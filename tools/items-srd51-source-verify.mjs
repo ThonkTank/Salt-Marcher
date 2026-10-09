@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import Ajv2020 from "ajv/dist/2020.js";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const dataRoot = resolve(root, "src/features/catalog/data");
@@ -27,11 +28,14 @@ const attunementValues = new Set(["required", "not-required", "unspecified"]);
 const occurrencePattern = /^srd51:(equipment|magic-item):[a-z0-9-]+:[0-9]+$/;
 
 export function normalizePdfText(value) {
-  return value.normalize("NFKC")
-    .replace(/\u00ad/g, "")
+  return value.normalize("NFC")
+    .replace(/\uFB00/g, "ff")
+    .replace(/\uFB01/g, "fi")
+    .replace(/\uFB02/g, "fl")
+    .replace(/\uFB03/g, "ffi")
+    .replace(/\uFB04/g, "ffl")
+    .replace(/\u00ad[^\S\r\n]*\r?\n[^\S\r\n]*/g, "")
     .replace(/[\u00a0\u2000-\u200b\u202f\u2060]/g, " ")
-    .replace(/[‐‑‒–—−]/g, "-")
-    .replace(/[‘’]/g, "'")
     .replace(/\s+/g, " ")
     .trim();
 }
@@ -73,6 +77,27 @@ function validateRarity(rarity, label) {
   }
 }
 
+function isStrictlyAscending(values) {
+  return values.every((value, index) => index === 0 || values[index - 1] < value);
+}
+
+function validateStructuredConversions(record) {
+  if (record.cost?.copperPieces !== undefined) {
+    const match = /^(\d[\d,]*) (cp|sp|ep|gp|pp)$/.exec(record.cost.sourceText);
+    invariant(match, `${record.id}.cost ist nicht eindeutig umrechenbar.`);
+    const multipliers = { cp: 1, sp: 10, ep: 50, gp: 100, pp: 1000 };
+    invariant(Number(match[1].replaceAll(",", "")) * multipliers[match[2]] === record.cost.copperPieces,
+      `${record.id}.cost.copperPieces stimmt nicht mit dem Quelltext überein.`);
+  }
+  if (record.weight?.pounds !== undefined) {
+    const match = /^(\d[\d,]*|1\/2|1\/4|1½) lb\.$/.exec(record.weight.sourceText);
+    invariant(match, `${record.id}.weight ist nicht eindeutig in Pfund umrechenbar.`);
+    const pounds = match[1] === "1/2" ? "0.5" : match[1] === "1/4" ? "0.25" : match[1] === "1½" ? "1.5"
+      : match[1].replaceAll(",", "");
+    invariant(pounds === record.weight.pounds, `${record.id}.weight.pounds stimmt nicht mit dem Quelltext überein.`);
+  }
+}
+
 export function validateTranscriptData(transcript, inventory, { allowIncomplete = false } = {}) {
   object(transcript, "Transkript");
   object(inventory, "Inventar");
@@ -84,12 +109,30 @@ export function validateTranscriptData(transcript, inventory, { allowIncomplete 
     "S01 ist unvollständig; Produktartefakt, Provider und UI bleiben gesperrt.");
   invariant(Array.isArray(inventory.occurrences) && Array.isArray(transcript.records),
     "Inventar und Transkript benötigen Listen.");
+  invariant(Array.isArray(inventory.sections), "Inventar benötigt eine Abschnittsliste.");
+  invariant(inventory.capturedPrimaryOccurrences === inventory.occurrences.length,
+    "Erfasster Inventarcount stimmt nicht.");
+  invariant(inventory.expectedPrimaryOccurrences >= inventory.capturedPrimaryOccurrences,
+    "Erwarteter Inventarcount ist kleiner als der erfasste Count.");
+  const sectionIds = new Set();
+  for (const section of inventory.sections) {
+    object(section, "Inventarabschnitt");
+    nonEmpty(section.id, "Inventarabschnitt.id");
+    invariant(!sectionIds.has(section.id), `Doppelter Inventarabschnitt ${section.id}.`);
+    sectionIds.add(section.id);
+    invariant(section.capturedOccurrences <= section.expectedOccurrences,
+      `${section.id} überschreitet den erwarteten Count.`);
+    if (section.complete) invariant(section.capturedOccurrences === section.expectedOccurrences,
+      `${section.id} ist trotz Countlücke vollständig markiert.`);
+  }
   const occurrences = new Map();
   for (const occurrence of inventory.occurrences) {
     object(occurrence, "Occurrence");
     invariant(occurrencePattern.test(occurrence.id), `Ungültige Occurrence-ID ${occurrence.id}.`);
     invariant(!occurrences.has(occurrence.id), `Doppelte Occurrence-ID ${occurrence.id}.`);
     nonEmpty(occurrence.sourceLabel, `${occurrence.id}.sourceLabel`);
+    nonEmpty(occurrence.sourceTable, `${occurrence.id}.sourceTable`);
+    invariant(sectionIds.has(occurrence.sectionId), `${occurrence.id} verweist auf unbekannten Abschnitt.`);
     for (const field of ["firstPdfPage", "lastPdfPage", "firstPrintedPage", "lastPrintedPage", "ordinal"])
       invariant(Number.isSafeInteger(occurrence[field]) && occurrence[field] > 0, `${occurrence.id}.${field} ist ungültig.`);
     invariant(occurrence.firstPdfPage <= occurrence.lastPdfPage, `${occurrence.id} hat umgekehrte PDF-Seiten.`);
@@ -106,19 +149,90 @@ export function validateTranscriptData(transcript, inventory, { allowIncomplete 
     invariant(record.category === "equipment" || record.category === "magic-item", `${record.id}.category ist ungültig.`);
     invariant(typeof record.magic === "boolean", `${record.id}.magic ist ungültig.`);
     invariant(attunementValues.has(record.attunement), `${record.id}.attunement ist ungültig.`);
+    if (record.category === "equipment") {
+      invariant(record.id.startsWith("srd51:equipment:"), `${record.id} hat eine falsche Kategorie-ID.`);
+      invariant(record.magic === false, `${record.id} darf nicht magisch markiert sein.`);
+      invariant(record.attunement === "unspecified", `${record.id} darf keine Einstimmungsbehauptung tragen.`);
+    } else {
+      invariant(record.id.startsWith("srd51:magic-item:"), `${record.id} hat eine falsche Kategorie-ID.`);
+      invariant(record.magic === true, `${record.id} muss magisch markiert sein.`);
+    }
     if (record.rarity !== undefined) validateRarity(record.rarity, `${record.id}.rarity`);
     invariant(Array.isArray(record.properties) && Array.isArray(record.description), `${record.id} benötigt Textlisten.`);
     object(record.source, `${record.id}.source`);
     invariant(Array.isArray(record.source.occurrenceIds) && record.source.occurrenceIds.length > 0,
       `${record.id} benötigt Quellenerscheinungen.`);
+    invariant(isStrictlyAscending(record.source.pdfPages) && isStrictlyAscending(record.source.printedPages),
+      `${record.id} benötigt streng aufsteigende Quellseiten.`);
     for (const occurrenceId of record.source.occurrenceIds)
       invariant(occurrences.has(occurrenceId), `${record.id} verweist auf unbekannte Occurrence ${occurrenceId}.`);
     for (const sourced of [...record.properties, ...record.description]) {
       object(sourced, `${record.id}.Textfakt`);
       invariant(occurrences.has(sourced.occurrenceId), `${record.id} hat unbelegte Textfakten.`);
+      invariant(record.source.occurrenceIds.includes(sourced.occurrenceId),
+        `${record.id} hat einen Textfakt außerhalb seiner Quellenliste.`);
     }
+    validateStructuredConversions(record);
   }
   return Object.freeze({ occurrenceCount: occurrences.size, recordCount: records.size, complete: transcript.complete });
+}
+
+function formatAjvErrors(errors) {
+  return [...(errors ?? [])]
+    .sort((left, right) => [left.instancePath, left.schemaPath, left.keyword, left.message]
+      .join("\u0000").localeCompare([right.instancePath, right.schemaPath, right.keyword, right.message].join("\u0000")))
+    .map(error => `${error.instancePath || "/"} ${error.message} (${error.schemaPath})`)
+    .join("; ");
+}
+
+export function validateJsonSchemas(schema, transcript, inventory) {
+  const ajv = new Ajv2020({ allErrors: true, strict: true, validateSchema: true, unicodeRegExp: true,
+    allowUnionTypes: false });
+  invariant(ajv.validateSchema(schema), `JSON Schema ist ungültig: ${formatAjvErrors(ajv.errors)}`);
+  ajv.addSchema(schema);
+  const validateTranscript = ajv.getSchema(schema.$id);
+  invariant(validateTranscript(transcript), `Transkript verletzt JSON Schema: ${formatAjvErrors(validateTranscript.errors)}`);
+  const validateInventory = ajv.compile({ $ref: `${schema.$id}#/$defs/inventory` });
+  invariant(validateInventory(inventory), `Inventar verletzt JSON Schema: ${formatAjvErrors(validateInventory.errors)}`);
+}
+
+function extractPdfPage(pdfPath, page) {
+  return execFileSync("pdftotext", ["-f", String(page), "-l", String(page), "-raw", resolve(pdfPath), "-"],
+    { encoding: "utf8", maxBuffer: 4 * 1024 * 1024 });
+}
+
+function verifyPdfOccurrences(pdfPath, inventory) {
+  const pageText = new Map();
+  for (const occurrence of inventory.occurrences) {
+    const pages = [];
+    for (let page = occurrence.firstPdfPage; page <= occurrence.lastPdfPage; page += 1) pages.push(page);
+    const text = pages.map(page => {
+      if (!pageText.has(page)) pageText.set(page, normalizePdfText(extractPdfPage(pdfPath, page)));
+      return pageText.get(page);
+    }).join(" ");
+    invariant(text.includes(normalizePdfText(occurrence.sourceLabel)),
+      `${occurrence.id} (${occurrence.sourceLabel}) fehlt auf den belegten PDF-Seiten.`);
+  }
+  return Object.freeze({ checkedOccurrences: inventory.occurrences.length, extractor: "pdftotext -raw" });
+}
+
+function verifyPdfTranscriptFacts(pdfPath, transcript) {
+  const pageText = new Map();
+  let checkedFacts = 0;
+  for (const record of transcript.records) {
+    const text = record.source.pdfPages.map(page => {
+      if (!pageText.has(page)) pageText.set(page, normalizePdfText(extractPdfPage(pdfPath, page)));
+      return pageText.get(page);
+    }).join(" ");
+    const facts = [record.cost?.sourceText, record.weight?.sourceText, record.damage?.diceText,
+      record.damage?.typeText, record.damage?.versatileDiceText, record.armor?.armorClassText,
+      record.armor?.strengthRequirementText, record.armor?.stealthRuleText].filter(Boolean);
+    for (const fact of facts) {
+      invariant(text.includes(normalizePdfText(fact)), `${record.id}: PDF-Beleg für „${fact}“ fehlt.`);
+      checkedFacts += 1;
+    }
+  }
+  return Object.freeze({ checkedRecords: transcript.records.length, checkedFacts, scope: "structured-table-facts" });
 }
 
 async function json(path) {
@@ -130,8 +244,9 @@ function sha256(bytes) {
 }
 
 export async function verifyItemsSourcePackage({ pdfPath, allowIncomplete = false } = {}) {
-  const [manifest, inventory, schema, transcript, attribution] = await Promise.all([
+  const [manifest, inventory, schema, transcript, attribution, inventoryBytes, schemaBytes, transcriptBytes] = await Promise.all([
     json(paths.manifest), json(paths.inventory), json(paths.schema), json(paths.transcript), readFile(paths.attribution, "utf8"),
+    readFile(paths.inventory), readFile(paths.schema), readFile(paths.transcript),
   ]);
   invariant(schema.$schema === "https://json-schema.org/draft/2020-12/schema", "Schema ist nicht Draft 2020-12.");
   invariant(schema.properties?.schemaVersion?.const === 1, "Schema v1 ist nicht gebunden.");
@@ -144,12 +259,21 @@ export async function verifyItemsSourcePackage({ pdfPath, allowIncomplete = fals
   invariant(attribution.includes(OFFICIAL_ATTRIBUTION), "Offizieller Attributionstext fehlt oder wurde verändert.");
   invariant((attribution.match(/Wizards of the Coast/g) ?? []).length === 1,
     "Attributionsasset enthält zusätzliche Wizards-Attribution.");
+  invariant(manifest.artifactHashes?.attributionSha256 === sha256(Buffer.from(attribution)),
+    "Attributionshash stimmt nicht mit dem Manifest überein.");
+  invariant(manifest.artifactHashes?.inventorySha256 === sha256(inventoryBytes),
+    "Inventarhash stimmt nicht mit dem Manifest überein.");
+  invariant(manifest.artifactHashes?.schemaSha256 === sha256(schemaBytes),
+    "Schemahash stimmt nicht mit dem Manifest überein.");
+  invariant(manifest.artifactHashes?.transcriptSha256 === sha256(transcriptBytes),
+    "Transkripthash stimmt nicht mit dem Manifest überein.");
   invariant(manifest.complete === inventory.complete && manifest.complete === transcript.complete,
     "Manifest, Inventar und Transkript widersprechen sich beim Vollständigkeitsstatus.");
   invariant(manifest.coverage.inventoryOccurrences === inventory.occurrences.length,
     "Manifest-Inventarcount stimmt nicht.");
   invariant(manifest.coverage.transcriptRecords === transcript.records.length,
     "Manifest-Transkriptcount stimmt nicht.");
+  validateJsonSchemas(schema, transcript, inventory);
   const validation = validateTranscriptData(transcript, inventory, { allowIncomplete });
   let pdf;
   if (pdfPath) {
@@ -158,7 +282,9 @@ export async function verifyItemsSourcePackage({ pdfPath, allowIncomplete = fals
     invariant(bytes.length === manifest.source.pdfBytes, "Offizielle SRD-5.1-PDF-Größe stimmt nicht.");
     const info = execFileSync("pdfinfo", [resolve(pdfPath)], { encoding: "utf8" });
     invariant(new RegExp(`^Pages:\\s+${manifest.source.pdfPages}$`, "m").test(info), "PDF-Seitenzahl stimmt nicht.");
-    pdf = Object.freeze({ sha256: OFFICIAL_PDF_SHA256, bytes: bytes.length, pages: manifest.source.pdfPages });
+    pdf = Object.freeze({ sha256: OFFICIAL_PDF_SHA256, bytes: bytes.length, pages: manifest.source.pdfPages,
+      occurrenceEvidence: verifyPdfOccurrences(pdfPath, inventory),
+      transcriptEvidence: verifyPdfTranscriptFacts(pdfPath, transcript) });
   }
   return Object.freeze({
     complete: manifest.complete,
@@ -166,10 +292,10 @@ export async function verifyItemsSourcePackage({ pdfPath, allowIncomplete = fals
     pdf,
     hashes: Object.freeze({
       attribution: sha256(Buffer.from(attribution)),
-      inventory: sha256(await readFile(paths.inventory)),
+      inventory: sha256(inventoryBytes),
       manifest: sha256(await readFile(paths.manifest)),
-      schema: sha256(await readFile(paths.schema)),
-      transcript: sha256(await readFile(paths.transcript)),
+      schema: sha256(schemaBytes),
+      transcript: sha256(transcriptBytes),
     }),
     blockers: Object.freeze([...manifest.blockingOpenSections]),
   });

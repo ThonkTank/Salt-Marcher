@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://thonktank.invalid/schema/items-srd51-transcript-v1.json",
   "title": "SRD 5.1 Items source transcript",
-  "$comment": "CE-02-I02-S01 work in progress: this schema is not reviewable as complete until the inventory-derived closed subcategory enum replaces the current nonempty-string placeholder.",
+  "$comment": "CE-02-I02-S01 work in progress: the equipment taxonomy and inventory contract are closed; magic-item inventory, transcript and merge contracts remain incomplete.",
   "type": "object",
   "additionalProperties": false,
   "required": ["schemaVersion", "complete", "source", "records"],
@@ -20,6 +20,15 @@
     "occurrenceId": {
       "type": "string",
       "pattern": "^srd51:(equipment|magic-item):[a-z0-9-]+:[0-9]+$"
+    },
+    "subcategory": {
+      "enum": [
+        "armor-light", "armor-medium", "armor-heavy", "shield",
+        "weapon-simple-melee", "weapon-simple-ranged", "weapon-martial-melee", "weapon-martial-ranged",
+        "adventuring-gear-standard", "ammunition", "arcane-focus", "druidic-focus", "holy-symbol", "kit", "equipment-pack",
+        "artisans-tools", "gaming-set", "musical-instrument", "other-tools",
+        "mount-or-animal", "tack-harness-or-drawn-vehicle", "waterborne-vehicle"
+      ]
     },
     "rarityValue": {
       "enum": ["common", "uncommon", "rare", "very-rare", "legendary", "artifact"]
@@ -76,7 +85,7 @@
       "required": ["sourceText"],
       "properties": {
         "sourceText": { "$ref": "#/$defs/nonEmpty" },
-        "pounds": { "type": "string", "pattern": "^(0|[1-9][0-9]*)(\\.[0-9]+)?$" }
+        "pounds": { "type": "string", "pattern": "^(?:[1-9][0-9]*(?:\\.[0-9]+)?|0\\.0*[1-9][0-9]*)$" }
       }
     },
     "sourcedText": {
@@ -139,7 +148,7 @@
         "id": { "$ref": "#/$defs/occurrenceId" },
         "name": { "$ref": "#/$defs/nonEmpty" },
         "category": { "enum": ["equipment", "magic-item"] },
-        "subcategory": { "$ref": "#/$defs/nonEmpty" },
+        "subcategory": { "$ref": "#/$defs/subcategory" },
         "magic": { "type": "boolean" },
         "rarity": { "$ref": "#/$defs/rarity" },
         "attunement": { "enum": ["required", "not-required", "unspecified"] },
@@ -161,6 +170,58 @@
         "pdfUrl": { "const": "https://media.wizards.com/2023/downloads/dnd/SRD_CC_v5.1.pdf" },
         "pdfSha256": { "const": "2504d2a0abb0a4d491a939be4f17910a2dde0312570ab8d208080225ccf0a1f0" },
         "license": { "const": "CC-BY-4.0" }
+      }
+    },
+    "inventoryOccurrence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "feed", "sectionId", "sourceKind", "sourceTable", "sourceLabel", "firstPdfPage", "lastPdfPage", "firstPrintedPage", "lastPrintedPage", "ordinal", "variantId", "mergeIntoId"],
+      "properties": {
+        "id": { "$ref": "#/$defs/occurrenceId" },
+        "feed": { "enum": ["equipment", "magic-item"] },
+        "sectionId": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+        "sourceKind": { "enum": ["table-row", "standalone-entry", "detail-heading", "fact-row", "cross-reference"] },
+        "sourceTable": { "$ref": "#/$defs/nonEmpty" },
+        "sourceLabel": { "$ref": "#/$defs/nonEmpty" },
+        "firstPdfPage": { "type": "integer", "minimum": 1, "maximum": 403 },
+        "lastPdfPage": { "type": "integer", "minimum": 1, "maximum": 403 },
+        "firstPrintedPage": { "type": "integer", "minimum": 1, "maximum": 403 },
+        "lastPrintedPage": { "type": "integer", "minimum": 1, "maximum": 403 },
+        "ordinal": { "type": "integer", "minimum": 1 },
+        "variantId": { "oneOf": [{ "type": "string", "minLength": 1 }, { "type": "null" }] },
+        "mergeIntoId": { "oneOf": [{ "$ref": "#/$defs/occurrenceId" }, { "type": "null" }] }
+      }
+    },
+    "inventorySection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "feed", "sourceKind", "firstPdfPage", "lastPdfPage", "firstPrintedPage", "lastPrintedPage", "expectedOccurrences", "capturedOccurrences", "complete"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+        "feed": { "enum": ["equipment", "magic-item"] },
+        "sourceKind": { "enum": ["table-row", "standalone-entry", "detail-heading", "mixed"] },
+        "firstPdfPage": { "type": "integer", "minimum": 1, "maximum": 403 },
+        "lastPdfPage": { "type": "integer", "minimum": 1, "maximum": 403 },
+        "firstPrintedPage": { "type": "integer", "minimum": 1, "maximum": 403 },
+        "lastPrintedPage": { "type": "integer", "minimum": 1, "maximum": 403 },
+        "expectedOccurrences": { "type": "integer", "minimum": 0 },
+        "capturedOccurrences": { "type": "integer", "minimum": 0 },
+        "inventoryComplete": { "type": "boolean" },
+        "transcriptComplete": { "type": "boolean" },
+        "complete": { "type": "boolean" }
+      }
+    },
+    "inventory": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["inventoryVersion", "complete", "expectedPrimaryOccurrences", "capturedPrimaryOccurrences", "sections", "occurrences"],
+      "properties": {
+        "inventoryVersion": { "const": 1 },
+        "complete": { "type": "boolean" },
+        "expectedPrimaryOccurrences": { "type": "integer", "minimum": 0 },
+        "capturedPrimaryOccurrences": { "type": "integer", "minimum": 0 },
+        "sections": { "type": "array", "items": { "$ref": "#/$defs/inventorySection" } },
+        "occurrences": { "type": "array", "items": { "$ref": "#/$defs/inventoryOccurrence" } }
       }
     }
   }
