@@ -1,7 +1,8 @@
 {
   "schemaVersion": "p01-v2",
   "package": "ADR-P01-H02",
-  "candidateCommit": "689e158d381c394a1af1eab58e06680dacf33413",
+  "receiptSourceCommit": "689e158d381c394a1af1eab58e06680dacf33413",
+  "provenance": "The clean implementation commit produced the immutable external receipt; this aggregate is a later Git-tracked evidence record and does not claim that its own commit is self-hashed by that receipt.",
   "baseSharedCommit": "b3cca7945279bdd932a1eb03f287337541950250",
   "lockfileSha256": "903741597cd3135a1425957d5ad751dcf22c525f5fbe4ea20befca94af4bf4d4",
   "sourceTruth": {
@@ -45,7 +46,7 @@
     "completeCreateUpdateDeleteFaultMatrix": "not-run",
     "productInputsByteIdentity": "passed for main.js, manifest.json and styles.css before/after harness",
     "installedObsidianAdapterByteIdentity": "not-run",
-    "externalEvidenceReceipt": "bound to clean exact candidate SHA",
+    "externalEvidenceReceipt": "bound to clean exact implementation SHA; aggregate recorded in a later evidence commit",
     "independentCodeEvidenceReview": "pending"
   },
   "tests": {
