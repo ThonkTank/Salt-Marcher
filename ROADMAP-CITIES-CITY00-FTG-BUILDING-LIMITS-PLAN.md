@@ -9,3 +9,5 @@ Technische Umsetzung CITY-02/06: Gebäudebedarfe und Anzahlgrenzen gehören in d
 I45 speichert AX/Screen, tatsächlichen Start, Originalversion soweit sichtbar und genaue Zugangslücken extern. R45 prüft Formularbeleg vs Ergebniswirkung, korrekte Zuordnung nur zu CO13, und offene eigene Produkt-/Host-/Bedienabnahme. Nach jeder Fachphase eigene Aufräum-P/I/R für Links, Grenzen, Rohhashes und Tabzustand. Keine lokale GUI-Instanz parallel zu HEX-02.
 
 R45-Nachbesserung CITY-REF-R45-01: Zwei frühe AX-Dateien sind nur No-change-Diffs. N45 liest Formular, individuelle Typenliste und Bedarfsgruppen erneut als vollständige AX-Snapshots mit eigener Startzeit. Counts/Zugangsregel nur daraus bestätigen; alte Rohdateien unverändert. Keine Generierung oder Änderung der alten QA-Karte. Danach separater R46.
+
+N45-Aufräumen: neue Vollaufnahmen sichern sichtbare Paginierung209 Typen/80 Gruppen; nur10/20 Einträge geladen. Dies ist keine Vollmatrixabnahme. Karte/Person/Uhrzeit sind sichtbar erhalten, keine bytegleiche gesamte Siedlung bewiesen. Alte Diffs unverändert erhalten.

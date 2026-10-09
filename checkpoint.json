@@ -4607,16 +4607,16 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I45-N45-CLEAN-P45",
-      "kind": "cleanup_plan",
-      "startedAt": "2026-10-09T19:24:01.688789+00:00",
-      "focus": "N-P: Referenzvollaufnahmen und Funktionsgrenzen",
-      "state": "completed",
-      "result": "Aufräumplan: genaue Zählgrenze UI-Gesamtzahl vs geladene Einträge dokumentieren; Originaldaten/IDs schützen."
-    },
-    "nextRun": {
       "id": "CITY-00-I45-N45-CLEAN-I45",
       "kind": "cleanup_implementation",
+      "startedAt": "2026-10-09T19:24:04.673654+00:00",
+      "focus": "N-I: Referenzvollaufnahmen und Funktionsgrenzen",
+      "state": "completed",
+      "result": "Zähl-/Erhaltungsgrenzen lesbar präzisiert; keine Runtime- oder Rohdatenänderung."
+    },
+    "nextRun": {
+      "id": "CITY-00-I45-N45-CLEAN-R45",
+      "kind": "cleanup_review",
       "focus": "Vollaufnahmen und Scopegrenzen prüfen"
     },
     "open": [
