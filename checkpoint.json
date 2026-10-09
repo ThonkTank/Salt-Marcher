@@ -62,36 +62,34 @@
   "hexAtlasExecution": {
     "scope": "HEX-00 bis HEX-28 und sämtliche eingeordneten CITY-00 bis CITY-09 vollständig",
     "phase": "HEX-00",
-    "state": "numeric_context_and_initial_path_repair_complete_review_pending",
+    "state": "water_numeric_inventory_mapped_review_pending",
     "plan": "ROADMAP-HEX-00-REPAIR-PLAN.md",
     "currentRun": {
-      "id": "HEX-00-N-I07",
-      "kind": "repair_implementation",
-      "startedAt": "2026-10-09T06:58:18.074318+02:00",
-      "baseCommit": "edf4a612ebeb56684356a1e1c9132b6b62285ad7",
-      "state": "completed",
-      "focus": "Existing New/Zoom/Ground numeric evidence first; measure only missing inline channel bounds and initial native path before explicit style choice. No independent review or cleanup approval.",
-      "evidence": [
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/manifest.json",
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/mapping-validation.json",
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/native-path-data.json",
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/protection-and-native-proof.json",
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/validator-partial.json",
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/validator-complete.json",
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/validator-tests.txt",
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/integrated-checks.json",
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/integrated-final-checks.json",
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/final-preservation.json"
-      ],
-      "result": "Elf frühe Inventarfragen mit Originalbelegen geklärt; 114 bleiben offen. Alle 33 begrenzten Optionskandidaten beobachtet. Eingehende Dungeon-Produktarbeit normal integriert, Basis neu geprüft; eigene R02-/Aufräumfreigabe ausstehend.",
-      "completedAt": "2026-10-09T07:31:00.753457+02:00",
-      "publication": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/publication.json"
-    },
-    "nextRun": {
       "id": "HEX-00-N-I08",
       "kind": "repair_implementation",
-      "focus": "16 offene Zahlenfragen im Water-Kontext (0233–0236,0240–0242,0244–0249,0251–0253): vorhandene native Belege zuerst zuordnen, nur konkrete fehlende Grenzen/Validierung im Original messen. Keine Übertragung von Ground-/Path-/Popup-Regeln. Gleicher Schutz und begrenzter Ablauf; danach eigener R02.",
-      "gate": "114 frühe Fragen und alle sechs R01-Befunde bleiben bis passenden Direktbelegen/eigenem R02 offen; Aufräumplan/Umsetzung/Review vor HEX-01."
+      "startedAt": "2026-10-09T07:41:25.914441+02:00",
+      "baseCommit": "a7565d52c9a4f9f86137c2b9d4bf7c4429b2ddd4",
+      "state": "checked_implementation_review_pending",
+      "focus": "16 Water numeric inventory questions: existing native evidence first, then direct endpoints/validation only in each actual Water control. No Ground/Path/Modal transfer or phase review.",
+      "evidence": [
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/water-numeric-repair-20261009-074125/manifest.json",
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/water-numeric-repair-20261009-074125/mapping-validation.json",
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/water-numeric-repair-20261009-074125/protection-and-native-proof.json",
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/water-numeric-repair-20261009-074125/initial-checks.json",
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/water-numeric-repair-20261009-074125/published-checks.json"
+      ],
+      "finishedAt": "2026-10-09T08:04:59.205833+02:00",
+      "result": "Alle 16 Water-Zahlenfragen in ihren tatsächlichen Original-Controlkontexten geklärt; 96 neue Frames und normaler Ausgang 0. 98 frühe Fragen, eigener R02 und Aufräumreview offen.",
+      "resolvedEarlyQuestions": 16,
+      "remainingEarlyQuestions": 98,
+      "newOriginalFrames": 96,
+      "normalExitCode": 0
+    },
+    "nextRun": {
+      "id": "HEX-00-N-I09",
+      "kind": "repair_implementation",
+      "focus": "Water Windrose 0259–0262/0264: fünf Controls, sechs frühe Fragen. Vorhandene Originalframes zuerst lesen; fehlende Grenzen und tatsächlichen Zahlenwert/Bedienweg von Inner Circles direkt erfassen. Keine anderen Werkzeugregeln übertragen.",
+      "gate": "98 frühe Fragen, alle sechs R01-Befunde und eigener R02 bleiben offen; Aufräumplan/Umsetzung/Review vor HEX-01."
     },
     "review": {
       "state": "changes_required",
@@ -122,7 +120,7 @@
       "HEX00-R01-06: Gespeicherte Gruppenindizes folgen neuen UI-Zuordnungen nicht",
       "Eigenständiges Aufräumen nach Fachfreigabe, einschließlich RFB-Beleg-/Eingabe-Preflight C01.",
       "CITY-00 bleibt eigene frühe Ergebnisreferenzphase; vollständige Wonderdraft-Wirkungsvarianten verbleiben in ihren Fachphasen.",
-      "114 ausdrückliche frühe UI-Inventarfragen nach N-I07 noch offen; weitere elf Fragen direkt geklärt. Spätere Wirkungsfragen ersetzen keine unbekannte Oberfläche/Validierung.",
+      "98 ausdrückliche frühe UI-Inventarfragen nach N-I08 offen; 16 Water-Zahlenfragen direkt geklärt. Spätere Wirkungsfragen ersetzen keine unbekannte Oberfläche/Validierung.",
       "R01-01/06 umgesetzt, eigener R02 noch offen; 113 Altquellenfehler jetzt getrennt als historical_unverified_replaced; eigene R02-Passung weiterhin offen.",
       "Zwei fremde Teständerungen/Installationsnotiz unverändert und unveröffentlicht; veröffentlichbarer Testbaum hat drei fehlende externe Fixture-Fälle."
     ],
@@ -136,29 +134,29 @@
       "build": "passed",
       "productBuildSha256": "bf4288c75ab395fbab9659c423c9d4f138893dc8a3d42055aad0182dde1b8383",
       "integratedCommit": "92b6df0232825ff6957ad61038980c92333119e8",
-      "host": "N-I07 integriert Dungeon-Bodenzellen/Terrainmasken und die anschließende native Boden-Löschpaarung; Build bf4288c7 lokal/veröffentlicht geprüft. Zwei frühere Hex-Kern-Hostnachweise gelten nur für Build b3211281. Keine neue Hex-Hostabnahme, Großkarte, physische Eingabe oder Installation.",
-      "testProvenance": "190 lokale Tests bestanden; zwei fremde Testpatches erhalten und unveröffentlicht. Veröffentlichter Quellbaum:193 Tests,190 bestanden, dieselben drei fehlenden externen Fixture-Fälle.",
+      "host": "N-I08 ergänzt ausschließlich native Water-Inventarbelege. Produktbuild bf4288c7 unverändert und erneut lokal/veröffentlicht geprüft. Zwei frühere Hex-Kern-Hostnachweise gelten nur für Build b3211281. Keine neue Hex-Hostabnahme, Großkarte, physische Eingabe oder Installation.",
+      "testProvenance": "190 lokale Tests bestanden; zwei fremde Testpatches erhalten und unveröffentlicht. Exakter veröffentlichbarer Quellbaum 3c8578a: 193 Tests, 190 bestanden, dieselben drei fehlenden externen Fixture-Fälle.",
       "cleanTreeTest": {
         "state": "three_known_fixture_failures",
         "tests": 193,
         "passed": 190,
         "failed": 3,
-        "source": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/integrated-final-checks.json"
+        "source": "/home/aaron/.cache/dungeon-native-qa/hex-00/water-numeric-repair-20261009-074125/published-checks.json"
       },
-      "catalog": "N-I07: 663 UI-Einträge/83 Fälle erhalten; elf frühe Fragen direkt geklärt: New-Größen, getrennte Zoomwege, Ground-Pinsel/Inline-RGBA und tatsächlicher initialer Pfadstil. 33/33 begrenzte Optionskandidaten beobachtet; 114 frühe Fragen, eigener R02 und Aufräumreview offen. Keine vollständige Inventar-/Paritätsfreigabe.",
+      "catalog": "N-I08: 663 UI-Einträge/83 Fälle erhalten; 16 Water-Zahlenfragen in ihrem tatsächlichen Originalkontext geklärt, einschließlich separater See-/Süßwasser-/Farbpinselgrenzen und Sättigungsanzeige ±0.24. 33/33 begrenzte Optionsfälle beobachtet; 98 frühe Fragen, eigener R02 und Aufräumreview offen. Keine vollständige Inventar-/Paritätsfreigabe.",
       "physicalInput": "not_run",
       "largeMap": "not_run",
       "installation": "unchanged",
-      "testedProductCommit": "92b6df0232825ff6957ad61038980c92333119e8",
+      "testedProductCommit": "3c8578acc556d443f20dca9334002a97a6537d10",
       "incomingReviewIntegration": "01d85e5/cadb62e/697f990/65db322 normal in486d7c3 integriert; anschließend2bb5335 (native V4-Bodenlöschung, Produkt/Tests geändert) in92b6df0 integriert. Eigene Hex-/Wonderdraft-Wurzeln, fremde Testpatches und Installationsnotiz erhalten. Basis lokal190/190 und veröffentlicht190/193 mit drei bekannten fehlenden Fixtures; beide Builds identisch bf4288c7. Keine neue Hex-Hostabnahme/Installation.",
       "latestOriginalRun": {
-        "manifest": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/manifest.json",
+        "manifest": "/home/aaron/.cache/dungeon-native-qa/hex-00/water-numeric-repair-20261009-074125/manifest.json",
         "sessions": 1,
-        "newFrames": 127,
+        "newFrames": 96,
         "normalExitCodes": [
           0
         ],
-        "scope": "New-Zahlenbelege zugeordnet; getrennte Zoommenü-/Manuellgrenzen, Ground-Größe und Inline-RGBA direkt gemessen; nativer initialer Pfad gespeichert/extrahiert und mit expliziter Reihe1 verglichen. Kein vollständiger Speicher-/Neuöffnungsreview.",
+        "scope": "16 Water-Zahlenfragen direkt gemessen; Sättigung zusätzlich per Sliderenden und ±0.25-Literalen. Kein Wasserauftrag, History-/Speicher-/Neustart- oder physischer Eingabereview.",
         "physicalInput": false
       },
       "referenceReview": {
@@ -349,6 +347,24 @@
         "earlyBlocking": 133,
         "historicalEvidenceUsages": 113,
         "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/mapping-validation.json",
+        "originalEffectApproval": false,
+        "phaseApproval": false
+      },
+      "waterNumericRepair": {
+        "run": "HEX-00-N-I08",
+        "state": "direct_mappings_observed_review_pending",
+        "resolvedEarlyQuestions": 16,
+        "remainingEarlyQuestions": 98,
+        "newFrames": 96,
+        "normalExitCode": 0,
+        "validatorErrors": 0,
+        "validatorTestsPassed": 26,
+        "partialPending": 196,
+        "earlyBlocking": 117,
+        "historicalEvidenceUsages": 113,
+        "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-00/water-numeric-repair-20261009-074125/mapping-validation.json",
+        "protection": "/home/aaron/.cache/dungeon-native-qa/hex-00/water-numeric-repair-20261009-074125/protection-and-native-proof.json",
+        "basis": "/home/aaron/.cache/dungeon-native-qa/hex-00/water-numeric-repair-20261009-074125/published-checks.json",
         "originalEffectApproval": false,
         "phaseApproval": false
       }
