@@ -3632,17 +3632,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I14-CP",
-      "kind": "cleanup_planning",
-      "startedAt": "2026-10-09T12:47:42.334783+00:00",
-      "focus": "Verformungsumfang und Befehlsschutz präzisieren",
-      "state": "completed",
-      "result": "I14-R01 geplant:8 Werkzeuge mit einzelnen offenen Wirkungsbelegen, Geometrieänderung getrennt vom Generatorersatz, stabiler Besitz/Bindung und atomare gemeinsame History"
-    },
-    "nextRun": {
       "id": "CITY-00-I14-CI",
       "kind": "cleanup_implementation",
-      "focus": "Geplanten Verformungsvertrag und Teilpflichten eintragen"
+      "startedAt": "2026-10-09T12:48:13.602689+00:00",
+      "focus": "Geplanten Verformungsvertrag und Teilpflichten eintragen",
+      "state": "completed",
+      "result": "Geplanter Verformungsvertrag ergänzt;8 Teilpflichten offen, nur Displace Originalteilwirkung; keine eigene API oder Hostabnahme"
+    },
+    "nextRun": {
+      "id": "CITY-00-I14-CR",
+      "kind": "cleanup_review",
+      "focus": "Verformungsvertrag und Rohbelege abschließend prüfen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",

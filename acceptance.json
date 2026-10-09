@@ -115,7 +115,7 @@
   },
   "cityPlans": {
     "schemaVersion": 1,
-    "updated": "2026-10-09T12:46:31.007466+00:00",
+    "updated": "2026-10-09T12:48:13.602689+00:00",
     "plan": "ROADMAP-CITIES.md",
     "state": "planned_not_implemented",
     "comparisonMode": "functional_equivalence_and_independent_usability_tests",
@@ -2602,7 +2602,8 @@
         "observationKind": "direct_geometry_effect_partial",
         "originalEvidence": [
           "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/manifest.json",
-          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i14-warp-20261009/manifest.json"
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i14-warp-20261009/manifest.json",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i14-warp-20261009/cleanup.json"
         ],
         "task": "Straßen/Bebauung durch lokalen Eingriff verformen",
         "phase": "CITY-04",
@@ -2641,6 +2642,56 @@
             "state": "partial",
             "run": "CITY-00-I03-I",
             "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/manifest.json"
+          }
+        ],
+        "operationRequirements": [
+          {
+            "name": "Bloat",
+            "status": "open",
+            "originalEffect": "control_only",
+            "implementation": "not_started"
+          },
+          {
+            "name": "Displace",
+            "status": "open",
+            "originalEffect": "direct_partial",
+            "implementation": "not_started"
+          },
+          {
+            "name": "Equalize",
+            "status": "open",
+            "originalEffect": "control_only",
+            "implementation": "not_started"
+          },
+          {
+            "name": "Liquify",
+            "status": "open",
+            "originalEffect": "control_only",
+            "implementation": "not_started"
+          },
+          {
+            "name": "Measure",
+            "status": "open",
+            "originalEffect": "control_only",
+            "implementation": "not_started"
+          },
+          {
+            "name": "Pinch",
+            "status": "open",
+            "originalEffect": "control_only",
+            "implementation": "not_started"
+          },
+          {
+            "name": "Rotate",
+            "status": "open",
+            "originalEffect": "control_only",
+            "implementation": "not_started"
+          },
+          {
+            "name": "Relax",
+            "status": "open",
+            "originalEffect": "control_only",
+            "implementation": "not_started"
           }
         ]
       },
