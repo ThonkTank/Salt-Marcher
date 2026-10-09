@@ -4051,17 +4051,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I32-CR",
-      "kind": "cleanup_review",
-      "startedAt": "2026-10-09T15:27:47.781532+00:00",
-      "focus": "Generationsbelege CR",
-      "state": "completed",
-      "result": "Snapshot, acceptance und technische CITY-02-Präzisierung stimmen; Rawhashes, tatsächliche Downloadkopien und Inventarbelegziele bestätigt.64 CO-/24 CTY-Pflichten weiterhin offen. Aufräumumfang ohne Restbefund. Als nächstes frühe Roads-Generationsvorgaben direkt prüfen; HEX-05-Vertrag vor Produktstart."
-    },
-    "nextRun": {
       "id": "CITY-00-I33-P",
       "kind": "reference_planning",
-      "focus": "Frühe Roads-Vorgaben auf eigener Karte planen; HEX-05 prüfen"
+      "startedAt": "2026-10-09T15:28:38.930506+00:00",
+      "focus": "Straßen-/Tor-Generationsvorgaben",
+      "state": "completed",
+      "result": "Eigener kontrollierter Originalvergleich geplant."
+    },
+    "nextRun": {
+      "id": "CITY-00-I33-I",
+      "kind": "reference_implementation",
+      "focus": "Roads-Controls und einen tatsächlichen Rebuild prüfen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
