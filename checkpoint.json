@@ -3438,17 +3438,17 @@
     "state": "city00_reference_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I06-CP",
-      "kind": "cleanup_planning",
-      "startedAt": "2026-10-09T10:52:40.527650+00:00",
-      "focus": "Sperr- und Zielvertrag technisch planen",
-      "state": "completed",
-      "result": "PID/Inode-FLOCK-Prüfung, Besitzeridentität und Frame-/Portbindung geplant"
-    },
-    "nextRun": {
       "id": "CITY-00-I06-CI",
       "kind": "cleanup_implementation",
-      "focus": "R01/R02 mit Offline-Grenztests reparieren"
+      "startedAt": "2026-10-09T10:53:55.476034+00:00",
+      "focus": "Echte gehaltene Sperre und RFB-Zielvertrag prüfen",
+      "state": "completed",
+      "result": "Sperrdeskriptor/PID/Inode plus Ownerstartticks und Display-Port-Rollen geprüft; fünf Offline-Grenztests grün. Btrfs-dev-Abweichung durch tatsächlichen fdinfo-Beleg gelöst."
+    },
+    "nextRun": {
+      "id": "CITY-00-I06-CR",
+      "kind": "cleanup_review",
+      "focus": "R01/R02, fünf Tests und Live-Startbereitschaft reviewen"
     },
     "open": [
       "CITY-00 direkte Referenzinventur/Galerie aller drei Produkte",
