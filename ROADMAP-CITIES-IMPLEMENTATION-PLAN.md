@@ -693,3 +693,6 @@ CITY-01-PREP-PLAN-CLEAN-P02 Start 2026-10-09T16:54:08.160940+00:00; Plan-Aufräu
 
 
 CITY-01-PREP-PLAN-CLEAN-I02 Start 2026-10-09T16:54:33.124584+00:00; Befehlsplan verwendet ausdrücklich die bestehende generic immutable-Hilfe auf frisch aufgebautem Change. Fehlendes unregister wird als einmalige Quelle je Stadt-/Historylebensdauer beschrieben; weitere Verbraucher teilen die Quelle, erneute Konstruktion kollidiert kontrolliert. Keine Registry, zweite History oder Hostcodeänderung. Abschließender Quellen-/Verweis-/JSONreview folgt.
+
+
+CITY-01-PREP-PLAN-CLEAN-R02 Start 2026-10-09T16:55:07.020488+00:00; Befehlsplan gegen tatsächliche AtlasHistory/TerrainSource, Codec/Modell und vorhandene immutable-Hilfe geprüft. Owner=document-ID/Target=document, einmalige Registrierung, ausschließlich History als Stand, strikte Eingabeprüfung vor JSON und festgehaltener Gestenbeginn stimmen. Mehrbesitzer-Stale/Formatfehler, gemeinsame Undo/Redo sowie No-op/Redo ausdrücklich geplant; lokale Verweise und JSON gültig,24 CTY-Pflichten weiter offen. Keine ausführbare Änderung oder Hostfreigabe. Plan-Aufräumen ohne Restbefund. Beleg: /home/aaron/.cache/dungeon-native-qa/city-plans/city01-commands-20261009/plan-review.json. Nächster Lauf CITY-01-PREP-I02 implementiert nur commands.ts und gezielte Tests.
