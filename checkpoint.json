@@ -4530,11 +4530,11 @@
   },
   "gmProductTesting": {
     "date": "2026-10-09",
-    "state": "gm_ux_01_cloud_scenario_complete_open_work_gated_d153a57",
+    "state": "gm_ux_01_cloud_asset_restore_retest_422718f",
     "plan": "ROADMAP-GM-PRODUCT-TESTING-PLAN.md",
     "focus": "Längere GM-Endanwenderabläufe, häufige Aktionen, Bedienkosten und UI-Überladung; belegte Nacharbeiten beauftragen und nachprüfen.",
-    "currentRun": "GM-UX-01 isolierte Kopie: Asset-Suche, zehn Objektplatzierungen, Undo/Redo, Save/Close/Reopen; kurzer prüfbarer Cloud-Abschluss",
-    "executedUiRuns": 9,
+    "currentRun": "Shared 422718f in isoliertem Vault: Geheimgang-Reopen, Wooden Crate suchen und einmal platzieren, Toolbar Undo/Redo, Save und Rückkehr/Reopen mit 11 sichtbaren Objekten und Raum-14-Key.",
+    "executedUiRuns": 11,
     "observedFindings": [
       {
         "id": "GM-UX-001",
@@ -4585,7 +4585,8 @@
           "result": "Bestanden: Wooden Crate-Eingabe aktualisiert die Kachel ohne Enter; Wechsel zu Oak Barrel aktualisiert direkt; × leert den Text und zeigt alle drei Assets. „Suche zurücksetzen“ lässt den Text stehen und zeigt alle drei Assets. Kachelauswahl funktionierte. Zehn Objekte (4/3/3) platziert; Ctrl+Z nahm die letzte Platzierung sichtbar zurück, Ctrl+Shift+Z stellte sie her. Save, Tab schließen und erneutes Öffnen über Schnellschalter erhielten alle zehn Objekte. Tags-Ansicht war erreichbar, aber Fixture enthält keine Tags, daher kein Urteil zur Tagpflege. Keine Produktlatenz gemessen. Auf erneut vorgerücktem sauberem 706627c-Build (Asset-Vorschaurenderer) Suche erneut bestanden; nach Hostreload alle zehn gespeicherten Objekte sichtbar. Vollständiger Undo/Redo/Save/Reopen-Lauf zuvor auf dem gleichen Produktcode/hash aus d65538b; Änderungsbereich im Folgecommit veränderte nur Asset-Preview. Auf c00bd41 mit aktualisiertem Browser-Assetrenderer sauber neu gebaut und erneut geprüft. Live-Suche/Termwechsel/× bestanden; eine Kiste sichtbar platziert, Toolbar-Undo nahm sie zurück, Redo stellte sie her; Save, Tab-Schließen/Neuöffnen erhielten 11 Testobjekte. Ein vorheriger Klick auf alte Drittspaltenkoordinate nach Such-Reflow war Testkoordinatenfehler und per Undo rückgängig gemacht, kein Produktfehler.",
           "evidence": "/workspace/scratch/gm-cloud-qa/142-n002-pass-integrated-latest.png; 135-n002-ten-placed.png; 136-n002-undo.png; 137-n002-redo.png; 138-n002-saved.png; 139-n002-quick-switch.png; 140-n002-fresh-reopen.png; 141-reloaded-618a7f2.png; /workspace/scratch/gm-cloud-qa/151-n002-latest-build-pass.png; /workspace/scratch/gm-cloud-qa/188-current-build-place.png; 191-latest-undo-visible.png; 192-latest-redo-visible.png; 194-latest-final-reopen-eleven.png",
           "coordination": "Issue #1 Kommentar 6083198759; unabhängiger Nachtest gemeldet. Latest-build-Nachtrag Issue #1 Kommentar 6083286156. c00bd41-Nachtest Issue #1 Kommentar 6083603608."
-        }
+        },
+        "latestBundleRetest": "422718f: one Wooden Crate result appeared without Enter; one placement increased object count 10→11; visible Undo/Redo, Save and file-list reopen retained the 11th object and room key. No latency measured. See gmProductTesting.latestBundleRetest."
       },
       {
         "id": "GM-UX-003",
@@ -4634,7 +4635,7 @@
       {
         "id": "GM-UX-005",
         "priority": "P2-Kandidat",
-        "status": "reproduced_plan_pass_I01_blocked_by_team_checkin",
+        "status": "reproduced_i01_core_integrated_i02_claimed_host_retest_pending",
         "kind": "Eigene UI-Beobachtung in isoliertem Cloud-Testvault; Such-/Fernsteuerungszeiten nicht als Produktlatenz",
         "build": "Obsidian 1.14.4; Produktcommit 3c2d88296d775ad7afcddac0b3c704958d501baa; main.js SHA-256 bd13cb2ac5e823d21f81bcb2f8d32a6b6a0ebe49a7049cacb2c5035eb99370a4",
         "scenario": "GM-UX-01 Nebelwacht, gespeicherter synthetischer Raum-12-Hinweis; Spielansicht Ebenenwechsel und GM-Informationssuche",
@@ -4646,12 +4647,12 @@
         "latency": "Nicht gemessen; Playwright/CDP-, Such- und Wartezeiten ausgeschlossen.",
         "dataIntegrity": "Karte SHA-256 blieb identisch zu vorher: 56c38f8ff9e4365a165af4319da37bb03db20c09925d6ee38e5327e7559353c7.",
         "proposedTask": "GM-UX-N-005: Dungeon-Verantwortlicher prüft eine sichtbare GM-Suche/Übersicht für Raum-Key-Texte. Abnahme: einzigartigen Begriff in isolierter Nebelwacht finden; Treffer zeigt Raum und Geschoss; Aktivierung führt zum Raum und öffnet Key, ohne Karte zu ändern; Leeren stellt Übersicht wieder her; Save/Reload erhält den Hinweis.",
-        "coordination": "Beobachtung Issue #1 6085234573; N-005-P01 unabhängig abgeschlossen und veröffentlicht in 6085787270. N-005-I01 laut verbindlichem Gesamtteam-Check-in in 6085975796 gesperrt. Keine Produktimplementierung/Hostabnahme behauptet."
+        "coordination": "N-005-P01 PASS; I01 hostneutral search core completed (Issue #1 6086279018). N-005-I02 exclusive Dungeon-owner claim on f48155a in Issue #1 6086963703; current 422718f has no panel wiring. Await I02 integration/review before exact Cloud host retest."
       },
       {
         "id": "GM-UX-006",
         "priority": "P2-Kandidat",
-        "status": "reproduced_twice_plan_pass_I01_blocked_by_team_checkin",
+        "status": "floor_reset_reproduced_again_on_shared_422718f",
         "kind": "Eigene UI-Beobachtung, isolierte Cloud-Kartenkopie; keine physische Eingabeabnahme",
         "build": "Obsidian 1.14.4; Shared product commit 972913fde69bd3824aedfe08fce86f74e66b3b22; main.js SHA-256 afc186f846242f7225d1c19d48f15c776bb3b817df586dead7a872f85b1ef6c5",
         "scenario": "GM-UX-01 Nebelwacht/Karte 1.dungeon, zuletzt ausgewähltes drittes Geschoss „Geheimgang“",
@@ -4662,7 +4663,7 @@
         "evidence": "/workspace/scratch/gm-cloud-qa/321-secret-floor-saved.png, /workspace/scratch/gm-cloud-qa/322-copy-reopened.png, /workspace/scratch/gm-cloud-qa/323-geheimgang-after-reopen.png, /workspace/scratch/gm-cloud-qa/328-gang-after-reopen.png, /workspace/scratch/gm-cloud-qa/329-geheimgang-and-corridor-after-reopen.png",
         "dataIntegrity": "Original Karte.dungeon blieb SHA-256 56c38f8ff9e4365a165af4319da37bb03db20c09925d6ee38e5327e7559353c7. Nur UI-Kopie Karte 1.dungeon geändert.",
         "proposedTask": "GM-UX-N-006: Dungeon-Verantwortlicher prüft persistierte aktive Ebene beim Schließen/Wiederöffnen. Abnahme: auf isolierter Karte Geheimgang aktivieren, speichern, Tab schließen und Karte erneut öffnen; Geheimgang ist erneut aktiv. Mindestens zwei Wiederholungen; zusätzlich prüfen, dass anderer Karteninhalt und Key unverändert sind. Falls Reset beabsichtigt, dokumentierte UI-Begründung zurückmelden.",
-        "coordination": "N-006-P01 unabhängig PASS-reviewt durch 40a9504 (integriert bis Shared 018a310); I01 bleibt laut Issue #1 6085975796 bis zum Gesamtteam-Check-in gesperrt. Cloud-UI-Beobachtung bleibt getrennt vom Kollegen-Planreview."
+        "coordination": "N-006-P01 independently PASS-reviewed (40a9504). Erdgeschoss reset was reproduced again in the current Cloud retest on Shared 422718f; implementation and next host retest remain open."
       }
     ],
     "blocker": "Cloud-Testassets sind selbst erzeugte, ausdrücklich freigegebene synthetische Fixture-Daten; Original-Dungeondraft-Pakete und deren Produktabnahme bleiben offen. Kein Cloud-Test nutzt oder ändert Nutzerkarten.",
@@ -4673,7 +4674,7 @@
       "state": "completed",
       "supersedes": "GM-UX-ACCESS; Slotanfrage gemäß Nutzerkorrektur aufgehoben"
     },
-    "next": "GM-UX-01 Cloud-Szenario bis zur Assetfolge auf vor d10ed1e Bundle durchlaufen; auf aktueller Shared-d153a57-Version wurden nach App-Reload Kopie, Geheimgang, Objekte und Raum-Key sichtbar bestätigt. Volle Suche/Undo/Redo-Folge auf aktuellem Bundle nicht wiederholt. N-005-P01 und N-006-P01 sind unabhängig planreviewt; deren Implementierungen sind getrennte Aufgaben und warten auf Koordination/Dateibesitz. GM-Produkttest läuft im autorisierten Cloud-Umfang fort; physischer Input und frischer Electronprozess bleiben offene Evidenzgrenzen.",
+    "next": "Nach Integration und Review von GM-UX-N-005-I02 den exakt vereinbarten Nebelwacht-Key-Suchablauf im selben isolierten Cloudvault ausführen. Dungeon-Verantwortlicher besitzt I02 exklusiv (Issue #1 6086963703); keine Überlappung. N-006-Geschossreset auf Shared 422718f erneut reproduziert; passenden Nachtest erst nach integrierter UI-Korrektur. Keine frische Electron- oder physische Eingabeabnahme.",
     "automation": "Stündliche GM-Produkttests in eigener Cloud; keine Laptop-Slotfreigabe erforderlich.",
     "executionEnvironment": "Eigene Cloud-Umgebung, getrennt vom Laptop der Kollegen",
     "cloudHost": {
@@ -4691,9 +4692,9 @@
         1000
       ],
       "input": "Playwright/CDP über sichtbare UI; keine physische Eingabeabnahme",
-      "productCommit": "d153a57ce128c62e243e89bed1caebd80634128c (Shared-Head; nachfolgende Diffs seit 018a310 betreffen nur acceptance/checkpoint; Build auf aktueller Dokumentationsrevision folgt)",
-      "buildSha256": "6896c7b53cb0100178d32c217b824b6c762122a33df38921e84acdd467234ba7",
-      "verified": "Shared-Head d153a57 integriert; seit 018a310 keine Produktquellcodeänderung. Aktuell geladenes Bundle aus d10ed1e enthält dieselben Produktdateien. Auf vorherigem Bundle: Asset-Suche Wooden Crate/Oak Barrel/Torch, zehn Objekte, Undo/Redo, Save, Close/Reopen. Auf Bundle aus d10ed1e: Karte erneut geöffnet, Geheimgang ausgewählt, Testobjekte und Raum-14-Key sichtbar. Full interaction sequence nicht wiederholt. Originalkarte blieb byteidentisch. Kein frischer Electronprozess und keine physische Eingabeabnahme.",
+      "productCommit": "422718fe25768ed80a30945f316532546ba3c2cd",
+      "buildSha256": "c77eed86d4ade60a3fdaca5edc8e338a9633a7b66fcfa195daab96664da6c997",
+      "verified": "Shared-Head 422718fe25768ed80a30945f316532546ba3c2cd; full build triplet rebuilt, installed and visibly reloaded. On the copy: live Wooden Crate search showed one tile without Enter; placed the 11th object, toolbar undo/redo, save, returned to layout and selected file again; reselected Geheimgang and saw all 11 objects and Room-14 key. Erdgeschoss reset reproduced again. Original file hash unchanged. No product latency, physical-input, or fresh-Electron acceptance.",
       "evidence": [
         "176-n002-current-remote-switch.png",
         "177-n002-current-remote-open.png",
@@ -4763,11 +4764,30 @@
         "369-latest-d10-dungeon-panel.png",
         "370-latest-d10-geheimgang-after-reopen.png",
         "371-latest-d10-room14-selected.png",
-        "372-latest-d10-room14-content.png"
+        "372-latest-d10-room14-content.png",
+        "373-current-422-before-reload.png",
+        "374-current-422-layout.png",
+        "375-current-422-reload-command.png",
+        "376-current-422-after-reload.png",
+        "377-current-422-copy-open.png",
+        "378-current-422-geheimgang.png",
+        "379-current-422-crate-search.png",
+        "380-current-422-crate-selected.png",
+        "381-current-422-crate-placed.png",
+        "382-current-422-undo-placement.png",
+        "383-current-422-redo-placement.png",
+        "384-current-422-saved-11-assets.png",
+        "385-current-422-layout-for-reopen.png",
+        "387-current-422-close-command.png",
+        "388-current-422-tab-closed.png",
+        "389-current-422-copy-reopened.png",
+        "390-current-422-11assets-reopened.png",
+        "392-current-422-room14-selected-after-reopen.png",
+        "393-current-422-key-reopened.png"
       ],
       "initialization": "Erste Eingaben während Hoststart ohne sichtbare Wirkung; später Befehlsleiste und Editor bedienbar. Kein reproduzierter Produktbefund.",
       "windowManager": "Openbox im isolierten dungeon-gm-cloud Container; Xvfb 1440x1000; maximiertes Obsidian-Fenster 1440x1000.",
-      "buildRevision": "2cedb5594d4860e7ce1209664a0e38431afeb358 (dirty:false; npm run build; main.js/styles.css/manifest.json hashes stimmen mit isoliert installiertem Tripel überein)"
+      "buildRevision": "422718fe25768ed80a30945f316532546ba3c2cd (dirty:false; complete installed triplet hash-equal)"
     },
     "latestScenario": {
       "environment": "Obsidian 1.14.4; eigener Cloud-Container; App 1024x800; sichtbare UI über Playwright/CDP; kein physischer Input",
@@ -4864,6 +4884,31 @@
         "coordination": "Issue #1 Kommentar 6084269776. N-004 bis HEX-01-CLEAN-R01 ohne Kamera-/Gesten-/Geometrieänderungen geparkt; Issue #1 Kommentar 6084291328. Ergänzende DOM-Diagnose Issue #1 Kommentar 6084619486."
       }
     ],
-    "evidence": "/workspace/scratch/gm-cloud-qa/330-current-aea-reload-command.png bis 372-latest-d10-room14-content.png; Interaktionen auf vorherigem Bundle; aktueller Zustand in 365–372."
+    "evidence": "/workspace/scratch/gm-cloud-qa/373-current-422-before-reload.png–393-current-422-key-reopened.png; earlier full GM-UX-01 run/evidence retained.",
+    "latestBundleRetest": {
+      "date": "2026-10-09",
+      "sharedCommit": "422718fe25768ed80a30945f316532546ba3c2cd",
+      "buildCommit": "422718fe25768ed80a30945f316532546ba3c2cd",
+      "buildDirty": false,
+      "obsidian": "1.14.4",
+      "appViewport": [
+        1440,
+        1000
+      ],
+      "artifactSha256": {
+        "main.js": "c77eed86d4ade60a3fdaca5edc8e338a9633a7b66fcfa195daab96664da6c997",
+        "styles.css": "9c98763ef1aca2dc88a0a5d90dd4dc24601b31368852a1974f169a303d08078c",
+        "manifest.json": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64"
+      },
+      "steps": "Vollständiges Tripel installiert und sichtbarer Plugin-Reload. Datei Explorer > Karte 1; Dungeon > Geschosse > Geheimgang. Objekte > Objekte platzieren; Wooden Crate tippen (1 Kachel ohne Enter), Kachel wählen, einmal in Raum 15 platzieren. Toolbar Rückgängig/Wiederholen; Speichern. Zurück zum Layout; Karte 1 erneut aus Dateiliste öffnen; aktives Geschoss startet wieder Erdgeschoss, manuell Geheimgang auswählen; 11 Objekte, Raum 14 wählen, Inhalte öffnen und Key-Text sichtbar prüfen.",
+      "result": "11 Objekte (vorher 10); Toolbar Undo entfernte Zusatzkiste, Redo stellte sie wieder her. Nach Speichern und erneutem Öffnen war der Zusatzinhalt vorhanden. Raum-14-Key blieb unverändert und sichtbar. Erdgeschoss-Reset erneut reproduziert; der Reset ist im aktuellen Bundle erneut sichtbar; keine Häufigkeit außerhalb dieses isolierten Vaults abgeleitet.",
+      "mapHashes": {
+        "original": "56c38f8ff9e4365a165af4319da37bb03db20c09925d6ee38e5327e7559353c7",
+        "isolatedCopyAfterRetest": "a537b6eaeebac8537fa9390fb650f142e4f5e102c8fd0181e6ef37e50e817b0b"
+      },
+      "evidence": "/workspace/scratch/gm-cloud-qa/373-current-422-before-reload.png through 393-current-422-key-reopened.png",
+      "latency": "Not measured; CDP/automation wait excluded from product latency.",
+      "limits": "Cloud/CDP visible UI, no physical input, no fresh Electron process. N-005-I02 UI not integrated in tested build; no N-005 host acceptance claimed."
+    }
   }
 }
