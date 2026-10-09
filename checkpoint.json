@@ -3580,17 +3580,17 @@
     "state": "city00_reference_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I07-CP",
-      "kind": "cleanup_planning",
-      "startedAt": "2026-10-09T11:51:44.924851+00:00",
-      "focus": "Doppelte Eingabeoptionen früh ablehnen",
-      "state": "completed",
-      "result": "COK-Vorparser, CLI-Regressionsfall und README geplant; generischer Transport und Originalartefakte erhalten"
-    },
-    "nextRun": {
       "id": "CITY-00-I07-CI",
       "kind": "cleanup_implementation",
-      "focus": "Vorparser und Regression implementieren"
+      "startedAt": "2026-10-09T11:53:46.363932+00:00",
+      "focus": "RFB-Optionen vor Verbindung validieren",
+      "state": "completed",
+      "result": "Vorparser und früher CLI-Regressionstest umgesetzt; check/build bestanden,207/207Standardtests und6/6COK-Tests"
+    },
+    "nextRun": {
+      "id": "CITY-00-I07-CR",
+      "kind": "cleanup_review",
+      "focus": "Adapterreparatur, Quellen und Metadaten abschließen"
     },
     "open": [
       "CITY-00 direkte Referenzinventur/Galerie aller drei Produkte",
