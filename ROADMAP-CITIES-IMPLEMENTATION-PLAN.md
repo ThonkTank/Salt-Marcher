@@ -720,3 +720,6 @@ CITY-01-PREP-EDIT-PLAN-CLEAN-P03 Start 2026-10-09T17:03:46.375318+00:00; Planrev
 
 
 CITY-01-PREP-EDIT-PLAN-CLEAN-I03 Start 2026-10-09T17:04:23.285947+00:00; Plan ergänzt einmaliges Schreibziel je Element, reservierte Anfangskennungen und separate Regressionen für add/remove, remove/add sowie typübergreifende IDwiederverwendung. Verschiedene Kanten-/Knotenziele können weiter einen gültigen Endzustand gemeinsam bilden; keine Zwischenvalidierung der Referenzen oder duplizierte Geometrieprüfung. Rein vorbereitende Dokumentation, keine Laufzeitänderung; CR folgt.
+
+
+CITY-01-PREP-EDIT-PLAN-CLEAN-R03 Start 2026-10-09T17:04:51.540191+00:00; Zehn reine Fachaktionen gegen vorhandene CityDocumentfelder, Codec und gemeinsame History geprüft. Anfangs-/Endprüfung, einmalige Schreibziele, reservierte IDs, unterschiedliche Referenzänderungen im Paket und fremde Kopien eindeutig festgelegt. Regressionen decken verbundene Straßen, Hauspose/-kontur, ersten Platz und gemeinsame Undo-/Stalefälle ab. Planlinks/JSON gültig, Quellen unverändert;24CTY/65CO offen. Kein Restbefund im Plan-Aufräumen. Nachweis: /home/aaron/.cache/dungeon-native-qa/city-plans/city01-edit-20261009/plan-review.json. I03 implementiert den geprüften Plan; Host weiterhin hinter HEX05.

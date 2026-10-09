@@ -1,0 +1,167 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://thonktank.invalid/schema/items-srd51-transcript-v1.json",
+  "title": "SRD 5.1 Items source transcript",
+  "$comment": "CE-02-I02-S01 work in progress: this schema is not reviewable as complete until the inventory-derived closed subcategory enum replaces the current nonempty-string placeholder.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "complete", "source", "records"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "complete": { "type": "boolean" },
+    "source": { "$ref": "#/$defs/source" },
+    "records": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/item" }
+    }
+  },
+  "$defs": {
+    "nonEmpty": { "type": "string", "minLength": 1 },
+    "occurrenceId": {
+      "type": "string",
+      "pattern": "^srd51:(equipment|magic-item):[a-z0-9-]+:[0-9]+$"
+    },
+    "rarityValue": {
+      "enum": ["common", "uncommon", "rare", "very-rare", "legendary", "artifact"]
+    },
+    "rarityChoice": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["variantId", "label", "value", "occurrenceId"],
+      "properties": {
+        "variantId": { "type": "string", "pattern": "^srd51:magic-item:[a-z0-9-]+:[0-9]+#variant:[0-9]+$" },
+        "label": { "$ref": "#/$defs/nonEmpty" },
+        "value": { "$ref": "#/$defs/rarityValue" },
+        "occurrenceId": { "$ref": "#/$defs/occurrenceId" }
+      }
+    },
+    "rarity": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "value"],
+          "properties": {
+            "kind": { "const": "fixed" },
+            "value": { "$ref": "#/$defs/rarityValue" }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "sourceText", "choices"],
+          "properties": {
+            "kind": { "const": "varies" },
+            "sourceText": { "$ref": "#/$defs/nonEmpty" },
+            "choices": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/rarityChoice" }
+            }
+          }
+        }
+      ]
+    },
+    "cost": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sourceText"],
+      "properties": {
+        "sourceText": { "$ref": "#/$defs/nonEmpty" },
+        "copperPieces": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }
+      }
+    },
+    "weight": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sourceText"],
+      "properties": {
+        "sourceText": { "$ref": "#/$defs/nonEmpty" },
+        "pounds": { "type": "string", "pattern": "^(0|[1-9][0-9]*)(\\.[0-9]+)?$" }
+      }
+    },
+    "sourcedText": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["text", "occurrenceId"],
+      "properties": {
+        "text": { "$ref": "#/$defs/nonEmpty" },
+        "occurrenceId": { "$ref": "#/$defs/occurrenceId" }
+      }
+    },
+    "property": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "occurrenceId"],
+      "properties": {
+        "name": { "$ref": "#/$defs/nonEmpty" },
+        "description": { "$ref": "#/$defs/nonEmpty" },
+        "occurrenceId": { "$ref": "#/$defs/occurrenceId" }
+      }
+    },
+    "damage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["diceText", "typeText"],
+      "properties": {
+        "diceText": { "$ref": "#/$defs/nonEmpty" },
+        "typeText": { "$ref": "#/$defs/nonEmpty" },
+        "versatileDiceText": { "$ref": "#/$defs/nonEmpty" }
+      }
+    },
+    "armor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["armorClassText"],
+      "properties": {
+        "armorClassText": { "$ref": "#/$defs/nonEmpty" },
+        "dexterityRuleText": { "$ref": "#/$defs/nonEmpty" },
+        "strengthRequirementText": { "$ref": "#/$defs/nonEmpty" },
+        "stealthRuleText": { "$ref": "#/$defs/nonEmpty" }
+      }
+    },
+    "recordSource": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["document", "pdfUrl", "pdfPages", "printedPages", "occurrenceIds"],
+      "properties": {
+        "document": { "const": "SRD 5.1" },
+        "pdfUrl": { "const": "https://media.wizards.com/2023/downloads/dnd/SRD_CC_v5.1.pdf" },
+        "pdfPages": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "integer", "minimum": 1, "maximum": 403 } },
+        "printedPages": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "integer", "minimum": 1, "maximum": 403 } },
+        "occurrenceIds": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "$ref": "#/$defs/occurrenceId" } }
+      }
+    },
+    "item": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "category", "magic", "attunement", "properties", "description", "source"],
+      "properties": {
+        "id": { "$ref": "#/$defs/occurrenceId" },
+        "name": { "$ref": "#/$defs/nonEmpty" },
+        "category": { "enum": ["equipment", "magic-item"] },
+        "subcategory": { "$ref": "#/$defs/nonEmpty" },
+        "magic": { "type": "boolean" },
+        "rarity": { "$ref": "#/$defs/rarity" },
+        "attunement": { "enum": ["required", "not-required", "unspecified"] },
+        "cost": { "$ref": "#/$defs/cost" },
+        "weight": { "$ref": "#/$defs/weight" },
+        "properties": { "type": "array", "items": { "$ref": "#/$defs/property" } },
+        "description": { "type": "array", "items": { "$ref": "#/$defs/sourcedText" } },
+        "damage": { "$ref": "#/$defs/damage" },
+        "armor": { "$ref": "#/$defs/armor" },
+        "source": { "$ref": "#/$defs/recordSource" }
+      }
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["document", "pdfUrl", "pdfSha256", "license"],
+      "properties": {
+        "document": { "const": "SRD 5.1" },
+        "pdfUrl": { "const": "https://media.wizards.com/2023/downloads/dnd/SRD_CC_v5.1.pdf" },
+        "pdfSha256": { "const": "2504d2a0abb0a4d491a939be4f17910a2dde0312570ab8d208080225ccf0a1f0" },
+        "license": { "const": "CC-BY-4.0" }
+      }
+    }
+  }
+}
