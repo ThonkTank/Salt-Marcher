@@ -38,3 +38,4 @@ import "./core/city-draft.test";
 import "./core/city-gestures.test";
 import "./core/city-renderer.test";
 import "./core/city-e2e-fixture.test";
+import "./core/dungeon-atlas-source.test";
