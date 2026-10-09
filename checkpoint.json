@@ -3864,17 +3864,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I22-R",
-      "kind": "handoff_audit_review",
-      "startedAt": "2026-10-09T14:14:09.546360+00:00",
-      "focus": "Startregel und Übergabelücken gegen vollständigen Auftrag prüfen",
-      "state": "completed",
-      "result": "Keine Pflicht reduziert; fehlende Atlaslieferung korrekt belegt. Fachreview ohne weiteren Befund."
-    },
-    "nextRun": {
       "id": "CITY-00-I22-CP",
       "kind": "cleanup_planning",
-      "focus": "Auditbelege, Fremdwurzeln und Verweise bereinigen"
+      "startedAt": "2026-10-09T14:14:28.607123+00:00",
+      "focus": "Auditprovenienz und Verweisschutz planen",
+      "state": "completed",
+      "result": "Quellhashprüfung gegen benannten Basiscommit geplant; keine neue API/Statusquelle."
+    },
+    "nextRun": {
+      "id": "CITY-00-I22-CI",
+      "kind": "cleanup_implementation",
+      "focus": "Auditprovenienz am gespeicherten Gitstand prüfen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
