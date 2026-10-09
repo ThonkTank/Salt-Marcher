@@ -649,3 +649,6 @@ CITY-01-Präzisierung aus I40: Frei gezeichnete Hauskontur bleibt bis zum gülti
 
 
 CITY-00-I40-R Start 2026-10-09T16:16:48.611641+00:00; 27 Rohbelege/Hashes bestätigt; abgeschlossene Vierpunktkontur, neue bekannte Auswahl, sichtbare Dreh-/Verschiebewirkung und getrennt verworfene zweite Vorschau korrekt begrenzt.CTRLwheel nur angebotene Geste, keine Skalierabnahme. Zwei ältere Treffer ohne Auswahl gestoppt; neue Kontur belegt separates Ziel. Gesamtentwurf verworfen,250m/Satellite/Districts/11Monday gelesen. Aufräumbefund: Referenzsnapshot führt weiterhin nur I11-Straßenwirkung. Aufräum-P/I/R getrennt.
+
+
+CITY-00-I40-CP Start 2026-10-09T16:17:09.830489+00:00; Plan: Snapshotkopf auf CITY-00-I40-I und CO-FTG-0015-Zeile um abgeschlossene Draw-Kontur, bekannte Hauspose und Entwurfsabbruch ergänzen. I10/I11-Straßen-/Savebelege erhalten; angeboteneCTRLwheel-Skalierung ausdrücklich ohne Wirkung. Zwei gestoppte Trefferversuche und stabile ID-/Save-/Undo-/Produktgrenzen behalten.27 Rawhashes/alle Inventarbelegziele/65und24 offene Pflichten prüfen; keine weitere UI-Mutation oder Statusdatei. CI/CR getrennt.
