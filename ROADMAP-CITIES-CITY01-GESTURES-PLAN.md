@@ -73,3 +73,6 @@ CITY-01-PREP-GESTURES-CLEAN-P06 Start 2026-10-09T18:07:41.308842+00:00. Vorhande
 
 
 CITY-01-PREP-N06-REVIEW-CLEAN-P06 Start 2026-10-09T18:15:49.061830+00:00: vorhandenes Precisionpaket benötigt gezielte rotationsgewichtete Fehleranteile. X-Inverskomponente hängt von abs(cos)×Xfehler + abs(sin)×Yfehler ab, Y-Komponente entsprechend umgekehrt. Keine Signatur-/Atlas-/Hoständerung. R08-No-op-Schutz erhalten, echte Kleinständerung trotz großer ungewählter Achse beweisen. CI dokumentiert historischen ungewichteten Ansatz und CR prüft Quellen/Verweise, danachN07.
+
+
+CITY-01-PREP-GESTURES-FINAL-CLEAN-P06 Start 2026-10-09T18:21:30.760216+00:00: abgeschlossenes lokales CityGesture-/Posepaket benötigt keinen weiteren Runtimeumbau. Eine Draftzustandsquelle, eigene primitive Zieladresse, keine Subscriber/Timer und eine gemeinsame Poseformel bleiben erhalten. Aktualisieren: reale Gesturedatei im Anschluss-/Gesamtplan, geschlossene R08/R09-Gegenfälle in Architektur und N07/R10-Belege als lokal. Offene Host/Placement/Savepflichten und fehlende SceneClock bleiben erhalten. CI setzt Dokumente um, CR prüft Links/Hashes/JSON/24CTY. Danach lesender Teamabgleich, kein neues Featurepaket ohne bestätigte gemeinsame Grenze.
