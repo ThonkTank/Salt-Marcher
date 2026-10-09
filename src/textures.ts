@@ -1,6 +1,5 @@
-import { Buffer } from "node:buffer";
-import { PNG } from "pngjs";
 import { BufferImageSource, ImageSource, Texture } from "pixi.js";
+import { decodeBrowserImagePixels } from "./features/objekte/browser-image-pixels";
 import {
   recolorColorableObjectRgba,
   type ColorableObjectSettings,
@@ -113,12 +112,11 @@ export class TexturePool {
         promise: Promise.resolve(null as unknown as Texture),
       };
       const owned = entry;
-      entry.promise = image.arrayBuffer()
-        .then((bytes) => {
-          const png = PNG.sync.read(Buffer.from(bytes));
+      entry.promise = decodeBrowserImagePixels(image)
+        .then((png) => {
           if (this.closed) throw new Error("Bildansicht geschlossen.");
           const rgba = recolorColorableObjectRgba(
-            png.data,
+            png.rgba,
             [(rgb >> 16) & 255, (rgb >> 8) & 255, rgb & 255, alpha],
             settings,
           );
