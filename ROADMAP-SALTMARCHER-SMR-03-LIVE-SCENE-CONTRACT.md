@@ -1,9 +1,9 @@
 # SMR-03-P01: Party-, LiveScene- und Live-Session-Vertrag
 
 Status: **Lifecycle-/Zeit-, Ownership- und Host/Security/Platform-Re-reviews
-`PASS`; Passive-Display-Phasensplit `PASS`; Source-Owner-abgestimmter
-Gate-Reparaturkandidat vor erneutem Exact-SHA-Review; ohne Implementierungs-,
-Host- oder Persistenzfreigabe.**
+`PASS`; Passive-Display-Phasensplit auf Exact-SHA `PASS` und vom Source-Owner
+ratifiziert; direkte Music/Weather/Shops-Rekonfirmation noch offen; ohne
+Implementierungs-, Host- oder Persistenzfreigabe.**
 
 ## Fachliche Quellen
 
@@ -74,7 +74,10 @@ Campaign/Data-Re-review 6088805451 und Host/Security/Platform-Re-review
 Passive-Display-Phasensplit erhielt in 6088899872 einen unabhängigen technischen
 PASS und wurde in 6088919292 vom SMR-03-Source-Owner direkt gebunden: SMR-03
 liefert keine Playerprojektion; Consumerbesitz und Aktivierung bleiben ein
-zwingendes SMR-10-Gate.
+zwingendes SMR-10-Gate. Der Exact-SHA-Wiederreview 6088985728 bestätigt die
+vollständige Umsetzung dieser Gate-Trennung im Kandidaten
+`0254d575e61df130b3f85dbcef810faef54ce0d5`; der Source-Owner ratifiziert
+diesen exakten Stand in 6088996383.
 
 ## Umfang und Nichtziele
 
