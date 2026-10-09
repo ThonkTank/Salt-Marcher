@@ -4060,17 +4060,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I34-P",
-      "kind": "reference_planning",
-      "startedAt": "2026-10-09T15:33:22.362976+00:00",
-      "focus": "Maximum-Generationsvorgabe",
-      "state": "completed",
-      "result": "Plan für kontrollierten Default/Maximum/Default-Vergleich festgelegt."
-    },
-    "nextRun": {
       "id": "CITY-00-I34-I",
       "kind": "reference_implementation",
-      "focus": "Maximum number mit echten Ausgaben vergleichen"
+      "startedAt": "2026-10-09T15:35:25.244762+00:00",
+      "focus": "Maximum als eigene Anschlussstrategie",
+      "state": "completed",
+      "result": "Kontrollierter Maximum-Export und bytegleiche Rückstellung gesichert; technische Vorgabe präzisiert."
+    },
+    "nextRun": {
+      "id": "CITY-00-I34-R",
+      "kind": "reference_review",
+      "focus": "Maximum-Wirkung und Rückstellung prüfen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
