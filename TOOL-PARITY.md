@@ -665,3 +665,7 @@ Der [Regressionsbericht](/home/aaron/.cache/dungeon-native-qa/parity-tools-phase
 ## Folge-Roadmap Phase 1: DD-038 Randbeschnitt, Nachbesserungsplan
 
 Der [getrennte Plan](ROADMAP-PARITY-TOOLS-PHASE1-RESIZE-REPAIR-PLAN.md) ordnet die noch fehlenden direkten Originalproben für rechte/untere Beschnitte und Terrain, die getrennte persistierte Smart-Tile-Zellschicht, vier Host-Randpaare und den unabhängigen Endbuild-Review. Der belegte linke Beschnitt verliert vier von zehn Smart-Tile-Zellen dauerhaft, während alle Shape-Polygonpunkte erhalten bleiben. **Plan bereit, Umsetzung und Tor offen.**
+
+## Folge-Roadmap Phase 1: rechter Smart-Tile-Beschnitt, direkte Originalprobe
+
+Der [Originalbericht](/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-right-crop-20261009/original-probe.md) vergleicht Dungeondraft 1.2.0.1 an einer externen 12×8-Kopie mit zehn belegten Randzellen. Rechts −3 speichert vier Zellen; rechts +3 im selben Prozess stellt zehn wieder her. Ein frischer Originalprozess liest exakt diese gespeicherte 9×8-Karte und behält nach rechts +3 nur vier. Alle vier Shape-Polygone bleiben in beiden Folgen erhalten. **`DD-038.03` ist ausschließlich im Original vermessen:** die bisher geplante sofortige Dauerlöschung aller Außenzellen gilt rechts nicht; Hostzustand, unterer Rand, weitere Inhalte, unabhängiger Review und das 77-Fälle-Tor bleiben offen. P7-2 bleibt physisch ungeprüft.

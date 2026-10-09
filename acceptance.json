@@ -112465,6 +112465,20 @@
           ],
           "measuredScope": "Original 12×8: nach links -4 wird rechts -4 zu 0 normalisiert; die Host-Kernfunktion bildet die Paarregel ab.",
           "remaining": "Rechte Host-GUI-Eingabe und rechte Crop-Wirkung direkt prüfen; unabhängiger Review offen."
+        },
+        "followUpPhase1RightCropOriginalProbe": {
+          "state": "original_measured_host_open",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "sequence": "12×8 mit zehn Smart-Tile-Randzellen → Right in tiles -3 → Save → Right in tiles +3 → Save; dieselbe gespeicherte 9×8-Beschnittkarte frisch öffnen → Right in tiles +3 → Save",
+          "sourceMapSha256": "7d57df1b32e42f2c95507ca4ce40fe8b9c4e8d891d61d7685f26c738aa1fd7c9",
+          "cropMapSha256": "e558b566f9899055294e4cf4c22224007c13e1ad352dc6cfa13126ed9cc37f2f",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-right-crop-20261009/original-probe.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-right-crop-20261009/native-final/runs/20261009-055552-3485360/evidence/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-right-crop-20261009/native-final-reopen/runs/20261009-055654-3486267/evidence/result.json"
+          ],
+          "measuredScope": "Rechts -3: gespeicherte Zellen 10→4 und vier Polygone gleich; rechts +3 im selben Prozess 4→10, aus frisch geladener identischer Beschnittkarte 4→4.",
+          "remaining": "Host mit persistenten sichtbaren und flüchtigen rechten Außenzellen paaren; unterer Rand, andere Inhalte und unabhängiger Review offen. Keine Fallfreigabe."
         }
       },
       {
