@@ -419,36 +419,35 @@
   "hexAtlasExecution": {
     "scope": "HEX-00 bis HEX-28 und sämtliche eingeordneten CITY-00 bis CITY-09 vollständig",
     "phase": "HEX-02",
-    "state": "r01_repairs_core_checked_native_review_open",
+    "state": "r01_repairs_native_checked_re_review_open",
     "plan": "ROADMAP-HEX-02-PLAN.md",
     "currentRun": {
-      "id": "HEX-02-N01-I01",
-      "kind": "focused_repair",
-      "startedAt": "2026-10-09T19:17:39.094198+00:00",
-      "state": "completed_core_native_pending",
-      "focus": "Two P1 implemented: exact closed target recovery without root + guarded visible Busy Copy; 8 targeted Core/DOM cases passed, clean full/native pending.",
-      "finishedAt": "2026-10-09T19:18:39.245708+00:00",
-      "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/n01-core-implementation.json",
-      "sourceCommit": "63e1efb623a8b1d85d57e7b6cd73ed37415810a7",
-      "testsPassed": 373
-    },
-    "nextRun": {
       "id": "HEX-02-N01-H01",
       "kind": "native_repair_check",
-      "focus": "Native dismissal lock, source switch, fresh missing-root prepared/committed recovery and foreign journal rejection; then independent R02."
+      "startedAt": "2026-10-09T19:20:08.756454+00:00",
+      "state": "completed_scoped_native",
+      "focus": "Actual native Busy Escape/X/outside/name/Cancel, late source switch, failure restore; fresh target named recovery prepared/committed/foreign. Clean product63e1efb/main4b78f558. Isolated vault only.",
+      "finishedAt": "2026-10-09T19:22:03.470421+00:00",
+      "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/n01-native-implementation.json"
+    },
+    "nextRun": {
+      "id": "HEX-02-R02",
+      "kind": "independent_re_review",
+      "focus": "Read-only exact0fdc76c source review plus separately supplied N01-H01 native proof; resolve required findings then CLEAN-P/I/R before HEX03."
     },
     "review": {
-      "run": "HEX-02-R01",
-      "state": "completed_changes_required",
-      "candidate": "c9e37ec749b38bfa71248bae7187c8d20ff5f693",
+      "run": "HEX-02-R02",
+      "state": "requested_read_only",
+      "candidate": "0fdc76c3cae7aa3b65b26308697c8fd716e997ef",
       "reviewerThread": "01a1204f-d184-7567-bfb3-d3ab06a0d07e",
-      "scope": "Complete early HEX02 source + focused tests; native proofs separately referenced. No phase/overall Go.",
+      "scope": "Exactly both P1 repaired; independent source/adapter/DOM re-review, native host proof separate, no phase Go.",
       "finishedAt": "2026-10-09T19:10:03.721578+00:00",
       "evidence": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1#issuecomment-6087387441",
       "requiredFindings": [
         "HEX02-R01-01",
         "HEX02-R01-02"
-      ]
+      ],
+      "previousReview": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1#issuecomment-6087387441"
     },
     "cleanup": {
       "run": "HEX-01-CLEAN-R01",
@@ -471,7 +470,7 @@
       "dungeonThread": "01a1204f-d184-7567-bfb3-d3ab06a0d07e",
       "fixtureReviewThread": "01a12031-2c30-73f7-bc01-6bd3eba86046",
       "publicationPolicy": "Bei fortlaufenden Shared-Branch-Pushrennen geprüftes Paket auf eigenem Branch sichern, regulären Servermerge in gemeinsamen active/installed-phase1 prüfen und lokal integrieren; keine Historienumschreibung.",
-      "nativeGuiSlot": "City explicitly returned after normal COK-I43 exit; Root holds for isolated HEX-02-N01-H01; no parallel local GUI.",
+      "nativeGuiSlot": "Root N01-H01 edit/fresh normal Exits0, no GUI process remains; slot available by explicit coordination, no parallel instance.",
       "gmTestingThread": "01a12031-2c30-73f7-bc01-6bd3eba86046",
       "gmTestingPolicy": "Eigenständiger Cloud-GM-Endanwenderlauf nach direkter Nutzerpräzisierung, ohne lokalen QA-Slot; beobachtete Befunde/Nacharbeiten getrennt überIssue1 übernehmen, kein Ersatz durch technische Testzahlen.",
       "lastCheckIn": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1#issuecomment-6086594621"
@@ -1250,6 +1249,59 @@
         "phaseApproval": false,
         "userVault": "unchanged",
         "testLog": "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/n01-clean-test.log"
+      },
+      "hex02CopyRepairNative": {
+        "run": "HEX-02-N01-H01",
+        "state": "completed_scoped_native_re_review_pending",
+        "finishedAt": "2026-10-09T19:22:03.470421+00:00",
+        "sourceCommit": "63e1efb623a8b1d85d57e7b6cd73ed37415810a7",
+        "triplet": {
+          "main.js": {
+            "bytes": 1402621,
+            "sha256": "4b78f558a89fd8c9969bd7668ab5fff308dd15170be834eb0cd274dbce04615c"
+          },
+          "styles.css": {
+            "bytes": 27503,
+            "sha256": "7662b340175931ff13ea91f0e03120566654981423466c5fbf5e02bbcd2e0b20"
+          },
+          "manifest.json": {
+            "bytes": 237,
+            "sha256": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64"
+          }
+        },
+        "proofs": [
+          {
+            "result": "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/n01-native-host/evidence/1791573564434-hex02-save-edit/result.json",
+            "lifecycle": "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/n01-native-host/evidence/1791573564434-hex02-save-edit/process-lifecycle.json",
+            "build": "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/n01-native-host/evidence/1791573564434-hex02-save-edit/build.json",
+            "checks": [
+              "Native accepted Copy ignores Escape/X/outside click, disables Cancel/name and remains visible; source switch prevents late Open and reports successful named copy",
+              "Native collision restores controls/name; fresh recovery fixture has only prepared journal and first own child, no root; committed and foreign closures separately seeded"
+            ],
+            "normalExitObserved": true,
+            "screensActuallyViewed": true
+          },
+          {
+            "result": "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/n01-native-host/evidence/1791573622407-hex02-save-reopen/result.json",
+            "lifecycle": "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/n01-native-host/evidence/1791573622407-hex02-save-reopen/process-lifecycle.json",
+            "build": "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/n01-native-host/evidence/1791573622407-hex02-save-reopen/build.json",
+            "checks": [
+              "Fresh native process explicitly recovers missing-root prepared Copy through named dialog; removes only own partial files and allows successful retry",
+              "Fresh committed recovery keeps exact complete target; foreign journal rejected visibly with exact source, other map and original successful Copy bytes unchanged"
+            ],
+            "normalExitObserved": true,
+            "screensActuallyViewed": true
+          }
+        ],
+        "normalExits": 2,
+        "screensActuallyViewed": 6,
+        "nativeOnThisBuild": true,
+        "phaseApproval": false,
+        "limits": [
+          "Synthetic mouse/keyboard and prepared/committed boundary fixtures; no physical-input or new OS-crash claim",
+          "Independent R02/CLEAN pending; common Atlas Location/City/Dungeon and complete Wonderdraft parity/large-map/install open"
+        ],
+        "userVault": "unchanged"
       }
     },
     "repairPlan": "ROADMAP-HEX-02-REPAIR-PLAN.md",
