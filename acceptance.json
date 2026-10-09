@@ -97,8 +97,8 @@
   },
   "saltMarcherCatalogEncounter": {
     "schemaVersion": 1,
-  "updated": "2026-10-09T15:03:43Z",
-  "state": "ce01_c01_cleanup_reviewed_ce02_plan_next_physical_input_open",
+    "updated": "2026-10-09T15:29:37Z",
+    "state": "ce02_plan_drafted_review_pending_ce01_physical_open",
     "plan": "ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md",
     "architecture": "ARCHITECTURE.md#geplante-katalog--und-encounter-erweiterung",
     "sourceRepository": "ThonkTank/Salt-Marcher",
@@ -422,7 +422,14 @@
       "review": "CE-01-C01-R02 passed without a remaining mandatory finding.",
       "limits": "Cleanup is reviewed; physical keyboard/mouse, screenreader and other-platform acceptance remain open."
     },
-    "next": "Plan CE-02 as a separate reviewed phase before implementation. CE-01 remains without full approval while physical-input, screenreader and other-platform gates are open."
+    "ce02Plan": {
+      "run": "CE-02-P01",
+      "state": "drafted_review_pending",
+      "document": "ROADMAP-SALTMARCHER-CE02-PLAN.md",
+      "result": "Plans one state-retaining seven-section shell with typed read-only owner providers and separate implementation/review packages for Items, saved Encounters, NPCs, Factions, Places and Encounter Tables.",
+      "limits": "Planning evidence only. Six new data providers and all CE-02 acceptance remain open; honest unavailable states do not count as delivered features."
+    },
+    "next": "Independently review ROADMAP-SALTMARCHER-CE02-PLAN.md before CE-02-I01. CE-01 remains without full approval while physical-input, screenreader and other-platform gates are open."
   },
   "cityPlans": {
     "schemaVersion": 1,

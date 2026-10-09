@@ -107,7 +107,7 @@
   },
   "saltMarcherCatalogEncounter": {
     "date": "2026-10-09",
-    "state": "ce01_c01_cleanup_reviewed_ce02_plan_next_physical_input_open",
+    "state": "ce02_plan_drafted_review_pending_ce01_physical_open",
     "plan": "ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md",
     "architecture": "ARCHITECTURE.md#geplante-katalog--und-encounter-erweiterung",
     "acceptance": "acceptance.json.saltMarcherCatalogEncounter",
@@ -265,6 +265,14 @@
       "testSlotClarification": "one graphical host/original instance per device; colleagues on separate devices may test in parallel",
       "cloudReviewHandoff": "Requested in GitHub Issue #1 comment 6081912800: prior GM-UX-CLOUD worker stops feature implementation and focuses architecture/technical reviews of local packages."
     },
+    "ce02Plan": {
+      "id": "CE-02-P01",
+      "kind": "feature_plan",
+      "state": "drafted_review_pending",
+      "plan": "ROADMAP-SALTMARCHER-CE02-PLAN.md",
+      "result": "Defines one seven-section state-retaining catalog shell, typed read-only owner providers, sequential delivery for Items, saved Encounters, NPCs, Factions, Places and Encounter Tables, and honest unavailable states until each owner is real.",
+      "limits": "Plan only. No CE-02 implementation or new data-owner approval. CE-01 physical input, screenreader and non-Linux gates remain open."
+    },
     "verified": "CE-00 and CE-01 implementation/review/repair cycles passed their scoped gates. CE-01-H01 passed its independently reviewed automated scope. CE-01-C01-N01 passes 247 tests and all three automated real-host scenarios on exact clean SHA c1582b3; R02 closed the cleanup gate. Physical input, screenreader and other-platform acceptance remain open.",
     "open": [
       "CE-01 physical keyboard/mouse, screenreader and other-platform acceptance; all CE-02 through CE-07 runs",
@@ -272,10 +280,10 @@
       "Physical catalog input acceptance cannot be replaced by Playwright automation"
     ],
     "nextRun": {
-      "id": "CE-02-P01",
-      "kind": "feature_plan",
-      "plan": "ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md",
-      "focus": "Create and independently review the technical plan for the state-retaining seven-section SaltMarcher catalog without implementing CE-02 yet"
+      "id": "CE-02-P01-R01",
+      "kind": "feature_plan_review",
+      "plan": "ROADMAP-SALTMARCHER-CE02-PLAN.md",
+      "focus": "Independently review the seven-section state/provider plan, sequential owner delivery, honest unavailable boundaries, host gates and cleanup before CE-02-I01"
     }
   },
   "repositoryWorkflow": {
