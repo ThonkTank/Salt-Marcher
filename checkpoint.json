@@ -4502,17 +4502,17 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I43-REVIEW-CLEAN-R43",
-      "kind": "cleanup_review",
-      "startedAt": "2026-10-09T19:13:33.598213+00:00",
-      "focus": "Referenzreview-Verknüpfung, Rawhashes und offene Anforderungen prüfen",
-      "state": "completed",
-      "result": "Aufräumen bestanden; Rohbelege unverändert, 65 CO und 24 CTY weiter offen. Nächster Lauf prüft veraltete FTG-Zuordnungen gegen vorhandene Evidenz."
-    },
-    "nextRun": {
       "id": "CITY-00-I44-P44",
       "kind": "plan",
-      "focus": "FTG-Inventarlücken und Evidenzzuordnung gezielt abgleichen"
+      "startedAt": "2026-10-09T19:15:28.500297+00:00",
+      "focus": "P: FTG-Belegzuordnung korrigieren und Anforderungen erhalten",
+      "state": "completed",
+      "result": "Drei Fehlzuordnungen identifiziert; konkreter Korrekturplan neben Roadmap, unveränderter Vorherkatalog extern gesichert."
+    },
+    "nextRun": {
+      "id": "CITY-00-I44-PLAN-CLEAN-P44",
+      "kind": "cleanup_plan",
+      "focus": "Planlink und Belegschutz prüfen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
