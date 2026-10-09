@@ -4101,17 +4101,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I39-CI",
-      "kind": "cleanup_implementation",
-      "startedAt": "2026-10-09T16:05:51.739005+00:00",
-      "focus": "Geometrie-Reuse und Einheitenprüfung konkretisiert",
-      "state": "completed",
-      "result": "Anschlussplan nennt vorhandene rectangle/inside/overlaps und deren Rand-/Bounding-Box-Grenzen; feste Topologietoleranz, BuildingEllipse-Segmentzahl und Dungeon-Entity-/Portalbindung ausdrücklich getrennt. Keine ungeprüfte Feld→Meter-Übernahme oder zweite Geometriebibliothek. Plan direkt im Gesamtplan verlinkt; ursprüngliche Evidenz unverändert."
-    },
-    "nextRun": {
       "id": "CITY-00-I39-CR",
       "kind": "cleanup_review",
-      "focus": "Finalplan, Geometriequellen, Referenzen und fremde Zustände prüfen"
+      "startedAt": "2026-10-09T16:06:44.885049+00:00",
+      "focus": "Quell-/Planbelege und Geometrie-Reuse abschließend prüfen",
+      "state": "completed",
+      "result": "Originalquellaudit unverändert, historischer Planhash gegen Commit56b18a9 sowie finaler Plan-/Geometriehash bestätigt. Zehn Quellbereiche/Anker und sämtliche Planlinks gültig; drei CITY-01-Fälle und drei Originalzuordnungen erhalten. Wiederverwendung klar von Dungeon-Einheiten/Topologie getrennt, keine zweite Kamera/History/Statusdatei.65 CO-/24 CTY-Pflichten offen; Aufräumumfang ohne Restbefund. CITY-01 startet nach geprüfter HEX-05-Übergabe; bis dahin frühe manuelle Originalfunktionen gezielt vervollständigen."
+    },
+    "nextRun": {
+      "id": "CITY-00-I40-P",
+      "kind": "reference_planning",
+      "focus": "Frühe manuelle Straßen-/Hausfunktionen gezielt gegen Original prüfen; HEX-05-Übergabe beobachten"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
