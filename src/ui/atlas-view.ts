@@ -8,6 +8,8 @@ import {
 } from "../features/atlas/overworld";
 import { VaultStore } from "../vault-stores";
 import { FileConflict } from "../persistence";
+import { AtlasHistory } from "../features/atlas/atlas-history";
+import { TerrainSource } from "../features/atlas/terrain-source";
 
 export const ATLAS_VIEW = "dungeon-native-atlas";
 export class AtlasView extends FileView {
@@ -31,7 +33,20 @@ export class AtlasView extends FileView {
     try {
       const world = parseOverworld(await this.app.vault.read(file));
       if (generation !== this.generation) return;
-      this.editor = new AtlasEditor(this.contentEl, world);
+      const store = new VaultStore(this.app);
+      const source = new TerrainSource(
+        world,
+        new AtlasHistory(),
+        async (ref) => {
+          const raw = await store.read(`Atlasdaten/${world.id}/${ref.file}`);
+          if (raw === null)
+            throw new Error(
+              "Ein Landschaftsbereich fehlt; Atlasdaten bleiben erhalten.",
+            );
+          return raw;
+        },
+      );
+      this.editor = new AtlasEditor(this.contentEl, world, source);
       await this.editor.init();
     } catch (error) {
       if (generation !== this.generation) return;
