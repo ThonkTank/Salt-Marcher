@@ -1,4 +1,5 @@
 export const DUNGEON_VIEW_STATE_SCHEMA_VERSION = 1 as const;
+export const DUNGEON_VIEW_STATE_KEY = "dungeonViewState" as const;
 
 const MAX_PATH_LENGTH = 1024;
 const MAX_FLOOR_ID_LENGTH = 256;
@@ -62,6 +63,24 @@ export function dungeonViewState(
     path,
     activeFloorId,
   });
+}
+
+export function dungeonViewStateFromWorkspace(
+  workspaceState: unknown,
+  expectedPath?: string,
+): DungeonViewState | undefined {
+  if (!workspaceState || typeof workspaceState !== "object") return;
+  return parseDungeonViewState(
+    (workspaceState as Record<string, unknown>)[DUNGEON_VIEW_STATE_KEY],
+    expectedPath,
+  );
+}
+
+export function withDungeonViewState(
+  baseState: Record<string, unknown>,
+  state: DungeonViewState,
+): Record<string, unknown> {
+  return { ...baseState, [DUNGEON_VIEW_STATE_KEY]: state };
 }
 
 export class DungeonViewStateRegistry {

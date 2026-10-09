@@ -2,11 +2,11 @@
   "gmProductFollowups": {
     "date": "2026-10-09",
     "GM-UX-N-006": {
-      "state": "i01_core_completed_i02_review_host_and_gm_retest_open",
+      "state": "i02_r02_passed_cloud_host_and_gm_retest_open",
       "source": "Issue #1 Kommentar 6085700084; ROADMAP-GM-PRODUCT-TESTING-PLAN.md; ROADMAP-GM-UX-N-006-PLAN.md",
-      "productCommit": "a86658c9825fe65ccf01eb08d7e1babd2d2e0ec2",
-      "confirmed": "Der hostneutrale exakte View-State-Codec und das monotone flüchtige Mehr-Leaf-Register bestehen ihre drei fokussierten Regressionen sowie npm run check, npm test (378/378) und npm run build.",
-      "notConfirmed": "Keine DungeonView-/DungeonEditor-Wirkung, keine zweimalige Tab-Neuöffnung im Cloud-Obsidian-Host, kein unabhängiger Produktreview und kein Produkttester-Nachtest. Keine physische Eingabe-, UX-, Host-, Fach-, Paritäts- oder Gesamtfreigabe."
+      "productCommit": "acc4774027d44c30295fc28b4c1e51dd2e353446",
+      "confirmed": "Codec/Register und DungeonView-/DungeonEditor-Verdrahtung bestehen direkte Base-State-, Same-file-, zweimalige Reopen-, Async-Close-/Retarget-, Rename/Delete/Clear-, Dirty-Key-/Selection- und Nichtmutationsregressionen; npm run check, npm test (387/387), npm run build und unabhängiger R02 PASS.",
+      "notConfirmed": "Keine zweimalige Nebelwacht-Tab-Neuöffnung im echten Cloud-Obsidian-Host und kein Produkttester-GM-R01. Kein frischer Prozess ohne Leaf-State, keine physische Eingabe-, UX-, Host-, Fach-, Paritäts- oder Gesamtfreigabe."
     }
   },
   "saltMarcherReplacement": {
@@ -152389,7 +152389,7 @@
   "hexAtlas": {
     "scope": "HEX-00..28, shared native Atlas; phase-specific functional approvals only.",
     "currentPhase": "HEX-03",
-    "state": "concrete_location_plan_checked_not_implemented",
+    "state": "location_core_checked_world_ui_storage_inactive",
     "referenceGate": "wonderdraftParity.coverageReview HEX-00-R02",
     "requirements": [
       {
@@ -152569,8 +152569,13 @@
       {
         "id": "HEX03-001",
         "requirement": "Geschlossener Orts-/Platzierungs-/Key-Codec mit unverändertem Markdown",
-        "state": "open",
-        "plan": "ROADMAP-HEX-03-PLAN.md"
+        "state": "checked_core",
+        "plan": "ROADMAP-HEX-03-PLAN.md",
+        "implementationRun": "HEX-03-I01a",
+        "evidence": [
+          "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/core-implementation.json"
+        ],
+        "observed": "Eight focused native codec/history cases; exact Markdown/IDs, closed before-JSON schema, same-history terrain+location atomic command. No native World/UI/storage activation or phase Go."
       },
       {
         "id": "HEX03-002",

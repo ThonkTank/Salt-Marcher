@@ -3,8 +3,10 @@ import test from "node:test";
 import {
   DUNGEON_VIEW_STATE_SCHEMA_VERSION,
   DungeonViewStateRegistry,
+  dungeonViewStateFromWorkspace,
   dungeonViewState,
   parseDungeonViewState,
+  withDungeonViewState,
 } from "../../src/features/verwaltung/dungeon-view-state";
 
 const PATH = "Karten/Nebelwacht.dungeon";
@@ -31,6 +33,31 @@ test("Dungeon-View-State accepts only the exact bounded path contract", () => {
   assert.equal(parseDungeonViewState([]), undefined);
 });
 
+test("Dungeon-View-State workspace envelope preserves the complete FileView base state", () => {
+  const state = dungeonViewState(PATH, "floor-secret");
+  assert.ok(state);
+  const base = { file: PATH, pinned: true, navigation: { custom: "kept" } };
+  const workspace = withDungeonViewState(base, state);
+  assert.deepEqual(workspace, { ...base, dungeonViewState: state });
+  assert.deepEqual(dungeonViewStateFromWorkspace(workspace, PATH), state);
+  assert.equal(
+    dungeonViewStateFromWorkspace(workspace, "Karten/Fremd.dungeon"),
+    undefined,
+  );
+  assert.equal(
+    dungeonViewStateFromWorkspace({ ...workspace, dungeonViewState: {
+      ...state,
+      extra: true,
+    } }),
+    undefined,
+  );
+  assert.deepEqual(base, {
+    file: PATH,
+    pinned: true,
+    navigation: { custom: "kept" },
+  });
+});
+
 test("Dungeon-View-State registry publishes monotone immutable latest state", () => {
   const registry = new DungeonViewStateRegistry();
   const leafA = {};
@@ -51,6 +78,17 @@ test("Dungeon-View-State registry publishes monotone immutable latest state", ()
 
   // Closing stale leaf A performs no publish. A subsequently opened leaf gets B.
   assert.equal(registry.latest(PATH)?.state.activeFloorId, "floor-b");
+
+  // The documented tester sequence repeats close/reopen twice in one plugin life.
+  const reopenedOnce = {};
+  const firstReopen = registry.latest(PATH)!.state;
+  registry.publish(reopenedOnce, firstReopen);
+  assert.equal(registry.latest(PATH)?.state.activeFloorId, "floor-b");
+  const reopenedTwice = {};
+  const secondReopen = registry.latest(PATH)!.state;
+  registry.publish(reopenedTwice, secondReopen);
+  assert.equal(registry.latest(PATH)?.state.activeFloorId, "floor-b");
+  assert.equal(registry.latest(PATH)?.leafToken, reopenedTwice);
 });
 
 test("Dungeon-View-State registry follows rename, delete and plugin unload", () => {
