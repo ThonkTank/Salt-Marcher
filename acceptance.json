@@ -1,8 +1,8 @@
 {
   "saltMarcherReplacement": {
     "schemaVersion": 1,
-    "updated": "2026-10-09T14:28:52Z",
-    "state": "smr00_adr_p01_no_go_cleanup_reviewed_new_hypothesis_next",
+    "updated": "2026-10-09T15:24:13Z",
+    "state": "smr00_adr_p01_h02_plan_drafted_review_pending",
     "plan": "ROADMAP-SALTMARCHER-REPLACEMENT.md",
     "platformAdr": "ROADMAP-SALTMARCHER-PLATFORM-ADR.md",
     "architecture": "ARCHITECTURE.md#plattformoffene-saltmarcher-ablösung",
@@ -80,12 +80,19 @@
       "review": "Final review passed the evidence as an honest No-Go. Cleanup review passed after removing the executable harness, P01 test and temporary command while retaining only the versioned contract and aggregate.",
       "limits": "No platform decision and no authorization for P02. Windows, macOS, GUI, native durability, real process isolation, restart OS boundary, parent/child retention and subscribe streaming remain unproven or not run."
     },
+    "adrP01H02": {
+      "run": "ADR-P01-H02-P01",
+      "state": "plan_drafted_review_pending",
+      "document": "ROADMAP-SALTMARCHER-ADR-P01-H02-PLAN.md",
+      "result": "Selects a bounded real Electron renderer/preload/main/utility chain with one native Linux root-FD durability helper and explicit process, restart, fault, cleanup and evidence gates.",
+      "limits": "Planning evidence only. No executable H02 proof, target-platform decision or P02 authorization. Windows and macOS remain not-run."
+    },
     "coordination": {
       "local": "Three new local goal threads coordinate integration. Existing Hex/Atlas, City and Dungeon colleagues on three other devices retain their workstreams, evidence and non-overlapping ownership and contribute requirements to the platform decision.",
       "cloud": "Prior GM-UX-CLOUD worker is reassigned through GitHub Issue #1 to independent architecture and technical review only. Other cloud colleagues retain their established specialist review/test responsibilities.",
       "gui": "At most one graphical host/original instance per device; static and non-graphical checks may run separately."
     },
-    "next": "Plan and independently review a replacement ADR-P01 architecture hypothesis with real desktop process isolation and platform-native durable file semantics. ADR-P02 remains blocked and the platform ADR remains proposed."
+    "next": "Independently review ROADMAP-SALTMARCHER-ADR-P01-H02-PLAN.md before any H02 implementation. ADR-P02 remains blocked and the platform ADR remains proposed."
   },
   "saltMarcherCatalogEncounter": {
     "schemaVersion": 1,
