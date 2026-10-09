@@ -1,6 +1,6 @@
-import bundledSrd from "./data/srd-5.1.generated.json";
+import assetIdentity from "./catalog-asset.json";
 
-export const SRD_5_1_ARTIFACT_SHA256 = "afdce83b65e0863e1247c6297f89460396fe8ce4fd6893139ae3284e8451073d";
+export const SRD_5_1_ARTIFACT_SHA256 = assetIdentity.artifactSha256;
 export const SRD_5_1_NOTICE = "This work includes material taken from the System Reference Document 5.1 by Wizards of the Coast LLC, available at https://dnd.wizards.com/resources/systems-reference-document and licensed under CC BY 4.0 at https://creativecommons.org/licenses/by/4.0/. The catalog was normalized by 5e-bits/5e-database v5.10.0, enriched with biome assignments and stable IDs by SaltMarcher, and copied byte-for-byte into this plugin.";
 
 const PINNED_MANIFEST = Object.freeze({
@@ -342,5 +342,3 @@ function validatedQuery(input: CreatureCatalogQuery): CreatureCatalogQuery {
   }
   return input;
 }
-
-export const bundledCreatureCatalog = new CreatureCatalog(bundledSrd);

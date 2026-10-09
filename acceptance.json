@@ -2,7 +2,7 @@
   "saltMarcherCatalogEncounter": {
     "schemaVersion": 1,
     "updated": "2026-10-09T11:55:00Z",
-  "state": "ce01_plan_reviewed_i01_next",
+  "state": "ce01_i01_reviewed_i02_next",
     "plan": "ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md",
     "architecture": "ARCHITECTURE.md#geplante-katalog--und-encounter-erweiterung",
     "sourceRepository": "ThonkTank/Salt-Marcher",
@@ -145,7 +145,27 @@
       "openCases": ["CE-AC-01", "CE-AC-02", "CE-AC-14"],
       "encounterCases": "CE-AC-03 through CE-AC-13 remain fully open"
     },
-    "next": "CE-01-I01 implement the hash-gated virtual gzip module, lazy loader and build inventory with focused tests; no UI or acceptance approval."
+    "ce01I01": {
+      "run": "CE-01-I01",
+      "state": "completed_checked_reviewed",
+      "result": "The product bundle contains a hash-gated compressed SRD payload and visible notice, but materializes the immutable catalog only on load. Capability errors and retries are explicit; dirty builds identify HEAD+dirty.",
+      "verification": {
+        "check": "passed",
+        "tests": {"passed": 222, "failed": 0},
+        "build": "passed",
+        "inventory": {
+          "sourceBytes": 832272,
+          "gzipBytes": 102021,
+          "base64Characters": 136028,
+          "mainBytes": 1334324,
+          "mainJsGrowthBytes": 144954,
+          "limitsPassed": true
+        }
+      },
+      "review": "Passed after product-bundle/gate regressions, honest dirty provenance and all runtime capability guards were added.",
+      "limits": "No ItemView or host acceptance yet; CE-AC-01, CE-AC-02 and CE-AC-14 remain open."
+    },
+    "next": "CE-01-I02 implements the dedicated ItemView and core catalog flow; no CE-01 or encounter acceptance approval."
   },
   "cityPlans": {
     "schemaVersion": 1,

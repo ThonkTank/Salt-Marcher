@@ -183,6 +183,8 @@ Offizielle Produktreferenzen für die Mindestabnahme:
 
 CE-01 folgt dem technischen Fachplan
 [`ROADMAP-SALTMARCHER-CE01-PLAN.md`](ROADMAP-SALTMARCHER-CE01-PLAN.md).
-Nächster Lauf ist `CE-01-I01`: Releaseasset, Lazy Loader, Build-/Hostinventar
-und fokussierte Regressionen. Noch keine Katalog-UI- oder Fachfreigabe
-behaupten.
+`CE-01-I01` (komprimiertes Buildasset, Lazy Loader und Inventar) ist geprüft
+und nach Reparaturreview bestanden. Nächster Lauf ist `CE-01-I02`: eigener
+Katalog-`ItemView`, Command-Fokus und der vollständige Kernfluss aus Suche,
+Filtern, Sortierung, Paging, Auswahl und Statblock. Noch keine CE-01- oder
+Encounter-Fachfreigabe behaupten.

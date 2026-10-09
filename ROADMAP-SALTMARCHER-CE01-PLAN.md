@@ -111,6 +111,11 @@ Nameklick, Doppelklick oder Enter auf einer ausgewählten Zeile öffnet Details.
 
 ### CE-01-I01 – Komprimiertes Buildasset und Lazy Loader
 
+Status: umgesetzt, Basisprüfungen und 222 Tests grün, nach Reparaturreview
+bestanden. Das Buildinventar misst 102.021 Gzip-Bytes, 136.028
+Base64-Zeichen und 144.954 Bytes `main.js`-Zuwachs; alle festgelegten Grenzen
+sind eingehalten. Katalog-UI und Hostabnahme bleiben offen.
+
 - JSON-Import aus `creature-catalog.ts` entfernen.
 - Hashprüfenden, einmalig cachenden Loader ergänzen.
 - Build um das hashgeprüfte virtuelle Gzip-/Base64-Modul und eine
@@ -170,5 +175,6 @@ Nameklick, Doppelklick oder Enter auf einer ausgewählten Zeile öffnet Details.
 
 ## Nächster Lauf
 
-`CE-01-I01`: komprimiertes Buildasset, Lazy Loader, Buildinventar und fokussierte
-Regressionen. Keine Katalog-UI- oder Fachfreigabe behaupten.
+`CE-01-I02`: eigener `ItemView`, Command-Fokus, Kernsuche/-filter,
+Sortierung, Paging, Auswahl und vollständiger read-only Statblock. Keine
+CE-01- oder Encounter-Fachfreigabe behaupten.

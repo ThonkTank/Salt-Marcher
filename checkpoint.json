@@ -1,7 +1,7 @@
 {
   "saltMarcherCatalogEncounter": {
     "date": "2026-10-09",
-  "state": "ce01_plan_reviewed_i01_next",
+  "state": "ce01_i01_reviewed_i02_next",
     "plan": "ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md",
     "architecture": "ARCHITECTURE.md#geplante-katalog--und-encounter-erweiterung",
     "acceptance": "acceptance.json.saltMarcherCatalogEncounter",
@@ -38,6 +38,28 @@
       "findings": "Independent static re-review confirms the provenance-bound baseline, demoted unreceipted probes, numeric payload gates, runtime capability/error path, shared identity source and repository-only NOTICE.md wording close all four findings."
       }
     },
+    "implementationRun": {
+      "id": "CE-01-I01",
+      "kind": "implementation",
+      "state": "completed_checked_reviewed",
+      "result": "Shared catalog asset identity, hash-gated gzip/Base64 virtual module, lazy memoized loader, explicit capability errors, retry and reproducible build inventory. No catalog UI or acceptance approval.",
+      "verification": {
+        "check": "passed",
+        "tests": {"passed": 222, "failed": 0},
+        "build": "passed",
+        "inventory": {
+          "sourceBytes": 832272,
+          "gzipBytes": 102021,
+          "base64Characters": 136028,
+          "mainBytes": 1334324,
+          "mainJsGrowthBytes": 144954
+        }
+      },
+      "review": {
+        "state": "passed_after_repair",
+        "repairs": "Added product bundle/inventory and all gate failure regressions, dirty source revision semantics, Blob capability guard and negative tests for every runtime capability."
+      }
+    },
     "coordination": {
       "catalogAnalysis": "completed read-only",
       "encounterAnalysis": "completed read-only",
@@ -52,9 +74,9 @@
       "Real Obsidian host, restart, keyboard and damaged-data acceptance"
     ],
     "nextRun": {
-      "id": "CE-01-I01",
+      "id": "CE-01-I02",
       "kind": "implementation",
-      "focus": "Hash-gated virtual gzip catalog module, lazy memoized loader and build inventory with focused regressions; no UI approval"
+      "focus": "Dedicated catalog ItemView, command focus, core search/filter/sort/paging selection and full read-only statblock; no CE-01 approval"
     }
   },
   "repositoryWorkflow": {
