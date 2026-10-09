@@ -99787,6 +99787,17 @@
       "hostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase7-dialog-repair2-20261009/evidence/1791506383123-parity-phase7-combined-reopen/result.json",
       "decision": "Host looked only in the main Obsidian document while the complete modal was rendered in an about:blank popout; corrected host pair passed. Separate review pending.",
       "gate": "open"
+    },
+    "phase7RepairReview": {
+      "date": "2026-10-09",
+      "state": "p7_1_passed_p7_2_deferred_gate_open",
+      "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase7-dialog-review-20261009/phase7-p7-1-repair-review.md",
+      "audit": "/home/aaron/.cache/dungeon-native-qa/parity-phase7-dialog-review-20261009/review-audit.json",
+      "hostEdit": "/home/aaron/.cache/dungeon-native-qa/parity-phase7-dialog-review-20261009/evidence/1791506625113-parity-phase7-combined-edit/result.json",
+      "hostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase7-dialog-review-20261009/evidence/1791506653956-parity-phase7-combined-reopen/result.json",
+      "decision": "P7-1 reviewed with a second complete popout edit/reopen pair; P7-3 and P7-4 already reviewed. Physical P7-2 deferred by user, so phase gate remains open.",
+      "open": ["P7-2 physical mouse/touchpad deferred by user", "Phase-7 gate", "Final cleanup"],
+      "gate": "open"
     }
   }
 }

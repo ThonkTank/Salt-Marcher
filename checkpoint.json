@@ -975,13 +975,13 @@
     "physicalInput": "deferred_at_user_request"
   },
   "parityRoadmap": {
-    "status": "phase7_p7_1_repair_review_candidate_p7_2_hardware_open",
+    "status": "phase7_p7_1_3_4_reviewed_p7_2_deferred_gate_open",
     "roadmap": "ROADMAP-PARITY.md",
     "plan": "ROADMAP-PARITY-PLAN.md",
     "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
     "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
-    "nextRun": "Eigener P7-1-Nachbesserungsreview für Obsidian-Haupt-/Popoutfenster und vollständigen V4-Verbund; P7-2 bleibt auf Nutzerwunsch vorerst offen. Fachphasentor bis zu physischer Eingabe offen.",
-    "note": "P7-1-Dialogabbruch als Host-Fensterziel erklärt: Obsidian renderte den Dialog im Popout. Korrigierter Host-Edit-/Neuöffnungslauf bestanden, Produktbuild unverändert; eigener Review folgt. P7-3/4 sind reviewt, P7-2 mit realer Hardware fehlt. Hex-Atlas- und Stadtstand erhalten.",
+    "nextRun": "P7-2 erst nach Aufhebung der Nutzeraufschiebung als direkte physische Maus-/Touchpad-Probe ausführen; danach Phase-7-Fachphasentor und eigene abschließende Aufräumphase. Bis dahin keine synthetische Hardwareabnahme.",
+    "note": "P7-1, P7-3 und P7-4 sind in getrennten Edit-/Neuöffnungspaaren reviewt. Der frühere P7-1-Dialogabbruch war ein Host-Fensterziel-Fehler bei einem Obsidian-Popout; Produktbuild unverändert. P7-2 ist auf Nutzerwunsch vorerst aufgeschoben, daher Fachphasentor und Aufräumen offen. Hex-Atlas- und Stadtstand erhalten.",
     "phase2Plan": "ROADMAP-PARITY-PHASE2-PLAN.md",
     "candidateBuildSha256": "b321128188b944c3324594663a410acfd84863f17860f637b9ed2e6ecc33b466",
     "candidateCoreTests": 167,
@@ -2554,6 +2554,16 @@
       "hostEdit": "/home/aaron/.cache/dungeon-native-qa/parity-phase7-dialog-repair2-20261009/evidence/1791506350139-parity-phase7-combined-edit/result.json",
       "hostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase7-dialog-repair2-20261009/evidence/1791506383123-parity-phase7-combined-reopen/result.json",
       "productBuildUnchanged": true,
+      "gate": "open"
+    },
+    "phase7RepairReview": {
+      "date": "2026-10-09",
+      "state": "p7_1_passed_p7_2_deferred_gate_open",
+      "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase7-dialog-review-20261009/phase7-p7-1-repair-review.md",
+      "audit": "/home/aaron/.cache/dungeon-native-qa/parity-phase7-dialog-review-20261009/review-audit.json",
+      "hostEdit": "/home/aaron/.cache/dungeon-native-qa/parity-phase7-dialog-review-20261009/evidence/1791506625113-parity-phase7-combined-edit/result.json",
+      "hostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase7-dialog-review-20261009/evidence/1791506653956-parity-phase7-combined-reopen/result.json",
+      "open": ["P7-2 physische Maus-/Touchpad-Eingabe auf Nutzerwunsch aufgeschoben", "Phase-7-Fachphasentor", "Abschließende Aufräumphase"],
       "gate": "open"
     }
   }
