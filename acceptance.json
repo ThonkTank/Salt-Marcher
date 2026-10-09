@@ -2370,15 +2370,12 @@
         "product": "Fantasy Town Generator",
         "feature": "Gebäudebedarfe und Anzahlgrenzen",
         "sourceUrl": "https://www.fantasytowngenerator.com/temporary-settlement?newSettlement=true",
-        "observedAt": "2026-10-09T12:20:56.140099+02:00",
+        "observedAt": "2026-10-09T12:15:44.926455+02:00",
         "observedVersion": null,
         "availability": "free",
-        "observationKind": "direct",
+        "observationKind": "direct_control_only",
         "originalEvidence": [
-          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i01-20261009/ftg-form-observation.json",
-          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/ftg-person-general.ax.txt",
-          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/ftg-person-relations.ax.txt",
-          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/ftg-person-relations.jpg"
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i01-20261009/ftg-form-observation.json"
         ],
         "task": "Gebäudeverteilung konfigurieren",
         "phase": "CITY-06",
@@ -2392,11 +2389,11 @@
           "state": "not_run"
         },
         "status": "open",
-        "gap": "Bewohnerattribute und Familienbeziehungen direkt gelesen; Bearbeitung und weitere Beziehungstypen offen.",
+        "gap": "Nur der Formularordner Buildings ist sichtbar. Bedarfsvorgaben, Anzahlgrenzen und erzeugte Verteilungswirkung sowie eigene Umsetzung/Host/Bedienung bleiben ungeprüft.",
         "originalProbe": {
-          "run": "CITY-00-I02",
-          "state": "partial",
-          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/manifest.json"
+          "run": "CITY-00-I01",
+          "state": "buildings_folder_only",
+          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i01-20261009/ftg-form-observation.json"
         },
         "independentFunctionalRequirement": true,
         "mappingCoverage": "new_required_function_not_covered_by_existing_CTY"
@@ -2405,12 +2402,16 @@
         "id": "CO-FTG-0014",
         "product": "Fantasy Town Generator",
         "feature": "Bewohnerdetails und Beziehungen",
-        "sourceUrl": "https://docs.fantasytowngenerator.com/",
-        "observedAt": "2026-10-09T12:15:44.926455+02:00",
+        "sourceUrl": "https://www.fantasytowngenerator.com/temporary-settlement",
+        "observedAt": "2026-10-09T12:20:56.140099+02:00",
         "observedVersion": null,
-        "availability": "unknown",
-        "observationKind": "documentation",
+        "availability": "temporary_settlement",
+        "observationKind": "direct_partial_effect",
         "originalEvidence": [
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/manifest.json",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/ftg-person-general.ax.txt",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/ftg-person-relations.ax.txt",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/ftg-person-relations.jpg",
           "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i18-residents-20261009/manifest.json"
         ],
         "task": "Bewohner, Haushalt und Beziehungen bearbeiten",
@@ -2428,10 +2429,16 @@
           "state": "not_run"
         },
         "status": "open",
-        "gap": "Resident profile/relationships remain unverified: first building detail request network error, second did not display detail within observation. No feature absence or persistent outage inferred. Own implementation/host/usability remain open.",
+        "gap": "Profilattribute und parent/father/adoptive brother direkt gelesen. Bearbeitung, weitere Beziehungen, stabile Datenkennungen, Persistenz und eigener Produkt-/Host-/Bedienvergleich bleiben offen. I18 war eine spätere erfolglose Zugangsprobe.",
         "independentFunctionalRequirement": true,
         "mappingCoverage": "related_project_criteria_only; CO requirement remains independently required",
         "originalProbes": [
+          {
+            "run": "CITY-00-I02",
+            "state": "profile_and_named_relations_observed",
+            "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/manifest.json",
+            "observation": "Thawn Cobblekind: Erscheinung, Persönlichkeit, Ziel, Wohnort und Attribute; Relations nennt Markli parent, Guro father, Durmold adoptive brother. Keine Bearbeitung geprüft."
+          },
           {
             "run": "CITY-00-I18-I",
             "state": "resident_access_unverified_after_network_error",
@@ -2440,10 +2447,10 @@
           }
         ],
         "originalProbe": {
-          "run": "CITY-00-I18-I",
-          "state": "resident_access_unverified_after_network_error",
-          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i18-residents-20261009/manifest.json",
-          "observation": "Population favourites empty; protected house found in29-building list. First detail click network error; second no loaded detail. Resident profile and relationships not reached."
+          "run": "CITY-00-I02",
+          "state": "profile_and_named_relations_observed",
+          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/manifest.json",
+          "observation": "Thawn Cobblekind: Erscheinung, Persönlichkeit, Ziel, Wohnort und Attribute; Relations nennt Markli parent, Guro father, Durmold adoptive brother. Keine Bearbeitung geprüft."
         }
       },
       {
@@ -2559,13 +2566,9 @@
         "sourceUrl": "https://docs.fantasytowngenerator.com/",
         "observedAt": "2026-10-09T12:20:56.140099+02:00",
         "observedVersion": null,
-        "availability": "free",
-        "observationKind": "direct",
-        "originalEvidence": [
-          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/ftg-time10-before.ax.txt",
-          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/ftg-time11-after.ax.txt",
-          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/ftg-time11-after.jpg"
-        ],
+        "availability": "unknown",
+        "observationKind": "documentation",
+        "originalEvidence": [],
         "task": "Mehrere Bewohner gemeinsam ändern",
         "phase": "CITY-06",
         "caseIds": [],
@@ -2578,12 +2581,7 @@
           "state": "not_run"
         },
         "status": "open",
-        "gap": "Ein Next-Hour-Wechsel direkt bestätigt; vollständige Tagespläne und große Zeitsprünge offen.",
-        "originalProbe": {
-          "run": "CITY-00-I02",
-          "state": "partial",
-          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/manifest.json"
-        },
+        "gap": "Keine direkte Massenbearbeitungsprobe vorhanden. Der früher hier zugeordnete Stundenwechsel ist ausschließlich CO-FTG-0018 zugeordnet; Massenbearbeitung und eigene Umsetzung/Host/Bedienung bleiben offen.",
         "independentFunctionalRequirement": true,
         "mappingCoverage": "new_required_function_not_covered_by_existing_CTY"
       },
@@ -2597,6 +2595,10 @@
         "availability": "temporary_settlement",
         "observationKind": "direct_partial",
         "originalEvidence": [
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/manifest.json",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/ftg-time10-before.ax.txt",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/ftg-time11-after.ax.txt",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/ftg-time11-after.jpg",
           "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/manifest.json",
           "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i42-time-20261009/manifest.json"
         ],
@@ -2612,7 +2614,7 @@
           "state": "not_run"
         },
         "status": "open",
-        "gap": "Bewohner-Aufenthaltsorte und Tagesplanwirkung weiterhin offen.",
+        "gap": "10:00→11:00 Monday und I42-Arbeits-/Ruhetagsfolge eines Bewohners bei gleichem Datum direkt teilbelegt. Vollständige Tagespläne, große Sprünge, Persistenz, Kalender-/Overridepolitik sowie eigener Produkt-/Host-/Bedienvergleich bleiben offen.",
         "independentFunctionalRequirement": true,
         "mappingCoverage": "new_required_function_not_covered_by_existing_CTY",
         "documentationSource": {
@@ -2626,7 +2628,29 @@
           "observation": "Time Skip changes23:00 to11:00 Monday and visibly changes daylight; no resident schedule recheck",
           "observationTimeScope": "artifact persistence times; UI action start not measured",
           "manualDayReference": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i42-time-20261009/manifest.json"
-        }
+        },
+        "originalProbes": [
+          {
+            "run": "CITY-00-I02",
+            "state": "one_hour_change_observed",
+            "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/manifest.json",
+            "limits": "Uhrzeit und wiederaufgebaute Bewohneranzeige; keine vollständige Tagesplanwirkung."
+          },
+          {
+            "run": "CITY-00-I07-BI",
+            "state": "partial_effect_observed",
+            "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/manifest.json",
+            "observation": "Time Skip changes23:00 to11:00 Monday and visibly changes daylight; no resident schedule recheck",
+            "observationTimeScope": "artifact persistence times; UI action start not measured",
+            "manualDayReference": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i42-time-20261009/manifest.json"
+          },
+          {
+            "run": "CITY-00-I42-I",
+            "state": "same_person_work_rest_work_observed",
+            "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i42-time-20261009/manifest.json",
+            "limits": "Ein Bewohner, Montag11h; keine vollständige Simulation/Persistenz oder ratifizierte None-Semantik."
+          }
+        ]
       },
       {
         "id": "CO-FTG-0019",
