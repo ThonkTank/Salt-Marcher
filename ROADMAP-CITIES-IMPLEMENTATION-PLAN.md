@@ -687,3 +687,6 @@ CITY-01-PREP-CLEAN-R01 Start 2026-10-09T16:48:58.646070+00:00; Alle drei Aufräu
 
 
 CITY-01-PREP-P02 Start 2026-10-09T16:53:43.876966+00:00; Fokus: reine Stadtbefehle auf tatsächlich gelieferter AtlasHistory. Owner=stabile CityDocument.id, Target=document, initiale Codecprüfung vor Registrierung/JSON-Konversion, keine zweite mutable Quelle. Reiner Vorher/Nachher-Change hält Gestenanfangsstand und ermöglicht atomare City-/Terrainbefehle. Echte Mehrbesitzer-, Stale-, No-op-/Redo- und Eingabegrenzprüfungen geplant; HEX-Besitzer bestätigt API. Plan: ROADMAP-CITIES-CITY01-COMMANDS-PLAN.md. Keine Produkt-/Hostfreigabe; Plan-Aufräum-P/I/R folgen getrennt.
+
+
+CITY-01-PREP-PLAN-CLEAN-P02 Start 2026-10-09T16:54:08.160940+00:00; Plan-Aufräumfokus: Befehlsplan gegen tatsächliche AtlasHistory/TerrainSource, bestehende immutable-Hilfe und CTY/HEX05-Grenzen prüfen. Geplante Snapshots müssen vorhandene Tiefkopiehilfe verwenden; register/hydrate ohne unregister erfordert einmalige Quelle je Besitzerlebensdauer. Diese beiden Implementierungsdetails explizit ergänzen, Verweise/JSON/fremde Roots prüfen; danach getrennt CI/CR.
