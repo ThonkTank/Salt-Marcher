@@ -2101,6 +2101,15 @@
         "result": "In zwei isolierten Obsidian-Prozessen speichert der sichtbare Atlas-Save 36 Zellen in fünf Terrainkinddateien plus Overworld-Manifest; ein 37-Zellen-Entwurf wird im frischen Prozess sichtbar wiederhergestellt und per Ctrl+S gespeichert. Nach einem einmalig injizierten Store-Schreibfehler im laufenden Prozess bleiben gespeicherte Basis und Entwurf erhalten; eine externe gültige Weltänderung wird sichtbar als Konflikt erkannt. Beide erfolgreichen Läufe enden normal. Der erste kalte Erststartversuch scheiterte vor Produktaktionen am Obsidian-Trust-/Befehlspalettenpfad und bleibt separat belegt.",
         "review": "Unabhängiger read-only Review PASS nur für den Terrain-Save-/Draft-/Neuöffnungs-Teilnachweis mit lokal vorhandenen Rohbelegen und identischem Build-Tripel. Kein unveränderter zweiter Save, keine City-/Dungeon-Kinder, kein harter Prozessabbruch mit Journal-Recovery, kein Open Recent oder voller DD-036.03-/HEX-02-R01-Go."
       },
+      "s01Noop": {
+        "run": "DD-036-ATLAS-S01-NOOP",
+        "state": "scoped_clean_repeat_save_host_passed_independent_review_passed_full_case_open",
+        "testCommit": "96a645c75b429b29af628f4a861bb4109c6e1948",
+        "mainSha256": "c77eed86d4ade60a3fdaca5edc8e338a9633a7b66fcfa195daab96664da6c997",
+        "evidence": "/home/aaron/.cache/dungeon-native-qa/dd036-s01-noop-20261009/evidence/1791570558973-dd036-s01-noop-reopen/s01-noop-result.json",
+        "result": "Isolierter frischer Obsidian-Prozess auf sauberem Testcommit öffnet eine tatsächlich gespeicherte 36-Zellen-Welt mit fünf referenzierten Terrainkinddateien. Ein sichtbarer erneuter Atlas-Save ohne Bearbeitung erhält alle sechs Dateien bytegleich; world.id, 34 aktuell geladene Zellen, fünf Referenzen, Kamera, Undo-Tiefe 0 und Status Gespeichert bleiben gleich. Draft und Journal fehlen vor und nach Save; normaler Prozessausgang.",
+        "review": "Unabhängiger read-only Nachreview des sauberen 96a645c-Laufs PASS für diesen engen Host-Noop. Build-Tripel und sechs Datei-SHA-256 wurden gegen installierte und aktuelle QA-Dateien geprüft. Der erste fehlgeschlagene Versuch nahm fälschlich vollständiges Laden aller 36 gespeicherten Zellen an; er belegte keinen Produktfehler. Dungeondraft schrieb bei einem zweiten Save andere Bytes; eine Bytegleichheit der Originaldatei wird nicht behauptet. Open Recent, City-/Dungeon-Kinder, harte Recovery und volle DD-036.03 bleiben offen."
+      },
       "next": "GM-UX-N-005-P01: als eigener Dungeon-Planlauf ausschließlich die belegte Raum-Key-Suche planen; nicht mit DD-036 oder Atlaspersistenz vermischen.",
       "followingRun": "DD-036-O01a und das Terrainkind-Teilpaket von O01b sind eng geprüft; O01b mit Stadt-/Dungeon-Kinddateien wartet auf deren Atlasreferenzen und sichtbare Hostprüfung."
     },

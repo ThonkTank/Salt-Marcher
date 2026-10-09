@@ -130520,13 +130520,14 @@
           "evidence": []
         },
         "hostCheck": {
-          "state": "partial_terrain_save_draft_reopen_independent_review_passed",
-          "build": "main.js SHA-256 c77eed86d4ade60a3fdaca5edc8e338a9633a7b66fcfa195daab96664da6c997; sourceRevision ee858931183cb387dce7ff38b01d6fc3be110818",
+          "state": "partial_terrain_save_draft_reopen_and_clean_repeat_save_independent_review_passed",
+          "build": "main.js SHA-256 c77eed86d4ade60a3fdaca5edc8e338a9633a7b66fcfa195daab96664da6c997; Save/Draft-Quelle ee858931183cb387dce7ff38b01d6fc3be110818; Noop-Testcommit 96a645c75b429b29af628f4a861bb4109c6e1948",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/dd036-s01-20261009/evidence/1791569925693-hex02-save-edit/result.json",
-            "/home/aaron/.cache/dungeon-native-qa/dd036-s01-20261009/evidence/1791570048607-hex02-save-reopen/result.json"
+            "/home/aaron/.cache/dungeon-native-qa/dd036-s01-20261009/evidence/1791570048607-hex02-save-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/dd036-s01-noop-20261009/evidence/1791570558973-dd036-s01-noop-reopen/s01-noop-result.json"
           ],
-          "gap": "Ein sichtbarer Terrain-Save mit 36 Zellen/fünf Kinddateien und frischer 37-Zellen-Draft-/Ctrl+S-Folge ist eng belegt. Unveränderter zweiter Atlas-Save, City-/Dungeon-Kinder, harter Prozessabbruch mit Journal-Recovery, Open Recent und vollständige Gleichwertigkeit bleiben offen."
+          "gap": "Ein sichtbarer Terrain-Save mit 36 Zellen/fünf Kinddateien und frischer 37-Zellen-Draft-/Ctrl+S-Folge ist eng belegt. Ein zweiter sichtbarer Atlas-Save ohne Bearbeitung erhielt alle sechs gespeicherten Dateien bytegleich und den Editorzustand. City-/Dungeon-Kinder, harter Prozessabbruch mit Journal-Recovery, Open Recent und vollständige Gleichwertigkeit bleiben offen."
         }
       },
       {
