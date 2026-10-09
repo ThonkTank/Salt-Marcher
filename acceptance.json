@@ -113,8 +113,8 @@
   },
   "saltMarcherCatalogEncounter": {
     "schemaVersion": 1,
-    "updated": "2026-10-09T16:10:40Z",
-    "state": "ce02_i01_reviewed_i02_plan_next_ce01_physical_open",
+    "updated": "2026-10-09T16:21:42Z",
+    "state": "ce02_i01_metadata_repair_review_pending_ce01_physical_open",
     "plan": "ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md",
     "architecture": "ARCHITECTURE.md#geplante-katalog--und-encounter-erweiterung",
     "sourceRepository": "ThonkTank/Salt-Marcher",
@@ -448,14 +448,14 @@
     },
     "ce02I01": {
       "run": "CE-02-I01",
-      "state": "completed_checked_review_pending",
+      "state": "completed_checked_metadata_repair_review_pending",
       "result": "The production catalog view is now one seven-section, versioned workspace. The existing 2014 Monster surface performs query and detail reads through the typed SRD-5.1 provider with section/generation/AbortSignal binding; six future owner providers and their panels remain explicitly unavailable.",
       "covered": ["exact canonical section order and visible/roving tabs", "CE-01 state migration and fail-closed future schema", "isolated seven-section state normalization", "immutable Monster query DTOs", "query and detail abort/stale isolation", "empty, invalid, error, missing and unavailable result contracts", "retained CE-01 filter, chip, sort, paging, keyboard, detail and attribution behavior"],
-      "verification": {"check": "passed", "tests": {"passed": 259, "failed": 0}, "focusedTests": {"passed": 217, "failed": 0}, "build": "passed", "mainBytes": 1361064, "mainJsGrowthBytes": 171694},
-      "review": "Passed independently after two repair rounds. The final read-only review confirmed fail-closed restore, differentiated query/detail status and retryability, one shared section frame, stale query/detail/error isolation, a fast-switch activation regression with one initial load, defensive state copies, owner discriminants and scoped visible-tab styling.",
+      "verification": {"sourceRevision": "7469e64202e730175ee138136a69d82ad4f28ea6", "check": "passed", "tests": {"passed": 259, "failed": 0}, "focusedTests": {"passed": 217, "failed": 0}, "build": "passed", "mainBytes": 1361064, "mainJsGrowthBytes": 171694},
+      "review": "Independent review of exact product commit 7469e64202e730175ee138136a69d82ad4f28ea6 retained the product and scoped CSS but required repair of contradictory status/provenance fields. N01 exact-head re-review is pending.",
       "limits": "No Item, saved Encounter, NPC, Faction, Place or Encounter-Table data is delivered; unavailable is not feature completion. No Encounter Builder, combat mutation, 2024 mode, host run or physical/screenreader/platform acceptance. All CE-AC cases remain open."
     },
-    "next": "Plan and independently review CE-02-I02 Item provenance, schema, generator, immutable provider and acceptance boundaries before importing data. Do not count the other five unavailable providers as delivered; CE-01 physical-input, screenreader and other-platform gates remain open."
+    "next": "Independently review the CE-02-I01 N01 metadata repair and exact product provenance before CE-02-I02 planning. Do not count the six unavailable providers as delivered; CE-01 physical-input, screenreader and other-platform gates remain open."
   },
   "cityPlans": {
     "schemaVersion": 1,
