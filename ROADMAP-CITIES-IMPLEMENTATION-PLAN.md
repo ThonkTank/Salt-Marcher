@@ -681,3 +681,6 @@ CITY-01-PREP-CLEAN-P01 Start 2026-10-09T16:46:15.720458+00:00; Plan: Nur drei R0
 
 
 CITY-01-PREP-CLEAN-I01 Start 2026-10-09T16:47:08.177038+00:00; Dimensionslose Skalierung am Modelltyp gekennzeichnet; existierende Modell-/Codec-APIs von geplanten Stadtmodulen getrennt; Architektur dokumentiert dichte native Listen und kontrollierte Ablehnung. Keine ausführbare Änderung oder neue öffentliche Schnittstelle. JS-/Typquellgleichheit und abschließender Review folgen.
+
+
+CITY-01-PREP-CLEAN-R01 Start 2026-10-09T16:48:58.646070+00:00; Alle drei Aufräumreste erledigt: Skalierung korrekt dimensionslos kommentiert, vorhandene APIs im Gesamtplan erkennbar, dichte Listen in Architektur festgehalten. Ausschließlich Kommentaränderung am Modelltyp; exakte Typquelle nach Kommentarentfernung und erzeugtes JS identisch. Codec/Tests/gemeinsame Quellen unverändert gegenüber276grünenTests/Typprüfung/Build. Modellvorbereitung reviewt ohne Restbefund;24CTY/65CO-Fachpflichten und Atlas-/Host-/Saveintegration offen. Beleg: /home/aaron/.cache/dungeon-native-qa/city-plans/city01-model-20261009/cleanup-review.json. Nächster Lauf plant reine Stadtbefehle auf der inzwischen gelieferten gemeinsamen AtlasHistory; mit HEX-Besitzer abgleichen, keine eigene Historie oder Hostvorgriff.
