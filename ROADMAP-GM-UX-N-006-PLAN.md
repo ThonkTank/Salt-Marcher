@@ -42,27 +42,35 @@ Ein kleiner hostneutraler Zustandsbaustein unter
 Auswahl, Dirty-Markierung oder Persistenz. Leere, typfremde, überlange oder zu
 einem anderen Pfad gehörende Werte werden verworfen.
 
-`DungeonView.getState()` erweitert den bestehenden `FileView`-State, statt den
-Dateipfad zu ersetzen. `setState()` liest den validierten Geschosswunsch vor
-dem Aufruf des Basistyps ein und wendet ihn erst nach erfolgreichem
-`onLoadFile`/Editoraufbau an. So bleibt Obsidian für Datei-, Leaf- und
-Layoutwiederherstellung zuständig. Ein ungültiger oder inzwischen gelöschter
-Geschosswert fällt deterministisch auf das erste vorhandene Geschoss zurück.
+`DungeonView.getState()` erweitert `super.getState()`, statt den Dateipfad zu
+ersetzen. `setState(state, result)` liest den validierten Geschosswunsch, reicht
+aber State und `ViewStateResult` unverändert an `super.setState(state, result)`
+weiter und wendet den Wunsch erst nach erfolgreichem `onLoadFile`/Editoraufbau
+an. So bleibt Obsidian für Datei-, Leaf- und Layoutwiederherstellung zuständig.
+Nach einem erfolgreichen Geschosswechsel aktualisiert `getState()` den
+abrufbaren Wert und `app.workspace.requestSaveLayout()` fordert die normale
+Obsidian-Layoutspeicherung an; es wird kein Navigations-Historyeintrag erzeugt.
+Ein ungültiger oder inzwischen gelöschter Geschosswert fällt deterministisch
+auf das erste vorhandene Geschoss zurück.
 
 Das Schließen eines Tabs entfernt dessen Leaf-State. Für genau diesen im
 Testerbefund beschriebenen Schließen-/Wiederöffnen-Ablauf hält der Plugin-
 Lebenszyklus deshalb denselben validierten Zustand zusätzlich in einem
-flüchtigen, pfadgebundenen Workspace-Register. Das Register ist nur der
-Handoff-Kanal desselben `DungeonViewState`-Codecs:
+flüchtigen, pfadgebundenen Workspace-Register. Jeder Registereintrag enthält
+neben dem validierten State eine pluginweit monoton steigende Revision und das
+stabile Token des meldenden Leaves. Das Register ist nur der Handoff-Kanal
+desselben `DungeonViewState`-Codecs:
 
 - ein expliziter oder programmatischer Geschosswechsel aktualisiert den
-  Leaf-State und das Register erst nach erfolgreichem `setFloor`;
-- `onUnloadFile` übernimmt den letzten Rendererwert, bevor der Editor zerstört
-  wird;
+  abrufbaren Leaf-State und schreibt mit der nächsten Revision ins Register
+  erst nach erfolgreichem `setFloor`;
+- `onUnloadFile` schreibt keinen Geschosswert zurück. Jeder wirksame Wechsel ist
+  bereits synchron registriert; damit kann das Schließen eines älteren Leaves
+  keinen neueren Wert eines anderen Leaves überschreiben;
 - ein neues Leaf derselben Datei verwendet den Registerwert nur, wenn kein
   gültiger eigener Leaf-State vorliegt;
 - bei mehreren Leaves gewinnt für jedes bestehende Leaf dessen eigener State;
-  nur ein neu geöffnetes Leaf übernimmt den zuletzt bestätigten Kartenwert;
+  nur ein neu geöffnetes Leaf übernimmt die höchste bestätigte Registerrevision;
 - Umbenennen verschiebt den Registerschlüssel, Löschen entfernt ihn, und
   Plugin-Unload leert das Register.
 
@@ -71,6 +79,12 @@ Plugin-/Obsidian-Prozess, wenn kein wiederhergestelltes Leaf den Zustand trägt.
 Diese Grenze entspricht dem belegten Tab-Schließen/-Öffnen-Ablauf. Eine
 prozessübergreifende Präferenz pro Dateipfad wäre ein neuer Persistenzvertrag
 und ist durch N-006 nicht belegt.
+
+Der verbindliche Mehr-Leaf-Regressionsfall lautet: Leaf A bleibt auf Geschoss A,
+Leaf B wechselt danach auf Geschoss B, anschließend wird das veraltete Leaf A
+geschlossen; ein neu geöffnetes Leaf derselben Karte muss Geschoss B verwenden.
+Weder der Unload von A noch eine verspätete Meldung eines zerstörten Editors darf
+die höhere B-Revision ersetzen.
 
 ## Anschluss an Editor und Renderer
 
@@ -88,6 +102,16 @@ bleibt Fallback für neue Karten, fehlenden State, fremde Pfade und gelöschte
 Geschosse. Programmatische Geschosswechsel – insbesondere eine spätere
 N-005-Trefferaktivierung – müssen denselben Meldeweg benutzen und dürfen den
 Workspace-State nicht umgehen.
+
+`DungeonView.onLoadFile` bindet jeden asynchronen Aufbau an Generation, exakten
+Dateipfad und die Identität von lokalem `OpenMap` und `DungeonEditor`. Nach jedem
+`await` – insbesondere nach `plugin.acquire`, `ensureAssets` und
+`editor.init()` – sowie unmittelbar vor Restore, Registermeldung und
+`requestSaveLayout()` werden diese Werte erneut geprüft. Bei Schließen oder
+Retargeting zerstört nur der besitzende Lauf seinen lokalen Editor und gibt
+seine Map-Lease genau einmal frei; ein verspätet abgeschlossener Lauf darf weder
+Geschoss, Register noch Layoutstate ändern. `onUnloadFile` erhöht wie heute die
+Generation vor dem Abbau.
 
 Offene Key-Entwürfe werden beim Schließen weiterhin ausschließlich durch den
 bestehenden `commitNote`-/Draft-Weg behandelt. N-006 verändert dessen Reihenfolge
@@ -116,15 +140,21 @@ Reparaturablauf wird nicht explorativ erweitert:
 Zusätzlich prüfen automatisierte Regressionen Layout-Restore mit gültigem
 Leaf-State, Tab-Reopen über das flüchtige Register, falschen Pfad, beschädigten
 State, gelöschtes Geschoss, Dateiumbenennung/-löschung, zwei Leaves derselben
-Datei und Plugin-Unload. Ein frischer Prozess ohne wiederhergestelltes Leaf fällt
-ehrlich auf das erste Geschoss zurück und ist kein N-006-Passkriterium.
+Datei und Plugin-Unload. Die Layoutprüfung wechselt ein Geschoss, wartet auf den
+angeforderten Layoutsave und liest den tatsächlich von `getState()` gelieferten
+serialisierten Base-Datei- plus Geschossstate zurück; sie injiziert nicht nur
+einen vorbereiteten State. Verzögerte-Init-Fälle schließen beziehungsweise
+retargeten das Leaf an jeder Await-Grenze und belegen: kein später Restore, keine
+Register-/Layoutmeldung und genau eine balancierte Map-Freigabe. Ein frischer
+Prozess ohne wiederhergestelltes Leaf fällt ehrlich auf das erste Geschoss zurück
+und ist kein N-006-Passkriterium.
 
 ## Umsetzungspakete und Gates
 
 | Lauf | Umfang | Gate |
 | --- | --- | --- |
-| `GM-UX-N-006-I01` | Reiner `DungeonViewState`-Codec und flüchtiges pfadgebundenes Workspace-Register | Unitfälle für gültigen State, Fremdpfad, beschädigte Werte, Rename/Delete, Zwei-Leaf-Präzedenz und Unload; keine Dokument- oder Plugin-Datenpersistenz. |
-| `GM-UX-N-006-I02` | `DungeonView`-/`DungeonEditor`-Verdrahtung über den bestehenden `MapRenderer.setFloor`-Weg | DOM-/Lifecycle-Regressionsfälle für Leaf-Restore, zweimaliges Tab-Schließen/-Öffnen, ungültiges/gelöschtes Geschoss und programmatischen Wechsel; Dokument, Dirty, History, Auswahlkennungen und Key-Entwurf bleiben gemäß Orakel unverändert. |
+| `GM-UX-N-006-I01` | Reiner `DungeonViewState`-Codec und flüchtiges pfadgebundenes Workspace-Register | Unitfälle für gültigen State, Fremdpfad, beschädigte Werte, Rename/Delete, monotone Revisionen, Switch B → stale A schließen → neues Leaf erhält B und Unload; keine Dokument- oder Plugin-Datenpersistenz. |
+| `GM-UX-N-006-I02` | `DungeonView`-/`DungeonEditor`-Verdrahtung über den bestehenden `MapRenderer.setFloor`-Weg | DOM-/Lifecycle-Regressionsfälle für echten serialisierten Base+Floor-State nach `requestSaveLayout`, zweimaliges Tab-Schließen/-Öffnen, ungültiges/gelöschtes Geschoss, programmatischen Wechsel und verzögertes Init mit Close/Retarget an jeder Await-Grenze; kein später Write, genau eine Release, Dokument, Dirty, History, Auswahlkennungen und Key-Entwurf unverändert. |
 | `GM-UX-N-006-R01` | Unabhängiger Produktreview des exakten Implementierungscommits | Obsidian-Base-State bleibt erhalten; kein zweiter Floor-/Kamera-/History-/Persistenzweg; Lifecycle, Race-Abbruch, Rename/Delete und N-005-Anschluss prüfen. Pflichtlücken vor Hostlauf reparieren. |
 | `GM-UX-N-006-H01` | Genau der veröffentlichte zweifache Nebelwacht-Reproduktionsablauf im isolierten Cloud-Obsidian-Host | Sauberer Build/Tripel, sichtbarer Geschosswert, Vorher-/Nachherhash, normaler Tab-Schluss und zwei Neuöffnungen. Synthetische Fernsteuerung bleibt keine physische Eingabeabnahme. |
 | `GM-UX-N-006-GM-R01` | Unabhängiger Produkttester-Nachtest | Der Tester wiederholt ausschließlich seinen beschriebenen Ablauf. Erst dieser Nachtest darf die Folgeaufgabe schließen. |
