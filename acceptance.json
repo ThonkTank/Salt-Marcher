@@ -380,7 +380,7 @@
   },
   "cityPlans": {
     "schemaVersion": 1,
-    "updated": "2026-10-09T15:08:41.202758+00:00",
+    "updated": "2026-10-09T15:13:30.790637+00:00",
     "plan": "ROADMAP-CITIES.md",
     "state": "planned_not_implemented",
     "comparisonMode": "functional_equivalence_and_independent_usability_tests",
@@ -1628,7 +1628,8 @@
           "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/watabou-walled-port-detail.jpg",
           "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/manifest.json",
           "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i28-roof-20261009/manifest.json",
-          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i29-building-20261009/manifest.json"
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i29-building-20261009/manifest.json",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i30-processing-20261009/manifest.json"
         ],
         "task": "Viertel und Dachdetail desselben Plans vergleichen",
         "phase": "CITY-07",
@@ -1645,7 +1646,7 @@
           "state": "not_run"
         },
         "status": "open",
-        "gap": "Gable/Hip/Block/Hidden direkt teilbelegt. Complex angeboten, nur Beschriftungen in zwei Beobachtungen, Lots stellt Karte wieder her; vollständige Complex-Wirkung/Ursache offen. Processing/Raised/Solids, Einzelbearbeitung/Persistenz, Version und eigener Vergleich offen.",
+        "gap": "Gable/Hip/Block/Hidden und Processing/Raised/Solids direkt visuell teilbelegt. Complex nur Beschriftungen, Lots stellt Karte wieder her; vollständige Complex-Wirkung/Ursache offen. Processing-Dateigeometrie, Einzelbearbeitung/Persistenz, Version und eigener Vergleich offen.",
         "independentFunctionalRequirement": true,
         "mappingCoverage": "related_project_criteria_only; CO requirement remains independently required",
         "originalProbe": {
@@ -1665,6 +1666,12 @@
             "state": "hip_hidden_visual_effect_complex_result_unverified",
             "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i29-building-20261009/manifest.json",
             "result": "Hip zeigt zusätzliche diagonale Dachflächenlinien. Hidden blendet gewöhnliche Gebäude aus, Mauern/Fluss/Küste/Straßen und markante dunkle Gebäude bleiben sichtbar. Complex ausgewählt: zwei Beobachtungen zeigen nur Beschriftung/Grid/Kompass statt Kartenflächen; nach Lots-Rücksetzung Karte wieder sichtbar. Keine brauchbare Complex-Gebäudewirkung oder Originalursache belegt. Processing None/Offset als Optionen gelesen, Offset unverändert."
+          },
+          {
+            "run": "CITY-00-I30-I",
+            "state": "processing_raised_solids_visual_effect_observed",
+            "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i30-processing-20261009/manifest.json",
+            "result": "Processing Offset→None→Offset verändert angezeigte Gebäudeformen/Abstände. Raised on→off→on reduziert betonte versetzte Gebäudekanten. Solids on→off→on ersetzt dunkle Füllungen markanter Gebäude durch helle Darstellung. Lots/Plain unverändert; keine Geometrie-/Export-/Speicherwirkung geprüft."
           }
         ]
       },
@@ -3979,7 +3986,7 @@
     ],
     "functionalInventoryStatus": {
       "state": "partial_inventory_not_accepted",
-      "run": "CITY-00-I29-I",
+      "run": "CITY-00-I30-I",
       "products": 3,
       "candidates": 64,
       "directFormAreas": 13,
@@ -4018,7 +4025,8 @@
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i26-20261009-r01/manifest.json",
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i27-forest-20261009/manifest.json",
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i28-roof-20261009/manifest.json",
-        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i29-building-20261009/manifest.json"
+        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i29-building-20261009/manifest.json",
+        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i30-processing-20261009/manifest.json"
       ],
       "resultReferences": [
         {

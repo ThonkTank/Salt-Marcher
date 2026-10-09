@@ -4042,17 +4042,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I30-P",
-      "kind": "reference_planning",
-      "startedAt": "2026-10-09T15:10:57.743395+00:00",
-      "focus": "Processing/Raised/Solids konkret planen",
-      "state": "completed",
-      "result": "Drei getrennte Darstellungsproben mit Rücksetzung und begrenztem Scope geplant."
-    },
-    "nextRun": {
       "id": "CITY-00-I30-I",
       "kind": "reference_probe",
-      "focus": "Processing/Raised/Solids-Wirkung direkt prüfen"
+      "startedAt": "2026-10-09T15:13:30.790637+00:00",
+      "focus": "Processing/Raised/Solids-Wirkung prüfen",
+      "state": "completed",
+      "result": "Processing Offset→None→Offset verändert angezeigte Gebäudeformen/Abstände. Raised on→off→on reduziert betonte versetzte Gebäudekanten. Solids on→off→on ersetzt dunkle Füllungen markanter Gebäude durch helle Darstellung. Lots/Plain unverändert; keine Geometrie-/Export-/Speicherwirkung geprüft."
+    },
+    "nextRun": {
+      "id": "CITY-00-I30-R",
+      "kind": "reference_review",
+      "focus": "Darstellungsnachweise und Persistenzgrenzen prüfen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
