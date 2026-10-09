@@ -2,7 +2,7 @@
   "saltMarcherReplacement": {
     "schemaVersion": 1,
     "updated": "2026-10-09T16:52:30Z",
-    "state": "smr00_adr_p01_h03_i02_plan_second_review_changes_required",
+    "state": "smr00_adr_p01_h03_i02_n02_repair_candidate_review_required",
     "plan": "ROADMAP-SALTMARCHER-REPLACEMENT.md",
     "platformAdr": "ROADMAP-SALTMARCHER-PLATFORM-ADR.md",
     "architecture": "ARCHITECTURE.md#plattformoffene-saltmarcher-ablösung",
@@ -98,7 +98,7 @@
     },
     "adrP01H03": {
       "run": "ADR-P01-H03-I02-P01-R02",
-      "state": "i02_p01_second_review_changes_required",
+      "state": "i02_p01_n02_repair_candidate_review_required",
       "document": "ROADMAP-SALTMARCHER-ADR-P01-H03-PLAN.md",
       "result": "Proposes a Linux-only native snapshot/capture/publish and parent/child recovery hypothesis using a durable Before snapshot from the immutable compare-and-write payload, independent target verification, exclusive current-name capture and no-replace publication, with a complete uncooperative-writer and fault matrix.",
       "contractCandidate": "f8fcdc1b2eacbfb17c7c5603f6c15cfd89c4296d",
