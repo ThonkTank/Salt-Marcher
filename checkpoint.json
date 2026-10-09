@@ -50,12 +50,15 @@
     },
     "p01BoundaryRepair": {
       "date": "2026-10-09",
-      "state": "first_candidate_no_go_product_repair_planned",
+      "state": "renderer_boundary_implementation_checked_independent_review_and_host_open",
       "plan": "ROADMAP-SALTMARCHER-P01-RENDERER-REPAIR-PLAN.md",
       "candidateBranch": "candidate/adr-p01-linux",
       "candidateReceipt": "tools/adr-prototypes/evidence/p01-aggregate.json",
       "finding": "Renderer import graph reaches node:buffer and pngjs through src/textures.ts; prototype build must also resolve the existing worker alias without changing product source.",
-      "next": "Browser-native PNG decode as a separate product repair, then a fresh P01 candidate and independent review; P01 remains open."
+      "browserPixelEvidence": "/home/aaron/.cache/dungeon-native-qa/p01-browser-decode-20261009/result.json",
+      "rendererBundleEvidence": "/home/aaron/.cache/dungeon-native-qa/p01-browser-decode-20261009/bundle-result.json",
+      "verification": "Typecheck, 240 tests and product build pass; browser decode retains the four sampled visible colors, and the isolated renderer bundle has no privileged import. Old object-alpha host harness stops at its obsolete Paketobjekt selector; no real Obsidian approval.",
+      "next": "Independent review of browser decode and an updated Obsidian colorable-object edit/reopen run; then fresh P01 candidate. P01 remains open."
     },
     "open": [
       "Executable ADR-P01 through ADR-P04 and ADR-C01 proof, review, repair and cleanup runs",
@@ -72,7 +75,7 @@
   },
   "saltMarcherCatalogEncounter": {
     "date": "2026-10-09",
-  "state": "ce01_n01_reviewed_host_acceptance_next",
+    "state": "ce01_n01_reviewed_host_acceptance_next",
     "plan": "ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md",
     "architecture": "ARCHITECTURE.md#geplante-katalog--und-encounter-erweiterung",
     "acceptance": "acceptance.json.saltMarcherCatalogEncounter",
@@ -85,7 +88,10 @@
       "plan": "ROADMAP-SALTMARCHER-CE01-PLAN.md",
       "verification": {
         "check": "passed",
-        "tests": {"passed": 235, "failed": 0},
+        "tests": {
+          "passed": 235,
+          "failed": 0
+        },
         "domHarness": "passed",
         "build": "passed"
       },
@@ -101,7 +107,10 @@
       "result": "Shared catalog asset identity, hash-gated gzip/Base64 virtual module, lazy memoized loader, explicit capability errors, retry and reproducible build inventory. No catalog UI or acceptance approval.",
       "verification": {
         "check": "passed",
-        "tests": {"passed": 222, "failed": 0},
+        "tests": {
+          "passed": 222,
+          "failed": 0
+        },
         "build": "passed",
         "inventory": {
           "sourceBytes": 832272,
@@ -123,7 +132,10 @@
       "result": "Registered dungeon-creature-catalog ItemView and Monsterkatalog command with unique-leaf focus, retained serializable session, core filters, deterministic sort, 50-row paging, mouse/keyboard selection, full read-only statblock and directly reachable license notice.",
       "verification": {
         "check": "passed",
-        "tests": {"passed": 225, "failed": 0},
+        "tests": {
+          "passed": 225,
+          "failed": 0
+        },
         "build": "passed",
         "inventory": {
           "sourceBytes": 832272,
@@ -151,7 +163,10 @@
       "result": "Complete 2014 filter projection, multi-value controls, removable chips/reset, correctable range feedback, stale-safe 200-ms drafts, atomic host-lifecycle draft persistence, deterministic keyboard focus and responsive catalog container. State, content controller and DOM harness are host-neutral behind an injected port; Obsidian is a separately tested thin adapter. Scroll resets capture the old DOM before applying the requested zero position.",
       "verification": {
         "check": "passed",
-        "tests": {"passed": 235, "failed": 0},
+        "tests": {
+          "passed": 235,
+          "failed": 0
+        },
         "build": "passed",
         "domHarness": "passed"
       },
@@ -174,11 +189,17 @@
       "id": "CE-01-N01",
       "kind": "repair_implementation_and_review",
       "state": "completed_checked_reviewed",
-      "commits": ["2c86971", "e93e2ba"],
+      "commits": [
+        "2c86971",
+        "e93e2ba"
+      ],
       "result": "One in-flight catalog opener now preserves and reveals a canonical leaf while removing duplicates; keyboard focus performs selector-safe dataset comparison for arbitrary parser-accepted IDs.",
       "verification": {
         "check": "passed",
-        "tests": {"passed": 239, "failed": 0},
+        "tests": {
+          "passed": 239,
+          "failed": 0
+        },
         "build": "passed",
         "mainBytes": 1356752,
         "mainJsGrowthBytes": 167382,
@@ -3983,13 +4004,27 @@
   "cokAdapterTests": {
     "date": "2026-10-09",
     "scope": "Fünf offline Lock-, Identitäts- und Zielpfadtests in den Standardaufruf npm test aufgenommen.",
-    "files": ["package.json", "tests/canvas-of-kings-session.test.mjs"],
-    "verification": {"targeted": {"passed": 5, "failed": 0}, "npmTest": {"passed": 206, "failed": 0}, "check": "passed", "build": "passed"},
+    "files": [
+      "package.json",
+      "tests/canvas-of-kings-session.test.mjs"
+    ],
+    "verification": {
+      "targeted": {
+        "passed": 5,
+        "failed": 0
+      },
+      "npmTest": {
+        "passed": 206,
+        "failed": 0
+      },
+      "check": "passed",
+      "build": "passed"
+    },
     "limitation": "Nur Offline-Adaptertests; keine zusätzliche COK-Laufzeit- oder GUI-Abnahme."
   },
   "gmProductTesting": {
     "date": "2026-10-09",
-    "state": "gm_ux_002_asset_search_finding_assigned_waiting_retest",
+    "state": "gm_ux_n002_product_retest_passed_continue_long_gm_workflow",
     "plan": "ROADMAP-GM-PRODUCT-TESTING-PLAN.md",
     "focus": "Längere GM-Endanwenderabläufe, häufige Aktionen, Bedienkosten und UI-Überladung; belegte Nacharbeiten beauftragen und nachprüfen.",
     "currentRun": "GM-UX-01",
@@ -4023,7 +4058,7 @@
       {
         "id": "GM-UX-002",
         "priority": "P2-Kandidat",
-        "status": "reproduziert_auf_integriertem_build_nacharbeit_beauftragt",
+        "status": "cloud_retest_passed_issue1_reported",
         "kind": "Eigene UI-Beobachtung; Cloud/Testvault; keine physische Eingabeabnahme",
         "build": "Obsidian 1.14.4; Produktcommit 7f43d7e152671fbd96b59a134016033d71829a50; main.js SHA-256 346f607b16dbfea258dbcbaf234988f1201454a3ea11d14593ae397b559c49c1",
         "scenario": "GM Asset Test, 1024x800 Appfenster; selbst erzeugtes synthetisches Paket mit ausdrücklicher Freigabe; drei Objektassets",
@@ -4034,7 +4069,17 @@
         "latency": "Keine Produktlatenz gemessen. CDP-, Skript- und Wartezeiten werden nicht als Produktzeiten gewertet.",
         "evidence": "/workspace/scratch/gm-cloud-qa/97-map-specific-assets-modal.png, 98-pack-enabled-for-map.png, 99-library-after-enable.png, 102-crate-search-results.png, 106-search-repeat.png, 119-current-build-crate-search.png, 121-ten-objects-current-build.png, 122-ten-objects-reopen.png, 123-search-clear-current-build.png, 124-current-build-undo.png, 125-current-build-redo.png",
         "proposedTask": "GM-UX-N-002: Dungeon-Verantwortlicher (lokaler Dungeon-Strang 01a1204f-d184-7567-bfb3-d3ab06a0d07e) bearbeitet nur src/features/objekte/object-library-panel.ts und nötige Suchzustandslogik. Abnahme mit mindestens drei Assets: Tippen aktualisiert Treffer ohne Enter; Wechsel auf einen zweiten Namen aktualisiert direkt; × leert Suche und stellt alle Treffer wieder her. Filter/Tags/Kachelauswahl bleiben bedienbar. Danach zehn Objekte platzieren, Undo/Redo, speichern und frisch öffnen; kein Objektverlust.",
-        "coordination": "Issue #1 Kommentar 6082352187"
+        "coordination": "Issue #1 Kommentar 6082352187",
+        "retest": {
+          "date": "2026-10-09",
+          "productCommit": "706627cb36a5f4063e9e84268954eda62193e6a6",
+          "productCodeCommit": "997db05 (integriert)",
+          "buildSha256": "98a41635abb5e0250b9daf4d275be4bc6fe68356d27701f8a30a949faca2c364",
+          "host": "Eigener Obsidian-1.14.4-Cloudhost, isolierter Vault, UI 1024x800; Build frisch erstellt und in Pluginhost geladen.",
+          "result": "Bestanden: Wooden Crate-Eingabe aktualisiert die Kachel ohne Enter; Wechsel zu Oak Barrel aktualisiert direkt; × leert den Text und zeigt alle drei Assets. „Suche zurücksetzen“ lässt den Text stehen und zeigt alle drei Assets. Kachelauswahl funktionierte. Zehn Objekte (4/3/3) platziert; Ctrl+Z nahm die letzte Platzierung sichtbar zurück, Ctrl+Shift+Z stellte sie her. Save, Tab schließen und erneutes Öffnen über Schnellschalter erhielten alle zehn Objekte. Tags-Ansicht war erreichbar, aber Fixture enthält keine Tags, daher kein Urteil zur Tagpflege. Keine Produktlatenz gemessen. Auf erneut vorgerücktem sauberem 706627c-Build (Asset-Vorschaurenderer) Suche erneut bestanden; nach Hostreload alle zehn gespeicherten Objekte sichtbar. Vollständiger Undo/Redo/Save/Reopen-Lauf zuvor auf dem gleichen Produktcode/hash aus d65538b; Änderungsbereich im Folgecommit veränderte nur Asset-Preview.",
+          "evidence": "/workspace/scratch/gm-cloud-qa/142-n002-pass-integrated-latest.png; 135-n002-ten-placed.png; 136-n002-undo.png; 137-n002-redo.png; 138-n002-saved.png; 139-n002-quick-switch.png; 140-n002-fresh-reopen.png; 141-reloaded-618a7f2.png; /workspace/scratch/gm-cloud-qa/151-n002-latest-build-pass.png",
+          "coordination": "Issue #1 Kommentar 6083198759; unabhängiger Nachtest gemeldet. Latest-build-Nachtrag Issue #1 Kommentar 6083286156."
+        }
       }
     ],
     "blocker": "Cloud-Testassets sind selbst erzeugte, ausdrücklich freigegebene synthetische Fixture-Daten; Original-Dungeondraft-Pakete und deren Produktabnahme bleiben offen. Kein Cloud-Test nutzt oder ändert Nutzerkarten.",
@@ -4045,7 +4090,7 @@
       "state": "completed",
       "supersedes": "GM-UX-ACCESS; Slotanfrage gemäß Nutzerkorrektur aufgehoben"
     },
-    "next": "GM-UX-N-002 nach regulärer Integration im selben Cloud-Ablauf erneut prüfen. GM-UX-OBS-01 in derselben Szene mit breiterem Fenster vergleichen. Spielansicht und spontane Informationssuche fortsetzen; Atlas-Zoomfolge nur testen, soweit implementiert.",
+    "next": "GM-UX-OBS-01 in derselben Szene bei breiterem Fenster vergleichen; danach Spielansicht und spontane Informationssuche im längeren Nebelwacht-Ablauf fortsetzen. Atlas-Zoomfolge nur testen, soweit implementiert.",
     "automation": "Stündliche GM-Produkttests in eigener Cloud; keine Laptop-Slotfreigabe erforderlich.",
     "executionEnvironment": "Eigene Cloud-Umgebung, getrennt vom Laptop der Kollegen",
     "cloudHost": {
@@ -4063,28 +4108,26 @@
         800
       ],
       "input": "Playwright/CDP über sichtbare UI; keine physische Eingabeabnahme",
-      "productCommit": "7f43d7e152671fbd96b59a134016033d71829a50",
-      "buildSha256": "346f607b16dbfea258dbcbaf234988f1201454a3ea11d14593ae397b559c49c1",
-      "verified": "Nach App-Neustart mit integriertem Commit 7f43d7e die selbst erstellte Karte GM Asset Test geöffnet. Kartenbibliothek für Karte aktiviert, drei synthetische Objektassets gesucht, zehn Objekte wiederholt platziert, Undo/Redo, Speichern und Tab schließen/frisches Öffnen; alle zehn und drei Assets sichtbar. Such-/Reset-Verhalten reproduziert. Keine Produktlatenz gemessen.",
+      "productCommit": "706627cb36a5f4063e9e84268954eda62193e6a6",
+      "buildSha256": "98a41635abb5e0250b9daf4d275be4bc6fe68356d27701f8a30a949faca2c364",
+      "verified": "Frischer, sauberer Build aus integriertem 706627c (Asset-Vorschaurenderer eingeschlossen) in isoliertem Obsidian 1.14.4 neu geladen. N-002-Suche erneut sichtbar bestanden: Tippen/Begriffwechsel aktualisiert Kachel ohne Enter, × zeigt alle drei Testassets; nach App-Neustart sind alle zehn gespeicherten Objekte sichtbar. Keine Produktlatenz gemessen.",
       "evidence": [
-        "97-map-specific-assets-modal.png",
-        "98-pack-enabled-for-map.png",
-        "99-library-after-enable.png",
-        "119-current-build-crate-search.png",
-        "121-ten-objects-current-build.png",
-        "122-ten-objects-reopen.png",
-        "123-search-clear-current-build.png",
-        "124-current-build-undo.png",
-        "125-current-build-redo.png"
+        "151-n002-latest-build-pass.png",
+        "142-n002-pass-integrated-latest.png",
+        "135-n002-ten-placed.png",
+        "136-n002-undo.png",
+        "137-n002-redo.png",
+        "138-n002-saved.png",
+        "140-n002-fresh-reopen.png"
       ],
       "initialization": "Erste Eingaben während Hoststart ohne sichtbare Wirkung; später Befehlsleiste und Editor bedienbar. Kein reproduzierter Produktbefund."
     },
     "latestScenario": {
       "environment": "Obsidian 1.14.4; eigener Cloud-Container; App 1024x800; sichtbare UI über Playwright/CDP; kein physischer Input",
-      "builtProductCommit": "7f43d7e152671fbd96b59a134016033d71829a50",
-      "buildSha256": "346f607b16dbfea258dbcbaf234988f1201454a3ea11d14593ae397b559c49c1",
-      "completed": "GM Asset Test auf dem integrierten Build: ein selbst erzeugtes, freigegebenes Paket mit drei Assets importiert und in der Kartenbibliothek aktiviert; Objektname gesucht; zehn Objekte aus drei Assets platziert. Ctrl+Z nahm die letzte Platzierung sichtbar zurück, Ctrl+Shift+Z stellte sie wieder her. Speichern, Tab schließen und frisch öffnen erhielten alle zehn Objekte und die Paketverknüpfung. Separat fortbestehend: Nebelwacht-Ablauf mit zwölf Räumen auf zwei Geschossen, Verbindungen/Türen und geänderter Raum-12-Notiz nach Speichern/Neuöffnung; Spielansicht und Raum-Key waren sichtbar.",
-      "limitations": "Der Asset-Suchablauf zeigt reproduzierbares Enter-/Reset-Verhalten; Nacharbeit GM-UX-N-002 in Issue #1 beauftragt. Produktlatenz nicht gemessen. Die schmale Spielansicht wurde bei 1024x800 erneut sichtbar; noch keine breitere Fenstervergleichsreihe. Keine Original-Paketlizenzabnahme; Atlas-Zoomfolge nicht getestet.",
+      "builtProductCommit": "706627cb36a5f4063e9e84268954eda62193e6a6",
+      "buildSha256": "98a41635abb5e0250b9daf4d275be4bc6fe68356d27701f8a30a949faca2c364",
+      "completed": "GM Asset Test auf dem integrierten Build: ein selbst erzeugtes, freigegebenes Paket mit drei Assets importiert und in der Kartenbibliothek aktiviert; Objektname gesucht; zehn Objekte aus drei Assets platziert. Ctrl+Z nahm die letzte Platzierung sichtbar zurück, Ctrl+Shift+Z stellte sie wieder her. Speichern, Tab schließen und frisch öffnen erhielten alle zehn Objekte und die Paketverknüpfung. Separat fortbestehend: Nebelwacht-Ablauf mit zwölf Räumen auf zwei Geschossen, Verbindungen/Türen und geänderter Raum-12-Notiz nach Speichern/Neuöffnung; Spielansicht und Raum-Key waren sichtbar. GM-UX-N-002 zusätzlich im selben isolierten Host auf frischem Build aus 618a7f2 nachgetestet: Suche mit Wooden Crate zeigte sofort eine Kachel; Wechsel auf Oak Barrel zeigte sofort die andere Kachel; × stellte alle drei wieder her. Zehn Objekte platziert, Ctrl+Z/ Ctrl+Shift+Z sichtbar geprüft, gespeichert, Tab geschlossen und über Schnellschalter frisch geöffnet; alle zehn blieben sichtbar. Issue-1-Ergebnisbericht 6083198759. Anschließend über den Obsidian-Schnellschalter GM-UX-01 Nebelwacht frisch geöffnet; gespeicherte Karte mit nummerierten Räumen und Verbindung sichtbar. Doppelklick auf Raum 1 markierte den Raum (keine Notiz geöffnet). Beim Zurückkehren zum Obsidian-Layout erschien der Karteninhalt in einem ca. 274 px breiten rechten Split neben einem leeren New-tab-Bereich; Bildschirmbeleg 149. Dies bestätigt die konkrete Split-Anordnung, aber vergleicht noch kein maximiertes Fenster. Nach Remote-Vorschub bis 706627c (enthält Asset-Vorschaurenderer) sauberer Build neu erstellt und im isolierten Obsidian-Host neu geladen. Suchfolge Wooden Crate→Oak Barrel→× wiederholt; 1/1/3 Kacheln ohne Enter. Nach App-Neustart alle zehn zuvor gespeicherten Objekte sichtbar. Aktueller Build-Beleg 151-n002-latest-build-pass.png; Issue-1-Nachtrag 6083286156. Undo/Redo/Save/Close/Reopen wurden im bisherigen vollständigen Lauf auf gleichem Produktcode getestet; der integrierte Produktbuild 618a7f2 davor war quellgleich (gleicher main.js-Hash).",
+      "limitations": "Keine Produktlatenz gemessen. Tags-Ansicht erreichbar, aber synthetische Fixture enthält keine Tags; Tagpflege daher nicht abgenommen. Die schmale Spielansicht bei 1024x800 bleibt viewportgebundene Beobachtung und braucht breiteren Vergleich. Keine Original-Paketlizenzabnahme; Atlas-Zoomfolge nicht getestet.",
       "evidence": [
         "49-second-floor-rooms.png",
         "51-second-floor-doors.png",
@@ -4107,16 +4150,31 @@
         "125-current-build-redo.png",
         "116-playview-tab2.png",
         "75-real-reopen.png",
-        "76-reopen-second-floor.png"
+        "76-reopen-second-floor.png",
+        "142-n002-pass-integrated-latest.png",
+        "135-n002-ten-placed.png",
+        "136-n002-undo.png",
+        "137-n002-redo.png",
+        "138-n002-saved.png",
+        "139-n002-quick-switch.png",
+        "140-n002-fresh-reopen.png",
+        "141-reloaded-618a7f2.png",
+        "144-nebelwacht-quick-switch.png",
+        "145-nebelwacht-reopened.png",
+        "146-nebelwacht-room-interaction.png",
+        "147-nebelwacht-menu.png",
+        "148-nebelwacht-play-session.png",
+        "149-nebelwacht-narrow-layout.png",
+        "151-n002-latest-build-pass.png"
       ]
     },
     "openObservations": [
       {
         "id": "GM-UX-OBS-01",
-        "status": "beobachtet_einmal_nicht_als_fehler_priorisiert",
-        "observation": "Im 1024x800-Obsidian-Split war die Karten-Spielansicht schmal; bei Geschosswechsel war die Karte zunächst außerhalb des sichtbaren Ausschnitts und nach Einpassen sichtbar. Einige rechte Steuerungen lagen außerhalb des Viewports, ließen sich aber per Tabulator erreichen. Bei einem erneuten Aufruf auf dem aktuellen Build blieb die Kartenfläche in einem rechten Split von ca. 274 px Breite; Teile der Steuerleiste lagen rechts außerhalb des 1024x800-App-Viewports. Weiterhin nur viewportgebundene Beobachtung, noch kein Nacharbeitsauftrag.",
+        "status": "viewport_split_reproduced_broader_window_comparison_open",
+        "observation": "Im 1024x800-Obsidian-Split war die Karten-Spielansicht schmal; bei Geschosswechsel war die Karte zunächst außerhalb des sichtbaren Ausschnitts und nach Einpassen sichtbar. Einige rechte Steuerungen lagen außerhalb des Viewports, ließen sich aber per Tabulator erreichen. Bei einem erneuten Aufruf auf dem aktuellen Build blieb die Kartenfläche in einem rechten Split von ca. 274 px Breite; Teile der Steuerleiste lagen rechts außerhalb des 1024x800-App-Viewports. Weiterhin nur viewportgebundene Beobachtung, noch kein Nacharbeitsauftrag. Auf erneutem Cloud-Lauf frisch über den Schnellschalter geöffnet; die Nebelwacht-Karte war sichtbar. Das Zurückkehren zum Obsidian-Layout zeigte sie als schmale rechte Pane von etwa 274 px neben einem leeren zentralen Tab. Ein maximiertes Fenster/volle Editorbreite wurde noch nicht erfolgreich verglichen.",
         "impact": "Mögliche Reibung für simultanes Leiten mit offener Raum-Notiz. Der Befund trat in der konkreten geteilten Fensteranordnung auf; weitere Fensterbreiten/GM-Abläufe vergleichen, bevor Nacharbeit beauftragt wird.",
-        "evidence": "/workspace/scratch/gm-cloud-qa/59-play-view.png, 63-tab-to-controls.png, 64-play-floor-switch.png, 68-play-fit.png, /workspace/scratch/gm-cloud-qa/116-playview-tab2.png"
+        "evidence": "/workspace/scratch/gm-cloud-qa/59-play-view.png, 63-tab-to-controls.png, 64-play-floor-switch.png, 68-play-fit.png, /workspace/scratch/gm-cloud-qa/116-playview-tab2.png, /workspace/scratch/gm-cloud-qa/145-nebelwacht-reopened.png, /workspace/scratch/gm-cloud-qa/149-nebelwacht-narrow-layout.png"
       }
     ]
   }

@@ -1,5 +1,4 @@
-import { Buffer } from "node:buffer";
-import { PNG } from "pngjs";
+import { decodeBrowserImagePixels } from "./browser-image-pixels";
 import {
   recolorColorableObjectRgba,
   type ColorableObjectSettings,
@@ -8,7 +7,7 @@ import {
 export interface LibraryTilePixels {
   readonly width: number;
   readonly height: number;
-  readonly rgba: Uint8Array;
+  readonly rgba: Uint8Array | Uint8ClampedArray;
 }
 
 export type LibraryTileEncoder = (
@@ -73,9 +72,6 @@ export function createObjectLibraryTilePreview(
   source: Blob,
   settings: ColorableObjectSettings,
 ): ObjectLibraryTilePreview {
-  const pixels = source.arrayBuffer().then((bytes) => {
-    const png = PNG.sync.read(Buffer.from(bytes));
-    return { width: png.width, height: png.height, rgba: png.data };
-  });
+  const pixels = decodeBrowserImagePixels(source);
   return new ObjectLibraryTilePreview(image, pixels, settings);
 }
