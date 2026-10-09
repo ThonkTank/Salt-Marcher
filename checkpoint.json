@@ -4253,17 +4253,17 @@
     "state": "city01_model_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-01-PREP-EDIT-PLAN-CLEAN-R03",
-      "kind": "cleanup_review",
-      "startedAt": "2026-10-09T17:04:51.540191+00:00",
-      "focus": "Finalen Fachaktionsplan gegen vorhandene Verträge prüfen",
-      "state": "completed",
-      "result": "Zehn Aktionen, Identitätsschutz und Paketvalidierung geprüft; keine Restlücke im Plan-Aufräumumfang, keine Funktionsabnahme."
-    },
-    "nextRun": {
       "id": "CITY-01-PREP-I03",
       "kind": "implementation",
-      "focus": "CityEdit/editCity mit gezielten Graph-/Haus-/Paketregressionen implementieren"
+      "startedAt": "2026-10-09T17:06:09.576602+00:00",
+      "focus": "Reine Straßen-/Hausaktionen und Paketregressionen implementieren",
+      "state": "completed",
+      "result": "Zehn Aktionen mit Identitätsschutz und Endvalidierung implementiert; sieben Fachtests und gesamte Basisprüfung grün. Separater Review folgt."
+    },
+    "nextRun": {
+      "id": "CITY-01-PREP-R04",
+      "kind": "review",
+      "focus": "Fachaktionen gegen Plan und unabhängige Referenz-/Datenverlustproben prüfen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
