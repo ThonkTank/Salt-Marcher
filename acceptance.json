@@ -27756,7 +27756,13 @@
         }
       ],
       "initialOriginalScope": "13 frühe Umfänge nach Plan ausreichend belegt; Fall-Gesamtproben und spätere Pflichten bleiben offen. Prüflogik/Datenvertrag muss diese Grenze ausdrücklich abbilden.",
-      "limits": "Keine vollständige Oberflächenfreigabe; Kandidatenliste für fehlende/unklare Choices ist begrenzt. Neue Reviewkritik ersetzt keine ungeprüften Oberflächenbelege."
+      "limits": "Keine vollständige Oberflächenfreigabe; Kandidatenliste für fehlende/unklare Choices ist begrenzt. Neue Reviewkritik ersetzt keine ungeprüften Oberflächenbelege.",
+      "repairPlan": {
+        "path": "ROADMAP-HEX-00-REPAIR-PLAN.md",
+        "run": "HEX-00-N-P01",
+        "state": "planned",
+        "focus": "Sechs begrenzte Pflichtbefunde; explizite frühe Abnahme und später fällige Varianten, keine automatische Torfreigabe."
+      }
     },
     "policy": {
       "sourceRule": "Paketpfade und Dokumentation sind Suchhinweise. Ausschließlich direkt gemessene Bedienfolgen und Wirkungen gelten als Originalbeleg.",
