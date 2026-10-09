@@ -3733,17 +3733,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I18-I",
-      "kind": "resident_reference_probe",
-      "startedAt": "2026-10-09T13:35:26.008969+00:00",
-      "focus": "FTG-Bewohnerzugang direkt prüfen",
-      "state": "completed",
-      "result": "Population-Favoriten leer; geschütztes Haus und29 Gebäude erhalten. Ein Detailabruf Netzwerkfehler, zweiter kein Detail im Beobachtungsfenster; zwei Versuche gestoppt, keine Bewohnerfunktion belegt."
-    },
-    "nextRun": {
       "id": "CITY-00-I18-R",
       "kind": "reference_review",
-      "focus": "Zugangsergebnis und Schutzbehauptungen prüfen"
+      "startedAt": "2026-10-09T13:35:45.539926+00:00",
+      "focus": "Belegumfang und Zugangsgrenze prüfen",
+      "state": "completed",
+      "result": "I18-R01: Rohbilder wahrheitsgemäß als Fehler-/Ladezustand beschriften; zweites Beobachtungsende nicht als terminalen Requestfehler deuten. Keine Originalfunktion abgenommen."
+    },
+    "nextRun": {
+      "id": "CITY-00-I18-CP",
+      "kind": "cleanup_planning",
+      "focus": "Caption-Grenzen und Rohschutz planen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
