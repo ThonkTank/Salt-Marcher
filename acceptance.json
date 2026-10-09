@@ -319,7 +319,14 @@
       "review": "Independent read-only review approved the automated scope after lifecycle receipts bound unique systemd and Obsidian process identities and normal non-forced exit for all three runs.",
       "limits": "CE-AC-01, CE-AC-02 and CE-AC-14 remain open until the remaining product lifecycle and physical acceptance gates are completed. Playwright input is not physical keyboard/mouse evidence; screenreader and other-platform checks were not run."
     },
-    "next": "CE-01-C01 reconciles the reviewed automated H01 evidence while preserving physical-input, screenreader and other-platform gates as open; CE-02 planning may proceed without treating CE-01 as fully approved."
+    "ce01C01Plan": {
+      "run": "CE-01-C01-P01",
+      "state": "completed_static_validation_review_pending",
+      "document": "ROADMAP-SALTMARCHER-CE01-C01-PLAN.md",
+      "scope": "One host-neutral restore/default helper backed by the existing draft mapping, focused state and DOM regressions, removal of one unused host-scenario dependency, and exact-candidate repetition of all three automated H01 scenarios.",
+      "limits": "Plan only. No cleanup implementation or approval; physical keyboard/mouse, screenreader and other-platform acceptance remain open."
+    },
+    "next": "Independently review CE-01-C01-P01, then implement and review the bounded cleanup. CE-02 planning may proceed, but implementation waits for the cleanup review and CE-01 remains without full approval while physical-input, screenreader and other-platform gates are open."
   },
   "cityPlans": {
     "schemaVersion": 1,
