@@ -1,7 +1,7 @@
 const VIEW = "dungeon-creature-catalog";
 const COMMAND = "dungeon-editor:open-creature-catalog";
 
-module.exports = ({ page, fs, path, assert, crypto, qa, out, checks, sleep }) => {
+module.exports = ({ page, fs, path, assert, qa, out, checks, sleep }) => {
   const baseline = path.join(qa, "ce01-catalog-baseline.json");
   const root = () => page.locator(".dn-creature-catalog:visible").last();
   const serializable = (value) => JSON.parse(JSON.stringify(value));

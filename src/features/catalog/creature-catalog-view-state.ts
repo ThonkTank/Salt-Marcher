@@ -51,7 +51,8 @@ export type CreatureCatalogTextFilter = "text" | "movement" | "senses" | "vulner
 export type CreatureCatalogDraftKey = "textDraft" | "movementDraft" | "sensesDraft" |
   "vulnerabilitiesDraft" | "resistancesDraft" | "immunitiesDraft" | "conditionImmunitiesDraft";
 
-const DRAFT_FILTERS: readonly [CreatureCatalogTextFilter, CreatureCatalogDraftKey][] = [
+export const CREATURE_CATALOG_DRAFT_FILTERS:
+readonly [CreatureCatalogTextFilter, CreatureCatalogDraftKey][] = [
   ["text", "textDraft"],
   ["movement", "movementDraft"],
   ["senses", "sensesDraft"],
@@ -65,6 +66,12 @@ export interface CreatureCatalogFilterChip {
   readonly key: CreatureCatalogFilterKey;
   readonly value?: string;
   readonly label: string;
+}
+
+export interface RestoredCreatureCatalogViewState extends CreatureCatalogViewState {
+  readonly sort: CreatureCatalogSort;
+  readonly direction: "asc" | "desc";
+  readonly page: number;
 }
 
 const ARRAY_FILTERS: readonly CreatureCatalogArrayFilter[] =
@@ -151,6 +158,21 @@ export function normalizeCreatureCatalogViewState(
   };
 }
 
+export function restoreCreatureCatalogViewState(
+  value: Record<string, unknown>,
+): RestoredCreatureCatalogViewState {
+  const normalized = normalizeCreatureCatalogViewState(value);
+  const restored: Record<string, unknown> = {
+    ...normalized,
+    sort: normalized.sort ?? "name",
+    direction: normalized.direction ?? "asc",
+    page: normalized.page ?? 0,
+  };
+  for (const [filterKey, draftKey] of CREATURE_CATALOG_DRAFT_FILTERS)
+    restored[draftKey] = normalized[draftKey] ?? normalized[filterKey];
+  return restored as unknown as RestoredCreatureCatalogViewState;
+}
+
 export function creatureCatalogQueryForState(
   state: CreatureCatalogViewState,
 ): CreatureCatalogQuery {
@@ -219,8 +241,8 @@ export function removeCreatureCatalogFilter(
 
 export function resetCreatureCatalogFilters(state: CreatureCatalogViewState): CreatureCatalogViewState {
   const next = { ...state } as Record<string, unknown>;
-  for (const key of [...ARRAY_FILTERS, ...SCALAR_FILTERS, "textDraft", "movementDraft", "sensesDraft",
-    "vulnerabilitiesDraft", "resistancesDraft", "immunitiesDraft", "conditionImmunitiesDraft"])
+  for (const key of [...ARRAY_FILTERS, ...SCALAR_FILTERS,
+    ...CREATURE_CATALOG_DRAFT_FILTERS.map(([, draftKey]) => draftKey)])
     delete next[key];
   next.page = 0;
   next.resultsScroll = 0;
@@ -232,7 +254,7 @@ export function applyCreatureCatalogDrafts(
 ): CreatureCatalogViewState {
   const next = { ...state } as Record<string, unknown>;
   let changed = false;
-  for (const [filterKey, draftKey] of DRAFT_FILTERS) {
+  for (const [filterKey, draftKey] of CREATURE_CATALOG_DRAFT_FILTERS) {
     if (!(draftKey in state)) continue;
     const applied = state[draftKey]?.trim() || undefined;
     if (state[filterKey] === applied) continue;
