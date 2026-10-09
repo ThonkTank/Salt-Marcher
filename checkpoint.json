@@ -3617,17 +3617,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I11-R",
-      "kind": "requirements_review",
-      "startedAt": "2026-10-09T12:22:05.222112+00:00",
-      "focus": "Originalstraßenwirkung und Zuordnung prüfen",
-      "state": "completed",
-      "result": "Originalwirkung begrenzt belegt; R01 Quellzugang und R02 fehlende direkte Bearbeitungszuordnung bereinigen; keine Produktfreigabe"
-    },
-    "nextRun": {
       "id": "CITY-00-I11-CP",
       "kind": "cleanup_planning",
-      "focus": "Quell-/Verfügbarkeits-/CTY-Metadaten planen"
+      "startedAt": "2026-10-09T12:22:09.231284+00:00",
+      "focus": "Quellumfang und CTY-Mapping präzisieren",
+      "state": "completed",
+      "result": "R01 direkte temporäre Quelle/Zugänglichkeit und R02 additiveCTY002-Verknüpfung geplant; alte Quellen/IDs und offene Pflichten erhalten"
+    },
+    "nextRun": {
+      "id": "CITY-00-I11-CI",
+      "kind": "cleanup_implementation",
+      "focus": "Metadaten ohne neue Wirkungsbehauptung korrigieren"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
