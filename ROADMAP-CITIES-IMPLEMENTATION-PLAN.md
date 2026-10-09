@@ -1043,3 +1043,5 @@ CITY-00-I46-PLAN-CLEAN-I46 Start 2026-10-09T19:30:36.312160+00:00; Originalprobe
 CITY-00-I46-PLAN-CLEAN-R46 Start 2026-10-09T19:30:39.201603+00:00; Planlink/JSON und klar begrenzter Bewohner-/Tabschutz geprüft. Originalprobe kann beginnen.
 
 CITY-00-I46-I46 Start 2026-10-09T19:30:56.956Z; CO17 von Dokumentationskandidat zu echter Teilwirkung: zwei Bewohner gemeinsam umbenannt, Cancel geprüft und ursprüngliche Namen sichtbar wiederhergestellt. Beleg: /home/aaron/.cache/dungeon-native-qa/city-plans/city00-i46-bulk-20261009/manifest.json.
+
+CITY-00-I46-CLEAN-P46 Start 2026-10-09T19:36:02.852129+00:00; Aufräumplan: Auswahl-Save von Daten-Apply und sichtbare Wiederherstellung von voller Dateninvarianz trennen; Rawhashes schützen. Beleg: /home/aaron/.cache/dungeon-native-qa/city-plans/city00-i46-bulk-20261009/manifest.json.
