@@ -114,8 +114,8 @@
   },
   "saltMarcherCatalogEncounter": {
     "schemaVersion": 1,
-    "updated": "2026-10-09T16:26:42Z",
-    "state": "ce02_i01_reviewed_i02_plan_next_ce01_physical_open",
+    "updated": "2026-10-09T16:36:53Z",
+    "state": "ce02_i02_plan_drafted_review_pending_ce01_physical_open",
     "plan": "ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md",
     "architecture": "ARCHITECTURE.md#geplante-katalog--und-encounter-erweiterung",
     "sourceRepository": "ThonkTank/Salt-Marcher",
@@ -457,8 +457,16 @@
       "review": "Independent N01 re-review passed exact repair candidate 4d239004c4f000b2af6f66122a05135b0c353ffb without a remaining mandatory finding; the product remains the clean, checked commit 7469e64202e730175ee138136a69d82ad4f28ea6.",
       "limits": "No Item, saved Encounter, NPC, Faction, Place or Encounter-Table data is delivered; unavailable is not feature completion. No Encounter Builder, combat mutation, 2024 mode or physical/screenreader/platform acceptance. The local automated host smoke is scoped; all CE-AC cases remain open."
     },
-    "next": "Plan and independently review CE-02-I02 for the first real non-Monster owner, including exact item provenance, schema, unavailable/error boundaries and isolated section state. Keep the other five unavailable providers explicitly undelivered; CE-01 physical-input, screenreader and other-platform gates remain open."
-  },
+    "next": "Plan and independently review CE-02-I02 for the first real non-Monster owner, including exact item provenance, schema, unavailable/error boundaries and isolated section state. Keep the other five unavailable providers explicitly undelivered; CE-01 physical-input, screenreader and other-platform gates remain open.",
+    "ce02I02Plan": {
+      "run": "CE-02-I02-P01",
+      "state": "drafted_review_pending",
+      "document": "ROADMAP-SALTMARCHER-CE02-I02-PLAN.md",
+      "sourceDocument": "https://media.wizards.com/2023/downloads/dnd/SRD_CC_v5.1.pdf",
+      "sourceSha256": "2504d2a0abb0a4d491a939be4f17910a2dde0312570ab8d208080225ccf0a1f0",
+      "result": "Defines a local read-only SRD 5.1 equipment and magic-item catalog, reproducible corpus, schema, source attribution, typed isolated failures, Item query/detail UI and separate review/host gates.",
+      "limits": "Plan only; Item data/provider and five other data owners remain unavailable. All CE-AC, physical-input, screenreader and other-platform gates remain open."
+    }  },
   "cityPlans": {
     "schemaVersion": 1,
     "updated": "2026-10-09T15:18:47.917996+00:00",

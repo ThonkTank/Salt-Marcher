@@ -123,33 +123,17 @@
   },
   "saltMarcherCatalogEncounter": {
     "date": "2026-10-09",
-    "state": "ce02_i01_reviewed_i02_plan_next_ce01_physical_open",
+    "state": "ce02_i02_plan_drafted_review_pending_ce01_physical_open",
     "plan": "ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md",
     "architecture": "ARCHITECTURE.md#geplante-katalog--und-encounter-erweiterung",
     "acceptance": "acceptance.json.saltMarcherCatalogEncounter",
     "currentRun": {
-      "id": "CE-02-I01-N01-R01",
-      "kind": "review_finding_repair_review",
-      "state": "passed",
-      "focus": "Verify the exact CE-02-I01 product provenance and aligned review states without changing product bytes",
-      "plan": "ROADMAP-SALTMARCHER-CE02-PLAN.md",
-      "result": "Independent review passed exact repair candidate 4d239004c4f000b2af6f66122a05135b0c353ffb. Its product diff against the shared base is empty, both metadata files are valid and aligned, and the clean exact product check, 259-test run and build remain bound to 7469e64202e730175ee138136a69d82ad4f28ea6.",
-      "verification": {
-        "sourceRevision": "7469e64202e730175ee138136a69d82ad4f28ea6",
-        "metadataJson": "passed",
-        "productInputs": "unchanged from 7469e64202e730175ee138136a69d82ad4f28ea6",
-        "dirty": false,
-        "node": "v22.22.2",
-        "check": "passed",
-        "tests": {"passed": 259, "failed": 0},
-        "build": "passed",
-        "mainBytes": 1362196,
-        "mainSha256": "0856066aa2415455dbe2d6f3745bcab07488aa5361a20218cb828617ac904052",
-        "mainJsGrowthBytes": 172826,
-        "reviewedRepairCommit": "4d239004c4f000b2af6f66122a05135b0c353ffb"
-      },
-      "review": "Independent exact-head N01 re-review passed without a remaining mandatory finding. The repair changes metadata only, preserves the product bytes from 7469e64202e730175ee138136a69d82ad4f28ea6 and records honest open acceptance limits.",
-      "limits": "No new data owner, host acceptance or CE-02 approval. Physical input, screenreader and non-Linux platform acceptance remain open."
+      "id": "CE-02-I02-P01",
+      "kind": "feature_plan",
+      "state": "drafted_review_pending",
+      "focus": "Pinned official SRD 5.1 Item provenance, corpus/schema/generator contract, isolated provider and error states, implementation and host gates",
+      "plan": "ROADMAP-SALTMARCHER-CE02-I02-PLAN.md",
+      "result": "Plan drafted; no item data or provider implemented, no Item or CE-02 acceptance."
     },
     "implementationRun": {
       "id": "CE-01-I01",
@@ -326,10 +310,10 @@
       "Physical catalog input acceptance cannot be replaced by Playwright automation"
     ],
     "nextRun": {
-      "id": "CE-02-I02-P01",
-      "kind": "feature_plan",
-      "plan": "ROADMAP-SALTMARCHER-CE02-PLAN.md",
-      "focus": "Plan the first real non-Monster owner with item provenance, schema, unavailable/error boundaries and isolated section state; keep the other five owners unavailable and all CE-01 physical/screenreader/platform gates open"
+      "id": "CE-02-I02-P01-R01",
+      "kind": "independent_plan_review",
+      "plan": "ROADMAP-SALTMARCHER-CE02-I02-PLAN.md",
+      "focus": "Review exact commit for source/license provenance, corpus feasibility/completeness, schema/null semantics, fail-closed provider behavior, owner isolation and executable I02 gates"
     }
   },
   "repositoryWorkflow": {
