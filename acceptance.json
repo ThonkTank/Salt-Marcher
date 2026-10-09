@@ -99777,6 +99777,16 @@
       "plan": "ROADMAP-PARITY-PHASE7-REPAIR-PLAN.md",
       "scope": "One content-modal click after P7-1 selection mirror did not open the dialog",
       "gate": "open"
+    },
+    "phase7RepairImplementation": {
+      "date": "2026-10-09",
+      "state": "implementation_review_candidate",
+      "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase7-dialog-repair2-20261009/phase7-p7-1-repair-implementation.md",
+      "modalOwner": "/home/aaron/.cache/dungeon-native-qa/parity-phase7-modal-owner-20261009/evidence/1791506167305-parity-phase7-combined-edit/p7-content-dialog-trace.json",
+      "hostEdit": "/home/aaron/.cache/dungeon-native-qa/parity-phase7-dialog-repair2-20261009/evidence/1791506350139-parity-phase7-combined-edit/result.json",
+      "hostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase7-dialog-repair2-20261009/evidence/1791506383123-parity-phase7-combined-reopen/result.json",
+      "decision": "Host looked only in the main Obsidian document while the complete modal was rendered in an about:blank popout; corrected host pair passed. Separate review pending.",
+      "gate": "open"
     }
   }
 }

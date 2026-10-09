@@ -1,8 +1,8 @@
 const MAP = "Dungeons/Phase7QA/Karte.dungeon";
 const TEXT = "*Wortlaut der Phase-7-Probe.*\n[[QA/Beute|Beute]]\n";
 
-module.exports = ({ page, fs, path, assert, crypto, qa, vault, out, checks,
-  chooseTool, waitForFileAbsent }) => {
+module.exports = ({ page, browser, fs, path, assert, crypto, qa, vault, out, checks,
+  chooseTool, waitForFileAbsent, sleep }) => {
   const fixtures = require("./phase5-fixtures.cjs")({ fs, crypto, assert });
   const savedPath = path.join(qa, "phase7-combined-saved.json");
   const editor = () => page.evaluate(() => {
@@ -179,9 +179,24 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out, checks,
     assert.deepEqual((await editor()).selection, [packageObject.id]);
     await page.locator(".dn-group-rail").getByRole("button", { name: "Inhalte", exact: true }).click();
     await page.locator(".dn-tool-rail").getByRole("button", { name: "Dungeon-Inhalte", exact: true }).click();
-    await page.locator(".modal-container .modal").last()
+    let modalPage;
+    for (let attempt = 0; attempt < 120 && !modalPage; attempt++) {
+      for (const candidate of browser.contexts().flatMap((context) => context.pages())) {
+        if (!candidate.isClosed() && await candidate.locator(".modal-container .modal").count()) {
+          modalPage = candidate;
+          break;
+        }
+      }
+      if (!modalPage) await sleep(100);
+    }
+    assert(modalPage, "Dungeon-Inhalte-Dialog fehlt in allen Obsidian-Fenstern");
+    fs.writeFileSync(path.join(out, "p7-content-dialog-window.json"), JSON.stringify({
+      mainUrl: page.url(), modalUrl: modalPage.url(), separateWindow: modalPage !== page,
+    }, null, 2));
+    await modalPage.bringToFront();
+    await modalPage.locator(".modal-container .modal").last()
       .getByRole("button", { name: "Vorkommen anlegen", exact: true }).first().click();
-    const modal = page.locator(".modal-container .modal").last();
+    const modal = modalPage.locator(".modal-container .modal").last();
     await modal.locator("textarea").fill(TEXT);
     await modal.getByRole("button", { name: "Vorkommen anlegen", exact: true }).click();
     const linked = await editor(), feature = occurrence(linked);
@@ -193,7 +208,9 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out, checks,
     await snapshot("p7-linked-feature");
     checks.push("Selected package object links to feature A and exact V4 Markdown section");
 
-    await page.keyboard.press("Escape");
+    if (!modalPage.isClosed() && await modalPage.locator(".modal-container .modal").count())
+      await modalPage.keyboard.press("Escape");
+    await page.bringToFront();
     await chooseTool("Auswahl");
     await page.getByRole("button", { name: "Einpassen", exact: true }).click();
     await selectObjects();

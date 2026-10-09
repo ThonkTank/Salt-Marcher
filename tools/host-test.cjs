@@ -709,7 +709,7 @@ async function workflow() {
         renderCount: e.renderer.renderCount,
       };
     });
-  const scenarioContext = { page, fs, path, assert, crypto, PNG, root, qa, vault, sourceVault, restart, out, checks, chooseTool, editorAction, waitForFileAbsent, sleep, resolveQaAppCgroup };
+  const scenarioContext = { page, browser, fs, path, assert, crypto, PNG, root, qa, vault, sourceVault, restart, out, checks, chooseTool, editorAction, waitForFileAbsent, sleep, resolveQaAppCgroup };
   if (parityPhase7Vault) {
     const scenario = require("./host/parity-phase7-vault.cjs")(scenarioContext);
     if (restart) await scenario.reopen();
