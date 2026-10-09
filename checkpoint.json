@@ -3617,17 +3617,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I11-CR",
-      "kind": "cleanup_review",
-      "startedAt": "2026-10-09T12:22:50.162152+00:00",
-      "focus": "Quell-/Verweis- und Rohbildschutz prüfen",
-      "state": "completed",
-      "result": "R01/R02 geschlossen; Rohhashes und vorige Gebäudeprobe erhalten, additiveCTY-Zuordnung gültig,63 CO/24CTY offen; Galerieabschluss unverändert"
-    },
-    "nextRun": {
       "id": "CITY-00-I12-P",
       "kind": "early_reference_planning",
-      "focus": "Frühe FTG-Generierungsvorgaben und Namens-/Layoutwirkung planen; COKUndo weiterhin nach Slotfreigabe"
+      "startedAt": "2026-10-09T12:25:09.921751+00:00",
+      "focus": "Generierungsvorgaben ohne ersetzte Originalprobe planen",
+      "state": "completed",
+      "result": "Exportstop aus I04 respektieren; Vorgaben/benanntePresets/Namen und mögliche nichtdestruktive Vorschau erfassen, keine Generate-Aktion; bestehende Karte erhalten"
+    },
+    "nextRun": {
+      "id": "CITY-00-I12-I",
+      "kind": "reference_controls_probe",
+      "focus": "Originalformular und erreichbare Vorschau prüfen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
