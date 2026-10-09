@@ -3909,17 +3909,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I25-P",
-      "kind": "reference_planning",
-      "startedAt": "2026-10-09T14:27:52.797617+00:00",
-      "focus": "Baumflag und tatsächliche Umgebungsgeometrie planen",
-      "state": "completed",
-      "result": "Begrenzte Show-trees-Probe mit tatsächlichen Vorher/Nachher-Dateien geplant; Forest-Zugang separat offen."
-    },
-    "nextRun": {
       "id": "CITY-00-I25-I",
       "kind": "tree_reference_probe",
-      "focus": "Baumdarstellung und tatsächliche Ausgabe direkt prüfen"
+      "startedAt": "2026-10-09T14:30:35.268747+00:00",
+      "focus": "Baumdarstellung und tatsächliche Umgebungsgeometrie prüfen",
+      "state": "completed",
+      "result": "trees0→13 Punkte, andere13 Gruppen wertgleich; Show forests nach Show trees bedienbar. Ausgangsflag zurückgesetzt."
+    },
+    "nextRun": {
+      "id": "CITY-00-I25-R",
+      "kind": "reference_review",
+      "focus": "Baumnachweis und neu beobachtete Waldzugangsbedingung prüfen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
