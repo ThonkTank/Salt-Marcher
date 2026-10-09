@@ -4489,17 +4489,17 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I43-I",
-      "kind": "reference_implementation",
-      "startedAt": "2026-10-09T18:57:07.640Z",
-      "focus": "COKKategorievarianten direktundgespeichertprüfen",
-      "state": "completed",
-      "result": "ZweiAsset-/Scale-/RotationsvariantenaufgleicherKategoriebelegt;Originalsave/normalExit0/Slotrückgabegeprüft. Vollparitätopen."
-    },
-    "nextRun": {
       "id": "CITY-00-I43-CLEAN-P43",
       "kind": "cleanup_planning",
-      "focus": "Referenzmanifest/MaterialisierungundDemo-/Kontrollgrenzen bereinigen"
+      "startedAt": "2026-10-09T19:08:06.372374+00:00",
+      "focus": "Referenzwirkung/Materialisierung undKontrollgrenzen bereinigen",
+      "state": "completed",
+      "result": "BelegschutzundGrenzenisolierterControlsplanen;keinRuntimeumbau."
+    },
+    "nextRun": {
+      "id": "CITY-00-I43-CLEAN-I43",
+      "kind": "cleanup_implementation",
+      "focus": "CO2BeleggrenzenundMaterialisierung klarfesthalten"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
