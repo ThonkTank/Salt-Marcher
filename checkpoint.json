@@ -4918,17 +4918,17 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-E2E-R02-CLEAN-R",
-      "kind": "cleanup_review",
-      "startedAt": "2026-10-09T21:40:44.043792+00:00",
-      "focus": "Receiptübergabe/Fremdschutz abschließen",
+      "id": "CITY-E2E-N02",
+      "kind": "plan_refinement",
+      "startedAt": "2026-10-09T21:56:38.542770+00:00",
+      "focus": "Neue Campaign/Data-Grenze E2E01 ohne LiveSession",
       "state": "completed",
-      "result": "Geprüfter Planblob exakt erhalten, nur cityExecution nach R02 geändert; acceptance bytegleich. PRübergabe an unabhängigen Steward, keine Selbstintegration."
+      "result": "Tabelle/Reihenfolge korrigiert: positive Campaign/Atlas/Save/Reopen ohne Session, Initialize positiv nur E2E02. Alte R01 geschlossen, neue Ownergrenze eng zu reviewen."
     },
     "nextRun": {
-      "id": "CITY-E2E-H01",
-      "kind": "coordination_handoff",
-      "focus": "Unabhängige PRintegration und gemeinsam versionierten Gatekatalog/Ownerannahmen in #12 prüfen; R02 nicht wiederholen, I48b bleibt bis Plan-Gate und neuer GUI-Slotantwort zurückgestellt."
+      "id": "CITY-E2E-N02-CLEAN-P",
+      "kind": "cleanup_planning",
+      "focus": "Widersprüche und unveränderte IDs/Geometrie/Fremdwurzeln prüfen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
@@ -4982,7 +4982,7 @@
       "endToEndPlan": {
         "issue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12",
         "plan": "ROADMAP-CITIES-E2E-INTEGRATION-PLAN.md",
-        "state": "independent_city_plan_r02_pass_common_ratification_integration_pending",
+        "state": "new_campaign_boundary_repaired_narrow_owner_review_pending",
         "referenceResume": "CITY-00-I48b after common plan gate and new GUI slot",
         "independentReview": {
           "reviewer": "Hex",
