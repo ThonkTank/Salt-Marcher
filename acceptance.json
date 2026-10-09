@@ -4,9 +4,9 @@
     "updated": "2026-10-08",
     "plan": "ROADMAP-CITIES.md",
     "state": "planned_not_implemented",
-    "comparisonMode": "result_reference_and_independent_usability_tests",
+    "comparisonMode": "functional_equivalence_and_independent_usability_tests",
     "userRequirements": {
-      "cityResults": "Stadtpläne im Ergebnis nach Canvas of Kings und Medieval Fantasy City Generator.",
+      "cityResults": "Stadtfunktionen gleichwertig mit Canvas of Kings, Medieval Fantasy City Generator und Fantasy Town Generator; Grafik ungefähr gleichwertig, Bedienung besser.",
       "interaction": "Bedienung einfacher und flüssiger; keine Originalgestenparität für diese Stadtvorbilder.",
       "atlas": "Städte und Haus-Dungeons liegen direkt im selben Atlas. Alle räumlichen Größenstufen sind allein durch Zoom erreichbar.",
       "editing": "Durchgehende direkte Bearbeitung ohne Kartenfenster-, Kontext- oder Moduswechsel.",
@@ -52,6 +52,17 @@
         "observed": "Entwickler-Devlog benennt Wälder um die Stadt; direkter Ergebnisvergleich steht aus.",
         "version": "0.11.4 (Devlog, keine aktuelle Laufversion)",
         "directResultEvidence": []
+      },
+      {
+        "product": "Fantasy Town Generator",
+        "url": "https://www.fantasytowngenerator.com/temporary-settlement",
+        "role": "functional_city_population_and_simulation_reference",
+        "observed": "Dorf direkt generiert; Gebäude/Räume, Bewohnerattribute/-beziehungen und Zeitwechsel sowie Exportmenü geprüft. Kein vollständiger Funktionsvergleich.",
+        "version": null,
+        "directResultEvidence": [
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/manifest.json",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/ftg-hamlet-overview.jpg"
+        ]
       }
     ],
     "referenceStatus": "official_descriptions_and_devlogs_read_direct_result_samples_pending",
@@ -191,7 +202,7 @@
     ],
     "policy": {
       "sourceRule": "Offizielle Produktbeschreibung und Devlogs liefern Kandidaten; ein direkter Ergebnisvergleich bleibt bis CITY-00 offen. Alte quelloffene Generatorversion ist kein Nachweis für aktuelle Ausgabe.",
-      "referenceRule": "Ergebnismerkmale und räumliche/visuelle Qualität vergleichen, keine vollständige Funktions- oder Gestenparität dieser beiden Vorbilder behaupten.",
+      "referenceRule": "Direkter Auftrag 09.10.2026: vollständige Funktionsgleichwertigkeit mit Canvas of Kings, Watabou und Fantasy Town Generator; Originalgesten nicht vorgeschrieben, Ergebnis-/Bedienvergleich separat belegen.",
       "interactionRule": "Ein Atlas, eine Kamera, eine Werkzeugleiste und durchgehende Undo/Redo-Folge. Zoom wechselt keinen Bearbeitungsmodus; Werkzeuge wirken auf direkt getroffene Geometrie.",
       "scopeRule": "Die Stadt-Ergebnisabnahme ist getrennt von Wonderdraft-Funktions-/Gestenparität. Wiederverwendete gemeinsame Werkzeuge behalten ihre jeweiligen belegten Regeln.",
       "evidenceRule": "Direkte Ergebnisbilder, bearbeitbare native Kartendaten, wirkliche Nutzeraufgaben, Save/Neustart und betroffene Konflikt-/Undo-Fälle auf benanntem Build belegen; eigenständiger Review.",
@@ -984,7 +995,6 @@
         "task": "Pfad und Fläche verändern; automatische Objekte folgen",
         "phase": "CITY-07",
         "caseIds": [
-          "CTY-006.01",
           "CTY-006.02"
         ],
         "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
@@ -996,7 +1006,9 @@
           "state": "not_run"
         },
         "status": "open",
-        "gap": "Dokumentationskandidat; direkte vollständige Originalprobe offen."
+        "gap": "Dokumentationskandidat; direkte vollständige Originalprobe offen.",
+        "independentFunctionalRequirement": true,
+        "mappingCoverage": "related_project_criteria_only; CO requirement remains independently required"
       },
       {
         "id": "CO-COK-0002",
@@ -1011,7 +1023,6 @@
         "task": "Kategorie verteilen und Eigenschaften variieren",
         "phase": "CITY-07",
         "caseIds": [
-          "CTY-006.01",
           "CTY-006.02"
         ],
         "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
@@ -1023,7 +1034,9 @@
           "state": "not_run"
         },
         "status": "open",
-        "gap": "Dokumentationskandidat; direkte vollständige Originalprobe offen."
+        "gap": "Dokumentationskandidat; direkte vollständige Originalprobe offen.",
+        "independentFunctionalRequirement": true,
+        "mappingCoverage": "related_project_criteria_only; CO requirement remains independently required"
       },
       {
         "id": "CO-COK-0003",
@@ -1037,10 +1050,7 @@
         "originalEvidence": [],
         "task": "Prop auf Turm gemeinsam verschieben",
         "phase": "CITY-07",
-        "caseIds": [
-          "CTY-006.01",
-          "CTY-006.02"
-        ],
+        "caseIds": [],
         "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
         "implementationEvidence": [],
         "hostEvidence": [],
@@ -1050,7 +1060,9 @@
           "state": "not_run"
         },
         "status": "open",
-        "gap": "Dokumentationskandidat; direkte vollständige Originalprobe offen."
+        "gap": "Dokumentationskandidat; direkte vollständige Originalprobe offen.",
+        "independentFunctionalRequirement": true,
+        "mappingCoverage": "new_required_function_not_covered_by_existing_CTY"
       },
       {
         "id": "CO-COK-0004",
@@ -1064,10 +1076,7 @@
         "originalEvidence": [],
         "task": "Atmosphäre ändern und speichern",
         "phase": "CITY-07",
-        "caseIds": [
-          "CTY-006.01",
-          "CTY-006.02"
-        ],
+        "caseIds": [],
         "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
         "implementationEvidence": [],
         "hostEvidence": [],
@@ -1077,7 +1086,9 @@
           "state": "not_run"
         },
         "status": "open",
-        "gap": "Dokumentationskandidat; direkte vollständige Originalprobe offen."
+        "gap": "Dokumentationskandidat; direkte vollständige Originalprobe offen.",
+        "independentFunctionalRequirement": true,
+        "mappingCoverage": "new_required_function_not_covered_by_existing_CTY"
       },
       {
         "id": "CO-COK-0005",
@@ -1092,10 +1103,7 @@
         "task": "Ausschnitt mit Quadrat-/Hexraster ausgeben",
         "phase": "CITY-08",
         "caseIds": [
-          "CTY-005.05",
-          "CTY-006.03",
-          "CTY-007.01",
-          "CTY-008.02"
+          "CTY-006.03"
         ],
         "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
         "implementationEvidence": [],
@@ -1106,7 +1114,9 @@
           "state": "not_run"
         },
         "status": "open",
-        "gap": "Dokumentationskandidat; direkte vollständige Originalprobe offen."
+        "gap": "Dokumentationskandidat; direkte vollständige Originalprobe offen.",
+        "independentFunctionalRequirement": true,
+        "mappingCoverage": "related_project_criteria_only; CO requirement remains independently required"
       },
       {
         "id": "CO-WAT-0001",
@@ -1122,7 +1132,6 @@
         "phase": "CITY-02",
         "caseIds": [
           "CTY-001.02",
-          "CTY-001.03",
           "CTY-008.01"
         ],
         "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
@@ -1134,7 +1143,9 @@
           "state": "not_run"
         },
         "status": "open",
-        "gap": "Dokumentationskandidat; direkte vollständige Originalprobe offen."
+        "gap": "Dokumentationskandidat; direkte vollständige Originalprobe offen.",
+        "independentFunctionalRequirement": true,
+        "mappingCoverage": "related_project_criteria_only; CO requirement remains independently required"
       },
       {
         "id": "CO-WAT-0002",
@@ -1161,7 +1172,9 @@
           "state": "not_run"
         },
         "status": "open",
-        "gap": "Dokumentationskandidat; direkte vollständige Originalprobe offen."
+        "gap": "Dokumentationskandidat; direkte vollständige Originalprobe offen.",
+        "independentFunctionalRequirement": true,
+        "mappingCoverage": "related_project_criteria_only; CO requirement remains independently required"
       },
       {
         "id": "CO-WAT-0003",
@@ -1176,8 +1189,7 @@
         "task": "Hauptweg und Gasse bearbeiten",
         "phase": "CITY-05",
         "caseIds": [
-          "CTY-004.01",
-          "CTY-004.02"
+          "CTY-004.01"
         ],
         "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
         "implementationEvidence": [],
@@ -1188,7 +1200,9 @@
           "state": "not_run"
         },
         "status": "open",
-        "gap": "Dokumentationskandidat; direkte vollständige Originalprobe offen."
+        "gap": "Dokumentationskandidat; direkte vollständige Originalprobe offen.",
+        "independentFunctionalRequirement": true,
+        "mappingCoverage": "related_project_criteria_only; CO requirement remains independently required"
       },
       {
         "id": "CO-WAT-0004",
@@ -1203,7 +1217,6 @@
         "task": "Umgebung sichtbar ausarbeiten",
         "phase": "CITY-07",
         "caseIds": [
-          "CTY-006.01",
           "CTY-006.02"
         ],
         "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
@@ -1215,25 +1228,27 @@
           "state": "not_run"
         },
         "status": "open",
-        "gap": "Dokumentationskandidat; direkte vollständige Originalprobe offen."
+        "gap": "Dokumentationskandidat; direkte vollständige Originalprobe offen.",
+        "independentFunctionalRequirement": true,
+        "mappingCoverage": "related_project_criteria_only; CO requirement remains independently required"
       },
       {
         "id": "CO-FTG-0001",
         "product": "Fantasy Town Generator",
         "feature": "Siedlungsgröße und benannte Vorgaben",
         "sourceUrl": "https://www.fantasytowngenerator.com/temporary-settlement?newSettlement=true",
-        "observedAt": "2026-10-09T12:15:44.926455+02:00",
+        "observedAt": "2026-10-09T12:20:56.140099+02:00",
         "observedVersion": null,
-        "availability": "unknown",
+        "availability": "free",
         "observationKind": "direct",
         "originalEvidence": [
-          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i01-20261009/ftg-form-observation.json"
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i01-20261009/ftg-form-observation.json",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/ftg-hamlet-overview.jpg"
         ],
         "task": "Größe/Vorgabe wählen und Plan erzeugen",
         "phase": "CITY-02",
         "caseIds": [
           "CTY-001.02",
-          "CTY-001.03",
           "CTY-008.01"
         ],
         "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
@@ -1245,7 +1260,14 @@
           "state": "not_run"
         },
         "status": "open",
-        "gap": "Formularbereich direkt sichtbar; konkrete Wirkung und vollständige Detailoptionen noch offen."
+        "gap": "Hamlet direkt erzeugt; übrige Größen und benannte Vorgaben weiter offen.",
+        "originalProbe": {
+          "run": "CITY-00-I02",
+          "state": "partial",
+          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/manifest.json"
+        },
+        "independentFunctionalRequirement": true,
+        "mappingCoverage": "related_project_criteria_only; CO requirement remains independently required"
       },
       {
         "id": "CO-FTG-0002",
@@ -1263,8 +1285,7 @@
         "phase": "CITY-02",
         "caseIds": [
           "CTY-001.02",
-          "CTY-001.03",
-          "CTY-008.01"
+          "CTY-004.03"
         ],
         "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
         "implementationEvidence": [],
@@ -1275,7 +1296,9 @@
           "state": "not_run"
         },
         "status": "open",
-        "gap": "Formularbereich direkt sichtbar; konkrete Wirkung und vollständige Detailoptionen noch offen."
+        "gap": "Formularbereich direkt sichtbar; konkrete Wirkung und vollständige Detailoptionen noch offen.",
+        "independentFunctionalRequirement": true,
+        "mappingCoverage": "related_project_criteria_only; CO requirement remains independently required"
       },
       {
         "id": "CO-FTG-0003",
@@ -1292,7 +1315,6 @@
         "task": "Gebäudematerial ändern",
         "phase": "CITY-07",
         "caseIds": [
-          "CTY-006.01",
           "CTY-006.02"
         ],
         "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
@@ -1304,7 +1326,9 @@
           "state": "not_run"
         },
         "status": "open",
-        "gap": "Formularbereich direkt sichtbar; konkrete Wirkung und vollständige Detailoptionen noch offen."
+        "gap": "Formularbereich direkt sichtbar; konkrete Wirkung und vollständige Detailoptionen noch offen.",
+        "independentFunctionalRequirement": true,
+        "mappingCoverage": "related_project_criteria_only; CO requirement remains independently required"
       },
       {
         "id": "CO-FTG-0004",
@@ -1320,9 +1344,7 @@
         ],
         "task": "Bevölkerung und Lebensstandard konfigurieren",
         "phase": "CITY-06",
-        "caseIds": [
-          "CTY-004.03"
-        ],
+        "caseIds": [],
         "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
         "implementationEvidence": [],
         "hostEvidence": [],
@@ -1332,7 +1354,9 @@
           "state": "not_run"
         },
         "status": "open",
-        "gap": "Formularbereich direkt sichtbar; konkrete Wirkung und vollständige Detailoptionen noch offen."
+        "gap": "Formularbereich direkt sichtbar; konkrete Wirkung und vollständige Detailoptionen noch offen.",
+        "independentFunctionalRequirement": true,
+        "mappingCoverage": "new_required_function_not_covered_by_existing_CTY"
       },
       {
         "id": "CO-FTG-0005",
@@ -1348,9 +1372,7 @@
         ],
         "task": "Regierung, Führung und Wachen konfigurieren",
         "phase": "CITY-06",
-        "caseIds": [
-          "CTY-004.03"
-        ],
+        "caseIds": [],
         "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
         "implementationEvidence": [],
         "hostEvidence": [],
@@ -1360,7 +1382,9 @@
           "state": "not_run"
         },
         "status": "open",
-        "gap": "Formularbereich direkt sichtbar; konkrete Wirkung und vollständige Detailoptionen noch offen."
+        "gap": "Formularbereich direkt sichtbar; konkrete Wirkung und vollständige Detailoptionen noch offen.",
+        "independentFunctionalRequirement": true,
+        "mappingCoverage": "new_required_function_not_covered_by_existing_CTY"
       },
       {
         "id": "CO-FTG-0006",
@@ -1388,7 +1412,9 @@
           "state": "not_run"
         },
         "status": "open",
-        "gap": "Formularbereich direkt sichtbar; konkrete Wirkung und vollständige Detailoptionen noch offen."
+        "gap": "Formularbereich direkt sichtbar; konkrete Wirkung und vollständige Detailoptionen noch offen.",
+        "independentFunctionalRequirement": true,
+        "mappingCoverage": "related_project_criteria_only; CO requirement remains independently required"
       },
       {
         "id": "CO-FTG-0007",
@@ -1404,9 +1430,7 @@
         ],
         "task": "Fraktion anlegen und Mitglieder verknüpfen",
         "phase": "CITY-06",
-        "caseIds": [
-          "CTY-004.03"
-        ],
+        "caseIds": [],
         "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
         "implementationEvidence": [],
         "hostEvidence": [],
@@ -1416,7 +1440,9 @@
           "state": "not_run"
         },
         "status": "open",
-        "gap": "Formularbereich direkt sichtbar; konkrete Wirkung und vollständige Detailoptionen noch offen."
+        "gap": "Formularbereich direkt sichtbar; konkrete Wirkung und vollständige Detailoptionen noch offen.",
+        "independentFunctionalRequirement": true,
+        "mappingCoverage": "new_required_function_not_covered_by_existing_CTY"
       },
       {
         "id": "CO-FTG-0008",
@@ -1432,9 +1458,7 @@
         ],
         "task": "Eigene Religion konfigurieren",
         "phase": "CITY-06",
-        "caseIds": [
-          "CTY-004.03"
-        ],
+        "caseIds": [],
         "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
         "implementationEvidence": [],
         "hostEvidence": [],
@@ -1444,7 +1468,9 @@
           "state": "not_run"
         },
         "status": "open",
-        "gap": "Formularbereich direkt sichtbar; konkrete Wirkung und vollständige Detailoptionen noch offen."
+        "gap": "Formularbereich direkt sichtbar; konkrete Wirkung und vollständige Detailoptionen noch offen.",
+        "independentFunctionalRequirement": true,
+        "mappingCoverage": "new_required_function_not_covered_by_existing_CTY"
       },
       {
         "id": "CO-FTG-0009",
@@ -1461,7 +1487,6 @@
         "task": "Wald/Farm und Klimavorlage konfigurieren",
         "phase": "CITY-07",
         "caseIds": [
-          "CTY-006.01",
           "CTY-006.02"
         ],
         "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
@@ -1473,7 +1498,9 @@
           "state": "not_run"
         },
         "status": "open",
-        "gap": "Formularbereich direkt sichtbar; konkrete Wirkung und vollständige Detailoptionen noch offen."
+        "gap": "Formularbereich direkt sichtbar; konkrete Wirkung und vollständige Detailoptionen noch offen.",
+        "independentFunctionalRequirement": true,
+        "mappingCoverage": "related_project_criteria_only; CO requirement remains independently required"
       },
       {
         "id": "CO-FTG-0010",
@@ -1490,9 +1517,8 @@
         "task": "Küsten-/Flusslage erzeugen",
         "phase": "CITY-02",
         "caseIds": [
-          "CTY-001.02",
           "CTY-001.03",
-          "CTY-008.01"
+          "CTY-004.02"
         ],
         "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
         "implementationEvidence": [],
@@ -1503,7 +1529,9 @@
           "state": "not_run"
         },
         "status": "open",
-        "gap": "Formularbereich direkt sichtbar; konkrete Wirkung und vollständige Detailoptionen noch offen."
+        "gap": "Formularbereich direkt sichtbar; konkrete Wirkung und vollständige Detailoptionen noch offen.",
+        "independentFunctionalRequirement": true,
+        "mappingCoverage": "related_project_criteria_only; CO requirement remains independently required"
       },
       {
         "id": "CO-FTG-0011",
@@ -1519,10 +1547,7 @@
         ],
         "task": "Tages-/Wochenlänge konfigurieren",
         "phase": "CITY-07",
-        "caseIds": [
-          "CTY-006.01",
-          "CTY-006.02"
-        ],
+        "caseIds": [],
         "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
         "implementationEvidence": [],
         "hostEvidence": [],
@@ -1532,7 +1557,9 @@
           "state": "not_run"
         },
         "status": "open",
-        "gap": "Formularbereich direkt sichtbar; konkrete Wirkung und vollständige Detailoptionen noch offen."
+        "gap": "Formularbereich direkt sichtbar; konkrete Wirkung und vollständige Detailoptionen noch offen.",
+        "independentFunctionalRequirement": true,
+        "mappingCoverage": "new_required_function_not_covered_by_existing_CTY"
       },
       {
         "id": "CO-FTG-0012",
@@ -1548,9 +1575,7 @@
         ],
         "task": "Gebäudeangebot und globale Preise ändern",
         "phase": "CITY-06",
-        "caseIds": [
-          "CTY-004.03"
-        ],
+        "caseIds": [],
         "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
         "implementationEvidence": [],
         "hostEvidence": [],
@@ -1560,25 +1585,28 @@
           "state": "not_run"
         },
         "status": "open",
-        "gap": "Formularbereich direkt sichtbar; konkrete Wirkung und vollständige Detailoptionen noch offen."
+        "gap": "Formularbereich direkt sichtbar; konkrete Wirkung und vollständige Detailoptionen noch offen.",
+        "independentFunctionalRequirement": true,
+        "mappingCoverage": "new_required_function_not_covered_by_existing_CTY"
       },
       {
         "id": "CO-FTG-0013",
         "product": "Fantasy Town Generator",
         "feature": "Gebäudebedarfe und Anzahlgrenzen",
         "sourceUrl": "https://www.fantasytowngenerator.com/temporary-settlement?newSettlement=true",
-        "observedAt": "2026-10-09T12:15:44.926455+02:00",
+        "observedAt": "2026-10-09T12:20:56.140099+02:00",
         "observedVersion": null,
-        "availability": "unknown",
+        "availability": "free",
         "observationKind": "direct",
         "originalEvidence": [
-          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i01-20261009/ftg-form-observation.json"
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i01-20261009/ftg-form-observation.json",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/ftg-person-general.ax.txt",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/ftg-person-relations.ax.txt",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/ftg-person-relations.jpg"
         ],
         "task": "Gebäudeverteilung konfigurieren",
         "phase": "CITY-06",
-        "caseIds": [
-          "CTY-004.03"
-        ],
+        "caseIds": [],
         "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
         "implementationEvidence": [],
         "hostEvidence": [],
@@ -1588,7 +1616,14 @@
           "state": "not_run"
         },
         "status": "open",
-        "gap": "Formularbereich direkt sichtbar; konkrete Wirkung und vollständige Detailoptionen noch offen."
+        "gap": "Bewohnerattribute und Familienbeziehungen direkt gelesen; Bearbeitung und weitere Beziehungstypen offen.",
+        "originalProbe": {
+          "run": "CITY-00-I02",
+          "state": "partial",
+          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/manifest.json"
+        },
+        "independentFunctionalRequirement": true,
+        "mappingCoverage": "new_required_function_not_covered_by_existing_CTY"
       },
       {
         "id": "CO-FTG-0014",
@@ -1603,7 +1638,8 @@
         "task": "Bewohner, Haushalt und Beziehungen bearbeiten",
         "phase": "CITY-06",
         "caseIds": [
-          "CTY-004.03"
+          "CTY-002.01",
+          "CTY-002.02"
         ],
         "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
         "implementationEvidence": [],
@@ -1614,7 +1650,9 @@
           "state": "not_run"
         },
         "status": "open",
-        "gap": "Dokumentationskandidat; direkte vollständige Originalprobe offen."
+        "gap": "Dokumentationskandidat; direkte vollständige Originalprobe offen.",
+        "independentFunctionalRequirement": true,
+        "mappingCoverage": "related_project_criteria_only; CO requirement remains independently required"
       },
       {
         "id": "CO-FTG-0015",
@@ -1629,9 +1667,7 @@
         "task": "Gebäude und Straße verändern",
         "phase": "CITY-01",
         "caseIds": [
-          "CTY-001.01",
-          "CTY-002.01",
-          "CTY-002.02"
+          "CTY-003.01"
         ],
         "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
         "implementationEvidence": [],
@@ -1642,7 +1678,9 @@
           "state": "not_run"
         },
         "status": "open",
-        "gap": "Dokumentationskandidat; direkte vollständige Originalprobe offen."
+        "gap": "Dokumentationskandidat; direkte vollständige Originalprobe offen.",
+        "independentFunctionalRequirement": true,
+        "mappingCoverage": "related_project_criteria_only; CO requirement remains independently required"
       },
       {
         "id": "CO-FTG-0016",
@@ -1656,10 +1694,7 @@
         "originalEvidence": [],
         "task": "Ausgewählten Bereich erneuern",
         "phase": "CITY-04",
-        "caseIds": [
-          "CTY-003.01",
-          "CTY-003.02"
-        ],
+        "caseIds": [],
         "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
         "implementationEvidence": [],
         "hostEvidence": [],
@@ -1669,23 +1704,27 @@
           "state": "not_run"
         },
         "status": "open",
-        "gap": "Dokumentationskandidat; direkte vollständige Originalprobe offen."
+        "gap": "Dokumentationskandidat; direkte vollständige Originalprobe offen.",
+        "independentFunctionalRequirement": true,
+        "mappingCoverage": "new_required_function_not_covered_by_existing_CTY"
       },
       {
         "id": "CO-FTG-0017",
         "product": "Fantasy Town Generator",
         "feature": "Bewohner-Massenbearbeitung",
         "sourceUrl": "https://docs.fantasytowngenerator.com/",
-        "observedAt": "2026-10-09T12:15:44.926455+02:00",
+        "observedAt": "2026-10-09T12:20:56.140099+02:00",
         "observedVersion": null,
-        "availability": "unknown",
-        "observationKind": "documentation",
-        "originalEvidence": [],
+        "availability": "free",
+        "observationKind": "direct",
+        "originalEvidence": [
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/ftg-time10-before.ax.txt",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/ftg-time11-after.ax.txt",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/ftg-time11-after.jpg"
+        ],
         "task": "Mehrere Bewohner gemeinsam ändern",
         "phase": "CITY-06",
-        "caseIds": [
-          "CTY-004.03"
-        ],
+        "caseIds": [],
         "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
         "implementationEvidence": [],
         "hostEvidence": [],
@@ -1695,7 +1734,14 @@
           "state": "not_run"
         },
         "status": "open",
-        "gap": "Dokumentationskandidat; direkte vollständige Originalprobe offen."
+        "gap": "Ein Next-Hour-Wechsel direkt bestätigt; vollständige Tagespläne und große Zeitsprünge offen.",
+        "originalProbe": {
+          "run": "CITY-00-I02",
+          "state": "partial",
+          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/manifest.json"
+        },
+        "independentFunctionalRequirement": true,
+        "mappingCoverage": "new_required_function_not_covered_by_existing_CTY"
       },
       {
         "id": "CO-FTG-0018",
@@ -1709,10 +1755,7 @@
         "originalEvidence": [],
         "task": "Uhrzeit ändern und Aufenthaltsorte prüfen",
         "phase": "CITY-07",
-        "caseIds": [
-          "CTY-006.01",
-          "CTY-006.02"
-        ],
+        "caseIds": [],
         "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
         "implementationEvidence": [],
         "hostEvidence": [],
@@ -1722,23 +1765,26 @@
           "state": "not_run"
         },
         "status": "open",
-        "gap": "Dokumentationskandidat; direkte vollständige Originalprobe offen."
+        "gap": "Dokumentationskandidat; direkte vollständige Originalprobe offen.",
+        "independentFunctionalRequirement": true,
+        "mappingCoverage": "new_required_function_not_covered_by_existing_CTY"
       },
       {
         "id": "CO-FTG-0019",
         "product": "Fantasy Town Generator",
         "feature": "Wetter, Jahreszeiten, Tag/Nacht",
         "sourceUrl": "https://docs.fantasytowngenerator.com/",
-        "observedAt": "2026-10-09T12:15:44.926455+02:00",
+        "observedAt": "2026-10-09T12:20:56.140099+02:00",
         "observedVersion": null,
-        "availability": "unknown",
-        "observationKind": "documentation",
-        "originalEvidence": [],
+        "availability": "free",
+        "observationKind": "direct",
+        "originalEvidence": [
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/ftg-export-menu.ax.txt"
+        ],
         "task": "Saison und Tageslicht wechseln",
         "phase": "CITY-07",
         "caseIds": [
-          "CTY-006.01",
-          "CTY-006.02"
+          "CTY-006.03"
         ],
         "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
         "implementationEvidence": [],
@@ -1749,7 +1795,15 @@
           "state": "not_run"
         },
         "status": "open",
-        "gap": "Dokumentationskandidat; direkte vollständige Originalprobe offen."
+        "gap": "Formate direkt im Menü: PNG/SVG/GeoJSON, Daten JSON/CSV im Dialog. Downloaddateien nicht bestätigt.",
+        "originalProbe": {
+          "run": "CITY-00-I02",
+          "state": "partial",
+          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/manifest.json",
+          "exportFileState": "unverified_after_download_timeout"
+        },
+        "independentFunctionalRequirement": true,
+        "mappingCoverage": "related_project_criteria_only; CO requirement remains independently required"
       },
       {
         "id": "CO-FTG-0020",
@@ -1758,17 +1812,14 @@
         "sourceUrl": "https://docs.fantasytowngenerator.com/",
         "observedAt": "2026-10-09T12:15:44.926455+02:00",
         "observedVersion": null,
-        "availability": "unknown",
+        "availability": "account_required_observed_disabled_in_temporary_access",
         "observationKind": "documentation",
-        "originalEvidence": [],
+        "originalEvidence": [
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/ftg-export-menu.ax.txt"
+        ],
         "task": "Karte und Lebensdaten ausgeben",
         "phase": "CITY-08",
-        "caseIds": [
-          "CTY-005.05",
-          "CTY-006.03",
-          "CTY-007.01",
-          "CTY-008.02"
-        ],
+        "caseIds": [],
         "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
         "implementationEvidence": [],
         "hostEvidence": [],
@@ -1778,7 +1829,9 @@
           "state": "not_run"
         },
         "status": "open",
-        "gap": "Dokumentationskandidat; direkte vollständige Originalprobe offen."
+        "gap": "FoundryVTT/Roll20 im Originalmenü sichtbar, für temporäre Siedlung deaktiviert; tatsächliche Integration offen.",
+        "independentFunctionalRequirement": true,
+        "mappingCoverage": "new_required_function_not_covered_by_existing_CTY"
       },
       {
         "id": "CO-FTG-0021",
@@ -1792,12 +1845,7 @@
         "originalEvidence": [],
         "task": "Export-/Integrationsablauf vergleichen",
         "phase": "CITY-08",
-        "caseIds": [
-          "CTY-005.05",
-          "CTY-006.03",
-          "CTY-007.01",
-          "CTY-008.02"
-        ],
+        "caseIds": [],
         "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
         "implementationEvidence": [],
         "hostEvidence": [],
@@ -1807,7 +1855,9 @@
           "state": "not_run"
         },
         "status": "open",
-        "gap": "Dokumentationskandidat; direkte vollständige Originalprobe offen."
+        "gap": "Dokumentationskandidat; direkte vollständige Originalprobe offen.",
+        "independentFunctionalRequirement": true,
+        "mappingCoverage": "new_required_function_not_covered_by_existing_CTY"
       },
       {
         "id": "CO-FTG-0022",
@@ -1823,8 +1873,7 @@
         "phase": "CITY-02",
         "caseIds": [
           "CTY-001.02",
-          "CTY-001.03",
-          "CTY-008.01"
+          "CTY-007.01"
         ],
         "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
         "implementationEvidence": [],
@@ -1835,7 +1884,9 @@
           "state": "not_run"
         },
         "status": "open",
-        "gap": "Dokumentationskandidat; direkte vollständige Originalprobe offen."
+        "gap": "Dokumentationskandidat; direkte vollständige Originalprobe offen.",
+        "independentFunctionalRequirement": true,
+        "mappingCoverage": "related_project_criteria_only; CO requirement remains independently required"
       },
       {
         "id": "CO-FTG-0023",
@@ -1850,10 +1901,7 @@
         "task": "Vorschau/50.000-Einwohner-Fähigkeit prüfen",
         "phase": "CITY-08",
         "caseIds": [
-          "CTY-005.05",
-          "CTY-006.03",
-          "CTY-007.01",
-          "CTY-008.02"
+          "CTY-006.03"
         ],
         "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
         "implementationEvidence": [],
@@ -1864,14 +1912,218 @@
           "state": "not_run"
         },
         "status": "open",
-        "gap": "Dokumentationskandidat; direkte vollständige Originalprobe offen."
+        "gap": "Dokumentationskandidat; direkte vollständige Originalprobe offen.",
+        "independentFunctionalRequirement": true,
+        "mappingCoverage": "related_project_criteria_only; CO requirement remains independently required"
+      },
+      {
+        "id": "CO-FTG-0024",
+        "product": "Fantasy Town Generator",
+        "feature": "SVG-Kartenausgabe",
+        "sourceUrl": "https://docs.fantasytowngenerator.com/",
+        "observedAt": "2026-10-09T12:20:56.140099+02:00",
+        "observedVersion": null,
+        "availability": "free",
+        "observationKind": "direct",
+        "originalEvidence": [
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/manifest.json"
+        ],
+        "task": "Vektorkarte ausgeben",
+        "phase": "CITY-08",
+        "caseIds": [
+          "CTY-006.03"
+        ],
+        "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
+        "implementationEvidence": [],
+        "hostEvidence": [],
+        "comparisonEvidence": [],
+        "usabilityEvidence": [],
+        "review": {
+          "state": "not_run"
+        },
+        "status": "open",
+        "gap": "Schaltfläche/Menü direkt sichtbar; konkrete Wirkung und eigener Vergleich noch offen.",
+        "originalProbe": {
+          "run": "CITY-00-I02",
+          "state": "control_observed_only",
+          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/manifest.json"
+        },
+        "independentFunctionalRequirement": true,
+        "mappingCoverage": "related_project_criteria_only; CO requirement remains independently required"
+      },
+      {
+        "id": "CO-FTG-0025",
+        "product": "Fantasy Town Generator",
+        "feature": "GeoJSON-Kartenausgabe",
+        "sourceUrl": "https://docs.fantasytowngenerator.com/",
+        "observedAt": "2026-10-09T12:20:56.140099+02:00",
+        "observedVersion": null,
+        "availability": "free",
+        "observationKind": "direct",
+        "originalEvidence": [
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/manifest.json"
+        ],
+        "task": "Geometrie und Kennungen als GeoJSON ausgeben",
+        "phase": "CITY-08",
+        "caseIds": [],
+        "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
+        "implementationEvidence": [],
+        "hostEvidence": [],
+        "comparisonEvidence": [],
+        "usabilityEvidence": [],
+        "review": {
+          "state": "not_run"
+        },
+        "status": "open",
+        "gap": "Schaltfläche/Menü direkt sichtbar; konkrete Wirkung und eigener Vergleich noch offen.",
+        "originalProbe": {
+          "run": "CITY-00-I02",
+          "state": "control_observed_only",
+          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/manifest.json"
+        },
+        "independentFunctionalRequirement": true,
+        "mappingCoverage": "new_required_function_not_covered_by_existing_CTY"
+      },
+      {
+        "id": "CO-FTG-0026",
+        "product": "Fantasy Town Generator",
+        "feature": "Familienstammbaum",
+        "sourceUrl": "https://www.fantasytowngenerator.com/temporary-settlement?newSettlement=true",
+        "observedAt": "2026-10-09T12:20:56.140099+02:00",
+        "observedVersion": null,
+        "availability": "free",
+        "observationKind": "direct",
+        "originalEvidence": [
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/manifest.json"
+        ],
+        "task": "Stammbaum eines Bewohners öffnen",
+        "phase": "CITY-06",
+        "caseIds": [],
+        "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
+        "implementationEvidence": [],
+        "hostEvidence": [],
+        "comparisonEvidence": [],
+        "usabilityEvidence": [],
+        "review": {
+          "state": "not_run"
+        },
+        "status": "open",
+        "gap": "Schaltfläche/Menü direkt sichtbar; konkrete Wirkung und eigener Vergleich noch offen.",
+        "originalProbe": {
+          "run": "CITY-00-I02",
+          "state": "control_observed_only",
+          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/manifest.json"
+        },
+        "independentFunctionalRequirement": true,
+        "mappingCoverage": "new_required_function_not_covered_by_existing_CTY"
+      },
+      {
+        "id": "CO-FTG-0027",
+        "product": "Fantasy Town Generator",
+        "feature": "Gebäudeereignisse",
+        "sourceUrl": "https://www.fantasytowngenerator.com/temporary-settlement?newSettlement=true",
+        "observedAt": "2026-10-09T12:20:56.140099+02:00",
+        "observedVersion": null,
+        "availability": "free",
+        "observationKind": "direct",
+        "originalEvidence": [
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/manifest.json"
+        ],
+        "task": "Ereignis am Gebäude konfigurieren",
+        "phase": "CITY-06",
+        "caseIds": [],
+        "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
+        "implementationEvidence": [],
+        "hostEvidence": [],
+        "comparisonEvidence": [],
+        "usabilityEvidence": [],
+        "review": {
+          "state": "not_run"
+        },
+        "status": "open",
+        "gap": "Schaltfläche/Menü direkt sichtbar; konkrete Wirkung und eigener Vergleich noch offen.",
+        "originalProbe": {
+          "run": "CITY-00-I02",
+          "state": "control_observed_only",
+          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/manifest.json"
+        },
+        "independentFunctionalRequirement": true,
+        "mappingCoverage": "new_required_function_not_covered_by_existing_CTY"
+      },
+      {
+        "id": "CO-FTG-0028",
+        "product": "Fantasy Town Generator",
+        "feature": "Favoriten für Gebäude und Bewohner",
+        "sourceUrl": "https://www.fantasytowngenerator.com/temporary-settlement?newSettlement=true",
+        "observedAt": "2026-10-09T12:20:56.140099+02:00",
+        "observedVersion": null,
+        "availability": "free",
+        "observationKind": "direct",
+        "originalEvidence": [
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/manifest.json"
+        ],
+        "task": "Ort und Bewohner favorisieren und wiederfinden",
+        "phase": "CITY-06",
+        "caseIds": [
+          "CTY-005.05"
+        ],
+        "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
+        "implementationEvidence": [],
+        "hostEvidence": [],
+        "comparisonEvidence": [],
+        "usabilityEvidence": [],
+        "review": {
+          "state": "not_run"
+        },
+        "status": "open",
+        "gap": "Schaltfläche/Menü direkt sichtbar; konkrete Wirkung und eigener Vergleich noch offen.",
+        "originalProbe": {
+          "run": "CITY-00-I02",
+          "state": "control_observed_only",
+          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/manifest.json"
+        },
+        "independentFunctionalRequirement": true,
+        "mappingCoverage": "related_project_criteria_only; CO requirement remains independently required"
+      },
+      {
+        "id": "CO-FTG-0029",
+        "product": "Fantasy Town Generator",
+        "feature": "Maßstab, Lineal und Einheiten",
+        "sourceUrl": "https://www.fantasytowngenerator.com/temporary-settlement?newSettlement=true",
+        "observedAt": "2026-10-09T12:20:56.140099+02:00",
+        "observedVersion": null,
+        "availability": "free",
+        "observationKind": "direct",
+        "originalEvidence": [
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/manifest.json"
+        ],
+        "task": "Abstand messen und Einheit umschalten",
+        "phase": "CITY-08",
+        "caseIds": [],
+        "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
+        "implementationEvidence": [],
+        "hostEvidence": [],
+        "comparisonEvidence": [],
+        "usabilityEvidence": [],
+        "review": {
+          "state": "not_run"
+        },
+        "status": "open",
+        "gap": "Schaltfläche/Menü direkt sichtbar; konkrete Wirkung und eigener Vergleich noch offen.",
+        "originalProbe": {
+          "run": "CITY-00-I02",
+          "state": "control_observed_only",
+          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/manifest.json"
+        },
+        "independentFunctionalRequirement": true,
+        "mappingCoverage": "new_required_function_not_covered_by_existing_CTY"
       }
     ],
     "functionalInventoryStatus": {
       "state": "partial_inventory_not_accepted",
-      "run": "CITY-00-I01",
+      "run": "CITY-00-I02",
       "products": 3,
-      "candidates": 32,
+      "candidates": 38,
       "directFormAreas": 13,
       "open": [
         "Detailfähigkeiten aller Produkte vervollständigen",
@@ -1879,7 +2131,11 @@
         "Originalwirkungsproben statt allein sichtbarer Formularbereiche",
         "Premium-/Integrationsumfang",
         "Anforderungsreview und getrennte Aufräumläufe"
-      ]
+      ],
+      "evidence": [
+        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/manifest.json"
+      ],
+      "originalResultSamples": 1
     },
     "currentUserGoal": "09.10.2026: vollständige Funktionsgleichwertigkeit mit Canvas of Kings, Watabou und Fantasy Town Generator, bessere Bedienung; bisherige Zweiprodukt-Ergebnisbegrenzung durch direkten Auftrag erweitert."
   },
