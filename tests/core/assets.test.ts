@@ -76,7 +76,11 @@ test("Dungeondraft packages keep image payloads lazy and expose stable assets", 
   assert.equal(object.packId, pack.metadata.id);
   assert.match(object.id, /^pack:/);
   assert.ok(
-    reads.every(([start, end]) => (end ?? 0) - (start ?? 0) < blob.size),
+    reads.every(([start, end]) => {
+      const from = start ?? 0,
+        to = end ?? blob.size;
+      return to >= from && to - from < blob.size;
+    }),
   );
   const image = new Uint8Array(
     await pack.asset(object.files.image!).arrayBuffer(),
