@@ -92,7 +92,11 @@ module.exports = ({ page, fs, path, assert, qa, vault, out, checks }) => {
   }
   async function menu(text) {
     await button("Atlas-Kartenmenü").click();
-    await page.locator(".menu-item").filter({ hasText: text }).last().click();
+    const item = page.locator(".menu-item").filter({ hasText: text }).last();
+    await item.hover();
+    await settle();
+    await page.screenshot({ path: path.join(out, "menu-before-choice.png") });
+    await item.click();
   }
   async function copyDialog() {
     await menu("Speichern unter");
