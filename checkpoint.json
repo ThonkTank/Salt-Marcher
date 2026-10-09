@@ -3872,17 +3872,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I21-CP",
-      "kind": "cleanup_planning",
-      "startedAt": "2026-10-09T14:09:55.889894+00:00",
-      "focus": "Abgeleiteten Snapshot und Belegschutz planen",
-      "state": "completed",
-      "result": "Snapshot-Korrektur und Verweis-/Pflichtschutz konkret geplant; Rohbelege bleiben unverändert."
-    },
-    "nextRun": {
       "id": "CITY-00-I21-CI",
       "kind": "cleanup_implementation",
-      "focus": "Snapshot aus acceptance berichtigen und Verweise prüfen"
+      "startedAt": "2026-10-09T14:10:15.657097+00:00",
+      "focus": "Snapshot berichtigen und Belege erhalten",
+      "state": "completed",
+      "result": "I21-Snapshot mit belegtem Legend-/SVG-Namen aktualisiert; 63 offene Pflichten und vorhandene Manifest-Verweise geprüft."
+    },
+    "nextRun": {
+      "id": "CITY-00-I21-CR",
+      "kind": "cleanup_review",
+      "focus": "Snapshot, JSON-Fremdwurzeln und Rohbelege unabhängig prüfen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
