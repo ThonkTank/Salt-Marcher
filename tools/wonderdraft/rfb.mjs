@@ -13,8 +13,11 @@ const { values } = parseArgs({ options: {
   text: { type: 'string' }, drag: { type: 'string' }, wheel: { type: 'string' },
   button: { type: 'string', default: 'left' },
   hold: { type: 'string' }, 'drag-key': { type: 'string' },
-  'settle-ms': { type: 'string' },
+  'settle-ms': { type: 'string' }, 'click-ms': { type: 'string' },
 } });
+const clickMs = values['click-ms'] === undefined ? 100 : Number(values['click-ms']);
+if (!Number.isInteger(clickMs) || clickMs < 100 || clickMs > 2000 || (values['click-ms'] !== undefined && !values.click))
+  throw new Error('Click duration requires click input and must be 100..2000 milliseconds');
 const settleMs = values['settle-ms'] === undefined ? undefined : Number(values['settle-ms']);
 if (settleMs !== undefined && (!Number.isInteger(settleMs) || settleMs < 100 || settleMs > 5000))
   throw new Error('Settle time must be 100..5000 milliseconds');
@@ -87,8 +90,8 @@ try {
   }
   if (values.move) { pointer(point(values.move)); actions.push({ move: values.move }); }
   if (values.click) {
-    const p = point(values.click); pointer(p); await pause(100); pointer(p, buttonMask); await pause(100); pointer(p);
-    actions.push({ click: values.click, button: values.button });
+    const p = point(values.click); pointer(p); await pause(100); pointer(p, buttonMask); await pause(clickMs); pointer(p);
+    actions.push({ click: values.click, button: values.button, pressMs: clickMs });
   }
   if (values.drag) {
     const [a, b] = values.drag.split(':').map(point); if (!a || !b) throw new Error('drag start:end required');

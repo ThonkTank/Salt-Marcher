@@ -35,6 +35,8 @@ Nur die eigene Sitzung beenden: eine Datei `stop` im exakt dokumentierten Laufve
 
 Bei verzögerter Originaldarstellung kann `rfb.mjs --settle-ms 1800` die Pause vor der Aufnahme verlängern (100–5.000 ms). Die tatsächliche Pause wird im Framebeleg gespeichert. Bei unklarem Übergangsbild zusätzlich einen Frame ohne Eingabe aufnehmen; weder eine feste Pause noch der Dateiname belegt den stabilen Endzustand.
 
+Für Klicks kann `--click-ms 500` die Dauer zwischen Drücken und Loslassen festlegen (100–2.000 ms; Standard 100 ms). Der Framebeleg hält sie als `actions[].pressMs` fest. Vor und nach einer Kamera- oder Werkzeugaktion bleibt die tatsächlich sichtbare Wirkung maßgeblich. Ein verlängerter synthetischer Klick ersetzt keine physische Eingabeabnahme.
+
 Paketverzeichnis und Katalog prüfen:
 
 ```sh

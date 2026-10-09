@@ -62,74 +62,61 @@
   "hexAtlasExecution": {
     "scope": "HEX-00 bis HEX-28 und sämtliche eingeordneten CITY-00 bis CITY-09 vollständig",
     "phase": "HEX-00",
-    "state": "original_initial_sequences_implementation_partial",
+    "state": "remaining_initial_sequences_measured_review_pending",
     "plan": "ROADMAP-HEX-00-PLAN.md",
     "currentRun": {
-      "id": "HEX-00-I02",
+      "id": "HEX-00-I03",
       "kind": "implementation",
-      "startedAt": "2026-10-09T00:38:24.332784+02:00",
-      "focus": "13 early original sequences: create/cancel, dimensions, camera, first draw, history, color, save/open, A/B/A and cold reopen",
+      "startedAt": "2026-10-09T01:40:11.896341+02:00",
+      "focus": "Gezielte acht Restfolgen des frühen Originalablaufs, vorhandene Kontrollkarten weiterverwenden",
       "state": "completed_partial",
-      "baseCommit": "395b97911a2c4d2b2410102516ac6c0220ae107e",
-      "integratedCommit": "8eedc57a3ad2181ed49cd3fd5f8ccc0a72720d7d",
+      "baseCommit": "f12a87891a06203d63d6d84acbb8451956aaec09",
       "evidence": [
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/manifest.json",
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original-reopen/session.json",
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/catalog-update.json",
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/inventory-validation-local.json",
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/inventory-validation-full.json",
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/all-frame-provenance.json",
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/check.log",
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/test.log",
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/build.log",
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/publish-check-provenance.json",
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/publish-test.log",
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/host-edit.log",
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/host-reopen.log"
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/remaining-sequences-20261009-014011/manifest.json"
       ],
-      "endedAt": "2026-10-09T01:35:49.313961+02:00",
-      "integratedCommits": [
-        "3a2fb7694a2e96e70a2ca4196793b38ba85d4f18",
-        "8f7fa1e692a0f5a9f7b39f04303400ccfeb56413",
-        "8eedc57a3ad2181ed49cd3fd5f8ccc0a72720d7d"
-      ],
-      "result": "Fünf frühe Originalfälle vollständig direkt belegt: Neuanlage/Abbruch, Maße/Vorlagen, Kamera, Historygrenzen und Escape/Werkzeugwechsel. Acht Fälle mit konkreten Teilfolgen und Restprüfungen. A/B/A und frischer Originalprozess zeigen getrennte Karten-/Werkzeug-/Assetzustände. Kein Hex-Produktcode und keine Fachfreigabe.",
-      "metrics": {
-        "completedInitialCases": 5,
-        "initialCases": 13,
-        "partialInitialCases": 8,
-        "newUiEntries": 6,
-        "totalUiEntries": 635,
-        "locallyPinnedUiEntries": 575,
-        "originalFrames": 221,
-        "mappedSurfaceRoles": 92,
-        "packageHints": 96,
-        "combinedCatalogErrors": 111,
-        "unchangedProtectedUserFiles": 16
+      "endedAt": "2026-10-09T02:36:57.619865+02:00",
+      "result": "Acht gezielte Restgruppen gemessen; zwei weitere frühe Fälle direkt verifiziert. Alle neun Neuanlagethemen gespeichert und im frischen Prozess geöffnet. Keine Fachfreigabe.",
+      "integratedCommit": "c8ee4d308fe6f6c363f384dc28bfca670a428bf8",
+      "outcome": {
+        "newFrames": 337,
+        "nativeUiEntries": 576,
+        "verifiedInitialCases": [
+          "WD-001.01",
+          "WD-001.02",
+          "WD-002.01",
+          "WD-003.01",
+          "WD-003.02",
+          "WD-004.01",
+          "WD-004.02"
+        ],
+        "allNineNewThemesMeasured": true,
+        "input": "synthetic_local_rfb",
+        "physicalInput": false,
+        "phaseGate": "open"
       }
     },
     "nextRun": {
-      "id": "HEX-00-I03",
-      "kind": "implementation",
-      "focus": "Nur die acht benannten Restfolgen ergänzen: ersten Einzelklick mit Fokus prüfen; aktualisiertes B kalt öffnen; Exit-/Wiederherstellungszweige; noch unklassifizierte Werkzeug-/Palettenwerte; Land-/Küstenregler; Groundpinsel/Filter/Fill; RGBA/HSV/Pipette/Außenklick; sieben übrige Themen ausschließlich bei Neuanlage. Vorhandene Referenzkarten und Kennungen verwenden, keine neue allgemeine Inventurschleife.",
-      "gate": "Danach eigener HEX-00-R01. HEX-00/HEX-01-Tor und getrennte Aufräumläufe bleiben offen."
+      "id": "HEX-00-R01",
+      "kind": "review",
+      "focus": "Eigener Abgleich gegen Roadmap/Plan und Original; Torentscheidung und begrenzte Pflichtlücken, anschließend eigene Nachbesserungen.",
+      "gate": "HEX-00/HEX-01 bleiben bis Fachreview, Pflichtnachbesserung und eigenständigem Aufräumreview offen."
     },
     "review": {
       "state": "not_started",
-      "next": "Eigener HEX-00-R01 nach Inventur und originalen Startfolgen; Pflichtlücken in eigenen Nachbesserungs-/Reviewläufen schließen."
+      "next": "Eigener HEX-00-R01 auf dem integrierten Endstand; nur daraus begrenzte Nachbesserungen ableiten. Keine weitere allgemeine Inventurschleife vor dem Review."
     },
     "cleanup": {
       "state": "not_started",
       "next": "Nach Fachfreigabe eigener Aufräumplan, Umsetzung und Review; HEX-01 erst nach bestandenem Aufräumreview."
     },
     "open": [
-      "Weitere Auswahl-/Entwurfszustände, Dropdowns, Stil-/Assetpaletten, Zahlenbereiche, unbeschriftete Regler und vollständige Set-Liste im Fachreview auf verpflichtende Abdeckung prüfen.",
-      "Mehrdeutige/bedingt sichtbare Pakethinweise im Fachreview gezielt klären: area_creator_dialog, inspect_dialog, news_dialog, update_dialog. Dokumentierte erfolglose Originalzustände erhalten.",
-      "Fünf frühe Originalfälle mit Rohkarte und neuem Prozess belegt. Restfolgen gezielt: erster Klick/Fokus, gewöhnliches Save kalt öffnen, Exit-/Wiederherstellungszweige, übrige Zustandswerte, Küstenregler, Farb-/Pinselvarianten und sieben übrige Neuanlagethemen.",
-      "HEX-00-C-Fachreview und getrennte Aufräumläufe; CITY-00-Ergebnisvorbilder im eigenen Referenzlauf.",
-      "Importierte Originalbelege aus b772d8d lokal nicht verfügbar: unverändert erhalten; neue Messungen ergänzen sie ausdrücklich und ersetzen keinen fehlenden Altbeleg.",
-      "Sauberer Repo-Teststand: drei vorhandene Assettests benötigen lokal fehlende own.dungeondraft_pack und own-walls.dungeondraft_pack; fremde lokale Teständerungen bleiben ausgeschlossen und unverändert."
+      "HEX-00-R01: frühe Pflichtabdeckung gegen Roadmap/Plan bewerten; sechs Teilgruppen bleiben ausdrücklich offen.",
+      "Timing/Fokus kurzer erster Eingabe, weitere Werkzeugzustände, einzelne Effektfarben, deutlich verschiedene Opacity-/Velocity-Wirkung und positive Filter auf geeignete Instanzen gezielt bewerten.",
+      "Vollständigkeit weiterer Auswahl-/Entwurfszustände, Dropdowns, Stil-/Assetpaletten, Zahlenbereiche und Set-Liste im Fachreview prüfen.",
+      "Vier mehrdeutige Pakethinweise: area_creator_dialog, inspect_dialog, news_dialog, update_dialog; erfolglose Originalzustände erhalten.",
+      "111 importierte Belegprobleme lokal erhalten; neue Messungen ersetzen fehlende Altbelege nicht.",
+      "Fachfreigabe und eigene Aufräumplanung/-umsetzung/-review offen. CITY-00-Referenzlauf bleibt eigenständig; Bestandskarten-Themenwechsel HEX-24.",
+      "Sauberer Repo-Testbaum benötigt zwei fehlende externe Asset-Fixtures; zwei fremde lokale Teständerungen ausgeschlossen und unverändert."
     ],
     "coordination": {
       "issue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1",
@@ -140,9 +127,9 @@
       "tests": 164,
       "build": "passed",
       "productBuildSha256": "b321128188b944c3324594663a410acfd84863f17860f637b9ed2e6ecc33b466",
-      "integratedCommit": "8eedc57a3ad2181ed49cd3fd5f8ccc0a72720d7d",
+      "integratedCommit": "c8ee4d308fe6f6c363f384dc28bfca670a428bf8",
       "host": "Gebundener Eingang/Raum-Key, exaktes Undo/Redo, Save und frischer Obsidian-Prozess auf integriertem Build b3211281 bestanden.",
-      "testProvenance": "164 lokale Tests enthalten unverändert erhaltene fremde Fixture-Teständerungen; diese werden nicht veröffentlicht. Separater veröffentlichbarer Baum: 167 Tests, 164 bestanden, drei fehlende externe Asset-Fixtures.",
+      "testProvenance": "164 lokale Tests bestanden; zwei unveränderte fremde Teständerungen nicht veröffentlicht. Vorheriger sauberer Baum 167 Tests/164 bestanden/drei fehlende externe Fixtures. Veröffentlichte Testquellen seit dieser Prüfung identisch.",
       "cleanTreeTest": {
         "state": "fixture_missing",
         "baseCommit": "8f7fa1e692a0f5a9f7b39f04303400ccfeb56413",
@@ -152,12 +139,25 @@
         "reason": "Fehlende ../dungeon-auswertung/tests/fixtures/own-asset-pack/own.dungeondraft_pack und wall-texture-probe/own-walls.dungeondraft_pack; Quellcheckout und fremde Tests unverändert.",
         "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/publish-test.log"
       },
-      "catalog": "575 Einträge mit lokalen Originalbelegen und 92 Rollen bestehen Zuordnungs-/Herkunftsprüfung. Alle 221 neuen Frames geprüft. Gesamtkatalog mit 635 Einträgen meldet weiterhin 111 fehlende importierte Belegreferenzen; unverändert erhalten.",
+      "catalog": "576 Einträge mit lokalen Originalbelegen und 92 Rollen bestehen Herkunfts-/Zuordnungsprüfung. Alle 337 neuen Frames geprüft. Gesamtkatalog 635 Einträge/83 Fälle: 111 erhaltene importierte Belegprobleme, keine neuen Fall-/Framefehler.",
       "physicalInput": "not_run",
       "largeMap": "not_run",
       "installation": "unchanged",
       "testedProductCommit": "8f7fa1e692a0f5a9f7b39f04303400ccfeb56413",
-      "incomingReviewIntegration": "8f7fa1e enthielt Produktänderungen, danach Basisprüfungen und zwei Hostläufe bestanden. cf3787e/8eedc57 ändern nur Dungeonplan-/Abnahme-/Reviewdaten; Produkt, Testquellen und Wonderdraft-Helfer gegenüber geprüftem Stand identisch."
+      "incomingReviewIntegration": "ada9ae9/1535749/216bdfb integriert. Neue Dungeon-Host-/Großkarten-/Vault-Prüfer und Nachweise; src/, veröffentlichte tests/, Buildskript und Abhängigkeiten unverändert. Produktbuild b3211281 bleibt identisch; bestehende zwei Kern-Hostnachweise werden weitergeführt. 122a1a6/c8ee4d3 anschließend integriert: ausschließlich Dungeon-Review/Plan/Abnahme, geprüfte Quellen unverändert.",
+      "latestOriginalRun": {
+        "manifest": "/home/aaron/.cache/dungeon-native-qa/hex-00/remaining-sequences-20261009-014011/manifest.json",
+        "sessions": 4,
+        "newFrames": 337,
+        "normalExitCodes": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "allNineNewThemesMeasured": true,
+        "physicalInput": false
+      }
     }
   },
   "phase": "Phase 6: zweiter Nachbesserungslauf teilweise umgesetzt; fünf Restpositionen und unabhängiger Review offen",
@@ -2518,7 +2518,11 @@
         "protectedFiles": 63,
         "state": "implementation_review_candidate"
       },
-      "open": ["P7-1/3/4 unabhängiger Review", "P7-2 physische Eingabe", "Unabhängiger Fachreview"],
+      "open": [
+        "P7-1/3/4 unabhängiger Review",
+        "P7-2 physische Eingabe",
+        "Unabhängiger Fachreview"
+      ],
       "gate": "open"
     },
     "phase7Review": {
@@ -2529,7 +2533,10 @@
       "p7_1": "Zweites eigenes Edit-/Neuöffnungspaar bestanden; erster Review-Editlauf stoppte vor dem Feature-Dialog. Ursache offen.",
       "p7_3": "Eigenes Edit-/Neuöffnungspaar und Rohdatenaudit bestanden.",
       "p7_4": "Eigenes Edit-/Neuöffnungspaar und Hashprüfung von 63 produktiven Dateien bestanden.",
-      "open": ["P7-1 Dungeon-Inhalte-Dialogdiagnose", "P7-2 physische Maus-/Touchpad-Eingabe"],
+      "open": [
+        "P7-1 Dungeon-Inhalte-Dialogdiagnose",
+        "P7-2 physische Maus-/Touchpad-Eingabe"
+      ],
       "gate": "open"
     },
     "phase7RepairPlan": {
