@@ -4094,17 +4094,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I39-I",
-      "kind": "integration_audit",
-      "startedAt": "2026-10-09T16:03:34.427799+00:00",
-      "focus": "Reale Atlasanschlüsse und konkrete CITY-01-Umsetzung",
-      "state": "completed",
-      "result": "Neun reale Quellbereiche mit SHA-256/Zeilenankern geprüft; drei CTY- und drei CO-Zuordnungen vollständig in konkretem Anschlussplan. Detailprojektion/Router/Besitzer/History fehlen noch; .city plus Elternplatzierung braucht bereits CITY-01 gemeinsame Save/Recovery. Kollege bestätigt Transaktions-/Command-Basis in HEX-02 und geprüften HEX-05-Handoff. Keine Produkt- oder Hostfreigabe."
-    },
-    "nextRun": {
       "id": "CITY-00-I39-R",
       "kind": "integration_audit_review",
-      "focus": "Plan gegen Quelle, CTY/CO, Besitz und Fehlerfälle reviewen"
+      "startedAt": "2026-10-09T16:04:44.446953+00:00",
+      "focus": "CITY-01-Plan gegen tatsächliche Quelle und Pflichtfälle reviewen",
+      "state": "completed",
+      "result": "Plan vollständig gegen neun unveränderte Quellbereiche, drei CITY-01-Kriterien und drei Originalzuordnungen geprüft. Meter-/Dokumentbesitz, vollständige Hausaktionen, Abbruch, gemeinsame History, früh nötige Mehrdateispeicherung und Hostfehlerfolge abgedeckt.65 CO-/24 CTY-Pflichten bleiben offen. Aufräumbefund: bestehende Geometriehelfer und ihre Dungeon-/Einheitenkopplung im Anschlussplan noch nicht eingeordnet."
+    },
+    "nextRun": {
+      "id": "CITY-00-I39-CP",
+      "kind": "cleanup_planning",
+      "focus": "Geometriewiederverwendung und Einheitenkopplung konkret einordnen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",

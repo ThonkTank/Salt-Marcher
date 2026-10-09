@@ -624,3 +624,6 @@ CITY-00-I39-P Start 2026-10-09T16:00:29.840385+00:00; Fokus: Quellprüfung und k
 
 
 CITY-00-I39-I Start 2026-10-09T16:03:34.427799+00:00; Neun reale Quellbereiche mit SHA-256/Zeilenankern geprüft; drei CTY- und drei CO-Zuordnungen vollständig in konkretem Anschlussplan. Detailprojektion/Router/Besitzer/History fehlen noch; .city plus Elternplatzierung braucht bereits CITY-01 gemeinsame Save/Recovery. Kollege bestätigt Transaktions-/Command-Basis in HEX-02 und geprüften HEX-05-Handoff. Keine Produkt- oder Hostfreigabe. Anschlussplan: [CITY-01 Integration](ROADMAP-CITIES-CITY01-INTEGRATION-PLAN.md). Audit: /home/aaron/.cache/dungeon-native-qa/city-plans/city00-i39-integration-20261009/source-audit.json. Review folgt getrennt.
+
+
+CITY-00-I39-R Start 2026-10-09T16:04:44.446953+00:00; Plan vollständig gegen neun unveränderte Quellbereiche, drei CITY-01-Kriterien und drei Originalzuordnungen geprüft. Meter-/Dokumentbesitz, vollständige Hausaktionen, Abbruch, gemeinsame History, früh nötige Mehrdateispeicherung und Hostfehlerfolge abgedeckt.65 CO-/24 CTY-Pflichten bleiben offen. Aufräumbefund: bestehende Geometriehelfer und ihre Dungeon-/Einheitenkopplung im Anschlussplan noch nicht eingeordnet. Aufräum-P/I/R folgen getrennt.
