@@ -145,12 +145,12 @@
     "architecture": "ARCHITECTURE.md#geplante-katalog--und-encounter-erweiterung",
     "acceptance": "acceptance.json.saltMarcherCatalogEncounter",
     "currentRun": {
-      "id": "CE-02-I02-S01-W04",
+      "id": "CE-02-I02-S01-W04-T01",
       "kind": "source_inventory_schema_transcript_intermediate",
       "state": "in_progress_verified_incomplete",
-      "focus": "Inventory all 99 Adventuring Gear table leaf rows in physical PDF order while preserving the incomplete gate",
+      "focus": "Transcribe all 99 Adventuring Gear rows with costs, optional weights, table groups and published narrative facts while preserving the incomplete gate",
       "plan": "ROADMAP-SALTMARCHER-CE02-I02-PLAN.md",
-      "result": "All 99 Adventuring Gear table leaf rows are inventoried in physical PDF order with contiguous source identities and page evidence. Group headers and the separate Container Capacity auxiliary table are excluded from primary occurrences; Potion of healing remains an explicit unmerged occurrence pending the disposition ledger. The real pinned PDF verifies 149 equipment occurrence labels. Overall coverage is 149 of 219 primary equipment occurrences and 50 transcript records. S01 remains incomplete and I01 blocked."
+      "result": "All 99 Adventuring Gear table leaf rows now have source transcripts with exact costs, optional weights, controlled table-group categories and every published item narrative. Potion of healing retains the first physical table occurrence as its canonical magic identity; its later detail merge remains open. The real pinned PDF verifies 149 occurrence labels and 455 captured facts. Overall coverage remains 149 of 219 primary equipment occurrences and rises to 149 transcript records. S01 remains incomplete and I01 blocked."
     },
     "implementationRun": {
       "id": "CE-01-I01",
@@ -353,7 +353,7 @@
       },
       "limits": "Build-contract repair only. No catalog data/provider/UI change and no CE, Atlas, host, physical-input or overall approval."
     },
-    "verified": "CE-00 and CE-01 implementation/review/repair cycles passed their scoped gates. CE-01-H01 passed its independently reviewed automated scope. CE-02-I01 product commit 7469e64202e730175ee138136a69d82ad4f28ea6 and metadata repair candidate 4d239004c4f000b2af6f66122a05135b0c353ffb passed independent review. CE-02-I02-S01 now has a checked fail-closed source-package scaffold with 149 equipment occurrences and 50 transcripts; the complete corpus, bounded matching, S01 review and Item product feature remain open. Physical input, screenreader and other-platform acceptance remain open.",
+    "verified": "CE-00 and CE-01 implementation/review/repair cycles passed their scoped gates. CE-01-H01 passed its independently reviewed automated scope. CE-02-I01 product commit 7469e64202e730175ee138136a69d82ad4f28ea6 and metadata repair candidate 4d239004c4f000b2af6f66122a05135b0c353ffb passed independent review. CE-02-I02-S01 now has a checked fail-closed source package with 149 equipment occurrences and 149 transcripts, including all 99 Adventuring Gear rows and narratives; the complete corpus, bounded matching, S01 review and Item product feature remain open. Physical input, screenreader and other-platform acceptance remain open.",
     "open": [
       "CE-01 physical keyboard/mouse, screenreader and other-platform acceptance; CE-02-I02 through CE-07 runs",
       "CE-02-I02-S01 complete official inventory, transcript, closed subcategory enum, full PDF matching, complete golden cases and independent S01-R01 review",
@@ -361,10 +361,10 @@
       "Physical catalog input acceptance cannot be replaced by Playwright automation"
     ],
     "nextRun": {
-      "id": "CE-02-I02-S01-W04-T01",
+      "id": "CE-02-I02-S01-W05",
       "kind": "source_inventory_schema_transcript_continuation",
       "plan": "ROADMAP-SALTMARCHER-CE02-I02-PLAN.md",
-      "focus": "Transcribe all 99 Adventuring Gear rows with costs, optional weights, exact table group mapping and sourced narrative facts; keep Potion of healing unmerged and complete false"
+      "focus": "Inventory and transcribe the seven Equipment Packs in physical PDF order, reconcile their prose-only components explicitly, and keep complete false"
     }
   },
   "repositoryWorkflow": {
@@ -430,7 +430,7 @@
   "hexAtlasExecution": {
     "scope": "HEX-00 bis HEX-28 und sämtliche eingeordneten CITY-00 bis CITY-09 vollständig",
     "phase": "HEX-03",
-    "state": "location_core_checked_world_ui_storage_inactive",
+    "state": "location_core_published_awaiting_team_handshake_heartbeat",
     "plan": "ROADMAP-HEX-03-PLAN.md",
     "currentRun": {
       "id": "HEX-03-I01a",
@@ -441,12 +441,19 @@
       "finishedAt": "2026-10-09T19:49:23.151867+00:00",
       "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/core-implementation.json",
       "sourceCommit": "09a242772214e4c04307d9ffddbb89a831d9210b",
-      "testsPassed": 386
+      "testsPassed": 386,
+      "publication": {
+        "candidate": "1d83833df0b398f517157f55cfdc94467b0c6be0",
+        "shared": "5ae20ae9b85982911c1f526de289468e08417cfc",
+        "receipt": "/home/aaron/.cache/dungeon-native-qa/hex-01/p01-20261009151055/hex03-core-publication.json",
+        "mergedBuildHostAcceptance": false
+      }
     },
     "nextRun": {
       "id": "HEX-03-I01b",
       "kind": "first_native_location_flow",
-      "focus": "Activate validated world placements only with Location/draft2/journal/copy/discard/recovery closure; connect marker/Key/drag/fit/shared history in same editor, first real native/fresh flow before extra links."
+      "focus": "Activate validated world placements only with Location/draft2/journal/copy/discard/recovery closure; connect marker/Key/drag/fit/shared history in same editor, first real native/fresh flow before extra links.",
+      "dependency": "Team milestone/owner/hand-off consolidation before a new product claim; per-run native slot coordination."
     },
     "review": {
       "run": "HEX-02-R02",
@@ -489,10 +496,24 @@
       "dungeonThread": "01a1204f-d184-7567-bfb3-d3ab06a0d07e",
       "fixtureReviewThread": "01a12031-2c30-73f7-bc01-6bd3eba86046",
       "publicationPolicy": "Bei fortlaufenden Shared-Branch-Pushrennen geprüftes Paket auf eigenem Branch sichern, regulären Servermerge in gemeinsamen active/installed-phase1 prüfen und lokal integrieren; keine Historienumschreibung.",
-      "nativeGuiSlot": "Explicitly handed to City for isolated CO-COK-0004 light/weather Original; Root no native GUI until normal exit and explicit return.",
+      "nativeGuiSlot": "City normal Exit0 and explicit return confirmed by Issue6088178583; no Root GUI running. Coordinate a fresh exclusive slot before any next native run.",
       "gmTestingThread": "01a12031-2c30-73f7-bc01-6bd3eba86046",
       "gmTestingPolicy": "Eigenständiger Cloud-GM-Endanwenderlauf nach direkter Nutzerpräzisierung, ohne lokalen QA-Slot; beobachtete Befunde/Nacharbeiten getrennt überIssue1 übernehmen, kein Ersatz durch technische Testzahlen.",
-      "lastCheckIn": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1#issuecomment-6086594621"
+      "lastCheckIn": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1#issuecomment-6088219207",
+      "cityHex03PlanReview": {
+        "state": "passed_scoped_plan",
+        "candidate": "cb869951a1bb5aad43fa422794247268669e04b2",
+        "issue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1#issuecomment-6088027708",
+        "sharedCityApiRatified": false
+      },
+      "teamHandshake": {
+        "state": "awaiting_team_consolidation_no_new_product_claim",
+        "prioritySource": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1#issuecomment-6087962175",
+        "ownResponse": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1#issuecomment-6088219207",
+        "nextVisibleSlice": "HEX03 native Location marker/Key/drag/shared history/full persistence/fresh process",
+        "sharedMilestone": "HEX03 -> HEX04 -> HEX05: Hex/Location/Dungeon editing by zoom, one camera/history, Save and fresh reopen; CITY01..04 follows",
+        "handoff": "After runnable HEX03: exact build/flow to Atlas-QA and independent review. City integration after ratified HEX04/05 contracts."
+      }
     },
     "verification": {
       "check": "Clean Git41cac27 passed",
@@ -1430,7 +1451,13 @@
           "Readonly cloned fixture changed to an explicitly mutable caller copy.",
           "Test redoDepth assumption corrected to actual canRedo API; no product API added."
         ],
-        "userVault": "unchanged"
+        "userVault": "unchanged",
+        "publication": {
+          "candidate": "1d83833df0b398f517157f55cfdc94467b0c6be0",
+          "shared": "5ae20ae9b85982911c1f526de289468e08417cfc",
+          "receipt": "/home/aaron/.cache/dungeon-native-qa/hex-01/p01-20261009151055/hex03-core-publication.json",
+          "mergedBuildHostAcceptance": false
+        }
       }
     },
     "repairPlan": "ROADMAP-HEX-02-REPAIR-PLAN.md",
@@ -1457,7 +1484,18 @@
       "dependency": "GM-UX-N-004 viewport facts/repair remain separate; no terrain product edits yet.",
       "nativeGate": "Isle flow after I01b; true save/fresh recovery after I01c.",
       "referenceRule": "WD004.02 Escape retains land; no invented rollback semantics."
-    }
+    },
+    "continuation": {
+      "mode": "heartbeat",
+      "automationId": "hex-atlas-fortsetzen",
+      "status": "ACTIVE",
+      "intervalHours": 6,
+      "targetThreadId": "01a11c65-2d9f-7e72-8587-cf9740b0650a",
+      "userRequest": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1#issuecomment-6088100769",
+      "goalPause": "requested_by_user_switch_to_heartbeat; final tool follows metadata publication",
+      "policy": "One bounded due step after Team handshake; no repeated unchanged status or autonomous Goal continuation."
+    },
+    "updatedAt": "2026-10-09T19:56:03.384926+00:00"
   },
   "phase": "Phase 6: zweiter Nachbesserungslauf teilweise umgesetzt; fünf Restpositionen und unabhängiger Review offen",
   "goal": "Dungeon-Pfad bis zur vollständigen beauftragten Dungeondraft-Verhaltensgleichheit verfolgen: Bedienung und Funktion angleichen, Grafik ungefähr gleichwertig. Zuerst ROADMAP-PARITY.md mit Building und Object Tool abschließen, danach übrige Dungeon-Werkzeuge. Jede Fachphase getrennt planen, umsetzen und unabhängig reviewen; Lücken mit eigenen Nachbesserungs- und Reviewläufen schließen; danach eigene Aufräumphase mit Plan, Umsetzung und Review.",

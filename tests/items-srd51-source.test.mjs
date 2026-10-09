@@ -63,7 +63,7 @@ test("items source package is explicitly incomplete and fails closed by default"
   const result = await verifyItemsSourcePackage({ allowIncomplete: true });
   assert.equal(result.complete, false);
   assert.equal(result.validation.occurrenceCount, 149);
-  assert.equal(result.validation.recordCount, 50);
+  assert.equal(result.validation.recordCount, 149);
   assert.ok(result.blockers.length >= 5);
 });
 
@@ -71,6 +71,8 @@ test("normalization expands ligatures and proven wrap artifacts while preserving
   assert.equal(normalizePdfText("  Wondrous\u00a0item, inter\u00ad\nnational — hero’s \uFB01ne  "),
     "Wondrous item, international — hero’s fine");
   assert.equal(normalizePdfText("Ladder (10-\u00ad\u2010foot)"), "Ladder (10-foot)");
+  assert.equal(normalizePdfText("item—\n an orb, wand-\u2011like item—\n designed"),
+    "item—an orb, wand-like item—designed");
   assert.equal(normalizePdfText("co\u00adoperate – −"), "co\u00adoperate – −");
 });
 
@@ -187,4 +189,43 @@ test("adventuring gear inventory preserves all 99 physical table rows without gr
   [reordered.occurrences[50], reordered.occurrences[51]] = [reordered.occurrences[51], reordered.occurrences[50]];
   assert.throws(() => validateTranscriptData(checkedTranscript, reordered, { allowIncomplete: true }),
     /lückenlose physische Reihenfolge/);
+});
+
+test("adventuring gear transcript preserves all 99 rows, exact omissions and source categories", async () => {
+  const [checkedInventory, checkedTranscript] = await Promise.all([
+    readFile(new URL("items-srd51-inventory.json", dataRoot), "utf8").then(JSON.parse),
+    readFile(new URL("items-srd51-transcript.json", dataRoot), "utf8").then(JSON.parse),
+  ]);
+  const records = checkedTranscript.records.filter(record => record.id.includes(":adventuring-gear:"));
+  assert.equal(records.length, 99);
+  assert.deepEqual(records.map(record => record.id), checkedInventory.occurrences
+    .filter(item => item.sectionId === "adventuring-gear").map(item => item.id));
+  assert.deepEqual(records.find(record => record.name === "Crossbow bolts (20)").weight,
+    { sourceText: "1½ lb.", pounds: "1.5" });
+  assert.equal("weight" in records.find(record => record.name === "Antitoxin (vial)"), false);
+  assert.deepEqual(records.find(record => record.name === "Waterskin").weight,
+    { sourceText: "5 lb. (full)" });
+  assert.deepEqual(records.find(record => record.name === "Caltrops (bag of 20)").cost,
+    { sourceText: "1 gp", copperPieces: 100 });
+  assert.deepEqual(records.find(record => record.name === "Spikes, iron (10)").cost,
+    { sourceText: "1 gp", copperPieces: 100 });
+  assert.equal(records.find(record => record.name === "Climber’s kit").subcategory, "kit");
+  assert.equal(records.find(record => record.name === "Crystal").subcategory, "arcane-focus");
+  assert.equal(records.find(record => record.name === "Amulet").subcategory, "holy-symbol");
+});
+
+test("Potion of healing keeps its first physical occurrence as canonical magic identity", async () => {
+  const [checkedInventory, checkedTranscript] = await Promise.all([
+    readFile(new URL("items-srd51-inventory.json", dataRoot), "utf8").then(JSON.parse),
+    readFile(new URL("items-srd51-transcript.json", dataRoot), "utf8").then(JSON.parse),
+  ]);
+  const potion = checkedTranscript.records.find(record => record.name === "Potion of healing");
+  const occurrence = checkedInventory.occurrences.find(item => item.id === potion.id);
+  assert.equal(potion.id, "srd51:equipment:adventuring-gear:76");
+  assert.equal(potion.category, "magic-item");
+  assert.equal(potion.magic, true);
+  assert.equal(potion.subcategory, "potion");
+  assert.match(potion.description[0].text, /magical red fluid/);
+  assert.equal(occurrence.mergeIntoId, null);
+  assert.equal(checkedTranscript.complete, false);
 });
