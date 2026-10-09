@@ -329,15 +329,36 @@
     },
     "ce01C01PlanReview": {
       "run": "CE-01-C01-P01-R01",
-      "state": "changes_required",
+      "state": "passed_after_repair",
       "reviewedPlanCommit": "2ee3a80f988ac8b96a736a0cc15ee27b5e989faf",
       "finding": "The plan identifies separately maintained restore and reset draft lists, but its implementation scope derives only restore/hydration from DRAFT_FILTERS and leaves resetCreatureCatalogFilters with a second manual seven-key list.",
       "requiredRepair": "Derive reset draft keys from DRAFT_FILTERS too and require a regression across all seven filter/draft pairs while preserving sort and selection.",
       "retained": "All other cleanup boundaries, exact-candidate host reruns, reviewed H01 evidence, D&D-2014-only scope and open physical/screenreader/platform gates remain valid.",
+      "reReview": "Independent read-only re-review on 9016ced passed the repaired plan without a remaining mandatory finding.",
       "verification": {"check": "passed", "tests": {"passed": 245, "failed": 0}, "build": "passed", "json": "passed", "diffCheck": "passed"},
       "limits": "Read-only plan review; no implementation, host run or CE case closure."
     },
-    "next": "Implement and independently review the bounded CE-01-C01 cleanup. CE-02 planning may proceed, but implementation waits for the cleanup review and CE-01 remains without full approval while physical-input, screenreader and other-platform gates are open."
+    "ce01C01Implementation": {
+      "run": "CE-01-C01-I01",
+      "state": "completed_checked_host_passed_review_pending",
+      "commit": "5759cc9b3b2f016849f3e8325e0f7effe59edc2b",
+      "result": "One shared mapping now owns restore drafts and reset draft keys, while one host-neutral helper owns sort, direction and page defaults; the content controller no longer duplicates those rules.",
+      "verification": {
+        "check": "passed",
+        "tests": {"passed": 246, "failed": 0},
+        "build": "passed",
+        "mainBytes": 1339259,
+        "mainSha256": "f29f86cb02547ee5f6b5767a247c7364ebaad1d2509df52cdd00752ad5ba7686",
+        "mainJsGrowthBytes": 149889,
+        "evidence": [
+          "/home/aaron/.cache/dungeon-native-qa/evidence/1791558557553-ce01-catalog-edit",
+          "/home/aaron/.cache/dungeon-native-qa/evidence/1791558564140-ce01-catalog-reopen",
+          "/home/aaron/.cache/dungeon-native-qa/evidence/1791558569690-ce01-catalog-damaged-edit"
+        ]
+      },
+      "limits": "Independent cleanup review pending. Automated host input does not close physical keyboard/mouse, screenreader or other-platform acceptance."
+    },
+    "next": "Independently review CE-01-C01-I01. CE-02 planning may proceed, but implementation waits for the cleanup review and CE-01 remains without full approval while physical-input, screenreader and other-platform gates are open."
   },
   "cityPlans": {
     "schemaVersion": 1,

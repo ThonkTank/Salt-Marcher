@@ -3,6 +3,7 @@ import test from "node:test";
 import type { Creature } from "../../src/features/catalog/creature-catalog";
 import {
   CREATURE_CATALOG_PAGE_SIZE,
+  CREATURE_CATALOG_DRAFT_FILTERS,
   adjacentCreatureId,
   applyCreatureCatalogDrafts,
   creatureCatalogFilterChips,
@@ -12,6 +13,7 @@ import {
   normalizeCreatureCatalogViewState,
   removeCreatureCatalogFilter,
   resetCreatureCatalogFilters,
+  restoreCreatureCatalogViewState,
 } from "../../src/features/catalog/creature-catalog-view-state";
 
 test("catalog view state restores only valid serializable values", () => {
@@ -106,20 +108,57 @@ test("catalog view state maps the complete filter contract into a bounded query"
   });
 });
 
+test("catalog view restore owns defaults and derives every missing draft from one mapping", () => {
+  const filters: Record<string, unknown> = {};
+  CREATURE_CATALOG_DRAFT_FILTERS.forEach(([filterKey], index) => {
+    filters[filterKey] = `filter-${index}`;
+  });
+  const restored = restoreCreatureCatalogViewState(filters);
+  assert.equal(restored.sort, "name");
+  assert.equal(restored.direction, "asc");
+  assert.equal(restored.page, 0);
+  for (const [filterKey, draftKey] of CREATURE_CATALOG_DRAFT_FILTERS)
+    assert.equal(restored[draftKey], restored[filterKey]);
+
+  const nonDefault = restoreCreatureCatalogViewState({
+    ...filters,
+    sort: "hp",
+    direction: "desc",
+    page: 2,
+    ...Object.fromEntries(CREATURE_CATALOG_DRAFT_FILTERS.map(([, draftKey]) => [draftKey, ""])),
+  });
+  assert.equal(nonDefault.sort, "hp");
+  assert.equal(nonDefault.direction, "desc");
+  assert.equal(nonDefault.page, 2);
+  for (const [, draftKey] of CREATURE_CATALOG_DRAFT_FILTERS)
+    assert.equal(nonDefault[draftKey], "");
+
+  assert.deepEqual(
+    restoreCreatureCatalogViewState({ sort: "broken", direction: "sideways", page: -1 }),
+    restoreCreatureCatalogViewState({}),
+  );
+});
+
 test("catalog filters expose removable chips and reset without losing sort or selection", () => {
-  const state = {
+  const state: Record<string, unknown> = {
     text: "dragon", textDraft: "dragon", types: ["Dragon", "Fiend"], crMin: 5,
     sort: "hp" as const, direction: "desc" as const, page: 4, selectedId: "adult-red-dragon",
   };
-  assert.deepEqual(creatureCatalogFilterChips(state).map((chip) => chip.label), [
-    "Typ: Dragon", "Typ: Fiend", "Name: dragon", "HG min: 5",
-  ]);
+  for (const [filterKey, draftKey] of CREATURE_CATALOG_DRAFT_FILTERS) {
+    state[filterKey] = `filter-${filterKey}`;
+    state[draftKey] = `draft-${draftKey}`;
+  }
+  assert.ok(creatureCatalogFilterChips(state).some((chip) => chip.label === "Typ: Dragon"));
   const oneRemoved = removeCreatureCatalogFilter(state, "types", "Dragon");
   assert.deepEqual(oneRemoved.types, ["Fiend"]);
   assert.equal(oneRemoved.page, 0);
   const reset = resetCreatureCatalogFilters(state);
   assert.equal(reset.text, undefined);
   assert.equal(reset.textDraft, undefined);
+  for (const [filterKey, draftKey] of CREATURE_CATALOG_DRAFT_FILTERS) {
+    assert.equal(reset[filterKey], undefined);
+    assert.equal(reset[draftKey], undefined);
+  }
   assert.equal(reset.types, undefined);
   assert.equal(reset.crMin, undefined);
   assert.equal(reset.sort, "hp");

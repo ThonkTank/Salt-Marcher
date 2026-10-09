@@ -14,9 +14,9 @@ import {
   creatureCatalogQueryForState,
   creatureCatalogRangeError,
   creatureCatalogSortChange,
-  normalizeCreatureCatalogViewState,
   removeCreatureCatalogFilter,
   resetCreatureCatalogFilters,
+  restoreCreatureCatalogViewState,
   type CreatureCatalogArrayFilter,
   type CreatureCatalogDraftKey,
   type CreatureCatalogFilterChip,
@@ -75,7 +75,7 @@ export function createUniqueCatalogOpener<Leaf extends UniqueCatalogLeaf>(
 export class CreatureCatalogViewContent {
   private catalog?: CreatureCatalog;
   private page?: CreatureCatalogPage;
-  private state: CreatureCatalogViewState = { sort: "name", direction: "asc", page: 0 };
+  private state: CreatureCatalogViewState = restoreCreatureCatalogViewState({});
   private generation = 0;
   private abort = new AbortController();
   private renderAbort = new AbortController();
@@ -94,20 +94,7 @@ export class CreatureCatalogViewContent {
   }
 
   async setState(state: Record<string, unknown>): Promise<void> {
-    const normalized = normalizeCreatureCatalogViewState(state);
-    this.state = {
-      ...normalized,
-      sort: normalized.sort ?? "name",
-      direction: normalized.direction ?? "asc",
-      page: normalized.page ?? 0,
-      textDraft: normalized.textDraft ?? normalized.text,
-      movementDraft: normalized.movementDraft ?? normalized.movement,
-      sensesDraft: normalized.sensesDraft ?? normalized.senses,
-      vulnerabilitiesDraft: normalized.vulnerabilitiesDraft ?? normalized.vulnerabilities,
-      resistancesDraft: normalized.resistancesDraft ?? normalized.resistances,
-      immunitiesDraft: normalized.immunitiesDraft ?? normalized.immunities,
-      conditionImmunitiesDraft: normalized.conditionImmunitiesDraft ?? normalized.conditionImmunities,
-    };
+    this.state = restoreCreatureCatalogViewState(state);
     if (this.contentEl.isConnected) await this.loadCatalog();
   }
 
