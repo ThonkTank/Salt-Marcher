@@ -3615,17 +3615,17 @@
     "state": "city00_reference_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I09-I",
-      "kind": "reference_gallery",
-      "startedAt": "2026-10-09T12:06:58.565973+00:00",
-      "focus": "Vier Ergebnisformen sichern und Kriterien zuordnen",
-      "state": "completed",
-      "result": "Sechs feste Referenzen mit Originalbytes/Hashes, Quellen, Datum und Ausschnitten; veröffentlichte COK-Galerie von eigener Demo getrennt"
-    },
-    "nextRun": {
       "id": "CITY-00-I09-R",
       "kind": "requirements_review",
-      "focus": "Galerie gegen Roadmap und Plan prüfen"
+      "startedAt": "2026-10-09T12:07:42.076908+00:00",
+      "focus": "Galerie gegen Roadmap und I09-P prüfen",
+      "state": "completed",
+      "result": "Vier Formen und Quellenumfang belegt; R01–R03 Metadatenbereinigung erforderlich, keine Paritätsfreigabe"
+    },
+    "nextRun": {
+      "id": "CITY-00-I09-CP",
+      "kind": "cleanup_planning",
+      "focus": "Befunde ohne Änderung der Rohbilder oder Pflichten planen"
     },
     "open": [
       "CITY-00 direkte Referenzinventur/Galerie aller drei Produkte",
