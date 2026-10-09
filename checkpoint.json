@@ -1840,7 +1840,7 @@
     "plan": "ROADMAP-PARITY-PLAN.md",
     "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
     "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
-    "nextRun": "ROADMAP-PARITY-TOOLS.md Phase 1: DD-038 Building-Boden nach direktem Rechteck-/Linksrandpaar: gemischte Bodenstile auf gemeinsamer Kontur, einzellige und größere rechteckige Übermalung, die 2×1-Stilgrenze beim Radieren und ein 1×1-Innenloch sind gepaart; weitere Übermal- und Radierformen samt größeren Löchern direkt messen und Host folgen lassen; Konturpunktverschiebung ist in drei Varianten mit Original und Host separat reviewt; Punkteinfügen auf der gemischten V4-Kontur ist mit Original und Host separat reviewt; Punktentfernung auf gemischtem V4-Boden ist mit Original und Host separat reviewt; zweite Delete-Geste am Dreieck samt Boden-Zellfolge ist mit Original und Host separat reviewt; als nächsten eigenen Lauf den gemessenen Rechteckzug über dem elliptischen Innenloch im Host paaren; weitere Punktgesten und Formen folgen; kombinierte Randänderung direkt im Original und Host prüfen. Terrainmasken beim Resize sind auf vorbereiteten Acht-Slot-Karten gepaart; Terrainmalen und weitere Entitäten separat abgleichen; die auf 12×8 gemessenen Eingabegrenzen an weiteren Ausgangsgrößen kontrollieren, danach DD-038 unabhängig reviewen. DD-039.04 hat die Regression mit ausgewähltem Paket bestanden; unabhängiger Endbuild-Review bleibt offen. DD-008 benötigt den unabhängigen Endbuild-Review, gemeinsame Original-/Host-Geometrie und kombinierte History-/Mehrgeschossfolge. Grafikpaare für DD-006/007 sowie offene DD-002-Grenz- und Löschpfade vor dem 77-Fälle-Endreview nachholen. Die übrigen Pflichtfälle folgen in Roadmap-Reihenfolge.",
+    "nextRun": "ROADMAP-PARITY-TOOLS.md Phase 1: DD-038 Building-Boden nach direktem Rechteck-/Linksrandpaar: gemischte Bodenstile auf gemeinsamer Kontur, einzellige und größere rechteckige Übermalung, die 2×1-Stilgrenze beim Radieren und ein 1×1-Innenloch sind gepaart; weitere Übermal- und Radierformen samt größeren Löchern direkt messen und Host folgen lassen; Konturpunktverschiebung ist in drei Varianten mit Original und Host separat reviewt; Punkteinfügen auf der gemischten V4-Kontur ist mit Original und Host separat reviewt; Punktentfernung auf gemischtem V4-Boden ist mit Original und Host separat reviewt; zweite Delete-Geste am Dreieck samt Boden-Zellfolge ist mit Original und Host separat reviewt; als nächsten eigenen Lauf einen weiteren Building-Boden-Randfall im Original messen; weitere Punktgesten und Formen folgen; kombinierte Randänderung direkt im Original und Host prüfen. Terrainmasken beim Resize sind auf vorbereiteten Acht-Slot-Karten gepaart; Terrainmalen und weitere Entitäten separat abgleichen; die auf 12×8 gemessenen Eingabegrenzen an weiteren Ausgangsgrößen kontrollieren, danach DD-038 unabhängig reviewen. DD-039.04 hat die Regression mit ausgewähltem Paket bestanden; unabhängiger Endbuild-Review bleibt offen. DD-008 benötigt den unabhängigen Endbuild-Review, gemeinsame Original-/Host-Geometrie und kombinierte History-/Mehrgeschossfolge. Grafikpaare für DD-006/007 sowie offene DD-002-Grenz- und Löschpfade vor dem 77-Fälle-Endreview nachholen. Die übrigen Pflichtfälle folgen in Roadmap-Reihenfolge.",
     "note": "P7-1, P7-3 und P7-4 sind in getrennten Edit-/Neuöffnungspaaren reviewt. P7-2 ist auf ausdrückliche Nutzeranweisung übersprungen, nicht physisch geprüft. Phase-7-Fachphasentor mit dieser Ausnahme bestanden; Produktbuild unverändert. Hex-Atlas- und Stadtstand erhalten.",
     "phase2Plan": "ROADMAP-PARITY-PHASE2-PLAN.md",
     "candidateBuildSha256": "b321128188b944c3324594663a410acfd84863f17860f637b9ed2e6ecc33b466",
@@ -3514,11 +3514,18 @@
     },
     "buildingFloorEllipseRefillOriginal": {
       "case": "DD-038.05, Rechteckzug über elliptischem Innenloch",
-      "state": "ellipse_refill_original_replicated_host_gap_case_open",
+      "state": "ellipse_refill_scoped_review_passed_case_open",
       "originalReport": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-ellipse-refill-original-20261009/original-probe.md",
       "originalAudit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-ellipse-refill-original-20261009/original-audit.json",
       "measured": "Zwei Originalprozesse: 1×1-Wood-Rechteck über dem Ellipsenloch erhält alle 36 Zellen und die Außenkontur, verkürzt den Innenring 28→23 Punkte; frische Originalöffnung erhält den Zustand.",
-      "open": "Host-GUI mit Zeigerpause erhält dagegen den 28-Punkt-Ring. Kontur gezielt reparieren, Rohdatenpaar und getrennten Review durchführen; weitere Loch- und Randfolgen sowie DD-038-Endreview offen.",
+      "open": "Host-GUI und frische Öffnung mit je elf Prüfpunkten sowie zwei Rohdatenpaare bestehen. Getrennter Review besteht; weitere Loch- und Randfolgen sowie DD-038-Endreview offen.",
+      "hostBuildSha256": "d54f25cf7b961cc78b1bbf197bd4781bd62d2325ec10dc4b34148c0d6ab3a6a2",
+      "hostReport": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-ellipse-refill-host-checked-20261009/implementation.md",
+      "hostAudit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-ellipse-refill-host-checked-20261009/independent-audit.json",
+      "hostEdit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-ellipse-refill-host-checked-20261009/evidence/1791545124880-parity-tools-phase1-building-mixed-edit/result.json",
+      "hostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-ellipse-refill-host-checked-20261009/evidence/1791545170129-parity-tools-phase1-building-mixed-reopen/result.json",
+      "review": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-ellipse-refill-host-checked-20261009/review.md",
+      "reviewAudit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-ellipse-refill-host-checked-20261009/review-audit.json",
       "gate": "open"
     }
   },
@@ -3528,17 +3535,17 @@
     "state": "city00_reference_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I07-BP",
-      "kind": "reference_planning",
-      "startedAt": "2026-10-09T11:18:57.129325+00:00",
-      "focus": "FTG-Tageslichtwirkung im Browser getrennt planen",
+      "id": "CITY-00-I08-CR",
+      "kind": "cleanup_review",
+      "startedAt": "2026-10-09T11:37:05.949757+00:00",
+      "focus": "Belegzuordnung und Rückstellung abschließen",
       "state": "completed",
-      "result": "Direkte Sun-/General-/Effects-Controls identifiziert, Tageslichtvergleich und Präferenzrückstellung geplant; COK wartet auf Hex-Farbenslot"
+      "result": "14Hashes intakt, Originalwerte gleich, Kartenbearbeitung zurück; Hex-Kollege hat nativen Slot ausdrücklich freigegeben"
     },
     "nextRun": {
-      "id": "CITY-00-I07-BI",
-      "kind": "browser_original_probe",
-      "focus": "FTG-Uhrparameter und Day/night-Wirkung dokumentieren"
+      "id": "CITY-00-I07-I",
+      "kind": "native_original_probe",
+      "focus": "COK vollständige Save/Preset/Neuöffnungsfolge beginnen"
     },
     "open": [
       "CITY-00 direkte Referenzinventur/Galerie aller drei Produkte",
@@ -3557,7 +3564,7 @@
     },
     "pendingNativeRun": {
       "id": "CITY-00-I07-I",
-      "state": "waiting_for_hex_colors_slot",
+      "state": "native_slot_explicitly_released_by_hex",
       "focus": "Vollständige COK-Save/Neuöffnungs-/Presetprobe",
       "dependency": "Hex-Kollege hat nächsten nativen Platz für14Interface-Farben reserviert"
     }
@@ -3586,5 +3593,23 @@
     "files": ["package.json", "tests/canvas-of-kings-session.test.mjs"],
     "verification": {"targeted": {"passed": 5, "failed": 0}, "npmTest": {"passed": 206, "failed": 0}, "check": "passed", "build": "passed"},
     "limitation": "Nur Offline-Adaptertests; keine zusätzliche COK-Laufzeit- oder GUI-Abnahme."
+  },
+  "gmProductTesting": {
+    "date": "2026-10-09",
+    "state": "planned_waiting_for_product_ui_access",
+    "plan": "ROADMAP-GM-PRODUCT-TESTING-PLAN.md",
+    "focus": "Längere GM-Endanwenderabläufe, häufige Aktionen, Bedienkosten und UI-Überladung; belegte Nacharbeiten beauftragen und nachprüfen.",
+    "currentRun": "GM-UX-01",
+    "executedUiRuns": 0,
+    "observedFindings": [],
+    "blocker": "Kein bedienbarer Obsidian-Host in diesem Workspace; Laptopzugang und exklusiver GUI-Slot sind abzustimmen.",
+    "coordination": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1#issuecomment-6080090197",
+    "assignedPrerequisite": {
+      "id": "GM-UX-ACCESS",
+      "owner": "Lokaler Hex-/Host-Kollege in Abstimmung mit Stadt-Kollegen",
+      "state": "requested_not_confirmed"
+    },
+    "next": "Produktslot und Zugang bestätigen, danach Vorbereitung → improvisierte Spielsitzung → Save/Neuöffnung als zusammenhängenden UI-Lauf durchführen.",
+    "automation": "Bestehende stündliche Automation auf GM-Produkttests und Nacharbeitskoordination umgestellt."
   }
 }

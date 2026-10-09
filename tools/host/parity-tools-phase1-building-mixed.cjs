@@ -8,6 +8,7 @@ const EXTENDED = "Dungeons/Phase1-BuildingMixed/wood-stone-extended.dungeon";
 const FOUR_CELL_WOOD = "Dungeons/Phase1-BuildingMixed/wood-stone-four-cell-wood.dungeon";
 const FOUR_CELL_STONE = "Dungeons/Phase1-BuildingMixed/wood-stone-four-cell-stone.dungeon";
 const ELLIPSE_HOLE = "Dungeons/Phase1-BuildingMixed/wood-stone-ellipse-hole.dungeon";
+const ELLIPSE_REFILL = "Dungeons/Phase1-BuildingMixed/wood-stone-ellipse-refill.dungeon";
 
 module.exports = ({ page, fs, path, assert, crypto, qa, vault, out,
   checks, chooseTool }) => {
@@ -22,6 +23,7 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out,
   const fourCellWoodBaseline = path.join(qa, "mixed-four-cell-wood-baseline.json");
   const fourCellStoneBaseline = path.join(qa, "mixed-four-cell-stone-baseline.json");
   const ellipseHoleBaseline = path.join(qa, "mixed-ellipse-hole-baseline.json");
+  const ellipseRefillBaseline = path.join(qa, "mixed-ellipse-refill-baseline.json");
   const hash = (name = MAP) => crypto.createHash("sha256")
     .update(fs.readFileSync(path.join(vault, name))).digest("hex");
   const state = () => page.evaluate(() => {
@@ -182,7 +184,7 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out,
       assert.equal(cell?.buildingId, building.id);
     }
   }
-  function verifyEllipseHole(doc, woodId, stoneId) {
+  function verifyEllipseHole(doc, woodId, stoneId, ringPoints = 28) {
     assert.equal(doc.settings.width, 8);
     assert.equal(doc.settings.height, 8);
     assert.equal(doc.entities.length, 1);
@@ -194,7 +196,7 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out,
       new Set(["1:1", "7:1", "7:7", "1:7"]));
     assert.equal(building.polygons[0].holes.length, 1);
     const ring = building.polygons[0].holes[0];
-    assert.equal(ring.length, 28);
+    assert.equal(ring.length, ringPoints);
     for (const axis of ["x", "y"]) {
       assert.ok(Math.abs(Math.min(...ring.map((p) => p[axis])) - 3) < 0.02);
       assert.ok(Math.abs(Math.max(...ring.map((p) => p[axis])) - 5) < 0.02);
@@ -571,6 +573,45 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out,
     await ellipseEditor.getByRole("button", { name: "Wiederholen", exact: true }).click();
     verifyEllipseHole((await state()).document, wood.id, stone.id);
     checks.push("DD-038 Alt ellipse retains 36 cells, repaints hidden Stone as Wood, and undoes in one step");
+    await page.evaluate(async ({ name, content }) => {
+      await app.vault.create(name, content);
+    }, { name: ELLIPSE_REFILL, content: fs.readFileSync(path.join(vault, ELLIPSE_HOLE), "utf8") });
+    await open(ELLIPSE_REFILL);
+    const refillEditor = page.locator(".dungeon-native-editor:visible").last();
+    await refillEditor.locator(".dn-group-rail")
+      .getByRole("button", { name: "Bauwerk", exact: true }).click();
+    await refillEditor.locator(".dn-tool-rail")
+      .getByRole("button", { name: "Rechteck", exact: true }).click();
+    await refillEditor.getByRole("group", { name: "Wandstil" })
+      .getByRole("button", { name: "Keine Wand", exact: true }).click();
+    await refillEditor.getByRole("group", { name: "Bodenstil" })
+      .getByRole("button", { name: wood.name, exact: true }).click();
+    const refillStart = await world({ x: 3, y: 3 });
+    const refillEnd = await world({ x: 4, y: 4 });
+    await page.mouse.move(refillStart.x, refillStart.y);
+    await page.waitForTimeout(600);
+    await page.mouse.down();
+    await page.mouse.move(refillEnd.x, refillEnd.y, { steps: 6 });
+    await page.mouse.up();
+    await page.waitForFunction(() =>
+      app.workspace.getLeavesOfType("dungeon-native-map").at(-1)
+        ?.view.editor?.session.historySize === 1);
+    const refill = await state();
+    verifyEllipseHole(refill.document, wood.id, stone.id, 23);
+    assert.equal(refill.history, 1);
+    await page.screenshot({ path: path.join(out, "wood-stone-ellipse-refill-edit.png") });
+    await refillEditor.getByRole("button", { name: "Speichern", exact: true }).click();
+    await page.waitForFunction(() =>
+      !app.workspace.getLeavesOfType("dungeon-native-map").at(-1)
+        ?.view.editor.session.dirty);
+    fs.writeFileSync(ellipseRefillBaseline,
+      JSON.stringify({ document: refill.document, hash: hash(ELLIPSE_REFILL),
+        woodId: wood.id, stoneId: stone.id }, null, 2));
+    await refillEditor.getByRole("button", { name: "Rückgängig", exact: true }).click();
+    verifyEllipseHole((await state()).document, wood.id, stone.id);
+    await refillEditor.getByRole("button", { name: "Wiederholen", exact: true }).click();
+    verifyEllipseHole((await state()).document, wood.id, stone.id, 23);
+    checks.push("DD-038 rectangle over ellipse hole clips the inner ring to 23 points in one Undo step");
   }
   async function reopen() {
     const saved = JSON.parse(fs.readFileSync(baseline, "utf8"));
@@ -687,6 +728,14 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out,
     verifyEllipseHole(ellipseFresh.document, ellipse.woodId, ellipse.stoneId);
     await page.screenshot({ path: path.join(out, "wood-stone-ellipse-hole-fresh.png") });
     checks.push("DD-038 fresh Host keeps the elliptic masked hole and all 36 styled tile values");
+    const refill = JSON.parse(fs.readFileSync(ellipseRefillBaseline, "utf8"));
+    await open(ELLIPSE_REFILL);
+    const refillFresh = await state();
+    assert.deepEqual(refillFresh.document, refill.document);
+    assert.equal(hash(ELLIPSE_REFILL), refill.hash);
+    verifyEllipseHole(refillFresh.document, refill.woodId, refill.stoneId, 23);
+    await page.screenshot({ path: path.join(out, "wood-stone-ellipse-refill-fresh.png") });
+    checks.push("DD-038 fresh Host keeps the clipped elliptic hole and 36 styled cells");
   }
   return { edit, reopen };
 };
