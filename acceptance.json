@@ -21,38 +21,158 @@
       "confirmed acceptance cases, static catalog data, reference tables and Golden Masters"
     ],
     "phases": [
-      {"id": "SMR-00", "title": "Portfolio contract and source inventory", "state": "prototype_plan_reviewed_execution_pending"},
-      {"id": "SMR-01", "title": "Campaign identity and data lifecycle", "state": "open"},
-      {"id": "SMR-02", "title": "Catalog, reference graph and world planner", "state": "partial_via_ce01"},
-      {"id": "SMR-03", "title": "Party, scene and live session", "state": "open"},
-      {"id": "SMR-04", "title": "Shared atlas and maps", "state": "active_in_existing_roadmaps"},
-      {"id": "SMR-05", "title": "Encounter, combat, loot and rewards", "state": "planned_via_ce03_ce06"},
-      {"id": "SMR-06", "title": "Session planner and reproducible generation", "state": "open"},
-      {"id": "SMR-07", "title": "Travel, calendar and authoritative time", "state": "open"},
-      {"id": "SMR-08", "title": "Shops, weather and music", "state": "open"},
-      {"id": "SMR-09", "title": "Actor autonomy", "state": "open"},
-      {"id": "SMR-10", "title": "Passive display, extensions and full portability", "state": "open"},
-      {"id": "SMR-11", "title": "Tutorials, accessibility, performance and final review", "state": "open"}
+      {
+        "id": "SMR-00",
+        "title": "Portfolio contract and source inventory",
+        "state": "prototype_plan_reviewed_execution_pending"
+      },
+      {
+        "id": "SMR-01",
+        "title": "Campaign identity and data lifecycle",
+        "state": "open"
+      },
+      {
+        "id": "SMR-02",
+        "title": "Catalog, reference graph and world planner",
+        "state": "partial_via_ce01"
+      },
+      {
+        "id": "SMR-03",
+        "title": "Party, scene and live session",
+        "state": "open"
+      },
+      {
+        "id": "SMR-04",
+        "title": "Shared atlas and maps",
+        "state": "active_in_existing_roadmaps"
+      },
+      {
+        "id": "SMR-05",
+        "title": "Encounter, combat, loot and rewards",
+        "state": "planned_via_ce03_ce06"
+      },
+      {
+        "id": "SMR-06",
+        "title": "Session planner and reproducible generation",
+        "state": "open"
+      },
+      {
+        "id": "SMR-07",
+        "title": "Travel, calendar and authoritative time",
+        "state": "open"
+      },
+      {
+        "id": "SMR-08",
+        "title": "Shops, weather and music",
+        "state": "open"
+      },
+      {
+        "id": "SMR-09",
+        "title": "Actor autonomy",
+        "state": "open"
+      },
+      {
+        "id": "SMR-10",
+        "title": "Passive display, extensions and full portability",
+        "state": "open"
+      },
+      {
+        "id": "SMR-11",
+        "title": "Tutorials, accessibility, performance and final review",
+        "state": "open"
+      }
     ],
     "cases": [
-      {"id": "SMR-AC-01", "title": "Sole-product boundary, complete source inventory and evidence-backed target-platform decision", "state": "open"},
-      {"id": "SMR-AC-02", "title": "Campaign A/B/A lifecycle and crash-safe data ownership", "state": "open"},
-      {"id": "SMR-AC-03", "title": "Definitions, references, world content and frozen history", "state": "open"},
-      {"id": "SMR-AC-04", "title": "Party, scene, masks and general history continuity", "state": "open"},
-      {"id": "SMR-AC-05", "title": "Unified hex, city and dungeon atlas", "state": "open"},
-      {"id": "SMR-AC-06", "title": "Encounter, combat, loot and reward atomicity", "state": "open"},
-      {"id": "SMR-AC-07", "title": "Session planning and reproducible generation", "state": "open"},
-      {"id": "SMR-AC-08", "title": "Cross-provider travel with causal undo", "state": "open"},
-      {"id": "SMR-AC-09", "title": "Calendar, per-scene time and exact-once consequences", "state": "open"},
-      {"id": "SMR-AC-10", "title": "Atomic shops and calendar-based restock", "state": "open"},
-      {"id": "SMR-AC-11", "title": "Weather/climate continuity and GM override", "state": "open"},
-      {"id": "SMR-AC-12", "title": "Portable music library/player and manual precedence", "state": "open"},
-      {"id": "SMR-AC-13", "title": "Opt-in explainable actor autonomy", "state": "open"},
-      {"id": "SMR-AC-14", "title": "Fail-closed passive player projection", "state": "open"},
-      {"id": "SMR-AC-15", "title": "Complete campaign export/import and salvage", "state": "open"},
-      {"id": "SMR-AC-16", "title": "Default-deny optional extension capabilities", "state": "open"},
-      {"id": "SMR-AC-17", "title": "Tutorial, localization, keyboard and 200-percent accessibility", "state": "open"},
-      {"id": "SMR-AC-18", "title": "Performance, cancellation, offline and privacy qualification", "state": "open"}
+      {
+        "id": "SMR-AC-01",
+        "title": "Sole-product boundary, complete source inventory and evidence-backed target-platform decision",
+        "state": "open"
+      },
+      {
+        "id": "SMR-AC-02",
+        "title": "Campaign A/B/A lifecycle and crash-safe data ownership",
+        "state": "open"
+      },
+      {
+        "id": "SMR-AC-03",
+        "title": "Definitions, references, world content and frozen history",
+        "state": "open"
+      },
+      {
+        "id": "SMR-AC-04",
+        "title": "Party, scene, masks and general history continuity",
+        "state": "open"
+      },
+      {
+        "id": "SMR-AC-05",
+        "title": "Unified hex, city and dungeon atlas",
+        "state": "open"
+      },
+      {
+        "id": "SMR-AC-06",
+        "title": "Encounter, combat, loot and reward atomicity",
+        "state": "open"
+      },
+      {
+        "id": "SMR-AC-07",
+        "title": "Session planning and reproducible generation",
+        "state": "open"
+      },
+      {
+        "id": "SMR-AC-08",
+        "title": "Cross-provider travel with causal undo",
+        "state": "open"
+      },
+      {
+        "id": "SMR-AC-09",
+        "title": "Calendar, per-scene time and exact-once consequences",
+        "state": "open"
+      },
+      {
+        "id": "SMR-AC-10",
+        "title": "Atomic shops and calendar-based restock",
+        "state": "open"
+      },
+      {
+        "id": "SMR-AC-11",
+        "title": "Weather/climate continuity and GM override",
+        "state": "open"
+      },
+      {
+        "id": "SMR-AC-12",
+        "title": "Portable music library/player and manual precedence",
+        "state": "open"
+      },
+      {
+        "id": "SMR-AC-13",
+        "title": "Opt-in explainable actor autonomy",
+        "state": "open"
+      },
+      {
+        "id": "SMR-AC-14",
+        "title": "Fail-closed passive player projection",
+        "state": "open"
+      },
+      {
+        "id": "SMR-AC-15",
+        "title": "Complete campaign export/import and salvage",
+        "state": "open"
+      },
+      {
+        "id": "SMR-AC-16",
+        "title": "Default-deny optional extension capabilities",
+        "state": "open"
+      },
+      {
+        "id": "SMR-AC-17",
+        "title": "Tutorial, localization, keyboard and 200-percent accessibility",
+        "state": "open"
+      },
+      {
+        "id": "SMR-AC-18",
+        "title": "Performance, cancellation, offline and privacy qualification",
+        "state": "open"
+      }
     ],
     "adrPrototypePlan": {
       "run": "SMR-00-P01",
@@ -159,20 +279,80 @@
       "sharedBranch": "fetch and integrate before every package and publication; preserve foreign IDs/evidence; no force-push"
     },
     "cases": [
-      {"id": "CE-AC-01", "title": "Combined catalog filters and reset", "state": "open", "automatedRealHost": "passed"},
-      {"id": "CE-AC-02", "title": "Catalog detail without state loss", "state": "open", "automatedRealHost": "passed"},
-      {"id": "CE-AC-03", "title": "Reproducible DMG-2014 evaluation", "state": "open"},
-      {"id": "CE-AC-04", "title": "Live party and roster recomputation", "state": "open"},
-      {"id": "CE-AC-05", "title": "Individual and group initiative semantics", "state": "open"},
-      {"id": "CE-AC-06", "title": "Persistent stable initiative ordering", "state": "open"},
-      {"id": "CE-AC-07", "title": "Round progression and undo", "state": "open"},
-      {"id": "CE-AC-08", "title": "HP, temporary HP and healing rules", "state": "open"},
-      {"id": "CE-AC-09", "title": "Exact combat restart recovery", "state": "open"},
-      {"id": "CE-AC-10", "title": "Live participant changes preserve state", "state": "open"},
-      {"id": "CE-AC-11", "title": "Auditable statblock rolls", "state": "open"},
-      {"id": "CE-AC-12", "title": "Conditions and immunity warning", "state": "open"},
-      {"id": "CE-AC-13", "title": "Independent plan lifecycle actions", "state": "open"},
-      {"id": "CE-AC-14", "title": "Mouse, keyboard and damaged-data resilience", "state": "open", "automatedRealHost": "passed", "physicalInput": "open"}
+      {
+        "id": "CE-AC-01",
+        "title": "Combined catalog filters and reset",
+        "state": "open",
+        "automatedRealHost": "passed"
+      },
+      {
+        "id": "CE-AC-02",
+        "title": "Catalog detail without state loss",
+        "state": "open",
+        "automatedRealHost": "passed"
+      },
+      {
+        "id": "CE-AC-03",
+        "title": "Reproducible DMG-2014 evaluation",
+        "state": "open"
+      },
+      {
+        "id": "CE-AC-04",
+        "title": "Live party and roster recomputation",
+        "state": "open"
+      },
+      {
+        "id": "CE-AC-05",
+        "title": "Individual and group initiative semantics",
+        "state": "open"
+      },
+      {
+        "id": "CE-AC-06",
+        "title": "Persistent stable initiative ordering",
+        "state": "open"
+      },
+      {
+        "id": "CE-AC-07",
+        "title": "Round progression and undo",
+        "state": "open"
+      },
+      {
+        "id": "CE-AC-08",
+        "title": "HP, temporary HP and healing rules",
+        "state": "open"
+      },
+      {
+        "id": "CE-AC-09",
+        "title": "Exact combat restart recovery",
+        "state": "open"
+      },
+      {
+        "id": "CE-AC-10",
+        "title": "Live participant changes preserve state",
+        "state": "open"
+      },
+      {
+        "id": "CE-AC-11",
+        "title": "Auditable statblock rolls",
+        "state": "open"
+      },
+      {
+        "id": "CE-AC-12",
+        "title": "Conditions and immunity warning",
+        "state": "open"
+      },
+      {
+        "id": "CE-AC-13",
+        "title": "Independent plan lifecycle actions",
+        "state": "open"
+      },
+      {
+        "id": "CE-AC-14",
+        "title": "Mouse, keyboard and damaged-data resilience",
+        "state": "open",
+        "automatedRealHost": "passed",
+        "physicalInput": "open"
+      }
     ],
     "implementationCandidate": {
       "run": "CE-00-I01",
@@ -186,7 +366,10 @@
       "sourceHashComparison": "byte-identical to SaltMarcher source artifact",
       "verification": {
         "check": "passed",
-        "tests": {"passed": 210, "failed": 0},
+        "tests": {
+          "passed": 210,
+          "failed": 0
+        },
         "build": "passed"
       },
       "limits": "Pure read-only domain foundation only; no Obsidian UI, Vault persistence, Encounter builder or host acceptance. All CE acceptance cases remain open. D&D 2024 is intentionally out of scope."
@@ -214,7 +397,14 @@
         "Locale-independent normalized comparison",
         "Explicit CE-01 gate against unmeasured eager startup and missing release notice"
       ],
-      "verification": {"check": "passed", "tests": {"passed": 211, "failed": 0}, "build": "passed"}
+      "verification": {
+        "check": "passed",
+        "tests": {
+          "passed": 211,
+          "failed": 0
+        },
+        "build": "passed"
+      }
     },
     "repairReview": {
       "run": "CE-00-R02",
@@ -226,7 +416,10 @@
       "commit": "f5fb834c5caa5b83b4ae624800dcec81287b606f",
       "incomingCommits": 12,
       "check": "passed",
-      "tests": {"passed": 212, "failed": 0},
+      "tests": {
+        "passed": 212,
+        "failed": 0
+      },
       "build": "passed",
       "scope": "Merged current shared branch after the reviewed repair; all incoming City, Hex, resize, Canvas of Kings and GM testing work preserved."
     },
@@ -261,7 +454,11 @@
         "state": "passed_after_repair",
         "findings": "Independent static re-review confirms measurement provenance, numeric payload gates, runtime decompression/capability behavior, shared identity source and repository-only NOTICE wording are consistent and complete."
       },
-      "openCases": ["CE-AC-01", "CE-AC-02", "CE-AC-14"],
+      "openCases": [
+        "CE-AC-01",
+        "CE-AC-02",
+        "CE-AC-14"
+      ],
       "encounterCases": "CE-AC-03 through CE-AC-13 remain fully open"
     },
     "ce01I01": {
@@ -270,7 +467,10 @@
       "result": "The product bundle contains a hash-gated compressed SRD payload and visible notice, but materializes the immutable catalog only on load. Capability errors and retries are explicit; dirty builds identify HEAD+dirty.",
       "verification": {
         "check": "passed",
-        "tests": {"passed": 222, "failed": 0},
+        "tests": {
+          "passed": 222,
+          "failed": 0
+        },
         "build": "passed",
         "inventory": {
           "sourceBytes": 832272,
@@ -298,7 +498,10 @@
       "result": "A unique Obsidian ItemView is command-accessible and retains its serializable catalog session. It exposes core name/CR/type/size filters, deterministic sortable and pageable results, mouse/keyboard selection, complete read-only statblocks, direct license notice and explicit loading/error/retry states.",
       "verification": {
         "check": "passed",
-        "tests": {"passed": 225, "failed": 0},
+        "tests": {
+          "passed": 225,
+          "failed": 0
+        },
         "build": "passed",
         "mainJsGrowthBytes": 159355,
         "mainJsGrowthLimitBytes": 180000
@@ -311,10 +514,30 @@
       "result": "All planned D&D-2014 monster filters project into the catalog query. Discrete filters accept multiple values; every accepted criterion has an individually removable chip and reset preserves sort/selection. Free-text drafts publish stale-safe after 200 ms or Enter, persist unfinished and empty input, and are folded atomically into applied filters for host persistence and close. Range errors remain correctable. State, content controller and DOM harness are host-neutral behind an injected port; the Obsidian ItemView is a separately tested adapter. Explicit scroll resets survive re-render.",
       "verification": {
         "check": "passed",
-        "tests": {"passed": 235, "failed": 0},
+        "tests": {
+          "passed": 235,
+          "failed": 0
+        },
         "domHarness": "passed",
         "build": "passed",
-        "covered": ["multi-filter intersection", "individual chip and reset focus", "paging", "Arrow/Enter/Escape", "selection after sort", "explicit scroll reset", "aria-sort", "notice", "200-ms latest generation", "Enter flush", "empty state", "host-lifecycle draft persistence", "correctable range alert", "close cleanup", "responsive CSS contract", "thin Obsidian adapter"]
+        "covered": [
+          "multi-filter intersection",
+          "individual chip and reset focus",
+          "paging",
+          "Arrow/Enter/Escape",
+          "selection after sort",
+          "explicit scroll reset",
+          "aria-sort",
+          "notice",
+          "200-ms latest generation",
+          "Enter flush",
+          "empty state",
+          "host-lifecycle draft persistence",
+          "correctable range alert",
+          "close cleanup",
+          "responsive CSS contract",
+          "thin Obsidian adapter"
+        ]
       },
       "review": "Passed after required repairs; reviewer ran no separate tests.",
       "limits": "No real Obsidian, restart, physical keyboard or measured 900x650/1150x700 acceptance. CE-AC-01, CE-AC-02 and CE-AC-14 remain open. All Encounter cases remain open."
@@ -333,11 +556,17 @@
     "ce01N01": {
       "run": "CE-01-N01",
       "state": "completed_checked_reviewed",
-      "commits": ["2c86971", "e93e2ba"],
+      "commits": [
+        "2c86971",
+        "e93e2ba"
+      ],
       "result": "Catalog opening is serialized through one in-flight operation, preserves and reveals one canonical leaf, and removes pre-existing duplicates. Keyboard row focus compares dataset values instead of interpolating untrusted IDs into a selector.",
       "verification": {
         "check": "passed",
-        "tests": {"passed": 239, "failed": 0},
+        "tests": {
+          "passed": 239,
+          "failed": 0
+        },
         "build": "passed",
         "mainBytes": 1356752,
         "mainJsGrowthBytes": 167382,
@@ -353,7 +582,10 @@
       "result": "Three distinct isolated real Obsidian processes passed visible command-palette opening, overlapping single-leaf behavior, paging/keyboard/filter/chip/detail/license/focus state, exact restart restore, clean close/reopen defaults, both measured layouts and damaged-payload same-leaf retry.",
       "verification": {
         "check": "passed",
-        "tests": {"passed": 242, "failed": 0},
+        "tests": {
+          "passed": 242,
+          "failed": 0
+        },
         "build": "passed",
         "mainBytes": 1339676,
         "mainSha256": "3a383cbc8853133e4d55af388c86ec70e93230cee8dffc32ba35cf0676f3cdad",
@@ -384,7 +616,16 @@
       "requiredRepair": "Derive reset draft keys from DRAFT_FILTERS too and require a regression across all seven filter/draft pairs while preserving sort and selection.",
       "retained": "All other cleanup boundaries, exact-candidate host reruns, reviewed H01 evidence, D&D-2014-only scope and open physical/screenreader/platform gates remain valid.",
       "reReview": "Independent read-only re-review on 9016ced passed the repaired plan without a remaining mandatory finding.",
-      "verification": {"check": "passed", "tests": {"passed": 245, "failed": 0}, "build": "passed", "json": "passed", "diffCheck": "passed"},
+      "verification": {
+        "check": "passed",
+        "tests": {
+          "passed": 245,
+          "failed": 0
+        },
+        "build": "passed",
+        "json": "passed",
+        "diffCheck": "passed"
+      },
       "limits": "Read-only plan review; no implementation, host run or CE case closure."
     },
     "ce01C01Implementation": {
@@ -394,7 +635,10 @@
       "result": "One shared mapping now owns restore drafts and reset draft keys, while one host-neutral helper owns sort, direction and page defaults; the content controller no longer duplicates those rules.",
       "verification": {
         "check": "passed",
-        "tests": {"passed": 246, "failed": 0},
+        "tests": {
+          "passed": 246,
+          "failed": 0
+        },
         "build": "passed",
         "mainBytes": 1339259,
         "mainSha256": "f29f86cb02547ee5f6b5767a247c7364ebaad1d2509df52cdd00752ad5ba7686",
@@ -431,7 +675,10 @@
       "result": "All seven text filters derive their draft key from the canonical mapping and use one content input/publish path; the name input retains its placeholder, ARIA label, focus, debounce and Enter behavior.",
       "verification": {
         "check": "passed",
-        "tests": {"passed": 247, "failed": 0},
+        "tests": {
+          "passed": 247,
+          "failed": 0
+        },
         "build": "passed",
         "mainBytes": 1338655,
         "mainSha256": "9ea37b4c8942ce1df4739e3f7786dde8fd62fbec227198023f85fa61275a63d3",
@@ -457,9 +704,41 @@
       "run": "CE-02-I01",
       "state": "completed_checked_reviewed",
       "result": "The production catalog view is now one seven-section, versioned workspace. The existing 2014 Monster surface performs query and detail reads through the typed SRD-5.1 provider with section/generation/AbortSignal binding; six future owner providers and their panels remain explicitly unavailable.",
-      "covered": ["exact canonical section order and visible/roving tabs", "CE-01 state migration and fail-closed future schema", "isolated seven-section state normalization", "immutable Monster query DTOs", "query and detail abort/stale isolation", "empty, invalid, error, missing and unavailable result contracts", "retained CE-01 filter, chip, sort, paging, keyboard, detail and attribution behavior"],
-      "verification": {"sourceRevision": "7469e64202e730175ee138136a69d82ad4f28ea6", "dirty": false, "node": "v22.22.2", "check": "passed", "tests": {"passed": 259, "failed": 0}, "focusedTests": {"passed": 217, "failed": 0}, "build": "passed", "mainBytes": 1362196, "mainSha256": "0856066aa2415455dbe2d6f3745bcab07488aa5361a20218cb828617ac904052", "mainJsGrowthBytes": 172826},
-      "hostSmoke": {"sourceRevision": "c5a485324bed7512fb927e2a7cfe9436c30928a4", "host": "Obsidian 1.13.7 Flatpak, isolated local vault, visible CDP UI, two normal-exit app processes", "mainSha256": "bd13cb2ac5e823d21f81bcb2f8d32a6b6a0ebe49a7049cacb2c5035eb99370a4", "edit": "/home/aaron/.cache/dungeon-native-qa/ce02-workspace-20261009/evidence/1791563339125-ce02-catalog-edit/result.json", "reopen": "/home/aaron/.cache/dungeon-native-qa/ce02-workspace-20261009/evidence/1791563349041-ce02-catalog-reopen/result.json", "covered": "seven visible sections, Monster results, six unavailable states, pending-search section switch, installed build triplet, fresh-process section and search restore"},
+      "covered": [
+        "exact canonical section order and visible/roving tabs",
+        "CE-01 state migration and fail-closed future schema",
+        "isolated seven-section state normalization",
+        "immutable Monster query DTOs",
+        "query and detail abort/stale isolation",
+        "empty, invalid, error, missing and unavailable result contracts",
+        "retained CE-01 filter, chip, sort, paging, keyboard, detail and attribution behavior"
+      ],
+      "verification": {
+        "sourceRevision": "7469e64202e730175ee138136a69d82ad4f28ea6",
+        "dirty": false,
+        "node": "v22.22.2",
+        "check": "passed",
+        "tests": {
+          "passed": 259,
+          "failed": 0
+        },
+        "focusedTests": {
+          "passed": 217,
+          "failed": 0
+        },
+        "build": "passed",
+        "mainBytes": 1362196,
+        "mainSha256": "0856066aa2415455dbe2d6f3745bcab07488aa5361a20218cb828617ac904052",
+        "mainJsGrowthBytes": 172826
+      },
+      "hostSmoke": {
+        "sourceRevision": "c5a485324bed7512fb927e2a7cfe9436c30928a4",
+        "host": "Obsidian 1.13.7 Flatpak, isolated local vault, visible CDP UI, two normal-exit app processes",
+        "mainSha256": "bd13cb2ac5e823d21f81bcb2f8d32a6b6a0ebe49a7049cacb2c5035eb99370a4",
+        "edit": "/home/aaron/.cache/dungeon-native-qa/ce02-workspace-20261009/evidence/1791563339125-ce02-catalog-edit/result.json",
+        "reopen": "/home/aaron/.cache/dungeon-native-qa/ce02-workspace-20261009/evidence/1791563349041-ce02-catalog-reopen/result.json",
+        "covered": "seven visible sections, Monster results, six unavailable states, pending-search section switch, installed build triplet, fresh-process section and search restore"
+      },
       "review": "Independent N01 re-review passed exact repair candidate 4d239004c4f000b2af6f66122a05135b0c353ffb without a remaining mandatory finding; the product remains the clean, checked commit 7469e64202e730175ee138136a69d82ad4f28ea6.",
       "limits": "No Item, saved Encounter, NPC, Faction, Place or Encounter-Table data is delivered; unavailable is not feature completion. No Encounter Builder, combat mutation, 2024 mode or physical/screenreader/platform acceptance. The local automated host smoke is scoped; all CE-AC cases remain open."
     },
@@ -504,8 +783,44 @@
       "sourceDocument": "https://media.wizards.com/2023/downloads/dnd/SRD_CC_v5.1.pdf",
       "sourceSha256": "2504d2a0abb0a4d491a939be4f17910a2dde0312570ab8d208080225ccf0a1f0",
       "helperCommit": "3f5593ea004c4f5a2af95603087ce4de72689d9f",
-      "covered": ["exact official source byte identity, size and 403-page count", "SaltMarcher-pinned extraction-helper revision and file hashes", "canonical attribution asset and manifest-bound artifact hashes", "Draft 2020-12 transcript and inventory schemas validated by pinned Ajv", "closed 22-value equipment subcategory enum", "13/13 Armor row inventory and structured table transcript", "37/37 Weapons row inventory and structured transcript including both special descriptions", "99/99 Adventuring Gear table-leaf inventory in physical PDF order", "real-PDF evidence for 149 equipment row labels and 224 structured or sourced-description facts", "Spear, Blowgun, Sling and Net source goldens", "fail-closed incomplete-package gate", "fixed and variable rarity identity regressions"],
-      "verification": {"check": "passed", "tests": {"passed": 355, "failed": 0}, "build": "passed", "focusedTests": {"passed": 9, "failed": 0}, "pdfIdentity": "passed", "equipmentOccurrences": {"checked": 149, "expectedPrimary": 219}, "transcriptRecords": {"checked": 50}, "structuredAndDescriptionFacts": {"checked": 224}, "incompleteGate": "passed"},
+      "covered": [
+        "exact official source byte identity, size and 403-page count",
+        "SaltMarcher-pinned extraction-helper revision and file hashes",
+        "canonical attribution asset and manifest-bound artifact hashes",
+        "Draft 2020-12 transcript and inventory schemas validated by pinned Ajv",
+        "closed 22-value equipment subcategory enum",
+        "13/13 Armor row inventory and structured table transcript",
+        "37/37 Weapons row inventory and structured transcript including both special descriptions",
+        "99/99 Adventuring Gear table-leaf inventory in physical PDF order",
+        "real-PDF evidence for 149 equipment row labels and 224 structured or sourced-description facts",
+        "Spear, Blowgun, Sling and Net source goldens",
+        "fail-closed incomplete-package gate",
+        "fixed and variable rarity identity regressions"
+      ],
+      "verification": {
+        "check": "passed",
+        "tests": {
+          "passed": 355,
+          "failed": 0
+        },
+        "build": "passed",
+        "focusedTests": {
+          "passed": 9,
+          "failed": 0
+        },
+        "pdfIdentity": "passed",
+        "equipmentOccurrences": {
+          "checked": 149,
+          "expectedPrimary": 219
+        },
+        "transcriptRecords": {
+          "checked": 50
+        },
+        "structuredAndDescriptionFacts": {
+          "checked": 224
+        },
+        "incompleteGate": "passed"
+      },
       "limits": "Intermediate only: 149 of 219 primary equipment occurrences and 50 transcript records are captured. Adventuring Gear transcript and narratives, Potion-of-Healing merge, Armor narratives, bounded cell matching, the other 70 primary equipment occurrences, 35 auxiliary fact rows, one cross-reference, pack-only components, expansion/reassignment ledger, every magic item, remaining goldens and independent S01-R01 review are open. No product artifact, provider, UI, host acceptance or I01 work is authorized."
     }
   },
@@ -152226,7 +152541,11 @@
       "hostEdit": "/home/aaron/.cache/dungeon-native-qa/parity-phase7-dialog-review-20261009/evidence/1791506625113-parity-phase7-combined-edit/result.json",
       "hostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase7-dialog-review-20261009/evidence/1791506653956-parity-phase7-combined-reopen/result.json",
       "decision": "P7-1 reviewed with a second complete popout edit/reopen pair; P7-3 and P7-4 already reviewed. Physical P7-2 deferred by user, so phase gate remains open.",
-      "open": ["P7-2 physical mouse/touchpad deferred by user", "Phase-7 gate", "Final cleanup"],
+      "open": [
+        "P7-2 physical mouse/touchpad deferred by user",
+        "Phase-7 gate",
+        "Final cleanup"
+      ],
       "gate": "open"
     },
     "phase7GateReview": {
@@ -152235,7 +152554,11 @@
       "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase7-gate-20261009/phase7-gate-review.md",
       "audit": "/home/aaron/.cache/dungeon-native-qa/parity-phase7-gate-20261009/gate-audit.json",
       "candidateBuildSha256": "b321128188b944c3324594663a410acfd84863f17860f637b9ed2e6ecc33b466",
-      "verifiedStrands": ["P7-1", "P7-3", "P7-4"],
+      "verifiedStrands": [
+        "P7-1",
+        "P7-3",
+        "P7-4"
+      ],
       "exception": {
         "strand": "P7-2",
         "basis": "Ausdrückliche Nutzeranweisung vom 09.10.2026: Überspringe das und arbeite weiter.",
@@ -152243,14 +152566,21 @@
         "physicalInputVerified": false
       },
       "gate": "passed_with_user_exception",
-      "open": ["Abschließende Aufräumphase", "Parität der übrigen Dungeondraft-Werkzeuge"]
+      "open": [
+        "Abschließende Aufräumphase",
+        "Parität der übrigen Dungeondraft-Werkzeuge"
+      ]
     },
     "phase7CleanupPlan": {
       "date": "2026-10-09",
       "state": "plan_ready_for_separate_implementation",
       "plan": "ROADMAP-PARITY-CLEANUP-7-PLAN.md",
       "baseCommit": "4c5808e3f6709119db4a607f933c71fe76120d4e",
-      "items": ["P7-CL-1", "P7-CL-2", "P7-CL-3"],
+      "items": [
+        "P7-CL-1",
+        "P7-CL-2",
+        "P7-CL-3"
+      ],
       "physicalInput": "skipped_at_user_request_unverified",
       "gate": "open",
       "next": "Getrennter Aufräum-Umsetzungslauf und danach unabhängiger Review vor der Folge-Roadmap."
@@ -152261,7 +152591,11 @@
       "plan": "ROADMAP-PARITY-CLEANUP-7-PLAN.md",
       "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase7-cleanup-20261009/cleanup-implementation.md",
       "audit": "/home/aaron/.cache/dungeon-native-qa/parity-phase7-cleanup-20261009/implementation-audit.json",
-      "items": ["P7-CL-1", "P7-CL-2", "P7-CL-3"],
+      "items": [
+        "P7-CL-1",
+        "P7-CL-2",
+        "P7-CL-3"
+      ],
       "productBuildSha256": "b321128188b944c3324594663a410acfd84863f17860f637b9ed2e6ecc33b466",
       "hostPairsPassed": 3,
       "coreTestsPassed": 167,
@@ -152275,7 +152609,11 @@
       "reviewOfCommit": "b6edbbe36f20aa7a18c5bf96cfca39148bc58fe3",
       "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase7-cleanup-review-20261009/cleanup-independent-review.md",
       "audit": "/home/aaron/.cache/dungeon-native-qa/parity-phase7-cleanup-review-20261009/review-audit.json",
-      "verifiedItems": ["P7-CL-1", "P7-CL-2", "P7-CL-3"],
+      "verifiedItems": [
+        "P7-CL-1",
+        "P7-CL-2",
+        "P7-CL-3"
+      ],
       "newHostPairs": 3,
       "coreTestsPassed": 167,
       "productBuildSha256": "b321128188b944c3324594663a410acfd84863f17860f637b9ed2e6ecc33b466",
@@ -152287,7 +152625,7 @@
   "hexAtlas": {
     "scope": "HEX-00..28, shared native Atlas; phase-specific functional approvals only.",
     "currentPhase": "HEX-02",
-    "state": "native_save_draft_checked_copy_discard_open",
+    "state": "native_island_copy_discard_checked_review_open",
     "referenceGate": "wonderdraftParity.coverageReview HEX-00-R02",
     "requirements": [
       {
@@ -152431,12 +152769,12 @@
       {
         "id": "HEX02-006",
         "requirement": "Kopie abbrechen/erstellen, A→B→A und Entwurf verwerfen",
-        "state": "open",
-        "implementationRun": "HEX-02-I01a/I01b",
+        "state": "checked_native_implementation",
+        "implementationRun": "HEX-02-I01d",
         "evidence": [
-          "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/i01b-native-implementation.json"
+          "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/i01d-native-implementation.json"
         ],
-        "observed": "I01d after safe durable kernel."
+        "observed": "Actual native copy Cancel/Create, new ID/namespace, A↔B drafts, discard Cancel/Confirm in same camera/tool/color and separate fresh process/independent CtrlS. R01 pending."
       },
       {
         "id": "HEX02-007",
@@ -152474,7 +152812,7 @@
         }
       }
     ],
-    "limits": "Early native sparse level0 island Save/Draft/fresh/conflict verified; Copy/Discard/A↔B I01d and independent R01/CLEAN open. Shared City/Location/Dungeon composition, multilevel editing, full parity, large-map/physical/installed-vault remain open.",
+    "limits": "Early native level0 island Save/Draft/fresh/conflict plus Copy/Discard/A↔B checked. Independent R01/CLEAN open. Shared City/Location/Dungeon composition, multilevel editing, full parity, large-map/physical/installed-vault remain open.",
     "cloudFollowup": {
       "id": "GM-UX-N-004",
       "state": "resolved_observed_failure_app_reload_only",
