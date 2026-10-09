@@ -4102,17 +4102,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I39-CR",
-      "kind": "cleanup_review",
-      "startedAt": "2026-10-09T16:06:44.885049+00:00",
-      "focus": "Quell-/Planbelege und Geometrie-Reuse abschließend prüfen",
-      "state": "completed",
-      "result": "Originalquellaudit unverändert, historischer Planhash gegen Commit56b18a9 sowie finaler Plan-/Geometriehash bestätigt. Zehn Quellbereiche/Anker und sämtliche Planlinks gültig; drei CITY-01-Fälle und drei Originalzuordnungen erhalten. Wiederverwendung klar von Dungeon-Einheiten/Topologie getrennt, keine zweite Kamera/History/Statusdatei.65 CO-/24 CTY-Pflichten offen; Aufräumumfang ohne Restbefund. CITY-01 startet nach geprüfter HEX-05-Übergabe; bis dahin frühe manuelle Originalfunktionen gezielt vervollständigen."
-    },
-    "nextRun": {
       "id": "CITY-00-I40-P",
       "kind": "reference_planning",
-      "focus": "Frühe manuelle Straßen-/Hausfunktionen gezielt gegen Original prüfen; HEX-05-Übergabe beobachten"
+      "startedAt": "2026-10-09T16:08:13.049726+00:00",
+      "focus": "Frühe Hausgeometrie im Original als verwerfbaren Entwurf prüfen",
+      "state": "completed",
+      "result": "Eigenes CITY00 Hamlet QA im vorhandenen FTG-Tab: Ausgangsbild und sichtbaren Stand sichern, Manual edit/Buildings frisch lesen. Frühe Skalier-/Drehwirkung soweit tatsächlich angeboten an einem sichtbaren Haus als ungespeicherten Entwurf prüfen; geänderte Werte/Vorschau/Abschluss getrennt sichern. Keine Löschung, neue Siedlung oder erneute gestoppte Download-/Bewohnerhypothese. Cancel Edit/Yes verwirft Entwurf, sichtbares Haus sowie250m/Districts/11Monday prüfen. Stabile IDs, Save/Reload und Einzel-Undo aus Bildern nicht behaupten; maximal2 erfolglose Versuche je Hypothese. Nachher Originaltabs erhalten, P/I/R und Aufräum-P/I/R getrennt."
+    },
+    "nextRun": {
+      "id": "CITY-00-I40-I",
+      "kind": "reference_implementation",
+      "focus": "FTG-Gebäudewerkzeuge lesen und Skalier-/Drehfolge direkt beobachten"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
