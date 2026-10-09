@@ -408,20 +408,21 @@
   "hexAtlasExecution": {
     "scope": "HEX-00 bis HEX-28 und sämtliche eingeordneten CITY-00 bis CITY-09 vollständig",
     "phase": "HEX-02",
-    "state": "native_island_passed_budget_integration_pending",
+    "state": "native_island_checked_durable_editing_next",
     "plan": "ROADMAP-HEX-02-PLAN.md",
     "currentRun": {
       "id": "HEX-02-I01b",
       "kind": "implementation_host",
       "startedAt": "2026-10-09T16:41:19.786367+00:00",
-      "state": "in_progress",
+      "state": "completed",
       "focus": "Same Atlas/camera: actual Land/Sea/Forest/Reset, preview and original-compatible stroke/Escape/undo; early native island.",
-      "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/i01b-native-implementation.json"
+      "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/i01b-native-implementation.json",
+      "finishedAt": "2026-10-09T16:58:01.825609+00:00"
     },
     "nextRun": {
       "id": "HEX-02-I01c",
       "kind": "durable_implementation",
-      "focus": "FileStore transaction/draft, then fresh process before more tools."
+      "focus": "FileStore CAS journal, durable draft, Save/fresh terrain process; no more tools before this works."
     },
     "review": {
       "run": "HEX-01-R01",
@@ -454,12 +455,12 @@
       "gmTestingPolicy": "Eigenständiger Cloud-GM-Endanwenderlauf nach direkter Nutzerpräzisierung, ohne lokalen QA-Slot; beobachtete Befunde/Nacharbeiten getrennt überIssue1 übernehmen, kein Ersatz durch technische Testzahlen."
     },
     "verification": {
-      "check": "Integrated a666b73 passed after npm ci for incoming linkedom dependency.",
-      "tests": "241/241 local, foreign test patches preserved; clean actual Git basis next.",
-      "build": "Both integrated local and clean Git build passed; no user-vault installation.",
-      "productBuildSha256": "cc92b1c03bf8c68db8f77294c5561edca5a1139482ec6ea26c0fc0485876b777",
-      "integratedCommit": "a666b73eaff018320bacddbb075e83b086f1f77a",
-      "host": "Build19d89351 own core passed and visually inspected; incoming portable renderer build021ff0fe short own core pending. No Hex/City, large-map, physical or install approval.",
+      "check": "Clean Git41cac27 passed",
+      "tests": "276/276 clean integrated Git, all basis gates passed; existing foreign local test patches preserved.",
+      "build": "Clean Git41cac27 passed, actual native99b4d9; no user-vault install.",
+      "productBuildSha256": "99b4d9a6e293ce7bb90f1ceaee453cd327c33d1c0d21149237f594885e332aaf",
+      "integratedCommit": "41cac27f2c63162833ff201a103c669b5d5ca73f",
+      "host": "Early native island and separate actual fresh Atlas/Dungeon regression passed; no saved terrain approval yet.",
       "testProvenance": "N-I17: saubere eigene Git-Kopie von747eaac bestanden222/222, Check/Build bestanden, unverändertes Produkt5b086c04. Vorheriger git-archive-Lauf221/222 scheiterte ausschließlich an fehlenden Git-Metadaten im neuen Katalog-Build; Fehlbeleg erhalten, keine Test-/Produktänderung zur Korrektur. Lokaler219-Lauf mit unveränderten fremden Testpatches getrennt.",
       "cleanTreeTest": {
         "state": "passed",
@@ -473,7 +474,7 @@
       "physicalInput": "not_run",
       "largeMap": "not_run",
       "installation": "unchanged",
-      "testedProductCommit": "a666b73eaff018320bacddbb075e83b086f1f77a",
+      "testedProductCommit": "41cac27f2c63162833ff201a103c669b5d5ca73f",
       "incomingReviewIntegration": "Quick-Room-GM-Nachbesserung/Cloudreview, portable und komprimierte SRD2014-Katalogbasis, DD039/008-Belege und Stadtgalerie/Warp/Generatorbelege regulär integriert; fremde Wurzeln und lokale Tests/Installationsbytes exakt erhalten. Neuer eigener Kernhost auf geändertem Build steht aus; eingehende Cloud-Hostbelege sind getrennte Nachweise.",
       "latestOriginalRun": {
         "manifest": "/home/aaron/.cache/dungeon-native-qa/hex-00/remaining-contexts-repair-20261009-135556/manifest.json",
@@ -1060,18 +1061,52 @@
       },
       "hex02NativeIsland": {
         "run": "HEX-02-I01b",
-        "state": "native_island_passed_final_basis_checks_pending_budget_fix",
-        "nativeResult": "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/host/evidence/1791564546067-hex01-atlas-edit/result.json",
-        "buildSha256": "00fb99089a73977e03bbad4fcb1cd1ddfff9593214cd30a6b1589a94fca6e112",
-        "screensActuallyViewed": 4,
-        "actualNative": true,
-        "syntheticInput": true,
-        "physicalInput": false,
-        "normalProcessExit": true,
+        "state": "checked_implementation_native_island_passed",
+        "finishedAt": "2026-10-09T16:58:01.825609+00:00",
+        "cleanGitSource": "41cac27f2c63162833ff201a103c669b5d5ca73f",
+        "productBuildSha256": "99b4d9a6e293ce7bb90f1ceaee453cd327c33d1c0d21149237f594885e332aaf",
+        "buildTriplet": {
+          "main.js": {
+            "bytes": 1376004,
+            "sha256": "99b4d9a6e293ce7bb90f1ceaee453cd327c33d1c0d21149237f594885e332aaf"
+          },
+          "manifest.json": {
+            "bytes": 237,
+            "sha256": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64"
+          },
+          "styles.css": {
+            "bytes": 26762,
+            "sha256": "9c98763ef1aca2dc88a0a5d90dd4dc24601b31368852a1974f169a303d08078c"
+          }
+        },
+        "cleanTestsPassed": 276,
         "checkPassed": true,
-        "testRun": "271/272: only old catalog total-main budget failed; corrected owner packet pending integration",
-        "scope": "Live level0 Land/Sea/Forest island, original Escape/undo/textcolor, reset, negative chunks/content-fit",
-        "storage": "No Save/draft yet; current-session edits only. I01c immediately next. No user-vault installation."
+        "buildPassed": true,
+        "nativeIsland": "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/host/evidence/1791564724634-hex02-terrain-edit/result.json",
+        "nativeScreensActuallyViewed": 4,
+        "dungeonFreshRegression": "/home/aaron/.cache/dungeon-native-qa/hex-01/p01-20261009151055/host/evidence/1791564958056-hex01-atlas-reopen/result.json",
+        "freshDungeonAndAtlasScreensActuallyViewed": true,
+        "nativeNormalExits": [
+          0,
+          0
+        ],
+        "originalPairs": {
+          "WD-004.01": "Single gesture is one history command; full variants/path still open",
+          "WD-004.02": "Held land Escape retains stroke, exact undo/redo; other contexts still open",
+          "WD-007.01 / WD-021.01": "Manual text color Enter/Tab/Escape, invalid black and two control colors; full picker/ground brush variants still open"
+        },
+        "scope": "36 explicit level0 hexes, Land/Sea/Forest/Reset, preview, actual negative chunk boundary, content-fit; no fixed bounds",
+        "limits": [
+          "Current session edits only; Save/draft/fresh terrain reopen I01c pending",
+          "Shared City/Location/Dungeon Atlas integration HEX03..05 pending",
+          "Multilevel editing/coast/brush variants, full parity/large maps/physical/input installation pending"
+        ],
+        "initialFailuresRetained": [
+          "Native first command-palette click before resized surface settled; next measured settle passed",
+          "Old global catalog total-bundle cap failed271/272; owner fix477535f integrated, clean276/276 passed",
+          "Old fixture split at1120px put known test center offscreen; actual1440px fixture sequence passed, no product layout change"
+        ],
+        "installation": "user vault unchanged"
       }
     },
     "repairPlan": "ROADMAP-HEX-00-REPAIR-PLAN.md",

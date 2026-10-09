@@ -792,7 +792,7 @@ async function workflow() {
       2,
     ),
   );
-  await page.setViewportSize({ width: 1120, height: 840 });
+  await page.setViewportSize(hex01Atlas ? { width: 1440, height: 1000 } : { width: 1120, height: 840 });
   await page.bringToFront();
   const view = () =>
     page.evaluate(() => {
