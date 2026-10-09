@@ -5,10 +5,12 @@ import {
   type MapDocument,
   type DungeonContent,
   type Settings,
+  type SmartTileCell,
   immutable,
   validateDocument,
   validateEntity,
   validateSettings,
+  validateSmartTileCells,
   validateFloor,
   validateContent,
   safePath,
@@ -33,6 +35,10 @@ export interface Command {
   readonly entities?: readonly RecordChange<Entity>[];
   readonly floors?: readonly RecordChange<Floor>[];
   readonly settings?: { readonly before: Settings; readonly after: Settings };
+  readonly smartTiles?: {
+    readonly before: readonly SmartTileCell[] | undefined;
+    readonly after: readonly SmartTileCell[] | undefined;
+  };
   readonly content?: {
     readonly before: DungeonContent;
     readonly after: DungeonContent;
@@ -46,6 +52,7 @@ export interface ChangeEvent {
   readonly notes: ReadonlySet<string>;
   readonly floors: boolean;
   readonly settings: boolean;
+  readonly smartTiles?: boolean;
   readonly paletteOnly?: boolean;
   readonly content: boolean;
   readonly revision: number;
@@ -143,6 +150,8 @@ export class Session {
   private stateSettings: Settings;
   private savedContent: DungeonContent;
   private stateContent: DungeonContent;
+  private stateSmartTiles?: readonly SmartTileCell[];
+  private savedSmartTiles?: readonly SmartTileCell[];
   readonly id: Id;
   readonly version: 3 | 4;
   revision = 0;
@@ -157,6 +166,7 @@ export class Session {
     this.version = doc.version;
     this.stateSettings = doc.settings;
     this.stateContent = doc.content;
+    this.stateSmartTiles = doc.smartTiles;
     for (const f of doc.floors) this.levels.set(f.id, f);
     for (const e of doc.entities) {
       this.records.set(e.id, e);
@@ -166,6 +176,7 @@ export class Session {
     this.savedFloors = new Map(this.levels);
     this.savedSettings = this.stateSettings;
     this.savedContent = this.stateContent;
+    this.savedSmartTiles = doc.smartTiles;
   }
   get settings(): Settings {
     return this.stateSettings;
@@ -178,6 +189,13 @@ export class Session {
   }
   get content(): DungeonContent {
     return this.stateContent;
+  }
+  get smartTiles(): readonly SmartTileCell[] | undefined {
+    return this.stateSmartTiles;
+  }
+  private visibleSmartTiles(): readonly SmartTileCell[] | undefined {
+    return this.stateSmartTiles?.filter((cell) =>
+      cell.x < this.stateSettings.width && cell.y < this.stateSettings.height);
   }
   get canUndo(): boolean {
     return this.past.length > 0;
@@ -192,6 +210,7 @@ export class Session {
       this.dirtyFloors.size > 0 ||
       this.stateSettings !== this.savedSettings ||
       this.stateContent !== this.savedContent ||
+      JSON.stringify(this.visibleSmartTiles()) !== JSON.stringify(this.savedSmartTiles) ||
       [...this.notes.values()].some((n) => n.base !== n.current)
     );
   }
@@ -351,6 +370,7 @@ export class Session {
         command.entities?.length ||
         command.floors?.length ||
         command.settings ||
+        command.smartTiles ||
         command.content ||
         command.texts?.some((p) => p.before !== p.after || p.create)
       )
@@ -531,6 +551,15 @@ export class Session {
       if (!equal(before, this.stateContent))
         throw new Error("Veraltete Dungeon-Inhalte.");
     }
+    let smartTiles = this.stateSmartTiles;
+    if (c.smartTiles) {
+      const before = inverse ? c.smartTiles.after : c.smartTiles.before;
+      smartTiles = inverse ? c.smartTiles.before : c.smartTiles.after;
+      if (!equal(before, this.stateSmartTiles))
+        throw new Error("Veraltete Smart-Tile-Zellen.");
+      if (smartTiles !== undefined)
+        validateSmartTileCells(smartTiles, settings.width, settings.height, nextFloors, true);
+    }
     const nextEntities = entityChanges.length ? new Map(this.records) : this.records;
     if (entityChanges.length)
       for (const change of entityChanges)
@@ -610,6 +639,7 @@ export class Session {
     this.stateContent = equal(content, this.savedContent)
       ? this.savedContent
       : content;
+    this.stateSmartTiles = smartTiles;
     for (const [path, current] of noteValues)
       this.notes.get(path)!.current = current;
     this.revision++;
@@ -620,6 +650,7 @@ export class Session {
       notes: new Set(noteValues.keys()),
       floors: !!floorChanges.length,
       settings: !!c.settings,
+      smartTiles: !!c.smartTiles,
       content: !!c.content,
       revision: this.revision,
       rulesRevision: this.rulesRevision,
@@ -647,6 +678,9 @@ export class Session {
       floors: [...this.levels.values()],
       entities: [...this.records.values()],
       content: this.stateContent,
+      ...(this.stateSmartTiles !== undefined
+        ? { smartTiles: this.visibleSmartTiles() }
+        : {}),
     };
   }
   snapshot(): SaveSnapshot {
@@ -697,6 +731,7 @@ export class Session {
     this.savedFloors = new Map(snapshot.document.floors.map((f) => [f.id, f]));
     this.savedSettings = snapshot.document.settings;
     this.savedContent = snapshot.document.content;
+    this.savedSmartTiles = snapshot.document.smartTiles;
     const equal = (a: unknown, b: unknown) =>
       a === b || JSON.stringify(a) === JSON.stringify(b);
     if (equal(this.stateSettings, this.savedSettings))

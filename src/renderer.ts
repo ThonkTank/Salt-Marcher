@@ -135,6 +135,7 @@ export class MapRenderer {
   readonly app = new Application();
   private world = new Container();
   private mapBackground = new Graphics();
+  private smartTileLayer = new Graphics();
   private grid = new Graphics();
   private referenceLayer = new Container();
   private areaShadowLayer = new Container();
@@ -330,6 +331,7 @@ export class MapRenderer {
     this.detailLayer.sortableChildren = true;
     this.world.addChild(
       this.mapBackground,
+      this.smartTileLayer,
       this.referenceLayer,
       this.areaShadowLayer,
       this.groundPathLayer,
@@ -392,7 +394,7 @@ export class MapRenderer {
         const e = this.session.entities.get(id) ?? this.visuals.get(id)?.entity;
         return e?.kind === "building";
       });
-      if (event.floors || rebuildForSettings) {
+      if (event.floors || rebuildForSettings || event.smartTiles) {
         this.rebuild();
         if (rebuildForSettings) this.drawMapMask();
       }
@@ -626,6 +628,7 @@ export class MapRenderer {
       if (e.floorId === this.floorId || e.floorId === this.compareFloor)
         this.sync(e.id);
     this.syncVisualOrder();
+    this.drawSmartTiles();
     this.drawGrid();
     this.drawSelection();
     this.invalidate();
@@ -1608,6 +1611,15 @@ export class MapRenderer {
       g.moveTo(Math.max(0, left), y).lineTo(Math.min(width, right), y);
     g.stroke({ color: 0x5b5a51, width: 1 / c.scale, alpha: 0.15 });
     g.rect(0, 0, width, height).stroke({ color: 0x777565, width: 1 / c.scale });
+  }
+  private drawSmartTiles(): void {
+    const graphics = this.smartTileLayer.clear();
+    const { width, height } = this.session.settings;
+    for (const cell of this.session.smartTiles ?? []) {
+      if (cell.floorId !== this.floorId || cell.x >= width || cell.y >= height)
+        continue;
+      graphics.rect(cell.x, cell.y, 1, 1).fill(cell.color);
+    }
   }
   setGridVisible(visible: boolean): void {
     this.appearance.grid = visible;
