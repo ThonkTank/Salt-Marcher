@@ -152424,7 +152424,7 @@
   "hexAtlas": {
     "scope": "HEX-00..28, shared native Atlas; phase-specific functional approvals only.",
     "currentPhase": "HEX-03",
-    "state": "marker_key_native_component_checked_independent_review_and_detail_links_open",
+    "state": "marker_native_and_source_history_composition_checked_full_spatial_gate_open",
     "referenceGate": "wonderdraftParity.coverageReview HEX-00-R02",
     "requirements": [
       {
@@ -152677,6 +152677,19 @@
         "requirement": "Unabhängiger Fachreview und getrenntes Aufräumen",
         "state": "open",
         "plan": "ROADMAP-HEX-03-PLAN.md"
+      },
+      {
+        "id": "E2E01-HEX-SOURCE-001",
+        "requirement": "Geprüfte Ownerquellen in einem Kandidaten und native Source-/Snapshot-/History-Closure",
+        "state": "checked_core_composition_full_gate_open",
+        "implementationRun": "E2E-01-STEW-I01",
+        "catalog": "ROADMAP-E2E-GATES-CANDIDATE.md:13",
+        "evidence": [
+          "tests/fixtures/atlas-e2e-components-v1/manifest.json",
+          "tests/core/atlas-e2e-composition.test.ts",
+          "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/steward-source-integration.json"
+        ],
+        "observed": "Seven native payloads/14 file byte receipts/21 distinct local IDs/eight actual references; real terrain, placement, Location, City and Dungeon owner adapters share one History. One Undo/Redo reproduces exact input/expected bytes; stale final Dungeon rejects all preceding owner changes. City expected is unchanged. No persisted spatial binding, all-owner Save, Campaign/P02/P04/import, native integrated or total-gate proof."
       }
     ],
     "cleanupFindings": [
@@ -152728,7 +152741,7 @@
         }
       }
     ],
-    "limits": "HEX02 early native level0 island Save/Draft/fresh/conflict and Copy/Discard/A↔B passed in stated scope; independent R01/R02 required findings plus own separate CLEAN closed. Shared Location/City/Dungeon composition, multilevel editing, full parity, large-map/physical/installed-vault remain open. Latest integrated N005 build is Core/check/build only; native receipts retain their exact source/triplet.",
+    "limits": "Earlier HEX02 scoped native/review/CLEAN and HEX03 marker native receipts retain their exact source/scope. The reviewed City/Dungeon/Campaign sources now share a checked seven-file native snapshot/History composition; spatial bindings, City/Dungeon rendering by zoom, all-owner persistence, Campaign/context/registry and P02/P04 Complete-Import remain open. Latest source-integration basis: check, 445/445 tests and build only; no new native, physical, large-map, original-parity or installation proof, no E2E01 PASS.",
     "cloudFollowup": {
       "id": "GM-UX-N-004",
       "state": "resolved_observed_failure_app_reload_only",

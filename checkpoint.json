@@ -492,28 +492,32 @@
   "hexAtlasExecution": {
     "scope": "HEX-00 bis HEX-28 und sämtliche eingeordneten CITY-00 bis CITY-09 vollständig",
     "phase": "HEX-03",
-    "state": "e2e01_location_marker_native_checked_integration_next",
+    "state": "e2e01_reviewed_sources_composed_spatial_binding_next",
     "plan": "ROADMAP-HEX-03-PLAN.md",
     "currentRun": {
-      "startedAt": "2026-10-09T23:14:30.168Z",
-      "startTimeSource": "heartbeat dispatch",
-      "finishedAt": "2026-10-09T23:36:51.436463+00:00",
-      "baseline": "8769c86d48343673e055333becc116c2176b8007",
+      "id": "E2E-01-STEW-I01",
+      "kind": "bounded_reviewed_source_integration",
+      "state": "source_snapshot_history_closure_checked_full_gate_open",
+      "startedAt": "2026-10-09T23:41:29.360786+00:00",
+      "startTimeSource": "actual bounded continuation after City handoff request",
+      "finishedAt": "2026-10-09T23:54:29.006252+00:00",
+      "baseline": "ffa6e90b6b164711623f80c32ddf178d848b7c8d",
+      "synchronizedShared": "eba8fdcb8c5a40f1618116bbaa3c3dd57c4d957b",
+      "mergeBasis": "68232d0be0bc039688deadf82bc68ee616cd4143",
       "gate": "E2E-01",
       "catalog": "ROADMAP-E2E-GATES-CANDIDATE.md:13",
-      "scope": "Same-canvas location marker/name/Key/edit/reorder/drag + shared terrain History + location-enabled Save/Copy/Discard/Recovery host adapter.",
-      "id": "HEX-03-I01b-marker",
-      "state": "implemented_native_component_independent_review_pending",
-      "kind": "implementation",
-      "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/marker-implementation.json",
-      "nativeOnThisBuild": true,
+      "scope": "Exactly accepted City/Dungeon/Campaign handoffs in existing PR13; seven native payloads, 21 local identities, actual same-History atomic command and exact Undo/Redo byte snapshots.",
+      "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/steward-source-integration.json",
+      "nativeOnThisBuild": false,
+      "independentIntegratedReview": false,
       "phaseApproval": false
     },
     "nextRun": {
-      "id": "E2E-01-STEW-I01",
-      "kind": "bounded_reviewed_source_integration",
-      "focus": "Integrate exactly accepted City272ddc4, Dungeon d01051c and Campaign06ac0ae into existing PR13, preserve all foreign roots and native fixture bytes, run combined basis and compose explicit source/fixture receipts. No second candidate and no new plan/review round.",
-      "dependency": "Real shared City/Dungeon placement/history/transaction, Campaign-to-Atlas, House105-to-Dungeon30 and P02/P04 complete import still need executable integration; independent integrated code/native gates remain required."
+      "id": "E2E-01-SPACE-P01",
+      "kind": "bounded_spatial_integration_concretization",
+      "focus": "Concretize the missing actual World/Location→City→House→Dungeon binding and minimal executable projection/mount/persistence slice from the now accepted real owner APIs. Pin stored IDs/transforms, parent-chain precision, one camera/hit/History and exact next product checks; no new catalog/general review round or foreign package.",
+      "requiredFinding": "The combined native payloads still contain no persisted City/House/Dungeon bindings or shared all-owner Save/Context adapter. E2E01 catalog line13 cannot execute by zoom until this Hex-owned integration input exists.",
+      "dependency": "CitySource/Renderer/Gesture and DungeonAtlasSource are accepted; full native joint gate, Campaign bridge, catalog references and P02/P04 import remain open."
     },
     "review": {
       "run": "HEX-02-R02",
@@ -635,8 +639,8 @@
         "campaignAtlasBridge": {
           "owner": "Hex for thin immutable-context/navigation adapter only",
           "decision": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6089730661",
-          "campaignDataInput": "Owner Lifecycle/Context/schema-CampaignRevision/namespace/remap semantics supplied in PR16 review; concrete versioned context/navigation input remains unconfirmed",
-          "state": "owned_not_implemented_contract_review_pending",
+          "campaignDataInput": "Exact repaired independently checked06ac0ae supplies executable Lifecycle/Context/schema-revision/namespace/remap core; no native Campaign fixture, trusted domain registry or Vault lifecycle adapter supplied.",
+          "state": "domain_core_accepted_actual_vault_context_bridge_open",
           "oracles": [
             "same camera/history",
             "stable ID lookup, reject foreign/missing/ambiguous/retired",
@@ -675,58 +679,69 @@
           "candidateBranch": "hex/hex03-p01-20261009",
           "candidatePr": 13,
           "reuseExistingCandidate": true,
-          "integrationBase": "6bfb1f393722cd469dc4fd5f15d8dea12a154f6b",
-          "fixturePath": "tests/fixtures/atlas-e2e-v1",
-          "fixtureState": "Atlas component pinned; full integrated Campaign/City/Dungeon/Import closure pending, no complete fixture claim",
+          "integrationBase": "eba8fdcb8c5a40f1618116bbaa3c3dd57c4d957b",
+          "fixturePath": "tests/fixtures/atlas-e2e-components-v1",
+          "fixtureState": "Explicit component composition v1: exact seven native payloads, History/Snapshot checked; persisted spatial bindings and full Campaign/Import/native gate still open.",
           "sourceList": {
-            "atlasPlanAndSeed": "f1aec1519867ae71d4fbf3bbe7597fcf2afa0b2b",
-            "locationRepositoryCore": "adebea3d1358c13d6843da10e29a424dd79ca71e",
-            "cityPlanAndCore": "9f0e3307cc0178a1f490bbb6e90dc54e3caadeae (historical plan evidence; actual fixture handoff pending, not consumed)",
-            "gateCatalog": "cc93c31870f461527b2f8953fe88e433dada7cd1"
+            "manifest": "tests/fixtures/atlas-e2e-components-v1/manifest.json",
+            "field": "sourceList",
+            "state": "exact reviewed owner handoffs accepted; authoritative active source list"
           },
           "gateProtocol": {
             "catalog": "ROADMAP-E2E-GATES-CANDIDATE.md",
             "gate": "E2E-01",
-            "state": "not_passed_marker_component_native_checked_full_integration_pending",
-            "hexNextRow": "Shared same-canvas Hex→Location marker/Key/common Undo/Redo/Save/fresh process",
+            "state": "not_passed_source_snapshot_history_composition_checked_spatial_binding_open",
+            "hexNextRow": "E2E01 catalog line13: actual World/Location→City→House→Dungeon persisted spatial binding, projection and same-camera edit/mount with joint persistence",
             "nativeQa": "Atlas-QA accepted separate exact-candidate fresh-host verification",
             "independentCodeReviewer": "Cloud-Architecture accepted independent integrated review in #12/6090828948; run only after full pinned source handoff, no current gate PASS.",
             "hexMarkerRow": {
               "catalogLine": 13,
               "state": "native_component_checked_review_pending",
               "receipt": "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/marker-implementation.json"
+            },
+            "sourceComposition": {
+              "run": "E2E-01-STEW-I01",
+              "manifest": "tests/fixtures/atlas-e2e-components-v1/manifest.json",
+              "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/steward-source-integration.json",
+              "state": "checked_core_only",
+              "native": false
             }
           },
           "ownership": {
-            "campaignLifecycleContext": "Campaign/Data confirmed domain owner; actual input/implementation handoff pending",
-            "cityPayloadSnapshotHistory": "City confirmed domain owner; exact assigned component handoff pending",
-            "dungeonPayloadRoomKeyHistory": "Dungeon confirmed domain owner; exact assigned component handoff pending",
-            "sharedSpatialHistoryTransaction": "Hex implementation owner for shared spatial orchestration; real Dungeon/City snapshot/command adapters remain their own domains and are not yet integrated",
+            "campaignLifecycleContext": "Campaign/Data exact repaired reviewed06ac0ae core accepted; persisted Campaign/context/navigation adapter remains open",
+            "cityPayloadSnapshotHistory": "City exact reviewed272ddc4 native seed/core accepted in the common History; spatial mount/persistence remains Hex integration",
+            "dungeonPayloadRoomKeyHistory": "Dungeon exact reviewedd01051c native bytes/Room-Key/History adapter accepted; spatial mount/persistence remains Hex integration",
+            "sharedSpatialHistoryTransaction": "Hex: real City/Dungeon owner commands now compose with terrain/Location in one History; actual persisted bindings, all-owner snapshot/save/draft/copy/discard/recovery and context boundary remain open",
             "p02SaveReopen": "Hex implementation owner for E2E01 minimal Obsidian-Vault spatial Save/Reopen adapter only; full P02 prototype/OS decision remains unclaimed and unproven",
             "p04CompleteImport": "Hex implementation owner for E2E01 one real CompleteImport Vault adapter; Campaign/Data owns domain import/remap closure. Actual domain input pending; full P04 portability/recovery remains unclaimed and unproven"
           },
           "handoff": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6090818808",
           "initialPinnedCandidate": "8670cbf480865d7d9a4f4a64cfe87c3b33d7fbcc",
-          "fixtureManifestSha256": "5431128663236f1c07b06049f647fbc4c2f8495e9380cb25ac9dd19b6e8099df",
+          "fixtureManifestSha256": "ebf6e26158031665be8388792ccf0c112934298b0fea614bc1382a11b412e0a2",
           "acceptedInputsForNextIntegration": {
             "city": {
               "sha": "272ddc4bd0f2aad99a74bdf369cd03dd6dd6913c",
               "handoff": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/7#issuecomment-6090895391",
-              "integrated": false
+              "integrated": true,
+              "mergeBasis": "68232d0be0bc039688deadf82bc68ee616cd4143"
             },
             "dungeon": {
               "sha": "d01051c0be74a66d9dffbbddd13575774e4b95b3",
               "handoff": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6090920500",
               "review": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6090917428",
-              "integrated": false
+              "integrated": true,
+              "mergeBasis": "68232d0be0bc039688deadf82bc68ee616cd4143"
             },
             "campaign": {
               "sha": "06ac0ae059702331ad4b8b2650122dba87382398",
               "handoff": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6090985775",
               "review": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/20#issuecomment-6090984072",
-              "integrated": false
+              "integrated": true,
+              "mergeBasis": "68232d0be0bc039688deadf82bc68ee616cd4143"
             }
-          }
+          },
+          "nativeComponentPayloadPath": "tests/fixtures/atlas-e2e-v1",
+          "initialSeedManifestSha256": "5431128663236f1c07b06049f647fbc4c2f8495e9380cb25ac9dd19b6e8099df"
         }
       }
     },
@@ -1872,6 +1887,25 @@
           "dungeon": "d01051c0be74a66d9dffbbddd13575774e4b95b3",
           "campaign": "06ac0ae059702331ad4b8b2650122dba87382398"
         }
+      },
+      "e2e01SourceComposition": {
+        "run": "E2E-01-STEW-I01",
+        "sourceReference": "68232d0be0bc039688deadf82bc68ee616cd4143 + new composition manifest/test",
+        "check": "passed",
+        "tests": {
+          "passed": 445,
+          "failed": 0,
+          "skipped": 0,
+          "jointCases": 3
+        },
+        "build": "passed",
+        "fixtureVersion": "e2e01-component-closure-v1",
+        "manifest": "tests/fixtures/atlas-e2e-components-v1/manifest.json",
+        "manifestSha256": "ebf6e26158031665be8388792ccf0c112934298b0fea614bc1382a11b412e0a2",
+        "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/steward-source-integration.json",
+        "native": false,
+        "selfIntegration": false,
+        "gateApproval": false
       }
     },
     "repairPlan": "ROADMAP-HEX-02-REPAIR-PLAN.md",
@@ -1915,7 +1949,7 @@
       "platformIssue": 11,
       "checkpointIsAuthoritative": true
     },
-    "updatedAt": "2026-10-09T23:11:13.148935+00:00"
+    "updatedAt": "2026-10-09T23:54:29.006252+00:00"
   },
   "phase": "Phase 6: zweiter Nachbesserungslauf teilweise umgesetzt; fünf Restpositionen und unabhängiger Review offen",
   "goal": "Dungeon-Pfad bis zur vollständigen beauftragten Dungeondraft-Verhaltensgleichheit verfolgen: Bedienung und Funktion angleichen, Grafik ungefähr gleichwertig. Zuerst ROADMAP-PARITY.md mit Building und Object Tool abschließen, danach übrige Dungeon-Werkzeuge. Jede Fachphase getrennt planen, umsetzen und unabhängig reviewen; Lücken mit eigenen Nachbesserungs- und Reviewläufen schließen; danach eigene Aufräumphase mit Plan, Umsetzung und Review.",
