@@ -419,19 +419,23 @@
   "hexAtlasExecution": {
     "scope": "HEX-00 bis HEX-28 und sämtliche eingeordneten CITY-00 bis CITY-09 vollständig",
     "phase": "HEX-02",
-    "state": "r01_changes_required_repair_planned",
+    "state": "r01_repairs_core_checked_native_review_open",
     "plan": "ROADMAP-HEX-02-PLAN.md",
     "currentRun": {
       "id": "HEX-02-N01-I01",
       "kind": "focused_repair",
       "startedAt": "2026-10-09T19:17:39.094198+00:00",
-      "state": "in_progress_core_checks_passed",
-      "focus": "Two P1 implemented: exact closed target recovery without root + guarded visible Busy Copy; 8 targeted Core/DOM cases passed, clean full/native pending."
+      "state": "completed_core_native_pending",
+      "focus": "Two P1 implemented: exact closed target recovery without root + guarded visible Busy Copy; 8 targeted Core/DOM cases passed, clean full/native pending.",
+      "finishedAt": "2026-10-09T19:18:39.245708+00:00",
+      "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/n01-core-implementation.json",
+      "sourceCommit": "63e1efb623a8b1d85d57e7b6cd73ed37415810a7",
+      "testsPassed": 373
     },
     "nextRun": {
-      "id": "HEX-02-N01-I01",
-      "kind": "focused_repair",
-      "focus": "Implement/test both P1 then isolated native H01 and independent R02 before cleanup/HEX03."
+      "id": "HEX-02-N01-H01",
+      "kind": "native_repair_check",
+      "focus": "Native dismissal lock, source switch, fresh missing-root prepared/committed recovery and foreign journal rejection; then independent R02."
     },
     "review": {
       "run": "HEX-02-R01",
@@ -1216,6 +1220,36 @@
         "nativeOnThisBuild": false,
         "phaseApproval": false,
         "atlasSourceUnchangedFromReviewCandidate": true
+      },
+      "hex02CopyRepairCore": {
+        "run": "HEX-02-N01-I01",
+        "state": "completed_core_native_pending",
+        "sourceCommit": "63e1efb623a8b1d85d57e7b6cd73ed37415810a7",
+        "checkPassed": true,
+        "testsPassed": 373,
+        "buildPassed": true,
+        "triplet": {
+          "main.js": {
+            "bytes": 1402621,
+            "sha256": "4b78f558a89fd8c9969bd7668ab5fff308dd15170be834eb0cd274dbce04615c"
+          },
+          "styles.css": {
+            "bytes": 27503,
+            "sha256": "7662b340175931ff13ea91f0e03120566654981423466c5fbf5e02bbcd2e0b20"
+          },
+          "manifest.json": {
+            "bytes": 237,
+            "sha256": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64"
+          }
+        },
+        "targetedCases": 8,
+        "preparedBoundaries": 5,
+        "committedAndNoJournalBoundaries": 2,
+        "corruptForeignVariants": 14,
+        "nativeOnThisBuild": false,
+        "phaseApproval": false,
+        "userVault": "unchanged",
+        "testLog": "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/n01-clean-test.log"
       }
     },
     "repairPlan": "ROADMAP-HEX-02-REPAIR-PLAN.md",
