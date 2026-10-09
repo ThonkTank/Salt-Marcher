@@ -4070,17 +4070,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I35-I",
-      "kind": "reference_implementation",
-      "startedAt": "2026-10-09T15:40:10.557981+00:00",
-      "focus": "Small und Permalink-Reproduktion",
-      "state": "completed",
-      "result": "Small/Seed gekoppelt beobachtet, bytegleiche From-URL-Rückstellung und zusätzliche Pflicht CO-WAT-0011 gesichert."
-    },
-    "nextRun": {
       "id": "CITY-00-I35-R",
       "kind": "reference_review",
-      "focus": "Vergleich und vollständige Pflichtzuordnung prüfen"
+      "startedAt": "2026-10-09T15:41:13.039067+00:00",
+      "focus": "Größe-/Recipebelege R",
+      "state": "completed",
+      "result": "Drei echte Downloadkopien, acht Bilder/Rawhashes und13-Gruppenvergleich bestätigt. Small ändert Seed UND Größe,9 Gruppen geändert/4 gleich; keine reine Größenwirkung behauptet. From-URL-Rückstellung bytegleich. CO-WAT-0011 eigenständige offene Recipepflicht mit Zuordnung vorhanden. Aufräumbefunde: Snapshot noch64/I34, neue Pflicht fehlt und Small-Umfang unspezifisch; Rezeptentscheidung noch in Architektur übernehmen."
+    },
+    "nextRun": {
+      "id": "CITY-00-I35-CP",
+      "kind": "cleanup_planning",
+      "focus": "Größe-/Recipebelege und Snapshot CP"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
