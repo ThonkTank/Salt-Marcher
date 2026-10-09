@@ -364,22 +364,23 @@
   "hexAtlasExecution": {
     "scope": "HEX-00 bis HEX-28 und sämtliche eingeordneten CITY-00 bis CITY-09 vollständig",
     "phase": "HEX-01",
-    "state": "foundation_and_cleanup_passed_cloud_followup_open",
+    "state": "plan_and_local_baseline_checked_cloud_facts_pending",
     "plan": "ROADMAP-HEX-01-PLAN.md",
     "currentRun": {
-      "id": "HEX-01-CLEAN-R01",
-      "kind": "cleanup_review",
-      "state": "completed",
-      "startedAt": "2026-10-09T15:53:18.381755+00:00",
-      "focus": "Two cleanup items only; expression-tree proof, actual notice and fresh byte-preservation. Cloud GM-N004 remains a distinct next investigation.",
-      "finishedAt": "2026-10-09T15:54:51.448935+00:00",
-      "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-01/p01-20261009151055/cleanup-review.json",
-      "result": "Both bounded cleanup items passed; distinct Cloud GM-N004 remains open."
-    },
-    "nextRun": {
       "id": "GM-UX-N-004-P01",
       "kind": "bounded_diagnosis_planning",
-      "focus": "Cloud black/tall viewport; reproduce full/split own Atlas, constrain rendering dimensions if product cause before HEX02."
+      "startedAt": "2026-10-09T15:56:40.748020+00:00",
+      "checkpointRegisteredAt": "2026-10-09T15:59:21.831542+00:00",
+      "state": "completed",
+      "focus": "Own full/split baseline and actual Cloud sizing facts; product source unchanged.",
+      "finishedAt": "2026-10-09T16:00:59.321054+00:00",
+      "result": "Local full/split baseline stable over60frames; Cloud facts requested, cause not yet proved.",
+      "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-01/p01-20261009151055/gm-n004-plan-and-baseline.json"
+    },
+    "nextRun": {
+      "id": "GM-UX-N-004-I01",
+      "kind": "bounded_layout_implementation",
+      "focus": "Only if product layout feedback established; renderer sizing scope, no camera/hex changes."
     },
     "review": {
       "run": "HEX-01-R01",
@@ -962,6 +963,10 @@
         "cleanTests": 252,
         "physicalInput": false,
         "installation": "unchanged"
+      },
+      "gmViewportBaseline": {
+        "receipt": "/home/aaron/.cache/dungeon-native-qa/hex-01/p01-20261009151055/gm-n004-plan-and-baseline.json",
+        "cloudApproved": false
       }
     },
     "repairPlan": "ROADMAP-HEX-00-REPAIR-PLAN.md",
@@ -978,7 +983,8 @@
       ],
       "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-00/effects-dialog-numeric-repair-20261009-112427/requirements-plan-validation.json"
     },
-    "cleanupPlan": "ROADMAP-HEX-01-CLEAN-PLAN.md"
+    "cleanupPlan": "ROADMAP-HEX-01-CLEAN-PLAN.md",
+    "gmViewportPlan": "ROADMAP-GM-UX-N004-PLAN.md"
   },
   "phase": "Phase 6: zweiter Nachbesserungslauf teilweise umgesetzt; fünf Restpositionen und unabhängiger Review offen",
   "goal": "Dungeon-Pfad bis zur vollständigen beauftragten Dungeondraft-Verhaltensgleichheit verfolgen: Bedienung und Funktion angleichen, Grafik ungefähr gleichwertig. Zuerst ROADMAP-PARITY.md mit Building und Object Tool abschließen, danach übrige Dungeon-Werkzeuge. Jede Fachphase getrennt planen, umsetzen und unabhängig reviewen; Lücken mit eigenen Nachbesserungs- und Reviewläufen schließen; danach eigene Aufräumphase mit Plan, Umsetzung und Review.",
