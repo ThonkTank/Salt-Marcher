@@ -430,6 +430,41 @@
     "verification": "Dungeon-Kernweg mit gebundenem Eingang, Raum-Key, Undo/Redo, Save und frischem Obsidian-Prozess auf dem integrierten Build bestanden. Lokale Basisprüfungen bestanden; Testprovenienz enthält erhaltene fremde Teständerungen. Produktive Daten unverändert. Wonderdraft-Inventur ist ein belegter Teilstand; HEX-00-C, Hostpaare, physische Eingabe und Aufräumreview offen.",
     "next": "HEX-00-I01b: verbliebene Original-Kontexte/Optionen und 96 Pakethinweise vervollständigen, importierte Belege über GitHub abgleichen. Danach HEX-00-I02 mit den 13 Startfolgen, eigener Fachreview und getrennte Aufräumläufe. Gesamtes Hex-/Stadtziel bleibt aktiv; HEX-01 erst nach Referenztor und Aufräumreview."
   },
+  "e2e01DungeonContribution": {
+    "run": "E2E01-DUNGEON-I01",
+    "state": "implementation_candidate_pending_independent_review",
+    "owner": "Dungeon-Strang (Thread Obsidian Dungeon Repo ansehen)",
+    "branch": "dungeon/e2e01-i01-20261010",
+    "baseCommit": "6bfb1f393722cd469dc4fd5f15d8dea12a154f6b",
+    "coordination": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6090859580",
+    "scope": "Synthetischer nativer Dungeon-/Geschoss-/Raum-/Eingangsroute-/Key-Markdown-Anteil und ausführbarer DungeonAtlasSource für genau einen extern gelieferten AtlasHistory-Lebenszyklus des gemeinsamen E2E-01-Kandidaten.",
+    "files": [
+      "src/features/dungeon/atlas-source.ts",
+      "tests/core/dungeon-atlas-source.test.ts",
+      "tests/core.test.ts",
+      "tests/fixtures/atlas-e2e-v1/dungeon-manifest.json",
+      "tests/fixtures/atlas-e2e-v1/input/Dungeons/E2E-01-Testdungeon/Karte.dungeon",
+      "tests/fixtures/atlas-e2e-v1/expected/Dungeons/E2E-01-Testdungeon/Karte.dungeon"
+    ],
+    "fixture": {
+      "documentId": "00000000-0000-4000-8000-000000000030",
+      "roomId": "00000000-0000-4000-8000-000000000031",
+      "floorId": "00000000-0000-4000-8000-000000000032",
+      "entranceRouteId": "00000000-0000-4000-8000-000000000033",
+      "sectionId": "00000000-0000-4000-8000-000000000034",
+      "inputSha256": "c6fe58d1b5de5c707000a39b0b8da2883d31867b7d8bf347f63830021e2df742",
+      "expectedSha256": "a86e366f64d44c81e797ee8660de3f54e05bf1ad4a09a2db9bb8002e6eac7429"
+    },
+    "verified": "Typprüfung, 333/333 fokussierte Coretests, 422/422 vollständige Tests, Produktbuild, JSON-Parse und Diff-Check bestanden. Der Adapter hält kanonische .dungeon-Bytes und daraus abgeleitete Key-Closure in derselben AtlasHistory wie ein fremder räumlicher Owner; ein kombinierter Befehl erzeugt genau einen Atlas-Undo-Schritt und keinen Session-History-Schritt.",
+    "externalEvidence": "Keine externe Hostevidenz für dieses Paket; die Repository-Fixturebytes und SHA-256-Werte sind in tests/fixtures/atlas-e2e-v1/dungeon-manifest.json eingefroren.",
+    "notVerified": "Unabhängiger Quellreview, gemeinsame House-zu-Dungeon-Bindung, Vault-/FileTransaction-Integration, Renderer/Placement, vollständiger gemeinsamer E2E-01-Lauf, Native Host, frischer Prozess, physische Eingabe und Gesamtfreigabe bleiben offen.",
+    "missingInputs": [
+      "Persistenter Bindungsvertrag von Location 00000000-0000-4000-8000-000000000011 / House 00000000-0000-4000-8000-000000000105 zu Dungeon 00000000-0000-4000-8000-000000000030.",
+      "Steward-Orchestrierung der getrennten AtlasHistory- und Session-Historien ohne Doppelcommit.",
+      "Gemeinsamer Vault-/FileTransaction-Schritt für den Dungeon-Owner; Session.revision bleibt ausdrücklich nur laufzeitlokal."
+    ],
+    "next": "Kandidaten-SHA veröffentlichen, eng unabhängig reviewen lassen und anschließend nur als Source-Handoff an den einen PR-#13-Steward übergeben; keine eigene Integration."
+  },
   "hexAtlasExecution": {
     "scope": "HEX-00 bis HEX-28 und sämtliche eingeordneten CITY-00 bis CITY-09 vollständig",
     "phase": "HEX-03",

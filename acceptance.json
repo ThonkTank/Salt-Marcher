@@ -1,4 +1,12 @@
 {
+  "e2e01DungeonContribution": {
+    "id": "E2E01-DUNGEON-I01",
+    "state": "implementation_candidate_pending_independent_review",
+    "required": "Ein kanonischer nativer Dungeon mit stabilen Dungeon-/Geschoss-/Raum-/Eingangsroute-/Section-IDs und exakten Markdownbytes nimmt an genau einem externen AtlasHistory-Befehl teil, ohne parallel in Session-History zu committen oder Session.revision zu persistieren.",
+    "confirmed": "Input c6fe58d1b5de5c707000a39b0b8da2883d31867b7d8bf347f63830021e2df742 und Erwartung a86e366f64d44c81e797ee8660de3f54e05bf1ad4a09a2db9bb8002e6eac7429 sind kanonische V4-.dungeon-Bytes. Raum-Key-Closure wird daraus abgeleitet. Kombinierte Dungeon-/räumliche Änderungen sind ein AtlasHistory-Schritt; Undo/Redo, Fremdkennung, ungültiges Ziel und stale Snapshot sind fokussiert geprüft. Typprüfung, 333/333 Coretests, 422/422 vollständige Tests und Produktbuild bestanden.",
+    "evidence": "tests/fixtures/atlas-e2e-v1/dungeon-manifest.json; tests/core/dungeon-atlas-source.test.ts; Issue #12 Kommentar 6090859580",
+    "notConfirmed": "Unabhängiger Review sowie House-Bindung, gemeinsamer Vault-/FileTransaction-Schritt, Renderer/Placement, Native Host, frischer Prozess, physische Eingabe und vollständiger E2E-01-Lauf stehen aus; keine Produkt-, Host- oder Gesamtfreigabe."
+  },
   "gmProductFollowups": {
     "date": "2026-10-09",
     "GM-UX-N-003": {
