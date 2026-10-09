@@ -413,26 +413,33 @@
   "hexAtlasExecution": {
     "scope": "HEX-00 bis HEX-28 und sämtliche eingeordneten CITY-00 bis CITY-09 vollständig",
     "phase": "HEX-02",
-    "state": "native_island_copy_discard_checked_review_open",
+    "state": "r01_changes_required_repair_planned",
     "plan": "ROADMAP-HEX-02-PLAN.md",
     "currentRun": {
-      "id": "HEX-02-R01",
-      "kind": "independent_review",
-      "startedAt": "2026-10-09T18:54:25.577722+00:00",
-      "state": "requested_read_only",
-      "focus": "Independent exact c9e37ec complete early island Copy/Discard/lifecycle/storage review; original/host claims and crash/create coverage separate; no HEX03 product before findings/re-review/CLEAN."
+      "id": "HEX-02-N01-P01",
+      "kind": "repair_plan",
+      "startedAt": "2026-10-09T19:10:03.721578+00:00",
+      "finishedAt": "2026-10-09T19:10:03.721578+00:00",
+      "state": "completed",
+      "focus": "Exactly two R01 P1: target-bound missing-root Copy recovery and visible non-dismissable accepted Copy; no HEX03 scope."
     },
     "nextRun": {
-      "id": "HEX-02-N01-or-CLEAN-P01",
-      "kind": "review_result_dependent",
-      "focus": "Repair every required finding then independent re-review; if none, bounded separate cleanup plan/implementation/review before HEX03."
+      "id": "HEX-02-N01-I01",
+      "kind": "focused_repair",
+      "focus": "Implement/test both P1 then isolated native H01 and independent R02 before cleanup/HEX03."
     },
     "review": {
       "run": "HEX-02-R01",
-      "state": "requested_read_only",
+      "state": "completed_changes_required",
       "candidate": "c9e37ec749b38bfa71248bae7187c8d20ff5f693",
       "reviewerThread": "01a1204f-d184-7567-bfb3-d3ab06a0d07e",
-      "scope": "Complete early HEX02 source + focused tests; native proofs separately referenced. No phase/overall Go."
+      "scope": "Complete early HEX02 source + focused tests; native proofs separately referenced. No phase/overall Go.",
+      "finishedAt": "2026-10-09T19:10:03.721578+00:00",
+      "evidence": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1#issuecomment-6087387441",
+      "requiredFindings": [
+        "HEX02-R01-01",
+        "HEX02-R01-02"
+      ]
     },
     "cleanup": {
       "run": "HEX-01-CLEAN-R01",
@@ -455,7 +462,7 @@
       "dungeonThread": "01a1204f-d184-7567-bfb3-d3ab06a0d07e",
       "fixtureReviewThread": "01a12031-2c30-73f7-bc01-6bd3eba86046",
       "publicationPolicy": "Bei fortlaufenden Shared-Branch-Pushrennen geprüftes Paket auf eigenem Branch sichern, regulären Servermerge in gemeinsamen active/installed-phase1 prüfen und lokal integrieren; keine Historienumschreibung.",
-      "nativeGuiSlot": "Explicitly handed to Citylocal for human-authorized isolated COK-RFB Original; Root no local GUI until explicit return; DD036-J02 coordinate same slot via Issue1.",
+      "nativeGuiSlot": "City explicitly returned after normal COK-I43 exit; Root holds for isolated HEX-02-N01-H01; no parallel local GUI.",
       "gmTestingThread": "01a12031-2c30-73f7-bc01-6bd3eba86046",
       "gmTestingPolicy": "Eigenständiger Cloud-GM-Endanwenderlauf nach direkter Nutzerpräzisierung, ohne lokalen QA-Slot; beobachtete Befunde/Nacharbeiten getrennt überIssue1 übernehmen, kein Ersatz durch technische Testzahlen.",
       "lastCheckIn": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1#issuecomment-6086594621"
@@ -1206,7 +1213,7 @@
         "atlasSourceUnchangedFromReviewCandidate": true
       }
     },
-    "repairPlan": "ROADMAP-HEX-00-REPAIR-PLAN.md",
+    "repairPlan": "ROADMAP-HEX-02-REPAIR-PLAN.md",
     "requirements": {
       "updatedAt": "2026-10-09",
       "state": "documented_planned_not_implemented",
