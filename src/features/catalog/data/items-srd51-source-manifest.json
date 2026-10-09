@@ -1,0 +1,52 @@
+{
+  "manifestVersion": 1,
+  "state": "incomplete-work-in-progress",
+  "complete": false,
+  "source": {
+    "document": "SRD 5.1",
+    "pdfUrl": "https://media.wizards.com/2023/downloads/dnd/SRD_CC_v5.1.pdf",
+    "pdfSha256": "2504d2a0abb0a4d491a939be4f17910a2dde0312570ab8d208080225ccf0a1f0",
+    "pdfBytes": 3158713,
+    "pdfPages": 403,
+    "license": "CC-BY-4.0"
+  },
+  "extractionHelper": {
+    "repository": "5e-bits/5e-database",
+    "commit": "3f5593ea004c4f5a2af95603087ce4de72689d9f",
+    "equipmentPath": "src/2014/en/5e-SRD-Equipment.json",
+    "equipmentSha256": "aa5e99e4dad50143467568a3de653d53d1d39c2c2aa6ac74b172f457f6315ac1",
+    "equipmentRecords": 237,
+    "magicItemsPath": "src/2014/en/5e-SRD-Magic-Items.json",
+    "magicItemsSha256": "9a6f928cbf36b268b02e09dc116995efce8a74380df0450e197117886b64993d",
+    "magicItemRecords": 362,
+    "magicItemBaseRecords": 239,
+    "magicItemVariantRecords": 123,
+    "role": "extraction-helper-only"
+  },
+  "sectionBoundaries": [
+    { "id": "equipment", "firstPdfPage": 62, "firstPrintedPage": 62, "lastPdfPage": 72, "lastPrintedPage": 72, "reviewState": "boundary-draft" },
+    { "id": "magic-items-a-z", "firstPdfPage": 207, "firstPrintedPage": 207, "lastPdfPage": 251, "lastPrintedPage": 251, "reviewState": "boundary-draft" },
+    { "id": "artifact-orb-of-dragonkind", "firstPdfPage": 252, "firstPrintedPage": 252, "lastPdfPage": 253, "lastPrintedPage": 253, "reviewState": "boundary-draft" }
+  ],
+  "coverage": {
+    "inventoryOccurrences": 0,
+    "transcriptRecords": 0,
+    "expectedEquipmentFeedRecords": 237,
+    "expectedMagicItemAzHeadings": 242,
+    "expectedArtifactHeadings": 1,
+    "extractionHelperMagicItemRecords": 362,
+    "unresolvedEquipmentHelperRecords": 237,
+    "unresolvedMagicItemSourceHeadings": 243,
+    "unresolvedMagicItemHelperRecords": 362
+  },
+  "blockingOpenSections": [
+    "All 237 equipment helper records still require row/detail occurrence reconciliation against the official PDF.",
+    "All 242 Magic Items A-Z headings and the Orb of Dragonkind artifact still require full description and page-range transcription.",
+    "All 362 helper magic-item records still require parent/variant reconciliation against the 243 official source headings.",
+    "The closed subcategory enum and source-table mapping remain blocked on the complete inventory.",
+    "The verifier does not yet perform standards-based JSON Schema validation or full PDF text-to-fact matching.",
+    "Golden coverage still lacks same-name, merge, ligature, line-break hyphen, punctuation, attunement-header and byte-identical projection cases.",
+    "Section boundaries and final pre/post-merge counts require independent full-page review.",
+    "The inventory and transcript remain incomplete and must not feed a product artifact, provider, or UI."
+  ]
+}

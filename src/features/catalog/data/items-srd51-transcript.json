@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "complete": false,
+  "source": {
+    "document": "SRD 5.1",
+    "pdfUrl": "https://media.wizards.com/2023/downloads/dnd/SRD_CC_v5.1.pdf",
+    "pdfSha256": "2504d2a0abb0a4d491a939be4f17910a2dde0312570ab8d208080225ccf0a1f0",
+    "license": "CC-BY-4.0"
+  },
+  "records": []
+}
