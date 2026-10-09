@@ -80,10 +80,14 @@
         "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/protection-and-native-proof.json",
         "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/local-basis.json",
         "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/core-host-continuity.json",
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/roadmap-change-proof.json"
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/roadmap-change-proof.json",
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/integration-preservation.json",
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/published-source.json",
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/published-basis.json",
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/integrated-core-host-continuity.json"
       ],
       "finishedAt": "2026-10-09T13:41:33.370554+02:00",
-      "result": "Vierzehn frühe Interface-Farbfragen je eigenem Picker direkt geklärt; tatsächliche RGBA-Dezimalanzeigen und Hex-Wortlaute getrennt,35Originalframes/normaler Ausgang0,73 frühere Dateien unverändert. Acht frühe Kontexte,R02 und Aufräumen offen.203/203 lokal, Check/Build frisch bestanden;206/206 vorherige exakt gleiche Repo-Testbasis, frischer exakter Repositorylauf folgt vor Veröffentlichung. Produkt/Kernhostbasis unverändertd54f25cf; keine Hex-/Atlasfunktion und keine Installation."
+      "result": "Vierzehn frühe Interface-Farbfragen je eigenem Picker direkt geklärt; tatsächliche RGBA-Dezimalanzeigen und Hex-Wortlaute getrennt,35Originalframes/normaler Ausgang0,73 frühere Dateien unverändert. Acht frühe Kontexte,R02 und Aufräumen offen.203/203 lokal sowie206/206 im exakten integrierten Repositorybaum, Check/Build frisch bestanden. Produkt/Kernhostbasis unverändertd54f25cf; eingehende Stadt-/Dungeonbelege und GM-Endanwenderplan integriert. Keine Hex-/Atlasfunktion und keine Installation."
     },
     "nextRun": {
       "id": "HEX-00-N-I17",
@@ -133,30 +137,32 @@
       "dungeonThread": "01a1204f-d184-7567-bfb3-d3ab06a0d07e",
       "fixtureReviewThread": "01a12031-2c30-73f7-bc01-6bd3eba86046",
       "publicationPolicy": "Bei fortlaufenden Shared-Branch-Pushrennen geprüftes Paket auf eigenem Branch sichern, regulären Servermerge in gemeinsamen active/installed-phase1 prüfen und lokal integrieren; keine Historienumschreibung.",
-      "nativeGuiSlot": "N-I16 nach normaler Wonderdraft-/Starterbeendigung0 und tatsächlichem Wegfall aller eigenen PID/Startkennungen an CITY freigegeben; nächste Wonderdraftsitzung erst nach ausdrücklicher CITY-Freigabe."
+      "nativeGuiSlot": "N-I16 nach normaler Wonderdraft-/Starterbeendigung0 und tatsächlichem Wegfall aller eigenen PID/Startkennungen an CITY freigegeben; nächste Wonderdraftsitzung erst nach ausdrücklicher CITY-Freigabe.",
+      "gmTestingThread": "01a12031-2c30-73f7-bc01-6bd3eba86046",
+      "gmTestingPolicy": "Eigenständiger Cloud-GM-Endanwenderlauf nach direkter Nutzerpräzisierung, ohne lokalen QA-Slot; beobachtete Befunde/Nacharbeiten getrennt überIssue1 übernehmen, kein Ersatz durch technische Testzahlen."
     },
     "verification": {
       "check": "N-I16 frisch bestanden",
-      "tests": "203/203 lokal frisch mit erhaltenen fremden Testpatches; vorherige exakt gleiche Repositorybasis206/206 bestanden, frischer exakter Repositorylauf vor Veröffentlichung folgt.",
+      "tests": "203/203 lokal mit exakt erhaltenen fremden Testpatches; exakter integrierter Repositorybaum206/206 frisch bestanden.",
       "build": "N-I16 frisch bestanden, identischer Buildd54f25cf; keine Installation.",
       "productBuildSha256": "d54f25cf7b961cc78b1bbf197bd4781bd62d2325ec10dc4b34148c0d6ab3a6a2",
-      "integratedCommit": "571e40d2ce61193bc36ad522a93692bddd588ddf",
+      "integratedCommit": "cd34d94f1c7335a8383afb15a1bd24b593b8ca07",
       "host": "Nach eingehender Building-Bodenübermalung frischer eigener Kern-Obsidian-Edit-/Neuöffnungslauf bestanden aufBuildd54f25cf: vier Edit-/zwei Neuöffnungschecks, beide Prozessausgänge0. Keine Hex-/Stadt-/Overworld-, Großkarten-, physische oder Gesamtparitätsabnahme; Produktvault unverändert.",
-      "testProvenance": "N-I15 final auf571e40d:203/203 lokal mit exakt erhaltenen fremden Testpatches, exakter Repositorybaum206/206 frisch bestanden. COK5 laufen jetzt im Standardtest; selbständige GDPC-Fixtures, gültige PNG-Payload und tatsächliche offene Slice-Grenzen erhalten die drei Assetfälle. Check/Build grün, identischer Produktbuildd54f25cf. Nur Slice-Bereiche, keine vollständige Blob-Materialisierung/Lazy-Payload-Wirkung nachgewiesen; Adaptertests bleiben offline, keine Original-/GUI-Abnahme daraus.",
+      "testProvenance": "N-I16 aufcd34d94f1c7335a8383afb15a1bd24b593b8ca07: exakter git-archive-Baum ohne lokale Testpatches206/206, Check/Build bestanden;203/203 vorheriger lokaler Lauf bei unverändertem Produkt und Tests. Andere eingehende QA-Helfer separat syntaktisch geprüft. Kein neuer Kernhostlauf, keine Großkarten-/physische Abnahme.",
       "cleanTreeTest": {
         "state": "passed",
         "tests": 206,
         "passed": 206,
         "failed": 0,
-        "source": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/standard-published-basis.json",
-        "testedCommit": "571e40d2ce61193bc36ad522a93692bddd588ddf"
+        "source": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/published-basis.json",
+        "testedCommit": "cd34d94f1c7335a8383afb15a1bd24b593b8ca07"
       },
       "catalog": "N-I16: alle14 frühen Interface-Farben0127–0140 direkt geöffnet und mit ihren tatsächlichen RGBA-Dezimalanzeigen/Hex-Wortlauten sowie einfachem Popupkontext pro Besitzer erfasst. 35Originalframes, normale Beendigung0; keine Farbeingabe/Apply/Skinänderung. Alle Kennungen, Defaults, Controltypen, Quellen und Gruppenindizes erhalten. Acht frühe Kontexte, eigener R02 und Aufräumen bleiben offen; keine vollständige Inventar-/Paritätsfreigabe. Gemeinsamer grenzenloser Hex-/Stadt-/Dungeonatlas geplant, nicht implementiert.",
       "physicalInput": "not_run",
       "largeMap": "not_run",
       "installation": "unchanged",
-      "testedProductCommit": "571e40d2ce61193bc36ad522a93692bddd588ddf",
-      "incomingReviewIntegration": "N-I15: sämtliche eingehenden Dungeon-/Stadt-/Fixturepfade normal bis0c4718a in571e40d integriert. Eigener frischer Kernhost auf9584fcf/Buildd54f25cf bestandEdit4/Neuöffnung2Checks; Produkt-/Kernhostquellen und sonstige Packagefelder unverändert, nur Standardtestscript ergänzt COK5. Aktueller exakt geprüfter Quellbaum571e40d:203/203 lokal und206/206 Repositorytests, Check/Build grün. Fremde Testpatches und Installationsnotiz bytegleich erhalten; neue Stadt-/Dungeon-/Fixturewurzeln erhalten. Stash-Konflikt wurde ausschließlich durch exakte fremde Bytewiederherstellung gelöst; eingehende Tests bleiben inHEAD/index.66 ältere Dateien erhalten. Separate Dungeon-Hosthelfer Syntax geprüft; fremde Originalreviews bleiben getrennt. Veröffentlichung wegen mehrerer Shared-Branch-Kollisionen über geprüften Paketbranch und regulären Servermerge, kein Force-Push oder Verlauf-Umschreiben.",
+      "testedProductCommit": "cd34d94f1c7335a8383afb15a1bd24b593b8ca07",
+      "incomingReviewIntegration": "N-I16: Stadt-FTG-Wetter/3D-Belege, Dungeon-Ellipsen-Refill-Host und unabhängiger GM-Endanwenderplan regulär integriert; alle fremden Wurzeln und lokalen Test-/Installationsbytes erhalten. GM eigener Cloudlauf benötigt nach direktem Nutzerhinweis keinen lokalen GUI-Slot.",
       "latestOriginalRun": {
         "manifest": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/manifest.json",
         "sessions": 1,
@@ -544,12 +550,13 @@
         "protectedFiles": 73,
         "mapping": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/mapping-validation.json",
         "colors": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/color-observations.json",
-        "basis": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/local-basis.json",
-        "coreHostContinuity": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/core-host-continuity.json",
+        "basis": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/published-basis.json",
+        "coreHostContinuity": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/integrated-core-host-continuity.json",
         "fullInventoryApproval": "pending HEX-00-R02",
         "cleanup": "not_started",
         "physicalInput": false,
-        "installation": "unchanged"
+        "installation": "unchanged",
+        "integration": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/integration-preservation.json"
       }
     },
     "repairPlan": "ROADMAP-HEX-00-REPAIR-PLAN.md",
