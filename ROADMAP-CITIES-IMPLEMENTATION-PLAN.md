@@ -1057,3 +1057,5 @@ CITY-00-I46-REVIEW-CLEAN-P46 Start 2026-10-09T19:38:22.320998+00:00; Aufräumpla
 CITY-00-I46-REVIEW-CLEAN-I46 Start 2026-10-09T19:38:24.745516+00:00; Reviewumfang und Profilgleichheitsgrenze lesbar ergänzt; keine Produktdaten-/APIänderung.
 
 CITY-00-I46-REVIEW-CLEAN-C46 Start 2026-10-09T19:38:27.357923+00:00; Reviewauf räumen abgeschlossen: Rawhashes, Link und offene eigene Abnahmen erhalten. Nächste offene COK-Licht-/Wetterfunktion konkret planen.
+
+CITY-00-I47-P47 Start 2026-10-09T19:40:11.874000+00:00; Konkrete Demo-Licht/Wetterprobe auf geschützter eigener QA-Kopie geplant; frischer GUI-Slot angefragt, keine Instanz gestartet.
