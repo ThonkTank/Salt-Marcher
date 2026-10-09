@@ -3854,17 +3854,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I20-I",
-      "kind": "native_history_probe",
-      "startedAt": "2026-10-09T13:56:09.039401+00:00",
-      "focus": "Original-History vor manuellem Save messen",
-      "state": "completed",
-      "result": "Zwei Undo-Versuche100/2000ms ohne sichtbare Rücknahme; Ausgangsdatei vor manuellem Save wertgleich, Endsave nur Pfad0 verändert. Automatische Sicherungen ungeklärt; normaler Exit0, fünf Prozesse weg."
-    },
-    "nextRun": {
       "id": "CITY-00-I20-R",
       "kind": "reference_review",
-      "focus": "Auto-Save-Grenze, Endsave und Versuchsstopp prüfen"
+      "startedAt": "2026-10-09T13:56:32.072510+00:00",
+      "focus": "History-/Auto-Save-Beleggrenze reviewen",
+      "state": "completed",
+      "result": "I20-R01: Pre-Save darf nur vor manuellem Save bedeuten. Auto-Save/Operationseignung bleiben ungeklärt; Enddatei und geschützte Vorlage geprüft."
+    },
+    "nextRun": {
+      "id": "CITY-00-I20-CP",
+      "kind": "cleanup_planning",
+      "focus": "Manuelle Save-Grenze und Wiederholstopp planen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
