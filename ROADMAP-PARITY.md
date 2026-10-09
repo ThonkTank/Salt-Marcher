@@ -6,6 +6,8 @@ Für alle Phasen gilt: Bedienung und Funktion müssen mit dem Vorbild übereinst
 
 Der verbindliche Unterfallkatalog steht in `acceptance.json`. Die Phasen decken `DD-011` bis `DD-015`, `DD-026` und die für dessen Bibliothek nötigen Tags und Sets aus `DD-047` ab. Farbwahl, Assetpakete und Auswahl werden nur für Abläufe dieser beiden Werkzeuge einbezogen. Die vollständige Parität anderer Werkzeuge bleibt offen. Raum-Key und Feature-Verknüpfung haben kein Dungeondraft-Vorbild; sie werden als Projektablauf gegen die bestehenden Anforderungen geprüft.
 
+Die [Folge-Roadmap für die übrigen Dungeondraft-Abläufe](ROADMAP-PARITY-TOOLS.md) ist geplant und beginnt erst nach diesem Phase-7- und Aufräumabschluss.
+
 ## Regel für jede Phase
 
 1. Den aktuellen **installierten** Editorstand und den passenden Unterfall in `acceptance.json` lesen. Vorhandene Nachweise sind Ausgangspunkte, keine pauschale Paritätsfreigabe.

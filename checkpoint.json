@@ -977,6 +977,8 @@
   "parityRoadmap": {
     "status": "phase7_p7_1_3_4_reviewed_p7_2_deferred_gate_open",
     "roadmap": "ROADMAP-PARITY.md",
+    "followUpRoadmap": "ROADMAP-PARITY-TOOLS.md",
+    "followUpState": "planned_not_started_waiting_for_phase7_and_cleanup",
     "plan": "ROADMAP-PARITY-PLAN.md",
     "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
     "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
