@@ -4734,17 +4734,17 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-HEX03-OWNER-CLEAN-C01",
-      "kind": "cleanup_review",
-      "startedAt": "2026-10-09T19:42:35.161597+00:00",
-      "focus": "HEX03-Plan aus Stadtanschlusssicht: C",
+      "id": "CITY-00-I47",
+      "kind": "reference_implementation",
+      "startedAt": "2026-10-09T19:43:35.514Z",
+      "focus": "COK-Atmosphärenprobe / I",
       "state": "completed",
-      "result": "Peerreviewlink/Quellpin/JSON/Fremdwurzeln geprüft. COK I47-Originalprobe bleibt nächster Umsetzungslauf nach GUI-Koordination."
+      "result": "Originalwirkung Schatten230→34/Schnee0→0.6 und Save nur environment belegt; Schnee0 nur sichtbar zurückgestellt, finale Datei weiterhin0.6, Schattenrestauration nicht gelungen. Normal Exit0/5 Prozesse weg, GUI zurückgegeben. R47 offen."
     },
     "nextRun": {
-      "id": "CITY-00-I47-I47",
-      "kind": "reference_implementation",
-      "focus": "Freigegebene COK-Licht/Wetterprobe auf eigener QA-Kopie durchführen"
+      "id": "CITY-00-I47-CLEAN-P47",
+      "kind": "cleanup_plan",
+      "focus": "Getrennte R47-Referenzreview nach Team-Abstimmung"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
@@ -4783,7 +4783,16 @@
         "scope": "Wiederverwendbarer City-Szenenbeitrag, caller-project(localMeters)->screen, Meterbreiten, bestehende Scene/Hit-Konturen; keine eigene Kamera/Application/History/Placementkopie",
         "open": "Frame-/Parent-/Lifecycle-/Pointervertrag erst HEX04/05; keine MapSnapshot/Travel/LiveScene-API",
         "plan": "ROADMAP-CITIES-CITY01-RENDERER-PLAN.md"
-      }
+      },
+      "shortName": "Stadt",
+      "teamHandshake": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1#issuecomment-6088131163",
+      "guiReturn": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1#issuecomment-6088178583",
+      "heartbeat": {
+        "automationId": "stadt-atlasfortsetzung",
+        "intervalMinutes": 60,
+        "state": "active"
+      },
+      "nextSharedMilestone": "HEX-03 → HEX-04 → HEX-05 → CITY-01–04; no new product claim before team handshake"
     }
   },
   "testFixturePortability": {

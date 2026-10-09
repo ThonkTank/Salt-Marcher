@@ -1075,3 +1075,5 @@ CITY-HEX03-OWNER-CLEAN-P01 Start 2026-10-09T19:42:29.373434+00:00; Aufräumplan:
 CITY-HEX03-OWNER-CLEAN-I01 Start 2026-10-09T19:42:32.185182+00:00; Quellengebundenen Peerreview im Cityvorschlag verlinkt; noch fehlende konkrete Transform-/Router-/Citypersistenz-Implementierung offen gehalten.
 
 CITY-HEX03-OWNER-CLEAN-C01 Start 2026-10-09T19:42:35.161597+00:00; Peerreviewlink/Quellpin/JSON/Fremdwurzeln geprüft. COK I47-Originalprobe bleibt nächster Umsetzungslauf nach GUI-Koordination.
+
+CITY-00-I47 Start 2026-10-09T19:43:35.514Z; Originalwirkung Schatten230→34/Schnee0→0.6 und Save nur environment belegt; Schnee0 nur sichtbar zurückgestellt, finale Datei weiterhin0.6, Schattenrestauration nicht gelungen. Normal Exit0/5 Prozesse weg, GUI zurückgegeben. R47 offen.

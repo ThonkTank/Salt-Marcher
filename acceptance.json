@@ -1713,11 +1713,13 @@
         "product": "Canvas of Kings",
         "feature": "Licht und Wettervorlagen",
         "sourceUrl": "https://store.steampowered.com/app/2498570/Canvas_of_Kings/",
-        "observedAt": "2026-10-09T12:15:44.926455+02:00",
-        "observedVersion": null,
-        "availability": "unknown",
-        "observationKind": "documentation",
-        "originalEvidence": [],
+        "observedAt": "2026-10-09T19:43:35.514Z",
+        "observedVersion": "Steam Demo3122210/build16643264",
+        "availability": "demo_partial",
+        "observationKind": "direct_partial_effect",
+        "originalEvidence": [
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i47-20261009-r02/manifest.json"
+        ],
         "task": "Atmosphäre ändern und speichern",
         "phase": "CITY-07",
         "caseIds": [],
@@ -1730,9 +1732,15 @@
           "state": "not_run"
         },
         "status": "open",
-        "gap": "Dokumentationskandidat; direkte vollständige Originalprobe offen.",
+        "gap": "Schattenrichtung/Schneeschicht sichtbar und nativ gespeichert; Vorlagenanwendung, übrige Parameter, Fresh-Reopen und eigenes Produkt/Host/Bedienung offen.",
         "independentFunctionalRequirement": true,
-        "mappingCoverage": "new_required_function_not_covered_by_existing_CTY"
+        "mappingCoverage": "new_required_function_not_covered_by_existing_CTY",
+        "originalProbe": {
+          "run": "CITY-00-I47",
+          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i47-20261009-r02/manifest.json",
+          "state": "completed_bounded_probe",
+          "restoration": "snow0 visible only; saved snow0.6/shadow34 retained in own QA copy; source protected"
+        }
       },
       {
         "id": "CO-COK-0005",
