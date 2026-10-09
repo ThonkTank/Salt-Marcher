@@ -116,7 +116,7 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out, checks }) =>
     assert.equal(bytes(WORLD), original, "Navigation allocates no landscape or document bounds");
     await fit(); checks.push("Middle/Space/Hand pan, pointer-anchored zoom and coarse grid overview preserve file bytes");
     const collision = await create("Hex01 Welt", "flat");
-    await page.locator(".notice").filter({ hasText: "Atlas konnte nicht angelegt" }).waitFor({ state: "visible" });
+    await page.getByText("Ein Atlas mit diesem Namen ist bereits vorhanden. Einen anderen Namen wählen.", { exact: true }).waitFor({ state: "visible" });
     assert.equal(bytes(WORLD), original); assert(await collision.isVisible()); await page.keyboard.press("Escape");
     checks.push("Duplicate atlas creation retains existing file and entered modal");
     await create("Hex01 Flach", "flat");
@@ -155,6 +155,13 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out, checks }) =>
     await dungeonRegression(); await open(WORLD); await choose(-2, -1, "pointy");
     await page.screenshot({ path: path.join(out, "03-fresh-atlas.png") });
     checks.push("Fresh native process preserves both world identities, orientations, addresses and all fixture bytes");
+    const collision = await create("Hex01 Welt", "flat");
+    await page.getByText("Ein Atlas mit diesem Namen ist bereits vorhanden. Einen anderen Namen wählen.", { exact: true }).waitFor({ state: "visible" });
+    assert.equal(await collision.getByRole("textbox", { name: "Atlasname", exact: true }).inputValue(), "Hex01 Welt");
+    assert.equal(hash(bytes(WORLD)), baseline.worldHash); assert.equal((await state()).id, baseline.worldId);
+    await page.screenshot({ path: path.join(out, "04-existing-name.png") });
+    await page.keyboard.press("Escape");
+    checks.push("Existing atlas name has clear next action; entered modal, identity and file bytes preserved");
   }
   return { edit, reopen };
 };

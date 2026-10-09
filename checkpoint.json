@@ -350,21 +350,22 @@
   "hexAtlasExecution": {
     "scope": "HEX-00 bis HEX-28 und sämtliche eingeordneten CITY-00 bis CITY-09 vollständig",
     "phase": "HEX-01",
-    "state": "cleanup_planned",
+    "state": "implemented_checked_review_pending",
     "plan": "ROADMAP-HEX-01-PLAN.md",
     "currentRun": {
-      "id": "HEX-01-CLEAN-P01",
-      "kind": "cleanup_planning",
-      "startedAt": "2026-10-09T15:44:35.609915+00:00",
-      "finishedAt": "2026-10-09T15:44:35.609915+00:00",
-      "state": "completed",
-      "focus": "Two bounded R01 cleanup items, no new capability.",
-      "result": "Plan and references checked; implementation and native review remain separate."
-    },
-    "nextRun": {
       "id": "HEX-01-CLEAN-I01",
       "kind": "cleanup_implementation",
-      "focus": "Existing-name notice, readable new source, native collision/reopen."
+      "startedAt": "2026-10-09T15:45:14.565158+00:00",
+      "state": "completed",
+      "focus": "Existing-name notice and formatting only; native replay after checks.",
+      "finishedAt": "2026-10-09T15:49:06.234755+00:00",
+      "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-01/p01-20261009151055/cleanup-implementation.json",
+      "result": "Clear existing-name notice, modal/file identity preserved; native reopen plus expression-tree equivalence."
+    },
+    "nextRun": {
+      "id": "HEX-01-CLEAN-R01",
+      "kind": "cleanup_review",
+      "focus": "Exact bytes, actual notice, formatting semantic preservation."
     },
     "review": {
       "state": "passed",
@@ -945,6 +946,10 @@
         "physicalInput": false,
         "largeMap": false,
         "installation": "unchanged"
+      },
+      "hex01CleanupImplementation": {
+        "receipt": "/home/aaron/.cache/dungeon-native-qa/hex-01/p01-20261009151055/cleanup-implementation.json",
+        "state": "implemented_checked_review_pending"
       }
     },
     "repairPlan": "ROADMAP-HEX-00-REPAIR-PLAN.md",
