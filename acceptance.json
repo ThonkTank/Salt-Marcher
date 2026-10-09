@@ -2376,7 +2376,8 @@
         "observationKind": "direct_form_state_partial",
         "originalEvidence": [
           "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i01-20261009/ftg-form-observation.json",
-          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i45-building-limits-20261009/manifest.json"
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i45-building-limits-20261009/manifest.json",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i45n-full-20261009/manifest.json"
         ],
         "task": "Gebäudeverteilung konfigurieren",
         "phase": "CITY-06",
@@ -2404,7 +2405,8 @@
             "Own implementation/host/usability/physical comparison open"
           ],
           "reviewManifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i45-building-limits-20261009/review.json",
-          "openEvidenceFinding": "CITY-REF-R45-01: vollständige Übersichtsaufnahmen für Typenzahlen/Zugangsregel fehlen; konkrete Parameter sind vollständig gespeichert."
+          "openEvidenceFinding": "CITY-REF-R45-01: vollständige Übersichtsaufnahmen für Typenzahlen/Zugangsregel fehlen; konkrete Parameter sind vollständig gespeichert.",
+          "fullOverviewSupplement": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i45n-full-20261009/manifest.json"
         },
         "independentFunctionalRequirement": true,
         "mappingCoverage": "new_required_function_not_covered_by_existing_CTY"

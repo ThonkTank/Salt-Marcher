@@ -981,3 +981,5 @@ CITY-00-I45-REVIEW-CLEAN-P45 Start 2026-10-09T19:22:38.455169+00:00; Aufräumpla
 CITY-00-I45-REVIEW-CLEAN-I45 Start 2026-10-09T19:22:41.063781+00:00; Reviewbefund und präziser Vollaufnahmeplan verknüpft; alte Rawdateien geschützt.
 
 CITY-00-I45-REVIEW-CLEAN-R45 Start 2026-10-09T19:22:44.655023+00:00; R45-Befund/Planlinks/Rawhashes geprüft, keine vorweggenommene Freigabe. N45 ergänzt jetzt Originalübersichten.
+
+CITY-00-I45-N45 Start 2026-10-09T19:22:59.620Z; Fehlende Vollaufnahmen ergänzt: Formularhinweis, UI-Listen209/80, alte Karte/Wyddis/Montag11h sichtbar erhalten. Kein Katalogvolltest oder Ergebnisgenerator.
