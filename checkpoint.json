@@ -4429,17 +4429,17 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-01-PREP-RENDERER-PLAN-CLEAN-R07",
-      "kind": "cleanup_review",
-      "startedAt": "2026-10-09T18:33:39.873774+00:00",
-      "focus": "Bereinigten Rendererplan gegen aktuelle Quellen prüfen",
-      "state": "completed",
-      "result": "Links/JSON/Besitzgrenzen geprüft; keine Runtimeänderung oder CTY-Freigabe. Plan und Aufräumen abgeschlossen."
-    },
-    "nextRun": {
       "id": "CITY-01-PREP-I07",
       "kind": "implementation",
-      "focus": "CityRenderer nach P07 implementieren; affine Straßen/Höfe/Ressourcen und gezielte Regressionen"
+      "startedAt": "2026-10-09T18:38:34.384149+00:00",
+      "focus": "CityRenderer gemäß P07 implementieren",
+      "state": "completed",
+      "result": "City-Szenenbeitrag und5Regressionen:check,352Tests/build bestanden. Startmarker fehlte; erster Testabschluss separat belegt, startedAt ist Abschlussdokumentationsstart. R11/Host offen."
+    },
+    "nextRun": {
+      "id": "CITY-01-PREP-RENDERER-CLEAN-P07",
+      "kind": "cleanup_planning",
+      "focus": "Rendererressourcen/Besitzgrenzen und Nachweisverweise bereinigen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
