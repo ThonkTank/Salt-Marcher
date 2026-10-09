@@ -35,10 +35,16 @@ export function normalizePdfText(value) {
     .replace(/\uFB03/g, "ffi")
     .replace(/\uFB04/g, "ffl")
     .replace(/-\u00ad\u2010/g, "-")
+    .replace(/-\u2011/g, "-")
+    .replace(/—[^\S\r\n]*\r?\n[^\S\r\n]*/g, "—")
     .replace(/\u00ad[^\S\r\n]*\r?\n[^\S\r\n]*/g, "")
     .replace(/[\u00a0\u2000-\u200b\u202f\u2060]/g, " ")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+function normalizePdfPageText(value, page) {
+  return normalizePdfText(value).replaceAll(`System Reference Document 5.1 ${page}`, "").trim();
 }
 
 function invariant(condition, message) {
@@ -166,11 +172,9 @@ export function validateTranscriptData(transcript, inventory, { allowIncomplete 
     invariant(typeof record.magic === "boolean", `${record.id}.magic ist ungültig.`);
     invariant(attunementValues.has(record.attunement), `${record.id}.attunement ist ungültig.`);
     if (record.category === "equipment") {
-      invariant(record.id.startsWith("srd51:equipment:"), `${record.id} hat eine falsche Kategorie-ID.`);
       invariant(record.magic === false, `${record.id} darf nicht magisch markiert sein.`);
       invariant(record.attunement === "unspecified", `${record.id} darf keine Einstimmungsbehauptung tragen.`);
     } else {
-      invariant(record.id.startsWith("srd51:magic-item:"), `${record.id} hat eine falsche Kategorie-ID.`);
       invariant(record.magic === true, `${record.id} muss magisch markiert sein.`);
     }
     if (record.rarity !== undefined) validateRarity(record.rarity, `${record.id}.rarity`);
@@ -223,7 +227,7 @@ function verifyPdfOccurrences(pdfPath, inventory) {
     const pages = [];
     for (let page = occurrence.firstPdfPage; page <= occurrence.lastPdfPage; page += 1) pages.push(page);
     const text = pages.map(page => {
-      if (!pageText.has(page)) pageText.set(page, normalizePdfText(extractPdfPage(pdfPath, page)));
+      if (!pageText.has(page)) pageText.set(page, normalizePdfPageText(extractPdfPage(pdfPath, page), page));
       return pageText.get(page);
     }).join(" ");
     invariant(text.includes(normalizePdfText(occurrence.sourceLabel)),
@@ -237,7 +241,7 @@ function verifyPdfTranscriptFacts(pdfPath, transcript) {
   let checkedFacts = 0;
   for (const record of transcript.records) {
     const text = record.source.pdfPages.map(page => {
-      if (!pageText.has(page)) pageText.set(page, normalizePdfText(extractPdfPage(pdfPath, page)));
+      if (!pageText.has(page)) pageText.set(page, normalizePdfPageText(extractPdfPage(pdfPath, page), page));
       return pageText.get(page);
     }).join(" ");
     const facts = [record.cost?.sourceText, record.weight?.sourceText, record.damage?.diceText,

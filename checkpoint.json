@@ -134,12 +134,12 @@
     "architecture": "ARCHITECTURE.md#geplante-katalog--und-encounter-erweiterung",
     "acceptance": "acceptance.json.saltMarcherCatalogEncounter",
     "currentRun": {
-      "id": "CE-02-I02-S01-W04",
+      "id": "CE-02-I02-S01-W04-T01",
       "kind": "source_inventory_schema_transcript_intermediate",
       "state": "in_progress_verified_incomplete",
-      "focus": "Inventory all 99 Adventuring Gear table leaf rows in physical PDF order while preserving the incomplete gate",
+      "focus": "Transcribe all 99 Adventuring Gear rows with costs, optional weights, table groups and published narrative facts while preserving the incomplete gate",
       "plan": "ROADMAP-SALTMARCHER-CE02-I02-PLAN.md",
-      "result": "All 99 Adventuring Gear table leaf rows are inventoried in physical PDF order with contiguous source identities and page evidence. Group headers and the separate Container Capacity auxiliary table are excluded from primary occurrences; Potion of healing remains an explicit unmerged occurrence pending the disposition ledger. The real pinned PDF verifies 149 equipment occurrence labels. Overall coverage is 149 of 219 primary equipment occurrences and 50 transcript records. S01 remains incomplete and I01 blocked."
+      "result": "All 99 Adventuring Gear table leaf rows now have source transcripts with exact costs, optional weights, controlled table-group categories and every published item narrative. Potion of healing retains the first physical table occurrence as its canonical magic identity; its later detail merge remains open. The real pinned PDF verifies 149 occurrence labels and 455 captured facts. Overall coverage remains 149 of 219 primary equipment occurrences and rises to 149 transcript records. S01 remains incomplete and I01 blocked."
     },
     "implementationRun": {
       "id": "CE-01-I01",
@@ -342,7 +342,7 @@
       },
       "limits": "Build-contract repair only. No catalog data/provider/UI change and no CE, Atlas, host, physical-input or overall approval."
     },
-    "verified": "CE-00 and CE-01 implementation/review/repair cycles passed their scoped gates. CE-01-H01 passed its independently reviewed automated scope. CE-02-I01 product commit 7469e64202e730175ee138136a69d82ad4f28ea6 and metadata repair candidate 4d239004c4f000b2af6f66122a05135b0c353ffb passed independent review. CE-02-I02-S01 now has a checked fail-closed source-package scaffold with 149 equipment occurrences and 50 transcripts; the complete corpus, bounded matching, S01 review and Item product feature remain open. Physical input, screenreader and other-platform acceptance remain open.",
+    "verified": "CE-00 and CE-01 implementation/review/repair cycles passed their scoped gates. CE-01-H01 passed its independently reviewed automated scope. CE-02-I01 product commit 7469e64202e730175ee138136a69d82ad4f28ea6 and metadata repair candidate 4d239004c4f000b2af6f66122a05135b0c353ffb passed independent review. CE-02-I02-S01 now has a checked fail-closed source package with 149 equipment occurrences and 149 transcripts, including all 99 Adventuring Gear rows and narratives; the complete corpus, bounded matching, S01 review and Item product feature remain open. Physical input, screenreader and other-platform acceptance remain open.",
     "open": [
       "CE-01 physical keyboard/mouse, screenreader and other-platform acceptance; CE-02-I02 through CE-07 runs",
       "CE-02-I02-S01 complete official inventory, transcript, closed subcategory enum, full PDF matching, complete golden cases and independent S01-R01 review",
@@ -350,10 +350,10 @@
       "Physical catalog input acceptance cannot be replaced by Playwright automation"
     ],
     "nextRun": {
-      "id": "CE-02-I02-S01-W04-T01",
+      "id": "CE-02-I02-S01-W05",
       "kind": "source_inventory_schema_transcript_continuation",
       "plan": "ROADMAP-SALTMARCHER-CE02-I02-PLAN.md",
-      "focus": "Transcribe all 99 Adventuring Gear rows with costs, optional weights, exact table group mapping and sourced narrative facts; keep Potion of healing unmerged and complete false"
+      "focus": "Inventory and transcribe the seven Equipment Packs in physical PDF order, reconcile their prose-only components explicitly, and keep complete false"
     }
   },
   "repositoryWorkflow": {

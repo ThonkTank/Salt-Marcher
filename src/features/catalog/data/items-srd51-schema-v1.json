@@ -25,7 +25,7 @@
       "enum": [
         "armor-light", "armor-medium", "armor-heavy", "shield",
         "weapon-simple-melee", "weapon-simple-ranged", "weapon-martial-melee", "weapon-martial-ranged",
-        "adventuring-gear-standard", "ammunition", "arcane-focus", "druidic-focus", "holy-symbol", "kit", "equipment-pack",
+        "adventuring-gear-standard", "ammunition", "arcane-focus", "druidic-focus", "holy-symbol", "kit", "potion", "equipment-pack",
         "artisans-tools", "gaming-set", "musical-instrument", "other-tools",
         "mount-or-animal", "tack-harness-or-drawn-vehicle", "waterborne-vehicle"
       ]
