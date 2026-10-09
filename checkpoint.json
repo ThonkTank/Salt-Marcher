@@ -4626,16 +4626,16 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-01-INTEGRATION-P01",
-      "kind": "integration_plan",
-      "startedAt": "2026-10-09T19:25:50.379517+00:00",
-      "focus": "Stadtanschluss auf vorhandenen Atlasdateien: P",
-      "state": "completed",
-      "result": "Quellenbasierter Vorschlag mit Pre-render-Zeitpunkt, gemeinsamem Pointer/History und noch fehlender Citypersistenz vorgelegt; keine API ratifiziert."
-    },
-    "nextRun": {
       "id": "CITY-01-INTEGRATION-CLEAN-P01",
       "kind": "cleanup_plan",
+      "startedAt": "2026-10-09T19:25:53.821846+00:00",
+      "focus": "Stadtanschluss auf vorhandenen Atlasdateien: CLEAN-P",
+      "state": "completed",
+      "result": "Aufräumplan: Plan verlinken und bestehende Hooks strikt von noch zu vereinbarender Persistenz/Placementgrenze trennen."
+    },
+    "nextRun": {
+      "id": "CITY-01-INTEGRATION-CLEAN-I01",
+      "kind": "cleanup_implementation",
       "focus": "Integrationsvorschlag mit Atlasbesitzer gegen HEX04/05-Plan reviewen"
     },
     "open": [
