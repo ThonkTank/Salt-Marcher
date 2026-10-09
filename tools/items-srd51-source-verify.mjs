@@ -103,6 +103,21 @@ function validateStructuredConversions(record) {
       : match[1].replaceAll(",", "");
     invariant(pounds === record.weight.pounds, `${record.id}.weight.pounds stimmt nicht mit dem Quelltext überein.`);
   }
+  if (record.speed !== undefined) {
+    const match = /^(\d[\d,]*|1\/2|1\/4|1½|2½) (ft\.|mph)$/.exec(record.speed.sourceText);
+    invariant(match, `${record.id}.speed ist nicht eindeutig umrechenbar.`);
+    const values = { "1/2": "0.5", "1/4": "0.25", "1½": "1.5", "2½": "2.5" };
+    const value = values[match[1]] ?? match[1].replaceAll(",", "");
+    const unit = match[2] === "ft." ? "ft/round" : "mph";
+    invariant(record.speed.value === value && record.speed.unit === unit,
+      `${record.id}.speed stimmt nicht mit dem Quelltext überein.`);
+  }
+  if (record.carryingCapacity !== undefined) {
+    const match = /^(\d[\d,]*) lb\.$/.exec(record.carryingCapacity.sourceText);
+    invariant(match, `${record.id}.carryingCapacity ist nicht eindeutig in Pfund umrechenbar.`);
+    invariant(Number(match[1].replaceAll(",", "")) === record.carryingCapacity.pounds,
+      `${record.id}.carryingCapacity.pounds stimmt nicht mit dem Quelltext überein.`);
+  }
 }
 
 export function validateTranscriptData(transcript, inventory, { allowIncomplete = false } = {}) {
@@ -204,6 +219,12 @@ export function validateTranscriptData(transcript, inventory, { allowIncomplete 
         `${disposition.helperIndex} darf als pack-prose-only keine kanonische Primär-ID erfinden.`);
       invariant(disposition.sourceOccurrenceIds.every(id => occurrences.get(id).sectionId === "equipment-packs"),
         `${disposition.helperIndex} muss als pack-prose-only aus Equipment Packs belegt sein.`);
+    } else if (disposition.disposition === "expanded-primary-occurrences") {
+      invariant(disposition.canonicalId !== null,
+        `${disposition.helperIndex} benötigt als expanded-primary-occurrences eine kanonische Primär-ID.`);
+      invariant(disposition.sourceOccurrenceIds.length === 1
+        && disposition.sourceOccurrenceIds[0] === disposition.canonicalId,
+        `${disposition.helperIndex} muss als expanded-primary-occurrences genau seine kanonische Primär-ID belegen.`);
     } else if (disposition.canonicalId !== null) {
       invariant(occurrences.has(disposition.canonicalId),
         `${disposition.helperIndex} verweist auf unbekannte kanonische Occurrence ${disposition.canonicalId}.`);
@@ -292,7 +313,8 @@ function verifyPdfTranscriptFacts(pdfPath, transcript) {
       if (!pageText.has(page)) pageText.set(page, normalizePdfPageText(extractPdfPage(pdfPath, page), page));
       return pageText.get(page);
     }).join(" ");
-    const facts = [record.cost?.sourceText, record.weight?.sourceText, record.damage?.diceText,
+    const facts = [record.cost?.sourceText, record.weight?.sourceText, record.speed?.sourceText,
+      record.carryingCapacity?.sourceText, record.damage?.diceText,
       record.damage?.typeText, record.damage?.versatileDiceText, record.armor?.armorClassText,
       record.armor?.strengthRequirementText, record.armor?.stealthRuleText,
       ...record.properties.map(property => property.description),

@@ -134,25 +134,25 @@
     "architecture": "ARCHITECTURE.md#geplante-katalog--und-encounter-erweiterung",
     "acceptance": "acceptance.json.saltMarcherCatalogEncounter",
     "currentRun": {
-      "id": "CE-02-I02-S01-W06",
+      "id": "CE-02-I02-S01-W07",
       "kind": "source_inventory_schema_transcript_intermediate",
       "state": "in_progress_verified_incomplete",
-      "focus": "Inventory and transcribe all 35 Tools table leaf rows in physical PDF order, preserve optional weight semantics and the Vehicles cross-reference separately",
+      "focus": "Inventory and transcribe all eight Mounts and Other Animals table rows in physical PDF order and explicitly reconcile the combined Donkey or mule source row against both helper identities",
       "plan": "ROADMAP-SALTMARCHER-CE02-I02-PLAN.md",
-      "result": "All 35 Tools leaf rows now have physical-order occurrences and source transcripts with exact prices, optional weight semantics and published shared/per-item narratives. The Vehicles row is preserved separately as a typed cross-reference to the three Mounts and Vehicles sections without inventing an item identity. The real pinned PDF verifies 191 occurrence labels, 572 captured transcript facts, seven helper dispositions and one cross-reference with two facts. Overall coverage is 191 of 219 primary equipment occurrences and 191 transcript records. S01 remains incomplete and I01 blocked.",
-      "verification": {"sourceRevision": "10436010dc180aa3577605ac4e50a99c43c5b843+dirty", "check": "passed", "tests": {"passed": 419, "failed": 0}, "build": "passed", "focusedTests": {"passed": 15, "failed": 0}, "pdfSha256": "2504d2a0abb0a4d491a939be4f17910a2dde0312570ab8d208080225ccf0a1f0", "occurrences": 191, "records": 191, "transcriptFacts": 572, "helperDispositions": 7, "crossReferences": 1, "crossReferenceFacts": 2, "mainBytes": 1422945, "mainSha256": "c8eced850cad83d4d58731cfe9bc5dcb7c293646b9d9961ede37be0c8bb7c37f"},
-      "limits": "Source-package intermediate only. No product Item artifact/provider/UI, Obsidian installation or host acceptance; no Mounts/Vehicle primary rows, Magic Items, Encounter runtime or 2024 rules. The 28 remaining equipment primary occurrences, 40 helper records, bounded matching and independent S01-R01 remain open; I01 stays blocked.",
+      "result": "All eight Mounts and Other Animals rows now have physical-order occurrences and source transcripts with exact prices, speeds, carrying capacities and the published shared narrative. The one official Donkey or mule row remains one primary identity; the two extraction-helper identities Donkey and Mule have explicit PDF-backed dispositions to it. The real pinned PDF verifies 199 occurrence labels, 604 captured transcript facts, nine helper dispositions and one cross-reference with two facts. Overall coverage is 199 of 219 primary equipment occurrences and 199 transcript records. S01 remains incomplete and I01 blocked.",
+      "verification": {"sourceRevision": "6bfb1f393722cd469dc4fd5f15d8dea12a154f6b+dirty", "check": "passed", "tests": {"passed": 420, "failed": 0}, "build": "passed", "focusedTests": {"passed": 16, "failed": 0}, "pdfSha256": "2504d2a0abb0a4d491a939be4f17910a2dde0312570ab8d208080225ccf0a1f0", "occurrences": 199, "records": 199, "transcriptFacts": 604, "helperDispositions": 9, "crossReferences": 1, "crossReferenceFacts": 2, "mainBytes": 1422945, "mainSha256": "c8eced850cad83d4d58731cfe9bc5dcb7c293646b9d9961ede37be0c8bb7c37f"},
+      "limits": "Source-package intermediate only. No product Item artifact/provider/UI, Obsidian installation or host acceptance; no Tack/Harness/Vehicle primary rows, Magic Items, Encounter runtime or 2024 rules. The 20 remaining equipment primary occurrences, 31 helper records, bounded matching and independent S01-R01 remain open; I01 stays blocked.",
       "documentation": {
         "status": "partial",
         "branch": "active/installed-phase1",
-        "baseCommit": "10436010dc180aa3577605ac4e50a99c43c5b843",
-        "issue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/9#issuecomment-6089803149",
+        "baseCommit": "6bfb1f393722cd469dc4fd5f15d8dea12a154f6b",
+        "issue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/9#issuecomment-6091122073",
         "changedFiles": ["acceptance.json", "checkpoint.json", "src/features/catalog/data/items-srd51-inventory.json", "src/features/catalog/data/items-srd51-schema-v1.json", "src/features/catalog/data/items-srd51-source-manifest.json", "src/features/catalog/data/items-srd51-transcript.json", "tests/items-srd51-source.test.mjs", "tools/items-srd51-source-verify.mjs"],
-        "externalEvidence": {"path": "/tmp/ce02-w06-verify.json", "scope": "Local official-PDF verification output bound to the pinned PDF hash and the dirty base revision; ephemeral cloud-host path, not an installed-plugin or GUI receipt."},
-        "publication": "The temporary GitHub credential failure was resolved by the managed environment. Final fetch confirmed the shared branch still at the documented base; exact publication SHA and remote verification are recorded in the Issue #9 close receipt.",
+        "externalEvidence": {"path": "/tmp/SRD_CC_v5.1.pdf and main.js", "scope": "Local official-PDF verification against pinned bytes plus build artifact hash bound to the dirty base revision; ephemeral cloud-host paths, not an installed-plugin or GUI receipt."},
+        "publication": "Pending final upstream synchronization, commit and non-force push; the exact publication SHA and remote verification will be recorded in the Issue #9 close receipt.",
         "commit": "see Issue #9 close receipt",
         "notProven": ["complete SRD 5.1 Item corpus", "independent S01-R01", "Item product artifact/provider/UI", "Obsidian host acceptance", "Encounter runtime", "any 2024 rules"],
-        "next": "Request independent review of the published W06 source slice and honor the shared E2E coordination gate before starting the separately documented W07 package."
+        "next": "Request independent review of the published W07 source slice before starting the separately documented W08 Tack, Harness, and Drawn Vehicles package."
       }
     },
     "implementationRun": {
