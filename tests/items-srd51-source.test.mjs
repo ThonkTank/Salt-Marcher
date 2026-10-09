@@ -62,7 +62,7 @@ test("items source package is explicitly incomplete and fails closed by default"
   await assert.rejects(verifyItemsSourcePackage(), /S01 ist unvollständig/);
   const result = await verifyItemsSourcePackage({ allowIncomplete: true });
   assert.equal(result.complete, false);
-  assert.equal(result.validation.occurrenceCount, 50);
+  assert.equal(result.validation.occurrenceCount, 149);
   assert.equal(result.validation.recordCount, 50);
   assert.ok(result.blockers.length >= 5);
 });
@@ -70,6 +70,7 @@ test("items source package is explicitly incomplete and fails closed by default"
 test("normalization expands ligatures and proven wrap artifacts while preserving punctuation", () => {
   assert.equal(normalizePdfText("  Wondrous\u00a0item, inter\u00ad\nnational — hero’s \uFB01ne  "),
     "Wondrous item, international — hero’s fine");
+  assert.equal(normalizePdfText("Ladder (10-\u00ad\u2010foot)"), "Ladder (10-foot)");
   assert.equal(normalizePdfText("co\u00adoperate – −"), "co\u00adoperate – −");
 });
 
@@ -148,4 +149,42 @@ test("weapon source goldens preserve ordered properties, literal damage and miss
   assert.deepEqual(byName.get("Net").source.pdfPages, [65, 66]);
   assert.equal(checkedTranscript.records.some(record => record.properties.some(property => property.name === "Monk")),
     false);
+});
+
+test("adventuring gear inventory preserves all 99 physical table rows without group headers", async () => {
+  const [checkedInventory, checkedTranscript] = await Promise.all([
+    readFile(new URL("items-srd51-inventory.json", dataRoot), "utf8").then(JSON.parse),
+    readFile(new URL("items-srd51-transcript.json", dataRoot), "utf8").then(JSON.parse),
+  ]);
+  const rows = checkedInventory.occurrences.filter(item => item.sectionId === "adventuring-gear");
+  assert.equal(rows.length, 99);
+  assert.deepEqual(rows.map(row => row.sourceLabel), [
+    "Abacus", "Acid (vial)", "Alchemist’s fire (flask)", "Arrows (20)", "Blowgun needles (50)",
+    "Crossbow bolts (20)", "Sling bullets (20)", "Antitoxin (vial)", "Crystal", "Orb", "Rod", "Staff",
+    "Wand", "Backpack", "Ball bearings (bag of 1,000)", "Barrel", "Basket", "Bedroll", "Bell", "Blanket",
+    "Block and tackle", "Book", "Bottle, glass", "Bucket", "Caltrops (bag of 20)", "Candle",
+    "Case, crossbow bolt", "Case, map or scroll", "Chain (10 feet)", "Chalk (1 piece)", "Chest",
+    "Climber’s kit", "Clothes, common", "Clothes, costume", "Clothes, fine", "Clothes, traveler’s",
+    "Component pouch", "Crowbar", "Sprig of mistletoe", "Totem", "Wooden staff", "Yew wand", "Fishing tackle",
+    "Flask or tankard", "Grappling hook", "Hammer", "Hammer, sledge", "Healer’s kit", "Amulet", "Emblem",
+    "Reliquary", "Holy water (flask)", "Hourglass", "Hunting trap", "Ink (1 ounce bottle)", "Ink pen",
+    "Jug or pitcher", "Ladder (10-foot)", "Lamp", "Lantern, bullseye", "Lantern, hooded", "Lock",
+    "Magnifying glass", "Manacles", "Mess kit", "Mirror, steel", "Oil (flask)", "Paper (one sheet)",
+    "Parchment (one sheet)", "Perfume (vial)", "Pick, miner’s", "Piton", "Poison, basic (vial)",
+    "Pole (10-foot)", "Pot, iron", "Potion of healing", "Pouch", "Quiver", "Ram, portable", "Rations (1 day)",
+    "Robes", "Rope, hempen (50 feet)", "Rope, silk (50 feet)", "Sack", "Scale, merchant’s", "Sealing wax",
+    "Shovel", "Signal whistle", "Signet ring", "Soap", "Spellbook", "Spikes, iron (10)", "Spyglass",
+    "Tent, two-person", "Tinderbox", "Torch", "Vial", "Waterskin", "Whetstone",
+  ]);
+  assert.deepEqual(rows.map(row => row.id),
+    Array.from({ length: 99 }, (_, index) => `srd51:equipment:adventuring-gear:${index + 1}`));
+  assert.equal(rows.every(row => row.firstPdfPage === 69 && row.lastPdfPage === 69), true);
+  assert.equal(rows[75].sourceLabel, "Potion of healing");
+  assert.equal(rows[75].mergeIntoId, null);
+  assert.equal(rows.some(row => ["Ammunition", "Arcane focus", "Druidic focus", "Holy symbol",
+    "Container Capacity"].includes(row.sourceLabel)), false);
+  const reordered = structuredClone(checkedInventory);
+  [reordered.occurrences[50], reordered.occurrences[51]] = [reordered.occurrences[51], reordered.occurrences[50]];
+  assert.throws(() => validateTranscriptData(checkedTranscript, reordered, { allowIncomplete: true }),
+    /lückenlose physische Reihenfolge/);
 });

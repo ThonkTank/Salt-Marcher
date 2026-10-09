@@ -34,6 +34,7 @@ export function normalizePdfText(value) {
     .replace(/\uFB02/g, "fl")
     .replace(/\uFB03/g, "ffi")
     .replace(/\uFB04/g, "ffl")
+    .replace(/-\u00ad\u2010/g, "-")
     .replace(/\u00ad[^\S\r\n]*\r?\n[^\S\r\n]*/g, "")
     .replace(/[\u00a0\u2000-\u200b\u202f\u2060]/g, " ")
     .replace(/\s+/g, " ")
@@ -138,6 +139,21 @@ export function validateTranscriptData(transcript, inventory, { allowIncomplete 
     invariant(occurrence.firstPdfPage <= occurrence.lastPdfPage, `${occurrence.id} hat umgekehrte PDF-Seiten.`);
     invariant(occurrence.firstPrintedPage <= occurrence.lastPrintedPage, `${occurrence.id} hat umgekehrte Druckseiten.`);
     occurrences.set(occurrence.id, occurrence);
+  }
+  for (const section of inventory.sections) {
+    const sectionOccurrences = inventory.occurrences.filter(occurrence => occurrence.sectionId === section.id);
+    invariant(sectionOccurrences.length === section.capturedOccurrences,
+      `${section.id}.capturedOccurrences stimmt nicht mit den Inventarzeilen überein.`);
+    if (section.inventoryComplete) {
+      invariant(sectionOccurrences.length === section.expectedOccurrences,
+        `${section.id} ist trotz Inventarlücke als inventarisiert markiert.`);
+      for (const [index, occurrence] of sectionOccurrences.entries()) {
+        const ordinal = index + 1;
+        invariant(occurrence.ordinal === ordinal, `${section.id} hat keine lückenlose physische Reihenfolge.`);
+        invariant(occurrence.id === `srd51:${section.feed}:${section.id}:${ordinal}`,
+          `${occurrence.id} stimmt nicht mit Abschnitt und Ordinal überein.`);
+      }
+    }
   }
   const records = new Set();
   for (const record of transcript.records) {

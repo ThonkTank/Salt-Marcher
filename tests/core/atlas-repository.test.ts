@@ -297,3 +297,164 @@ test("An edit arriving during save keeps its newer snapshot as the next durable 
     [0, 1],
   );
 });
+test("Copy includes unloaded saved terrain and restored additions/deletions under a new world ID, preserving source files", async () => {
+  const store = new Store(),
+    a = new AtlasRepository(store, worldPath),
+    sa = await a.open();
+  await paint(sa, 0);
+  await paint(sa, 35);
+  await a.save();
+  const saved = new Map(store.files),
+    r = new AtlasRepository(store, worldPath),
+    s = await r.open();
+  await paint(s, 0, 0, "reset");
+  await paint(s, -35);
+  await r.persistDraft();
+  const draft = store.files.get(r.draftPath),
+    path = "Atlanten/Kopie.overworld";
+  await r.copy(path, "copy-world", "Kopie");
+  for (const [file, bytes] of saved) assert.equal(store.files.get(file), bytes);
+  assert.equal(store.files.get(r.draftPath), draft);
+  assert(r.dirty && r.hasDraft);
+  const b = new AtlasRepository(store, path),
+    sb = await b.open();
+  assert.equal(sb.world.id, "copy-world");
+  assert.equal(sb.history.undoDepth, 0);
+  await sb.ensure([
+    { q: -35, r: 0 },
+    { q: 0, r: 0 },
+    { q: 35, r: 0 },
+  ]);
+  assert.deepEqual(
+    sb
+      .cells()
+      .map((c) => c.q)
+      .sort((a, b) => a - b),
+    [-35, 35],
+  );
+  await paint(sb, 36);
+  await b.save();
+  for (const [file, bytes] of saved) assert.equal(store.files.get(file), bytes);
+  assert.equal(store.files.get(r.draftPath), draft);
+});
+test("Copy collisions, missing children and a partial destination write preserve source and roll back destination", async () => {
+  for (const collision of [
+    "Atlanten/Kopie.overworld",
+    "Atlanten/Kopie.overworld.draft",
+    "Atlanten/Kopie.overworld.journal",
+    "Atlasdaten/copy-world/terrain/0_0_0.json",
+  ]) {
+    const store = new Store(),
+      repo = new AtlasRepository(store, worldPath),
+      s = await repo.open();
+    await paint(s, 0);
+    await repo.persistDraft();
+    store.files.set(collision, "foreign");
+    const before = new Map(store.files);
+    await assert.rejects(
+      repo.copy("Atlanten/Kopie.overworld", "copy-world", "Kopie"),
+    );
+    assert.deepEqual(store.files, before);
+  }
+  const store = new Store(),
+    repo = new AtlasRepository(store, worldPath),
+    s = await repo.open();
+  await paint(s, 0);
+  await repo.save();
+  await paint(s, -35);
+  await repo.persistDraft();
+  const before = new Map(store.files);
+  store.failPath = "Atlanten/Kopie.overworld";
+  await assert.rejects(
+    repo.copy("Atlanten/Kopie.overworld", "copy-world", "Kopie"),
+    /interruption/,
+  );
+  assert.deepEqual(store.files, before);
+  store.files.delete("Atlasdaten/island/terrain/0_0_0.json");
+  const fresh = new AtlasRepository(store, worldPath);
+  await fresh.open();
+  const missing = new Map(store.files);
+  await assert.rejects(
+    fresh.copy("Atlanten/Kopie.overworld", "copy-world", "Kopie"),
+    /fehlt/,
+  );
+  assert.deepEqual(store.files, missing);
+});
+test("Discard retires only its owned draft and returns the saved sparse terrain with a fresh history", async () => {
+  const store = new Store(),
+    repo = new AtlasRepository(store, worldPath),
+    s = await repo.open();
+  await paint(s, 0);
+  await paint(s, 35);
+  await repo.save();
+  const saved = new Map(store.files);
+  await paint(s, 0, 0, "reset");
+  await paint(s, -35);
+  await repo.persistDraft();
+  const fresh = new AtlasRepository(store, worldPath),
+    draft = await fresh.open();
+  assert(fresh.dirty && fresh.hasDraft);
+  const restored = await fresh.discard();
+  assert.notEqual(restored, draft);
+  assert.equal(restored.history.undoDepth, 0);
+  assert(!fresh.dirty && !fresh.hasDraft);
+  assert.deepEqual(store.files, saved);
+  await restored.ensure([
+    { q: 0, r: 0 },
+    { q: 35, r: 0 },
+    { q: -35, r: 0 },
+  ]);
+  assert.deepEqual(
+    restored
+      .cells()
+      .map((c) => c.q)
+      .sort((a, b) => a - b),
+    [0, 35],
+  );
+  await fresh.persistDraft();
+  assert.deepEqual(store.files, saved);
+  // A different leaf cannot discard a draft it did not open or produce.
+  const other = new AtlasRepository(store, worldPath);
+  await other.open();
+  await paint(restored, 1);
+  await fresh.persistDraft();
+  const owned = new Map(store.files);
+  await assert.rejects(other.discard(), FileConflict);
+  assert.deepEqual(store.files, owned);
+  store.files.set(worldPath, "external");
+  const external = new Map(store.files);
+  await assert.rejects(fresh.discard(), FileConflict);
+  assert.deepEqual(store.files, external);
+});
+test("A newer edit during discard survives the deletion as a durable draft rather than switching source", async () => {
+  const store = new Store(),
+    repo = new AtlasRepository(store, worldPath),
+    s = await repo.open();
+  await paint(s, 0);
+  await repo.save();
+  await paint(s, 1);
+  await repo.persistDraft();
+  let reached!: () => void, release!: () => void;
+  const entered = new Promise<void>((r) => (reached = r)),
+    paused = new Promise<void>((r) => (release = r)),
+    write = store.compareAndWrite.bind(store);
+  store.compareAndWrite = async (p, b, a) => {
+    if (p === repo.draftPath && a === null) {
+      reached();
+      await paused;
+    }
+    await write(p, b, a);
+  };
+  const discarding = repo.discard();
+  await entered;
+  await paint(s, 2);
+  release();
+  await assert.rejects(discarding, /weiterbearbeitet/);
+  assert(repo.dirty && repo.hasDraft);
+  const fresh = await new AtlasRepository(store, worldPath).open();
+  await fresh.ensure([{ q: 0, r: 0 }]);
+  assert.deepEqual(
+    fresh.cells().map((c) => c.q),
+    [0, 1, 2],
+  );
+});

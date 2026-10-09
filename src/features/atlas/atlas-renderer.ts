@@ -37,13 +37,25 @@ export class AtlasRenderer {
   selected?: HexAddress;
   preview: readonly AtlasChange[] = [];
   hover?: HexAddress;
+  private terrainSource?: TerrainSource;
   constructor(
     readonly host: HTMLElement,
     readonly world: OverworldDocument,
     private changed: () => void,
-    readonly terrain?: TerrainSource,
+    terrain?: TerrainSource,
   ) {
+    this.terrainSource = terrain;
     this.currentCamera = initialAtlasCamera(world.origin);
+  }
+  get terrain(): TerrainSource | undefined {
+    return this.terrainSource;
+  }
+  useTerrain(source: TerrainSource): void {
+    if (source.world.id !== this.world.id)
+      throw new Error("Landschaft gehört zu einer anderen Welt.");
+    this.terrainSource = source;
+    this.preview = [];
+    this.schedule();
   }
   get camera(): AtlasCamera {
     return this.currentCamera;
