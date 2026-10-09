@@ -1432,15 +1432,19 @@
     "mapInfoNoResizePreparation": {
       "date": "2026-10-09",
       "cases": "DD-039.01–.06",
-      "state": "host_edit_reopen_passed_pending_independent_review",
+      "state": "dd039_scoped_review_passed_phase1_open",
       "helper": "tools/host/parity-tools-phase1-map-info.cjs",
       "productBuildSha256": "d54f25cf7b961cc78b1bbf197bd4781bd62d2325ec10dc4b34148c0d6ab3a6a2",
       "checks": "Edit und frische Öffnung über GUI bestanden; Rohdatenvergleich: beide 8×8-Dateien hashgleich wiedergeöffnet, einzige Differenz assetPacks. Auf integriertem Vorlauf Check, 212/212 Tests und Build bestanden.",
-      "next": "Getrennten DD-039-Review auf dem integrierten Build durchführen; erst danach Fallentscheidung.",
+      "next": "DD-008 mit gleicher Original-/Host-Geometrie, kombinierter History und Mehrgeschosswirkung prüfen; Phase 1 bleibt offen.",
       "implementationReport": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-map-info-no-resize-20261009/implementation.md",
       "audit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-map-info-no-resize-20261009/implementation-audit.json",
       "hostEdit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-map-info-no-resize-20261009/evidence/1791547034261-parity-tools-phase1-map-info-edit/result.json",
-      "hostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-map-info-no-resize-20261009/evidence/1791547050103-parity-tools-phase1-map-info-reopen/result.json"
+      "hostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-map-info-no-resize-20261009/evidence/1791547050103-parity-tools-phase1-map-info-reopen/result.json",
+      "review": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-map-info-review-20261009/review.md",
+      "reviewAudit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-map-info-review-20261009/review-audit.json",
+      "reviewEdit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-map-info-review-20261009/evidence/1791547407655-parity-tools-phase1-map-info-edit/result.json",
+      "reviewReopen": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-map-info-review-20261009/evidence/1791547422038-parity-tools-phase1-map-info-reopen/result.json"
     },
     "resizeScopeDecision": {
       "date": "2026-10-09",
@@ -1904,7 +1908,7 @@
     "plan": "ROADMAP-PARITY-PLAN.md",
     "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
     "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
-    "nextRun": "ROADMAP-PARITY-TOOLS.md Phase 1: DD-038.01–.09 sind für den grenzenlosen Atlas ausgeschlossen. DD-039-Hostpaar ohne Resize (Edit, frische Öffnung, Rohdaten) ist Umsetzungskandidat; als nächstes eigener unabhängiger DD-039-Review auf integriertem Build. DD-008 benötigt identische Original-/Host-Geometrie, kombinierte History und Mehrgeschossprobe; anschließend übrige Pflichtfälle in Roadmap-Reihenfolge bearbeiten. Building-Boden-Werkzeuge und Atlaswachstum bleiben separat offen; P7-2 bleibt auf Nutzerwunsch physisch ungeprüft.",
+    "nextRun": "ROADMAP-PARITY-TOOLS.md Phase 1: DD-038.01–.09 sind für den grenzenlosen Atlas ausgeschlossen; DD-039.01–.06 bestehen im separaten 8×8-Hostreview ohne Resize, das Phase-1-Tor bleibt offen. Als nächstes DD-008 mit gleicher Original-/Host-Geometrie, kombinierter History und Mehrgeschosswirkung prüfen; danach DD-001/002, DD-006/007 und offene Ansichts-/Dateimenüfälle in Roadmap-Reihenfolge. Building-Boden-Werkzeuge und Atlaswachstum bleiben separat offen; P7-2 bleibt auf Nutzerwunsch physisch ungeprüft.",
     "note": "P7-1, P7-3 und P7-4 sind in getrennten Edit-/Neuöffnungspaaren reviewt. P7-2 ist auf ausdrückliche Nutzeranweisung übersprungen, nicht physisch geprüft. Phase-7-Fachphasentor mit dieser Ausnahme bestanden; Produktbuild unverändert. Hex-Atlas- und Stadtstand erhalten.",
     "phase2Plan": "ROADMAP-PARITY-PHASE2-PLAN.md",
     "candidateBuildSha256": "b321128188b944c3324594663a410acfd84863f17860f637b9ed2e6ecc33b466",
