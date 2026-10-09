@@ -955,3 +955,5 @@ CITY-00-I44-REVIEW-CLEAN-P44 Start 2026-10-09T19:16:32.577778+00:00; Aufräumpla
 CITY-00-I44-REVIEW-CLEAN-I44 Start 2026-10-09T19:16:36.415502+00:00; Links und Scopegrenzen konsolidiert; Rohbelege unverändert, keine weitere fachliche Datenhaltung.
 
 CITY-00-I44-REVIEW-CLEAN-R44 Start 2026-10-09T19:16:39.897987+00:00; Aufräumreview bestanden: I02-Rawhashes, Links, 65 offene CO und 24 offene CTY sowie fremde JSON-Wurzeln unverändert.
+
+CITY-00-I45-P45 Start 2026-10-09T19:18:26.813586+00:00; Eigener Formularentwurf und Originalparameterprobe geplant, bestehende QA-Karte geschützt; Ergebniswirkung ausdrücklich getrennt.
