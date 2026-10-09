@@ -1,0 +1,54 @@
+# CITY-01: Anschluss an den gemeinsamen Atlas
+
+## Umfang und Beleggrenze
+
+CITY-00-I39 erstellt den konkreten Anschlussplan aus der aktuellen Quelle. Er ersetzt keine Produktimplementierung oder HEX-05-Abnahme. Maßgeblich bleiben [Stadt-Roadmap](ROADMAP-CITIES.md), [Gesamtplan](ROADMAP-CITIES-IMPLEMENTATION-PLAN.md), `acceptance.json.cityPlans` und [Architektur](ARCHITECTURE.md). Vollständige Parität aller drei Programme bleibt CITY-09-Pflicht.
+
+Quellstand und Hashes stehen im externen Audit `/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i39-integration-20261009/source-audit.json`. Nach HEX-05 sind die Quellen erneut zu prüfen; hier benannte künftige Adapter sind vorgeschlagene Aufgaben, keine existierenden APIs.
+
+CITY-01 umfasst CTY-001.01, CTY-002.01 und CTY-002.02: native Stadt am gespeicherten Ort, Straße zeichnen/ziehen/ergänzen/rücknehmen, Häuser auswählen/verschieben/skalieren/drehen/entfernen, Platz und zwei Häuser. Kamera, Auswahl, Werkzeug und History bleiben beim Zoom erhalten. Stadtfläche darf wachsen; keine feste Leinwand begrenzt die Daten.
+
+## Vorhandene Anschlüsse und fehlende Verträge
+
+| Bereich / aktuelle Quelle | Tatsächlich vorhanden | Vor Stadtintegration zu liefern / zu prüfen | Besitzer |
+|---|---|---|---|
+| `src/features/atlas/camera.ts` | `worldToScreen`, `screenToWorld`, `panAtlas`, `zoomAtlas`; Weltmeter und verankerter Zoom | Kamera ausschließlich hier beziehen; Stadtplatzierung samt inverser Transformation zusätzlich komponieren. Keine Stadt-Zoomzustände. | HEX gemeinsame Basis; CITY lokale Geometrie |
+| `src/features/atlas/atlas-renderer.ts` | `camera`, `viewport`, `worldPoint`, `detailLayer`, `schedule`, `destroy`; Grid wird je Frame projiziert | `detailLayer` wird derzeit nur eingehängt. Detailtransform/Neuzeichnen bei Pan, Zoom und Resize sowie geordnete Treffergeometrie werden benötigt. Gleiches Szenenmodell für Bild und Hit-Test. | HEX Szene; CITY Szenenbeitrag |
+| `src/features/atlas/atlas-editor.ts` | Auswahl/Hand, Pointer-Capture, Hex-Klick, Space-Pan, Ctrl-Wheel, Abbruch auf Cancel/Blur | Gemeinsamer Router für Stadtgeometrie und Werkzeuggesten; Zielbesitzer bei Pointer-Down binden. Vorschau bleibt transient; Pointer-Up genau ein Befehl, Cancel/Blur verwirft. Hex-Hintergrund darf nicht eine getroffene Hausauswahl ersetzen. | HEX Eingabe; CITY Werkzeugadapter |
+| `src/features/atlas/overworld.ts` | versionierter Parser, Metermaßstab, ID, leere `placements`/`chunks` | Nichtleere Platzierungen werden aktuell abgewiesen. HEX-05 muss geprüfte Besitz-/Referenz-/Transformdaten liefern. Stadt ergänzt einen Dokumenttyp im selben Graphen. | HEX Dokumentgraph |
+| `src/ui/atlas-view.ts`, `src/main.ts` | `.overworld` öffnet `AtlasView`; asynchroner Generationsschutz und Destroy | `.city` am Ort anlegen/registrieren, Dateiaufruf zur selben Atlasansicht auflösen. Keine zweite Stadt-FileView. Fehlende/mehrdeutige Elternbindung sichtbar auflösen, kein stillschweigender Ursprung. | HEX Hostrahmen; CITY Dateiauflösung |
+| `src/session.ts` | Dungeon-`Session.execute`, `undo`, `redo`, `snapshot`; Command kennt Dungeon-Entitäten, Settings und Texte | Das ist noch kein Atlas-/Stadtvertrag. HEX-05 muss eine gemeinsame History mit adressierten Dokumentänderungen und gültigen Vorherwerten liefern. CITY verwendet sie, ohne eine Stadt-Session mit eigener History anzulegen. | HEX History; CITY Befehlplaner |
+| `src/persistence.ts` | `FileStore.compareAndWrite`; Dungeon-`MapRepository` mit Draft/Journal | `MapRepository.assertAllowed` erlaubt neben seiner Karte nur Markdown im zugehörigen Verzeichnis. Nicht pauschal auf beliebige Dateien erweitern. Explizite Dokumentbesitzer und zulässige Transaktionsmenge, Konfliktprüfung, Journal-Recovery und geordnete Schreibzugriffe nötig. | HEX Persistenz; CITY Codec |
+| `src/vault-stores.ts` | `VaultStore` vergleicht Bestand vor Modify/Delete, prüft Neuanlage auf Kollision | Einzeldateivergleich ist keine atomare Mehrdateispeicherung. Gemeinsamer Speichervertrag muss `.city` und Elternplatzierung schon bei CITY-01-Anlage konsistent retten; nicht bis CITY-03 verschieben. | HEX Speicherkoordination |
+
+## Geplanter Stadtanteil
+
+`src/features/city/model.ts` definiert ein versioniertes CityDocument mit stabiler Dokument-ID und lokalen Meterkoordinaten. Keine Pixel und keine zweite Kopie der Atlasplatzierung. Straßen besitzen Knoten und Kanten mit stabilen IDs, Endknotenreferenzen, editierbarem Verlauf und positiver Meterbreite. Plätze besitzen gültige Konturen; Gebäude besitzen lokale Kontur/Platzierung und stabile IDs. Vorgesehene Grundstücks-/Vierteldaten und optionale Orts-/Dungeonreferenzen dürfen spätere Generatorphasen erweitern; CITY-01 erzeugt keine Pflichtdatei für jedes namenlose Haus.
+
+`src/features/city/codec.ts` liest/serialisiert ausschließlich dieses native Format. Vor Übernahme werden Version, endliche Koordinaten, ID-Eindeutigkeit, Referenzen, Konturen, positive Breiten/Skalen sowie zulässige Dokumentpfade validiert. Unbekannte inkompatible Daten bleiben unverändert erhalten und führen zu einer verständlichen Meldung. Laden liest materialisierte Geometrie; kein Generator, kein neuer Seed, keine ersetzten IDs. Umbenennung ändert weder IDs noch räumliche Bindungen.
+
+`src/features/city/commands.ts` plant Änderungen anhand des aktuellen Dokuments und seiner Revision. Knotenbewegung aktualisiert alle referenzierenden Straßenkanten gemeinsam; Kanten teilen Anschlussknoten statt fast gleicher Punktkopien. Straßenergänzung erzeugt gültige Knoten-/Kantenreferenzen. Gebäudezug/-drehung/-skalierung ersetzt nur die betroffenen Geometriewerte; Entfernen validiert abhängige Referenzen. Der gemeinsame Atlasbefehl enthält vollständige Vorher-/Nachherwerte und geänderte Dokumentadressen. Veraltete Vorherwerte verhindern den Commit. Bestehende fremde Keys, Dokumente und IDs bleiben erhalten.
+
+`src/features/city/scene.ts` und `gestures.ts` sind geplante Beiträge zum gemeinsamen Renderer/Router: dieselben Konturen für Rendern, Trefferprüfung und Vorschau; Griffe mit Bildschirmtoleranz, Geometrie in Metern. Die invers komponierte Platzierung liefert lokale Punkte auch bei gedrehter Stadt. Ein laufender Zug behält Element, Werkzeug und Dokumentbesitzer, unabhängig von Zoom-/Detailstufe. Auswahl ist eine Dokument-/Elementadresse; sie wird durch einen Sichtbarkeitswechsel nicht gelöscht. Kollidierende Straßen-/Hausänderungen werden vor Apply sichtbar erklärt, nicht stillschweigend als gültig übernommen.
+
+Hostintegration verwendet den gelieferten Atlas-Dokumentresolver und die registrierten gemeinsamen Befehle. „Stadt hier anlegen“ erzeugt CityDocument und Elternplatzierung als einen rücknehmbaren Auftrag. Save nutzt denselben konsistenten Snapshot beider Besitzer. Es gibt keine isolierte persistente Stadt-Kamera, keine eigene Undo-Liste und keinen Zoomschalter für Stadtwerkzeuge.
+
+## Umsetzung nach geprüfter HEX-05-Übergabe
+
+1. Gelieferten Commit, tatsächliche APIs und Hostnachweise aufnehmen; die obige Tabelle aktualisieren. Die HEX-05-Folge Region → Hex → Orts-Key → Dungeonraum/Key → zurück → Undo/Redo → Save → frischer Prozess muss belegt sein. Den Cloud-Befund GM-UX-N-004 unabhängig schließen. Fehlende Verträge gezielt mit HEX-Besitzer lösen.
+2. CityDocument/Codec und Befehlsplaner implementieren; echte Fehlerfälle für Topologie, ungültige Geometrie, stale Revision und Referenzschutz prüfen. Keine Dungeon-Entity-Verkleidung für eine Stadtdatei.
+3. Szene, Auswahl und Straße/Platz/Haus-Werkzeuge in vorhandene Router/Toolbar integrieren. Vorschau und Abbruch zuerst; gemeinsamer Commit anschließend. Verschieben, Skalieren, Drehen und Entfernen gehören zur ersten Phase, nicht nur Hausplatzierung.
+4. Native Anlage/Dateiauflösung und Draft/Save/Recovery anbinden. Unterbrochene Anlage darf keine verwaiste platzierte Stadt oder verlorene Datei hinterlassen. Externe Änderung beider Besitzer verhindert den überholten Schreibauftrag; Wiederherstellung darf fremde Änderungen nicht überschreiben.
+5. Isolierten Hostlauf und Review gegen alle drei CITY-01-Fälle durchführen. Fehler als eigenen N-Lauf beheben, neu reviewen; anschließend Aufräum-P/I/R. Kein Installieren im Nutzervault ohne Sicherung und eigenen Installationsnachweis.
+
+## Konkrete Abnahmesequenzen
+
+| Pflicht | Sequenz / erwarteter Nachweis |
+|---|---|
+| CTY-001.01 | Auf Regionsebene Ort wählen; dort `.city`, Straße, Platz, zwei Häuser erstellen. Meterwerte und IDs sichern. Hinaus-/hineinzoomen, Stadt jenseits bisheriger Ausdehnung erweitern, speichern. Frischer Prozess lädt dieselben Dokument-IDs, Platzierung und materialisierte Geometrie. Gedrehte/verschobene Atlasplatzierung zusätzlich prüfen. |
+| CTY-002.01 | Straße mit gemeinsamem Anschlussknoten zeichnen, Knoten ziehen, Straße ergänzen; beteiligte Kanten bleiben angeschlossen und Häuser unverändert. Pro abgeschlossener Geste ein Undo/Redo; Cancel, Blur und Pointer-Cancel ändern weder dauerhaftes Dokument noch Dirty/History. Ungültiger Anschluss/Kollision wird erklärt. |
+| CTY-002.02 | Haus auswählen, verschieben, skalieren, drehen, entfernen; jeden Schritt rücknehmen/wiederholen. Das zweite Haus und fremde Texte bleiben unverändert. Pan/Zoom/Resize und Detailgrenze während aktiver Auswahl und laufendem Zug prüfen; kein anderes Ziel und keine zweite Historie. Save/Neustart bestätigt Endwerte. |
+| Gemeinsame Speicherung | Neue Stadt samt Elternplatzierung, normale Änderung und gespeicherter Entwurf. Fehler nach jedem Journalschritt; erneutes Öffnen, Recover, Konflikt in `.city` und `.overworld` sowie Dateinamenskollision. Rohdateien/Revisionen vor und nach sichern. Weder teilweise Übernahme noch fremde Überschreibung als Erfolg melden. |
+| Vergleich und Bedienung | CO-FTG-0015: direkte Straßen-/Hausbearbeitung; CO-COK-0006: Save/frisches Open; CO-COK-0007: Undo/Redo. Vorhandene Originalbelege verwenden, Umfang getrennt halten. Beide gestoppten COK-Undo-Hypothesen bleiben offen; erneute Probe braucht konkrete neue Evidenz. Gepaarte Bedienaufgaben/Schritte/Zeit/Fehlversuche und physische Maus-/Touchpad-Bedienung getrennt vom synthetischen Hostlauf prüfen. |
+
+Produktänderungen verlangen `npm run check`, `npm test`, `npm run build` und gezielte Regressionen für die oben genannten Risiken. Grüne Codec-Tests ersetzen die gemeinsame Hostfolge nicht. CTY- und CO-Einträge bleiben bis zu passender tatsächlicher Evidenz offen.
