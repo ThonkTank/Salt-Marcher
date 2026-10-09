@@ -252,3 +252,17 @@ reproduzierbarem Beleg.
 ADR-P02, ADR-P03, ADR-P04, ADR-C01 und die Plattform-ADR bleiben in beiden
 Fällen gesperrt beziehungsweise vorgeschlagen, bis ihre jeweils eigenen
 Voraussetzungen erfüllt sind.
+
+## Planreview ADR-P01-H02-R01
+
+Der unabhängige schreibgeschützte Review auf dem exakten gemeinsamen Commit
+`0dd314c1772ebd91f3375d8660f964a731bdf215` ist `PASSED`. Er bestätigte ohne
+Pflichtbefund die echte Prozesskette ohne Direktimport, unveränderte
+Produktmodule, native Linux-Primitiven, getrennte Create-/Update-/Delete- und
+TOCTOU-/Identity-/Root-/Link-Faultmatrizen, reproduzierbare Receipts,
+verpflichtendes Cleanup, die ehrliche Linux-only-Grenze und die fortbestehende
+Sperre von P02/P03/P04/C01 und Plattform-ADR.
+
+Dies ist ausschließlich eine Planfreigabe. Ein H02-Kandidat benötigt weiterhin
+seine vollständigen Gates, unabhängigen Code-/Evidence-Review und
+Aufräumreview.

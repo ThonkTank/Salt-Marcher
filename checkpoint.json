@@ -1,7 +1,7 @@
 {
   "saltMarcherReplacement": {
     "date": "2026-10-09",
-    "state": "smr00_adr_p01_h02_plan_drafted_review_pending",
+    "state": "smr00_adr_p01_h02_plan_reviewed_implementation_next",
     "plan": "ROADMAP-SALTMARCHER-REPLACEMENT.md",
     "platformAdr": "ROADMAP-SALTMARCHER-PLATFORM-ADR.md",
     "prototypePlan": "ROADMAP-SALTMARCHER-ADR-PROTOTYPES.md",
@@ -86,11 +86,11 @@
     },
     "adrP01H02": {
       "date": "2026-10-09",
-      "state": "plan_drafted_review_pending",
+      "state": "plan_passed_implementation_pending",
       "plan": "ROADMAP-SALTMARCHER-ADR-P01-H02-PLAN.md",
       "hypothesis": "A real sandboxed Electron renderer/preload/main/utility chain delegates bounded Linux durability operations to one native root-FD helper; success qualifies only a full cross-platform P01 rerun.",
       "limits": "Plan only. No H02 implementation, platform Go or P02 authorization. Windows and macOS remain not-run.",
-      "review": "Independent local architecture review pending; subsequent cloud architecture/security review remains required for an implementation candidate."
+      "review": "ADR-P01-H02-R01 passed independently on exact shared commit 0dd314c1772ebd91f3375d8660f964a731bdf215 with no mandatory finding; implementation-candidate cloud architecture/security review remains required."
     },
     "open": [
       "Replacement architecture hypothesis after ADR-P01 No-Go; ADR-P02 through ADR-P04 and ADR-C01 remain blocked",
@@ -99,10 +99,10 @@
       "Per-slice source-to-target mapping and host persistence/security decisions"
     ],
     "nextRun": {
-      "id": "ADR-P01-H02-R01",
-      "kind": "architecture_hypothesis_plan_review",
-      "owner": "independent_local_review_thread",
-      "focus": "Review the bounded Linux Electron/utility/native-helper hypothesis, its process and durability gates, cleanup, and honest platform boundary; do not implement H02 or begin ADR-P02"
+      "id": "ADR-P01-H02-I01",
+      "kind": "architecture_hypothesis_implementation",
+      "owner": "local_implementation_thread",
+      "focus": "Implement and evidence only the reviewed Linux Electron/utility/native-helper H02 candidate; preserve product bytes and keep ADR-P02 blocked"
     }
   },
   "saltMarcherCatalogEncounter": {
