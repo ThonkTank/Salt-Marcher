@@ -79,14 +79,14 @@
   },
   "saltMarcherCatalogEncounter": {
     "date": "2026-10-09",
-    "state": "ce01_c01_plan_repair_review_pending_physical_input_open",
+    "state": "ce01_c01_plan_reviewed_implementation_next_physical_input_open",
     "plan": "ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md",
     "architecture": "ARCHITECTURE.md#geplante-katalog--und-encounter-erweiterung",
     "acceptance": "acceptance.json.saltMarcherCatalogEncounter",
     "currentRun": {
       "id": "CE-01-C01-P01",
       "kind": "cleanup_plan",
-      "state": "repair_completed_static_validation_review_pending",
+      "state": "completed_static_validation_reviewed",
       "focus": "Centralize catalog restore defaults and draft hydration after the real-host drift finding, retain the repeatable H01 harness and keep physical, screenreader and platform gates open",
       "plan": "ROADMAP-SALTMARCHER-CE01-C01-PLAN.md",
       "basis": {
@@ -95,10 +95,12 @@
         "planStartCommit": "c00bd417c6cb8c65d303fc7765e7b3b393405eab"
       },
       "review": {
-        "state": "changes_required",
+        "state": "passed_after_repair",
         "reviewedCommit": "37342f98911e1e5fcbcb7f369f1e411f3bdda667",
         "finding": "The plan identified reset draft-list drift but did not require resetCreatureCatalogFilters to derive draft keys from the canonical DRAFT_FILTERS mapping.",
-        "repair": "C01-I01 now derives reset draft keys from DRAFT_FILTERS and requires focused coverage without a second independently maintained seven-key list."
+        "repair": "C01-I01 now derives reset draft keys from DRAFT_FILTERS and requires focused coverage without a second independently maintained seven-key list.",
+        "reReviewCommit": "9016cedfee0c82b4b64ac786f55a849c2e8c918c",
+        "result": "Independent read-only re-review passed without a remaining mandatory finding."
       },
       "limits": "Planning only. No product code, host execution, cleanup approval or CE-01 approval is claimed; physical input, screenreader and non-Linux platform acceptance remain open."
     },
@@ -239,10 +241,10 @@
       "Physical catalog input acceptance cannot be replaced by Playwright automation"
     ],
     "nextRun": {
-      "id": "CE-01-C01-P01-R02",
-      "kind": "cleanup_plan_re_review",
+      "id": "CE-01-C01-I01",
+      "kind": "cleanup_implementation",
       "plan": "ROADMAP-SALTMARCHER-CE01-C01-PLAN.md",
-      "focus": "Independently re-review the repaired plan against the original reset-list finding and its complete seven-filter, sort and selection test obligation before implementation"
+      "focus": "Centralize restore defaults and reset draft keys on DRAFT_FILTERS, run focused regressions plus all three exact-candidate H01 scenarios and submit the result to an independent cleanup review"
     }
   },
   "repositoryWorkflow": {
@@ -3978,17 +3980,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I28-CR",
-      "kind": "cleanup_review",
-      "startedAt": "2026-10-09T15:04:23.971472+00:00",
-      "focus": "Dach-/Blockbelege CR",
-      "state": "completed",
-      "result": "Snapshot und acceptance stimmen, neun Rawhashes und alle Inventarbelegziele geprüft;64 CO-/24 CTY-Pflichten offen. Lots/Plain zurückgesetzt, eigene Kopie geschlossen. Aufräumumfang ohne Restbefund. Eigener Stadtproduktstart weiterhin nach HEX-05; nächste Teilprobe der übrigen angebotenen Gebäudedarstellungen gesondert planen."
-    },
-    "nextRun": {
       "id": "CITY-00-I29-P",
       "kind": "reference_planning",
-      "focus": "Übrige Gebäudedarstellungen konkret planen; HEX-05-Übergabe prüfen"
+      "startedAt": "2026-10-09T15:05:16.163755+00:00",
+      "focus": "Weitere Gebäudedarstellungen planen",
+      "state": "completed",
+      "result": "Hip/Complex/Hidden als begrenzte Originalprobe mit Rücksetzung geplant."
+    },
+    "nextRun": {
+      "id": "CITY-00-I29-I",
+      "kind": "reference_probe",
+      "focus": "Drei angebotene Darstellungen und Processing-Inventar prüfen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",

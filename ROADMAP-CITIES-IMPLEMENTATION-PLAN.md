@@ -471,3 +471,7 @@ CITY-00-I28-CP Start 2026-10-09T15:03:50.802170+00:00; Plan: Snapshot anhand acc
 CITY-00-I28-CI Start 2026-10-09T15:04:03.424384+00:00; Snapshot auf I28, Gable-/Block-Sichtwirkung und offene weitere Vorgaben/Einzelbearbeitung/Persistenz aktualisiert; keine Rawdatei oder fremde Wurzel verändert.
 
 CITY-00-I28-CR Start 2026-10-09T15:04:23.971472+00:00; Snapshot und acceptance stimmen, neun Rawhashes und alle Inventarbelegziele geprüft;64 CO-/24 CTY-Pflichten offen. Lots/Plain zurückgesetzt, eigene Kopie geschlossen. Aufräumumfang ohne Restbefund. Eigener Stadtproduktstart weiterhin nach HEX-05; nächste Teilprobe der übrigen angebotenen Gebäudedarstellungen gesondert planen.
+
+## CITY-00-I29-P: weitere Dach-/Gebäudedarstellungen
+
+Start 2026-10-09T15:05:16.163755+00:00. Eigene New-River-Kopie, aktuelle Ausgangsvorgaben lesen. Bekannte angebotene Roofs Hip und Display Complex/Hidden einzeln ändern, nach jeder Änderung Wirkungsbild sichern und Lots/Plain zurücksetzen. Angebotene Processing-Optionen nur lesen, Wirkung in eigenem Folgeumfang. Keine Geometrie-/Savewirkung oder stabile IDs aus Grafik ableiten. Bei unverändertem Ergebnis maximal zwei Versuche; keine geratenen Controls. Eigene Kopie schließen, Originaltabs erhalten, nativer Slot beim Hex-Kollegen. Anschließend getrennt Review und Aufräumen P/I/R.

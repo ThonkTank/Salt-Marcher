@@ -72,7 +72,7 @@
   "saltMarcherCatalogEncounter": {
     "schemaVersion": 1,
   "updated": "2026-10-09T15:03:43Z",
-  "state": "ce01_c01_plan_review_changes_required_physical_input_open",
+  "state": "ce01_c01_plan_reviewed_implementation_next_physical_input_open",
     "plan": "ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md",
     "architecture": "ARCHITECTURE.md#geplante-katalog--und-encounter-erweiterung",
     "sourceRepository": "ThonkTank/Salt-Marcher",
@@ -321,10 +321,10 @@
     },
     "ce01C01Plan": {
       "run": "CE-01-C01-P01",
-      "state": "repair_completed_static_validation_review_pending",
+      "state": "completed_static_validation_reviewed",
       "document": "ROADMAP-SALTMARCHER-CE01-C01-PLAN.md",
       "scope": "One host-neutral restore/default helper plus reset-key derivation backed by the existing draft mapping, focused state and DOM regressions, removal of one unused host-scenario dependency, and exact-candidate repetition of all three automated H01 scenarios.",
-      "review": "The first independent review required the reset path to consume DRAFT_FILTERS instead of retaining a second seven-key list; the repaired plan now makes that change and its focused coverage mandatory.",
+      "review": "The first independent review required the reset path to consume DRAFT_FILTERS instead of retaining a second seven-key list. Independent re-review on 9016ced passed the repaired plan without a remaining mandatory finding.",
       "limits": "Plan only. No cleanup implementation or approval; physical keyboard/mouse, screenreader and other-platform acceptance remain open."
     },
     "ce01C01PlanReview": {
@@ -337,7 +337,7 @@
       "verification": {"check": "passed", "tests": {"passed": 245, "failed": 0}, "build": "passed", "json": "passed", "diffCheck": "passed"},
       "limits": "Read-only plan review; no implementation, host run or CE case closure."
     },
-    "next": "Independently re-review the repaired CE-01-C01-P01 against the complete original finding, then implement and review the bounded cleanup. CE-02 implementation remains gated on cleanup review."
+    "next": "Implement and independently review the bounded CE-01-C01 cleanup. CE-02 planning may proceed, but implementation waits for the cleanup review and CE-01 remains without full approval while physical-input, screenreader and other-platform gates are open."
   },
   "cityPlans": {
     "schemaVersion": 1,
