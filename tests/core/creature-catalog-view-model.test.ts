@@ -47,6 +47,7 @@ test("catalog timers are invoked without borrowing the debouncer receiver", () =
   const debouncer = new CreatureCatalogDebouncer(200,
     function schedule(this: unknown, callback) {
       assert.equal(this, undefined);
+      void callback;
       timer = 1 as unknown as CatalogTimer;
       return timer;
     },
