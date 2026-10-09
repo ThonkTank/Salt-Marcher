@@ -711,3 +711,6 @@ CITY-01-PREP-COMMAND-CLEAN-I02 Start 2026-10-09T16:59:36.296592+00:00; Architekt
 
 
 CITY-01-PREP-COMMAND-CLEAN-R02 Start 2026-10-09T17:00:39.825702+00:00; Architektur und Pläne trennen vorhandene CitySource/cityDocumentChange von geplanter UI-/Host-/Saveintegration. Keine zweite Stadtquelle, zusätzliche Revision, History oder Freezeimplementierung. Cityquellen/Tests/Codec/History unverändert; integriertes HEX-I01b mit aktueller Typprüfung,282Tests und Build bestätigt. Lokale Links/JSON/fremde Roots geprüft;24CTY-/65CO-Pflichten weiter offen. Aufräumumfang ohne Restbefund. Beleg: /home/aaron/.cache/dungeon-native-qa/city-plans/city01-commands-20261009/cleanup-review.json. Nächster Lauf plant reine Straßen-/Haus-Fachaktionen auf dieser Befehlsbasis, Hostanschluss weiterhin nach HEX05.
+
+
+CITY-01-PREP-P03 Start 2026-10-09T17:02:42.690100+00:00; Konkreter Plan für editCity/CityEdit: Straße ergänzen/Knoten ziehen/Kante ersetzen oder entfernen, Hauspose/Grundriss/Entfernung, erster Platz. Vollständiger geprüfter Anfangsstand, strikte Operationsgrenze und abschließende Paketvalidierung ermöglichen abhängige Referenzänderungen ohne Zwischencommit. Caller-IDs, unbeteiligte Daten und lokale Einheiten bleiben erhalten; ein gemeinsamer CityDocumentchange, keine History-/Host-/Speicheränderung. Plan: ROADMAP-CITIES-CITY01-EDIT-PLAN.md. Plan-Aufräum-P/I/R folgt.
