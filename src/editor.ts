@@ -1131,6 +1131,10 @@ export class DungeonEditor {
     this.showPanel("generator", "Kartenassistent");
   }
   private openRoomKeySearch(): void {
+    // A clean key dock yields to search. A dirty key draft blocks before any
+    // group, panel or layout state changes.
+    if (!this.allowKeyNavigation()) return;
+    this.toggleKey(false);
     this.showGroup("content");
     this.showPanel("room-key-search", "Raum-Keys durchsuchen");
     this.roomKeySearchPanel ??= new RoomKeySearchPanel(

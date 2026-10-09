@@ -430,35 +430,40 @@
   "hexAtlasExecution": {
     "scope": "HEX-00 bis HEX-28 und sämtliche eingeordneten CITY-00 bis CITY-09 vollständig",
     "phase": "HEX-02",
-    "state": "r01_repairs_native_checked_re_review_open",
+    "state": "r01_r02_pass_scoped_cleanup_open",
     "plan": "ROADMAP-HEX-02-PLAN.md",
     "currentRun": {
-      "id": "HEX-02-N01-H01",
-      "kind": "native_repair_check",
-      "startedAt": "2026-10-09T19:20:08.756454+00:00",
-      "state": "completed_scoped_native",
-      "focus": "Actual native Busy Escape/X/outside/name/Cancel, late source switch, failure restore; fresh target named recovery prepared/committed/foreign. Clean product63e1efb/main4b78f558. Isolated vault only.",
-      "finishedAt": "2026-10-09T19:22:03.470421+00:00",
-      "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/n01-native-implementation.json"
+      "id": "HEX-02-CLEAN-P01",
+      "kind": "cleanup_plan",
+      "startedAt": "2026-10-09T19:26:10.493235+00:00",
+      "finishedAt": "2026-10-09T19:26:10.493235+00:00",
+      "state": "completed",
+      "focus": "Exactly two cleanup findings: AST-preserving formatting of atlas-view/own native helper; accurate current provenance/next HEX03. No feature scope."
     },
     "nextRun": {
-      "id": "HEX-02-R02",
-      "kind": "independent_re_review",
-      "focus": "Read-only exact0fdc76c source review plus separately supplied N01-H01 native proof; resolve required findings then CLEAN-P/I/R before HEX03."
+      "id": "HEX-02-CLEAN-I01",
+      "kind": "cleanup_implementation",
+      "focus": "Format only two named files, AST-equivalence and same native buildtriplet plus clean gates; update own current evidence."
     },
     "review": {
       "run": "HEX-02-R02",
-      "state": "requested_read_only",
+      "state": "completed_pass_scoped",
       "candidate": "0fdc76c3cae7aa3b65b26308697c8fd716e997ef",
       "reviewerThread": "01a1204f-d184-7567-bfb3-d3ab06a0d07e",
-      "scope": "Exactly both P1 repaired; independent source/adapter/DOM re-review, native host proof separate, no phase Go.",
-      "finishedAt": "2026-10-09T19:10:03.721578+00:00",
-      "evidence": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1#issuecomment-6087387441",
-      "requiredFindings": [
+      "startedAt": "2026-10-09T19:19:16+00:00",
+      "finishedAt": "2026-10-09T19:21:30+00:00",
+      "evidence": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1#issuecomment-6087698506",
+      "requiredFindings": [],
+      "closedFindings": [
         "HEX02-R01-01",
         "HEX02-R01-02"
       ],
-      "previousReview": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1#issuecomment-6087387441"
+      "checkPassed": true,
+      "testsPassed": 373,
+      "buildPassed": true,
+      "nativeOnThisBuild": false,
+      "phaseApproval": false,
+      "scope": "Independent read-only exact source/Core/DOM P1 re-review; Root native N01-H01 separate, CLEAN/phase/overall Go not given."
     },
     "cleanup": {
       "run": "HEX-01-CLEAN-R01",
@@ -1329,7 +1334,7 @@
       ],
       "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-00/effects-dialog-numeric-repair-20261009-112427/requirements-plan-validation.json"
     },
-    "cleanupPlan": "ROADMAP-HEX-01-CLEAN-PLAN.md",
+    "cleanupPlan": "ROADMAP-HEX-02-CLEAN-PLAN.md",
     "gmViewportPlan": "ROADMAP-GM-UX-N004-PLAN.md",
     "parallelPlanning": {
       "phase": "HEX-02",
@@ -2312,16 +2317,16 @@
     },
     "gmUxN005Plan": {
       "date": "2026-10-09",
-      "state": "r01_independent_product_review_passed_h01_in_progress_gm_retest_open",
-      "run": "GM-UX-N-005-R01",
+      "state": "h01_partial_n01_independent_review_passed_cloud_retest_open",
+      "run": "GM-UX-N-005-N01-R01",
       "plan": "ROADMAP-GM-UX-N-005-PLAN.md",
       "source": "GM-UX-005 im getrennten Cloud-GM-Produkttest; ROADMAP-GM-PRODUCT-TESTING-PLAN.md; Issue #1 Kommentar 6085234573",
-      "ownership": "Dungeon-Strang; GM-UX-N-005-I02 wurde nach erneuter Prüfung von Shared-Head f48155a72a404bf21e43d3fe475302cc091a13e4, Issue #1, offenen PRs und gleichnamigen Remote-Branches exklusiv übernommen. Das Paket ändert nur Dungeon-Suchpanel, bestehenden Editor-/Key-Guard, fokussierte Tests und N-005-Metadaten; N-006-, DD-036-, Atlas-, City-, Hex-, CE- und Migrationsarbeit bleibt fremd.",
+      "ownership": "Kartograph/Dungeon-Strang übernahm GM-UX-N-005-N01 nach Issue-/PR-/Branchprüfung exklusiv auf Base 7d35591b9ec02034f6ce63dbbbb8f27d7ccc9bf0; Claim Issue #1 6087711097. Das Paket ändert nur Dungeon-Suchpanel, bestehenden Editor-/Key-Guard, Styles, fokussierte Tests und N-005-Metadaten; N-006-, DD-036-, Atlas-, City-, Hex-, CE-, SMR- und Migrationsarbeit bleibt fremd.",
       "scope": "I01 bleibt der hostneutrale V4-Suchkern. I02 ergänzt das Inhaltsgruppen-Panel, unmittelbare Filterung, Übersicht/Leeren, Live-Aktualisierung und stale Abbruch. Trefferaktivierung nutzt bestehende Geschoss-, Auswahl-, StructuredKeyPanel- und Renderer-Fokuswege. Der gemeinsame Dirty-Draft-Guard stoppt Geschoss-, Auswahl-, Canvas-, Abschnitts- und Trefferwechsel vor Mutation; nur ausdrückliches Übernehmen oder Verwerfen erlaubt den Wiederholungsversuch.",
-      "review": "I01- und I02-Implementierungsreviews bleiben gültig. Der getrennte unabhängige Produktreview GM-UX-N-005-R01 bestand den exakten I02-Implementierungsstand 84440f161914b985acbfd23fbd79cb51bd1e6360 ohne Pflichtbefund; Issue #1 Kommentar 6087430151. Auf Shared b65937e4fe668e8d60eb148671cdfa2979b3be79 waren src/editor.ts, src/key-panel.ts, src/room-key-search-panel.ts und src/room-key-search.ts gegenüber dem Kandidaten unverändert. Geprüft wurden Sessionquelle, flüchtige UI, Accessibility, Zielrevalidierung, bestehende Navigationswege, Dirty-Draft-Guard und Nichtmutation.",
-      "verification": "Sechs fokussierte serielle DOM-/Editorfälle bestanden einschließlich Raum/Geschoss/Snippet, Leeren, Live-Refresh, stale Ziel, V3-Grenze, sauberer Aktivierung und dirty Erstversuch/Wiederholung mit Textarea-, Geschoss-, Auswahl-, Kamera-, Dokument-, History-, Dirty- und Revisionsorakeln. Nach Integration des aktuellen Shared-Stands bestanden auf b8beed18e7f1553bfd5c37192769f2d43ff65b0b npm run check, npm test (365/365) und npm run build. Keine explorative Bedienprüfung oder GUI ausgeführt.",
-      "limits": "I01/I02 hostneutral implementiert und R01 unabhängig bestanden. Der exakte Save/Reload-/Nebelwacht-Cloud-Hostlauf H01 läuft getrennt beim GM-Produkttester; Ergebnis und GM-R01 bleiben offen. Keine vaultweite Obsidian-Suche, V2/V3-Erweiterung, GM-UX-N-003-, N-006-, DD-036-, Atlas-, City- oder H03-Arbeit und keine UX-, Host-, Produkt-, Fach-, Paritäts- oder Gesamtfreigabe. EB-003 und NATIVE-21 bleiben unverändert.",
-      "next": "GM-UX-N-005-H01: der GM-Produkttester führt getrennt exakt den veröffentlichten Nebelwacht-Cloud-Hostablauf aus; Ergebnis nicht vorwegnehmen. Erst danach darf GM-UX-N-005-GM-R01 die Folgeaufgabe unabhängig nachtesten.",
+      "review": "I01/I02 und der getrennte Produktreview R01 bleiben gültig. Der unabhängige read-only N01-Produktreview bestand den exakten Commit a06703c31766a064c6a8e8510a1cb5eaa46ca549 ohne Pflichtbefund. Bestätigt wurden neue leere Panelinstanz versus gleichinstanzlich flüchtige Abfrage, Dirty-Guard vor Gruppen-/Panel-/Layoutmutation, bestehender clean Key-Dock-Weg, klickbarer Ergebnisbutton und statischer 256-px-DOM-/CSS-Vertrag. Kein GUI-Host im Review.",
+      "verification": "H01 auf Shared 95e7bd2 bestand Suche/Aktivierung/Dirty-Guard/Save-Reopen bei bytegleicher Karte, belegte aber drei UI-Reibungen (Issue #1 6087535370). N01-Produktcommit a06703c initialisiert neue Suchpanels leer, lässt einen sauberen Key-Dock beim Suchöffnen über den bestehenden Weg weichen, blockiert dirty vor Ansichtsmutation und hält Raum/Geschoss durch eigene Ortszeile sowie automatische Mindesthöhe sichtbar. Acht fokussierte serielle DOM-/Editorfälle, npm run check, npm test (375/375) und npm run build bestanden; kein GUI-Host in N01 ausgeführt.",
+      "limits": "I01/I02/R01 und N01-R01 bestanden; H01 nur teilweise. Der exakte Cloud-GM-Nachtest und danach GM-R01 bleiben offen. Die 256-px-Wirkung ist bisher statisch per DOM/CSS, nicht im Host bestätigt. Keine vaultweite Obsidian-Suche, V2/V3-Erweiterung, GM-UX-N-003-, N-006-, DD-036-, Atlas-, City-, SMR- oder H03-Arbeit und keine UX-, Host-, Produkt-, Fach-, Paritäts- oder Gesamtfreigabe. EB-003 und NATIVE-21 bleiben unverändert.",
+      "next": "GM-UX-N-005-N01-H01: der Cloud-GM-Produkttester wiederholt exakt den veröffentlichten Nebelwacht-H01-Ablauf auf integriertem a06703c-Produktstand; erst danach bleibt GM-R01 als unabhängiger Nachtest.",
       "followingRun": "GM-UX-N-006-P01 als eigener Planlauf: nach Abschluss des N-005-Plans den Workspace-/View-State-Vertrag prüfen und zwischen Ebenenwiederherstellung und sichtbarer Wiederaufnahme entscheiden; keine Vermischung mit N-005-Implementierung, DD-036 oder Atlaspersistenz."
     },
     "gmUxN006Backlog": {
@@ -2923,7 +2928,7 @@
     "plan": "ROADMAP-PARITY-PLAN.md",
     "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
     "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
-    "nextRun": "GM-UX-N-005-H01: der GM-Produkttester führt getrennt exakt den veröffentlichten Nebelwacht-Cloud-Hostablauf aus. H01 und danach GM-R01 nicht vorwegnehmen; N-006-I01, DD-036 und Atlaspersistenz bleiben getrennt.",
+    "nextRun": "GM-UX-N-005-N01-H01: nach bestandenem N01-R01 exakt H01 im isolierten Cloudvault auf integriertem a06703c-Produktstand wiederholen. GM-R01, N-006-I01, DD-036 und Atlaspersistenz bleiben getrennt.",
     "note": "P7-1, P7-3 und P7-4 sind in getrennten Edit-/Neuöffnungspaaren reviewt. P7-2 ist auf ausdrückliche Nutzeranweisung übersprungen, nicht physisch geprüft. Phase-7-Fachphasentor mit dieser Ausnahme bestanden; Produktbuild unverändert. Hex-Atlas- und Stadtstand erhalten.",
     "phase2Plan": "ROADMAP-PARITY-PHASE2-PLAN.md",
     "candidateBuildSha256": "b321128188b944c3324594663a410acfd84863f17860f637b9ed2e6ecc33b466",
@@ -4618,17 +4623,17 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I45-R46-CLEAN-R45",
+      "id": "CITY-01-INTEGRATION-CLEAN-R01",
       "kind": "cleanup_review",
-      "startedAt": "2026-10-09T19:24:24.773063+00:00",
-      "focus": "R-R: Referenzvollaufnahmen und Funktionsgrenzen",
+      "startedAt": "2026-10-09T19:25:59.973810+00:00",
+      "focus": "Stadtanschluss auf vorhandenen Atlasdateien: CLEAN-R",
       "state": "completed",
-      "result": "Aufräumreview bestanden: neue/alte Hashes, Scopegrenzen, Links und offene Stadtanforderungen erhalten."
+      "result": "Verweise und zentrale Quellgrenzen geprüft: changed nach Render, Draft terrain-only, CitySource gemeinsame History. Vorschlag bereit zur konkreten HEX04/05-Abstimmung."
     },
     "nextRun": {
-      "id": "CITY-01-INTEGRATION-P01",
-      "kind": "integration_plan",
-      "focus": "Konkreten Stadtintegrationsvorschlag auf existierenden Atlasdateien erstellen"
+      "id": "CITY-01-INTEGRATION-R01",
+      "kind": "integration_review",
+      "focus": "Integrationsvorschlag mit Atlasbesitzer gegen HEX04/05-Plan reviewen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
@@ -4816,7 +4821,7 @@
       {
         "id": "GM-UX-005",
         "priority": "P2-Kandidat",
-        "status": "h01_cloud_partial_core_pass_visible_ui_followups_open_after_R01_passed",
+        "status": "h01_cloud_partial_n01_review_passed_cloud_retest_open",
         "kind": "Eigene UI-Beobachtung in isoliertem Cloud-Testvault; Such-/Fernsteuerungszeiten nicht als Produktlatenz",
         "build": "Obsidian 1.14.4; Shared product commit 95e7bd214f96fe7be894e6cc6dcecf2609c10dc3; main.js SHA-256 260aed21ccc7767e5ef703b6de2229c2d3916c67e3501c85a9ef3f1cdb90eb6f",
         "scenario": "GM-UX-01 Nebelwacht H01: Suche, Trefferaktivierung, Geschoss-/Raum-/Key-Fokus, Dirty-Draft-Guard, Leeren, Save, normaler Tab-Close/Reopen",
@@ -4828,7 +4833,7 @@
         "latency": "Nicht gemessen; Playwright/CDP-, Such- und Wartezeiten ausgeschlossen.",
         "dataIntegrity": "Dungeons/GM-UX-01 Nebelwacht/Karte.dungeon SHA-256 vor/nach dem vollständigen UI-Ablauf 56c38f8ff9e4365a165af4319da37bb03db20c09925d6ee38e5327e7559353c7; Dirty-Testabsatz wurde explizit verworfen; keine Kartendaten geändert.",
         "proposedTask": "GM-UX-N-005: Dungeon-Verantwortlicher prüft eine sichtbare GM-Suche/Übersicht für Raum-Key-Texte. Abnahme: einzigartigen Begriff in isolierter Nebelwacht finden; Treffer zeigt Raum und Geschoss; Aktivierung führt zum Raum und öffnet Key, ohne Karte zu ändern; Leeren stellt Übersicht wieder her; Save/Reload erhält den Hinweis.",
-        "coordination": "Beobachtung Issue #1 6085234573; I01/I02 implementiert und gehostet auf Shared 95e7bd2. Der unabhängige Produktreview R01 bestand den exakten I02-Stand 84440f161914b985acbfd23fbd79cb51bd1e6360 ohne Pflichtbefund (Issue #1 6087430151); I02-Implementierung ist seit diesem geprüften Stand unverändert. H01-Teilergebnis und begrenzter Dungeon-Anschlussauftrag in Issue #1 im Bericht nach Commit. Unabhängiger GM-R01-Nachtest bleibt offen; keine Gesamtfreigabe."
+        "coordination": "Beobachtung Issue #1 6085234573; I01/I02 und R01 bestanden. H01 auf Shared 95e7bd2 bestand den Kernablauf, belegte aber drei enge UI-Reibungen (Issue #1 6087535370). Kartograph/Dungeon-Strang claimte N01 in Issue #1 6087711097 und implementierte die begrenzte Reparatur in a06703c; acht fokussierte Fälle sowie check, 375/375 Tests und Build bestanden. Der unabhängige read-only N01-Produktreview bestand exakt a06703c ohne Pflichtbefund. Exakter Cloud-H01-Nachtest und GM-R01 bleiben offen; keine Gesamtfreigabe."
       },
       {
         "id": "GM-UX-006",
@@ -4855,7 +4860,7 @@
       "state": "completed",
       "supersedes": "GM-UX-ACCESS; Slotanfrage gemäß Nutzerkorrektur aufgehoben"
     },
-    "next": "Kartograph – Dungeon-Strang hat GM-UX-N-005-N01 in Issue #1 Kommentar 6087711097 übernommen. Nach integriertem Fix den ursprünglichen H01-Ablauf im Cloudvault erneut ausführen: leerer Suchstart nach Reopen, sichtbare/klickbare Raum- und Geschosszeile bei 256px, sauberes Key-Dock erreichbar, Dirty-Draft weiterhin guarded. GM-R01 bleibt unabhängig offen; N-006 separat.",
+    "next": "Kartograph/Dungeon-Strang hat N01 in a06703c implementiert; unabhängiger read-only Produktreview PASS. Der Cloud-GM-Produkttester wiederholt jetzt exakt H01 auf integriertem Build: leerer Suchstart nach Reopen, sichtbare/klickbare Raum- und Geschosszeile bei 256 px, sauberer Key-Dock weicht der Suche und Dirty-Draft bleibt bis zur ausdrücklichen Aktion geschützt. Danach bleibt GM-R01 offen; N-006 separat.",
     "automation": "Stündliche GM-Produkttests in eigener Cloud; keine Laptop-Slotfreigabe erforderlich.",
     "executionEnvironment": "Eigene Cloud-Umgebung, getrennt vom Laptop der Kollegen",
     "cloudHost": {
