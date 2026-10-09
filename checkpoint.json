@@ -160,7 +160,10 @@
         "/home/aaron/.cache/dungeon-native-qa/hex-00/remaining-contexts-repair-20261009-135556/protection-and-native-proof.json",
         "/home/aaron/.cache/dungeon-native-qa/hex-00/remaining-contexts-repair-20261009-135556/catalog-partial.json",
         "/home/aaron/.cache/dungeon-native-qa/hex-00/remaining-contexts-repair-20261009-135556/pre-mapping-integration-preservation.json",
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/remaining-contexts-repair-20261009-135556/local-basis.json"
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/remaining-contexts-repair-20261009-135556/local-basis.json",
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/remaining-contexts-repair-20261009-135556/clean-git-basis.json",
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/remaining-contexts-repair-20261009-135556/clean-git-provenance.json",
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/remaining-contexts-repair-20261009-135556/catalog-complete-gate.json"
       ],
       "completedAt": "2026-10-09T13:15:49.293315+00:00"
     },
@@ -218,25 +221,26 @@
     },
     "verification": {
       "check": "N-I17 auf integriertem Produktcode frisch bestanden",
-      "tests": "219/219 lokal mit exakt erhaltenen fremden Testpatches; exakter Repositorybaum noch gesondert zu prüfen.",
+      "tests": "219/219 lokal mit exakt erhaltenen fremden Testpatches;222/222 im unveränderten tatsächlichen Git-Repositorybaum747eaaca51fcbe34f31ff8cd903772bfed742514.",
       "build": "N-I17 frisch bestanden, integrierte Quick-Room-/Katalogänderungen; keine Installation.",
       "productBuildSha256": "5b086c04c05b8011c64331ee6da7baa4831fcf06cc8712d2078731fcd03f3d4f",
-      "integratedCommit": "cd34d94f1c7335a8383afb15a1bd24b593b8ca07",
+      "integratedCommit": "747eaaca51fcbe34f31ff8cd903772bfed742514",
       "host": "Älterer eigener NI15-Kernhost aufBuildd54f25cf bleibt erhalten; geänderter integrierter Build5b086c04 hat noch keinen neuen eigenen Kernhost. Eingehender Quick-Room-Cloudreview getrennt. Keine Hex-/Stadt-/Großkarten-/physische/Gesamtparitätsabnahme; Produktvault unverändert.",
-      "testProvenance": "N-I16 aufcd34d94f1c7335a8383afb15a1bd24b593b8ca07: exakter git-archive-Baum ohne lokale Testpatches206/206, Check/Build bestanden;203/203 vorheriger lokaler Lauf bei unverändertem Produkt und Tests. Andere eingehende QA-Helfer separat syntaktisch geprüft. Kein neuer Kernhostlauf, keine Großkarten-/physische Abnahme.",
+      "testProvenance": "N-I17: saubere eigene Git-Kopie von747eaac bestanden222/222, Check/Build bestanden, unverändertes Produkt5b086c04. Vorheriger git-archive-Lauf221/222 scheiterte ausschließlich an fehlenden Git-Metadaten im neuen Katalog-Build; Fehlbeleg erhalten, keine Test-/Produktänderung zur Korrektur. Lokaler219-Lauf mit unveränderten fremden Testpatches getrennt.",
       "cleanTreeTest": {
         "state": "passed",
-        "tests": 206,
-        "passed": 206,
+        "tests": 222,
+        "passed": 222,
         "failed": 0,
-        "source": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/published-basis.json",
-        "testedCommit": "cd34d94f1c7335a8383afb15a1bd24b593b8ca07"
+        "source": "/home/aaron/.cache/dungeon-native-qa/hex-00/remaining-contexts-repair-20261009-135556/clean-git-basis.json",
+        "testedCommit": "747eaaca51fcbe34f31ff8cd903772bfed742514",
+        "repositoryProvenance": "/home/aaron/.cache/dungeon-native-qa/hex-00/remaining-contexts-repair-20261009-135556/clean-git-provenance.json"
       },
       "catalog": "N-I17: acht verbliebene frühe Kontexte direkt geklärt,155Frames/vier normal0 beendete Originalprozesse.18 echte zusätzliche Controls stabil angehängt, alte663Kennungen/Defaults/Fragetexte und113Altquellen erhalten. Drei konkret neue frühe Fragen im gefundenen Move-Path-Panel (Color-Popup, Width-/Roughnessgrenzen) bleiben vorR02 offen; alle späteren Original-/Host-/physischen Pflichten erhalten. Asset-Missing-Probe ohne Save, eigene gespeicherte Karte bytegleich. Eigener R02 und Aufräumen fehlen; gemeinsamer grenzenloser Atlas noch geplant.",
       "physicalInput": "not_run",
       "largeMap": "not_run",
       "installation": "unchanged",
-      "testedProductCommit": "cd34d94f1c7335a8383afb15a1bd24b593b8ca07",
+      "testedProductCommit": "747eaaca51fcbe34f31ff8cd903772bfed742514",
       "incomingReviewIntegration": "Quick-Room-GM-Nachbesserung/Cloudreview, portable und komprimierte SRD2014-Katalogbasis, DD039/008-Belege und Stadtgalerie/Warp/Generatorbelege regulär integriert; fremde Wurzeln und lokale Tests/Installationsbytes exakt erhalten. Neuer eigener Kernhost auf geändertem Build steht aus; eingehende Cloud-Hostbelege sind getrennte Nachweise.",
       "latestOriginalRun": {
         "manifest": "/home/aaron/.cache/dungeon-native-qa/hex-00/remaining-contexts-repair-20261009-135556/manifest.json",
@@ -647,7 +651,13 @@
         "partialBlocking": 22,
         "deferred": 79,
         "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-00/remaining-contexts-repair-20261009-135556/mapping-preservation.json",
-        "stage": "checked_implementation_review_pending"
+        "stage": "checked_implementation_review_pending",
+        "publishedTestsPassed": 222,
+        "publishedTestsTotal": 222,
+        "localTestsPassed": 219,
+        "protectedFiles": 145,
+        "productBuildSha256": "5b086c04c05b8011c64331ee6da7baa4831fcf06cc8712d2078731fcd03f3d4f",
+        "integration": "/home/aaron/.cache/dungeon-native-qa/hex-00/remaining-contexts-repair-20261009-135556/pre-publication-integration-preservation.json"
       }
     },
     "repairPlan": "ROADMAP-HEX-00-REPAIR-PLAN.md",
