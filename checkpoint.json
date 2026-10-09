@@ -4029,17 +4029,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I30-CI",
-      "kind": "cleanup_implementation",
-      "startedAt": "2026-10-09T15:14:47.857614+00:00",
-      "focus": "Processing-Belege CI",
-      "state": "completed",
-      "result": "Snapshot enthält Processing/Raised/Solids-Sichtwirkung und getrennte Dateigeometrie-/Persistenzlücke; historische Belege und Complex-Grenze erhalten."
-    },
-    "nextRun": {
       "id": "CITY-00-I30-CR",
       "kind": "cleanup_review",
-      "focus": "Belege und Snapshot CR"
+      "startedAt": "2026-10-09T15:15:05.214804+00:00",
+      "focus": "Processing-Belege CR",
+      "state": "completed",
+      "result": "Snapshot und acceptance stimmen;10 Rawhashes und alle Belegziele geprüft.64 CO-/24 CTY-Pflichten erhalten, eigene Vorgaben zurückgesetzt und Kopie geschlossen. Aufräumumfang ohne Restbefund. Nächste Originalprobe plant tatsächliche Processing-Ausgabe vor/nach, keine weitere Complex-Wiederholung."
+    },
+    "nextRun": {
+      "id": "CITY-00-I31-P",
+      "kind": "reference_planning",
+      "focus": "Tatsächliche Processing-Ausgabe planen; HEX-05-Handoff verfolgen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
