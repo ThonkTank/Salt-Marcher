@@ -3864,17 +3864,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I22-I",
-      "kind": "handoff_audit_implementation",
-      "startedAt": "2026-10-09T14:13:47.254756+00:00",
-      "focus": "Atlaslieferung gegen Quellen prüfen und Startregel konsistent machen",
-      "state": "completed",
-      "result": "Fünf CLP-02-Übergaben fehlen; vollständige Inventur als Endpflicht erhalten, pauschale Startregel korrigiert. CITY-01 bleibt bis HEX-05 gesperrt."
-    },
-    "nextRun": {
       "id": "CITY-00-I22-R",
       "kind": "handoff_audit_review",
-      "focus": "Quellbelege, Startregel und vollständigen Pflichtumfang reviewen"
+      "startedAt": "2026-10-09T14:14:09.546360+00:00",
+      "focus": "Startregel und Übergabelücken gegen vollständigen Auftrag prüfen",
+      "state": "completed",
+      "result": "Keine Pflicht reduziert; fehlende Atlaslieferung korrekt belegt. Fachreview ohne weiteren Befund."
+    },
+    "nextRun": {
+      "id": "CITY-00-I22-CP",
+      "kind": "cleanup_planning",
+      "focus": "Auditbelege, Fremdwurzeln und Verweise bereinigen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
