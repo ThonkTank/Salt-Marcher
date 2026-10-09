@@ -116185,6 +116185,18 @@
           "measuredScope": "18×12, per Galerie gezeichneter Wood-/Diamond-Boden; Alt-Rechteck radiert zwei Wood-Zellen und halbiert dessen Kontur. Host-Undo stellt acht Zellen wieder her; die gespeicherte Radierkarte öffnet frisch mit sechs Zellen. Vollständige gespeicherte Zellwerte und beide Konturen gleich dem Original.",
           "remaining": "Der im Original direkt gemessene Wiederaufbau durch Nachzeichnen, andere Radierformen, Konturänderung, Stilüberlagerung, kombinierte Ränder und DD-038-Endreview bleiben offen. Keine Fallfreigabe; P7-2 physisch ungeprüft."
         },
+        "followUpPhase1BuildingFloorRedrawCandidate": {
+          "state": "same_style_edge_redraw_scoped_host_raw_review_passed_case_open",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "hostBuildSha256": "dd9cf1f6596b23f4c5a67fcdc5d3758ab37c54ee7d6270bf1124248c71d698b1",
+          "report": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-redraw-host-20261009/implementation.md",
+          "originalEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-erase-20261009/native/runs/20261009-071913-3585442/evidence/redraw-result.json",
+          "hostEdit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-redraw-host-20261009/evidence/1791523990441-parity-tools-phase1-building-floor-edit/result.json",
+          "hostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-redraw-host-20261009/evidence/1791524229302-parity-tools-phase1-building-floor-reopen/result.json",
+          "audit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-redraw-host-20261009/independent-audit.json",
+          "measuredScope": "18×12 Wood/Diamond: nach Alt-Radieren gleichartigen Wood-Boden entlang gemeinsamer Kante nachzeichnen; wieder acht Zellen und eine volle Wood-Kontur. Gespeicherte Radier- und Wiederaufbaukarte stimmen in allen Zellen, Stilpfaden, Farben und Konturen mit dem Original überein. Zwei Host-Undo-Schritte und frische Öffnung der gespeicherten Zustände bestanden.",
+          "remaining": "Gemischte Stile auf gemeinsamer Kontur, reine Übermalung, Konturpunkte, andere Formen, kombinierte Ränder und DD-038-Endreview offen. Keine Fallfreigabe; P7-2 physisch ungeprüft."
+        },
         "followUpPhase1TerrainMaskCandidate": {
           "state": "seeded_host_masks_scoped_review_passed_case_open",
           "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",

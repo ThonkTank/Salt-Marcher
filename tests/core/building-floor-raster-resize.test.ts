@@ -4,7 +4,7 @@ import { newDocument, parseDocument, serializeDocument, type Building } from "..
 import { duplicateFloor, planBuildingMutation, resizeMap } from "../../src/commands";
 import { composeBuilding } from "../../src/compute";
 import { Session } from "../../src/session";
-import { buildingFloorCells, buildingFloorCellsAfterErase } from "../../src/features/material/building-floor-cells";
+import { buildingFloorCells, buildingFloorCellsAfterDraw, buildingFloorCellsAfterErase } from "../../src/features/material/building-floor-cells";
 
 const STYLE = "pack:dungeondraft-builtin-1.2.0.1:tileset:res%3A%2F%2Ftextures%2Ftilesets%2Fsmart%2Ftileset_wood_vertical.png";
 function building(id: string, floorId: string, y: number): Building {
@@ -110,4 +110,44 @@ test("Alt erase removes only the Wood cells covered by the changed contour in on
   assert.equal(session.smartTiles?.length, 6);
   assert.deepEqual(parseDocument(serializeDocument(session.document())).smartTiles,
     session.document().smartTiles);
+  const half = [{ outer: [
+    { x: 0, y: 0 }, { x: 1, y: 0 }, { x: 1, y: 2 }, { x: 0, y: 2 },
+  ], holes: [] }];
+  const drawn = composeBuilding({ kind: "compose-building", nativeBuilding: true,
+    mergeTouching: true, sources: [{ id: "wood", polygons: afterWood.polygons }],
+    shape: half, erase: false });
+  assert.equal(drawn.mode, "draw");
+  if (drawn.mode !== "draw") return;
+  assert.deepEqual(drawn.mergedIds, ["wood"]);
+  const redraw = planBuildingMutation({ entities: [...session.entities.values()],
+    floorId, result: drawn, expectedRevision: session.revision,
+    currentRevision: session.revision });
+  assert.ok(redraw.command);
+  const reunited = redraw.command.entities?.find((change) => change.id === "wood")?.after;
+  assert.equal(reunited?.kind, "building");
+  if (reunited?.kind !== "building") return;
+  const beforeRedraw = session.smartTiles;
+  session.execute({ ...redraw.command, smartTiles: { before: beforeRedraw,
+    after: buildingFloorCellsAfterDraw(beforeRedraw, reunited,
+      drawn.mergedIds, half, 18, 12) } });
+  assert.deepEqual(new Set(session.smartTiles?.map((cell) => `${cell.x}:${cell.y}`)),
+    new Set(["0:0", "1:0", "0:1", "1:1", "0:3", "1:3", "0:4", "1:4"]));
+  assert.equal((session.entities.get("wood") as Building).polygons.length, 1);
+  session.undo();
+  assert.equal(session.smartTiles?.length, 6);
+  session.redo();
+  assert.equal(session.smartTiles?.length, 8);
+});
+
+test("drawing beside a retained contour leaves a prior crop gap empty", () => {
+  const full = building("wood", "floor-1", 0);
+  const retained = buildingFloorCells(full, 18, 12).filter((cell) => cell.x === 1);
+  const next = buildingFloorCellsAfterDraw(retained,
+    { ...full, polygons: [{ outer: [
+      { x: 0, y: 0 }, { x: 3, y: 0 }, { x: 3, y: 2 }, { x: 0, y: 2 },
+    ], holes: [] }] }, [full.id], [{ outer: [
+      { x: 2, y: 0 }, { x: 3, y: 0 }, { x: 3, y: 2 }, { x: 2, y: 2 },
+    ], holes: [] }], 18, 12);
+  assert.deepEqual(new Set(next?.map((cell) => `${cell.x}:${cell.y}`)),
+    new Set(["1:0", "1:1", "2:0", "2:1"]));
 });

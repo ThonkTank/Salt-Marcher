@@ -1,4 +1,4 @@
-import type { Building, Entity, SmartTileCell } from "../../model";
+import type { Building, Entity, Polygon, SmartTileCell } from "../../model";
 import type { RecordChange } from "../../session";
 import { isNativeFloorAssetId } from "./native-path-catalog";
 import { nativeFloorCells } from "./native-floor-tiles";
@@ -43,4 +43,32 @@ export function buildingFloorCellsAfterErase(
       allowed.has(`${cell.x}:${cell.y}`);
   });
   return next.length === cells.length ? cells : next;
+}
+
+/** Paint only the new gesture's cells, preserving earlier crop gaps. */
+export function buildingFloorCellsAfterDraw(
+  cells: readonly SmartTileCell[] | undefined,
+  building: Building,
+  mergedIds: readonly string[],
+  shape: readonly Polygon[] | undefined,
+  width: number, height: number,
+): readonly SmartTileCell[] | undefined {
+  const previous = cells ?? [];
+  const owners = new Set(mergedIds);
+  const painted = shape?.length
+    ? buildingFloorCells({ ...building, polygons: shape }, width, height) : [];
+  const key = (cell: SmartTileCell) => `${cell.floorId}:${cell.x}:${cell.y}`;
+  const existing = new Map(previous.map((cell) => [key(cell), cell]));
+  const changedPaint = painted.some((cell) => {
+    const old = existing.get(key(cell));
+    return !old || old.buildingId !== building.id ||
+      old.assetId !== cell.assetId || old.color !== cell.color;
+  });
+  const changedOwner = previous.some((cell) => cell.buildingId &&
+    owners.has(cell.buildingId) && cell.buildingId !== building.id);
+  if (!changedPaint && !changedOwner) return cells;
+  const positions = new Set(painted.map(key));
+  return [...previous.filter((cell) => !positions.has(key(cell)))
+    .map((cell) => cell.buildingId && owners.has(cell.buildingId)
+      ? { ...cell, buildingId: building.id } : cell), ...painted];
 }
