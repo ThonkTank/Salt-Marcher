@@ -142,27 +142,33 @@
   "hexAtlasExecution": {
     "scope": "HEX-00 bis HEX-28 und sämtliche eingeordneten CITY-00 bis CITY-09 vollständig",
     "phase": "HEX-00",
-    "state": "remaining_contexts_native_observed_mapping_pending",
+    "state": "remaining_contexts_mapped_three_new_selection_questions",
     "plan": "ROADMAP-HEX-00-REPAIR-PLAN.md",
     "currentRun": {
       "id": "HEX-00-N-I17",
       "kind": "repair_implementation",
       "startedAt": "2026-10-09T13:55:56.316385+02:00",
       "baseCommit": "fc96f780aa40111464ea4b2ebbd8a7d71f603f55",
-      "state": "native_observations_completed_mapping_running",
+      "state": "checked_implementation_review_pending",
       "focus": "Eight remaining early reference contexts: assets, selections, generator, gradient, resize anchor and lasso handles",
       "evidence": [
         "/home/aaron/.cache/dungeon-native-qa/hex-00/remaining-contexts-repair-20261009-135556/manifest.json",
         "/home/aaron/.cache/dungeon-native-qa/hex-00/remaining-contexts-repair-20261009-135556/start-integration-preservation.json",
         "/home/aaron/.cache/dungeon-native-qa/hex-00/remaining-contexts-repair-20261009-135556/receipt-reconstruction.json",
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/remaining-contexts-repair-20261009-135556/native-process-close-proof.json"
-      ]
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/remaining-contexts-repair-20261009-135556/native-process-close-proof.json",
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/remaining-contexts-repair-20261009-135556/mapping-preservation.json",
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/remaining-contexts-repair-20261009-135556/protection-and-native-proof.json",
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/remaining-contexts-repair-20261009-135556/catalog-partial.json",
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/remaining-contexts-repair-20261009-135556/pre-mapping-integration-preservation.json",
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/remaining-contexts-repair-20261009-135556/local-basis.json"
+      ],
+      "completedAt": "2026-10-09T13:15:49.293315+00:00"
     },
     "nextRun": {
-      "id": "HEX-00-R02",
-      "kind": "review",
-      "focus": "Direct review of six R01 findings and final integrated original inventory after eight remaining contexts are resolved.",
-      "gate": "No HEX-01 before reference review and separate cleanup cycle pass."
+      "id": "HEX-00-N-I18",
+      "kind": "repair_implementation",
+      "focus": "Drei tatsächlich neue Move-Path-Panel-Inventarfragen0667–0669 direkt schließen; fünf vorhandene Fall-/UI-Verweislücken anhand bestehender Originalbelege einordnen.",
+      "gate": "Native Originalprobe erst nach ausdrücklicher CITY-Slotrückgabe; anschließend eigener R02 und separater Aufräumzyklus, vor HEX-01 bis05."
     },
     "review": {
       "state": "changes_required",
@@ -193,8 +199,8 @@
       "HEX00-R01-06: Gespeicherte Gruppenindizes folgen neuen UI-Zuordnungen nicht",
       "Eigenständiges Aufräumen nach Fachfreigabe, einschließlich RFB-Beleg-/Eingabe-Preflight C01.",
       "CITY-00 bleibt eigene frühe Ergebnisreferenzphase; vollständige Wonderdraft-Wirkungsvarianten verbleiben in ihren Fachphasen.",
-      "Acht ausdrückliche frühe UI-Inventarkontexte nach N-I16 offen;14Interface-Farbfragen direkt geklärt. Eigener R02/Aufräumen ausstehend; keine vollständige Inventarfreigabe.",
-      "R01-01/06 umgesetzt, eigener R02 noch offen; 113 Altquellenfehler jetzt getrennt als historical_unverified_replaced; eigene R02-Passung weiterhin offen."
+      "R01-01/06 umgesetzt, eigener R02 noch offen; 113 Altquellenfehler jetzt getrennt als historical_unverified_replaced; eigene R02-Passung weiterhin offen.",
+      "N-I17: acht frühere Kontexte geklärt;18 zusätzliche echte Controls. Drei neue frühe Fragen im ausgewählten Move-Path-Panel (Color/Width/Roughness) und fünf fehlende vorhandene Fall-/UI-Verweise brauchen begrenztes N-I18; eigener R02 und Aufräumen bleiben ausstehend."
     ],
     "coordination": {
       "issue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1",
@@ -202,7 +208,7 @@
       "cityThread": "01a12022-b67b-7da2-bed5-8ebde169d475",
       "cityPolicy": "Separater ausdrücklich beauftragter Stadtlauf in eigener Arbeitskopie; gemeinsame Atlaspräzisierungen mitgeteilt, Stadt- und Hexwurzeln erhalten, geprüfte Stadtcommits integrieren. Genau eine grafische QA-Instanz.",
       "overallObjective": "Nutzerziel aktualisiert: mit Kollegen koordinieren und Gesamtprodukt planmäßig fertigstellen; gemeinsame Atlasanforderungen und Abnahmetore gelten für alle Pfade.",
-      "nextJointGate": "HEX-00 verbliebene8 frühen Kontexte begrenzt schließen, eigener R02 und Aufräumen; danach HEX-01 bis05 als nutzbare gemeinsame grenzenlose Atlasbasis. CITY01 verwendet diese Basis, kein separater Editor; Dungeonstand fortlaufend integrieren/regressionsprüfen.",
+      "nextJointGate": "N-I18 auf drei tatsächlich neue Auswahlpanel-Fragen und fünf Fallverweise begrenzt; R02/Aufräumen, dann sofort HEX-01 bis05 als nutzbarer gemeinsamer grenzenloser Hex-/Stadt-/Dungeonatlas. CITY01 bleibt abhängiger Pfad, kein separater Editor.",
       "dungeonThread": "01a1204f-d184-7567-bfb3-d3ab06a0d07e",
       "fixtureReviewThread": "01a12031-2c30-73f7-bc01-6bd3eba86046",
       "publicationPolicy": "Bei fortlaufenden Shared-Branch-Pushrennen geprüftes Paket auf eigenem Branch sichern, regulären Servermerge in gemeinsamen active/installed-phase1 prüfen und lokal integrieren; keine Historienumschreibung.",
@@ -211,12 +217,12 @@
       "gmTestingPolicy": "Eigenständiger Cloud-GM-Endanwenderlauf nach direkter Nutzerpräzisierung, ohne lokalen QA-Slot; beobachtete Befunde/Nacharbeiten getrennt überIssue1 übernehmen, kein Ersatz durch technische Testzahlen."
     },
     "verification": {
-      "check": "N-I16 frisch bestanden",
-      "tests": "203/203 lokal mit exakt erhaltenen fremden Testpatches; exakter integrierter Repositorybaum206/206 frisch bestanden.",
-      "build": "N-I16 frisch bestanden, identischer Buildd54f25cf; keine Installation.",
-      "productBuildSha256": "d54f25cf7b961cc78b1bbf197bd4781bd62d2325ec10dc4b34148c0d6ab3a6a2",
+      "check": "N-I17 auf integriertem Produktcode frisch bestanden",
+      "tests": "219/219 lokal mit exakt erhaltenen fremden Testpatches; exakter Repositorybaum noch gesondert zu prüfen.",
+      "build": "N-I17 frisch bestanden, integrierte Quick-Room-/Katalogänderungen; keine Installation.",
+      "productBuildSha256": "5b086c04c05b8011c64331ee6da7baa4831fcf06cc8712d2078731fcd03f3d4f",
       "integratedCommit": "cd34d94f1c7335a8383afb15a1bd24b593b8ca07",
-      "host": "Nach eingehender Building-Bodenübermalung frischer eigener Kern-Obsidian-Edit-/Neuöffnungslauf bestanden aufBuildd54f25cf: vier Edit-/zwei Neuöffnungschecks, beide Prozessausgänge0. Keine Hex-/Stadt-/Overworld-, Großkarten-, physische oder Gesamtparitätsabnahme; Produktvault unverändert.",
+      "host": "Älterer eigener NI15-Kernhost aufBuildd54f25cf bleibt erhalten; geänderter integrierter Build5b086c04 hat noch keinen neuen eigenen Kernhost. Eingehender Quick-Room-Cloudreview getrennt. Keine Hex-/Stadt-/Großkarten-/physische/Gesamtparitätsabnahme; Produktvault unverändert.",
       "testProvenance": "N-I16 aufcd34d94f1c7335a8383afb15a1bd24b593b8ca07: exakter git-archive-Baum ohne lokale Testpatches206/206, Check/Build bestanden;203/203 vorheriger lokaler Lauf bei unverändertem Produkt und Tests. Andere eingehende QA-Helfer separat syntaktisch geprüft. Kein neuer Kernhostlauf, keine Großkarten-/physische Abnahme.",
       "cleanTreeTest": {
         "state": "passed",
@@ -226,21 +232,23 @@
         "source": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/published-basis.json",
         "testedCommit": "cd34d94f1c7335a8383afb15a1bd24b593b8ca07"
       },
-      "catalog": "N-I16: alle14 frühen Interface-Farben0127–0140 direkt geöffnet und mit ihren tatsächlichen RGBA-Dezimalanzeigen/Hex-Wortlauten sowie einfachem Popupkontext pro Besitzer erfasst. 35Originalframes, normale Beendigung0; keine Farbeingabe/Apply/Skinänderung. Alle Kennungen, Defaults, Controltypen, Quellen und Gruppenindizes erhalten. Acht frühe Kontexte, eigener R02 und Aufräumen bleiben offen; keine vollständige Inventar-/Paritätsfreigabe. Gemeinsamer grenzenloser Hex-/Stadt-/Dungeonatlas geplant, nicht implementiert.",
+      "catalog": "N-I17: acht verbliebene frühe Kontexte direkt geklärt,155Frames/vier normal0 beendete Originalprozesse.18 echte zusätzliche Controls stabil angehängt, alte663Kennungen/Defaults/Fragetexte und113Altquellen erhalten. Drei konkret neue frühe Fragen im gefundenen Move-Path-Panel (Color-Popup, Width-/Roughnessgrenzen) bleiben vorR02 offen; alle späteren Original-/Host-/physischen Pflichten erhalten. Asset-Missing-Probe ohne Save, eigene gespeicherte Karte bytegleich. Eigener R02 und Aufräumen fehlen; gemeinsamer grenzenloser Atlas noch geplant.",
       "physicalInput": "not_run",
       "largeMap": "not_run",
       "installation": "unchanged",
       "testedProductCommit": "cd34d94f1c7335a8383afb15a1bd24b593b8ca07",
-      "incomingReviewIntegration": "N-I16: Stadt-FTG-Wetter/3D-Belege, Dungeon-Ellipsen-Refill-Host und unabhängiger GM-Endanwenderplan regulär integriert; alle fremden Wurzeln und lokalen Test-/Installationsbytes erhalten. GM eigener Cloudlauf benötigt nach direktem Nutzerhinweis keinen lokalen GUI-Slot.",
+      "incomingReviewIntegration": "Quick-Room-GM-Nachbesserung/Cloudreview, portable und komprimierte SRD2014-Katalogbasis, DD039/008-Belege und Stadtgalerie/Warp/Generatorbelege regulär integriert; fremde Wurzeln und lokale Tests/Installationsbytes exakt erhalten. Neuer eigener Kernhost auf geändertem Build steht aus; eingehende Cloud-Hostbelege sind getrennte Nachweise.",
       "latestOriginalRun": {
-        "manifest": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/manifest.json",
-        "sessions": 1,
-        "newFrames": 51,
-        "nativeConfigSnapshots": 6,
+        "manifest": "/home/aaron/.cache/dungeon-native-qa/hex-00/remaining-contexts-repair-20261009-135556/manifest.json",
+        "sessions": 4,
+        "newFrames": 155,
         "normalExitCodes": [
+          0,
+          0,
+          0,
           0
         ],
-        "scope": "Zehn Preferences-Inventarfragen: einzeln Zahl/Tab/Pfeil; zwei Slider über Apply/native Config-Snapshots. Ohne Karte vorNew, Fontextreme nur im Feld validiert, keine volle Einstellungswirkung/Kaltstart-/History-/physische Abnahme.",
+        "scope": "Eight early contexts +18 actual controls. Three new selection-input questions remain; no full reference gate, effect, host or physical approval.",
         "physicalInput": false
       },
       "referenceReview": {
@@ -626,6 +634,20 @@
         "physicalInput": false,
         "installation": "unchanged",
         "integration": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/integration-preservation.json"
+      },
+      "remainingContextsRepair": {
+        "run": "HEX-00-N-I17",
+        "resolvedEarlyQuestions": 8,
+        "newControls": 18,
+        "remainingNewEarlyQuestions": 3,
+        "existingUiFieldsPreserved": 663,
+        "historicalUsagesPreserved": 113,
+        "validatorErrors": 0,
+        "validatorTestsPassed": 26,
+        "partialBlocking": 22,
+        "deferred": 79,
+        "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-00/remaining-contexts-repair-20261009-135556/mapping-preservation.json",
+        "stage": "checked_implementation_review_pending"
       }
     },
     "repairPlan": "ROADMAP-HEX-00-REPAIR-PLAN.md",
