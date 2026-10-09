@@ -2567,7 +2567,7 @@
     "plan": "ROADMAP-PARITY-PLAN.md",
     "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
     "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
-    "nextRun": "DD-036-ATLAS-P01-R01: den Dateiflussplan nach dem unabhängigen Review reparieren; read-only Öffnen von HEX-01, erst später ausführbare HEX-02-History-/Save-/Dirty-Folgen, getrennte Dungeondraft-/Wonderdraft-Referenzwahrheit, Weltkennungs-/Kopierorakel und gemeinsamen FileTransaction-/Draft-/Recovery-Weg präzise staffeln. Danach eigener Planreview; keine Host- oder Paritätsfreigabe. Globale Atlasoptionen und übrige Phase-1-Fälle bleiben offen.",
+    "nextRun": "GM-UX-N-005-P01: als eigener Dungeon-Planlauf die durch GM-UX-005 belegte Suche nach Raum-Key-Texten planen; Treffer nennt Raum und Geschoss, Aktivierung öffnet Raum und Key ohne Kartenänderung, leere Suche stellt die Übersicht wieder her und Save/Reload erhält den Hinweis. Nicht mit DD-036-O01a, Atlaspersistenz oder fremden Featurepfaden vermischen; keine Produkt-, Host- oder Fachfreigabe aus der Planung.",
     "note": "P7-1, P7-3 und P7-4 sind in getrennten Edit-/Neuöffnungspaaren reviewt. P7-2 ist auf ausdrückliche Nutzeranweisung übersprungen, nicht physisch geprüft. Phase-7-Fachphasentor mit dieser Ausnahme bestanden; Produktbuild unverändert. Hex-Atlas- und Stadtstand erhalten.",
     "phase2Plan": "ROADMAP-PARITY-PHASE2-PLAN.md",
     "candidateBuildSha256": "b321128188b944c3324594663a410acfd84863f17860f637b9ed2e6ecc33b466",
