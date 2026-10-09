@@ -3730,17 +3730,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I17-R",
-      "kind": "reference_review",
-      "startedAt": "2026-10-09T13:28:16.507537+00:00",
-      "focus": "Beleg- und Historygrenze prüfen",
-      "state": "completed",
-      "result": "I17-R01 irreführende historische Bildnamen; I17-R02 Save vor Undo als ungemessene Grenze. Beide in eigener Aufräumphase korrigieren; Fachwirkung offen."
-    },
-    "nextRun": {
       "id": "CITY-00-I17-CP",
       "kind": "cleanup_planning",
-      "focus": "Wahrheitsgemäße Bildzuordnung und nächste Historyhypothese planen"
+      "startedAt": "2026-10-09T13:28:33.291547+00:00",
+      "focus": "Belegzuordnung und neue Hypothese planen",
+      "state": "completed",
+      "result": "Caption-Ergänzung bei Rohschutz und separate künftige Pre-Save-Probe geplant."
+    },
+    "nextRun": {
+      "id": "CITY-00-I17-CI",
+      "kind": "cleanup_implementation",
+      "focus": "Caption-Zuordnung und Beobachtungsgrenzen ergänzen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
