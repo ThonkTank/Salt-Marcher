@@ -4502,17 +4502,17 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I43-REVIEW-CLEAN-P43",
-      "kind": "cleanup_plan",
-      "startedAt": "2026-10-09T19:13:05.334816+00:00",
-      "focus": "Variantenreview konsistent und lesbar dokumentieren",
-      "state": "completed",
-      "result": "Plan: Referenzteilbeleg und geplante eigene Persistenzpolitik ausdrücklich trennen; Rawhashes und fremde JSON-Wurzeln schützen."
-    },
-    "nextRun": {
       "id": "CITY-00-I43-REVIEW-CLEAN-I43",
       "kind": "cleanup_implementation",
-      "focus": "CO2-Plantext lesbar präzisieren und Originalreview verlinken"
+      "startedAt": "2026-10-09T19:13:16.936175+00:00",
+      "focus": "Referenzbeleg und eigene Umsetzungspflicht sprachlich trennen",
+      "state": "completed",
+      "result": "CO2-Technikplan präzisiert: stabile IDs, explizite Vorschau, gemeinsamer Befehl und keine Neuwürfelung sind eigene Anforderungen; Original-Neuöffnung bleibt ungeprüft."
+    },
+    "nextRun": {
+      "id": "CITY-00-I43-REVIEW-CLEAN-R43",
+      "kind": "cleanup_review",
+      "focus": "Rawhashes, Kennungen und offene Abnahme prüfen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",

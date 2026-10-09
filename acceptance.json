@@ -1634,7 +1634,7 @@
         "caseIds": [
           "CTY-006.02"
         ],
-        "technicalPlan": "ROADMAP-CITIES-CITY00-COK-VARIANTS-PLAN.md; CITY07materialized variant/pose onstableelementIDs, explicit refreshpreview and oneAtlascommand, no rerandomizeonload.",
+        "technicalPlan": "ROADMAP-CITIES-CITY00-COK-VARIANTS-PLAN.md; CITY-07 speichert gewählte Assetvariante und Pose auf stabilen Element-IDs. Explizite Variation aktualisiert zunächst die Vorschau; Apply verwendet einen gemeinsamen Atlasbefehl. Laden darf bestehende Varianten nicht neu auswürfeln. Dies ist geplante eigene Umsetzung, keine bereits geprüfte Original-Neuöffnung.",
         "implementationEvidence": [],
         "hostEvidence": [],
         "comparisonEvidence": [],
