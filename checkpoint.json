@@ -4043,17 +4043,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I31-CR",
-      "kind": "cleanup_review",
-      "startedAt": "2026-10-09T15:22:47.637875+00:00",
-      "focus": "Processing-Ausgabebelege CR",
-      "state": "completed",
-      "result": "Snapshot und acceptance stimmen, echte Downloadkopien/Rawhashes und sämtliche Inventarbelegziele geprüft;64 CO-/24 CTY-Pflichten offen. Eigener Wert wiederhergestellt und Kopie geschlossen. Aufräumumfang ohne Restbefund. Nächste Referenzplanung prüft frühe Generationsvorgaben auf eigener Karte; HEX-05-Handoff bleibt Voraussetzung für Stadtproduktstart."
-    },
-    "nextRun": {
       "id": "CITY-00-I32-P",
       "kind": "reference_planning",
-      "focus": "Frühe Generationsvorgaben auf eigener Karte planen; HEX-05 prüfen"
+      "startedAt": "2026-10-09T15:23:32.148278+00:00",
+      "focus": "Frühe Generationsvorgaben",
+      "state": "completed",
+      "result": "Plan für eigene Karte und tatsächlichen Vorher/Nachher-Export festgelegt."
+    },
+    "nextRun": {
+      "id": "CITY-00-I32-I",
+      "kind": "reference_implementation",
+      "focus": "Generate-/Settlement-Vorgabe direkt prüfen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
