@@ -3629,17 +3629,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I13-I",
-      "kind": "reference_settings_probe",
-      "startedAt": "2026-10-09T12:40:27.142161+00:00",
-      "focus": "Gespeicherte Vorgaben im Original prüfen",
-      "state": "completed",
-      "result": "Load settings leer/Dateiimport sichtbar; dokumentierter Save-Knopf im temporären All-settings/General nicht erreichbar; keine Datei-/Speicherwirkung behauptet, Stadt erhalten"
-    },
-    "nextRun": {
       "id": "CITY-00-I13-R",
       "kind": "requirements_review",
-      "focus": "Zugangslücke und Vorgabenplan gegen Originalbelege prüfen"
+      "startedAt": "2026-10-09T12:40:50.685772+00:00",
+      "focus": "Zugangslücke und Vorgabenplan prüfen",
+      "state": "completed",
+      "result": "Referenzbelege konsistent; I13-R01: Abschnittsauswahl/atomarer Vorgabenmerge im technischen Plan ergänzen, Produktfreigabe offen"
+    },
+    "nextRun": {
+      "id": "CITY-00-I13-CP",
+      "kind": "cleanup_planning",
+      "focus": "Vorgabenvertrag und Belegzuordnung bereinigen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
