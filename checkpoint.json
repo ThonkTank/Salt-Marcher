@@ -4086,17 +4086,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I38-CP",
-      "kind": "cleanup_planning",
-      "startedAt": "2026-10-09T15:55:06.520420+00:00",
-      "focus": "Küstenbelege CP",
+      "id": "CITY-00-I38-CR",
+      "kind": "cleanup_review",
+      "startedAt": "2026-10-09T15:55:34.845432+00:00",
+      "focus": "Küstenbelege CR",
       "state": "completed",
-      "result": "Plan: CO-WAT-0001-Snapshot um Coast/water/planks und offene Hafen-/sea-Grenzen ergänzen. Vorige Fluss-/Größenbelege erhalten, zusätzliche Gruppe im Vergleich nicht übergehen. Rohhashes/Downloadkopien/Verweise und65/24 offene Pflichten prüfen; CI/CR getrennt."
+      "result": "Snapshot/acceptance/Plan stimmen. Echte Downloadkopien, Rawhashes und Inventarbelegziele gültig;65 CO-/24 CTY-Pflichten offen. Eigene Kopie geschlossen, Coast aus angewendet, Kontrollausgabe bytegleich. Aufräumumfang ohne Restbefund. Nächster Lauf prüft frühe Stadtpflichten und bereitet konkrete CITY-01-Schnittstellen nach Atlasstand vor; geprüfter HEX-05-Vertrag bleibt Starttor."
     },
     "nextRun": {
-      "id": "CITY-00-I38-CI",
-      "kind": "cleanup_implementation",
-      "focus": "Küstenbelege und Snapshot CI"
+      "id": "CITY-00-I39-P",
+      "kind": "reference_planning",
+      "focus": "Frühe Pflichten und konkrete CITY-01-Schnittstellen vorbereiten; HEX-05 prüfen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
