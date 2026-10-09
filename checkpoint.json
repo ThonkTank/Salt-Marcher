@@ -4437,17 +4437,17 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-01-PREP-RENDERER-REVIEW-CLEAN-P07",
-      "kind": "cleanup_planning",
-      "startedAt": "2026-10-09T18:41:31.652212+00:00",
-      "focus": "Reviewbefund und Architekturstatus bereinigen",
-      "state": "completed",
-      "result": "R11-Befundquelle erhalten, Architekturstand präzisieren; keine technische Nebenbaustelle."
-    },
-    "nextRun": {
       "id": "CITY-01-PREP-RENDERER-REVIEW-CLEAN-I07",
       "kind": "cleanup_implementation",
-      "focus": "Architektur auf offenen numerischen Rendererbefund aktualisieren"
+      "startedAt": "2026-10-09T18:41:45.685386+00:00",
+      "focus": "Architektur auf reproduzierten Befund aktualisieren",
+      "state": "completed",
+      "result": "R11/N08-Grenze in Architektur präzisiert; unabhängige Gegenprobe bleibt unverändert."
+    },
+    "nextRun": {
+      "id": "CITY-01-PREP-RENDERER-REVIEW-CLEAN-R07",
+      "kind": "cleanup_review",
+      "focus": "Befundnachweis/Quellenhashes/fremdeWurzeln prüfen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",

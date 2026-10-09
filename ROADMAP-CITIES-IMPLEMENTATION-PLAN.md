@@ -867,3 +867,5 @@ CITY-01-PREP-RENDERER-CLEAN-R07 Start 2026-10-09T18:39:43.051047+00:00; Runtimeh
 CITY-01-PREP-R11 Start 2026-10-09T18:40:26Z; unabhängige Quell-/Modulgegenprobe findet CITY-RENDERER-R11-01: Radius bei10^16lokalenMetern vor Projektion weggerundet, erwartete5px werden inX0px. Darstellbare Projektionsproben und Bildschirmoffsets als N08 geplant. Kein Pass/CTY-Abschluss; Review-Aufräum-P/I/R folgt vor Nachbesserung.
 
 CITY-01-PREP-RENDERER-REVIEW-CLEAN-P07 Start 2026-10-09T18:41:31.652212+00:00; Fokus:Reviewbefund statt veralteter offenerR11-Darstellung dokumentieren. Plan:Architektur auf geprüften Pflichtbefund und geplante N08 aktualisieren; Belegquelle/Runtimehash binden, keine Runtimeänderung im Aufräumen.
+
+CITY-01-PREP-RENDERER-REVIEW-CLEAN-I07 Start 2026-10-09T18:41:45.685386+00:00; Architektur nennt jetzt den tatsächlich reproduzierten R11-Befund und geplante numerische Korrektur; zuvor offenerReview-Verweis bereinigt. Keine Runtime-/Abnahmeänderung.
