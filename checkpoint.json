@@ -1,7 +1,7 @@
 {
   "saltMarcherReplacement": {
     "date": "2026-10-09",
-    "state": "smr00_adr_p01_h02_no_go_reviewed_cleaned_h03_plan_next",
+    "state": "smr00_adr_p01_h03_plan_pending_review",
     "plan": "ROADMAP-SALTMARCHER-REPLACEMENT.md",
     "platformAdr": "ROADMAP-SALTMARCHER-PLATFORM-ADR.md",
     "prototypePlan": "ROADMAP-SALTMARCHER-ADR-PROTOTYPES.md",
@@ -99,6 +99,13 @@
       "review": "Plan review ADR-P01-H02-R01 passed exact shared commit 0dd314c1772ebd91f3375d8660f964a731bdf215. Independent code/evidence re-review passed exact head 6e282f91846313a615cdbaf692d0ed65da80e5f2 after repairing the receipt-source versus later evidence-commit provenance label. Independent cleanup review passed exact commit 8d620a064e16d977e51b97d6aec64b7f40034961; only p01-v2 and the aggregate remain.",
       "next": "Plan a narrower H03 hypothesis for the missing durable receipt/recovery state machine and complete native fault matrix while preserving the proven process boundary."
     },
+    "adrP01H03": {
+      "date": "2026-10-09",
+      "state": "plan_pending_independent_review",
+      "plan": "ROADMAP-SALTMARCHER-ADR-P01-H03-PLAN.md",
+      "hypothesis": "Capture the expected old target into an exclusive backup before publishing a synced temp only with RENAME_NOREPLACE, so an uncooperative writer is retained as a visible conflict rather than overwritten.",
+      "limits": "Plan only. H02 remains No-Go; no executable H03 proof, Linux durability Go, platform decision or P02 authorization. Windows and macOS remain not-run."
+    },
     "open": [
       "Replacement architecture hypothesis after ADR-P01 No-Go; ADR-P02 through ADR-P04 and ADR-C01 remain blocked",
       "All SMR-01 through SMR-11 implementation, review, repair and cleanup gates",
@@ -106,10 +113,10 @@
       "Per-slice source-to-target mapping and host persistence/security decisions"
     ],
     "nextRun": {
-      "id": "ADR-P01-H03-P01",
-      "kind": "architecture_hypothesis_plan",
-      "owner": "local_coordination_thread",
-      "focus": "Plan only the missing durable receipt/recovery state machine and complete Create/Update/Delete native fault matrix; reuse the proven process-boundary evidence without authorizing ADR-P02"
+      "id": "ADR-P01-H03-P01-R01",
+      "kind": "architecture_hypothesis_plan_review",
+      "owner": "local_review_thread",
+      "focus": "Independently review the capture/publish state machine, parent/child recovery, complete native adversary matrix and retained P02 block"
     }
   },
   "saltMarcherCatalogEncounter": {

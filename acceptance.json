@@ -96,12 +96,19 @@
       "review": "Independent evidence re-review passed exact head 6e282f91846313a615cdbaf692d0ed65da80e5f2. Independent cleanup review passed exact commit 8d620a064e16d977e51b97d6aec64b7f40034961 after removing the executable harness, tests, command and temporary Electron dependency while retaining p01-v2 and the aggregate.",
       "limits": "No target-platform decision or P02 authorization. Durable receipt/recovery, the full Create/Update/Delete fault matrix, installed-adapter bytes, Windows, macOS and accessibility remain not-run."
     },
+    "adrP01H03": {
+      "run": "ADR-P01-H03-P01",
+      "state": "plan_pending_independent_review",
+      "document": "ROADMAP-SALTMARCHER-ADR-P01-H03-PLAN.md",
+      "result": "Proposes a Linux-only native capture/publish and parent/child recovery hypothesis using exclusive backup capture followed by no-replace publication, with a complete uncooperative-writer and fault matrix.",
+      "limits": "Unreviewed planning evidence only. No executable proof, Linux durability Go, target-platform decision or P02 authorization. Windows and macOS remain not-run."
+    },
     "coordination": {
       "local": "Three new local goal threads coordinate integration. Existing Hex/Atlas, City and Dungeon colleagues on three other devices retain their workstreams, evidence and non-overlapping ownership and contribute requirements to the platform decision.",
       "cloud": "Prior GM-UX-CLOUD worker is reassigned through GitHub Issue #1 to independent architecture and technical review only. Other cloud colleagues retain their established specialist review/test responsibilities.",
       "gui": "At most one graphical host/original instance per device; static and non-graphical checks may run separately."
     },
-    "next": "Plan a narrower ADR-P01-H03 hypothesis for durable receipt/recovery and the complete native fault matrix while preserving the proven process boundary. ADR-P02 remains blocked and the platform ADR remains proposed."
+    "next": "Independently review ADR-P01-H03 before any implementation. ADR-P02 remains blocked and the platform ADR remains proposed."
   },
   "saltMarcherCatalogEncounter": {
     "schemaVersion": 1,
