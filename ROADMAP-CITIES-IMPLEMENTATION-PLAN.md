@@ -861,3 +861,5 @@ CITY-01-PREP-I07; erster Testabschluss 2026-10-09T18:37:19.017802+00:00; CityRen
 CITY-01-PREP-RENDERER-CLEAN-P07 Start 2026-10-09T18:38:55.737758+00:00; Fokus: Ressourcen und Architekturgrenze nach I07 bereinigen. Plan: vorhandene schmale Zeichenhelfer behalten, keine zweite Render-/Stateabstraktion; Architektur um tatsächlichen CityRenderer ergänzen und ältere Aussage „sichtbare Stadtzeichnung fehlt“ auf Hostanschluss präzisieren. Review: Quellenhashes gegen352Tests, Link-/JSONschutz und keine CTY-Freigabe.
 
 CITY-01-PREP-RENDERER-CLEAN-I07 Start 2026-10-09T18:39:17.782163+00:00; Architektur um tatsächlichen CityRenderer/Ressourcenbesitz ergänzt; ältere Zeichnungsaussage auf Host-/Pointerintegration präzisiert. Keine Runtimeänderung, kein neuer Port.
+
+CITY-01-PREP-RENDERER-CLEAN-R07 Start 2026-10-09T18:39:43.051047+00:00; Runtimehashes identisch zum352Tests/check/build-Beleg; Architektur/Planlink und24offeneCTY geprüft. Ressourcen sind eng begrenzt, kein unnötiger technischer Umbau. Implementierungs-Aufräumen abgeschlossen; separater R11 folgt. Beleg:/home/aaron/.cache/dungeon-native-qa/city-plans/city01-renderer-20261009/i07-cleanup-review.json.
