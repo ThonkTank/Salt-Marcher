@@ -88,7 +88,9 @@
         "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/integrated-published-source.json",
         "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/integrated-published-basis.json",
         "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/catalog-integrated-partial.json",
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/integrated-host-regression.json"
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/integrated-host-regression.json",
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/integration-preservation2.json",
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/publication-basis-equivalence.json"
       ],
       "finishedAt": "2026-10-09T12:57:55.237659+02:00",
       "result": "Zehn frühe Preferences-Fragen direkt geklärt;51 Frames/sechs Config-Snapshots/normaler Ausgang0.22 frühe Fragen,R02/Aufräumen offen. Eingehende Bodenübermalung in Gebäudeaussparungen integriert; frische Basis198 lokal/198 von201 veröffentlicht mit drei bekannten Fixture-Fehlern und eigener Kern-Edit-/Neuöffnungslauf bestanden. Keine Hex-/Atlas-Funktion implementiert."
@@ -160,7 +162,7 @@
       "largeMap": "not_run",
       "installation": "unchanged",
       "testedProductCommit": "9584fcf9ced7915d9bc72224e4ac5f446771ca56",
-      "incomingReviewIntegration": "N-I15: bad35f1 am Start per Fast-forward integriert. Vor Veröffentlichung478028e mit CITY-FTG-Bindungsreview/COK-Adapter und Dungeon-Bodenübermalung unter Building-Innenlöchern normal in9584fcf integriert. Eigene Hex-/Wonderdraftroots, fremde Stadt-/Dungeonroots, zwei lokale Testpatches und Installationsnotiz erhalten. Basis frisch198/198 lokal und198/201 veröffentlicht mit drei bekannten fehlenden Fixtures, neuer Buildd54f25cf. Eigener frischer Kernhost Edit4/Neuöffnung2Checks bestanden; keine Installation oder fremde Referenzfreigabe.",
+      "incomingReviewIntegration": "N-I15: bad35f1 am Start per Fast-forward integriert. Vor Veröffentlichung478028e mit CITY-FTG-Bindungsreview/COK-Adapter und Dungeon-Bodenübermalung unter Building-Innenlöchern normal in9584fcf integriert. Eigene Hex-/Wonderdraftroots, fremde Stadt-/Dungeonroots, zwei lokale Testpatches und Installationsnotiz erhalten. Basis frisch198/198 lokal und198/201 veröffentlicht mit drei bekannten fehlenden Fixtures, neuer Buildd54f25cf. Eigener frischer Kernhost Edit4/Neuöffnung2Checks bestanden; keine Installation oder fremde Referenzfreigabe. Anschließend49ab822 mit Stadt-COK-Lock-/Zielreparatur und Dungeon-Vierzellenreview normal in0bd2c84 integriert. Produkt-/gewöhnliche Test-/Wonderdraft-/Kernhostbasis gegenüber geprüftem9584fcf unverändert. Separater COK-Adapter zusätzlich gezielt5/5 und drei Module Syntax geprüft; keine eigene COK-Originalfreigabe.",
       "latestOriginalRun": {
         "manifest": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/manifest.json",
         "sessions": 1,
@@ -536,7 +538,8 @@
         "installation": "unchanged",
         "basis": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/integrated-published-basis.json",
         "hostRegression": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/integrated-host-regression.json",
-        "integration": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/integration-preservation.json"
+        "integration": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/integration-preservation.json",
+        "latestIntegrationProof": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/integration-preservation2.json"
       }
     },
     "repairPlan": "ROADMAP-HEX-00-REPAIR-PLAN.md",
