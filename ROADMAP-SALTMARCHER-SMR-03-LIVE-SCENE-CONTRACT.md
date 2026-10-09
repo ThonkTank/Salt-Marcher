@@ -57,6 +57,10 @@ Grenze dieser Fassung. Der zweite R03-Wiederreview in Kommentar 6088109268
 forderte exakte Target-/Survivor-Bindung, post-Publish Slot-Revisionssemantik
 und die TN-05/TN-27-Auflösung; Campaign/Data-Entscheidung 6088120065 bindet
 transportierte Tokens als nicht ausführbare Evidenz und lokales Import-Rebinding.
+Der dritte R03-Wiederreview 6088191105 fand die verbliebene Export-
+Zustandskollision und den absent-Provider-Bootstrap; die präzisierte
+Campaign/Data-Entscheidung 6088202673 bindet die drei Zustände sowie den
+providerunabhängigen, nicht ausführbaren Core-Quarantäne-Slot.
 
 ## Umfang und Nichtziele
 
@@ -206,12 +210,13 @@ einen strukturierten Pending-Zustand. Namen sind nicht identitätsstiftend.
   Identität als `[UNKNOWN]`; nur ein noch tatsächlich recoverable Trash-Objekt
   darf verlinkt bleiben. Undo darf die CharacterId weder wiederherstellen noch
   erneut referenzierbar machen; erneute Anlage erzeugt eine neue CharacterId.
-  Ein app-kontrollierter Export nach Lösch-Publish übernimmt höchstens
-  nichtrekonstruktive Tombstone-/Closure-Belege und niemals gelöschten Payload
-  oder quarantined Live-Referenzen. Ein älterer, vor der Löschung ausdrücklich
-  vom GM erzeugter Export bleibt extern und nicht widerrufbar; sein Import
-  erzeugt eine neue unabhängige Campaign mit neuen remappten Identitäten und
-  ist keine Resurrection in der gelöschten Campaign.
+  Exportfähigkeit richtet sich ausdrücklich nach dem unten definierten
+  Delete-Closure-Status: `closure-pending` darf ausschließlich opaque offline
+  Quarantäne geschlossen mitführen; erst `permanent-purge-finalized` verbietet
+  jeden rekonstruierbaren app-kontrollierten Payload. Ein älterer, vor der
+  Löschung ausdrücklich vom GM erzeugter Export bleibt extern und nicht
+  widerrufbar; sein Import erzeugt eine neue unabhängige Campaign mit neuen
+  remappten Identitäten und ist keine Resurrection in der gelöschten Campaign.
 - Adventuring-Day-Budget und -Fortschritt sind reine, revisionierte Party-
   Berechnungen. Eigene Eingabezeilen bleiben transient und verändern weder
   Roster noch aktuelle Party oder Scene-Zuordnung.
@@ -402,35 +407,62 @@ Survivor-Hash- sowie Outcome-Belege. After-/Survivor-Belege müssen zeigen, dass
 genau die Target-Unit fehlt und alle übrigen Records derselben Payloadklasse
 byte- und semantisch unverändert blieben.
 
-PartyCommandHistory und immutable Receipts behalten nach Löschung nur
-nichtrekonstruktive Belege. Rekonstruktive Vorher-/Nachher-Fakten, Profile, XP,
-Quick Fields, Loot- oder Medienpayloads werden in History, Recovery, Staging,
-Temp, retained storage und app-kontrollierten Exportkopien entfernt oder
-anonymisiert, ohne den erklärenden `[UNKNOWN]`-Fakt umzuschreiben. Erst die
-vollständige semantische und Byte-Closure erlaubt physischen Payload- und
-Tombstone-Purge. Recovery rollt vor Publish alles zurück und finalisiert danach
-nur vorwärts; Retry wiederholt weder Party-Löschung noch abhängige Effekte.
+PartyCommandHistory und immutable Receipts projizieren ab logischer Löschung
+nur nichtrekonstruktive Belege. Verfügbare rekonstruierbare Vorher-/Nachher-
+Fakten, Profile, XP, Quick Fields, Loot- oder Medienpayloads werden in History,
+Recovery, Staging, Temp, retained storage und app-kontrollierten Exportkopien
+entfernt oder anonymisiert, ohne den erklärenden `[UNKNOWN]`-Fakt umzuschreiben.
+Noch unavailable Bytes bleiben bis Closure ausschließlich offline quarantined
+und dürfen nur im unten definierten `closure-pending` Complete mitgeführt
+werden. Erst die vollständige semantische und Byte-Closure erlaubt physischen
+Payload- und Tombstone-Purge sowie den Status `permanent-purge-finalized`.
+Recovery rollt vor Publish alles zurück und finalisiert danach nur vorwärts;
+Retry wiederholt weder Party-Löschung noch abhängige Effekte.
 
-Solange Closure oder Purge pending ist, bleibt Complete Export nach TN-27 nur
-dann zulässig, wenn er sämtliche quarantined opaken Bytes zusammen mit
-Tombstone, Manifest, Scope-/Hashbelegen und Erasure-Vertrag vollständig und
-verifiziert einschließt. Sie bleiben im Paket und nach Import quarantined,
-können nie live aufgelöst werden und müssen vor Aktivierung der betroffenen
-Capability lokal geschlossen werden. Kann diese geschlossene Quarantäne nicht
-vollständig bewiesen werden, ist Complete blockiert; nur ein ausdrücklich
-gewählter Salvage-Export darf genau manifestierte quarantined Bytes auslassen
-und nennt jede Identität und Auswirkung.
+Der veröffentlichte Receipt-/UI-Status unterscheidet drei Zustände:
+
+1. `logical-delete/closure-pending`: Party-/Live-Identität ist tombstoned;
+   verbliebene Bytes existieren ausschließlich opaque, offline und quarantined.
+   Campaign Complete bleibt nach TN-27 nur zulässig, wenn es alle diese Bytes
+   zusammen mit Tombstone, Manifest, Scope-/Hashbelegen und nicht ausführbarer
+   Erasure-Evidenz vollständig und verifiziert einschließt. Es behauptet keinen
+   finalisierten Purge.
+2. `permanent-purge-finalized`: semantische und Byte-Closure sind bewiesen;
+   kein app-kontrollierter Live-, Trash-, Recovery-, Staging-, Temp-, retained-
+   oder Export-Payload kann den Character rekonstruieren. Campaign Complete ist
+   für den dann aktuellen kanonischen Campaign-Zustand zulässig und enthält nur
+   nichtrekonstruktive `[UNKNOWN]`-/Receipt-Evidenz. Ein separat angeforderter
+   Character-/Closure-/History-Export heißt ausschließlich `evidentiary`, nie
+   Complete, und suggeriert keine Wiederherstellbarkeit.
+3. `prior-external-gm-export`: die vor der Löschung erzeugte externe Kopie ist
+   nicht widerrufbar, aber nur Evidenz/Importquelle und verleiht weder Restore-
+   noch Purge-Berechtigung für die Quell-Campaign.
+
+Kann die geschlossene pending Quarantäne nicht vollständig bewiesen werden,
+ist Complete blockiert; nur ein ausdrücklich gewählter Salvage-Export darf
+genau manifestierte quarantined Bytes auslassen und nennt jede Identität und
+Auswirkung.
 
 Ein exportierter ErasureToken ist ausschließlich nicht ausführbare Provenienz-
-und Closure-Evidenz. Nach vollständigem Campaign-ID-Remap validiert der
-Zielhost die importierten quarantined Bytes gegen sein neues Registry-Snapshot
-und mintet lokal einen neuen, eng an Target-Campaign, Target-Character,
-Target-Owner und Target-Slot gebundenen Token. Der Source-Token wird niemals
-ausgeführt oder auf den Zielslot umgebogen; Source-Slots, externe Exportpakete
-und fremde Campaigns bleiben unerreichbar. Ohne erfolgreiche lokale Rebind-/
-Quarantänevalidierung scheitert Complete Import fail-closed; Salvage bleibt
-getrennt offengelegt. Frühere GM-kontrollierte Exporte bleiben die oben
-beschriebene externe, nicht widerrufbare Ausnahme.
+und Closure-Evidenz. Import legt opaque Bytes und portable, nicht ausführbare
+Slotbeschreibung zunächst in einen Core-eigenen providerunabhängigen
+`RetainedQuarantineSlot`. Dieser ist kein Capability-Owner, besitzt keine
+Fachprojektion und darf weder Erasure ausführen noch einen Owner simulieren; er
+hält nur immutable validierte Quarantäne-Evidenz und Remap-Closure.
+
+Nach vollständigem Campaign-/Character-/Command-ID-Remap und erfolgreicher
+lokaler Installation des Target-Owners validiert dieser die Bytes gegen das
+neue Registry-Snapshot und mintet lokal einen neuen, eng an Target-Campaign,
+Target-Character, Target-Owner und Target-Slot gebundenen Token. Der Source-
+Token wird niemals ausgeführt oder umgebogen; Source-Slots, externe Pakete,
+gleichnamige/sibling Campaigns und fremde Slots bleiben unerreichbar. Bei
+absent, disabled oder ersetztem Provider bleiben Campaign und unabhängige
+Workflows nutzbar, während Capability-Aktivierung und Tombstone-Auflösung
+fail-closed bleiben. Installation, Reaktivierung oder Providerwechsel löst
+weder Aktivierung, Löschung, Restore noch Token-Minting ohne ausdrücklichen
+validierten Rebind aus. Beschädigte oder unverifizierbare Quarantäne führt nur
+zu atomarer Ablehnung beziehungsweise getrennt offengelegtem Salvage, niemals
+stillem Complete.
 
 Restore behält Campaign-, Character-, LiveScene-, Masken- und
 Referenzidentitäten. Import erzeugt eine neue Campaign und remappt jede
@@ -554,14 +586,21 @@ keine Schreibfähigkeit und keine GM-private oder mechanische Information.
     erhaltene Metadaten und Auswirkung nennt; kein stilles Downgrade. Import und
     Recovery eines Salvage bleiben als Salvage erkennbar, bewahren zulässige
     Identitäten/Metadaten und initialisieren keine fehlende Session still.
-    Pending Delete-Closure erlaubt Complete nur mit vollständig verifizierten
-    opaken quarantined Bytes plus Tombstone/Manifest/Erasure-Vertrag; Import
-    hält sie offline, behandelt Source-Tokens als nicht ausführbare Evidenz und
-    mintet erst nach Campaign-Remap und lokaler Registry-/Quarantänevalidierung
-    einen eng gebundenen Target-Token. Ohne sichere lokale Bindung scheitert
-    Complete Import; Salvage darf nur manifestierte Bytes auslassen. Ein vor
-    der Löschung erzeugter externer GM-Export darf als neue remappte Campaign
-    importiert werden und mutiert die gelöschte Quell-Campaign nicht.
+    `closure-pending` erlaubt Campaign Complete nur mit vollständig
+    verifizierten opaken quarantined Bytes plus Tombstone/Manifest/Evidenz;
+    `permanent-purge-finalized` erlaubt Campaign Complete nur ohne Personen-
+    Payload und mit nichtrekonstruktivem `[UNKNOWN]`/Receipt, während ein
+    separater Character-/Closure-Export `evidentiary` heißt. Import hält Bytes
+    im Core-RetainedQuarantineSlot offline und Source-Tokens nicht ausführbar.
+    Mit Target-Provider `present`, `disabled`, `absent` und `replaced` bleiben
+    Campaign und unabhängige Workflows nutzbar; erst installierter validierter
+    Target-Owner mintet nach Remap den Target-only Token. Alte/fremde Slot- und
+    Token-IDs, Source-/sibling Campaigns und fremde Slots bleiben unverändert;
+    Providerwechsel aktiviert, löscht oder restored nichts implizit. Ohne
+    sichere lokale Bindung scheitert Capability-Aktivierung fail-closed;
+    beschädigte Quarantäne führt nur zu atomarer Ablehnung oder Salvage. Ein
+    vor der Löschung erzeugter externer GM-Export darf als neue remappte
+    Campaign importiert werden und mutiert die Quell-Campaign nicht.
 15. Name-only-Erstellung, zwei gleichnamige Rosterfiguren und das Leeren jedes
     optionalen Profilfelds erhalten stabile Identitäten, echte Abwesenheit und
     inaktive Mitgliedschaft ohne Scene-/Travel-Nebenwirkung.
