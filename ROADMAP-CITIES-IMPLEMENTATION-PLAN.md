@@ -1039,3 +1039,5 @@ CITY-00-I46-PLAN-CLEAN-P46 Start 2026-10-09T19:30:33.307996+00:00; Aufräumplan:
 I46-Plan: [FTG-Bewohner-Massenbearbeitung](ROADMAP-CITIES-CITY00-FTG-BULK-EDIT-PLAN.md).
 
 CITY-00-I46-PLAN-CLEAN-I46 Start 2026-10-09T19:30:36.312160+00:00; Originalprobe mit vorhandener QA-Karte und Field-before-Schutz verlinkt.
+
+CITY-00-I46-PLAN-CLEAN-R46 Start 2026-10-09T19:30:39.201603+00:00; Planlink/JSON und klar begrenzter Bewohner-/Tabschutz geprüft. Originalprobe kann beginnen.
