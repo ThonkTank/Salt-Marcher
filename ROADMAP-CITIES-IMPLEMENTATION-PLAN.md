@@ -77,3 +77,13 @@ Aufräumprüfungen: keine parallele Zustands-/Undoquelle, keine Kopie gemeinsame
 ## Planungsergebnis und nächste Grenze
 
 Alle bestehenden CTY-Pflichten sind zugeordnet; der neue Dreiprodukt-Funktionsauftrag ist zusätzlich explizit eingeplant. CITY-P01 schließt keine Produkt- oder Referenzabnahme. Nächster Lauf: getrennte Planbereinigung (CP/CI/CR), anschließend CITY-00-I01 Originalinventur und Katalogerweiterung. CITY-01 wartet auf die Referenzgalerie und HEX-05. Die Kollegenarbeit an HEX-00 bleibt unangetastet.
+
+## Aufräumplan CITY-P01-CP
+
+Start 09.10.2026 nach geprüftem Planungspush 37181e1. Fokus: Plan als ausführbare, widerspruchsfreie Grundlage.
+
+1. CLP-01: Der CO-Inventarbegriff besitzt noch kein Schema. In CI feste Felder/Status und unveränderliche Kennungen definieren, damit dokumentierte Kandidaten niemals direkte Abnahmen vortäuschen.
+2. CLP-02: Gemeinsame Abhängigkeiten sind genannt, aber der Übergabevertrag fehlt. In CI Kamera/Transform, stabile Dokumentkennungen, Befehls-/Journalgrenze und Zoom-Hit-Test-Vertrag als prüfbare HEX-05-Übergabe festlegen.
+3. CLP-03: Vollständige Funktionsgleichwertigkeit benötigt eine Abschlussregel jenseits der 24 alten CTY-Fälle. In CI Vollständigkeits-/Abdeckungsreview des Dreiproduktinventars und messbare Bedienverbesserung definieren.
+
+Ergebnis: drei konkrete Planungsschwächen; kein Produktcode betroffen. Nächster eigener Lauf CITY-P01-CI; danach CITY-P01-CR prüft jeden Punkt gegen den geänderten Plan.
