@@ -443,3 +443,7 @@ CITY-00-I26-CP Start 2026-10-09T14:53:12.962042+00:00; Plan: abgeleiteten Snapsh
 CITY-00-I26-CI Start 2026-10-09T14:53:41.596934+00:00; Ergebnis: Snapshot aus acceptance auf64 Pflichten und getrennte CO-COK-0003/0012 aktualisiert. Keine Rawdatei oder historische Kennung verändert; Originalwirkung und sämtliche Produktabnahmen bleiben offen.
 
 CITY-00-I26-CR Start 2026-10-09T14:54:14.332536+00:00; Ergebnis: Snapshot und acceptance stimmen für beide unabhängigen Fähigkeiten überein,64 CO-/24 CTY-Pflichten offen. Alle Manifesthashes und Inventarbelegziele geprüft; fremde JSON-Wurzeln erhalten. Keine verbleibende Lücke im Aufräumumfang. Normaler Prozessabschluss und GUI-Rückgabe verifiziert; eigener Stadtproduktcode wartet auf HEX-05. Nächste getrennte Planung untersucht angebotene Waldwirkung im Browser ohne native Sitzung.
+
+## CITY-00-I27-P: Waldwirkung und reale Geometrieausgabe
+
+Start 2026-10-09T14:54:59.446908+00:00. Eigene New-River-Kopie, aktuelle Show-trees/Show-forests-Flags lesen. Bekannten Zugang über Show trees aktivieren, echte JSON-Ausgabe bei Forest off/on empfangen und alle14 Gruppen vergleichen. Waldwirkung visuell und Dateiumfang getrennt sichern; keine internen Appdaten lesen. Bei fehlender Wirkung höchstens zwei Versuche. Beide eigenen Flags auf Ausgangswert zurücksetzen und eigene Kopie schließen; Originaltabs erhalten. Nativer Slot bleibt beim Kollegen. Separate I/R und Aufräumen P/I/R; CITY-01 weiterhin erst nach HEX-05.
