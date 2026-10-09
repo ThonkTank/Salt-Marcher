@@ -9,3 +9,5 @@ I44 verschiebt die fachlich falschen aktiven Verweise zu CO14/CO18. Ursprünglic
 CO14 erhält das tatsächliche Profil und drei benannte Beziehungstypen als Teilbeleg; keine Bearbeitungs-/Speicherwirkung behaupten. CO18 erhält den Stundenwechsel und I42-Arbeits-/Ruhetagsfolge, mit weiterhin offenen vollständigen Tagesplänen, großen Zeitsprüngen, Persistenz und Kalendersemantik. Beobachtungszeit stammt aus den Originalmanifesten, nicht aus dem heutigen Korrekturzeitpunkt.
 
 R44 prüft jeden veränderten Verweis gegen Rawhash und AX-Inhalt, I18-Erhaltung, 65 CO/24 CTY offen sowie unveränderte fremde JSON-Wurzeln. Nach Planung, Umsetzung und Review jeweils getrennte Aufräum-P/I/R: Links, lesbare Texte, keine duplizierte fachliche Datenhaltung, Rohbelege unverändert. Keine GUI, keine Produktquellen-/APIänderung.
+
+Reviewabschluss: lokale Zuordnungsprüfung bestanden; keine funktionale Produktfreigabe und kein fremder Reviewer. Gebäudebedarfe und Massenbearbeitung bleiben eigene offene Originalprüfungen.
