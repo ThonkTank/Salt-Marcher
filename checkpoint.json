@@ -4174,19 +4174,17 @@
     "state": "city01_model_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-01-PREP-I01",
-      "kind": "model_implementation",
-      "startedAt": "2026-10-09T16:28:02.695114+00:00",
-      "focus": "Natives Meterformat und City-Codec implementieren",
-      "state": "completed",
-      "result": "Reines natives CityDocument/Codec implementiert: lokale Meter, stabileIDs, Straßenknoten/-verlauf, Platz/Grundstück/Viertel, Grundriss/Innenhof/Hauspose und strikte Referenz-/Geometrieprüfung. Keine fremde Eingabemutation, keine unbekannten Feldverluste; gemeinsame Typen/Topologie wiederverwendet. Typprüfung,269Tests einschließlich10 gezielter City-Fälle und Build grün. Kein Atlasadapter, keine History-/Dateiaktion oder Host-/Paritätsfreigabe; Fachreview folgt.",
-      "finishedAt": "2026-10-09T16:35:46.547763+00:00",
-      "evidence": "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-model-20261009/implementation.json"
-    },
-    "nextRun": {
       "id": "CITY-01-PREP-R01",
       "kind": "implementation_review",
-      "focus": "Datenvertrag und numerische/Referenzgrenzen gegen Plan unabhängig prüfen"
+      "startedAt": "2026-10-09T16:40:19.778135+00:00",
+      "focus": "Stadtmodell gegen strikte Datenverlust-/Formatgrenzen reviewen",
+      "state": "completed",
+      "result": "Zwei konkrete Reviewlücken belegt: Listen-Zusatzfelder gehen im Serializer verloren (CITY-MODEL-R01-01); sparse Listen führen zu unverständlichem TypeError statt Formatfehler (CITY-MODEL-R01-02). Gegen strikten Datenvertrag ist damit Nachbesserung nötig. Bestehende Meter-/Graph-/Posefälle bleiben belegt, keine Host-/Paritätsfreigabe."
+    },
+    "nextRun": {
+      "id": "CITY-01-PREP-N01",
+      "kind": "implementation_repair",
+      "focus": "Dichte native Listen ohne Zusatz-/Accessorfelder prüfen und Regressionen ausführen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
