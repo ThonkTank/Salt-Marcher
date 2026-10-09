@@ -4203,17 +4203,17 @@
     "state": "city01_model_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-01-PREP-PLAN-CLEAN-R02",
-      "kind": "cleanup_review",
-      "startedAt": "2026-10-09T16:55:07.020488+00:00",
-      "focus": "Befehlsplan gegen reale Schnittstellen und Abnahmegrenzen prüfen",
-      "state": "completed",
-      "result": "Plan vollständig geprüft: gemeinsame History, einmaliger Besitzer, strikte Konversion und konkrete Mehrbesitzerregressionen; keine Restlücke im Plan-Aufräumumfang."
-    },
-    "nextRun": {
       "id": "CITY-01-PREP-I02",
       "kind": "implementation",
-      "focus": "Reine CitySource und codecvalidierte CityDocumentchanges auf gemeinsamer AtlasHistory implementieren"
+      "startedAt": "2026-10-09T16:55:47.454518+00:00",
+      "focus": "Reine CitySource und geprüfte Citychanges implementieren",
+      "state": "completed",
+      "result": "Gemeinsame History mit sechs echten Besitzerregressionen implementiert; Typprüfung, Tests und Build bestanden. Review folgt."
+    },
+    "nextRun": {
+      "id": "CITY-01-PREP-R03",
+      "kind": "review",
+      "focus": "Stadtbefehle unabhängig gegen Plan und Konflikt-/Kopiergrenzen prüfen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
