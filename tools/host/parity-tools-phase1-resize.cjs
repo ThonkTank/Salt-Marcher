@@ -79,6 +79,19 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out, checks }) =>
     const beforeHash = hash();
     let dialog = await openDialog();
     assert.match(await dialog.innerText(), /nicht rückgängig gemacht/);
+    const topInput = setting(dialog, "Oben in Feldern").locator("input");
+    const bottomInput = setting(dialog, "Unten in Feldern").locator("input");
+    await topInput.fill("999");
+    await topInput.press("Tab");
+    assert.equal(await topInput.inputValue(), "64");
+    await bottomInput.fill("999");
+    await bottomInput.press("Tab");
+    assert.equal(await bottomInput.inputValue(), "56");
+    await bottomInput.fill("0");
+    await bottomInput.press("Tab");
+    await topInput.fill("-1");
+    await topInput.press("Tab");
+    assert.equal(await topInput.inputValue(), "0");
     await setting(dialog, "Oben in Feldern").locator("input").fill("1");
     await dialog.getByRole("button", { name: "Abbrechen" }).click();
     assert.deepEqual(await editor(), before);
@@ -115,6 +128,7 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out, checks }) =>
     fs.writeFileSync(baseline, JSON.stringify({ document: saved, hash: hash() }, null, 2));
     await page.screenshot({ path: path.join(out, "resize-saved.png") });
     checks.push("DD-038 Menu opens four-margin dialog with non-Undo warning; Cancel and X preserve map and history");
+    checks.push("DD-038 resize inputs cap per edge at 64 and resulting dimension at 128 or minimum 8");
     checks.push("DD-038 Top +1 moves Building and object, saves 8×9, and clears older Undo/Redo");
   }
   async function reopen() {

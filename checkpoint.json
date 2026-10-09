@@ -1198,12 +1198,21 @@
         "measured": "Oben +1 vor Cancel/X: beide 8×8 und Rohkarten bytegleich; Dialog erneut bei 0. OK-Kontrolle: 8×9 und Objekt um 256 native Einheiten verschoben.",
         "state": "original_measured_host_candidate_review_pending"
       },
+      "resizeInputCandidate": {
+        "cases": "DD-038.02–.05, Eingabefelder",
+        "buildSha256": "bc467f3a43ce2c615f72d40e2ccb66bd8d4e9d9ab9b3bb49ece0bc78c9463d56",
+        "report": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-input-20261009/implementation.md",
+        "hostEdit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-input-host-20261009/evidence/1791517451651-parity-tools-phase1-resize-edit/result.json",
+        "hostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-input-host-20261009/evidence/1791517456955-parity-tools-phase1-resize-reopen/result.json",
+        "coreTests": 186,
+        "state": "partial_candidate_review_pending"
+      },
       "phaseGate": "open"
     },
     "plan": "ROADMAP-PARITY-PLAN.md",
     "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
     "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
-    "nextRun": "ROADMAP-PARITY-TOOLS.md Phase 1: DD-038 rechte/untere/linke Beschnitte, Smart-Tile-Zellen, Terrain und Randgrenzen direkt mit dem Host paaren; danach DD-038 unabhängig reviewen. DD-008 benötigt den unabhängigen Endbuild-Review, gemeinsame Original-/Host-Geometrie und kombinierte History-/Mehrgeschossfolge. Grafikpaare für DD-006/007 sowie offene DD-002-Grenz- und Löschpfade vor dem 77-Fälle-Endreview nachholen. Die übrigen Pflichtfälle folgen in Roadmap-Reihenfolge.",
+    "nextRun": "ROADMAP-PARITY-TOOLS.md Phase 1: DD-038 rechte/untere/linke Beschnitte, Smart-Tile-Zellen und Terrain direkt mit dem Host paaren; die auf 12×8 gemessenen Eingabegrenzen an weiteren Ausgangsgrößen kontrollieren, danach DD-038 unabhängig reviewen. DD-008 benötigt den unabhängigen Endbuild-Review, gemeinsame Original-/Host-Geometrie und kombinierte History-/Mehrgeschossfolge. Grafikpaare für DD-006/007 sowie offene DD-002-Grenz- und Löschpfade vor dem 77-Fälle-Endreview nachholen. Die übrigen Pflichtfälle folgen in Roadmap-Reihenfolge.",
     "note": "P7-1, P7-3 und P7-4 sind in getrennten Edit-/Neuöffnungspaaren reviewt. P7-2 ist auf ausdrückliche Nutzeranweisung übersprungen, nicht physisch geprüft. Phase-7-Fachphasentor mit dieser Ausnahme bestanden; Produktbuild unverändert. Hex-Atlas- und Stadtstand erhalten.",
     "phase2Plan": "ROADMAP-PARITY-PHASE2-PLAN.md",
     "candidateBuildSha256": "b321128188b944c3324594663a410acfd84863f17860f637b9ed2e6ecc33b466",

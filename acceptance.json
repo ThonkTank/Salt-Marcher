@@ -112342,6 +112342,23 @@
           ],
           "measuredScope": "Oben +1 verschiebt Building und Objekt um ein Feld, 8×8 → 8×9; Save und bytegleiche frische Host-Neuöffnung erneut bestanden.",
           "remaining": "Oberer Beschnitt und weitere Entity-Arten offen."
+        },
+        "followUpPhase1InputLimits": {
+          "state": "input_candidate_review_pending",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "hostBuildSha256": "bc467f3a43ce2c615f72d40e2ccb66bd8d4e9d9ab9b3bb49ece0bc78c9463d56",
+          "originalEvidence": [
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/tests/native-resize-limits.json",
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/tests/native-resize-negative.json",
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/tests/native-resize-paired.json"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-input-20261009/implementation.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-input-host-20261009/evidence/1791517451651-parity-tools-phase1-resize-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-input-host-20261009/evidence/1791517456955-parity-tools-phase1-resize-reopen/result.json"
+          ],
+          "measuredScope": "Original 12×8: oben -1 → 0 und oben 999 → 64 bei Gegenrand 0; Host-GUI 8×8 zeigt beide Grenzen nach Tab.",
+          "remaining": "Oberer Crop, weitere Ausgangsgrößen und unabhängiger Review offen."
         }
       },
       {
@@ -112415,7 +112432,24 @@
           ],
           "gap": "Direkte Original-Dateiwirkung und gleicher Host-Commit für einen rechten Rand fehlen. Acht-Slot-Terrain-Hostlauf zweimal durch Testnavigation vor Resize abgebrochen; keine neue Abnahme."
         },
-        "inventoryNote": "Terrain-Resize-IL: beide Masken erhalten neue Randpixel als RGBA (255,0,0,0), alte Samples werden um linke/obere Randfelder verschoben und außerhalb abgeschnitten; History wird nach Größenänderung geleert. Integrierter Helfer und Kerntest vorhanden, direkte Original-/Host-Randbyte-, Bild- und Frischöffnungspaarung offen."
+        "inventoryNote": "Terrain-Resize-IL: beide Masken erhalten neue Randpixel als RGBA (255,0,0,0), alte Samples werden um linke/obere Randfelder verschoben und außerhalb abgeschnitten; History wird nach Größenänderung geleert. Integrierter Helfer und Kerntest vorhanden, direkte Original-/Host-Randbyte-, Bild- und Frischöffnungspaarung offen.",
+        "followUpPhase1InputLimits": {
+          "state": "input_candidate_horizontal_host_gui_open",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "hostBuildSha256": "bc467f3a43ce2c615f72d40e2ccb66bd8d4e9d9ab9b3bb49ece0bc78c9463d56",
+          "originalEvidence": [
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/tests/native-resize-limits.json",
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/tests/native-resize-negative.json",
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/tests/native-resize-paired.json"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-input-20261009/implementation.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-input-host-20261009/evidence/1791517451651-parity-tools-phase1-resize-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-input-host-20261009/evidence/1791517456955-parity-tools-phase1-resize-reopen/result.json"
+          ],
+          "measuredScope": "Original 12×8: nach links -4 wird rechts -4 zu 0 normalisiert; die Host-Kernfunktion bildet die Paarregel ab.",
+          "remaining": "Rechte Host-GUI-Eingabe und rechte Crop-Wirkung direkt prüfen; unabhängiger Review offen."
+        }
       },
       {
         "id": "DD-038.04",
@@ -112488,7 +112522,24 @@
           ],
           "gap": "Direkte Original-Dateiwirkung und gleicher Host-Commit für einen unteren Rand fehlen. Acht-Slot-Terrain-Hostlauf zweimal durch Testnavigation vor Resize abgebrochen; keine neue Abnahme."
         },
-        "inventoryNote": "Terrain-Resize-IL: beide Masken erhalten neue Randpixel als RGBA (255,0,0,0), alte Samples werden um linke/obere Randfelder verschoben und außerhalb abgeschnitten; History wird nach Größenänderung geleert. Integrierter Helfer und Kerntest vorhanden, direkte Original-/Host-Randbyte-, Bild- und Frischöffnungspaarung offen."
+        "inventoryNote": "Terrain-Resize-IL: beide Masken erhalten neue Randpixel als RGBA (255,0,0,0), alte Samples werden um linke/obere Randfelder verschoben und außerhalb abgeschnitten; History wird nach Größenänderung geleert. Integrierter Helfer und Kerntest vorhanden, direkte Original-/Host-Randbyte-, Bild- und Frischöffnungspaarung offen.",
+        "followUpPhase1InputLimits": {
+          "state": "input_candidate_review_pending",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "hostBuildSha256": "bc467f3a43ce2c615f72d40e2ccb66bd8d4e9d9ab9b3bb49ece0bc78c9463d56",
+          "originalEvidence": [
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/tests/native-resize-limits.json",
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/tests/native-resize-negative.json",
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/tests/native-resize-paired.json"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-input-20261009/implementation.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-input-host-20261009/evidence/1791517451651-parity-tools-phase1-resize-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-input-host-20261009/evidence/1791517456955-parity-tools-phase1-resize-reopen/result.json"
+          ],
+          "measuredScope": "Original 12×8: nach oben 64 wird unten 999 zu 56 normalisiert; Host-GUI 8×8 zeigt denselben Gegenrandwert nach Tab.",
+          "remaining": "Untere Crop-Wirkung, weitere Ausgangsgrößen und unabhängiger Review offen."
+        }
       },
       {
         "id": "DD-038.05",
@@ -112561,7 +112612,24 @@
           ],
           "gap": "Das Original verwirft dabei 4 von 10 Tile-Zellen dauerhaft; dem Editor fehlt ein getrenntes Tile-Zellmodell für den Hostvergleich. Acht-Slot-Terrain-Hostlauf zweimal durch Testnavigation vor Resize abgebrochen; keine neue Abnahme."
         },
-        "inventoryNote": "Terrain-Resize-IL: beide Masken erhalten neue Randpixel als RGBA (255,0,0,0), alte Samples werden um linke/obere Randfelder verschoben und außerhalb abgeschnitten; History wird nach Größenänderung geleert. Integrierter Helfer und Kerntest vorhanden, direkte Original-/Host-Randbyte-, Bild- und Frischöffnungspaarung offen."
+        "inventoryNote": "Terrain-Resize-IL: beide Masken erhalten neue Randpixel als RGBA (255,0,0,0), alte Samples werden um linke/obere Randfelder verschoben und außerhalb abgeschnitten; History wird nach Größenänderung geleert. Integrierter Helfer und Kerntest vorhanden, direkte Original-/Host-Randbyte-, Bild- und Frischöffnungspaarung offen.",
+        "followUpPhase1InputLimits": {
+          "state": "input_candidate_horizontal_host_gui_open",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "hostBuildSha256": "bc467f3a43ce2c615f72d40e2ccb66bd8d4e9d9ab9b3bb49ece0bc78c9463d56",
+          "originalEvidence": [
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/tests/native-resize-limits.json",
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/tests/native-resize-negative.json",
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/tests/native-resize-paired.json"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-input-20261009/implementation.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-input-host-20261009/evidence/1791517451651-parity-tools-phase1-resize-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-input-host-20261009/evidence/1791517456955-parity-tools-phase1-resize-reopen/result.json"
+          ],
+          "measuredScope": "Original 12×8: links -5 → -4, 999 → 64 und -1,5 → -2; die Host-Kernfunktion bildet diese Werte ab.",
+          "remaining": "Linke Host-GUI-Eingabe, Smart-Tile-Crop und unabhängiger Review offen."
+        }
       },
       {
         "id": "DD-038.06",
