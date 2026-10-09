@@ -4174,17 +4174,17 @@
     "state": "city01_model_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-01-PREP-R01",
-      "kind": "implementation_review",
-      "startedAt": "2026-10-09T16:40:19.778135+00:00",
-      "focus": "Stadtmodell gegen strikte Datenverlust-/Formatgrenzen reviewen",
-      "state": "completed",
-      "result": "Zwei konkrete Reviewlücken belegt: Listen-Zusatzfelder gehen im Serializer verloren (CITY-MODEL-R01-01); sparse Listen führen zu unverständlichem TypeError statt Formatfehler (CITY-MODEL-R01-02). Gegen strikten Datenvertrag ist damit Nachbesserung nötig. Bestehende Meter-/Graph-/Posefälle bleiben belegt, keine Host-/Paritätsfreigabe."
-    },
-    "nextRun": {
       "id": "CITY-01-PREP-N01",
       "kind": "implementation_repair",
-      "focus": "Dichte native Listen ohne Zusatz-/Accessorfelder prüfen und Regressionen ausführen"
+      "startedAt": "2026-10-09T16:40:57.836912+00:00",
+      "focus": "Listen-Datenverlust und unkontrollierte Sparsefehler beheben",
+      "state": "completed",
+      "result": "Gemeinsame Listenprüfung lehnt Zusatzfelder, Sparse-Arrays, berechnete Indizes und Array-Unterklassen kontrolliert ab. Beide R01-Lücken behoben; Regression umfasst alle sechs Sammlungen, verschachtelte Konturen, Getter und Zusatzfeld statt fehlendem Index. Typprüfung,276Tests (11 City-Fälle) und Build grün; keine gemeinsame Atlasquelle verändert."
+    },
+    "nextRun": {
+      "id": "CITY-01-PREP-R02",
+      "kind": "implementation_review",
+      "focus": "R01-Gegenproben und vollständigen Modellvertrag erneut prüfen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
