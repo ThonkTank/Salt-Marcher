@@ -133,11 +133,11 @@ synthetische leere Scene verdeckt.
 
 Nach erfolgreicher Initialisierung existiert immer genau eine Primary Scene.
 Wenn keine Partyfigur aktiv ist, bleibt eine leere Primary Scene verwendbar.
-Die Primary Scene kann nicht direkt gelöscht werden. Wird sie durch einen
-bestätigten Rejoin vollständig leer, darf derselbe atomare Befehl die
-Primary-Rolle auf seine ausdrücklich benannte, bevölkerte Ziel-Scene
-übertragen und die leere Quelle entfernen. Eine leere letzte Primary Scene
-wird nie entfernt.
+Die Primary Scene kann nicht direkt gelöscht werden. Wird sie durch eine
+bestätigte Deaktivierung, permanente Löschung, einen Move oder Rejoin leer,
+entscheidet der unten festgelegte Empty-Scene-Cleanup in derselben
+Party-/Scene-Veröffentlichungsgrenze über Primary, Focus, Clock und Retirement.
+Eine leere letzte Primary Scene wird nie entfernt.
 
 ### Party und Scene-Zuordnung
 
@@ -181,6 +181,53 @@ wird nie entfernt.
 - Batch-Auswahl, Aktivierung, Deaktivierung und Move validieren die vollständige
   Auswahl vor Veröffentlichung, führen erwartete Party- und Scene-Revisionen
   mit und wiederholen einen unbekannten Ausgang nicht blind.
+
+#### Deterministischer Empty-Scene-Cleanup
+
+Nach jeder autoritativen Membership-Mutation, die eine Source Scene leeren
+kann—Deaktivierung, permanente Löschung, Move oder Rejoin—enthält derselbe
+Command ein revisioniertes `SceneCleanupPlan`; der veröffentlichte Receipt
+bindet den vollständigen Membership-, Primary-, Focus-, Clock- und
+Retirement-Ausgang. Prepared-Import-Drafts sind bis zum ersten bestätigten
+Teilnehmer-Move eine getrennte, nicht aktive Lifecycle-Klasse: Sie sind weder
+Primary-/Focus-Kandidat noch ein Grund, eine aktive leere Scene zu behalten.
+
+- Enthält die Source nach der Mutation noch mindestens eine aktive Figur,
+  bleibt sie dieselbe aktive LiveScene. Primary und Focus bleiben erhalten,
+  ihre SourceClock wird weder archiviert noch finalisiert und Scene-weite
+  Masken-/Ambience-/Weather-/Shop-Zustände werden nicht suspendiert. Ein
+  Teil-Move reconciled nur die tatsächlich bewegten Teilnehmer.
+- Wird die Source leer und bleibt mindestens eine andere bevölkerte Scene,
+  wird die leere Source im selben fachlichen Entscheid retired. War sie
+  Primary, wird `PrimarySuccessorSceneId` deterministisch gebunden: zuerst die
+  ausdrücklich benannte bevölkerte Move-/Rejoin-Target-Scene, sonst eine andere
+  aktuell fokussierte bevölkerte Scene, sonst die Scene der ersten verbleibenden
+  aktiven CharacterId in autoritativer Partyreihenfolge. Eine nicht-Primary
+  Source ändert die bestehende Primary nicht.
+- Zeigt Focus auf eine retired Source, bindet der Cleanupplan den Focus-
+  Nachfolger: bei Move/Rejoin die ausdrücklich benannte bevölkerte Target-
+  Scene, sonst die daraus resultierende Primary. Der Wechsel erhöht die
+  FocusRevision monoton. Focus auf einer anderen gültigen Scene sowie `none`
+  bleiben unverändert. Erst das Retirement archiviert/finalisiert die
+  SourceClock; weder ihr letzter Zeitwert noch eine Scene-weite
+  Consumerprojektion wird als aktueller Target-Zustand übertragen.
+- Ist nach der Mutation keine Partyfigur aktiv, bleibt die bisherige Primary als
+  genau eine leere aktive Primary erhalten. Alle übrigen durch denselben
+  Entscheid leer gewordenen aktiven Scenes werden retired; Prepared-Import-
+  Drafts bleiben davon getrennt. Ein Focus auf die erhaltene Primary bleibt
+  gültig, ein Focus auf eine retired Scene wechselt auf diese Primary.
+- Retirement entfernt keine persistenten Location-Inhalte und inferiert weder
+  Masken-/Encounter-Completion noch Transfer oder Folgen. Verfügbare Consumer
+  archivieren beziehungsweise suspendieren ausschließlich Source-gebundene
+  Masken und Overrides; unavailable Consumer werden sichtbar pending und dürfen
+  weder alte Membership noch die retired Source als live projizieren.
+
+Ein unavailable abhängiger Scene-, Masken- oder Consumer-Owner rollt die
+autoritative Party-Mutation nicht zurück. Der gebundene `SceneCleanupPlan` und
+sein Receipt werden genau einmal veröffentlicht; betroffene Owner reconciliieren
+idempotent nach Restart oder Retry. Bis dahin unterdrücken Tombstone-,
+Membership- und Retirement-Guards jede stale aktive Source-/Teilnehmerprojektion,
+während unbetroffene Scenes nutzbar bleiben.
 
 Während einer nichtdestruktiven abhängigen Reconciliation wird eine betroffene
 Figur nicht aus einer veralteten Scene- oder Maskenprojektion als aktuell
@@ -278,20 +325,26 @@ werden nie still entfernt, ersetzt oder einer anderen Scene zugeordnet.
   unabhängig.
 - Eine CharacterId kann nie gleichzeitig in zwei Scenes erscheinen. Source und
   Target werden gegen dieselbe veröffentlichte Zuordnungsgrenze geprüft.
-- Wird eine nicht-Primary Scene leer, entfernt derselbe bestätigte Rejoin die
-  leere Scene an der gemeinsamen Party-/Scene-Veröffentlichungsgrenze. Ist die
-  leere Quelle Primary, gilt die oben definierte ausdrückliche
-  Primary-Übertragung.
+- Jeder Move oder Rejoin benutzt den oben definierten Empty-Scene-Cleanup. Eine
+  nichtleere Source bleibt aktiv; nur eine tatsächlich leere Source wird
+  retired. Primary- und Focus-Ausgänge folgen vollständig dem gebundenen
+  `SceneCleanupPlan`.
 - Ein Rejoin nennt erwartete Source-/Target-Scene- und SceneClock-Revisionen
   sowie eine ausdrückliche GM-Zeitauflösung: bestätigte Source-Zeit, bestätigte
-  Target-Zeit oder ein manuell bestätigter Auflösungswert. Sie setzt Target-
-  Zeit/Revision vorwärts, archiviert/finalisiert die SourceClock und dreht weder
-  Worldzustand, Geschichte noch eine andere Scene zurück.
+  Target-Zeit oder ein manuell bestätigter Auflösungswert. Target übernimmt
+  exakt diesen bestätigten Zeitwert, auch wenn er vor seinem bisherigen Wert
+  liegt; ausschließlich Target-SceneClockRevision steigt monoton. Bestätigte
+  WorldEffects, Geschichte und andere Scenes bleiben unverändert. Abhängige
+  spätere Widersprüche benutzen den ratifizierten sichtbaren Konfliktmarker-
+  und manuellen Auflösungsworkflow. Nur wenn der Cleanup die Source tatsächlich
+  retired, wird ihre SourceClock archiviert/finalisiert.
 - Derselbe Entscheid beschreibt den alten und neuen Primary- und Focus-Zustand.
   War Source fokussiert, wechselt Focus mit monotoner FocusRevision auf Target;
   war Target fokussiert, bleibt es Target mit neuer Revision; war eine dritte
-  Scene fokussiert, bleibt sie unverändert. Source wird nie wieder `active`
-  projiziert.
+  Scene fokussiert, bleibt sie unverändert. Diese Target-Regel gilt für den
+  vollständigen Rejoin mit Source-Retirement; bei einem Teil-Move bleibt die
+  nichtleere Source samt Focus und Clock aktiv. Eine retired Source wird nie
+  wieder `active` projiziert.
 - Rejoin selbst inferiert weder Masken-/Encounter-Completion noch Transfer und
   löst keine fremden Folgen aus. Bewegte CharacterIds verlassen jede betroffene
   Maske nach der bestätigten Move-Regel. `complete` ist nur als getrennt
@@ -304,8 +357,9 @@ werden nie still entfernt, ersetzt oder einer anderen Scene zugeordnet.
   seine Daten werden unter CommandId/Receipt quarantined und können keine
   lebende SourceScene- oder Teilnehmerreferenz projizieren. Reconnect
   finalisiert genau einmal und erzeugt weder Completion noch Transfer.
-- Source-spezifische AmbienceOverrides sowie Weather-/Shop-Verfügbarkeiten
-  werden archiviert oder suspendiert, niemals auf Target übertragen. Erst eine
+- Bei Source-Retirement werden Source-spezifische AmbienceOverrides sowie
+  Weather-/Shop-Verfügbarkeiten archiviert oder suspendiert, niemals auf Target
+  übertragen. Bei einem Teil-Move bleiben sie Source-gebunden aktiv. Erst eine
   frische Target-Focus-/Scene-Projektion darf Target-Overrides oder Autonomie
   aktivieren; Campaign-weite ManualDecisions bleiben unverändert.
 - Location-Wechsel ersetzt nur abgeleitete Location-Projektionen. Persistente
@@ -543,29 +597,44 @@ keine Schreibfähigkeit und keine GM-private oder mechanische Information.
    Validate publiziert nichts; gleiche CommandId liefert dasselbe Receipt.
    Vollständiger LiveSession-Import ruft Init nie auf, beschädigter Import
    erzeugt keine synthetische leere Scene.
-2. Innerhalb einer initialisierten Campaign bleibt bei leerer Party genau eine
-   leere Primary Scene; direkte Löschung ist unmöglich.
+2. Nach Deaktivierung, permanenter Löschung, Move oder Rejoin gilt der
+   deterministische Empty-Scene-Cleanup. Bei leerer Party bleibt genau die eine
+   leere Primary Scene; bei verbleibender Party ist jede aktive Scene bevölkert,
+   genau eine davon Primary und keine retired Source live referenzierbar.
+   Prepared-Import-Drafts bleiben getrennt und direkte Primary-Löschung ist
+   unmöglich.
 3. Aktivierung mit validiertem Focus ordnet genau der gebundenen Ziel-Scene zu;
    ein Focus-Race wird stale abgewiesen und lenkt nie auf den neuen Focus um.
    Ein regulärer `unassigned`-Aktivzustand ist unmöglich; `pending` entsteht nur
    nach gespeicherter autoritativer Änderung mit abhängiger Reconciliation.
 4. A/B/A: jede aktive Partyfigur erscheint in genau einer Scene, inaktive in
    keiner; Campaignwechsel vermischt keine IDs, Focus- oder Maskenzustände.
-5. Split und Rejoin bewahren Party-Mitgliedschaft, bewegen jede CharacterId
-   genau einmal, räumen nur die bestätigte leere Source auf, übertragen die
-   Primary-Rolle ausdrücklich und löschen keine ortsgebundenen Inhalte.
+5. Split, Teil-Move und Rejoin bewahren Party-Mitgliedschaft und bewegen jede
+   CharacterId genau einmal. Ein Teil-Move mit verbleibenden Teilnehmern erhält
+   Source, SourceClock, Focus und Source-gebundene Consumerzustände; nur eine
+   bestätigte leere Source wird retired. Primary-Successor und Focus-Fallback
+   folgen dem gebundenen Cleanupplan und ortsgebundene Inhalte bleiben erhalten.
 6. Rejoin mit divergenten Source-/Target-Uhren verlangt eine ausdrückliche
-   GM-Zeitentscheidung und erwartete Clock-Revisionen. Fälle mit Focus auf
-   Source, Target und dritter Scene, Primary auf Source/Target, unavailable
-   Maskenprovider sowie Crash/Restart liefern jeweils genau den festgelegten
-   Focus-/Primary-/Clock-/Maskenausgang; keine Live-Projektion referenziert die
-   entfernte Source. Source-Ambience/Weather/Shop-Verfügbarkeit wird nie auf
-   Target übertragen und Target aktiviert erst aus frischer Projektion. Rejoin
-   allein bewirkt niemals Masken-/Encounter-Completion, Transfer oder Folgen;
-   ohne getrennte GM-Bestätigung werden übrige Teilnehmer/Inhalte nicht bewegt.
+   GM-Zeitentscheidung und erwartete Clock-Revisionen. Source früher und später
+   als Target sowie die Wahl von Source, Target und einem manuell bestätigten
+   früheren Wert übernehmen exakt den gewählten Zeitwert, während ausschließlich
+   die Target-ClockRevision monoton steigt. Retry und Crash/Restart liefern
+   dasselbe Receipt; WorldEffects, Geschichte und Dritt-Scenes bleiben
+   unverändert und spätere Widersprüche sichtbar markiert. Fälle mit Focus auf
+   Source, Target und dritter Scene, Primary auf Source/Target sowie unavailable
+   Maskenprovider liefern jeweils genau den festgelegten Focus-/Primary-/Clock-/
+   Maskenausgang; keine Live-Projektion referenziert die entfernte Source.
+   Source-Ambience/Weather/Shop-Verfügbarkeit wird nie auf Target übertragen und
+   Target aktiviert erst aus frischer Projektion. Rejoin allein bewirkt niemals
+   Masken-/Encounter-Completion, Transfer oder Folgen; ohne getrennte GM-
+   Bestätigung werden übrige Teilnehmer/Inhalte nicht bewegt.
 7. Deaktivierung bleibt bei Fehlern nichtdestruktiver abhängiger Projektionen
-   genau einmal Party-autoritativ; nur betroffene Contexts werden pending,
-   stale Contexts werden nicht als synchron gezeigt und Retry dupliziert nichts.
+   genau einmal Party-autoritativ. Im Zwei-Scene-Fall Primary A mit nur PC1 und
+   Scene B mit PC2 retired Deaktivierung von PC1 A, macht B gemäß Cleanupplan
+   Primary und verschiebt einen Focus auf A nach B. Deaktivierung von PC2 lässt
+   genau eine leere Primary. Nur betroffene Contexts werden pending, stale
+   Contexts werden nicht als synchron gezeigt und unavailable Owner sowie Retry
+   duplizieren weder Membership noch Cleanup.
 8. Permanente Löschung mit unavailable Combat vor Publish schreibt Party-
    Löschung, nichtrekonstruktiven Tombstone und Registry-revisioniertes Owner-
    Manifest genau einmal. Registry-Install/Enable/Disable/Reconnect-Races
@@ -582,6 +651,10 @@ keine Schreibfähigkeit und keine GM-private oder mechanische Information.
    Manifest-Snapshot nicht; unveränderter Slot schließt weiter, betroffener
    Reconnect/Update nutzt genau einen Rebind/Closure-Pfad und neuer Owner lehnt
    die Tombstone-ID ab—ohne Rollback oder zweite Party-Löschung.
+   Derselbe Zwei-Scene- und letzte-aktive-Figur-Fall wie bei Deaktivierung prüft
+   zusätzlich den gebundenen Primary-/Focus-/Clock-/Retirement-Ausgang bei
+   Löschung, unavailable Owner, Crash/Restart und Retry; keine stale Source-
+   Referenz oder doppelte Membership-/Cleanup-Mutation bleibt sichtbar.
 9. Zwei Masken verschiedener Typen und zwei Masken desselben Typs dürfen
    Teilnehmer teilen. Ein Scene-Move entfernt die Figur aus allen betroffenen
    Masken, ohne andere Teilnehmer oder Masken zu ändern.
@@ -645,8 +718,9 @@ keine Schreibfähigkeit und keine GM-private oder mechanische Information.
     verändert keine fremden Teilnehmer oder Ownerdaten. Rejoin ohne getrennte
     GM-confirmed Completion/OwnerReceipt beziehungsweise ratifizierte explizite
     Transfer-Aktion erzeugt weder Completion, Transfer noch Encounter-Folgen.
-19. Eine Faultmatrix für `InitializeLiveSession`, Split/Rejoin, Move,
-    permanente Löschung, `QuarantineDiscard` sowie Undo und Redo injiziert
+19. Eine Faultmatrix für `InitializeLiveSession`, Split/Rejoin, Teil-Move,
+    Deaktivierung samt Empty-Scene-Cleanup, permanente Löschung samt Cleanup,
+    `QuarantineDiscard` sowie Undo und Redo injiziert
     Fehler vor, während und nach Stage, Validate, owner-lokalem Prepare,
     Publish, Verify und Finalize
     sowie Crash/Restart und unbekannten Ausgang—einschließlich zwischen
