@@ -81,26 +81,27 @@
       "limits": "No platform decision and no authorization for P02. Windows, macOS, GUI, native durability, real process isolation, restart OS boundary, parent/child retention and subscribe streaming remain unproven or not run."
     },
     "adrP01H02": {
-      "run": "ADR-P01-H02-I01-R02",
-      "state": "no_go_evidence_review_passed_cleanup_pending",
+      "run": "ADR-P01-H02-C01-R01",
+      "state": "no_go_checked_reviewed_cleaned",
       "document": "ROADMAP-SALTMARCHER-ADR-P01-H02-PLAN.md",
       "result": "No-Go. A clean Linux receipt proves the real sandboxed Electron renderer/preload/main/utility/native-helper process chain, bounded contract, stream, Undo/Redo/Save and fresh small/large V4 reopen. The mandatory durable receipt state machine and complete fault matrix were not run.",
       "evidence": {
         "receiptSourceCommit": "689e158d381c394a1af1eab58e06680dacf33413",
         "reviewedEvidenceHead": "6e282f91846313a615cdbaf692d0ed65da80e5f2",
+        "cleanupCommit": "8d620a064e16d977e51b97d6aec64b7f40034961",
         "receipt": "/home/aaron/.cache/dungeon-native-qa/smr-adr-prototypes/h02-runs/ADR-P01-H02/h02-1791561179831-67e8f5f3-abab-4a75-9106-c5c2745b0b91/receipt.json",
         "receiptSha256": "74e806657f1b3a2e292d875f14e7ad9cf8eed40bdbc21d67081ee3521ee33a83",
         "aggregate": "tools/adr-prototypes/evidence/p01-aggregate.json"
       },
-      "review": "Independent re-review passed exact head 6e282f91846313a615cdbaf692d0ed65da80e5f2 after the receipt-source/evidence-commit provenance repair; no mandatory finding remains.",
-      "limits": "No target-platform decision or P02 authorization. Durable receipt/recovery, the full Create/Update/Delete fault matrix, installed-adapter bytes, Windows, macOS and accessibility remain not-run. Required cleanup and cleanup review are next."
+      "review": "Independent evidence re-review passed exact head 6e282f91846313a615cdbaf692d0ed65da80e5f2. Independent cleanup review passed exact commit 8d620a064e16d977e51b97d6aec64b7f40034961 after removing the executable harness, tests, command and temporary Electron dependency while retaining p01-v2 and the aggregate.",
+      "limits": "No target-platform decision or P02 authorization. Durable receipt/recovery, the full Create/Update/Delete fault matrix, installed-adapter bytes, Windows, macOS and accessibility remain not-run."
     },
     "coordination": {
       "local": "Three new local goal threads coordinate integration. Existing Hex/Atlas, City and Dungeon colleagues on three other devices retain their workstreams, evidence and non-overlapping ownership and contribute requirements to the platform decision.",
       "cloud": "Prior GM-UX-CLOUD worker is reassigned through GitHub Issue #1 to independent architecture and technical review only. Other cloud colleagues retain their established specialist review/test responsibilities.",
       "gui": "At most one graphical host/original instance per device; static and non-graphical checks may run separately."
     },
-    "next": "Perform and independently review ADR-P01-H02 cleanup, retaining only p01-v2 and the reviewed aggregate. ADR-P02 remains blocked and the platform ADR remains proposed."
+    "next": "Plan a narrower ADR-P01-H03 hypothesis for durable receipt/recovery and the complete native fault matrix while preserving the proven process boundary. ADR-P02 remains blocked and the platform ADR remains proposed."
   },
   "saltMarcherCatalogEncounter": {
     "schemaVersion": 1,

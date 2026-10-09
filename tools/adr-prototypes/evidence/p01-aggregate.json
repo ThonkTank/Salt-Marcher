@@ -91,5 +91,16 @@
     "receiptSha256": "74e806657f1b3a2e292d875f14e7ad9cf8eed40bdbc21d67081ee3521ee33a83",
     "sourceCommit": "689e158d381c394a1af1eab58e06680dacf33413"
   },
+  "cleanup": {
+    "commit": "8d620a064e16d977e51b97d6aec64b7f40034961",
+    "review": "passed independently on the exact cleanup commit with no mandatory finding",
+    "retained": [
+      "tools/adr-prototypes/contracts/p01-v2/contract.mjs",
+      "tools/adr-prototypes/contracts/p01-v2/node.mjs",
+      "tools/adr-prototypes/evidence/p01-aggregate.json"
+    ],
+    "removed": "executable Electron/native harness, H02 tests, npm command and temporary Electron dependency",
+    "verification": "npm run check passed; 252 tests and build passed on the exact clean commit before the read-only cleanup review; product inputs remained byte-identical"
+  },
   "dirty": false
 }
