@@ -3691,17 +3691,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I16-CI",
-      "kind": "cleanup_implementation",
-      "startedAt": "2026-10-09T13:07:13.410046+00:00",
-      "focus": "Geplanten Exportumfang und Szenenbesitz eintragen",
-      "state": "completed",
-      "result": "CITY-08 nennt alle4 Formate, geplanter gemeinsamer Export-Szenenvertrag in ARCHITECTURE; Originaldateien erhalten, SVG-Sicht-/Produktabnahme offen"
-    },
-    "nextRun": {
       "id": "CITY-00-I16-CR",
       "kind": "cleanup_review",
-      "focus": "Formatvertrag und empfangene Rohdateien abschließend prüfen"
+      "startedAt": "2026-10-09T13:07:52.419202+00:00",
+      "focus": "Formatvertrag und empfangene Rohdateien abschließend prüfen",
+      "state": "completed",
+      "result": "I16-R01 in Planung bereinigt;10 Rohartefakte/3 Dateikopien/Parser/63 offene Pflichten geprüft; SVG-Sicht-/Produktabnahme offen"
+    },
+    "nextRun": {
+      "id": "CITY-00-I17-P",
+      "kind": "early_reference_planning",
+      "focus": "Freigegebenen nativen COK Undo/Redo-Lauf planen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
