@@ -2,6 +2,8 @@
 module.exports = ({ page, fs, path, assert, crypto, qa, vault, out, checks, resolveQaAppCgroup, sleep }) => async () => {
   const cp = require("node:child_process");
   const fixture = JSON.parse(fs.readFileSync(path.join(qa, "hard-crash-case.json"), "utf8"));
+  assert(Number.isInteger(fixture.boundary) && fixture.boundary >= 1 && fixture.boundary <= 8,
+    "Hard-crash boundary must follow a completed prepared/target/committed CAS");
   const originalWrites = JSON.parse(fs.readFileSync(path.join(qa, "writes.json"), "utf8"));
   const journalPath = fixture.worldPath + ".journal";
   const paths = [...originalWrites.map((write) => write.path), journalPath];
@@ -59,14 +61,17 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out, checks, reso
     fixture.boundary, { timeout: 30000 });
   const pause = await page.evaluate(() => window.__dd036HardCrashPause);
   const journal = JSON.parse(read(journalPath));
-  assert.equal(journal.state, "prepared");
+  const state = fixture.boundary === 8 ? "committed" : "prepared";
+  assert.equal(journal.state, state);
   assert.deepEqual(journal.writes.map((entry) => entry.path).sort(),
     originalWrites.filter((entry) => entry.path !== fixture.worldPath)
       .map((entry) => entry.path).sort());
-  assert.equal(pause.file, fixture.boundary === 1 ? journalPath : journal.writes[fixture.boundary - 2].path);
+  assert.equal(pause.file, fixture.boundary === 1 || fixture.boundary === 8
+    ? journalPath : journal.writes[fixture.boundary - 2].path);
   for (let i = 0; i < journal.writes.length; i++)
     assert.equal(read(journal.writes[i].path),
-      i < fixture.boundary - 1 ? journal.writes[i].after : journal.writes[i].before,
+      i < Math.min(fixture.boundary - 1, journal.writes.length)
+        ? journal.writes[i].after : journal.writes[i].before,
       "Stopped target " + journal.writes[i].path);
   const interrupted = snapshot();
 
@@ -87,9 +92,10 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out, checks, reso
 
   const recovered = Object.fromEntries(paths.map((file) => {
     const write = journal.writes.find((entry) => entry.path === file);
-    return [file, sha(file === journalPath ? null : write ? write.before : read(file))];
+    return [file, sha(file === journalPath ? null : write
+      ? state === "committed" ? write.after : write.before : read(file))];
   }));
-  const recoveryCase = { kind: "prepared", boundary: fixture.boundary,
+  const recoveryCase = { kind: state, boundary: fixture.boundary,
     worldId: fixture.worldId, before: afterKill, after: recovered };
   fs.writeFileSync(path.join(qa, "writes.json"), JSON.stringify(journal.writes, null, 2));
   fs.writeFileSync(path.join(qa, "dd036-s01-recovery-case.json"), JSON.stringify(recoveryCase, null, 2));
@@ -98,5 +104,5 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out, checks, reso
     recoveryCase, appProcess: { serviceName: appProcess.serviceName, pids: appProcess.pids },
     signal: "SIGKILL", allOwnedPidsGone: gone,
   }, null, 2));
-  checks.push("DD-036.03 actual isolated Obsidian SIGKILL after completed Atlas CAS boundary " + fixture.boundary);
+  checks.push("DD-036.03 actual isolated Obsidian SIGKILL after " + state + " Atlas CAS boundary " + fixture.boundary);
 };
