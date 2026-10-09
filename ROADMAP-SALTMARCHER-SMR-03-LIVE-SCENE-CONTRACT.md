@@ -1,0 +1,317 @@
+# SMR-03-P01: Party-, LiveScene- und Live-Session-Vertrag
+
+Status: **Plankandidat; nicht reviewt, nicht ratifiziert und ohne
+Implementierungs-, Host- oder Persistenzfreigabe.**
+
+## Fachliche Quellen
+
+Maßgeblich ist SaltMarcher-Revision
+`9de85c1a26f526acbc1af332ac5962e185c0aab2`, insbesondere:
+
+- `docs/project/vision.md`;
+- `docs/project/requirements/requirements-program-capabilities.md`, vor allem
+  `Roster, Current Party, And Planning Party`, `Continuous Scene State And
+  Party Splits`, `Masks And Prepared Monster Groups`, `Live Search, Creation,
+  Notes, And Music`, `Independent Time And Weather`, `Continuous Preservation
+  And Resume` und die Cross-Workflow-Verträge;
+- `docs/party/requirements/`, `docs/party/domain/domain-party.md` und
+  `docs/party/contract/contract-party-persistence.md`;
+- `docs/scene/requirements/requirements-scene.md`,
+  `docs/scene/domain/domain-scene.md` und
+  `docs/scene/contract/contract-scene-persistence.md`;
+- `docs/session/requirements/requirements-live-session.md`,
+  `docs/session/domain/domain-live-session.md` und
+  `docs/session/contract/contract-live-session-persistence.md`;
+- `docs/project/architecture/program-technical-needs.md`, insbesondere
+  TN-01 bis TN-03, TN-05, TN-07, TN-11, TN-15 bis TN-19, TN-21, TN-24,
+  TN-27, TN-28, TN-31, TN-34 und TN-36.
+
+Im Zielrepository bindet dieser Kandidat die reviewte SMR-07-Vertragssemantik
+`94b1a15990b11a0cc00f3091ef24130a19a263a2` sowie den reviewten
+SMR-01-Kandidaten `11e256309d43bcd1c14db66ffc41945c9360aec8` ein.
+Beide bleiben getrennt ratifikationspflichtig. Java-, JavaFX-, Electron-,
+JDBC- und historische Obsidian-Implementierungen sind ausschließlich
+Verhaltensreferenzen, keine Zielarchitektur.
+
+## Umfang und Nichtziele
+
+Dieser Lauf definiert nur den hostneutralen Fachvertrag für Campaign-Roster,
+aktuelle Party, LiveScene-Identität und -Zuordnung, Primary Scene, Fokus,
+Split/Rejoin, generische Runtime-Masken sowie die Live-Session-Projektion. Er
+definiert noch keine TypeScript-API, SQL-Tabelle, Datei, IPC-Nachricht, UI,
+konkrete Maskenimplementierung oder Plattform.
+
+Ausdrücklich außerhalb dieses Besitzes bleiben:
+
+- Campaign-Lifecycle, Import/Export und physische Recovery (SMR-01);
+- SceneClock, Kalender, Travel-Checkpoints, Campaign History und WorldEffects
+  (SMR-07);
+- Encounter-, Chase-, Loot-, Music-, Weather-, Shop-, Karten- und
+  Passive-Display-Fachwahrheit;
+- bestehende `src/session.ts::Session` als Dungeon-Editiersession,
+  `src/features/city/scene.ts` als Render-/Hit-Test-Projektion und
+  `AtlasHistory` als Kartenhistory;
+- Host-, Prozess-, Capability-, Datenbank- und Dateisystementscheidungen.
+
+## Begriffe und Eigentümer
+
+| Wahrheit | Autoritativer Eigentümer | Grenze |
+| --- | --- | --- |
+| Campaign-Identität und Nutzbarkeitsrevision | SMR-01 | kann ohne initialisierte Live Session gültig existieren |
+| Roster, CharacterId, aktuelle Party-Mitgliedschaft und Charakterprofil | Party | eine Campaign hat höchstens eine aktuelle Party; Profile bleiben Party-Wahrheit |
+| LiveSceneId, Primary-Rolle, Scene-Zuordnung, Focus und SceneRevision | SMR-03 Scene | besitzt keine Party-Mitgliedschaft, Uhr, Karte oder Maskenfachlogik |
+| SceneClock und Zeitrevision | SMR-07 | genau eine unabhängige Uhr je existierender LiveScene |
+| Encounter, Chase oder weitere Runtime-Maske | jeweiliger Maskenbesitzer | Scene hält nur ratifizierte Identität, Teilnahmeprojektion und Reconciliation-Status |
+| LiveSession | lesende Komposition | projiziert die fokussierte Scene und besitzt keine zweite Party-, Gruppen- oder Maskenwahrheit |
+| Shell-/Fensterzustand | Präsentationsbesitzer | niemals Campaign-, Party-, Scene- oder Maskenfachwahrheit |
+
+`LiveScene`, `DungeonEditSession` und `CitySceneProjection` bleiben in allen
+späteren Typen, Dateinamen und UI-Texten eindeutig unterscheidbar.
+
+## Normativer Lebenszyklus
+
+### Campaign vor der ersten Live Session
+
+Eine neu erzeugte, kopierte oder importierte Campaign darf gültig keine
+LiveScene, Primary Scene, Focus-Referenz oder SceneClock besitzen. Eine reine
+Campaign-Lifecycle-Operation darf keine Scene als Nebenwirkung erzeugen.
+
+`InitializeLiveSession` ist eine ausdrückliche, idempotente GM-/Continue-Aktion.
+Sie erzeugt genau eine leere Primary LiveScene, deren SceneClock und den ersten
+gültigen Focus. Eine Wiederholung mit derselben CommandId liefert dasselbe
+Receipt; ein bereits initialisierter Zustand wird nicht dupliziert. Der
+Anwendungsstart bleibt auf der Campaign-Auswahl. Erst ausdrückliches Continue
+lädt die gespeicherte Live-Session-Projektion; es gibt kein verborgenes
+automatisches Session-Resume.
+
+Nach erfolgreicher Initialisierung existiert immer genau eine Primary Scene.
+Wenn keine Partyfigur aktiv ist, bleibt eine leere Primary Scene verwendbar.
+Die Primary Scene kann nicht direkt gelöscht werden. Wird sie durch einen
+bestätigten Rejoin vollständig leer, darf derselbe atomare Befehl die
+Primary-Rolle auf seine ausdrücklich benannte, bevölkerte Ziel-Scene
+übertragen und die leere Quelle entfernen. Eine leere letzte Primary Scene
+wird nie entfernt.
+
+### Party und Scene-Zuordnung
+
+- Roster und aktuelle Party-Mitgliedschaft bleiben Party-Wahrheit. Scene
+  speichert nur stabile CharacterId-Referenzen und deren Reihenfolge.
+- Im stabil synchronisierten Zustand gehört jede aktive Partyfigur genau einer
+  LiveScene derselben Campaign an; inaktive Figuren gehören keiner Scene an.
+- Aktivierung nennt eine konkrete Ziel-LiveSceneId, die aus einer validierten
+  Focus-Projektion gewonnen wurde, sowie erwartete Campaign-, Party-, Scene-
+  und Focus-Revisionen. Ein späterer Focuswechsel lenkt den Befehl niemals auf
+  eine andere Scene um.
+- Deaktivierung oder permanente Charakterlöschung ist im Party-Besitzer
+  autoritativ. Die Figur wird aus jeder Scene und allen Masken entfernt.
+  Abhängige Fehler rollen die Party-Entscheidung nicht zurück, sondern erzeugen
+  ausschließlich betroffene, sichtbare Reconciliation-Pflichten.
+- Eine Scene-Bewegung erhält Party-Mitgliedschaft und verschiebt eine Figur
+  atomar zwischen genau zwei Scene-Zuordnungen. Ein Split kann eine neue Scene
+  anlegen; der gemeinsame Befehl lässt den Location-Eigentümer dieselbe
+  bestätigte Location referenzieren und den Time-Eigentümer eine neue,
+  unabhängig revisionierte SceneClock am bestätigten Quellzeitpunkt anlegen,
+  ohne fremde Interna zu kopieren.
+- Ein Rejoin löscht weder ortsgebundene Inhalte noch bestätigte Geschichte.
+  Gepinnte oder ausdrücklich mitreisende Referenzen folgen nur nach ihrer
+  eigenen bestätigten Regel.
+- Batch-Auswahl, Aktivierung, Deaktivierung und Move validieren die vollständige
+  Auswahl vor Veröffentlichung, führen erwartete Party- und Scene-Revisionen
+  mit und wiederholen einen unbekannten Ausgang nicht blind.
+
+Während einer abhängigen Reconciliation wird eine betroffene Figur nicht aus
+einer veralteten Scene- oder Maskenprojektion als aktuell angezeigt. Stattdessen
+zeigt die Live Session ihre stabile CharacterId, die beabsichtigte Zielgrenze
+und einen strukturierten Pending-/Retry-Zustand. Unbetroffene Scenes und Masken
+bleiben verwendbar.
+
+### Primary Scene und Focus
+
+Primary Scene und aktueller Focus sind getrennte, revisionierte Zustände. Ein
+Focuswechsel ändert weder Primary-Rolle noch Partyzuordnung, SceneClock,
+Location, Masken, Travel, Music-Entscheidung oder WorldEffect-Autorität.
+
+Eine immutable `FocusProjection` enthält mindestens:
+
+- CampaignId;
+- LiveSceneId oder ausdrücklich `none`;
+- SceneRevision, falls eine Scene projiziert wird;
+- monotone FocusRevision;
+- Zustand `active`, `none`, `pending` oder `unavailable`.
+
+Nur `active` darf Scene-Fachdaten liefern. `none`, beschädigte, archivierte,
+fremde oder stale Scene-Referenzen liefern niemals zuletzt bekannte Daten als
+aktuelle Wahrheit. Music, Weather, Shops, Karten und Passive Display konsumieren
+nur ratifizierte immutable Projektionen und erhalten keine Scene-Interna.
+
+Campaignwechsel invalidiert den aktiven Focus für Consumer, überträgt keine
+Scene-, Queue-, Override-, Shop- oder Weather-Verfügbarkeit und stoppt/mutet
+alte Ausgabe nach dem jeweiligen Besitzervertrag. A→B→A bewahrt den dauerhaften
+A-Zustand; seine erneute Ausgabe erfordert ausdrückliches Continue und frische
+Revisionen.
+
+## LiveScene-Projektion
+
+Eine immutable, tief eingefrorene `LiveSceneProjection` trägt mindestens:
+
+- CampaignId, LiveSceneId, SceneRevision und Primary-Flag;
+- ausdrücklich getrennte FocusRevision beziehungsweise den Hinweis, dass die
+  Scene nicht fokussiert ist;
+- geordnete aktive CharacterId-Referenzen und sichtbare Pending-Zuordnungen;
+- optionale ratifizierte LocationId und ihre Projektionrevision;
+- getrennte IDs/Revisionen für SceneClock, aktive beziehungsweise archivierte
+  Gruppen sowie Runtime-Masken;
+- Reconciliation-Status je abhängigem Besitzer;
+- stabile Referenzen auf gepinnte oder Scene-gebundene Inhalte, niemals
+  kopierte fremde Payloads.
+
+Fremde Namen, Profile, Statblocks, Karten, Wetter, Shops, Musik, Uhrzeiten oder
+Maskenpayloads werden bei einer aktuellen Projektion über ihre Eigentümer
+aufgelöst. Fehlende Referenzen bleiben sichtbar und retry-/rebind-fähig; sie
+werden nie still entfernt, ersetzt oder einer anderen Scene zugeordnet.
+
+## Split, Rejoin und ortsgebundene Inhalte
+
+- Eine neue Split-Scene erhält eine neue stabile LiveSceneId und optionalen
+  Titel; Split-Scenes benötigen keinen Namen. Ihre SceneRevision beginnt
+  unabhängig.
+- Eine CharacterId kann nie gleichzeitig in zwei Scenes erscheinen. Source und
+  Target werden gegen dieselbe veröffentlichte Zuordnungsgrenze geprüft.
+- Wird eine nicht-Primary Scene leer, entfernt derselbe bestätigte Rejoin die
+  leere Scene an der gemeinsamen Party-/Scene-Veröffentlichungsgrenze. Ist die
+  leere Quelle Primary, gilt die oben definierte ausdrückliche
+  Primary-Übertragung. Masken- oder andere nachgelagerte Owner dürfen danach
+  sichtbar pending bleiben und blockieren die autoritative Zuordnung nicht.
+- Location-Wechsel ersetzt nur abgeleitete Location-Projektionen. Persistente
+  Inhalte am alten Ort bleiben beim Orteigentümer; gepinnte oder mit genau
+  einer Partyuntergruppe reisende Inhalte folgen nur mit eigener stabiler
+  Identität und bestätigtem Befehl.
+- Prepared-Scene-Import erzeugt jedes Mal eine neue unabhängige Runtime-Kopie
+  mit Quellenprovenienz. Spätere Planänderungen mutieren die Runtime-Kopie
+  nicht. Nur aktive, aktuell unzugeordnete Teilnehmer werden übernommen.
+
+## Runtime-Masken
+
+Encounter, Chase und spätere Masken überlagern die kontinuierlich bestehende
+LiveScene. Mehrere Masken desselben oder verschiedener Typen dürfen gleichzeitig
+existieren; ein Teilnehmer darf in mehreren Masken vorkommen.
+
+Jede Maskenprojektion nennt mindestens CampaignId, LiveSceneId, stabile MaskId,
+MaskKind, OwnerIdentity, OwnerRevision, Teilnehmerreferenzen und Lifecycle-
+Status. Der Maskenbesitzer hält fachlichen Ablauf, History und Persistenz. Scene
+führt keine kopierten Combat-/Chase-Zustände.
+
+Eine bestätigte Teilnehmerbewegung entfernt die CharacterId aus allen
+betroffenen Masken, blockiert aber die autoritative Party-/Scene-Entscheidung
+nicht. Fehlgeschlagene abhängige Maskenupdates werden sichtbar pending;
+veraltete Masken werden nicht als synchron dargestellt. Completion einer Maske
+beendet niemals die LiveScene. Fehlende oder ausgefallene Maskenprovider lassen
+Scene, Party, Notizen und andere Masken weiter nutzbar.
+
+## Mehrbesitzer-Commit und Recovery
+
+Mehrbesitzerbefehle verwenden die mit SMR-01 und SMR-07 gemeinsame öffentliche
+Folge `Stage → Validate → Publish → Verify → Finalize`. Owner-lokales `Prepare`
+bleibt eine unsichtbare Unterphase im Participant-Slot des Stage-Receipts und
+ist keine sechste Phase.
+
+Jeder Befehl führt stabile CommandId, CampaignId, ausdrücklich beteiligte
+Owner, beabsichtigte Zielidentitäten und erwartete Owner-Revisionen. Vor dem
+durablen Publish-Entscheid bleibt die alte bestätigte Wahrheit sichtbar und
+Recovery rollt vorbereitete Beiträge zurück. Nach Publish wird ausschließlich
+vorwärts verifiziert/finalisiert. Ein unbekannter Ausgang wird über dieselbe
+CommandId und das Receipt aufgelöst, niemals als neuer Befehl wiederholt.
+
+Wo Party gemäß bestätigtem Cross-Workflow-Vertrag die primäre autoritative
+Änderung vor abhängigen Contexts veröffentlicht, enthält derselbe Publish-
+Entscheid die genaue Scene-/Masken-Reconciliation-Pflicht. Die UI zeigt weder
+eine alte Zuordnung als aktuell noch eine unbestätigte neue Zuordnung als
+fertig. Retry wendet die primäre Mutation nicht erneut an.
+
+Restore behält Campaign-, Character-, LiveScene-, Masken- und
+Referenzidentitäten. Import erzeugt eine neue Campaign und remappt jede
+campaignlokale Identität und interne Referenz atomar bei erhaltener Topologie.
+Copy folgt der SMR-01-Closure-Regel. Trashing oder Löschen einer Campaign darf
+keine Ersatz-Campaign, Scene oder Party implizit aktivieren.
+
+## Live-Session- und Präsentationsgrenze
+
+LiveSession ist eine lesende, revisionierte Komposition der fokussierten
+LiveScene. Sie besitzt keine zweite Party-, Gruppen-, Encounter-, Travel- oder
+Music-Wahrheit. Scene-lokale Auswahl, Details-/Suchhistorie und Fensterzustände
+sowie app-weite Shellpräferenzen bleiben ausdrücklich von Fachzuständen
+getrennt. Fenster öffnen, schließen, fokussieren, minimieren oder neu anordnen
+startet, pausiert oder beendet weder Scene noch Masken, Travel oder Audio.
+
+Ein optionales passives Display liest ausschließlich die aktuelle sichere
+Focus-/Scene-Projektion. Bei Focuswechsel, stale Revision, Providerfehler oder
+`none` wird kein alter unsicherer Frame weiter als aktuell gezeigt. Es erhält
+keine Schreibfähigkeit und keine GM-private oder mechanische Information.
+
+## Acceptance vor jeder Implementierungsfreigabe
+
+1. Eine neue, kopierte und importierte Campaign bleibt ohne LiveScene gültig;
+   ausdrückliches Continue initialisiert genau eine Primary Scene idempotent.
+2. Innerhalb einer initialisierten Campaign bleibt bei leerer Party genau eine
+   leere Primary Scene; direkte Löschung ist unmöglich.
+3. Aktivierung mit validiertem Focus ordnet genau der gebundenen Ziel-Scene zu;
+   ein Focus-Race wird stale abgewiesen und lenkt nie auf den neuen Focus um.
+4. A/B/A: jede aktive Partyfigur erscheint in genau einer Scene, inaktive in
+   keiner; Campaignwechsel vermischt keine IDs, Focus- oder Maskenzustände.
+5. Split und Rejoin bewahren Party-Mitgliedschaft, bewegen jede CharacterId
+   genau einmal, räumen nur die bestätigte leere Source auf, übertragen die
+   Primary-Rolle ausdrücklich und löschen keine ortsgebundenen Inhalte.
+6. Deaktivierung oder Löschung bleibt bei Scene-/Maskenfehler genau einmal
+   Party-autoritativ; nur betroffene Contexts werden pending, stale Contexts
+   werden nicht als synchron gezeigt und Retry dupliziert nichts.
+7. Zwei Masken verschiedener Typen und zwei Masken desselben Typs dürfen
+   Teilnehmer teilen. Ein Scene-Move entfernt die Figur aus allen betroffenen
+   Masken, ohne andere Teilnehmer oder Masken zu ändern.
+8. Focuswechsel ändert ausschließlich Focus/Fokusprojektion. Primary Scene,
+   Partyzuordnung, Uhren, Travel, WorldEffects und Campaign-weite manuelle
+   Music-Entscheidungen bleiben unverändert; ein LiveScene-Override wird nur
+   nach frischer Projektion suspendiert/aktiviert.
+9. `none`, stale, beschädigte oder fremde Focus-/Scene-Referenzen speisen keine
+   Music-, Weather-, Shop-, Karten- oder Passive-Display-Projektion mit alten
+   Daten. Unabhängige manuelle Arbeit bleibt nutzbar.
+10. Campaignwechsel und Neustart stellen nach ausdrücklichem Continue Focus,
+    Scenes, Masken, SceneClock-Verweise und Pending-Reconciliation vollständig
+    wieder her; unbestätigte Drafts werden nicht zu Fachwahrheit.
+11. Restore bewahrt alle Identitäten. Import remappt alle campaignlokalen IDs
+    und Referenzen in eine unabhängige Campaign, ohne Topologieverlust oder
+    Rückreferenz; Konflikte bleiben fail-closed.
+12. Ausfall eines Masken-, Music-, Weather-, Shop-, Karten- oder
+    Passive-Display-Providers lässt Scene, Party, Notizen, bestätigte Arbeit,
+    Preservation und vollständigen Export nutzbar.
+13. Der repräsentative technische Fall mit 20 Rosterfiguren, vier unabhängig
+    getakteten Scenes, acht Masken und 50 Teilnehmern erfüllt die TN-21-
+    Livebudgets; die großen Profile truncaten oder vermischen keine Wahrheit.
+14. Tastatur, 200-Prozent-Skalierung, lange Namen, `pending`/`unavailable` und
+    nicht-farbige Zustände erhalten dieselben Scene-/Party-Aktionen und
+    vollständige zugängliche Namen.
+
+## Offene Ratifikations- und Review-Gates
+
+- Campaign/Data ratifiziert pre-session Campaign, Import/Restore/Recovery,
+  CampaignRevision und die fünf Phasen.
+- Party ratifiziert Roster-/Membership-Autorität, Aktivierung/Deaktivierung,
+  Profile, XP/Rest und CharacterId-Lifecycle.
+- Encounter/Chase beziehungsweise jeder Maskenbesitzer ratifiziert
+  Maskenidentität, Teilnahmeprojektion, Pending-Reconciliation und Completion.
+- Scene/Time/Travel ratifiziert Primary/Focus-Trennung, SceneClock-Verweis,
+  Split/Rejoin, Location/Travel-Grenze und Nicht-WorldEffect-Semantik.
+- Music/Weather/Shops und Passive Display ratifizieren die immutable Focus-
+  und LiveScene-Projektionen sowie `none`/stale-/Fehlerverhalten.
+- Host/Security/Platform ratifiziert Capability-, Prozess-, Persistenz-,
+  Cancellation- und Recovery-Realisierbarkeit ohne Fachautorität.
+- Produkt-QA prüft später GM-Abläufe, ersetzt aber keine Eigentümerratifikation.
+
+## Integrationsfolge
+
+1. Campaign/Data- und Music/Weather/Shops-Peerreview dieses exakten Plans.
+2. Unabhängiger Architekturreview; Befunde in einem getrennten Repairlauf.
+3. Explizite Ratifikation aller betroffenen Eigentümer auf dem reviewten SHA.
+4. Erst dann ein getrenntes Implementierungsplanpaket mit konkreten
+   Contracts, Aggregategrenzen, Migration und Acceptance-Harness.
+5. Domain, Persistenz-/Hostadapter, UI und Produkt-QA bleiben getrennte,
+   jeweils reviewte Arbeitspakete.
