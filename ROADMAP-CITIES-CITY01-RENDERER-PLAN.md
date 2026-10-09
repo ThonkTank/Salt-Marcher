@@ -1,0 +1,37 @@
+# CITY-01: gemeinsamer City-Szenenbeitrag
+
+Planung CITY-01-PREP-P07, Start 2026-10-09T18:27:36.073378+00:00. Ausgangspunkt 70ebb44; vor Abschluss 7d2b41f integriert. Dieser Plan bereitet die sichtbare Metergeometrie vor; CITY-01 und sämtliche 24 CTY-Unterfälle bleiben offen bis zur vollständigen Atlas-/Hostabnahme.
+
+## Auftrag, Iststand und Besitz
+
+Eine Stadt muss im selben grenzenlosen Atlas Straßen, Plätze und Häuser unmittelbar bearbeiten lassen. cityScene liefert geprüfte Konturen, Straßenpolylines mit Meterbreite, Knoten, Ausdehnung und identische Treffergeometrie. CityGesture/CityDraft liefern eine transiente Vorschau; AtlasHistory besitzt den dauerhaften Stand. Die Zeichnung fehlt.
+
+Der Atlasbesitzer bestätigte am 09.10. den begrenzten City-Szenenbeitrag: caller-supplied project(localMeters)->screen, Meterbreiten und vorhandene Scene/Hit-Konturen. src/features/atlas/atlas-renderer.ts besitzt den gemeinsamen detailLayer. Frame-/Parent-/Lifecycle-/Pointeranschluss wird erst in HEX-04/05 konkret vereinbart. Die Governance aus Issue1/6086785648 erlaubt Arbeiten im eigenen bestätigten Scope; gemeinsame neue Verträge benötigen betroffene Besitzer und unabhängigen Review. Die bisherige SMR-Kandidatenrückmeldung ist keine Freigabe seiner neuen APIs.
+
+## Konkrete Umsetzung I07
+
+Neue src/features/city/renderer.ts und tests/core/city-renderer.test.ts; nötiger Import im vorhandenen Testeingang. Keine Änderungen an Atlasdateien. CityRenderer besitzt einen Container mit Basis- und Auswahlgraphics, ausschließlich aus vorhandenem Pixi 8.22.0. Keine Application, DOM-Ansicht, Kamera, History, persistente Placementkopie, Subscription, Timer oder LiveScene/SceneClock.
+
+Geplante lokale Signatur: draw(scene: CityScene, project: (point: Point) => Point, options?: { selection?: CityHit | null; showNodes?: boolean }): void; readonly container; clear(); destroy(). Der Aufrufer liefert bei jedem Zeichnen aktuelle Scene oder preview.scene und die affine Komposition aus echter Atlas-Kamera und Platzierung. Der Callback wird nicht gespeichert. Bei nullPreview zeichnet der spätere Atlasrouter die aktuelle Source, niemals den alten Gestenanfang. Diese lokale Signatur ersetzt keinen bereits gelieferten Framevertrag.
+
+Die Scene-Reihenfolge Viertel→Grundstück→Platz→Straße→Haus und Dokumentreihenfolge bleiben unverändert. Polygonpunkte samt Innenhöfen stammen ausschließlich aus CityScene, einschließlich bereits angewandter Hauspose. Keine separate Treffergeometrie. Erst Außenkontur füllen, dann alle Innenhofringe in EINEM gemeinsamen aktiven Pfad sammeln und EINMAL cut() aufrufen, danach Außen-/Innenringe umranden. Installiertes GraphicsContext.cut() betrachtet bis zu zwei letzte Anweisungen: wiederholte cuts auf dieselbe Füllung könnten vorige Geometrie schneiden. Ein Cut pro Füllung verhindert diese Falle; Mehrhofregression Pflicht.
+
+Straßen folgen der Hitgeometrie: Vereinigung aus Segmentvierecken mit halber Meterbreite und runden Scheiben an jedem Stützpunkt. Segmentnormalen werden mittels Math.hypot gebildet, ihre vier lokalen Ecken durch project abgebildet. Jede Scheibe nutzt projizierten Mittelpunkt und projizierte lokale X-/Y-Radiuspunkte als sechs Werte eines temporären GraphicsContext.setTransform; circle(0,0,1) zeichnet den affinen Kreis. save/restore kapseln den Zustand. Dies ist eine Renderprimitive, keine gespeicherte Platzierung. Opaque Straßenfüllung verhindert dunklere Überlappungen. Gleichförmige und gedrehte anisotrope Projektion prüfen; keine zweite pixelsPerMeter-Annahme oder fest begrenzte Polygonkreis-Tessellation.
+
+Alle projizierten Punkte und abgeleiteten Differenzen müssen finit sein, Eingaben bleiben unverändert. Zwei neue GraphicsContexts werden vor Veröffentlichung vollständig aufgebaut. Erst danach beide Graphics-Kontexte austauschen und alte eigene Kontexte freigeben. Bei Projektions-/Aufbaufehler neue Kandidaten freigeben, bestehende Cityzeichnung leeren und kontrolliert werfen: keine halbe oder stale Vorschau. clear entfernt nur Zeichnung; destroy ist idempotent und zerstört ausschließlich eigene Ressourcen. Kein gemeinsames Asset, Parent oder Application wird zerstört. Nach destroy ist draw kontrolliert abzuweisen.
+
+Auswahl bleibt beim Atlas: fremder owner oder fehlendes Element bedeutet keine Hervorhebung. Keine Auswahlmutation. Passende Konturen erhalten stärkere Bildschirmumrandung; Löcher bleiben frei. Knoten nur bei showNodes:true als feste Bildschirmgriffe (Radius etwa 5px), stabile IDs und passende Auswahl. Der Atlas muss includeNodes bei Hitprüfung entsprechend Sichtbarkeit setzen. Via-, Dreh- und Achsgriffe sowie Pointercapture werden später mit dem Router angeschlossen; Knotendarstellung ist keine vollständige Werkzeugoberfläche.
+
+## Darstellungsplan und Kritik vor Code
+
+Kartografische Lesbarkeit im bestehenden Landschaftsraum: Straßen #D3D5CF, Plätze #98A6AD, Dächer #5B7287, Konturen #273C4A, Viertel #8CAFA1, Auswahl #E7B24E. Viertel/Grundstücke transparent, Dächer und Straßen deckend. Konturen etwa 1px, Auswahl etwa 2px; keine Mindesthausgröße, die Treffer und echte Kontur auseinanderzieht. Auswahl unterscheidet sich auch durch Linienstärke.
+
+Layout ist die bestehende Atlasfläche: Landschaft → Citybasis → Auswahl/Griffe. Keine eigenen Kartenrahmen, Panels oder Hintergrundfüllung. Typografie erbt für spätere Beschriftungen die vorhandene Obsidian-UI; dieser Beitrag zeichnet noch keinen Text. Innenhöfe zeigen wirklich Landschaft/Platz/Straße darunter. Ruhige kühle Bausteine und gezielte Auswahlfarbe dienen der Stadtbearbeitung. Die Kritik gegen den Auftrag verwirft dekorative Dachtexturen und eigene UI in diesem Paket; ihre spätere CITY-07-Abnahme bleibt erforderlich. Grafikgleichwertigkeit und bessere Bedienung sind erst mit echten Original-/Hostsequenzen belegt.
+
+## Review R11, Nachbesserung und Aufräumen
+
+I07: npm run check, npm test, npm run build plus gezielte Regressionen. R11 liest die Umsetzung gegen diesen Plan und prüft Gegenfälle unabhängig von der Produktionsberechnung. Pflichtfälle: echte GraphicsContext-Anweisungen in Scene-Reihenfolge; projizierte Konturen; mindestens zwei Löcher ohne Änderung vorheriger Füllung; Straßenbreite/-kappen unter affine Rotation und Achsenskalierung; feste Pixelgriffe; fremde/fehlende Auswahl; leere Scene und verwaiste Knoten; ungültige Projektion/werfernder Callback ohne stale Frame; wiederholtes draw/clear/destroy ohne eigene Ressourcenreste.
+
+Echte CityDraft-Vorschau/Cancel/Apply durch die Zeichnung führen und Source/AtlasHistory-/Terrainwerte auf Unverändertheit beim draw prüfen. Kontextanweisungen sind Kernnachweise, kein Pixel-/Hostbeweis. Spätere echte Pixi-/Obsidianzeichnung, Höfe über Landschaft, Zoom, Hauspose, Griffzug, Undo/Redo, Save und frischer Prozess ausschließlich in der mit Hex koordinierten einzelnen GUI-Testinstanz. RFB-Testfreigabe für das isolierte Canvas-of-Kings-Original liegt vor; sie ersetzt keinen eigenen Produktnachweis.
+
+Jeder Befund erhält gezielte Nachbesserung mit anschließendem Review, bis im Paket keine Pflichtlücke bleibt. Nach P07 getrennte Aufräum-P/I/R: Planlinks und Besitzgrenzen prüfen, veraltete pauschale Warteformulierung durch bestätigten City-Scope ersetzen, fremde JSON-Wurzeln erhalten; Ergebnis separat committen/pushen. Nach I07, R11 und jeder Nachbesserung ebenfalls eigene Aufräum-P/I/R. Keine rein lokale Rendererprüfung schließt CTY-Fälle, HEX-05, Speicherintegration, Großkartenleistung, Originalparität oder physische Bedienabnahme.

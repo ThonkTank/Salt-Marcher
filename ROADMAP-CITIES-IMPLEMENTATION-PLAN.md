@@ -846,3 +846,6 @@ CITY-01-PREP-GESTURES-FINAL-CLEAN-R06 Start 2026-10-09T18:21:38.668055+00:00; Pl
 
 
 Stadt-Besitzerfeedback 2026-10-09T18:23:09.537136+00:00: exakten Root-Kandidaten934eba515308674447c24d85d15190af132be366 lesend geprüft. Cityzeile/Begriffstrennung/kein Travel-Direktzugriff stimmen mit tatsächlicher Source/Historygrenze überein. Rückmeldung in Issue1/6086779942 bestätigt nur vorhandenen Besitz; unabhängiger Architekturreview und erneute Ownerbestätigung des endgültigenSHA fehlen, keine Implementierungsfreigabe. R10 ist lokaler Quellenreview mit unabhängigen Modulgegenproben, kein fremder Reviewer. Kein neues Featurepaket, alle24CTY offen.
+
+
+CITY-01-PREP-P07 Start 2026-10-09T18:27:36.073378+00:00; ROADMAP-CITIES-CITY01-RENDERER-PLAN.md konkretisiert den bestätigten City-Szenenbeitrag, affine Meterbreiten, transparente Mehrhöfe, atomare GraphicsContexts und gezielte Kern-/Hostgrenzen. Pixi cut-Mehrfachaufrufrisiko durch einen gemeinsamen Lochpfad berücksichtigt. Keine Runtimeänderung. Aufräum-P/I/R folgt vor I07.
