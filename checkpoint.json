@@ -9,8 +9,10 @@
     "acceptance": "acceptance.json.saltMarcherReplacement",
     "objective": "This repository delivers the sole successor product for all implemented and planned SaltMarcher capabilities. UX and functional requirements are binding; the final host may be an Obsidian plugin, desktop application or evidence-backed hybrid.",
     "smr03LiveScene": {
-      "state": "music_weather_shops_consumer_ratification_documented",
+      "state": "implementation_plan_candidate_review_pending",
       "plan": "ROADMAP-SALTMARCHER-SMR-03-LIVE-SCENE-CONTRACT.md",
+      "implementationPlan": "ROADMAP-SALTMARCHER-SMR-03-IMPLEMENTATION-PLAN.md",
+      "implementationPlanState": "exact_sha_review_pending",
       "coordinationIssue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/6",
       "candidateBranch": "codex/smr-03-live-scene-contract-p01",
       "baseline": "7d35591be570d1c188998103b55e8e86e437f73d",
