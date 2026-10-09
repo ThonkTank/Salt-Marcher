@@ -49,3 +49,7 @@ Gemeinsame Korrektur/Ownerannahme von #12 → unabhängiger Architektur-/Technik
 CITY-00-I48b bleibt ein eingeordneter Referenzbeitrag zu CITY-07/CO-COK-0004, keine Produktintegration. Wiederaufnahme erst nach gemeinsamem Plan-Gate und neuer konkreter GUI-Slotantwort; I48a/R47/P48 nicht wiederholen. Danach separate R48 und jeweils Aufräum-P/I/R. Falls Verträge fehlen, nur konkret verfügbare gemeinsame Plan-/Reviewarbeit, keine Leermeldungen oder konkurrierenden Slices.
 
 Planergebnis: eigener Umfang, Fixturevorschlag und Orakel konkretisiert. Offene Punkte: gemeinsame ID-Reservierung/Foreignbindings, P02/P03/P04-Implementierungsowners, Steward, unabhängiger Review und Ratifikation. Keine fremde Ownerstimme.
+
+## Getrennte Aufräumplanung
+
+CITY-E2E-P01-CLEAN-P: Prüfen, dass nur dieser Plan und checkpoint.cityExecution geändert sind; keine acceptance-Freigabe, Fixturedatei, neue Speicher-/Kameraautorität oder Originalinstanz. Relative Planverweise auf Existenz und sieben City-ID-Reservierungen auf Kollision außerhalb dieses Vorschlags prüfen. Alte Anschlussbeschreibung als historischen Vorschlag kenntlich lassen. Wiederaufnahme im Heartbeat an #12-Gate statt bloß freie GUI binden. Umsetzung/Review folgen separat.

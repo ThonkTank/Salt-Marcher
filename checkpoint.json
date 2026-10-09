@@ -4918,17 +4918,17 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-E2E-P01",
-      "kind": "planning",
-      "startedAt": "2026-10-09T21:22:47.645833+00:00",
-      "focus": "Citybeitrag zu gemeinsamen E2E-Gates, feste Fixture-IDs, Ownership",
-      "state": "completed",
-      "result": "Eigener Planvorschlag; keine gemeinsame Ratifikation oder GUI. Kandidatenbranch, unabhängige Integration ausstehend."
-    },
-    "nextRun": {
       "id": "CITY-E2E-P01-CLEAN-P",
       "kind": "cleanup_planning",
-      "focus": "Verweise, IDkollisionen und geschützte Fremdwurzeln prüfen"
+      "startedAt": "2026-10-09T21:23:06.483302+00:00",
+      "focus": "Schutz, Verweise und IDreservierung",
+      "state": "completed",
+      "result": "Konkrete Cleanupprüfungen geplant; keine Produktmutation."
+    },
+    "nextRun": {
+      "id": "CITY-E2E-P01-CLEAN-I",
+      "kind": "cleanup_implementation",
+      "focus": "Planverweise/IDs prüfen und Wiederaufnahmegate erhalten"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
