@@ -4341,17 +4341,17 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-01-PREP-N05-CLEAN-P05",
-      "kind": "cleanup_plan",
-      "startedAt": "2026-10-09T17:52:58.904860+00:00",
-      "focus": "Regressionnachbesserung und Dokumentationsdrift aufräumen",
-      "state": "completed",
-      "result": "Keine unnötige Runtime-/Fixturebereinigung; Gesamt- und Anschlussplan um vorhandenen Draft ergänzen. Separate Umsetzung/Review mit Hash-/Link-/JSONprüfung."
-    },
-    "nextRun": {
       "id": "CITY-01-PREP-N05-CLEAN-I05",
       "kind": "cleanup_implementation",
-      "focus": "Vorhandenen Draft im Gesamt- und Anschlussplan verankern"
+      "startedAt": "2026-10-09T17:53:18.201092+00:00",
+      "focus": "Vorhandenen Draft in Anschluss- und Gesamtplan dokumentieren",
+      "state": "completed",
+      "result": "Beide Pläne verweisen auf reviewten Draft; fehlende sichtbare Gesten/Renderer/Platzierung/Save klar getrennt. Keine Runtime-/Fixtureänderung."
+    },
+    "nextRun": {
+      "id": "CITY-01-PREP-N05-CLEAN-R05",
+      "kind": "cleanup_review",
+      "focus": "Verweise und aktuelle Runtimehashes mit N05/R07 abgleichen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
