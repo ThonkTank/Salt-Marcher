@@ -117569,6 +117569,20 @@
           "measuredScope": "8×8 Wood/Stone: Stone-Rechteck über genau einer Wood-Zelle. Original und Host speichern dieselbe eine Kontur und 18 Zellen; nur (1,1) wechselt Stil und Farbe. Host-Undo/Redo sowie frische Original- und Hostöffnung bestanden.",
           "remaining": "Größere Übermalung, Radieren an der Stilgrenze, Konturpunkte, andere Formen, kombinierte Ränder und DD-038-Endreview offen. Keine Fallfreigabe; P7-2 physisch ungeprüft."
         },
+        "followUpPhase1BuildingFloorMixedEraseCandidate": {
+          "state": "wood_stone_boundary_alt_erase_scoped_host_raw_review_passed_case_open",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "hostBuildSha256": "42ce7de22870def7ba6476fa2a5cad8e38d30e68d51b34cca60691a865a596b3",
+          "originalReport": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-mixed-erase-original-20261009/original-probe.md",
+          "originalSource": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-mixed-erase-original-20261009/native/runs/20261009-081251-3636064/evidence/maps/00-source.dungeondraft_map",
+          "originalErased": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-mixed-erase-original-20261009/native/runs/20261009-081251-3636064/evidence/maps/01-erased.dungeondraft_map",
+          "hostReport": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-mixed-erase-host-20261009/implementation.md",
+          "hostEdit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-mixed-erase-host-20261009/evidence/1791526575061-parity-tools-phase1-building-mixed-edit/result.json",
+          "hostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-mixed-erase-host-20261009/evidence/1791526593619-parity-tools-phase1-building-mixed-reopen/result.json",
+          "audit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-mixed-erase-host-20261009/independent-audit.json",
+          "measuredScope": "8×8 Wood/Stone: Alt-Rechteck (3,1)–(5,2) entfernt eine Zelle jedes Stils. Original und Host speichern eine eingekerbte Achtpunktkontur und 16 gleiche Zellwerte; Undo/Redo sowie frische Original- und Hostöffnung bestanden.",
+          "remaining": "Weitere Radierflächen, Innenlöcher, Konturpunkte, andere Formen, kombinierte Ränder und DD-038-Endreview offen. Keine Fallfreigabe; P7-2 physisch ungeprüft."
+        },
         "followUpPhase1TerrainMaskCandidate": {
           "state": "seeded_host_masks_scoped_review_passed_case_open",
           "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",

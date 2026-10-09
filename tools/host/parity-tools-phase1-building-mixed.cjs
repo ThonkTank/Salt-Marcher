@@ -1,11 +1,13 @@
 const MAP = "Dungeons/Phase1-BuildingMixed/wood-stone.dungeon";
 const OVERPAINT = "Dungeons/Phase1-BuildingMixed/wood-stone-overpaint.dungeon";
+const ERASED = "Dungeons/Phase1-BuildingMixed/wood-stone-erased.dungeon";
 
 module.exports = ({ page, fs, path, assert, crypto, qa, vault, out,
   checks, chooseTool }) => {
   const mapFile = path.join(vault, MAP);
   const baseline = path.join(qa, "mixed-floor-baseline.json");
   const paintedBaseline = path.join(qa, "overpaint-baseline.json");
+  const erasedBaseline = path.join(qa, "mixed-erase-baseline.json");
   const hash = (name = MAP) => crypto.createHash("sha256")
     .update(fs.readFileSync(path.join(vault, name))).digest("hex");
   const state = () => page.evaluate(() => {
@@ -65,6 +67,22 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out,
     assert.ok(doc.smartTiles.filter((cell) => cell.assetId === stoneId)
       .every((cell) => (cell.x >= 4 && cell.x < 7 && cell.y >= 1 && cell.y < 4) ||
         (stoneCount === 10 && cell.x === 1 && cell.y === 1)));
+  }
+  function verifyErased(doc, woodId, stoneId) {
+    assert.equal(doc.settings.width, 8);
+    assert.equal(doc.settings.height, 8);
+    assert.equal(doc.entities.length, 1);
+    assert.equal(doc.entities[0].kind, "building");
+    assert.equal(doc.entities[0].polygons.length, 1);
+    assert.deepEqual(new Set(doc.entities[0].polygons[0].outer
+      .map((point) => `${point.x}:${point.y}`)),
+    new Set(["1:1", "3:1", "3:2", "5:2", "5:1", "7:1", "7:4", "1:4"]));
+    assert.equal(doc.smartTiles.length, 16);
+    assert.equal(doc.smartTiles.filter((cell) => cell.assetId === woodId).length, 8);
+    assert.equal(doc.smartTiles.filter((cell) => cell.assetId === stoneId).length, 8);
+    assert.ok(doc.smartTiles.every((cell) => cell.buildingId === doc.entities[0].id));
+    assert.ok(!doc.smartTiles.some((cell) => cell.y === 1 &&
+      (cell.x === 3 || cell.x === 4)));
   }
   async function edit() {
     const { pckPath } = require("./phase3-fixtures.cjs")({ fs, crypto, assert });
@@ -166,6 +184,40 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out,
       .getByRole("button", { name: "Wiederholen", exact: true }).click();
     verify((await state()).document, wood.id, stone.id, 8, 10);
     checks.push("DD-038 Stone overpaint changes exactly one Wood cell in one Undo step without splitting the contour");
+    await page.evaluate(async ({ name, content }) => {
+      await app.vault.create(name, content);
+    }, { name: ERASED, content: fs.readFileSync(mapFile, "utf8") });
+    await open(ERASED);
+    const eraseEditor = page.locator(".dungeon-native-editor:visible").last();
+    await eraseEditor.locator(".dn-group-rail")
+      .getByRole("button", { name: "Bauwerk", exact: true }).click();
+    await eraseEditor.locator(".dn-tool-rail")
+      .getByRole("button", { name: "Rechteck", exact: true }).click();
+    await eraseEditor.getByRole("group", { name: "Wandstil" })
+      .getByRole("button", { name: "Keine Wand", exact: true }).click();
+    await page.keyboard.down("Alt");
+    try {
+      await draw({ x: 3, y: 1 }, { x: 5, y: 2 }, 16);
+    } finally {
+      await page.keyboard.up("Alt");
+    }
+    const erased = await state();
+    verifyErased(erased.document, wood.id, stone.id);
+    assert.equal(erased.history, 1);
+    await page.screenshot({ path: path.join(out, "wood-stone-erased-edit.png") });
+    await eraseEditor.getByRole("button", { name: "Speichern", exact: true }).click();
+    await page.waitForFunction(() =>
+      !app.workspace.getLeavesOfType("dungeon-native-map").at(-1)
+        ?.view.editor.session.dirty);
+    const erasedSaved = JSON.parse(fs.readFileSync(path.join(vault, ERASED), "utf8"));
+    assert.deepEqual(erasedSaved, erased.document);
+    fs.writeFileSync(erasedBaseline, JSON.stringify({ document: erasedSaved,
+      hash: hash(ERASED), woodId: wood.id, stoneId: stone.id }, null, 2));
+    await eraseEditor.getByRole("button", { name: "Rückgängig", exact: true }).click();
+    verify((await state()).document, wood.id, stone.id);
+    await eraseEditor.getByRole("button", { name: "Wiederholen", exact: true }).click();
+    verifyErased((await state()).document, wood.id, stone.id);
+    checks.push("DD-038 Alt erases Wood and Stone together at their shared boundary in one Undo step");
   }
   async function reopen() {
     const saved = JSON.parse(fs.readFileSync(baseline, "utf8"));
@@ -196,6 +248,20 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out,
     });
     await page.screenshot({ path: path.join(out, "wood-stone-overpaint-fresh.png") });
     checks.push("DD-038 fresh Host keeps one contour and 8+10 cells after Stone overpaint");
+    const erased = JSON.parse(fs.readFileSync(erasedBaseline, "utf8"));
+    await open(ERASED);
+    const erasedFresh = await state();
+    assert.deepEqual(erasedFresh.document, erased.document);
+    assert.equal(hash(ERASED), erased.hash);
+    verifyErased(erasedFresh.document, erased.woodId, erased.stoneId);
+    await page.waitForFunction(() => {
+      const visual = [...app.workspace.getLeavesOfType("dungeon-native-map")
+        .at(-1).view.editor.renderer.visuals.values()]
+        .find((item) => item.entity.kind === "building");
+      return visual?.floorExtraGeometries?.length === 1;
+    });
+    await page.screenshot({ path: path.join(out, "wood-stone-erased-fresh.png") });
+    checks.push("DD-038 fresh Host keeps 8+8 mixed-style cells and the notched contour");
   }
   return { edit, reopen };
 };
