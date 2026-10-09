@@ -3629,17 +3629,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I13-CR",
-      "kind": "cleanup_review",
-      "startedAt": "2026-10-09T12:42:17.658528+00:00",
-      "focus": "Vertragspräzisierung und Belege abschließend prüfen",
-      "state": "completed",
-      "result": "I13-R01 im Plan bereinigt, Hash-/JSON-/Verweis-/Statusreview bestanden; keine Produkt-/Hostabnahme"
-    },
-    "nextRun": {
       "id": "CITY-00-I14-P",
       "kind": "early_reference_planning",
-      "focus": "Nächste frühe Originalwirkung nach Slotstand planen"
+      "startedAt": "2026-10-09T12:43:33.564623+00:00",
+      "focus": "Lokale Watabou-Wirkung planen",
+      "state": "completed",
+      "result": "Getrennte Testkopie vom beobachteten Originalseed, lokaler Zug/Regeneration und angebotene Rücknahme; Save und Seed-Neugenerierung ausdrücklich trennen"
+    },
+    "nextRun": {
+      "id": "CITY-00-I14-I",
+      "kind": "reference_geometry_probe",
+      "focus": "Lokale Watabou-Verformung direkt messen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
