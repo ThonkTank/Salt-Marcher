@@ -3546,17 +3546,17 @@
     "state": "city00_reference_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I08-CP",
-      "kind": "cleanup_planning",
-      "startedAt": "2026-10-09T11:36:24.393915+00:00",
-      "focus": "Quellzuordnung und Perspektivgrenze präzisieren",
-      "state": "completed",
-      "result": "Bereinigung der Originalbelegzuordnung geplant;3D ersetzt keine gemeinsame Zoom-Bearbeitung"
-    },
-    "nextRun": {
       "id": "CITY-00-I08-CI",
       "kind": "cleanup_implementation",
-      "focus": "Präferenzpaare und angewandte Rückkehr verknüpfen"
+      "startedAt": "2026-10-09T11:36:48.482218+00:00",
+      "focus": "Originalwerte und Perspektivstart zuordnen",
+      "state": "completed",
+      "result": "Präferenzpaare gleich; Startpunkt nur in Bildkoordinaten, Rückkehr angewandt; keine unbelegte Fortbewegung"
+    },
+    "nextRun": {
+      "id": "CITY-00-I08-CR",
+      "kind": "cleanup_review",
+      "focus": "Bereinigung prüfen und freien COK-Slot übernehmen"
     },
     "open": [
       "CITY-00 direkte Referenzinventur/Galerie aller drei Produkte",

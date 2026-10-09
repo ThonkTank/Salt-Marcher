@@ -3092,7 +3092,8 @@
         "originalEvidence": [
           "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/manifest.json",
           "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/ftg-general-settings.ax.txt",
-          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i08-browser-20261009/manifest.json"
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i08-browser-20261009/manifest.json",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i08-browser-20261009/evidence-cleanup.json"
         ],
         "task": "3D-Darstellung und Street View ändern und Ergebnis prüfen",
         "phase": "CITY-07",
