@@ -13,23 +13,34 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out, checks, rest
 
   await page.evaluate(() => {
     const calls = [];
+    const coverage = [];
     const relevant = (value) => {
       const name = typeof value === "string" ? value : value?.path;
       return typeof name === "string" &&
-        (/^Atlanten\/O01a /.test(name) || /\.overworld(?:\.|$)/.test(name) || /^Atlasdaten\//.test(name));
+        (/^Atlanten(?:\/|$)/.test(name) || /\.overworld(?:\.|$)/.test(name) || /^Atlasdaten(?:\/|$)/.test(name));
     };
-    for (const [owner, names] of [
-      [app.vault, ["create", "modify", "process", "trash", "delete", "rename", "createFolder"]],
-      [app.vault.adapter, ["write", "remove", "rename", "append", "writeBinary"]],
-    ]) for (const name of names) {
-      const originalMethod = owner[name];
-      if (typeof originalMethod !== "function") continue;
-      owner[name] = function (...args) {
-        if (args.some(relevant)) calls.push({ method: name, target: String(args[0]?.path ?? args[0]) });
-        return originalMethod.apply(this, args);
-      };
+    for (const [label, owner] of [["vault", app.vault], ["adapter", app.vault.adapter]]) {
+      const names = new Set();
+      for (let proto = owner; proto && proto !== Object.prototype; proto = Object.getPrototypeOf(proto))
+        for (const name of Reflect.ownKeys(proto))
+          if (typeof name === "string" && /^(create|modify|process|append|write|copy|rename|remove|delete|trash|mkdir|rmdir)/i.test(name))
+            names.add(name);
+      for (const name of names) {
+        const originalMethod = owner[name];
+        if (typeof originalMethod !== "function") continue;
+        const wrapped = function (...args) {
+          if (args.some(relevant)) calls.push({ api: label, method: name, target: String(args[0]?.path ?? args[0]) });
+          return originalMethod.apply(this, args);
+        };
+        owner[name] = wrapped;
+        if (owner[name] !== wrapped) throw new Error("Atlas write method could not be instrumented: " + label + "." + name);
+        coverage.push(label + "." + name);
+      }
     }
+    for (const required of ["vault.create", "vault.createBinary", "vault.modify", "vault.process", "vault.append", "vault.trash", "adapter.write", "adapter.writeBinary", "adapter.mkdir", "adapter.rmdir"])
+      if (!coverage.includes(required)) throw new Error("Atlas write instrumentation missing: " + required);
     window.__dd036O01aWrites = calls;
+    window.__dd036O01aCoverage = coverage.sort();
   });
 
   const chosen = restart ? transport : original;
@@ -53,13 +64,16 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out, checks, rest
     for (const leaf of app.workspace.getLeavesOfType("dungeon-native-atlas")) leaf.detach();
   });
   await page.locator(".dn-atlas-viewport:visible").waitFor({ state: "detached" });
-  const writes = await page.evaluate(() => window.__dd036O01aWrites);
+  const { writes, coverage } = await page.evaluate(() => ({
+    writes: window.__dd036O01aWrites,
+    coverage: window.__dd036O01aCoverage,
+  }));
   assert.deepEqual(writes, [], "Opening and closing makes zero Atlas file write calls");
   const after = files();
   assert.deepEqual(after, baseline, "Opening and closing retains both exact file hashes");
   assert.deepEqual(fs.readdirSync(path.join(vault, "Atlanten")).sort(),
     ["O01a Original.overworld", "O01a Transport.overworld"]);
   assert(!fs.existsSync(path.join(vault, "Atlasdaten")), "No child, draft or journal files allocated");
-  fs.writeFileSync(path.join(out, "o01a-result.json"), JSON.stringify({ chosen, before, after, observed, writes }, null, 2));
+  fs.writeFileSync(path.join(out, "o01a-result.json"), JSON.stringify({ chosen, before, after, observed, writes, coverage }, null, 2));
   checks.push("DD-036-O01a read-only reference-free Atlas open, stable world.id and byte-identical transport, zero Atlas write calls");
 };
