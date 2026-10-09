@@ -3733,17 +3733,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I18-CI",
-      "kind": "cleanup_implementation",
-      "startedAt": "2026-10-09T13:36:14.533758+00:00",
-      "focus": "Caption-Grenzen ergänzen",
-      "state": "completed",
-      "result": "Sechs Rohbilder wahrheitsgemäß zugeordnet; ein Fehler und ungeklärte zweite Antwort getrennt, keine Bewohner-/Geometrieabnahme."
-    },
-    "nextRun": {
       "id": "CITY-00-I18-CR",
       "kind": "cleanup_review",
-      "focus": "Rohschutz und Zugangsbeschränkung reviewen"
+      "startedAt": "2026-10-09T13:36:33.749046+00:00",
+      "focus": "Rohschutz und Belegumfang reviewen",
+      "state": "completed",
+      "result": "Aufräumreview bestanden; Bewohnerdetails weiterhin ungeprüft, Originaltabs erhalten. Keine Produktimplementierung oder Paritätsfreigabe."
+    },
+    "nextRun": {
+      "id": "CITY-00-I19-P",
+      "kind": "reference_planning",
+      "focus": "HEX-05-Übergabe prüfen und nächste zugängliche Originalwirkung auswählen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
