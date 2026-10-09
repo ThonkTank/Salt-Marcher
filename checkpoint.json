@@ -4369,7 +4369,7 @@
     "nextRun": {
       "id": "CITY-01-PREP-R09",
       "kind": "review",
-      "focus": "Precision-Reparatur gegen Originalgegenprobe und echte kleine Skalierung reviewen"
+      "focus": "Bestehende N06-Präzisionsreparatur sicher reviewen; konsolidierten Teamabgleich vor neuem Anschluss-/Featurepaket lesen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
@@ -4384,7 +4384,17 @@
       "ownResponsibility": "Stadtpfad und seine Referenz-/Funktions-/Bedienabnahmen; gemeinsame Abschlusskoordination",
       "handoff": "HEX-05-Vertrag vor CITY-01; keine zweite Kamera oder History",
       "state": "responsibilities_confirmed_hex_basis_then_city",
-      "confirmedHexResponsibility": "Lokaler Kollege schließt HEX-00 und implementiert HEX-01 bis HEX-05; Übergabevertrag aus Stadtplan ausdrücklich bestätigt."
+      "confirmedHexResponsibility": "Lokaler Kollege schließt HEX-00 und implementiert HEX-01 bis HEX-05; Übergabevertrag aus Stadtplan ausdrücklich bestätigt.",
+      "teamCheckin": {
+        "updatedAt": "2026-10-09T18:12:38.818649+00:00",
+        "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1#issuecomment-6086617328",
+        "package": "CITY-01-PREP-N06",
+        "commit": "9f9e188857668fa849d3ce67823fc8876cfbaeac",
+        "state": "published_awaiting_consolidated_team_response",
+        "provided": "Citydocument-/Elementidentitäten, materialisierte Metergeometrie, lesende CityScene/Hit-Projektion und gemeinsame AtlasHistory-Grenze",
+        "notProvided": "LiveScene/SceneClock/Focus/Split/Rejoin/Travel/Zeit-/Placement-/Router-/Detail-Lifecycle-API",
+        "gate": "Kein neues Schnittstellen-/Featurepaket vor gemeinsamem Teamabgleich; vorhandenes N06 inklusive ausstehendem R09 sicher abschließen."
+      }
     }
   },
   "testFixturePortability": {
