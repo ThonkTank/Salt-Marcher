@@ -27,6 +27,9 @@ export class FileTransaction {
     readonly journalPath: string,
     private allowed: (path: string) => boolean,
     private serializationScope: object = store,
+    private recoveryValidator?: (
+      journal: AtlasFileJournal,
+    ) => void | Promise<void>,
   ) {
     safePath(journalPath);
   }
@@ -114,7 +117,8 @@ export class FileTransaction {
     if (raw === null) return "none";
     const journal = this.parse(raw);
     // The owner validates this exact parsed journal inside the recovery queue.
-    await validate?.(journal);
+    await this.recoveryValidator?.(journal);
+    if (validate !== this.recoveryValidator) await validate?.(journal);
     if ((await this.store.read(this.journalPath)) !== raw)
       throw new FileConflict(this.journalPath);
     // Validate every target before repairing any; unknown external bytes stay untouched.
