@@ -4081,17 +4081,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I37-P",
-      "kind": "reference_planning",
-      "startedAt": "2026-10-09T15:47:23.617274+00:00",
-      "focus": "Fluss und Umgebung",
+      "id": "CITY-00-I38-I",
+      "kind": "reference_implementation",
+      "startedAt": "2026-10-09T15:54:09.203174+00:00",
+      "focus": "Küsten-/Hafenwirkung",
       "state": "completed",
-      "result": "Kontrollierter River-Rebuild-Vergleich und tatsächliche Rückstellung geplant."
+      "result": "Vollständige13/14-Gruppenprobe und bytegleiche Rückstellung gesichert; Hafenplan präzisiert."
     },
     "nextRun": {
-      "id": "CITY-00-I37-I",
-      "kind": "reference_implementation",
-      "focus": "River-Feature mit echter Ausgabe prüfen"
+      "id": "CITY-00-I38-R",
+      "kind": "reference_review",
+      "focus": "Zusätzliche Wassergruppe und Steggrenzen prüfen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
