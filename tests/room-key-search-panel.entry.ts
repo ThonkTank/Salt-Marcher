@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 import { parseHTML } from "linkedom";
 import { addFloor, createRoom } from "../src/commands";
@@ -84,6 +85,8 @@ test("room key search panel filters immediately, clears to overview and unsubscr
   assert.equal(root.querySelectorAll(".dn-room-key-search-result").length, 2);
   assert.match(root.querySelector('[role="status"]')?.textContent ?? "", /2 Räume/);
   const input = root.querySelector<HTMLInputElement>('input[type="search"]')!;
+  assert.equal(input.autocomplete, "off");
+  assert.equal(input.value, "");
   input.focus();
   input.value = "blaue fackel";
   input.dispatchEvent(event(window, "input"));
@@ -115,7 +118,42 @@ test("room key search panel filters immediately, clears to overview and unsubscr
   panel.destroy();
   createRoom(session, floor.id, outline(24), "QA/Räume");
   assert.equal(root.childElementCount, 0);
+  const reopened = new RoomKeySearchPanel(root, session, {
+    activate: () => "activated",
+  });
+  assert.equal(root.querySelector<HTMLInputElement>('input[type="search"]')!.value, "");
+  assert.match(root.querySelector('[role="status"]')?.textContent ?? "", /4 Räume/);
+  reopened.destroy();
   assert.ok(first);
+});
+
+test("room key search yields a clean key dock, but dirty draft blocks before layout mutation", () => {
+  const methods = DungeonEditor.prototype as unknown as Record<string, Function>;
+  let allowed = false;
+  const calls: string[] = [];
+  const fake = {
+    allowKeyNavigation: () => allowed,
+    toggleKey: (open: boolean) => calls.push(`key:${open}`),
+    showGroup: (group: string) => calls.push(`group:${group}`),
+    showPanel: (panel: string) => calls.push(`panel:${panel}`),
+    roomKeySearchPanel: { focus: () => calls.push("focus") },
+  };
+  methods.openRoomKeySearch!.call(fake);
+  assert.deepEqual(calls, []);
+  allowed = true;
+  methods.openRoomKeySearch!.call(fake);
+  assert.deepEqual(calls, [
+    "key:false",
+    "group:content",
+    "panel:room-key-search",
+    "focus",
+  ]);
+});
+
+test("room key result CSS keeps the location line visible in the 256px inspector", () => {
+  const css = readFileSync("styles.css", "utf8");
+  assert.match(css, /\.dn-room-key-search-result\s*\{[^}]*height:\s*auto;[^}]*min-height:\s*44px;/s);
+  assert.match(css, /\.dn-room-key-search-location\s*\{[^}]*flex:\s*0 0 auto;[^}]*white-space:\s*normal;/s);
 });
 
 test("room key search panel rejects a stale rendered target without activation", async () => {
