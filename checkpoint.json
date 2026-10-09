@@ -3444,17 +3444,17 @@
     "state": "city00_reference_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I06-CI",
-      "kind": "cleanup_implementation",
-      "startedAt": "2026-10-09T10:53:55.476034+00:00",
-      "focus": "Echte gehaltene Sperre und RFB-Zielvertrag prüfen",
-      "state": "completed",
-      "result": "Sperrdeskriptor/PID/Inode plus Ownerstartticks und Display-Port-Rollen geprüft; fünf Offline-Grenztests grün. Btrfs-dev-Abweichung durch tatsächlichen fdinfo-Beleg gelöst."
-    },
-    "nextRun": {
       "id": "CITY-00-I06-CR",
       "kind": "cleanup_review",
-      "focus": "R01/R02, fünf Tests und Live-Startbereitschaft reviewen"
+      "startedAt": "2026-10-09T10:54:28.931093+00:00",
+      "focus": "Sperr- und Zielreparatur vor Originalstart reviewen",
+      "state": "completed",
+      "result": "R01/R02 geschlossen; fünf Offline-Tests grün; check/build grün, drei fehlende externe Fixtures als offene Baselinegrenze erfasst. Freier GUI-Platz bestätigt."
+    },
+    "nextRun": {
+      "id": "CITY-00-I06-NI",
+      "kind": "native_original_probe",
+      "focus": "Ein enger COK-Start-/Werkzeugbeleg und normaler Abschluss unter eigener Sperre"
     },
     "open": [
       "CITY-00 direkte Referenzinventur/Galerie aller drei Produkte",
