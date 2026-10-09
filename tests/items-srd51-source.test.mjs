@@ -63,7 +63,7 @@ test("items source package is explicitly incomplete and fails closed by default"
   const result = await verifyItemsSourcePackage({ allowIncomplete: true });
   assert.equal(result.complete, false);
   assert.equal(result.validation.occurrenceCount, 50);
-  assert.equal(result.validation.recordCount, 13);
+  assert.equal(result.validation.recordCount, 50);
   assert.ok(result.blockers.length >= 5);
 });
 
@@ -106,7 +106,7 @@ test("variant identities and occurrence references fail closed", () => {
     inventory(occurrence)), /unbekannte Occurrence/);
 });
 
-test("Draft 2020-12 schemas validate the checked-in armor inventory and transcript", async () => {
+test("Draft 2020-12 schemas validate the checked-in equipment inventory and transcript", async () => {
   const [schema, checkedInventory, checkedTranscript] = await Promise.all([
     readFile(new URL("items-srd51-schema-v1.json", dataRoot), "utf8").then(JSON.parse),
     readFile(new URL("items-srd51-inventory.json", dataRoot), "utf8").then(JSON.parse),
@@ -127,4 +127,25 @@ test("armor source goldens preserve cost, missing values and literal AC semantic
   assert.equal(byName.get("Chain Mail").armor.strengthRequirementText, "Str 13");
   assert.equal(byName.get("Shield").armor.armorClassText, "+2");
   assert.equal("strengthRequirementText" in byName.get("Padded Armor").armor, false);
+});
+
+test("weapon source goldens preserve ordered properties, literal damage and missing values", async () => {
+  const checkedTranscript = JSON.parse(await readFile(new URL("items-srd51-transcript.json", dataRoot), "utf8"));
+  const byName = new Map(checkedTranscript.records.map(record => [record.name, record]));
+  assert.deepEqual(byName.get("Spear").damage,
+    { diceText: "1d6", typeText: "piercing", versatileDiceText: "1d8" });
+  assert.deepEqual(byName.get("Spear").properties.map(({ name, description }) => ({ name, description })), [
+    { name: "Thrown", description: "range 20/60" },
+    { name: "Versatile", description: "1d8" },
+  ]);
+  assert.equal(byName.get("Blowgun").damage.diceText, "1");
+  assert.equal("weight" in byName.get("Sling"), false);
+  assert.equal("damage" in byName.get("Net"), false);
+  assert.deepEqual(byName.get("Net").properties.map(({ name, description }) => ({ name, description })), [
+    { name: "Special", description: undefined },
+    { name: "Thrown", description: "range 5/15" },
+  ]);
+  assert.deepEqual(byName.get("Net").source.pdfPages, [65, 66]);
+  assert.equal(checkedTranscript.records.some(record => record.properties.some(property => property.name === "Monk")),
+    false);
 });
