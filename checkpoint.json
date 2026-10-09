@@ -4060,17 +4060,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I33-CI",
-      "kind": "cleanup_implementation",
-      "startedAt": "2026-10-09T15:32:23.078589+00:00",
-      "focus": "Straßenbelege CI",
-      "state": "completed",
-      "result": "Snapshot enthält kontrollierte Road-/Gate-Rebuild-Wirkung. I32-Beleg erklärt jetzt ausdrücklich nur unmittelbare ausstehende OFF-Control, keine dauerhafte Wiederherstellung; I33-Start zeigt GreensON. Effektives Default in I33 angewendet, inaktives Number-Feld3 erhalten."
-    },
-    "nextRun": {
       "id": "CITY-00-I33-CR",
       "kind": "cleanup_review",
-      "focus": "Straßenbelege und Snapshot CR"
+      "startedAt": "2026-10-09T15:32:36.785913+00:00",
+      "focus": "Straßenbelege CR",
+      "state": "completed",
+      "result": "Snapshot, acceptance und technische CITY-02/05-Präzisierung einschließlich I32-Restaurationsgrenze stimmen. Tatsächliche Kopien, Hashes und sämtliche Inventarbelegziele gültig;64/24 Pflichten offen. Aufräumumfang ohne Restbefund. Nächster Schritt prüft Maximum-Variante und erreichbare Anschlussanzahl, sofern HEX-05 noch nicht übergeben."
+    },
+    "nextRun": {
+      "id": "CITY-00-I34-P",
+      "kind": "reference_planning",
+      "focus": "Maximum-Vorgabe und Anschlussanzahl prüfen; HEX-05 prüfen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",

@@ -541,3 +541,5 @@ CITY-00-I33-R Start 2026-10-09T15:31:59.274072+00:00; Drei echte Downloadkopien,
 CITY-00-I33-CP Start 2026-10-09T15:32:10.337178+00:00; Plan: CO-WAT-0010-Snapshot um Number3 und tatsächliche bytegleiche Default-Rückstellung ergänzen. I32-Restaurationsgrenze in acceptance/Plan ausdrücklich präzisieren und mit I33 belegen, unveränderte historische Rawdateien erhalten. Alle Verweise/Hashes und64/24 offene Pflichten prüfen; CI/CR getrennt.
 
 CITY-00-I33-CI Start 2026-10-09T15:32:23.078589+00:00; Snapshot enthält kontrollierte Road-/Gate-Rebuild-Wirkung. I32-Beleg erklärt jetzt ausdrücklich nur unmittelbare ausstehende OFF-Control, keine dauerhafte Wiederherstellung; I33-Start zeigt GreensON. Effektives Default in I33 angewendet, inaktives Number-Feld3 erhalten.
+
+CITY-00-I33-CR Start 2026-10-09T15:32:36.785913+00:00; Snapshot, acceptance und technische CITY-02/05-Präzisierung einschließlich I32-Restaurationsgrenze stimmen. Tatsächliche Kopien, Hashes und sämtliche Inventarbelegziele gültig;64/24 Pflichten offen. Aufräumumfang ohne Restbefund. Nächster Schritt prüft Maximum-Variante und erreichbare Anschlussanzahl, sofern HEX-05 noch nicht übergeben.
