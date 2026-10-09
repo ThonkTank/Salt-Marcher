@@ -1481,6 +1481,13 @@
       "atlasRoadmap": "ROADMAP-HEX-ATLAS.md",
       "next": "HEX-01-Atlasanlage ohne Größenabfrage und verbleibende übertragbare Dungeon-/Ansichtsfunktionen getrennt prüfen."
     },
+    "dd006ShadowPlan": {
+      "date": "2026-10-09",
+      "state": "plan_recorded_original_render_probe_next",
+      "plan": "ROADMAP-PARITY-TOOLS-PHASE1-DD006-SHADOW-PLAN.md",
+      "cases": "DD-006.03/.04",
+      "next": "Vier Original-Rohkarten mit gleicher Geometrie und getrennten Schattenwerten im Original rendern und frisch öffnen; danach isolierten Hostvergleich durchführen. New-Map-Bedienung ist historisch."
+    },
     "dd001002Plan": {
       "date": "2026-10-09",
       "state": "superseded_by_single_atlas_user_decision",
