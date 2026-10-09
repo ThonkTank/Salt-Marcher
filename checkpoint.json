@@ -3978,17 +3978,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I28-I",
-      "kind": "reference_probe",
-      "startedAt": "2026-10-09T15:02:49.736313+00:00",
-      "focus": "Dach- und Blockdarstellung prüfen",
+      "id": "CITY-00-I28-CI",
+      "kind": "cleanup_implementation",
+      "startedAt": "2026-10-09T15:04:03.424384+00:00",
+      "focus": "Dach-/Blockbelege CI",
       "state": "completed",
-      "result": "Roofs Plain→Gable→Plain zeigt zusätzliche Dachfirst-/Teilflächenlinien. Display mode Lots→Block→Lots zeigt zusammengefasste Flächen statt Einzelgebäuden. Sichtbare Optionen Roofs Plain/Hip/Gable und Display Block/Lots/Complex/Hidden; Hip/Complex/Hidden-Wirkungen ungeprüft. Processing Offset und Raised/Solids unverändert. Keine Geometrie-/Save-/Exportwirkung geprüft."
+      "result": "Snapshot auf I28, Gable-/Block-Sichtwirkung und offene weitere Vorgaben/Einzelbearbeitung/Persistenz aktualisiert; keine Rawdatei oder fremde Wurzel verändert."
     },
     "nextRun": {
-      "id": "CITY-00-I28-R",
-      "kind": "reference_review",
-      "focus": "Teilwirkung, Rücksetzung und Grenzen prüfen"
+      "id": "CITY-00-I28-CR",
+      "kind": "cleanup_review",
+      "focus": "Scope und Rawschutz nachprüfen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
