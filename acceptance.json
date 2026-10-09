@@ -4170,7 +4170,7 @@
         "task": "Ruhetag manuell überschreiben ändern und Ergebnis prüfen",
         "phase": "CITY-07",
         "caseIds": [],
-        "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
+        "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md: CITY-07; Zeit/Resttagpolitik mit zuständigen gemeinsamen Zeitbesitzern ratifizieren, Aktivität aus stabilen Personen-/Wohn-/Arbeitsreferenzen ableiten; manueller Override explizit, keine neue CitySceneClock.",
         "implementationEvidence": [],
         "hostEvidence": [],
         "comparisonEvidence": [],
@@ -4194,7 +4194,8 @@
             "Reload/freshprocess persistence",
             "Full population schedules and dependencies",
             "Own model/commands/Host/UX/physical comparison"
-          ]
+          ],
+          "limits": "One temporary settlement, same-date sequence. Visible references/names, not stable serialized IDs. No version, persistence, universal calendar or independent reference review proof."
         }
       },
       {
