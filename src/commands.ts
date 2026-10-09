@@ -42,6 +42,7 @@ import {
   applyBuildingWallStyle,
   type BuildingWallStyle,
 } from "./features/bau/building-wall-style";
+import { resizeTerrainMasks } from "./features/material/terrain-mask-resize";
 
 export function createRoom(
   session: Session,
@@ -808,10 +809,16 @@ function duplicateStructuredFloor(session: Session, sourceId: string): Floor {
     };
     return { ...entity, ...common };
   });
+  const tiles = session.smartTiles;
+  const copiedTiles = tiles?.filter((cell) => cell.floorId === sourceId)
+    .map((cell) => ({ ...cell, floorId: floor.id,
+      ...(cell.buildingId ? { buildingId: ids.get(cell.buildingId) ?? cell.buildingId } : {}) }));
   session.execute({
     label: "Geschoss kopieren",
     floors: [{ id: floor.id, before: null, after: floor }],
     entities: copies.map((entity) => ({ id: entity.id, before: null, after: entity })),
+    ...(tiles && copiedTiles ? { smartTiles: { before: tiles,
+      after: [...tiles, ...copiedTiles] } } : {}),
     content: { before: session.content, after: { ...session.content,
       occurrences: [...session.content.occurrences, ...sourceOccurrences.map((item) => ({
         ...item, id: occurrenceIds.get(item.id)!, roomId: ids.get(item.roomId)!,
@@ -858,12 +865,20 @@ export function resizeMap(
     const x = cell.x + margins.left, y = cell.y + margins.top;
     return x < 0 || y < 0 ? [] : [{ ...cell, x, y }];
   });
+  const terrainMasks = session.terrainMasks;
+  const movedMasks = terrainMasks === undefined ? undefined : resizeTerrainMasks(
+    terrainMasks, before.width, before.height, width, height,
+    margins.left, margins.top,
+  );
   session.execute({
     label: "Karteneinstellungen ändern",
     settings: { before, after },
     entities: changes,
     ...(smartTiles !== undefined
       ? { smartTiles: { before: smartTiles, after: movedTiles! } }
+      : {}),
+    ...(terrainMasks !== undefined
+      ? { terrainMasks: { before: terrainMasks, after: movedMasks! } }
       : {}),
   });
   if (values.some((value) => value !== 0)) session.clearHistory();

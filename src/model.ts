@@ -42,6 +42,8 @@ export interface Building extends BaseEntity {
   readonly fill: number;
   /** Optional for maps saved before Building RGBA controls existed. */
   readonly floorAlpha?: number;
+  /** V4 Building floor uses stored cells, including after a map crop. */
+  readonly floorTileRaster?: boolean;
   readonly wall: number;
   readonly wallAlpha?: number;
   readonly wallBevel?: boolean;
@@ -312,10 +314,17 @@ export interface DungeonContent {
 }
 export interface SmartTileCell {
   readonly floorId: Id;
+  readonly buildingId?: Id;
   readonly x: number;
   readonly y: number;
   readonly assetId: string;
   readonly color: number;
+}
+/** RGBA splat samples at four samples per field axis, encoded as Base64. */
+export interface TerrainMask {
+  readonly floorId: Id;
+  readonly splat: string;
+  readonly splat2?: string;
 }
 export interface MapDocument {
   readonly format: "dungeon-map";
@@ -327,6 +336,8 @@ export interface MapDocument {
   readonly content: DungeonContent;
   /** Optional V4 raster; older maps retain their original representation. */
   readonly smartTiles?: readonly SmartTileCell[];
+  /** Optional V4 terrain weights; absent on cards without a terrain raster. */
+  readonly terrainMasks?: readonly TerrainMask[];
 }
 export type MapDocumentV2 = Omit<MapDocument, "version"> & {
   readonly version: 2;
@@ -450,6 +461,8 @@ export function validateEntity(
       !Number.isInteger(e.fill) ||
       (e.floorAlpha !== undefined &&
         (!Number.isInteger(e.floorAlpha) || e.floorAlpha < 0 || e.floorAlpha > 255)) ||
+      (e.floorTileRaster !== undefined &&
+        (version !== 4 || typeof e.floorTileRaster !== "boolean")) ||
       !Number.isInteger(e.wall) ||
       (e.wallAlpha !== undefined &&
         (!Number.isInteger(e.wallAlpha) || e.wallAlpha < 0 || e.wallAlpha > 255)) ||
@@ -724,6 +737,11 @@ export function validateDocument(doc: MapDocument): void {
       throw new Error("Smart-Tile-Zellen benötigen Kartenformat V4.");
     validateSmartTileCells(doc.smartTiles, doc.settings.width, doc.settings.height, floors);
   }
+  if (doc.terrainMasks !== undefined) {
+    if (doc.version !== 4)
+      throw new Error("Terrainmasken benötigen Kartenformat V4.");
+    validateTerrainMasks(doc.terrainMasks, doc.settings.width, doc.settings.height, floors);
+  }
   for (const e of entities.values())
     validateEntity(e, floors, (id) => entities.get(id), doc.version);
   for (const e of entities.values()) if (e.keyTarget) {
@@ -748,9 +766,43 @@ export function validateSmartTileCells(
       typeof cell.assetId !== "string" || !cell.assetId.trim() ||
       !Number.isInteger(cell.color) || cell.color < 0 || cell.color > 0xffffff)
       throw new Error("Ungültige Smart-Tile-Zelle.");
+    if (cell.buildingId !== undefined &&
+        (typeof cell.buildingId !== "string" || !cell.buildingId))
+      throw new Error("Ungültige Building-Zellzuordnung.");
     const key = `${cell.floorId}:${cell.x}:${cell.y}`;
     if (positions.has(key)) throw new Error("Doppelte Smart-Tile-Zelle.");
     positions.add(key);
+  }
+}
+export function decodeTerrainMask(value: string, width: number, height: number): Uint8Array {
+  const expected = width * height * 64;
+  if (typeof value !== "string" || value.length !== Math.ceil(expected / 3) * 4 ||
+      !/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(value))
+    throw new Error("Ungültige Terrainmaske.");
+  let binary: string;
+  try { binary = atob(value); }
+  catch { throw new Error("Ungültige Terrainmaske."); }
+  if (binary.length !== expected) throw new Error("Ungültige Terrainmaske.");
+  return Uint8Array.from(binary, (char) => char.charCodeAt(0));
+}
+export function encodeTerrainMask(bytes: Uint8Array): string {
+  let binary = "";
+  for (let offset = 0; offset < bytes.length; offset += 8192)
+    binary += String.fromCharCode(...bytes.subarray(offset, offset + 8192));
+  return btoa(binary);
+}
+export function validateTerrainMasks(
+  masks: readonly TerrainMask[], width: number, height: number,
+  floors: ReadonlyMap<Id, Floor>,
+): void {
+  if (!Array.isArray(masks)) throw new Error("Ungültige Terrainmasken.");
+  const seen = new Set<Id>();
+  for (const mask of masks) {
+    if (!mask || !floors.has(mask.floorId) || seen.has(mask.floorId))
+      throw new Error("Ungültige Terrainmaske.");
+    seen.add(mask.floorId);
+    decodeTerrainMask(mask.splat, width, height);
+    if (mask.splat2 !== undefined) decodeTerrainMask(mask.splat2, width, height);
   }
 }
 export function validateContent(

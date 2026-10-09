@@ -68,7 +68,8 @@ import { ObjectLibraryPanel } from "./features/objekte/object-library-panel";
 import { objectWheelDirection, rotateObjectRadians, scaleObjectStep } from "./features/objekte/object-gestures";
 import type { ObjectTagDocument } from "./features/objekte/object-tags";
 import { floorEraseActive } from "./drawing";
-import { buildingWearMode, type BuildingWearMode } from "./features/material/native-path-catalog";
+import { buildingWearMode, isNativeFloorAssetId, type BuildingWearMode } from "./features/material/native-path-catalog";
+import { buildingFloorCells } from "./features/material/building-floor-cells";
 import {
   buildingPointGripPixels,
   buildingVertexGrip,
@@ -3093,6 +3094,8 @@ export class DungeonEditor {
                   wallAlpha: floorWallStyle.wallAlpha,
                   wallBevel: floorWallStyle.wallBevel,
                   wallWidth: floorWallStyle.wallWidth,
+                  ...(this.session.version === 4 && isNativeFloorAssetId(material?.assetId)
+                    ? { floorTileRaster: true } : {}),
                   ...(floorWallStyle.wallAssetId
                     ? { wallAssetId: floorWallStyle.wallAssetId } : {}),
                   ...(material ? { material } : {}),
@@ -3110,7 +3113,18 @@ export class DungeonEditor {
             } : {}),
           });
         if (!plan.command) return;
-        this.session.execute(plan.command);
+        if (newBuilding?.floorTileRaster) {
+          const added = buildingFloorCells(newBuilding,
+            this.session.settings.width, this.session.settings.height);
+          const previous = this.session.smartTiles;
+          const positions = new Set(added.map((cell) =>
+            `${cell.floorId}:${cell.x}:${cell.y}`));
+          this.session.execute({ ...plan.command, smartTiles: {
+            before: previous,
+            after: [...(previous ?? []).filter((cell) =>
+              !positions.has(`${cell.floorId}:${cell.x}:${cell.y}`)), ...added],
+          } });
+        } else this.session.execute(plan.command);
         selected = plan.selectedId;
       } else {
         const changes: RecordChange<Entity>[] = [];

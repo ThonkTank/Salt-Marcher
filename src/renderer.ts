@@ -26,6 +26,7 @@ import {
   type MapObject,
   type ReferenceImage,
   isRoom,
+  decodeTerrainMask,
 } from "./model";
 import { Session } from "./session";
 import { objectSelectionFrame, selectionFrame, type SelectionFrame, type TransformSelection } from "./selection";
@@ -135,6 +136,7 @@ export class MapRenderer {
   readonly app = new Application();
   private world = new Container();
   private mapBackground = new Graphics();
+  private terrainMaskLayer = new Graphics();
   private smartTileLayer = new Graphics();
   private grid = new Graphics();
   private referenceLayer = new Container();
@@ -331,6 +333,7 @@ export class MapRenderer {
     this.detailLayer.sortableChildren = true;
     this.world.addChild(
       this.mapBackground,
+      this.terrainMaskLayer,
       this.smartTileLayer,
       this.referenceLayer,
       this.areaShadowLayer,
@@ -394,7 +397,7 @@ export class MapRenderer {
         const e = this.session.entities.get(id) ?? this.visuals.get(id)?.entity;
         return e?.kind === "building";
       });
-      if (event.floors || rebuildForSettings || event.smartTiles) {
+      if (event.floors || rebuildForSettings || event.smartTiles || event.terrainMasks) {
         this.rebuild();
         if (rebuildForSettings) this.drawMapMask();
       }
@@ -542,6 +545,11 @@ export class MapRenderer {
         !building.polygons.length) { clear(); return; }
     const columns = texture.width / 256,
       variants = this.floorVariants(building.floorId, replacement),
+      storedCells = building.floorTileRaster && !replacement
+        ? new Set((this.session.smartTiles ?? [])
+          .filter((cell) => cell.buildingId === building.id)
+          .map((cell) => `${cell.x}:${cell.y}`))
+        : undefined,
       positions: number[] = [], uvs: number[] = [], indices: number[] = [];
     for (const polygon of building.polygons) {
       const xs = polygon.outer.map((point) => point.x),
@@ -552,6 +560,7 @@ export class MapRenderer {
         maxY = Math.min(this.settings.height, Math.ceil(Math.max(...ys)));
       for (let y = minY; y < maxY; y++)
         for (let x = minX; x < maxX; x++) {
+          if (storedCells && !storedCells.has(`${x}:${y}`)) continue;
           const storedVariant = variants[y * this.settings.width + x]!;
           // A diagonal can cover part of a cell while its center is outside.
           // The polygon mask clips this fallback tile to the occupied part.
@@ -595,11 +604,13 @@ export class MapRenderer {
     mask.clear();
     underlay.clear();
     for (const polygon of building.polygons) {
-      underlay.poly(polygon.outer.flatMap((point) => [point.x, point.y]), true)
-        .fill(0x252525);
-      for (const hole of polygon.holes)
-        underlay.poly(hole.flatMap((point) => [point.x, point.y]), true)
-          .cut();
+      if (!storedCells) {
+        underlay.poly(polygon.outer.flatMap((point) => [point.x, point.y]), true)
+          .fill(0x252525);
+        for (const hole of polygon.holes)
+          underlay.poly(hole.flatMap((point) => [point.x, point.y]), true)
+            .cut();
+      }
       mask.poly(polygon.outer.flatMap((point) => [point.x, point.y]), true)
         .fill(0xffffff);
       for (const hole of polygon.holes)
@@ -628,6 +639,7 @@ export class MapRenderer {
       if (e.floorId === this.floorId || e.floorId === this.compareFloor)
         this.sync(e.id);
     this.syncVisualOrder();
+    this.drawTerrainMasks();
     this.drawSmartTiles();
     this.drawGrid();
     this.drawSelection();
@@ -1235,7 +1247,7 @@ export class MapRenderer {
         : { color: e.kind === "building" ? e.fill : e.color,
             alpha: floorAlpha };
     const polygons = e.polygons;
-    if (!nativeFloor)
+    if (!nativeFloor && !(e.kind === "building" && e.floorTileRaster))
       for (const p of polygons) {
         g.poly(
           p.outer.flatMap((q) => [q.x, q.y]),
@@ -1616,10 +1628,44 @@ export class MapRenderer {
     const graphics = this.smartTileLayer.clear();
     const { width, height } = this.session.settings;
     for (const cell of this.session.smartTiles ?? []) {
+      if (cell.buildingId) continue;
       if (cell.floorId !== this.floorId || cell.x >= width || cell.y >= height)
         continue;
       graphics.rect(cell.x, cell.y, 1, 1).fill(cell.color);
     }
+  }
+  private drawTerrainMasks(): void {
+    const graphics = this.terrainMaskLayer.clear();
+    const mask = this.session.terrainMasks?.find((item) => item.floorId === this.floorId);
+    if (!mask) return;
+    const { width, height } = this.session.settings;
+    const primary = decodeTerrainMask(mask.splat, width, height);
+    const secondary = mask.splat2
+      ? decodeTerrainMask(mask.splat2, width, height) : undefined;
+    const colors = [0x887653, 0x6f8055, 0x77716a, 0xb2a27c,
+      0x526d62, 0x998569, 0x757e83, 0x9e927b];
+    const pixelWidth = width * 4;
+    for (let y = 0; y < height; y++)
+      for (let x = 0; x < width; x++) {
+        const weights = Array<number>(secondary ? 8 : 4).fill(0);
+        for (let sy = 0; sy < 4; sy++)
+          for (let sx = 0; sx < 4; sx++) {
+            const offset = ((y * 4 + sy) * pixelWidth + x * 4 + sx) * 4;
+            for (let channel = 0; channel < 4; channel++) {
+              weights[channel]! += primary[offset + channel]!;
+              if (secondary) weights[channel + 4]! += secondary[offset + channel]!;
+            }
+          }
+        // The default red sample leaves the ordinary map background visible.
+        if (weights[0] === 16 * 255 && weights.slice(1).every((value) => value === 0))
+          continue;
+        const total = weights.reduce((sum, value) => sum + value, 0);
+        if (!total) continue;
+        const channel = (shift: number) => Math.round(weights.reduce((sum, value, index) =>
+          sum + value * ((colors[index]! >> shift) & 255), 0) / total);
+        const color = (channel(16) << 16) | (channel(8) << 8) | channel(0);
+        graphics.rect(x, y, 1, 1).fill(color);
+      }
   }
   setGridVisible(visible: boolean): void {
     this.appearance.grid = visible;
