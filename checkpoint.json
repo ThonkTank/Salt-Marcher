@@ -422,31 +422,17 @@
     "state": "r01_r02_pass_scoped_cleanup_open",
     "plan": "ROADMAP-HEX-02-PLAN.md",
     "currentRun": {
-      "run": "HEX-02-R02",
-      "state": "completed_pass_scoped",
-      "candidate": "0fdc76c3cae7aa3b65b26308697c8fd716e997ef",
-      "reviewerThread": "01a1204f-d184-7567-bfb3-d3ab06a0d07e",
-      "startedAt": "2026-10-09T19:19:16+00:00",
-      "finishedAt": "2026-10-09T19:21:30+00:00",
-      "evidence": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1#issuecomment-6087698506",
-      "requiredFindings": [],
-      "closedFindings": [
-        "HEX02-R01-01",
-        "HEX02-R01-02"
-      ],
-      "checkPassed": true,
-      "testsPassed": 373,
-      "buildPassed": true,
-      "nativeOnThisBuild": false,
-      "phaseApproval": false,
-      "scope": "Independent read-only exact source/Core/DOM P1 re-review; Root native N01-H01 separate, CLEAN/phase/overall Go not given.",
-      "id": "HEX-02-R02",
-      "kind": "independent_re_review"
-    },
-    "nextRun": {
       "id": "HEX-02-CLEAN-P01",
       "kind": "cleanup_plan",
-      "focus": "Bounded formatting/provenance cleanup only, then separate implementation/review and HEX03."
+      "startedAt": "2026-10-09T19:26:10.493235+00:00",
+      "finishedAt": "2026-10-09T19:26:10.493235+00:00",
+      "state": "completed",
+      "focus": "Exactly two cleanup findings: AST-preserving formatting of atlas-view/own native helper; accurate current provenance/next HEX03. No feature scope."
+    },
+    "nextRun": {
+      "id": "HEX-02-CLEAN-I01",
+      "kind": "cleanup_implementation",
+      "focus": "Format only two named files, AST-equivalence and same native buildtriplet plus clean gates; update own current evidence."
     },
     "review": {
       "run": "HEX-02-R02",
@@ -1337,7 +1323,7 @@
       ],
       "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-00/effects-dialog-numeric-repair-20261009-112427/requirements-plan-validation.json"
     },
-    "cleanupPlan": "ROADMAP-HEX-01-CLEAN-PLAN.md",
+    "cleanupPlan": "ROADMAP-HEX-02-CLEAN-PLAN.md",
     "gmViewportPlan": "ROADMAP-GM-UX-N004-PLAN.md",
     "parallelPlanning": {
       "phase": "HEX-02",
