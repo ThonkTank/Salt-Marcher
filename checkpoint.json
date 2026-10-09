@@ -4094,17 +4094,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I39-R",
-      "kind": "integration_audit_review",
-      "startedAt": "2026-10-09T16:04:44.446953+00:00",
-      "focus": "CITY-01-Plan gegen tatsächliche Quelle und Pflichtfälle reviewen",
-      "state": "completed",
-      "result": "Plan vollständig gegen neun unveränderte Quellbereiche, drei CITY-01-Kriterien und drei Originalzuordnungen geprüft. Meter-/Dokumentbesitz, vollständige Hausaktionen, Abbruch, gemeinsame History, früh nötige Mehrdateispeicherung und Hostfehlerfolge abgedeckt.65 CO-/24 CTY-Pflichten bleiben offen. Aufräumbefund: bestehende Geometriehelfer und ihre Dungeon-/Einheitenkopplung im Anschlussplan noch nicht eingeordnet."
-    },
-    "nextRun": {
       "id": "CITY-00-I39-CP",
       "kind": "cleanup_planning",
-      "focus": "Geometriewiederverwendung und Einheitenkopplung konkret einordnen"
+      "startedAt": "2026-10-09T16:05:14.494999+00:00",
+      "focus": "Geometrie-/Einheitenkopplung und Anschlussplan-Auffindbarkeit bereinigen",
+      "state": "completed",
+      "result": "Geometriehelfer aus src/geometry.ts im Plan einordnen: rectangle/inside/overlaps als punktbasierte Kandidaten, kein neuer Parallelbestand; Entity-/Portal-/Building-Helfer nicht ungeprüft auf Metergeometrie übernehmen. Polygon-Grenzsemantik und topologyEpsilon1e-9 benötigen bewusste Meterprüfung; BuildingEllipse hängt von Koordinatenspanne ab. Anschlussplan im vorderen Gesamtplan verlinken; ursprüngliches Quellaudit unverändert lassen und finalen Dokumenthash separat sichern."
+    },
+    "nextRun": {
+      "id": "CITY-00-I39-CI",
+      "kind": "cleanup_implementation",
+      "focus": "Wiederverwendung mit echten Grenzen konkretisieren und Plan verlinken"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",

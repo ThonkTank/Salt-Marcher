@@ -627,3 +627,6 @@ CITY-00-I39-I Start 2026-10-09T16:03:34.427799+00:00; Neun reale Quellbereiche m
 
 
 CITY-00-I39-R Start 2026-10-09T16:04:44.446953+00:00; Plan vollständig gegen neun unveränderte Quellbereiche, drei CITY-01-Kriterien und drei Originalzuordnungen geprüft. Meter-/Dokumentbesitz, vollständige Hausaktionen, Abbruch, gemeinsame History, früh nötige Mehrdateispeicherung und Hostfehlerfolge abgedeckt.65 CO-/24 CTY-Pflichten bleiben offen. Aufräumbefund: bestehende Geometriehelfer und ihre Dungeon-/Einheitenkopplung im Anschlussplan noch nicht eingeordnet. Aufräum-P/I/R folgen getrennt.
+
+
+CITY-00-I39-CP Start 2026-10-09T16:05:14.494999+00:00; Plan: Geometriehelfer aus src/geometry.ts im Plan einordnen: rectangle/inside/overlaps als punktbasierte Kandidaten, kein neuer Parallelbestand; Entity-/Portal-/Building-Helfer nicht ungeprüft auf Metergeometrie übernehmen. Polygon-Grenzsemantik und topologyEpsilon1e-9 benötigen bewusste Meterprüfung; BuildingEllipse hängt von Koordinatenspanne ab. Anschlussplan im vorderen Gesamtplan verlinken; ursprüngliches Quellaudit unverändert lassen und finalen Dokumenthash separat sichern. Umsetzung und Review getrennt.
