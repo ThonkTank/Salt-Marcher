@@ -1079,3 +1079,5 @@ CITY-HEX03-OWNER-CLEAN-C01 Start 2026-10-09T19:42:35.161597+00:00; Peerreviewlin
 CITY-00-I47 Start 2026-10-09T19:43:35.514Z; Originalwirkung Schatten230→34/Schnee0→0.6 und Save nur environment belegt; Schnee0 nur sichtbar zurückgestellt, finale Datei weiterhin0.6, Schattenrestauration nicht gelungen. Normal Exit0/5 Prozesse weg, GUI zurückgegeben. R47 offen.
 
 CITY-00-I47-CLEAN-P47 Start 2026-10-09T19:55:16.507511+00:00; Aufräumplan: Rawhashes/Kopien/Prozessende, partielle Wiederherstellung und fehlende Vorlagen-/Fresh-Reopen-Abnahme prüfen; eigenes Evidenzformat konsolidieren ohne APIs.
+
+CITY-00-I47-CLEAN-I47 Start 2026-10-09T19:55:27.486404+00:00; Plan mit begrenzter Reglerwirkung und offenen Vorlagen-/Wiederherstellungs-/Reopen-Grenzen ergänzt; externe Rohdaten geschützt, kein neuer Produkt-/APIstand.
