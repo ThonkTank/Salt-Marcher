@@ -121174,6 +121174,21 @@
           "measuredScope": "8×8 Wood/Stone: Ein größerer Stone-Rechteckzug übermalt genau vier Wood-Zellen (2,1), (3,1), (2,2), (3,2). Original und Host speichern eine unveränderte gemeinsame Kontur und 18 gleiche Zellwerte, jetzt fünf Wood und 13 Stone. Undo/Redo sowie frische Original- und Hostöffnung bestanden.",
           "remaining": "Weitere Übermal- und Radierformen, Innenlöcher, Konturpunkte, kombinierte Ränder und DD-038-Endreview offen. Keine Fallfreigabe; P7-2 physisch ungeprüft."
         },
+        "followUpPhase1BuildingFloorInteriorHoleCandidate": {
+          "state": "one_cell_interior_hole_scoped_host_raw_review_passed_case_open",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "hostBuildSha256": "d522bd25a3725f6b2df22c684b6d62e334c6924026a4cc718fb9b597ad3f69b5",
+          "originalReport": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-hole-original-20261009/original-probe.md",
+          "originalSource": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-hole-original-20261009/native/runs/20261009-083428-3654995/evidence/maps/00-source.dungeondraft_map",
+          "originalErased": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-hole-original-20261009/native/runs/20261009-083428-3654995/evidence/maps/01-erased.dungeondraft_map",
+          "originalReopen": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-hole-original-20261009/native-reopen-checked/runs/20261009-085319-3660501/evidence/screens/00-reopen-loaded.png",
+          "hostReport": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-hole-host-20261009/implementation.md",
+          "hostEdit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-hole-host-20261009/evidence/1791527924050-parity-tools-phase1-building-mixed-edit/result.json",
+          "hostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-hole-host-20261009/evidence/1791527947122-parity-tools-phase1-building-mixed-reopen/result.json",
+          "audit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-hole-host-20261009/independent-audit.json",
+          "measuredScope": "8×8 Wood/Stone: Ein 1×1-Alt-Innenloch bei (3,2) erzeugt einen inneren Konturring. Original und Host speichern beide Ringe und unverändert 18 gleiche Zellwerte einschließlich des Wood-Felds unter dem Loch; visuelle Maskierung, Undo/Redo und frische Neuöffnung bestanden.",
+          "remaining": "Weitere Lochgrößen und -formen, Übermalung im Loch, Konturpunkte, kombinierte Ränder und DD-038-Endreview offen. Keine Fallfreigabe; P7-2 physisch ungeprüft."
+        },
         "followUpPhase1TerrainMaskCandidate": {
           "state": "seeded_host_masks_scoped_review_passed_case_open",
           "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
