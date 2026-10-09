@@ -421,26 +421,27 @@
   "hexAtlasExecution": {
     "scope": "HEX-00 bis HEX-28 und sämtliche eingeordneten CITY-00 bis CITY-09 vollständig",
     "phase": "HEX-03",
-    "state": "i01b_repository_checked_marker_key_ui_pending",
+    "state": "e2e_alignment_plan_fixture_candidate_review_pending",
     "plan": "ROADMAP-HEX-03-PLAN.md",
     "currentRun": {
-      "id": "HEX-03-I01b-repository",
-      "kind": "repository_location_integration",
-      "state": "checked_core_repository_host_activation_pending",
-      "startedAt": "2026-10-09T20:57:29.938Z",
-      "finishedAt": "2026-10-09T21:13:16.501922+00:00",
-      "sourceCommit": "adebea3d1358c13d6843da10e29a424dd79ca71e",
-      "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/location-repository-implementation.json",
-      "testsPassed": 417,
-      "focus": "Location owners/World placements use one History and full Repository V2 Save/Copy/Discard/Recovery; actual host opt-in remains closed until marker/Key UI. Native fresh flow is next, before link comfort.",
+      "id": "HEX-E2E-P01",
+      "kind": "cross_owner_e2e_alignment_and_owned_fixture",
+      "state": "checked_plan_candidate_independent_review_and_shared_ratification_pending",
+      "startedAt": "2026-10-09T21:17:29.966Z",
+      "finishedAt": "2026-10-09T21:26:58.114183+00:00",
+      "baselineCommit": "10436010dc180aa3577605ac4e50a99c43c5b843",
+      "candidateBranch": "hex/hex03-p01-20261009",
+      "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/e2e-hex-plan.json",
+      "plan": "ROADMAP-HEX-ATLAS-E2E-PLAN.md",
+      "decision": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6089474384",
       "nativeOnThisBuild": false,
       "phaseApproval": false
     },
     "nextRun": {
-      "id": "HEX-03-I01b-marker",
-      "kind": "visible_location_editor_integration",
-      "focus": "Connect same-canvas Location marker/create/select, right Key/ordered exact Markdown, pointer drag and content fit to checked Repository; shared terrain+Location Undo/Redo and full Save/Copy/Discard/Recovery. Then native two-Location edit and separate fresh process before extra links.",
-      "dependency": "No general team round; fresh local GUI slot must be coordinated with City on Laptop2. Storage and owner contracts are ready; independent native QA uses separate Laptop1 and needs its own concrete runnable handoff."
+      "id": "HEX-E2E-P01-review",
+      "kind": "independent_plan_review_and_cross_owner_decisions",
+      "focus": "Independent review of exact candidate plan/owned fixture, actual first Steward/Gate-Code-Reviewer acceptance and remaining Dungeon/Campaign/P02/P04 bindings in Issue12. Then same-editor marker/Key/drag/fit as named E2E01 spatial intermediate; full E2E01 also requires Campaign/Party/Preparation/Initialize/P02/Complete-Import.",
+      "dependency": "Current own decision delivered; City binds confirmed IDs and Atlas-QA accepts independent host QA. Do not begin another isolated product slice or regenerate a pinned fixture while shared gate is unresolved. No GUI planned; future local slot coordinated anew with City."
     },
     "review": {
       "run": "HEX-02-R02",
@@ -513,6 +514,16 @@
         "state": "recovered_verified",
         "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/sync-recovery.json",
         "reason": "Accepted upstream QA/host metadata changed Hex root; normal merged HEAD is authoritative, foreign working bytes/install preserved."
+      },
+      "productE2EAlignment": {
+        "plan": "ROADMAP-HEX-ATLAS-E2E-PLAN.md",
+        "workIssue": 12,
+        "ownDecision": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6089474384",
+        "firstStewardOffer": "Hex; no self-release and no foreign ownership vote",
+        "cityBindingDecision": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6089511317",
+        "hostQaDecision": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6089483573",
+        "candidateNotSelfIntegrated": true,
+        "sharedRatification": false
       }
     },
     "verification": {
@@ -1615,7 +1626,7 @@
       "platformIssue": 11,
       "checkpointIsAuthoritative": true
     },
-    "updatedAt": "2026-10-09T21:13:16.501922+00:00"
+    "updatedAt": "2026-10-09T21:26:58.114183+00:00"
   },
   "phase": "Phase 6: zweiter Nachbesserungslauf teilweise umgesetzt; fünf Restpositionen und unabhängiger Review offen",
   "goal": "Dungeon-Pfad bis zur vollständigen beauftragten Dungeondraft-Verhaltensgleichheit verfolgen: Bedienung und Funktion angleichen, Grafik ungefähr gleichwertig. Zuerst ROADMAP-PARITY.md mit Building und Object Tool abschließen, danach übrige Dungeon-Werkzeuge. Jede Fachphase getrennt planen, umsetzen und unabhängig reviewen; Lücken mit eigenen Nachbesserungs- und Reviewläufen schließen; danach eigene Aufräumphase mit Plan, Umsetzung und Review.",
