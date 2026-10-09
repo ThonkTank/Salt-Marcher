@@ -4359,17 +4359,17 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-01-PREP-R08",
-      "kind": "review",
-      "startedAt": "2026-10-09T18:06:15.198040+00:00",
-      "focus": "Gedrehte Achsgriffe und numerische No-op-Grenzen prüfen",
+      "id": "CITY-01-PREP-GESTURES-CLEAN-P06",
+      "kind": "cleanup_plan",
+      "startedAt": "2026-10-09T18:07:41.308842+00:00",
+      "focus": "Vorhandenen Gesturekern und numerische Nachbesserung dokumentieren",
       "state": "completed",
-      "result": "CITY-GESTURE-R08-01 reproduziert:6von8 Bewegungen auf ungewählter Achse erzeugen Rundungsänderung/Undo. N06 braucht maßstabsabhängige Fehlergrenze und Regressionen für echte kleine Änderungen."
+      "result": "Architekturdrift und konkrete N06-Rundungsschätzung festgelegt; keine Runtimebereinigung während offenen Befunds."
     },
     "nextRun": {
-      "id": "CITY-01-PREP-N06",
-      "kind": "refinement",
-      "focus": "Numerische Achs-No-ops ohne feste Meterklemmung reparieren"
+      "id": "CITY-01-PREP-GESTURES-CLEAN-I06",
+      "kind": "cleanup_implementation",
+      "focus": "Vorhandenen Gesturekern und offene numerische Grenze in Architektur dokumentieren"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
