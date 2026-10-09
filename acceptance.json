@@ -2450,7 +2450,8 @@
           "run": "CITY-00-I02",
           "state": "profile_and_named_relations_observed",
           "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/manifest.json",
-          "observation": "Thawn Cobblekind: Erscheinung, Persönlichkeit, Ziel, Wohnort und Attribute; Relations nennt Markli parent, Guro father, Durmold adoptive brother. Keine Bearbeitung geprüft."
+          "observation": "Thawn Cobblekind: Erscheinung, Persönlichkeit, Ziel, Wohnort und Attribute; Relations nennt Markli parent, Guro father, Durmold adoptive brother. Keine Bearbeitung geprüft.",
+          "limits": "Gelesene Attribute und benannte Beziehungen sind sichtbare Originaldaten; keine stabilen serialisierten IDs, Bearbeitung oder Persistenz bewiesen."
         }
       },
       {
