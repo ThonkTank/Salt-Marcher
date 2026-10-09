@@ -145,7 +145,14 @@ Auf `active/installed-phase1` Commit `3c2d88296d775ad7afcddac0b3c704958d501baa` 
 
 Das ist ein Endanwenderbefund zur Suchbarkeit, keine Produktlatenz: Such-/CDP-Wartezeiten wurden nicht als UI-Zeit gewertet. Ob die Obsidian-Kernsuche `.dungeon`-Inhalte absichtlich auslässt, ist eine offene Ursache; die Beobachtung belegt keine allgemeine Suchfehlerquote. **Vorgeschlagene Nacharbeit GM-UX-N-005 an Dungeon-Verantwortlichen:** eine sichtbare, GM-taugliche Suche/Übersicht für Raum-Key-Texte in der Dungeon-Ansicht prüfen. Abnahme: in der isolierten Nebelwacht einen einzigartigen Begriff eingeben; ein Treffer nennt Raum und Geschoss; Aktivierung führt zum Raum und öffnet den Key, ohne die Karte zu verändern; Leeren der Suche stellt die Übersicht wieder her; Save/Reload erhält den Hinweis. Kein Anspruch, dass globale Obsidian-Suche proprietäre Dateiinhalte indiziert.
 
-Die Nebelwacht-Spielansicht ist damit nur teilweise als Sessionoberfläche beurteilt: Ebenenwechsel klappt, direkte Rauminformation per Raumklick nicht; der Key ist über den Dungeon-Editor auffindbar. Die exakte GM-UX-N-005-Auftragsannahme steht noch aus. Kollegenbelege zu N-004-Ursache/Fix sind getrennt; oben stehen nur meine Cloud-Beobachtungen.
+**Folgearbeitsstand:** Die hostneutrale Implementierung `GM-UX-N-005-I02`
+bestand nach zwei Pflichtreparaturen den unabhängigen read-only Review auf
+`84440f161914b985acbfd23fbd79cb51bd1e6360`; 353/353 Basistests, Typprüfung
+und Build sind grün. Dieser Stand schließt den Testerbefund nicht: der getrennte
+Produktreview, der obige exakte Nebelwacht-Reproduktionslauf im isolierten
+Cloud-Host und der unabhängige GM-Nachtest bleiben offen.
+
+Die Nebelwacht-Spielansicht ist damit nur teilweise als Sessionoberfläche beurteilt: Ebenenwechsel klappt, direkte Rauminformation per Raumklick nicht; der Key ist über den Dungeon-Editor auffindbar. GM-UX-N-005 ist übernommen, aber bis R01, H01 und GM-R01 nicht geschlossen. Kollegenbelege zu N-004-Ursache/Fix sind getrennt; oben stehen nur meine Cloud-Beobachtungen.
 
 ### GM-UX-01 Ausbau, Improvisation und Wiederöffnung auf Shared-Head 972913f
 

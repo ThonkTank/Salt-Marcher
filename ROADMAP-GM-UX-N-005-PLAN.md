@@ -177,9 +177,30 @@ Pflichtbefunde sind in den getrennten Reparaturcommits
 `63f1270f124100b4b73088430584b92debcbd4cd` behoben; der abschließende
 read-only Review des exakten letzten Stands bestand.
 
-Damit ist nur `GM-UX-N-005-I01` abgeschlossen. `GM-UX-N-005-I02` mit Panel,
-Draft-Guard und Navigation, der Produktreview, der beschriebene
-Nebelwacht-Cloud-Hostlauf und der unabhängige Produkttester-Nachtest bleiben
-offen. Die verlinkten Acceptance-Einträge `EB-003` und `NATIVE-21` werden aus
-diesem hostneutralen Teilnachweis nicht verändert; es folgt keine UX-, Host-,
-Fach-, Paritäts- oder Gesamtfreigabe.
+`GM-UX-N-005-I02` ist auf dem exakten Reparaturstand
+`84440f161914b985acbfd23fbd79cb51bd1e6360` unabhängig reviewt und ohne
+verbleibenden Pflichtbefund bestanden. Das Inhaltsgruppen-Panel projiziert die
+I01-Suche in normale fokussierbare Ergebnisbuttons, aktualisiert Treffer aus der
+laufenden Session, verwirft stale Ziele sichtbar und stellt beim Leeren die
+Raum-/Geschossübersicht wieder her. Die Aktivierung verwendet den vorhandenen
+Geschoss-, Auswahl-, `StructuredKeyPanel`- und `MapRenderer.focus`-Weg. Ein
+dirty Key-Entwurf blockiert Geschoss-, Auswahl-, Canvas-, Abschnitts- und
+Trefferwechsel vor der ersten Mutation; erst ausdrückliches Übernehmen oder
+Verwerfen erlaubt den Wiederholungsversuch.
+
+Der erste unabhängige I02-Review von
+`8b484dd17600955fae8cc2023bd457b901126429` fand vorgezogene implizite
+Key-Commits und fehlende Editororakel. Reparatur
+`b0ede7e51eed0557b51a6896ae3804a28c94bd6c` entfernte diese Übernahme und
+ergänzte den gemeinsamen Aktivierungskoordinator samt View-/Sessionorakeln. Der
+Nachreview fand noch direkte Einfügen-/Löschen-Auswahlpfade; Reparatur
+`84440f161914b985acbfd23fbd79cb51bd1e6360` schloss sie und bestand den
+abschließenden read-only Review. Frisch bestanden: sechs fokussierte serielle
+DOM-/Editorfälle, `npm run check`, `npm test` mit 353/353 und `npm run build`.
+
+Damit sind I01 und I02 implementiert und reviewt. Der getrennte Produktreview
+`GM-UX-N-005-R01`, der exakt beschriebene Nebelwacht-Cloud-Hostlauf H01 und der
+unabhängige Produkttester-Nachtest bleiben offen. Es wurde kein explorativer
+Bedientest ausgeführt. Die verlinkten Acceptance-Einträge `EB-003` und
+`NATIVE-21` bleiben aus diesem hostneutralen Teilnachweis unverändert; es folgt
+keine UX-, Host-, Fach-, Paritäts- oder Gesamtfreigabe.

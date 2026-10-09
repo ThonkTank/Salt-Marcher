@@ -2115,16 +2115,16 @@
     },
     "gmUxN005Plan": {
       "date": "2026-10-09",
-      "state": "i01_repaired_independent_re_review_passed",
-      "run": "GM-UX-N-005-P01",
+      "state": "i02_repaired_independent_re_review_passed_r01_host_gm_retest_open",
+      "run": "GM-UX-N-005-I02",
       "plan": "ROADMAP-GM-UX-N-005-PLAN.md",
       "source": "GM-UX-005 im getrennten Cloud-GM-Produkttest; ROADMAP-GM-PRODUCT-TESTING-PLAN.md; Issue #1 Kommentar 6085234573",
-      "ownership": "Dungeon-Strang; GM-UX-N-005-I01 wurde nach erneuter Prüfung von Issue #1, offenen PRs und gleichnamigen Remote-Branches auf Shared-Head d153a57ce128c62e243e89bed1caebd80634128c exklusiv übernommen. Keine UI-, N-006-, DD-036-, Atlas-, City-, Hex-, CE- oder Migrationsdatei gehört zum Paket.",
-      "scope": "I01 implementiert ausschließlich die hostneutrale read-only V4-Raum-Key-Projektion der aktuellen Session: leere Übersicht pro strukturiertem Raum, ein Suchtreffer pro passendem Key-Abschnitt, Raum-/Geschossangabe, sichtbarer Ausschnitt, deterministische Reihenfolge und Zielrevalidierung ohne Sessionmutation.",
-      "review": "Der Planreview auf cb97060990781e39397aec495e6525f70d42e70a und der Plan-Nachreview auf fa9c31e264c3b296df68342927a617c96f5e33f2 bleiben gültig. Der erste unabhängige I01-Review des Implementierungscommits 9b18055b4b599a35f27387ee2393694a6add0133 verlangte vollständige lange Treffer und eine Unicode-Offsetabbildung; der Review von b78ea9462d76b1600aa91dd909c7b87f3bc45e21 verlangte zusätzlich kontextkorrekte Sigma-Suche. Der exakte Reparaturstand 63f1270f124100b4b73088430584b92debcbd4cd bestand den abschließenden unabhängigen read-only Review ohne Pflichtbefund.",
-      "verification": "Fokussiert sechs Raum-Key-Such-/Snippetfälle sowie nach Integration des aktuellen Shared-Stands npm run check, npm test (325/325) und npm run build bestanden. Keine explorative Bedienprüfung; I01 besitzt keine GUI und der veröffentlichte Nebelwacht-Ablauf bleibt bis I02/H01 offen.",
-      "limits": "Nur I01-Suchkern. Kein Inhaltsgruppen-Panel, keine Ergebnisaktivierung, kein Key-Draft-Navigationsguard, kein Save/Reload-/Cloud-Hostbeleg und kein unabhängiger GM-Nachtest. Keine vaultweite Obsidian-Suche, V2/V3-Erweiterung, GM-UX-N-003-, N-006-, DD-036-, Atlas-, City- oder H03-Arbeit und keine UX-/Host-/Produkt-/Fach-/Paritäts- oder Gesamtfreigabe. EB-003 und NATIVE-21 bleiben unverändert.",
-      "next": "GM-UX-N-005-I02 ist als separates nächstes Paket planseitig offen; vor Übernahme Shared-Head, Issue #1, PRs und Branches erneut prüfen und den bestehenden Draft-/Auswahl-/Kamera-/Key-Weg wiederverwenden.",
+      "ownership": "Dungeon-Strang; GM-UX-N-005-I02 wurde nach erneuter Prüfung von Shared-Head f48155a72a404bf21e43d3fe475302cc091a13e4, Issue #1, offenen PRs und gleichnamigen Remote-Branches exklusiv übernommen. Das Paket ändert nur Dungeon-Suchpanel, bestehenden Editor-/Key-Guard, fokussierte Tests und N-005-Metadaten; N-006-, DD-036-, Atlas-, City-, Hex-, CE- und Migrationsarbeit bleibt fremd.",
+      "scope": "I01 bleibt der hostneutrale V4-Suchkern. I02 ergänzt das Inhaltsgruppen-Panel, unmittelbare Filterung, Übersicht/Leeren, Live-Aktualisierung und stale Abbruch. Trefferaktivierung nutzt bestehende Geschoss-, Auswahl-, StructuredKeyPanel- und Renderer-Fokuswege. Der gemeinsame Dirty-Draft-Guard stoppt Geschoss-, Auswahl-, Canvas-, Abschnitts- und Trefferwechsel vor Mutation; nur ausdrückliches Übernehmen oder Verwerfen erlaubt den Wiederholungsversuch.",
+      "review": "I01-Reviews bleiben gültig. Der unabhängige I02-Erstreview von 8b484dd17600955fae8cc2023bd457b901126429 fand implizite Key-Commits und fehlende Editororakel. Reparatur b0ede7e51eed0557b51a6896ae3804a28c94bd6c entfernte sie und ergänzte Aktivierungs-/Guardregressionen; der Nachreview fand noch Einfügen/Löschen als direkte Auswahlbypässe. Der exakte Reparaturstand 84440f161914b985acbfd23fbd79cb51bd1e6360 schloss diese Wege und bestand den abschließenden unabhängigen read-only Review ohne Pflichtbefund.",
+      "verification": "Sechs fokussierte serielle DOM-/Editorfälle bestanden einschließlich Raum/Geschoss/Snippet, Leeren, Live-Refresh, stale Ziel, V3-Grenze, sauberer Aktivierung und dirty Erstversuch/Wiederholung mit Textarea-, Geschoss-, Auswahl-, Kamera-, Dokument-, History-, Dirty- und Revisionsorakeln. Auf 84440f1 bestanden npm run check, npm test (353/353) und npm run build. Keine explorative Bedienprüfung oder GUI ausgeführt.",
+      "limits": "I01/I02 hostneutral implementiert und reviewt. Der getrennte Produktreview R01, der exakte Save/Reload-/Nebelwacht-Cloud-Hostlauf H01 und der unabhängige GM-Nachtest bleiben offen. Keine vaultweite Obsidian-Suche, V2/V3-Erweiterung, GM-UX-N-003-, N-006-, DD-036-, Atlas-, City- oder H03-Arbeit und keine UX-, Host-, Produkt-, Fach-, Paritäts- oder Gesamtfreigabe. EB-003 und NATIVE-21 bleiben unverändert.",
+      "next": "GM-UX-N-005-R01: unabhängiger Produktreview des veröffentlichten I01/I02-Stands; erst nach PASS folgt exakt der beschriebene Nebelwacht-Cloud-Hostlauf H01 im isolierten Testvault.",
       "followingRun": "GM-UX-N-006-P01 als eigener Planlauf: nach Abschluss des N-005-Plans den Workspace-/View-State-Vertrag prüfen und zwischen Ebenenwiederherstellung und sichtbarer Wiederaufnahme entscheiden; keine Vermischung mit N-005-Implementierung, DD-036 oder Atlaspersistenz."
     },
     "gmUxN006Backlog": {
@@ -2726,7 +2726,7 @@
     "plan": "ROADMAP-PARITY-PLAN.md",
     "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
     "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
-    "nextRun": "GM-UX-N-005-I02: nach unabhängig bestandenem I01-Suchkern ausschließlich Inhaltsgruppen-Panel und Aktivierung über bestehende Geschoss-/Auswahl-/Kamera-/Key-Wege umsetzen. Vor Übernahme Shared-Head, Issue #1, PRs und Branches erneut prüfen; N-006-I01 bleibt separat planseitig offen, DD-036 gehört dem getrennten Besitzer, Atlaspersistenz bleibt unberührt.",
+    "nextRun": "GM-UX-N-005-R01: den veröffentlichten I01/I02-Produktstand unabhängig gegen Datenquelle, Navigation, Accessibility, geschützte Texte/IDs und Nichtmutation reviewen. Erst nach PASS folgt der exakt beschriebene Nebelwacht-Cloud-Hostlauf H01; N-006-I01, DD-036 und Atlaspersistenz bleiben getrennt.",
     "note": "P7-1, P7-3 und P7-4 sind in getrennten Edit-/Neuöffnungspaaren reviewt. P7-2 ist auf ausdrückliche Nutzeranweisung übersprungen, nicht physisch geprüft. Phase-7-Fachphasentor mit dieser Ausnahme bestanden; Produktbuild unverändert. Hex-Atlas- und Stadtstand erhalten.",
     "phase2Plan": "ROADMAP-PARITY-PHASE2-PLAN.md",
     "candidateBuildSha256": "b321128188b944c3324594663a410acfd84863f17860f637b9ed2e6ecc33b466",
@@ -4618,7 +4618,7 @@
       {
         "id": "GM-UX-005",
         "priority": "P2-Kandidat",
-        "status": "reproduced_plan_pass_I01_blocked_by_team_checkin",
+        "status": "reproduced_I01_I02_reviewed_R01_host_GM_retest_open",
         "kind": "Eigene UI-Beobachtung in isoliertem Cloud-Testvault; Such-/Fernsteuerungszeiten nicht als Produktlatenz",
         "build": "Obsidian 1.14.4; Produktcommit 3c2d88296d775ad7afcddac0b3c704958d501baa; main.js SHA-256 bd13cb2ac5e823d21f81bcb2f8d32a6b6a0ebe49a7049cacb2c5035eb99370a4",
         "scenario": "GM-UX-01 Nebelwacht, gespeicherter synthetischer Raum-12-Hinweis; Spielansicht Ebenenwechsel und GM-Informationssuche",
@@ -4630,7 +4630,7 @@
         "latency": "Nicht gemessen; Playwright/CDP-, Such- und Wartezeiten ausgeschlossen.",
         "dataIntegrity": "Karte SHA-256 blieb identisch zu vorher: 56c38f8ff9e4365a165af4319da37bb03db20c09925d6ee38e5327e7559353c7.",
         "proposedTask": "GM-UX-N-005: Dungeon-Verantwortlicher prüft eine sichtbare GM-Suche/Übersicht für Raum-Key-Texte. Abnahme: einzigartigen Begriff in isolierter Nebelwacht finden; Treffer zeigt Raum und Geschoss; Aktivierung führt zum Raum und öffnet Key, ohne Karte zu ändern; Leeren stellt Übersicht wieder her; Save/Reload erhält den Hinweis.",
-        "coordination": "Beobachtung Issue #1 6085234573; N-005-P01 unabhängig abgeschlossen und veröffentlicht in 6085787270. N-005-I01 laut verbindlichem Gesamtteam-Check-in in 6085975796 gesperrt. Keine Produktimplementierung/Hostabnahme behauptet."
+        "coordination": "Beobachtung Issue #1 6085234573. N-005-P01 und I01 bleiben unabhängig bestanden. I02 wurde auf Shared-Basis f48155a exklusiv übernommen; Implementierungsstand 84440f161914b985acbfd23fbd79cb51bd1e6360 bestand nach zwei Pflichtreparaturen den unabhängigen read-only Review sowie 353/353 Tests, Typprüfung und Build. R01, der exakte Nebelwacht-Cloud-Hostlauf und der unabhängige GM-Nachtest bleiben offen; keine Host-/UX-/Fachfreigabe behauptet."
       },
       {
         "id": "GM-UX-006",
