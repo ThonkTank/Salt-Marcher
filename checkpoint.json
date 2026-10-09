@@ -3733,17 +3733,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I17-CR",
-      "kind": "cleanup_review",
-      "startedAt": "2026-10-09T13:29:07.493012+00:00",
-      "focus": "Rohschutz, Beleggrenzen und Pflichtstatus prüfen",
-      "state": "completed",
-      "result": "Aufräumreview bestanden; Originalwirkung von Undo/Redo bleibt ausdrücklich offen; Slot frei, keine Produktimplementierung."
-    },
-    "nextRun": {
       "id": "CITY-00-I18-P",
       "kind": "reference_planning",
-      "focus": "Neue Pre-Save-Historyhypothese nach Slotabstimmung planen; HEX-05-Übergabe prüfen"
+      "startedAt": "2026-10-09T13:31:47.018556+00:00",
+      "focus": "FTG-Bewohnerdetails und Orts-/Beziehungslinks ohne Neubau planen",
+      "state": "completed",
+      "result": "Native Slot beim Kollegen; FTG-Neugenerierung wegen unbewiesener Wiederherstellung zurückgestellt. Begrenzte Bewohner-/Linkprobe im bestehenden eigenen QA-Ort geplant."
+    },
+    "nextRun": {
+      "id": "CITY-00-I18-I",
+      "kind": "resident_reference_probe",
+      "focus": "FTG-Personenprofil, Ortslinks und Beziehungen direkt beobachten"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
