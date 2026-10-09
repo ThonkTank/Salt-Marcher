@@ -8,7 +8,7 @@ import {
 } from "../../src/features/objekte/object-tags";
 import {
   applyObjectSearch, chooseObjectSet, chooseObjectTag, clearObjectSearchText, enterObjectLibraryTab,
-  newObjectLibraryState, resetObjectSearch,
+  newObjectLibraryState, resetObjectSearch, updateObjectSearchText,
   sortedObjectAssetEntries, visibleObjectAssets, visibleObjectEntries,
 } from "../../src/features/objekte/object-library";
 
@@ -55,7 +55,8 @@ test("Fuzzy search, Exact search, search X and trash have separate observed effe
     [assets[0]!.id, assets[1]!.id, assets[3]!.id]);
   state = clearObjectSearchText(state);
   assert.equal(state.text, "");
-  assert.equal(visibleObjectAssets(assets, empty, state).length, 3);
+  assert.equal(state.appliedQuery, null);
+  assert.equal(visibleObjectAssets(assets, empty, state).length, 4);
   state = resetObjectSearch(state);
   assert.equal(state.text, "");
   assert.equal(state.selectedId, "");
@@ -64,6 +65,24 @@ test("Fuzzy search, Exact search, search X and trash have separate observed effe
   assert.equal(visibleObjectAssets(assets, empty, state).length, 0);
   assert.equal(visibleObjectAssets(assets, empty, { ...state, strictness: 0.5 }).length, 0,
     "moving the slider alone does not resubmit the search");
+});
+
+test("typing switches object results immediately while trash keeps its separate behavior", () => {
+  let state = newObjectLibraryState(assets[0]!.id);
+  state = updateObjectSearchText(state, "Atlas Globe");
+  assert.deepEqual(visibleObjectAssets(assets, empty, state).map((asset) => asset.id),
+    [assets[0]!.id, assets[3]!.id]);
+  state = updateObjectSearchText(state, "Stone Chair");
+  assert.deepEqual(visibleObjectAssets(assets, empty, state).map((asset) => asset.id),
+    [assets[2]!.id]);
+  state = resetObjectSearch(state);
+  assert.equal(state.text, "Stone Chair");
+  assert.equal(visibleObjectAssets(assets, empty, state).length, 4);
+  state = updateObjectSearchText(state, "Glass Case");
+  assert.deepEqual(visibleObjectAssets(assets, empty, state).map((asset) => asset.id),
+    [assets[1]!.id]);
+  state = updateObjectSearchText(state, "");
+  assert.equal(visibleObjectAssets(assets, empty, state).length, 4);
 });
 
 test("Used is captured on tab entry and refreshed only on re-entry", () => {

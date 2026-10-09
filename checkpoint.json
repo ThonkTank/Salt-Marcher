@@ -1667,10 +1667,14 @@
     },
     "gmUxN002Plan": {
       "date": "2026-10-09",
-      "state": "plan_recorded_implementation_open",
+      "state": "implementation_host_passed_review_open",
       "plan": "ROADMAP-GM-UX-N-002-PLAN.md",
       "source": "GM-UX-002 im getrennten Cloud-GM-Test; Issue #1",
-      "next": "Hostneutrale Live-Suche und ×-Leeren umsetzen; drei Assets, zehn Platzierungen, Undo/Redo und Save/Reopen isoliert prüfen."
+      "implementation": "/home/aaron/.cache/dungeon-native-qa/gm-ux-n002-implementation-20261009/implementation.md",
+      "hostEdit": "/home/aaron/.cache/dungeon-native-qa/gm-ux-n002-implementation-20261009/evidence/1791554675329-edit/result.json",
+      "hostReopen": "/home/aaron/.cache/dungeon-native-qa/gm-ux-n002-implementation-20261009/evidence/1791554799073-reopen/result.json",
+      "buildSha256": "6f83c57351170c9f48ac71fc47201398fea234c505ba2032bd10d0b788237d71",
+      "next": "Getrennten Review auf integriertem Build und frischem QA-Vault durchführen; danach Produkttester-Nachprüfung im Koordinationskanal anfordern."
     },
     "gmUxN001Plan": {
       "date": "2026-10-09",
@@ -3860,17 +3864,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I21-P",
-      "kind": "reference_planning",
-      "startedAt": "2026-10-09T14:00:37.535648+00:00",
-      "focus": "Landmarke und tatsächlich ausgegebenen Text planen",
+      "id": "CITY-00-I21-CR",
+      "kind": "cleanup_review",
+      "startedAt": "2026-10-09T14:10:45.746008+00:00",
+      "focus": "Abgeleitete Übersicht, JSON-Schutz und Rohbelege prüfen",
       "state": "completed",
-      "result": "Browserkopie mit eindeutigem QA-Ort, sichtbare Bearbeitung und tatsächlicher Export geplant; SVG ausschließlich XML-Parse ohne Vorschaubypass."
+      "result": "Snapshot entspricht Teilnachweis, Rohbeleg-Hashes unverändert und 63 unabhängige Pflichten offen; Aufräumumfang ohne Restbefund."
     },
     "nextRun": {
-      "id": "CITY-00-I21-I",
-      "kind": "landmark_reference_probe",
-      "focus": "Landmarke setzen, sichtbare Optionen und ausgegebenen Namen prüfen"
+      "id": "CITY-00-I22-P",
+      "kind": "handoff_review_planning",
+      "focus": "Aktuellen HEX-05-Übergabestand und nächsten umsetzbaren Stadtauftrag prüfen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",

@@ -100,8 +100,12 @@ export function applyObjectSearch(state: ObjectLibraryState): ObjectLibraryState
     appliedStrictness: state.strictness, selectedId: "" };
 }
 
+export function updateObjectSearchText(state: ObjectLibraryState, text: string): ObjectLibraryState {
+  return applyObjectSearch({ ...state, text });
+}
+
 export function clearObjectSearchText(state: ObjectLibraryState): ObjectLibraryState {
-  return { ...state, text: "" };
+  return { ...state, text: "", appliedQuery: null, selectedId: "" };
 }
 
 export function resetObjectSearch(state: ObjectLibraryState): ObjectLibraryState {
