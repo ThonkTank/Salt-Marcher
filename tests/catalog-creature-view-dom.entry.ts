@@ -56,6 +56,11 @@ function choose(root: HTMLElement, window: DomWindow, key: string, value: string
 
 test("catalog DOM exposes advanced filters, chips, reset, ARIA sorting, notice and global Escape", async () => {
   const { view, root, window } = await openedView();
+  await view.setState({});
+  assert.deepEqual({ sort: view.getState().sort, direction: view.getState().direction,
+    page: view.getState().page }, { sort: "name", direction: "asc", page: 0 });
+  assert.equal(root.querySelector('[data-focus-key="sort-name"]')?.closest("th")
+    ?.getAttribute("aria-sort"), "ascending");
   assert.equal(root.querySelectorAll(".dn-catalog-filters input").length, 13);
   assert.equal(root.querySelectorAll(".dn-catalog-filters select").length, 5);
   choose(root, window, "type", "Dragon");
