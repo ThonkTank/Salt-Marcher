@@ -130530,7 +130530,7 @@
           "remaining": "Drei Original-/Host-Rohdatenpaare, frische Hostöffnung und getrennter Review bestehen. Weitere Lochformen, Außenkanten, Übermalung im Loch, kombinierte Ränder und DD-038-Endreview offen. Keine Fallfreigabe; P7-2 physisch ungeprüft."
         },
         "followUpPhase1BuildingFloorEllipseHoleOriginalProbe": {
-          "state": "ellipse_interior_hole_original_measured_host_open_case_open",
+          "state": "ellipse_host_tool_candidate_qa_lock_pending_case_open",
           "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
           "originalReport": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-ellipse-hole-original-20261009/original-probe.md",
           "originalAudit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-ellipse-hole-original-20261009/original-audit.json",
@@ -130539,8 +130539,10 @@
           "originalUndo": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-ellipse-hole-original-20261009/native/runs/20261009-125513-3750637/evidence/maps/02-undo.dungeondraft_map",
           "originalRedo": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-ellipse-hole-original-20261009/native/runs/20261009-125513-3750637/evidence/maps/03-redo.dungeondraft_map",
           "originalFresh": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-ellipse-hole-fresh-original-20261009/native/runs/20261009-125624-3751209/evidence/screens/00-fresh.png",
+          "hostTool": "tools/host/parity-tools-phase1-building-mixed.cjs",
+          "offlineVerification": "Hosthelfer-Syntax, Typprüfung, 201 Kerntests und Build bestanden; keine grafische Hostausführung in dieser Cloud-Sitzung.",
           "measuredScope": "8×8-Karte mit gemischter 6×6-Kontur: Alt-Ellipse `(3,3)`–`(5,5)` erzeugt einen 28-Punkt-Innenring und erhält 36 Zellpositionen. Nur das verdeckte Feld (4,3) wechselt von Stone zu Wood im gewählten Farbwert. Original-Undo/Redo bytegleich; frische Originalöffnung zeigt die Aussparung.",
-          "remaining": "Host-GUI-Paar und getrennter Review offen. Weitere Ellipsengrößen, Außenkanten, spätere Übermalung im Loch, kombinierte Ränder und DD-038-Endreview offen. Keine Fallfreigabe; P7-2 physisch ungeprüft."
+          "remaining": "Der Hosthelfer ist für Edit, Undo/Redo, Speichern und frische Öffnung ergänzt. Die tatsächlichen Host-GUI-Läufe bleiben wegen der exklusiven lokalen QA-Instanz offen; anschließend getrennter Review. Weitere Ellipsengrößen, Außenkanten, spätere Übermalung im Loch, kombinierte Ränder und DD-038-Endreview offen. Keine Fallfreigabe; P7-2 physisch ungeprüft."
         },
         "followUpPhase1BuildingPointOriginalProbe": {
           "state": "three_point_moves_scoped_review_passed_case_open",

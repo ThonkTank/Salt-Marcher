@@ -7,6 +7,7 @@ const TWO_CELL_HOLE = "Dungeons/Phase1-BuildingMixed/wood-stone-two-cell-hole.du
 const EXTENDED = "Dungeons/Phase1-BuildingMixed/wood-stone-extended.dungeon";
 const FOUR_CELL_WOOD = "Dungeons/Phase1-BuildingMixed/wood-stone-four-cell-wood.dungeon";
 const FOUR_CELL_STONE = "Dungeons/Phase1-BuildingMixed/wood-stone-four-cell-stone.dungeon";
+const ELLIPSE_HOLE = "Dungeons/Phase1-BuildingMixed/wood-stone-ellipse-hole.dungeon";
 
 module.exports = ({ page, fs, path, assert, crypto, qa, vault, out,
   checks, chooseTool }) => {
@@ -20,6 +21,7 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out,
   const extendedBaseline = path.join(qa, "mixed-extended-baseline.json");
   const fourCellWoodBaseline = path.join(qa, "mixed-four-cell-wood-baseline.json");
   const fourCellStoneBaseline = path.join(qa, "mixed-four-cell-stone-baseline.json");
+  const ellipseHoleBaseline = path.join(qa, "mixed-ellipse-hole-baseline.json");
   const hash = (name = MAP) => crypto.createHash("sha256")
     .update(fs.readFileSync(path.join(vault, name))).digest("hex");
   const state = () => page.evaluate(() => {
@@ -175,6 +177,33 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out,
       const cell = doc.smartTiles.find((item) => item.x === x && item.y === y);
       const hole = x >= 3 && x < 5 && y >= 3 && y < 5;
       const stone = hole ? selectedId === stoneId : x >= 4 && y <= 3;
+      assert.equal(cell?.assetId, stone ? stoneId : woodId);
+      assert.equal(cell?.color, stone ? 0x7f7e71 : 0xb28f6f);
+      assert.equal(cell?.buildingId, building.id);
+    }
+  }
+  function verifyEllipseHole(doc, woodId, stoneId) {
+    assert.equal(doc.settings.width, 8);
+    assert.equal(doc.settings.height, 8);
+    assert.equal(doc.entities.length, 1);
+    const building = doc.entities[0];
+    assert.equal(building.kind, "building");
+    assert.equal(building.wallWidth, 0);
+    assert.equal(building.polygons.length, 1);
+    assert.deepEqual(new Set(building.polygons[0].outer.map((p) => `${p.x}:${p.y}`)),
+      new Set(["1:1", "7:1", "7:7", "1:7"]));
+    assert.equal(building.polygons[0].holes.length, 1);
+    const hole = building.polygons[0].holes[0];
+    assert.equal(hole.length, 28);
+    assert.equal(Math.min(...hole.map((point) => point.x)), 3);
+    assert.equal(Math.max(...hole.map((point) => point.x)), 5);
+    assert.equal(Math.min(...hole.map((point) => point.y)), 3);
+    assert.equal(Math.max(...hole.map((point) => point.y)), 5);
+    assert.equal(doc.smartTiles.length, 36);
+    for (let y = 1; y < 7; y++) for (let x = 1; x < 7; x++) {
+      const cell = doc.smartTiles.find((item) => item.x === x && item.y === y);
+      const inEllipseBounds = x >= 3 && x < 5 && y >= 3 && y < 5;
+      const stone = !inEllipseBounds && x >= 4 && y <= 3;
       assert.equal(cell?.assetId, stone ? stoneId : woodId);
       assert.equal(cell?.color, stone ? 0x7f7e71 : 0xb28f6f);
       assert.equal(cell?.buildingId, building.id);
@@ -504,6 +533,46 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out,
       verifyFourCellHole((await state()).document, wood.id, stone.id, selected.id);
       checks.push(`DD-038 four-cell interior Alt hole repaints retained tiles as ${name} in one Undo step`);
     }
+    await page.evaluate(async ({ name, content }) => {
+      await app.vault.create(name, content);
+    }, { name: ELLIPSE_HOLE,
+      content: fs.readFileSync(path.join(vault, EXTENDED), "utf8") });
+    await open(ELLIPSE_HOLE);
+    const ellipseEditor = page.locator(".dungeon-native-editor:visible").last();
+    await ellipseEditor.locator(".dn-group-rail")
+      .getByRole("button", { name: "Bauwerk", exact: true }).click();
+    await ellipseEditor.locator(".dn-tool-rail")
+      .getByRole("button", { name: "Ellipse", exact: true }).click();
+    await ellipseEditor.getByRole("group", { name: "Wandstil" })
+      .getByRole("button", { name: "Keine Wand", exact: true }).click();
+    await ellipseEditor.getByRole("group", { name: "Bodenstil" })
+      .getByRole("button", { name: wood.name, exact: true }).click();
+    await page.keyboard.down("Alt");
+    try {
+      await draw({ x: 3, y: 3 }, { x: 5, y: 5 }, 36);
+    } finally {
+      await page.keyboard.up("Alt");
+    }
+    await page.waitForFunction(() =>
+      app.workspace.getLeavesOfType("dungeon-native-map").at(-1)
+        ?.view.editor?.session.document().entities[0]?.polygons[0]?.holes.length === 1);
+    const ellipseHole = await state();
+    verifyEllipseHole(ellipseHole.document, wood.id, stone.id);
+    assert.equal(ellipseHole.history, 1);
+    await page.screenshot({ path: path.join(out, "wood-stone-ellipse-hole-edit.png") });
+    await ellipseEditor.getByRole("button", { name: "Speichern", exact: true }).click();
+    await page.waitForFunction(() =>
+      !app.workspace.getLeavesOfType("dungeon-native-map").at(-1)
+        ?.view.editor.session.dirty);
+    const ellipseSaved = JSON.parse(fs.readFileSync(path.join(vault, ELLIPSE_HOLE), "utf8"));
+    assert.deepEqual(ellipseSaved, ellipseHole.document);
+    fs.writeFileSync(ellipseHoleBaseline, JSON.stringify({ document: ellipseSaved,
+      hash: hash(ELLIPSE_HOLE), woodId: wood.id, stoneId: stone.id }, null, 2));
+    await ellipseEditor.getByRole("button", { name: "Rückgängig", exact: true }).click();
+    verifyExtended((await state()).document, wood.id, stone.id);
+    await ellipseEditor.getByRole("button", { name: "Wiederholen", exact: true }).click();
+    verifyEllipseHole((await state()).document, wood.id, stone.id);
+    checks.push("DD-038 elliptical interior Alt hole repaints the covered Stone tile as Wood in one Undo step");
   }
   async function reopen() {
     const saved = JSON.parse(fs.readFileSync(baseline, "utf8"));
@@ -612,6 +681,14 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out,
         `wood-stone-four-cell-${name}-fresh.png`) });
       checks.push(`DD-038 fresh Host retains the four-cell ${name} hole and repainted hidden cells`);
     }
+    const ellipseHole = JSON.parse(fs.readFileSync(ellipseHoleBaseline, "utf8"));
+    await open(ELLIPSE_HOLE);
+    const ellipseFresh = await state();
+    assert.deepEqual(ellipseFresh.document, ellipseHole.document);
+    assert.equal(hash(ELLIPSE_HOLE), ellipseHole.hash);
+    verifyEllipseHole(ellipseFresh.document, ellipseHole.woodId, ellipseHole.stoneId);
+    await page.screenshot({ path: path.join(out, "wood-stone-ellipse-hole-fresh.png") });
+    checks.push("DD-038 fresh Host retains the elliptical hole and its 36 stored floor cells");
   }
   return { edit, reopen };
 };

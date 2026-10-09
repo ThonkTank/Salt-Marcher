@@ -3460,13 +3460,15 @@
     },
     "buildingFloorEllipseHoleOriginal": {
       "case": "DD-038.05, Alt-Ellipse auf gemischtem Building-Boden",
-      "state": "ellipse_interior_hole_original_measured_host_open_case_open",
+      "state": "ellipse_host_tool_candidate_qa_lock_pending_case_open",
       "originalReport": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-ellipse-hole-original-20261009/original-probe.md",
       "originalAudit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-ellipse-hole-original-20261009/original-audit.json",
       "originalErased": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-ellipse-hole-original-20261009/native/runs/20261009-125513-3750637/evidence/maps/01-erased.dungeondraft_map",
       "originalFresh": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-ellipse-hole-fresh-original-20261009/native/runs/20261009-125624-3751209/evidence/screens/00-fresh.png",
+      "hostTool": "tools/host/parity-tools-phase1-building-mixed.cjs",
+      "coreTests": 201,
       "measured": "Alt-Ellipse `(3,3)`–`(5,5)` ergänzt einen 28-Punkt-Innenring, erhält 36 Bodenzellen und übermalt nur das verdeckte Stone-Feld (4,3) mit gewähltem Wood. Undo/Redo bytegleich; frische Originalöffnung besteht.",
-      "open": "Host-GUI-Paar, separater Review, weitere Formen und DD-038-Endreview.",
+      "open": "Der Hosthelfer bildet Alt-Ellipse, 28-Punkt-Ring, 36 Zellwerte, genau eine Stone-zu-Wood-Zelle, Undo/Redo und frische Öffnung ab; Syntax, Typprüfung, 201 Kerntests und Build bestehen. Die grafischen Edit-/Neuöffnungsläufe bleiben wegen der exklusiv bei den lokalen Kollegen gehaltenen QA-Instanz offen; danach separater Review, weitere Formen und DD-038-Endreview.",
       "gate": "open"
     }
   },
