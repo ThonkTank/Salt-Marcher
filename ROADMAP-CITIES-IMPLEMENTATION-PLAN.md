@@ -105,3 +105,9 @@ CITY-00 hat zwei getrennte Tore: alle öffentlich dokumentierten Produktbereiche
 Bedienverbesserung: pro vergleichbarer Aufgabe mindestens drei gleich vorbereitete Versuche, gleiche Eingabegeräte und vergleichbare Kartengröße; Medianzeit, Aktionszahl und Fehler erfassen. Ziel: keine zusätzlichen notwendigen Modus-/Kartenwechsel, keine höhere Fehlerrate und geringere Medianzeit oder weniger notwendige Aktionen pro Kernaufgabe. Kein pauschaler Geschwindigkeitsanspruch aus Einzelversuchen. Noch fehlende physische Beobachtung bleibt offen. Produktumfang ohne direkten Originalzugang wird nicht als gleichwertig freigegeben.
 
 CI-Ergebnis: CLP-01/02/03 konkretisiert; keine Produktfähigkeit implementiert oder abgenommen. Nächster eigener Lauf CR prüft Schema, Übergabe und Abschlussregel gegen Nutzerauftrag und Roadmap.
+
+## Aufräumreview CITY-P01-CR
+
+09.10.2026; eigener Reviewlauf nach CI-Commit 83693f3. CLP-01 bestanden: stabiles Dreiproduktschema trennt Dokumentation, Originalprobe und eigene Abnahme. CLP-02 bestanden: fünf überprüfbare Atlasübergaben; keine zweite Kamera/History. CLP-03 bestanden: vollständiges Inventar plus CTY- und Endbuildreview, messbare gepaarte Bedienaufgaben; Zugangslücken bleiben offen. Alle 24 bestehenden CTY-Fälle sind eindeutig zugeordnet. Checkpoint-Roots des Ausgangsstands sind semantisch unverändert. JSON-/Verweisprüfung und Diffcheck bestanden.
+
+Keine weitere Pflichtlücke im Planaufbau gefunden. Dies beendet die Bereinigung des Planungspakets, nicht CITY-00 oder die Produktparität. CITY-00-I01 beginnt mit direkten Browserproben und Erweiterung des Katalogs auf drei Originalprodukte; native QA nur nach gemeinsamer Sperrprüfung. Der vollständige Originalumfang ist noch zu ermitteln.

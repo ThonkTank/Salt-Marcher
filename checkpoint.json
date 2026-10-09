@@ -3348,20 +3348,20 @@
   "cityExecution": {
     "scope": "CITY-00 bis CITY-09; vollständige Funktionsgleichwertigkeit mit drei Vergleichsprogrammen und bessere Bedienung",
     "phase": "CITY-00",
-    "state": "overall_plan_statically_checked",
+    "state": "overall_plan_and_cleanup_reviewed",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-P01-CI",
-      "kind": "cleanup_implementation",
-      "startedAt": "2026-10-09T12:13:44.877952+02:00",
-      "focus": "Referenzinventarschema, Atlas-Übergabe und Abschlussregel konkretisieren",
-      "state": "completed",
-      "result": "CLP-01/02/03 im Plan umgesetzt; keine Produktabnahme"
-    },
-    "nextRun": {
       "id": "CITY-P01-CR",
       "kind": "cleanup_review",
-      "focus": "Drei Planbereinigungen gegen Nutzerauftrag und Roadmap prüfen"
+      "startedAt": "2026-10-09T12:14:12.327602+02:00",
+      "focus": "CLP-01/02/03 und Bestandsschutz unabhängig vom Umsetzungslauf prüfen",
+      "state": "completed",
+      "result": "Alle drei Planbefunde geschlossen; 24 CTY-Verweise eindeutig; fremde Checkpointwurzeln semantisch erhalten; Produktparität offen"
+    },
+    "nextRun": {
+      "id": "CITY-00-I01",
+      "kind": "reference_implementation",
+      "focus": "Drei Originalprodukte direkt prüfen und vollständigen Funktionsvergleich im Katalog anlegen"
     },
     "open": [
       "CITY-00 direkte Referenzinventur/Galerie aller drei Produkte",
