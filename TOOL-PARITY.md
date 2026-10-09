@@ -673,3 +673,7 @@ Der [Originalbericht](/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-r
 ## Folge-Roadmap Phase 1: unterer Smart-Tile-Beschnitt, direkte Originalprobe
 
 Der [Originalbericht](/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-bottom-crop-20261009/original-probe.md) misst auf einer extern vorbereiteten 12×10-Karte unten −2 und danach +2: Die gespeicherten belegten Zellen zählen 10→5→10 im selben Originalprozess; ein frischer Prozess öffnet exakt die 12×8-Beschnittkarte und behält nach +2 fünf. Die vier Shape-Polygone bleiben in beiden Abläufen gleich. **`DD-038.04` ist nur im Original vermessen:** Host-Zellschicht, oberer und erneut kontrollierter linker Rand, weitere Inhalte, unabhängiger Review und das 77-Fälle-Tor bleiben offen. P7-2 bleibt physisch ungeprüft.
+
+## Folge-Roadmap Phase 1: oberer Smart-Tile-Beschnitt, direkte Originalprobe
+
+Der [Originalbericht](/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-top-crop-20261009/original-probe.md) belegt auf einer externen 12×10-Karte oben −2 und danach +2: belegte Smart-Tile-Zellen 10→5→5; die frische Öffnung exakt der 12×8-Beschnittkarte bleibt nach +2 bei fünf. Alle 16 Shape-Polygonpunkte verschieben sich beim Beschnitt um −512 native Y-Einheiten und kehren bei beiden Erweiterungsfolgen exakt zurück. **`DD-038.02` ist für diesen Beschnitt nur im Original vermessen:** linker Rand, Host-Zellschicht, andere Inhalte, unabhängiger Review und das 77-Fälle-Tor bleiben offen. P7-2 ist physisch ungeprüft.
