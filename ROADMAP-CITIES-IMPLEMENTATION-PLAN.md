@@ -684,3 +684,12 @@ CITY-01-PREP-CLEAN-I01 Start 2026-10-09T16:47:08.177038+00:00; Dimensionslose Sk
 
 
 CITY-01-PREP-CLEAN-R01 Start 2026-10-09T16:48:58.646070+00:00; Alle drei Aufräumreste erledigt: Skalierung korrekt dimensionslos kommentiert, vorhandene APIs im Gesamtplan erkennbar, dichte Listen in Architektur festgehalten. Ausschließlich Kommentaränderung am Modelltyp; exakte Typquelle nach Kommentarentfernung und erzeugtes JS identisch. Codec/Tests/gemeinsame Quellen unverändert gegenüber276grünenTests/Typprüfung/Build. Modellvorbereitung reviewt ohne Restbefund;24CTY/65CO-Fachpflichten und Atlas-/Host-/Saveintegration offen. Beleg: /home/aaron/.cache/dungeon-native-qa/city-plans/city01-model-20261009/cleanup-review.json. Nächster Lauf plant reine Stadtbefehle auf der inzwischen gelieferten gemeinsamen AtlasHistory; mit HEX-Besitzer abgleichen, keine eigene Historie oder Hostvorgriff.
+
+
+CITY-01-PREP-P02 Start 2026-10-09T16:53:43.876966+00:00; Fokus: reine Stadtbefehle auf tatsächlich gelieferter AtlasHistory. Owner=stabile CityDocument.id, Target=document, initiale Codecprüfung vor Registrierung/JSON-Konversion, keine zweite mutable Quelle. Reiner Vorher/Nachher-Change hält Gestenanfangsstand und ermöglicht atomare City-/Terrainbefehle. Echte Mehrbesitzer-, Stale-, No-op-/Redo- und Eingabegrenzprüfungen geplant; HEX-Besitzer bestätigt API. Plan: ROADMAP-CITIES-CITY01-COMMANDS-PLAN.md. Keine Produkt-/Hostfreigabe; Plan-Aufräum-P/I/R folgen getrennt.
+
+
+CITY-01-PREP-PLAN-CLEAN-P02 Start 2026-10-09T16:54:08.160940+00:00; Plan-Aufräumfokus: Befehlsplan gegen tatsächliche AtlasHistory/TerrainSource, bestehende immutable-Hilfe und CTY/HEX05-Grenzen prüfen. Geplante Snapshots müssen vorhandene Tiefkopiehilfe verwenden; register/hydrate ohne unregister erfordert einmalige Quelle je Besitzerlebensdauer. Diese beiden Implementierungsdetails explizit ergänzen, Verweise/JSON/fremde Roots prüfen; danach getrennt CI/CR.
+
+
+CITY-01-PREP-PLAN-CLEAN-I02 Start 2026-10-09T16:54:33.124584+00:00; Befehlsplan verwendet ausdrücklich die bestehende generic immutable-Hilfe auf frisch aufgebautem Change. Fehlendes unregister wird als einmalige Quelle je Stadt-/Historylebensdauer beschrieben; weitere Verbraucher teilen die Quelle, erneute Konstruktion kollidiert kontrolliert. Keine Registry, zweite History oder Hostcodeänderung. Abschließender Quellen-/Verweis-/JSONreview folgt.
