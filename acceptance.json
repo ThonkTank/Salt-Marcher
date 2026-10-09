@@ -3966,18 +3966,18 @@
         }
       ]
     },
-    "inventoryComplete": false,
-    "inventoryStatus": "N-I18: drei letzte frühe Move-Path-Fragen direkt geschlossen,29Originalframes/normal0 und vier eigene Prozesse beendet. Color-Popup und Width1,5..64/Roughness0..1 über jeweils eigene Eingabewege; kein Werkzeugtransfer. Fünf bisher fehlende Fall-/UI-Zuordnungen ausdrücklich nur Oberflächen-/Metaverweise, Geräte/Anschluss-/gespeicherte Fehlassetwirkung bleiben offene Fachpflichten. Alle681Kennungen/83Fälle/113Altquellen erhalten, keine offene frühe UI-Frage. Dreizehn Startumfangreviews, R02/A/B/C und eigener Aufräumzyklus fehlen; HEX01..05 als nächste Produktbasis weiterhin gesperrt.",
+    "inventoryComplete": true,
+    "inventoryStatus": "R02:681 native surfaces,96 roles,33 scoped options and13 early original cases independently reviewed. Reference gate passed;79 later effect/host/physical obligations and113 historically unverified source usages retained. C01 cleanup required before HEX01..05; full Wonderdraft equality remains unapproved.",
     "legacyInventoryScope": "Das vorhandene Wurzelfeld inventoryComplete und strictParity beschreiben nur die bisherige Dungeondraft-Inventur; daraus folgt keine Wonderdraft-Abnahme.",
     "inventoryGate": {
       "phase": "HEX-00",
-      "state": "open",
+      "state": "passed",
       "blocks": "HEX-01 product implementation",
       "steps": [
         {
           "id": "HEX-00-A",
           "task": "Alle erreichbaren Originalkategorien, Menüs, Werkzeuge, Optionen, Kontextzustände, Gesten und Dialoge direkt inventarisieren; UI-Pfad und Defaults/Validierung erfassen; jeden Eintrag stabilen WD-Fällen und einer Produktphase zuordnen.",
-          "state": "in_progress",
+          "state": "passed",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/session.txt",
             "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/evidence/screens/hover-water-1.png",
@@ -3996,29 +3996,32 @@
             "/home/aaron/.cache/dungeon-native-qa/hex-00/inventory-dialogs-20261008-235225/original-first-run/input.jsonl",
             "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/session.json",
             "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original-update/session.json",
-            "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/update-fixture.json"
+            "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/update-fixture.json",
+            "/home/aaron/.cache/dungeon-native-qa/hex-00/r02-review-20261009-155338/review.json"
           ]
         },
         {
           "id": "HEX-00-B",
           "task": "Kleine originale Kontrollkarten anlegen: Neuanlage, Navigation, Grundpinsel, Farbgrundlage, Abbruch, Undo/Redo, Save/Open und vollständiger Prozessneustart direkt belegen; Testdaten für erste Hostpaare festlegen.",
-          "state": "in_progress",
+          "state": "passed",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/data/Wonderdraft/maps/HEX00-F01.wonderdraft_map",
             "/home/aaron/.cache/dungeon-native-qa/hex-00/HEX-00-I01-2026-10-08T19-05-15-417Z/original-20261008-211706-3026226/evidence/screens/save-filled.png",
             "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/manifest.json",
             "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/session.json",
             "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original-reopen/session.json",
-            "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/maps/A.wonderdraft_map"
+            "/home/aaron/.cache/dungeon-native-qa/hex-00/initial-sequences-20261009-003824/original/maps/A.wonderdraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/hex-00/r02-review-20261009-155338/review.json"
           ]
         },
         {
           "id": "HEX-00-C",
           "task": "Getrennter Inventarreview gegen alle Originaloberflächen und Pakethinweise; keine erreichbare Funktion unzugeordnet, keine Annahme als Originalbefund, Startfälle belegt. Erst danach HEX-01 öffnen.",
-          "state": "changes_required",
+          "state": "passed",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/hex-00/review-20261009-024123/manifest.json",
-            "/home/aaron/.cache/dungeon-native-qa/hex-00/review-20261009-024123/review.json"
+            "/home/aaron/.cache/dungeon-native-qa/hex-00/review-20261009-024123/review.json",
+            "/home/aaron/.cache/dungeon-native-qa/hex-00/r02-review-20261009-155338/review.json"
           ]
         }
       ],
@@ -62432,240 +62435,28 @@
       "classification"
     ],
     "coverageReview": {
-      "state": "changes_required",
-      "run": "HEX-00-R01",
-      "startedAt": "2026-10-09T02:41:23.909064+02:00",
-      "endedAt": "2026-10-09T03:01:02.046480+02:00",
-      "baseCommit": "a7f9f82b3b39fea7d6f503d66a5bf866bb733e7d",
+      "state": "passed",
+      "run": "HEX-00-R02",
+      "startedAt": "2026-10-09T15:53:38.991845+02:00",
+      "endedAt": "2026-10-09T16:44:38.156626+02:00",
+      "baseCommit": "7f43d7e152671fbd96b59a134016033d71829a50",
       "evidence": [
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/review-20261009-024123/manifest.json",
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/review-20261009-024123/review.json",
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/review-20261009-024123/original/session.json",
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/review-20261009-024123/reopen/session.json"
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/r02-review-20261009-155338/review.json",
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/r02-review-20261009-155338/protection-review.json"
       ],
-      "unmappedReachableControls": [
-        {
-          "exactUiPath": "Land > Ground Color Brush > Color Palette > + > Pick Color > [pipette icon]",
-          "caseIds": [
-            "WD-021.01",
-            "WD-021.02",
-            "WD-007.01"
-          ],
-          "phase": "HEX-02",
-          "evidence": {
-            "role": "actual_original_runtime",
-            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/review-20261009-024123/original/session.json",
-            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/review-20261009-024123/original/screens/015-palette-modal.json",
-            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/review-20261009-024123/original/screens/015-palette-modal.png",
-            "observation": "Direkt sichtbarer modaler Kontext; noch kein eigener Inventareintrag für [pipette icon]."
-          }
-        },
-        {
-          "exactUiPath": "Land > Ground Color Brush > Color Palette > + > Pick Color > [saturation/value area]",
-          "caseIds": [
-            "WD-021.01",
-            "WD-021.02",
-            "WD-007.01"
-          ],
-          "phase": "HEX-02",
-          "evidence": {
-            "role": "actual_original_runtime",
-            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/review-20261009-024123/original/session.json",
-            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/review-20261009-024123/original/screens/015-palette-modal.json",
-            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/review-20261009-024123/original/screens/015-palette-modal.png",
-            "observation": "Direkt sichtbarer modaler Kontext; noch kein eigener Inventareintrag für [saturation/value area]."
-          }
-        },
-        {
-          "exactUiPath": "Land > Ground Color Brush > Color Palette > + > Pick Color > [hue bar]",
-          "caseIds": [
-            "WD-021.01",
-            "WD-021.02",
-            "WD-007.01"
-          ],
-          "phase": "HEX-02",
-          "evidence": {
-            "role": "actual_original_runtime",
-            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/review-20261009-024123/original/session.json",
-            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/review-20261009-024123/original/screens/015-palette-modal.json",
-            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/review-20261009-024123/original/screens/015-palette-modal.png",
-            "observation": "Direkt sichtbarer modaler Kontext; noch kein eigener Inventareintrag für [hue bar]."
-          }
-        },
-        {
-          "exactUiPath": "Land > Ground Color Brush > Color Palette > + > Pick Color > R",
-          "caseIds": [
-            "WD-021.01",
-            "WD-021.02",
-            "WD-007.01"
-          ],
-          "phase": "HEX-02",
-          "evidence": {
-            "role": "actual_original_runtime",
-            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/review-20261009-024123/original/session.json",
-            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/review-20261009-024123/original/screens/015-palette-modal.json",
-            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/review-20261009-024123/original/screens/015-palette-modal.png",
-            "observation": "Direkt sichtbarer modaler Kontext; noch kein eigener Inventareintrag für R."
-          }
-        },
-        {
-          "exactUiPath": "Land > Ground Color Brush > Color Palette > + > Pick Color > G",
-          "caseIds": [
-            "WD-021.01",
-            "WD-021.02",
-            "WD-007.01"
-          ],
-          "phase": "HEX-02",
-          "evidence": {
-            "role": "actual_original_runtime",
-            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/review-20261009-024123/original/session.json",
-            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/review-20261009-024123/original/screens/015-palette-modal.json",
-            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/review-20261009-024123/original/screens/015-palette-modal.png",
-            "observation": "Direkt sichtbarer modaler Kontext; noch kein eigener Inventareintrag für G."
-          }
-        },
-        {
-          "exactUiPath": "Land > Ground Color Brush > Color Palette > + > Pick Color > B",
-          "caseIds": [
-            "WD-021.01",
-            "WD-021.02",
-            "WD-007.01"
-          ],
-          "phase": "HEX-02",
-          "evidence": {
-            "role": "actual_original_runtime",
-            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/review-20261009-024123/original/session.json",
-            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/review-20261009-024123/original/screens/015-palette-modal.json",
-            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/review-20261009-024123/original/screens/015-palette-modal.png",
-            "observation": "Direkt sichtbarer modaler Kontext; noch kein eigener Inventareintrag für B."
-          }
-        },
-        {
-          "exactUiPath": "Land > Ground Color Brush > Color Palette > + > Pick Color > A",
-          "caseIds": [
-            "WD-021.01",
-            "WD-021.02",
-            "WD-007.01"
-          ],
-          "phase": "HEX-02",
-          "evidence": {
-            "role": "actual_original_runtime",
-            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/review-20261009-024123/original/session.json",
-            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/review-20261009-024123/original/screens/015-palette-modal.json",
-            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/review-20261009-024123/original/screens/015-palette-modal.png",
-            "observation": "Direkt sichtbarer modaler Kontext; noch kein eigener Inventareintrag für A."
-          }
-        },
-        {
-          "exactUiPath": "Land > Ground Color Brush > Color Palette > + > Pick Color > [numeric representation toggle]",
-          "caseIds": [
-            "WD-021.01",
-            "WD-021.02",
-            "WD-007.01"
-          ],
-          "phase": "HEX-02",
-          "evidence": {
-            "role": "actual_original_runtime",
-            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/review-20261009-024123/original/session.json",
-            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/review-20261009-024123/original/screens/015-palette-modal.json",
-            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/review-20261009-024123/original/screens/015-palette-modal.png",
-            "observation": "Direkt sichtbarer modaler Kontext; noch kein eigener Inventareintrag für [numeric representation toggle]."
-          }
-        },
-        {
-          "exactUiPath": "Land > Ground Color Brush > Color Palette > + > Pick Color > HTML",
-          "caseIds": [
-            "WD-021.01",
-            "WD-021.02",
-            "WD-007.01"
-          ],
-          "phase": "HEX-02",
-          "evidence": {
-            "role": "actual_original_runtime",
-            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/review-20261009-024123/original/session.json",
-            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/review-20261009-024123/original/screens/015-palette-modal.json",
-            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/review-20261009-024123/original/screens/015-palette-modal.png",
-            "observation": "Direkt sichtbarer modaler Kontext; noch kein eigener Inventareintrag für HTML."
-          }
-        },
-        {
-          "exactUiPath": "Land > Ground Color Brush > Color Palette > + > Pick Color > [picker palette plus]",
-          "caseIds": [
-            "WD-021.01",
-            "WD-021.02",
-            "WD-007.01"
-          ],
-          "phase": "HEX-02",
-          "evidence": {
-            "role": "actual_original_runtime",
-            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/review-20261009-024123/original/session.json",
-            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/review-20261009-024123/original/screens/015-palette-modal.json",
-            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/review-20261009-024123/original/screens/015-palette-modal.png",
-            "observation": "Direkt sichtbarer modaler Kontext; noch kein eigener Inventareintrag für [picker palette plus]."
-          }
-        },
-        {
-          "exactUiPath": "Land > Ground Color Brush > Color Palette > + > Pick Color > Cancel",
-          "caseIds": [
-            "WD-021.01",
-            "WD-021.02",
-            "WD-007.01"
-          ],
-          "phase": "HEX-02",
-          "evidence": {
-            "role": "actual_original_runtime",
-            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/review-20261009-024123/original/session.json",
-            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/review-20261009-024123/original/screens/015-palette-modal.json",
-            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/review-20261009-024123/original/screens/015-palette-modal.png",
-            "observation": "Direkt sichtbarer modaler Kontext; noch kein eigener Inventareintrag für Cancel."
-          }
-        },
-        {
-          "exactUiPath": "Land > Ground Color Brush > Color Palette > + > Pick Color > OK",
-          "caseIds": [
-            "WD-021.01",
-            "WD-021.02",
-            "WD-007.01"
-          ],
-          "phase": "HEX-02",
-          "evidence": {
-            "role": "actual_original_runtime",
-            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/review-20261009-024123/original/session.json",
-            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/review-20261009-024123/original/screens/015-palette-modal.json",
-            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/review-20261009-024123/original/screens/015-palette-modal.png",
-            "observation": "Direkt sichtbarer modaler Kontext; noch kein eigener Inventareintrag für OK."
-          }
-        },
-        {
-          "exactUiPath": "Land > Ground Color Brush > Color Palette > + > Pick Color > [close button]",
-          "caseIds": [
-            "WD-021.01",
-            "WD-021.02",
-            "WD-007.01"
-          ],
-          "phase": "HEX-02",
-          "evidence": {
-            "role": "actual_original_runtime",
-            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/review-20261009-024123/original/session.json",
-            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/review-20261009-024123/original/screens/015-palette-modal.json",
-            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/review-20261009-024123/original/screens/015-palette-modal.png",
-            "observation": "Direkt sichtbarer modaler Kontext; noch kein eigener Inventareintrag für [close button]."
-          }
-        }
-      ],
-      "unclassifiedPackageHints": [
-        "res://scripts/ui/area_creator_dialog.gdc",
-        "res://scripts/ui/inspect_dialog.gdc",
-        "res://scripts/ui/news_dialog.gdc",
-        "res://scripts/ui/update_dialog.gdc"
-      ],
-      "classificationBasis": "92 Paketrollen als begründete Oberflächenrollen überprüft, keine instrumentierte Codezuordnung. Vier verbleiben pending. Alle 96 Pakethinweise sind Gruppen zugeordnet; das ist kein Vollständigkeitsbeweis der Originaloberfläche.",
+      "unmappedReachableControls": [],
+      "unclassifiedPackageHints": [],
+      "classificationBasis": {
+        "classified": 96,
+        "packageHints": 96,
+        "instrumentedMapping": false
+      },
       "findings": [
         {
           "id": "HEX00-R01-01",
           "priority": 1,
-          "state": "open",
-          "blocking": true,
+          "state": "resolved",
+          "blocking": false,
           "title": "Inventartor vermischt frühe Referenzpflicht und spätere Wirkungsfragen",
           "requirement": "WONDERDRAFT-PARITY.md HEX-00-A/B/C und ROADMAP-HEX-00-PLAN.md: Oberfläche vollständig früh; tiefe Varianten vor ihrer Fachphase; Startfälle im festgelegten frühen Umfang.",
           "evidence": [
@@ -62674,13 +62465,18 @@
             "/home/aaron/.cache/dungeon-native-qa/hex-00/review-20261009-024123/catalog-before.json"
           ],
           "observed": "160 UI-Fragen enthalten sowohl echte Inventarlücken als auch spätere Kartenwirkung, etwa Paletten-Mehrfachwahl und Coast-Snapping-/SHIFT-Wirkung. Der frühe Umfang von sechs breit formulierten Startfällen ist nicht eigenständig prüfbar.",
-          "required": "Inventarpflichten, vollständige frühe Originalfolge und spätere Wirkungs-/Host-/physische Pflichten explizit getrennt darstellen und prüfen. Unklassifizierte Fragen bleiben blockierend. Keine Frage löschen oder automatisch als später erklären; tiefe Fragen behalten Fall, Zielphase und direkte Probe vor Produktcode."
+          "required": "Inventarpflichten, vollständige frühe Originalfolge und spätere Wirkungs-/Host-/physische Pflichten explizit getrennt darstellen und prüfen. Unklassifizierte Fragen bleiben blockierend. Keine Frage löschen oder automatisch als später erklären; tiefe Fragen behalten Fall, Zielphase und direkte Probe vor Produktcode.",
+          "resolvedBy": {
+            "run": "HEX-00-R02",
+            "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-00/r02-review-20261009-155338/review.json",
+            "decision": "Explicit scoped contract preserves every source question and separates HEX00 inventory/initial sequences from the 79 later obligations. 13 initial cases reviewed from actual native images, raw saved maps and fresh stopped-process evidence; no full paired approval."
+          }
         },
         {
           "id": "HEX00-R01-02",
           "priority": 1,
-          "state": "open",
-          "blocking": true,
+          "state": "resolved",
+          "blocking": false,
           "title": "Modaler Farbdialog ist gemessen, seine Oberfläche noch nicht vollständig zugeordnet",
           "requirement": "Jedes erreichbare Steuerelement und jeder unterschiedliche Dialogkontext braucht Originalpfad, UI-Kennung, WD-Unterfall und Zielphase.",
           "evidence": [
@@ -62713,13 +62509,18 @@
               "WD-UI-0652"
             ],
             "remaining": "Neue frühe Validierungsfragen bleiben sichtbar; keine Wirkungsgleichsetzung der drei Pickerkontexte."
+          },
+          "resolvedBy": {
+            "run": "HEX-00-R02",
+            "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-00/r02-review-20261009-155338/review.json",
+            "decision": "Modal controls0636..0652 each have paths, phases and direct native evidence; five picker contexts remain distinct. Numeric and HTML commits/cancel inspected, no transfer of inline RGBA rules to modal AARRGGBB."
           }
         },
         {
           "id": "HEX00-R01-03",
           "priority": 1,
-          "state": "open",
-          "blocking": true,
+          "state": "resolved",
+          "blocking": false,
           "title": "Verfügbare Listen und Paletten sind teilweise noch unbekannt oder veraltet dokumentiert",
           "requirement": "Frühes Inventar enthält verfügbare Optionen, sichtbare Defaults/Validierung und kontextbezogene Eingabewege; tiefe Wirkung darf später bleiben.",
           "evidence": [
@@ -62798,13 +62599,18 @@
                 "probe": "Zwei rechts abgeschnittene Scale-Fontnamen im Originalkontext lesbar machen; keine ungeprüfte Gleichsetzung mit den ähnlich angezeigten Label-Fonts."
               }
             ]
+          },
+          "resolvedBy": {
+            "run": "HEX-00-R02",
+            "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-00/r02-review-20261009-155338/review.json",
+            "decision": "All33 bounded candidates inspected through actual list ends/tooltips or native saved style data. Dynamic fonts/assets/palettes retain observed profile/set context. Initial null path style distinguished from first explicit icon; variant effects remain later."
           }
         },
         {
           "id": "HEX00-R01-04",
           "priority": 1,
-          "state": "open",
-          "blocking": true,
+          "state": "resolved",
+          "blocking": false,
           "title": "Aktive Importbelege sind ohne lokale Herkunftsprüfung weiterhin ungeprüft",
           "requirement": "Fehlende Quellen bleiben sichtbar; eine Direktabnahme verlangt auffindbare Originalbilder mit Sitzungs-/Frameprovenienz.",
           "evidence": [
@@ -62813,13 +62619,18 @@
             "wonderdraftParity.importedEvidenceAvailability"
           ],
           "observed": "59 aktive UI-Einträge haben keinen lokalen JSON-Originalbeleg. 67 importierte Einträge bleiben erhalten, davon acht mittlerweile zusätzlich nativ belegt; die alten Quellen erzeugen weiterhin 111 Prüffehler. Das ist kein neuer Fehler der I03-Messungen.",
-          "required": "Jede aktive UI-Kennung mit tatsächlichem passenden nativen Kontext belegen oder ihre Quelle zugänglich verifizieren. Historische Kennungen, Aussagen und fehlende Quellen erhalten; historische Belege und neue aktuelle Direktbelege ausdrücklich trennen. Kein fehlender Altbeleg darf durch eine Umbenennung als verifiziert gelten."
+          "required": "Jede aktive UI-Kennung mit tatsächlichem passenden nativen Kontext belegen oder ihre Quelle zugänglich verifizieren. Historische Kennungen, Aussagen und fehlende Quellen erhalten; historische Belege und neue aktuelle Direktbelege ausdrücklich trennen. Kein fehlender Altbeleg darf durch eine Umbenennung als verifiziert gelten.",
+          "resolvedBy": {
+            "run": "HEX-00-R02",
+            "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-00/r02-review-20261009-155338/review.json",
+            "decision": "All681 active identities have native correspondence; 59 formerly unproved active entries inspected. 113 historical unverified usages and original sources preserved byte-for-byte in data, with current native replacements. Historical sources remain unverified."
+          }
         },
         {
           "id": "HEX00-R01-05",
           "priority": 1,
-          "state": "open",
-          "blocking": true,
+          "state": "resolved",
+          "blocking": false,
           "title": "Vier Paketrollen bleiben ohne abschließende begründete Zuordnung",
           "requirement": "Alle 96 Pakethinweise als erreichbare Funktion, interner Helfer oder Programmservice begründet klassifizieren; fehlende Beobachtung ist kein Ausschluss.",
           "evidence": [
@@ -62827,13 +62638,18 @@
             "/home/aaron/.cache/dungeon-native-qa/hex-00/review-20261009-024123/package-inventory.json"
           ],
           "observed": "area_creator_dialog, inspect_dialog, news_dialog und update_dialog bleiben pending. Vorherige erfolglose Originalzustände sind echte Befunde und belegen keine Nichtexistenz.",
-          "required": "Nur diese vier Rollen gezielt klären. Für bedingt sichtbare Programmservices Aktivierungsbedingung und Quelle belegen; vorhandene Kartengesten direkt zuordnen. Eine Schlussfolgerung aus dem Originalpaket ausdrücklich als solche kennzeichnen und von einer UI-Abnahme unterscheiden."
+          "required": "Nur diese vier Rollen gezielt klären. Für bedingt sichtbare Programmservices Aktivierungsbedingung und Quelle belegen; vorhandene Kartengesten direkt zuordnen. Eine Schlussfolgerung aus dem Originalpaket ausdrücklich als solche kennzeichnen und von einer UI-Abnahme unterscheiden.",
+          "resolvedBy": {
+            "run": "HEX-00-R02",
+            "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-00/r02-review-20261009-155338/review.json",
+            "decision": "All96 roles classified with bounded evidence. Area selection and Community Links directly shown; inspect has explicit debug/F9 guard and loaded negative probe, classified internal. Update Download directly shown only in private minimal fixture, no real update/download/install claim. Role inference remains distinct from instrumentation."
+          }
         },
         {
           "id": "HEX00-R01-06",
           "priority": 2,
-          "state": "open",
-          "blocking": true,
+          "state": "resolved",
+          "blocking": false,
           "title": "Gespeicherte Gruppenindizes folgen neuen UI-Zuordnungen nicht",
           "requirement": "Inventar-/Unterfall-/Gruppenzuordnung bleibt vollständig und nachvollziehbar.",
           "evidence": [
@@ -62842,7 +62658,12 @@
             "groups.WD-003.uiInventoryIds"
           ],
           "observed": "Neue New-Dialog-Kennungen 0630–0632 fehlen im WD-001-Index, neue Unsaved-Kennungen 0633–0635 im WD-003-Index. Weitere gespeicherte Indizes unterscheiden sich von der aktuellen Fallzuordnung; WD-036 besitzt zwei nicht erklärte zusätzliche Querverweise. Der Validator prüft diese Indizes bislang nicht.",
-          "required": "Gruppenindizes aus der kanonischen Fallzuordnung konsistent ableiten oder bewusste Querverweise explizit begründen. Passende Verweisprüfung ergänzen; IDs und fremde Daten nicht umnummerieren."
+          "required": "Gruppenindizes aus der kanonischen Fallzuordnung konsistent ableiten oder bewusste Querverweise explizit begründen. Passende Verweisprüfung ergänzen; IDs und fremde Daten nicht umnummerieren.",
+          "resolvedBy": {
+            "run": "HEX-00-R02",
+            "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-00/r02-review-20261009-155338/review.json",
+            "decision": "36 group indices equal the canonical case/UI union, explicit cross references retained. Five NI18 references inspected; WD036.02 remains a meta inventory case, actual tool phases unchanged."
+          }
         }
       ],
       "cleanupFindings": [
@@ -62859,8 +62680,8 @@
           "required": "Im eigenen Aufräumplan sämtliche syntaktischen Beleg-/Eingabeprüfungen vor Verbindung und Eingabe ziehen. Frühere Rohbelege unverändert; im Review keine negative Mutation an der laufenden Kontrollkarte provoziert."
         }
       ],
-      "initialOriginalScope": "13 frühe Umfänge nach Plan ausreichend belegt; Fall-Gesamtproben und spätere Pflichten bleiben offen. Prüflogik/Datenvertrag muss diese Grenze ausdrücklich abbilden.",
-      "limits": "Keine vollständige Oberflächenfreigabe; Kandidatenliste für fehlende/unklare Choices ist begrenzt. Neue Reviewkritik ersetzt keine ungeprüften Oberflächenbelege.",
+      "initialOriginalScope": "All13 early scopes passed direct separate R02; full cases and paired coverage remain open.",
+      "limits": "Reference inventory only;79 later obligations,113 historical sources and C01 retained.",
       "repairPlan": {
         "path": "ROADMAP-HEX-00-REPAIR-PLAN.md",
         "run": "HEX-00-N-P01",
@@ -65308,9 +65129,11 @@
               ]
             },
             "review": {
-              "state": "pending",
-              "run": null,
-              "evidence": []
+              "state": "passed",
+              "run": "HEX-00-R02",
+              "evidence": [
+                "/home/aaron/.cache/dungeon-native-qa/hex-00/r02-review-20261009-155338/review.json"
+              ]
             },
             "deferredSourceStatements": [],
             "observationQuestions": [],
@@ -65885,9 +65708,11 @@
               ]
             },
             "review": {
-              "state": "pending",
-              "run": null,
-              "evidence": []
+              "state": "passed",
+              "run": "HEX-00-R02",
+              "evidence": [
+                "/home/aaron/.cache/dungeon-native-qa/hex-00/r02-review-20261009-155338/review.json"
+              ]
             },
             "deferredSourceStatements": [
               "HEX-26: tatsächliche große Kartengröße und vollständige Vorgaben-/Ausgabewirkung"
@@ -66377,9 +66202,11 @@
               ]
             },
             "review": {
-              "state": "pending",
-              "run": null,
-              "evidence": []
+              "state": "passed",
+              "run": "HEX-00-R02",
+              "evidence": [
+                "/home/aaron/.cache/dungeon-native-qa/hex-00/r02-review-20261009-155338/review.json"
+              ]
             },
             "deferredSourceStatements": [
               "Physische Maus-/Touchpadgesten gesondert"
@@ -66835,9 +66662,11 @@
               ]
             },
             "review": {
-              "state": "pending",
-              "run": null,
-              "evidence": []
+              "state": "passed",
+              "run": "HEX-00-R02",
+              "evidence": [
+                "/home/aaron/.cache/dungeon-native-qa/hex-00/r02-review-20261009-155338/review.json"
+              ]
             },
             "deferredSourceStatements": [
               "Kurze frühere Aussetzer bleiben protokolliert; keine gesicherte Fokus-/Timingursache und kein Produktverhalten \"ersten Klick ignorieren\" daraus ableiten.",
@@ -67404,9 +67233,11 @@
               ]
             },
             "review": {
-              "state": "pending",
-              "run": null,
-              "evidence": []
+              "state": "passed",
+              "run": "HEX-00-R02",
+              "evidence": [
+                "/home/aaron/.cache/dungeon-native-qa/hex-00/r02-review-20261009-155338/review.json"
+              ]
             },
             "deferredSourceStatements": [
               "HEX-07: Konflikt-/Fehler-/unterbrochene Speicherfolgen"
@@ -68055,9 +67886,11 @@
               ]
             },
             "review": {
-              "state": "pending",
-              "run": null,
-              "evidence": []
+              "state": "passed",
+              "run": "HEX-00-R02",
+              "evidence": [
+                "/home/aaron/.cache/dungeon-native-qa/hex-00/r02-review-20261009-155338/review.json"
+              ]
             },
             "deferredSourceStatements": [
               "HEX-07: erzwungener Crash, Fehlerfälle und weitergehende Recovery; keine Crash-Recovery-Abnahme aus manueller Sicherungsöffnung"
@@ -68736,9 +68569,11 @@
               ]
             },
             "review": {
-              "state": "pending",
-              "run": null,
-              "evidence": []
+              "state": "passed",
+              "run": "HEX-00-R02",
+              "evidence": [
+                "/home/aaron/.cache/dungeon-native-qa/hex-00/r02-review-20261009-155338/review.json"
+              ]
             },
             "deferredSourceStatements": [
               "HEX-07/HEX-19: vollständige Familien und gemischte Assetgruppen-Zuständigkeit; nicht alle Werte pauschal global/lokal nennen"
@@ -69268,9 +69103,11 @@
               ]
             },
             "review": {
-              "state": "pending",
-              "run": null,
-              "evidence": []
+              "state": "passed",
+              "run": "HEX-00-R02",
+              "evidence": [
+                "/home/aaron/.cache/dungeon-native-qa/hex-00/r02-review-20261009-155338/review.json"
+              ]
             },
             "deferredSourceStatements": [
               "Weitere Fachwerkzeug-Befehlsgrenzen vor deren Produktcode"
@@ -69940,9 +69777,11 @@
               ]
             },
             "review": {
-              "state": "pending",
-              "run": null,
-              "evidence": []
+              "state": "passed",
+              "run": "HEX-00-R02",
+              "evidence": [
+                "/home/aaron/.cache/dungeon-native-qa/hex-00/r02-review-20261009-155338/review.json"
+              ]
             },
             "deferredSourceStatements": [
               "Weitere Fachwerkzeug-Abbruch-/Abschlussgesten vor deren Produktcode"
@@ -71002,9 +70841,11 @@
               ]
             },
             "review": {
-              "state": "pending",
-              "run": null,
-              "evidence": []
+              "state": "passed",
+              "run": "HEX-00-R02",
+              "evidence": [
+                "/home/aaron/.cache/dungeon-native-qa/hex-00/r02-review-20261009-155338/review.json"
+              ]
             },
             "deferredSourceStatements": [
               "HEX-11/HEX-24: weitere Effektfarben, Color Grading und vollständige Küstenvarianten"
@@ -72121,9 +71962,11 @@
               ]
             },
             "review": {
-              "state": "pending",
-              "run": null,
-              "evidence": []
+              "state": "passed",
+              "run": "HEX-00-R02",
+              "evidence": [
+                "/home/aaron/.cache/dungeon-native-qa/hex-00/r02-review-20261009-155338/review.json"
+              ]
             },
             "deferredSourceStatements": [
               "HEX-11/HEX-24: klare Opacity-/Velocity-Wirkung, Mehrfachwahl und positive Symbol-/Baum-/Bergfilter auf geeigneten Instanzen"
@@ -75425,9 +75268,11 @@
               ]
             },
             "review": {
-              "state": "pending",
-              "run": null,
-              "evidence": []
+              "state": "passed",
+              "run": "HEX-00-R02",
+              "evidence": [
+                "/home/aaron/.cache/dungeon-native-qa/hex-00/r02-review-20261009-155338/review.json"
+              ]
             },
             "deferredSourceStatements": [
               "Weitere Farbfeldfamilien vor ihrer Fachphase; Inline-Schalter nicht allein aus Coastline-Popup generalisieren"
@@ -77212,9 +77057,11 @@
               ]
             },
             "review": {
-              "state": "pending",
-              "run": null,
-              "evidence": []
+              "state": "passed",
+              "run": "HEX-00-R02",
+              "evidence": [
+                "/home/aaron/.cache/dungeon-native-qa/hex-00/r02-review-20261009-155338/review.json"
+              ]
             },
             "deferredSourceStatements": [
               "HEX-24: alle Themenkomponenten und Wechsel auf vorhandener gestalteter Karte"
@@ -83419,14 +83266,9 @@
       }
     ],
     "inventoryRemaining": [
-      "HEX00-R01-01: Inventartor vermischt frühe Referenzpflicht und spätere Wirkungsfragen",
-      "HEX00-R01-02: Modaler Farbdialog ist gemessen, seine Oberfläche noch nicht vollständig zugeordnet",
-      "HEX00-R01-03: Verfügbare Listen und Paletten sind teilweise noch unbekannt oder veraltet dokumentiert",
-      "HEX00-R01-04: Aktive Importbelege sind ohne lokale Herkunftsprüfung weiterhin ungeprüft",
-      "HEX00-R01-05: Sämtliche 96 Paketrollen begründet eingeordnet; Update Download direkt erreicht, frühere Negativproben erhalten; unabhängiger Rollenreview fehlt",
-      "HEX00-R01-06: Gespeicherte Gruppenindizes folgen neuen UI-Zuordnungen nicht",
-      "Tiefe Originalvarianten bleiben bei ihrer Fachphase und sind vor deren Produktcode direkt zu messen; keine vollständige Wonderdraft-Parität aus dem frühen Ablauf.",
-      "Nach Pflichtnachbesserung eigener HEX-00-R02, anschließend eigene Aufräumplanung/-umsetzung/-review. CITY-00 bleibt eigene frühe Ergebnisreferenzphase."
+      "C01 own cleanup plan/implementation/review beforeHEX01.",
+      "79 later original effect, host pair and physical obligations remain due at their phase.",
+      "Full paired Wonderdraft parity dueHEX28; CITY00 early result reference remains separate."
     ],
     "importedEvidenceAvailability": {
       "sourceCommit": "b772d8d3fe40e2cb3be4d55deef806c41b39447e",
@@ -83435,11 +83277,16 @@
       "policy": "Existing identifiers and observations preserved; missing external QA files are not accepted as locally reverified proof.",
       "activeReplacement": {
         "run": "HEX-00-N-I03",
-        "state": "recorded_native_replacements_review_pending",
+        "state": "native_replacements_review_passed",
         "uiEntries": 67,
         "newlyMappedUiEntries": 59,
         "usageRecords": 113,
-        "policy": "Historische Quellen bleiben lokal ungeprüft; ihre konkrete aktive Ablösung ist owner-/quellenbezogen validiert. Keine Rückdatierung/Freigabe des Imports."
+        "policy": "Historische Quellen bleiben lokal ungeprüft; ihre konkrete aktive Ablösung ist owner-/quellenbezogen validiert. Keine Rückdatierung/Freigabe des Imports.",
+        "review": {
+          "run": "HEX-00-R02",
+          "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-00/r02-review-20261009-155338/review.json",
+          "historicalSourcesVerified": false
+        }
       }
     },
     "contextFixtures": [
@@ -83888,7 +83735,7 @@
       "plan": "ROADMAP-HEX-00-REPAIR-PLAN.md",
       "referenceVersion": "1.1.8.2",
       "scope": "Exactly the 33 R01-03 candidates; new native list captures only where old receipts were insufficient.",
-      "state": "bounded_implementation_partial_review_pending",
+      "state": "bounded_scoped_options_review_passed",
       "candidates": [
         {
           "uiId": "WD-UI-0055",
@@ -84894,6 +84741,12 @@
           "WD-UI-0458",
           "WD-UI-0468"
         ]
+      },
+      "review": {
+        "run": "HEX-00-R02",
+        "state": "passed",
+        "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-00/r02-review-20261009-155338/review.json",
+        "variantEffectApproval": false
       }
     },
     "evidenceUsageContractVersion": 1,
@@ -88569,6 +88422,457 @@
             "sha256": "6bfae1924f0cd942b131d98ce79ad7583c5cb0ee943991312d13c2fef618b49f"
           }
         ]
+      }
+    ],
+    "coverageReviewHistory": [
+      {
+        "state": "changes_required",
+        "run": "HEX-00-R01",
+        "startedAt": "2026-10-09T02:41:23.909064+02:00",
+        "endedAt": "2026-10-09T03:01:02.046480+02:00",
+        "baseCommit": "a7f9f82b3b39fea7d6f503d66a5bf866bb733e7d",
+        "evidence": [
+          "/home/aaron/.cache/dungeon-native-qa/hex-00/review-20261009-024123/manifest.json",
+          "/home/aaron/.cache/dungeon-native-qa/hex-00/review-20261009-024123/review.json",
+          "/home/aaron/.cache/dungeon-native-qa/hex-00/review-20261009-024123/original/session.json",
+          "/home/aaron/.cache/dungeon-native-qa/hex-00/review-20261009-024123/reopen/session.json"
+        ],
+        "unmappedReachableControls": [
+          {
+            "exactUiPath": "Land > Ground Color Brush > Color Palette > + > Pick Color > [pipette icon]",
+            "caseIds": [
+              "WD-021.01",
+              "WD-021.02",
+              "WD-007.01"
+            ],
+            "phase": "HEX-02",
+            "evidence": {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/review-20261009-024123/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/review-20261009-024123/original/screens/015-palette-modal.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/review-20261009-024123/original/screens/015-palette-modal.png",
+              "observation": "Direkt sichtbarer modaler Kontext; noch kein eigener Inventareintrag für [pipette icon]."
+            }
+          },
+          {
+            "exactUiPath": "Land > Ground Color Brush > Color Palette > + > Pick Color > [saturation/value area]",
+            "caseIds": [
+              "WD-021.01",
+              "WD-021.02",
+              "WD-007.01"
+            ],
+            "phase": "HEX-02",
+            "evidence": {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/review-20261009-024123/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/review-20261009-024123/original/screens/015-palette-modal.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/review-20261009-024123/original/screens/015-palette-modal.png",
+              "observation": "Direkt sichtbarer modaler Kontext; noch kein eigener Inventareintrag für [saturation/value area]."
+            }
+          },
+          {
+            "exactUiPath": "Land > Ground Color Brush > Color Palette > + > Pick Color > [hue bar]",
+            "caseIds": [
+              "WD-021.01",
+              "WD-021.02",
+              "WD-007.01"
+            ],
+            "phase": "HEX-02",
+            "evidence": {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/review-20261009-024123/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/review-20261009-024123/original/screens/015-palette-modal.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/review-20261009-024123/original/screens/015-palette-modal.png",
+              "observation": "Direkt sichtbarer modaler Kontext; noch kein eigener Inventareintrag für [hue bar]."
+            }
+          },
+          {
+            "exactUiPath": "Land > Ground Color Brush > Color Palette > + > Pick Color > R",
+            "caseIds": [
+              "WD-021.01",
+              "WD-021.02",
+              "WD-007.01"
+            ],
+            "phase": "HEX-02",
+            "evidence": {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/review-20261009-024123/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/review-20261009-024123/original/screens/015-palette-modal.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/review-20261009-024123/original/screens/015-palette-modal.png",
+              "observation": "Direkt sichtbarer modaler Kontext; noch kein eigener Inventareintrag für R."
+            }
+          },
+          {
+            "exactUiPath": "Land > Ground Color Brush > Color Palette > + > Pick Color > G",
+            "caseIds": [
+              "WD-021.01",
+              "WD-021.02",
+              "WD-007.01"
+            ],
+            "phase": "HEX-02",
+            "evidence": {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/review-20261009-024123/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/review-20261009-024123/original/screens/015-palette-modal.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/review-20261009-024123/original/screens/015-palette-modal.png",
+              "observation": "Direkt sichtbarer modaler Kontext; noch kein eigener Inventareintrag für G."
+            }
+          },
+          {
+            "exactUiPath": "Land > Ground Color Brush > Color Palette > + > Pick Color > B",
+            "caseIds": [
+              "WD-021.01",
+              "WD-021.02",
+              "WD-007.01"
+            ],
+            "phase": "HEX-02",
+            "evidence": {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/review-20261009-024123/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/review-20261009-024123/original/screens/015-palette-modal.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/review-20261009-024123/original/screens/015-palette-modal.png",
+              "observation": "Direkt sichtbarer modaler Kontext; noch kein eigener Inventareintrag für B."
+            }
+          },
+          {
+            "exactUiPath": "Land > Ground Color Brush > Color Palette > + > Pick Color > A",
+            "caseIds": [
+              "WD-021.01",
+              "WD-021.02",
+              "WD-007.01"
+            ],
+            "phase": "HEX-02",
+            "evidence": {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/review-20261009-024123/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/review-20261009-024123/original/screens/015-palette-modal.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/review-20261009-024123/original/screens/015-palette-modal.png",
+              "observation": "Direkt sichtbarer modaler Kontext; noch kein eigener Inventareintrag für A."
+            }
+          },
+          {
+            "exactUiPath": "Land > Ground Color Brush > Color Palette > + > Pick Color > [numeric representation toggle]",
+            "caseIds": [
+              "WD-021.01",
+              "WD-021.02",
+              "WD-007.01"
+            ],
+            "phase": "HEX-02",
+            "evidence": {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/review-20261009-024123/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/review-20261009-024123/original/screens/015-palette-modal.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/review-20261009-024123/original/screens/015-palette-modal.png",
+              "observation": "Direkt sichtbarer modaler Kontext; noch kein eigener Inventareintrag für [numeric representation toggle]."
+            }
+          },
+          {
+            "exactUiPath": "Land > Ground Color Brush > Color Palette > + > Pick Color > HTML",
+            "caseIds": [
+              "WD-021.01",
+              "WD-021.02",
+              "WD-007.01"
+            ],
+            "phase": "HEX-02",
+            "evidence": {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/review-20261009-024123/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/review-20261009-024123/original/screens/015-palette-modal.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/review-20261009-024123/original/screens/015-palette-modal.png",
+              "observation": "Direkt sichtbarer modaler Kontext; noch kein eigener Inventareintrag für HTML."
+            }
+          },
+          {
+            "exactUiPath": "Land > Ground Color Brush > Color Palette > + > Pick Color > [picker palette plus]",
+            "caseIds": [
+              "WD-021.01",
+              "WD-021.02",
+              "WD-007.01"
+            ],
+            "phase": "HEX-02",
+            "evidence": {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/review-20261009-024123/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/review-20261009-024123/original/screens/015-palette-modal.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/review-20261009-024123/original/screens/015-palette-modal.png",
+              "observation": "Direkt sichtbarer modaler Kontext; noch kein eigener Inventareintrag für [picker palette plus]."
+            }
+          },
+          {
+            "exactUiPath": "Land > Ground Color Brush > Color Palette > + > Pick Color > Cancel",
+            "caseIds": [
+              "WD-021.01",
+              "WD-021.02",
+              "WD-007.01"
+            ],
+            "phase": "HEX-02",
+            "evidence": {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/review-20261009-024123/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/review-20261009-024123/original/screens/015-palette-modal.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/review-20261009-024123/original/screens/015-palette-modal.png",
+              "observation": "Direkt sichtbarer modaler Kontext; noch kein eigener Inventareintrag für Cancel."
+            }
+          },
+          {
+            "exactUiPath": "Land > Ground Color Brush > Color Palette > + > Pick Color > OK",
+            "caseIds": [
+              "WD-021.01",
+              "WD-021.02",
+              "WD-007.01"
+            ],
+            "phase": "HEX-02",
+            "evidence": {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/review-20261009-024123/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/review-20261009-024123/original/screens/015-palette-modal.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/review-20261009-024123/original/screens/015-palette-modal.png",
+              "observation": "Direkt sichtbarer modaler Kontext; noch kein eigener Inventareintrag für OK."
+            }
+          },
+          {
+            "exactUiPath": "Land > Ground Color Brush > Color Palette > + > Pick Color > [close button]",
+            "caseIds": [
+              "WD-021.01",
+              "WD-021.02",
+              "WD-007.01"
+            ],
+            "phase": "HEX-02",
+            "evidence": {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/review-20261009-024123/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/review-20261009-024123/original/screens/015-palette-modal.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/review-20261009-024123/original/screens/015-palette-modal.png",
+              "observation": "Direkt sichtbarer modaler Kontext; noch kein eigener Inventareintrag für [close button]."
+            }
+          }
+        ],
+        "unclassifiedPackageHints": [
+          "res://scripts/ui/area_creator_dialog.gdc",
+          "res://scripts/ui/inspect_dialog.gdc",
+          "res://scripts/ui/news_dialog.gdc",
+          "res://scripts/ui/update_dialog.gdc"
+        ],
+        "classificationBasis": "92 Paketrollen als begründete Oberflächenrollen überprüft, keine instrumentierte Codezuordnung. Vier verbleiben pending. Alle 96 Pakethinweise sind Gruppen zugeordnet; das ist kein Vollständigkeitsbeweis der Originaloberfläche.",
+        "findings": [
+          {
+            "id": "HEX00-R01-01",
+            "priority": 1,
+            "state": "open",
+            "blocking": true,
+            "title": "Inventartor vermischt frühe Referenzpflicht und spätere Wirkungsfragen",
+            "requirement": "WONDERDRAFT-PARITY.md HEX-00-A/B/C und ROADMAP-HEX-00-PLAN.md: Oberfläche vollständig früh; tiefe Varianten vor ihrer Fachphase; Startfälle im festgelegten frühen Umfang.",
+            "evidence": [
+              "tools/wonderdraft/validate-inventory.mjs: observationLimits → pending; inventoryComplete rejects every pending; --require-complete also rejects every pending",
+              "tools/wonderdraft/validate-inventory.mjs: every initial case must use original.state=verified_direct_probe",
+              "/home/aaron/.cache/dungeon-native-qa/hex-00/review-20261009-024123/catalog-before.json"
+            ],
+            "observed": "160 UI-Fragen enthalten sowohl echte Inventarlücken als auch spätere Kartenwirkung, etwa Paletten-Mehrfachwahl und Coast-Snapping-/SHIFT-Wirkung. Der frühe Umfang von sechs breit formulierten Startfällen ist nicht eigenständig prüfbar.",
+            "required": "Inventarpflichten, vollständige frühe Originalfolge und spätere Wirkungs-/Host-/physische Pflichten explizit getrennt darstellen und prüfen. Unklassifizierte Fragen bleiben blockierend. Keine Frage löschen oder automatisch als später erklären; tiefe Fragen behalten Fall, Zielphase und direkte Probe vor Produktcode."
+          },
+          {
+            "id": "HEX00-R01-02",
+            "priority": 1,
+            "state": "open",
+            "blocking": true,
+            "title": "Modaler Farbdialog ist gemessen, seine Oberfläche noch nicht vollständig zugeordnet",
+            "requirement": "Jedes erreichbare Steuerelement und jeder unterschiedliche Dialogkontext braucht Originalpfad, UI-Kennung, WD-Unterfall und Zielphase.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/hex-00/review-20261009-024123/original/screens/015-palette-modal.json",
+              "/home/aaron/.cache/dungeon-native-qa/hex-00/review-20261009-024123/catalog-scope-audit.json"
+            ],
+            "observed": "Kein uiInventory.exactUiPath enthält Pick Color. Der Plus-Befehl ist vorhanden, die 13 direkt sichtbaren modalen Steuerelemente sind nicht einzeln zugeordnet. Inline-Ground-, Coastline-Popup- und Modal-Kontexte dürfen nicht ohne Wirkungsmessung gleichgesetzt werden.",
+            "required": "Neue stabile UI-Kennungen für die fehlenden modalen Controls und explizite Kontextzuordnung wiederverwendbarer Picker hinzufügen. Vorhandene Cancel/OK-/Escape-Belege nutzen; keine neue allgemeine Wirkungsinventur.",
+            "implementation": {
+              "run": "HEX-00-N-I02",
+              "state": "partial_implementation_review_pending",
+              "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-00/options-repair-20261009-034511/options-validation.json",
+              "uiIds": [
+                "WD-UI-0636",
+                "WD-UI-0637",
+                "WD-UI-0638",
+                "WD-UI-0639",
+                "WD-UI-0640",
+                "WD-UI-0641",
+                "WD-UI-0642",
+                "WD-UI-0643",
+                "WD-UI-0644",
+                "WD-UI-0645",
+                "WD-UI-0646",
+                "WD-UI-0647",
+                "WD-UI-0648",
+                "WD-UI-0649",
+                "WD-UI-0650",
+                "WD-UI-0651",
+                "WD-UI-0652"
+              ],
+              "remaining": "Neue frühe Validierungsfragen bleiben sichtbar; keine Wirkungsgleichsetzung der drei Pickerkontexte."
+            }
+          },
+          {
+            "id": "HEX00-R01-03",
+            "priority": 1,
+            "state": "open",
+            "blocking": true,
+            "title": "Verfügbare Listen und Paletten sind teilweise noch unbekannt oder veraltet dokumentiert",
+            "requirement": "Frühes Inventar enthält verfügbare Optionen, sichtbare Defaults/Validierung und kontextbezogene Eingabewege; tiefe Wirkung darf später bleiben.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/hex-00/review-20261009-024123/catalog-scope-audit.json",
+              "WD-UI-0322",
+              "WD-UI-0440",
+              "WD-UI-0458",
+              "WD-UI-0467",
+              "WD-UI-0123",
+              "WD-UI-0491"
+            ],
+            "observed": "33 gezielte Prüfkandidaten, keine Behauptung von 33 Fehlern. Set, Box Style, Frame Style, Numbers Display, Toolbar Display Mode und Themes haben keine ausgefüllte Optionsliste. Manche andere Grenzen sind bereits belegt, tragen aber noch veraltete offene Hinweise, etwa Coastline Style.",
+            "required": "Nur die 33 fest benannten Kandidaten abgleichen: vorhandene echte Optionsframes übernehmen, fehlende Listen bis zum sichtbaren Ende öffnen. Dynamische Assetlisten mit geladenem Set/Profil und Umfang kennzeichnen. Wirkung/Undo jeder Variante bleibt in ihrer Fachphase.",
+            "implementation": {
+              "run": "HEX-00-N-I02",
+              "state": "partial_implementation_review_pending",
+              "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-00/options-repair-20261009-034511/options-validation.json",
+              "uiIds": [
+                "WD-UI-0055",
+                "WD-UI-0058",
+                "WD-UI-0123",
+                "WD-UI-0125",
+                "WD-UI-0256",
+                "WD-UI-0287",
+                "WD-UI-0315",
+                "WD-UI-0319",
+                "WD-UI-0322",
+                "WD-UI-0376",
+                "WD-UI-0382",
+                "WD-UI-0418",
+                "WD-UI-0419",
+                "WD-UI-0422",
+                "WD-UI-0435",
+                "WD-UI-0440",
+                "WD-UI-0448",
+                "WD-UI-0449",
+                "WD-UI-0450",
+                "WD-UI-0458",
+                "WD-UI-0463",
+                "WD-UI-0467",
+                "WD-UI-0468",
+                "WD-UI-0480",
+                "WD-UI-0481",
+                "WD-UI-0485",
+                "WD-UI-0491",
+                "WD-UI-0509",
+                "WD-UI-0540",
+                "WD-UI-0563",
+                "WD-UI-0575",
+                "WD-UI-0579",
+                "WD-UI-0582"
+              ],
+              "remaining": [
+                {
+                  "uiId": "WD-UI-0256",
+                  "probe": "Mehrfachwahl/Zufall im tatsächlichen jeweiligen Palette-Kontext gezielt klären; Ctrl-/Shift-Versuche sind kein Nichtexistenzbeweis. Kartenwechsel-/Speicherwirkung bleibt in der zugeordneten Fachprobe."
+                },
+                {
+                  "uiId": "WD-UI-0287",
+                  "probe": "Mehrfachwahl/Zufall im tatsächlichen jeweiligen Palette-Kontext gezielt klären; Ctrl-/Shift-Versuche sind kein Nichtexistenzbeweis. Kartenwechsel-/Speicherwirkung bleibt in der zugeordneten Fachprobe."
+                },
+                {
+                  "uiId": "WD-UI-0315",
+                  "probe": "Initiale Style-Auswahl anhand eines gezielten frischen Originalkontexts eindeutig zuordnen; zehn sichtbare Vorschauen und Testklick sind erfasst."
+                },
+                {
+                  "uiId": "WD-UI-0440",
+                  "probe": "Die fünf verbleibenden Box-Style-Tooltipnamen gezielt mit Freigabe der vorherigen Tooltipfläche erfassen; sechs Vorschauen und Scrollende sind belegt."
+                },
+                {
+                  "uiId": "WD-UI-0458",
+                  "probe": "Verbleibende Frame-Tooltipnamen gezielt erfassen. N-I02 zeigt 17 Vorschauen, aber Tooltips waren teilweise überdeckt/abgeschnitten; keine Namen aus ähnlichen Box-Styles ableiten."
+                },
+                {
+                  "uiId": "WD-UI-0468",
+                  "probe": "Zwei rechts abgeschnittene Scale-Fontnamen im Originalkontext lesbar machen; keine ungeprüfte Gleichsetzung mit den ähnlich angezeigten Label-Fonts."
+                }
+              ]
+            }
+          },
+          {
+            "id": "HEX00-R01-04",
+            "priority": 1,
+            "state": "open",
+            "blocking": true,
+            "title": "Aktive Importbelege sind ohne lokale Herkunftsprüfung weiterhin ungeprüft",
+            "requirement": "Fehlende Quellen bleiben sichtbar; eine Direktabnahme verlangt auffindbare Originalbilder mit Sitzungs-/Frameprovenienz.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/hex-00/review-20261009-024123/catalog-before.json",
+              "/home/aaron/.cache/dungeon-native-qa/hex-00/review-20261009-024123/catalog-scope-audit.json",
+              "wonderdraftParity.importedEvidenceAvailability"
+            ],
+            "observed": "59 aktive UI-Einträge haben keinen lokalen JSON-Originalbeleg. 67 importierte Einträge bleiben erhalten, davon acht mittlerweile zusätzlich nativ belegt; die alten Quellen erzeugen weiterhin 111 Prüffehler. Das ist kein neuer Fehler der I03-Messungen.",
+            "required": "Jede aktive UI-Kennung mit tatsächlichem passenden nativen Kontext belegen oder ihre Quelle zugänglich verifizieren. Historische Kennungen, Aussagen und fehlende Quellen erhalten; historische Belege und neue aktuelle Direktbelege ausdrücklich trennen. Kein fehlender Altbeleg darf durch eine Umbenennung als verifiziert gelten."
+          },
+          {
+            "id": "HEX00-R01-05",
+            "priority": 1,
+            "state": "open",
+            "blocking": true,
+            "title": "Vier Paketrollen bleiben ohne abschließende begründete Zuordnung",
+            "requirement": "Alle 96 Pakethinweise als erreichbare Funktion, interner Helfer oder Programmservice begründet klassifizieren; fehlende Beobachtung ist kein Ausschluss.",
+            "evidence": [
+              "wonderdraftParity.packageClassification",
+              "/home/aaron/.cache/dungeon-native-qa/hex-00/review-20261009-024123/package-inventory.json"
+            ],
+            "observed": "area_creator_dialog, inspect_dialog, news_dialog und update_dialog bleiben pending. Vorherige erfolglose Originalzustände sind echte Befunde und belegen keine Nichtexistenz.",
+            "required": "Nur diese vier Rollen gezielt klären. Für bedingt sichtbare Programmservices Aktivierungsbedingung und Quelle belegen; vorhandene Kartengesten direkt zuordnen. Eine Schlussfolgerung aus dem Originalpaket ausdrücklich als solche kennzeichnen und von einer UI-Abnahme unterscheiden."
+          },
+          {
+            "id": "HEX00-R01-06",
+            "priority": 2,
+            "state": "open",
+            "blocking": true,
+            "title": "Gespeicherte Gruppenindizes folgen neuen UI-Zuordnungen nicht",
+            "requirement": "Inventar-/Unterfall-/Gruppenzuordnung bleibt vollständig und nachvollziehbar.",
+            "evidence": [
+              "/home/aaron/.cache/dungeon-native-qa/hex-00/review-20261009-024123/group-index-audit.json",
+              "groups.WD-001.uiInventoryIds",
+              "groups.WD-003.uiInventoryIds"
+            ],
+            "observed": "Neue New-Dialog-Kennungen 0630–0632 fehlen im WD-001-Index, neue Unsaved-Kennungen 0633–0635 im WD-003-Index. Weitere gespeicherte Indizes unterscheiden sich von der aktuellen Fallzuordnung; WD-036 besitzt zwei nicht erklärte zusätzliche Querverweise. Der Validator prüft diese Indizes bislang nicht.",
+            "required": "Gruppenindizes aus der kanonischen Fallzuordnung konsistent ableiten oder bewusste Querverweise explizit begründen. Passende Verweisprüfung ergänzen; IDs und fremde Daten nicht umnummerieren."
+          }
+        ],
+        "cleanupFindings": [
+          {
+            "id": "HEX00-R01-C01",
+            "priority": 2,
+            "state": "open",
+            "due": "HEX-00-CLEAN",
+            "title": "RFB-Preflight liegt teilweise nach der Eingabe",
+            "evidence": [
+              "tools/wonderdraft/rfb.mjs: safe/unused shot check after pointer/key/text operations"
+            ],
+            "observed": "Ein ungültiger oder schon vorhandener Screenshotname wird erst nach der Eingabe abgewiesen. Das kann den QA-Zustand verändern, ohne den geplanten Frame zu erzeugen.",
+            "required": "Im eigenen Aufräumplan sämtliche syntaktischen Beleg-/Eingabeprüfungen vor Verbindung und Eingabe ziehen. Frühere Rohbelege unverändert; im Review keine negative Mutation an der laufenden Kontrollkarte provoziert."
+          }
+        ],
+        "initialOriginalScope": "13 frühe Umfänge nach Plan ausreichend belegt; Fall-Gesamtproben und spätere Pflichten bleiben offen. Prüflogik/Datenvertrag muss diese Grenze ausdrücklich abbilden.",
+        "limits": "Keine vollständige Oberflächenfreigabe; Kandidatenliste für fehlende/unklare Choices ist begrenzt. Neue Reviewkritik ersetzt keine ungeprüften Oberflächenbelege.",
+        "repairPlan": {
+          "path": "ROADMAP-HEX-00-REPAIR-PLAN.md",
+          "run": "HEX-00-N-P01",
+          "state": "planned",
+          "focus": "Sechs begrenzte Pflichtbefunde; explizite frühe Abnahme und später fällige Varianten, keine automatische Torfreigabe."
+        },
+        "repairImplementation": {
+          "run": "HEX-00-N-I01",
+          "state": "implemented_review_pending",
+          "findingIds": [
+            "HEX00-R01-01",
+            "HEX00-R01-06"
+          ],
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/hex-00/repair-contract-20261009-031620/manifest.json"
+          ],
+          "limits": "R01-02..05 remain open, native inputs and user files untouched."
+        }
       }
     ]
   },
