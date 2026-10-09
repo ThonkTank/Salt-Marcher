@@ -4630,7 +4630,8 @@
         "372-latest-d10-room14-content.png"
       ],
       "initialization": "Erste Eingaben während Hoststart ohne sichtbare Wirkung; später Befehlsleiste und Editor bedienbar. Kein reproduzierter Produktbefund.",
-      "windowManager": "Openbox im isolierten dungeon-gm-cloud Container; Xvfb 1440x1000; maximiertes Obsidian-Fenster 1440x1000."
+      "windowManager": "Openbox im isolierten dungeon-gm-cloud Container; Xvfb 1440x1000; maximiertes Obsidian-Fenster 1440x1000.",
+      "buildRevision": "2cedb5594d4860e7ce1209664a0e38431afeb358 (dirty:false; npm run build; main.js/styles.css/manifest.json hashes stimmen mit isoliert installiertem Tripel überein)"
     },
     "latestScenario": {
       "environment": "Obsidian 1.14.4; eigener Cloud-Container; App 1024x800; sichtbare UI über Playwright/CDP; kein physischer Input",
