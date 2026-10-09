@@ -485,3 +485,7 @@ CITY-00-I29-CP Start 2026-10-09T15:09:33.330639+00:00; Plan: Snapshot auf belegt
 CITY-00-I29-CI Start 2026-10-09T15:09:50.045310+00:00; Snapshot enthält Hip/Hidden-Sichtwirkung und konkrete Complex-Teilbeobachtung; Processing/Raised/Solids und Persistenz offen. Alte Belege und IDs erhalten.
 
 CITY-00-I29-CR Start 2026-10-09T15:10:06.384271+00:00; Snapshot/acceptance stimmen;15 Rawhashes und alle Inventarbelegziele geprüft,64 CO-/24 CTY-Pflichten offen. Eigene Vorgaben zurückgesetzt, Testkopie geschlossen. Aufräumumfang ohne Restbefund. Nächste begrenzte Referenzplanung Processing/Raised/Solids, während HEX-05-Handoff verfolgt wird.
+
+## CITY-00-I30-P: Processing, Raised und Solids
+
+Start 2026-10-09T15:10:57.743395+00:00. Eigene New-River-Kopie; aktuelle Lots/Plain/Offset/Raised/Solids ablesen. Processing Offset→None→Offset, Raised on→off→on und Solids on→off→on getrennt mit sichtbarem Vorher-/Nachherbild prüfen. Tatsächlicher Ausgangswert entscheidet Rücksetzung, kein geratener Shortcut. Höchstens zwei Versuche bei ausbleibender Wirkung. Keine Geometrie-/Save-/Persistenzbehauptung aus Darstellung; kein erneuter Complex-Versuch. Eigene Flags/Vorgaben zurücksetzen, eigene Kopie schließen, Originaltabs erhalten. Nativer Slot beim Hex-Kollegen. I/R und Aufräumen P/I/R separat; Stadtprodukt nach HEX-05.
