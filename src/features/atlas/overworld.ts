@@ -1,3 +1,8 @@
+import {
+  checkedTerrainReference,
+  terrainChunkKey,
+  type TerrainReference,
+} from "./terrain-schema";
 export type HexOrientation = "pointy" | "flat";
 export interface WorldPoint {
   readonly x: number;
@@ -15,7 +20,7 @@ export interface OverworldDocument {
   readonly metersPerMile: typeof METERS_PER_MILE;
   readonly minHexMiles: typeof MIN_HEX_MILES;
   readonly levelFactor: 3;
-  readonly chunks: readonly never[];
+  readonly chunks: readonly TerrainReference[];
   readonly placements: readonly never[];
 }
 export function newOverworld(
@@ -60,7 +65,7 @@ export function parseOverworld(text: string): OverworldDocument {
     !Array.isArray(d.placements)
   )
     throw new Error("Ungültige Atlasdatei oder unbekannter Maßstab.");
-  if (d.chunks.length || d.placements.length)
+  if (d.placements.length)
     throw new Error("Diese Atlasinhalte benötigen einen neueren Editor.");
   const keys = [
     "kind",
@@ -77,10 +82,17 @@ export function parseOverworld(text: string): OverworldDocument {
   ];
   if (Object.keys(d).some((k) => !keys.includes(k)))
     throw new Error("Unbekannte Atlasdaten; Datei bleibt erhalten.");
+  const chunks = d.chunks.map(checkedTerrainReference),
+    chunkKeys = new Set<string>();
+  for (const chunk of chunks) {
+    const key = terrainChunkKey(chunk);
+    if (chunkKeys.has(key)) throw new Error("Doppelter Landschaftsbereich.");
+    chunkKeys.add(key);
+  }
   return Object.freeze({
     ...d,
     origin: Object.freeze({ ...d.origin }),
-    chunks: Object.freeze([]),
+    chunks: Object.freeze(chunks),
     placements: Object.freeze([]),
   });
 }
