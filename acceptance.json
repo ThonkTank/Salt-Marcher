@@ -301,7 +301,7 @@
   },
   "cityPlans": {
     "schemaVersion": 1,
-    "updated": "2026-10-09T14:52:25.394917+00:00",
+    "updated": "2026-10-09T14:58:03.394252+00:00",
     "plan": "ROADMAP-CITIES.md",
     "state": "planned_not_implemented",
     "comparisonMode": "functional_equivalence_and_independent_usability_tests",
@@ -1629,7 +1629,8 @@
         "availability": "unknown",
         "observationKind": "direct",
         "originalEvidence": [
-          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i25-trees-20261009/manifest.json"
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i25-trees-20261009/manifest.json",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i27-forest-20261009/manifest.json"
         ],
         "task": "Umgebung sichtbar ausarbeiten",
         "phase": "CITY-07",
@@ -1645,7 +1646,7 @@
           "state": "not_run"
         },
         "status": "open",
-        "gap": "Baumdarstellung und tatsächliche trees-Ausgabe direkt teilbelegt. Forest-Zugang nach Show trees beobachtet; Waldwirkung, Einzelbearbeitung, Save/Reload und eigener Produkt-/Host-/Bedienvergleich offen.",
+        "gap": "Bäume und Waldanzeige direkt teilbelegt; Waldflag verändert sichtbare Außenflächen, JSON bleibt bytegleich. Waldkonturbearbeitung, stabile Kennungen, Save/Reload sowie eigener Produkt-/Host-/Bedienvergleich offen.",
         "independentFunctionalRequirement": true,
         "mappingCoverage": "related_project_criteria_only; CO requirement remains independently required",
         "originalProbes": [
@@ -1654,6 +1655,12 @@
             "state": "direct_partial",
             "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i25-trees-20261009/manifest.json",
             "result": "Show trees off/on/off; sichtbare Kronen und tatsächliche JSON trees0→13 Punkte, andere13 Gruppen wertgleich. Show forests wird nach Show trees bedienbar, Waldwirkung noch ungeprüft."
+          },
+          {
+            "run": "CITY-00-I27-I",
+            "state": "forest_visual_effect_json_byte_equal",
+            "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i27-forest-20261009/manifest.json",
+            "result": "Show trees aktiviert Show forests. Forest off/on/off verändert sichtbar zusammenhängende Außenwaldflächen. Tatsächliche JSON-Dateien beide299585 Bytes und bytegleich; alle14 Gruppen einschließlich trees13 identisch. Keine separate Waldgeometrieausgabe durch dieses Flag belegt. Exportmetadata0.11.5 ist keine bestätigte UI-Laufversion."
           }
         ]
       },
@@ -3877,7 +3884,7 @@
     ],
     "functionalInventoryStatus": {
       "state": "partial_inventory_not_accepted",
-      "run": "CITY-00-I26-I",
+      "run": "CITY-00-I27-I",
       "products": 3,
       "candidates": 64,
       "directFormAreas": 13,
@@ -3913,7 +3920,8 @@
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i23-landmark-edit-20261009/manifest.json",
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i24-alleys-20261009/manifest.json",
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i25-trees-20261009/manifest.json",
-        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i26-20261009-r01/manifest.json"
+        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i26-20261009-r01/manifest.json",
+        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i27-forest-20261009/manifest.json"
       ],
       "resultReferences": [
         {
