@@ -16,8 +16,8 @@
       "integratedShared": "adc7c2b13fc7a1d898eeb990a34993311a5dafcb",
       "planCandidateCommit": "4d1a50b580dee9df8e2553b51395d26a0a6b19c8",
       "reviewedCandidate": "4d1a50b580dee9df8e2553b51395d26a0a6b19c8",
-      "review": "Cloud Architecture/Technical exact-SHA re-review PASS on 4d1a50b580dee9df8e2553b51395d26a0a6b19c8 is recorded in Issue comment 6088512190 with both SMR03-ARCH-01/02 findings closed and no remaining mandatory gap in the reviewed repair/regression scope. Campaign/Data RATIFY 6088373177 remains evidence only for its unchanged named scope. Earlier Scene/Time/Travel RATIFY 6088364139 is superseded for the changed lifecycle/time scope and must be renewed on this candidate.",
-      "limits": "Plan only. No product code, API, host, persistence, migration, implementation or acceptance approval. Direct ratification by Party, Scene/Time/Travel and affected Encounter/mask/consumer owners remains required. Preparation, Music/Weather/Shops, Passive Display and Host/Recovery remain open; the Music/Weather/Shops chat still cannot directly reach api.github.com."
+      "review": "Cloud Architecture/Technical exact-SHA re-review PASS on 4d1a50b580dee9df8e2553b51395d26a0a6b19c8 is recorded in Issue comment 6088512190 with both SMR03-ARCH-01/02 findings closed and no remaining mandatory gap in the reviewed repair/regression scope. Direct renewed Scene/Time/Travel Owner RATIFY for the changed lifecycle/time scope is recorded in 6088524890. Campaign/Data RATIFY 6088373177 remains evidence only for its unchanged named scope.",
+      "limits": "Plan only. No product code, API, host, persistence, migration, implementation or acceptance approval. Direct ratification by Party and affected Encounter/mask/consumer owners remains required. Preparation, Music/Weather/Shops, Passive Display and Host/Recovery remain open; the Music/Weather/Shops chat still cannot directly reach api.github.com."
     },
     "source": {
       "repository": "ThonkTank/Salt-Marcher",
