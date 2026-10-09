@@ -115,7 +115,9 @@ export class AtlasView extends FileView {
             async (name) => {
               const path = `Atlanten/${name}.overworld`;
               const target = new AtlasRepository(
-                new VaultStore(this.app), path, this.app.vault,
+                new VaultStore(this.app),
+                path,
+                this.app.vault,
               );
               const state = await target.recoverCopy();
               return { state, open: this.openCopy(path, generation, editor) };
@@ -138,7 +140,8 @@ export class AtlasView extends FileView {
   }
   private openCopy(path: string, generation: number, editor: AtlasEditor) {
     return async (): Promise<boolean> => {
-      if (generation !== this.generation || this.editor !== editor) return false;
+      if (generation !== this.generation || this.editor !== editor)
+        return false;
       const file = this.app.vault.getAbstractFileByPath(path);
       if (!(file instanceof TFile))
         throw new Error("Gespeicherte Kopie wurde nicht gefunden.");

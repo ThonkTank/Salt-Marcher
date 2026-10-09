@@ -152565,16 +152565,18 @@
       {
         "id": "HEX02-C01",
         "priority": 3,
-        "state": "open",
+        "state": "implementation_checked_review_open",
         "title": "Zwei neue Anschlussdateien lesbar formatieren",
-        "required": "AST and native buildtriplet unchanged; only atlas-view.ts and own hex02-copy-repair.cjs."
+        "required": "AST and native buildtriplet unchanged; only atlas-view.ts and own hex02-copy-repair.cjs.",
+        "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/cleanup-implementation.json"
       },
       {
         "id": "HEX02-C02",
         "priority": 3,
-        "state": "open",
+        "state": "implementation_checked_review_open",
         "title": "Aktuelle Review-/Cleanup-/Nachweiszuordnung abschließen",
-        "required": "Own hex roots/current architecture only; preserve historical and foreign evidence/IDs."
+        "required": "Own hex roots/current architecture only; preserve historical and foreign evidence/IDs.",
+        "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/cleanup-implementation.json"
       }
     ],
     "limits": "Early native level0 island Save/Draft/fresh/conflict plus Copy/Discard/A↔B checked; independent R01/R02 required findings closed. Separate CLEAN open. Shared City/Location/Dungeon composition, multilevel editing, full parity, large-map/physical/installed-vault remain open.",
