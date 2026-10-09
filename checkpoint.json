@@ -9,15 +9,15 @@
     "acceptance": "acceptance.json.saltMarcherReplacement",
     "objective": "This repository delivers the sole successor product for all implemented and planned SaltMarcher capabilities. UX and functional requirements are binding; the final host may be an Obsidian plugin, desktop application or evidence-backed hybrid.",
     "smr03LiveScene": {
-      "state": "architecture_pass_owner_ratification_pending",
+      "state": "architecture_pass_owner_assignment_pending",
       "plan": "ROADMAP-SALTMARCHER-SMR-03-LIVE-SCENE-CONTRACT.md",
       "candidateBranch": "codex/smr-03-live-scene-contract-p01",
       "baseline": "7d35591be570d1c188998103b55e8e86e437f73d",
       "integratedShared": "71099f277c8de58f4d0a60dc62d56bbd9c8bc483",
       "planCandidateCommit": "4d1a50b580dee9df8e2553b51395d26a0a6b19c8",
       "reviewedCandidate": "4d1a50b580dee9df8e2553b51395d26a0a6b19c8",
-      "review": "Cloud Architecture/Technical exact-SHA re-review PASS on 4d1a50b580dee9df8e2553b51395d26a0a6b19c8 is recorded in Issue comment 6088512190 with both SMR03-ARCH-01/02 findings closed and no remaining mandatory gap in the reviewed repair/regression scope. Direct renewed Scene/Time/Travel Owner RATIFY is recorded in 6088524890. Chronik's existing ownership of the complete SMR-03 Party/LiveScene/LiveSession contract is clarified and the separately scoped Party Owner RATIFY is recorded in 6088571459. Campaign/Data RATIFY 6088373177 remains evidence only for its unchanged named scope.",
-      "limits": "Plan only. No product code, API, host, persistence, migration, implementation or acceptance approval. Direct ratification by affected Encounter/mask/consumer owners remains required. Preparation, Music/Weather/Shops, Passive Display and Host/Recovery remain open; the Music/Weather/Shops chat still cannot directly reach api.github.com."
+      "review": "Cloud Architecture/Technical exact-SHA re-review PASS on 4d1a50b580dee9df8e2553b51395d26a0a6b19c8 is recorded in Issue comment 6088512190 with both SMR03-ARCH-01/02 findings closed and no remaining mandatory gap in the reviewed repair/regression scope. Direct renewed Scene/Time/Travel Owner RATIFY is recorded in 6088524890. Chronik's existing ownership of the complete SMR-03 Party/LiveScene/LiveSession contract is clarified and the separately scoped Party Owner RATIFY is recorded in 6088571459. Campaign/Data RATIFY 6088373177 remains evidence only for its unchanged named scope. Direct replies 6088646744 and 6088647477 establish that Kartograph/Dungeon owns neither Preparation/Session Planner nor runtime Encounter/Chase masks and that Katalog owns no runtime Encounter/Chase masks; neither identifies another confirmed owner.",
+      "limits": "Plan only. No product code, API, host, persistence, migration, implementation or acceptance approval. Runtime Encounter/Chase masks, Preparation/Session Planner, Passive Display and Host/Recovery have no confirmed real owner and require an explicit equal-peer ownership decision before ratification. Music/Weather/Shops locally passed the repaired consumer scope but cannot directly reach Issue #1 through either gh/API or its available browser session, so that result is not a direct ratification or substitute owner voice."
     },
     "source": {
       "repository": "ThonkTank/Salt-Marcher",
