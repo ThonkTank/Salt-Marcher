@@ -1634,10 +1634,14 @@
     },
     "dd041PanPlan": {
       "date": "2026-10-09",
-      "state": "plan_recorded_host_recheck_open",
+      "state": "host_implementation_passed_review_open",
       "plan": "ROADMAP-PARITY-TOOLS-PHASE1-DD041-PAN-PLAN.md",
       "cases": "DD-041.02/.03",
-      "next": "Leertaste+Links und Mitteltaste auf dem aktuellen integrierten Build mit Auswahl, Polygonentwurf, Zeitfolgen und frischer V4-Öffnung gepaart prüfen."
+      "implementation": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-pan-host-20261009/implementation.md",
+      "hostEdit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-pan-host-20261009/evidence/1791555946809-parity-tools-phase1-navigation-edit/result.json",
+      "hostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-pan-host-20261009/evidence/1791556023605-parity-tools-phase1-navigation-reopen/result.json",
+      "buildSha256": "e57ce6b7d2222f11b540e3baf6cab6a4f412eba7d96f38a2d46481a4ca846c62",
+      "next": "DD-041.02/.03 im frischen QA-Vault auf integriertem Build unabhängig reviewen; Atlas-/Phase-1-Gesamttor offen."
     },
     "dd04104NavigationReview": {
       "date": "2026-10-09",
