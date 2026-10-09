@@ -133446,6 +133446,30 @@
           ],
           "measuredScope": "Beide 8×8-Karten haben Building-Grenzen -2…6 × 0…6 und 6…8 × 6…8; NONE erzeugt keinen Undo-Schritt, Undo/Redo betrifft nur den Building-Zug, Redo stellt die gespeicherten Bytes je Produkt wieder her. Host NONE bleibt nach frischem Prozess markiert; unabhängiger Hostreview wiederholt dies.",
           "gap": "Direkte Grafikpaarung aller vier aktiven Modi auf gleicher Assetbasis und Mehrgeschosswirkung offen; Phase-1-Tor offen."
+        },
+        "followUpPhase1MultilevelCandidate": {
+          "state": "implementation_candidate_review_pending",
+          "originalVersion": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "originalGesture": "Zwei gezeichnete Geschosse → Settings > Map Settings → Building Wear: NONE → Ground und NEW_LEVEL ansehen → Save",
+          "hostGesture": "Zwei Building-Geschosse → Einstellungen > Karteneinstellungen → NONE → Ground und NEW_LEVEL ansehen → Speichern",
+          "hostBuildSha256": "bf9e6cd7773a21901a886371258bf0670c3531365f9da381439c6364132aa2c8",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-20261009/multilevel-original.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-20261009/runs/20261009-144339-3849010/evidence/maps/wear-none-two-level.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-20261009/runs/20261009-144339-3849010/evidence/screens/wear-none-ground.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-20261009/runs/20261009-144339-3849010/evidence/screens/wear-none-upper.png"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-20261009/multilevel-implementation.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-20261009/multilevel-pair-audit.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-multilevel-host-20261009/evidence/1791550306896-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-multilevel-host-20261009/evidence/1791550306896-edit/wear-none.dungeon",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-multilevel-host-20261009/evidence/1791550306896-edit/wear-none-ground.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-multilevel-host-20261009/evidence/1791550306896-edit/wear-none-upper.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-multilevel-host-20261009/evidence/1791550327404-reopen/result.json"
+          ],
+          "measuredScope": "Gleiche Building-Grenzen auf zwei Geschossen; alle fünf Wahlen bleiben geschossübergreifend ausgewählt und gespeichert, ohne Building-Geometrie oder Host-History zu ändern. Vier aktive Modi wirken auf beiden Building-Flächen ungefähr gleichwertig zum Original; kontrollierter Außenbereich bleibt gleich. SCRATCHED bleibt nach frischem Prozess auf beiden Geschossen ausgewählt und die Karte bytegleich.",
+          "gap": "Getrennter Hostreview und Phase-1-Gesamttor offen; unterschiedliche Gebäudeassets verhindern pixelgleiche Bildaussagen."
         }
       },
       {
@@ -133527,6 +133551,30 @@
           ],
           "measuredScope": "Sofortige seitliche Wahl ohne eigenen Undo-Eintrag; Building-Boden und native Wand ändern sich bei gleichem Terrain; Save mit unveränderten Building-Entities.",
           "gap": "Unabhängiger Endbuild-Review, exakt gleiche Original-/Host-Geometrie, kombinierte Original-History und Mehrgeschosswirkung offen."
+        },
+        "followUpPhase1MultilevelCandidate": {
+          "state": "implementation_candidate_review_pending",
+          "originalVersion": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "originalGesture": "Zwei gezeichnete Geschosse → Settings > Map Settings → Building Wear: DUST → Ground und NEW_LEVEL ansehen → Save",
+          "hostGesture": "Zwei Building-Geschosse → Einstellungen > Karteneinstellungen → DUST → Ground und NEW_LEVEL ansehen → Speichern",
+          "hostBuildSha256": "bf9e6cd7773a21901a886371258bf0670c3531365f9da381439c6364132aa2c8",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-20261009/multilevel-original.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-20261009/runs/20261009-144339-3849010/evidence/maps/wear-dust-two-level.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-20261009/runs/20261009-144339-3849010/evidence/screens/wear-dust-ground.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-20261009/runs/20261009-144339-3849010/evidence/screens/wear-dust-upper.png"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-20261009/multilevel-implementation.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-20261009/multilevel-pair-audit.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-multilevel-host-20261009/evidence/1791550306896-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-multilevel-host-20261009/evidence/1791550306896-edit/wear-dust.dungeon",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-multilevel-host-20261009/evidence/1791550306896-edit/wear-dust-ground.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-multilevel-host-20261009/evidence/1791550306896-edit/wear-dust-upper.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-multilevel-host-20261009/evidence/1791550327404-reopen/result.json"
+          ],
+          "measuredScope": "Gleiche Building-Grenzen auf zwei Geschossen; alle fünf Wahlen bleiben geschossübergreifend ausgewählt und gespeichert, ohne Building-Geometrie oder Host-History zu ändern. Vier aktive Modi wirken auf beiden Building-Flächen ungefähr gleichwertig zum Original; kontrollierter Außenbereich bleibt gleich. SCRATCHED bleibt nach frischem Prozess auf beiden Geschossen ausgewählt und die Karte bytegleich.",
+          "gap": "Getrennter Hostreview und Phase-1-Gesamttor offen; unterschiedliche Gebäudeassets verhindern pixelgleiche Bildaussagen."
         }
       },
       {
@@ -133608,6 +133656,30 @@
           ],
           "measuredScope": "Sofortige seitliche Wahl ohne eigenen Undo-Eintrag; Building-Boden und native Wand ändern sich bei gleichem Terrain; Save mit unveränderten Building-Entities.",
           "gap": "Unabhängiger Endbuild-Review, exakt gleiche Original-/Host-Geometrie, kombinierte Original-History und Mehrgeschosswirkung offen."
+        },
+        "followUpPhase1MultilevelCandidate": {
+          "state": "implementation_candidate_review_pending",
+          "originalVersion": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "originalGesture": "Zwei gezeichnete Geschosse → Settings > Map Settings → Building Wear: GRIME → Ground und NEW_LEVEL ansehen → Save",
+          "hostGesture": "Zwei Building-Geschosse → Einstellungen > Karteneinstellungen → GRIME → Ground und NEW_LEVEL ansehen → Speichern",
+          "hostBuildSha256": "bf9e6cd7773a21901a886371258bf0670c3531365f9da381439c6364132aa2c8",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-20261009/multilevel-original.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-20261009/runs/20261009-144339-3849010/evidence/maps/wear-grime-two-level.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-20261009/runs/20261009-144339-3849010/evidence/screens/wear-grime-ground.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-20261009/runs/20261009-144339-3849010/evidence/screens/wear-grime-upper.png"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-20261009/multilevel-implementation.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-20261009/multilevel-pair-audit.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-multilevel-host-20261009/evidence/1791550306896-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-multilevel-host-20261009/evidence/1791550306896-edit/wear-grime.dungeon",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-multilevel-host-20261009/evidence/1791550306896-edit/wear-grime-ground.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-multilevel-host-20261009/evidence/1791550306896-edit/wear-grime-upper.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-multilevel-host-20261009/evidence/1791550327404-reopen/result.json"
+          ],
+          "measuredScope": "Gleiche Building-Grenzen auf zwei Geschossen; alle fünf Wahlen bleiben geschossübergreifend ausgewählt und gespeichert, ohne Building-Geometrie oder Host-History zu ändern. Vier aktive Modi wirken auf beiden Building-Flächen ungefähr gleichwertig zum Original; kontrollierter Außenbereich bleibt gleich. SCRATCHED bleibt nach frischem Prozess auf beiden Geschossen ausgewählt und die Karte bytegleich.",
+          "gap": "Getrennter Hostreview und Phase-1-Gesamttor offen; unterschiedliche Gebäudeassets verhindern pixelgleiche Bildaussagen."
         }
       },
       {
@@ -133689,6 +133761,30 @@
           ],
           "measuredScope": "Sofortige seitliche Wahl ohne eigenen Undo-Eintrag; Building-Boden und native Wand ändern sich bei gleichem Terrain; Save mit unveränderten Building-Entities.",
           "gap": "Unabhängiger Endbuild-Review, exakt gleiche Original-/Host-Geometrie, kombinierte Original-History und Mehrgeschosswirkung offen."
+        },
+        "followUpPhase1MultilevelCandidate": {
+          "state": "implementation_candidate_review_pending",
+          "originalVersion": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "originalGesture": "Zwei gezeichnete Geschosse → Settings > Map Settings → Building Wear: NOISE → Ground und NEW_LEVEL ansehen → Save",
+          "hostGesture": "Zwei Building-Geschosse → Einstellungen > Karteneinstellungen → NOISE → Ground und NEW_LEVEL ansehen → Speichern",
+          "hostBuildSha256": "bf9e6cd7773a21901a886371258bf0670c3531365f9da381439c6364132aa2c8",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-20261009/multilevel-original.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-20261009/runs/20261009-144339-3849010/evidence/maps/wear-noise-two-level.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-20261009/runs/20261009-144339-3849010/evidence/screens/wear-noise-ground.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-20261009/runs/20261009-144339-3849010/evidence/screens/wear-noise-upper.png"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-20261009/multilevel-implementation.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-20261009/multilevel-pair-audit.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-multilevel-host-20261009/evidence/1791550306896-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-multilevel-host-20261009/evidence/1791550306896-edit/wear-noise.dungeon",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-multilevel-host-20261009/evidence/1791550306896-edit/wear-noise-ground.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-multilevel-host-20261009/evidence/1791550306896-edit/wear-noise-upper.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-multilevel-host-20261009/evidence/1791550327404-reopen/result.json"
+          ],
+          "measuredScope": "Gleiche Building-Grenzen auf zwei Geschossen; alle fünf Wahlen bleiben geschossübergreifend ausgewählt und gespeichert, ohne Building-Geometrie oder Host-History zu ändern. Vier aktive Modi wirken auf beiden Building-Flächen ungefähr gleichwertig zum Original; kontrollierter Außenbereich bleibt gleich. SCRATCHED bleibt nach frischem Prozess auf beiden Geschossen ausgewählt und die Karte bytegleich.",
+          "gap": "Getrennter Hostreview und Phase-1-Gesamttor offen; unterschiedliche Gebäudeassets verhindern pixelgleiche Bildaussagen."
         }
       },
       {
@@ -133771,6 +133867,30 @@
           ],
           "measuredScope": "Sofortige seitliche Wahl ohne eigenen Undo-Eintrag; Building-Boden und native Wand ändern sich bei gleichem Terrain; Save und frischer Hoststart mit markierter Wahl und bytegleicher V4-Karte.",
           "gap": "Unabhängiger Endbuild-Review, exakt gleiche Original-/Host-Geometrie, kombinierte Original-History und Mehrgeschosswirkung offen."
+        },
+        "followUpPhase1MultilevelCandidate": {
+          "state": "implementation_candidate_review_pending",
+          "originalVersion": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "originalGesture": "Zwei gezeichnete Geschosse → Settings > Map Settings → Building Wear: SCRATCHED → Ground und NEW_LEVEL ansehen → Save",
+          "hostGesture": "Zwei Building-Geschosse → Einstellungen > Karteneinstellungen → SCRATCHED → Ground und NEW_LEVEL ansehen → Speichern",
+          "hostBuildSha256": "bf9e6cd7773a21901a886371258bf0670c3531365f9da381439c6364132aa2c8",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-20261009/multilevel-original.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-20261009/runs/20261009-144339-3849010/evidence/maps/wear-scratched-two-level.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-20261009/runs/20261009-144339-3849010/evidence/screens/wear-scratched-ground.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-20261009/runs/20261009-144339-3849010/evidence/screens/wear-scratched-upper.png"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-20261009/multilevel-implementation.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-20261009/multilevel-pair-audit.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-multilevel-host-20261009/evidence/1791550306896-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-multilevel-host-20261009/evidence/1791550306896-edit/wear-scratched.dungeon",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-multilevel-host-20261009/evidence/1791550306896-edit/wear-scratched-ground.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-multilevel-host-20261009/evidence/1791550306896-edit/wear-scratched-upper.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-multilevel-host-20261009/evidence/1791550327404-reopen/result.json"
+          ],
+          "measuredScope": "Gleiche Building-Grenzen auf zwei Geschossen; alle fünf Wahlen bleiben geschossübergreifend ausgewählt und gespeichert, ohne Building-Geometrie oder Host-History zu ändern. Vier aktive Modi wirken auf beiden Building-Flächen ungefähr gleichwertig zum Original; kontrollierter Außenbereich bleibt gleich. SCRATCHED bleibt nach frischem Prozess auf beiden Geschossen ausgewählt und die Karte bytegleich.",
+          "gap": "Getrennter Hostreview und Phase-1-Gesamttor offen; unterschiedliche Gebäudeassets verhindern pixelgleiche Bildaussagen."
         }
       },
       {

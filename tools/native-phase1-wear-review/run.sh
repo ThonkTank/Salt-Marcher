@@ -3,7 +3,7 @@ set -euo pipefail
 
 qa_root=${DUNGEON_DD008_QA_ROOT:-/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-20261009}
 source_app=/home/aaron/Downloads/Dungeondraft-1.2.0.1-Linux64
-source_map='/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/reference/own-building-wear-scratched.dungeondraft_map'
+source_map=${DUNGEON_DD008_SOURCE_MAP:-/home/aaron/Schreibtisch/Obsidian/DnD\ OT/.obsidian/plugins/dungeon-auswertung/reference/own-building-wear-scratched.dungeondraft_map}
 wall_pack='/home/aaron/.cache/codex-dungeondraft-pack-qa/output/QA Wall Pack.dungeondraft_pack'
 floor_pack='/home/aaron/.cache/codex-dungeondraft-pack-qa/output/QA Wizard Floor.dungeondraft_pack'
 xvnc=/home/aaron/.cache/dungeon-native-qa/xvnc/usr/bin/Xvnc
