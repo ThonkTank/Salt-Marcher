@@ -429,58 +429,21 @@
   },
   "hexAtlasExecution": {
     "scope": "HEX-00 bis HEX-28 und sämtliche eingeordneten CITY-00 bis CITY-09 vollständig",
-    "phase": "HEX-02",
-    "state": "passed_scoped_early_level0_island",
-    "plan": "ROADMAP-HEX-02-PLAN.md",
+    "phase": "HEX-03",
+    "state": "concrete_location_plan_checked_not_implemented",
+    "plan": "ROADMAP-HEX-03-PLAN.md",
     "currentRun": {
-      "run": "HEX-02-CLEAN-R01",
-      "state": "completed_pass_scoped",
-      "reviewer": "Hex owner, separate bounded cleanup review; not an independent foreign reviewer",
-      "finishedAt": "2026-10-09T19:31:30.818592+00:00",
-      "findings": [],
-      "closed": [
-        "HEX02-C01",
-        "HEX02-C02"
-      ],
-      "astEvidence": "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/cleanup-ast.json",
-      "implementationEvidence": "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/cleanup-implementation.json",
-      "formatStable": true,
-      "ownFormatNativeTripletUnchanged": true,
-      "nativeSource": "63e1efb623a8b1d85d57e7b6cd73ed37415810a7",
-      "sameProductSourceAfterFormat": "ad8283fb78ba5a4ced812be289b1d1a130a8f53f",
-      "foreignTestsPreserved": true,
-      "foreignCheckpointRootsPreserved": true,
-      "integratedBasis": {
-        "sourceCommit": "fcc7600cf070fd1e840ed7408b7d908ec52232e6",
-        "checkPassed": true,
-        "testsPassed": 375,
-        "buildPassed": true,
-        "triplet": {
-          "main.js": {
-            "bytes": 1402761,
-            "sha256": "943e2ac12a596917797162cac69d5f1da7f86334ab666e9e4c9d27197fd436e7"
-          },
-          "styles.css": {
-            "bytes": 27726,
-            "sha256": "a6d31c13219d4b9f49d2ecf6993106bedef2a33560c9bdfdb93106659d45bc2e"
-          },
-          "manifest.json": {
-            "bytes": 237,
-            "sha256": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64"
-          }
-        },
-        "nativeOnThisBuild": false,
-        "phaseApproval": false,
-        "reason": "Incoming N005 Dungeon UI and scoped styles change bundle; Atlas sources unchanged, earlier native proof stays separately scoped."
-      },
-      "initialFormatterSecondPass": "Prettier collapsed only chained modal selector on second pass; normalized AST unchanged, settled helper syntax/format check passed.",
-      "id": "HEX-02-CLEAN-R01",
-      "kind": "cleanup_review"
-    },
-    "nextRun": {
       "id": "HEX-03-P01",
       "kind": "location_plan",
-      "focus": "Concrete same-camera city/POI location Key+placement+common history/save/fresh flow; address city integration proposal persistence/fit/precision constraints in HEX03..05."
+      "startedAt": "2026-10-09T19:38:23.619137+00:00",
+      "finishedAt": "2026-10-09T19:38:23.619137+00:00",
+      "state": "completed",
+      "focus": "Early native Location/placement/shared history/save/copy/recovery/fresh flow; bounded codec+commands first, actual UI next before extra link comforts."
+    },
+    "nextRun": {
+      "id": "HEX-03-I01a",
+      "kind": "location_core",
+      "focus": "Native closed Location/Placement/Key schema and one history source; keep World placements inactive until complete I01b persistence."
     },
     "review": {
       "run": "HEX-02-R02",
@@ -4745,17 +4708,17 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I46-CLEAN-R46",
+      "id": "CITY-HEX03-OWNER-CLEAN-C01",
       "kind": "cleanup_review",
-      "startedAt": "2026-10-09T19:36:08.707285+00:00",
-      "focus": "FTG-Bulk-Wirkung und Rücksetzung: CR",
+      "startedAt": "2026-10-09T19:42:35.161597+00:00",
+      "focus": "HEX03-Plan aus Stadtanschlusssicht: C",
       "state": "completed",
-      "result": "Hash-/Plan-/Scopeprüfung bestanden: originale sichtbare Namen wiederhergestellt, Produktabnahmen offen; getrenntes R46 folgt."
+      "result": "Peerreviewlink/Quellpin/JSON/Fremdwurzeln geprüft. COK I47-Originalprobe bleibt nächster Umsetzungslauf nach GUI-Koordination."
     },
     "nextRun": {
-      "id": "CITY-00-I46-R46",
-      "kind": "reference_review",
-      "focus": "Zweierauswahl/Cancel/Apply/Rücksetzung gegen Originalbelege reviewen"
+      "id": "CITY-00-I47-I47",
+      "kind": "reference_implementation",
+      "focus": "Freigegebene COK-Licht/Wetterprobe auf eigener QA-Kopie durchführen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
