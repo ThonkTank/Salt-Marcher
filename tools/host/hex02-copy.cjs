@@ -104,11 +104,18 @@ module.exports = ({ page, fs, path, assert, qa, vault, out, checks }) => {
       debugSession.on("Debugger.paused", async (event) => {
         const record = {reason:event.reason, data:event.data, frames:event.callFrames.map(f=>({name:f.functionName,url:f.url,location:f.location}))};
         if (event.reason === "other") {
+          const callFrameId=event.callFrames[0].callFrameId;
           record.runtime = await debugSession.send("Debugger.evaluateOnCallFrame", {
-            callFrameId:event.callFrames[0].callFrameId,
-            expression:'JSON.stringify({app:!!this.app,open:String(Re.Modal.prototype.open),close:String(Re.Modal.prototype.close),ctor:String(Re.Modal),copyOpen:String(_b.prototype.open)})',
+            callFrameId,
+            expression:'JSON.stringify({app:!!this.app,ctor:this.constructor.name,isOpen:this.isOpen,container:this.containerEl?.outerHTML?.slice(0,2000),ownerDoc:this.containerEl?.ownerDocument===document,activeWindowMatch:typeof activeWindow!=="undefined"&&activeWindow===window,windowUrl:typeof activeWindow!=="undefined"&&activeWindow.location.href})',
             returnByValue:true,
           });
+          if (event.callFrames[0].location.scriptId === runtimeProbe?.scriptId) {
+            for (const expression of ["Re.Modal.prototype.open", "Re.Modal.prototype.close", "_b.prototype.onOpen"]) {
+              const target = await debugSession.send("Debugger.evaluateOnCallFrame", {callFrameId,expression});
+              if (target.result.objectId) await debugSession.send("Debugger.setBreakpointOnFunctionCall",{objectId:target.result.objectId});
+            }
+          }
         }
         exceptions.push(record);
         await debugSession.send("Debugger.resume");
@@ -118,7 +125,7 @@ module.exports = ({ page, fs, path, assert, qa, vault, out, checks }) => {
         const offset = scriptSource.indexOf("new _b(this.app,r.terrain.world.name");
         if (offset < 0) continue;
         const lines = scriptSource.slice(0,offset).split("\n");
-        runtimeProbe = {url:script.url,breakpoint:await debugSession.send("Debugger.setBreakpoint",{location:{scriptId:script.scriptId,lineNumber:lines.length-1,columnNumber:lines.at(-1).length}})};
+        runtimeProbe = {url:script.url,scriptId:script.scriptId,breakpoint:await debugSession.send("Debugger.setBreakpoint",{location:{scriptId:script.scriptId,lineNumber:lines.length-1,columnNumber:lines.at(-1).length}})};
       }
       await debugSession.send("Debugger.setPauseOnExceptions", {state:"all"});
       await page.evaluate(() => {
