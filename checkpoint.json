@@ -4429,17 +4429,17 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-01-PREP-RENDERER-CLEAN-R07",
-      "kind": "cleanup_review",
-      "startedAt": "2026-10-09T18:39:43.051047+00:00",
-      "focus": "Renderer-Aufräumen gegen Quellen und Nachweise prüfen",
-      "state": "completed",
-      "result": "Geprüfte Runtime unverändert; Architektur/Links/JSON und24offeneCTY erhalten."
-    },
-    "nextRun": {
       "id": "CITY-01-PREP-R11",
       "kind": "review",
-      "focus": "CityRenderer unabhängig gegen P07 und numerische/Lifecycle-Gegenfälle prüfen"
+      "startedAt": "2026-10-09T18:40:26Z",
+      "focus": "Renderer gegen lokale Großkoordinaten/Finewidth prüfen",
+      "state": "completed",
+      "result": "CITY-RENDERER-R11-01 reproduziert: gültige0.01mStraße bei10^16 verliert eine5pxKappenachse. N08 erforderlich."
+    },
+    "nextRun": {
+      "id": "CITY-01-PREP-RENDERER-REVIEW-CLEAN-P07",
+      "kind": "cleanup_planning",
+      "focus": "Befund und Nachbesserungsgrenze sauber festhalten"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",

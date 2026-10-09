@@ -863,3 +863,5 @@ CITY-01-PREP-RENDERER-CLEAN-P07 Start 2026-10-09T18:38:55.737758+00:00; Fokus: R
 CITY-01-PREP-RENDERER-CLEAN-I07 Start 2026-10-09T18:39:17.782163+00:00; Architektur um tatsächlichen CityRenderer/Ressourcenbesitz ergänzt; ältere Zeichnungsaussage auf Host-/Pointerintegration präzisiert. Keine Runtimeänderung, kein neuer Port.
 
 CITY-01-PREP-RENDERER-CLEAN-R07 Start 2026-10-09T18:39:43.051047+00:00; Runtimehashes identisch zum352Tests/check/build-Beleg; Architektur/Planlink und24offeneCTY geprüft. Ressourcen sind eng begrenzt, kein unnötiger technischer Umbau. Implementierungs-Aufräumen abgeschlossen; separater R11 folgt. Beleg:/home/aaron/.cache/dungeon-native-qa/city-plans/city01-renderer-20261009/i07-cleanup-review.json.
+
+CITY-01-PREP-R11 Start 2026-10-09T18:40:26Z; unabhängige Quell-/Modulgegenprobe findet CITY-RENDERER-R11-01: Radius bei10^16lokalenMetern vor Projektion weggerundet, erwartete5px werden inX0px. Darstellbare Projektionsproben und Bildschirmoffsets als N08 geplant. Kein Pass/CTY-Abschluss; Review-Aufräum-P/I/R folgt vor Nachbesserung.
