@@ -997,14 +997,15 @@
     "physicalInput": "skipped_at_user_request_unverified"
   },
   "parityRoadmap": {
-    "status": "roadmap_closed_with_p7_2_exception_followup_phase1_plan_next",
+    "status": "roadmap_closed_with_p7_2_exception_followup_phase1_implementation_next",
     "roadmap": "ROADMAP-PARITY.md",
     "followUpRoadmap": "ROADMAP-PARITY-TOOLS.md",
-    "followUpState": "phase1_plan_next",
+    "followUpState": "phase1_plan_ready_implementation_next",
+    "followUpPhase1Plan": "ROADMAP-PARITY-TOOLS-PHASE1-PLAN.md",
     "plan": "ROADMAP-PARITY-PLAN.md",
     "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
     "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
-    "nextRun": "ROADMAP-PARITY-TOOLS.md Phase 1 in eigenem Planlauf: offene Unterfälle und konkrete technische Umsetzung festlegen; danach getrennte Umsetzung und Review.",
+    "nextRun": "ROADMAP-PARITY-TOOLS.md Phase 1: 77 Pflichtfälle nach dem eigenen Plan in getrennter Umsetzung abgleichen; danach unabhängiger Fachreview.",
     "note": "P7-1, P7-3 und P7-4 sind in getrennten Edit-/Neuöffnungspaaren reviewt. P7-2 ist auf ausdrückliche Nutzeranweisung übersprungen, nicht physisch geprüft. Phase-7-Fachphasentor mit dieser Ausnahme bestanden; Produktbuild unverändert. Hex-Atlas- und Stadtstand erhalten.",
     "phase2Plan": "ROADMAP-PARITY-PHASE2-PLAN.md",
     "candidateBuildSha256": "b321128188b944c3324594663a410acfd84863f17860f637b9ed2e6ecc33b466",
