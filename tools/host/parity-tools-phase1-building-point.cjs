@@ -5,6 +5,7 @@ const CASES = [
   { name: "wood-no-wall", floor: "wood", wall: "Keine Wand" },
   { name: "wood-battlements", floor: "wood", wall: "Battlements" },
   { name: "stone-insert", floor: "stone", wall: "Keine Wand", kind: "insert" },
+  { name: "stone-remove", floor: "stone", wall: "Keine Wand", kind: "remove" },
 ];
 
 module.exports = ({ page, fs, path, assert, crypto, qa, vault, out,
@@ -62,22 +63,26 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out,
   function verifyEdited(doc, styleId, wallId, kind) {
     assert.equal(doc.entities.length, 1);
     const building = doc.entities[0];
-    assert.deepEqual(building.polygons[0].outer, kind === "insert"
-      ? [{ x: 1, y: 1 }, { x: 4, y: 0.125 }, { x: 7, y: 1 },
-        { x: 7, y: 4 }, { x: 1, y: 4 }]
-      : [{ x: 1, y: 0 }, { x: 7, y: 1 }, { x: 7, y: 4 }, { x: 1, y: 4 }]);
+    assert.deepEqual(building.polygons[0].outer, kind === "remove"
+      ? [{ x: 7, y: 1 }, { x: 7, y: 4 }, { x: 1, y: 4 }]
+      : kind === "insert"
+        ? [{ x: 1, y: 1 }, { x: 4, y: 0.125 }, { x: 7, y: 1 },
+          { x: 7, y: 4 }, { x: 1, y: 4 }]
+        : [{ x: 1, y: 0 }, { x: 7, y: 1 }, { x: 7, y: 4 }, { x: 1, y: 4 }]);
     assert.equal(building.wallAssetId ?? null, wallId);
-    assert.equal(doc.smartTiles.length, 24);
+    assert.equal(doc.smartTiles.length, kind === "remove" ? 12 : 24);
     assert.ok(doc.smartTiles.every((cell) => cell.assetId === styleId &&
       cell.buildingId === building.id));
     const positions = new Set(doc.smartTiles.map((cell) => `${cell.x}:${cell.y}`));
-    assert.deepEqual(positions, new Set(Array.from({ length: 24 }, (_, i) =>
-      `${1 + i % 6}:${Math.floor(i / 6)}`)));
+    assert.deepEqual(positions, kind === "remove"
+      ? new Set(["5:1", "6:1", "3:2", "4:2", "5:2", "6:2",
+        "1:3", "2:3", "3:3", "4:3", "5:3", "6:3"])
+      : new Set(Array.from({ length: 24 }, (_, i) =>
+        `${1 + i % 6}:${Math.floor(i / 6)}`)));
   }
   async function movePoint(kind) {
     const insert = kind === "insert";
     const start = await world(insert ? { x: 4, y: 1 } : { x: 1, y: 1 });
-    const end = await world(insert ? { x: 4, y: 0.125 } : { x: 1, y: 0 });
     await page.mouse.move(start.x + 10, start.y + 10);
     await page.mouse.move(start.x, start.y);
     await page.waitForFunction((insert) => {
@@ -86,12 +91,19 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out,
       return hover?.kind === (insert ? "edge" : "vertex") &&
         hover.contour === 0 && hover.index === 0;
     }, insert);
-    await page.mouse.down();
-    await page.mouse.move(end.x, end.y, { steps: 8 });
-    await page.mouse.up();
-    await page.waitForFunction(() =>
+    if (kind === "remove") {
+      await page.locator(".dungeon-native-editor:visible .dn-canvas canvas")
+        .last().focus();
+      await page.keyboard.press("Delete");
+    } else {
+      const end = await world(insert ? { x: 4, y: 0.125 } : { x: 1, y: 0 });
+      await page.mouse.down();
+      await page.mouse.move(end.x, end.y, { steps: 8 });
+      await page.mouse.up();
+    }
+    await page.waitForFunction((kind) =>
       app.workspace.getLeavesOfType("dungeon-native-map").at(-1)
-        ?.view.editor?.session.smartTiles?.length === 24);
+        ?.view.editor?.session.smartTiles?.length === (kind === "remove" ? 12 : 24), kind);
   }
   async function edit() {
     const { pckPath } = require("./phase3-fixtures.cjs")({ fs, crypto, assert });
@@ -175,7 +187,8 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out,
       verifyEdited((await state()).document, floor.id, wallId, item.kind);
       records.push({ name: item.name, document: saved, hash: hash(item.name),
         styleId: floor.id, wallId, kind: item.kind });
-      checks.push(`DD-038 ${item.name} point drag repaints 24 cells in one Undo step`);
+      checks.push(`DD-038 ${item.name} point edit repaints ` +
+        `${item.kind === "remove" ? 12 : 24} cells in one Undo step`);
     }
     fs.writeFileSync(baseline, JSON.stringify({ records, woodId: wood.id,
       stoneId: stone.id }, null, 2));

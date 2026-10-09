@@ -5,6 +5,7 @@ import { duplicateFloor, planBuildingContourMutation, planBuildingMutation, resi
 import { composeBuilding } from "../../src/compute";
 import { Session } from "../../src/session";
 import { buildingFloorCells, buildingFloorCellsAfterDraw, buildingFloorCellsAfterErase, buildingFloorCellsAfterPointEdit } from "../../src/features/material/building-floor-cells";
+import { buildingVertexGrip, planBuildingBackspacePoint } from "../../src/features/bau/building-point-gestures";
 
 const STYLE = "pack:dungeondraft-builtin-1.2.0.1:tileset:res%3A%2F%2Ftextures%2Ftilesets%2Fsmart%2Ftileset_wood_vertical.png";
 const STONE = "pack:dungeondraft-builtin-1.2.0.1:tileset:res%3A%2F%2Ftextures%2Ftilesets%2Fsmart_double%2Ftileset_stone.png";
@@ -313,6 +314,44 @@ test("native edge-point insertion replaces mixed floor cells and restores them o
   const stored = session.entities.get(before.id);
   assert.deepEqual(stored?.kind === "building" && stored.polygons[0]?.outer[1],
     { x: 4, y: 0.125 });
+  const saved = parseDocument(serializeDocument(session.document()));
+  session.undo();
+  assert.deepEqual(session.smartTiles, original);
+  assert.deepEqual(session.entities.get(before.id), before);
+  session.redo();
+  assert.deepEqual(parseDocument(serializeDocument(session.document())), saved);
+});
+
+test("native point Delete repaints triangular cell overlaps in the selected style", () => {
+  const document = newDocument("Mixed delete point", 8, 8);
+  const floorId = document.floors[0]!.id;
+  const before: Building = { ...building("mixed-delete", floorId, 1), polygons: [{ outer: [
+    { x: 1, y: 1 }, { x: 7, y: 1 }, { x: 7, y: 4 }, { x: 1, y: 4 },
+  ], holes: [] }] };
+  const original = buildingFloorCells(before, 8, 8).map((cell) => cell.x < 4
+    ? cell : { ...cell, assetId: STONE, color: 0x7f7e71 });
+  const session = new Session({ ...document, entities: [before], smartTiles: original });
+  const grip = buildingVertexGrip(before, { x: 1, y: 1 }, 0.2);
+  assert.ok(grip);
+  const result = planBuildingBackspacePoint([...session.entities.values()],
+    before, grip!, { wall: before.wall, wallAlpha: 255, wallBevel: true,
+      wallWidth: 0, wallAssetId: undefined });
+  assert.equal(result.status, "command");
+  if (result.status !== "command") return;
+  const next = buildingFloorCellsAfterPointEdit(session.smartTiles, result.after,
+    8, 8, { assetId: STONE, color: 0x7f7e71 }, "remove");
+  session.execute({ ...result.command, smartTiles: {
+    before: session.smartTiles, after: next } });
+  assert.equal(session.historySize, 1);
+  assert.deepEqual(session.entities.get(before.id)?.kind === "building" &&
+    (session.entities.get(before.id) as Building).polygons[0]!.outer,
+    [{ x: 7, y: 1 }, { x: 7, y: 4 }, { x: 1, y: 4 }]);
+  assert.equal(session.smartTiles?.length, 12);
+  assert.deepEqual(new Set(session.smartTiles?.map((cell) => `${cell.x}:${cell.y}`)),
+    new Set(["5:1", "6:1", "3:2", "4:2", "5:2", "6:2",
+      "1:3", "2:3", "3:3", "4:3", "5:3", "6:3"]));
+  assert.ok(session.smartTiles?.every((cell) => cell.assetId === STONE &&
+    cell.color === 0x7f7e71 && cell.buildingId === before.id));
   const saved = parseDocument(serializeDocument(session.document()));
   session.undo();
   assert.deepEqual(session.smartTiles, original);

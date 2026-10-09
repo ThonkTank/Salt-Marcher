@@ -3757,7 +3757,21 @@ export class DungeonEditor {
         this.hoveredBuildingVertex,
         this.currentBuildingWallStyle());
       if (result.command) {
-        this.session.execute(result.command);
+        const after = result.command.entities?.find((change) =>
+          change.id === building.id)?.after,
+          material = this.settings.material;
+        if (this.session.version === 4 && result.status === "command" &&
+            after?.kind === "building" && after.floorTileRaster &&
+            isNativeFloorAssetId(material?.assetId)) {
+          const previous = this.session.smartTiles;
+          const next = buildingFloorCellsAfterPointEdit(previous, after,
+            this.session.settings.width, this.session.settings.height,
+            { assetId: material!.assetId!, color: this.settings.surfaces.floor.color },
+            "remove");
+          this.session.execute(next === previous ? result.command : {
+            ...result.command, smartTiles: { before: previous, after: next },
+          });
+        } else this.session.execute(result.command);
         this.hoveredBuildingVertex = undefined;
         this.renderer.setBuildingPointHover();
       } else if (result.status === "protected-room")

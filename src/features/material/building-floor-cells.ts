@@ -3,6 +3,35 @@ import type { RecordChange } from "../../session";
 import { isNativeFloorAssetId } from "./native-path-catalog";
 import { nativeFloorCells } from "./native-floor-tiles";
 
+/** A touched corner alone is not a native floor cell; positive overlap is. */
+function polygonOverlapsCell(outer: Polygon["outer"], x: number, y: number): boolean {
+  let clipped = [...outer];
+  for (const [axis, limit, sign] of [
+    ["x", x, 1], ["x", x + 1, -1],
+    ["y", y, 1], ["y", y + 1, -1],
+  ] as const) {
+    const next: typeof clipped = [];
+    for (let i = 0; i < clipped.length; i++) {
+      const a = clipped[i]!, b = clipped[(i + 1) % clipped.length]!;
+      const da = sign * (a[axis] - limit), db = sign * (b[axis] - limit);
+      if (da >= 0) next.push(a);
+      if ((da < 0 && db > 0) || (da > 0 && db < 0)) {
+        const t = da / (da - db);
+        next.push({ x: a.x + t * (b.x - a.x),
+          y: a.y + t * (b.y - a.y) });
+      }
+    }
+    clipped = next;
+    if (clipped.length < 3) return false;
+  }
+  let doubledArea = 0;
+  for (let i = 0; i < clipped.length; i++) {
+    const a = clipped[i]!, b = clipped[(i + 1) % clipped.length]!;
+    doubledArea += a.x * b.y - b.x * a.y;
+  }
+  return Math.abs(doubledArea) > 1e-9;
+}
+
 /** Store the cells produced by a new, separate Building floor gesture. */
 export function buildingFloorCells(
   building: Building, width: number, height: number,
@@ -77,12 +106,13 @@ export function buildingFloorCellsAfterDraw(
       ? { ...cell, buildingId: building.id } : cell), ...painted];
 }
 
-/** Native contour point dragging repaints the complete outer bounding rectangle. */
+/** Native point moves/inserts repaint the bounding raster; removal repaints its interior. */
 export function buildingFloorCellsAfterPointEdit(
   cells: readonly SmartTileCell[] | undefined,
   building: Building,
   width: number, height: number,
   paint: { assetId: string; color: number },
+  kind: "move" | "insert" | "remove" = "move",
 ): readonly SmartTileCell[] | undefined {
   if (!building.floorTileRaster || building.polygons.length !== 1 ||
       building.polygons[0]?.holes.length || !isNativeFloorAssetId(paint.assetId))
@@ -95,8 +125,9 @@ export function buildingFloorCellsAfterPointEdit(
   const painted: SmartTileCell[] = [];
   for (let y = minY; y < maxY; y++)
     for (let x = minX; x < maxX; x++)
-      painted.push({ floorId: building.floorId, buildingId: building.id,
-        x, y, assetId: paint.assetId, color: paint.color });
+      if (kind !== "remove" || polygonOverlapsCell(outer, x, y))
+        painted.push({ floorId: building.floorId, buildingId: building.id,
+          x, y, assetId: paint.assetId, color: paint.color });
   const positions = new Set(painted.map((cell) => `${cell.x}:${cell.y}`));
   const retained = (cells ?? []).filter((cell) =>
     cell.buildingId !== building.id && (cell.floorId !== building.floorId ||
