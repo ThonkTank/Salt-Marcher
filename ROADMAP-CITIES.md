@@ -2,6 +2,8 @@
 
 Diese Erweiterung gehört zur [Hex-Atlas-Roadmap](ROADMAP-HEX-ATLAS.md). **Ein Atlas, eine Kamera, dieselben Werkzeuge und eine durchgehende Bearbeitung. Es gibt keine separaten Welt-, Stadt- oder Dungeonmodi.** Von der obersten Hex-Stufe bis zum Raum eines Hauses sind alle räumlichen Detailstufen allein durch Zoom erreichbar. Auch Bearbeitung und Key-Arbeit bleiben im selben Editor.
 
+Der gemeinsame Atlas ist grenzenlos und wächst mit seinen Inhalten. Stadtanlage, Straßen und Haus-Dungeons erweitern bei Bedarf seine belegte Ausdehnung, ohne Kartenrand-, Resize- oder Betretenaktion. Siedlungsflächen besitzen reale Maße; Meilen und Hex-Kacheln beschreiben den gewählten Bereich, Pixel nur die Darstellung beziehungsweise Bildausgabe. Orts-, Stadt- und Dungeondokumente teilen denselben räumlichen Atlas und dieselbe Bearbeitung.
+
 Alle folgenden Phasen sind geplant. Der Abnahmekatalog liegt unter `acceptance.json.cityPlans`; die geplanten Daten- und Raumentscheidungen stehen in der [Architektur](ARCHITECTURE.md#stadtpläne-und-durchgehende-atlas-bearbeitung).
 
 ## Ergebnisvorbilder und Vergleich
