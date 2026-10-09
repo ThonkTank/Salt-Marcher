@@ -1431,14 +1431,17 @@
     "followUpRoadmap": "ROADMAP-PARITY-TOOLS.md",
     "gmUxN001Plan": {
       "date": "2026-10-09",
-      "state": "implementation_host_passed_review_and_cloud_retest_open",
+      "state": "local_review_passed_cloud_retest_open",
       "plan": "ROADMAP-GM-UX-N-001-PLAN.md",
       "source": "GM-UX-001 im getrennten Cloud-GM-Test; Issue #1",
       "implementation": "/home/aaron/.cache/dungeon-native-qa/gm-ux-n001-20261009/implementation.md",
       "hostEdit": "/home/aaron/.cache/dungeon-native-qa/gm-ux-n001-20261009/evidence/1791548322282-edit/result.json",
       "hostReopen": "/home/aaron/.cache/dungeon-native-qa/gm-ux-n001-20261009/evidence/1791548354258-reopen/result.json",
       "buildSha256": "bf9e6cd7773a21901a886371258bf0670c3531365f9da381439c6364132aa2c8",
-      "next": "Unabhängigen Produktreview durchführen, dann Cloud-GM-Nachtest desselben GM-UX-01-Abschnitts auslösen; Dungeon-Paritäts- und Atlas-Tore bleiben offen."
+      "review": "/home/aaron/.cache/dungeon-native-qa/gm-ux-n001-review-20261009/review.md",
+      "reviewEdit": "/home/aaron/.cache/dungeon-native-qa/gm-ux-n001-review-20261009/evidence/1791548445362-edit/result.json",
+      "reviewReopen": "/home/aaron/.cache/dungeon-native-qa/gm-ux-n001-review-20261009/evidence/1791548454436-reopen/result.json",
+      "next": "Cloud-GM-Nachtest desselben GM-UX-01-Abschnitts auf Commit 8da4bda auslösen; Dungeon-Paritäts- und Atlas-Tore bleiben offen."
     },
     "mapInfoNoResizePreparation": {
       "date": "2026-10-09",
