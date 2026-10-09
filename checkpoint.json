@@ -3438,17 +3438,17 @@
     "state": "city00_reference_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I06-P",
-      "kind": "reference_tool_planning",
-      "startedAt": "2026-10-09T10:47:58.878515+00:00",
-      "focus": "Freigegebenen COK-Adapter produktspezifisch planen",
-      "state": "completed",
-      "result": "Privater Lifecycle und Steam-Identität geplant; generischen RFB-Transport ohne Wonderdraft-Identitätsersatz wiederverwenden"
-    },
-    "nextRun": {
       "id": "CITY-00-I06-I",
       "kind": "reference_tool_implementation",
-      "focus": "COK-Starter und Identitätsguard offline implementieren"
+      "startedAt": "2026-10-09T10:52:11.928250+00:00",
+      "focus": "Eigenen COK-Starter und Identitätswrapper implementieren",
+      "state": "completed",
+      "result": "Privates HOME/XDG, lokale Anzeige/Bus, gemeinsame Sperre, gestreamte Originalhashes und drei Offline-Grenztests implementiert; check/build grün, Basistests197/200 mit drei fehlenden externen Asset-Fixtures"
+    },
+    "nextRun": {
+      "id": "CITY-00-I06-R",
+      "kind": "reference_tool_review",
+      "focus": "Lifecycle, Sperre und Wrapper vor Originalstart reviewen"
     },
     "open": [
       "CITY-00 direkte Referenzinventur/Galerie aller drei Produkte",
