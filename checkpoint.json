@@ -3634,20 +3634,47 @@
   },
   "gmProductTesting": {
     "date": "2026-10-09",
-    "state": "planned_waiting_for_product_ui_access",
+    "state": "cloud_host_ready_first_map_saved",
     "plan": "ROADMAP-GM-PRODUCT-TESTING-PLAN.md",
     "focus": "Längere GM-Endanwenderabläufe, häufige Aktionen, Bedienkosten und UI-Überladung; belegte Nacharbeiten beauftragen und nachprüfen.",
     "currentRun": "GM-UX-01",
     "executedUiRuns": 0,
     "observedFindings": [],
-    "blocker": "Kein bedienbarer Obsidian-Host in diesem Workspace; Laptopzugang und exklusiver GUI-Slot sind abzustimmen.",
-    "coordination": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1#issuecomment-6080090197",
+    "blocker": null,
+    "coordination": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1#issuecomment-6080172233",
     "assignedPrerequisite": {
-      "id": "GM-UX-ACCESS",
-      "owner": "Lokaler Hex-/Host-Kollege in Abstimmung mit Stadt-Kollegen",
-      "state": "requested_not_confirmed"
+      "id": "GM-UX-CLOUD",
+      "owner": "Dieser Cloud-Arbeitsstrang",
+      "state": "completed",
+      "supersedes": "GM-UX-ACCESS; Slotanfrage gemäß Nutzerkorrektur aufgehoben"
     },
-    "next": "Produktslot und Zugang bestätigen, danach Vorbereitung → improvisierte Spielsitzung → Save/Neuöffnung als zusammenhängenden UI-Lauf durchführen.",
-    "automation": "Bestehende stündliche Automation auf GM-Produkttests und Nacharbeitskoordination umgestellt."
+    "next": "GM-UX-01 auf eigener Cloud-Oberfläche fortsetzen: Räume, Verbindungen und Texte; echte Bedienkosten erfassen.",
+    "automation": "Stündliche GM-Produkttests in eigener Cloud; keine Laptop-Slotfreigabe erforderlich.",
+    "executionEnvironment": "Eigene Cloud-Umgebung, getrennt vom Laptop der Kollegen",
+    "cloudHost": {
+      "obsidian": "1.14.4",
+      "container": "dungeon-gm-cloud",
+      "vault": "/workspace/scratch/gm-cloud-qa/vault",
+      "artifacts": "/workspace/scratch/gm-cloud-qa",
+      "cdp": "http://127.0.0.1:9228",
+      "display": [
+        1440,
+        1000
+      ],
+      "appViewport": [
+        1024,
+        800
+      ],
+      "input": "Playwright/CDP über sichtbare UI; keine physische Eingabeabnahme",
+      "productCommit": "d93136c0d656f9613bdab6562ba7707988962d97",
+      "buildSha256": "d54f25cf7b961cc78b1bbf197bd4781bd62d2325ec10dc4b34148c0d6ab3a6a2",
+      "verified": "Vault vertrauen, Befehl Dungeon anlegen, GM-UX-01 Nebelwacht mit Standardwerten erstellen, Editor öffnen, Speichern zeigt Gespeichert. Keine vollständige Szenarioabnahme.",
+      "evidence": [
+        "03-create.png",
+        "04-editor.png",
+        "05-saved.png"
+      ],
+      "initialization": "Erste Eingaben während Hoststart ohne sichtbare Wirkung; später Befehlsleiste und Editor bedienbar. Kein reproduzierter Produktbefund."
+    }
   }
 }
