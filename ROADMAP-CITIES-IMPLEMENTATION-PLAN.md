@@ -4,7 +4,7 @@
 
 Direkter Auftrag vom 09.10.2026: vollständige Funktionsgleichwertigkeit mit Canvas of Kings, Watabou Medieval Fantasy City Generator und Fantasy Town Generator, mit besserer Bedienung. Die ältere Beschränkung auf zwei Ergebnisvorbilder reicht dafür nicht aus. Originalgesten sind weiterhin keine Vorgabe. Alle bestehenden CTY-Kennungen und fremden Nachweise bleiben erhalten.
 
-Planungslauf CITY-P01; Ausgangspunkt bca9fbc. Repository: active/installed-phase1. Eigene Arbeitskopie, gemeinsame Veröffentlichung ohne Force-Push. Der Hex-Kollege besitzt derzeit HEX-00 und seine GUI-Testinstanz; keine parallele native Testinstanz starten. Stadtproduktcode beginnt nach CITY-00 und den vereinbarten Atlasvoraussetzungen HEX-05. Bis dahin kann die Referenzarbeit vollständig vorgezogen werden.
+Planungslauf CITY-P01; Ausgangspunkt bca9fbc. Repository: active/installed-phase1. Eigene Arbeitskopie, gemeinsame Veröffentlichung ohne Force-Push. Der Hex-Kollege besitzt derzeit HEX-00 und seine GUI-Testinstanz; keine parallele native Testinstanz starten. CITY-01 beginnt nach der festen CITY-00-Ergebnisgalerie und dem geprüften HEX-05-Übergabevertrag. Direkte Detailwirkungen werden spätestens vor ihrem zugehörigen Fachpaket geprüft; vollständige Originalinventur und Parität bleiben Pflicht für CITY-09. Bis zur Atlasübergabe wird Referenzarbeit vorgezogen.
 
 ## Iststand und offene technische Basis
 
@@ -381,3 +381,5 @@ CITY-00-I21-CR Ergebnis: Snapshot entspricht I21-Teilverweisen; Manifest-Hashes 
 ## CITY-00-I22-P: Übergabe- und Startregel gegen aktuelle Quellen prüfen
 
 Start: 2026-10-09T14:12:57.591718+00:00. Fokus: tatsächliche HEX-05-Voraussetzungen und widersprüchliche Stadt-Startformulierungen. Umsetzungslauf liest aktuellen Checkpoint und vorhandene Model-/Session-/Persistenzquellen, dokumentiert konkrete fehlende API-/Hostnachweise außerhalb des Vaults und berichtigt ausschließlich die pauschale CITY-00-Startregel: feste Galerie vor CITY-01, vollständige Detailwirkung spätestens vor zugehörigem Fachpaket, volle Inventur/Parität bleibt vor CITY-09 Pflicht. HEX-05 wird weder ersetzt noch als geliefert bewertet. Bestehende CLP-02-Übergabepflichten unverändert erhalten. Review prüft Originalauftrag, Roadmap und 63 CO-/24 CTY-Pflichten; anschließend getrenntes Aufräumen P/I/R für Verweis-/Fremdwurzelschutz.
+
+CITY-00-I22-I Ergebnis: aktuelle gemeinsame Quellen und Checkpoint belegen keine gelieferte HEX-05-Schnittstelle. Bestehender Renderer/Command und auf Karte plus gleichwurzelige Markdown-Dateien begrenztes Speicherjournal erfüllen die geplante Atlasübergabe nicht. CLP-02 bleibt offen. Pauschale Startregel mit Roadmap/phasenspezifischer Referenzregel konsistent korrigiert; keine Pflicht reduziert und kein Produktstart freigegeben. Quellhashes und fünf Übergabelücken: `/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i22-handoff-20261009/manifest.json`.
