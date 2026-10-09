@@ -4359,17 +4359,17 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-01-PREP-N06-REVIEW-CLEAN-P06",
-      "kind": "cleanup_plan",
-      "startedAt": "2026-10-09T18:15:49.061830+00:00",
-      "focus": "Bestehenden Precisionbefund ohne neue API bereinigen",
-      "state": "completed",
-      "result": "Rotationsgewichtung der X-/Y-Fehleranteile und Regressionen festgelegt; vorhandenes Paket wird sicher abgeschlossen."
-    },
-    "nextRun": {
       "id": "CITY-01-PREP-N06-REVIEW-CLEAN-I06",
       "kind": "cleanup_implementation",
-      "focus": "Plan und Architektur auf R08-Reparatur/R09-Befund abgleichen"
+      "startedAt": "2026-10-09T18:15:52.557951+00:00",
+      "focus": "Dokumentation und konkrete Gewichtung ergänzen",
+      "state": "completed",
+      "result": "Plan nennt Gewichtung mit abs(cos/sin); Architektur trennt reparierten R08 vom offenen R09. Keine Runtimeänderung."
+    },
+    "nextRun": {
+      "id": "CITY-01-PREP-N06-REVIEW-CLEAN-R06",
+      "kind": "cleanup_review",
+      "focus": "Dokumente/Links und unveränderte Runtime prüfen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",

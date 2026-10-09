@@ -822,3 +822,6 @@ CITY-01-PREP-R09 Start 2026-10-09T18:14:21.267514+00:00; Quellenhashes unveränd
 
 
 CITY-01-PREP-N06-REVIEW-CLEAN-P06 Start 2026-10-09T18:15:49.061830+00:00; Rotationsgewichtung der X-/Y-Fehleranteile und Regressionen festgelegt; vorhandenes Paket wird sicher abgeschlossen. Fokus:Bestehenden Precisionbefund ohne neue API bereinigen. Keine neue gemeinsame API, bestehendes Reparaturpaket.
+
+
+CITY-01-PREP-N06-REVIEW-CLEAN-I06 Start 2026-10-09T18:15:52.557951+00:00; Plan nennt Gewichtung mit abs(cos/sin); Architektur trennt reparierten R08 vom offenen R09. Keine Runtimeänderung. Fokus:Dokumentation und konkrete Gewichtung ergänzen. Keine neue gemeinsame API, bestehendes Reparaturpaket.
