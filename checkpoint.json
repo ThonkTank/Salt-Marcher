@@ -4340,17 +4340,17 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-01-PREP-I05",
-      "kind": "implementation",
-      "startedAt": "2026-10-09T17:45:40.580305+00:00",
-      "focus": "CityDraft und private Observerfehlerisolation implementieren",
+      "id": "CITY-01-PREP-DRAFT-CLEAN-I05",
+      "kind": "cleanup_implementation",
+      "startedAt": "2026-10-09T17:49:43.598192+00:00",
+      "focus": "Draft und Observergrenze architektonisch dokumentieren",
       "state": "completed",
-      "result": "CityDraft Vorschau/Cancel/Apply und abgestimmte notify-Isolation implementiert; Typprüfung,319Tests und Build bestanden. Separater Review und Aufräumen folgen; Atlas-/Hostabnahme offen."
+      "result": "ARCHITECTURE unterscheidet vorhandenen transienten Draft und private notify-Reparatur von fehlender sichtbarer Integration; Plan kennzeichnet historischen Observerbefund. Keine Runtimeänderung."
     },
     "nextRun": {
-      "id": "CITY-01-PREP-R06",
-      "kind": "review",
-      "focus": "Draftlebenszyklus und History-Fehlergrenze gegen P05 und echte Owner prüfen"
+      "id": "CITY-01-PREP-DRAFT-CLEAN-R05",
+      "kind": "cleanup_review",
+      "focus": "Dokumentation mit unverändertem Core und offenem Regressionbefund abgleichen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
