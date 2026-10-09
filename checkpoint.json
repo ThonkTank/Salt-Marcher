@@ -4653,16 +4653,16 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I46-P46",
-      "kind": "plan",
-      "startedAt": "2026-10-09T19:30:30.593778+00:00",
-      "focus": "Bewohner-Massenbearbeitung: P",
-      "state": "completed",
-      "result": "Konkrete Originalprobe für Mehrfachauswahl/Editor geplant, Schreibprobe nur mit gelesenen reversiblen Beforewerten."
-    },
-    "nextRun": {
       "id": "CITY-00-I46-PLAN-CLEAN-P46",
       "kind": "cleanup_plan",
+      "startedAt": "2026-10-09T19:30:33.307996+00:00",
+      "focus": "Bewohner-Massenbearbeitung: CP",
+      "state": "completed",
+      "result": "Aufräumplan: eigenen Bewohner-/Rawschutz und Planlink prüfen; keine unbestätigte Massenwirkung."
+    },
+    "nextRun": {
+      "id": "CITY-00-I46-PLAN-CLEAN-I46",
+      "kind": "cleanup_implementation",
       "focus": "Aktuelle Population-Mehrfachauswahl und zugänglichen Editor im Original prüfen"
     },
     "open": [

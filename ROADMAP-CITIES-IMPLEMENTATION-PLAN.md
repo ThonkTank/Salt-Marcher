@@ -1033,3 +1033,5 @@ CITY-01-INTEGRATION-R02-CLEAN-I01 Start 2026-10-09T19:29:06.203947+00:00; Belegp
 CITY-01-INTEGRATION-R02-CLEAN-R01 Start 2026-10-09T19:29:09.073297+00:00; Planlinks/JSON/Gegenbeleg vorhanden, fremde JSON-Wurzeln erhalten; Scope bleibt Vorschlag.
 
 CITY-00-I46-P46 Start 2026-10-09T19:30:30.593778+00:00; Konkrete Originalprobe für Mehrfachauswahl/Editor geplant, Schreibprobe nur mit gelesenen reversiblen Beforewerten.
+
+CITY-00-I46-PLAN-CLEAN-P46 Start 2026-10-09T19:30:33.307996+00:00; Aufräumplan: eigenen Bewohner-/Rawschutz und Planlink prüfen; keine unbestätigte Massenwirkung.
