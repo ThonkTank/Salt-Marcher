@@ -3372,20 +3372,20 @@
     "state": "city00_reference_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I03-I",
-      "kind": "reference_implementation",
-      "startedAt": "2026-10-09T12:26:27.986169+02:00",
-      "focus": "Direkte Watabou-Stadtgalerie und Funktionsmenüs mit festem Seed",
-      "state": "completed_bounded_reference_package",
-      "result": "Ummauerte Hafen-/Flussstadt in Übersicht und Detail, sechs Menübelege; 44 offene Funktionskandidaten; Versions-/Wirkungsabnahmen offen",
+      "id": "CITY-00-I03-R",
+      "kind": "reference_review",
+      "startedAt": "2026-10-09T12:29:59.627163+02:00",
+      "focus": "Originalbild-Reproduzierbarkeit, tatsächlich beobachteter Funktionsumfang und Beleggrenzen",
+      "state": "completed_changes_required",
+      "result": "Galerie und Reload belegt; zwei Metadatenpräzisierungen R01/R02 erforderlich",
       "evidence": [
-        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/manifest.json"
+        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/reference-review.json"
       ]
     },
     "nextRun": {
-      "id": "CITY-00-I03-R",
-      "kind": "reference_review",
-      "focus": "Reproduzierbarkeit und Bild-/Funktionsumfang prüfen, anschließend getrennt aufräumen"
+      "id": "CITY-00-I03-CP",
+      "kind": "cleanup_planning",
+      "focus": "Menü-/Bildzahl und Vorgaben-/Ergebnisgrenze präzisieren; CI/CR getrennt"
     },
     "open": [
       "CITY-00 direkte Referenzinventur/Galerie aller drei Produkte",
