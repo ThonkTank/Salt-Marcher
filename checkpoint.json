@@ -422,12 +422,11 @@
     "state": "r01_r02_pass_scoped_cleanup_open",
     "plan": "ROADMAP-HEX-02-PLAN.md",
     "currentRun": {
-      "id": "HEX-02-CLEAN-P01",
-      "kind": "cleanup_plan",
-      "startedAt": "2026-10-09T19:26:10.493235+00:00",
-      "finishedAt": "2026-10-09T19:26:10.493235+00:00",
-      "state": "completed",
-      "focus": "Exactly two cleanup findings: AST-preserving formatting of atlas-view/own native helper; accurate current provenance/next HEX03. No feature scope."
+      "id": "HEX-02-CLEAN-I01",
+      "kind": "cleanup_implementation",
+      "startedAt": "2026-10-09T19:26:57.166076+00:00",
+      "state": "in_progress_formatted_ast_unchanged",
+      "focus": "Two named files formatted; exact AST unchanged. Clean gates/buildtriplet pending; own provenance state preserved."
     },
     "nextRun": {
       "id": "HEX-02-CLEAN-I01",
