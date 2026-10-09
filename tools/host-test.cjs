@@ -21,7 +21,8 @@ const restart = process.argv.includes("--restart"),
   dd036O01b = process.argv.find((arg) => /^--dd036-o01b=(original|transport|missing|foreign)$/.test(arg))?.split("=")[1],
   dd036H01 = process.argv.includes("--dd036-h01"),
   dd036S01Noop = process.argv.includes("--dd036-s01-noop"),
-  dd036S01Recovery = process.argv.includes("--dd036-s01-recovery"),
+  dd036S01Recovery = process.argv.includes("--dd036-s01-recovery") || process.argv.includes("--dd036-s01-hard-crash"),
+  dd036S01HardCrash = process.argv.includes("--dd036-s01-hard-crash"),
   hex02Save = process.argv.includes("--hex02-save"),
   hex02Terrain = process.argv.includes("--hex02-terrain") || hex02Save,
   hex01Atlas = process.argv.includes("--hex01-atlas") || process.argv.includes("--hex01-layout") || hex02Terrain || dd036O01a || !!dd036O01b || dd036H01 || dd036S01Recovery,
@@ -862,6 +863,10 @@ async function workflow() {
       };
     });
   const scenarioContext = { page, browser, fs, path, assert, crypto, PNG, root, pluginRoot, qa, vault, sourceVault, restart, out, checks, chooseTool, editorAction, selectOnlyObjects, waitForFileAbsent, sleep, resolveQaAppCgroup };
+  if (dd036S01HardCrash) {
+    await require("./host/dd036-s01-hard-crash.cjs")(scenarioContext)();
+    return;
+  }
   if (dd036S01Recovery) {
     await require("./host/dd036-s01-recovery.cjs")(scenarioContext)();
     return;

@@ -1634,7 +1634,7 @@
         "caseIds": [
           "CTY-006.02"
         ],
-        "technicalPlan": "ROADMAP-CITIES-CITY00-COK-VARIANTS-PLAN.md; CITY07materialized variant/pose onstableelementIDs, explicit refreshpreview and oneAtlascommand, no rerandomizeonload.",
+        "technicalPlan": "ROADMAP-CITIES-CITY00-COK-VARIANTS-PLAN.md; CITY-07 speichert gewählte Assetvariante und Pose auf stabilen Element-IDs. Explizite Variation aktualisiert zunächst die Vorschau; Apply verwendet einen gemeinsamen Atlasbefehl. Laden darf bestehende Varianten nicht neu auswürfeln. Dies ist geplante eigene Umsetzung, keine bereits geprüfte Original-Neuöffnung.",
         "implementationEvidence": [],
         "hostEvidence": [],
         "comparisonEvidence": [],
@@ -1658,7 +1658,8 @@
             "Other category/custom subtype variations and full version untested",
             "Fresh reopen/restart and own materialized variants/host/UX/physical comparison open"
           ],
-          "limits": "RandomizeScale and RandomizeRotation were both enabled; saved variation does not independently prove each toggle range/policy. Preview overlaps after placement are distinct from final Escape frame. Native scene asset paths are observed artifact fields, not public integration APIs."
+          "limits": "RandomizeScale and RandomizeRotation were both enabled; saved variation does not independently prove each toggle range/policy. Preview overlaps after placement are distinct from final Escape frame. Native scene asset paths are observed artifact fields, not public integration APIs.",
+          "reviewManifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i43-20261009-r01/review.json"
         }
       },
       {
@@ -2369,15 +2370,12 @@
         "product": "Fantasy Town Generator",
         "feature": "Gebäudebedarfe und Anzahlgrenzen",
         "sourceUrl": "https://www.fantasytowngenerator.com/temporary-settlement?newSettlement=true",
-        "observedAt": "2026-10-09T12:20:56.140099+02:00",
+        "observedAt": "2026-10-09T12:15:44.926455+02:00",
         "observedVersion": null,
         "availability": "free",
-        "observationKind": "direct",
+        "observationKind": "direct_control_only",
         "originalEvidence": [
-          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i01-20261009/ftg-form-observation.json",
-          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/ftg-person-general.ax.txt",
-          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/ftg-person-relations.ax.txt",
-          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/ftg-person-relations.jpg"
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i01-20261009/ftg-form-observation.json"
         ],
         "task": "Gebäudeverteilung konfigurieren",
         "phase": "CITY-06",
@@ -2391,11 +2389,11 @@
           "state": "not_run"
         },
         "status": "open",
-        "gap": "Bewohnerattribute und Familienbeziehungen direkt gelesen; Bearbeitung und weitere Beziehungstypen offen.",
+        "gap": "Nur der Formularordner Buildings ist sichtbar. Bedarfsvorgaben, Anzahlgrenzen und erzeugte Verteilungswirkung sowie eigene Umsetzung/Host/Bedienung bleiben ungeprüft.",
         "originalProbe": {
-          "run": "CITY-00-I02",
-          "state": "partial",
-          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/manifest.json"
+          "run": "CITY-00-I01",
+          "state": "buildings_folder_only",
+          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i01-20261009/ftg-form-observation.json"
         },
         "independentFunctionalRequirement": true,
         "mappingCoverage": "new_required_function_not_covered_by_existing_CTY"
@@ -2404,12 +2402,16 @@
         "id": "CO-FTG-0014",
         "product": "Fantasy Town Generator",
         "feature": "Bewohnerdetails und Beziehungen",
-        "sourceUrl": "https://docs.fantasytowngenerator.com/",
-        "observedAt": "2026-10-09T12:15:44.926455+02:00",
+        "sourceUrl": "https://www.fantasytowngenerator.com/temporary-settlement",
+        "observedAt": "2026-10-09T12:20:56.140099+02:00",
         "observedVersion": null,
-        "availability": "unknown",
-        "observationKind": "documentation",
+        "availability": "temporary_settlement",
+        "observationKind": "direct_partial_effect",
         "originalEvidence": [
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/manifest.json",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/ftg-person-general.ax.txt",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/ftg-person-relations.ax.txt",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/ftg-person-relations.jpg",
           "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i18-residents-20261009/manifest.json"
         ],
         "task": "Bewohner, Haushalt und Beziehungen bearbeiten",
@@ -2427,10 +2429,16 @@
           "state": "not_run"
         },
         "status": "open",
-        "gap": "Resident profile/relationships remain unverified: first building detail request network error, second did not display detail within observation. No feature absence or persistent outage inferred. Own implementation/host/usability remain open.",
+        "gap": "Profilattribute und parent/father/adoptive brother direkt gelesen. Bearbeitung, weitere Beziehungen, stabile Datenkennungen, Persistenz und eigener Produkt-/Host-/Bedienvergleich bleiben offen. I18 war eine spätere erfolglose Zugangsprobe.",
         "independentFunctionalRequirement": true,
         "mappingCoverage": "related_project_criteria_only; CO requirement remains independently required",
         "originalProbes": [
+          {
+            "run": "CITY-00-I02",
+            "state": "profile_and_named_relations_observed",
+            "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/manifest.json",
+            "observation": "Thawn Cobblekind: Erscheinung, Persönlichkeit, Ziel, Wohnort und Attribute; Relations nennt Markli parent, Guro father, Durmold adoptive brother. Keine Bearbeitung geprüft."
+          },
           {
             "run": "CITY-00-I18-I",
             "state": "resident_access_unverified_after_network_error",
@@ -2439,10 +2447,11 @@
           }
         ],
         "originalProbe": {
-          "run": "CITY-00-I18-I",
-          "state": "resident_access_unverified_after_network_error",
-          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i18-residents-20261009/manifest.json",
-          "observation": "Population favourites empty; protected house found in29-building list. First detail click network error; second no loaded detail. Resident profile and relationships not reached."
+          "run": "CITY-00-I02",
+          "state": "profile_and_named_relations_observed",
+          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/manifest.json",
+          "observation": "Thawn Cobblekind: Erscheinung, Persönlichkeit, Ziel, Wohnort und Attribute; Relations nennt Markli parent, Guro father, Durmold adoptive brother. Keine Bearbeitung geprüft.",
+          "limits": "Gelesene Attribute und benannte Beziehungen sind sichtbare Originaldaten; keine stabilen serialisierten IDs, Bearbeitung oder Persistenz bewiesen."
         }
       },
       {
@@ -2558,13 +2567,9 @@
         "sourceUrl": "https://docs.fantasytowngenerator.com/",
         "observedAt": "2026-10-09T12:20:56.140099+02:00",
         "observedVersion": null,
-        "availability": "free",
-        "observationKind": "direct",
-        "originalEvidence": [
-          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/ftg-time10-before.ax.txt",
-          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/ftg-time11-after.ax.txt",
-          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/ftg-time11-after.jpg"
-        ],
+        "availability": "unknown",
+        "observationKind": "documentation",
+        "originalEvidence": [],
         "task": "Mehrere Bewohner gemeinsam ändern",
         "phase": "CITY-06",
         "caseIds": [],
@@ -2577,12 +2582,7 @@
           "state": "not_run"
         },
         "status": "open",
-        "gap": "Ein Next-Hour-Wechsel direkt bestätigt; vollständige Tagespläne und große Zeitsprünge offen.",
-        "originalProbe": {
-          "run": "CITY-00-I02",
-          "state": "partial",
-          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/manifest.json"
-        },
+        "gap": "Keine direkte Massenbearbeitungsprobe vorhanden. Der früher hier zugeordnete Stundenwechsel ist ausschließlich CO-FTG-0018 zugeordnet; Massenbearbeitung und eigene Umsetzung/Host/Bedienung bleiben offen.",
         "independentFunctionalRequirement": true,
         "mappingCoverage": "new_required_function_not_covered_by_existing_CTY"
       },
@@ -2596,6 +2596,10 @@
         "availability": "temporary_settlement",
         "observationKind": "direct_partial",
         "originalEvidence": [
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/manifest.json",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/ftg-time10-before.ax.txt",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/ftg-time11-after.ax.txt",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/ftg-time11-after.jpg",
           "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/manifest.json",
           "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i42-time-20261009/manifest.json"
         ],
@@ -2611,7 +2615,7 @@
           "state": "not_run"
         },
         "status": "open",
-        "gap": "Bewohner-Aufenthaltsorte und Tagesplanwirkung weiterhin offen.",
+        "gap": "10:00→11:00 Monday und I42-Arbeits-/Ruhetagsfolge eines Bewohners bei gleichem Datum direkt teilbelegt. Vollständige Tagespläne, große Sprünge, Persistenz, Kalender-/Overridepolitik sowie eigener Produkt-/Host-/Bedienvergleich bleiben offen.",
         "independentFunctionalRequirement": true,
         "mappingCoverage": "new_required_function_not_covered_by_existing_CTY",
         "documentationSource": {
@@ -2625,7 +2629,29 @@
           "observation": "Time Skip changes23:00 to11:00 Monday and visibly changes daylight; no resident schedule recheck",
           "observationTimeScope": "artifact persistence times; UI action start not measured",
           "manualDayReference": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i42-time-20261009/manifest.json"
-        }
+        },
+        "originalProbes": [
+          {
+            "run": "CITY-00-I02",
+            "state": "one_hour_change_observed",
+            "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/manifest.json",
+            "limits": "Uhrzeit und wiederaufgebaute Bewohneranzeige; keine vollständige Tagesplanwirkung."
+          },
+          {
+            "run": "CITY-00-I07-BI",
+            "state": "partial_effect_observed",
+            "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/manifest.json",
+            "observation": "Time Skip changes23:00 to11:00 Monday and visibly changes daylight; no resident schedule recheck",
+            "observationTimeScope": "artifact persistence times; UI action start not measured",
+            "manualDayReference": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i42-time-20261009/manifest.json"
+          },
+          {
+            "run": "CITY-00-I42-I",
+            "state": "same_person_work_rest_work_observed",
+            "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i42-time-20261009/manifest.json",
+            "limits": "Ein Bewohner, Montag11h; keine vollständige Simulation/Persistenz oder ratifizierte None-Semantik."
+          }
+        ]
       },
       {
         "id": "CO-FTG-0019",
@@ -130556,16 +130582,18 @@
           "evidence": []
         },
         "hostCheck": {
-          "state": "partial_terrain_save_draft_reopen_repeat_save_and_vaultstore_recovery_independent_review_passed",
-          "build": "main.js SHA-256 c77eed86d4ade60a3fdaca5edc8e338a9633a7b66fcfa195daab96664da6c997; Save/Draft-Quelle ee858931183cb387dce7ff38b01d6fc3be110818; Noop-Testcommit 96a645c75b429b29af628f4a861bb4109c6e1948",
+          "state": "partial_terrain_save_draft_reopen_repeat_save_vaultstore_recovery_and_one_native_hard_crash_independent_review_passed",
+          "build": "Save/Draft/Noop/J02: main.js SHA-256 c77eed86d4ade60a3fdaca5edc8e338a9633a7b66fcfa195daab96664da6c997; Save/Draft-Quelle ee858931183cb387dce7ff38b01d6fc3be110818; Noop-Testcommit 96a645c75b429b29af628f4a861bb4109c6e1948. J03: Testcommit 0711828446c2504065f08010547bbedd5d0df9df, main.js SHA-256 260aed21ccc7767e5ef703b6de2229c2d3916c67e3501c85a9ef3f1cdb90eb6f.",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/dd036-s01-20261009/evidence/1791569925693-hex02-save-edit/result.json",
             "/home/aaron/.cache/dungeon-native-qa/dd036-s01-20261009/evidence/1791570048607-hex02-save-reopen/result.json",
             "/home/aaron/.cache/dungeon-native-qa/dd036-s01-noop-20261009/evidence/1791570558973-dd036-s01-noop-reopen/s01-noop-result.json",
             "/home/aaron/.cache/dungeon-native-qa/dd036-s01-j01-20261009/result.json",
-            "/home/aaron/.cache/dungeon-native-qa/dd036-s01-j02-20261009/clean/summary.json"
+            "/home/aaron/.cache/dungeon-native-qa/dd036-s01-j02-20261009/clean/summary.json",
+            "/home/aaron/.cache/dungeon-native-qa/dd036-s01-j03-20261009/clean-boundary4/evidence/1791573040825-dd036-s01-recovery-reopen/s01-hard-crash-result.json",
+            "/home/aaron/.cache/dungeon-native-qa/dd036-s01-j03-20261009/clean-boundary4/evidence/1791573051667-dd036-s01-recovery-reopen/s01-recovery-result.json"
           ],
-          "gap": "Sichtbarer Terrain-Save, frische Draft-/Ctrl+S-Folge und unveränderter zweiter Save sind eng belegt. J01 beendet getrennte Node-Dateistore-Prozesse an zehn CAS-Grenzen; J02 öffnet entsprechende vorbereitete Zwischenstände in elf frischen Obsidian-Prozessen über den echten VaultStore und prüft alle Ziel- und Journalbytes samt Konflikt. Ein direkt ausgelöster harter Abbruch des Obsidian-Prozesses, fsync/Power-Loss, City-/Dungeon-Kinder, Open Recent und vollständige Gleichwertigkeit bleiben offen."
+          "gap": "Sichtbarer Terrain-Save, frische Draft-/Ctrl+S-Folge und unveränderter zweiter Save sind eng belegt. J01 beendet getrennte Node-Dateistore-Prozesse an zehn CAS-Grenzen; J02 öffnet entsprechende vorbereitete Zwischenstände in elf frischen Obsidian-Prozessen über den echten VaultStore und prüft alle Ziel- und Journalbytes samt Konflikt. J03 beendet einen isolierten Obsidian-Prozess per SIGKILL nach dem dritten von sechs geänderten Atlaszielen und belegt den Rollback durch einen frischen Obsidian-/VaultStore-Prozess. Weitere direkte Host-Abbruchgrenzen, fsync/Power-Loss, City-/Dungeon-Kinder, Open Recent und vollständige Gleichwertigkeit bleiben offen."
         }
       },
       {

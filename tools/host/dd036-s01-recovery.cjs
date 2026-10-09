@@ -1,10 +1,10 @@
-// Fresh Obsidian/VaultStore recovery from a preseeded, isolated seven-write Atlas state.
+// Fresh Obsidian/VaultStore recovery from an isolated multi-write Atlas state.
 module.exports = ({ page, fs, path, assert, crypto, qa, vault, out, checks }) => async () => {
   const fixture = JSON.parse(fs.readFileSync(path.join(qa, "dd036-s01-recovery-case.json"), "utf8"));
   const writes = JSON.parse(fs.readFileSync(path.join(qa, "writes.json"), "utf8"));
   const worldPath = "Atlanten/Hex02 Insel.overworld";
   const journalPath = worldPath + ".journal";
-  const files = [...writes.map((entry) => entry.path), journalPath];
+  const files = [...new Set([...writes.map((entry) => entry.path), worldPath, journalPath])];
   const read = (file) => {
     const full = path.join(vault, file);
     return fs.existsSync(full) ? fs.readFileSync(full, "utf8") : null;
@@ -58,5 +58,5 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out, checks }) =>
   fs.writeFileSync(path.join(out, "s01-recovery-result.json"), JSON.stringify({
     fixture, before, after, observed,
   }, null, 2));
-  checks.push("DD-036.03 fresh Obsidian VaultStore recovery matches all seven Atlas target files and journal for " + fixture.kind + " boundary " + fixture.boundary);
+  checks.push("DD-036.03 fresh Obsidian VaultStore recovery matches all Atlas manifest files and journal for " + fixture.kind + " boundary " + fixture.boundary);
 };

@@ -921,3 +921,37 @@ CITY-00-I43-CLEAN-P43 Start 2026-10-09T19:08:06.372374+00:00; Plan:Originalframe
 CITY-00-I43-CLEAN-I43 Start 2026-10-09T19:08:09.607626+00:00; CO2trenntbeideaktivierteControls/keineisoliertenRanges,PlatzierungsfolgeVorschauüberlagerungvsEscapeEndstand,ArtefaktassetpfadevsöffentlicheAPI. Originaldateien/Rohframesunverändert.
 
 CITY-00-I43-CLEAN-R43 Start 2026-10-09T19:08:13.588421+00:00; Manifest-/Frame-/Savehashes,Exit0/5verschwundeneProzessidentitäten/Slotrückgabeund65CO+24CTYopengeprüft. KeinRestbefundimAufräumen, separaterReferenzreviewR43folgt;keineerneuteGUIgeplant.
+
+CITY-00-I43-R43 Start 2026-10-09T19:12:50.494468+00:00; unabhängige Neuberechnung des Save-Diffs und aller 47 Rawhashes: nur objects geändert, zwei alte Objekte unverändert, zwei neue Kategorieassets mit unterschiedlichen Posen. Frame017 zeigt Endstand ohne Vorschauüberlagerung. Lokaler Referenzreview ohne Pflichtbefund in diesem Scope; kein fremder Reviewer, keine Neuöffnung/isolierten Randomize-Parameter und keine eigene Produktabnahme. Beleg: /home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i43-20261009-r01/review.json. Getrenntes Aufräum-P/I/R folgt.
+
+CITY-00-I43-REVIEW-CLEAN-P43 Start 2026-10-09T19:13:05.334816+00:00; Plan: den CO2-Techniktext lesbar machen und die eigene Persistenzpolitik als Umsetzungspflicht kennzeichnen. Originaldateien/Frames nicht ändern; Review verknüpfen, Kennungen und fremde JSON-Wurzeln erhalten. Cleanup-Review prüft Hashes und offene Produktabnahmen.
+
+CITY-00-I43-REVIEW-CLEAN-I43 Start 2026-10-09T19:13:16.936175+00:00; CO2-Technikplan lesbar präzisiert: geplante eigene stabile IDs/Apply/Persistenz sind vom Original-Teilbeleg getrennt. Originaldaten unverändert; keine neue Runtime oder Schnittstelle.
+
+CITY-00-I43-REVIEW-CLEAN-R43 Start 2026-10-09T19:13:33.598213+00:00; alle 47 Rawhashes, Referenzreviewlink und unverändert offene 65 CO/24 CTY geprüft. Kein Restbefund in dieser Aufräumphase. Nächster Lauf: FTG-Inventar auf veraltete Beschreibung/Belegzuordnung prüfen, bevor weitere Originaltests geplant werden. Keine neue GUI.
+
+CITY-00-I44-P44 Start 2026-10-09T19:15:28.500297+00:00; Drei Fehlzuordnungen identifiziert; konkreter Korrekturplan neben Roadmap, unveränderter Vorherkatalog extern gesichert.
+
+CITY-00-I44-PLAN-CLEAN-P44 Start 2026-10-09T19:15:37.485866+00:00; Aufräumplan: aktuelle Plan-/Reviewlinks konsolidieren, Rohbelege und Kennungen erhalten; keine Runtimeänderung.
+
+I44-Korrekturplan: [FTG-Evidenzzuordnung](ROADMAP-CITIES-CITY00-FTG-MAPPING-PLAN.md).
+
+CITY-00-I44-PLAN-CLEAN-I44 Start 2026-10-09T19:15:41.046066+00:00; Links und Scopegrenzen konsolidiert; Rohbelege unverändert, keine weitere fachliche Datenhaltung.
+
+CITY-00-I44-PLAN-CLEAN-R44 Start 2026-10-09T19:15:44.532950+00:00; Aufräumreview bestanden: I02-Rawhashes, Links, 65 offene CO und 24 offene CTY sowie fremde JSON-Wurzeln unverändert.
+
+CITY-00-I44-I44 Start 2026-10-09T19:15:52.464620+00:00; Falsche Personen-/Zeitbelege zu CO14/18 korrigiert; CO13/17 ohne unbewiesene Wirkung, I18-Historie erhalten. Alle Anforderungen offen.
+
+CITY-00-I44-IMPL-CLEAN-P44 Start 2026-10-09T19:16:04.867958+00:00; Aufräumplan: aktuelle Plan-/Reviewlinks konsolidieren, Rohbelege und Kennungen erhalten; keine Runtimeänderung.
+
+CITY-00-I44-IMPL-CLEAN-I44 Start 2026-10-09T19:16:08.585729+00:00; Links und Scopegrenzen konsolidiert; Rohbelege unverändert, keine weitere fachliche Datenhaltung.
+
+CITY-00-I44-IMPL-CLEAN-R44 Start 2026-10-09T19:16:12.773682+00:00; Aufräumreview bestanden: I02-Rawhashes, Links, 65 offene CO und 24 offene CTY sowie fremde JSON-Wurzeln unverändert.
+
+CITY-00-I44-R44 Start 2026-10-09T19:16:20.862788+00:00; Zuordnungsreview bestanden: Profil/Beziehungen und Uhrzeit aus AX bestätigt; I18 erhalten, Scope/IDs/Produktabnahmen unverändert.
+
+CITY-00-I44-REVIEW-CLEAN-P44 Start 2026-10-09T19:16:32.577778+00:00; Aufräumplan: aktuelle Plan-/Reviewlinks konsolidieren, Rohbelege und Kennungen erhalten; keine Runtimeänderung.
+
+CITY-00-I44-REVIEW-CLEAN-I44 Start 2026-10-09T19:16:36.415502+00:00; Links und Scopegrenzen konsolidiert; Rohbelege unverändert, keine weitere fachliche Datenhaltung.
+
+CITY-00-I44-REVIEW-CLEAN-R44 Start 2026-10-09T19:16:39.897987+00:00; Aufräumreview bestanden: I02-Rawhashes, Links, 65 offene CO und 24 offene CTY sowie fremde JSON-Wurzeln unverändert.
