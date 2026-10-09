@@ -2064,6 +2064,11 @@
             "Select family tree",
             "Neuöffnung",
             "Eigene Produkt-/Bedienabnahme"
+          ],
+          "observationLimits": [
+            "Adoption nur im Relations-Text, nicht an Graphkante nachgewiesen",
+            "Obere Kartenbegrenzungen teilweise angeschnitten; kein vollständiger Layoutnachweis",
+            "Graphpan/-zoom, Select family tree und Neuöffnung ungemessen"
           ]
         },
         "independentFunctionalRequirement": true,

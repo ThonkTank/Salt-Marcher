@@ -3438,17 +3438,17 @@
     "state": "city00_reference_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I05-CP",
-      "kind": "cleanup_planning",
-      "startedAt": "2026-10-09T10:47:00.161280+00:00",
-      "focus": "Semantik und gemeinsame Graphdaten präzisieren",
-      "state": "completed",
-      "result": "Beleggrenzen und Datenbindung gezielt geplant"
-    },
-    "nextRun": {
       "id": "CITY-00-I05-CI",
       "kind": "cleanup_implementation",
-      "focus": "Explizite Originalgrenzen an CO-FTG-0026 ergänzen"
+      "startedAt": "2026-10-09T10:47:04.304138+00:00",
+      "focus": "Beleggrenzen am funktionalen Originaleintrag festhalten",
+      "state": "completed",
+      "result": "Adoption, Ausschnitt und ungemessene Navigation explizit getrennt; Originalframes erhalten"
+    },
+    "nextRun": {
+      "id": "CITY-00-I05-CR",
+      "kind": "cleanup_review",
+      "focus": "Hashes, Graphgrenzen und offene Abnahme prüfen"
     },
     "open": [
       "CITY-00 direkte Referenzinventur/Galerie aller drei Produkte",
