@@ -1645,6 +1645,13 @@
       "atlasRoadmap": "ROADMAP-HEX-ATLAS.md",
       "next": "HEX-01-Atlasanlage ohne Größenabfrage und verbleibende übertragbare Dungeon-/Ansichtsfunktionen getrennt prüfen."
     },
+    "dd036AtlasPlan": {
+      "date": "2026-10-09",
+      "state": "scope_plan_written_original_effect_and_host_review_open",
+      "plan": "ROADMAP-PARITY-TOOLS-PHASE1-DD036-ATLAS-PLAN.md",
+      "cases": "DD-036.01–.16",
+      "next": "Atlas-Speichern, Undo/Redo, Dirty-Warnung und frische Öffnung auf isolierter Kopie prüfen; Recent/Save As erst nach Atlasidentitäts- und Plattformentscheidung fachlich zuordnen."
+    },
     "dd006ShadowPlan": {
       "date": "2026-10-09",
       "state": "per_entity_shadow_review_passed_atlas_options_and_phase1_open",

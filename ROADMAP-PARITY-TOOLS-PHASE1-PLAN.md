@@ -12,7 +12,7 @@ Die Nutzerentscheidung vom 09.10.2026 nimmt `DD-038.01–.09` aus dem grenzenlos
 | --- | ---: | --- |
 | `DD-006.03/.04` | 2 | Sichtbare Wandschatten- und Objektschattenwirkung im übertragbaren Dungeonbereich; kein New-Map-Startschalter. |
 | `DD-008.01–.05` | 5 | Globale Abnutzung NONE, DUST, GRIME, NOISE, SCRATCHED; der vorhandene Intensitätsregler belegt diese fünf Modi nicht. |
-| `DD-036.01–.16` | 16 | Menü, Datei, History, Recent, Save As, About, Preferences-Einstieg, User Folder und Exit samt leeren/ungespeicherten Zuständen; Preferences-Felder und Kürzel `.17–.76` bleiben Phase 12. |
+| `DD-036.01–.16` | 16 | Menü, Datei, History, Recent, Save As, About, Preferences-Einstieg, User Folder und Exit samt leeren/ungespeicherten Zuständen; [Atlaszuschnitt](ROADMAP-PARITY-TOOLS-PHASE1-DD036-ATLAS-PLAN.md) trennt Speicherzweck und Mehrkartenannahmen. Preferences-Felder und Kürzel `.17–.76` bleiben Phase 12. |
 | `DD-039.01–.06` | 6 | Karteninformation, Maße, Pfad, Pakete, Close/X; alle belegt, als Regression auf dem Phasenbuild. |
 | `DD-041.02–.04` | 3 | Temporärer Pan mit Leertaste/Mitte und Strg+Rad-Zoom; `.04` hat eine dokumentierte Hostabweichung. |
 | `DD-048.01–.11`, `.16–.19` | 15 | Rasterstil/-farbe, Picker, Kamerafilter, Grid/Snap/Licht, Guide/Ruler, Zoommenü, Positionsanzeige, Vollbild und Back; Wirkung überwiegend noch ungemessen. |
