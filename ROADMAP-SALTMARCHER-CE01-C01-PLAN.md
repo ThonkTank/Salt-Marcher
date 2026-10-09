@@ -93,7 +93,10 @@ erneuten Reviewlauf.
 Der erste unabhängige Planreview auf `37342f9` verlangte genau diese
 Resetableitung, weil der ursprüngliche Entwurf die von ihm selbst benannte
 zweite hartcodierte Draftliste stehen ließ. Diese Planreparatur ändert weiterhin
-keinen Produktcode; ein erneuter unabhängiger Planreview bleibt Pflicht.
+keinen Produktcode. Der erneute unabhängige Read-only-Review auf `9016ced`
+bestätigte die gemeinsame Restore-/Reset-Zuordnung, unveränderte Resetsemantik,
+vollständige gezielte Matrix, exakte H01-Wiederholung und ehrliche offene
+Hostgrenzen ohne weiteren Pflichtbefund. C01-I01 darf damit beginnen.
 
 Erst der bestandene C01-R01 schließt das CE-01-Aufräumtor. CE-01 selbst bleibt
 bis zu den noch offenen physischen, Screenreader- und Plattformabnahmen ohne

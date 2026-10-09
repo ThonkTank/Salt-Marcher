@@ -86,7 +86,7 @@
     "currentRun": {
       "id": "CE-01-C01-P01",
       "kind": "cleanup_plan",
-      "state": "repair_completed_static_validation_review_pending",
+      "state": "completed_static_validation_reviewed",
       "focus": "Centralize catalog restore defaults and draft hydration after the real-host drift finding, retain the repeatable H01 harness and keep physical, screenreader and platform gates open",
       "plan": "ROADMAP-SALTMARCHER-CE01-C01-PLAN.md",
       "basis": {
@@ -95,10 +95,12 @@
         "planStartCommit": "c00bd417c6cb8c65d303fc7765e7b3b393405eab"
       },
       "review": {
-        "state": "changes_required",
+        "state": "passed_after_repair",
         "reviewedCommit": "37342f98911e1e5fcbcb7f369f1e411f3bdda667",
         "finding": "The plan identified reset draft-list drift but did not require resetCreatureCatalogFilters to derive draft keys from the canonical DRAFT_FILTERS mapping.",
-        "repair": "C01-I01 now derives reset draft keys from DRAFT_FILTERS and requires focused coverage without a second independently maintained seven-key list."
+        "repair": "C01-I01 now derives reset draft keys from DRAFT_FILTERS and requires focused coverage without a second independently maintained seven-key list.",
+        "reReviewCommit": "9016cedfee0c82b4b64ac786f55a849c2e8c918c",
+        "result": "Independent read-only re-review passed without a remaining mandatory finding."
       },
       "limits": "Planning only. No product code, host execution, cleanup approval or CE-01 approval is claimed; physical input, screenreader and non-Linux platform acceptance remain open."
     },
@@ -239,10 +241,10 @@
       "Physical catalog input acceptance cannot be replaced by Playwright automation"
     ],
     "nextRun": {
-      "id": "CE-01-C01",
-      "kind": "cleanup",
+      "id": "CE-01-C01-I01",
+      "kind": "cleanup_implementation",
       "plan": "ROADMAP-SALTMARCHER-CE01-C01-PLAN.md",
-      "focus": "Review this bounded cleanup plan, then centralize restore defaults and draft hydration, run focused regressions plus all three exact-candidate H01 scenarios and submit the result to an independent cleanup review"
+      "focus": "Centralize restore defaults and reset draft keys on DRAFT_FILTERS, run focused regressions plus all three exact-candidate H01 scenarios and submit the result to an independent cleanup review"
     }
   },
   "repositoryWorkflow": {
