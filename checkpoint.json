@@ -3539,17 +3539,17 @@
     "state": "city00_reference_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I07-BR",
-      "kind": "reference_review",
-      "startedAt": "2026-10-09T11:30:49.036861+00:00",
-      "focus": "Originalbelege und Grenzen prüfen",
-      "state": "completed",
-      "result": "26Hashes intakt, gleiche250m-Uhrkontrollen, keine Produktfreigabe; zwei Metadatenlücken zur Bereinigung"
-    },
-    "nextRun": {
       "id": "CITY-00-I07-BCP",
       "kind": "cleanup_planning",
-      "focus": "Color effect und explizite Rückstellungs-/Helligkeitsbelege planen"
+      "startedAt": "2026-10-09T11:31:08.484178+00:00",
+      "focus": "Zwei Beleglücken präzise schließen",
+      "state": "completed",
+      "result": "Farbfilterergänzung und unveränderliche Quellen mit Zusatzmanifest geplant"
+    },
+    "nextRun": {
+      "id": "CITY-00-I07-BCI",
+      "kind": "cleanup_implementation",
+      "focus": "Farbfilter und Rückstellungsbezüge ergänzen"
     },
     "open": [
       "CITY-00 direkte Referenzinventur/Galerie aller drei Produkte",
