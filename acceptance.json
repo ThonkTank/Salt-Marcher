@@ -91512,6 +91512,20 @@
           "build": null,
           "evidence": [],
           "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+        },
+        "followUpPhase1Implementation": {
+          "state": "candidate_review_pending",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "measuredScope": "Negativer Wandschatten-Schalter: markiert speichert wallShadows=false; unmarkiert true.",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-start-options-20261009/implementation.md"
+          ],
+          "hostBuildSha256": "6915df556e3df249429bd6742555b2c1e9fcd223ee9e76d5db47482115d79693",
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-start-options-20261009/evidence/1791512018100-parity-tools-phase1-start-options-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-start-options-20261009/evidence/1791512044443-parity-tools-phase1-start-options-reopen/result.json"
+          ],
+          "remaining": "Unabhängiger Phase-1-Endbuild-Review offen; gezeichnete Grafikpaare und weitere Building-Wear-Arten separat offen."
         }
       },
       {
@@ -91566,6 +91580,20 @@
           "build": null,
           "evidence": [],
           "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+        },
+        "followUpPhase1Implementation": {
+          "state": "candidate_review_pending",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "measuredScope": "Negativer Objektschatten-Schalter: markiert speichert objectShadows=false; unmarkiert true.",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-start-options-20261009/implementation.md"
+          ],
+          "hostBuildSha256": "6915df556e3df249429bd6742555b2c1e9fcd223ee9e76d5db47482115d79693",
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-start-options-20261009/evidence/1791512018100-parity-tools-phase1-start-options-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-start-options-20261009/evidence/1791512044443-parity-tools-phase1-start-options-reopen/result.json"
+          ],
+          "remaining": "Unabhängiger Phase-1-Endbuild-Review offen; gezeichnete Grafikpaare und weitere Building-Wear-Arten separat offen."
         }
       },
       {
@@ -91620,6 +91648,20 @@
           "build": null,
           "evidence": [],
           "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+        },
+        "followUpPhase1Implementation": {
+          "state": "candidate_review_pending",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "measuredScope": "Disable Building Wear setzt den Host-Neukartenwert nativeBuildingWear=false; unmarkiert bleibt er true.",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-start-options-20261009/implementation.md"
+          ],
+          "hostBuildSha256": "6915df556e3df249429bd6742555b2c1e9fcd223ee9e76d5db47482115d79693",
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-start-options-20261009/evidence/1791512018100-parity-tools-phase1-start-options-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-start-options-20261009/evidence/1791512044443-parity-tools-phase1-start-options-reopen/result.json"
+          ],
+          "remaining": "Unabhängiger Phase-1-Endbuild-Review offen; gezeichnete Grafikpaare und weitere Building-Wear-Arten separat offen."
         }
       },
       {
@@ -104680,6 +104722,20 @@
           "build": null,
           "evidence": [],
           "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+        },
+        "followUpPhase1Implementation": {
+          "state": "candidate_review_pending",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "measuredScope": "Gemischte Karte A speichert Wandschatten aus und Objektschatten an; Gegenkarte B speichert Wandschatten an.",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-start-options-20261009/implementation.md"
+          ],
+          "hostBuildSha256": "6915df556e3df249429bd6742555b2c1e9fcd223ee9e76d5db47482115d79693",
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-start-options-20261009/evidence/1791512018100-parity-tools-phase1-start-options-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-start-options-20261009/evidence/1791512044443-parity-tools-phase1-start-options-reopen/result.json"
+          ],
+          "remaining": "Unabhängiger Phase-1-Endbuild-Review offen; gezeichnete Grafikpaare und weitere Building-Wear-Arten separat offen."
         }
       },
       {
@@ -104734,6 +104790,20 @@
           "build": null,
           "evidence": [],
           "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+        },
+        "followUpPhase1Implementation": {
+          "state": "candidate_review_pending",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "measuredScope": "Gemischte Karte B speichert Objektschatten aus und Wandschatten an; Gegenkarte A speichert Objektschatten an.",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-start-options-20261009/implementation.md"
+          ],
+          "hostBuildSha256": "6915df556e3df249429bd6742555b2c1e9fcd223ee9e76d5db47482115d79693",
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-start-options-20261009/evidence/1791512018100-parity-tools-phase1-start-options-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-start-options-20261009/evidence/1791512044443-parity-tools-phase1-start-options-reopen/result.json"
+          ],
+          "remaining": "Unabhängiger Phase-1-Endbuild-Review offen; gezeichnete Grafikpaare und weitere Building-Wear-Arten separat offen."
         }
       },
       {
@@ -104788,6 +104858,20 @@
           "build": null,
           "evidence": [],
           "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+        },
+        "followUpPhase1Implementation": {
+          "state": "candidate_review_pending",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "measuredScope": "Zwei Neukarten mit entgegengesetztem Building-Wear-Startwert bleiben bis Save Entwürfe und öffnen mit denselben V4-Werten erneut.",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-start-options-20261009/implementation.md"
+          ],
+          "hostBuildSha256": "6915df556e3df249429bd6742555b2c1e9fcd223ee9e76d5db47482115d79693",
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-start-options-20261009/evidence/1791512018100-parity-tools-phase1-start-options-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-start-options-20261009/evidence/1791512044443-parity-tools-phase1-start-options-reopen/result.json"
+          ],
+          "remaining": "Unabhängiger Phase-1-Endbuild-Review offen; gezeichnete Grafikpaare und weitere Building-Wear-Arten separat offen."
         }
       },
       {

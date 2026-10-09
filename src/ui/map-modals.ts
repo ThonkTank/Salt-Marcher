@@ -887,16 +887,16 @@ export class CreateDungeonModal extends Modal {
           .onChange((value) => (builtInAssets = value)),
       );
     new Setting(this.contentEl)
-      .setName("Wandschatten")
+      .setName("Wandschatten deaktivieren")
       .addToggle((toggle) =>
-        toggle.setValue(wallShadows).onChange((value) => (wallShadows = value)),
+        toggle.setValue(!wallShadows).onChange((value) => (wallShadows = !value)),
       );
     new Setting(this.contentEl)
-      .setName("Objektschatten")
+      .setName("Objektschatten deaktivieren")
       .addToggle((toggle) =>
         toggle
-          .setValue(objectShadows)
-          .onChange((value) => (objectShadows = value)),
+          .setValue(!objectShadows)
+          .onChange((value) => (objectShadows = !value)),
       );
     new Setting(this.contentEl)
       .setName("Gebäudeabnutzung deaktivieren")

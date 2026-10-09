@@ -1034,12 +1034,21 @@
         "coreTests": 177,
         "state": "partial_candidate_review_pending"
       },
+      "startOptionsCandidate": {
+        "cases": "DD-006.01–.04, DD-007.01–.02",
+        "buildSha256": "6915df556e3df249429bd6742555b2c1e9fcd223ee9e76d5db47482115d79693",
+        "report": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-start-options-20261009/implementation.md",
+        "hostEdit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-start-options-20261009/evidence/1791512018100-parity-tools-phase1-start-options-edit/result.json",
+        "hostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-start-options-20261009/evidence/1791512044443-parity-tools-phase1-start-options-reopen/result.json",
+        "coreTests": 177,
+        "state": "partial_candidate_review_pending"
+      },
       "phaseGate": "open"
     },
     "plan": "ROADMAP-PARITY-PLAN.md",
     "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
     "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
-    "nextRun": "ROADMAP-PARITY-TOOLS.md Phase 1: Originalpersistenz, Grenzwerte und Namenskonflikte für DD-002 gezielt messen; danach DD-003 und DD-006/007 sowie die übrigen Pflichtfälle vor dem unabhängigen 77-Fälle-Review umsetzen.",
+    "nextRun": "ROADMAP-PARITY-TOOLS.md Phase 1: DD-003 Start mit Kartenassistent im Original und Host schließen; Originalpersistenz, Grenzwerte und Namenskonflikte für DD-002 sowie Grafikpaare für DD-006/007 nachholen. Die übrigen Pflichtfälle folgen vor dem unabhängigen 77-Fälle-Review.",
     "note": "P7-1, P7-3 und P7-4 sind in getrennten Edit-/Neuöffnungspaaren reviewt. P7-2 ist auf ausdrückliche Nutzeranweisung übersprungen, nicht physisch geprüft. Phase-7-Fachphasentor mit dieser Ausnahme bestanden; Produktbuild unverändert. Hex-Atlas- und Stadtstand erhalten.",
     "phase2Plan": "ROADMAP-PARITY-PHASE2-PLAN.md",
     "candidateBuildSha256": "b321128188b944c3324594663a410acfd84863f17860f637b9ed2e6ecc33b466",
