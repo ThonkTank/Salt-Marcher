@@ -380,6 +380,16 @@ export class Session {
   }
   execute(command: Command): void {
     this.assertMutable();
+    const removedBuildings = new Set((command.entities ?? [])
+      .filter((change) => change.before?.kind === "building" && change.after === null)
+      .map((change) => change.id));
+    if (!command.smartTiles && removedBuildings.size && this.stateSmartTiles?.some((cell) =>
+      cell.buildingId && removedBuildings.has(cell.buildingId)))
+      command = { ...command, smartTiles: {
+        before: this.stateSmartTiles,
+        after: this.stateSmartTiles.filter((cell) =>
+          !cell.buildingId || !removedBuildings.has(cell.buildingId)),
+      } };
     if (
       !(
         command.entities?.length ||

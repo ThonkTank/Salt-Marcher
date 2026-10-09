@@ -42,6 +42,8 @@ export interface Building extends BaseEntity {
   readonly fill: number;
   /** Optional for maps saved before Building RGBA controls existed. */
   readonly floorAlpha?: number;
+  /** V4 Building floor uses stored cells, including after a map crop. */
+  readonly floorTileRaster?: boolean;
   readonly wall: number;
   readonly wallAlpha?: number;
   readonly wallBevel?: boolean;
@@ -312,6 +314,7 @@ export interface DungeonContent {
 }
 export interface SmartTileCell {
   readonly floorId: Id;
+  readonly buildingId?: Id;
   readonly x: number;
   readonly y: number;
   readonly assetId: string;
@@ -458,6 +461,8 @@ export function validateEntity(
       !Number.isInteger(e.fill) ||
       (e.floorAlpha !== undefined &&
         (!Number.isInteger(e.floorAlpha) || e.floorAlpha < 0 || e.floorAlpha > 255)) ||
+      (e.floorTileRaster !== undefined &&
+        (version !== 4 || typeof e.floorTileRaster !== "boolean")) ||
       !Number.isInteger(e.wall) ||
       (e.wallAlpha !== undefined &&
         (!Number.isInteger(e.wallAlpha) || e.wallAlpha < 0 || e.wallAlpha > 255)) ||
@@ -761,6 +766,9 @@ export function validateSmartTileCells(
       typeof cell.assetId !== "string" || !cell.assetId.trim() ||
       !Number.isInteger(cell.color) || cell.color < 0 || cell.color > 0xffffff)
       throw new Error("Ungültige Smart-Tile-Zelle.");
+    if (cell.buildingId !== undefined &&
+        (typeof cell.buildingId !== "string" || !cell.buildingId))
+      throw new Error("Ungültige Building-Zellzuordnung.");
     const key = `${cell.floorId}:${cell.x}:${cell.y}`;
     if (positions.has(key)) throw new Error("Doppelte Smart-Tile-Zelle.");
     positions.add(key);

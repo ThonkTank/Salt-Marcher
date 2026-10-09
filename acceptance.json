@@ -116157,6 +116157,17 @@
           "measured": "Zwei erhaltene Shape-Polygone, Tile-Zellen 8→4→4 im selben und frischen Originalprozess.",
           "gap": "Aktueller Building-Befehl erzeugt keine Zellfolge; Boden-Hostfolge nach Crop/Neuöffnung offen. Keine Fallfreigabe."
         },
+        "followUpPhase1BuildingFloorHostCandidate": {
+          "state": "direct_draw_left_crop_pair_scoped_review_passed_case_open",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "hostBuildSha256": "dadbc0284eded84d0416141b9b6d9d254ece2d563702fa4c222f09d0bfc90cd8",
+          "report": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-floor-host-20261009/implementation.md",
+          "audit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-floor-host-20261009/independent-audit.json",
+          "hostEdit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-floor-host-20261009/evidence/1791522476909-parity-tools-phase1-building-floor-edit/result.json",
+          "hostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-floor-host-20261009/evidence/1791522590067-parity-tools-phase1-building-floor-reopen/result.json",
+          "measuredScope": "Zwei getrennte per Galerie gezeichnete 2×2-Böden; links -1/+1, Save und frische Öffnung der gespeicherten Crop-Karte. Drei gespeicherte Host-/Originalstände mit gleichen Zellkoordinaten, Stilpfaden und ARGB-Farben.",
+          "remaining": "Radieren, Konturänderung, Union/Überlagerung, andere Formen, kombinierte Ränder und vollständiger DD-038-Endbuild-Review offen. Keine Fallfreigabe; P7-2 physisch ungeprüft."
+        },
         "followUpPhase1TerrainMaskCandidate": {
           "state": "seeded_host_masks_scoped_review_passed_case_open",
           "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",

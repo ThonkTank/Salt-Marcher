@@ -809,10 +809,16 @@ function duplicateStructuredFloor(session: Session, sourceId: string): Floor {
     };
     return { ...entity, ...common };
   });
+  const tiles = session.smartTiles;
+  const copiedTiles = tiles?.filter((cell) => cell.floorId === sourceId)
+    .map((cell) => ({ ...cell, floorId: floor.id,
+      ...(cell.buildingId ? { buildingId: ids.get(cell.buildingId) ?? cell.buildingId } : {}) }));
   session.execute({
     label: "Geschoss kopieren",
     floors: [{ id: floor.id, before: null, after: floor }],
     entities: copies.map((entity) => ({ id: entity.id, before: null, after: entity })),
+    ...(tiles && copiedTiles ? { smartTiles: { before: tiles,
+      after: [...tiles, ...copiedTiles] } } : {}),
     content: { before: session.content, after: { ...session.content,
       occurrences: [...session.content.occurrences, ...sourceOccurrences.map((item) => ({
         ...item, id: occurrenceIds.get(item.id)!, roomId: ids.get(item.roomId)!,

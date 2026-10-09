@@ -545,6 +545,11 @@ export class MapRenderer {
         !building.polygons.length) { clear(); return; }
     const columns = texture.width / 256,
       variants = this.floorVariants(building.floorId, replacement),
+      storedCells = building.floorTileRaster && !replacement
+        ? new Set((this.session.smartTiles ?? [])
+          .filter((cell) => cell.buildingId === building.id)
+          .map((cell) => `${cell.x}:${cell.y}`))
+        : undefined,
       positions: number[] = [], uvs: number[] = [], indices: number[] = [];
     for (const polygon of building.polygons) {
       const xs = polygon.outer.map((point) => point.x),
@@ -555,6 +560,7 @@ export class MapRenderer {
         maxY = Math.min(this.settings.height, Math.ceil(Math.max(...ys)));
       for (let y = minY; y < maxY; y++)
         for (let x = minX; x < maxX; x++) {
+          if (storedCells && !storedCells.has(`${x}:${y}`)) continue;
           const storedVariant = variants[y * this.settings.width + x]!;
           // A diagonal can cover part of a cell while its center is outside.
           // The polygon mask clips this fallback tile to the occupied part.
@@ -598,11 +604,13 @@ export class MapRenderer {
     mask.clear();
     underlay.clear();
     for (const polygon of building.polygons) {
-      underlay.poly(polygon.outer.flatMap((point) => [point.x, point.y]), true)
-        .fill(0x252525);
-      for (const hole of polygon.holes)
-        underlay.poly(hole.flatMap((point) => [point.x, point.y]), true)
-          .cut();
+      if (!storedCells) {
+        underlay.poly(polygon.outer.flatMap((point) => [point.x, point.y]), true)
+          .fill(0x252525);
+        for (const hole of polygon.holes)
+          underlay.poly(hole.flatMap((point) => [point.x, point.y]), true)
+            .cut();
+      }
       mask.poly(polygon.outer.flatMap((point) => [point.x, point.y]), true)
         .fill(0xffffff);
       for (const hole of polygon.holes)
@@ -1239,7 +1247,7 @@ export class MapRenderer {
         : { color: e.kind === "building" ? e.fill : e.color,
             alpha: floorAlpha };
     const polygons = e.polygons;
-    if (!nativeFloor)
+    if (!nativeFloor && !(e.kind === "building" && e.floorTileRaster))
       for (const p of polygons) {
         g.poly(
           p.outer.flatMap((q) => [q.x, q.y]),
@@ -1620,6 +1628,7 @@ export class MapRenderer {
     const graphics = this.smartTileLayer.clear();
     const { width, height } = this.session.settings;
     for (const cell of this.session.smartTiles ?? []) {
+      if (cell.buildingId) continue;
       if (cell.floorId !== this.floorId || cell.x >= width || cell.y >= height)
         continue;
       graphics.rect(cell.x, cell.y, 1, 1).fill(cell.color);
