@@ -4043,17 +4043,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I31-CP",
-      "kind": "cleanup_planning",
-      "startedAt": "2026-10-09T15:22:24.093531+00:00",
-      "focus": "Processing-Ausgabebelege CP",
-      "state": "completed",
-      "result": "Plan: Snapshot mit Processing-Ausgabe669→651 ergänzen und interne Mutation/ID-/Savewirkung weiterhin offen führen. Frühere Sichtbelege erhalten; Rawhashes/Verweise und64/24 offene Pflichten prüfen. CI/CR getrennt."
-    },
-    "nextRun": {
       "id": "CITY-00-I31-CI",
       "kind": "cleanup_implementation",
-      "focus": "Belege und Snapshot CI"
+      "startedAt": "2026-10-09T15:22:35.068212+00:00",
+      "focus": "Processing-Ausgabebelege CI",
+      "state": "completed",
+      "result": "Snapshot enthält echte buildings-Ausgabewirkung669→651 sowie interne Geometrie-/ID-/Savegrenze; frühere Darstellungsbelege und Complex-Beobachtung erhalten."
+    },
+    "nextRun": {
+      "id": "CITY-00-I31-CR",
+      "kind": "cleanup_review",
+      "focus": "Belege und Snapshot CR"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",

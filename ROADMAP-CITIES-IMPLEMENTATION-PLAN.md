@@ -509,3 +509,5 @@ CITY-00-I31-I Ergebnis: Processing Offset/None: tatsächliche JSON298842/293445 
 CITY-00-I31-R Start 2026-10-09T15:19:32.364268+00:00; Tatsächliche Downloadkopien und alle Rawhashes bestätigt. Vollständiger14-Gruppenvergleich: buildings MultiPolygon669→651, andere13 wertgleich, übrige Rootwerte gleich. Keine interne Mutation, Neugeneration oder stabile Einzelobjekt-ID aus Export abgeleitet. Aufräumbefund: Snapshot nennt Processing-Dateigeometrie pauschal offen statt direkten Ausgabeteilbeleg.
 
 CITY-00-I31-CP Start 2026-10-09T15:22:24.093531+00:00; Plan: Snapshot mit Processing-Ausgabe669→651 ergänzen und interne Mutation/ID-/Savewirkung weiterhin offen führen. Frühere Sichtbelege erhalten; Rawhashes/Verweise und64/24 offene Pflichten prüfen. CI/CR getrennt.
+
+CITY-00-I31-CI Start 2026-10-09T15:22:35.068212+00:00; Snapshot enthält echte buildings-Ausgabewirkung669→651 sowie interne Geometrie-/ID-/Savegrenze; frühere Darstellungsbelege und Complex-Beobachtung erhalten.
