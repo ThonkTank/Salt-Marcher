@@ -4262,17 +4262,17 @@
     "state": "city01_model_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-01-PREP-EDIT-CLEAN-I03",
-      "kind": "cleanup_implementation",
-      "startedAt": "2026-10-09T17:10:49.725727+00:00",
-      "focus": "Vorhandene Fachaktionen und Codecgrenzen dokumentieren",
-      "state": "completed",
-      "result": "Architektur und Pläne bilden vorhandenen Fachcode ab, falsche Pfadvalidierungsbehauptung korrigiert; keine Laufzeitänderung."
-    },
-    "nextRun": {
       "id": "CITY-01-PREP-EDIT-CLEAN-R03",
       "kind": "cleanup_review",
-      "focus": "Aufgeräumte Fachaktionen und Nachweise abschließend prüfen"
+      "startedAt": "2026-10-09T17:11:26.813059+00:00",
+      "focus": "Aufgeräumte Fachaktionen und Nachweise prüfen",
+      "state": "completed",
+      "result": "Fachaktionspaket separat reviewt und aufgeräumt; geprüfte Quellen/294Tests unverändert. Host/Gesten/Save/Bindungen weiter offen."
+    },
+    "nextRun": {
+      "id": "CITY-01-PREP-P04",
+      "kind": "implementation_planning",
+      "focus": "Aktuellen Atlasvertrag prüfen und gemeinsame Stadt-Darstellung/Trefferprüfung konkret planen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
