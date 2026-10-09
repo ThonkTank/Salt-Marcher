@@ -4918,17 +4918,17 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-P48-CLEAN-R48",
-      "kind": "cleanup_review",
-      "startedAt": "2026-10-09T21:00:03.993621+00:00",
-      "focus": "COK-Vorlagen/Reopen konkret planen: CR",
-      "state": "completed",
-      "result": "Plan-/Link-/JSON-/Quellhashprüfung PASS; getrennte Vorlagen-/Map-/Neustartbelege und Slotgrenzen erhalten,24CTY/65CO offen. Bereit für I48a nach konkreter GUI-Slotfreigabe."
-    },
-    "nextRun": {
       "id": "CITY-00-I48a",
       "kind": "reference_implementation",
-      "focus": "I48a auf eigener QA-Kopie nach ausdrücklich abgestimmtem GUI-Slot durchführen"
+      "startedAt": "2026-10-09T21:05:00.623Z",
+      "focus": "COK-Vorlagen Originalfolge I",
+      "state": "completed",
+      "result": "Eigene momenv geschrieben, Open sofort Light/Weather34/0.6→230/0, Cancel sichtbar erhalten; finaler Menu/Save bytegleich Quelle. Normal Exit0/5 Prozesse weg/GUI zurück. I48b/R48 offen."
+    },
+    "nextRun": {
+      "id": "CITY-00-I48a-CLEAN-P48",
+      "kind": "cleanup_plan",
+      "focus": "I48b frischer Originalprozess mit eigenen finalen Map-/Templatekopien nach neuer GUI-Slotabsprache"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",

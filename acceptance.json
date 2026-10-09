@@ -1725,7 +1725,8 @@
         "availability": "demo_partial",
         "observationKind": "direct_partial_effect",
         "originalEvidence": [
-          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i47-20261009-r02/manifest.json"
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i47-20261009-r02/manifest.json",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i48a-20261009-r01/manifest.json"
         ],
         "task": "Atmosphäre ändern und speichern",
         "phase": "CITY-07",
@@ -1742,7 +1743,7 @@
           "independentProductReview": false
         },
         "status": "open",
-        "gap": "Schattenrichtung/Schneeschicht sichtbar und nativ gespeichert; Vorlagenanwendung, übrige Parameter, Fresh-Reopen und eigenes Produkt/Host/Bedienung offen.",
+        "gap": "Eigene Vorlage gespeichert/geladen, Cancel sichtbar und finaler Map-Save bytegleich zurückgestellt; frischer Prozess I48b/ReviewR48, übrige Regler/Ranges und eigenes Produkt/Host/Bedienung offen.",
         "independentFunctionalRequirement": true,
         "mappingCoverage": "new_required_function_not_covered_by_existing_CTY",
         "originalProbe": {
@@ -1751,6 +1752,13 @@
           "state": "completed_bounded_probe",
           "restoration": "snow0 visible only; saved snow0.6/shadow34 retained in own QA copy; source protected",
           "reviewManifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i47-20261009-r02/review.json"
+        },
+        "templateProbe": {
+          "run": "CITY-00-I48a",
+          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i48a-20261009-r01/manifest.json",
+          "state": "completed_bounded_pending_R48",
+          "templateEffect": "immediate combined Light/Weather load, two changed values restored",
+          "freshReopen": "not_run_I48b"
         }
       },
       {

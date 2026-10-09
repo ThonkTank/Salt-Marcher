@@ -1101,3 +1101,5 @@ P48-Folgeplan: [COK-Vorlagen/Reopen](ROADMAP-CITIES-CITY00-COK-TEMPLATE-REOPEN-P
 CITY-00-P48-CLEAN-I48 Start 2026-10-09T20:59:52.329422+00:00; P48 neben Roadmap verlinkt; überholten R47-Ausstehend-Satz konsolidiert. Rawdaten/Kopien bleiben unverändert, kein neues Produkt/API.
 
 CITY-00-P48-CLEAN-R48 Start 2026-10-09T21:00:03.993621+00:00; Plan-/Link-/JSON-/Quellhashprüfung PASS; getrennte Vorlagen-/Map-/Neustartbelege und Slotgrenzen erhalten,24CTY/65CO offen. Bereit für I48a nach konkreter GUI-Slotfreigabe.
+
+CITY-00-I48a Start 2026-10-09T21:05:00.623Z; Eigene momenv geschrieben, Open sofort Light/Weather34/0.6→230/0, Cancel sichtbar erhalten; finaler Menu/Save bytegleich Quelle. Normal Exit0/5 Prozesse weg/GUI zurück. I48b/R48 offen.
