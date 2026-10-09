@@ -6855,7 +6855,7 @@
         "exactUiPath": "Toolbar > Zoom",
         "context": "Neue Karte 1920 × 1080, Eastward; leere Geometrie. TextOnly nach QA-Änderung; ab Bild 060 Layer Management ON.",
         "commandOrControl": "Zoom",
-        "controlType": "number",
+        "controlType": "dropdown",
         "default": {
           "value": "47%",
           "evidenceScope": "Angezeigter Zustand dieser Originalaufnahme; Persistenz und andere Kontexte nicht gemessen."
@@ -7029,7 +7029,8 @@
               "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/numeric-context-repair-20261009-065818/original/screens/toolbar-zoom15.png",
               "observation": "Klick auf15-Prozent-Zeile verkleinert Karte; Toolbar zeigt15%."
             }
-          ]
+          ],
+          "note": "Canonical control type corrected from original inventory number to actual observed dropdown; prior classification retained here. Stable identity and historical source references unchanged."
         }
       },
       {
