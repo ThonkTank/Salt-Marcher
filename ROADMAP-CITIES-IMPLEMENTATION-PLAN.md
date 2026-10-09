@@ -8,6 +8,8 @@ Planungslauf CITY-P01; Ausgangspunkt bca9fbc. Repository: active/installed-phase
 
 Der konkrete [CITY-01-Anschlussplan](ROADMAP-CITIES-CITY01-INTEGRATION-PLAN.md) ordnet die aktuellen Quellschnittstellen, fehlenden HEX-05-Verträge, Stadtmodule und vollständigen Abnahmesequenzen zu. Er wird nach der geprüften Atlasübergabe an den gelieferten APIs aktualisiert.
 
+Vor der Atlasübergabe wird ausschließlich der unabhängige [Stadtmodell-/Codec-Anteil](ROADMAP-CITIES-CITY01-MODEL-PLAN.md) vorbereitet, mit bestätigter Modulgrenze des Hex-Besitzers. Gemeinsame Atlasintegration und Hostabnahme bleiben hinter HEX-05. I41-Skalierwirkung ist zurückgestellt und weiterhin offen.
+
 ## Iststand und offene technische Basis
 
 Alle 24 CTY-Unterfälle sind offen; native Stadtmodelle, Atlasintegration, Generierung, Darstellung und Stadtbedienung fehlen. `src/model.ts` beschreibt Dungeon-Dokumente, `src/session.ts` hält deren Befehle und Historie; `src/persistence.ts` besitzt Compare-and-write, Entwurf und Journal, erlaubt aber neben der Karte nur Markdown. Diese Besitz-/Journalgrenze darf nicht ungeprüft für .city/.location/.overworld aufgeweitet werden. HEX-05 ist noch nicht abgenommen. Eine neue separate Stadtansicht wäre keine Erfüllung des gemeinsamen Editors.
@@ -641,3 +643,23 @@ CITY-00-I39-CR Start 2026-10-09T16:06:44.885049+00:00; Originalquellaudit unver�
 
 
 CITY-00-I40-P Start 2026-10-09T16:08:13.049726+00:00; Fokus: FTG-Hausgeometrie für CITY-01. Eigenes CITY00 Hamlet QA im vorhandenen FTG-Tab: Ausgangsbild und sichtbaren Stand sichern, Manual edit/Buildings frisch lesen. Frühe Skalier-/Drehwirkung soweit tatsächlich angeboten an einem sichtbaren Haus als ungespeicherten Entwurf prüfen; geänderte Werte/Vorschau/Abschluss getrennt sichern. Keine Löschung, neue Siedlung oder erneute gestoppte Download-/Bewohnerhypothese. Cancel Edit/Yes verwirft Entwurf, sichtbares Haus sowie250m/Districts/11Monday prüfen. Stabile IDs, Save/Reload und Einzel-Undo aus Bildern nicht behaupten; maximal2 erfolglose Versuche je Hypothese. Nachher Originaltabs erhalten, P/I/R und Aufräum-P/I/R getrennt. Externe Belege: /home/aaron/.cache/dungeon-native-qa/city-plans/city00-i40-building-20261009/.
+
+
+CITY-00-I40-I Start 2026-10-09T16:15:52.829607+00:00; FTG-Draw schließt eigene Vierpunktkontur; neu erzeugtes bekanntes Haus ausgewählt/verschoben/sichtbar gedreht. Zweite Platzierungsvorschau per Cancel entfernt, eine gedrehte Kontur bleibt; Gesamtentwurf per CancelEdit/Yes verworfen.CTRL-Mausrad-Skalierung direkt angeboten, Wirkung nicht geprüft. Zwei frühere Treffer ohne Auswahl gestoppt; neue bekannte Kontur ist eigener belegter Auswahlfall.250m/Districts/11Monday zurückgestellt; Originaltabs erhalten. Manifest: /home/aaron/.cache/dungeon-native-qa/city-plans/city00-i40-building-20261009/manifest.json. Keine Save-/ID-/Binding-/Undo-/Produktabnahme.
+
+CITY-01-Präzisierung aus I40: Frei gezeichnete Hauskontur bleibt bis zum gültigen Schließen ein abbrechbarer Entwurf und wird als ein gemeinsamer Atlasbefehl übernommen. Bekannte Dokument-/Elementadresse bleibt bei Verschieben/Drehen erhalten; nach Abschluss bleibt das gewählte Werkzeug aktiv, keine automatische Einzelplatzierung. Maßstäbliche Griffe und numerische Meterwerte erlauben Skalierung unabhängig von einem zwingenden Modifier-Mausradweg. I40 belegt nur sichtbare Originalkontur/Platzierungswirkung und angebotene Skaliergeste, keine eigene bessere Bedienung.
+
+
+CITY-00-I40-R Start 2026-10-09T16:16:48.611641+00:00; 27 Rohbelege/Hashes bestätigt; abgeschlossene Vierpunktkontur, neue bekannte Auswahl, sichtbare Dreh-/Verschiebewirkung und getrennt verworfene zweite Vorschau korrekt begrenzt.CTRLwheel nur angebotene Geste, keine Skalierabnahme. Zwei ältere Treffer ohne Auswahl gestoppt; neue Kontur belegt separates Ziel. Gesamtentwurf verworfen,250m/Satellite/Districts/11Monday gelesen. Aufräumbefund: Referenzsnapshot führt weiterhin nur I11-Straßenwirkung. Aufräum-P/I/R getrennt.
+
+
+CITY-00-I40-CP Start 2026-10-09T16:17:09.830489+00:00; Plan: Snapshotkopf auf CITY-00-I40-I und CO-FTG-0015-Zeile um abgeschlossene Draw-Kontur, bekannte Hauspose und Entwurfsabbruch ergänzen. I10/I11-Straßen-/Savebelege erhalten; angeboteneCTRLwheel-Skalierung ausdrücklich ohne Wirkung. Zwei gestoppte Trefferversuche und stabile ID-/Save-/Undo-/Produktgrenzen behalten.27 Rawhashes/alle Inventarbelegziele/65und24 offene Pflichten prüfen; keine weitere UI-Mutation oder Statusdatei. CI/CR getrennt.
+
+
+CITY-00-I40-CI Start 2026-10-09T16:18:12.594721+00:00; Snapshot enthält I11-Straßen-/Savefolge sowie I40-Draw/known-house-Pose/Entwurfsabbruch. Skaliergeste nur angeboten, keine Wirkung behauptet; gestoppte Auswahlversuche und unbekannte IDs/Bindings/Einzel-Undo bleiben erhalten. Historische Belege unverändert; kein eigener Produktcode oder neuer UI-Eingriff. Finaler Rawhash-/Verweisreview folgt.
+
+
+CITY-00-I40-CR Start 2026-10-09T16:19:03.385325+00:00; Snapshot/acceptance/Anschlussplan stimmen: Draw-Kontur und bekannte Hauspose/Entwurfsabbruch belegt,CTRLwheelScale nur angeboten.27 Rawhashes und alle Inventarbelegziele gültig; I10/I11 sowie gestoppte Trefferversuche erhalten,65 CO-/24 CTY-Pflichten offen. Originaltabs erhalten, Gesamtentwurf verworfen und250m/Districts/11Monday bestätigt. Keine Restlücke im Aufräumumfang. Nächste frühe Probe klärt dokumentierte Skalierbedienung; CITY-01 wartet weiter auf geprüften HEX-05-Vertrag.
+
+
+CITY-01-PREP-P01 Start 2026-10-09T16:25:35.193204+00:00; Hex-Besitzer bestätigt reine CITY-Modell-/Codec-Vorbereitung ohne gemeinsame Schnittstellenänderung. Natives Meterformat, stabileIDs/Graphreferenzen, Hauspose/Polygone/Grundstücke/Viertel und strikte verlustfreie Prüfung konkret geplant. Formaler CITY01-Hostanschluss bleibt nach HEX05; I41-Skalierwirkung wegen fehlendem dokumentierten Modifier-Scrollweg zurückgestellt, weiterhin offen. Plan: ROADMAP-CITIES-CITY01-MODEL-PLAN.md. I/R und Aufräum-P/I/R folgen getrennt.

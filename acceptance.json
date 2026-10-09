@@ -1,8 +1,8 @@
 {
   "saltMarcherReplacement": {
     "schemaVersion": 1,
-    "updated": "2026-10-09T15:25:52Z",
-    "state": "smr00_adr_p01_h02_plan_reviewed_implementation_next",
+    "updated": "2026-10-09T16:29:38Z",
+    "state": "smr00_adr_p01_h03_contract_review_changes_required",
     "plan": "ROADMAP-SALTMARCHER-REPLACEMENT.md",
     "platformAdr": "ROADMAP-SALTMARCHER-PLATFORM-ADR.md",
     "architecture": "ARCHITECTURE.md#plattformoffene-saltmarcher-ablösung",
@@ -96,17 +96,26 @@
       "review": "Independent evidence re-review passed exact head 6e282f91846313a615cdbaf692d0ed65da80e5f2. Independent cleanup review passed exact commit 8d620a064e16d977e51b97d6aec64b7f40034961 after removing the executable harness, tests, command and temporary Electron dependency while retaining p01-v2 and the aggregate.",
       "limits": "No target-platform decision or P02 authorization. Durable receipt/recovery, the full Create/Update/Delete fault matrix, installed-adapter bytes, Windows, macOS and accessibility remain not-run."
     },
+    "adrP01H03": {
+      "run": "ADR-P01-H03-I01-R01",
+      "state": "contract_candidate_review_changes_required",
+      "document": "ROADMAP-SALTMARCHER-ADR-P01-H03-PLAN.md",
+      "result": "Proposes a Linux-only native snapshot/capture/publish and parent/child recovery hypothesis using a durable Before snapshot from the immutable compare-and-write payload, independent target verification, exclusive current-name capture and no-replace publication, with a complete uncooperative-writer and fault matrix.",
+      "contractCandidate": "e95f3eba325b3aa55620d39a617074ede425405d",
+      "review": "The R02 plan remains passed, but independent contract review rejected exact candidate e95f3eba325b3aa55620d39a617074ede425405d. Mandatory gaps are the absent parent receipt/sorted child-set and aggregate digest contract, incomplete state/operation identity-hash-name oracles, non-distinct internal names, unstructured orphan evidence and insufficient adversarial tests.",
+      "limits": "R02 passed planning review only. No executable proof, Linux durability Go, target-platform decision or P02 authorization. Windows and macOS remain not-run."
+    },
     "coordination": {
       "local": "Three new local goal threads coordinate integration. Existing Hex/Atlas, City and Dungeon colleagues on three other devices retain their workstreams, evidence and non-overlapping ownership and contribute requirements to the platform decision.",
       "cloud": "Prior GM-UX-CLOUD worker is reassigned through GitHub Issue #1 to independent architecture and technical review only. Other cloud colleagues retain their established specialist review/test responsibilities.",
       "gui": "At most one graphical host/original instance per device; static and non-graphical checks may run separately."
     },
-    "next": "Plan a narrower ADR-P01-H03 hypothesis for durable receipt/recovery and the complete native fault matrix while preserving the proven process boundary. ADR-P02 remains blocked and the platform ADR remains proposed."
+    "next": "Repair and independently re-review only the p01-v3 parent/child contract and adversarial Golden DTO matrix. Do not build the native helper or claim executable H03 evidence before the exact-head contract review passes; ADR-P02 remains blocked and the platform ADR remains proposed."
   },
   "saltMarcherCatalogEncounter": {
     "schemaVersion": 1,
-    "updated": "2026-10-09T15:31:16Z",
-    "state": "ce02_plan_reviewed_i01_next_ce01_physical_open",
+    "updated": "2026-10-09T16:26:42Z",
+    "state": "ce02_i01_reviewed_i02_plan_next_ce01_physical_open",
     "plan": "ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md",
     "architecture": "ARCHITECTURE.md#geplante-katalog--und-encounter-erweiterung",
     "sourceRepository": "ThonkTank/Salt-Marcher",
@@ -190,7 +199,7 @@
     },
     "repairCandidate": {
       "run": "CE-00-N01",
-      "state": "completed_checked_review_pending",
+      "state": "completed_checked_reviewed",
       "changes": [
         "Pinned exact manifest identity and independent JSON SHA-256 test guard",
         "Repository NOTICE plus exported visible-notice text with license URLs and change provenance",
@@ -438,7 +447,17 @@
       "review": "Independent read-only review passed exact shared commit 42808d372363cb1e9c8c8fc0ac8fca315cecd02c without a mandatory finding.",
       "limits": "Reviewed planning evidence only. Six new data providers and all CE-02 acceptance remain open; honest unavailable states do not count as delivered features."
     },
-    "next": "Implement and independently review only CE-02-I01, retaining one real Monster provider and six explicit unavailable providers. CE-01 remains without full approval while physical-input, screenreader and other-platform gates are open."
+    "ce02I01": {
+      "run": "CE-02-I01",
+      "state": "completed_checked_reviewed",
+      "result": "The production catalog view is now one seven-section, versioned workspace. The existing 2014 Monster surface performs query and detail reads through the typed SRD-5.1 provider with section/generation/AbortSignal binding; six future owner providers and their panels remain explicitly unavailable.",
+      "covered": ["exact canonical section order and visible/roving tabs", "CE-01 state migration and fail-closed future schema", "isolated seven-section state normalization", "immutable Monster query DTOs", "query and detail abort/stale isolation", "empty, invalid, error, missing and unavailable result contracts", "retained CE-01 filter, chip, sort, paging, keyboard, detail and attribution behavior"],
+      "verification": {"sourceRevision": "7469e64202e730175ee138136a69d82ad4f28ea6", "dirty": false, "node": "v22.22.2", "check": "passed", "tests": {"passed": 259, "failed": 0}, "focusedTests": {"passed": 217, "failed": 0}, "build": "passed", "mainBytes": 1362196, "mainSha256": "0856066aa2415455dbe2d6f3745bcab07488aa5361a20218cb828617ac904052", "mainJsGrowthBytes": 172826},
+      "hostSmoke": {"sourceRevision": "c5a485324bed7512fb927e2a7cfe9436c30928a4", "host": "Obsidian 1.13.7 Flatpak, isolated local vault, visible CDP UI, two normal-exit app processes", "mainSha256": "bd13cb2ac5e823d21f81bcb2f8d32a6b6a0ebe49a7049cacb2c5035eb99370a4", "edit": "/home/aaron/.cache/dungeon-native-qa/ce02-workspace-20261009/evidence/1791563339125-ce02-catalog-edit/result.json", "reopen": "/home/aaron/.cache/dungeon-native-qa/ce02-workspace-20261009/evidence/1791563349041-ce02-catalog-reopen/result.json", "covered": "seven visible sections, Monster results, six unavailable states, pending-search section switch, installed build triplet, fresh-process section and search restore"},
+      "review": "Independent N01 re-review passed exact repair candidate 4d239004c4f000b2af6f66122a05135b0c353ffb without a remaining mandatory finding; the product remains the clean, checked commit 7469e64202e730175ee138136a69d82ad4f28ea6.",
+      "limits": "No Item, saved Encounter, NPC, Faction, Place or Encounter-Table data is delivered; unavailable is not feature completion. No Encounter Builder, combat mutation, 2024 mode or physical/screenreader/platform acceptance. The local automated host smoke is scoped; all CE-AC cases remain open."
+    },
+    "next": "Plan and independently review CE-02-I02 for the first real non-Monster owner, including exact item provenance, schema, unavailable/error boundaries and isolated section state. Keep the other five unavailable providers explicitly undelivered; CE-01 physical-input, screenreader and other-platform gates remain open."
   },
   "cityPlans": {
     "schemaVersion": 1,
@@ -2337,7 +2356,7 @@
         "product": "Fantasy Town Generator",
         "feature": "Manuelle Kartenbearbeitung",
         "sourceUrl": "https://www.fantasytowngenerator.com/temporary-settlement",
-        "observedAt": "2026-10-09T12:21:16.277352+00:00",
+        "observedAt": "2026-10-09T16:15:52.829607+00:00",
         "observedVersion": null,
         "availability": "own_temporary_settlement_manual_roads_and_move_access_confirmed_full_scope_open",
         "observationKind": "direct_partial_effect",
@@ -2345,7 +2364,8 @@
           "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i10-edit-20261009/manifest.json",
           "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i10-edit-20261009/cleanup.json",
           "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i11-roads-20261009/manifest.json",
-          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i11-roads-20261009/cleanup.json"
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i11-roads-20261009/cleanup.json",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i40-building-20261009/manifest.json"
         ],
         "task": "Gebäude und Straße verändern",
         "phase": "CITY-01",
@@ -2363,7 +2383,7 @@
           "state": "not_run"
         },
         "status": "open",
-        "gap": "Gebäudeverschiebung/Entwurfsabbruch und Straße zeichnen/speichern/frischladen/gezielt entfernen direkt belegt; übrige Werkzeuge, stabile Bindungen, Einzel-Undo und eigene Umsetzung/Host/Bedienung offen.",
+        "gap": "I10/I11 house move/cancel and road save/reload partial; I40 custom Draw/known-shape pose/draft discard directly observed,CTRLwheel scaling instruction only. Original scaling effect, other tools, stable bindings, per-actionUndo and own implementation/host/physical UX remain open.",
         "independentFunctionalRequirement": true,
         "mappingCoverage": "related_project_criteria_only; CO requirement remains independently required",
         "originalProbe": {
@@ -2392,6 +2412,20 @@
               "Kein Save Layout, Undo/Redo oder Neustart dieser Geometrieprobe",
               "Keine Identitäts-/Bewohnerbindung aus Pixelframes bewiesen",
               "Sechs weitere Gebäudewerkzeuge neben Move, Material-/Höhen-/Skalierwirkung bleiben offen"
+            ]
+          },
+          {
+            "run": "CITY-00-I40-I",
+            "state": "draw_known_target_pose_and_draft_discard_observed_scaling_instruction_only",
+            "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i40-building-20261009/manifest.json",
+            "sourceScope": "own_temporary_settlement_original",
+            "observation": "Closed custom square drawn; known new shape picked/moved/oriented; next placement preview cancelled; entire draft discarded.CTRLwheelScale offered but no scaling input/effect. Two generated-area picks stopped without selection.",
+            "remaining": [
+              "Original scaling gesture offered but effect untested; exact angles and scale formula unmeasured",
+              "Two generated-area Move picks had no observed selection; not a proven original bug",
+              "Material/height/snapping effects and remaining tools not tested",
+              "No rawgeometry, stableIDs, residents/housebindings, Save/Reload or per-actionUndo/Redo for this sequence",
+              "Visual pose and draft discard only; no own product/host/physical usability acceptance"
             ]
           }
         ],
@@ -4150,7 +4184,7 @@
     ],
     "functionalInventoryStatus": {
       "state": "partial_inventory_not_accepted",
-      "run": "CITY-00-I38-I",
+      "run": "CITY-00-I40-I",
       "products": 3,
       "candidates": 65,
       "directFormAreas": 13,
@@ -4198,7 +4232,8 @@
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i35-size-20261009/manifest.json",
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i36-custom-size-20261009/manifest.json",
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i37-river-20261009/manifest.json",
-        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i38-coast-20261009/manifest.json"
+        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i38-coast-20261009/manifest.json",
+        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i40-building-20261009/manifest.json"
       ],
       "resultReferences": [
         {

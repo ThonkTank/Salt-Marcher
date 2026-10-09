@@ -1,7 +1,7 @@
 {
   "saltMarcherReplacement": {
     "date": "2026-10-09",
-    "state": "smr00_adr_p01_h02_no_go_reviewed_cleaned_h03_plan_next",
+    "state": "smr00_adr_p01_h03_contract_review_changes_required",
     "plan": "ROADMAP-SALTMARCHER-REPLACEMENT.md",
     "platformAdr": "ROADMAP-SALTMARCHER-PLATFORM-ADR.md",
     "prototypePlan": "ROADMAP-SALTMARCHER-ADR-PROTOTYPES.md",
@@ -99,6 +99,15 @@
       "review": "Plan review ADR-P01-H02-R01 passed exact shared commit 0dd314c1772ebd91f3375d8660f964a731bdf215. Independent code/evidence re-review passed exact head 6e282f91846313a615cdbaf692d0ed65da80e5f2 after repairing the receipt-source versus later evidence-commit provenance label. Independent cleanup review passed exact commit 8d620a064e16d977e51b97d6aec64b7f40034961; only p01-v2 and the aggregate remain.",
       "next": "Plan a narrower H03 hypothesis for the missing durable receipt/recovery state machine and complete native fault matrix while preserving the proven process boundary."
     },
+    "adrP01H03": {
+      "date": "2026-10-09",
+      "state": "contract_candidate_review_changes_required",
+      "plan": "ROADMAP-SALTMARCHER-ADR-P01-H03-PLAN.md",
+      "hypothesis": "Materialize the immutable expected Before payload supplied by the bounded compare-and-write request into a durable snapshot independent of the externally writable target inode, then verify/capture the current name and publish only with RENAME_NOREPLACE.",
+      "contractCandidate": "e95f3eba325b3aa55620d39a617074ede425405d",
+      "limits": "R02 passed planning review only. H02 remains No-Go; no executable H03 proof, Linux durability Go, platform decision or P02 authorization. Windows and macOS remain not-run.",
+      "review": "R01 passed a9de899 but later independent rechecks found three mandatory gaps (Issue #1 comments 6084665817, 6084697489). R02 repaired those and two follow-up matrix/oracle findings. Independent read-only R02 re-review passed exact shared head 25885d543c8576a3ae1d0556e7b04a51d40209c7. Contract review of exact candidate e95f3eba325b3aa55620d39a617074ede425405d requires repair: parent receipts and sorted child-set/digest binding are absent; state- and operation-specific identity/hash/name oracles are incomplete; internal names are not pairwise distinct; orphan evidence is unstructured; and the adversarial matrix tests are incomplete."
+    },
     "open": [
       "Replacement architecture hypothesis after ADR-P01 No-Go; ADR-P02 through ADR-P04 and ADR-C01 remain blocked",
       "All SMR-01 through SMR-11 implementation, review, repair and cleanup gates",
@@ -106,41 +115,41 @@
       "Per-slice source-to-target mapping and host persistence/security decisions"
     ],
     "nextRun": {
-      "id": "ADR-P01-H03-P01",
-      "kind": "architecture_hypothesis_plan",
-      "owner": "local_coordination_thread",
-      "focus": "Plan only the missing durable receipt/recovery state machine and complete Create/Update/Delete native fault matrix; reuse the proven process-boundary evidence without authorizing ADR-P02"
+      "id": "ADR-P01-H03-I01-N01",
+      "kind": "review_finding_contract_repair",
+      "owner": "local_implementation_thread",
+      "focus": "Repair only the p01-v3 parent/child contract and adversarial Golden DTO matrix; no native helper, executable proof or Go claim before an independent exact-head contract re-review passes"
     }
   },
   "saltMarcherCatalogEncounter": {
     "date": "2026-10-09",
-    "state": "ce02_plan_reviewed_i01_next_ce01_physical_open",
+    "state": "ce02_i01_reviewed_i02_plan_next_ce01_physical_open",
     "plan": "ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md",
     "architecture": "ARCHITECTURE.md#geplante-katalog--und-encounter-erweiterung",
     "acceptance": "acceptance.json.saltMarcherCatalogEncounter",
     "currentRun": {
-      "id": "CE-01-C01-R02",
-      "kind": "cleanup_repair_review",
+      "id": "CE-02-I01-N01-R01",
+      "kind": "review_finding_repair_review",
       "state": "passed",
-      "focus": "Independently verify the sole draft-pair source, shared content path, retained UX and exact-candidate automated host evidence",
-      "plan": "ROADMAP-SALTMARCHER-CE01-C01-REPAIR-PLAN.md",
-      "result": "Passed without a remaining mandatory finding after all seven text inputs were routed through the sole canonical pair source and one content input/publish path.",
+      "focus": "Verify the exact CE-02-I01 product provenance and aligned review states without changing product bytes",
+      "plan": "ROADMAP-SALTMARCHER-CE02-PLAN.md",
+      "result": "Independent review passed exact repair candidate 4d239004c4f000b2af6f66122a05135b0c353ffb. Its product diff against the shared base is empty, both metadata files are valid and aligned, and the clean exact product check, 259-test run and build remain bound to 7469e64202e730175ee138136a69d82ad4f28ea6.",
       "verification": {
-        "sourceRevision": "c1582b384acbc5025ad529c17e664bc5fb04ef8f",
+        "sourceRevision": "7469e64202e730175ee138136a69d82ad4f28ea6",
+        "metadataJson": "passed",
+        "productInputs": "unchanged from 7469e64202e730175ee138136a69d82ad4f28ea6",
+        "dirty": false,
+        "node": "v22.22.2",
         "check": "passed",
-        "tests": {"passed": 247, "failed": 0},
+        "tests": {"passed": 259, "failed": 0},
         "build": "passed",
-        "mainBytes": 1338655,
-        "mainSha256": "9ea37b4c8942ce1df4739e3f7786dde8fd62fbec227198023f85fa61275a63d3",
-        "mainJsGrowthBytes": 149285,
-        "runs": [
-          "/home/aaron/.cache/dungeon-native-qa/evidence/1791559080712-ce01-catalog-edit",
-          "/home/aaron/.cache/dungeon-native-qa/evidence/1791559092369-ce01-catalog-reopen",
-          "/home/aaron/.cache/dungeon-native-qa/evidence/1791559102197-ce01-catalog-damaged-edit"
-        ]
+        "mainBytes": 1362196,
+        "mainSha256": "0856066aa2415455dbe2d6f3745bcab07488aa5361a20218cb828617ac904052",
+        "mainJsGrowthBytes": 172826,
+        "reviewedRepairCommit": "4d239004c4f000b2af6f66122a05135b0c353ffb"
       },
-      "review": "Independent read-only re-review on c9dfde7 confirmed code, 247 tests, build identity and all three normal-exit host receipts.",
-      "limits": "The cleanup gate is closed, but CE-01 remains without full approval because physical input, screenreader and non-Linux platform acceptance remain open."
+      "review": "Independent exact-head N01 re-review passed without a remaining mandatory finding. The repair changes metadata only, preserves the product bytes from 7469e64202e730175ee138136a69d82ad4f28ea6 and records honest open acceptance limits.",
+      "limits": "No new data owner, host acceptance or CE-02 approval. Physical input, screenreader and non-Linux platform acceptance remain open."
     },
     "implementationRun": {
       "id": "CE-01-I01",
@@ -170,7 +179,7 @@
     "ce01I02": {
       "id": "CE-01-I02",
       "kind": "implementation",
-      "state": "completed_checked_review_pending",
+      "state": "completed_checked_reviewed",
       "result": "Registered dungeon-creature-catalog ItemView and Monsterkatalog command with unique-leaf focus, retained serializable session, core filters, deterministic sort, 50-row paging, mouse/keyboard selection, full read-only statblock and directly reachable license notice.",
       "verification": {
         "check": "passed",
@@ -281,17 +290,46 @@
       "review": "CE-02-P01-R01 passed independently on exact shared commit 42808d372363cb1e9c8c8fc0ac8fca315cecd02c without a mandatory finding.",
       "limits": "Reviewed plan only. No CE-02 implementation or new data-owner approval. CE-01 physical input, screenreader and non-Linux gates remain open."
     },
-    "verified": "CE-00 and CE-01 implementation/review/repair cycles passed their scoped gates. CE-01-H01 passed its independently reviewed automated scope. CE-01-C01-N01 passes 247 tests and all three automated real-host scenarios on exact clean SHA c1582b3; R02 closed the cleanup gate. Physical input, screenreader and other-platform acceptance remain open.",
+    "ce02I01": {
+      "id": "CE-02-I01",
+      "kind": "implementation",
+      "state": "completed_checked_reviewed",
+      "result": "One accessible seven-section catalog workspace now migrates the unversioned CE-01 Monster state, retains isolated typed section state, routes Monster query/detail reads through the real immutable SRD-5.1 provider with generation/abort isolation, and exposes six honest unavailable providers without invented data.",
+      "verification": {
+        "sourceRevision": "7469e64202e730175ee138136a69d82ad4f28ea6",
+        "dirty": false,
+        "node": "v22.22.2",
+        "check": "passed",
+        "tests": {"passed": 259, "failed": 0},
+        "focusedTests": {"passed": 217, "failed": 0},
+        "build": "passed",
+        "mainBytes": 1362196,
+        "mainSha256": "0856066aa2415455dbe2d6f3745bcab07488aa5361a20218cb828617ac904052",
+        "mainJsGrowthBytes": 172826
+      },
+      "hostSmoke": {
+        "sourceRevision": "c5a485324bed7512fb927e2a7cfe9436c30928a4",
+        "host": "Obsidian 1.13.7 Flatpak in isolated local test vault; two distinct normal-exit app processes; CDP visible UI",
+        "build": "clean; npm run check, 259/259 tests and npm run build passed",
+        "mainSha256": "bd13cb2ac5e823d21f81bcb2f8d32a6b6a0ebe49a7049cacb2c5035eb99370a4",
+        "edit": "/home/aaron/.cache/dungeon-native-qa/ce02-workspace-20261009/evidence/1791563339125-ce02-catalog-edit/result.json",
+        "reopen": "/home/aaron/.cache/dungeon-native-qa/ce02-workspace-20261009/evidence/1791563349041-ce02-catalog-reopen/result.json",
+        "result": "Seven visible tabs, real Monster results, six explicit unavailable sections, pending-search switch isolation, exact installed build triplet and restored section/search state passed."
+      },
+      "review": "Independent N01 re-review passed exact repair candidate 4d239004c4f000b2af6f66122a05135b0c353ffb without a remaining mandatory finding; the product remains the clean, checked commit 7469e64202e730175ee138136a69d82ad4f28ea6.",
+      "limits": "No new data owner is delivered. Items, saved Encounters, NPCs, Factions, Places and Encounter Tables remain explicitly unavailable. Local automated host smoke is scoped; physical-input, screenreader, non-Linux and full CE-02 acceptance remain open."
+    },
+    "verified": "CE-00 and CE-01 implementation/review/repair cycles passed their scoped gates. CE-01-H01 passed its independently reviewed automated scope. CE-02-I01 product commit 7469e64202e730175ee138136a69d82ad4f28ea6 and metadata repair candidate 4d239004c4f000b2af6f66122a05135b0c353ffb passed independent review. Its six unavailable providers do not count as delivered catalog areas. Physical input, screenreader and other-platform acceptance remain open.",
     "open": [
-      "CE-01 physical keyboard/mouse, screenreader and other-platform acceptance; all CE-02 through CE-07 runs",
+      "CE-01 physical keyboard/mouse, screenreader and other-platform acceptance; CE-02-I02 through CE-07 runs",
       "Pinned DMG-2014 encounter math and golden masters",
       "Physical catalog input acceptance cannot be replaced by Playwright automation"
     ],
     "nextRun": {
-      "id": "CE-02-I01",
-      "kind": "implementation",
+      "id": "CE-02-I02-P01",
+      "kind": "feature_plan",
       "plan": "ROADMAP-SALTMARCHER-CE02-PLAN.md",
-      "focus": "Implement only the reviewed seven-section shell/state/provider boundary with the existing Monster provider and six honest unavailable providers"
+      "focus": "Plan the first real non-Monster owner with item provenance, schema, unavailable/error boundaries and isolated section state; keep the other five owners unavailable and all CE-01 physical/screenreader/platform gates open"
     }
   },
   "repositoryWorkflow": {
@@ -1844,10 +1882,12 @@
     },
     "dd036AtlasPlan": {
       "date": "2026-10-09",
-      "state": "scope_plan_written_original_effect_and_host_review_open",
+      "state": "independent_plan_review_failed_repair_required",
       "plan": "ROADMAP-PARITY-TOOLS-PHASE1-DD036-ATLAS-PLAN.md",
       "cases": "DD-036.01–.16",
-      "next": "Atlas-Speichern, Undo/Redo, Dirty-Warnung und frische Öffnung auf isolierter Kopie prüfen; Recent/Save As erst nach Atlasidentitäts- und Plattformentscheidung fachlich zuordnen."
+      "reviewedBase": "6ee65dae1eb462f269d253263d5f861fe28a8ef0",
+      "reviewFinding": "Pflichtlücken: aktueller Atlas besitzt noch keine ausführbare History-/Save-/Dirty-Grenze; Dungeondraft- und Wonderdraft-Belege müssen getrennt bleiben; Weltkennung/Kopierdateien brauchen ein exaktes Orakel; HEX-01-Compare/Write ist kein Journal-/Draft-/Recovery-Nachweis.",
+      "next": "DD-036-ATLAS-P01-R01: nur den Plan reparieren, Fälle nach ausführbarer HEX-02-Voraussetzung und realer Shell staffeln, Referenzquellen je Hostschritt trennen sowie Identitäts- und gemeinsamen FileTransaction-/Draft-Vertrag als prüfbare Orakel festlegen; danach unabhängiger Planreview."
     },
     "dd006ShadowPlan": {
       "date": "2026-10-09",
@@ -2435,7 +2475,7 @@
     "plan": "ROADMAP-PARITY-PLAN.md",
     "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
     "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
-    "nextRun": "ROADMAP-PARITY-TOOLS.md Phase 1: DD-038.01–.09 sind für den grenzenlosen Atlas ausgeschlossen; DD-039.01–.06 bestehen im separaten 8×8-Hostreview ohne Resize. DD-008.01–.05 sind im gemessenen Wahl-/Zwei-Geschoss-/Save-Scope reviewt; DD-006.03/.04 im per-Element-Render-/UI-/Save-Scope. DD-001/002/003 sowie die gebundenen Startschalter DD-006.01/.02 und DD-007.01/.02 sind keine direkten Vorbilder mehr. Als nächstes übertragbare Ansichts-/Dateifunktionen und globale Atlasoptionen nach Nutzerzweck prüfen; Phase-1-Gesamttor offen. Building-Boden-Werkzeuge und Atlaswachstum bleiben separat offen; P7-2 bleibt auf Nutzerwunsch physisch ungeprüft.",
+    "nextRun": "DD-036-ATLAS-P01-R01: den Dateiflussplan nach dem unabhängigen Review reparieren; read-only Öffnen von HEX-01, erst später ausführbare HEX-02-History-/Save-/Dirty-Folgen, getrennte Dungeondraft-/Wonderdraft-Referenzwahrheit, Weltkennungs-/Kopierorakel und gemeinsamen FileTransaction-/Draft-/Recovery-Weg präzise staffeln. Danach eigener Planreview; keine Host- oder Paritätsfreigabe. Globale Atlasoptionen und übrige Phase-1-Fälle bleiben offen.",
     "note": "P7-1, P7-3 und P7-4 sind in getrennten Edit-/Neuöffnungspaaren reviewt. P7-2 ist auf ausdrückliche Nutzeranweisung übersprungen, nicht physisch geprüft. Phase-7-Fachphasentor mit dieser Ausnahme bestanden; Produktbuild unverändert. Hex-Atlas- und Stadtstand erhalten.",
     "phase2Plan": "ROADMAP-PARITY-PHASE2-PLAN.md",
     "candidateBuildSha256": "b321128188b944c3324594663a410acfd84863f17860f637b9ed2e6ecc33b466",
@@ -4130,17 +4170,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I40-P",
-      "kind": "reference_planning",
-      "startedAt": "2026-10-09T16:08:13.049726+00:00",
-      "focus": "Frühe Hausgeometrie im Original als verwerfbaren Entwurf prüfen",
+      "id": "CITY-01-PREP-P01",
+      "kind": "implementation_planning",
+      "startedAt": "2026-10-09T16:25:35.193204+00:00",
+      "focus": "Unabhängigen Stadtmodell-/Codec-Anteil konkret planen",
       "state": "completed",
-      "result": "Eigenes CITY00 Hamlet QA im vorhandenen FTG-Tab: Ausgangsbild und sichtbaren Stand sichern, Manual edit/Buildings frisch lesen. Frühe Skalier-/Drehwirkung soweit tatsächlich angeboten an einem sichtbaren Haus als ungespeicherten Entwurf prüfen; geänderte Werte/Vorschau/Abschluss getrennt sichern. Keine Löschung, neue Siedlung oder erneute gestoppte Download-/Bewohnerhypothese. Cancel Edit/Yes verwirft Entwurf, sichtbares Haus sowie250m/Districts/11Monday prüfen. Stabile IDs, Save/Reload und Einzel-Undo aus Bildern nicht behaupten; maximal2 erfolglose Versuche je Hypothese. Nachher Originaltabs erhalten, P/I/R und Aufräum-P/I/R getrennt."
+      "result": "Hex-Besitzer bestätigt reine CITY-Modell-/Codec-Vorbereitung ohne gemeinsame Schnittstellenänderung. Natives Meterformat, stabileIDs/Graphreferenzen, Hauspose/Polygone/Grundstücke/Viertel und strikte verlustfreie Prüfung konkret geplant. Formaler CITY01-Hostanschluss bleibt nach HEX05; I41-Skalierwirkung wegen fehlendem dokumentierten Modifier-Scrollweg zurückgestellt, weiterhin offen."
     },
     "nextRun": {
-      "id": "CITY-00-I40-I",
-      "kind": "reference_implementation",
-      "focus": "FTG-Gebäudewerkzeuge lesen und Skalier-/Drehfolge direkt beobachten"
+      "id": "CITY-01-PREP-I01",
+      "kind": "model_implementation",
+      "focus": "Native Meterdaten und strikten Stadtcodec implementieren, drei Basisprüfungen durchführen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
