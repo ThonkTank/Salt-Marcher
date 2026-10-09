@@ -3854,17 +3854,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I20-R",
-      "kind": "reference_review",
-      "startedAt": "2026-10-09T13:56:32.072510+00:00",
-      "focus": "History-/Auto-Save-Beleggrenze reviewen",
-      "state": "completed",
-      "result": "I20-R01: Pre-Save darf nur vor manuellem Save bedeuten. Auto-Save/Operationseignung bleiben ungeklärt; Enddatei und geschützte Vorlage geprüft."
-    },
-    "nextRun": {
       "id": "CITY-00-I20-CP",
       "kind": "cleanup_planning",
-      "focus": "Manuelle Save-Grenze und Wiederholstopp planen"
+      "startedAt": "2026-10-09T13:56:48.774632+00:00",
+      "focus": "Save-Grenze und Stoppbedingungen planen",
+      "state": "completed",
+      "result": "Belegumfang vor manuellem Save präzisieren und beide gestoppten Hypothesen erhalten; eigene vollständige Undo/Redo-Pflicht unverändert."
+    },
+    "nextRun": {
+      "id": "CITY-00-I20-CI",
+      "kind": "cleanup_implementation",
+      "focus": "Scope/Captions bei Rohschutz ergänzen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
