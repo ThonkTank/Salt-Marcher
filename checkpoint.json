@@ -9,13 +9,14 @@
     "acceptance": "acceptance.json.saltMarcherReplacement",
     "objective": "This repository delivers the sole successor product for all implemented and planned SaltMarcher capabilities. UX and functional requirements are binding; the final host may be an Obsidian plugin, desktop application or evidence-backed hybrid.",
     "smr03LiveScene": {
-      "state": "plan_candidate_review_pending",
+      "state": "peer_changes_required_repair_pending_rereview",
       "plan": "ROADMAP-SALTMARCHER-SMR-03-LIVE-SCENE-CONTRACT.md",
       "candidateBranch": "codex/smr-03-live-scene-contract-p01",
       "baseline": "7d35591be570d1c188998103b55e8e86e437f73d",
-      "planCandidateCommit": "6b04dadf5aedefe15a7d4030e98911029db6b7fd",
-      "reviewedCandidate": null,
-      "review": "Initial host-neutral Party/LiveScene/LiveSession contract candidate. Campaign/Data and Music/Weather/Shops advisories are incorporated; rotating peer and independent architecture reviews remain required.",
+      "integratedShared": "f0a8cdaa79d842ec826d5795676517dfd156a139",
+      "planCandidateCommit": "77c8ece7ee803123524d64295d6a8c748a1845c0",
+      "reviewedCandidate": "6b04dadf5aedefe15a7d4030e98911029db6b7fd",
+      "review": "Campaign/Data peer R01 in Issue comment 6087727266 required atomic initialization with an existing active Party and exact Complete-vs-disclosed-Salvage behavior. Both are repaired in the new plan candidate; focused peer re-review and independent architecture review remain required.",
       "limits": "Plan only. No product code, API, host, persistence, migration, implementation or acceptance approval. Campaign/Data, Party, mask owners, Scene/Time/Travel, Music/Weather/Shops, Passive Display and Host/Security ratifications remain required."
     },
     "source": {
