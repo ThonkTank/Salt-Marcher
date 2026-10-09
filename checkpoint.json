@@ -134,12 +134,12 @@
     "architecture": "ARCHITECTURE.md#geplante-katalog--und-encounter-erweiterung",
     "acceptance": "acceptance.json.saltMarcherCatalogEncounter",
     "currentRun": {
-      "id": "CE-02-I02-S01-W01",
+      "id": "CE-02-I02-S01-W02",
       "kind": "source_inventory_schema_transcript_intermediate",
       "state": "in_progress_verified_incomplete",
-      "focus": "Establish pinned source identity, canonical attribution, schema draft and fail-closed verification without exposing incomplete Item data",
+      "focus": "Inventory and transcribe the bounded Armor table section with standards-based schema and real PDF evidence while preserving the incomplete gate",
       "plan": "ROADMAP-SALTMARCHER-CE02-I02-PLAN.md",
-      "result": "Pinned the official 403-page SRD 5.1 PDF and SaltMarcher's exact 5e-database extraction-helper revision, added the exact canonical attribution, a versioned transcript schema draft, explicitly empty incomplete inventory/transcript fixtures, and a verifier that rejects the package for product use unless completeness is true. This is an honest intermediate only: 0 inventory occurrences and 0 transcript records; S01 review and I01 remain blocked."
+      "result": "Captured all 13 Armor table occurrences in physical PDF order and 13 structured Armor transcript records. Draft-2020-12 validation now covers transcript and inventory, the 22-value equipment taxonomy is closed, artifact hashes are manifest-bound, and the real pinned PDF verifies all 13 row labels plus 49 structured table facts. The package remains incomplete: Armor narrative text and bounded cells, 206 other equipment primary occurrences, auxiliary/expansion dispositions and all magic items remain open; S01 review and I01 stay blocked."
     },
     "implementationRun": {
       "id": "CE-01-I01",
@@ -344,10 +344,10 @@
       "Physical catalog input acceptance cannot be replaced by Playwright automation"
     ],
     "nextRun": {
-      "id": "CE-02-I02-S01-W02",
+      "id": "CE-02-I02-S01-W03",
       "kind": "source_inventory_schema_transcript_continuation",
       "plan": "ROADMAP-SALTMARCHER-CE02-I02-PLAN.md",
-      "focus": "Populate and fully reconcile all official equipment rows and magic-item headings/details, close the inventory-derived enums and merge ledger, implement full PDF-to-transcript matching and remaining goldens; independent S01-R01 PASS remains required before I01"
+      "focus": "Capture and transcribe the 37-row Weapons table in physical PDF order, add bounded PDF-backed weapon goldens, and continue the explicit equipment disposition/expansion ledger; keep complete false and I01 blocked"
     }
   },
   "repositoryWorkflow": {

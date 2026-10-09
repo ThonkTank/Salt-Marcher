@@ -1,19 +1,29 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import test from "node:test";
 import {
   normalizePdfText,
+  validateJsonSchemas,
   validateTranscriptData,
   verifyItemsSourcePackage,
 } from "../tools/items-srd51-source-verify.mjs";
 
+const dataRoot = new URL("../src/features/catalog/data/", import.meta.url);
+
 const occurrence = Object.freeze({
   id: "srd51:magic-item:magic-items-a-z:2",
+  feed: "magic-item",
+  sectionId: "magic-items-a-z",
+  sourceKind: "detail-heading",
+  sourceTable: "Magic Items A–Z",
   sourceLabel: "Ammunition, +1, +2, or +3",
   firstPdfPage: 207,
   lastPdfPage: 207,
   firstPrintedPage: 207,
   lastPrintedPage: 207,
   ordinal: 2,
+  variantId: null,
+  mergeIntoId: null,
 });
 
 function transcript(rarity) {
@@ -30,8 +40,21 @@ function transcript(rarity) {
       attunement: "not-required",
       properties: [],
       description: [{ text: "Beleg", occurrenceId: occurrence.id }],
-      source: { occurrenceIds: [occurrence.id] },
+      source: { pdfPages: [207], printedPages: [207], occurrenceIds: [occurrence.id] },
     }],
+  };
+}
+
+function inventory(...occurrences) {
+  return {
+    inventoryVersion: 1,
+    complete: true,
+    expectedPrimaryOccurrences: occurrences.length,
+    capturedPrimaryOccurrences: occurrences.length,
+    sections: [{ id: "magic-items-a-z", feed: "magic-item", sourceKind: "detail-heading",
+      firstPdfPage: 207, lastPdfPage: 207, firstPrintedPage: 207, lastPrintedPage: 207,
+      expectedOccurrences: occurrences.length, capturedOccurrences: occurrences.length, complete: true }],
+    occurrences,
   };
 }
 
@@ -39,13 +62,15 @@ test("items source package is explicitly incomplete and fails closed by default"
   await assert.rejects(verifyItemsSourcePackage(), /S01 ist unvollständig/);
   const result = await verifyItemsSourcePackage({ allowIncomplete: true });
   assert.equal(result.complete, false);
-  assert.equal(result.validation.occurrenceCount, 0);
+  assert.equal(result.validation.occurrenceCount, 13);
+  assert.equal(result.validation.recordCount, 13);
   assert.ok(result.blockers.length >= 5);
 });
 
-test("normalization covers PDF ligatures, soft hyphens, spacing and typographic punctuation", () => {
-  assert.equal(normalizePdfText("  Wondrous\u00a0item, very\u00ad rare — hero’s  "),
-    "Wondrous item, very rare - hero's");
+test("normalization expands ligatures and proven wrap artifacts while preserving punctuation", () => {
+  assert.equal(normalizePdfText("  Wondrous\u00a0item, inter\u00ad\nnational — hero’s \uFB01ne  "),
+    "Wondrous item, international — hero’s fine");
+  assert.equal(normalizePdfText("co\u00adoperate – −"), "co\u00adoperate – −");
 });
 
 test("variable rarity golden preserves ordered, sourced +1/+2/+3 choices", () => {
@@ -59,14 +84,13 @@ test("variable rarity golden preserves ordered, sourced +1/+2/+3 choices", () =>
       occurrenceId: occurrence.id,
     })),
   };
-  const result = validateTranscriptData(transcript(rarity), { inventoryVersion: 1, complete: true,
-    occurrences: [occurrence] });
+  const result = validateTranscriptData(transcript(rarity), inventory(occurrence));
   assert.equal(result.recordCount, 1);
 });
 
 test("rarity varies golden may preserve source text without inventing a choice", () => {
   const result = validateTranscriptData(transcript({ kind: "varies", sourceText: "rarity varies", choices: [] }),
-    { inventoryVersion: 1, complete: true, occurrences: [occurrence] });
+    inventory(occurrence));
   assert.equal(result.complete, true);
 });
 
@@ -75,9 +99,32 @@ test("variant identities and occurrence references fail closed", () => {
     variantId: `${occurrence.id}#variant:9`, label: "Wrong", value: "rare", occurrenceId: occurrence.id,
   }] };
   assert.throws(() => validateTranscriptData(transcript(rarity),
-    { inventoryVersion: 1, complete: true, occurrences: [occurrence] }), /ordinale Variant-ID/);
+    inventory(occurrence)), /ordinale Variant-ID/);
   const bad = transcript({ kind: "fixed", value: "rare" });
   bad.records[0].source.occurrenceIds = ["srd51:magic-item:missing:1"];
   assert.throws(() => validateTranscriptData(bad,
-    { inventoryVersion: 1, complete: true, occurrences: [occurrence] }), /unbekannte Occurrence/);
+    inventory(occurrence)), /unbekannte Occurrence/);
+});
+
+test("Draft 2020-12 schemas validate the checked-in armor inventory and transcript", async () => {
+  const [schema, checkedInventory, checkedTranscript] = await Promise.all([
+    readFile(new URL("items-srd51-schema-v1.json", dataRoot), "utf8").then(JSON.parse),
+    readFile(new URL("items-srd51-inventory.json", dataRoot), "utf8").then(JSON.parse),
+    readFile(new URL("items-srd51-transcript.json", dataRoot), "utf8").then(JSON.parse),
+  ]);
+  assert.doesNotThrow(() => validateJsonSchemas(schema, checkedTranscript, checkedInventory));
+  const damaged = structuredClone(checkedTranscript);
+  damaged.records[0].subcategory = "invented-category";
+  assert.throws(() => validateJsonSchemas(schema, damaged, checkedInventory), /Transkript verletzt JSON Schema/);
+});
+
+test("armor source goldens preserve cost, missing values and literal AC semantics", async () => {
+  const checkedTranscript = JSON.parse(await readFile(new URL("items-srd51-transcript.json", dataRoot), "utf8"));
+  const byName = new Map(checkedTranscript.records.map(record => [record.name, record]));
+  assert.deepEqual(byName.get("Padded Armor").cost, { sourceText: "5 gp", copperPieces: 500 });
+  assert.equal(byName.get("Padded Armor").armor.stealthRuleText, "Disadvantage");
+  assert.equal(byName.get("Hide Armor").armor.armorClassText, "12 + Dex modifier (max 2)");
+  assert.equal(byName.get("Chain Mail").armor.strengthRequirementText, "Str 13");
+  assert.equal(byName.get("Shield").armor.armorClassText, "+2");
+  assert.equal("strengthRequirementText" in byName.get("Padded Armor").armor, false);
 });
