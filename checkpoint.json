@@ -3427,17 +3427,18 @@
     "state": "city00_reference_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I04-P",
-      "kind": "reference_planning",
-      "startedAt": "2026-10-09T12:33:25.808263+02:00",
-      "focus": "Vorhandene Canvas-of-Kings-Demo und koordinierten Original-QA-Zugang planen",
-      "state": "completed_access_coordination_pending",
-      "result": "Steam-Demo3122210 installiert; Rollen Hex/Stadt bestätigt; direkter Native-QA-Zugang angefragt, kein paralleler Host gestartet"
-    },
-    "nextRun": {
       "id": "CITY-00-I04-I",
       "kind": "reference_implementation",
-      "focus": "Canvas-of-Kings-Ergebnisbilder/Funktionen über bestätigten Originalzugang prüfen; FTG/Watabou-Restproben weiterführen"
+      "startedAt": "2026-10-09T10:40:38.524671+00:00",
+      "timeScope": "recording start; preceding browser interaction times retained in evidence artifacts",
+      "focus": "FTG-Gebäudeänderung speichern und nach Neuladen prüfen",
+      "state": "completed_partial_reference_probe",
+      "result": "Umbenennung und sieben Bewohner nach Reload bestätigt; JSON-Dateiausgabe unbestätigt; COK-Testzugang offen"
+    },
+    "nextRun": {
+      "id": "CITY-00-I04-R",
+      "kind": "reference_review",
+      "focus": "Belegumfang, Exportzuordnung und Pflichtlücken gegen Plan prüfen"
     },
     "open": [
       "CITY-00 direkte Referenzinventur/Galerie aller drei Produkte",
