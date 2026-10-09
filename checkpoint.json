@@ -3612,23 +3612,23 @@
   "cityExecution": {
     "scope": "CITY-00 bis CITY-09; vollständige Funktionsgleichwertigkeit mit drei Vergleichsprogrammen und bessere Bedienung",
     "phase": "CITY-00",
-    "state": "city00_reference_inventory_partial",
+    "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I09-CP",
-      "kind": "cleanup_planning",
-      "startedAt": "2026-10-09T12:07:42.642932+00:00",
-      "focus": "R01–R03 Bereinigung planen",
-      "state": "completed",
-      "result": "Gate-, Quellen- und Dateinamenkorrekturen getrennt geplant; Rohbildbytes und alle offenen Pflichten erhalten"
-    },
-    "nextRun": {
       "id": "CITY-00-I09-CI",
       "kind": "cleanup_implementation",
-      "focus": "Galeriemetadaten und Status bereinigen"
+      "startedAt": "2026-10-09T12:08:19.364542+00:00",
+      "focus": "Galeriebefunde R01–R03 bereinigen",
+      "state": "completed",
+      "result": "Galerietor als reiner Ergebnisabschluss geschlossen; aktuelle Texte korrigiert, Bridge-Dateiname präzisiert; voller Funktionsauftrag und HEX-05 offen"
+    },
+    "nextRun": {
+      "id": "CITY-00-I09-CR",
+      "kind": "cleanup_review",
+      "focus": "Metadaten, Rohhashes und Grenzen erneut prüfen"
     },
     "open": [
-      "CITY-00 direkte Referenzinventur/Galerie aller drei Produkte",
+      "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
       "HEX-05 gemeinsame Atlasbasis vor CITY-01",
       "CITY-01 bis CITY-09 Produkt-, Host-, Ergebnis- und physische Bedienabnahmen"
     ],

@@ -48,7 +48,7 @@ Ergebniskriterien: Detaillierte Dächer, Vegetation und Ausstattungsobjekte; Gla
 
 Offizielle veröffentlichte Steam-Galerie; Bridge to Eden; sichtbarer Zoom200%. Keine eigene Vollversionsprobe.
 
-[Bild](/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i09-gallery-20261009/cok-official-town-detail.jpg) · [Quelle](https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/2498570/ss_14ee7265344dc02aaa4f03d17ce5c3e71bd333a1.1920x1080.jpg?t=1774602500)
+[Bild](/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i09-gallery-20261009/cok-official-bridge-detail.jpg) · [Quelle](https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/2498570/ss_14ee7265344dc02aaa4f03d17ce5c3e71bd333a1.1920x1080.jpg?t=1774602500)
 
 Prüfausschnitt (links, oben, rechts, unten): [270, 40, 1660, 1030]. Unbeschnittene Bilder bleiben erhalten.
 

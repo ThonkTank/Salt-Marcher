@@ -109,7 +109,7 @@
   },
   "cityPlans": {
     "schemaVersion": 1,
-    "updated": "2026-10-09T12:06:58.566027+00:00",
+    "updated": "2026-10-09T12:08:19.364542+00:00",
     "plan": "ROADMAP-CITIES.md",
     "state": "planned_not_implemented",
     "comparisonMode": "functional_equivalence_and_independent_usability_tests",
@@ -127,7 +127,12 @@
         "role": "visual_and_spatial_result_reference",
         "observed": "Offizielle Produktbeschreibung: handgezeichnete Objekte, pfad-/flächenbezogene Platzierung, Mauern/Türme, Vegetation, Gestaltung und Bildausgabe.",
         "version": null,
-        "directResultEvidence": []
+        "directResultEvidence": [],
+        "publishedGalleryEvidence": [
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i09-gallery-20261009/manifest.json",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i09-gallery-20261009/cok-official-harbor.jpg",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i09-gallery-20261009/cok-official-bridge-detail.jpg"
+        ]
       },
       {
         "product": "Medieval Fantasy City Generator",
@@ -188,23 +193,25 @@
         "product": "Canvas of Kings Demo",
         "url": "/home/aaron/.var/app/com.valvesoftware.Steam/.local/share/Steam/steamapps/appmanifest_3122210.acf",
         "role": "actual_demo_original_runtime",
-        "observed": "Pfad und Plot mit automatischer Belegung; Kontrollpunkte direkt verändert. Demo-/Grafikgrenzen und fehlende Dateiausgabe explizit.",
+        "observed": "Pfad/Plot mit automatischer Belegung und Kontrollpunktänderung direkt geprüft. I07: echte Save-Datei und unveränderte Neuöffnung in frischem Prozess belegt. Demo-/Grafikgrenzen weiterhin offen.",
         "version": "Demo 0.4.06; Steam build16643264",
         "directResultEvidence": [
-          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i06-20261009-01/reference-manifest.json"
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i06-20261009-01/reference-manifest.json",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i07-20261009-01/reference-manifest.json"
         ]
       }
     ],
-    "referenceStatus": "fixed_result_gallery_recorded_review_pending_full_function_inventory_open",
+    "referenceStatus": "fixed_result_gallery_complete_full_function_inventory_and_product_parity_open",
     "referenceGate": {
       "phase": "CITY-00",
-      "state": "gallery_recorded_review_pending",
+      "state": "closed_result_gallery_only",
       "blocks": "CITY-01",
-      "rule": "Vor Stadtproduktcode eine kleine feste Galerie für Stadtübersicht und ausgearbeitete Draufsicht mit Version/Datum, Umfang und Ergebnismerkmalen belegen. Keine Werkzeug-/Gestenparität inventarisieren.",
+      "rule": "Vor Stadtproduktcode kleine feste Galerie für Dorf, ummauerte Stadt, Hafen und ausgearbeitete Draufsicht mit Datum bzw Version, Umfang und Ergebnismerkmalen belegen. Funktionen aller drei Produkte inventarisieren und vollständig umsetzen; Originalgesten sind keine Pflicht. Galerieabschluss ersetzt keine Funktions-, Host-, Grafik- oder Bedienabnahme.",
       "evidence": [
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i09-gallery-20261009/manifest.json",
         "ROADMAP-CITIES-REFERENCE-GALLERY.md"
-      ]
+      ],
+      "closedAt": "2026-10-09T12:08:19.364542+00:00"
     },
     "architecture": "ARCHITECTURE.md#stadtpläne-und-durchgehende-atlas-bearbeitung",
     "documents": {
@@ -3308,13 +3315,13 @@
     ],
     "functionalInventoryStatus": {
       "state": "partial_inventory_not_accepted",
-      "run": "CITY-00-I07-I",
+      "run": "CITY-00-I09-CI",
       "products": 3,
       "candidates": 63,
       "directFormAreas": 13,
       "open": [
         "Detailfähigkeiten aller Produkte vervollständigen",
-        "Versionsstand und direkte Ergebnisgalerie",
+        "Aktuelle Laufversionen soweit zugänglich; vollständige Originalwirkungen vor dem jeweiligen Produktpaket",
         "Originalwirkungsproben statt allein sichtbarer Formularbereiche",
         "Premium-/Integrationsumfang",
         "Anforderungsreview und getrennte Aufräumläufe"
@@ -3350,6 +3357,11 @@
           "product": "Fantasy Town Generator",
           "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/manifest.json",
           "scope": "same250m hamlet: weather,season,night cycle; no complete city gallery"
+        },
+        {
+          "product": "Alle drei Vergleichsprogramme",
+          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i09-gallery-20261009/manifest.json",
+          "scope": "Feste Ergebnisgalerie mit vier Formen vollständig; COK veröffentlichte Bilder, eigene Vollversionsprobe und Parität offen"
         }
       ]
     },
