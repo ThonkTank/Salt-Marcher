@@ -5,6 +5,7 @@ const parity = acceptance.strictParity;
 if (!parity || !Array.isArray(parity.cases))
   throw new Error("Verbindliche Unterfälle fehlen.");
 const ids = new Set();
+const atlasExclusions = new Set(parity.scopeDecision20261009SingleAtlas?.cases ?? []);
 let required = 0;
 let excluded = 0;
 let editorAdditions = 0;
@@ -15,7 +16,8 @@ for (const item of parity.cases) {
     throw new Error(`Originalbeleg oder Ziel fehlt: ${item.id}`);
   if (item.scope === "excluded") {
     excluded++;
-    if (item.parent !== "DD-037")
+    if (item.parent !== "DD-037" && item.parent !== "DD-038" &&
+        !atlasExclusions.has(item.id))
       throw new Error(`Nicht beschlossene Ausnahme: ${item.id}`);
   } else if (item.scope === "editor_addition") {
     editorAdditions++;
@@ -43,6 +45,9 @@ if (corrections.length !== editorAdditions ||
       !entry.evidence ||
       parity.cases.find((item) => item.id === entry.caseId)?.scope !== "editor_addition"))
   throw new Error("Inventurkorrektur ohne Fall oder Beleg.");
-if (required !== 711 + (ids.size - 723) - editorAdditions || excluded !== 12)
+if ([...atlasExclusions].some((id) =>
+      parity.cases.find((item) => item.id === id)?.scope !== "excluded") ||
+    required !== ids.size - excluded - editorAdditions ||
+    excluded !== 12 + 9 + atlasExclusions.size)
   throw new Error(`Umfang verändert: ${required} Pflicht, ${excluded} Ausnahme, ${editorAdditions} Inventurfehler.`);
 console.log(JSON.stringify({ cases: ids.size, required, excluded, editorAdditions }));
