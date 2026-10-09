@@ -1612,6 +1612,7 @@ export class DungeonEditor {
       this.host.notice("Zuerst eine Zeichenvorlage wählen.");
       return;
     }
+    if (!this.allowKeyNavigation()) return;
     this.commitNote();
     const copies = placePrefab(prefab, at, this.renderer.floorId);
     this.session.execute({
@@ -1723,6 +1724,7 @@ export class DungeonEditor {
       this.host.notice("Die Karten-Zwischenablage ist leer.");
       return;
     }
+    if (!this.allowKeyNavigation()) return;
     this.commitNote();
     const viewportCenter = this.renderer.toWorld({
         x: this.renderer.host.clientWidth / 2,
@@ -1751,6 +1753,7 @@ export class DungeonEditor {
     void this.refreshSelectedNote();
   }
   private archiveSelection(): void {
+    if (!this.allowKeyNavigation()) return;
     this.commitNote();
     const bundle = archiveEntities(this.session, [...this.selection]);
     this.selection.clear();
@@ -1861,6 +1864,7 @@ export class DungeonEditor {
     }
   }
   private stepHistory(direction: "undo" | "redo"): void {
+    if (!this.allowKeyNavigation()) return;
     this.commitNote();
     this.cancel();
     if (direction === "undo" ? !this.session.canUndo : !this.session.canRedo)

@@ -243,6 +243,8 @@ test("dirty editor guard stops search, floor, selection and canvas before view m
     floor: { value: "angefordert" }, renderer: { floorId: "vorher" },
     applyFloor: () => { calls++; }, applySelection: () => { calls++; },
     gesture: undefined, tool: "select", commitNote: () => { calls++; },
+    clipboard: { entities: [{ id: "clip" }] },
+    host: { notice: () => { calls++; } },
   };
   methods.switchFloor!.call(fake, floor.id);
   await methods.selectMany!.call(fake, [room.id], false, room.id);
@@ -250,6 +252,8 @@ test("dirty editor guard stops search, floor, selection and canvas before view m
   await methods.copyCurrentFloor!.call(fake);
   methods.archiveCurrentFloor!.call(fake);
   methods.setTool!.call(fake, "room");
+  methods.pasteSelection!.call(fake);
+  methods.archiveSelection!.call(fake);
   assert.equal(fake.floor.value, "vorher");
   assert.equal(calls, 0);
   assert.deepEqual(view, beforeView);
