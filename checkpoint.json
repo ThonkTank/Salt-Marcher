@@ -4078,17 +4078,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I36-CI",
-      "kind": "cleanup_implementation",
-      "startedAt": "2026-10-09T15:46:21.202296+00:00",
-      "focus": "Customgrößenbelege CI",
-      "state": "completed",
-      "result": "Snapshot enthält Eingabesemantik Enter/neuer Seed sowie gehaltene Größe per From URL. Parametergrenzen, Einheiten, weitere Features und eigene Abnahme weiterhin offen. Historische Belege erhalten."
-    },
-    "nextRun": {
       "id": "CITY-00-I36-CR",
       "kind": "cleanup_review",
-      "focus": "Customgrößenbelege und Snapshot CR"
+      "startedAt": "2026-10-09T15:46:35.647289+00:00",
+      "focus": "Customgrößenbelege CR",
+      "state": "completed",
+      "result": "Snapshot/acceptance/Plan stimmen; vier tatsächliche Kopien und sämtliche Rawhashes/Inventarbelegziele gültig,65 CO-/24 CTY-Pflichten offen. Eigene Kopie geschlossen und Kontrollausgabe bytegleich restauriert. Aufräumumfang ohne Restbefund. Nächste frühe Originalprobe prüft Gewässerfeature aus kontrollierten Vorgaben; nach geprüftem HEX-05-Vertrag unmittelbar CITY-01."
+    },
+    "nextRun": {
+      "id": "CITY-00-I37-P",
+      "kind": "reference_planning",
+      "focus": "Gewässerfeature aus kontrollierten Vorgaben planen; HEX-05 prüfen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",

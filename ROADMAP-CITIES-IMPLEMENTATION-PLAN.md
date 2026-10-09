@@ -586,3 +586,5 @@ CITY-00-I36-R Start 2026-10-09T15:45:57.635904+00:00; Vier echte Downloadkopien,
 CITY-00-I36-CP Start 2026-10-09T15:46:09.219407+00:00; Plan: CO-WAT-0001-Snapshot um direkten Customgrößen-/Seedumfang ergänzen, Einheiten/Bereiche weiter offen. Ursprüngliche Small- und Rebuild-Belege nicht umdeuten; Versuchsnamen nicht als erfolgreichen Size19-Apply behaupten. Hashes/Downloadkopien/Verweise und65/24 offene Pflichten prüfen. CI/CR getrennt.
 
 CITY-00-I36-CI Start 2026-10-09T15:46:21.202296+00:00; Snapshot enthält Eingabesemantik Enter/neuer Seed sowie gehaltene Größe per From URL. Parametergrenzen, Einheiten, weitere Features und eigene Abnahme weiterhin offen. Historische Belege erhalten.
+
+CITY-00-I36-CR Start 2026-10-09T15:46:35.647289+00:00; Snapshot/acceptance/Plan stimmen; vier tatsächliche Kopien und sämtliche Rawhashes/Inventarbelegziele gültig,65 CO-/24 CTY-Pflichten offen. Eigene Kopie geschlossen und Kontrollausgabe bytegleich restauriert. Aufräumumfang ohne Restbefund. Nächste frühe Originalprobe prüft Gewässerfeature aus kontrollierten Vorgaben; nach geprüftem HEX-05-Vertrag unmittelbar CITY-01.
