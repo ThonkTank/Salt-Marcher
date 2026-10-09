@@ -3366,17 +3366,20 @@
     "state": "city00_reference_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I02-CI",
-      "kind": "cleanup_implementation",
-      "startedAt": "2026-10-09T12:23:23.871274+02:00",
-      "focus": "Explizite semantische CO-/CTY-Zuordnung statt pauschaler Phase; Exportbeleggrenze",
-      "state": "completed_pending_review",
-      "result": "Alle 38 CO-Fähigkeiten eigenständig verpflichtend; nur passende CTY-Verweise; fehlende Downloaddatei explizit"
-    },
-    "nextRun": {
       "id": "CITY-00-I02-CR",
       "kind": "cleanup_review",
-      "focus": "Erhaltung der 38 Anforderungen, CTY-Kriterien und Originalbelege; korrekte Beleggrenzen"
+      "startedAt": "2026-10-09T12:23:52.867008+02:00",
+      "focus": "38 Anforderungen und Belege nach Katalogbereinigung",
+      "state": "completed_passed",
+      "result": "38 Pflichtfähigkeiten, CTY-Bestand und Belege erhalten; Katalogbereinigung bestanden",
+      "evidence": [
+        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/cleanup-review.json"
+      ]
+    },
+    "nextRun": {
+      "id": "CITY-00-I02-NR",
+      "kind": "reference_re_review",
+      "focus": "R01/R02 nach Bereinigung erneut fachlich bewerten"
     },
     "open": [
       "CITY-00 direkte Referenzinventur/Galerie aller drei Produkte",
