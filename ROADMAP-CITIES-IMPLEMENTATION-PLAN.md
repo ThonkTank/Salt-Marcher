@@ -819,3 +819,6 @@ Stadt-Team-Check-in 2026-10-09T18:12:38.814082+00:00: an sicherer N06-Grenze auf
 
 
 CITY-01-PREP-R09 Start 2026-10-09T18:14:21.267514+00:00; Quellenhashes unverändert zum grünen N06. Ursprüngliche8Achs-No-ops repariert; unabhängige Gegenprobe findet CITY-GESTURE-R09-01:unrotierte X-Kleinständerung wird bei großem ungewähltem Y wegen ungewichteter Precision verworfen. Keine neue Schnittstelle; bestehendes Paket braucht N07 mit Koeffizientengewichtung. Teamabgleich weiter ohne bestätigte neue API-Freigabe. Beleg:/home/aaron/.cache/dungeon-native-qa/city-plans/city01-tools-20261009/refinement-review.json.
+
+
+CITY-01-PREP-N06-REVIEW-CLEAN-P06 Start 2026-10-09T18:15:49.061830+00:00; Rotationsgewichtung der X-/Y-Fehleranteile und Regressionen festgelegt; vorhandenes Paket wird sicher abgeschlossen. Fokus:Bestehenden Precisionbefund ohne neue API bereinigen. Keine neue gemeinsame API, bestehendes Reparaturpaket.
