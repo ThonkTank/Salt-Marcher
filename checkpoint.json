@@ -3366,17 +3366,17 @@
     "state": "city00_reference_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I02-CP",
-      "kind": "cleanup_planning",
-      "startedAt": "2026-10-09T12:22:37.572740+02:00",
-      "focus": "Explizite CO-/CTY-Zuordnung und unbestätigten Downloadstatus planen",
-      "state": "completed",
-      "result": "R01/R02 gezielt im Plan beschrieben; keine Originalfähigkeit ausgeschlossen"
-    },
-    "nextRun": {
       "id": "CITY-00-I02-CI",
       "kind": "cleanup_implementation",
-      "focus": "Katalogzuordnung explizit und belegtreu bereinigen"
+      "startedAt": "2026-10-09T12:23:23.871274+02:00",
+      "focus": "Explizite semantische CO-/CTY-Zuordnung statt pauschaler Phase; Exportbeleggrenze",
+      "state": "completed_pending_review",
+      "result": "Alle 38 CO-Fähigkeiten eigenständig verpflichtend; nur passende CTY-Verweise; fehlende Downloaddatei explizit"
+    },
+    "nextRun": {
+      "id": "CITY-00-I02-CR",
+      "kind": "cleanup_review",
+      "focus": "Erhaltung der 38 Anforderungen, CTY-Kriterien und Originalbelege; korrekte Beleggrenzen"
     },
     "open": [
       "CITY-00 direkte Referenzinventur/Galerie aller drei Produkte",
