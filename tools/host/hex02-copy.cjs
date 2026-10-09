@@ -96,11 +96,9 @@ module.exports = ({ page, fs, path, assert, qa, vault, out, checks }) => {
   }
   async function copyDialog() {
     await menu("Speichern unter");
-    const modal = page
-      .locator(".modal")
-      .filter({
-        has: page.getByRole("textbox", { name: "Kopiename", exact: true }),
-      });
+    const modal = page.locator(".modal").filter({
+      has: page.getByRole("textbox", { name: "Kopiename", exact: true }),
+    });
     await modal.waitFor({ state: "visible" });
     return modal;
   }
@@ -108,12 +106,7 @@ module.exports = ({ page, fs, path, assert, qa, vault, out, checks }) => {
     await menu("Entwurf verwerfen");
     const modal = page
       .locator(".modal")
-      .filter({
-        has: page.getByRole("heading", {
-          name: "Atlasentwurf verwerfen",
-          exact: true,
-        }),
-      });
+      .filter({ hasText: "Atlasentwurf verwerfen" });
     await modal.waitFor({ state: "visible" });
     await modal
       .getByRole("button", {
