@@ -19,3 +19,5 @@ Der [isolierte Original-Renderlauf](/home/aaron/.cache/dungeon-native-qa/parity-
 Das [Hostpaar](/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd006-shadow-host-20261009/implementation.md) bestätigt die getrennte per-Element-Renderwirkung und bytegleiche Dateien nach frischer Neuöffnung. Der nächste Lauf betrifft UI-Wahl, neue Elemente und History; danach folgt ein unabhängiger Review. Die V4-Bildpaare allein schließen `DD-006.03/.04` nicht.
 
 Der [ergänzte Host-UI-Lauf](/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd006-shadow-ui-library-20261009/implementation.md) bestätigt neue Wände und Objekte mit Schatten an/aus sowie Undo/Redo und frische Neuöffnung. Als nächstes folgt ein getrennter Review auf integriertem Produktbuild. Die endgültige Atlasbedienung globaler Optionen bleibt an HEX-01 gebunden.
+
+Der [getrennte Review](/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd006-shadow-review-20261009/review.md) besteht auf integriertem Build im per-Element-Render-, UI- und Save/Reopen-Scope. Die globalen Atlasoptionen und das Phase-1-Gesamttor bleiben offen.
