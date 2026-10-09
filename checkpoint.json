@@ -4340,17 +4340,17 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-01-PREP-R06",
-      "kind": "review",
-      "startedAt": "2026-10-09T17:49:00.752Z",
-      "focus": "Draftzustände und Historyfehlergrenze gegen P05 prüfen",
-      "state": "completed",
-      "result": "Separate Gegenproben bestanden; keine Laufzeitlücke gefunden. Dauerhafte Regressionen für Straßen-/Hausanlage und codecgültigen Szenenfehler fehlen (CITY-DRAFT-R06-01). Quellen unverändert zum geprüften I05."
-    },
-    "nextRun": {
       "id": "CITY-01-PREP-DRAFT-CLEAN-P05",
       "kind": "cleanup_plan",
-      "focus": "Aufräumen des reviewten Draftkerns planen; vorhandenen Stand und gezielte Testlücke präzisieren"
+      "startedAt": "2026-10-09T17:49:17.752616+00:00",
+      "focus": "Draftarchitektur und Dokumentation aufräumen",
+      "state": "completed",
+      "result": "Keine ungenutzte Laufzeitstruktur gefunden; vorhandenen Draft und Observerreparatur dokumentieren, historische Befundformulierung präzisieren. Regressionlücke bleibt getrennte N05."
+    },
+    "nextRun": {
+      "id": "CITY-01-PREP-DRAFT-CLEAN-I05",
+      "kind": "cleanup_implementation",
+      "focus": "Vorhandenen Draft und reparierte Observergrenze dokumentieren"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
