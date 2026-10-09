@@ -3955,17 +3955,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I26-R",
-      "kind": "reference_review",
-      "startedAt": "2026-10-09T14:52:53.471490+00:00",
-      "focus": "Rohdaten und Funktionsabgrenzung prüfen",
-      "state": "completed",
-      "result": "Teilergebnis bestätigt; Snapshot muss neue unabhängige Layerpflicht und begrenzte Objektprobe abbilden."
-    },
-    "nextRun": {
       "id": "CITY-00-I26-CP",
       "kind": "cleanup_planning",
-      "focus": "Snapshot-/Verweisbereinigung konkret planen"
+      "startedAt": "2026-10-09T14:53:12.962042+00:00",
+      "focus": "Snapshot und Verweise planen",
+      "state": "completed",
+      "result": "Gezielte Snapshotkorrektur geplant; historische Zählungen und sämtliche Originalbelege erhalten."
+    },
+    "nextRun": {
+      "id": "CITY-00-I26-CI",
+      "kind": "cleanup_implementation",
+      "focus": "Snapshot aus authoritative acceptance aktualisieren"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
