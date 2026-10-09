@@ -29,6 +29,7 @@ module.exports = ({ page, fs, path, assert, out, checks, vault }) => {
   async function clickCell(tool,q,r) { return stroke(tool,[q,r]); }
   async function edit() {
     await page.setViewportSize({width:1440,height:1000}); await settle();
+    await page.locator(".workspace-tab-header:visible").first().click();
     await page.locator('.side-dock-ribbon-action[aria-label="Befehlspalette öffnen"]:visible, .side-dock-ribbon-action[aria-label="Open command palette"]:visible').last().click();
     await page.locator(".prompt-input").waitFor({state:"visible"});
     await page.locator(".prompt-input").fill("Atlas anlegen"); await page.locator(".suggestion-item").filter({hasText:"Atlas anlegen"}).first().click();
