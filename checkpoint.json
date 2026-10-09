@@ -2008,6 +2008,29 @@
       "next": "GM-UX-N-005-P01: als eigener Dungeon-Planlauf ausschließlich die belegte Raum-Key-Suche planen; nicht mit DD-036 oder Atlaspersistenz vermischen.",
       "followingRun": "DD-036-O01a bleibt als separater referenzfreier read-only Overworld-Öffnungslauf verfügbar, wird aber nicht mit GM-UX-N-005-P01 kombiniert."
     },
+    "gmUxN005Plan": {
+      "date": "2026-10-09",
+      "state": "plan_repaired_independent_re_review_passed",
+      "run": "GM-UX-N-005-P01",
+      "plan": "ROADMAP-GM-UX-N-005-PLAN.md",
+      "source": "GM-UX-005 im getrennten Cloud-GM-Produkttest; ROADMAP-GM-PRODUCT-TESTING-PLAN.md; Issue #1 Kommentar 6085234573",
+      "ownership": "Dungeon-Strang; vor Claim keine offenen PRs, gleichnamigen Remote-Branches oder anderen Besitzer auf Shared-Head 5fc9f7f6a6a8b20fb8470ad865cd5b84be16c7c1.",
+      "scope": "Nur technischer Plan für read-only V4-Raum-Key-Suche der aktuellen Session: Treffer nennt Raum und Geschoss, Aktivierung nutzt bestehende Geschoss-/Auswahl-/Kamera-/Key-Wege ohne Kartenmutation, Leeren stellt Übersicht wieder her, Save/Reload erhält Hinweis.",
+      "review": "Unabhängiger read-only Review auf cb97060990781e39397aec495e6525f70d42e70a verlangte einen gemeinsamen nicht-committenden Key-Draft-Navigationsguard sowie Session-Subscribe/Unsubscribe mit stale-target DOM-Orakel. Der exakte Reparaturcommit fa9c31e264c3b296df68342927a617c96f5e33f2 bestand den unabhängigen Nachreview ohne weitere Pflichtlücke.",
+      "limits": "Keine Implementierung oder GUI-/Hostprüfung. Keine vaultweite Obsidian-Suche, V2/V3-Erweiterung, GM-UX-N-003-, DD-036-, Atlas-, City- oder H03-Arbeit und keine Produkt-/Fachfreigabe.",
+      "next": "GM-UX-N-005-I01 ist nach bestandenem Planreview planseitig geöffnet, aber nicht gestartet; vor Umsetzung Besitz und aktuellen Shared-Stand erneut prüfen.",
+      "followingRun": "GM-UX-N-006-P01 als eigener Planlauf: nach Abschluss des N-005-Plans den Workspace-/View-State-Vertrag prüfen und zwischen Ebenenwiederherstellung und sichtbarer Wiederaufnahme entscheiden; keine Vermischung mit N-005-Implementierung, DD-036 oder Atlaspersistenz."
+    },
+    "gmUxN006Backlog": {
+      "date": "2026-10-09",
+      "state": "claimed_separate_plan_pending",
+      "run": "GM-UX-N-006-P01",
+      "source": "GM-UX-006 im getrennten Cloud-GM-Produkttest; Issue #1 Kommentar 6085700084",
+      "ownership": "Dungeon-Strang; bei Claim keine offene PR, kein gleichnamiger Remote-Branch und kein anderer sichtbarer N-006-Besitzer.",
+      "finding": "Auf isolierter Nebelwacht-Kopie blieben Geschoss Geheimgang, Räume 13–15, Türen, Key und Gang gespeichert; nach Schließen und Wiederöffnen war in zwei Läufen jeweils Erdgeschoss aktiv.",
+      "planDecision": "Den aktuellen Workspace-/View-State-Vertrag lesen und belegt zwischen Wiederherstellung der letzten aktiven Ebene und einem absichtlichen Erdgeschoss-Start mit klar sichtbarer Wiederaufnahme entscheiden.",
+      "limits": "Nur nachfolgender Planbesitz; noch keine Produktänderung, GUI-/Hostprüfung oder Entscheidung. Getrennt von N-005-I01, DD-036 und Atlaspersistenz; Cloud-/CDP-Evidence ist keine physische Eingabe- oder Host-Gesamtfreigabe."
+    },
     "dd006ShadowPlan": {
       "date": "2026-10-09",
       "state": "per_entity_shadow_review_passed_atlas_options_and_phase1_open",
@@ -2594,7 +2617,7 @@
     "plan": "ROADMAP-PARITY-PLAN.md",
     "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
     "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
-    "nextRun": "GM-UX-N-005-P01: als eigener Dungeon-Planlauf die durch GM-UX-005 belegte Suche nach Raum-Key-Texten planen; Treffer nennt Raum und Geschoss, Aktivierung öffnet Raum und Key ohne Kartenänderung, leere Suche stellt die Übersicht wieder her und Save/Reload erhält den Hinweis. Nicht mit DD-036-O01a, Atlaspersistenz oder fremden Featurepfaden vermischen; keine Produkt-, Host- oder Fachfreigabe aus der Planung.",
+    "nextRun": "GM-UX-N-006-P01: als eigener Dungeon-Planlauf den Workspace-/View-State-Vertrag prüfen und belegt entscheiden, ob die zuletzt aktive Ebene beim erneuten Öffnen wiederhergestellt wird oder ein absichtlicher Erdgeschoss-Start eine klar sichtbare Wiederaufnahme benötigt. N-005-I01, DD-036 und Atlaspersistenz bleiben getrennt; keine Implementierungs- oder Hostfreigabe aus der Planung.",
     "note": "P7-1, P7-3 und P7-4 sind in getrennten Edit-/Neuöffnungspaaren reviewt. P7-2 ist auf ausdrückliche Nutzeranweisung übersprungen, nicht physisch geprüft. Phase-7-Fachphasentor mit dieser Ausnahme bestanden; Produktbuild unverändert. Hex-Atlas- und Stadtstand erhalten.",
     "phase2Plan": "ROADMAP-PARITY-PHASE2-PLAN.md",
     "candidateBuildSha256": "b321128188b944c3324594663a410acfd84863f17860f637b9ed2e6ecc33b466",
