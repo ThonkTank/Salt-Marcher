@@ -31,6 +31,8 @@ CITY-01 umfasst CTY-001.01, CTY-002.01 und CTY-002.02: native Stadt am gespeiche
 
 `src/features/city/scene.ts` und `gestures.ts` sind geplante Beiträge zum gemeinsamen Renderer/Router: dieselben Konturen für Rendern, Trefferprüfung und Vorschau; Griffe mit Bildschirmtoleranz, Geometrie in Metern. Die invers komponierte Platzierung liefert lokale Punkte auch bei gedrehter Stadt. Ein laufender Zug behält Element, Werkzeug und Dokumentbesitzer, unabhängig von Zoom-/Detailstufe. Auswahl ist eine Dokument-/Elementadresse; sie wird durch einen Sichtbarkeitswechsel nicht gelöscht. Kollidierende Straßen-/Hausänderungen werden vor Apply sichtbar erklärt, nicht stillschweigend als gültig übernommen.
 
+Die manuelle Hauskontur bleibt bis zum gültigen Schließen ein abbrechbarer Entwurf; das fertige Polygon wird als ein Atlasbefehl übernommen. Verschieben/Drehen hält die bekannte Dokument-/Elementadresse und lässt nach Abschluss das gewählte Werkzeug aktiv. Skaliergriffe und numerische Meterwerte bieten einen direkten Weg ohne zwingende Modifier-Mausradgeste. FTG-I40 belegt Zeichnen, sichtbare Pose und Entwurfsabbruch; die dort angebotene Strg-Mausrad-Skalierung ist noch ohne Wirkungsprobe.
+
 Hostintegration verwendet den gelieferten Atlas-Dokumentresolver und die registrierten gemeinsamen Befehle. „Stadt hier anlegen“ erzeugt CityDocument und Elternplatzierung als einen rücknehmbaren Auftrag. Save nutzt denselben konsistenten Snapshot beider Besitzer. Es gibt keine isolierte persistente Stadt-Kamera, keine eigene Undo-Liste und keinen Zoomschalter für Stadtwerkzeuge.
 
 ## Geometrie wiederverwenden, Einheiten prüfen

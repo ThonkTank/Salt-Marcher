@@ -2354,7 +2354,7 @@
         "product": "Fantasy Town Generator",
         "feature": "Manuelle Kartenbearbeitung",
         "sourceUrl": "https://www.fantasytowngenerator.com/temporary-settlement",
-        "observedAt": "2026-10-09T12:21:16.277352+00:00",
+        "observedAt": "2026-10-09T16:15:52.829607+00:00",
         "observedVersion": null,
         "availability": "own_temporary_settlement_manual_roads_and_move_access_confirmed_full_scope_open",
         "observationKind": "direct_partial_effect",
@@ -2362,7 +2362,8 @@
           "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i10-edit-20261009/manifest.json",
           "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i10-edit-20261009/cleanup.json",
           "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i11-roads-20261009/manifest.json",
-          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i11-roads-20261009/cleanup.json"
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i11-roads-20261009/cleanup.json",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i40-building-20261009/manifest.json"
         ],
         "task": "Gebäude und Straße verändern",
         "phase": "CITY-01",
@@ -2380,7 +2381,7 @@
           "state": "not_run"
         },
         "status": "open",
-        "gap": "Gebäudeverschiebung/Entwurfsabbruch und Straße zeichnen/speichern/frischladen/gezielt entfernen direkt belegt; übrige Werkzeuge, stabile Bindungen, Einzel-Undo und eigene Umsetzung/Host/Bedienung offen.",
+        "gap": "I10/I11 house move/cancel and road save/reload partial; I40 custom Draw/known-shape pose/draft discard directly observed,CTRLwheel scaling instruction only. Original scaling effect, other tools, stable bindings, per-actionUndo and own implementation/host/physical UX remain open.",
         "independentFunctionalRequirement": true,
         "mappingCoverage": "related_project_criteria_only; CO requirement remains independently required",
         "originalProbe": {
@@ -2409,6 +2410,20 @@
               "Kein Save Layout, Undo/Redo oder Neustart dieser Geometrieprobe",
               "Keine Identitäts-/Bewohnerbindung aus Pixelframes bewiesen",
               "Sechs weitere Gebäudewerkzeuge neben Move, Material-/Höhen-/Skalierwirkung bleiben offen"
+            ]
+          },
+          {
+            "run": "CITY-00-I40-I",
+            "state": "draw_known_target_pose_and_draft_discard_observed_scaling_instruction_only",
+            "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i40-building-20261009/manifest.json",
+            "sourceScope": "own_temporary_settlement_original",
+            "observation": "Closed custom square drawn; known new shape picked/moved/oriented; next placement preview cancelled; entire draft discarded.CTRLwheelScale offered but no scaling input/effect. Two generated-area picks stopped without selection.",
+            "remaining": [
+              "Original scaling gesture offered but effect untested; exact angles and scale formula unmeasured",
+              "Two generated-area Move picks had no observed selection; not a proven original bug",
+              "Material/height/snapping effects and remaining tools not tested",
+              "No rawgeometry, stableIDs, residents/housebindings, Save/Reload or per-actionUndo/Redo for this sequence",
+              "Visual pose and draft discard only; no own product/host/physical usability acceptance"
             ]
           }
         ],
@@ -4167,7 +4182,7 @@
     ],
     "functionalInventoryStatus": {
       "state": "partial_inventory_not_accepted",
-      "run": "CITY-00-I38-I",
+      "run": "CITY-00-I40-I",
       "products": 3,
       "candidates": 65,
       "directFormAreas": 13,
@@ -4215,7 +4230,8 @@
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i35-size-20261009/manifest.json",
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i36-custom-size-20261009/manifest.json",
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i37-river-20261009/manifest.json",
-        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i38-coast-20261009/manifest.json"
+        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i38-coast-20261009/manifest.json",
+        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i40-building-20261009/manifest.json"
       ],
       "resultReferences": [
         {

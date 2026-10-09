@@ -4122,17 +4122,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I40-P",
-      "kind": "reference_planning",
-      "startedAt": "2026-10-09T16:08:13.049726+00:00",
-      "focus": "Frühe Hausgeometrie im Original als verwerfbaren Entwurf prüfen",
-      "state": "completed",
-      "result": "Eigenes CITY00 Hamlet QA im vorhandenen FTG-Tab: Ausgangsbild und sichtbaren Stand sichern, Manual edit/Buildings frisch lesen. Frühe Skalier-/Drehwirkung soweit tatsächlich angeboten an einem sichtbaren Haus als ungespeicherten Entwurf prüfen; geänderte Werte/Vorschau/Abschluss getrennt sichern. Keine Löschung, neue Siedlung oder erneute gestoppte Download-/Bewohnerhypothese. Cancel Edit/Yes verwirft Entwurf, sichtbares Haus sowie250m/Districts/11Monday prüfen. Stabile IDs, Save/Reload und Einzel-Undo aus Bildern nicht behaupten; maximal2 erfolglose Versuche je Hypothese. Nachher Originaltabs erhalten, P/I/R und Aufräum-P/I/R getrennt."
-    },
-    "nextRun": {
       "id": "CITY-00-I40-I",
       "kind": "reference_implementation",
-      "focus": "FTG-Gebäudewerkzeuge lesen und Skalier-/Drehfolge direkt beobachten"
+      "startedAt": "2026-10-09T16:15:52.829607+00:00",
+      "focus": "FTG-Hauskontur und bekannte Platzierungsfolge direkt prüfen",
+      "state": "completed",
+      "result": "FTG-Draw schließt eigene Vierpunktkontur; neu erzeugtes bekanntes Haus ausgewählt/verschoben/sichtbar gedreht. Zweite Platzierungsvorschau per Cancel entfernt, eine gedrehte Kontur bleibt; Gesamtentwurf per CancelEdit/Yes verworfen.CTRL-Mausrad-Skalierung direkt angeboten, Wirkung nicht geprüft. Zwei frühere Treffer ohne Auswahl gestoppt; neue bekannte Kontur ist eigener belegter Auswahlfall.250m/Districts/11Monday zurückgestellt; Originaltabs erhalten."
+    },
+    "nextRun": {
+      "id": "CITY-00-I40-R",
+      "kind": "reference_review",
+      "focus": "Rohbelege, Vorschau-/Commitgrenze und eingeschränkten Skaliernachweis reviewen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
