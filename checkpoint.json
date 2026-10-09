@@ -975,12 +975,12 @@
     "physicalInput": "deferred_at_user_request"
   },
   "parityRoadmap": {
-    "status": "phase7_review_p7_1_dialog_open_p7_2_hardware_open",
+    "status": "phase7_repair_plan_p7_1_dialog_open_p7_2_hardware_open",
     "roadmap": "ROADMAP-PARITY.md",
     "plan": "ROADMAP-PARITY-PLAN.md",
     "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
     "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
-    "nextRun": "Eigener begrenzter P7-1-Diagnose- und Nachbesserungsplan für den einmalig fehlenden Dungeon-Inhalte-Dialog; P7-2 bleibt direkte physische Hardwareprobe. Danach gezielter Review, Fachphasentor bis zu allen Pflichtbelegen offen.",
+    "nextRun": "Getrennte P7-1-Diagnose nach ROADMAP-PARITY-PHASE7-REPAIR-PLAN.md, danach begrenzte Umsetzung und eigener Nachbesserungsreview. P7-2 bleibt auf Nutzerwunsch vorerst offen.",
     "note": "Getrennter Phase-7-Review: P7-3 und P7-4 bestanden mit eigenen Edit-/Neuöffnungspaaren und Rohdatenaudit. P7-1 bestand im zweiten vollständigen Paar, aber der erste Reviewlauf öffnete den Dungeon-Inhalte-Dialog nach einem Klick nicht; Ursache offen. P7-2 mit realer Hardware fehlt. Hex-Atlas- und Stadtstand erhalten.",
     "phase2Plan": "ROADMAP-PARITY-PHASE2-PLAN.md",
     "candidateBuildSha256": "b321128188b944c3324594663a410acfd84863f17860f637b9ed2e6ecc33b466",
@@ -2530,6 +2530,13 @@
       "p7_3": "Eigenes Edit-/Neuöffnungspaar und Rohdatenaudit bestanden.",
       "p7_4": "Eigenes Edit-/Neuöffnungspaar und Hashprüfung von 63 produktiven Dateien bestanden.",
       "open": ["P7-1 Dungeon-Inhalte-Dialogdiagnose", "P7-2 physische Maus-/Touchpad-Eingabe"],
+      "gate": "open"
+    },
+    "phase7RepairPlan": {
+      "date": "2026-10-09",
+      "state": "plan_ready_for_separate_diagnosis",
+      "plan": "ROADMAP-PARITY-PHASE7-REPAIR-PLAN.md",
+      "scope": "Einmalig fehlender Dungeon-Inhalte-Dialog nach P7-1-Auswahlspiegelung",
       "gate": "open"
     }
   }

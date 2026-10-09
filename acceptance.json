@@ -98416,6 +98416,13 @@
       "p7_4": "Independent edit/reopen and 63-file source hash audit passed for protected Vault copy.",
       "open": ["P7-1 content-modal diagnosis", "P7-2 physical mouse/touchpad input"],
       "gate": "open"
+    },
+    "phase7RepairPlan": {
+      "date": "2026-10-09",
+      "state": "plan_ready_for_separate_diagnosis",
+      "plan": "ROADMAP-PARITY-PHASE7-REPAIR-PLAN.md",
+      "scope": "One content-modal click after P7-1 selection mirror did not open the dialog",
+      "gate": "open"
     }
   }
 }
