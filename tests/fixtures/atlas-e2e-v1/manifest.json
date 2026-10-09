@@ -76,7 +76,7 @@
   ],
   "actions": [
     "ensure both Locations and visible terrain",
-    "edit town name and description without changing section IDs or Markdown bytes",
+    "edit town name to Torheim – bearbeitet and description to the exact expected Markdown; preserve all section IDs and the unchanged notes Markdown bytes",
     "reverse town sections",
     "move POI to (4828.032,0) meters",
     "paint forest at axial (1,0)",
@@ -98,8 +98,19 @@
       "roomId": "00000000-0000-4000-8000-000000000031",
       "floorId": "00000000-0000-4000-8000-000000000032",
       "entranceId": "00000000-0000-4000-8000-000000000033",
-      "owner": "Dungeon/Hex boundary",
-      "state": "proposed_not_ratified_payload_not_included"
+      "owner": "Dungeon-Strang: persistent payload, Source/Snapshot/Command adapter; Hex: spatial Worldplacement/Transform/Atlasrenderer",
+      "state": "ids_and_owner_confirmed_payload_and_common_history_revision_contract_pending",
+      "sectionId": "00000000-0000-4000-8000-000000000034",
+      "decision": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6089536903",
+      "entranceSemantics": {
+        "kind": "DungeonRoute",
+        "entrance": true,
+        "toRoomId": "00000000-0000-4000-8000-000000000031",
+        "fromRoomIdAbsent": true,
+        "physicalDoorEntity": false
+      },
+      "durableRevision": "not_present; Session.revision is runtime-local only",
+      "historyStatus": "Session and AtlasHistory remain separate today; confirmed future adapter must commit once through ratified shared History/Transaction port, never Session then AtlasHistory"
     }
   ],
   "limitations": [
@@ -107,5 +118,17 @@
     "No Campaign, City, Dungeon, Party, LiveSession, Receipt, Display, OS or P02 payload is synthesized or declared approved.",
     "Native marker/Key/drag/zoom and fresh-process evidence remain missing.",
     "Fixture content/hashes are fixed within a gate; changes require a new explicit fixture version."
-  ]
+  ],
+  "gateCatalog": {
+    "version": "e2e-gates-v1-candidate",
+    "decision": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6089626939",
+    "state": "Hex-supported canonical proposal; shared team confirmation pending",
+    "gates": {
+      "E2E-01": "Campaign/common Atlas-space/Save/Restart with Campaign Party Preparation Initialize P02 and Complete-Import/P04 inputs",
+      "E2E-02": "Preparation/Party/LiveSession/Scene/Focus/Encounter/Chase/session completion",
+      "E2E-03": "Travel/Calendar/Clock/location/weather/shop/music/world effects and exactly-once retry/restart",
+      "E2E-04": "Recovery/Complete/Salvage/Restore/Import plus safe Player Display/accessibility/target host"
+    },
+    "crossCutting": "Crash/Command/Receipt oracles also apply to every affected write gate E2E-01 through E2E-03"
+  }
 }
