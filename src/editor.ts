@@ -69,7 +69,7 @@ import { objectWheelDirection, rotateObjectRadians, scaleObjectStep } from "./fe
 import type { ObjectTagDocument } from "./features/objekte/object-tags";
 import { floorEraseActive } from "./drawing";
 import { buildingWearMode, isNativeFloorAssetId, type BuildingWearMode } from "./features/material/native-path-catalog";
-import { buildingFloorCells } from "./features/material/building-floor-cells";
+import { buildingFloorCells, buildingFloorCellsAfterErase } from "./features/material/building-floor-cells";
 import {
   buildingPointGripPixels,
   buildingVertexGrip,
@@ -3124,6 +3124,13 @@ export class DungeonEditor {
             after: [...(previous ?? []).filter((cell) =>
               !positions.has(`${cell.floorId}:${cell.x}:${cell.y}`)), ...added],
           } });
+        } else if (erase && this.session.version === 4) {
+          const previous = this.session.smartTiles;
+          const next = buildingFloorCellsAfterErase(previous, plan.command.entities,
+            this.session.settings.width, this.session.settings.height);
+          this.session.execute(next === previous ? plan.command : {
+            ...plan.command, smartTiles: { before: previous, after: next },
+          });
         } else this.session.execute(plan.command);
         selected = plan.selectedId;
       } else {

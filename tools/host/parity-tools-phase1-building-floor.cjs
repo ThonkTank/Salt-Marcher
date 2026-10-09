@@ -1,6 +1,7 @@
 const ROOT = "Dungeons/Phase1-BuildingFloor";
 const FILE = `${ROOT}/draw-resize.dungeon`;
 const CROP = `${ROOT}/draw-resize-crop.dungeon`;
+const ERASED = `${ROOT}/draw-erase.dungeon`;
 
 module.exports = ({ page, fs, path, assert, crypto, qa, vault, out, checks, chooseTool }) => {
   const { pckPath } = require("./phase3-fixtures.cjs")({ fs, crypto, assert });
@@ -22,7 +23,8 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out, checks, choo
       .last().waitFor({ state: "visible" });
     await page.waitForFunction(() =>
       !!app.workspace.getLeavesOfType("dungeon-native-map").at(-1)?.view.editor);
-    await page.getByRole("button", { name: "Einpassen", exact: true }).click();
+    await page.locator(".dungeon-native-editor:visible").last()
+      .getByRole("button", { name: "Einpassen", exact: true }).click();
   }
   const world = (point) => page.evaluate((point) => {
     const r = app.workspace.getLeavesOfType("dungeon-native-map").at(-1).view.editor.renderer;
@@ -109,6 +111,30 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out, checks, choo
     const savedBefore = await save(FILE);
     assert.deepEqual(occupied(savedBefore), occupied(before.document));
     await page.screenshot({ path: path.join(out, "before-crop.png") });
+    const wood = catalog.find((item) => item.image?.endsWith("/tileset_wood_vertical.png"));
+    await page.getByRole("group", { name: "Bodenstil" })
+      .getByRole("button", { name: wood.name, exact: true }).click();
+    await page.keyboard.down("Alt");
+    try {
+      await draw({ x: 0, y: 0 }, { x: 1, y: 2 }, 2);
+    } finally {
+      await page.keyboard.up("Alt");
+    }
+    await page.waitForFunction(() =>
+      app.workspace.getLeavesOfType("dungeon-native-map").at(-1)
+        ?.view.editor?.session.smartTiles?.length === 6);
+    const erased = await editor();
+    assert.deepEqual(occupied(erased.document), [[1, 0], [1, 1],
+      [0, 3], [1, 3], [0, 4], [1, 4]]);
+    assert.deepEqual(occupied(await save(FILE)), occupied(erased.document));
+    fs.copyFileSync(file(FILE), file(ERASED));
+    await page.screenshot({ path: path.join(out, "erased.png") });
+    assert.ok((await editor()).history > 0);
+    await page.getByRole("button", { name: "Rückgängig", exact: true }).click();
+    await page.waitForFunction(() =>
+      app.workspace.getLeavesOfType("dungeon-native-map").at(-1)
+        ?.view.editor?.session.smartTiles?.length === 8);
+    assert.deepEqual(occupied(await save(FILE)), occupied(before.document));
     await resize(-1);
     const crop = await editor();
     assert.deepEqual([crop.document.settings.width, crop.document.settings.height], [17, 12]);
@@ -125,14 +151,22 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out, checks, choo
     assert.deepEqual(occupied(await save(FILE)), occupied(restored.document));
     await page.screenshot({ path: path.join(out, "restored.png") });
     fs.writeFileSync(path.join(out, "building-floor-result.json"), JSON.stringify({
-      mode: "edit", before: occupied(before.document), crop: occupied(crop.document),
+      mode: "edit", before: occupied(before.document), erased: occupied(erased.document),
+      crop: occupied(crop.document),
       restored: occupied(restored.document), cropHash: hash(CROP),
+      eraseHash: hash(ERASED),
       sourceStyles: before.document.entities.map((e) => e.material?.assetId),
       afterStyles: restored.document.entities.map((e) => e.material?.assetId),
     }, null, 2));
     checks.push("DD-038 Building floor UI draw: 8→4→4 cells, two retained polygons, save");
+    checks.push("DD-038 Building floor Alt erase: 8→6 cells, Undo restores eight, save");
   }
   async function reopen() {
+    await open(ERASED);
+    const erased = await editor();
+    assert.deepEqual(occupied(erased.document), [[1, 0], [1, 1],
+      [0, 3], [1, 3], [0, 4], [1, 4]]);
+    await page.screenshot({ path: path.join(out, "fresh-erased.png") });
     const cropHash = hash(CROP);
     assert.equal(cropHash, fs.readFileSync(path.join(qa, "building-floor-crop-hash.txt"), "utf8"));
     await open(CROP);
@@ -143,10 +177,13 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out, checks, choo
     assert.deepEqual(occupied(await save(CROP)), occupied(restored.document));
     await page.screenshot({ path: path.join(out, "fresh-restored.png") });
     fs.writeFileSync(path.join(out, "building-floor-result.json"), JSON.stringify({
-      mode: "reopen", cropHash, restored: occupied(restored.document),
+      mode: "reopen", eraseHash: hash(ERASED),
+      erased: occupied(erased.document), cropHash,
+      restored: occupied(restored.document),
       styles: restored.document.entities.map((e) => e.material?.assetId),
     }, null, 2));
     checks.push("DD-038 Building floor fresh crop opens and expands with four cells");
+    checks.push("DD-038 Building floor fresh erased map keeps six cells");
   }
   return { edit, reopen };
 };

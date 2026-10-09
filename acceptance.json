@@ -117514,6 +117514,21 @@
           "measuredScope": "Zwei getrennte per Galerie gezeichnete 2×2-Böden; links -1/+1, Save und frische Öffnung der gespeicherten Crop-Karte. Drei gespeicherte Host-/Originalstände mit gleichen Zellkoordinaten, Stilpfaden und ARGB-Farben.",
           "remaining": "Radieren, Konturänderung, Union/Überlagerung, andere Formen, kombinierte Ränder und vollständiger DD-038-Endbuild-Review offen. Keine Fallfreigabe; P7-2 physisch ungeprüft."
         },
+        "followUpPhase1BuildingFloorEraseCandidate": {
+          "state": "alt_rectangle_erase_scoped_host_raw_review_passed_case_open",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "hostBuildSha256": "bf4288c75ab395fbab9659c423c9d4f138893dc8a3d42055aad0182dde1b8383",
+          "report": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-erase-host-20261009-final/implementation.md",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-erase-20261009/native/runs/20261009-071913-3585442/evidence/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-erase-20261009/native/runs/20261009-071913-3585442/evidence/redraw-result.json"
+          ],
+          "hostEdit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-erase-host-20261009-final/evidence/1791523441738-parity-tools-phase1-building-floor-edit/result.json",
+          "hostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-erase-host-20261009-final/evidence/1791523562385-parity-tools-phase1-building-floor-reopen/result.json",
+          "audit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-erase-host-20261009-final/independent-audit.json",
+          "measuredScope": "18×12, per Galerie gezeichneter Wood-/Diamond-Boden; Alt-Rechteck radiert zwei Wood-Zellen und halbiert dessen Kontur. Host-Undo stellt acht Zellen wieder her; die gespeicherte Radierkarte öffnet frisch mit sechs Zellen. Vollständige gespeicherte Zellwerte und beide Konturen gleich dem Original.",
+          "remaining": "Der im Original direkt gemessene Wiederaufbau durch Nachzeichnen, andere Radierformen, Konturänderung, Stilüberlagerung, kombinierte Ränder und DD-038-Endreview bleiben offen. Keine Fallfreigabe; P7-2 physisch ungeprüft."
+        },
         "followUpPhase1TerrainMaskCandidate": {
           "state": "seeded_host_masks_scoped_review_passed_case_open",
           "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
