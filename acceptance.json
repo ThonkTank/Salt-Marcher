@@ -396,7 +396,7 @@
   },
   "cityPlans": {
     "schemaVersion": 1,
-    "updated": "2026-10-09T15:13:30.790637+00:00",
+    "updated": "2026-10-09T15:18:47.917996+00:00",
     "plan": "ROADMAP-CITIES.md",
     "state": "planned_not_implemented",
     "comparisonMode": "functional_equivalence_and_independent_usability_tests",
@@ -1645,7 +1645,8 @@
           "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/manifest.json",
           "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i28-roof-20261009/manifest.json",
           "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i29-building-20261009/manifest.json",
-          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i30-processing-20261009/manifest.json"
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i30-processing-20261009/manifest.json",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i31-processing-output-20261009/manifest.json"
         ],
         "task": "Viertel und Dachdetail desselben Plans vergleichen",
         "phase": "CITY-07",
@@ -1662,7 +1663,7 @@
           "state": "not_run"
         },
         "status": "open",
-        "gap": "Gable/Hip/Block/Hidden und Processing/Raised/Solids direkt visuell teilbelegt. Complex nur Beschriftungen, Lots stellt Karte wieder her; vollständige Complex-Wirkung/Ursache offen. Processing-Dateigeometrie, Einzelbearbeitung/Persistenz, Version und eigener Vergleich offen.",
+        "gap": "Dach-/Display-/Processing-/Raised-/Solids-Sichtwirkung und Processing-Ausgabe buildings669→651 direkt teilbelegt. Complex vollständige Wirkung/Ursache, interne Geometrie-/ID-/Savewirkung und eigener Vergleich offen.",
         "independentFunctionalRequirement": true,
         "mappingCoverage": "related_project_criteria_only; CO requirement remains independently required",
         "originalProbe": {
@@ -1688,6 +1689,12 @@
             "state": "processing_raised_solids_visual_effect_observed",
             "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i30-processing-20261009/manifest.json",
             "result": "Processing Offset→None→Offset verändert angezeigte Gebäudeformen/Abstände. Raised on→off→on reduziert betonte versetzte Gebäudekanten. Solids on→off→on ersetzt dunkle Füllungen markanter Gebäude durch helle Darstellung. Lots/Plain unverändert; keine Geometrie-/Export-/Speicherwirkung geprüft."
+          },
+          {
+            "run": "CITY-00-I31-I",
+            "state": "processing_actual_json_buildings_change_other13_equal",
+            "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i31-processing-output-20261009/manifest.json",
+            "result": "Processing Offset/None: tatsächliche JSON298842/293445 Bytes; nur buildings geändert, MultiPolygon669→651. Andere13 Gruppen wertgleich; gleiche Gruppenkennung buildings ist kein Beleg stabiler Einzelobjekt-IDs. Exportversion0.11.5 keine bestätigte UI-Version."
           }
         ]
       },
@@ -4002,7 +4009,7 @@
     ],
     "functionalInventoryStatus": {
       "state": "partial_inventory_not_accepted",
-      "run": "CITY-00-I30-I",
+      "run": "CITY-00-I31-I",
       "products": 3,
       "candidates": 64,
       "directFormAreas": 13,
@@ -4042,7 +4049,8 @@
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i27-forest-20261009/manifest.json",
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i28-roof-20261009/manifest.json",
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i29-building-20261009/manifest.json",
-        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i30-processing-20261009/manifest.json"
+        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i30-processing-20261009/manifest.json",
+        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i31-processing-output-20261009/manifest.json"
       ],
       "resultReferences": [
         {
