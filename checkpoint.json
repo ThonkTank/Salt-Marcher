@@ -1,7 +1,7 @@
 {
   "saltMarcherReplacement": {
     "date": "2026-10-09",
-    "state": "smr00_adr_p01_h03_i02_plan_third_review_changes_required",
+    "state": "smr00_adr_p01_h03_i02_plan_review_passed_implementation_next",
     "plan": "ROADMAP-SALTMARCHER-REPLACEMENT.md",
     "platformAdr": "ROADMAP-SALTMARCHER-PLATFORM-ADR.md",
     "prototypePlan": "ROADMAP-SALTMARCHER-ADR-PROTOTYPES.md",
@@ -101,14 +101,17 @@
     },
     "adrP01H03": {
       "date": "2026-10-09",
-      "state": "i02_p01_third_review_changes_required",
+      "state": "i02_p01_plan_review_passed_implementation_next",
       "plan": "ROADMAP-SALTMARCHER-ADR-P01-H03-PLAN.md",
       "hypothesis": "Materialize the immutable expected Before payload supplied by the bounded compare-and-write request into a durable snapshot independent of the externally writable target inode, then verify/capture the current name and publish only with RENAME_NOREPLACE.",
       "contractCandidate": "f8fcdc1b2eacbfb17c7c5603f6c15cfd89c4296d",
       "integrationCommit": "0aecf2b4ce046c69a84cecb0890c949fd7962286",
-      "i02PlanCandidate": "b4f50c52e926d6ee7d7016d29b2d58192c0377d8",
+      "i02PreviousPlanCandidate": "b4f50c52e926d6ee7d7016d29b2d58192c0377d8",
+      "i02PlanCandidate": "c9f05806c94a1900ab276940730cae24ee94850f",
+      "i02PlanIntegrationCommit": "e051028aa581fd4d77b57b22b128658d2b5a20cc",
+      "i02RepairMatrix": "ROADMAP-SALTMARCHER-ADR-P01-H03-I02-MATRIX.json",
       "limits": "R02 and the p01-v3 contract passed their separate reviews. H02 remains No-Go; no native helper, complete fault matrix, executable H03 proof, Linux durability Go, platform decision or P02 authorization exists. Windows and macOS remain not-run.",
-      "review": "R01 passed a9de899 but later independent rechecks found three mandatory gaps (Issue #1 comments 6084665817, 6084697489). R02 repaired those and two follow-up matrix/oracle findings. Independent read-only R02 re-review passed exact shared head 25885d543c8576a3ae1d0556e7b04a51d40209c7. The first contract candidate e95f3eba325b3aa55620d39a617074ede425405d failed review. Its replacement on exact candidate f8fcdc1b2eacbfb17c7c5603f6c15cfd89c4296d passed independent read-only contract re-review after one repair. I02 plan R01 rejected e0cff1d0d112633fa3f6288d95973de936a5dbc3 and R02 rejected 2c5e765a62c6a1f8210a0bd53255b97df5b821d2. R03 on b4f50c52e926d6ee7d7016d29b2d58192c0377d8 confirms state-specific conflict IDs but still requires explicit source states for all normal and rollback transitions plus a per-transition-phase-adversary lookup of Receipt, target, temp, snapshot, capture, rollback and Parent digest instead of class-level oracles."
+      "review": "R01 passed a9de899 but later independent rechecks found three mandatory gaps (Issue #1 comments 6084665817, 6084697489). R02 repaired those and two follow-up matrix/oracle findings. Independent read-only R02 re-review passed exact shared head 25885d543c8576a3ae1d0556e7b04a51d40209c7. The first contract candidate e95f3eba325b3aa55620d39a617074ede425405d failed review. Its replacement on exact candidate f8fcdc1b2eacbfb17c7c5603f6c15cfd89c4296d passed independent read-only contract re-review after one repair. I02 plan R01 rejected e0cff1d0d112633fa3f6288d95973de936a5dbc3, R02 rejected 2c5e765a62c6a1f8210a0bd53255b97df5b821d2 and R03 rejected b4f50c52e926d6ee7d7016d29b2d58192c0377d8. Independent read-only R04 passed exact N03 candidate c9f05806c94a1900ab276940730cae24ee94850f: 87 explicit p01-v3 transitions, 13 complete overlays, 3 phases and 3,393 unambiguous cells bind exact recovery vectors without fallbacks. No helper, test or Evidence was added."
     },
     "open": [
       "Replacement architecture hypothesis after ADR-P01 No-Go; ADR-P02 through ADR-P04 and ADR-C01 remain blocked",
@@ -117,10 +120,10 @@
       "Per-slice source-to-target mapping and host persistence/security decisions"
     ],
     "nextRun": {
-      "id": "ADR-P01-H03-I02-P01-N03",
-      "kind": "child_state_machine_plan_repair",
+      "id": "ADR-P01-H03-I02-I01",
+      "kind": "native_child_state_machine_implementation",
       "owner": "local_implementation_thread",
-      "focus": "Repair the I02 plan into explicit Parent/Child/conflict receipt transitions and a complete operation-state-killpoint-adversary matrix with per-cell recovery oracles; no helper implementation or Go claim"
+      "focus": "Implement only the reviewed N03 child-state-machine and generated fault cells against p01-v3; no H03 Go, platform selection or P02 authorization before code, security and evidence review"
     }
   },
   "saltMarcherCatalogEncounter": {
