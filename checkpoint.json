@@ -93,38 +93,27 @@
   "hexAtlasExecution": {
     "scope": "HEX-00 bis HEX-28 und sämtliche eingeordneten CITY-00 bis CITY-09 vollständig",
     "phase": "HEX-00",
-    "state": "interface_colors_inventory_repair_completed_review_pending",
+    "state": "remaining_contexts_native_observed_mapping_pending",
     "plan": "ROADMAP-HEX-00-REPAIR-PLAN.md",
     "currentRun": {
-      "id": "HEX-00-N-I16",
-      "kind": "repair_implementation",
-      "startedAt": "2026-10-09T13:31:11.872004+02:00",
-      "baseCommit": "07377878ddacf0828e24dab712fb0a889400edc7",
-      "state": "completed_checked_review_pending",
-      "focus": "14 early Interface color values and direct owner picker contexts only",
-      "evidence": [
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/manifest.json",
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/color-observations.json",
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/mapping-validation.json",
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/catalog-partial.json",
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/catalog-complete-strict.json",
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/protection-and-native-proof.json",
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/local-basis.json",
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/core-host-continuity.json",
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/roadmap-change-proof.json",
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/integration-preservation.json",
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/published-source.json",
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/published-basis.json",
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/integrated-core-host-continuity.json"
-      ],
-      "finishedAt": "2026-10-09T13:41:33.370554+02:00",
-      "result": "Vierzehn frühe Interface-Farbfragen je eigenem Picker direkt geklärt; tatsächliche RGBA-Dezimalanzeigen und Hex-Wortlaute getrennt,35Originalframes/normaler Ausgang0,73 frühere Dateien unverändert. Acht frühe Kontexte,R02 und Aufräumen offen.203/203 lokal sowie206/206 im exakten integrierten Repositorybaum, Check/Build frisch bestanden. Produkt/Kernhostbasis unverändertd54f25cf; eingehende Stadt-/Dungeonbelege und GM-Endanwenderplan integriert. Keine Hex-/Atlasfunktion und keine Installation."
-    },
-    "nextRun": {
       "id": "HEX-00-N-I17",
       "kind": "repair_implementation",
-      "focus": "Acht frühe Asset-/Pfad-/Symbol-/Label-/Gradienten-/Anchor-/Lasso-Griffkontexte0109/0316/0324/0436/0437/0490/0521/0612 konkret messen; Originalbelege zuerst lesen. Native Sitzung erst nach ausdrücklicher CITY-Slotfreigabe.",
-      "gate": "Acht frühe Fragen, sechs R01-Befunde, eigener R02 sowie Aufräumplan/Umsetzung/Review offen; HEX-01 bis05 bleiben frühes gemeinsames Funktionsziel."
+      "startedAt": "2026-10-09T13:55:56.316385+02:00",
+      "baseCommit": "fc96f780aa40111464ea4b2ebbd8a7d71f603f55",
+      "state": "native_observations_completed_mapping_running",
+      "focus": "Eight remaining early reference contexts: assets, selections, generator, gradient, resize anchor and lasso handles",
+      "evidence": [
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/remaining-contexts-repair-20261009-135556/manifest.json",
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/remaining-contexts-repair-20261009-135556/start-integration-preservation.json",
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/remaining-contexts-repair-20261009-135556/receipt-reconstruction.json",
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/remaining-contexts-repair-20261009-135556/native-process-close-proof.json"
+      ]
+    },
+    "nextRun": {
+      "id": "HEX-00-R02",
+      "kind": "review",
+      "focus": "Direct review of six R01 findings and final integrated original inventory after eight remaining contexts are resolved.",
+      "gate": "No HEX-01 before reference review and separate cleanup cycle pass."
     },
     "review": {
       "state": "changes_required",
@@ -168,7 +157,7 @@
       "dungeonThread": "01a1204f-d184-7567-bfb3-d3ab06a0d07e",
       "fixtureReviewThread": "01a12031-2c30-73f7-bc01-6bd3eba86046",
       "publicationPolicy": "Bei fortlaufenden Shared-Branch-Pushrennen geprüftes Paket auf eigenem Branch sichern, regulären Servermerge in gemeinsamen active/installed-phase1 prüfen und lokal integrieren; keine Historienumschreibung.",
-      "nativeGuiSlot": "N-I16 nach normaler Wonderdraft-/Starterbeendigung0 und tatsächlichem Wegfall aller eigenen PID/Startkennungen an CITY freigegeben; nächste Wonderdraftsitzung erst nach ausdrücklicher CITY-Freigabe.",
+      "nativeGuiSlot": "NI17: vier Originalprozesse normal0 beendet und sämtliche eigene16 PID/Startkennungen tatsächlich weg; lokaler Slot ausdrücklich an CITY-COK Undo/Redo freigegeben. R02 wartet auf dessen ausdrückliche Rückfreigabe.",
       "gmTestingThread": "01a12031-2c30-73f7-bc01-6bd3eba86046",
       "gmTestingPolicy": "Eigenständiger Cloud-GM-Endanwenderlauf nach direkter Nutzerpräzisierung, ohne lokalen QA-Slot; beobachtete Befunde/Nacharbeiten getrennt überIssue1 übernehmen, kein Ersatz durch technische Testzahlen."
     },
