@@ -967,3 +967,5 @@ CITY-00-I45-PLAN-CLEAN-I45 Start 2026-10-09T19:18:31.866072+00:00; Plan neben Ro
 CITY-00-I45-PLAN-CLEAN-R45 Start 2026-10-09T19:18:34.697707+00:00; Planlink/JSON/Fremdwurzeln geprüft; keine Produktabnahme. Originalformularprobe kann im Hintergrundtab beginnen.
 
 CITY-00-I45-I45 Start 2026-10-09T19:18:45.432Z; Originalparameter vermessen: Initialzahl2/Limit1 und Per-population-Auswahl im Entwurf; deklarierte Ausnahmen identifiziert, keine Ergebnisgenerierung. Beleg: /home/aaron/.cache/dungeon-native-qa/city-plans/city00-i45-building-limits-20261009/manifest.json.
+
+CITY-00-I45-CLEAN-P45 Start 2026-10-09T19:21:01.574661+00:00; Aufräumplan: vorschnelle strikte Limitregel durch explizite Original-Ausnahmen ersetzen, Formzustand von Ergebniswirkung trennen; Rohhashes erhalten. Beleg: /home/aaron/.cache/dungeon-native-qa/city-plans/city00-i45-building-limits-20261009/manifest.json.
