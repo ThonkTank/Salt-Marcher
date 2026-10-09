@@ -4175,17 +4175,17 @@
     "state": "city01_model_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-01-PREP-CLEAN-I01",
-      "kind": "cleanup_implementation",
-      "startedAt": "2026-10-09T16:47:08.177038+00:00",
-      "focus": "Einheiten und tatsächlichen API-/Listenvertrag bereinigen",
-      "state": "completed",
-      "result": "Dimensionslose Skalierung am Modelltyp gekennzeichnet; existierende Modell-/Codec-APIs von geplanten Stadtmodulen getrennt; Architektur dokumentiert dichte native Listen und kontrollierte Ablehnung. Keine ausführbare Änderung oder neue öffentliche Schnittstelle. JS-/Typquellgleichheit und abschließender Review folgen."
-    },
-    "nextRun": {
       "id": "CITY-01-PREP-CLEAN-R01",
       "kind": "cleanup_review",
-      "focus": "Kommentar-/JS-Gleichheit und vollständige Beleggrenzen verifizieren"
+      "startedAt": "2026-10-09T16:48:58.646070+00:00",
+      "focus": "Aufgeräumten Modell-/Codec-Vertrag und Codegleichheit prüfen",
+      "state": "completed",
+      "result": "Alle drei Aufräumreste erledigt: Skalierung korrekt dimensionslos kommentiert, vorhandene APIs im Gesamtplan erkennbar, dichte Listen in Architektur festgehalten. Ausschließlich Kommentaränderung am Modelltyp; exakte Typquelle nach Kommentarentfernung und erzeugtes JS identisch. Codec/Tests/gemeinsame Quellen unverändert gegenüber276grünenTests/Typprüfung/Build. Modellvorbereitung reviewt ohne Restbefund;24CTY/65CO-Fachpflichten und Atlas-/Host-/Saveintegration offen."
+    },
+    "nextRun": {
+      "id": "CITY-01-PREP-P02",
+      "kind": "implementation_planning",
+      "focus": "Reine Stadtbefehle auf vorhandener AtlasHistory planen und Modulgrenze abstimmen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
