@@ -70,11 +70,11 @@
       "kind": "implementation",
       "state": "completed_checked_reviewed",
       "focus": "Complete D&D-2014 catalog filters, chips/reset, debounced drafts, correctable validation, responsive/A11y behavior and DOM harness",
-      "result": "The ItemView now projects every planned 2014 monster filter, supports multiple discrete values, removable chips and sort/selection-preserving reset. All free-text drafts publish stale-safe after 200 ms or immediately on Enter, survive restore including an empty draft and cancel on close. Invalid ranges remain correctable. Focus fallbacks, keyboard flows and responsive descendant breakpoints are DOM-covered. Real Obsidian and 900x650/1150x700 acceptance remain open.",
+      "result": "The ItemView now projects every planned 2014 monster filter, supports multiple discrete values, removable chips and sort/selection-preserving reset. All free-text drafts publish stale-safe after 200 ms or immediately on Enter, survive restore including an empty draft, and fold atomically into applied state for host persistence and close. Invalid ranges remain correctable. Focus fallbacks, keyboard flows and responsive descendant breakpoints are DOM-covered. Real Obsidian and 900x650/1150x700 acceptance remain open.",
       "plan": "ROADMAP-SALTMARCHER-CE01-PLAN.md",
       "verification": {
         "check": "passed",
-        "tests": {"passed": 234, "failed": 0},
+        "tests": {"passed": 235, "failed": 0},
         "domHarness": "passed",
         "build": "passed"
       },
@@ -137,10 +137,10 @@
       "id": "CE-01-I03",
       "kind": "implementation",
       "state": "completed_checked_reviewed",
-      "result": "Complete 2014 filter projection, multi-value controls, removable chips/reset, correctable range feedback, stale-safe 200-ms drafts, deterministic keyboard focus and responsive catalog container. State, content controller and DOM harness are host-neutral behind an injected port; Obsidian is a separately tested thin adapter. Scroll resets capture the old DOM before applying the requested zero position.",
+      "result": "Complete 2014 filter projection, multi-value controls, removable chips/reset, correctable range feedback, stale-safe 200-ms drafts, atomic host-lifecycle draft persistence, deterministic keyboard focus and responsive catalog container. State, content controller and DOM harness are host-neutral behind an injected port; Obsidian is a separately tested thin adapter. Scroll resets capture the old DOM before applying the requested zero position.",
       "verification": {
         "check": "passed",
-        "tests": {"passed": 234, "failed": 0},
+        "tests": {"passed": 235, "failed": 0},
         "build": "passed",
         "domHarness": "passed"
       },
@@ -154,7 +154,7 @@
       "testSlotClarification": "one graphical host/original instance per device; colleagues on separate devices may test in parallel",
       "cloudReviewHandoff": "Requested in GitHub Issue #1 comment 6081912800: prior GM-UX-CLOUD worker stops feature implementation and focuses architecture/technical reviews of local packages."
     },
-    "verified": "CE-00-I01 passed 210 tests but R01 required changes. CE-00-N01 passed check, 211 tests and build; independent CE-00-R02 passed with no remaining R01 findings. The direct user decision narrows the feature to D&D 2014 only. CE-01-I01 is independently reviewed; CE-01-I02 provides the core ItemView. CE-01-I03 passes check, 234 tests, host-neutral DOM harness, thin-adapter test, build and repair review. All real-host and CE-01 acceptance remain open.",
+    "verified": "CE-00-I01 passed 210 tests but R01 required changes. CE-00-N01 passed check, 211 tests and build; independent CE-00-R02 passed with no remaining R01 findings. The direct user decision narrows the feature to D&D 2014 only. CE-01-I01 is independently reviewed; CE-01-I02 provides the core ItemView. CE-01-I03 passes check, 235 tests, host-neutral DOM harness, thin-adapter test, build and repair review. All real-host and CE-01 acceptance remain open.",
     "open": [
       "CE-01-R01 review, repair if required, real Obsidian acceptance, cleanup and all CE-02 through CE-07 runs",
       "Pinned DMG-2014 encounter math and golden masters",

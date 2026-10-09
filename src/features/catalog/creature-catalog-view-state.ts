@@ -1,4 +1,8 @@
-import type { Creature, CreatureCatalogQuery, CreatureCatalogSort } from "./creature-catalog";
+import type {
+  Creature,
+  CreatureCatalogQuery,
+  CreatureCatalogSort,
+} from "./creature-catalog";
 
 export const CREATURE_CATALOG_PAGE_SIZE = 50;
 const SORTS: readonly CreatureCatalogSort[] = ["name", "cr", "ac", "hp", "xp"];
@@ -47,6 +51,16 @@ export type CreatureCatalogTextFilter = "text" | "movement" | "senses" | "vulner
 export type CreatureCatalogDraftKey = "textDraft" | "movementDraft" | "sensesDraft" |
   "vulnerabilitiesDraft" | "resistancesDraft" | "immunitiesDraft" | "conditionImmunitiesDraft";
 
+const DRAFT_FILTERS: readonly [CreatureCatalogTextFilter, CreatureCatalogDraftKey][] = [
+  ["text", "textDraft"],
+  ["movement", "movementDraft"],
+  ["senses", "sensesDraft"],
+  ["vulnerabilities", "vulnerabilitiesDraft"],
+  ["resistances", "resistancesDraft"],
+  ["immunities", "immunitiesDraft"],
+  ["conditionImmunities", "conditionImmunitiesDraft"],
+];
+
 export interface CreatureCatalogFilterChip {
   readonly key: CreatureCatalogFilterKey;
   readonly value?: string;
@@ -68,7 +82,9 @@ const LABELS: Readonly<Record<CreatureCatalogFilterKey, string>> = {
 };
 
 function finiteNonNegative(value: unknown): number | undefined {
-  return typeof value === "number" && Number.isFinite(value) && value >= 0 ? value : undefined;
+  return typeof value === "number" && Number.isFinite(value) && value >= 0
+    ? value
+    : undefined;
 }
 
 function stringValue(value: unknown): string | undefined {
@@ -89,9 +105,12 @@ export function normalizeCreatureCatalogViewState(
   value: Record<string, unknown>,
 ): CreatureCatalogViewState {
   const sort = SORTS.includes(value.sort as CreatureCatalogSort)
-    ? value.sort as CreatureCatalogSort : undefined;
-  const direction = value.direction === "asc" || value.direction === "desc"
-    ? value.direction : undefined;
+    ? (value.sort as CreatureCatalogSort)
+    : undefined;
+  const direction =
+    value.direction === "asc" || value.direction === "desc"
+      ? value.direction
+      : undefined;
   return {
     text: stringValue(value.text),
     textDraft: draftValue(value.textDraft),
@@ -120,8 +139,12 @@ export function normalizeCreatureCatalogViewState(
     conditionImmunitiesDraft: draftValue(value.conditionImmunitiesDraft),
     sort,
     direction,
-    page: typeof value.page === "number" && Number.isSafeInteger(value.page) && value.page >= 0
-      ? value.page : undefined,
+    page:
+      typeof value.page === "number" &&
+      Number.isSafeInteger(value.page) &&
+      value.page >= 0
+        ? value.page
+        : undefined,
     selectedId: stringValue(value.selectedId),
     resultsScroll: finiteNonNegative(value.resultsScroll),
     detailScroll: finiteNonNegative(value.detailScroll),
@@ -204,13 +227,32 @@ export function resetCreatureCatalogFilters(state: CreatureCatalogViewState): Cr
   return next as CreatureCatalogViewState;
 }
 
+export function applyCreatureCatalogDrafts(
+  state: CreatureCatalogViewState,
+): CreatureCatalogViewState {
+  const next = { ...state } as Record<string, unknown>;
+  let changed = false;
+  for (const [filterKey, draftKey] of DRAFT_FILTERS) {
+    if (!(draftKey in state)) continue;
+    const applied = state[draftKey]?.trim() || undefined;
+    if (state[filterKey] === applied) continue;
+    next[filterKey] = applied;
+    changed = true;
+  }
+  if (!changed) return state;
+  next.page = 0;
+  next.resultsScroll = 0;
+  return next as CreatureCatalogViewState;
+}
+
 export function creatureCatalogSortChange(
   state: CreatureCatalogViewState,
   sort: CreatureCatalogSort,
 ): Partial<CreatureCatalogViewState> {
   return {
     sort,
-    direction: state.sort === sort && state.direction === "asc" ? "desc" : "asc",
+    direction:
+      state.sort === sort && state.direction === "asc" ? "desc" : "asc",
     page: 0,
     resultsScroll: 0,
   };

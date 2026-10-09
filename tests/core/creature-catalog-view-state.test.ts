@@ -4,6 +4,7 @@ import type { Creature } from "../../src/features/catalog/creature-catalog";
 import {
   CREATURE_CATALOG_PAGE_SIZE,
   adjacentCreatureId,
+  applyCreatureCatalogDrafts,
   creatureCatalogFilterChips,
   creatureCatalogQueryForState,
   creatureCatalogRangeError,
@@ -43,7 +44,7 @@ test("catalog view state restores only valid serializable values", () => {
   assert.equal(normalizeCreatureCatalogViewState({ text: "dragon", textDraft: "" }).textDraft, "");
 });
 
-test("catalog view state produces the bounded core query and resets sorting page", () => {
+test("catalog view state maps the complete filter contract into a bounded query", () => {
   const state = {
     text: "dragon",
     crMin: 5,
@@ -92,10 +93,16 @@ test("catalog view state produces the bounded core query and resets sorting page
     limit: CREATURE_CATALOG_PAGE_SIZE,
   });
   assert.deepEqual(creatureCatalogSortChange(state, "cr"), {
-    sort: "cr", direction: "asc", page: 0, resultsScroll: 0,
+    sort: "cr",
+    direction: "asc",
+    page: 0,
+    resultsScroll: 0,
   });
   assert.deepEqual(creatureCatalogSortChange(state, "hp"), {
-    sort: "hp", direction: "asc", page: 0, resultsScroll: 0,
+    sort: "hp",
+    direction: "asc",
+    page: 0,
+    resultsScroll: 0,
   });
 });
 
@@ -125,6 +132,27 @@ test("invalid catalog ranges remain correctable view feedback", () => {
   assert.equal(creatureCatalogRangeError({ acMin: 20, acMax: 19 }), "RK min darf RK max nicht überschreiten.");
   assert.equal(creatureCatalogRangeError({ hpMin: 2, hpMax: 1 }), "TP min darf TP max nicht überschreiten.");
   assert.equal(creatureCatalogRangeError({ crMin: 4, crMax: 5 }), undefined);
+});
+
+test("pending catalog drafts fold into applied filters for host persistence", () => {
+  const applied = applyCreatureCatalogDrafts({
+    text: "dragon",
+    textDraft: "  aboleth  ",
+    movement: "walk",
+    movementDraft: "   ",
+    sensesDraft: "darkvision",
+    page: 3,
+    resultsScroll: 88,
+    detailScroll: 12,
+    sort: "name",
+  });
+  assert.equal(applied.text, "aboleth");
+  assert.equal(applied.movement, undefined);
+  assert.equal(applied.senses, "darkvision");
+  assert.equal(applied.page, 0);
+  assert.equal(applied.resultsScroll, 0);
+  assert.equal(applied.detailScroll, 12);
+  assert.equal(applyCreatureCatalogDrafts(applied), applied);
 });
 
 test("catalog keyboard selection stays within the current result page", () => {

@@ -9,6 +9,7 @@ import {
 import {
   CREATURE_CATALOG_PAGE_SIZE,
   adjacentCreatureId,
+  applyCreatureCatalogDrafts,
   creatureCatalogFilterChips,
   creatureCatalogQueryForState,
   creatureCatalogRangeError,
@@ -58,7 +59,7 @@ export class CreatureCatalogViewContent {
 
   getState(): Record<string, unknown> {
     this.captureScroll();
-    return { ...this.state };
+    return { ...applyCreatureCatalogDrafts(this.state) };
   }
 
   async setState(state: Record<string, unknown>): Promise<void> {
@@ -88,6 +89,7 @@ export class CreatureCatalogViewContent {
 
   async onClose(): Promise<void> {
     this.captureScroll();
+    this.state = applyCreatureCatalogDrafts(this.state);
     this.abort.abort();
     this.renderAbort.abort();
     this.lifecycleAbort.abort();

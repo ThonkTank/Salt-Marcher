@@ -137,9 +137,10 @@ Review, DOM-/Obsidian-Host und Fachabnahme bleiben offen.
 
 ### CE-01-I03 – Erweiterte Filter, Chips und Responsive/A11y
 
-Status: umgesetzt; Typprüfung, 234 Tests einschließlich hostneutralem DOM-
+Status: umgesetzt; Typprüfung, 235 Tests einschließlich hostneutralem DOM-
 Harness und Build bestanden. Ein Reparaturreview bestätigt Filterprojektion,
-Mehrfachwerte, Chips/Reset, 200-ms-Drafts, Timer-Cleanup und Fokusfallbacks.
+Mehrfachwerte, Chips/Reset, 200-ms-Drafts, Timer-Cleanup, atomare Übernahme
+ausstehender Drafts beim Host-Lifecycle und Fokusfallbacks.
 Der CSS-Container und seine Breakpoints sind statisch belegt; echte
 Obsidian- und 900×650-/1150×700-Abnahme bleiben offen.
 

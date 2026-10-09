@@ -251,13 +251,13 @@
     "ce01I03": {
       "run": "CE-01-I03",
       "state": "completed_checked_reviewed",
-      "result": "All planned D&D-2014 monster filters project into the catalog query. Discrete filters accept multiple values; every accepted criterion has an individually removable chip and reset preserves sort/selection. Free-text drafts publish stale-safe after 200 ms or Enter, persist unfinished and empty input, and cancel on close. Range errors remain correctable. State, content controller and DOM harness are host-neutral behind an injected port; the Obsidian ItemView is a separately tested adapter. Explicit scroll resets survive re-render.",
+      "result": "All planned D&D-2014 monster filters project into the catalog query. Discrete filters accept multiple values; every accepted criterion has an individually removable chip and reset preserves sort/selection. Free-text drafts publish stale-safe after 200 ms or Enter, persist unfinished and empty input, and are folded atomically into applied filters for host persistence and close. Range errors remain correctable. State, content controller and DOM harness are host-neutral behind an injected port; the Obsidian ItemView is a separately tested adapter. Explicit scroll resets survive re-render.",
       "verification": {
         "check": "passed",
-        "tests": {"passed": 234, "failed": 0},
+        "tests": {"passed": 235, "failed": 0},
         "domHarness": "passed",
         "build": "passed",
-        "covered": ["multi-filter intersection", "individual chip and reset focus", "paging", "Arrow/Enter/Escape", "selection after sort", "explicit scroll reset", "aria-sort", "notice", "200-ms latest generation", "Enter flush", "empty state", "correctable range alert", "close cleanup", "responsive CSS contract", "thin Obsidian adapter"]
+        "covered": ["multi-filter intersection", "individual chip and reset focus", "paging", "Arrow/Enter/Escape", "selection after sort", "explicit scroll reset", "aria-sort", "notice", "200-ms latest generation", "Enter flush", "empty state", "host-lifecycle draft persistence", "correctable range alert", "close cleanup", "responsive CSS contract", "thin Obsidian adapter"]
       },
       "review": "Passed after required repairs; reviewer ran no separate tests.",
       "limits": "No real Obsidian, restart, physical keyboard or measured 900x650/1150x700 acceptance. CE-AC-01, CE-AC-02 and CE-AC-14 remain open. All Encounter cases remain open."

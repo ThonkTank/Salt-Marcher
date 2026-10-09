@@ -132,7 +132,7 @@ test("catalog DOM debounces search, flushes Enter and keeps invalid ranges corre
   await view.onClose();
 });
 
-test("catalog DOM preserves an empty draft and cancels pending publication on close", async () => {
+test("catalog DOM preserves an empty draft and commits pending input on close", async () => {
   const { view, root, window } = await openedView();
   await view.setState({ text: "dragon", textDraft: "" });
   assert.equal(root.querySelector<HTMLInputElement>('[data-focus-key="search"]')?.value, "");
@@ -142,7 +142,7 @@ test("catalog DOM preserves an empty draft and cancels pending publication on cl
   await view.onClose();
   await new Promise((resolve) => setTimeout(resolve, 230));
   const state = view.getState();
-  assert.equal(state.text, "dragon");
+  assert.equal(state.text, "aboleth");
   assert.equal(state.textDraft, "aboleth");
 });
 
