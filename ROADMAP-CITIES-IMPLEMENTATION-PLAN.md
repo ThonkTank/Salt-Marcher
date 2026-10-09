@@ -911,3 +911,5 @@ CITY-00-I43-P43 Start 2026-10-09T18:55:59.348181+00:00; ROADMAP-CITIES-CITY00-CO
 CITY-00-I43-PLAN-CLEAN-P43 Start 2026-10-09T18:56:33.932996+00:00; Plan: neuenVariantenplan imbestehendenReferenzabschnittverlinken; eigeneQA-Originalkopie/Demo-/Slotgrenzen verifizieren. KeinRuntimeumbau. ReviewprüftLink/Originalhashschutz und65CO/24CTYopen.
 
 CITY-00-I43-PLAN-CLEAN-I43 Start 2026-10-09T18:56:37.168600+00:00; Planlink imCOKReferenzabschnitt gesetzt; neueVariantenhypothesevonvorigerUndo-/Gruppenprobegetrennt. KeineRaw-/Original-/Produktänderung.
+
+CITY-00-I43-PLAN-CLEAN-R43 Start 2026-10-09T18:56:40.178738+00:00; Planlink/JSON/65CO+24CTYopen undeigenergesicherterInput geprüft. Plan-Aufräumen abgeschlossen. I43 startetjetztübergeprüftenStarter/nachöffentlichemStartcheckin; keineGUIinstanzbisher.
