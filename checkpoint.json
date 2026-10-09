@@ -1429,6 +1429,13 @@
     "status": "roadmap_closed_with_p7_2_exception_followup_phase1_implementation_in_progress",
     "roadmap": "ROADMAP-PARITY.md",
     "followUpRoadmap": "ROADMAP-PARITY-TOOLS.md",
+    "gmUxN001Plan": {
+      "date": "2026-10-09",
+      "state": "plan_ready_for_separate_implementation",
+      "plan": "ROADMAP-GM-UX-N-001-PLAN.md",
+      "source": "GM-UX-001 im getrennten Cloud-GM-Test; Issue #1",
+      "next": "Optionalen Rechteck-Raum-Modus implementieren, im isolierten Host prüfen und danach unabhängig reviewen; Cloud-GM-Nachtest auslösen."
+    },
     "mapInfoNoResizePreparation": {
       "date": "2026-10-09",
       "cases": "DD-039.01–.06",
