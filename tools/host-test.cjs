@@ -150,6 +150,14 @@ const selectionKinds = (...labels) =>
         }
       }
     }, labels);
+const selectOnlyObjects = async () => {
+  await selectionKinds("Objekte");
+  const checked = await page.locator('.dn-selection-filter input[type="checkbox"]')
+    .evaluateAll((inputs) => inputs.filter((input) => input.checked)
+      .map((input) => input.getAttribute("aria-label"))
+      .filter((label) => label?.startsWith("Objektarten: ") && label !== "Objektarten: Alle"));
+  assert.deepEqual(checked, ["Objektarten: Objekte"]);
+};
 function processes() {
   return fs
     .readdirSync("/proc")
@@ -709,7 +717,7 @@ async function workflow() {
         renderCount: e.renderer.renderCount,
       };
     });
-  const scenarioContext = { page, browser, fs, path, assert, crypto, PNG, root, qa, vault, sourceVault, restart, out, checks, chooseTool, editorAction, waitForFileAbsent, sleep, resolveQaAppCgroup };
+  const scenarioContext = { page, browser, fs, path, assert, crypto, PNG, root, qa, vault, sourceVault, restart, out, checks, chooseTool, editorAction, selectOnlyObjects, waitForFileAbsent, sleep, resolveQaAppCgroup };
   if (parityPhase7Vault) {
     const scenario = require("./host/parity-phase7-vault.cjs")(scenarioContext);
     if (restart) await scenario.reopen();

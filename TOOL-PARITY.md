@@ -605,3 +605,7 @@ Der [getrennte Review](/home/aaron/.cache/dungeon-native-qa/parity-phase7-gate-2
 ## Phase 7: abschließender Aufräumplan
 
 Der [getrennte Plan](ROADMAP-PARITY-CLEANUP-7-PLAN.md) benennt drei begrenzte Hostschwächen: die unspezifische Modalwahl und Fokusfreigabe, volle V4-Dokumentübertragungen bei Zwischenaufnahmen der 4.295-Entitäten-Karte und die doppelte Objektfilter-Vorbereitung. Messung, Umsetzung und unabhängiger Review bleiben getrennte Läufe. **Nur Plan; Aufräumtor offen und Folge-Roadmap gesperrt.** Die physische P7-2-Probe bleibt ausdrücklich nicht durchgeführt.
+
+## Phase 7: abschließende Aufräumumsetzung
+
+Der [Umsetzungsbericht](/home/aaron/.cache/dungeon-native-qa/parity-phase7-cleanup-20261009/cleanup-implementation.md) mit [Rohdatenaudit](/home/aaron/.cache/dungeon-native-qa/parity-phase7-cleanup-20261009/implementation-audit.json) belegt `P7-CL-1–3`: eindeutigen Inhalte-Dialog und Fokusfreigabe, weniger Datenübertragung bei unverändert vollständigem Save-/Undo-/Reopen-Vergleich und eine gemeinsame Objektfilter-Vorbereitung. Vorher/Nachher sinkt die Nutzdatenmenge von 8.301.347 auf 3.020.924 Byte bei elf Hostabfragen; dies misst den Testtreiber, nicht die Produktleistung. Drei Host-Edit-/Neuöffnungspaare, Typprüfung, 167 Tests und Build bestehen auf unverändertem Produktbuild. **Umsetzungskandidat; unabhängiger Aufräumreview und Tor offen.** P7-2 bleibt physisch unbelegt.

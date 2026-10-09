@@ -1,26 +1,36 @@
 const MAP = "Dungeons/Grosskarte/Karte.dungeon";
 module.exports = ({ page, fs, path, assert, crypto, qa, vault, out, checks,
-  chooseTool, editorAction, sleep }) => {
+  chooseTool, editorAction, selectOnlyObjects, sleep }) => {
   const savedPath = path.join(qa, "phase7-large-saved.json");
   const mapFile = path.join(vault, MAP);
   const digest = () => crypto.createHash("sha256").update(fs.readFileSync(mapFile)).digest("hex");
-  const state = () => page.evaluate(() => {
-    const e = app.workspace.getLeavesOfType("dungeon-native-map")[0]?.view?.editor;
-    if (!e) return null;
-    const started = performance.now(), document = e.session.document();
-    const modelMs = performance.now() - started;
-    const counts = {};
-    for (const entity of document.entities)
-      counts[entity.kind] = (counts[entity.kind] ?? 0) + 1;
-    return { document, counts, modelMs, dirty: e.session.dirty,
-      history: e.session.historySize, selected: [...e.selection],
-      renderCount: e.renderer.renderCount, lastRenderMs: e.renderer.lastRenderMs,
-      drawnObjects: [...e.renderer.visuals.values()].filter((visual) =>
-        visual.entity.kind === "object").length,
-      floor: e.renderer.floorId,
-      camera: { x: e.renderer.camera.x, y: e.renderer.camera.y,
-        scale: e.renderer.camera.scale } };
-  });
+  const transfers = [];
+  const state = async (fullDocument = false) => {
+    const started = process.hrtime.bigint();
+    const result = await page.evaluate((fullDocument) => {
+      const e = app.workspace.getLeavesOfType("dungeon-native-map")[0]?.view?.editor;
+      if (!e) return null;
+      const started = performance.now(), document = e.session.document();
+      const modelMs = performance.now() - started;
+      const counts = {};
+      for (const entity of document.entities)
+        counts[entity.kind] = (counts[entity.kind] ?? 0) + 1;
+      return { ...(fullDocument ? { document } : {
+        version: document.version, entityCount: document.entities.length,
+        occurrenceCount: document.content.occurrences.length }),
+        counts, modelMs, dirty: e.session.dirty,
+        history: e.session.historySize, selected: [...e.selection],
+        renderCount: e.renderer.renderCount, lastRenderMs: e.renderer.lastRenderMs,
+        drawnObjects: [...e.renderer.visuals.values()].filter((visual) =>
+          visual.entity.kind === "object").length,
+        floor: e.renderer.floorId,
+        camera: { x: e.renderer.camera.x, y: e.renderer.camera.y,
+          scale: e.renderer.camera.scale } };
+    }, fullDocument);
+    transfers.push({ bytes: Buffer.byteLength(JSON.stringify(result)),
+      wallMs: Number(process.hrtime.bigint() - started) / 1e6 });
+    return result;
+  };
   const screen = (point) => page.evaluate((point) => {
     const r = app.workspace.getLeavesOfType("dungeon-native-map")[0].view.editor.renderer;
     const box = r.canvas.getBoundingClientRect();
@@ -41,28 +51,16 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out, checks,
     await page.locator(".dn-canvas canvas").waitFor({ state: "visible", timeout: 30000 });
     return Date.now() - started;
   };
-  const selectObjects = () => page.locator('.dn-selection-filter input[type="checkbox"]')
-    .evaluateAll((inputs) => {
-      for (const input of inputs) {
-        const label = input.getAttribute("aria-label");
-        if (!label?.startsWith("Objektarten: ") || label === "Objektarten: Alle") continue;
-        const checked = label === "Objektarten: Objekte";
-        if (input.checked !== checked) {
-          input.checked = checked;
-          input.dispatchEvent(new Event("change", { bubbles: true }));
-        }
-      }
-    });
   async function edit() {
     const metrics = { openMs: await open() };
     let current = await state();
-    assert.equal(current.document.version, 4);
-    assert.equal(current.document.entities.length, 4295);
+    assert.equal(current.version, 4);
+    assert.equal(current.entityCount, 4295);
     assert.deepEqual(current.counts, { surface: 4, building: 193,
       door: 64, object: 4001, light: 33 });
-    assert.equal(current.document.content.occurrences.length, 1);
+    assert.equal(current.occurrenceCount, 1);
     assert.equal(fs.existsSync(path.join(vault, "Dungeons/Grosskarte/Räume")), false);
-    metrics.initial = { total: current.document.entities.length,
+    metrics.initial = { total: current.entityCount,
       counts: current.counts, modelMs: current.modelMs,
       renderCount: current.renderCount, lastRenderMs: current.lastRenderMs,
       drawnObjects: current.drawnObjects, camera: current.camera };
@@ -98,7 +96,7 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out, checks,
     checks.push("Both floors and aligned comparison switch on the large map");
 
     await chooseTool("Auswahl");
-    await selectObjects();
+    await selectOnlyObjects();
     await page.evaluate(() => app.workspace.getLeavesOfType("dungeon-native-map")[0]
       .view.editor.renderer.focus("room-phase7", 4));
     const focused = await snapshot("p7-large-room-focus");
@@ -114,23 +112,23 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out, checks,
       "Fokussierter Objektzug liegt außerhalb der Zeichenfläche");
     await page.mouse.click(start.x, start.y);
     assert.deepEqual((await state()).selected, ["object-phase7"]);
-    const beforeMove = await state();
+    const beforeMove = await state(true);
     started = Date.now();
     await page.mouse.move(start.x, start.y);
     await page.mouse.down();
     await page.mouse.move(end.x, end.y, { steps: 12 });
     await page.mouse.up();
     metrics.dragInputMs = Date.now() - started;
-    const moved = await state(), object = moved.document.entities.find((e) => e.id === "object-phase7");
+    const moved = await state(true), object = moved.document.entities.find((e) => e.id === "object-phase7");
     assert.equal(object.x, 187);
     assert.equal(object.y, 126);
     assert.equal(object.roomId, "room-phase7");
     assert.equal(moved.document.content.occurrences[0].sectionId, "section-phase7");
     assert.equal(moved.history, beforeMove.history + 1);
     await page.getByRole("button", { name: "Rückgängig", exact: true }).click();
-    assert.deepEqual((await state()).document, beforeMove.document);
+    assert.deepEqual((await state(true)).document, beforeMove.document);
     await page.getByRole("button", { name: "Wiederholen", exact: true }).click();
-    assert.deepEqual((await state()).document, moved.document);
+    assert.deepEqual((await state(true)).document, moved.document);
     metrics.afterMove = { modelMs: moved.modelMs, renderCount: moved.renderCount,
       lastRenderMs: moved.lastRenderMs, drawnObjects: moved.drawnObjects };
     await snapshot("p7-large-object-moved");
@@ -154,6 +152,7 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out, checks,
     metrics.final = { modelMs: idle.modelMs, renderCount: idle.renderCount,
       lastRenderMs: idle.lastRenderMs, drawnObjects: idle.drawnObjects };
     fs.writeFileSync(path.join(out, "p7-large-metrics.json"), JSON.stringify(metrics, null, 2));
+    fs.writeFileSync(path.join(out, "p7-large-host-transfers.json"), JSON.stringify(transfers, null, 2));
     checks.push("Large V4 map saves atomically; model, render, input, save, memory and idle telemetry are separated");
 
     await page.evaluate(async (mapPath) =>
@@ -200,7 +199,7 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out, checks,
   async function reopen() {
     const prior = JSON.parse(fs.readFileSync(savedPath, "utf8"));
     const openMs = await open();
-    const current = await state();
+    const current = await state(true);
     assert.equal(current.document.version, 4);
     assert.deepEqual(current.document, prior.document);
     assert.equal(digest(), prior.hash);
