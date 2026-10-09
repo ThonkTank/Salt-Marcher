@@ -211,17 +211,31 @@
         "complete": { "type": "boolean" }
       }
     },
+    "helperDisposition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["helperIndex", "helperName", "sourceText", "disposition", "sourceOccurrenceIds", "canonicalId"],
+      "properties": {
+        "helperIndex": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+        "helperName": { "$ref": "#/$defs/nonEmpty" },
+        "sourceText": { "$ref": "#/$defs/nonEmpty" },
+        "disposition": { "enum": ["pack-prose-only", "split-primary-occurrences", "expanded-primary-occurrences", "merge-to-first-occurrence"] },
+        "sourceOccurrenceIds": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "$ref": "#/$defs/occurrenceId" } },
+        "canonicalId": { "oneOf": [{ "$ref": "#/$defs/occurrenceId" }, { "type": "null" }] }
+      }
+    },
     "inventory": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["inventoryVersion", "complete", "expectedPrimaryOccurrences", "capturedPrimaryOccurrences", "sections", "occurrences"],
+      "required": ["inventoryVersion", "complete", "expectedPrimaryOccurrences", "capturedPrimaryOccurrences", "sections", "occurrences", "helperDispositions"],
       "properties": {
         "inventoryVersion": { "const": 1 },
         "complete": { "type": "boolean" },
         "expectedPrimaryOccurrences": { "type": "integer", "minimum": 0 },
         "capturedPrimaryOccurrences": { "type": "integer", "minimum": 0 },
         "sections": { "type": "array", "items": { "$ref": "#/$defs/inventorySection" } },
-        "occurrences": { "type": "array", "items": { "$ref": "#/$defs/inventoryOccurrence" } }
+        "occurrences": { "type": "array", "items": { "$ref": "#/$defs/inventoryOccurrence" } },
+        "helperDispositions": { "type": "array", "items": { "$ref": "#/$defs/helperDisposition" } }
       }
     }
   }

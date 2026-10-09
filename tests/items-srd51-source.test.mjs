@@ -55,6 +55,7 @@ function inventory(...occurrences) {
       firstPdfPage: 207, lastPdfPage: 207, firstPrintedPage: 207, lastPrintedPage: 207,
       expectedOccurrences: occurrences.length, capturedOccurrences: occurrences.length, complete: true }],
     occurrences,
+    helperDispositions: [],
   };
 }
 
@@ -62,8 +63,8 @@ test("items source package is explicitly incomplete and fails closed by default"
   await assert.rejects(verifyItemsSourcePackage(), /S01 ist unvollständig/);
   const result = await verifyItemsSourcePackage({ allowIncomplete: true });
   assert.equal(result.complete, false);
-  assert.equal(result.validation.occurrenceCount, 149);
-  assert.equal(result.validation.recordCount, 149);
+  assert.equal(result.validation.occurrenceCount, 156);
+  assert.equal(result.validation.recordCount, 156);
   assert.ok(result.blockers.length >= 5);
 });
 
@@ -228,4 +229,46 @@ test("Potion of healing keeps its first physical occurrence as canonical magic i
   assert.match(potion.description[0].text, /magical red fluid/);
   assert.equal(occurrence.mergeIntoId, null);
   assert.equal(checkedTranscript.complete, false);
+});
+
+test("equipment packs preserve physical order, exact costs and complete published contents", async () => {
+  const [checkedInventory, checkedTranscript] = await Promise.all([
+    readFile(new URL("items-srd51-inventory.json", dataRoot), "utf8").then(JSON.parse),
+    readFile(new URL("items-srd51-transcript.json", dataRoot), "utf8").then(JSON.parse),
+  ]);
+  const occurrences = checkedInventory.occurrences.filter(item => item.sectionId === "equipment-packs");
+  const records = checkedTranscript.records.filter(record => record.subcategory === "equipment-pack");
+  assert.deepEqual(occurrences.map(item => item.sourceLabel), [
+    "Burglar’s Pack", "Diplomat’s Pack", "Dungeoneer’s Pack", "Entertainer’s Pack",
+    "Explorer’s Pack", "Priest’s Pack", "Scholar’s Pack",
+  ]);
+  assert.deepEqual(records.map(record => record.id), occurrences.map(item => item.id));
+  assert.deepEqual(records.map(record => record.cost.sourceText),
+    ["16 gp", "39 gp", "12 gp", "40 gp", "10 gp", "19 gp", "40 gp"]);
+  assert.equal(records.every(record => record.source.pdfPages.join() === "70"), true);
+  assert.match(records[0].description[0].text, /10 feet of string/);
+  assert.match(records[0].description[0].text, /5 days rations/);
+  assert.match(records[5].description[0].text, /an alms box, 2 blocks of incense, a censer, vestments/);
+  assert.match(records[6].description[0].text, /a little bag of sand, and a small knife/);
+});
+
+test("pack-only helper dispositions are explicit and cannot invent primary identities", async () => {
+  const [checkedInventory, checkedTranscript] = await Promise.all([
+    readFile(new URL("items-srd51-inventory.json", dataRoot), "utf8").then(JSON.parse),
+    readFile(new URL("items-srd51-transcript.json", dataRoot), "utf8").then(JSON.parse),
+  ]);
+  assert.deepEqual(checkedInventory.helperDispositions.map(item => item.helperIndex), [
+    "string-10-feet", "alms-box", "block-of-incense", "censer", "vestments",
+    "little-bag-of-sand", "small-knife",
+  ]);
+  assert.equal(checkedInventory.helperDispositions.every(item =>
+    item.disposition === "pack-prose-only" && item.canonicalId === null), true);
+  const invented = structuredClone(checkedInventory);
+  invented.helperDispositions[0].canonicalId = "srd51:equipment:equipment-packs:1";
+  assert.throws(() => validateTranscriptData(checkedTranscript, invented, { allowIncomplete: true }),
+    /keine kanonische Primär-ID erfinden/);
+  const unknownSource = structuredClone(checkedInventory);
+  unknownSource.helperDispositions[0].sourceOccurrenceIds = ["srd51:equipment:equipment-packs:99"];
+  assert.throws(() => validateTranscriptData(checkedTranscript, unknownSource, { allowIncomplete: true }),
+    /unbekannte Occurrence/);
 });
