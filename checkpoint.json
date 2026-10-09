@@ -4060,17 +4060,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I33-R",
-      "kind": "reference_review",
-      "startedAt": "2026-10-09T15:31:59.274072+00:00",
-      "focus": "Straßenbelege R",
-      "state": "completed",
-      "result": "Drei echte Downloadkopien, sämtliche Rawhashes und13-Gruppenvergleich bestätigt; Default-Rebuild-Wiederherstellung bytegleich. Maximum nur sichtbarer Control, genaue Torzählung offen. Aufräumbefunde: CO-WAT-0010-Snapshot partial; I32-OFF-Rückstellung nur ausstehender UI-Wert, I33-Neutab zeigt GreensON. Keine dauerhafte globale Wiederherstellung aus I32 ableiten."
-    },
-    "nextRun": {
       "id": "CITY-00-I33-CP",
       "kind": "cleanup_planning",
-      "focus": "Straßenbelege und Snapshot CP"
+      "startedAt": "2026-10-09T15:32:10.337178+00:00",
+      "focus": "Straßenbelege CP",
+      "state": "completed",
+      "result": "Plan: CO-WAT-0010-Snapshot um Number3 und tatsächliche bytegleiche Default-Rückstellung ergänzen. I32-Restaurationsgrenze in acceptance/Plan ausdrücklich präzisieren und mit I33 belegen, unveränderte historische Rawdateien erhalten. Alle Verweise/Hashes und64/24 offene Pflichten prüfen; CI/CR getrennt."
+    },
+    "nextRun": {
+      "id": "CITY-00-I33-CI",
+      "kind": "cleanup_implementation",
+      "focus": "Straßenbelege und Snapshot CI"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
