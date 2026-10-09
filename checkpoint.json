@@ -3485,17 +3485,17 @@
     "state": "city00_reference_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I06-NI",
-      "kind": "native_original_probe",
-      "startedAt": "2026-10-09T11:09:48.582330+00:00",
-      "focus": "Freigegebene COK-Demo direkt starten und Kernwirkung prüfen",
-      "state": "completed",
-      "result": "25 Originalframes: Demo0.4.06, Pfad/Plot erzeugt und Kontrolleck verändert; Save unbestätigt; normaler Original-/Runnerabschluss0, eigene Prozesse weg"
-    },
-    "nextRun": {
       "id": "CITY-00-I06-NR",
       "kind": "native_reference_review",
-      "focus": "Belegprovenienz, Demo-/Grafik-/Savegrenzen gegen Plan reviewen"
+      "startedAt": "2026-10-09T11:10:59.362297+00:00",
+      "focus": "Originalframes gegen Plan und Inventarmetadaten prüfen",
+      "state": "completed_required_findings",
+      "result": "Originalwirkung/Abschluss bestätigt; NR01 neue Kandidatenzeit/-quelle präzisieren, NR02 unklare Samplezahl durch konkrete Referenzliste ersetzen"
+    },
+    "nextRun": {
+      "id": "CITY-00-I06-NCP",
+      "kind": "cleanup_planning",
+      "focus": "Metadatenreparatur ohne Originalbelegänderung planen"
     },
     "open": [
       "CITY-00 direkte Referenzinventur/Galerie aller drei Produkte",
