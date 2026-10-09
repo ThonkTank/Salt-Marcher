@@ -17,7 +17,7 @@ const root = path.resolve(__dirname, ".."),
   vault = qa + "/vault",
   debugPort = Number(process.env.DUNGEON_QA_PORT || 9226);
 const restart = process.argv.includes("--restart"),
-  hex01Atlas = process.argv.includes("--hex01-atlas"),
+  hex01Atlas = process.argv.includes("--hex01-atlas") || process.argv.includes("--hex01-layout"),
   ce01Catalog = process.argv.includes("--ce01-catalog") || process.argv.includes("--ce01-catalog-damaged"),
   ce01CatalogDamaged = process.argv.includes("--ce01-catalog-damaged"),
   v2Open = process.argv.includes("--v2-open"),
@@ -810,7 +810,8 @@ async function workflow() {
   const scenarioContext = { page, browser, fs, path, assert, crypto, PNG, root, qa, vault, sourceVault, restart, out, checks, chooseTool, editorAction, selectOnlyObjects, waitForFileAbsent, sleep, resolveQaAppCgroup };
   if (hex01Atlas) {
     const scenario = require("./host/hex01-atlas.cjs")(scenarioContext);
-    if (restart) await scenario.reopen();
+    if (process.argv.includes("--hex01-layout")) await scenario.layout();
+    else if (restart) await scenario.reopen();
     else await scenario.edit();
     return;
   }
