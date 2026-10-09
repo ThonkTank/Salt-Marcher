@@ -49,7 +49,11 @@ forderte die explizite Auflösung widersprüchlicher Lösch- und Aktivierungsque
 vollständige Rejoin-/History-Verträge und eine Acceptance-Faultmatrix. Die
 Campaign/Data-Entscheidung in Kommentar 6087908963 und die Music/Weather/Shops-
 Ratifikation in Kommentar 6087913612 binden diese Reparatur. Keiner der
-Vorgänger besitzt einen Architektur-PASS.
+Vorgänger besitzt einen Architektur-PASS. Der R03-Wiederreview in Kommentar
+6088021905 präzisierte Maskenautorität, dauerhaft fehlende Owner, Registry-
+Vollständigkeit, Prepared-Import, Delete-Portabilität und Undo-Faults; die
+Campaign/Data-Entscheidung 6088033502 bindet die capability-gebundene Erasure-
+Grenze dieser Fassung.
 
 ## Umfang und Nichtziele
 
@@ -78,6 +82,7 @@ Ausdrücklich außerhalb dieses Besitzes bleiben:
 | Campaign-Identität und Nutzbarkeitsrevision | SMR-01 | kann ohne initialisierte Live Session gültig existieren |
 | Roster, CharacterId, aktuelle Party-Mitgliedschaft und Charakterprofil | Party | eine Campaign hat höchstens eine aktuelle Party; Profile bleiben Party-Wahrheit |
 | PartyCommandHistory | Party-History | letzte 100 bestätigte Party-/Rosteraktionen mit owner-lokalen Vorher-/Nachher-Fakten und unveränderlichen Receipts; nicht SMR-07 Campaign History |
+| ReferenceOwnerRegistryProjection | Campaign-Capability-Registry | revisionierte vollständige fachliche Deklaration aller Owner und Payloadklassen, die Character-Referenzen halten können; Host transportiert, entscheidet aber keine Fachzugehörigkeit |
 | LiveSceneId, Primary-Rolle, Scene-Zuordnung, Focus und SceneRevision | SMR-03 Scene | besitzt keine Party-Mitgliedschaft, Uhr, Karte oder Maskenfachlogik |
 | SceneClock und Zeitrevision | SMR-07 | genau eine unabhängige Uhr je existierender LiveScene |
 | Encounter, Chase oder weitere Runtime-Maske | jeweiliger Maskenbesitzer | Scene hält nur ratifizierte Identität, Teilnahmeprojektion und Reconciliation-Status |
@@ -148,7 +153,9 @@ wird nie entfernt.
   `ReferenceOwnerManifest`. Verfügbare Besitzer entfernen ihre Live-Referenz im
   selben Publish; registrierte unavailable Besitzer werden darin quarantined
   und sichtbar pending. Ein unbekannter oder nicht registrierter möglicher
-  Referenzbesitzer ist vor Publish fail-closed. Tombstone-Guards an jeder
+  Referenzbesitzer ist vor Publish fail-closed. Die beim Stage gepinnte
+  RegistryRevision wird unmittelbar vor Publish erneut validiert; Install-,
+  Enable-, Disable- oder Reconnect-Races brechen stale ab. Tombstone-Guards an jeder
   Projektion verhindern trotz alter quarantined Bytes Live-Mitgliedschaft,
   Teilnahme, Undo-Ergebnis oder Resurrection. Erst vollständige Closure aller
   Manifesteinträge erlaubt den getrennten irreversiblen physischen Purge.
@@ -196,8 +203,12 @@ einen strukturierten Pending-Zustand. Namen sind nicht identitätsstiftend.
   Identität als `[UNKNOWN]`; nur ein noch tatsächlich recoverable Trash-Objekt
   darf verlinkt bleiben. Undo darf die CharacterId weder wiederherstellen noch
   erneut referenzierbar machen; erneute Anlage erzeugt eine neue CharacterId.
-  Export/Import übernimmt höchstens nichtrekonstruktive Tombstone-/Closure-
-  Belege und niemals gelöschten Party-Payload oder quarantined Live-Referenzen.
+  Ein app-kontrollierter Export nach Lösch-Publish übernimmt höchstens
+  nichtrekonstruktive Tombstone-/Closure-Belege und niemals gelöschten Payload
+  oder quarantined Live-Referenzen. Ein älterer, vor der Löschung ausdrücklich
+  vom GM erzeugter Export bleibt extern und nicht widerrufbar; sein Import
+  erzeugt eine neue unabhängige Campaign mit neuen remappten Identitäten und
+  ist keine Resurrection in der gelöschten Campaign.
 - Adventuring-Day-Budget und -Fortschritt sind reine, revisionierte Party-
   Berechnungen. Eigene Eingabezeilen bleiben transient und verändern weder
   Roster noch aktuelle Party oder Scene-Zuordnung.
@@ -270,11 +281,18 @@ werden nie still entfernt, ersetzt oder einer anderen Scene zugeordnet.
   war Target fokussiert, bleibt es Target mit neuer Revision; war eine dritte
   Scene fokussiert, bleibt sie unverändert. Source wird nie wieder `active`
   projiziert.
-- Jeder Scene-gebundene Masken-/Encounter-Owner deklariert vor Publish
-  `archive`, `complete`, `transfer-to-target` oder `quarantine-pending`. Ein
-  unavailable Owner darf den Character-Move nicht zurückrollen, aber seine
-  Daten werden unter CommandId/Receipt quarantined und können keine lebende
-  SourceScene-Referenz projizieren. Reconnect finalisiert genau einmal.
+- Rejoin selbst inferiert weder Masken-/Encounter-Completion noch Transfer und
+  löst keine fremden Folgen aus. Bewegte CharacterIds verlassen jede betroffene
+  Maske nach der bestätigten Move-Regel. `complete` ist nur als getrennt
+  ausgewiesener, vom GM bestätigter Owner-Workflow mit eigenem OwnerReceipt und
+  atomar gekoppelten Folgen zulässig. `transfer-to-target` erfordert eine
+  ratifizierte Maskenfachregel und eine ausdrückliche GM-Aktion; es überträgt
+  keine übrigen Teilnehmer oder Inhalte implizit. Sonst archiviert/suspendiert
+  der Owner ohne Folgen oder wird `quarantine-pending`.
+- Ein unavailable Maskenowner darf den Character-Move nicht zurückrollen, aber
+  seine Daten werden unter CommandId/Receipt quarantined und können keine
+  lebende SourceScene- oder Teilnehmerreferenz projizieren. Reconnect
+  finalisiert genau einmal und erzeugt weder Completion noch Transfer.
 - Source-spezifische AmbienceOverrides sowie Weather-/Shop-Verfügbarkeiten
   werden archiviert oder suspendiert, niemals auf Target übertragen. Erst eine
   frische Target-Focus-/Scene-Projektion darf Target-Overrides oder Autonomie
@@ -284,8 +302,13 @@ werden nie still entfernt, ersetzt oder einer anderen Scene zugeordnet.
   einer Partyuntergruppe reisende Inhalte folgen nur mit eigener stabiler
   Identität und bestätigtem Befehl.
 - Prepared-Scene-Import erzeugt jedes Mal eine neue unabhängige Runtime-Kopie
-  mit Quellenprovenienz. Spätere Planänderungen mutieren die Runtime-Kopie
-  nicht. Nur aktive, aktuell unzugeordnete Teilnehmer werden übernommen.
+  von Titel, Notes, Location, verlinkter Encounter-Plan-Referenz und
+  Quellenprovenienz. Spätere Planänderungen mutieren die Runtime-Kopie nicht.
+  Teilnehmer werden nicht aus einem unmöglichen `unassigned`-Zustand kopiert:
+  ausgewählte aktive Characters wechseln erst durch einen getrennt bestätigten,
+  revisionierten Move in die neue Runtime-Scene; ein fehlgeschlagener Move
+  lässt die unabhängige leere Kopie sichtbar bestehen oder wird ausdrücklich
+  verworfen, niemals still befüllt.
 
 ## Runtime-Masken
 
@@ -335,16 +358,47 @@ CampaignId, CharacterId, OwnerId, Referenz-/Revisionsbeleg und Closure-Status,
 niemals Profil, Werte, Medien oder anderen rekonstruierbaren Payload. Erfasst
 werden alle registrierten Besitzer lebender Character-Referenzen, insbesondere
 Party, Scene, Masken/Combat, SMR-06 Preparation, SMR-07/Travel sowie jeder
-retained Capability-Owner; ein möglicher unbekannter Owner blockiert Publish.
+retained Capability-Owner; zusätzlich sind Registry, Tombstone,
+PartyCommandHistory, Staging, Temp, Recovery und app-kontrollierte Exportkopien
+eigene Closure-Teilnehmer. Ein möglicher unbekannter Owner blockiert Publish.
+
+Stage pinnt eine immutable `ReferenceOwnerRegistryProjection` mit CampaignId,
+RegistryRevision, jedem Owner, seinen vollständigen Character-referenzierenden
+Payloadklassen und je Klasse einer capability-gebundenen unveränderlichen
+Erasure-Referenz. Diese Referenz ist an CampaignId, OwnerId, RegistryRevision,
+Payloadklasse und erwarteten Byte-/Hashbeleg gebunden; sie ist kein durch
+SMR-03 interpretierbarer Pfad, SQL-Schlüssel oder frei nutzbarer Locator. Der
+Lifecycle darf ausschließlich die idempotente Host-Erasure-Capability aufrufen
+und öffnet oder verändert niemals fremden Owner-Speicher selbst. Ein Owner darf
+erst nach bestätigter Closure aus der Registry verschwinden. Registry- und
+Slotbindung werden direkt vor Publish beziehungsweise Erasure revalidiert.
 
 Jeder Manifesteintrag ist vor Publish entweder `removed` oder
 `unavailable-quarantined`. Danach erzwingt jeder Lese-, Undo-, Import- und
 Recovery-Rand den Tombstone: quarantined Bytes sind nicht live auflösbar und
 können keinen neuen Effekt erzeugen. Beim Reconnect entfernt der Owner seine
 Alt-Referenz mit ursprünglicher CommandId genau einmal und schreibt ein
-`ClosureReceipt`. Erst vollständige Closure erlaubt physischen Payload- und
+`ClosureReceipt`. Kehrt ein registrierter Owner dauerhaft nicht zurück, löscht
+die gebundene Erasure-Capability ausschließlich seine manifestierten
+Payloadklassen byteweise, ohne sie fachlich zu interpretieren, und schreibt
+dasselbe nichtrekonstruktive ClosureReceipt. Dieses enthält nur Command-,
+Owner-, Registry-/OwnerRevision-, Hash- und Outcome-Belege.
+
+PartyCommandHistory und immutable Receipts behalten nach Löschung nur
+nichtrekonstruktive Belege. Rekonstruktive Vorher-/Nachher-Fakten, Profile, XP,
+Quick Fields, Loot- oder Medienpayloads werden in History, Recovery, Staging,
+Temp, retained storage und app-kontrollierten Exportkopien entfernt oder
+anonymisiert, ohne den erklärenden `[UNKNOWN]`-Fakt umzuschreiben. Erst die
+vollständige semantische und Byte-Closure erlaubt physischen Payload- und
 Tombstone-Purge. Recovery rollt vor Publish alles zurück und finalisiert danach
 nur vorwärts; Retry wiederholt weder Party-Löschung noch abhängige Effekte.
+
+Solange Closure oder Purge pending ist, ist Complete Export blockiert. Nur ein
+ausdrücklich gewählter Salvage-Export darf genau die manifestierten quarantined
+Bytes auslassen, nennt jede Identität und Auswirkung und enthält weder
+rekonstruktiven gelöschten Payload noch einen fehlenden Tombstone-/Closure-
+Beleg. Frühere GM-kontrollierte Exporte bleiben die oben beschriebene externe,
+nicht widerrufbare Ausnahme.
 
 Restore behält Campaign-, Character-, LiveScene-, Masken- und
 Referenzidentitäten. Import erzeugt eine neue Campaign und remappt jede
@@ -366,6 +420,10 @@ unveränderliche CommandReceipt sind atomar. Undo/Redo benutzen eigene stabile
 CommandIds und Receipts, erhöhen Revisionen und liefern aktuelle Projektionen;
 ein unbekannter Ausgang wird vor einem neuen Versuch mit der ursprünglichen
 CommandId aufgelöst. Eine neue Aktion nach Undo verwirft den Redo-Zweig.
+Nach permanenter Charakterlöschung werden alle rekonstruierbaren Vorher-/
+Nachher-Fakten über das ReferenceOwnerManifest anonymisiert oder entfernt;
+Receipt und erklärender History-Eintrag bewahren nur nichtrekonstruktive
+Command-/Owner-/Revision-/Outcome-Evidenz und `[UNKNOWN]`.
 
 Undo/Redo kehrt nur kausal betroffene Felder um. Spätere inkompatible Scene-,
 Clock-, Journey-, Combat- oder Profiländerung erzeugt einen sichtbaren Konflikt
@@ -416,18 +474,22 @@ keine Schreibfähigkeit und keine GM-private oder mechanische Information.
    Maskenprovider sowie Crash/Restart liefern jeweils genau den festgelegten
    Focus-/Primary-/Clock-/Maskenausgang; keine Live-Projektion referenziert die
    entfernte Source. Source-Ambience/Weather/Shop-Verfügbarkeit wird nie auf
-   Target übertragen und Target aktiviert erst aus frischer Projektion.
+   Target übertragen und Target aktiviert erst aus frischer Projektion. Rejoin
+   allein bewirkt niemals Masken-/Encounter-Completion, Transfer oder Folgen;
+   ohne getrennte GM-Bestätigung werden übrige Teilnehmer/Inhalte nicht bewegt.
 7. Deaktivierung bleibt bei Fehlern nichtdestruktiver abhängiger Projektionen
    genau einmal Party-autoritativ; nur betroffene Contexts werden pending,
    stale Contexts werden nicht als synchron gezeigt und Retry dupliziert nichts.
 8. Permanente Löschung mit unavailable Combat vor Publish schreibt Party-
-   Löschung, nichtrekonstruktiven Tombstone und vollständiges Owner-Manifest
-   genau einmal. Restart projiziert keine quarantined Referenz live; Reconnect
-   entfernt sie mit einem ClosureReceipt, Retry wiederholt die Party-Löschung
-   nicht, Undo scheitert, und erst vollständige Closure erlaubt Purge. Ein
-   unbekannter möglicher Owner ist fail-closed. Export/Import führt weder
-   gelöschten Payload noch quarantined Live-Referenzen wieder ein; History zeigt
-   `[UNKNOWN]` oder einen tatsächlich recoverable Trash-Link.
+   Löschung, nichtrekonstruktiven Tombstone und Registry-revisioniertes Owner-
+   Manifest genau einmal. Registry-Install/Enable/Disable/Reconnect-Races
+   brechen stale ab. Restart projiziert keine quarantined Referenz live;
+   Reconnect oder capability-gebundene Erasure bei einem nie wiederkehrenden
+   Owner schreibt genau ein ClosureReceipt. Retry löscht Party nicht zweimal,
+   Undo scheitert, und nur semantischer plus Byte-Audit aller History-, Recovery-,
+   Staging-, Temp-, retained- und Exportkopien erlaubt Purge. Ein unbekannter
+   möglicher Owner ist fail-closed; History zeigt `[UNKNOWN]` oder recoverable
+   Trash und enthält keinen rekonstruierbaren Vorher-/Nachher-Payload.
 9. Zwei Masken verschiedener Typen und zwei Masken desselben Typs dürfen
    Teilnehmer teilen. Ein Scene-Move entfernt die Figur aus allen betroffenen
    Masken, ohne andere Teilnehmer oder Masken zu ändern.
@@ -454,6 +516,10 @@ keine Schreibfähigkeit und keine GM-private oder mechanische Information.
     erhaltene Metadaten und Auswirkung nennt; kein stilles Downgrade. Import und
     Recovery eines Salvage bleiben als Salvage erkennbar, bewahren zulässige
     Identitäten/Metadaten und initialisieren keine fehlende Session still.
+    Pending Delete-Closure blockiert Complete; Salvage darf nur manifestierte
+    quarantined Bytes auslassen. Ein vor der Löschung erzeugter externer GM-
+    Export darf als neue remappte Campaign importiert werden und mutiert die
+    gelöschte Quell-Campaign nicht.
 15. Name-only-Erstellung, zwei gleichnamige Rosterfiguren und das Leeren jedes
     optionalen Profilfelds erhalten stabile Identitäten, echte Abwesenheit und
     inaktive Mitgliedschaft ohne Scene-/Travel-Nebenwirkung.
@@ -461,16 +527,23 @@ keine Schreibfähigkeit und keine GM-private oder mechanische Information.
     Adventuring-Day-Berechnung ändern keine Scene-Zuordnung. Eine planning-only
     expected Party verändert weder Roster-Mitgliedschaft noch LiveScene.
 17. Wiederholter Prepared-Scene-Import erzeugt unabhängige Runtime-Kopien mit
-    Source-Provenienz; spätere Planner-Änderung wirkt nicht zurück, und nur
-    aktive aktuell unzugeordnete Teilnehmer werden übernommen.
+    Source-Provenienz; spätere Planner-Änderung wirkt nicht zurück. Die Kopie
+    beginnt ohne Teilnehmer; ausgewählte aktive Characters wechseln nur über
+    einen getrennten revisionierten Move. Dessen Fehlschlag befüllt sie nicht
+    still und verändert keine bestehende Zuordnung.
 18. Completion einer Maske beendet weder LiveScene noch andere Masken und
-    verändert keine fremden Teilnehmer oder Ownerdaten.
-19. Eine Faultmatrix für `InitializeLiveSession`, Split/Rejoin, Move und
-    permanente Löschung injiziert Fehler vor, während und nach Stage, Validate,
-    owner-lokalem Prepare, Publish, Verify und Finalize sowie Crash/Restart und
-    unbekannten Ausgang. Vor Publish ist ausschließlich Discard/Rollback, nach
-    Publish ausschließlich Roll-forward sichtbar; nie partielle Fachwahrheit.
-    Unbekanntes Ergebnis wird nur mit ursprünglicher CommandId/Receipt geklärt.
+    verändert keine fremden Teilnehmer oder Ownerdaten. Rejoin ohne getrennte
+    GM-confirmed Completion/OwnerReceipt beziehungsweise ratifizierte explizite
+    Transfer-Aktion erzeugt weder Completion, Transfer noch Encounter-Folgen.
+19. Eine Faultmatrix für `InitializeLiveSession`, Split/Rejoin, Move,
+    permanente Löschung sowie Undo und Redo injiziert Fehler vor, während und
+    nach Stage, Validate, owner-lokalem Prepare, Publish, Verify und Finalize
+    sowie Crash/Restart und unbekannten Ausgang—einschließlich zwischen
+    HistoryReceipt und Owner-Reconciliation. Vor Publish ist ausschließlich
+    Discard/Rollback, nach Publish ausschließlich Roll-forward sichtbar; nie
+    partielle Fachwahrheit. Der ursprüngliche Ausgang wird vor einem neuen
+    Versuch geklärt; keine zweite Umkehr oder doppelte Journey-/Combat-
+    Reconciliation.
 20. PartyCommandHistory bewahrt 100 Schritte über Fenster-, Navigations- und
     Prozessneustart, verwirft den Redo-Zweig nach neuer Aktion und nutzt für
     Undo/Redo neue CommandIds/Receipts. Spätere inkompatible Änderungen erzeugen
