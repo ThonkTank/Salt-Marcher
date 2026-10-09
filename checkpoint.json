@@ -1,7 +1,7 @@
 {
   "saltMarcherReplacement": {
     "date": "2026-10-09",
-    "state": "smr00_adr_p01_h02_plan_reviewed_implementation_next",
+    "state": "smr00_adr_p01_h02_no_go_reviewed_cleaned_h03_plan_next",
     "plan": "ROADMAP-SALTMARCHER-REPLACEMENT.md",
     "platformAdr": "ROADMAP-SALTMARCHER-PLATFORM-ADR.md",
     "prototypePlan": "ROADMAP-SALTMARCHER-ADR-PROTOTYPES.md",
@@ -86,11 +86,18 @@
     },
     "adrP01H02": {
       "date": "2026-10-09",
-      "state": "plan_passed_implementation_pending",
+      "state": "no_go_checked_reviewed_cleaned",
       "plan": "ROADMAP-SALTMARCHER-ADR-P01-H02-PLAN.md",
       "hypothesis": "A real sandboxed Electron renderer/preload/main/utility chain delegates bounded Linux durability operations to one native root-FD helper; success qualifies only a full cross-platform P01 rerun.",
-      "limits": "Plan only. No H02 implementation, platform Go or P02 authorization. Windows and macOS remain not-run.",
-      "review": "ADR-P01-H02-R01 passed independently on exact shared commit 0dd314c1772ebd91f3375d8660f964a731bdf215 with no mandatory finding; implementation-candidate cloud architecture/security review remains required."
+      "receiptSourceCommit": "689e158d381c394a1af1eab58e06680dacf33413",
+      "reviewedEvidenceHead": "6e282f91846313a615cdbaf692d0ed65da80e5f2",
+      "cleanupCommit": "8d620a064e16d977e51b97d6aec64b7f40034961",
+      "aggregate": "tools/adr-prototypes/evidence/p01-aggregate.json",
+      "externalReceipt": "/home/aaron/.cache/dungeon-native-qa/smr-adr-prototypes/h02-runs/ADR-P01-H02/h02-1791561179831-67e8f5f3-abab-4a75-9106-c5c2745b0b91/receipt.json",
+      "decision": "No-Go: the real Linux Electron process boundary and fresh restart passed, but the mandatory durable receipt state machine and complete fault matrix were not run.",
+      "limits": "No platform Go or P02 authorization. Durable receipt/recovery, the complete Create/Update/Delete fault matrix, installed-adapter byte identity, Windows, macOS and accessibility remain not-run.",
+      "review": "Plan review ADR-P01-H02-R01 passed exact shared commit 0dd314c1772ebd91f3375d8660f964a731bdf215. Independent code/evidence re-review passed exact head 6e282f91846313a615cdbaf692d0ed65da80e5f2 after repairing the receipt-source versus later evidence-commit provenance label. Independent cleanup review passed exact commit 8d620a064e16d977e51b97d6aec64b7f40034961; only p01-v2 and the aggregate remain.",
+      "next": "Plan a narrower H03 hypothesis for the missing durable receipt/recovery state machine and complete native fault matrix while preserving the proven process boundary."
     },
     "open": [
       "Replacement architecture hypothesis after ADR-P01 No-Go; ADR-P02 through ADR-P04 and ADR-C01 remain blocked",
@@ -99,10 +106,10 @@
       "Per-slice source-to-target mapping and host persistence/security decisions"
     ],
     "nextRun": {
-      "id": "ADR-P01-H02-I01",
-      "kind": "architecture_hypothesis_implementation",
-      "owner": "local_implementation_thread",
-      "focus": "Implement and evidence only the reviewed Linux Electron/utility/native-helper H02 candidate; preserve product bytes and keep ADR-P02 blocked"
+      "id": "ADR-P01-H03-P01",
+      "kind": "architecture_hypothesis_plan",
+      "owner": "local_coordination_thread",
+      "focus": "Plan only the missing durable receipt/recovery state machine and complete Create/Update/Delete native fault matrix; reuse the proven process-boundary evidence without authorizing ADR-P02"
     }
   },
   "saltMarcherCatalogEncounter": {
@@ -4087,17 +4094,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I38-R",
-      "kind": "reference_review",
-      "startedAt": "2026-10-09T15:54:53.712965+00:00",
-      "focus": "Küstenbelege R",
+      "id": "CITY-00-I39-P",
+      "kind": "integration_audit_planning",
+      "startedAt": "2026-10-09T16:00:29.840385+00:00",
+      "focus": "CITY-01-Anschluss an aktuelle Atlasbasis planen",
       "state": "completed",
-      "result": "Drei echte Downloadkopien, sieben Bilder/Rawhashes und vollständige13→14-Gruppenvereinigung geprüft. water hinzugefügt,10 gemeinsame Gruppen geändert/3 gleich; planks0→8, Rückstellung bytegleich. sea0.2 bleibt ohne bewiesene Einheit. Exakte Hafenanschlusstopologie und eigene Abnahme nicht behauptet. Aufräumbefund: Snapshot führt Küstenwirkung noch unspezifisch als weitere Features offen."
+      "result": "Auditumfang festgelegt: drei CITY-01-Pflichtfälle und ihre drei Originalzuordnungen gegen reale Kamera, Eingabe, Renderer, Dokumentparser, History und Speicher prüfen. Konkreten Anschlussplan mit vorhanden/geplant/fehlend, Besitzer und Hostnachweis liefern; keine erfundene HEX-05-API und keine zweite Editorbasis. Produktstart erst nach geprüfter HEX-05-Übergabe."
     },
     "nextRun": {
-      "id": "CITY-00-I38-CP",
-      "kind": "cleanup_planning",
-      "focus": "Küstenbelege und Snapshot CP"
+      "id": "CITY-00-I39-I",
+      "kind": "integration_audit",
+      "focus": "Reale Schnittstellen und Stadtpflichten prüfen; konkreten Anschlussplan liefern"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
