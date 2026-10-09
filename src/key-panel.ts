@@ -37,17 +37,24 @@ export class StructuredKeyPanel {
     this.root.dataset.keyRoom = roomId;
     this.selected = sectionId;
     this.stop = session.subscribe((event) => {
-      if (!this.closed && event.ids.has(roomId) && !this.dirty()) this.render();
+      if (!this.closed && event.ids.has(roomId) && !this.hasDraft()) this.render();
     });
     this.render();
   }
 
-  private dirty(): boolean {
+  hasDraft(): boolean {
     return !!this.editor && this.editor.value !== this.original.replace(/\r\n?/g, "\n");
   }
 
+  allowNavigation(): boolean {
+    if (!this.hasDraft()) return true;
+    this.notice("Key-Entwurf zuerst Übernehmen oder Verwerfen.");
+    this.editor?.focus();
+    return false;
+  }
+
   commit(): boolean {
-    if (!this.editor || !this.selected || !this.dirty()) return true;
+    if (!this.editor || !this.selected || !this.hasDraft()) return true;
     try {
       editMarkdownSection(this.session, this.roomId, this.selected, this.original, this.editor.value);
       this.original = this.editor.value;
@@ -59,7 +66,7 @@ export class StructuredKeyPanel {
   }
 
   focus(sectionId?: string, anchor?: string): void {
-    if (!this.commit()) return;
+    if (!this.allowNavigation()) return;
     this.selected = sectionId;
     this.anchor = anchor;
     this.render();
@@ -102,7 +109,7 @@ export class StructuredKeyPanel {
       if (section.id === this.selected) entry.setAttribute("aria-current", "true");
     }
     this.button(navigation, "+ Abschnitt", () => {
-      if (!this.commit()) return;
+      if (!this.allowNavigation()) return;
       this.selected = addMarkdownSection(this.session, this.roomId, this.selected);
       this.render();
     });
@@ -125,12 +132,12 @@ export class StructuredKeyPanel {
     if (!selected) return;
     const controls = this.root.createDiv({ cls: "dn-key-controls" });
     this.button(controls, "↑", () => {
-      if (!this.commit()) return;
+      if (!this.allowNavigation()) return;
       moveKeySection(this.session, this.roomId, selected.id, -1);
       this.render();
     });
     this.button(controls, "↓", () => {
-      if (!this.commit()) return;
+      if (!this.allowNavigation()) return;
       moveKeySection(this.session, this.roomId, selected.id, 1);
       this.render();
     });
@@ -144,7 +151,7 @@ export class StructuredKeyPanel {
       return;
     }
     this.button(controls, "Entfernen", () => {
-      if (!this.commit()) return;
+      if (!this.allowNavigation()) return;
       try {
         removeMarkdownSection(this.session, this.roomId, selected.id);
         this.selected = undefined;
