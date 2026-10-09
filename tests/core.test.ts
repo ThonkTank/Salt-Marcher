@@ -21,5 +21,6 @@ import "./core/catalog-workspace.test";
 import "./core/open-unique-view.test";
 import "./core/atlas-foundation.test";
 import "./core/atlas-terrain.test";
+import "./core/atlas-file-transaction.test";
 import "./core/city-codec.test";
 import "./core/city-commands.test";

@@ -408,21 +408,23 @@
   "hexAtlasExecution": {
     "scope": "HEX-00 bis HEX-28 und sämtliche eingeordneten CITY-00 bis CITY-09 vollständig",
     "phase": "HEX-02",
-    "state": "native_island_checked_durable_editing_next",
+    "state": "durable_terrain_editing_in_progress",
     "plan": "ROADMAP-HEX-02-PLAN.md",
     "currentRun": {
-      "id": "HEX-02-I01b",
-      "kind": "implementation_host",
-      "startedAt": "2026-10-09T16:41:19.786367+00:00",
-      "state": "completed",
-      "focus": "Same Atlas/camera: actual Land/Sea/Forest/Reset, preview and original-compatible stroke/Escape/undo; early native island.",
-      "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/i01b-native-implementation.json",
-      "finishedAt": "2026-10-09T16:58:01.825609+00:00"
-    },
-    "nextRun": {
       "id": "HEX-02-I01c",
       "kind": "durable_implementation",
-      "focus": "FileStore CAS journal, durable draft, Save/fresh terrain process; no more tools before this works."
+      "startedAt": "2026-10-09T17:01:39.507883+00:00",
+      "state": "in_progress",
+      "focus": "Hostneutral FileStore CAS transaction reused with terrain+manifest+draft, followed immediately by saved/recovered native island.",
+      "fileTransactionPacket": {
+        "state": "checked",
+        "finishedAt": "2026-10-09T17:10:56.510362+00:00"
+      }
+    },
+    "nextRun": {
+      "id": "HEX-02-I01d",
+      "kind": "implementation_host",
+      "focus": "SaveAs/Discard and A↔B after saved/reopened island is functional."
     },
     "review": {
       "run": "HEX-01-R01",
@@ -1106,7 +1108,25 @@
           "Old global catalog total-bundle cap failed271/272; owner fix477535f integrated, clean276/276 passed",
           "Old fixture split at1120px put known test center offscreen; actual1440px fixture sequence passed, no product layout change"
         ],
-        "installation": "user vault unchanged"
+        "installation": "user vault unchanged",
+        "finalIntegratedClean": {
+          "source": "f06eb15f85aa7c34d3251eca788b93385d034c51",
+          "testsPassed": 282,
+          "checkPassed": true,
+          "buildPassed": true,
+          "sameNativeBuildSha256": "99b4d9a6e293ce7bb90f1ceaee453cd327c33d1c0d21149237f594885e332aaf"
+        }
+      },
+      "hex02FileTransaction": {
+        "state": "checked_core_implementation",
+        "run": "HEX-02-I01c",
+        "testsLocal": 285,
+        "cases": 6,
+        "faultBoundaries": 12,
+        "checkPassed": true,
+        "buildPassed": true,
+        "scope": "Existing FileStore CAS, create/update/delete, prepared rollback, committed cleanup, external/corrupt-data preserve, shared-backend serialization",
+        "limits": "Not wired to Atlas Save/draft yet. No native saved/reopened terrain or filesystem fsync/TOCTOU approval."
       }
     },
     "repairPlan": "ROADMAP-HEX-00-REPAIR-PLAN.md",
