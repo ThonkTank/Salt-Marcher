@@ -792,3 +792,6 @@ CITY-01-PREP-N05 Start 2026-10-09T19:50:28.278387+02:00; CITY-DRAFT-R06-01: voll
 
 
 CITY-01-PREP-R07 Start 2026-10-09T17:52:11.677389+00:00; Beide N05-Regressionen gegen R06-Originalproben reviewt: Anlage bis ausdrücklichem Apply ohne Mutation, ein exaktes Undo/Redo; editCity akzeptiert Überlaufkandidaten, erst Szenenbounds lehnen ihn ab und löschen Vorschau, danach gültige Korrektur. Quellenhashes unverändert zum integrierten grünen Stand; CITY-DRAFT-R06-01 geschlossen. Keine weitere Pflichtlücke im Draftcore; keine Host-/Atlas-/Savefreigabe. Beleg: /home/aaron/.cache/dungeon-native-qa/city-plans/city01-gestures-20261009/refinement-review.json. Aufräum-P/I/R folgt.
+
+
+CITY-01-PREP-N05-CLEAN-R05 Start 2026-10-09T17:53:44.038473+00:00; Separate Aufräumplanung/Umsetzung haben Gesamt-/Anschlussplan mit dem vorhandenen reviewten Draft abgeglichen. Neue Verweise/JSON und sämtliche N05-Quellenhashes geprüft;327Tests/check/build unverändert, kein zusätzlicher Runtime-/Fixtureumbau. CITY-DRAFT-R06-01 geschlossen, keine Restlücke im Draftcore.24CTY und echte Host/Gesten/Save/Atlasabnahmen bleiben offen. NächsterP06 plant den Werkzeugadapter an der bestätigten aufrufergelieferten Projektion, mit Hexbesitzeranschluss. Beleg: /home/aaron/.cache/dungeon-native-qa/city-plans/city01-gestures-20261009/refinement-cleanup-review.json.
