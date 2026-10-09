@@ -130454,13 +130454,17 @@
           "evidence": []
         },
         "hostCheck": {
-          "state": "scoped_o01a_read_only_observed_review_passed_full_case_open",
+          "state": "scoped_o01a_and_o01b_terrain_observed_review_passed_full_case_open",
           "build": "Obsidian 1.14.4; main.js SHA-256 6896c7b53cb0100178d32c217b824b6c762122a33df38921e84acdd467234ba7; Produktstand fcc4ce612d17c47c720ce4bf7c0c5e216398f41e",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/dd036-o01a-20261009/evidence/1791567176069-dd036-o01a-edit/o01a-result.json",
-            "/home/aaron/.cache/dungeon-native-qa/dd036-o01a-20261009/evidence/1791567218121-dd036-o01a-reopen/o01a-result.json"
+            "/home/aaron/.cache/dungeon-native-qa/dd036-o01a-20261009/evidence/1791567218121-dd036-o01a-reopen/o01a-result.json",
+            "/home/aaron/.cache/dungeon-native-qa/dd036-o01b-20261009/original/evidence/1791567719360-dd036-o01b-original-edit/o01b-result.json",
+            "/home/aaron/.cache/dungeon-native-qa/dd036-o01b-20261009/transport/evidence/1791567727327-dd036-o01b-transport-edit/o01b-result.json",
+            "/home/aaron/.cache/dungeon-native-qa/dd036-o01b-20261009/missing/evidence/1791567734162-dd036-o01b-missing-edit/o01b-result.json",
+            "/home/aaron/.cache/dungeon-native-qa/dd036-o01b-20261009/foreign/evidence/1791567741590-dd036-o01b-foreign-edit/o01b-result.json"
           ],
-          "gap": "Nur referenzfreie .overworld und bytegleiche Einzeldatei-Transportkopie mit stabiler world.id und null Atlas-Schreibaufrufen belegt. Dungeondraft-Originalablauf, Kinddateien, Save, Import und vollständige Gleichwertigkeit bleiben offen."
+          "gap": "O01a belegt referenzfreies read-only Öffnen; O01b eng eine nichtleere .overworld mit genau einem Terrainkind, tatsächlicher Dateikopie und Missing-/Foreign-Child-Ablehnung. Dungeondraft-Originalablauf, Stadt-/Dungeon-Kinder, geschützte Key-Bytes, Save, Import und vollständige Gleichwertigkeit bleiben offen."
         }
       },
       {
@@ -131793,13 +131797,17 @@
           "evidence": []
         },
         "hostCheck": {
-          "state": "scoped_o01a_read_only_observed_review_passed_full_case_open",
+          "state": "scoped_o01a_and_o01b_terrain_observed_review_passed_full_case_open",
           "build": "Obsidian 1.14.4; main.js SHA-256 6896c7b53cb0100178d32c217b824b6c762122a33df38921e84acdd467234ba7; Produktstand fcc4ce612d17c47c720ce4bf7c0c5e216398f41e",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/dd036-o01a-20261009/evidence/1791567176069-dd036-o01a-edit/o01a-result.json",
-            "/home/aaron/.cache/dungeon-native-qa/dd036-o01a-20261009/evidence/1791567218121-dd036-o01a-reopen/o01a-result.json"
+            "/home/aaron/.cache/dungeon-native-qa/dd036-o01a-20261009/evidence/1791567218121-dd036-o01a-reopen/o01a-result.json",
+            "/home/aaron/.cache/dungeon-native-qa/dd036-o01b-20261009/original/evidence/1791567719360-dd036-o01b-original-edit/o01b-result.json",
+            "/home/aaron/.cache/dungeon-native-qa/dd036-o01b-20261009/transport/evidence/1791567727327-dd036-o01b-transport-edit/o01b-result.json",
+            "/home/aaron/.cache/dungeon-native-qa/dd036-o01b-20261009/missing/evidence/1791567734162-dd036-o01b-missing-edit/o01b-result.json",
+            "/home/aaron/.cache/dungeon-native-qa/dd036-o01b-20261009/foreign/evidence/1791567741590-dd036-o01b-foreign-edit/o01b-result.json"
           ],
-          "gap": "Nur referenzfreie .overworld und bytegleiche Einzeldatei-Transportkopie mit stabiler world.id und null Atlas-Schreibaufrufen belegt. Dungeondraft-Originalablauf, Kinddateien, Save, Import und vollständige Gleichwertigkeit bleiben offen."
+          "gap": "O01a belegt referenzfreies read-only Öffnen; O01b eng eine nichtleere .overworld mit genau einem Terrainkind, tatsächlicher Dateikopie und Missing-/Foreign-Child-Ablehnung. Dungeondraft-Originalablauf, Stadt-/Dungeon-Kinder, geschützte Key-Bytes, Save, Import und vollständige Gleichwertigkeit bleiben offen."
         }
       },
       {
