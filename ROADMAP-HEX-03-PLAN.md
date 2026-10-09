@@ -50,3 +50,7 @@ HEX-03 liefert nur den ersten geprüften Weltpunkt und Mehrdateivertrag. HEX-04/
 Neue gezielte Core-/Adaptertests nur für die benannten Daten-/History-/Speicherfehler. Schlanke check/test/build-Gates, genaue Buildtriplets und normale isolierte Hostexits. Echte Bilder und Texte ansehen; Wortlaut und IDs nach Neuöffnung vergleichen. Fremde Checkpointwurzeln, lokale Teständerungen, Originalkarten/Belege und Nutzervault bleiben geschützt. Laufanfang/-ende und konkrete SHAs über Issue1 koordinieren; regelmäßig normal veröffentlichen und Upstream integrieren.
 
 Native Ortfunktion, vollständiger gemeinsamer Zoom, Cityerzeugung, sämtliche Hexstufen, Wonderdraft-Parität, Großwelt, physische Eingabe und Installation bleiben jeweils eigene Nachweise. Dieser Plan schließt keine dieser Abnahmen vorweg.
+
+## I01b-Zwischenstand: gemeinsamer Entwurfcodec
+
+HEX-03-I01b-draft2 auf `05f4f5c` erfasst Version2 mit Ortsbytes und Placements sowie Terrain; sechs neue Fälle, tatsächlicher FileTransaction-Rollback/Retry und saubere check/test403/build bestanden. Version1 bleibt separat lesbar. Das ist noch kein Repository-/Marker-/Key-/Hostanschluss. Nächster Schritt bleibt der vollständige gemeinsame Speicherweg, unmittelbar danach der erste native Ortsablauf. Neue Fachübergaben werden in Issue #7 geführt, Bereichsrisiken zur Plattform in Issue #11; Issue #1 dient nur dem übergreifenden Index.
