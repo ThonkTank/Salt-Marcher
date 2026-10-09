@@ -4083,17 +4083,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I38-P",
-      "kind": "reference_planning",
-      "startedAt": "2026-10-09T15:51:56.580605+00:00",
-      "focus": "Küste und Hafen",
-      "state": "completed",
-      "result": "Kontrollierter Coast-Rebuild mit vollständigem Gruppenumfang und Rückstellung geplant."
-    },
-    "nextRun": {
       "id": "CITY-00-I38-I",
       "kind": "reference_implementation",
-      "focus": "Coast-Feature und Hafenstruktur prüfen"
+      "startedAt": "2026-10-09T15:54:09.203174+00:00",
+      "focus": "Küsten-/Hafenwirkung",
+      "state": "completed",
+      "result": "Vollständige13/14-Gruppenprobe und bytegleiche Rückstellung gesichert; Hafenplan präzisiert."
+    },
+    "nextRun": {
+      "id": "CITY-00-I38-R",
+      "kind": "reference_review",
+      "focus": "Zusätzliche Wassergruppe und Steggrenzen prüfen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
