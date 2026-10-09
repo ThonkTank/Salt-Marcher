@@ -130448,10 +130448,13 @@
           "evidence": []
         },
         "hostCheck": {
-          "state": "open",
-          "build": null,
-          "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "state": "scoped_o01a_read_only_observed_review_pending_full_case_open",
+          "build": "Obsidian 1.14.4; main.js SHA-256 99b4d9a6e293ce7bb90f1ceaee453cd327c33d1c0d21149237f594885e332aaf; Produktstand b518521293b79fa3745378fec3674ebfd90383ae",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/dd036-o01a-20261009/evidence/1791566748761-dd036-o01a-edit/o01a-result.json",
+            "/home/aaron/.cache/dungeon-native-qa/dd036-o01a-20261009/evidence/1791566759544-dd036-o01a-reopen/o01a-result.json"
+          ],
+          "gap": "Nur referenzfreie .overworld und bytegleiche Einzeldatei-Transportkopie mit stabiler world.id und null Atlas-Schreibaufrufen belegt. Dungeondraft-Originalablauf, Kinddateien, Save, Import und vollständige Gleichwertigkeit bleiben offen."
         }
       },
       {
@@ -131784,10 +131787,13 @@
           "evidence": []
         },
         "hostCheck": {
-          "state": "open",
-          "build": null,
-          "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "state": "scoped_o01a_read_only_observed_review_pending_full_case_open",
+          "build": "Obsidian 1.14.4; main.js SHA-256 99b4d9a6e293ce7bb90f1ceaee453cd327c33d1c0d21149237f594885e332aaf; Produktstand b518521293b79fa3745378fec3674ebfd90383ae",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/dd036-o01a-20261009/evidence/1791566748761-dd036-o01a-edit/o01a-result.json",
+            "/home/aaron/.cache/dungeon-native-qa/dd036-o01a-20261009/evidence/1791566759544-dd036-o01a-reopen/o01a-result.json"
+          ],
+          "gap": "Nur referenzfreie .overworld und bytegleiche Einzeldatei-Transportkopie mit stabiler world.id und null Atlas-Schreibaufrufen belegt. Dungeondraft-Originalablauf, Kinddateien, Save, Import und vollständige Gleichwertigkeit bleiben offen."
         }
       },
       {
