@@ -3427,17 +3427,17 @@
     "state": "city00_reference_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I04-CI",
-      "kind": "cleanup_implementation",
-      "startedAt": "2026-10-09T10:42:01.854083+00:00",
-      "focus": "R01/R02 ohne Änderung der Originalartefakte reparieren",
-      "state": "completed",
-      "result": "Wetter ist Dokumentationskandidat; Export und gesperrte Integrationen besitzen getrennte direkte Belege"
-    },
-    "nextRun": {
       "id": "CITY-00-I04-CR",
       "kind": "cleanup_review",
-      "focus": "Korrekte Zuordnung und Erhalt fremder Wurzeln verifizieren"
+      "startedAt": "2026-10-09T10:42:27.821438+00:00",
+      "focus": "Belegintegrität und korrigierte Zuordnung prüfen",
+      "state": "completed_no_required_findings_in_package",
+      "result": "Sieben Belege unverändert, 45 eindeutige offene Pflichten, Export/Wetter/Integration getrennt; CTY und fremde Wurzeln erhalten"
+    },
+    "nextRun": {
+      "id": "CITY-00-I04-NR",
+      "kind": "reference_rereview",
+      "focus": "R01/R02 schließen und verbleibende Originalaufgaben priorisieren"
     },
     "open": [
       "CITY-00 direkte Referenzinventur/Galerie aller drei Produkte",
