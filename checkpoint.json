@@ -4078,17 +4078,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I36-R",
-      "kind": "reference_review",
-      "startedAt": "2026-10-09T15:45:57.635904+00:00",
-      "focus": "Customgrößenbelege R",
-      "state": "completed",
-      "result": "Vier echte Downloadkopien, elf Bilder/Rawhashes und13-Gruppenvergleich bestätigt. Size+Rebuild-Versuch nur sichtbarer/URL-Nichteffekt; Enter erzeugt neuen Seed. Reiner Größenvergleich über From URL hält Seed,8 Gruppen geändert/5 gleich. Versuchsbilder03/04/05 korrekt begrenzt; Rückstellung bytegleich. Aufräumbefund: Snapshot nennt Customgröße noch offen."
-    },
-    "nextRun": {
       "id": "CITY-00-I36-CP",
       "kind": "cleanup_planning",
-      "focus": "Customgrößenbelege und Snapshot CP"
+      "startedAt": "2026-10-09T15:46:09.219407+00:00",
+      "focus": "Customgrößenbelege CP",
+      "state": "completed",
+      "result": "Plan: CO-WAT-0001-Snapshot um direkten Customgrößen-/Seedumfang ergänzen, Einheiten/Bereiche weiter offen. Ursprüngliche Small- und Rebuild-Belege nicht umdeuten; Versuchsnamen nicht als erfolgreichen Size19-Apply behaupten. Hashes/Downloadkopien/Verweise und65/24 offene Pflichten prüfen. CI/CR getrennt."
+    },
+    "nextRun": {
+      "id": "CITY-00-I36-CI",
+      "kind": "cleanup_implementation",
+      "focus": "Customgrößenbelege und Snapshot CI"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
