@@ -3539,5 +3539,12 @@
     },
     "limitation": "Synthetische Fixtures prüfen Parser-, Assetklassifizierungs- und Kataloglogik; sie ersetzen keine originale Paket-/GUI-Abnahme.",
     "review": "Die Lazy-Range-Assertion behandelt offene slice-Grenzen korrekt. Sie protokolliert weiterhin nur slice-Aufrufe, nicht ob danach arrayBuffer()/text() Materialisierung auslöst; Lazy-Payload-Verhalten ist dadurch nur teilweise belegt."
+  },
+  "cokAdapterTests": {
+    "date": "2026-10-09",
+    "scope": "Fünf offline Lock-, Identitäts- und Zielpfadtests in den Standardaufruf npm test aufgenommen.",
+    "files": ["package.json", "tests/canvas-of-kings-session.test.mjs"],
+    "verification": {"targeted": {"passed": 5, "failed": 0}, "npmTest": {"passed": 206, "failed": 0}, "check": "passed", "build": "passed"},
+    "limitation": "Nur Offline-Adaptertests; keine zusätzliche COK-Laufzeit- oder GUI-Abnahme."
   }
 }

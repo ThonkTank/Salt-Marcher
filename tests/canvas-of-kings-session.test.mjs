@@ -1,13 +1,21 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
-import { assertRun, originalIdentity, assertProcesses, startTicks, sha256, qaRoot, assertHeldLock, assertTarget } from '../tools/canvas-of-kings/identity.mjs';
 // Offline fixtures only; these are never claimed as original runtime evidence.
+const testQaRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'cok-adapter-root-')),
+  identityPath = new URL('../tools/canvas-of-kings/identity.mjs', import.meta.url),
+  identitySource = fs.readFileSync(identityPath, 'utf8'),
+  rootDeclaration = "export const qaRoot = '/home/aaron/.cache/dungeon-native-qa';",
+  isolatedSource = identitySource.replace(rootDeclaration, `export const qaRoot = ${JSON.stringify(testQaRoot)};`);
+assert.notEqual(isolatedSource, identitySource, 'QA root declaration must match the helper');
+const { assertRun, originalIdentity, assertProcesses, startTicks, sha256, qaRoot, assertHeldLock, assertTarget } =
+  await import(`data:text/javascript;base64,${Buffer.from(isolatedSource).toString('base64')}`);
 const root = fs.mkdtempSync(path.join(qaRoot, 'cok-adapter-offline-'));
-test.after(() => fs.rmSync(root, { recursive: true, force: true }));
+test.after(() => fs.rmSync(testQaRoot, { recursive: true, force: true }));
 test('private run rejects reuse, outside root, and symlink escape', () => {
   assertRun(path.join(root, 'new'));
   assert.throws(() => assertRun(root), /existing session/);
