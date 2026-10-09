@@ -3666,13 +3666,29 @@
   },
   "gmProductTesting": {
     "date": "2026-10-09",
-    "state": "cloud_host_ready_first_map_saved",
+    "state": "gm_ux_01_partial_first_pass_complete",
     "plan": "ROADMAP-GM-PRODUCT-TESTING-PLAN.md",
     "focus": "Längere GM-Endanwenderabläufe, häufige Aktionen, Bedienkosten und UI-Überladung; belegte Nacharbeiten beauftragen und nachprüfen.",
     "currentRun": "GM-UX-01",
-    "executedUiRuns": 0,
-    "observedFindings": [],
-    "blocker": null,
+    "executedUiRuns": 1,
+    "observedFindings": [
+      {
+        "id": "GM-UX-001",
+        "priority": "P2",
+        "status": "assigned_for_review_and_small_implementation",
+        "kind": "Eigene UI-Beobachtung; Cloud/Testvault, kein physischer Eingabegeräte-Test",
+        "build": "Obsidian 1.14.4; Produktbuild SHA-256 d54f25cf7b961cc78b1bbf197bd4781bd62d2325ec10dc4b34148c0d6ab3a6a2; aus Produktcommit d93136c0d656f9613bdab6562ba7707988962d97",
+        "scenario": "GM-UX-01 Abschnitt A, GM-UX-01 Nebelwacht, 1024x800 Appfenster",
+        "reproduction": "Bauwerk > Rechteck; rechteckige Raumfläche ziehen; nach Berechnung pro Fläche Raum anlegen betätigen. Sechs Räume einzeln angelegt.",
+        "expected": "Wiederholtes Anlegen mehrerer Räume lässt sich mit geringerem Wiederholungsaufwand erledigen; freie Grundflächen bleiben möglich.",
+        "actual": "Sechs Räume erforderten je eine Ziehbewegung und eine separate Betätigung von Raum anlegen: 12 gezählte UI-Gesten, ohne anfängliche Werkzeugwahl. Die Oberfläche zeigt während der Ableitung zeitweilig Fläche wird berechnet. Im ersten schnellen, nicht einzeln bestätigten Durchgang entstanden zunächst nur freie Flächen; mit einzelnem Warten/Bestätigen gelang die Anlage. Keine Produktlatenz gemessen.",
+        "impact": "P2 Kandidat für wiederholt ausgeführte Kartenaufgabe; angenommene Häufigkeit noch nicht durch weitere GMs belegt.",
+        "evidence": "/workspace/scratch/gm-cloud-qa/08-six-rooms.png, 12-pending.png, 14-six-rooms.png, 17-eight-rooms.png; sechs Räume plus Verbindung und Notiz / 31-reopened.png, 32-note-reopen.png",
+        "proposedTask": "GM-UX-N-001: Dungeon-Verantwortlicher prüft/schlägt einen optionalen schnellen Rechteck-Raum-Modus vor, der Raum bei Flächenerstellung automatisch anlegt. Bei aktiviertem Modus sechs Räume mit sechs Ziehgesten erstellen; Modus aus erhält freie Grundflächen. Abnahmekriterien: genau sechs Raum-Keys, kein Extraklick je Raum, kein doppelter Raum nach Maus-Loslassen, Moduswahl nach erneutem Öffnen erhalten; denselben Abschnitt GM-UX-01 vorher/nachher vergleichen.",
+        "latency": "Nicht gemessen; Fernsteuerungs-/Automationszeiten ausgeschlossen."
+      }
+    ],
+    "blocker": "Objektplatzierung noch nicht sinnvoll prüfbar: isolierte Testvault-Objektbibliothek zeigt Keine Objekte, trotz aktivierter Eingebauter Grundassets; keine Assetpakete importiert. Das ist derzeit eine Testdatenlücke, kein bestätigter allgemeiner Produktfehler.",
     "coordination": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1#issuecomment-6080172233",
     "assignedPrerequisite": {
       "id": "GM-UX-CLOUD",
@@ -3680,7 +3696,7 @@
       "state": "completed",
       "supersedes": "GM-UX-ACCESS; Slotanfrage gemäß Nutzerkorrektur aufgehoben"
     },
-    "next": "GM-UX-01 auf eigener Cloud-Oberfläche fortsetzen: Räume, Verbindungen und Texte; echte Bedienkosten erfassen.",
+    "next": "Dungeon-Verantwortlichen GM-UX-N-001 in Issue #1 zuweisen; für erneuten Asset-Such-/Platzierungstest freigegebene Dungeondraft-Pakettestdaten bereitstellen/importieren; GM-UX-01 mit Ebenenwechsel, Undo/Redo, Wiederöffnung und Spielablauf fortsetzen.",
     "automation": "Stündliche GM-Produkttests in eigener Cloud; keine Laptop-Slotfreigabe erforderlich.",
     "executionEnvironment": "Eigene Cloud-Umgebung, getrennt vom Laptop der Kollegen",
     "cloudHost": {

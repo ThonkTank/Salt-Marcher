@@ -4,7 +4,7 @@
 
 Direkter Nutzerauftrag vom 09.10.2026: das Produkt wie ein Endanwender in längeren Arbeitsabläufen benutzen; Hindernisse, unnötige Umwege, langsame häufige GM-Aktionen und störende selten gebrauchte UI erfassen. Daraus konkrete Nacharbeiten planen, an zuständige Kollegen beauftragen und anschließend erneut im Nutzerablauf prüfen.
 
-GM-UX-01 ist geplant, noch nicht ausgeführt. Es liegen aus diesem Arbeitsstrang keine beobachteten Usability-Befunde vor. Nutzerkorrektur vom 09.10.2026: Dieser Arbeitsstrang testet in seiner eigenen Cloud-Umgebung und benötigt keine Laptop-GUI-Slots. Die frühere Anfrage an den lokalen Host-Kollegen entfällt. Ein isolierter Cloud-Obsidian-Host mit eigenem Testvault ist eingerichtet; Editoröffnung und Speichern einer neuen Testkarte wurden über die Oberfläche ausgeführt. Die stündliche Automation folgt diesem Schwerpunkt. Aktuellen Laufzustand ausschließlich in `checkpoint.gmProductTesting` führen.
+GM-UX-01 erster Cloud-Durchlauf teilweise ausgeführt; Laufstand und Belege stehen in `checkpoint.gmProductTesting`. Ein vorläufiger, reproduzierter Bedienkosten-Kandidat GM-UX-001 ist dem Dungeon-Verantwortlichen als GM-UX-N-001 zur Prüfung und kleinen Nacharbeit vorgelegt; Häufigkeit über diesen einzelnen GM-Ablauf hinaus ist noch Hypothese. Nutzerkorrektur vom 09.10.2026: Dieser Arbeitsstrang testet in seiner eigenen Cloud-Umgebung und benötigt keine Laptop-GUI-Slots. Die frühere Anfrage an den lokalen Host-Kollegen entfällt. Ein isolierter Cloud-Obsidian-Host mit eigenem Testvault ist eingerichtet; Editoröffnung und Speichern einer neuen Testkarte wurden über die Oberfläche ausgeführt. Die stündliche Automation folgt diesem Schwerpunkt. Aktuellen Laufzustand ausschließlich in `checkpoint.gmProductTesting` führen.
 
 ## Durchführungsregeln
 
@@ -27,6 +27,16 @@ Geplante Testkarte: zwei Ebenen, zwölf Räume, acht Verbindungen, wiederholte M
 | D – Fortsetzung | Speichern, normal schließen, in frischem Prozess öffnen und denselben Raum samt Notiz, Ebenenzustand und Änderungen wiederfinden; zwei Schritte aus C erneut ausführen. | Verständlicher Speicherzustand, Text-/Linkerhalt, Wiederaufnahme und wiederholte Bedienkosten. |
 
 Die Annahme, dass Raum-/Keyzugriff, Navigation, Auswahl, wiederholtes Platzieren, Undo und Speichern häufig sind, wird zunächst als GM-Aufgabenhypothese dokumentiert. Die Beobachtungszahl innerhalb des Szenarios ist kein Beleg für die Häufigkeit bei allen Nutzern.
+
+## Erster Durchlauf: Teilbefunde und offene Strecke
+
+Am 09.10.2026 im isolierten Obsidian 1.14.4 wurden über die sichtbare Oberfläche sechs Räume in „GM-UX-01 Nebelwacht“ angelegt, eine Wandverbindung und ein Durchgang ergänzt, eine Geheimnisnotiz im Key von Raum 6 eingetragen, gespeichert, zum Layout zurückgekehrt und die Karte frisch geöffnet. Die Notiz und alle sechs nummerierten Räume blieben erhalten. Belege liegen unter `/workspace/scratch/gm-cloud-qa/`. Eingabe über Playwright/CDP, Appfenster 1024×800; keine physische Bedienabnahme. Die noch fehlenden acht Verbindungen, zweites Geschoss, Assetwiederholungen, Spielerimprovisation, Undo/Redo und Spielansicht sind nicht ausgeführt.
+
+**GM-UX-001 · P2 Kandidat · eigene UI-Beobachtung:** Im Rechteckwerkzeug besteht die Raumaufgabe aus Fläche ziehen und anschließend pro Fläche „Raum anlegen“ betätigen. Für sechs Räume wurden zwölf UI-Gesten gezählt, Werkzeugwahl nicht eingerechnet. Bei nicht einzeln abgewarteten Folgezeichnungen blieben zunächst Flächen ohne Raum-Key; mit sichtbarer Berechnung und anschließender Bestätigung ließ sich der Ablauf fertigstellen. Eine Produktlatenz wurde nicht gemessen. Ein erster schneller Durchgang war nicht kontrolliert genug, um eine Eingabeverlust-Störung zu behaupten. GM-Häufigkeit ist eine zu prüfende Annahme.
+
+**GM-UX-N-001 · vorgeschlagener Dungeon-Auftrag:** Optionalen schnellen Rechteck-Raum-Modus prüfen/umsetzen, der nach dem Ziehen direkt einen Raum-Key erzeugt; ausgeschaltet müssen freie Grundflächen weiter möglich sein. Abnahme: sechs Räume in sechs Ziehgesten, genau sechs Keys, keine Doppelanlage, Modus bleibt nach Speichern/Neuöffnen erhalten. Danach denselben GM-UX-01 Abschnitt vergleichen. Zuteilung und Annahme im Koordinationsthread dokumentieren.
+
+**Objekttest offen:** Objektbibliothek zeigte „Keine Objekte“ bei aktivierten „Eingebauten Grundassets“; Assetmanager meldete keine importierten Pakete. Daher sind Such- und Wiederholungsplatzierung mit einem freigegebenen Packdatensatz noch nicht beurteilbar. Das ist derzeit eine Lücke der Testdaten, kein allgemeiner Produktbefund. Screenshot `27-assets-manager.png`, `28-search-door.png`.
 
 ## Messung und Befunde
 
