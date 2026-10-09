@@ -49,6 +49,7 @@ import { newSizePresetSize } from "./features/verwaltung/new-map-size";
 import { CreatureCatalogLoader } from "./features/catalog/creature-catalog-loader";
 import { CreatureCatalogView } from "./features/catalog/creature-catalog-view";
 import { createUniqueCatalogOpener } from "./features/catalog/creature-catalog-view-content";
+import { ATLAS_VIEW, AtlasView, CreateAtlasModal } from "./ui/atlas-view";
 
 export interface OpenMap {
   session: Session;
@@ -252,6 +253,7 @@ export default class DungeonPlugin extends Plugin {
     this.registerView(PLAY_VIEW, (leaf) => new DungeonPlayView(leaf, this));
     this.registerView(ROOM_VIEW, (leaf) => new DungeonRoomView(leaf, this));
     this.registerView(CREATURE_CATALOG_VIEW, (leaf) => new CreatureCatalogView(leaf, this));
+    this.registerView(ATLAS_VIEW, (leaf) => new AtlasView(leaf));
     this.registerObsidianProtocolHandler("dungeon-room", (params) => {
       void this.openRoomLink(params).catch((error) => new Notice(String(error)));
     });
@@ -264,11 +266,21 @@ export default class DungeonPlugin extends Plugin {
       void this.openRoomLink(params).catch((error) => new Notice(String(error)));
     }, true);
     this.registerExtensions(["dungeon"], VIEW);
+    this.registerExtensions(["overworld"], ATLAS_VIEW);
     this.app.workspace.onLayoutReady(() => void this.restorePendingViews());
     this.addCommand({
       id: "create-dungeon",
       name: "Dungeon anlegen",
       callback: () => new CreateDungeonModal(this.app, this).open(),
+    });
+    this.addCommand({
+      id: "create-atlas",
+      name: "Atlas anlegen",
+      callback: () => new CreateAtlasModal(this.app, async (path) => {
+        const file = this.app.vault.getAbstractFileByPath(path);
+        if (!(file instanceof TFile)) throw new Error("Gespeicherte Atlasdatei nicht gefunden.");
+        await this.app.workspace.getLeaf(false).openFile(file);
+      }).open(),
     });
     this.addCommand({
       id: "manage-dungeon-assets",

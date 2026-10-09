@@ -312,26 +312,21 @@
   "hexAtlasExecution": {
     "scope": "HEX-00 bis HEX-28 und sämtliche eingeordneten CITY-00 bis CITY-09 vollständig",
     "phase": "HEX-01",
-    "state": "planning_passed",
+    "state": "implementation_running",
     "plan": "ROADMAP-HEX-01-PLAN.md",
     "currentRun": {
-      "run": "HEX-01-P01",
-      "state": "planning_artifact_checks_passed",
-      "startedAt": "2026-10-09T17:10:55.836713+02:00",
-      "endedAt": "2026-10-09T17:10:55.836713+02:00",
-      "baseCommit": "a3baac32c6f01fdb8ef593de6bf3359ac1c757dd",
-      "plan": "ROADMAP-HEX-01-PLAN.md",
-      "referenceReview": "/home/aaron/.cache/dungeon-native-qa/hex-00/r02-review-20261009-155338/review.json",
-      "cleanupReview": "/home/aaron/.cache/dungeon-native-qa/hex-00/r02-review-20261009-155338/cleanup-review.json",
-      "phaseApproval": false,
-      "kind": "planning",
-      "focus": "Create/open actual boundless Overworld with hostneutral meter/hex/camera core; visible selection and fresh reopen."
-    },
-    "nextRun": {
       "id": "HEX-01-I01",
       "kind": "implementation",
-      "focus": "Core and first native Atlas UI plus actual host proof",
-      "gate": "No phase approval until own R01 and cleanup."
+      "startedAt": "2026-10-09T17:13:27.670995+02:00",
+      "baseCommit": "0d1dedcd4a87c8cf19087d3e274a5598faaf5e4e",
+      "state": "running",
+      "focus": "Native Overworld create/open, meter camera, axial geometry and bounded visible Pixi grid; real host next."
+    },
+    "nextRun": {
+      "id": "HEX-01-R01",
+      "kind": "review",
+      "focus": "Actual UI/core/reopen and Dungeon preservation",
+      "gate": "Implementation checks and own native host required."
     },
     "review": {
       "state": "passed",
