@@ -63,8 +63,8 @@
   },
   "saltMarcherCatalogEncounter": {
     "schemaVersion": 1,
-    "updated": "2026-10-09T13:36:06Z",
-  "state": "ce01_i02_implemented_i03_next",
+    "updated": "2026-10-09T13:59:02Z",
+    "state": "ce01_i03_implemented_review_next",
     "plan": "ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md",
     "architecture": "ARCHITECTURE.md#geplante-katalog--und-encounter-erweiterung",
     "sourceRepository": "ThonkTank/Salt-Marcher",
@@ -248,7 +248,37 @@
       },
       "limits": "Implementation candidate only. Advanced filters/chips/reset/debounce, DOM-host and real Obsidian acceptance, independent review and all Encounter behavior remain open; CE-AC-01/02/14 are not approved."
     },
-    "next": "CE-01-I03 completes advanced filters, removable chips/reset, debounced stale-safe querying, responsive/A11y behavior and focused DOM-host coverage; no CE-01 or encounter acceptance approval."
+    "ce01I03": {
+      "run": "CE-01-I03",
+      "state": "completed_checked_review_pending",
+      "files": [
+        "src/features/catalog/creature-catalog-controller.ts",
+        "src/features/catalog/creature-catalog-view.ts",
+        "src/features/catalog/creature-catalog-view-state.ts",
+        "styles.css",
+        "tests/core/creature-catalog-controller.test.ts",
+        "tests/core/creature-catalog-view-state.test.ts",
+        "package.json",
+        "package-lock.json"
+      ],
+      "result": "The complete catalog query/state/render flow is host-neutral behind injected DOM, catalog, notice and scheduler ports; the Obsidian ItemView is a thin lifecycle and resize adapter. All remaining 2014-comparable filters, removable chips/reset, 200-ms debouncing, stale-query protection, responsive 900x650 and 1150x700 layouts, status semantics and keyboard flows are implemented. Focused DOM regressions reproduce and close the old-DOM scroll overwrite and missing catalog container-type findings.",
+      "verification": {
+        "check": "passed",
+        "tests": {"passed": 232, "failed": 0},
+        "build": "passed",
+        "inventory": {
+          "sourceBytes": 832272,
+          "gzipBytes": 102869,
+          "base64Characters": 137160,
+          "mainBytes": 1354974,
+          "mainJsGrowthBytes": 165604,
+          "mainJsGrowthLimitBytes": 180000,
+          "limitsPassed": true
+        }
+      },
+      "limits": "DOM-host evidence is not real Obsidian acceptance. Independent CE-01-R01, fresh-process host checks and all Encounter behavior remain open; CE-AC-01, CE-AC-02 and CE-AC-14 are not approved."
+    },
+    "next": "CE-01-R01 independently reviews I01-I03 against CE-AC-01/02/14, the host-neutral boundary, regressions and recorded limits; no CE-01 or encounter acceptance approval."
   },
   "cityPlans": {
     "schemaVersion": 1,

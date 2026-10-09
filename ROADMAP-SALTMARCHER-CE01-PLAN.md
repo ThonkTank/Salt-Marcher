@@ -137,6 +137,12 @@ Review, DOM-/Obsidian-Host und Fachabnahme bleiben offen.
 
 ### CE-01-I03 – Erweiterte Filter, Chips und Responsive/A11y
 
+Status: umgesetzt; Typprüfung, 232 Tests, Produktbuild und alle drei
+Payload-Grenzen bestanden. Der hostneutrale DOM-Test deckt die beiden
+I02-Befunde, 200-ms-Debounce, Stale-Schutz, Tastaturfluss sowie 900×650 und
+1150×700 ab. Unabhängiger Review und echte Obsidian-Host-Abnahme bleiben
+offen.
+
 - Query, State, Render-Controller und DOM-Host-Prüfungen bleiben hostneutral
   und erhalten alle Hostfähigkeiten über injizierte Ports. Der bestehende
   Obsidian-`ItemView` ist nur ein dünner Übergangsadapter; Command-/View-Tests
@@ -188,6 +194,7 @@ Review, DOM-/Obsidian-Host und Fachabnahme bleiben offen.
 
 ## Nächster Lauf
 
-`CE-01-I03`: verbleibende Filter, einzelne Chips/Reset, 200-ms-Debounce mit
-Stale-Schutz, responsive/A11y-Vervollständigung und fokussierte DOM-Host-
-Prüfungen. Keine CE-01- oder Encounter-Fachfreigabe behaupten.
+`CE-01-R01`: getrennte statische und fachliche Prüfung von I01–I03 gegen
+CE-AC-01/02/14, Architekturgrenze, Regressionen und dokumentierte Limits.
+Keine CE-01- oder Encounter-Fachfreigabe vor Review, nötiger Nachbesserung und
+echter Host-Abnahme behaupten.
