@@ -1,6 +1,6 @@
 # Referenzlücken vor den Stadtpaketen
 
-Abgeleitete Übersicht vom09.10.2026, CITY-00-I15-I. Maßgeblich bleibt `acceptance.json` unter `cityPlans.functionalInventory`. Ein Originalprobe-Status bezeichnet ausschließlich beobachteten Umfang; eigene Umsetzung, Hostvergleich und bessere Bedienung sind für alle Einträge offen. Diese Übersicht ersetzt keine Pflicht und kein Abnahmetor. Sie ist ein versionierter Snapshot, keine zusätzliche Statusdatenbank; spätere Änderungen werden aus acceptance in einem zusammengehörigen Planpaket neu zugeordnet.
+Abgeleitete Übersicht vom09.10.2026, CITY-00-I16-I. Maßgeblich bleibt `acceptance.json` unter `cityPlans.functionalInventory`. Ein Originalprobe-Status bezeichnet ausschließlich beobachteten Umfang; eigene Umsetzung, Hostvergleich und bessere Bedienung sind für alle Einträge offen. Diese Übersicht ersetzt keine Pflicht und kein Abnahmetor. Sie ist ein versionierter Snapshot, keine zusätzliche Statusdatenbank; spätere Änderungen werden aus acceptance in einem zusammengehörigen Planpaket neu zugeordnet.
 
 CITY-01 startet nach HEX-05. Frühe Referenzen: Save/Open CO-COK-0006 direkt belegt; FTG-Gebäudeverschiebung/Abbruch sowie Straßenzeichnung/Save/Reload/Entfernung CO-FTG-0015 direkt teilbelegt. COK-Undo CO-COK-0007 benötigt noch eine freigegebene native Sitzung. Weitere Originalwirkungen werden spätestens vor ihrer hier genannten Zielphase geprüft.
 
@@ -68,6 +68,6 @@ CITY-01 startet nach HEX-05. Frühe Referenzen: Save/Open CO-COK-0006 direkt bel
 | CO-FTG-0037 | CITY-08 | Kantenglättung und FPS-Anzeige | control_observed_only |
 | CO-FTG-0038 | CITY-08 | Schattenqualität | control_observed_only |
 | CO-FTG-0040 | CITY-08 | SVG-Renderer als Gerätefallback | control_observed_only |
-| CO-WAT-0005 | CITY-08 | PNG-/SVG-/JSON-Ausgabe | partial |
+| CO-WAT-0005 | CITY-08 | PNG-/SVG-/JSON-Ausgabe | png_svg_json_received_parsed_partial; SVG-Sichtnachweis offen |
 
 Der FTG-Move-Ablauf enthält getrennte Orts- und Orientierungsschritte. Im eigenen CITY-01-Editor kann direkter Zug mit sichtbarer Vorschau dieselbe Aufgabe erfüllen; Aktionsersparnis und bessere Verständlichkeit bleiben bis zur gepaarten Bedienprobe unbewiesen. Material- und Meterhöhe gehören an dieselbe Gebäudegeometrie/Assetreferenz, keine zweite Karte. Cancel muss den gesamten Entwurf ohne Persistenz-/Historywirkung verwerfen.

@@ -3691,17 +3691,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I16-P",
-      "kind": "early_reference_planning",
-      "startedAt": "2026-10-09T13:00:09.810416+00:00",
-      "focus": "Tatsächliche Watabou-Ausgabedateien planen",
-      "state": "completed",
-      "result": "Je Format einen angebotenen Originaldownload beobachten; nur empfangene Dateien prüfen, keine verdeckten Ersatzwege oder FTG-Exportwiederholung"
-    },
-    "nextRun": {
       "id": "CITY-00-I16-I",
       "kind": "reference_export_probe",
-      "focus": "Originalausgabe PNG/SVG/JSON direkt prüfen"
+      "startedAt": "2026-10-09T13:05:13.424921+00:00",
+      "focus": "Originalausgabe PNG/SVG/JSON direkt prüfen",
+      "state": "completed",
+      "result": "3 Originaldateien empfangen/bytegleich archiviert; PNG3874x4330 visuell,SVG XML,JSON14 Gruppen/669 Gebäudepolygone geprüft; SVG-Sichtnachweis policybedingt offen"
+    },
+    "nextRun": {
+      "id": "CITY-00-I16-R",
+      "kind": "requirements_review",
+      "focus": "Ausgabebelege und CITY-08-Formatplanung prüfen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",

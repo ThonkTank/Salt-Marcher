@@ -169,7 +169,7 @@
   },
   "cityPlans": {
     "schemaVersion": 1,
-    "updated": "2026-10-09T12:57:50.497253+00:00",
+    "updated": "2026-10-09T13:05:13.424921+00:00",
     "plan": "ROADMAP-CITIES.md",
     "state": "planned_not_implemented",
     "comparisonMode": "functional_equivalence_and_independent_usability_tests",
@@ -2527,12 +2527,13 @@
         "product": "Medieval Fantasy City Generator",
         "feature": "PNG-/SVG-/JSON-Ausgabe",
         "sourceUrl": "https://html-classic.itch.zone/html/12710731/bin/index.html?size=25&seed=540139574&citadel=1&urban_castle=1&plaza=1&temple=1&walls=1&shantytown=0&coast=1&river=1&greens=0&gates=-1&sea=0.2",
-        "observedAt": "2026-10-09T12:28:25.003314+02:00",
-        "observedVersion": null,
-        "availability": "unknown",
-        "observationKind": "direct",
+        "observedAt": "2026-10-09T13:05:13.424921+00:00",
+        "observedVersion": "JSON export metadata mfcg0.11.5",
+        "availability": "all3_original_browser_exports_received",
+        "observationKind": "direct_export_files_partial",
         "originalEvidence": [
-          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/manifest.json"
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/manifest.json",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i16-export-20261009/manifest.json"
         ],
         "task": "Karte und Geometrie in allen drei Formaten ausgeben",
         "phase": "CITY-08",
@@ -2548,14 +2549,31 @@
           "state": "not_run"
         },
         "status": "open",
-        "gap": "Originalmenü direkt sichtbar; konkrete Wirkungs-/Saveprobe und eigener Produktvergleich offen.",
+        "gap": "PNG/SVG/JSON tatsächlich empfangen und Struktur geprüft; PNG visuell geprüft. SVG-Sichtnachweis, Format-/Optionsvarianten, Import/Geometrie-Roundtrip und eigene Produkt-/Host-/Bedienparität offen.",
         "independentFunctionalRequirement": true,
         "mappingCoverage": "related_project_criteria_only; CO requirement remains independently required",
         "originalProbe": {
-          "state": "partial",
-          "run": "CITY-00-I03-I",
-          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/manifest.json"
-        }
+          "run": "CITY-00-I16-I",
+          "state": "png_svg_json_received_parsed_partial",
+          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i16-export-20261009/manifest.json",
+          "observation": "All3 offered files downloaded/archived byte-identically; PNG visual,SVG XML andJSON geometry parsed; SVG visual preview blocked",
+          "remaining": [
+            "One original output context; formatting/options/layer variants not tested",
+            "Export metadata version not backfilled as version of older probes",
+            "669 exported building polygons not assumed equal to population/building-stat count",
+            "JSON category IDs not proof of stable individual element IDs; units/axis/import/roundtrip unverified",
+            "FeatureCollection label does not prove a standard interchange schema",
+            "SVG XML parse not visual/portable-font acceptance; browser local-file preview was policy-blocked, no workaround",
+            "No edited-state save/reload, own export implementation/host/usability acceptance"
+          ]
+        },
+        "originalProbes": [
+          {
+            "state": "partial",
+            "run": "CITY-00-I03-I",
+            "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/manifest.json"
+          }
+        ]
       },
       {
         "id": "CO-WAT-0006",
@@ -3589,7 +3607,7 @@
     ],
     "functionalInventoryStatus": {
       "state": "partial_inventory_not_accepted",
-      "run": "CITY-00-I15-I",
+      "run": "CITY-00-I16-I",
       "products": 3,
       "candidates": 63,
       "directFormAreas": 13,
@@ -3615,7 +3633,8 @@
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i12-presets-20261009/manifest.json",
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i13-saved-settings-20261009/manifest.json",
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i14-warp-20261009/manifest.json",
-        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i15-warp-tools-20261009/manifest.json"
+        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i15-warp-tools-20261009/manifest.json",
+        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i16-export-20261009/manifest.json"
       ],
       "resultReferences": [
         {
