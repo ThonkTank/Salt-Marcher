@@ -15,6 +15,14 @@ import {
   uid,
 } from "./model";
 import { StructuredKeyPanel } from "./key-panel";
+import {
+  roomKeySearchTargetExists,
+  type RoomKeySearchTarget,
+} from "./room-key-search";
+import {
+  RoomKeySearchPanel,
+  type RoomKeySearchActivation,
+} from "./room-key-search-panel";
 import { wheelNavigation } from "./navigation";
 import { type RecordChange, Session } from "./session";
 import { MapRepository } from "./persistence";
@@ -89,6 +97,7 @@ import {
   buildingWallStyle,
   type BuildingWallStyle,
 } from "./features/bau/building-wall-style";
+
 import { archiveEntities, archiveFloor, executeLinkedObjectChanges } from "./content";
 import { setIcon } from "obsidian";
 import {
@@ -114,6 +123,34 @@ import {
   type SelectionFrame,
   type SelectionTransform,
 } from "./selection";
+
+export interface RoomKeySearchNavigation {
+  allow(): boolean;
+  setFloor(floorId: string): void;
+  selectRoom(roomId: string): Promise<void>;
+  showSearch(): void;
+  openKey(): void;
+  focusSection(sectionId: string | undefined): boolean;
+  focusRoom(roomId: string): void;
+}
+
+/** Coordinate a search hit through the editor's existing transient view paths. */
+export async function activateRoomKeySearchNavigation(
+  session: Session,
+  target: RoomKeySearchTarget,
+  navigation: RoomKeySearchNavigation,
+): Promise<RoomKeySearchActivation> {
+  if (!roomKeySearchTargetExists(session, target)) return "stale";
+  if (!navigation.allow()) return "blocked";
+  navigation.setFloor(target.floorId);
+  await navigation.selectRoom(target.roomId);
+  if (!roomKeySearchTargetExists(session, target)) return "stale";
+  navigation.showSearch();
+  navigation.openKey();
+  if (!navigation.focusSection(target.sectionId)) return "stale";
+  navigation.focusRoom(target.roomId);
+  return "activated";
+}
 
 interface Gesture {
   pointer: number;
@@ -373,6 +410,8 @@ export class DungeonEditor {
   private wearButtons = new Map<BuildingWearMode, HTMLButtonElement>();
   private generatorPanel: HTMLElement;
   private emptyPanel: HTMLElement;
+  private roomKeySearchHost: HTMLElement;
+  private roomKeySearchPanel?: RoomKeySearchPanel;
   private keyDock: HTMLElement;
   private structuredHost: HTMLElement;
   private structuredPanel?: StructuredKeyPanel;
@@ -628,6 +667,7 @@ export class DungeonEditor {
       "Geschoss hinzufügen",
       () =>
         this.run(() => {
+          if (!this.allowKeyNavigation()) return;
           this.commitNote();
           this.cancel();
           const floor = addFloor(session);
@@ -713,6 +753,8 @@ export class DungeonEditor {
       });
     }
     this.emptyPanel = element("div", "dn-empty-panel", this.inspector);
+    this.roomKeySearchHost = element("section", "", this.inspector);
+    this.roomKeySearchHost.hidden = true;
     const objectLibraryHost = element("aside", "dn-object-library", this.body);
     this.objectLibrary = new ObjectLibraryPanel(objectLibraryHost, session, {
       assets: () => host.assets?.() ?? [],
@@ -1019,6 +1061,13 @@ export class DungeonEditor {
         this.toggleKey(true);
       },
     );
+    panelButton(
+      "content",
+      "room-key-search",
+      "Raum-Keys durchsuchen",
+      "search",
+      () => this.openRoomKeySearch(),
+    );
     if (this.host.manageContent)
       panelButton("content", "content", "Dungeon-Inhalte", "list-tree", () => {
         this.showGroup("content");
@@ -1081,8 +1130,19 @@ export class DungeonEditor {
     this.toggleKey(false);
     this.showPanel("generator", "Kartenassistent");
   }
+  private openRoomKeySearch(): void {
+    this.showGroup("content");
+    this.showPanel("room-key-search", "Raum-Keys durchsuchen");
+    this.roomKeySearchPanel ??= new RoomKeySearchPanel(
+      this.roomKeySearchHost,
+      this.session,
+      { activate: (target) => this.activateRoomKeySearchTarget(target) },
+    );
+    this.roomKeySearchPanel.focus();
+  }
   private showPanel(
-    panel: "properties" | "floors" | "content" | "generator" | "map-settings",
+    panel: "properties" | "floors" | "content" | "room-key-search" |
+      "generator" | "map-settings",
     title: string,
   ): void {
     this.optionTitle.textContent = title;
@@ -1093,6 +1153,7 @@ export class DungeonEditor {
     this.floorPanel.hidden = panel !== "floors";
     this.mapSettingsPanel.hidden = panel !== "map-settings";
     this.generatorPanel.hidden = panel !== "generator";
+    this.roomKeySearchHost.hidden = panel !== "room-key-search";
     this.emptyPanel.hidden = panel !== "content";
     this.emptyPanel.textContent =
       panel === "content"
@@ -1103,6 +1164,7 @@ export class DungeonEditor {
         (panel === "floors" && id === "floors") ||
         (panel === "map-settings" && id === "map-settings") ||
         (panel === "generator" && id === "generator") ||
+        (panel === "room-key-search" && id === "room-key-search") ||
         (panel === "content" && id === "key" && !this.keyDock.hidden);
       button.classList.toggle("is-active", active);
       button.setAttribute("aria-pressed", String(active));
@@ -1118,7 +1180,10 @@ export class DungeonEditor {
   }
   private toggleKey(open: boolean): void {
     if (open === !this.keyDock.hidden) return;
-    if (!open) this.run(() => this.commitNote());
+    if (!open) {
+      if (!this.allowKeyNavigation()) return;
+      this.run(() => this.commitNote());
+    }
     this.keyDock.hidden = !open;
     this.root.classList.toggle("dn-key-open", open);
     this.keyButton?.classList.toggle("is-active", open);
@@ -1326,15 +1391,22 @@ export class DungeonEditor {
       this.compare.value = compare;
   }
   private switchFloor(id: string): void {
-    this.commitNote();
+    if (!this.allowKeyNavigation()) {
+      this.floor.value = this.renderer.floorId;
+      return;
+    }
+    this.applyFloor(id);
+    void this.applySelection([], false);
+  }
+  private applyFloor(id: string): void {
     this.cancel();
     this.floor.value = id;
     this.renderer.setFloor(id);
     this.applyComparison();
-    void this.select(undefined);
   }
   private async copyCurrentFloor(): Promise<void> {
     try {
+      if (!this.allowKeyNavigation()) return;
       this.commitNote();
       this.cancel();
       const sourceId = this.renderer.floorId;
@@ -1352,6 +1424,7 @@ export class DungeonEditor {
     }
   }
   private archiveCurrentFloor(): void {
+    if (!this.allowKeyNavigation()) return;
     this.commitNote();
     this.cancel();
     const current = this.renderer.floorId;
@@ -1539,6 +1612,7 @@ export class DungeonEditor {
       this.host.notice("Zuerst eine Zeichenvorlage wählen.");
       return;
     }
+    if (!this.allowKeyNavigation()) return;
     this.commitNote();
     const copies = placePrefab(prefab, at, this.renderer.floorId);
     this.session.execute({
@@ -1650,6 +1724,7 @@ export class DungeonEditor {
       this.host.notice("Die Karten-Zwischenablage ist leer.");
       return;
     }
+    if (!this.allowKeyNavigation()) return;
     this.commitNote();
     const viewportCenter = this.renderer.toWorld({
         x: this.renderer.host.clientWidth / 2,
@@ -1678,6 +1753,7 @@ export class DungeonEditor {
     void this.refreshSelectedNote();
   }
   private archiveSelection(): void {
+    if (!this.allowKeyNavigation()) return;
     this.commitNote();
     const bundle = archiveEntities(this.session, [...this.selection]);
     this.selection.clear();
@@ -1692,6 +1768,7 @@ export class DungeonEditor {
     );
   }
   private setTool(tool: Tool): void {
+    if (!this.allowKeyNavigation()) return;
     this.run(() => this.commitNote());
     this.cancel();
     this.objectPreviewPoint = undefined;
@@ -1787,6 +1864,7 @@ export class DungeonEditor {
     }
   }
   private stepHistory(direction: "undo" | "redo"): void {
+    if (!this.allowKeyNavigation()) return;
     this.commitNote();
     this.cancel();
     if (direction === "undo" ? !this.session.canUndo : !this.session.canRedo)
@@ -1864,6 +1942,7 @@ export class DungeonEditor {
     }
     if (this.gesture || (e.button !== 0 && e.button !== 1))
       return;
+    if (!this.allowKeyNavigation()) return;
     this.commitNote();
     e.preventDefault();
     this.renderer.canvas.focus();
@@ -3428,7 +3507,14 @@ export class DungeonEditor {
     additive = false,
     primary = ids.at(-1),
   ): Promise<void> {
-    if (this.structuredPanel && !this.structuredPanel.commit()) return;
+    if (!this.allowKeyNavigation()) return;
+    return this.applySelection(ids, additive, primary);
+  }
+  private async applySelection(
+    ids: readonly string[],
+    additive = false,
+    primary = ids.at(-1),
+  ): Promise<void> {
     const targets = [
       ...new Set(
         ids.flatMap((id) => {
@@ -3462,6 +3548,29 @@ export class DungeonEditor {
     this.renderer.select(this.selection);
     this.refreshProperties();
     await this.refreshSelectedNote();
+  }
+  private allowKeyNavigation(): boolean {
+    return this.structuredPanel?.allowNavigation() ?? true;
+  }
+  private async activateRoomKeySearchTarget(
+    target: RoomKeySearchTarget,
+  ): Promise<RoomKeySearchActivation> {
+    return activateRoomKeySearchNavigation(this.session, target, {
+      allow: () => this.allowKeyNavigation(),
+      setFloor: (floorId) => this.applyFloor(floorId),
+      selectRoom: (roomId) => this.applySelection([roomId], false, roomId),
+      showSearch: () => {
+        this.showGroup("content");
+        this.showPanel("room-key-search", "Raum-Keys durchsuchen");
+      },
+      openKey: () => this.toggleKey(true),
+      focusSection: (sectionId) => {
+        if (!this.structuredPanel) return false;
+        this.structuredPanel.focus(sectionId);
+        return true;
+      },
+      focusRoom: (roomId) => this.renderer.focus(roomId),
+    });
   }
   private selectedNotePath(): string | undefined {
     const room = this.selectedRoom();
@@ -3527,8 +3636,6 @@ export class DungeonEditor {
     this.text.value = current;
   }
   commitNote(): void {
-    if (this.structuredPanel?.commit() === false)
-      throw new Error("Der geänderte Raumabschnitt konnte nicht übernommen werden.");
     if (
       !this.notePath ||
       this.text.disabled ||
@@ -3906,6 +4013,7 @@ export class DungeonEditor {
   }
   async save(): Promise<void> {
     if (this.saving) return;
+    if (!this.allowKeyNavigation()) return;
     this.saving = true;
     const pending = this.host.pending?.() === true;
     const wasInert = this.root.inert;
@@ -3935,8 +4043,8 @@ export class DungeonEditor {
     this.cancelColorSample?.();
     this.unsub?.();
     this.properties?.dispose();
-    this.structuredPanel?.commit();
     this.structuredPanel?.destroy();
+    this.roomKeySearchPanel?.destroy();
     this.setMaximized(false);
     this.cancel();
     this.abort.abort();

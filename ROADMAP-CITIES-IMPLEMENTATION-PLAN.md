@@ -434,6 +434,8 @@ CITY-00-I25-CP Plan: Snapshot auf direkten Baum-/JSON-Nachweis aktualisieren; Fo
 CITY-00-I25-CR Ergebnis: Snapshot/Manifest-Verweise stimmen, Rohbelege unverändert, 63 CO-/24 CTY-Pflichten erhalten. Ausgangsflag off wiederhergestellt und eigene Kopie geschlossen; Aufräumumfang ohne Restbefund. Nativer Slot ausdrücklich vom Hex-Kollegen nach abgeschlossenen Original-/Hostprozessen zurückgegeben. Nächster Lauf plant neue COK-Objektauswahl/Gruppierungsprobe; keine Wiederholung gestoppter Undo-Hypothesen. Forest-Wirkungsprobe bleibt offen.
 
 
+Der nächste neue Variantenvergleich folgt dem [COK-Variantenplan](ROADMAP-CITIES-CITY00-COK-VARIANTS-PLAN.md); frühere gestoppte Undo-Hypothesen bleiben gestoppt.
+
 ## CITY-00-I26-P: COK-Objektauswahl/Gruppierung
 
 Start 2026-10-09T14:33:28.417478+00:00. Nativer Slot ausdrücklich vom Hex-Kollegen freigegeben. Vor Start Prozess-/Lockgrenzen über geprüften COK-Starter validieren; private Sitzung auf Basis tatsächlich installierter Demo, keine Vollversionsfreigabe. Eigene gespeicherte CITY00-Vorlage bytegleich kopieren und Originalhash sichern. Sichtbare Object-/Select-/Gruppencontrols lesen; höchstens zwei erfolglose Folgen pro Hypothese. Falls angeboten zwei eigene Props auswählen/zusammen bewegen, vor/nach sichtbare Wirkung und tatsächliche eigene Kartendatei sichern. Keine geratenen Gruppierungsshortcuts und keine Wiederholung der gestoppten Undo-Hypothesen. Nicht verfügbare Demo-/Gruppenfunktion bleibt Zugangslücke, keine Originalfehlfunktion behaupten. Normales Exit0 plus verschwundene PID/Startzeit-Identitäten aller eigenen Prozesse prüfen, erst dann nativen Slot zurückgeben. Eigener Review und Aufräumen P/I/R folgen; alle Produkt-/Host-/physischen Bedienpflichten offen.
@@ -905,3 +907,9 @@ CITY-00-I42-REVIEW-CLEAN-I42 Start 2026-10-09T18:54:46.255992+00:00; bestehender
 CITY-00-I42-REVIEW-CLEAN-R42 Start 2026-10-09T18:55:03.984815+00:00; unveränderteRawhashes/Reviewlink/24CTY+65COopen/fremdeWurzeln geprüft. KeinRestbefund imI42Aufräumen. NächstePlanung:frischfreigegebenerisolierterCOKVariantenvergleich,keineUndoRetry.
 
 CITY-00-I43-P43 Start 2026-10-09T18:55:59.348181+00:00; ROADMAP-CITIES-CITY00-COK-VARIANTS-PLAN.md plant neueCOKKategorie-/Variantenwirkungsprobe aufeigenerQA-Kopie, freigegebenerSlot, keineUndoRetry/Versionsübertreibung. Cleanup-P/I/R vorI43.
+
+CITY-00-I43-PLAN-CLEAN-P43 Start 2026-10-09T18:56:33.932996+00:00; Plan: neuenVariantenplan imbestehendenReferenzabschnittverlinken; eigeneQA-Originalkopie/Demo-/Slotgrenzen verifizieren. KeinRuntimeumbau. ReviewprüftLink/Originalhashschutz und65CO/24CTYopen.
+
+CITY-00-I43-PLAN-CLEAN-I43 Start 2026-10-09T18:56:37.168600+00:00; Planlink imCOKReferenzabschnitt gesetzt; neueVariantenhypothesevonvorigerUndo-/Gruppenprobegetrennt. KeineRaw-/Original-/Produktänderung.
+
+CITY-00-I43-PLAN-CLEAN-R43 Start 2026-10-09T18:56:40.178738+00:00; Planlink/JSON/65CO+24CTYopen undeigenergesicherterInput geprüft. Plan-Aufräumen abgeschlossen. I43 startetjetztübergeprüftenStarter/nachöffentlichemStartcheckin; keineGUIinstanzbisher.
