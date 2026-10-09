@@ -1644,7 +1644,8 @@
           "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/watabou-generate-features.jpg",
           "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/manifest.json",
           "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i32-generation-20261009/manifest.json",
-          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i35-size-20261009/manifest.json"
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i35-size-20261009/manifest.json",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i36-custom-size-20261009/manifest.json"
         ],
         "task": "Dorf und Stadt erzeugen",
         "phase": "CITY-02",
@@ -1661,7 +1662,7 @@
           "state": "not_run"
         },
         "status": "open",
-        "gap": "Features/Rebuild/Small-Größenwirkung direkt teilbelegt; Small ändert zugleich Seed. Feste Presetranges, benutzerdefinierte Größe, weitere Features/Version und eigener Produktvergleich offen.",
+        "gap": "Features/Small/Customgröße direkt teilbelegt; Size+Enter ändert Seed, gehaltene Größe via Permalink. Feste Presetranges/Einheiten/weitere Features/Version und eigener Vergleich offen.",
         "independentFunctionalRequirement": true,
         "mappingCoverage": "related_project_criteria_only; CO requirement remains independently required",
         "originalProbe": {
@@ -1686,6 +1687,12 @@
             "state": "partial",
             "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i35-size-20261009/manifest.json",
             "result": "Small changes size25→19 AND seed540139574→2039168945. Other feature URL values unchanged.13-group output:9 changed,4 equal; buildings544→252, greens0→2. No pure-size attribution or fixed Small19 rule."
+          },
+          {
+            "run": "CITY-00-I36-I",
+            "state": "partial",
+            "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i36-custom-size-20261009/manifest.json",
+            "result": "Size19 pending + Rebuild retained size25 visually/URL; Size19+Enter generated seed1484653642. From URL size25→19 at held seed540139574:8 groups changed/5 equal, buildings544→418, roads5→3; restoration byteequal. Size units/ranges and manual retention unproved."
           }
         ]
       },
@@ -4120,7 +4127,7 @@
     ],
     "functionalInventoryStatus": {
       "state": "partial_inventory_not_accepted",
-      "run": "CITY-00-I35-I",
+      "run": "CITY-00-I36-I",
       "products": 3,
       "candidates": 65,
       "directFormAreas": 13,
@@ -4165,7 +4172,8 @@
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i32-generation-20261009/manifest.json",
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i33-roads-20261009/manifest.json",
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i34-maximum-20261009/manifest.json",
-        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i35-size-20261009/manifest.json"
+        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i35-size-20261009/manifest.json",
+        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i36-custom-size-20261009/manifest.json"
       ],
       "resultReferences": [
         {

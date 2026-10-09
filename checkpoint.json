@@ -4078,17 +4078,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I36-P",
-      "kind": "reference_planning",
-      "startedAt": "2026-10-09T15:42:36.090055+00:00",
-      "focus": "Benutzerdefinierte Größe",
-      "state": "completed",
-      "result": "Kontrollierte Size19-Probe mit tatsächlichem Seedvergleich geplant."
-    },
-    "nextRun": {
       "id": "CITY-00-I36-I",
       "kind": "reference_implementation",
-      "focus": "Size-Feld und tatsächlichen Rebuild prüfen"
+      "startedAt": "2026-10-09T15:45:19.220002+00:00",
+      "focus": "Customgröße und gehaltener Seed",
+      "state": "completed",
+      "result": "Direkte Eingabesemantik und reiner Größenparametervergleich samt bytegleicher Rückstellung gesichert."
+    },
+    "nextRun": {
+      "id": "CITY-00-I36-R",
+      "kind": "reference_review",
+      "focus": "Eingabewege, Vergleich und Beleggrenzen reviewen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
