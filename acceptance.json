@@ -330,7 +330,7 @@
   },
   "cityPlans": {
     "schemaVersion": 1,
-    "updated": "2026-10-09T14:58:03.394252+00:00",
+    "updated": "2026-10-09T15:02:49.736313+00:00",
     "plan": "ROADMAP-CITIES.md",
     "state": "planned_not_implemented",
     "comparisonMode": "functional_equivalence_and_independent_usability_tests",
@@ -1576,7 +1576,8 @@
         "originalEvidence": [
           "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/watabou-walled-port-overview.jpg",
           "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/watabou-walled-port-detail.jpg",
-          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/manifest.json"
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/manifest.json",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i28-roof-20261009/manifest.json"
         ],
         "task": "Viertel und Dachdetail desselben Plans vergleichen",
         "phase": "CITY-07",
@@ -1593,14 +1594,22 @@
           "state": "not_run"
         },
         "status": "open",
-        "gap": "Direkte Ergebnis-/Menüprobe gesichert; weitere Vorgaben/Wirkungen, Versionsstand und eigener Produktvergleich offen.",
+        "gap": "Dach Gable und Blockdarstellung direkt teilbelegt. Weitere Dach-/Gebäudevorgaben, genaue Viertelwirkung, Einzelbearbeitung/Persistenz, Version und eigener Produkt-/Host-/Bedienvergleich offen.",
         "independentFunctionalRequirement": true,
         "mappingCoverage": "related_project_criteria_only; CO requirement remains independently required",
         "originalProbe": {
           "state": "partial",
           "run": "CITY-00-I03-I",
           "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/manifest.json"
-        }
+        },
+        "originalProbes": [
+          {
+            "run": "CITY-00-I28-I",
+            "state": "gable_and_block_visual_effect_observed",
+            "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i28-roof-20261009/manifest.json",
+            "result": "Roofs Plain→Gable→Plain zeigt zusätzliche Dachfirst-/Teilflächenlinien. Display mode Lots→Block→Lots zeigt zusammengefasste Flächen statt Einzelgebäuden. Sichtbare Optionen Roofs Plain/Hip/Gable und Display Block/Lots/Complex/Hidden; Hip/Complex/Hidden-Wirkungen ungeprüft. Processing Offset und Raised/Solids unverändert. Keine Geometrie-/Save-/Exportwirkung geprüft."
+          }
+        ]
       },
       {
         "id": "CO-WAT-0003",
@@ -3913,7 +3922,7 @@
     ],
     "functionalInventoryStatus": {
       "state": "partial_inventory_not_accepted",
-      "run": "CITY-00-I27-I",
+      "run": "CITY-00-I28-I",
       "products": 3,
       "candidates": 64,
       "directFormAreas": 13,
@@ -3950,7 +3959,8 @@
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i24-alleys-20261009/manifest.json",
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i25-trees-20261009/manifest.json",
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i26-20261009-r01/manifest.json",
-        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i27-forest-20261009/manifest.json"
+        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i27-forest-20261009/manifest.json",
+        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i28-roof-20261009/manifest.json"
       ],
       "resultReferences": [
         {
