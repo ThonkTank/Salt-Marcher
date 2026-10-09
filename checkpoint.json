@@ -3691,17 +3691,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I16-CR",
-      "kind": "cleanup_review",
-      "startedAt": "2026-10-09T13:07:52.419202+00:00",
-      "focus": "Formatvertrag und empfangene Rohdateien abschließend prüfen",
-      "state": "completed",
-      "result": "I16-R01 in Planung bereinigt;10 Rohartefakte/3 Dateikopien/Parser/63 offene Pflichten geprüft; SVG-Sicht-/Produktabnahme offen"
-    },
-    "nextRun": {
       "id": "CITY-00-I17-P",
       "kind": "early_reference_planning",
-      "focus": "Freigegebenen nativen COK Undo/Redo-Lauf planen"
+      "startedAt": "2026-10-09T13:09:26.505151+00:00",
+      "focus": "Freigegebenen nativen COK Undo/Redo-Lauf planen",
+      "state": "completed",
+      "result": "Native Freigabe bestätigt und16 Kollegenprozesse tatsächlich weg; begrenzte Undo/Redo-Folge auf Kopie eigener gespeicherter Demokarte mit Rohwert-/Bild-/normaler Endprüfung geplant"
+    },
+    "nextRun": {
+      "id": "CITY-00-I17-I",
+      "kind": "reference_history_probe",
+      "focus": "COK Undo/Redo auf eigener QA-Kartenkopie direkt messen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
