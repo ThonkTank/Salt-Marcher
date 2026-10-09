@@ -125,17 +125,17 @@
   },
   "saltMarcherCatalogEncounter": {
     "date": "2026-10-09",
-    "state": "ce02_i02_plan_second_repair_review_pending_ce01_physical_open",
+    "state": "ce02_i02_plan_third_repair_review_pending_ce01_physical_open",
     "plan": "ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md",
     "architecture": "ARCHITECTURE.md#geplante-katalog--und-encounter-erweiterung",
     "acceptance": "acceptance.json.saltMarcherCatalogEncounter",
     "currentRun": {
-      "id": "CE-02-I02-P01-N02",
+      "id": "CE-02-I02-P01-N03",
       "kind": "plan_repair",
       "state": "drafted_review_pending",
-      "focus": "Resolve N01-R01 cycle and schema-artifact findings while preserving the five confirmed repair groups",
+      "focus": "Resolve N02-R01 variable and variant-specific rarity schema/filter/Inspector finding",
       "plan": "ROADMAP-SALTMARCHER-CE02-I02-PLAN.md",
-      "result": "R01 required seven changes on 8c5c5680054b8dddd89900733ac7bbfe966876f1 (Issue #1 comment 6085178049). N01-R01 left two mandatory findings on 01a02ef124e3ffc02b626019f89f5e216612f7ab (Issue #1 comment 6085248851). N02 repair awaits exact-head independent review. No Item implementation or acceptance."
+      "result": "N02-R01 on 3b7e5c933a107da6f406aa44037decf316d09b77 found one remaining variable-rarity gap (Issue #1 comment 6085306351). N03 plan repair awaits exact-head review. No Item implementation or acceptance."
     },
     "implementationRun": {
       "id": "CE-01-I01",
@@ -312,10 +312,10 @@
       "Physical catalog input acceptance cannot be replaced by Playwright automation"
     ],
     "nextRun": {
-      "id": "CE-02-I02-P01-N02-R01",
+      "id": "CE-02-I02-P01-N03-R01",
       "kind": "independent_plan_re_review",
       "plan": "ROADMAP-SALTMARCHER-CE02-I02-PLAN.md",
-      "focus": "Verify S01 gate is acyclic and owns complete inventory/transcript/schema/source evidence while Inspector and product gates remain I01; verify named schema types, enums, units, optionality and review hashes. Only after PASS begin S01, not I01."
+      "focus": "Verify variable and variant-specific rarity is preserved through source inventory, transcript, schema, query filters, sort and Inspector with required Golden cases; confirm earlier repaired gates remain intact. Only after PASS begin S01, not I01."
     }
   },
   "repositoryWorkflow": {

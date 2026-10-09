@@ -88,14 +88,20 @@ S01 legt den verbindlichen Vertrag als
 `src/features/catalog/data/items-srd51-transcript.json` ab. Der unabhängige
 S01-Review bindet die SHA-256-Hashes von PDF, Inventar, Schema, Transkript und
 Attribution sowie die Schema-Validierung sämtlicher Einträge. Das Schema
-verbietet zusätzliche Felder und schließt Kategorie, Unterkategorie, Rarität,
+verbietet zusätzliche Felder und schließt Kategorie, Unterkategorie, Raritätswerte,
 Einstimmung und Einheiten als Enums. Seine Mindestform ist:
 
 - `id` und `name`: nichtleere NFC-Strings; `category`: `equipment` oder
   `magic-item`; `subcategory`: optionaler Wert aus einem in S01 durch das
   vollständige Inventar festgelegten, geschlossenen Enum samt Zuordnung jeder
-  Quellentabelle; `magic`: Boolean; `rarity`: optionales Enum `common`,
-  `uncommon`, `rare`, `very-rare`, `legendary`, `artifact`;
+  Quellentabelle; `magic`: Boolean; `rarity`: optionales diskriminiertes Objekt:
+  `{kind: "fixed", value}` oder `{kind: "varies", sourceText, choices}`.
+  `value` und jedes `choices[].value` gehören zum Enum `common`, `uncommon`,
+  `rare`, `very-rare`, `legendary`, `artifact`. Eine Choice ist
+  `{variantId, label, value, occurrenceId}` mit nichtleeren Strings und
+  Inventarbeleg; `choices` ist geordnet und darf leer sein, wenn die Quelle
+  zwar „rarity varies“ nennt, aber keine eindeutige Variante→Rarität-Zuordnung
+  liefert. `sourceText` bewahrt dann den vollständigen Quellenwert;
 - `attunement`: genau `required`, `not-required` oder `unspecified`;
 - `cost`: optionales Objekt `{sourceText, copperPieces?}` mit nichtleerem
   Quelltext und nichtnegativem Safe-Integer in Kupferstücken. Umrechnung ist
@@ -130,7 +136,19 @@ und unklare Header als Golden-Fälle. Geldwerte werden ohne Rundung als
 ganzzahlige kleinste Einheit
 normalisiert; nicht eindeutig umrechenbare Quellwerte bleiben reine Anzeige
 und nehmen am numerischen Kostenfilter nicht teil. Sortierung behandelt fehlende
-Werte deterministisch am Ende, unabhängig von der Richtung. Der Inspector
+Werte deterministisch am Ende, unabhängig von der Richtung. Für Rarität gilt:
+ein konkreter Filterwert trifft `fixed.value` oder eine belegte
+`varies.choices[].value`; ein eigener Filterwert `varies` trifft alle
+variablen Einträge. Die Sortierung ordnet feste Raritäten nach der genannten
+Enum-Reihenfolge, dann `varies`, dann fehlende Werte; Richtung kehrt nur die
+festen Raritätswerte um, fehlende bleiben am Ende. Der Inspector zeigt bei
+`varies` den `sourceText` und jede belegte Choice; er macht keine einzelne
+Rarität für den gesamten Eintrag geltend. Ein Variantenschlüssel ist
+`<occurrenceId>#variant:<ordinal>` mit dem Ordinal der Variantenfolge im
+gepinnten PDF, unabhängig von Label oder Slug. S01-Golden-Fälle decken
+mindestens `rarity varies` und einen kombinierten `+1/+2/+3`-Header vollständig
+von Inventar über Transkript und Schema bis zur Filter-/Inspector-Projektion
+ab. Der Inspector
 kennzeichnet fehlende Fakten, statt sie mit Nullwerten zu verwechseln.
 
 ## Reproduzierbarer Build und Fail-closed-Lader
