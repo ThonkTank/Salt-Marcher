@@ -8,5 +8,6 @@ import "./core/session.test";
 import "./core/drawing.test";
 import "./core/assets.test";
 import "./core/map-resize-input.test";
+import "./core/smart-tiles-resize.test";
 import "./core/object-library.test";
 import "./core/v4.test";

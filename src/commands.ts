@@ -853,10 +853,18 @@ export function resizeMap(
       ? []
       : [{ id: entity.id, before: entity, after: moved }];
   });
+  const smartTiles = session.smartTiles;
+  const movedTiles = smartTiles?.flatMap((cell) => {
+    const x = cell.x + margins.left, y = cell.y + margins.top;
+    return x < 0 || y < 0 ? [] : [{ ...cell, x, y }];
+  });
   session.execute({
     label: "Karteneinstellungen ändern",
     settings: { before, after },
     entities: changes,
+    ...(smartTiles !== undefined
+      ? { smartTiles: { before: smartTiles, after: movedTiles! } }
+      : {}),
   });
   if (values.some((value) => value !== 0)) session.clearHistory();
 }

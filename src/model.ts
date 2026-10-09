@@ -310,6 +310,13 @@ export interface DungeonContent {
   readonly routes: readonly DungeonRoute[];
   readonly archive: readonly ArchivedBundle[];
 }
+export interface SmartTileCell {
+  readonly floorId: Id;
+  readonly x: number;
+  readonly y: number;
+  readonly assetId: string;
+  readonly color: number;
+}
 export interface MapDocument {
   readonly format: "dungeon-map";
   readonly version: 3 | 4;
@@ -318,6 +325,8 @@ export interface MapDocument {
   readonly floors: readonly Floor[];
   readonly entities: readonly Entity[];
   readonly content: DungeonContent;
+  /** Optional V4 raster; older maps retain their original representation. */
+  readonly smartTiles?: readonly SmartTileCell[];
 }
 export type MapDocumentV2 = Omit<MapDocument, "version"> & {
   readonly version: 2;
@@ -710,6 +719,11 @@ export function validateDocument(doc: MapDocument): void {
   )
     throw new Error("Doppelte Kennung.");
   for (const f of floors.values()) validateFloor(f);
+  if (doc.smartTiles !== undefined) {
+    if (doc.version !== 4)
+      throw new Error("Smart-Tile-Zellen benötigen Kartenformat V4.");
+    validateSmartTileCells(doc.smartTiles, doc.settings.width, doc.settings.height, floors);
+  }
   for (const e of entities.values())
     validateEntity(e, floors, (id) => entities.get(id), doc.version);
   for (const e of entities.values()) if (e.keyTarget) {
@@ -719,6 +733,25 @@ export function validateDocument(doc: MapDocument): void {
       throw new Error("Key-Ziel des Kartenobjekts fehlt.");
   }
   validateContent(doc.content, entities, doc.version);
+}
+export function validateSmartTileCells(
+  cells: readonly SmartTileCell[], width: number, height: number,
+  floors: ReadonlyMap<Id, Floor>, allowOutside = false,
+): void {
+  if (!Array.isArray(cells)) throw new Error("Ungültige Smart-Tile-Zellen.");
+  const positions = new Set<string>();
+  for (const cell of cells) {
+    if (!cell || !floors.has(cell.floorId) ||
+      !Number.isInteger(cell.x) || !Number.isInteger(cell.y) ||
+      cell.x < 0 || cell.y < 0 ||
+      (!allowOutside && (cell.x >= width || cell.y >= height)) ||
+      typeof cell.assetId !== "string" || !cell.assetId.trim() ||
+      !Number.isInteger(cell.color) || cell.color < 0 || cell.color > 0xffffff)
+      throw new Error("Ungültige Smart-Tile-Zelle.");
+    const key = `${cell.floorId}:${cell.x}:${cell.y}`;
+    if (positions.has(key)) throw new Error("Doppelte Smart-Tile-Zelle.");
+    positions.add(key);
+  }
 }
 export function validateContent(
   content: DungeonContent,

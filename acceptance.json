@@ -113536,6 +113536,18 @@
           ],
           "measuredScope": "Oben -2: gespeicherte Zellen 10→5; oben +2 im selben wie im frischen Prozess bleiben fünf. Vier Polygone verschieben alle Y-Punkte um -512 native Einheiten und kehren nach +2 exakt zurück.",
           "remaining": "Linke Folge nochmals direkt kontrollieren, anschließend Host-Zellschicht und unabhängigen Review prüfen. Keine Fallfreigabe."
+        },
+        "followUpPhase1SmartTilesCandidate": {
+          "state": "seeded_host_candidate_review_pending",
+          "hostBuildSha256": "458fc6f9ec59c9ab5c707e351b3e58190ddc7902cae916ed1c29d05db07ab393",
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-smarttiles-host-20261009/implementation.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-smarttiles-host-20261009/implementation-audit.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-smarttiles-host-20261009/evidence/1791519713007-parity-tools-phase1-smart-tiles-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-smarttiles-host-20261009/evidence/1791519788875-parity-tools-phase1-smart-tiles-reopen/result.json"
+          ],
+          "measuredScope": "Oben -2/+2: Host-Zellkoordinaten in Crop, unmittelbarer Erweiterung und frischer Erweiterung stimmen mit der direkten Originalfolge überein.",
+          "remaining": "Smart-Tile-Zeichnen/Bearbeiten, Texturwirkung, weitere Entitäten, kombinierte Ränder, Terrain und unabhängiger Review offen. Keine Fallfreigabe."
         }
       },
       {
@@ -113640,6 +113652,18 @@
           ],
           "measuredScope": "Rechts -3: gespeicherte Zellen 10→4 und vier Polygone gleich; rechts +3 im selben Prozess 4→10, aus frisch geladener identischer Beschnittkarte 4→4.",
           "remaining": "Host mit persistenten sichtbaren und flüchtigen rechten Außenzellen paaren; unterer Rand, andere Inhalte und unabhängiger Review offen. Keine Fallfreigabe."
+        },
+        "followUpPhase1SmartTilesCandidate": {
+          "state": "seeded_host_candidate_review_pending",
+          "hostBuildSha256": "458fc6f9ec59c9ab5c707e351b3e58190ddc7902cae916ed1c29d05db07ab393",
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-smarttiles-host-20261009/implementation.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-smarttiles-host-20261009/implementation-audit.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-smarttiles-host-20261009/evidence/1791519713007-parity-tools-phase1-smart-tiles-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-smarttiles-host-20261009/evidence/1791519788875-parity-tools-phase1-smart-tiles-reopen/result.json"
+          ],
+          "measuredScope": "Rechts -3/+3: Host-Zellkoordinaten in Crop, unmittelbarer Erweiterung und frischer Erweiterung stimmen mit der direkten Originalfolge überein.",
+          "remaining": "Smart-Tile-Zeichnen/Bearbeiten, Texturwirkung, weitere Entitäten, kombinierte Ränder, Terrain und unabhängiger Review offen. Keine Fallfreigabe."
         }
       },
       {
@@ -113745,6 +113769,18 @@
           ],
           "measuredScope": "Unten -2: gespeicherte Zellen 10→5 und vier Polygone gleich; unten +2 im selben Prozess 5→10, aus frisch geladener identischer Beschnittkarte 5→5.",
           "remaining": "Host mit persistenten sichtbaren und flüchtigen unteren Außenzellen paaren; oberer/linker Rand, andere Inhalte und unabhängiger Review offen. Keine Fallfreigabe."
+        },
+        "followUpPhase1SmartTilesCandidate": {
+          "state": "seeded_host_candidate_review_pending",
+          "hostBuildSha256": "458fc6f9ec59c9ab5c707e351b3e58190ddc7902cae916ed1c29d05db07ab393",
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-smarttiles-host-20261009/implementation.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-smarttiles-host-20261009/implementation-audit.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-smarttiles-host-20261009/evidence/1791519713007-parity-tools-phase1-smart-tiles-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-smarttiles-host-20261009/evidence/1791519788875-parity-tools-phase1-smart-tiles-reopen/result.json"
+          ],
+          "measuredScope": "Unten -2/+2: Host-Zellkoordinaten in Crop, unmittelbarer Erweiterung und frischer Erweiterung stimmen mit der direkten Originalfolge überein.",
+          "remaining": "Smart-Tile-Zeichnen/Bearbeiten, Texturwirkung, weitere Entitäten, kombinierte Ränder, Terrain und unabhängiger Review offen. Keine Fallfreigabe."
         }
       },
       {
@@ -113849,6 +113885,18 @@
           ],
           "measuredScope": "Links -3: gespeicherte Zellen 10→6; links +3 im selben wie im frischen Prozess bleiben sechs. Vier Polygone verschieben alle X-Punkte um -768 native Einheiten und kehren nach +3 exakt zurück.",
           "remaining": "Host-Zellschicht, weitere Inhalte, kombinierte Randfolge und unabhängiger Review offen. Keine Fallfreigabe."
+        },
+        "followUpPhase1SmartTilesCandidate": {
+          "state": "seeded_host_candidate_review_pending",
+          "hostBuildSha256": "458fc6f9ec59c9ab5c707e351b3e58190ddc7902cae916ed1c29d05db07ab393",
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-smarttiles-host-20261009/implementation.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-smarttiles-host-20261009/implementation-audit.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-smarttiles-host-20261009/evidence/1791519713007-parity-tools-phase1-smart-tiles-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-smarttiles-host-20261009/evidence/1791519788875-parity-tools-phase1-smart-tiles-reopen/result.json"
+          ],
+          "measuredScope": "Links -3/+3: Host-Zellkoordinaten in Crop, unmittelbarer Erweiterung und frischer Erweiterung stimmen mit der direkten Originalfolge überein.",
+          "remaining": "Smart-Tile-Zeichnen/Bearbeiten, Texturwirkung, weitere Entitäten, kombinierte Ränder, Terrain und unabhängiger Review offen. Keine Fallfreigabe."
         }
       },
       {
