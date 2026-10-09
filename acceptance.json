@@ -1,4 +1,14 @@
 {
+  "gmProductFollowups": {
+    "date": "2026-10-09",
+    "GM-UX-N-006": {
+      "state": "i01_core_completed_i02_review_host_and_gm_retest_open",
+      "source": "Issue #1 Kommentar 6085700084; ROADMAP-GM-PRODUCT-TESTING-PLAN.md; ROADMAP-GM-UX-N-006-PLAN.md",
+      "productCommit": "a86658c9825fe65ccf01eb08d7e1babd2d2e0ec2",
+      "confirmed": "Der hostneutrale exakte View-State-Codec und das monotone flüchtige Mehr-Leaf-Register bestehen ihre drei fokussierten Regressionen sowie npm run check, npm test (378/378) und npm run build.",
+      "notConfirmed": "Keine DungeonView-/DungeonEditor-Wirkung, keine zweimalige Tab-Neuöffnung im Cloud-Obsidian-Host, kein unabhängiger Produktreview und kein Produkttester-Nachtest. Keine physische Eingabe-, UX-, Host-, Fach-, Paritäts- oder Gesamtfreigabe."
+    }
+  },
   "saltMarcherReplacement": {
     "schemaVersion": 1,
     "updated": "2026-10-09T17:14:05Z",
