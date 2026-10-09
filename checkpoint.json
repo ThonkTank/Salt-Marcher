@@ -4734,16 +4734,16 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I46-R46",
-      "kind": "reference_review",
-      "startedAt": "2026-10-09T19:38:18.497531+00:00",
-      "focus": "Massenbearbeitungsbeleg reviewen: R",
-      "state": "completed",
-      "result": "R46 bestanden: Zweierauswahl/Cancel/Apply/Rücksetzung, 18 Rawhashes und identisches sichtbares Wyddis-Profil. Ganze Daten-/Hostparität offen."
-    },
-    "nextRun": {
       "id": "CITY-00-I46-REVIEW-CLEAN-P46",
       "kind": "cleanup_plan",
+      "startedAt": "2026-10-09T19:38:22.320998+00:00",
+      "focus": "Massenbearbeitungsbeleg reviewen: P",
+      "state": "completed",
+      "result": "Aufräumplan: sichtbares Profilgleichheitsmaß von serialisierten IDs/Persistenz trennen; Reviewlink und Rohbelege erhalten."
+    },
+    "nextRun": {
+      "id": "CITY-00-I46-REVIEW-CLEAN-I46",
+      "kind": "cleanup_implementation",
       "focus": "COK-Licht-/Wetterprobe mit Atlasbesitzer-GUI-Slot abstimmen und konkret planen"
     },
     "open": [

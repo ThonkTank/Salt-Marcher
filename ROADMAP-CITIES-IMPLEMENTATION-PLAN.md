@@ -1051,3 +1051,5 @@ CITY-00-I46-CLEAN-I46 Start 2026-10-09T19:36:05.837607+00:00; Auswahl vs Apply u
 CITY-00-I46-CLEAN-R46 Start 2026-10-09T19:36:08.707285+00:00; Hash-/Plan-/Scopeprüfung bestanden: originale sichtbare Namen wiederhergestellt, Produktabnahmen offen; getrenntes R46 folgt. Beleg: /home/aaron/.cache/dungeon-native-qa/city-plans/city00-i46-bulk-20261009/manifest.json.
 
 CITY-00-I46-R46 Start 2026-10-09T19:38:18.497531+00:00; R46 bestanden: Zweierauswahl/Cancel/Apply/Rücksetzung, 18 Rawhashes und identisches sichtbares Wyddis-Profil. Ganze Daten-/Hostparität offen.
+
+CITY-00-I46-REVIEW-CLEAN-P46 Start 2026-10-09T19:38:22.320998+00:00; Aufräumplan: sichtbares Profilgleichheitsmaß von serialisierten IDs/Persistenz trennen; Reviewlink und Rohbelege erhalten.
