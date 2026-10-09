@@ -1040,7 +1040,7 @@
       ]
     },
     "inventoryComplete": false,
-    "inventoryStatus": "N-I10: neun frühe Land-Zahlenfragen direkt geklärt. Wizard Roughness/Water Level0..1, Detail1..5, Seed beiOverrideON0..999999; Eraser Size4..512; Raise/Lower Size4..128 und Roughness0.1..2 jeweils selbst gemessen.663 UI/83 Fälle und alte Quellen erhalten.83 frühe Fragen/R02/Aufräumen offen; keine vollständige Inventar-/Paritätsfreigabe.",
+    "inventoryStatus": "N-I10: Neun frühe Land-Zahlenfragen direkt geklärt. Wizard Roughness/Water Level 0..1, Detail 1..5, Seed bei Override ON 0..999999; Eraser Size 4..512; Raise/Lower Size 4..128 und Roughness 0.1..2 jeweils selbst gemessen. 663 UI/83 Fälle und alte Quellen erhalten. 83 frühe Fragen, R02 und Aufräumen offen; keine vollständige Inventar-/Paritätsfreigabe.",
     "legacyInventoryScope": "Das vorhandene Wurzelfeld inventoryComplete und strictParity beschreiben nur die bisherige Dungeondraft-Inventur; daraus folgt keine Wonderdraft-Abnahme.",
     "inventoryGate": {
       "phase": "HEX-00",
