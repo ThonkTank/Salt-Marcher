@@ -508,6 +508,18 @@
       "colleagues": "Only real independent Codex chats; no subagents as colleague/owner stand-ins."
     },
     "verification": {
+      "atlasQaSharedSmoke": {
+        "run": "Atlas-QA shared-build smoke 2026-10-09",
+        "sourceRevision": "adc7c2b13fc7a1d898eeb990a34993311a5dafcb",
+        "currentSharedHeadAtReview": "3943a844e13b528d9b401d5df3562b0d9e66e58a",
+        "productUnchangedSinceSource": true,
+        "mainJsSha256": "36f18ea11095851aed901ea62b53566668cffcf40952f8b2887769d555df0df8",
+        "atlasOriginalAndFreshTransport": "/home/aaron/.cache/dungeon-native-qa/atlas-qa-smoke-20261009/evidence/1791577141774-dd036-o01a-reopen/result.json",
+        "dungeonCompactSmoke": "/home/aaron/.cache/dungeon-native-qa/atlas-qa-dungeon-20261009/evidence/1791577171002-compact-edit/result.json",
+        "blockedAtlasCreationHarness": "/home/aaron/.cache/dungeon-native-qa/atlas-qa-shared-20261009/evidence/1791577076603-hex01-atlas-edit/result.json",
+        "issue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1#issuecomment-6088602051",
+        "limits": "Separate isolated read-only Atlas/fresh-transport and Dungeon smoke only; command-palette harness timed out before Atlas creation. No saved terrain, Location/Key, integrated Atlas-Dungeon flow, physical input, HEX03-I01b review or phase approval."
+      },
       "check": "Clean Git41cac27 passed",
       "tests": "276/276 clean integrated Git, all basis gates passed; existing foreign local test patches preserved.",
       "build": "Clean Git41cac27 passed, actual native99b4d9; no user-vault install.",
