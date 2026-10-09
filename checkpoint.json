@@ -3615,17 +3615,17 @@
     "state": "city00_reference_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I09-R",
-      "kind": "requirements_review",
-      "startedAt": "2026-10-09T12:07:42.076908+00:00",
-      "focus": "Galerie gegen Roadmap und I09-P prüfen",
-      "state": "completed",
-      "result": "Vier Formen und Quellenumfang belegt; R01–R03 Metadatenbereinigung erforderlich, keine Paritätsfreigabe"
-    },
-    "nextRun": {
       "id": "CITY-00-I09-CP",
       "kind": "cleanup_planning",
-      "focus": "Befunde ohne Änderung der Rohbilder oder Pflichten planen"
+      "startedAt": "2026-10-09T12:07:42.642932+00:00",
+      "focus": "R01–R03 Bereinigung planen",
+      "state": "completed",
+      "result": "Gate-, Quellen- und Dateinamenkorrekturen getrennt geplant; Rohbildbytes und alle offenen Pflichten erhalten"
+    },
+    "nextRun": {
+      "id": "CITY-00-I09-CI",
+      "kind": "cleanup_implementation",
+      "focus": "Galeriemetadaten und Status bereinigen"
     },
     "open": [
       "CITY-00 direkte Referenzinventur/Galerie aller drei Produkte",
