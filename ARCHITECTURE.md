@@ -2,6 +2,29 @@
 
 Auftrag: große Karten im echten Obsidian flüssig bearbeiten, alle bestehenden und zugesagten Arbeitsabläufe erhalten. Neue native Karten; kein SVG-Import und keine Legacy-Unterstützung im Produkt. Originaldateien bleiben geschützt; ausdrücklich beauftragte Einbindungsänderungen bleiben eng begrenzt. Pixelgleichheit ist kein Ziel; Lesbarkeit und Spielbedeutung sind verbindlich.
 
+## Plattformoffene SaltMarcher-Ablösung
+
+Direkter Nutzerauftrag vom 9. Oktober 2026: Dieses Repository ist der einzige
+fortzuführende Produktpfad. Es übernimmt sowohl die bereits in SaltMarcher
+umgesetzten als auch die dort bestätigten und geplanten Funktionen,
+einschließlich Reise, Kalender/Weltzeit, Musikbibliothek/-player, Wetter,
+Shops, Autonomie und der querliegenden Daten-/Erweiterungs-/Qualitätsverträge.
+Das Endprodukt muss kein Obsidian-Plugin sein. Verbindlich sind UX und
+Funktion; Host, Distribution und technische Ausprägung werden in
+`SMR-00-ADR-01` gemeinsam entschieden.
+Die versionierte Gesamtfolge steht in
+[`ROADMAP-SALTMARCHER-REPLACEMENT.md`](ROADMAP-SALTMARCHER-REPLACEMENT.md).
+
+SaltMarchers Produktanforderungen, bestätigte Acceptance-Fälle, statische
+Daten und Golden Master bleiben fachliche Wahrheit. Aktueller Electron-Code,
+die letzte JavaFX-Dungeon-Linie und historische Obsidian-Plugins sind nur
+Verhaltens-, Fixture- oder UX-Referenzen. Keine dieser Hostarchitekturen wird
+vor dem ADR als Zielgrenze übernommen. Bestehender Vaultzugriff und
+Hostintegration gehören an explizite Adapter; Domänenzustände, Kommandos und
+Projektionen bleiben davon getrennt und werden an ihren aktuellen
+Produktverträgen geprüft. Dadurch bleiben die bereits gebauten Pluginteile
+nutzbar, ohne die Plattformentscheidung vorwegzunehmen.
+
 ## Geplante Katalog- und Encounter-Erweiterung
 
 Die [SaltMarcher-Migrationsroadmap](ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md)

@@ -1,4 +1,66 @@
 {
+  "saltMarcherReplacement": {
+    "schemaVersion": 1,
+    "updated": "2026-10-09T13:36:06Z",
+    "state": "smr00_plan_review_pending",
+    "plan": "ROADMAP-SALTMARCHER-REPLACEMENT.md",
+    "platformAdr": "ROADMAP-SALTMARCHER-PLATFORM-ADR.md",
+    "architecture": "ARCHITECTURE.md#plattformoffene-saltmarcher-ablösung",
+    "sourceRepository": "ThonkTank/Salt-Marcher",
+    "sourceRevision": "9de85c1a26f526acbc1af332ac5962e185c0aab2",
+    "scopeDecision": {
+      "date": "2026-10-09",
+      "authority": "Direct user instructions: Salt Marcher ist als eigenständiges Projekt komplett abgelöst; bereits erledigte und künftig geplante Arbeit wird in den gemeinsamen Nachfolger integriert. Das Endergebnis muss kein Obsidian-Plugin sein; UX- und Funktionsvorgaben sind verbindlich, die genaue Umsetzung entscheidet das Team.",
+      "effect": "This repository is the only continued product path. Travel, calendar/world time, music library/player and every other confirmed SaltMarcher capability are in scope. Obsidian is the current implementation base, not a mandatory final host. SaltMarcher code and historical plugins are references, not target architecture or merge contracts."
+    },
+    "sourceHierarchy": [
+      "docs/project/vision.md",
+      "docs/project/requirements/requirements-program-capabilities.md",
+      "docs/**/requirements/*.md",
+      "docs/project/architecture/program-technical-needs.md",
+      "confirmed acceptance cases, static catalog data, reference tables and Golden Masters"
+    ],
+    "phases": [
+      {"id": "SMR-00", "title": "Portfolio contract and source inventory", "state": "plan_ready_review_pending"},
+      {"id": "SMR-01", "title": "Campaign identity and data lifecycle", "state": "open"},
+      {"id": "SMR-02", "title": "Catalog, reference graph and world planner", "state": "partial_via_ce01"},
+      {"id": "SMR-03", "title": "Party, scene and live session", "state": "open"},
+      {"id": "SMR-04", "title": "Shared atlas and maps", "state": "active_in_existing_roadmaps"},
+      {"id": "SMR-05", "title": "Encounter, combat, loot and rewards", "state": "planned_via_ce03_ce06"},
+      {"id": "SMR-06", "title": "Session planner and reproducible generation", "state": "open"},
+      {"id": "SMR-07", "title": "Travel, calendar and authoritative time", "state": "open"},
+      {"id": "SMR-08", "title": "Shops, weather and music", "state": "open"},
+      {"id": "SMR-09", "title": "Actor autonomy", "state": "open"},
+      {"id": "SMR-10", "title": "Passive display, extensions and full portability", "state": "open"},
+      {"id": "SMR-11", "title": "Tutorials, accessibility, performance and final review", "state": "open"}
+    ],
+    "cases": [
+      {"id": "SMR-AC-01", "title": "Sole-product boundary, complete source inventory and evidence-backed target-platform decision", "state": "open"},
+      {"id": "SMR-AC-02", "title": "Campaign A/B/A lifecycle and crash-safe data ownership", "state": "open"},
+      {"id": "SMR-AC-03", "title": "Definitions, references, world content and frozen history", "state": "open"},
+      {"id": "SMR-AC-04", "title": "Party, scene, masks and general history continuity", "state": "open"},
+      {"id": "SMR-AC-05", "title": "Unified hex, city and dungeon atlas", "state": "open"},
+      {"id": "SMR-AC-06", "title": "Encounter, combat, loot and reward atomicity", "state": "open"},
+      {"id": "SMR-AC-07", "title": "Session planning and reproducible generation", "state": "open"},
+      {"id": "SMR-AC-08", "title": "Cross-provider travel with causal undo", "state": "open"},
+      {"id": "SMR-AC-09", "title": "Calendar, per-scene time and exact-once consequences", "state": "open"},
+      {"id": "SMR-AC-10", "title": "Atomic shops and calendar-based restock", "state": "open"},
+      {"id": "SMR-AC-11", "title": "Weather/climate continuity and GM override", "state": "open"},
+      {"id": "SMR-AC-12", "title": "Portable music library/player and manual precedence", "state": "open"},
+      {"id": "SMR-AC-13", "title": "Opt-in explainable actor autonomy", "state": "open"},
+      {"id": "SMR-AC-14", "title": "Fail-closed passive player projection", "state": "open"},
+      {"id": "SMR-AC-15", "title": "Complete campaign export/import and salvage", "state": "open"},
+      {"id": "SMR-AC-16", "title": "Default-deny optional extension capabilities", "state": "open"},
+      {"id": "SMR-AC-17", "title": "Tutorial, localization, keyboard and 200-percent accessibility", "state": "open"},
+      {"id": "SMR-AC-18", "title": "Performance, cancellation, offline and privacy qualification", "state": "open"}
+    ],
+    "coordination": {
+      "local": "Three new local goal threads coordinate integration. Existing Hex/Atlas, City and Dungeon colleagues on three other devices retain their workstreams, evidence and non-overlapping ownership and contribute requirements to the platform decision.",
+      "cloud": "Prior GM-UX-CLOUD worker is reassigned through GitHub Issue #1 to independent architecture and technical review only. Other cloud colleagues retain their established specialist review/test responsibilities.",
+      "gui": "At most one graphical host/original instance per device; static and non-graphical checks may run separately."
+    },
+    "next": "SMR-00-ADR-01 compares the Obsidian-plugin, standalone-desktop and incremental-hybrid paths and records the team decision with independent cloud review. Host-neutral CE-01-I03 and existing dungeon/hex/city work may continue."
+  },
   "saltMarcherCatalogEncounter": {
     "schemaVersion": 1,
     "updated": "2026-10-09T13:36:06Z",
