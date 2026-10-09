@@ -969,7 +969,919 @@
           "evidence": []
         }
       }
-    ]
+    ],
+    "functionalInventory": [
+      {
+        "id": "CO-COK-0001",
+        "product": "Canvas of Kings",
+        "feature": "Pfad-/Flächenplatzierung",
+        "sourceUrl": "https://store.steampowered.com/app/2498570/Canvas_of_Kings/",
+        "observedAt": "2026-10-09T12:15:44.926455+02:00",
+        "observedVersion": null,
+        "availability": "unknown",
+        "observationKind": "documentation",
+        "originalEvidence": [],
+        "task": "Pfad und Fläche verändern; automatische Objekte folgen",
+        "phase": "CITY-07",
+        "caseIds": [
+          "CTY-006.01",
+          "CTY-006.02"
+        ],
+        "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
+        "implementationEvidence": [],
+        "hostEvidence": [],
+        "comparisonEvidence": [],
+        "usabilityEvidence": [],
+        "review": {
+          "state": "not_run"
+        },
+        "status": "open",
+        "gap": "Dokumentationskandidat; direkte vollständige Originalprobe offen."
+      },
+      {
+        "id": "CO-COK-0002",
+        "product": "Canvas of Kings",
+        "feature": "Zufallsvarianten von Objektkategorien",
+        "sourceUrl": "https://store.steampowered.com/app/2498570/Canvas_of_Kings/",
+        "observedAt": "2026-10-09T12:15:44.926455+02:00",
+        "observedVersion": null,
+        "availability": "unknown",
+        "observationKind": "documentation",
+        "originalEvidence": [],
+        "task": "Kategorie verteilen und Eigenschaften variieren",
+        "phase": "CITY-07",
+        "caseIds": [
+          "CTY-006.01",
+          "CTY-006.02"
+        ],
+        "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
+        "implementationEvidence": [],
+        "hostEvidence": [],
+        "comparisonEvidence": [],
+        "usabilityEvidence": [],
+        "review": {
+          "state": "not_run"
+        },
+        "status": "open",
+        "gap": "Dokumentationskandidat; direkte vollständige Originalprobe offen."
+      },
+      {
+        "id": "CO-COK-0003",
+        "product": "Canvas of Kings",
+        "feature": "Zusammen bewegte Objektgruppen",
+        "sourceUrl": "https://store.steampowered.com/app/2498570/Canvas_of_Kings/",
+        "observedAt": "2026-10-09T12:15:44.926455+02:00",
+        "observedVersion": null,
+        "availability": "unknown",
+        "observationKind": "documentation",
+        "originalEvidence": [],
+        "task": "Prop auf Turm gemeinsam verschieben",
+        "phase": "CITY-07",
+        "caseIds": [
+          "CTY-006.01",
+          "CTY-006.02"
+        ],
+        "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
+        "implementationEvidence": [],
+        "hostEvidence": [],
+        "comparisonEvidence": [],
+        "usabilityEvidence": [],
+        "review": {
+          "state": "not_run"
+        },
+        "status": "open",
+        "gap": "Dokumentationskandidat; direkte vollständige Originalprobe offen."
+      },
+      {
+        "id": "CO-COK-0004",
+        "product": "Canvas of Kings",
+        "feature": "Licht und Wettervorlagen",
+        "sourceUrl": "https://store.steampowered.com/app/2498570/Canvas_of_Kings/",
+        "observedAt": "2026-10-09T12:15:44.926455+02:00",
+        "observedVersion": null,
+        "availability": "unknown",
+        "observationKind": "documentation",
+        "originalEvidence": [],
+        "task": "Atmosphäre ändern und speichern",
+        "phase": "CITY-07",
+        "caseIds": [
+          "CTY-006.01",
+          "CTY-006.02"
+        ],
+        "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
+        "implementationEvidence": [],
+        "hostEvidence": [],
+        "comparisonEvidence": [],
+        "usabilityEvidence": [],
+        "review": {
+          "state": "not_run"
+        },
+        "status": "open",
+        "gap": "Dokumentationskandidat; direkte vollständige Originalprobe offen."
+      },
+      {
+        "id": "CO-COK-0005",
+        "product": "Canvas of Kings",
+        "feature": "Exportbereich, Raster und Vorlagen",
+        "sourceUrl": "https://store.steampowered.com/app/2498570/Canvas_of_Kings/",
+        "observedAt": "2026-10-09T12:15:44.926455+02:00",
+        "observedVersion": null,
+        "availability": "unknown",
+        "observationKind": "documentation",
+        "originalEvidence": [],
+        "task": "Ausschnitt mit Quadrat-/Hexraster ausgeben",
+        "phase": "CITY-08",
+        "caseIds": [
+          "CTY-005.05",
+          "CTY-006.03",
+          "CTY-007.01",
+          "CTY-008.02"
+        ],
+        "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
+        "implementationEvidence": [],
+        "hostEvidence": [],
+        "comparisonEvidence": [],
+        "usabilityEvidence": [],
+        "review": {
+          "state": "not_run"
+        },
+        "status": "open",
+        "gap": "Dokumentationskandidat; direkte vollständige Originalprobe offen."
+      },
+      {
+        "id": "CO-WAT-0001",
+        "product": "Medieval Fantasy City Generator",
+        "feature": "Stadtlayout und Größenoptionen",
+        "sourceUrl": "https://watabou.itch.io/medieval-fantasy-city-generator",
+        "observedAt": "2026-10-09T12:15:44.926455+02:00",
+        "observedVersion": null,
+        "availability": "unknown",
+        "observationKind": "documentation",
+        "originalEvidence": [],
+        "task": "Dorf und Stadt erzeugen",
+        "phase": "CITY-02",
+        "caseIds": [
+          "CTY-001.02",
+          "CTY-001.03",
+          "CTY-008.01"
+        ],
+        "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
+        "implementationEvidence": [],
+        "hostEvidence": [],
+        "comparisonEvidence": [],
+        "usabilityEvidence": [],
+        "review": {
+          "state": "not_run"
+        },
+        "status": "open",
+        "gap": "Dokumentationskandidat; direkte vollständige Originalprobe offen."
+      },
+      {
+        "id": "CO-WAT-0002",
+        "product": "Medieval Fantasy City Generator",
+        "feature": "Dächer und Vierteldarstellung",
+        "sourceUrl": "https://watabou.itch.io/medieval-fantasy-city-generator",
+        "observedAt": "2026-10-09T12:15:44.926455+02:00",
+        "observedVersion": null,
+        "availability": "unknown",
+        "observationKind": "documentation",
+        "originalEvidence": [],
+        "task": "Viertel und Dachdetail desselben Plans vergleichen",
+        "phase": "CITY-07",
+        "caseIds": [
+          "CTY-006.01",
+          "CTY-006.02"
+        ],
+        "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
+        "implementationEvidence": [],
+        "hostEvidence": [],
+        "comparisonEvidence": [],
+        "usabilityEvidence": [],
+        "review": {
+          "state": "not_run"
+        },
+        "status": "open",
+        "gap": "Dokumentationskandidat; direkte vollständige Originalprobe offen."
+      },
+      {
+        "id": "CO-WAT-0003",
+        "product": "Medieval Fantasy City Generator",
+        "feature": "Gassen und Straßennetz",
+        "sourceUrl": "https://watabou.itch.io/medieval-fantasy-city-generator",
+        "observedAt": "2026-10-09T12:15:44.926455+02:00",
+        "observedVersion": null,
+        "availability": "unknown",
+        "observationKind": "documentation",
+        "originalEvidence": [],
+        "task": "Hauptweg und Gasse bearbeiten",
+        "phase": "CITY-05",
+        "caseIds": [
+          "CTY-004.01",
+          "CTY-004.02"
+        ],
+        "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
+        "implementationEvidence": [],
+        "hostEvidence": [],
+        "comparisonEvidence": [],
+        "usabilityEvidence": [],
+        "review": {
+          "state": "not_run"
+        },
+        "status": "open",
+        "gap": "Dokumentationskandidat; direkte vollständige Originalprobe offen."
+      },
+      {
+        "id": "CO-WAT-0004",
+        "product": "Medieval Fantasy City Generator",
+        "feature": "Wälder und Stadtumgebung",
+        "sourceUrl": "https://watabou.itch.io/medieval-fantasy-city-generator",
+        "observedAt": "2026-10-09T12:15:44.926455+02:00",
+        "observedVersion": null,
+        "availability": "unknown",
+        "observationKind": "documentation",
+        "originalEvidence": [],
+        "task": "Umgebung sichtbar ausarbeiten",
+        "phase": "CITY-07",
+        "caseIds": [
+          "CTY-006.01",
+          "CTY-006.02"
+        ],
+        "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
+        "implementationEvidence": [],
+        "hostEvidence": [],
+        "comparisonEvidence": [],
+        "usabilityEvidence": [],
+        "review": {
+          "state": "not_run"
+        },
+        "status": "open",
+        "gap": "Dokumentationskandidat; direkte vollständige Originalprobe offen."
+      },
+      {
+        "id": "CO-FTG-0001",
+        "product": "Fantasy Town Generator",
+        "feature": "Siedlungsgröße und benannte Vorgaben",
+        "sourceUrl": "https://www.fantasytowngenerator.com/temporary-settlement?newSettlement=true",
+        "observedAt": "2026-10-09T12:15:44.926455+02:00",
+        "observedVersion": null,
+        "availability": "unknown",
+        "observationKind": "direct",
+        "originalEvidence": [
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i01-20261009/ftg-form-observation.json"
+        ],
+        "task": "Größe/Vorgabe wählen und Plan erzeugen",
+        "phase": "CITY-02",
+        "caseIds": [
+          "CTY-001.02",
+          "CTY-001.03",
+          "CTY-008.01"
+        ],
+        "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
+        "implementationEvidence": [],
+        "hostEvidence": [],
+        "comparisonEvidence": [],
+        "usabilityEvidence": [],
+        "review": {
+          "state": "not_run"
+        },
+        "status": "open",
+        "gap": "Formularbereich direkt sichtbar; konkrete Wirkung und vollständige Detailoptionen noch offen."
+      },
+      {
+        "id": "CO-FTG-0002",
+        "product": "Fantasy Town Generator",
+        "feature": "Straßenlayout und Bebauungsvorgaben",
+        "sourceUrl": "https://www.fantasytowngenerator.com/temporary-settlement?newSettlement=true",
+        "observedAt": "2026-10-09T12:15:44.926455+02:00",
+        "observedVersion": null,
+        "availability": "unknown",
+        "observationKind": "direct",
+        "originalEvidence": [
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i01-20261009/ftg-form-observation.json"
+        ],
+        "task": "Gewundenes, Raster- und Ringlayout erzeugen",
+        "phase": "CITY-02",
+        "caseIds": [
+          "CTY-001.02",
+          "CTY-001.03",
+          "CTY-008.01"
+        ],
+        "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
+        "implementationEvidence": [],
+        "hostEvidence": [],
+        "comparisonEvidence": [],
+        "usabilityEvidence": [],
+        "review": {
+          "state": "not_run"
+        },
+        "status": "open",
+        "gap": "Formularbereich direkt sichtbar; konkrete Wirkung und vollständige Detailoptionen noch offen."
+      },
+      {
+        "id": "CO-FTG-0003",
+        "product": "Fantasy Town Generator",
+        "feature": "Baumaterial",
+        "sourceUrl": "https://www.fantasytowngenerator.com/temporary-settlement?newSettlement=true",
+        "observedAt": "2026-10-09T12:15:44.926455+02:00",
+        "observedVersion": null,
+        "availability": "unknown",
+        "observationKind": "direct",
+        "originalEvidence": [
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i01-20261009/ftg-form-observation.json"
+        ],
+        "task": "Gebäudematerial ändern",
+        "phase": "CITY-07",
+        "caseIds": [
+          "CTY-006.01",
+          "CTY-006.02"
+        ],
+        "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
+        "implementationEvidence": [],
+        "hostEvidence": [],
+        "comparisonEvidence": [],
+        "usabilityEvidence": [],
+        "review": {
+          "state": "not_run"
+        },
+        "status": "open",
+        "gap": "Formularbereich direkt sichtbar; konkrete Wirkung und vollständige Detailoptionen noch offen."
+      },
+      {
+        "id": "CO-FTG-0004",
+        "product": "Fantasy Town Generator",
+        "feature": "Demografie und Lebensstandard",
+        "sourceUrl": "https://www.fantasytowngenerator.com/temporary-settlement?newSettlement=true",
+        "observedAt": "2026-10-09T12:15:44.926455+02:00",
+        "observedVersion": null,
+        "availability": "unknown",
+        "observationKind": "direct",
+        "originalEvidence": [
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i01-20261009/ftg-form-observation.json"
+        ],
+        "task": "Bevölkerung und Lebensstandard konfigurieren",
+        "phase": "CITY-06",
+        "caseIds": [
+          "CTY-004.03"
+        ],
+        "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
+        "implementationEvidence": [],
+        "hostEvidence": [],
+        "comparisonEvidence": [],
+        "usabilityEvidence": [],
+        "review": {
+          "state": "not_run"
+        },
+        "status": "open",
+        "gap": "Formularbereich direkt sichtbar; konkrete Wirkung und vollständige Detailoptionen noch offen."
+      },
+      {
+        "id": "CO-FTG-0005",
+        "product": "Fantasy Town Generator",
+        "feature": "Regierung und Wachen",
+        "sourceUrl": "https://www.fantasytowngenerator.com/temporary-settlement?newSettlement=true",
+        "observedAt": "2026-10-09T12:15:44.926455+02:00",
+        "observedVersion": null,
+        "availability": "unknown",
+        "observationKind": "direct",
+        "originalEvidence": [
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i01-20261009/ftg-form-observation.json"
+        ],
+        "task": "Regierung, Führung und Wachen konfigurieren",
+        "phase": "CITY-06",
+        "caseIds": [
+          "CTY-004.03"
+        ],
+        "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
+        "implementationEvidence": [],
+        "hostEvidence": [],
+        "comparisonEvidence": [],
+        "usabilityEvidence": [],
+        "review": {
+          "state": "not_run"
+        },
+        "status": "open",
+        "gap": "Formularbereich direkt sichtbar; konkrete Wirkung und vollständige Detailoptionen noch offen."
+      },
+      {
+        "id": "CO-FTG-0006",
+        "product": "Fantasy Town Generator",
+        "feature": "Viertelwachstum und Dekoration",
+        "sourceUrl": "https://www.fantasytowngenerator.com/temporary-settlement?newSettlement=true",
+        "observedAt": "2026-10-09T12:15:44.926455+02:00",
+        "observedVersion": null,
+        "availability": "unknown",
+        "observationKind": "direct",
+        "originalEvidence": [
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i01-20261009/ftg-form-observation.json"
+        ],
+        "task": "Viertelnutzung und Wachstum ändern",
+        "phase": "CITY-06",
+        "caseIds": [
+          "CTY-004.03"
+        ],
+        "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
+        "implementationEvidence": [],
+        "hostEvidence": [],
+        "comparisonEvidence": [],
+        "usabilityEvidence": [],
+        "review": {
+          "state": "not_run"
+        },
+        "status": "open",
+        "gap": "Formularbereich direkt sichtbar; konkrete Wirkung und vollständige Detailoptionen noch offen."
+      },
+      {
+        "id": "CO-FTG-0007",
+        "product": "Fantasy Town Generator",
+        "feature": "Fraktionen",
+        "sourceUrl": "https://www.fantasytowngenerator.com/temporary-settlement?newSettlement=true",
+        "observedAt": "2026-10-09T12:15:44.926455+02:00",
+        "observedVersion": null,
+        "availability": "unknown",
+        "observationKind": "direct",
+        "originalEvidence": [
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i01-20261009/ftg-form-observation.json"
+        ],
+        "task": "Fraktion anlegen und Mitglieder verknüpfen",
+        "phase": "CITY-06",
+        "caseIds": [
+          "CTY-004.03"
+        ],
+        "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
+        "implementationEvidence": [],
+        "hostEvidence": [],
+        "comparisonEvidence": [],
+        "usabilityEvidence": [],
+        "review": {
+          "state": "not_run"
+        },
+        "status": "open",
+        "gap": "Formularbereich direkt sichtbar; konkrete Wirkung und vollständige Detailoptionen noch offen."
+      },
+      {
+        "id": "CO-FTG-0008",
+        "product": "Fantasy Town Generator",
+        "feature": "Religionen und Götter",
+        "sourceUrl": "https://www.fantasytowngenerator.com/temporary-settlement?newSettlement=true",
+        "observedAt": "2026-10-09T12:15:44.926455+02:00",
+        "observedVersion": null,
+        "availability": "unknown",
+        "observationKind": "direct",
+        "originalEvidence": [
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i01-20261009/ftg-form-observation.json"
+        ],
+        "task": "Eigene Religion konfigurieren",
+        "phase": "CITY-06",
+        "caseIds": [
+          "CTY-004.03"
+        ],
+        "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
+        "implementationEvidence": [],
+        "hostEvidence": [],
+        "comparisonEvidence": [],
+        "usabilityEvidence": [],
+        "review": {
+          "state": "not_run"
+        },
+        "status": "open",
+        "gap": "Formularbereich direkt sichtbar; konkrete Wirkung und vollständige Detailoptionen noch offen."
+      },
+      {
+        "id": "CO-FTG-0009",
+        "product": "Fantasy Town Generator",
+        "feature": "Landschaft und Klima",
+        "sourceUrl": "https://www.fantasytowngenerator.com/temporary-settlement?newSettlement=true",
+        "observedAt": "2026-10-09T12:15:44.926455+02:00",
+        "observedVersion": null,
+        "availability": "unknown",
+        "observationKind": "direct",
+        "originalEvidence": [
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i01-20261009/ftg-form-observation.json"
+        ],
+        "task": "Wald/Farm und Klimavorlage konfigurieren",
+        "phase": "CITY-07",
+        "caseIds": [
+          "CTY-006.01",
+          "CTY-006.02"
+        ],
+        "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
+        "implementationEvidence": [],
+        "hostEvidence": [],
+        "comparisonEvidence": [],
+        "usabilityEvidence": [],
+        "review": {
+          "state": "not_run"
+        },
+        "status": "open",
+        "gap": "Formularbereich direkt sichtbar; konkrete Wirkung und vollständige Detailoptionen noch offen."
+      },
+      {
+        "id": "CO-FTG-0010",
+        "product": "Fantasy Town Generator",
+        "feature": "Küste, Insel und Flüsse",
+        "sourceUrl": "https://www.fantasytowngenerator.com/temporary-settlement?newSettlement=true",
+        "observedAt": "2026-10-09T12:15:44.926455+02:00",
+        "observedVersion": null,
+        "availability": "unknown",
+        "observationKind": "direct",
+        "originalEvidence": [
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i01-20261009/ftg-form-observation.json"
+        ],
+        "task": "Küsten-/Flusslage erzeugen",
+        "phase": "CITY-02",
+        "caseIds": [
+          "CTY-001.02",
+          "CTY-001.03",
+          "CTY-008.01"
+        ],
+        "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
+        "implementationEvidence": [],
+        "hostEvidence": [],
+        "comparisonEvidence": [],
+        "usabilityEvidence": [],
+        "review": {
+          "state": "not_run"
+        },
+        "status": "open",
+        "gap": "Formularbereich direkt sichtbar; konkrete Wirkung und vollständige Detailoptionen noch offen."
+      },
+      {
+        "id": "CO-FTG-0011",
+        "product": "Fantasy Town Generator",
+        "feature": "Kalender",
+        "sourceUrl": "https://www.fantasytowngenerator.com/temporary-settlement?newSettlement=true",
+        "observedAt": "2026-10-09T12:15:44.926455+02:00",
+        "observedVersion": null,
+        "availability": "unknown",
+        "observationKind": "direct",
+        "originalEvidence": [
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i01-20261009/ftg-form-observation.json"
+        ],
+        "task": "Tages-/Wochenlänge konfigurieren",
+        "phase": "CITY-07",
+        "caseIds": [
+          "CTY-006.01",
+          "CTY-006.02"
+        ],
+        "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
+        "implementationEvidence": [],
+        "hostEvidence": [],
+        "comparisonEvidence": [],
+        "usabilityEvidence": [],
+        "review": {
+          "state": "not_run"
+        },
+        "status": "open",
+        "gap": "Formularbereich direkt sichtbar; konkrete Wirkung und vollständige Detailoptionen noch offen."
+      },
+      {
+        "id": "CO-FTG-0012",
+        "product": "Fantasy Town Generator",
+        "feature": "Gegenstände, Dienstleistungen und Preise",
+        "sourceUrl": "https://www.fantasytowngenerator.com/temporary-settlement?newSettlement=true",
+        "observedAt": "2026-10-09T12:15:44.926455+02:00",
+        "observedVersion": null,
+        "availability": "unknown",
+        "observationKind": "direct",
+        "originalEvidence": [
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i01-20261009/ftg-form-observation.json"
+        ],
+        "task": "Gebäudeangebot und globale Preise ändern",
+        "phase": "CITY-06",
+        "caseIds": [
+          "CTY-004.03"
+        ],
+        "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
+        "implementationEvidence": [],
+        "hostEvidence": [],
+        "comparisonEvidence": [],
+        "usabilityEvidence": [],
+        "review": {
+          "state": "not_run"
+        },
+        "status": "open",
+        "gap": "Formularbereich direkt sichtbar; konkrete Wirkung und vollständige Detailoptionen noch offen."
+      },
+      {
+        "id": "CO-FTG-0013",
+        "product": "Fantasy Town Generator",
+        "feature": "Gebäudebedarfe und Anzahlgrenzen",
+        "sourceUrl": "https://www.fantasytowngenerator.com/temporary-settlement?newSettlement=true",
+        "observedAt": "2026-10-09T12:15:44.926455+02:00",
+        "observedVersion": null,
+        "availability": "unknown",
+        "observationKind": "direct",
+        "originalEvidence": [
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i01-20261009/ftg-form-observation.json"
+        ],
+        "task": "Gebäudeverteilung konfigurieren",
+        "phase": "CITY-06",
+        "caseIds": [
+          "CTY-004.03"
+        ],
+        "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
+        "implementationEvidence": [],
+        "hostEvidence": [],
+        "comparisonEvidence": [],
+        "usabilityEvidence": [],
+        "review": {
+          "state": "not_run"
+        },
+        "status": "open",
+        "gap": "Formularbereich direkt sichtbar; konkrete Wirkung und vollständige Detailoptionen noch offen."
+      },
+      {
+        "id": "CO-FTG-0014",
+        "product": "Fantasy Town Generator",
+        "feature": "Bewohnerdetails und Beziehungen",
+        "sourceUrl": "https://docs.fantasytowngenerator.com/",
+        "observedAt": "2026-10-09T12:15:44.926455+02:00",
+        "observedVersion": null,
+        "availability": "unknown",
+        "observationKind": "documentation",
+        "originalEvidence": [],
+        "task": "Bewohner, Haushalt und Beziehungen bearbeiten",
+        "phase": "CITY-06",
+        "caseIds": [
+          "CTY-004.03"
+        ],
+        "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
+        "implementationEvidence": [],
+        "hostEvidence": [],
+        "comparisonEvidence": [],
+        "usabilityEvidence": [],
+        "review": {
+          "state": "not_run"
+        },
+        "status": "open",
+        "gap": "Dokumentationskandidat; direkte vollständige Originalprobe offen."
+      },
+      {
+        "id": "CO-FTG-0015",
+        "product": "Fantasy Town Generator",
+        "feature": "Manuelle Kartenbearbeitung",
+        "sourceUrl": "https://docs.fantasytowngenerator.com/",
+        "observedAt": "2026-10-09T12:15:44.926455+02:00",
+        "observedVersion": null,
+        "availability": "unknown",
+        "observationKind": "documentation",
+        "originalEvidence": [],
+        "task": "Gebäude und Straße verändern",
+        "phase": "CITY-01",
+        "caseIds": [
+          "CTY-001.01",
+          "CTY-002.01",
+          "CTY-002.02"
+        ],
+        "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
+        "implementationEvidence": [],
+        "hostEvidence": [],
+        "comparisonEvidence": [],
+        "usabilityEvidence": [],
+        "review": {
+          "state": "not_run"
+        },
+        "status": "open",
+        "gap": "Dokumentationskandidat; direkte vollständige Originalprobe offen."
+      },
+      {
+        "id": "CO-FTG-0016",
+        "product": "Fantasy Town Generator",
+        "feature": "Lokale Neugeneration",
+        "sourceUrl": "https://docs.fantasytowngenerator.com/",
+        "observedAt": "2026-10-09T12:15:44.926455+02:00",
+        "observedVersion": null,
+        "availability": "unknown",
+        "observationKind": "documentation",
+        "originalEvidence": [],
+        "task": "Ausgewählten Bereich erneuern",
+        "phase": "CITY-04",
+        "caseIds": [
+          "CTY-003.01",
+          "CTY-003.02"
+        ],
+        "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
+        "implementationEvidence": [],
+        "hostEvidence": [],
+        "comparisonEvidence": [],
+        "usabilityEvidence": [],
+        "review": {
+          "state": "not_run"
+        },
+        "status": "open",
+        "gap": "Dokumentationskandidat; direkte vollständige Originalprobe offen."
+      },
+      {
+        "id": "CO-FTG-0017",
+        "product": "Fantasy Town Generator",
+        "feature": "Bewohner-Massenbearbeitung",
+        "sourceUrl": "https://docs.fantasytowngenerator.com/",
+        "observedAt": "2026-10-09T12:15:44.926455+02:00",
+        "observedVersion": null,
+        "availability": "unknown",
+        "observationKind": "documentation",
+        "originalEvidence": [],
+        "task": "Mehrere Bewohner gemeinsam ändern",
+        "phase": "CITY-06",
+        "caseIds": [
+          "CTY-004.03"
+        ],
+        "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
+        "implementationEvidence": [],
+        "hostEvidence": [],
+        "comparisonEvidence": [],
+        "usabilityEvidence": [],
+        "review": {
+          "state": "not_run"
+        },
+        "status": "open",
+        "gap": "Dokumentationskandidat; direkte vollständige Originalprobe offen."
+      },
+      {
+        "id": "CO-FTG-0018",
+        "product": "Fantasy Town Generator",
+        "feature": "Tagespläne und Zeitsimulation",
+        "sourceUrl": "https://docs.fantasytowngenerator.com/",
+        "observedAt": "2026-10-09T12:15:44.926455+02:00",
+        "observedVersion": null,
+        "availability": "unknown",
+        "observationKind": "documentation",
+        "originalEvidence": [],
+        "task": "Uhrzeit ändern und Aufenthaltsorte prüfen",
+        "phase": "CITY-07",
+        "caseIds": [
+          "CTY-006.01",
+          "CTY-006.02"
+        ],
+        "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
+        "implementationEvidence": [],
+        "hostEvidence": [],
+        "comparisonEvidence": [],
+        "usabilityEvidence": [],
+        "review": {
+          "state": "not_run"
+        },
+        "status": "open",
+        "gap": "Dokumentationskandidat; direkte vollständige Originalprobe offen."
+      },
+      {
+        "id": "CO-FTG-0019",
+        "product": "Fantasy Town Generator",
+        "feature": "Wetter, Jahreszeiten, Tag/Nacht",
+        "sourceUrl": "https://docs.fantasytowngenerator.com/",
+        "observedAt": "2026-10-09T12:15:44.926455+02:00",
+        "observedVersion": null,
+        "availability": "unknown",
+        "observationKind": "documentation",
+        "originalEvidence": [],
+        "task": "Saison und Tageslicht wechseln",
+        "phase": "CITY-07",
+        "caseIds": [
+          "CTY-006.01",
+          "CTY-006.02"
+        ],
+        "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
+        "implementationEvidence": [],
+        "hostEvidence": [],
+        "comparisonEvidence": [],
+        "usabilityEvidence": [],
+        "review": {
+          "state": "not_run"
+        },
+        "status": "open",
+        "gap": "Dokumentationskandidat; direkte vollständige Originalprobe offen."
+      },
+      {
+        "id": "CO-FTG-0020",
+        "product": "Fantasy Town Generator",
+        "feature": "Bild-, CSV- und JSON-Ausgabe",
+        "sourceUrl": "https://docs.fantasytowngenerator.com/",
+        "observedAt": "2026-10-09T12:15:44.926455+02:00",
+        "observedVersion": null,
+        "availability": "unknown",
+        "observationKind": "documentation",
+        "originalEvidence": [],
+        "task": "Karte und Lebensdaten ausgeben",
+        "phase": "CITY-08",
+        "caseIds": [
+          "CTY-005.05",
+          "CTY-006.03",
+          "CTY-007.01",
+          "CTY-008.02"
+        ],
+        "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
+        "implementationEvidence": [],
+        "hostEvidence": [],
+        "comparisonEvidence": [],
+        "usabilityEvidence": [],
+        "review": {
+          "state": "not_run"
+        },
+        "status": "open",
+        "gap": "Dokumentationskandidat; direkte vollständige Originalprobe offen."
+      },
+      {
+        "id": "CO-FTG-0021",
+        "product": "Fantasy Town Generator",
+        "feature": "FoundryVTT und Roll20 Integration",
+        "sourceUrl": "https://docs.fantasytowngenerator.com/",
+        "observedAt": "2026-10-09T12:15:44.926455+02:00",
+        "observedVersion": null,
+        "availability": "unknown",
+        "observationKind": "documentation",
+        "originalEvidence": [],
+        "task": "Export-/Integrationsablauf vergleichen",
+        "phase": "CITY-08",
+        "caseIds": [
+          "CTY-005.05",
+          "CTY-006.03",
+          "CTY-007.01",
+          "CTY-008.02"
+        ],
+        "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
+        "implementationEvidence": [],
+        "hostEvidence": [],
+        "comparisonEvidence": [],
+        "usabilityEvidence": [],
+        "review": {
+          "state": "not_run"
+        },
+        "status": "open",
+        "gap": "Dokumentationskandidat; direkte vollständige Originalprobe offen."
+      },
+      {
+        "id": "CO-FTG-0022",
+        "product": "Fantasy Town Generator",
+        "feature": "Einstellungen und Namenslisten",
+        "sourceUrl": "https://docs.fantasytowngenerator.com/",
+        "observedAt": "2026-10-09T12:15:44.926455+02:00",
+        "observedVersion": null,
+        "availability": "unknown",
+        "observationKind": "documentation",
+        "originalEvidence": [],
+        "task": "Vorgaben speichern und Namensliste verwenden",
+        "phase": "CITY-02",
+        "caseIds": [
+          "CTY-001.02",
+          "CTY-001.03",
+          "CTY-008.01"
+        ],
+        "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
+        "implementationEvidence": [],
+        "hostEvidence": [],
+        "comparisonEvidence": [],
+        "usabilityEvidence": [],
+        "review": {
+          "state": "not_run"
+        },
+        "status": "open",
+        "gap": "Dokumentationskandidat; direkte vollständige Originalprobe offen."
+      },
+      {
+        "id": "CO-FTG-0023",
+        "product": "Fantasy Town Generator",
+        "feature": "Generierungsvorschau und Metropole",
+        "sourceUrl": "https://docs.fantasytowngenerator.com/",
+        "observedAt": "2026-10-09T12:15:44.926455+02:00",
+        "observedVersion": null,
+        "availability": "premium",
+        "observationKind": "documentation",
+        "originalEvidence": [],
+        "task": "Vorschau/50.000-Einwohner-Fähigkeit prüfen",
+        "phase": "CITY-08",
+        "caseIds": [
+          "CTY-005.05",
+          "CTY-006.03",
+          "CTY-007.01",
+          "CTY-008.02"
+        ],
+        "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
+        "implementationEvidence": [],
+        "hostEvidence": [],
+        "comparisonEvidence": [],
+        "usabilityEvidence": [],
+        "review": {
+          "state": "not_run"
+        },
+        "status": "open",
+        "gap": "Dokumentationskandidat; direkte vollständige Originalprobe offen."
+      }
+    ],
+    "functionalInventoryStatus": {
+      "state": "partial_inventory_not_accepted",
+      "run": "CITY-00-I01",
+      "products": 3,
+      "candidates": 32,
+      "directFormAreas": 13,
+      "open": [
+        "Detailfähigkeiten aller Produkte vervollständigen",
+        "Versionsstand und direkte Ergebnisgalerie",
+        "Originalwirkungsproben statt allein sichtbarer Formularbereiche",
+        "Premium-/Integrationsumfang",
+        "Anforderungsreview und getrennte Aufräumläufe"
+      ]
+    },
+    "currentUserGoal": "09.10.2026: vollständige Funktionsgleichwertigkeit mit Canvas of Kings, Watabou und Fantasy Town Generator, bessere Bedienung; bisherige Zweiprodukt-Ergebnisbegrenzung durch direkten Auftrag erweitert."
   },
   "wonderdraftParity": {
     "schemaVersion": 1,
@@ -129054,7 +129966,7 @@
           "remaining": "Einfügezug und drei frühere Punktzüge sind mit Host-Rohdaten ohne Abweichung gepaart; Undo/Redo und frische Hostöffnungen bestehen. Weitere Einfügepunkte, Punktentfernung, Löcher, Crop-Folgen und DD-038-Endreview offen. Keine Fallfreigabe; P7-2 physisch ungeprüft."
         },
         "followUpPhase1BuildingPointRemoveOriginalProbe": {
-          "state": "edge_delete_scoped_host_raw_pair_passed_case_open",
+          "state": "edge_delete_scoped_review_passed_case_open",
           "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
           "hostBuildSha256": "e1a4ad3af9f1e2767f47f435b9d4a162271390bd9eebff637d32a6e04d341d06",
           "originalReport": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-remove-original-20261009/original-probe.md",
@@ -129067,8 +129979,21 @@
           "hostEdit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-remove-host-20261009/evidence/1791540497568-parity-tools-phase1-building-point-edit/result.json",
           "hostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-remove-host-20261009/evidence/1791540621881-parity-tools-phase1-building-point-reopen/result.json",
           "hostAudit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-remove-host-20261009/independent-audit.json",
+          "review": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-remove-host-20261009/review.md",
           "measuredScope": "8×8 Wood/Stone: Delete am oberen linken Griff entfernt einen Punkt und speichert ein Dreieck mit zwölf Stone-Zellen, die den neuen Umriss mit positiver Fläche schneiden. Ein Mittelpunktfilter ergäbe nur neun Zellen. Undo 18 gemischte Zellen, Redo zwölf Stone. Frische Originalöffnung erhält belegte Zellen; ungenutzter Lookup und Farben leerer Zellen können wechseln.",
-          "remaining": "Löschzug und vier frühere Punktfälle sind mit Host-Rohdaten ohne Abweichung gepaart; Undo/Redo und frische Hostöffnungen bestehen. Getrennter Review, weitere Punktentfernungen, aktive Wandvorlage, Löcher, Crop-Folgen und DD-038-Endreview offen. Keine Fallfreigabe; P7-2 physisch ungeprüft."
+          "remaining": "Löschzug und vier frühere Punktfälle sind mit Host-Rohdaten ohne Abweichung gepaart und separat reviewt; Undo/Redo und frische Hostöffnungen bestehen. Weitere Punktentfernungen, aktive Wandvorlage, Löcher, Crop-Folgen und DD-038-Endreview offen. Keine Fallfreigabe; P7-2 physisch ungeprüft."
+        },
+        "followUpPhase1BuildingLastOutlineOriginalProbe": {
+          "state": "last_outline_delete_original_measured_host_open",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "originalReport": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-remove-last-original-20261009/original-probe.md",
+          "originalAudit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-remove-last-original-20261009/original-audit.json",
+          "originalDeleted": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-remove-last-original-20261009/native/runs/20261009-121657-3720879/evidence/maps/01-deleted.dungeondraft_map",
+          "originalUndo": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-remove-last-original-20261009/native/runs/20261009-121657-3720879/evidence/maps/02-undo.dungeondraft_map",
+          "originalRedo": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-remove-last-original-20261009/native/runs/20261009-121657-3720879/evidence/maps/03-redo.dungeondraft_map",
+          "originalFresh": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-remove-last-original-20261009/native-fresh/runs/20261009-121752-3721714/evidence/screens/00-fresh.png",
+          "measuredScope": "8×8: Delete am Stone-Dreieckgriff entfernt den letzten Shape-Umriss und zwölf belegte Zellen. Undo stellt beides wieder her, Redo entfernt beides. Frische Originalöffnung bleibt leer; ungenutzter Lookup und Farben leerer Zellen können wechseln.",
+          "remaining": "Host-GUI-/Rohdatenvergleich, weitere Eckpunkte, Wände, Portale, Mehrkonturen und DD-038-Endreview offen. Keine Fallfreigabe; P7-2 physisch ungeprüft."
         },
         "followUpPhase1TerrainMaskCandidate": {
           "state": "seeded_host_masks_scoped_review_passed_case_open",
