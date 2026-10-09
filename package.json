@@ -10,7 +10,9 @@
   },
   "dependencies": {
     "clipper-lib": "^6.4.2",
+    "fflate": "0.8.3",
     "pixi.js": "8.22.0",
+    "png-tools": "1.1.1",
     "pngjs": "^7.0.0",
     "polygon-clipping": "^0.15.7"
   },
