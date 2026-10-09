@@ -4930,25 +4930,17 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-E2E-I01-SEED",
-      "kind": "implementation",
-      "startedAt": "2026-10-09T23:12:36.576281+00:00",
-      "focus": "Materialize assigned City seed in common fixture path using actual City v1 codec, hash and snapshot/reference oracles",
-      "state": "completed",
-      "result": "Assigned Cityseed materialized through real codec; check/test/build PASS (421/421). Byte/hash/canonical/snapshot/reference oracles; host/import/E2E and separate review/cleanup open.",
-      "checks": {
-        "typecheck": "PASS",
-        "tests": "421/421",
-        "build": "PASS",
-        "nativeHost": "not_run",
-        "independentReview": "pending",
-        "cleanup": "pending"
-      }
-    },
-    "nextRun": {
       "id": "CITY-E2E-R01-SEED",
       "kind": "review",
-      "focus": "Review new seed against Steward6090818808, planned IDs/geometries and actual codec/snapshot boundary; then separate cleanup P/I/R"
+      "startedAt": "2026-10-09T23:14:30.767823+00:00",
+      "focus": "Own focused seed review against Steward6090818808, complete planned geometry and codec/snapshot/reference boundary",
+      "state": "completed",
+      "result": "PASS no mandatory seed finding on6276312; full payload/hash/foreign-ID/source boundary verified; focused2/2; independent integrated review/host pending"
+    },
+    "nextRun": {
+      "id": "CITY-E2E-SEED-CLEAN-P",
+      "kind": "cleanup_planning",
+      "focus": "Plan cleanup of seed component/test/manifest ownership and temporary generation resources; no new product authority"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
