@@ -4619,16 +4619,16 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-01-INTEGRATION-R01-CLEAN-P01",
-      "kind": "cleanup_plan",
-      "startedAt": "2026-10-09T19:28:15.623485+00:00",
-      "focus": "Integrationsvorschlag gegen Quellen und Roadmap: R01-P",
-      "state": "completed",
-      "result": "Aufräumplan: Befunde und reine Vorschlagsgrenzen lesbar halten, Quellen-/Gegenbelege unverändert erhalten."
-    },
-    "nextRun": {
       "id": "CITY-01-INTEGRATION-R01-CLEAN-I01",
       "kind": "cleanup_implementation",
+      "startedAt": "2026-10-09T19:28:18.561382+00:00",
+      "focus": "Integrationsvorschlag gegen Quellen und Roadmap: R01-I",
+      "state": "completed",
+      "result": "Belegpfad und Vorschlagsscope konsolidiert; kein vorweggenommener Vertrag oder Produktpass."
+    },
+    "nextRun": {
+      "id": "CITY-01-INTEGRATION-R01-CLEAN-R01",
+      "kind": "cleanup_review",
       "focus": "Konkreten HEX04/05-Ownervertrag mit den drei Anschlussanforderungen abstimmen"
     },
     "open": [
