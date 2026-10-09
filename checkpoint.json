@@ -3880,17 +3880,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I23-CP",
-      "kind": "cleanup_planning",
-      "startedAt": "2026-10-09T14:20:41.215696+00:00",
-      "focus": "Abgeleiteten Snapshot und Nachweisgrenzen planen",
-      "state": "completed",
-      "result": "I23-Snapshotkorrektur und Hash-/Verweisprüfung geplant."
-    },
-    "nextRun": {
       "id": "CITY-00-I23-CI",
       "kind": "cleanup_implementation",
-      "focus": "Snapshot berichtigen und Rohbelege schützen"
+      "startedAt": "2026-10-09T14:21:00.690537+00:00",
+      "focus": "Snapshot aus aktuellen Teilbelegen berichtigen",
+      "state": "completed",
+      "result": "Snapshot zeigt Inlinekorrektur/Delete/SVG und trennt Legendenlayout von Pinposition; Rawhashes unverändert."
+    },
+    "nextRun": {
+      "id": "CITY-00-I23-CR",
+      "kind": "cleanup_review",
+      "focus": "Snapshot, Rawhashes und unveränderte Pflichten prüfen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
