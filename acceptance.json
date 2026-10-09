@@ -1658,7 +1658,8 @@
             "Other category/custom subtype variations and full version untested",
             "Fresh reopen/restart and own materialized variants/host/UX/physical comparison open"
           ],
-          "limits": "RandomizeScale and RandomizeRotation were both enabled; saved variation does not independently prove each toggle range/policy. Preview overlaps after placement are distinct from final Escape frame. Native scene asset paths are observed artifact fields, not public integration APIs."
+          "limits": "RandomizeScale and RandomizeRotation were both enabled; saved variation does not independently prove each toggle range/policy. Preview overlaps after placement are distinct from final Escape frame. Native scene asset paths are observed artifact fields, not public integration APIs.",
+          "reviewManifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i43-20261009-r01/review.json"
         }
       },
       {

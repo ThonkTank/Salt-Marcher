@@ -921,3 +921,5 @@ CITY-00-I43-CLEAN-P43 Start 2026-10-09T19:08:06.372374+00:00; Plan:Originalframe
 CITY-00-I43-CLEAN-I43 Start 2026-10-09T19:08:09.607626+00:00; CO2trenntbeideaktivierteControls/keineisoliertenRanges,PlatzierungsfolgeVorschauüberlagerungvsEscapeEndstand,ArtefaktassetpfadevsöffentlicheAPI. Originaldateien/Rohframesunverändert.
 
 CITY-00-I43-CLEAN-R43 Start 2026-10-09T19:08:13.588421+00:00; Manifest-/Frame-/Savehashes,Exit0/5verschwundeneProzessidentitäten/Slotrückgabeund65CO+24CTYopengeprüft. KeinRestbefundimAufräumen, separaterReferenzreviewR43folgt;keineerneuteGUIgeplant.
+
+CITY-00-I43-R43 Start 2026-10-09T19:12:50.494468+00:00; unabhängige Neuberechnung des Save-Diffs und aller 47 Rawhashes: nur objects geändert, zwei alte Objekte unverändert, zwei neue Kategorieassets mit unterschiedlichen Posen. Frame017 zeigt Endstand ohne Vorschauüberlagerung. Lokaler Referenzreview ohne Pflichtbefund in diesem Scope; kein fremder Reviewer, keine Neuöffnung/isolierten Randomize-Parameter und keine eigene Produktabnahme. Beleg: /home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i43-20261009-r01/review.json. Getrenntes Aufräum-P/I/R folgt.

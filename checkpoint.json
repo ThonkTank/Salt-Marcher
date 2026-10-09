@@ -4502,17 +4502,17 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I43-CLEAN-R43",
-      "kind": "cleanup_review",
-      "startedAt": "2026-10-09T19:08:13.588421+00:00",
-      "focus": "BereinigteOriginalevidenz/NormalExit undKennungsschutzprüfen",
-      "state": "completed",
-      "result": "Hashes/Save/Exit0/Slotund24CTY+65COopengeprüft; nächsteR43Referenzreview."
-    },
-    "nextRun": {
       "id": "CITY-00-I43-R43",
       "kind": "reference_review",
-      "focus": "Kategorieasset-/PosenvariantenundMaterialisierung unabhängiggegenFrames/Save undAnforderungenprüfen"
+      "startedAt": "2026-10-09T19:12:50.494468+00:00",
+      "focus": "Originalvarianten gegen Rohframes, tatsächliche Save-Differenz und Anforderungsumfang prüfen",
+      "state": "completed",
+      "result": "Lokaler Referenzreview bestanden: 47 Rawhashes, alte Objekte unverändert, zwei materialisierte Asset-/Posenvarianten. Vollparität und Produktabnahme offen."
+    },
+    "nextRun": {
+      "id": "CITY-00-I43-REVIEW-CLEAN-P43",
+      "kind": "cleanup_plan",
+      "focus": "Reviewgrenzen und CITY07-Zuordnung lesbar konsolidieren"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
