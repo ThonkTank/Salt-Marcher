@@ -4437,17 +4437,17 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-01-PREP-R11",
-      "kind": "review",
-      "startedAt": "2026-10-09T18:40:26Z",
-      "focus": "Renderer gegen lokale Großkoordinaten/Finewidth prüfen",
-      "state": "completed",
-      "result": "CITY-RENDERER-R11-01 reproduziert: gültige0.01mStraße bei10^16 verliert eine5pxKappenachse. N08 erforderlich."
-    },
-    "nextRun": {
       "id": "CITY-01-PREP-RENDERER-REVIEW-CLEAN-P07",
       "kind": "cleanup_planning",
-      "focus": "Befund und Nachbesserungsgrenze sauber festhalten"
+      "startedAt": "2026-10-09T18:41:31.652212+00:00",
+      "focus": "Reviewbefund und Architekturstatus bereinigen",
+      "state": "completed",
+      "result": "R11-Befundquelle erhalten, Architekturstand präzisieren; keine technische Nebenbaustelle."
+    },
+    "nextRun": {
+      "id": "CITY-01-PREP-RENDERER-REVIEW-CLEAN-I07",
+      "kind": "cleanup_implementation",
+      "focus": "Architektur auf offenen numerischen Rendererbefund aktualisieren"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
