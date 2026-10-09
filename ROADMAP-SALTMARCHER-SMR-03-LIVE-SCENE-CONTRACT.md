@@ -1,9 +1,9 @@
 # SMR-03-P01: Party-, LiveScene- und Live-Session-Vertrag
 
-Status: **Lifecycle-/Zeit-Re-review und Ownership-Grenzreview `PASS`;
-Host/Security/Platform-Feasibility-Review `CHANGES_REQUIRED`; owner-abgestimmter
-Cancellation-Reparaturkandidat vor erneutem Exact-SHA-Hostreview; ohne
-Implementierungs-, Host- oder Persistenzfreigabe.**
+Status: **Lifecycle-/Zeit-, Ownership- und Host/Security/Platform-Re-reviews
+`PASS`; Passive-Display-Phasensplit `PASS`; Source-Owner-abgestimmter
+Gate-Reparaturkandidat vor erneutem Exact-SHA-Review; ohne Implementierungs-,
+Host- oder Persistenzfreigabe.**
 
 ## Fachliche Quellen
 
@@ -69,6 +69,12 @@ Der separate Host/Security/Platform-Feasibility-Review 6088759311 bestätigte di
 stale-Worker-Schutz, ehrliche post-Publish-Semantik, TN-22-Ressourcengrenzen und
 die zugehörige Faultmatrix. Campaign/Data ratifizierte diese enge Reparatur in
 6088774539 für Import, Commit, Recovery, Quarantäne und Discard.
+Campaign/Data-Re-review 6088805451 und Host/Security/Platform-Re-review
+6088815708 bestanden den exakten Cancellation-Reparaturkandidaten. Der
+Passive-Display-Phasensplit erhielt in 6088899872 einen unabhängigen technischen
+PASS und wurde in 6088919292 vom SMR-03-Source-Owner direkt gebunden: SMR-03
+liefert keine Playerprojektion; Consumerbesitz und Aktivierung bleiben ein
+zwingendes SMR-10-Gate.
 
 ## Umfang und Nichtziele
 
@@ -294,8 +300,17 @@ Eine immutable `FocusProjection` enthält mindestens:
 
 Nur `active` darf Scene-Fachdaten liefern. `none`, beschädigte, archivierte,
 fremde oder stale Scene-Referenzen liefern niemals zuletzt bekannte Daten als
-aktuelle Wahrheit. Music, Weather, Shops, Karten und Passive Display konsumieren
-nur ratifizierte immutable Projektionen und erhalten keine Scene-Interna.
+aktuelle Wahrheit. Music, Weather, Shops und Karten konsumieren nur ratifizierte
+immutable Projektionen und erhalten keine Scene-Interna.
+
+`FocusProjection` und `LiveSceneProjection` sind interne Source-Verträge und
+keine player-sichere Passive-Display-Projektion. Solange SMR-10 keinen echten
+Consumer-Owner, keinen ratifizierten Knowledge-/Perception-/Fog-/Camera-Vertrag
+und keine vollständige Null-Leak-Abnahme besitzt, bleibt Passive Display
+`absent/disabled`: Es existieren keine Consumer-Bridge, Subscription,
+Serialisierung oder Ausgabe aus diesen Source-Projektionen. Dieser Default-Deny-
+Zustand blockiert keine Scene-/Party-/Preservation-Arbeit und erzeugt keinen
+Dummy-Owner.
 
 Campaignwechsel invalidiert den aktiven Focus für Consumer, überträgt keine
 Scene-, Queue-, Override-, Shop- oder Weather-Verfügbarkeit und stoppt/mutet
@@ -619,10 +634,16 @@ sowie app-weite Shellpräferenzen bleiben ausdrücklich von Fachzuständen
 getrennt. Fenster öffnen, schließen, fokussieren, minimieren oder neu anordnen
 startet, pausiert oder beendet weder Scene noch Masken, Travel oder Audio.
 
-Ein optionales passives Display liest ausschließlich die aktuelle sichere
-Focus-/Scene-Projektion. Bei Focuswechsel, stale Revision, Providerfehler oder
-`none` wird kein alter unsicherer Frame weiter als aktuell gezeigt. Es erhält
-keine Schreibfähigkeit und keine GM-private oder mechanische Information.
+Erst SMR-10 darf aus der aktuellen Focus-/Scene-Source eine getrennte sichere
+Playerprojektion ableiten. Deren Owner muss vor Aktivierung Character-Knowledge,
+aktuelle Perception und GM-Truth trennen; Fog/Camera sowie
+blank/replace/reveal/hide binden; Schreibfähigkeit, Text-/Mechanik-/Privatdaten
+und stale unsafe Frames ausschließen; und TN-21, TN-24, TN-31, AC-L10 sowie
+AC-T07 vollständig qualifizieren. Bei Party-Splits umfasst die zulässige
+Knowledge-/Perception-Union nur die Characters der fokussierten Scene; eine
+ältere Formulierung `complete Party` darf keine Kenntnisse anderer Scenes
+offenlegen. Focuswechsel, `none`, stale/unavailable, Displayverlust, A→B→A,
+Restart und Import dürfen nie zuletzt bekannte unsafe Ausgabe reaktivieren.
 
 ## Acceptance vor jeder Implementierungsfreigabe
 
@@ -699,8 +720,12 @@ keine Schreibfähigkeit und keine GM-private oder mechanische Information.
    Music-Entscheidungen bleiben unverändert; ein LiveScene-Override wird nur
    nach frischer Projektion suspendiert/aktiviert.
 11. `none`, stale, beschädigte oder fremde Focus-/Scene-Referenzen speisen keine
-   Music-, Weather-, Shop-, Karten- oder Passive-Display-Projektion mit alten
-   Daten. Unabhängige manuelle Arbeit bleibt nutzbar.
+    Music-, Weather-, Shop-, Karten- oder Passive-Display-Projektion mit alten
+    Daten. Ohne ratifizierten SMR-10-Consumer existieren keine Passive-Display-
+    Bridge, Subscription, Serialisierung oder Ausgabe. Ein synthetischer
+    Consumerzugriff scheitert default-deny und erhält weder private/mechanische
+    Felder noch Campaign-Schreibautorität; Scene, Party, Preservation und
+    unabhängige manuelle Arbeit bleiben nutzbar.
 12. Campaignwechsel und Neustart stellen nach ausdrücklichem Continue Focus,
     Scenes, Masken, SceneClock-Verweise und Pending-Reconciliation vollständig
     wieder her; unbestätigte Drafts werden nicht zu Fachwahrheit.
@@ -797,8 +822,14 @@ keine Schreibfähigkeit und keine GM-private oder mechanische Information.
   Maskenidentität, Teilnahmeprojektion, Pending-Reconciliation und Completion.
 - Scene/Time/Travel ratifiziert Primary/Focus-Trennung, SceneClock-Verweis,
   Split/Rejoin, Location/Travel-Grenze und Nicht-WorldEffect-Semantik.
-- Music/Weather/Shops und Passive Display ratifizieren die immutable Focus-
-  und LiveScene-Projektionen sowie `none`/stale-/Fehlerverhalten.
+- Music/Weather/Shops ratifizieren ihre immutable Focus-/LiveScene-Consumer sowie
+  `none`/stale-/Fehlerverhalten.
+- Scene/Time/Travel ratifiziert die providerunabhängige immutable Source-
+  Projektion und den absent/disabled Default-Deny-Zustand. Der spätere SMR-10-
+  Passive-Display-Owner ratifiziert vor jeder Consumer-Bridge oder Aktivierung
+  die getrennte player-sichere Knowledge-/Perception-/Fog-/Camera-Projektion und
+  deren TN-21/TN-24/TN-31-, AC-L10-/AC-T07-Abnahme. Dieses spätere Gate blockiert
+  nicht den SMR-03-Sourcevertrag, wohl aber jede Passive-Display-Ausgabe.
 - Host/Security/Platform ratifiziert Capability-, Prozess-, Persistenz-,
   Cancellation- und Recovery-Realisierbarkeit ohne Fachautorität.
 - Produkt-QA prüft später GM-Abläufe, ersetzt aber keine Eigentümerratifikation.
@@ -807,8 +838,12 @@ keine Schreibfähigkeit und keine GM-private oder mechanische Information.
 
 1. Campaign/Data- und Music/Weather/Shops-Peerreview dieses exakten Plans.
 2. Unabhängiger Architekturreview; Befunde in einem getrennten Repairlauf.
-3. Explizite Ratifikation aller betroffenen Eigentümer auf dem reviewten SHA.
-4. Erst dann ein getrenntes Implementierungsplanpaket mit konkreten
-   Contracts, Aggregategrenzen, Migration und Acceptance-Harness.
+3. Explizite Ratifikation aller aktuell betroffenen Eigentümer auf dem
+   reviewten SHA sowie dokumentierte Default-Deny-Aktivierungsgates für spätere
+   Consumer. Ein aufgeschobener Consumer wird nicht durch einen Dummy-Owner
+   ersetzt.
+4. Erst dann ein getrenntes SMR-03-Implementierungsplanpaket mit konkreten
+   Source-Contracts, Aggregategrenzen, Migration und Acceptance-Harness. Es darf
+   keine Passive-Display-Bridge oder -Ausgabe enthalten; diese bleibt SMR-10.
 5. Domain, Persistenz-/Hostadapter, UI und Produkt-QA bleiben getrennte,
    jeweils reviewte Arbeitspakete.
