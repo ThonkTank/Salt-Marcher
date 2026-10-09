@@ -1040,7 +1040,7 @@
       ]
     },
     "inventoryComplete": false,
-    "inventoryStatus": "N-I10: Neun frühe Land-Zahlenfragen direkt geklärt. Wizard Roughness/Water Level 0..1, Detail 1..5, Seed bei Override ON 0..999999; Eraser Size 4..512; Raise/Lower Size 4..128 und Roughness 0.1..2 jeweils selbst gemessen. 663 UI/83 Fälle und alte Quellen erhalten. 83 frühe Fragen, R02 und Aufräumen offen; keine vollständige Inventar-/Paritätsfreigabe.",
+    "inventoryStatus": "N-I11: 13 frühe Path-/Symbol-Zahlenfragen direkt geklärt, Zahlenvalidierung und12 Slider getrennt. Width1.5..64/Roughness0..1; Symbol/Tree/Mountain Scale10..100, Rotation−180..180/Outline0..16, Tree/Mountain Rate/Density0.25..2, Eraser2..128, ausgewähltes Override Scale0.01..100. Zwei Advanced-Controltypen ausdrücklich korrigiert.663 UI/83 Fälle und historische Quellen erhalten.70 frühe Fragen/R02/Aufräumen offen; keine vollständige Inventar-/Paritätsfreigabe.",
     "legacyInventoryScope": "Das vorhandene Wurzelfeld inventoryComplete und strictParity beschreiben nur die bisherige Dungeondraft-Inventur; daraus folgt keine Wonderdraft-Abnahme.",
     "inventoryGate": {
       "phase": "HEX-00",
@@ -22205,8 +22205,29 @@
           "value": 4,
           "evidenceScope": "Angezeigter Zustand dieser Originalaufnahme; Persistenz und andere Kontexte nicht gemessen."
         },
-        "rangeOrChoices": null,
-        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit.",
+        "rangeOrChoices": {
+          "kind": "observed_numeric_bounds",
+          "minimum": 1.5,
+          "maximum": 64,
+          "boundMeaning": "displayed_after_validation",
+          "testedInputLiterals": [
+            "-99999",
+            "99999"
+          ],
+          "inputPaths": [
+            "number",
+            "slider"
+          ],
+          "scope": {
+            "version": "1.1.8.2",
+            "sessions": [
+              "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json"
+            ],
+            "context": "Eigenes frisches Fensterprofil; neue1024×1024-Karte, Large Icons. Advanced tatsächlich geöffnet; Mountain nach Tree-Endproben; Override mit eigener ausgewählter QA-Brücke, Button nicht ausgeführt.",
+            "factoryDefaultsAsserted": false
+          }
+        },
+        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit. Direkt N-I11: eigene Zahlenliterale nach Tab begrenzt; vorhandene Sliderenden separat bedient.",
         "gesture": {
           "observed": "Öffnen/Anwählen über die protokollierte Original-UI.",
           "operation": "Werkzeug-Abschlussgesten noch nicht gemessen."
@@ -22229,6 +22250,55 @@
             "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/053-path-tool.json",
             "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/053-path-tool.png",
             "observation": "Paths > Path Tool > Width: 4."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/011-path-tool.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/011-path-tool.png",
+            "observation": "Paths > Path Tool > Width: Anfangsanzeige 4 in dieser Folge; kein allgemeiner Default."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/012-path-width--99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/012-path-width--99999-entry.png",
+            "observation": "Paths > Path Tool > Width: protokollierte Zahleneingabe -99999 im eigenen Feld."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/013-path-width--99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/013-path-width--99999-validated.png",
+            "observation": "Paths > Path Tool > Width: nach Tab sichtbar auf 1.5 begrenzt."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/016-path-width-99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/016-path-width-99999-entry.png",
+            "observation": "Paths > Path Tool > Width: protokollierte Zahleneingabe 99999 im eigenen Feld."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/017-path-width-99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/017-path-width-99999-validated.png",
+            "observation": "Paths > Path Tool > Width: nach Tab sichtbar auf 64 begrenzt."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/020-path-width-slider-min.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/020-path-width-slider-min.png",
+            "observation": "Paths > Path Tool > Width: eigener Slider am linken Ende zeigt 1.5."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/021-path-width-slider-max.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/021-path-width-slider-max.png",
+            "observation": "Paths > Path Tool > Width: eigener Slider am rechten Ende zeigt 64."
           }
         ],
         "classification": "user_function",
@@ -22248,10 +22318,69 @@
             "duePhase": "HEX-00",
             "reason": "Der Wortlaut benennt unbekannte Oberfläche, Wertebereich, Auswahl oder Eingabekontext; keine spätere Wirkung ersetzt diese Inventarpflicht.",
             "probe": "Originaloberfläche abgleichen: Auswahl oder Zahlenbereich noch nicht direkt abgegrenzt.",
-            "state": "open",
-            "evidence": []
+            "state": "resolved",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/011-path-tool.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/011-path-tool.png",
+                "observation": "Paths > Path Tool > Width: Anfangsanzeige 4 in dieser Folge; kein allgemeiner Default."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/012-path-width--99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/012-path-width--99999-entry.png",
+                "observation": "Paths > Path Tool > Width: protokollierte Zahleneingabe -99999 im eigenen Feld."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/013-path-width--99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/013-path-width--99999-validated.png",
+                "observation": "Paths > Path Tool > Width: nach Tab sichtbar auf 1.5 begrenzt."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/016-path-width-99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/016-path-width-99999-entry.png",
+                "observation": "Paths > Path Tool > Width: protokollierte Zahleneingabe 99999 im eigenen Feld."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/017-path-width-99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/017-path-width-99999-validated.png",
+                "observation": "Paths > Path Tool > Width: nach Tab sichtbar auf 64 begrenzt."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/020-path-width-slider-min.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/020-path-width-slider-min.png",
+                "observation": "Paths > Path Tool > Width: eigener Slider am linken Ende zeigt 1.5."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/021-path-width-slider-max.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/021-path-width-slider-max.png",
+                "observation": "Paths > Path Tool > Width: eigener Slider am rechten Ende zeigt 64."
+              }
+            ],
+            "resolvedIn": "HEX-00-N-I11",
+            "resolution": "Paths > Path Tool > Width einzeln im Original gemessen: -99999 → 1.5, 99999 → 64 nach Tab. Auch die beiden Sliderenden zeigen 1.5/64; beide Eingabewege direkt belegt. Nur unmittelbare Oberflächen-/Grenzenbeobachtung; Zeichenwirkung, allgemeine Schritt-/Rundungsregeln, History, Persistenz/Neuöffnung und physische Eingabe bleiben Fachpflicht."
           }
-        ]
+        ],
+        "numericObservation": {
+          "run": "HEX-00-N-I11",
+          "initialValue": 4,
+          "initialFrame": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/011-path-tool.json",
+          "note": "Paths > Path Tool > Width einzeln im Original gemessen: -99999 → 1.5, 99999 → 64 nach Tab. Auch die beiden Sliderenden zeigen 1.5/64; beide Eingabewege direkt belegt. Nur unmittelbare Oberflächen-/Grenzenbeobachtung; Zeichenwirkung, allgemeine Schritt-/Rundungsregeln, History, Persistenz/Neuöffnung und physische Eingabe bleiben Fachpflicht.",
+          "scope": "Nur dieses Control, protokollierte Zahlenliterale und direkt gemessene Sliderenden; keine Fachfreigabe."
+        }
       },
       {
         "id": "WD-UI-0313",
@@ -22264,8 +22393,29 @@
           "value": 0.33,
           "evidenceScope": "Angezeigter Zustand dieser Originalaufnahme; Persistenz und andere Kontexte nicht gemessen."
         },
-        "rangeOrChoices": null,
-        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit.",
+        "rangeOrChoices": {
+          "kind": "observed_numeric_bounds",
+          "minimum": 0,
+          "maximum": 1,
+          "boundMeaning": "displayed_after_validation",
+          "testedInputLiterals": [
+            "-99999",
+            "99999"
+          ],
+          "inputPaths": [
+            "number",
+            "slider"
+          ],
+          "scope": {
+            "version": "1.1.8.2",
+            "sessions": [
+              "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json"
+            ],
+            "context": "Eigenes frisches Fensterprofil; neue1024×1024-Karte, Large Icons. Advanced tatsächlich geöffnet; Mountain nach Tree-Endproben; Override mit eigener ausgewählter QA-Brücke, Button nicht ausgeführt.",
+            "factoryDefaultsAsserted": false
+          }
+        },
+        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit. Direkt N-I11: eigene Zahlenliterale nach Tab begrenzt; vorhandene Sliderenden separat bedient.",
         "gesture": {
           "observed": "Öffnen/Anwählen über die protokollierte Original-UI.",
           "operation": "Werkzeug-Abschlussgesten noch nicht gemessen."
@@ -22288,6 +22438,55 @@
             "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/053-path-tool.json",
             "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/053-path-tool.png",
             "observation": "Paths > Path Tool > Roughness: 0.33."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/011-path-tool.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/011-path-tool.png",
+            "observation": "Paths > Path Tool > Roughness: Anfangsanzeige 0.33 in dieser Folge; kein allgemeiner Default."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/014-path-roughness--99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/014-path-roughness--99999-entry.png",
+            "observation": "Paths > Path Tool > Roughness: protokollierte Zahleneingabe -99999 im eigenen Feld."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/015-path-roughness--99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/015-path-roughness--99999-validated.png",
+            "observation": "Paths > Path Tool > Roughness: nach Tab sichtbar auf 0 begrenzt."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/018-path-roughness-99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/018-path-roughness-99999-entry.png",
+            "observation": "Paths > Path Tool > Roughness: protokollierte Zahleneingabe 99999 im eigenen Feld."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/019-path-roughness-99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/019-path-roughness-99999-validated.png",
+            "observation": "Paths > Path Tool > Roughness: nach Tab sichtbar auf 1 begrenzt."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/022-path-roughness-slider-min.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/022-path-roughness-slider-min.png",
+            "observation": "Paths > Path Tool > Roughness: eigener Slider am linken Ende zeigt 0."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/023-path-roughness-slider-max.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/023-path-roughness-slider-max.png",
+            "observation": "Paths > Path Tool > Roughness: eigener Slider am rechten Ende zeigt 1."
           }
         ],
         "classification": "user_function",
@@ -22307,10 +22506,69 @@
             "duePhase": "HEX-00",
             "reason": "Der Wortlaut benennt unbekannte Oberfläche, Wertebereich, Auswahl oder Eingabekontext; keine spätere Wirkung ersetzt diese Inventarpflicht.",
             "probe": "Originaloberfläche abgleichen: Auswahl oder Zahlenbereich noch nicht direkt abgegrenzt.",
-            "state": "open",
-            "evidence": []
+            "state": "resolved",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/011-path-tool.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/011-path-tool.png",
+                "observation": "Paths > Path Tool > Roughness: Anfangsanzeige 0.33 in dieser Folge; kein allgemeiner Default."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/014-path-roughness--99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/014-path-roughness--99999-entry.png",
+                "observation": "Paths > Path Tool > Roughness: protokollierte Zahleneingabe -99999 im eigenen Feld."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/015-path-roughness--99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/015-path-roughness--99999-validated.png",
+                "observation": "Paths > Path Tool > Roughness: nach Tab sichtbar auf 0 begrenzt."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/018-path-roughness-99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/018-path-roughness-99999-entry.png",
+                "observation": "Paths > Path Tool > Roughness: protokollierte Zahleneingabe 99999 im eigenen Feld."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/019-path-roughness-99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/019-path-roughness-99999-validated.png",
+                "observation": "Paths > Path Tool > Roughness: nach Tab sichtbar auf 1 begrenzt."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/022-path-roughness-slider-min.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/022-path-roughness-slider-min.png",
+                "observation": "Paths > Path Tool > Roughness: eigener Slider am linken Ende zeigt 0."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/023-path-roughness-slider-max.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/023-path-roughness-slider-max.png",
+                "observation": "Paths > Path Tool > Roughness: eigener Slider am rechten Ende zeigt 1."
+              }
+            ],
+            "resolvedIn": "HEX-00-N-I11",
+            "resolution": "Paths > Path Tool > Roughness einzeln im Original gemessen: -99999 → 0, 99999 → 1 nach Tab. Auch die beiden Sliderenden zeigen 0/1; beide Eingabewege direkt belegt. Nur unmittelbare Oberflächen-/Grenzenbeobachtung; Zeichenwirkung, allgemeine Schritt-/Rundungsregeln, History, Persistenz/Neuöffnung und physische Eingabe bleiben Fachpflicht."
           }
-        ]
+        ],
+        "numericObservation": {
+          "run": "HEX-00-N-I11",
+          "initialValue": 0.33,
+          "initialFrame": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/011-path-tool.json",
+          "note": "Paths > Path Tool > Roughness einzeln im Original gemessen: -99999 → 0, 99999 → 1 nach Tab. Auch die beiden Sliderenden zeigen 0/1; beide Eingabewege direkt belegt. Nur unmittelbare Oberflächen-/Grenzenbeobachtung; Zeichenwirkung, allgemeine Schritt-/Rundungsregeln, History, Persistenz/Neuöffnung und physische Eingabe bleiben Fachpflicht.",
+          "scope": "Nur dieses Control, protokollierte Zahlenliterale und direkt gemessene Sliderenden; keine Fachfreigabe."
+        }
       },
       {
         "id": "WD-UI-0314",
@@ -22819,8 +23077,29 @@
           "value": 100,
           "evidenceScope": "Angezeigter Zustand dieser Originalaufnahme; Persistenz und andere Kontexte nicht gemessen."
         },
-        "rangeOrChoices": null,
-        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit.",
+        "rangeOrChoices": {
+          "kind": "observed_numeric_bounds",
+          "minimum": 10,
+          "maximum": 100,
+          "boundMeaning": "displayed_after_validation",
+          "testedInputLiterals": [
+            "-99999",
+            "99999"
+          ],
+          "inputPaths": [
+            "number",
+            "slider"
+          ],
+          "scope": {
+            "version": "1.1.8.2",
+            "sessions": [
+              "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json"
+            ],
+            "context": "Eigenes frisches Fensterprofil; neue1024×1024-Karte, Large Icons. Advanced tatsächlich geöffnet; Mountain nach Tree-Endproben; Override mit eigener ausgewählter QA-Brücke, Button nicht ausgeführt.",
+            "factoryDefaultsAsserted": false
+          }
+        },
+        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit. Direkt N-I11: eigene Zahlenliterale nach Tab begrenzt; vorhandene Sliderenden separat bedient.",
         "gesture": {
           "observed": "Öffnen/Anwählen über die protokollierte Original-UI.",
           "operation": "Werkzeug-Abschlussgesten noch nicht gemessen."
@@ -22843,6 +23122,55 @@
             "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/057-symbol-ready.json",
             "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/057-symbol-ready.png",
             "observation": "Symbols > Symbol Tool > Symbol Scale: 100."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/026-symbol-ready.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/026-symbol-ready.png",
+            "observation": "Symbols > Symbol Tool > Symbol Scale: Anfangsanzeige 100 in dieser Folge; kein allgemeiner Default."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/027-symbol-scale--99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/027-symbol-scale--99999-entry.png",
+            "observation": "Symbols > Symbol Tool > Symbol Scale: protokollierte Zahleneingabe -99999 im eigenen Feld."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/028-symbol-scale--99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/028-symbol-scale--99999-validated.png",
+            "observation": "Symbols > Symbol Tool > Symbol Scale: nach Tab sichtbar auf 10 begrenzt."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/029-symbol-scale-99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/029-symbol-scale-99999-entry.png",
+            "observation": "Symbols > Symbol Tool > Symbol Scale: protokollierte Zahleneingabe 99999 im eigenen Feld."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/030-symbol-scale-99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/030-symbol-scale-99999-validated.png",
+            "observation": "Symbols > Symbol Tool > Symbol Scale: nach Tab sichtbar auf 100 begrenzt."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/031-symbol-scale-slider-min.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/031-symbol-scale-slider-min.png",
+            "observation": "Symbols > Symbol Tool > Symbol Scale: eigener Slider am linken Ende zeigt 10."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/032-symbol-scale-slider-max.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/032-symbol-scale-slider-max.png",
+            "observation": "Symbols > Symbol Tool > Symbol Scale: eigener Slider am rechten Ende zeigt 100."
           }
         ],
         "classification": "user_function",
@@ -22862,10 +23190,69 @@
             "duePhase": "HEX-00",
             "reason": "Der Wortlaut benennt unbekannte Oberfläche, Wertebereich, Auswahl oder Eingabekontext; keine spätere Wirkung ersetzt diese Inventarpflicht.",
             "probe": "Originaloberfläche abgleichen: Auswahl oder Zahlenbereich noch nicht direkt abgegrenzt.",
-            "state": "open",
-            "evidence": []
+            "state": "resolved",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/026-symbol-ready.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/026-symbol-ready.png",
+                "observation": "Symbols > Symbol Tool > Symbol Scale: Anfangsanzeige 100 in dieser Folge; kein allgemeiner Default."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/027-symbol-scale--99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/027-symbol-scale--99999-entry.png",
+                "observation": "Symbols > Symbol Tool > Symbol Scale: protokollierte Zahleneingabe -99999 im eigenen Feld."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/028-symbol-scale--99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/028-symbol-scale--99999-validated.png",
+                "observation": "Symbols > Symbol Tool > Symbol Scale: nach Tab sichtbar auf 10 begrenzt."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/029-symbol-scale-99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/029-symbol-scale-99999-entry.png",
+                "observation": "Symbols > Symbol Tool > Symbol Scale: protokollierte Zahleneingabe 99999 im eigenen Feld."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/030-symbol-scale-99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/030-symbol-scale-99999-validated.png",
+                "observation": "Symbols > Symbol Tool > Symbol Scale: nach Tab sichtbar auf 100 begrenzt."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/031-symbol-scale-slider-min.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/031-symbol-scale-slider-min.png",
+                "observation": "Symbols > Symbol Tool > Symbol Scale: eigener Slider am linken Ende zeigt 10."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/032-symbol-scale-slider-max.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/032-symbol-scale-slider-max.png",
+                "observation": "Symbols > Symbol Tool > Symbol Scale: eigener Slider am rechten Ende zeigt 100."
+              }
+            ],
+            "resolvedIn": "HEX-00-N-I11",
+            "resolution": "Symbols > Symbol Tool > Symbol Scale einzeln im Original gemessen: -99999 → 10, 99999 → 100 nach Tab. Auch die beiden Sliderenden zeigen 10/100; beide Eingabewege direkt belegt. Nur unmittelbare Oberflächen-/Grenzenbeobachtung; Zeichenwirkung, allgemeine Schritt-/Rundungsregeln, History, Persistenz/Neuöffnung und physische Eingabe bleiben Fachpflicht."
           }
-        ]
+        ],
+        "numericObservation": {
+          "run": "HEX-00-N-I11",
+          "initialValue": 100,
+          "initialFrame": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/026-symbol-ready.json",
+          "note": "Symbols > Symbol Tool > Symbol Scale einzeln im Original gemessen: -99999 → 10, 99999 → 100 nach Tab. Auch die beiden Sliderenden zeigen 10/100; beide Eingabewege direkt belegt. Nur unmittelbare Oberflächen-/Grenzenbeobachtung; Zeichenwirkung, allgemeine Schritt-/Rundungsregeln, History, Persistenz/Neuöffnung und physische Eingabe bleiben Fachpflicht.",
+          "scope": "Nur dieses Control, protokollierte Zahlenliterale und direkt gemessene Sliderenden; keine Fachfreigabe."
+        }
       },
       {
         "id": "WD-UI-0318",
@@ -23460,13 +23847,34 @@
         "exactUiPath": "Symbols > Symbol Tool > Advanced > Symbol Rotation",
         "context": "Neue Karte 1920 × 1080, Eastward; leere Geometrie. TextOnly nach QA-Änderung; ab Bild 060 Layer Management ON.",
         "commandOrControl": "Symbol Rotation",
-        "controlType": "number",
+        "controlType": "slider_number",
         "default": {
           "value": 0,
           "evidenceScope": "Angezeigter Zustand dieser Originalaufnahme; Persistenz und andere Kontexte nicht gemessen."
         },
-        "rangeOrChoices": null,
-        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit.",
+        "rangeOrChoices": {
+          "kind": "observed_numeric_bounds",
+          "minimum": -180,
+          "maximum": 180,
+          "boundMeaning": "displayed_after_validation",
+          "testedInputLiterals": [
+            "-99999",
+            "99999"
+          ],
+          "inputPaths": [
+            "number",
+            "slider"
+          ],
+          "scope": {
+            "version": "1.1.8.2",
+            "sessions": [
+              "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json"
+            ],
+            "context": "Eigenes frisches Fensterprofil; neue1024×1024-Karte, Large Icons. Advanced tatsächlich geöffnet; Mountain nach Tree-Endproben; Override mit eigener ausgewählter QA-Brücke, Button nicht ausgeführt.",
+            "factoryDefaultsAsserted": false
+          }
+        },
+        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit. Direkt N-I11: eigene Zahlenliterale nach Tab begrenzt; vorhandene Sliderenden separat bedient.",
         "gesture": {
           "observed": "Öffnen/Anwählen über die protokollierte Original-UI.",
           "operation": "Werkzeug-Abschlussgesten noch nicht gemessen."
@@ -23488,6 +23896,55 @@
             "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/058-symbol-advanced.json",
             "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/058-symbol-advanced.png",
             "observation": "Symbols > Symbol Tool > Advanced > Symbol Rotation: 0."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/033-symbol-advanced.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/033-symbol-advanced.png",
+            "observation": "Symbols > Symbol Tool > Advanced > Symbol Rotation: Anfangsanzeige 0 in dieser Folge; kein allgemeiner Default."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/034-symbol-rotation--99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/034-symbol-rotation--99999-entry.png",
+            "observation": "Symbols > Symbol Tool > Advanced > Symbol Rotation: protokollierte Zahleneingabe -99999 im eigenen Feld."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/035-symbol-rotation--99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/035-symbol-rotation--99999-validated.png",
+            "observation": "Symbols > Symbol Tool > Advanced > Symbol Rotation: nach Tab sichtbar auf -180 begrenzt."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/038-symbol-rotation-99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/038-symbol-rotation-99999-entry.png",
+            "observation": "Symbols > Symbol Tool > Advanced > Symbol Rotation: protokollierte Zahleneingabe 99999 im eigenen Feld."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/039-symbol-rotation-99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/039-symbol-rotation-99999-validated.png",
+            "observation": "Symbols > Symbol Tool > Advanced > Symbol Rotation: nach Tab sichtbar auf 180 begrenzt."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/042-symbol-rotation-slider-min.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/042-symbol-rotation-slider-min.png",
+            "observation": "Symbols > Symbol Tool > Advanced > Symbol Rotation: eigener Slider am linken Ende zeigt -180."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/043-symbol-rotation-slider-max.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/043-symbol-rotation-slider-max.png",
+            "observation": "Symbols > Symbol Tool > Advanced > Symbol Rotation: eigener Slider am rechten Ende zeigt 180."
           }
         ],
         "classification": "user_function",
@@ -23506,10 +23963,84 @@
             "duePhase": "HEX-00",
             "reason": "Der Wortlaut benennt unbekannte Oberfläche, Wertebereich, Auswahl oder Eingabekontext; keine spätere Wirkung ersetzt diese Inventarpflicht.",
             "probe": "Originaloberfläche abgleichen: Auswahl oder Zahlenbereich noch nicht direkt abgegrenzt.",
-            "state": "open",
-            "evidence": []
+            "state": "resolved",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/033-symbol-advanced.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/033-symbol-advanced.png",
+                "observation": "Symbols > Symbol Tool > Advanced > Symbol Rotation: Anfangsanzeige 0 in dieser Folge; kein allgemeiner Default."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/034-symbol-rotation--99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/034-symbol-rotation--99999-entry.png",
+                "observation": "Symbols > Symbol Tool > Advanced > Symbol Rotation: protokollierte Zahleneingabe -99999 im eigenen Feld."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/035-symbol-rotation--99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/035-symbol-rotation--99999-validated.png",
+                "observation": "Symbols > Symbol Tool > Advanced > Symbol Rotation: nach Tab sichtbar auf -180 begrenzt."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/038-symbol-rotation-99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/038-symbol-rotation-99999-entry.png",
+                "observation": "Symbols > Symbol Tool > Advanced > Symbol Rotation: protokollierte Zahleneingabe 99999 im eigenen Feld."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/039-symbol-rotation-99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/039-symbol-rotation-99999-validated.png",
+                "observation": "Symbols > Symbol Tool > Advanced > Symbol Rotation: nach Tab sichtbar auf 180 begrenzt."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/042-symbol-rotation-slider-min.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/042-symbol-rotation-slider-min.png",
+                "observation": "Symbols > Symbol Tool > Advanced > Symbol Rotation: eigener Slider am linken Ende zeigt -180."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/043-symbol-rotation-slider-max.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/043-symbol-rotation-slider-max.png",
+                "observation": "Symbols > Symbol Tool > Advanced > Symbol Rotation: eigener Slider am rechten Ende zeigt 180."
+              }
+            ],
+            "resolvedIn": "HEX-00-N-I11",
+            "resolution": "Symbols > Symbol Tool > Advanced > Symbol Rotation einzeln im Original gemessen: -99999 → -180, 99999 → 180 nach Tab. Auch die beiden Sliderenden zeigen -180/180; beide Eingabewege direkt belegt. Frühere number-Einordnung ausdrücklich als slider_number korrigiert; alter Kontextbeleg bleibt erhalten. Nur unmittelbare Oberflächen-/Grenzenbeobachtung; Zeichenwirkung, allgemeine Schritt-/Rundungsregeln, History, Persistenz/Neuöffnung und physische Eingabe bleiben Fachpflicht."
           }
-        ]
+        ],
+        "controlTypeObservation": {
+          "run": "HEX-00-N-I11",
+          "prior": "number",
+          "observed": "slider_number",
+          "reason": "Frischer Advanced-Kontext zeigt Slider und Zahlenfeld; beide Wege selbst bedient.",
+          "evidence": [
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/033-symbol-advanced.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/033-symbol-advanced.png",
+              "observation": "Advanced geöffnet: Rotation und Outline Width besitzen je Slider plus Zahlenfeld."
+            }
+          ]
+        },
+        "numericObservation": {
+          "run": "HEX-00-N-I11",
+          "initialValue": 0,
+          "initialFrame": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/033-symbol-advanced.json",
+          "note": "Symbols > Symbol Tool > Advanced > Symbol Rotation einzeln im Original gemessen: -99999 → -180, 99999 → 180 nach Tab. Auch die beiden Sliderenden zeigen -180/180; beide Eingabewege direkt belegt. Frühere number-Einordnung ausdrücklich als slider_number korrigiert; alter Kontextbeleg bleibt erhalten. Nur unmittelbare Oberflächen-/Grenzenbeobachtung; Zeichenwirkung, allgemeine Schritt-/Rundungsregeln, History, Persistenz/Neuöffnung und physische Eingabe bleiben Fachpflicht.",
+          "scope": "Nur dieses Control, protokollierte Zahlenliterale und direkt gemessene Sliderenden; keine Fachfreigabe."
+        }
       },
       {
         "id": "WD-UI-0328",
@@ -23556,13 +24087,34 @@
         "exactUiPath": "Symbols > Symbol Tool > Advanced > Outline Width",
         "context": "Neue Karte 1920 × 1080, Eastward; leere Geometrie. TextOnly nach QA-Änderung; ab Bild 060 Layer Management ON.",
         "commandOrControl": "Outline Width",
-        "controlType": "number",
+        "controlType": "slider_number",
         "default": {
           "value": 0,
           "evidenceScope": "Angezeigter Zustand dieser Originalaufnahme; Persistenz und andere Kontexte nicht gemessen."
         },
-        "rangeOrChoices": null,
-        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit.",
+        "rangeOrChoices": {
+          "kind": "observed_numeric_bounds",
+          "minimum": 0,
+          "maximum": 16,
+          "boundMeaning": "displayed_after_validation",
+          "testedInputLiterals": [
+            "-99999",
+            "99999"
+          ],
+          "inputPaths": [
+            "number",
+            "slider"
+          ],
+          "scope": {
+            "version": "1.1.8.2",
+            "sessions": [
+              "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json"
+            ],
+            "context": "Eigenes frisches Fensterprofil; neue1024×1024-Karte, Large Icons. Advanced tatsächlich geöffnet; Mountain nach Tree-Endproben; Override mit eigener ausgewählter QA-Brücke, Button nicht ausgeführt.",
+            "factoryDefaultsAsserted": false
+          }
+        },
+        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit. Direkt N-I11: eigene Zahlenliterale nach Tab begrenzt; vorhandene Sliderenden separat bedient.",
         "gesture": {
           "observed": "Öffnen/Anwählen über die protokollierte Original-UI.",
           "operation": "Werkzeug-Abschlussgesten noch nicht gemessen."
@@ -23584,6 +24136,55 @@
             "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/058-symbol-advanced.json",
             "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/058-symbol-advanced.png",
             "observation": "Symbols > Symbol Tool > Advanced > Outline Width: 0."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/033-symbol-advanced.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/033-symbol-advanced.png",
+            "observation": "Symbols > Symbol Tool > Advanced > Outline Width: Anfangsanzeige 0 in dieser Folge; kein allgemeiner Default."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/036-symbol-outline-width--99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/036-symbol-outline-width--99999-entry.png",
+            "observation": "Symbols > Symbol Tool > Advanced > Outline Width: protokollierte Zahleneingabe -99999 im eigenen Feld."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/037-symbol-outline-width--99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/037-symbol-outline-width--99999-validated.png",
+            "observation": "Symbols > Symbol Tool > Advanced > Outline Width: nach Tab sichtbar auf 0 begrenzt."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/040-symbol-outline-width-99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/040-symbol-outline-width-99999-entry.png",
+            "observation": "Symbols > Symbol Tool > Advanced > Outline Width: protokollierte Zahleneingabe 99999 im eigenen Feld."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/041-symbol-outline-width-99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/041-symbol-outline-width-99999-validated.png",
+            "observation": "Symbols > Symbol Tool > Advanced > Outline Width: nach Tab sichtbar auf 16 begrenzt."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/044-symbol-outline-slider-min.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/044-symbol-outline-slider-min.png",
+            "observation": "Symbols > Symbol Tool > Advanced > Outline Width: eigener Slider am linken Ende zeigt 0."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/045-symbol-outline-slider-max.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/045-symbol-outline-slider-max.png",
+            "observation": "Symbols > Symbol Tool > Advanced > Outline Width: eigener Slider am rechten Ende zeigt 16."
           }
         ],
         "classification": "user_function",
@@ -23602,10 +24203,84 @@
             "duePhase": "HEX-00",
             "reason": "Der Wortlaut benennt unbekannte Oberfläche, Wertebereich, Auswahl oder Eingabekontext; keine spätere Wirkung ersetzt diese Inventarpflicht.",
             "probe": "Originaloberfläche abgleichen: Auswahl oder Zahlenbereich noch nicht direkt abgegrenzt.",
-            "state": "open",
-            "evidence": []
+            "state": "resolved",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/033-symbol-advanced.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/033-symbol-advanced.png",
+                "observation": "Symbols > Symbol Tool > Advanced > Outline Width: Anfangsanzeige 0 in dieser Folge; kein allgemeiner Default."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/036-symbol-outline-width--99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/036-symbol-outline-width--99999-entry.png",
+                "observation": "Symbols > Symbol Tool > Advanced > Outline Width: protokollierte Zahleneingabe -99999 im eigenen Feld."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/037-symbol-outline-width--99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/037-symbol-outline-width--99999-validated.png",
+                "observation": "Symbols > Symbol Tool > Advanced > Outline Width: nach Tab sichtbar auf 0 begrenzt."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/040-symbol-outline-width-99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/040-symbol-outline-width-99999-entry.png",
+                "observation": "Symbols > Symbol Tool > Advanced > Outline Width: protokollierte Zahleneingabe 99999 im eigenen Feld."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/041-symbol-outline-width-99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/041-symbol-outline-width-99999-validated.png",
+                "observation": "Symbols > Symbol Tool > Advanced > Outline Width: nach Tab sichtbar auf 16 begrenzt."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/044-symbol-outline-slider-min.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/044-symbol-outline-slider-min.png",
+                "observation": "Symbols > Symbol Tool > Advanced > Outline Width: eigener Slider am linken Ende zeigt 0."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/045-symbol-outline-slider-max.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/045-symbol-outline-slider-max.png",
+                "observation": "Symbols > Symbol Tool > Advanced > Outline Width: eigener Slider am rechten Ende zeigt 16."
+              }
+            ],
+            "resolvedIn": "HEX-00-N-I11",
+            "resolution": "Symbols > Symbol Tool > Advanced > Outline Width einzeln im Original gemessen: -99999 → 0, 99999 → 16 nach Tab. Auch die beiden Sliderenden zeigen 0/16; beide Eingabewege direkt belegt. Frühere number-Einordnung ausdrücklich als slider_number korrigiert; alter Kontextbeleg bleibt erhalten. Nur unmittelbare Oberflächen-/Grenzenbeobachtung; Zeichenwirkung, allgemeine Schritt-/Rundungsregeln, History, Persistenz/Neuöffnung und physische Eingabe bleiben Fachpflicht."
           }
-        ]
+        ],
+        "controlTypeObservation": {
+          "run": "HEX-00-N-I11",
+          "prior": "number",
+          "observed": "slider_number",
+          "reason": "Frischer Advanced-Kontext zeigt Slider und Zahlenfeld; beide Wege selbst bedient.",
+          "evidence": [
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/033-symbol-advanced.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/033-symbol-advanced.png",
+              "observation": "Advanced geöffnet: Rotation und Outline Width besitzen je Slider plus Zahlenfeld."
+            }
+          ]
+        },
+        "numericObservation": {
+          "run": "HEX-00-N-I11",
+          "initialValue": 0,
+          "initialFrame": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/033-symbol-advanced.json",
+          "note": "Symbols > Symbol Tool > Advanced > Outline Width einzeln im Original gemessen: -99999 → 0, 99999 → 16 nach Tab. Auch die beiden Sliderenden zeigen 0/16; beide Eingabewege direkt belegt. Frühere number-Einordnung ausdrücklich als slider_number korrigiert; alter Kontextbeleg bleibt erhalten. Nur unmittelbare Oberflächen-/Grenzenbeobachtung; Zeichenwirkung, allgemeine Schritt-/Rundungsregeln, History, Persistenz/Neuöffnung und physische Eingabe bleiben Fachpflicht.",
+          "scope": "Nur dieses Control, protokollierte Zahlenliterale und direkt gemessene Sliderenden; keine Fachfreigabe."
+        }
       },
       {
         "id": "WD-UI-0330",
@@ -25567,8 +26242,29 @@
           "value": 100,
           "evidenceScope": "Angezeigter Zustand dieser Originalaufnahme; Persistenz und andere Kontexte nicht gemessen."
         },
-        "rangeOrChoices": null,
-        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit.",
+        "rangeOrChoices": {
+          "kind": "observed_numeric_bounds",
+          "minimum": 10,
+          "maximum": 100,
+          "boundMeaning": "displayed_after_validation",
+          "testedInputLiterals": [
+            "-99999",
+            "99999"
+          ],
+          "inputPaths": [
+            "number",
+            "slider"
+          ],
+          "scope": {
+            "version": "1.1.8.2",
+            "sessions": [
+              "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json"
+            ],
+            "context": "Eigenes frisches Fensterprofil; neue1024×1024-Karte, Large Icons. Advanced tatsächlich geöffnet; Mountain nach Tree-Endproben; Override mit eigener ausgewählter QA-Brücke, Button nicht ausgeführt.",
+            "factoryDefaultsAsserted": false
+          }
+        },
+        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit. Direkt N-I11: eigene Zahlenliterale nach Tab begrenzt; vorhandene Sliderenden separat bedient.",
         "gesture": {
           "observed": "Öffnen/Anwählen über die protokollierte Original-UI.",
           "operation": "Werkzeug-Abschlussgesten noch nicht gemessen."
@@ -25591,6 +26287,55 @@
             "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/061-tree-brush.json",
             "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/061-tree-brush.png",
             "observation": "Symbols > Tree Brush > Symbol Scale: 100."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/046-tree-tool.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/046-tree-tool.png",
+            "observation": "Symbols > Tree Brush > Symbol Scale: Anfangsanzeige 100 in dieser Folge; kein allgemeiner Default."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/047-tree-scale--99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/047-tree-scale--99999-entry.png",
+            "observation": "Symbols > Tree Brush > Symbol Scale: protokollierte Zahleneingabe -99999 im eigenen Feld."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/048-tree-scale--99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/048-tree-scale--99999-validated.png",
+            "observation": "Symbols > Tree Brush > Symbol Scale: nach Tab sichtbar auf 10 begrenzt."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/053-tree-scale-99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/053-tree-scale-99999-entry.png",
+            "observation": "Symbols > Tree Brush > Symbol Scale: protokollierte Zahleneingabe 99999 im eigenen Feld."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/054-tree-scale-99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/054-tree-scale-99999-validated.png",
+            "observation": "Symbols > Tree Brush > Symbol Scale: nach Tab sichtbar auf 100 begrenzt."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/059-tree-scale-slider-min.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/059-tree-scale-slider-min.png",
+            "observation": "Symbols > Tree Brush > Symbol Scale: eigener Slider am linken Ende zeigt 10."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/060-tree-scale-slider-max.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/060-tree-scale-slider-max.png",
+            "observation": "Symbols > Tree Brush > Symbol Scale: eigener Slider am rechten Ende zeigt 100."
           }
         ],
         "classification": "user_function",
@@ -25610,10 +26355,69 @@
             "duePhase": "HEX-00",
             "reason": "Der Wortlaut benennt unbekannte Oberfläche, Wertebereich, Auswahl oder Eingabekontext; keine spätere Wirkung ersetzt diese Inventarpflicht.",
             "probe": "Originaloberfläche abgleichen: Auswahl oder Zahlenbereich noch nicht direkt abgegrenzt.",
-            "state": "open",
-            "evidence": []
+            "state": "resolved",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/046-tree-tool.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/046-tree-tool.png",
+                "observation": "Symbols > Tree Brush > Symbol Scale: Anfangsanzeige 100 in dieser Folge; kein allgemeiner Default."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/047-tree-scale--99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/047-tree-scale--99999-entry.png",
+                "observation": "Symbols > Tree Brush > Symbol Scale: protokollierte Zahleneingabe -99999 im eigenen Feld."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/048-tree-scale--99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/048-tree-scale--99999-validated.png",
+                "observation": "Symbols > Tree Brush > Symbol Scale: nach Tab sichtbar auf 10 begrenzt."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/053-tree-scale-99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/053-tree-scale-99999-entry.png",
+                "observation": "Symbols > Tree Brush > Symbol Scale: protokollierte Zahleneingabe 99999 im eigenen Feld."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/054-tree-scale-99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/054-tree-scale-99999-validated.png",
+                "observation": "Symbols > Tree Brush > Symbol Scale: nach Tab sichtbar auf 100 begrenzt."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/059-tree-scale-slider-min.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/059-tree-scale-slider-min.png",
+                "observation": "Symbols > Tree Brush > Symbol Scale: eigener Slider am linken Ende zeigt 10."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/060-tree-scale-slider-max.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/060-tree-scale-slider-max.png",
+                "observation": "Symbols > Tree Brush > Symbol Scale: eigener Slider am rechten Ende zeigt 100."
+              }
+            ],
+            "resolvedIn": "HEX-00-N-I11",
+            "resolution": "Symbols > Tree Brush > Symbol Scale einzeln im Original gemessen: -99999 → 10, 99999 → 100 nach Tab. Auch die beiden Sliderenden zeigen 10/100; beide Eingabewege direkt belegt. Nur unmittelbare Oberflächen-/Grenzenbeobachtung; Zeichenwirkung, allgemeine Schritt-/Rundungsregeln, History, Persistenz/Neuöffnung und physische Eingabe bleiben Fachpflicht."
           }
-        ]
+        ],
+        "numericObservation": {
+          "run": "HEX-00-N-I11",
+          "initialValue": 100,
+          "initialFrame": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/046-tree-tool.json",
+          "note": "Symbols > Tree Brush > Symbol Scale einzeln im Original gemessen: -99999 → 10, 99999 → 100 nach Tab. Auch die beiden Sliderenden zeigen 10/100; beide Eingabewege direkt belegt. Nur unmittelbare Oberflächen-/Grenzenbeobachtung; Zeichenwirkung, allgemeine Schritt-/Rundungsregeln, History, Persistenz/Neuöffnung und physische Eingabe bleiben Fachpflicht.",
+          "scope": "Nur dieses Control, protokollierte Zahlenliterale und direkt gemessene Sliderenden; keine Fachfreigabe."
+        }
       },
       {
         "id": "WD-UI-0378",
@@ -25626,8 +26430,29 @@
           "value": 1,
           "evidenceScope": "Angezeigter Zustand dieser Originalaufnahme; Persistenz und andere Kontexte nicht gemessen."
         },
-        "rangeOrChoices": null,
-        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit.",
+        "rangeOrChoices": {
+          "kind": "observed_numeric_bounds",
+          "minimum": 0.25,
+          "maximum": 2,
+          "boundMeaning": "displayed_after_validation",
+          "testedInputLiterals": [
+            "-99999",
+            "99999"
+          ],
+          "inputPaths": [
+            "number",
+            "slider"
+          ],
+          "scope": {
+            "version": "1.1.8.2",
+            "sessions": [
+              "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json"
+            ],
+            "context": "Eigenes frisches Fensterprofil; neue1024×1024-Karte, Large Icons. Advanced tatsächlich geöffnet; Mountain nach Tree-Endproben; Override mit eigener ausgewählter QA-Brücke, Button nicht ausgeführt.",
+            "factoryDefaultsAsserted": false
+          }
+        },
+        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit. Direkt N-I11: eigene Zahlenliterale nach Tab begrenzt; vorhandene Sliderenden separat bedient.",
         "gesture": {
           "observed": "Öffnen/Anwählen über die protokollierte Original-UI.",
           "operation": "Werkzeug-Abschlussgesten noch nicht gemessen."
@@ -25650,6 +26475,55 @@
             "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/061-tree-brush.json",
             "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/061-tree-brush.png",
             "observation": "Symbols > Tree Brush > Placement Rate: 1."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/046-tree-tool.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/046-tree-tool.png",
+            "observation": "Symbols > Tree Brush > Placement Rate: Anfangsanzeige 1 in dieser Folge; kein allgemeiner Default."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/049-tree-rate--99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/049-tree-rate--99999-entry.png",
+            "observation": "Symbols > Tree Brush > Placement Rate: protokollierte Zahleneingabe -99999 im eigenen Feld."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/050-tree-rate--99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/050-tree-rate--99999-validated.png",
+            "observation": "Symbols > Tree Brush > Placement Rate: nach Tab sichtbar auf 0.25 begrenzt."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/055-tree-rate-99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/055-tree-rate-99999-entry.png",
+            "observation": "Symbols > Tree Brush > Placement Rate: protokollierte Zahleneingabe 99999 im eigenen Feld."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/056-tree-rate-99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/056-tree-rate-99999-validated.png",
+            "observation": "Symbols > Tree Brush > Placement Rate: nach Tab sichtbar auf 2 begrenzt."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/061-tree-rate-slider-min.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/061-tree-rate-slider-min.png",
+            "observation": "Symbols > Tree Brush > Placement Rate: eigener Slider am linken Ende zeigt 0.25."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/062-tree-rate-slider-max.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/062-tree-rate-slider-max.png",
+            "observation": "Symbols > Tree Brush > Placement Rate: eigener Slider am rechten Ende zeigt 2."
           }
         ],
         "classification": "user_function",
@@ -25669,10 +26543,69 @@
             "duePhase": "HEX-00",
             "reason": "Der Wortlaut benennt unbekannte Oberfläche, Wertebereich, Auswahl oder Eingabekontext; keine spätere Wirkung ersetzt diese Inventarpflicht.",
             "probe": "Originaloberfläche abgleichen: Auswahl oder Zahlenbereich noch nicht direkt abgegrenzt.",
-            "state": "open",
-            "evidence": []
+            "state": "resolved",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/046-tree-tool.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/046-tree-tool.png",
+                "observation": "Symbols > Tree Brush > Placement Rate: Anfangsanzeige 1 in dieser Folge; kein allgemeiner Default."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/049-tree-rate--99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/049-tree-rate--99999-entry.png",
+                "observation": "Symbols > Tree Brush > Placement Rate: protokollierte Zahleneingabe -99999 im eigenen Feld."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/050-tree-rate--99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/050-tree-rate--99999-validated.png",
+                "observation": "Symbols > Tree Brush > Placement Rate: nach Tab sichtbar auf 0.25 begrenzt."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/055-tree-rate-99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/055-tree-rate-99999-entry.png",
+                "observation": "Symbols > Tree Brush > Placement Rate: protokollierte Zahleneingabe 99999 im eigenen Feld."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/056-tree-rate-99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/056-tree-rate-99999-validated.png",
+                "observation": "Symbols > Tree Brush > Placement Rate: nach Tab sichtbar auf 2 begrenzt."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/061-tree-rate-slider-min.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/061-tree-rate-slider-min.png",
+                "observation": "Symbols > Tree Brush > Placement Rate: eigener Slider am linken Ende zeigt 0.25."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/062-tree-rate-slider-max.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/062-tree-rate-slider-max.png",
+                "observation": "Symbols > Tree Brush > Placement Rate: eigener Slider am rechten Ende zeigt 2."
+              }
+            ],
+            "resolvedIn": "HEX-00-N-I11",
+            "resolution": "Symbols > Tree Brush > Placement Rate einzeln im Original gemessen: -99999 → 0.25, 99999 → 2 nach Tab. Auch die beiden Sliderenden zeigen 0.25/2; beide Eingabewege direkt belegt. Nur unmittelbare Oberflächen-/Grenzenbeobachtung; Zeichenwirkung, allgemeine Schritt-/Rundungsregeln, History, Persistenz/Neuöffnung und physische Eingabe bleiben Fachpflicht."
           }
-        ]
+        ],
+        "numericObservation": {
+          "run": "HEX-00-N-I11",
+          "initialValue": 1,
+          "initialFrame": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/046-tree-tool.json",
+          "note": "Symbols > Tree Brush > Placement Rate einzeln im Original gemessen: -99999 → 0.25, 99999 → 2 nach Tab. Auch die beiden Sliderenden zeigen 0.25/2; beide Eingabewege direkt belegt. Nur unmittelbare Oberflächen-/Grenzenbeobachtung; Zeichenwirkung, allgemeine Schritt-/Rundungsregeln, History, Persistenz/Neuöffnung und physische Eingabe bleiben Fachpflicht.",
+          "scope": "Nur dieses Control, protokollierte Zahlenliterale und direkt gemessene Sliderenden; keine Fachfreigabe."
+        }
       },
       {
         "id": "WD-UI-0379",
@@ -25685,8 +26618,29 @@
           "value": 1,
           "evidenceScope": "Angezeigter Zustand dieser Originalaufnahme; Persistenz und andere Kontexte nicht gemessen."
         },
-        "rangeOrChoices": null,
-        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit.",
+        "rangeOrChoices": {
+          "kind": "observed_numeric_bounds",
+          "minimum": 0.25,
+          "maximum": 2,
+          "boundMeaning": "displayed_after_validation",
+          "testedInputLiterals": [
+            "-99999",
+            "99999"
+          ],
+          "inputPaths": [
+            "number",
+            "slider"
+          ],
+          "scope": {
+            "version": "1.1.8.2",
+            "sessions": [
+              "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json"
+            ],
+            "context": "Eigenes frisches Fensterprofil; neue1024×1024-Karte, Large Icons. Advanced tatsächlich geöffnet; Mountain nach Tree-Endproben; Override mit eigener ausgewählter QA-Brücke, Button nicht ausgeführt.",
+            "factoryDefaultsAsserted": false
+          }
+        },
+        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit. Direkt N-I11: eigene Zahlenliterale nach Tab begrenzt; vorhandene Sliderenden separat bedient.",
         "gesture": {
           "observed": "Öffnen/Anwählen über die protokollierte Original-UI.",
           "operation": "Werkzeug-Abschlussgesten noch nicht gemessen."
@@ -25709,6 +26663,55 @@
             "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/061-tree-brush.json",
             "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/061-tree-brush.png",
             "observation": "Symbols > Tree Brush > Placement Density: 1."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/046-tree-tool.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/046-tree-tool.png",
+            "observation": "Symbols > Tree Brush > Placement Density: Anfangsanzeige 1 in dieser Folge; kein allgemeiner Default."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/051-tree-density--99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/051-tree-density--99999-entry.png",
+            "observation": "Symbols > Tree Brush > Placement Density: protokollierte Zahleneingabe -99999 im eigenen Feld."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/052-tree-density--99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/052-tree-density--99999-validated.png",
+            "observation": "Symbols > Tree Brush > Placement Density: nach Tab sichtbar auf 0.25 begrenzt."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/057-tree-density-99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/057-tree-density-99999-entry.png",
+            "observation": "Symbols > Tree Brush > Placement Density: protokollierte Zahleneingabe 99999 im eigenen Feld."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/058-tree-density-99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/058-tree-density-99999-validated.png",
+            "observation": "Symbols > Tree Brush > Placement Density: nach Tab sichtbar auf 2 begrenzt."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/063-tree-density-slider-min.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/063-tree-density-slider-min.png",
+            "observation": "Symbols > Tree Brush > Placement Density: eigener Slider am linken Ende zeigt 0.25."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/064-tree-density-slider-max.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/064-tree-density-slider-max.png",
+            "observation": "Symbols > Tree Brush > Placement Density: eigener Slider am rechten Ende zeigt 2."
           }
         ],
         "classification": "user_function",
@@ -25728,10 +26731,69 @@
             "duePhase": "HEX-00",
             "reason": "Der Wortlaut benennt unbekannte Oberfläche, Wertebereich, Auswahl oder Eingabekontext; keine spätere Wirkung ersetzt diese Inventarpflicht.",
             "probe": "Originaloberfläche abgleichen: Auswahl oder Zahlenbereich noch nicht direkt abgegrenzt.",
-            "state": "open",
-            "evidence": []
+            "state": "resolved",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/046-tree-tool.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/046-tree-tool.png",
+                "observation": "Symbols > Tree Brush > Placement Density: Anfangsanzeige 1 in dieser Folge; kein allgemeiner Default."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/051-tree-density--99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/051-tree-density--99999-entry.png",
+                "observation": "Symbols > Tree Brush > Placement Density: protokollierte Zahleneingabe -99999 im eigenen Feld."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/052-tree-density--99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/052-tree-density--99999-validated.png",
+                "observation": "Symbols > Tree Brush > Placement Density: nach Tab sichtbar auf 0.25 begrenzt."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/057-tree-density-99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/057-tree-density-99999-entry.png",
+                "observation": "Symbols > Tree Brush > Placement Density: protokollierte Zahleneingabe 99999 im eigenen Feld."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/058-tree-density-99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/058-tree-density-99999-validated.png",
+                "observation": "Symbols > Tree Brush > Placement Density: nach Tab sichtbar auf 2 begrenzt."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/063-tree-density-slider-min.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/063-tree-density-slider-min.png",
+                "observation": "Symbols > Tree Brush > Placement Density: eigener Slider am linken Ende zeigt 0.25."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/064-tree-density-slider-max.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/064-tree-density-slider-max.png",
+                "observation": "Symbols > Tree Brush > Placement Density: eigener Slider am rechten Ende zeigt 2."
+              }
+            ],
+            "resolvedIn": "HEX-00-N-I11",
+            "resolution": "Symbols > Tree Brush > Placement Density einzeln im Original gemessen: -99999 → 0.25, 99999 → 2 nach Tab. Auch die beiden Sliderenden zeigen 0.25/2; beide Eingabewege direkt belegt. Nur unmittelbare Oberflächen-/Grenzenbeobachtung; Zeichenwirkung, allgemeine Schritt-/Rundungsregeln, History, Persistenz/Neuöffnung und physische Eingabe bleiben Fachpflicht."
           }
-        ]
+        ],
+        "numericObservation": {
+          "run": "HEX-00-N-I11",
+          "initialValue": 1,
+          "initialFrame": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/046-tree-tool.json",
+          "note": "Symbols > Tree Brush > Placement Density einzeln im Original gemessen: -99999 → 0.25, 99999 → 2 nach Tab. Auch die beiden Sliderenden zeigen 0.25/2; beide Eingabewege direkt belegt. Nur unmittelbare Oberflächen-/Grenzenbeobachtung; Zeichenwirkung, allgemeine Schritt-/Rundungsregeln, History, Persistenz/Neuöffnung und physische Eingabe bleiben Fachpflicht.",
+          "scope": "Nur dieses Control, protokollierte Zahlenliterale und direkt gemessene Sliderenden; keine Fachfreigabe."
+        }
       },
       {
         "id": "WD-UI-0380",
@@ -25934,8 +26996,29 @@
           "value": 100,
           "evidenceScope": "Angezeigter Zustand dieser Originalaufnahme; Persistenz und andere Kontexte nicht gemessen."
         },
-        "rangeOrChoices": null,
-        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit.",
+        "rangeOrChoices": {
+          "kind": "observed_numeric_bounds",
+          "minimum": 10,
+          "maximum": 100,
+          "boundMeaning": "displayed_after_validation",
+          "testedInputLiterals": [
+            "-99999",
+            "99999"
+          ],
+          "inputPaths": [
+            "number",
+            "slider"
+          ],
+          "scope": {
+            "version": "1.1.8.2",
+            "sessions": [
+              "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json"
+            ],
+            "context": "Eigenes frisches Fensterprofil; neue1024×1024-Karte, Large Icons. Advanced tatsächlich geöffnet; Mountain nach Tree-Endproben; Override mit eigener ausgewählter QA-Brücke, Button nicht ausgeführt.",
+            "factoryDefaultsAsserted": false
+          }
+        },
+        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit. Direkt N-I11: eigene Zahlenliterale nach Tab begrenzt; vorhandene Sliderenden separat bedient.",
         "gesture": {
           "observed": "Öffnen/Anwählen über die protokollierte Original-UI.",
           "operation": "Werkzeug-Abschlussgesten noch nicht gemessen."
@@ -25958,6 +27041,55 @@
             "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/062-mountain-brush.json",
             "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/062-mountain-brush.png",
             "observation": "Symbols > Mountain Brush > Symbol Scale: 100."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/065-mountain-tool.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/065-mountain-tool.png",
+            "observation": "Symbols > Mountain Brush > Symbol Scale: Anfangsanzeige 100 in dieser Folge; kein allgemeiner Default."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/066-mountain-scale--99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/066-mountain-scale--99999-entry.png",
+            "observation": "Symbols > Mountain Brush > Symbol Scale: protokollierte Zahleneingabe -99999 im eigenen Feld."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/067-mountain-scale--99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/067-mountain-scale--99999-validated.png",
+            "observation": "Symbols > Mountain Brush > Symbol Scale: nach Tab sichtbar auf 10 begrenzt."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/072-mountain-scale-99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/072-mountain-scale-99999-entry.png",
+            "observation": "Symbols > Mountain Brush > Symbol Scale: protokollierte Zahleneingabe 99999 im eigenen Feld."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/073-mountain-scale-99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/073-mountain-scale-99999-validated.png",
+            "observation": "Symbols > Mountain Brush > Symbol Scale: nach Tab sichtbar auf 100 begrenzt."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/078-mountain-scale-slider-min.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/078-mountain-scale-slider-min.png",
+            "observation": "Symbols > Mountain Brush > Symbol Scale: eigener Slider am linken Ende zeigt 10."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/079-mountain-scale-slider-max.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/079-mountain-scale-slider-max.png",
+            "observation": "Symbols > Mountain Brush > Symbol Scale: eigener Slider am rechten Ende zeigt 100."
           }
         ],
         "classification": "user_function",
@@ -25977,10 +27109,69 @@
             "duePhase": "HEX-00",
             "reason": "Der Wortlaut benennt unbekannte Oberfläche, Wertebereich, Auswahl oder Eingabekontext; keine spätere Wirkung ersetzt diese Inventarpflicht.",
             "probe": "Originaloberfläche abgleichen: Auswahl oder Zahlenbereich noch nicht direkt abgegrenzt.",
-            "state": "open",
-            "evidence": []
+            "state": "resolved",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/065-mountain-tool.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/065-mountain-tool.png",
+                "observation": "Symbols > Mountain Brush > Symbol Scale: Anfangsanzeige 100 in dieser Folge; kein allgemeiner Default."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/066-mountain-scale--99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/066-mountain-scale--99999-entry.png",
+                "observation": "Symbols > Mountain Brush > Symbol Scale: protokollierte Zahleneingabe -99999 im eigenen Feld."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/067-mountain-scale--99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/067-mountain-scale--99999-validated.png",
+                "observation": "Symbols > Mountain Brush > Symbol Scale: nach Tab sichtbar auf 10 begrenzt."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/072-mountain-scale-99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/072-mountain-scale-99999-entry.png",
+                "observation": "Symbols > Mountain Brush > Symbol Scale: protokollierte Zahleneingabe 99999 im eigenen Feld."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/073-mountain-scale-99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/073-mountain-scale-99999-validated.png",
+                "observation": "Symbols > Mountain Brush > Symbol Scale: nach Tab sichtbar auf 100 begrenzt."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/078-mountain-scale-slider-min.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/078-mountain-scale-slider-min.png",
+                "observation": "Symbols > Mountain Brush > Symbol Scale: eigener Slider am linken Ende zeigt 10."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/079-mountain-scale-slider-max.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/079-mountain-scale-slider-max.png",
+                "observation": "Symbols > Mountain Brush > Symbol Scale: eigener Slider am rechten Ende zeigt 100."
+              }
+            ],
+            "resolvedIn": "HEX-00-N-I11",
+            "resolution": "Symbols > Mountain Brush > Symbol Scale einzeln im Original gemessen: -99999 → 10, 99999 → 100 nach Tab. Auch die beiden Sliderenden zeigen 10/100; beide Eingabewege direkt belegt. Nur unmittelbare Oberflächen-/Grenzenbeobachtung; Zeichenwirkung, allgemeine Schritt-/Rundungsregeln, History, Persistenz/Neuöffnung und physische Eingabe bleiben Fachpflicht."
           }
-        ]
+        ],
+        "numericObservation": {
+          "run": "HEX-00-N-I11",
+          "initialValue": 100,
+          "initialFrame": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/065-mountain-tool.json",
+          "note": "Symbols > Mountain Brush > Symbol Scale einzeln im Original gemessen: -99999 → 10, 99999 → 100 nach Tab. Auch die beiden Sliderenden zeigen 10/100; beide Eingabewege direkt belegt. Nur unmittelbare Oberflächen-/Grenzenbeobachtung; Zeichenwirkung, allgemeine Schritt-/Rundungsregeln, History, Persistenz/Neuöffnung und physische Eingabe bleiben Fachpflicht.",
+          "scope": "Nur dieses Control, protokollierte Zahlenliterale und direkt gemessene Sliderenden; keine Fachfreigabe."
+        }
       },
       {
         "id": "WD-UI-0384",
@@ -25993,8 +27184,29 @@
           "value": 1,
           "evidenceScope": "Angezeigter Zustand dieser Originalaufnahme; Persistenz und andere Kontexte nicht gemessen."
         },
-        "rangeOrChoices": null,
-        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit.",
+        "rangeOrChoices": {
+          "kind": "observed_numeric_bounds",
+          "minimum": 0.25,
+          "maximum": 2,
+          "boundMeaning": "displayed_after_validation",
+          "testedInputLiterals": [
+            "-99999",
+            "99999"
+          ],
+          "inputPaths": [
+            "number",
+            "slider"
+          ],
+          "scope": {
+            "version": "1.1.8.2",
+            "sessions": [
+              "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json"
+            ],
+            "context": "Eigenes frisches Fensterprofil; neue1024×1024-Karte, Large Icons. Advanced tatsächlich geöffnet; Mountain nach Tree-Endproben; Override mit eigener ausgewählter QA-Brücke, Button nicht ausgeführt.",
+            "factoryDefaultsAsserted": false
+          }
+        },
+        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit. Direkt N-I11: eigene Zahlenliterale nach Tab begrenzt; vorhandene Sliderenden separat bedient.",
         "gesture": {
           "observed": "Öffnen/Anwählen über die protokollierte Original-UI.",
           "operation": "Werkzeug-Abschlussgesten noch nicht gemessen."
@@ -26017,6 +27229,55 @@
             "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/062-mountain-brush.json",
             "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/062-mountain-brush.png",
             "observation": "Symbols > Mountain Brush > Placement Rate: 1."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/065-mountain-tool.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/065-mountain-tool.png",
+            "observation": "Symbols > Mountain Brush > Placement Rate: Anfangsanzeige 2 in dieser Folge; kein allgemeiner Default."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/068-mountain-rate--99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/068-mountain-rate--99999-entry.png",
+            "observation": "Symbols > Mountain Brush > Placement Rate: protokollierte Zahleneingabe -99999 im eigenen Feld."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/069-mountain-rate--99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/069-mountain-rate--99999-validated.png",
+            "observation": "Symbols > Mountain Brush > Placement Rate: nach Tab sichtbar auf 0.25 begrenzt."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/074-mountain-rate-99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/074-mountain-rate-99999-entry.png",
+            "observation": "Symbols > Mountain Brush > Placement Rate: protokollierte Zahleneingabe 99999 im eigenen Feld."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/075-mountain-rate-99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/075-mountain-rate-99999-validated.png",
+            "observation": "Symbols > Mountain Brush > Placement Rate: nach Tab sichtbar auf 2 begrenzt."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/080-mountain-rate-slider-min.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/080-mountain-rate-slider-min.png",
+            "observation": "Symbols > Mountain Brush > Placement Rate: eigener Slider am linken Ende zeigt 0.25."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/081-mountain-rate-slider-max.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/081-mountain-rate-slider-max.png",
+            "observation": "Symbols > Mountain Brush > Placement Rate: eigener Slider am rechten Ende zeigt 2."
           }
         ],
         "classification": "user_function",
@@ -26036,10 +27297,69 @@
             "duePhase": "HEX-00",
             "reason": "Der Wortlaut benennt unbekannte Oberfläche, Wertebereich, Auswahl oder Eingabekontext; keine spätere Wirkung ersetzt diese Inventarpflicht.",
             "probe": "Originaloberfläche abgleichen: Auswahl oder Zahlenbereich noch nicht direkt abgegrenzt.",
-            "state": "open",
-            "evidence": []
+            "state": "resolved",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/065-mountain-tool.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/065-mountain-tool.png",
+                "observation": "Symbols > Mountain Brush > Placement Rate: Anfangsanzeige 2 in dieser Folge; kein allgemeiner Default."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/068-mountain-rate--99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/068-mountain-rate--99999-entry.png",
+                "observation": "Symbols > Mountain Brush > Placement Rate: protokollierte Zahleneingabe -99999 im eigenen Feld."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/069-mountain-rate--99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/069-mountain-rate--99999-validated.png",
+                "observation": "Symbols > Mountain Brush > Placement Rate: nach Tab sichtbar auf 0.25 begrenzt."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/074-mountain-rate-99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/074-mountain-rate-99999-entry.png",
+                "observation": "Symbols > Mountain Brush > Placement Rate: protokollierte Zahleneingabe 99999 im eigenen Feld."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/075-mountain-rate-99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/075-mountain-rate-99999-validated.png",
+                "observation": "Symbols > Mountain Brush > Placement Rate: nach Tab sichtbar auf 2 begrenzt."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/080-mountain-rate-slider-min.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/080-mountain-rate-slider-min.png",
+                "observation": "Symbols > Mountain Brush > Placement Rate: eigener Slider am linken Ende zeigt 0.25."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/081-mountain-rate-slider-max.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/081-mountain-rate-slider-max.png",
+                "observation": "Symbols > Mountain Brush > Placement Rate: eigener Slider am rechten Ende zeigt 2."
+              }
+            ],
+            "resolvedIn": "HEX-00-N-I11",
+            "resolution": "Symbols > Mountain Brush > Placement Rate einzeln im Original gemessen: -99999 → 0.25, 99999 → 2 nach Tab. Auch die beiden Sliderenden zeigen 0.25/2; beide Eingabewege direkt belegt. Anfangsanzeige2 folgt auf die Tree-Endproben; der alte1-Default bleibt unverändert als früherer Kontextbeleg erhalten. Nur unmittelbare Oberflächen-/Grenzenbeobachtung; Zeichenwirkung, allgemeine Schritt-/Rundungsregeln, History, Persistenz/Neuöffnung und physische Eingabe bleiben Fachpflicht."
           }
-        ]
+        ],
+        "numericObservation": {
+          "run": "HEX-00-N-I11",
+          "initialValue": 2,
+          "initialFrame": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/065-mountain-tool.json",
+          "note": "Symbols > Mountain Brush > Placement Rate einzeln im Original gemessen: -99999 → 0.25, 99999 → 2 nach Tab. Auch die beiden Sliderenden zeigen 0.25/2; beide Eingabewege direkt belegt. Anfangsanzeige2 folgt auf die Tree-Endproben; der alte1-Default bleibt unverändert als früherer Kontextbeleg erhalten. Nur unmittelbare Oberflächen-/Grenzenbeobachtung; Zeichenwirkung, allgemeine Schritt-/Rundungsregeln, History, Persistenz/Neuöffnung und physische Eingabe bleiben Fachpflicht.",
+          "scope": "Nur dieses Control, protokollierte Zahlenliterale und direkt gemessene Sliderenden; keine Fachfreigabe."
+        }
       },
       {
         "id": "WD-UI-0385",
@@ -26052,8 +27372,29 @@
           "value": 1,
           "evidenceScope": "Angezeigter Zustand dieser Originalaufnahme; Persistenz und andere Kontexte nicht gemessen."
         },
-        "rangeOrChoices": null,
-        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit.",
+        "rangeOrChoices": {
+          "kind": "observed_numeric_bounds",
+          "minimum": 0.25,
+          "maximum": 2,
+          "boundMeaning": "displayed_after_validation",
+          "testedInputLiterals": [
+            "-99999",
+            "99999"
+          ],
+          "inputPaths": [
+            "number",
+            "slider"
+          ],
+          "scope": {
+            "version": "1.1.8.2",
+            "sessions": [
+              "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json"
+            ],
+            "context": "Eigenes frisches Fensterprofil; neue1024×1024-Karte, Large Icons. Advanced tatsächlich geöffnet; Mountain nach Tree-Endproben; Override mit eigener ausgewählter QA-Brücke, Button nicht ausgeführt.",
+            "factoryDefaultsAsserted": false
+          }
+        },
+        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit. Direkt N-I11: eigene Zahlenliterale nach Tab begrenzt; vorhandene Sliderenden separat bedient.",
         "gesture": {
           "observed": "Öffnen/Anwählen über die protokollierte Original-UI.",
           "operation": "Werkzeug-Abschlussgesten noch nicht gemessen."
@@ -26076,6 +27417,55 @@
             "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/062-mountain-brush.json",
             "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/062-mountain-brush.png",
             "observation": "Symbols > Mountain Brush > Placement Density: 1."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/065-mountain-tool.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/065-mountain-tool.png",
+            "observation": "Symbols > Mountain Brush > Placement Density: Anfangsanzeige 2 in dieser Folge; kein allgemeiner Default."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/070-mountain-density--99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/070-mountain-density--99999-entry.png",
+            "observation": "Symbols > Mountain Brush > Placement Density: protokollierte Zahleneingabe -99999 im eigenen Feld."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/071-mountain-density--99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/071-mountain-density--99999-validated.png",
+            "observation": "Symbols > Mountain Brush > Placement Density: nach Tab sichtbar auf 0.25 begrenzt."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/076-mountain-density-99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/076-mountain-density-99999-entry.png",
+            "observation": "Symbols > Mountain Brush > Placement Density: protokollierte Zahleneingabe 99999 im eigenen Feld."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/077-mountain-density-99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/077-mountain-density-99999-validated.png",
+            "observation": "Symbols > Mountain Brush > Placement Density: nach Tab sichtbar auf 2 begrenzt."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/082-mountain-density-slider-min.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/082-mountain-density-slider-min.png",
+            "observation": "Symbols > Mountain Brush > Placement Density: eigener Slider am linken Ende zeigt 0.25."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/083-mountain-density-slider-max.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/083-mountain-density-slider-max.png",
+            "observation": "Symbols > Mountain Brush > Placement Density: eigener Slider am rechten Ende zeigt 2."
           }
         ],
         "classification": "user_function",
@@ -26095,10 +27485,69 @@
             "duePhase": "HEX-00",
             "reason": "Der Wortlaut benennt unbekannte Oberfläche, Wertebereich, Auswahl oder Eingabekontext; keine spätere Wirkung ersetzt diese Inventarpflicht.",
             "probe": "Originaloberfläche abgleichen: Auswahl oder Zahlenbereich noch nicht direkt abgegrenzt.",
-            "state": "open",
-            "evidence": []
+            "state": "resolved",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/065-mountain-tool.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/065-mountain-tool.png",
+                "observation": "Symbols > Mountain Brush > Placement Density: Anfangsanzeige 2 in dieser Folge; kein allgemeiner Default."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/070-mountain-density--99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/070-mountain-density--99999-entry.png",
+                "observation": "Symbols > Mountain Brush > Placement Density: protokollierte Zahleneingabe -99999 im eigenen Feld."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/071-mountain-density--99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/071-mountain-density--99999-validated.png",
+                "observation": "Symbols > Mountain Brush > Placement Density: nach Tab sichtbar auf 0.25 begrenzt."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/076-mountain-density-99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/076-mountain-density-99999-entry.png",
+                "observation": "Symbols > Mountain Brush > Placement Density: protokollierte Zahleneingabe 99999 im eigenen Feld."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/077-mountain-density-99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/077-mountain-density-99999-validated.png",
+                "observation": "Symbols > Mountain Brush > Placement Density: nach Tab sichtbar auf 2 begrenzt."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/082-mountain-density-slider-min.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/082-mountain-density-slider-min.png",
+                "observation": "Symbols > Mountain Brush > Placement Density: eigener Slider am linken Ende zeigt 0.25."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/083-mountain-density-slider-max.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/083-mountain-density-slider-max.png",
+                "observation": "Symbols > Mountain Brush > Placement Density: eigener Slider am rechten Ende zeigt 2."
+              }
+            ],
+            "resolvedIn": "HEX-00-N-I11",
+            "resolution": "Symbols > Mountain Brush > Placement Density einzeln im Original gemessen: -99999 → 0.25, 99999 → 2 nach Tab. Auch die beiden Sliderenden zeigen 0.25/2; beide Eingabewege direkt belegt. Anfangsanzeige2 folgt auf die Tree-Endproben; der alte1-Default bleibt unverändert als früherer Kontextbeleg erhalten. Nur unmittelbare Oberflächen-/Grenzenbeobachtung; Zeichenwirkung, allgemeine Schritt-/Rundungsregeln, History, Persistenz/Neuöffnung und physische Eingabe bleiben Fachpflicht."
           }
-        ]
+        ],
+        "numericObservation": {
+          "run": "HEX-00-N-I11",
+          "initialValue": 2,
+          "initialFrame": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/065-mountain-tool.json",
+          "note": "Symbols > Mountain Brush > Placement Density einzeln im Original gemessen: -99999 → 0.25, 99999 → 2 nach Tab. Auch die beiden Sliderenden zeigen 0.25/2; beide Eingabewege direkt belegt. Anfangsanzeige2 folgt auf die Tree-Endproben; der alte1-Default bleibt unverändert als früherer Kontextbeleg erhalten. Nur unmittelbare Oberflächen-/Grenzenbeobachtung; Zeichenwirkung, allgemeine Schritt-/Rundungsregeln, History, Persistenz/Neuöffnung und physische Eingabe bleiben Fachpflicht.",
+          "scope": "Nur dieses Control, protokollierte Zahlenliterale und direkt gemessene Sliderenden; keine Fachfreigabe."
+        }
       },
       {
         "id": "WD-UI-0386",
@@ -26194,8 +27643,29 @@
           "value": 64,
           "evidenceScope": "Angezeigter Zustand dieser Originalaufnahme; Persistenz und andere Kontexte nicht gemessen."
         },
-        "rangeOrChoices": null,
-        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit.",
+        "rangeOrChoices": {
+          "kind": "observed_numeric_bounds",
+          "minimum": 2,
+          "maximum": 128,
+          "boundMeaning": "displayed_after_validation",
+          "testedInputLiterals": [
+            "-99999",
+            "99999"
+          ],
+          "inputPaths": [
+            "number",
+            "slider"
+          ],
+          "scope": {
+            "version": "1.1.8.2",
+            "sessions": [
+              "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json"
+            ],
+            "context": "Eigenes frisches Fensterprofil; neue1024×1024-Karte, Large Icons. Advanced tatsächlich geöffnet; Mountain nach Tree-Endproben; Override mit eigener ausgewählter QA-Brücke, Button nicht ausgeführt.",
+            "factoryDefaultsAsserted": false
+          }
+        },
+        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit. Direkt N-I11: eigene Zahlenliterale nach Tab begrenzt; vorhandene Sliderenden separat bedient.",
         "gesture": {
           "observed": "Öffnen/Anwählen über die protokollierte Original-UI.",
           "operation": "Werkzeug-Abschlussgesten noch nicht gemessen."
@@ -26218,6 +27688,55 @@
             "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/063-symbol-eraser.json",
             "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/063-symbol-eraser.png",
             "observation": "Symbols > Symbol Eraser > Size: 64."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/084-eraser-tool.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/084-eraser-tool.png",
+            "observation": "Symbols > Symbol Eraser > Size: Anfangsanzeige 64 in dieser Folge; kein allgemeiner Default."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/085-symbol-eraser-size--99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/085-symbol-eraser-size--99999-entry.png",
+            "observation": "Symbols > Symbol Eraser > Size: protokollierte Zahleneingabe -99999 im eigenen Feld."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/086-symbol-eraser-size--99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/086-symbol-eraser-size--99999-validated.png",
+            "observation": "Symbols > Symbol Eraser > Size: nach Tab sichtbar auf 2 begrenzt."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/087-symbol-eraser-size-99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/087-symbol-eraser-size-99999-entry.png",
+            "observation": "Symbols > Symbol Eraser > Size: protokollierte Zahleneingabe 99999 im eigenen Feld."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/088-symbol-eraser-size-99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/088-symbol-eraser-size-99999-validated.png",
+            "observation": "Symbols > Symbol Eraser > Size: nach Tab sichtbar auf 128 begrenzt."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/89-eraser-slider-min.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/89-eraser-slider-min.png",
+            "observation": "Symbols > Symbol Eraser > Size: eigener Slider am linken Ende zeigt 2."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/90-eraser-slider-max.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/90-eraser-slider-max.png",
+            "observation": "Symbols > Symbol Eraser > Size: eigener Slider am rechten Ende zeigt 128."
           }
         ],
         "classification": "user_function",
@@ -26237,10 +27756,69 @@
             "duePhase": "HEX-00",
             "reason": "Der Wortlaut benennt unbekannte Oberfläche, Wertebereich, Auswahl oder Eingabekontext; keine spätere Wirkung ersetzt diese Inventarpflicht.",
             "probe": "Originaloberfläche abgleichen: Auswahl oder Zahlenbereich noch nicht direkt abgegrenzt.",
-            "state": "open",
-            "evidence": []
+            "state": "resolved",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/084-eraser-tool.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/084-eraser-tool.png",
+                "observation": "Symbols > Symbol Eraser > Size: Anfangsanzeige 64 in dieser Folge; kein allgemeiner Default."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/085-symbol-eraser-size--99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/085-symbol-eraser-size--99999-entry.png",
+                "observation": "Symbols > Symbol Eraser > Size: protokollierte Zahleneingabe -99999 im eigenen Feld."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/086-symbol-eraser-size--99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/086-symbol-eraser-size--99999-validated.png",
+                "observation": "Symbols > Symbol Eraser > Size: nach Tab sichtbar auf 2 begrenzt."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/087-symbol-eraser-size-99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/087-symbol-eraser-size-99999-entry.png",
+                "observation": "Symbols > Symbol Eraser > Size: protokollierte Zahleneingabe 99999 im eigenen Feld."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/088-symbol-eraser-size-99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/088-symbol-eraser-size-99999-validated.png",
+                "observation": "Symbols > Symbol Eraser > Size: nach Tab sichtbar auf 128 begrenzt."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/89-eraser-slider-min.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/89-eraser-slider-min.png",
+                "observation": "Symbols > Symbol Eraser > Size: eigener Slider am linken Ende zeigt 2."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/90-eraser-slider-max.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/90-eraser-slider-max.png",
+                "observation": "Symbols > Symbol Eraser > Size: eigener Slider am rechten Ende zeigt 128."
+              }
+            ],
+            "resolvedIn": "HEX-00-N-I11",
+            "resolution": "Symbols > Symbol Eraser > Size einzeln im Original gemessen: -99999 → 2, 99999 → 128 nach Tab. Auch die beiden Sliderenden zeigen 2/128; beide Eingabewege direkt belegt. Nur unmittelbare Oberflächen-/Grenzenbeobachtung; Zeichenwirkung, allgemeine Schritt-/Rundungsregeln, History, Persistenz/Neuöffnung und physische Eingabe bleiben Fachpflicht."
           }
-        ]
+        ],
+        "numericObservation": {
+          "run": "HEX-00-N-I11",
+          "initialValue": 64,
+          "initialFrame": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/084-eraser-tool.json",
+          "note": "Symbols > Symbol Eraser > Size einzeln im Original gemessen: -99999 → 2, 99999 → 128 nach Tab. Auch die beiden Sliderenden zeigen 2/128; beide Eingabewege direkt belegt. Nur unmittelbare Oberflächen-/Grenzenbeobachtung; Zeichenwirkung, allgemeine Schritt-/Rundungsregeln, History, Persistenz/Neuöffnung und physische Eingabe bleiben Fachpflicht.",
+          "scope": "Nur dieses Control, protokollierte Zahlenliterale und direkt gemessene Sliderenden; keine Fachfreigabe."
+        }
       },
       {
         "id": "WD-UI-0389",
@@ -26601,8 +28179,28 @@
           "value": 1,
           "evidenceScope": "Angezeigter Zustand dieser Originalaufnahme; Persistenz und andere Kontexte nicht gemessen."
         },
-        "rangeOrChoices": null,
-        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit.",
+        "rangeOrChoices": {
+          "kind": "observed_numeric_bounds",
+          "minimum": 0.01,
+          "maximum": 100,
+          "boundMeaning": "displayed_after_validation",
+          "testedInputLiterals": [
+            "-99999",
+            "99999"
+          ],
+          "inputPaths": [
+            "number"
+          ],
+          "scope": {
+            "version": "1.1.8.2",
+            "sessions": [
+              "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json"
+            ],
+            "context": "Eigenes frisches Fensterprofil; neue1024×1024-Karte, Large Icons. Advanced tatsächlich geöffnet; Mountain nach Tree-Endproben; Override mit eigener ausgewählter QA-Brücke, Button nicht ausgeführt.",
+            "factoryDefaultsAsserted": false
+          }
+        },
+        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit. Direkt N-I11: eigene Zahlenliterale nach Tab begrenzt; vorhandene Sliderenden separat bedient.",
         "gesture": {
           "observed": "Öffnen/Anwählen über die protokollierte Original-UI.",
           "operation": "Werkzeug-Abschlussgesten noch nicht gemessen."
@@ -26626,6 +28224,62 @@
             "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/064-symbol-move.json",
             "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/064-symbol-move.png",
             "observation": "Symbols > Symbol Move Tool > Override Scale: 1."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/102-move-selected-context.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/102-move-selected-context.png",
+            "observation": "Symbols > Symbol Move Tool > Override Scale: Anfangsanzeige 1 in dieser Folge; kein allgemeiner Default."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/103-move-override-scale--99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/103-move-override-scale--99999-entry.png",
+            "observation": "Symbols > Symbol Move Tool > Override Scale: protokollierte Zahleneingabe -99999 im eigenen Feld."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/104-move-override-scale--99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/104-move-override-scale--99999-validated.png",
+            "observation": "Symbols > Symbol Move Tool > Override Scale: nach Tab sichtbar auf 0.01 begrenzt."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/105-move-override-scale-99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/105-move-override-scale-99999-entry.png",
+            "observation": "Symbols > Symbol Move Tool > Override Scale: protokollierte Zahleneingabe 99999 im eigenen Feld."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/106-move-override-scale-99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/106-move-override-scale-99999-validated.png",
+            "observation": "Symbols > Symbol Move Tool > Override Scale: nach Tab sichtbar auf 100 begrenzt."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/91-move-no-selection.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/91-move-no-selection.png",
+            "observation": "Ohne Auswahl: Override Scale1 sichtbar, Override-Button deaktiviert; kein Slider."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/100-qa-bridge-placement-confirm.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/100-qa-bridge-placement-confirm.png",
+            "observation": "Eine eigene QA-Brücke mit Scale100, Rotation0 und Outline0 nur zur Aktivierung des Auswahlkontexts platziert."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/102-move-selected-context.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/102-move-selected-context.png",
+            "observation": "Eigene Brücke ausgewählt; Layerliste sichtbar und Override-Button aktiviert. Zahlenfeld jetzt unten bei724 statt im auswahlfreien Kontext357."
           }
         ],
         "classification": "user_function",
@@ -26646,10 +28300,76 @@
             "duePhase": "HEX-00",
             "reason": "Der Wortlaut benennt unbekannte Oberfläche, Wertebereich, Auswahl oder Eingabekontext; keine spätere Wirkung ersetzt diese Inventarpflicht.",
             "probe": "Originaloberfläche abgleichen: Auswahl oder Zahlenbereich noch nicht direkt abgegrenzt.",
-            "state": "open",
-            "evidence": []
+            "state": "resolved",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/102-move-selected-context.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/102-move-selected-context.png",
+                "observation": "Symbols > Symbol Move Tool > Override Scale: Anfangsanzeige 1 in dieser Folge; kein allgemeiner Default."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/103-move-override-scale--99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/103-move-override-scale--99999-entry.png",
+                "observation": "Symbols > Symbol Move Tool > Override Scale: protokollierte Zahleneingabe -99999 im eigenen Feld."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/104-move-override-scale--99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/104-move-override-scale--99999-validated.png",
+                "observation": "Symbols > Symbol Move Tool > Override Scale: nach Tab sichtbar auf 0.01 begrenzt."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/105-move-override-scale-99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/105-move-override-scale-99999-entry.png",
+                "observation": "Symbols > Symbol Move Tool > Override Scale: protokollierte Zahleneingabe 99999 im eigenen Feld."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/106-move-override-scale-99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/106-move-override-scale-99999-validated.png",
+                "observation": "Symbols > Symbol Move Tool > Override Scale: nach Tab sichtbar auf 100 begrenzt."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/91-move-no-selection.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/91-move-no-selection.png",
+                "observation": "Ohne Auswahl: Override Scale1 sichtbar, Override-Button deaktiviert; kein Slider."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/100-qa-bridge-placement-confirm.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/100-qa-bridge-placement-confirm.png",
+                "observation": "Eine eigene QA-Brücke mit Scale100, Rotation0 und Outline0 nur zur Aktivierung des Auswahlkontexts platziert."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/102-move-selected-context.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/102-move-selected-context.png",
+                "observation": "Eigene Brücke ausgewählt; Layerliste sichtbar und Override-Button aktiviert. Zahlenfeld jetzt unten bei724 statt im auswahlfreien Kontext357."
+              }
+            ],
+            "resolvedIn": "HEX-00-N-I11",
+            "resolution": "Symbols > Symbol Move Tool > Override Scale einzeln im Original gemessen: -99999 → 0.01, 99999 → 100 nach Tab. Plain-Zahlenfeld ohne Slider, ausgewählte eigene QA-Brücke und aktivierter Override-Button. Override wurde nicht ausgeführt; Effekt, Mehrfachauswahl und History bleiben offen. Nur unmittelbare Oberflächen-/Grenzenbeobachtung; Zeichenwirkung, allgemeine Schritt-/Rundungsregeln, History, Persistenz/Neuöffnung und physische Eingabe bleiben Fachpflicht."
           }
-        ]
+        ],
+        "numericObservation": {
+          "run": "HEX-00-N-I11",
+          "initialValue": 1,
+          "initialFrame": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/original/screens/102-move-selected-context.json",
+          "note": "Symbols > Symbol Move Tool > Override Scale einzeln im Original gemessen: -99999 → 0.01, 99999 → 100 nach Tab. Plain-Zahlenfeld ohne Slider, ausgewählte eigene QA-Brücke und aktivierter Override-Button. Override wurde nicht ausgeführt; Effekt, Mehrfachauswahl und History bleiben offen. Nur unmittelbare Oberflächen-/Grenzenbeobachtung; Zeichenwirkung, allgemeine Schritt-/Rundungsregeln, History, Persistenz/Neuöffnung und physische Eingabe bleiben Fachpflicht.",
+          "scope": "Nur dieses Control, protokollierte Zahlenliterale und direkt gemessene Sliderenden; keine Fachfreigabe."
+        }
       },
       {
         "id": "WD-UI-0398",
