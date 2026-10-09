@@ -370,3 +370,5 @@ HEX-05 weiterhin offen, nativer Platz beim Kollegen für R02. GitHub-DNS scheite
 
 
 CITY-00-I21-I Ergebnis: Add-landmark-Dialog nimmt `CITY21 Beacon` an. Im anfänglichen Icon-Modus kein Pin identifiziert; das ist kein Fehlfunktionsnachweis. Style → Elements bietet Hidden/Icon/Legend. Legend zeigt den Namen direkt; tatsächlicher Download `/home/aaron/Downloads/new_river (1).svg` (355207 Bytes) enthält einen SVG-text-Knoten mit diesem Namen. Nur XML-Parse, kein Vorschau-Bypass. Position, Korrektur, Entfernen, Save/Reload und stabile Keys offen. Eigene Testkopie geschlossen; Originaltabs erhalten. Belege: `/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i21-landmark-20261009/manifest.json`. Nächster getrennter Lauf I21-R, danach Aufräumen P/I/R.
+
+CITY-00-I21-R Ergebnis: Manifest-Hashes, Download-Bytegleichheit und genau ein SVG-Textknoten unabhängig geprüft. Sichtnachweis `10-visible-legend.jpg` passt zum Namen. Pflichtlücken bleiben explizit offen; keine Produktänderung, keine Abnahme. Ein Aufräumbefund: abgeleiteter Referenzlücken-Snapshot steht noch auf I20/partial und ist aus aktuellem acceptance zu aktualisieren.
