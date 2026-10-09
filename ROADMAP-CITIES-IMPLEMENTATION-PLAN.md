@@ -374,3 +374,5 @@ CITY-00-I21-I Ergebnis: Add-landmark-Dialog nimmt `CITY21 Beacon` an. Im anfäng
 CITY-00-I21-R Ergebnis: Manifest-Hashes, Download-Bytegleichheit und genau ein SVG-Textknoten unabhängig geprüft. Sichtnachweis `10-visible-legend.jpg` passt zum Namen. Pflichtlücken bleiben explizit offen; keine Produktänderung, keine Abnahme. Ein Aufräumbefund: abgeleiteter Referenzlücken-Snapshot steht noch auf I20/partial und ist aus aktuellem acceptance zu aktualisieren.
 
 CITY-00-I21-CP Plan: Referenzlücken-Snapshot auf I21 und den belegten Legend-/SVG-Namensumfang bringen; acceptance bleibt maßgeblich. Rohbelege/Originaldownloads unverändert erhalten, Manifest-Verweise und alle 63 unabhängigen Pflichten prüfen. Keine neue Architektur aus ungeprüfter Pinposition; kein neues Statussystem. Danach eigener CI-Lauf und unabhängiger CR-Lauf.
+
+CITY-00-I21-CR Ergebnis: Snapshot entspricht I21-Teilverweisen; Manifest-Hashes unverändert, 63 unabhängige Funktionspflichten offen. Aufräumumfang ohne weiteren Befund; keine technische Produktänderung und keine CITY-Freigabe. Nächster Lauf prüft den aktuellen HEX-05-Übergabestand für den Beginn der Stadtimplementierung.
