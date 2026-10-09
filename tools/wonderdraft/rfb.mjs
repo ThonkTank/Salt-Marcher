@@ -69,6 +69,7 @@ function key(symbol, down) {
 }
 const keys = { Escape: 0xff1b, Enter: 0xff0d, Tab: 0xff09, Backspace: 0xff08, Delete: 0xffff,
   Control: 0xffe3, Shift: 0xffe1, Alt: 0xffe9, Space: 0x20, Left: 0xff51, Up: 0xff52, Right: 0xff53, Down: 0xff54 };
+for (let n = 1; n <= 12; n++) keys[`F${n}`] = 0xffbd + n;
 try {
   socket.write(await take(12));
   const count = (await take(1))[0];
