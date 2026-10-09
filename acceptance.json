@@ -152607,7 +152607,12 @@
         "id": "HEX03-005",
         "requirement": "Gemeinsames Save/Draft/Discard/Copy/Recovery samt frischem Prozess",
         "state": "open",
-        "plan": "ROADMAP-HEX-03-PLAN.md"
+        "plan": "ROADMAP-HEX-03-PLAN.md",
+        "implementationRun": "HEX-03-I01b-draft2",
+        "evidence": [
+          "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/draft2-implementation.json"
+        ],
+        "observed": "V2 exact native terrain/placement/Location delta contract checked, six new cases and shared FileTransaction rollback/retry fixture. Repository/UI/Copy/Discard/Recovery hookup and native/fresh full flow remain required; no phase Go."
       },
       {
         "id": "HEX03-006",
