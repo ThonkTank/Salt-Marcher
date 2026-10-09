@@ -142,36 +142,24 @@
   "hexAtlasExecution": {
     "scope": "HEX-00 bis HEX-28 und sämtliche eingeordneten CITY-00 bis CITY-09 vollständig",
     "phase": "HEX-00",
-    "state": "remaining_contexts_mapped_three_new_selection_questions",
+    "state": "move_path_final_inventory_repair_running",
     "plan": "ROADMAP-HEX-00-REPAIR-PLAN.md",
     "currentRun": {
-      "id": "HEX-00-N-I17",
-      "kind": "repair_implementation",
-      "startedAt": "2026-10-09T13:55:56.316385+02:00",
-      "baseCommit": "fc96f780aa40111464ea4b2ebbd8a7d71f603f55",
-      "state": "checked_implementation_review_pending",
-      "focus": "Eight remaining early reference contexts: assets, selections, generator, gradient, resize anchor and lasso handles",
-      "evidence": [
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/remaining-contexts-repair-20261009-135556/manifest.json",
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/remaining-contexts-repair-20261009-135556/start-integration-preservation.json",
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/remaining-contexts-repair-20261009-135556/receipt-reconstruction.json",
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/remaining-contexts-repair-20261009-135556/native-process-close-proof.json",
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/remaining-contexts-repair-20261009-135556/mapping-preservation.json",
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/remaining-contexts-repair-20261009-135556/protection-and-native-proof.json",
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/remaining-contexts-repair-20261009-135556/catalog-partial.json",
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/remaining-contexts-repair-20261009-135556/pre-mapping-integration-preservation.json",
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/remaining-contexts-repair-20261009-135556/local-basis.json",
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/remaining-contexts-repair-20261009-135556/clean-git-basis.json",
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/remaining-contexts-repair-20261009-135556/clean-git-provenance.json",
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/remaining-contexts-repair-20261009-135556/catalog-complete-gate.json"
-      ],
-      "completedAt": "2026-10-09T13:15:49.293315+00:00"
-    },
-    "nextRun": {
       "id": "HEX-00-N-I18",
       "kind": "repair_implementation",
-      "focus": "Drei tatsächlich neue Move-Path-Panel-Inventarfragen0667–0669 direkt schließen; fünf vorhandene Fall-/UI-Verweislücken anhand bestehender Originalbelege einordnen.",
-      "gate": "Native Originalprobe erst nach ausdrücklicher CITY-Slotrückgabe; anschließend eigener R02 und separater Aufräumzyklus, vor HEX-01 bis05."
+      "startedAt": "2026-10-09T15:28:15.902396+02:00",
+      "baseCommit": "dee15e4bc6def6458cd7536f486f2d44ac72d05d",
+      "state": "running",
+      "focus": "Three newly discovered selected Move Path inputs and five existing case mappings; no general variants",
+      "evidence": [
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/move-path-final-repair-20261009-152726/manifest.json"
+      ]
+    },
+    "nextRun": {
+      "id": "HEX-00-R02",
+      "kind": "review",
+      "focus": "Six R01 findings, full early inventory/start sequences and all retained evidence sources.",
+      "gate": "Own review and separate cleanup before HEX-01 to05 product implementation."
     },
     "review": {
       "state": "changes_required",
