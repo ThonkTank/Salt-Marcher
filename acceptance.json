@@ -513,7 +513,7 @@
     "schemaVersion": 1,
     "updated": "2026-10-09T15:18:47.917996+00:00",
     "plan": "ROADMAP-CITIES.md",
-    "state": "model_codec_prepared_atlas_integration_pending",
+    "state": "core_prepared_atlas_integration_pending",
     "comparisonMode": "functional_equivalence_and_independent_usability_tests",
     "userRequirements": {
       "cityResults": "Stadtfunktionen gleichwertig mit Canvas of Kings, Medieval Fantasy City Generator und Fantasy Town Generator; Grafik ungefähr gleichwertig, Bedienung besser.",
@@ -643,7 +643,7 @@
         ],
         "deliverable": "Native .city direkt am Ort anlegen; Straße, Platz und zwei Häuser im selben Editor bearbeiten.",
         "test": "Nur hinein-/herauszoomen; Haus verschieben, Straße ändern, Undo/Redo, speichern und frisch öffnen.",
-        "state": "model_prepared_integration_pending",
+        "state": "core_prepared_integration_pending",
         "evidence": [
           "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-model-20261009/implementation.json"
         ]
@@ -774,9 +774,10 @@
             "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-model-20261009/implementation.json",
             "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-model-20261009/repair.json",
             "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-commands-20261009/implementation.json",
-            "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-commands-20261009/cleanup-review.json"
+            "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-commands-20261009/cleanup-review.json",
+            "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-scene-20261009/implementation.json"
           ],
-          "remaining": "Common History code adapter prepared and reviewed. Atlas placement/scene/selection, native registration and save/reopen host sequence remain unimplemented."
+          "remaining": "Native model, shared history, pure actions and local scene/hit core prepared; scene review pending. Atlas placement, visible rendering, gestures/selection, external bindings and host save/reopen still pending."
         },
         "hostCheck": {
           "state": "not_run",
@@ -874,9 +875,10 @@
           "state": "partial",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-edit-20261009/implementation.json",
-            "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-edit-20261009/cleanup-review.json"
+            "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-edit-20261009/cleanup-review.json",
+            "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-scene-20261009/implementation.json"
           ],
-          "remaining": "Pure road/building edit operations prepared and reviewed. Shared atlas gestures, selection, rendering, external bindings and host save/reopen remain unimplemented."
+          "remaining": "Native model, shared history, pure actions and local scene/hit core prepared; scene review pending. Atlas placement, visible rendering, gestures/selection, external bindings and host save/reopen still pending."
         },
         "hostCheck": {
           "state": "not_run",
@@ -910,9 +912,10 @@
           "state": "partial",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-edit-20261009/implementation.json",
-            "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-edit-20261009/cleanup-review.json"
+            "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-edit-20261009/cleanup-review.json",
+            "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-scene-20261009/implementation.json"
           ],
-          "remaining": "Pure road/building edit operations prepared and reviewed. Shared atlas gestures, selection, rendering, external bindings and host save/reopen remain unimplemented."
+          "remaining": "Native model, shared history, pure actions and local scene/hit core prepared; scene review pending. Atlas placement, visible rendering, gestures/selection, external bindings and host save/reopen still pending."
         },
         "hostCheck": {
           "state": "not_run",
@@ -130448,10 +130451,13 @@
           "evidence": []
         },
         "hostCheck": {
-          "state": "open",
-          "build": null,
-          "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "state": "scoped_o01a_read_only_observed_review_pending_full_case_open",
+          "build": "Obsidian 1.14.4; main.js SHA-256 6896c7b53cb0100178d32c217b824b6c762122a33df38921e84acdd467234ba7; Produktstand fcc4ce612d17c47c720ce4bf7c0c5e216398f41e",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/dd036-o01a-20261009/evidence/1791566923401-dd036-o01a-edit/o01a-result.json",
+            "/home/aaron/.cache/dungeon-native-qa/dd036-o01a-20261009/evidence/1791566931299-dd036-o01a-reopen/o01a-result.json"
+          ],
+          "gap": "Nur referenzfreie .overworld und bytegleiche Einzeldatei-Transportkopie mit stabiler world.id und null Atlas-Schreibaufrufen belegt. Dungeondraft-Originalablauf, Kinddateien, Save, Import und vollständige Gleichwertigkeit bleiben offen."
         }
       },
       {
@@ -131784,10 +131790,13 @@
           "evidence": []
         },
         "hostCheck": {
-          "state": "open",
-          "build": null,
-          "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "state": "scoped_o01a_read_only_observed_review_pending_full_case_open",
+          "build": "Obsidian 1.14.4; main.js SHA-256 6896c7b53cb0100178d32c217b824b6c762122a33df38921e84acdd467234ba7; Produktstand fcc4ce612d17c47c720ce4bf7c0c5e216398f41e",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/dd036-o01a-20261009/evidence/1791566923401-dd036-o01a-edit/o01a-result.json",
+            "/home/aaron/.cache/dungeon-native-qa/dd036-o01a-20261009/evidence/1791566931299-dd036-o01a-reopen/o01a-result.json"
+          ],
+          "gap": "Nur referenzfreie .overworld und bytegleiche Einzeldatei-Transportkopie mit stabiler world.id und null Atlas-Schreibaufrufen belegt. Dungeondraft-Originalablauf, Kinddateien, Save, Import und vollständige Gleichwertigkeit bleiben offen."
         }
       },
       {
