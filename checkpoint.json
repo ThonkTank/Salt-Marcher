@@ -4734,17 +4734,17 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I46-CLEAN-R46",
-      "kind": "cleanup_review",
-      "startedAt": "2026-10-09T19:36:08.707285+00:00",
-      "focus": "FTG-Bulk-Wirkung und Rücksetzung: CR",
-      "state": "completed",
-      "result": "Hash-/Plan-/Scopeprüfung bestanden: originale sichtbare Namen wiederhergestellt, Produktabnahmen offen; getrenntes R46 folgt."
-    },
-    "nextRun": {
       "id": "CITY-00-I46-R46",
       "kind": "reference_review",
-      "focus": "Zweierauswahl/Cancel/Apply/Rücksetzung gegen Originalbelege reviewen"
+      "startedAt": "2026-10-09T19:38:18.497531+00:00",
+      "focus": "Massenbearbeitungsbeleg reviewen: R",
+      "state": "completed",
+      "result": "R46 bestanden: Zweierauswahl/Cancel/Apply/Rücksetzung, 18 Rawhashes und identisches sichtbares Wyddis-Profil. Ganze Daten-/Hostparität offen."
+    },
+    "nextRun": {
+      "id": "CITY-00-I46-REVIEW-CLEAN-P46",
+      "kind": "cleanup_plan",
+      "focus": "COK-Licht-/Wetterprobe mit Atlasbesitzer-GUI-Slot abstimmen und konkret planen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",

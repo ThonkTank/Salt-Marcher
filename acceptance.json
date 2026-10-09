@@ -2621,7 +2621,9 @@
             "Only surname tested; race/gender/religion/friend/faction/job/move/delete effects not tested",
             "Visible restoration, no bytewise whole-settlement or full population invariance proof",
             "Own implementation/host/usability/physical comparison remains open"
-          ]
+          ],
+          "reviewManifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i46-bulk-20261009/review.json",
+          "restorationScope": "Both visible names restored; Wyddis normalized full visible profile equals before. No whole-settlement serialized equality or fresh reload."
         }
       },
       {
