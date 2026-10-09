@@ -20,3 +20,4 @@ import "./core/creature-catalog-view-model.test";
 import "./core/catalog-workspace.test";
 import "./core/open-unique-view.test";
 import "./core/atlas-foundation.test";
+import "./core/atlas-terrain.test";

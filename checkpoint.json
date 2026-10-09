@@ -394,22 +394,22 @@
   },
   "hexAtlasExecution": {
     "scope": "HEX-00 bis HEX-28 und sämtliche eingeordneten CITY-00 bis CITY-09 vollständig",
-    "phase": "HEX-01",
-    "state": "hex01_complete_cloud_layout_reloaded_next_hex02",
-    "plan": "ROADMAP-HEX-01-PLAN.md",
+    "phase": "HEX-02",
+    "state": "core_checked_native_terrain_next",
+    "plan": "ROADMAP-HEX-02-PLAN.md",
     "currentRun": {
-      "id": "GM-UX-N-004-R01",
-      "kind": "host_retest_review",
-      "startedAt": "2026-10-09T16:31:18.304242+00:00",
-      "finishedAt": "2026-10-09T16:31:18.304242+00:00",
-      "state": "completed",
-      "focus": "No source layout repair: incomplete QA installation caused missing flex rules; complete triplet plus app reload resolved observed failure. Start HEX02 implementation.",
-      "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-01/p01-20261009151055/gm-n004-review.json"
-    },
-    "nextRun": {
       "id": "HEX-02-I01a",
       "kind": "implementation",
-      "focus": "Sparse native 3-mile terrain, continuous axial strokes and common document history; early host island next I01b."
+      "startedAt": "2026-10-09T16:33:05.466305+00:00",
+      "state": "completed",
+      "focus": "Sparse level0 cells, safe lazy chunk reads, exact continuous stroke, common atomic AtlasHistory",
+      "finishedAt": "2026-10-09T16:38:34.970445+00:00",
+      "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-01/p01-20261009151055/hex02-core-implementation.json"
+    },
+    "nextRun": {
+      "id": "HEX-02-I01b",
+      "kind": "implementation_host",
+      "focus": "Actually paint island in unchanged single Atlas editor before durable save work."
     },
     "review": {
       "run": "HEX-01-R01",
@@ -1025,6 +1025,17 @@
           "Filled terrain / full Atlas / physical input and large-map approval remain open"
         ],
         "decision": "No source layout repair: incomplete QA installation caused missing flex rules; complete triplet plus app reload resolved observed failure. Start HEX02 implementation."
+      },
+      "hex02Core": {
+        "run": "HEX-02-I01a",
+        "state": "checked_core_implementation_no_host_yet",
+        "finishedAt": "2026-10-09T16:38:34.970445+00:00",
+        "testsLocal": 262,
+        "coreCases": 6,
+        "checkPassed": true,
+        "buildPassed": true,
+        "target": "Native sparse level0 chunks, lazy-source read guard, continuous atomic preview/stroke, shared document history",
+        "limits": "No terrain controls/render/Save/Host acceptance until I01b/c; no installed user-vault change"
       }
     },
     "repairPlan": "ROADMAP-HEX-00-REPAIR-PLAN.md",
