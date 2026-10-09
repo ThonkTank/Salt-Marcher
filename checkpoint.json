@@ -4262,17 +4262,17 @@
     "state": "city01_model_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-01-PREP-R04",
-      "kind": "review",
-      "startedAt": "2026-10-09T17:09:21.880Z",
-      "focus": "Fachaktionen separat gegen Plan und Verlust-/Referenzfälle prüfen",
-      "state": "completed",
-      "result": "Unabhängige Gegenproben und unveränderte geprüfte Quellen bestätigen Fachaktionsvertrag ohne Pflichtlücke; Dokumentationsreste aufräumen."
-    },
-    "nextRun": {
       "id": "CITY-01-PREP-EDIT-CLEAN-P03",
       "kind": "cleanup_planning",
-      "focus": "Reine Fachaktionen in Architektur/Plänen dokumentieren und unbelegte Pfadprüfung korrigieren"
+      "startedAt": "2026-10-09T17:10:19.775367+00:00",
+      "focus": "Fachaktionsarchitektur und Planbehauptungen aufräumen",
+      "state": "completed",
+      "result": "Dokumentationskorrekturen geplant; keine Geometriekopie, neue API oder Laufzeitänderung."
+    },
+    "nextRun": {
+      "id": "CITY-01-PREP-EDIT-CLEAN-I03",
+      "kind": "cleanup_implementation",
+      "focus": "Vorhandene Fachaktionen kenntlich machen und Codec-Pfadbehauptung entfernen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
