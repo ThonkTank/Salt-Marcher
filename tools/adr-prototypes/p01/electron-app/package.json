@@ -1,6 +1,0 @@
-{
-  "name": "adr-p01-h02-electron-shell",
-  "private": true,
-  "type": "module",
-  "main": "../electron-main.mjs"
-}
