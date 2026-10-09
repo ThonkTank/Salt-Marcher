@@ -115663,6 +115663,21 @@
           "audit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-smarttiles-review-20261009/independent-audit.json",
           "decision": "Vier einzelne vorbereitete Smart-Tile-Randfolgen in zwölf gespeicherten Größen-/Zellkoordinatenständen bestätigt; kein vollständiger DD-038-Fall freigegeben.",
           "remaining": "Bedienbares Zeichnen/Bearbeiten, ungefähr gleichwertige Pakettextur, weitere Inhalte, kombinierte Ränder, Eingabegrenzen und installierter Endbuild offen."
+        },
+        "followUpPhase1TerrainOriginalProbe": {
+          "state": "original_measured_host_open",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-024-DD-038-SMOOTH-RESIZE-NATIVE-RESULT.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-terrain-resize-review-20261009/raw-mask-audit.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd024-terrain-native/native-smooth-resize-20261006/evidence/08-before-resize.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd024-terrain-native/native-smooth-resize-20261006/evidence/12-expanded-saved.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd024-terrain-native/native-smooth-resize-20261006/evidence/15-top-expanded-saved.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd024-terrain-native/native-smooth-resize-20261006/evidence/17-cropped-saved.dungeondraft_map"
+          ],
+          "measuredScope": "Oben +1 nach links +1: beide Masken verschieben alle 1152 alten Samples vier Pixel nach unten; 144 neue Rand-Samples je Maske sind [255,0,0,0].",
+          "fixtureCaveat": "Acht-Slot-Gewichte der Quelle als externe Dateifixture gesetzt; Resize-Dialog im Original bedient.",
+          "remaining": "Persistierte Host-Terrainmasken und gepaarte Host-Neuöffnung fehlen. Keine Fallfreigabe."
         }
       },
       {
@@ -115787,6 +115802,21 @@
           "audit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-smarttiles-review-20261009/independent-audit.json",
           "decision": "Vier einzelne vorbereitete Smart-Tile-Randfolgen in zwölf gespeicherten Größen-/Zellkoordinatenständen bestätigt; kein vollständiger DD-038-Fall freigegeben.",
           "remaining": "Bedienbares Zeichnen/Bearbeiten, ungefähr gleichwertige Pakettextur, weitere Inhalte, kombinierte Ränder, Eingabegrenzen und installierter Endbuild offen."
+        },
+        "followUpPhase1TerrainOriginalProbe": {
+          "state": "original_measured_host_open",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-024-DD-038-SMOOTH-RESIZE-NATIVE-RESULT.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-terrain-resize-review-20261009/raw-mask-audit.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd024-terrain-native/native-smooth-resize-20261006/evidence/08-before-resize.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd024-terrain-native/native-smooth-resize-20261006/evidence/12-expanded-saved.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd024-terrain-native/native-smooth-resize-20261006/evidence/15-top-expanded-saved.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd024-terrain-native/native-smooth-resize-20261006/evidence/17-cropped-saved.dungeondraft_map"
+          ],
+          "measuredScope": "Rechts -1 gemeinsam mit unten -1 nach links/oben +1: beide Masken speichern den linken oberen 8×8-Ausschnitt ohne Samplefehler.",
+          "fixtureCaveat": "Acht-Slot-Gewichte der Quelle als externe Dateifixture gesetzt; Resize-Dialog im Original bedient.",
+          "remaining": "Persistierte Host-Terrainmasken und gepaarte Host-Neuöffnung fehlen. Keine Fallfreigabe."
         }
       },
       {
@@ -115912,6 +115942,21 @@
           "audit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-smarttiles-review-20261009/independent-audit.json",
           "decision": "Vier einzelne vorbereitete Smart-Tile-Randfolgen in zwölf gespeicherten Größen-/Zellkoordinatenständen bestätigt; kein vollständiger DD-038-Fall freigegeben.",
           "remaining": "Bedienbares Zeichnen/Bearbeiten, ungefähr gleichwertige Pakettextur, weitere Inhalte, kombinierte Ränder, Eingabegrenzen und installierter Endbuild offen."
+        },
+        "followUpPhase1TerrainOriginalProbe": {
+          "state": "original_measured_host_open",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-024-DD-038-SMOOTH-RESIZE-NATIVE-RESULT.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-terrain-resize-review-20261009/raw-mask-audit.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd024-terrain-native/native-smooth-resize-20261006/evidence/08-before-resize.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd024-terrain-native/native-smooth-resize-20261006/evidence/12-expanded-saved.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd024-terrain-native/native-smooth-resize-20261006/evidence/15-top-expanded-saved.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd024-terrain-native/native-smooth-resize-20261006/evidence/17-cropped-saved.dungeondraft_map"
+          ],
+          "measuredScope": "Unten -1 gemeinsam mit rechts -1 nach links/oben +1: beide Masken speichern den linken oberen 8×8-Ausschnitt ohne Samplefehler.",
+          "fixtureCaveat": "Acht-Slot-Gewichte der Quelle als externe Dateifixture gesetzt; Resize-Dialog im Original bedient.",
+          "remaining": "Persistierte Host-Terrainmasken und gepaarte Host-Neuöffnung fehlen. Keine Fallfreigabe."
         }
       },
       {
@@ -116050,6 +116095,21 @@
           "cropMapSha256": "814bf8d74821e466540dac3e6cce5d31ce9ad944532a34258c26eb6336b7fc1a",
           "measured": "Zwei erhaltene Shape-Polygone, Tile-Zellen 8→4→4 im selben und frischen Originalprozess.",
           "gap": "Aktueller Building-Befehl erzeugt keine Zellfolge; Boden-Hostfolge nach Crop/Neuöffnung offen. Keine Fallfreigabe."
+        },
+        "followUpPhase1TerrainOriginalProbe": {
+          "state": "original_measured_host_open",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-024-DD-038-SMOOTH-RESIZE-NATIVE-RESULT.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-terrain-resize-review-20261009/raw-mask-audit.json",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd024-terrain-native/native-smooth-resize-20261006/evidence/08-before-resize.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd024-terrain-native/native-smooth-resize-20261006/evidence/12-expanded-saved.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd024-terrain-native/native-smooth-resize-20261006/evidence/15-top-expanded-saved.dungeondraft_map",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd024-terrain-native/native-smooth-resize-20261006/evidence/17-cropped-saved.dungeondraft_map"
+          ],
+          "measuredScope": "Links +1: beide Masken verschieben alle 1024 alten Samples vier Pixel nach rechts; 128 neue Rand-Samples je Maske sind [255,0,0,0].",
+          "fixtureCaveat": "Acht-Slot-Gewichte der Quelle als externe Dateifixture gesetzt; Resize-Dialog im Original bedient.",
+          "remaining": "Persistierte Host-Terrainmasken und gepaarte Host-Neuöffnung fehlen. Keine Fallfreigabe."
         }
       },
       {

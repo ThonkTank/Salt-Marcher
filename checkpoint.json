@@ -1348,6 +1348,21 @@
         "next": "Building-Zeichen-/Editbefehl mit gespeicherter Zellfolge verbinden; aktuellen Host auf demselben gezeichneten Boden nach Resize und frischer Öffnung vergleichen.",
         "gate": "open"
       },
+      "terrainResizeOriginalProbe": {
+        "cases": "DD-038.02–.05, acht Terrain-Slots und zwei Masken",
+        "state": "original_measured_host_open",
+        "originalReport": "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-024-DD-038-SMOOTH-RESIZE-NATIVE-RESULT.md",
+        "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-terrain-resize-review-20261009/raw-mask-audit.json",
+        "savedMaps": [
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd024-terrain-native/native-smooth-resize-20261006/evidence/08-before-resize.dungeondraft_map",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd024-terrain-native/native-smooth-resize-20261006/evidence/12-expanded-saved.dungeondraft_map",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd024-terrain-native/native-smooth-resize-20261006/evidence/15-top-expanded-saved.dungeondraft_map",
+          "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd024-terrain-native/native-smooth-resize-20261006/evidence/17-cropped-saved.dungeondraft_map"
+        ],
+        "measured": "Beide Masken: links +1, oben +1, rechts -1/unten -1; sechs Übergänge samplegenau, neue Rand-Samples [255,0,0,0].",
+        "next": "Optionale V4-Terrainmasken speichern und in DD-038-Resize/Host-Neuöffnung paaren; Terrain-Pinsel selbst bleibt Phase 6.",
+        "gate": "open"
+      },
       "phaseGate": "open"
     },
     "plan": "ROADMAP-PARITY-PLAN.md",
