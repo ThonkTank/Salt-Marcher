@@ -15,3 +15,4 @@ import "./core/object-library.test";
 import "./core/v4.test";
 import "./core/creature-catalog.test";
 import "./core/creature-catalog-view-state.test";
+import "./core/creature-catalog-controller.test";
