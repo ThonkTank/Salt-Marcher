@@ -4018,17 +4018,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I29-R",
-      "kind": "reference_review",
-      "startedAt": "2026-10-09T15:09:20.895270+00:00",
-      "focus": "Gebäudedarstellungsbelege R",
-      "state": "completed",
-      "result": "15 Rawhashes und Controls14 gelesen; Lots/Plain/Offset/Raised/Solids entsprechen Ausgangsbild02. Hip/Hidden sichtbar, Complex nur ungeklärte fehlende Kartenflächen mit erfolgreicher Lots-Rücksetzung; zwei Beobachtungen sind kein bewiesener terminaler Fehler. Dateigeometrie und Löschung nicht behauptet. Aufräumbefund: Snapshot führt Hip/Complex/Hidden pauschal als ungeprüft."
-    },
-    "nextRun": {
       "id": "CITY-00-I29-CP",
       "kind": "cleanup_planning",
-      "focus": "Belege und Snapshot CP"
+      "startedAt": "2026-10-09T15:09:33.330639+00:00",
+      "focus": "Gebäudedarstellungsbelege CP",
+      "state": "completed",
+      "result": "Plan: Snapshot auf belegtes Hip/Hidden und ungeklärtes Complex differenzieren. Complex-Funktionspflicht nicht entfernen oder durch fehlende Kartenflächen ersetzen. Historische Belege erhalten;15 Rawhashes und64/24 offene Pflichten nachprüfen. CI/CR getrennt."
+    },
+    "nextRun": {
+      "id": "CITY-00-I29-CI",
+      "kind": "cleanup_implementation",
+      "focus": "Belege und Snapshot CI"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
