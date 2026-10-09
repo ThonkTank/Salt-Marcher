@@ -786,3 +786,6 @@ CITY-01-PREP-R06 Start 2026-10-09T17:49:00.752Z; Quellreview gegen P05 plus unab
 
 
 CITY-01-PREP-DRAFT-CLEAN-R05 Start 2026-10-09T17:50:53.039000+00:00; Getrennte Aufräumplanung und Umsetzung dokumentieren vorhandenen Draft und reparierten historischen Observerbefund. Eigene Planlinks/JSON und unveränderte Runtimehashes geprüft;24CTY offen, kein Runtimeumbau. Eine alte fremde externe Dungeon-QA-Verknüpfung ist lokal nicht vorhanden und gehört nicht zum Stadtpaket. Keine Restlücke im Architektur-Aufräumen; CITY-DRAFT-R06-01 bleibt für N05/R07. Beleg: /home/aaron/.cache/dungeon-native-qa/city-plans/city01-gestures-20261009/cleanup-review.json.
+
+
+CITY-01-PREP-N05 Start 2026-10-09T19:50:28.278387+02:00; CITY-DRAFT-R06-01: vollständige Straßen-/Hausanlage einschließlich clearPreview/Apply/Undo/Redo sowie codecgültiger Szenenboundsfehler mit Verwerfen alter Vorschau und erfolgreicher Korrektur dauerhaft getestet. Kein Runtime-/Historyumbau. Eingehende Raumsuche integriert; erneutes check,327Tests/build bestanden. R07 prüft getrennt. Beleg: /home/aaron/.cache/dungeon-native-qa/city-plans/city01-gestures-20261009/refinement.json.
