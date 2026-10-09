@@ -126,17 +126,17 @@
   },
   "saltMarcherCatalogEncounter": {
     "date": "2026-10-09",
-    "state": "ce02_i02_plan_reviewed_s01_next_ce01_physical_open",
+    "state": "ce02_i02_s01_in_progress_verified_incomplete_ce01_physical_open",
     "plan": "ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md",
     "architecture": "ARCHITECTURE.md#geplante-katalog--und-encounter-erweiterung",
     "acceptance": "acceptance.json.saltMarcherCatalogEncounter",
     "currentRun": {
-      "id": "CE-02-I02-P01-N03-R01",
-      "kind": "independent_plan_re_review",
-      "state": "passed",
-      "focus": "Verify variable and variant-specific rarity without losing the earlier plan repairs",
+      "id": "CE-02-I02-S01-W01",
+      "kind": "source_inventory_schema_transcript_intermediate",
+      "state": "in_progress_verified_incomplete",
+      "focus": "Establish pinned source identity, canonical attribution, schema draft and fail-closed verification without exposing incomplete Item data",
       "plan": "ROADMAP-SALTMARCHER-CE02-I02-PLAN.md",
-      "result": "Independent N03-R01 passed exact 679d432e145bd9afe766393346e4b788931886ea without remaining mandatory plan findings (Issue #1 comment 6085341786). This is plan approval only; S01 and I01 remain undelivered."
+      "result": "Pinned the official 403-page SRD 5.1 PDF and SaltMarcher's exact 5e-database extraction-helper revision, added the exact canonical attribution, a versioned transcript schema draft, explicitly empty incomplete inventory/transcript fixtures, and a verifier that rejects the package for product use unless completeness is true. This is an honest intermediate only: 0 inventory occurrences and 0 transcript records; S01 review and I01 remain blocked."
     },
     "implementationRun": {
       "id": "CE-01-I01",
@@ -333,17 +333,18 @@
       },
       "limits": "Build-contract repair only. No catalog data/provider/UI change and no CE, Atlas, host, physical-input or overall approval."
     },
-    "verified": "CE-00 and CE-01 implementation/review/repair cycles passed their scoped gates. CE-01-H01 passed its independently reviewed automated scope. CE-02-I01 product commit 7469e64202e730175ee138136a69d82ad4f28ea6 and metadata repair candidate 4d239004c4f000b2af6f66122a05135b0c353ffb passed independent review. Its six unavailable providers do not count as delivered catalog areas. Physical input, screenreader and other-platform acceptance remain open.",
+    "verified": "CE-00 and CE-01 implementation/review/repair cycles passed their scoped gates. CE-01-H01 passed its independently reviewed automated scope. CE-02-I01 product commit 7469e64202e730175ee138136a69d82ad4f28ea6 and metadata repair candidate 4d239004c4f000b2af6f66122a05135b0c353ffb passed independent review. CE-02-I02-S01 now has a checked fail-closed source-package scaffold, but no source occurrence or transcript record is complete and no Item product feature is available. Physical input, screenreader and other-platform acceptance remain open.",
     "open": [
       "CE-01 physical keyboard/mouse, screenreader and other-platform acceptance; CE-02-I02 through CE-07 runs",
+      "CE-02-I02-S01 complete official inventory, transcript, closed subcategory enum, full PDF matching, complete golden cases and independent S01-R01 review",
       "Pinned DMG-2014 encounter math and golden masters",
       "Physical catalog input acceptance cannot be replaced by Playwright automation"
     ],
     "nextRun": {
-      "id": "CE-02-I02-S01",
-      "kind": "source_inventory_schema_transcript",
+      "id": "CE-02-I02-S01-W02",
+      "kind": "source_inventory_schema_transcript_continuation",
       "plan": "ROADMAP-SALTMARCHER-CE02-I02-PLAN.md",
-      "focus": "Create complete pinned SRD-5.1 inventory, transcript, versioned schema, canonical attribution and PDF-to-transcript source verification; independent S01-R01 PASS required before I01 product implementation"
+      "focus": "Populate and fully reconcile all official equipment rows and magic-item headings/details, close the inventory-derived enums and merge ledger, implement full PDF-to-transcript matching and remaining goldens; independent S01-R01 PASS remains required before I01"
     }
   },
   "repositoryWorkflow": {
@@ -409,21 +410,21 @@
   "hexAtlasExecution": {
     "scope": "HEX-00 bis HEX-28 und sämtliche eingeordneten CITY-00 bis CITY-09 vollständig",
     "phase": "HEX-02",
-    "state": "core_checked_native_terrain_next",
+    "state": "native_island_checked_durable_editing_next",
     "plan": "ROADMAP-HEX-02-PLAN.md",
     "currentRun": {
-      "id": "HEX-02-I01a",
-      "kind": "implementation",
-      "startedAt": "2026-10-09T16:33:05.466305+00:00",
-      "state": "completed",
-      "focus": "Sparse level0 cells, safe lazy chunk reads, exact continuous stroke, common atomic AtlasHistory",
-      "finishedAt": "2026-10-09T16:38:34.970445+00:00",
-      "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-01/p01-20261009151055/hex02-core-implementation.json"
-    },
-    "nextRun": {
       "id": "HEX-02-I01b",
       "kind": "implementation_host",
-      "focus": "Actually paint island in unchanged single Atlas editor before durable save work."
+      "startedAt": "2026-10-09T16:41:19.786367+00:00",
+      "state": "completed",
+      "focus": "Same Atlas/camera: actual Land/Sea/Forest/Reset, preview and original-compatible stroke/Escape/undo; early native island.",
+      "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/i01b-native-implementation.json",
+      "finishedAt": "2026-10-09T16:58:01.825609+00:00"
+    },
+    "nextRun": {
+      "id": "HEX-02-I01c",
+      "kind": "durable_implementation",
+      "focus": "FileStore CAS journal, durable draft, Save/fresh terrain process; no more tools before this works."
     },
     "review": {
       "run": "HEX-01-R01",
@@ -456,12 +457,12 @@
       "gmTestingPolicy": "Eigenständiger Cloud-GM-Endanwenderlauf nach direkter Nutzerpräzisierung, ohne lokalen QA-Slot; beobachtete Befunde/Nacharbeiten getrennt überIssue1 übernehmen, kein Ersatz durch technische Testzahlen."
     },
     "verification": {
-      "check": "Integrated a666b73 passed after npm ci for incoming linkedom dependency.",
-      "tests": "241/241 local, foreign test patches preserved; clean actual Git basis next.",
-      "build": "Both integrated local and clean Git build passed; no user-vault installation.",
-      "productBuildSha256": "cc92b1c03bf8c68db8f77294c5561edca5a1139482ec6ea26c0fc0485876b777",
-      "integratedCommit": "a666b73eaff018320bacddbb075e83b086f1f77a",
-      "host": "Build19d89351 own core passed and visually inspected; incoming portable renderer build021ff0fe short own core pending. No Hex/City, large-map, physical or install approval.",
+      "check": "Clean Git41cac27 passed",
+      "tests": "276/276 clean integrated Git, all basis gates passed; existing foreign local test patches preserved.",
+      "build": "Clean Git41cac27 passed, actual native99b4d9; no user-vault install.",
+      "productBuildSha256": "99b4d9a6e293ce7bb90f1ceaee453cd327c33d1c0d21149237f594885e332aaf",
+      "integratedCommit": "41cac27f2c63162833ff201a103c669b5d5ca73f",
+      "host": "Early native island and separate actual fresh Atlas/Dungeon regression passed; no saved terrain approval yet.",
       "testProvenance": "N-I17: saubere eigene Git-Kopie von747eaac bestanden222/222, Check/Build bestanden, unverändertes Produkt5b086c04. Vorheriger git-archive-Lauf221/222 scheiterte ausschließlich an fehlenden Git-Metadaten im neuen Katalog-Build; Fehlbeleg erhalten, keine Test-/Produktänderung zur Korrektur. Lokaler219-Lauf mit unveränderten fremden Testpatches getrennt.",
       "cleanTreeTest": {
         "state": "passed",
@@ -475,7 +476,7 @@
       "physicalInput": "not_run",
       "largeMap": "not_run",
       "installation": "unchanged",
-      "testedProductCommit": "a666b73eaff018320bacddbb075e83b086f1f77a",
+      "testedProductCommit": "41cac27f2c63162833ff201a103c669b5d5ca73f",
       "incomingReviewIntegration": "Quick-Room-GM-Nachbesserung/Cloudreview, portable und komprimierte SRD2014-Katalogbasis, DD039/008-Belege und Stadtgalerie/Warp/Generatorbelege regulär integriert; fremde Wurzeln und lokale Tests/Installationsbytes exakt erhalten. Neuer eigener Kernhost auf geändertem Build steht aus; eingehende Cloud-Hostbelege sind getrennte Nachweise.",
       "latestOriginalRun": {
         "manifest": "/home/aaron/.cache/dungeon-native-qa/hex-00/remaining-contexts-repair-20261009-135556/manifest.json",
@@ -1059,6 +1060,55 @@
           "cityCodecIntegrated": true,
           "scope": "Core-only, no terrain host yet"
         }
+      },
+      "hex02NativeIsland": {
+        "run": "HEX-02-I01b",
+        "state": "checked_implementation_native_island_passed",
+        "finishedAt": "2026-10-09T16:58:01.825609+00:00",
+        "cleanGitSource": "41cac27f2c63162833ff201a103c669b5d5ca73f",
+        "productBuildSha256": "99b4d9a6e293ce7bb90f1ceaee453cd327c33d1c0d21149237f594885e332aaf",
+        "buildTriplet": {
+          "main.js": {
+            "bytes": 1376004,
+            "sha256": "99b4d9a6e293ce7bb90f1ceaee453cd327c33d1c0d21149237f594885e332aaf"
+          },
+          "manifest.json": {
+            "bytes": 237,
+            "sha256": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64"
+          },
+          "styles.css": {
+            "bytes": 26762,
+            "sha256": "9c98763ef1aca2dc88a0a5d90dd4dc24601b31368852a1974f169a303d08078c"
+          }
+        },
+        "cleanTestsPassed": 276,
+        "checkPassed": true,
+        "buildPassed": true,
+        "nativeIsland": "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/host/evidence/1791564724634-hex02-terrain-edit/result.json",
+        "nativeScreensActuallyViewed": 4,
+        "dungeonFreshRegression": "/home/aaron/.cache/dungeon-native-qa/hex-01/p01-20261009151055/host/evidence/1791564958056-hex01-atlas-reopen/result.json",
+        "freshDungeonAndAtlasScreensActuallyViewed": true,
+        "nativeNormalExits": [
+          0,
+          0
+        ],
+        "originalPairs": {
+          "WD-004.01": "Single gesture is one history command; full variants/path still open",
+          "WD-004.02": "Held land Escape retains stroke, exact undo/redo; other contexts still open",
+          "WD-007.01 / WD-021.01": "Manual text color Enter/Tab/Escape, invalid black and two control colors; full picker/ground brush variants still open"
+        },
+        "scope": "36 explicit level0 hexes, Land/Sea/Forest/Reset, preview, actual negative chunk boundary, content-fit; no fixed bounds",
+        "limits": [
+          "Current session edits only; Save/draft/fresh terrain reopen I01c pending",
+          "Shared City/Location/Dungeon Atlas integration HEX03..05 pending",
+          "Multilevel editing/coast/brush variants, full parity/large maps/physical/input installation pending"
+        ],
+        "initialFailuresRetained": [
+          "Native first command-palette click before resized surface settled; next measured settle passed",
+          "Old global catalog total-bundle cap failed271/272; owner fix477535f integrated, clean276/276 passed",
+          "Old fixture split at1120px put known test center offscreen; actual1440px fixture sequence passed, no product layout change"
+        ],
+        "installation": "user vault unchanged"
       }
     },
     "repairPlan": "ROADMAP-HEX-00-REPAIR-PLAN.md",
@@ -1916,12 +1966,18 @@
     },
     "dd036AtlasPlan": {
       "date": "2026-10-09",
-      "state": "independent_plan_review_failed_repair_required",
+      "state": "plan_repaired_independent_re_review_passed",
       "plan": "ROADMAP-PARITY-TOOLS-PHASE1-DD036-ATLAS-PLAN.md",
       "cases": "DD-036.01–.16",
       "reviewedBase": "6ee65dae1eb462f269d253263d5f861fe28a8ef0",
       "reviewFinding": "Pflichtlücken: aktueller Atlas besitzt noch keine ausführbare History-/Save-/Dirty-Grenze; Dungeondraft- und Wonderdraft-Belege müssen getrennt bleiben; Weltkennung/Kopierdateien brauchen ein exaktes Orakel; HEX-01-Compare/Write ist kein Journal-/Draft-/Recovery-Nachweis.",
-      "next": "DD-036-ATLAS-P01-R01: nur den Plan reparieren, Fälle nach ausführbarer HEX-02-Voraussetzung und realer Shell staffeln, Referenzquellen je Hostschritt trennen sowie Identitäts- und gemeinsamen FileTransaction-/Draft-Vertrag als prüfbare Orakel festlegen; danach unabhängiger Planreview."
+      "repairRun": "DD-036-ATLAS-P01-R01",
+      "repairBase": "972913fde69bd3824aedfe08fce86f74e66b3b22",
+      "repair": "Plan staffelt referenzfreies read-only Overworld-Öffnen nach HEX-01, nichtleeren Transport und Kinddateivalidierung hinter Terrain-Lader plus Hostverdrahtung, History nach HEX-02-I01a/I01b, Save/Draft/Recovery nach I01c, Kopie/Discard nach I01d und Shellfälle nach der Plattformentscheidung. Dungeondraft DD-036 und Wonderdraft WD-003 bleiben getrennte Referenzwahrheiten. Ein operationsgenaues world.id-/Dateimanifest sowie prepared-/committed-/Draft-/Konfliktorakel binden alle späteren Läufe an den gemeinsamen FileStore-/FileTransaction-Weg.",
+      "review": "Unabhängiger read-only Nachreview bestand den exakten Planstand f6e420db98060beebdb30704ca06a6299a01b40c nach einer Reparatur: O01a ist referenzfrei und read-only; O01b wartet auf Terrain-Lader und sichtbare Hostverdrahtung. Keine weitere Pflichtlücke.",
+      "limits": "Nur Planreparatur und Planreview; acceptance.json und Produktcode unverändert. Kein Host-, Original-, GUI-, Funktions- oder Paritäts-Go. O01a ist planbar, aber nicht gestartet; O01b, HEX-02 und die reale Shell bleiben Voraussetzungen.",
+      "next": "GM-UX-N-005-P01: als eigener Dungeon-Planlauf ausschließlich die belegte Raum-Key-Suche planen; nicht mit DD-036 oder Atlaspersistenz vermischen.",
+      "followingRun": "DD-036-O01a bleibt als separater referenzfreier read-only Overworld-Öffnungslauf verfügbar, wird aber nicht mit GM-UX-N-005-P01 kombiniert."
     },
     "dd006ShadowPlan": {
       "date": "2026-10-09",
@@ -4204,17 +4260,17 @@
     "state": "city01_model_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-01-PREP-I02",
-      "kind": "implementation",
-      "startedAt": "2026-10-09T16:55:47.454518+00:00",
-      "focus": "Reine CitySource und geprüfte Citychanges implementieren",
+      "id": "CITY-01-PREP-EDIT-PLAN-CLEAN-R03",
+      "kind": "cleanup_review",
+      "startedAt": "2026-10-09T17:04:51.540191+00:00",
+      "focus": "Finalen Fachaktionsplan gegen vorhandene Verträge prüfen",
       "state": "completed",
-      "result": "Gemeinsame History mit sechs echten Besitzerregressionen implementiert; Typprüfung, Tests und Build bestanden. Review folgt."
+      "result": "Zehn Aktionen, Identitätsschutz und Paketvalidierung geprüft; keine Restlücke im Plan-Aufräumumfang, keine Funktionsabnahme."
     },
     "nextRun": {
-      "id": "CITY-01-PREP-R03",
-      "kind": "review",
-      "focus": "Stadtbefehle unabhängig gegen Plan und Konflikt-/Kopiergrenzen prüfen"
+      "id": "CITY-01-PREP-I03",
+      "kind": "implementation",
+      "focus": "CityEdit/editCity mit gezielten Graph-/Haus-/Paketregressionen implementieren"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",

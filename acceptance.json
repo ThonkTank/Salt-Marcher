@@ -117,8 +117,8 @@
   },
   "saltMarcherCatalogEncounter": {
     "schemaVersion": 1,
-    "updated": "2026-10-09T16:52:44Z",
-    "state": "ce02_i02_plan_reviewed_s01_next_ce01_physical_open",
+    "updated": "2026-10-09T17:03:08Z",
+    "state": "ce02_i02_s01_in_progress_verified_incomplete_ce01_physical_open",
     "plan": "ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md",
     "architecture": "ARCHITECTURE.md#geplante-katalog--und-encounter-erweiterung",
     "sourceRepository": "ThonkTank/Salt-Marcher",
@@ -494,6 +494,16 @@
       "result": "Defines a local read-only SRD 5.1 equipment and magic-item catalog, reproducible corpus, schema, source attribution, typed isolated failures, Item query/detail UI and separate review/host gates.",
       "limits": "Plan only; Item data/provider and five other data owners remain unavailable. All CE-AC, physical-input, screenreader and other-platform gates remain open.",
       "review": "R01 on exact 8c5c5680054b8dddd89900733ac7bbfe966876f1 required seven repairs (Issue #1 comment 6085178049). N01-R01 on exact 01a02ef124e3ffc02b626019f89f5e216612f7ab required S01 cycle/schema repairs (Issue #1 comment 6085248851). N02-R01 on exact 3b7e5c933a107da6f406aa44037decf316d09b77 found a variable-rarity schema gap (Issue #1 comment 6085306351). N03-R01 PASSED exact 679d432e145bd9afe766393346e4b788931886ea with no remaining mandatory plan finding (Issue #1 comment 6085341786). This approves planning only; S01 and I01 are undelivered."
+    },
+    "ce02I02Source": {
+      "run": "CE-02-I02-S01-W01",
+      "state": "in_progress_verified_incomplete",
+      "sourceDocument": "https://media.wizards.com/2023/downloads/dnd/SRD_CC_v5.1.pdf",
+      "sourceSha256": "2504d2a0abb0a4d491a939be4f17910a2dde0312570ab8d208080225ccf0a1f0",
+      "helperCommit": "3f5593ea004c4f5a2af95603087ce4de72689d9f",
+      "covered": ["exact official source byte identity, size and 403-page count", "SaltMarcher-pinned extraction-helper revision and file hashes", "canonical attribution asset", "Draft 2020-12 transcript schema v1 draft", "fail-closed incomplete-package gate", "fixed and variable rarity identity regressions"],
+      "verification": {"focusedTests": {"passed": 5, "failed": 0}, "pdfIdentity": "passed", "incompleteGate": "passed"},
+      "limits": "Intermediate only: inventory and transcript each contain zero records. The complete equipment/magic-item inventory, transcript, merge ledger, inventory-derived closed subcategory enum, standards schema validation, full PDF fact matching, remaining goldens and independent S01-R01 review are open. No product artifact, provider, UI, host acceptance or I01 work is authorized."
     }
   },
   "cityPlans": {
@@ -760,9 +770,10 @@
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-model-20261009/implementation.json",
             "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-model-20261009/repair.json",
-            "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-commands-20261009/implementation.json"
+            "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-commands-20261009/implementation.json",
+            "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-commands-20261009/cleanup-review.json"
           ],
-          "remaining": "Common History code adapter prepared, review pending. Atlas placement/scene/selection, native registration and save/reopen host sequence remain unimplemented."
+          "remaining": "Common History code adapter prepared and reviewed. Atlas placement/scene/selection, native registration and save/reopen host sequence remain unimplemented."
         },
         "hostCheck": {
           "state": "not_run",
@@ -152218,8 +152229,8 @@
   },
   "hexAtlas": {
     "scope": "HEX-00..28, shared native Atlas; phase-specific functional approvals only.",
-    "currentPhase": "HEX-01",
-    "state": "foundation_and_cleanup_passed_cloud_followup_open",
+    "currentPhase": "HEX-02",
+    "state": "early_native_terrain_checked_durable_editing_open",
     "referenceGate": "wonderdraftParity.coverageReview HEX-00-R02",
     "requirements": [
       {
@@ -152309,6 +152320,76 @@
           "/home/aaron/.cache/dungeon-native-qa/hex-01/p01-20261009151055/review.json"
         ],
         "observed": "Native screenshots reviewed: map dominance, compact controls, visible focus, legible mile and hex labels."
+      },
+      {
+        "id": "HEX02-001",
+        "requirement": "Spärliche native 3-Meilen-Landschaft über negative Bereichsgrenzen",
+        "state": "checked_implementation",
+        "implementationRun": "HEX-02-I01a/I01b",
+        "evidence": [
+          "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/i01b-native-implementation.json"
+        ],
+        "observed": "Six focused core cases; sparse chunks and unread-data protection."
+      },
+      {
+        "id": "HEX02-002",
+        "requirement": "Lückenloser Zug, Vorschau, Escape, genau ein Undo-Befehl",
+        "state": "checked_native_implementation",
+        "implementationRun": "HEX-02-I01a/I01b",
+        "evidence": [
+          "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/i01b-native-implementation.json"
+        ],
+        "observed": "WD004.01/.02 early land scope, source original1.1.8.2; other gesture contexts open."
+      },
+      {
+        "id": "HEX02-003",
+        "requirement": "Land/Meer/Wald und begrenzte manuelle Farbe tatsächlich malen",
+        "state": "checked_native_implementation",
+        "implementationRun": "HEX-02-I01a/I01b",
+        "evidence": [
+          "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/i01b-native-implementation.json"
+        ],
+        "observed": "WD007.01/021.01 text commit scope; full brushes, coast/color-picker/palette open."
+      },
+      {
+        "id": "HEX02-004",
+        "requirement": "Grenzenlos weiterzeichnen und belegten Inhalt einpassen",
+        "state": "checked_native_implementation",
+        "implementationRun": "HEX-02-I01a/I01b",
+        "evidence": [
+          "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/i01b-native-implementation.json"
+        ],
+        "observed": "36 cells, five referenced ranges, real pan and negative range boundary; camera/file allocation absent."
+      },
+      {
+        "id": "HEX02-005",
+        "requirement": "Speichern, dauerhafter Entwurf, Konflikt/Unterbruch und frischer Geländeprozess",
+        "state": "open",
+        "implementationRun": "HEX-02-I01a/I01b",
+        "evidence": [
+          "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/i01b-native-implementation.json"
+        ],
+        "observed": "I01c immediately next; transient island is not save/restart approval."
+      },
+      {
+        "id": "HEX02-006",
+        "requirement": "Kopie abbrechen/erstellen, A→B→A und Entwurf verwerfen",
+        "state": "open",
+        "implementationRun": "HEX-02-I01a/I01b",
+        "evidence": [
+          "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/i01b-native-implementation.json"
+        ],
+        "observed": "I01d after safe durable kernel."
+      },
+      {
+        "id": "HEX02-007",
+        "requirement": "Eigener Fachreview und getrennte Aufräumläufe",
+        "state": "open",
+        "implementationRun": "HEX-02-I01a/I01b",
+        "evidence": [
+          "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/i01b-native-implementation.json"
+        ],
+        "observed": "R01/CLEAN-P/I/R after complete usable save/reopen flow."
       }
     ],
     "cleanupFindings": [
@@ -152336,7 +152417,7 @@
         }
       }
     ],
-    "limits": "Terrain/history/drafts HEX02; location HEX03; Dungeon placement/composition HEX04/05; cities, full parity, large maps and physical input remain open.",
+    "limits": "I01b visible discrete level0 terrain only. Save/draft/fresh terrain reopening I01c mandatory; City/Location/Dungeon spatial integration, multilevel editing, full Wonderdraft parity, large-map/physical/installed-vault remain open.",
     "cloudFollowup": {
       "id": "GM-UX-N-004",
       "state": "resolved_observed_failure_app_reload_only",
