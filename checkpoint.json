@@ -50,7 +50,7 @@
     },
     "p01BoundaryRepair": {
       "date": "2026-10-09",
-      "state": "renderer_boundary_raw_png_review_passed_host_candidate_review_open",
+      "state": "renderer_boundary_and_host_scoped_review_passed_p01_open",
       "plan": "ROADMAP-SALTMARCHER-P01-RENDERER-REPAIR-PLAN.md",
       "candidateBranch": "candidate/adr-p01-linux",
       "candidateReceipt": "tools/adr-prototypes/evidence/p01-aggregate.json",
@@ -59,8 +59,10 @@
       "rendererBundleEvidence": "/home/aaron/.cache/dungeon-native-qa/p01-renderer-review-20261009/bundle-result.json",
       "hostEdit": "/home/aaron/.cache/dungeon-native-qa/p01-texture-host-20261009/evidence/1791557663090-p01-browser-texture-edit/result.json",
       "hostReopen": "/home/aaron/.cache/dungeon-native-qa/p01-texture-host-20261009/evidence/1791557672875-p01-browser-texture-reopen/result.json",
-      "verification": "Fresh worktree at 2e9ea8c passes typecheck, 241 tests and build; real 1024x1024 colorable PNG is byte-identical for alpha 255/128/0, renderer bundle has no privileged imports, and an isolated Obsidian edit/reopen pair passes. Independent host review is open.",
-      "next": "Repeat the modern colorable-object host sequence on a fresh QA profile, then resume ADR-P01 on a new candidate branch. Full P01 remains open."
+      "hostReview": "/home/aaron/.cache/dungeon-native-qa/p01-texture-review-20261009/review.md",
+      "hostReviewAudit": "/home/aaron/.cache/dungeon-native-qa/p01-texture-review-20261009/review-audit.json",
+      "verification": "Fresh worktree at 2e9ea8c passes typecheck, 241 tests and build; real 1024x1024 colorable PNG is byte-identical for alpha 255/128/0; renderer bundle has no privileged imports. Two independent isolated Obsidian edit/reopen pairs pass on one product build with matching screenshots and stable per-profile V4 hashes.",
+      "next": "Resume ADR-P01 on a fresh candidate branch. Desktop shell, utility persistence/fault matrix, OS matrix and full P01 remain open."
     },
     "open": [
       "Executable ADR-P01 through ADR-P04 and ADR-C01 proof, review, repair and cleanup runs",
