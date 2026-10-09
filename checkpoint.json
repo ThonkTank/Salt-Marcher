@@ -1,7 +1,7 @@
 {
   "saltMarcherReplacement": {
     "date": "2026-10-09",
-    "state": "smr00_adr_p01_h03_i02_plan_review_passed_implementation_next",
+    "state": "smr00_adr_p01_h03_i02_implementation_review_changes_required",
     "plan": "ROADMAP-SALTMARCHER-REPLACEMENT.md",
     "platformAdr": "ROADMAP-SALTMARCHER-PLATFORM-ADR.md",
     "prototypePlan": "ROADMAP-SALTMARCHER-ADR-PROTOTYPES.md",
@@ -101,7 +101,7 @@
     },
     "adrP01H03": {
       "date": "2026-10-09",
-      "state": "i02_p01_plan_review_passed_implementation_next",
+      "state": "i02_i01_implementation_review_changes_required",
       "plan": "ROADMAP-SALTMARCHER-ADR-P01-H03-PLAN.md",
       "hypothesis": "Materialize the immutable expected Before payload supplied by the bounded compare-and-write request into a durable snapshot independent of the externally writable target inode, then verify/capture the current name and publish only with RENAME_NOREPLACE.",
       "contractCandidate": "f8fcdc1b2eacbfb17c7c5603f6c15cfd89c4296d",
@@ -110,8 +110,9 @@
       "i02PlanCandidate": "c9f05806c94a1900ab276940730cae24ee94850f",
       "i02PlanIntegrationCommit": "e051028aa581fd4d77b57b22b128658d2b5a20cc",
       "i02RepairMatrix": "ROADMAP-SALTMARCHER-ADR-P01-H03-I02-MATRIX.json",
+      "i02ImplementationCandidate": "1cb104f105441f78a796c2e1daea74ccbde3196c",
       "limits": "R02 and the p01-v3 contract passed their separate reviews. H02 remains No-Go; no native helper, complete fault matrix, executable H03 proof, Linux durability Go, platform decision or P02 authorization exists. Windows and macOS remain not-run.",
-      "review": "R01 passed a9de899 but later independent rechecks found three mandatory gaps (Issue #1 comments 6084665817, 6084697489). R02 repaired those and two follow-up matrix/oracle findings. Independent read-only R02 re-review passed exact shared head 25885d543c8576a3ae1d0556e7b04a51d40209c7. The first contract candidate e95f3eba325b3aa55620d39a617074ede425405d failed review. Its replacement on exact candidate f8fcdc1b2eacbfb17c7c5603f6c15cfd89c4296d passed independent read-only contract re-review after one repair. I02 plan R01 rejected e0cff1d0d112633fa3f6288d95973de936a5dbc3, R02 rejected 2c5e765a62c6a1f8210a0bd53255b97df5b821d2 and R03 rejected b4f50c52e926d6ee7d7016d29b2d58192c0377d8. Independent read-only R04 passed exact N03 candidate c9f05806c94a1900ab276940730cae24ee94850f: 87 explicit p01-v3 transitions, 13 complete overlays, 3 phases and 3,393 unambiguous cells bind exact recovery vectors without fallbacks. No helper, test or Evidence was added."
+      "review": "R01 passed a9de899 but later independent rechecks found three mandatory gaps (Issue #1 comments 6084665817, 6084697489). R02 repaired those and two follow-up matrix/oracle findings. Independent read-only R02 re-review passed exact shared head 25885d543c8576a3ae1d0556e7b04a51d40209c7. The first contract candidate e95f3eba325b3aa55620d39a617074ede425405d failed review. Its replacement on exact candidate f8fcdc1b2eacbfb17c7c5603f6c15cfd89c4296d passed independent read-only contract re-review after one repair. I02 plan R01 through R03 failed and independent R04 passed exact N03 candidate c9f05806c94a1900ab276940730cae24ee94850f. Code/Security R01 on implementation candidate 1cb104f105441f78a796c2e1daea74ccbde3196c requires repair: it validates matrix composition and one durable create primitive but does not implement Parent/Child receipt generations, Create/Update/Delete state machines, conflict/rollback/fresh double recovery, live 3,393-cell execution, eleven adversaries, complete identity and errno oracles, runtime/byte/process limits or adversarial tests. Status claims remain correctly fail-closed."
     },
     "open": [
       "Replacement architecture hypothesis after ADR-P01 No-Go; ADR-P02 through ADR-P04 and ADR-C01 remain blocked",
@@ -120,10 +121,10 @@
       "Per-slice source-to-target mapping and host persistence/security decisions"
     ],
     "nextRun": {
-      "id": "ADR-P01-H03-I02-I01",
-      "kind": "native_child_state_machine_implementation",
+      "id": "ADR-P01-H03-I02-I01-N01",
+      "kind": "native_child_state_machine_implementation_repair",
       "owner": "local_implementation_thread",
-      "focus": "Implement only the reviewed N03 child-state-machine and generated fault cells against p01-v3; no H03 Go, platform selection or P02 authorization before code, security and evidence review"
+      "focus": "Complete the reviewed receipt state machines, rollback/recovery, live matrix/adversary execution, safety limits and negative tests on the existing I02 candidate; no Evidence or Go claim before separate review"
     }
   },
   "saltMarcherCatalogEncounter": {
@@ -412,21 +413,24 @@
   "hexAtlasExecution": {
     "scope": "HEX-00 bis HEX-28 und sämtliche eingeordneten CITY-00 bis CITY-09 vollständig",
     "phase": "HEX-02",
-    "state": "native_island_checked_durable_editing_next",
+    "state": "durable_terrain_editing_in_progress",
     "plan": "ROADMAP-HEX-02-PLAN.md",
     "currentRun": {
-      "id": "HEX-02-I01b",
-      "kind": "implementation_host",
-      "startedAt": "2026-10-09T16:41:19.786367+00:00",
-      "state": "completed",
-      "focus": "Same Atlas/camera: actual Land/Sea/Forest/Reset, preview and original-compatible stroke/Escape/undo; early native island.",
-      "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/i01b-native-implementation.json",
-      "finishedAt": "2026-10-09T16:58:01.825609+00:00"
-    },
-    "nextRun": {
       "id": "HEX-02-I01c",
       "kind": "durable_implementation",
-      "focus": "FileStore CAS journal, durable draft, Save/fresh terrain process; no more tools before this works."
+      "startedAt": "2026-10-09T17:01:39.507883+00:00",
+      "state": "in_progress",
+      "focus": "Hostneutral FileStore CAS transaction reused with terrain+manifest+draft, followed immediately by saved/recovered native island.",
+      "fileTransactionPacket": {
+        "state": "checked_clean",
+        "finishedAt": "2026-10-09T17:13:32.092547+00:00",
+        "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/file-transaction-implementation.json"
+      }
+    },
+    "nextRun": {
+      "id": "HEX-02-I01d",
+      "kind": "implementation_host",
+      "focus": "SaveAs/Discard and A↔B after saved/reopened island is functional."
     },
     "review": {
       "run": "HEX-01-R01",
@@ -1110,7 +1114,30 @@
           "Old global catalog total-bundle cap failed271/272; owner fix477535f integrated, clean276/276 passed",
           "Old fixture split at1120px put known test center offscreen; actual1440px fixture sequence passed, no product layout change"
         ],
-        "installation": "user vault unchanged"
+        "installation": "user vault unchanged",
+        "finalIntegratedClean": {
+          "source": "f06eb15f85aa7c34d3251eca788b93385d034c51",
+          "testsPassed": 282,
+          "checkPassed": true,
+          "buildPassed": true,
+          "sameNativeBuildSha256": "99b4d9a6e293ce7bb90f1ceaee453cd327c33d1c0d21149237f594885e332aaf"
+        }
+      },
+      "hex02FileTransaction": {
+        "run": "HEX-02-I01c-file-transaction",
+        "state": "checked_core_not_yet_wired",
+        "sourceCommit": "309972d43080b91cddd2f8d3a79bac40ed42728a",
+        "cleanTestsPassed": 300,
+        "checkPassed": true,
+        "buildPassed": true,
+        "cases": 6,
+        "injectedBoundaries": 12,
+        "nativeBuildUnchanged": "99b4d9a6e293ce7bb90f1ceaee453cd327c33d1c0d21149237f594885e332aaf",
+        "implementation": "src/features/atlas/file-transaction.ts",
+        "nativeFileStoreAndTerrainSavedHost": "pending actual Save/draft wiring",
+        "failureRetained": "Initial strict journal field count7 was incorrect; six exact keys fixed, fault/corrupt tests passed after repair.",
+        "physicalInput": false,
+        "userVault": "unchanged"
       }
     },
     "repairPlan": "ROADMAP-HEX-00-REPAIR-PLAN.md",
@@ -4285,17 +4312,17 @@
     "state": "city01_model_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-01-PREP-EDIT-CLEAN-R03",
+      "id": "CITY-01-PREP-SCENE-PLAN-CLEAN-R04",
       "kind": "cleanup_review",
-      "startedAt": "2026-10-09T17:11:26.813059+00:00",
-      "focus": "Aufgeräumte Fachaktionen und Nachweise prüfen",
+      "startedAt": "2026-10-09T17:17:42.773613+00:00",
+      "focus": "Finalen Szenenplan gegen Quellen und bestätigte Modulgrenze prüfen",
       "state": "completed",
-      "result": "Fachaktionspaket separat reviewt und aufgeräumt; geprüfte Quellen/294Tests unverändert. Host/Gesten/Save/Bindungen weiter offen."
+      "result": "Konkrete lokale Szene/Treffer, gemeinsame Pose/Segmenthelper, finite Bounds und Dungeonbaseline geprüft; keine Restlücke im Plan-Aufräumen."
     },
     "nextRun": {
-      "id": "CITY-01-PREP-P04",
-      "kind": "implementation_planning",
-      "focus": "Aktuellen Atlasvertrag prüfen und gemeinsame Stadt-Darstellung/Trefferprüfung konkret planen"
+      "id": "CITY-01-PREP-I04",
+      "kind": "implementation",
+      "focus": "Lokale CityScene/Treffer und gemeinsame Pose/Streckenhelper mit Dungeonregressionen implementieren"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
