@@ -4512,17 +4512,17 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I45-P45",
-      "kind": "plan",
-      "startedAt": "2026-10-09T19:18:26.813586+00:00",
-      "focus": "FTG-Gebäudebedarfe: P",
-      "state": "completed",
-      "result": "Eigener Formularentwurf und Originalparameterprobe geplant, bestehende QA-Karte geschützt; Ergebniswirkung ausdrücklich getrennt."
-    },
-    "nextRun": {
       "id": "CITY-00-I45-PLAN-CLEAN-P45",
       "kind": "cleanup_plan",
-      "focus": "Planlinks und Tab-/Belegschutz prüfen"
+      "startedAt": "2026-10-09T19:18:29.410523+00:00",
+      "focus": "FTG-Gebäudebedarfe: CLEAN-P",
+      "state": "completed",
+      "result": "Aufräumplan: neuen Plan verlinken, Referenz-/Produktgrenzen und neue Tabisolation prüfen."
+    },
+    "nextRun": {
+      "id": "CITY-00-I45-PLAN-CLEAN-I45",
+      "kind": "cleanup_implementation",
+      "focus": "Planlink konsolidieren"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
