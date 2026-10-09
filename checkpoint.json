@@ -3653,17 +3653,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I14-SYNC",
-      "kind": "publication_recovery",
-      "startedAt": "2026-10-09T12:50:26.358533+00:00",
-      "focus": "Ausstehenden Review veröffentlichen",
-      "state": "completed",
-      "result": "GitHub wieder erreichbar; lokale1533b59 mit Kollegenstand integriert und599f271 exakt remote bestätigt, Reviewveröffentlichung abgeschlossen"
-    },
-    "nextRun": {
       "id": "CITY-00-I15-P",
       "kind": "early_reference_planning",
-      "focus": "Nächste offene Originalwirkung planen"
+      "startedAt": "2026-10-09T12:51:12.564302+00:00",
+      "focus": "Weitere Watabou-Warp-Werkzeuge planen",
+      "state": "completed",
+      "result": "Sieben Werkzeuge getrennt auf jeweils neu geladener Testbasis prüfen; tatsächliche Bild-/Messwirkung statt Namensannahme, höchstens2 erfolglose Folgen"
+    },
+    "nextRun": {
+      "id": "CITY-00-I15-I",
+      "kind": "reference_operation_probe",
+      "focus": "Weitere Warp-Werkzeuge direkt prüfen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
