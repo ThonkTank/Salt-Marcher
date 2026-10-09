@@ -1,6 +1,7 @@
 const MAP = "Dungeons/Phase1-BuildingMixed/wood-stone.dungeon";
 const OVERPAINT = "Dungeons/Phase1-BuildingMixed/wood-stone-overpaint.dungeon";
 const ERASED = "Dungeons/Phase1-BuildingMixed/wood-stone-erased.dungeon";
+const LARGE_OVERPAINT = "Dungeons/Phase1-BuildingMixed/wood-stone-overpaint-large.dungeon";
 
 module.exports = ({ page, fs, path, assert, crypto, qa, vault, out,
   checks, chooseTool }) => {
@@ -8,6 +9,7 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out,
   const baseline = path.join(qa, "mixed-floor-baseline.json");
   const paintedBaseline = path.join(qa, "overpaint-baseline.json");
   const erasedBaseline = path.join(qa, "mixed-erase-baseline.json");
+  const largePaintBaseline = path.join(qa, "overpaint-large-baseline.json");
   const hash = (name = MAP) => crypto.createHash("sha256")
     .update(fs.readFileSync(path.join(vault, name))).digest("hex");
   const state = () => page.evaluate(() => {
@@ -83,6 +85,27 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out,
     assert.ok(doc.smartTiles.every((cell) => cell.buildingId === doc.entities[0].id));
     assert.ok(!doc.smartTiles.some((cell) => cell.y === 1 &&
       (cell.x === 3 || cell.x === 4)));
+  }
+  function verifyLargePaint(doc, woodId, stoneId) {
+    assert.equal(doc.settings.width, 8);
+    assert.equal(doc.settings.height, 8);
+    assert.equal(doc.entities.length, 1);
+    assert.equal(doc.entities[0].kind, "building");
+    assert.equal(doc.entities[0].polygons.length, 1);
+    assert.deepEqual(new Set(doc.entities[0].polygons[0].outer
+      .map((point) => `${point.x}:${point.y}`)),
+    new Set(["1:1", "7:1", "7:4", "1:4"]));
+    assert.equal(doc.smartTiles.length, 18);
+    const expectedStone = new Set();
+    for (let y = 1; y < 4; y++) for (let x = 4; x < 7; x++)
+      expectedStone.add(`${x}:${y}`);
+    for (let y = 1; y < 3; y++) for (let x = 2; x < 4; x++)
+      expectedStone.add(`${x}:${y}`);
+    assert.equal(doc.smartTiles.filter((cell) => cell.assetId === woodId).length, 5);
+    assert.equal(doc.smartTiles.filter((cell) => cell.assetId === stoneId).length, 13);
+    assert.deepEqual(new Set(doc.smartTiles.filter((cell) => cell.assetId === stoneId)
+      .map((cell) => `${cell.x}:${cell.y}`)), expectedStone);
+    assert.ok(doc.smartTiles.every((cell) => cell.buildingId === doc.entities[0].id));
   }
   async function edit() {
     const { pckPath } = require("./phase3-fixtures.cjs")({ fs, crypto, assert });
@@ -218,6 +241,41 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out,
     await eraseEditor.getByRole("button", { name: "Wiederholen", exact: true }).click();
     verifyErased((await state()).document, wood.id, stone.id);
     checks.push("DD-038 Alt erases Wood and Stone together at their shared boundary in one Undo step");
+    await page.evaluate(async ({ name, content }) => {
+      await app.vault.create(name, content);
+    }, { name: LARGE_OVERPAINT, content: fs.readFileSync(mapFile, "utf8") });
+    await open(LARGE_OVERPAINT);
+    const largePaintEditor = page.locator(".dungeon-native-editor:visible").last();
+    await largePaintEditor.locator(".dn-group-rail")
+      .getByRole("button", { name: "Bauwerk", exact: true }).click();
+    await largePaintEditor.locator(".dn-tool-rail")
+      .getByRole("button", { name: "Rechteck", exact: true }).click();
+    await largePaintEditor.getByRole("group", { name: "Wandstil" })
+      .getByRole("button", { name: "Keine Wand", exact: true }).click();
+    await largePaintEditor.getByRole("group", { name: "Bodenstil" })
+      .getByRole("button", { name: stone.name, exact: true }).click();
+    await draw({ x: 2, y: 1 }, { x: 5, y: 3 }, 18);
+    await page.waitForFunction((stoneId) =>
+      app.workspace.getLeavesOfType("dungeon-native-map").at(-1)
+        ?.view.editor?.session.smartTiles?.find((cell) =>
+          cell.x === 2 && cell.y === 2)?.assetId === stoneId, stone.id);
+    const largePaint = await state();
+    verifyLargePaint(largePaint.document, wood.id, stone.id);
+    assert.equal(largePaint.history, 1);
+    await page.screenshot({ path: path.join(out, "wood-stone-overpaint-large-edit.png") });
+    await largePaintEditor.getByRole("button", { name: "Speichern", exact: true }).click();
+    await page.waitForFunction(() =>
+      !app.workspace.getLeavesOfType("dungeon-native-map").at(-1)
+        ?.view.editor.session.dirty);
+    const largePaintSaved = JSON.parse(fs.readFileSync(path.join(vault, LARGE_OVERPAINT), "utf8"));
+    assert.deepEqual(largePaintSaved, largePaint.document);
+    fs.writeFileSync(largePaintBaseline, JSON.stringify({ document: largePaintSaved,
+      hash: hash(LARGE_OVERPAINT), woodId: wood.id, stoneId: stone.id }, null, 2));
+    await largePaintEditor.getByRole("button", { name: "Rückgängig", exact: true }).click();
+    verify((await state()).document, wood.id, stone.id);
+    await largePaintEditor.getByRole("button", { name: "Wiederholen", exact: true }).click();
+    verifyLargePaint((await state()).document, wood.id, stone.id);
+    checks.push("DD-038 Stone overpaints four Wood cells across a 3×2 gesture in one Undo step");
   }
   async function reopen() {
     const saved = JSON.parse(fs.readFileSync(baseline, "utf8"));
@@ -262,6 +320,20 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out,
     });
     await page.screenshot({ path: path.join(out, "wood-stone-erased-fresh.png") });
     checks.push("DD-038 fresh Host keeps 8+8 mixed-style cells and the notched contour");
+    const largePaint = JSON.parse(fs.readFileSync(largePaintBaseline, "utf8"));
+    await open(LARGE_OVERPAINT);
+    const largePaintFresh = await state();
+    assert.deepEqual(largePaintFresh.document, largePaint.document);
+    assert.equal(hash(LARGE_OVERPAINT), largePaint.hash);
+    verifyLargePaint(largePaintFresh.document, largePaint.woodId, largePaint.stoneId);
+    await page.waitForFunction(() => {
+      const visual = [...app.workspace.getLeavesOfType("dungeon-native-map")
+        .at(-1).view.editor.renderer.visuals.values()]
+        .find((item) => item.entity.kind === "building");
+      return visual?.floorExtraGeometries?.length === 1;
+    });
+    await page.screenshot({ path: path.join(out, "wood-stone-overpaint-large-fresh.png") });
+    checks.push("DD-038 fresh Host keeps one contour and 5+13 cells after larger Stone overpaint");
   }
   return { edit, reopen };
 };
