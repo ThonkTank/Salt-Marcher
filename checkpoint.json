@@ -3427,17 +3427,17 @@
     "state": "city00_reference_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I05-P",
-      "kind": "reference_planning",
-      "startedAt": "2026-10-09T10:43:56.338779+00:00",
-      "focus": "Originalwirkung der Familienstammbaum-Schaltfläche",
-      "state": "completed",
-      "result": "Vorhandene Person, Relations-Vergleich, sichtbarer Graph und technische Datenbindung geplant"
-    },
-    "nextRun": {
       "id": "CITY-00-I05-I",
       "kind": "reference_implementation",
-      "focus": "Thawn Cobblekind Relations und Family tree im Original prüfen"
+      "startedAt": "2026-10-09T10:46:01.305590+00:00",
+      "focus": "Stammbaumwirkung direkt messen",
+      "state": "completed",
+      "result": "Sechs Karten, Kanten, Vollbild und Personenaufruf beobachtet; Adoptionssemantik nur Relations belegt"
+    },
+    "nextRun": {
+      "id": "CITY-00-I05-R",
+      "kind": "reference_review",
+      "focus": "Graphbelege und technische Bindung gegen Plan prüfen"
     },
     "open": [
       "CITY-00 direkte Referenzinventur/Galerie aller drei Produkte",

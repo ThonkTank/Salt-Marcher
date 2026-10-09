@@ -2039,7 +2039,8 @@
         "availability": "free",
         "observationKind": "direct",
         "originalEvidence": [
-          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/manifest.json"
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/manifest.json",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i05-20261009/manifest.json"
         ],
         "task": "Stammbaum eines Bewohners öffnen",
         "phase": "CITY-06",
@@ -2053,11 +2054,17 @@
           "state": "not_run"
         },
         "status": "open",
-        "gap": "Schaltfläche/Menü direkt sichtbar; konkrete Wirkung und eigener Vergleich noch offen.",
+        "gap": "Originalgraph, Vollbild und Personenaufruf direkt belegt; Navigation/Neuöffnung und eigener Vergleich offen.",
         "originalProbe": {
-          "run": "CITY-00-I02",
-          "state": "control_observed_only",
-          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/manifest.json"
+          "run": "CITY-00-I05-I",
+          "state": "graph_fullscreen_person_navigation_observed",
+          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i05-20261009/manifest.json",
+          "remaining": [
+            "Graphpan/-zoom",
+            "Select family tree",
+            "Neuöffnung",
+            "Eigene Produkt-/Bedienabnahme"
+          ]
         },
         "independentFunctionalRequirement": true,
         "mappingCoverage": "new_required_function_not_covered_by_existing_CTY"
@@ -2415,7 +2422,7 @@
     ],
     "functionalInventoryStatus": {
       "state": "partial_inventory_not_accepted",
-      "run": "CITY-00-I04-I",
+      "run": "CITY-00-I05-I",
       "products": 3,
       "candidates": 45,
       "directFormAreas": 13,
@@ -2429,7 +2436,8 @@
       "evidence": [
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/manifest.json",
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/manifest.json",
-        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i04-20261009/manifest.json"
+        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i04-20261009/manifest.json",
+        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i05-20261009/manifest.json"
       ],
       "originalResultSamples": 3
     },
