@@ -350,47 +350,38 @@
   "hexAtlasExecution": {
     "scope": "HEX-00 bis HEX-28 und sämtliche eingeordneten CITY-00 bis CITY-09 vollständig",
     "phase": "HEX-01",
-    "state": "implemented_checked_review_pending",
+    "state": "foundation_and_cleanup_passed_cloud_followup_open",
     "plan": "ROADMAP-HEX-01-PLAN.md",
     "currentRun": {
-      "id": "HEX-01-CLEAN-I01",
-      "kind": "cleanup_implementation",
-      "startedAt": "2026-10-09T15:45:14.565158+00:00",
-      "state": "completed",
-      "focus": "Existing-name notice and formatting only; native replay after checks.",
-      "finishedAt": "2026-10-09T15:49:06.234755+00:00",
-      "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-01/p01-20261009151055/cleanup-implementation.json",
-      "result": "Clear existing-name notice, modal/file identity preserved; native reopen plus expression-tree equivalence."
-    },
-    "nextRun": {
       "id": "HEX-01-CLEAN-R01",
       "kind": "cleanup_review",
-      "focus": "Exact bytes, actual notice, formatting semantic preservation."
+      "state": "completed",
+      "startedAt": "2026-10-09T15:53:18.381755+00:00",
+      "focus": "Two cleanup items only; expression-tree proof, actual notice and fresh byte-preservation. Cloud GM-N004 remains a distinct next investigation.",
+      "finishedAt": "2026-10-09T15:54:51.448935+00:00",
+      "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-01/p01-20261009151055/cleanup-review.json",
+      "result": "Both bounded cleanup items passed; distinct Cloud GM-N004 remains open."
+    },
+    "nextRun": {
+      "id": "GM-UX-N-004-P01",
+      "kind": "bounded_diagnosis_planning",
+      "focus": "Cloud black/tall viewport; reproduce full/split own Atlas, constrain rendering dimensions if product cause before HEX02."
     },
     "review": {
-      "state": "passed",
-      "run": "HEX-00-R02",
-      "evidence": [
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/r02-review-20261009-155338/review.json"
-      ],
-      "findings": [],
-      "next": "Reference and own kernel346 on R02 base7f43 passed. C01 cleanup next; later incoming19d kernel remains separate integration recheck."
+      "run": "HEX-01-R01",
+      "state": "passed_scoped",
+      "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-01/p01-20261009151055/review.json"
     },
     "cleanup": {
-      "state": "passed",
-      "plan": "ROADMAP-HEX-00-CLEAN-PLAN.md",
-      "finding": "HEX00-R01-C01",
-      "implementation": "passed",
-      "review": "passed",
-      "evidence": [
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/r02-review-20261009-155338/cleanup-review.json"
-      ]
+      "run": "HEX-01-CLEAN-R01",
+      "state": "passed_bounded",
+      "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-01/p01-20261009151055/cleanup-review.json"
     },
     "open": [
-      "HEX01 implementation and own actual create/negative-hex/navigation/fresh-open host proof.",
-      "HEX01 independent review and own cleanup before HEX02.",
-      "HEX02..05 common editable Atlas remains next, CITY01 depends on testedHEX05 contract.",
-      "79 later Wonderdraft obligations/full parity/physical/large-map/install remain open."
+      "GM-UX-N-004: Cloud viewport/render reproduction and bounded repair before reuse in HEX02.",
+      "HEX02 terrain/history/drafts, then HEX03..05 common location/Dungeon Atlas; CITY01 depends on tested HEX05 contract.",
+      "HEX06..28/CITY product phases and 79 later Wonderdraft obligations remain.",
+      "Full parity, physical input, large-map and installed-vault acceptance remain open."
     ],
     "coordination": {
       "issue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1",
@@ -950,6 +941,13 @@
       "hex01CleanupImplementation": {
         "receipt": "/home/aaron/.cache/dungeon-native-qa/hex-01/p01-20261009151055/cleanup-implementation.json",
         "state": "implemented_checked_review_pending"
+      },
+      "hex01CleanupReview": {
+        "receipt": "/home/aaron/.cache/dungeon-native-qa/hex-01/p01-20261009151055/cleanup-review.json",
+        "state": "passed_bounded_cleanup",
+        "cleanTests": 252,
+        "physicalInput": false,
+        "installation": "unchanged"
       }
     },
     "repairPlan": "ROADMAP-HEX-00-REPAIR-PLAN.md",
@@ -4083,17 +4081,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I38-P",
-      "kind": "reference_planning",
-      "startedAt": "2026-10-09T15:51:56.580605+00:00",
-      "focus": "Küste und Hafen",
+      "id": "CITY-00-I38-CP",
+      "kind": "cleanup_planning",
+      "startedAt": "2026-10-09T15:55:06.520420+00:00",
+      "focus": "Küstenbelege CP",
       "state": "completed",
-      "result": "Kontrollierter Coast-Rebuild mit vollständigem Gruppenumfang und Rückstellung geplant."
+      "result": "Plan: CO-WAT-0001-Snapshot um Coast/water/planks und offene Hafen-/sea-Grenzen ergänzen. Vorige Fluss-/Größenbelege erhalten, zusätzliche Gruppe im Vergleich nicht übergehen. Rohhashes/Downloadkopien/Verweise und65/24 offene Pflichten prüfen; CI/CR getrennt."
     },
     "nextRun": {
-      "id": "CITY-00-I38-I",
-      "kind": "reference_implementation",
-      "focus": "Coast-Feature und Hafenstruktur prüfen"
+      "id": "CITY-00-I38-CI",
+      "kind": "cleanup_implementation",
+      "focus": "Küstenbelege und Snapshot CI"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",

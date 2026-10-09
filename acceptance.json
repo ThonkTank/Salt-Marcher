@@ -1646,7 +1646,8 @@
           "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i32-generation-20261009/manifest.json",
           "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i35-size-20261009/manifest.json",
           "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i36-custom-size-20261009/manifest.json",
-          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i37-river-20261009/manifest.json"
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i37-river-20261009/manifest.json",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i38-coast-20261009/manifest.json"
         ],
         "task": "Dorf und Stadt erzeugen",
         "phase": "CITY-02",
@@ -1664,7 +1665,7 @@
           "state": "not_run"
         },
         "status": "open",
-        "gap": "Features/Small/Customgröße/River-Umgebungswirkung direkt teilbelegt; genaue Gewässerübergänge, Uferabstände/Einheiten/weitere Features/Version und eigener Vergleich offen.",
+        "gap": "Features/Größen/River/Coast mit sichtbaren Stegen und echten Ausgabegruppen direkt teilbelegt; genaue Ufer-/Hafentopologie, sea-Einheit/Bereiche/weitere Features/Version und eigener Vergleich offen.",
         "independentFunctionalRequirement": true,
         "mappingCoverage": "related_project_criteria_only; CO requirement remains independently required",
         "originalProbe": {
@@ -1701,6 +1702,12 @@
             "state": "partial",
             "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i37-river-20261009/manifest.json",
             "result": "Only River URL flag0→1 at same size25/seed540139574:13 groups,6 changed/7 equal. rivers0→1; values adds riverWidth41.038340289629225 (units unproved); roads5 count same but values changed, buildings544→417. planks stays0, exact bridge topology unproved. OFF+Rebuild restoration byteequal."
+          },
+          {
+            "run": "CITY-00-I38-I",
+            "state": "partial",
+            "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i38-coast-20261009/manifest.json",
+            "result": "Coast OFF→ON adds sea0.2, same seed540139574/size25.13→14 groups:water added,10 common groups changed/3 equal; planks0→8, buildings544→537. Visible shoreline/jetties, exact harbor topology/sea units unproved. OFF+Rebuild restoration byteequal."
           }
         ]
       },
@@ -4135,7 +4142,7 @@
     ],
     "functionalInventoryStatus": {
       "state": "partial_inventory_not_accepted",
-      "run": "CITY-00-I37-I",
+      "run": "CITY-00-I38-I",
       "products": 3,
       "candidates": 65,
       "directFormAreas": 13,
@@ -4182,7 +4189,8 @@
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i34-maximum-20261009/manifest.json",
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i35-size-20261009/manifest.json",
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i36-custom-size-20261009/manifest.json",
-        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i37-river-20261009/manifest.json"
+        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i37-river-20261009/manifest.json",
+        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i38-coast-20261009/manifest.json"
       ],
       "resultReferences": [
         {
@@ -152124,7 +152132,7 @@
   "hexAtlas": {
     "scope": "HEX-00..28, shared native Atlas; phase-specific functional approvals only.",
     "currentPhase": "HEX-01",
-    "state": "foundation_review_passed_cleanup_pending",
+    "state": "foundation_and_cleanup_passed_cloud_followup_open",
     "referenceGate": "wonderdraftParity.coverageReview HEX-00-R02",
     "requirements": [
       {
@@ -152220,19 +152228,33 @@
       {
         "id": "HEX01-C01",
         "priority": 2,
-        "state": "open",
+        "state": "resolved",
         "title": "Vorhandener Atlasname benötigt eine verständliche Meldung",
         "observed": "FileConflict says Extern geändert for an already existing creation path; no overwrite occurs.",
-        "required": "Keep entered modal, explain existing name and ask for another name. Verify exact saved bytes."
+        "required": "Keep entered modal, explain existing name and ask for another name. Verify exact saved bytes.",
+        "resolvedBy": {
+          "run": "HEX-01-CLEAN-R01",
+          "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-01/p01-20261009151055/cleanup-review.json"
+        }
       },
       {
         "id": "HEX01-C02",
         "priority": 3,
-        "state": "open",
+        "state": "resolved",
         "title": "Neue Kernmodule lesbar formatieren",
-        "required": "Format only new Atlas modules and their focused test; no math, storage or gesture changes."
+        "required": "Format only new Atlas modules and their focused test; no math, storage or gesture changes.",
+        "resolvedBy": {
+          "run": "HEX-01-CLEAN-R01",
+          "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-01/p01-20261009151055/cleanup-review.json"
+        }
       }
     ],
-    "limits": "Terrain/history/drafts HEX02; location HEX03; Dungeon placement/composition HEX04/05; cities, full parity, large maps and physical input remain open."
+    "limits": "Terrain/history/drafts HEX02; location HEX03; Dungeon placement/composition HEX04/05; cities, full parity, large maps and physical input remain open.",
+    "cloudFollowup": {
+      "id": "GM-UX-N-004",
+      "state": "open",
+      "evidence": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1#issuecomment-6084269776",
+      "scope": "Viewport/render only, after completed cleanup; no camera/gesture/hex change planned."
+    }
   }
 }
