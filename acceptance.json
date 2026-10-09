@@ -1,8 +1,8 @@
 {
   "saltMarcherReplacement": {
     "schemaVersion": 1,
-    "updated": "2026-10-09T16:52:30Z",
-    "state": "smr00_adr_p01_h03_i02_plan_second_review_changes_required",
+    "updated": "2026-10-09T16:54:13Z",
+    "state": "smr00_adr_p01_h03_i02_plan_third_review_changes_required",
     "plan": "ROADMAP-SALTMARCHER-REPLACEMENT.md",
     "platformAdr": "ROADMAP-SALTMARCHER-PLATFORM-ADR.md",
     "architecture": "ARCHITECTURE.md#plattformoffene-saltmarcher-ablösung",
@@ -97,14 +97,14 @@
       "limits": "No target-platform decision or P02 authorization. Durable receipt/recovery, the full Create/Update/Delete fault matrix, installed-adapter bytes, Windows, macOS and accessibility remain not-run."
     },
     "adrP01H03": {
-      "run": "ADR-P01-H03-I02-P01-R02",
-      "state": "i02_p01_second_review_changes_required",
+      "run": "ADR-P01-H03-I02-P01-R03",
+      "state": "i02_p01_third_review_changes_required",
       "document": "ROADMAP-SALTMARCHER-ADR-P01-H03-PLAN.md",
       "result": "Proposes a Linux-only native snapshot/capture/publish and parent/child recovery hypothesis using a durable Before snapshot from the immutable compare-and-write payload, independent target verification, exclusive current-name capture and no-replace publication, with a complete uncooperative-writer and fault matrix.",
       "contractCandidate": "f8fcdc1b2eacbfb17c7c5603f6c15cfd89c4296d",
       "integrationCommit": "0aecf2b4ce046c69a84cecb0890c949fd7962286",
-      "i02PlanCandidate": "2c5e765a62c6a1f8210a0bd53255b97df5b821d2",
-      "review": "The reviewed p01-v3 contract remains passed. I02 plan R01 rejected e0cff1d0d112633fa3f6288d95973de936a5dbc3. Independent read-only R02 on repaired candidate 2c5e765a62c6a1f8210a0bd53255b97df5b821d2 still requires changes: conflict transitions are grouped as any-to-conflict, U02 lacks its explicit before-snapshotted source, and Parent/conflict matrix cells do not yet bind unambiguous state- and phase-specific fresh-recovery oracles.",
+      "i02PlanCandidate": "b4f50c52e926d6ee7d7016d29b2d58192c0377d8",
+      "review": "The reviewed p01-v3 contract remains passed. I02 plan R01 rejected e0cff1d0d112633fa3f6288d95973de936a5dbc3 and R02 rejected 2c5e765a62c6a1f8210a0bd53255b97df5b821d2. Independent read-only R03 on b4f50c52e926d6ee7d7016d29b2d58192c0377d8 confirms state-specific conflict IDs but still requires explicit source states for every normal and rollback transition and a per-transition-phase-adversary lookup of Receipt, target, temp, snapshot, capture, rollback and Parent digest instead of grouped class-level oracles.",
       "limits": "R02 and the p01-v3 contract passed their separate reviews. No native helper, complete fault matrix, executable H03 proof, Linux durability Go, target-platform decision or P02 authorization exists. Windows and macOS remain not-run."
     },
     "coordination": {
@@ -768,9 +768,11 @@
           "state": "partial",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-model-20261009/implementation.json",
-            "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-model-20261009/repair.json"
+            "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-model-20261009/repair.json",
+            "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-commands-20261009/implementation.json",
+            "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-commands-20261009/cleanup-review.json"
           ],
-          "remaining": "Atlas placement/scene/selection/common history, native file registration and save/reopen host sequence not implemented."
+          "remaining": "Common History code adapter prepared and reviewed. Atlas placement/scene/selection, native registration and save/reopen host sequence remain unimplemented."
         },
         "hostCheck": {
           "state": "not_run",
@@ -152226,8 +152228,8 @@
   },
   "hexAtlas": {
     "scope": "HEX-00..28, shared native Atlas; phase-specific functional approvals only.",
-    "currentPhase": "HEX-01",
-    "state": "foundation_and_cleanup_passed_cloud_followup_open",
+    "currentPhase": "HEX-02",
+    "state": "early_native_terrain_checked_durable_editing_open",
     "referenceGate": "wonderdraftParity.coverageReview HEX-00-R02",
     "requirements": [
       {
@@ -152317,6 +152319,76 @@
           "/home/aaron/.cache/dungeon-native-qa/hex-01/p01-20261009151055/review.json"
         ],
         "observed": "Native screenshots reviewed: map dominance, compact controls, visible focus, legible mile and hex labels."
+      },
+      {
+        "id": "HEX02-001",
+        "requirement": "Spärliche native 3-Meilen-Landschaft über negative Bereichsgrenzen",
+        "state": "checked_implementation",
+        "implementationRun": "HEX-02-I01a/I01b",
+        "evidence": [
+          "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/i01b-native-implementation.json"
+        ],
+        "observed": "Six focused core cases; sparse chunks and unread-data protection."
+      },
+      {
+        "id": "HEX02-002",
+        "requirement": "Lückenloser Zug, Vorschau, Escape, genau ein Undo-Befehl",
+        "state": "checked_native_implementation",
+        "implementationRun": "HEX-02-I01a/I01b",
+        "evidence": [
+          "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/i01b-native-implementation.json"
+        ],
+        "observed": "WD004.01/.02 early land scope, source original1.1.8.2; other gesture contexts open."
+      },
+      {
+        "id": "HEX02-003",
+        "requirement": "Land/Meer/Wald und begrenzte manuelle Farbe tatsächlich malen",
+        "state": "checked_native_implementation",
+        "implementationRun": "HEX-02-I01a/I01b",
+        "evidence": [
+          "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/i01b-native-implementation.json"
+        ],
+        "observed": "WD007.01/021.01 text commit scope; full brushes, coast/color-picker/palette open."
+      },
+      {
+        "id": "HEX02-004",
+        "requirement": "Grenzenlos weiterzeichnen und belegten Inhalt einpassen",
+        "state": "checked_native_implementation",
+        "implementationRun": "HEX-02-I01a/I01b",
+        "evidence": [
+          "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/i01b-native-implementation.json"
+        ],
+        "observed": "36 cells, five referenced ranges, real pan and negative range boundary; camera/file allocation absent."
+      },
+      {
+        "id": "HEX02-005",
+        "requirement": "Speichern, dauerhafter Entwurf, Konflikt/Unterbruch und frischer Geländeprozess",
+        "state": "open",
+        "implementationRun": "HEX-02-I01a/I01b",
+        "evidence": [
+          "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/i01b-native-implementation.json"
+        ],
+        "observed": "I01c immediately next; transient island is not save/restart approval."
+      },
+      {
+        "id": "HEX02-006",
+        "requirement": "Kopie abbrechen/erstellen, A→B→A und Entwurf verwerfen",
+        "state": "open",
+        "implementationRun": "HEX-02-I01a/I01b",
+        "evidence": [
+          "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/i01b-native-implementation.json"
+        ],
+        "observed": "I01d after safe durable kernel."
+      },
+      {
+        "id": "HEX02-007",
+        "requirement": "Eigener Fachreview und getrennte Aufräumläufe",
+        "state": "open",
+        "implementationRun": "HEX-02-I01a/I01b",
+        "evidence": [
+          "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/i01b-native-implementation.json"
+        ],
+        "observed": "R01/CLEAN-P/I/R after complete usable save/reopen flow."
       }
     ],
     "cleanupFindings": [
@@ -152344,7 +152416,7 @@
         }
       }
     ],
-    "limits": "Terrain/history/drafts HEX02; location HEX03; Dungeon placement/composition HEX04/05; cities, full parity, large maps and physical input remain open.",
+    "limits": "I01b visible discrete level0 terrain only. Save/draft/fresh terrain reopening I01c mandatory; City/Location/Dungeon spatial integration, multilevel editing, full Wonderdraft parity, large-map/physical/installed-vault remain open.",
     "cloudFollowup": {
       "id": "GM-UX-N-004",
       "state": "resolved_observed_failure_app_reload_only",
