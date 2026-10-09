@@ -98382,13 +98382,28 @@
     },
     "phase7Implementation": {
       "date": "2026-10-09",
-      "state": "p7_1_implementation_review_candidate",
+      "state": "p7_1_3_4_implementation_review_candidate",
       "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase7-combined-full-20261009/phase7-p7-1-implementation.md",
       "partialReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase7-combined-20261009/phase7-p7-1-progress.md",
       "hostEdit": "/home/aaron/.cache/dungeon-native-qa/parity-phase7-combined-full-20261009/evidence/1791503978274-parity-phase7-combined-edit/result.json",
       "hostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase7-combined-full-20261009/evidence/1791504077076-parity-phase7-combined-reopen/result.json",
       "verified": ["Two V4 rooms and portal", "Edited room contour", "Two built-in and two package objects by asset ID", "Selected-object mirror", "Stable feature A and exact Markdown", "Atomic room move and Undo/Redo", "Fresh-process map click to right key"],
-      "open": ["P7-1 independent review", "P7-2 physical input", "P7-3 large combined map", "P7-4 protected Vault copy", "Independent Phase-7 review"],
+      "p7_3": {
+        "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase7-large-20261009/phase7-p7-3-implementation.md",
+        "hostEdit": "/home/aaron/.cache/dungeon-native-qa/parity-phase7-large-20261009/evidence/1791504666383-parity-phase7-large-edit/result.json",
+        "hostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase7-large-20261009/evidence/1791504709551-parity-phase7-large-reopen/result.json",
+        "metrics": "/home/aaron/.cache/dungeon-native-qa/parity-phase7-large-20261009/evidence/1791504666383-parity-phase7-large-edit/p7-large-metrics.json",
+        "entities": 4295,
+        "decision": "Implementation candidate; separate independent review pending"
+      },
+      "p7_4": {
+        "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase7-vault-20261009/phase7-p7-4-implementation.md",
+        "hostEdit": "/home/aaron/.cache/dungeon-native-qa/parity-phase7-vault-20261009/evidence/1791505021886-parity-phase7-vault-edit/result.json",
+        "hostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase7-vault-20261009/evidence/1791505060073-parity-phase7-vault-reopen/result.json",
+        "protectedFiles": 63,
+        "decision": "Implementation candidate; separate independent review pending"
+      },
+      "open": ["P7-1/3/4 independent review", "P7-2 physical input", "Independent Phase-7 review"],
       "gate": "open"
     }
   }

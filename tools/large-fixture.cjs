@@ -203,4 +203,46 @@ function prepareLarge(vault) {
   return { path: "Dungeons/Grosskarte/Karte.dungeon", document };
 }
 
-module.exports = { prepareLarge };
+function prepareLargeV4(vault) {
+  const prepared = prepareLarge(vault), document = prepared.document;
+  document.version = 4;
+  document.id = "large-native-v4-phase7";
+  for (const entity of document.entities) {
+    if (entity.kind !== "building" || !entity.number) continue;
+    delete entity.note;
+    entity.key = { sections: [{ id: entity.id + "-section",
+      kind: "markdown", markdown: "" }] };
+  }
+  const featureText = "*Wortlaut der großen Phase-7-Karte.*\n[[QA/Grosskarte|Quelle]]\n";
+  const featureMarkdown = "## A · Zeichen:\n" +
+    "<!-- dungeon-feature:large-occurrence-phase7:start -->\n" + featureText +
+    "\n<!-- dungeon-feature:large-occurrence-phase7:end -->";
+  document.entities.push({
+    id: "room-phase7", kind: "building", floorId: "floor-ground",
+    name: "Raum 193", number: "193", layer: 200,
+    polygons: [{ outer: [{ x: 185, y: 120 }, { x: 193, y: 120 },
+      { x: 193, y: 128 }, { x: 185, y: 128 }], holes: [] }],
+    fill: 0xbfb09a, wall: 0x403e39, wallWidth: 0.2,
+    key: { sections: [{ id: "room-phase7-intro", kind: "markdown", markdown: "" },
+      { id: "section-phase7", kind: "markdown", markdown: featureMarkdown }],
+      nextFeatureOrdinal: 2 },
+  });
+  document.entities.push({ id: "object-phase7", kind: "object",
+    floorId: "floor-ground", roomId: "room-phase7", x: 187, y: 122,
+    rotation: 0, width: 2.5, height: 2.5, color: 0x6688aa,
+    label: "Zeichen", layer: 100, flip: false });
+  document.entities.push({ id: "light-phase7", kind: "light",
+    floorId: "floor-ground", x: 180, y: 130,
+    radius: 8, intensity: 1, color: 0xffd89a, shadows: true });
+  document.content.definitions.push({ id: "definition-phase7", name: "Zeichen",
+    kind: "feature", xp: 0, lootValue: 0 });
+  document.content.occurrences.push({ id: "large-occurrence-phase7",
+    definitionId: "definition-phase7", roomId: "room-phase7",
+    entityId: "object-phase7", marker: "A", quantity: 1,
+    sectionId: "section-phase7" });
+  fs.rmSync(path.join(vault, "Dungeons/Grosskarte/Räume"), { recursive: true });
+  fs.writeFileSync(path.join(vault, prepared.path), JSON.stringify(document, null, 2) + "\n");
+  return { ...prepared, document, featureText };
+}
+
+module.exports = { prepareLarge, prepareLargeV4 };

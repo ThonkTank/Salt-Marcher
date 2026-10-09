@@ -9,7 +9,7 @@ const {
   chromium,
 } = require("/home/aaron/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright");
 const { PNG } = require("pngjs");
-const { prepareLarge } = require("./large-fixture.cjs");
+const { prepareLarge, prepareLargeV4 } = require("./large-fixture.cjs");
 const root = path.resolve(__dirname, ".."),
   pluginRoot = process.env.DUNGEON_PLUGIN_ROOT || root,
   sourceVault = process.env.DUNGEON_SOURCE_VAULT || path.resolve(root, "../../.."),
@@ -52,13 +52,15 @@ const restart = process.argv.includes("--restart"),
   parityPhase6Repair2Marquee = process.argv.includes("--parity-phase6-repair2-marquee"),
   parityPhase6Repair2Rotation = process.argv.includes("--parity-phase6-repair2-rotation"),
   parityPhase7Combined = process.argv.includes("--parity-phase7-combined"),
+  parityPhase7Large = process.argv.includes("--parity-phase7-large"),
+  parityPhase7Vault = process.argv.includes("--parity-phase7-vault"),
   parityPhase4OwnMinimal = parityPhase4Objects && process.argv.includes("--own-tags-minimal"),
   parityPhase4CleanupMatrix = parityPhase4Objects && process.argv.includes("--parity-phase4-cleanup-matrix"),
   pathLibrary = process.argv.includes("--path-library"),
   large = process.argv.includes("--large"),
   compactSmoke = process.argv.includes("--compact-smoke"),
   selectionSmoke = process.argv.includes("--selection-smoke"),
-  run = Date.now() + (parityPhase7Combined ? "-parity-phase7-combined" : parityPhase6Repair2Focus ? "-parity-phase6-repair2-focus" : parityPhase6Repair ? "-parity-phase6-repair" : parityPhase6Gestures ? "-parity-phase6-gestures" : parityPhase5CleanupRepair ? "-parity-phase5-cleanup-repair" : parityPhase5CleanupBenchmark ? "-parity-phase5-cleanup-benchmark" : parityPhase5AlphaReview ? "-parity-phase5-alpha-review" : parityPhase5Visual ? "-parity-phase5-visual" : parityPhase5Repair2 ? "-parity-phase5-repair2" : parityPhase5Light ? "-parity-phase5-light" : parityPhase5Repair ? "-parity-phase5-repair" : parityPhase5Review ? "-parity-phase5-review" : parityPhase4Objects ? "-parity-phase4-objects" : parityPhase3Wear ? "-parity-phase3-wear" : parityPhase3Building ? "-parity-phase3-building" : parityPhase2Points ? "-parity-phase2-points" : parityPhase1Repair ? "-parity-phase1-repair" : parityPhase1Shapes ? "-parity-phase1-shapes" : parityPhase1 ? "-parity-phase1" : phase6Migration ? "-phase6-migration" : phase5Feature ? "-phase5-feature" : phase4Key ? "-phase4-key" : phase3Object ? "-phase3-object" : phase2Object ? "-phase2-object" : v2Open ? "-v2-open" : patternAlpha ? "-pattern-alpha" : prefabForget ? "-prefab-forget" : objectAlpha ? "-object-alpha" : pathLibrary ? "-path-library" : selectionSmoke ? "-selection" : compactSmoke ? "-compact" : large ? "-large" : "") + (restart ? "-reopen" : "-edit"),
+  run = Date.now() + (parityPhase7Vault ? "-parity-phase7-vault" : parityPhase7Large ? "-parity-phase7-large" : parityPhase7Combined ? "-parity-phase7-combined" : parityPhase6Repair2Focus ? "-parity-phase6-repair2-focus" : parityPhase6Repair ? "-parity-phase6-repair" : parityPhase6Gestures ? "-parity-phase6-gestures" : parityPhase5CleanupRepair ? "-parity-phase5-cleanup-repair" : parityPhase5CleanupBenchmark ? "-parity-phase5-cleanup-benchmark" : parityPhase5AlphaReview ? "-parity-phase5-alpha-review" : parityPhase5Visual ? "-parity-phase5-visual" : parityPhase5Repair2 ? "-parity-phase5-repair2" : parityPhase5Light ? "-parity-phase5-light" : parityPhase5Repair ? "-parity-phase5-repair" : parityPhase5Review ? "-parity-phase5-review" : parityPhase4Objects ? "-parity-phase4-objects" : parityPhase3Wear ? "-parity-phase3-wear" : parityPhase3Building ? "-parity-phase3-building" : parityPhase2Points ? "-parity-phase2-points" : parityPhase1Repair ? "-parity-phase1-repair" : parityPhase1Shapes ? "-parity-phase1-shapes" : parityPhase1 ? "-parity-phase1" : phase6Migration ? "-phase6-migration" : phase5Feature ? "-phase5-feature" : phase4Key ? "-phase4-key" : phase3Object ? "-phase3-object" : phase2Object ? "-phase2-object" : v2Open ? "-v2-open" : patternAlpha ? "-pattern-alpha" : prefabForget ? "-prefab-forget" : objectAlpha ? "-object-alpha" : pathLibrary ? "-path-library" : selectionSmoke ? "-selection" : compactSmoke ? "-compact" : large ? "-large" : "") + (restart ? "-reopen" : "-edit"),
   out = qa + "/evidence/" + run;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const waitForFileAbsent = async (file, timeoutMs = 12000) => {
@@ -247,12 +249,12 @@ function prepare() {
     );
   fs.writeFileSync(
     vault + "/.obsidian/community-plugins.json",
-    JSON.stringify(phase6Migration ? ["dungeon-editor", "dungeon-auswertung", "dnd-ot-spielansicht"] : ["dungeon-editor"]),
+    JSON.stringify(phase6Migration ? ["dungeon-editor", "dungeon-auswertung", "dnd-ot-spielansicht"] : parityPhase7Vault ? ["dungeon-editor", "dnd-ot-spielansicht"] : ["dungeon-editor"]),
   );
   fs.writeFileSync(vault + "/.obsidian/app.json", "{}");
   fs.writeFileSync(
     vault + "/.obsidian/core-plugins.json",
-    JSON.stringify({ "file-explorer": true, "command-palette": true, ...(phase6Migration ? { outline: true } : {}) }),
+    JSON.stringify({ "file-explorer": true, "command-palette": true, ...(phase6Migration || parityPhase7Vault ? { outline: true } : {}) }),
   );
   fs.writeFileSync(
     qa + "/config/obsidian/obsidian.json",
@@ -261,6 +263,22 @@ function prepare() {
     }),
   );
   if (large && !restart) prepareLarge(vault);
+  if (parityPhase7Large && !restart) prepareLargeV4(vault);
+  if (parityPhase7Vault) {
+    assert(fs.existsSync(path.join(sourceVault, "Dungeons/Drachenhöhle/Karte.dungeon")),
+      "Quellvault für Phase 7 fehlt");
+    if (!restart)
+      for (const dir of ["Dungeons/Drachenhöhle", "Dungeons/_System"])
+        fs.cpSync(path.join(sourceVault, dir), path.join(vault, dir), { recursive: true });
+    const plugin = "dnd-ot-spielansicht";
+    fs.mkdirSync(path.join(vault, ".obsidian/plugins", plugin), { recursive: true });
+    const sourcePlugin = path.join(sourceVault, ".obsidian/plugins", plugin);
+    fs.copyFileSync(path.join(sourcePlugin, "manifest.json"),
+      path.join(vault, ".obsidian/plugins", plugin, "manifest.json"));
+    for (const name of ["main.js", "styles.css"])
+      fs.copyFileSync(path.join(root, "tools/spielansicht", name),
+        path.join(vault, ".obsidian/plugins", plugin, name));
+  }
   if (phase6Migration) {
     const stage = process.env.DUNGEON_PHASE6_STAGE;
     assert(stage && fs.existsSync(stage + "/migration.json"), "Phase-6-Ablage fehlt");
@@ -609,9 +627,9 @@ async function workflow() {
     if (e.type() === "error")
       fs.appendFileSync(out + "/console.log", e.text() + "\n");
   });
-  if (parityPhase3Building || parityPhase7Combined) {
+  if (parityPhase3Building || parityPhase7Combined || parityPhase7Large || parityPhase7Vault) {
     let ready = false, observed;
-    for (let attempt = 0; attempt < (parityPhase7Combined ? 180 : 120); attempt++) {
+    for (let attempt = 0; attempt < (parityPhase7Combined || parityPhase7Large || parityPhase7Vault ? 180 : 120); attempt++) {
       try {
         observed = await page.evaluate(() => typeof app === "undefined" ? null : ({
           vault: app.vault?.adapter?.basePath,
@@ -692,6 +710,18 @@ async function workflow() {
       };
     });
   const scenarioContext = { page, fs, path, assert, crypto, PNG, root, qa, vault, sourceVault, restart, out, checks, chooseTool, editorAction, waitForFileAbsent, sleep, resolveQaAppCgroup };
+  if (parityPhase7Vault) {
+    const scenario = require("./host/parity-phase7-vault.cjs")(scenarioContext);
+    if (restart) await scenario.reopen();
+    else await scenario.edit();
+    return;
+  }
+  if (parityPhase7Large) {
+    const scenario = require("./host/parity-phase7-large.cjs")(scenarioContext);
+    if (restart) await scenario.reopen();
+    else await scenario.edit();
+    return;
+  }
   if (parityPhase7Combined) {
     const scenario = require("./host/parity-phase7-combined.cjs")(scenarioContext);
     if (restart) await scenario.reopen();
