@@ -1861,7 +1861,8 @@
         "availability": "temporary_settlement",
         "observationKind": "direct_partial",
         "originalEvidence": [
-          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/manifest.json"
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/manifest.json",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/evidence-cleanup.json"
         ],
         "task": "Saison und Tageslicht wechseln",
         "phase": "CITY-07",
@@ -3017,7 +3018,8 @@
         "observationKind": "direct_control_only",
         "originalEvidence": [
           "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/manifest.json",
-          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/ftg-effects-settings.ax.txt"
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/ftg-effects-settings.ax.txt",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/evidence-cleanup.json"
         ],
         "task": "Bildeffekte ändern und Ergebnis prüfen",
         "phase": "CITY-07",
@@ -3037,7 +3039,7 @@
         "originalProbe": {
           "run": "CITY-00-I07-BI",
           "state": "control_observed_only",
-          "observation": "Pixelation, vignette, dots, scanline, crosshatch controls",
+          "observation": "Color effect None/Greyscale/Sepia/Green tint; Pixelation, Vignette, Dot screen, Scanline, Crosshatch None/Original colour/Grey/Blue/Add; controls only",
           "sourceFrame": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/ftg-effects-settings.ax.txt",
           "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/manifest.json"
         }
