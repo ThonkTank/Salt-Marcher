@@ -169,7 +169,7 @@
   },
   "cityPlans": {
     "schemaVersion": 1,
-    "updated": "2026-10-09T12:56:00.648423+00:00",
+    "updated": "2026-10-09T12:57:50.497253+00:00",
     "plan": "ROADMAP-CITIES.md",
     "state": "planned_not_implemented",
     "comparisonMode": "functional_equivalence_and_independent_usability_tests",
@@ -2658,7 +2658,8 @@
           "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/manifest.json",
           "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i14-warp-20261009/manifest.json",
           "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i14-warp-20261009/cleanup.json",
-          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i15-warp-tools-20261009/manifest.json"
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i15-warp-tools-20261009/manifest.json",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i15-warp-tools-20261009/cleanup.json"
         ],
         "task": "Straßen/Bebauung durch lokalen Eingriff verformen",
         "phase": "CITY-04",

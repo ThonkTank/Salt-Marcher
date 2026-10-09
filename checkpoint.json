@@ -3680,17 +3680,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I15-CP",
-      "kind": "cleanup_planning",
-      "startedAt": "2026-10-09T12:57:17.687445+00:00",
-      "focus": "Wirkungsrollen und geplante gemeinsame Befehle präzisieren",
-      "state": "completed",
-      "result": "I15-R01 konkret geplant: Gesamtdrehung über gemeinsame Platzierung, lokale Geometriebefehle getrennt, Messoverlay ohne Mutation/History; sieben Werkzeugrestfragen explizit"
-    },
-    "nextRun": {
       "id": "CITY-00-I15-CI",
       "kind": "cleanup_implementation",
-      "focus": "Geplante Rollenpräzisierung in Architektur eintragen"
+      "startedAt": "2026-10-09T12:57:50.497253+00:00",
+      "focus": "Geplante Rollenpräzisierung in Architektur eintragen",
+      "state": "completed",
+      "result": "I15-R01 in geplanter Architektur präzisiert; Originalteilwirkungen und offene Parametergrenzen erhalten, keine neue Produkt-API"
+    },
+    "nextRun": {
+      "id": "CITY-00-I15-CR",
+      "kind": "cleanup_review",
+      "focus": "Rollen-/Belegpräzisierung abschließend prüfen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
