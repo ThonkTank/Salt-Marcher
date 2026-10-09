@@ -13,6 +13,8 @@ export interface AtlasEditorStorage {
   save(): Promise<void>;
   changed(): Promise<void>;
   status(): { dirty: boolean; hasDraft: boolean };
+  menu?(event: MouseEvent): void;
+  discard?(): Promise<TerrainSource>;
 }
 export class AtlasEditor {
   readonly renderer: AtlasRenderer;
@@ -23,7 +25,8 @@ export class AtlasEditor {
   private scale: HTMLSpanElement;
   private undoButton: HTMLButtonElement;
   private redoButton: HTMLButtonElement;
-  private unsubscribe: () => void;
+  private unsubscribe: () => void = () => {};
+  private currentTerrain: TerrainSource;
   private landColor: string = TERRAIN_COLORS.land;
   private space = false;
   private tool: Tool = "select";
@@ -47,9 +50,10 @@ export class AtlasEditor {
   constructor(
     private root: HTMLElement,
     world: OverworldDocument,
-    readonly terrain: TerrainSource,
+    terrain: TerrainSource,
     private storage: AtlasEditorStorage,
   ) {
+    this.currentTerrain = terrain;
     root.replaceChildren();
     root.classList.add("dn-atlas");
     root.dataset.worldId = world.id;
@@ -59,7 +63,11 @@ export class AtlasEditor {
     const title = doc.createElement("strong");
     title.textContent = world.name;
     toolbar.append(title);
-    const button = (text: string, label: string, action: () => void) => {
+    const button = (
+      text: string,
+      label: string,
+      action: (event: MouseEvent) => void,
+    ) => {
       const b = doc.createElement("button");
       b.type = "button";
       b.textContent = text;
@@ -132,6 +140,8 @@ export class AtlasEditor {
       this.enqueue(() => this.renderer.fit());
     });
     button("Speichern", "Atlas speichern", () => this.save());
+    if (storage.menu)
+      button("Karte ▾", "Atlas-Kartenmenü", (event) => storage.menu!(event));
     this.scale = doc.createElement("span");
     this.scale.className = "dn-atlas-scale";
     toolbar.append(this.scale);
@@ -166,7 +176,16 @@ export class AtlasEditor {
       },
       terrain,
     );
-    this.unsubscribe = terrain.history.subscribe(() => {
+    this.subscribeTerrain();
+    choose("select");
+    this.refreshHistory();
+    this.bind();
+  }
+  get terrain(): TerrainSource {
+    return this.currentTerrain;
+  }
+  private subscribeTerrain(): void {
+    this.unsubscribe = this.terrain.history.subscribe(() => {
       this.refreshHistory();
       this.renderer.schedule();
       const version = ++this.persistenceVersion;
@@ -184,9 +203,6 @@ export class AtlasEditor {
         },
       );
     });
-    choose("select");
-    this.refreshHistory();
-    this.bind();
   }
   async init(): Promise<void> {
     await this.renderer.init();
@@ -229,6 +245,27 @@ export class AtlasEditor {
       this.refreshHistory();
     });
   }
+  discard(): void {
+    if (!this.storage.discard) return;
+    this.finishStroke();
+    this.releasePointer();
+    this.enqueue(async () => {
+      this.flushing = true;
+      try {
+        const source = await this.storage.discard!();
+        this.unsubscribe();
+        this.currentTerrain = source;
+        this.renderer.useTerrain(source);
+        this.subscribeTerrain();
+        this.persistence = Promise.resolve();
+        ++this.persistenceVersion;
+        this.visibleLoadFailed = false;
+        this.refreshHistory();
+      } finally {
+        this.flushing = false;
+      }
+    });
+  }
   /** Finish queued pointer work and retain its draft before a view is destroyed. */
   async flush(): Promise<void> {
     this.finishStroke();
@@ -244,19 +281,26 @@ export class AtlasEditor {
   private async loadVisible(): Promise<void> {
     if (this.loadingVisible || this.closed || this.visibleLoadFailed) return;
     this.loadingVisible = true;
-    const bounds = this.renderer.visibleTerrainBounds(),
-      count = this.terrain.cells().length;
+    const source = this.terrain,
+      bounds = this.renderer.visibleTerrainBounds(),
+      count = source.cells().length;
     try {
-      await this.terrain.ensureVisible(bounds);
-      if (!this.closed && this.terrain.cells().length !== count)
+      await source.ensureVisible(bounds);
+      if (
+        !this.closed &&
+        source === this.terrain &&
+        source.cells().length !== count
+      )
         this.renderer.schedule();
     } catch (error) {
-      this.visibleLoadFailed = true;
-      if (!this.closed)
+      if (!this.closed && source === this.terrain) {
+        this.visibleLoadFailed = true;
         this.status.textContent =
           "Landschaft konnte nicht geladen werden. " + String(error);
+      }
     } finally {
       this.loadingVisible = false;
+      if (!this.closed && source !== this.terrain) this.renderer.schedule();
     }
   }
   private local(event: MouseEvent): WorldPoint {

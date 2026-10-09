@@ -4170,7 +4170,7 @@
         "task": "Ruhetag manuell überschreiben ändern und Ergebnis prüfen",
         "phase": "CITY-07",
         "caseIds": [],
-        "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
+        "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md: CITY-07; Zeit/Resttagpolitik mit zuständigen gemeinsamen Zeitbesitzern ratifizieren, Aktivität aus stabilen Personen-/Wohn-/Arbeitsreferenzen ableiten; manueller Override explizit, keine neue CitySceneClock.",
         "implementationEvidence": [],
         "hostEvidence": [],
         "comparisonEvidence": [],
@@ -4194,7 +4194,10 @@
             "Reload/freshprocess persistence",
             "Full population schedules and dependencies",
             "Own model/commands/Host/UX/physical comparison"
-          ]
+          ],
+          "limits": "One temporary settlement, same-date sequence. Visible references/names, not stable serialized IDs. No version, persistence, universal calendar or independent reference review proof.",
+          "reviewManifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i42-time-20261009/review.json",
+          "semanticLimit": "Neither None-clear nor None-preserve is ratified as intended own behavior by this single discrepant reference sequence. Explicit calendar/override policy must be coordinated and tested."
         }
       },
       {
@@ -152299,7 +152302,7 @@
   "hexAtlas": {
     "scope": "HEX-00..28, shared native Atlas; phase-specific functional approvals only.",
     "currentPhase": "HEX-02",
-    "state": "native_save_draft_checked_copy_discard_open",
+    "state": "native_island_copy_discard_checked_review_open",
     "referenceGate": "wonderdraftParity.coverageReview HEX-00-R02",
     "requirements": [
       {
@@ -152443,12 +152446,12 @@
       {
         "id": "HEX02-006",
         "requirement": "Kopie abbrechen/erstellen, A→B→A und Entwurf verwerfen",
-        "state": "open",
-        "implementationRun": "HEX-02-I01a/I01b",
+        "state": "checked_native_implementation",
+        "implementationRun": "HEX-02-I01d",
         "evidence": [
-          "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/i01b-native-implementation.json"
+          "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/i01d-native-implementation.json"
         ],
-        "observed": "I01d after safe durable kernel."
+        "observed": "Actual native copy Cancel/Create, new ID/namespace, A↔B drafts, discard Cancel/Confirm in same camera/tool/color and separate fresh process/independent CtrlS. R01 pending."
       },
       {
         "id": "HEX02-007",
@@ -152486,7 +152489,7 @@
         }
       }
     ],
-    "limits": "Early native sparse level0 island Save/Draft/fresh/conflict verified; Copy/Discard/A↔B I01d and independent R01/CLEAN open. Shared City/Location/Dungeon composition, multilevel editing, full parity, large-map/physical/installed-vault remain open.",
+    "limits": "Early native level0 island Save/Draft/fresh/conflict plus Copy/Discard/A↔B checked. Independent R01/CLEAN open. Shared City/Location/Dungeon composition, multilevel editing, full parity, large-map/physical/installed-vault remain open.",
     "cloudFollowup": {
       "id": "GM-UX-N-004",
       "state": "resolved_observed_failure_app_reload_only",
