@@ -126409,16 +126409,21 @@
           "remaining": "Ausgangskarte und drei Punktzugvarianten sind mit Host-Rohdaten ohne Abweichung gepaart; Undo/Redo und frische Hostöffnung bestehen. Weitere Punktgesten, Löcher, kombinierte Ränder und DD-038-Endreview offen. Keine Fallfreigabe; P7-2 physisch ungeprüft."
         },
         "followUpPhase1BuildingPointInsertOriginalProbe": {
-          "state": "original_measured_host_open",
+          "state": "edge_insert_scoped_host_raw_pair_passed_case_open",
           "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "hostBuildSha256": "9066ab0c4a4f0eb56e138d49bb627026d291e5e4bff8f516cb744197f71ff36c",
           "originalReport": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-insert-original-20261009/original-probe.md",
           "originalAudit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-insert-original-20261009/original-audit.json",
           "originalInserted": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-insert-original-20261009/native/runs/20261009-102517-3686711/evidence/maps/01-inserted.dungeondraft_map",
           "originalUndo": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-insert-original-20261009/native/runs/20261009-102517-3686711/evidence/maps/02-undo.dungeondraft_map",
           "originalRedo": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-insert-original-20261009/native/runs/20261009-102517-3686711/evidence/maps/03-redo.dungeondraft_map",
           "originalFresh": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-insert-original-20261009/native-fresh/runs/20261009-102707-3687394/evidence/screens/00-fresh.png",
+          "hostReport": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-insert-host-20261009/implementation.md",
+          "hostEdit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-insert-host-20261009/evidence/1791537855959-parity-tools-phase1-building-point-edit/result.json",
+          "hostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-insert-host-20261009/evidence/1791537882187-parity-tools-phase1-building-point-reopen/result.json",
+          "hostAudit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-insert-host-20261009/independent-audit.json",
           "measuredScope": "8×8 Wood/Stone: Oberer Kantenmittelgriff wird bei Smart Stone und Keine Wand nach oben gezogen. Gespeichert: Fünfpunktkontur mit (4,0.125), 24 Stone-Zellen im Bounding-Raster; Undo 18 gemischte Zellen, Redo 24 Stone. Frische Originalöffnung erhält Kontur und Zellwerte; ungenutzter Asset-Lookup ändert beim erneuten Speichern den Dateihash.",
-          "remaining": "Host-Umsetzung und Rohdatenpaar, weitere Einfügepunkte, Löcher, Crop-Folgen und DD-038-Endreview offen. Keine Fallfreigabe; P7-2 physisch ungeprüft."
+          "remaining": "Einfügezug und drei frühere Punktzüge sind mit Host-Rohdaten ohne Abweichung gepaart; Undo/Redo und frische Hostöffnungen bestehen. Weitere Einfügepunkte, Punktentfernung, Löcher, Crop-Folgen und DD-038-Endreview offen. Keine Fallfreigabe; P7-2 physisch ungeprüft."
         },
         "followUpPhase1TerrainMaskCandidate": {
           "state": "seeded_host_masks_scoped_review_passed_case_open",

@@ -4,6 +4,7 @@ const CASES = [
   { name: "stone-no-wall", floor: "stone", wall: "Keine Wand" },
   { name: "wood-no-wall", floor: "wood", wall: "Keine Wand" },
   { name: "wood-battlements", floor: "wood", wall: "Battlements" },
+  { name: "stone-insert", floor: "stone", wall: "Keine Wand", kind: "insert" },
 ];
 
 module.exports = ({ page, fs, path, assert, crypto, qa, vault, out,
@@ -58,11 +59,13 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out,
     assert.equal(doc.smartTiles.filter((c) => c.assetId === woodId).length, 9);
     assert.equal(doc.smartTiles.filter((c) => c.assetId === stoneId).length, 9);
   }
-  function verifyMoved(doc, styleId, wallId) {
+  function verifyEdited(doc, styleId, wallId, kind) {
     assert.equal(doc.entities.length, 1);
     const building = doc.entities[0];
-    assert.deepEqual(building.polygons[0].outer,
-      [{ x: 1, y: 0 }, { x: 7, y: 1 }, { x: 7, y: 4 }, { x: 1, y: 4 }]);
+    assert.deepEqual(building.polygons[0].outer, kind === "insert"
+      ? [{ x: 1, y: 1 }, { x: 4, y: 0.125 }, { x: 7, y: 1 },
+        { x: 7, y: 4 }, { x: 1, y: 4 }]
+      : [{ x: 1, y: 0 }, { x: 7, y: 1 }, { x: 7, y: 4 }, { x: 1, y: 4 }]);
     assert.equal(building.wallAssetId ?? null, wallId);
     assert.equal(doc.smartTiles.length, 24);
     assert.ok(doc.smartTiles.every((cell) => cell.assetId === styleId &&
@@ -71,16 +74,18 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out,
     assert.deepEqual(positions, new Set(Array.from({ length: 24 }, (_, i) =>
       `${1 + i % 6}:${Math.floor(i / 6)}`)));
   }
-  async function movePoint() {
-    const start = await world({ x: 1, y: 1 });
-    const end = await world({ x: 1, y: 0 });
+  async function movePoint(kind) {
+    const insert = kind === "insert";
+    const start = await world(insert ? { x: 4, y: 1 } : { x: 1, y: 1 });
+    const end = await world(insert ? { x: 4, y: 0.125 } : { x: 1, y: 0 });
     await page.mouse.move(start.x + 10, start.y + 10);
     await page.mouse.move(start.x, start.y);
-    await page.waitForFunction(() => {
+    await page.waitForFunction((insert) => {
       const hover = app.workspace.getLeavesOfType("dungeon-native-map").at(-1)
         ?.view.editor?.renderer.buildingPointHover;
-      return hover?.kind === "vertex" && hover.contour === 0 && hover.index === 0;
-    });
+      return hover?.kind === (insert ? "edge" : "vertex") &&
+        hover.contour === 0 && hover.index === 0;
+    }, insert);
     await page.mouse.down();
     await page.mouse.move(end.x, end.y, { steps: 8 });
     await page.mouse.up();
@@ -144,15 +149,19 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out,
       const floor = item.floor === "wood" ? wood : stone;
       await editor.getByRole("group", { name: "Bodenstil" })
         .getByRole("button", { name: floor.name, exact: true }).click();
+      if (item.kind === "insert") {
+        const snap = editor.getByRole("button", { name: "Snap", exact: true });
+        if (await snap.getAttribute("aria-pressed") === "true") await snap.click();
+      }
       const initial = await state();
       verifyBase(initial.document, wood.id, stone.id);
       const id = initial.document.entities[0].id;
       await page.evaluate((id) => app.workspace.getLeavesOfType("dungeon-native-map")
         .at(-1).view.editor.select(id), id);
-      await movePoint();
+      await movePoint(item.kind);
       const moved = await state();
       const wallId = item.wall === "Keine Wand" ? null : battlements.id;
-      verifyMoved(moved.document, floor.id, wallId);
+      verifyEdited(moved.document, floor.id, wallId, item.kind);
       assert.equal(moved.history, 1);
       await page.screenshot({ path: path.join(out, item.name + "-edit.png") });
       await editor.getByRole("button", { name: "Speichern", exact: true }).click();
@@ -163,9 +172,9 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out,
       await editor.getByRole("button", { name: "Rückgängig", exact: true }).click();
       verifyBase((await state()).document, wood.id, stone.id);
       await editor.getByRole("button", { name: "Wiederholen", exact: true }).click();
-      verifyMoved((await state()).document, floor.id, wallId);
+      verifyEdited((await state()).document, floor.id, wallId, item.kind);
       records.push({ name: item.name, document: saved, hash: hash(item.name),
-        styleId: floor.id, wallId });
+        styleId: floor.id, wallId, kind: item.kind });
       checks.push(`DD-038 ${item.name} point drag repaints 24 cells in one Undo step`);
     }
     fs.writeFileSync(baseline, JSON.stringify({ records, woodId: wood.id,
@@ -178,7 +187,7 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out,
       const fresh = await state();
       assert.deepEqual(JSON.parse(JSON.stringify(fresh.document)), record.document);
       assert.equal(hash(record.name), record.hash);
-      verifyMoved(fresh.document, record.styleId, record.wallId);
+      verifyEdited(fresh.document, record.styleId, record.wallId, record.kind);
       await page.screenshot({ path: path.join(out, record.name + "-fresh.png") });
       checks.push(`DD-038 fresh Host opens ${record.name} byte-identically`);
     }

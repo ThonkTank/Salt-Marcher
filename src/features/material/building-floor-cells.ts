@@ -77,8 +77,8 @@ export function buildingFloorCellsAfterDraw(
       ? { ...cell, buildingId: building.id } : cell), ...painted];
 }
 
-/** Native point dragging repaints the complete outer bounding rectangle. */
-export function buildingFloorCellsAfterPointMove(
+/** Native contour point dragging repaints the complete outer bounding rectangle. */
+export function buildingFloorCellsAfterPointEdit(
   cells: readonly SmartTileCell[] | undefined,
   building: Building,
   width: number, height: number,

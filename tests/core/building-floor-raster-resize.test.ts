@@ -4,7 +4,7 @@ import { newDocument, parseDocument, serializeDocument, type Building } from "..
 import { duplicateFloor, planBuildingContourMutation, planBuildingMutation, resizeMap } from "../../src/commands";
 import { composeBuilding } from "../../src/compute";
 import { Session } from "../../src/session";
-import { buildingFloorCells, buildingFloorCellsAfterDraw, buildingFloorCellsAfterErase, buildingFloorCellsAfterPointMove } from "../../src/features/material/building-floor-cells";
+import { buildingFloorCells, buildingFloorCellsAfterDraw, buildingFloorCellsAfterErase, buildingFloorCellsAfterPointEdit } from "../../src/features/material/building-floor-cells";
 
 const STYLE = "pack:dungeondraft-builtin-1.2.0.1:tileset:res%3A%2F%2Ftextures%2Ftilesets%2Fsmart%2Ftileset_wood_vertical.png";
 const STONE = "pack:dungeondraft-builtin-1.2.0.1:tileset:res%3A%2F%2Ftextures%2Ftilesets%2Fsmart_double%2Ftileset_stone.png";
@@ -261,7 +261,7 @@ test("native point move repaints the bounding raster in the selected style with 
   assert.equal(moved?.kind, "building");
   if (moved?.kind !== "building") return;
   session.execute({ ...command, smartTiles: { before: session.smartTiles,
-    after: buildingFloorCellsAfterPointMove(session.smartTiles, moved, 8, 8,
+    after: buildingFloorCellsAfterPointEdit(session.smartTiles, moved, 8, 8,
       { assetId: STONE, color: 0x7f7e71 }) } });
   assert.equal(session.historySize, 1);
   assert.equal(session.smartTiles?.length, 24);
@@ -272,6 +272,48 @@ test("native point move repaints the bounding raster in the selected style with 
       `${1 + i % 6}:${Math.floor(i / 6)}`)));
   const saved = parseDocument(serializeDocument(session.document()));
   assert.deepEqual(saved.smartTiles, session.document().smartTiles);
+  session.undo();
+  assert.deepEqual(session.smartTiles, original);
+  assert.deepEqual(session.entities.get(before.id), before);
+  session.redo();
+  assert.deepEqual(parseDocument(serializeDocument(session.document())), saved);
+});
+
+test("native edge-point insertion replaces mixed floor cells and restores them on Undo", () => {
+  const document = newDocument("Mixed edge point", 8, 8);
+  const floorId = document.floors[0]!.id;
+  const before: Building = { ...building("mixed-edge", floorId, 1), polygons: [{ outer: [
+    { x: 1, y: 1 }, { x: 7, y: 1 }, { x: 7, y: 4 }, { x: 1, y: 4 },
+  ], holes: [] }] };
+  const original = buildingFloorCells(before, 8, 8).map((cell) => cell.x < 4
+    ? cell : { ...cell, assetId: STONE, color: 0x7f7e71 });
+  const session = new Session({ ...document, entities: [before], smartTiles: original });
+  const after: Building = { ...before, polygons: [{ outer: [
+    { x: 1, y: 1 }, { x: 4, y: 0.125 }, { x: 7, y: 1 },
+    { x: 7, y: 4 }, { x: 1, y: 4 },
+  ], holes: [] }] };
+  const command = planBuildingContourMutation({ entities: [...session.entities.values()],
+    before, after, edit: { kind: "insert", contour: 0, index: 1 },
+    wallStyle: { wall: before.wall, wallAlpha: 255, wallBevel: true,
+      wallWidth: 0, wallAssetId: undefined } });
+  assert.ok(command);
+  const inserted = command.entities?.find((change) => change.id === before.id)?.after;
+  assert.equal(inserted?.kind, "building");
+  if (inserted?.kind !== "building") return;
+  session.execute({ ...command, smartTiles: { before: session.smartTiles,
+    after: buildingFloorCellsAfterPointEdit(session.smartTiles, inserted, 8, 8,
+      { assetId: STONE, color: 0x7f7e71 }) } });
+  assert.equal(session.historySize, 1);
+  assert.equal(session.smartTiles?.length, 24);
+  assert.ok(session.smartTiles?.every((cell) => cell.assetId === STONE &&
+    cell.color === 0x7f7e71));
+  assert.deepEqual(new Set(session.smartTiles?.map((cell) => `${cell.x}:${cell.y}`)),
+    new Set(Array.from({ length: 24 }, (_, i) =>
+      `${1 + i % 6}:${Math.floor(i / 6)}`)));
+  const stored = session.entities.get(before.id);
+  assert.deepEqual(stored?.kind === "building" && stored.polygons[0]?.outer[1],
+    { x: 4, y: 0.125 });
+  const saved = parseDocument(serializeDocument(session.document()));
   session.undo();
   assert.deepEqual(session.smartTiles, original);
   assert.deepEqual(session.entities.get(before.id), before);

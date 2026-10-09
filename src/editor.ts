@@ -69,7 +69,7 @@ import { objectWheelDirection, rotateObjectRadians, scaleObjectStep } from "./fe
 import type { ObjectTagDocument } from "./features/objekte/object-tags";
 import { floorEraseActive } from "./drawing";
 import { buildingWearMode, isNativeFloorAssetId, type BuildingWearMode } from "./features/material/native-path-catalog";
-import { buildingFloorCells, buildingFloorCellsAfterDraw, buildingFloorCellsAfterErase, buildingFloorCellsAfterPointMove } from "./features/material/building-floor-cells";
+import { buildingFloorCells, buildingFloorCellsAfterDraw, buildingFloorCellsAfterErase, buildingFloorCellsAfterPointEdit } from "./features/material/building-floor-cells";
 import {
   buildingPointGripPixels,
   buildingVertexGrip,
@@ -2550,9 +2550,9 @@ export class DungeonEditor {
           material = this.settings.material;
         if (this.session.version === 4 && after?.kind === "building" &&
             after.floorTileRaster && isNativeFloorAssetId(material?.assetId) &&
-            proposal.edit.kind === "move") {
+            (proposal.edit.kind === "move" || proposal.edit.kind === "insert")) {
           const previous = this.session.smartTiles;
-          const next = buildingFloorCellsAfterPointMove(previous, after,
+          const next = buildingFloorCellsAfterPointEdit(previous, after,
             this.session.settings.width, this.session.settings.height,
             { assetId: material!.assetId!, color: this.settings.surfaces.floor.color });
           this.session.execute(next === previous ? command : {
