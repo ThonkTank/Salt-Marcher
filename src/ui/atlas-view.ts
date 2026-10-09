@@ -95,12 +95,9 @@ export class AtlasView extends FileView {
     const editor = this.editor,
       repository = this.repository;
     if (!editor || !repository || generation !== this.generation) return;
-    const menu = new Menu();
-    menu
+    new Menu()
       .addItem((item) =>
-        item.setTitle("Speichern unter …").onClick((event) => {
-          event.stopPropagation();
-          menu.hide();
+        item.setTitle("Speichern unter …").onClick(() => {
           new CopyAtlasModal(
             this.app,
             editor.terrain.world.name,
@@ -128,14 +125,12 @@ export class AtlasView extends FileView {
         item
           .setTitle("Entwurf verwerfen …")
           .setDisabled(!repository.dirty && !repository.hasDraft)
-          .onClick((event) => {
-            event.stopPropagation();
-            menu.hide();
+          .onClick(() =>
             new DiscardAtlasModal(this.app, () => {
               if (generation === this.generation && this.editor === editor)
                 editor.discard();
-            }).open();
-          }),
+            }).open(),
+          ),
       )
       .showAtMouseEvent(event);
   }

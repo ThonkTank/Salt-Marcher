@@ -91,86 +91,21 @@ module.exports = ({ page, fs, path, assert, qa, vault, out, checks }) => {
     await settle();
   }
   async function menu(text) {
+    // CDP bringToFront does not update Obsidian's native activeWindow when
+    // the startup trust flow leaves a separate Settings window focused.
+    // Focus the verified QA map window; use the actual menu and Modal unchanged.
+    await page.evaluate((expected) => {
+      if (app.vault.adapter.basePath !== expected)
+        throw new Error("Unbekanntes Testfenster");
+      window.electron.remote.getCurrentWindow().focus();
+    }, vault);
+    await page.waitForFunction(() => activeWindow === window);
     await button("Atlas-Kartenmenü").click();
     const item = page.locator(".menu-item").filter({ hasText: text }).last();
     await item.hover();
     await settle();
     await page.screenshot({ path: path.join(out, "menu-before-choice.png") });
-    let debugSession, exceptions = [], scripts = [], runtimeProbe;
-    if (process.env.DUNGEON_QA_MENU_DIAGNOSTIC) {
-      debugSession = await page.context().newCDPSession(page);
-      debugSession.on("Debugger.scriptParsed", (script) => scripts.push(script));
-      await debugSession.send("Debugger.enable");
-      debugSession.on("Debugger.paused", async (event) => {
-        const record = {reason:event.reason, data:event.data, frames:event.callFrames.map(f=>({name:f.functionName,url:f.url,location:f.location}))};
-        if (event.reason === "other") {
-          const callFrameId=event.callFrames[0].callFrameId;
-          record.runtime = await debugSession.send("Debugger.evaluateOnCallFrame", {
-            callFrameId,
-            expression:'JSON.stringify({app:!!this.app,ctor:this.constructor.name,isOpen:this.isOpen,container:this.containerEl?.outerHTML?.slice(0,2000),ownerDoc:this.containerEl?.ownerDocument===document,activeWindowMatch:typeof activeWindow!=="undefined"&&activeWindow===window,windowUrl:typeof activeWindow!=="undefined"&&activeWindow.location.href})',
-            returnByValue:true,
-          });
-          if (event.callFrames[0].location.scriptId === runtimeProbe?.scriptId) {
-            for (const expression of ["Re.Modal.prototype.open", "Re.Modal.prototype.close", "_b.prototype.onOpen"]) {
-              const target = await debugSession.send("Debugger.evaluateOnCallFrame", {callFrameId,expression});
-              if (target.result.objectId) await debugSession.send("Debugger.setBreakpointOnFunctionCall",{objectId:target.result.objectId});
-            }
-          }
-        }
-        exceptions.push(record);
-        await debugSession.send("Debugger.resume");
-      });
-      for (const script of scripts.filter(s=>s.url.includes("plugin:dungeon-editor"))) {
-        const {scriptSource} = await debugSession.send("Debugger.getScriptSource", {scriptId:script.scriptId});
-        const offset = scriptSource.indexOf("new _b(this.app,r.terrain.world.name");
-        if (offset < 0) continue;
-        const lines = scriptSource.slice(0,offset).split("\n");
-        runtimeProbe = {url:script.url,scriptId:script.scriptId,breakpoint:await debugSession.send("Debugger.setBreakpoint",{location:{scriptId:script.scriptId,lineNumber:lines.length-1,columnNumber:lines.at(-1).length}})};
-      }
-      await debugSession.send("Debugger.setPauseOnExceptions", {state:"all"});
-      await page.evaluate(() => {
-        const log = (window.__hexMenuEvents = []);
-        const describe = (el) => ({
-          tag: el?.tagName,
-          cls: el?.className,
-          text: el?.textContent?.slice(0, 120),
-        });
-        for (const target of [window, document.querySelector(".menu"), ...document.querySelectorAll(".menu-item")]) {
-          for (const type of ["pointerdown", "mousedown", "pointerup", "mouseup", "click"]) {
-            for (const capture of [true, false]) {
-              target.addEventListener(type, (e) => log.push({
-                type, capture, current: describe(e.currentTarget), target: describe(e.target),
-                x: e.clientX, y: e.clientY, prevented: e.defaultPrevented, stopped: e.cancelBubble,
-                path: e.composedPath().slice(0, 5).map(describe),
-              }), {capture, once:true});
-            }
-          }
-        }
-        const observer = new MutationObserver((records) => {
-          for (const record of records) {
-            for (const [action, nodes] of [["added", record.addedNodes], ["removed", record.removedNodes]]) {
-              for (const node of nodes) {
-                if (node instanceof Element && (node.matches(".modal-container, .menu") || node.querySelector(".modal-container")))
-                  log.push({action, node:describe(node)});
-              }
-            }
-          }
-        });
-        observer.observe(document.body, {subtree:true, childList:true});
-        window.__hexMenuObserver = observer;
-      });
-    }
     await item.click();
-    if (process.env.DUNGEON_QA_MENU_DIAGNOSTIC) {
-      await settle();
-      await debugSession.send("Debugger.setPauseOnExceptions", {state:"none"});
-      await debugSession.detach();
-      fs.writeFileSync(path.join(out, "menu-exception-diagnostic.json"), JSON.stringify({runtimeProbe,scripts:scripts.filter(s=>s.url.includes("plugin:")).map(s=>({url:s.url,scriptId:s.scriptId})),exceptions},null,2));
-      fs.writeFileSync(path.join(out, "menu-event-diagnostic.json"), JSON.stringify(await page.evaluate(() => {
-        window.__hexMenuObserver.disconnect();
-        return {events:window.__hexMenuEvents, modals:[...document.querySelectorAll(".modal-container")].map(el=>el.outerHTML)};
-      }), null, 2));
-    }
   }
   async function copyDialog() {
     await menu("Speichern unter");
