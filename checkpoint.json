@@ -4351,17 +4351,17 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-01-PREP-GESTURES-PLAN-CLEAN-I06",
-      "kind": "cleanup_implementation",
-      "startedAt": "2026-10-09T17:58:26.059335+00:00",
-      "focus": "No-op-Rundungsregel und Outlinebaseline konkret ergänzen",
-      "state": "completed",
-      "result": "Originalpose bei gleichem Pointer oder unveränderten relevanten Anteilen vorgeschrieben; x/y-Ausnahme und externe Outlinebaseline konkret. Keine Runtimeänderung."
-    },
-    "nextRun": {
       "id": "CITY-01-PREP-GESTURES-PLAN-CLEAN-R06",
       "kind": "cleanup_review",
-      "focus": "Finalen Gestenplan mit aktuellen Source-/Atlasgrenzen und Beispielarithmetik prüfen"
+      "startedAt": "2026-10-09T17:59:39.900617+00:00",
+      "focus": "Finalen Gestenplan mit Quellen und No-op-Gegenprobe prüfen",
+      "state": "completed",
+      "result": "Planverträge/Links/JSON und aktuelle Quellenhashes geprüft; No-op-Pivotrundung tatsächlich reproduziert und Originalpose-Regel festgelegt. Keine Restlücke im Plan-Aufräumen, kein Produkt-/Hostnachweis."
+    },
+    "nextRun": {
+      "id": "CITY-01-PREP-I06",
+      "kind": "implementation",
+      "focus": "CityGesture und gemeinsame Cityposepunkte samt realen Draft-/Historyregressionen implementieren"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
