@@ -4322,17 +4322,17 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-01-PREP-SCENE-CLEAN-P04",
-      "kind": "cleanup_planning",
-      "startedAt": "2026-10-09T17:31:07.162885+00:00",
-      "focus": "Szenenarchitektur und Integrationsgrenzen aufräumen",
-      "state": "completed",
-      "result": "Nur Architektur-/Planpräzisierung und Übergabe des nativen Nachtests; kein Laufzeitumbau."
-    },
-    "nextRun": {
       "id": "CITY-01-PREP-SCENE-CLEAN-I04",
       "kind": "cleanup_implementation",
-      "focus": "Vorhandenen lokalen Core und offene Grafik-/Hostprüfung kenntlich machen"
+      "startedAt": "2026-10-09T17:32:05.019677+00:00",
+      "focus": "Vorhandenen lokalen Core und offene native Prüfung dokumentieren",
+      "state": "completed",
+      "result": "Architektur/Pläne stimmen mit lokalem Szene-/Treffercore und gemeinsamer Geometrie; sichtbare Grafik und native Regression bleiben offen."
+    },
+    "nextRun": {
+      "id": "CITY-01-PREP-SCENE-CLEAN-R04",
+      "kind": "cleanup_review",
+      "focus": "Szenenarchitektur und unveränderte geprüfte Quellen abschließend prüfen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",

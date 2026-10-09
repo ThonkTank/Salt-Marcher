@@ -1,5 +1,7 @@
 # CITY-01-Vorbereitung: gemeinsame Stadtgeometrie und Treffer
 
+Lokaler Core in CITY-01-PREP-I04 umgesetzt und R05 separat geprüft. Umsetzung und Gegenprobe: `/home/aaron/.cache/dungeon-native-qa/city-plans/city01-scene-20261009/implementation.json`, `review.json`, `i04-dungeon-baseline.json`. Die folgenden Verträge bleiben Reviewmaßstab; Pixi-/Host-/Platzierungsintegration und native Dungeon-/Atlasregression sind damit nicht abgenommen.
+
 ## Ausgangspunkt und offene Integration
 
 CITY-01-PREP-P04 folgt dem reviewten [Fachaktionspaket](ROADMAP-CITIES-CITY01-EDIT-PLAN.md). CTY-001.01/CTY-002.01/CTY-002.02 brauchen dieselbe Geometrie für Darstellung, Auswahl und Werkzeugvorschau. Der aktuelle AtlasRenderer besitzt `detailLayer`, zeichnet dort aber noch keine Stadt. `camera.ts` liefert worldToScreen/screenToWorld; `OverworldDocument.placements` ist weiterhin `never[]`, nichtleer wird beim Lesen abgelehnt. `fit()` liest ausschließlich Terrainreferenzen. Es existiert keine ausgelieferte Stadtplatzierung oder Transformation zwischen lokalen und Weltkoordinaten. Der frühere vermutete Pfad `world-coordinates.ts` existiert nicht.
