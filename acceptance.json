@@ -1040,7 +1040,7 @@
       ]
     },
     "inventoryComplete": false,
-    "inventoryStatus": "N-I09: sechs Windrose-Inventarfragen an fünf Controls direkt geklärt. Vier Zahlenfelder korrekt eingeordnet; Directions4..32, LineWidth2..16, InnerRadius0..1024, OuterRadius32..9999; reiner Inner-Circles-Slider nativ0..2. 663 UI/83 Fälle und alte Quellen erhalten. 92 frühe Fragen/R02/Aufräumen offen; keine vollständige Inventar-/Paritätsfreigabe.",
+    "inventoryStatus": "N-I10: neun frühe Land-Zahlenfragen direkt geklärt. Wizard Roughness/Water Level0..1, Detail1..5, Seed beiOverrideON0..999999; Eraser Size4..512; Raise/Lower Size4..128 und Roughness0.1..2 jeweils selbst gemessen.663 UI/83 Fälle und alte Quellen erhalten.83 frühe Fragen/R02/Aufräumen offen; keine vollständige Inventar-/Paritätsfreigabe.",
     "legacyInventoryScope": "Das vorhandene Wurzelfeld inventoryComplete und strictParity beschreiben nur die bisherige Dungeondraft-Inventur; daraus folgt keine Wonderdraft-Abnahme.",
     "inventoryGate": {
       "phase": "HEX-00",
@@ -17987,8 +17987,25 @@
           "value": 0.5,
           "evidenceScope": "Angezeigter Zustand dieser Originalaufnahme; Persistenz und andere Kontexte nicht gemessen."
         },
-        "rangeOrChoices": null,
-        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit.",
+        "rangeOrChoices": {
+          "kind": "observed_numeric_bounds",
+          "minimum": 0,
+          "maximum": 1,
+          "boundMeaning": "displayed_after_validation",
+          "testedInputLiterals": [
+            "-99999",
+            "99999"
+          ],
+          "scope": {
+            "version": "1.1.8.2",
+            "sessions": [
+              "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json"
+            ],
+            "context": "Eigenes frisches Fensterprofil; neue1024×1024-Karte/Large Icons; Wizard Uniform, Seed nur bei OverrideON. Lower wird nach Raise-Endproben geöffnet. Keine globale Default-/Theme-Aussage.",
+            "factoryDefaultsAsserted": false
+          }
+        },
+        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit. Direkt N-I10: protokollierte Zahlenliterale nach Tab auf die belegten Anzeigegrenzen begrenzt.",
         "gesture": {
           "observed": "Öffnen/Anwählen über die protokollierte Original-UI.",
           "operation": "Werkzeug-Abschlussgesten noch nicht gemessen."
@@ -18011,6 +18028,41 @@
             "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/041-landmass-wizard.json",
             "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/041-landmass-wizard.png",
             "observation": "Land > Landmass Wizard > Roughness: 0.5."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/011-land-wizard.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/011-land-wizard.png",
+            "observation": "Land > Landmass Wizard > Roughness: Ausgangsanzeige 0.5 in dieser Folge. Kein universeller Default."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/012-wizard-roughness--99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/012-wizard-roughness--99999-entry.png",
+            "observation": "Land > Landmass Wizard > Roughness: Literal -99999 im eigenen Zahlenfeld eingegeben."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/013-wizard-roughness--99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/013-wizard-roughness--99999-validated.png",
+            "observation": "Land > Landmass Wizard > Roughness: nach Tab als 0 angezeigt."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/018-wizard-roughness-99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/018-wizard-roughness-99999-entry.png",
+            "observation": "Land > Landmass Wizard > Roughness: Literal 99999 im eigenen Zahlenfeld eingegeben."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/019-wizard-roughness-99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/019-wizard-roughness-99999-validated.png",
+            "observation": "Land > Landmass Wizard > Roughness: nach Tab als 1 angezeigt."
           }
         ],
         "classification": "user_function",
@@ -18030,10 +18082,55 @@
             "duePhase": "HEX-00",
             "reason": "Der Wortlaut benennt unbekannte Oberfläche, Wertebereich, Auswahl oder Eingabekontext; keine spätere Wirkung ersetzt diese Inventarpflicht.",
             "probe": "Originaloberfläche abgleichen: Auswahl oder Zahlenbereich noch nicht direkt abgegrenzt.",
-            "state": "open",
-            "evidence": []
+            "state": "resolved",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/011-land-wizard.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/011-land-wizard.png",
+                "observation": "Land > Landmass Wizard > Roughness: Ausgangsanzeige 0.5 in dieser Folge. Kein universeller Default."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/012-wizard-roughness--99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/012-wizard-roughness--99999-entry.png",
+                "observation": "Land > Landmass Wizard > Roughness: Literal -99999 im eigenen Zahlenfeld eingegeben."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/013-wizard-roughness--99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/013-wizard-roughness--99999-validated.png",
+                "observation": "Land > Landmass Wizard > Roughness: nach Tab als 0 angezeigt."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/018-wizard-roughness-99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/018-wizard-roughness-99999-entry.png",
+                "observation": "Land > Landmass Wizard > Roughness: Literal 99999 im eigenen Zahlenfeld eingegeben."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/019-wizard-roughness-99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/019-wizard-roughness-99999-validated.png",
+                "observation": "Land > Landmass Wizard > Roughness: nach Tab als 1 angezeigt."
+              }
+            ],
+            "resolvedIn": "HEX-00-N-I10",
+            "resolution": "Land > Landmass Wizard > Roughness direkt selbst gemessen: -99999 → 0, 99999 → 1 nach Tab. Nur beobachtete Anzeigegrenzen in diesem Originalkontext. Zeichen-/Generierungswirkung, History, Persistenz/Neuöffnung und physische Eingabe bleiben in der jeweiligen Fachphase offen."
           }
-        ]
+        ],
+        "numericObservation": {
+          "run": "HEX-00-N-I10",
+          "initialValue": 0.5,
+          "initialFrame": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/011-land-wizard.json",
+          "note": "Land > Landmass Wizard > Roughness direkt selbst gemessen: -99999 → 0, 99999 → 1 nach Tab. Nur beobachtete Anzeigegrenzen in diesem Originalkontext. Zeichen-/Generierungswirkung, History, Persistenz/Neuöffnung und physische Eingabe bleiben in der jeweiligen Fachphase offen.",
+          "scope": "Nur dieses Original-Control und die protokollierten Literale; keine allgemeine Rundungs-/Schrittformel oder Fachfreigabe."
+        }
       },
       {
         "id": "WD-UI-0268",
@@ -18046,8 +18143,25 @@
           "value": 4,
           "evidenceScope": "Angezeigter Zustand dieser Originalaufnahme; Persistenz und andere Kontexte nicht gemessen."
         },
-        "rangeOrChoices": null,
-        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit.",
+        "rangeOrChoices": {
+          "kind": "observed_numeric_bounds",
+          "minimum": 1,
+          "maximum": 5,
+          "boundMeaning": "displayed_after_validation",
+          "testedInputLiterals": [
+            "-99999",
+            "99999"
+          ],
+          "scope": {
+            "version": "1.1.8.2",
+            "sessions": [
+              "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json"
+            ],
+            "context": "Eigenes frisches Fensterprofil; neue1024×1024-Karte/Large Icons; Wizard Uniform, Seed nur bei OverrideON. Lower wird nach Raise-Endproben geöffnet. Keine globale Default-/Theme-Aussage.",
+            "factoryDefaultsAsserted": false
+          }
+        },
+        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit. Direkt N-I10: protokollierte Zahlenliterale nach Tab auf die belegten Anzeigegrenzen begrenzt.",
         "gesture": {
           "observed": "Öffnen/Anwählen über die protokollierte Original-UI.",
           "operation": "Werkzeug-Abschlussgesten noch nicht gemessen."
@@ -18070,6 +18184,41 @@
             "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/041-landmass-wizard.json",
             "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/041-landmass-wizard.png",
             "observation": "Land > Landmass Wizard > Detail: 4."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/011-land-wizard.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/011-land-wizard.png",
+            "observation": "Land > Landmass Wizard > Detail: Ausgangsanzeige 4 in dieser Folge. Kein universeller Default."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/014-wizard-detail--99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/014-wizard-detail--99999-entry.png",
+            "observation": "Land > Landmass Wizard > Detail: Literal -99999 im eigenen Zahlenfeld eingegeben."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/015-wizard-detail--99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/015-wizard-detail--99999-validated.png",
+            "observation": "Land > Landmass Wizard > Detail: nach Tab als 1 angezeigt."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/020-wizard-detail-99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/020-wizard-detail-99999-entry.png",
+            "observation": "Land > Landmass Wizard > Detail: Literal 99999 im eigenen Zahlenfeld eingegeben."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/021-wizard-detail-99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/021-wizard-detail-99999-validated.png",
+            "observation": "Land > Landmass Wizard > Detail: nach Tab als 5 angezeigt."
           }
         ],
         "classification": "user_function",
@@ -18089,10 +18238,55 @@
             "duePhase": "HEX-00",
             "reason": "Der Wortlaut benennt unbekannte Oberfläche, Wertebereich, Auswahl oder Eingabekontext; keine spätere Wirkung ersetzt diese Inventarpflicht.",
             "probe": "Originaloberfläche abgleichen: Auswahl oder Zahlenbereich noch nicht direkt abgegrenzt.",
-            "state": "open",
-            "evidence": []
+            "state": "resolved",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/011-land-wizard.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/011-land-wizard.png",
+                "observation": "Land > Landmass Wizard > Detail: Ausgangsanzeige 4 in dieser Folge. Kein universeller Default."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/014-wizard-detail--99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/014-wizard-detail--99999-entry.png",
+                "observation": "Land > Landmass Wizard > Detail: Literal -99999 im eigenen Zahlenfeld eingegeben."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/015-wizard-detail--99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/015-wizard-detail--99999-validated.png",
+                "observation": "Land > Landmass Wizard > Detail: nach Tab als 1 angezeigt."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/020-wizard-detail-99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/020-wizard-detail-99999-entry.png",
+                "observation": "Land > Landmass Wizard > Detail: Literal 99999 im eigenen Zahlenfeld eingegeben."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/021-wizard-detail-99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/021-wizard-detail-99999-validated.png",
+                "observation": "Land > Landmass Wizard > Detail: nach Tab als 5 angezeigt."
+              }
+            ],
+            "resolvedIn": "HEX-00-N-I10",
+            "resolution": "Land > Landmass Wizard > Detail direkt selbst gemessen: -99999 → 1, 99999 → 5 nach Tab. Nur beobachtete Anzeigegrenzen in diesem Originalkontext. Zeichen-/Generierungswirkung, History, Persistenz/Neuöffnung und physische Eingabe bleiben in der jeweiligen Fachphase offen."
           }
-        ]
+        ],
+        "numericObservation": {
+          "run": "HEX-00-N-I10",
+          "initialValue": 4,
+          "initialFrame": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/011-land-wizard.json",
+          "note": "Land > Landmass Wizard > Detail direkt selbst gemessen: -99999 → 1, 99999 → 5 nach Tab. Nur beobachtete Anzeigegrenzen in diesem Originalkontext. Zeichen-/Generierungswirkung, History, Persistenz/Neuöffnung und physische Eingabe bleiben in der jeweiligen Fachphase offen.",
+          "scope": "Nur dieses Original-Control und die protokollierten Literale; keine allgemeine Rundungs-/Schrittformel oder Fachfreigabe."
+        }
       },
       {
         "id": "WD-UI-0269",
@@ -18105,8 +18299,25 @@
           "value": 0.5,
           "evidenceScope": "Angezeigter Zustand dieser Originalaufnahme; Persistenz und andere Kontexte nicht gemessen."
         },
-        "rangeOrChoices": null,
-        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit.",
+        "rangeOrChoices": {
+          "kind": "observed_numeric_bounds",
+          "minimum": 0,
+          "maximum": 1,
+          "boundMeaning": "displayed_after_validation",
+          "testedInputLiterals": [
+            "-99999",
+            "99999"
+          ],
+          "scope": {
+            "version": "1.1.8.2",
+            "sessions": [
+              "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json"
+            ],
+            "context": "Eigenes frisches Fensterprofil; neue1024×1024-Karte/Large Icons; Wizard Uniform, Seed nur bei OverrideON. Lower wird nach Raise-Endproben geöffnet. Keine globale Default-/Theme-Aussage.",
+            "factoryDefaultsAsserted": false
+          }
+        },
+        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit. Direkt N-I10: protokollierte Zahlenliterale nach Tab auf die belegten Anzeigegrenzen begrenzt.",
         "gesture": {
           "observed": "Öffnen/Anwählen über die protokollierte Original-UI.",
           "operation": "Werkzeug-Abschlussgesten noch nicht gemessen."
@@ -18129,6 +18340,41 @@
             "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/041-landmass-wizard.json",
             "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/041-landmass-wizard.png",
             "observation": "Land > Landmass Wizard > Water Level: 0.5."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/011-land-wizard.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/011-land-wizard.png",
+            "observation": "Land > Landmass Wizard > Water Level: Ausgangsanzeige 0.5 in dieser Folge. Kein universeller Default."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/016-wizard-water-level--99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/016-wizard-water-level--99999-entry.png",
+            "observation": "Land > Landmass Wizard > Water Level: Literal -99999 im eigenen Zahlenfeld eingegeben."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/017-wizard-water-level--99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/017-wizard-water-level--99999-validated.png",
+            "observation": "Land > Landmass Wizard > Water Level: nach Tab als 0 angezeigt."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/022-wizard-water-level-99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/022-wizard-water-level-99999-entry.png",
+            "observation": "Land > Landmass Wizard > Water Level: Literal 99999 im eigenen Zahlenfeld eingegeben."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/023-wizard-water-level-99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/023-wizard-water-level-99999-validated.png",
+            "observation": "Land > Landmass Wizard > Water Level: nach Tab als 1 angezeigt."
           }
         ],
         "classification": "user_function",
@@ -18148,10 +18394,55 @@
             "duePhase": "HEX-00",
             "reason": "Der Wortlaut benennt unbekannte Oberfläche, Wertebereich, Auswahl oder Eingabekontext; keine spätere Wirkung ersetzt diese Inventarpflicht.",
             "probe": "Originaloberfläche abgleichen: Auswahl oder Zahlenbereich noch nicht direkt abgegrenzt.",
-            "state": "open",
-            "evidence": []
+            "state": "resolved",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/011-land-wizard.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/011-land-wizard.png",
+                "observation": "Land > Landmass Wizard > Water Level: Ausgangsanzeige 0.5 in dieser Folge. Kein universeller Default."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/016-wizard-water-level--99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/016-wizard-water-level--99999-entry.png",
+                "observation": "Land > Landmass Wizard > Water Level: Literal -99999 im eigenen Zahlenfeld eingegeben."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/017-wizard-water-level--99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/017-wizard-water-level--99999-validated.png",
+                "observation": "Land > Landmass Wizard > Water Level: nach Tab als 0 angezeigt."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/022-wizard-water-level-99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/022-wizard-water-level-99999-entry.png",
+                "observation": "Land > Landmass Wizard > Water Level: Literal 99999 im eigenen Zahlenfeld eingegeben."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/023-wizard-water-level-99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/023-wizard-water-level-99999-validated.png",
+                "observation": "Land > Landmass Wizard > Water Level: nach Tab als 1 angezeigt."
+              }
+            ],
+            "resolvedIn": "HEX-00-N-I10",
+            "resolution": "Land > Landmass Wizard > Water Level direkt selbst gemessen: -99999 → 0, 99999 → 1 nach Tab. Nur beobachtete Anzeigegrenzen in diesem Originalkontext. Die Karte zeigt beim Wechsel der Wasserstandsanzeige eine andere Oberfläche; dies ist keine vollständige Generierungs-/Geometrieabnahme. Zeichen-/Generierungswirkung, History, Persistenz/Neuöffnung und physische Eingabe bleiben in der jeweiligen Fachphase offen."
           }
-        ]
+        ],
+        "numericObservation": {
+          "run": "HEX-00-N-I10",
+          "initialValue": 0.5,
+          "initialFrame": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/011-land-wizard.json",
+          "note": "Land > Landmass Wizard > Water Level direkt selbst gemessen: -99999 → 0, 99999 → 1 nach Tab. Nur beobachtete Anzeigegrenzen in diesem Originalkontext. Die Karte zeigt beim Wechsel der Wasserstandsanzeige eine andere Oberfläche; dies ist keine vollständige Generierungs-/Geometrieabnahme. Zeichen-/Generierungswirkung, History, Persistenz/Neuöffnung und physische Eingabe bleiben in der jeweiligen Fachphase offen.",
+          "scope": "Nur dieses Original-Control und die protokollierten Literale; keine allgemeine Rundungs-/Schrittformel oder Fachfreigabe."
+        }
       },
       {
         "id": "WD-UI-0270",
@@ -18326,8 +18617,26 @@
           "value": "0; disabled without override",
           "evidenceScope": "Angezeigter Zustand dieser Originalaufnahme; Persistenz und andere Kontexte nicht gemessen."
         },
-        "rangeOrChoices": null,
-        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit.",
+        "rangeOrChoices": {
+          "kind": "observed_numeric_bounds",
+          "minimum": 0,
+          "maximum": 999999,
+          "boundMeaning": "displayed_after_validation",
+          "testedInputLiterals": [
+            "-99999",
+            "1000000",
+            "99999999999999999999"
+          ],
+          "scope": {
+            "version": "1.1.8.2",
+            "sessions": [
+              "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json"
+            ],
+            "context": "Eigenes frisches Fensterprofil; neue1024×1024-Karte/Large Icons; Wizard Uniform, Seed nur bei OverrideON. Lower wird nach Raise-Endproben geöffnet. Keine globale Default-/Theme-Aussage.",
+            "factoryDefaultsAsserted": false
+          }
+        },
+        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit. Direkt N-I10: protokollierte Zahlenliterale nach Tab auf die belegten Anzeigegrenzen begrenzt.",
         "gesture": {
           "observed": "Öffnen/Anwählen über die protokollierte Original-UI.",
           "operation": "Werkzeug-Abschlussgesten noch nicht gemessen."
@@ -18349,6 +18658,69 @@
             "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/042-landmass-wizard-advanced.json",
             "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/042-landmass-wizard-advanced.png",
             "observation": "Land > Landmass Wizard > Advanced > Seed: 0; disabled without override."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/025-wizard-seed-override.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/025-wizard-seed-override.png",
+            "observation": "Land > Landmass Wizard > Advanced > Seed: Ausgangsanzeige 0 in dieser Folge. Kein universeller Default."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/026-wizard-seed--99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/026-wizard-seed--99999-entry.png",
+            "observation": "Land > Landmass Wizard > Advanced > Seed: Literal -99999 im eigenen Zahlenfeld eingegeben."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/027-wizard-seed--99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/027-wizard-seed--99999-validated.png",
+            "observation": "Land > Landmass Wizard > Advanced > Seed: nach Tab als 0 angezeigt."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/030-wizard-seed-upper-confirm-1000000-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/030-wizard-seed-upper-confirm-1000000-entry.png",
+            "observation": "Land > Landmass Wizard > Advanced > Seed: Literal 1000000 im eigenen Zahlenfeld eingegeben."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/031-wizard-seed-upper-confirm-1000000-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/031-wizard-seed-upper-confirm-1000000-validated.png",
+            "observation": "Land > Landmass Wizard > Advanced > Seed: nach Tab als 999999 angezeigt."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/024-wizard-advanced-disabled.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/024-wizard-advanced-disabled.png",
+            "observation": "Advanced geöffnet: Override OFF, Seed0 ausgegraut."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/025-wizard-seed-override.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/025-wizard-seed-override.png",
+            "observation": "Override ON macht das Seed-Zahlenfeld bei0 bearbeitbar."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/028-wizard-seed-99999999999999999999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/028-wizard-seed-99999999999999999999-entry.png",
+            "observation": "Zusätzliche hohe Seed-Literalprobe99999999999999999999 im eigenen aktiven Feld; Feldbreite begrenzt die sichtbare Eingabe."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/029-wizard-seed-99999999999999999999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/029-wizard-seed-99999999999999999999-validated.png",
+            "observation": "Zusätzliches hohes Seed-Literal zeigt nach Tab999999. Die separate sichtbare1000000-Probe belegt den oberen Abschluss ohne Annahme einer sechsstelligen Eingabesperre."
           }
         ],
         "classification": "user_function",
@@ -18367,10 +18739,83 @@
             "duePhase": "HEX-00",
             "reason": "Der Wortlaut benennt unbekannte Oberfläche, Wertebereich, Auswahl oder Eingabekontext; keine spätere Wirkung ersetzt diese Inventarpflicht.",
             "probe": "Originaloberfläche abgleichen: Auswahl oder Zahlenbereich noch nicht direkt abgegrenzt.",
-            "state": "open",
-            "evidence": []
+            "state": "resolved",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/025-wizard-seed-override.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/025-wizard-seed-override.png",
+                "observation": "Land > Landmass Wizard > Advanced > Seed: Ausgangsanzeige 0 in dieser Folge. Kein universeller Default."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/026-wizard-seed--99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/026-wizard-seed--99999-entry.png",
+                "observation": "Land > Landmass Wizard > Advanced > Seed: Literal -99999 im eigenen Zahlenfeld eingegeben."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/027-wizard-seed--99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/027-wizard-seed--99999-validated.png",
+                "observation": "Land > Landmass Wizard > Advanced > Seed: nach Tab als 0 angezeigt."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/030-wizard-seed-upper-confirm-1000000-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/030-wizard-seed-upper-confirm-1000000-entry.png",
+                "observation": "Land > Landmass Wizard > Advanced > Seed: Literal 1000000 im eigenen Zahlenfeld eingegeben."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/031-wizard-seed-upper-confirm-1000000-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/031-wizard-seed-upper-confirm-1000000-validated.png",
+                "observation": "Land > Landmass Wizard > Advanced > Seed: nach Tab als 999999 angezeigt."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/024-wizard-advanced-disabled.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/024-wizard-advanced-disabled.png",
+                "observation": "Advanced geöffnet: Override OFF, Seed0 ausgegraut."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/025-wizard-seed-override.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/025-wizard-seed-override.png",
+                "observation": "Override ON macht das Seed-Zahlenfeld bei0 bearbeitbar."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/028-wizard-seed-99999999999999999999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/028-wizard-seed-99999999999999999999-entry.png",
+                "observation": "Zusätzliche hohe Seed-Literalprobe99999999999999999999 im eigenen aktiven Feld; Feldbreite begrenzt die sichtbare Eingabe."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/029-wizard-seed-99999999999999999999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/029-wizard-seed-99999999999999999999-validated.png",
+                "observation": "Zusätzliches hohes Seed-Literal zeigt nach Tab999999. Die separate sichtbare1000000-Probe belegt den oberen Abschluss ohne Annahme einer sechsstelligen Eingabesperre."
+              }
+            ],
+            "resolvedIn": "HEX-00-N-I10",
+            "resolution": "Land > Landmass Wizard > Advanced > Seed direkt selbst gemessen: -99999 → 0, 1000000 → 999999 nach Tab. Nur beobachtete Anzeigegrenzen in diesem Originalkontext. Advanced > Override ON ist der gemessene Eingabeweg. Auch das sehr hohe Literal endet bei999999;1000000 ist vor Tab vollständig sichtbar. Keine angenommene Seed-Bitzahl oder Generierungswirkung. Zeichen-/Generierungswirkung, History, Persistenz/Neuöffnung und physische Eingabe bleiben in der jeweiligen Fachphase offen."
           }
-        ]
+        ],
+        "numericObservation": {
+          "run": "HEX-00-N-I10",
+          "initialValue": 0,
+          "initialFrame": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/025-wizard-seed-override.json",
+          "note": "Land > Landmass Wizard > Advanced > Seed direkt selbst gemessen: -99999 → 0, 1000000 → 999999 nach Tab. Nur beobachtete Anzeigegrenzen in diesem Originalkontext. Advanced > Override ON ist der gemessene Eingabeweg. Auch das sehr hohe Literal endet bei999999;1000000 ist vor Tab vollständig sichtbar. Keine angenommene Seed-Bitzahl oder Generierungswirkung. Zeichen-/Generierungswirkung, History, Persistenz/Neuöffnung und physische Eingabe bleiben in der jeweiligen Fachphase offen.",
+          "scope": "Nur dieses Original-Control und die protokollierten Literale; keine allgemeine Rundungs-/Schrittformel oder Fachfreigabe."
+        }
       },
       {
         "id": "WD-UI-0275",
@@ -18474,8 +18919,25 @@
           "value": 64,
           "evidenceScope": "Angezeigter Zustand dieser Originalaufnahme; Persistenz und andere Kontexte nicht gemessen."
         },
-        "rangeOrChoices": null,
-        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit.",
+        "rangeOrChoices": {
+          "kind": "observed_numeric_bounds",
+          "minimum": 4,
+          "maximum": 512,
+          "boundMeaning": "displayed_after_validation",
+          "testedInputLiterals": [
+            "-99999",
+            "99999"
+          ],
+          "scope": {
+            "version": "1.1.8.2",
+            "sessions": [
+              "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json"
+            ],
+            "context": "Eigenes frisches Fensterprofil; neue1024×1024-Karte/Large Icons; Wizard Uniform, Seed nur bei OverrideON. Lower wird nach Raise-Endproben geöffnet. Keine globale Default-/Theme-Aussage.",
+            "factoryDefaultsAsserted": false
+          }
+        },
+        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit. Direkt N-I10: protokollierte Zahlenliterale nach Tab auf die belegten Anzeigegrenzen begrenzt.",
         "gesture": {
           "observed": "Öffnen/Anwählen über die protokollierte Original-UI.",
           "operation": "Werkzeug-Abschlussgesten noch nicht gemessen."
@@ -18497,6 +18959,41 @@
             "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/044-landmass-eraser.json",
             "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/044-landmass-eraser.png",
             "observation": "Land > Landmass Eraser > Brush Size: 64."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/032-land-eraser.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/032-land-eraser.png",
+            "observation": "Land > Landmass Eraser > Brush Size: Ausgangsanzeige 64 in dieser Folge. Kein universeller Default."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/033-land-eraser-size--99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/033-land-eraser-size--99999-entry.png",
+            "observation": "Land > Landmass Eraser > Brush Size: Literal -99999 im eigenen Zahlenfeld eingegeben."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/034-land-eraser-size--99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/034-land-eraser-size--99999-validated.png",
+            "observation": "Land > Landmass Eraser > Brush Size: nach Tab als 4 angezeigt."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/035-land-eraser-size-99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/035-land-eraser-size-99999-entry.png",
+            "observation": "Land > Landmass Eraser > Brush Size: Literal 99999 im eigenen Zahlenfeld eingegeben."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/036-land-eraser-size-99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/036-land-eraser-size-99999-validated.png",
+            "observation": "Land > Landmass Eraser > Brush Size: nach Tab als 512 angezeigt."
           }
         ],
         "classification": "user_function",
@@ -18515,10 +19012,55 @@
             "duePhase": "HEX-00",
             "reason": "Der Wortlaut benennt unbekannte Oberfläche, Wertebereich, Auswahl oder Eingabekontext; keine spätere Wirkung ersetzt diese Inventarpflicht.",
             "probe": "Originaloberfläche abgleichen: Auswahl oder Zahlenbereich noch nicht direkt abgegrenzt.",
-            "state": "open",
-            "evidence": []
+            "state": "resolved",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/032-land-eraser.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/032-land-eraser.png",
+                "observation": "Land > Landmass Eraser > Brush Size: Ausgangsanzeige 64 in dieser Folge. Kein universeller Default."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/033-land-eraser-size--99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/033-land-eraser-size--99999-entry.png",
+                "observation": "Land > Landmass Eraser > Brush Size: Literal -99999 im eigenen Zahlenfeld eingegeben."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/034-land-eraser-size--99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/034-land-eraser-size--99999-validated.png",
+                "observation": "Land > Landmass Eraser > Brush Size: nach Tab als 4 angezeigt."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/035-land-eraser-size-99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/035-land-eraser-size-99999-entry.png",
+                "observation": "Land > Landmass Eraser > Brush Size: Literal 99999 im eigenen Zahlenfeld eingegeben."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/036-land-eraser-size-99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/036-land-eraser-size-99999-validated.png",
+                "observation": "Land > Landmass Eraser > Brush Size: nach Tab als 512 angezeigt."
+              }
+            ],
+            "resolvedIn": "HEX-00-N-I10",
+            "resolution": "Land > Landmass Eraser > Brush Size direkt selbst gemessen: -99999 → 4, 99999 → 512 nach Tab. Nur beobachtete Anzeigegrenzen in diesem Originalkontext. Aktuelle Feldbeschriftung Size; bisheriger Inventarpfad Brush Size unverändert erhalten. Zeichen-/Generierungswirkung, History, Persistenz/Neuöffnung und physische Eingabe bleiben in der jeweiligen Fachphase offen."
           }
-        ]
+        ],
+        "numericObservation": {
+          "run": "HEX-00-N-I10",
+          "initialValue": 64,
+          "initialFrame": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/032-land-eraser.json",
+          "note": "Land > Landmass Eraser > Brush Size direkt selbst gemessen: -99999 → 4, 99999 → 512 nach Tab. Nur beobachtete Anzeigegrenzen in diesem Originalkontext. Aktuelle Feldbeschriftung Size; bisheriger Inventarpfad Brush Size unverändert erhalten. Zeichen-/Generierungswirkung, History, Persistenz/Neuöffnung und physische Eingabe bleiben in der jeweiligen Fachphase offen.",
+          "scope": "Nur dieses Original-Control und die protokollierten Literale; keine allgemeine Rundungs-/Schrittformel oder Fachfreigabe."
+        }
       },
       {
         "id": "WD-UI-0277",
@@ -18531,8 +19073,25 @@
           "value": 64,
           "evidenceScope": "Angezeigter Zustand dieser Originalaufnahme; Persistenz und andere Kontexte nicht gemessen."
         },
-        "rangeOrChoices": null,
-        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit.",
+        "rangeOrChoices": {
+          "kind": "observed_numeric_bounds",
+          "minimum": 4,
+          "maximum": 128,
+          "boundMeaning": "displayed_after_validation",
+          "testedInputLiterals": [
+            "-99999",
+            "99999"
+          ],
+          "scope": {
+            "version": "1.1.8.2",
+            "sessions": [
+              "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json"
+            ],
+            "context": "Eigenes frisches Fensterprofil; neue1024×1024-Karte/Large Icons; Wizard Uniform, Seed nur bei OverrideON. Lower wird nach Raise-Endproben geöffnet. Keine globale Default-/Theme-Aussage.",
+            "factoryDefaultsAsserted": false
+          }
+        },
+        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit. Direkt N-I10: protokollierte Zahlenliterale nach Tab auf die belegten Anzeigegrenzen begrenzt.",
         "gesture": {
           "observed": "Öffnen/Anwählen über die protokollierte Original-UI.",
           "operation": "Werkzeug-Abschlussgesten noch nicht gemessen."
@@ -18555,6 +19114,41 @@
             "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/045-raise-landmass.json",
             "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/045-raise-landmass.png",
             "observation": "Land > Raise Landmass Tool > Brush Size: 64."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/037-land-raise.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/037-land-raise.png",
+            "observation": "Land > Raise Landmass Tool > Brush Size: Ausgangsanzeige 64 in dieser Folge. Kein universeller Default."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/038-land-raise-size--99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/038-land-raise-size--99999-entry.png",
+            "observation": "Land > Raise Landmass Tool > Brush Size: Literal -99999 im eigenen Zahlenfeld eingegeben."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/039-land-raise-size--99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/039-land-raise-size--99999-validated.png",
+            "observation": "Land > Raise Landmass Tool > Brush Size: nach Tab als 4 angezeigt."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/042-land-raise-size-99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/042-land-raise-size-99999-entry.png",
+            "observation": "Land > Raise Landmass Tool > Brush Size: Literal 99999 im eigenen Zahlenfeld eingegeben."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/043-land-raise-size-99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/043-land-raise-size-99999-validated.png",
+            "observation": "Land > Raise Landmass Tool > Brush Size: nach Tab als 128 angezeigt."
           }
         ],
         "classification": "user_function",
@@ -18574,10 +19168,55 @@
             "duePhase": "HEX-00",
             "reason": "Der Wortlaut benennt unbekannte Oberfläche, Wertebereich, Auswahl oder Eingabekontext; keine spätere Wirkung ersetzt diese Inventarpflicht.",
             "probe": "Originaloberfläche abgleichen: Auswahl oder Zahlenbereich noch nicht direkt abgegrenzt.",
-            "state": "open",
-            "evidence": []
+            "state": "resolved",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/037-land-raise.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/037-land-raise.png",
+                "observation": "Land > Raise Landmass Tool > Brush Size: Ausgangsanzeige 64 in dieser Folge. Kein universeller Default."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/038-land-raise-size--99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/038-land-raise-size--99999-entry.png",
+                "observation": "Land > Raise Landmass Tool > Brush Size: Literal -99999 im eigenen Zahlenfeld eingegeben."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/039-land-raise-size--99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/039-land-raise-size--99999-validated.png",
+                "observation": "Land > Raise Landmass Tool > Brush Size: nach Tab als 4 angezeigt."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/042-land-raise-size-99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/042-land-raise-size-99999-entry.png",
+                "observation": "Land > Raise Landmass Tool > Brush Size: Literal 99999 im eigenen Zahlenfeld eingegeben."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/043-land-raise-size-99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/043-land-raise-size-99999-validated.png",
+                "observation": "Land > Raise Landmass Tool > Brush Size: nach Tab als 128 angezeigt."
+              }
+            ],
+            "resolvedIn": "HEX-00-N-I10",
+            "resolution": "Land > Raise Landmass Tool > Brush Size direkt selbst gemessen: -99999 → 4, 99999 → 128 nach Tab. Nur beobachtete Anzeigegrenzen in diesem Originalkontext. Zeichen-/Generierungswirkung, History, Persistenz/Neuöffnung und physische Eingabe bleiben in der jeweiligen Fachphase offen."
           }
-        ]
+        ],
+        "numericObservation": {
+          "run": "HEX-00-N-I10",
+          "initialValue": 64,
+          "initialFrame": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/037-land-raise.json",
+          "note": "Land > Raise Landmass Tool > Brush Size direkt selbst gemessen: -99999 → 4, 99999 → 128 nach Tab. Nur beobachtete Anzeigegrenzen in diesem Originalkontext. Zeichen-/Generierungswirkung, History, Persistenz/Neuöffnung und physische Eingabe bleiben in der jeweiligen Fachphase offen.",
+          "scope": "Nur dieses Original-Control und die protokollierten Literale; keine allgemeine Rundungs-/Schrittformel oder Fachfreigabe."
+        }
       },
       {
         "id": "WD-UI-0278",
@@ -18590,8 +19229,25 @@
           "value": 1,
           "evidenceScope": "Angezeigter Zustand dieser Originalaufnahme; Persistenz und andere Kontexte nicht gemessen."
         },
-        "rangeOrChoices": null,
-        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit.",
+        "rangeOrChoices": {
+          "kind": "observed_numeric_bounds",
+          "minimum": 0.1,
+          "maximum": 2,
+          "boundMeaning": "displayed_after_validation",
+          "testedInputLiterals": [
+            "-99999",
+            "99999"
+          ],
+          "scope": {
+            "version": "1.1.8.2",
+            "sessions": [
+              "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json"
+            ],
+            "context": "Eigenes frisches Fensterprofil; neue1024×1024-Karte/Large Icons; Wizard Uniform, Seed nur bei OverrideON. Lower wird nach Raise-Endproben geöffnet. Keine globale Default-/Theme-Aussage.",
+            "factoryDefaultsAsserted": false
+          }
+        },
+        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit. Direkt N-I10: protokollierte Zahlenliterale nach Tab auf die belegten Anzeigegrenzen begrenzt.",
         "gesture": {
           "observed": "Öffnen/Anwählen über die protokollierte Original-UI.",
           "operation": "Werkzeug-Abschlussgesten noch nicht gemessen."
@@ -18614,6 +19270,41 @@
             "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/045-raise-landmass.json",
             "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/045-raise-landmass.png",
             "observation": "Land > Raise Landmass Tool > Roughness: 1."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/037-land-raise.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/037-land-raise.png",
+            "observation": "Land > Raise Landmass Tool > Roughness: Ausgangsanzeige 1 in dieser Folge. Kein universeller Default."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/040-land-raise-roughness--99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/040-land-raise-roughness--99999-entry.png",
+            "observation": "Land > Raise Landmass Tool > Roughness: Literal -99999 im eigenen Zahlenfeld eingegeben."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/041-land-raise-roughness--99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/041-land-raise-roughness--99999-validated.png",
+            "observation": "Land > Raise Landmass Tool > Roughness: nach Tab als 0.1 angezeigt."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/044-land-raise-roughness-99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/044-land-raise-roughness-99999-entry.png",
+            "observation": "Land > Raise Landmass Tool > Roughness: Literal 99999 im eigenen Zahlenfeld eingegeben."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/045-land-raise-roughness-99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/045-land-raise-roughness-99999-validated.png",
+            "observation": "Land > Raise Landmass Tool > Roughness: nach Tab als 2 angezeigt."
           }
         ],
         "classification": "user_function",
@@ -18633,10 +19324,55 @@
             "duePhase": "HEX-00",
             "reason": "Der Wortlaut benennt unbekannte Oberfläche, Wertebereich, Auswahl oder Eingabekontext; keine spätere Wirkung ersetzt diese Inventarpflicht.",
             "probe": "Originaloberfläche abgleichen: Auswahl oder Zahlenbereich noch nicht direkt abgegrenzt.",
-            "state": "open",
-            "evidence": []
+            "state": "resolved",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/037-land-raise.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/037-land-raise.png",
+                "observation": "Land > Raise Landmass Tool > Roughness: Ausgangsanzeige 1 in dieser Folge. Kein universeller Default."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/040-land-raise-roughness--99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/040-land-raise-roughness--99999-entry.png",
+                "observation": "Land > Raise Landmass Tool > Roughness: Literal -99999 im eigenen Zahlenfeld eingegeben."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/041-land-raise-roughness--99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/041-land-raise-roughness--99999-validated.png",
+                "observation": "Land > Raise Landmass Tool > Roughness: nach Tab als 0.1 angezeigt."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/044-land-raise-roughness-99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/044-land-raise-roughness-99999-entry.png",
+                "observation": "Land > Raise Landmass Tool > Roughness: Literal 99999 im eigenen Zahlenfeld eingegeben."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/045-land-raise-roughness-99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/045-land-raise-roughness-99999-validated.png",
+                "observation": "Land > Raise Landmass Tool > Roughness: nach Tab als 2 angezeigt."
+              }
+            ],
+            "resolvedIn": "HEX-00-N-I10",
+            "resolution": "Land > Raise Landmass Tool > Roughness direkt selbst gemessen: -99999 → 0.1, 99999 → 2 nach Tab. Nur beobachtete Anzeigegrenzen in diesem Originalkontext. Zeichen-/Generierungswirkung, History, Persistenz/Neuöffnung und physische Eingabe bleiben in der jeweiligen Fachphase offen."
           }
-        ]
+        ],
+        "numericObservation": {
+          "run": "HEX-00-N-I10",
+          "initialValue": 1,
+          "initialFrame": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/037-land-raise.json",
+          "note": "Land > Raise Landmass Tool > Roughness direkt selbst gemessen: -99999 → 0.1, 99999 → 2 nach Tab. Nur beobachtete Anzeigegrenzen in diesem Originalkontext. Zeichen-/Generierungswirkung, History, Persistenz/Neuöffnung und physische Eingabe bleiben in der jeweiligen Fachphase offen.",
+          "scope": "Nur dieses Original-Control und die protokollierten Literale; keine allgemeine Rundungs-/Schrittformel oder Fachfreigabe."
+        }
       },
       {
         "id": "WD-UI-0279",
@@ -18649,8 +19385,25 @@
           "value": 64,
           "evidenceScope": "Angezeigter Zustand dieser Originalaufnahme; Persistenz und andere Kontexte nicht gemessen."
         },
-        "rangeOrChoices": null,
-        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit.",
+        "rangeOrChoices": {
+          "kind": "observed_numeric_bounds",
+          "minimum": 4,
+          "maximum": 128,
+          "boundMeaning": "displayed_after_validation",
+          "testedInputLiterals": [
+            "-99999",
+            "99999"
+          ],
+          "scope": {
+            "version": "1.1.8.2",
+            "sessions": [
+              "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json"
+            ],
+            "context": "Eigenes frisches Fensterprofil; neue1024×1024-Karte/Large Icons; Wizard Uniform, Seed nur bei OverrideON. Lower wird nach Raise-Endproben geöffnet. Keine globale Default-/Theme-Aussage.",
+            "factoryDefaultsAsserted": false
+          }
+        },
+        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit. Direkt N-I10: protokollierte Zahlenliterale nach Tab auf die belegten Anzeigegrenzen begrenzt.",
         "gesture": {
           "observed": "Öffnen/Anwählen über die protokollierte Original-UI.",
           "operation": "Werkzeug-Abschlussgesten noch nicht gemessen."
@@ -18673,6 +19426,41 @@
             "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/046-lower-landmass.json",
             "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/046-lower-landmass.png",
             "observation": "Land > Lower Landmass Tool > Brush Size: 64."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/046-land-lower.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/046-land-lower.png",
+            "observation": "Land > Lower Landmass Tool > Brush Size: Ausgangsanzeige 128 in dieser Folge. Kein universeller Default."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/047-land-lower-size--99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/047-land-lower-size--99999-entry.png",
+            "observation": "Land > Lower Landmass Tool > Brush Size: Literal -99999 im eigenen Zahlenfeld eingegeben."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/048-land-lower-size--99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/048-land-lower-size--99999-validated.png",
+            "observation": "Land > Lower Landmass Tool > Brush Size: nach Tab als 4 angezeigt."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/051-land-lower-size-99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/051-land-lower-size-99999-entry.png",
+            "observation": "Land > Lower Landmass Tool > Brush Size: Literal 99999 im eigenen Zahlenfeld eingegeben."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/052-land-lower-size-99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/052-land-lower-size-99999-validated.png",
+            "observation": "Land > Lower Landmass Tool > Brush Size: nach Tab als 128 angezeigt."
           }
         ],
         "classification": "user_function",
@@ -18692,10 +19480,55 @@
             "duePhase": "HEX-00",
             "reason": "Der Wortlaut benennt unbekannte Oberfläche, Wertebereich, Auswahl oder Eingabekontext; keine spätere Wirkung ersetzt diese Inventarpflicht.",
             "probe": "Originaloberfläche abgleichen: Auswahl oder Zahlenbereich noch nicht direkt abgegrenzt.",
-            "state": "open",
-            "evidence": []
+            "state": "resolved",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/046-land-lower.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/046-land-lower.png",
+                "observation": "Land > Lower Landmass Tool > Brush Size: Ausgangsanzeige 128 in dieser Folge. Kein universeller Default."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/047-land-lower-size--99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/047-land-lower-size--99999-entry.png",
+                "observation": "Land > Lower Landmass Tool > Brush Size: Literal -99999 im eigenen Zahlenfeld eingegeben."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/048-land-lower-size--99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/048-land-lower-size--99999-validated.png",
+                "observation": "Land > Lower Landmass Tool > Brush Size: nach Tab als 4 angezeigt."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/051-land-lower-size-99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/051-land-lower-size-99999-entry.png",
+                "observation": "Land > Lower Landmass Tool > Brush Size: Literal 99999 im eigenen Zahlenfeld eingegeben."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/052-land-lower-size-99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/052-land-lower-size-99999-validated.png",
+                "observation": "Land > Lower Landmass Tool > Brush Size: nach Tab als 128 angezeigt."
+              }
+            ],
+            "resolvedIn": "HEX-00-N-I10",
+            "resolution": "Land > Lower Landmass Tool > Brush Size direkt selbst gemessen: -99999 → 4, 99999 → 128 nach Tab. Nur beobachtete Anzeigegrenzen in diesem Originalkontext. Die Ausgangsanzeige 128 stammt nach der vorherigen Raise-Grenzenfolge; der alte64/1-Default bleibt als alter Kontextbeleg erhalten. Zeichen-/Generierungswirkung, History, Persistenz/Neuöffnung und physische Eingabe bleiben in der jeweiligen Fachphase offen."
           }
-        ]
+        ],
+        "numericObservation": {
+          "run": "HEX-00-N-I10",
+          "initialValue": 128,
+          "initialFrame": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/046-land-lower.json",
+          "note": "Land > Lower Landmass Tool > Brush Size direkt selbst gemessen: -99999 → 4, 99999 → 128 nach Tab. Nur beobachtete Anzeigegrenzen in diesem Originalkontext. Die Ausgangsanzeige 128 stammt nach der vorherigen Raise-Grenzenfolge; der alte64/1-Default bleibt als alter Kontextbeleg erhalten. Zeichen-/Generierungswirkung, History, Persistenz/Neuöffnung und physische Eingabe bleiben in der jeweiligen Fachphase offen.",
+          "scope": "Nur dieses Original-Control und die protokollierten Literale; keine allgemeine Rundungs-/Schrittformel oder Fachfreigabe."
+        }
       },
       {
         "id": "WD-UI-0280",
@@ -18708,8 +19541,25 @@
           "value": 1,
           "evidenceScope": "Angezeigter Zustand dieser Originalaufnahme; Persistenz und andere Kontexte nicht gemessen."
         },
-        "rangeOrChoices": null,
-        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit.",
+        "rangeOrChoices": {
+          "kind": "observed_numeric_bounds",
+          "minimum": 0.1,
+          "maximum": 2,
+          "boundMeaning": "displayed_after_validation",
+          "testedInputLiterals": [
+            "-99999",
+            "99999"
+          ],
+          "scope": {
+            "version": "1.1.8.2",
+            "sessions": [
+              "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json"
+            ],
+            "context": "Eigenes frisches Fensterprofil; neue1024×1024-Karte/Large Icons; Wizard Uniform, Seed nur bei OverrideON. Lower wird nach Raise-Endproben geöffnet. Keine globale Default-/Theme-Aussage.",
+            "factoryDefaultsAsserted": false
+          }
+        },
+        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit. Direkt N-I10: protokollierte Zahlenliterale nach Tab auf die belegten Anzeigegrenzen begrenzt.",
         "gesture": {
           "observed": "Öffnen/Anwählen über die protokollierte Original-UI.",
           "operation": "Werkzeug-Abschlussgesten noch nicht gemessen."
@@ -18732,6 +19582,41 @@
             "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/046-lower-landmass.json",
             "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/046-lower-landmass.png",
             "observation": "Land > Lower Landmass Tool > Roughness: 1."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/046-land-lower.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/046-land-lower.png",
+            "observation": "Land > Lower Landmass Tool > Roughness: Ausgangsanzeige 2 in dieser Folge. Kein universeller Default."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/049-land-lower-roughness--99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/049-land-lower-roughness--99999-entry.png",
+            "observation": "Land > Lower Landmass Tool > Roughness: Literal -99999 im eigenen Zahlenfeld eingegeben."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/050-land-lower-roughness--99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/050-land-lower-roughness--99999-validated.png",
+            "observation": "Land > Lower Landmass Tool > Roughness: nach Tab als 0.1 angezeigt."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/053-land-lower-roughness-99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/053-land-lower-roughness-99999-entry.png",
+            "observation": "Land > Lower Landmass Tool > Roughness: Literal 99999 im eigenen Zahlenfeld eingegeben."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/054-land-lower-roughness-99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/054-land-lower-roughness-99999-validated.png",
+            "observation": "Land > Lower Landmass Tool > Roughness: nach Tab als 2 angezeigt."
           }
         ],
         "classification": "user_function",
@@ -18751,10 +19636,55 @@
             "duePhase": "HEX-00",
             "reason": "Der Wortlaut benennt unbekannte Oberfläche, Wertebereich, Auswahl oder Eingabekontext; keine spätere Wirkung ersetzt diese Inventarpflicht.",
             "probe": "Originaloberfläche abgleichen: Auswahl oder Zahlenbereich noch nicht direkt abgegrenzt.",
-            "state": "open",
-            "evidence": []
+            "state": "resolved",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/046-land-lower.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/046-land-lower.png",
+                "observation": "Land > Lower Landmass Tool > Roughness: Ausgangsanzeige 2 in dieser Folge. Kein universeller Default."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/049-land-lower-roughness--99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/049-land-lower-roughness--99999-entry.png",
+                "observation": "Land > Lower Landmass Tool > Roughness: Literal -99999 im eigenen Zahlenfeld eingegeben."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/050-land-lower-roughness--99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/050-land-lower-roughness--99999-validated.png",
+                "observation": "Land > Lower Landmass Tool > Roughness: nach Tab als 0.1 angezeigt."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/053-land-lower-roughness-99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/053-land-lower-roughness-99999-entry.png",
+                "observation": "Land > Lower Landmass Tool > Roughness: Literal 99999 im eigenen Zahlenfeld eingegeben."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/054-land-lower-roughness-99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/054-land-lower-roughness-99999-validated.png",
+                "observation": "Land > Lower Landmass Tool > Roughness: nach Tab als 2 angezeigt."
+              }
+            ],
+            "resolvedIn": "HEX-00-N-I10",
+            "resolution": "Land > Lower Landmass Tool > Roughness direkt selbst gemessen: -99999 → 0.1, 99999 → 2 nach Tab. Nur beobachtete Anzeigegrenzen in diesem Originalkontext. Die Ausgangsanzeige 2 stammt nach der vorherigen Raise-Grenzenfolge; der alte64/1-Default bleibt als alter Kontextbeleg erhalten. Zeichen-/Generierungswirkung, History, Persistenz/Neuöffnung und physische Eingabe bleiben in der jeweiligen Fachphase offen."
           }
-        ]
+        ],
+        "numericObservation": {
+          "run": "HEX-00-N-I10",
+          "initialValue": 2,
+          "initialFrame": "/home/aaron/.cache/dungeon-native-qa/hex-00/land-numeric-repair-20261009-085228/original/screens/046-land-lower.json",
+          "note": "Land > Lower Landmass Tool > Roughness direkt selbst gemessen: -99999 → 0.1, 99999 → 2 nach Tab. Nur beobachtete Anzeigegrenzen in diesem Originalkontext. Die Ausgangsanzeige 2 stammt nach der vorherigen Raise-Grenzenfolge; der alte64/1-Default bleibt als alter Kontextbeleg erhalten. Zeichen-/Generierungswirkung, History, Persistenz/Neuöffnung und physische Eingabe bleiben in der jeweiligen Fachphase offen.",
+          "scope": "Nur dieses Original-Control und die protokollierten Literale; keine allgemeine Rundungs-/Schrittformel oder Fachfreigabe."
+        }
       },
       {
         "id": "WD-UI-0281",
