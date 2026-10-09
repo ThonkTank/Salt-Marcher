@@ -877,3 +877,5 @@ CITY-01-PREP-N08 Start 2026-10-09T18:42:26Z; darstellbare affine Proben verwende
 CITY-01-PREP-N08-CLEAN-P08 Start 2026-10-09T18:44:52.815629+00:00; Fokus:radiusVector als schmalen Renderhelfer behalten, veraltete Radiusaddition im Plan präzisieren und tatsächlichen N08Stand in Architektur/Nachweisen ergänzen. Kein zweiter allgemeiner Transformdienst. Review prüft354Tests-Quellenhashes/JSON/Fremdwurzeln; R12 bleibt offen.
 
 CITY-01-PREP-N08-CLEAN-I08 Start 2026-10-09T18:45:18.215839+00:00; tatsächliche Probeformel/Failuregrenze undR12offen inPlan/Architektur festgehalten, vorhandenenCITY01Nachweis ergänzt. Keine Runtimeänderung oderCTYFreigabe.
+
+CITY-01-PREP-N08-CLEAN-R08 Start 2026-10-09T18:45:39.756178+00:00; Quellenhashes identisch zum354Tests/check/buildStand; JSON/Planlink/24offeneCTY geprüft. Keine Pflichtlücke imN08Aufräumen. SeparaterR12 gegen unabhängige affine Sollwerte folgt; Befundabschluss erst dort.
