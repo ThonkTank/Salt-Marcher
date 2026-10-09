@@ -4081,17 +4081,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I38-CP",
-      "kind": "cleanup_planning",
-      "startedAt": "2026-10-09T15:55:06.520420+00:00",
-      "focus": "Küstenbelege CP",
-      "state": "completed",
-      "result": "Plan: CO-WAT-0001-Snapshot um Coast/water/planks und offene Hafen-/sea-Grenzen ergänzen. Vorige Fluss-/Größenbelege erhalten, zusätzliche Gruppe im Vergleich nicht übergehen. Rohhashes/Downloadkopien/Verweise und65/24 offene Pflichten prüfen; CI/CR getrennt."
-    },
-    "nextRun": {
       "id": "CITY-00-I38-CI",
       "kind": "cleanup_implementation",
-      "focus": "Küstenbelege und Snapshot CI"
+      "startedAt": "2026-10-09T15:55:20.952772+00:00",
+      "focus": "Küstenbelege CI",
+      "state": "completed",
+      "result": "Snapshot enthält Küstenwirkung mit zusätzlicher water-Gruppe und planks0→8; exakte Hafen-/Übergangstopologie und Einheiten weiterhin offen. Vorige Referenzumfänge erhalten."
+    },
+    "nextRun": {
+      "id": "CITY-00-I38-CR",
+      "kind": "cleanup_review",
+      "focus": "Küstenbelege und Snapshot CR"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",

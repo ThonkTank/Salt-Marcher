@@ -614,3 +614,5 @@ CITY-02/CITY-05-Präzisierung aus I38: Küstenwasser und Uferkante bilden Geomet
 CITY-00-I38-R Start 2026-10-09T15:54:53.712965+00:00; Drei echte Downloadkopien, sieben Bilder/Rawhashes und vollständige13→14-Gruppenvereinigung geprüft. water hinzugefügt,10 gemeinsame Gruppen geändert/3 gleich; planks0→8, Rückstellung bytegleich. sea0.2 bleibt ohne bewiesene Einheit. Exakte Hafenanschlusstopologie und eigene Abnahme nicht behauptet. Aufräumbefund: Snapshot führt Küstenwirkung noch unspezifisch als weitere Features offen.
 
 CITY-00-I38-CP Start 2026-10-09T15:55:06.520420+00:00; Plan: CO-WAT-0001-Snapshot um Coast/water/planks und offene Hafen-/sea-Grenzen ergänzen. Vorige Fluss-/Größenbelege erhalten, zusätzliche Gruppe im Vergleich nicht übergehen. Rohhashes/Downloadkopien/Verweise und65/24 offene Pflichten prüfen; CI/CR getrennt.
+
+CITY-00-I38-CI Start 2026-10-09T15:55:20.952772+00:00; Snapshot enthält Küstenwirkung mit zusätzlicher water-Gruppe und planks0→8; exakte Hafen-/Übergangstopologie und Einheiten weiterhin offen. Vorige Referenzumfänge erhalten.
