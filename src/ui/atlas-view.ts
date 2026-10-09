@@ -8,6 +8,7 @@ import {
 import { VaultStore } from "../vault-stores";
 import { FileConflict } from "../persistence";
 import { AtlasRepository } from "../features/atlas/atlas-repository";
+import { CopyAtlasModal } from "./atlas-copy-modal";
 
 export const ATLAS_VIEW = "dungeon-native-atlas";
 export class AtlasView extends FileView {
@@ -109,14 +110,15 @@ export class AtlasView extends FileView {
                 throw new Error("Die Ausgangskarte ist nicht mehr geöffnet.");
               const path = `Atlanten/${name}.overworld`;
               await repository.copy(path, crypto.randomUUID(), name);
-              return async () => {
-                if (generation !== this.generation || this.editor !== editor)
-                  return;
-                const file = this.app.vault.getAbstractFileByPath(path);
-                if (!(file instanceof TFile))
-                  throw new Error("Gespeicherte Kopie wurde nicht gefunden.");
-                await this.leaf.openFile(file);
-              };
+              return this.openCopy(path, generation, editor);
+            },
+            async (name) => {
+              const path = `Atlanten/${name}.overworld`;
+              const target = new AtlasRepository(
+                new VaultStore(this.app), path, this.app.vault,
+              );
+              const state = await target.recoverCopy();
+              return { state, open: this.openCopy(path, generation, editor) };
             },
           ).open();
         }),
@@ -134,88 +136,22 @@ export class AtlasView extends FileView {
       )
       .showAtMouseEvent(event);
   }
+  private openCopy(path: string, generation: number, editor: AtlasEditor) {
+    return async (): Promise<boolean> => {
+      if (generation !== this.generation || this.editor !== editor) return false;
+      const file = this.app.vault.getAbstractFileByPath(path);
+      if (!(file instanceof TFile))
+        throw new Error("Gespeicherte Kopie wurde nicht gefunden.");
+      await this.leaf.openFile(file);
+      return true;
+    };
+  }
   onUnloadFile(): Promise<void> {
     this.generation++;
     return this.sequence(async () => {
       await this.closeEditor();
       this.contentEl.replaceChildren();
     });
-  }
-}
-class CopyAtlasModal extends Modal {
-  constructor(
-    app: App,
-    private originalName: string,
-    private copy: (name: string) => Promise<() => Promise<void>>,
-  ) {
-    super(app);
-  }
-  onOpen(): void {
-    this.setTitle("Atlas speichern unter");
-    let name = this.originalName + " Kopie",
-      busy = false;
-    new Setting(this.contentEl).setName("Name").addText((text) => {
-      text.setValue(name).onChange((value) => {
-        name = value;
-      });
-      text.inputEl.setAttribute("aria-label", "Kopiename");
-    });
-    this.contentEl.createEl("p", {
-      text: "Die Kopie kann unabhängig von der Ausgangskarte bearbeitet werden.",
-    });
-    new Setting(this.contentEl)
-      .addButton((button) =>
-        button.setButtonText("Abbrechen").onClick(() => {
-          if (!busy) this.close();
-        }),
-      )
-      .addButton((button) =>
-        button
-          .setButtonText("Kopie speichern")
-          .setCta()
-          .onClick(async () => {
-            if (busy) return;
-            const clean = name.trim();
-            if (
-              !clean ||
-              clean === "." ||
-              clean === ".." ||
-              /[\\/:*?"<>|]/.test(clean) ||
-              clean.length > 200
-            ) {
-              new Notice(
-                "Einen Atlasnamen ohne Pfad- oder Sonderzeichen eingeben.",
-              );
-              return;
-            }
-            busy = true;
-            button.setDisabled(true);
-            try {
-              const open = await this.copy(clean);
-              this.close();
-              try {
-                await open();
-              } catch (error) {
-                new Notice(
-                  "Kopie ist gespeichert; Öffnen fehlgeschlagen. " +
-                    String(error),
-                );
-              }
-            } catch (error) {
-              new Notice(
-                error instanceof FileConflict
-                  ? "Ein Atlas mit diesem Namen oder Zielinhalt ist bereits vorhanden. Einen anderen Namen wählen."
-                  : "Kopie konnte nicht gespeichert werden. " + String(error),
-              );
-            } finally {
-              busy = false;
-              button.setDisabled(false);
-            }
-          }),
-      );
-  }
-  onClose(): void {
-    this.contentEl.empty();
   }
 }
 class DiscardAtlasModal extends Modal {

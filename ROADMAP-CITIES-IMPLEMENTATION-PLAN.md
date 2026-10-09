@@ -963,3 +963,5 @@ CITY-00-I45-PLAN-CLEAN-P45 Start 2026-10-09T19:18:29.410523+00:00; Aufräumplan:
 I45-Originalplan: [FTG-Gebäudebedarfe und Anzahlgrenzen](ROADMAP-CITIES-CITY00-FTG-BUILDING-LIMITS-PLAN.md).
 
 CITY-00-I45-PLAN-CLEAN-I45 Start 2026-10-09T19:18:31.866072+00:00; Plan neben Roadmap verlinkt; eigene Formularprobe getrennt von alter QA-Karte und paralleler nativer GUI.
+
+CITY-00-I45-PLAN-CLEAN-R45 Start 2026-10-09T19:18:34.697707+00:00; Planlink/JSON/Fremdwurzeln geprüft; keine Produktabnahme. Originalformularprobe kann im Hintergrundtab beginnen.
