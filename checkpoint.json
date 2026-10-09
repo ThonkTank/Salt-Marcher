@@ -134,12 +134,12 @@
     "architecture": "ARCHITECTURE.md#geplante-katalog--und-encounter-erweiterung",
     "acceptance": "acceptance.json.saltMarcherCatalogEncounter",
     "currentRun": {
-      "id": "CE-02-I02-S01-W02",
+      "id": "CE-02-I02-S01-W03",
       "kind": "source_inventory_schema_transcript_intermediate",
       "state": "in_progress_verified_incomplete",
-      "focus": "Inventory and transcribe the bounded Armor table section with standards-based schema and real PDF evidence while preserving the incomplete gate",
+      "focus": "Inventory the bounded 37-row Weapons table in physical PDF order while preserving the incomplete gate",
       "plan": "ROADMAP-SALTMARCHER-CE02-I02-PLAN.md",
-      "result": "Captured all 13 Armor table occurrences in physical PDF order and 13 structured Armor transcript records. Draft-2020-12 validation now covers transcript and inventory, the 22-value equipment taxonomy is closed, artifact hashes are manifest-bound, and the real pinned PDF verifies all 13 row labels plus 49 structured table facts. The package remains incomplete: Armor narrative text and bounded cells, 206 other equipment primary occurrences, auxiliary/expansion dispositions and all magic items remain open; S01 review and I01 stay blocked."
+      "result": "After the W02 Armor package, captured all 37 Weapons table occurrences in physical PDF order. The real pinned PDF now verifies 50 total equipment occurrence labels; Weapons transcript and special descriptions remain open. Overall coverage is 50 of 219 primary equipment occurrences and 13 transcript records. S01 remains incomplete and I01 blocked."
     },
     "implementationRun": {
       "id": "CE-01-I01",
@@ -344,10 +344,10 @@
       "Physical catalog input acceptance cannot be replaced by Playwright automation"
     ],
     "nextRun": {
-      "id": "CE-02-I02-S01-W03",
+      "id": "CE-02-I02-S01-W03-T01",
       "kind": "source_inventory_schema_transcript_continuation",
       "plan": "ROADMAP-SALTMARCHER-CE02-I02-PLAN.md",
-      "focus": "Capture and transcribe the 37-row Weapons table in physical PDF order, add bounded PDF-backed weapon goldens, and continue the explicit equipment disposition/expansion ledger; keep complete false and I01 blocked"
+      "focus": "Transcribe all 37 Weapons rows with costs, positive weights, literal damage and ordered properties; add PDF-backed Spear, Blowgun and Net goldens and keep complete false"
     }
   },
   "repositoryWorkflow": {
@@ -4319,20 +4319,20 @@
   "cityExecution": {
     "scope": "CITY-00 bis CITY-09; vollständige Funktionsgleichwertigkeit mit drei Vergleichsprogrammen und bessere Bedienung",
     "phase": "CITY-00",
-    "state": "city01_model_prepared_hex05_integration_pending",
+    "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-01-PREP-SCENE-PLAN-CLEAN-R04",
-      "kind": "cleanup_review",
-      "startedAt": "2026-10-09T17:17:42.773613+00:00",
-      "focus": "Finalen Szenenplan gegen Quellen und bestätigte Modulgrenze prüfen",
-      "state": "completed",
-      "result": "Konkrete lokale Szene/Treffer, gemeinsame Pose/Segmenthelper, finite Bounds und Dungeonbaseline geprüft; keine Restlücke im Plan-Aufräumen."
-    },
-    "nextRun": {
       "id": "CITY-01-PREP-I04",
       "kind": "implementation",
-      "focus": "Lokale CityScene/Treffer und gemeinsame Pose/Streckenhelper mit Dungeonregressionen implementieren"
+      "startedAt": "2026-10-09T17:19:57.078Z",
+      "focus": "Lokale Szene, Treffer und gemeinsame Geometrie implementieren",
+      "state": "completed",
+      "result": "Lokaler Core implementiert;308Tests/Typprüfung/Build grün,7525Dungeonbaselinevergleiche mit exakten Adressen. Separater Review folgt."
+    },
+    "nextRun": {
+      "id": "CITY-01-PREP-R05",
+      "kind": "review",
+      "focus": "Szene/Treffer und gemeinsame Geometrie unabhängig gegen Plan prüfen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",

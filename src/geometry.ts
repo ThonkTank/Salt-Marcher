@@ -421,6 +421,50 @@ export function nearestBuildingVertex(
     }
   return best;
 }
+/** Shared point primitive; normalize the direction before squaring to avoid overflow. */
+export function nearestSegmentPoint(
+  point: Point,
+  a: Point,
+  b: Point,
+): { point: Point; t: number; distance: number } {
+  if (![point.x, point.y, a.x, a.y, b.x, b.y].every(Number.isFinite))
+    throw new Error("Ungültige Streckenkoordinate.");
+  const dx = b.x - a.x,
+    dy = b.y - a.y,
+    scale = Math.max(Math.abs(dx), Math.abs(dy));
+  if (!Number.isFinite(scale))
+    throw new Error("Streckenspanne ist nicht darstellbar.");
+  let t = 0;
+  if (scale > 0) {
+    const x = dx / scale,
+      y = dy / scale;
+    const dot =
+      (x === 0 ? 0 : ((point.x - a.x) / scale) * x) +
+      (y === 0 ? 0 : ((point.y - a.y) / scale) * y);
+    t = Math.max(0, Math.min(1, dot / (x * x + y * y)));
+    if (Number.isNaN(t)) {
+      // An extremely distant query can overflow opposing terms; neither endpoint can hit.
+      t =
+        Math.hypot(point.x - a.x, point.y - a.y) <=
+        Math.hypot(point.x - b.x, point.y - b.y)
+          ? 0
+          : 1;
+    }
+  }
+  const nearest =
+    t === 0
+      ? { ...a }
+      : t === 1
+        ? { ...b }
+        : { x: a.x + dx * t, y: a.y + dy * t };
+  return {
+    point: nearest,
+    t,
+    // Keep the residual arithmetic used by Dungeon wrappers, including their tie order.
+    distance: Math.hypot(point.x - a.x - dx * t, point.y - a.y - dy * t),
+  };
+}
+
 export function nearestBuildingSegment(
   point: Point,
   building: Building,
@@ -429,21 +473,7 @@ export function nearestBuildingSegment(
   for (const entry of buildingContourEntries(building)) {
     const segments = segmentsOf(entry.points, true);
     for (const [index, segment] of segments.entries()) {
-      const dx = segment.b.x - segment.a.x,
-        dy = segment.b.y - segment.a.y,
-        t = Math.max(
-          0,
-          Math.min(
-            1,
-            ((point.x - segment.a.x) * dx +
-              (point.y - segment.a.y) * dy) /
-              (dx * dx + dy * dy || 1),
-          ),
-        ),
-        distance = Math.hypot(
-          point.x - segment.a.x - dx * t,
-          point.y - segment.a.y - dy * t,
-        );
+      const { distance } = nearestSegmentPoint(point, segment.a, segment.b);
       if (distance < best.distance)
         best = { contour: entry.contour, index, distance };
     }
@@ -462,20 +492,7 @@ export function nearestBoundary(
       ),
       total = segments.reduce((sum, segment) => sum + segment.length, 0);
     for (const segment of segments) {
-      const dx = segment.b.x - segment.a.x,
-        dy = segment.b.y - segment.a.y,
-        t = Math.max(
-          0,
-          Math.min(
-            1,
-            ((point.x - segment.a.x) * dx + (point.y - segment.a.y) * dy) /
-              (dx * dx + dy * dy || 1),
-          ),
-        ),
-        distance = Math.hypot(
-          point.x - segment.a.x - t * dx,
-          point.y - segment.a.y - t * dy,
-        );
+      const { t, distance } = nearestSegmentPoint(point, segment.a, segment.b);
       if (distance < best.distance)
         best = {
           contour,
@@ -495,20 +512,7 @@ export function nearestPath(
     total = segments.reduce((sum, segment) => sum + segment.length, 0);
   let best = { at: 0, distance: Infinity };
   for (const segment of segments) {
-    const dx = segment.b.x - segment.a.x,
-      dy = segment.b.y - segment.a.y,
-      t = Math.max(
-        0,
-        Math.min(
-          1,
-          ((point.x - segment.a.x) * dx + (point.y - segment.a.y) * dy) /
-            (dx * dx + dy * dy || 1),
-        ),
-      ),
-      distance = Math.hypot(
-        point.x - segment.a.x - t * dx,
-        point.y - segment.a.y - t * dy,
-      );
+    const { t, distance } = nearestSegmentPoint(point, segment.a, segment.b);
     if (distance < best.distance)
       best = {
         at: (segment.start + t * segment.length) / (total || 1),
@@ -524,19 +528,11 @@ export function nearestEdge(
   let best = { edge: 0, t: 0, distance: Infinity };
   const points = room.polygons[0]!.outer;
   for (let i = 0; i < points.length; i++) {
-    const a = points[i]!,
-      b = points[(i + 1) % points.length]!,
-      dx = b.x - a.x,
-      dy = b.y - a.y,
-      t = Math.max(
-        0,
-        Math.min(
-          1,
-          ((point.x - a.x) * dx + (point.y - a.y) * dy) /
-            (dx * dx + dy * dy || 1),
-        ),
-      ),
-      distance = Math.hypot(point.x - a.x - t * dx, point.y - a.y - t * dy);
+    const { t, distance } = nearestSegmentPoint(
+      point,
+      points[i]!,
+      points[(i + 1) % points.length]!,
+    );
     if (distance < best.distance) best = { edge: i, t, distance };
   }
   return best;

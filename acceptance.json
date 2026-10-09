@@ -120,7 +120,7 @@
   },
   "saltMarcherCatalogEncounter": {
     "schemaVersion": 1,
-    "updated": "2026-10-09T17:19:14Z",
+    "updated": "2026-10-09T17:22:32Z",
     "state": "ce02_i02_s01_in_progress_verified_incomplete_ce01_physical_open",
     "plan": "ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md",
     "architecture": "ARCHITECTURE.md#geplante-katalog--und-encounter-erweiterung",
@@ -499,21 +499,21 @@
       "review": "R01 on exact 8c5c5680054b8dddd89900733ac7bbfe966876f1 required seven repairs (Issue #1 comment 6085178049). N01-R01 on exact 01a02ef124e3ffc02b626019f89f5e216612f7ab required S01 cycle/schema repairs (Issue #1 comment 6085248851). N02-R01 on exact 3b7e5c933a107da6f406aa44037decf316d09b77 found a variable-rarity schema gap (Issue #1 comment 6085306351). N03-R01 PASSED exact 679d432e145bd9afe766393346e4b788931886ea with no remaining mandatory plan finding (Issue #1 comment 6085341786). This approves planning only; S01 and I01 are undelivered."
     },
     "ce02I02Source": {
-      "run": "CE-02-I02-S01-W02",
+      "run": "CE-02-I02-S01-W03",
       "state": "in_progress_verified_incomplete",
       "sourceDocument": "https://media.wizards.com/2023/downloads/dnd/SRD_CC_v5.1.pdf",
       "sourceSha256": "2504d2a0abb0a4d491a939be4f17910a2dde0312570ab8d208080225ccf0a1f0",
       "helperCommit": "3f5593ea004c4f5a2af95603087ce4de72689d9f",
-      "covered": ["exact official source byte identity, size and 403-page count", "SaltMarcher-pinned extraction-helper revision and file hashes", "canonical attribution asset and manifest-bound artifact hashes", "Draft 2020-12 transcript and inventory schemas validated by pinned Ajv", "closed 22-value equipment subcategory enum", "13/13 Armor row inventory and structured table transcript", "real-PDF evidence for 13 Armor row labels and 49 structured facts", "fail-closed incomplete-package gate", "fixed and variable rarity identity regressions"],
-      "verification": {"focusedTests": {"passed": 7, "failed": 0}, "pdfIdentity": "passed", "armorOccurrences": {"checked": 13, "expected": 13}, "armorStructuredFacts": {"checked": 49}, "incompleteGate": "passed"},
-      "limits": "Intermediate only: 13 of 219 primary equipment occurrences and 13 transcript records are captured. Armor narrative descriptions and bounded cell matching, the other 206 primary equipment occurrences, 35 auxiliary fact rows, one cross-reference, pack-only components, expansion/reassignment ledger, every magic item, remaining goldens and independent S01-R01 review are open. No product artifact, provider, UI, host acceptance or I01 work is authorized."
+      "covered": ["exact official source byte identity, size and 403-page count", "SaltMarcher-pinned extraction-helper revision and file hashes", "canonical attribution asset and manifest-bound artifact hashes", "Draft 2020-12 transcript and inventory schemas validated by pinned Ajv", "closed 22-value equipment subcategory enum", "13/13 Armor row inventory and structured table transcript", "37/37 Weapons row inventory", "real-PDF evidence for 50 equipment row labels and 49 Armor structured facts", "fail-closed incomplete-package gate", "fixed and variable rarity identity regressions"],
+      "verification": {"focusedTests": {"passed": 7, "failed": 0}, "pdfIdentity": "passed", "equipmentOccurrences": {"checked": 50, "expectedPrimary": 219}, "armorStructuredFacts": {"checked": 49}, "incompleteGate": "passed"},
+      "limits": "Intermediate only: 50 of 219 primary equipment occurrences and 13 transcript records are captured. Weapons transcript, Armor narrative descriptions, bounded cell matching, the other 169 primary equipment occurrences, 35 auxiliary fact rows, one cross-reference, pack-only components, expansion/reassignment ledger, every magic item, remaining goldens and independent S01-R01 review are open. No product artifact, provider, UI, host acceptance or I01 work is authorized."
     }
   },
   "cityPlans": {
     "schemaVersion": 1,
     "updated": "2026-10-09T15:18:47.917996+00:00",
     "plan": "ROADMAP-CITIES.md",
-    "state": "model_codec_prepared_atlas_integration_pending",
+    "state": "core_prepared_atlas_integration_pending",
     "comparisonMode": "functional_equivalence_and_independent_usability_tests",
     "userRequirements": {
       "cityResults": "Stadtfunktionen gleichwertig mit Canvas of Kings, Medieval Fantasy City Generator und Fantasy Town Generator; Grafik ungefähr gleichwertig, Bedienung besser.",
@@ -643,7 +643,7 @@
         ],
         "deliverable": "Native .city direkt am Ort anlegen; Straße, Platz und zwei Häuser im selben Editor bearbeiten.",
         "test": "Nur hinein-/herauszoomen; Haus verschieben, Straße ändern, Undo/Redo, speichern und frisch öffnen.",
-        "state": "model_prepared_integration_pending",
+        "state": "core_prepared_integration_pending",
         "evidence": [
           "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-model-20261009/implementation.json"
         ]
@@ -774,9 +774,10 @@
             "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-model-20261009/implementation.json",
             "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-model-20261009/repair.json",
             "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-commands-20261009/implementation.json",
-            "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-commands-20261009/cleanup-review.json"
+            "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-commands-20261009/cleanup-review.json",
+            "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-scene-20261009/implementation.json"
           ],
-          "remaining": "Common History code adapter prepared and reviewed. Atlas placement/scene/selection, native registration and save/reopen host sequence remain unimplemented."
+          "remaining": "Native model, shared history, pure actions and local scene/hit core prepared; scene review pending. Atlas placement, visible rendering, gestures/selection, external bindings and host save/reopen still pending."
         },
         "hostCheck": {
           "state": "not_run",
@@ -874,9 +875,10 @@
           "state": "partial",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-edit-20261009/implementation.json",
-            "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-edit-20261009/cleanup-review.json"
+            "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-edit-20261009/cleanup-review.json",
+            "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-scene-20261009/implementation.json"
           ],
-          "remaining": "Pure road/building edit operations prepared and reviewed. Shared atlas gestures, selection, rendering, external bindings and host save/reopen remain unimplemented."
+          "remaining": "Native model, shared history, pure actions and local scene/hit core prepared; scene review pending. Atlas placement, visible rendering, gestures/selection, external bindings and host save/reopen still pending."
         },
         "hostCheck": {
           "state": "not_run",
@@ -910,9 +912,10 @@
           "state": "partial",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-edit-20261009/implementation.json",
-            "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-edit-20261009/cleanup-review.json"
+            "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-edit-20261009/cleanup-review.json",
+            "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-scene-20261009/implementation.json"
           ],
-          "remaining": "Pure road/building edit operations prepared and reviewed. Shared atlas gestures, selection, rendering, external bindings and host save/reopen remain unimplemented."
+          "remaining": "Native model, shared history, pure actions and local scene/hit core prepared; scene review pending. Atlas placement, visible rendering, gestures/selection, external bindings and host save/reopen still pending."
         },
         "hostCheck": {
           "state": "not_run",
