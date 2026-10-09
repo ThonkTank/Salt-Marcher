@@ -293,3 +293,5 @@ Die direkt verglichene Dungeondraft-Version hält selbst angelegte New-Map-Grö�
 ## Kartengröße und Historiengrenze
 
 Nach einer bestätigten Änderung mindestens eines Kartenrandes verschiebt `resizeMap` die vorhandene Geometrie und setzt anschließend die verfügbare Undo-/Redo-Historie zurück. Die neue Karte bleibt bis zum Speichern dirty; reine Änderungen der Darstellungsoptionen ohne Randwert bleiben normal rückgängig machbar. Dies bildet die direkt gemessene History-Grenze von Dungeondraft nach `Change Map Size` für den Host nach. Die Originalmessung unterscheidet internes Löschen und Sperren älterer Schritte nicht; der Host löscht sie. Smart-Tile-Zellen des Originals benötigen weiterhin eine getrennte gespeicherte Rasterrepräsentation, damit Beschnitt Zellen dauerhaft entfernt und Shape-Polygone erhalten bleiben. Rechte/untere Beschnittfolgen und allgemeine Eingabegrenzen bleiben offen.
+
+Der Größen-Dialog bindet vor dem Öffnen `activeWindow` und `activeDocument` an das Quelldokument der angeklickten Kartenansicht. Obsidian erstellt Modals sonst gegebenenfalls im zuvor aktiven Fenster; die Zuordnung folgt dem bereits vorhandenen Objekt-Tag-Dialog.

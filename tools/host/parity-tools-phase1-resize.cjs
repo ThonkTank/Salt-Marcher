@@ -24,6 +24,7 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out, checks }) =>
     fs.writeFileSync(path.join(out, "resize-modal-debug.json"), JSON.stringify(
       await page.evaluate(() => ({
         activeWindow: !!window.activeWindow,
+        activeWindowIsSource: window.activeWindow === window,
         modalCount: document.querySelectorAll(".modal").length,
         modals: [...document.querySelectorAll(".modal")]
           .map((node) => ({ text: node.textContent?.slice(0, 400),
@@ -78,10 +79,12 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out, checks }) =>
     const beforeHash = hash();
     let dialog = await openDialog();
     assert.match(await dialog.innerText(), /nicht rückgängig gemacht/);
+    await setting(dialog, "Oben in Feldern").locator("input").fill("1");
     await dialog.getByRole("button", { name: "Abbrechen" }).click();
     assert.deepEqual(await editor(), before);
     assert.equal(hash(), beforeHash);
     dialog = await openDialog();
+    await setting(dialog, "Oben in Feldern").locator("input").fill("1");
     const bounds = await dialog.boundingBox();
     assert.ok(bounds);
     await page.mouse.click(bounds.x + bounds.width - 37, bounds.y + 21);

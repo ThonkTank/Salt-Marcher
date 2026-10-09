@@ -101178,6 +101178,21 @@
           ],
           "measuredScope": "Menü öffnete im bestandenen Hostlauf den Dialog mit vier Randfeldern, Warnung, Übernehmen, Abbrechen und X.",
           "remaining": "Spätere Kaltstarts öffneten den Dialog beim ersten Menüklick nicht zuverlässig; unabhängiger Review offen."
+        },
+        "followUpPhase1ResizeRepair": {
+          "state": "partial_candidate_review_pending",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "hostBuildSha256": "495efaf9c9eabb8a55ba1ae0e6d8c88e79d1d38b00b1b688499a4318b3b4a75e",
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-window-20261009/implementation.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-window-20261009/evidence/1791516812106-parity-tools-phase1-resize-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-window-20261009/evidence/1791516816609-parity-tools-phase1-resize-reopen/result.json"
+          ],
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd038/REPORT.md"
+          ],
+          "measuredScope": "Menüklick öffnet den Größen-Dialog im Quelldokument der Karte; zwei isolierte Host-Editläufe bestanden.",
+          "remaining": "Unabhängiger Endbuild-Review und übrige DD-038-Randfolgen offen."
         }
       },
       {
@@ -111194,6 +111209,22 @@
           ],
           "measuredScope": "Oben +1 verschob Building-Polygon und Objekt um ein Feld, 8×8 → 8×9; Save und frischer Hoststart bytegleich.",
           "remaining": "Oberer Beschnitt, weitere Elementarten und unabhängiger Review offen."
+        },
+        "followUpPhase1ResizeRepair": {
+          "state": "partial_candidate_review_pending",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "hostBuildSha256": "495efaf9c9eabb8a55ba1ae0e6d8c88e79d1d38b00b1b688499a4318b3b4a75e",
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-window-20261009/implementation.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-window-20261009/evidence/1791516812106-parity-tools-phase1-resize-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-window-20261009/evidence/1791516816609-parity-tools-phase1-resize-reopen/result.json"
+          ],
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd038/REPORT.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd038-history/REPORT.md"
+          ],
+          "measuredScope": "Oben +1 verschiebt Building und Objekt um ein Feld, 8×8 → 8×9; Save und bytegleiche frische Host-Neuöffnung erneut bestanden.",
+          "remaining": "Oberer Beschnitt und weitere Entity-Arten offen."
         }
       },
       {
@@ -111507,6 +111538,21 @@
           ],
           "measuredScope": "Warnung sichtbar; nach Oben +1 war auch ein zuvor vorhandener Undo-Schritt nicht mehr erreichbar; Save und frischer Hoststart bestanden.",
           "remaining": "Neue Aktionen nach Resize, bestehende Redo-Verzweigung und unabhängiger Review offen."
+        },
+        "followUpPhase1ResizeRepair": {
+          "state": "partial_candidate_review_pending",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "hostBuildSha256": "495efaf9c9eabb8a55ba1ae0e6d8c88e79d1d38b00b1b688499a4318b3b4a75e",
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-window-20261009/implementation.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-window-20261009/evidence/1791516812106-parity-tools-phase1-resize-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-window-20261009/evidence/1791516816609-parity-tools-phase1-resize-reopen/result.json"
+          ],
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd038-history/REPORT.md"
+          ],
+          "measuredScope": "Nach bestätigter oberer Randänderung ältere Undo-/Redo-Schritte nicht mehr erreichbar; Speichern und Neuöffnung bestanden.",
+          "remaining": "Neue Aktionen nach Resize und unabhängiger Review offen."
         }
       },
       {
@@ -111584,6 +111630,21 @@
           ],
           "measuredScope": "Übernehmen setzte Oben +1, verschob Building und Objekt, machte die Karte dirty und speicherte sie für bytegleiche Neuöffnung.",
           "remaining": "Andere Randrichtungen, Crops und unabhängiger Review offen."
+        },
+        "followUpPhase1ResizeRepair": {
+          "state": "partial_candidate_review_pending",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "hostBuildSha256": "495efaf9c9eabb8a55ba1ae0e6d8c88e79d1d38b00b1b688499a4318b3b4a75e",
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-window-20261009/implementation.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-window-20261009/evidence/1791516812106-parity-tools-phase1-resize-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-window-20261009/evidence/1791516816609-parity-tools-phase1-resize-reopen/result.json"
+          ],
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd038-history/REPORT.md"
+          ],
+          "measuredScope": "Übernehmen setzt oben +1, verschiebt Building und Objekt, markiert Dirty und speichert die 8×9-Karte.",
+          "remaining": "Weitere Randrichtungen und Crop-Wirkung offen."
         }
       },
       {
@@ -111660,6 +111721,21 @@
           ],
           "measuredScope": "Host-Abbrechen schloss den Dialog bei unveränderten Eingabefeldern ohne Karten-, Datei- oder History-Änderung.",
           "remaining": "Cancel nach unbestätigter Eingabe und Originalwirkung direkt messen; Menüzuverlässigkeit und unabhängiger Review offen."
+        },
+        "followUpPhase1ResizeRepair": {
+          "state": "host_measured_original_gap_open",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "hostBuildSha256": "495efaf9c9eabb8a55ba1ae0e6d8c88e79d1d38b00b1b688499a4318b3b4a75e",
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-window-20261009/implementation.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-window-20261009/evidence/1791516812106-parity-tools-phase1-resize-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-window-20261009/evidence/1791516816609-parity-tools-phase1-resize-reopen/result.json"
+          ],
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd038/REPORT.md"
+          ],
+          "measuredScope": "Nach Eingabe von oben +1 verwirft Host-Abbrechen den unbestätigten Wert; Dokument, Dateihash und History bleiben gleich.",
+          "remaining": "Originalwirkung nach Eingabe direkt messen; unabhängiger Review offen."
         }
       },
       {
@@ -117431,6 +117507,21 @@
           ],
           "measuredScope": "Host-X schloss den Dialog bei unveränderten Eingabefeldern ohne Karten-, Datei- oder History-Änderung.",
           "remaining": "X nach unbestätigter Eingabe und Originalwirkung direkt messen; Menüzuverlässigkeit und unabhängiger Review offen."
+        },
+        "followUpPhase1ResizeRepair": {
+          "state": "host_measured_original_gap_open",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "hostBuildSha256": "495efaf9c9eabb8a55ba1ae0e6d8c88e79d1d38b00b1b688499a4318b3b4a75e",
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-window-20261009/implementation.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-window-20261009/evidence/1791516812106-parity-tools-phase1-resize-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-window-20261009/evidence/1791516816609-parity-tools-phase1-resize-reopen/result.json"
+          ],
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd038/REPORT.md"
+          ],
+          "measuredScope": "Nach Eingabe von oben +1 verwirft Host-X den unbestätigten Wert; Dokument, Dateihash und History bleiben gleich.",
+          "remaining": "Originalwirkung nach Eingabe direkt messen; unabhängiger Review offen."
         }
       },
       {
