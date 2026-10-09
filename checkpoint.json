@@ -3366,25 +3366,34 @@
     "state": "city00_reference_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I02-CR",
-      "kind": "cleanup_review",
-      "startedAt": "2026-10-09T12:23:52.867008+02:00",
-      "focus": "38 Anforderungen und Belege nach Katalogbereinigung",
-      "state": "completed_passed",
-      "result": "38 Pflichtfähigkeiten, CTY-Bestand und Belege erhalten; Katalogbereinigung bestanden",
+      "id": "CITY-00-I02-NR",
+      "kind": "reference_re_review",
+      "startedAt": "2026-10-09T12:25:27.792670+02:00",
+      "focus": "Fachlicher Nachreview nach Katalogbereinigung",
+      "state": "completed_bounded_reference_package",
+      "result": "R01 geschlossen; R02 bleibt reale Exportbeleglücke; Gesamt-CITY00 nicht freigegeben",
       "evidence": [
-        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/cleanup-review.json"
+        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/reference-rereview.json"
       ]
     },
     "nextRun": {
-      "id": "CITY-00-I02-NR",
-      "kind": "reference_re_review",
-      "focus": "R01/R02 nach Bereinigung erneut fachlich bewerten"
+      "id": "CITY-00-I03-P",
+      "kind": "reference_planning",
+      "focus": "Watabou-Stadtfunktionen/Galerie direkt vorbereiten und offene Originalzugänge klären"
     },
     "open": [
       "CITY-00 direkte Referenzinventur/Galerie aller drei Produkte",
       "HEX-05 gemeinsame Atlasbasis vor CITY-01",
       "CITY-01 bis CITY-09 Produkt-, Host-, Ergebnis- und physische Bedienabnahmen"
-    ]
+    ],
+    "productCoordination": {
+      "objective": "Koordiniere dich mit deinen Kollegen. Bring das Produkt planmäßig zuende.",
+      "updatedAt": "2026-10-09T12:25:27.792670+02:00",
+      "issue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1#issuecomment-6079028112",
+      "localHexThread": "01a11c65-2d9f-7e72-8587-cf9740b0650a",
+      "ownResponsibility": "Stadtpfad und seine Referenz-/Funktions-/Bedienabnahmen; gemeinsame Abschlusskoordination",
+      "handoff": "HEX-05-Vertrag vor CITY-01; keine zweite Kamera oder History",
+      "state": "coordination_sent_responsibility_reply_pending"
+    }
   }
 }
