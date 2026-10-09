@@ -4203,17 +4203,17 @@
     "state": "city01_model_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-01-PREP-P02",
-      "kind": "implementation_planning",
-      "startedAt": "2026-10-09T16:53:43.876966+00:00",
-      "focus": "Reine Stadtbefehle auf tatsächlicher AtlasHistory planen",
-      "state": "completed",
-      "result": "Owner-/Targetvertrag, strikte Konversionsgrenze, Gestenanfangsstand und echte Mehrbesitzertests konkret geplant; keine gemeinsame APIänderung."
-    },
-    "nextRun": {
       "id": "CITY-01-PREP-PLAN-CLEAN-P02",
       "kind": "cleanup_planning",
-      "focus": "Befehlsplan auf Quellen, doppelte Zustände und Integrationsgrenze prüfen"
+      "startedAt": "2026-10-09T16:54:08.160940+00:00",
+      "focus": "Befehlsplan auf Kopiehilfe und Ownerlebensdauer prüfen",
+      "state": "completed",
+      "result": "Konkrete Präzisierungen: vorhandene immutable-Hilfe wiederverwenden, einmalige Quelle je Besitzerlebensdauer; keine History-Erweiterung."
+    },
+    "nextRun": {
+      "id": "CITY-01-PREP-PLAN-CLEAN-I02",
+      "kind": "cleanup_implementation",
+      "focus": "Kopiehilfe und einmalige Besitzerlebensdauer im Plan präzisieren"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
