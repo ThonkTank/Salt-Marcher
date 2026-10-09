@@ -236,8 +236,24 @@
 }
 .dn-properties[hidden],
 .dn-option-section[hidden],
+.dn-generator-panel[hidden],
 .dn-empty-panel[hidden] {
   display: none !important;
+}
+.dn-generator-panel > .dn-menu-content {
+  position: static;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.dn-generator-choice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 .dn-field {
   display: grid;

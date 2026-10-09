@@ -137,6 +137,7 @@ interface CreationAppearance {
 }
 export default class DungeonPlugin extends Plugin {
   disableBuildingWearForNewMap = false;
+  startWizardForNewMap = false;
   private maps = new Map<string, Promise<OpenMap>>();
   readonly assets = new AssetCatalog(new VaultAssetStore(this.app));
   readonly objectTagStore = new ObjectTagStore(new VaultObjectTagStorage(this.app));
@@ -862,6 +863,7 @@ export default class DungeonPlugin extends Plugin {
     selectedAssets?: CreationAssets,
     generator?: GeneratorOptions,
     appearance?: CreationAppearance,
+    startWizard = false,
   ): Promise<void> {
     name = name.trim();
     if (
@@ -898,7 +900,8 @@ export default class DungeonPlugin extends Plugin {
     await repository.beginPending(initial, session);
     this.maps.set(path, Promise.resolve(this.mapRecord(repository, session, true)));
     const leaf = this.app.workspace.getLeaf("tab");
-    await leaf.setViewState({ type: PENDING_VIEW, active: true, state: { path } });
+    await leaf.setViewState({ type: PENDING_VIEW, active: true,
+      state: { path, startWizard } });
     this.app.workspace.revealLeaf(leaf);
   }
 }

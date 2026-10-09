@@ -63,6 +63,7 @@ import {
   type ToolSettings,
 } from "./properties";
 import { type AssetDefinition } from "./assets";
+import { generateLayout, type GeneratorKind } from "./generators";
 import { ObjectLibraryPanel } from "./features/objekte/object-library-panel";
 import { objectWheelDirection, rotateObjectRadians, scaleObjectStep } from "./features/objekte/object-gestures";
 import type { ObjectTagDocument } from "./features/objekte/object-tags";
@@ -365,6 +366,7 @@ export class DungeonEditor {
   private propertiesHost: HTMLElement;
   private selectionPanel: HTMLDetailsElement;
   private floorPanel: HTMLDetailsElement;
+  private generatorPanel: HTMLElement;
   private emptyPanel: HTMLElement;
   private keyDock: HTMLElement;
   private structuredHost: HTMLElement;
@@ -635,6 +637,41 @@ export class DungeonEditor {
       floorControls,
     );
     this.compare.addEventListener("change", () => this.applyComparison());
+    this.generatorPanel = element("section", "dn-generator-panel", this.inspector);
+    const generatorControls = element("div", "dn-menu-content", this.generatorPanel);
+    const modeName = "dn-generator-mode-" + uid();
+    let generatorKind: GeneratorKind = "dungeon", generatedIds: string[] = [],
+      nextSeed = 1;
+    element("h3", "", generatorControls, "Generator");
+    for (const [kind, label] of [["dungeon", "DUNGEON"], ["cave", "CAVE"]] as const) {
+      const row = element("label", "dn-generator-choice", generatorControls);
+      const input = element("input", "", row);
+      input.type = "radio";
+      input.name = modeName;
+      input.value = kind;
+      input.checked = kind === generatorKind;
+      input.addEventListener("change", () => { generatorKind = kind; });
+      element("span", "", row, label);
+    }
+    const amountRow = element("label", "dn-compact-field", generatorControls);
+    element("span", "", amountRow, "Räume oder Formdetails");
+    const amountInput = element("input", "", amountRow);
+    amountInput.type = "number";
+    amountInput.min = "1";
+    amountInput.step = "1";
+    amountInput.value = "12";
+    amountInput.setAttribute("aria-label", "Räume oder Formdetails");
+    const generateButton = this.button("Generieren", () => this.run(() => {
+      const amount = Number(amountInput.value);
+      const result = generateLayout(this.session, this.renderer.floorId,
+        { kind: generatorKind, seed: nextSeed++, amount }, generatedIds);
+      generatedIds = result.map((entity) => entity.id);
+      generateButton.textContent = "Neu generieren";
+    }), generatorControls);
+    this.button("Fertigstellen", () => {
+      this.showGroup("selection");
+      this.showPanel("properties", "Auswahl");
+    }, generatorControls);
     for (const [label, key] of [
       ["Referenzdeckkraft", "referenceAlpha"],
       ["Aktuelle Deckkraft", "currentAlpha"],
@@ -977,11 +1014,8 @@ export class DungeonEditor {
         this.showGroup("dungeon");
         this.host.manageMapInfo!();
       });
-    if (this.host.manageGenerator)
-      panelButton("dungeon", "generator", "Assistent", "wand-sparkles", () => {
-        this.showGroup("dungeon");
-        this.host.manageGenerator!(this.renderer.floorId);
-      });
+    panelButton("dungeon", "generator", "Assistent", "wand-sparkles", () =>
+      this.openGenerator());
     if (this.host.manageReferences)
       panelButton("dungeon", "references", "Vorlagen", "scan", () => {
         this.showGroup("dungeon");
@@ -1007,8 +1041,14 @@ export class DungeonEditor {
     ))
       button.hidden = button.dataset.group !== id;
   }
+  openGenerator(): void {
+    this.cancel();
+    this.showGroup("dungeon");
+    this.toggleKey(false);
+    this.showPanel("generator", "Kartenassistent");
+  }
   private showPanel(
-    panel: "properties" | "floors" | "content",
+    panel: "properties" | "floors" | "content" | "generator",
     title: string,
   ): void {
     this.optionTitle.textContent = title;
@@ -1017,6 +1057,7 @@ export class DungeonEditor {
       panel !== "properties" || this.tool !== "select";
     this.prefabPanel.hidden = panel !== "properties" || this.tool !== "prefab";
     this.floorPanel.hidden = panel !== "floors";
+    this.generatorPanel.hidden = panel !== "generator";
     this.emptyPanel.hidden = panel !== "content";
     this.emptyPanel.textContent =
       panel === "content"
@@ -1025,6 +1066,7 @@ export class DungeonEditor {
     for (const [id, button] of this.panelButtons) {
       const active =
         (panel === "floors" && id === "floors") ||
+        (panel === "generator" && id === "generator") ||
         (panel === "content" && id === "key" && !this.keyDock.hidden);
       button.classList.toggle("is-active", active);
       button.setAttribute("aria-pressed", String(active));

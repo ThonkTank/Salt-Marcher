@@ -95728,6 +95728,21 @@
           "build": null,
           "evidence": [],
           "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+        },
+        "followUpPhase1Implementation": {
+          "state": "candidate_review_pending",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "measuredScope": "Start With Map Wizard öffnet eine leere Karte mit seitlichem Assistenten; die Wahl bleibt nach Finish und erneutem New Map im selben Prozess erhalten.",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-wizard-host-20261009/implementation.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-wizard-20261009/runs/20261009-042943-3399733/evidence/screens/06-new-after-discard.png"
+          ],
+          "hostBuildSha256": "970dedecd9f30117c06b6d9011621893c6fb35081180cad968557c3240df02cf",
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-wizard-host-20261009/evidence/1791512619629-parity-tools-phase1-wizard-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-wizard-host-20261009/evidence/1791512632080-parity-tools-phase1-wizard-reopen/result.json"
+          ],
+          "remaining": "Unabhängiger Phase-1-Endbuild-Review offen; Generatorparameter und erzeugte Kartenwirkung sind DD-004/005 in Phase 7."
         }
       },
       {
@@ -96579,6 +96594,22 @@
           "build": null,
           "evidence": [],
           "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+        },
+        "followUpPhase1Implementation": {
+          "state": "candidate_review_pending",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "measuredScope": "Der seitliche Assistent startet mit DUNGEON, lässt CAVE wählen und behält die leere Karte bis Generate; Finish behält das erzeugte Ergebnis.",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-wizard-host-20261009/implementation.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-wizard-20261009/runs/20261009-041657-3390722/evidence/screens/03-wizard-open.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-wizard-20261009/runs/20261009-041657-3390722/evidence/screens/04-wizard-cave.png"
+          ],
+          "hostBuildSha256": "970dedecd9f30117c06b6d9011621893c6fb35081180cad968557c3240df02cf",
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-wizard-host-20261009/evidence/1791512619629-parity-tools-phase1-wizard-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-wizard-host-20261009/evidence/1791512632080-parity-tools-phase1-wizard-reopen/result.json"
+          ],
+          "remaining": "Unabhängiger Phase-1-Endbuild-Review offen; Boundary, Complexity, Density, Floor/Wall und Generatorwirkung sind DD-004/005 in Phase 7."
         }
       },
       {

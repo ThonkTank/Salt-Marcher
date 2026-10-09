@@ -807,6 +807,7 @@ export class PendingDungeonView extends ItemView {
   editor?: DungeonEditor;
   private current?: OpenMap;
   private generation = 0;
+  private startWizard = false;
   mapPath?: string;
   constructor(leaf: WorkspaceLeaf, private plugin: DungeonPlugin) {
     super(leaf);
@@ -821,10 +822,11 @@ export class PendingDungeonView extends ItemView {
     return "map";
   }
   getState(): Record<string, unknown> {
-    return { path: this.mapPath };
+    return { path: this.mapPath, startWizard: this.startWizard };
   }
   async setState(state: Record<string, unknown>): Promise<void> {
     this.mapPath = typeof state.path === "string" ? state.path : undefined;
+    this.startWizard = state.startWizard === true;
     if (this.contentEl.isConnected) await this.render();
   }
   async onOpen(): Promise<void> {
@@ -866,6 +868,10 @@ export class PendingDungeonView extends ItemView {
       );
       await this.editor.init();
       this.editor.maximize();
+      if (this.startWizard) {
+        this.editor.openGenerator();
+        this.startWizard = false;
+      }
     } catch (error) {
       this.editor?.destroy();
       this.editor = undefined;
