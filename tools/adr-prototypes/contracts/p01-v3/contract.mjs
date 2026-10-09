@@ -4,273 +4,36 @@ export const SCHEMA_VERSION = "p01-v3";
 export const MAX_BYTES = 8 * 1024 * 1024;
 export const MAX_ORPHANS = 16;
 export const TARGET_IDS = Object.freeze(["draft", "journal", "map", "note"]);
-export const CHILD_STATES = Object.freeze([
-  "prepared", "temp-synced", "before-snapshotted", "ready-to-capture",
-  "old-captured", "new-published", "deleted", "committed", "rolling-back",
-  "rollback-captured", "rollback-published", "rolled-back",
-  "conflict-before-capture", "conflict",
-]);
-export const PARENT_STATES = Object.freeze([
-  "prepared", "children-committed", "committed", "rolling-back", "rolled-back", "conflict",
-]);
+export const CHILD_STATES = Object.freeze(["prepared", "temp-synced", "before-snapshotted", "ready-to-capture", "old-captured", "new-published", "deleted", "committed", "rolling-back", "rollback-captured", "rollback-published", "rolled-back", "conflict-before-capture", "conflict"]);
+export const PARENT_STATES = Object.freeze(["prepared", "children-committed", "committed", "rolling-back", "rolled-back", "conflict"]);
 
 const encoder = new TextEncoder();
-const sha256 = (value) => createHash("sha256").update(value).digest("hex");
-const freeze = (value) => {
-  if (value && typeof value === "object" && !Object.isFrozen(value)) {
-    for (const child of Object.values(value)) freeze(child);
-    Object.freeze(value);
-  }
-  return value;
-};
+const hash = (value) => createHash("sha256").update(value).digest("hex");
+const size = (value) => encoder.encode(value).byteLength;
+const freeze = (value) => { if (value && typeof value === "object" && !Object.isFrozen(value)) { for (const item of Object.values(value)) freeze(item); Object.freeze(value); } return value; };
+export function canonical(value) { if (value === null || typeof value !== "object") return JSON.stringify(value); if (Array.isArray(value)) return `[${value.map(canonical).join(",")}]`; return `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${canonical(value[key])}`).join(",")}}`; }
+const exact = (value, keys, label) => { if (!value || typeof value !== "object" || Array.isArray(value) || Object.keys(value).length !== keys.length || keys.some((key) => !(key in value))) throw new Error(`${label} has an invalid shape`); };
+const token = (value, label) => { if (typeof value !== "string" || !/^[A-Za-z0-9_-]{24,256}$/.test(value)) throw new Error(`${label} must be an opaque token`); };
+const digest = (value, label, nullable = false) => { if (nullable && value === null) return; if (typeof value !== "string" || !/^[a-f0-9]{64}$/.test(value)) throw new Error(`${label} must be a SHA-256 digest`); };
+const boundedLength = (value, label, nullable = false) => { if (nullable && value === null) return; if (!Number.isSafeInteger(value) || value < 0 || value > MAX_BYTES) throw new Error(`${label} must be a bounded byte length`); };
+const unique = (values, label) => { const present = values.filter((value) => value !== null); if (new Set(present).size !== present.length) throw new Error(`${label} must be pairwise unique`); };
+function internalName(value, kind, nullable = false) { if (nullable && value === null) return; if (typeof value !== "string" || !new RegExp(`^\\.p01h03-${kind}-[A-Za-z0-9_-]{24,256}$`).test(value)) throw new Error(`${kind} name is invalid`); }
+function identity(value, label) { exact(value, ["device", "inode", "linkCount"], label); for (const key of ["device", "inode", "linkCount"]) if (!Number.isSafeInteger(value[key]) || value[key] < 0) throw new Error(`${label}.${key} is invalid`); if (value.linkCount !== 1) throw new Error(`${label} must reject hardlinks`); }
+function child(value) { exact(value, ["childId", "targetId", "operation", "beforeHash", "beforeLength", "afterHash", "afterLength"], "child"); token(value.childId, "childId"); if (!TARGET_IDS.includes(value.targetId) || !["create", "update", "delete"].includes(value.operation)) throw new Error("invalid child identity"); digest(value.beforeHash, "beforeHash", true); digest(value.afterHash, "afterHash", true); boundedLength(value.beforeLength, "beforeLength", true); boundedLength(value.afterLength, "afterLength", true); const beforeAbsent = value.beforeHash === null && value.beforeLength === null; const afterAbsent = value.afterHash === null && value.afterLength === null; if ((value.operation === "create") !== beforeAbsent || (value.operation === "delete") !== afterAbsent || (value.operation === "update" && (beforeAbsent || afterAbsent))) throw new Error("invalid child null/hash/length combination"); }
+function payload(value, hashValue, lengthValue, nullable, label) { if (nullable && value === null) { if (hashValue !== null || lengthValue !== null) throw new Error(`${label} absence is not bound`); return; } if (typeof value !== "string" || size(value) > MAX_BYTES || hash(value) !== hashValue || size(value) !== lengthValue) throw new Error(`${label} does not match bound hash and length`); }
+export function validateRequest(value) { exact(value, ["schemaVersion", "operation", "transactionId", "fixtureId", "payload"], "request"); if (value.schemaVersion !== SCHEMA_VERSION || !["create", "update", "delete"].includes(value.operation)) throw new Error("unsupported request"); token(value.transactionId, "transactionId"); if (typeof value.fixtureId !== "string" || !/^[a-z0-9][a-z0-9-]{0,63}$/.test(value.fixtureId)) throw new Error("invalid fixtureId"); exact(value.payload, ["child", "beforeBytes", "afterBytes"], "request payload"); child(value.payload.child); if (value.payload.child.operation !== value.operation) throw new Error("request operation mismatch"); payload(value.payload.beforeBytes, value.payload.child.beforeHash, value.payload.child.beforeLength, value.operation === "create", "beforeBytes"); payload(value.payload.afterBytes, value.payload.child.afterHash, value.payload.child.afterLength, value.operation === "delete", "afterBytes"); return freeze(structuredClone(value)); }
 
-export function canonical(value) {
-  if (value === null || typeof value !== "object") return JSON.stringify(value);
-  if (Array.isArray(value)) return `[${value.map(canonical).join(",")}]`;
-  return `{${Object.keys(value).sort().map((key) =>
-    `${JSON.stringify(key)}:${canonical(value[key])}`).join(",")}}`;
-}
+function names(value, operation) { exact(value, ["childReceiptStaging", "temp", "beforeSnapshot", "capture", "rollbackCapture", "rollbackTemp"], "child names"); internalName(value.childReceiptStaging, "child-staging"); internalName(value.temp, "temp", operation === "delete"); internalName(value.beforeSnapshot, "before", operation === "create"); internalName(value.capture, "capture", operation === "create"); internalName(value.rollbackCapture, "rollback-capture", operation === "delete"); internalName(value.rollbackTemp, "rollback-temp", operation === "create"); unique(Object.values(value), "child internal names"); }
+function evidence(value, label, expectedHash, expectedLength, applicable, retained, conflict) { exact(value, ["status", "identity", "length", "hash"], label); if (!applicable) { if (value.status !== "not-applicable" || value.identity !== null || value.length !== null || value.hash !== null) throw new Error(`${label} is not applicable`); return; } if (!["absent", "pending", "present"].includes(value.status)) throw new Error(`${label} status is invalid`); if (value.status === "absent") { if (value.identity !== null || value.length !== 0 || value.hash !== null) throw new Error(`${label} absence is inconsistent`); } else if (value.status === "pending") { if (value.identity !== null || value.length !== null || value.hash !== null) throw new Error(`${label} pending is inconsistent`); } else { identity(value.identity, `${label}.identity`); boundedLength(value.length, `${label}.length`); digest(value.hash, `${label}.hash`); if (!conflict && (value.hash !== expectedHash || value.length !== expectedLength)) throw new Error(`${label} does not match bound truth`); } if (retained && value.status !== "present") throw new Error(`${label} must be retained`); }
+function stateSet(operation) { const shared = ["prepared", "committed", "rolling-back", "rolled-back", "conflict"]; if (operation === "create") return [...shared, "temp-synced", "new-published", "rollback-captured"]; if (operation === "update") return [...shared, "before-snapshotted", "ready-to-capture", "old-captured", "new-published", "rollback-captured", "rollback-published", "conflict-before-capture"]; return [...shared, "before-snapshotted", "ready-to-capture", "old-captured", "deleted", "rollback-published", "conflict-before-capture"]; }
+function lifecycle(operation, state) { const inSet = (states) => states.includes(state); const afterTemp = inSet(["temp-synced", "ready-to-capture", "old-captured", "new-published", "committed", "rolling-back", "rollback-captured", "rollback-published", "rolled-back", "conflict-before-capture", "conflict"]); const afterBefore = inSet(["before-snapshotted", "ready-to-capture", "old-captured", "new-published", "deleted", "committed", "rolling-back", "rollback-captured", "rollback-published", "rolled-back", "conflict-before-capture", "conflict"]); const afterCapture = inSet(["old-captured", "new-published", "deleted", "committed", "rolling-back", "rollback-captured", "rollback-published", "rolled-back", "conflict-before-capture", "conflict"]); return { beforeSnapshot: [operation !== "create", operation !== "create" && afterBefore], temp: [operation !== "delete", operation !== "delete" && afterTemp], capture: [operation !== "create", operation !== "create" && afterCapture], rollbackCapture: [operation !== "delete", operation !== "delete" && inSet(["rollback-captured", "rollback-published", "rolled-back", "conflict"])], rollbackTemp: [operation !== "create", operation !== "create" && inSet(["rollback-published", "rolled-back", "conflict"])], target: [true, operation !== "delete" && inSet(["new-published", "committed"])], }; }
+function orphans(value) { if (!Array.isArray(value) || value.length > MAX_ORPHANS) throw new Error("orphan inventory is unbounded"); const seen = []; for (const item of value) { exact(item, ["name", "exists", "length", "hash", "bytes", "identity"], "orphan"); internalName(item.name, "(?:parent-staging|child-staging|parent-receipt|child-receipt)"); seen.push(item.name); if (!item.exists) { if (item.length !== 0 || item.hash !== null || item.bytes !== null || item.identity !== null) throw new Error("absent orphan is inconsistent"); } else { if (typeof item.bytes !== "string" || size(item.bytes) > MAX_BYTES || item.length !== size(item.bytes) || item.hash !== hash(item.bytes)) throw new Error("orphan content is inconsistent"); identity(item.identity, "orphan.identity"); } } unique(seen, "orphan names"); }
+export function validateChildReceipt(value) { exact(value, ["schemaVersion", "transactionId", "parentId", "child", "generation", "state", "names", "artifacts", "orphanInventory"], "child receipt"); if (value.schemaVersion !== SCHEMA_VERSION || !Number.isSafeInteger(value.generation) || value.generation < 0) throw new Error("invalid child receipt header"); token(value.transactionId, "transactionId"); token(value.parentId, "parentId"); child(value.child); if (!stateSet(value.child.operation).includes(value.state)) throw new Error("invalid state for operation"); names(value.names, value.child.operation); exact(value.artifacts, ["beforeSnapshot", "temp", "capture", "rollbackCapture", "rollbackTemp", "target"], "artifacts"); const stages = lifecycle(value.child.operation, value.state); const conflict = value.state.includes("conflict"); const expected = { beforeSnapshot: [value.child.beforeHash, value.child.beforeLength], temp: [value.child.afterHash, value.child.afterLength], capture: [value.child.beforeHash, value.child.beforeLength], rollbackCapture: [value.child.afterHash, value.child.afterLength], rollbackTemp: [value.child.beforeHash, value.child.beforeLength], target: [value.child.afterHash, value.child.afterLength] }; for (const key of Object.keys(stages)) evidence(value.artifacts[key], key, ...expected[key], ...stages[key], conflict); orphans(value.orphanInventory); if (conflict && !Object.values(value.artifacts).some((item) => item.status === "present" && (item.hash !== value.child.beforeHash && item.hash !== value.child.afterHash)) && !value.orphanInventory.some((item) => item.exists)) throw new Error("conflict needs observed competing evidence or orphan"); return freeze(structuredClone(value)); }
 
-function exact(value, keys, name) {
-  if (!value || typeof value !== "object" || Array.isArray(value) ||
-      Object.keys(value).length !== keys.length || keys.some((key) => !(key in value)))
-    throw new Error(`${name} has an invalid shape`);
-}
-
-function token(value, name) {
-  if (typeof value !== "string" || !/^[A-Za-z0-9_-]{24,256}$/.test(value))
-    throw new Error(`${name} must be an opaque token`);
-}
-
-function digest(value, name, nullable = false) {
-  if (value === null && nullable) return;
-  if (typeof value !== "string" || !/^[a-f0-9]{64}$/.test(value))
-    throw new Error(`${name} must be a SHA-256 digest`);
-}
-
-function bytes(value, name, nullable = false) {
-  if (value === null && nullable) return;
-  if (typeof value !== "string" || encoder.encode(value).byteLength > MAX_BYTES)
-    throw new Error(`${name} must be bounded bytes`);
-}
-
-function name(value, kind, nullable = false) {
-  if (value === null && nullable) return;
-  if (typeof value !== "string" ||
-      !new RegExp(`^\\.p01h03-${kind}-[A-Za-z0-9_-]{24,256}$`).test(value))
-    throw new Error(`${kind} name is invalid`);
-}
-
-function unique(values, label) {
-  const present = values.filter((value) => value !== null);
-  if (new Set(present).size !== present.length) throw new Error(`${label} must be pairwise unique`);
-}
-
-function identity(value, label, pending = false, nullable = false) {
-  if (value === null && nullable) return;
-  if (value === "pending" && pending) return;
-  exact(value, ["device", "inode", "linkCount"], label);
-  for (const key of ["device", "inode", "linkCount"])
-    if (!Number.isSafeInteger(value[key]) || value[key] < 0)
-      throw new Error(`${label}.${key} must be a non-negative safe integer`);
-  if (value.linkCount !== 1) throw new Error(`${label} must reject hardlinks`);
-}
-
-function child(value) {
-  exact(value, ["childId", "targetId", "operation", "beforeHash", "afterHash"], "child");
-  token(value.childId, "childId");
-  if (!TARGET_IDS.includes(value.targetId)) throw new Error("unknown targetId");
-  if (!['create', 'update', 'delete'].includes(value.operation)) throw new Error("invalid operation");
-  digest(value.beforeHash, "beforeHash", true);
-  digest(value.afterHash, "afterHash", true);
-  if ((value.operation === "create") !== (value.beforeHash === null) ||
-      (value.operation === "delete") !== (value.afterHash === null) ||
-      (value.operation === "update" && (value.beforeHash === null || value.afterHash === null)))
-    throw new Error("operation has an invalid null/hash combination");
-}
-
-function boundPayload(value, expectedHash, nullable, label) {
-  bytes(value, label, nullable);
-  if (value === null ? expectedHash !== null : sha256(value) !== expectedHash)
-    throw new Error(`${label} does not match its bound hash`);
-}
-
-export function validateRequest(value) {
-  exact(value, ["schemaVersion", "operation", "transactionId", "fixtureId", "payload"], "request");
-  if (value.schemaVersion !== SCHEMA_VERSION || !["create", "update", "delete"].includes(value.operation))
-    throw new Error("unsupported request");
-  token(value.transactionId, "transactionId");
-  if (typeof value.fixtureId !== "string" || !/^[a-z0-9][a-z0-9-]{0,63}$/.test(value.fixtureId))
-    throw new Error("invalid fixtureId");
-  exact(value.payload, ["child", "beforeBytes", "afterBytes"], "request payload");
-  child(value.payload.child);
-  if (value.payload.child.operation !== value.operation) throw new Error("request operation mismatch");
-  boundPayload(value.payload.beforeBytes, value.payload.child.beforeHash, value.operation === "create", "beforeBytes");
-  boundPayload(value.payload.afterBytes, value.payload.child.afterHash, value.operation === "delete", "afterBytes");
-  return freeze(structuredClone(value));
-}
-
-function validateNames(value, operation) {
-  exact(value, ["childReceiptStaging", "temp", "beforeSnapshot", "capture", "rollbackCapture", "rollbackTemp"], "child names");
-  name(value.childReceiptStaging, "child-staging");
-  name(value.temp, "temp", operation === "delete");
-  name(value.beforeSnapshot, "before", operation === "create");
-  name(value.capture, "capture", operation === "create");
-  name(value.rollbackCapture, "rollback-capture", operation === "delete");
-  name(value.rollbackTemp, "rollback-temp", operation === "create");
-  unique(Object.values(value), "child internal names");
-}
-
-function artifact(value, label, requiredHash, allowed, allowPending = false) {
-  if (!allowed) {
-    if (value === "pending" && allowPending) return;
-    if (value !== null) throw new Error(`${label} is not valid for this operation/state`);
-    return;
-  }
-  if (value === "pending" && allowPending) return;
-  if (value === "pending") throw new Error(`${label} may no longer be pending`);
-  exact(value, ["identity", "length", "hash"], label);
-  identity(value.identity, `${label}.identity`);
-  if (!Number.isSafeInteger(value.length) || value.length < 0 || value.length > MAX_BYTES)
-    throw new Error(`${label}.length is invalid`);
-  digest(value.hash, `${label}.hash`);
-  if (requiredHash !== undefined && value.hash !== requiredHash)
-    throw new Error(`${label} has the wrong hash`);
-}
-
-function requiredArtifacts(operation, state) {
-  const needBefore = ["before-snapshotted", "ready-to-capture", "old-captured", "deleted",
-    "committed", "rolling-back", "rollback-published", "rolled-back", "conflict-before-capture"].includes(state);
-  const needTemp = ["temp-synced", "ready-to-capture", "old-captured", "new-published",
-    "committed", "rolling-back", "rollback-captured", "conflict-before-capture"].includes(state);
-  const needCapture = ["old-captured", "deleted", "committed", "rolling-back", "rollback-published",
-    "rolled-back", "conflict-before-capture"].includes(state);
-  return {
-    beforeSnapshot: operation !== "create" && needBefore,
-    temp: operation !== "delete" && needTemp,
-    capture: operation !== "create" && needCapture,
-    rollbackCapture: operation !== "delete" && state === "rollback-captured",
-    rollbackTemp: operation !== "create" && ["rollback-published", "rolled-back"].includes(state),
-    target: ["new-published", "committed"].includes(state) && operation !== "delete",
-  };
-}
-
-function allowedStates(operation) {
-  const shared = ["prepared", "committed", "rolling-back", "rolled-back", "conflict"];
-  if (operation === "create") return [...shared, "temp-synced", "new-published", "rollback-captured"];
-  if (operation === "update") return [...shared, "before-snapshotted", "ready-to-capture", "old-captured",
-    "new-published", "rollback-captured", "rollback-published", "conflict-before-capture"];
-  return [...shared, "before-snapshotted", "ready-to-capture", "old-captured", "deleted",
-    "rollback-published", "conflict-before-capture"];
-}
-
-function validateOrphans(value) {
-  if (!Array.isArray(value) || value.length > MAX_ORPHANS) throw new Error("orphan inventory is unbounded");
-  const names = [];
-  for (const orphan of value) {
-    exact(orphan, ["name", "exists", "length", "hash", "bytes", "identity"], "orphan");
-    name(orphan.name, "(?:parent-staging|child-staging|parent-receipt|child-receipt)");
-    if (typeof orphan.exists !== "boolean") throw new Error("orphan.exists must be boolean");
-    names.push(orphan.name);
-    if (!orphan.exists) {
-      if (orphan.length !== 0 || orphan.hash !== null || orphan.bytes !== null || orphan.identity !== null)
-        throw new Error("absent orphan must have null evidence");
-      continue;
-    }
-    bytes(orphan.bytes, "orphan.bytes");
-    if (orphan.length !== encoder.encode(orphan.bytes).byteLength || orphan.length > MAX_BYTES ||
-        orphan.hash !== sha256(orphan.bytes)) throw new Error("orphan evidence does not match content");
-    identity(orphan.identity, "orphan.identity");
-  }
-  unique(names, "orphan names");
-}
-
-export function validateChildReceipt(value) {
-  exact(value, ["schemaVersion", "transactionId", "parentId", "child", "generation", "state", "names", "artifacts", "orphanInventory"], "child receipt");
-  if (value.schemaVersion !== SCHEMA_VERSION || !Number.isSafeInteger(value.generation) || value.generation < 0)
-    throw new Error("invalid child receipt header");
-  token(value.transactionId, "transactionId");
-  token(value.parentId, "parentId");
-  child(value.child);
-  if (!allowedStates(value.child.operation).includes(value.state)) throw new Error("child state is invalid for operation");
-  validateNames(value.names, value.child.operation);
-  exact(value.artifacts, ["beforeSnapshot", "temp", "capture", "rollbackCapture", "rollbackTemp", "target"], "artifacts");
-  const needed = requiredArtifacts(value.child.operation, value.state);
-  const allowPending = value.state === "prepared";
-  artifact(value.artifacts.beforeSnapshot, "beforeSnapshot", value.child.beforeHash, needed.beforeSnapshot, allowPending);
-  artifact(value.artifacts.temp, "temp", value.child.afterHash, needed.temp, allowPending);
-  artifact(value.artifacts.capture, "capture", value.child.beforeHash, needed.capture, allowPending);
-  artifact(value.artifacts.rollbackCapture, "rollbackCapture", value.child.afterHash, needed.rollbackCapture, allowPending);
-  artifact(value.artifacts.rollbackTemp, "rollbackTemp", value.child.beforeHash, needed.rollbackTemp, allowPending);
-  artifact(value.artifacts.target, "target", value.child.afterHash, needed.target, allowPending);
-  validateOrphans(value.orphanInventory);
-  return freeze(structuredClone(value));
-}
-
-function aggregate(children, key) {
-  return sha256(canonical(children.map(({ targetId, operation, beforeHash, afterHash }) => ({
-    targetId, operation, hash: key === "before" ? beforeHash : afterHash,
-  }))));
-}
-
+function aggregate(children, side) { return hash(canonical(children.map(({ targetId, operation, beforeHash, beforeLength, afterHash, afterLength }) => ({ targetId, operation, hash: side === "before" ? beforeHash : afterHash, length: side === "before" ? beforeLength : afterLength })))); }
 export const aggregateBeforeDigest = (children) => aggregate(children, "before");
 export const aggregateAfterDigest = (children) => aggregate(children, "after");
-
-function validateChildReferences(value) {
-  if (!Array.isArray(value) || value.length !== TARGET_IDS.length) throw new Error("parent must bind the complete child set");
-  const expected = [...TARGET_IDS];
-  for (let index = 0; index < value.length; index += 1) {
-    const reference = value[index];
-    exact(reference, ["childId", "targetId", "operation", "beforeHash", "afterHash", "state", "receiptName", "receiptDigest", "names"], "child reference");
-    child({ childId: reference.childId, targetId: reference.targetId, operation: reference.operation,
-      beforeHash: reference.beforeHash, afterHash: reference.afterHash });
-    if (reference.targetId !== expected[index]) throw new Error("children must be stably sorted by targetId");
-    if (!CHILD_STATES.includes(reference.state)) throw new Error("invalid child reference state");
-    name(reference.receiptName, "child-receipt");
-    digest(reference.receiptDigest, "child receipt digest");
-    validateNames(reference.names, reference.operation);
-  }
-  unique(value.map((reference) => reference.childId), "child IDs");
-  unique(value.map((reference) => reference.receiptName), "child receipt names");
-  return value;
-}
-
-function coherent(parentState, children) {
-  const states = children.map((childReference) => childReference.state);
-  if (["children-committed", "committed"].includes(parentState) && !states.every((state) => state === "committed"))
-    throw new Error("committed parent requires committed children");
-  if (parentState === "rolled-back" && !states.every((state) => state === "rolled-back"))
-    throw new Error("rolled-back parent requires rolled-back children");
-  if (parentState === "conflict" && !states.some((state) => state.includes("conflict")))
-    throw new Error("conflict parent requires a conflict child");
-  if (parentState === "prepared" && states.some((state) => ["committed", "rolled-back"].includes(state)))
-    throw new Error("prepared parent cannot describe terminal children");
-  if (parentState === "rolling-back" && states.some((state) => state === "committed"))
-    throw new Error("rolling-back parent cannot retain committed children");
-}
-
-export function validateParentReceipt(value) {
-  exact(value, ["schemaVersion", "transactionId", "parentId", "generation", "state", "names", "children", "beforeDigest", "afterDigest", "orphanInventory"], "parent receipt");
-  if (value.schemaVersion !== SCHEMA_VERSION || !PARENT_STATES.includes(value.state) ||
-      !Number.isSafeInteger(value.generation) || value.generation < 0) throw new Error("invalid parent receipt header");
-  token(value.transactionId, "transactionId");
-  token(value.parentId, "parentId");
-  exact(value.names, ["parentReceiptStaging", "parentReceipt"], "parent names");
-  name(value.names.parentReceiptStaging, "parent-staging");
-  name(value.names.parentReceipt, "parent-receipt");
-  const children = validateChildReferences(value.children);
-  unique([value.names.parentReceiptStaging, value.names.parentReceipt,
-    ...children.flatMap((reference) => [reference.receiptName, ...Object.values(reference.names)])],
-  "all parent and child internal names");
-  digest(value.beforeDigest, "beforeDigest");
-  digest(value.afterDigest, "afterDigest");
-  if (value.beforeDigest !== aggregateBeforeDigest(children) || value.afterDigest !== aggregateAfterDigest(children))
-    throw new Error("parent aggregate digest does not bind its full child set");
-  coherent(value.state, children);
-  validateOrphans(value.orphanInventory);
-  return freeze(structuredClone(value));
-}
-
-export function receiptDigest(receipt) {
-  return sha256(canonical(receipt));
-}
+function references(value) { if (!Array.isArray(value) || value.length !== TARGET_IDS.length) throw new Error("parent must bind the complete child set"); for (let index = 0; index < value.length; index += 1) { const item = value[index]; exact(item, ["childId", "targetId", "operation", "beforeHash", "beforeLength", "afterHash", "afterLength", "state", "receiptName", "receiptDigest", "names"], "child reference"); child({ childId: item.childId, targetId: item.targetId, operation: item.operation, beforeHash: item.beforeHash, beforeLength: item.beforeLength, afterHash: item.afterHash, afterLength: item.afterLength }); if (item.targetId !== TARGET_IDS[index] || !CHILD_STATES.includes(item.state)) throw new Error("child references are unsorted or invalid"); internalName(item.receiptName, "child-receipt"); digest(item.receiptDigest, "child receipt digest"); names(item.names, item.operation); } unique(value.map((item) => item.childId), "child IDs"); return value; }
+function coherent(state, children) { const states = children.map((item) => item.state); if (["children-committed", "committed"].includes(state) && !states.every((item) => item === "committed")) throw new Error("committed parent requires committed children"); if (state === "rolled-back" && !states.every((item) => item === "rolled-back")) throw new Error("rolled-back parent requires rolled-back children"); if (state === "conflict" && !states.some((item) => item.includes("conflict"))) throw new Error("conflict parent requires conflict child"); if (state === "prepared" && states.some((item) => ["committed", "rolled-back"].includes(item))) throw new Error("prepared parent has terminal child"); }
+export function validateParentReceipt(value) { exact(value, ["schemaVersion", "transactionId", "parentId", "generation", "state", "names", "children", "beforeDigest", "afterDigest", "orphanInventory"], "parent receipt"); if (value.schemaVersion !== SCHEMA_VERSION || !PARENT_STATES.includes(value.state) || !Number.isSafeInteger(value.generation) || value.generation < 0) throw new Error("invalid parent receipt header"); token(value.transactionId, "transactionId"); token(value.parentId, "parentId"); exact(value.names, ["parentReceiptStaging", "parentReceipt"], "parent names"); internalName(value.names.parentReceiptStaging, "parent-staging"); internalName(value.names.parentReceipt, "parent-receipt"); const children = references(value.children); unique([value.names.parentReceiptStaging, value.names.parentReceipt, ...children.flatMap((item) => [item.receiptName, ...Object.values(item.names)])], "all internal names"); if (value.beforeDigest !== aggregateBeforeDigest(children) || value.afterDigest !== aggregateAfterDigest(children)) throw new Error("parent aggregate digest does not bind children"); coherent(value.state, children); orphans(value.orphanInventory); return freeze(structuredClone(value)); }
+export const receiptDigest = (receipt) => hash(canonical(receipt));
