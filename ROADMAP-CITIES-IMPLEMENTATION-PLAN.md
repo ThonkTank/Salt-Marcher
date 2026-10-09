@@ -1015,3 +1015,5 @@ CITY-01-INTEGRATION-R01-CLEAN-P01 Start 2026-10-09T19:28:15.623485+00:00; Aufrä
 CITY-01-INTEGRATION-R01-CLEAN-I01 Start 2026-10-09T19:28:18.561382+00:00; Belegpfad und Vorschlagsscope konsolidiert; kein vorweggenommener Vertrag oder Produktpass.
 
 CITY-01-INTEGRATION-R01-CLEAN-R01 Start 2026-10-09T19:28:21.042352+00:00; Planlinks/JSON/Gegenbeleg vorhanden, fremde JSON-Wurzeln erhalten; Scope bleibt Vorschlag.
+
+CITY-01-INTEGRATION-N01 Start 2026-10-09T19:28:35.030662+00:00; Drei Befunde in konkrete Anschluss-/Abnahmepflichten übersetzt: relative Vorwärts/Rückabbildung, neues Placement/Draftschema, gemeinsames Fit.
