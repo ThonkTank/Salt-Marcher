@@ -3675,17 +3675,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I14-CI",
-      "kind": "cleanup_implementation",
-      "startedAt": "2026-10-09T12:48:13.602689+00:00",
-      "focus": "Geplanten Verformungsvertrag und Teilpflichten eintragen",
+      "id": "CITY-00-I15-P",
+      "kind": "early_reference_planning",
+      "startedAt": "2026-10-09T12:51:12.564302+00:00",
+      "focus": "Weitere Watabou-Warp-Werkzeuge planen",
       "state": "completed",
-      "result": "Geplanter Verformungsvertrag ergänzt;8 Teilpflichten offen, nur Displace Originalteilwirkung; keine eigene API oder Hostabnahme"
+      "result": "Sieben Werkzeuge getrennt auf jeweils neu geladener Testbasis prüfen; tatsächliche Bild-/Messwirkung statt Namensannahme, höchstens2 erfolglose Folgen"
     },
     "nextRun": {
-      "id": "CITY-00-I14-CR",
-      "kind": "cleanup_review",
-      "focus": "Verformungsvertrag und Rohbelege abschließend prüfen"
+      "id": "CITY-00-I15-I",
+      "kind": "reference_operation_probe",
+      "focus": "Weitere Warp-Werkzeuge direkt prüfen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
@@ -3730,16 +3730,16 @@
   },
   "gmProductTesting": {
     "date": "2026-10-09",
-    "state": "gm_ux_01_partial_first_pass_complete",
+    "state": "gm_ux_n001_cloud_retest_passed_scenario_continues",
     "plan": "ROADMAP-GM-PRODUCT-TESTING-PLAN.md",
     "focus": "Längere GM-Endanwenderabläufe, häufige Aktionen, Bedienkosten und UI-Überladung; belegte Nacharbeiten beauftragen und nachprüfen.",
     "currentRun": "GM-UX-01",
-    "executedUiRuns": 1,
+    "executedUiRuns": 2,
     "observedFindings": [
       {
         "id": "GM-UX-001",
         "priority": "P2",
-        "status": "assigned_for_review_and_small_implementation",
+        "status": "cloud_retest_passed",
         "kind": "Eigene UI-Beobachtung; Cloud/Testvault, kein physischer Eingabegeräte-Test",
         "build": "Obsidian 1.14.4; Produktbuild SHA-256 d54f25cf7b961cc78b1bbf197bd4781bd62d2325ec10dc4b34148c0d6ab3a6a2; aus Produktcommit d93136c0d656f9613bdab6562ba7707988962d97",
         "scenario": "GM-UX-01 Abschnitt A, GM-UX-01 Nebelwacht, 1024x800 Appfenster",
@@ -3749,10 +3749,20 @@
         "impact": "P2 Kandidat für wiederholt ausgeführte Kartenaufgabe; angenommene Häufigkeit noch nicht durch weitere GMs belegt.",
         "evidence": "/workspace/scratch/gm-cloud-qa/08-six-rooms.png, 12-pending.png, 14-six-rooms.png, 17-eight-rooms.png; sechs Räume plus Verbindung und Notiz / 31-reopened.png, 32-note-reopen.png",
         "proposedTask": "GM-UX-N-001: Dungeon-Verantwortlicher prüft/schlägt einen optionalen schnellen Rechteck-Raum-Modus vor, der Raum bei Flächenerstellung automatisch anlegt. Bei aktiviertem Modus sechs Räume mit sechs Ziehgesten erstellen; Modus aus erhält freie Grundflächen. Abnahmekriterien: genau sechs Raum-Keys, kein Extraklick je Raum, kein doppelter Raum nach Maus-Loslassen, Moduswahl nach erneutem Öffnen erhalten; denselben Abschnitt GM-UX-01 vorher/nachher vergleichen.",
-        "latency": "Nicht gemessen; Fernsteuerungs-/Automationszeiten ausgeschlossen."
+        "latency": "Nicht gemessen; Fernsteuerungs-/Automationszeiten ausgeschlossen.",
+        "retest": {
+          "date": "2026-10-09",
+          "productCommit": "8da4bdad70003e474d423118d46166deeddcd833 (integriert in 110d91434afbda2ae0d6738abb514585e9c9e827)",
+          "buildSha256": "bf9e6cd7773a21901a886371258bf0670c3531365f9da381439c6364132aa2c8",
+          "map": "GM-UX-01 Schnellmodus-Nachtest, isolierter Vault; zuvor unangetastete Nebelwacht-Karte getrennt fortgesetzt",
+          "result": "Sechs sichtbare Rechteckzüge erzeugten genau sechs nummerierte Räume ohne zusätzliche Raum-anlegen-Klicks. Nach Speichern, Tab schließen und erneut öffnen waren die sechs Räume vorhanden und der Modus weiterhin aktiviert. Ctrl+Z nahm Raum 6 sichtbar zurück; Ctrl+Shift+Z stellte ihn wieder her. Bei deaktiviertem Modus erschien nach einer Flächenzeichnung wieder Raum anlegen. Testfläche lag teilweise über Raum 5; nur Sichtbarkeit der manuellen Aktion verifiziert, keine zusätzliche freie Fläche als gespeichert behauptet.",
+          "gestures": "Einmaliges Aktivieren des Modus plus sechs Ziehgesten (7). Nach Aktivierung sechs statt zwölf Gesten für sechs Räume; ein einzelner Endanwenderlauf.",
+          "evidence": "/workspace/scratch/gm-cloud-qa/35-quick-room-setting.png, 37-six-quick-room-drags.png, 38-undo.png, 39-redo.png, 40-reopen-quick-rooms.png, 42-mode-persistence.png, 43-free-floor-mode-off.png, 41-fit-after-reopen.png",
+          "colleagueEvidence": "Implementierung und getrenntes Review vom Dungeon-Kollegen in Issue #1 Kommentar 6080778787; eigener Cloud-Nachtest hier separat."
+        }
       }
     ],
-    "blocker": "Objektplatzierung noch nicht sinnvoll prüfbar: isolierte Testvault-Objektbibliothek zeigt Keine Objekte, trotz aktivierter Eingebauter Grundassets; keine Assetpakete importiert. Das ist derzeit eine Testdatenlücke, kein bestätigter allgemeiner Produktfehler.",
+    "blocker": "Asset-Such- und Wiederholungsplatzierung bleiben mangels freigegebener Testpakete offen; isolierte Bibliothek zeigt Keine Objekte, trotz aktivierter Eingebauter Grundassets. Testdatenlücke, kein allgemeiner Produktfehler.",
     "coordination": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1#issuecomment-6080172233",
     "assignedPrerequisite": {
       "id": "GM-UX-CLOUD",
@@ -3760,7 +3770,7 @@
       "state": "completed",
       "supersedes": "GM-UX-ACCESS; Slotanfrage gemäß Nutzerkorrektur aufgehoben"
     },
-    "next": "Dungeon-Verantwortlichen GM-UX-N-001 in Issue #1 zuweisen; für erneuten Asset-Such-/Platzierungstest freigegebene Dungeondraft-Pakettestdaten bereitstellen/importieren; GM-UX-01 mit Ebenenwechsel, Undo/Redo, Wiederöffnung und Spielablauf fortsetzen.",
+    "next": "Freigegebene Pack-Testdaten für eigenen Vault finden/importieren; Asset suchen und zehnmal platzieren. GM-UX-OBS-01 in derselben Szene mit breiterem Fenster nochmals prüfen. Danach Undo/Redo und GM-Spielansicht für spontane Routenwahl fortsetzen; Atlas nur testen, falls Zoomfolge implementiert ist.",
     "automation": "Stündliche GM-Produkttests in eigener Cloud; keine Laptop-Slotfreigabe erforderlich.",
     "executionEnvironment": "Eigene Cloud-Umgebung, getrennt vom Laptop der Kollegen",
     "cloudHost": {
@@ -3787,6 +3797,35 @@
         "05-saved.png"
       ],
       "initialization": "Erste Eingaben während Hoststart ohne sichtbare Wirkung; später Befehlsleiste und Editor bedienbar. Kein reproduzierter Produktbefund."
-    }
+    },
+    "latestScenario": {
+      "environment": "Obsidian 1.14.4; eigener Cloud-Container; App 1024x800; sichtbare UI über Playwright/CDP; kein physischer Input",
+      "builtProductCommit": "110d91434afbda2ae0d6738abb514585e9c9e827; GM-UX-N-001 Featurecommit 8da4bdad70003e474d423118d46166deeddcd833 ist Vorfahr",
+      "buildSha256": "bf9e6cd7773a21901a886371258bf0670c3531365f9da381439c6364132aa2c8",
+      "completed": "Nebelwacht: sechs Räume im Erdgeschoss, fünf weitere Wände im zweiten Geschoss, zwei Türen ergänzt; Raum 12 Notiz geändert, Tür zwischen Raum 7/8 verschoben; Speichern, Tab schließen und erneutes Öffnen; beide Geschosse, zwölf nummerierte Räume, Verbindungen/Türen und geänderter Hinweis waren sichtbar. Zweite Ebene im Karten- und Spielansichtweg aufgerufen; Hinweis in Raum 12 gelesen. Undo/Redo am separaten Schnellmodus-Nachtest durchgeführt.",
+      "limitations": "Keine Paketassets im Vault; Objektbibliothek meldet Keine Objekte und Assetmanager hat keine Pakete. Assetrecherche/Wiederholungsplatzierung deshalb offen. Keine Produktlatenz gemessen. Atlas-Zoomfolge nicht ausgeführt.",
+      "evidence": [
+        "49-second-floor-rooms.png",
+        "51-second-floor-doors.png",
+        "53-note-second-floor.png",
+        "55-floor-switch.png",
+        "56-improvised-hint-find.png",
+        "59-play-view.png",
+        "64-play-floor-switch.png",
+        "68-play-fit.png",
+        "72-door-moved.png",
+        "75-real-reopen.png",
+        "76-reopen-second-floor.png"
+      ]
+    },
+    "openObservations": [
+      {
+        "id": "GM-UX-OBS-01",
+        "status": "beobachtet_einmal_nicht_als_fehler_priorisiert",
+        "observation": "Im 1024x800-Obsidian-Split war die Karten-Spielansicht schmal; bei Geschosswechsel war die Karte zunächst außerhalb des sichtbaren Ausschnitts und nach Einpassen sichtbar. Einige rechte Steuerungen lagen außerhalb des Viewports, ließen sich aber per Tabulator erreichen.",
+        "impact": "Mögliche Reibung für simultanes Leiten mit offener Raum-Notiz. Der Befund trat in der konkreten geteilten Fensteranordnung auf; weitere Fensterbreiten/GM-Abläufe vergleichen, bevor Nacharbeit beauftragt wird.",
+        "evidence": "/workspace/scratch/gm-cloud-qa/59-play-view.png, 63-tab-to-controls.png, 64-play-floor-switch.png, 68-play-fit.png"
+      }
+    ]
   }
 }
