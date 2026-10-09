@@ -1634,7 +1634,7 @@
         "caseIds": [
           "CTY-006.02"
         ],
-        "technicalPlan": "ROADMAP-CITIES-CITY00-COK-VARIANTS-PLAN.md; CITY07materialized variant/pose onstableelementIDs, explicit refreshpreview and oneAtlascommand, no rerandomizeonload.",
+        "technicalPlan": "ROADMAP-CITIES-CITY00-COK-VARIANTS-PLAN.md; CITY-07 speichert gewählte Assetvariante und Pose auf stabilen Element-IDs. Explizite Variation aktualisiert zunächst die Vorschau; Apply verwendet einen gemeinsamen Atlasbefehl. Laden darf bestehende Varianten nicht neu auswürfeln. Dies ist geplante eigene Umsetzung, keine bereits geprüfte Original-Neuöffnung.",
         "implementationEvidence": [],
         "hostEvidence": [],
         "comparisonEvidence": [],
@@ -1658,7 +1658,8 @@
             "Other category/custom subtype variations and full version untested",
             "Fresh reopen/restart and own materialized variants/host/UX/physical comparison open"
           ],
-          "limits": "RandomizeScale and RandomizeRotation were both enabled; saved variation does not independently prove each toggle range/policy. Preview overlaps after placement are distinct from final Escape frame. Native scene asset paths are observed artifact fields, not public integration APIs."
+          "limits": "RandomizeScale and RandomizeRotation were both enabled; saved variation does not independently prove each toggle range/policy. Preview overlaps after placement are distinct from final Escape frame. Native scene asset paths are observed artifact fields, not public integration APIs.",
+          "reviewManifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i43-20261009-r01/review.json"
         }
       },
       {
@@ -152321,7 +152322,7 @@
   "hexAtlas": {
     "scope": "HEX-00..28, shared native Atlas; phase-specific functional approvals only.",
     "currentPhase": "HEX-02",
-    "state": "native_island_copy_discard_checked_review_open",
+    "state": "r01_changes_required_repair_planned",
     "referenceGate": "wonderdraftParity.coverageReview HEX-00-R02",
     "requirements": [
       {
@@ -152517,6 +152518,24 @@
       "review": "/home/aaron/.cache/dungeon-native-qa/hex-01/p01-20261009151055/gm-n004-review.json",
       "cloudFreshProcess": "not_verified",
       "limits": "Empty grid layout/zoom/fit only; filled terrain, full Atlas/parity/physical/large map remain open."
-    }
+    },
+    "reviewFindings": [
+      {
+        "id": "HEX02-R01-01",
+        "priority": 1,
+        "state": "open",
+        "title": "Kopie nach Prozessverlust ohne Hauptdatei gezielt wiederherstellen",
+        "candidate": "c9e37ec749b38bfa71248bae7187c8d20ff5f693",
+        "review": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1#issuecomment-6087387441"
+      },
+      {
+        "id": "HEX02-R01-02",
+        "priority": 1,
+        "state": "open",
+        "title": "Angenommene Kopie bis Abschluss sichtbar und gegen native Dismisswege geschützt",
+        "candidate": "c9e37ec749b38bfa71248bae7187c8d20ff5f693",
+        "review": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1#issuecomment-6087387441"
+      }
+    ]
   }
 }
