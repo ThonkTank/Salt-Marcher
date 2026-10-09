@@ -863,6 +863,11 @@ async function workflow() {
   }
   if (hex02Terrain) {
     if (hex02Save) {
+      if (process.argv.includes("--hex02-dungeon-geometry")) {
+        const scenario = require("./host/hex02-dungeon-geometry.cjs")(scenarioContext);
+        if (restart) await scenario.reopen(); else await scenario.edit();
+        return;
+      }
       const scenario = require("./host/hex02-save.cjs")(scenarioContext);
       if (process.argv.includes("--hex02-conflict")) await scenario.reopenConflict();
       else if (restart) await scenario.reopen();
