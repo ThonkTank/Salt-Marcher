@@ -2048,6 +2048,14 @@
         "result": "In isolierter unmodifizierter Dungeondraft-Kopie verschwindet ein per Building Tool gezeichneter Rechteckraum nach Hauptleisten-Undo und erscheint nach Hauptleisten-Redo wieder. Bildausschnitt mit >40-Pixelabweichung zur leeren Ausgangskarte: gezeichnet 45837, nach Undo 36, nach Redo 45690 Pixel. Die verworfene Arbeitskopie behält denselben SHA-256 wie die Quellkarte: 283ddbf85c4f12536a862ea64200763d61062d7d7a296f3d2e1cbc31b59e6ae2.",
         "review": "Unabhängiger read-only Review PASS nur für sichtbare Rechteck-/Topbar-Wirkung. Synthetische Zeigereingabe; keine gespeicherten Zwischenstände, Tastenkürzel, anderen Befehle, physische Eingabe oder App-Exit-Code-Belege. Wrapperstatus 1 folgt dessen Stop-Sentinel-Regel und ist kein Produktfehler."
       },
+      "s01Original": {
+        "run": "DD-036.03-ORIGINAL-01",
+        "state": "scoped_one_building_rectangle_original_save_reopen_independent_review_passed_full_case_open",
+        "version": "Dungeondraft 1.2.0.1 Opulent Kirin",
+        "evidence": "/home/aaron/.cache/dungeon-native-qa/dd036-native-s01-20261009/evidence/native-save-reopen-result.json",
+        "result": "Eine isolierte Kopie der leeren C00-Karte erhält per Building Tool einen Rechteckraum. Hauptleisten-Save zeigt Success! und ändert den SHA-256 der Arbeitskopie von 283ddbf85c4f12536a862ea64200763d61062d7d7a296f3d2e1cbc31b59e6ae2 auf a81de48c0fbdffd037fd513e73a099444e022ebe7cf2ccaab8feac4cbce03543; ein Polygon und eine Wand sind gespeichert. Ein zweiter Originalprozess öffnet eine Kopie dieser gespeicherten Datei per Startargument und zeigt den Raum. Ein weiterer Save zeigt Success! und schreibt de97459080998efa0ea7faece02a9e2c2cc7af9698c5fb94df7f79ce2586b77c; Shapes, Walls und Tile-Zellen bleiben gleich, die Tile-Lookup-Reihenfolge ändert sich.",
+        "review": "Unabhängiger read-only Review PASS nur für diesen direkten Original-Save-/CLI-Neuöffnungsbefund. Synthetische Zeigereingabe; kein Toolbar-Open/Open Recent, kein vollständiges Eingabeprotokoll für den zweiten Save, kein normaler App-Exit aus dem Wrapperstatus ableitbar. Atlas-Host-Save, Draft/Recovery und volle DD-036.03 bleiben offen."
+      },
       "next": "GM-UX-N-005-P01: als eigener Dungeon-Planlauf ausschließlich die belegte Raum-Key-Suche planen; nicht mit DD-036 oder Atlaspersistenz vermischen.",
       "followingRun": "DD-036-O01a und das Terrainkind-Teilpaket von O01b sind eng geprüft; O01b mit Stadt-/Dungeon-Kinddateien wartet auf deren Atlasreferenzen und sichtbare Hostprüfung."
     },
