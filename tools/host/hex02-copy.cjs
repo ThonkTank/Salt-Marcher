@@ -97,6 +97,7 @@ module.exports = ({ page, fs, path, assert, qa, vault, out, checks }) => {
     await page.evaluate((expected) => {
       if (app.vault.adapter.basePath !== expected)
         throw new Error("Unbekanntes Testfenster");
+      app.setting.close();
       window.electron.remote.getCurrentWindow().focus();
     }, vault);
     await page.waitForFunction(() => activeWindow === window);
