@@ -1,15 +1,64 @@
 {
   "saltMarcherCatalogEncounter": {
     "date": "2026-10-09",
-    "state": "ce00_plan_candidate_implementation_next",
+  "state": "ce01_i01_reviewed_i02_next",
     "plan": "ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md",
     "architecture": "ARCHITECTURE.md#geplante-katalog--und-encounter-erweiterung",
     "acceptance": "acceptance.json.saltMarcherCatalogEncounter",
     "currentRun": {
-      "id": "CE-00-P01",
+      "id": "CE-01-P01",
       "kind": "planning",
-      "state": "completed_static_validation_pending",
-      "focus": "SaltMarcher source mapping, D&D Beyond minimum parity, ownership, phases and coordination"
+    "state": "completed_static_validation_reviewed",
+      "focus": "Read-only Monster workspace, visible notice and measured lazy/release-asset strategy",
+      "result": "Dedicated ItemView selected. Build verifies, gzips and embeds the pinned SRD JSON as a virtual Base64 string in main.js; the immutable object graph is decoded only on first catalog open. The visible embedded notice is distribution-safe. UI work is split into loader, core view and advanced-filter packages.",
+      "plan": "ROADMAP-SALTMARCHER-CE01-PLAN.md",
+    "baseline": {
+      "commit": "86ce73179ede452ee6a9f5d3197ee325544a58b8",
+      "node": "v24.19.0",
+      "command": "npm run build && wc -c main.js && gzip -9 -c main.js | wc -c",
+        "currentMainBytes": 1189370,
+      "currentMainGzipBytes": 344194
+    },
+    "unverifiedPlanningObservations": {
+        "isolatedCatalogBundleBytes": 606237,
+        "isolatedCatalogBundleGzipBytes": 96282,
+        "rawCatalogGzipBytes": 106150,
+        "rawCatalogGzipBase64Characters": 141536,
+        "nodeMaterializationMs": 28.84,
+        "nodeHeapDeltaBytes": 3154264,
+      "limitation": "One-off probes without a checked-in script, warmup/sample definition or receipt; not acceptance evidence or an Obsidian startup/host measurement."
+    },
+    "i01PayloadLimits": {
+      "gzipBytes": 122880,
+      "base64Characters": 164000,
+      "mainJsGrowthBytes": 180000
+    },
+    "review": {
+      "state": "passed_after_repair",
+      "findings": "Independent static re-review confirms the provenance-bound baseline, demoted unreceipted probes, numeric payload gates, runtime capability/error path, shared identity source and repository-only NOTICE.md wording close all four findings."
+      }
+    },
+    "implementationRun": {
+      "id": "CE-01-I01",
+      "kind": "implementation",
+      "state": "completed_checked_reviewed",
+      "result": "Shared catalog asset identity, hash-gated gzip/Base64 virtual module, lazy memoized loader, explicit capability errors, retry and reproducible build inventory. No catalog UI or acceptance approval.",
+      "verification": {
+        "check": "passed",
+        "tests": {"passed": 222, "failed": 0},
+        "build": "passed",
+        "inventory": {
+          "sourceBytes": 832272,
+          "gzipBytes": 102021,
+          "base64Characters": 136028,
+          "mainBytes": 1334324,
+          "mainJsGrowthBytes": 144954
+        }
+      },
+      "review": {
+        "state": "passed_after_repair",
+        "repairs": "Added product bundle/inventory and all gate failure regressions, dirty source revision semantics, Blob capability guard and negative tests for every runtime capability."
+      }
     },
     "coordination": {
       "catalogAnalysis": "completed read-only",
@@ -18,16 +67,16 @@
       "testSlotClarification": "one graphical host/original instance per device; colleagues on separate devices may test in parallel",
       "automation": "hourly continuation enabled"
     },
-    "verified": "No product function claimed. Plan records current SaltMarcher gaps: normative seven-section catalog differs from current selector; runtime Encounter is Scene-group based and DMG-2014-only.",
+    "verified": "CE-00-I01 passed 210 tests but R01 required changes. CE-00-N01 passed check, 211 tests and build; independent CE-00-R02 passed with no remaining R01 findings. The later direct user decision narrows the entire feature to D&D 2014 only; the scope correction passes check, 212 tests and build. Portable read-only catalog foundation only. No UI, Vault, Encounter or parity approval claimed.",
     "open": [
       "All CE-01 through CE-07 implementation, review and cleanup runs",
-      "Official pinned DMG-2024 budget table and golden masters",
+      "Pinned DMG-2014 encounter math and golden masters",
       "Real Obsidian host, restart, keyboard and damaged-data acceptance"
     ],
     "nextRun": {
-      "id": "CE-00-I01",
+      "id": "CE-01-I02",
       "kind": "implementation",
-      "focus": "Portable creature types, SRD manifest validation and pure combined-filter query with focused tests"
+      "focus": "Dedicated catalog ItemView, command focus, core search/filter/sort/paging selection and full read-only statblock; no CE-01 approval"
     }
   },
   "repositoryWorkflow": {
@@ -1412,6 +1461,52 @@
     "status": "roadmap_closed_with_p7_2_exception_followup_phase1_implementation_in_progress",
     "roadmap": "ROADMAP-PARITY.md",
     "followUpRoadmap": "ROADMAP-PARITY-TOOLS.md",
+    "dd008Plan": {
+      "date": "2026-10-09",
+      "state": "dd008_none_history_scoped_review_passed_phase1_open",
+      "plan": "ROADMAP-PARITY-TOOLS-PHASE1-DD008-PLAN.md",
+      "source": "Dungeondraft 1.2.0.1: own-building-wear-scratched.dungeondraft_map; bisherige Original-Wahlprobe war leer",
+      "originalHistory": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-20261009/original-history.md",
+      "implementation": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-20261009/implementation.md",
+      "pairedAudit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-20261009/paired-history-audit.json",
+      "hostEdit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-host-20261009/evidence/1791549046997-edit/result.json",
+      "hostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-host-20261009/evidence/1791549276477-reopen/result.json",
+      "review": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-20261009/review.md",
+      "reviewEdit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-review-20261009/evidence/1791549568094-edit/result.json",
+      "reviewReopen": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-review-20261009/evidence/1791549583366-reopen/result.json",
+      "next": "Die vier aktiven Modi auf gleicher Assetbasis und zwei Geschosse direkt prüfen; DD-008 und Phase 1 bleiben offen."
+    },
+    "gmUxN001Plan": {
+      "date": "2026-10-09",
+      "state": "local_review_passed_cloud_retest_open",
+      "plan": "ROADMAP-GM-UX-N-001-PLAN.md",
+      "source": "GM-UX-001 im getrennten Cloud-GM-Test; Issue #1",
+      "implementation": "/home/aaron/.cache/dungeon-native-qa/gm-ux-n001-20261009/implementation.md",
+      "hostEdit": "/home/aaron/.cache/dungeon-native-qa/gm-ux-n001-20261009/evidence/1791548322282-edit/result.json",
+      "hostReopen": "/home/aaron/.cache/dungeon-native-qa/gm-ux-n001-20261009/evidence/1791548354258-reopen/result.json",
+      "buildSha256": "bf9e6cd7773a21901a886371258bf0670c3531365f9da381439c6364132aa2c8",
+      "review": "/home/aaron/.cache/dungeon-native-qa/gm-ux-n001-review-20261009/review.md",
+      "reviewEdit": "/home/aaron/.cache/dungeon-native-qa/gm-ux-n001-review-20261009/evidence/1791548445362-edit/result.json",
+      "reviewReopen": "/home/aaron/.cache/dungeon-native-qa/gm-ux-n001-review-20261009/evidence/1791548454436-reopen/result.json",
+      "next": "Cloud-GM-Nachtest desselben GM-UX-01-Abschnitts auf Commit 8da4bda auslösen; Dungeon-Paritäts- und Atlas-Tore bleiben offen."
+    },
+    "mapInfoNoResizePreparation": {
+      "date": "2026-10-09",
+      "cases": "DD-039.01–.06",
+      "state": "dd039_scoped_review_passed_phase1_open",
+      "helper": "tools/host/parity-tools-phase1-map-info.cjs",
+      "productBuildSha256": "d54f25cf7b961cc78b1bbf197bd4781bd62d2325ec10dc4b34148c0d6ab3a6a2",
+      "checks": "Edit und frische Öffnung über GUI bestanden; Rohdatenvergleich: beide 8×8-Dateien hashgleich wiedergeöffnet, einzige Differenz assetPacks. Auf integriertem Vorlauf Check, 212/212 Tests und Build bestanden.",
+      "next": "DD-008 mit gleicher Original-/Host-Geometrie, kombinierter History und Mehrgeschosswirkung prüfen; Phase 1 bleibt offen.",
+      "implementationReport": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-map-info-no-resize-20261009/implementation.md",
+      "audit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-map-info-no-resize-20261009/implementation-audit.json",
+      "hostEdit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-map-info-no-resize-20261009/evidence/1791547034261-parity-tools-phase1-map-info-edit/result.json",
+      "hostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-map-info-no-resize-20261009/evidence/1791547050103-parity-tools-phase1-map-info-reopen/result.json",
+      "review": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-map-info-review-20261009/review.md",
+      "reviewAudit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-map-info-review-20261009/review-audit.json",
+      "reviewEdit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-map-info-review-20261009/evidence/1791547407655-parity-tools-phase1-map-info-edit/result.json",
+      "reviewReopen": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-map-info-review-20261009/evidence/1791547422038-parity-tools-phase1-map-info-reopen/result.json"
+    },
     "resizeScopeDecision": {
       "date": "2026-10-09",
       "cases": "DD-038.01–.09",
@@ -1874,7 +1969,7 @@
     "plan": "ROADMAP-PARITY-PLAN.md",
     "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
     "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
-    "nextRun": "ROADMAP-PARITY-TOOLS.md Phase 1: Nutzerentscheidung vom 09.10.2026 berücksichtigt: DD-038.01–.09 und kombinierte Resize-Hostfolge entfallen. Als nächstes die noch erforderlichen DD-008-, DD-039-, DD-002-, DD-006/007- und Ansichts-/Dateimenüfälle gegen Original und Host nach Phasenplan bearbeiten. Building-Boden-Gesten bleiben als Werkzeugparität erhalten. Grenzenloses Wachstum ohne Resize-Aktion wird nach ROADMAP-HEX-ATLAS.md geprüft. P7-2 bleibt auf Nutzerwunsch physisch ungeprüft.",
+    "nextRun": "ROADMAP-PARITY-TOOLS.md Phase 1: DD-038.01–.09 sind für den grenzenlosen Atlas ausgeschlossen; DD-039.01–.06 bestehen im separaten 8×8-Hostreview ohne Resize, das Phase-1-Tor bleibt offen. Als nächstes DD-008 mit gleicher Original-/Host-Geometrie, kombinierter History und Mehrgeschosswirkung prüfen; danach DD-001/002, DD-006/007 und offene Ansichts-/Dateimenüfälle in Roadmap-Reihenfolge. Building-Boden-Werkzeuge und Atlaswachstum bleiben separat offen; P7-2 bleibt auf Nutzerwunsch physisch ungeprüft.",
     "note": "P7-1, P7-3 und P7-4 sind in getrennten Edit-/Neuöffnungspaaren reviewt. P7-2 ist auf ausdrückliche Nutzeranweisung übersprungen, nicht physisch geprüft. Phase-7-Fachphasentor mit dieser Ausnahme bestanden; Produktbuild unverändert. Hex-Atlas- und Stadtstand erhalten.",
     "phase2Plan": "ROADMAP-PARITY-PHASE2-PLAN.md",
     "candidateBuildSha256": "b321128188b944c3324594663a410acfd84863f17860f637b9ed2e6ecc33b466",
@@ -3566,23 +3661,23 @@
   "cityExecution": {
     "scope": "CITY-00 bis CITY-09; vollständige Funktionsgleichwertigkeit mit drei Vergleichsprogrammen und bessere Bedienung",
     "phase": "CITY-00",
-    "state": "city00_reference_inventory_partial",
+    "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I07-CI",
-      "kind": "cleanup_implementation",
-      "startedAt": "2026-10-09T11:53:46.363932+00:00",
-      "focus": "RFB-Optionen vor Verbindung validieren",
+      "id": "CITY-00-I15-I",
+      "kind": "reference_operation_probe",
+      "startedAt": "2026-10-09T12:56:00.648423+00:00",
+      "focus": "Weitere Warp-Werkzeuge direkt prüfen",
       "state": "completed",
-      "result": "Vorparser und früher CLI-Regressionstest umgesetzt; check/build bestanden,207/207Standardtests und6/6COK-Tests"
+      "result": "Sieben weitere Werkzeugfolgen direkt teilbelegt; Rotate ganze Stadt/Küste/Fluss, Measure96m; alle Entwürfe verworfen, Testkopie geschlossen; keine eigene Parität"
     },
     "nextRun": {
-      "id": "CITY-00-I07-CR",
-      "kind": "cleanup_review",
-      "focus": "Adapterreparatur, Quellen und Metadaten abschließen"
+      "id": "CITY-00-I15-R",
+      "kind": "requirements_review",
+      "focus": "Unterschiedliche Werkzeugwirkungen gegen Plan prüfen"
     },
     "open": [
-      "CITY-00 direkte Referenzinventur/Galerie aller drei Produkte",
+      "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
       "HEX-05 gemeinsame Atlasbasis vor CITY-01",
       "CITY-01 bis CITY-09 Produkt-, Host-, Ergebnis- und physische Bedienabnahmen"
     ],
@@ -3595,12 +3690,6 @@
       "handoff": "HEX-05-Vertrag vor CITY-01; keine zweite Kamera oder History",
       "state": "responsibilities_confirmed_hex_basis_then_city",
       "confirmedHexResponsibility": "Lokaler Kollege schließt HEX-00 und implementiert HEX-01 bis HEX-05; Übergabevertrag aus Stadtplan ausdrücklich bestätigt."
-    },
-    "pendingNativeRun": {
-      "id": "CITY-00-I07-I",
-      "state": "completed_save_reopen_probe_review_pending",
-      "focus": "Vollständige COK-Save/Neuöffnungs-/Presetprobe",
-      "dependency": "Hex-Kollege hat nächsten nativen Platz für14Interface-Farben reserviert"
     }
   },
   "testFixturePortability": {
@@ -3630,13 +3719,39 @@
   },
   "gmProductTesting": {
     "date": "2026-10-09",
-    "state": "cloud_host_ready_first_map_saved",
+    "state": "gm_ux_n001_cloud_retest_passed_scenario_continues",
     "plan": "ROADMAP-GM-PRODUCT-TESTING-PLAN.md",
     "focus": "Längere GM-Endanwenderabläufe, häufige Aktionen, Bedienkosten und UI-Überladung; belegte Nacharbeiten beauftragen und nachprüfen.",
     "currentRun": "GM-UX-01",
-    "executedUiRuns": 0,
-    "observedFindings": [],
-    "blocker": null,
+    "executedUiRuns": 2,
+    "observedFindings": [
+      {
+        "id": "GM-UX-001",
+        "priority": "P2",
+        "status": "cloud_retest_passed",
+        "kind": "Eigene UI-Beobachtung; Cloud/Testvault, kein physischer Eingabegeräte-Test",
+        "build": "Obsidian 1.14.4; Produktbuild SHA-256 d54f25cf7b961cc78b1bbf197bd4781bd62d2325ec10dc4b34148c0d6ab3a6a2; aus Produktcommit d93136c0d656f9613bdab6562ba7707988962d97",
+        "scenario": "GM-UX-01 Abschnitt A, GM-UX-01 Nebelwacht, 1024x800 Appfenster",
+        "reproduction": "Bauwerk > Rechteck; rechteckige Raumfläche ziehen; nach Berechnung pro Fläche Raum anlegen betätigen. Sechs Räume einzeln angelegt.",
+        "expected": "Wiederholtes Anlegen mehrerer Räume lässt sich mit geringerem Wiederholungsaufwand erledigen; freie Grundflächen bleiben möglich.",
+        "actual": "Sechs Räume erforderten je eine Ziehbewegung und eine separate Betätigung von Raum anlegen: 12 gezählte UI-Gesten, ohne anfängliche Werkzeugwahl. Die Oberfläche zeigt während der Ableitung zeitweilig Fläche wird berechnet. Im ersten schnellen, nicht einzeln bestätigten Durchgang entstanden zunächst nur freie Flächen; mit einzelnem Warten/Bestätigen gelang die Anlage. Keine Produktlatenz gemessen.",
+        "impact": "P2 Kandidat für wiederholt ausgeführte Kartenaufgabe; angenommene Häufigkeit noch nicht durch weitere GMs belegt.",
+        "evidence": "/workspace/scratch/gm-cloud-qa/08-six-rooms.png, 12-pending.png, 14-six-rooms.png, 17-eight-rooms.png; sechs Räume plus Verbindung und Notiz / 31-reopened.png, 32-note-reopen.png",
+        "proposedTask": "GM-UX-N-001: Dungeon-Verantwortlicher prüft/schlägt einen optionalen schnellen Rechteck-Raum-Modus vor, der Raum bei Flächenerstellung automatisch anlegt. Bei aktiviertem Modus sechs Räume mit sechs Ziehgesten erstellen; Modus aus erhält freie Grundflächen. Abnahmekriterien: genau sechs Raum-Keys, kein Extraklick je Raum, kein doppelter Raum nach Maus-Loslassen, Moduswahl nach erneutem Öffnen erhalten; denselben Abschnitt GM-UX-01 vorher/nachher vergleichen.",
+        "latency": "Nicht gemessen; Fernsteuerungs-/Automationszeiten ausgeschlossen.",
+        "retest": {
+          "date": "2026-10-09",
+          "productCommit": "8da4bdad70003e474d423118d46166deeddcd833 (integriert in 110d91434afbda2ae0d6738abb514585e9c9e827)",
+          "buildSha256": "bf9e6cd7773a21901a886371258bf0670c3531365f9da381439c6364132aa2c8",
+          "map": "GM-UX-01 Schnellmodus-Nachtest, isolierter Vault; zuvor unangetastete Nebelwacht-Karte getrennt fortgesetzt",
+          "result": "Sechs sichtbare Rechteckzüge erzeugten genau sechs nummerierte Räume ohne zusätzliche Raum-anlegen-Klicks. Nach Speichern, Tab schließen und erneut öffnen waren die sechs Räume vorhanden und der Modus weiterhin aktiviert. Ctrl+Z nahm Raum 6 sichtbar zurück; Ctrl+Shift+Z stellte ihn wieder her. Bei deaktiviertem Modus erschien nach einer Flächenzeichnung wieder Raum anlegen. Testfläche lag teilweise über Raum 5; nur Sichtbarkeit der manuellen Aktion verifiziert, keine zusätzliche freie Fläche als gespeichert behauptet.",
+          "gestures": "Einmaliges Aktivieren des Modus plus sechs Ziehgesten (7). Nach Aktivierung sechs statt zwölf Gesten für sechs Räume; ein einzelner Endanwenderlauf.",
+          "evidence": "/workspace/scratch/gm-cloud-qa/35-quick-room-setting.png, 37-six-quick-room-drags.png, 38-undo.png, 39-redo.png, 40-reopen-quick-rooms.png, 42-mode-persistence.png, 43-free-floor-mode-off.png, 41-fit-after-reopen.png",
+          "colleagueEvidence": "Implementierung und getrenntes Review vom Dungeon-Kollegen in Issue #1 Kommentar 6080778787; eigener Cloud-Nachtest hier separat."
+        }
+      }
+    ],
+    "blocker": "Asset-Such- und Wiederholungsplatzierung bleiben mangels freigegebener Testpakete offen; isolierte Bibliothek zeigt Keine Objekte, trotz aktivierter Eingebauter Grundassets. Testdatenlücke, kein allgemeiner Produktfehler.",
     "coordination": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1#issuecomment-6080172233",
     "assignedPrerequisite": {
       "id": "GM-UX-CLOUD",
@@ -3644,7 +3759,7 @@
       "state": "completed",
       "supersedes": "GM-UX-ACCESS; Slotanfrage gemäß Nutzerkorrektur aufgehoben"
     },
-    "next": "GM-UX-01 auf eigener Cloud-Oberfläche fortsetzen: Räume, Verbindungen und Texte; echte Bedienkosten erfassen.",
+    "next": "Freigegebene Pack-Testdaten für eigenen Vault finden/importieren; Asset suchen und zehnmal platzieren. GM-UX-OBS-01 in derselben Szene mit breiterem Fenster nochmals prüfen. Danach Undo/Redo und GM-Spielansicht für spontane Routenwahl fortsetzen; Atlas nur testen, falls Zoomfolge implementiert ist.",
     "automation": "Stündliche GM-Produkttests in eigener Cloud; keine Laptop-Slotfreigabe erforderlich.",
     "executionEnvironment": "Eigene Cloud-Umgebung, getrennt vom Laptop der Kollegen",
     "cloudHost": {
@@ -3671,6 +3786,35 @@
         "05-saved.png"
       ],
       "initialization": "Erste Eingaben während Hoststart ohne sichtbare Wirkung; später Befehlsleiste und Editor bedienbar. Kein reproduzierter Produktbefund."
-    }
+    },
+    "latestScenario": {
+      "environment": "Obsidian 1.14.4; eigener Cloud-Container; App 1024x800; sichtbare UI über Playwright/CDP; kein physischer Input",
+      "builtProductCommit": "110d91434afbda2ae0d6738abb514585e9c9e827; GM-UX-N-001 Featurecommit 8da4bdad70003e474d423118d46166deeddcd833 ist Vorfahr",
+      "buildSha256": "bf9e6cd7773a21901a886371258bf0670c3531365f9da381439c6364132aa2c8",
+      "completed": "Nebelwacht: sechs Räume im Erdgeschoss, fünf weitere Wände im zweiten Geschoss, zwei Türen ergänzt; Raum 12 Notiz geändert, Tür zwischen Raum 7/8 verschoben; Speichern, Tab schließen und erneutes Öffnen; beide Geschosse, zwölf nummerierte Räume, Verbindungen/Türen und geänderter Hinweis waren sichtbar. Zweite Ebene im Karten- und Spielansichtweg aufgerufen; Hinweis in Raum 12 gelesen. Undo/Redo am separaten Schnellmodus-Nachtest durchgeführt.",
+      "limitations": "Keine Paketassets im Vault; Objektbibliothek meldet Keine Objekte und Assetmanager hat keine Pakete. Assetrecherche/Wiederholungsplatzierung deshalb offen. Keine Produktlatenz gemessen. Atlas-Zoomfolge nicht ausgeführt.",
+      "evidence": [
+        "49-second-floor-rooms.png",
+        "51-second-floor-doors.png",
+        "53-note-second-floor.png",
+        "55-floor-switch.png",
+        "56-improvised-hint-find.png",
+        "59-play-view.png",
+        "64-play-floor-switch.png",
+        "68-play-fit.png",
+        "72-door-moved.png",
+        "75-real-reopen.png",
+        "76-reopen-second-floor.png"
+      ]
+    },
+    "openObservations": [
+      {
+        "id": "GM-UX-OBS-01",
+        "status": "beobachtet_einmal_nicht_als_fehler_priorisiert",
+        "observation": "Im 1024x800-Obsidian-Split war die Karten-Spielansicht schmal; bei Geschosswechsel war die Karte zunächst außerhalb des sichtbaren Ausschnitts und nach Einpassen sichtbar. Einige rechte Steuerungen lagen außerhalb des Viewports, ließen sich aber per Tabulator erreichen.",
+        "impact": "Mögliche Reibung für simultanes Leiten mit offener Raum-Notiz. Der Befund trat in der konkreten geteilten Fensteranordnung auf; weitere Fensterbreiten/GM-Abläufe vergleichen, bevor Nacharbeit beauftragt wird.",
+        "evidence": "/workspace/scratch/gm-cloud-qa/59-play-view.png, 63-tab-to-controls.png, 64-play-floor-switch.png, 68-play-fit.png"
+      }
+    ]
   }
 }

@@ -6,7 +6,7 @@
   "scripts": {
     "build": "node build.mjs",
     "check": "tsc --noEmit",
-    "test": "node build.mjs --test && node --test --test-concurrency=1 .build/tests.cjs tests/migrate-building-v2.test.mjs tests/wonderdraft-inventory.test.mjs tests/canvas-of-kings-session.test.mjs"
+    "test": "node build.mjs --test && node --test --test-concurrency=1 .build/tests.cjs tests/migrate-building-v2.test.mjs tests/wonderdraft-inventory.test.mjs tests/canvas-of-kings-session.test.mjs tests/catalog-build-asset.test.mjs"
   },
   "dependencies": {
     "clipper-lib": "^6.4.2",

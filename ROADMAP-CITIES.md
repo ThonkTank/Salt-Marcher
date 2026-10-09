@@ -16,7 +16,7 @@ Alle folgenden Phasen sind geplant. Der Abnahmekatalog liegt unter `acceptance.j
 
 **Funktionen und Ergebnisse sind maßgeblich.** Originalgesten, Menüs oder Arbeitsmodi der drei Werkzeuge sind keine Vorgabe. Eigene Bedienung wird anhand wirklicher Aufgaben auf Verständlichkeit, Aktionszahl und Reaktionszeit geprüft. Wonderdrafts bereits vereinbarter Funktions-/Gestenvergleich bleibt für die entsprechenden übernommenen Werkzeuge bestehen.
 
-CITY-00 sammelt vor Stadtproduktcode wenige feste Ergebnisbilder: Dorf, ummauerte Stadt und Hafenstadt sowie eine ausgearbeitete Stadtdetailfläche. Datum beziehungsweise beobachtete Version und Bildausschnitt werden festgehalten. Dokumentation und Devlogs sind bisher geprüft; eine direkte Ergebnisgalerie und eine aktuelle Laufversion bleiben offen. Das ältere öffentliche Watabou-Quellarchiv nennt selbst fehlende neuere Funktionen und ersetzt keine aktuelle Ergebnisprobe. [Originalarchiv](https://github.com/watabou/TownGeneratorOS).
+CITY-00 sammelt vor Stadtproduktcode wenige feste Ergebnisbilder: Dorf, ummauerte Stadt und Hafenstadt sowie eine ausgearbeitete Stadtdetailfläche. Datum beziehungsweise beobachtete Version und Bildausschnitt werden festgehalten. Die feste Galerie ist in `ROADMAP-CITIES-REFERENCE-GALLERY.md` dokumentiert: eigene Watabou-/FTG-Originalbilder und ausdrücklich veröffentlichte COK-Ergebnisbilder. Datum und Ausschnitte sind festgehalten; Galerie-Laufversionen bleiben unbekannt. Die eigene COK-Demo ist separat als0.4.06 belegt. Vollständige Funktionsinventur und Produktparität bleiben offen. Das ältere öffentliche Watabou-Quellarchiv nennt selbst fehlende neuere Funktionen und ersetzt keine aktuelle Ergebnisprobe. [Originalarchiv](https://github.com/watabou/TownGeneratorOS).
 
 ## Einfacher Benutzerablauf
 
@@ -37,7 +37,7 @@ Danach folgen CITY-05/06 nach HEX-14, CITY-07 nach HEX-20 und CITY-08 nach HEX-2
 
 | Phase | Nutzbarer Umfang | Praxisprüfung |
 |---|---|---|
-| **CITY-00 – Ergebnisvorbilder festlegen** | Kleine Referenzgalerie und Ergebnis-/Bedienkriterien festlegen. | Übersicht und Detail an beiden Vorbildern prüfen; keine Originalgeste als Pflicht übernehmen. |
+| **CITY-00 – Ergebnisvorbilder festlegen** | Kleine Referenzgalerie und Ergebnis-/Bedienkriterien festlegen. | Übersicht und Detail aller drei Vorbilder prüfen; keine Originalgeste als Pflicht übernehmen. |
 | **CITY-01 – Stadt im Atlas zeichnen** | Native .city direkt am Ort anlegen; Straße, Platz und zwei Häuser im selben Editor bearbeiten. | Nur hinein-/herauszoomen; Haus verschieben, Straße ändern, Undo/Redo, speichern und frisch öffnen. |
 | **CITY-02 – Nutzbare Stadt erzeugen** | Siedlungsfläche aufziehen und direkt einen editierbaren Grundplan mit Straßen, Platz und Gebäuden erzeugen; wenige sichtbare Vorgaben. | Dorf und kleine Stadt erzeugen, sofort ein Gebäude und eine Straße ändern; Abbruch, Undo, Wiederöffnung. |
 | **CITY-03 – Hausgrundriss und Keys direkt bearbeiten** | Gebäude mit Orts-Key und vorhandener Dungeonkarte verbinden; Stadt und Innenräume in einem durchgehenden Editor bearbeiten. | Region → Stadt → Haus → Raum nur zoomen; Straßen-, Haus-, Raum- und Key-Änderung mit gemeinsamer Undo-Folge und frischer Öffnung. |

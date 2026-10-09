@@ -46,6 +46,7 @@ import { emptyObjectTags, mergeObjectTags,
   type ObjectTagDocument } from "./features/objekte/object-tags";
 import { ObjectTagsModal } from "./ui/object-tags-modal";
 import { newSizePresetSize } from "./features/verwaltung/new-map-size";
+import { CreatureCatalogLoader } from "./features/catalog/creature-catalog-loader";
 
 export interface OpenMap {
   session: Session;
@@ -144,6 +145,7 @@ export default class DungeonPlugin extends Plugin {
   private maps = new Map<string, Promise<OpenMap>>();
   readonly assets = new AssetCatalog(new VaultAssetStore(this.app));
   readonly objectTagStore = new ObjectTagStore(new VaultObjectTagStorage(this.app));
+  readonly creatureCatalog = new CreatureCatalogLoader();
   private objectTagsBrowserMode: "default" | "override" = "default";
   private assetLibrary = new PackAssetLibrary();
   private nativePathCatalog?: NativePathCatalog;

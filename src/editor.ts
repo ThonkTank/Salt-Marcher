@@ -20,6 +20,7 @@ import { type RecordChange, Session } from "./session";
 import { MapRepository } from "./persistence";
 import {
   adoptFloorAsRoom,
+  roomFromNewBuilding,
   createPortal,
   createWall,
   createSurface,
@@ -1875,7 +1876,10 @@ export class DungeonEditor {
       this.insertPrefab(this.snap(point));
       return;
     }
-    if (this.paintWorker && tool !== "pan") {
+    const queuedQuickRoom = tool === "room" && this.session.version === 4 &&
+      !!this.settings.room.autoCreateOnRectangle &&
+      !floorEraseActive(this.settings.floorMode, e.altKey);
+    if (this.paintWorker && tool !== "pan" && !queuedQuickRoom) {
       this.host.notice("Fläche wird berechnet. Escape bricht ab.");
       return;
     }
@@ -2573,10 +2577,17 @@ export class DungeonEditor {
       const a = this.snap(g.start),
         b = this.snap(point);
       if (Math.abs(a.x - b.x) < 1 || Math.abs(a.y - b.y) < 1) return;
-      this.paintTask = this.composeFloor(
-        [{ outer: rectangle(a, b), holes: [] }],
-        g.erase,
-      );
+      const quickRoom = !g.erase && this.session.version === 4 &&
+        !!this.settings.room.autoCreateOnRectangle;
+      if (quickRoom) {
+        const previous = this.paintTask;
+        this.paintTask = (async () => {
+          await previous;
+          await this.composeFloor([{ outer: rectangle(a, b), holes: [] }], false,
+            undefined, true);
+        })();
+      } else this.paintTask = this.composeFloor(
+        [{ outer: rectangle(a, b), holes: [] }], g.erase);
     } else if (g.tool === "ellipse") {
       const a = this.snap(g.start),
         b = this.snap(point);
@@ -2990,14 +3001,16 @@ export class DungeonEditor {
     shape: readonly Polygon[] | undefined,
     erase: boolean,
     stroke?: readonly Point[],
+    quickRoom = false,
   ): Promise<void> {
-    return this.composeArea("floor", shape, erase, stroke);
+    return this.composeArea("floor", shape, erase, stroke, quickRoom);
   }
   private async composeArea(
     category: "floor" | "water",
     shape: readonly Polygon[] | undefined,
     erase: boolean,
     stroke?: readonly Point[],
+    quickRoom = false,
   ): Promise<void> {
     const floorId = this.renderer.floorId,
       defaults = this.settings.surfaces[category],
@@ -3045,7 +3058,7 @@ export class DungeonEditor {
             category === "floor"
               ? entity.kind === "building"
               : entity.kind === "surface" && entity.category === "water";
-          if (!source) return false;
+          if (!source || quickRoom) return false;
           return (
             entity.floorId === floorId &&
             !entity.locked &&
@@ -3075,7 +3088,7 @@ export class DungeonEditor {
       const result = await worker.request<ComposeBuildingResult>({
         kind: "compose-building",
         nativeBuilding: category === "floor",
-        mergeTouching: category === "floor" && this.session.version === 4 &&
+        mergeTouching: !quickRoom && category === "floor" && this.session.version === 4 &&
           isNativeFloorAssetId(material?.assetId),
         sources: sources.map((source) => ({
           id: source.id,
@@ -3142,20 +3155,31 @@ export class DungeonEditor {
           this.session.version === 4 && isNativeFloorAssetId(material?.assetId) &&
           !newBuilding && !!plan.selectedId;
         if (!plan.command && !(trackedDraw && shape?.length)) return;
+        let command = plan.command;
+        if (quickRoom && newBuilding && command) {
+          const room = roomFromNewBuilding(this.session, newBuilding);
+          command = {
+            ...command,
+            label: "Raum zeichnen",
+            entities: command.entities?.map((change) =>
+              change.id === newBuilding.id ? { ...change, after: room } : change),
+            affectsRules: true,
+          };
+        }
         if (newBuilding?.floorTileRaster) {
-          if (!plan.command) return;
+          if (!command) return;
           const added = buildingFloorCells(newBuilding,
             this.session.settings.width, this.session.settings.height);
           const previous = this.session.smartTiles;
           const positions = new Set(added.map((cell) =>
             `${cell.floorId}:${cell.x}:${cell.y}`));
-          this.session.execute({ ...plan.command, smartTiles: {
+          this.session.execute({ ...command, smartTiles: {
             before: previous,
             after: [...(previous ?? []).filter((cell) =>
               !positions.has(`${cell.floorId}:${cell.x}:${cell.y}`)), ...added],
           } });
         } else if (trackedDraw && result.mode === "draw") {
-          const changed = plan.command?.entities?.find((change) =>
+          const changed = command?.entities?.find((change) =>
             change.id === plan.selectedId)?.after;
           const target = changed ?? this.session.entities.get(plan.selectedId!);
           if (target?.kind === "building" && target.floorTileRaster) {
@@ -3164,22 +3188,22 @@ export class DungeonEditor {
               result.mergedIds, shape,
               this.session.settings.width, this.session.settings.height,
               { assetId: material!.assetId!, color: defaults.color });
-            if (plan.command || next !== previous)
-              this.session.execute({ ...(plan.command ?? { label: "Grundriss zeichnen" }),
+            if (command || next !== previous)
+              this.session.execute({ ...(command ?? { label: "Grundriss zeichnen" }),
                 ...(next !== previous ? { smartTiles: { before: previous, after: next } } : {}),
               });
-          } else if (plan.command) this.session.execute(plan.command);
+          } else if (command) this.session.execute(command);
         } else if (erase && this.session.version === 4) {
-          if (!plan.command) return;
+          if (!command) return;
           const previous = this.session.smartTiles;
-          const next = buildingFloorCellsAfterErase(previous, plan.command.entities,
+          const next = buildingFloorCellsAfterErase(previous, command.entities,
             this.session.settings.width, this.session.settings.height,
             shape, nativeMixedFloor && material?.assetId
               ? { assetId: material.assetId, color: defaults.color } : undefined);
-          this.session.execute(next === previous ? plan.command : {
-            ...plan.command, smartTiles: { before: previous, after: next },
+          this.session.execute(next === previous ? command : {
+            ...command, smartTiles: { before: previous, after: next },
           });
-        } else if (plan.command) this.session.execute(plan.command);
+        } else if (command) this.session.execute(command);
         selected = plan.selectedId;
       } else {
         const changes: RecordChange<Entity>[] = [];

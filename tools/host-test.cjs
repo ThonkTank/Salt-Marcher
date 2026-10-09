@@ -59,7 +59,10 @@ const restart = process.argv.includes("--restart"),
   parityToolsPhase1StartOptions = process.argv.includes("--parity-tools-phase1-start-options"),
   parityToolsPhase1Wizard = process.argv.includes("--parity-tools-phase1-wizard"),
   parityToolsPhase1Wear = process.argv.includes("--parity-tools-phase1-wear"),
+  parityToolsPhase1WearHistory = process.argv.includes("--parity-tools-phase1-wear-history"),
   parityToolsPhase1Resize = process.argv.includes("--parity-tools-phase1-resize"),
+  parityToolsPhase1MapInfo = process.argv.includes("--parity-tools-phase1-map-info"),
+  gmUxN001 = process.argv.includes("--gm-ux-n001"),
   parityToolsPhase1SmartTiles = process.argv.includes("--parity-tools-phase1-smart-tiles"),
   parityToolsPhase1TerrainMasks = process.argv.includes("--parity-tools-phase1-terrain-masks"),
   parityToolsPhase1BuildingFloor = process.argv.includes("--parity-tools-phase1-building-floor"),
@@ -71,7 +74,7 @@ const restart = process.argv.includes("--restart"),
   large = process.argv.includes("--large"),
   compactSmoke = process.argv.includes("--compact-smoke"),
   selectionSmoke = process.argv.includes("--selection-smoke"),
-  run = Date.now() + (parityToolsPhase1BuildingPoint ? "-parity-tools-phase1-building-point" : parityToolsPhase1BuildingMixed ? "-parity-tools-phase1-building-mixed" : parityToolsPhase1BuildingFloor ? "-parity-tools-phase1-building-floor" : parityToolsPhase1TerrainMasks ? "-parity-tools-phase1-terrain-masks" : parityToolsPhase1SmartTiles ? "-parity-tools-phase1-smart-tiles" : parityToolsPhase1Resize ? "-parity-tools-phase1-resize" : parityToolsPhase1Wear ? "-parity-tools-phase1-wear" : parityToolsPhase1Wizard ? "-parity-tools-phase1-wizard" : parityToolsPhase1StartOptions ? "-parity-tools-phase1-start-options" : parityToolsPhase1NewMap ? "-parity-tools-phase1-new-map" : parityToolsPhase1Navigation ? "-parity-tools-phase1-navigation" : parityPhase7Vault ? "-parity-phase7-vault" : parityPhase7Large ? "-parity-phase7-large" : parityPhase7Combined ? "-parity-phase7-combined" : parityPhase6Repair2Focus ? "-parity-phase6-repair2-focus" : parityPhase6Repair ? "-parity-phase6-repair" : parityPhase6Gestures ? "-parity-phase6-gestures" : parityPhase5CleanupRepair ? "-parity-phase5-cleanup-repair" : parityPhase5CleanupBenchmark ? "-parity-phase5-cleanup-benchmark" : parityPhase5AlphaReview ? "-parity-phase5-alpha-review" : parityPhase5Visual ? "-parity-phase5-visual" : parityPhase5Light ? "-parity-phase5-light" : parityPhase5Review ? "-parity-phase5-review" : parityPhase5Repair ? "-parity-phase5-repair" : parityPhase4Objects ? "-parity-phase4-objects" : parityPhase3Wear ? "-parity-phase3-wear" : parityPhase2Points ? "-parity-phase2-points" : parityPhase1Repair ? "-parity-phase1-repair" : parityPhase1Shapes ? "-parity-phase1-shapes" : parityPhase1 ? "-parity-phase1" : phase6Migration ? "-phase6-migration" : phase5Feature ? "-phase5-feature" : phase4Key ? "-phase4-key" : phase3Object ? "-phase3-object" : phase2Object ? "-phase2-object" : v2Open ? "-v2-open" : patternAlpha ? "-pattern-alpha" : prefabForget ? "-prefab-forget" : objectAlpha ? "-object-alpha" : pathLibrary ? "-path-library" : selectionSmoke ? "-selection" : compactSmoke ? "-compact" : large ? "-large" : "") + (restart ? "-reopen" : "-edit"),
+  run = Date.now() + (parityToolsPhase1BuildingPoint ? "-parity-tools-phase1-building-point" : parityToolsPhase1BuildingMixed ? "-parity-tools-phase1-building-mixed" : parityToolsPhase1BuildingFloor ? "-parity-tools-phase1-building-floor" : parityToolsPhase1TerrainMasks ? "-parity-tools-phase1-terrain-masks" : parityToolsPhase1SmartTiles ? "-parity-tools-phase1-smart-tiles" : parityToolsPhase1Resize ? "-parity-tools-phase1-resize" : parityToolsPhase1MapInfo ? "-parity-tools-phase1-map-info" : parityToolsPhase1Wear ? "-parity-tools-phase1-wear" : parityToolsPhase1Wizard ? "-parity-tools-phase1-wizard" : parityToolsPhase1StartOptions ? "-parity-tools-phase1-start-options" : parityToolsPhase1NewMap ? "-parity-tools-phase1-new-map" : parityToolsPhase1Navigation ? "-parity-tools-phase1-navigation" : parityPhase7Vault ? "-parity-phase7-vault" : parityPhase7Large ? "-parity-phase7-large" : parityPhase7Combined ? "-parity-phase7-combined" : parityPhase6Repair2Focus ? "-parity-phase6-repair2-focus" : parityPhase6Repair ? "-parity-phase6-repair" : parityPhase6Gestures ? "-parity-phase6-gestures" : parityPhase5CleanupRepair ? "-parity-phase5-cleanup-repair" : parityPhase5CleanupBenchmark ? "-parity-phase5-cleanup-benchmark" : parityPhase5AlphaReview ? "-parity-phase5-alpha-review" : parityPhase5Visual ? "-parity-phase5-visual" : parityPhase5Light ? "-parity-phase5-light" : parityPhase5Review ? "-parity-phase5-review" : parityPhase5Repair ? "-parity-phase5-repair" : parityPhase4Objects ? "-parity-phase4-objects" : parityPhase3Wear ? "-parity-phase3-wear" : parityPhase2Points ? "-parity-phase2-points" : parityPhase1Repair ? "-parity-phase1-repair" : parityPhase1Shapes ? "-parity-phase1-shapes" : parityPhase1 ? "-parity-phase1" : phase6Migration ? "-phase6-migration" : phase5Feature ? "-phase5-feature" : phase4Key ? "-phase4-key" : phase3Object ? "-phase3-object" : phase2Object ? "-phase2-object" : v2Open ? "-v2-open" : patternAlpha ? "-pattern-alpha" : prefabForget ? "-prefab-forget" : objectAlpha ? "-object-alpha" : pathLibrary ? "-path-library" : selectionSmoke ? "-selection" : compactSmoke ? "-compact" : large ? "-large" : "") + (restart ? "-reopen" : "-edit"),
   out = qa + "/evidence/" + run;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const waitForFileAbsent = async (file, timeoutMs = 12000) => {
@@ -249,7 +252,7 @@ function prepare() {
   if (!restart) {
     fs.rmSync(vault + "/Dungeons", { recursive: true, force: true });
     fs.rmSync(vault + "/.obsidian/workspace.json", { force: true });
-    if (patternAlpha || prefabForget || objectAlpha || pathLibrary || parityPhase6Gestures || parityPhase6Repair || parityPhase6RepairSelection || parityToolsPhase1NewMap || parityToolsPhase1StartOptions || parityToolsPhase1Wizard)
+    if (patternAlpha || prefabForget || objectAlpha || pathLibrary || parityPhase6Gestures || parityPhase6Repair || parityPhase6RepairSelection || parityToolsPhase1NewMap || parityToolsPhase1StartOptions || parityToolsPhase1Wizard || gmUxN001)
       fs.rmSync(vault + "/.obsidian/plugins/dungeon-editor/data.json", { force: true });
     if (pathLibrary)
       fs.rmSync(vault + "/.obsidian/dungeon-editor-assets", { recursive: true, force: true });
@@ -650,9 +653,9 @@ async function workflow() {
     if (e.type() === "error")
       fs.appendFileSync(out + "/console.log", e.text() + "\n");
   });
-  if (parityPhase3Building || parityPhase7Combined || parityPhase7Large || parityPhase7Vault || parityToolsPhase1Wear || parityToolsPhase1Resize || parityToolsPhase1SmartTiles || parityToolsPhase1BuildingFloor || parityToolsPhase1BuildingMixed || parityToolsPhase1BuildingPoint) {
+  if (parityPhase3Building || parityPhase7Combined || parityPhase7Large || parityPhase7Vault || parityToolsPhase1Wear || parityToolsPhase1WearHistory || parityToolsPhase1Resize || parityToolsPhase1MapInfo || parityToolsPhase1SmartTiles || parityToolsPhase1BuildingFloor || parityToolsPhase1BuildingMixed || parityToolsPhase1BuildingPoint) {
     let ready = false, observed;
-    for (let attempt = 0; attempt < (parityPhase7Combined || parityPhase7Large || parityPhase7Vault || parityToolsPhase1Wear || parityToolsPhase1Resize || parityToolsPhase1SmartTiles || parityToolsPhase1BuildingFloor || parityToolsPhase1BuildingMixed ? 180 : 120); attempt++) {
+    for (let attempt = 0; attempt < (parityPhase7Combined || parityPhase7Large || parityPhase7Vault || parityToolsPhase1Wear || parityToolsPhase1WearHistory || parityToolsPhase1Resize || parityToolsPhase1MapInfo || parityToolsPhase1SmartTiles || parityToolsPhase1BuildingFloor || parityToolsPhase1BuildingMixed ? 180 : 120); attempt++) {
       try {
         observed = await page.evaluate(() => typeof app === "undefined" ? null : ({
           vault: app.vault?.adapter?.basePath,
@@ -765,6 +768,24 @@ async function workflow() {
   }
   if (parityToolsPhase1Resize) {
     const scenario = require("./host/parity-tools-phase1-resize.cjs")(scenarioContext);
+    if (restart) await scenario.reopen();
+    else await scenario.edit();
+    return;
+  }
+  if (parityToolsPhase1MapInfo) {
+    const scenario = require("./host/parity-tools-phase1-map-info.cjs")(scenarioContext);
+    if (restart) await scenario.reopen();
+    else await scenario.edit();
+    return;
+  }
+  if (gmUxN001) {
+    const scenario = require("./host/gm-ux-n001.cjs")(scenarioContext);
+    if (restart) await scenario.reopen();
+    else await scenario.edit();
+    return;
+  }
+  if (parityToolsPhase1WearHistory) {
+    const scenario = require("./host/parity-tools-phase1-wear-history.cjs")(scenarioContext);
     if (restart) await scenario.reopen();
     else await scenario.edit();
     return;

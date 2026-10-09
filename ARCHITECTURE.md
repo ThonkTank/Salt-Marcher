@@ -9,15 +9,15 @@ ordnet den am 9. Oktober 2026 beauftragten Ausbau. Die folgenden Entscheidungen
 sind Zielarchitektur und noch keine Funktions- oder Fachfreigabe:
 
 - Der Monsterkatalog ist vaultweite, versionierte Referenzwahrheit mit
-  Quellen-/Regelversionskennzeichnung. SRD-5.1-Daten behalten Manifest,
+  Quellenkennzeichnung. SRD-5.1-Daten behalten Manifest,
   Inhaltshash und CC-BY-4.0-Attribution; Homebrew bleibt eine getrennte Quelle.
 - Gespeicherte Encounter-Pläne enthalten stabile Kreaturen-IDs, Mengen,
   Gruppierungsbedeutung und redaktionelle Felder, aber keine duplizierten
   Statblocks. Ein laufender Kampf besitzt davon getrennt Initiative, Runde,
   Zug, HP, Zustände, Würfelprotokoll und begrenztes Undo.
-- Jeder Encounter speichert `dmg2014` oder `dmg2024`. Beide Rechner verwenden
-  getrennte gepinnte Tabellen und Ergebnisbegriffe. 2024 darf vor direkter
-  offizieller Tabellenprovenienz nicht als fachlich bestanden erscheinen.
+- Encounter verwenden ausschließlich die gepinnten DMG-2014-Schwellen,
+  Monsterzahlmultiplikatoren und Ergebnisbegriffe. Es gibt keinen zweiten
+  Rechner, keinen auswählbaren Regelmodus und keine 2024-Daten.
 - Dungeon-Featuredefinitionen und Raum-Key-Texte bleiben bestehen. Spätere
   stabile Encounter-/Kreaturenverweise ergänzen sie optional und verändern
   vorhandenen Markdown-Wortlaut nicht stillschweigend.
@@ -27,6 +27,35 @@ sind Zielarchitektur und noch keine Funktions- oder Fachfreigabe:
 - Die Begrenzung grafischer Testinstanzen gilt pro Gerät. Getrennte Kollegen
   dürfen auf getrennten Geräten parallel prüfen; auf einem Gerät läuft nur eine
   grafische Host-/Originalinstanz.
+
+Der erste portable Katalogkern liest inzwischen das unveränderte, hashgleich
+aus SaltMarcher übernommene SRD-5.1-Artefakt ohne SQLite. Er validiert Manifest,
+Lizenz, eindeutige IDs und vollständige Statblockfelder und bietet reine,
+kombinierbare Suche, Filter, Sortierung, Paging und Detailzugriff. Diese
+Domänenbasis ist noch nicht an eine Obsidian-Oberfläche oder Vaultpersistenz
+angebunden und erfüllt deshalb keinen der offenen Gesamt-Abnahmefälle allein.
+Manifestidentität und JSON-Bytehash werden unabhängig gepinnt; verschachtelte
+Referenzwerte sind tief eingefroren und Laufzeitqueries validiert. Der Notice
+liegt im Repository und zusätzlich als exportierter Text für die spätere
+Credits-Ansicht vor.
+
+Der Katalogkern bleibt bis CE-01 absichtlich vom Produktionseinstieg getrennt.
+CE-01 bettet das beim Build hashgeprüfte, gzip-komprimierte JSON als virtuellen
+Base64-String in das bestehende `main.js` ein. Der unveränderliche Statblock-
+Objektgraph wird erst beim ersten Öffnen des Katalogs dekodiert, dekomprimiert
+und geparst. So bleiben die bestehenden drei distributionssicheren Plugin-
+Dateien ausreichend und ein eager JSON-Objektliteral beim Pluginstart entfällt.
+Der exportierte Notice muss im Katalog sichtbar sein; `NOTICE.md` ist derzeit
+nur Repositoryhinweis, weil die belegten Installationswege ausschließlich
+`main.js`, `manifest.json` und `styles.css` kopieren. Die Runtime nutzt
+`atob`, `Uint8Array`, `DecompressionStream("gzip")`, `TextDecoder` und
+`JSON.parse`; ein Capabilitycheck führt bei fehlender Browserunterstützung in
+einen sichtbaren Fehlerzustand, nie in einen eager Fallback. Produkt und Build
+lesen Hash und Payloadgrenzen aus einer gemeinsamen Identitätsquelle. Für
+CE-01-I01 gelten maximal 122.880 Gzip-Bytes, 164.000 Base64-Zeichen und
+180.000 Bytes `main.js`-Zuwachs gegenüber der auf Commit
+`86ce73179ede452ee6a9f5d3197ee325544a58b8` belegten Baseline von 1.189.370
+Bytes. Echte Obsidian-Start-/Ladezeitmessung bleibt ein CE-01-Abnahmetor.
 
 ## Entscheidungen
 
@@ -310,7 +339,11 @@ Ergänzung des vereinbarten Zielbilds: [Stadtplan-Roadmap](ROADMAP-CITIES.md), C
 - Kamera und abgeleitete Details verwenden diese gemeinsame Position durch alle Zoomstufen. CPU-Koordinaten bleiben genau; Renderkoordinaten beziehen sich auf den sichtbaren Ausschnitt, damit Häuser in einer sehr großen Welt nicht zittern. Übersicht, Dach-/Dekorationsdarstellung und Innenraum liegen deckungsgleich.
 - Ortsinformationen bleiben in `.location`, Raum-Keys in `.dungeon`. Gebäude/Viertel halten bei Bedarf stabile Ortsverweise. Unbeschriebene generierte Gebäude benötigen keine einzeln angelegten Ortsdateien. Datei-/Abschnittslinks dürfen den Atlas auf ein Ziel fokussieren, ohne einen anderen Bearbeitungsmodus vorauszusetzen.
 - Lokale Neugeneration schützt manuell bearbeitete Elemente, Gebäude mit Orts-/Dungeonbindung und deren Kennungen. Nur neue Elemente erhalten neue Kennungen. Generationsvorgaben dürfen eine bestehende Karte nicht beim Öffnen verändern; Undo und Konfliktwiederherstellung erhalten zusammengehörige Geometrie und Keys.
-- Canvas of Kings und Watabou dienen als Ergebnisvorbilder. Ihre Menüs, Gesten und Arbeitsmodi sind keine Paritätsvorgabe. Ergebnisqualität und einfachere Bedienung werden getrennt belegt; die Wonderdraft-Unterfälle bleiben als eigener Funktions-/Gestenvergleich erhalten.
+- Geplante CITY-04-Verformung ist ein Geometrieänderungsbefehl mit vollständigen Vorher-/Nachherwerten bestehender stabiler Elemente, getrennt vom Generatorersatz. Vorschau verändert keinen dauerhaften Zustand; Apply erzeugt einen gemeinsamen Atlas-History-Befehl, Cancel verwirft die Vorschau. Straßenknoten und angrenzende Konturen werden zusammen validiert. Personen, Ortsverweise, Keys und Kennungen bleiben erhalten; gebundene Dungeonräume folgen starrer Gebäudeplatzierung und werden nicht durch das Stadt-Verformungsfeld verzerrt. Save speichert Endgeometrie, ohne beim Laden die Operation zu wiederholen. I14 belegt nur Displace-Apply/Discard und visuelle lokale Neugeneration im Original; eigene Befehls-/Bindungs-/Hostabnahme offen.
+- Stadtauftrag: vollständige Funktionen und Ergebnisse von Canvas of Kings, Watabou Medieval Fantasy City Generator und Fantasy Town Generator mit besserer Bedienung. Deren Originalgesten, Menüs und Arbeitsmodi sind keine Vorgabe. Funktions-/Host-/Ergebnis-/Bediennachweise bleiben getrennt; die Wonderdraft-Unterfälle behalten ihren eigenen Funktions-/Gestenvergleich.
+- Geplant für CITY-02: geordnete versionierte Wachstumsstufen besitzen Flächenanteile und lokale Straßen-/Gebäude-/Mauervorgaben. Der Vorstadtanteil ist der validierte Rest; Artgewichte sind davon getrennt. Presetversion, Seed und Custom-Parameter gehören zum Generierungsauftrag, die erzeugte Geometrie wird materialisiert gespeichert. Laden führt keine Generation aus.
+- Geplant für CITY-02/06: versionierte Namensset-Referenzen gehören zu gemeinsamen Vorgaben; Bewohnergenerierung verwendet diese zusammen mit stabilen Personen-/Artkennungen. Vorlagen- und Namensbearbeitung erzeugen keine zweite Personen- oder Stadtdatenhaltung. I12 belegt nur Formularzustand, noch keine eigene API oder erzeugte Namen.
+- Geplanter CITY-02-Vorgabenvertrag: stabile Vorgabenkennung, Name, Generatorversion und explizite Abschnittsmenge. Vollständige Validierung/Migration geht der Anwendung voraus; nur enthaltene Abschnitte werden atomar mit gemeinsamer History ersetzt, übrige Entwurfswerte bleiben erhalten. Datei und gemeinsame Bibliothek verwenden dieselbe kanonische Serialisierung. Fehlende Referenzen verhindern die Teilanwendung bis zur sichtbaren Auflösung. Cloud-Synchronisation ist noch zu vermessen. I13 belegt nur eine leere Load-Liste und einen nicht gefundenen Save-Zugang im temporären Originalformular; keine eigene API oder Original-Speicherwirkung.
 
 ## Dungeondraft-Kartenassistent beim Kartenstart
 
