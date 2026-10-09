@@ -1040,7 +1040,7 @@
       ]
     },
     "inventoryComplete": false,
-    "inventoryStatus": "N-I08: 663 UI-Einträge/83 Fälle erhalten; 16 Water-Zahlenfragen in ihrem tatsächlichen Originalkontext geklärt, einschließlich separater See-/Süßwasser-/Farbpinselgrenzen und Sättigungsanzeige ±0.24. 33/33 begrenzte Optionsfälle beobachtet; 98 frühe Fragen, eigener R02 und Aufräumreview offen. Keine vollständige Inventar-/Paritätsfreigabe.",
+    "inventoryStatus": "N-I09: sechs Windrose-Inventarfragen an fünf Controls direkt geklärt. Vier Zahlenfelder korrekt eingeordnet; Directions4..32, LineWidth2..16, InnerRadius0..1024, OuterRadius32..9999; reiner Inner-Circles-Slider nativ0..2. 663 UI/83 Fälle und alte Quellen erhalten. 92 frühe Fragen/R02/Aufräumen offen; keine vollständige Inventar-/Paritätsfreigabe.",
     "legacyInventoryScope": "Das vorhandene Wurzelfeld inventoryComplete und strictParity beschreiben nur die bisherige Dungeondraft-Inventur; daraus folgt keine Wonderdraft-Abnahme.",
     "inventoryGate": {
       "phase": "HEX-00",
@@ -16801,13 +16801,30 @@
         "exactUiPath": "Water > Windrose Tool > Directions",
         "context": "Neue Karte 1920 × 1080, Eastward; leere Geometrie. TextOnly nach QA-Änderung; ab Bild 060 Layer Management ON.",
         "commandOrControl": "Directions",
-        "controlType": "slider_number",
+        "controlType": "number",
         "default": {
           "value": 16,
           "evidenceScope": "Angezeigter Zustand dieser Originalaufnahme; Persistenz und andere Kontexte nicht gemessen."
         },
-        "rangeOrChoices": null,
-        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit.",
+        "rangeOrChoices": {
+          "kind": "observed_numeric_bounds",
+          "minimum": 4,
+          "maximum": 32,
+          "boundMeaning": "displayed_after_validation",
+          "testedInputs": [
+            -99999,
+            99999
+          ],
+          "scope": {
+            "version": "1.1.8.2",
+            "sessions": [
+              "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/session.json"
+            ],
+            "context": "Eigenes frisches Fensterprofil, neue 1024 × 1024-Karte, Large Icons; keine explizite Themeänderung. Initiales New-Dialoglabel Eastward belegt keine globale/gespeicherte Themeidentität.",
+            "factoryDefaultsAsserted": false
+          }
+        },
+        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit. Direkt N-I09: Eingabeliterale nach Tab auf die belegten Anzeigegrenzen begrenzt.",
         "gesture": {
           "observed": "Öffnen/Anwählen über die protokollierte Original-UI.",
           "operation": "Werkzeug-Abschlussgesten noch nicht gemessen."
@@ -16829,6 +16846,41 @@
             "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/038-windrose-tool.json",
             "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/038-windrose-tool.png",
             "observation": "Water > Windrose Tool > Directions: 16."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/011-windrose-panel.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/011-windrose-panel.png",
+            "observation": "Water > Windrose Tool > Directions: Zahlenfeld mit Pfeilen, kein zusätzlicher Slider; angezeigter Ausgangswert 16 in diesem Kontext."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/013-directions--99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/013-directions--99999-entry.png",
+            "observation": "Water > Windrose Tool > Directions: Eingabeliteral -99999 tatsächlich im Zahlenfeld."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/014-directions--99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/014-directions--99999-validated.png",
+            "observation": "Water > Windrose Tool > Directions: Tab-Abschluss zeigt 4."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/021-directions-99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/021-directions-99999-entry.png",
+            "observation": "Water > Windrose Tool > Directions: Eingabeliteral 99999 tatsächlich im Zahlenfeld."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/022-directions-99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/022-directions-99999-validated.png",
+            "observation": "Water > Windrose Tool > Directions: Tab-Abschluss zeigt 32."
           }
         ],
         "classification": "user_function",
@@ -16847,10 +16899,69 @@
             "duePhase": "HEX-00",
             "reason": "Der Wortlaut benennt unbekannte Oberfläche, Wertebereich, Auswahl oder Eingabekontext; keine spätere Wirkung ersetzt diese Inventarpflicht.",
             "probe": "Originaloberfläche abgleichen: Auswahl oder Zahlenbereich noch nicht direkt abgegrenzt.",
-            "state": "open",
-            "evidence": []
+            "state": "resolved",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/011-windrose-panel.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/011-windrose-panel.png",
+                "observation": "Water > Windrose Tool > Directions: Zahlenfeld mit Pfeilen, kein zusätzlicher Slider; angezeigter Ausgangswert 16 in diesem Kontext."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/013-directions--99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/013-directions--99999-entry.png",
+                "observation": "Water > Windrose Tool > Directions: Eingabeliteral -99999 tatsächlich im Zahlenfeld."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/014-directions--99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/014-directions--99999-validated.png",
+                "observation": "Water > Windrose Tool > Directions: Tab-Abschluss zeigt 4."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/021-directions-99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/021-directions-99999-entry.png",
+                "observation": "Water > Windrose Tool > Directions: Eingabeliteral 99999 tatsächlich im Zahlenfeld."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/022-directions-99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/022-directions-99999-validated.png",
+                "observation": "Water > Windrose Tool > Directions: Tab-Abschluss zeigt 32."
+              }
+            ],
+            "resolvedIn": "HEX-00-N-I09",
+            "resolution": "Water > Windrose Tool > Directions selbst direkt gemessen: -99999 → 4, 99999 → 32 nach Tab; Zahlenfeld mit Pfeilen statt früherer slider_number-Einordnung. Nur beobachtete Anzeigegrenzen; weitere Zeichenwirkung, History, Neuöffnung und physische Eingabe bleiben in HEX-25 offen."
           }
-        ]
+        ],
+        "controlTypeObservation": {
+          "run": "HEX-00-N-I09",
+          "prior": "slider_number",
+          "observed": "number",
+          "evidence": [
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/011-windrose-panel.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/011-windrose-panel.png",
+              "observation": "Water > Windrose Tool > Directions: Zahlenfeld mit Pfeilen, kein zusätzlicher Slider; angezeigter Ausgangswert 16 in diesem Kontext."
+            }
+          ]
+        },
+        "numericObservation": {
+          "run": "HEX-00-N-I09",
+          "initialValue": 16,
+          "initialFrame": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/011-windrose-panel.json",
+          "note": "Water > Windrose Tool > Directions selbst direkt gemessen: -99999 → 4, 99999 → 32 nach Tab; Zahlenfeld mit Pfeilen statt früherer slider_number-Einordnung. Nur beobachtete Anzeigegrenzen; weitere Zeichenwirkung, History, Neuöffnung und physische Eingabe bleiben in HEX-25 offen.",
+          "scope": "Nur dieses Original-Control und die protokollierten Literale; keine allgemeine Rundungs-/Schrittformel oder Fachfreigabe."
+        }
       },
       {
         "id": "WD-UI-0260",
@@ -16858,13 +16969,30 @@
         "exactUiPath": "Water > Windrose Tool > Line Width",
         "context": "Neue Karte 1920 × 1080, Eastward; leere Geometrie. TextOnly nach QA-Änderung; ab Bild 060 Layer Management ON.",
         "commandOrControl": "Line Width",
-        "controlType": "slider_number",
+        "controlType": "number",
         "default": {
           "value": 3,
           "evidenceScope": "Angezeigter Zustand dieser Originalaufnahme; Persistenz und andere Kontexte nicht gemessen."
         },
-        "rangeOrChoices": null,
-        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit.",
+        "rangeOrChoices": {
+          "kind": "observed_numeric_bounds",
+          "minimum": 2,
+          "maximum": 16,
+          "boundMeaning": "displayed_after_validation",
+          "testedInputs": [
+            -99999,
+            99999
+          ],
+          "scope": {
+            "version": "1.1.8.2",
+            "sessions": [
+              "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/session.json"
+            ],
+            "context": "Eigenes frisches Fensterprofil, neue 1024 × 1024-Karte, Large Icons; keine explizite Themeänderung. Initiales New-Dialoglabel Eastward belegt keine globale/gespeicherte Themeidentität.",
+            "factoryDefaultsAsserted": false
+          }
+        },
+        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit. Direkt N-I09: Eingabeliterale nach Tab auf die belegten Anzeigegrenzen begrenzt.",
         "gesture": {
           "observed": "Öffnen/Anwählen über die protokollierte Original-UI.",
           "operation": "Werkzeug-Abschlussgesten noch nicht gemessen."
@@ -16886,6 +17014,41 @@
             "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/038-windrose-tool.json",
             "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/038-windrose-tool.png",
             "observation": "Water > Windrose Tool > Line Width: 3."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/011-windrose-panel.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/011-windrose-panel.png",
+            "observation": "Water > Windrose Tool > Line Width: Zahlenfeld mit Pfeilen, kein zusätzlicher Slider; angezeigter Ausgangswert 3 in diesem Kontext."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/015-line-width--99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/015-line-width--99999-entry.png",
+            "observation": "Water > Windrose Tool > Line Width: Eingabeliteral -99999 tatsächlich im Zahlenfeld."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/016-line-width--99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/016-line-width--99999-validated.png",
+            "observation": "Water > Windrose Tool > Line Width: Tab-Abschluss zeigt 2."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/023-line-width-99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/023-line-width-99999-entry.png",
+            "observation": "Water > Windrose Tool > Line Width: Eingabeliteral 99999 tatsächlich im Zahlenfeld."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/024-line-width-99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/024-line-width-99999-validated.png",
+            "observation": "Water > Windrose Tool > Line Width: Tab-Abschluss zeigt 16."
           }
         ],
         "classification": "user_function",
@@ -16904,10 +17067,69 @@
             "duePhase": "HEX-00",
             "reason": "Der Wortlaut benennt unbekannte Oberfläche, Wertebereich, Auswahl oder Eingabekontext; keine spätere Wirkung ersetzt diese Inventarpflicht.",
             "probe": "Originaloberfläche abgleichen: Auswahl oder Zahlenbereich noch nicht direkt abgegrenzt.",
-            "state": "open",
-            "evidence": []
+            "state": "resolved",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/011-windrose-panel.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/011-windrose-panel.png",
+                "observation": "Water > Windrose Tool > Line Width: Zahlenfeld mit Pfeilen, kein zusätzlicher Slider; angezeigter Ausgangswert 3 in diesem Kontext."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/015-line-width--99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/015-line-width--99999-entry.png",
+                "observation": "Water > Windrose Tool > Line Width: Eingabeliteral -99999 tatsächlich im Zahlenfeld."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/016-line-width--99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/016-line-width--99999-validated.png",
+                "observation": "Water > Windrose Tool > Line Width: Tab-Abschluss zeigt 2."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/023-line-width-99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/023-line-width-99999-entry.png",
+                "observation": "Water > Windrose Tool > Line Width: Eingabeliteral 99999 tatsächlich im Zahlenfeld."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/024-line-width-99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/024-line-width-99999-validated.png",
+                "observation": "Water > Windrose Tool > Line Width: Tab-Abschluss zeigt 16."
+              }
+            ],
+            "resolvedIn": "HEX-00-N-I09",
+            "resolution": "Water > Windrose Tool > Line Width selbst direkt gemessen: -99999 → 2, 99999 → 16 nach Tab; Zahlenfeld mit Pfeilen statt früherer slider_number-Einordnung. Nur beobachtete Anzeigegrenzen; weitere Zeichenwirkung, History, Neuöffnung und physische Eingabe bleiben in HEX-25 offen."
           }
-        ]
+        ],
+        "controlTypeObservation": {
+          "run": "HEX-00-N-I09",
+          "prior": "slider_number",
+          "observed": "number",
+          "evidence": [
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/011-windrose-panel.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/011-windrose-panel.png",
+              "observation": "Water > Windrose Tool > Line Width: Zahlenfeld mit Pfeilen, kein zusätzlicher Slider; angezeigter Ausgangswert 3 in diesem Kontext."
+            }
+          ]
+        },
+        "numericObservation": {
+          "run": "HEX-00-N-I09",
+          "initialValue": 3,
+          "initialFrame": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/011-windrose-panel.json",
+          "note": "Water > Windrose Tool > Line Width selbst direkt gemessen: -99999 → 2, 99999 → 16 nach Tab; Zahlenfeld mit Pfeilen statt früherer slider_number-Einordnung. Nur beobachtete Anzeigegrenzen; weitere Zeichenwirkung, History, Neuöffnung und physische Eingabe bleiben in HEX-25 offen.",
+          "scope": "Nur dieses Original-Control und die protokollierten Literale; keine allgemeine Rundungs-/Schrittformel oder Fachfreigabe."
+        }
       },
       {
         "id": "WD-UI-0261",
@@ -16915,13 +17137,30 @@
         "exactUiPath": "Water > Windrose Tool > Inner Radius",
         "context": "Neue Karte 1920 × 1080, Eastward; leere Geometrie. TextOnly nach QA-Änderung; ab Bild 060 Layer Management ON.",
         "commandOrControl": "Inner Radius",
-        "controlType": "slider_number",
+        "controlType": "number",
         "default": {
           "value": 0,
           "evidenceScope": "Angezeigter Zustand dieser Originalaufnahme; Persistenz und andere Kontexte nicht gemessen."
         },
-        "rangeOrChoices": null,
-        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit.",
+        "rangeOrChoices": {
+          "kind": "observed_numeric_bounds",
+          "minimum": 0,
+          "maximum": 1024,
+          "boundMeaning": "displayed_after_validation",
+          "testedInputs": [
+            -99999,
+            99999
+          ],
+          "scope": {
+            "version": "1.1.8.2",
+            "sessions": [
+              "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/session.json"
+            ],
+            "context": "Eigenes frisches Fensterprofil, neue 1024 × 1024-Karte, Large Icons; keine explizite Themeänderung. Initiales New-Dialoglabel Eastward belegt keine globale/gespeicherte Themeidentität.",
+            "factoryDefaultsAsserted": false
+          }
+        },
+        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit. Direkt N-I09: Eingabeliterale nach Tab auf die belegten Anzeigegrenzen begrenzt.",
         "gesture": {
           "observed": "Öffnen/Anwählen über die protokollierte Original-UI.",
           "operation": "Werkzeug-Abschlussgesten noch nicht gemessen."
@@ -16943,6 +17182,41 @@
             "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/038-windrose-tool.json",
             "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/038-windrose-tool.png",
             "observation": "Water > Windrose Tool > Inner Radius: 0."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/011-windrose-panel.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/011-windrose-panel.png",
+            "observation": "Water > Windrose Tool > Inner Radius: Zahlenfeld mit Pfeilen, kein zusätzlicher Slider; angezeigter Ausgangswert 0 in diesem Kontext."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/017-inner-radius--99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/017-inner-radius--99999-entry.png",
+            "observation": "Water > Windrose Tool > Inner Radius: Eingabeliteral -99999 tatsächlich im Zahlenfeld."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/018-inner-radius--99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/018-inner-radius--99999-validated.png",
+            "observation": "Water > Windrose Tool > Inner Radius: Tab-Abschluss zeigt 0."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/025-inner-radius-99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/025-inner-radius-99999-entry.png",
+            "observation": "Water > Windrose Tool > Inner Radius: Eingabeliteral 99999 tatsächlich im Zahlenfeld."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/026-inner-radius-99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/026-inner-radius-99999-validated.png",
+            "observation": "Water > Windrose Tool > Inner Radius: Tab-Abschluss zeigt 1024."
           }
         ],
         "classification": "user_function",
@@ -16961,10 +17235,69 @@
             "duePhase": "HEX-00",
             "reason": "Der Wortlaut benennt unbekannte Oberfläche, Wertebereich, Auswahl oder Eingabekontext; keine spätere Wirkung ersetzt diese Inventarpflicht.",
             "probe": "Originaloberfläche abgleichen: Auswahl oder Zahlenbereich noch nicht direkt abgegrenzt.",
-            "state": "open",
-            "evidence": []
+            "state": "resolved",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/011-windrose-panel.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/011-windrose-panel.png",
+                "observation": "Water > Windrose Tool > Inner Radius: Zahlenfeld mit Pfeilen, kein zusätzlicher Slider; angezeigter Ausgangswert 0 in diesem Kontext."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/017-inner-radius--99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/017-inner-radius--99999-entry.png",
+                "observation": "Water > Windrose Tool > Inner Radius: Eingabeliteral -99999 tatsächlich im Zahlenfeld."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/018-inner-radius--99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/018-inner-radius--99999-validated.png",
+                "observation": "Water > Windrose Tool > Inner Radius: Tab-Abschluss zeigt 0."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/025-inner-radius-99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/025-inner-radius-99999-entry.png",
+                "observation": "Water > Windrose Tool > Inner Radius: Eingabeliteral 99999 tatsächlich im Zahlenfeld."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/026-inner-radius-99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/026-inner-radius-99999-validated.png",
+                "observation": "Water > Windrose Tool > Inner Radius: Tab-Abschluss zeigt 1024."
+              }
+            ],
+            "resolvedIn": "HEX-00-N-I09",
+            "resolution": "Water > Windrose Tool > Inner Radius selbst direkt gemessen: -99999 → 0, 99999 → 1024 nach Tab; Zahlenfeld mit Pfeilen statt früherer slider_number-Einordnung. Nur beobachtete Anzeigegrenzen; weitere Zeichenwirkung, History, Neuöffnung und physische Eingabe bleiben in HEX-25 offen."
           }
-        ]
+        ],
+        "controlTypeObservation": {
+          "run": "HEX-00-N-I09",
+          "prior": "slider_number",
+          "observed": "number",
+          "evidence": [
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/011-windrose-panel.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/011-windrose-panel.png",
+              "observation": "Water > Windrose Tool > Inner Radius: Zahlenfeld mit Pfeilen, kein zusätzlicher Slider; angezeigter Ausgangswert 0 in diesem Kontext."
+            }
+          ]
+        },
+        "numericObservation": {
+          "run": "HEX-00-N-I09",
+          "initialValue": 0,
+          "initialFrame": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/011-windrose-panel.json",
+          "note": "Water > Windrose Tool > Inner Radius selbst direkt gemessen: -99999 → 0, 99999 → 1024 nach Tab; Zahlenfeld mit Pfeilen statt früherer slider_number-Einordnung. Nur beobachtete Anzeigegrenzen; weitere Zeichenwirkung, History, Neuöffnung und physische Eingabe bleiben in HEX-25 offen.",
+          "scope": "Nur dieses Original-Control und die protokollierten Literale; keine allgemeine Rundungs-/Schrittformel oder Fachfreigabe."
+        }
       },
       {
         "id": "WD-UI-0262",
@@ -16972,13 +17305,31 @@
         "exactUiPath": "Water > Windrose Tool > Outer Radius",
         "context": "Neue Karte 1920 × 1080, Eastward; leere Geometrie. TextOnly nach QA-Änderung; ab Bild 060 Layer Management ON.",
         "commandOrControl": "Outer Radius",
-        "controlType": "slider_number",
+        "controlType": "number",
         "default": {
           "value": 2048,
           "evidenceScope": "Angezeigter Zustand dieser Originalaufnahme; Persistenz und andere Kontexte nicht gemessen."
         },
-        "rangeOrChoices": null,
-        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit.",
+        "rangeOrChoices": {
+          "kind": "observed_numeric_bounds",
+          "minimum": 32,
+          "maximum": 9999,
+          "boundMeaning": "displayed_after_validation",
+          "testedInputs": [
+            -99999,
+            99999,
+            999999
+          ],
+          "scope": {
+            "version": "1.1.8.2",
+            "sessions": [
+              "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/session.json"
+            ],
+            "context": "Eigenes frisches Fensterprofil, neue 1024 × 1024-Karte, Large Icons; keine explizite Themeänderung. Initiales New-Dialoglabel Eastward belegt keine globale/gespeicherte Themeidentität.",
+            "factoryDefaultsAsserted": false
+          }
+        },
+        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit. Direkt N-I09: Eingabeliterale nach Tab auf die belegten Anzeigegrenzen begrenzt.",
         "gesture": {
           "observed": "Öffnen/Anwählen über die protokollierte Original-UI.",
           "operation": "Werkzeug-Abschlussgesten noch nicht gemessen."
@@ -17000,6 +17351,55 @@
             "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/038-windrose-tool.json",
             "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/038-windrose-tool.png",
             "observation": "Water > Windrose Tool > Outer Radius: 2048."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/011-windrose-panel.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/011-windrose-panel.png",
+            "observation": "Water > Windrose Tool > Outer Radius: Zahlenfeld mit Pfeilen, kein zusätzlicher Slider; angezeigter Ausgangswert 2048 in diesem Kontext."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/019-outer-radius--99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/019-outer-radius--99999-entry.png",
+            "observation": "Water > Windrose Tool > Outer Radius: Eingabeliteral -99999 tatsächlich im Zahlenfeld."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/020-outer-radius--99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/020-outer-radius--99999-validated.png",
+            "observation": "Water > Windrose Tool > Outer Radius: Tab-Abschluss zeigt 32."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/027-outer-radius-99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/027-outer-radius-99999-entry.png",
+            "observation": "Water > Windrose Tool > Outer Radius: Eingabeliteral 99999 tatsächlich im Zahlenfeld."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/028-outer-radius-99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/028-outer-radius-99999-validated.png",
+            "observation": "Water > Windrose Tool > Outer Radius: Tab-Abschluss zeigt 9999."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/029-outer-radius-second-high-999999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/029-outer-radius-second-high-999999-entry.png",
+            "observation": "Outer Radius: zweites höheres Literal 999999 vor Tab tatsächlich sichtbar."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/030-outer-radius-second-high-999999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/030-outer-radius-second-high-999999-validated.png",
+            "observation": "Outer Radius: auch 999999 wird nach Tab als 9999 angezeigt; keine Annahme einer vierstelligen Eingabesperre."
           }
         ],
         "classification": "user_function",
@@ -17018,10 +17418,83 @@
             "duePhase": "HEX-00",
             "reason": "Der Wortlaut benennt unbekannte Oberfläche, Wertebereich, Auswahl oder Eingabekontext; keine spätere Wirkung ersetzt diese Inventarpflicht.",
             "probe": "Originaloberfläche abgleichen: Auswahl oder Zahlenbereich noch nicht direkt abgegrenzt.",
-            "state": "open",
-            "evidence": []
+            "state": "resolved",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/011-windrose-panel.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/011-windrose-panel.png",
+                "observation": "Water > Windrose Tool > Outer Radius: Zahlenfeld mit Pfeilen, kein zusätzlicher Slider; angezeigter Ausgangswert 2048 in diesem Kontext."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/019-outer-radius--99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/019-outer-radius--99999-entry.png",
+                "observation": "Water > Windrose Tool > Outer Radius: Eingabeliteral -99999 tatsächlich im Zahlenfeld."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/020-outer-radius--99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/020-outer-radius--99999-validated.png",
+                "observation": "Water > Windrose Tool > Outer Radius: Tab-Abschluss zeigt 32."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/027-outer-radius-99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/027-outer-radius-99999-entry.png",
+                "observation": "Water > Windrose Tool > Outer Radius: Eingabeliteral 99999 tatsächlich im Zahlenfeld."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/028-outer-radius-99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/028-outer-radius-99999-validated.png",
+                "observation": "Water > Windrose Tool > Outer Radius: Tab-Abschluss zeigt 9999."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/029-outer-radius-second-high-999999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/029-outer-radius-second-high-999999-entry.png",
+                "observation": "Outer Radius: zweites höheres Literal 999999 vor Tab tatsächlich sichtbar."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/030-outer-radius-second-high-999999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/030-outer-radius-second-high-999999-validated.png",
+                "observation": "Outer Radius: auch 999999 wird nach Tab als 9999 angezeigt; keine Annahme einer vierstelligen Eingabesperre."
+              }
+            ],
+            "resolvedIn": "HEX-00-N-I09",
+            "resolution": "Water > Windrose Tool > Outer Radius selbst direkt gemessen: -99999 → 32, 99999 → 9999 nach Tab; Zahlenfeld mit Pfeilen statt früherer slider_number-Einordnung. Zweites oberes Literal 999999 → 9999; längere Eingabe ist vor Abschluss sichtbar. Nur beobachtete Anzeigegrenzen; weitere Zeichenwirkung, History, Neuöffnung und physische Eingabe bleiben in HEX-25 offen."
           }
-        ]
+        ],
+        "controlTypeObservation": {
+          "run": "HEX-00-N-I09",
+          "prior": "slider_number",
+          "observed": "number",
+          "evidence": [
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/011-windrose-panel.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/011-windrose-panel.png",
+              "observation": "Water > Windrose Tool > Outer Radius: Zahlenfeld mit Pfeilen, kein zusätzlicher Slider; angezeigter Ausgangswert 2048 in diesem Kontext."
+            }
+          ]
+        },
+        "numericObservation": {
+          "run": "HEX-00-N-I09",
+          "initialValue": 2048,
+          "initialFrame": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/011-windrose-panel.json",
+          "note": "Water > Windrose Tool > Outer Radius selbst direkt gemessen: -99999 → 32, 99999 → 9999 nach Tab; Zahlenfeld mit Pfeilen statt früherer slider_number-Einordnung. Zweites oberes Literal 999999 → 9999; längere Eingabe ist vor Abschluss sichtbar. Nur beobachtete Anzeigegrenzen; weitere Zeichenwirkung, History, Neuöffnung und physische Eingabe bleiben in HEX-25 offen.",
+          "scope": "Nur dieses Original-Control und die protokollierten Literale; keine allgemeine Rundungs-/Schrittformel oder Fachfreigabe."
+        }
       },
       {
         "id": "WD-UI-0263",
@@ -17076,8 +17549,31 @@
           "value": "visible",
           "evidenceScope": "Angezeigter Zustand dieser Originalaufnahme; Persistenz und andere Kontexte nicht gemessen."
         },
-        "rangeOrChoices": null,
-        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit.",
+        "rangeOrChoices": {
+          "kind": "observed_numeric_bounds",
+          "minimum": 0,
+          "maximum": 2,
+          "boundMeaning": "native_saved_value_at_slider_endpoints",
+          "testedSliderStates": [
+            "initial_left",
+            "middle",
+            "right"
+          ],
+          "observedNativeValues": [
+            0.0,
+            1.0,
+            2.0
+          ],
+          "scope": {
+            "version": "1.1.8.2",
+            "sessions": [
+              "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/session.json"
+            ],
+            "context": "Eigenes frisches Fensterprofil, neue 1024 × 1024-Karte, Large Icons; keine explizite Themeänderung. Initiales New-Dialoglabel Eastward belegt keine globale/gespeicherte Themeidentität.",
+            "factoryDefaultsAsserted": false
+          }
+        },
+        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit. Direkt N-I09: Sliderenden/Mitte liefern in eigener nativer Extraktion circles0/1/2; kein Zahlenfeld oder Höchstwert anderer Werkzeuge übertragen.",
         "gesture": {
           "observed": "Öffnen/Anwählen über die protokollierte Original-UI.",
           "operation": "Werkzeug-Abschlussgesten noch nicht gemessen."
@@ -17099,6 +17595,76 @@
             "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/038-windrose-tool.json",
             "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/038-windrose-tool.png",
             "observation": "Water > Windrose Tool > Inner Circles: visible."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/011-windrose-panel.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/011-windrose-panel.png",
+            "observation": "Inner Circles: Slider am linken Ende, kein Zahlenfeld."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/012-inner-circles-hover.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/012-inner-circles-hover.png",
+            "observation": "Hover zeigt keinen Zahlenwert oder Tooltip."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/circles-left-place.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/circles-left-place.png",
+            "observation": "Erste Windrose im linken Ausgangszustand platziert."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/circles-left-away.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/circles-left-away.png",
+            "observation": "Zeiger weg: erste Platzierung bleibt; Vorschau separat."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/circles-mid-slider.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/circles-mid-slider.png",
+            "observation": "Slider in der Mitte gewählt, weiterhin keine Zahlenanzeige."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/circles-mid-place.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/circles-mid-place.png",
+            "observation": "Zweite Windrose nach mittlerem Sliderzustand platziert."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/circles-right-slider.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/circles-right-slider.png",
+            "observation": "Slider am rechten Ende gewählt, weiterhin keine Zahlenanzeige."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/circles-right-place.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/circles-right-place.png",
+            "observation": "Dritte Windrose nach rechtem Sliderzustand platziert."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/circles-save-commit.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/circles-save-commit.png",
+            "observation": "Drei eigene QA-Platzierungen nativ unter getrenntem Verzeichnis/Basename gespeichert."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/circles-extract-file-confirm.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/circles-extract-file-confirm.png",
+            "observation": "Original Extract Map Data liest exakt diese eigene Karte. Nativer Rohtext enthält in Platzierungsreihenfolge circles0/1.0/2.0; passende Rohkarten-/Texthashes in native-windrose-data.json."
           }
         ],
         "classification": "user_function",
@@ -17118,8 +17684,81 @@
             "duePhase": "HEX-00",
             "reason": "Der Wortlaut benennt unbekannte Oberfläche, Wertebereich, Auswahl oder Eingabekontext; keine spätere Wirkung ersetzt diese Inventarpflicht.",
             "probe": "Originaloberfläche abgleichen: Auswahl oder Zahlenbereich noch nicht direkt abgegrenzt.",
-            "state": "open",
-            "evidence": []
+            "state": "resolved",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/011-windrose-panel.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/011-windrose-panel.png",
+                "observation": "Inner Circles: Slider am linken Ende, kein Zahlenfeld."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/012-inner-circles-hover.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/012-inner-circles-hover.png",
+                "observation": "Hover zeigt keinen Zahlenwert oder Tooltip."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/circles-left-place.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/circles-left-place.png",
+                "observation": "Erste Windrose im linken Ausgangszustand platziert."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/circles-left-away.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/circles-left-away.png",
+                "observation": "Zeiger weg: erste Platzierung bleibt; Vorschau separat."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/circles-mid-slider.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/circles-mid-slider.png",
+                "observation": "Slider in der Mitte gewählt, weiterhin keine Zahlenanzeige."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/circles-mid-place.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/circles-mid-place.png",
+                "observation": "Zweite Windrose nach mittlerem Sliderzustand platziert."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/circles-right-slider.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/circles-right-slider.png",
+                "observation": "Slider am rechten Ende gewählt, weiterhin keine Zahlenanzeige."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/circles-right-place.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/circles-right-place.png",
+                "observation": "Dritte Windrose nach rechtem Sliderzustand platziert."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/circles-save-commit.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/circles-save-commit.png",
+                "observation": "Drei eigene QA-Platzierungen nativ unter getrenntem Verzeichnis/Basename gespeichert."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/circles-extract-file-confirm.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/circles-extract-file-confirm.png",
+                "observation": "Original Extract Map Data liest exakt diese eigene Karte. Nativer Rohtext enthält in Platzierungsreihenfolge circles0/1.0/2.0; passende Rohkarten-/Texthashes in native-windrose-data.json."
+              }
+            ],
+            "resolvedIn": "HEX-00-N-I09",
+            "resolution": "Reiner Slider ohne sichtbaren Zahlenwert, auch beim Hover. Drei getrennte eigene QA-Platzierungen mit linkem Ausgangsende, Mitte und rechtem Ende nativ gespeichert/extrahiert: tatsächlicher Schlüssel circles enthält 0,1.0,2.0. Damit beobachtete Slidergrenzen0..2 und Ausgangswert0 in diesem frischen Kontext. Keine Behauptung über Ganzzahlschritte, sichtbare Kreisgrafik, vollständige Zeichen-/History-/Neuöffnungsabnahme oder globale Defaults."
           },
           {
             "id": "WD-UI-0264-Q02-01",
@@ -17132,10 +17771,100 @@
             "duePhase": "HEX-00",
             "reason": "Der Wortlaut benennt unbekannte Oberfläche, Wertebereich, Auswahl oder Eingabekontext; keine spätere Wirkung ersetzt diese Inventarpflicht.",
             "probe": "Originaloberfläche abgleichen: Numerischer Wert und Bereich fehlen.",
-            "state": "open",
-            "evidence": []
+            "state": "resolved",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/011-windrose-panel.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/011-windrose-panel.png",
+                "observation": "Inner Circles: Slider am linken Ende, kein Zahlenfeld."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/012-inner-circles-hover.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/012-inner-circles-hover.png",
+                "observation": "Hover zeigt keinen Zahlenwert oder Tooltip."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/circles-left-place.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/circles-left-place.png",
+                "observation": "Erste Windrose im linken Ausgangszustand platziert."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/circles-left-away.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/circles-left-away.png",
+                "observation": "Zeiger weg: erste Platzierung bleibt; Vorschau separat."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/circles-mid-slider.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/circles-mid-slider.png",
+                "observation": "Slider in der Mitte gewählt, weiterhin keine Zahlenanzeige."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/circles-mid-place.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/circles-mid-place.png",
+                "observation": "Zweite Windrose nach mittlerem Sliderzustand platziert."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/circles-right-slider.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/circles-right-slider.png",
+                "observation": "Slider am rechten Ende gewählt, weiterhin keine Zahlenanzeige."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/circles-right-place.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/circles-right-place.png",
+                "observation": "Dritte Windrose nach rechtem Sliderzustand platziert."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/circles-save-commit.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/circles-save-commit.png",
+                "observation": "Drei eigene QA-Platzierungen nativ unter getrenntem Verzeichnis/Basename gespeichert."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/circles-extract-file-confirm.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/original/screens/circles-extract-file-confirm.png",
+                "observation": "Original Extract Map Data liest exakt diese eigene Karte. Nativer Rohtext enthält in Platzierungsreihenfolge circles0/1.0/2.0; passende Rohkarten-/Texthashes in native-windrose-data.json."
+              }
+            ],
+            "resolvedIn": "HEX-00-N-I09",
+            "resolution": "Reiner Slider ohne sichtbaren Zahlenwert, auch beim Hover. Drei getrennte eigene QA-Platzierungen mit linkem Ausgangsende, Mitte und rechtem Ende nativ gespeichert/extrahiert: tatsächlicher Schlüssel circles enthält 0,1.0,2.0. Damit beobachtete Slidergrenzen0..2 und Ausgangswert0 in diesem frischen Kontext. Keine Behauptung über Ganzzahlschritte, sichtbare Kreisgrafik, vollständige Zeichen-/History-/Neuöffnungsabnahme oder globale Defaults."
           }
-        ]
+        ],
+        "numericObservation": {
+          "run": "HEX-00-N-I09",
+          "initialValue": 0,
+          "note": "Reiner Slider ohne sichtbaren Zahlenwert, auch beim Hover. Drei getrennte eigene QA-Platzierungen mit linkem Ausgangsende, Mitte und rechtem Ende nativ gespeichert/extrahiert: tatsächlicher Schlüssel circles enthält 0,1.0,2.0. Damit beobachtete Slidergrenzen0..2 und Ausgangswert0 in diesem frischen Kontext. Keine Behauptung über Ganzzahlschritte, sichtbare Kreisgrafik, vollständige Zeichen-/History-/Neuöffnungsabnahme oder globale Defaults.",
+          "nativeData": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/native-windrose-data.json",
+          "nativeFiles": [
+            {
+              "file": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/circles-disabled-endpoints.wonderdraft_map",
+              "sha256": "ff36439951ce5fdbfc2ca0e833dedcd5c0856df114b0904483616054d844cf3b"
+            },
+            {
+              "file": "/home/aaron/.cache/dungeon-native-qa/hex-00/windrose-numeric-repair-20261009-082531/circles-disabled-endpoints.wonderdraft_map.txt",
+              "sha256": "5a771bf55ccdc4471560d01e4a8be2358c3bbcef1acf03d41986c69f6f1f8278"
+            }
+          ],
+          "scope": "Endpoint-/Wertinventar über eigene QA-Platzierungen; keine vollständige Windrose-Zeichen-/Speicherfachabnahme."
+        }
       },
       {
         "id": "WD-UI-0265",
