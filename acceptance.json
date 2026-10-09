@@ -152115,7 +152115,7 @@
   "hexAtlas": {
     "scope": "HEX-00..28, shared native Atlas; phase-specific functional approvals only.",
     "currentPhase": "HEX-01",
-    "state": "foundation_review_passed_cleanup_pending",
+    "state": "foundation_and_cleanup_passed_cloud_followup_open",
     "referenceGate": "wonderdraftParity.coverageReview HEX-00-R02",
     "requirements": [
       {
@@ -152211,19 +152211,33 @@
       {
         "id": "HEX01-C01",
         "priority": 2,
-        "state": "open",
+        "state": "resolved",
         "title": "Vorhandener Atlasname benötigt eine verständliche Meldung",
         "observed": "FileConflict says Extern geändert for an already existing creation path; no overwrite occurs.",
-        "required": "Keep entered modal, explain existing name and ask for another name. Verify exact saved bytes."
+        "required": "Keep entered modal, explain existing name and ask for another name. Verify exact saved bytes.",
+        "resolvedBy": {
+          "run": "HEX-01-CLEAN-R01",
+          "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-01/p01-20261009151055/cleanup-review.json"
+        }
       },
       {
         "id": "HEX01-C02",
         "priority": 3,
-        "state": "open",
+        "state": "resolved",
         "title": "Neue Kernmodule lesbar formatieren",
-        "required": "Format only new Atlas modules and their focused test; no math, storage or gesture changes."
+        "required": "Format only new Atlas modules and their focused test; no math, storage or gesture changes.",
+        "resolvedBy": {
+          "run": "HEX-01-CLEAN-R01",
+          "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-01/p01-20261009151055/cleanup-review.json"
+        }
       }
     ],
-    "limits": "Terrain/history/drafts HEX02; location HEX03; Dungeon placement/composition HEX04/05; cities, full parity, large maps and physical input remain open."
+    "limits": "Terrain/history/drafts HEX02; location HEX03; Dungeon placement/composition HEX04/05; cities, full parity, large maps and physical input remain open.",
+    "cloudFollowup": {
+      "id": "GM-UX-N-004",
+      "state": "open",
+      "evidence": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1#issuecomment-6084269776",
+      "scope": "Viewport/render only, after completed cleanup; no camera/gesture/hex change planned."
+    }
   }
 }
