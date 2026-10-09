@@ -1015,3 +1015,29 @@ CITY-01-INTEGRATION-R01-CLEAN-P01 Start 2026-10-09T19:28:15.623485+00:00; Aufrä
 CITY-01-INTEGRATION-R01-CLEAN-I01 Start 2026-10-09T19:28:18.561382+00:00; Belegpfad und Vorschlagsscope konsolidiert; kein vorweggenommener Vertrag oder Produktpass.
 
 CITY-01-INTEGRATION-R01-CLEAN-R01 Start 2026-10-09T19:28:21.042352+00:00; Planlinks/JSON/Gegenbeleg vorhanden, fremde JSON-Wurzeln erhalten; Scope bleibt Vorschlag.
+
+CITY-01-INTEGRATION-N01 Start 2026-10-09T19:28:35.030662+00:00; Drei Befunde in konkrete Anschluss-/Abnahmepflichten übersetzt: relative Vorwärts/Rückabbildung, neues Placement/Draftschema, gemeinsames Fit.
+
+CITY-01-INTEGRATION-N01-CLEAN-P01 Start 2026-10-09T19:28:38.312911+00:00; Aufräumplan: Befunde und reine Vorschlagsgrenzen lesbar halten, Quellen-/Gegenbelege unverändert erhalten.
+
+CITY-01-INTEGRATION-N01-CLEAN-I01 Start 2026-10-09T19:28:41.330934+00:00; Belegpfad und Vorschlagsscope konsolidiert; kein vorweggenommener Vertrag oder Produktpass.
+
+CITY-01-INTEGRATION-N01-CLEAN-R01 Start 2026-10-09T19:28:43.984353+00:00; Planlinks/JSON/Gegenbeleg vorhanden, fremde JSON-Wurzeln erhalten; Scope bleibt Vorschlag.
+
+CITY-01-INTEGRATION-R02 Start 2026-10-09T19:29:00.630020+00:00; R02: alle drei Befunde im Vorschlag vollständig adressiert. Vertrag, Implementierung und Hostabnahme bleiben offen.
+
+CITY-01-INTEGRATION-R02-CLEAN-P01 Start 2026-10-09T19:29:03.471755+00:00; Aufräumplan: Befunde und reine Vorschlagsgrenzen lesbar halten, Quellen-/Gegenbelege unverändert erhalten.
+
+CITY-01-INTEGRATION-R02-CLEAN-I01 Start 2026-10-09T19:29:06.203947+00:00; Belegpfad und Vorschlagsscope konsolidiert; kein vorweggenommener Vertrag oder Produktpass.
+
+CITY-01-INTEGRATION-R02-CLEAN-R01 Start 2026-10-09T19:29:09.073297+00:00; Planlinks/JSON/Gegenbeleg vorhanden, fremde JSON-Wurzeln erhalten; Scope bleibt Vorschlag.
+
+CITY-00-I46-P46 Start 2026-10-09T19:30:30.593778+00:00; Konkrete Originalprobe für Mehrfachauswahl/Editor geplant, Schreibprobe nur mit gelesenen reversiblen Beforewerten.
+
+CITY-00-I46-PLAN-CLEAN-P46 Start 2026-10-09T19:30:33.307996+00:00; Aufräumplan: eigenen Bewohner-/Rawschutz und Planlink prüfen; keine unbestätigte Massenwirkung.
+
+I46-Plan: [FTG-Bewohner-Massenbearbeitung](ROADMAP-CITIES-CITY00-FTG-BULK-EDIT-PLAN.md).
+
+CITY-00-I46-PLAN-CLEAN-I46 Start 2026-10-09T19:30:36.312160+00:00; Originalprobe mit vorhandener QA-Karte und Field-before-Schutz verlinkt.
+
+CITY-00-I46-PLAN-CLEAN-R46 Start 2026-10-09T19:30:39.201603+00:00; Planlink/JSON und klar begrenzter Bewohner-/Tabschutz geprüft. Originalprobe kann beginnen.

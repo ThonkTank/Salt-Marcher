@@ -4732,17 +4732,17 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-01-INTEGRATION-R01-CLEAN-R01",
+      "id": "CITY-00-I46-PLAN-CLEAN-R46",
       "kind": "cleanup_review",
-      "startedAt": "2026-10-09T19:28:21.042352+00:00",
-      "focus": "Integrationsvorschlag gegen Quellen und Roadmap: R01-R",
+      "startedAt": "2026-10-09T19:30:39.201603+00:00",
+      "focus": "Bewohner-Massenbearbeitung: CR",
       "state": "completed",
-      "result": "Planlinks/JSON/Gegenbeleg vorhanden, fremde JSON-Wurzeln erhalten; Scope bleibt Vorschlag."
+      "result": "Planlink/JSON und klar begrenzter Bewohner-/Tabschutz geprüft. Originalprobe kann beginnen."
     },
     "nextRun": {
-      "id": "CITY-01-INTEGRATION-N01",
-      "kind": "integration_refinement",
-      "focus": "Konkreten HEX04/05-Ownervertrag mit den drei Anschlussanforderungen abstimmen"
+      "id": "CITY-00-I46-I46",
+      "kind": "reference_implementation",
+      "focus": "Aktuelle Population-Mehrfachauswahl und zugänglichen Editor im Original prüfen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
