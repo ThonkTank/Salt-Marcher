@@ -62,36 +62,28 @@
   "hexAtlasExecution": {
     "scope": "HEX-00 bis HEX-28 und sämtliche eingeordneten CITY-00 bis CITY-09 vollständig",
     "phase": "HEX-00",
-    "state": "reference_review_requires_focused_repair",
+    "state": "focused_reference_repair_planned",
     "plan": "ROADMAP-HEX-00-PLAN.md",
     "currentRun": {
-      "id": "HEX-00-R01",
-      "kind": "review",
-      "startedAt": "2026-10-09T02:41:23.909064+02:00",
-      "state": "completed_changes_required",
-      "baseCommit": "a7f9f82b3b39fea7d6f503d66a5bf866bb733e7d",
-      "focus": "Eigenständiger Original-/Anforderungsabgleich der Referenzbasis; frühe Startpflichten von späteren Varianten abgrenzen, kritische Folge wiederholen und konkrete Nachbesserungen feststellen.",
-      "evidence": [
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/review-20261009-024123/manifest.json",
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/review-20261009-024123/review.json"
-      ],
-      "endedAt": "2026-10-09T03:01:02.046480+02:00",
-      "result": "Eigener Originalreview: 29 neue Frames und frische Save-/Wiederöffnungsfolge; frühe Umfänge ausreichend belegt. Sechs konkrete Inventar-/Prüfvertragsbefunde verhindern HEX-00-Fachfreigabe.",
-      "findings": [
-        "HEX00-R01-01",
-        "HEX00-R01-02",
-        "HEX00-R01-03",
-        "HEX00-R01-04",
-        "HEX00-R01-05",
-        "HEX00-R01-06"
-      ],
-      "integratedCommit": "6704cf72755b67d9526a1d2933b5c7d52991562b"
-    },
-    "nextRun": {
       "id": "HEX-00-N-P01",
       "kind": "repair_plan",
-      "focus": "Konkreten begrenzten Nachbesserungsplan neben der Roadmap für R01-01..06 festlegen; frühe Pflicht und spätere Varianten explizit trennen.",
-      "gate": "Keine neue allgemeine Inventurschleife; HEX-01 erst nach Pflichtnachbesserung, neuem Fachreview und eigenständigem Aufräumreview."
+      "startedAt": "2026-10-09T03:08:39+02:00",
+      "state": "completed_planned",
+      "baseCommit": "5eca8d66c948f90fbcfe9d2e7d55a4f9077142d9",
+      "focus": "Begrenzter technischer Nachbesserungsplan für HEX00-R01-01..06; keine Umsetzung oder Fachfreigabe",
+      "evidence": [
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/repair-plan-20261009-030839/manifest.json",
+        "ROADMAP-HEX-00-REPAIR-PLAN.md",
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/repair-plan-20261009-030839/plan-validation.json"
+      ],
+      "endedAt": "2026-10-09T03:14:44.878049+02:00",
+      "result": "Sechs Reviewbefunde technisch eingegrenzt; drei eigene Nachbesserungsumsetzungen, R02 und getrenntes Aufräumen festgelegt. Keine Pflicht geschlossen und keine Fachfreigabe."
+    },
+    "nextRun": {
+      "id": "HEX-00-N-I01",
+      "kind": "repair_implementation",
+      "focus": "R01-01/06: expliziter Pflicht-/Frühprobenvertrag, Gruppenindizes und gezielte Validatorregressionen; spätere Pflichtbefunde bleiben offen.",
+      "gate": "Keine Fachfreigabe im Umsetzungsrun; R01-02..05 anschließend gezielt beheben, eigener R02 und Aufräumreview vor HEX-01."
     },
     "review": {
       "state": "changes_required",
@@ -179,8 +171,16 @@
         "physicalInput": "not_run",
         "installation": "unchanged",
         "newFrameProvenance": "passed"
+      },
+      "repairPlan": {
+        "run": "HEX-00-N-P01",
+        "state": "planning_artifact_checks_passed",
+        "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-00/repair-plan-20261009-030839/plan-validation.json",
+        "phaseApproval": false,
+        "newOriginalOrHostRun": false
       }
-    }
+    },
+    "repairPlan": "ROADMAP-HEX-00-REPAIR-PLAN.md"
   },
   "phase": "Phase 6: zweiter Nachbesserungslauf teilweise umgesetzt; fünf Restpositionen und unabhängiger Review offen",
   "goal": "Dungeon-Pfad bis zur vollständigen beauftragten Dungeondraft-Verhaltensgleichheit verfolgen: Bedienung und Funktion angleichen, Grafik ungefähr gleichwertig. Zuerst ROADMAP-PARITY.md mit Building und Object Tool abschließen, danach übrige Dungeon-Werkzeuge. Jede Fachphase getrennt planen, umsetzen und unabhängig reviewen; Lücken mit eigenen Nachbesserungs- und Reviewläufen schließen; danach eigene Aufräumphase mit Plan, Umsetzung und Review.",
