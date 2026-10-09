@@ -3610,17 +3610,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I10-CR",
-      "kind": "cleanup_review",
-      "startedAt": "2026-10-09T12:16:09.369728+00:00",
-      "focus": "Nachbereinigte Referenzwirkung prüfen",
-      "state": "completed",
-      "result": "Alle Rohhashes, Frame08/09-Grenze, sieben Werkzeuge, Snapshot und63 offene CO-/24 CTY-Fälle geprüft; Rückstellung250m/Districts/11Monday"
-    },
-    "nextRun": {
       "id": "CITY-00-I11-P",
       "kind": "early_reference_planning",
-      "focus": "FTG-Straßenbearbeitung und frühe Persistenzwirkung planen; COK-Undo nach nativer Slotfreigabe"
+      "startedAt": "2026-10-09T12:17:22.272237+00:00",
+      "focus": "Straßenwirkung und temporäre Layoutpersistenz planen",
+      "state": "completed",
+      "result": "Eigene kurze Straße zeichnen/speichern/frischladen; nur eigene Strecke anschließend entfernen; offene Produkt-/Hostpflichten erhalten"
+    },
+    "nextRun": {
+      "id": "CITY-00-I11-I",
+      "kind": "reference_effect_probe",
+      "focus": "Roads-Werkzeuge und Save-Reload-Rückstellung prüfen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
