@@ -100,7 +100,7 @@
       "run": "ADR-P01-H03-P01",
       "state": "plan_pending_independent_review",
       "document": "ROADMAP-SALTMARCHER-ADR-P01-H03-PLAN.md",
-      "result": "Proposes a Linux-only native snapshot/capture/publish and parent/child recovery hypothesis using a verified FD-copied Before snapshot, exclusive current-name capture and no-replace publication, with a complete uncooperative-writer and fault matrix.",
+      "result": "Proposes a Linux-only native snapshot/capture/publish and parent/child recovery hypothesis using a durable Before snapshot from the immutable compare-and-write payload, independent target verification, exclusive current-name capture and no-replace publication, with a complete uncooperative-writer and fault matrix.",
       "limits": "Unreviewed planning evidence only. No executable proof, Linux durability Go, target-platform decision or P02 authorization. Windows and macOS remain not-run."
     },
     "coordination": {

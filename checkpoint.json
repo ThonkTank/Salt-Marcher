@@ -103,7 +103,7 @@
       "date": "2026-10-09",
       "state": "plan_pending_independent_review",
       "plan": "ROADMAP-SALTMARCHER-ADR-P01-H03-PLAN.md",
-      "hypothesis": "Materialize the expected old bytes through an open target FD into a verified durable Before snapshot, then capture the current name and publish only with RENAME_NOREPLACE, so pre- and post-capture writers remain visible conflicts rather than overwritten truths.",
+      "hypothesis": "Materialize the immutable expected Before payload supplied by the bounded compare-and-write request into a durable snapshot independent of the externally writable target inode, then verify/capture the current name and publish only with RENAME_NOREPLACE.",
       "limits": "Plan only. H02 remains No-Go; no executable H03 proof, Linux durability Go, platform decision or P02 authorization. Windows and macOS remain not-run."
     },
     "open": [

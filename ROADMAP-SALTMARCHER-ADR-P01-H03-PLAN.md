@@ -17,9 +17,9 @@ Delete-Faultmatrix ausführte. Der ausführbare H02-Harness ist aufgeräumt;
 
 H03 prüft genau eine engere Hypothese:
 
-> Ein nativer Linux-Transaktionsdienst kann die erwarteten alten Bytes zuerst
-> über einen offen gehaltenen Ziel-FD in einen exklusiven, synchronisierten
-> Before-Snapshot materialisieren, danach den aktuellen Zielnamen ohne
+> Ein nativer Linux-Transaktionsdienst kann die vom engen Compare-and-Write-
+> Auftrag gelieferten erwarteten alten Bytes zuerst in einen exklusiven,
+> synchronisierten Before-Snapshot materialisieren, danach den aktuellen Zielnamen ohne
 > Überschreiben capturen und erst dann die synchronisierte neue Datei mit
 > `RENAME_NOREPLACE` publizieren. Greift ein unkooperativer Writer vor oder
 > nach dem Capture ein, bleiben erwartete alte Bytes, beobachtete konkurrierende
@@ -94,6 +94,15 @@ nur gebundene `beginRepositoryTransaction`, Child-Create/Update/Delete,
 festen Größenlimits. Pfade werden vom Controller nicht frei gewählt, sondern
 aus einer beim Start gebundenen Fixture-Manifest-ID aufgelöst.
 
+Update und Delete erhalten wie der bestehende `FileStore.compareAndWrite`-Port
+die erwarteten Before-Bytes als unveränderlichen, größenbegrenzten Payload. Der
+Vertrag bindet diese Bytes und ihren Hash an Parent, Child und Ziel-ID. Der
+Before-Snapshot wird ausschließlich aus diesem Payload geschrieben, nie aus
+dem gleichzeitig extern beschreibbaren Ziel-Inode. Der Ziel-FD dient nur zur
+Verifikation gegen die bereits unabhängig erhaltene Before-Wahrheit. Ein
+falscher Payload, torn Read oder abweichender Zielhash stoppt vor jeder
+Namensmutation als Konflikt.
+
 ### Child-State-Machines
 
 Jedes Child-Receipt bindet Operation, Parent-ID, Before-/After-Hash,
@@ -120,25 +129,27 @@ Receipt bleiben als sichtbarer Konflikt erhalten.
 
 **Update**
 
-1. Ziel-FD öffnen und gebundene Identität festhalten. Seine Bytes über genau
-   diesen FD in einen exklusiven Before-Snapshot kopieren, Snapshot
-   synchronisieren und dessen Hash gegen Before prüfen. Ein nicht passender
-   Snapshot stoppt ohne Namensmutation als Konflikt.
-2. After-Temp schreiben und synchronisieren; Receipt `before-snapshotted`,
+1. Die gebundenen erwarteten Before-Bytes aus dem unveränderlichen Auftrag in
+   einen exklusiven Before-Snapshot schreiben, synchronisieren und dessen Hash
+   gegen den gebundenen Before-Hash prüfen.
+2. Ziel-FD öffnen, Identität festhalten und seine beobachteten Bytes gegen den
+   bereits unabhängig erhaltenen Before-Snapshot prüfen. Ein torn Read oder
+   abweichender Hash stoppt ohne Namensmutation als Konflikt.
+3. After-Temp schreiben und synchronisieren; Receipt `before-snapshotted`,
    danach `prepared`, mit Snapshotidentität durable publizieren.
-3. Den zu diesem Zeitpunkt aktuellen Zielnamen per
+4. Den zu diesem Zeitpunkt aktuellen Zielnamen per
    `renameat2(target, exclusive-capture, RENAME_NOREPLACE)` capturen.
-4. Captureidentität/-hash prüfen und Verzeichnis synchronisieren. Entspricht
+5. Captureidentität/-hash prüfen und Verzeichnis synchronisieren. Entspricht
    die Capture nicht der ursprünglichen Zielidentität und dem Before-Hash,
    bleibt sie neben Before-Snapshot und Temp als `conflict-before-capture`
    erhalten; es wird nichts Neues publiziert.
-5. Nur bei passender Capture Receipt `old-captured` durable publizieren und
+6. Nur bei passender Capture Receipt `old-captured` durable publizieren und
    Temp ausschließlich mit `RENAME_NOREPLACE` am nun freien Ziel publizieren.
-6. Zielidentität/After-Hash prüfen, Verzeichnis synchronisieren und Receipt
+7. Zielidentität/After-Hash prüfen, Verzeichnis synchronisieren und Receipt
    `new-published`, danach `committed`, durable publizieren.
 
 Ersetzt oder verändert ein Writer den Zielnamen vor Capture, bewahrt der
-verifizierte Before-Snapshot die erwartete alte Wahrheit und die Capture dessen
+vom Auftrags-Payload erzeugte Before-Snapshot die erwartete alte Wahrheit und die Capture dessen
 beobachtete konkurrierende Wahrheit. Belegt er den Zielnamen nach Capture neu,
 schlägt die Publikation ohne Überschreiben fehl. Before-Snapshot, Capture,
 Konkurrent am Ziel und neue Tempbytes bleiben erhalten; Recovery meldet
@@ -146,9 +157,11 @@ Konflikt. `RENAME_EXCHANGE` ist verboten.
 
 **Delete**
 
-1. Wie bei Update die erwarteten Bytes über den offenen Ziel-FD in einen
-   exklusiven Before-Snapshot kopieren, synchronisieren und gegen Before
-   prüfen; Receipt `before-snapshotted`, danach `prepared`, durable publizieren.
+1. Wie bei Update die gebundenen erwarteten Before-Bytes aus dem Auftrag in
+   einen exklusiven Before-Snapshot schreiben, synchronisieren und hashen;
+   danach Ziel-FD/Identität/Bytes gegen diesen Snapshot verifizieren. Torn Read
+   oder Abweichung stoppt ohne Namensmutation. Receipt `before-snapshotted`,
+   danach `prepared`, durable publizieren.
 2. Den aktuellen Zielnamen per `RENAME_NOREPLACE` in den exklusiven
    Capturenamen bewegen.
 3. Captureidentität/Before-Hash prüfen. Bei Abweichung Snapshot und
@@ -195,7 +208,8 @@ Create, Update und Delete sind getrennte Pflichtzeilen. Für jede Zeile werden
 mindestens folgende Killpunkte mit neuem Root und frischem Recoveryprozess
 ausgeführt:
 
-- vor/während/nach Before-Snapshot-Kopie und Snapshot-Sync;
+- vor/während/nach Before-Payload-Snapshot und Snapshot-Sync;
+- vor/während/nach Ziel-FD-Verifikation gegen den Before-Snapshot;
 - vor/nach Temp-Sync;
 - vor/nach durablem `prepared`;
 - vor/nach Capture;
@@ -209,7 +223,8 @@ ausgeführt:
 An jedem anwendbaren Dateisystemschritt werden zusätzlich separat injiziert:
 
 - Zielneubelegung durch einen unkooperativen Prozess;
-- Zielersatz vor Capture sowie In-place-Änderung über einen vorab offenen FD;
+- Zielersatz vor Capture sowie In-place-Änderung über einen vorab offenen FD,
+  insbesondere während jeder Zielverifikation;
 - Ziel-Symlink, Parent-Symlink und Hardlink;
 - Austausch von Zielidentität, Parent und Rootpfad;
 - Mount-/Gerätewechsel, soweit der isolierte Host ihn sicher erlaubt;
