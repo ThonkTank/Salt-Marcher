@@ -163,5 +163,48 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out, checks }) =>
     await page.keyboard.press("Escape");
     checks.push("Existing atlas name has clear next action; entered modal, identity and file bytes preserved");
   }
-  return { edit, reopen };
+  async function layout() {
+    const original = bytes(WORLD); await page.setViewportSize({ width: 1440, height: 1000 }); await open(WORLD);
+    async function measure(label) {
+      const data = await viewport().evaluate(async el => {
+        const style = node => {
+          const s = getComputedStyle(node), r = node.getBoundingClientRect();
+          return { width: r.width, height: r.height, x: r.x, y: r.y, clientWidth: node.clientWidth, clientHeight: node.clientHeight,
+            display: s.display, minHeight: s.minHeight, heightCss: s.height, flex: s.flex, position: s.position, overflow: s.overflow };
+        };
+        const canvas = el.querySelector("canvas"), gl = canvas.getContext("webgl2") || canvas.getContext("webgl");
+        const samples = [];
+        for (let i = 0; i < 60; i++) {
+          await new Promise(resolve => requestAnimationFrame(resolve));
+          samples.push({ width: el.clientWidth, height: el.clientHeight, bitmapWidth: canvas.width, bitmapHeight: canvas.height });
+          if (el.clientHeight > window.innerHeight * 2) break;
+        }
+        return { innerWidth: innerWidth, innerHeight: innerHeight, dpr: devicePixelRatio, root: style(el.parentElement),
+          pane: style(el.closest(".workspace-leaf-content")), viewport: style(el), canvas: style(canvas),
+          samples, gridLevel: el.dataset.hexLevel, mpp: el.dataset.metersPerPixel,
+          webgl: gl ? { maxTexture: gl.getParameter(gl.MAX_TEXTURE_SIZE), maxRenderbuffer: gl.getParameter(gl.MAX_RENDERBUFFER_SIZE), lost: gl.isContextLost() } : null };
+      });
+      fs.writeFileSync(path.join(out, label + "-layout.json"), JSON.stringify(data, null, 2));
+      await page.screenshot({ path: path.join(out, label + ".png") });
+      assert(data.viewport.height <= data.innerHeight && data.viewport.height > 0, "Canvas viewport must stay in available window height");
+      assert.equal(data.samples.at(-1).height, data.samples[0].height, "Viewport has no frame-to-frame resize growth");
+      assert(data.webgl && !data.webgl.lost, "Live WebGL context");
+      return data;
+    }
+    const full = await measure("01-full");
+    await page.evaluate(async file => { await app.workspace.getLeaf("split", "vertical").openFile(app.vault.getAbstractFileByPath(file)); }, WORLD);
+    await viewport().locator("canvas").waitFor({ state: "visible" }); await settle();
+    const split = await measure("02-split"); assert(split.viewport.width < full.viewport.width);
+    const before = await state(); await toolbar().getByRole("button", { name: "Atlas vergrößern", exact: true }).click(); await settle();
+    assert((await state()).mpp < before.mpp); await fit(); await choose(1, 0, "pointy");
+    const b = await state(), ax = Math.round(b.x + b.width * .6) - b.x, ay = Math.round(b.y + b.height * .45) - b.y;
+    const worldAnchor = { x: b.cx + (ax - b.width / 2) * b.mpp, y: b.cy + (ay - b.height / 2) * b.mpp };
+    await page.mouse.move(b.x + ax, b.y + ay); await page.keyboard.down("Control"); await page.mouse.wheel(0, -200); await page.keyboard.up("Control"); await settle();
+    const z = await state(); assert(z.mpp < b.mpp);
+    near(z.cx + (ax - z.width / 2) * z.mpp, worldAnchor.x, "Split zoom anchor X", 1);
+    near(z.cy + (ay - z.height / 2) * z.mpp, worldAnchor.y, "Split zoom anchor Y", 1);
+    await fit(); await measure("03-split-fit"); assert.equal(bytes(WORLD), original);
+    checks.push("Own native full/split layout measured across60frames; pane-bounded live renderer and zoom preserve native bytes; no Cloud approval");
+  }
+  return { edit, reopen, layout };
 };
