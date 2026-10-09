@@ -3427,17 +3427,17 @@
     "state": "city00_reference_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I04-R",
-      "kind": "reference_review",
-      "startedAt": "2026-10-09T10:41:10.233983+00:00",
-      "focus": "Gebäude-/Exportbelege gegen Inventar und Plan prüfen",
-      "state": "completed_gaps_found",
-      "result": "R01: CO-FTG-0020 vermischt Dateiausgabe mit gesperrten Integrationen; R02: Export-Timeout war zuvor irrtümlich CO-FTG-0019 statt Ausgabe zugeordnet; Nachbesserung erforderlich"
-    },
-    "nextRun": {
       "id": "CITY-00-I04-CP",
       "kind": "cleanup_planning",
-      "focus": "Originalbelege erhalten; Export- und Integrationszuordnung gezielt reparieren"
+      "startedAt": "2026-10-09T10:41:35.311580+00:00",
+      "focus": "Export-, Integrations- und Wetterbelege semantisch trennen",
+      "state": "completed",
+      "result": "Gezielte Reparatur ohne Löschen von Originalbelegen oder Pflichtkennungen geplant"
+    },
+    "nextRun": {
+      "id": "CITY-00-I04-CI",
+      "kind": "cleanup_implementation",
+      "focus": "R01/R02 nach Plan korrigieren"
     },
     "open": [
       "CITY-00 direkte Referenzinventur/Galerie aller drei Produkte",

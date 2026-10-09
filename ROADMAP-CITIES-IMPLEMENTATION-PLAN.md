@@ -147,3 +147,7 @@ Gemeinsamer Produktabschluss: Hex-Kollege besitzt HEX-00 und HEX-01 bis HEX-05; 
 ## CITY-00-I04-I: FTG-Gebäudedaten
 
 Der zugängliche Teil des geplanten Referenzlaufs bestätigt Umbenennen, Speichern und Wiederfinden nach Browser-Reload: The Radiant Flats heißt anschließend CITY00 Protected House; sieben Bewohner bleiben zugeordnet. Eigenständige Pflicht CO-FTG-0030 in CITY-06, ohne zusätzliche Pflichtdatei für ein namenloses Gebäude. Gebäudeinformationen gehören an stabile Gebäude-IDs; Umbenennen erzeugt einen gemeinsamen Atlasbefehl und erhält Personen-/Ortsbindungen. Sichtbare Unterbereich-Tabs sind nur Inventarhinweise, keine Wirkungsnachweise. Der zweite JSON-Downloadversuch schließt den Dialog, liefert jedoch keinen bestätigten Download; keine weiteren Wiederholungen derselben Hypothese. Belege: `/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i04-20261009/manifest.json`. Canvas-of-Kings-Zugang bleibt offen.
+
+## CITY-00-I04-CP: Belegzuordnung bereinigen
+
+R01/R02 gezielt reparieren: Exportmenü und beide unbestätigten Dateiversuche ausschließlich CO-FTG-0020 zuordnen; die in temporärer Siedlung deaktivierten Integrationsschaltflächen CO-FTG-0021 zuordnen. CO-FTG-0019 erhält wieder den ehrlichen Dokumentationsstatus für Wetter/Jahreszeiten/Tag-Nacht ohne Exportbeleg und ohne Export-CTY-Verweis. Originalartefakte und IDs erhalten. Hashes, unabhängige Pflichtkennungen, sämtliche offenen CTY-Zustände und fremde JSON-Wurzeln prüfen. Anschließend eigener Umsetzungs- und Reviewlauf; keine Produktabnahme ableiten.
