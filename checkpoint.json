@@ -62,61 +62,67 @@
   "hexAtlasExecution": {
     "scope": "HEX-00 bis HEX-28 und sämtliche eingeordneten CITY-00 bis CITY-09 vollständig",
     "phase": "HEX-00",
-    "state": "remaining_initial_sequences_measured_review_pending",
+    "state": "reference_review_requires_focused_repair",
     "plan": "ROADMAP-HEX-00-PLAN.md",
     "currentRun": {
-      "id": "HEX-00-I03",
-      "kind": "implementation",
-      "startedAt": "2026-10-09T01:40:11.896341+02:00",
-      "focus": "Gezielte acht Restfolgen des frühen Originalablaufs, vorhandene Kontrollkarten weiterverwenden",
-      "state": "completed_partial",
-      "baseCommit": "f12a87891a06203d63d6d84acbb8451956aaec09",
-      "evidence": [
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/remaining-sequences-20261009-014011/manifest.json"
-      ],
-      "endedAt": "2026-10-09T02:36:57.619865+02:00",
-      "result": "Acht gezielte Restgruppen gemessen; zwei weitere frühe Fälle direkt verifiziert. Alle neun Neuanlagethemen gespeichert und im frischen Prozess geöffnet. Keine Fachfreigabe.",
-      "integratedCommit": "c8ee4d308fe6f6c363f384dc28bfca670a428bf8",
-      "outcome": {
-        "newFrames": 337,
-        "nativeUiEntries": 576,
-        "verifiedInitialCases": [
-          "WD-001.01",
-          "WD-001.02",
-          "WD-002.01",
-          "WD-003.01",
-          "WD-003.02",
-          "WD-004.01",
-          "WD-004.02"
-        ],
-        "allNineNewThemesMeasured": true,
-        "input": "synthetic_local_rfb",
-        "physicalInput": false,
-        "phaseGate": "open"
-      }
-    },
-    "nextRun": {
       "id": "HEX-00-R01",
       "kind": "review",
-      "focus": "Eigener Abgleich gegen Roadmap/Plan und Original; Torentscheidung und begrenzte Pflichtlücken, anschließend eigene Nachbesserungen.",
-      "gate": "HEX-00/HEX-01 bleiben bis Fachreview, Pflichtnachbesserung und eigenständigem Aufräumreview offen."
+      "startedAt": "2026-10-09T02:41:23.909064+02:00",
+      "state": "completed_changes_required",
+      "baseCommit": "a7f9f82b3b39fea7d6f503d66a5bf866bb733e7d",
+      "focus": "Eigenständiger Original-/Anforderungsabgleich der Referenzbasis; frühe Startpflichten von späteren Varianten abgrenzen, kritische Folge wiederholen und konkrete Nachbesserungen feststellen.",
+      "evidence": [
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/review-20261009-024123/manifest.json",
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/review-20261009-024123/review.json"
+      ],
+      "endedAt": "2026-10-09T03:01:02.046480+02:00",
+      "result": "Eigener Originalreview: 29 neue Frames und frische Save-/Wiederöffnungsfolge; frühe Umfänge ausreichend belegt. Sechs konkrete Inventar-/Prüfvertragsbefunde verhindern HEX-00-Fachfreigabe.",
+      "findings": [
+        "HEX00-R01-01",
+        "HEX00-R01-02",
+        "HEX00-R01-03",
+        "HEX00-R01-04",
+        "HEX00-R01-05",
+        "HEX00-R01-06"
+      ],
+      "integratedCommit": "6704cf72755b67d9526a1d2933b5c7d52991562b"
+    },
+    "nextRun": {
+      "id": "HEX-00-N-P01",
+      "kind": "repair_plan",
+      "focus": "Konkreten begrenzten Nachbesserungsplan neben der Roadmap für R01-01..06 festlegen; frühe Pflicht und spätere Varianten explizit trennen.",
+      "gate": "Keine neue allgemeine Inventurschleife; HEX-01 erst nach Pflichtnachbesserung, neuem Fachreview und eigenständigem Aufräumreview."
     },
     "review": {
-      "state": "not_started",
-      "next": "Eigener HEX-00-R01 auf dem integrierten Endstand; nur daraus begrenzte Nachbesserungen ableiten. Keine weitere allgemeine Inventurschleife vor dem Review."
+      "state": "changes_required",
+      "run": "HEX-00-R01",
+      "evidence": [
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/review-20261009-024123/review.json"
+      ],
+      "findings": [
+        "HEX00-R01-01",
+        "HEX00-R01-02",
+        "HEX00-R01-03",
+        "HEX00-R01-04",
+        "HEX00-R01-05",
+        "HEX00-R01-06"
+      ],
+      "next": "Nach eigenen Plan-/Nachbesserungsläufen eigener HEX-00-R02."
     },
     "cleanup": {
       "state": "not_started",
       "next": "Nach Fachfreigabe eigener Aufräumplan, Umsetzung und Review; HEX-01 erst nach bestandenem Aufräumreview."
     },
     "open": [
-      "HEX-00-R01: frühe Pflichtabdeckung gegen Roadmap/Plan bewerten; sechs Teilgruppen bleiben ausdrücklich offen.",
-      "Timing/Fokus kurzer erster Eingabe, weitere Werkzeugzustände, einzelne Effektfarben, deutlich verschiedene Opacity-/Velocity-Wirkung und positive Filter auf geeignete Instanzen gezielt bewerten.",
-      "Vollständigkeit weiterer Auswahl-/Entwurfszustände, Dropdowns, Stil-/Assetpaletten, Zahlenbereiche und Set-Liste im Fachreview prüfen.",
-      "Vier mehrdeutige Pakethinweise: area_creator_dialog, inspect_dialog, news_dialog, update_dialog; erfolglose Originalzustände erhalten.",
-      "111 importierte Belegprobleme lokal erhalten; neue Messungen ersetzen fehlende Altbelege nicht.",
-      "Fachfreigabe und eigene Aufräumplanung/-umsetzung/-review offen. CITY-00-Referenzlauf bleibt eigenständig; Bestandskarten-Themenwechsel HEX-24.",
-      "Sauberer Repo-Testbaum benötigt zwei fehlende externe Asset-Fixtures; zwei fremde lokale Teständerungen ausgeschlossen und unverändert."
+      "HEX00-R01-01: Inventartor vermischt frühe Referenzpflicht und spätere Wirkungsfragen",
+      "HEX00-R01-02: Modaler Farbdialog ist gemessen, seine Oberfläche noch nicht vollständig zugeordnet",
+      "HEX00-R01-03: Verfügbare Listen und Paletten sind teilweise noch unbekannt oder veraltet dokumentiert",
+      "HEX00-R01-04: Aktive Importbelege sind ohne lokale Herkunftsprüfung weiterhin ungeprüft",
+      "HEX00-R01-05: Vier Paketrollen bleiben ohne abschließende begründete Zuordnung",
+      "HEX00-R01-06: Gespeicherte Gruppenindizes folgen neuen UI-Zuordnungen nicht",
+      "Eigenständiges Aufräumen nach Fachfreigabe, einschließlich RFB-Beleg-/Eingabe-Preflight C01.",
+      "CITY-00 bleibt eigene frühe Ergebnisreferenzphase; vollständige Wonderdraft-Wirkungsvarianten verbleiben in ihren Fachphasen.",
+      "Zwei fremde Teständerungen/Installationsnotiz unverändert und unveröffentlicht. Sauberer Testbaum hat drei fehlende externe Asset-Fixture-Fälle; keine neue Produkt-/Host-/physische Abnahme."
     ],
     "coordination": {
       "issue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1",
@@ -127,7 +133,7 @@
       "tests": 164,
       "build": "passed",
       "productBuildSha256": "b321128188b944c3324594663a410acfd84863f17860f637b9ed2e6ecc33b466",
-      "integratedCommit": "c8ee4d308fe6f6c363f384dc28bfca670a428bf8",
+      "integratedCommit": "6704cf72755b67d9526a1d2933b5c7d52991562b",
       "host": "Gebundener Eingang/Raum-Key, exaktes Undo/Redo, Save und frischer Obsidian-Prozess auf integriertem Build b3211281 bestanden.",
       "testProvenance": "164 lokale Tests bestanden; zwei unveränderte fremde Teständerungen nicht veröffentlicht. Vorheriger sauberer Baum 167 Tests/164 bestanden/drei fehlende externe Fixtures. Veröffentlichte Testquellen seit dieser Prüfung identisch.",
       "cleanTreeTest": {
@@ -144,7 +150,7 @@
       "largeMap": "not_run",
       "installation": "unchanged",
       "testedProductCommit": "8f7fa1e692a0f5a9f7b39f04303400ccfeb56413",
-      "incomingReviewIntegration": "ada9ae9/1535749/216bdfb integriert. Neue Dungeon-Host-/Großkarten-/Vault-Prüfer und Nachweise; src/, veröffentlichte tests/, Buildskript und Abhängigkeiten unverändert. Produktbuild b3211281 bleibt identisch; bestehende zwei Kern-Hostnachweise werden weitergeführt. 122a1a6/c8ee4d3 anschließend integriert: ausschließlich Dungeon-Review/Plan/Abnahme, geprüfte Quellen unverändert.",
+      "incomingReviewIntegration": "ada9ae9/1535749/216bdfb integriert. Neue Dungeon-Host-/Großkarten-/Vault-Prüfer und Nachweise; src/, veröffentlichte tests/, Buildskript und Abhängigkeiten unverändert. Produktbuild b3211281 bleibt identisch; bestehende zwei Kern-Hostnachweise werden weitergeführt. 122a1a6/c8ee4d3 anschließend integriert: ausschließlich Dungeon-Review/Plan/Abnahme, geprüfte Quellen unverändert. 4c22eeb/5a9b320/6704cf7 im Reviewlauf integriert: Phase-7-spezifischer Hostdialog und Dokumentation, Produkt und Wonderdraft-Helfer unverändert.",
       "latestOriginalRun": {
         "manifest": "/home/aaron/.cache/dungeon-native-qa/hex-00/remaining-sequences-20261009-014011/manifest.json",
         "sessions": 4,
@@ -157,6 +163,22 @@
         ],
         "allNineNewThemesMeasured": true,
         "physicalInput": false
+      },
+      "referenceReview": {
+        "run": "HEX-00-R01",
+        "newFrames": 29,
+        "originalSessions": 2,
+        "normalExitCodes": [
+          0,
+          0
+        ],
+        "validatorTestsPassed": 10,
+        "productBuildSha256": "b321128188b944c3324594663a410acfd84863f17860f637b9ed2e6ecc33b466",
+        "host": "Vorhandene zwei Kern-Hostergebnisse erneut geprüft; Produktbuild identisch, kein neuer Hostlauf.",
+        "fullCatalog": "111 bekannte Importbelegfehler erhalten; Oberfläche nicht vollständig freigegeben.",
+        "physicalInput": "not_run",
+        "installation": "unchanged",
+        "newFrameProvenance": "passed"
       }
     }
   },
