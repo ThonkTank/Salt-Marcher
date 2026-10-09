@@ -415,3 +415,8 @@ CITY-00-I24-R Ergebnis: Rohhashes, echte Downloadkopien und vollständiger Vergl
 CITY-00-I24-CP Plan: versionierten Snapshot auf I24/Gassenflag-Ausgabe bringen, sämtliche früheren Teilbelege erhalten. Rawhashes und Verweisziel prüfen, 63 CO-/24 CTY-Pflichten und fremde JSON-Wurzeln unverändert halten. Keine interne Geometrieänderung aus Export behaupten und keinen neuen Export-/Stadtspeicher erzeugen. CI/CR getrennt.
 
 CITY-00-I24-CR Ergebnis: Snapshot/Manifest-Verweise stimmen, Rohbelege unverändert, 63 CO-/24 CTY-Pflichten erhalten. Ausgangsflag off wiederhergestellt und Testkopie geschlossen; Aufräumumfang ohne Restbefund. Aktueller Hex-Kollegenlauf weiter inProgress/R02, keine HEX-05-Lieferung. Nächste eigene Referenzplanung: Bäume/Umgebung und tatsächliche ausgegebene Geometrie, keine neue native Sitzung.
+
+
+## CITY-00-I25-P: Baum-/Umgebungsdarstellung und ausgegebene Geometrie
+
+Start 2026-10-09T14:27:52.797617+00:00. Eigene New-River-Browserkopie öffnen und Ausgangsflag Show trees/Show forests lesen. Tatsächliche JSON-Datei vor/nach genau einer angebotenen Baumdarstellungsänderung empfangen und vollständig vergleichen; sichtbare Wirkung samt Flag sichern. Deaktiviertes Show forests bleibt Zugangslücke, nicht als fehlende Originalfähigkeit ausgeben. Weitere angebotene Umgebungsparameter nur lesen, keine unkontrollierte Neugeneration oder dritte Wiederholung. Ausgabepunkte/-werte sind kein Nachweis stabiler Baumobjekte oder bearbeiteter Save-Datei. Ausgangsflag sichtbar zurücksetzen, eigene Kopie schließen, Originaltabs erhalten. Nativer Slot bleibt beim Hex-Kollegen; aktueller Livehandle inProgress, HEX-05 noch nicht geliefert. Review und Aufräumen P/I/R separat.
