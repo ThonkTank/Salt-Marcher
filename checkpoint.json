@@ -3977,17 +3977,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I27-CI",
-      "kind": "cleanup_implementation",
-      "startedAt": "2026-10-09T14:59:17.271931+00:00",
-      "focus": "Forest-Snapshot korrigieren",
-      "state": "completed",
-      "result": "Snapshot enthält getrennte Sichtwirkung und unveränderte Dateiausgabe."
-    },
-    "nextRun": {
       "id": "CITY-00-I27-CR",
       "kind": "cleanup_review",
-      "focus": "Snapshotgleichheit und Belegschutz prüfen"
+      "startedAt": "2026-10-09T14:59:46.504135+00:00",
+      "focus": "Forest-Snapshot und Belegschutz prüfen",
+      "state": "completed",
+      "result": "Aufräumumfang geprüft ohne Restbefund; Waldkonturbearbeitung/Persistenz sowie Produktparität offen."
+    },
+    "nextRun": {
+      "id": "CITY-00-I28-P",
+      "kind": "reference_planning",
+      "focus": "Dächer und Vierteldarstellung konkret planen; HEX-05-Übergabe verfolgen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
