@@ -60,7 +60,10 @@ transportierte Tokens als nicht ausführbare Evidenz und lokales Import-Rebindin
 Der dritte R03-Wiederreview 6088191105 fand die verbliebene Export-
 Zustandskollision und den absent-Provider-Bootstrap; die präzisierte
 Campaign/Data-Entscheidung 6088202673 bindet die drei Zustände sowie den
-providerunabhängigen, nicht ausführbaren Core-Quarantäne-Slot.
+providerunabhängigen, nicht ausführbaren Core-Quarantäne-Slot. Der vierte
+R03-Wiederreview 6088273526 fand den providerlos fehlenden Abschlussweg;
+Campaign/Data-Entscheidung 6088282319 bindet dafür ausschließlich die explizite
+target-lokale Core-Envelope-Discard-Grenze.
 
 ## Umfang und Nichtziele
 
@@ -464,6 +467,25 @@ validierten Rebind aus. Beschädigte oder unverifizierbare Quarantäne führt nu
 zu atomarer Ablehnung beziehungsweise getrennt offengelegtem Salvage, niemals
 stillem Complete.
 
+Bleibt der Target-Owner dauerhaft absent, darf der GM die bereits manifestierte
+Closure ausdrücklich mit `FinalizeImportedTombstone/QuarantineDiscard`
+fortsetzen. Diese irreversible target-lokale Lifecycle-Aktion ist weder Owner-
+Rebind noch ErasureToken-Ausführung und entfernt ausschließlich den vollständig
+remappten, isolierten Core-Envelope als opaque Ganzes, ohne fremden Payload zu
+interpretieren. Vor Publish validiert sie TargetCampaignId, TargetCharacterId,
+remappte DeletionCommandId, CoreEnvelopeId, Tombstone/Manifest sowie Before-/
+Survivor-Hashes; falsche, überlappende oder unvollständige Envelope-Closure
+bricht fail-closed ab.
+
+Das idempotente Receipt bezeichnet exakt `local opaque envelope discard; no
+provider semantic closure claimed`. Crash, Restart, Retry und unbekannter
+Ausgang werden über dieselbe CommandId aufgelöst. Absent/Disable/Remove/Replace
+löst nie automatisch Discard aus. Ein späterer Owner-Rebind konvergiert auf das
+bestehende Receipt und darf weder Reaktivierung, Rekonstruktion noch zweite
+Closure erzeugen. Danach beschreibt Campaign Complete nur den aktuellen
+kanonischen Zustand plus nichtrekonstruktive Evidenz, niemals verworfenen
+Character-Payload oder eine vorgetäuschte provider-semantische Löschung.
+
 Restore behält Campaign-, Character-, LiveScene-, Masken- und
 Referenzidentitäten. Import erzeugt eine neue Campaign und remappt jede
 campaignlokale Identität und interne Referenz atomar bei erhaltener Topologie.
@@ -601,6 +623,13 @@ keine Schreibfähigkeit und keine GM-private oder mechanische Information.
     beschädigte Quarantäne führt nur zu atomarer Ablehnung oder Salvage. Ein
     vor der Löschung erzeugter externer GM-Export darf als neue remappte
     Campaign importiert werden und mutiert die Quell-Campaign nicht.
+    Bei dauerhaft absentem Provider entfernt nur eine ausdrückliche GM-
+    `QuarantineDiscard`-Aktion den exakt gebundenen remappten Core-Envelope;
+    falscher oder überlappender Envelope scheitert unverändert. Wiederholter
+    Befehl sowie Crash/Restart/unknown outcome liefern genau dasselbe lokale
+    Opaque-Discard-Receipt. Verspäteter Owner-Rebind konvergiert ohne zweite
+    Closure; Import/Export danach führt weder Envelope noch Character-Payload
+    wieder ein und behauptet keine provider-semantische Löschung.
 15. Name-only-Erstellung, zwei gleichnamige Rosterfiguren und das Leeren jedes
     optionalen Profilfelds erhalten stabile Identitäten, echte Abwesenheit und
     inaktive Mitgliedschaft ohne Scene-/Travel-Nebenwirkung.
@@ -617,8 +646,9 @@ keine Schreibfähigkeit und keine GM-private oder mechanische Information.
     GM-confirmed Completion/OwnerReceipt beziehungsweise ratifizierte explizite
     Transfer-Aktion erzeugt weder Completion, Transfer noch Encounter-Folgen.
 19. Eine Faultmatrix für `InitializeLiveSession`, Split/Rejoin, Move,
-    permanente Löschung sowie Undo und Redo injiziert Fehler vor, während und
-    nach Stage, Validate, owner-lokalem Prepare, Publish, Verify und Finalize
+    permanente Löschung, `QuarantineDiscard` sowie Undo und Redo injiziert
+    Fehler vor, während und nach Stage, Validate, owner-lokalem Prepare,
+    Publish, Verify und Finalize
     sowie Crash/Restart und unbekannten Ausgang—einschließlich zwischen
     HistoryReceipt und Owner-Reconciliation. Vor Publish ist ausschließlich
     Discard/Rollback, nach Publish ausschließlich Roll-forward sichtbar; nie
