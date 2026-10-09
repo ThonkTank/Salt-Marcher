@@ -140,6 +140,43 @@ test("Alt erase removes only the Wood cells covered by the changed contour in on
   assert.equal(session.smartTiles?.length, 8);
 });
 
+test("DD-038 interior erase retains the native floor tile beneath the hole", () => {
+  const document = newDocument("Building hole", 8, 8);
+  const session = new Session(document), floorId = document.floors[0]!.id;
+  const source = { ...building("wood", floorId, 1), polygons: [{ outer: [
+    { x: 1, y: 1 }, { x: 7, y: 1 }, { x: 7, y: 4 }, { x: 1, y: 4 },
+  ], holes: [] }] };
+  const previous = buildingFloorCells(source, 8, 8);
+  assert.equal(previous.length, 18);
+  session.execute({ label: "Grundriss zeichnen", entities: [{ id: source.id,
+    before: null, after: source }], smartTiles: { before: undefined, after: previous } });
+  const result = composeBuilding({ kind: "compose-building", nativeBuilding: true,
+    sources: [source], shape: [{ outer: [
+      { x: 3, y: 2 }, { x: 4, y: 2 }, { x: 4, y: 3 }, { x: 3, y: 3 },
+    ], holes: [] }], erase: true });
+  const plan = planBuildingMutation({ entities: [...session.entities.values()],
+    floorId, result, expectedRevision: session.revision,
+    currentRevision: session.revision });
+  assert.ok(plan.command);
+  session.execute({ ...plan.command, smartTiles: { before: previous,
+    after: buildingFloorCellsAfterErase(previous, plan.command.entities, 8, 8) } });
+  const after = session.entities.get(source.id);
+  assert.equal(after?.kind, "building");
+  if (after?.kind !== "building") return;
+  assert.equal(after.polygons.length, 1);
+  assert.equal(after.polygons[0]!.holes.length, 1);
+  assert.deepEqual(new Set(after.polygons[0]!.holes[0]!.map((point) =>
+    `${point.x}:${point.y}`)), new Set(["3:2", "4:2", "4:3", "3:3"]));
+  assert.equal(session.smartTiles?.length, 18);
+  assert.ok(session.smartTiles?.some((cell) => cell.x === 3 && cell.y === 2));
+  session.undo();
+  assert.equal((session.entities.get(source.id) as Building).polygons[0]!.holes.length, 0);
+  session.redo();
+  assert.equal(session.smartTiles?.length, 18);
+  assert.deepEqual(parseDocument(serializeDocument(session.document())).smartTiles,
+    session.document().smartTiles);
+});
+
 test("drawing beside a retained contour leaves a prior crop gap empty", () => {
   const full = building("wood", "floor-1", 0);
   const retained = buildingFloorCells(full, 18, 12).filter((cell) => cell.x === 1);

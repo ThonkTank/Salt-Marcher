@@ -20,7 +20,7 @@ export function buildingFloorCells(
   }] : []);
 }
 
-/** Erasing a Building removes only cells no longer covered by its contour. */
+/** Native interior holes mask the floor visually but retain the stored tiles. */
 export function buildingFloorCellsAfterErase(
   cells: readonly SmartTileCell[] | undefined,
   changes: readonly RecordChange<Entity>[] | undefined,
@@ -33,7 +33,9 @@ export function buildingFloorCellsAfterErase(
       continue;
     const after = change.after?.kind === "building" ? change.after : undefined;
     remaining.set(change.id, new Set(after
-      ? buildingFloorCells(after, width, height).map((cell) => `${cell.x}:${cell.y}`)
+      ? buildingFloorCells({ ...after, polygons: after.polygons.map((polygon) =>
+        ({ ...polygon, holes: [] })) }, width, height)
+        .map((cell) => `${cell.x}:${cell.y}`)
       : []));
   }
   if (!remaining.size) return cells;
