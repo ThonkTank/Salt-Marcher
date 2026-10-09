@@ -181,6 +181,8 @@ Offizielle Produktreferenzen für die Mindestabnahme:
 
 ## Nächster Lauf
 
-`CE-00-I01`: portable Katalogtypen, Manifestprüfung und reine Such-/Filterlogik
-mit SaltMarcher-SRD-Fixture übernehmen; fokussierte Tests ergänzen. Noch keine
-UI-, Persistenz- oder Fachfreigabe behaupten.
+CE-01 folgt dem technischen Fachplan
+[`ROADMAP-SALTMARCHER-CE01-PLAN.md`](ROADMAP-SALTMARCHER-CE01-PLAN.md).
+Nächster Lauf ist `CE-01-I01`: Releaseasset, Lazy Loader, Build-/Hostinventar
+und fokussierte Regressionen. Noch keine Katalog-UI- oder Fachfreigabe
+behaupten.

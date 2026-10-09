@@ -40,12 +40,22 @@ liegt im Repository und zusätzlich als exportierter Text für die spätere
 Credits-Ansicht vor.
 
 Der Katalogkern bleibt bis CE-01 absichtlich vom Produktionseinstieg getrennt.
-Vor seiner UI-Anbindung muss ein CE-01-Plan entweder das JSON als bei Bedarf
-geladenes Releaseasset ausweisen oder die Kosten eines gebündelten, erst beim
-Öffnen materialisierten Korpus auf dem unterstützten Obsidian-Host messen und
-akzeptieren. Derselbe Plan muss `NOTICE.md` in das Release aufnehmen und den
-exportierten Notice im Katalog erreichbar machen. Ein unbelegter eager Import
-beim Pluginstart ist kein zulässiger Standard.
+CE-01 bettet das beim Build hashgeprüfte, gzip-komprimierte JSON als virtuellen
+Base64-String in das bestehende `main.js` ein. Der unveränderliche Statblock-
+Objektgraph wird erst beim ersten Öffnen des Katalogs dekodiert, dekomprimiert
+und geparst. So bleiben die bestehenden drei distributionssicheren Plugin-
+Dateien ausreichend und ein eager JSON-Objektliteral beim Pluginstart entfällt.
+Der exportierte Notice muss im Katalog sichtbar sein; `NOTICE.md` ist derzeit
+nur Repositoryhinweis, weil die belegten Installationswege ausschließlich
+`main.js`, `manifest.json` und `styles.css` kopieren. Die Runtime nutzt
+`atob`, `Uint8Array`, `DecompressionStream("gzip")`, `TextDecoder` und
+`JSON.parse`; ein Capabilitycheck führt bei fehlender Browserunterstützung in
+einen sichtbaren Fehlerzustand, nie in einen eager Fallback. Produkt und Build
+lesen Hash und Payloadgrenzen aus einer gemeinsamen Identitätsquelle. Für
+CE-01-I01 gelten maximal 122.880 Gzip-Bytes, 164.000 Base64-Zeichen und
+180.000 Bytes `main.js`-Zuwachs gegenüber der auf Commit
+`86ce73179ede452ee6a9f5d3197ee325544a58b8` belegten Baseline von 1.189.370
+Bytes. Echte Obsidian-Start-/Ladezeitmessung bleibt ein CE-01-Abnahmetor.
 
 ## Entscheidungen
 

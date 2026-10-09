@@ -2,7 +2,7 @@
   "saltMarcherCatalogEncounter": {
     "schemaVersion": 1,
     "updated": "2026-10-09T11:55:00Z",
-    "state": "dnd2014_only_scope_applied_ce01_plan_next",
+  "state": "ce01_plan_reviewed_i01_next",
     "plan": "ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md",
     "architecture": "ARCHITECTURE.md#geplante-katalog--und-encounter-erweiterung",
     "sourceRepository": "ThonkTank/Salt-Marcher",
@@ -111,7 +111,41 @@
       "build": "passed",
       "scope": "Merged current shared branch after the reviewed repair; all incoming City, Hex, resize, Canvas of Kings and GM testing work preserved."
     },
-    "next": "CE-01-P01 plan the read-only Monster workspace, visible notice and measured lazy/release-asset strategy; all end-user acceptance remains open."
+    "ce01Plan": {
+      "run": "CE-01-P01",
+      "state": "completed_static_validation_reviewed",
+      "document": "ROADMAP-SALTMARCHER-CE01-PLAN.md",
+      "surface": "Dedicated Obsidian ItemView with retained query, selection, paging and scroll state",
+      "assetDecision": "Build and product read one shared identity source; build hash-checks and gzips the pinned JSON into a virtual Base64 module in main.js. Runtime uses capability-checked atob, DecompressionStream, TextDecoder and JSON.parse; object graph materializes only on first catalog open, with an explicit error state and no eager fallback. Visible embedded notice is distribution-safe; NOTICE.md is currently repository-only.",
+      "reproducibleBaseline": {
+        "commit": "86ce73179ede452ee6a9f5d3197ee325544a58b8",
+        "node": "v24.19.0",
+        "command": "npm run build && wc -c main.js && gzip -9 -c main.js | wc -c",
+        "currentMainBytes": 1189370,
+        "currentMainGzipBytes": 344194
+      },
+      "unverifiedPlanningObservations": {
+        "isolatedCatalogBundleBytes": 606237,
+        "isolatedCatalogBundleGzipBytes": 96282,
+        "rawCatalogGzipBytes": 106150,
+        "rawCatalogGzipBase64Characters": 141536,
+        "nodeMaterializationMs": 28.84,
+        "nodeHeapDeltaBytes": 3154264,
+        "limitation": "One-off probes without a checked-in script, warmup/sample definition or receipt; not acceptance evidence or an Obsidian performance acceptance."
+      },
+      "i01PayloadLimits": {
+        "gzipBytes": 122880,
+        "base64Characters": 164000,
+        "mainJsGrowthBytes": 180000
+      },
+      "review": {
+        "state": "passed_after_repair",
+        "findings": "Independent static re-review confirms measurement provenance, numeric payload gates, runtime decompression/capability behavior, shared identity source and repository-only NOTICE wording are consistent and complete."
+      },
+      "openCases": ["CE-AC-01", "CE-AC-02", "CE-AC-14"],
+      "encounterCases": "CE-AC-03 through CE-AC-13 remain fully open"
+    },
+    "next": "CE-01-I01 implement the hash-gated virtual gzip module, lazy loader and build inventory with focused tests; no UI or acceptance approval."
   },
   "cityPlans": {
     "schemaVersion": 1,
