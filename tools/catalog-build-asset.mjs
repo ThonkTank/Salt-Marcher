@@ -10,10 +10,29 @@ export function assertCatalogPayloadLimits(inventory, limits) {
 }
 
 export function catalogMainJsGrowth(mainBytes, identity) {
-  const growth = mainBytes - identity.baseline.mainBytes;
-  if (growth > identity.limits.mainJsGrowthBytes)
-    throw new Error(`main.js-Zuwachs ${growth} > ${identity.limits.mainJsGrowthBytes} Bytes.`);
-  return growth;
+  return mainBytes - identity.baseline.mainBytes;
+}
+
+export function catalogPayloadMainJsBytes(metafile, outputPath = "main.js") {
+  const outputs = Object.entries(metafile?.outputs ?? {}).filter(
+    ([path]) => path === outputPath || path.endsWith(`/${outputPath}`),
+  );
+  if (outputs.length !== 1)
+    throw new Error(`Buildinventar enthält nicht genau ein ${outputPath}.`);
+  const contribution = outputs[0][1]?.inputs?.["catalog-asset:srd-5.1-gzip"]?.bytesInOutput;
+  if (!Number.isSafeInteger(contribution) || contribution < 1)
+    throw new Error("Buildinventar enthält keinen emittierten SRD-5.1-Katalogpayload.");
+  return contribution;
+}
+
+export function assertCatalogMainJsBudget(catalogBytes, identity) {
+  if (!Number.isSafeInteger(catalogBytes) || catalogBytes < 1)
+    throw new Error("Ungültiger main.js-Kataloganteil.");
+  if (catalogBytes > identity.limits.mainJsGrowthBytes)
+    throw new Error(
+      `main.js-Kataloganteil ${catalogBytes} > ${identity.limits.mainJsGrowthBytes} Bytes.`,
+    );
+  return catalogBytes;
 }
 
 export async function prepareCatalogBuildAsset(identityPath = "src/features/catalog/catalog-asset.json") {
