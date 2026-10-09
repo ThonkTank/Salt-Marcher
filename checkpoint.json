@@ -433,19 +433,21 @@
   "hexAtlasExecution": {
     "scope": "HEX-00 bis HEX-28 und sämtliche eingeordneten CITY-00 bis CITY-09 vollständig",
     "phase": "HEX-03",
-    "state": "e2e01_steward_candidate_component_activation_in_progress",
+    "state": "e2e01_steward_handoff_complete_marker_editor_next",
     "plan": "ROADMAP-HEX-03-PLAN.md",
     "currentRun": {
       "id": "E2E-01-STEW-H01",
       "kind": "confirmed_steward_handoff",
-      "state": "candidate_basis_pinned_component_work_pending",
+      "state": "completed_exact_candidate_and_concrete_domain_tasks_handed_off",
       "startedAt": "2026-10-09T23:06:02.130018+00:00",
       "focus": "Accept actual collected team decision and reuse existing PR13 as one E2E01 integration candidate; retain component evidence and expose missing hard inputs without another planning/review round.",
       "catalogSha": "cc93c31870f461527b2f8953fe88e433dada7cd1",
       "integrationBase": "6bfb1f393722cd469dc4fd5f15d8dea12a154f6b",
       "evidence": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6090741953",
       "nativeOnThisBuild": false,
-      "phaseApproval": false
+      "phaseApproval": false,
+      "finishedAt": "2026-10-09T23:11:13.148935+00:00",
+      "handoff": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6090818808"
     },
     "nextRun": {
       "id": "HEX-03-I01b-marker",
@@ -619,7 +621,7 @@
           "sourceList": {
             "atlasPlanAndSeed": "f1aec1519867ae71d4fbf3bbe7597fcf2afa0b2b",
             "locationRepositoryCore": "adebea3d1358c13d6843da10e29a424dd79ca71e",
-            "cityPlanAndCore": "2bd2da5 (pending exact contribution handoff)",
+            "cityPlanAndCore": "9f0e3307cc0178a1f490bbb6e90dc54e3caadeae (historical plan evidence; actual fixture handoff pending, not consumed)",
             "gateCatalog": "cc93c31870f461527b2f8953fe88e433dada7cd1"
           },
           "gateProtocol": {
@@ -628,16 +630,19 @@
             "state": "not_passed_inputs_and_visible_product_work_pending",
             "hexNextRow": "Shared same-canvas Hex→Location marker/Key/common Undo/Redo/Save/fresh process",
             "nativeQa": "Atlas-QA accepted separate exact-candidate fresh-host verification",
-            "independentCodeReviewer": "pending explicit acceptance; no self-release"
+            "independentCodeReviewer": "Cloud-Architecture requested for integrated Gate code review after real source handoff; explicit acceptance pending, no self-release"
           },
           "ownership": {
             "campaignLifecycleContext": "Campaign/Data confirmed domain owner; actual input/implementation handoff pending",
             "cityPayloadSnapshotHistory": "City confirmed domain owner; exact assigned component handoff pending",
             "dungeonPayloadRoomKeyHistory": "Dungeon confirmed domain owner; exact assigned component handoff pending",
-            "sharedSpatialHistoryTransaction": "implementation owner/port confirmation pending",
-            "p02SaveReopen": "general hostadapter implementation owner confirmation pending; AtlasRepository existing opt-in core is only component evidence",
-            "p04CompleteImport": "Campaign/Data domain contract/remap owner confirmed; actual hostadapter implementation owner confirmation pending"
-          }
+            "sharedSpatialHistoryTransaction": "Hex implementation owner for shared spatial orchestration; real Dungeon/City snapshot/command adapters remain their own domains and are not yet integrated",
+            "p02SaveReopen": "Hex implementation owner for E2E01 minimal Obsidian-Vault spatial Save/Reopen adapter only; full P02 prototype/OS decision remains unclaimed and unproven",
+            "p04CompleteImport": "Hex implementation owner for E2E01 one real CompleteImport Vault adapter; Campaign/Data owns domain import/remap closure. Actual domain input pending; full P04 portability/recovery remains unclaimed and unproven"
+          },
+          "handoff": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6090818808",
+          "initialPinnedCandidate": "8670cbf480865d7d9a4f4a64cfe87c3b33d7fbcc",
+          "fixtureManifestSha256": "5431128663236f1c07b06049f647fbc4c2f8495e9380cb25ac9dd19b6e8099df"
         }
       }
     },
@@ -1741,7 +1746,7 @@
       "platformIssue": 11,
       "checkpointIsAuthoritative": true
     },
-    "updatedAt": "2026-10-09T23:06:02.130018+00:00"
+    "updatedAt": "2026-10-09T23:11:13.148935+00:00"
   },
   "phase": "Phase 6: zweiter Nachbesserungslauf teilweise umgesetzt; fünf Restpositionen und unabhängiger Review offen",
   "goal": "Dungeon-Pfad bis zur vollständigen beauftragten Dungeondraft-Verhaltensgleichheit verfolgen: Bedienung und Funktion angleichen, Grafik ungefähr gleichwertig. Zuerst ROADMAP-PARITY.md mit Building und Object Tool abschließen, danach übrige Dungeon-Werkzeuge. Jede Fachphase getrennt planen, umsetzen und unabhängig reviewen; Lücken mit eigenen Nachbesserungs- und Reviewläufen schließen; danach eigene Aufräumphase mit Plan, Umsetzung und Review.",
