@@ -5159,17 +5159,17 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I48a-CLEAN-R48",
+      "id": "CITY-E2E-SEED-CLEAN-R",
       "kind": "cleanup_review",
-      "startedAt": "2026-10-09T21:16:51.071531+00:00",
-      "focus": "COK-Vorlagen Originalfolge R",
+      "startedAt": "2026-10-09T23:17:20.379107+00:00",
+      "focus": "Review archived resource hashes, absence of own temp files and byte/scope/root boundaries",
       "state": "completed",
-      "result": "Rawhashes/Quelle/finale Bytegleichheit/Templateumfang/5 Prozessende geprüft,24CTY/65CO offen. I48b eigener nächster Prozesslauf nach erneuter Slotabsprache; R48 folgt danach."
+      "result": "PASS no mandatory cleanup finding; all fixture/test bytes unchanged vs6276312; seed cycle complete; ready exact handoff, integrated code/host gates remain open"
     },
     "nextRun": {
-      "id": "CITY-00-I48b",
-      "kind": "reference_implementation",
-      "focus": "I48b frischer Originalprozess mit eigenen finalen Map-/Templatekopien nach neuer GUI-Slotabsprache"
+      "id": "CITY-E2E-SEED-HANDOFF",
+      "kind": "steward_handoff",
+      "focus": "Hand off final exact City component SHA to Hex PR13 for independently reviewed integration; next own product work only concrete contract row"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
@@ -5219,7 +5219,25 @@
       },
       "nextSharedMilestone": "HEX-03 → HEX-04 → HEX-05 → CITY-01–04; team handshake resolved, concrete integration contracts still pending",
       "workIssue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/7",
-      "platformIssue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11"
+      "platformIssue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11",
+      "endToEndPlan": {
+        "issue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12",
+        "plan": "ROADMAP-CITIES-E2E-INTEGRATION-PLAN.md",
+        "state": "new_campaign_boundary_repaired_narrow_owner_review_pending",
+        "referenceResume": "CITY-00-I48b after common plan gate and new GUI slot",
+        "independentReview": {
+          "reviewer": "Hex",
+          "candidate": "1de3ceead95b9a126419b79f1201fe95d9b22c7e",
+          "result": "PASS in bounded plan scope",
+          "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6089692756",
+          "receipt": "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/city-e2e-peer-r02.json",
+          "closedFindings": [
+            "CITY-E2E-R01-01",
+            "CITY-E2E-R01-02"
+          ],
+          "limits": "No product/API/native/fixture/team ratification; no self-integration"
+        }
+      }
     }
   },
   "testFixturePortability": {
