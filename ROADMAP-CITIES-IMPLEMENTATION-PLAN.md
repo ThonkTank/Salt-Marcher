@@ -1073,3 +1073,5 @@ CITY-HEX03-OWNER-R01 Start 2026-10-09T19:42:25.334736+00:00; Exakter cb869951-HE
 CITY-HEX03-OWNER-CLEAN-P01 Start 2026-10-09T19:42:29.373434+00:00; Aufräumplan: exakten Peerreviewbeleg verlinken, fachliche Planpass-Grenze von Produkt-/Vertragsabnahme trennen.
 
 CITY-HEX03-OWNER-CLEAN-I01 Start 2026-10-09T19:42:32.185182+00:00; Quellengebundenen Peerreview im Cityvorschlag verlinkt; noch fehlende konkrete Transform-/Router-/Citypersistenz-Implementierung offen gehalten.
+
+CITY-HEX03-OWNER-CLEAN-C01 Start 2026-10-09T19:42:35.161597+00:00; Peerreviewlink/Quellpin/JSON/Fremdwurzeln geprüft. COK I47-Originalprobe bleibt nächster Umsetzungslauf nach GUI-Koordination.
