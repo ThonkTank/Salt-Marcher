@@ -4918,17 +4918,17 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-E2E-P01-CLEAN-R",
-      "kind": "cleanup_review",
-      "startedAt": "2026-10-09T21:24:02.795641+00:00",
-      "focus": "Plan-Scope und Fremdschutz",
+      "id": "CITY-E2E-N01",
+      "kind": "plan_refinement",
+      "startedAt": "2026-10-09T21:34:08.908369+00:00",
+      "focus": "Zwei Pflichtbefunde aus unabhängigem Hex-Review",
       "state": "completed",
-      "result": "JSON/Verweise/IDs/Diff geprüft; acceptance bytegleich, keine GUI oder Produktmutation. Kandidat extern zu reviewen; gemeinsame Ratifikation offen."
+      "result": "Vorläufige versionierte Gatezuordnung, Reise/Clock und Recoveryquerschnitt erhalten; harte E2E01-Eingänge in Tabelle/Reihenfolge ergänzt."
     },
     "nextRun": {
-      "id": "CITY-E2E-R01",
-      "kind": "independent_plan_review",
-      "focus": "Konkrete Peer-/Architekturantwort in #12 prüfen; Kandidat nicht selbst integrieren. I48b erst nach gemeinsamem Plan-Gate und neuer Slotantwort."
+      "id": "CITY-E2E-N01-CLEAN-P",
+      "kind": "cleanup_planning",
+      "focus": "Gatezuordnung, Eingänge und Fremdschutz prüfen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
@@ -4982,7 +4982,7 @@
       "endToEndPlan": {
         "issue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12",
         "plan": "ROADMAP-CITIES-E2E-INTEGRATION-PLAN.md",
-        "state": "city_scope_proposal_team_review_ratification_pending",
+        "state": "city_plan_r01_changes_repaired_independent_re_review_pending",
         "referenceResume": "CITY-00-I48b after common plan gate and new GUI slot"
       }
     }
