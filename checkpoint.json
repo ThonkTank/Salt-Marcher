@@ -4607,17 +4607,17 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I45-R46-CLEAN-I45",
-      "kind": "cleanup_implementation",
-      "startedAt": "2026-10-09T19:24:21.769458+00:00",
-      "focus": "R-I: Referenzvollaufnahmen und Funktionsgrenzen",
-      "state": "completed",
-      "result": "Zähl-/Erhaltungsgrenzen lesbar präzisiert; keine Runtime- oder Rohdatenänderung."
-    },
-    "nextRun": {
       "id": "CITY-00-I45-R46-CLEAN-R45",
       "kind": "cleanup_review",
-      "focus": "Vollaufnahmen und Scopegrenzen prüfen"
+      "startedAt": "2026-10-09T19:24:24.773063+00:00",
+      "focus": "R-R: Referenzvollaufnahmen und Funktionsgrenzen",
+      "state": "completed",
+      "result": "Aufräumreview bestanden: neue/alte Hashes, Scopegrenzen, Links und offene Stadtanforderungen erhalten."
+    },
+    "nextRun": {
+      "id": "CITY-01-INTEGRATION-P01",
+      "kind": "integration_plan",
+      "focus": "Konkreten Stadtintegrationsvorschlag auf existierenden Atlasdateien erstellen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
