@@ -62,38 +62,29 @@
   "hexAtlasExecution": {
     "scope": "HEX-00 bis HEX-28 und sämtliche eingeordneten CITY-00 bis CITY-09 vollständig",
     "phase": "HEX-00",
-    "state": "bounded_dialog_repair_recorded_review_pending",
+    "state": "targeted_update_activation_repair_checked_review_pending",
     "plan": "ROADMAP-HEX-00-PLAN.md",
     "currentRun": {
-      "id": "HEX-00-N-I04",
-      "kind": "repair_implementation",
-      "startedAt": "2026-10-09T05:16:37.183517+02:00",
-      "baseCommit": "1e9fd99dec90bd5a529e9f1b4e00ede101cc404d",
-      "state": "completed_checked",
-      "focus": "R01-05: inspect/news/update mit begrenzten Aufrufer-/Aktivierungsproben am unveränderten Original prüfen. Keine Options-/Aufräum-/Reviewfreigabe.",
-      "evidence": [
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/manifest.json",
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/mapping-preservation.json",
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/catalog-validation.json",
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/complete-gate-validation.json",
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/bounded-callsite-hints.json",
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/update-fixture.json",
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/session.json",
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original-update/session.json",
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/local-final-checks.json",
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/published-final-checks.json",
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/final-integration-preservation.json",
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/final-catalog-validation.json",
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/final-complete-gate-validation.json"
-      ],
-      "result": "658 UI-Einträge mit gültiger aktueller Belegzuordnung; 95/96 Rollen eingeordnet. News/Community Links in zwei Originalkontexten direkt bedient; Inspect debug-guarded eingeordnet, eigener Review ausstehend. Update-Status aus fingiertem privatem Cache sichtbar, zwei Klickversuche ohne Dialog; bleibt pending. 19 echte Frames, beide Originalprozesse normal beendet. Eingehende Dungeon-Wear-/Resize-Arbeit integriert; Basisprüfung lokal und auf veröffentlichtem Quellbaum wiederholt.",
-      "endedAt": "2026-10-09T05:38:04.098119+02:00",
-      "publication": "Geprüfter Lauf auf active/installed-phase1 veröffentlicht; exakter Remote-Beleg im QA-manifest.json. Eigener Fachreview bleibt ausstehend."
-    },
-    "nextRun": {
       "id": "HEX-00-N-I05",
       "kind": "repair_implementation",
-      "focus": "Einzige verbliebene Paketrolle update_dialog: NI04-Aufruf-/Guardbefunde lesen, dann geladene-Karte-/sichtbarer-Dialog-Ausschnitt-Hypothese gezielt prüfen. Keine erneuten gleichen Startbildschirmklicks. Danach N-I06 für sechs Optionsreste, modale Rohzahlen/HTML und frühe Inventarfragen.",
+      "startedAt": "2026-10-09T05:41:54.265012+02:00",
+      "baseCommit": "82819436e6249037de64346cf72e1be6fc06f660",
+      "state": "completed_checked",
+      "focus": "R01-05 verbliebener Update-Aufruf: geladene Karte und neue Log-/Konfigurationsbedingung prüfen. Keine Options-/Review-/Aufräumfreigabe.",
+      "evidence": [
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/manifest.json",
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/mapping-preservation.json",
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/run-preservation.json",
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/catalog-validation.json",
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/complete-gate-validation.json"
+      ],
+      "endedAt": "2026-10-09T06:09:20.645223+02:00",
+      "result": "Update Download im unveränderten Original mit eigenem Minimalprofil direkt erreicht; fünf Controls zugeordnet, alle 96 Paketrollen eingeordnet. 136 frühe UI-Fragen und eigener R02 bleiben offen."
+    },
+    "nextRun": {
+      "id": "HEX-00-N-I06",
+      "kind": "repair_implementation",
+      "focus": "R01-02/03: sechs Optionsreste (0256/0287/0315/0440/0458/0468), modale Rohzahlen/HTML und 136 frühe UI-Inventarfragen gezielt anhand vorhandener Belege schließen; nur tatsächlich fehlende Kontrollen nachmessen. Danach eigener R02, keine vollständige Referenzfreigabe aus Rollenklassifikation.",
       "gate": "Alle sechs R01-Befunde bleiben bis eigenem R02 offen; getrenntes Aufräumplan/Umsetzung/Review vor HEX-01."
     },
     "review": {
@@ -121,11 +112,11 @@
       "HEX00-R01-02: 17 modale Controls zugeordnet; Rohzahlen/HTML-Validierung und unabhängiger Review bleiben offen.",
       "HEX00-R01-03: 33 Optionsfälle erfasst; 27 vollständig im beobachteten Kontext, sechs konkrete frühe Restpflichten (0256/0287/0315/0440/0458/0468).",
       "HEX00-R01-04: 113 historische Quellen ausdrücklich durch aktuelle Belege abgelöst; Herkunftsprüfung bestanden, inhaltliche Passung im eigenen R02 prüfen",
-      "HEX00-R01-05: 95/96 Rollen zugeordnet; News direkt erreicht, Inspect debug-guarded eingeordnet; einzig Update-Aktivierung offen, eigener R02 für alle Rollen ausstehend",
+      "HEX00-R01-05: Alle 96 Rollen eingeordnet; Update Download direkt erreicht, frühere Negativproben erhalten; unabhängiger Rollenreview in R02 ausstehend",
       "HEX00-R01-06: Gespeicherte Gruppenindizes folgen neuen UI-Zuordnungen nicht",
       "Eigenständiges Aufräumen nach Fachfreigabe, einschließlich RFB-Beleg-/Eingabe-Preflight C01.",
       "CITY-00 bleibt eigene frühe Ergebnisreferenzphase; vollständige Wonderdraft-Wirkungsvarianten verbleiben in ihren Fachphasen.",
-      "137 ausdrückliche frühe UI-Inventarfragen nach N-I04 noch offen (136 bisherige plus Update-Dialog); spätere Wirkung ersetzt keine unbekannte Oberfläche/Validierung. Vorhandene passende Belege weiter gezielt zuordnen.",
+      "136 ausdrückliche frühe UI-Inventarfragen nach N-I05 noch offen; Update-Aktivierung direkt belegt. Spätere Wirkungsfragen ersetzen keine unbekannte Oberfläche/Validierung.",
       "R01-01/06 umgesetzt, eigener R02 noch offen; 113 Altquellenfehler jetzt getrennt als historical_unverified_replaced; eigene R02-Passung weiterhin offen.",
       "Zwei fremde Teständerungen/Installationsnotiz unverändert und unveröffentlicht; veröffentlichbarer Testbaum hat drei fehlende externe Fixture-Fälle."
     ],
@@ -139,7 +130,7 @@
       "build": "passed",
       "productBuildSha256": "495efaf9c9eabb8a55ba1ae0e6d8c88e79d1d38b00b1b688499a4318b3b4a75e",
       "integratedCommit": "924265eb8f4ac16e075a73d5beacef285d572cdf",
-      "host": "Zwei frühere Hex-Kern-Hostnachweise gelten für Build b3211281. NI04-Integration erzeugt Build 495efaf9; Typprüfung, lokale/veröffentlichte Tests und Build erneut geprüft. Keine neue Hex-Hostabnahme, Großkarte, physische Eingabe oder Installation.",
+      "host": "Produktbuild 495efaf9 unverändert; NI05 nur Referenzdaten/Dokumentation. Lokale Basis erneut geprüft. Zwei ältere Hex-Kern-Hostnachweise gelten nur für Build b3211281; keine neue Hex-Hostabnahme, Großkarte, physische Eingabe oder Installation.",
       "testProvenance": "182 lokale Tests bestanden; fremde Testpatches erhalten und unveröffentlicht. Veröffentlichter Quellbaum: 185 Tests, 182 bestanden, dieselben drei fehlenden externen Fixture-Fälle.",
       "cleanTreeTest": {
         "state": "three_known_fixture_failures",
@@ -148,21 +139,21 @@
         "failed": 3,
         "source": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/published-final-checks.json"
       },
-      "catalog": "658 UI-Einträge/83 Fälle mit gültiger aktueller Native-Provenienz. Keine aktiven Herkunfts-/Strukturfehler; 113 historische Quellen weiter ungeprüft und ausdrücklich abgelöst. 95/96 Rollen eingeordnet; Update pending. 137 frühe UI-Fragen und eigener Review bleiben offen.",
+      "catalog": "663 UI-Einträge/83 Fälle mit gültiger aktueller Native-Provenienz; 96/96 Rollen begründet eingeordnet. Keine aktiven Herkunfts-/Strukturfehler; 113 historische Quellen weiterhin ungeprüft und ausdrücklich abgelöst. 136 frühe UI-Fragen und eigener R02 offen.",
       "physicalInput": "not_run",
       "largeMap": "not_run",
       "installation": "unchanged",
-      "testedProductCommit": "924265eb8f4ac16e075a73d5beacef285d572cdf",
+      "testedProductCommit": "82819436e6249037de64346cf72e1be6fc06f660",
       "incomingReviewIntegration": "ada9ae9/1535749/216bdfb integriert. Neue Dungeon-Host-/Großkarten-/Vault-Prüfer und Nachweise; src/, veröffentlichte tests/, Buildskript und Abhängigkeiten unverändert. Produktbuild b3211281 bleibt identisch; bestehende zwei Kern-Hostnachweise werden weitergeführt. 122a1a6/c8ee4d3 anschließend integriert: ausschließlich Dungeon-Review/Plan/Abnahme, geprüfte Quellen unverändert. 4c22eeb/5a9b320/6704cf7 im Reviewlauf integriert: Phase-7-spezifischer Hostdialog und Dokumentation, Produkt und Wonderdraft-Helfer unverändert. adbc951/4c5808e/df1c6f3/b6edbbe/3cf3210 im N-I01 integriert: Phase-7-Aufräumen/Hosthilfen und Dokumentation; Produkt, Tests und Wonderdraft-Helfer unverändert. N-I01-Prüfquellen identisch; Basis-/Kern-Hostnachweise weitergeführt. 7db890b anschließend integriert: ausschließlich übriger Dungeon-Werkzeugplan, geprüfte Quellen unverändert. N-I02: 0f4be9c/d4ecda9/7194ec8/269deb3 integriert: Dungeon-Zoomschritt, New-Map-Größenvorlagen/Schalter und Hostwerkzeuge. Produktquellen verändert; Basisprüfungen lokal und auf veröffentlichtem Quellbaum erneut ausgeführt, identische neue Buildhashes. Kein neuer Hex-Hostlauf/keine Installation. 6ffccde unmittelbar vor Push integriert (Merge e8dbce87): neuer Dungeon-Kartenassistent mit neuen Hosthilfen. Basis lokal erneut 174/174, veröffentlichter Quellbaum erneut 174/177 mit denselben drei fehlenden Fixtures; Build 970dedec. Eigene Wonderdraft-Zuordnungen und fremde Dungeon-Daten unverändert erhalten. N-I03: 6fdd90f/1ac2f62/59e6cce integriert (Merge e59c584): prozesslokale Dungeon-Größenvorlagen und direkte Building-Wear-Originalprobe. Produkt verändert; lokal erneut 181/181, veröffentlichter Quellbaum 181/184 mit denselben drei externen Fixture-Lücken; beide Builds identisch 62b74463. Wonderdraft-Katalog/Prüfer unverändert integriert, neu ergänzter Referenzbesitzer-Negativtest bestanden. Kein neuer Hex-Hostlauf/keine Installation. N-I04: c25c5ad/26670d4 und be13572/9b30e99 integriert (Merge 637d6c16/924265eb): Dungeon-Building-Wear-Modi und an Quellfenster gebundener Resize-Dialog. Produkt/Tests verändert; lokal erneut 182/182, veröffentlichter Quellbaum 182/185 mit denselben drei externen Fixture-Lücken; beide Builds identisch 495efaf9. Fremde Testpatches und Installationsnotiz erhalten; keine neue Hex-Hostabnahme/Installation.",
       "latestOriginalRun": {
-        "manifest": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/manifest.json",
+        "manifest": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/manifest.json",
         "sessions": 2,
-        "newFrames": 19,
+        "newFrames": 23,
         "normalExitCodes": [
           0,
           0
         ],
-        "scope": "Dialogrollen, kein neuer vollständiger Karten-/Wiederöffnungslauf",
+        "scope": "Update-Dialogrolle, unmittelbare Eingabevalidierung und Abbruch; keine bestätigte externe Updatewirkung oder vollständige Karten-/Neuöffnungsfolge",
         "physicalInput": false
       },
       "referenceReview": {
@@ -281,6 +272,42 @@
         "publishedTestsTotal": 185,
         "originalAndPackageFiles": "unchanged",
         "stage": "checked_implementation_review_pending"
+      },
+      "updateActivationRepair": {
+        "run": "HEX-00-N-I05",
+        "stage": "checked_implementation_review_pending",
+        "controlsAdded": [
+          "WD-UI-0659",
+          "WD-UI-0660",
+          "WD-UI-0661",
+          "WD-UI-0662",
+          "WD-UI-0663"
+        ],
+        "nativeFrames": 23,
+        "originalSessions": 2,
+        "normalExitCodes": [
+          0,
+          0
+        ],
+        "mappedRoles": 96,
+        "packageRoles": 96,
+        "pendingRoles": [],
+        "earlyUiQuestions": 136,
+        "validatorTestsPassed": 26,
+        "historicUsagesPreserved": 113,
+        "uiSourceFieldsPreserved": 658,
+        "originalInput": "synthetic_local_rfb",
+        "physicalInput": false,
+        "confirmedUpdate": false,
+        "fixture": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/minimal-update-fixture.json",
+        "evidence": [
+          "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/mapping-preservation.json",
+          "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/run-preservation.json",
+          "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/catalog-validation.json",
+          "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/complete-gate-validation.json"
+        ],
+        "review": "pending HEX-00-R02",
+        "originalAndPackageFiles": "unchanged"
       }
     },
     "repairPlan": "ROADMAP-HEX-00-REPAIR-PLAN.md"

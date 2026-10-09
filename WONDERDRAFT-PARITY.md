@@ -8,7 +8,7 @@ Die [Stadtplan-Roadmap](ROADMAP-CITIES.md) ergänzt Ergebnisvorbilder von Canvas
 
 ## Referenz und Aussagegrenzen
 
-Referenz ist die lokal installierte **Wonderdraft-Version 1.1.8.2** unter `/home/aaron/.local/opt/Wonderdraft/`. Programm- und Paketprüfsummen stehen im Katalog. Die Versionskennung wurde aus den lokalen Paketdaten gelesen. Eine direkte Bedienaufnahme dieser Version steht noch aus.
+Referenz ist die lokal installierte **Wonderdraft-Version 1.1.8.2** unter `/home/aaron/.local/opt/Wonderdraft/`. Programm- und Paketprüfsummen stehen im Katalog. Die Versionskennung ist in den lokalen Paketdaten und direkten Originalaufnahmen belegt. Der aktuelle Umfang und offene Original-/Reviewpflichten stehen im Katalog und Checkpoint; einzelne Bedienaufnahmen ersetzen keine vollständige Inventarfreigabe.
 
 Der erste Katalog enthält **36 Inventargruppen und 79 konkrete Ausgangsproben**. Sämtliche 35 Werkzeug- und 61 UI-Modulpfade aus dem lokalen Programmpaket sind Gruppen zugeordnet. Das belegt vorhandene Paketbestandteile; Erreichbarkeit, genaue UI-Namen, Defaults und Wirkung bleiben bis zur Originalprobe offen. Hilfsmodule können dieselbe Funktion unterstützen, unbenutzt sein oder reine Programmoberfläche betreffen. Diese Unterscheidung wird im Inventarreview belegt.
 

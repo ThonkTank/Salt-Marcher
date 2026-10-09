@@ -973,7 +973,7 @@
   },
   "wonderdraftParity": {
     "schemaVersion": 1,
-    "updated": "2026-10-09T03:00:05.158Z",
+    "updated": "2026-10-09",
     "plan": "WONDERDRAFT-PARITY.md",
     "reference": {
       "product": "Wonderdraft",
@@ -1040,7 +1040,7 @@
       ]
     },
     "inventoryComplete": false,
-    "inventoryStatus": "N-I04: 658 UI-Einträge; News als Community Links direkt geöffnet, Inspect als explizit bewachter Debug-Helfer eingeordnet. 95/96 Paketrollen zugeordnet, Update nach zwei begrenzten Aktivierungsversuchen weiter pending. Sechs Optionsreste, modale Rohzahlen/HTML und eigener R02 bleiben offen.",
+    "inventoryStatus": "N-I05: 663 UI-Einträge, sämtliche 96 Paketrollen begründet eingeordnet; Update Download im unveränderten Original direkt erreicht. Native URL-Aktivierung/Cancel/X/Escape belegt, keine bestätigte Updatewirkung. 136 frühe UI-Fragen, sechs Optionsreste, modale Rohzahlen/HTML und eigener R02 bleiben offen.",
     "legacyInventoryScope": "Das vorhandene Wurzelfeld inventoryComplete und strictParity beschreiben nur die bisherige Dungeondraft-Inventur; daraus folgt keine Wonderdraft-Abnahme.",
     "inventoryGate": {
       "phase": "HEX-00",
@@ -37156,6 +37156,34 @@
             "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original-update/screens/004-update-long-click.json",
             "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original-update/screens/004-update-long-click.png",
             "observation": "Zweiter 500ms-Linksklick öffnet keinen sichtbaren Update-Dialog. Gleiche Hypothese danach beendet."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original/screens/004-map-ready.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original/screens/004-map-ready.png",
+            "observation": "Geladene leere 512px-QA-Karte mit fingiertem Update-Status."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original/screens/005-update-loaded-click.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original/screens/005-update-loaded-click.png",
+            "observation": "500ms-Klick bei geladener Karte öffnet keinen sichtbaren Dialog; eigener Log zeigt erstmals xdg-open-Hilfetext."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original/screens/006-loaded-call-observed.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original/screens/006-loaded-call-observed.png",
+            "observation": "Zweiter Klick im Kartenkontext ohne sichtbaren Dialog. Eigene Prozessbeobachtung erfasst xdg-open ohne nichtleeres Ziel; leere Argumenteinträge nicht erhalten, genaue Argumentanzahl unbelegt."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/002-minimal-update-click.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/002-minimal-update-click.png",
+            "observation": "NI05: Linksklick auf die fingierte Update-Meldung öffnet Update Download im Original 1.1.8.2. Minimalprofil ohne private_url; leeres Eingabefeld mit Beispielhinweis, OK deaktiviert, Cancel und X sichtbar. Keine reale neue Version behauptet."
           }
         ],
         "classification": "user_function",
@@ -37174,10 +37202,508 @@
             "duePhase": "HEX-00",
             "reason": "Unbekannte erreichbare Dialogoberfläche bleibt frühe Pflicht; zwei erfolglose Klicks beweisen keine Nichtexistenz.",
             "probe": "Im eigenen Nachbesserungslauf konkret prüfen, ob der Original-Aufruf eine geladene Karte voraussetzt oder der Dialog außerhalb des sichtbaren Ausschnitts liegt; keine bloße Wiederholung derselben Startbildschirmklicks.",
+            "state": "resolved",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/002-minimal-update-click.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/002-minimal-update-click.png",
+                "observation": "NI05: Linksklick auf die fingierte Update-Meldung öffnet Update Download im Original 1.1.8.2. Minimalprofil ohne private_url; leeres Eingabefeld mit Beispielhinweis, OK deaktiviert, Cancel und X sichtbar. Keine reale neue Version behauptet."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/008-before-cancel.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/008-before-cancel.png",
+                "observation": "Fingierte Root-URL vor Cancel; OK aktiviert."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/009-cancel.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/009-cancel.png",
+                "observation": "Cancel schließt den Dialog zum unveränderten Startbildschirm."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/010-reopen-after-cancel.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/010-reopen-after-cancel.png",
+                "observation": "Nach Cancel erneut geöffnet: dieselbe fingierte URL im Feld erhalten, OK aktiviert. Flüchtige Dialogretention, keine Linkpersistenz behauptet."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/011-close-x.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/011-close-x.png",
+                "observation": "X schließt den erneut geöffneten Dialog zum Startbildschirm."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/012-reopen-after-x.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/012-reopen-after-x.png",
+                "observation": "Nach X erneut geöffnet: dieselbe fingierte URL im Feld erhalten, OK aktiviert."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/013-escape.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/013-escape.png",
+                "observation": "Escape schließt den Dialog zum Startbildschirm. Keine OK-/Enter-Bestätigung oder Updateinstallation."
+              }
+            ],
+            "resolution": "NI05: Tatsächlich erreichbarer Update-Download-Dialog im unveränderten Original mit eigenem Minimalprofil direkt geöffnet. Oberfläche und Abbruch sind gemessen; neue Controls 0659–0663. Frühere negative Kontexte bleiben erhalten. Keine bestätigte externe Updatewirkung."
+          }
+        ],
+        "contextObservations": [
+          {
+            "run": "HEX-00-N-I05",
+            "observed": "Geladene Karte allein öffnet den Dialog im kopierten Profil nicht. Frisches Minimalprofil ohne private_url erreicht Update Download schon am Startbildschirm.",
+            "fixture": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/minimal-update-fixture.json",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/002-minimal-update-click.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/002-minimal-update-click.png",
+                "observation": "NI05: Linksklick auf die fingierte Update-Meldung öffnet Update Download im Original 1.1.8.2. Minimalprofil ohne private_url; leeres Eingabefeld mit Beispielhinweis, OK deaktiviert, Cancel und X sichtbar. Keine reale neue Version behauptet."
+              }
+            ],
+            "limit": "NI04-Ausbleiben und ursprüngliche Kennungsfelder bleiben erhalten. Die genaue Ursache aller früheren Profilzustände ist nicht instrumentiert."
+          }
+        ]
+      },
+      {
+        "id": "WD-UI-0659",
+        "version": "1.1.8.2",
+        "exactUiPath": "Toolbar > update status > Update Download > [download-link explanation]",
+        "context": "NI05: tatsächliches Original 1.1.8.2, Startbildschirm; eigenes Minimalprofil mit fingiertem cached latest_version=\"1.1.9\", frischem last_checked und fehlendem private_url. Kein echter Release-/Downloadnachweis.",
+        "commandOrControl": "[download-link explanation]",
+        "controlType": "display",
+        "default": {
+          "value": "Hinweis zum Humble-Downloadlink und dessen späterer Speicherung",
+          "evidenceScope": "Erstes Öffnen im beschriebenen Minimalprofil; kein universeller produktiver Profildefault."
+        },
+        "rangeOrChoices": null,
+        "validation": "Leeres Feld und zwei gemessene Negativbeispiele deaktivieren OK; drei gemessene Fragmente aktivieren OK, auch das Präfixbeispiel ohne Schema. Dies ist keine vollständige URL-Grammatik.",
+        "gesture": {
+          "observed": "Status-Linksklick öffnet; Eingabefeld per Klick und Control+A ersetzt. Cancel, X und Escape getrennt gemessen.",
+          "operation": "OK/Enter und externe Linköffnung im Minimalprofil nicht ausgelöst."
+        },
+        "previewOrCommit": "OK-Aktivierung folgt sichtbar der Eingabe. Cancel/X/Escape schließen; erneutes Öffnen nach Cancel/X erhält den getippten Wert in derselben Sitzung.",
+        "stateScope": {
+          "observed": "Dialogwert bleibt nach Cancel/X bis zum erneuten Öffnen erhalten.",
+          "persistence": "Private Minimal-Konfiguration enthält nach Abbruch weiterhin keinen private_url. Keine bestätigte Speicherung oder neue Prozessretention gemessen."
+        },
+        "caseIds": [
+          "WD-034.01"
+        ],
+        "phase": "HEX-26",
+        "directEvidence": [
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/002-minimal-update-click.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/002-minimal-update-click.png",
+            "observation": "NI05: Linksklick auf die fingierte Update-Meldung öffnet Update Download im Original 1.1.8.2. Minimalprofil ohne private_url; leeres Eingabefeld mit Beispielhinweis, OK deaktiviert, Cancel und X sichtbar. Keine reale neue Version behauptet."
+          }
+        ],
+        "classification": "user_function",
+        "observationLimits": [],
+        "observationQuestions": []
+      },
+      {
+        "id": "WD-UI-0660",
+        "version": "1.1.8.2",
+        "exactUiPath": "Toolbar > update status > Update Download > download link",
+        "context": "NI05: tatsächliches Original 1.1.8.2, Startbildschirm; eigenes Minimalprofil mit fingiertem cached latest_version=\"1.1.9\", frischem last_checked und fehlendem private_url. Kein echter Release-/Downloadnachweis.",
+        "commandOrControl": "download link",
+        "controlType": "text_input",
+        "default": {
+          "value": "",
+          "evidenceScope": "Erstes Öffnen im beschriebenen Minimalprofil; kein universeller produktiver Profildefault."
+        },
+        "rangeOrChoices": [
+          {
+            "input": "https://example.invalid/hexatlas-qa",
+            "okEnabled": false
+          },
+          {
+            "input": "https://www.humblebundle.com/downloads?key=hexatlas-qa-not-a-real-key",
+            "okEnabled": true
+          },
+          {
+            "input": "https://www.humblebundle.com/?key=hexatlas-qa-not-a-real-key",
+            "okEnabled": true
+          },
+          {
+            "input": "https://www.humblebundle.com/downloads",
+            "okEnabled": false
+          },
+          {
+            "input": "qa humblebundle.com/?key=hexatlas-qa-not-a-real-key",
+            "okEnabled": true
+          }
+        ],
+        "validation": "Leeres Feld und zwei gemessene Negativbeispiele deaktivieren OK; drei gemessene Fragmente aktivieren OK, auch das Präfixbeispiel ohne Schema. Dies ist keine vollständige URL-Grammatik.",
+        "gesture": {
+          "observed": "Status-Linksklick öffnet; Eingabefeld per Klick und Control+A ersetzt. Cancel, X und Escape getrennt gemessen.",
+          "operation": "OK/Enter und externe Linköffnung im Minimalprofil nicht ausgelöst."
+        },
+        "previewOrCommit": "OK-Aktivierung folgt sichtbar der Eingabe. Cancel/X/Escape schließen; erneutes Öffnen nach Cancel/X erhält den getippten Wert in derselben Sitzung.",
+        "stateScope": {
+          "observed": "Dialogwert bleibt nach Cancel/X bis zum erneuten Öffnen erhalten.",
+          "persistence": "Private Minimal-Konfiguration enthält nach Abbruch weiterhin keinen private_url. Keine bestätigte Speicherung oder neue Prozessretention gemessen."
+        },
+        "caseIds": [
+          "WD-034.01"
+        ],
+        "phase": "HEX-26",
+        "directEvidence": [
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/002-minimal-update-click.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/002-minimal-update-click.png",
+            "observation": "NI05: Linksklick auf die fingierte Update-Meldung öffnet Update Download im Original 1.1.8.2. Minimalprofil ohne private_url; leeres Eingabefeld mit Beispielhinweis, OK deaktiviert, Cancel und X sichtbar. Keine reale neue Version behauptet."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/003-invalid-url.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/003-invalid-url.png",
+            "observation": "https://example.invalid/hexatlas-qa: OK deaktiviert."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/004-downloads-form.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/004-downloads-form.png",
+            "observation": "https://www.humblebundle.com/downloads?key=hexatlas-qa-not-a-real-key: OK aktiviert; ausdrücklich fingierter Schlüssel, keine Bestätigung."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/005-root-form.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/005-root-form.png",
+            "observation": "https://www.humblebundle.com/?key=hexatlas-qa-not-a-real-key: OK aktiviert; keine Bestätigung."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/006-missing-key-form.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/006-missing-key-form.png",
+            "observation": "https://www.humblebundle.com/downloads ohne key: OK deaktiviert."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/007-embedded-fragment.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/007-embedded-fragment.png",
+            "observation": "qa humblebundle.com/?key=hexatlas-qa-not-a-real-key: OK aktiviert trotz fehlendem URL-Schema und zusätzlichem Präfix. Nur diese gemessene Eingabe, keine vollständige Parserregel daraus abgeleitet."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/008-before-cancel.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/008-before-cancel.png",
+            "observation": "Fingierte Root-URL vor Cancel; OK aktiviert."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/009-cancel.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/009-cancel.png",
+            "observation": "Cancel schließt den Dialog zum unveränderten Startbildschirm."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/010-reopen-after-cancel.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/010-reopen-after-cancel.png",
+            "observation": "Nach Cancel erneut geöffnet: dieselbe fingierte URL im Feld erhalten, OK aktiviert. Flüchtige Dialogretention, keine Linkpersistenz behauptet."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/011-close-x.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/011-close-x.png",
+            "observation": "X schließt den erneut geöffneten Dialog zum Startbildschirm."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/012-reopen-after-x.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/012-reopen-after-x.png",
+            "observation": "Nach X erneut geöffnet: dieselbe fingierte URL im Feld erhalten, OK aktiviert."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/013-escape.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/013-escape.png",
+            "observation": "Escape schließt den Dialog zum Startbildschirm. Keine OK-/Enter-Bestätigung oder Updateinstallation."
+          }
+        ],
+        "classification": "user_function",
+        "observationLimits": [],
+        "observationQuestions": [],
+        "placeholder": "example: www.humblebundle.com/?key=YourPrivateKey"
+      },
+      {
+        "id": "WD-UI-0661",
+        "version": "1.1.8.2",
+        "exactUiPath": "Toolbar > update status > Update Download > Cancel",
+        "context": "NI05: tatsächliches Original 1.1.8.2, Startbildschirm; eigenes Minimalprofil mit fingiertem cached latest_version=\"1.1.9\", frischem last_checked und fehlendem private_url. Kein echter Release-/Downloadnachweis.",
+        "commandOrControl": "Cancel",
+        "controlType": "command",
+        "default": {
+          "value": "Cancel",
+          "evidenceScope": "Erstes Öffnen im beschriebenen Minimalprofil; kein universeller produktiver Profildefault."
+        },
+        "rangeOrChoices": null,
+        "validation": "Leeres Feld und zwei gemessene Negativbeispiele deaktivieren OK; drei gemessene Fragmente aktivieren OK, auch das Präfixbeispiel ohne Schema. Dies ist keine vollständige URL-Grammatik.",
+        "gesture": {
+          "observed": "Status-Linksklick öffnet; Eingabefeld per Klick und Control+A ersetzt. Cancel, X und Escape getrennt gemessen.",
+          "operation": "OK/Enter und externe Linköffnung im Minimalprofil nicht ausgelöst."
+        },
+        "previewOrCommit": "OK-Aktivierung folgt sichtbar der Eingabe. Cancel/X/Escape schließen; erneutes Öffnen nach Cancel/X erhält den getippten Wert in derselben Sitzung.",
+        "stateScope": {
+          "observed": "Dialogwert bleibt nach Cancel/X bis zum erneuten Öffnen erhalten.",
+          "persistence": "Private Minimal-Konfiguration enthält nach Abbruch weiterhin keinen private_url. Keine bestätigte Speicherung oder neue Prozessretention gemessen."
+        },
+        "caseIds": [
+          "WD-034.01"
+        ],
+        "phase": "HEX-26",
+        "directEvidence": [
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/002-minimal-update-click.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/002-minimal-update-click.png",
+            "observation": "NI05: Linksklick auf die fingierte Update-Meldung öffnet Update Download im Original 1.1.8.2. Minimalprofil ohne private_url; leeres Eingabefeld mit Beispielhinweis, OK deaktiviert, Cancel und X sichtbar. Keine reale neue Version behauptet."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/008-before-cancel.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/008-before-cancel.png",
+            "observation": "Fingierte Root-URL vor Cancel; OK aktiviert."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/009-cancel.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/009-cancel.png",
+            "observation": "Cancel schließt den Dialog zum unveränderten Startbildschirm."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/010-reopen-after-cancel.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/010-reopen-after-cancel.png",
+            "observation": "Nach Cancel erneut geöffnet: dieselbe fingierte URL im Feld erhalten, OK aktiviert. Flüchtige Dialogretention, keine Linkpersistenz behauptet."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/011-close-x.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/011-close-x.png",
+            "observation": "X schließt den erneut geöffneten Dialog zum Startbildschirm."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/012-reopen-after-x.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/012-reopen-after-x.png",
+            "observation": "Nach X erneut geöffnet: dieselbe fingierte URL im Feld erhalten, OK aktiviert."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/013-escape.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/013-escape.png",
+            "observation": "Escape schließt den Dialog zum Startbildschirm. Keine OK-/Enter-Bestätigung oder Updateinstallation."
+          }
+        ],
+        "classification": "user_function",
+        "observationLimits": [],
+        "observationQuestions": []
+      },
+      {
+        "id": "WD-UI-0662",
+        "version": "1.1.8.2",
+        "exactUiPath": "Toolbar > update status > Update Download > OK",
+        "context": "NI05: tatsächliches Original 1.1.8.2, Startbildschirm; eigenes Minimalprofil mit fingiertem cached latest_version=\"1.1.9\", frischem last_checked und fehlendem private_url. Kein echter Release-/Downloadnachweis.",
+        "commandOrControl": "OK",
+        "controlType": "command",
+        "default": {
+          "value": "disabled",
+          "evidenceScope": "Erstes Öffnen im beschriebenen Minimalprofil; kein universeller produktiver Profildefault."
+        },
+        "rangeOrChoices": null,
+        "validation": "Leeres Feld und zwei gemessene Negativbeispiele deaktivieren OK; drei gemessene Fragmente aktivieren OK, auch das Präfixbeispiel ohne Schema. Dies ist keine vollständige URL-Grammatik.",
+        "gesture": {
+          "observed": "Status-Linksklick öffnet; Eingabefeld per Klick und Control+A ersetzt. Cancel, X und Escape getrennt gemessen.",
+          "operation": "OK/Enter und externe Linköffnung im Minimalprofil nicht ausgelöst."
+        },
+        "previewOrCommit": "OK-Aktivierung folgt sichtbar der Eingabe. Cancel/X/Escape schließen; erneutes Öffnen nach Cancel/X erhält den getippten Wert in derselben Sitzung.",
+        "stateScope": {
+          "observed": "Dialogwert bleibt nach Cancel/X bis zum erneuten Öffnen erhalten.",
+          "persistence": "Private Minimal-Konfiguration enthält nach Abbruch weiterhin keinen private_url. Keine bestätigte Speicherung oder neue Prozessretention gemessen."
+        },
+        "caseIds": [
+          "WD-034.01"
+        ],
+        "phase": "HEX-26",
+        "directEvidence": [
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/002-minimal-update-click.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/002-minimal-update-click.png",
+            "observation": "NI05: Linksklick auf die fingierte Update-Meldung öffnet Update Download im Original 1.1.8.2. Minimalprofil ohne private_url; leeres Eingabefeld mit Beispielhinweis, OK deaktiviert, Cancel und X sichtbar. Keine reale neue Version behauptet."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/003-invalid-url.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/003-invalid-url.png",
+            "observation": "https://example.invalid/hexatlas-qa: OK deaktiviert."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/004-downloads-form.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/004-downloads-form.png",
+            "observation": "https://www.humblebundle.com/downloads?key=hexatlas-qa-not-a-real-key: OK aktiviert; ausdrücklich fingierter Schlüssel, keine Bestätigung."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/005-root-form.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/005-root-form.png",
+            "observation": "https://www.humblebundle.com/?key=hexatlas-qa-not-a-real-key: OK aktiviert; keine Bestätigung."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/006-missing-key-form.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/006-missing-key-form.png",
+            "observation": "https://www.humblebundle.com/downloads ohne key: OK deaktiviert."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/007-embedded-fragment.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/007-embedded-fragment.png",
+            "observation": "qa humblebundle.com/?key=hexatlas-qa-not-a-real-key: OK aktiviert trotz fehlendem URL-Schema und zusätzlichem Präfix. Nur diese gemessene Eingabe, keine vollständige Parserregel daraus abgeleitet."
+          }
+        ],
+        "classification": "user_function",
+        "observationLimits": [
+          "OK-Bestätigung, gespeicherter Downloadlink und externer Browserübergang sind nicht gemessen; NI05 erfasst Aktivierung und Abbruch mit fingierten Eingaben."
+        ],
+        "observationQuestions": [
+          {
+            "id": "WD-UI-0662-Q05-01",
+            "sourceIndex": 0,
+            "sourceText": "OK-Bestätigung, gespeicherter Downloadlink und externer Browserübergang sind nicht gemessen; NI05 erfasst Aktivierung und Abbruch mit fingierten Eingaben.",
+            "kind": "original_effect",
+            "caseIds": [
+              "WD-034.01"
+            ],
+            "duePhase": "HEX-26",
+            "reason": "Dialogoberfläche und unmittelbare Eingabeaktivierung sind direkt belegt; bestätigte Service-/Linkwirkung bleibt bei der zugehörigen Einstellungsphase.",
+            "probe": "In eigener späterer Serviceprobe bestätigten Linkpfad, tatsächlich gespeicherte Konfiguration und Browserübergang messen; keine Installation aus Sichtbarkeit oder fingiertem Cache ableiten. Atlas-Anpassung des Programmservices ausdrücklich festhalten.",
             "state": "open",
             "evidence": []
           }
         ]
+      },
+      {
+        "id": "WD-UI-0663",
+        "version": "1.1.8.2",
+        "exactUiPath": "Toolbar > update status > Update Download > close button",
+        "context": "NI05: tatsächliches Original 1.1.8.2, Startbildschirm; eigenes Minimalprofil mit fingiertem cached latest_version=\"1.1.9\", frischem last_checked und fehlendem private_url. Kein echter Release-/Downloadnachweis.",
+        "commandOrControl": "close button",
+        "controlType": "command",
+        "default": {
+          "value": "X",
+          "evidenceScope": "Erstes Öffnen im beschriebenen Minimalprofil; kein universeller produktiver Profildefault."
+        },
+        "rangeOrChoices": null,
+        "validation": "Leeres Feld und zwei gemessene Negativbeispiele deaktivieren OK; drei gemessene Fragmente aktivieren OK, auch das Präfixbeispiel ohne Schema. Dies ist keine vollständige URL-Grammatik.",
+        "gesture": {
+          "observed": "Status-Linksklick öffnet; Eingabefeld per Klick und Control+A ersetzt. Cancel, X und Escape getrennt gemessen.",
+          "operation": "OK/Enter und externe Linköffnung im Minimalprofil nicht ausgelöst."
+        },
+        "previewOrCommit": "OK-Aktivierung folgt sichtbar der Eingabe. Cancel/X/Escape schließen; erneutes Öffnen nach Cancel/X erhält den getippten Wert in derselben Sitzung.",
+        "stateScope": {
+          "observed": "Dialogwert bleibt nach Cancel/X bis zum erneuten Öffnen erhalten.",
+          "persistence": "Private Minimal-Konfiguration enthält nach Abbruch weiterhin keinen private_url. Keine bestätigte Speicherung oder neue Prozessretention gemessen."
+        },
+        "caseIds": [
+          "WD-034.01"
+        ],
+        "phase": "HEX-26",
+        "directEvidence": [
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/002-minimal-update-click.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/002-minimal-update-click.png",
+            "observation": "NI05: Linksklick auf die fingierte Update-Meldung öffnet Update Download im Original 1.1.8.2. Minimalprofil ohne private_url; leeres Eingabefeld mit Beispielhinweis, OK deaktiviert, Cancel und X sichtbar. Keine reale neue Version behauptet."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/008-before-cancel.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/008-before-cancel.png",
+            "observation": "Fingierte Root-URL vor Cancel; OK aktiviert."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/009-cancel.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/009-cancel.png",
+            "observation": "Cancel schließt den Dialog zum unveränderten Startbildschirm."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/010-reopen-after-cancel.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/010-reopen-after-cancel.png",
+            "observation": "Nach Cancel erneut geöffnet: dieselbe fingierte URL im Feld erhalten, OK aktiviert. Flüchtige Dialogretention, keine Linkpersistenz behauptet."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/011-close-x.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/011-close-x.png",
+            "observation": "X schließt den erneut geöffneten Dialog zum Startbildschirm."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/012-reopen-after-x.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/012-reopen-after-x.png",
+            "observation": "Nach X erneut geöffnet: dieselbe fingierte URL im Feld erhalten, OK aktiviert."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/013-escape.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/013-escape.png",
+            "observation": "Escape schließt den Dialog zum Startbildschirm. Keine OK-/Enter-Bestätigung oder Updateinstallation."
+          }
+        ],
+        "classification": "user_function",
+        "observationLimits": [],
+        "observationQuestions": []
       }
     ],
     "uiInventoryFields": [
@@ -39270,7 +39796,12 @@
           "WD-UI-0654",
           "WD-UI-0655",
           "WD-UI-0656",
-          "WD-UI-0657"
+          "WD-UI-0657",
+          "WD-UI-0659",
+          "WD-UI-0660",
+          "WD-UI-0661",
+          "WD-UI-0662",
+          "WD-UI-0663"
         ]
       },
       {
@@ -39642,6 +40173,71 @@
                 "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/011-community-close-x.json",
                 "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original/screens/011-community-close-x.png",
                 "observation": "X schließt Community Links zur geladenen Karte."
+              }
+            ]
+          },
+          {
+            "uiId": "WD-UI-0659",
+            "reason": "Update-Paketrolle direkt als Update Download erreicht; frühe Rollenklärung WD-036.01, bestätigte Service-/Vorgabenwirkung WD-034.01/HEX-26.",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/002-minimal-update-click.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/002-minimal-update-click.png",
+                "observation": "NI05: Linksklick auf die fingierte Update-Meldung öffnet Update Download im Original 1.1.8.2. Minimalprofil ohne private_url; leeres Eingabefeld mit Beispielhinweis, OK deaktiviert, Cancel und X sichtbar. Keine reale neue Version behauptet."
+              }
+            ]
+          },
+          {
+            "uiId": "WD-UI-0660",
+            "reason": "Update-Paketrolle direkt als Update Download erreicht; frühe Rollenklärung WD-036.01, bestätigte Service-/Vorgabenwirkung WD-034.01/HEX-26.",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/002-minimal-update-click.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/002-minimal-update-click.png",
+                "observation": "NI05: Linksklick auf die fingierte Update-Meldung öffnet Update Download im Original 1.1.8.2. Minimalprofil ohne private_url; leeres Eingabefeld mit Beispielhinweis, OK deaktiviert, Cancel und X sichtbar. Keine reale neue Version behauptet."
+              }
+            ]
+          },
+          {
+            "uiId": "WD-UI-0661",
+            "reason": "Update-Paketrolle direkt als Update Download erreicht; frühe Rollenklärung WD-036.01, bestätigte Service-/Vorgabenwirkung WD-034.01/HEX-26.",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/002-minimal-update-click.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/002-minimal-update-click.png",
+                "observation": "NI05: Linksklick auf die fingierte Update-Meldung öffnet Update Download im Original 1.1.8.2. Minimalprofil ohne private_url; leeres Eingabefeld mit Beispielhinweis, OK deaktiviert, Cancel und X sichtbar. Keine reale neue Version behauptet."
+              }
+            ]
+          },
+          {
+            "uiId": "WD-UI-0662",
+            "reason": "Update-Paketrolle direkt als Update Download erreicht; frühe Rollenklärung WD-036.01, bestätigte Service-/Vorgabenwirkung WD-034.01/HEX-26.",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/002-minimal-update-click.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/002-minimal-update-click.png",
+                "observation": "NI05: Linksklick auf die fingierte Update-Meldung öffnet Update Download im Original 1.1.8.2. Minimalprofil ohne private_url; leeres Eingabefeld mit Beispielhinweis, OK deaktiviert, Cancel und X sichtbar. Keine reale neue Version behauptet."
+              }
+            ]
+          },
+          {
+            "uiId": "WD-UI-0663",
+            "reason": "Update-Paketrolle direkt als Update Download erreicht; frühe Rollenklärung WD-036.01, bestätigte Service-/Vorgabenwirkung WD-034.01/HEX-26.",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/002-minimal-update-click.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/002-minimal-update-click.png",
+                "observation": "NI05: Linksklick auf die fingierte Update-Meldung öffnet Update Download im Original 1.1.8.2. Minimalprofil ohne private_url; leeres Eingabefeld mit Beispielhinweis, OK deaktiviert, Cancel und X sichtbar. Keine reale neue Version behauptet."
               }
             ]
           }
@@ -51916,7 +52512,107 @@
           "savedEffect": null,
           "reopen": null,
           "evidence": [],
-          "gap": "Direkte Bedienfolge und Wirkung in der lokalen Originalversion noch nicht gemessen."
+          "gap": "Direkte Bedienfolge und Wirkung in der lokalen Originalversion noch nicht gemessen.",
+          "surfaceObservations": [
+            {
+              "run": "HEX-00-N-I05",
+              "scope": "Update-Dialogrolle und unmittelbare Eingabe-/Abbruchoberfläche; keine vollständige Einstellungs-/Serviceabnahme.",
+              "uiIds": [
+                "WD-UI-0659",
+                "WD-UI-0660",
+                "WD-UI-0661",
+                "WD-UI-0662",
+                "WD-UI-0663"
+              ],
+              "evidence": [
+                {
+                  "role": "actual_original_runtime",
+                  "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/session.json",
+                  "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/002-minimal-update-click.json",
+                  "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/002-minimal-update-click.png",
+                  "observation": "NI05: Linksklick auf die fingierte Update-Meldung öffnet Update Download im Original 1.1.8.2. Minimalprofil ohne private_url; leeres Eingabefeld mit Beispielhinweis, OK deaktiviert, Cancel und X sichtbar. Keine reale neue Version behauptet."
+                },
+                {
+                  "role": "actual_original_runtime",
+                  "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/session.json",
+                  "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/003-invalid-url.json",
+                  "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/003-invalid-url.png",
+                  "observation": "https://example.invalid/hexatlas-qa: OK deaktiviert."
+                },
+                {
+                  "role": "actual_original_runtime",
+                  "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/session.json",
+                  "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/004-downloads-form.json",
+                  "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/004-downloads-form.png",
+                  "observation": "https://www.humblebundle.com/downloads?key=hexatlas-qa-not-a-real-key: OK aktiviert; ausdrücklich fingierter Schlüssel, keine Bestätigung."
+                },
+                {
+                  "role": "actual_original_runtime",
+                  "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/session.json",
+                  "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/005-root-form.json",
+                  "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/005-root-form.png",
+                  "observation": "https://www.humblebundle.com/?key=hexatlas-qa-not-a-real-key: OK aktiviert; keine Bestätigung."
+                },
+                {
+                  "role": "actual_original_runtime",
+                  "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/session.json",
+                  "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/006-missing-key-form.json",
+                  "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/006-missing-key-form.png",
+                  "observation": "https://www.humblebundle.com/downloads ohne key: OK deaktiviert."
+                },
+                {
+                  "role": "actual_original_runtime",
+                  "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/session.json",
+                  "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/007-embedded-fragment.json",
+                  "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/007-embedded-fragment.png",
+                  "observation": "qa humblebundle.com/?key=hexatlas-qa-not-a-real-key: OK aktiviert trotz fehlendem URL-Schema und zusätzlichem Präfix. Nur diese gemessene Eingabe, keine vollständige Parserregel daraus abgeleitet."
+                },
+                {
+                  "role": "actual_original_runtime",
+                  "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/session.json",
+                  "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/008-before-cancel.json",
+                  "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/008-before-cancel.png",
+                  "observation": "Fingierte Root-URL vor Cancel; OK aktiviert."
+                },
+                {
+                  "role": "actual_original_runtime",
+                  "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/session.json",
+                  "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/009-cancel.json",
+                  "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/009-cancel.png",
+                  "observation": "Cancel schließt den Dialog zum unveränderten Startbildschirm."
+                },
+                {
+                  "role": "actual_original_runtime",
+                  "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/session.json",
+                  "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/010-reopen-after-cancel.json",
+                  "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/010-reopen-after-cancel.png",
+                  "observation": "Nach Cancel erneut geöffnet: dieselbe fingierte URL im Feld erhalten, OK aktiviert. Flüchtige Dialogretention, keine Linkpersistenz behauptet."
+                },
+                {
+                  "role": "actual_original_runtime",
+                  "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/session.json",
+                  "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/011-close-x.json",
+                  "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/011-close-x.png",
+                  "observation": "X schließt den erneut geöffneten Dialog zum Startbildschirm."
+                },
+                {
+                  "role": "actual_original_runtime",
+                  "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/session.json",
+                  "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/012-reopen-after-x.json",
+                  "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/012-reopen-after-x.png",
+                  "observation": "Nach X erneut geöffnet: dieselbe fingierte URL im Feld erhalten, OK aktiviert."
+                },
+                {
+                  "role": "actual_original_runtime",
+                  "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/session.json",
+                  "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/013-escape.json",
+                  "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/013-escape.png",
+                  "observation": "Escape schließt den Dialog zum Startbildschirm. Keine OK-/Enter-Bestätigung oder Updateinstallation."
+                }
+              ],
+              "review": "pending HEX-00-R02"
+            }
+          ]
         },
         "target": {
           "state": "pending_original_mapping",
@@ -52203,7 +52899,107 @@
           "savedEffect": null,
           "reopen": null,
           "evidence": [],
-          "gap": "Direkte Bedienfolge und Wirkung in der lokalen Originalversion noch nicht gemessen."
+          "gap": "Direkte Bedienfolge und Wirkung in der lokalen Originalversion noch nicht gemessen.",
+          "surfaceObservations": [
+            {
+              "run": "HEX-00-N-I05",
+              "scope": "Update-Dialogrolle und unmittelbare Eingabe-/Abbruchoberfläche; keine vollständige Einstellungs-/Serviceabnahme.",
+              "uiIds": [
+                "WD-UI-0659",
+                "WD-UI-0660",
+                "WD-UI-0661",
+                "WD-UI-0662",
+                "WD-UI-0663"
+              ],
+              "evidence": [
+                {
+                  "role": "actual_original_runtime",
+                  "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/session.json",
+                  "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/002-minimal-update-click.json",
+                  "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/002-minimal-update-click.png",
+                  "observation": "NI05: Linksklick auf die fingierte Update-Meldung öffnet Update Download im Original 1.1.8.2. Minimalprofil ohne private_url; leeres Eingabefeld mit Beispielhinweis, OK deaktiviert, Cancel und X sichtbar. Keine reale neue Version behauptet."
+                },
+                {
+                  "role": "actual_original_runtime",
+                  "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/session.json",
+                  "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/003-invalid-url.json",
+                  "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/003-invalid-url.png",
+                  "observation": "https://example.invalid/hexatlas-qa: OK deaktiviert."
+                },
+                {
+                  "role": "actual_original_runtime",
+                  "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/session.json",
+                  "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/004-downloads-form.json",
+                  "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/004-downloads-form.png",
+                  "observation": "https://www.humblebundle.com/downloads?key=hexatlas-qa-not-a-real-key: OK aktiviert; ausdrücklich fingierter Schlüssel, keine Bestätigung."
+                },
+                {
+                  "role": "actual_original_runtime",
+                  "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/session.json",
+                  "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/005-root-form.json",
+                  "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/005-root-form.png",
+                  "observation": "https://www.humblebundle.com/?key=hexatlas-qa-not-a-real-key: OK aktiviert; keine Bestätigung."
+                },
+                {
+                  "role": "actual_original_runtime",
+                  "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/session.json",
+                  "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/006-missing-key-form.json",
+                  "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/006-missing-key-form.png",
+                  "observation": "https://www.humblebundle.com/downloads ohne key: OK deaktiviert."
+                },
+                {
+                  "role": "actual_original_runtime",
+                  "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/session.json",
+                  "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/007-embedded-fragment.json",
+                  "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/007-embedded-fragment.png",
+                  "observation": "qa humblebundle.com/?key=hexatlas-qa-not-a-real-key: OK aktiviert trotz fehlendem URL-Schema und zusätzlichem Präfix. Nur diese gemessene Eingabe, keine vollständige Parserregel daraus abgeleitet."
+                },
+                {
+                  "role": "actual_original_runtime",
+                  "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/session.json",
+                  "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/008-before-cancel.json",
+                  "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/008-before-cancel.png",
+                  "observation": "Fingierte Root-URL vor Cancel; OK aktiviert."
+                },
+                {
+                  "role": "actual_original_runtime",
+                  "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/session.json",
+                  "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/009-cancel.json",
+                  "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/009-cancel.png",
+                  "observation": "Cancel schließt den Dialog zum unveränderten Startbildschirm."
+                },
+                {
+                  "role": "actual_original_runtime",
+                  "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/session.json",
+                  "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/010-reopen-after-cancel.json",
+                  "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/010-reopen-after-cancel.png",
+                  "observation": "Nach Cancel erneut geöffnet: dieselbe fingierte URL im Feld erhalten, OK aktiviert. Flüchtige Dialogretention, keine Linkpersistenz behauptet."
+                },
+                {
+                  "role": "actual_original_runtime",
+                  "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/session.json",
+                  "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/011-close-x.json",
+                  "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/011-close-x.png",
+                  "observation": "X schließt den erneut geöffneten Dialog zum Startbildschirm."
+                },
+                {
+                  "role": "actual_original_runtime",
+                  "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/session.json",
+                  "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/012-reopen-after-x.json",
+                  "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/012-reopen-after-x.png",
+                  "observation": "Nach X erneut geöffnet: dieselbe fingierte URL im Feld erhalten, OK aktiviert."
+                },
+                {
+                  "role": "actual_original_runtime",
+                  "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/session.json",
+                  "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/013-escape.json",
+                  "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/013-escape.png",
+                  "observation": "Escape schließt den Dialog zum Startbildschirm. Keine OK-/Enter-Bestätigung oder Updateinstallation."
+                }
+              ],
+              "review": "pending HEX-00-R02"
+            }
+          ]
         },
         "target": {
           "state": "pending_original_mapping",
@@ -55234,10 +56030,17 @@
       },
       {
         "path": "res://scripts/ui/update_dialog.gdc",
-        "state": "pending",
-        "classification": null,
-        "reason": "Kontrollierter privater Update-Cache zeigt native rote Update-Meldung, zwei Klicks öffnen im Startkontext keinen sichtbaren Dialog. Paketaufruf on_update hat Nicht-Windows-/fehlendes-private_url-Bedingung, aber Dialogoberfläche bleibt ungeklärt. Pending; keine ausbleibende UI als Nichtexistenz gewertet.",
-        "uiIds": [],
+        "state": "mapped_surface_role",
+        "classification": "user_function",
+        "reason": "NI05 erreicht im unveränderten Original den benannten Update Download-Dialog einschließlich Linkfeld, Cancel, OK und X. Native Oberfläche und Paket-Szenenbindung liefern begründete Zuordnung; keine Laufzeitinstrumentierung und keine externe Updateabnahme.",
+        "uiIds": [
+          "WD-UI-0658",
+          "WD-UI-0659",
+          "WD-UI-0660",
+          "WD-UI-0661",
+          "WD-UI-0662",
+          "WD-UI-0663"
+        ],
         "directEvidence": [
           {
             "role": "actual_original_runtime",
@@ -55280,6 +56083,111 @@
             "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original-update/screens/004-update-long-click.json",
             "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original-update/screens/004-update-long-click.png",
             "observation": "Zweiter 500ms-Linksklick öffnet keinen sichtbaren Update-Dialog. Gleiche Hypothese danach beendet."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original/screens/004-map-ready.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original/screens/004-map-ready.png",
+            "observation": "Geladene leere 512px-QA-Karte mit fingiertem Update-Status."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original/screens/005-update-loaded-click.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original/screens/005-update-loaded-click.png",
+            "observation": "500ms-Klick bei geladener Karte öffnet keinen sichtbaren Dialog; eigener Log zeigt erstmals xdg-open-Hilfetext."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original/screens/006-loaded-call-observed.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original/screens/006-loaded-call-observed.png",
+            "observation": "Zweiter Klick im Kartenkontext ohne sichtbaren Dialog. Eigene Prozessbeobachtung erfasst xdg-open ohne nichtleeres Ziel; leere Argumenteinträge nicht erhalten, genaue Argumentanzahl unbelegt."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/002-minimal-update-click.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/002-minimal-update-click.png",
+            "observation": "NI05: Linksklick auf die fingierte Update-Meldung öffnet Update Download im Original 1.1.8.2. Minimalprofil ohne private_url; leeres Eingabefeld mit Beispielhinweis, OK deaktiviert, Cancel und X sichtbar. Keine reale neue Version behauptet."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/003-invalid-url.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/003-invalid-url.png",
+            "observation": "https://example.invalid/hexatlas-qa: OK deaktiviert."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/004-downloads-form.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/004-downloads-form.png",
+            "observation": "https://www.humblebundle.com/downloads?key=hexatlas-qa-not-a-real-key: OK aktiviert; ausdrücklich fingierter Schlüssel, keine Bestätigung."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/005-root-form.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/005-root-form.png",
+            "observation": "https://www.humblebundle.com/?key=hexatlas-qa-not-a-real-key: OK aktiviert; keine Bestätigung."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/006-missing-key-form.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/006-missing-key-form.png",
+            "observation": "https://www.humblebundle.com/downloads ohne key: OK deaktiviert."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/007-embedded-fragment.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/007-embedded-fragment.png",
+            "observation": "qa humblebundle.com/?key=hexatlas-qa-not-a-real-key: OK aktiviert trotz fehlendem URL-Schema und zusätzlichem Präfix. Nur diese gemessene Eingabe, keine vollständige Parserregel daraus abgeleitet."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/008-before-cancel.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/008-before-cancel.png",
+            "observation": "Fingierte Root-URL vor Cancel; OK aktiviert."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/009-cancel.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/009-cancel.png",
+            "observation": "Cancel schließt den Dialog zum unveränderten Startbildschirm."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/010-reopen-after-cancel.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/010-reopen-after-cancel.png",
+            "observation": "Nach Cancel erneut geöffnet: dieselbe fingierte URL im Feld erhalten, OK aktiviert. Flüchtige Dialogretention, keine Linkpersistenz behauptet."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/011-close-x.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/011-close-x.png",
+            "observation": "X schließt den erneut geöffneten Dialog zum Startbildschirm."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/012-reopen-after-x.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/012-reopen-after-x.png",
+            "observation": "Nach X erneut geöffnet: dieselbe fingierte URL im Feld erhalten, OK aktiviert."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/013-escape.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/013-escape.png",
+            "observation": "Escape schließt den Dialog zum Startbildschirm. Keine OK-/Enter-Bestätigung oder Updateinstallation."
           }
         ],
         "priorClassification": {
@@ -55310,47 +56218,107 @@
           "role": "package_identifier_hints_only",
           "packageSha256": "67f3806a23f97f781420cf6a4a21d9a0e768b711860464c8da96e36dcca5bcac"
         },
-        "classificationBasis": "Aktuelle echte Originalzustände und begrenzte Paket-Aufrufhinweise, keine endgültige Rollenentscheidung.",
+        "classificationBasis": "Tatsächlich geöffneter Originaldialog; ergänzende, auf UpdateDialog und Link_Edit begrenzte Editor-Szenenbindung an update_dialog.gd. Paketmetadaten allein gelten nicht als UI-Abnahme.",
         "activationInvestigation": {
-          "run": "HEX-00-N-I04",
-          "state": "bounded_failed_activation_pending",
-          "newNativeRun": true,
-          "fixture": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/update-fixture.json",
-          "fixtureLimit": "Fingierte Version 1.1.9 ausschließlich im eigenen privaten QA-Cache, keine reale Releasebehauptung.",
-          "attempts": 2,
-          "observed": "Statusmeldung sichtbar; 100ms- und 500ms-Klick im Startkontext ohne sichtbaren Dialog. Hypothese danach beendet.",
-          "entryHint": "http.gdc on_update: Windows → safe_self_update; sonst vorhandene private_url → shell_open; ohne private_url → update_dialog.popup_centered. Keine Laufzeitinstrumentierung.",
+          "run": "HEX-00-N-I05",
+          "state": "actual_dialog_reached_review_pending",
+          "fixture": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/minimal-update-fixture.json",
+          "observed": "Kopiertes Vollprofil bei geladener Karte ohne Dialog; Minimalprofil ohne private_url öffnet Update Download schon am Startbildschirm. Native Eingabe-/Abbruchfolgen erfasst.",
+          "fixtureLimit": "Cacheversion und alle Linkschlüssel fingiert; Originalprogramm, Paket und produktives Profil unverändert. Quellprofil dieses eigenen Laufs erst nach normalem Stopp gezielt auf Minimalfixture gesetzt; eingefrorene Vorherkopien erhalten.",
           "evidence": [
             {
               "role": "actual_original_runtime",
-              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original-update/session.json",
-              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original-update/screens/001-controlled-update-start.json",
-              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original-update/screens/001-controlled-update-start.png",
-              "observation": "Original 1.1.8.2 zeigt rote v1.1.9 update available!-Meldung ausschließlich aufgrund eines ausdrücklich fingierten privaten QA-Caches; keine echte neue Version behauptet."
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/002-minimal-update-click.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/002-minimal-update-click.png",
+              "observation": "NI05: Linksklick auf die fingierte Update-Meldung öffnet Update Download im Original 1.1.8.2. Minimalprofil ohne private_url; leeres Eingabefeld mit Beispielhinweis, OK deaktiviert, Cancel und X sichtbar. Keine reale neue Version behauptet."
             },
             {
               "role": "actual_original_runtime",
-              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original-update/session.json",
-              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original-update/screens/002-update-dialog.json",
-              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original-update/screens/002-update-dialog.png",
-              "observation": "Erster 100ms-Linksklick auf die kontrollierte Statusmeldung öffnet keinen sichtbaren Dialog."
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/003-invalid-url.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/003-invalid-url.png",
+              "observation": "https://example.invalid/hexatlas-qa: OK deaktiviert."
             },
             {
               "role": "actual_original_runtime",
-              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original-update/session.json",
-              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original-update/screens/003-after-update-click.json",
-              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original-update/screens/003-after-update-click.png",
-              "observation": "Auch nach zusätzlicher Wartezeit kein sichtbarer Update-Dialog."
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/004-downloads-form.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/004-downloads-form.png",
+              "observation": "https://www.humblebundle.com/downloads?key=hexatlas-qa-not-a-real-key: OK aktiviert; ausdrücklich fingierter Schlüssel, keine Bestätigung."
             },
             {
               "role": "actual_original_runtime",
-              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original-update/session.json",
-              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original-update/screens/004-update-long-click.json",
-              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original-update/screens/004-update-long-click.png",
-              "observation": "Zweiter 500ms-Linksklick öffnet keinen sichtbaren Update-Dialog. Gleiche Hypothese danach beendet."
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/005-root-form.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/005-root-form.png",
+              "observation": "https://www.humblebundle.com/?key=hexatlas-qa-not-a-real-key: OK aktiviert; keine Bestätigung."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/006-missing-key-form.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/006-missing-key-form.png",
+              "observation": "https://www.humblebundle.com/downloads ohne key: OK deaktiviert."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/007-embedded-fragment.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/007-embedded-fragment.png",
+              "observation": "qa humblebundle.com/?key=hexatlas-qa-not-a-real-key: OK aktiviert trotz fehlendem URL-Schema und zusätzlichem Präfix. Nur diese gemessene Eingabe, keine vollständige Parserregel daraus abgeleitet."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/008-before-cancel.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/008-before-cancel.png",
+              "observation": "Fingierte Root-URL vor Cancel; OK aktiviert."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/009-cancel.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/009-cancel.png",
+              "observation": "Cancel schließt den Dialog zum unveränderten Startbildschirm."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/010-reopen-after-cancel.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/010-reopen-after-cancel.png",
+              "observation": "Nach Cancel erneut geöffnet: dieselbe fingierte URL im Feld erhalten, OK aktiviert. Flüchtige Dialogretention, keine Linkpersistenz behauptet."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/011-close-x.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/011-close-x.png",
+              "observation": "X schließt den erneut geöffneten Dialog zum Startbildschirm."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/012-reopen-after-x.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/012-reopen-after-x.png",
+              "observation": "Nach X erneut geöffnet: dieselbe fingierte URL im Feld erhalten, OK aktiviert."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/013-escape.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/original-minimal/screens/013-escape.png",
+              "observation": "Escape schließt den Dialog zum Startbildschirm. Keine OK-/Enter-Bestätigung oder Updateinstallation."
             }
           ],
-          "nextProbe": "Im eigenen Nachbesserungslauf konkret prüfen, ob der Original-Aufruf eine geladene Karte voraussetzt oder der Dialog außerhalb des sichtbaren Ausschnitts liegt; keine bloße Wiederholung derselben Startbildschirmklicks."
+          "supplementalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/bounded-update-read-hints.json",
+            "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/bounded-update-scene-hints.json",
+            "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/loaded-private-link-state.json",
+            "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/external-call-observation.json",
+            "/home/aaron/.cache/dungeon-native-qa/hex-00/update-activation-20261009-053946/minimal-abort-state.json"
+          ],
+          "limit": "Prozessbeobachtung hat leere Argumenteinträge entfernt; beweist nur fehlendes nichtleeres Ziel. Frühere vollständige Profilursache nicht instrumentiert. OK nicht bestätigt, kein Update/Download ausgelöst."
         },
         "classificationHistory": [
           {
@@ -55416,6 +56384,141 @@
                 "nextProbe": "Isolierte, ausdrücklich als Testzustand dokumentierte Versionscache-Fixture nutzen, um Erreichbarkeit der Versionsschaltfläche zu prüfen. Keine produktiven Update-Links eingeben oder Updates ausführen. Dialog nur bei tatsächlicher Darstellung zuordnen."
               }
             }
+          },
+          {
+            "run": "HEX-00-N-I04",
+            "record": {
+              "path": "res://scripts/ui/update_dialog.gdc",
+              "state": "pending",
+              "classification": null,
+              "reason": "Kontrollierter privater Update-Cache zeigt native rote Update-Meldung, zwei Klicks öffnen im Startkontext keinen sichtbaren Dialog. Paketaufruf on_update hat Nicht-Windows-/fehlendes-private_url-Bedingung, aber Dialogoberfläche bleibt ungeklärt. Pending; keine ausbleibende UI als Nichtexistenz gewertet.",
+              "uiIds": [],
+              "directEvidence": [
+                {
+                  "role": "actual_original_runtime",
+                  "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/inventory-dialogs-20261008-235225/original-first-run/session.json",
+                  "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/inventory-dialogs-20261008-235225/original-first-run/screens/002-welcome-moved.json",
+                  "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/inventory-dialogs-20261008-235225/original-first-run/screens/002-welcome-moved.png",
+                  "observation": "Erststartdialog Welcome sichtbar; keine weitere Dialogrolle daraus abgeleitet."
+                },
+                {
+                  "role": "actual_original_runtime",
+                  "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/inventory-dialogs-20261008-235225/original-first-run/session.json",
+                  "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/inventory-dialogs-20261008-235225/original-first-run/screens/004-version-status-click.json",
+                  "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/inventory-dialogs-20261008-235225/original-first-run/screens/004-version-status-click.png",
+                  "observation": "Klick auf version up to date zeigt in diesem Kontext keinen Dialog."
+                },
+                {
+                  "role": "actual_original_runtime",
+                  "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original-update/session.json",
+                  "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original-update/screens/001-controlled-update-start.json",
+                  "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original-update/screens/001-controlled-update-start.png",
+                  "observation": "Original 1.1.8.2 zeigt rote v1.1.9 update available!-Meldung ausschließlich aufgrund eines ausdrücklich fingierten privaten QA-Caches; keine echte neue Version behauptet."
+                },
+                {
+                  "role": "actual_original_runtime",
+                  "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original-update/session.json",
+                  "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original-update/screens/002-update-dialog.json",
+                  "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original-update/screens/002-update-dialog.png",
+                  "observation": "Erster 100ms-Linksklick auf die kontrollierte Statusmeldung öffnet keinen sichtbaren Dialog."
+                },
+                {
+                  "role": "actual_original_runtime",
+                  "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original-update/session.json",
+                  "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original-update/screens/003-after-update-click.json",
+                  "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original-update/screens/003-after-update-click.png",
+                  "observation": "Auch nach zusätzlicher Wartezeit kein sichtbarer Update-Dialog."
+                },
+                {
+                  "role": "actual_original_runtime",
+                  "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original-update/session.json",
+                  "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original-update/screens/004-update-long-click.json",
+                  "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original-update/screens/004-update-long-click.png",
+                  "observation": "Zweiter 500ms-Linksklick öffnet keinen sichtbaren Update-Dialog. Gleiche Hypothese danach beendet."
+                }
+              ],
+              "priorClassification": {
+                "path": "res://scripts/ui/update_dialog.gdc",
+                "state": "pending",
+                "classification": null,
+                "reason": "In den gemessenen Menüs/Start-/Kartenkontexten nicht direkt erreicht. Leeres Erststartprofil zeigt Welcome; Klick auf version up to date öffnet in diesem Zustand keinen weiteren Dialog. Bedingung und Zuordnung bleiben im Fachreview offen; kein Ersatzdialog erfunden.",
+                "uiIds": [],
+                "directEvidence": [
+                  {
+                    "role": "actual_original_runtime",
+                    "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/inventory-dialogs-20261008-235225/original-first-run/session.json",
+                    "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/inventory-dialogs-20261008-235225/original-first-run/screens/002-welcome-moved.json",
+                    "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/inventory-dialogs-20261008-235225/original-first-run/screens/002-welcome-moved.png",
+                    "observation": "Erststartdialog Welcome sichtbar; keine weitere Dialogrolle daraus abgeleitet."
+                  },
+                  {
+                    "role": "actual_original_runtime",
+                    "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/inventory-dialogs-20261008-235225/original-first-run/session.json",
+                    "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/inventory-dialogs-20261008-235225/original-first-run/screens/004-version-status-click.json",
+                    "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/inventory-dialogs-20261008-235225/original-first-run/screens/004-version-status-click.png",
+                    "observation": "Klick auf version up to date zeigt in diesem Kontext keinen Dialog."
+                  }
+                ]
+              },
+              "packageHintEvidence": {
+                "file": "/home/aaron/.cache/dungeon-native-qa/hex-00/evidence-repair-20261009-044709/package-role-hints.json",
+                "role": "package_identifier_hints_only",
+                "packageSha256": "67f3806a23f97f781420cf6a4a21d9a0e768b711860464c8da96e36dcca5bcac"
+              },
+              "classificationBasis": "Aktuelle echte Originalzustände und begrenzte Paket-Aufrufhinweise, keine endgültige Rollenentscheidung.",
+              "activationInvestigation": {
+                "run": "HEX-00-N-I04",
+                "state": "bounded_failed_activation_pending",
+                "newNativeRun": true,
+                "fixture": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/update-fixture.json",
+                "fixtureLimit": "Fingierte Version 1.1.9 ausschließlich im eigenen privaten QA-Cache, keine reale Releasebehauptung.",
+                "attempts": 2,
+                "observed": "Statusmeldung sichtbar; 100ms- und 500ms-Klick im Startkontext ohne sichtbaren Dialog. Hypothese danach beendet.",
+                "entryHint": "http.gdc on_update: Windows → safe_self_update; sonst vorhandene private_url → shell_open; ohne private_url → update_dialog.popup_centered. Keine Laufzeitinstrumentierung.",
+                "evidence": [
+                  {
+                    "role": "actual_original_runtime",
+                    "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original-update/session.json",
+                    "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original-update/screens/001-controlled-update-start.json",
+                    "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original-update/screens/001-controlled-update-start.png",
+                    "observation": "Original 1.1.8.2 zeigt rote v1.1.9 update available!-Meldung ausschließlich aufgrund eines ausdrücklich fingierten privaten QA-Caches; keine echte neue Version behauptet."
+                  },
+                  {
+                    "role": "actual_original_runtime",
+                    "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original-update/session.json",
+                    "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original-update/screens/002-update-dialog.json",
+                    "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original-update/screens/002-update-dialog.png",
+                    "observation": "Erster 100ms-Linksklick auf die kontrollierte Statusmeldung öffnet keinen sichtbaren Dialog."
+                  },
+                  {
+                    "role": "actual_original_runtime",
+                    "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original-update/session.json",
+                    "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original-update/screens/003-after-update-click.json",
+                    "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original-update/screens/003-after-update-click.png",
+                    "observation": "Auch nach zusätzlicher Wartezeit kein sichtbarer Update-Dialog."
+                  },
+                  {
+                    "role": "actual_original_runtime",
+                    "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original-update/session.json",
+                    "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original-update/screens/004-update-long-click.json",
+                    "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original-update/screens/004-update-long-click.png",
+                    "observation": "Zweiter 500ms-Linksklick öffnet keinen sichtbaren Update-Dialog. Gleiche Hypothese danach beendet."
+                  }
+                ],
+                "nextProbe": "Im eigenen Nachbesserungslauf konkret prüfen, ob der Original-Aufruf eine geladene Karte voraussetzt oder der Dialog außerhalb des sichtbaren Ausschnitts liegt; keine bloße Wiederholung derselben Startbildschirmklicks."
+              },
+              "callsiteHintEvidence": {
+                "file": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/bounded-callsite-hints.json",
+                "role": "bounded_package_callsite_hint_not_runtime_proof",
+                "sha256": "b5c33c70cbaf4ec0cd3e1ca0e912a097425a5e370ba2c516f024f1101dbd528b",
+                "packageSha256": "67f3806a23f97f781420cf6a4a21d9a0e768b711860464c8da96e36dcca5bcac",
+                "format": "GDSC bytecode version 12; bounded call-site tokens interpreted using official Godot 3.0 format; diagnostic only, no instrumented runtime code attribution.",
+                "formatSources": [
+                  "https://raw.githubusercontent.com/godotengine/godot/3.0/modules/gdscript/gdscript_tokenizer.cpp",
+                  "https://raw.githubusercontent.com/godotengine/godot/3.0/modules/gdscript/gdscript_tokenizer.h"
+                ]
+              }
+            }
           }
         ],
         "callsiteHintEvidence": {
@@ -55428,7 +56531,51 @@
             "https://raw.githubusercontent.com/godotengine/godot/3.0/modules/gdscript/gdscript_tokenizer.cpp",
             "https://raw.githubusercontent.com/godotengine/godot/3.0/modules/gdscript/gdscript_tokenizer.h"
           ]
-        }
+        },
+        "review": "pending HEX-00-R02",
+        "activationInvestigationHistory": [
+          {
+            "run": "HEX-00-N-I04",
+            "state": "bounded_failed_activation_pending",
+            "newNativeRun": true,
+            "fixture": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/update-fixture.json",
+            "fixtureLimit": "Fingierte Version 1.1.9 ausschließlich im eigenen privaten QA-Cache, keine reale Releasebehauptung.",
+            "attempts": 2,
+            "observed": "Statusmeldung sichtbar; 100ms- und 500ms-Klick im Startkontext ohne sichtbaren Dialog. Hypothese danach beendet.",
+            "entryHint": "http.gdc on_update: Windows → safe_self_update; sonst vorhandene private_url → shell_open; ohne private_url → update_dialog.popup_centered. Keine Laufzeitinstrumentierung.",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original-update/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original-update/screens/001-controlled-update-start.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original-update/screens/001-controlled-update-start.png",
+                "observation": "Original 1.1.8.2 zeigt rote v1.1.9 update available!-Meldung ausschließlich aufgrund eines ausdrücklich fingierten privaten QA-Caches; keine echte neue Version behauptet."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original-update/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original-update/screens/002-update-dialog.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original-update/screens/002-update-dialog.png",
+                "observation": "Erster 100ms-Linksklick auf die kontrollierte Statusmeldung öffnet keinen sichtbaren Dialog."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original-update/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original-update/screens/003-after-update-click.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original-update/screens/003-after-update-click.png",
+                "observation": "Auch nach zusätzlicher Wartezeit kein sichtbarer Update-Dialog."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original-update/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original-update/screens/004-update-long-click.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/dialog-role-repair-20261009-051637/original-update/screens/004-update-long-click.png",
+                "observation": "Zweiter 500ms-Linksklick öffnet keinen sichtbaren Update-Dialog. Gleiche Hypothese danach beendet."
+              }
+            ],
+            "nextProbe": "Im eigenen Nachbesserungslauf konkret prüfen, ob der Original-Aufruf eine geladene Karte voraussetzt oder der Dialog außerhalb des sichtbaren Ausschnitts liegt; keine bloße Wiederholung derselben Startbildschirmklicks."
+          }
+        ]
       },
       {
         "path": "res://scripts/ui/warlock_panel.gdc",
@@ -55721,7 +56868,7 @@
       "HEX00-R01-02: Modaler Farbdialog ist gemessen, seine Oberfläche noch nicht vollständig zugeordnet",
       "HEX00-R01-03: Verfügbare Listen und Paletten sind teilweise noch unbekannt oder veraltet dokumentiert",
       "HEX00-R01-04: Aktive Importbelege sind ohne lokale Herkunftsprüfung weiterhin ungeprüft",
-      "HEX00-R01-05: News und Inspect begründet eingeordnet; Update-Aktivierung nach zwei begrenzten NI04-Versuchen noch offen; unabhängiger Rollenreview fehlt",
+      "HEX00-R01-05: Sämtliche 96 Paketrollen begründet eingeordnet; Update Download direkt erreicht, frühere Negativproben erhalten; unabhängiger Rollenreview fehlt",
       "HEX00-R01-06: Gespeicherte Gruppenindizes folgen neuen UI-Zuordnungen nicht",
       "Tiefe Originalvarianten bleiben bei ihrer Fachphase und sind vor deren Produktcode direkt zu messen; keine vollständige Wonderdraft-Parität aus dem frühen Ablauf.",
       "Nach Pflichtnachbesserung eigener HEX-00-R02, anschließend eigene Aufräumplanung/-umsetzung/-review. CITY-00 bleibt eigene frühe Ergebnisreferenzphase."
