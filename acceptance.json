@@ -2,7 +2,7 @@
   "saltMarcherCatalogEncounter": {
     "schemaVersion": 1,
     "updated": "2026-10-09T11:55:00Z",
-    "state": "ce00_plan_candidate_implementation_open",
+    "state": "ce00_catalog_foundation_reviewed_ce01_plan_next",
     "plan": "ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md",
     "architecture": "ARCHITECTURE.md#geplante-katalog--und-encounter-erweiterung",
     "sourceRepository": "ThonkTank/Salt-Marcher",
@@ -49,7 +49,63 @@
       {"id": "CE-AC-13", "title": "Independent plan lifecycle actions", "state": "open"},
       {"id": "CE-AC-14", "title": "Mouse, keyboard and damaged-data resilience", "state": "open"}
     ],
-    "next": "CE-00-I01 portable catalog types, manifest validation, pure search/filter logic and focused tests; no UI or domain approval."
+    "implementationCandidate": {
+      "run": "CE-00-I01",
+      "files": [
+        "src/features/catalog/creature-catalog.ts",
+        "src/features/catalog/data/srd-5.1.generated.json",
+        "src/features/catalog/SRD-5.1-ATTRIBUTION.md",
+        "tests/core/creature-catalog.test.ts"
+      ],
+      "sourceSha256": "afdce83b65e0863e1247c6297f89460396fe8ce4fd6893139ae3284e8451073d",
+      "sourceHashComparison": "byte-identical to SaltMarcher source artifact",
+      "verification": {
+        "check": "passed",
+        "tests": {"passed": 210, "failed": 0},
+        "build": "passed"
+      },
+      "limits": "Pure read-only domain foundation only; no Obsidian UI, Vault persistence, Encounter builder, 2024 rules or host acceptance. All CE acceptance cases remain open."
+    },
+    "review": {
+      "run": "CE-00-R01",
+      "state": "changes_required",
+      "findings": [
+        "Artifact and manifest provenance were not independently pinned",
+        "Attribution was not distribution-safe",
+        "Nested reference values remained mutable",
+        "Runtime queries accepted non-finite and unknown values",
+        "Text ordering used environment locale",
+        "CE-01 bundle and startup strategy was undecided"
+      ]
+    },
+    "repairCandidate": {
+      "run": "CE-00-N01",
+      "state": "completed_checked_review_pending",
+      "changes": [
+        "Pinned exact manifest identity and independent JSON SHA-256 test guard",
+        "Repository NOTICE plus exported visible-notice text with license URLs and change provenance",
+        "Deeply frozen reference graph",
+        "Finite range, paging, enum and array query validation",
+        "Locale-independent normalized comparison",
+        "Explicit CE-01 gate against unmeasured eager startup and missing release notice"
+      ],
+      "verification": {"check": "passed", "tests": {"passed": 211, "failed": 0}, "build": "passed"}
+    },
+    "repairReview": {
+      "run": "CE-00-R02",
+      "state": "passed",
+      "result": "No remaining R01 findings. Manifest and byte hash guards, notice/gate, deep immutability, runtime query validation, deterministic ordering and honest bundle status statically confirmed.",
+      "testsRunByReviewer": false
+    },
+    "integratedVerification": {
+      "commit": "f5fb834c5caa5b83b4ae624800dcec81287b606f",
+      "incomingCommits": 12,
+      "check": "passed",
+      "tests": {"passed": 212, "failed": 0},
+      "build": "passed",
+      "scope": "Merged current shared branch after the reviewed repair; all incoming City, Hex, resize, Canvas of Kings and GM testing work preserved."
+    },
+    "next": "CE-01-P01 plan the read-only Monster workspace, visible notice and measured lazy/release-asset strategy; all end-user acceptance remains open."
   },
   "cityPlans": {
     "schemaVersion": 1,

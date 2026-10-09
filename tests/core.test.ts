@@ -13,3 +13,4 @@ import "./core/terrain-mask-resize.test";
 import "./core/building-floor-raster-resize.test";
 import "./core/object-library.test";
 import "./core/v4.test";
+import "./core/creature-catalog.test";
