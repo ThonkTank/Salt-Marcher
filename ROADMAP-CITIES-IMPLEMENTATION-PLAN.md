@@ -1009,3 +1009,5 @@ CITY-01-INTEGRATION-CLEAN-I01 Start 2026-10-09T19:25:56.754856+00:00; Vorschlag 
 CITY-01-INTEGRATION-CLEAN-R01 Start 2026-10-09T19:25:59.973810+00:00; Verweise und zentrale Quellgrenzen geprüft: changed nach Render, Draft terrain-only, CitySource gemeinsame History. Vorschlag bereit zur konkreten HEX04/05-Abstimmung.
 
 CITY-01-INTEGRATION-R01 Start 2026-10-09T19:28:12.125763+00:00; Drei Planbefunde: precision-komposition, striktes Placement/Draftschema und Terrain-only Fit. Anschlussvorschlag muss nachgebessert werden.
+
+CITY-01-INTEGRATION-R01-CLEAN-P01 Start 2026-10-09T19:28:15.623485+00:00; Aufräumplan: Befunde und reine Vorschlagsgrenzen lesbar halten, Quellen-/Gegenbelege unverändert erhalten.
