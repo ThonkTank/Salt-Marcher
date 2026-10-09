@@ -775,9 +775,10 @@
             "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-model-20261009/repair.json",
             "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-commands-20261009/implementation.json",
             "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-commands-20261009/cleanup-review.json",
-            "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-scene-20261009/implementation.json"
+            "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-scene-20261009/implementation.json",
+            "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-scene-20261009/cleanup-review.json"
           ],
-          "remaining": "Native model, shared history, pure actions and local scene/hit core prepared; scene review pending. Atlas placement, visible rendering, gestures/selection, external bindings and host save/reopen still pending."
+          "remaining": "Native model/shared history/pure actions/local scene-hit core prepared and reviewed. Atlas placement, visible drawing, gestures/selection, external bindings, fresh native Dungeon/Atlas regression and city save/reopen remain pending."
         },
         "hostCheck": {
           "state": "not_run",
@@ -876,9 +877,10 @@
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-edit-20261009/implementation.json",
             "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-edit-20261009/cleanup-review.json",
-            "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-scene-20261009/implementation.json"
+            "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-scene-20261009/implementation.json",
+            "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-scene-20261009/cleanup-review.json"
           ],
-          "remaining": "Native model, shared history, pure actions and local scene/hit core prepared; scene review pending. Atlas placement, visible rendering, gestures/selection, external bindings and host save/reopen still pending."
+          "remaining": "Native model/shared history/pure actions/local scene-hit core prepared and reviewed. Atlas placement, visible drawing, gestures/selection, external bindings, fresh native Dungeon/Atlas regression and city save/reopen remain pending."
         },
         "hostCheck": {
           "state": "not_run",
@@ -913,9 +915,10 @@
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-edit-20261009/implementation.json",
             "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-edit-20261009/cleanup-review.json",
-            "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-scene-20261009/implementation.json"
+            "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-scene-20261009/implementation.json",
+            "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-scene-20261009/cleanup-review.json"
           ],
-          "remaining": "Native model, shared history, pure actions and local scene/hit core prepared; scene review pending. Atlas placement, visible rendering, gestures/selection, external bindings and host save/reopen still pending."
+          "remaining": "Native model/shared history/pure actions/local scene-hit core prepared and reviewed. Atlas placement, visible drawing, gestures/selection, external bindings, fresh native Dungeon/Atlas regression and city save/reopen remain pending."
         },
         "hostCheck": {
           "state": "not_run",

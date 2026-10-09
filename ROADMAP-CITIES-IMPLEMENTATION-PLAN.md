@@ -762,3 +762,6 @@ CITY-01-PREP-SCENE-CLEAN-P04 Start 2026-10-09T17:31:07.162885+00:00; Plan: vorha
 
 
 CITY-01-PREP-SCENE-CLEAN-I04 Start 2026-10-09T17:32:05.019677+00:00; Architektur und Pläne unterscheiden vorhandene lokale Szene/Treffer, gemeinsame Hauspose und Streckenprimitive von fehlender Pixizeichnung/Gesten/Platzierung/Host/Save. Dungeonbaseline und Residualtie-Fix dokumentiert, tatsächlicher nativer Dungeon-/Atlasnachtest bleibt ausdrücklich offen. Keine API-/Laufzeitänderung oder unnötige Cache-/Kopienoptimierung; CR folgt.
+
+
+CITY-01-PREP-SCENE-CLEAN-R04 Start 2026-10-09T17:32:52.031176+00:00; Architektur/Pläne stimmen mit lokalem Szenen-/Treffercore, gemeinsamer Hauspose und extrahierter Streckenprimitive. Keine weitere API-/Laufzeitänderung; alle geprüften Produkt-/Test-/Abhängigkeitshashes unverändert gegenüber310Tests/Typprüfung/Build.7525Dungeonbaselinevergleiche und separate Szenenprobe erhalten. JSON/Links/fremde Roots geprüft,24CTY/65CO erhalten. Tatsächlicher nativer Dungeon-/Atlasnachtest, Grafik/Gesten/Platzierung/Save weiter offen; keine Restlücke im Aufräumumfang. Beleg: /home/aaron/.cache/dungeon-native-qa/city-plans/city01-scene-20261009/cleanup-review.json. Nächster Plan bereitet transiente Stadtwerkzeugzüge am bestätigten project/unproject- und gemeinsamen Historyvertrag vor.
