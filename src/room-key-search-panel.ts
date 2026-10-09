@@ -39,6 +39,8 @@ export class RoomKeySearchPanel {
     label.textContent = "Raum-Keys durchsuchen";
     this.input = root.ownerDocument.createElement("input");
     this.input.type = "search";
+    this.input.autocomplete = "off";
+    this.input.value = "";
     this.input.placeholder = "Begriff im Raum-Key";
     this.input.setAttribute("aria-label", "Raum-Keys durchsuchen");
     label.append(this.input);
@@ -118,6 +120,7 @@ export class RoomKeySearchPanel {
       button.dataset.floorId = entry.floorId;
       if (entry.sectionId) button.dataset.sectionId = entry.sectionId;
       const title = this.root.ownerDocument.createElement("strong");
+      title.className = "dn-room-key-search-location";
       title.textContent = roomLabel(entry);
       button.append(title);
       if (entry.kind === "section") {

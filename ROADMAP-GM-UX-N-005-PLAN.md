@@ -211,9 +211,28 @@ Navigationswege, Dirty-Draft-Guard und Nichtmutation wurden gegen Plan und
 Regressionen geprüft.
 
 Damit sind I01, I02 und R01 bestanden. Der exakt beschriebene
-Nebelwacht-Cloud-Hostlauf H01 läuft getrennt beim GM-Produkttester; sein Ergebnis
-wird hier nicht vorweggenommen. Danach bleibt der unabhängige
-Produkttester-Nachtest GM-R01 offen. Es wurde in diesem Metadatenabgleich kein
-Bedientest ausgeführt. Die verlinkten Acceptance-Einträge `EB-003` und
-`NATIVE-21` bleiben unverändert; es folgt keine UX-, Host-, Fach-, Paritäts-
+Nebelwacht-Cloud-Hostlauf H01 bestand den Kernablauf, belegte aber drei enge
+UI-Reibungen (Issue #1 `6087535370`): Filter blieb nach Neuöffnung erhalten,
+ein sauberer offener Key-Dock verdrängte die Suche, und die 256-px-Trefferzeile
+zeigte Raum/Geschoss nicht sichtbar.
+
+`GM-UX-N-005-N01` wurde auf Base
+`7d35591b9ec02034f6ce63dbbbb8f27d7ccc9bf0` exklusiv übernommen und im
+Produktcommit `a06703c` umgesetzt. Eine neue Panelinstanz initialisiert den
+flüchtigen Filter ausdrücklich leer und ohne Formularwiederherstellung; im
+gleichen Editor bleibt die Abfrage weiterhin flüchtig erhalten. Das Öffnen der
+Suche schließt einen sauberen Key-Dock über den vorhandenen `toggleKey`-Weg,
+während der gemeinsame Dirty-Draft-Guard vor jeder Gruppen-, Panel- oder
+Layoutmutation stoppt. Treffer besitzen eine eigene Raum-/Geschoss-Ortszeile,
+intrinsische Höhe und einen begrenzten scrollbaren Ergebnisbereich. Acht
+fokussierte DOM-/Editorfälle, Typprüfung, 375/375 Tests und Build bestanden vor
+der Shared-Integration. Der unabhängige read-only N01-Produktreview bestand den
+exakten Commit `a06703c31766a064c6a8e8510a1cb5eaa46ca549` ohne Pflichtbefund:
+neue/leere versus gleichinstanzlich flüchtige Suche, Guard-Reihenfolge,
+bestehender Key-Dock-Weg und statischer DOM-/CSS-Vertrag wurden bestätigt. Der
+exakt gleiche Cloud-GM-Nachtest bleibt getrennt offen; in N01 und Review wurde
+kein GUI-Host gestartet.
+
+Die verlinkten Acceptance-Einträge `EB-003` und `NATIVE-21` bleiben
+unverändert; N-006 bleibt getrennt. Es folgt keine UX-, Host-, Fach-, Paritäts-
 oder Gesamtfreigabe.
