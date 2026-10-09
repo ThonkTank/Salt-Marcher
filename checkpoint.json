@@ -1648,14 +1648,18 @@
     },
     "dd041PanPlan": {
       "date": "2026-10-09",
-      "state": "host_implementation_passed_review_open",
+      "state": "paired_p0_p1_review_passed_phase1_open",
       "plan": "ROADMAP-PARITY-TOOLS-PHASE1-DD041-PAN-PLAN.md",
       "cases": "DD-041.02/.03",
       "implementation": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-pan-host-20261009/implementation.md",
       "hostEdit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-pan-host-20261009/evidence/1791555946809-parity-tools-phase1-navigation-edit/result.json",
       "hostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-pan-host-20261009/evidence/1791556023605-parity-tools-phase1-navigation-reopen/result.json",
       "buildSha256": "e57ce6b7d2222f11b540e3baf6cab6a4f412eba7d96f38a2d46481a4ca846c62",
-      "next": "DD-041.02/.03 im frischen QA-Vault auf integriertem Build unabhängig reviewen; Atlas-/Phase-1-Gesamttor offen."
+      "review": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-pan-review-20261009/review.md",
+      "reviewAudit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-pan-review-20261009/review-audit.json",
+      "reviewEdit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-pan-review-20261009/evidence/1791556129222-parity-tools-phase1-navigation-edit/result.json",
+      "reviewReopen": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-pan-review-20261009/evidence/1791556141720-parity-tools-phase1-navigation-reopen/result.json",
+      "next": "DD-041.02/.03 im direkt gepaarten P0/P1-Scope reviewt; Canvasrand, Fokus, Touchpad, physische Eingabe und Phase-1-/Atlas-Gesamttor bleiben offen."
     },
     "dd04104NavigationReview": {
       "date": "2026-10-09",
