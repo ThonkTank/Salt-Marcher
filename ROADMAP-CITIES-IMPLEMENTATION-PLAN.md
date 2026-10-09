@@ -987,3 +987,5 @@ CITY-00-I45-N45 Start 2026-10-09T19:22:59.620Z; Fehlende Vollaufnahmen ergänzt:
 CITY-00-I45-N45-CLEAN-P45 Start 2026-10-09T19:24:01.688789+00:00; Aufräumplan: genaue Zählgrenze UI-Gesamtzahl vs geladene Einträge dokumentieren; Originaldaten/IDs schützen.
 
 CITY-00-I45-N45-CLEAN-I45 Start 2026-10-09T19:24:04.673654+00:00; Zähl-/Erhaltungsgrenzen lesbar präzisiert; keine Runtime- oder Rohdatenänderung.
+
+CITY-00-I45-N45-CLEAN-R45 Start 2026-10-09T19:24:07.611554+00:00; Aufräumreview bestanden: neue/alte Hashes, Scopegrenzen, Links und offene Stadtanforderungen erhalten.
