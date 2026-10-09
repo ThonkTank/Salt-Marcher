@@ -735,3 +735,6 @@ CITY-01-PREP-EDIT-CLEAN-P03 Start 2026-10-09T17:10:19.775367+00:00; Plan: existi
 
 
 CITY-01-PREP-EDIT-CLEAN-I03 Start 2026-10-09T17:10:49.725727+00:00; Architektur führt editCity/CityEdit samt Paket-/Identitätsschutz, Codeceigentum und unveränderlichen Kopien. Gesamt-/Anschlussplan kennzeichnen vorhandene Fachaktionen, UI/Bindungen/Host/Save bleiben geplant. Falsche Behauptung über City-Dokumentpfadprüfung korrigiert; Schema hat keine solchen Felder. Keine Laufzeit-/APIänderung. Quellen-/JSON-/Verweisreview folgt.
+
+
+CITY-01-PREP-EDIT-CLEAN-R03 Start 2026-10-09T17:11:26.813059+00:00; Aufgeräumte Fachaktionsarchitektur/Pläne stimmen: reiner Fachcode vorhanden, Gesten/Renderer/Host/Save weiter offen. Codec-Pfadbehauptung korrigiert. Keine ausführbare Änderung; sämtliche geprüften Quell-/Test-/Build-/Abhängigkeitshashes unverändert gegenüber294Tests/Typprüfung/Build. JSON/Links/fremde Roots geprüft,24CTY und65CO-Inventarpflichten erhalten. Kein Restbefund im Aufräumumfang. Beleg: /home/aaron/.cache/dungeon-native-qa/city-plans/city01-edit-20261009/cleanup-review.json. Nächster Lauf prüft aktuellen Atlasstand und plant Darstellung/Trefferprüfung am gemeinsamen Renderer ohne eigene Kamera oder Hostvorgriff.

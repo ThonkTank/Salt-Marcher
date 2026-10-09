@@ -872,9 +872,10 @@
         "implementation": {
           "state": "partial",
           "evidence": [
-            "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-edit-20261009/implementation.json"
+            "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-edit-20261009/implementation.json",
+            "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-edit-20261009/cleanup-review.json"
           ],
-          "remaining": "Pure road/building edit operations prepared; review pending. Shared atlas gestures, selection, rendering, bindings and host save/reopen remain unimplemented."
+          "remaining": "Pure road/building edit operations prepared and reviewed. Shared atlas gestures, selection, rendering, external bindings and host save/reopen remain unimplemented."
         },
         "hostCheck": {
           "state": "not_run",
@@ -907,9 +908,10 @@
         "implementation": {
           "state": "partial",
           "evidence": [
-            "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-edit-20261009/implementation.json"
+            "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-edit-20261009/implementation.json",
+            "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-edit-20261009/cleanup-review.json"
           ],
-          "remaining": "Pure road/building edit operations prepared; review pending. Shared atlas gestures, selection, rendering, bindings and host save/reopen remain unimplemented."
+          "remaining": "Pure road/building edit operations prepared and reviewed. Shared atlas gestures, selection, rendering, external bindings and host save/reopen remain unimplemented."
         },
         "hostCheck": {
           "state": "not_run",
