@@ -350,26 +350,23 @@
   "hexAtlasExecution": {
     "scope": "HEX-00 bis HEX-28 und sämtliche eingeordneten CITY-00 bis CITY-09 vollständig",
     "phase": "HEX-01",
-    "state": "planning_passed",
+    "state": "implementation_checked_review_pending",
     "plan": "ROADMAP-HEX-01-PLAN.md",
     "currentRun": {
-      "run": "HEX-01-P01",
-      "state": "planning_artifact_checks_passed",
-      "startedAt": "2026-10-09T17:10:55.836713+02:00",
-      "endedAt": "2026-10-09T17:10:55.836713+02:00",
-      "baseCommit": "a3baac32c6f01fdb8ef593de6bf3359ac1c757dd",
-      "plan": "ROADMAP-HEX-01-PLAN.md",
-      "referenceReview": "/home/aaron/.cache/dungeon-native-qa/hex-00/r02-review-20261009-155338/review.json",
-      "cleanupReview": "/home/aaron/.cache/dungeon-native-qa/hex-00/r02-review-20261009-155338/cleanup-review.json",
-      "phaseApproval": false,
-      "kind": "planning",
-      "focus": "Create/open actual boundless Overworld with hostneutral meter/hex/camera core; visible selection and fresh reopen."
-    },
-    "nextRun": {
       "id": "HEX-01-I01",
       "kind": "implementation",
-      "focus": "Core and first native Atlas UI plus actual host proof",
-      "gate": "No phase approval until own R01 and cleanup."
+      "startedAt": "2026-10-09T17:13:27.670995+02:00",
+      "baseCommit": "0d1dedcd4a87c8cf19087d3e274a5598faaf5e4e",
+      "state": "completed",
+      "focus": "Native Overworld create/open, meter camera, axial geometry and bounded visible Pixi grid; real host next.",
+      "finishedAt": "2026-10-09T15:37:54.379654+00:00",
+      "result": "Native create/select/pan/pointer-zoom/LOD, collision, invalid-file and fresh reopen passed; separate review next.",
+      "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-01/p01-20261009151055/implementation.json"
+    },
+    "nextRun": {
+      "id": "HEX-01-R01",
+      "kind": "review",
+      "focus": "Meter/address invariants, native gesture/persistence and actual UI clarity; clean Git basis and preserved Dungeon."
     },
     "review": {
       "state": "passed",
@@ -928,6 +925,19 @@
           "Synthetic transport is not Original or physical acceptance.",
           "Full Wonderdraft/City/Hex/large-map parity and user installation remain open."
         ]
+      },
+      "hex01Implementation": {
+        "run": "HEX-01-I01",
+        "receipt": "/home/aaron/.cache/dungeon-native-qa/hex-01/p01-20261009151055/implementation.json",
+        "state": "implementation_checked_review_pending",
+        "productBuildSha256": "50912139879c51c740a976301794964cf8d11c1f78e1e4f38c75c18d4443e625",
+        "host": "Own native edit and fresh process passed; screenshots viewed; empty foundation scope."
+      },
+      "latestIntegratedHostCC": {
+        "receipt": "/home/aaron/.cache/dungeon-native-qa/hex-00/r02-review-20261009-155338/latest-host-review.json",
+        "state": "passed",
+        "screensActuallyViewed": true,
+        "physicalInput": false
       }
     },
     "repairPlan": "ROADMAP-HEX-00-REPAIR-PLAN.md",
