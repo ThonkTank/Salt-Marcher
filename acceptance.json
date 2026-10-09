@@ -1,8 +1,8 @@
 {
   "saltMarcherReplacement": {
     "schemaVersion": 1,
-    "updated": "2026-10-09T17:09:06Z",
-    "state": "smr00_adr_p01_h03_i02_plan_review_passed_implementation_next",
+    "updated": "2026-10-09T17:14:05Z",
+    "state": "smr00_adr_p01_h03_i02_implementation_review_changes_required",
     "plan": "ROADMAP-SALTMARCHER-REPLACEMENT.md",
     "platformAdr": "ROADMAP-SALTMARCHER-PLATFORM-ADR.md",
     "architecture": "ARCHITECTURE.md#plattformoffene-saltmarcher-ablösung",
@@ -97,8 +97,8 @@
       "limits": "No target-platform decision or P02 authorization. Durable receipt/recovery, the full Create/Update/Delete fault matrix, installed-adapter bytes, Windows, macOS and accessibility remain not-run."
     },
     "adrP01H03": {
-      "run": "ADR-P01-H03-I02-P01-R04",
-      "state": "i02_p01_plan_review_passed_implementation_next",
+      "run": "ADR-P01-H03-I02-I01-R01",
+      "state": "i02_i01_implementation_review_changes_required",
       "document": "ROADMAP-SALTMARCHER-ADR-P01-H03-PLAN.md",
       "result": "Proposes a Linux-only native snapshot/capture/publish and parent/child recovery hypothesis using a durable Before snapshot from the immutable compare-and-write payload, independent target verification, exclusive current-name capture and no-replace publication, with a complete uncooperative-writer and fault matrix.",
       "contractCandidate": "f8fcdc1b2eacbfb17c7c5603f6c15cfd89c4296d",
@@ -107,7 +107,8 @@
       "i02PlanCandidate": "c9f05806c94a1900ab276940730cae24ee94850f",
       "i02PlanIntegrationCommit": "e051028aa581fd4d77b57b22b128658d2b5a20cc",
       "i02RepairMatrix": "ROADMAP-SALTMARCHER-ADR-P01-H03-I02-MATRIX.json",
-      "review": "The reviewed p01-v3 contract remains passed. I02 plan R01 rejected e0cff1d0d112633fa3f6288d95973de936a5dbc3, R02 rejected 2c5e765a62c6a1f8210a0bd53255b97df5b821d2 and R03 rejected b4f50c52e926d6ee7d7016d29b2d58192c0377d8. Independent read-only R04 passed exact N03 candidate c9f05806c94a1900ab276940730cae24ee94850f: 87 explicit p01-v3 transitions, 13 complete overlays, 3 phases and 3,393 unambiguous cells bind exact recovery vectors without fallbacks. The delta adds no helper, test, Evidence or Go claim.",
+      "i02ImplementationCandidate": "1cb104f105441f78a796c2e1daea74ccbde3196c",
+      "review": "The reviewed p01-v3 contract remains passed. I02 plan R01 through R03 failed and independent R04 passed exact N03 candidate c9f05806c94a1900ab276940730cae24ee94850f. Code/Security R01 on implementation candidate 1cb104f105441f78a796c2e1daea74ccbde3196c requires repair: matrix composition and one durable create primitive exist, but Parent/Child receipt generations, Create/Update/Delete state machines, conflict/rollback/fresh double recovery, live 3,393-cell execution, eleven adversaries, complete identity and errno oracles, runtime/byte/process limits and adversarial tests are not implemented. The status correctly makes no Evidence or Go claim.",
       "limits": "R02 and the p01-v3 contract passed their separate reviews. No native helper, complete fault matrix, executable H03 proof, Linux durability Go, target-platform decision or P02 authorization exists. Windows and macOS remain not-run."
     },
     "coordination": {
@@ -115,7 +116,7 @@
       "cloud": "Prior GM-UX-CLOUD worker is reassigned through GitHub Issue #1 to independent architecture and technical review only. Other cloud colleagues retain their established specialist review/test responsibilities.",
       "gui": "At most one graphical host/original instance per device; static and non-graphical checks may run separately."
     },
-    "next": "Implement only the independently reviewed N03 child-state-machine and generated fault cells against p01-v3, then perform separate code, security and evidence review. Do not claim H03 Go, platform selection or P02 authorization before those gates pass."
+    "next": "Complete the reviewed receipt state machines, rollback and fresh recovery, live matrix/adversary execution, safety limits and negative tests on the existing I02 candidate, then repeat independent code/security review. Do not claim Evidence, H03 Go, platform selection or P02 authorization."
   },
   "saltMarcherCatalogEncounter": {
     "schemaVersion": 1,
