@@ -16,8 +16,8 @@
       "integratedShared": "adc7c2b13fc7a1d898eeb990a34993311a5dafcb",
       "planCandidateCommit": "840663fd83046457321283d9dad57db4a30ca8c7",
       "reviewedCandidate": "840663fd83046457321283d9dad57db4a30ca8c7",
-      "review": "Independent exact-SHA review PASS is recorded in Issue comment 6088324877 with no P0/P1/P2. This is review evidence, not a substitute for direct real-chat owner ratification. Campaign/Data, Encounter/mask, Preparation, SMR-07/Travel, Music/Weather/Shops, Passive Display and Host/Recovery ratifications remain required.",
-      "limits": "Plan only. No product code, API, host, persistence, migration, implementation or acceptance approval. Campaign/Data, Party, mask owners, Scene/Time/Travel, Music/Weather/Shops, Passive Display and Host/Security ratifications remain required."
+      "review": "Independent exact-SHA review PASS is recorded in Issue comment 6088324877 with no P0/P1/P2. Direct owner RATIFY is recorded for Scene/Time/Travel in 6088364139 and Campaign/Data in 6088373177. Party, Encounter/mask, Preparation, Music/Weather/Shops, Passive Display and Host/Recovery remain open; the Music/Weather/Shops chat cannot directly read or write Issue #1 because its GitHub token is invalid and API connectivity fails, recorded in 6088336057.",
+      "limits": "Plan only. No product code, API, host, persistence, migration, implementation or acceptance approval. Party, Encounter/mask, Preparation, Music/Weather/Shops, Passive Display and Host/Recovery ratifications remain required."
     },
     "source": {
       "repository": "ThonkTank/Salt-Marcher",
