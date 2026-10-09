@@ -190,7 +190,7 @@
   },
   "cityPlans": {
     "schemaVersion": 1,
-    "updated": "2026-10-09T13:35:26.008969+00:00",
+    "updated": "2026-10-09T13:44:38.401333+00:00",
     "plan": "ROADMAP-CITIES.md",
     "state": "planned_not_implemented",
     "comparisonMode": "functional_equivalence_and_independent_usability_tests",
@@ -2842,12 +2842,13 @@
         "product": "Medieval Fantasy City Generator",
         "feature": "Farb-/Stilvorgaben",
         "sourceUrl": "https://html-classic.itch.zone/html/12710731/bin/index.html?size=25&seed=540139574&citadel=1&urban_castle=1&plaza=1&temple=1&walls=1&shantytown=0&coast=1&river=1&greens=0&gates=-1&sea=0.2",
-        "observedAt": "2026-10-09T12:28:25.003314+02:00",
-        "observedVersion": null,
+        "observedAt": "2026-10-09T13:44:38.401333+00:00",
+        "observedVersion": "Export metadata mfcg0.11.5; UI build unknown",
         "availability": "unknown",
         "observationKind": "direct",
         "originalEvidence": [
-          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/manifest.json"
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/manifest.json",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i19-style-20261009/manifest.json"
         ],
         "task": "Übersicht und Details gestalten",
         "phase": "CITY-07",
@@ -2864,14 +2865,30 @@
           "state": "not_run"
         },
         "status": "open",
-        "gap": "Originalmenü direkt sichtbar; konkrete Wirkungs-/Saveprobe und eigener Produktvergleich offen.",
+        "gap": "Vivid Apply and color file Save, geometry equality and district tint effect partial proven. File Load, complete presets, tint/weathering formulas/ranges and own host/usability remain open.",
         "independentFunctionalRequirement": true,
         "mappingCoverage": "related_project_criteria_only; CO requirement remains independently required",
         "originalProbe": {
-          "state": "partial",
-          "run": "CITY-00-I03-I",
-          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/manifest.json"
-        }
+          "run": "CITY-00-I19-I",
+          "state": "vivid_apply_color_file_geometry_equal_tint_partial",
+          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i19-style-20261009/manifest.json",
+          "observation": "Vivid draft→Apply visible color change; actual341B13-field color JSON saved; before/after298842B geometry JSON byteequal; Tint districts visible checked/un-checked; original restored",
+          "sourceScope": "direct original output and synthetic browser inputs; not own implementation"
+        },
+        "originalProbes": [
+          {
+            "state": "partial",
+            "run": "CITY-00-I03-I",
+            "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/manifest.json"
+          },
+          {
+            "run": "CITY-00-I19-I",
+            "state": "vivid_apply_color_file_geometry_equal_tint_partial",
+            "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i19-style-20261009/manifest.json",
+            "observation": "Vivid draft→Apply visible color change; actual341B13-field color JSON saved; before/after298842B geometry JSON byteequal; Tint districts visible checked/un-checked; original restored",
+            "sourceScope": "direct original output and synthetic browser inputs; not own implementation"
+          }
+        ]
       },
       {
         "id": "CO-WAT-0010",
@@ -3662,7 +3679,7 @@
     ],
     "functionalInventoryStatus": {
       "state": "partial_inventory_not_accepted",
-      "run": "CITY-00-I18-I",
+      "run": "CITY-00-I19-I",
       "products": 3,
       "candidates": 63,
       "directFormAreas": 13,
@@ -3691,7 +3708,8 @@
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i15-warp-tools-20261009/manifest.json",
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i16-export-20261009/manifest.json",
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i17-20261009/manifest.json",
-        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i18-residents-20261009/manifest.json"
+        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i18-residents-20261009/manifest.json",
+        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i19-style-20261009/manifest.json"
       ],
       "resultReferences": [
         {

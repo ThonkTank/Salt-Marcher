@@ -3756,17 +3756,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I19-P",
-      "kind": "reference_planning",
-      "startedAt": "2026-10-09T13:38:34.334901+00:00",
-      "focus": "Watabou-Stilwirkung und ausgegebene Geometrie planen",
-      "state": "completed",
-      "result": "Eine sichtbare Vorgabe auf Browserkopie anwenden, tatsächliche Vorher-/Nachherausgaben vergleichen; Originaltabs und nativen Slot erhalten."
-    },
-    "nextRun": {
       "id": "CITY-00-I19-I",
       "kind": "style_reference_probe",
-      "focus": "Stilvorgabe direkt anwenden und Geometrieausgaben vergleichen"
+      "startedAt": "2026-10-09T13:44:38.401333+00:00",
+      "focus": "Stilvorgabe und tatsächliche Geometrieausgabe messen",
+      "state": "completed",
+      "result": "Vivid erst nach Apply sichtbar;13 Felder echte Farbschema-JSON; zwei298842B Geometriedateien bytegleich. Vierteltönung sichtbar geprüft/zurückgestellt; Testkopie geschlossen."
+    },
+    "nextRun": {
+      "id": "CITY-00-I19-R",
+      "kind": "reference_review",
+      "focus": "Farbdatei, Stilgrenzen und technische Planung reviewen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
