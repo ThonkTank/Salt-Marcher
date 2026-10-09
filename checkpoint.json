@@ -3872,17 +3872,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I21-P",
-      "kind": "reference_planning",
-      "startedAt": "2026-10-09T14:00:37.535648+00:00",
-      "focus": "Landmarke und tatsächlich ausgegebenen Text planen",
-      "state": "completed",
-      "result": "Browserkopie mit eindeutigem QA-Ort, sichtbare Bearbeitung und tatsächlicher Export geplant; SVG ausschließlich XML-Parse ohne Vorschaubypass."
-    },
-    "nextRun": {
       "id": "CITY-00-I21-I",
       "kind": "landmark_reference_probe",
-      "focus": "Landmarke setzen, sichtbare Optionen und ausgegebenen Namen prüfen"
+      "startedAt": "2026-10-09T14:08:57.894573+00:00",
+      "focus": "Original-Landmarke und ausgegebenen Namen prüfen",
+      "state": "completed",
+      "result": "Legend zeigt CITY21 Beacon; tatsächliche SVG enthält Namen. Testkopie geschlossen; Position, Bearbeitung und Persistenz ausdrücklich offen."
+    },
+    "nextRun": {
+      "id": "CITY-00-I21-R",
+      "kind": "reference_review",
+      "focus": "Plan, direkte Belege und offene Landmarkenpflichten unabhängig reviewen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
