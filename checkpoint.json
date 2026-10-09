@@ -1915,12 +1915,17 @@
     },
     "dd036AtlasPlan": {
       "date": "2026-10-09",
-      "state": "independent_plan_review_failed_repair_required",
+      "state": "plan_repaired_independent_re_review_pending",
       "plan": "ROADMAP-PARITY-TOOLS-PHASE1-DD036-ATLAS-PLAN.md",
       "cases": "DD-036.01–.16",
       "reviewedBase": "6ee65dae1eb462f269d253263d5f861fe28a8ef0",
       "reviewFinding": "Pflichtlücken: aktueller Atlas besitzt noch keine ausführbare History-/Save-/Dirty-Grenze; Dungeondraft- und Wonderdraft-Belege müssen getrennt bleiben; Weltkennung/Kopierdateien brauchen ein exaktes Orakel; HEX-01-Compare/Write ist kein Journal-/Draft-/Recovery-Nachweis.",
-      "next": "DD-036-ATLAS-P01-R01: nur den Plan reparieren, Fälle nach ausführbarer HEX-02-Voraussetzung und realer Shell staffeln, Referenzquellen je Hostschritt trennen sowie Identitäts- und gemeinsamen FileTransaction-/Draft-Vertrag als prüfbare Orakel festlegen; danach unabhängiger Planreview."
+      "repairRun": "DD-036-ATLAS-P01-R01",
+      "repairBase": "972913fde69bd3824aedfe08fce86f74e66b3b22",
+      "repair": "Plan staffelt read-only Öffnen nach HEX-01, History nach HEX-02-I01a/I01b, Save/Draft/Recovery nach I01c, Kopie/Discard nach I01d und Shellfälle nach der Plattformentscheidung. Dungeondraft DD-036 und Wonderdraft WD-003 bleiben getrennte Referenzwahrheiten. Ein operationsgenaues world.id-/Dateimanifest sowie prepared-/committed-/Draft-/Konfliktorakel binden alle späteren Läufe an den gemeinsamen FileStore-/FileTransaction-Weg.",
+      "limits": "Nur Planreparatur; acceptance.json und Produktcode unverändert. Kein Host-, Original-, GUI-, Funktions- oder Paritäts-Go. HEX-02 und die reale Shell bleiben Voraussetzungen.",
+      "next": "Unabhängiger read-only Re-Review des exakten DD-036-ATLAS-P01-R01-Plancommits gegen Issue #1 Kommentar 6084893762; erst PASS öffnet den getrennten read-only O01-Lauf.",
+      "followingRun": "GM-UX-N-005-P01: nach bestandenem DD-036-Planreview als eigener Dungeon-Planlauf die belegte Raum-Key-Suche planen; nicht mit DD-036 oder Atlaspersistenz vermischen."
     },
     "dd006ShadowPlan": {
       "date": "2026-10-09",
