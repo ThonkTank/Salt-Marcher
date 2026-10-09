@@ -121190,7 +121190,7 @@
           "remaining": "Weitere Lochgrößen und -formen, Übermalung im Loch, Konturpunkte, kombinierte Ränder und DD-038-Endreview offen. Keine Fallfreigabe; P7-2 physisch ungeprüft."
         },
         "followUpPhase1BuildingPointOriginalProbe": {
-          "state": "three_point_moves_scoped_host_raw_pair_passed_case_open",
+          "state": "three_point_moves_scoped_review_passed_case_open",
           "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
           "hostBuildSha256": "d7c47ec29ea089169e6a7ad39f00d78c080b9f1d5e8f2daebe7c9ad024759ef8",
           "originalReport": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-point-original-20261009/original-probe.md",
@@ -121205,6 +121205,7 @@
           "hostEdit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-point-host-20261009/evidence/1791530164226-parity-tools-phase1-building-point-edit/result.json",
           "hostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-point-host-20261009/evidence/1791530342910-parity-tools-phase1-building-point-reopen/result.json",
           "hostAudit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-point-host-20261009/independent-audit.json",
+          "review": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-point-host-20261009/review.md",
           "measuredScope": "8×8 Wood/Stone: Building-Punkt (1,1)→(1,0) erzeugt eine neue Kontur und 24 Zellen im vollen umschließenden Raster, alle im aktuell gewählten Wood- oder Stone-Stil. Undo stellt 18 gemischte Zellen wieder her, Redo 24 Stone-Zellen; frische Originalöffnung bytegleich. Aktive Battlements-Vorlage erzeugt beim Punktzug eine Wand.",
           "remaining": "Ausgangskarte und drei Punktzugvarianten sind mit Host-Rohdaten ohne Abweichung gepaart; Undo/Redo und frische Hostöffnung bestehen. Weitere Punktgesten, Löcher, kombinierte Ränder und DD-038-Endreview offen. Keine Fallfreigabe; P7-2 physisch ungeprüft."
         },
