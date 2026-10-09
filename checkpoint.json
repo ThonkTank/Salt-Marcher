@@ -9,14 +9,14 @@
     "acceptance": "acceptance.json.saltMarcherReplacement",
     "objective": "This repository delivers the sole successor product for all implemented and planned SaltMarcher capabilities. UX and functional requirements are binding; the final host may be an Obsidian plugin, desktop application or evidence-backed hybrid.",
     "smr03LiveScene": {
-      "state": "architecture_changes_required_repair_pending_rereview",
+      "state": "architecture_pass_owner_ratification_pending",
       "plan": "ROADMAP-SALTMARCHER-SMR-03-LIVE-SCENE-CONTRACT.md",
       "candidateBranch": "codex/smr-03-live-scene-contract-p01",
       "baseline": "7d35591be570d1c188998103b55e8e86e437f73d",
       "integratedShared": "adc7c2b13fc7a1d898eeb990a34993311a5dafcb",
       "planCandidateCommit": "840663fd83046457321283d9dad57db4a30ca8c7",
-      "reviewedCandidate": "48b228cfc79d8d3fbcae2054d9958ae0916e7778",
-      "review": "Independent architecture R03 fourth re-review in Issue comment 6088273526 left one P1: imported pending closure had no finish path when the target owner stays absent. The repair incorporates Campaign/Data decision 6088282319 for an explicit exact-envelope Core quarantine discard without owner semantics or token authority; focused owner and independent architecture re-reviews remain required.",
+      "reviewedCandidate": "840663fd83046457321283d9dad57db4a30ca8c7",
+      "review": "Independent exact-SHA review PASS is recorded in Issue comment 6088324877 with no P0/P1/P2. This is review evidence, not a substitute for direct real-chat owner ratification. Campaign/Data, Encounter/mask, Preparation, SMR-07/Travel, Music/Weather/Shops, Passive Display and Host/Recovery ratifications remain required.",
       "limits": "Plan only. No product code, API, host, persistence, migration, implementation or acceptance approval. Campaign/Data, Party, mask owners, Scene/Time/Travel, Music/Weather/Shops, Passive Display and Host/Security ratifications remain required."
     },
     "source": {
