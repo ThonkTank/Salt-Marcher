@@ -3485,17 +3485,17 @@
     "state": "city00_reference_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I06-CR",
-      "kind": "cleanup_review",
-      "startedAt": "2026-10-09T10:54:28.931093+00:00",
-      "focus": "Sperr- und Zielreparatur vor Originalstart reviewen",
-      "state": "completed",
-      "result": "R01/R02 geschlossen; fünf Offline-Tests grün; check/build grün, drei fehlende externe Fixtures als offene Baselinegrenze erfasst. Freier GUI-Platz bestätigt."
-    },
-    "nextRun": {
       "id": "CITY-00-I06-NI",
       "kind": "native_original_probe",
-      "focus": "Ein enger COK-Start-/Werkzeugbeleg und normaler Abschluss unter eigener Sperre"
+      "startedAt": "2026-10-09T11:09:48.582330+00:00",
+      "focus": "Freigegebene COK-Demo direkt starten und Kernwirkung prüfen",
+      "state": "completed",
+      "result": "25 Originalframes: Demo0.4.06, Pfad/Plot erzeugt und Kontrolleck verändert; Save unbestätigt; normaler Original-/Runnerabschluss0, eigene Prozesse weg"
+    },
+    "nextRun": {
+      "id": "CITY-00-I06-NR",
+      "kind": "native_reference_review",
+      "focus": "Belegprovenienz, Demo-/Grafik-/Savegrenzen gegen Plan reviewen"
     },
     "open": [
       "CITY-00 direkte Referenzinventur/Galerie aller drei Produkte",

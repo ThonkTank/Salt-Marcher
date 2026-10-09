@@ -75,9 +75,19 @@
           "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/watabou-walled-port-overview.jpg",
           "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/watabou-walled-port-detail.jpg"
         ]
+      },
+      {
+        "product": "Canvas of Kings Demo",
+        "url": "/home/aaron/.var/app/com.valvesoftware.Steam/.local/share/Steam/steamapps/appmanifest_3122210.acf",
+        "role": "actual_demo_original_runtime",
+        "observed": "Pfad und Plot mit automatischer Belegung; Kontrollpunkte direkt verändert. Demo-/Grafikgrenzen und fehlende Dateiausgabe explizit.",
+        "version": "Demo 0.4.06; Steam build16643264",
+        "directResultEvidence": [
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i06-20261009-01/reference-manifest.json"
+        ]
       }
     ],
-    "referenceStatus": "official_descriptions_and_devlogs_read_direct_result_samples_pending",
+    "referenceStatus": "partial_direct_original_probes_all_three_products_full_inventory_and_city_result_gallery_open",
     "referenceGate": {
       "phase": "CITY-00",
       "state": "open",
@@ -1000,10 +1010,12 @@
         "feature": "Pfad-/Flächenplatzierung",
         "sourceUrl": "https://store.steampowered.com/app/2498570/Canvas_of_Kings/",
         "observedAt": "2026-10-09T12:15:44.926455+02:00",
-        "observedVersion": null,
-        "availability": "unknown",
-        "observationKind": "documentation",
-        "originalEvidence": [],
+        "observedVersion": "Demo 0.4.06; Steam build16643264",
+        "availability": "installed_demo_partial",
+        "observationKind": "direct_demo_partial",
+        "originalEvidence": [
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i06-20261009-01/reference-manifest.json"
+        ],
         "task": "Pfad und Fläche verändern; automatische Objekte folgen",
         "phase": "CITY-07",
         "caseIds": [
@@ -1018,9 +1030,22 @@
           "state": "not_run"
         },
         "status": "open",
-        "gap": "Dokumentationskandidat; direkte vollständige Originalprobe offen.",
+        "gap": "Demo-Pfad/Plot und Kontrollpunktwirkung direkt belegt; volle Funktionstiefe, Vollversion und eigener Vergleich offen.",
         "independentFunctionalRequirement": true,
-        "mappingCoverage": "related_project_criteria_only; CO requirement remains independently required"
+        "mappingCoverage": "related_project_criteria_only; CO requirement remains independently required",
+        "originalProbe": {
+          "run": "CITY-00-I06-NI",
+          "state": "path_plot_create_and_control_move_observed",
+          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i06-20261009-01/reference-manifest.json",
+          "productVariant": "Canvas of Kings Demo 3122210",
+          "remaining": [
+            "Full version inventory",
+            "Preset identities",
+            "Density/structure controls",
+            "Save/reopen",
+            "Own implementation and better usability"
+          ]
+        }
       },
       {
         "id": "CO-COK-0002",
@@ -2423,13 +2448,227 @@
         },
         "independentFunctionalRequirement": true,
         "mappingCoverage": "new_required_function_not_covered_by_existing_CTY"
+      },
+      {
+        "id": "CO-COK-0006",
+        "product": "Canvas of Kings",
+        "feature": "Native Karten speichern und öffnen",
+        "sourceUrl": "https://store.steampowered.com/app/2498570/Canvas_of_Kings/",
+        "observedAt": "2026-10-09T12:15:44.926455+02:00",
+        "observedVersion": "Demo 0.4.06; Steam build16643264",
+        "availability": "installed_demo_partial",
+        "observationKind": "direct_demo_partial",
+        "originalEvidence": [
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i06-20261009-01/reference-manifest.json"
+        ],
+        "task": "Neue Karte speichern und in frischem Prozess öffnen",
+        "phase": "CITY-01",
+        "caseIds": [
+          "CTY-001.01"
+        ],
+        "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
+        "implementationEvidence": [],
+        "hostEvidence": [],
+        "comparisonEvidence": [],
+        "usabilityEvidence": [],
+        "review": {
+          "state": "not_run"
+        },
+        "status": "open",
+        "gap": "Originalcontrol direkt sichtbar; konkrete Wirkung, Zugang und eigener Vergleich offen.",
+        "independentFunctionalRequirement": true,
+        "mappingCoverage": "related_project_criteria_only; CO requirement remains independently required",
+        "originalProbe": {
+          "run": "CITY-00-I06-NI",
+          "state": "control_observed_only",
+          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i06-20261009-01/reference-manifest.json",
+          "productVariant": "Canvas of Kings Demo 3122210",
+          "observation": "Save/Save As/Open/New menus; Save As dialog, no confirmed file"
+        }
+      },
+      {
+        "id": "CO-COK-0007",
+        "product": "Canvas of Kings",
+        "feature": "Rückgängig und Wiederherstellen",
+        "sourceUrl": "https://store.steampowered.com/app/2498570/Canvas_of_Kings/",
+        "observedAt": "2026-10-09T12:15:44.926455+02:00",
+        "observedVersion": "Demo 0.4.06; Steam build16643264",
+        "availability": "installed_demo_partial",
+        "observationKind": "direct_demo_partial",
+        "originalEvidence": [
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i06-20261009-01/reference-manifest.json"
+        ],
+        "task": "Pfad-/Plotänderung rücknehmen und wiederherstellen",
+        "phase": "CITY-01",
+        "caseIds": [
+          "CTY-002.01"
+        ],
+        "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
+        "implementationEvidence": [],
+        "hostEvidence": [],
+        "comparisonEvidence": [],
+        "usabilityEvidence": [],
+        "review": {
+          "state": "not_run"
+        },
+        "status": "open",
+        "gap": "Originalcontrol direkt sichtbar; konkrete Wirkung, Zugang und eigener Vergleich offen.",
+        "independentFunctionalRequirement": true,
+        "mappingCoverage": "related_project_criteria_only; CO requirement remains independently required",
+        "originalProbe": {
+          "run": "CITY-00-I06-NI",
+          "state": "control_observed_only",
+          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i06-20261009-01/reference-manifest.json",
+          "productVariant": "Canvas of Kings Demo 3122210",
+          "observation": "Undo/Redo menu controls only"
+        }
+      },
+      {
+        "id": "CO-COK-0008",
+        "product": "Canvas of Kings",
+        "feature": "Snapping und Kollisionsprüfung",
+        "sourceUrl": "https://store.steampowered.com/app/2498570/Canvas_of_Kings/",
+        "observedAt": "2026-10-09T12:15:44.926455+02:00",
+        "observedVersion": "Demo 0.4.06; Steam build16643264",
+        "availability": "installed_demo_partial",
+        "observationKind": "direct_demo_partial",
+        "originalEvidence": [
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i06-20261009-01/reference-manifest.json"
+        ],
+        "task": "Pfad-/Plotgrenzen verbinden und Überlappungen kontrollieren",
+        "phase": "CITY-05",
+        "caseIds": [],
+        "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
+        "implementationEvidence": [],
+        "hostEvidence": [],
+        "comparisonEvidence": [],
+        "usabilityEvidence": [],
+        "review": {
+          "state": "not_run"
+        },
+        "status": "open",
+        "gap": "Originalcontrol direkt sichtbar; konkrete Wirkung, Zugang und eigener Vergleich offen.",
+        "independentFunctionalRequirement": true,
+        "mappingCoverage": "new_required_function_not_covered_by_existing_CTY",
+        "originalProbe": {
+          "run": "CITY-00-I06-NI",
+          "state": "control_observed_only",
+          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i06-20261009-01/reference-manifest.json",
+          "productVariant": "Canvas of Kings Demo 3122210",
+          "observation": "Snap To Paths and Collision Check visible toggles"
+        }
+      },
+      {
+        "id": "CO-COK-0009",
+        "product": "Canvas of Kings",
+        "feature": "Höhenversatz von Pfaden und Plots",
+        "sourceUrl": "https://store.steampowered.com/app/2498570/Canvas_of_Kings/",
+        "observedAt": "2026-10-09T12:15:44.926455+02:00",
+        "observedVersion": "Demo 0.4.06; Steam build16643264",
+        "availability": "installed_demo_partial",
+        "observationKind": "direct_demo_partial",
+        "originalEvidence": [
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i06-20261009-01/reference-manifest.json"
+        ],
+        "task": "Pfad/Plot anheben und absenken, Höhe erhalten",
+        "phase": "CITY-07",
+        "caseIds": [],
+        "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
+        "implementationEvidence": [],
+        "hostEvidence": [],
+        "comparisonEvidence": [],
+        "usabilityEvidence": [],
+        "review": {
+          "state": "not_run"
+        },
+        "status": "open",
+        "gap": "Originalcontrol direkt sichtbar; konkrete Wirkung, Zugang und eigener Vergleich offen.",
+        "independentFunctionalRequirement": true,
+        "mappingCoverage": "new_required_function_not_covered_by_existing_CTY",
+        "originalProbe": {
+          "run": "CITY-00-I06-NI",
+          "state": "control_observed_only",
+          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i06-20261009-01/reference-manifest.json",
+          "productVariant": "Canvas of Kings Demo 3122210",
+          "observation": "T lift/G lower and Keep Height visible controls"
+        }
+      },
+      {
+        "id": "CO-COK-0010",
+        "product": "Canvas of Kings",
+        "feature": "Eigene Assets und Asset Editor",
+        "sourceUrl": "https://store.steampowered.com/app/2498570/Canvas_of_Kings/",
+        "observedAt": "2026-10-09T12:15:44.926455+02:00",
+        "observedVersion": "Demo 0.4.06; Steam build16643264",
+        "availability": "installed_demo_partial",
+        "observationKind": "direct_demo_partial",
+        "originalEvidence": [
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i06-20261009-01/reference-manifest.json"
+        ],
+        "task": "Eigene wiederverwendbare Stadtassets bearbeiten",
+        "phase": "CITY-07",
+        "caseIds": [],
+        "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
+        "implementationEvidence": [],
+        "hostEvidence": [],
+        "comparisonEvidence": [],
+        "usabilityEvidence": [],
+        "review": {
+          "state": "not_run"
+        },
+        "status": "open",
+        "gap": "Originalcontrol direkt sichtbar; konkrete Wirkung, Zugang und eigener Vergleich offen.",
+        "independentFunctionalRequirement": true,
+        "mappingCoverage": "new_required_function_not_covered_by_existing_CTY",
+        "originalProbe": {
+          "run": "CITY-00-I06-NI",
+          "state": "control_observed_only",
+          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i06-20261009-01/reference-manifest.json",
+          "productVariant": "Canvas of Kings Demo 3122210",
+          "observation": "Asset Editor top control only"
+        }
+      },
+      {
+        "id": "CO-COK-0011",
+        "product": "Canvas of Kings",
+        "feature": "Gemeinschaftsassets über Steam Workshop",
+        "sourceUrl": "https://store.steampowered.com/app/2498570/Canvas_of_Kings/",
+        "observedAt": "2026-10-09T12:15:44.926455+02:00",
+        "observedVersion": "Demo 0.4.06; Steam build16643264",
+        "availability": "installed_demo_partial",
+        "observationKind": "direct_demo_partial",
+        "originalEvidence": [
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i06-20261009-01/reference-manifest.json"
+        ],
+        "task": "Gemeinschaftsassets finden und im Entwurf verwenden",
+        "phase": "CITY-07",
+        "caseIds": [],
+        "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
+        "implementationEvidence": [],
+        "hostEvidence": [],
+        "comparisonEvidence": [],
+        "usabilityEvidence": [],
+        "review": {
+          "state": "not_run"
+        },
+        "status": "open",
+        "gap": "Originalcontrol direkt sichtbar; konkrete Wirkung, Zugang und eigener Vergleich offen.",
+        "independentFunctionalRequirement": true,
+        "mappingCoverage": "new_required_function_not_covered_by_existing_CTY",
+        "originalProbe": {
+          "run": "CITY-00-I06-NI",
+          "state": "control_observed_only",
+          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i06-20261009-01/reference-manifest.json",
+          "productVariant": "Canvas of Kings Demo 3122210",
+          "observation": "Steam Workshop top control only; integration access/effects untested"
+        }
       }
     ],
     "functionalInventoryStatus": {
       "state": "partial_inventory_not_accepted",
-      "run": "CITY-00-I05-I",
+      "run": "CITY-00-I06-NI",
       "products": 3,
-      "candidates": 45,
+      "candidates": 51,
       "directFormAreas": 13,
       "open": [
         "Detailfähigkeiten aller Produkte vervollständigen",
@@ -2442,7 +2681,8 @@
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/manifest.json",
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/manifest.json",
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i04-20261009/manifest.json",
-        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i05-20261009/manifest.json"
+        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i05-20261009/manifest.json",
+        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i06-20261009-01/reference-manifest.json"
       ],
       "originalResultSamples": 3
     },
