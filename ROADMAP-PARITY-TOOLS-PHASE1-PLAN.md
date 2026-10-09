@@ -34,7 +34,7 @@ Innerhalb der Umsetzung können diese Blöcke als einzeln prüfbare Commits ver�
 
 ## DD-039-Hostpaar ohne Größenänderung
 
-Der eigenständige GUI-Prüfer `tools/host/parity-tools-phase1-map-info.cjs` ist vorbereitet. Er öffnet Karteninformationen auf einer unveränderten 8×8-Karte, prüft Größe und Pfad, leere und ausgewählte Paketliste, Close/X ohne Dokument- oder Historyänderung sowie beide gespeicherten Zustände nach frischem Hoststart. Die bisherige DD-039-Regression nutzte den nun ausgeschlossenen Resize-Befehl; ihre Belege bleiben historisch. Syntax, Typprüfung, 206 Kerntests und Build bestehen auf unverändertem Produktbundle. **Der neue GUI-Edit- und Neuöffnungslauf ist noch nicht ausgeführt; DD-039 und das Phase-1-Tor bleiben offen.** Nach Freigabe des lokalen Grafikplatzes folgen beide Hostläufe, Rohdatenprüfung und eigener Review.
+Der eigenständige GUI-Prüfer `tools/host/parity-tools-phase1-map-info.cjs` ist vorbereitet. Er öffnet Karteninformationen auf einer unveränderten 8×8-Karte, prüft Größe und Pfad, leere und ausgewählte Paketliste, Close/X ohne Dokument- oder Historyänderung sowie beide gespeicherten Zustände nach frischem Hoststart. Die bisherige DD-039-Regression nutzte den nun ausgeschlossenen Resize-Befehl; ihre Belege bleiben historisch. Syntax, Typprüfung, 207 Kerntests und Build bestehen auf unverändertem Produktbundle. **Der neue GUI-Edit- und Neuöffnungslauf ist noch nicht ausgeführt; DD-039 und das Phase-1-Tor bleiben offen.** Nach Freigabe des lokalen Grafikplatzes folgen beide Hostläufe, Rohdatenprüfung und eigener Review.
 
 ## Fachreview und Tor
 

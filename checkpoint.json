@@ -1429,7 +1429,7 @@
       "state": "helper_prepared_gui_edit_reopen_pending",
       "helper": "tools/host/parity-tools-phase1-map-info.cjs",
       "productBuildSha256": "d54f25cf7b961cc78b1bbf197bd4781bd62d2325ec10dc4b34148c0d6ab3a6a2",
-      "checks": "Syntax, npm run check, 206/206 Tests und npm run build bestanden; kein neuer GUI-Lauf.",
+      "checks": "Syntax, npm run check, 207/207 Tests und npm run build auf integriertem Stand bestanden; kein neuer GUI-Lauf.",
       "next": "Nach Freigabe des lokalen Grafikplatzes Edit- und Neuöffnungslauf ohne Resize, Rohdatenprüfung und separaten DD-039-Review ausführen."
     },
     "resizeScopeDecision": {
