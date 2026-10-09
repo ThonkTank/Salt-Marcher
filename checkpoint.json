@@ -1,7 +1,7 @@
 {
   "saltMarcherReplacement": {
     "date": "2026-10-09",
-    "state": "smr00_adr_prototype_plan_reviewed_p01_next",
+    "state": "smr00_adr_p01_no_go_cleanup_reviewed_new_hypothesis_next",
     "plan": "ROADMAP-SALTMARCHER-REPLACEMENT.md",
     "platformAdr": "ROADMAP-SALTMARCHER-PLATFORM-ADR.md",
     "prototypePlan": "ROADMAP-SALTMARCHER-ADR-PROTOTYPES.md",
@@ -64,17 +64,37 @@
       "verification": "Fresh worktree at 2e9ea8c passes typecheck, 241 tests and build; real 1024x1024 colorable PNG is byte-identical for alpha 255/128/0; renderer bundle has no privileged imports. Two independent isolated Obsidian edit/reopen pairs pass on one product build with matching screenshots and stable per-profile V4 hashes.",
       "next": "Resume ADR-P01 on a fresh candidate branch. Desktop shell, utility persistence/fault matrix, OS matrix and full P01 remain open."
     },
+    "adrP01": {
+      "date": "2026-10-09",
+      "state": "no_go_checked_reviewed_cleaned",
+      "candidateBranch": "codex/adr-p01-i01",
+      "candidateCommit": "82bf9854a6a4a1859eda1841055023083cd2f3a6",
+      "reviewedEvidenceCommit": "8f0e64904a95a4b02aaf545aa42a47108a1476e5",
+      "cleanupCommit": "9c412c21751a67d6126c825d64552f4445e2589f",
+      "contract": "tools/adr-prototypes/contracts/p01-v1/contract.mjs",
+      "aggregate": "tools/adr-prototypes/evidence/p01-aggregate.json",
+      "decision": "No-Go: the Node-FS same-process harness does not prove native OS durability or desktop process isolation.",
+      "externalReceipt": {
+        "path": "/home/aaron/.cache/dungeon-native-qa/smr-adr-prototypes/ADR-P01/p01-1791557969723-ad3a886d-41ac-425d-8134-fd4a27e988e3/receipt.json",
+        "sha256": "2c7de2ab4bbacd80564ee844c62888c89cc23d1e0f26433b53137529a447071c",
+        "sourceCommit": "82bf9854a6a4a1859eda1841055023083cd2f3a6",
+        "dirty": false
+      },
+      "review": "Independent final review confirmed the clean receipt binding, honest not-proven/not-run/boundary-no-go gates, 243 tests and no platform Go claim. Independent cleanup review confirmed only the versioned contract and aggregate remain; current suite passed 245 tests and the product bundle stayed byte-identical.",
+      "limits": "P02 is not authorized. Windows, macOS, GUI, native durability, real desktop process isolation, restart OS boundary, parent/child retention and subscribe streaming remain unproven or not run. The platform ADR remains proposed.",
+      "next": "Plan a new architecture hypothesis with real process isolation and platform-native durable file primitives, then review it before any replacement P01 execution."
+    },
     "open": [
-      "Executable ADR-P01 through ADR-P04 and ADR-C01 proof, review, repair and cleanup runs",
+      "Replacement architecture hypothesis after ADR-P01 No-Go; ADR-P02 through ADR-P04 and ADR-C01 remain blocked",
       "All SMR-01 through SMR-11 implementation, review, repair and cleanup gates",
       "SMR-00-ADR-01 target-platform and migration-path decision",
       "Per-slice source-to-target mapping and host persistence/security decisions"
     ],
     "nextRun": {
-      "id": "ADR-P01",
-      "kind": "executable_prototype_implementation",
-      "owner": "one_local_integration_thread_with_independent_review",
-      "focus": "Build the isolated desktop-shell map proof within the plan-owned files, produce immutable receipts for renderer boundaries, restart, create/update/delete durability and OS evidence, then clean the harness after independent review"
+      "id": "ADR-P01-H02",
+      "kind": "architecture_hypothesis_plan",
+      "owner": "local_integration_thread_with_cloud_architecture_review",
+      "focus": "Replace the rejected Node-FS same-process premise with a bounded hypothesis that can prove real desktop process isolation and platform-native durable file semantics; do not begin ADR-P02"
     }
   },
   "saltMarcherCatalogEncounter": {

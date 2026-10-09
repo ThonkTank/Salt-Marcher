@@ -2,7 +2,7 @@
   "saltMarcherReplacement": {
     "schemaVersion": 1,
     "updated": "2026-10-09T14:28:52Z",
-    "state": "smr00_adr_prototype_plan_reviewed_p01_next",
+    "state": "smr00_adr_p01_no_go_cleanup_reviewed_new_hypothesis_next",
     "plan": "ROADMAP-SALTMARCHER-REPLACEMENT.md",
     "platformAdr": "ROADMAP-SALTMARCHER-PLATFORM-ADR.md",
     "architecture": "ARCHITECTURE.md#plattformoffene-saltmarcher-ablösung",
@@ -62,12 +62,30 @@
       "review": "Passed on exact source commit 0497661e21848fd16454b088ffe4aa1230bc62d9 after repairs for shared contract composition, repository-wide write/delete receipts, import identity mapping, canonical archive bytes, retry/concurrency and ratification blockers.",
       "limits": "No executable prototype or target-platform decision exists yet. Device/cloud inputs, ADR-P01 through ADR-P04, ADR-C01 and the additional distribution, extension, audio/background-work and three-option evidence remain open."
     },
+    "adrP01": {
+      "run": "ADR-P01",
+      "state": "no_go_checked_reviewed_cleaned",
+      "candidateCommit": "82bf9854a6a4a1859eda1841055023083cd2f3a6",
+      "reviewedEvidenceCommit": "8f0e64904a95a4b02aaf545aa42a47108a1476e5",
+      "cleanupCommit": "9c412c21751a67d6126c825d64552f4445e2589f",
+      "contract": "tools/adr-prototypes/contracts/p01-v1/contract.mjs",
+      "aggregate": "tools/adr-prototypes/evidence/p01-aggregate.json",
+      "decision": "No-Go: a same-process Node-FS harness does not prove the required desktop isolation or native durable file boundary.",
+      "evidence": {
+        "receipt": "/home/aaron/.cache/dungeon-native-qa/smr-adr-prototypes/ADR-P01/p01-1791557969723-ad3a886d-41ac-425d-8134-fd4a27e988e3/receipt.json",
+        "receiptSha256": "2c7de2ab4bbacd80564ee844c62888c89cc23d1e0f26433b53137529a447071c",
+        "sourceCommit": "82bf9854a6a4a1859eda1841055023083cd2f3a6",
+        "dirty": false
+      },
+      "review": "Final review passed the evidence as an honest No-Go. Cleanup review passed after removing the executable harness, P01 test and temporary command while retaining only the versioned contract and aggregate.",
+      "limits": "No platform decision and no authorization for P02. Windows, macOS, GUI, native durability, real process isolation, restart OS boundary, parent/child retention and subscribe streaming remain unproven or not run."
+    },
     "coordination": {
       "local": "Three new local goal threads coordinate integration. Existing Hex/Atlas, City and Dungeon colleagues on three other devices retain their workstreams, evidence and non-overlapping ownership and contribute requirements to the platform decision.",
       "cloud": "Prior GM-UX-CLOUD worker is reassigned through GitHub Issue #1 to independent architecture and technical review only. Other cloud colleagues retain their established specialist review/test responsibilities.",
       "gui": "At most one graphical host/original instance per device; static and non-graphical checks may run separately."
     },
-    "next": "ADR-P01 implements the isolated desktop-shell map proof on a clean candidate branch and must pass its fault, restart, renderer-boundary, OS-durability and cleanup reviews before ADR-P02 begins. The platform ADR remains proposed."
+    "next": "Plan and independently review a replacement ADR-P01 architecture hypothesis with real desktop process isolation and platform-native durable file semantics. ADR-P02 remains blocked and the platform ADR remains proposed."
   },
   "saltMarcherCatalogEncounter": {
     "schemaVersion": 1,
