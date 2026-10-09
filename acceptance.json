@@ -97,12 +97,12 @@
       "limits": "No target-platform decision or P02 authorization. Durable receipt/recovery, the full Create/Update/Delete fault matrix, installed-adapter bytes, Windows, macOS and accessibility remain not-run."
     },
     "adrP01H03": {
-      "run": "ADR-P01-H03-P01-R01",
-      "state": "plan_repair_required_implementation_blocked",
+      "run": "ADR-P01-H03-P01-R02",
+      "state": "plan_repaired_review_pending_implementation_blocked",
       "document": "ROADMAP-SALTMARCHER-ADR-P01-H03-PLAN.md",
       "result": "Proposes a Linux-only native snapshot/capture/publish and parent/child recovery hypothesis using a durable Before snapshot from the immutable compare-and-write payload, independent target verification, exclusive current-name capture and no-replace publication, with a complete uncooperative-writer and fault matrix.",
       "review": "R01 passed exact head a9de899262163f355f627931f527c6f5bd1d16d9. Independent later read-only review of daa053967b4e7fa7228cfd89fd11996bb363d420 confirmed three mandatory plan gaps: capture-name collision, orphan helper files before first durable receipt, and incomplete Create absent-state oracle. See Issue #1 comments 6084665817 and 6084697489. Exact-head repair review pending.",
-      "limits": "Reviewed planning evidence only. No executable proof, Linux durability Go, target-platform decision or P02 authorization. Windows and macOS remain not-run."
+      "limits": "Repaired planning draft at 2f7f8fa7712b99c30c452aec9cc0c25a3cc5738d awaits independent exact-head review. No executable proof, Linux durability Go, target-platform decision or P02 authorization. Windows and macOS remain not-run."
     },
     "coordination": {
       "local": "Three new local goal threads coordinate integration. Existing Hex/Atlas, City and Dungeon colleagues on three other devices retain their workstreams, evidence and non-overlapping ownership and contribute requirements to the platform decision.",
