@@ -3810,17 +3810,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I18-CR",
+      "id": "CITY-00-I19-CR",
       "kind": "cleanup_review",
-      "startedAt": "2026-10-09T13:36:33.749046+00:00",
-      "focus": "Rohschutz und Belegumfang reviewen",
+      "startedAt": "2026-10-09T13:45:52.517434+00:00",
+      "focus": "Rohschutz und Style-Vertrag reviewen",
       "state": "completed",
-      "result": "Aufräumreview bestanden; Bewohnerdetails weiterhin ungeprüft, Originaltabs erhalten. Keine Produktimplementierung oder Paritätsfreigabe."
+      "result": "Aufräumreview bestanden: Style-Vertrag präzisiert, Rohschutz und Statusgrenzen erhalten. Keine Produkt-/Paritätsabnahme."
     },
     "nextRun": {
-      "id": "CITY-00-I19-P",
+      "id": "CITY-00-I20-P",
       "kind": "reference_planning",
-      "focus": "HEX-05-Übergabe prüfen und nächste zugängliche Originalwirkung auswählen"
+      "focus": "Freigegebenen nativen Slot prüfen und COK Pre-Save-History planen; HEX-05-Übergabe prüfen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
