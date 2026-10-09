@@ -3909,17 +3909,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I25-CP",
-      "kind": "cleanup_planning",
-      "startedAt": "2026-10-09T14:31:37.471913+00:00",
-      "focus": "Baum-Snapshot und Scopegrenzen planen",
-      "state": "completed",
-      "result": "Snapshotkorrektur und Rohbeleg-/Verweisschutz konkret geplant."
-    },
-    "nextRun": {
       "id": "CITY-00-I25-CI",
       "kind": "cleanup_implementation",
-      "focus": "Umgebungs-Snapshot aus aktuellem acceptance berichtigen"
+      "startedAt": "2026-10-09T14:31:57.413440+00:00",
+      "focus": "Umgebungs-Snapshot berichtigen und Rohbelege erhalten",
+      "state": "completed",
+      "result": "Snapshot trennt Baumwirkung und Forest-Zugang; Rawhashes/Manifest unverändert."
+    },
+    "nextRun": {
+      "id": "CITY-00-I25-CR",
+      "kind": "cleanup_review",
+      "focus": "Snapshot und vollständigen Pflicht-/Rohschutz prüfen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
