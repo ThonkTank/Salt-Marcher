@@ -4791,17 +4791,17 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I47-CLEAN-R47",
-      "kind": "cleanup_review",
-      "startedAt": "2026-10-09T19:55:37.671020+00:00",
-      "focus": "COK-Atmosphärenprobe / R",
-      "state": "completed",
-      "result": "Rawhashes, geschützte Quelle, ausschließlicher environment-Diff und partielle Restauration geprüft; 24CTY/65CO offen, 5 eigene Prozesse weg. Team-Handshake vor neuen Claims; R47 folgt per Heartbeat."
-    },
-    "nextRun": {
       "id": "CITY-00-R47",
       "kind": "reference_review",
-      "focus": "Getrennte R47-Referenzreview nach Team-Abstimmung"
+      "startedAt": "2026-10-09T20:39:04.076618+00:00",
+      "focus": "R47 COK-Effekt-/Savebelege prüfen",
+      "state": "completed",
+      "result": "R47:43 Hashes/19 Frames, sichtbare Schatten-/Schneeregler und nur environment-Save bestätigt; Quelle/5 Prozessidentitäten geschützt. PASS nur begrenzte Wirkung; Vorlagen/Reopen/eigenes Produkt offen."
+    },
+    "nextRun": {
+      "id": "CITY-00-R47-CLEAN-P47",
+      "kind": "cleanup_plan",
+      "focus": "COK-Vorlagenfunktion/Fresh-Reopen konkret planen; CITY01 wartet konkrete HEX04/05-Verträge"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",

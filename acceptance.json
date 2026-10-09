@@ -1729,7 +1729,10 @@
         "comparisonEvidence": [],
         "usabilityEvidence": [],
         "review": {
-          "state": "not_run"
+          "state": "pass_bounded_effect_feature_partial",
+          "run": "CITY-00-R47",
+          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i47-20261009-r02/review.json",
+          "independentProductReview": false
         },
         "status": "open",
         "gap": "Schattenrichtung/Schneeschicht sichtbar und nativ gespeichert; Vorlagenanwendung, übrige Parameter, Fresh-Reopen und eigenes Produkt/Host/Bedienung offen.",
@@ -1739,7 +1742,8 @@
           "run": "CITY-00-I47",
           "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i47-20261009-r02/manifest.json",
           "state": "completed_bounded_probe",
-          "restoration": "snow0 visible only; saved snow0.6/shadow34 retained in own QA copy; source protected"
+          "restoration": "snow0 visible only; saved snow0.6/shadow34 retained in own QA copy; source protected",
+          "reviewManifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i47-20261009-r02/review.json"
         }
       },
       {
