@@ -462,7 +462,7 @@
     "schemaVersion": 1,
     "updated": "2026-10-09T15:18:47.917996+00:00",
     "plan": "ROADMAP-CITIES.md",
-    "state": "planned_not_implemented",
+    "state": "model_codec_prepared_atlas_integration_pending",
     "comparisonMode": "functional_equivalence_and_independent_usability_tests",
     "userRequirements": {
       "cityResults": "Stadtfunktionen gleichwertig mit Canvas of Kings, Medieval Fantasy City Generator und Fantasy Town Generator; Grafik ungefähr gleichwertig, Bedienung besser.",
@@ -592,8 +592,10 @@
         ],
         "deliverable": "Native .city direkt am Ort anlegen; Straße, Platz und zwei Häuser im selben Editor bearbeiten.",
         "test": "Nur hinein-/herauszoomen; Haus verschieben, Straße ändern, Undo/Redo, speichern und frisch öffnen.",
-        "state": "planned",
-        "evidence": []
+        "state": "model_prepared_integration_pending",
+        "evidence": [
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-model-20261009/implementation.json"
+        ]
       },
       {
         "id": "CITY-02",
@@ -716,8 +718,11 @@
           "gap": null
         },
         "implementation": {
-          "state": "not_started",
-          "evidence": []
+          "state": "partial",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-model-20261009/implementation.json"
+          ],
+          "remaining": "Atlas placement/scene/selection/common history, native file registration and save/reopen host sequence not implemented."
         },
         "hostCheck": {
           "state": "not_run",
