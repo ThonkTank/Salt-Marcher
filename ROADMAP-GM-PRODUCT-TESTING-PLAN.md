@@ -115,6 +115,13 @@ Ein erster Locator-Klick auf das Key-Textarea wurde vom Editor-Dock abgefangen; 
 
 **GM-UX-N-003 an Dungeon-Verantwortlichen:** enger UX-Auftrag: beim Öffnen der Key-Ansicht Karte/gewählten Raum brauchbar sichtbar halten und unnötige parallele Key-Editor-Duplikation vermeiden; „Key bearbeiten“ muss direkt wieder erreichbar bleiben. Abnahme: gleiche isolierte Karte/Notiz, ein Hinweistext in der aktiven Notizansicht ohne zweiten offenen Key-Editor, sichtbarer Kartenkontext; Bearbeiten bleibt erreichbar; Speichern, App-Reload und erneutes Öffnen erhalten den Text. Issue #1 Kommentar `6084205940`. Zuständigkeit/Annahme und Umsetzung stehen aus.
 
+**Folgearbeitsstand:** Der Dungeon-Strang hat ausschließlich den technischen
+Planlauf `GM-UX-N-003-P01` in Issue #8 Kommentar `6088872377` übernommen.
+`ROADMAP-GM-UX-N-003-PLAN.md` führt den vorhandenen Dirty-Guard, Key-Dock und
+`openRoomKey`-Workspaceweg zusammen; Produktcode ist noch unverändert. Vor I01
+bleibt der unabhängige read-only Planreview offen. N-006-H01/GM-R01 läuft
+getrennt beim Cloud-GM-Produkttester auf dessen bereits installiertem Build.
+
 ### GM-UX-02 – Atlas-Zoomprobe auf neu integrierter Oberfläche
 
 Nach Fast-Forward auf `0dc85609a35bc4c4452f7afc2a360400922becab` enthielt die Oberfläche jetzt den sichtbaren Befehl „Atlas anlegen“, Zoomschaltflächen −/+, „Einpassen“ und die Anleitung „Strg + Mausrad zoomt“. Ich baute diesen Stand und lud `main.js` SHA-256 `416c739776dd39cca0e2935aaeb0f966cfba54a36f65e6d846446122d9c8f159` in Obsidian 1.14.4 (1440×1000). Der Build meldete `dirty:true`, weil nur GM-Plan/Checkpoint-Dokumentation geändert war; Produktquellen, CSS und Paketdateien waren unverändert.

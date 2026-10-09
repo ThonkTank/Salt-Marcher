@@ -2495,6 +2495,19 @@
       "next": "GM-UX-N-005-N01-H01: der Cloud-GM-Produkttester wiederholt exakt den veröffentlichten Nebelwacht-H01-Ablauf auf integriertem a06703c-Produktstand; erst danach bleibt GM-R01 als unabhängiger Nachtest.",
       "followingRun": "GM-UX-N-006-P01 als eigener Planlauf: nach Abschluss des N-005-Plans den Workspace-/View-State-Vertrag prüfen und zwischen Ebenenwiederherstellung und sichtbarer Wiederaufnahme entscheiden; keine Vermischung mit N-005-Implementierung, DD-036 oder Atlaspersistenz."
     },
+    "gmUxN003Plan": {
+      "date": "2026-10-09",
+      "state": "plan_candidate_review_pending",
+      "run": "GM-UX-N-003-P01",
+      "plan": "ROADMAP-GM-UX-N-003-PLAN.md",
+      "source": "GM-UX-003 im isolierten Cloud-GM-Produkttest; Issue #1 Kommentar 6084205940; ROADMAP-GM-PRODUCT-TESTING-PLAN.md",
+      "ownership": "Dungeon-Strang beanspruchte ausschließlich GM-UX-N-003-P01 nach Issue-/PR-/Branchabgleich auf Shared-Base 71099f277c8de58f4d0a60dc62d56bbd9c8bc483; Claim Issue #8 Kommentar 6088872377. N-006-H01/GM-R01 bleibt beim Cloud-GM-Produkttester; N-005, DD-036, Hex/Atlas, City, Katalog, Migration und SMR bleiben fremd.",
+      "finding": "Auf zwei isolierten Karten blieb nach Raum-Key öffnen der eingebettete strukturierte Key-Editor sichtbar, während derselbe Hinweis zusätzlich in der Raumansicht erschien; der Kartenkontext wurde stark geteilt. Nutzungshäufigkeit und Produktlatenz sind nicht gemessen.",
+      "planDecision": "Nur für einen sauberen strukturierten Key den vorhandenen Dirty-Guard vor jeder Layoutmutation prüfen, das vollständige Raum-/Abschnitt-/Ankerziel erfassen, den bestehenden Key-Dock über toggleKey(false) weichen lassen und danach den unveränderten openRoomKey-Workspaceport nutzen. Auswahl, Kamera, Dokument, History, Persistenz und unstrukturierter Notizpfad bleiben unverändert.",
+      "verification": "Plan-Kandidat: JSON-, Verweis- und Diffprüfung vorgesehen; unabhängiger read-only Review des exakten Plancommits ausstehend.",
+      "limits": "Keine Produktänderung, automatisierte Produktregression, GUI-/Hostprüfung, physische Eingabe oder Save/App-Reload/Reopen-Wirkung. Keine UX-, Host-, Fach-, Paritäts- oder Gesamtfreigabe.",
+      "next": "GM-UX-N-003-P01-R01: unabhängiger read-only Review des exakten Plancommits; nur bei PASS folgt ein getrenntes I01-Produktpaket."
+    },
     "gmUxN006Backlog": {
       "date": "2026-10-09",
       "state": "i02_implementation_r02_passed_h01_open",
