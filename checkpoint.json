@@ -4791,16 +4791,16 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-R47-CLEAN-I47",
-      "kind": "cleanup_implementation",
-      "startedAt": "2026-10-09T20:39:26.928811+00:00",
-      "focus": "R47 COK-Effekt-/Savebelege prüfen",
-      "state": "completed",
-      "result": "Rawname018 ohne Umbenennen als bloße Kennung geklärt; Plan-Ausgangsstand datiert; Issue7/11 und tatsächlicher20min-Heartbeat konsolidiert. Keine API-/Produktänderung."
-    },
-    "nextRun": {
       "id": "CITY-00-R47-CLEAN-R47",
       "kind": "cleanup_review",
+      "startedAt": "2026-10-09T20:39:40.200319+00:00",
+      "focus": "R47 COK-Effekt-/Savebelege prüfen",
+      "state": "completed",
+      "result": "Aufräumreview PASS:43 Rawhashes/Reviewlink/JSON/Quellschutz und24CTY/65CO offen; keine fremde Wurzel verändert. Nächster Schritt Vorlagenlücke konkret planen, keine neue GUI bis Slotabsprache."
+    },
+    "nextRun": {
+      "id": "CITY-00-P48",
+      "kind": "plan",
       "focus": "COK-Vorlagenfunktion/Fresh-Reopen konkret planen; CITY01 wartet konkrete HEX04/05-Verträge"
     },
     "open": [

@@ -1089,3 +1089,5 @@ CITY-00-R47 Start 2026-10-09T20:39:04.076618+00:00; R47:43 Hashes/19 Frames, sic
 CITY-00-R47-CLEAN-P47 Start 2026-10-09T20:39:15.687903+00:00; Aufräumplan: irreführenden Raw-Bildnamen018 ausdrücklich einordnen, veraltete Plan-/Koordinationsaussagen konsolidieren, tatsächlichen20min-Heartbeat und Issue7 im eigenen Checkpoint abbilden; Rawdaten unverändert.
 
 CITY-00-R47-CLEAN-I47 Start 2026-10-09T20:39:26.928811+00:00; Rawname018 ohne Umbenennen als bloße Kennung geklärt; Plan-Ausgangsstand datiert; Issue7/11 und tatsächlicher20min-Heartbeat konsolidiert. Keine API-/Produktänderung.
+
+CITY-00-R47-CLEAN-R47 Start 2026-10-09T20:39:40.200319+00:00; Aufräumreview PASS:43 Rawhashes/Reviewlink/JSON/Quellschutz und24CTY/65CO offen; keine fremde Wurzel verändert. Nächster Schritt Vorlagenlücke konkret planen, keine neue GUI bis Slotabsprache.
