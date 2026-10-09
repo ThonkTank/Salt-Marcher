@@ -4286,20 +4286,20 @@
   "cityExecution": {
     "scope": "CITY-00 bis CITY-09; vollständige Funktionsgleichwertigkeit mit drei Vergleichsprogrammen und bessere Bedienung",
     "phase": "CITY-00",
-    "state": "city01_model_prepared_hex05_integration_pending",
+    "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-01-PREP-SCENE-PLAN-CLEAN-R04",
-      "kind": "cleanup_review",
-      "startedAt": "2026-10-09T17:17:42.773613+00:00",
-      "focus": "Finalen Szenenplan gegen Quellen und bestätigte Modulgrenze prüfen",
-      "state": "completed",
-      "result": "Konkrete lokale Szene/Treffer, gemeinsame Pose/Segmenthelper, finite Bounds und Dungeonbaseline geprüft; keine Restlücke im Plan-Aufräumen."
-    },
-    "nextRun": {
       "id": "CITY-01-PREP-I04",
       "kind": "implementation",
-      "focus": "Lokale CityScene/Treffer und gemeinsame Pose/Streckenhelper mit Dungeonregressionen implementieren"
+      "startedAt": "2026-10-09T17:19:57.078Z",
+      "focus": "Lokale Szene, Treffer und gemeinsame Geometrie implementieren",
+      "state": "completed",
+      "result": "Lokaler Core implementiert;308Tests/Typprüfung/Build grün,7525Dungeonbaselinevergleiche mit exakten Adressen. Separater Review folgt."
+    },
+    "nextRun": {
+      "id": "CITY-01-PREP-R05",
+      "kind": "review",
+      "focus": "Szene/Treffer und gemeinsame Geometrie unabhängig gegen Plan prüfen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",

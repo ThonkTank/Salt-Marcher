@@ -513,7 +513,7 @@
     "schemaVersion": 1,
     "updated": "2026-10-09T15:18:47.917996+00:00",
     "plan": "ROADMAP-CITIES.md",
-    "state": "model_codec_prepared_atlas_integration_pending",
+    "state": "core_prepared_atlas_integration_pending",
     "comparisonMode": "functional_equivalence_and_independent_usability_tests",
     "userRequirements": {
       "cityResults": "Stadtfunktionen gleichwertig mit Canvas of Kings, Medieval Fantasy City Generator und Fantasy Town Generator; Grafik ungefähr gleichwertig, Bedienung besser.",
@@ -643,7 +643,7 @@
         ],
         "deliverable": "Native .city direkt am Ort anlegen; Straße, Platz und zwei Häuser im selben Editor bearbeiten.",
         "test": "Nur hinein-/herauszoomen; Haus verschieben, Straße ändern, Undo/Redo, speichern und frisch öffnen.",
-        "state": "model_prepared_integration_pending",
+        "state": "core_prepared_integration_pending",
         "evidence": [
           "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-model-20261009/implementation.json"
         ]
@@ -774,9 +774,10 @@
             "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-model-20261009/implementation.json",
             "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-model-20261009/repair.json",
             "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-commands-20261009/implementation.json",
-            "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-commands-20261009/cleanup-review.json"
+            "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-commands-20261009/cleanup-review.json",
+            "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-scene-20261009/implementation.json"
           ],
-          "remaining": "Common History code adapter prepared and reviewed. Atlas placement/scene/selection, native registration and save/reopen host sequence remain unimplemented."
+          "remaining": "Native model, shared history, pure actions and local scene/hit core prepared; scene review pending. Atlas placement, visible rendering, gestures/selection, external bindings and host save/reopen still pending."
         },
         "hostCheck": {
           "state": "not_run",
@@ -874,9 +875,10 @@
           "state": "partial",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-edit-20261009/implementation.json",
-            "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-edit-20261009/cleanup-review.json"
+            "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-edit-20261009/cleanup-review.json",
+            "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-scene-20261009/implementation.json"
           ],
-          "remaining": "Pure road/building edit operations prepared and reviewed. Shared atlas gestures, selection, rendering, external bindings and host save/reopen remain unimplemented."
+          "remaining": "Native model, shared history, pure actions and local scene/hit core prepared; scene review pending. Atlas placement, visible rendering, gestures/selection, external bindings and host save/reopen still pending."
         },
         "hostCheck": {
           "state": "not_run",
@@ -910,9 +912,10 @@
           "state": "partial",
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-edit-20261009/implementation.json",
-            "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-edit-20261009/cleanup-review.json"
+            "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-edit-20261009/cleanup-review.json",
+            "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-scene-20261009/implementation.json"
           ],
-          "remaining": "Pure road/building edit operations prepared and reviewed. Shared atlas gestures, selection, rendering, external bindings and host save/reopen remain unimplemented."
+          "remaining": "Native model, shared history, pure actions and local scene/hit core prepared; scene review pending. Atlas placement, visible rendering, gestures/selection, external bindings and host save/reopen still pending."
         },
         "hostCheck": {
           "state": "not_run",
