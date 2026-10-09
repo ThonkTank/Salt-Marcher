@@ -4325,17 +4325,17 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-01-PREP-SCENE-CLEAN-R04",
-      "kind": "cleanup_review",
-      "startedAt": "2026-10-09T17:32:52.031176+00:00",
-      "focus": "Szenenarchitektur und unveränderte geprüfte Quellen prüfen",
-      "state": "completed",
-      "result": "Lokaler Core reviewt und aufgeräumt;310Tests/Typprüfung/Build und7525Baselinevergleiche gültig. Native-/Grafik-/Gesten-/Saveintegration weiter offen."
-    },
-    "nextRun": {
       "id": "CITY-01-PREP-P05",
       "kind": "implementation_planning",
-      "focus": "Transiente Stadtwerkzeugzüge mit stabilem Gestenanfangsstand und gemeinsamem Historyvertrag planen"
+      "startedAt": "2026-10-09T17:35:42.174Z",
+      "focus": "Transiente CityDraft-Lebensdauer und gemeinsame Historyfehlergrenze planen",
+      "state": "completed",
+      "result": "CityDraft-API konkret geplant; echte postcommit-Subscriberlücke belegt, koordinierte Reparatur erforderlich vor verlässlichem Apply."
+    },
+    "nextRun": {
+      "id": "CITY-01-PREP-DRAFT-PLAN-CLEAN-P05",
+      "kind": "cleanup_planning",
+      "focus": "Draftplan auf Zustandsübergänge und koordinierte Historyreparatur prüfen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
