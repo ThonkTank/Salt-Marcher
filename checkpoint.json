@@ -3546,17 +3546,17 @@
     "state": "city00_reference_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I08-I",
-      "kind": "browser_original_probe",
-      "startedAt": "2026-10-09T11:35:20.862216+00:00",
-      "focus": "3D/StreetView über sichtbare Controls prüfen",
-      "state": "completed",
-      "result": "Perspektive und Kartenrückkehr direkt belegt;3D deaktiviert und250m-Ausgangskamera wiederhergestellt. Bewegung weiterhin offen."
-    },
-    "nextRun": {
       "id": "CITY-00-I08-R",
       "kind": "reference_review",
-      "focus": "3D-Belege, Rückstellung und Grenzen prüfen"
+      "startedAt": "2026-10-09T11:35:59.125795+00:00",
+      "focus": "Originalperspektive und Rückstellung bewerten",
+      "state": "completed",
+      "result": "14Hashes und General-Ausgangswerte erhalten; Einstieg/Rückkehr belegt, Fortbewegung weiterhin ungeprüft; keine Pflichtlücke des engen Probelaufs"
+    },
+    "nextRun": {
+      "id": "CITY-00-I08-CP",
+      "kind": "cleanup_planning",
+      "focus": "Präferenzzuordnung und gemeinsame Kameraanforderung präzisieren"
     },
     "open": [
       "CITY-00 direkte Referenzinventur/Galerie aller drei Produkte",
