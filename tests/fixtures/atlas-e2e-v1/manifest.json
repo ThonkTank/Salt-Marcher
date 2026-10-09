@@ -124,11 +124,20 @@
     "decision": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6089626939",
     "state": "Hex-supported canonical proposal; shared team confirmation pending",
     "gates": {
-      "E2E-01": "Campaign/common Atlas-space/Save/Restart with Campaign Party Preparation Initialize P02 and Complete-Import/P04 inputs",
+      "E2E-01": "CampaignLifecycle/Context/Schema-CampaignRevision/World-Location namespace/common Atlas-space/P02 Save-Reopen and verified Complete-Import/P04; no positive Party-Preparation-Initialize requirement, no automatic LiveSession",
       "E2E-02": "Preparation/Party/LiveSession/Scene/Focus/Encounter/Chase/session completion",
       "E2E-03": "Travel/Calendar/Clock/location/weather/shop/music/world effects and exactly-once retry/restart",
       "E2E-04": "Recovery/Complete/Salvage/Restore/Import plus safe Player Display/accessibility/target host"
     },
-    "crossCutting": "Crash/Command/Receipt oracles also apply to every affected write gate E2E-01 through E2E-03"
+    "crossCutting": "Crash/Command/Receipt oracles also apply to every affected write gate E2E-01 through E2E-03",
+    "campaignBoundary": {
+      "decision": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/16#issuecomment-6089845918",
+      "contractState": "Campaign/Data owner semantics incorporated; concrete versioned Context/navigation input and independent review pending",
+      "contextOwner": "Campaign/Data owns Lifecycle/Context, schema/CampaignRevision, namespace and import/remapping truth; Hex owns thin navigation adapter only",
+      "sessionBoundary": "E2E-01 accepts a valid Campaign without LiveSession; Party/Preparation/Initialize are negative side-effect boundaries only, positive start belongs to E2E-02",
+      "switchOracle": "A-to-B-to-A rebinds current CampaignRevision; no foreign camera/history/selection/write or stale callback mutation; preserve pending key/gesture work before confirmed switch",
+      "identityOracle": "Reopen/Restore preserve Campaign and domain IDs; Campaign Copy/Import create an independent Campaign with complete campaign-local Old-to-New closure; source/existing Campaigns/shared definitions/global Catalog IDs unchanged",
+      "portabilityScope": "E2E-01 requires real P02 Save/Reopen and one verified Complete-Import with manifest/checksums/remap closure; broader Salvage/Backup/Restore/Crash-Recovery remains E2E-04"
+    }
   }
 }

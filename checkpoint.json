@@ -421,25 +421,26 @@
   "hexAtlasExecution": {
     "scope": "HEX-00 bis HEX-28 und sämtliche eingeordneten CITY-00 bis CITY-09 vollständig",
     "phase": "HEX-03",
-    "state": "e2e_plans_peer_review_pass_contract_ratification_pending",
+    "state": "e2e_campaign_boundary_repair_candidate_review_pending",
     "plan": "ROADMAP-HEX-03-PLAN.md",
     "currentRun": {
-      "id": "HEX-E2E-H01",
-      "kind": "coordination_handoff",
-      "state": "completed_checked_candidate_metadata",
-      "startedAt": "2026-10-09T21:47:03.490302+00:00",
-      "focus": "Record real independent Hex/City R02 receipts, bridge ownership and own exact gate-catalog response; preserve reviewed plan and native fixture bytes.",
+      "id": "HEX-E2E-N02",
+      "kind": "campaign_lifecycle_plan_repair",
+      "state": "implemented_checked_independent_review_pending",
+      "startedAt": "2026-10-09T21:51:55.241738+00:00",
+      "finishedAt": "2026-10-09T21:53:42.654512+00:00",
+      "focus": "Remove positive Preparation/Party/Initialize dependency from E2E01; spell Campaign→Atlas lifecycle/revision/identity boundaries and keep positive session flow in E2E02.",
       "candidateBranch": "hex/hex03-p01-20261009",
-      "baseCommit": "1888f527bbec321778cab733bf78c93a20298992",
-      "result": "Own R02 and City R02/meta PASS narrowly; no self-integration, shared contracts/ratification still open.",
+      "baseCommit": "6b631773dc64febf296408f7aed2f3a9147c5889",
+      "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/e2e-hex-campaign-repair.json",
       "nativeOnThisBuild": false,
       "phaseApproval": false
     },
     "nextRun": {
-      "id": "HEX-E2E-P02",
-      "kind": "joint_contract_plan_gate",
-      "focus": "Confirm Campaign/Data bridge input and shared catalog corrections/version; agree persisted House→Dungeon and single History/Snapshot/Transaction contract plus real P02/P03/P04 implementation owners and independent Gate-Code-Reviewer. Integrate only reviewed candidates through agreed gate.",
-      "dependency": "No new isolated UI slice or repeated Codec/plan review. HEX03 marker remains next own product step within ratified E2E01 path. Future native slot coordinated anew with City."
+      "id": "HEX-E2E-R03",
+      "kind": "independent_campaign_boundary_plan_review",
+      "focus": "Campaign/Data independently reviews only new E2E01 negative Party/Preparation/Initialize boundary, lifecycle/context/revision/namespace/switch/ID oracles and staged P02/P04 in Hex plan/manifest; earlier Dungeon and City reviews preserved. Shared catalog/House→Dungeon/one History-Transaction/P02 adapter gates remain explicit.",
+      "dependency": "No native payload/source edits or self-integration. Concrete Campaign navigation input remains unconfirmed. Next own product slice remains HEX03 marker/Key within shared E2E01 path, with fresh GUI slot when needed."
     },
     "review": {
       "run": "HEX-02-R02",
@@ -548,14 +549,16 @@
         },
         "gateCatalogCandidate": {
           "pr": 16,
-          "candidate": "ba9661d4d79755ac27bc7eb9ecea03f6268227fe",
+          "candidate": "26c4603040693300ad1737bca6ad0163befdc093",
           "ownResponse": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6089793770",
-          "state": "own_scope_supported_copy_import_identity_oracle_precision_requested; shared ratification pending"
+          "state": "Latest Campaign/Data/Chronik/consumer repair candidate observed; own Atlas plan aligned with Campaign/Data owner semantics, independent new-scope review and team ratification pending",
+          "campaignDataReview": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/16#issuecomment-6089845918",
+          "lastOwnRemapPrecisionChecked": "2cf8eaf6085d16b288250a4996dec05dbf03f84a"
         },
         "campaignAtlasBridge": {
           "owner": "Hex for thin immutable-context/navigation adapter only",
           "decision": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6089730661",
-          "campaignDataInput": "unconfirmed; lifecycle/context/reference/remap remain Campaign/Data",
+          "campaignDataInput": "Owner Lifecycle/Context/schema-CampaignRevision/namespace/remap semantics supplied in PR16 review; concrete versioned context/navigation input remains unconfirmed",
           "state": "owned_not_implemented_contract_review_pending",
           "oracles": [
             "same camera/history",
@@ -563,7 +566,25 @@
             "pending key/gesture protected before switch",
             "stale callbacks cannot affect new campaign",
             "no automatic LiveSession/Party/Travel/Clock writes"
-          ]
+          ],
+          "campaignDataDecision": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/16#issuecomment-6089845918"
+        },
+        "independentOwnMetadataReview": {
+          "run": "HEX-E2E-H01-R01",
+          "candidate": "6b631773dc64febf296408f7aed2f3a9147c5889",
+          "reviewer": "Dungeon",
+          "result": "PASS metadata only",
+          "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/13#pullrequestreview-5475674675"
+        },
+        "campaignBoundaryRepair": {
+          "run": "HEX-E2E-N02",
+          "baseCommit": "6b631773dc64febf296408f7aed2f3a9147c5889",
+          "state": "candidate_new_scope_independent_review_pending",
+          "plan": "ROADMAP-HEX-ATLAS-E2E-PLAN.md",
+          "manifest": "tests/fixtures/atlas-e2e-v1/manifest.json",
+          "nativePayloadsChanged": false,
+          "positiveInitializeGate": "E2E-02 only",
+          "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/e2e-hex-campaign-repair.json"
         }
       }
     },
@@ -1667,7 +1688,7 @@
       "platformIssue": 11,
       "checkpointIsAuthoritative": true
     },
-    "updatedAt": "2026-10-09T21:47:03.490302+00:00"
+    "updatedAt": "2026-10-09T21:53:42.654512+00:00"
   },
   "phase": "Phase 6: zweiter Nachbesserungslauf teilweise umgesetzt; fünf Restpositionen und unabhängiger Review offen",
   "goal": "Dungeon-Pfad bis zur vollständigen beauftragten Dungeondraft-Verhaltensgleichheit verfolgen: Bedienung und Funktion angleichen, Grafik ungefähr gleichwertig. Zuerst ROADMAP-PARITY.md mit Building und Object Tool abschließen, danach übrige Dungeon-Werkzeuge. Jede Fachphase getrennt planen, umsetzen und unabhängig reviewen; Lücken mit eigenen Nachbesserungs- und Reviewläufen schließen; danach eigene Aufräumphase mit Plan, Umsetzung und Review.",
