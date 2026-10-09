@@ -675,3 +675,6 @@ CITY-01-PREP-N01 Start 2026-10-09T16:40:57.836912+00:00; Abschluss 2026-10-09T16
 
 
 CITY-01-PREP-R02 Start 2026-10-09T16:44:07.400Z; Beide R01-Gegenfälle erneut am reparierten Codec kontrolliert abgelehnt; kanonischer Roundtrip unverändert.276Tests einschließlich11 City-Fällen, Typprüfung und Build an unveränderten geprüften Quellen bestätigt. Modellvertrag ohne weitere Fachlücke im begrenzten Vorbereitungsumfang. Aufräumreste: dimensionslose Skalierung im Typ kommentieren, pauschal geplante Modulpfade im Gesamtplan korrigieren und dichte Listen in Architektur dokumentieren. Alle Host-/Atlas-/Paritätspflichten bleiben offen. Beleg: /home/aaron/.cache/dungeon-native-qa/city-plans/city01-model-20261009/r02-review.json. Aufräum-P/I/R folgen getrennt.
+
+
+CITY-01-PREP-CLEAN-P01 Start 2026-10-09T16:46:15.720458+00:00; Plan: Nur drei R02-Reste bereinigen: dimensionslose Achsenskalierung direkt am Modelltyp kommentieren; Gesamtplan trennt existierende Modell-/Codec-APIs von geplanten Modulen; Architektur nennt dichte native Listen ohne Zusatz-/Accessorfelder. Kein Laufzeitumbau/Geometriekopie/öffentlicher API-Zuwachs. Generierten JS-Code vor/nach Kommentar vergleichen; frühere Rawbelege erhalten und abschließend CTY/CO/Verweise/Quellgrenzen prüfen. CI/CR getrennt.
