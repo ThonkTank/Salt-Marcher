@@ -186,11 +186,17 @@ module.exports = ({ page, fs, path, assert, crypto, qa, out, checks, sleep }) =>
     await page.waitForFunction((viewType) => app.workspace.getLeavesOfType(viewType).length === 0, VIEW);
     await openViaPalette();
     const reopened = await assertOneLeaf();
-    assert.equal(reopened.state.sort, "name");
-    assert.equal(reopened.state.direction, "asc");
-    assert.equal(reopened.state.page, 0);
+    assert.equal(reopened.state.sort ?? "name", "name");
+    assert.equal(reopened.state.direction ?? "asc", "asc");
+    assert.equal(reopened.state.page ?? 0, 0);
     assert.equal(reopened.state.selectedId, undefined);
-    assert.equal(await root().locator('[data-focus-key="search"]').inputValue(), "");
+    const reopenedCatalog = root();
+    assert.equal(await reopenedCatalog.locator('[data-focus-key="search"]').inputValue(), "");
+    assert.equal(await reopenedCatalog.locator(".dn-catalog-chip").count(), 0);
+    assert.equal(await reopenedCatalog.locator(".dn-catalog-detail h2").count(), 0);
+    await reopenedCatalog.getByText(/1–50 von 334/).waitFor();
+    assert.equal(await reopenedCatalog.getByRole("columnheader", { name: "Name" })
+      .getAttribute("aria-sort"), "ascending");
     await page.screenshot({ path: path.join(out, "catalog-close-reopen-default.png") });
     fs.writeFileSync(path.join(out, "catalog-state.json"), JSON.stringify({ restored: current.state,
       afterCloseReopen: reopened.state }, null, 2));
