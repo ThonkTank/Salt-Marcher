@@ -28,6 +28,7 @@ test("unique view opener serializes overlapping creation calls", async () => {
   let release!: () => void;
   const pending = new Promise<void>((resolve) => { release = resolve; });
   const created: FakeLeaf[] = [];
+  const revealed: FakeLeaf[] = [];
   const workspace: UniqueViewWorkspace<FakeLeaf> = {
     getLeavesOfType: () => created,
     getLeaf: () => {
@@ -35,7 +36,7 @@ test("unique view opener serializes overlapping creation calls", async () => {
       created.push(leaf);
       return leaf;
     },
-    revealLeaf: () => undefined,
+    revealLeaf: (leaf) => { revealed.push(leaf); },
   };
   const opener = createUniqueCatalogOpener(workspace, "catalog");
   const first = opener();
@@ -45,5 +46,24 @@ test("unique view opener serializes overlapping creation calls", async () => {
   await first;
   await second;
   assert.equal(created.length, 1);
+  assert.deepEqual(revealed, [created[0]]);
   assert.deepEqual(created[0]?.states, [{ type: "catalog", active: true }]);
+});
+
+test("unique view opener keeps the first existing leaf and detaches duplicates", async () => {
+  const pending = Promise.resolve();
+  const first = new FakeLeaf(pending);
+  const duplicate = new FakeLeaf(pending);
+  const third = new FakeLeaf(pending);
+  const revealed: FakeLeaf[] = [];
+  const workspace: UniqueViewWorkspace<FakeLeaf> = {
+    getLeavesOfType: () => [first, duplicate, third],
+    getLeaf: () => { throw new Error("must not create a new leaf"); },
+    revealLeaf: (leaf) => { revealed.push(leaf); },
+  };
+  await createUniqueCatalogOpener(workspace, "catalog")();
+  assert.equal(first.detached, false);
+  assert.equal(duplicate.detached, true);
+  assert.equal(third.detached, true);
+  assert.deepEqual(revealed, [first]);
 });

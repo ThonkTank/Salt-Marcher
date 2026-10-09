@@ -158,6 +158,7 @@ test("catalog keyboard focus tolerates parser-accepted adversarial creature IDs"
   const source = rows[sourceIndex]!;
   source.focus();
   assert.doesNotThrow(() => source.dispatchEvent(key(window, targetIndex === 0 ? "ArrowUp" : "ArrowDown")));
+  assert.equal(root.ownerDocument.activeElement?.getAttribute("data-focus-key"), `row-${adversarialId}`);
   await view.onClose();
 });
 
