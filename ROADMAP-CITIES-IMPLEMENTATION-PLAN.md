@@ -119,3 +119,11 @@ R01: Pauschale Zuordnung aller CTY-Fälle einer Phase entfernen. In CI eine expl
 R02: Für die JSON-Exportaktion `originalProbe.exportFileState: unverified_after_download_timeout` samt Beobachtung eintragen. Datei-/Formatinhalt erst nach realer Sicherung belegen. Menübeobachtung bleibt als Teilbeleg; keine Fähigkeiten oder Qualitätsanforderungen streichen.
 
 CI führt ausschließlich diese beiden Katalogbereinigungen aus. CR prüft vollständige Kennungs-/Belegerhaltung, die explizite CTY-Zuordnung, fehlende Abschlussbehauptungen und JSON-/Diffgültigkeit. Danach eigener Fach-Nachreview N-R, bevor das nächste Originalpaket startet. Die vollständige CITY-00-Abnahme bleibt offen.
+
+## CITY-00-I03-P: Watabou-Referenzpaket
+
+Offen: direkte Stadtübersicht, aktuelle Version, Größen-/Layout-/Darstellungs-/Exportfähigkeiten. Originalseite ist nach automatischer Sicherheitsprüfung erreichbar; keine manuelle Sicherheitsumgehung.
+
+Konkreter Lauf: den auf der offiziellen itch-Seite tatsächlich eingebetteten Generator öffnen; Start-URL samt Seed/Größe/Features sichern. Eine ummauerte Küsten-/Flussstadt in Übersicht und Detail erfassen; Kontextmenü und Versionsanzeige direkt lesen. Nur beobachtete Optionswege nutzen. Ergebnisbilder, Menü-AX und Manifest mit Dateihashes in der bestehenden city-plans-QA-Wurzel sichern. Weitere echte Wirkungs-/Speicherproben getrennt durchführen, statt Menüs zu vollständiger Funktionsabnahme umzudeuten.
+
+Review: Referenzbilder lesbar und reproduzierbare Vorgaben bekannt; jede neu entdeckte Fähigkeit mit stabiler CO-WAT-Kennung, Zielaufgabe und Phase ergänzen; keine Referenztor-/Produktfreigabe aus diesem Teilpaket. Aufräumen danach getrennt planen, umsetzen und reviewen.

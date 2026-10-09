@@ -3366,20 +3366,17 @@
     "state": "city00_reference_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I02-NR",
-      "kind": "reference_re_review",
-      "startedAt": "2026-10-09T12:25:27.792670+02:00",
-      "focus": "Fachlicher Nachreview nach Katalogbereinigung",
-      "state": "completed_bounded_reference_package",
-      "result": "R01 geschlossen; R02 bleibt reale Exportbeleglücke; Gesamt-CITY00 nicht freigegeben",
-      "evidence": [
-        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/reference-rereview.json"
-      ]
-    },
-    "nextRun": {
       "id": "CITY-00-I03-P",
       "kind": "reference_planning",
-      "focus": "Watabou-Stadtfunktionen/Galerie direkt vorbereiten und offene Originalzugänge klären"
+      "startedAt": "2026-10-09T12:26:01.188629+02:00",
+      "focus": "Watabou-Galerie, Versions-/Menü-/Exportumfang auf direktem Original planen",
+      "state": "completed",
+      "result": "Begrenztes Originalpaket geplant; direkte Webseite erreichbar"
+    },
+    "nextRun": {
+      "id": "CITY-00-I03-I",
+      "kind": "reference_implementation",
+      "focus": "Tatsächlich eingebetteten Generator mit festem Seed und aktuellen Optionen erfassen"
     },
     "open": [
       "CITY-00 direkte Referenzinventur/Galerie aller drei Produkte",
