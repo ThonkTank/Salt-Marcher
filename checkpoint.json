@@ -2110,6 +2110,14 @@
         "result": "Isolierter frischer Obsidian-Prozess auf sauberem Testcommit öffnet eine tatsächlich gespeicherte 36-Zellen-Welt mit fünf referenzierten Terrainkinddateien. Ein sichtbarer erneuter Atlas-Save ohne Bearbeitung erhält alle sechs Dateien bytegleich; world.id, 34 aktuell geladene Zellen, fünf Referenzen, Kamera, Undo-Tiefe 0 und Status Gespeichert bleiben gleich. Draft und Journal fehlen vor und nach Save; normaler Prozessausgang.",
         "review": "Unabhängiger read-only Nachreview des sauberen 96a645c-Laufs PASS für diesen engen Host-Noop. Build-Tripel und sechs Datei-SHA-256 wurden gegen installierte und aktuelle QA-Dateien geprüft. Der erste fehlgeschlagene Versuch nahm fälschlich vollständiges Laden aller 36 gespeicherten Zellen an; er belegte keinen Produktfehler. Dungeondraft schrieb bei einem zweiten Save andere Bytes; eine Bytegleichheit der Originaldatei wird nicht behauptet. Open Recent, City-/Dungeon-Kinder, harte Recovery und volle DD-036.03 bleiben offen."
       },
+      "o01Original": {
+        "run": "DD-036-O01-ORIGINAL-03",
+        "state": "scoped_topbar_open_original_effect_independent_review_passed_full_cases_open",
+        "version": "Dungeondraft 1.2.0.1 Opulent Kirin",
+        "evidence": "/home/aaron/.cache/dungeon-native-qa/dd036-native-o03-20261009/evidence/native-open-result.json",
+        "result": "Hauptleisten-Open der isolierten Original-App öffnet einen Dateidialog. Die Auswahl der zuvor selbst gespeicherten gültigen QA-Karte ersetzt die leere C00-Karte sichtbar durch deren Rechteckraum; ein 512×512-Ausschnitt unterscheidet sich danach an 43362 Pixeln um mehr als 40 RGB-Stufen. Ausgangs- und ausgewählte Karte behalten SHA-256 283ddbf85c4f12536a862ea64200763d61062d7d7a296f3d2e1cbc31b59e6ae2 und a81de48c0fbdffd037fd513e73a099444e022ebe7cf2ccaab8feac4cbce03543.",
+        "review": "Unabhängiger read-only Review PASS nur für die enge Originalwirkung von DD-036.02/.16. Der Dateidialog erschien auf Desktop-Display :0, die App lief auf Xvnc :17; dadurch war der frühere Dialog auf dem Xvnc-Bild nicht sichtbar. Synthetische Eingabe, nur eine gültige Karte; Cancel, Dateifilter, Open Recent, Atlas-Host-Gleichwertigkeit und vollständige Fälle offen. Wrapperstatus 143 belegt keinen normalen App-Ausgang."
+      },
       "next": "GM-UX-N-005-P01: als eigener Dungeon-Planlauf ausschließlich die belegte Raum-Key-Suche planen; nicht mit DD-036 oder Atlaspersistenz vermischen.",
       "followingRun": "DD-036-O01a und das Terrainkind-Teilpaket von O01b sind eng geprüft; O01b mit Stadt-/Dungeon-Kinddateien wartet auf deren Atlasreferenzen und sichtbare Hostprüfung."
     },
