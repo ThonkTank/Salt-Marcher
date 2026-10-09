@@ -29,10 +29,11 @@ module.exports = ({ page, fs, path, assert, out, checks, vault }) => {
   async function clickCell(tool,q,r) { return stroke(tool,[q,r]); }
   async function edit() {
     await page.setViewportSize({width:1440,height:1000}); await settle();
-    await page.locator('.side-dock-ribbon-action[aria-label="Befehlspalette öffnen"]:visible, .side-dock-ribbon-action[aria-label="Open command palette"]:visible').last().click();
+    await page.keyboard.press("Control+p");
+    await page.locator(".prompt-input").waitFor({state:"visible"});
     await page.locator(".prompt-input").fill("Atlas anlegen"); await page.locator(".suggestion-item").filter({hasText:"Atlas anlegen"}).first().click();
     const modal=page.locator(".modal").filter({has:page.getByRole("textbox",{name:"Atlasname",exact:true})});
-    await modal.getByRole("textbox",{name:"Atlasname",exact:true}).fill("Hex02 Insel"); await modal.getByRole("button",{name:"Atlas anlegen",exact:true}).click();
+    await modal.getByRole("textbox",{name:"Atlasname",exact:true}).fill("Hex02 Insel"); await modal.getByRole("button",{name:"Atlas anlegen",exact:true}).click({noWaitAfter:true});
     await viewport().locator("canvas").waitFor({state:"visible"});await settle();
     const original=fs.readFileSync(path.join(vault,WORLD),"utf8");
     await stroke("Land malen",[-3,0],[3,0],true);
