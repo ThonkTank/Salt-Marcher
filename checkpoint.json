@@ -4734,16 +4734,16 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I46-CLEAN-P46",
-      "kind": "cleanup_plan",
-      "startedAt": "2026-10-09T19:36:02.852129+00:00",
-      "focus": "FTG-Bulk-Wirkung und Rücksetzung: CP",
-      "state": "completed",
-      "result": "Aufräumplan: Auswahl-Save von Daten-Apply und sichtbare Wiederherstellung von voller Dateninvarianz trennen; Rawhashes schützen."
-    },
-    "nextRun": {
       "id": "CITY-00-I46-CLEAN-I46",
       "kind": "cleanup_implementation",
+      "startedAt": "2026-10-09T19:36:05.837607+00:00",
+      "focus": "FTG-Bulk-Wirkung und Rücksetzung: CI",
+      "state": "completed",
+      "result": "Auswahl vs Apply und sichtbare Rücksetzung vs Dateninvarianz präzisiert; keine neuen APIs/Produktdatenhaltung."
+    },
+    "nextRun": {
+      "id": "CITY-00-I46-CLEAN-R46",
+      "kind": "cleanup_review",
       "focus": "Zweierauswahl/Cancel/Apply/Rücksetzung gegen Originalbelege reviewen"
     },
     "open": [
