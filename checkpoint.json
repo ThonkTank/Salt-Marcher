@@ -3544,17 +3544,17 @@
     "state": "city00_reference_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I07-BCI",
-      "kind": "cleanup_implementation",
-      "startedAt": "2026-10-09T11:31:34.645785+00:00",
-      "focus": "Farbfilter und Rückstellung exakt referenzieren",
-      "state": "completed",
-      "result": "BR01/BR02 ergänzt; Zusatzmanifest verbindet Originalframes und sieben Helligkeitswerte ohne Quelldateiänderung"
-    },
-    "nextRun": {
       "id": "CITY-00-I07-BCR",
       "kind": "cleanup_review",
-      "focus": "Hashes, Beleggrenzen und Fremdwurzeln abschließend prüfen"
+      "startedAt": "2026-10-09T11:32:00.224848+00:00",
+      "focus": "Quellen, Pflichtzuordnung und Rückstellung prüfen",
+      "state": "completed",
+      "result": "Beide Metadatenbefunde geschlossen;26Hashes intakt,63Pflichten/24CTY offen. COK wartet auf ausdrücklich freien nativen Slot."
+    },
+    "nextRun": {
+      "id": "CITY-00-I07-I",
+      "kind": "native_original_probe",
+      "focus": "Nach Hex-Slotfreigabe vollständige COK-Save/Neuöffnungs-/Presetfolge"
     },
     "open": [
       "CITY-00 direkte Referenzinventur/Galerie aller drei Produkte",
