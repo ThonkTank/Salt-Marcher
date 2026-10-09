@@ -224,10 +224,29 @@
         "canonicalId": { "oneOf": [{ "$ref": "#/$defs/occurrenceId" }, { "type": "null" }] }
       }
     },
+    "inventoryCrossReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "feed", "sectionId", "sourceKind", "sourceTable", "sourceLabel", "sourceText", "firstPdfPage", "lastPdfPage", "firstPrintedPage", "lastPrintedPage", "targetSectionIds"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^srd51:(equipment|magic-item):[a-z0-9-]+:cross-reference:[0-9]+$" },
+        "feed": { "enum": ["equipment", "magic-item"] },
+        "sectionId": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+        "sourceKind": { "const": "cross-reference" },
+        "sourceTable": { "$ref": "#/$defs/nonEmpty" },
+        "sourceLabel": { "$ref": "#/$defs/nonEmpty" },
+        "sourceText": { "$ref": "#/$defs/nonEmpty" },
+        "firstPdfPage": { "type": "integer", "minimum": 1, "maximum": 403 },
+        "lastPdfPage": { "type": "integer", "minimum": 1, "maximum": 403 },
+        "firstPrintedPage": { "type": "integer", "minimum": 1, "maximum": 403 },
+        "lastPrintedPage": { "type": "integer", "minimum": 1, "maximum": 403 },
+        "targetSectionIds": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string", "pattern": "^[a-z0-9-]+$" } }
+      }
+    },
     "inventory": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["inventoryVersion", "complete", "expectedPrimaryOccurrences", "capturedPrimaryOccurrences", "sections", "occurrences", "helperDispositions"],
+      "required": ["inventoryVersion", "complete", "expectedPrimaryOccurrences", "capturedPrimaryOccurrences", "sections", "occurrences", "helperDispositions", "crossReferences"],
       "properties": {
         "inventoryVersion": { "const": 1 },
         "complete": { "type": "boolean" },
@@ -235,7 +254,8 @@
         "capturedPrimaryOccurrences": { "type": "integer", "minimum": 0 },
         "sections": { "type": "array", "items": { "$ref": "#/$defs/inventorySection" } },
         "occurrences": { "type": "array", "items": { "$ref": "#/$defs/inventoryOccurrence" } },
-        "helperDispositions": { "type": "array", "items": { "$ref": "#/$defs/helperDisposition" } }
+        "helperDispositions": { "type": "array", "items": { "$ref": "#/$defs/helperDisposition" } },
+        "crossReferences": { "type": "array", "items": { "$ref": "#/$defs/inventoryCrossReference" } }
       }
     }
   }

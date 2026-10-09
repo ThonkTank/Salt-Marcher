@@ -161,6 +161,29 @@ export function validateTranscriptData(transcript, inventory, { allowIncomplete 
       }
     }
   }
+  invariant(Array.isArray(inventory.crossReferences), "Inventar benötigt eine Cross-reference-Liste.");
+  const crossReferenceIds = new Set();
+  for (const [index, reference] of inventory.crossReferences.entries()) {
+    object(reference, `Cross-reference[${index}]`);
+    nonEmpty(reference.id, `Cross-reference[${index}].id`);
+    invariant(!crossReferenceIds.has(reference.id), `Doppelte Cross-reference-ID ${reference.id}.`);
+    crossReferenceIds.add(reference.id);
+    invariant(reference.sourceKind === "cross-reference", `${reference.id} hat einen ungültigen Quelltyp.`);
+    nonEmpty(reference.sourceTable, `${reference.id}.sourceTable`);
+    nonEmpty(reference.sourceLabel, `${reference.id}.sourceLabel`);
+    nonEmpty(reference.sourceText, `${reference.id}.sourceText`);
+    invariant(sectionIds.has(reference.sectionId), `${reference.id} verweist auf unbekannten Quellabschnitt.`);
+    invariant(Array.isArray(reference.targetSectionIds) && reference.targetSectionIds.length > 0,
+      `${reference.id} benötigt Zielabschnitte.`);
+    for (const targetSectionId of reference.targetSectionIds)
+      invariant(sectionIds.has(targetSectionId), `${reference.id} verweist auf unbekannten Zielabschnitt ${targetSectionId}.`);
+    for (const field of ["firstPdfPage", "lastPdfPage", "firstPrintedPage", "lastPrintedPage"])
+      invariant(Number.isSafeInteger(reference[field]) && reference[field] > 0,
+        `${reference.id}.${field} ist ungültig.`);
+    invariant(reference.firstPdfPage <= reference.lastPdfPage, `${reference.id} hat umgekehrte PDF-Seiten.`);
+    invariant(reference.firstPrintedPage <= reference.lastPrintedPage,
+      `${reference.id} hat umgekehrte Druckseiten.`);
+  }
   invariant(Array.isArray(inventory.helperDispositions), "Inventar benötigt eine Helper-Dispositionliste.");
   const helperIndices = new Set();
   for (const [index, disposition] of inventory.helperDispositions.entries()) {
@@ -303,6 +326,26 @@ function verifyPdfHelperDispositions(pdfPath, inventory) {
     scope: "helper-disposition-source-text" });
 }
 
+function verifyPdfCrossReferences(pdfPath, inventory) {
+  const pageText = new Map();
+  let checkedFacts = 0;
+  for (const reference of inventory.crossReferences) {
+    const pages = Array.from({ length: reference.lastPdfPage - reference.firstPdfPage + 1 },
+      (_, index) => reference.firstPdfPage + index);
+    const text = pages.map(page => {
+      if (!pageText.has(page)) pageText.set(page, normalizePdfPageText(extractPdfPage(pdfPath, page), page));
+      return pageText.get(page);
+    }).join(" ");
+    for (const fact of [reference.sourceLabel, reference.sourceText]) {
+      invariant(text.includes(normalizePdfText(fact)),
+        `${reference.id}: PDF-Beleg für Cross-reference „${fact}“ fehlt.`);
+      checkedFacts += 1;
+    }
+  }
+  return Object.freeze({ checkedCrossReferences: inventory.crossReferences.length, checkedFacts,
+    scope: "cross-reference-label-and-source-text" });
+}
+
 async function json(path) {
   return JSON.parse(await readFile(path, "utf8"));
 }
@@ -341,6 +384,8 @@ export async function verifyItemsSourcePackage({ pdfPath, allowIncomplete = fals
     "Manifest-Inventarcount stimmt nicht.");
   invariant(manifest.coverage.transcriptRecords === transcript.records.length,
     "Manifest-Transkriptcount stimmt nicht.");
+  invariant(manifest.coverage.capturedEquipmentCrossReferenceRows === inventory.crossReferences.length,
+    "Manifest-Cross-reference-Count stimmt nicht.");
   validateJsonSchemas(schema, transcript, inventory);
   const validation = validateTranscriptData(transcript, inventory, { allowIncomplete });
   let pdf;
@@ -353,7 +398,8 @@ export async function verifyItemsSourcePackage({ pdfPath, allowIncomplete = fals
     pdf = Object.freeze({ sha256: OFFICIAL_PDF_SHA256, bytes: bytes.length, pages: manifest.source.pdfPages,
       occurrenceEvidence: verifyPdfOccurrences(pdfPath, inventory),
       transcriptEvidence: verifyPdfTranscriptFacts(pdfPath, transcript),
-      helperDispositionEvidence: verifyPdfHelperDispositions(pdfPath, inventory) });
+      helperDispositionEvidence: verifyPdfHelperDispositions(pdfPath, inventory),
+      crossReferenceEvidence: verifyPdfCrossReferences(pdfPath, inventory) });
   }
   return Object.freeze({
     complete: manifest.complete,
