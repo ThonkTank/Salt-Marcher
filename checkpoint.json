@@ -3977,17 +3977,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I27-CP",
-      "kind": "cleanup_planning",
-      "startedAt": "2026-10-09T14:58:45.971880+00:00",
-      "focus": "Forest-Snapshotbereinigung planen",
-      "state": "completed",
-      "result": "Gezielte Referenzkorrektur und Hash-/Verweisprüfung geplant."
-    },
-    "nextRun": {
       "id": "CITY-00-I27-CI",
       "kind": "cleanup_implementation",
-      "focus": "Forest-Snapshot aus acceptance ergänzen"
+      "startedAt": "2026-10-09T14:59:17.271931+00:00",
+      "focus": "Forest-Snapshot korrigieren",
+      "state": "completed",
+      "result": "Snapshot enthält getrennte Sichtwirkung und unveränderte Dateiausgabe."
+    },
+    "nextRun": {
+      "id": "CITY-00-I27-CR",
+      "kind": "cleanup_review",
+      "focus": "Snapshotgleichheit und Belegschutz prüfen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",

@@ -453,3 +453,5 @@ CITY-00-I27-I Start 2026-10-09T14:58:03.394252+00:00; Ergebnis: Show trees aktiv
 CITY-00-I27-R Start 2026-10-09T14:58:28.205444+00:00; Ergebnis: tatsächliche Downloadkopien, alle Rawhashes und Bytegleichheit der14 Exportgruppen geprüft. Screens03/04/05 zeigen Forest-Zugang und Flächenwirkung,06/07 Rücksetzung. Keine persistente Waldgeometrie aus Darstellung behauptet. Aufräumbefund: abgeleiteter Snapshot enthält noch allein Waldzugang ausI25; Waldwirkung und unveränderte Ausgabe ergänzen.
 
 CITY-00-I27-CP Start 2026-10-09T14:58:45.971880+00:00; Plan: CO-WAT-0004 im abgeleiteten Snapshot um beobachtete Waldflächen und bytegleiche JSON-Ausgabe ergänzen. Frühere Baumdaten und offene Waldkonturbearbeitung/Persistenz erhalten. Rawhashes, vorhandene Belegziele,64 CO-/24 CTY-Pflichten und fremde JSON-Wurzeln kontrollieren. Keine neue Statusquelle oder Architekturbehauptung aus Original-Export ableiten. CI/CR separat.
+
+CITY-00-I27-CI Start 2026-10-09T14:59:17.271931+00:00; Ergebnis: CO-WAT-0004-Snapshot enthält Waldwirkung und bytegleiche Ausgabe, frühere Baumwirkung erhalten. Keine persistente Waldgeometrie oder eigene Produktfreigabe behauptet.
