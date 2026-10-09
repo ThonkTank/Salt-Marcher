@@ -997,3 +997,5 @@ CITY-00-I45-R46-CLEAN-P45 Start 2026-10-09T19:24:18.883021+00:00; Aufräumplan: 
 CITY-00-I45-R46-CLEAN-I45 Start 2026-10-09T19:24:21.769458+00:00; Zähl-/Erhaltungsgrenzen lesbar präzisiert; keine Runtime- oder Rohdatenänderung.
 
 CITY-00-I45-R46-CLEAN-R45 Start 2026-10-09T19:24:24.773063+00:00; Aufräumreview bestanden: neue/alte Hashes, Scopegrenzen, Links und offene Stadtanforderungen erhalten.
+
+CITY-01-INTEGRATION-P01 Start 2026-10-09T19:25:50.379517+00:00; Quellenbasierter Vorschlag mit Pre-render-Zeitpunkt, gemeinsamem Pointer/History und noch fehlender Citypersistenz vorgelegt; keine API ratifiziert.
