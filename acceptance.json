@@ -384,7 +384,15 @@
       "retained": "Restore/reset/default behavior, 246 tests, bundle identity, all three real-host receipts and honest open physical/screenreader/platform gates passed review.",
       "repairPlan": "ROADMAP-SALTMARCHER-CE01-C01-REPAIR-PLAN.md"
     },
-    "next": "Review and implement CE-01-C01-N01, then independently re-review the cleanup. CE-02 implementation remains blocked and CE-01 remains without full approval while physical-input, screenreader and other-platform gates are open."
+    "ce01C01RepairPlan": {
+      "run": "CE-01-C01-N01-P01",
+      "state": "completed_static_validation_reviewed",
+      "document": "ROADMAP-SALTMARCHER-CE01-C01-REPAIR-PLAN.md",
+      "result": "The plan makes CREATURE_CATALOG_DRAFT_FILTERS the sole seven-pair source and routes the name search through the same content path while retaining its UX.",
+      "review": "Independent read-only review on 9bbacb5 passed without a mandatory finding.",
+      "limits": "Planning only; no repair implementation or cleanup approval."
+    },
+    "next": "Implement CE-01-C01-N01, then independently re-review the cleanup. CE-02 implementation remains blocked and CE-01 remains without full approval while physical-input, screenreader and other-platform gates are open."
   },
   "cityPlans": {
     "schemaVersion": 1,

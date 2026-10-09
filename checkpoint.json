@@ -99,18 +99,19 @@
   },
   "saltMarcherCatalogEncounter": {
     "date": "2026-10-09",
-    "state": "ce01_c01_review_changes_required_repair_plan_review_pending",
+    "state": "ce01_c01_repair_plan_reviewed_implementation_next",
     "plan": "ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md",
     "architecture": "ARCHITECTURE.md#geplante-katalog--und-encounter-erweiterung",
     "acceptance": "acceptance.json.saltMarcherCatalogEncounter",
     "currentRun": {
       "id": "CE-01-C01-N01-P01",
       "kind": "cleanup_repair_plan",
-      "state": "completed_static_validation_review_pending",
+      "state": "completed_static_validation_reviewed",
       "focus": "Remove the remaining content-level knowledge of six explicit draft keys and the separate name-search draft path",
       "plan": "ROADMAP-SALTMARCHER-CE01-C01-REPAIR-PLAN.md",
       "reviewFinding": "CreatureCatalogViewContent still names six filter/draft pairs manually while the name search is a seventh special path, so the exported mapping is not yet the only pair source.",
       "retained": "The 5759cc9 candidate passed check, 246 tests, build and all three exact-candidate real-host scenarios; defaults, restore/reset behavior, harness scope and open host limits remain valid.",
+      "review": "Independent read-only plan review on 9bbacb5 passed without a mandatory finding.",
       "limits": "Repair planning only. No cleanup approval or CE-01 approval; physical input, screenreader and non-Linux platform acceptance remain open."
     },
     "implementationRun": {
@@ -253,7 +254,7 @@
       "id": "CE-01-C01-N01",
       "kind": "cleanup_repair",
       "plan": "ROADMAP-SALTMARCHER-CE01-C01-REPAIR-PLAN.md",
-      "focus": "Review the repair plan, then make every catalog text input derive its draft key from CREATURE_CATALOG_DRAFT_FILTERS and repeat all exact-candidate gates"
+      "focus": "Make every catalog text input derive its draft key from CREATURE_CATALOG_DRAFT_FILTERS, preserve the name-input UX and repeat all exact-candidate gates"
     }
   },
   "repositoryWorkflow": {
