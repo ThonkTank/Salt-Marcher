@@ -104424,6 +104424,19 @@
           "build": null,
           "evidence": [],
           "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+        },
+        "followUpPhase1OriginalProbe": {
+          "state": "original_measured_host_open",
+          "originalVersion": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "originalGesture": "Settings > Map Settings → Building Wear: NONE → Save",
+          "originalValue": null,
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-wear-original-20261009/original-probe.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-wear-20261009/runs/20261009-045219-3419331/evidence/screens/none-selected.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-wear-20261009/runs/20261009-045219-3419331/evidence/maps/none-saved.dungeondraft_map"
+          ],
+          "measuredScope": "Sofortige Wahl und Rohkartenspeicherung; alle fünf Karten behalten identische serialisierte Levels.",
+          "gap": "Hostwahl, ungefähr gleichwertige Gebäudewirkung, Host-Save/Reopen und unabhängiger Review offen; kombinierte Undo/Redo- und Mehrgeschossfolge nicht geprüft."
         }
       },
       {
@@ -104478,6 +104491,19 @@
           "build": null,
           "evidence": [],
           "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+        },
+        "followUpPhase1OriginalProbe": {
+          "state": "original_measured_host_open",
+          "originalVersion": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "originalGesture": "Settings > Map Settings → Building Wear: DUST → Save",
+          "originalValue": "res://textures/wear/dust.png",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-wear-original-20261009/original-probe.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-wear-20261009/runs/20261009-045219-3419331/evidence/screens/dust-selected.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-wear-20261009/runs/20261009-045219-3419331/evidence/maps/dust-saved.dungeondraft_map"
+          ],
+          "measuredScope": "Sofortige Wahl und Rohkartenspeicherung; alle fünf Karten behalten identische serialisierte Levels.",
+          "gap": "Hostwahl, ungefähr gleichwertige Gebäudewirkung, Host-Save/Reopen und unabhängiger Review offen; kombinierte Undo/Redo- und Mehrgeschossfolge nicht geprüft."
         }
       },
       {
@@ -104532,6 +104558,19 @@
           "build": null,
           "evidence": [],
           "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+        },
+        "followUpPhase1OriginalProbe": {
+          "state": "original_measured_host_open",
+          "originalVersion": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "originalGesture": "Settings > Map Settings → Building Wear: GRIME → Save",
+          "originalValue": "res://textures/wear/grime.png",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-wear-original-20261009/original-probe.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-wear-20261009/runs/20261009-045219-3419331/evidence/screens/grime-selected.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-wear-20261009/runs/20261009-045219-3419331/evidence/maps/grime-saved.dungeondraft_map"
+          ],
+          "measuredScope": "Sofortige Wahl und Rohkartenspeicherung; alle fünf Karten behalten identische serialisierte Levels.",
+          "gap": "Hostwahl, ungefähr gleichwertige Gebäudewirkung, Host-Save/Reopen und unabhängiger Review offen; kombinierte Undo/Redo- und Mehrgeschossfolge nicht geprüft."
         }
       },
       {
@@ -104586,6 +104625,19 @@
           "build": null,
           "evidence": [],
           "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+        },
+        "followUpPhase1OriginalProbe": {
+          "state": "original_measured_host_open",
+          "originalVersion": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "originalGesture": "Settings > Map Settings → Building Wear: NOISE → Save",
+          "originalValue": "res://textures/wear/noise.png",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-wear-original-20261009/original-probe.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-wear-20261009/runs/20261009-045219-3419331/evidence/screens/noise-selected.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-wear-20261009/runs/20261009-045219-3419331/evidence/maps/noise-saved.dungeondraft_map"
+          ],
+          "measuredScope": "Sofortige Wahl und Rohkartenspeicherung; alle fünf Karten behalten identische serialisierte Levels.",
+          "gap": "Hostwahl, ungefähr gleichwertige Gebäudewirkung, Host-Save/Reopen und unabhängiger Review offen; kombinierte Undo/Redo- und Mehrgeschossfolge nicht geprüft."
         }
       },
       {
@@ -104641,6 +104693,19 @@
           "build": null,
           "evidence": [],
           "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+        },
+        "followUpPhase1OriginalProbe": {
+          "state": "original_measured_host_open",
+          "originalVersion": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "originalGesture": "Settings > Map Settings → Building Wear: SCRATCHED → Save",
+          "originalValue": "res://textures/wear/scratched.png",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-wear-original-20261009/original-probe.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-wear-20261009/runs/20261009-045219-3419331/evidence/screens/scratched-selected.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-wear-20261009/runs/20261009-045219-3419331/evidence/maps/scratched-saved.dungeondraft_map"
+          ],
+          "measuredScope": "Sofortige Wahl und Rohkartenspeicherung; nach frischem Originalstart erneut markiert und Rohkarte bytegleich.",
+          "gap": "Hostwahl, ungefähr gleichwertige Gebäudewirkung, Host-Save/Reopen und unabhängiger Review offen; kombinierte Undo/Redo- und Mehrgeschossfolge nicht geprüft."
         }
       },
       {

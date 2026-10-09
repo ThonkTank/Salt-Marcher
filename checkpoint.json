@@ -1089,12 +1089,19 @@
         "coreTests": 177,
         "state": "partial_candidate_review_pending"
       },
+      "wearOriginalProbe": {
+        "cases": "DD-008.01–.05",
+        "report": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-wear-original-20261009/original-probe.md",
+        "originalSaveRun": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-wear-20261009/runs/20261009-045219-3419331",
+        "originalReopenRun": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-wear-reopen-20261009/runs/20261009-045443-3420753",
+        "state": "original_measured_host_implementation_open"
+      },
       "phaseGate": "open"
     },
     "plan": "ROADMAP-PARITY-PLAN.md",
     "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
     "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
-    "nextRun": "ROADMAP-PARITY-TOOLS.md Phase 1: DD-008 globale Kartenabnutzung und DD-038 Kartengröße direkt im Original messen und umsetzen; Grafikpaare für DD-006/007 sowie offene DD-002-Grenz- und Löschpfade vor dem 77-Fälle-Endreview nachholen. Die übrigen Pflichtfälle folgen in Roadmap-Reihenfolge.",
+    "nextRun": "ROADMAP-PARITY-TOOLS.md Phase 1: DD-008 fünf Building-Wear-Modi im Host mit unmittelbarer Auswahl, ungefähr gleichwertiger Building-Wirkung und Save/Reopen umsetzen; danach DD-038 Kartengröße im Original messen. Grafikpaare für DD-006/007 sowie offene DD-002-Grenz- und Löschpfade vor dem 77-Fälle-Endreview nachholen. Die übrigen Pflichtfälle folgen in Roadmap-Reihenfolge.",
     "note": "P7-1, P7-3 und P7-4 sind in getrennten Edit-/Neuöffnungspaaren reviewt. P7-2 ist auf ausdrückliche Nutzeranweisung übersprungen, nicht physisch geprüft. Phase-7-Fachphasentor mit dieser Ausnahme bestanden; Produktbuild unverändert. Hex-Atlas- und Stadtstand erhalten.",
     "phase2Plan": "ROADMAP-PARITY-PHASE2-PLAN.md",
     "candidateBuildSha256": "b321128188b944c3324594663a410acfd84863f17860f637b9ed2e6ecc33b466",

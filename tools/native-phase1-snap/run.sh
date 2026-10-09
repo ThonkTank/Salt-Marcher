@@ -3,7 +3,7 @@ set -euo pipefail
 
 qa_root=${DUNGEON_PHASE1_NATIVE_QA_ROOT:-/home/aaron/.cache/dungeon-native-qa/parity-phase1-snap-20261007}
 source_app=/home/aaron/Downloads/Dungeondraft-1.2.0.1-Linux64
-source_map=/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/native/runs/20261005-120725-2872601/evidence/maps/C00-empty.dungeondraft_map
+source_map=${DUNGEON_PHASE1_NATIVE_SOURCE_MAP:-/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/native/runs/20261005-120725-2872601/evidence/maps/C00-empty.dungeondraft_map}
 xvnc=/home/aaron/.cache/dungeon-native-qa/xvnc/usr/bin/Xvnc
 run="$qa_root/runs/$(date +%Y%m%d-%H%M%S)-$$"
 mkdir -p "$run"/{config,data/Dungeondraft,cache,map,evidence/screens,evidence/maps}
