@@ -1160,12 +1160,30 @@
         "coreTests": 178,
         "state": "partial_candidate_review_pending"
       },
+      "resizeCandidate": {
+        "cases": "DD-038.01/.02/.06–.09",
+        "buildSha256": "35e9e137027ffbdd53b975e0370a263a397c753ee0d5323197e7220c9554fa35",
+        "report": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-host-20261009/implementation.md",
+        "hostEdit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-host-20261009/evidence/1791516282483-parity-tools-phase1-resize-edit/result.json",
+        "hostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-host-20261009/evidence/1791516293218-parity-tools-phase1-resize-reopen/result.json",
+        "coreTests": 185,
+        "state": "partial_candidate_menu_reliability_open"
+      },
+      "resizeWindowRepair": {
+        "cases": "DD-038.01/.02/.06–.09",
+        "buildSha256": "495efaf9c9eabb8a55ba1ae0e6d8c88e79d1d38b00b1b688499a4318b3b4a75e",
+        "report": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-window-20261009/implementation.md",
+        "diagnostic": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-diagnostic2-20261009/evidence/1791516713527-parity-tools-phase1-resize-edit/resize-modal-debug.json",
+        "hostEdit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-window-final-20261009/evidence/1791516812106-parity-tools-phase1-resize-edit/result.json",
+        "hostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-window-final-20261009/evidence/1791516816609-parity-tools-phase1-resize-reopen/result.json",
+        "state": "partial_candidate_review_pending"
+      },
       "phaseGate": "open"
     },
     "plan": "ROADMAP-PARITY-PLAN.md",
     "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
     "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
-    "nextRun": "ROADMAP-PARITY-TOOLS.md Phase 1: DD-038 Kartengröße im Original mit vier Rändern, Crop und Undo-Warnung messen und den Host angleichen. DD-008 benötigt den unabhängigen Endbuild-Review, gemeinsame Original-/Host-Geometrie und kombinierte History-/Mehrgeschossfolge. Grafikpaare für DD-006/007 sowie offene DD-002-Grenz- und Löschpfade vor dem 77-Fälle-Endreview nachholen. Die übrigen Pflichtfälle folgen in Roadmap-Reihenfolge.",
+    "nextRun": "ROADMAP-PARITY-TOOLS.md Phase 1: DD-038 Original-Cancel/X nach unbestätigter Eingabe direkt messen; rechte/untere/linke Beschnitte, Smart-Tile-Zellen, Terrain und Randgrenzen mit dem Host paaren. Danach DD-038 unabhängig reviewen. DD-008 benötigt den unabhängigen Endbuild-Review, gemeinsame Original-/Host-Geometrie und kombinierte History-/Mehrgeschossfolge. Grafikpaare für DD-006/007 sowie offene DD-002-Grenz- und Löschpfade vor dem 77-Fälle-Endreview nachholen. Die übrigen Pflichtfälle folgen in Roadmap-Reihenfolge.",
     "note": "P7-1, P7-3 und P7-4 sind in getrennten Edit-/Neuöffnungspaaren reviewt. P7-2 ist auf ausdrückliche Nutzeranweisung übersprungen, nicht physisch geprüft. Phase-7-Fachphasentor mit dieser Ausnahme bestanden; Produktbuild unverändert. Hex-Atlas- und Stadtstand erhalten.",
     "phase2Plan": "ROADMAP-PARITY-PHASE2-PLAN.md",
     "candidateBuildSha256": "b321128188b944c3324594663a410acfd84863f17860f637b9ed2e6ecc33b466",

@@ -662,6 +662,7 @@ function editorHost(
   mapPath: string,
   save: () => Promise<void>,
   exitEditor: () => void,
+  sourceDocument: Document,
   pending = false,
   exportName?: string,
 ): EditorHost {
@@ -703,13 +704,19 @@ function editorHost(
       plugin.app, () => plugin.prefabs(),
     ).request(),
     manageAssets: () => plugin.openAssets(map.session),
-    manageMap: () =>
+    manageMap: () => {
+      // Obsidian creates Modal in activeWindow, which can lag behind this view.
+      if (sourceDocument.defaultView) {
+        window.activeWindow = sourceDocument.defaultView;
+        window.activeDocument = sourceDocument;
+      }
       new MapSettingsModal(
         plugin.app,
         map.session,
         mapPath,
         plugin.assets,
-      ).open(),
+      ).open();
+    },
     manageMapInfo: pending ? undefined : () =>
       new MapInformationModal(
         plugin.app,
@@ -864,7 +871,7 @@ export class PendingDungeonView extends ItemView {
         this.contentEl, map.session, map.repository,
         editorHost(this.plugin, map, path,
           () => this.plugin.savePending(path, map, this.leaf),
-          () => this.leaf.detach(), true),
+          () => this.leaf.detach(), this.contentEl.ownerDocument, true),
       );
       await this.editor.init();
       this.editor.maximize();
@@ -950,7 +957,7 @@ editorHost(
           this.plugin, map, file.path,
           () => map.repository.save(map.session),
           () => this.exitEditor(),
-          false, file.basename,
+          this.contentEl.ownerDocument, false, file.basename,
         ),
       );
       await this.editor.init();

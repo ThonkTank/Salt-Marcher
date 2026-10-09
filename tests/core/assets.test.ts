@@ -230,7 +230,7 @@ test("floor duplication remaps topology and copies protected room text in one un
   assert.ok(s.entities.has(object.id));
 });
 
-test("map margins translate all geometry together and restore exactly with undo", () => {
+test("DD-038 map margins translate geometry and clear prior undo history", () => {
   const { s, floor, room } = fixture(),
     door = createDoor(s, room, 0, 0.5),
     object = createObject(s, floor, { x: 5, y: 5 }),
@@ -244,14 +244,16 @@ test("map margins translate all geometry together and restore exactly with undo"
       false,
     ),
     storedDoor = s.entities.get(door.id),
-    before = s.document(),
-    history = s.historySize;
+    before = s.document();
+  assert.ok(s.historySize > 0);
   resizeMap(
     s,
     { left: 3, right: -5, top: 2, bottom: 4 },
     { wallShadows: false, objectShadows: false, buildingWear: 0.55 },
   );
-  assert.equal(s.historySize, history + 1);
+  assert.equal(s.historySize, 0);
+  assert.equal(s.canUndo, false);
+  assert.equal(s.canRedo, false);
   assert.equal(s.settings.width, 78);
   assert.equal(s.settings.height, 66);
   assert.equal(s.settings.wallShadows, false);
@@ -277,7 +279,8 @@ test("map margins translate all geometry together and restore exactly with undo"
   });
   assert.equal(s.entities.get(door.id), storedDoor);
   s.undo();
-  assert.deepEqual(s.document(), before);
+  assert.notDeepEqual(s.document(), before);
+  assert.equal(s.settings.width, 78);
   s.redo();
   assert.equal(s.settings.width, 78);
   assert.equal(s.settings.buildingWear, 0.55);
@@ -314,10 +317,9 @@ test("reference images align per floor and participate in ordinary history", () 
     assert.equal(moved.x, 42);
     assert.equal(moved.y, 33);
   }
+  assert.equal(s.historySize, 0);
   s.undo();
-  assert.deepEqual(s.entities.get(image.id), image);
-  s.undo();
-  assert.equal(s.entities.has(image.id), false);
+  assert.equal(s.entities.get(image.id), moved);
 });
 
 test("dungeon and cave generation are deterministic replaceable proposals", () => {
