@@ -28,10 +28,14 @@ module.exports = ({ page, fs, path, assert, out, checks, vault }) => {
   }
   async function clickCell(tool,q,r) { return stroke(tool,[q,r]); }
   async function edit() {
+    // First-use vault trust can leave commands registered before their modals open reliably.
+    await page.reload({waitUntil:"domcontentloaded"});
+    await page.waitForFunction(() => typeof app !== "undefined" && app.workspace?.layoutReady && !!app.plugins.getPlugin("dungeon-editor"));
     await page.setViewportSize({width:1440,height:1000}); await settle();
     await page.locator(".workspace-tab-header:visible").first().click();
-    await page.evaluate(() => app.commands.executeCommandById("dungeon-editor:create-atlas"));
     const modal=page.locator(".modal").filter({has:page.getByRole("textbox",{name:"Atlasname",exact:true})});
+    await page.evaluate(() => app.commands.executeCommandById("dungeon-editor:create-atlas"));
+    await modal.waitFor({state:"visible"});
     await modal.getByRole("textbox",{name:"Atlasname",exact:true}).fill("Hex02 Insel"); await modal.getByRole("button",{name:"Atlas anlegen",exact:true}).click({noWaitAfter:true});
     await viewport().locator("canvas").waitFor({state:"visible"});await settle();
     const original=fs.readFileSync(path.join(vault,WORLD),"utf8");
