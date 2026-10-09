@@ -1,7 +1,19 @@
-/** Decode an image inside the renderer without Node or filesystem access. */
+import { decode } from "png-tools";
+import { unzlibSync } from "fflate";
+
+/** Decode PNG bytes inside the renderer without losing raw RGBA channels. */
 export async function decodeBrowserImagePixels(image: Blob): Promise<{
-  width: number; height: number; rgba: Uint8ClampedArray;
+  width: number; height: number; rgba: Uint8Array | Uint8ClampedArray;
 }> {
+  const bytes = new Uint8Array(await image.arrayBuffer());
+  try {
+    const png = decode(bytes, (compressed) => unzlibSync(compressed));
+    if (png.depth === 8 && png.data instanceof Uint8Array &&
+        png.data.length === png.width * png.height * 4)
+      return { width: png.width, height: png.height, rgba: png.data };
+  } catch {
+    // Other valid PNG encodings can still use the browser decoder below.
+  }
   const bitmap = await createImageBitmap(image, {
     colorSpaceConversion: "none",
     premultiplyAlpha: "none",
