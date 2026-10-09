@@ -37,17 +37,24 @@ Produktcode und nimmt CE-01 nicht vollständig ab.
    leitet jeden fehlenden Draft über die bestehende `DRAFT_FILTERS`-Zuordnung
    vom akzeptierten Filterwert ab. Ein ausdrücklich gespeicherter leerer Draft
    bleibt leer und darf nicht durch den veröffentlichten Filter ersetzt werden.
-2. Konstruktor und `setState()` von
+2. `resetCreatureCatalogFilters()` leitet die zu löschenden Draftschlüssel aus
+   derselben `DRAFT_FILTERS`-Zuordnung ab. Die sichtbare Resetsemantik bleibt
+   unverändert: alle Filter und Drafts werden geleert, Sortierung bleibt
+   erhalten, Seite und Ergebnis-Scroll springen auf null. Es entsteht keine
+   zweite manuell gepflegte Liste der sieben Draftschlüssel.
+3. Konstruktor und `setState()` von
    `src/features/catalog/creature-catalog-view-content.ts` benutzen nur diesen
    Helfer. Query-, Chip-, Reset-, Scroll-, Paging- und ARIA-Semantik ändern sich
    nicht. Es wird keine allgemeine View-Abstraktion und kein breiter Umbau der
    derzeit großen Content-Klasse eingeführt.
-3. Gezielte Zustandsprüfungen decken leeren Zustand, gültige Nichtdefaults,
+4. Gezielte Zustandsprüfungen decken leeren Zustand, gültige Nichtdefaults,
    jeden Textfilter mit fehlendem Draft, ausdrücklich leere Drafts sowie
-   ungültige Sortier-/Richtungs-/Seitenwerte ab. Der DOM-Harness bestätigt für
-   den leeren Restore weiterhin `aria-sort="ascending"`, Seite 0 und sichtbare
-   Defaultsortierung.
-4. Aus `tools/host/ce01-catalog.cjs` wird ausschließlich der ungenutzte
+   ungültige Sortier-/Richtungs-/Seitenwerte ab. Sie bestätigen außerdem, dass
+   Reset alle sieben Drafts über die gemeinsame Zuordnung leert; kein Test
+   wiederholt dafür eine zweite unabhängige Draftliste. Der DOM-Harness
+   bestätigt für den leeren Restore weiterhin `aria-sort="ascending"`, Seite 0
+   und sichtbare Defaultsortierung.
+5. Aus `tools/host/ce01-catalog.cjs` wird ausschließlich der ungenutzte
    `crypto`-Parameter entfernt. H01-Runner, Baseline, Screenshots,
    Prozess-Lifecycle und Fault-Szenario bleiben wiederholbar erhalten; frühere
    Belege werden nicht umgeschrieben.
@@ -78,9 +85,15 @@ versionierten Ersatz entfernt.
 Ein getrennter unabhängiger Lauf liest Plan, Diff, Restore-Matrix, DOM-Test,
 Buildinventar und die neuen Real-Host-Receipts. Er prüft insbesondere, dass
 leere Drafts erhalten bleiben, alle sieben Textfilter dieselbe Zuordnung nutzen,
-keine Defaultsemantik im Content dupliziert bleibt und der Harness nur um die
-ungenutzte Abhängigkeit kleiner wurde. Pflichtbefunde führen zu einem eigenen
-Nachbesserungs- und erneuten Reviewlauf.
+Restore und Reset keine eigene Draftliste pflegen, keine Defaultsemantik im
+Content dupliziert bleibt und der Harness nur um die ungenutzte Abhängigkeit
+kleiner wurde. Pflichtbefunde führen zu einem eigenen Nachbesserungs- und
+erneuten Reviewlauf.
+
+Der erste unabhängige Planreview auf `37342f9` verlangte genau diese
+Resetableitung, weil der ursprüngliche Entwurf die von ihm selbst benannte
+zweite hartcodierte Draftliste stehen ließ. Diese Planreparatur ändert weiterhin
+keinen Produktcode; ein erneuter unabhängiger Planreview bleibt Pflicht.
 
 Erst der bestandene C01-R01 schließt das CE-01-Aufräumtor. CE-01 selbst bleibt
 bis zu den noch offenen physischen, Screenreader- und Plattformabnahmen ohne
