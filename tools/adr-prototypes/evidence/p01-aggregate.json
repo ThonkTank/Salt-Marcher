@@ -1,10 +1,9 @@
 {
-  "schemaVersion": "p01-v1",
-  "package": "ADR-P01",
-  "candidateCommit": "82bf9854a6a4a1859eda1841055023083cd2f3a6",
-  "baseCommit": "ae82294d61e31adbb1c83589a4fdedf448d3c6df",
-  "lockfileSha256": "fc191b566e05121497fa63f3795de7e00ed3d0d688e43e61a6d25f4c5d6fb624",
-  "platform": { "os": "linux", "arch": "x64", "node": "v22.22.2" },
+  "schemaVersion": "p01-v2",
+  "package": "ADR-P01-H02",
+  "candidateCommit": "689e158d381c394a1af1eab58e06680dacf33413",
+  "baseSharedCommit": "b3cca7945279bdd932a1eb03f287337541950250",
+  "lockfileSha256": "903741597cd3135a1425957d5ad751dcf22c525f5fbe4ea20befca94af4bf4d4",
   "sourceTruth": {
     "model": "src/model.ts",
     "session": "src/session.ts",
@@ -12,36 +11,84 @@
     "persistence": "src/persistence.ts",
     "renderer": "src/renderer.ts"
   },
-  "fixture": { "id": "large-native-v4-phase7", "entityCount": 4295 },
-  "checks": {
-    "rendererBoundary": "harness-only; desktop isolation not-run",
-    "mapOpenCommandSaveRestart": "narrow-harness-passed; restart/OS-boundary not-proven",
-    "createUpdateDeleteReceipts": "narrow-receipt-passed",
-    "updateRecovery": "partial-node-fs-not-proven",
-    "deleteRecovery": "partial-node-fs-not-proven",
-    "receiptRetention": "passed",
-    "rootEscape": "passed",
-    "symlinkEscape": "passed",
-    "parentSymlinkMutation": "detected-by-harness",
-    "assetReadHash": "passed",
-    "invalidationDTO": "passed",
-    "externalEvidenceReceipt": "bound-to-clean-run; hardware/fault inventory not-run",
-    "nativeDurabilityPrimitive": "boundary-no-go: Node fs does not prove openat2/renameat2/dir-fd/file-identity",
-    "parentChildRetention": "not-proven",
-    "subscribeStream": "not-run: one-shot invalidation DTO only",
-    "largeFixtureDigest": "passed"
+  "predecessor": {
+    "package": "ADR-P01-H01",
+    "candidateCommit": "82bf9854a6a4a1859eda1841055023083cd2f3a6",
+    "receiptSha256": "2c7de2ab4bbacd80564ee844c62888c89cc23d1e0f26433b53137529a447071c",
+    "decision": "No-Go: Node fs and a same-process harness did not prove a native durability or desktop-process boundary"
   },
-  "tests": { "npmTest": { "passed": 243, "failed": 0 }, "npmRunCheck": "passed", "npmRunBuild": "passed" },
-  "bundle": { "mainSha256": "3a383cbc8853133e4d55af388c86ec70e93230cee8dffc32ba35cf0676f3cdad", "mainBytes": 1339676, "mainJsGrowthBytes": 150306 },
-  "platformMatrix": { "linux": "harness-measured; durability-boundary-no-go", "windows": "not-run", "macos": "not-run", "gui": "not-run" },
-  "decision": "No-Go: native OS durability and desktop-process isolation remain unproven; harness evidence is retained for follow-up",
-  "evidenceCommand": "npm run adr:p01",
+  "fixtures": [
+    {
+      "id": "h02-small-v4",
+      "baselineSha256": "f1b35ed6b56de8d9c71ae08daa446861244a911b8492650e9028792bcabee1cc",
+      "initialDigest": "92387e47d0108c7fb66ec338ff7bbb7c241545a32ead28ad3a55e812a8d1f20e",
+      "savedDigest": "406fcc6375827d4d208da86bbb83242c94f551f1d3accbed6a88559377e50268"
+    },
+    {
+      "id": "large-native-v4-phase7",
+      "entityCount": 4295,
+      "baselineSha256": "fe0c5d31330982de0599f6a409ec2ab5a83b71917ed99cbd5445d1f4b007c26f",
+      "initialDigest": "b7962caab93fd6e805cc0b3ae9a6aaa5dd33c66b960764834c39686e91ab021b",
+      "savedDigest": "c1d5afb24ff2bab5130bbae177fb9cfb669e3d342cd0dbea74788233ab3718f4"
+    }
+  ],
+  "checks": {
+    "realElectronProcesses": "passed: fresh Main, sandboxed Renderer, utilityProcess and native helper PIDs/tokens/parent ancestry for both fixtures",
+    "restrictedPreload": "passed: only invoke/subscribe; require, process, ipcRenderer, raw send and direct file fetch unavailable",
+    "versionedContract": "passed: p01-v2 exact operation-specific request/response/invalidation validation and deep immutable DTOs",
+    "mapOpenCommandUndoRedoSaveRestart": "passed for small and large V4 fixtures with fresh four-process reopen",
+    "assetReadHash": "passed",
+    "invalidationStream": "passed with unsubscribe",
+    "nativeRootAndLinkDefense": "preflight passed for traversal, symlink, hardlink and stale compare rejection",
+    "nativePrimitive": "partial: openat2, root dir FD, fdatasync/fsync and renameat2 used",
+    "durableReceiptStateMachine": "not-run",
+    "completeCreateUpdateDeleteFaultMatrix": "not-run",
+    "productInputsByteIdentity": "passed for main.js, manifest.json and styles.css before/after harness",
+    "installedObsidianAdapterByteIdentity": "not-run",
+    "externalEvidenceReceipt": "bound to clean exact candidate SHA",
+    "independentCodeEvidenceReview": "pending"
+  },
+  "tests": {
+    "npmRunCheck": "passed",
+    "npmTest": { "passed": 252, "failed": 0 },
+    "npmRunBuild": "passed",
+    "h02Focused": { "passed": 6, "failed": 0 }
+  },
+  "bundle": {
+    "mainSha256": "eb39a514e978ce4933d7b730a9b44cf9997621723979dc5a898c2ab4bbecfdcb",
+    "mainBytes": 1352028,
+    "mainJsGrowthBytes": 162658,
+    "manifestSha256": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64",
+    "stylesSha256": "6e3fd4d05a39bcddcd0753e42f17330da312810f94b19b51eb58eb64acb997c0"
+  },
+  "nativeArtifact": {
+    "sourceSha256": "e33ef9d9064984f101a65f920807b5aaa0637fdd63a183c3baa7056250b5f072",
+    "binarySha256": "61e25d7436c3059e810a8c0937c9f3f7342924d555c795db5eb9f6f0a2440f3d",
+    "binaryBytes": 18576
+  },
+  "platform": {
+    "os": "linux",
+    "arch": "x64",
+    "node": "v22.22.2",
+    "electron": "43.2.0",
+    "kernel": "6.17.1-300.fc43.x86_64",
+    "compiler": "gcc 15.3.1",
+    "libc": "glibc 2.42"
+  },
+  "platformMatrix": {
+    "linux": "real process and fresh restart measured; durable receipt/fault gates not-run",
+    "windows": "not-run",
+    "macos": "not-run",
+    "accessibility": "not-run"
+  },
+  "decision": "No-Go: real Linux process isolation and restart passed, but the mandatory durable receipt state machine and complete fault matrix remain not-run",
+  "evidenceCommand": "SMR_ADR_EVIDENCE_ROOT=/home/aaron/.cache/dungeon-native-qa/smr-adr-prototypes/h02-runs npm run adr:p01-h02",
   "externalEvidence": {
     "dirty": false,
-    "receiptId": "p01-1791557969723-ad3a886d-41ac-425d-8134-fd4a27e988e3",
-    "receiptPath": "/home/aaron/.cache/dungeon-native-qa/smr-adr-prototypes/ADR-P01/p01-1791557969723-ad3a886d-41ac-425d-8134-fd4a27e988e3/receipt.json",
-    "receiptSha256": "2c7de2ab4bbacd80564ee844c62888c89cc23d1e0f26433b53137529a447071c",
-    "sourceCommit": "82bf9854a6a4a1859eda1841055023083cd2f3a6"
+    "receiptId": "h02-1791561179831-67e8f5f3-abab-4a75-9106-c5c2745b0b91",
+    "receiptPath": "/home/aaron/.cache/dungeon-native-qa/smr-adr-prototypes/h02-runs/ADR-P01-H02/h02-1791561179831-67e8f5f3-abab-4a75-9106-c5c2745b0b91/receipt.json",
+    "receiptSha256": "74e806657f1b3a2e292d875f14e7ad9cf8eed40bdbc21d67081ee3521ee33a83",
+    "sourceCommit": "689e158d381c394a1af1eab58e06680dacf33413"
   },
   "dirty": false
 }
