@@ -1,8 +1,8 @@
 {
   "saltMarcherReplacement": {
     "schemaVersion": 1,
-    "updated": "2026-10-09T16:49:14Z",
-    "state": "smr00_adr_p01_h03_i02_plan_review_changes_required",
+    "updated": "2026-10-09T16:52:30Z",
+    "state": "smr00_adr_p01_h03_i02_plan_second_review_changes_required",
     "plan": "ROADMAP-SALTMARCHER-REPLACEMENT.md",
     "platformAdr": "ROADMAP-SALTMARCHER-PLATFORM-ADR.md",
     "architecture": "ARCHITECTURE.md#plattformoffene-saltmarcher-ablösung",
@@ -97,14 +97,14 @@
       "limits": "No target-platform decision or P02 authorization. Durable receipt/recovery, the full Create/Update/Delete fault matrix, installed-adapter bytes, Windows, macOS and accessibility remain not-run."
     },
     "adrP01H03": {
-      "run": "ADR-P01-H03-I02-P01-R01",
-      "state": "i02_p01_plan_review_changes_required",
+      "run": "ADR-P01-H03-I02-P01-R02",
+      "state": "i02_p01_second_review_changes_required",
       "document": "ROADMAP-SALTMARCHER-ADR-P01-H03-PLAN.md",
       "result": "Proposes a Linux-only native snapshot/capture/publish and parent/child recovery hypothesis using a durable Before snapshot from the immutable compare-and-write payload, independent target verification, exclusive current-name capture and no-replace publication, with a complete uncooperative-writer and fault matrix.",
       "contractCandidate": "f8fcdc1b2eacbfb17c7c5603f6c15cfd89c4296d",
       "integrationCommit": "0aecf2b4ce046c69a84cecb0890c949fd7962286",
-      "i02PlanCandidate": "e0cff1d0d112633fa3f6288d95973de936a5dbc3",
-      "review": "The reviewed p01-v3 contract remains passed. Independent read-only review rejected the first I02 plan candidate e0cff1d0d112633fa3f6288d95973de936a5dbc3: ten aggregate transition rows do not enumerate Parent receipt transitions, conflict transitions or the Update temp-synced receipt generation; durable receipt ordering is incomplete; and prose over killpoints/adversaries is not a complete operation-state-killpoint-adversary matrix with per-cell fresh-recovery oracles.",
+      "i02PlanCandidate": "2c5e765a62c6a1f8210a0bd53255b97df5b821d2",
+      "review": "The reviewed p01-v3 contract remains passed. I02 plan R01 rejected e0cff1d0d112633fa3f6288d95973de936a5dbc3. Independent read-only R02 on repaired candidate 2c5e765a62c6a1f8210a0bd53255b97df5b821d2 still requires changes: conflict transitions are grouped as any-to-conflict, U02 lacks its explicit before-snapshotted source, and Parent/conflict matrix cells do not yet bind unambiguous state- and phase-specific fresh-recovery oracles.",
       "limits": "R02 and the p01-v3 contract passed their separate reviews. No native helper, complete fault matrix, executable H03 proof, Linux durability Go, target-platform decision or P02 authorization exists. Windows and macOS remain not-run."
     },
     "coordination": {
@@ -116,8 +116,8 @@
   },
   "saltMarcherCatalogEncounter": {
     "schemaVersion": 1,
-    "updated": "2026-10-09T16:50:41Z",
-    "state": "ce02_i02_plan_third_repair_review_pending_ce01_physical_open",
+    "updated": "2026-10-09T16:52:44Z",
+    "state": "ce02_i02_plan_reviewed_s01_next_ce01_physical_open",
     "plan": "ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md",
     "architecture": "ARCHITECTURE.md#geplante-katalog--und-encounter-erweiterung",
     "sourceRepository": "ThonkTank/Salt-Marcher",
@@ -486,13 +486,13 @@
     "next": "Plan and independently review CE-02-I02 for the first real non-Monster owner, including exact item provenance, schema, unavailable/error boundaries and isolated section state. Keep the other five unavailable providers explicitly undelivered; CE-01 physical-input, screenreader and other-platform gates remain open.",
     "ce02I02Plan": {
       "run": "CE-02-I02-P01",
-      "state": "n02_r01_changes_required_n03_review_pending",
+      "state": "n03_r01_passed_s01_next",
       "document": "ROADMAP-SALTMARCHER-CE02-I02-PLAN.md",
       "sourceDocument": "https://media.wizards.com/2023/downloads/dnd/SRD_CC_v5.1.pdf",
       "sourceSha256": "2504d2a0abb0a4d491a939be4f17910a2dde0312570ab8d208080225ccf0a1f0",
       "result": "Defines a local read-only SRD 5.1 equipment and magic-item catalog, reproducible corpus, schema, source attribution, typed isolated failures, Item query/detail UI and separate review/host gates.",
       "limits": "Plan only; Item data/provider and five other data owners remain unavailable. All CE-AC, physical-input, screenreader and other-platform gates remain open.",
-      "review": "R01 on exact 8c5c5680054b8dddd89900733ac7bbfe966876f1 required seven repairs (Issue #1 comment 6085178049). N01-R01 on exact 01a02ef124e3ffc02b626019f89f5e216612f7ab required S01 cycle/schema repairs (Issue #1 comment 6085248851). N02-R01 on exact 3b7e5c933a107da6f406aa44037decf316d09b77 confirmed those and found one remaining variable-rarity schema gap (Issue #1 comment 6085306351). N03 awaits independent review."
+      "review": "R01 on exact 8c5c5680054b8dddd89900733ac7bbfe966876f1 required seven repairs (Issue #1 comment 6085178049). N01-R01 on exact 01a02ef124e3ffc02b626019f89f5e216612f7ab required S01 cycle/schema repairs (Issue #1 comment 6085248851). N02-R01 on exact 3b7e5c933a107da6f406aa44037decf316d09b77 found a variable-rarity schema gap (Issue #1 comment 6085306351). N03-R01 PASSED exact 679d432e145bd9afe766393346e4b788931886ea with no remaining mandatory plan finding (Issue #1 comment 6085341786). This approves planning only; S01 and I01 are undelivered."
     }
   },
   "cityPlans": {
