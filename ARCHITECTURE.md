@@ -82,9 +82,12 @@ nur Repositoryhinweis, weil die belegten Installationswege ausschließlich
 einen sichtbaren Fehlerzustand, nie in einen eager Fallback. Produkt und Build
 lesen Hash und Payloadgrenzen aus einer gemeinsamen Identitätsquelle. Für
 CE-01-I01 gelten maximal 122.880 Gzip-Bytes, 164.000 Base64-Zeichen und
-180.000 Bytes `main.js`-Zuwachs gegenüber der auf Commit
+180.000 tatsächlich in `main.js` emittierte Bytes des virtuellen
+Katalogpayloads. Das gesamte `main.js`-Wachstum gegenüber der auf Commit
 `86ce73179ede452ee6a9f5d3197ee325544a58b8` belegten Baseline von 1.189.370
-Bytes. Echte Obsidian-Start-/Ladezeitmessung bleibt ein CE-01-Abnahmetor.
+Bytes bleibt im Buildinventar sichtbar, begrenzt aber keine späteren Atlas-,
+City- oder anderen Produktfunktionen. Echte Obsidian-Start-/Ladezeitmessung
+bleibt ein CE-01-Abnahmetor.
 
 ## Entscheidungen
 

@@ -1,10 +1,15 @@
 import { build } from "esbuild";
 import { mkdir, stat, writeFile } from "node:fs/promises";
 import { execFileSync } from "node:child_process";
-import { catalogMainJsGrowth, prepareCatalogBuildAsset } from "./tools/catalog-build-asset.mjs";
+import {
+  assertCatalogMainJsBudget,
+  catalogMainJsGrowth,
+  catalogPayloadMainJsBytes,
+  prepareCatalogBuildAsset,
+} from "./tools/catalog-build-asset.mjs";
 const test = process.argv.includes("--test");
 const catalogAsset = await prepareCatalogBuildAsset();
-await build({
+const productBuild = await build({
   entryPoints: [test ? "tests/core.test.ts" : "src/main.ts"],
   outfile: test ? ".build/tests.cjs" : "main.js",
   bundle: true,
@@ -14,6 +19,7 @@ await build({
   external: ["obsidian", "electron", "node:*", "util", "stream", "zlib", "assert", "buffer"],
   sourcemap: true,
   logLevel: "info",
+  metafile: !test,
   minify: !test,
   plugins: [
     {
@@ -87,6 +93,10 @@ if (test) await build({
 if (!test) {
   const mainBytes = (await stat("main.js")).size;
   const mainJsGrowthBytes = catalogMainJsGrowth(mainBytes, catalogAsset.identity);
+  const catalogPayloadBytes = assertCatalogMainJsBudget(
+    catalogPayloadMainJsBytes(productBuild.metafile),
+    catalogAsset.identity,
+  );
   const commit = execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim();
   const dirty = execFileSync("git", ["status", "--porcelain", "--untracked-files=no"], { encoding: "utf8" }).trim().length > 0;
   const inventory = {
@@ -95,6 +105,8 @@ if (!test) {
     baselineMainBytes: catalogAsset.identity.baseline.mainBytes,
     mainBytes,
     mainJsGrowthBytes,
+    catalogPayloadBytes,
+    catalogPayloadLimitBytes: catalogAsset.identity.limits.mainJsGrowthBytes,
     node: process.version,
     commit,
     dirty,

@@ -305,6 +305,33 @@
       "review": "Independent N01 re-review passed exact repair candidate 4d239004c4f000b2af6f66122a05135b0c353ffb without a remaining mandatory finding; the product remains the clean, checked commit 7469e64202e730175ee138136a69d82ad4f28ea6.",
       "limits": "No new data owner is delivered. Items, saved Encounters, NPCs, Factions, Places and Encounter Tables remain explicitly unavailable. Local automated host smoke is scoped; physical-input, screenreader, non-Linux and full CE-02 acceptance remain open."
     },
+    "catalogBuildBudgetContract": {
+      "date": "2026-10-09",
+      "state": "checked_regression_passed",
+      "result": "The 180000-byte CE-01 gate now measures only the virtual SRD-5.1 payload bytes actually emitted into main.js from the esbuild metafile. Total main.js growth against the historical baseline remains inventory and no longer blocks unrelated Atlas, City or other product features.",
+      "verification": {
+        "check": "passed",
+        "tests": {
+          "passed": 276,
+          "failed": 0
+        },
+        "focusedCatalogBuildTests": {
+          "passed": 4,
+          "failed": 0
+        },
+        "build": "passed",
+        "inventory": {
+          "sourceBytes": 832272,
+          "gzipBytes": 102021,
+          "base64Characters": 136028,
+          "mainBytes": 1362224,
+          "mainJsGrowthBytesInventoryOnly": 172854,
+          "catalogPayloadBytes": 136038,
+          "catalogPayloadLimitBytes": 180000
+        }
+      },
+      "limits": "Build-contract repair only. No catalog data/provider/UI change and no CE, Atlas, host, physical-input or overall approval."
+    },
     "verified": "CE-00 and CE-01 implementation/review/repair cycles passed their scoped gates. CE-01-H01 passed its independently reviewed automated scope. CE-02-I01 product commit 7469e64202e730175ee138136a69d82ad4f28ea6 and metadata repair candidate 4d239004c4f000b2af6f66122a05135b0c353ffb passed independent review. Its six unavailable providers do not count as delivered catalog areas. Physical input, screenreader and other-platform acceptance remain open.",
     "open": [
       "CE-01 physical keyboard/mouse, screenreader and other-platform acceptance; CE-02-I02 through CE-07 runs",
