@@ -3539,17 +3539,17 @@
     "state": "city00_reference_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I07-BP",
-      "kind": "reference_planning",
-      "startedAt": "2026-10-09T11:18:57.129325+00:00",
-      "focus": "FTG-Tageslichtwirkung im Browser getrennt planen",
-      "state": "completed",
-      "result": "Direkte Sun-/General-/Effects-Controls identifiziert, Tageslichtvergleich und Präferenzrückstellung geplant; COK wartet auf Hex-Farbenslot"
-    },
-    "nextRun": {
       "id": "CITY-00-I07-BI",
       "kind": "browser_original_probe",
-      "focus": "FTG-Uhrparameter und Day/night-Wirkung dokumentieren"
+      "startedAt": "2026-10-09T11:30:17.614823+00:00",
+      "focus": "FTG-Wetter, Saison, Uhr und Lichtzyklus",
+      "state": "completed",
+      "result": "26 Originalartefakte; Wirkung und Rückstellung belegt;12 zusätzliche offene Darstellungs-/Zeitpflichten"
+    },
+    "nextRun": {
+      "id": "CITY-00-I07-BR",
+      "kind": "reference_review",
+      "focus": "Belegumfang, Pflichtzuordnung und Rückstellung prüfen"
     },
     "open": [
       "CITY-00 direkte Referenzinventur/Galerie aller drei Produkte",

@@ -1,7 +1,7 @@
 {
   "cityPlans": {
     "schemaVersion": 1,
-    "updated": "2026-10-09T10:42:01.854083+00:00",
+    "updated": "2026-10-09T11:30:17.614823+00:00",
     "plan": "ROADMAP-CITIES.md",
     "state": "planned_not_implemented",
     "comparisonMode": "functional_equivalence_and_independent_usability_tests",
@@ -1816,12 +1816,14 @@
         "id": "CO-FTG-0018",
         "product": "Fantasy Town Generator",
         "feature": "Tagespläne und Zeitsimulation",
-        "sourceUrl": "https://docs.fantasytowngenerator.com/",
-        "observedAt": "2026-10-09T12:15:44.926455+02:00",
+        "sourceUrl": "https://www.fantasytowngenerator.com/temporary-settlement",
+        "observedAt": "2026-10-09T11:29:25.998933+00:00",
         "observedVersion": null,
-        "availability": "unknown",
-        "observationKind": "documentation",
-        "originalEvidence": [],
+        "availability": "temporary_settlement",
+        "observationKind": "direct_partial",
+        "originalEvidence": [
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/manifest.json"
+        ],
         "task": "Uhrzeit ändern und Aufenthaltsorte prüfen",
         "phase": "CITY-07",
         "caseIds": [],
@@ -1834,20 +1836,33 @@
           "state": "not_run"
         },
         "status": "open",
-        "gap": "Dokumentationskandidat; direkte vollständige Originalprobe offen.",
+        "gap": "Bewohner-Aufenthaltsorte und Tagesplanwirkung weiterhin offen.",
         "independentFunctionalRequirement": true,
-        "mappingCoverage": "new_required_function_not_covered_by_existing_CTY"
+        "mappingCoverage": "new_required_function_not_covered_by_existing_CTY",
+        "documentationSource": {
+          "sourceUrl": "https://docs.fantasytowngenerator.com/",
+          "observedAt": "2026-10-09T12:15:44.926455+02:00"
+        },
+        "originalProbe": {
+          "run": "CITY-00-I07-BI",
+          "state": "partial_effect_observed",
+          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/manifest.json",
+          "observation": "Time Skip changes23:00 to11:00 Monday and visibly changes daylight; no resident schedule recheck",
+          "observationTimeScope": "artifact persistence times; UI action start not measured"
+        }
       },
       {
         "id": "CO-FTG-0019",
         "product": "Fantasy Town Generator",
         "feature": "Wetter, Jahreszeiten, Tag/Nacht",
-        "sourceUrl": "https://docs.fantasytowngenerator.com/",
-        "observedAt": "2026-10-09T12:20:56.140099+02:00",
+        "sourceUrl": "https://www.fantasytowngenerator.com/temporary-settlement",
+        "observedAt": "2026-10-09T11:29:25.998933+00:00",
         "observedVersion": null,
-        "availability": "unknown",
-        "observationKind": "documentation",
-        "originalEvidence": [],
+        "availability": "temporary_settlement",
+        "observationKind": "direct_partial",
+        "originalEvidence": [
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/manifest.json"
+        ],
         "task": "Saison und Tageslicht wechseln",
         "phase": "CITY-07",
         "caseIds": [],
@@ -1860,9 +1875,20 @@
           "state": "not_run"
         },
         "status": "open",
-        "gap": "Dokumentationskandidat Wetter/Jahreszeiten/Tag-Nacht; direkte Wirkungsprobe offen.",
+        "gap": "Weitere Wetter/Saison/Sonnenparameter, eigene Umsetzung und Vergleich weiterhin offen.",
         "independentFunctionalRequirement": true,
-        "mappingCoverage": "new_required_function_not_covered_by_existing_CTY"
+        "mappingCoverage": "new_required_function_not_covered_by_existing_CTY",
+        "documentationSource": {
+          "sourceUrl": "https://docs.fantasytowngenerator.com/",
+          "observedAt": "2026-10-09T12:20:56.140099+02:00"
+        },
+        "originalProbe": {
+          "run": "CITY-00-I07-BI",
+          "state": "partial_effect_observed",
+          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/manifest.json",
+          "observation": "Snow(clear) whitens ground; Winter shows bare trees/defaultsLow8/16; at23:00 dayNight on darkens map, off brightens it, restored on darkens again",
+          "observationTimeScope": "artifact persistence times; UI action start not measured"
+        }
       },
       {
         "id": "CO-FTG-0020",
@@ -2679,13 +2705,457 @@
           "sourceFrame": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i06-20261009-01/screens/003-editor.png",
           "sourceScope": "installed_demo_control_not_full_version_description"
         }
+      },
+      {
+        "id": "CO-FTG-0031",
+        "product": "Fantasy Town Generator",
+        "feature": "Dachdarstellungsmodi",
+        "sourceUrl": "https://www.fantasytowngenerator.com/temporary-settlement",
+        "observedAt": "2026-10-09T11:19:17.324703+00:00",
+        "observedVersion": null,
+        "availability": "temporary_settlement_control_visible",
+        "observationKind": "direct_control_only",
+        "originalEvidence": [
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/manifest.json",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/ftg-general-settings.ax.txt"
+        ],
+        "task": "Dachdarstellungsmodi ändern und Ergebnis prüfen",
+        "phase": "CITY-07",
+        "caseIds": [
+          "CTY-006.02"
+        ],
+        "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
+        "implementationEvidence": [],
+        "hostEvidence": [],
+        "comparisonEvidence": [],
+        "usabilityEvidence": [],
+        "review": {
+          "state": "not_run"
+        },
+        "status": "open",
+        "gap": "Originalcontrol sichtbar; Wirkung, eigene Umsetzung, Host- und Bedienvergleich offen.",
+        "independentFunctionalRequirement": true,
+        "mappingCoverage": "independent_candidate_with_existing_CTY_mapping",
+        "originalProbe": {
+          "run": "CITY-00-I07-BI",
+          "state": "control_observed_only",
+          "observation": "Flat, roof texture,3D,Flattened3D",
+          "sourceFrame": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/ftg-general-settings.ax.txt",
+          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/manifest.json"
+        }
+      },
+      {
+        "id": "CO-FTG-0032",
+        "product": "Fantasy Town Generator",
+        "feature": "Sichtbarer Dekorationsanteil",
+        "sourceUrl": "https://www.fantasytowngenerator.com/temporary-settlement",
+        "observedAt": "2026-10-09T11:19:17.324703+00:00",
+        "observedVersion": null,
+        "availability": "temporary_settlement_control_visible",
+        "observationKind": "direct_control_only",
+        "originalEvidence": [
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/manifest.json",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/ftg-general-settings.ax.txt"
+        ],
+        "task": "Sichtbarer Dekorationsanteil ändern und Ergebnis prüfen",
+        "phase": "CITY-08",
+        "caseIds": [
+          "CTY-007.01"
+        ],
+        "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
+        "implementationEvidence": [],
+        "hostEvidence": [],
+        "comparisonEvidence": [],
+        "usabilityEvidence": [],
+        "review": {
+          "state": "not_run"
+        },
+        "status": "open",
+        "gap": "Originalcontrol sichtbar; Wirkung, eigene Umsetzung, Host- und Bedienvergleich offen.",
+        "independentFunctionalRequirement": true,
+        "mappingCoverage": "independent_candidate_with_existing_CTY_mapping",
+        "originalProbe": {
+          "run": "CITY-00-I07-BI",
+          "state": "control_observed_only",
+          "observation": "Shown individual decorations100%; trees/rocks visibility",
+          "sourceFrame": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/ftg-general-settings.ax.txt",
+          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/manifest.json"
+        }
+      },
+      {
+        "id": "CO-FTG-0033",
+        "product": "Fantasy Town Generator",
+        "feature": "Texturen oder Vollfarben",
+        "sourceUrl": "https://www.fantasytowngenerator.com/temporary-settlement",
+        "observedAt": "2026-10-09T11:19:17.324703+00:00",
+        "observedVersion": null,
+        "availability": "temporary_settlement_control_visible",
+        "observationKind": "direct_control_only",
+        "originalEvidence": [
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/manifest.json",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/ftg-general-settings.ax.txt"
+        ],
+        "task": "Texturen oder Vollfarben ändern und Ergebnis prüfen",
+        "phase": "CITY-07",
+        "caseIds": [
+          "CTY-006.02"
+        ],
+        "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
+        "implementationEvidence": [],
+        "hostEvidence": [],
+        "comparisonEvidence": [],
+        "usabilityEvidence": [],
+        "review": {
+          "state": "not_run"
+        },
+        "status": "open",
+        "gap": "Originalcontrol sichtbar; Wirkung, eigene Umsetzung, Host- und Bedienvergleich offen.",
+        "independentFunctionalRequirement": true,
+        "mappingCoverage": "independent_candidate_with_existing_CTY_mapping",
+        "originalProbe": {
+          "run": "CITY-00-I07-BI",
+          "state": "control_observed_only",
+          "observation": "Textures checkbox",
+          "sourceFrame": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/ftg-general-settings.ax.txt",
+          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/manifest.json"
+        }
+      },
+      {
+        "id": "CO-FTG-0034",
+        "product": "Fantasy Town Generator",
+        "feature": "Materialfarbvariation",
+        "sourceUrl": "https://www.fantasytowngenerator.com/temporary-settlement",
+        "observedAt": "2026-10-09T11:19:17.324703+00:00",
+        "observedVersion": null,
+        "availability": "temporary_settlement_control_visible",
+        "observationKind": "direct_control_only",
+        "originalEvidence": [
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/manifest.json",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/ftg-general-settings.ax.txt"
+        ],
+        "task": "Materialfarbvariation ändern und Ergebnis prüfen",
+        "phase": "CITY-07",
+        "caseIds": [
+          "CTY-006.02"
+        ],
+        "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
+        "implementationEvidence": [],
+        "hostEvidence": [],
+        "comparisonEvidence": [],
+        "usabilityEvidence": [],
+        "review": {
+          "state": "not_run"
+        },
+        "status": "open",
+        "gap": "Originalcontrol sichtbar; Wirkung, eigene Umsetzung, Host- und Bedienvergleich offen.",
+        "independentFunctionalRequirement": true,
+        "mappingCoverage": "independent_candidate_with_existing_CTY_mapping",
+        "originalProbe": {
+          "run": "CITY-00-I07-BI",
+          "state": "control_observed_only",
+          "observation": "Material multiple colours checkbox",
+          "sourceFrame": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/ftg-general-settings.ax.txt",
+          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/manifest.json"
+        }
+      },
+      {
+        "id": "CO-FTG-0035",
+        "product": "Fantasy Town Generator",
+        "feature": "Weiche Feldkanten",
+        "sourceUrl": "https://www.fantasytowngenerator.com/temporary-settlement",
+        "observedAt": "2026-10-09T11:19:17.324703+00:00",
+        "observedVersion": null,
+        "availability": "temporary_settlement_control_visible",
+        "observationKind": "direct_control_only",
+        "originalEvidence": [
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/manifest.json",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/ftg-general-settings.ax.txt"
+        ],
+        "task": "Weiche Feldkanten ändern und Ergebnis prüfen",
+        "phase": "CITY-07",
+        "caseIds": [],
+        "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
+        "implementationEvidence": [],
+        "hostEvidence": [],
+        "comparisonEvidence": [],
+        "usabilityEvidence": [],
+        "review": {
+          "state": "not_run"
+        },
+        "status": "open",
+        "gap": "Originalcontrol sichtbar; Wirkung, eigene Umsetzung, Host- und Bedienvergleich offen.",
+        "independentFunctionalRequirement": true,
+        "mappingCoverage": "new_required_function_not_covered_by_existing_CTY",
+        "originalProbe": {
+          "run": "CITY-00-I07-BI",
+          "state": "control_observed_only",
+          "observation": "Field edge fade checkbox",
+          "sourceFrame": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/ftg-general-settings.ax.txt",
+          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/manifest.json"
+        }
+      },
+      {
+        "id": "CO-FTG-0036",
+        "product": "Fantasy Town Generator",
+        "feature": "Wassertiefe und Schaumdarstellung",
+        "sourceUrl": "https://www.fantasytowngenerator.com/temporary-settlement",
+        "observedAt": "2026-10-09T11:19:17.324703+00:00",
+        "observedVersion": null,
+        "availability": "temporary_settlement_control_visible",
+        "observationKind": "direct_control_only",
+        "originalEvidence": [
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/manifest.json",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/ftg-general-settings.ax.txt"
+        ],
+        "task": "Wassertiefe und Schaumdarstellung ändern und Ergebnis prüfen",
+        "phase": "CITY-07",
+        "caseIds": [],
+        "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
+        "implementationEvidence": [],
+        "hostEvidence": [],
+        "comparisonEvidence": [],
+        "usabilityEvidence": [],
+        "review": {
+          "state": "not_run"
+        },
+        "status": "open",
+        "gap": "Originalcontrol sichtbar; Wirkung, eigene Umsetzung, Host- und Bedienvergleich offen.",
+        "independentFunctionalRequirement": true,
+        "mappingCoverage": "new_required_function_not_covered_by_existing_CTY",
+        "originalProbe": {
+          "run": "CITY-00-I07-BI",
+          "state": "control_observed_only",
+          "observation": "Water effects checkbox",
+          "sourceFrame": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/ftg-general-settings.ax.txt",
+          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/manifest.json"
+        }
+      },
+      {
+        "id": "CO-FTG-0037",
+        "product": "Fantasy Town Generator",
+        "feature": "Kantenglättung und FPS-Anzeige",
+        "sourceUrl": "https://www.fantasytowngenerator.com/temporary-settlement",
+        "observedAt": "2026-10-09T11:19:17.324703+00:00",
+        "observedVersion": null,
+        "availability": "temporary_settlement_control_visible",
+        "observationKind": "direct_control_only",
+        "originalEvidence": [
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/manifest.json",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/ftg-general-settings.ax.txt"
+        ],
+        "task": "Kantenglättung und FPS-Anzeige ändern und Ergebnis prüfen",
+        "phase": "CITY-08",
+        "caseIds": [
+          "CTY-007.01"
+        ],
+        "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
+        "implementationEvidence": [],
+        "hostEvidence": [],
+        "comparisonEvidence": [],
+        "usabilityEvidence": [],
+        "review": {
+          "state": "not_run"
+        },
+        "status": "open",
+        "gap": "Originalcontrol sichtbar; Wirkung, eigene Umsetzung, Host- und Bedienvergleich offen.",
+        "independentFunctionalRequirement": true,
+        "mappingCoverage": "independent_candidate_with_existing_CTY_mapping",
+        "originalProbe": {
+          "run": "CITY-00-I07-BI",
+          "state": "control_observed_only",
+          "observation": "Antialiasing dropdown and FPS stats checkbox",
+          "sourceFrame": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/ftg-general-settings.ax.txt",
+          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/manifest.json"
+        }
+      },
+      {
+        "id": "CO-FTG-0038",
+        "product": "Fantasy Town Generator",
+        "feature": "Schattenqualität",
+        "sourceUrl": "https://www.fantasytowngenerator.com/temporary-settlement",
+        "observedAt": "2026-10-09T11:18:10.510417+00:00",
+        "observedVersion": null,
+        "availability": "temporary_settlement_control_visible",
+        "observationKind": "direct_control_only",
+        "originalEvidence": [
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/manifest.json",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/ftg-sun-settings.ax.txt"
+        ],
+        "task": "Schattenqualität ändern und Ergebnis prüfen",
+        "phase": "CITY-08",
+        "caseIds": [
+          "CTY-007.01"
+        ],
+        "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
+        "implementationEvidence": [],
+        "hostEvidence": [],
+        "comparisonEvidence": [],
+        "usabilityEvidence": [],
+        "review": {
+          "state": "not_run"
+        },
+        "status": "open",
+        "gap": "Originalcontrol sichtbar; Wirkung, eigene Umsetzung, Host- und Bedienvergleich offen.",
+        "independentFunctionalRequirement": true,
+        "mappingCoverage": "independent_candidate_with_existing_CTY_mapping",
+        "originalProbe": {
+          "run": "CITY-00-I07-BI",
+          "state": "control_observed_only",
+          "observation": "Shadow resolution2048..32768; hardware may limit actual setting",
+          "sourceFrame": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/ftg-sun-settings.ax.txt",
+          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/manifest.json"
+        }
+      },
+      {
+        "id": "CO-FTG-0039",
+        "product": "Fantasy Town Generator",
+        "feature": "Bildeffekte",
+        "sourceUrl": "https://www.fantasytowngenerator.com/temporary-settlement",
+        "observedAt": "2026-10-09T11:19:16.959702+00:00",
+        "observedVersion": null,
+        "availability": "temporary_settlement_control_visible",
+        "observationKind": "direct_control_only",
+        "originalEvidence": [
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/manifest.json",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/ftg-effects-settings.ax.txt"
+        ],
+        "task": "Bildeffekte ändern und Ergebnis prüfen",
+        "phase": "CITY-07",
+        "caseIds": [],
+        "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
+        "implementationEvidence": [],
+        "hostEvidence": [],
+        "comparisonEvidence": [],
+        "usabilityEvidence": [],
+        "review": {
+          "state": "not_run"
+        },
+        "status": "open",
+        "gap": "Originalcontrol sichtbar; Wirkung, eigene Umsetzung, Host- und Bedienvergleich offen.",
+        "independentFunctionalRequirement": true,
+        "mappingCoverage": "new_required_function_not_covered_by_existing_CTY",
+        "originalProbe": {
+          "run": "CITY-00-I07-BI",
+          "state": "control_observed_only",
+          "observation": "Pixelation, vignette, dots, scanline, crosshatch controls",
+          "sourceFrame": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/ftg-effects-settings.ax.txt",
+          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/manifest.json"
+        }
+      },
+      {
+        "id": "CO-FTG-0040",
+        "product": "Fantasy Town Generator",
+        "feature": "SVG-Renderer als Gerätefallback",
+        "sourceUrl": "https://www.fantasytowngenerator.com/temporary-settlement",
+        "observedAt": "2026-10-09T11:19:17.324703+00:00",
+        "observedVersion": null,
+        "availability": "temporary_settlement_control_visible",
+        "observationKind": "direct_control_only",
+        "originalEvidence": [
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/manifest.json",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/ftg-general-settings.ax.txt"
+        ],
+        "task": "SVG-Renderer als Gerätefallback ändern und Ergebnis prüfen",
+        "phase": "CITY-08",
+        "caseIds": [],
+        "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
+        "implementationEvidence": [],
+        "hostEvidence": [],
+        "comparisonEvidence": [],
+        "usabilityEvidence": [],
+        "review": {
+          "state": "not_run"
+        },
+        "status": "open",
+        "gap": "Originalcontrol sichtbar; Wirkung, eigene Umsetzung, Host- und Bedienvergleich offen.",
+        "independentFunctionalRequirement": true,
+        "mappingCoverage": "new_required_function_not_covered_by_existing_CTY",
+        "originalProbe": {
+          "run": "CITY-00-I07-BI",
+          "state": "control_observed_only",
+          "observation": "SVG Renderer warning: disables editing and layers",
+          "sourceFrame": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/ftg-general-settings.ax.txt",
+          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/manifest.json"
+        }
+      },
+      {
+        "id": "CO-FTG-0041",
+        "product": "Fantasy Town Generator",
+        "feature": "3D-Darstellung und Street View",
+        "sourceUrl": "https://www.fantasytowngenerator.com/temporary-settlement",
+        "observedAt": "2026-10-09T11:19:17.324703+00:00",
+        "observedVersion": null,
+        "availability": "temporary_settlement_control_visible",
+        "observationKind": "direct_control_only",
+        "originalEvidence": [
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/manifest.json",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/ftg-general-settings.ax.txt"
+        ],
+        "task": "3D-Darstellung und Street View ändern und Ergebnis prüfen",
+        "phase": "CITY-07",
+        "caseIds": [],
+        "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
+        "implementationEvidence": [],
+        "hostEvidence": [],
+        "comparisonEvidence": [],
+        "usabilityEvidence": [],
+        "review": {
+          "state": "not_run"
+        },
+        "status": "open",
+        "gap": "Originalcontrol sichtbar; Wirkung, eigene Umsetzung, Host- und Bedienvergleich offen.",
+        "independentFunctionalRequirement": true,
+        "mappingCoverage": "new_required_function_not_covered_by_existing_CTY",
+        "originalProbe": {
+          "run": "CITY-00-I07-BI",
+          "state": "control_observed_only",
+          "observation": "3D unstable checkbox; warning enables Street View; effects untested",
+          "sourceFrame": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/ftg-general-settings.ax.txt",
+          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/manifest.json"
+        }
+      },
+      {
+        "id": "CO-FTG-0042",
+        "product": "Fantasy Town Generator",
+        "feature": "Ruhetag manuell überschreiben",
+        "sourceUrl": "https://www.fantasytowngenerator.com/temporary-settlement",
+        "observedAt": "2026-10-09T11:22:28.268520+00:00",
+        "observedVersion": null,
+        "availability": "temporary_settlement_control_visible",
+        "observationKind": "direct_control_only",
+        "originalEvidence": [
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/manifest.json",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/ftg-time-before.ax.txt"
+        ],
+        "task": "Ruhetag manuell überschreiben ändern und Ergebnis prüfen",
+        "phase": "CITY-07",
+        "caseIds": [],
+        "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
+        "implementationEvidence": [],
+        "hostEvidence": [],
+        "comparisonEvidence": [],
+        "usabilityEvidence": [],
+        "review": {
+          "state": "not_run"
+        },
+        "status": "open",
+        "gap": "Originalcontrol sichtbar; Wirkung, eigene Umsetzung, Host- und Bedienvergleich offen.",
+        "independentFunctionalRequirement": true,
+        "mappingCoverage": "new_required_function_not_covered_by_existing_CTY",
+        "originalProbe": {
+          "run": "CITY-00-I07-BI",
+          "state": "control_observed_only",
+          "observation": "Manual day type None,Not rest day,Rest day; schedule effect untested",
+          "sourceFrame": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/ftg-time-before.ax.txt",
+          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/manifest.json"
+        }
       }
     ],
     "functionalInventoryStatus": {
       "state": "partial_inventory_not_accepted",
-      "run": "CITY-00-I06-NI",
+      "run": "CITY-00-I07-BI",
       "products": 3,
-      "candidates": 51,
+      "candidates": 63,
       "directFormAreas": 13,
       "open": [
         "Detailfähigkeiten aller Produkte vervollständigen",
@@ -2699,7 +3169,8 @@
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/manifest.json",
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i04-20261009/manifest.json",
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i05-20261009/manifest.json",
-        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i06-20261009-01/reference-manifest.json"
+        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i06-20261009-01/reference-manifest.json",
+        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/manifest.json"
       ],
       "resultReferences": [
         {
@@ -2716,6 +3187,11 @@
           "product": "Canvas of Kings Demo",
           "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i06-20261009-01/reference-manifest.json",
           "scope": "path/plot test scene; full city/district gallery and unreduced graphics open"
+        },
+        {
+          "product": "Fantasy Town Generator",
+          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/manifest.json",
+          "scope": "same250m hamlet: weather,season,night cycle; no complete city gallery"
         }
       ]
     },
