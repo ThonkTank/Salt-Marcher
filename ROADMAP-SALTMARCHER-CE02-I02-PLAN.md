@@ -27,8 +27,9 @@ Document 5.1*, die 2014er Fassung unter
 (SHA-256; 3.158.713 Bytes, 403 PDF-Seiten). Seite 1 nennt CC BY 4.0 und den
 verlangten Attributionstext. `CE-02-I02-S01` kopiert genau den auf PDF-Seite 1
 als Attribution Statement ausgewiesenen Wortlaut unverändert in das kanonische
-Asset `src/features/catalog/SRD-5.1-ITEMS-ATTRIBUTION.md`. Ein Hash-/Texttest
-prüft seine Präsenz im Build und im sichtbaren Inspector. Hinweise zur
+Asset `src/features/catalog/SRD-5.1-ITEMS-ATTRIBUTION.md`. S01 prüft den
+Wortlaut und Asset-Hash gegen PDF-Seite 1; erst I01 prüft seine Präsenz im
+Build und im sichtbaren Inspector. Hinweise zur
 Itemprojektion stehen getrennt davon; keine weitere Wizards-Attribution wird
 angehängt. Keine 2024-/SRD-5.2-Daten.
 
@@ -45,7 +46,10 @@ Ein zweiter Prüfer vergleicht alle PDF-Seiten an den Abschnittsgrenzen und die
 vollständige Zeilen-/Überschriftenfolge gegen das Inventar; Stichproben allein
 reichen nicht. Er dokumentiert PDF-Hash, Inventarhash, Count-Abgleich und
 Ausnahmen auf einem exakten Commit als `CE-02-I02-S01-R01 PASS` oder
-`CHANGES REQUIRED`. Ohne PASS kein Quelltranskript und kein `I01`.
+`CHANGES REQUIRED`. S01 erstellt vor diesem Review auch das vollständige
+Quelltranskript, das versionierte Schema und den PDF→Transkript-Beleg. Ohne
+PASS entstehen weder generiertes Produktartefakt noch Provider oder UI; I01
+beginnt nicht.
 
 Ein 5e-bits-Datensatz darf als Extraktionshilfe dienen,
 aber nicht ungeprüft zur zweiten Wahrheit werden: jede übernommene Tatsache
@@ -55,7 +59,7 @@ keine Prüfung der Inhaltslizenz.
 
 ## Quellprojektion und Schema
 
-Das reviewte Inventar ist die Identitätsgrundlage des Quelltranskripts. Eine
+Das in S01 erstellte Inventar ist die Identitätsgrundlage des Quelltranskripts. Eine
 Erscheinung erhält die ID `srd51:<equipment|magic-item>:<abschnitt>:<ordinal>`;
 Abschnitt und Ordinal stammen ausschließlich aus der festgehaltenen physischen
 PDF-Reihenfolge. Anzeigenamen, Slugs, Unicode und Interpunktion erzeugen keine
@@ -78,22 +82,44 @@ Werte und die Zuordnung jeder Quellentabelle fest. Golden-Fälle prüfen
 Gleichnamigkeit, Varianten, Tabellen-/Detailmerge, Ligatur, Trennstrich,
 Interpunktion und bytegleiche Projektion.
 
-Der versionierte Item-Datensatz enthält mindestens:
+S01 legt den verbindlichen Vertrag als
+`src/features/catalog/data/items-srd51-schema-v1.json` (JSON Schema Draft
+2020-12, `schemaVersion: 1`) und das Transkript als
+`src/features/catalog/data/items-srd51-transcript.json` ab. Der unabhängige
+S01-Review bindet die SHA-256-Hashes von PDF, Inventar, Schema, Transkript und
+Attribution sowie die Schema-Validierung sämtlicher Einträge. Das Schema
+verbietet zusätzliche Felder und schließt Kategorie, Unterkategorie, Rarität,
+Einstimmung und Einheiten als Enums. Seine Mindestform ist:
 
-- `id`, `name`, `category`, optionale `subcategory`, `magic` und optionale
-  `rarity` sowie `attunement` als explizit belegte Werte;
-- optionale `cost` mit Quellwert und normalisierter 2014-Währung für
-  numerische Filter/Sortierung, optionales `weight` mit Einheit;
-- `properties` als geordnete Liste aus `{name, description?}` und `description`
-  als geordnete Textabschnitte mit Herkunft je Abschnitt;
-- `damage` optional als `{dice, type, versatileDice?}` und `armor` optional
-  als `{baseAc, dexterityRule?, strengthRequirement?, stealthRule?}`. Werte
-  bleiben Quelltext, ohne zusätzliche Kampfberechnung; fehlt ein für die
-  Struktur erforderlicher Wert, bleibt der ganze Teil optional und der
-  Quelltext in der Beschreibung sichtbar;
-- `source` mit SRD-Version, Dokument-URL und PDF-Seiten.
+- `id` und `name`: nichtleere NFC-Strings; `category`: `equipment` oder
+  `magic-item`; `subcategory`: optionaler Wert aus einem in S01 durch das
+  vollständige Inventar festgelegten, geschlossenen Enum samt Zuordnung jeder
+  Quellentabelle; `magic`: Boolean; `rarity`: optionales Enum `common`,
+  `uncommon`, `rare`, `very-rare`, `legendary`, `artifact`;
+- `attunement`: genau `required`, `not-required` oder `unspecified`;
+- `cost`: optionales Objekt `{sourceText, copperPieces?}` mit nichtleerem
+  Quelltext und nichtnegativem Safe-Integer in Kupferstücken. Umrechnung ist
+  nur für eindeutige Einzelwerte zulässig: `cp=1`, `sp=10`, `ep=50`, `gp=100`,
+  `pp=1000`; Bereiche, Formeln und unbezifferte Kosten behalten allein
+  `sourceText`;
+- `weight`: optionales Objekt `{sourceText, pounds?}`; `pounds` ist eine
+  kanonische positive Dezimalzeichenfolge ohne Exponent, nur bei eindeutigem
+  Quellenwert in Pfund; andere Einheiten bleiben allein `sourceText`;
+- `properties`: geordnete Liste aus `{name, description?, occurrenceId}`;
+  `description`: geordnete Liste aus `{text, occurrenceId}`. Alle Strings sind
+  nichtleer und `occurrenceId` verweist auf genau eine Inventarerscheinung;
+- `damage`: optional `{diceText, typeText, versatileDiceText?}` und `armor`:
+  optional `{armorClassText, dexterityRuleText?, strengthRequirementText?,
+  stealthRuleText?}`. Diese Felder sind ausdrücklich nichtleere,
+  quellengetreue Textwerte, keine numerischen Kampfwerte. Fehlt ein Pflichttext,
+  bleibt der strukturierte Teil weg und der Wortlaut in `description`;
+- `source`: `{document: "SRD 5.1", pdfUrl, pdfPages, printedPages,
+  occurrenceIds}` mit der gepinnten URL, nichtleeren geordneten
+  Integer-Seitenlisten und existierenden Inventar-IDs. Der Generator prüft
+  Seiten, Abschnitte und faktbezogene Erscheinungen gegen das Inventar.
 
-Fehlende Quellenfelder bleiben `null`/abwesend. Insbesondere werden für magische
+Optionale fehlende Quellenfelder werden ausgelassen, nicht durch `null` oder
+Nullwerte ersetzt. Insbesondere werden für magische
 Gegenstände keine Preise, Gewichte oder Einstimmungen aus anderen Quellen
 erfunden. `attunement` unterscheidet `required`, `not-required` und
 `unspecified`: Bei einem vollständig geprüften Magic-Item-Header setzt die
@@ -189,10 +215,12 @@ Item→Monster→Item und frischen Prozess-Restore.
 
 ## Besitz, Läufe und Prüfgates
 
-`CE-02-I02-S01` besitzt Inventar, Identitäts-/Merge-Ledger,
-Kategoriezuordnung, kanonische Attribution, Quellen-Verify und Golden-Fälle,
-aber noch keinen Produktprovider. Ein unabhängiger Prüfer muss S01 auf einem
-exakten Commit mit Count-/Hashbeleg freigeben.
+`CE-02-I02-S01` besitzt Inventar, Identitäts-/Merge-Ledger, vollständiges
+Quelltranskript, `items-srd51-schema-v1.json`, Kategoriezuordnung, kanonische
+Attribution, PDF→Transkript-Quellen-Verify und Golden-Fälle, aber noch kein
+generiertes Produktartefakt, keinen Provider und keine UI. Ein unabhängiger
+Prüfer muss S01 auf einem exakten Commit mit vollständigem Count-, Schema- und
+Hashbeleg freigeben.
 
 `CE-02-I02-I01` besitzt erst danach neue Itemdaten-, Generator-, Manifest-,
 Attributions-,
