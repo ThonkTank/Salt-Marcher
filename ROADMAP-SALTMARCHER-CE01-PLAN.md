@@ -137,7 +137,17 @@ Review, DOM-/Obsidian-Host und Fachabnahme bleiben offen.
 
 ### CE-01-I03 – Erweiterte Filter, Chips und Responsive/A11y
 
+- Query, State, Render-Controller und DOM-Host-Prüfungen bleiben hostneutral
+  und erhalten alle Hostfähigkeiten über injizierte Ports. Der bestehende
+  Obsidian-`ItemView` ist nur ein dünner Übergangsadapter; Command-/View-Tests
+  prüfen diesen Adapter getrennt und begründen keine dauerhafte Hostbindung.
 - Verbleibende D&D-Beyond-2014-vergleichbare Filter, einzelne Chips und Reset.
+- Den lokalen statischen I02-Befund reproduzieren und beheben: `change()` darf
+  beabsichtigte Scroll-Resets nicht durch ein nachfolgendes `captureScroll()`
+  aus dem alten DOM überschreiben.
+- Responsive Containerregeln am tatsächlichen Katalogcontainer aktivieren und
+  im DOM-Host belegen; derzeit ist `container-type` nur für den Editorhost
+  nachgewiesen.
 - Tastaturablauf, 200-ms-Debounce, Statuszustände und Layout bei 900×650 und
   1150×700 fertigstellen.
 

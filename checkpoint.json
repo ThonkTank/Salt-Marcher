@@ -1,4 +1,64 @@
 {
+  "saltMarcherReplacement": {
+    "date": "2026-10-09",
+    "state": "smr00_plan_review_pending",
+    "plan": "ROADMAP-SALTMARCHER-REPLACEMENT.md",
+    "platformAdr": "ROADMAP-SALTMARCHER-PLATFORM-ADR.md",
+    "architecture": "ARCHITECTURE.md#plattformoffene-saltmarcher-ablösung",
+    "acceptance": "acceptance.json.saltMarcherReplacement",
+    "objective": "This repository delivers the sole successor product for all implemented and planned SaltMarcher capabilities. UX and functional requirements are binding; the final host may be an Obsidian plugin, desktop application or evidence-backed hybrid.",
+    "source": {
+      "repository": "ThonkTank/Salt-Marcher",
+      "revision": "9de85c1a26f526acbc1af332ac5962e185c0aab2",
+      "authority": "Current vision, program capabilities, feature requirements, confirmed acceptance, static catalogs, reference tables and Golden Masters; code is behavioral reference only."
+    },
+    "portfolio": [
+      "Campaign and data lifecycle",
+      "Catalog, reference graph and world planner",
+      "Party, scene and live session",
+      "Unified hex, city and dungeon atlas",
+      "Encounter, combat, loot and rewards",
+      "Session planner and generation",
+      "Travel, calendar and authoritative time",
+      "Shops, weather and music",
+      "Actor autonomy",
+      "Passive display, extensions and portability",
+      "Tutorials, accessibility, performance, offline and privacy"
+    ],
+    "coordination": {
+      "localThreads": [
+        "01a120d7-9f9e-7082-b8a8-11646ad25402",
+        "01a120d8-2869-7371-a417-3cb239ea4bd0",
+        "01a120d8-2868-7d02-b5b9-74ef49b0b88d"
+      ],
+      "deviceColleagues": {
+        "hexAtlas": "01a11c65-2d9f-7e72-8587-cf9740b0650a",
+        "city": "01a12022-b67b-7da2-bed5-8ebde169d475",
+        "dungeon": "01a1204f-d184-7567-bfb3-d3ab06a0d07e"
+      },
+      "goal": "Vollendet die Arbeit am Obsidian Plugin. Koordiniere dich mit deinen Kollegen",
+      "cloudReviewHandoff": "GitHub Issue #1 comments 6081912800, 6081935763, 6082129686 and 6082173824; the replaced GM cloud thread focuses architecture/technical review including the platform decision. Other cloud colleagues retain their established review/test roles and participate through Issue #1."
+    },
+    "verified": "Read-only audit covered current SaltMarcher vision, program capabilities, all feature requirement families, technical needs, current implementation and historical JavaFX/Obsidian references. The resulting portfolio plan defines SMR-00 through SMR-11 without claiming implementation or acceptance. SMR-00-ADR-01 is a proposed host-neutral-core plus desktop-shell migration direction and remains unratified pending prototypes and reviews from all device and cloud workstreams.",
+    "platformAdrReview": {
+      "state": "local_static_review_repaired_cloud_and_device_reviews_pending",
+      "inventory": "At b7e06f0, 68 of 78 evaluated TypeScript files had no direct Obsidian import; direct host imports were concentrated in ten entry, storage and UI files totaling about 9100 LOC.",
+      "repairs": "Legacy Obsidian wording was limited to the transition adapter; Markdown authority was scoped to existing documents pending ADR; CE-01-I03 was split into host-neutral controller/DOM work and a thin Obsidian adapter; team roles and opaque retained data were clarified.",
+      "limits": "Static inventory and local review only. ADR-P01 through ADR-P04, device-owner feedback and independent cloud reviews remain open."
+    },
+    "open": [
+      "Independent architecture/technical review of SMR-00 plan and acceptance matrix",
+      "All SMR-01 through SMR-11 implementation, review, repair and cleanup gates",
+      "SMR-00-ADR-01 target-platform and migration-path decision",
+      "Per-slice source-to-target mapping and host persistence/security decisions"
+    ],
+    "nextRun": {
+      "id": "SMR-00-ADR-01",
+      "kind": "architecture_technical_review",
+      "owner": "three_local_threads_with_cloud_review",
+      "focus": "Compare Obsidian plugin, standalone desktop and incremental hybrid against UX, data, distribution, security, performance and migration needs; cloud supplies independent architecture/technical review"
+    }
+  },
   "saltMarcherCatalogEncounter": {
     "date": "2026-10-09",
   "state": "ce01_i02_implemented_i03_next",
@@ -78,7 +138,15 @@
           "limitsPassed": true
         }
       },
-      "limits": "No advanced filters/chips/reset/debounce, DOM-host or real Obsidian acceptance, Encounter action or CE-01 approval. CE-AC-01, CE-AC-02 and CE-AC-14 remain open."
+      "limits": "No advanced filters/chips/reset/debounce, DOM-host or real Obsidian acceptance, Encounter action or CE-01 approval. CE-AC-01, CE-AC-02 and CE-AC-14 remain open.",
+      "localStaticReview": {
+        "state": "findings_assigned_to_ce01_i03",
+        "findings": [
+          "A requested scroll reset may be overwritten when render captures scroll from the old DOM after change().",
+          "Catalog container queries require a proven container-type on the actual catalog host."
+        ],
+        "limit": "Static findings only; reproduce in focused state/DOM tests before changing behavior. Independent CE-01-R01 and real-host acceptance remain open."
+      }
     },
     "coordination": {
       "catalogAnalysis": "completed read-only",
@@ -1540,7 +1608,7 @@
     },
     "dd006ShadowPlan": {
       "date": "2026-10-09",
-      "state": "original_and_host_render_candidate_recorded_ui_and_review_open",
+      "state": "original_host_render_and_ui_candidates_recorded_review_open",
       "plan": "ROADMAP-PARITY-TOOLS-PHASE1-DD006-SHADOW-PLAN.md",
       "cases": "DD-006.03/.04",
       "originalReport": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd006-shadow-20261009/original-render-probe.md",
@@ -1548,8 +1616,10 @@
       "hostReport": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd006-shadow-host-20261009/implementation.md",
       "hostAudit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd006-shadow-host-20261009/host-pair-audit.json",
       "hostBuildSha256": "5b086c04c05b8011c64331ee6da7baa4831fcf06cc8712d2078731fcd03f3d4f",
+      "hostUiReport": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd006-shadow-ui-library-20261009/implementation.md",
+      "hostUiAudit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd006-shadow-ui-library-20261009/ui-audit.json",
       "finding": "Globale world-Schattenwerte ändern vorhandene Elemente im Original nicht rückwirkend; gespeicherte shadow-Felder von Wand und Objekt ändern ihre Bilder getrennt.",
-      "next": "UI-Bedienung der Schattenwerte, Vorgaben für neue Elemente und Undo/Redo getrennt prüfen; danach unabhängigen DD-006.03/.04-Review. New-Map-Bedienung ist historisch."
+      "next": "Unabhängigen DD-006.03/.04-Review auf integriertem Endbuild durchführen; globale Atlasoptionen bei Atlasintegration nach Nutzerzweck prüfen. New-Map-Bedienung ist historisch."
     },
     "dd001002Plan": {
       "date": "2026-10-09",
@@ -3772,17 +3842,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I19-P",
+      "id": "CITY-00-I20-P",
       "kind": "reference_planning",
-      "startedAt": "2026-10-09T13:38:34.334901+00:00",
-      "focus": "Watabou-Stilwirkung und ausgegebene Geometrie planen",
+      "startedAt": "2026-10-09T13:47:20.089912+00:00",
+      "focus": "Original-History vor Save gesondert planen",
       "state": "completed",
-      "result": "Eine sichtbare Vorgabe auf Browserkopie anwenden, tatsächliche Vorher-/Nachherausgaben vergleichen; Originaltabs und nativen Slot erhalten."
+      "result": "Kollegenfreigabe und vier verschwundene Prozessidentitäten geprüft; native Pre-Save-Folge auf geschützter eigener Kartenkopie geplant."
     },
     "nextRun": {
-      "id": "CITY-00-I19-I",
-      "kind": "style_reference_probe",
-      "focus": "Stilvorgabe direkt anwenden und Geometrieausgaben vergleichen"
+      "id": "CITY-00-I20-I",
+      "kind": "native_history_probe",
+      "focus": "Straßenpunkt ändern, Undo/Redo vor Save direkt prüfen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
