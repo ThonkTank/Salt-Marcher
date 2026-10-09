@@ -3880,17 +3880,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I23-P",
-      "kind": "reference_planning",
-      "startedAt": "2026-10-09T14:16:25.053056+00:00",
-      "focus": "Landmarkenposition und angebotene Korrektur planen",
-      "state": "completed",
-      "result": "Begrenzte Probe in eigener Browserkopie mit sichtbaren Controls und tatsächlichen SVG-Dateien geplant."
-    },
-    "nextRun": {
       "id": "CITY-00-I23-I",
       "kind": "landmark_edit_reference_probe",
-      "focus": "Markierung, Kontextaktionen und Korrektur direkt prüfen"
+      "startedAt": "2026-10-09T14:19:54.689294+00:00",
+      "focus": "Originalkorrektur und tatsächliche Ausgaben prüfen",
+      "state": "completed",
+      "result": "Inline-Umbenennung/Delete sichtbar und SVG-seitig belegt; Position ist Legendenlayout. Geographische Position/Persistenz offen."
+    },
+    "nextRun": {
+      "id": "CITY-00-I23-R",
+      "kind": "reference_review",
+      "focus": "Originalwirkung und unbelegte Positions-/Persistenzansprüche prüfen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
