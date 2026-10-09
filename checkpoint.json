@@ -4930,17 +4930,17 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-E2E-SEED-CLEAN-I",
-      "kind": "cleanup_implementation",
-      "startedAt": "2026-10-09T23:16:25.942028+00:00",
-      "focus": "Archive/remove four pinned own temp resources; preserve seed/component boundaries",
-      "state": "completed",
-      "result": "Four files hash-verified then archived and removed; external cleanup receipt; fixture/test/product unchanged; CLEAN-R pending"
-    },
-    "nextRun": {
       "id": "CITY-E2E-SEED-CLEAN-R",
       "kind": "cleanup_review",
-      "focus": "Review cleanup receipt/archive hashes, absence of exact own temp files, unchanged seed/test/product/foreign roots; then final exact handoff to Hex PR13"
+      "startedAt": "2026-10-09T23:17:20.379107+00:00",
+      "focus": "Review archived resource hashes, absence of own temp files and byte/scope/root boundaries",
+      "state": "completed",
+      "result": "PASS no mandatory cleanup finding; all fixture/test bytes unchanged vs6276312; seed cycle complete; ready exact handoff, integrated code/host gates remain open"
+    },
+    "nextRun": {
+      "id": "CITY-E2E-SEED-HANDOFF",
+      "kind": "steward_handoff",
+      "focus": "Hand off final exact City component SHA to Hex PR13 for independently reviewed integration; next own product work only concrete contract row"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
