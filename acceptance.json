@@ -132541,17 +132541,19 @@
           "reviewAudit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-ellipse-hole-host-20261009/review-audit.json"
         },
         "followUpPhase1BuildingFloorEllipseRefillOriginalProbe": {
-          "state": "ellipse_refill_scoped_host_raw_pair_passed_review_open_case_open",
+          "state": "ellipse_refill_scoped_review_passed_case_open",
           "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
           "originalReport": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-ellipse-refill-original-20261009/original-probe.md",
           "originalAudit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-ellipse-refill-original-20261009/original-audit.json",
           "measuredScope": "1×1-Smart-Wood-Rechteckzug vom linken oberen Ellipsenlochrand zur Mitte erhält in zwei Originalprozessen alle 36 Zellen und die Außenkontur. Der Innenring verkürzt sich von 28 auf 23 Punkte. Undo semantisch gleich, Redo bytegleich; frische Originalöffnung erhält den Zustand.",
-          "remaining": "Host-GUI nach abgeschlossenem History-Schritt und frischer Öffnung mit je elf Prüfpunkten bestanden; zwei Rohdatenpaare stimmen in allen 36 Zellwerten und der 23-Punkt-Innenkontur bis 0,0045 Felder überein. Getrennter Review offen. Weitere Startpunkte, Größen und Randfolgen nicht abgeleitet; DD-038 und Phase 1 offen. P7-2 physisch ungeprüft.",
+          "remaining": "Host-GUI nach abgeschlossenem History-Schritt und frischer Öffnung mit je elf Prüfpunkten bestanden; zwei Rohdatenpaare stimmen in allen 36 Zellwerten und der 23-Punkt-Innenkontur bis 0,0045 Felder überein. Getrennter Review besteht. Weitere Startpunkte, Größen und Randfolgen nicht abgeleitet; DD-038 und Phase 1 offen. P7-2 physisch ungeprüft.",
           "hostBuildSha256": "d54f25cf7b961cc78b1bbf197bd4781bd62d2325ec10dc4b34148c0d6ab3a6a2",
           "hostReport": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-ellipse-refill-host-checked-20261009/implementation.md",
           "hostAudit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-ellipse-refill-host-checked-20261009/independent-audit.json",
           "hostEdit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-ellipse-refill-host-checked-20261009/evidence/1791545124880-parity-tools-phase1-building-mixed-edit/result.json",
-          "hostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-ellipse-refill-host-checked-20261009/evidence/1791545170129-parity-tools-phase1-building-mixed-reopen/result.json"
+          "hostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-ellipse-refill-host-checked-20261009/evidence/1791545170129-parity-tools-phase1-building-mixed-reopen/result.json",
+          "review": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-ellipse-refill-host-checked-20261009/review.md",
+          "reviewAudit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-ellipse-refill-host-checked-20261009/review-audit.json"
         },
         "followUpPhase1BuildingPointOriginalProbe": {
           "state": "three_point_moves_scoped_review_passed_case_open",
