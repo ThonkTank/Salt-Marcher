@@ -798,7 +798,9 @@ async function workflow() {
     return;
   }
   if (parityToolsPhase1Wear) {
-    const scenario = require("./host/parity-tools-phase1-wear.cjs")(scenarioContext);
+    const scenario = process.argv.includes("--shadow-matrix")
+      ? require("./host/parity-tools-phase1-shadow-matrix.cjs")(scenarioContext)
+      : require("./host/parity-tools-phase1-wear.cjs")(scenarioContext);
     if (restart) await scenario.reopen();
     else await scenario.edit();
     return;

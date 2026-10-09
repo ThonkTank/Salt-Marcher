@@ -1,16 +1,16 @@
 {
   "saltMarcherCatalogEncounter": {
     "date": "2026-10-09",
-  "state": "ce01_i01_reviewed_i02_next",
+  "state": "ce01_i02_implemented_i03_next",
     "plan": "ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md",
     "architecture": "ARCHITECTURE.md#geplante-katalog--und-encounter-erweiterung",
     "acceptance": "acceptance.json.saltMarcherCatalogEncounter",
     "currentRun": {
-      "id": "CE-01-P01",
-      "kind": "planning",
-    "state": "completed_static_validation_reviewed",
-      "focus": "Read-only Monster workspace, visible notice and measured lazy/release-asset strategy",
-      "result": "Dedicated ItemView selected. Build verifies, gzips and embeds the pinned SRD JSON as a virtual Base64 string in main.js; the immutable object graph is decoded only on first catalog open. The visible embedded notice is distribution-safe. UI work is split into loader, core view and advanced-filter packages.",
+      "id": "CE-01-I02",
+      "kind": "implementation",
+    "state": "completed_checked_review_pending",
+      "focus": "Dedicated catalog ItemView, command focus, core query/sort/paging/selection and complete read-only statblock",
+      "result": "The command opens or focuses exactly one catalog ItemView. The lazy loader feeds a retained view session with name/CR/type/size filters, sortable and pageable results, keyboard selection, scroll restoration, source notice, explicit loading/error/retry states and a complete read-only SRD statblock. No Encounter mutation or CE-01 approval.",
       "plan": "ROADMAP-SALTMARCHER-CE01-PLAN.md",
     "baseline": {
       "commit": "86ce73179ede452ee6a9f5d3197ee325544a58b8",
@@ -60,23 +60,43 @@
         "repairs": "Added product bundle/inventory and all gate failure regressions, dirty source revision semantics, Blob capability guard and negative tests for every runtime capability."
       }
     },
+    "ce01I02": {
+      "id": "CE-01-I02",
+      "kind": "implementation",
+      "state": "completed_checked_review_pending",
+      "result": "Registered dungeon-creature-catalog ItemView and Monsterkatalog command with unique-leaf focus, retained serializable session, core filters, deterministic sort, 50-row paging, mouse/keyboard selection, full read-only statblock and directly reachable license notice.",
+      "verification": {
+        "check": "passed",
+        "tests": {"passed": 225, "failed": 0},
+        "build": "passed",
+        "inventory": {
+          "sourceBytes": 832272,
+          "gzipBytes": 102869,
+          "base64Characters": 137160,
+          "mainBytes": 1348725,
+          "mainJsGrowthBytes": 159355,
+          "limitsPassed": true
+        }
+      },
+      "limits": "No advanced filters/chips/reset/debounce, DOM-host or real Obsidian acceptance, Encounter action or CE-01 approval. CE-AC-01, CE-AC-02 and CE-AC-14 remain open."
+    },
     "coordination": {
       "catalogAnalysis": "completed read-only",
       "encounterAnalysis": "completed read-only",
       "dndBeyondBenchmark": "completed from official sources",
       "testSlotClarification": "one graphical host/original instance per device; colleagues on separate devices may test in parallel",
-      "automation": "hourly continuation enabled"
+      "cloudReviewHandoff": "Requested in GitHub Issue #1 comment 6081912800: prior GM-UX-CLOUD worker stops feature implementation and focuses architecture/technical reviews of local packages."
     },
-    "verified": "CE-00-I01 passed 210 tests but R01 required changes. CE-00-N01 passed check, 211 tests and build; independent CE-00-R02 passed with no remaining R01 findings. The later direct user decision narrows the entire feature to D&D 2014 only; the scope correction passes check, 212 tests and build. Portable read-only catalog foundation only. No UI, Vault, Encounter or parity approval claimed.",
+    "verified": "CE-00-I01 passed 210 tests but R01 required changes. CE-00-N01 passed check, 211 tests and build; independent CE-00-R02 passed with no remaining R01 findings. The later direct user decision narrows the feature to D&D 2014 only. CE-01-I01 is independently reviewed. CE-01-I02 passes check, all 225 tests and build with payload limits, and exposes the first product ItemView; its independent review and all real-host acceptance remain open.",
     "open": [
-      "All CE-01 through CE-07 implementation, review and cleanup runs",
+      "CE-01-I02 independent review, CE-01-I03, CE-01 review/repair/cleanup and all CE-02 through CE-07 runs",
       "Pinned DMG-2014 encounter math and golden masters",
       "Real Obsidian host, restart, keyboard and damaged-data acceptance"
     ],
     "nextRun": {
-      "id": "CE-01-I02",
+      "id": "CE-01-I03",
       "kind": "implementation",
-      "focus": "Dedicated catalog ItemView, command focus, core search/filter/sort/paging selection and full read-only statblock; no CE-01 approval"
+      "focus": "Remaining filters, removable chips/reset, 200-ms debounced stale-safe query, responsive/A11y completion and focused DOM-host coverage; no CE-01 approval"
     }
   },
   "repositoryWorkflow": {
@@ -1492,10 +1512,16 @@
     },
     "dd006ShadowPlan": {
       "date": "2026-10-09",
-      "state": "plan_recorded_original_render_probe_next",
+      "state": "original_and_host_render_candidate_recorded_ui_and_review_open",
       "plan": "ROADMAP-PARITY-TOOLS-PHASE1-DD006-SHADOW-PLAN.md",
       "cases": "DD-006.03/.04",
-      "next": "Vier Original-Rohkarten mit gleicher Geometrie und getrennten Schattenwerten im Original rendern und frisch öffnen; danach isolierten Hostvergleich durchführen. New-Map-Bedienung ist historisch."
+      "originalReport": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd006-shadow-20261009/original-render-probe.md",
+      "originalAudit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd006-shadow-20261009/original-audit.json",
+      "hostReport": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd006-shadow-host-20261009/implementation.md",
+      "hostAudit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd006-shadow-host-20261009/host-pair-audit.json",
+      "hostBuildSha256": "5b086c04c05b8011c64331ee6da7baa4831fcf06cc8712d2078731fcd03f3d4f",
+      "finding": "Globale world-Schattenwerte ändern vorhandene Elemente im Original nicht rückwirkend; gespeicherte shadow-Felder von Wand und Objekt ändern ihre Bilder getrennt.",
+      "next": "UI-Bedienung der Schattenwerte, Vorgaben für neue Elemente und Undo/Redo getrennt prüfen; danach unabhängigen DD-006.03/.04-Review. New-Map-Bedienung ist historisch."
     },
     "dd001002Plan": {
       "date": "2026-10-09",
@@ -3718,17 +3744,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I17-P",
-      "kind": "early_reference_planning",
-      "startedAt": "2026-10-09T13:09:26.505151+00:00",
-      "focus": "Freigegebenen nativen COK Undo/Redo-Lauf planen",
+      "id": "CITY-00-I19-P",
+      "kind": "reference_planning",
+      "startedAt": "2026-10-09T13:38:34.334901+00:00",
+      "focus": "Watabou-Stilwirkung und ausgegebene Geometrie planen",
       "state": "completed",
-      "result": "Native Freigabe bestätigt und16 Kollegenprozesse tatsächlich weg; begrenzte Undo/Redo-Folge auf Kopie eigener gespeicherter Demokarte mit Rohwert-/Bild-/normaler Endprüfung geplant"
+      "result": "Eine sichtbare Vorgabe auf Browserkopie anwenden, tatsächliche Vorher-/Nachherausgaben vergleichen; Originaltabs und nativen Slot erhalten."
     },
     "nextRun": {
-      "id": "CITY-00-I17-I",
-      "kind": "reference_history_probe",
-      "focus": "COK Undo/Redo auf eigener QA-Kartenkopie direkt messen"
+      "id": "CITY-00-I19-I",
+      "kind": "style_reference_probe",
+      "focus": "Stilvorgabe direkt anwenden und Geometrieausgaben vergleichen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
