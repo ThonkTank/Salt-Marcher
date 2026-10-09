@@ -3615,17 +3615,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I09-CI",
-      "kind": "cleanup_implementation",
-      "startedAt": "2026-10-09T12:08:19.364542+00:00",
-      "focus": "Galeriebefunde R01–R03 bereinigen",
-      "state": "completed",
-      "result": "Galerietor als reiner Ergebnisabschluss geschlossen; aktuelle Texte korrigiert, Bridge-Dateiname präzisiert; voller Funktionsauftrag und HEX-05 offen"
-    },
-    "nextRun": {
       "id": "CITY-00-I09-CR",
       "kind": "cleanup_review",
-      "focus": "Metadaten, Rohhashes und Grenzen erneut prüfen"
+      "startedAt": "2026-10-09T12:08:48.968725+00:00",
+      "focus": "Galerieabschluss und offene Pflichten erneut prüfen",
+      "state": "completed",
+      "result": "R01–R03 geschlossen;6 Hashes/4 Formen,63 Pflichten/24 CTY unverändert, fremde Wurzeln erhalten. Keine Produktparitätsfreigabe"
+    },
+    "nextRun": {
+      "id": "CITY-00-I10-P",
+      "kind": "implementation_readiness_planning",
+      "focus": "Restinventur nach Produktphasen ordnen und HEX-05-Übergabe abstimmen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
