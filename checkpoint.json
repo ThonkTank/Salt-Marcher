@@ -3344,5 +3344,29 @@
       "gate": "passed",
       "next": "Eigener Phase-1-Planlauf der Folge-Roadmap."
     }
+  },
+  "cityExecution": {
+    "scope": "CITY-00 bis CITY-09; vollständige Funktionsgleichwertigkeit mit drei Vergleichsprogrammen und bessere Bedienung",
+    "phase": "CITY-00",
+    "state": "overall_plan_statically_checked",
+    "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
+    "currentRun": {
+      "id": "CITY-P01",
+      "kind": "planning",
+      "startedAt": "2026-10-09T12:12:01.222390+02:00",
+      "focus": "Alle offenen CTY-Pflichten, zusätzlicher FTG-Funktionsumfang und technische Umsetzung auf gemeinsamer Atlasbasis",
+      "state": "completed",
+      "result": "24 offene Pflichtfälle zugeordnet; drei Referenzen eingeplant; direkte Originalinventur und HEX-05 offen; JSON, Verweise und vollständige CTY-Zuordnung geprüft"
+    },
+    "nextRun": {
+      "id": "CITY-P01-CP",
+      "kind": "cleanup_planning",
+      "focus": "Planverweise, vollständige CTY-Zuordnung, klare Referenz-/Abnahmegrenzen und eigene Checkpoint-Zuständigkeit prüfen"
+    },
+    "open": [
+      "CITY-00 direkte Referenzinventur/Galerie aller drei Produkte",
+      "HEX-05 gemeinsame Atlasbasis vor CITY-01",
+      "CITY-01 bis CITY-09 Produkt-, Host-, Ergebnis- und physische Bedienabnahmen"
+    ]
   }
 }
