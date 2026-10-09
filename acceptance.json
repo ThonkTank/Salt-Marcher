@@ -63,6 +63,18 @@
           "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/manifest.json",
           "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/ftg-hamlet-overview.jpg"
         ]
+      },
+      {
+        "product": "Medieval Fantasy City Generator",
+        "url": "https://html-classic.itch.zone/html/12710731/bin/index.html?size=25&seed=540139574&citadel=1&urban_castle=1&plaza=1&temple=1&walls=1&shantytown=0&coast=1&river=1&greens=0&gates=-1&sea=0.2",
+        "role": "direct_walled_coastal_city_overview_and_detail",
+        "observed": "New River mit festem Seed; Stadtstruktur und Detail direkt gesehen; Menüs Generate/Features/Roads und PNG/SVG/JSON erfasst.",
+        "version": null,
+        "directResultEvidence": [
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/manifest.json",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/watabou-walled-port-overview.jpg",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/watabou-walled-port-detail.jpg"
+        ]
       }
     ],
     "referenceStatus": "official_descriptions_and_devlogs_read_direct_result_samples_pending",
@@ -1122,12 +1134,16 @@
         "id": "CO-WAT-0001",
         "product": "Medieval Fantasy City Generator",
         "feature": "Stadtlayout und Größenoptionen",
-        "sourceUrl": "https://watabou.itch.io/medieval-fantasy-city-generator",
-        "observedAt": "2026-10-09T12:15:44.926455+02:00",
+        "sourceUrl": "https://html-classic.itch.zone/html/12710731/bin/index.html?size=25&seed=540139574&citadel=1&urban_castle=1&plaza=1&temple=1&walls=1&shantytown=0&coast=1&river=1&greens=0&gates=-1&sea=0.2",
+        "observedAt": "2026-10-09T12:28:25.003314+02:00",
         "observedVersion": null,
         "availability": "unknown",
-        "observationKind": "documentation",
-        "originalEvidence": [],
+        "observationKind": "direct",
+        "originalEvidence": [
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/watabou-walled-port-overview.jpg",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/watabou-generate-features.jpg",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/manifest.json"
+        ],
         "task": "Dorf und Stadt erzeugen",
         "phase": "CITY-02",
         "caseIds": [
@@ -1143,20 +1159,29 @@
           "state": "not_run"
         },
         "status": "open",
-        "gap": "Dokumentationskandidat; direkte vollständige Originalprobe offen.",
+        "gap": "Direkte Ergebnis-/Menüprobe gesichert; weitere Vorgaben/Wirkungen, Versionsstand und eigener Produktvergleich offen.",
         "independentFunctionalRequirement": true,
-        "mappingCoverage": "related_project_criteria_only; CO requirement remains independently required"
+        "mappingCoverage": "related_project_criteria_only; CO requirement remains independently required",
+        "originalProbe": {
+          "state": "partial",
+          "run": "CITY-00-I03-I",
+          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/manifest.json"
+        }
       },
       {
         "id": "CO-WAT-0002",
         "product": "Medieval Fantasy City Generator",
         "feature": "Dächer und Vierteldarstellung",
-        "sourceUrl": "https://watabou.itch.io/medieval-fantasy-city-generator",
-        "observedAt": "2026-10-09T12:15:44.926455+02:00",
+        "sourceUrl": "https://html-classic.itch.zone/html/12710731/bin/index.html?size=25&seed=540139574&citadel=1&urban_castle=1&plaza=1&temple=1&walls=1&shantytown=0&coast=1&river=1&greens=0&gates=-1&sea=0.2",
+        "observedAt": "2026-10-09T12:28:25.003314+02:00",
         "observedVersion": null,
         "availability": "unknown",
-        "observationKind": "documentation",
-        "originalEvidence": [],
+        "observationKind": "direct",
+        "originalEvidence": [
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/watabou-walled-port-overview.jpg",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/watabou-walled-port-detail.jpg",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/manifest.json"
+        ],
         "task": "Viertel und Dachdetail desselben Plans vergleichen",
         "phase": "CITY-07",
         "caseIds": [
@@ -1172,20 +1197,29 @@
           "state": "not_run"
         },
         "status": "open",
-        "gap": "Dokumentationskandidat; direkte vollständige Originalprobe offen.",
+        "gap": "Direkte Ergebnis-/Menüprobe gesichert; weitere Vorgaben/Wirkungen, Versionsstand und eigener Produktvergleich offen.",
         "independentFunctionalRequirement": true,
-        "mappingCoverage": "related_project_criteria_only; CO requirement remains independently required"
+        "mappingCoverage": "related_project_criteria_only; CO requirement remains independently required",
+        "originalProbe": {
+          "state": "partial",
+          "run": "CITY-00-I03-I",
+          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/manifest.json"
+        }
       },
       {
         "id": "CO-WAT-0003",
         "product": "Medieval Fantasy City Generator",
         "feature": "Gassen und Straßennetz",
-        "sourceUrl": "https://watabou.itch.io/medieval-fantasy-city-generator",
-        "observedAt": "2026-10-09T12:15:44.926455+02:00",
+        "sourceUrl": "https://html-classic.itch.zone/html/12710731/bin/index.html?size=25&seed=540139574&citadel=1&urban_castle=1&plaza=1&temple=1&walls=1&shantytown=0&coast=1&river=1&greens=0&gates=-1&sea=0.2",
+        "observedAt": "2026-10-09T12:28:25.003314+02:00",
         "observedVersion": null,
         "availability": "unknown",
-        "observationKind": "documentation",
-        "originalEvidence": [],
+        "observationKind": "direct",
+        "originalEvidence": [
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/watabou-generate-roads.jpg",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/watabou-walled-port-overview.jpg",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/manifest.json"
+        ],
         "task": "Hauptweg und Gasse bearbeiten",
         "phase": "CITY-05",
         "caseIds": [
@@ -1200,9 +1234,14 @@
           "state": "not_run"
         },
         "status": "open",
-        "gap": "Dokumentationskandidat; direkte vollständige Originalprobe offen.",
+        "gap": "Direkte Ergebnis-/Menüprobe gesichert; weitere Vorgaben/Wirkungen, Versionsstand und eigener Produktvergleich offen.",
         "independentFunctionalRequirement": true,
-        "mappingCoverage": "related_project_criteria_only; CO requirement remains independently required"
+        "mappingCoverage": "related_project_criteria_only; CO requirement remains independently required",
+        "originalProbe": {
+          "state": "partial",
+          "run": "CITY-00-I03-I",
+          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/manifest.json"
+        }
       },
       {
         "id": "CO-WAT-0004",
@@ -2117,13 +2156,224 @@
         },
         "independentFunctionalRequirement": true,
         "mappingCoverage": "new_required_function_not_covered_by_existing_CTY"
+      },
+      {
+        "id": "CO-WAT-0005",
+        "product": "Medieval Fantasy City Generator",
+        "feature": "PNG-/SVG-/JSON-Ausgabe",
+        "sourceUrl": "https://html-classic.itch.zone/html/12710731/bin/index.html?size=25&seed=540139574&citadel=1&urban_castle=1&plaza=1&temple=1&walls=1&shantytown=0&coast=1&river=1&greens=0&gates=-1&sea=0.2",
+        "observedAt": "2026-10-09T12:28:25.003314+02:00",
+        "observedVersion": null,
+        "availability": "unknown",
+        "observationKind": "direct",
+        "originalEvidence": [
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/manifest.json"
+        ],
+        "task": "Karte und Geometrie in allen drei Formaten ausgeben",
+        "phase": "CITY-08",
+        "caseIds": [
+          "CTY-006.03"
+        ],
+        "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
+        "implementationEvidence": [],
+        "hostEvidence": [],
+        "comparisonEvidence": [],
+        "usabilityEvidence": [],
+        "review": {
+          "state": "not_run"
+        },
+        "status": "open",
+        "gap": "Originalmenü direkt sichtbar; konkrete Wirkungs-/Saveprobe und eigener Produktvergleich offen.",
+        "independentFunctionalRequirement": true,
+        "mappingCoverage": "related_project_criteria_only; CO requirement remains independently required",
+        "originalProbe": {
+          "state": "partial",
+          "run": "CITY-00-I03-I",
+          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/manifest.json"
+        }
+      },
+      {
+        "id": "CO-WAT-0006",
+        "product": "Medieval Fantasy City Generator",
+        "feature": "Landmarken setzen",
+        "sourceUrl": "https://html-classic.itch.zone/html/12710731/bin/index.html?size=25&seed=540139574&citadel=1&urban_castle=1&plaza=1&temple=1&walls=1&shantytown=0&coast=1&river=1&greens=0&gates=-1&sea=0.2",
+        "observedAt": "2026-10-09T12:28:25.003314+02:00",
+        "observedVersion": null,
+        "availability": "unknown",
+        "observationKind": "direct",
+        "originalEvidence": [
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/manifest.json"
+        ],
+        "task": "Benannten Ort direkt platzieren",
+        "phase": "CITY-06",
+        "caseIds": [
+          "CTY-005.01"
+        ],
+        "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
+        "implementationEvidence": [],
+        "hostEvidence": [],
+        "comparisonEvidence": [],
+        "usabilityEvidence": [],
+        "review": {
+          "state": "not_run"
+        },
+        "status": "open",
+        "gap": "Originalmenü direkt sichtbar; konkrete Wirkungs-/Saveprobe und eigener Produktvergleich offen.",
+        "independentFunctionalRequirement": true,
+        "mappingCoverage": "related_project_criteria_only; CO requirement remains independently required",
+        "originalProbe": {
+          "state": "partial",
+          "run": "CITY-00-I03-I",
+          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/manifest.json"
+        }
+      },
+      {
+        "id": "CO-WAT-0007",
+        "product": "Medieval Fantasy City Generator",
+        "feature": "Lokale Geometrie erneut erzeugen",
+        "sourceUrl": "https://html-classic.itch.zone/html/12710731/bin/index.html?size=25&seed=540139574&citadel=1&urban_castle=1&plaza=1&temple=1&walls=1&shantytown=0&coast=1&river=1&greens=0&gates=-1&sea=0.2",
+        "observedAt": "2026-10-09T12:28:25.003314+02:00",
+        "observedVersion": null,
+        "availability": "unknown",
+        "observationKind": "direct",
+        "originalEvidence": [
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/manifest.json"
+        ],
+        "task": "Viertelkontur lokal erneuern",
+        "phase": "CITY-04",
+        "caseIds": [
+          "CTY-003.01"
+        ],
+        "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
+        "implementationEvidence": [],
+        "hostEvidence": [],
+        "comparisonEvidence": [],
+        "usabilityEvidence": [],
+        "review": {
+          "state": "not_run"
+        },
+        "status": "open",
+        "gap": "Originalmenü direkt sichtbar; konkrete Wirkungs-/Saveprobe und eigener Produktvergleich offen.",
+        "independentFunctionalRequirement": true,
+        "mappingCoverage": "related_project_criteria_only; CO requirement remains independently required",
+        "originalProbe": {
+          "state": "partial",
+          "run": "CITY-00-I03-I",
+          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/manifest.json"
+        }
+      },
+      {
+        "id": "CO-WAT-0008",
+        "product": "Medieval Fantasy City Generator",
+        "feature": "Stadtgeometrie verformen (Warp)",
+        "sourceUrl": "https://html-classic.itch.zone/html/12710731/bin/index.html?size=25&seed=540139574&citadel=1&urban_castle=1&plaza=1&temple=1&walls=1&shantytown=0&coast=1&river=1&greens=0&gates=-1&sea=0.2",
+        "observedAt": "2026-10-09T12:28:25.003314+02:00",
+        "observedVersion": null,
+        "availability": "unknown",
+        "observationKind": "direct",
+        "originalEvidence": [
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/manifest.json"
+        ],
+        "task": "Straßen/Bebauung durch lokalen Eingriff verformen",
+        "phase": "CITY-04",
+        "caseIds": [
+          "CTY-003.01"
+        ],
+        "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
+        "implementationEvidence": [],
+        "hostEvidence": [],
+        "comparisonEvidence": [],
+        "usabilityEvidence": [],
+        "review": {
+          "state": "not_run"
+        },
+        "status": "open",
+        "gap": "Originalmenü direkt sichtbar; konkrete Wirkungs-/Saveprobe und eigener Produktvergleich offen.",
+        "independentFunctionalRequirement": true,
+        "mappingCoverage": "related_project_criteria_only; CO requirement remains independently required",
+        "originalProbe": {
+          "state": "partial",
+          "run": "CITY-00-I03-I",
+          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/manifest.json"
+        }
+      },
+      {
+        "id": "CO-WAT-0009",
+        "product": "Medieval Fantasy City Generator",
+        "feature": "Farb-/Stilvorgaben",
+        "sourceUrl": "https://html-classic.itch.zone/html/12710731/bin/index.html?size=25&seed=540139574&citadel=1&urban_castle=1&plaza=1&temple=1&walls=1&shantytown=0&coast=1&river=1&greens=0&gates=-1&sea=0.2",
+        "observedAt": "2026-10-09T12:28:25.003314+02:00",
+        "observedVersion": null,
+        "availability": "unknown",
+        "observationKind": "direct",
+        "originalEvidence": [
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/manifest.json"
+        ],
+        "task": "Übersicht und Details gestalten",
+        "phase": "CITY-07",
+        "caseIds": [
+          "CTY-006.01",
+          "CTY-006.02"
+        ],
+        "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
+        "implementationEvidence": [],
+        "hostEvidence": [],
+        "comparisonEvidence": [],
+        "usabilityEvidence": [],
+        "review": {
+          "state": "not_run"
+        },
+        "status": "open",
+        "gap": "Originalmenü direkt sichtbar; konkrete Wirkungs-/Saveprobe und eigener Produktvergleich offen.",
+        "independentFunctionalRequirement": true,
+        "mappingCoverage": "related_project_criteria_only; CO requirement remains independently required",
+        "originalProbe": {
+          "state": "partial",
+          "run": "CITY-00-I03-I",
+          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/manifest.json"
+        }
+      },
+      {
+        "id": "CO-WAT-0010",
+        "product": "Medieval Fantasy City Generator",
+        "feature": "Kontrollierte Tor-/Straßenanzahl",
+        "sourceUrl": "https://html-classic.itch.zone/html/12710731/bin/index.html?size=25&seed=540139574&citadel=1&urban_castle=1&plaza=1&temple=1&walls=1&shantytown=0&coast=1&river=1&greens=0&gates=-1&sea=0.2",
+        "observedAt": "2026-10-09T12:28:25.003314+02:00",
+        "observedVersion": null,
+        "availability": "unknown",
+        "observationKind": "direct",
+        "originalEvidence": [
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/manifest.json"
+        ],
+        "task": "Straßenanschlüsse begrenzen",
+        "phase": "CITY-05",
+        "caseIds": [
+          "CTY-004.01"
+        ],
+        "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
+        "implementationEvidence": [],
+        "hostEvidence": [],
+        "comparisonEvidence": [],
+        "usabilityEvidence": [],
+        "review": {
+          "state": "not_run"
+        },
+        "status": "open",
+        "gap": "Originalmenü direkt sichtbar; konkrete Wirkungs-/Saveprobe und eigener Produktvergleich offen.",
+        "independentFunctionalRequirement": true,
+        "mappingCoverage": "related_project_criteria_only; CO requirement remains independently required",
+        "originalProbe": {
+          "state": "partial",
+          "run": "CITY-00-I03-I",
+          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/manifest.json"
+        }
       }
     ],
     "functionalInventoryStatus": {
       "state": "partial_inventory_not_accepted",
-      "run": "CITY-00-I02",
+      "run": "CITY-00-I03-I",
       "products": 3,
-      "candidates": 38,
+      "candidates": 44,
       "directFormAreas": 13,
       "open": [
         "Detailfähigkeiten aller Produkte vervollständigen",
@@ -2133,9 +2383,10 @@
         "Anforderungsreview und getrennte Aufräumläufe"
       ],
       "evidence": [
-        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/manifest.json"
+        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/manifest.json",
+        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/manifest.json"
       ],
-      "originalResultSamples": 1
+      "originalResultSamples": 3
     },
     "currentUserGoal": "09.10.2026: vollständige Funktionsgleichwertigkeit mit Canvas of Kings, Watabou und Fantasy Town Generator, bessere Bedienung; bisherige Zweiprodukt-Ergebnisbegrenzung durch direkten Auftrag erweitert."
   },
@@ -130240,16 +130491,22 @@
           "remaining": "Löschzug und vier frühere Punktfälle sind mit Host-Rohdaten ohne Abweichung gepaart und separat reviewt; Undo/Redo und frische Hostöffnungen bestehen. Weitere Punktentfernungen, aktive Wandvorlage, Löcher, Crop-Folgen und DD-038-Endreview offen. Keine Fallfreigabe; P7-2 physisch ungeprüft."
         },
         "followUpPhase1BuildingLastOutlineOriginalProbe": {
-          "state": "last_outline_delete_original_measured_host_open",
+          "state": "last_outline_delete_scoped_review_passed_case_open",
           "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "hostBuildSha256": "e1a4ad3af9f1e2767f47f435b9d4a162271390bd9eebff637d32a6e04d341d06",
           "originalReport": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-remove-last-original-20261009/original-probe.md",
           "originalAudit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-remove-last-original-20261009/original-audit.json",
           "originalDeleted": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-remove-last-original-20261009/native/runs/20261009-121657-3720879/evidence/maps/01-deleted.dungeondraft_map",
           "originalUndo": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-remove-last-original-20261009/native/runs/20261009-121657-3720879/evidence/maps/02-undo.dungeondraft_map",
           "originalRedo": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-remove-last-original-20261009/native/runs/20261009-121657-3720879/evidence/maps/03-redo.dungeondraft_map",
           "originalFresh": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-remove-last-original-20261009/native-fresh/runs/20261009-121752-3721714/evidence/screens/00-fresh.png",
+          "hostReport": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-remove-last-host-20261009/implementation.md",
+          "hostEdit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-remove-last-host-20261009/evidence/1791541240517-parity-tools-phase1-building-point-edit/result.json",
+          "hostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-remove-last-host-20261009/evidence/1791541281079-parity-tools-phase1-building-point-reopen/result.json",
+          "hostAudit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-remove-last-host-20261009/independent-audit.json",
+          "review": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-remove-last-host-20261009/review.md",
           "measuredScope": "8×8: Delete am Stone-Dreieckgriff entfernt den letzten Shape-Umriss und zwölf belegte Zellen. Undo stellt beides wieder her, Redo entfernt beides. Frische Originalöffnung bleibt leer; ungenutzter Lookup und Farben leerer Zellen können wechseln.",
-          "remaining": "Host-GUI-/Rohdatenvergleich, weitere Eckpunkte, Wände, Portale, Mehrkonturen und DD-038-Endreview offen. Keine Fallfreigabe; P7-2 physisch ungeprüft."
+          "remaining": "Host-GUI-/Rohdatenvergleich, zwei Undo-/Redo-Schritte, frische Hostöffnung und getrennter Review bestehen. Weitere Eckpunkte, Wände, Portale, Mehrkonturen und DD-038-Endreview offen. Keine Fallfreigabe; P7-2 physisch ungeprüft."
         },
         "followUpPhase1TerrainMaskCandidate": {
           "state": "seeded_host_masks_scoped_review_passed_case_open",

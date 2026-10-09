@@ -6,6 +6,7 @@ const CASES = [
   { name: "wood-battlements", floor: "wood", wall: "Battlements" },
   { name: "stone-insert", floor: "stone", wall: "Keine Wand", kind: "insert" },
   { name: "stone-remove", floor: "stone", wall: "Keine Wand", kind: "remove" },
+  { name: "stone-remove-last", floor: "stone", wall: "Keine Wand", kind: "remove-last" },
 ];
 
 module.exports = ({ page, fs, path, assert, crypto, qa, vault, out,
@@ -61,6 +62,11 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out,
     assert.equal(doc.smartTiles.filter((c) => c.assetId === stoneId).length, 9);
   }
   function verifyEdited(doc, styleId, wallId, kind) {
+    if (kind === "remove-last") {
+      assert.equal(doc.entities.length, 0);
+      assert.equal(doc.smartTiles?.length ?? 0, 0);
+      return;
+    }
     assert.equal(doc.entities.length, 1);
     const building = doc.entities[0];
     assert.deepEqual(building.polygons[0].outer, kind === "remove"
@@ -91,7 +97,7 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out,
       return hover?.kind === (insert ? "edge" : "vertex") &&
         hover.contour === 0 && hover.index === 0;
     }, insert);
-    if (kind === "remove") {
+    if (kind === "remove" || kind === "remove-last") {
       await page.locator(".dungeon-native-editor:visible .dn-canvas canvas")
         .last().focus();
       await page.keyboard.press("Delete");
@@ -103,7 +109,27 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out,
     }
     await page.waitForFunction((kind) =>
       app.workspace.getLeavesOfType("dungeon-native-map").at(-1)
-        ?.view.editor?.session.smartTiles?.length === (kind === "remove" ? 12 : 24), kind);
+        ?.view.editor?.session.smartTiles?.length ===
+          (kind === "remove" || kind === "remove-last" ? 12 : 24), kind);
+  }
+  async function deleteLastPoint() {
+    const at = await world({ x: 7, y: 1 });
+    await page.mouse.move(at.x - 10, at.y + 10);
+    await page.mouse.move(at.x, at.y);
+    await page.waitForFunction(() => {
+      const hover = app.workspace.getLeavesOfType("dungeon-native-map").at(-1)
+        ?.view.editor?.renderer.buildingPointHover;
+      return hover?.kind === "vertex" && hover.contour === 0 && hover.index === 0;
+    });
+    await page.locator(".dungeon-native-editor:visible .dn-canvas canvas")
+      .last().focus();
+    await page.keyboard.press("Delete");
+    await page.waitForFunction(() => {
+      const editor = app.workspace.getLeavesOfType("dungeon-native-map").at(-1)
+        ?.view.editor;
+      return editor?.session.entities.size === 0 &&
+        (editor.session.smartTiles?.length ?? 0) === 0;
+    });
   }
   async function edit() {
     const { pckPath } = require("./phase3-fixtures.cjs")({ fs, crypto, assert });
@@ -171,10 +197,14 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out,
       await page.evaluate((id) => app.workspace.getLeavesOfType("dungeon-native-map")
         .at(-1).view.editor.select(id), id);
       await movePoint(item.kind);
+      if (item.kind === "remove-last") {
+        verifyEdited((await state()).document, floor.id, null, "remove");
+        await deleteLastPoint();
+      }
       const moved = await state();
       const wallId = item.wall === "Keine Wand" ? null : battlements.id;
       verifyEdited(moved.document, floor.id, wallId, item.kind);
-      assert.equal(moved.history, 1);
+      assert.equal(moved.history, item.kind === "remove-last" ? 2 : 1);
       await page.screenshot({ path: path.join(out, item.name + "-edit.png") });
       await editor.getByRole("button", { name: "Speichern", exact: true }).click();
       await page.waitForFunction(() => !app.workspace.getLeavesOfType("dungeon-native-map")
@@ -182,13 +212,23 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out,
       const saved = JSON.parse(fs.readFileSync(path.join(vault, mapPath(item.name)), "utf8"));
       assert.deepEqual(saved, JSON.parse(JSON.stringify(moved.document)));
       await editor.getByRole("button", { name: "Rückgängig", exact: true }).click();
+      if (item.kind === "remove-last") {
+        verifyEdited((await state()).document, floor.id, null, "remove");
+        await editor.getByRole("button", { name: "Rückgängig", exact: true }).click();
+      }
       verifyBase((await state()).document, wood.id, stone.id);
       await editor.getByRole("button", { name: "Wiederholen", exact: true }).click();
+      if (item.kind === "remove-last") {
+        verifyEdited((await state()).document, floor.id, null, "remove");
+        await editor.getByRole("button", { name: "Wiederholen", exact: true }).click();
+      }
       verifyEdited((await state()).document, floor.id, wallId, item.kind);
       records.push({ name: item.name, document: saved, hash: hash(item.name),
         styleId: floor.id, wallId, kind: item.kind });
-      checks.push(`DD-038 ${item.name} point edit repaints ` +
-        `${item.kind === "remove" ? 12 : 24} cells in one Undo step`);
+      checks.push(item.kind === "remove-last"
+        ? "DD-038 final outline Delete removes all 12 cells in a second Undo step"
+        : `DD-038 ${item.name} point edit repaints ` +
+          `${item.kind === "remove" ? 12 : 24} cells in one Undo step`);
     }
     fs.writeFileSync(baseline, JSON.stringify({ records, woodId: wood.id,
       stoneId: stone.id }, null, 2));
