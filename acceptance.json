@@ -112722,6 +112722,17 @@
           "gap": "Suche zusammen mit Fuzzy/Exact und Tagfilter im Original nicht vollständig geprüft."
         },
         "target": "Die Suche zeigt für denselben Begriff dieselben Treffer und erhält die beabsichtigte Assetwahl.",
+        "productOverride20261009": {
+          "source": "GM-UX-002 im getrennten GM-Produkttest; Issue #1 Kommentar 6082352187",
+          "decision": "Treffer erscheinen beim Tippen ohne Enter; × leert Text und wirksamen Filter. Die Originalbelege für Return-Suche bleiben historisch erhalten. Die Papierkorbwirkung aus DD-026.07 bleibt bestehen.",
+          "reviewBuildSha256": "537823555975cd3b905456d6124637218a2f89ab0dd993fcbdffca5701e37a3e",
+          "reviewEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/gm-ux-n002-review-20261009/evidence/1791555054805-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/gm-ux-n002-review-20261009/evidence/1791555068634-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/gm-ux-n002-review-20261009/review-audit.json"
+          ],
+          "remaining": "Unabhängiger Produkttester-Nachlauf und Zielshell-Abnahme stehen aus."
+        },
         "baseline": {
           "editor": {
             "sequence": null,

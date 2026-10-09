@@ -1667,14 +1667,19 @@
     },
     "gmUxN002Plan": {
       "date": "2026-10-09",
-      "state": "implementation_host_passed_review_open",
+      "state": "local_review_passed_product_retest_open",
       "plan": "ROADMAP-GM-UX-N-002-PLAN.md",
       "source": "GM-UX-002 im getrennten Cloud-GM-Test; Issue #1",
       "implementation": "/home/aaron/.cache/dungeon-native-qa/gm-ux-n002-implementation-20261009/implementation.md",
       "hostEdit": "/home/aaron/.cache/dungeon-native-qa/gm-ux-n002-implementation-20261009/evidence/1791554675329-edit/result.json",
       "hostReopen": "/home/aaron/.cache/dungeon-native-qa/gm-ux-n002-implementation-20261009/evidence/1791554799073-reopen/result.json",
       "buildSha256": "6f83c57351170c9f48ac71fc47201398fea234c505ba2032bd10d0b788237d71",
-      "next": "Getrennten Review auf integriertem Build und frischem QA-Vault durchführen; danach Produkttester-Nachprüfung im Koordinationskanal anfordern."
+      "review": "/home/aaron/.cache/dungeon-native-qa/gm-ux-n002-review-20261009/review.md",
+      "reviewEdit": "/home/aaron/.cache/dungeon-native-qa/gm-ux-n002-review-20261009/evidence/1791555054805-edit/result.json",
+      "reviewReopen": "/home/aaron/.cache/dungeon-native-qa/gm-ux-n002-review-20261009/evidence/1791555068634-reopen/result.json",
+      "reviewAudit": "/home/aaron/.cache/dungeon-native-qa/gm-ux-n002-review-20261009/review-audit.json",
+      "reviewBuildSha256": "537823555975cd3b905456d6124637218a2f89ab0dd993fcbdffca5701e37a3e",
+      "next": "GM-UX-002-Produkttester-Nachprüfung auf gemeinsamem Stand anfordern; getrennte Dungeon-/Atlas-/Zielshell-Tore offen halten."
     },
     "gmUxN001Plan": {
       "date": "2026-10-09",
