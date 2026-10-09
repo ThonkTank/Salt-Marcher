@@ -392,7 +392,27 @@
       "review": "Independent read-only review on 9bbacb5 passed without a mandatory finding.",
       "limits": "Planning only; no repair implementation or cleanup approval."
     },
-    "next": "Implement CE-01-C01-N01, then independently re-review the cleanup. CE-02 implementation remains blocked and CE-01 remains without full approval while physical-input, screenreader and other-platform gates are open."
+    "ce01C01Repair": {
+      "run": "CE-01-C01-N01",
+      "state": "completed_checked_host_passed_rereview_pending",
+      "commit": "c1582b384acbc5025ad529c17e664bc5fb04ef8f",
+      "result": "All seven text filters derive their draft key from the canonical mapping and use one content input/publish path; the name input retains its placeholder, ARIA label, focus, debounce and Enter behavior.",
+      "verification": {
+        "check": "passed",
+        "tests": {"passed": 247, "failed": 0},
+        "build": "passed",
+        "mainBytes": 1338655,
+        "mainSha256": "9ea37b4c8942ce1df4739e3f7786dde8fd62fbec227198023f85fa61275a63d3",
+        "mainJsGrowthBytes": 149285,
+        "evidence": [
+          "/home/aaron/.cache/dungeon-native-qa/evidence/1791559080712-ce01-catalog-edit",
+          "/home/aaron/.cache/dungeon-native-qa/evidence/1791559092369-ce01-catalog-reopen",
+          "/home/aaron/.cache/dungeon-native-qa/evidence/1791559102197-ce01-catalog-damaged-edit"
+        ]
+      },
+      "limits": "Independent re-review pending; physical keyboard/mouse, screenreader and other-platform acceptance remain open."
+    },
+    "next": "Independently re-review CE-01-C01-N01. CE-02 implementation remains blocked and CE-01 remains without full approval while physical-input, screenreader and other-platform gates are open."
   },
   "cityPlans": {
     "schemaVersion": 1,

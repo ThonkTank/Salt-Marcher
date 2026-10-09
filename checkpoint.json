@@ -99,20 +99,34 @@
   },
   "saltMarcherCatalogEncounter": {
     "date": "2026-10-09",
-    "state": "ce01_c01_repair_plan_reviewed_implementation_next",
+    "state": "ce01_c01_repair_host_passed_rereview_pending",
     "plan": "ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md",
     "architecture": "ARCHITECTURE.md#geplante-katalog--und-encounter-erweiterung",
     "acceptance": "acceptance.json.saltMarcherCatalogEncounter",
     "currentRun": {
-      "id": "CE-01-C01-N01-P01",
-      "kind": "cleanup_repair_plan",
-      "state": "completed_static_validation_reviewed",
+      "id": "CE-01-C01-N01",
+      "kind": "cleanup_repair",
+      "state": "completed_checked_host_passed_rereview_pending",
       "focus": "Remove the remaining content-level knowledge of six explicit draft keys and the separate name-search draft path",
       "plan": "ROADMAP-SALTMARCHER-CE01-C01-REPAIR-PLAN.md",
       "reviewFinding": "CreatureCatalogViewContent still names six filter/draft pairs manually while the name search is a seventh special path, so the exported mapping is not yet the only pair source.",
-      "retained": "The 5759cc9 candidate passed check, 246 tests, build and all three exact-candidate real-host scenarios; defaults, restore/reset behavior, harness scope and open host limits remain valid.",
-      "review": "Independent read-only plan review on 9bbacb5 passed without a mandatory finding.",
-      "limits": "Repair planning only. No cleanup approval or CE-01 approval; physical input, screenreader and non-Linux platform acceptance remain open."
+      "result": "All seven text inputs now derive their draft key from CREATURE_CATALOG_DRAFT_FILTERS and share one content input/publish path while retaining the established name UX.",
+      "verification": {
+        "sourceRevision": "c1582b384acbc5025ad529c17e664bc5fb04ef8f",
+        "check": "passed",
+        "tests": {"passed": 247, "failed": 0},
+        "build": "passed",
+        "mainBytes": 1338655,
+        "mainSha256": "9ea37b4c8942ce1df4739e3f7786dde8fd62fbec227198023f85fa61275a63d3",
+        "mainJsGrowthBytes": 149285,
+        "runs": [
+          "/home/aaron/.cache/dungeon-native-qa/evidence/1791559080712-ce01-catalog-edit",
+          "/home/aaron/.cache/dungeon-native-qa/evidence/1791559092369-ce01-catalog-reopen",
+          "/home/aaron/.cache/dungeon-native-qa/evidence/1791559102197-ce01-catalog-damaged-edit"
+        ]
+      },
+      "review": "Independent repair-plan review on 9bbacb5 passed; implementation re-review is pending.",
+      "limits": "No cleanup approval or CE-01 approval until re-review; physical input, screenreader and non-Linux platform acceptance remain open."
     },
     "implementationRun": {
       "id": "CE-01-I01",
@@ -251,10 +265,10 @@
       "Physical catalog input acceptance cannot be replaced by Playwright automation"
     ],
     "nextRun": {
-      "id": "CE-01-C01-N01",
-      "kind": "cleanup_repair",
+      "id": "CE-01-C01-R02",
+      "kind": "cleanup_repair_review",
       "plan": "ROADMAP-SALTMARCHER-CE01-C01-REPAIR-PLAN.md",
-      "focus": "Make every catalog text input derive its draft key from CREATURE_CATALOG_DRAFT_FILTERS, preserve the name-input UX and repeat all exact-candidate gates"
+      "focus": "Independently confirm the sole draft-pair source, shared content path, retained UX, 247 tests, build identity and all three c1582b3 host receipts"
     }
   },
   "repositoryWorkflow": {

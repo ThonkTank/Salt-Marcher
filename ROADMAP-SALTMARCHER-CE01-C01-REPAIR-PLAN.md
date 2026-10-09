@@ -62,3 +62,27 @@ Der unabhängige Read-only-Planreview auf `9bbacb5` bestätigte den Umfang ohne
 Pflichtbefund: eine einzige Paarquelle, gemeinsamer Input-/Debounce-/Enter-Pfad,
 erhaltene Name-UX, gezielte Matrix und erneute exakte Hostläufe. C01-N01 darf
 damit beginnen.
+
+## C01-N01 – Ergebnis
+
+Die Nachbesserung ist auf dem exakten sauberen Commit
+`c1582b384acbc5025ad529c17e664bc5fb04ef8f` abgeschlossen. Alle sieben
+Textfilter beziehen ihren Draftschlüssel über
+`creatureCatalogDraftKeyForFilter()` aus `CREATURE_CATALOG_DRAFT_FILTERS`;
+Namenssuche und übrige Filter verwenden denselben Contentpfad. Der bestehende
+Name-Placeholder, das ARIA-Label, Fokus, Debounce und Enter bleiben erhalten.
+
+`npm run check`, 247/247 Tests und `npm run build` bestanden. `main.js` ist
+1.338.655 Byte groß, liegt mit 149.285 Byte Wachstum unter dem Limit und hat
+SHA-256 `9ea37b4c8942ce1df4739e3f7786dde8fd62fbec227198023f85fa61275a63d3`.
+Die drei automatisierten echten Obsidian-Läufe bestanden auf exakt diesem
+Commit und Build:
+
+- `/home/aaron/.cache/dungeon-native-qa/evidence/1791559080712-ce01-catalog-edit`
+- `/home/aaron/.cache/dungeon-native-qa/evidence/1791559092369-ce01-catalog-reopen`
+- `/home/aaron/.cache/dungeon-native-qa/evidence/1791559102197-ce01-catalog-damaged-edit`
+
+Alle drei Prozesse besitzen eigene Unit, Invocation-ID und Prozessidentität,
+endeten normal mit Status 0 und ohne erzwungene Terminierung. Der unabhängige
+Re-Review bleibt offen; ebenso physische Eingabe, Screenreader und weitere
+Plattformen.
