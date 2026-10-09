@@ -4341,17 +4341,17 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-01-PREP-N05",
-      "kind": "refinement",
-      "startedAt": "2026-10-09T19:50:28.278387+02:00",
-      "focus": "Zwei unabhängige Draft-Gegenproben dauerhaft absichern",
-      "state": "completed",
-      "result": "Straßen-/Hausanlage und codecgültiger Szenenboundsfehler als Regression ergänzt. Runtime unverändert; nach eingehender Raumsuche check,327Tests und Build bestanden. R07 folgt."
-    },
-    "nextRun": {
       "id": "CITY-01-PREP-R07",
       "kind": "review",
-      "focus": "Dauerhafte Draftregressionen gegen R06 und integrierte Quellen prüfen"
+      "startedAt": "2026-10-09T17:52:11.677389+00:00",
+      "focus": "Neue Regressionen gegen R06 und aktuelle Quellen prüfen",
+      "state": "completed",
+      "result": "Beide dauerhaften Gegenfälle prüfen echte Draftgrenzen; Quellhashes unverändert zum integrierten grünen Stand. CITY-DRAFT-R06-01 geschlossen, keine weitere Corepflichtlücke gefunden; Host/Atlas offen."
+    },
+    "nextRun": {
+      "id": "CITY-01-PREP-N05-CLEAN-P05",
+      "kind": "cleanup_plan",
+      "focus": "Gezielte Regressionnachbesserung auf unnötige Fixtures und Dokumentationsdrift prüfen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",

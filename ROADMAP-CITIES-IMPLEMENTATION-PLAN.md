@@ -789,3 +789,6 @@ CITY-01-PREP-DRAFT-CLEAN-R05 Start 2026-10-09T17:50:53.039000+00:00; Getrennte A
 
 
 CITY-01-PREP-N05 Start 2026-10-09T19:50:28.278387+02:00; CITY-DRAFT-R06-01: vollständige Straßen-/Hausanlage einschließlich clearPreview/Apply/Undo/Redo sowie codecgültiger Szenenboundsfehler mit Verwerfen alter Vorschau und erfolgreicher Korrektur dauerhaft getestet. Kein Runtime-/Historyumbau. Eingehende Raumsuche integriert; erneutes check,327Tests/build bestanden. R07 prüft getrennt. Beleg: /home/aaron/.cache/dungeon-native-qa/city-plans/city01-gestures-20261009/refinement.json.
+
+
+CITY-01-PREP-R07 Start 2026-10-09T17:52:11.677389+00:00; Beide N05-Regressionen gegen R06-Originalproben reviewt: Anlage bis ausdrücklichem Apply ohne Mutation, ein exaktes Undo/Redo; editCity akzeptiert Überlaufkandidaten, erst Szenenbounds lehnen ihn ab und löschen Vorschau, danach gültige Korrektur. Quellenhashes unverändert zum integrierten grünen Stand; CITY-DRAFT-R06-01 geschlossen. Keine weitere Pflichtlücke im Draftcore; keine Host-/Atlas-/Savefreigabe. Beleg: /home/aaron/.cache/dungeon-native-qa/city-plans/city01-gestures-20261009/refinement-review.json. Aufräum-P/I/R folgt.
