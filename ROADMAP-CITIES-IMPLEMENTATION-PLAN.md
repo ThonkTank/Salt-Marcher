@@ -771,3 +771,6 @@ CITY-01-PREP-P05 Start 2026-10-09T17:35:42.174Z; Konkreter CityDraft-Plan: unver
 
 
 CITY-01-PREP-DRAFT-PLAN-CLEAN-P05 Start 2026-10-09T17:40:53.561548+00:00; Planreview: Hex-Besitzer bestätigt notify-Reparatur im I05-Paket, keine Dateikollision. Präzisieren: Sync-Observerfehler werden isoliert; unveränderte öffentliche subscribe-/History-API. preview=null bedeutet aktueller Sourcezustand ohne Draftoverlay, nie restaurierter before. Router gibt terminale Draftreferenz frei, Klasse besitzt keine Listener. closed-Zustandsfehler dürfen keine erneute invalid-Mutation bewirken. CI/CR getrennt; reine Dokumentationsarbeit.
+
+
+CITY-01-PREP-DRAFT-PLAN-CLEAN-I05 Start 2026-10-09T17:41:43.653837+00:00; Plan führt bestätigte begrenzte Sync-Subscriberreparatur ohne öffentliche API-/Reihenfolgenänderung. nullPreview entfernt nur Overlay und liest aktuellen Source, never beforeRestore. Bearbeitbarkeitsprüfung vor Updatecatch erhält terminale Zustände; Router gibt terminale Draftreferenz frei, Core hat keine Listener/Timer/Capture. Keine Laufzeitänderung; finaler Planreview folgt.

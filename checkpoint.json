@@ -4325,17 +4325,17 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-01-PREP-DRAFT-PLAN-CLEAN-P05",
-      "kind": "cleanup_planning",
-      "startedAt": "2026-10-09T17:40:53.561548+00:00",
-      "focus": "Draftplan auf Zustands-/Rendergrenze und bestätigte Observerreparatur prüfen",
-      "state": "completed",
-      "result": "Observerfix bestätigt; nullPreview zeigt aktuelle Source, terminale Drafts und Zustandsprüfung konkret präzisieren."
-    },
-    "nextRun": {
       "id": "CITY-01-PREP-DRAFT-PLAN-CLEAN-I05",
       "kind": "cleanup_implementation",
-      "focus": "Bestätigten Observerumfang und nullPreview-/Lebensdauervertrag ergänzen"
+      "startedAt": "2026-10-09T17:41:43.653837+00:00",
+      "focus": "Bestätigten Observerumfang und Draftlebensdauer präzisieren",
+      "state": "completed",
+      "result": "Sync-Observerfix, terminale Zustandsprüfung und aktueller Source bei nullPreview im Plan ergänzt."
+    },
+    "nextRun": {
+      "id": "CITY-01-PREP-DRAFT-PLAN-CLEAN-R05",
+      "kind": "cleanup_review",
+      "focus": "Finalen Draftplan gegen reale History und Sourceverträge prüfen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",

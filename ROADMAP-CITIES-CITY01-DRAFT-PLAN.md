@@ -12,6 +12,8 @@ CITY-HISTORY-P05-01: Im aktuellen `AtlasHistory.notify()` wirft der erste fehler
 
 Vor einem verlässlichen Draft-Apply muss gelten: History wirft nur vor Übernahme; Beobachterfehler können keinen bereits übernommenen Befehl als abgelehnt erscheinen lassen. Mit dem Hex-Besitzer koordiniert: privates notify isoliert Fehler je Subscriber, meldet sie separat und informiert die übrigen Subscriber weiter. Keine neue öffentliche API, kein Rollback nach Benachrichtigung und keine zweite Befehlsquelle. Geplante minimale Diagnose: console.error mit festem Kontext und Fehlerobjekt; auch eine fehlerhafte Diagnoseausgabe darf den bereits übernommenen Befehl nicht nachträglich scheitern lassen. Validierungs-/Stalekonflikte bleiben unverändert werfend **vor** Mutation. Vor I05 prüfen, ob der Besitzer diese Reparatur inzwischen selbst übernommen hat; seine Version gezielt reviewen statt parallel implementieren.
 
+Der Hex-Besitzer bestätigt die begrenzte notify-Reparatur samt execute/undo/redo-Regressionen für dieses I05-Paket; notify ist dort nicht gleichzeitig in Arbeit. Der Fix isoliert synchrone Subscriberfehler, ändert weder die öffentliche subscribe-API noch die Reihenfolge normaler Benachrichtigungen und führt keine neue asynchrone Eventpipeline ein.
+
 ## Konkrete Draft-API
 
 `CityDraft` besitzt folgende readonly Zustandszugriffe und Methoden:
@@ -28,6 +30,8 @@ Vor einem verlässlichen Draft-Apply muss gelten: History wirft nur vor Übernah
 | `cancel(): boolean` | editing/invalid/failed → cancelled, Vorschau null. Kein Historyaufruf, keine Rückschreibung des alten before. applied/cancelled liefern false; Cancel nach Apply ist kein heimliches Undo. |
 
 CityDraftPreview enthält ausschließlich document und scene. Kein Pixiobjekt, Callback, Pointer, persistenter Entwurf oder Cache anderer Dokumente. Nach Apply bleibt das ausgewählte Werkzeug im Atlas unverändert; die Klasse startet keine zweite Platzierung und erstellt keine neuen Kennungen. Erneuter Aufruf von Apply oder SetEdits auf einem geschlossenen/fehlgeschlagenen Draft wird kontrolliert abgelehnt.
+
+Die Prüfung, ob ein Draft noch bearbeitbar ist, erfolgt vor dem Update-try/catch; ein abgelehnter Aufruf auf applied/cancelled/failed darf diesen Zustand nicht in invalid umschreiben. preview=null entfernt nur das Draftoverlay: Der Renderer liest die **aktuelle** CitySource und zeichnet niemals automatisch before als zurückgeschriebenen Stadtstand. Terminale Draftreferenzen gibt der Router frei; der Core besitzt keine Subscriber, Timer oder Pointercapture und benötigt keinen zusätzlichen Disposevertrag.
 
 ## Gestenvertrag für den späteren Router
 
