@@ -2,12 +2,17 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import { parseHTML } from "linkedom";
-import { addFloor, createRoom } from "../src/commands";
+import { addFloor, createObject, createRoom } from "../src/commands";
+import {
+  createFeatureDefinition,
+  createFeatureOccurrence,
+} from "../src/content";
 import {
   activateRoomKeySearchNavigation,
   DungeonEditor,
 } from "../src/editor";
 import { StructuredKeyPanel } from "../src/key-panel";
+import { parseDocument } from "../src/model";
 import { editMarkdownSection, structuredRoom } from "../src/room-key";
 import { RoomKeySearchPanel } from "../src/room-key-search-panel";
 import { Session } from "../src/session";
@@ -148,6 +153,124 @@ test("room key search yields a clean key dock, but dirty draft blocks before lay
     "panel:room-key-search",
     "focus",
   ]);
+});
+
+test("the real structured key route derives both targets, blocks dirty and preserves editor state", () => {
+  const methods = DungeonEditor.prototype as unknown as Record<string, Function>;
+  const { root } = dom();
+  const setup = new Session(newDocument("Nebelwacht", 30, 20, undefined, undefined, 4));
+  const floor = setup.floors.values().next().value!;
+  const room = createRoom(setup, floor.id, outline(1), "QA/Räume");
+  const section = structuredRoom(setup, room.id).key.sections[0]!;
+  assert.equal(section.kind, "markdown");
+  editMarkdownSection(setup, room.id, section.id, "", "Hebel hinter der Wandmalerei.");
+  const object = createObject(setup, floor.id, { x: 3, y: 3 });
+  const withTarget = setup.document();
+  const session = new Session(parseDocument(JSON.stringify({
+    ...withTarget,
+    entities: withTarget.entities.map((entity) => entity.id === object.id
+      ? { ...entity, keyTarget: {
+          roomId: room.id, sectionId: section.id, anchor: "^lever",
+        } }
+      : entity),
+  })));
+  const notices: string[] = [];
+  const panel = new StructuredKeyPanel(
+    {} as never, root, session, "QA/Karte.dungeon", room.id, section.id,
+    (message) => notices.push(message), () => true,
+  );
+  const calls: string[] = [];
+  const fake: Record<string, unknown> = {
+    session,
+    selected: object.id,
+    selection: new Set([object.id]),
+    renderer: { floorId: floor.id, camera: { x: 4, y: 5, scale: 2 } },
+    structuredPanel: panel,
+    notePath: undefined,
+    allowKeyNavigation: () => methods.allowKeyNavigation!.call(fake),
+    selectedRoom: () => methods.selectedRoom!.call(fake),
+    openStructuredRoomKey: (roomId: string, sectionId?: string, anchor?: string) =>
+      methods.openStructuredRoomKey!.call(fake, roomId, sectionId, anchor),
+    toggleKey: (open: boolean) => calls.push(`key:${open}`),
+    host: {
+      openRoomKey: (roomId: string, sectionId?: string, anchor?: string) =>
+        calls.push(`open:${roomId}:${sectionId}:${anchor}`),
+    },
+  };
+  const snapshot = () => ({
+    document: session.document(), dirty: session.dirty,
+    historySize: session.historySize, canUndo: session.canUndo,
+    canRedo: session.canRedo, selected: fake.selected,
+    selection: [...(fake.selection as Set<string>)],
+    camera: structuredClone((fake.renderer as { camera: unknown }).camera),
+  });
+  const before = snapshot();
+  const textarea = root.querySelector<HTMLTextAreaElement>("textarea")!;
+  textarea.value += " Entwurf";
+  assert.equal(methods.openSelectedStructuredRoomKey!.call(fake), true);
+  assert.deepEqual(calls, []);
+  assert.match(notices.at(-1) ?? "", /Entwurf/);
+  assert.deepEqual(snapshot(), before);
+
+  const currentSection = structuredRoom(session, room.id).key.sections.find(
+    (item) => item.id === section.id,
+  );
+  assert.equal(currentSection?.kind, "markdown");
+  textarea.value = currentSection.markdown;
+  assert.equal(methods.openSelectedStructuredRoomKey!.call(fake), true);
+  assert.deepEqual(calls, [
+    "key:false",
+    `open:${room.id}:${section.id}:^lever`,
+  ]);
+  assert.deepEqual(snapshot(), before);
+  panel.destroy();
+
+  const occurrenceSession = new Session(
+    newDocument("Occurrence", 30, 20, undefined, undefined, 4),
+  );
+  const occurrenceFloor = occurrenceSession.floors.values().next().value!;
+  const occurrenceRoom = createRoom(
+    occurrenceSession, occurrenceFloor.id, outline(1), "QA/Räume",
+  );
+  const occurrenceObject = createObject(
+    occurrenceSession, occurrenceFloor.id, { x: 3, y: 3 },
+  );
+  const definition = createFeatureDefinition(occurrenceSession, {
+    name: "Wandmalerei", kind: "feature", xp: 0, lootValue: 0,
+  });
+  const occurrence = createFeatureOccurrence(
+    occurrenceSession, definition.id, occurrenceRoom.id, 1,
+    occurrenceObject.id, {}, { markdown: "Dahinter liegt ein Hebel." },
+  );
+  const occurrenceCalls: string[] = [];
+  const occurrenceFake: Record<string, unknown> = {
+    session: occurrenceSession,
+    selected: occurrenceObject.id,
+    structuredPanel: undefined,
+    allowKeyNavigation: () => methods.allowKeyNavigation!.call(occurrenceFake),
+    selectedRoom: () => methods.selectedRoom!.call(occurrenceFake),
+    openStructuredRoomKey: (roomId: string, sectionId?: string, anchor?: string) =>
+      methods.openStructuredRoomKey!.call(occurrenceFake, roomId, sectionId, anchor),
+    toggleKey: (open: boolean) => occurrenceCalls.push(`key:${open}`),
+    host: { openRoomKey: (roomId: string, sectionId?: string, anchor?: string) =>
+      occurrenceCalls.push(`open:${roomId}:${sectionId}:${anchor}`) },
+  };
+  const occurrenceBefore = occurrenceSession.document();
+  assert.equal(methods.openSelectedStructuredRoomKey!.call(occurrenceFake), true);
+  assert.deepEqual(occurrenceCalls, [
+    "key:false",
+    `open:${occurrenceRoom.id}:${occurrence.sectionId}:undefined`,
+  ]);
+  assert.deepEqual(occurrenceSession.document(), occurrenceBefore);
+
+  const keyDock = root.ownerDocument.createElement("aside");
+  keyDock.hidden = true;
+  const keyButton = root.ownerDocument.createElement("button");
+  const reopenFake = { keyDock, root, keyButton };
+  methods.toggleKey!.call(reopenFake, true);
+  assert.equal(keyDock.hidden, false);
+  assert.equal(root.classList.contains("dn-key-open"), true);
+  assert.equal(keyButton.getAttribute("aria-pressed"), "true");
 });
 
 test("editor floor restore and programmatic switches use one nonmutating state port", () => {
