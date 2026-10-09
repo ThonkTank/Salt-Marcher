@@ -3438,17 +3438,17 @@
     "state": "city00_reference_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I05-CR",
-      "kind": "cleanup_review",
-      "startedAt": "2026-10-09T10:47:08.792213+00:00",
-      "focus": "Unveränderte Belege und ehrlichen Teilumfang verifizieren",
-      "state": "completed",
-      "result": "Keine Pflichtlücke dieses Pakets; vollständiger Stadtpfad weiterhin offen"
-    },
-    "nextRun": {
       "id": "CITY-00-I06-P",
       "kind": "reference_tool_planning",
-      "focus": "Freigegebenen produktspezifischen COK-RFB-Adapter planen"
+      "startedAt": "2026-10-09T10:47:58.878515+00:00",
+      "focus": "Freigegebenen COK-Adapter produktspezifisch planen",
+      "state": "completed",
+      "result": "Privater Lifecycle und Steam-Identität geplant; generischen RFB-Transport ohne Wonderdraft-Identitätsersatz wiederverwenden"
+    },
+    "nextRun": {
+      "id": "CITY-00-I06-I",
+      "kind": "reference_tool_implementation",
+      "focus": "COK-Starter und Identitätsguard offline implementieren"
     },
     "open": [
       "CITY-00 direkte Referenzinventur/Galerie aller drei Produkte",
