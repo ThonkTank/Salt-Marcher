@@ -989,3 +989,5 @@ CITY-00-I45-N45-CLEAN-P45 Start 2026-10-09T19:24:01.688789+00:00; Aufräumplan: 
 CITY-00-I45-N45-CLEAN-I45 Start 2026-10-09T19:24:04.673654+00:00; Zähl-/Erhaltungsgrenzen lesbar präzisiert; keine Runtime- oder Rohdatenänderung.
 
 CITY-00-I45-N45-CLEAN-R45 Start 2026-10-09T19:24:07.611554+00:00; Aufräumreview bestanden: neue/alte Hashes, Scopegrenzen, Links und offene Stadtanforderungen erhalten.
+
+CITY-00-I45-R46 Start 2026-10-09T19:24:15.145266+00:00; R46 schließt CITY-REF-R45-01: Vollaufnahmen und alte Rawhashes bestätigt. Formularteilbeleg bestanden, Generierungs-/Produktabnahme offen.
