@@ -28,6 +28,25 @@ sind Zielarchitektur und noch keine Funktions- oder Fachfreigabe:
   dürfen auf getrennten Geräten parallel prüfen; auf einem Gerät läuft nur eine
   grafische Host-/Originalinstanz.
 
+Der erste portable Katalogkern liest inzwischen das unveränderte, hashgleich
+aus SaltMarcher übernommene SRD-5.1-Artefakt ohne SQLite. Er validiert Manifest,
+Lizenz, eindeutige IDs und vollständige Statblockfelder und bietet reine,
+kombinierbare Suche, Filter, Sortierung, Paging und Detailzugriff. Diese
+Domänenbasis ist noch nicht an eine Obsidian-Oberfläche oder Vaultpersistenz
+angebunden und erfüllt deshalb keinen der offenen Gesamt-Abnahmefälle allein.
+Manifestidentität und JSON-Bytehash werden unabhängig gepinnt; verschachtelte
+Referenzwerte sind tief eingefroren und Laufzeitqueries validiert. Der Notice
+liegt im Repository und zusätzlich als exportierter Text für die spätere
+Credits-Ansicht vor.
+
+Der Katalogkern bleibt bis CE-01 absichtlich vom Produktionseinstieg getrennt.
+Vor seiner UI-Anbindung muss ein CE-01-Plan entweder das JSON als bei Bedarf
+geladenes Releaseasset ausweisen oder die Kosten eines gebündelten, erst beim
+Öffnen materialisierten Korpus auf dem unterstützten Obsidian-Host messen und
+akzeptieren. Derselbe Plan muss `NOTICE.md` in das Release aufnehmen und den
+exportierten Notice im Katalog erreichbar machen. Ein unbelegter eager Import
+beim Pluginstart ist kein zulässiger Standard.
+
 ## Entscheidungen
 
 - TypeScript-Domänenmodell: versioniertes JSON, stabile Kennungen, Geometrie in Feldern (1 Feld = 5 Fuß). Markdown bleibt maßgeblich für Prosa und Regeln. Assets sind separate Dateien.
