@@ -3691,17 +3691,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I16-CP",
-      "kind": "cleanup_planning",
-      "startedAt": "2026-10-09T13:06:44.318541+00:00",
-      "focus": "Expliziten Exportumfang und gemeinsamen Szenenvertrag präzisieren",
-      "state": "completed",
-      "result": "I16-R01 geplant:4 Formate, gemeinsamer Szenenstand, unabhängiger Ausschnitt/Rastermaßstab, versioniertes metrisches JSON und Vektor/Text-Ressourcen; SVG-Sichtnachweis offen"
-    },
-    "nextRun": {
       "id": "CITY-00-I16-CI",
       "kind": "cleanup_implementation",
-      "focus": "Geplanten Exportumfang und Szenenbesitz eintragen"
+      "startedAt": "2026-10-09T13:07:13.410046+00:00",
+      "focus": "Geplanten Exportumfang und Szenenbesitz eintragen",
+      "state": "completed",
+      "result": "CITY-08 nennt alle4 Formate, geplanter gemeinsamer Export-Szenenvertrag in ARCHITECTURE; Originaldateien erhalten, SVG-Sicht-/Produktabnahme offen"
+    },
+    "nextRun": {
+      "id": "CITY-00-I16-CR",
+      "kind": "cleanup_review",
+      "focus": "Formatvertrag und empfangene Rohdateien abschließend prüfen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
