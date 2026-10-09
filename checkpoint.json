@@ -4043,17 +4043,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I31-R",
-      "kind": "reference_review",
-      "startedAt": "2026-10-09T15:19:32.364268+00:00",
-      "focus": "Processing-Ausgabebelege R",
-      "state": "completed",
-      "result": "Tatsächliche Downloadkopien und alle Rawhashes bestätigt. Vollständiger14-Gruppenvergleich: buildings MultiPolygon669→651, andere13 wertgleich, übrige Rootwerte gleich. Keine interne Mutation, Neugeneration oder stabile Einzelobjekt-ID aus Export abgeleitet. Aufräumbefund: Snapshot nennt Processing-Dateigeometrie pauschal offen statt direkten Ausgabeteilbeleg."
-    },
-    "nextRun": {
       "id": "CITY-00-I31-CP",
       "kind": "cleanup_planning",
-      "focus": "Belege und Snapshot CP"
+      "startedAt": "2026-10-09T15:22:24.093531+00:00",
+      "focus": "Processing-Ausgabebelege CP",
+      "state": "completed",
+      "result": "Plan: Snapshot mit Processing-Ausgabe669→651 ergänzen und interne Mutation/ID-/Savewirkung weiterhin offen führen. Frühere Sichtbelege erhalten; Rawhashes/Verweise und64/24 offene Pflichten prüfen. CI/CR getrennt."
+    },
+    "nextRun": {
+      "id": "CITY-00-I31-CI",
+      "kind": "cleanup_implementation",
+      "focus": "Belege und Snapshot CI"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
