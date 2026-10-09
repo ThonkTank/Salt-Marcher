@@ -9,3 +9,24 @@ export class ItemView {
 export interface WorkspaceLeaf {
   readonly contentEl: HTMLElement;
 }
+
+export interface App {
+  readonly vault: { getName(): string };
+}
+
+export class Component {
+  load(): void {}
+  unload(): void {}
+}
+
+export const MarkdownRenderer = {
+  async render(
+    _app: App,
+    markdown: string,
+    host: HTMLElement,
+    _path: string,
+    _component: Component,
+  ): Promise<void> {
+    host.textContent = markdown;
+  },
+};

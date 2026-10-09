@@ -15,6 +15,14 @@ import {
   uid,
 } from "./model";
 import { StructuredKeyPanel } from "./key-panel";
+import {
+  roomKeySearchTargetExists,
+  type RoomKeySearchTarget,
+} from "./room-key-search";
+import {
+  RoomKeySearchPanel,
+  type RoomKeySearchActivation,
+} from "./room-key-search-panel";
 import { wheelNavigation } from "./navigation";
 import { type RecordChange, Session } from "./session";
 import { MapRepository } from "./persistence";
@@ -373,6 +381,8 @@ export class DungeonEditor {
   private wearButtons = new Map<BuildingWearMode, HTMLButtonElement>();
   private generatorPanel: HTMLElement;
   private emptyPanel: HTMLElement;
+  private roomKeySearchHost: HTMLElement;
+  private roomKeySearchPanel?: RoomKeySearchPanel;
   private keyDock: HTMLElement;
   private structuredHost: HTMLElement;
   private structuredPanel?: StructuredKeyPanel;
@@ -713,6 +723,8 @@ export class DungeonEditor {
       });
     }
     this.emptyPanel = element("div", "dn-empty-panel", this.inspector);
+    this.roomKeySearchHost = element("section", "", this.inspector);
+    this.roomKeySearchHost.hidden = true;
     const objectLibraryHost = element("aside", "dn-object-library", this.body);
     this.objectLibrary = new ObjectLibraryPanel(objectLibraryHost, session, {
       assets: () => host.assets?.() ?? [],
@@ -1019,6 +1031,13 @@ export class DungeonEditor {
         this.toggleKey(true);
       },
     );
+    panelButton(
+      "content",
+      "room-key-search",
+      "Raum-Keys durchsuchen",
+      "search",
+      () => this.openRoomKeySearch(),
+    );
     if (this.host.manageContent)
       panelButton("content", "content", "Dungeon-Inhalte", "list-tree", () => {
         this.showGroup("content");
@@ -1081,8 +1100,19 @@ export class DungeonEditor {
     this.toggleKey(false);
     this.showPanel("generator", "Kartenassistent");
   }
+  private openRoomKeySearch(): void {
+    this.showGroup("content");
+    this.showPanel("room-key-search", "Raum-Keys durchsuchen");
+    this.roomKeySearchPanel ??= new RoomKeySearchPanel(
+      this.roomKeySearchHost,
+      this.session,
+      { activate: (target) => this.activateRoomKeySearchTarget(target) },
+    );
+    this.roomKeySearchPanel.focus();
+  }
   private showPanel(
-    panel: "properties" | "floors" | "content" | "generator" | "map-settings",
+    panel: "properties" | "floors" | "content" | "room-key-search" |
+      "generator" | "map-settings",
     title: string,
   ): void {
     this.optionTitle.textContent = title;
@@ -1093,6 +1123,7 @@ export class DungeonEditor {
     this.floorPanel.hidden = panel !== "floors";
     this.mapSettingsPanel.hidden = panel !== "map-settings";
     this.generatorPanel.hidden = panel !== "generator";
+    this.roomKeySearchHost.hidden = panel !== "room-key-search";
     this.emptyPanel.hidden = panel !== "content";
     this.emptyPanel.textContent =
       panel === "content"
@@ -1103,6 +1134,7 @@ export class DungeonEditor {
         (panel === "floors" && id === "floors") ||
         (panel === "map-settings" && id === "map-settings") ||
         (panel === "generator" && id === "generator") ||
+        (panel === "room-key-search" && id === "room-key-search") ||
         (panel === "content" && id === "key" && !this.keyDock.hidden);
       button.classList.toggle("is-active", active);
       button.setAttribute("aria-pressed", String(active));
@@ -1118,7 +1150,10 @@ export class DungeonEditor {
   }
   private toggleKey(open: boolean): void {
     if (open === !this.keyDock.hidden) return;
-    if (!open) this.run(() => this.commitNote());
+    if (!open) {
+      if (!this.allowKeyNavigation()) return;
+      this.run(() => this.commitNote());
+    }
     this.keyDock.hidden = !open;
     this.root.classList.toggle("dn-key-open", open);
     this.keyButton?.classList.toggle("is-active", open);
@@ -1326,12 +1361,18 @@ export class DungeonEditor {
       this.compare.value = compare;
   }
   private switchFloor(id: string): void {
-    this.commitNote();
+    if (!this.allowKeyNavigation()) {
+      this.floor.value = this.renderer.floorId;
+      return;
+    }
+    this.applyFloor(id);
+    void this.applySelection([], false);
+  }
+  private applyFloor(id: string): void {
     this.cancel();
     this.floor.value = id;
     this.renderer.setFloor(id);
     this.applyComparison();
-    void this.select(undefined);
   }
   private async copyCurrentFloor(): Promise<void> {
     try {
@@ -3428,7 +3469,14 @@ export class DungeonEditor {
     additive = false,
     primary = ids.at(-1),
   ): Promise<void> {
-    if (this.structuredPanel && !this.structuredPanel.commit()) return;
+    if (!this.allowKeyNavigation()) return;
+    return this.applySelection(ids, additive, primary);
+  }
+  private async applySelection(
+    ids: readonly string[],
+    additive = false,
+    primary = ids.at(-1),
+  ): Promise<void> {
     const targets = [
       ...new Set(
         ids.flatMap((id) => {
@@ -3462,6 +3510,26 @@ export class DungeonEditor {
     this.renderer.select(this.selection);
     this.refreshProperties();
     await this.refreshSelectedNote();
+  }
+  private allowKeyNavigation(): boolean {
+    return this.structuredPanel?.allowNavigation() ?? true;
+  }
+  private async activateRoomKeySearchTarget(
+    target: RoomKeySearchTarget,
+  ): Promise<RoomKeySearchActivation> {
+    if (!roomKeySearchTargetExists(this.session, target)) return "stale";
+    if (!this.allowKeyNavigation()) return "blocked";
+    this.applyFloor(target.floorId);
+    await this.applySelection([target.roomId], false, target.roomId);
+    if (!roomKeySearchTargetExists(this.session, target)) return "stale";
+    this.showGroup("content");
+    this.showPanel("room-key-search", "Raum-Keys durchsuchen");
+    this.toggleKey(true);
+    const panel = this.structuredPanel;
+    if (!panel) return "stale";
+    panel.focus(target.sectionId);
+    this.renderer.focus(target.roomId);
+    return "activated";
   }
   private selectedNotePath(): string | undefined {
     const room = this.selectedRoom();
@@ -3937,6 +4005,7 @@ export class DungeonEditor {
     this.properties?.dispose();
     this.structuredPanel?.commit();
     this.structuredPanel?.destroy();
+    this.roomKeySearchPanel?.destroy();
     this.setMaximized(false);
     this.cancel();
     this.abort.abort();
