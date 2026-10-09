@@ -97,8 +97,8 @@
   },
   "saltMarcherCatalogEncounter": {
     "schemaVersion": 1,
-  "updated": "2026-10-09T15:03:43Z",
-  "state": "ce01_c01_cleanup_reviewed_ce02_plan_next_physical_input_open",
+    "updated": "2026-10-09T15:31:16Z",
+    "state": "ce02_plan_reviewed_i01_next_ce01_physical_open",
     "plan": "ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md",
     "architecture": "ARCHITECTURE.md#geplante-katalog--und-encounter-erweiterung",
     "sourceRepository": "ThonkTank/Salt-Marcher",
@@ -422,7 +422,15 @@
       "review": "CE-01-C01-R02 passed without a remaining mandatory finding.",
       "limits": "Cleanup is reviewed; physical keyboard/mouse, screenreader and other-platform acceptance remain open."
     },
-    "next": "Plan CE-02 as a separate reviewed phase before implementation. CE-01 remains without full approval while physical-input, screenreader and other-platform gates are open."
+    "ce02Plan": {
+      "run": "CE-02-P01-R01",
+      "state": "passed_implementation_pending",
+      "document": "ROADMAP-SALTMARCHER-CE02-PLAN.md",
+      "result": "Plans one state-retaining seven-section shell with typed read-only owner providers and separate implementation/review packages for Items, saved Encounters, NPCs, Factions, Places and Encounter Tables.",
+      "review": "Independent read-only review passed exact shared commit 42808d372363cb1e9c8c8fc0ac8fca315cecd02c without a mandatory finding.",
+      "limits": "Reviewed planning evidence only. Six new data providers and all CE-02 acceptance remain open; honest unavailable states do not count as delivered features."
+    },
+    "next": "Implement and independently review only CE-02-I01, retaining one real Monster provider and six explicit unavailable providers. CE-01 remains without full approval while physical-input, screenreader and other-platform gates are open."
   },
   "cityPlans": {
     "schemaVersion": 1,
@@ -1634,7 +1642,8 @@
         "originalEvidence": [
           "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/watabou-walled-port-overview.jpg",
           "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/watabou-generate-features.jpg",
-          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/manifest.json"
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/manifest.json",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i32-generation-20261009/manifest.json"
         ],
         "task": "Dorf und Stadt erzeugen",
         "phase": "CITY-02",
@@ -1651,14 +1660,22 @@
           "state": "not_run"
         },
         "status": "open",
-        "gap": "Direkte Ergebnis-/Menüprobe gesichert; weitere Vorgaben/Wirkungen, Versionsstand und eigener Produktvergleich offen.",
+        "gap": "Feature-Rebuild mit kontrolliertem URL-Vergleich direkt teilbelegt; Greens-Gruppe in Probe leer. Weitere Vorgaben/Wirkungen, Reproduzierbarkeit, Version und eigener Produktvergleich offen.",
         "independentFunctionalRequirement": true,
         "mappingCoverage": "related_project_criteria_only; CO requirement remains independently required",
         "originalProbe": {
           "state": "partial",
           "run": "CITY-00-I03-I",
           "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/manifest.json"
-        }
+        },
+        "originalProbes": [
+          {
+            "run": "CITY-00-I32-I",
+            "state": "partial",
+            "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i32-generation-20261009/manifest.json",
+            "result": "Visible generation controls differ from initial URL. Control Rebuild then Greens-only flag Rebuild: same seed/size, buildings499→544, fields4→7, districts7→8; other10 groups equal including empty greens. No unconditional green output or stable object preservation proved."
+          }
+        ]
       },
       {
         "id": "CO-WAT-0002",
@@ -3218,7 +3235,8 @@
         "availability": "unknown",
         "observationKind": "direct",
         "originalEvidence": [
-          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/manifest.json"
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/manifest.json",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i33-roads-20261009/manifest.json"
         ],
         "task": "Straßenanschlüsse begrenzen",
         "phase": "CITY-05",
@@ -3234,14 +3252,22 @@
           "state": "not_run"
         },
         "status": "open",
-        "gap": "Originalmenü direkt sichtbar; konkrete Wirkungs-/Saveprobe und eigener Produktvergleich offen.",
+        "gap": "Explizite Number3-Rebuild-Wirkung und bytegleiche Default-Wiederherstellung direkt belegt; Maximum, genaue Torzählung, Einzelstraßen-/Savewirkung und eigener Produktvergleich offen.",
         "independentFunctionalRequirement": true,
         "mappingCoverage": "related_project_criteria_only; CO requirement remains independently required",
         "originalProbe": {
           "state": "partial",
           "run": "CITY-00-I03-I",
           "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/manifest.json"
-        }
+        },
+        "originalProbes": [
+          {
+            "run": "CITY-00-I33-I",
+            "state": "partial",
+            "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i33-roads-20261009/manifest.json",
+            "result": "Default/Maximum/Number visible. Default→Number3→Default Rebuild: gates=-1→3→-1 only URL change at same seed/size; roads5→4, walls changed, buildings544→528, fields7→8, districts8→7; other8 groups equal. Restoration byteequal. Exact gate count and Maximum effect unproved."
+          }
+        ]
       },
       {
         "id": "CO-FTG-0030",
@@ -4039,7 +4065,7 @@
     ],
     "functionalInventoryStatus": {
       "state": "partial_inventory_not_accepted",
-      "run": "CITY-00-I31-I",
+      "run": "CITY-00-I33-I",
       "products": 3,
       "candidates": 64,
       "directFormAreas": 13,
@@ -4080,7 +4106,9 @@
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i28-roof-20261009/manifest.json",
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i29-building-20261009/manifest.json",
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i30-processing-20261009/manifest.json",
-        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i31-processing-output-20261009/manifest.json"
+        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i31-processing-output-20261009/manifest.json",
+        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i32-generation-20261009/manifest.json",
+        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i33-roads-20261009/manifest.json"
       ],
       "resultReferences": [
         {
