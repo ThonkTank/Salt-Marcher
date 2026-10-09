@@ -744,3 +744,6 @@ CITY-01-PREP-P04 Start 2026-10-09T17:15:00.503300+00:00; Quellaudit bestätigt g
 
 
 CITY-01-PREP-SCENE-PLAN-CLEAN-P04 Start 2026-10-09T17:15:54.932937+00:00; Planreview: Hex-Besitzer bestätigt reine CitySceneCore mit aufrufergeliefertem project/unproject, kein Placementvertrag. Präzisieren: callbacks nur Anschlussgrenze, P04-Core bleibt lokal; Bounds als finite min/max statt potenziell überlaufender Breite/Höhe; kontrollierte Ablehnung nicht darstellbarer gepufferter Ausdehnung. Gemeinsamer Streckenumbau benötigt Baselinegegenprobe für Dungeonaddresses/Gleichstände und gezielte lange Strecken, keine ungeprüfte bitweise Gleichheit. Dungeonbesitzer zur Kollision angefragt. CI/CR getrennt.
+
+
+CITY-01-PREP-SCENE-PLAN-CLEAN-I04 Start 2026-10-09T17:16:54.491334+00:00; Szenenplan nennt bestätigte aufrufergelieferte project/unproject-Grenze ohne Placementkopie; Core bleibt lokal. Finite Min/Maxbounds samt kontrollierter Szenenfehlergrenze festgelegt. Gemeinsamer Streckenumbau bekommt externe Vorherbaseline, exakte Adressen/Gleichstandsfolge, toleranten Zahlenvergleich und analytischen Langstreckenfall. Dungeonbesitzer über aktuell entdeckten durable-Host informiert; keine Laufzeitänderung. CR folgt.
