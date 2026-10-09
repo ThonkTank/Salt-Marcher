@@ -2007,13 +2007,13 @@
       "limits": "Planreview-PASS und O01a als enger read-only Hostnachweis; keine Original-, Kinddatei-, Save-, Import-, Recovery-, physische oder Gesamtparitätsfreigabe. O01b, HEX-02 und die reale Shell bleiben für weitere Fälle Voraussetzungen.",
       "o01a": {
         "run": "DD-036-ATLAS-O01a",
-        "state": "scoped_read_only_host_passed_independent_review_pending_full_cases_open",
+        "state": "scoped_read_only_host_passed_independent_review_passed_full_cases_open",
         "productCommit": "fcc4ce612d17c47c720ce4bf7c0c5e216398f41e",
         "mainSha256": "6896c7b53cb0100178d32c217b824b6c762122a33df38921e84acdd467234ba7",
-        "editEvidence": "/home/aaron/.cache/dungeon-native-qa/dd036-o01a-20261009/evidence/1791566923401-dd036-o01a-edit/o01a-result.json",
-        "reopenEvidence": "/home/aaron/.cache/dungeon-native-qa/dd036-o01a-20261009/evidence/1791566931299-dd036-o01a-reopen/o01a-result.json",
+        "editEvidence": "/home/aaron/.cache/dungeon-native-qa/dd036-o01a-20261009/evidence/1791567176069-dd036-o01a-edit/o01a-result.json",
+        "reopenEvidence": "/home/aaron/.cache/dungeon-native-qa/dd036-o01a-20261009/evidence/1791567218121-dd036-o01a-reopen/o01a-result.json",
         "result": "Zwei getrennte Obsidian-Prozesse öffnen referenzfreie Original-/bytegleiche Transportkopie mit world.id dd036-o01a-world; beide Dateien behalten SHA-256 e264ddbeedb32a83a5e35eb904fd044046af8f133665fcb5877409d3d9aa5efb, null beobachtete Atlas-Schreibaufrufe, kein Draft/Journal; normale Prozessausgänge. Synthetischer Hostlauf, keine Dungeondraft-Originalwirkung.",
-        "review": "Unabhängiger Review der Hostevidenz ausstehend."
+        "review": "Unabhängiger read-only Nachreview auf Shared-Head 018a310 bestand den engen O01a-Nachweis nach Erweiterung der Vault-/Adapter-Schreibinstrumentierung auf 32 Methoden; beide Hostläufe zeigen keine Atlas-Schreibaufrufe. Keine Freigabe für O01b oder vollständige DD-036-Fälle."
       },
       "next": "GM-UX-N-005-P01: als eigener Dungeon-Planlauf ausschließlich die belegte Raum-Key-Suche planen; nicht mit DD-036 oder Atlaspersistenz vermischen.",
       "followingRun": "DD-036-O01a ist eng geprüft; O01b mit Kinddateien wartet auf den angeschlossenen Terrain-Lader und seine sichtbare Hostprüfung."
