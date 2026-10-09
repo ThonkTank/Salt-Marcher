@@ -25,14 +25,29 @@ Document 5.1*, die 2014er Fassung unter
 9. Oktober 2026 abgerufene PDF-Byte-Hash ist
 `2504d2a0abb0a4d491a939be4f17910a2dde0312570ab8d208080225ccf0a1f0`
 (SHA-256; 3.158.713 Bytes, 403 PDF-Seiten). Seite 1 nennt CC BY 4.0 und den
-verlangten Attributionstext. Der sichtbare Inspector und die ausgelieferte
-Attributionsdatei führen Dokument, Herausgeber, URL, Lizenzlink, Version und
-Bearbeitung der Projektion. Keine 2024-/SRD-5.2-Daten.
+verlangten Attributionstext. `CE-02-I02-S01` kopiert genau den auf PDF-Seite 1
+als Attribution Statement ausgewiesenen Wortlaut unverändert in das kanonische
+Asset `src/features/catalog/SRD-5.1-ITEMS-ATTRIBUTION.md`. Ein Hash-/Texttest
+prüft seine Präsenz im Build und im sichtbaren Inspector. Hinweise zur
+Itemprojektion stehen getrennt davon; keine weitere Wizards-Attribution wird
+angehängt. Keine 2024-/SRD-5.2-Daten.
 
-Vor dem ersten Datencommit prüft ein eigener Provenienz-/Schema-Review am
-exakten Quellenhash, welche SRD-Tabellen und alphabetischen Magic-Item-Einträge
-zum Korpus gehören. Er legt eine überprüfbare Inventarliste samt PDF-Seiten und
-Eintragszahlen fest. Ein 5e-bits-Datensatz darf als Extraktionshilfe dienen,
+`CE-02-I02-S01` ist ein eigenes, vor jeder Produktumsetzung abgeschlossenes
+Provenienz-/Schema-Paket. Es legt `src/features/catalog/data/items-srd51-inventory.json`
+mit genau einer Zeile je Ausrüstungs-Tabellenzeile, eigenständigem Magic-Item-
+Tabelleneintrag und alphabetischem Magic-Item-Detailabschnitt an. Jede Zeile
+trägt Abschnitt/Feed, erste und letzte physische PDF-Seite, sichtbare SRD-Seite,
+Quellenüberschrift bzw. Tabellenkennung, Zeilen-/Abschnittsordinal,
+Variantenkennung und explizite Merge-Referenz oder `null`. Das Manifest enthält
+Abschnittsgrenzen und erwartete Counts für Ausrüstungstabellen, Magic-Item-
+Tabellen und A–Z-Details sowie eine Summe vor und nach expliziten Merges.
+Ein zweiter Prüfer vergleicht alle PDF-Seiten an den Abschnittsgrenzen und die
+vollständige Zeilen-/Überschriftenfolge gegen das Inventar; Stichproben allein
+reichen nicht. Er dokumentiert PDF-Hash, Inventarhash, Count-Abgleich und
+Ausnahmen auf einem exakten Commit als `CE-02-I02-S01-R01 PASS` oder
+`CHANGES REQUIRED`. Ohne PASS kein Quelltranskript und kein `I01`.
+
+Ein 5e-bits-Datensatz darf als Extraktionshilfe dienen,
 aber nicht ungeprüft zur zweiten Wahrheit werden: jede übernommene Tatsache
 muss im SRD 5.1 verortbar sein. Nicht belegte oder außerhalb der SRD liegende
 Einträge werden abgewiesen. Die 5e-bits-MIT-Lizenz für Repository-Code ersetzt
@@ -40,15 +55,28 @@ keine Prüfung der Inhaltslizenz.
 
 ## Quellprojektion und Schema
 
-Ein eingechecktes, reviewtes Quelltranskript enthält pro Eintrag den stabilen
-Quellenschlüssel, die PDF-Seite(n) und die quellennahen Fakten. Der Schlüssel
-verwendet einen fest dokumentierten Namensraum für `equipment` bzw.
-`magic-item` und einen stabilen SRD-Eintragsschlüssel. Gleichnamige Einträge
-werden nicht allein nach Anzeigenamen zusammengeführt. Tabelleneinträge mit
-eigener Beschreibung und alphabetische Detailabschnitte werden anhand derselben
-Quellenidentität zu genau einem Datensatz verbunden; Konflikte stoppen den
-Generator. Ein abweichender SRD-Quellenstand erfordert neues Manifest und
-eigenen Review, keine stillschweigende Aktualisierung.
+Das reviewte Inventar ist die Identitätsgrundlage des Quelltranskripts. Eine
+Erscheinung erhält die ID `srd51:<equipment|magic-item>:<abschnitt>:<ordinal>`;
+Abschnitt und Ordinal stammen ausschließlich aus der festgehaltenen physischen
+PDF-Reihenfolge. Anzeigenamen, Slugs, Unicode und Interpunktion erzeugen keine
+Identität. Für gleichnamige Varianten gibt es je eigener Tabellenzeile oder
+Überschrift eine eigene Erscheinung und eine explizite Variantenkennung.
+Eine Merge-Liste weist Tabellenerscheinungen und A–Z-Details per ID genau
+einem kanonischen Eintrag zu; niemals durch automatisch gleichen Namen. Die
+kanonische ID ist die erste Erscheinung in PDF-Reihenfolge. Mehrdeutigkeit,
+Kollision, unbelegter Merge oder abweichende Fakten stoppen den Generator.
+Ein abweichender SRD-Quellenstand erfordert neues Manifest und eigenen Review.
+
+Das Transkript speichert je Fakt die Inventar-ID und PDF-Seite. Mechanische
+Textextraktion normalisiert Unicode nach NFC, Ligaturen zu Buchstaben,
+geschützte Leerzeichen zu normalen Leerzeichen und PDF-Zeilenumbrüche zu
+Leerzeichen; echte Wortbindestriche und Zeichensetzung bleiben erhalten.
+Weiche Trennstriche an Zeilenenden dürfen nur bei nachgewiesenem Umbruch
+entfallen. Jede andere Korrektur steht als explizite Vorher-/Nachher-Zeile mit
+PDF-Beleg im Transkript. `S01` legt die kontrollierten Kategorie-/Unterkategorie-
+Werte und die Zuordnung jeder Quellentabelle fest. Golden-Fälle prüfen
+Gleichnamigkeit, Varianten, Tabellen-/Detailmerge, Ligatur, Trennstrich,
+Interpunktion und bytegleiche Projektion.
 
 Der versionierte Item-Datensatz enthält mindestens:
 
@@ -56,16 +84,24 @@ Der versionierte Item-Datensatz enthält mindestens:
   `rarity` sowie `attunement` als explizit belegte Werte;
 - optionale `cost` mit Quellwert und normalisierter 2014-Währung für
   numerische Filter/Sortierung, optionales `weight` mit Einheit;
-- `properties` und `description` als quelltreue, darstellbare Fakten;
-- optionale strukturierte `damage`- bzw. `armor`-Fakten, soweit die Quelle
-  sie für genau diesen Gegenstand nennt;
+- `properties` als geordnete Liste aus `{name, description?}` und `description`
+  als geordnete Textabschnitte mit Herkunft je Abschnitt;
+- `damage` optional als `{dice, type, versatileDice?}` und `armor` optional
+  als `{baseAc, dexterityRule?, strengthRequirement?, stealthRule?}`. Werte
+  bleiben Quelltext, ohne zusätzliche Kampfberechnung; fehlt ein für die
+  Struktur erforderlicher Wert, bleibt der ganze Teil optional und der
+  Quelltext in der Beschreibung sichtbar;
 - `source` mit SRD-Version, Dokument-URL und PDF-Seiten.
 
 Fehlende Quellenfelder bleiben `null`/abwesend. Insbesondere werden für magische
 Gegenstände keine Preise, Gewichte oder Einstimmungen aus anderen Quellen
 erfunden. `attunement` unterscheidet `required`, `not-required` und
-`unspecified`; nur explizite Quellenangaben setzen einen der ersten beiden
-Werte. Geldwerte werden ohne Rundung als ganzzahlige kleinste Einheit
+`unspecified`: Bei einem vollständig geprüften Magic-Item-Header setzt die
+`requires attunement`-Klausel `required`, ihr belegtes Fehlen `not-required`.
+Bei unvollständigem/mehrdeutigem Header und nichtmagischer Ausrüstung gilt
+`unspecified`; das ist kein behauptetes Nein. `S01` prüft positive, negative
+und unklare Header als Golden-Fälle. Geldwerte werden ohne Rundung als
+ganzzahlige kleinste Einheit
 normalisiert; nicht eindeutig umrechenbare Quellwerte bleiben reine Anzeige
 und nehmen am numerischen Kostenfilter nicht teil. Sortierung behandelt fehlende
 Werte deterministisch am Ende, unabhängig von der Richtung. Der Inspector
@@ -73,15 +109,19 @@ kennzeichnet fehlende Fakten, statt sie mit Nullwerten zu verwechseln.
 
 ## Reproduzierbarer Build und Fail-closed-Lader
 
-Ein enger Generator unter `tools/` liest ausschließlich das reviewte
-Quelltranskript und ein Manifest mit PDF-URL, PDF-SHA-256, Korpusinventar,
+Ein enger Generator unter `tools/` liest ausschließlich das reviewte Inventar,
+Quelltranskript und Manifest mit PDF-URL/-SHA-256, Inventarhash,
 Schema-Version, Lizenz und Attribution. Er benötigt keinen Netzwerkzugriff.
-Der Build prüft den PDF-Hash gegen den lokal angegebenen Quellenpfad, validiert
-alle Datensätze, Quellseiten, eindeutigen Schlüssel und die vollständige
-Inventarliste, serialisiert in fester Ordnung und schreibt ein generiertes
-Artefakt samt SHA-256. Wiederholung mit denselben Eingaben muss bytegleich
-sein. CI/Build vergleicht generierte Bytes und Manifest mit den eingecheckten
-Dateien. Quell-PDF und große Laufprotokolle liegen im QA-Cache, nicht im Vault.
+Ein separater Quellen-Verify-Lauf lädt die PDF in den QA-Cache, prüft ihren
+Hash und vergleicht die vollständige Seiten-/Zeilen-/Überschriftenfolge mit
+dem Inventar und den Transkriptbelegen. Er liefert den unabhängigen
+PDF→Transkript-Vollständigkeitsbeleg. Der Offline-Generator validiert jede
+Inventar-ID, jede Faktquelle, eindeutige Schlüssel, alle Merge-Regeln und
+Counts, serialisiert in fester Ordnung und schreibt ein Artefakt samt SHA-256.
+Wiederholung muss bytegleich sein. `npm run build` prüft das eingecheckte
+Artefakt gegen Manifest und generierte Bytes, ohne die PDF erneut aus dem Netz
+zu holen; der getrennte Quellen-Verify-Lauf ist Pflichtgate von S01 und jeder
+Quelländerung. Quell-PDF und große Protokolle liegen im QA-Cache.
 
 Der Runtime-Lader prüft Schema-Version, Manifest/Artefakt-Hash und Struktur vor
 der ersten Veröffentlichung des gesamten Korpus. Die Daten werden erst nach
@@ -90,9 +130,10 @@ keine Teilmenge oder veraltete Detailantwort als aktuelle Wahrheit aus:
 
 - fehlendes Asset bzw. noch kein vollständiger Import: `unavailable`;
 - neuere/andere Schema-Version: `incompatible`;
-- Hashabweichung, ungültiger Datensatz, Duplikat oder fehlendes Detail:
+- Hashabweichung, ungültiger Datensatz, Duplikat oder indizierter Datensatz
+  ohne versprochenes Detail:
   `corrupt`;
-- ungültige Filter-/Pagingwerte: `invalid-query`;
+- ungültige Filter-/Pagingwerte: `invalid`;
 - Laufzeit-/Ladefehler: `error` mit isoliertem Retry.
 
 Diese Fehler betreffen nur `items`. `creatures` und die fünf weiterhin
@@ -101,7 +142,21 @@ Netzwerk, Import, Vaultwrite, Loot-, Inventory- oder Encounter-Mutation.
 
 ## Provider und sichtbares Verhalten
 
-Der Itemprovider implementiert den vorhandenen CE-02-read-only-Vertrag mit
+`I01` erweitert den vorhandenen Providervertrag ausdrücklich: Capability
+behält `available|missing|unavailable`; Query erhält neben `ready|empty|
+invalid|missing|unavailable|error` die Status `incompatible|corrupt`; Detail
+erhält neben `ready|missing|unavailable|error` ebenfalls `incompatible|corrupt`.
+Loader-Schemafehler gehen auf beide `incompatible`, Integritätsfehler auf
+`corrupt`; ungültige Query auf `invalid`. Eine unbekannte oder inzwischen
+entfernte Detail-ID ist `missing`, ein im geprüften Index gelisteter Eintrag
+ohne Detail ist `corrupt`. Nur `error` und nach erneuter lokaler Validierung
+`corrupt` bieten Retry; `incompatible` verlangt einen passenden Build und
+`missing` eine neue Auswahl. Registry, Shellstatus, Itemansichten und Tests
+erhalten diese Union gemeinsam; Monsterverhalten bleibt unverändert. Ein
+fehlgeschlagener Refresh entwertet den aktuellen Item-Snapshot, sodass Retry
+oder spätere Query keine alte Liste als aktuellen Erfolg ausgeben.
+
+Der Itemprovider implementiert diesen CE-02-read-only-Vertrag mit
 immutable Row-/Detail-DTOs, begrenzter Ergebnispage und `AbortSignal`.
 Stabile IDs werden auch in Auswahl und Wiederherstellung genutzt. Query und
 Detail verwenden denselben geprüften Snapshot. Generations-/Abortschutz der
@@ -119,16 +174,28 @@ Schadens-/Rüstungsfakten soweit vorhanden, Quellenstellen und Attribution.
 Es gibt explizite Loading-, Empty-, Invalid-, Unavailable-, Incompatible-,
 Corrupt- und Error-/Retry-Ansichten, ohne verdeckte Produkt-Placeholder.
 
-Der Itembereich erhält eigenen persistierten Draft/angewandte Suche, Filter,
-Sortierung, Page, Auswahl und Ergebnis-/Inspector-Scrollposition. Eine
-beschädigte Item-State-Payload normalisiert nur diesen Bereich; ein
-inkompatibles künftiges Workspace-Schema bleibt insgesamt fail-closed gemäß
-CE-02-I01. Der Wechsel zu Monster und zurück bewahrt den vorherigen
-Monsterzustand und den Itemzustand unabhängig.
+Die Workspace-Schemaversion steigt von `1` auf `2`. Die v1→v2-Migration
+übernimmt `activeSection` und Monster sowie die fünf anderen Section-States
+werttreu durch ihre bisherigen Restorer. Beim bisherigen Item-Placeholder
+übernimmt sie `search`, `searchDraft`, `direction`, `page`, `selectedId` und
+beide Scrollpositionen; `filters: []` wird zum leeren typisierten Itemfilter,
+`sort: name` bleibt erhalten. Neue Item-Filter und Sortierfelder beginnen mit
+Defaults. Nur beschädigte Itemwerte werden auf Itemdefaults normalisiert.
+Unbekannte künftige Workspaceversionen bleiben wie bisher insgesamt
+fail-closed. Der real typisierte Itemzustand hält eigenen Draft/angewandte
+Suche, Filter, Sortierung, Seite, Auswahl und beide Scrollpositionen. Tests
+prüfen v1→v2, beschädigtes Item bei intaktem Monster, unbekannte Zukunft,
+Item→Monster→Item und frischen Prozess-Restore.
 
 ## Besitz, Läufe und Prüfgates
 
-`CE-02-I02-I01` besitzt neue Itemdaten-, Generator-, Manifest-, Attributions-,
+`CE-02-I02-S01` besitzt Inventar, Identitäts-/Merge-Ledger,
+Kategoriezuordnung, kanonische Attribution, Quellen-Verify und Golden-Fälle,
+aber noch keinen Produktprovider. Ein unabhängiger Prüfer muss S01 auf einem
+exakten Commit mit Count-/Hashbeleg freigeben.
+
+`CE-02-I02-I01` besitzt erst danach neue Itemdaten-, Generator-, Manifest-,
+Attributions-,
 Provider- und Item-View-Dateien unter `src/features/catalog/` und `tools/`,
 gezielte Item-Deskriptor-/State-Ergänzungen in der bestehenden Katalog-Shell,
 passende Tests und nur nötige Katalog-CSS. Monsterdaten, die fünf anderen
@@ -136,18 +203,27 @@ Provider, Encounter-/World-Planner-Owner, Atlas, Dungeon und Vaulttexte bleiben
 außerhalb dieses Pakets. Ein verändertes Bundlebudget wird nur anhand gemessener
 Buildgröße, Lazy-Load und echtem Hostverhalten entschieden.
 
-Nach diesem Plan folgt ein unabhängiger `CE-02-I02-P01-R01`-Review. Erst nach
-bestandenem Planreview folgen getrennt Umsetzung `CE-02-I02-I01`, unabhängiger
-Code-/Datenreview und gegebenenfalls Reparatur mit erneuter Prüfung. Die
+Nach bestandenem `CE-02-I02-P01`-Planreview folgen `S01`, dessen unabhängiger
+`S01-R01`-Review und nur bei PASS die getrennte Umsetzung `CE-02-I02-I01`,
+unabhängiger Code-/Datenreview und gegebenenfalls Reparatur. Die
 Umsetzung führt `npm run check`, `npm test`, `npm run build` und gezielte
 Generator-/Provider-/DOM-Tests aus. Pflichtfälle sind: Source-Hash und
 Attribution; Korpusvollständigkeit und bytegleiche Regeneration; doppelte
 Schlüssel und widersprüchliche Feldquellen; fehlende optionale Werte;
 deterministische Filter/Sortierung/Paging; Auswahl und Inspector; sämtliche
 Fehlerzustände und Retry; Abort-/Stale-Antwort; Bereichs-/Neustartzustand;
-kein Netzwerk oder Ownerwrite beim Browsing. Ein realer isolierter
-Obsidian-Hostlauf mit frischem Prozess, sichtbarer Itemliste und Detail gehört
-zum I02-Review und später zusätzlich zu CE-02-H01.
+kein Netzwerk oder Ownerwrite beim Browsing. Der I02-Review bindet sauberen
+Quell-SHA, bytegleiche installierte `main.js`/`manifest.json`/`styles.css` und
+einen echten isolierten Obsidian-Hostlauf. Sichtbar geprüft werden bei
+900×650 und 1150×700 Itemfilter, Chips/Reset, Sortierung, Paging, Auswahl,
+Inspector, Attribution und fehlende optionale Felder. Ein Bereichswechsel
+während einer ausstehenden Query darf Item/Monster nicht überschreiben;
+beide Zustände müssen unabhängig durch Wechsel und frischen Prozess erhalten
+bleiben. Der Prozess endet normal. Corrupt/Incompatible/Error/Retry werden
+zusätzlich mit deterministischen Fixture-/Harness-Gates geprüft. Automatisierte
+Hostbelege werden nicht als physische Tastatur-/Maus-, Screenreader- oder
+Plattformabnahme ausgegeben. CE-02-H01 wiederholt die gemeinsame Prüfung nach
+allen sieben Providern.
 
 Eine Itemfreigabe schließt weder die fünf anderen Provider noch CE-02, CE-01-
 Physikeingabe, Screenreader oder weitere Plattformen. Diese Gates bleiben
