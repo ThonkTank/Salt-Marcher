@@ -1645,13 +1645,15 @@
           "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/manifest.json",
           "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i32-generation-20261009/manifest.json",
           "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i35-size-20261009/manifest.json",
-          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i36-custom-size-20261009/manifest.json"
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i36-custom-size-20261009/manifest.json",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i37-river-20261009/manifest.json"
         ],
         "task": "Dorf und Stadt erzeugen",
         "phase": "CITY-02",
         "caseIds": [
           "CTY-001.02",
-          "CTY-008.01"
+          "CTY-008.01",
+          "CTY-001.03"
         ],
         "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
         "implementationEvidence": [],
@@ -1662,7 +1664,7 @@
           "state": "not_run"
         },
         "status": "open",
-        "gap": "Features/Small/Customgröße direkt teilbelegt; Size+Enter ändert Seed, gehaltene Größe via Permalink. Feste Presetranges/Einheiten/weitere Features/Version und eigener Vergleich offen.",
+        "gap": "Features/Small/Customgröße/River-Umgebungswirkung direkt teilbelegt; genaue Gewässerübergänge, Uferabstände/Einheiten/weitere Features/Version und eigener Vergleich offen.",
         "independentFunctionalRequirement": true,
         "mappingCoverage": "related_project_criteria_only; CO requirement remains independently required",
         "originalProbe": {
@@ -1693,6 +1695,12 @@
             "state": "partial",
             "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i36-custom-size-20261009/manifest.json",
             "result": "Size19 pending + Rebuild retained size25 visually/URL; Size19+Enter generated seed1484653642. From URL size25→19 at held seed540139574:8 groups changed/5 equal, buildings544→418, roads5→3; restoration byteequal. Size units/ranges and manual retention unproved."
+          },
+          {
+            "run": "CITY-00-I37-I",
+            "state": "partial",
+            "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i37-river-20261009/manifest.json",
+            "result": "Only River URL flag0→1 at same size25/seed540139574:13 groups,6 changed/7 equal. rivers0→1; values adds riverWidth41.038340289629225 (units unproved); roads5 count same but values changed, buildings544→417. planks stays0, exact bridge topology unproved. OFF+Rebuild restoration byteequal."
           }
         ]
       },
@@ -4127,7 +4135,7 @@
     ],
     "functionalInventoryStatus": {
       "state": "partial_inventory_not_accepted",
-      "run": "CITY-00-I36-I",
+      "run": "CITY-00-I37-I",
       "products": 3,
       "candidates": 65,
       "directFormAreas": 13,
@@ -4173,7 +4181,8 @@
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i33-roads-20261009/manifest.json",
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i34-maximum-20261009/manifest.json",
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i35-size-20261009/manifest.json",
-        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i36-custom-size-20261009/manifest.json"
+        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i36-custom-size-20261009/manifest.json",
+        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i37-river-20261009/manifest.json"
       ],
       "resultReferences": [
         {
