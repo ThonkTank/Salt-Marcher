@@ -93,6 +93,7 @@ let browser,
   page,
   timer,
   scope,
+  lifecycle,
   stopping = false,
   guardFailure;
 const checks = [],
@@ -182,6 +183,7 @@ function processes() {
     .filter((p) => /^\d+$/.test(p))
     .flatMap((p) => {
       try {
+        const stat = fs.readFileSync("/proc/" + p + "/stat", "utf8");
         return [
           {
             pid: Number(p),
@@ -195,12 +197,33 @@ function processes() {
               .trim()
               .split(":")
               .at(-1),
+            executable: fs.readlinkSync("/proc/" + p + "/exe"),
+            startTicks: stat.slice(stat.lastIndexOf(")") + 2)
+              .split(" ")[19],
           },
         ];
       } catch {
         return [];
       }
     });
+}
+function systemdProperties() {
+  try {
+    return Object.fromEntries(cp.execFileSync("systemctl", ["--user", "show", unit + ".service",
+      "--property=Id,InvocationID,MainPID,ControlPID,ActiveState,SubState,Result,ExecMainCode,ExecMainStatus"],
+    { encoding: "utf8", timeout: 5000 }).trim().split("\n").filter(Boolean)
+      .map((line) => {
+        const separator = line.indexOf("=");
+        return [line.slice(0, separator), line.slice(separator + 1)];
+      }));
+  } catch (error) {
+    return { unavailable: error instanceof Error ? error.message : String(error) };
+  }
+}
+function qaProcesses() {
+  return processes().filter((candidate) =>
+    candidate.args[0]?.startsWith("/app/obsidian") &&
+    candidate.args.some((arg) => arg === "--user-data-dir=" + qa + "/config/obsidian"));
 }
 function resolveQaAppCgroup() {
   const matching = processes().filter((process) =>
@@ -498,6 +521,7 @@ async function shutdown() {
   if (stopping) return;
   stopping = true;
   clearInterval(timer);
+  let requestedNormalQuit = false;
   if (page && !page.isClosed())
     try {
       if (
@@ -508,6 +532,7 @@ async function shutdown() {
           vault,
         )
       ) {
+        requestedNormalQuit = true;
         await page.evaluate(() =>
           setTimeout(() => window.electron.remote.app.quit(), 0),
         );
@@ -537,6 +562,7 @@ async function shutdown() {
     } catch {}
   }
   if (remaining.length) await sleep(1000);
+  const systemdBeforeCleanup = systemdProperties();
   await browser?.close().catch(() => {});
   if (scope) {
     try {
@@ -553,6 +579,17 @@ async function shutdown() {
       timeout: 5000,
     });
   } catch {}
+  if (lifecycle) {
+    lifecycle.exit = {
+      requestedNormalQuit,
+      normalExitObserved: remaining.length === 0,
+      forcedTerminationPids: remaining.map((candidate) => candidate.pid),
+      finishedAt: new Date().toISOString(),
+      systemdBeforeCleanup,
+      systemdAfterCleanup: systemdProperties(),
+    };
+    fs.writeFileSync(out + "/process-lifecycle.json", JSON.stringify(lifecycle, null, 2));
+  }
 }
 process.on("SIGTERM", () => {
   guardFailure = "External timeout or termination";
@@ -638,6 +675,12 @@ async function main() {
     ],
     { stdio: "inherit" },
   );
+  lifecycle = {
+    unit: unit + ".service",
+    runnerPid: process.pid,
+    startedAt: new Date().toISOString(),
+    systemd: systemdProperties(),
+  };
   await Promise.race([workflow(), guard]);
 }
 async function workflow() {
@@ -664,6 +707,15 @@ async function workflow() {
     await sleep(100);
   }
   assert(page, "Obsidian window");
+  const resolvedProcess = resolveQaAppCgroup();
+  lifecycle.app = {
+    cgroup: resolvedProcess.group,
+    serviceName: resolvedProcess.serviceName,
+    processes: qaProcesses().map(({ pid, executable, startTicks, group, args }) => ({
+      pid, executable, startTicks, group, args,
+    })),
+  };
+  fs.writeFileSync(out + "/process-lifecycle.json", JSON.stringify(lifecycle, null, 2));
   page.setDefaultTimeout(12000);
   page.on("pageerror", (e) => errors.push(e.stack || e.message));
   page.on("console", (e) => {
