@@ -3978,17 +3978,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I28-CI",
-      "kind": "cleanup_implementation",
-      "startedAt": "2026-10-09T15:04:03.424384+00:00",
-      "focus": "Dach-/Blockbelege CI",
-      "state": "completed",
-      "result": "Snapshot auf I28, Gable-/Block-Sichtwirkung und offene weitere Vorgaben/Einzelbearbeitung/Persistenz aktualisiert; keine Rawdatei oder fremde Wurzel verändert."
-    },
-    "nextRun": {
       "id": "CITY-00-I28-CR",
       "kind": "cleanup_review",
-      "focus": "Scope und Rawschutz nachprüfen"
+      "startedAt": "2026-10-09T15:04:23.971472+00:00",
+      "focus": "Dach-/Blockbelege CR",
+      "state": "completed",
+      "result": "Snapshot und acceptance stimmen, neun Rawhashes und alle Inventarbelegziele geprüft;64 CO-/24 CTY-Pflichten offen. Lots/Plain zurückgesetzt, eigene Kopie geschlossen. Aufräumumfang ohne Restbefund. Eigener Stadtproduktstart weiterhin nach HEX-05; nächste Teilprobe der übrigen angebotenen Gebäudedarstellungen gesondert planen."
+    },
+    "nextRun": {
+      "id": "CITY-00-I29-P",
+      "kind": "reference_planning",
+      "focus": "Übrige Gebäudedarstellungen konkret planen; HEX-05-Übergabe prüfen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",

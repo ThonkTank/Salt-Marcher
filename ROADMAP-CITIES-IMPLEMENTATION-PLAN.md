@@ -469,3 +469,5 @@ CITY-00-I28-R Start 2026-10-09T15:03:37.480848+00:00; Neun Rawhashes und sichtba
 CITY-00-I28-CP Start 2026-10-09T15:03:50.802170+00:00; Plan: Snapshot anhand acceptance um Gable-/Block-Teilwirkung ergänzen; Blockdarstellung von eigenständiger Vierteltopologie trennen. Historische I03-/I19-Belege erhalten, sämtliche Rawhashes/Verweise und64/24 offene Pflichten prüfen. CI/CR separat.
 
 CITY-00-I28-CI Start 2026-10-09T15:04:03.424384+00:00; Snapshot auf I28, Gable-/Block-Sichtwirkung und offene weitere Vorgaben/Einzelbearbeitung/Persistenz aktualisiert; keine Rawdatei oder fremde Wurzel verändert.
+
+CITY-00-I28-CR Start 2026-10-09T15:04:23.971472+00:00; Snapshot und acceptance stimmen, neun Rawhashes und alle Inventarbelegziele geprüft;64 CO-/24 CTY-Pflichten offen. Lots/Plain zurückgesetzt, eigene Kopie geschlossen. Aufräumumfang ohne Restbefund. Eigener Stadtproduktstart weiterhin nach HEX-05; nächste Teilprobe der übrigen angebotenen Gebäudedarstellungen gesondert planen.
