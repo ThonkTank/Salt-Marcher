@@ -4653,16 +4653,16 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-01-INTEGRATION-N01",
-      "kind": "integration_refinement",
-      "startedAt": "2026-10-09T19:28:35.030662+00:00",
-      "focus": "Integrationsvorschlag gegen Quellen und Roadmap: N01",
-      "state": "completed",
-      "result": "Drei Befunde in konkrete Anschluss-/Abnahmepflichten übersetzt: relative Vorwärts/Rückabbildung, neues Placement/Draftschema, gemeinsames Fit."
-    },
-    "nextRun": {
       "id": "CITY-01-INTEGRATION-N01-CLEAN-P01",
       "kind": "cleanup_plan",
+      "startedAt": "2026-10-09T19:28:38.312911+00:00",
+      "focus": "Integrationsvorschlag gegen Quellen und Roadmap: N01-P",
+      "state": "completed",
+      "result": "Aufräumplan: Befunde und reine Vorschlagsgrenzen lesbar halten, Quellen-/Gegenbelege unverändert erhalten."
+    },
+    "nextRun": {
+      "id": "CITY-01-INTEGRATION-N01-CLEAN-I01",
+      "kind": "cleanup_implementation",
       "focus": "Konkreten HEX04/05-Ownervertrag mit den drei Anschlussanforderungen abstimmen"
     },
     "open": [
