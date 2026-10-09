@@ -143474,6 +143474,14 @@
           "measured": "Wand aus ändert 27356 Hostbildpixel getrennt vom jeweils anderen Element; Edit und frische Öffnung sind bild-, dokument- und hashgleich.",
           "remaining": "UI-Bedienung, Vorgaben für neue Elemente, Undo/Redo und unabhängiger Review offen; globale Atlasoptionen nach Nutzerzweck klären."
         },
+        "followUpPhase1HostUiCandidate": {
+          "state": "candidate_ui_undo_redo_save_reopen_review_pending",
+          "report": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd006-shadow-ui-library-20261009/implementation.md",
+          "audit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd006-shadow-ui-library-20261009/ui-audit.json",
+          "buildSha256": "5b086c04c05b8011c64331ee6da7baa4831fcf06cc8712d2078731fcd03f3d4f",
+          "measured": "Je zwei neue Wände und Objekte per UI mit shadow=[true,false]; zweites Objekt per Undo/Redo entfernt und wiederhergestellt, Save/Reopen dokument- und hashgleich.",
+          "remaining": "Unabhängiger Endbuild-Review und Atlasbedienung der globalen Kartenoptionen offen; UI-Bilder haben unterschiedliche Kamera-/Panelzustände und belegen keine Bildparität."
+        },
         "baseline": {
           "editor": {
             "sequence": "Wandschatten an/aus",
@@ -143558,6 +143566,14 @@
           "buildSha256": "5b086c04c05b8011c64331ee6da7baa4831fcf06cc8712d2078731fcd03f3d4f",
           "measured": "Objekt aus ändert 644 Hostbildpixel getrennt vom jeweils anderen Element; Edit und frische Öffnung sind bild-, dokument- und hashgleich.",
           "remaining": "UI-Bedienung, Vorgaben für neue Elemente, Undo/Redo und unabhängiger Review offen; globale Atlasoptionen nach Nutzerzweck klären."
+        },
+        "followUpPhase1HostUiCandidate": {
+          "state": "candidate_ui_undo_redo_save_reopen_review_pending",
+          "report": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd006-shadow-ui-library-20261009/implementation.md",
+          "audit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd006-shadow-ui-library-20261009/ui-audit.json",
+          "buildSha256": "5b086c04c05b8011c64331ee6da7baa4831fcf06cc8712d2078731fcd03f3d4f",
+          "measured": "Je zwei neue Wände und Objekte per UI mit shadow=[true,false]; zweites Objekt per Undo/Redo entfernt und wiederhergestellt, Save/Reopen dokument- und hashgleich.",
+          "remaining": "Unabhängiger Endbuild-Review und Atlasbedienung der globalen Kartenoptionen offen; UI-Bilder haben unterschiedliche Kamera-/Panelzustände und belegen keine Bildparität."
         },
         "baseline": {
           "editor": {

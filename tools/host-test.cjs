@@ -798,10 +798,14 @@ async function workflow() {
     return;
   }
   if (parityToolsPhase1Wear) {
-    const scenario = process.argv.includes("--shadow-matrix")
+    const scenario = process.argv.includes("--shadow-matrix") ||
+      process.argv.includes("--shadow-ui")
       ? require("./host/parity-tools-phase1-shadow-matrix.cjs")(scenarioContext)
       : require("./host/parity-tools-phase1-wear.cjs")(scenarioContext);
-    if (restart) await scenario.reopen();
+    if (process.argv.includes("--shadow-ui")) {
+      if (restart) await scenario.uiReopen();
+      else await scenario.uiEdit();
+    } else if (restart) await scenario.reopen();
     else await scenario.edit();
     return;
   }
