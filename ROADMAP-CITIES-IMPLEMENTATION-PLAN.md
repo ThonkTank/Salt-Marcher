@@ -1035,3 +1035,7 @@ CITY-01-INTEGRATION-R02-CLEAN-R01 Start 2026-10-09T19:29:09.073297+00:00; Planli
 CITY-00-I46-P46 Start 2026-10-09T19:30:30.593778+00:00; Konkrete Originalprobe für Mehrfachauswahl/Editor geplant, Schreibprobe nur mit gelesenen reversiblen Beforewerten.
 
 CITY-00-I46-PLAN-CLEAN-P46 Start 2026-10-09T19:30:33.307996+00:00; Aufräumplan: eigenen Bewohner-/Rawschutz und Planlink prüfen; keine unbestätigte Massenwirkung.
+
+I46-Plan: [FTG-Bewohner-Massenbearbeitung](ROADMAP-CITIES-CITY00-FTG-BULK-EDIT-PLAN.md).
+
+CITY-00-I46-PLAN-CLEAN-I46 Start 2026-10-09T19:30:36.312160+00:00; Originalprobe mit vorhandener QA-Karte und Field-before-Schutz verlinkt.
