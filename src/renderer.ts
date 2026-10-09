@@ -87,6 +87,8 @@ export interface Visual {
   floorGeometry?: MeshGeometry;
   floorShader?: Shader;
   floorMesh?: Mesh<MeshGeometry, Shader>;
+  floorExtraGeometries?: MeshGeometry[];
+  floorExtraShaders?: Shader[];
   floorUnderlay?: Graphics;
   floorShaderStyle?: string;
 }
@@ -115,6 +117,8 @@ interface BuildingPreview {
   floorGeometry?: MeshGeometry;
   floorShader?: Shader;
   floorMesh?: Mesh<MeshGeometry, Shader>;
+  floorExtraGeometries?: MeshGeometry[];
+  floorExtraShaders?: Shader[];
   floorUnderlay?: Graphics;
   floorShaderStyle?: string;
   wallTexture?: Texture;
@@ -490,6 +494,8 @@ export class MapRenderer {
       v.pathGeometry?.destroy();
       v.floorGeometry?.destroy();
       v.floorShader?.destroy();
+      for (const geometry of v.floorExtraGeometries ?? []) geometry.destroy();
+      for (const shader of v.floorExtraShaders ?? []) shader.destroy();
       for (const geometry of v.wallGeometries ?? []) geometry.destroy();
       for (const shader of v.wallShaders ?? []) shader.destroy();
       v.label?.destroy();
@@ -514,6 +520,17 @@ export class MapRenderer {
         (entity): entity is Building => entity.kind === "building"),
       floorId, this.settings.width, this.settings.height, replacement,
     );
+    if (!replacement) {
+      const tracked = new Set([...this.session.entities.values()]
+        .filter((entity): entity is Building => entity.kind === "building" &&
+          entity.floorId === floorId && !!entity.floorTileRaster)
+        .map((building) => building.id));
+      for (const cell of this.session.smartTiles ?? [])
+        if (cell.floorId === floorId && cell.buildingId &&
+            tracked.has(cell.buildingId) && cell.x < this.settings.width &&
+            cell.y < this.settings.height)
+          cells[cell.y * this.settings.width + cell.x] = cell.assetId;
+    }
     const variants = nativeFloorVariants(
       cells, this.settings.width, this.settings.height);
     if (!replacement)
@@ -527,17 +544,22 @@ export class MapRenderer {
     texture: Texture,
     grime: Texture,
     replacement?: Building,
+    otherTextures?: ReadonlyMap<string, Texture>,
   ): void {
     const clear = () => {
       target.floorLayer?.destroy({ children: true });
       target.floorMask?.destroy();
       target.floorGeometry?.destroy();
       target.floorShader?.destroy();
+      for (const geometry of target.floorExtraGeometries ?? []) geometry.destroy();
+      for (const shader of target.floorExtraShaders ?? []) shader.destroy();
       target.floorLayer = undefined;
       target.floorMask = undefined;
       target.floorGeometry = undefined;
       target.floorShader = undefined;
       target.floorMesh = undefined;
+      target.floorExtraGeometries = undefined;
+      target.floorExtraShaders = undefined;
       target.floorUnderlay = undefined;
       target.floorShaderStyle = undefined;
     };
@@ -619,6 +641,59 @@ export class MapRenderer {
     }
     if (!reusable) {
       layer.addChild(underlay, mesh);
+      if (otherTextures?.size && storedCells) {
+        const groups = new Map<string, { assetId: string; color: number;
+          positions: number[]; uvs: number[]; indices: number[] }>();
+        for (const cell of this.session.smartTiles ?? []) {
+          if (cell.buildingId !== building.id ||
+              cell.floorId !== building.floorId ||
+              cell.x >= this.settings.width || cell.y >= this.settings.height ||
+              (cell.assetId === building.material?.assetId &&
+                cell.color === building.fill)) continue;
+          const extraTexture = otherTextures.get(cell.assetId);
+          if (!extraTexture || extraTexture.width % 256 ||
+              extraTexture.height % 256) continue;
+          const key = `${cell.assetId}\0${cell.color}`;
+          let group = groups.get(key);
+          if (!group) {
+            group = { assetId: cell.assetId, color: cell.color,
+              positions: [], uvs: [], indices: [] };
+            groups.set(key, group);
+          }
+          const columns = extraTexture.width / 256;
+          const variant = variants[cell.y * this.settings.width + cell.x]!;
+          const column = (variant === 255 ? 0 : variant) % columns;
+          const row = Math.floor((variant === 255 ? 0 : variant) / columns);
+          const u0 = (column * 256 + 0.5) / extraTexture.width;
+          const u1 = ((column + 1) * 256 - 0.5) / extraTexture.width;
+          const v0 = (row * 256 + 0.5) / extraTexture.height;
+          const v1 = ((row + 1) * 256 - 0.5) / extraTexture.height;
+          const { x, y } = cell, base = group.positions.length / 2;
+          group.positions.push(x, y, x + 1, y, x + 1, y + 1, x, y + 1);
+          group.uvs.push(u0, v0, u1, v0, u1, v1, u0, v1);
+          group.indices.push(base, base + 1, base + 2,
+            base, base + 2, base + 3);
+        }
+        target.floorExtraGeometries = [];
+        target.floorExtraShaders = [];
+        for (const group of groups.values()) {
+          const extraTexture = otherTextures.get(group.assetId)!;
+          const extraGeometry = new MeshGeometry({
+            positions: new Float32Array(group.positions),
+            uvs: new Float32Array(group.uvs),
+            indices: new Uint32Array(group.indices),
+          });
+          const extraShader = nativeFloorShader(extraTexture, grime,
+            isNativeCustomColorFloorAssetId(group.assetId), wear);
+          const extraMesh = new Mesh({ geometry: extraGeometry,
+            texture: extraTexture, shader: extraShader });
+          extraMesh.tint = group.color;
+          extraMesh.alpha = (building.floorAlpha ?? 255) / 255;
+          layer.addChild(extraMesh);
+          target.floorExtraGeometries.push(extraGeometry);
+          target.floorExtraShaders.push(extraShader);
+        }
+      }
       layer.mask = mask;
       target.container.addChildAt(layer, 0);
       target.container.addChild(mask);
@@ -1087,18 +1162,28 @@ export class MapRenderer {
       const rawNativeFloor = e.kind === "building" &&
         isNativeFloorAssetId(e.material.assetId);
       const grimeReference = buildingWearAssetId(this.settings) + "\0image";
+      const otherFloorAssets = rawNativeFloor && e.kind === "building" &&
+        e.floorTileRaster
+        ? [...new Set((this.session.smartTiles ?? [])
+          .filter((cell) => cell.buildingId === e.id &&
+            cell.assetId !== e.material?.assetId)
+          .map((cell) => cell.assetId))]
+        : [];
       void Promise.all([
         this.acquireAsset(visual, reference, rawNativeFloor),
         rawNativeFloor
           ? this.acquireAsset(visual, grimeReference)
           : Promise.resolve(undefined),
-      ]).then(([texture, grime]) => {
+        Promise.all(otherFloorAssets.map(async (assetId) => [assetId,
+          await this.acquireAsset(visual, assetId + "\0image", true)] as const)),
+      ]).then(([texture, grime, extras]) => {
         if (this.visuals.get(id) !== visual || this.closed) return;
         if (e.kind === "path") drawPath(visual, g, texture);
         else if (e.kind === "roof") drawRoof(visual, g, texture);
         else {
           if (e.kind === "building" && rawNativeFloor && grime)
-            this.drawNativeFloor(visual, e, texture, grime);
+            this.drawNativeFloor(visual, e, texture, grime, undefined,
+              new Map(extras));
           this.drawSurface(visual, g, texture);
         }
         this.invalidate();
@@ -2260,6 +2345,8 @@ export class MapRenderer {
     state.container.destroy({ children: true });
     state.floorGeometry?.destroy();
     state.floorShader?.destroy();
+    for (const geometry of state.floorExtraGeometries ?? []) geometry.destroy();
+    for (const shader of state.floorExtraShaders ?? []) shader.destroy();
     for (const geometry of state.wallGeometries) geometry.destroy();
     for (const shader of state.wallShaders) shader.destroy();
     for (const reference of state.assets) this.textures.release(reference);

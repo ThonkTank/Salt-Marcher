@@ -91,6 +91,23 @@ test("floor shapes merge on overlap, retain shared walls on touch, and erase rea
   }
 });
 
+test("native tiled floor redraw joins a full shared edge but leaves corner contact separate", () => {
+  const cell = (x: number, y: number) => ({ outer: [
+    { x, y }, { x: x + 1, y }, { x: x + 1, y: y + 2 }, { x, y: y + 2 },
+  ], holes: [] });
+  const source = { id: "wood", polygons: [cell(1, 0)] };
+  const edge = composeBuilding({ kind: "compose-building", nativeBuilding: true,
+    mergeTouching: true, sources: [source], shape: [cell(0, 0)], erase: false });
+  assert.equal(edge.mode, "draw");
+  if (edge.mode !== "draw") return;
+  assert.deepEqual(edge.mergedIds, ["wood"]);
+  assert.equal(edge.polygons.length, 1);
+  const corner = composeBuilding({ kind: "compose-building", nativeBuilding: true,
+    mergeTouching: true, sources: [source], shape: [cell(0, -2)], erase: false });
+  assert.equal(corner.mode, "draw");
+  if (corner.mode === "draw") assert.deepEqual(corner.mergedIds, []);
+});
+
 test("corridor strokes join and split the same floor geometry", () => {
   const room = {
       outer: [

@@ -1,10 +1,12 @@
 const MAP = "Dungeons/Phase1-Resize/Karte.dungeon";
+const EMPTY_PACK_MAP = "Dungeons/Phase1-Resize/Karte-ohne-Paket.dungeon";
 
 module.exports = ({ page, fs, path, assert, crypto, qa, vault, out, checks }) => {
   const baseline = path.join(qa, "phase1-resize-baseline.json");
+  const selectedBaseline = path.join(qa, "phase1-resize-selected-pack.json");
   const mapFile = path.join(vault, MAP);
-  const hash = () => crypto.createHash("sha256")
-    .update(fs.readFileSync(mapFile)).digest("hex");
+  const hash = (name = MAP) => crypto.createHash("sha256")
+    .update(fs.readFileSync(path.join(vault, name))).digest("hex");
   const editor = () => page.evaluate(() => {
     const e = app.workspace.getLeavesOfType("dungeon-native-map").at(-1)
       ?.view.editor;
@@ -153,25 +155,75 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out, checks }) =>
       infoBounds.y + 21);
     assert.deepEqual(await editor(), savedState);
     assert.equal(hash(), savedHash);
+    fs.copyFileSync(mapFile, path.join(vault, EMPTY_PACK_MAP));
+    assert.equal(hash(EMPTY_PACK_MAP), savedHash);
+    const { load } = require("./phase3-fixtures.cjs")({ fs, crypto, assert });
+    await load(page, { qaWall: true });
+    await page.evaluate(() => {
+      const session = app.workspace.getLeavesOfType("dungeon-native-map").at(-1)
+        .view.editor.session;
+      const before = session.settings;
+      session.execute({ label: "Paket wählen", settings: { before,
+        after: { ...before, assetPacks: ["QAWall01"] } } });
+    });
+    await page.locator(".dungeon-native-editor:visible").last()
+      .getByRole("button", { name: "Speichern", exact: true }).click();
+    await page.waitForFunction(() =>
+      !app.workspace.getLeavesOfType("dungeon-native-map").at(-1)
+        ?.view.editor.session.dirty);
+    const selected = await editor();
+    assert.deepEqual(selected.document.settings.assetPacks, ["QAWall01"]);
+    const selectedHash = hash();
+    info = await openInfo();
+    await info.getByText(/QA Wall Pack/).waitFor({ state: "visible" });
+    const selectedText = await info.innerText();
+    assert.match(selectedText, /1\. QA Wall Pack · Independent QA/);
+    assert.match(selectedText, /8 × 9 Felder/);
+    assert.ok(selectedText.includes(mapFile));
+    await page.screenshot({ path: path.join(out, "map-info-selected-pack.png") });
+    await info.getByRole("button", { name: "Schließen" }).click();
+    assert.deepEqual(await editor(), selected);
+    assert.equal(hash(), selectedHash);
+    fs.writeFileSync(selectedBaseline, JSON.stringify({
+      document: selected.document, hash: selectedHash, info: selectedText,
+    }, null, 2));
     checks.push("DD-038 Menu opens four-margin dialog with non-Undo warning; Cancel and X preserve map and history");
     checks.push("DD-038 resize inputs cap per edge at 64 and resulting dimension at 128 or minimum 8");
     checks.push("DD-038 Top +1 moves Building and object, saves 8×9, and clears older Undo/Redo");
     checks.push("DD-039 Map Information shows updated 8×9 size and path; Close and X preserve saved map and history");
+    checks.push("DD-039 selected QA pack shows name and author after resize; closing preserves map and history");
   }
   async function reopen() {
     const prior = JSON.parse(fs.readFileSync(baseline, "utf8"));
     await page.evaluate(async (file) =>
       app.workspace.getLeaf("tab").openFile(app.vault.getAbstractFileByPath(file)),
-    MAP);
+    EMPTY_PACK_MAP);
     await page.locator(".dn-canvas canvas").last().waitFor({ state: "visible" });
     assert.deepEqual((await editor()).document, prior.document);
-    assert.equal(hash(), prior.hash);
-    const info = await openInfo();
+    assert.equal(hash(EMPTY_PACK_MAP), prior.hash);
+    let info = await openInfo();
     assert.match(await info.innerText(), /8 × 9 Felder/);
-    assert.ok((await info.innerText()).includes(mapFile));
+    assert.ok((await info.innerText()).includes(path.join(vault, EMPTY_PACK_MAP)));
+    await info.getByText("keine", { exact: true }).waitFor({ state: "visible" });
+    await info.getByRole("button", { name: "Schließen" }).click();
+    const selectedPrior = JSON.parse(fs.readFileSync(selectedBaseline, "utf8"));
+    await page.evaluate(async (file) =>
+      app.workspace.getLeaf("tab").openFile(app.vault.getAbstractFileByPath(file)),
+    MAP);
+    await page.locator(".dn-canvas canvas").last().waitFor({ state: "visible" });
+    assert.deepEqual((await editor()).document, selectedPrior.document);
+    assert.equal(hash(), selectedPrior.hash);
+    info = await openInfo();
+    await info.getByText(/QA Wall Pack/).waitFor({ state: "visible" });
+    const selectedText = await info.innerText();
+    assert.match(selectedText, /1\. QA Wall Pack · Independent QA/);
+    assert.match(selectedText, /8 × 9 Felder/);
+    assert.ok(selectedText.includes(mapFile));
+    await page.screenshot({ path: path.join(out, "map-info-selected-pack-fresh.png") });
     await info.getByRole("button", { name: "Schließen" }).click();
     checks.push("DD-038 fresh host process reopens the shifted 8×9 V4 map byte unchanged");
     checks.push("DD-039 fresh host process reads the resized map information");
+    checks.push("DD-039 fresh host process reads selected QA pack name and author");
   }
   return { edit, reopen };
 };

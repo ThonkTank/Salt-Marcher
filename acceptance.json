@@ -119447,6 +119447,32 @@
           "measuredScope": "18×12, per Galerie gezeichneter Wood-/Diamond-Boden; Alt-Rechteck radiert zwei Wood-Zellen und halbiert dessen Kontur. Host-Undo stellt acht Zellen wieder her; die gespeicherte Radierkarte öffnet frisch mit sechs Zellen. Vollständige gespeicherte Zellwerte und beide Konturen gleich dem Original.",
           "remaining": "Der im Original direkt gemessene Wiederaufbau durch Nachzeichnen, andere Radierformen, Konturänderung, Stilüberlagerung, kombinierte Ränder und DD-038-Endreview bleiben offen. Keine Fallfreigabe; P7-2 physisch ungeprüft."
         },
+        "followUpPhase1BuildingFloorRedrawCandidate": {
+          "state": "same_style_edge_redraw_scoped_host_raw_review_passed_case_open",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "hostBuildSha256": "dd9cf1f6596b23f4c5a67fcdc5d3758ab37c54ee7d6270bf1124248c71d698b1",
+          "report": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-redraw-host-20261009/implementation.md",
+          "originalEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-erase-20261009/native/runs/20261009-071913-3585442/evidence/redraw-result.json",
+          "hostEdit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-redraw-host-20261009/evidence/1791523990441-parity-tools-phase1-building-floor-edit/result.json",
+          "hostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-redraw-host-20261009/evidence/1791524229302-parity-tools-phase1-building-floor-reopen/result.json",
+          "audit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-redraw-host-20261009/independent-audit.json",
+          "measuredScope": "18×12 Wood/Diamond: nach Alt-Radieren gleichartigen Wood-Boden entlang gemeinsamer Kante nachzeichnen; wieder acht Zellen und eine volle Wood-Kontur. Gespeicherte Radier- und Wiederaufbaukarte stimmen in allen Zellen, Stilpfaden, Farben und Konturen mit dem Original überein. Zwei Host-Undo-Schritte und frische Öffnung der gespeicherten Zustände bestanden.",
+          "remaining": "Gemischte Stile auf gemeinsamer Kontur, reine Übermalung, Konturpunkte, andere Formen, kombinierte Ränder und DD-038-Endreview offen. Keine Fallfreigabe; P7-2 physisch ungeprüft."
+        },
+        "followUpPhase1BuildingFloorMixedCandidate": {
+          "state": "adjacent_wood_stone_scoped_host_raw_review_passed_case_open",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "hostBuildSha256": "42ce7de22870def7ba6476fa2a5cad8e38d30e68d51b34cca60691a865a596b3",
+          "report": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-mixed-host-20261009/implementation.md",
+          "originalEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-floor-20261007/native-direct-two-style/runs/20261007-062733-1411559/evidence/maps/direct-two-style.dungeondraft_map",
+          "hostEdit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-mixed-host-20261009/evidence/1791525118340-parity-tools-phase1-building-mixed-edit/result.json",
+          "hostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-mixed-host-20261009/evidence/1791525232937-parity-tools-phase1-building-mixed-reopen/result.json",
+          "audit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-mixed-host-20261009/independent-audit.json",
+          "regressionEdit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-mixed-regression-20261009/evidence/1791525400605-parity-tools-phase1-building-floor-edit/result.json",
+          "regressionReopen": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-mixed-regression-20261009/evidence/1791525416848-parity-tools-phase1-building-floor-reopen/result.json",
+          "measuredScope": "8×8, angrenzende 3×3-Smart-Wood-/Smart-Stone-Gesten ohne Wand: eine gemeinsame Kontur und 18 Zellen. Gespeicherte Kontur, Positionen, Stilpfade und Farben entsprechen dem Original vollständig; Undo/Redo, Save und frische Neuöffnung bestanden.",
+          "remaining": "Reine Übermalung, Radieren an der Stilgrenze, Konturpunkte, andere Formen, kombinierte Ränder und DD-038-Endreview offen. Keine Fallfreigabe; P7-2 physisch ungeprüft."
+        },
         "followUpPhase1TerrainMaskCandidate": {
           "state": "seeded_host_masks_scoped_review_passed_case_open",
           "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
@@ -120217,8 +120243,8 @@
           "verifiedScope": "Ausgewählte Paketnamen mit Autor; verbliebene Texturreferenz ohne Paketauswahl wird nicht als Auswahl gemeldet. Leere nummerierte Originalzeile ist Oberflächendifferenz. Auf dem DD-042.09-Endstand erneut in Bearbeitung und Frischstart bestanden."
         },
         "followUpPhase1ResizeRegression": {
-          "state": "regression_empty_selection_only",
-          "hostBuildSha256": "9c064517d7e2221acd1b43694f7c0634f7a682d61870378bbf17aa847410d3d5",
+          "state": "regression_selected_and_empty_selection_passed",
+          "hostBuildSha256": "dd9cf1f6596b23f4c5a67fcdc5d3758ab37c54ee7d6270bf1124248c71d698b1",
           "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
           "originalEvidence": [
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd039/NATIVE-GAP-REPORT.md"
@@ -120227,10 +120253,15 @@
             "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-info-20261009/implementation.md",
             "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-info-host-20261009/evidence/1791517646065-parity-tools-phase1-resize-edit/result.json",
             "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-info-host-20261009/evidence/1791517646065-parity-tools-phase1-resize-edit/map-info-after-resize.png",
-            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-info-host-20261009/evidence/1791517651000-parity-tools-phase1-resize-reopen/result.json"
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-info-host-20261009/evidence/1791517651000-parity-tools-phase1-resize-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-map-info-pack-20261009/implementation.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-map-info-pack-20261009/evidence/1791524647760-parity-tools-phase1-resize-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-map-info-pack-20261009/evidence/1791524647760-parity-tools-phase1-resize-edit/map-info-selected-pack.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-map-info-pack-20261009/evidence/1791524660542-parity-tools-phase1-resize-reopen/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-map-info-pack-20261009/evidence/1791524660542-parity-tools-phase1-resize-reopen/map-info-selected-pack-fresh.png"
           ],
-          "measuredScope": "Bei leerer Paketauswahl zeigt die Information „keine“ nach Resize.",
-          "remaining": "Ausgewähltes Paket mit Name/Autor auf dem aktuellen Build noch nicht regressionsgeprüft."
+          "measuredScope": "Nach Resize zeigen getrennte Karten entweder „keine“ oder Name und Autor des gespeicherten QA-Pakets; Größe und Pfad stimmen in Bearbeitung und Frischstart.",
+          "remaining": "Paketauswahl war als Sitzungseinstellung vorbereitet; unabhängiger DD-039-Endbuild-Review und Phase-1-Tor bleiben offen."
         }
       },
       {

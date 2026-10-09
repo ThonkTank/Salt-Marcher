@@ -2,6 +2,7 @@ const ROOT = "Dungeons/Phase1-BuildingFloor";
 const FILE = `${ROOT}/draw-resize.dungeon`;
 const CROP = `${ROOT}/draw-resize-crop.dungeon`;
 const ERASED = `${ROOT}/draw-erase.dungeon`;
+const REDRAWN = `${ROOT}/draw-redrawn.dungeon`;
 
 module.exports = ({ page, fs, path, assert, crypto, qa, vault, out, checks, chooseTool }) => {
   const { pckPath } = require("./phase3-fixtures.cjs")({ fs, crypto, assert });
@@ -129,7 +130,25 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out, checks, choo
     assert.deepEqual(occupied(await save(FILE)), occupied(erased.document));
     fs.copyFileSync(file(FILE), file(ERASED));
     await page.screenshot({ path: path.join(out, "erased.png") });
+    await draw({ x: 0, y: 0 }, { x: 1, y: 2 }, 2);
+    await page.waitForFunction(() =>
+      app.workspace.getLeavesOfType("dungeon-native-map").at(-1)
+        ?.view.editor?.session.smartTiles?.length === 8);
+    const redrawn = await editor();
+    assert.equal(redrawn.document.entities.length, 2);
+    assert.equal(redrawn.document.entities.find((e) => e.material?.assetId?.includes("wood_vertical"))
+      ?.polygons.length, 1);
+    assert.deepEqual(new Set(redrawn.document.entities.find((e) =>
+      e.material?.assetId?.includes("wood_vertical"))?.polygons[0].outer.map((p) =>
+      `${p.x}:${p.y}`)), new Set(["0:0", "2:0", "2:2", "0:2"]));
+    assert.equal((await save(FILE)).smartTiles.length, 8);
+    fs.copyFileSync(file(FILE), file(REDRAWN));
+    await page.screenshot({ path: path.join(out, "redrawn.png") });
     assert.ok((await editor()).history > 0);
+    await page.getByRole("button", { name: "Rückgängig", exact: true }).click();
+    await page.waitForFunction(() =>
+      app.workspace.getLeavesOfType("dungeon-native-map").at(-1)
+        ?.view.editor?.session.smartTiles?.length === 6);
     await page.getByRole("button", { name: "Rückgängig", exact: true }).click();
     await page.waitForFunction(() =>
       app.workspace.getLeavesOfType("dungeon-native-map").at(-1)
@@ -154,14 +173,22 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out, checks, choo
       mode: "edit", before: occupied(before.document), erased: occupied(erased.document),
       crop: occupied(crop.document),
       restored: occupied(restored.document), cropHash: hash(CROP),
-      eraseHash: hash(ERASED),
+      eraseHash: hash(ERASED), redrawHash: hash(REDRAWN),
       sourceStyles: before.document.entities.map((e) => e.material?.assetId),
       afterStyles: restored.document.entities.map((e) => e.material?.assetId),
     }, null, 2));
     checks.push("DD-038 Building floor UI draw: 8→4→4 cells, two retained polygons, save");
     checks.push("DD-038 Building floor Alt erase: 8→6 cells, Undo restores eight, save");
+    checks.push("DD-038 Building floor redraw: one Wood contour, eight cells, two-step Undo");
   }
   async function reopen() {
+    await open(REDRAWN);
+    const redrawn = await editor();
+    assert.equal(redrawn.document.smartTiles.length, 8);
+    assert.equal(redrawn.document.entities.length, 2);
+    assert.deepEqual(new Set(redrawn.document.entities.find((e) =>
+      e.material?.assetId?.includes("wood_vertical"))?.polygons[0].outer.map((p) =>
+      `${p.x}:${p.y}`)), new Set(["0:0", "2:0", "2:2", "0:2"]));
     await open(ERASED);
     const erased = await editor();
     assert.deepEqual(occupied(erased.document), [[1, 0], [1, 1],
@@ -177,13 +204,15 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out, checks, choo
     assert.deepEqual(occupied(await save(CROP)), occupied(restored.document));
     await page.screenshot({ path: path.join(out, "fresh-restored.png") });
     fs.writeFileSync(path.join(out, "building-floor-result.json"), JSON.stringify({
-      mode: "reopen", eraseHash: hash(ERASED),
+      mode: "reopen", redrawHash: hash(REDRAWN),
+      redrawn: occupied(redrawn.document), eraseHash: hash(ERASED),
       erased: occupied(erased.document), cropHash,
       restored: occupied(restored.document),
       styles: restored.document.entities.map((e) => e.material?.assetId),
     }, null, 2));
     checks.push("DD-038 Building floor fresh crop opens and expands with four cells");
     checks.push("DD-038 Building floor fresh erased map keeps six cells");
+    checks.push("DD-038 Building floor fresh redrawn map keeps one Wood contour and eight cells");
   }
   return { edit, reopen };
 };

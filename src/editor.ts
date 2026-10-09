@@ -69,7 +69,7 @@ import { objectWheelDirection, rotateObjectRadians, scaleObjectStep } from "./fe
 import type { ObjectTagDocument } from "./features/objekte/object-tags";
 import { floorEraseActive } from "./drawing";
 import { buildingWearMode, isNativeFloorAssetId, type BuildingWearMode } from "./features/material/native-path-catalog";
-import { buildingFloorCells, buildingFloorCellsAfterErase } from "./features/material/building-floor-cells";
+import { buildingFloorCells, buildingFloorCellsAfterDraw, buildingFloorCellsAfterErase } from "./features/material/building-floor-cells";
 import {
   buildingPointGripPixels,
   buildingVertexGrip,
@@ -3025,6 +3025,8 @@ export class DungeonEditor {
         defaults.wallWidth, defaults.opacity ?? 1,
         defaults.effect ?? "none", material ?? null,
       ]),
+      nativeMixedFloor = category === "floor" && this.session.version === 4 &&
+        isNativeFloorAssetId(material?.assetId),
       sources = [...this.session.entities.values()].filter(
         (entity): entity is Surface | Building => {
           const source =
@@ -3036,7 +3038,17 @@ export class DungeonEditor {
             entity.floorId === floorId &&
             !entity.locked &&
             (erase ||
-              styleKey(entity as Surface | Building) === desiredStyle)
+              styleKey(entity as Surface | Building) === desiredStyle ||
+              (nativeMixedFloor && entity.kind === "building" &&
+                !!entity.floorTileRaster &&
+                isNativeFloorAssetId(entity.material?.assetId) &&
+                entity.layer === defaults.layer &&
+                entity.wall === floorWallStyle.wall &&
+                entity.wallWidth === floorWallStyle.wallWidth &&
+                (entity.wallAssetId ?? null) === (floorWallStyle.wallAssetId ?? null) &&
+                (entity.wallAlpha ?? 255) === floorWallStyle.wallAlpha &&
+                (entity.wallBevel ?? false) === floorWallStyle.wallBevel &&
+                (entity.floorAlpha ?? 255) === Math.round((defaults.opacity ?? 1) * 255)))
           );
         },
       ),
@@ -3051,6 +3063,8 @@ export class DungeonEditor {
       const result = await worker.request<ComposeBuildingResult>({
         kind: "compose-building",
         nativeBuilding: category === "floor",
+        mergeTouching: category === "floor" && this.session.version === 4 &&
+          isNativeFloorAssetId(material?.assetId),
         sources: sources.map((source) => ({
           id: source.id,
           polygons: source.polygons,
@@ -3112,8 +3126,12 @@ export class DungeonEditor {
               eraseWallStyle: floorWallStyle,
             } : {}),
           });
-        if (!plan.command) return;
+        const trackedDraw = result.mode === "draw" &&
+          this.session.version === 4 && isNativeFloorAssetId(material?.assetId) &&
+          !newBuilding && !!plan.selectedId;
+        if (!plan.command && !(trackedDraw && shape?.length)) return;
         if (newBuilding?.floorTileRaster) {
+          if (!plan.command) return;
           const added = buildingFloorCells(newBuilding,
             this.session.settings.width, this.session.settings.height);
           const previous = this.session.smartTiles;
@@ -3124,14 +3142,30 @@ export class DungeonEditor {
             after: [...(previous ?? []).filter((cell) =>
               !positions.has(`${cell.floorId}:${cell.x}:${cell.y}`)), ...added],
           } });
+        } else if (trackedDraw && result.mode === "draw") {
+          const changed = plan.command?.entities?.find((change) =>
+            change.id === plan.selectedId)?.after;
+          const target = changed ?? this.session.entities.get(plan.selectedId!);
+          if (target?.kind === "building" && target.floorTileRaster) {
+            const previous = this.session.smartTiles;
+            const next = buildingFloorCellsAfterDraw(previous, target,
+              result.mergedIds, shape,
+              this.session.settings.width, this.session.settings.height,
+              { assetId: material!.assetId!, color: defaults.color });
+            if (plan.command || next !== previous)
+              this.session.execute({ ...(plan.command ?? { label: "Grundriss zeichnen" }),
+                ...(next !== previous ? { smartTiles: { before: previous, after: next } } : {}),
+              });
+          } else if (plan.command) this.session.execute(plan.command);
         } else if (erase && this.session.version === 4) {
+          if (!plan.command) return;
           const previous = this.session.smartTiles;
           const next = buildingFloorCellsAfterErase(previous, plan.command.entities,
             this.session.settings.width, this.session.settings.height);
           this.session.execute(next === previous ? plan.command : {
             ...plan.command, smartTiles: { before: previous, after: next },
           });
-        } else this.session.execute(plan.command);
+        } else if (plan.command) this.session.execute(plan.command);
         selected = plan.selectedId;
       } else {
         const changes: RecordChange<Entity>[] = [];

@@ -23,6 +23,7 @@ export interface ComposeBuildingRequest {
   shape?: readonly Polygon[];
   stroke?: { readonly points: readonly Point[]; readonly radius: number };
   nativeBuilding?: boolean;
+  mergeTouching?: boolean;
   erase: boolean;
 }
 export type ComposeBuildingResult =
@@ -231,9 +232,13 @@ export function composeBuilding(
     for (const source of request.sources) {
       if (mergedIds.includes(source.id)) continue;
       const current = multiPolygon(source.polygons);
-      // A shared edge alone keeps two rooms separate. Positive overlap joins them.
-      if (area(clipping.intersection(current, merged)) <= 1e-8) continue;
-      merged = clipping.union(merged, current);
+      const overlap = area(clipping.intersection(current, merged)) > 1e-8;
+      // Native tiled floors also join at a shared edge; a corner stays separate.
+      const joined = overlap || request.mergeTouching
+        ? clipping.union(merged, current) : undefined;
+      if (!overlap && (!request.mergeTouching || !joined ||
+        joined.length >= merged.length + current.length)) continue;
+      merged = joined!;
       mergedIds.push(source.id);
       changed = true;
     }
