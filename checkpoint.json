@@ -1216,6 +1216,12 @@
         "coreTests": 186,
         "state": "regression_passed_selected_pack_open"
       },
+      "resizeCropRepairPlan": {
+        "plan": "ROADMAP-PARITY-TOOLS-PHASE1-RESIZE-REPAIR-PLAN.md",
+        "scope": "DD-038.03–.05 und übrige Crop-/Terrainwirkung",
+        "state": "plan_ready_for_separate_implementation",
+        "gate": "open"
+      },
       "phaseGate": "open"
     },
     "plan": "ROADMAP-PARITY-PLAN.md",

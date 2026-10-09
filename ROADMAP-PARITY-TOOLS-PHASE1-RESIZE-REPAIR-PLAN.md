@@ -1,0 +1,19 @@
+# Folge-Roadmap Phase 1: DD-038 Randbeschnitt nachbessern
+
+Planlauf vom 09.10.2026 zu [Phase 1](ROADMAP-PARITY-TOOLS-PHASE1-PLAN.md). Dieser Plan ändert kein Produkt und gibt keinen Pflichtfall frei. Ziel ist die noch fehlende Bedien- und Datenwirkung beim Ändern der Kartengröße; die grafische Darstellung muss nur ungefähr gleichwertig sein.
+
+## Gesicherter Ausgangspunkt
+
+- `DD-038.01/.02/.06–.09`: Menü, vier Eingaben, Warnung, obere Erweiterung, History-Grenze, Cancel/X nach Eingabe, Save und Neuöffnung besitzen direkte Original- und isolierte Hostbelege in `acceptance.json`. Eingabegrenzen stammen aus der gemessenen 12×8-Originalmatrix; ihre Verallgemeinerung bleibt Kandidat.
+- [Original-Crop-Paar](/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd038/REPORT.md): 12×8 → links −3 → 9×8 → links +3. Von zehn belegten Smart-Tile-Zellen bleiben sechs; nach Erweiterung bleiben es sechs. Alle 16 Shape-Polygonpunkte bleiben verschoben erhalten. Ein pauschaler Polygon-Clip wäre falsch.
+- [Terrain-Assembly-Befund](/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-038-TERRAIN-RESIZE-NATIVE-STATIC.md): Die Terraindaten werden mit linkem/oberem Versatz in neu angelegte Masken kopiert; neue Randpixel werden rot-transparent initialisiert, auch in der zweiten Maske. Ein gespeichertes Zwei-Masken-Originalpaar fehlt.
+- Der aktuelle Host verschiebt V4-Entitäten und setzt die History-Grenze. Ein getrenntes persistiertes Smart-Tile-Zellraster fehlt. `DD-038.03–.05` haben noch keine vollständigen Original-/Hostpaare für rechte, untere und linke Beschnittfolgen.
+
+## Getrennte Arbeitsläufe
+
+1. **Originalmessung.** Auf unveränderten Quellkarten isolierte Kopien anlegen. Links −3/+3 mit belegten Zellen und Polygonen erneut roh vergleichen; rechts und unten jeweils Erweiterung und Beschnitt mit belegtem Randmaterial direkt messen. Objekte, Wände, Portale, Räume/Keys und Terrainmasken je eigener Karte prüfen. Für acht Terrain-Slots beide Masken vor/nach Resize und frischer Originalöffnung mit festen Samplekoordinaten vergleichen. Wo kein Originalbeleg entsteht, die Teilwirkung offen lassen.
+2. **Umsetzung.** Eine optionale, versionierte V4-Zellschicht getrennt von Shape-Polygonen speichern, laden und rendern. Beim Resize überlebende Zellen um links/oben verschieben, außerhalb liegende Zellen dauerhaft verwerfen und neue Felder leer anlegen; die schon belegte reine Zelltransformation als Referenz nutzen. Bestehende V4-Karten ohne Raster unverändert laden und speichern. Terrainmasken nur nach direktem Rohpaar integrieren. Die History-Grenze und Cancel/X bleiben erhalten.
+3. **Hostpaare.** Für alle vier Ränder einzeln sowie eine kombinierte Folge dieselben Ausgangsdaten, Eingaben und gespeicherten Zustände wie im Original verwenden. Nach Crop und Wiedererweiterung Zellzahlen, Polygonpunkte, Objekt-/Key-Kennungen, Dateihash, Dirty, History und frische Neuöffnung prüfen. Rasterdarstellung auf ungefähr gleichwertige Lesbarkeit prüfen; keine Pixelgleichheit verlangen. DD-039-Karteninformation nach jeder Größenänderung regressionsprüfen.
+4. **Unabhängiger Review.** Ein eigener Lauf auf dem integrierten Endbuild liest Original- und Hostrohdaten je `DD-038.01–.09`, wiederholt die kritische Crop-/Reexpand-Folge und prüft geschützte Vault-Dateien. Nicht gemessene Entity-Arten, Eingabegrenzen außerhalb der Originalprobe und Paketfolgen bleiben ausdrücklich offen. Danach entscheidet das 77-Fälle-Phase-1-Tor; nötige Nachbesserung und Aufräumung folgen wieder getrennt.
+
+Vor jedem Arbeitspaket und unmittelbar vor dem Push den gemeinsamen Branch abrufen und eingehende Änderungen integrieren. Große QA-Dateien bleiben außerhalb des Vaults. Die vom Nutzer aufgeschobene physische P7-2-Probe wird in diesem Plan nicht als bestanden gezählt.

@@ -661,3 +661,7 @@ Der [Umsetzungsbericht](/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1
 ## Folge-Roadmap Phase 1: Karteninformation nach Resize, Regression
 
 Der [Regressionsbericht](/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-info-20261009/implementation.md) belegt auf Hostbuild `9c064517…` Menü → Karteninformationen nach einer gespeicherten Änderung von 8×8 auf 8×9: vollständiger Pfad, „keine“ Pakete, Close/X ohne Änderung von Dokument, Dateihash oder History, dazu bytegleiche Neuöffnung mit erneut korrekter Information. Typprüfung, 186 Tests und Build bestehen. **`DD-039.01–.03/.05/.06` sind auf dem neuen Größenbuild regressionsgeprüft:** ein ausgewähltes Paket mit Name/Autor, unabhängiger Endbuild-Review und das 77-Fälle-Tor bleiben offen. Der Vault-Build blieb unverändert; P7-2 ist physisch ungeprüft.
+
+## Folge-Roadmap Phase 1: DD-038 Randbeschnitt, Nachbesserungsplan
+
+Der [getrennte Plan](ROADMAP-PARITY-TOOLS-PHASE1-RESIZE-REPAIR-PLAN.md) ordnet die noch fehlenden direkten Originalproben für rechte/untere Beschnitte und Terrain, die getrennte persistierte Smart-Tile-Zellschicht, vier Host-Randpaare und den unabhängigen Endbuild-Review. Der belegte linke Beschnitt verliert vier von zehn Smart-Tile-Zellen dauerhaft, während alle Shape-Polygonpunkte erhalten bleiben. **Plan bereit, Umsetzung und Tor offen.**
