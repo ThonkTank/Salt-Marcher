@@ -38,3 +38,5 @@ R01-Aufräumen: Befundabschluss gilt ausschließlich für den Anschlussvorschlag
 - **R01-03, gemeinsames Einpassen:** Die belegte Ausdehnung für Fit kommt aus Terrain sowie sichtbaren geladenen Stadt-/Dungeoninhalten und ihren tatsächlichen Weltbindungen. Stadt-only, weit entfernte Stadt und leere Szene sind explizite Fälle. `CityScene.extent === null` trägt keine falschen Ursprungspunkte bei; vorhandene Szenengrenzen werden über die vereinbarte Platzierung abgebildet. Kein privater City-Fit und keine Kameraverlagerung beim bloßen Zoom-/Detailwechsel. Große Grenzen müssen in der gleichen präzisen relativen Abbildung verarbeitet werden.
 
 Diese Punkte sind verbindliche Umsetzung-/Abnahmepflichten des Anschlusses, keine bereits existierenden Shared-APIs. R02 kann die Vollständigkeit dieses Vorschlags prüfen; formale gemeinsame Vertragsfreigabe und sichtbare Produktabnahme bleiben separat offen.
+
+N01-Aufräumen: Befundabschluss gilt ausschließlich für den Anschlussvorschlag. Quellen und Gegenprobe sind unter /home/aaron/.cache/dungeon-native-qa/city-plans/city01-integration-review-20261009/ erhalten. Keine Produktsource/API durch diesen Dokumentlauf geändert.
