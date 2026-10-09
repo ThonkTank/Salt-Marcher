@@ -69,7 +69,7 @@
       "kind": "repair_implementation",
       "startedAt": "2026-10-09T12:41:20.951032+02:00",
       "baseCommit": "bad35f16beca21339057dc91ee66b8985e8129e1",
-      "state": "completed_local_checks_passed_publication_check_pending",
+      "state": "completed_checked_review_pending",
       "focus": "Ten early Preferences numeric/slider questions in eight controls only",
       "evidence": [
         "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/manifest.json",
@@ -80,10 +80,18 @@
         "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/catalog-complete-strict.json",
         "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/protection-and-native-proof.json",
         "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/local-basis.json",
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/core-host-continuity.json"
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/core-host-continuity.json",
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/published-source.json",
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/published-basis.json",
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/integration-preservation.json",
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/integrated-local-basis.json",
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/integrated-published-source.json",
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/integrated-published-basis.json",
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/catalog-integrated-partial.json",
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/integrated-host-regression.json"
       ],
-      "finishedAt": "2026-10-09T12:52:50.807005+02:00",
-      "result": "Zehn frühe Preferences-Fragen direkt geklärt;51 Originalframes/sechs native Config-Snapshots/normaler Ausgang0.22 frühe Fragen,R02/Aufräumen offen. Keine Hex-/Atlas-Funktion implementiert."
+      "finishedAt": "2026-10-09T12:57:55.237659+02:00",
+      "result": "Zehn frühe Preferences-Fragen direkt geklärt;51 Frames/sechs Config-Snapshots/normaler Ausgang0.22 frühe Fragen,R02/Aufräumen offen. Eingehende Bodenübermalung in Gebäudeaussparungen integriert; frische Basis198 lokal/198 von201 veröffentlicht mit drei bekannten Fixture-Fehlern und eigener Kern-Edit-/Neuöffnungslauf bestanden. Keine Hex-/Atlas-Funktion implementiert."
     },
     "nextRun": {
       "id": "HEX-00-N-I16",
@@ -133,26 +141,26 @@
       "nextJointGate": "HEX-00 verbleibende22 frühen Fragen begrenzt schließen, eigener R02 und Aufräumen; danach HEX-01 bis05 als nutzbare gemeinsame grenzenlose Atlasbasis. CITY01 verwendet diese Basis, kein separater Editor; Dungeonstand fortlaufend integrieren/regressionsprüfen."
     },
     "verification": {
-      "check": "N-I15 frisch bestanden",
-      "tests": "197/197 lokal bestanden; unveröffentlichte fremde Fixture-Testpatches erhalten.",
-      "build": "N-I15 frisch bestanden, identischer Builde1a4ad3a; keine Installation.",
-      "productBuildSha256": "e1a4ad3af9f1e2767f47f435b9d4a162271390bd9eebff637d32a6e04d341d06",
-      "integratedCommit": "bad35f16beca21339057dc91ee66b8985e8129e1",
-      "host": "Eigene N-I14-Kern-Edit-/Neuöffnungsbelege erneut gelesen und Hashes/Build geprüft; relevante Produkt-/Test-/Kern-Hostquellen unverändert. Kein neuer Hostlauf oder Hex-/Stadt-/Overworld-/Großkarten-/physischer Nachweis.",
-      "testProvenance": "N-I15 frisch197 lokale Tests bestanden; veröffentlichbarer Testbaum wird separat auf die drei bekannten fehlenden externen Fixtures geprüft. Fremde Testpatches/Installationsnotiz erhalten.",
+      "check": "N-I15 nach Produktintegration frisch bestanden",
+      "tests": "198/198 lokal bestanden; unveröffentlichte fremde Fixture-Testpatches erhalten.",
+      "build": "Nach Produktintegration frisch bestanden, neuer Buildd54f25cf; keine Installation.",
+      "productBuildSha256": "d54f25cf7b961cc78b1bbf197bd4781bd62d2325ec10dc4b34148c0d6ab3a6a2",
+      "integratedCommit": "9584fcf9ced7915d9bc72224e4ac5f446771ca56",
+      "host": "Nach eingehender Building-Bodenübermalung frischer eigener Kern-Obsidian-Edit-/Neuöffnungslauf bestanden aufBuildd54f25cf: vier Edit-/zwei Neuöffnungschecks, beide Prozessausgänge0. Keine Hex-/Stadt-/Overworld-, Großkarten-, physische oder Gesamtparitätsabnahme; Produktvault unverändert.",
+      "testProvenance": "N-I15 nach Integration frisch: 198 lokale Tests bestanden; veröffentlichbarer Quellbaum201 Tests/198 bestanden/drei bekannte fehlende externe Fixture-Fälle. Check/Build in beiden Bäumen bestanden, identischer Buildd54f25cf. Fremde Testpatches erhalten.",
       "cleanTreeTest": {
         "state": "three_known_fixture_failures",
-        "tests": 200,
-        "passed": 197,
+        "tests": 201,
+        "passed": 198,
         "failed": 3,
-        "source": "/home/aaron/.cache/dungeon-native-qa/hex-00/effects-dialog-numeric-repair-20261009-112427/published-basis.json"
+        "source": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/integrated-published-basis.json"
       },
       "catalog": "N-I15: zehn frühe Preferences-Fragen in acht Controls direkt geklärt: Undo0..64,BackupEvery1..60 Minuten/Limit1..64,Font8..28,Density0.1..10,Rotation0.1..90 Grad; einzelne Pfeilschritte belegt. EdgeDelay0..1/Speed50..1000 native Skalare über einzeln Apply und sechs unveränderte eigene Config-Snapshots, keine physikalische Einheit behauptet. Alle Kennungen/Defaults/Controltypen/Quellen,663 UI/83 Fälle erhalten.22 frühe Fragen,R02/Aufräumen offen; keine vollständige Inventar-/Paritätsfreigabe. Gemeinsamer grenzenloser Hex-/Stadt-/Dungeonatlas geplant, nicht implementiert.",
       "physicalInput": "not_run",
       "largeMap": "not_run",
       "installation": "unchanged",
-      "testedProductCommit": "3d7f45dd2da2f295b21a5aa1baf7128fc0e38fab",
-      "incomingReviewIntegration": "N-I15: bad35f1 am Paketstart per Fast-forward integriert; Stadtgalerie-/FTG-/COK-Pläne sowie Dungeon-Zweizellenlochplanung. Produkt-/Test-/Wonderdraft-/Kern-Hostbasis gegenüber geprüftem3d7f45d unverändert. Eigene Hex-/Wonderdraftroots und fremde lokale Tests/Installationsnotiz erhalten.197 lokale Tests frisch bestanden; eigener vorheriger Kernhostbeleg erneut gelesen. Keine Installation oder fremde Referenzfreigabe.",
+      "testedProductCommit": "9584fcf9ced7915d9bc72224e4ac5f446771ca56",
+      "incomingReviewIntegration": "N-I15: bad35f1 am Start per Fast-forward integriert. Vor Veröffentlichung478028e mit CITY-FTG-Bindungsreview/COK-Adapter und Dungeon-Bodenübermalung unter Building-Innenlöchern normal in9584fcf integriert. Eigene Hex-/Wonderdraftroots, fremde Stadt-/Dungeonroots, zwei lokale Testpatches und Installationsnotiz erhalten. Basis frisch198/198 lokal und198/201 veröffentlicht mit drei bekannten fehlenden Fixtures, neuer Buildd54f25cf. Eigener frischer Kernhost Edit4/Neuöffnung2Checks bestanden; keine Installation oder fremde Referenzfreigabe.",
       "latestOriginalRun": {
         "manifest": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/manifest.json",
         "sessions": 1,
@@ -377,12 +385,12 @@
       },
       "integrationCoreHostRegression": {
         "state": "edit_and_fresh_reopen_passed",
-        "sourceCommit": "b9a6aa444a581d450334a9defac8d7ccb3b1df3a",
-        "buildSha256": "d7c47ec29ea089169e6a7ad39f00d78c080b9f1d5e8f2daebe7c9ad024759ef8",
-        "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-00/path-symbol-numeric-repair-20261009-092126/integrated-host-regression.json",
+        "sourceCommit": "9584fcf9ced7915d9bc72224e4ac5f446771ca56",
+        "buildSha256": "d54f25cf7b961cc78b1bbf197bd4781bd62d2325ec10dc4b34148c0d6ab3a6a2",
+        "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/integrated-host-regression.json",
         "syntheticInput": true,
         "physicalInput": false,
-        "scope": "V4 room, entrance/key binding, exact text sections, undo/redo, save and fresh reopen; no Overworld/Hex functionality or full parity approval."
+        "scope": "V4 room, entrance/key binding, exact text sections, Undo/Redo, Save and fresh reopen; no Overworld/Hex functionality or full parity approval."
       },
       "windroseNumericRepair": {
         "run": "HEX-00-N-I09",
@@ -525,7 +533,10 @@
         "fullInventoryApproval": "pending HEX-00-R02",
         "cleanup": "not_started",
         "physicalInput": false,
-        "installation": "unchanged"
+        "installation": "unchanged",
+        "basis": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/integrated-published-basis.json",
+        "hostRegression": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/integrated-host-regression.json",
+        "integration": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/integration-preservation.json"
       }
     },
     "repairPlan": "ROADMAP-HEX-00-REPAIR-PLAN.md",
