@@ -2376,7 +2376,8 @@
         "observationKind": "direct_form_state_partial",
         "originalEvidence": [
           "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i01-20261009/ftg-form-observation.json",
-          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i45-building-limits-20261009/manifest.json"
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i45-building-limits-20261009/manifest.json",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i45n-full-20261009/manifest.json"
         ],
         "task": "Gebäudeverteilung konfigurieren",
         "phase": "CITY-06",
@@ -2402,7 +2403,10 @@
             "Only two selected types/groups inspected; no full209/80 matrix",
             "Graph cycles, rounding, factions, workforce override and generated distribution unmeasured",
             "Own implementation/host/usability/physical comparison open"
-          ]
+          ],
+          "reviewManifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i45-building-limits-20261009/review.json",
+          "openEvidenceFinding": "CITY-REF-R45-01: vollständige Übersichtsaufnahmen für Typenzahlen/Zugangsregel fehlen; konkrete Parameter sind vollständig gespeichert.",
+          "fullOverviewSupplement": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i45n-full-20261009/manifest.json"
         },
         "independentFunctionalRequirement": true,
         "mappingCoverage": "new_required_function_not_covered_by_existing_CTY"
@@ -152358,7 +152362,7 @@
   "hexAtlas": {
     "scope": "HEX-00..28, shared native Atlas; phase-specific functional approvals only.",
     "currentPhase": "HEX-02",
-    "state": "r01_changes_required_repair_planned",
+    "state": "r01_repairs_native_checked_re_review_open",
     "referenceGate": "wonderdraftParity.coverageReview HEX-00-R02",
     "requirements": [
       {
@@ -152495,9 +152499,10 @@
         "state": "checked_native_implementation",
         "implementationRun": "HEX-02-I01c",
         "evidence": [
-          "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/i01c-native-implementation.json"
+          "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/i01c-native-implementation.json",
+          "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/n01-native-implementation.json"
         ],
-        "observed": "36 cells/five chunks Save, 37-cell draft in fresh process, captured CtrlS, one-time native store interruption rollback and external conflict; shared-vault second leaf cannot retire owned draft. Independent R01 pending."
+        "observed": "36 cells/five chunks Save, 37-cell draft in fresh process, captured CtrlS, one-time native store interruption rollback and external conflict; shared-vault second leaf cannot retire owned draft. R01 found two P1; N01 core/native repair checked, independent R02/CLEAN pending."
       },
       {
         "id": "HEX02-006",
@@ -152505,9 +152510,10 @@
         "state": "checked_native_implementation",
         "implementationRun": "HEX-02-I01d",
         "evidence": [
-          "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/i01d-native-implementation.json"
+          "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/i01d-native-implementation.json",
+          "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/n01-native-implementation.json"
         ],
-        "observed": "Actual native copy Cancel/Create, new ID/namespace, A↔B drafts, discard Cancel/Confirm in same camera/tool/color and separate fresh process/independent CtrlS. R01 pending."
+        "observed": "Actual native copy Cancel/Create, new ID/namespace, A↔B drafts, discard Cancel/Confirm in same camera/tool/color and separate fresh process/independent CtrlS. R01 found two P1; N01 core/native repair checked, independent R02/CLEAN pending."
       },
       {
         "id": "HEX02-007",
@@ -152559,18 +152565,22 @@
       {
         "id": "HEX02-R01-01",
         "priority": 1,
-        "state": "open",
+        "state": "implementation_native_checked_re_review_pending",
         "title": "Kopie nach Prozessverlust ohne Hauptdatei gezielt wiederherstellen",
         "candidate": "c9e37ec749b38bfa71248bae7187c8d20ff5f693",
-        "review": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1#issuecomment-6087387441"
+        "review": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1#issuecomment-6087387441",
+        "implementation": "63e1efb623a8b1d85d57e7b6cd73ed37415810a7",
+        "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/n01-native-implementation.json"
       },
       {
         "id": "HEX02-R01-02",
         "priority": 1,
-        "state": "open",
+        "state": "implementation_native_checked_re_review_pending",
         "title": "Angenommene Kopie bis Abschluss sichtbar und gegen native Dismisswege geschützt",
         "candidate": "c9e37ec749b38bfa71248bae7187c8d20ff5f693",
-        "review": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1#issuecomment-6087387441"
+        "review": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1#issuecomment-6087387441",
+        "implementation": "63e1efb623a8b1d85d57e7b6cd73ed37415810a7",
+        "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/n01-native-implementation.json"
       }
     ]
   }

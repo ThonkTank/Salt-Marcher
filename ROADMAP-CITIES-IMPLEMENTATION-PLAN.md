@@ -973,3 +973,13 @@ CITY-00-I45-CLEAN-P45 Start 2026-10-09T19:21:01.574661+00:00; Aufräumplan: vors
 CITY-00-I45-CLEAN-I45 Start 2026-10-09T19:21:04.729675+00:00; Technikplan unterstützt deklarierte Initial-/Fraktions-/Arbeitsplatzausnahmen; Erzeugungsbedarfe getrennt von Simulationsressourcen. Keine Runtimeänderung. Beleg: /home/aaron/.cache/dungeon-native-qa/city-plans/city00-i45-building-limits-20261009/manifest.json.
 
 CITY-00-I45-CLEAN-R45 Start 2026-10-09T19:21:07.610814+00:00; Rohhashes/Planlinks/Entwurfgrenze geprüft; neuer Tab geschlossen, alte QA-Karte sichtbar erhalten. Anforderungsreview R45 noch offen. Beleg: /home/aaron/.cache/dungeon-native-qa/city-plans/city00-i45-building-limits-20261009/manifest.json.
+
+CITY-00-I45-R45 Start 2026-10-09T19:22:35.160257+00:00; Parameterteilbelege bestanden; CITY-REF-R45-01 verlangt vollständige Übersichtssnapshots statt No-change-Diffs.
+
+CITY-00-I45-REVIEW-CLEAN-P45 Start 2026-10-09T19:22:38.455169+00:00; Aufräumplan: Reviewbefund verknüpfen, Nachbesserung auf frische Vollaufnahmen ohne Generierung begrenzen.
+
+CITY-00-I45-REVIEW-CLEAN-I45 Start 2026-10-09T19:22:41.063781+00:00; Reviewbefund und präziser Vollaufnahmeplan verknüpft; alte Rawdateien geschützt.
+
+CITY-00-I45-REVIEW-CLEAN-R45 Start 2026-10-09T19:22:44.655023+00:00; R45-Befund/Planlinks/Rawhashes geprüft, keine vorweggenommene Freigabe. N45 ergänzt jetzt Originalübersichten.
+
+CITY-00-I45-N45 Start 2026-10-09T19:22:59.620Z; Fehlende Vollaufnahmen ergänzt: Formularhinweis, UI-Listen209/80, alte Karte/Wyddis/Montag11h sichtbar erhalten. Kein Katalogvolltest oder Ergebnisgenerator.
