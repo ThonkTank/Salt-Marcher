@@ -290,8 +290,14 @@
         "dirty": false,
         "node": "v22.22.2",
         "check": "passed",
-        "tests": {"passed": 259, "failed": 0},
-        "focusedTests": {"passed": 217, "failed": 0},
+        "tests": {
+          "passed": 259,
+          "failed": 0
+        },
+        "focusedTests": {
+          "passed": 217,
+          "failed": 0
+        },
         "build": "passed",
         "mainBytes": 1362196,
         "mainSha256": "0856066aa2415455dbe2d6f3745bcab07488aa5361a20218cb828617ac904052",
@@ -4589,11 +4595,11 @@
   },
   "gmProductTesting": {
     "date": "2026-10-09",
-    "state": "gm_ux_01_cloud_asset_restore_retest_422718f",
+    "state": "gm_ux_n005_h01_cloud_partial_visible_ui_followups_open_95e7bd2",
     "plan": "ROADMAP-GM-PRODUCT-TESTING-PLAN.md",
     "focus": "Längere GM-Endanwenderabläufe, häufige Aktionen, Bedienkosten und UI-Überladung; belegte Nacharbeiten beauftragen und nachprüfen.",
-    "currentRun": "Shared 422718f in isoliertem Vault: Geheimgang-Reopen, Wooden Crate suchen und einmal platzieren, Toolbar Undo/Redo, Save und Rückkehr/Reopen mit 11 sichtbaren Objekten und Raum-14-Key.",
-    "executedUiRuns": 11,
+    "currentRun": "H01 auf Shared 95e7bd2 im isolierten Cloudvault: blaue-Fackel-Suche, Trefferaktivierung, Raum12/Geschoss1/Key, Dirty-Guard mit Verwerfen, Übersicht, Save/Tab-Reopen und erneute Aktivierung. Suche blieb nach Reopen gefiltert; Ergebnisdarstellung und Key-Dock-Zustand haben sichtbare Reibung.",
+    "executedUiRuns": 12,
     "observedFindings": [
       {
         "id": "GM-UX-001",
@@ -4694,19 +4700,19 @@
       {
         "id": "GM-UX-005",
         "priority": "P2-Kandidat",
-        "status": "reproduced_I01_I02_R01_passed_H01_in_progress_GM_retest_open",
+        "status": "h01_cloud_partial_core_pass_visible_ui_followups_open_after_R01_passed",
         "kind": "Eigene UI-Beobachtung in isoliertem Cloud-Testvault; Such-/Fernsteuerungszeiten nicht als Produktlatenz",
-        "build": "Obsidian 1.14.4; Produktcommit 3c2d88296d775ad7afcddac0b3c704958d501baa; main.js SHA-256 bd13cb2ac5e823d21f81bcb2f8d32a6b6a0ebe49a7049cacb2c5035eb99370a4",
-        "scenario": "GM-UX-01 Nebelwacht, gespeicherter synthetischer Raum-12-Hinweis; Spielansicht Ebenenwechsel und GM-Informationssuche",
-        "reproduction": "In der Dungeon-Spielansicht Erdgeschoss/Geschoss 1 über Auswahlfeld wechseln; Raumklick öffnet keine Key-Info. Ctrl+Shift+F auf „Die blaue Fackel in Raum 12“, „Nebelwacht“ und „GM“ ergibt No matches found. Um den Hinweis zu finden: Ctrl+O, Kartennamen öffnen, Dungeon > Geschosse, Geschoss 1 auswählen, Raum 12 anklicken, Inhalte öffnen.",
+        "build": "Obsidian 1.14.4; Shared product commit 95e7bd214f96fe7be894e6cc6dcecf2609c10dc3; main.js SHA-256 260aed21ccc7767e5ef703b6de2229c2d3916c67e3501c85a9ef3f1cdb90eb6f",
+        "scenario": "GM-UX-01 Nebelwacht H01: Suche, Trefferaktivierung, Geschoss-/Raum-/Key-Fokus, Dirty-Draft-Guard, Leeren, Save, normaler Tab-Close/Reopen",
+        "reproduction": "Dungeon > Inhalte > Raum-Keys durchsuchen > blaue Fackel: ein Treffer Raum 12/Geschoss 1. Aktivieren öffnet den Key und fokussiert Raum 12 in Geschoss 1. Draft-Probe mit Canvas-Wechselversuch blockiert; Key-Dock-Schließen blockiert ebenfalls, bis Verwerfen. Nach Save/Close/Reopen erneut suchen und aktivieren.",
         "expected": "GM kann während einer simulierten Sitzung einen bekannten Begriff oder Raum-Key schnell finden und zum passenden Raum/Geschoss springen.",
-        "actual": "Obsidian-Suche zeigt bei allen drei Abfragen keine Treffer für die .dungeon-Karte; der gespeicherte Key ist nur über den Editorpfad auffindbar. Der Spielansicht-Raumklick öffnet keine Key-Information.",
-        "impact": "P2-Kandidat: mehrere Navigationseingaben unterbrechen die simulierte Spielsitzung. Suchbarkeit benutzerdefinierter Dateiinhalte und Häufigkeit bei anderen GMs nicht populationsgemessen.",
-        "evidence": "/workspace/scratch/gm-cloud-qa/268-nebelwacht-play-floor1.png, 270-play-room1-click.png, 271-search-open.png, 272-search-clue-results.png, 274-search-gm.png, 275-quick-switch-nebelwacht.png, 276-reopen-nebelwacht.png, 278-floor1-gm-editor.png, 279-room12-key-found.png",
+        "actual": "Core-Ablauf sichtbar erfolgreich, Originaldatei unverändert. Neue UI-Reibung: nach Reopen bleibt blauer Fackel-Filter; ein leerer Key-Dock kollabiert Inspector-/Suchpanelbreite auf 0 und Canvas blockiert Trefferklick bis zusätzlichem Schließen. Bei 256px Inspector ist die Trefferzeile nur ca. 30px hoch; Screenshot zeigt Raum/Geschoss visuell nicht, obwohl Text im DOM/Accessibility-Text steht.",
+        "impact": "P2-Kandidat: Reopen startet mit altem Suchzustand und ein offener Key-Dock verhindert den Zugriff auf Treffer; bei schmalem Inspector sind wichtige Raum-/Geschossmetadaten nicht sichtbar. Ein einzelner isolierter GM-Ablauf, keine Nutzerhäufigkeit gemessen.",
+        "evidence": "/workspace/scratch/gm-cloud-qa/evidence-95e7/08-room-key-search-open.png, 11-close-stale-key-dock.png, 12-result-activated.png, 14-draft-guard-blocked-selection.png, 15-search-cleared-overview.png, 16-tab-closed.png, 17-tab-reopened.png, 20-reopen-search-activated.png, 21-key-close-draft-guard.png, 22-final-clear-search.png",
         "latency": "Nicht gemessen; Playwright/CDP-, Such- und Wartezeiten ausgeschlossen.",
-        "dataIntegrity": "Karte SHA-256 blieb identisch zu vorher: 56c38f8ff9e4365a165af4319da37bb03db20c09925d6ee38e5327e7559353c7.",
+        "dataIntegrity": "Dungeons/GM-UX-01 Nebelwacht/Karte.dungeon SHA-256 vor/nach dem vollständigen UI-Ablauf 56c38f8ff9e4365a165af4319da37bb03db20c09925d6ee38e5327e7559353c7; Dirty-Testabsatz wurde explizit verworfen; keine Kartendaten geändert.",
         "proposedTask": "GM-UX-N-005: Dungeon-Verantwortlicher prüft eine sichtbare GM-Suche/Übersicht für Raum-Key-Texte. Abnahme: einzigartigen Begriff in isolierter Nebelwacht finden; Treffer zeigt Raum und Geschoss; Aktivierung führt zum Raum und öffnet Key, ohne Karte zu ändern; Leeren stellt Übersicht wieder her; Save/Reload erhält den Hinweis.",
-        "coordination": "Beobachtung Issue #1 6085234573; N-005-P01 und der hostneutrale I01-Suchkern (Issue #1 6086279018) bleiben unabhängig bestanden. I02 wurde auf Shared-Basis f48155a exklusiv in Issue #1 6086963703 übernommen; Implementierungsstand 84440f161914b985acbfd23fbd79cb51bd1e6360 bestand nach zwei Pflichtreparaturen den unabhängigen read-only Review. Nach Shared-Integration bestanden auf b8beed18e7f1553bfd5c37192769f2d43ff65b0b 365/365 Tests, Typprüfung und Build. Der getrennte Produktreview R01 bestand den exakten I02-Stand 84440f161914b985acbfd23fbd79cb51bd1e6360 ohne Pflichtbefund (Issue #1 6087430151); die vier Implementierungsdateien waren auf Shared b65937e4fe668e8d60eb148671cdfa2979b3be79 unverändert. Der exakte Nebelwacht-H01-Lauf läuft getrennt beim GM-Produkttester; Ergebnis und unabhängiger GM-R01-Nachtest bleiben offen. Keine Host-/UX-/Fachfreigabe behauptet."
+        "coordination": "Beobachtung Issue #1 6085234573; I01/I02 implementiert und gehostet auf Shared 95e7bd2. Der unabhängige Produktreview R01 bestand den exakten I02-Stand 84440f161914b985acbfd23fbd79cb51bd1e6360 ohne Pflichtbefund (Issue #1 6087430151); I02-Implementierung ist seit diesem geprüften Stand unverändert. H01-Teilergebnis und begrenzter Dungeon-Anschlussauftrag in Issue #1 im Bericht nach Commit. Unabhängiger GM-R01-Nachtest bleibt offen; keine Gesamtfreigabe."
       },
       {
         "id": "GM-UX-006",
@@ -4733,7 +4739,7 @@
       "state": "completed",
       "supersedes": "GM-UX-ACCESS; Slotanfrage gemäß Nutzerkorrektur aufgehoben"
     },
-    "next": "Nach Integration und Review von GM-UX-N-005-I02 den exakt vereinbarten Nebelwacht-Key-Suchablauf im selben isolierten Cloudvault ausführen. Dungeon-Verantwortlicher besitzt I02 exklusiv (Issue #1 6086963703); keine Überlappung. N-006-Geschossreset auf Shared 422718f erneut reproduziert; passenden Nachtest erst nach integrierter UI-Korrektur. Keine frische Electron- oder physische Eingabeabnahme.",
+    "next": "Dungeon-Paketbesitzer soll in Issue #1 den begrenzten H01-Anschlussauftrag prüfen/beanspruchen: Ergebniszeile mit Raum/Geschoss im 256px-Inspector sichtbar, Suchpanel trotz sauberem Key-Dock erreichbar, Suchstartzustand nach Reopen festlegen. R01 ist für I02 auf 84440f1 PASS (Issue #1 6087430151); nach Follow-up den ursprünglichen H01-Ablauf auf exakt integriertem Build wiederholen. Danach bleibt unabhängiger GM-R01 offen. N-006-Geschossreset separat.",
     "automation": "Stündliche GM-Produkttests in eigener Cloud; keine Laptop-Slotfreigabe erforderlich.",
     "executionEnvironment": "Eigene Cloud-Umgebung, getrennt vom Laptop der Kollegen",
     "cloudHost": {
@@ -4751,9 +4757,9 @@
         1000
       ],
       "input": "Playwright/CDP über sichtbare UI; keine physische Eingabeabnahme",
-      "productCommit": "422718fe25768ed80a30945f316532546ba3c2cd",
-      "buildSha256": "c77eed86d4ade60a3fdaca5edc8e338a9633a7b66fcfa195daab96664da6c997",
-      "verified": "Shared-Head 422718fe25768ed80a30945f316532546ba3c2cd; full build triplet rebuilt, installed and visibly reloaded. On the copy: live Wooden Crate search showed one tile without Enter; placed the 11th object, toolbar undo/redo, save, returned to layout and selected file again; reselected Geheimgang and saw all 11 objects and Room-14 key. Erdgeschoss reset reproduced again. Original file hash unchanged. No product latency, physical-input, or fresh-Electron acceptance.",
+      "productCommit": "95e7bd214f96fe7be894e6cc6dcecf2609c10dc3",
+      "buildSha256": "260aed21ccc7767e5ef703b6de2229c2d3916c67e3501c85a9ef3f1cdb90eb6f",
+      "verified": "Shared 95e7bd2 built dirty:false, full triplet hash-equal installed and visibly reloaded in Obsidian 1.14.4. H01 search/activation/key/floor/camera and dirty-draft guard exercised; normal tab close/reopen confirmed exact key and unchanged card bytes. Search filter persists after reopen, clean Key dock can collapse search to zero width, and result metadata is visually clipped at 256px. No physical input, fresh Electron, latency or overall acceptance; R01 passed separately on I02 commit 84440f1.",
       "evidence": [
         "176-n002-current-remote-switch.png",
         "177-n002-current-remote-open.png",
@@ -4842,11 +4848,28 @@
         "389-current-422-copy-reopened.png",
         "390-current-422-11assets-reopened.png",
         "392-current-422-room14-selected-after-reopen.png",
-        "393-current-422-key-reopened.png"
+        "393-current-422-key-reopened.png",
+        "01-installed-before-reload.png",
+        "03-after-reload.png",
+        "05-nebelwacht-key-card-open.png",
+        "07-inhalte-panel.png",
+        "08-room-key-search-open.png",
+        "09-search-blue-torch.png",
+        "11-close-stale-key-dock.png",
+        "12-result-activated.png",
+        "13-dirty-key-draft.png",
+        "14-draft-guard-blocked-selection.png",
+        "15-search-cleared-overview.png",
+        "16-tab-closed.png",
+        "17-tab-reopened.png",
+        "19-reopen-key-dock-closed.png",
+        "20-reopen-search-activated.png",
+        "21-key-close-draft-guard.png",
+        "22-final-clear-search.png"
       ],
       "initialization": "Erste Eingaben während Hoststart ohne sichtbare Wirkung; später Befehlsleiste und Editor bedienbar. Kein reproduzierter Produktbefund.",
       "windowManager": "Openbox im isolierten dungeon-gm-cloud Container; Xvfb 1440x1000; maximiertes Obsidian-Fenster 1440x1000.",
-      "buildRevision": "422718fe25768ed80a30945f316532546ba3c2cd (dirty:false; complete installed triplet hash-equal)"
+      "buildRevision": "95e7bd214f96fe7be894e6cc6dcecf2609c10dc3 (dirty:false; complete installed triplet hash-equal; visible reload)"
     },
     "latestScenario": {
       "environment": "Obsidian 1.14.4; eigener Cloud-Container; App 1024x800; sichtbare UI über Playwright/CDP; kein physischer Input",
@@ -4968,6 +4991,29 @@
       "evidence": "/workspace/scratch/gm-cloud-qa/373-current-422-before-reload.png through 393-current-422-key-reopened.png",
       "latency": "Not measured; CDP/automation wait excluded from product latency.",
       "limits": "Cloud/CDP visible UI, no physical input, no fresh Electron process. N-005-I02 UI not integrated in tested build; no N-005 host acceptance claimed."
+    },
+    "latestN005H01": {
+      "date": "2026-10-09",
+      "sharedCommit": "95e7bd214f96fe7be894e6cc6dcecf2609c10dc3",
+      "buildCommit": "95e7bd214f96fe7be894e6cc6dcecf2609c10dc3",
+      "buildDirty": false,
+      "obsidian": "1.14.4",
+      "vault": "/workspace/scratch/gm-cloud-qa/vault",
+      "viewport": [
+        1440,
+        1000
+      ],
+      "input": "Playwright/CDP über sichtbare UI; keine physische Bedienabnahme",
+      "artifactSha256": {
+        "main.js": "260aed21ccc7767e5ef703b6de2229c2d3916c67e3501c85a9ef3f1cdb90eb6f",
+        "styles.css": "7662b340175931ff13ea91f0e03120566654981423466c5fbf5e02bbcd2e0b20",
+        "manifest.json": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64"
+      },
+      "steps": "Sichtbarer Reload des vollständigen Tripels; Dateiexplorer öffnet isolierte Nebelwacht/Karte.dungeon. Dungeon > Inhalte > Raum-Keys durchsuchen; blaue Fackel tippen, ein Treffer. Treffer aktivieren, Raum12/Geschoss1/Key und Kamerafokus sichtbar. Textarea flüchtig ergänzen; Canvas-Raumwechsel und Key-Dock-Schließen werden mit Draft-Hinweis blockiert; explizit Verwerfen. Suche leeren: 12-Raum-Übersicht. Speichern, Close current tab über Befehlspalette, Datei erneut aus Explorer öffnen; Suche zeigt weiter blauen Fackel Treffer; nach Schließen des leeren Key-Docks Treffer erneut aktivieren.",
+      "result": "Suchkern und Trefferaktivierung erfolgreich; aktivierter Raum12/Geschoss1-Key-Text vollständig und nach Close/Reopen unverändert. Dirty guard erhält Draft und blockiert Auswahl-/Close-Transition bis explizit Verwerfen. Datei-Hash vor/nach Save und Lauf identisch 56c38f8ff9e4365a165af4319da37bb03db20c09925d6ee38e5327e7559353c7. Teilbefund: Filter bleibt über normales Tab-Reopen bestehen; leerer Key-Dock kollabiert Suche/Inspector auf Breite 0 bis Schließen; Ergebniszeile im 256px Inspector zeigt Raum/Geschoss nicht sichtbar.",
+      "evidence": "/workspace/scratch/gm-cloud-qa/evidence-95e7/01-installed-before-reload.png through 22-final-clear-search.png",
+      "latency": "Nicht gemessen; CDP- und Automationszeiten nicht als Produktlatenz gewertet.",
+      "limits": "H01 ist ein begrenzter sichtbarer Cloud-Produkttest auf Shared 95e7bd2, keine physische Eingabe, kein frischer Electronprozess und keine Gesamtfreigabe. Der unabhängige R01-PASS gilt separat für I02-Commit 84440f1. UI-Follow-up dem Dungeon-Paketbesitzer in Issue #1 vorgeschlagen; N-006 bleibt getrennt offen."
     }
   }
 }
