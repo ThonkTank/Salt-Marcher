@@ -9,6 +9,11 @@ import {
 } from "./terrain-source";
 
 type Tool = "select" | "hand" | TerrainTool;
+export interface AtlasEditorStorage {
+  save(): Promise<void>;
+  changed(): Promise<void>;
+  status(): { dirty: boolean; hasDraft: boolean };
+}
 export class AtlasEditor {
   readonly renderer: AtlasRenderer;
   readonly viewport: HTMLDivElement;
@@ -24,6 +29,9 @@ export class AtlasEditor {
   private tool: Tool = "select";
   private stroke?: TerrainStroke;
   private work: Promise<void> = Promise.resolve();
+  private persistence: Promise<void> = Promise.resolve();
+  private persistenceVersion = 0;
+  private flushing = false;
   private closed = false;
   private loadingVisible = false;
   private visibleLoadFailed = false;
@@ -40,6 +48,7 @@ export class AtlasEditor {
     private root: HTMLElement,
     world: OverworldDocument,
     readonly terrain: TerrainSource,
+    private storage: AtlasEditorStorage,
   ) {
     root.replaceChildren();
     root.classList.add("dn-atlas");
@@ -122,6 +131,7 @@ export class AtlasEditor {
       this.finishStroke();
       this.enqueue(() => this.renderer.fit());
     });
+    button("Speichern", "Atlas speichern", () => this.save());
     this.scale = doc.createElement("span");
     this.scale.className = "dn-atlas-scale";
     toolbar.append(this.scale);
@@ -159,6 +169,20 @@ export class AtlasEditor {
     this.unsubscribe = terrain.history.subscribe(() => {
       this.refreshHistory();
       this.renderer.schedule();
+      const version = ++this.persistenceVersion;
+      this.status.textContent = "Entwurf wird gesichert …";
+      this.persistence = this.storage.changed();
+      void this.persistence.then(
+        () => {
+          if (!this.closed && version === this.persistenceVersion)
+            this.refreshHistory();
+        },
+        (error) => {
+          if (!this.closed && version === this.persistenceVersion)
+            this.status.textContent =
+              "Entwurf konnte nicht gesichert werden. " + String(error);
+        },
+      );
     });
     choose("select");
     this.refreshHistory();
@@ -170,13 +194,18 @@ export class AtlasEditor {
   private refreshHistory(): void {
     this.undoButton.disabled = !this.terrain.history.canUndo;
     this.redoButton.disabled = !this.terrain.history.canRedo;
-    this.status.textContent =
-      this.terrain.history.undoDepth || this.terrain.history.canRedo
-        ? "Ungespeichert"
-        : "Keine Änderungen";
+    const state = this.storage.status();
+    this.status.textContent = state.dirty
+      ? state.hasDraft
+        ? "Entwurf gesichert"
+        : "Ungespeichert"
+      : "Gespeichert";
+    this.root.dataset.dirty = String(state.dirty);
+    this.root.dataset.hasDraft = String(state.hasDraft);
     this.root.dataset.undoDepth = String(this.terrain.history.undoDepth);
   }
   private enqueue(action: () => void | Promise<void>): void {
+    if (this.flushing || this.closed) return;
     this.work = this.work
       .then(async () => {
         if (!this.closed) await action();
@@ -188,6 +217,29 @@ export class AtlasEditor {
           this.renderer.schedule();
         }
       });
+  }
+  private save(): void {
+    this.finishStroke();
+    this.enqueue(async () => {
+      const version = this.persistenceVersion;
+      this.status.textContent = "Atlas wird gespeichert …";
+      await this.storage.save();
+      if (version === this.persistenceVersion)
+        this.persistence = Promise.resolve();
+      this.refreshHistory();
+    });
+  }
+  /** Finish queued pointer work and retain its draft before a view is destroyed. */
+  async flush(): Promise<void> {
+    this.finishStroke();
+    this.releasePointer();
+    this.flushing = true;
+    try {
+      await this.work;
+      await this.persistence;
+    } finally {
+      this.flushing = false;
+    }
   }
   private async loadVisible(): Promise<void> {
     if (this.loadingVisible || this.closed || this.visibleLoadFailed) return;
@@ -265,7 +317,8 @@ export class AtlasEditor {
     this.viewport.addEventListener(
       "pointerdown",
       (e) => {
-        if ((e.button !== 0 && e.button !== 1) || this.pointer) return;
+        if ((e.button !== 0 && e.button !== 1) || this.pointer || this.flushing)
+          return;
         e.preventDefault();
         this.viewport.focus();
         this.viewport.setPointerCapture(e.pointerId);
@@ -369,6 +422,11 @@ export class AtlasEditor {
       "keydown",
       (e) => {
         if (this.root.ownerDocument.activeElement !== this.viewport) return;
+        if (
+          (e.ctrlKey || e.metaKey) &&
+          ["s", "z", "y"].includes(e.key.toLowerCase())
+        )
+          e.stopImmediatePropagation();
         if (e.code === "Space") {
           this.space = true;
           if (this.pointer?.action === "paint") {
@@ -381,7 +439,10 @@ export class AtlasEditor {
           this.finishStroke();
           e.preventDefault();
         }
-        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z") {
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") {
+          this.save();
+          e.preventDefault();
+        } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z") {
           this.historyAction(e.shiftKey ? "redo" : "undo");
           e.preventDefault();
         } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "y") {
@@ -395,7 +456,7 @@ export class AtlasEditor {
           e.preventDefault();
         }
       },
-      opts,
+      { ...opts, capture: true },
     );
     win.addEventListener(
       "keyup",

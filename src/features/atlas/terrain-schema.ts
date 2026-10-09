@@ -209,3 +209,28 @@ export function parseTerrainChunk(
     cells: Object.freeze(cells),
   });
 }
+export function serializeTerrainChunk(chunk: TerrainChunk): string {
+  const reference = checkedTerrainReference({
+    level: 0,
+    q: chunk.q,
+    r: chunk.r,
+    file: terrainChunkFile(chunk),
+    cellCount: chunk.cells.length,
+    extent: terrainExtent(chunk.cells),
+  });
+  const checked = parseTerrainChunk(
+    JSON.stringify(chunk),
+    chunk.worldId,
+    reference,
+  );
+  return (
+    JSON.stringify(
+      {
+        ...checked,
+        cells: [...checked.cells].sort((a, b) => a.q - b.q || a.r - b.r),
+      },
+      null,
+      2,
+    ) + "\n"
+  );
+}
