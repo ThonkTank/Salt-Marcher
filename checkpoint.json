@@ -14,9 +14,9 @@
       "candidateBranch": "codex/smr-03-live-scene-contract-p01",
       "baseline": "7d35591be570d1c188998103b55e8e86e437f73d",
       "integratedShared": "fbed51f59963e7d12384390ee2f0722d0c28ea33",
-      "planCandidateCommit": "e23f27494be13d27f8688d399b55c235fe3e718c",
-      "reviewedCandidate": "4bfa7d80bd5b611c9b1e312dec0558959012ee18",
-      "review": "Independent architecture R03 re-review in Issue comment 6088021905 required explicit GM authority for mask completion/transfer, owner-independent capability-bound purge, a revisioned owner registry, Prepared-Scene import without regular unassigned members, precise delete portability and Undo/Redo fault coverage. The repair incorporates Campaign/Data erasure decision 6088033502; focused owner and independent architecture re-reviews remain required.",
+      "planCandidateCommit": "038ce292e311024bebc30ffba4cbb63b0b46b72d",
+      "reviewedCandidate": "e23f27494be13d27f8688d399b55c235fe3e718c",
+      "review": "Independent architecture R03 second re-review in Issue comment 6088109268 required exact target/survivor erasure evidence, post-Publish per-slot revision and rebind semantics, and an explicit TN-05/TN-27 portability decision. The repair incorporates Campaign/Data quarantined-Complete decision 6088120065; focused owner and independent architecture re-reviews remain required.",
       "limits": "Plan only. No product code, API, host, persistence, migration, implementation or acceptance approval. Campaign/Data, Party, mask owners, Scene/Time/Travel, Music/Weather/Shops, Passive Display and Host/Security ratifications remain required."
     },
     "source": {
