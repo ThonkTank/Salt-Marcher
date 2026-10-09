@@ -190,7 +190,7 @@
   },
   "cityPlans": {
     "schemaVersion": 1,
-    "updated": "2026-10-09T13:27:57.021215+00:00",
+    "updated": "2026-10-09T13:35:26.008969+00:00",
     "plan": "ROADMAP-CITIES.md",
     "state": "planned_not_implemented",
     "comparisonMode": "functional_equivalence_and_independent_usability_tests",
@@ -1935,7 +1935,9 @@
         "observedVersion": null,
         "availability": "unknown",
         "observationKind": "documentation",
-        "originalEvidence": [],
+        "originalEvidence": [
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i18-residents-20261009/manifest.json"
+        ],
         "task": "Bewohner, Haushalt und Beziehungen bearbeiten",
         "phase": "CITY-06",
         "caseIds": [
@@ -1951,9 +1953,23 @@
           "state": "not_run"
         },
         "status": "open",
-        "gap": "Dokumentationskandidat; direkte vollständige Originalprobe offen.",
+        "gap": "Resident profile/relationships remain unverified: first building detail request network error, second did not display detail within observation. No feature absence or persistent outage inferred. Own implementation/host/usability remain open.",
         "independentFunctionalRequirement": true,
-        "mappingCoverage": "related_project_criteria_only; CO requirement remains independently required"
+        "mappingCoverage": "related_project_criteria_only; CO requirement remains independently required",
+        "originalProbes": [
+          {
+            "run": "CITY-00-I18-I",
+            "state": "resident_access_unverified_after_network_error",
+            "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i18-residents-20261009/manifest.json",
+            "observation": "Population favourites empty; protected house found in29-building list. First detail click network error; second no loaded detail. Resident profile and relationships not reached."
+          }
+        ],
+        "originalProbe": {
+          "run": "CITY-00-I18-I",
+          "state": "resident_access_unverified_after_network_error",
+          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i18-residents-20261009/manifest.json",
+          "observation": "Population favourites empty; protected house found in29-building list. First detail click network error; second no loaded detail. Resident profile and relationships not reached."
+        }
       },
       {
         "id": "CO-FTG-0015",
@@ -3646,7 +3662,7 @@
     ],
     "functionalInventoryStatus": {
       "state": "partial_inventory_not_accepted",
-      "run": "CITY-00-I17-I",
+      "run": "CITY-00-I18-I",
       "products": 3,
       "candidates": 63,
       "directFormAreas": 13,
@@ -3674,7 +3690,8 @@
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i14-warp-20261009/manifest.json",
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i15-warp-tools-20261009/manifest.json",
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i16-export-20261009/manifest.json",
-        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i17-20261009/manifest.json"
+        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i17-20261009/manifest.json",
+        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i18-residents-20261009/manifest.json"
       ],
       "resultReferences": [
         {
@@ -143368,6 +143385,15 @@
           "measured": "Bei gleicher bestehender Geometrie ändert wall.shadow=false 15068 Bildpixel; die globalen world-Startwerte ändern bestehende Elemente nicht rückwirkend.",
           "limit": "Kontrollierter Rohkartenimport; keine UI-Bedienung, History oder neue Elementvorgabe belegt. Atlas-Hostpaar und getrennter Review offen."
         },
+        "followUpPhase1HostRenderCandidate": {
+          "state": "candidate_render_save_reopen_review_pending",
+          "scope": "Vier importierte V4-Karten mit gleicher Geometrie und unabhängigen per-Element-Schattenwerten; kein UI-Toggle oder Historybeleg.",
+          "report": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd006-shadow-host-20261009/implementation.md",
+          "audit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd006-shadow-host-20261009/host-pair-audit.json",
+          "buildSha256": "5b086c04c05b8011c64331ee6da7baa4831fcf06cc8712d2078731fcd03f3d4f",
+          "measured": "Wand aus ändert 27356 Hostbildpixel getrennt vom jeweils anderen Element; Edit und frische Öffnung sind bild-, dokument- und hashgleich.",
+          "remaining": "UI-Bedienung, Vorgaben für neue Elemente, Undo/Redo und unabhängiger Review offen; globale Atlasoptionen nach Nutzerzweck klären."
+        },
         "baseline": {
           "editor": {
             "sequence": "Wandschatten an/aus",
@@ -143443,6 +143469,15 @@
           "audit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd006-shadow-20261009/original-audit.json",
           "measured": "Bei gleicher bestehender Geometrie ändert object.shadow=false 238 Bildpixel; die globalen world-Startwerte ändern bestehende Elemente nicht rückwirkend.",
           "limit": "Kontrollierter Rohkartenimport; keine UI-Bedienung, History oder neue Elementvorgabe belegt. Atlas-Hostpaar und getrennter Review offen."
+        },
+        "followUpPhase1HostRenderCandidate": {
+          "state": "candidate_render_save_reopen_review_pending",
+          "scope": "Vier importierte V4-Karten mit gleicher Geometrie und unabhängigen per-Element-Schattenwerten; kein UI-Toggle oder Historybeleg.",
+          "report": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd006-shadow-host-20261009/implementation.md",
+          "audit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd006-shadow-host-20261009/host-pair-audit.json",
+          "buildSha256": "5b086c04c05b8011c64331ee6da7baa4831fcf06cc8712d2078731fcd03f3d4f",
+          "measured": "Objekt aus ändert 644 Hostbildpixel getrennt vom jeweils anderen Element; Edit und frische Öffnung sind bild-, dokument- und hashgleich.",
+          "remaining": "UI-Bedienung, Vorgaben für neue Elemente, Undo/Redo und unabhängiger Review offen; globale Atlasoptionen nach Nutzerzweck klären."
         },
         "baseline": {
           "editor": {
