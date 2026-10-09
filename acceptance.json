@@ -103585,6 +103585,22 @@
             }
           },
           "verifiedScope": "Lesender Map-Information-Dialog; direkte Texteingabe änderte Originalwerte nicht. Paketliste hat sichtbar keine Bearbeitungsschaltfläche. Auf dem DD-042.09-Endstand erneut in Bearbeitung und Frischstart bestanden."
+        },
+        "followUpPhase1ResizeRegression": {
+          "state": "regression_candidate_review_pending",
+          "hostBuildSha256": "9c064517d7e2221acd1b43694f7c0634f7a682d61870378bbf17aa847410d3d5",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd039/NATIVE-GAP-REPORT.md"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-info-20261009/implementation.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-info-host-20261009/evidence/1791517646065-parity-tools-phase1-resize-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-info-host-20261009/evidence/1791517646065-parity-tools-phase1-resize-edit/map-info-after-resize.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-info-host-20261009/evidence/1791517651000-parity-tools-phase1-resize-reopen/result.json"
+          ],
+          "measuredScope": "Menü → Karteninformationen öffnet nach Resize den lesenden Dialog im Kartenfenster.",
+          "remaining": "Unabhängiger Endbuild-Review offen."
         }
       },
       {
@@ -113489,6 +113505,23 @@
           ],
           "measuredScope": "Oben +1 verschiebt Building und Objekt um ein Feld, 8×8 → 8×9; Save und bytegleiche frische Host-Neuöffnung erneut bestanden.",
           "remaining": "Oberer Beschnitt und weitere Entity-Arten offen."
+        },
+        "followUpPhase1InputLimits": {
+          "state": "input_candidate_review_pending",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "hostBuildSha256": "bc467f3a43ce2c615f72d40e2ccb66bd8d4e9d9ab9b3bb49ece0bc78c9463d56",
+          "originalEvidence": [
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/tests/native-resize-limits.json",
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/tests/native-resize-negative.json",
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/tests/native-resize-paired.json"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-input-20261009/implementation.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-input-host-20261009/evidence/1791517451651-parity-tools-phase1-resize-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-input-host-20261009/evidence/1791517456955-parity-tools-phase1-resize-reopen/result.json"
+          ],
+          "measuredScope": "Original 12×8: oben -1 → 0 und oben 999 → 64 bei Gegenrand 0; Host-GUI 8×8 zeigt beide Grenzen nach Tab.",
+          "remaining": "Oberer Crop, weitere Ausgangsgrößen und unabhängiger Review offen."
         }
       },
       {
@@ -113562,7 +113595,38 @@
           ],
           "gap": "Direkte Original-Dateiwirkung und gleicher Host-Commit für einen rechten Rand fehlen. Acht-Slot-Terrain-Hostlauf zweimal durch Testnavigation vor Resize abgebrochen; keine neue Abnahme."
         },
-        "inventoryNote": "Terrain-Resize-IL: beide Masken erhalten neue Randpixel als RGBA (255,0,0,0), alte Samples werden um linke/obere Randfelder verschoben und außerhalb abgeschnitten; History wird nach Größenänderung geleert. Integrierter Helfer und Kerntest vorhanden, direkte Original-/Host-Randbyte-, Bild- und Frischöffnungspaarung offen."
+        "inventoryNote": "Terrain-Resize-IL: beide Masken erhalten neue Randpixel als RGBA (255,0,0,0), alte Samples werden um linke/obere Randfelder verschoben und außerhalb abgeschnitten; History wird nach Größenänderung geleert. Integrierter Helfer und Kerntest vorhanden, direkte Original-/Host-Randbyte-, Bild- und Frischöffnungspaarung offen.",
+        "followUpPhase1InputLimits": {
+          "state": "input_candidate_horizontal_host_gui_open",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "hostBuildSha256": "bc467f3a43ce2c615f72d40e2ccb66bd8d4e9d9ab9b3bb49ece0bc78c9463d56",
+          "originalEvidence": [
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/tests/native-resize-limits.json",
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/tests/native-resize-negative.json",
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/tests/native-resize-paired.json"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-input-20261009/implementation.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-input-host-20261009/evidence/1791517451651-parity-tools-phase1-resize-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-input-host-20261009/evidence/1791517456955-parity-tools-phase1-resize-reopen/result.json"
+          ],
+          "measuredScope": "Original 12×8: nach links -4 wird rechts -4 zu 0 normalisiert; die Host-Kernfunktion bildet die Paarregel ab.",
+          "remaining": "Rechte Host-GUI-Eingabe und rechte Crop-Wirkung direkt prüfen; unabhängiger Review offen."
+        },
+        "followUpPhase1RightCropOriginalProbe": {
+          "state": "original_measured_host_open",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "sequence": "12×8 mit zehn Smart-Tile-Randzellen → Right in tiles -3 → Save → Right in tiles +3 → Save; dieselbe gespeicherte 9×8-Beschnittkarte frisch öffnen → Right in tiles +3 → Save",
+          "sourceMapSha256": "7d57df1b32e42f2c95507ca4ce40fe8b9c4e8d891d61d7685f26c738aa1fd7c9",
+          "cropMapSha256": "e558b566f9899055294e4cf4c22224007c13e1ad352dc6cfa13126ed9cc37f2f",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-right-crop-20261009/original-probe.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-right-crop-20261009/native-final/runs/20261009-055552-3485360/evidence/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-right-crop-20261009/native-final-reopen/runs/20261009-055654-3486267/evidence/result.json"
+          ],
+          "measuredScope": "Rechts -3: gespeicherte Zellen 10→4 und vier Polygone gleich; rechts +3 im selben Prozess 4→10, aus frisch geladener identischer Beschnittkarte 4→4.",
+          "remaining": "Host mit persistenten sichtbaren und flüchtigen rechten Außenzellen paaren; unterer Rand, andere Inhalte und unabhängiger Review offen. Keine Fallfreigabe."
+        }
       },
       {
         "id": "DD-038.04",
@@ -113635,7 +113699,39 @@
           ],
           "gap": "Direkte Original-Dateiwirkung und gleicher Host-Commit für einen unteren Rand fehlen. Acht-Slot-Terrain-Hostlauf zweimal durch Testnavigation vor Resize abgebrochen; keine neue Abnahme."
         },
-        "inventoryNote": "Terrain-Resize-IL: beide Masken erhalten neue Randpixel als RGBA (255,0,0,0), alte Samples werden um linke/obere Randfelder verschoben und außerhalb abgeschnitten; History wird nach Größenänderung geleert. Integrierter Helfer und Kerntest vorhanden, direkte Original-/Host-Randbyte-, Bild- und Frischöffnungspaarung offen."
+        "inventoryNote": "Terrain-Resize-IL: beide Masken erhalten neue Randpixel als RGBA (255,0,0,0), alte Samples werden um linke/obere Randfelder verschoben und außerhalb abgeschnitten; History wird nach Größenänderung geleert. Integrierter Helfer und Kerntest vorhanden, direkte Original-/Host-Randbyte-, Bild- und Frischöffnungspaarung offen.",
+        "followUpPhase1InputLimits": {
+          "state": "input_candidate_review_pending",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "hostBuildSha256": "bc467f3a43ce2c615f72d40e2ccb66bd8d4e9d9ab9b3bb49ece0bc78c9463d56",
+          "originalEvidence": [
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/tests/native-resize-limits.json",
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/tests/native-resize-negative.json",
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/tests/native-resize-paired.json"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-input-20261009/implementation.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-input-host-20261009/evidence/1791517451651-parity-tools-phase1-resize-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-input-host-20261009/evidence/1791517456955-parity-tools-phase1-resize-reopen/result.json"
+          ],
+          "measuredScope": "Original 12×8: nach oben 64 wird unten 999 zu 56 normalisiert; Host-GUI 8×8 zeigt denselben Gegenrandwert nach Tab.",
+          "remaining": "Untere Crop-Wirkung, weitere Ausgangsgrößen und unabhängiger Review offen."
+        },
+        "followUpPhase1BottomCropOriginalProbe": {
+          "state": "original_measured_host_open",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "sequence": "12×10 mit zehn Smart-Tile-Zellen → Bottom in tiles -2 → Save → Bottom in tiles +2 → Save; dieselbe gespeicherte 12×8-Beschnittkarte frisch öffnen → Bottom in tiles +2 → Save",
+          "sourceMapSha256": "7f6be27e1ce298f7e0e5319a26f749490362ddf529a8dd73182e503fb68e55e4",
+          "cropMapSha256": "6a884bdd0bff18cec2785032203287c534ad0584f7441003f7096697a1cbd0bc",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-bottom-crop-20261009/original-probe.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-bottom-crop-20261009/native-prepare-second/runs/20261009-060322-3494601/evidence/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-bottom-crop-20261009/native-same/runs/20261009-060413-3495578/evidence/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-bottom-crop-20261009/native-fresh/runs/20261009-060457-3496258/evidence/result.json"
+          ],
+          "measuredScope": "Unten -2: gespeicherte Zellen 10→5 und vier Polygone gleich; unten +2 im selben Prozess 5→10, aus frisch geladener identischer Beschnittkarte 5→5.",
+          "remaining": "Host mit persistenten sichtbaren und flüchtigen unteren Außenzellen paaren; oberer/linker Rand, andere Inhalte und unabhängiger Review offen. Keine Fallfreigabe."
+        }
       },
       {
         "id": "DD-038.05",
@@ -113708,7 +113804,24 @@
           ],
           "gap": "Das Original verwirft dabei 4 von 10 Tile-Zellen dauerhaft; dem Editor fehlt ein getrenntes Tile-Zellmodell für den Hostvergleich. Acht-Slot-Terrain-Hostlauf zweimal durch Testnavigation vor Resize abgebrochen; keine neue Abnahme."
         },
-        "inventoryNote": "Terrain-Resize-IL: beide Masken erhalten neue Randpixel als RGBA (255,0,0,0), alte Samples werden um linke/obere Randfelder verschoben und außerhalb abgeschnitten; History wird nach Größenänderung geleert. Integrierter Helfer und Kerntest vorhanden, direkte Original-/Host-Randbyte-, Bild- und Frischöffnungspaarung offen."
+        "inventoryNote": "Terrain-Resize-IL: beide Masken erhalten neue Randpixel als RGBA (255,0,0,0), alte Samples werden um linke/obere Randfelder verschoben und außerhalb abgeschnitten; History wird nach Größenänderung geleert. Integrierter Helfer und Kerntest vorhanden, direkte Original-/Host-Randbyte-, Bild- und Frischöffnungspaarung offen.",
+        "followUpPhase1InputLimits": {
+          "state": "input_candidate_horizontal_host_gui_open",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "hostBuildSha256": "bc467f3a43ce2c615f72d40e2ccb66bd8d4e9d9ab9b3bb49ece0bc78c9463d56",
+          "originalEvidence": [
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/tests/native-resize-limits.json",
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/tests/native-resize-negative.json",
+            "/home/aaron/Schreibtisch/Obsidian/DnD OT/.obsidian/plugins/dungeon-auswertung/tests/native-resize-paired.json"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-input-20261009/implementation.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-input-host-20261009/evidence/1791517451651-parity-tools-phase1-resize-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-input-host-20261009/evidence/1791517456955-parity-tools-phase1-resize-reopen/result.json"
+          ],
+          "measuredScope": "Original 12×8: links -5 → -4, 999 → 64 und -1,5 → -2; die Host-Kernfunktion bildet diese Werte ab.",
+          "remaining": "Linke Host-GUI-Eingabe, Smart-Tile-Crop und unabhängiger Review offen."
+        }
       },
       {
         "id": "DD-038.06",
@@ -113909,6 +114022,23 @@
           ],
           "measuredScope": "Übernehmen setzt oben +1, verschiebt Building und Objekt, markiert Dirty und speichert die 8×9-Karte.",
           "remaining": "Weitere Randrichtungen und Crop-Wirkung offen."
+        },
+        "followUpPhase1CancelOriginalProbe": {
+          "state": "original_measured_host_candidate_review_pending",
+          "originalVersion": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-original-final-20261009/original-probe.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-original-final-20261009/runs/20261009-053824-3468006/evidence/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-original-final-20261009/runs/20261009-053824-3468006/evidence/screens/09-ok-top-one.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-original-final-20261009/runs/20261009-053824-3468006/evidence/maps/after-ok.dungeondraft_map"
+          ],
+          "hostBuildSha256": "495efaf9c9eabb8a55ba1ae0e6d8c88e79d1d38b00b1b688499a4318b3b4a75e",
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-window-final-20261009/evidence/1791516812106-parity-tools-phase1-resize-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-window-final-20261009/evidence/1791516816609-parity-tools-phase1-resize-reopen/result.json"
+          ],
+          "measuredScope": "Oben +1 und OK ergeben 8×9; das Objekt wandert von y=1280 auf y=1536 native Einheiten.",
+          "remaining": "Weitere Randrichtungen, Smart-Tile-Crop und unabhängiger Review offen."
         }
       },
       {
@@ -114000,6 +114130,24 @@
           ],
           "measuredScope": "Nach Eingabe von oben +1 verwirft Host-Abbrechen den unbestätigten Wert; Dokument, Dateihash und History bleiben gleich.",
           "remaining": "Originalwirkung nach Eingabe direkt messen; unabhängiger Review offen."
+        },
+        "followUpPhase1CancelOriginalProbe": {
+          "state": "original_measured_host_candidate_review_pending",
+          "originalVersion": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-original-final-20261009/original-probe.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-original-final-20261009/runs/20261009-053824-3468006/evidence/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-original-final-20261009/runs/20261009-053824-3468006/evidence/screens/03-cancel-top-one.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-original-final-20261009/runs/20261009-053824-3468006/evidence/screens/05-reopen-after-cancel.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-original-final-20261009/runs/20261009-053824-3468006/evidence/maps/after-cancel.dungeondraft_map"
+          ],
+          "hostBuildSha256": "495efaf9c9eabb8a55ba1ae0e6d8c88e79d1d38b00b1b688499a4318b3b4a75e",
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-window-final-20261009/evidence/1791516812106-parity-tools-phase1-resize-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-window-final-20261009/evidence/1791516816609-parity-tools-phase1-resize-reopen/result.json"
+          ],
+          "measuredScope": "Oben +1 eingegeben, Cancel schließt ohne Übernahme; erneut 0 tiles, gespeicherte Karte 8×8 und zu X bytegleich.",
+          "remaining": "Andere Randwerte und unabhängiger Review offen."
         }
       },
       {
@@ -114129,6 +114277,22 @@
             }
           },
           "verifiedScope": "Kartengröße bei zwei geöffneten Karten und im Frischstart; Menüänderung bei offenem Originaldialog nicht erreichbar. Auf dem DD-042.09-Endstand erneut in Bearbeitung und Frischstart bestanden."
+        },
+        "followUpPhase1ResizeRegression": {
+          "state": "regression_candidate_review_pending",
+          "hostBuildSha256": "9c064517d7e2221acd1b43694f7c0634f7a682d61870378bbf17aa847410d3d5",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd039/NATIVE-GAP-REPORT.md"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-info-20261009/implementation.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-info-host-20261009/evidence/1791517646065-parity-tools-phase1-resize-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-info-host-20261009/evidence/1791517646065-parity-tools-phase1-resize-edit/map-info-after-resize.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-info-host-20261009/evidence/1791517651000-parity-tools-phase1-resize-reopen/result.json"
+          ],
+          "measuredScope": "Nach 8×8 → 8×9 und Save zeigt die Information 8×9; nach frischem Hoststart erneut 8×9.",
+          "remaining": "Unabhängiger Endbuild-Review offen."
         }
       },
       {
@@ -114257,6 +114421,22 @@
             }
           },
           "verifiedScope": "Vollständiger aktueller Kartendateipfad bei zwei Karten und im Frischstart; In-App-Umbenennung bei offenem Originaldialog nicht erreichbar. Auf dem DD-042.09-Endstand erneut in Bearbeitung und Frischstart bestanden."
+        },
+        "followUpPhase1ResizeRegression": {
+          "state": "regression_candidate_review_pending",
+          "hostBuildSha256": "9c064517d7e2221acd1b43694f7c0634f7a682d61870378bbf17aa847410d3d5",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd039/NATIVE-GAP-REPORT.md"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-info-20261009/implementation.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-info-host-20261009/evidence/1791517646065-parity-tools-phase1-resize-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-info-host-20261009/evidence/1791517646065-parity-tools-phase1-resize-edit/map-info-after-resize.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-info-host-20261009/evidence/1791517651000-parity-tools-phase1-resize-reopen/result.json"
+          ],
+          "measuredScope": "Die Information zeigt nach Resize und frischem Hoststart den vollständigen aktuellen Dateipfad.",
+          "remaining": "Unabhängiger Endbuild-Review offen."
         }
       },
       {
@@ -114384,6 +114564,22 @@
             }
           },
           "verifiedScope": "Ausgewählte Paketnamen mit Autor; verbliebene Texturreferenz ohne Paketauswahl wird nicht als Auswahl gemeldet. Leere nummerierte Originalzeile ist Oberflächendifferenz. Auf dem DD-042.09-Endstand erneut in Bearbeitung und Frischstart bestanden."
+        },
+        "followUpPhase1ResizeRegression": {
+          "state": "regression_empty_selection_only",
+          "hostBuildSha256": "9c064517d7e2221acd1b43694f7c0634f7a682d61870378bbf17aa847410d3d5",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd039/NATIVE-GAP-REPORT.md"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-info-20261009/implementation.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-info-host-20261009/evidence/1791517646065-parity-tools-phase1-resize-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-info-host-20261009/evidence/1791517646065-parity-tools-phase1-resize-edit/map-info-after-resize.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-info-host-20261009/evidence/1791517651000-parity-tools-phase1-resize-reopen/result.json"
+          ],
+          "measuredScope": "Bei leerer Paketauswahl zeigt die Information „keine“ nach Resize.",
+          "remaining": "Ausgewähltes Paket mit Name/Autor auf dem aktuellen Build noch nicht regressionsgeprüft."
         }
       },
       {
@@ -114504,6 +114700,22 @@
             }
           },
           "verifiedScope": "Schließen ohne Datei-, Dokument- oder History-Verlust; vorheriger Objekt-Undo bleibt im Original erreichbar. Auf dem DD-042.09-Endstand erneut in Bearbeitung und Frischstart bestanden."
+        },
+        "followUpPhase1ResizeRegression": {
+          "state": "regression_candidate_review_pending",
+          "hostBuildSha256": "9c064517d7e2221acd1b43694f7c0634f7a682d61870378bbf17aa847410d3d5",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd039/NATIVE-GAP-REPORT.md"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-info-20261009/implementation.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-info-host-20261009/evidence/1791517646065-parity-tools-phase1-resize-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-info-host-20261009/evidence/1791517646065-parity-tools-phase1-resize-edit/map-info-after-resize.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-info-host-20261009/evidence/1791517651000-parity-tools-phase1-resize-reopen/result.json"
+          ],
+          "measuredScope": "Schließen lässt Dokument, Dateihash und History nach Resize unverändert.",
+          "remaining": "Unabhängiger Endbuild-Review offen."
         }
       },
       {
@@ -119786,6 +119998,24 @@
           ],
           "measuredScope": "Nach Eingabe von oben +1 verwirft Host-X den unbestätigten Wert; Dokument, Dateihash und History bleiben gleich.",
           "remaining": "Originalwirkung nach Eingabe direkt messen; unabhängiger Review offen."
+        },
+        "followUpPhase1CancelOriginalProbe": {
+          "state": "original_measured_host_candidate_review_pending",
+          "originalVersion": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-original-final-20261009/original-probe.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-original-final-20261009/runs/20261009-053824-3468006/evidence/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-original-final-20261009/runs/20261009-053824-3468006/evidence/screens/06-x-top-one.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-original-final-20261009/runs/20261009-053824-3468006/evidence/screens/08-reopen-after-x.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-original-final-20261009/runs/20261009-053824-3468006/evidence/maps/after-x.dungeondraft_map"
+          ],
+          "hostBuildSha256": "495efaf9c9eabb8a55ba1ae0e6d8c88e79d1d38b00b1b688499a4318b3b4a75e",
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-window-final-20261009/evidence/1791516812106-parity-tools-phase1-resize-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-window-final-20261009/evidence/1791516816609-parity-tools-phase1-resize-reopen/result.json"
+          ],
+          "measuredScope": "Oben +1 eingegeben, X schließt ohne Übernahme; erneut 0 tiles, gespeicherte Karte 8×8 und zu Cancel bytegleich.",
+          "remaining": "Andere Randwerte und unabhängiger Review offen."
         }
       },
       {
@@ -119906,6 +120136,22 @@
             }
           },
           "verifiedScope": "X ohne Datei-, Dokument- oder History-Verlust; vorheriger Objekt-Undo bleibt im Original erreichbar. Auf dem DD-042.09-Endstand erneut in Bearbeitung und Frischstart bestanden."
+        },
+        "followUpPhase1ResizeRegression": {
+          "state": "regression_candidate_review_pending",
+          "hostBuildSha256": "9c064517d7e2221acd1b43694f7c0634f7a682d61870378bbf17aa847410d3d5",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd039/NATIVE-GAP-REPORT.md"
+          ],
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-info-20261009/implementation.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-info-host-20261009/evidence/1791517646065-parity-tools-phase1-resize-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-info-host-20261009/evidence/1791517646065-parity-tools-phase1-resize-edit/map-info-after-resize.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-info-host-20261009/evidence/1791517651000-parity-tools-phase1-resize-reopen/result.json"
+          ],
+          "measuredScope": "X lässt Dokument, Dateihash und History nach Resize unverändert.",
+          "remaining": "Unabhängiger Endbuild-Review offen."
         }
       },
       {

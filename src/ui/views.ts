@@ -666,6 +666,13 @@ function editorHost(
   pending = false,
   exportName?: string,
 ): EditorHost {
+  const bindSourceDocument = () => {
+    // Obsidian creates Modal in activeWindow, which can lag behind this view.
+    if (sourceDocument.defaultView) {
+      window.activeWindow = sourceDocument.defaultView;
+      window.activeDocument = sourceDocument;
+    }
+  };
   return {
     app: plugin.app,
     notice: (m) => new Notice(m),
@@ -705,11 +712,7 @@ function editorHost(
     ).request(),
     manageAssets: () => plugin.openAssets(map.session),
     manageMap: () => {
-      // Obsidian creates Modal in activeWindow, which can lag behind this view.
-      if (sourceDocument.defaultView) {
-        window.activeWindow = sourceDocument.defaultView;
-        window.activeDocument = sourceDocument;
-      }
+      bindSourceDocument();
       new MapSettingsModal(
         plugin.app,
         map.session,
@@ -717,13 +720,15 @@ function editorHost(
         plugin.assets,
       ).open();
     },
-    manageMapInfo: pending ? undefined : () =>
+    manageMapInfo: pending ? undefined : () => {
+      bindSourceDocument();
       new MapInformationModal(
         plugin.app,
         map.session,
         mapPath,
         plugin.assets,
-      ).open(),
+      ).open();
+    },
     manageReferences: (floorId) =>
       new ReferenceImagesModal(
         plugin.app,

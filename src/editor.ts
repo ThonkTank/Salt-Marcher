@@ -441,6 +441,8 @@ export class DungeonEditor {
     const menuContent = element("div", "dn-menu-content", menu);
     if (host.manageMap)
       this.button("Kartengröße ändern", () => host.manageMap!(), menuContent);
+    if (host.manageMapInfo)
+      this.button("Karteninformationen", () => host.manageMapInfo!(), menuContent);
     if (host.exportMap)
       this.button("Exportieren", () => host.exportMap!(this.renderer, this.session), menuContent);
     if (host.openPlay)

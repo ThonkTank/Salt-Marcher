@@ -1217,12 +1217,67 @@
         "hostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-window-final-20261009/evidence/1791516816609-parity-tools-phase1-resize-reopen/result.json",
         "state": "partial_candidate_review_pending"
       },
+      "resizeCancelOriginalProbe": {
+        "cases": "DD-038.07–.09",
+        "report": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-original-final-20261009/original-probe.md",
+        "result": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-original-final-20261009/runs/20261009-053824-3468006/evidence/result.json",
+        "sourceMapSha256": "dcf8dbec6bb1188bcddae5ad40deabf994acfb651166a9c77571d644272085c2",
+        "measured": "Oben +1 vor Cancel/X: beide 8×8 und Rohkarten bytegleich; Dialog erneut bei 0. OK-Kontrolle: 8×9 und Objekt um 256 native Einheiten verschoben.",
+        "state": "original_measured_host_candidate_review_pending"
+      },
+      "resizeInputCandidate": {
+        "cases": "DD-038.02–.05, Eingabefelder",
+        "buildSha256": "bc467f3a43ce2c615f72d40e2ccb66bd8d4e9d9ab9b3bb49ece0bc78c9463d56",
+        "report": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-input-20261009/implementation.md",
+        "hostEdit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-input-host-20261009/evidence/1791517451651-parity-tools-phase1-resize-edit/result.json",
+        "hostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-input-host-20261009/evidence/1791517456955-parity-tools-phase1-resize-reopen/result.json",
+        "coreTests": 186,
+        "state": "partial_candidate_review_pending"
+      },
+      "mapInfoRegression": {
+        "cases": "DD-039.01–.03/.05/.06 nach DD-038-Resize",
+        "buildSha256": "9c064517d7e2221acd1b43694f7c0634f7a682d61870378bbf17aa847410d3d5",
+        "report": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-info-20261009/implementation.md",
+        "hostEdit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-info-host-20261009/evidence/1791517646065-parity-tools-phase1-resize-edit/result.json",
+        "hostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-info-host-20261009/evidence/1791517651000-parity-tools-phase1-resize-reopen/result.json",
+        "coreTests": 186,
+        "state": "regression_passed_selected_pack_open"
+      },
+      "resizeCropRepairPlan": {
+        "plan": "ROADMAP-PARITY-TOOLS-PHASE1-RESIZE-REPAIR-PLAN.md",
+        "scope": "DD-038.03–.05 und übrige Crop-/Terrainwirkung",
+        "state": "plan_ready_for_separate_implementation",
+        "gate": "open"
+      },
+      "resizeRightOriginalProbe": {
+        "cases": "DD-038.03",
+        "state": "original_measured_host_open",
+        "report": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-right-crop-20261009/original-probe.md",
+        "sameProcessResult": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-right-crop-20261009/native-final/runs/20261009-055552-3485360/evidence/result.json",
+        "freshProcessResult": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-right-crop-20261009/native-final-reopen/runs/20261009-055654-3486267/evidence/result.json",
+        "sourceMapSha256": "7d57df1b32e42f2c95507ca4ce40fe8b9c4e8d891d61d7685f26c738aa1fd7c9",
+        "cropMapSha256": "e558b566f9899055294e4cf4c22224007c13e1ad352dc6cfa13126ed9cc37f2f",
+        "measured": "12×8→9×8→12×8: belegte Zellen 10→4→10 im selben Prozess, aber 4→4 nach frischer Öffnung der gespeicherten Crop-Karte; vier Shape-Polygone bleiben gleich.",
+        "gate": "open"
+      },
+      "resizeBottomOriginalProbe": {
+        "cases": "DD-038.04",
+        "state": "original_measured_host_open",
+        "report": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-bottom-crop-20261009/original-probe.md",
+        "prepareResult": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-bottom-crop-20261009/native-prepare-second/runs/20261009-060322-3494601/evidence/result.json",
+        "sameProcessResult": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-bottom-crop-20261009/native-same/runs/20261009-060413-3495578/evidence/result.json",
+        "freshProcessResult": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-bottom-crop-20261009/native-fresh/runs/20261009-060457-3496258/evidence/result.json",
+        "sourceMapSha256": "7f6be27e1ce298f7e0e5319a26f749490362ddf529a8dd73182e503fb68e55e4",
+        "cropMapSha256": "6a884bdd0bff18cec2785032203287c534ad0584f7441003f7096697a1cbd0bc",
+        "measured": "12×10→12×8→12×10: belegte Zellen 10→5→10 im selben Prozess, aber 5→5 nach frischer Öffnung der gespeicherten Crop-Karte; vier Shape-Polygone bleiben gleich.",
+        "gate": "open"
+      },
       "phaseGate": "open"
     },
     "plan": "ROADMAP-PARITY-PLAN.md",
     "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
     "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
-    "nextRun": "ROADMAP-PARITY-TOOLS.md Phase 1: DD-038 Original-Cancel/X nach unbestätigter Eingabe direkt messen; rechte/untere/linke Beschnitte, Smart-Tile-Zellen, Terrain und Randgrenzen mit dem Host paaren. Danach DD-038 unabhängig reviewen. DD-008 benötigt den unabhängigen Endbuild-Review, gemeinsame Original-/Host-Geometrie und kombinierte History-/Mehrgeschossfolge. Grafikpaare für DD-006/007 sowie offene DD-002-Grenz- und Löschpfade vor dem 77-Fälle-Endreview nachholen. Die übrigen Pflichtfälle folgen in Roadmap-Reihenfolge.",
+    "nextRun": "ROADMAP-PARITY-TOOLS.md Phase 1: DD-038 oberen und linken Smart-Tile-Beschnitt direkt kontrollieren, dann eine getrennte persistente/flüchtige Zellschicht für rechte und untere Randfolgen im Host umsetzen und paaren. Terrain und weitere Entitäten separat abgleichen; die auf 12×8 gemessenen Eingabegrenzen an weiteren Ausgangsgrößen kontrollieren, danach DD-038 unabhängig reviewen. DD-039 braucht noch die Regression mit ausgewähltem Paket. DD-008 benötigt den unabhängigen Endbuild-Review, gemeinsame Original-/Host-Geometrie und kombinierte History-/Mehrgeschossfolge. Grafikpaare für DD-006/007 sowie offene DD-002-Grenz- und Löschpfade vor dem 77-Fälle-Endreview nachholen. Die übrigen Pflichtfälle folgen in Roadmap-Reihenfolge.",
     "note": "P7-1, P7-3 und P7-4 sind in getrennten Edit-/Neuöffnungspaaren reviewt. P7-2 ist auf ausdrückliche Nutzeranweisung übersprungen, nicht physisch geprüft. Phase-7-Fachphasentor mit dieser Ausnahme bestanden; Produktbuild unverändert. Hex-Atlas- und Stadtstand erhalten.",
     "phase2Plan": "ROADMAP-PARITY-PHASE2-PLAN.md",
     "candidateBuildSha256": "b321128188b944c3324594663a410acfd84863f17860f637b9ed2e6ecc33b466",

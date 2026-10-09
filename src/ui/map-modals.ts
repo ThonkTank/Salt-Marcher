@@ -4,6 +4,7 @@ import { Session } from "../session";
 import { type Prefab } from "../prefabs";
 import { type AssetCatalog } from "../assets";
 import { NATIVE_SIZE_PRESETS, NEW_MAP_DEFAULT_SIZE, newMapDialogSize, newSizePresetSize } from "../features/verwaltung/new-map-size";
+import { normalizeResizeEdge } from "../features/verwaltung/map-resize-input";
 import { resizeMap, type MapMargins } from "../commands";
 import { generateLayout, type GeneratorKind } from "../generators";
 import type DungeonPlugin from "../main";
@@ -461,15 +462,25 @@ export class MapSettingsModal extends Modal {
     for (const [key, label] of labels)
       new Setting(this.contentEl)
         .setName(label + " in Feldern")
-        .addText((input) =>
+        .addText((input) => {
           input
             .setValue("0")
             .setPlaceholder("0")
             .onChange((value) => {
-              margins[key] = Number(value);
+              const number = Number(value);
+              margins[key] = Number.isFinite(number) ? number : 0;
               update();
-            }),
-        );
+            });
+          input.inputEl.addEventListener("blur", () => {
+            const normalized = normalizeResizeEdge(
+              current.width, current.height, margins, key,
+              Number(input.getValue()),
+            );
+            margins[key] = normalized;
+            input.setValue(String(normalized));
+            update();
+          });
+        });
     update();
     new Setting(this.contentEl)
       .addButton((button) =>

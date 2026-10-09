@@ -649,3 +649,27 @@ Der [Umsetzungsbericht](/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1
 ## Folge-Roadmap Phase 1: Größen-Dialogfenster, Nachbesserungsteilstand
 
 Der [Nachbesserungsbericht](/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-window-20261009/implementation.md) weist nach, dass der frühere Menüklick den Dialog im falschen Obsidian-Fenster öffnete. Der Reparaturbuild `495efaf9…` bindet ihn an die angeklickte Kartenansicht. Zwei isolierte Host-Editläufe bestehen; im zweiten verwerfen Cancel und X jeweils einen bereits eingegebenen, unbestätigten Randwert ohne Karten-, Datei- oder History-Änderung. Oben +1, Save und bytegleiche Neuöffnung im frischen Prozess bestehen erneut. **Noch kein DD-038-Gesamtreview:** Original-Cancel/X nach Eingabe, Smart-Tile-Crop, übrige Randrichtungen, Eingabegrenzen, unabhängiger Endbuild-Review und das 77-Fälle-Tor bleiben offen. Der installierte Vault-Build blieb unverändert; P7-2 ist physisch ungeprüft.
+
+## Folge-Roadmap Phase 1: Größen-Dialogabbruch, direkte Originalprobe
+
+Der [Originalbericht](/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-original-final-20261009/original-probe.md) belegt in Dungeondraft 1.2.0.1 nach oben +1 sowohl Cancel als auch X: Dialog zu, beim Wiederöffnen 0, gespeicherte 8×8-Rohkarten bytegleich; OK mit derselben Eingabe erzeugt als Kontrolle 8×9 und verschiebt das Objekt. Nur eine unbenutzte Textur-Lookup-Reihenfolge änderte sich gegenüber der Quellkarte beim ersten Save. Die konkrete Abbruchfolge ist mit dem Hostbuild `495efaf9…` gepaart. **`DD-038.07–.09` bleiben Umsetzungskandidaten:** andere Eingaben und Randrichtungen, Crop, unabhängiger Review und das 77-Fälle-Tor bleiben offen. P7-2 ist physisch ungeprüft.
+
+## Folge-Roadmap Phase 1: Größen-Eingabegrenzen, Umsetzungsteilstand
+
+Der [Umsetzungsbericht](/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-input-20261009/implementation.md) vergleicht die direkte 12×8-Originalmatrix für Einzelrand, gegenüberliegende Ränder und negative Brüche mit dem Hostkandidaten `bc467f3a…`. Die Dialogfelder normalisieren beim Verlassen auf ±64 je Rand und 8–128 für die resultierende Seite; halbe Werte runden weg von null. Die Originalmatrix besteht als Kerntest, und der isolierte Hostlauf bestätigt drei Grenzfälle sowie die bestehende Abbruch-/Save-/Neuöffnungsfolge. Typprüfung, 186 Tests und Build bestehen. **Nur Eingabekandidat für `DD-038.02–.05`:** die Regel ist außerhalb der gemessenen Ausgangsgröße eine Inferenz; rechte/untere Crop-Wirkung, Smart-Tile-Raster, unabhängiger Review und das 77-Fälle-Tor bleiben offen. Der Vault-Build blieb unverändert; P7-2 ist physisch ungeprüft.
+
+## Folge-Roadmap Phase 1: Karteninformation nach Resize, Regression
+
+Der [Regressionsbericht](/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-info-20261009/implementation.md) belegt auf Hostbuild `9c064517…` Menü → Karteninformationen nach einer gespeicherten Änderung von 8×8 auf 8×9: vollständiger Pfad, „keine“ Pakete, Close/X ohne Änderung von Dokument, Dateihash oder History, dazu bytegleiche Neuöffnung mit erneut korrekter Information. Typprüfung, 186 Tests und Build bestehen. **`DD-039.01–.03/.05/.06` sind auf dem neuen Größenbuild regressionsgeprüft:** ein ausgewähltes Paket mit Name/Autor, unabhängiger Endbuild-Review und das 77-Fälle-Tor bleiben offen. Der Vault-Build blieb unverändert; P7-2 ist physisch ungeprüft.
+
+## Folge-Roadmap Phase 1: DD-038 Randbeschnitt, Nachbesserungsplan
+
+Der [getrennte Plan](ROADMAP-PARITY-TOOLS-PHASE1-RESIZE-REPAIR-PLAN.md) ordnet die noch fehlenden direkten Originalproben für rechte/untere Beschnitte und Terrain, die getrennte persistierte Smart-Tile-Zellschicht, vier Host-Randpaare und den unabhängigen Endbuild-Review. Der belegte linke Beschnitt verliert vier von zehn Smart-Tile-Zellen dauerhaft, während alle Shape-Polygonpunkte erhalten bleiben. **Plan bereit, Umsetzung und Tor offen.**
+
+## Folge-Roadmap Phase 1: rechter Smart-Tile-Beschnitt, direkte Originalprobe
+
+Der [Originalbericht](/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-right-crop-20261009/original-probe.md) vergleicht Dungeondraft 1.2.0.1 an einer externen 12×8-Kopie mit zehn belegten Randzellen. Rechts −3 speichert vier Zellen; rechts +3 im selben Prozess stellt zehn wieder her. Ein frischer Originalprozess liest exakt diese gespeicherte 9×8-Karte und behält nach rechts +3 nur vier. Alle vier Shape-Polygone bleiben in beiden Folgen erhalten. **`DD-038.03` ist ausschließlich im Original vermessen:** die bisher geplante sofortige Dauerlöschung aller Außenzellen gilt rechts nicht; Hostzustand, unterer Rand, weitere Inhalte, unabhängiger Review und das 77-Fälle-Tor bleiben offen. P7-2 bleibt physisch ungeprüft.
+
+## Folge-Roadmap Phase 1: unterer Smart-Tile-Beschnitt, direkte Originalprobe
+
+Der [Originalbericht](/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-bottom-crop-20261009/original-probe.md) misst auf einer extern vorbereiteten 12×10-Karte unten −2 und danach +2: Die gespeicherten belegten Zellen zählen 10→5→10 im selben Originalprozess; ein frischer Prozess öffnet exakt die 12×8-Beschnittkarte und behält nach +2 fünf. Die vier Shape-Polygone bleiben in beiden Abläufen gleich. **`DD-038.04` ist nur im Original vermessen:** Host-Zellschicht, oberer und erneut kontrollierter linker Rand, weitere Inhalte, unabhängiger Review und das 77-Fälle-Tor bleiben offen. P7-2 bleibt physisch ungeprüft.
