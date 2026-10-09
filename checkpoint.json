@@ -1472,6 +1472,13 @@
     "status": "roadmap_closed_with_p7_2_exception_followup_phase1_implementation_in_progress",
     "roadmap": "ROADMAP-PARITY.md",
     "followUpRoadmap": "ROADMAP-PARITY-TOOLS.md",
+    "dd001002Plan": {
+      "date": "2026-10-09",
+      "state": "plan_written_original_probe_next",
+      "plan": "ROADMAP-PARITY-TOOLS-PHASE1-DD001002-PLAN.md",
+      "source": "Dungeondraft 1.2.0.1 Opulent Kirin; frühere Start-/Vorlagenproben in TOOL-PARITY.md",
+      "next": "Bruchwertrundung, obere Höhengrenze, doppelte Namen/Minus und New-Map-OK/Cancel/X direkt im Original messen; danach Hostpaar und getrennten Review durchführen."
+    },
     "dd008Plan": {
       "date": "2026-10-09",
       "state": "dd008_multilevel_scoped_review_passed_phase1_open",
