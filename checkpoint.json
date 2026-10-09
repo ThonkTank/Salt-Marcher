@@ -1981,6 +1981,18 @@
       "next": "GM-UX-N-005-P01: als eigener Dungeon-Planlauf ausschließlich die belegte Raum-Key-Suche planen; nicht mit DD-036 oder Atlaspersistenz vermischen.",
       "followingRun": "DD-036-O01a bleibt als separater referenzfreier read-only Overworld-Öffnungslauf verfügbar, wird aber nicht mit GM-UX-N-005-P01 kombiniert."
     },
+    "gmUxN005Plan": {
+      "date": "2026-10-09",
+      "state": "plan_drafted_independent_review_pending",
+      "run": "GM-UX-N-005-P01",
+      "plan": "ROADMAP-GM-UX-N-005-PLAN.md",
+      "source": "GM-UX-005 im getrennten Cloud-GM-Produkttest; ROADMAP-GM-PRODUCT-TESTING-PLAN.md; Issue #1 Kommentar 6085234573",
+      "ownership": "Dungeon-Strang; vor Claim keine offenen PRs, gleichnamigen Remote-Branches oder anderen Besitzer auf Shared-Head 5fc9f7f6a6a8b20fb8470ad865cd5b84be16c7c1.",
+      "scope": "Nur technischer Plan für read-only V4-Raum-Key-Suche der aktuellen Session: Treffer nennt Raum und Geschoss, Aktivierung nutzt bestehende Geschoss-/Auswahl-/Kamera-/Key-Wege ohne Kartenmutation, Leeren stellt Übersicht wieder her, Save/Reload erhält Hinweis.",
+      "limits": "Keine Implementierung oder GUI-/Hostprüfung. Keine vaultweite Obsidian-Suche, V2/V3-Erweiterung, GM-UX-N-003-, DD-036-, Atlas-, City- oder H03-Arbeit und keine Produkt-/Fachfreigabe.",
+      "next": "Unabhängiger read-only Review des exakten GM-UX-N-005-P01-Plancommits; erst PASS öffnet GM-UX-N-005-I01.",
+      "followingRun": "GM-UX-N-006-P01 als eigener Planlauf: nach Abschluss des N-005-Plans den Workspace-/View-State-Vertrag prüfen und zwischen Ebenenwiederherstellung und sichtbarer Wiederaufnahme entscheiden; keine Vermischung mit N-005-Implementierung, DD-036 oder Atlaspersistenz."
+    },
     "dd006ShadowPlan": {
       "date": "2026-10-09",
       "state": "per_entity_shadow_review_passed_atlas_options_and_phase1_open",
@@ -2567,7 +2579,7 @@
     "plan": "ROADMAP-PARITY-PLAN.md",
     "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
     "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
-    "nextRun": "GM-UX-N-005-P01: als eigener Dungeon-Planlauf die durch GM-UX-005 belegte Suche nach Raum-Key-Texten planen; Treffer nennt Raum und Geschoss, Aktivierung öffnet Raum und Key ohne Kartenänderung, leere Suche stellt die Übersicht wieder her und Save/Reload erhält den Hinweis. Nicht mit DD-036-O01a, Atlaspersistenz oder fremden Featurepfaden vermischen; keine Produkt-, Host- oder Fachfreigabe aus der Planung.",
+    "nextRun": "GM-UX-N-005-P01-R01: den exakten technischen Plan für die belegte V4-Raum-Key-Suche unabhängig read-only prüfen; Datenquelle, Raum-/Geschoss-/Abschnittsaktivierung, Übersicht nach Leeren, Nichtmutation sowie Save/Reload-Orakel müssen ausführbar sein. Keine Implementierung oder Host-/Fachfreigabe aus dem Planreview.",
     "note": "P7-1, P7-3 und P7-4 sind in getrennten Edit-/Neuöffnungspaaren reviewt. P7-2 ist auf ausdrückliche Nutzeranweisung übersprungen, nicht physisch geprüft. Phase-7-Fachphasentor mit dieser Ausnahme bestanden; Produktbuild unverändert. Hex-Atlas- und Stadtstand erhalten.",
     "phase2Plan": "ROADMAP-PARITY-PHASE2-PLAN.md",
     "candidateBuildSha256": "b321128188b944c3324594663a410acfd84863f17860f637b9ed2e6ecc33b466",
