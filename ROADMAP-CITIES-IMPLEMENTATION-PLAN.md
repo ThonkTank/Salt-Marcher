@@ -376,3 +376,8 @@ CITY-00-I21-R Ergebnis: Manifest-Hashes, Download-Bytegleichheit und genau ein S
 CITY-00-I21-CP Plan: Referenzlücken-Snapshot auf I21 und den belegten Legend-/SVG-Namensumfang bringen; acceptance bleibt maßgeblich. Rohbelege/Originaldownloads unverändert erhalten, Manifest-Verweise und alle 63 unabhängigen Pflichten prüfen. Keine neue Architektur aus ungeprüfter Pinposition; kein neues Statussystem. Danach eigener CI-Lauf und unabhängiger CR-Lauf.
 
 CITY-00-I21-CR Ergebnis: Snapshot entspricht I21-Teilverweisen; Manifest-Hashes unverändert, 63 unabhängige Funktionspflichten offen. Aufräumumfang ohne weiteren Befund; keine technische Produktänderung und keine CITY-Freigabe. Nächster Lauf prüft den aktuellen HEX-05-Übergabestand für den Beginn der Stadtimplementierung.
+
+
+## CITY-00-I22-P: Übergabe- und Startregel gegen aktuelle Quellen prüfen
+
+Start: 2026-10-09T14:12:57.591718+00:00. Fokus: tatsächliche HEX-05-Voraussetzungen und widersprüchliche Stadt-Startformulierungen. Umsetzungslauf liest aktuellen Checkpoint und vorhandene Model-/Session-/Persistenzquellen, dokumentiert konkrete fehlende API-/Hostnachweise außerhalb des Vaults und berichtigt ausschließlich die pauschale CITY-00-Startregel: feste Galerie vor CITY-01, vollständige Detailwirkung spätestens vor zugehörigem Fachpaket, volle Inventur/Parität bleibt vor CITY-09 Pflicht. HEX-05 wird weder ersetzt noch als geliefert bewertet. Bestehende CLP-02-Übergabepflichten unverändert erhalten. Review prüft Originalauftrag, Roadmap und 63 CO-/24 CTY-Pflichten; anschließend getrenntes Aufräumen P/I/R für Verweis-/Fremdwurzelschutz.
