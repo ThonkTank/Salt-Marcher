@@ -4399,17 +4399,17 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-01-PREP-GESTURES-FINAL-CLEAN-I06",
-      "kind": "cleanup_implementation",
-      "startedAt": "2026-10-09T18:21:34.376981+00:00",
-      "focus": "Gesturekern und Grenzen konsistent dokumentieren",
-      "state": "completed",
-      "result": "CityGesture/gewichtete Precision als lokal reviewt dokumentiert; R08/R09 geschlossen. Sichtbare Griffe/Router/Placement/Save offen; keine Runtimeänderung."
-    },
-    "nextRun": {
       "id": "CITY-01-PREP-GESTURES-FINAL-CLEAN-R06",
       "kind": "cleanup_review",
-      "focus": "Dokumente, Belege, Quellenhashes und offene CTY-Fälle prüfen"
+      "startedAt": "2026-10-09T18:21:38.668055+00:00",
+      "focus": "Finales Werkzeug-Aufräumen mit aktuellen Quellen abschließen",
+      "state": "completed",
+      "result": "Planlinks/JSON/Quellenhashes geprüft;347Tests/check/build unverändert.24CTY/volleHostpflichten offen, kein Restbefund im lokalen Werkzeugkern."
+    },
+    "nextRun": {
+      "id": "CITY-TEAM-HANDOFF-R01",
+      "kind": "coordination_review",
+      "focus": "Konsolidierten Teamabgleich und vorhandenen Integrationskandidaten lesend gegen Citygrenzen prüfen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",

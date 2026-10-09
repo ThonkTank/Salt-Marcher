@@ -840,3 +840,6 @@ CITY-01-PREP-GESTURES-FINAL-CLEAN-P06 Start 2026-10-09T18:21:30.760216+00:00; Ke
 
 
 CITY-01-PREP-GESTURES-FINAL-CLEAN-I06 Start 2026-10-09T18:21:34.376981+00:00; CityGesture/gewichtete Precision als lokal reviewt dokumentiert; R08/R09 geschlossen. Sichtbare Griffe/Router/Placement/Save offen; keine Runtimeänderung. Fokus:Gesturekern und Grenzen konsistent dokumentieren. Bestehendes Werkzeugpaket, kein neues Schnittstellen-/Featurepaket.
+
+
+CITY-01-PREP-GESTURES-FINAL-CLEAN-R06 Start 2026-10-09T18:21:38.668055+00:00; Planlinks/JSON/Quellenhashes geprüft;347Tests/check/build unverändert.24CTY/volleHostpflichten offen, kein Restbefund im lokalen Werkzeugkern. Fokus:Finales Werkzeug-Aufräumen mit aktuellen Quellen abschließen. Bestehendes Werkzeugpaket, kein neues Schnittstellen-/Featurepaket.
