@@ -53,3 +53,5 @@ Planergebnis: eigener Umfang, Fixturevorschlag und Orakel konkretisiert. Offene 
 ## Getrennte Aufräumplanung
 
 CITY-E2E-P01-CLEAN-P: Prüfen, dass nur dieser Plan und checkpoint.cityExecution geändert sind; keine acceptance-Freigabe, Fixturedatei, neue Speicher-/Kameraautorität oder Originalinstanz. Relative Planverweise auf Existenz und sieben City-ID-Reservierungen auf Kollision außerhalb dieses Vorschlags prüfen. Alte Anschlussbeschreibung als historischen Vorschlag kenntlich lassen. Wiederaufnahme im Heartbeat an #12-Gate statt bloß freie GUI binden. Umsetzung/Review folgen separat.
+
+CITY-E2E-P01-CLEAN-I: Relative Planverweise vorhanden; sieben City-IDs ohne Treffer in sonstigen getrackten Dateien. Nur vorgeschlagene Reservierung, keine globale Vergabe. Historischen Quellenstand ausdrücklich abgegrenzt; Restart-/Foreignbinding-/OS-Gates erhalten. Keine entfernbare Produktsource oder Laufressource entstanden; deshalb kein Architekturumbau. Heartbeat wird auf gemeinsame Review-/Ratifikation vor I48b umgestellt.
