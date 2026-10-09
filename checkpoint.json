@@ -13,10 +13,10 @@
       "plan": "ROADMAP-SALTMARCHER-SMR-03-LIVE-SCENE-CONTRACT.md",
       "candidateBranch": "codex/smr-03-live-scene-contract-p01",
       "baseline": "7d35591be570d1c188998103b55e8e86e437f73d",
-      "integratedShared": "f0a8cdaa79d842ec826d5795676517dfd156a139",
-      "planCandidateCommit": "77c8ece7ee803123524d64295d6a8c748a1845c0",
-      "reviewedCandidate": "6b04dadf5aedefe15a7d4030e98911029db6b7fd",
-      "review": "Campaign/Data peer R01 in Issue comment 6087727266 required atomic initialization with an existing active Party and exact Complete-vs-disclosed-Salvage behavior. Both are repaired in the new plan candidate; focused peer re-review and independent architecture review remain required.",
+      "integratedShared": "d8e68728dfe0baba2144e75144884928b904b163",
+      "planCandidateCommit": "c8fb1ebce65969a4d6ae437300a5bafd45288aa2",
+      "reviewedCandidate": "77c8ece7ee803123524d64295d6a8c748a1845c0",
+      "review": "Campaign/Data peer R02 in Issue comment 6087780040 required permanent Character deletion to remove every live Scene, mask and Combat reference in the same confirmed publication boundary, never as deleted-with-cleanup-pending. The repair also forbids Undo from restoring the deleted CharacterId; focused peer re-review and independent architecture review remain required.",
       "limits": "Plan only. No product code, API, host, persistence, migration, implementation or acceptance approval. Campaign/Data, Party, mask owners, Scene/Time/Travel, Music/Weather/Shops, Passive Display and Host/Security ratifications remain required."
     },
     "source": {
