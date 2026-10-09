@@ -125,17 +125,17 @@
   },
   "saltMarcherCatalogEncounter": {
     "date": "2026-10-09",
-    "state": "ce02_i02_plan_second_repair_review_pending_ce01_physical_open",
+    "state": "ce02_i02_plan_third_repair_review_pending_ce01_physical_open",
     "plan": "ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md",
     "architecture": "ARCHITECTURE.md#geplante-katalog--und-encounter-erweiterung",
     "acceptance": "acceptance.json.saltMarcherCatalogEncounter",
     "currentRun": {
-      "id": "CE-02-I02-P01-N02",
+      "id": "CE-02-I02-P01-N03",
       "kind": "plan_repair",
       "state": "drafted_review_pending",
-      "focus": "Resolve N01-R01 cycle and schema-artifact findings while preserving the five confirmed repair groups",
+      "focus": "Resolve N02-R01 variable and variant-specific rarity schema/filter/Inspector finding",
       "plan": "ROADMAP-SALTMARCHER-CE02-I02-PLAN.md",
-      "result": "R01 required seven changes on 8c5c5680054b8dddd89900733ac7bbfe966876f1 (Issue #1 comment 6085178049). N01-R01 left two mandatory findings on 01a02ef124e3ffc02b626019f89f5e216612f7ab (Issue #1 comment 6085248851). N02 repair awaits exact-head independent review. No Item implementation or acceptance."
+      "result": "N02-R01 on 3b7e5c933a107da6f406aa44037decf316d09b77 found one remaining variable-rarity gap (Issue #1 comment 6085306351). N03 plan repair awaits exact-head review. No Item implementation or acceptance."
     },
     "implementationRun": {
       "id": "CE-01-I01",
@@ -305,6 +305,33 @@
       "review": "Independent N01 re-review passed exact repair candidate 4d239004c4f000b2af6f66122a05135b0c353ffb without a remaining mandatory finding; the product remains the clean, checked commit 7469e64202e730175ee138136a69d82ad4f28ea6.",
       "limits": "No new data owner is delivered. Items, saved Encounters, NPCs, Factions, Places and Encounter Tables remain explicitly unavailable. Local automated host smoke is scoped; physical-input, screenreader, non-Linux and full CE-02 acceptance remain open."
     },
+    "catalogBuildBudgetContract": {
+      "date": "2026-10-09",
+      "state": "checked_regression_passed",
+      "result": "The 180000-byte CE-01 gate now measures only the virtual SRD-5.1 payload bytes actually emitted into main.js from the esbuild metafile. Total main.js growth against the historical baseline remains inventory and no longer blocks unrelated Atlas, City or other product features.",
+      "verification": {
+        "check": "passed",
+        "tests": {
+          "passed": 276,
+          "failed": 0
+        },
+        "focusedCatalogBuildTests": {
+          "passed": 4,
+          "failed": 0
+        },
+        "build": "passed",
+        "inventory": {
+          "sourceBytes": 832272,
+          "gzipBytes": 102021,
+          "base64Characters": 136028,
+          "mainBytes": 1362224,
+          "mainJsGrowthBytesInventoryOnly": 172854,
+          "catalogPayloadBytes": 136038,
+          "catalogPayloadLimitBytes": 180000
+        }
+      },
+      "limits": "Build-contract repair only. No catalog data/provider/UI change and no CE, Atlas, host, physical-input or overall approval."
+    },
     "verified": "CE-00 and CE-01 implementation/review/repair cycles passed their scoped gates. CE-01-H01 passed its independently reviewed automated scope. CE-02-I01 product commit 7469e64202e730175ee138136a69d82ad4f28ea6 and metadata repair candidate 4d239004c4f000b2af6f66122a05135b0c353ffb passed independent review. Its six unavailable providers do not count as delivered catalog areas. Physical input, screenreader and other-platform acceptance remain open.",
     "open": [
       "CE-01 physical keyboard/mouse, screenreader and other-platform acceptance; CE-02-I02 through CE-07 runs",
@@ -312,10 +339,10 @@
       "Physical catalog input acceptance cannot be replaced by Playwright automation"
     ],
     "nextRun": {
-      "id": "CE-02-I02-P01-N02-R01",
+      "id": "CE-02-I02-P01-N03-R01",
       "kind": "independent_plan_re_review",
       "plan": "ROADMAP-SALTMARCHER-CE02-I02-PLAN.md",
-      "focus": "Verify S01 gate is acyclic and owns complete inventory/transcript/schema/source evidence while Inspector and product gates remain I01; verify named schema types, enums, units, optionality and review hashes. Only after PASS begin S01, not I01."
+      "focus": "Verify variable and variant-specific rarity is preserved through source inventory, transcript, schema, query filters, sort and Inspector with required Golden cases; confirm earlier repaired gates remain intact. Only after PASS begin S01, not I01."
     }
   },
   "repositoryWorkflow": {
