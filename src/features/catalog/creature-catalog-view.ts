@@ -11,11 +11,20 @@ import {
 import {
   CREATURE_CATALOG_PAGE_SIZE,
   adjacentCreatureId,
+  creatureCatalogFilterChips,
   creatureCatalogQueryForState,
+  creatureCatalogRangeError,
   creatureCatalogSortChange,
   normalizeCreatureCatalogViewState,
+  removeCreatureCatalogFilter,
+  resetCreatureCatalogFilters,
+  type CreatureCatalogArrayFilter,
+  type CreatureCatalogDraftKey,
+  type CreatureCatalogFilterChip,
+  type CreatureCatalogTextFilter,
   type CreatureCatalogViewState,
 } from "./creature-catalog-view-state";
+import { CreatureCatalogDebouncer } from "./creature-catalog-view-model";
 import { CREATURE_CATALOG_VIEW } from "../../ui/view-types";
 
 interface FocusState {
@@ -36,6 +45,9 @@ export class CreatureCatalogView extends ItemView {
   private generation = 0;
   private abort = new AbortController();
   private renderAbort = new AbortController();
+  private lifecycleAbort = new AbortController();
+  private readonly debouncers = new Map<CreatureCatalogTextFilter, CreatureCatalogDebouncer>();
+  private validationError?: string;
 
   constructor(leaf: WorkspaceLeaf, private readonly plugin: DungeonPlugin) {
     super(leaf);
@@ -59,12 +71,27 @@ export class CreatureCatalogView extends ItemView {
   }
 
   async setState(state: Record<string, unknown>): Promise<void> {
-    this.state = { sort: "name", direction: "asc", page: 0, ...normalizeCreatureCatalogViewState(state) };
+    const normalized = normalizeCreatureCatalogViewState(state);
+    this.state = {
+      sort: "name", direction: "asc", page: 0, ...normalized,
+      textDraft: normalized.textDraft ?? normalized.text,
+      movementDraft: normalized.movementDraft ?? normalized.movement,
+      sensesDraft: normalized.sensesDraft ?? normalized.senses,
+      vulnerabilitiesDraft: normalized.vulnerabilitiesDraft ?? normalized.vulnerabilities,
+      resistancesDraft: normalized.resistancesDraft ?? normalized.resistances,
+      immunitiesDraft: normalized.immunitiesDraft ?? normalized.immunities,
+      conditionImmunitiesDraft: normalized.conditionImmunitiesDraft ?? normalized.conditionImmunities,
+    };
     if (this.contentEl.isConnected) await this.loadCatalog();
   }
 
   async onOpen(): Promise<void> {
     this.contentEl.classList.add("dn-creature-catalog");
+    this.contentEl.addEventListener("keydown", (event) => {
+      if (event.key !== "Escape" || !this.state.selectedId) return;
+      event.preventDefault();
+      this.change({ selectedId: undefined, detailScroll: 0 });
+    }, { signal: this.lifecycleAbort.signal });
     await this.loadCatalog();
   }
 
@@ -72,6 +99,8 @@ export class CreatureCatalogView extends ItemView {
     this.captureScroll();
     this.abort.abort();
     this.renderAbort.abort();
+    this.lifecycleAbort.abort();
+    this.disposeDebouncers();
     this.generation++;
     this.contentEl.replaceChildren();
   }
@@ -99,6 +128,12 @@ export class CreatureCatalogView extends ItemView {
   private refresh(): void {
     if (!this.catalog) return;
     const query = this.query();
+    this.validationError = creatureCatalogRangeError(this.state);
+    if (this.validationError) {
+      this.page = { rows: [], total: 0, offset: query.offset ?? 0, limit: query.limit ?? CREATURE_CATALOG_PAGE_SIZE };
+      this.render();
+      return;
+    }
     try {
       let page = this.catalog.search(query);
       const lastPage = Math.max(0, Math.ceil(page.total / CREATURE_CATALOG_PAGE_SIZE) - 1);
@@ -210,31 +245,52 @@ export class CreatureCatalogView extends ItemView {
     filters.className = "dn-catalog-filters";
     filters.setAttribute("aria-label", "Monster filtern");
     filters.append(
-      this.textInput("Name", "search", this.state.text ?? "", (value) =>
-        this.change({ text: value || undefined, page: 0, resultsScroll: 0 })),
+      this.searchInput(),
       this.numberInput("HG min", "cr-min", this.state.crMin, (value) =>
         this.change({ crMin: value, page: 0, resultsScroll: 0 })),
       this.numberInput("HG max", "cr-max", this.state.crMax, (value) =>
         this.change({ crMax: value, page: 0, resultsScroll: 0 })),
-      this.selectInput("Typ", "type", this.state.type, this.values("type"), (value) =>
-        this.change({ type: value || undefined, page: 0, resultsScroll: 0 })),
-      this.selectInput("Größe", "size", this.state.size, this.values("size"), (value) =>
-        this.change({ size: value || undefined, page: 0, resultsScroll: 0 })),
+      this.multiSelectInput("Typ", "type", "types", this.values("type")),
+      this.multiSelectInput("Subtyp", "subtype", "subtypes", this.values("subtype")),
+      this.multiSelectInput("Größe", "size", "sizes", this.values("size")),
+      this.multiSelectInput("Habitat", "habitat", "habitats", this.values("biomes")),
+      this.multiSelectInput("Gesinnung", "alignment", "alignments", this.values("alignment")),
+      this.numberInput("RK min", "ac-min", this.state.acMin, (value) =>
+        this.change({ acMin: value, page: 0, resultsScroll: 0 })),
+      this.numberInput("RK max", "ac-max", this.state.acMax, (value) =>
+        this.change({ acMax: value, page: 0, resultsScroll: 0 })),
+      this.numberInput("TP min", "hp-min", this.state.hpMin, (value) =>
+        this.change({ hpMin: value, page: 0, resultsScroll: 0 })),
+      this.numberInput("TP max", "hp-max", this.state.hpMax, (value) =>
+        this.change({ hpMax: value, page: 0, resultsScroll: 0 })),
+      this.textFilterInput("Bewegung", "movement", "movement", "movementDraft"),
+      this.textFilterInput("Sinne", "senses", "senses", "sensesDraft"),
+      this.textFilterInput("Verwundbarkeit", "vulnerabilities", "vulnerabilities", "vulnerabilitiesDraft"),
+      this.textFilterInput("Resistenz", "resistances", "resistances", "resistancesDraft"),
+      this.textFilterInput("Immunität", "immunities", "immunities", "immunitiesDraft"),
+      this.textFilterInput("Zustandsimmunität", "condition-immunities", "conditionImmunities",
+        "conditionImmunitiesDraft"),
     );
+
+    const chips = this.renderFilterChips();
 
     const body = doc.createElement("div");
     body.className = "dn-catalog-body";
     const results = this.renderResults();
     const detail = this.renderDetail();
     body.append(results, detail);
-    this.contentEl.append(header, notice, filters, body);
+    this.contentEl.append(header, notice, filters, chips, body);
     results.scrollTop = this.state.resultsScroll ?? 0;
     detail.scrollTop = this.state.detailScroll ?? 0;
     this.restoreFocus(focus);
   }
 
-  private values(field: "type" | "size"): readonly string[] {
-    return [...new Set(this.catalog?.creatures.map((creature) => creature[field]).filter(Boolean) ?? [])]
+  private values(field: "type" | "subtype" | "size" | "alignment" | "biomes"): readonly string[] {
+    const values = this.catalog?.creatures.flatMap((creature) => {
+      const value = creature[field];
+      return Array.isArray(value) ? [...value] : value ? [value] : [];
+    }) ?? [];
+    return [...new Set(values)]
       .sort((left, right) => left.localeCompare(right, "en"));
   }
 
@@ -270,11 +326,11 @@ export class CreatureCatalogView extends ItemView {
     const footer = doc.createElement("footer");
     footer.className = "dn-catalog-footer";
     const status = doc.createElement("span");
-    status.setAttribute("role", "status");
+    status.setAttribute("role", this.validationError ? "alert" : "status");
     const first = (this.state.page ?? 0) * CREATURE_CATALOG_PAGE_SIZE + ((this.page?.rows.length ?? 0) ? 1 : 0);
     const last = first + (this.page?.rows.length ?? 0) - (first ? 1 : 0);
-    status.textContent = this.page?.total
-      ? `${first}–${last} von ${this.page.total}` : "Keine Monster gefunden";
+    status.textContent = this.validationError ?? (this.page?.total
+      ? `${first}–${last} von ${this.page.total}` : "Keine Monster gefunden");
     const previous = this.button("Zurück", () => this.change({
       page: Math.max(0, (this.state.page ?? 0) - 1), resultsScroll: 0,
     }));
@@ -417,28 +473,115 @@ export class CreatureCatalogView extends ItemView {
     this.refresh();
   }
 
-  private textInput(labelText: string, key: string, value: string,
-    change: (value: string) => void): HTMLLabelElement {
-    const label = this.contentEl.ownerDocument.createElement("label");
-    label.textContent = labelText;
+  private renderFilterChips(): HTMLElement {
+    const region = this.contentEl.ownerDocument.createElement("section");
+    region.className = "dn-catalog-chips";
+    region.setAttribute("aria-label", "Aktive Filter");
+    const chips = creatureCatalogFilterChips(this.state);
+    region.hidden = chips.length === 0;
+    for (const [index, chip] of chips.entries()) {
+      const button = this.button(`${chip.label} ×`, () => {
+        this.debouncers.get(chip.key as CreatureCatalogTextFilter)?.dispose();
+        const fallback = chips[index + 1] ?? chips[index - 1];
+        this.state = removeCreatureCatalogFilter(this.state, chip.key, chip.value);
+        this.refresh();
+        this.focusControl(fallback ? this.chipFocusKey(fallback) : "search");
+      });
+      button.className = "dn-catalog-chip";
+      button.setAttribute("aria-label", `Filter ${chip.label} entfernen`);
+      button.dataset.focusKey = this.chipFocusKey(chip);
+      region.append(button);
+    }
+    const reset = this.button("Filter zurücksetzen", () => {
+      this.disposeDebouncers();
+      this.state = resetCreatureCatalogFilters(this.state);
+      this.refresh();
+      this.focusControl("search");
+    });
+    reset.className = "dn-catalog-reset";
+    reset.dataset.focusKey = "filter-reset";
+    region.append(reset);
+    return region;
+  }
+
+  private chipFocusKey(chip: CreatureCatalogFilterChip): string {
+    return `chip-${chip.key}-${chip.value ?? "value"}`;
+  }
+
+  private focusControl(key: string): void {
+    [...this.contentEl.querySelectorAll<HTMLElement>("[data-focus-key]")]
+      .find((element) => element.dataset.focusKey === key)?.focus({ preventScroll: true });
+  }
+
+  private debouncer(key: CreatureCatalogTextFilter): CreatureCatalogDebouncer {
+    let debouncer = this.debouncers.get(key);
+    if (!debouncer) {
+      debouncer = new CreatureCatalogDebouncer();
+      this.debouncers.set(key, debouncer);
+    }
+    return debouncer;
+  }
+
+  private disposeDebouncers(): void {
+    for (const debouncer of this.debouncers.values()) debouncer.dispose();
+  }
+
+  private searchInput(): HTMLInputElement {
     const input = this.contentEl.ownerDocument.createElement("input");
     input.type = "search";
-    input.value = value;
+    input.value = this.state.textDraft ?? this.state.text ?? "";
+    input.placeholder = "Name suchen";
+    input.setAttribute("aria-label", "Monstername suchen");
+    input.dataset.focusKey = "search";
+    input.addEventListener("input", () => {
+      this.state = { ...this.state, textDraft: input.value };
+      this.debouncer("text").schedule(() => this.publishSearch());
+    }, { signal: this.renderAbort.signal });
+    input.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter") return;
+      event.preventDefault();
+      this.debouncer("text").flush(() => this.publishSearch());
+    }, { signal: this.renderAbort.signal });
+    return input;
+  }
+
+  private publishSearch(): void {
+    this.change({ text: this.state.textDraft?.trim() || undefined, page: 0, resultsScroll: 0 });
+  }
+
+  private textFilterInput(labelText: string, key: string, stateKey: CreatureCatalogTextFilter,
+    draftKey: CreatureCatalogDraftKey): HTMLInputElement {
+    const input = this.contentEl.ownerDocument.createElement("input");
+    input.type = "search";
+    input.value = this.state[draftKey] ?? this.state[stateKey] ?? "";
+    input.placeholder = labelText;
+    input.setAttribute("aria-label", labelText);
     input.dataset.focusKey = key;
-    input.addEventListener("input", () => change(input.value), { signal: this.renderAbort.signal });
-    label.append(input);
-    return label;
+    input.addEventListener("input", () => {
+      this.state = { ...this.state, [draftKey]: input.value };
+      this.debouncer(stateKey).schedule(() => this.publishTextFilter(stateKey, draftKey));
+    }, { signal: this.renderAbort.signal });
+    input.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter") return;
+      event.preventDefault();
+      this.debouncer(stateKey).flush(() => this.publishTextFilter(stateKey, draftKey));
+    }, { signal: this.renderAbort.signal });
+    return input;
+  }
+
+  private publishTextFilter(stateKey: CreatureCatalogTextFilter, draftKey: CreatureCatalogDraftKey): void {
+    this.change({ [stateKey]: this.state[draftKey]?.trim() || undefined, page: 0, resultsScroll: 0 });
   }
 
   private numberInput(labelText: string, key: string, value: number | undefined,
-    change: (value: number | undefined) => void): HTMLLabelElement {
-    const label = this.contentEl.ownerDocument.createElement("label");
-    label.textContent = labelText;
+    change: (value: number | undefined) => void): HTMLInputElement {
     const input = this.contentEl.ownerDocument.createElement("input");
     input.type = "number";
     input.min = "0";
     input.step = "any";
     input.value = value === undefined ? "" : String(value);
+    input.placeholder = labelText;
+    input.setAttribute("aria-label", labelText);
     input.dataset.focusKey = key;
     input.addEventListener("change", () => {
       const parsed = input.value === "" ? undefined : Number(input.value);
@@ -450,30 +593,31 @@ export class CreatureCatalogView extends ItemView {
       input.setCustomValidity("");
       change(parsed);
     }, { signal: this.renderAbort.signal });
-    label.append(input);
-    return label;
+    return input;
   }
 
-  private selectInput(labelText: string, key: string, value: string | undefined,
-    values: readonly string[], change: (value: string) => void): HTMLLabelElement {
-    const label = this.contentEl.ownerDocument.createElement("label");
-    label.textContent = labelText;
+  private multiSelectInput(labelText: string, key: string, stateKey: CreatureCatalogArrayFilter,
+    values: readonly string[]): HTMLSelectElement {
     const select = this.contentEl.ownerDocument.createElement("select");
+    select.setAttribute("aria-label", `${labelText} hinzufügen`);
     select.dataset.focusKey = key;
     const all = this.contentEl.ownerDocument.createElement("option");
     all.value = "";
-    all.textContent = "Alle";
+    all.textContent = `${labelText}: alle`;
     select.append(all);
+    const selected = this.state[stateKey] ?? [];
     for (const entry of values) {
+      if (selected.includes(entry)) continue;
       const option = this.contentEl.ownerDocument.createElement("option");
       option.value = entry;
       option.textContent = entry;
       select.append(option);
     }
-    select.value = value ?? "";
-    select.addEventListener("change", () => change(select.value), { signal: this.renderAbort.signal });
-    label.append(select);
-    return label;
+    select.addEventListener("change", () => {
+      if (!select.value) return;
+      this.change({ [stateKey]: [...selected, select.value], page: 0, resultsScroll: 0 });
+    }, { signal: this.renderAbort.signal });
+    return select;
   }
 
   private button(text: string, click: () => void): HTMLButtonElement {

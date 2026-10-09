@@ -1,41 +1,26 @@
 {
   "saltMarcherCatalogEncounter": {
     "date": "2026-10-09",
-  "state": "ce01_i02_implemented_i03_next",
+  "state": "ce01_i03_reviewed_r01_next",
     "plan": "ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md",
     "architecture": "ARCHITECTURE.md#geplante-katalog--und-encounter-erweiterung",
     "acceptance": "acceptance.json.saltMarcherCatalogEncounter",
     "currentRun": {
-      "id": "CE-01-I02",
+      "id": "CE-01-I03",
       "kind": "implementation",
-    "state": "completed_checked_review_pending",
-      "focus": "Dedicated catalog ItemView, command focus, core query/sort/paging/selection and complete read-only statblock",
-      "result": "The command opens or focuses exactly one catalog ItemView. The lazy loader feeds a retained view session with name/CR/type/size filters, sortable and pageable results, keyboard selection, scroll restoration, source notice, explicit loading/error/retry states and a complete read-only SRD statblock. No Encounter mutation or CE-01 approval.",
+      "state": "completed_checked_reviewed",
+      "focus": "Complete D&D-2014 catalog filters, chips/reset, debounced drafts, correctable validation, responsive/A11y behavior and DOM harness",
+      "result": "The ItemView now projects every planned 2014 monster filter, supports multiple discrete values, removable chips and sort/selection-preserving reset. All free-text drafts publish stale-safe after 200 ms or immediately on Enter, survive restore including an empty draft and cancel on close. Invalid ranges remain correctable. Focus fallbacks, keyboard flows and responsive descendant breakpoints are DOM-covered. Real Obsidian and 900x650/1150x700 acceptance remain open.",
       "plan": "ROADMAP-SALTMARCHER-CE01-PLAN.md",
-    "baseline": {
-      "commit": "86ce73179ede452ee6a9f5d3197ee325544a58b8",
-      "node": "v24.19.0",
-      "command": "npm run build && wc -c main.js && gzip -9 -c main.js | wc -c",
-        "currentMainBytes": 1189370,
-      "currentMainGzipBytes": 344194
-    },
-    "unverifiedPlanningObservations": {
-        "isolatedCatalogBundleBytes": 606237,
-        "isolatedCatalogBundleGzipBytes": 96282,
-        "rawCatalogGzipBytes": 106150,
-        "rawCatalogGzipBase64Characters": 141536,
-        "nodeMaterializationMs": 28.84,
-        "nodeHeapDeltaBytes": 3154264,
-      "limitation": "One-off probes without a checked-in script, warmup/sample definition or receipt; not acceptance evidence or an Obsidian startup/host measurement."
-    },
-    "i01PayloadLimits": {
-      "gzipBytes": 122880,
-      "base64Characters": 164000,
-      "mainJsGrowthBytes": 180000
-    },
-    "review": {
-      "state": "passed_after_repair",
-      "findings": "Independent static re-review confirms the provenance-bound baseline, demoted unreceipted probes, numeric payload gates, runtime capability/error path, shared identity source and repository-only NOTICE.md wording close all four findings."
+      "verification": {
+        "check": "passed",
+        "tests": {"passed": 233, "failed": 0},
+        "domHarness": "passed",
+        "build": "passed"
+      },
+      "review": {
+        "state": "passed_after_repair",
+        "findings": "All free-text drafts, empty restore, timer cleanup, chip/reset focus and representative DOM flows confirmed; real host sizing remains open."
       }
     },
     "implementationRun": {
@@ -80,6 +65,20 @@
       },
       "limits": "No advanced filters/chips/reset/debounce, DOM-host or real Obsidian acceptance, Encounter action or CE-01 approval. CE-AC-01, CE-AC-02 and CE-AC-14 remain open."
     },
+    "ce01I03": {
+      "id": "CE-01-I03",
+      "kind": "implementation",
+      "state": "completed_checked_reviewed",
+      "result": "Complete 2014 filter projection, multi-value controls, removable chips/reset, correctable range feedback, stale-safe 200-ms drafts, deterministic keyboard focus and responsive catalog container with a focused DOM harness.",
+      "verification": {
+        "check": "passed",
+        "tests": {"passed": 233, "failed": 0},
+        "build": "passed",
+        "domHarness": "passed"
+      },
+      "review": "Passed after extending debounce/restore to every free-text filter, adding timer cleanup, deterministic chip/reset focus and representative end-to-end DOM flows.",
+      "limits": "Static and DOM candidate only. Real Obsidian restart, 900x650/1150x700 layout, physical keyboard and damaged-data host acceptance remain open; CE-AC-01/02/14 are not approved."
+    },
     "coordination": {
       "catalogAnalysis": "completed read-only",
       "encounterAnalysis": "completed read-only",
@@ -87,16 +86,16 @@
       "testSlotClarification": "one graphical host/original instance per device; colleagues on separate devices may test in parallel",
       "cloudReviewHandoff": "Requested in GitHub Issue #1 comment 6081912800: prior GM-UX-CLOUD worker stops feature implementation and focuses architecture/technical reviews of local packages."
     },
-    "verified": "CE-00-I01 passed 210 tests but R01 required changes. CE-00-N01 passed check, 211 tests and build; independent CE-00-R02 passed with no remaining R01 findings. The later direct user decision narrows the feature to D&D 2014 only. CE-01-I01 is independently reviewed. CE-01-I02 passes check, all 225 tests and build with payload limits, and exposes the first product ItemView; its independent review and all real-host acceptance remain open.",
+    "verified": "CE-00-I01 passed 210 tests but R01 required changes. CE-00-N01 passed check, 211 tests and build; independent CE-00-R02 passed with no remaining R01 findings. The direct user decision narrows the feature to D&D 2014 only. CE-01-I01 is independently reviewed; CE-01-I02 provides the core ItemView. CE-01-I03 passes check, 233 tests, DOM harness, build and repair review. All real-host and CE-01 acceptance remain open.",
     "open": [
-      "CE-01-I02 independent review, CE-01-I03, CE-01 review/repair/cleanup and all CE-02 through CE-07 runs",
+      "CE-01-R01 review, repair if required, real Obsidian acceptance, cleanup and all CE-02 through CE-07 runs",
       "Pinned DMG-2014 encounter math and golden masters",
       "Real Obsidian host, restart, keyboard and damaged-data acceptance"
     ],
     "nextRun": {
-      "id": "CE-01-I03",
-      "kind": "implementation",
-      "focus": "Remaining filters, removable chips/reset, 200-ms debounced stale-safe query, responsive/A11y completion and focused DOM-host coverage; no CE-01 approval"
+      "id": "CE-01-R01",
+      "kind": "review",
+      "focus": "Independent CE-01 review against CE-AC-01/02/14, SaltMarcher requirements and comparable D&D-Beyond-2014 catalog behavior; no automatic approval"
     }
   },
   "repositoryWorkflow": {

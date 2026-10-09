@@ -137,6 +137,12 @@ Review, DOM-/Obsidian-Host und Fachabnahme bleiben offen.
 
 ### CE-01-I03 – Erweiterte Filter, Chips und Responsive/A11y
 
+Status: umgesetzt; Typprüfung, 233 Tests einschließlich fokussiertem DOM-
+Harness und Build bestanden. Ein Reparaturreview bestätigt Filterprojektion,
+Mehrfachwerte, Chips/Reset, 200-ms-Drafts, Timer-Cleanup und Fokusfallbacks.
+Der CSS-Container und seine Breakpoints sind statisch belegt; echte
+Obsidian- und 900×650-/1150×700-Abnahme bleiben offen.
+
 - Verbleibende D&D-Beyond-2014-vergleichbare Filter, einzelne Chips und Reset.
 - Tastaturablauf, 200-ms-Debounce, Statuszustände und Layout bei 900×650 und
   1150×700 fertigstellen.
@@ -178,6 +184,6 @@ Review, DOM-/Obsidian-Host und Fachabnahme bleiben offen.
 
 ## Nächster Lauf
 
-`CE-01-I03`: verbleibende Filter, einzelne Chips/Reset, 200-ms-Debounce mit
-Stale-Schutz, responsive/A11y-Vervollständigung und fokussierte DOM-Host-
-Prüfungen. Keine CE-01- oder Encounter-Fachfreigabe behaupten.
+`CE-01-R01`: unabhängiger Gesamt-Review des CE-01-Kandidaten gegen
+CE-AC-01/02/14, SaltMarcher und vergleichbare D&D-Beyond-2014-Abläufe. Eine
+Fach- oder Hostfreigabe nicht aus Tests allein ableiten.

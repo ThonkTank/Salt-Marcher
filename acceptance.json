@@ -1,8 +1,8 @@
 {
   "saltMarcherCatalogEncounter": {
     "schemaVersion": 1,
-    "updated": "2026-10-09T13:36:06Z",
-  "state": "ce01_i02_implemented_i03_next",
+  "updated": "2026-10-09T13:57:34Z",
+  "state": "ce01_i03_reviewed_r01_next",
     "plan": "ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md",
     "architecture": "ARCHITECTURE.md#geplante-katalog--und-encounter-erweiterung",
     "sourceRepository": "ThonkTank/Salt-Marcher",
@@ -186,7 +186,21 @@
       },
       "limits": "Implementation candidate only. Advanced filters/chips/reset/debounce, DOM-host and real Obsidian acceptance, independent review and all Encounter behavior remain open; CE-AC-01/02/14 are not approved."
     },
-    "next": "CE-01-I03 completes advanced filters, removable chips/reset, debounced stale-safe querying, responsive/A11y behavior and focused DOM-host coverage; no CE-01 or encounter acceptance approval."
+    "ce01I03": {
+      "run": "CE-01-I03",
+      "state": "completed_checked_reviewed",
+      "result": "All planned D&D-2014 monster filters project into the catalog query. Discrete filters accept multiple values; every accepted criterion has an individually removable chip and reset preserves sort/selection. Free-text drafts publish stale-safe after 200 ms or Enter, persist unfinished and empty input, and cancel on close. Range errors remain correctable in the workspace.",
+      "verification": {
+        "check": "passed",
+        "tests": {"passed": 233, "failed": 0},
+        "domHarness": "passed",
+        "build": "passed",
+        "covered": ["multi-filter intersection", "individual chip and reset focus", "paging", "Arrow/Enter/Escape", "selection after sort", "aria-sort", "notice", "200-ms latest generation", "Enter flush", "empty state", "correctable range alert", "close cleanup", "responsive CSS contract"]
+      },
+      "review": "Passed after required repairs; reviewer ran no separate tests.",
+      "limits": "No real Obsidian, restart, physical keyboard or measured 900x650/1150x700 acceptance. CE-AC-01, CE-AC-02 and CE-AC-14 remain open. All Encounter cases remain open."
+    },
+    "next": "CE-01-R01 independently reviews the complete CE-01 candidate against SaltMarcher, comparable D&D-Beyond-2014 catalog behavior and CE-AC-01/02/14; no automatic approval."
   },
   "cityPlans": {
     "schemaVersion": 1,

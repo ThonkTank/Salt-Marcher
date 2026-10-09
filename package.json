@@ -6,7 +6,7 @@
   "scripts": {
     "build": "node build.mjs",
     "check": "tsc --noEmit",
-    "test": "node build.mjs --test && node --test --test-concurrency=1 .build/tests.cjs tests/migrate-building-v2.test.mjs tests/wonderdraft-inventory.test.mjs tests/canvas-of-kings-session.test.mjs tests/catalog-build-asset.test.mjs"
+    "test": "node build.mjs --test && node --test --test-concurrency=1 .build/tests.cjs .build/catalog-creature-view-dom.cjs tests/migrate-building-v2.test.mjs tests/wonderdraft-inventory.test.mjs tests/canvas-of-kings-session.test.mjs tests/catalog-build-asset.test.mjs"
   },
   "dependencies": {
     "clipper-lib": "^6.4.2",
@@ -19,6 +19,7 @@
     "@types/node": "^22.0.0",
     "@types/pngjs": "^6.0.5",
     "esbuild": "^0.25.0",
+    "linkedom": "^0.18.13",
     "obsidian": "^1.8.7",
     "prettier": "^3.6.2",
     "typescript": "^5.9.0"

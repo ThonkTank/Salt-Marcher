@@ -187,6 +187,8 @@ CE-01 folgt dem technischen Fachplan
 und nach Reparaturreview bestanden. `CE-01-I02` stellt den eigenen
 Katalog-`ItemView`, eindeutigen Command-Fokus und den Kernfluss aus Suche,
 Filtern, Sortierung, Paging, Auswahl und Statblock als geprüften
-Umsetzungskandidaten bereit. Nächster Lauf ist `CE-01-I03` für die übrigen
-Filter, Chips/Reset, Debounce/Stale-Schutz, responsive Barrierefreiheit und
-DOM-Host-Prüfungen. Noch keine CE-01- oder Encounter-Fachfreigabe behaupten.
+Umsetzungskandidaten bereit. `CE-01-I03` ergänzt die übrigen 2014-Filter,
+Mehrfachwerte, Chips/Reset, Debounce/Stale-Schutz, responsive Barrierefreiheit
+und einen fokussierten DOM-Harness. Nächster Lauf ist `CE-01-R01`, der
+unabhängige Gesamt-Review gegen CE-AC-01/02/14. Noch keine CE-01- oder
+Encounter-Fachfreigabe behaupten.
