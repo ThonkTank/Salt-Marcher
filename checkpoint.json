@@ -421,8 +421,9 @@
       "state": "in_progress",
       "focus": "Hostneutral FileStore CAS transaction reused with terrain+manifest+draft, followed immediately by saved/recovered native island.",
       "fileTransactionPacket": {
-        "state": "checked",
-        "finishedAt": "2026-10-09T17:10:56.510362+00:00"
+        "state": "checked_clean",
+        "finishedAt": "2026-10-09T17:13:32.092547+00:00",
+        "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/file-transaction-implementation.json"
       }
     },
     "nextRun": {
@@ -1122,15 +1123,20 @@
         }
       },
       "hex02FileTransaction": {
-        "state": "checked_core_implementation",
-        "run": "HEX-02-I01c",
-        "testsLocal": 285,
-        "cases": 6,
-        "faultBoundaries": 12,
+        "run": "HEX-02-I01c-file-transaction",
+        "state": "checked_core_not_yet_wired",
+        "sourceCommit": "309972d43080b91cddd2f8d3a79bac40ed42728a",
+        "cleanTestsPassed": 300,
         "checkPassed": true,
         "buildPassed": true,
-        "scope": "Existing FileStore CAS, create/update/delete, prepared rollback, committed cleanup, external/corrupt-data preserve, shared-backend serialization",
-        "limits": "Not wired to Atlas Save/draft yet. No native saved/reopened terrain or filesystem fsync/TOCTOU approval."
+        "cases": 6,
+        "injectedBoundaries": 12,
+        "nativeBuildUnchanged": "99b4d9a6e293ce7bb90f1ceaee453cd327c33d1c0d21149237f594885e332aaf",
+        "implementation": "src/features/atlas/file-transaction.ts",
+        "nativeFileStoreAndTerrainSavedHost": "pending actual Save/draft wiring",
+        "failureRetained": "Initial strict journal field count7 was incorrect; six exact keys fixed, fault/corrupt tests passed after repair.",
+        "physicalInput": false,
+        "userVault": "unchanged"
       }
     },
     "repairPlan": "ROADMAP-HEX-00-REPAIR-PLAN.md",
