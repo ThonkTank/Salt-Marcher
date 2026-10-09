@@ -113548,6 +113548,14 @@
           ],
           "measuredScope": "Oben -2/+2: Host-Zellkoordinaten in Crop, unmittelbarer Erweiterung und frischer Erweiterung stimmen mit der direkten Originalfolge überein.",
           "remaining": "Smart-Tile-Zeichnen/Bearbeiten, Texturwirkung, weitere Entitäten, kombinierte Ränder, Terrain und unabhängiger Review offen. Keine Fallfreigabe."
+        },
+        "followUpPhase1SmartTilesReview": {
+          "state": "partial_single_edge_confirmed_cases_open",
+          "original": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "review": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-smarttiles-review-20261009/review.md",
+          "audit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-smarttiles-review-20261009/independent-audit.json",
+          "decision": "Vier einzelne vorbereitete Smart-Tile-Randfolgen in zwölf gespeicherten Größen-/Zellkoordinatenständen bestätigt; kein vollständiger DD-038-Fall freigegeben.",
+          "remaining": "Bedienbares Zeichnen/Bearbeiten, ungefähr gleichwertige Pakettextur, weitere Inhalte, kombinierte Ränder, Eingabegrenzen und installierter Endbuild offen."
         }
       },
       {
@@ -113664,6 +113672,14 @@
           ],
           "measuredScope": "Rechts -3/+3: Host-Zellkoordinaten in Crop, unmittelbarer Erweiterung und frischer Erweiterung stimmen mit der direkten Originalfolge überein.",
           "remaining": "Smart-Tile-Zeichnen/Bearbeiten, Texturwirkung, weitere Entitäten, kombinierte Ränder, Terrain und unabhängiger Review offen. Keine Fallfreigabe."
+        },
+        "followUpPhase1SmartTilesReview": {
+          "state": "partial_single_edge_confirmed_cases_open",
+          "original": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "review": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-smarttiles-review-20261009/review.md",
+          "audit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-smarttiles-review-20261009/independent-audit.json",
+          "decision": "Vier einzelne vorbereitete Smart-Tile-Randfolgen in zwölf gespeicherten Größen-/Zellkoordinatenständen bestätigt; kein vollständiger DD-038-Fall freigegeben.",
+          "remaining": "Bedienbares Zeichnen/Bearbeiten, ungefähr gleichwertige Pakettextur, weitere Inhalte, kombinierte Ränder, Eingabegrenzen und installierter Endbuild offen."
         }
       },
       {
@@ -113781,6 +113797,14 @@
           ],
           "measuredScope": "Unten -2/+2: Host-Zellkoordinaten in Crop, unmittelbarer Erweiterung und frischer Erweiterung stimmen mit der direkten Originalfolge überein.",
           "remaining": "Smart-Tile-Zeichnen/Bearbeiten, Texturwirkung, weitere Entitäten, kombinierte Ränder, Terrain und unabhängiger Review offen. Keine Fallfreigabe."
+        },
+        "followUpPhase1SmartTilesReview": {
+          "state": "partial_single_edge_confirmed_cases_open",
+          "original": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "review": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-smarttiles-review-20261009/review.md",
+          "audit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-smarttiles-review-20261009/independent-audit.json",
+          "decision": "Vier einzelne vorbereitete Smart-Tile-Randfolgen in zwölf gespeicherten Größen-/Zellkoordinatenständen bestätigt; kein vollständiger DD-038-Fall freigegeben.",
+          "remaining": "Bedienbares Zeichnen/Bearbeiten, ungefähr gleichwertige Pakettextur, weitere Inhalte, kombinierte Ränder, Eingabegrenzen und installierter Endbuild offen."
         }
       },
       {
@@ -113897,6 +113921,14 @@
           ],
           "measuredScope": "Links -3/+3: Host-Zellkoordinaten in Crop, unmittelbarer Erweiterung und frischer Erweiterung stimmen mit der direkten Originalfolge überein.",
           "remaining": "Smart-Tile-Zeichnen/Bearbeiten, Texturwirkung, weitere Entitäten, kombinierte Ränder, Terrain und unabhängiger Review offen. Keine Fallfreigabe."
+        },
+        "followUpPhase1SmartTilesReview": {
+          "state": "partial_single_edge_confirmed_cases_open",
+          "original": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "review": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-smarttiles-review-20261009/review.md",
+          "audit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-smarttiles-review-20261009/independent-audit.json",
+          "decision": "Vier einzelne vorbereitete Smart-Tile-Randfolgen in zwölf gespeicherten Größen-/Zellkoordinatenständen bestätigt; kein vollständiger DD-038-Fall freigegeben.",
+          "remaining": "Bedienbares Zeichnen/Bearbeiten, ungefähr gleichwertige Pakettextur, weitere Inhalte, kombinierte Ränder, Eingabegrenzen und installierter Endbuild offen."
         }
       },
       {
