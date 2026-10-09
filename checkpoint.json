@@ -125,17 +125,17 @@
   },
   "saltMarcherCatalogEncounter": {
     "date": "2026-10-09",
-    "state": "ce02_i02_plan_reviewed_s01_next_ce01_physical_open",
+    "state": "ce02_i02_s01_in_progress_verified_incomplete_ce01_physical_open",
     "plan": "ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md",
     "architecture": "ARCHITECTURE.md#geplante-katalog--und-encounter-erweiterung",
     "acceptance": "acceptance.json.saltMarcherCatalogEncounter",
     "currentRun": {
-      "id": "CE-02-I02-P01-N03-R01",
-      "kind": "independent_plan_re_review",
-      "state": "passed",
-      "focus": "Verify variable and variant-specific rarity without losing the earlier plan repairs",
+      "id": "CE-02-I02-S01-W01",
+      "kind": "source_inventory_schema_transcript_intermediate",
+      "state": "in_progress_verified_incomplete",
+      "focus": "Establish pinned source identity, canonical attribution, schema draft and fail-closed verification without exposing incomplete Item data",
       "plan": "ROADMAP-SALTMARCHER-CE02-I02-PLAN.md",
-      "result": "Independent N03-R01 passed exact 679d432e145bd9afe766393346e4b788931886ea without remaining mandatory plan findings (Issue #1 comment 6085341786). This is plan approval only; S01 and I01 remain undelivered."
+      "result": "Pinned the official 403-page SRD 5.1 PDF and SaltMarcher's exact 5e-database extraction-helper revision, added the exact canonical attribution, a versioned transcript schema draft, explicitly empty incomplete inventory/transcript fixtures, and a verifier that rejects the package for product use unless completeness is true. This is an honest intermediate only: 0 inventory occurrences and 0 transcript records; S01 review and I01 remain blocked."
     },
     "implementationRun": {
       "id": "CE-01-I01",
@@ -332,17 +332,18 @@
       },
       "limits": "Build-contract repair only. No catalog data/provider/UI change and no CE, Atlas, host, physical-input or overall approval."
     },
-    "verified": "CE-00 and CE-01 implementation/review/repair cycles passed their scoped gates. CE-01-H01 passed its independently reviewed automated scope. CE-02-I01 product commit 7469e64202e730175ee138136a69d82ad4f28ea6 and metadata repair candidate 4d239004c4f000b2af6f66122a05135b0c353ffb passed independent review. Its six unavailable providers do not count as delivered catalog areas. Physical input, screenreader and other-platform acceptance remain open.",
+    "verified": "CE-00 and CE-01 implementation/review/repair cycles passed their scoped gates. CE-01-H01 passed its independently reviewed automated scope. CE-02-I01 product commit 7469e64202e730175ee138136a69d82ad4f28ea6 and metadata repair candidate 4d239004c4f000b2af6f66122a05135b0c353ffb passed independent review. CE-02-I02-S01 now has a checked fail-closed source-package scaffold, but no source occurrence or transcript record is complete and no Item product feature is available. Physical input, screenreader and other-platform acceptance remain open.",
     "open": [
       "CE-01 physical keyboard/mouse, screenreader and other-platform acceptance; CE-02-I02 through CE-07 runs",
+      "CE-02-I02-S01 complete official inventory, transcript, closed subcategory enum, full PDF matching, complete golden cases and independent S01-R01 review",
       "Pinned DMG-2014 encounter math and golden masters",
       "Physical catalog input acceptance cannot be replaced by Playwright automation"
     ],
     "nextRun": {
-      "id": "CE-02-I02-S01",
-      "kind": "source_inventory_schema_transcript",
+      "id": "CE-02-I02-S01-W02",
+      "kind": "source_inventory_schema_transcript_continuation",
       "plan": "ROADMAP-SALTMARCHER-CE02-I02-PLAN.md",
-      "focus": "Create complete pinned SRD-5.1 inventory, transcript, versioned schema, canonical attribution and PDF-to-transcript source verification; independent S01-R01 PASS required before I01 product implementation"
+      "focus": "Populate and fully reconcile all official equipment rows and magic-item headings/details, close the inventory-derived enums and merge ledger, implement full PDF-to-transcript matching and remaining goldens; independent S01-R01 PASS remains required before I01"
     }
   },
   "repositoryWorkflow": {

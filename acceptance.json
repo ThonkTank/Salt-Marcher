@@ -116,8 +116,8 @@
   },
   "saltMarcherCatalogEncounter": {
     "schemaVersion": 1,
-    "updated": "2026-10-09T16:52:44Z",
-    "state": "ce02_i02_plan_reviewed_s01_next_ce01_physical_open",
+    "updated": "2026-10-09T17:03:08Z",
+    "state": "ce02_i02_s01_in_progress_verified_incomplete_ce01_physical_open",
     "plan": "ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md",
     "architecture": "ARCHITECTURE.md#geplante-katalog--und-encounter-erweiterung",
     "sourceRepository": "ThonkTank/Salt-Marcher",
@@ -493,6 +493,16 @@
       "result": "Defines a local read-only SRD 5.1 equipment and magic-item catalog, reproducible corpus, schema, source attribution, typed isolated failures, Item query/detail UI and separate review/host gates.",
       "limits": "Plan only; Item data/provider and five other data owners remain unavailable. All CE-AC, physical-input, screenreader and other-platform gates remain open.",
       "review": "R01 on exact 8c5c5680054b8dddd89900733ac7bbfe966876f1 required seven repairs (Issue #1 comment 6085178049). N01-R01 on exact 01a02ef124e3ffc02b626019f89f5e216612f7ab required S01 cycle/schema repairs (Issue #1 comment 6085248851). N02-R01 on exact 3b7e5c933a107da6f406aa44037decf316d09b77 found a variable-rarity schema gap (Issue #1 comment 6085306351). N03-R01 PASSED exact 679d432e145bd9afe766393346e4b788931886ea with no remaining mandatory plan finding (Issue #1 comment 6085341786). This approves planning only; S01 and I01 are undelivered."
+    },
+    "ce02I02Source": {
+      "run": "CE-02-I02-S01-W01",
+      "state": "in_progress_verified_incomplete",
+      "sourceDocument": "https://media.wizards.com/2023/downloads/dnd/SRD_CC_v5.1.pdf",
+      "sourceSha256": "2504d2a0abb0a4d491a939be4f17910a2dde0312570ab8d208080225ccf0a1f0",
+      "helperCommit": "3f5593ea004c4f5a2af95603087ce4de72689d9f",
+      "covered": ["exact official source byte identity, size and 403-page count", "SaltMarcher-pinned extraction-helper revision and file hashes", "canonical attribution asset", "Draft 2020-12 transcript schema v1 draft", "fail-closed incomplete-package gate", "fixed and variable rarity identity regressions"],
+      "verification": {"focusedTests": {"passed": 5, "failed": 0}, "pdfIdentity": "passed", "incompleteGate": "passed"},
+      "limits": "Intermediate only: inventory and transcript each contain zero records. The complete equipment/magic-item inventory, transcript, merge ledger, inventory-derived closed subcategory enum, standards schema validation, full PDF fact matching, remaining goldens and independent S01-R01 review are open. No product artifact, provider, UI, host acceptance or I01 work is authorized."
     }
   },
   "cityPlans": {
