@@ -1194,6 +1194,16 @@
         "screensActuallyViewed": true,
         "physicalInput": false,
         "userVault": "unchanged"
+      },
+      "hex02ReviewIntegratedBasis": {
+        "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/r01-integrated-basis.json",
+        "cleanSource": "95e7bd214f96fe7be894e6cc6dcecf2609c10dc3",
+        "checkPassed": true,
+        "testsPassed": 365,
+        "buildPassed": true,
+        "nativeOnThisBuild": false,
+        "phaseApproval": false,
+        "atlasSourceUnchangedFromReviewCandidate": true
       }
     },
     "repairPlan": "ROADMAP-HEX-00-REPAIR-PLAN.md",
