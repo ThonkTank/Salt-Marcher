@@ -2,9 +2,11 @@
 
 Diese Roadmap setzt [Grundrisse und Objekte](ROADMAP-PARITY.md) fort. Deren Fach- und Aufräumtore sind mit der ausdrücklichen Nutzerausnahme für die nicht durchgeführte Hardwareprobe P7-2 bestanden. Der [getrennte Phase-1-Plan](ROADMAP-PARITY-TOOLS-PHASE1-PLAN.md) liegt vor; für diese Folge-Roadmap liegt noch keine Fachabnahme vor.
 
-Maßstab ist der Pflichtkatalog `acceptance.json` für Dungeondraft 1.2.0.1 „Opulent Kirin“: derzeit 698 `required`-Unterfälle. 21 `excluded`-Fälle und fünf `editor_addition`-Fälle sind keine Paritätstore. Bereits belegte Teilabläufe werden als Regression übernommen, aber nicht pauschal auf ganze Werkzeuge ausgeweitet. Bedienfolge, Optionen, Zustandswechsel und gespeicherte Funktion müssen dem Original entsprechen; die Dungeon-Grafik darf ungefähr gleichwertig sein.
+Maßstab ist der Pflichtkatalog `acceptance.json` für Dungeondraft 1.2.0.1 „Opulent Kirin“: derzeit 677 `required`-Unterfälle. 42 `excluded`-Fälle und fünf `editor_addition`-Fälle sind keine Paritätstore. Bereits belegte Teilabläufe werden als Regression übernommen, aber nicht pauschal auf ganze Werkzeuge ausgeweitet. Bedienfolge, Optionen, Zustandswechsel und gespeicherte Funktion müssen dem Original entsprechen; die Dungeon-Grafik darf ungefähr gleichwertig sein.
 
 Nutzerentscheidung vom 09.10.2026: Vergrößern und Verkleinern einer Karte sind für den grenzenlosen gemeinsamen Atlas unnötig. `DD-038.01–.09` sind deshalb aus dem Pflichtscope genommen; der bisherige Resize-Nachbesserungsplan wird nicht fortgesetzt. Vorhandene Belege bleiben historisch erhalten. Der Atlas wächst durch Bearbeitung in jeder Richtung ohne Resize-Aktion; Ausschnitte und Exportmaße begrenzen Inhalte nicht. Building-Boden-Bedienung bleibt unabhängig davon im Werkzeugscope.
+
+Nutzerpräzisierung vom 09.10.2026: Es gibt eine einzige grenzenlose Atlaskarte für Overworld-Hexterrain, Städte und Dungeons. Dungeondrafts `New Map`, lokale Startmaße, Größenvorlagen, Assistentenstart und daran gebundene Startschalter (`DD-001.01–.06`, `DD-002.01–.09`, `DD-003.01–.02`, `DD-006.01/.02`, `DD-007.01/.02`) sind keine direkten Bedienvorbilder mehr und verlassen das Paritätstor. Bestehende Belege bleiben historisch. Atlasanlage ohne Breiten-/Höhenabfrage gehört zu HEX-01; Schattenwirkung `DD-006.03/.04`, Gebäudeabnutzung `DD-008` und die übrigen übertragbaren Werkzeuge bleiben offen beziehungsweise im gemessenen Scope reviewt. Datei- und Karteninformationsfälle werden für den gemeinsamen Atlas nach Nutzerzweck geprüft.
 
 ## Ablauf und Phasentor
 
@@ -16,7 +18,7 @@ Für jede Fachphase folgt ein eigener konkreter Plan neben dieser Roadmap: offen
 
 | Phase | Pflichtfälle | Nachzuweisender Ablauf |
 | --- | --- | --- |
-| 1 – Karte, Datei und Ansicht | `DD-001–003`, `DD-006–008`, `DD-036.01–.16`, `DD-039`, die `required`-Fälle aus `DD-041` und `DD-048` | Karte anlegen, öffnen und sichern; Start- und Kartenoptionen, Navigation, Raster, Snap, Zoom, Anzeige und Dateimenüs über Eingabe, History und Neuöffnung prüfen. |
+| 1 – Karte, Datei und Ansicht | `DD-006.03/.04`, `DD-008`, `DD-036.01–.16`, `DD-039`, die `required`-Fälle aus `DD-041` und `DD-048` | Übertragbare Dungeon- und Atlasoptionen, Navigation, Raster, Snap, Zoom, Anzeige und Dateifunktionen über Eingabe, History und Neuöffnung prüfen; Atlasanlage folgt HEX-01. |
 | 2 – Assetpakete und Ressourcen | `DD-009–010`, `DD-033–035`, `DD-037`, `DD-046` | Pakete auswählen, sortieren, aktivieren und verwenden; Tilesets und Texturen laden, Paketierung und Mod-Menüabläufe einschließlich Neustart prüfen. Die Architekturentscheidung gegen ein getrenntes ausführbares Mod-System wird vor `DD-037` mit dessen Pflichtwirkung abgeglichen; ungelöste Funktionslücken bleiben offen. |
 | 3 – Geschosse und Nachzeichenvorlage | `DD-032`, `DD-040` | Geschosse anlegen, klonen, umbenennen, löschen, ordnen und vergleichen; Nachzeichenvorlage laden, ausrichten und schalten. Karteninhalt und Ebenenzuordnung nach Neuöffnung prüfen. |
 | 4 – Freie Wände, Portale und Höhlen | `DD-016–019` | Freie gerade und gekrümmte Wände, gebundene Türen und Portalvarianten sowie Höhlenpinsel und Radieren paarweise messen; Bindung, Öffnung, Kontur und History prüfen. |

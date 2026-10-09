@@ -12,6 +12,7 @@ Das vereinbarte Ziel:
 - **Alle Hex-Stufen sind bearbeitbar.** Grobe Weltgestaltung lässt sich schrittweise verfeinern.
 - **3 Meilen bilden die kleinste Hex-Stufe.** Darunter folgen Stadt- und Dungeonansichten mit ihrem eigenen Detailraster.
 - **Overworld, Städte und Dungeons teilen einen räumlichen Atlas.** Lage, Orientierung, Maßstab und Eingänge verbinden die Karten.
+- **Dungeondrafts „New Map“, Startgrößen und Größenvorlagen sind keine direkten Bedienvorbilder.** Die Welt besitzt eine einzige Atlaskarte; Dungeon-, Stadt- und Hexinhalte werden dort integriert.
 - **Der Atlas ist grenzenlos und wächst mit seinem Inhalt.** Beim Anlegen werden weder Breite/Höhe noch ein Kartenrand verlangt. Landschaft, Städte und Dungeonplatzierungen können den bislang bearbeiteten Bereich in jede Richtung erweitern.
 - **Räumliche Größen werden in Meilen oder Hex-Kacheln angegeben.** Das betrifft erzeugte Bereiche, Vorlagen und gewählte Ausschnitte; Hex-Anzahlen beziehen sich auf eine ausdrücklich benannte Hex-Stufe. Pixel bestimmen ausschließlich Darstellung und Bildausgabe.
 - **Alle räumlichen Detailstufen sind allein durch Zoom erreichbar.** Welt → Region → Stadt → Haus → Dungeonraum bleibt an denselben Weltpositionen.

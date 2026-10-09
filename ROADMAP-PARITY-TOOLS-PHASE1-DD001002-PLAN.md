@@ -1,5 +1,7 @@
 # Phase 1, DD-001/002: Kartenstart und Größenvorlagen
 
+**Status: durch Nutzerpräzisierung vom 09.10.2026 abgelöst.** `DD-001/002` sind keine direkten Vorbilder für die einzige grenzenlose Atlaskarte. Die folgenden Schritte sind historischer Planstand und werden nicht fortgesetzt; Atlasanlage ohne Größenabfrage gehört zu HEX-01. Die begonnenen Originalbelege bleiben erhalten.
+
 Planlauf vom 09.10.2026 zu [ROADMAP-PARITY-TOOLS-PHASE1-PLAN.md](ROADMAP-PARITY-TOOLS-PHASE1-PLAN.md). Maßstab ist Dungeondraft 1.2.0.1 „Opulent Kirin“. `DD-001.01–.06` und `DD-002.01–.09` erhalten erst nach direkten Originalfolgen und getrenntem Hostreview eine Entscheidung. Der grenzenlose Atlas hat keine feste Breite oder Höhe und benötigt kein Resize; die gemessenen 8–128-Felder-Werte sind lokale Startkarten und Vorlagen, keine Atlasgrenzen.
 
 ## Offene Punkte und Reihenfolge

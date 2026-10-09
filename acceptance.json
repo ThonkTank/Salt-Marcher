@@ -84825,6 +84825,35 @@
       "reason": "Nutzerentscheidung: Kartenvergrößerung und -verkleinerung sind für den grenzenlosen gemeinsamen Atlas unnötig.",
       "followUp": "Kein weiterer Resize-Hostlauf; Building-Boden-Werkzeuge separat prüfen und Atlaswachstum ohne Größenaktion in ROADMAP-HEX-ATLAS.md abnehmen."
     },
+    "scopeDecision20261009SingleAtlas": {
+      "cases": [
+        "DD-001.01",
+        "DD-001.02",
+        "DD-001.03",
+        "DD-001.04",
+        "DD-001.05",
+        "DD-001.06",
+        "DD-002.01",
+        "DD-002.02",
+        "DD-002.03",
+        "DD-002.04",
+        "DD-002.05",
+        "DD-002.06",
+        "DD-002.07",
+        "DD-002.08",
+        "DD-002.09",
+        "DD-003.01",
+        "DD-003.02",
+        "DD-006.01",
+        "DD-006.02",
+        "DD-007.01",
+        "DD-007.02"
+      ],
+      "decision": "excluded_from_direct_dungeondraft_parity",
+      "reason": "Nutzerentscheidung vom 09.10.2026: Eine einzige grenzenlose Atlaskarte enthält Overworld-Hexterrain, Städte und Dungeons. New Map, Startmaße, Größenvorlagen und daran gebundene Startschalter sind keine direkten Bedienvorbilder mehr.",
+      "replacement": "Atlasanlage und Erstöffnung ohne Breiten-/Höhenabfrage in ROADMAP-HEX-ATLAS.md HEX-01; Generierung und lokale Dungeon-/Schatten-/Abnutzungswirkung getrennt nach ihrem Nutzerzweck prüfen. Historische Original-/Hostbelege bleiben erhalten.",
+      "open": "Datei-/Karteninfo-Menüs DD-036/039 und per-Karte-Wirkungen DD-006.03/.04 werden beim gemeinsamen Atlas auf ihren Nutzerzweck geprüft; dieser Beschluss gibt sie nicht pauschal frei."
+    },
     "acceptanceRule": "Pflichtfall erst nach direktem Originalbeleg, implementierter Wirkung, isoliertem Hostlauf und Nachweis am installierten Endstand geschlossen.",
     "cases": [
       {
@@ -123009,7 +123038,7 @@
         "area": "verwaltung",
         "path": "Hauptleiste",
         "command": "New",
-        "scope": "required",
+        "scope": "excluded",
         "original": {
           "sequence": "Hauptleiste → New",
           "options": null,
@@ -123070,6 +123099,12 @@
             "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-new-map-20261009/evidence/1791511450182-parity-tools-phase1-new-map-reopen/result.json"
           ],
           "remaining": "Unabhängiger Phase-1-Endbuild-Review offen; Originalpersistenz von Größenvorlagen, Eingabegrenzen und Namenskonflikte nicht aus diesem Lauf ableitbar."
+        },
+        "singleAtlasScope": {
+          "decision": "excluded_from_direct_dungeondraft_parity",
+          "source": "acceptance.json.strictParity.scopeDecision20261009SingleAtlas",
+          "replacement": "ROADMAP-HEX-ATLAS.md",
+          "historicalEvidencePreserved": true
         }
       },
       {
@@ -124468,7 +124503,7 @@
         "area": "verwaltung",
         "path": "Hauptleiste > New > New Map",
         "command": "Template auswählen",
-        "scope": "required",
+        "scope": "excluded",
         "original": {
           "sequence": "Hauptleiste > New > New Map → Template auswählen",
           "options": "Standardvorlagen 40\" TV 35×20, 55\" TV 48×27, A4 11×8, A3 16×11; benannte QA-Vorlage 12×8 wiedergewählt.",
@@ -124543,6 +124578,12 @@
             "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-template-host-20261009/evidence/1791513967959-parity-tools-phase1-new-map-reopen/result.json"
           ],
           "remaining": "Unabhängiger Phase-1-Endbuild-Review offen; Zwischenwert-Rundung, obere Höhengrenze und Löschen bei doppeltem Namen nicht vollständig direkt gemessen."
+        },
+        "singleAtlasScope": {
+          "decision": "excluded_from_direct_dungeondraft_parity",
+          "source": "acceptance.json.strictParity.scopeDecision20261009SingleAtlas",
+          "replacement": "ROADMAP-HEX-ATLAS.md",
+          "historicalEvidencePreserved": true
         }
       },
       {
@@ -124551,7 +124592,7 @@
         "area": "verwaltung",
         "path": "Hauptleiste > New > New Map",
         "command": "Width in tiles",
-        "scope": "required",
+        "scope": "excluded",
         "original": {
           "sequence": "Hauptleiste > New > New Map → Width in tiles",
           "options": null,
@@ -124611,6 +124652,12 @@
             "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-new-map-20261009/evidence/1791511450182-parity-tools-phase1-new-map-reopen/result.json"
           ],
           "remaining": "Unabhängiger Phase-1-Endbuild-Review offen; Originalpersistenz von Größenvorlagen, Eingabegrenzen und Namenskonflikte nicht aus diesem Lauf ableitbar."
+        },
+        "singleAtlasScope": {
+          "decision": "excluded_from_direct_dungeondraft_parity",
+          "source": "acceptance.json.strictParity.scopeDecision20261009SingleAtlas",
+          "replacement": "ROADMAP-HEX-ATLAS.md",
+          "historicalEvidencePreserved": true
         }
       },
       {
@@ -124619,7 +124666,7 @@
         "area": "verwaltung",
         "path": "Hauptleiste > New > New Map",
         "command": "Height in tiles",
-        "scope": "required",
+        "scope": "excluded",
         "original": {
           "sequence": "Hauptleiste > New > New Map → Height in tiles",
           "options": null,
@@ -124679,6 +124726,12 @@
             "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-new-map-20261009/evidence/1791511450182-parity-tools-phase1-new-map-reopen/result.json"
           ],
           "remaining": "Unabhängiger Phase-1-Endbuild-Review offen; Originalpersistenz von Größenvorlagen, Eingabegrenzen und Namenskonflikte nicht aus diesem Lauf ableitbar."
+        },
+        "singleAtlasScope": {
+          "decision": "excluded_from_direct_dungeondraft_parity",
+          "source": "acceptance.json.strictParity.scopeDecision20261009SingleAtlas",
+          "replacement": "ROADMAP-HEX-ATLAS.md",
+          "historicalEvidencePreserved": true
         }
       },
       {
@@ -124687,7 +124740,7 @@
         "area": "verwaltung",
         "path": "Hauptleiste > New > New Map",
         "command": "Start With Map Wizard",
-        "scope": "required",
+        "scope": "excluded",
         "original": {
           "sequence": "Hauptleiste > New > New Map → Start With Map Wizard",
           "options": null,
@@ -124748,6 +124801,12 @@
             "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-wizard-host-20261009/evidence/1791512632080-parity-tools-phase1-wizard-reopen/result.json"
           ],
           "remaining": "Unabhängiger Phase-1-Endbuild-Review offen; Generatorparameter und erzeugte Kartenwirkung sind DD-004/005 in Phase 7."
+        },
+        "singleAtlasScope": {
+          "decision": "excluded_from_direct_dungeondraft_parity",
+          "source": "acceptance.json.strictParity.scopeDecision20261009SingleAtlas",
+          "replacement": "ROADMAP-HEX-ATLAS.md",
+          "historicalEvidencePreserved": true
         }
       },
       {
@@ -124756,7 +124815,7 @@
         "area": "verwaltung",
         "path": "Hauptleiste > New > New Map",
         "command": "Disable Wall Shadow",
-        "scope": "required",
+        "scope": "excluded",
         "original": {
           "sequence": "Hauptleiste > New > New Map → Disable Wall Shadow",
           "options": null,
@@ -124816,6 +124875,12 @@
             "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-start-options-20261009/evidence/1791512044443-parity-tools-phase1-start-options-reopen/result.json"
           ],
           "remaining": "Unabhängiger Phase-1-Endbuild-Review offen; gezeichnete Grafikpaare und weitere Building-Wear-Arten separat offen."
+        },
+        "singleAtlasScope": {
+          "decision": "excluded_from_direct_dungeondraft_parity",
+          "source": "acceptance.json.strictParity.scopeDecision20261009SingleAtlas",
+          "replacement": "ROADMAP-HEX-ATLAS.md",
+          "historicalEvidencePreserved": true
         }
       },
       {
@@ -124824,7 +124889,7 @@
         "area": "verwaltung",
         "path": "Hauptleiste > New > New Map",
         "command": "Disable Object Shadow",
-        "scope": "required",
+        "scope": "excluded",
         "original": {
           "sequence": "Hauptleiste > New > New Map → Disable Object Shadow",
           "options": null,
@@ -124884,6 +124949,12 @@
             "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-start-options-20261009/evidence/1791512044443-parity-tools-phase1-start-options-reopen/result.json"
           ],
           "remaining": "Unabhängiger Phase-1-Endbuild-Review offen; gezeichnete Grafikpaare und weitere Building-Wear-Arten separat offen."
+        },
+        "singleAtlasScope": {
+          "decision": "excluded_from_direct_dungeondraft_parity",
+          "source": "acceptance.json.strictParity.scopeDecision20261009SingleAtlas",
+          "replacement": "ROADMAP-HEX-ATLAS.md",
+          "historicalEvidencePreserved": true
         }
       },
       {
@@ -124892,7 +124963,7 @@
         "area": "verwaltung",
         "path": "Hauptleiste > New > New Map",
         "command": "Disable Building Wear",
-        "scope": "required",
+        "scope": "excluded",
         "original": {
           "sequence": "Hauptleiste > New > New Map → Disable Building Wear",
           "options": null,
@@ -124952,6 +125023,12 @@
             "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-start-options-20261009/evidence/1791512044443-parity-tools-phase1-start-options-reopen/result.json"
           ],
           "remaining": "Unabhängiger Phase-1-Endbuild-Review offen; gezeichnete Grafikpaare und weitere Building-Wear-Arten separat offen."
+        },
+        "singleAtlasScope": {
+          "decision": "excluded_from_direct_dungeondraft_parity",
+          "source": "acceptance.json.strictParity.scopeDecision20261009SingleAtlas",
+          "replacement": "ROADMAP-HEX-ATLAS.md",
+          "historicalEvidencePreserved": true
         }
       },
       {
@@ -125014,7 +125091,7 @@
         "area": "verwaltung",
         "path": "Hauptleiste > New > New Map",
         "command": "OK",
-        "scope": "required",
+        "scope": "excluded",
         "original": {
           "sequence": "Hauptleiste > New > New Map → OK",
           "options": null,
@@ -125102,6 +125179,12 @@
             "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-new-map-20261009/evidence/1791511450182-parity-tools-phase1-new-map-reopen/result.json"
           ],
           "remaining": "Unabhängiger Phase-1-Endbuild-Review offen; Originalpersistenz von Größenvorlagen, Eingabegrenzen und Namenskonflikte nicht aus diesem Lauf ableitbar."
+        },
+        "singleAtlasScope": {
+          "decision": "excluded_from_direct_dungeondraft_parity",
+          "source": "acceptance.json.strictParity.scopeDecision20261009SingleAtlas",
+          "replacement": "ROADMAP-HEX-ATLAS.md",
+          "historicalEvidencePreserved": true
         }
       },
       {
@@ -125110,7 +125193,7 @@
         "area": "verwaltung",
         "path": "Hauptleiste > New > New Map",
         "command": "Cancel",
-        "scope": "required",
+        "scope": "excluded",
         "original": {
           "sequence": "Hauptleiste > New > New Map → Cancel",
           "options": null,
@@ -125188,6 +125271,12 @@
             "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-new-map-20261009/evidence/1791511450182-parity-tools-phase1-new-map-reopen/result.json"
           ],
           "remaining": "Unabhängiger Phase-1-Endbuild-Review offen; Originalpersistenz von Größenvorlagen, Eingabegrenzen und Namenskonflikte nicht aus diesem Lauf ableitbar."
+        },
+        "singleAtlasScope": {
+          "decision": "excluded_from_direct_dungeondraft_parity",
+          "source": "acceptance.json.strictParity.scopeDecision20261009SingleAtlas",
+          "replacement": "ROADMAP-HEX-ATLAS.md",
+          "historicalEvidencePreserved": true
         }
       },
       {
@@ -125196,7 +125285,7 @@
         "area": "verwaltung",
         "path": "Hauptleiste > New > Template > New Template",
         "command": "Name",
-        "scope": "required",
+        "scope": "excluded",
         "original": {
           "sequence": "Hauptleiste > New > Template > New Template → Name",
           "options": null,
@@ -125282,6 +125371,12 @@
           ],
           "finding": "Im neuen Lauf blieb ein weiterer QA-95-Eintrag mit 12×9 nach Accept offen; ältere Originalprobe listet zwei LimitProbe-Namen. Ursache nicht entschieden; keine Regel für gleiche Namen aus diesem Lauf abgeleitet.",
           "remaining": "Hostpaar und unabhängiger Review offen; bei gleichem Namen frische Originalprobe nötig."
+        },
+        "singleAtlasScope": {
+          "decision": "excluded_from_direct_dungeondraft_parity",
+          "source": "acceptance.json.strictParity.scopeDecision20261009SingleAtlas",
+          "replacement": "ROADMAP-HEX-ATLAS.md",
+          "historicalEvidencePreserved": true
         }
       },
       {
@@ -125290,7 +125385,7 @@
         "area": "verwaltung",
         "path": "Hauptleiste > New > Template > New Template",
         "command": "Width in tiles",
-        "scope": "required",
+        "scope": "excluded",
         "original": {
           "sequence": "Hauptleiste > New > Template > New Template → Width in tiles",
           "options": null,
@@ -125376,6 +125471,12 @@
           ],
           "finding": "Vorlagenbreite 9,5 zeigt vor Accept 10 Felder und danach in New Map 10; Ausgangskarte unverändert. Kein allgemeiner Rundungsbeweis für weitere Werte.",
           "remaining": "Hostpaar und unabhängiger Review offen; bei gleichem Namen frische Originalprobe nötig."
+        },
+        "singleAtlasScope": {
+          "decision": "excluded_from_direct_dungeondraft_parity",
+          "source": "acceptance.json.strictParity.scopeDecision20261009SingleAtlas",
+          "replacement": "ROADMAP-HEX-ATLAS.md",
+          "historicalEvidencePreserved": true
         }
       },
       {
@@ -125384,7 +125485,7 @@
         "area": "verwaltung",
         "path": "Hauptleiste > New > Template > New Template",
         "command": "Height in tiles",
-        "scope": "required",
+        "scope": "excluded",
         "original": {
           "sequence": "Hauptleiste > New > Template > New Template → Height in tiles",
           "options": null,
@@ -125469,6 +125570,12 @@
           ],
           "finding": "Vorlagenhöhe 10001 ergibt nach Accept 128; Ausgangskarte unverändert.",
           "remaining": "Hostpaar und unabhängiger Review offen; bei gleichem Namen frische Originalprobe nötig."
+        },
+        "singleAtlasScope": {
+          "decision": "excluded_from_direct_dungeondraft_parity",
+          "source": "acceptance.json.strictParity.scopeDecision20261009SingleAtlas",
+          "replacement": "ROADMAP-HEX-ATLAS.md",
+          "historicalEvidencePreserved": true
         }
       },
       {
@@ -125477,7 +125584,7 @@
         "area": "verwaltung",
         "path": "Hauptleiste > New > Template > New Template",
         "command": "Accept",
-        "scope": "required",
+        "scope": "excluded",
         "original": {
           "sequence": "Hauptleiste > New > Template > New Template → Accept",
           "options": null,
@@ -125568,6 +125675,12 @@
             "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-template-host-20261009/evidence/1791513967959-parity-tools-phase1-new-map-reopen/result.json"
           ],
           "remaining": "Unabhängiger Phase-1-Endbuild-Review offen; Zwischenwert-Rundung, obere Höhengrenze und Löschen bei doppeltem Namen nicht vollständig direkt gemessen."
+        },
+        "singleAtlasScope": {
+          "decision": "excluded_from_direct_dungeondraft_parity",
+          "source": "acceptance.json.strictParity.scopeDecision20261009SingleAtlas",
+          "replacement": "ROADMAP-HEX-ATLAS.md",
+          "historicalEvidencePreserved": true
         }
       },
       {
@@ -125576,7 +125689,7 @@
         "area": "verwaltung",
         "path": "Hauptleiste > New > Template > New Template",
         "command": "Cancel",
-        "scope": "required",
+        "scope": "excluded",
         "original": {
           "sequence": "Hauptleiste > New > Template > New Template → Cancel",
           "options": null,
@@ -125650,6 +125763,12 @@
             "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-template-host-20261009/evidence/1791513967959-parity-tools-phase1-new-map-reopen/result.json"
           ],
           "remaining": "Unabhängiger Phase-1-Endbuild-Review offen; Zwischenwert-Rundung, obere Höhengrenze und Löschen bei doppeltem Namen nicht vollständig direkt gemessen."
+        },
+        "singleAtlasScope": {
+          "decision": "excluded_from_direct_dungeondraft_parity",
+          "source": "acceptance.json.strictParity.scopeDecision20261009SingleAtlas",
+          "replacement": "ROADMAP-HEX-ATLAS.md",
+          "historicalEvidencePreserved": true
         }
       },
       {
@@ -125658,7 +125777,7 @@
         "area": "verwaltung",
         "path": "New Map > Map Wizard",
         "command": "DUNGEON/CAVE wählen",
-        "scope": "required",
+        "scope": "excluded",
         "original": {
           "sequence": "New Map > Map Wizard → DUNGEON/CAVE wählen",
           "options": null,
@@ -125720,6 +125839,12 @@
             "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-wizard-host-20261009/evidence/1791512632080-parity-tools-phase1-wizard-reopen/result.json"
           ],
           "remaining": "Unabhängiger Phase-1-Endbuild-Review offen; Boundary, Complexity, Density, Floor/Wall und Generatorwirkung sind DD-004/005 in Phase 7."
+        },
+        "singleAtlasScope": {
+          "decision": "excluded_from_direct_dungeondraft_parity",
+          "source": "acceptance.json.strictParity.scopeDecision20261009SingleAtlas",
+          "replacement": "ROADMAP-HEX-ATLAS.md",
+          "historicalEvidencePreserved": true
         }
       },
       {
@@ -139527,7 +139652,7 @@
         "area": "verwaltung",
         "path": "Start/Assets > Kartenwirkung",
         "command": "Gebäudeabnutzung beim Start deaktivieren",
-        "scope": "required",
+        "scope": "excluded",
         "original": {
           "sequence": "Start/Assets > Kartenwirkung → Gebäudeabnutzung beim Start deaktivieren",
           "options": null,
@@ -139587,6 +139712,12 @@
             "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-start-options-20261009/evidence/1791512044443-parity-tools-phase1-start-options-reopen/result.json"
           ],
           "remaining": "Unabhängiger Phase-1-Endbuild-Review offen; gezeichnete Grafikpaare und weitere Building-Wear-Arten separat offen."
+        },
+        "singleAtlasScope": {
+          "decision": "excluded_from_direct_dungeondraft_parity",
+          "source": "acceptance.json.strictParity.scopeDecision20261009SingleAtlas",
+          "replacement": "ROADMAP-HEX-ATLAS.md",
+          "historicalEvidencePreserved": true
         }
       },
       {
@@ -140748,7 +140879,7 @@
         "area": "verwaltung",
         "path": "Hauptleiste > New > New Map",
         "command": "Template +",
-        "scope": "required",
+        "scope": "excluded",
         "original": {
           "sequence": "Hauptleiste > New > New Map → Template +",
           "options": null,
@@ -140823,6 +140954,12 @@
             "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-template-host-20261009/evidence/1791513967959-parity-tools-phase1-new-map-reopen/result.json"
           ],
           "remaining": "Unabhängiger Phase-1-Endbuild-Review offen; Zwischenwert-Rundung, obere Höhengrenze und Löschen bei doppeltem Namen nicht vollständig direkt gemessen."
+        },
+        "singleAtlasScope": {
+          "decision": "excluded_from_direct_dungeondraft_parity",
+          "source": "acceptance.json.strictParity.scopeDecision20261009SingleAtlas",
+          "replacement": "ROADMAP-HEX-ATLAS.md",
+          "historicalEvidencePreserved": true
         }
       },
       {
@@ -141101,7 +141238,7 @@
         "area": "verwaltung",
         "path": "Hauptleiste > New > New Map",
         "command": "X / Schließen",
-        "scope": "required",
+        "scope": "excluded",
         "original": {
           "sequence": "Hauptleiste > New > New Map → X / Schließen",
           "options": null,
@@ -141161,6 +141298,12 @@
             "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-new-map-20261009/evidence/1791511450182-parity-tools-phase1-new-map-reopen/result.json"
           ],
           "remaining": "Unabhängiger Phase-1-Endbuild-Review offen; Originalpersistenz von Größenvorlagen, Eingabegrenzen und Namenskonflikte nicht aus diesem Lauf ableitbar."
+        },
+        "singleAtlasScope": {
+          "decision": "excluded_from_direct_dungeondraft_parity",
+          "source": "acceptance.json.strictParity.scopeDecision20261009SingleAtlas",
+          "replacement": "ROADMAP-HEX-ATLAS.md",
+          "historicalEvidencePreserved": true
         }
       },
       {
@@ -141446,7 +141589,7 @@
         "area": "verwaltung",
         "path": "Hauptleiste > New > Template > New Template",
         "command": "X / Schließen",
-        "scope": "required",
+        "scope": "excluded",
         "original": {
           "sequence": "Hauptleiste > New > Template > New Template → X / Schließen",
           "options": null,
@@ -141520,6 +141663,12 @@
             "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-template-host-20261009/evidence/1791513967959-parity-tools-phase1-new-map-reopen/result.json"
           ],
           "remaining": "Unabhängiger Phase-1-Endbuild-Review offen; Zwischenwert-Rundung, obere Höhengrenze und Löschen bei doppeltem Namen nicht vollständig direkt gemessen."
+        },
+        "singleAtlasScope": {
+          "decision": "excluded_from_direct_dungeondraft_parity",
+          "source": "acceptance.json.strictParity.scopeDecision20261009SingleAtlas",
+          "replacement": "ROADMAP-HEX-ATLAS.md",
+          "historicalEvidencePreserved": true
         }
       },
       {
@@ -142014,7 +142163,7 @@
         "area": "verwaltung",
         "path": "Hauptleiste > New > New Map",
         "command": "Template −",
-        "scope": "required",
+        "scope": "excluded",
         "original": {
           "sequence": "Hauptleiste > New > New Map → Template −",
           "options": null,
@@ -142116,6 +142265,12 @@
           ],
           "finding": "Minus bei doppeltem Namen wurde im neuen Lauf nicht erreicht; ältere Hostfolge ersetzt keine direkte Originalmessung.",
           "remaining": "Hostpaar und unabhängiger Review offen; bei gleichem Namen frische Originalprobe nötig."
+        },
+        "singleAtlasScope": {
+          "decision": "excluded_from_direct_dungeondraft_parity",
+          "source": "acceptance.json.strictParity.scopeDecision20261009SingleAtlas",
+          "replacement": "ROADMAP-HEX-ATLAS.md",
+          "historicalEvidencePreserved": true
         }
       },
       {
