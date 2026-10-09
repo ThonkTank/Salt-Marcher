@@ -109,23 +109,55 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out, checks,
     assert.equal(portal?.anchor?.boundaryId, rooms(built)[0].id);
     await snapshot("p7-rooms-and-portal");
     checks.push("Two V4 rooms and one anchored portal created through canvas gestures");
+    await chooseTool("Punkte");
+    await page.getByRole("button", { name: "Einpassen", exact: true }).click();
+    await page.evaluate(async (id) =>
+      app.workspace.getLeavesOfType("dungeon-native-pending")[0].view.editor.select(id),
+    rooms(built)[0].id);
+    await drag({ x: 10, y: 11 }, { x: 11, y: 11 });
+    await page.waitForFunction((id) => {
+      const e = app.workspace.getLeavesOfType("dungeon-native-pending")[0]?.view?.editor;
+      return e?.session.entities.get(id)?.polygons.some((polygon) =>
+        polygon.outer.some((point) => point.x === 11 && point.y === 11));
+    }, rooms(built)[0].id, { timeout: 12000 });
+    const reshaped = await editor();
+    assert.equal(reshaped.document.entities.find((e) => e.id === portal.id)?.anchor?.boundaryId,
+      rooms(built)[0].id);
+    await snapshot("p7-room-contour-edited");
+    checks.push("Point tool edits a keyed room contour without detaching its portal");
 
     await chooseTool("Möbel");
     await page.getByRole("button", { name: "Einpassen", exact: true }).click();
+    await page.locator('.dn-object-library-tile[aria-label="Atlas Globe 01"]').click();
+    await page.getByRole("spinbutton", { name: "Scale", exact: true }).fill("4");
+    await page.getByRole("spinbutton", { name: "Scale", exact: true }).press("Tab");
     await click({ x: 4, y: 4 });
     const builtIn = (await editor()).document.entities.filter((e) => e.kind === "object")[0];
     assert.equal(builtIn.roomId, rooms(built)[0].id);
+    assert.match(builtIn.assetId, /dungeondraft-builtin-1\.2\.0\.1/);
     await page.locator('.dn-object-library-tile[aria-label="QA Object Color"]').click();
+    await page.getByRole("spinbutton", { name: "Scale", exact: true }).fill("1");
+    await page.getByRole("spinbutton", { name: "Scale", exact: true }).press("Tab");
     await page.getByRole("spinbutton", { name: "Rotation", exact: true }).fill("45");
     await page.getByRole("spinbutton", { name: "Rotation", exact: true }).press("Tab");
-    await click({ x: 7, y: 7 });
+    await click({ x: 8, y: 8 });
     const placed = await editor();
     const packageObject = placed.document.entities.filter((e) => e.kind === "object")
       .find((e) => e.id !== builtIn.id);
     assert(packageObject?.assetId && packageObject.roomId === rooms(built)[0].id);
     assert.equal(packageObject.rotation, Math.PI / 4);
+    await page.locator('.dn-object-library-tile[aria-label="Atlas Globe 01"]').click();
+    await click({ x: 16, y: 8 });
+    await page.locator('.dn-object-library-tile[aria-label="QA Object Color"]').click();
+    await click({ x: 20, y: 8 });
+    const fourObjects = (await editor()).document.entities.filter((e) => e.kind === "object");
+    assert.equal(fourObjects.length, 4);
+    assert.equal(fourObjects.filter((e) => e.assetId.includes("dungeondraft-builtin-1.2.0.1")).length, 2);
+    assert.equal(fourObjects.filter((e) => e.assetId.includes("QAObjASl")).length, 2);
+    assert.equal(fourObjects.filter((e) => e.roomId === rooms(built)[0].id).length, 2);
+    assert.equal(fourObjects.filter((e) => e.roomId === rooms(built)[1].id).length, 2);
     await snapshot("p7-built-in-and-package");
-    checks.push("Built-in and package objects placed in one room; package rotation persists");
+    checks.push("Two built-in and two package objects placed across both rooms; package rotation persists");
 
     await page.evaluate(() => {
       const session = app.workspace.getLeavesOfType("dungeon-native-pending")[0].view.editor.session;
@@ -138,8 +170,13 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out, checks,
     await chooseTool("Auswahl");
     await page.getByRole("button", { name: "Einpassen", exact: true }).click();
     await selectObjects();
-    await click({ x: 4, y: 4 });
-    assert.deepEqual((await editor()).selection, [builtIn.id]);
+    await click({ x: 8, y: 8 });
+    assert.deepEqual((await editor()).selection, [packageObject.id]);
+    await page.keyboard.press("a");
+    assert.equal(object(await editor(), packageObject.id).flip, true);
+    await snapshot("p7-selected-package-transformed");
+    checks.push("Selecting an existing package object and pressing A mirrors that instance");
+    assert.deepEqual((await editor()).selection, [packageObject.id]);
     await page.locator(".dn-group-rail").getByRole("button", { name: "Inhalte", exact: true }).click();
     await page.locator(".dn-tool-rail").getByRole("button", { name: "Dungeon-Inhalte", exact: true }).click();
     await page.locator(".modal-container .modal").last()
@@ -148,21 +185,21 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out, checks,
     await modal.locator("textarea").fill(TEXT);
     await modal.getByRole("button", { name: "Vorkommen anlegen", exact: true }).click();
     const linked = await editor(), feature = occurrence(linked);
-    assert.equal(feature.entityId, builtIn.id);
+    assert.equal(feature.entityId, packageObject.id);
     assert.equal(feature.roomId, rooms(built)[0].id);
     assert.equal(feature.marker, "A");
     const markdown = section(linked, feature.roomId, feature.sectionId)?.markdown;
     assert(markdown?.includes(TEXT));
     await snapshot("p7-linked-feature");
-    checks.push("Selected built-in object links to feature A and exact V4 Markdown section");
+    checks.push("Selected package object links to feature A and exact V4 Markdown section");
 
     await page.keyboard.press("Escape");
     await chooseTool("Auswahl");
     await page.getByRole("button", { name: "Einpassen", exact: true }).click();
     await selectObjects();
-    await drag({ x: 4, y: 4 }, { x: 17, y: 4 });
+    await drag({ x: 8, y: 8 }, { x: 17, y: 4 });
     const moved = await editor();
-    assert.equal(object(moved, builtIn.id).roomId, rooms(built)[1].id);
+    assert.equal(object(moved, packageObject.id).roomId, rooms(built)[1].id);
     assert.equal(occurrence(moved).roomId, rooms(built)[1].id);
     assert.equal(occurrence(moved).sectionId, feature.sectionId);
     assert.equal(section(moved, rooms(built)[1].id, feature.sectionId)?.markdown, markdown);
@@ -186,7 +223,8 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out, checks,
     const hash = crypto.createHash("sha256").update(fs.readFileSync(path.join(vault, MAP))).digest("hex");
     fs.writeFileSync(savedPath, JSON.stringify({ hash, document: saved,
       firstRoomId: rooms(built)[0].id, secondRoomId: rooms(built)[1].id,
-      objectId: builtIn.id, packageId: packageObject.id, sectionId: feature.sectionId,
+      objectId: packageObject.id, builtInId: builtIn.id,
+      packageId: packageObject.id, sectionId: feature.sectionId,
       markdown }, null, 2));
     await page.evaluate(async ({ mapPath, roomId, sectionId }) =>
       app.plugins.getPlugin("dungeon-editor").openRoomKey(mapPath, roomId, sectionId),
@@ -207,6 +245,10 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out, checks,
       .digest("hex"), prior.hash);
     assert.equal(object(current, prior.objectId).roomId, prior.secondRoomId);
     assert.equal(object(current, prior.packageId).rotation, Math.PI / 4);
+    assert.equal(object(current, prior.packageId).flip, true);
+    assert.equal(current.document.entities.filter((e) => e.kind === "object").length, 4);
+    assert(rooms(current).find((e) => e.id === prior.firstRoomId).polygons.some((polygon) =>
+      polygon.outer.some((point) => point.x === 11 && point.y === 11)));
     assert.equal(section(current, prior.secondRoomId, prior.sectionId)?.markdown, prior.markdown);
     await page.evaluate(async ({ mapPath, roomId }) =>
       app.plugins.getPlugin("dungeon-editor").openRoomKey(mapPath, roomId),

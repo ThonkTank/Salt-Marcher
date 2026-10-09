@@ -98382,12 +98382,13 @@
     },
     "phase7Implementation": {
       "date": "2026-10-09",
-      "state": "partial_p7_1_host_pair_passed",
-      "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase7-combined-20261009/phase7-p7-1-progress.md",
-      "hostEdit": "/home/aaron/.cache/dungeon-native-qa/parity-phase7-combined-20261009/evidence/1791502824418-parity-phase7-combined-edit/result.json",
-      "hostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase7-combined-20261009/evidence/1791503193207-parity-phase7-combined-reopen/result.json",
-      "verified": ["Two V4 rooms and portal", "Built-in and package object", "Stable feature A and exact Markdown", "Atomic room move and Undo/Redo", "Fresh-process map click to right key"],
-      "open": ["P7-1 remaining contour, multiple objects and selected-object transform", "P7-2 physical input", "P7-3 large combined map", "P7-4 protected Vault copy", "Independent Phase-7 review"],
+      "state": "p7_1_implementation_review_candidate",
+      "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase7-combined-full-20261009/phase7-p7-1-implementation.md",
+      "partialReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase7-combined-20261009/phase7-p7-1-progress.md",
+      "hostEdit": "/home/aaron/.cache/dungeon-native-qa/parity-phase7-combined-full-20261009/evidence/1791503978274-parity-phase7-combined-edit/result.json",
+      "hostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase7-combined-full-20261009/evidence/1791504077076-parity-phase7-combined-reopen/result.json",
+      "verified": ["Two V4 rooms and portal", "Edited room contour", "Two built-in and two package objects by asset ID", "Selected-object mirror", "Stable feature A and exact Markdown", "Atomic room move and Undo/Redo", "Fresh-process map click to right key"],
+      "open": ["P7-1 independent review", "P7-2 physical input", "P7-3 large combined map", "P7-4 protected Vault copy", "Independent Phase-7 review"],
       "gate": "open"
     }
   }
