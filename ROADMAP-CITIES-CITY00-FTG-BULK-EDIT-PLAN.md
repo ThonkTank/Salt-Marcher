@@ -1,0 +1,11 @@
+# CITY-00 I46: Bewohner gemeinsam bearbeiten
+
+CO-FTG-0017 ist ein unbelegter Dokumentationskandidat; frühere Zeitbelege wurden korrekt entfernt. Die existente eigene CITY00-Hamlet-QA-Siedlung dient als temporäre Originalprobe, keine Nutzerkarte und kein Account.
+
+I46 liest aktuelle Population-Liste und angebotene Mehrfachauswahl/Massenbearbeitung direkt. Vollständige AX-Snapshots statt No-change-Diffs sichern; Originalversion/Zugang und tatsächlichen Start festhalten. Auswahl allein verändert keine Bewohnerdaten. Wenn ein Editor zugänglich ist, angebotene Felder und Apply-/Cancelverhalten erfassen. Ein tatsächlicher Schreibversuch darf nur ein klar reversibles, zuvor für beide ausgewählten eigenen Testbewohner gelesenen Feld betreffen; beide Originalwerte getrennt sichern und anschließend über sichtbare Originalcontrols vollständig zurücksetzen. Kein Löschen, keine Neugeneration, kein Kauf/Account und keine unbekannte Undoannahme. Andernfalls reine Control-/Zugangsprobe, keine Wirkung behaupten. Höchstens zwei erfolglose Versuche je Hypothese.
+
+Technische Zuordnung CITY-06: Massenbearbeitung adressiert stabile Personenkennungen, zeigt Zahl/Zielauswahl und eine Vorschau der betroffenen Felder. Ein gemeinsamer Atlasbefehl mit vollständigen Before/Afterwerten; Cancel/Filterwechsel schreibt nichts. Individuelle Haus-/Arbeits-/Familienbindungen bleiben erhalten, wenn nicht ausdrücklich bearbeitet. Originalfeldtypen und Konfliktpolitik erst nach Probe präzisieren; keine zusätzliche Personenhaltung oder Shared-API vor Eigentümervertrag.
+
+R46/I46 prüft Auswahl vs tatsächliche Speicherwirkung, Änderungs-/Rücksetzbelege, Zugangslücken und unabhängige CO17-Pflicht. Alle eigenen Implementierungs-/Host-/Bedienabnahmen bleiben offen. Nach jeder Fachphase getrenntes Aufräum-P/I/R für Rawhashes, Planlinks, Auswahl-/Tabzustand und Bewohnerschutz. Keine zusätzliche native GUI parallel zum Atlasbesitzer.
+
+I46-Zuordnung: Auswahl-Save öffnet erst den Editor; Editor-Save wendet Feldänderungen an. Eine verständliche eigene Zielauswahl soll dies sprachlich unterscheiden. Visible Apply/search/cancel/restore ist belegt; Fresh-Reopen, serialisierte IDs und atomare Produktgarantien bleiben offen. Ein erfolgloser Checkboxversuch wurde durch den sichtbar dokumentierten CTRL-Kartenweg ersetzt, nicht blind wiederholt.

@@ -1007,3 +1007,45 @@ Atlasbesitzer angefragter [CITY-01-Integrationsvorschlag](ROADMAP-CITIES-ATLAS-I
 CITY-01-INTEGRATION-CLEAN-I01 Start 2026-10-09T19:25:56.754856+00:00; Vorschlag im Stadtplan verlinkt; HEX05-Voraussetzung und offene Owner-/Persistenzentscheidungen erhalten.
 
 CITY-01-INTEGRATION-CLEAN-R01 Start 2026-10-09T19:25:59.973810+00:00; Verweise und zentrale Quellgrenzen geprüft: changed nach Render, Draft terrain-only, CitySource gemeinsame History. Vorschlag bereit zur konkreten HEX04/05-Abstimmung.
+
+CITY-01-INTEGRATION-R01 Start 2026-10-09T19:28:12.125763+00:00; Drei Planbefunde: precision-komposition, striktes Placement/Draftschema und Terrain-only Fit. Anschlussvorschlag muss nachgebessert werden.
+
+CITY-01-INTEGRATION-R01-CLEAN-P01 Start 2026-10-09T19:28:15.623485+00:00; Aufräumplan: Befunde und reine Vorschlagsgrenzen lesbar halten, Quellen-/Gegenbelege unverändert erhalten.
+
+CITY-01-INTEGRATION-R01-CLEAN-I01 Start 2026-10-09T19:28:18.561382+00:00; Belegpfad und Vorschlagsscope konsolidiert; kein vorweggenommener Vertrag oder Produktpass.
+
+CITY-01-INTEGRATION-R01-CLEAN-R01 Start 2026-10-09T19:28:21.042352+00:00; Planlinks/JSON/Gegenbeleg vorhanden, fremde JSON-Wurzeln erhalten; Scope bleibt Vorschlag.
+
+CITY-01-INTEGRATION-N01 Start 2026-10-09T19:28:35.030662+00:00; Drei Befunde in konkrete Anschluss-/Abnahmepflichten übersetzt: relative Vorwärts/Rückabbildung, neues Placement/Draftschema, gemeinsames Fit.
+
+CITY-01-INTEGRATION-N01-CLEAN-P01 Start 2026-10-09T19:28:38.312911+00:00; Aufräumplan: Befunde und reine Vorschlagsgrenzen lesbar halten, Quellen-/Gegenbelege unverändert erhalten.
+
+CITY-01-INTEGRATION-N01-CLEAN-I01 Start 2026-10-09T19:28:41.330934+00:00; Belegpfad und Vorschlagsscope konsolidiert; kein vorweggenommener Vertrag oder Produktpass.
+
+CITY-01-INTEGRATION-N01-CLEAN-R01 Start 2026-10-09T19:28:43.984353+00:00; Planlinks/JSON/Gegenbeleg vorhanden, fremde JSON-Wurzeln erhalten; Scope bleibt Vorschlag.
+
+CITY-01-INTEGRATION-R02 Start 2026-10-09T19:29:00.630020+00:00; R02: alle drei Befunde im Vorschlag vollständig adressiert. Vertrag, Implementierung und Hostabnahme bleiben offen.
+
+CITY-01-INTEGRATION-R02-CLEAN-P01 Start 2026-10-09T19:29:03.471755+00:00; Aufräumplan: Befunde und reine Vorschlagsgrenzen lesbar halten, Quellen-/Gegenbelege unverändert erhalten.
+
+CITY-01-INTEGRATION-R02-CLEAN-I01 Start 2026-10-09T19:29:06.203947+00:00; Belegpfad und Vorschlagsscope konsolidiert; kein vorweggenommener Vertrag oder Produktpass.
+
+CITY-01-INTEGRATION-R02-CLEAN-R01 Start 2026-10-09T19:29:09.073297+00:00; Planlinks/JSON/Gegenbeleg vorhanden, fremde JSON-Wurzeln erhalten; Scope bleibt Vorschlag.
+
+CITY-00-I46-P46 Start 2026-10-09T19:30:30.593778+00:00; Konkrete Originalprobe für Mehrfachauswahl/Editor geplant, Schreibprobe nur mit gelesenen reversiblen Beforewerten.
+
+CITY-00-I46-PLAN-CLEAN-P46 Start 2026-10-09T19:30:33.307996+00:00; Aufräumplan: eigenen Bewohner-/Rawschutz und Planlink prüfen; keine unbestätigte Massenwirkung.
+
+I46-Plan: [FTG-Bewohner-Massenbearbeitung](ROADMAP-CITIES-CITY00-FTG-BULK-EDIT-PLAN.md).
+
+CITY-00-I46-PLAN-CLEAN-I46 Start 2026-10-09T19:30:36.312160+00:00; Originalprobe mit vorhandener QA-Karte und Field-before-Schutz verlinkt.
+
+CITY-00-I46-PLAN-CLEAN-R46 Start 2026-10-09T19:30:39.201603+00:00; Planlink/JSON und klar begrenzter Bewohner-/Tabschutz geprüft. Originalprobe kann beginnen.
+
+CITY-00-I46-I46 Start 2026-10-09T19:30:56.956Z; CO17 von Dokumentationskandidat zu echter Teilwirkung: zwei Bewohner gemeinsam umbenannt, Cancel geprüft und ursprüngliche Namen sichtbar wiederhergestellt. Beleg: /home/aaron/.cache/dungeon-native-qa/city-plans/city00-i46-bulk-20261009/manifest.json.
+
+CITY-00-I46-CLEAN-P46 Start 2026-10-09T19:36:02.852129+00:00; Aufräumplan: Auswahl-Save von Daten-Apply und sichtbare Wiederherstellung von voller Dateninvarianz trennen; Rawhashes schützen. Beleg: /home/aaron/.cache/dungeon-native-qa/city-plans/city00-i46-bulk-20261009/manifest.json.
+
+CITY-00-I46-CLEAN-I46 Start 2026-10-09T19:36:05.837607+00:00; Auswahl vs Apply und sichtbare Rücksetzung vs Dateninvarianz präzisiert; keine neuen APIs/Produktdatenhaltung. Beleg: /home/aaron/.cache/dungeon-native-qa/city-plans/city00-i46-bulk-20261009/manifest.json.
+
+CITY-00-I46-CLEAN-R46 Start 2026-10-09T19:36:08.707285+00:00; Hash-/Plan-/Scopeprüfung bestanden: originale sichtbare Namen wiederhergestellt, Produktabnahmen offen; getrenntes R46 folgt. Beleg: /home/aaron/.cache/dungeon-native-qa/city-plans/city00-i46-bulk-20261009/manifest.json.
