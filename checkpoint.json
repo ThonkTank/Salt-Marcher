@@ -4445,17 +4445,17 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I42-I",
-      "kind": "reference_implementation",
-      "startedAt": "2026-10-09T18:49:04Z",
-      "focus": "FTG-Ruhetagwirkung aufgleichenBewohner beiunveränderterZeit prüfen",
-      "state": "completed",
-      "result": "Working→RestingHome→Working beobachtet;NoneTooltipabweichung dokumentiert. EigenerTestzustandMontag11h restauriert, volleParität offen."
-    },
-    "nextRun": {
       "id": "CITY-00-I42-CLEAN-P42",
       "kind": "cleanup_planning",
-      "focus": "Originalevidenz/Tooltipabweichung undZeitportgrenze bereinigen"
+      "startedAt": "2026-10-09T18:52:25.376327+00:00",
+      "focus": "Referenzsemantik undbestehendeZeitgrenzen bereinigen",
+      "state": "completed",
+      "result": "Originalevidenz erhalten, expliziteKalenderpolitik stattTooltipübernahme planen."
+    },
+    "nextRun": {
+      "id": "CITY-00-I42-CLEAN-I42",
+      "kind": "cleanup_implementation",
+      "focus": "CO42-Zuordnung undScopegrenzen präzisieren"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
