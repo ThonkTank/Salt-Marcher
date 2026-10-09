@@ -3977,17 +3977,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I27-P",
-      "kind": "reference_planning",
-      "startedAt": "2026-10-09T14:54:59.446908+00:00",
-      "focus": "Forest-Wirkung und Ausgabe konkret planen",
-      "state": "completed",
-      "result": "Bekannter Show-trees-Zugang, tatsächliche Downloads und vollständiger Gruppenvergleich geplant."
-    },
-    "nextRun": {
       "id": "CITY-00-I27-I",
       "kind": "reference_probe",
-      "focus": "Forest off/on/off mit realen Ausgaben prüfen"
+      "startedAt": "2026-10-09T14:58:03.394252+00:00",
+      "focus": "Waldwirkung und tatsächliche Ausgabe prüfen",
+      "state": "completed",
+      "result": "Show trees aktiviert Show forests. Forest off/on/off verändert sichtbar zusammenhängende Außenwaldflächen. Tatsächliche JSON-Dateien beide299585 Bytes und bytegleich; alle14 Gruppen einschließlich trees13 identisch. Keine separate Waldgeometrieausgabe durch dieses Flag belegt. Exportmetadata0.11.5 ist keine bestätigte UI-Laufversion."
+    },
+    "nextRun": {
+      "id": "CITY-00-I27-R",
+      "kind": "reference_review",
+      "focus": "Sichtwirkung von Ausgabe/Persistenz abgrenzen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
