@@ -951,3 +951,5 @@ CITY-00-I44-IMPL-CLEAN-R44 Start 2026-10-09T19:16:12.773682+00:00; Aufräumrevie
 CITY-00-I44-R44 Start 2026-10-09T19:16:20.862788+00:00; Zuordnungsreview bestanden: Profil/Beziehungen und Uhrzeit aus AX bestätigt; I18 erhalten, Scope/IDs/Produktabnahmen unverändert.
 
 CITY-00-I44-REVIEW-CLEAN-P44 Start 2026-10-09T19:16:32.577778+00:00; Aufräumplan: aktuelle Plan-/Reviewlinks konsolidieren, Rohbelege und Kennungen erhalten; keine Runtimeänderung.
+
+CITY-00-I44-REVIEW-CLEAN-I44 Start 2026-10-09T19:16:36.415502+00:00; Links und Scopegrenzen konsolidiert; Rohbelege unverändert, keine weitere fachliche Datenhaltung.
