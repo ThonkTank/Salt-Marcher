@@ -1431,7 +1431,7 @@
     "followUpRoadmap": "ROADMAP-PARITY-TOOLS.md",
     "dd008Plan": {
       "date": "2026-10-09",
-      "state": "original_host_history_pair_candidate_review_pending",
+      "state": "dd008_none_history_scoped_review_passed_phase1_open",
       "plan": "ROADMAP-PARITY-TOOLS-PHASE1-DD008-PLAN.md",
       "source": "Dungeondraft 1.2.0.1: own-building-wear-scratched.dungeondraft_map; bisherige Original-Wahlprobe war leer",
       "originalHistory": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-20261009/original-history.md",
@@ -1439,7 +1439,10 @@
       "pairedAudit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-20261009/paired-history-audit.json",
       "hostEdit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-host-20261009/evidence/1791549046997-edit/result.json",
       "hostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-host-20261009/evidence/1791549276477-reopen/result.json",
-      "next": "Neues Geometrie-/History-Paar unabhängig reviewen; anschließend die vier aktiven Modi auf gleicher Assetbasis und zwei Geschosse direkt prüfen."
+      "review": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-20261009/review.md",
+      "reviewEdit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-review-20261009/evidence/1791549568094-edit/result.json",
+      "reviewReopen": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-review-20261009/evidence/1791549583366-reopen/result.json",
+      "next": "Die vier aktiven Modi auf gleicher Assetbasis und zwei Geschosse direkt prüfen; DD-008 und Phase 1 bleiben offen."
     },
     "gmUxN001Plan": {
       "date": "2026-10-09",
