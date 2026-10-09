@@ -130498,16 +130498,21 @@
           "remaining": "Original-/Host-Rohdatenpaar, frische Hostöffnung und getrennter Review bestehen. Ein 2×2-Loch braucht eine größere Quellkontur; weitere Radierformen, Übermalung im Loch, kombinierte Ränder und DD-038-Endreview offen. Keine Fallfreigabe; P7-2 physisch ungeprüft."
         },
         "followUpPhase1BuildingFloorFourCellHoleOriginalProbe": {
-          "state": "four_cell_interior_hole_original_measured_host_repair_open_case_open",
+          "state": "four_cell_interior_hole_scoped_host_raw_pair_passed_review_open_case_open",
           "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "hostBuildSha256": "d54f25cf7b961cc78b1bbf197bd4781bd62d2325ec10dc4b34148c0d6ab3a6a2",
           "originalReport": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-hole-2x2-original-20261009/original-probe.md",
           "originalAudit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-hole-2x2-original-20261009/original-audit.json",
           "originalWoodSource": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-hole-2x2-original-20261009/native/runs/20261009-124026-3740818/evidence/maps/00-extended.dungeondraft_map",
           "originalWoodErased": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-hole-2x2-original-20261009/native/runs/20261009-124026-3740818/evidence/maps/01-erased.dungeondraft_map",
           "originalStoneErased": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-hole-2x2-stone-original-20261009/native/runs/20261009-124229-3741944/evidence/maps/01-erased.dungeondraft_map",
           "originalWoodFresh": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-hole-2x2-fresh-original-20261009/native/runs/20261009-124147-3741445/evidence/screens/00-fresh.png",
+          "hostReport": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-hole-2x2-host-20261009-checked/implementation.md",
+          "hostEdit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-hole-2x2-host-20261009-checked/evidence/1791542927554-parity-tools-phase1-building-mixed-edit/result.json",
+          "hostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-hole-2x2-host-20261009-checked/evidence/1791542949425-parity-tools-phase1-building-mixed-reopen/result.json",
+          "audit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-hole-2x2-host-20261009-checked/independent-audit.json",
           "measuredScope": "8×8-Karte mit 6×6-Kontur: 2×2-Alt-Loch erhält 36 Zellpositionen und malt die vier gespeicherten verdeckten Zellen im gewählten Stil. Wood ändert (4,3) von Stone zu Wood; Stone ändert (3,3), (3,4), (4,4) von Wood zu Stone. Undo/Redo bytegleich; frische Wood-Originalöffnung zeigt vier freie Innenfelder.",
-          "remaining": "Host-Zellnachbesserung, direkte GUI-Paare und getrennter Review offen. Weitere Lochformen, Außenkanten, Übermalung im Loch, kombinierte Ränder und DD-038-Endreview offen. Keine Fallfreigabe; P7-2 physisch ungeprüft."
+          "remaining": "Original-/Host-Rohdatenpaare und frische Hostöffnung bestehen; getrennter Review offen. Weitere Lochformen, Außenkanten, Übermalung im Loch, kombinierte Ränder und DD-038-Endreview offen. Keine Fallfreigabe; P7-2 physisch ungeprüft."
         },
         "followUpPhase1BuildingPointOriginalProbe": {
           "state": "three_point_moves_scoped_review_passed_case_open",
