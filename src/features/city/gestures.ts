@@ -4,6 +4,7 @@ import { CityDraft, type CityDraftPreview } from "./draft";
 import type { CityEdit } from "./edit";
 import {
   cityBuildingLocalPoint,
+  cityBuildingLocalPrecision,
   cityBuildingPoint,
   type CityBuildingPose,
 } from "./geometry";
@@ -192,9 +193,14 @@ export class CityGesture {
             cityBuildingLocalPoint(building, this.start),
             pivotLocal,
           );
+          const initialError = cityBuildingLocalPrecision(building, this.start);
           const x = t.axes !== "y",
             y = t.axes !== "x";
-          if ((x && initial.x === 0) || (y && initial.y === 0)) invalid();
+          if (
+            (x && Math.abs(initial.x) <= initialError.x) ||
+            (y && Math.abs(initial.y) <= initialError.y)
+          )
+            invalid();
           this.edit = (point) => {
             if (point.x === this.start.x && point.y === this.start.y)
               return poseEdit(building);
@@ -202,13 +208,21 @@ export class CityGesture {
               cityBuildingLocalPoint(building, point),
               pivotLocal,
             );
+            const error = cityBuildingLocalPrecision(building, point);
+            const component = (axis: "x" | "y", selected: boolean): number => {
+              if (!selected) return building.scale[axis];
+              const ratio = current[axis] / initial[axis];
+              // Zero and reflected candidates remain invalid, even near roundoff.
+              if (!Number.isFinite(ratio) || ratio <= 0) invalid();
+              const uncertainty = initialError[axis] + error[axis];
+              if (!Number.isFinite(uncertainty)) invalid();
+              return Math.abs(current[axis] - initial[axis]) <= uncertainty
+                ? building.scale[axis]
+                : building.scale[axis] * ratio;
+            };
             const scale = cityInputPoint({
-              x: x
-                ? building.scale.x * (current.x / initial.x)
-                : building.scale.x,
-              y: y
-                ? building.scale.y * (current.y / initial.y)
-                : building.scale.y,
+              x: component("x", x),
+              y: component("y", y),
             });
             if (scale.x <= 0 || scale.y <= 0) invalid();
             return anchorPose(building.rotationRadians, scale);

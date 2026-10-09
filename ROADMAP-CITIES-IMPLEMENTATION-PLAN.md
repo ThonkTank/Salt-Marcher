@@ -810,3 +810,6 @@ CITY-01-PREP-R08 Start 2026-10-09T18:06:15.198040+00:00; Separater Review reprod
 
 
 CITY-01-PREP-GESTURES-CLEAN-R06 Start 2026-10-09T18:08:26.898821+00:00; Getrennte CP/CI dokumentieren realen Gesturekern und offene R08-Lücke. Konkrete N06-Precision-Regel aus EPS-gewichteten Eingabe-/Posekoordinaten, ohne feste Meter-/Pixelklemmung. Quellhashes/Links/JSON geprüft, keine Runtimeänderung. Befund bleibt offen fürN06. Beleg: /home/aaron/.cache/dungeon-native-qa/city-plans/city01-tools-20261009/cleanup-review.json.
+
+
+CITY-01-PREP-N06 Start 2026-10-09T18:09:28.846154+00:00; CITY-GESTURE-R08-01 repariert: gemeinsame cityBuildingLocalPrecision schätzt inverse Double-Rundung aus Pointer/Poseposition und Anfangsskala, keine feste Meterklemmung. Unauflösbarer Anfangshebel abgewiesen; Null/Spiegelung vor No-op-Regel geprüft. Originalskala bleibt bei nichtauflösbarer relevanter Achsdifferenz exakt. Zwei neue Regressionen mit32gedrehten Achsfällen/Redo, großen Lagen, negativer Hebelseite und echter Kleinständerung am Millimeterhaus. Unabhängige Original8Gegenfälle jetzt0Fehlcommits statt6;144Vorherkonturen exakt. check,338Tests/build bestanden. R09 folgt separat;Host/Atlas offen. Beleg: /home/aaron/.cache/dungeon-native-qa/city-plans/city01-tools-20261009/refinement.json.
