@@ -847,6 +847,18 @@ test("touchpad wheel navigation zooms vertically at a bounded rate and keeps hor
   );
 });
 
+test("Ctrl+wheel notch follows the measured native 100–125% step", () => {
+  const event = { deltaX: 0, deltaMode: 0, ctrlKey: true,
+    metaKey: false, shiftKey: false };
+  assert.deepEqual(wheelNavigation({ ...event, deltaY: -100 }),
+    { kind: "zoom", factor: 1.25 });
+  assert.deepEqual(wheelNavigation({ ...event, deltaY: 100 }),
+    { kind: "zoom", factor: 0.8 });
+  const smooth = wheelNavigation({ ...event, deltaY: -8 });
+  assert.equal(smooth.kind, "zoom");
+  if (smooth.kind === "zoom") assert(smooth.factor > 1 && smooth.factor < 1.25);
+});
+
 test("compact reading map keeps the established ctrl-wheel contract", () => {
   assert.deepEqual(compactWheelNavigation({ deltaY: 18, ctrlKey: false }), {
     kind: "none",

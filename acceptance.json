@@ -94892,6 +94892,15 @@
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd041-pan-current-assessment.md"
           ],
           "gap": "Isolierter Host zoomt bei Ctrl+Rad ±100 auf etwa 133,4 % beziehungsweise 93,7 % statt 125 %/100 %. Andere Radsignale und Zoomstufen noch nicht gemessen."
+        },
+        "followUpPhase1Implementation": {
+          "state": "candidate_pending_independent_review",
+          "scope": "Der direkt gemessene einzelne Strg+Rad-Rastschritt 100→125→100 %; weitere Radsignale und Zoomstufen offen.",
+          "candidateBuildSha256": "605877ac33c9af94395a59e0c7bcda017f8b2fad83cc24cf8edfca91200615e1",
+          "originalEvidence": "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd041-navigation/REPORT.md",
+          "hostEditEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-navigation-20261009/evidence/1791510197843-parity-tools-phase1-navigation-edit/navigation-pair.json",
+          "hostReopenEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-navigation-20261009/evidence/1791510204224-parity-tools-phase1-navigation-reopen/result.json",
+          "comparison": "Im isolierten Host 64→80→64; Weltpunkt unter dem Zeiger, V4-Dokument, History, Dirty und Dateihash bleiben gleich. Frischer Prozess liest dieselbe Karte. Fachentscheidung offen."
         }
       },
       {

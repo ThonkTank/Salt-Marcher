@@ -54,13 +54,14 @@ const restart = process.argv.includes("--restart"),
   parityPhase7Combined = process.argv.includes("--parity-phase7-combined"),
   parityPhase7Large = process.argv.includes("--parity-phase7-large"),
   parityPhase7Vault = process.argv.includes("--parity-phase7-vault"),
+  parityToolsPhase1Navigation = process.argv.includes("--parity-tools-phase1-navigation"),
   parityPhase4OwnMinimal = parityPhase4Objects && process.argv.includes("--own-tags-minimal"),
   parityPhase4CleanupMatrix = parityPhase4Objects && process.argv.includes("--parity-phase4-cleanup-matrix"),
   pathLibrary = process.argv.includes("--path-library"),
   large = process.argv.includes("--large"),
   compactSmoke = process.argv.includes("--compact-smoke"),
   selectionSmoke = process.argv.includes("--selection-smoke"),
-  run = Date.now() + (parityPhase7Vault ? "-parity-phase7-vault" : parityPhase7Large ? "-parity-phase7-large" : parityPhase7Combined ? "-parity-phase7-combined" : parityPhase6Repair2Focus ? "-parity-phase6-repair2-focus" : parityPhase6Repair ? "-parity-phase6-repair" : parityPhase6Gestures ? "-parity-phase6-gestures" : parityPhase5CleanupRepair ? "-parity-phase5-cleanup-repair" : parityPhase5CleanupBenchmark ? "-parity-phase5-cleanup-benchmark" : parityPhase5AlphaReview ? "-parity-phase5-alpha-review" : parityPhase5Visual ? "-parity-phase5-visual" : parityPhase5Repair2 ? "-parity-phase5-repair2" : parityPhase5Light ? "-parity-phase5-light" : parityPhase5Repair ? "-parity-phase5-repair" : parityPhase5Review ? "-parity-phase5-review" : parityPhase4Objects ? "-parity-phase4-objects" : parityPhase3Wear ? "-parity-phase3-wear" : parityPhase3Building ? "-parity-phase3-building" : parityPhase2Points ? "-parity-phase2-points" : parityPhase1Repair ? "-parity-phase1-repair" : parityPhase1Shapes ? "-parity-phase1-shapes" : parityPhase1 ? "-parity-phase1" : phase6Migration ? "-phase6-migration" : phase5Feature ? "-phase5-feature" : phase4Key ? "-phase4-key" : phase3Object ? "-phase3-object" : phase2Object ? "-phase2-object" : v2Open ? "-v2-open" : patternAlpha ? "-pattern-alpha" : prefabForget ? "-prefab-forget" : objectAlpha ? "-object-alpha" : pathLibrary ? "-path-library" : selectionSmoke ? "-selection" : compactSmoke ? "-compact" : large ? "-large" : "") + (restart ? "-reopen" : "-edit"),
+  run = Date.now() + (parityToolsPhase1Navigation ? "-parity-tools-phase1-navigation" : parityPhase7Vault ? "-parity-phase7-vault" : parityPhase7Large ? "-parity-phase7-large" : parityPhase7Combined ? "-parity-phase7-combined" : parityPhase6Repair2Focus ? "-parity-phase6-repair2-focus" : parityPhase6Repair ? "-parity-phase6-repair" : parityPhase6Gestures ? "-parity-phase6-gestures" : parityPhase5CleanupRepair ? "-parity-phase5-cleanup-repair" : parityPhase5CleanupBenchmark ? "-parity-phase5-cleanup-benchmark" : parityPhase5AlphaReview ? "-parity-phase5-alpha-review" : parityPhase5Visual ? "-parity-phase5-visual" : parityPhase5Repair2 ? "-parity-phase5-repair2" : parityPhase5Light ? "-parity-phase5-light" : parityPhase5Repair ? "-parity-phase5-repair" : parityPhase5Review ? "-parity-phase5-review" : parityPhase4Objects ? "-parity-phase4-objects" : parityPhase3Wear ? "-parity-phase3-wear" : parityPhase3Building ? "-parity-phase3-building" : parityPhase2Points ? "-parity-phase2-points" : parityPhase1Repair ? "-parity-phase1-repair" : parityPhase1Shapes ? "-parity-phase1-shapes" : parityPhase1 ? "-parity-phase1" : phase6Migration ? "-phase6-migration" : phase5Feature ? "-phase5-feature" : phase4Key ? "-phase4-key" : phase3Object ? "-phase3-object" : phase2Object ? "-phase2-object" : v2Open ? "-v2-open" : patternAlpha ? "-pattern-alpha" : prefabForget ? "-prefab-forget" : objectAlpha ? "-object-alpha" : pathLibrary ? "-path-library" : selectionSmoke ? "-selection" : compactSmoke ? "-compact" : large ? "-large" : "") + (restart ? "-reopen" : "-edit"),
   out = qa + "/evidence/" + run;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const waitForFileAbsent = async (file, timeoutMs = 12000) => {
@@ -718,6 +719,12 @@ async function workflow() {
       };
     });
   const scenarioContext = { page, browser, fs, path, assert, crypto, PNG, root, qa, vault, sourceVault, restart, out, checks, chooseTool, editorAction, selectOnlyObjects, waitForFileAbsent, sleep, resolveQaAppCgroup };
+  if (parityToolsPhase1Navigation) {
+    const scenario = require("./host/parity-tools-phase1-navigation.cjs")(scenarioContext);
+    if (restart) await scenario.reopen();
+    else await scenario.edit();
+    return;
+  }
   if (parityPhase7Vault) {
     const scenario = require("./host/parity-phase7-vault.cjs")(scenarioContext);
     if (restart) await scenario.reopen();

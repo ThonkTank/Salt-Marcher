@@ -25,6 +25,10 @@ export function wheelNavigation(event: WheelInput): WheelNavigation {
       event.metaKey ||
       (!event.shiftKey && Math.abs(y) >= Math.abs(x));
   if (!zoom) return { kind: "pan", x: -x, y: -y };
+  // The measured native Ctrl+wheel notch moves 100% to 125% and back.
+  // Small pixel deltas remain continuous for touchpad pinch input.
+  if ((event.ctrlKey || event.metaKey) && Math.abs(y) >= 40)
+    return { kind: "zoom", factor: y < 0 ? 1.25 : 0.8 };
   const bounded = Math.max(-48, Math.min(48, y));
   return { kind: "zoom", factor: Math.exp(-bounded * 0.006) };
 }
