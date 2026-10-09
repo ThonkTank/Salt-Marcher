@@ -3756,17 +3756,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I19-I",
-      "kind": "style_reference_probe",
-      "startedAt": "2026-10-09T13:44:38.401333+00:00",
-      "focus": "Stilvorgabe und tatsächliche Geometrieausgabe messen",
-      "state": "completed",
-      "result": "Vivid erst nach Apply sichtbar;13 Felder echte Farbschema-JSON; zwei298842B Geometriedateien bytegleich. Vierteltönung sichtbar geprüft/zurückgestellt; Testkopie geschlossen."
-    },
-    "nextRun": {
       "id": "CITY-00-I19-R",
       "kind": "reference_review",
-      "focus": "Farbdatei, Stilgrenzen und technische Planung reviewen"
+      "startedAt": "2026-10-09T13:44:55.340556+00:00",
+      "focus": "Originalwirkung und Style-Vertrag prüfen",
+      "state": "completed",
+      "result": "I19-R01: explizite Farbrollen/Stilflags und Atomarität im Plan fehlen; I19-R02: JSON-Beleg benötigt klare Formatzuordnung. Getrennte Aufräumplanung folgt."
+    },
+    "nextRun": {
+      "id": "CITY-00-I19-CP",
+      "kind": "cleanup_planning",
+      "focus": "Style-Vertrag und JSON-Alias planen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
