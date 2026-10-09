@@ -3438,17 +3438,17 @@
     "state": "city00_reference_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I04-P",
+      "id": "CITY-00-I05-P",
       "kind": "reference_planning",
-      "startedAt": "2026-10-09T12:33:25.808263+02:00",
-      "focus": "Vorhandene Canvas-of-Kings-Demo und koordinierten Original-QA-Zugang planen",
-      "state": "completed_access_coordination_pending",
-      "result": "Steam-Demo3122210 installiert; Rollen Hex/Stadt bestätigt; direkter Native-QA-Zugang angefragt, kein paralleler Host gestartet"
+      "startedAt": "2026-10-09T10:43:56.338779+00:00",
+      "focus": "Originalwirkung der Familienstammbaum-Schaltfläche",
+      "state": "completed",
+      "result": "Vorhandene Person, Relations-Vergleich, sichtbarer Graph und technische Datenbindung geplant"
     },
     "nextRun": {
-      "id": "CITY-00-I04-I",
+      "id": "CITY-00-I05-I",
       "kind": "reference_implementation",
-      "focus": "Canvas-of-Kings-Ergebnisbilder/Funktionen über bestätigten Originalzugang prüfen; FTG/Watabou-Restproben weiterführen"
+      "focus": "Thawn Cobblekind Relations und Family tree im Original prüfen"
     },
     "open": [
       "CITY-00 direkte Referenzinventur/Galerie aller drei Produkte",

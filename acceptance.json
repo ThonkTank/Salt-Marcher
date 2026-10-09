@@ -1,7 +1,7 @@
 {
   "cityPlans": {
     "schemaVersion": 1,
-    "updated": "2026-10-08",
+    "updated": "2026-10-09T10:42:01.854083+00:00",
     "plan": "ROADMAP-CITIES.md",
     "state": "planned_not_implemented",
     "comparisonMode": "functional_equivalence_and_independent_usability_tests",
@@ -1815,13 +1815,40 @@
         "sourceUrl": "https://docs.fantasytowngenerator.com/",
         "observedAt": "2026-10-09T12:20:56.140099+02:00",
         "observedVersion": null,
-        "availability": "free",
-        "observationKind": "direct",
-        "originalEvidence": [
-          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/ftg-export-menu.ax.txt"
-        ],
+        "availability": "unknown",
+        "observationKind": "documentation",
+        "originalEvidence": [],
         "task": "Saison und Tageslicht wechseln",
         "phase": "CITY-07",
+        "caseIds": [],
+        "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
+        "implementationEvidence": [],
+        "hostEvidence": [],
+        "comparisonEvidence": [],
+        "usabilityEvidence": [],
+        "review": {
+          "state": "not_run"
+        },
+        "status": "open",
+        "gap": "Dokumentationskandidat Wetter/Jahreszeiten/Tag-Nacht; direkte Wirkungsprobe offen.",
+        "independentFunctionalRequirement": true,
+        "mappingCoverage": "new_required_function_not_covered_by_existing_CTY"
+      },
+      {
+        "id": "CO-FTG-0020",
+        "product": "Fantasy Town Generator",
+        "feature": "Bild-, CSV- und JSON-Ausgabe",
+        "sourceUrl": "https://docs.fantasytowngenerator.com/",
+        "observedAt": "2026-10-09T12:15:44.926455+02:00",
+        "observedVersion": null,
+        "availability": "free_control_observed_file_unconfirmed",
+        "observationKind": "direct",
+        "originalEvidence": [
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/ftg-export-menu.ax.txt",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i04-20261009/manifest.json"
+        ],
+        "task": "Karte und Lebensdaten ausgeben",
+        "phase": "CITY-08",
         "caseIds": [
           "CTY-006.03"
         ],
@@ -1834,29 +1861,30 @@
           "state": "not_run"
         },
         "status": "open",
-        "gap": "Formate direkt im Menü: PNG/SVG/GeoJSON, Daten JSON/CSV im Dialog. Downloaddateien nicht bestätigt.",
-        "originalProbe": {
-          "run": "CITY-00-I02",
-          "state": "partial",
-          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/manifest.json",
-          "exportFileState": "unverified_after_download_timeout"
-        },
+        "gap": "PNG/SVG/GeoJSON und Daten JSON/CSV im Originalmenü sichtbar; tatsächliche Ausgabedateien nach zwei Downloadversuchen unbestätigt.",
         "independentFunctionalRequirement": true,
-        "mappingCoverage": "related_project_criteria_only; CO requirement remains independently required"
+        "mappingCoverage": "related_project_criteria_only; CO requirement remains independently required",
+        "originalProbe": {
+          "run": "CITY-00-I04-I",
+          "state": "partial",
+          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i04-20261009/manifest.json",
+          "exportFileState": "unverified_after_two_download_attempts",
+          "retryPolicy": "stop_same_hypothesis"
+        }
       },
       {
-        "id": "CO-FTG-0020",
+        "id": "CO-FTG-0021",
         "product": "Fantasy Town Generator",
-        "feature": "Bild-, CSV- und JSON-Ausgabe",
+        "feature": "FoundryVTT und Roll20 Integration",
         "sourceUrl": "https://docs.fantasytowngenerator.com/",
         "observedAt": "2026-10-09T12:15:44.926455+02:00",
         "observedVersion": null,
         "availability": "account_required_observed_disabled_in_temporary_access",
-        "observationKind": "documentation",
+        "observationKind": "direct",
         "originalEvidence": [
           "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/ftg-export-menu.ax.txt"
         ],
-        "task": "Karte und Lebensdaten ausgeben",
+        "task": "Export-/Integrationsablauf vergleichen",
         "phase": "CITY-08",
         "caseIds": [],
         "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
@@ -1870,33 +1898,11 @@
         "status": "open",
         "gap": "FoundryVTT/Roll20 im Originalmenü sichtbar, für temporäre Siedlung deaktiviert; tatsächliche Integration offen.",
         "independentFunctionalRequirement": true,
-        "mappingCoverage": "new_required_function_not_covered_by_existing_CTY"
-      },
-      {
-        "id": "CO-FTG-0021",
-        "product": "Fantasy Town Generator",
-        "feature": "FoundryVTT und Roll20 Integration",
-        "sourceUrl": "https://docs.fantasytowngenerator.com/",
-        "observedAt": "2026-10-09T12:15:44.926455+02:00",
-        "observedVersion": null,
-        "availability": "unknown",
-        "observationKind": "documentation",
-        "originalEvidence": [],
-        "task": "Export-/Integrationsablauf vergleichen",
-        "phase": "CITY-08",
-        "caseIds": [],
-        "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
-        "implementationEvidence": [],
-        "hostEvidence": [],
-        "comparisonEvidence": [],
-        "usabilityEvidence": [],
-        "review": {
-          "state": "not_run"
-        },
-        "status": "open",
-        "gap": "Dokumentationskandidat; direkte vollständige Originalprobe offen.",
-        "independentFunctionalRequirement": true,
-        "mappingCoverage": "new_required_function_not_covered_by_existing_CTY"
+        "mappingCoverage": "new_required_function_not_covered_by_existing_CTY",
+        "originalProbe": {
+          "run": "CITY-00-I02",
+          "state": "disabled_control_observed_only"
+        }
       },
       {
         "id": "CO-FTG-0022",
@@ -2367,13 +2373,51 @@
           "run": "CITY-00-I03-I",
           "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/manifest.json"
         }
+      },
+      {
+        "id": "CO-FTG-0030",
+        "product": "Fantasy Town Generator",
+        "feature": "Gebäudedaten bearbeiten und erhalten",
+        "sourceUrl": "https://www.fantasytowngenerator.com/temporary-settlement",
+        "observedAt": "2026-10-09T10:40:38.524671+00:00",
+        "observedVersion": null,
+        "availability": "free",
+        "observationKind": "direct",
+        "originalEvidence": [
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i04-20261009/manifest.json"
+        ],
+        "task": "Gebäude benennen, speichern und nach Neuladen mit Bewohnerzuordnung wiederfinden",
+        "phase": "CITY-06",
+        "caseIds": [],
+        "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
+        "implementationEvidence": [],
+        "hostEvidence": [],
+        "comparisonEvidence": [],
+        "usabilityEvidence": [],
+        "review": {
+          "state": "not_run"
+        },
+        "status": "open",
+        "gap": "Original-Umbenennung und Reload direkt belegt; eigener Produktvergleich und weitere Gebäudedaten offen.",
+        "originalProbe": {
+          "run": "CITY-00-I04-I",
+          "state": "rename_save_reload_observed",
+          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i04-20261009/manifest.json",
+          "remaining": [
+            "Weitere General-Felder",
+            "Unterbereiche Opening times/Stock/Services/Sub-locations/Resources",
+            "Kontenübergreifende oder dauerhafte Speicherung"
+          ]
+        },
+        "independentFunctionalRequirement": true,
+        "mappingCoverage": "new_required_function_not_covered_by_existing_CTY"
       }
     ],
     "functionalInventoryStatus": {
       "state": "partial_inventory_not_accepted",
-      "run": "CITY-00-I03-I",
+      "run": "CITY-00-I04-I",
       "products": 3,
-      "candidates": 44,
+      "candidates": 45,
       "directFormAreas": 13,
       "open": [
         "Detailfähigkeiten aller Produkte vervollständigen",
@@ -2384,7 +2428,8 @@
       ],
       "evidence": [
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/manifest.json",
-        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/manifest.json"
+        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/manifest.json",
+        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i04-20261009/manifest.json"
       ],
       "originalResultSamples": 3
     },
