@@ -1,6 +1,6 @@
 # Referenzlücken vor den Stadtpaketen
 
-Abgeleitete Übersicht vom09.10.2026, CITY-00-I17-I. Maßgeblich bleibt `acceptance.json` unter `cityPlans.functionalInventory`. Ein Originalprobe-Status bezeichnet ausschließlich beobachteten Umfang; eigene Umsetzung, Hostvergleich und bessere Bedienung sind für alle Einträge offen. Diese Übersicht ersetzt keine Pflicht und kein Abnahmetor. Sie ist ein versionierter Snapshot, keine zusätzliche Statusdatenbank; spätere Änderungen werden aus acceptance in einem zusammengehörigen Planpaket neu zugeordnet.
+Abgeleitete Übersicht vom09.10.2026, CITY-00-I18-I. Maßgeblich bleibt `acceptance.json` unter `cityPlans.functionalInventory`. Ein Originalprobe-Status bezeichnet ausschließlich beobachteten Umfang; eigene Umsetzung, Hostvergleich und bessere Bedienung sind für alle Einträge offen. Diese Übersicht ersetzt keine Pflicht und kein Abnahmetor. Sie ist ein versionierter Snapshot, keine zusätzliche Statusdatenbank; spätere Änderungen werden aus acceptance in einem zusammengehörigen Planpaket neu zugeordnet.
 
 CITY-01 startet nach HEX-05. Frühe Referenzen: Save/Open CO-COK-0006 direkt belegt; FTG-Gebäudeverschiebung/Abbruch sowie Straßenzeichnung/Save/Reload/Entfernung CO-FTG-0015 direkt teilbelegt. COK-Undo CO-COK-0007: zwei Versuche nach Save ohne beobachtete Rücknahme; erfolgreiche History-Folge und Einfluss von Save offen. Weitere Originalwirkungen werden spätestens vor ihrer hier genannten Zielphase geprüft.
 
@@ -27,7 +27,7 @@ CITY-01 startet nach HEX-05. Frühe Referenzen: Save/Open CO-COK-0006 direkt bel
 | CO-FTG-0008 | CITY-06 | Religionen und Götter | keine gesonderte Wirkungsprobe; direct |
 | CO-FTG-0012 | CITY-06 | Gegenstände, Dienstleistungen und Preise | keine gesonderte Wirkungsprobe; direct |
 | CO-FTG-0013 | CITY-06 | Gebäudebedarfe und Anzahlgrenzen | partial |
-| CO-FTG-0014 | CITY-06 | Bewohnerdetails und Beziehungen | keine gesonderte Wirkungsprobe; documentation |
+| CO-FTG-0014 | CITY-06 | Bewohnerdetails und Beziehungen | resident_access_unverified_after_network_error; Detail nicht erreicht |
 | CO-FTG-0017 | CITY-06 | Bewohner-Massenbearbeitung | partial |
 | CO-FTG-0026 | CITY-06 | Familienstammbaum | graph_fullscreen_person_navigation_observed |
 | CO-FTG-0027 | CITY-06 | Gebäudeereignisse | control_observed_only |
