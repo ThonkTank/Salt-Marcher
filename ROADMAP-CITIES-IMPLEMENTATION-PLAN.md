@@ -655,3 +655,6 @@ CITY-00-I40-CP Start 2026-10-09T16:17:09.830489+00:00; Plan: Snapshotkopf auf CI
 
 
 CITY-00-I40-CI Start 2026-10-09T16:18:12.594721+00:00; Snapshot enthält I11-Straßen-/Savefolge sowie I40-Draw/known-house-Pose/Entwurfsabbruch. Skaliergeste nur angeboten, keine Wirkung behauptet; gestoppte Auswahlversuche und unbekannte IDs/Bindings/Einzel-Undo bleiben erhalten. Historische Belege unverändert; kein eigener Produktcode oder neuer UI-Eingriff. Finaler Rawhash-/Verweisreview folgt.
+
+
+CITY-00-I40-CR Start 2026-10-09T16:19:03.385325+00:00; Snapshot/acceptance/Anschlussplan stimmen: Draw-Kontur und bekannte Hauspose/Entwurfsabbruch belegt,CTRLwheelScale nur angeboten.27 Rawhashes und alle Inventarbelegziele gültig; I10/I11 sowie gestoppte Trefferversuche erhalten,65 CO-/24 CTY-Pflichten offen. Originaltabs erhalten, Gesamtentwurf verworfen und250m/Districts/11Monday bestätigt. Keine Restlücke im Aufräumumfang. Nächste frühe Probe klärt dokumentierte Skalierbedienung; CITY-01 wartet weiter auf geprüften HEX-05-Vertrag.
