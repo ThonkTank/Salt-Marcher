@@ -3610,17 +3610,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I10-CP",
-      "kind": "cleanup_planning",
-      "startedAt": "2026-10-09T12:15:23.688523+00:00",
-      "focus": "Drei Metadatenbefunde getrennt planen",
-      "state": "completed",
-      "result": "Frame08/09-Grenze, sechs übrige Werkzeuge und abgeleiteten Snapshot präzisieren; Rohbytes/Manifest erhalten"
-    },
-    "nextRun": {
       "id": "CITY-00-I10-CI",
       "kind": "cleanup_implementation",
-      "focus": "Belegbenennung und Snapshotsemantik korrigieren"
+      "startedAt": "2026-10-09T12:16:04.525290+00:00",
+      "focus": "Belegnamen und abgeleitete Statusgrenze korrigieren",
+      "state": "completed",
+      "result": "R01–R03 korrigiert; Rohmanifest durch separate Ergänzung erhalten, Frame08 präzise benannt, Anzahl/snapshot korrigiert"
+    },
+    "nextRun": {
+      "id": "CITY-00-I10-CR",
+      "kind": "cleanup_review",
+      "focus": "Rohhashes und aktuelle Umfangskorrekturen prüfen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",

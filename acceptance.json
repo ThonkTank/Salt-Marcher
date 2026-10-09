@@ -1874,7 +1874,8 @@
         "availability": "unknown",
         "observationKind": "direct_partial_effect",
         "originalEvidence": [
-          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i10-edit-20261009/manifest.json"
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i10-edit-20261009/manifest.json",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i10-edit-20261009/cleanup.json"
         ],
         "task": "Gebäude und Straße verändern",
         "phase": "CITY-01",
@@ -1903,7 +1904,7 @@
             "Nur Verschiebung/Orientierungsabschluss und Gesamtentwurfsabbruch geprüft",
             "Kein Save Layout, Undo/Redo oder Neustart dieser Geometrieprobe",
             "Keine Identitäts-/Bewohnerbindung aus Pixelframes bewiesen",
-            "Andere7 Gebäudewerkzeuge, Material-/Höhen-/Skalierwirkung bleiben offen"
+            "Sechs weitere Gebäudewerkzeuge neben Move, Material-/Höhen-/Skalierwirkung bleiben offen"
           ]
         }
       },

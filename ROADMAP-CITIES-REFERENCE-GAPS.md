@@ -1,6 +1,6 @@
 # Referenzlücken vor den Stadtpaketen
 
-Abgeleitete Übersicht vom09.10.2026, CITY-00-I10-I. Maßgeblich bleibt `acceptance.json` unter `cityPlans.functionalInventory`. Ein Originalprobe-Status bezeichnet ausschließlich beobachteten Umfang; eigene Umsetzung, Hostvergleich und bessere Bedienung sind für alle Einträge offen. Diese Übersicht ersetzt keine Pflicht und kein Abnahmetor.
+Abgeleitete Übersicht vom09.10.2026, CITY-00-I10-I. Maßgeblich bleibt `acceptance.json` unter `cityPlans.functionalInventory`. Ein Originalprobe-Status bezeichnet ausschließlich beobachteten Umfang; eigene Umsetzung, Hostvergleich und bessere Bedienung sind für alle Einträge offen. Diese Übersicht ersetzt keine Pflicht und kein Abnahmetor. Sie ist ein versionierter Snapshot, keine zusätzliche Statusdatenbank; spätere Änderungen werden aus acceptance in einem zusammengehörigen Planpaket neu zugeordnet.
 
 CITY-01 startet nach HEX-05. Frühe Referenzen: Save/Open CO-COK-0006 direkt belegt; FTG-Gebäudeverschiebung/Abbruch CO-FTG-0015 jetzt direkt teilbelegt. COK-Undo CO-COK-0007 benötigt noch eine freigegebene native Sitzung. Weitere Originalwirkungen werden spätestens vor ihrer hier genannten Zielphase geprüft.
 
