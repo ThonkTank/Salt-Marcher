@@ -145992,6 +145992,14 @@
           "measured": "Je zwei neue Wände und Objekte per UI mit shadow=[true,false]; zweites Objekt per Undo/Redo entfernt und wiederhergestellt, Save/Reopen dokument- und hashgleich.",
           "remaining": "Unabhängiger Endbuild-Review und Atlasbedienung der globalen Kartenoptionen offen; UI-Bilder haben unterschiedliche Kamera-/Panelzustände und belegen keine Bildparität."
         },
+        "followUpPhase1ShadowReview": {
+          "state": "passed_scoped_per_entity_atlas_option_open",
+          "scope": "Getrennte Wand-/Objekt-Renderwirkung, Werkzeugwahl für neue Elemente, Undo/Redo, Save und frische Neuöffnung auf integriertem Build.",
+          "report": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd006-shadow-review-20261009/review.md",
+          "audit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd006-shadow-review-20261009/review-audit.json",
+          "buildSha256": "346f607b16dbfea258dbcbaf234988f1201454a3ea11d14593ae397b559c49c1",
+          "remaining": "Globales Atlasoptionen-Verhalten und Phase-1-Gesamttor offen; New-Map-Startdialog ist kein direktes Vorbild."
+        },
         "baseline": {
           "editor": {
             "sequence": "Wandschatten an/aus",
@@ -146084,6 +146092,14 @@
           "buildSha256": "5b086c04c05b8011c64331ee6da7baa4831fcf06cc8712d2078731fcd03f3d4f",
           "measured": "Je zwei neue Wände und Objekte per UI mit shadow=[true,false]; zweites Objekt per Undo/Redo entfernt und wiederhergestellt, Save/Reopen dokument- und hashgleich.",
           "remaining": "Unabhängiger Endbuild-Review und Atlasbedienung der globalen Kartenoptionen offen; UI-Bilder haben unterschiedliche Kamera-/Panelzustände und belegen keine Bildparität."
+        },
+        "followUpPhase1ShadowReview": {
+          "state": "passed_scoped_per_entity_atlas_option_open",
+          "scope": "Getrennte Wand-/Objekt-Renderwirkung, Werkzeugwahl für neue Elemente, Undo/Redo, Save und frische Neuöffnung auf integriertem Build.",
+          "report": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd006-shadow-review-20261009/review.md",
+          "audit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd006-shadow-review-20261009/review-audit.json",
+          "buildSha256": "346f607b16dbfea258dbcbaf234988f1201454a3ea11d14593ae397b559c49c1",
+          "remaining": "Globales Atlasoptionen-Verhalten und Phase-1-Gesamttor offen; New-Map-Startdialog ist kein direktes Vorbild."
         },
         "baseline": {
           "editor": {
