@@ -3632,17 +3632,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I14-I",
-      "kind": "reference_geometry_probe",
-      "startedAt": "2026-10-09T12:46:31.007466+00:00",
-      "focus": "Lokale Watabou-Verformung direkt messen",
-      "state": "completed",
-      "result": "Displace/Discard und Displace/Apply sowie lokale Starwind-Heath-Neugeneration sichtbar belegt; separate Testkopie geschlossen, Original erhalten; keine Save/Undo-/Produktabnahme"
-    },
-    "nextRun": {
       "id": "CITY-00-I14-R",
       "kind": "requirements_review",
-      "focus": "Lokale Wirkungen und geplanten CITY-04-Befehl prüfen"
+      "startedAt": "2026-10-09T12:47:04.471278+00:00",
+      "focus": "Lokale Wirkungen und CITY-04-Befehl prüfen",
+      "state": "completed",
+      "result": "Wirkungsbelege konsistent; I14-R01: Verformung getrennt von Neugeneration und8 Operationen ausdrücklich planen, eigene Parität offen"
+    },
+    "nextRun": {
+      "id": "CITY-00-I14-CP",
+      "kind": "cleanup_planning",
+      "focus": "Verformungsumfang und Befehlsschutz präzisieren"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
