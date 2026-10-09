@@ -30,12 +30,12 @@ keine Funktions-, Host- oder Paritätsfreigabe.
 
 | Fälle | Früheste Voraussetzung | Genau erlaubter Lauf | Sichtbares Orakel | Noch ausdrücklich offen |
 | --- | --- | --- | --- | --- |
-| `.02`, `.16` | HEX-01 | Eine vorhandene gültige Welt sowie eine **bytegleich transportierte** Weltdateimenge nur lesend öffnen. Vor und nach Schließen alle Dateien hashen; keine Anlage, kein Save, kein Draft und kein Journal. Ungültige Version, fehlende referenzierte Terraindatei und fremde `world.id` sichtbar ablehnen. | Gleiche `world.id`, gleiche referenzierte Pfade und Einzeldateihashes, gleiche geschützte Dungeon-/Location-Key-Bytes und Fremdkennungen; null Schreibaufrufe. | Dungeondraft-Open-Wirkung, veränderter Atlas, Save, Import, Recovery und Hostabnahme. |
+| `.02`, `.16` | O01a nach HEX-01; O01b hostneutral nach I01a und sichtbar erst nach angeschlossenem Terrain-Lader/I01b | O01a öffnet nur eine gültige **referenzfreie** `.overworld` und deren bytegleiche Einzeldatei-Transportkopie read-only; vor und nach Schließen hashen, null Schreibaufrufe. O01b öffnet erst später die vollständige nichtleere Weltdateimenge und prüft fehlende Terraindatei beziehungsweise Kinddatei mit fremder `world.id`. | O01a: gleiche `.overworld`-Bytes und `world.id`, keine Anlage, kein Save, Draft oder Journal. O01b: zusätzlich gleiche referenzierte Pfade, Einzeldateihashes, geschützte Dungeon-/Location-Key-Bytes und Fremdkennungen; Missing-/Foreign-Child wird hostneutral und danach sichtbar abgelehnt. | O01a belegt weder Kinddateiladen noch Dungeondraft-Open-Wirkung, veränderten Atlas, Save, Import, Recovery oder Hostabnahme. O01b wartet auf die echte Hostverdrahtung. |
 | `.04`, `.05` | HEX-02-I01a hostneutral; sichtbarer Lauf erst nach I01b | Einen Terrainbefehl über die gemeinsame `AtlasHistory` zurücknehmen und wiederholen. Der hostneutrale Test darf nach I01a laufen; das sichtbare Hostpaar wartet auf I01b. | Besitzerkennung, Vorher-/Nachheränderungen und Redo-Folge exakt; Kamera, geladene Fremdbesitzer und Dateien unverändert. | Keine Dungeondraft-Parität; kein Persistenznachweis vor I01c. |
 | `.03` | HEX-02-I01c | Dirty Terrain über den gemeinsamen Transaktionsweg speichern, normal neu öffnen und denselben gespeicherten Stand erneut ohne Änderung speichern. | Zustandsmatrix unten, Einzeldatei-Manifest und exakter gespeicherter Dokumentzustand; Draft wird erst nach bestätigtem Commit entfernt. | Dungeondraft-Open-Recent-Nebeneffekt und alle Kopierfälle. |
 | `.14` | HEX-02-I01c für Dirty/Draft; sichtbare Save/Discard/Cancel-Folge erst nach I01d | Ungespeichert verlassen oder Welt wechseln: Cancel erhält Session und Draft; Save benutzt denselben Transaktionsweg; Discard stellt die gespeicherte Basis wieder her. Der alte New-Map-Zweig entfällt. | Jeder Zweig hat getrennte Vorher-/Nachherdateien, sichtbaren Status und frische Neuöffnung; Cancel schreibt nichts, Discard ändert keine gespeicherte Basis. | Betriebssystem-Exit und Dungeondraft-Dialogparität bis zur Shellentscheidung. |
 | `.07`, `.08`, `.13`, `.15` | Identitätsorakel dieses Plans unabhängig bestanden **und** HEX-02-I01d | Nur die ausdrücklich benannten Atlasaktionen Backup/Restore, Transport oder „Als Kopie“ ausführen. Keine alte Recent-/Save-As-Oberfläche automatisch nachbauen. | Operationszeile aus dem Identitätsorakel, vollständiges Einzeldatei-Manifest und A→B→A; Original und Kopie lassen sich nicht gegenseitig überschreiben. | Nutzerentscheidung über eine Recent-Liste und endgültige Shell-/Importoberfläche. |
-| `.01`, `.06`, `.10–.12` | ratifizierte reale Ziel-Shell | Menü, About, Datenordner, reguläres Schließen und zustandsabhängige Befehle in genau dieser Shell prüfen. | Installierte Version, aktiver Atlas, leerer Zustand, normaler Prozessausgang und unveränderte Dateien je Aktion. | Vor der Plattformentscheidung keine Ersatzoberfläche und kein Host-Go. |
+| `.01`, `.06`, `.10`, `.11`, `.12` | ratifizierte reale Ziel-Shell | Menü, About, Datenordner, reguläres Schließen und zustandsabhängige Befehle in genau dieser Shell prüfen. | Installierte Version, aktiver Atlas, leerer Zustand, normaler Prozessausgang und unveränderte Dateien je Aktion. | Vor der Plattformentscheidung keine Ersatzoberfläche und kein Host-Go. |
 | `.09` | ratifizierte reale Ziel-Shell | In Phase 1 ausschließlich den sichtbaren Preferences-Einstieg öffnen und schließen. | Einstieg ist erreichbar, Cancel/X schreiben nichts. | Felder, Tabs und Kürzel `.17–.76` bleiben Phase 12. |
 
 Kein späterer Tabellenlauf darf einen früheren Gate-Status rückwirkend behaupten.
@@ -117,9 +117,11 @@ ersetzt.
 
 ## Getrennte Ausführungspakete
 
-1. **O01 – read-only Open:** nach HEX-01 ausschließlich `.02/.16` mit dem
-   Null-Schreiborakel prüfen. Das ist ein Atlas-Öffnungsbeleg, keine
-   Dungeondraft-Abnahme.
+1. **O01a – read-only Overworld-Open:** nach HEX-01 ausschließlich `.02/.16`
+   mit einer referenzfreien `.overworld` und dem Null-Schreiborakel prüfen. Das
+   ist ein enger Atlas-Öffnungsbeleg, keine Kinddatei- oder Dungeondraft-Abnahme.
+   **O01b** prüft vollständigen Transport und Missing-/Foreign-Child erst nach
+   hostneutralem Terrain-Lader und seiner sichtbaren Hostverdrahtung.
 2. **H01 – History:** `.04/.05` nach I01a hostneutral, sichtbar erst nach I01b.
    Kein Speicher- oder Dirty-Claim.
 3. **S01 – Save/Draft/Recovery:** `.03` und die technische Dirty-/Draftgrenze
@@ -140,7 +142,7 @@ getrennt bleibt und jede Identitäts-/Recovery-Aktion ein eindeutiges Orakel hat
 Ein unabhängiger Reviewer prüft den exakten Commit gegen Issue-#1-Befund
 `6084893762`, `acceptance.json`, `ROADMAP-HEX-02-PLAN.md`, den aktuellen
 `FileStore`-/Dungeon-Journalvertrag und die unveränderten fremden
-Checkpoint-Wurzeln. Erst ein PASS öffnet O01; er öffnet weder HEX-02 noch eine
+Checkpoint-Wurzeln. Erst ein PASS öffnet O01a; er öffnet weder O01b, HEX-02 noch eine
 Produktimplementierung und ersetzt keinen späteren Implementierungsreview.
 
 ## Danach, ausdrücklich eigener Planlauf
