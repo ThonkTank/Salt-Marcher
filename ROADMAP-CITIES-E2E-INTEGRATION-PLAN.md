@@ -110,3 +110,5 @@ Gepinnte eigene temporäre Ressourcen für CLEAN-I:
 - `/tmp/city-e2e-codec.cjs`: SHA256 `0bf6e6ba4f1c1e38afa4530e85f7665b966e5944a51690088276dd60b7bbf373`.
 - `/tmp/city-e2e-i01-test.log`: SHA256 `aaf1ea7a58e8d9ebbf68097a189c9fc3b43544cd647e9769b36a228d25b4ad13`.
 - `/tmp/city-e2e-i01-build.log`: SHA256 `46b9f8fcf4e7b9cb86af7eb0a51f6d130baf9f51f1ac8c29bc51b8be9305c369`.
+
+CITY-E2E-SEED-CLEAN-I: Die vier geplanten eigenen temporären Dateien nach Prüfung ihrer gepinnten Hashes bytegleich an der festen externen QA-Stelle archiviert; alle Kopien vor Entfernen der vier Originale erneut geprüft. Beleg `city-plans/city-e2e-i01-seed-20261010/cleanup.json` mit Quellen-/Archivpfaden, Bytes und SHA256. Kein Generator oder Erwartungsregeneration hinzugefügt, Fixture/Test/Productbytes unverändert. Kein fremder Dateibesitz/Prozess angefasst. Getrennter CLEAN-R folgt vor endgültigem Exact-SHA-Handoff.
