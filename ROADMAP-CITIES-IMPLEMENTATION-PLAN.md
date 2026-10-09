@@ -871,3 +871,5 @@ CITY-01-PREP-RENDERER-REVIEW-CLEAN-P07 Start 2026-10-09T18:41:31.652212+00:00; F
 CITY-01-PREP-RENDERER-REVIEW-CLEAN-I07 Start 2026-10-09T18:41:45.685386+00:00; Architektur nennt jetzt den tatsächlich reproduzierten R11-Befund und geplante numerische Korrektur; zuvor offenerReview-Verweis bereinigt. Keine Runtime-/Abnahmeänderung.
 
 CITY-01-PREP-RENDERER-REVIEW-CLEAN-R07 Start 2026-10-09T18:42:07.715397+00:00; Befundgegenprobe und unveränderte352Tests-Runtimehashes geprüft; eingehende5832001nurJSON integriert. Alle24CTYoffen. Review-Aufräumen abgeschlossen; CITY-RENDERER-R11-01 bleibt Pflicht für N08/R12.
+
+CITY-01-PREP-N08 Start 2026-10-09T18:42:26Z; darstellbare affine Proben verwenden tatsächlichen Meterdelta, Radius-/Normaloffsets erst im Screen. Gleiche Callback-API, keine Atlasdatei/Placementkopie.2neueRegressionen mit9Großkoordinaten-/Matrixfällen undMAX_VALUE-Gegenrichtung; Originalgegenprobe jetzt5/5px statt0/5px. Testvergleich für-0/0 numerisch präzisiert. check,354Tests/build bestanden. Incoming6133b43docs-only integriert. Beleg:/home/aaron/.cache/dungeon-native-qa/city-plans/city01-renderer-20261009/n08-refinement.json. Aufräum-P/I/R vorR12.

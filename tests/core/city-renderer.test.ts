@@ -274,3 +274,89 @@ test("City renderer uses actual Draft preview/cancel/apply without editing share
   assert.equal(JSON.stringify(terrain.read({ q: 0, r: 0 })), terrainBefore);
   r.destroy();
 });
+
+test("City road radius and normal offsets survive large X/Y origins before rotated affine projection", () => {
+  const matrices = [
+    [1000, 0, 0, 2000],
+    [0, 1000, -2000, 0],
+    [600, 800, -1600, 1200],
+  ];
+  for (const origin of [
+    { x: 1e16, y: 0 },
+    { x: 0, y: -1e16 },
+    { x: 1e16, y: -1e16 },
+  ]) {
+    for (const [a, b, c, d] of matrices as [number, number, number, number][]) {
+      const r = new CityRenderer(),
+        doc = {
+          ...newCityDocument("city", "Feine Straße"),
+          roadNodes: [
+            { id: "a", point: origin },
+            { id: "b", point: { x: origin.x + 20, y: origin.y + 20 } },
+          ],
+          roads: [
+            {
+              id: "r",
+              startNodeId: "a",
+              endNodeId: "b",
+              via: [],
+              widthMeters: 0.01,
+            },
+          ],
+        },
+        before = serializeCityDocument(doc);
+      r.draw(cityScene(doc), (p) => ({
+        x: a * (p.x - origin.x) + c * (p.y - origin.y),
+        y: b * (p.x - origin.x) + d * (p.y - origin.y),
+      }));
+      const layers = fills(r),
+        circle = layers[1]!.data.path.instructions.find(
+          (i) => i.action === "circle",
+        )!.data[3];
+      for (const [actual, expected] of [
+        [circle.a, a * 0.005],
+        [circle.b, b * 0.005],
+        [circle.c, c * 0.005],
+        [circle.d, d * 0.005],
+      ])
+        assert(Math.abs(actual - expected) < 1e-12);
+      const quad = layers[0]!.data.path.instructions.find(
+        (i) => i.action === "poly",
+      )!.data[0];
+      const nx = -Math.SQRT1_2,
+        ny = Math.SQRT1_2;
+      assert(Math.abs(quad[0] - 0.005 * (nx * a + ny * c)) < 1e-12);
+      assert(Math.abs(quad[1] - 0.005 * (nx * b + ny * d)) < 1e-12);
+      assert.equal(serializeCityDocument(doc), before);
+      r.destroy();
+    }
+  }
+});
+
+test("City road affine probe uses the finite opposite direction at coordinate maximum, and clears unresolvable projection", () => {
+  const r = new CityRenderer(),
+    origin = Number.MAX_VALUE;
+  const scene = cityScene({
+    ...newCityDocument("city", "Rand"),
+    roadNodes: [
+      { id: "a", point: { x: origin, y: 0 } },
+      { id: "b", point: { x: origin, y: 20 } },
+    ],
+    roads: [
+      { id: "r", startNodeId: "a", endNodeId: "b", via: [], widthMeters: 2 },
+    ],
+  });
+  r.draw(scene, (p) => ({ x: p.x - origin, y: p.y }));
+  const m = fills(r)[1]!.data.path.instructions.find(
+    (i) => i.action === "circle",
+  )!.data[3];
+  assert(
+    Math.abs(m.a - 1) < 1e-12 &&
+      Math.abs(m.b) < 1e-12 &&
+      Math.abs(m.c) < 1e-12 &&
+      Math.abs(m.d - 1) < 1e-12,
+  );
+  assert.throws(() => r.draw(scene, () => ({ x: 0, y: 0 })), /nicht auflösbar/);
+  assert.equal(graphics(r).context.instructions.length, 0);
+  r.destroy();
+});
