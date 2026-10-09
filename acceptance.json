@@ -2580,7 +2580,8 @@
         "availability": "temporary_settlement",
         "observationKind": "direct_partial",
         "originalEvidence": [
-          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/manifest.json"
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/manifest.json",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i42-time-20261009/manifest.json"
         ],
         "task": "Uhrzeit ändern und Aufenthaltsorte prüfen",
         "phase": "CITY-07",
@@ -2606,7 +2607,8 @@
           "state": "partial_effect_observed",
           "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/manifest.json",
           "observation": "Time Skip changes23:00 to11:00 Monday and visibly changes daylight; no resident schedule recheck",
-          "observationTimeScope": "artifact persistence times; UI action start not measured"
+          "observationTimeScope": "artifact persistence times; UI action start not measured",
+          "manualDayReference": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i42-time-20261009/manifest.json"
         }
       },
       {
@@ -4159,10 +4161,11 @@
         "observedAt": "2026-10-09T11:22:28.268520+00:00",
         "observedVersion": null,
         "availability": "temporary_settlement_control_visible",
-        "observationKind": "direct_control_only",
+        "observationKind": "direct_partial_effect",
         "originalEvidence": [
           "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/manifest.json",
-          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/ftg-time-before.ax.txt"
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/ftg-time-before.ax.txt",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i42-time-20261009/manifest.json"
         ],
         "task": "Ruhetag manuell überschreiben ändern und Ergebnis prüfen",
         "phase": "CITY-07",
@@ -4176,15 +4179,22 @@
           "state": "not_run"
         },
         "status": "open",
-        "gap": "Originalcontrol sichtbar; Wirkung, eigene Umsetzung, Host- und Bedienvergleich offen.",
+        "gap": "Same-timeRestday changes resident work/home activity; None actual behavior differs fromtooltip in thissequence. Fullcalendar/overridepersistence, own implementation/host/UX remainopen.",
         "independentFunctionalRequirement": true,
         "mappingCoverage": "new_required_function_not_covered_by_existing_CTY",
         "originalProbe": {
-          "run": "CITY-00-I07-BI",
-          "state": "control_observed_only",
-          "observation": "Manual day type None,Not rest day,Rest day; schedule effect untested",
-          "sourceFrame": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/ftg-time-before.ax.txt",
-          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/manifest.json"
+          "run": "CITY-00-I42-I",
+          "state": "rest_day_resident_transition_and_none_return_observed",
+          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i42-time-20261009/manifest.json",
+          "observation": "Wyddis Cobblekind, farmer, Monday11:00 currently farming at Farm; Rest day at sameMonday11:00 shows Day of rest; same resident relaxing at home at The Cobblekind Residence; Lives in Residence and Works at Farm references remain displayed; Time dialog reopens with None selected; submit unchangedMonday11:00 removes Day of rest; reopened person farming atFarm again",
+          "discrepancy": "Tooltip says None keeps existing override for rest of day; observed identical-date resubmit returned to normal working day. Single sequence, cause/version unknown.",
+          "remaining": [
+            "Not rest day on calendar-defined rest day",
+            "Automatic day boundary and overrides duration",
+            "Reload/freshprocess persistence",
+            "Full population schedules and dependencies",
+            "Own model/commands/Host/UX/physical comparison"
+          ]
         }
       },
       {
@@ -4262,7 +4272,7 @@
     ],
     "functionalInventoryStatus": {
       "state": "partial_inventory_not_accepted",
-      "run": "CITY-00-I40-I",
+      "run": "CITY-00-I42-I",
       "products": 3,
       "candidates": 65,
       "directFormAreas": 13,
@@ -4311,7 +4321,8 @@
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i36-custom-size-20261009/manifest.json",
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i37-river-20261009/manifest.json",
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i38-coast-20261009/manifest.json",
-        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i40-building-20261009/manifest.json"
+        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i40-building-20261009/manifest.json",
+        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i42-time-20261009/manifest.json"
       ],
       "resultReferences": [
         {
