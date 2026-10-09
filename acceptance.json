@@ -2790,7 +2790,7 @@
       ]
     },
     "inventoryComplete": false,
-    "inventoryStatus": "N-I14: zehn frühe Effekt-/Kartendialogfragen direkt geklärt. Drei reine Slider ohne Zahl über eigene native Snapshotpaare: Coastal0..32,Outline0.01..2,Vignette0..1. Resize512..8192 Originalpixel, gelöste/gekoppelte Achsen getrennt. DetailZoom1..10; X/Y/W/H tatsächlich aktiviert und in zwei abhängigen Ausschnittskontexten gemessen, keine unabhängigen globalen Maxima. Nutzerziel: grenzenlos mit Inhalt wachsender gemeinsamer Hex-/Stadt-/Dungeonatlas; Bereichsmaße in Meilen/Hex-Kacheln, Pixel nur Darstellung/Export. Alle Kennungen,Defaults,Controltypen,663 UI/83 Fälle und historischen Quellen erhalten.32 frühe Fragen,R02/Aufräumen offen; keine vollständige Inventar-/Paritätsfreigabe.",
+    "inventoryStatus": "N-I15: zehn frühe Preferences-Fragen in acht Controls direkt geklärt: Undo0..64,BackupEvery1..60 Minuten/Limit1..64,Font8..28,Density0.1..10,Rotation0.1..90 Grad; einzelne Pfeilschritte belegt. EdgeDelay0..1/Speed50..1000 native Skalare über einzeln Apply und sechs unveränderte eigene Config-Snapshots, keine physikalische Einheit behauptet. Alle Kennungen/Defaults/Controltypen/Quellen,663 UI/83 Fälle erhalten.22 frühe Fragen,R02/Aufräumen offen; keine vollständige Inventar-/Paritätsfreigabe. Gemeinsamer grenzenloser Hex-/Stadt-/Dungeonatlas geplant, nicht implementiert.",
     "legacyInventoryScope": "Das vorhandene Wurzelfeld inventoryComplete und strictParity beschreiben nur die bisherige Dungeondraft-Inventur; daraus folgt keine Wonderdraft-Abnahme.",
     "inventoryGate": {
       "phase": "HEX-00",
@@ -9833,8 +9833,31 @@
           "value": 20,
           "evidenceScope": "Angezeigter Zustand dieser Originalaufnahme; Persistenz und andere Kontexte nicht gemessen."
         },
-        "rangeOrChoices": null,
-        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit.",
+        "rangeOrChoices": {
+          "kind": "observed_numeric_bounds",
+          "minimum": 0,
+          "maximum": 64,
+          "step": 1,
+          "unit": "count",
+          "boundMeaning": "displayed_after_individual_text_entry_and_tab",
+          "testedInputLiterals": [
+            "-99999",
+            "99999"
+          ],
+          "inputPaths": [
+            "number_text",
+            "spinner_arrow"
+          ],
+          "scope": {
+            "version": "1.1.8.2",
+            "sessions": [
+              "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json"
+            ],
+            "context": "Frisches festes privates Fensterprofil, Large Icons, vor New ohne geladene Karte; General Auto Backup ON, Advanced für Slider Edge Scrolling ausdrücklich ON.",
+            "factoryDefaultsAsserted": false
+          }
+        },
+        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit. Direkt N-I15: einzelne Zahlengrenzen/Eingabewege und native Sliderwerte im eigenen Profil belegt; keine allgemeine Wirkungs-/History-/Kaltstartabnahme.",
         "gesture": {
           "observed": "Öffnen/Anwählen über die protokollierte Original-UI.",
           "operation": "Werkzeug-Abschlussgesten noch nicht gemessen."
@@ -9856,6 +9879,48 @@
             "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/014-preferences.json",
             "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/014-preferences.png",
             "observation": "Preferences > General > Undo Limit: 20."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/003-preferences-general.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/003-preferences-general.png",
+            "observation": "Preferences > General > Undo Limit im direkt geöffneten Preferences-Tab."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/004-undo-limit--99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/004-undo-limit--99999-entry.png",
+            "observation": "undo-limit: eigene literal eingegebene Zahl -99999."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/005-undo-limit--99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/005-undo-limit--99999-validated.png",
+            "observation": "undo-limit: nach Tab direkt angezeigt 0."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/010-undo-limit-99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/010-undo-limit-99999-entry.png",
+            "observation": "undo-limit: eigene literal eingegebene Zahl 99999."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/011-undo-limit-99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/011-undo-limit-99999-validated.png",
+            "observation": "undo-limit: nach Tab direkt angezeigt 64."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/016-undo-step.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/016-undo-step.png",
+            "observation": "undo-limit: einzelner Pfeil-Abwärtsklick am Maximum 64 ergibt 63; sichtbare Schrittweite 1."
           }
         ],
         "classification": "user_function",
@@ -9874,10 +9939,61 @@
             "duePhase": "HEX-00",
             "reason": "Der Wortlaut benennt unbekannte Oberfläche, Wertebereich, Auswahl oder Eingabekontext; keine spätere Wirkung ersetzt diese Inventarpflicht.",
             "probe": "Originaloberfläche abgleichen: Auswahl oder Zahlenbereich noch nicht direkt abgegrenzt.",
-            "state": "open",
-            "evidence": []
+            "state": "resolved",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/003-preferences-general.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/003-preferences-general.png",
+                "observation": "Preferences > General > Undo Limit im direkt geöffneten Preferences-Tab."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/004-undo-limit--99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/004-undo-limit--99999-entry.png",
+                "observation": "undo-limit: eigene literal eingegebene Zahl -99999."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/005-undo-limit--99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/005-undo-limit--99999-validated.png",
+                "observation": "undo-limit: nach Tab direkt angezeigt 0."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/010-undo-limit-99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/010-undo-limit-99999-entry.png",
+                "observation": "undo-limit: eigene literal eingegebene Zahl 99999."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/011-undo-limit-99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/011-undo-limit-99999-validated.png",
+                "observation": "undo-limit: nach Tab direkt angezeigt 64."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/016-undo-step.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/016-undo-step.png",
+                "observation": "undo-limit: einzelner Pfeil-Abwärtsklick am Maximum 64 ergibt 63; sichtbare Schrittweite 1."
+              }
+            ],
+            "resolvedIn": "HEX-00-N-I15",
+            "resolution": "Preferences > General > Undo Limit: Textfeld mit Pfeilen; einzeln -99999 eingegeben/Tab → 0,99999/Tab → 64; ein Abwärtspfeilklick → 63, Schritt 1. Einheit: count. Nur direkt beobachtete Oberfläche, Zahlenvalidierung und eigene native Config-Zuordnung; allgemeine Einstellungswirkung, Karten-History, Kaltstart und physische Eingabe bleiben Fachpflicht HEX-26."
           }
-        ]
+        ],
+        "numericObservation": {
+          "run": "HEX-00-N-I15",
+          "note": "Preferences > General > Undo Limit: Textfeld mit Pfeilen; einzeln -99999 eingegeben/Tab → 0,99999/Tab → 64; ein Abwärtspfeilklick → 63, Schritt 1. Einheit: count. Nur direkt beobachtete Oberfläche, Zahlenvalidierung und eigene native Config-Zuordnung; allgemeine Einstellungswirkung, Karten-History, Kaltstart und physische Eingabe bleiben Fachpflicht HEX-26.",
+          "initialValue": 20,
+          "scope": "Einzelvalidierung und einzelner Pfeilschritt am Maximum; keine weiteren Parsingregeln behauptet."
+        }
       },
       {
         "id": "WD-UI-0114",
@@ -9939,8 +10055,31 @@
           "value": "15 Minutes",
           "evidenceScope": "Angezeigter Zustand dieser Originalaufnahme; Persistenz und andere Kontexte nicht gemessen."
         },
-        "rangeOrChoices": null,
-        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit.",
+        "rangeOrChoices": {
+          "kind": "observed_numeric_bounds",
+          "minimum": 1,
+          "maximum": 60,
+          "step": 1,
+          "unit": "minutes",
+          "boundMeaning": "displayed_after_individual_text_entry_and_tab",
+          "testedInputLiterals": [
+            "-99999",
+            "99999"
+          ],
+          "inputPaths": [
+            "number_text",
+            "spinner_arrow"
+          ],
+          "scope": {
+            "version": "1.1.8.2",
+            "sessions": [
+              "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json"
+            ],
+            "context": "Frisches festes privates Fensterprofil, Large Icons, vor New ohne geladene Karte; General Auto Backup ON, Advanced für Slider Edge Scrolling ausdrücklich ON.",
+            "factoryDefaultsAsserted": false
+          }
+        },
+        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit. Direkt N-I15: einzelne Zahlengrenzen/Eingabewege und native Sliderwerte im eigenen Profil belegt; keine allgemeine Wirkungs-/History-/Kaltstartabnahme.",
         "gesture": {
           "observed": "Öffnen/Anwählen über die protokollierte Original-UI.",
           "operation": "Werkzeug-Abschlussgesten noch nicht gemessen."
@@ -9969,6 +10108,48 @@
             "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/remaining-sequences-20261009-014011/original/screens/177-preferences-recovery.json",
             "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/remaining-sequences-20261009-014011/original/screens/177-preferences-recovery.png",
             "observation": "General: Auto Backup ON, Every 15 Minutes, Limit 10, Save Sequentially OFF."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/003-preferences-general.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/003-preferences-general.png",
+            "observation": "Preferences > General > Auto Backup Every im direkt geöffneten Preferences-Tab."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/006-auto-backup-every--99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/006-auto-backup-every--99999-entry.png",
+            "observation": "auto-backup-every: eigene literal eingegebene Zahl -99999."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/007-auto-backup-every--99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/007-auto-backup-every--99999-validated.png",
+            "observation": "auto-backup-every: nach Tab direkt angezeigt 1."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/012-auto-backup-every-99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/012-auto-backup-every-99999-entry.png",
+            "observation": "auto-backup-every: eigene literal eingegebene Zahl 99999."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/013-auto-backup-every-99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/013-auto-backup-every-99999-validated.png",
+            "observation": "auto-backup-every: nach Tab direkt angezeigt 60."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/017-backup-every-step.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/017-backup-every-step.png",
+            "observation": "auto-backup-every: einzelner Pfeil-Abwärtsklick am Maximum 60 ergibt 59; sichtbare Schrittweite 1."
           }
         ],
         "classification": "user_function",
@@ -9987,10 +10168,61 @@
             "duePhase": "HEX-00",
             "reason": "Der Wortlaut benennt unbekannte Oberfläche, Wertebereich, Auswahl oder Eingabekontext; keine spätere Wirkung ersetzt diese Inventarpflicht.",
             "probe": "Originaloberfläche abgleichen: Auswahl oder Zahlenbereich noch nicht direkt abgegrenzt.",
-            "state": "open",
-            "evidence": []
+            "state": "resolved",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/003-preferences-general.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/003-preferences-general.png",
+                "observation": "Preferences > General > Auto Backup Every im direkt geöffneten Preferences-Tab."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/006-auto-backup-every--99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/006-auto-backup-every--99999-entry.png",
+                "observation": "auto-backup-every: eigene literal eingegebene Zahl -99999."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/007-auto-backup-every--99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/007-auto-backup-every--99999-validated.png",
+                "observation": "auto-backup-every: nach Tab direkt angezeigt 1."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/012-auto-backup-every-99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/012-auto-backup-every-99999-entry.png",
+                "observation": "auto-backup-every: eigene literal eingegebene Zahl 99999."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/013-auto-backup-every-99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/013-auto-backup-every-99999-validated.png",
+                "observation": "auto-backup-every: nach Tab direkt angezeigt 60."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/017-backup-every-step.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/017-backup-every-step.png",
+                "observation": "auto-backup-every: einzelner Pfeil-Abwärtsklick am Maximum 60 ergibt 59; sichtbare Schrittweite 1."
+              }
+            ],
+            "resolvedIn": "HEX-00-N-I15",
+            "resolution": "Preferences > General > Auto Backup Every: Textfeld mit Pfeilen; einzeln -99999 eingegeben/Tab → 1,99999/Tab → 60; ein Abwärtspfeilklick → 59, Schritt 1. Einheit: minutes. Nur direkt beobachtete Oberfläche, Zahlenvalidierung und eigene native Config-Zuordnung; allgemeine Einstellungswirkung, Karten-History, Kaltstart und physische Eingabe bleiben Fachpflicht HEX-26."
           }
-        ]
+        ],
+        "numericObservation": {
+          "run": "HEX-00-N-I15",
+          "note": "Preferences > General > Auto Backup Every: Textfeld mit Pfeilen; einzeln -99999 eingegeben/Tab → 1,99999/Tab → 60; ein Abwärtspfeilklick → 59, Schritt 1. Einheit: minutes. Nur direkt beobachtete Oberfläche, Zahlenvalidierung und eigene native Config-Zuordnung; allgemeine Einstellungswirkung, Karten-History, Kaltstart und physische Eingabe bleiben Fachpflicht HEX-26.",
+          "initialValue": 15,
+          "scope": "Einzelvalidierung und einzelner Pfeilschritt am Maximum; keine weiteren Parsingregeln behauptet."
+        }
       },
       {
         "id": "WD-UI-0116",
@@ -10003,8 +10235,31 @@
           "value": 10,
           "evidenceScope": "Angezeigter Zustand dieser Originalaufnahme; Persistenz und andere Kontexte nicht gemessen."
         },
-        "rangeOrChoices": null,
-        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit.",
+        "rangeOrChoices": {
+          "kind": "observed_numeric_bounds",
+          "minimum": 1,
+          "maximum": 64,
+          "step": 1,
+          "unit": "count",
+          "boundMeaning": "displayed_after_individual_text_entry_and_tab",
+          "testedInputLiterals": [
+            "-99999",
+            "99999"
+          ],
+          "inputPaths": [
+            "number_text",
+            "spinner_arrow"
+          ],
+          "scope": {
+            "version": "1.1.8.2",
+            "sessions": [
+              "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json"
+            ],
+            "context": "Frisches festes privates Fensterprofil, Large Icons, vor New ohne geladene Karte; General Auto Backup ON, Advanced für Slider Edge Scrolling ausdrücklich ON.",
+            "factoryDefaultsAsserted": false
+          }
+        },
+        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit. Direkt N-I15: einzelne Zahlengrenzen/Eingabewege und native Sliderwerte im eigenen Profil belegt; keine allgemeine Wirkungs-/History-/Kaltstartabnahme.",
         "gesture": {
           "observed": "Öffnen/Anwählen über die protokollierte Original-UI.",
           "operation": "Werkzeug-Abschlussgesten noch nicht gemessen."
@@ -10033,6 +10288,48 @@
             "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/remaining-sequences-20261009-014011/original/screens/177-preferences-recovery.json",
             "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/remaining-sequences-20261009-014011/original/screens/177-preferences-recovery.png",
             "observation": "General: Auto Backup ON, Every 15 Minutes, Limit 10, Save Sequentially OFF."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/003-preferences-general.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/003-preferences-general.png",
+            "observation": "Preferences > General > Auto Backup Limit im direkt geöffneten Preferences-Tab."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/008-auto-backup-limit--99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/008-auto-backup-limit--99999-entry.png",
+            "observation": "auto-backup-limit: eigene literal eingegebene Zahl -99999."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/009-auto-backup-limit--99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/009-auto-backup-limit--99999-validated.png",
+            "observation": "auto-backup-limit: nach Tab direkt angezeigt 1."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/014-auto-backup-limit-99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/014-auto-backup-limit-99999-entry.png",
+            "observation": "auto-backup-limit: eigene literal eingegebene Zahl 99999."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/015-auto-backup-limit-99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/015-auto-backup-limit-99999-validated.png",
+            "observation": "auto-backup-limit: nach Tab direkt angezeigt 64."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/018-backup-limit-step.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/018-backup-limit-step.png",
+            "observation": "auto-backup-limit: einzelner Pfeil-Abwärtsklick am Maximum 64 ergibt 63; sichtbare Schrittweite 1."
           }
         ],
         "classification": "user_function",
@@ -10051,10 +10348,61 @@
             "duePhase": "HEX-00",
             "reason": "Der Wortlaut benennt unbekannte Oberfläche, Wertebereich, Auswahl oder Eingabekontext; keine spätere Wirkung ersetzt diese Inventarpflicht.",
             "probe": "Originaloberfläche abgleichen: Auswahl oder Zahlenbereich noch nicht direkt abgegrenzt.",
-            "state": "open",
-            "evidence": []
+            "state": "resolved",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/003-preferences-general.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/003-preferences-general.png",
+                "observation": "Preferences > General > Auto Backup Limit im direkt geöffneten Preferences-Tab."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/008-auto-backup-limit--99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/008-auto-backup-limit--99999-entry.png",
+                "observation": "auto-backup-limit: eigene literal eingegebene Zahl -99999."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/009-auto-backup-limit--99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/009-auto-backup-limit--99999-validated.png",
+                "observation": "auto-backup-limit: nach Tab direkt angezeigt 1."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/014-auto-backup-limit-99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/014-auto-backup-limit-99999-entry.png",
+                "observation": "auto-backup-limit: eigene literal eingegebene Zahl 99999."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/015-auto-backup-limit-99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/015-auto-backup-limit-99999-validated.png",
+                "observation": "auto-backup-limit: nach Tab direkt angezeigt 64."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/018-backup-limit-step.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/018-backup-limit-step.png",
+                "observation": "auto-backup-limit: einzelner Pfeil-Abwärtsklick am Maximum 64 ergibt 63; sichtbare Schrittweite 1."
+              }
+            ],
+            "resolvedIn": "HEX-00-N-I15",
+            "resolution": "Preferences > General > Auto Backup Limit: Textfeld mit Pfeilen; einzeln -99999 eingegeben/Tab → 1,99999/Tab → 64; ein Abwärtspfeilklick → 63, Schritt 1. Einheit: count. Nur direkt beobachtete Oberfläche, Zahlenvalidierung und eigene native Config-Zuordnung; allgemeine Einstellungswirkung, Karten-History, Kaltstart und physische Eingabe bleiben Fachpflicht HEX-26."
           }
-        ]
+        ],
+        "numericObservation": {
+          "run": "HEX-00-N-I15",
+          "note": "Preferences > General > Auto Backup Limit: Textfeld mit Pfeilen; einzeln -99999 eingegeben/Tab → 1,99999/Tab → 64; ein Abwärtspfeilklick → 63, Schritt 1. Einheit: count. Nur direkt beobachtete Oberfläche, Zahlenvalidierung und eigene native Config-Zuordnung; allgemeine Einstellungswirkung, Karten-History, Kaltstart und physische Eingabe bleiben Fachpflicht HEX-26.",
+          "initialValue": 10,
+          "scope": "Einzelvalidierung und einzelner Pfeilschritt am Maximum; keine weiteren Parsingregeln behauptet."
+        }
       },
       {
         "id": "WD-UI-0117",
@@ -10417,8 +10765,31 @@
           "value": 15,
           "evidenceScope": "Angezeigter Zustand dieser Originalaufnahme; Persistenz und andere Kontexte nicht gemessen."
         },
-        "rangeOrChoices": null,
-        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit.",
+        "rangeOrChoices": {
+          "kind": "observed_numeric_bounds",
+          "minimum": 8,
+          "maximum": 28,
+          "step": 1,
+          "unit": "native_font_size_no_explicit_unit_label",
+          "boundMeaning": "displayed_after_individual_text_entry_and_tab",
+          "testedInputLiterals": [
+            "-99999",
+            "99999"
+          ],
+          "inputPaths": [
+            "number_text",
+            "spinner_arrow"
+          ],
+          "scope": {
+            "version": "1.1.8.2",
+            "sessions": [
+              "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json"
+            ],
+            "context": "Frisches festes privates Fensterprofil, Large Icons, vor New ohne geladene Karte; General Auto Backup ON, Advanced für Slider Edge Scrolling ausdrücklich ON.",
+            "factoryDefaultsAsserted": false
+          }
+        },
+        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit. Direkt N-I15: einzelne Zahlengrenzen/Eingabewege und native Sliderwerte im eigenen Profil belegt; keine allgemeine Wirkungs-/History-/Kaltstartabnahme.",
         "gesture": {
           "observed": "Öffnen/Anwählen über die protokollierte Original-UI.",
           "operation": "Werkzeug-Abschlussgesten noch nicht gemessen."
@@ -10440,6 +10811,69 @@
             "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/015-preferences-interface.json",
             "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/015-preferences-interface.png",
             "observation": "Preferences > Interface > Font Size: 15."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/040-interface-before-font.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/040-interface-before-font.png",
+            "observation": "Preferences > Interface > Font Size im direkt geöffneten Preferences-Tab."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/041-font-size--99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/041-font-size--99999-entry.png",
+            "observation": "font-size: eigene literal eingegebene Zahl -99999."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/042-font-size--99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/042-font-size--99999-validated.png",
+            "observation": "font-size: nach Tab direkt angezeigt 8."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/043-font-size-99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/043-font-size-99999-entry.png",
+            "observation": "font-size: eigene literal eingegebene Zahl 99999."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/044-font-size-99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/044-font-size-99999-validated.png",
+            "observation": "font-size: nach Tab direkt angezeigt 28."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/045-font-step.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/045-font-step.png",
+            "observation": "font-size: einzelner Pfeil-Abwärtsklick am Maximum 28 ergibt 27; sichtbare Schrittweite 1."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/046-font-size-15-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/046-font-size-15-entry.png",
+            "observation": "font-size: eigene literal eingegebene Zahl 15."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/047-font-size-15-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/047-font-size-15-validated.png",
+            "observation": "font-size: nach Tab direkt angezeigt 15."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/048-font-restored-applied.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/048-font-restored-applied.png",
+            "observation": "Font Size vor Apply auf15 zurückgesetzt; globaler UI-Font blieb15. Die Extremwerte wurden nur im Zahlenfeld validiert, nicht auf die globale Oberfläche angewandt."
           }
         ],
         "classification": "user_function",
@@ -10458,10 +10892,82 @@
             "duePhase": "HEX-00",
             "reason": "Der Wortlaut benennt unbekannte Oberfläche, Wertebereich, Auswahl oder Eingabekontext; keine spätere Wirkung ersetzt diese Inventarpflicht.",
             "probe": "Originaloberfläche abgleichen: Auswahl oder Zahlenbereich noch nicht direkt abgegrenzt.",
-            "state": "open",
-            "evidence": []
+            "state": "resolved",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/040-interface-before-font.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/040-interface-before-font.png",
+                "observation": "Preferences > Interface > Font Size im direkt geöffneten Preferences-Tab."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/041-font-size--99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/041-font-size--99999-entry.png",
+                "observation": "font-size: eigene literal eingegebene Zahl -99999."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/042-font-size--99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/042-font-size--99999-validated.png",
+                "observation": "font-size: nach Tab direkt angezeigt 8."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/043-font-size-99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/043-font-size-99999-entry.png",
+                "observation": "font-size: eigene literal eingegebene Zahl 99999."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/044-font-size-99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/044-font-size-99999-validated.png",
+                "observation": "font-size: nach Tab direkt angezeigt 28."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/045-font-step.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/045-font-step.png",
+                "observation": "font-size: einzelner Pfeil-Abwärtsklick am Maximum 28 ergibt 27; sichtbare Schrittweite 1."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/046-font-size-15-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/046-font-size-15-entry.png",
+                "observation": "font-size: eigene literal eingegebene Zahl 15."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/047-font-size-15-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/047-font-size-15-validated.png",
+                "observation": "font-size: nach Tab direkt angezeigt 15."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/048-font-restored-applied.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/048-font-restored-applied.png",
+                "observation": "Font Size vor Apply auf15 zurückgesetzt; globaler UI-Font blieb15. Die Extremwerte wurden nur im Zahlenfeld validiert, nicht auf die globale Oberfläche angewandt."
+              }
+            ],
+            "resolvedIn": "HEX-00-N-I15",
+            "resolution": "Preferences > Interface > Font Size: Textfeld mit Pfeilen; einzeln -99999 eingegeben/Tab → 8,99999/Tab → 28; ein Abwärtspfeilklick → 27, Schritt 1. Einheit: native_font_size_no_explicit_unit_label. Fontgrenzen vor Apply gemessen und15 wiederhergestellt; keine unbesehen verschobenen Koordinaten und keine Wirkungsfreigabe der Extremfonts. Nur direkt beobachtete Oberfläche, Zahlenvalidierung und eigene native Config-Zuordnung; allgemeine Einstellungswirkung, Karten-History, Kaltstart und physische Eingabe bleiben Fachpflicht HEX-26."
           }
-        ]
+        ],
+        "numericObservation": {
+          "run": "HEX-00-N-I15",
+          "note": "Preferences > Interface > Font Size: Textfeld mit Pfeilen; einzeln -99999 eingegeben/Tab → 8,99999/Tab → 28; ein Abwärtspfeilklick → 27, Schritt 1. Einheit: native_font_size_no_explicit_unit_label. Fontgrenzen vor Apply gemessen und15 wiederhergestellt; keine unbesehen verschobenen Koordinaten und keine Wirkungsfreigabe der Extremfonts. Nur direkt beobachtete Oberfläche, Zahlenvalidierung und eigene native Config-Zuordnung; allgemeine Einstellungswirkung, Karten-History, Kaltstart und physische Eingabe bleiben Fachpflicht HEX-26.",
+          "initialValue": 15,
+          "scope": "Einzelvalidierung und einzelner Pfeilschritt am Maximum; keine weiteren Parsingregeln behauptet."
+        }
       },
       {
         "id": "WD-UI-0125",
@@ -11535,8 +12041,31 @@
           "value": 1,
           "evidenceScope": "Angezeigter Zustand dieser Originalaufnahme; Persistenz und andere Kontexte nicht gemessen."
         },
-        "rangeOrChoices": null,
-        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit.",
+        "rangeOrChoices": {
+          "kind": "observed_numeric_bounds",
+          "minimum": 0.1,
+          "maximum": 10,
+          "step": 0.1,
+          "unit": "unlabelled_scalar",
+          "boundMeaning": "displayed_after_individual_text_entry_and_tab",
+          "testedInputLiterals": [
+            "-99999",
+            "99999"
+          ],
+          "inputPaths": [
+            "number_text",
+            "spinner_arrow"
+          ],
+          "scope": {
+            "version": "1.1.8.2",
+            "sessions": [
+              "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json"
+            ],
+            "context": "Frisches festes privates Fensterprofil, Large Icons, vor New ohne geladene Karte; General Auto Backup ON, Advanced für Slider Edge Scrolling ausdrücklich ON.",
+            "factoryDefaultsAsserted": false
+          }
+        },
+        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit. Direkt N-I15: einzelne Zahlengrenzen/Eingabewege und native Sliderwerte im eigenen Profil belegt; keine allgemeine Wirkungs-/History-/Kaltstartabnahme.",
         "gesture": {
           "observed": "Öffnen/Anwählen über die protokollierte Original-UI.",
           "operation": "Werkzeug-Abschlussgesten noch nicht gemessen."
@@ -11558,6 +12087,48 @@
             "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/016-preferences-advanced.json",
             "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/016-preferences-advanced.png",
             "observation": "Preferences > Advanced > Coastal Pattern Density: 1."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/019-preferences-advanced.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/019-preferences-advanced.png",
+            "observation": "Preferences > Advanced > Coastal Pattern Density im direkt geöffneten Preferences-Tab."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/020-coastal-density--99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/020-coastal-density--99999-entry.png",
+            "observation": "coastal-density: eigene literal eingegebene Zahl -99999."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/021-coastal-density--99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/021-coastal-density--99999-validated.png",
+            "observation": "coastal-density: nach Tab direkt angezeigt 0.1."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/024-coastal-density-99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/024-coastal-density-99999-entry.png",
+            "observation": "coastal-density: eigene literal eingegebene Zahl 99999."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/025-coastal-density-99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/025-coastal-density-99999-validated.png",
+            "observation": "coastal-density: nach Tab direkt angezeigt 10."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/028-density-step.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/028-density-step.png",
+            "observation": "coastal-density: einzelner Pfeil-Abwärtsklick am Maximum 10 ergibt 9.9; sichtbare Schrittweite 0.1."
           }
         ],
         "classification": "user_function",
@@ -11576,10 +12147,61 @@
             "duePhase": "HEX-00",
             "reason": "Der Wortlaut benennt unbekannte Oberfläche, Wertebereich, Auswahl oder Eingabekontext; keine spätere Wirkung ersetzt diese Inventarpflicht.",
             "probe": "Originaloberfläche abgleichen: Auswahl oder Zahlenbereich noch nicht direkt abgegrenzt.",
-            "state": "open",
-            "evidence": []
+            "state": "resolved",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/019-preferences-advanced.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/019-preferences-advanced.png",
+                "observation": "Preferences > Advanced > Coastal Pattern Density im direkt geöffneten Preferences-Tab."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/020-coastal-density--99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/020-coastal-density--99999-entry.png",
+                "observation": "coastal-density: eigene literal eingegebene Zahl -99999."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/021-coastal-density--99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/021-coastal-density--99999-validated.png",
+                "observation": "coastal-density: nach Tab direkt angezeigt 0.1."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/024-coastal-density-99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/024-coastal-density-99999-entry.png",
+                "observation": "coastal-density: eigene literal eingegebene Zahl 99999."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/025-coastal-density-99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/025-coastal-density-99999-validated.png",
+                "observation": "coastal-density: nach Tab direkt angezeigt 10."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/028-density-step.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/028-density-step.png",
+                "observation": "coastal-density: einzelner Pfeil-Abwärtsklick am Maximum 10 ergibt 9.9; sichtbare Schrittweite 0.1."
+              }
+            ],
+            "resolvedIn": "HEX-00-N-I15",
+            "resolution": "Preferences > Advanced > Coastal Pattern Density: Textfeld mit Pfeilen; einzeln -99999 eingegeben/Tab → 0.1,99999/Tab → 10; ein Abwärtspfeilklick → 9.9, Schritt 0.1. Einheit: unlabelled_scalar. Nur direkt beobachtete Oberfläche, Zahlenvalidierung und eigene native Config-Zuordnung; allgemeine Einstellungswirkung, Karten-History, Kaltstart und physische Eingabe bleiben Fachpflicht HEX-26."
           }
-        ]
+        ],
+        "numericObservation": {
+          "run": "HEX-00-N-I15",
+          "note": "Preferences > Advanced > Coastal Pattern Density: Textfeld mit Pfeilen; einzeln -99999 eingegeben/Tab → 0.1,99999/Tab → 10; ein Abwärtspfeilklick → 9.9, Schritt 0.1. Einheit: unlabelled_scalar. Nur direkt beobachtete Oberfläche, Zahlenvalidierung und eigene native Config-Zuordnung; allgemeine Einstellungswirkung, Karten-History, Kaltstart und physische Eingabe bleiben Fachpflicht HEX-26.",
+          "initialValue": 1,
+          "scope": "Einzelvalidierung und einzelner Pfeilschritt am Maximum; keine weiteren Parsingregeln behauptet."
+        }
       },
       {
         "id": "WD-UI-0145",
@@ -11592,8 +12214,31 @@
           "value": "5°",
           "evidenceScope": "Angezeigter Zustand dieser Originalaufnahme; Persistenz und andere Kontexte nicht gemessen."
         },
-        "rangeOrChoices": null,
-        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit.",
+        "rangeOrChoices": {
+          "kind": "observed_numeric_bounds",
+          "minimum": 0.1,
+          "maximum": 90,
+          "step": 0.1,
+          "unit": "degrees",
+          "boundMeaning": "displayed_after_individual_text_entry_and_tab",
+          "testedInputLiterals": [
+            "-99999",
+            "99999"
+          ],
+          "inputPaths": [
+            "number_text",
+            "spinner_arrow"
+          ],
+          "scope": {
+            "version": "1.1.8.2",
+            "sessions": [
+              "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json"
+            ],
+            "context": "Frisches festes privates Fensterprofil, Large Icons, vor New ohne geladene Karte; General Auto Backup ON, Advanced für Slider Edge Scrolling ausdrücklich ON.",
+            "factoryDefaultsAsserted": false
+          }
+        },
+        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit. Direkt N-I15: einzelne Zahlengrenzen/Eingabewege und native Sliderwerte im eigenen Profil belegt; keine allgemeine Wirkungs-/History-/Kaltstartabnahme.",
         "gesture": {
           "observed": "Öffnen/Anwählen über die protokollierte Original-UI.",
           "operation": "Werkzeug-Abschlussgesten noch nicht gemessen."
@@ -11615,6 +12260,48 @@
             "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/016-preferences-advanced.json",
             "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/016-preferences-advanced.png",
             "observation": "Preferences > Advanced > Rotation Step: 5°."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/019-preferences-advanced.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/019-preferences-advanced.png",
+            "observation": "Preferences > Advanced > Rotation Step im direkt geöffneten Preferences-Tab."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/022-rotation-step--99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/022-rotation-step--99999-entry.png",
+            "observation": "rotation-step: eigene literal eingegebene Zahl -99999."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/023-rotation-step--99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/023-rotation-step--99999-validated.png",
+            "observation": "rotation-step: nach Tab direkt angezeigt 0.1."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/026-rotation-step-99999-entry.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/026-rotation-step-99999-entry.png",
+            "observation": "rotation-step: eigene literal eingegebene Zahl 99999."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/027-rotation-step-99999-validated.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/027-rotation-step-99999-validated.png",
+            "observation": "rotation-step: nach Tab direkt angezeigt 90."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/029-rotation-step.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/029-rotation-step.png",
+            "observation": "rotation-step: einzelner Pfeil-Abwärtsklick am Maximum 90 ergibt 89.9; sichtbare Schrittweite 0.1."
           }
         ],
         "classification": "user_function",
@@ -11633,10 +12320,61 @@
             "duePhase": "HEX-00",
             "reason": "Der Wortlaut benennt unbekannte Oberfläche, Wertebereich, Auswahl oder Eingabekontext; keine spätere Wirkung ersetzt diese Inventarpflicht.",
             "probe": "Originaloberfläche abgleichen: Auswahl oder Zahlenbereich noch nicht direkt abgegrenzt.",
-            "state": "open",
-            "evidence": []
+            "state": "resolved",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/019-preferences-advanced.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/019-preferences-advanced.png",
+                "observation": "Preferences > Advanced > Rotation Step im direkt geöffneten Preferences-Tab."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/022-rotation-step--99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/022-rotation-step--99999-entry.png",
+                "observation": "rotation-step: eigene literal eingegebene Zahl -99999."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/023-rotation-step--99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/023-rotation-step--99999-validated.png",
+                "observation": "rotation-step: nach Tab direkt angezeigt 0.1."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/026-rotation-step-99999-entry.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/026-rotation-step-99999-entry.png",
+                "observation": "rotation-step: eigene literal eingegebene Zahl 99999."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/027-rotation-step-99999-validated.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/027-rotation-step-99999-validated.png",
+                "observation": "rotation-step: nach Tab direkt angezeigt 90."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/029-rotation-step.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/029-rotation-step.png",
+                "observation": "rotation-step: einzelner Pfeil-Abwärtsklick am Maximum 90 ergibt 89.9; sichtbare Schrittweite 0.1."
+              }
+            ],
+            "resolvedIn": "HEX-00-N-I15",
+            "resolution": "Preferences > Advanced > Rotation Step: Textfeld mit Pfeilen; einzeln -99999 eingegeben/Tab → 0.1,99999/Tab → 90; ein Abwärtspfeilklick → 89.9, Schritt 0.1. Einheit: degrees. Nur direkt beobachtete Oberfläche, Zahlenvalidierung und eigene native Config-Zuordnung; allgemeine Einstellungswirkung, Karten-History, Kaltstart und physische Eingabe bleiben Fachpflicht HEX-26."
           }
-        ]
+        ],
+        "numericObservation": {
+          "run": "HEX-00-N-I15",
+          "note": "Preferences > Advanced > Rotation Step: Textfeld mit Pfeilen; einzeln -99999 eingegeben/Tab → 0.1,99999/Tab → 90; ein Abwärtspfeilklick → 89.9, Schritt 0.1. Einheit: degrees. Nur direkt beobachtete Oberfläche, Zahlenvalidierung und eigene native Config-Zuordnung; allgemeine Einstellungswirkung, Karten-History, Kaltstart und physische Eingabe bleiben Fachpflicht HEX-26.",
+          "initialValue": 5,
+          "scope": "Einzelvalidierung und einzelner Pfeilschritt am Maximum; keine weiteren Parsingregeln behauptet."
+        }
       },
       {
         "id": "WD-UI-0146",
@@ -11691,8 +12429,30 @@
           "value": "displayed slider",
           "evidenceScope": "Angezeigter Zustand dieser Originalaufnahme; Persistenz und andere Kontexte nicht gemessen."
         },
-        "rangeOrChoices": null,
-        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit.",
+        "rangeOrChoices": {
+          "kind": "observed_native_slider_bounds",
+          "minimum": 0,
+          "maximum": 1,
+          "unit": "native_config_scalar_no_explicit_ui_unit",
+          "endLabels": [
+            "Short",
+            "Long"
+          ],
+          "boundMeaning": "native_saved_config_value_at_slider_endpoints",
+          "inputPaths": [
+            "slider"
+          ],
+          "nativeConfigKey": "edge_scroll_delay",
+          "scope": {
+            "version": "1.1.8.2",
+            "sessions": [
+              "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json"
+            ],
+            "context": "Frisches festes privates Fensterprofil, Large Icons, vor New ohne geladene Karte; General Auto Backup ON, Advanced für Slider Edge Scrolling ausdrücklich ON.",
+            "factoryDefaultsAsserted": false
+          }
+        },
+        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit. Direkt N-I15: einzelne Zahlengrenzen/Eingabewege und native Sliderwerte im eigenen Profil belegt; keine allgemeine Wirkungs-/History-/Kaltstartabnahme.",
         "gesture": {
           "observed": "Öffnen/Anwählen über die protokollierte Original-UI.",
           "operation": "Werkzeug-Abschlussgesten noch nicht gemessen."
@@ -11714,6 +12474,55 @@
             "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/016-preferences-advanced.json",
             "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/016-preferences-advanced.png",
             "observation": "Preferences > Advanced > Edge Scroll Delay: displayed slider."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/019-preferences-advanced.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/019-preferences-advanced.png",
+            "observation": "Advanced vor Aktivierung: Edge Scrolling OFF; Slider zeigt beschriftete Enden ohne Zahl."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/030-edge-scrolling-enabled.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/030-edge-scrolling-enabled.png",
+            "observation": "Edge Scrolling ausdrücklich ON, beide Slider ohne Zahlenanzeige."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/031-advanced-baseline-applied.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/031-advanced-baseline-applied.png",
+            "observation": "Native Preferences Apply; baseline eigene Config-Datei kopiert."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/032-delay-low.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/032-delay-low.png",
+            "observation": "edge_scroll_delay: einzeln linkes/rechtes Sliderende bedient und Apply; native Originalconfig 0/1, genau dieser Schlüssel gegenüber vorherigem Snapshot geändert."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/033-delay-low-applied.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/033-delay-low-applied.png",
+            "observation": "edge_scroll_delay: einzeln linkes/rechtes Sliderende bedient und Apply; native Originalconfig 0/1, genau dieser Schlüssel gegenüber vorherigem Snapshot geändert."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/034-delay-high.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/034-delay-high.png",
+            "observation": "edge_scroll_delay: einzeln linkes/rechtes Sliderende bedient und Apply; native Originalconfig 0/1, genau dieser Schlüssel gegenüber vorherigem Snapshot geändert."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/035-delay-high-applied.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/035-delay-high-applied.png",
+            "observation": "edge_scroll_delay: einzeln linkes/rechtes Sliderende bedient und Apply; native Originalconfig 0/1, genau dieser Schlüssel gegenüber vorherigem Snapshot geändert."
           }
         ],
         "classification": "user_function",
@@ -11733,8 +12542,60 @@
             "duePhase": "HEX-00",
             "reason": "Der Wortlaut benennt unbekannte Oberfläche, Wertebereich, Auswahl oder Eingabekontext; keine spätere Wirkung ersetzt diese Inventarpflicht.",
             "probe": "Originaloberfläche abgleichen: Auswahl oder Zahlenbereich noch nicht direkt abgegrenzt.",
-            "state": "open",
-            "evidence": []
+            "state": "resolved",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/019-preferences-advanced.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/019-preferences-advanced.png",
+                "observation": "Advanced vor Aktivierung: Edge Scrolling OFF; Slider zeigt beschriftete Enden ohne Zahl."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/030-edge-scrolling-enabled.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/030-edge-scrolling-enabled.png",
+                "observation": "Edge Scrolling ausdrücklich ON, beide Slider ohne Zahlenanzeige."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/031-advanced-baseline-applied.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/031-advanced-baseline-applied.png",
+                "observation": "Native Preferences Apply; baseline eigene Config-Datei kopiert."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/032-delay-low.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/032-delay-low.png",
+                "observation": "edge_scroll_delay: einzeln linkes/rechtes Sliderende bedient und Apply; native Originalconfig 0/1, genau dieser Schlüssel gegenüber vorherigem Snapshot geändert."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/033-delay-low-applied.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/033-delay-low-applied.png",
+                "observation": "edge_scroll_delay: einzeln linkes/rechtes Sliderende bedient und Apply; native Originalconfig 0/1, genau dieser Schlüssel gegenüber vorherigem Snapshot geändert."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/034-delay-high.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/034-delay-high.png",
+                "observation": "edge_scroll_delay: einzeln linkes/rechtes Sliderende bedient und Apply; native Originalconfig 0/1, genau dieser Schlüssel gegenüber vorherigem Snapshot geändert."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/035-delay-high-applied.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/035-delay-high-applied.png",
+                "observation": "edge_scroll_delay: einzeln linkes/rechtes Sliderende bedient und Apply; native Originalconfig 0/1, genau dieser Schlüssel gegenüber vorherigem Snapshot geändert."
+              }
+            ],
+            "resolvedIn": "HEX-00-N-I15",
+            "resolution": "Preferences > Advanced > Edge Scroll Delay: reiner Slider, Endbeschriftung Short/Long, keine Zahl/Einheit im Dialog. Edge Scrolling ausdrücklich ON. Linkes/rechtes Ende einzeln bedient und Apply; native eigene Config edge_scroll_delay=0/1. Pro Zustand unveränderte Kopie/Hash, vollständiger Zeilenvergleich bestätigt jeweils genau diesen Schlüsselwechsel. Ausgang dieser Folge 0.25, kein allgemeiner Default. Physikalische Einheit und tatsächliche Randkamerawirkung nicht gemessen; Werte als native Skalare führen. Nur direkt beobachtete Oberfläche, Zahlenvalidierung und eigene native Config-Zuordnung; allgemeine Einstellungswirkung, Karten-History, Kaltstart und physische Eingabe bleiben Fachpflicht HEX-26."
           },
           {
             "id": "WD-UI-0147-Q02-01",
@@ -11747,10 +12608,138 @@
             "duePhase": "HEX-00",
             "reason": "Der Wortlaut benennt unbekannte Oberfläche, Wertebereich, Auswahl oder Eingabekontext; keine spätere Wirkung ersetzt diese Inventarpflicht.",
             "probe": "Originaloberfläche abgleichen: Endpoints Short / Long; Zahlenwert unbekannt.",
-            "state": "open",
-            "evidence": []
+            "state": "resolved",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/019-preferences-advanced.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/019-preferences-advanced.png",
+                "observation": "Advanced vor Aktivierung: Edge Scrolling OFF; Slider zeigt beschriftete Enden ohne Zahl."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/030-edge-scrolling-enabled.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/030-edge-scrolling-enabled.png",
+                "observation": "Edge Scrolling ausdrücklich ON, beide Slider ohne Zahlenanzeige."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/031-advanced-baseline-applied.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/031-advanced-baseline-applied.png",
+                "observation": "Native Preferences Apply; baseline eigene Config-Datei kopiert."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/032-delay-low.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/032-delay-low.png",
+                "observation": "edge_scroll_delay: einzeln linkes/rechtes Sliderende bedient und Apply; native Originalconfig 0/1, genau dieser Schlüssel gegenüber vorherigem Snapshot geändert."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/033-delay-low-applied.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/033-delay-low-applied.png",
+                "observation": "edge_scroll_delay: einzeln linkes/rechtes Sliderende bedient und Apply; native Originalconfig 0/1, genau dieser Schlüssel gegenüber vorherigem Snapshot geändert."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/034-delay-high.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/034-delay-high.png",
+                "observation": "edge_scroll_delay: einzeln linkes/rechtes Sliderende bedient und Apply; native Originalconfig 0/1, genau dieser Schlüssel gegenüber vorherigem Snapshot geändert."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/035-delay-high-applied.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/035-delay-high-applied.png",
+                "observation": "edge_scroll_delay: einzeln linkes/rechtes Sliderende bedient und Apply; native Originalconfig 0/1, genau dieser Schlüssel gegenüber vorherigem Snapshot geändert."
+              }
+            ],
+            "resolvedIn": "HEX-00-N-I15",
+            "resolution": "Preferences > Advanced > Edge Scroll Delay: reiner Slider, Endbeschriftung Short/Long, keine Zahl/Einheit im Dialog. Edge Scrolling ausdrücklich ON. Linkes/rechtes Ende einzeln bedient und Apply; native eigene Config edge_scroll_delay=0/1. Pro Zustand unveränderte Kopie/Hash, vollständiger Zeilenvergleich bestätigt jeweils genau diesen Schlüsselwechsel. Ausgang dieser Folge 0.25, kein allgemeiner Default. Physikalische Einheit und tatsächliche Randkamerawirkung nicht gemessen; Werte als native Skalare führen. Nur direkt beobachtete Oberfläche, Zahlenvalidierung und eigene native Config-Zuordnung; allgemeine Einstellungswirkung, Karten-History, Kaltstart und physische Eingabe bleiben Fachpflicht HEX-26."
           }
-        ]
+        ],
+        "numericObservation": {
+          "run": "HEX-00-N-I15",
+          "note": "Preferences > Advanced > Edge Scroll Delay: reiner Slider, Endbeschriftung Short/Long, keine Zahl/Einheit im Dialog. Edge Scrolling ausdrücklich ON. Linkes/rechtes Ende einzeln bedient und Apply; native eigene Config edge_scroll_delay=0/1. Pro Zustand unveränderte Kopie/Hash, vollständiger Zeilenvergleich bestätigt jeweils genau diesen Schlüsselwechsel. Ausgang dieser Folge 0.25, kein allgemeiner Default. Physikalische Einheit und tatsächliche Randkamerawirkung nicht gemessen; Werte als native Skalare führen. Nur direkt beobachtete Oberfläche, Zahlenvalidierung und eigene native Config-Zuordnung; allgemeine Einstellungswirkung, Karten-History, Kaltstart und physische Eingabe bleiben Fachpflicht HEX-26.",
+          "initialValue": 0.25,
+          "nativeData": [
+            {
+              "state": "baseline",
+              "source": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/data/Wonderdraft/config.ini",
+              "file": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/native-config-snapshots/baseline.ini",
+              "sha256": "a48b1bf0637197b1d0a60b82d17b7ba28cc7f109d5ff743312310d699b24467b",
+              "frame": "031-advanced-baseline-applied",
+              "selectedNativeValues": {
+                "undo_limit": "63",
+                "auto_backup_frequency": "59",
+                "auto_backup_limit": "63",
+                "rotation_step": "89.9",
+                "font_size": "15.0",
+                "edge_scrolling": "true",
+                "edge_scroll_delay": "0.25",
+                "edge_scroll_speed": "240.0"
+              },
+              "metadataScopeNormalization": "Match the same eight raw native keys selected by every endpoint snapshot; immutable source bytes/hash unchanged."
+            },
+            {
+              "state": "delay-low",
+              "source": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/data/Wonderdraft/config.ini",
+              "file": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/native-config-snapshots/delay-low.ini",
+              "sha256": "42bab02e5d5ef09e5e88cece773912c71bd74316ad6e1370ef9881ac53ca6576",
+              "frame": "033-delay-low-applied",
+              "selectedNativeValues": {
+                "undo_limit": "63",
+                "auto_backup_frequency": "59",
+                "auto_backup_limit": "63",
+                "rotation_step": "89.9",
+                "font_size": "15.0",
+                "edge_scrolling": "true",
+                "edge_scroll_delay": "0.0",
+                "edge_scroll_speed": "240.0"
+              },
+              "singleChangedNativeKey": "edge_scroll_delay",
+              "lineDiff": [
+                {
+                  "before": "edge_scroll_delay=0.25",
+                  "after": "edge_scroll_delay=0.0"
+                }
+              ]
+            },
+            {
+              "state": "delay-high",
+              "source": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/data/Wonderdraft/config.ini",
+              "file": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/native-config-snapshots/delay-high.ini",
+              "sha256": "06871472da4c3b319c3cdcc0884061a7a6f92791dd2b8b26fb66bafaca72cc3d",
+              "frame": "035-delay-high-applied",
+              "selectedNativeValues": {
+                "undo_limit": "63",
+                "auto_backup_frequency": "59",
+                "auto_backup_limit": "63",
+                "rotation_step": "89.9",
+                "font_size": "15.0",
+                "edge_scrolling": "true",
+                "edge_scroll_delay": "1.0",
+                "edge_scroll_speed": "240.0"
+              },
+              "singleChangedNativeKey": "edge_scroll_delay",
+              "lineDiff": [
+                {
+                  "before": "edge_scroll_delay=0.0",
+                  "after": "edge_scroll_delay=1.0"
+                }
+              ]
+            }
+          ],
+          "nativeDataReceipt": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/native-config-snapshots.json",
+          "physicalUnitMeasurement": "not_run",
+          "scope": "Direkte Slider-Endpunkte und nach Apply zugeordnete native Skalare; keine Zeit-/Kamerageschwindigkeits- oder Kaltstartmessung."
+        }
       },
       {
         "id": "WD-UI-0148",
@@ -11763,8 +12752,30 @@
           "value": "displayed slider",
           "evidenceScope": "Angezeigter Zustand dieser Originalaufnahme; Persistenz und andere Kontexte nicht gemessen."
         },
-        "rangeOrChoices": null,
-        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit.",
+        "rangeOrChoices": {
+          "kind": "observed_native_slider_bounds",
+          "minimum": 50,
+          "maximum": 1000,
+          "unit": "native_config_scalar_no_explicit_ui_unit",
+          "endLabels": [
+            "Slow",
+            "Fast"
+          ],
+          "boundMeaning": "native_saved_config_value_at_slider_endpoints",
+          "inputPaths": [
+            "slider"
+          ],
+          "nativeConfigKey": "edge_scroll_speed",
+          "scope": {
+            "version": "1.1.8.2",
+            "sessions": [
+              "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json"
+            ],
+            "context": "Frisches festes privates Fensterprofil, Large Icons, vor New ohne geladene Karte; General Auto Backup ON, Advanced für Slider Edge Scrolling ausdrücklich ON.",
+            "factoryDefaultsAsserted": false
+          }
+        },
+        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit. Direkt N-I15: einzelne Zahlengrenzen/Eingabewege und native Sliderwerte im eigenen Profil belegt; keine allgemeine Wirkungs-/History-/Kaltstartabnahme.",
         "gesture": {
           "observed": "Öffnen/Anwählen über die protokollierte Original-UI.",
           "operation": "Werkzeug-Abschlussgesten noch nicht gemessen."
@@ -11786,6 +12797,55 @@
             "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/016-preferences-advanced.json",
             "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/016-preferences-advanced.png",
             "observation": "Preferences > Advanced > Edge Scroll Speed: displayed slider."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/019-preferences-advanced.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/019-preferences-advanced.png",
+            "observation": "Advanced vor Aktivierung: Edge Scrolling OFF; Slider zeigt beschriftete Enden ohne Zahl."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/030-edge-scrolling-enabled.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/030-edge-scrolling-enabled.png",
+            "observation": "Edge Scrolling ausdrücklich ON, beide Slider ohne Zahlenanzeige."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/031-advanced-baseline-applied.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/031-advanced-baseline-applied.png",
+            "observation": "Native Preferences Apply; baseline eigene Config-Datei kopiert."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/036-speed-low.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/036-speed-low.png",
+            "observation": "edge_scroll_speed: einzeln linkes/rechtes Sliderende bedient und Apply; native Originalconfig 50/1000, genau dieser Schlüssel gegenüber vorherigem Snapshot geändert."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/037-speed-low-applied.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/037-speed-low-applied.png",
+            "observation": "edge_scroll_speed: einzeln linkes/rechtes Sliderende bedient und Apply; native Originalconfig 50/1000, genau dieser Schlüssel gegenüber vorherigem Snapshot geändert."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/038-speed-high.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/038-speed-high.png",
+            "observation": "edge_scroll_speed: einzeln linkes/rechtes Sliderende bedient und Apply; native Originalconfig 50/1000, genau dieser Schlüssel gegenüber vorherigem Snapshot geändert."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/039-speed-high-applied.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/039-speed-high-applied.png",
+            "observation": "edge_scroll_speed: einzeln linkes/rechtes Sliderende bedient und Apply; native Originalconfig 50/1000, genau dieser Schlüssel gegenüber vorherigem Snapshot geändert."
           }
         ],
         "classification": "user_function",
@@ -11805,8 +12865,60 @@
             "duePhase": "HEX-00",
             "reason": "Der Wortlaut benennt unbekannte Oberfläche, Wertebereich, Auswahl oder Eingabekontext; keine spätere Wirkung ersetzt diese Inventarpflicht.",
             "probe": "Originaloberfläche abgleichen: Auswahl oder Zahlenbereich noch nicht direkt abgegrenzt.",
-            "state": "open",
-            "evidence": []
+            "state": "resolved",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/019-preferences-advanced.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/019-preferences-advanced.png",
+                "observation": "Advanced vor Aktivierung: Edge Scrolling OFF; Slider zeigt beschriftete Enden ohne Zahl."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/030-edge-scrolling-enabled.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/030-edge-scrolling-enabled.png",
+                "observation": "Edge Scrolling ausdrücklich ON, beide Slider ohne Zahlenanzeige."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/031-advanced-baseline-applied.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/031-advanced-baseline-applied.png",
+                "observation": "Native Preferences Apply; baseline eigene Config-Datei kopiert."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/036-speed-low.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/036-speed-low.png",
+                "observation": "edge_scroll_speed: einzeln linkes/rechtes Sliderende bedient und Apply; native Originalconfig 50/1000, genau dieser Schlüssel gegenüber vorherigem Snapshot geändert."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/037-speed-low-applied.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/037-speed-low-applied.png",
+                "observation": "edge_scroll_speed: einzeln linkes/rechtes Sliderende bedient und Apply; native Originalconfig 50/1000, genau dieser Schlüssel gegenüber vorherigem Snapshot geändert."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/038-speed-high.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/038-speed-high.png",
+                "observation": "edge_scroll_speed: einzeln linkes/rechtes Sliderende bedient und Apply; native Originalconfig 50/1000, genau dieser Schlüssel gegenüber vorherigem Snapshot geändert."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/039-speed-high-applied.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/039-speed-high-applied.png",
+                "observation": "edge_scroll_speed: einzeln linkes/rechtes Sliderende bedient und Apply; native Originalconfig 50/1000, genau dieser Schlüssel gegenüber vorherigem Snapshot geändert."
+              }
+            ],
+            "resolvedIn": "HEX-00-N-I15",
+            "resolution": "Preferences > Advanced > Edge Scroll Speed: reiner Slider, Endbeschriftung Slow/Fast, keine Zahl/Einheit im Dialog. Edge Scrolling ausdrücklich ON. Linkes/rechtes Ende einzeln bedient und Apply; native eigene Config edge_scroll_speed=50/1000. Pro Zustand unveränderte Kopie/Hash, vollständiger Zeilenvergleich bestätigt jeweils genau diesen Schlüsselwechsel. Ausgang dieser Folge 240.0, kein allgemeiner Default. Physikalische Einheit und tatsächliche Randkamerawirkung nicht gemessen; Werte als native Skalare führen. Nur direkt beobachtete Oberfläche, Zahlenvalidierung und eigene native Config-Zuordnung; allgemeine Einstellungswirkung, Karten-History, Kaltstart und physische Eingabe bleiben Fachpflicht HEX-26."
           },
           {
             "id": "WD-UI-0148-Q02-01",
@@ -11819,10 +12931,138 @@
             "duePhase": "HEX-00",
             "reason": "Der Wortlaut benennt unbekannte Oberfläche, Wertebereich, Auswahl oder Eingabekontext; keine spätere Wirkung ersetzt diese Inventarpflicht.",
             "probe": "Originaloberfläche abgleichen: Endpoints Slow / Fast; Zahlenwert unbekannt.",
-            "state": "open",
-            "evidence": []
+            "state": "resolved",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/019-preferences-advanced.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/019-preferences-advanced.png",
+                "observation": "Advanced vor Aktivierung: Edge Scrolling OFF; Slider zeigt beschriftete Enden ohne Zahl."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/030-edge-scrolling-enabled.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/030-edge-scrolling-enabled.png",
+                "observation": "Edge Scrolling ausdrücklich ON, beide Slider ohne Zahlenanzeige."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/031-advanced-baseline-applied.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/031-advanced-baseline-applied.png",
+                "observation": "Native Preferences Apply; baseline eigene Config-Datei kopiert."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/036-speed-low.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/036-speed-low.png",
+                "observation": "edge_scroll_speed: einzeln linkes/rechtes Sliderende bedient und Apply; native Originalconfig 50/1000, genau dieser Schlüssel gegenüber vorherigem Snapshot geändert."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/037-speed-low-applied.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/037-speed-low-applied.png",
+                "observation": "edge_scroll_speed: einzeln linkes/rechtes Sliderende bedient und Apply; native Originalconfig 50/1000, genau dieser Schlüssel gegenüber vorherigem Snapshot geändert."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/038-speed-high.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/038-speed-high.png",
+                "observation": "edge_scroll_speed: einzeln linkes/rechtes Sliderende bedient und Apply; native Originalconfig 50/1000, genau dieser Schlüssel gegenüber vorherigem Snapshot geändert."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/039-speed-high-applied.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/screens/039-speed-high-applied.png",
+                "observation": "edge_scroll_speed: einzeln linkes/rechtes Sliderende bedient und Apply; native Originalconfig 50/1000, genau dieser Schlüssel gegenüber vorherigem Snapshot geändert."
+              }
+            ],
+            "resolvedIn": "HEX-00-N-I15",
+            "resolution": "Preferences > Advanced > Edge Scroll Speed: reiner Slider, Endbeschriftung Slow/Fast, keine Zahl/Einheit im Dialog. Edge Scrolling ausdrücklich ON. Linkes/rechtes Ende einzeln bedient und Apply; native eigene Config edge_scroll_speed=50/1000. Pro Zustand unveränderte Kopie/Hash, vollständiger Zeilenvergleich bestätigt jeweils genau diesen Schlüsselwechsel. Ausgang dieser Folge 240.0, kein allgemeiner Default. Physikalische Einheit und tatsächliche Randkamerawirkung nicht gemessen; Werte als native Skalare führen. Nur direkt beobachtete Oberfläche, Zahlenvalidierung und eigene native Config-Zuordnung; allgemeine Einstellungswirkung, Karten-History, Kaltstart und physische Eingabe bleiben Fachpflicht HEX-26."
           }
-        ]
+        ],
+        "numericObservation": {
+          "run": "HEX-00-N-I15",
+          "note": "Preferences > Advanced > Edge Scroll Speed: reiner Slider, Endbeschriftung Slow/Fast, keine Zahl/Einheit im Dialog. Edge Scrolling ausdrücklich ON. Linkes/rechtes Ende einzeln bedient und Apply; native eigene Config edge_scroll_speed=50/1000. Pro Zustand unveränderte Kopie/Hash, vollständiger Zeilenvergleich bestätigt jeweils genau diesen Schlüsselwechsel. Ausgang dieser Folge 240.0, kein allgemeiner Default. Physikalische Einheit und tatsächliche Randkamerawirkung nicht gemessen; Werte als native Skalare führen. Nur direkt beobachtete Oberfläche, Zahlenvalidierung und eigene native Config-Zuordnung; allgemeine Einstellungswirkung, Karten-History, Kaltstart und physische Eingabe bleiben Fachpflicht HEX-26.",
+          "initialValue": 240.0,
+          "nativeData": [
+            {
+              "state": "baseline",
+              "source": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/data/Wonderdraft/config.ini",
+              "file": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/native-config-snapshots/baseline.ini",
+              "sha256": "a48b1bf0637197b1d0a60b82d17b7ba28cc7f109d5ff743312310d699b24467b",
+              "frame": "031-advanced-baseline-applied",
+              "selectedNativeValues": {
+                "undo_limit": "63",
+                "auto_backup_frequency": "59",
+                "auto_backup_limit": "63",
+                "rotation_step": "89.9",
+                "font_size": "15.0",
+                "edge_scrolling": "true",
+                "edge_scroll_delay": "0.25",
+                "edge_scroll_speed": "240.0"
+              },
+              "metadataScopeNormalization": "Match the same eight raw native keys selected by every endpoint snapshot; immutable source bytes/hash unchanged."
+            },
+            {
+              "state": "speed-low",
+              "source": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/data/Wonderdraft/config.ini",
+              "file": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/native-config-snapshots/speed-low.ini",
+              "sha256": "835cd02383861738b4e0d4f9028c94c3e9f7ccf376889419f449c828a14954d2",
+              "frame": "037-speed-low-applied",
+              "selectedNativeValues": {
+                "undo_limit": "63",
+                "auto_backup_frequency": "59",
+                "auto_backup_limit": "63",
+                "rotation_step": "89.9",
+                "font_size": "15.0",
+                "edge_scrolling": "true",
+                "edge_scroll_delay": "1.0",
+                "edge_scroll_speed": "50.0"
+              },
+              "singleChangedNativeKey": "edge_scroll_speed",
+              "lineDiff": [
+                {
+                  "before": "edge_scroll_speed=240.0",
+                  "after": "edge_scroll_speed=50.0"
+                }
+              ]
+            },
+            {
+              "state": "speed-high",
+              "source": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/original/data/Wonderdraft/config.ini",
+              "file": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/native-config-snapshots/speed-high.ini",
+              "sha256": "587f06f339973d4cfe5e18731be34a794e8f0cb714f4ebb866a10bb5a587b928",
+              "frame": "039-speed-high-applied",
+              "selectedNativeValues": {
+                "undo_limit": "63",
+                "auto_backup_frequency": "59",
+                "auto_backup_limit": "63",
+                "rotation_step": "89.9",
+                "font_size": "15.0",
+                "edge_scrolling": "true",
+                "edge_scroll_delay": "1.0",
+                "edge_scroll_speed": "1000.0"
+              },
+              "singleChangedNativeKey": "edge_scroll_speed",
+              "lineDiff": [
+                {
+                  "before": "edge_scroll_speed=50.0",
+                  "after": "edge_scroll_speed=1000.0"
+                }
+              ]
+            }
+          ],
+          "nativeDataReceipt": "/home/aaron/.cache/dungeon-native-qa/hex-00/preferences-numeric-repair-20261009-124120/native-config-snapshots.json",
+          "physicalUnitMeasurement": "not_run",
+          "scope": "Direkte Slider-Endpunkte und nach Apply zugeordnete native Skalare; keine Zeit-/Kamerageschwindigkeits- oder Kaltstartmessung."
+        }
       },
       {
         "id": "WD-UI-0149",
