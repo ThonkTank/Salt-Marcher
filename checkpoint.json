@@ -4893,17 +4893,17 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-R47-CLEAN-R47",
-      "kind": "cleanup_review",
-      "startedAt": "2026-10-09T20:39:40.200319+00:00",
-      "focus": "R47 COK-Effekt-/Savebelege prüfen",
-      "state": "completed",
-      "result": "Aufräumreview PASS:43 Rawhashes/Reviewlink/JSON/Quellschutz und24CTY/65CO offen; keine fremde Wurzel verändert. Nächster Schritt Vorlagenlücke konkret planen, keine neue GUI bis Slotabsprache."
-    },
-    "nextRun": {
       "id": "CITY-00-P48",
       "kind": "plan",
-      "focus": "COK-Vorlagenfunktion/Fresh-Reopen konkret planen; CITY01 wartet konkrete HEX04/05-Verträge"
+      "startedAt": "2026-10-09T20:59:29.030065+00:00",
+      "focus": "COK-Vorlagen/Reopen konkret planen: P",
+      "state": "completed",
+      "result": "Zwei getrennte Originalfolgen I48a Vorlage/Map-Save und I48b frischer Prozess mit getrennten Dialog-/Datei-/Section-/Prozessorakeln geplant. Keine GUI gestartet."
+    },
+    "nextRun": {
+      "id": "CITY-00-P48-CLEAN-P48",
+      "kind": "cleanup_plan",
+      "focus": "I48a auf eigener QA-Kopie nach ausdrücklich abgestimmtem GUI-Slot durchführen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
