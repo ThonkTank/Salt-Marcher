@@ -483,3 +483,5 @@ CITY-00-I29-R Start 2026-10-09T15:09:20.895270+00:00; 15 Rawhashes und Controls1
 CITY-00-I29-CP Start 2026-10-09T15:09:33.330639+00:00; Plan: Snapshot auf belegtes Hip/Hidden und ungeklärtes Complex differenzieren. Complex-Funktionspflicht nicht entfernen oder durch fehlende Kartenflächen ersetzen. Historische Belege erhalten;15 Rawhashes und64/24 offene Pflichten nachprüfen. CI/CR getrennt.
 
 CITY-00-I29-CI Start 2026-10-09T15:09:50.045310+00:00; Snapshot enthält Hip/Hidden-Sichtwirkung und konkrete Complex-Teilbeobachtung; Processing/Raised/Solids und Persistenz offen. Alte Belege und IDs erhalten.
+
+CITY-00-I29-CR Start 2026-10-09T15:10:06.384271+00:00; Snapshot/acceptance stimmen;15 Rawhashes und alle Inventarbelegziele geprüft,64 CO-/24 CTY-Pflichten offen. Eigene Vorgaben zurückgesetzt, Testkopie geschlossen. Aufräumumfang ohne Restbefund. Nächste begrenzte Referenzplanung Processing/Raised/Solids, während HEX-05-Handoff verfolgt wird.
