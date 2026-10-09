@@ -133471,6 +133471,18 @@
           ],
           "measuredScope": "Gleiche Building-Grenzen auf zwei Geschossen; alle fünf Wahlen bleiben geschossübergreifend ausgewählt und gespeichert, ohne Building-Geometrie oder Host-History zu ändern. Vier aktive Modi wirken auf beiden Building-Flächen ungefähr gleichwertig zum Original; kontrollierter Außenbereich bleibt gleich. SCRATCHED bleibt nach frischem Prozess auf beiden Geschossen ausgewählt und die Karte bytegleich.",
           "gap": "Getrennter Hostreview und Phase-1-Gesamttor offen; unterschiedliche Gebäudeassets verhindern pixelgleiche Bildaussagen."
+        },
+        "followUpPhase1MultilevelReview": {
+          "state": "two_floor_scope_review_passed_phase1_open",
+          "reviewBuildSha256": "5b086c04c05b8011c64331ee6da7baa4831fcf06cc8712d2078731fcd03f3d4f",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-20261009/multilevel-review.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-20261009/multilevel-review-audit.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-multilevel-review-20261009/evidence/1791550635772-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-multilevel-review-20261009/evidence/1791550656575-reopen/result.json"
+          ],
+          "finding": "Getrennter Hostlauf auf aktualisiertem Build: fünf Rohkarten bytegleich und zehn Geschossbilder pixelgleich zum Kandidaten; SCRATCHED nach frischem Prozess auf beiden Geschossen gewählt, Kartendatei bytegleich. Direkte Original-Zwei-Geschoss-Wirkung ist gepaart.",
+          "gap": "Phase-1-Gesamttor und weitere Roadmap-Fälle offen; Grafikassets sind verschieden."
         }
       },
       {
@@ -133576,6 +133588,18 @@
           ],
           "measuredScope": "Gleiche Building-Grenzen auf zwei Geschossen; alle fünf Wahlen bleiben geschossübergreifend ausgewählt und gespeichert, ohne Building-Geometrie oder Host-History zu ändern. Vier aktive Modi wirken auf beiden Building-Flächen ungefähr gleichwertig zum Original; kontrollierter Außenbereich bleibt gleich. SCRATCHED bleibt nach frischem Prozess auf beiden Geschossen ausgewählt und die Karte bytegleich.",
           "gap": "Getrennter Hostreview und Phase-1-Gesamttor offen; unterschiedliche Gebäudeassets verhindern pixelgleiche Bildaussagen."
+        },
+        "followUpPhase1MultilevelReview": {
+          "state": "two_floor_scope_review_passed_phase1_open",
+          "reviewBuildSha256": "5b086c04c05b8011c64331ee6da7baa4831fcf06cc8712d2078731fcd03f3d4f",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-20261009/multilevel-review.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-20261009/multilevel-review-audit.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-multilevel-review-20261009/evidence/1791550635772-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-multilevel-review-20261009/evidence/1791550656575-reopen/result.json"
+          ],
+          "finding": "Getrennter Hostlauf auf aktualisiertem Build: fünf Rohkarten bytegleich und zehn Geschossbilder pixelgleich zum Kandidaten; SCRATCHED nach frischem Prozess auf beiden Geschossen gewählt, Kartendatei bytegleich. Direkte Original-Zwei-Geschoss-Wirkung ist gepaart.",
+          "gap": "Phase-1-Gesamttor und weitere Roadmap-Fälle offen; Grafikassets sind verschieden."
         }
       },
       {
@@ -133681,6 +133705,18 @@
           ],
           "measuredScope": "Gleiche Building-Grenzen auf zwei Geschossen; alle fünf Wahlen bleiben geschossübergreifend ausgewählt und gespeichert, ohne Building-Geometrie oder Host-History zu ändern. Vier aktive Modi wirken auf beiden Building-Flächen ungefähr gleichwertig zum Original; kontrollierter Außenbereich bleibt gleich. SCRATCHED bleibt nach frischem Prozess auf beiden Geschossen ausgewählt und die Karte bytegleich.",
           "gap": "Getrennter Hostreview und Phase-1-Gesamttor offen; unterschiedliche Gebäudeassets verhindern pixelgleiche Bildaussagen."
+        },
+        "followUpPhase1MultilevelReview": {
+          "state": "two_floor_scope_review_passed_phase1_open",
+          "reviewBuildSha256": "5b086c04c05b8011c64331ee6da7baa4831fcf06cc8712d2078731fcd03f3d4f",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-20261009/multilevel-review.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-20261009/multilevel-review-audit.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-multilevel-review-20261009/evidence/1791550635772-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-multilevel-review-20261009/evidence/1791550656575-reopen/result.json"
+          ],
+          "finding": "Getrennter Hostlauf auf aktualisiertem Build: fünf Rohkarten bytegleich und zehn Geschossbilder pixelgleich zum Kandidaten; SCRATCHED nach frischem Prozess auf beiden Geschossen gewählt, Kartendatei bytegleich. Direkte Original-Zwei-Geschoss-Wirkung ist gepaart.",
+          "gap": "Phase-1-Gesamttor und weitere Roadmap-Fälle offen; Grafikassets sind verschieden."
         }
       },
       {
@@ -133786,6 +133822,18 @@
           ],
           "measuredScope": "Gleiche Building-Grenzen auf zwei Geschossen; alle fünf Wahlen bleiben geschossübergreifend ausgewählt und gespeichert, ohne Building-Geometrie oder Host-History zu ändern. Vier aktive Modi wirken auf beiden Building-Flächen ungefähr gleichwertig zum Original; kontrollierter Außenbereich bleibt gleich. SCRATCHED bleibt nach frischem Prozess auf beiden Geschossen ausgewählt und die Karte bytegleich.",
           "gap": "Getrennter Hostreview und Phase-1-Gesamttor offen; unterschiedliche Gebäudeassets verhindern pixelgleiche Bildaussagen."
+        },
+        "followUpPhase1MultilevelReview": {
+          "state": "two_floor_scope_review_passed_phase1_open",
+          "reviewBuildSha256": "5b086c04c05b8011c64331ee6da7baa4831fcf06cc8712d2078731fcd03f3d4f",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-20261009/multilevel-review.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-20261009/multilevel-review-audit.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-multilevel-review-20261009/evidence/1791550635772-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-multilevel-review-20261009/evidence/1791550656575-reopen/result.json"
+          ],
+          "finding": "Getrennter Hostlauf auf aktualisiertem Build: fünf Rohkarten bytegleich und zehn Geschossbilder pixelgleich zum Kandidaten; SCRATCHED nach frischem Prozess auf beiden Geschossen gewählt, Kartendatei bytegleich. Direkte Original-Zwei-Geschoss-Wirkung ist gepaart.",
+          "gap": "Phase-1-Gesamttor und weitere Roadmap-Fälle offen; Grafikassets sind verschieden."
         }
       },
       {
@@ -133892,6 +133940,18 @@
           ],
           "measuredScope": "Gleiche Building-Grenzen auf zwei Geschossen; alle fünf Wahlen bleiben geschossübergreifend ausgewählt und gespeichert, ohne Building-Geometrie oder Host-History zu ändern. Vier aktive Modi wirken auf beiden Building-Flächen ungefähr gleichwertig zum Original; kontrollierter Außenbereich bleibt gleich. SCRATCHED bleibt nach frischem Prozess auf beiden Geschossen ausgewählt und die Karte bytegleich.",
           "gap": "Getrennter Hostreview und Phase-1-Gesamttor offen; unterschiedliche Gebäudeassets verhindern pixelgleiche Bildaussagen."
+        },
+        "followUpPhase1MultilevelReview": {
+          "state": "two_floor_scope_review_passed_phase1_open",
+          "reviewBuildSha256": "5b086c04c05b8011c64331ee6da7baa4831fcf06cc8712d2078731fcd03f3d4f",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-20261009/multilevel-review.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-20261009/multilevel-review-audit.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-multilevel-review-20261009/evidence/1791550635772-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-multilevel-review-20261009/evidence/1791550656575-reopen/result.json"
+          ],
+          "finding": "Getrennter Hostlauf auf aktualisiertem Build: fünf Rohkarten bytegleich und zehn Geschossbilder pixelgleich zum Kandidaten; SCRATCHED nach frischem Prozess auf beiden Geschossen gewählt, Kartendatei bytegleich. Direkte Original-Zwei-Geschoss-Wirkung ist gepaart.",
+          "gap": "Phase-1-Gesamttor und weitere Roadmap-Fälle offen; Grafikassets sind verschieden."
         }
       },
       {
