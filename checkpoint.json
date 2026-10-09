@@ -4791,16 +4791,16 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-R47-CLEAN-P47",
-      "kind": "cleanup_plan",
-      "startedAt": "2026-10-09T20:39:15.687903+00:00",
-      "focus": "R47 COK-Effekt-/Savebelege prüfen",
-      "state": "completed",
-      "result": "Aufräumplan: irreführenden Raw-Bildnamen018 ausdrücklich einordnen, veraltete Plan-/Koordinationsaussagen konsolidieren, tatsächlichen20min-Heartbeat und Issue7 im eigenen Checkpoint abbilden; Rawdaten unverändert."
-    },
-    "nextRun": {
       "id": "CITY-00-R47-CLEAN-I47",
       "kind": "cleanup_implementation",
+      "startedAt": "2026-10-09T20:39:26.928811+00:00",
+      "focus": "R47 COK-Effekt-/Savebelege prüfen",
+      "state": "completed",
+      "result": "Rawname018 ohne Umbenennen als bloße Kennung geklärt; Plan-Ausgangsstand datiert; Issue7/11 und tatsächlicher20min-Heartbeat konsolidiert. Keine API-/Produktänderung."
+    },
+    "nextRun": {
+      "id": "CITY-00-R47-CLEAN-R47",
+      "kind": "cleanup_review",
       "focus": "COK-Vorlagenfunktion/Fresh-Reopen konkret planen; CITY01 wartet konkrete HEX04/05-Verträge"
     },
     "open": [
@@ -4846,10 +4846,12 @@
       "guiReturn": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1#issuecomment-6088178583",
       "heartbeat": {
         "automationId": "stadt-atlasfortsetzung",
-        "intervalMinutes": 60,
+        "intervalMinutes": 20,
         "state": "active"
       },
-      "nextSharedMilestone": "HEX-03 → HEX-04 → HEX-05 → CITY-01–04; no new product claim before team handshake"
+      "nextSharedMilestone": "HEX-03 → HEX-04 → HEX-05 → CITY-01–04; team handshake resolved, concrete integration contracts still pending",
+      "workIssue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/7",
+      "platformIssue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11"
     }
   },
   "testFixturePortability": {
