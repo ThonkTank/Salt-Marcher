@@ -4555,16 +4555,16 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I45-CLEAN-P45",
-      "kind": "cleanup_plan",
-      "startedAt": "2026-10-09T19:21:01.574661+00:00",
-      "focus": "Gebäudebedarfe: CLEAN-P",
-      "state": "completed",
-      "result": "Aufräumplan: vorschnelle strikte Limitregel durch explizite Original-Ausnahmen ersetzen, Formzustand von Ergebniswirkung trennen; Rohhashes erhalten."
-    },
-    "nextRun": {
       "id": "CITY-00-I45-CLEAN-I45",
       "kind": "cleanup_implementation",
+      "startedAt": "2026-10-09T19:21:04.729675+00:00",
+      "focus": "Gebäudebedarfe: CLEAN-I",
+      "state": "completed",
+      "result": "Technikplan unterstützt deklarierte Initial-/Fraktions-/Arbeitsplatzausnahmen; Erzeugungsbedarfe getrennt von Simulationsressourcen. Keine Runtimeänderung."
+    },
+    "nextRun": {
+      "id": "CITY-00-I45-CLEAN-R45",
+      "kind": "cleanup_review",
       "focus": "Formularbelege und deklarierte Ausnahmeregeln getrennt gegen Anforderungen prüfen"
     },
     "open": [
