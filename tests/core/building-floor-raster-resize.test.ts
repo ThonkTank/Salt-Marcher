@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { newDocument, parseDocument, serializeDocument, type Building } from "../../src/model";
+import { newDocument, parseDocument, serializeDocument, type Building, type SmartTileCell } from "../../src/model";
 import { duplicateFloor, planBuildingContourMutation, planBuildingMutation, resizeMap } from "../../src/commands";
 import { composeBuilding } from "../../src/compute";
 import { Session } from "../../src/session";
@@ -176,6 +176,58 @@ test("DD-038 interior erase retains the native floor tile beneath the hole", () 
   assert.equal(session.smartTiles?.length, 18);
   assert.deepEqual(parseDocument(serializeDocument(session.document())).smartTiles,
     session.document().smartTiles);
+});
+
+test("DD-038 interior Alt hole repaints its retained cells in the selected native style", () => {
+  const document = newDocument("Mixed Building hole", 8, 8);
+  const floorId = document.floors[0]!.id;
+  const source: Building = { ...building("mixed", floorId, 1), polygons: [{ outer: [
+    { x: 1, y: 1 }, { x: 7, y: 1 }, { x: 7, y: 7 }, { x: 1, y: 7 },
+  ], holes: [] }] };
+  const original = buildingFloorCells(source, 8, 8).map((cell) =>
+    cell.x >= 4 && cell.y <= 3
+      ? { ...cell, assetId: STONE, color: 0x7f7e71 } : cell);
+  assert.equal(original.length, 36);
+  const shape = [{ outer: [
+    { x: 3, y: 3 }, { x: 5, y: 3 }, { x: 5, y: 5 }, { x: 3, y: 5 },
+  ], holes: [] }];
+  for (const selected of [
+    { assetId: STYLE, color: 0xb28f6f, changed: ["4:3"] },
+    { assetId: STONE, color: 0x7f7e71, changed: ["3:3", "3:4", "4:4"] },
+  ]) {
+    const session = new Session({ ...document, entities: [source], smartTiles: original });
+    const result = composeBuilding({ kind: "compose-building", nativeBuilding: true,
+      sources: [source], shape, erase: true });
+    const plan = planBuildingMutation({ entities: [...session.entities.values()],
+      floorId, result, expectedRevision: session.revision,
+      currentRevision: session.revision });
+    assert.ok(plan.command);
+    session.execute({ ...plan.command, smartTiles: { before: original,
+      after: buildingFloorCellsAfterErase(original, plan.command.entities,
+        8, 8, shape, selected) } });
+    const after = session.document();
+    assert.equal(after.entities.length, 1);
+    assert.equal((after.entities[0] as Building).polygons[0]!.holes.length, 1);
+    assert.equal(after.smartTiles?.length, 36);
+    const changed = after.smartTiles?.filter((cell, index) =>
+      cell.assetId !== original[index]?.assetId ||
+      cell.color !== original[index]?.color).map((cell) => `${cell.x}:${cell.y}`);
+    assert.deepEqual(changed?.sort(), selected.changed.sort());
+    for (const [x, y] of [[3, 3], [4, 3], [3, 4], [4, 4]]) {
+      const paintedCell: SmartTileCell | undefined = after.smartTiles?.find(
+        (item) => item.x === x && item.y === y);
+      assert.equal(paintedCell?.assetId, selected.assetId);
+      assert.equal(paintedCell?.color, selected.color);
+    }
+    assert.equal(session.historySize, 1);
+    session.undo();
+    assert.deepEqual(session.document().smartTiles, original);
+    assert.equal((session.document().entities[0] as Building).polygons[0]!.holes.length, 0);
+    session.redo();
+    assert.deepEqual(session.document(), after);
+    assert.deepEqual(parseDocument(serializeDocument(after)).smartTiles,
+      after.smartTiles);
+  }
 });
 
 test("drawing beside a retained contour leaves a prior crop gap empty", () => {

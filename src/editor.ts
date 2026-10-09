@@ -3173,7 +3173,9 @@ export class DungeonEditor {
           if (!plan.command) return;
           const previous = this.session.smartTiles;
           const next = buildingFloorCellsAfterErase(previous, plan.command.entities,
-            this.session.settings.width, this.session.settings.height);
+            this.session.settings.width, this.session.settings.height,
+            shape, nativeMixedFloor && material?.assetId
+              ? { assetId: material.assetId, color: defaults.color } : undefined);
           this.session.execute(next === previous ? plan.command : {
             ...plan.command, smartTiles: { before: previous, after: next },
           });

@@ -1,7 +1,7 @@
 {
   "cityPlans": {
     "schemaVersion": 1,
-    "updated": "2026-10-08",
+    "updated": "2026-10-09T10:42:01.854083+00:00",
     "plan": "ROADMAP-CITIES.md",
     "state": "planned_not_implemented",
     "comparisonMode": "functional_equivalence_and_independent_usability_tests",
@@ -1815,13 +1815,40 @@
         "sourceUrl": "https://docs.fantasytowngenerator.com/",
         "observedAt": "2026-10-09T12:20:56.140099+02:00",
         "observedVersion": null,
-        "availability": "free",
-        "observationKind": "direct",
-        "originalEvidence": [
-          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/ftg-export-menu.ax.txt"
-        ],
+        "availability": "unknown",
+        "observationKind": "documentation",
+        "originalEvidence": [],
         "task": "Saison und Tageslicht wechseln",
         "phase": "CITY-07",
+        "caseIds": [],
+        "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
+        "implementationEvidence": [],
+        "hostEvidence": [],
+        "comparisonEvidence": [],
+        "usabilityEvidence": [],
+        "review": {
+          "state": "not_run"
+        },
+        "status": "open",
+        "gap": "Dokumentationskandidat Wetter/Jahreszeiten/Tag-Nacht; direkte Wirkungsprobe offen.",
+        "independentFunctionalRequirement": true,
+        "mappingCoverage": "new_required_function_not_covered_by_existing_CTY"
+      },
+      {
+        "id": "CO-FTG-0020",
+        "product": "Fantasy Town Generator",
+        "feature": "Bild-, CSV- und JSON-Ausgabe",
+        "sourceUrl": "https://docs.fantasytowngenerator.com/",
+        "observedAt": "2026-10-09T12:15:44.926455+02:00",
+        "observedVersion": null,
+        "availability": "free_control_observed_file_unconfirmed",
+        "observationKind": "direct",
+        "originalEvidence": [
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/ftg-export-menu.ax.txt",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i04-20261009/manifest.json"
+        ],
+        "task": "Karte und Lebensdaten ausgeben",
+        "phase": "CITY-08",
         "caseIds": [
           "CTY-006.03"
         ],
@@ -1834,29 +1861,30 @@
           "state": "not_run"
         },
         "status": "open",
-        "gap": "Formate direkt im Menü: PNG/SVG/GeoJSON, Daten JSON/CSV im Dialog. Downloaddateien nicht bestätigt.",
-        "originalProbe": {
-          "run": "CITY-00-I02",
-          "state": "partial",
-          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/manifest.json",
-          "exportFileState": "unverified_after_download_timeout"
-        },
+        "gap": "PNG/SVG/GeoJSON und Daten JSON/CSV im Originalmenü sichtbar; tatsächliche Ausgabedateien nach zwei Downloadversuchen unbestätigt.",
         "independentFunctionalRequirement": true,
-        "mappingCoverage": "related_project_criteria_only; CO requirement remains independently required"
+        "mappingCoverage": "related_project_criteria_only; CO requirement remains independently required",
+        "originalProbe": {
+          "run": "CITY-00-I04-I",
+          "state": "partial",
+          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i04-20261009/manifest.json",
+          "exportFileState": "unverified_after_two_download_attempts",
+          "retryPolicy": "stop_same_hypothesis"
+        }
       },
       {
-        "id": "CO-FTG-0020",
+        "id": "CO-FTG-0021",
         "product": "Fantasy Town Generator",
-        "feature": "Bild-, CSV- und JSON-Ausgabe",
+        "feature": "FoundryVTT und Roll20 Integration",
         "sourceUrl": "https://docs.fantasytowngenerator.com/",
         "observedAt": "2026-10-09T12:15:44.926455+02:00",
         "observedVersion": null,
         "availability": "account_required_observed_disabled_in_temporary_access",
-        "observationKind": "documentation",
+        "observationKind": "direct",
         "originalEvidence": [
           "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/ftg-export-menu.ax.txt"
         ],
-        "task": "Karte und Lebensdaten ausgeben",
+        "task": "Export-/Integrationsablauf vergleichen",
         "phase": "CITY-08",
         "caseIds": [],
         "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
@@ -1870,33 +1898,11 @@
         "status": "open",
         "gap": "FoundryVTT/Roll20 im Originalmenü sichtbar, für temporäre Siedlung deaktiviert; tatsächliche Integration offen.",
         "independentFunctionalRequirement": true,
-        "mappingCoverage": "new_required_function_not_covered_by_existing_CTY"
-      },
-      {
-        "id": "CO-FTG-0021",
-        "product": "Fantasy Town Generator",
-        "feature": "FoundryVTT und Roll20 Integration",
-        "sourceUrl": "https://docs.fantasytowngenerator.com/",
-        "observedAt": "2026-10-09T12:15:44.926455+02:00",
-        "observedVersion": null,
-        "availability": "unknown",
-        "observationKind": "documentation",
-        "originalEvidence": [],
-        "task": "Export-/Integrationsablauf vergleichen",
-        "phase": "CITY-08",
-        "caseIds": [],
-        "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
-        "implementationEvidence": [],
-        "hostEvidence": [],
-        "comparisonEvidence": [],
-        "usabilityEvidence": [],
-        "review": {
-          "state": "not_run"
-        },
-        "status": "open",
-        "gap": "Dokumentationskandidat; direkte vollständige Originalprobe offen.",
-        "independentFunctionalRequirement": true,
-        "mappingCoverage": "new_required_function_not_covered_by_existing_CTY"
+        "mappingCoverage": "new_required_function_not_covered_by_existing_CTY",
+        "originalProbe": {
+          "run": "CITY-00-I02",
+          "state": "disabled_control_observed_only"
+        }
       },
       {
         "id": "CO-FTG-0022",
@@ -2033,7 +2039,8 @@
         "availability": "free",
         "observationKind": "direct",
         "originalEvidence": [
-          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/manifest.json"
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/manifest.json",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i05-20261009/manifest.json"
         ],
         "task": "Stammbaum eines Bewohners öffnen",
         "phase": "CITY-06",
@@ -2047,11 +2054,22 @@
           "state": "not_run"
         },
         "status": "open",
-        "gap": "Schaltfläche/Menü direkt sichtbar; konkrete Wirkung und eigener Vergleich noch offen.",
+        "gap": "Originalgraph, Vollbild und Personenaufruf direkt belegt; Navigation/Neuöffnung und eigener Vergleich offen.",
         "originalProbe": {
-          "run": "CITY-00-I02",
-          "state": "control_observed_only",
-          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/manifest.json"
+          "run": "CITY-00-I05-I",
+          "state": "graph_fullscreen_person_navigation_observed",
+          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i05-20261009/manifest.json",
+          "remaining": [
+            "Graphpan/-zoom",
+            "Select family tree",
+            "Neuöffnung",
+            "Eigene Produkt-/Bedienabnahme"
+          ],
+          "observationLimits": [
+            "Adoption nur im Relations-Text, nicht an Graphkante nachgewiesen",
+            "Obere Kartenbegrenzungen teilweise angeschnitten; kein vollständiger Layoutnachweis",
+            "Graphpan/-zoom, Select family tree und Neuöffnung ungemessen"
+          ]
         },
         "independentFunctionalRequirement": true,
         "mappingCoverage": "new_required_function_not_covered_by_existing_CTY"
@@ -2367,13 +2385,51 @@
           "run": "CITY-00-I03-I",
           "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/manifest.json"
         }
+      },
+      {
+        "id": "CO-FTG-0030",
+        "product": "Fantasy Town Generator",
+        "feature": "Gebäudedaten bearbeiten und erhalten",
+        "sourceUrl": "https://www.fantasytowngenerator.com/temporary-settlement",
+        "observedAt": "2026-10-09T10:40:38.524671+00:00",
+        "observedVersion": null,
+        "availability": "free",
+        "observationKind": "direct",
+        "originalEvidence": [
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i04-20261009/manifest.json"
+        ],
+        "task": "Gebäude benennen, speichern und nach Neuladen mit Bewohnerzuordnung wiederfinden",
+        "phase": "CITY-06",
+        "caseIds": [],
+        "technicalPlan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
+        "implementationEvidence": [],
+        "hostEvidence": [],
+        "comparisonEvidence": [],
+        "usabilityEvidence": [],
+        "review": {
+          "state": "not_run"
+        },
+        "status": "open",
+        "gap": "Original-Umbenennung und Reload direkt belegt; eigener Produktvergleich und weitere Gebäudedaten offen.",
+        "originalProbe": {
+          "run": "CITY-00-I04-I",
+          "state": "rename_save_reload_observed",
+          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i04-20261009/manifest.json",
+          "remaining": [
+            "Weitere General-Felder",
+            "Unterbereiche Opening times/Stock/Services/Sub-locations/Resources",
+            "Kontenübergreifende oder dauerhafte Speicherung"
+          ]
+        },
+        "independentFunctionalRequirement": true,
+        "mappingCoverage": "new_required_function_not_covered_by_existing_CTY"
       }
     ],
     "functionalInventoryStatus": {
       "state": "partial_inventory_not_accepted",
-      "run": "CITY-00-I03-I",
+      "run": "CITY-00-I05-I",
       "products": 3,
-      "candidates": 44,
+      "candidates": 45,
       "directFormAreas": 13,
       "open": [
         "Detailfähigkeiten aller Produkte vervollständigen",
@@ -2384,7 +2440,9 @@
       ],
       "evidence": [
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i02-20261009/manifest.json",
-        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/manifest.json"
+        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/manifest.json",
+        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i04-20261009/manifest.json",
+        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i05-20261009/manifest.json"
       ],
       "originalResultSamples": 3
     },
@@ -131675,16 +131733,39 @@
           "remaining": "Weitere Lochgrößen und -formen, Übermalung im Loch, Konturpunkte, kombinierte Ränder und DD-038-Endreview offen. Keine Fallfreigabe; P7-2 physisch ungeprüft."
         },
         "followUpPhase1BuildingFloorTwoCellHoleOriginalProbe": {
-          "state": "two_cell_interior_hole_original_measured_host_open_case_open",
+          "state": "two_cell_interior_hole_scoped_review_passed_case_open",
           "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "hostBuildSha256": "e1a4ad3af9f1e2767f47f435b9d4a162271390bd9eebff637d32a6e04d341d06",
           "originalReport": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-hole-large-original-20261009/original-probe.md",
           "originalSource": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-hole-large-original-20261009/native/runs/20261009-122836-3730724/evidence/maps/00-source.dungeondraft_map",
           "originalErased": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-hole-large-original-20261009/native/runs/20261009-122836-3730724/evidence/maps/01-erased.dungeondraft_map",
           "originalUndo": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-hole-large-original-20261009/native/runs/20261009-122836-3730724/evidence/maps/02-undo.dungeondraft_map",
           "originalRedo": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-hole-large-original-20261009/native/runs/20261009-122836-3730724/evidence/maps/03-redo.dungeondraft_map",
           "originalFresh": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-hole-large-fresh-original-20261009/native-checked/runs/20261009-123115-3733552/evidence/screens/00-fresh.png",
+          "hostReport": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-hole-large-host-20261009/implementation.md",
+          "hostEdit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-hole-large-host-20261009/evidence/1791542056610-parity-tools-phase1-building-mixed-edit/result.json",
+          "hostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-hole-large-host-20261009/evidence/1791542075285-parity-tools-phase1-building-mixed-reopen/result.json",
+          "audit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-hole-large-host-20261009/independent-audit.json",
+          "review": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-hole-large-host-20261009/review.md",
           "measuredScope": "8×8 Wood/Stone: Ein 2×1-Alt-Innenloch bei (2,2)–(4,3) erzeugt einen inneren Konturring. Alle 18 gespeicherten Zellen, Stile und Farben bleiben unverändert; Undo/Redo sind jeweils bytegleich zum Ausgangs- und Lochzustand, die frische Originalöffnung zeigt die Aussparung.",
-          "remaining": "Hostpaar und unabhängiger Review offen. Ein 2×2-Loch braucht eine größere Quellkontur; weitere Radierformen, Übermalung im Loch, kombinierte Ränder und DD-038-Endreview offen. Keine Fallfreigabe; P7-2 physisch ungeprüft."
+          "remaining": "Original-/Host-Rohdatenpaar, frische Hostöffnung und getrennter Review bestehen. Ein 2×2-Loch braucht eine größere Quellkontur; weitere Radierformen, Übermalung im Loch, kombinierte Ränder und DD-038-Endreview offen. Keine Fallfreigabe; P7-2 physisch ungeprüft."
+        },
+        "followUpPhase1BuildingFloorFourCellHoleOriginalProbe": {
+          "state": "four_cell_interior_hole_scoped_host_raw_pair_passed_review_open_case_open",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "hostBuildSha256": "d54f25cf7b961cc78b1bbf197bd4781bd62d2325ec10dc4b34148c0d6ab3a6a2",
+          "originalReport": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-hole-2x2-original-20261009/original-probe.md",
+          "originalAudit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-hole-2x2-original-20261009/original-audit.json",
+          "originalWoodSource": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-hole-2x2-original-20261009/native/runs/20261009-124026-3740818/evidence/maps/00-extended.dungeondraft_map",
+          "originalWoodErased": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-hole-2x2-original-20261009/native/runs/20261009-124026-3740818/evidence/maps/01-erased.dungeondraft_map",
+          "originalStoneErased": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-hole-2x2-stone-original-20261009/native/runs/20261009-124229-3741944/evidence/maps/01-erased.dungeondraft_map",
+          "originalWoodFresh": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-hole-2x2-fresh-original-20261009/native/runs/20261009-124147-3741445/evidence/screens/00-fresh.png",
+          "hostReport": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-hole-2x2-host-20261009-checked/implementation.md",
+          "hostEdit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-hole-2x2-host-20261009-checked/evidence/1791542927554-parity-tools-phase1-building-mixed-edit/result.json",
+          "hostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-hole-2x2-host-20261009-checked/evidence/1791542949425-parity-tools-phase1-building-mixed-reopen/result.json",
+          "audit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-hole-2x2-host-20261009-checked/independent-audit.json",
+          "measuredScope": "8×8-Karte mit 6×6-Kontur: 2×2-Alt-Loch erhält 36 Zellpositionen und malt die vier gespeicherten verdeckten Zellen im gewählten Stil. Wood ändert (4,3) von Stone zu Wood; Stone ändert (3,3), (3,4), (4,4) von Wood zu Stone. Undo/Redo bytegleich; frische Wood-Originalöffnung zeigt vier freie Innenfelder.",
+          "remaining": "Original-/Host-Rohdatenpaare und frische Hostöffnung bestehen; getrennter Review offen. Weitere Lochformen, Außenkanten, Übermalung im Loch, kombinierte Ränder und DD-038-Endreview offen. Keine Fallfreigabe; P7-2 physisch ungeprüft."
         },
         "followUpPhase1BuildingPointOriginalProbe": {
           "state": "three_point_moves_scoped_review_passed_case_open",
