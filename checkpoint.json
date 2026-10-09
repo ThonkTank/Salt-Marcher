@@ -3869,17 +3869,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I22-CI",
-      "kind": "cleanup_implementation",
-      "startedAt": "2026-10-09T14:14:50.844982+00:00",
-      "focus": "Quellbelege am benannten Commit sichern",
-      "state": "completed",
-      "result": "Sechs Quellhashes gegen gespeicherten Gitstand bestätigt; eigener Provenienznachweis gesichert. Keine Produkt-/Architekturduplikation."
-    },
-    "nextRun": {
       "id": "CITY-00-I22-CR",
       "kind": "cleanup_review",
-      "focus": "Auditprovenienz und unveränderte Übergabepflichten unabhängig prüfen"
+      "startedAt": "2026-10-09T14:15:17.033437+00:00",
+      "focus": "Provenienz und Übergabevertrag unabhängig prüfen",
+      "state": "completed",
+      "result": "Manifest unverändert, sechs Quellhashes geprüft, volle Pflichten erhalten. Kein Restbefund im Aufräumumfang."
+    },
+    "nextRun": {
+      "id": "CITY-00-I23-P",
+      "kind": "reference_planning",
+      "focus": "Landmarkenposition und Korrektur im Original mit sichtbaren Controls planen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
