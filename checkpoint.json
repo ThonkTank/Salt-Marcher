@@ -3756,17 +3756,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I19-CI",
-      "kind": "cleanup_implementation",
-      "startedAt": "2026-10-09T13:45:31.654832+00:00",
-      "focus": "Style-Vertrag und Belegformat präzisieren",
-      "state": "completed",
-      "result": "Geplante Farbrollen/Flags, transienter Entwurf und Atlas-Apply in Architektur ergänzt; JSON-Alias bytegleich, Rohbelege erhalten."
-    },
-    "nextRun": {
       "id": "CITY-00-I19-CR",
       "kind": "cleanup_review",
-      "focus": "Gestaltungsplan und Rohschutz prüfen"
+      "startedAt": "2026-10-09T13:45:52.517434+00:00",
+      "focus": "Rohschutz und Style-Vertrag reviewen",
+      "state": "completed",
+      "result": "Aufräumreview bestanden: Style-Vertrag präzisiert, Rohschutz und Statusgrenzen erhalten. Keine Produkt-/Paritätsabnahme."
+    },
+    "nextRun": {
+      "id": "CITY-00-I20-P",
+      "kind": "reference_planning",
+      "focus": "Freigegebenen nativen Slot prüfen und COK Pre-Save-History planen; HEX-05-Übergabe prüfen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
