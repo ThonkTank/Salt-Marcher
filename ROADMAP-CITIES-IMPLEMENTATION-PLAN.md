@@ -303,3 +303,9 @@ I15-R01: Eine starre Gesamtdrehung nutzt die gemeinsame Stadtplatzierung als get
 | Relax | Pinsel/Kanten und geänderte Geometrie/Bebauung | Glättungsregel, Stärke, Einflussverlauf |
 
 Ein kontrollierter Zug pro Werkzeug auf frischer Seedbasis; Discard geprüft. Kein Rohgeometrie-/Kennungsvergleich, keine vollständige Operationsformel und keine eigene Implementierung aus diesen Bildern ableiten. Nach Umsetzung der geplanten Rollenpräzisierung eigener Review auf Beleg-/Status-/Wurzelschutz.
+
+## CITY-00-I16-P: tatsächliche Watabou-Ausgabedateien
+
+CO-WAT-0005 bisher Exportmenü ohne empfangene Dateien. Separate Browserkopie der beobachteten eigenen New-River-URL öffnen, originale Auswahl-/Exportoptionen und Übersicht sichern. PNG, SVG und JSON je einmal über den angebotenen Downloadbeobachter versuchen; beobachtete Dateipfade sichern und nur tatsächlich vorhandene Dateien anhand Signatur, Parser, Umfang und Hash prüfen. Dateiformate nicht aus Menüschluss oder Extension allein ableiten. Kein verdeckter Appzustand, keine interne Implementierung und keine Netzwerkrouten als Ersatz abrufen. Bei fehlender Dateibestätigung konkrete Beobachtungslücke erhalten, keine Originalfehlfunktion behaupten. Die gestoppte FTG-Siedlungs-JSON-Hypothese wird nicht erneut versucht.
+
+Falls JSON/SVG tatsächlich empfangen wird, öffentlich ausgegebene Geometriestruktur prüfen; nur daraus messbare Koordinaten/Einheiten/Mengen nennen, keine stabile Identitäts- oder Importfähigkeit erfinden. PNG/SVG-Darstellung gegen den gewählten Originalausschnitt prüfen. Eigene Datei unverändert archivieren; Testkopie schließen, Originaltabs erhalten. CITY-08-Plan präzisiert nötigen Format-/Geometrie-/Ausschnittvertrag, keine Produktimplementierung vor HEX-05. Separater Review, nötige Nachbesserung und Aufräumplan/Umsetzung/Review.
