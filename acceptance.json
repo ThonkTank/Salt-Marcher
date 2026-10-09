@@ -1,8 +1,8 @@
 {
   "saltMarcherReplacement": {
     "schemaVersion": 1,
-    "updated": "2026-10-09T14:28:52Z",
-    "state": "smr00_adr_prototype_plan_reviewed_p01_next",
+    "updated": "2026-10-09T15:25:52Z",
+    "state": "smr00_adr_p01_h02_plan_reviewed_implementation_next",
     "plan": "ROADMAP-SALTMARCHER-REPLACEMENT.md",
     "platformAdr": "ROADMAP-SALTMARCHER-PLATFORM-ADR.md",
     "architecture": "ARCHITECTURE.md#plattformoffene-saltmarcher-ablösung",
@@ -62,17 +62,43 @@
       "review": "Passed on exact source commit 0497661e21848fd16454b088ffe4aa1230bc62d9 after repairs for shared contract composition, repository-wide write/delete receipts, import identity mapping, canonical archive bytes, retry/concurrency and ratification blockers.",
       "limits": "No executable prototype or target-platform decision exists yet. Device/cloud inputs, ADR-P01 through ADR-P04, ADR-C01 and the additional distribution, extension, audio/background-work and three-option evidence remain open."
     },
+    "adrP01": {
+      "run": "ADR-P01",
+      "state": "no_go_checked_reviewed_cleaned",
+      "candidateCommit": "82bf9854a6a4a1859eda1841055023083cd2f3a6",
+      "reviewedEvidenceCommit": "8f0e64904a95a4b02aaf545aa42a47108a1476e5",
+      "cleanupCommit": "9c412c21751a67d6126c825d64552f4445e2589f",
+      "contract": "tools/adr-prototypes/contracts/p01-v1/contract.mjs",
+      "aggregate": "tools/adr-prototypes/evidence/p01-aggregate.json",
+      "decision": "No-Go: a same-process Node-FS harness does not prove the required desktop isolation or native durable file boundary.",
+      "evidence": {
+        "receipt": "/home/aaron/.cache/dungeon-native-qa/smr-adr-prototypes/ADR-P01/p01-1791557969723-ad3a886d-41ac-425d-8134-fd4a27e988e3/receipt.json",
+        "receiptSha256": "2c7de2ab4bbacd80564ee844c62888c89cc23d1e0f26433b53137529a447071c",
+        "sourceCommit": "82bf9854a6a4a1859eda1841055023083cd2f3a6",
+        "dirty": false
+      },
+      "review": "Final review passed the evidence as an honest No-Go. Cleanup review passed after removing the executable harness, P01 test and temporary command while retaining only the versioned contract and aggregate.",
+      "limits": "No platform decision and no authorization for P02. Windows, macOS, GUI, native durability, real process isolation, restart OS boundary, parent/child retention and subscribe streaming remain unproven or not run."
+    },
+    "adrP01H02": {
+      "run": "ADR-P01-H02-R01",
+      "state": "plan_passed_implementation_pending",
+      "document": "ROADMAP-SALTMARCHER-ADR-P01-H02-PLAN.md",
+      "result": "Selects a bounded real Electron renderer/preload/main/utility chain with one native Linux root-FD durability helper and explicit process, restart, fault, cleanup and evidence gates.",
+      "review": "Independent read-only review passed exact shared commit 0dd314c1772ebd91f3375d8660f964a731bdf215 without a mandatory finding.",
+      "limits": "Reviewed planning evidence only. No executable H02 proof, target-platform decision or P02 authorization. Windows and macOS remain not-run."
+    },
     "coordination": {
       "local": "Three new local goal threads coordinate integration. Existing Hex/Atlas, City and Dungeon colleagues on three other devices retain their workstreams, evidence and non-overlapping ownership and contribute requirements to the platform decision.",
       "cloud": "Prior GM-UX-CLOUD worker is reassigned through GitHub Issue #1 to independent architecture and technical review only. Other cloud colleagues retain their established specialist review/test responsibilities.",
       "gui": "At most one graphical host/original instance per device; static and non-graphical checks may run separately."
     },
-    "next": "ADR-P01 implements the isolated desktop-shell map proof on a clean candidate branch and must pass its fault, restart, renderer-boundary, OS-durability and cleanup reviews before ADR-P02 begins. The platform ADR remains proposed."
+    "next": "Implement and independently review the bounded Linux ADR-P01-H02 candidate, then perform its required cleanup review. ADR-P02 remains blocked and the platform ADR remains proposed."
   },
   "saltMarcherCatalogEncounter": {
     "schemaVersion": 1,
-  "updated": "2026-10-09T15:03:43Z",
-  "state": "ce01_c01_plan_reviewed_implementation_next_physical_input_open",
+    "updated": "2026-10-09T15:31:16Z",
+    "state": "ce02_plan_reviewed_i01_next_ce01_physical_open",
     "plan": "ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md",
     "architecture": "ARCHITECTURE.md#geplante-katalog--und-encounter-erweiterung",
     "sourceRepository": "ThonkTank/Salt-Marcher",
@@ -340,7 +366,7 @@
     },
     "ce01C01Implementation": {
       "run": "CE-01-C01-I01",
-      "state": "completed_checked_host_passed_review_pending",
+      "state": "completed_checked_host_passed_review_changes_required",
       "commit": "5759cc9b3b2f016849f3e8325e0f7effe59edc2b",
       "result": "One shared mapping now owns restore drafts and reset draft keys, while one host-neutral helper owns sort, direction and page defaults; the content controller no longer duplicates those rules.",
       "verification": {
@@ -358,11 +384,57 @@
       },
       "limits": "Independent cleanup review pending. Automated host input does not close physical keyboard/mouse, screenreader or other-platform acceptance."
     },
-    "next": "Independently review CE-01-C01-I01. CE-02 planning may proceed, but implementation waits for the cleanup review and CE-01 remains without full approval while physical-input, screenreader and other-platform gates are open."
+    "ce01C01Review": {
+      "run": "CE-01-C01-R01",
+      "state": "passed_after_repair",
+      "reviewedCommit": "5759cc9b3b2f016849f3e8325e0f7effe59edc2b",
+      "finding": "CreatureCatalogViewContent still names six text-filter draft keys manually and implements the name draft through a separate search path, so CREATURE_CATALOG_DRAFT_FILTERS is not yet the only pair source.",
+      "retained": "Restore/reset/default behavior, 246 tests, bundle identity, all three real-host receipts and honest open physical/screenreader/platform gates passed review.",
+      "repairPlan": "ROADMAP-SALTMARCHER-CE01-C01-REPAIR-PLAN.md",
+      "reReview": "CE-01-C01-R02 passed on c9dfde7 after confirming the sole pair source, shared content path, retained name UX, 247 tests, exact build and all three normal-exit host receipts."
+    },
+    "ce01C01RepairPlan": {
+      "run": "CE-01-C01-N01-P01",
+      "state": "completed_static_validation_reviewed",
+      "document": "ROADMAP-SALTMARCHER-CE01-C01-REPAIR-PLAN.md",
+      "result": "The plan makes CREATURE_CATALOG_DRAFT_FILTERS the sole seven-pair source and routes the name search through the same content path while retaining its UX.",
+      "review": "Independent read-only review on 9bbacb5 passed without a mandatory finding.",
+      "limits": "Planning only; no repair implementation or cleanup approval."
+    },
+    "ce01C01Repair": {
+      "run": "CE-01-C01-N01",
+      "state": "completed_checked_host_passed_rereviewed",
+      "commit": "c1582b384acbc5025ad529c17e664bc5fb04ef8f",
+      "result": "All seven text filters derive their draft key from the canonical mapping and use one content input/publish path; the name input retains its placeholder, ARIA label, focus, debounce and Enter behavior.",
+      "verification": {
+        "check": "passed",
+        "tests": {"passed": 247, "failed": 0},
+        "build": "passed",
+        "mainBytes": 1338655,
+        "mainSha256": "9ea37b4c8942ce1df4739e3f7786dde8fd62fbec227198023f85fa61275a63d3",
+        "mainJsGrowthBytes": 149285,
+        "evidence": [
+          "/home/aaron/.cache/dungeon-native-qa/evidence/1791559080712-ce01-catalog-edit",
+          "/home/aaron/.cache/dungeon-native-qa/evidence/1791559092369-ce01-catalog-reopen",
+          "/home/aaron/.cache/dungeon-native-qa/evidence/1791559102197-ce01-catalog-damaged-edit"
+        ]
+      },
+      "review": "CE-01-C01-R02 passed without a remaining mandatory finding.",
+      "limits": "Cleanup is reviewed; physical keyboard/mouse, screenreader and other-platform acceptance remain open."
+    },
+    "ce02Plan": {
+      "run": "CE-02-P01-R01",
+      "state": "passed_implementation_pending",
+      "document": "ROADMAP-SALTMARCHER-CE02-PLAN.md",
+      "result": "Plans one state-retaining seven-section shell with typed read-only owner providers and separate implementation/review packages for Items, saved Encounters, NPCs, Factions, Places and Encounter Tables.",
+      "review": "Independent read-only review passed exact shared commit 42808d372363cb1e9c8c8fc0ac8fca315cecd02c without a mandatory finding.",
+      "limits": "Reviewed planning evidence only. Six new data providers and all CE-02 acceptance remain open; honest unavailable states do not count as delivered features."
+    },
+    "next": "Implement and independently review only CE-02-I01, retaining one real Monster provider and six explicit unavailable providers. CE-01 remains without full approval while physical-input, screenreader and other-platform gates are open."
   },
   "cityPlans": {
     "schemaVersion": 1,
-    "updated": "2026-10-09T15:08:41.202758+00:00",
+    "updated": "2026-10-09T15:18:47.917996+00:00",
     "plan": "ROADMAP-CITIES.md",
     "state": "planned_not_implemented",
     "comparisonMode": "functional_equivalence_and_independent_usability_tests",
@@ -1570,7 +1642,8 @@
         "originalEvidence": [
           "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/watabou-walled-port-overview.jpg",
           "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/watabou-generate-features.jpg",
-          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/manifest.json"
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/manifest.json",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i32-generation-20261009/manifest.json"
         ],
         "task": "Dorf und Stadt erzeugen",
         "phase": "CITY-02",
@@ -1587,14 +1660,27 @@
           "state": "not_run"
         },
         "status": "open",
-        "gap": "Direkte Ergebnis-/Menüprobe gesichert; weitere Vorgaben/Wirkungen, Versionsstand und eigener Produktvergleich offen.",
+        "gap": "Feature-Rebuild mit kontrolliertem URL-Vergleich direkt teilbelegt; Greens-Gruppe in Probe leer. Weitere Vorgaben/Wirkungen, Reproduzierbarkeit, Version und eigener Produktvergleich offen.",
         "independentFunctionalRequirement": true,
         "mappingCoverage": "related_project_criteria_only; CO requirement remains independently required",
         "originalProbe": {
           "state": "partial",
           "run": "CITY-00-I03-I",
           "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/manifest.json"
-        }
+        },
+        "originalProbes": [
+          {
+            "run": "CITY-00-I32-I",
+            "state": "partial",
+            "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i32-generation-20261009/manifest.json",
+            "result": "Visible generation controls differ from initial URL. Control Rebuild then Greens-only flag Rebuild: same seed/size, buildings499→544, fields4→7, districts7→8; other10 groups equal including empty greens. No unconditional green output or stable object preservation proved.",
+            "restorationClarification": {
+              "observedIn": "CITY-00-I33-I",
+              "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i33-roads-20261009/manifest.json",
+              "result": "I32 OFF was an immediate pending control only. I33 fresh tab shows GreensON; no durable global restoration was proved by I32."
+            }
+          }
+        ]
       },
       {
         "id": "CO-WAT-0002",
@@ -1610,7 +1696,9 @@
           "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/watabou-walled-port-detail.jpg",
           "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/manifest.json",
           "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i28-roof-20261009/manifest.json",
-          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i29-building-20261009/manifest.json"
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i29-building-20261009/manifest.json",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i30-processing-20261009/manifest.json",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i31-processing-output-20261009/manifest.json"
         ],
         "task": "Viertel und Dachdetail desselben Plans vergleichen",
         "phase": "CITY-07",
@@ -1627,7 +1715,7 @@
           "state": "not_run"
         },
         "status": "open",
-        "gap": "Gable/Hip/Block/Hidden direkt teilbelegt. Complex angeboten, nur Beschriftungen in zwei Beobachtungen, Lots stellt Karte wieder her; vollständige Complex-Wirkung/Ursache offen. Processing/Raised/Solids, Einzelbearbeitung/Persistenz, Version und eigener Vergleich offen.",
+        "gap": "Dach-/Display-/Processing-/Raised-/Solids-Sichtwirkung und Processing-Ausgabe buildings669→651 direkt teilbelegt. Complex vollständige Wirkung/Ursache, interne Geometrie-/ID-/Savewirkung und eigener Vergleich offen.",
         "independentFunctionalRequirement": true,
         "mappingCoverage": "related_project_criteria_only; CO requirement remains independently required",
         "originalProbe": {
@@ -1647,6 +1735,18 @@
             "state": "hip_hidden_visual_effect_complex_result_unverified",
             "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i29-building-20261009/manifest.json",
             "result": "Hip zeigt zusätzliche diagonale Dachflächenlinien. Hidden blendet gewöhnliche Gebäude aus, Mauern/Fluss/Küste/Straßen und markante dunkle Gebäude bleiben sichtbar. Complex ausgewählt: zwei Beobachtungen zeigen nur Beschriftung/Grid/Kompass statt Kartenflächen; nach Lots-Rücksetzung Karte wieder sichtbar. Keine brauchbare Complex-Gebäudewirkung oder Originalursache belegt. Processing None/Offset als Optionen gelesen, Offset unverändert."
+          },
+          {
+            "run": "CITY-00-I30-I",
+            "state": "processing_raised_solids_visual_effect_observed",
+            "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i30-processing-20261009/manifest.json",
+            "result": "Processing Offset→None→Offset verändert angezeigte Gebäudeformen/Abstände. Raised on→off→on reduziert betonte versetzte Gebäudekanten. Solids on→off→on ersetzt dunkle Füllungen markanter Gebäude durch helle Darstellung. Lots/Plain unverändert; keine Geometrie-/Export-/Speicherwirkung geprüft."
+          },
+          {
+            "run": "CITY-00-I31-I",
+            "state": "processing_actual_json_buildings_change_other13_equal",
+            "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i31-processing-output-20261009/manifest.json",
+            "result": "Processing Offset/None: tatsächliche JSON298842/293445 Bytes; nur buildings geändert, MultiPolygon669→651. Andere13 Gruppen wertgleich; gleiche Gruppenkennung buildings ist kein Beleg stabiler Einzelobjekt-IDs. Exportversion0.11.5 keine bestätigte UI-Version."
           }
         ]
       },
@@ -3140,7 +3240,9 @@
         "availability": "unknown",
         "observationKind": "direct",
         "originalEvidence": [
-          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/manifest.json"
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/manifest.json",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i33-roads-20261009/manifest.json",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i34-maximum-20261009/manifest.json"
         ],
         "task": "Straßenanschlüsse begrenzen",
         "phase": "CITY-05",
@@ -3156,14 +3258,28 @@
           "state": "not_run"
         },
         "status": "open",
-        "gap": "Originalmenü direkt sichtbar; konkrete Wirkungs-/Saveprobe und eigener Produktvergleich offen.",
+        "gap": "Number3 und Maximum/hub-Rebuild-Wirkung sowie bytegleiche Default-Rückstellungen direkt belegt; genaue Maximalregel/Torzählung, Einzelstraßen-/Savewirkung und eigener Produktvergleich offen.",
         "independentFunctionalRequirement": true,
         "mappingCoverage": "related_project_criteria_only; CO requirement remains independently required",
         "originalProbe": {
           "state": "partial",
           "run": "CITY-00-I03-I",
           "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/manifest.json"
-        }
+        },
+        "originalProbes": [
+          {
+            "run": "CITY-00-I33-I",
+            "state": "partial",
+            "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i33-roads-20261009/manifest.json",
+            "result": "Default/Maximum/Number visible. Default→Number3→Default Rebuild: gates=-1→3→-1 only URL change at same seed/size; roads5→4, walls changed, buildings544→528, fields7→8, districts8→7; other8 groups equal. Restoration byteequal. Exact gate count and Maximum effect unproved."
+          },
+          {
+            "run": "CITY-00-I34-I",
+            "state": "partial",
+            "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i34-maximum-20261009/manifest.json",
+            "result": "Maximum Rebuild replaces gates=-1 with hub=1 at same seed/size/other flags. roads5→10, walls/buildings/fields/districts changed; other8 groups equal. Default restoration byteequal. No numeric maximum formula or exact gate count proved."
+          }
+        ]
       },
       {
         "id": "CO-FTG-0030",
@@ -3961,7 +4077,7 @@
     ],
     "functionalInventoryStatus": {
       "state": "partial_inventory_not_accepted",
-      "run": "CITY-00-I29-I",
+      "run": "CITY-00-I34-I",
       "products": 3,
       "candidates": 64,
       "directFormAreas": 13,
@@ -4000,7 +4116,12 @@
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i26-20261009-r01/manifest.json",
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i27-forest-20261009/manifest.json",
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i28-roof-20261009/manifest.json",
-        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i29-building-20261009/manifest.json"
+        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i29-building-20261009/manifest.json",
+        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i30-processing-20261009/manifest.json",
+        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i31-processing-output-20261009/manifest.json",
+        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i32-generation-20261009/manifest.json",
+        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i33-roads-20261009/manifest.json",
+        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i34-maximum-20261009/manifest.json"
       ],
       "resultReferences": [
         {

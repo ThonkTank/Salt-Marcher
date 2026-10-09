@@ -62,6 +62,14 @@ readonly [CreatureCatalogTextFilter, CreatureCatalogDraftKey][] = [
   ["conditionImmunities", "conditionImmunitiesDraft"],
 ];
 
+export function creatureCatalogDraftKeyForFilter(
+  filterKey: CreatureCatalogTextFilter,
+): CreatureCatalogDraftKey {
+  const pair = CREATURE_CATALOG_DRAFT_FILTERS.find(([candidate]) => candidate === filterKey);
+  if (!pair) throw new Error(`Missing catalog draft mapping for ${filterKey}`);
+  return pair[1];
+}
+
 export interface CreatureCatalogFilterChip {
   readonly key: CreatureCatalogFilterKey;
   readonly value?: string;

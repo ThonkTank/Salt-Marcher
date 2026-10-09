@@ -1,7 +1,7 @@
 {
   "saltMarcherReplacement": {
     "date": "2026-10-09",
-    "state": "smr00_adr_prototype_plan_reviewed_p01_next",
+    "state": "smr00_adr_p01_h02_plan_reviewed_implementation_next",
     "plan": "ROADMAP-SALTMARCHER-REPLACEMENT.md",
     "platformAdr": "ROADMAP-SALTMARCHER-PLATFORM-ADR.md",
     "prototypePlan": "ROADMAP-SALTMARCHER-ADR-PROTOTYPES.md",
@@ -64,47 +64,76 @@
       "verification": "Fresh worktree at 2e9ea8c passes typecheck, 241 tests and build; real 1024x1024 colorable PNG is byte-identical for alpha 255/128/0; renderer bundle has no privileged imports. Two independent isolated Obsidian edit/reopen pairs pass on one product build with matching screenshots and stable per-profile V4 hashes.",
       "next": "Resume ADR-P01 on a fresh candidate branch. Desktop shell, utility persistence/fault matrix, OS matrix and full P01 remain open."
     },
+    "adrP01": {
+      "date": "2026-10-09",
+      "state": "no_go_checked_reviewed_cleaned",
+      "candidateBranch": "codex/adr-p01-i01",
+      "candidateCommit": "82bf9854a6a4a1859eda1841055023083cd2f3a6",
+      "reviewedEvidenceCommit": "8f0e64904a95a4b02aaf545aa42a47108a1476e5",
+      "cleanupCommit": "9c412c21751a67d6126c825d64552f4445e2589f",
+      "contract": "tools/adr-prototypes/contracts/p01-v1/contract.mjs",
+      "aggregate": "tools/adr-prototypes/evidence/p01-aggregate.json",
+      "decision": "No-Go: the Node-FS same-process harness does not prove native OS durability or desktop process isolation.",
+      "externalReceipt": {
+        "path": "/home/aaron/.cache/dungeon-native-qa/smr-adr-prototypes/ADR-P01/p01-1791557969723-ad3a886d-41ac-425d-8134-fd4a27e988e3/receipt.json",
+        "sha256": "2c7de2ab4bbacd80564ee844c62888c89cc23d1e0f26433b53137529a447071c",
+        "sourceCommit": "82bf9854a6a4a1859eda1841055023083cd2f3a6",
+        "dirty": false
+      },
+      "review": "Independent final review confirmed the clean receipt binding, honest not-proven/not-run/boundary-no-go gates, 243 tests and no platform Go claim. Independent cleanup review confirmed only the versioned contract and aggregate remain; current suite passed 245 tests and the product bundle stayed byte-identical.",
+      "limits": "P02 is not authorized. Windows, macOS, GUI, native durability, real desktop process isolation, restart OS boundary, parent/child retention and subscribe streaming remain unproven or not run. The platform ADR remains proposed.",
+      "next": "Plan a new architecture hypothesis with real process isolation and platform-native durable file primitives, then review it before any replacement P01 execution."
+    },
+    "adrP01H02": {
+      "date": "2026-10-09",
+      "state": "plan_passed_implementation_pending",
+      "plan": "ROADMAP-SALTMARCHER-ADR-P01-H02-PLAN.md",
+      "hypothesis": "A real sandboxed Electron renderer/preload/main/utility chain delegates bounded Linux durability operations to one native root-FD helper; success qualifies only a full cross-platform P01 rerun.",
+      "limits": "Plan only. No H02 implementation, platform Go or P02 authorization. Windows and macOS remain not-run.",
+      "review": "ADR-P01-H02-R01 passed independently on exact shared commit 0dd314c1772ebd91f3375d8660f964a731bdf215 with no mandatory finding; implementation-candidate cloud architecture/security review remains required."
+    },
     "open": [
-      "Executable ADR-P01 through ADR-P04 and ADR-C01 proof, review, repair and cleanup runs",
+      "Replacement architecture hypothesis after ADR-P01 No-Go; ADR-P02 through ADR-P04 and ADR-C01 remain blocked",
       "All SMR-01 through SMR-11 implementation, review, repair and cleanup gates",
       "SMR-00-ADR-01 target-platform and migration-path decision",
       "Per-slice source-to-target mapping and host persistence/security decisions"
     ],
     "nextRun": {
-      "id": "ADR-P01",
-      "kind": "executable_prototype_implementation",
-      "owner": "one_local_integration_thread_with_independent_review",
-      "focus": "Build the isolated desktop-shell map proof within the plan-owned files, produce immutable receipts for renderer boundaries, restart, create/update/delete durability and OS evidence, then clean the harness after independent review"
+      "id": "ADR-P01-H02-I01",
+      "kind": "architecture_hypothesis_implementation",
+      "owner": "local_implementation_thread",
+      "focus": "Implement and evidence only the reviewed Linux Electron/utility/native-helper H02 candidate; preserve product bytes and keep ADR-P02 blocked"
     }
   },
   "saltMarcherCatalogEncounter": {
     "date": "2026-10-09",
-    "state": "ce01_c01_implementation_host_passed_review_pending_physical_input_open",
+    "state": "ce02_plan_reviewed_i01_next_ce01_physical_open",
     "plan": "ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md",
     "architecture": "ARCHITECTURE.md#geplante-katalog--und-encounter-erweiterung",
     "acceptance": "acceptance.json.saltMarcherCatalogEncounter",
     "currentRun": {
-      "id": "CE-01-C01-I01",
-      "kind": "cleanup_implementation",
-      "state": "completed_checked_host_passed_review_pending",
-      "focus": "Centralize catalog restore defaults and draft hydration after the real-host drift finding, derive reset keys from the same mapping and retain the repeatable H01 harness",
-      "plan": "ROADMAP-SALTMARCHER-CE01-C01-PLAN.md",
-      "result": "Restore defaults, seven draft pairs and reset draft keys now share one host-neutral mapping. Focused state/DOM coverage and all three automated real-Obsidian H01 scenarios passed on the exact clean candidate.",
+      "id": "CE-01-C01-R02",
+      "kind": "cleanup_repair_review",
+      "state": "passed",
+      "focus": "Independently verify the sole draft-pair source, shared content path, retained UX and exact-candidate automated host evidence",
+      "plan": "ROADMAP-SALTMARCHER-CE01-C01-REPAIR-PLAN.md",
+      "result": "Passed without a remaining mandatory finding after all seven text inputs were routed through the sole canonical pair source and one content input/publish path.",
       "verification": {
-        "sourceRevision": "5759cc9b3b2f016849f3e8325e0f7effe59edc2b",
+        "sourceRevision": "c1582b384acbc5025ad529c17e664bc5fb04ef8f",
         "check": "passed",
-        "tests": {"passed": 246, "failed": 0},
+        "tests": {"passed": 247, "failed": 0},
         "build": "passed",
-        "mainBytes": 1339259,
-        "mainSha256": "f29f86cb02547ee5f6b5767a247c7364ebaad1d2509df52cdd00752ad5ba7686",
-        "mainJsGrowthBytes": 149889,
+        "mainBytes": 1338655,
+        "mainSha256": "9ea37b4c8942ce1df4739e3f7786dde8fd62fbec227198023f85fa61275a63d3",
+        "mainJsGrowthBytes": 149285,
         "runs": [
-          "/home/aaron/.cache/dungeon-native-qa/evidence/1791558557553-ce01-catalog-edit",
-          "/home/aaron/.cache/dungeon-native-qa/evidence/1791558564140-ce01-catalog-reopen",
-          "/home/aaron/.cache/dungeon-native-qa/evidence/1791558569690-ce01-catalog-damaged-edit"
+          "/home/aaron/.cache/dungeon-native-qa/evidence/1791559080712-ce01-catalog-edit",
+          "/home/aaron/.cache/dungeon-native-qa/evidence/1791559092369-ce01-catalog-reopen",
+          "/home/aaron/.cache/dungeon-native-qa/evidence/1791559102197-ce01-catalog-damaged-edit"
         ]
       },
-      "limits": "Independent cleanup review is pending. Automated input is not physical keyboard/mouse evidence; physical input, screenreader and non-Linux platform acceptance remain open."
+      "review": "Independent read-only re-review on c9dfde7 confirmed code, 247 tests, build identity and all three normal-exit host receipts.",
+      "limits": "The cleanup gate is closed, but CE-01 remains without full approval because physical input, screenreader and non-Linux platform acceptance remain open."
     },
     "implementationRun": {
       "id": "CE-01-I01",
@@ -236,17 +265,26 @@
       "testSlotClarification": "one graphical host/original instance per device; colleagues on separate devices may test in parallel",
       "cloudReviewHandoff": "Requested in GitHub Issue #1 comment 6081912800: prior GM-UX-CLOUD worker stops feature implementation and focuses architecture/technical reviews of local packages."
     },
-    "verified": "CE-00-I01 passed 210 tests but R01 required changes. CE-00-N01 and R02 passed. CE-01-I03 passed check, DOM harness and build. CE-01-R01 found unique-view concurrency and selector-unsafe ID paths; CE-01-N01 repaired both. CE-01-H01 passed its independently reviewed automated scope. CE-01-C01-I01 now passes 246 tests and all three automated real-host scenarios on exact clean SHA 5759cc9; cleanup review plus physical input, screenreader and other-platform acceptance remain open.",
+    "ce02Plan": {
+      "id": "CE-02-P01",
+      "kind": "feature_plan",
+      "state": "passed_implementation_pending",
+      "plan": "ROADMAP-SALTMARCHER-CE02-PLAN.md",
+      "result": "Defines one seven-section state-retaining catalog shell, typed read-only owner providers, sequential delivery for Items, saved Encounters, NPCs, Factions, Places and Encounter Tables, and honest unavailable states until each owner is real.",
+      "review": "CE-02-P01-R01 passed independently on exact shared commit 42808d372363cb1e9c8c8fc0ac8fca315cecd02c without a mandatory finding.",
+      "limits": "Reviewed plan only. No CE-02 implementation or new data-owner approval. CE-01 physical input, screenreader and non-Linux gates remain open."
+    },
+    "verified": "CE-00 and CE-01 implementation/review/repair cycles passed their scoped gates. CE-01-H01 passed its independently reviewed automated scope. CE-01-C01-N01 passes 247 tests and all three automated real-host scenarios on exact clean SHA c1582b3; R02 closed the cleanup gate. Physical input, screenreader and other-platform acceptance remain open.",
     "open": [
-      "CE-01 physical keyboard/mouse, screenreader and other-platform acceptance; CE-01-C01 cleanup review; all CE-02 through CE-07 runs",
+      "CE-01 physical keyboard/mouse, screenreader and other-platform acceptance; all CE-02 through CE-07 runs",
       "Pinned DMG-2014 encounter math and golden masters",
       "Physical catalog input acceptance cannot be replaced by Playwright automation"
     ],
     "nextRun": {
-      "id": "CE-01-C01-R01",
-      "kind": "cleanup_review",
-      "plan": "ROADMAP-SALTMARCHER-CE01-C01-PLAN.md",
-      "focus": "Independently review the exact cleanup diff, shared restore/reset draft mapping, focused tests, build inventory and all three exact-candidate real-host receipts"
+      "id": "CE-02-I01",
+      "kind": "implementation",
+      "plan": "ROADMAP-SALTMARCHER-CE02-PLAN.md",
+      "focus": "Implement only the reviewed seven-section shell/state/provider boundary with the existing Monster provider and six honest unavailable providers"
     }
   },
   "repositoryWorkflow": {
@@ -4032,17 +4070,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I30-P",
+      "id": "CITY-00-I35-P",
       "kind": "reference_planning",
-      "startedAt": "2026-10-09T15:10:57.743395+00:00",
-      "focus": "Processing/Raised/Solids konkret planen",
+      "startedAt": "2026-10-09T15:37:40.456491+00:00",
+      "focus": "Small-Größenwahl",
       "state": "completed",
-      "result": "Drei getrennte Darstellungsproben mit Rücksetzung und begrenztem Scope geplant."
+      "result": "Kontrollierter eigener Größen-/Seed-/Ausgabevergleich geplant."
     },
     "nextRun": {
-      "id": "CITY-00-I30-I",
-      "kind": "reference_probe",
-      "focus": "Processing/Raised/Solids-Wirkung direkt prüfen"
+      "id": "CITY-00-I35-I",
+      "kind": "reference_implementation",
+      "focus": "Small und sichtbaren Rückweg prüfen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",

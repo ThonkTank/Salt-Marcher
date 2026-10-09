@@ -1,0 +1,47 @@
+{
+  "schemaVersion": "p01-v1",
+  "package": "ADR-P01",
+  "candidateCommit": "82bf9854a6a4a1859eda1841055023083cd2f3a6",
+  "baseCommit": "ae82294d61e31adbb1c83589a4fdedf448d3c6df",
+  "lockfileSha256": "fc191b566e05121497fa63f3795de7e00ed3d0d688e43e61a6d25f4c5d6fb624",
+  "platform": { "os": "linux", "arch": "x64", "node": "v22.22.2" },
+  "sourceTruth": {
+    "model": "src/model.ts",
+    "session": "src/session.ts",
+    "commands": "src/commands.ts",
+    "persistence": "src/persistence.ts",
+    "renderer": "src/renderer.ts"
+  },
+  "fixture": { "id": "large-native-v4-phase7", "entityCount": 4295 },
+  "checks": {
+    "rendererBoundary": "harness-only; desktop isolation not-run",
+    "mapOpenCommandSaveRestart": "narrow-harness-passed; restart/OS-boundary not-proven",
+    "createUpdateDeleteReceipts": "narrow-receipt-passed",
+    "updateRecovery": "partial-node-fs-not-proven",
+    "deleteRecovery": "partial-node-fs-not-proven",
+    "receiptRetention": "passed",
+    "rootEscape": "passed",
+    "symlinkEscape": "passed",
+    "parentSymlinkMutation": "detected-by-harness",
+    "assetReadHash": "passed",
+    "invalidationDTO": "passed",
+    "externalEvidenceReceipt": "bound-to-clean-run; hardware/fault inventory not-run",
+    "nativeDurabilityPrimitive": "boundary-no-go: Node fs does not prove openat2/renameat2/dir-fd/file-identity",
+    "parentChildRetention": "not-proven",
+    "subscribeStream": "not-run: one-shot invalidation DTO only",
+    "largeFixtureDigest": "passed"
+  },
+  "tests": { "npmTest": { "passed": 243, "failed": 0 }, "npmRunCheck": "passed", "npmRunBuild": "passed" },
+  "bundle": { "mainSha256": "3a383cbc8853133e4d55af388c86ec70e93230cee8dffc32ba35cf0676f3cdad", "mainBytes": 1339676, "mainJsGrowthBytes": 150306 },
+  "platformMatrix": { "linux": "harness-measured; durability-boundary-no-go", "windows": "not-run", "macos": "not-run", "gui": "not-run" },
+  "decision": "No-Go: native OS durability and desktop-process isolation remain unproven; harness evidence is retained for follow-up",
+  "evidenceCommand": "npm run adr:p01",
+  "externalEvidence": {
+    "dirty": false,
+    "receiptId": "p01-1791557969723-ad3a886d-41ac-425d-8134-fd4a27e988e3",
+    "receiptPath": "/home/aaron/.cache/dungeon-native-qa/smr-adr-prototypes/ADR-P01/p01-1791557969723-ad3a886d-41ac-425d-8134-fd4a27e988e3/receipt.json",
+    "receiptSha256": "2c7de2ab4bbacd80564ee844c62888c89cc23d1e0f26433b53137529a447071c",
+    "sourceCommit": "82bf9854a6a4a1859eda1841055023083cd2f3a6"
+  },
+  "dirty": false
+}

@@ -5,6 +5,7 @@ import { parseHTML } from "linkedom";
 import bundledSrd from "../src/features/catalog/data/srd-5.1.generated.json";
 import { CreatureCatalog, SRD_5_1_NOTICE } from "../src/features/catalog/creature-catalog";
 import { CreatureCatalogViewContent } from "../src/features/catalog/creature-catalog-view-content";
+import { CREATURE_CATALOG_DRAFT_FILTERS } from "../src/features/catalog/creature-catalog-view-state";
 
 interface DomWindow {
   readonly Event: typeof Event;
@@ -61,6 +62,9 @@ test("catalog DOM exposes advanced filters, chips, reset, ARIA sorting, notice a
     page: view.getState().page }, { sort: "name", direction: "asc", page: 0 });
   assert.equal(root.querySelector('[data-focus-key="sort-name"]')?.closest("th")
     ?.getAttribute("aria-sort"), "ascending");
+  assert.equal(root.querySelector<HTMLInputElement>('[data-focus-key="search"]')?.placeholder, "Name suchen");
+  assert.equal(root.querySelector<HTMLInputElement>('[data-focus-key="search"]')
+    ?.getAttribute("aria-label"), "Monstername suchen");
   assert.equal(root.querySelectorAll(".dn-catalog-filters input").length, 13);
   assert.equal(root.querySelectorAll(".dn-catalog-filters select").length, 5);
   choose(root, window, "type", "Dragon");
@@ -102,6 +106,23 @@ test("catalog DOM exposes advanced filters, chips, reset, ARIA sorting, notice a
   assert.equal(root.querySelector(".dn-catalog-detail h2")?.textContent, selectedName);
   root.querySelector<HTMLElement>(".dn-catalog-detail")!.dispatchEvent(key(window, "Escape"));
   assert.equal(root.querySelector(".dn-catalog-detail h2"), null);
+  await view.onClose();
+});
+
+test("every catalog text input publishes through the canonical draft mapping", async () => {
+  const { view, root, window } = await openedView();
+  for (const [filterKey, draftKey] of CREATURE_CATALOG_DRAFT_FILTERS) {
+    const focusKey = filterKey === "text" ? "search"
+      : filterKey === "conditionImmunities" ? "condition-immunities" : filterKey;
+    const input = root.querySelector<HTMLInputElement>(`[data-focus-key="${focusKey}"]`)!;
+    const value = `probe-${filterKey}`;
+    input.value = value;
+    input.dispatchEvent(event(window, "input"));
+    input.dispatchEvent(key(window, "Enter"));
+    const state = view.getState();
+    assert.equal(state[filterKey], value);
+    assert.equal(state[draftKey], value);
+  }
   await view.onClose();
 });
 
