@@ -101163,6 +101163,21 @@
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd038-host-fixed/evidence/1791210420855-verwaltung-karte-datei-reopen/dd038-map-size.json"
           ],
           "gap": "Vollständige Kartenwirkung weiterer Elementarten und globale Eingabegrenzen bleiben offen."
+        },
+        "followUpPhase1Implementation": {
+          "state": "partial_candidate_menu_reliability_open",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "hostBuildSha256": "35e9e137027ffbdd53b975e0370a263a397c753ee0d5323197e7220c9554fa35",
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-host-20261009/implementation.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-host-20261009/evidence/1791516282483-parity-tools-phase1-resize-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-host-20261009/evidence/1791516293218-parity-tools-phase1-resize-reopen/result.json"
+          ],
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd038/REPORT.md"
+          ],
+          "measuredScope": "Menü öffnete im bestandenen Hostlauf den Dialog mit vier Randfeldern, Warnung, Übernehmen, Abbrechen und X.",
+          "remaining": "Spätere Kaltstarts öffneten den Dialog beim ersten Menüklick nicht zuverlässig; unabhängiger Review offen."
         }
       },
       {
@@ -111163,7 +111178,23 @@
           ],
           "gap": "Der neu gespeicherte Top-Resize wurde in keinem weiteren frischen Prozess geöffnet. Acht-Slot-Terrain-Hostlauf zweimal durch Testnavigation vor Resize abgebrochen; keine neue Abnahme."
         },
-        "inventoryNote": "Terrain-Resize-IL: beide Masken erhalten neue Randpixel als RGBA (255,0,0,0), alte Samples werden um linke/obere Randfelder verschoben und außerhalb abgeschnitten; History wird nach Größenänderung geleert. Integrierter Helfer und Kerntest vorhanden, direkte Original-/Host-Randbyte-, Bild- und Frischöffnungspaarung offen."
+        "inventoryNote": "Terrain-Resize-IL: beide Masken erhalten neue Randpixel als RGBA (255,0,0,0), alte Samples werden um linke/obere Randfelder verschoben und außerhalb abgeschnitten; History wird nach Größenänderung geleert. Integrierter Helfer und Kerntest vorhanden, direkte Original-/Host-Randbyte-, Bild- und Frischöffnungspaarung offen.",
+        "followUpPhase1Implementation": {
+          "state": "partial_candidate_review_pending",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "hostBuildSha256": "35e9e137027ffbdd53b975e0370a263a397c753ee0d5323197e7220c9554fa35",
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-host-20261009/implementation.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-host-20261009/evidence/1791516282483-parity-tools-phase1-resize-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-host-20261009/evidence/1791516293218-parity-tools-phase1-resize-reopen/result.json"
+          ],
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd038/REPORT.md",
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd038-history/REPORT.md"
+          ],
+          "measuredScope": "Oben +1 verschob Building-Polygon und Objekt um ein Feld, 8×8 → 8×9; Save und frischer Hoststart bytegleich.",
+          "remaining": "Oberer Beschnitt, weitere Elementarten und unabhängiger Review offen."
+        }
       },
       {
         "id": "DD-038.03",
@@ -111461,7 +111492,22 @@
           ],
           "gap": "Eine neue Aktion nach Resize und deren Undo wurde im Original noch nicht geprüft. Acht-Slot-Terrain-Hostlauf zweimal durch Testnavigation vor Resize abgebrochen; keine neue Abnahme."
         },
-        "inventoryNote": "Terrain-Resize-IL: beide Masken erhalten neue Randpixel als RGBA (255,0,0,0), alte Samples werden um linke/obere Randfelder verschoben und außerhalb abgeschnitten; History wird nach Größenänderung geleert. Integrierter Helfer und Kerntest vorhanden, direkte Original-/Host-Randbyte-, Bild- und Frischöffnungspaarung offen."
+        "inventoryNote": "Terrain-Resize-IL: beide Masken erhalten neue Randpixel als RGBA (255,0,0,0), alte Samples werden um linke/obere Randfelder verschoben und außerhalb abgeschnitten; History wird nach Größenänderung geleert. Integrierter Helfer und Kerntest vorhanden, direkte Original-/Host-Randbyte-, Bild- und Frischöffnungspaarung offen.",
+        "followUpPhase1Implementation": {
+          "state": "partial_candidate_review_pending",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "hostBuildSha256": "35e9e137027ffbdd53b975e0370a263a397c753ee0d5323197e7220c9554fa35",
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-host-20261009/implementation.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-host-20261009/evidence/1791516282483-parity-tools-phase1-resize-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-host-20261009/evidence/1791516293218-parity-tools-phase1-resize-reopen/result.json"
+          ],
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd038-history/REPORT.md"
+          ],
+          "measuredScope": "Warnung sichtbar; nach Oben +1 war auch ein zuvor vorhandener Undo-Schritt nicht mehr erreichbar; Save und frischer Hoststart bestanden.",
+          "remaining": "Neue Aktionen nach Resize, bestehende Redo-Verzweigung und unabhängiger Review offen."
+        }
       },
       {
         "id": "DD-038.07",
@@ -111523,6 +111569,21 @@
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd038-host-fixed/evidence/1791210420855-verwaltung-karte-datei-reopen/dd038-map-size.json"
           ],
           "gap": "Weitere Randrichtungen und Elementarten sind noch nicht gleichwertig verglichen."
+        },
+        "followUpPhase1Implementation": {
+          "state": "partial_candidate_review_pending",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "hostBuildSha256": "35e9e137027ffbdd53b975e0370a263a397c753ee0d5323197e7220c9554fa35",
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-host-20261009/implementation.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-host-20261009/evidence/1791516282483-parity-tools-phase1-resize-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-host-20261009/evidence/1791516293218-parity-tools-phase1-resize-reopen/result.json"
+          ],
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd038-history/REPORT.md"
+          ],
+          "measuredScope": "Übernehmen setzte Oben +1, verschob Building und Objekt, machte die Karte dirty und speicherte sie für bytegleiche Neuöffnung.",
+          "remaining": "Andere Randrichtungen, Crops und unabhängiger Review offen."
         }
       },
       {
@@ -111584,6 +111645,21 @@
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd038-host-fixed/evidence/1791210420855-verwaltung-karte-datei-reopen/dd038-map-size.json"
           ],
           "gap": "Die Cancel-Wirkung auf Karte und History im Original ist noch nicht direkt gemessen."
+        },
+        "followUpPhase1Implementation": {
+          "state": "host_candidate_original_gap_open",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "hostBuildSha256": "35e9e137027ffbdd53b975e0370a263a397c753ee0d5323197e7220c9554fa35",
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-host-20261009/implementation.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-host-20261009/evidence/1791516282483-parity-tools-phase1-resize-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-host-20261009/evidence/1791516293218-parity-tools-phase1-resize-reopen/result.json"
+          ],
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd038/REPORT.md"
+          ],
+          "measuredScope": "Host-Abbrechen schloss den Dialog bei unveränderten Eingabefeldern ohne Karten-, Datei- oder History-Änderung.",
+          "remaining": "Cancel nach unbestätigter Eingabe und Originalwirkung direkt messen; Menüzuverlässigkeit und unabhängiger Review offen."
         }
       },
       {
@@ -117340,6 +117416,21 @@
             "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/dd038-host-fixed/evidence/1791210420855-verwaltung-karte-datei-reopen/dd038-map-size.json"
           ],
           "gap": "Die X-Wirkung auf Karte und History im Original ist noch nicht direkt gemessen."
+        },
+        "followUpPhase1Implementation": {
+          "state": "host_candidate_original_gap_open",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "hostBuildSha256": "35e9e137027ffbdd53b975e0370a263a397c753ee0d5323197e7220c9554fa35",
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-host-20261009/implementation.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-host-20261009/evidence/1791516282483-parity-tools-phase1-resize-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-host-20261009/evidence/1791516293218-parity-tools-phase1-resize-reopen/result.json"
+          ],
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/main/qa/dd038/REPORT.md"
+          ],
+          "measuredScope": "Host-X schloss den Dialog bei unveränderten Eingabefeldern ohne Karten-, Datei- oder History-Änderung.",
+          "remaining": "X nach unbestätigter Eingabe und Originalwirkung direkt messen; Menüzuverlässigkeit und unabhängiger Review offen."
         }
       },
       {

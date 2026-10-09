@@ -423,6 +423,9 @@ export class MapSettingsModal extends Modal {
           .setValue(current.buildingWear * 100)
           .setDynamicTooltip();
       });
+    this.contentEl.createEl("p", {
+      text: "Eine Änderung der Kartengröße kann nicht rückgängig gemacht werden. Der bisherige Undo-/Redo-Verlauf wird zurückgesetzt.",
+    });
     const margins: { -readonly [Key in keyof MapMargins]: number } = {
         left: 0,
         right: 0,
@@ -468,24 +471,28 @@ export class MapSettingsModal extends Modal {
             }),
         );
     update();
-    new Setting(this.contentEl).addButton((button) =>
-      button
-        .setButtonText("Übernehmen")
-        .setCta()
-        .onClick(() => {
-          try {
-            resizeMap(this.session, margins, {
-              wallShadows: wallShadows?.getValue() ?? current.wallShadows,
-              objectShadows: objectShadows?.getValue() ?? current.objectShadows,
-              buildingWear:
-                (buildingWear?.getValue() ?? current.buildingWear * 100) / 100,
-            });
-            this.close();
-          } catch (error) {
-            new Notice(String(error));
-          }
-        }),
-    );
+    new Setting(this.contentEl)
+      .addButton((button) =>
+        button.setButtonText("Abbrechen").onClick(() => this.close()),
+      )
+      .addButton((button) =>
+        button
+          .setButtonText("Übernehmen")
+          .setCta()
+          .onClick(() => {
+            try {
+              resizeMap(this.session, margins, {
+                wallShadows: wallShadows?.getValue() ?? current.wallShadows,
+                objectShadows: objectShadows?.getValue() ?? current.objectShadows,
+                buildingWear:
+                  (buildingWear?.getValue() ?? current.buildingWear * 100) / 100,
+              });
+              this.close();
+            } catch (error) {
+              new Notice(String(error));
+            }
+          }),
+      );
   }
   onClose(): void {
     this.generation++;

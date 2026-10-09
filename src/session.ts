@@ -421,6 +421,17 @@ export class Session {
     this.past.push(c);
     this.emit(event);
   }
+  /** Dungeondraft clears the available history after a confirmed map resize. */
+  clearHistory(): void {
+    if (!this.past.length && !this.future.length) return;
+    this.past = [];
+    this.future = [];
+    this.emit({
+      ids: new Set(), entityOrder: false, notes: new Set(), floors: false,
+      settings: false, content: false, revision: this.revision,
+      rulesRevision: this.rulesRevision, label: "Verlauf nach Kartengröße zurücksetzen",
+    });
+  }
   private apply(c: Command, inverse: boolean): ChangeEvent {
     const entityChanges = (c.entities ?? []).map((p) => {
       const change = inverse

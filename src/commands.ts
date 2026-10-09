@@ -858,6 +858,7 @@ export function resizeMap(
     settings: { before, after },
     entities: changes,
   });
+  if (values.some((value) => value !== 0)) session.clearHistory();
 }
 export function createReferenceImage(
   session: Session,
