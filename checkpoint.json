@@ -3480,11 +3480,11 @@
     },
     "buildingFloorEllipseRefillOriginal": {
       "case": "DD-038.05, Rechteckzug über elliptischem Innenloch",
-      "state": "ellipse_refill_original_replicated_host_open_case_open",
+      "state": "ellipse_refill_original_replicated_host_gap_case_open",
       "originalReport": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-ellipse-refill-original-20261009/original-probe.md",
       "originalAudit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-ellipse-refill-original-20261009/original-audit.json",
-      "measured": "Zwei Originalprozesse: 1×1-Wood-Rechteck über Ellipsenloch führt zu 36→43 Zellen, sieben neue Randzellen und links geöffneter Innenring; frische Originalöffnung erhält den Zustand.",
-      "open": "Identischen Host-GUI-Zug, Rohdatenpaar und getrennter Review durchführen; weitere Loch- und Randfolgen sowie DD-038-Endreview offen.",
+      "measured": "Zwei Originalprozesse: 1×1-Wood-Rechteck über dem Ellipsenloch erhält alle 36 Zellen und die Außenkontur, verkürzt den Innenring 28→23 Punkte; frische Originalöffnung erhält den Zustand.",
+      "open": "Host-GUI mit Zeigerpause erhält dagegen den 28-Punkt-Ring. Kontur gezielt reparieren, Rohdatenpaar und getrennten Review durchführen; weitere Loch- und Randfolgen sowie DD-038-Endreview offen.",
       "gate": "open"
     }
   },
