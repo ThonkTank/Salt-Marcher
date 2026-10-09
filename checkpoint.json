@@ -162,18 +162,28 @@
   "hexAtlasExecution": {
     "scope": "HEX-00 bis HEX-28 und sämtliche eingeordneten CITY-00 bis CITY-09 vollständig",
     "phase": "HEX-00",
-    "state": "move_path_final_inventory_repair_running",
+    "state": "early_ui_mapping_complete_review_and_cleanup_pending",
     "plan": "ROADMAP-HEX-00-REPAIR-PLAN.md",
     "currentRun": {
       "id": "HEX-00-N-I18",
       "kind": "repair_implementation",
       "startedAt": "2026-10-09T15:28:15.902396+02:00",
       "baseCommit": "dee15e4bc6def6458cd7536f486f2d44ac72d05d",
-      "state": "running",
+      "state": "checked_implementation_review_pending",
       "focus": "Three newly discovered selected Move Path inputs and five existing case mappings; no general variants",
       "evidence": [
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/move-path-final-repair-20261009-152726/manifest.json"
-      ]
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/move-path-final-repair-20261009-152726/manifest.json",
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/move-path-final-repair-20261009-152726/initial-fetch-noop.json",
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/move-path-final-repair-20261009-152726/start-integration-preservation.json",
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/move-path-final-repair-20261009-152726/native-process-close-proof.json",
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/move-path-final-repair-20261009-152726/mapping-preservation.json",
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/move-path-final-repair-20261009-152726/protection-and-native-proof.json",
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/move-path-final-repair-20261009-152726/catalog-partial.json",
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/move-path-final-repair-20261009-152726/catalog-complete-gate.json",
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/move-path-final-repair-20261009-152726/local-basis.json"
+      ],
+      "completedAt": "2026-10-09T13:49:11.061386+00:00",
+      "result": "Three final selected Move Path questions directly resolved; five prior UI/case mapping gaps appended with explicit scope,681 IDs/83 cases/113 historical sources retained. No early UI question remains;13 initial reviews and reference/cleanup gates still open."
     },
     "nextRun": {
       "id": "HEX-00-R02",
@@ -666,6 +676,24 @@
         "protectedFiles": 145,
         "productBuildSha256": "5b086c04c05b8011c64331ee6da7baa4831fcf06cc8712d2078731fcd03f3d4f",
         "integration": "/home/aaron/.cache/dungeon-native-qa/hex-00/remaining-contexts-repair-20261009-135556/pre-publication-integration-preservation.json"
+      },
+      "lastRepair": {
+        "run": "HEX-00-N-I18",
+        "originalFrames": 29,
+        "originalNormalExitCode": 0,
+        "remainingEarlyUiQuestions": 0,
+        "unmappedCases": 0,
+        "localTests": {
+          "passed": 222,
+          "failed": 0
+        },
+        "validatorTests": {
+          "passed": 26,
+          "failed": 0
+        },
+        "protectedFiles": 466,
+        "productBuildSha256": "346f607b16dbfea258dbcbaf234988f1201454a3ea11d14593ae397b559c49c1",
+        "limitations": "Local foreign-test tree distinct from exact clean repository check. No new Hex/city/large/physical/installation or changed-build core host approval; R02 and cleanup pending."
       }
     },
     "repairPlan": "ROADMAP-HEX-00-REPAIR-PLAN.md",
