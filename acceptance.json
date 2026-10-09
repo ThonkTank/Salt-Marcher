@@ -152319,7 +152319,7 @@
   "hexAtlas": {
     "scope": "HEX-00..28, shared native Atlas; phase-specific functional approvals only.",
     "currentPhase": "HEX-02",
-    "state": "native_island_copy_discard_checked_review_open",
+    "state": "r01_changes_required_repair_planned",
     "referenceGate": "wonderdraftParity.coverageReview HEX-00-R02",
     "requirements": [
       {
@@ -152515,6 +152515,24 @@
       "review": "/home/aaron/.cache/dungeon-native-qa/hex-01/p01-20261009151055/gm-n004-review.json",
       "cloudFreshProcess": "not_verified",
       "limits": "Empty grid layout/zoom/fit only; filled terrain, full Atlas/parity/physical/large map remain open."
-    }
+    },
+    "reviewFindings": [
+      {
+        "id": "HEX02-R01-01",
+        "priority": 1,
+        "state": "open",
+        "title": "Kopie nach Prozessverlust ohne Hauptdatei gezielt wiederherstellen",
+        "candidate": "c9e37ec749b38bfa71248bae7187c8d20ff5f693",
+        "review": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1#issuecomment-6087387441"
+      },
+      {
+        "id": "HEX02-R01-02",
+        "priority": 1,
+        "state": "open",
+        "title": "Angenommene Kopie bis Abschluss sichtbar und gegen native Dismisswege geschützt",
+        "candidate": "c9e37ec749b38bfa71248bae7187c8d20ff5f693",
+        "review": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1#issuecomment-6087387441"
+      }
+    ]
   }
 }
