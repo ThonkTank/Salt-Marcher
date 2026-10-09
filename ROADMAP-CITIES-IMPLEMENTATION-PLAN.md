@@ -481,3 +481,5 @@ CITY-00-I29-I Ergebnis: Hip zeigt zusätzliche diagonale Dachflächenlinien. Hid
 CITY-00-I29-R Start 2026-10-09T15:09:20.895270+00:00; 15 Rawhashes und Controls14 gelesen; Lots/Plain/Offset/Raised/Solids entsprechen Ausgangsbild02. Hip/Hidden sichtbar, Complex nur ungeklärte fehlende Kartenflächen mit erfolgreicher Lots-Rücksetzung; zwei Beobachtungen sind kein bewiesener terminaler Fehler. Dateigeometrie und Löschung nicht behauptet. Aufräumbefund: Snapshot führt Hip/Complex/Hidden pauschal als ungeprüft.
 
 CITY-00-I29-CP Start 2026-10-09T15:09:33.330639+00:00; Plan: Snapshot auf belegtes Hip/Hidden und ungeklärtes Complex differenzieren. Complex-Funktionspflicht nicht entfernen oder durch fehlende Kartenflächen ersetzen. Historische Belege erhalten;15 Rawhashes und64/24 offene Pflichten nachprüfen. CI/CR getrennt.
+
+CITY-00-I29-CI Start 2026-10-09T15:09:50.045310+00:00; Snapshot enthält Hip/Hidden-Sichtwirkung und konkrete Complex-Teilbeobachtung; Processing/Raised/Solids und Persistenz offen. Alte Belege und IDs erhalten.

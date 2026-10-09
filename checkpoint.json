@@ -4018,17 +4018,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I29-CP",
-      "kind": "cleanup_planning",
-      "startedAt": "2026-10-09T15:09:33.330639+00:00",
-      "focus": "Gebäudedarstellungsbelege CP",
-      "state": "completed",
-      "result": "Plan: Snapshot auf belegtes Hip/Hidden und ungeklärtes Complex differenzieren. Complex-Funktionspflicht nicht entfernen oder durch fehlende Kartenflächen ersetzen. Historische Belege erhalten;15 Rawhashes und64/24 offene Pflichten nachprüfen. CI/CR getrennt."
-    },
-    "nextRun": {
       "id": "CITY-00-I29-CI",
       "kind": "cleanup_implementation",
-      "focus": "Belege und Snapshot CI"
+      "startedAt": "2026-10-09T15:09:50.045310+00:00",
+      "focus": "Gebäudedarstellungsbelege CI",
+      "state": "completed",
+      "result": "Snapshot enthält Hip/Hidden-Sichtwirkung und konkrete Complex-Teilbeobachtung; Processing/Raised/Solids und Persistenz offen. Alte Belege und IDs erhalten."
+    },
+    "nextRun": {
+      "id": "CITY-00-I29-CR",
+      "kind": "cleanup_review",
+      "focus": "Belege und Snapshot CR"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
