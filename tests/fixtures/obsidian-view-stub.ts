@@ -10,6 +10,8 @@ export interface WorkspaceLeaf {
   readonly contentEl: HTMLElement;
 }
 
+export function setIcon(): void {}
+
 export interface App {
   readonly vault: { getName(): string };
 }

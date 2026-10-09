@@ -105,6 +105,14 @@ if (test) await build({
       builder.onResolve({ filter: /^obsidian$/ }, () => ({
         path: new URL("./tests/fixtures/obsidian-view-stub.ts", import.meta.url).pathname,
       }));
+      builder.onResolve({ filter: /^dungeon-compute-worker$/ }, () => ({
+        path: "compute-worker-stub",
+        namespace: "room-key-search-test",
+      }));
+      builder.onLoad({ filter: /.*/, namespace: "room-key-search-test" }, () => ({
+        contents: "export default '';",
+        loader: "js",
+      }));
     },
   }],
 });

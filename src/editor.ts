@@ -97,6 +97,7 @@ import {
   buildingWallStyle,
   type BuildingWallStyle,
 } from "./features/bau/building-wall-style";
+
 import { archiveEntities, archiveFloor, executeLinkedObjectChanges } from "./content";
 import { setIcon } from "obsidian";
 import {
@@ -122,6 +123,34 @@ import {
   type SelectionFrame,
   type SelectionTransform,
 } from "./selection";
+
+export interface RoomKeySearchNavigation {
+  allow(): boolean;
+  setFloor(floorId: string): void;
+  selectRoom(roomId: string): Promise<void>;
+  showSearch(): void;
+  openKey(): void;
+  focusSection(sectionId: string | undefined): boolean;
+  focusRoom(roomId: string): void;
+}
+
+/** Coordinate a search hit through the editor's existing transient view paths. */
+export async function activateRoomKeySearchNavigation(
+  session: Session,
+  target: RoomKeySearchTarget,
+  navigation: RoomKeySearchNavigation,
+): Promise<RoomKeySearchActivation> {
+  if (!roomKeySearchTargetExists(session, target)) return "stale";
+  if (!navigation.allow()) return "blocked";
+  navigation.setFloor(target.floorId);
+  await navigation.selectRoom(target.roomId);
+  if (!roomKeySearchTargetExists(session, target)) return "stale";
+  navigation.showSearch();
+  navigation.openKey();
+  if (!navigation.focusSection(target.sectionId)) return "stale";
+  navigation.focusRoom(target.roomId);
+  return "activated";
+}
 
 interface Gesture {
   pointer: number;
@@ -638,6 +667,7 @@ export class DungeonEditor {
       "Geschoss hinzufügen",
       () =>
         this.run(() => {
+          if (!this.allowKeyNavigation()) return;
           this.commitNote();
           this.cancel();
           const floor = addFloor(session);
@@ -1376,6 +1406,7 @@ export class DungeonEditor {
   }
   private async copyCurrentFloor(): Promise<void> {
     try {
+      if (!this.allowKeyNavigation()) return;
       this.commitNote();
       this.cancel();
       const sourceId = this.renderer.floorId;
@@ -1393,6 +1424,7 @@ export class DungeonEditor {
     }
   }
   private archiveCurrentFloor(): void {
+    if (!this.allowKeyNavigation()) return;
     this.commitNote();
     this.cancel();
     const current = this.renderer.floorId;
@@ -1733,6 +1765,7 @@ export class DungeonEditor {
     );
   }
   private setTool(tool: Tool): void {
+    if (!this.allowKeyNavigation()) return;
     this.run(() => this.commitNote());
     this.cancel();
     this.objectPreviewPoint = undefined;
@@ -1905,6 +1938,7 @@ export class DungeonEditor {
     }
     if (this.gesture || (e.button !== 0 && e.button !== 1))
       return;
+    if (!this.allowKeyNavigation()) return;
     this.commitNote();
     e.preventDefault();
     this.renderer.canvas.focus();
@@ -3517,19 +3551,22 @@ export class DungeonEditor {
   private async activateRoomKeySearchTarget(
     target: RoomKeySearchTarget,
   ): Promise<RoomKeySearchActivation> {
-    if (!roomKeySearchTargetExists(this.session, target)) return "stale";
-    if (!this.allowKeyNavigation()) return "blocked";
-    this.applyFloor(target.floorId);
-    await this.applySelection([target.roomId], false, target.roomId);
-    if (!roomKeySearchTargetExists(this.session, target)) return "stale";
-    this.showGroup("content");
-    this.showPanel("room-key-search", "Raum-Keys durchsuchen");
-    this.toggleKey(true);
-    const panel = this.structuredPanel;
-    if (!panel) return "stale";
-    panel.focus(target.sectionId);
-    this.renderer.focus(target.roomId);
-    return "activated";
+    return activateRoomKeySearchNavigation(this.session, target, {
+      allow: () => this.allowKeyNavigation(),
+      setFloor: (floorId) => this.applyFloor(floorId),
+      selectRoom: (roomId) => this.applySelection([roomId], false, roomId),
+      showSearch: () => {
+        this.showGroup("content");
+        this.showPanel("room-key-search", "Raum-Keys durchsuchen");
+      },
+      openKey: () => this.toggleKey(true),
+      focusSection: (sectionId) => {
+        if (!this.structuredPanel) return false;
+        this.structuredPanel.focus(sectionId);
+        return true;
+      },
+      focusRoom: (roomId) => this.renderer.focus(roomId),
+    });
   }
   private selectedNotePath(): string | undefined {
     const room = this.selectedRoom();
@@ -3595,8 +3632,6 @@ export class DungeonEditor {
     this.text.value = current;
   }
   commitNote(): void {
-    if (this.structuredPanel?.commit() === false)
-      throw new Error("Der geänderte Raumabschnitt konnte nicht übernommen werden.");
     if (
       !this.notePath ||
       this.text.disabled ||
@@ -3974,6 +4009,7 @@ export class DungeonEditor {
   }
   async save(): Promise<void> {
     if (this.saving) return;
+    if (!this.allowKeyNavigation()) return;
     this.saving = true;
     const pending = this.host.pending?.() === true;
     const wasInert = this.root.inert;
@@ -4003,7 +4039,6 @@ export class DungeonEditor {
     this.cancelColorSample?.();
     this.unsub?.();
     this.properties?.dispose();
-    this.structuredPanel?.commit();
     this.structuredPanel?.destroy();
     this.roomKeySearchPanel?.destroy();
     this.setMaximized(false);

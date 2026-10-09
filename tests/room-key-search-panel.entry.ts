@@ -2,6 +2,10 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { parseHTML } from "linkedom";
 import { addFloor, createRoom } from "../src/commands";
+import {
+  activateRoomKeySearchNavigation,
+  DungeonEditor,
+} from "../src/editor";
 import { StructuredKeyPanel } from "../src/key-panel";
 import { editMarkdownSection, structuredRoom } from "../src/room-key";
 import { RoomKeySearchPanel } from "../src/room-key-search-panel";
@@ -155,7 +159,14 @@ test("structured key navigation blocks a dirty draft until explicit apply or dis
   const navigation = root.querySelectorAll<HTMLButtonElement>(".dn-key-navigation button");
   navigation[0]!.click();
   assert.deepEqual(session.document(), before);
-  [...root.querySelectorAll<HTMLButtonElement>(".dn-key-controls button")]
+  navigation[navigation.length - 1]!.click();
+  assert.deepEqual(session.document(), before);
+  const controls = [...root.querySelectorAll<HTMLButtonElement>(".dn-key-controls button")];
+  controls.find((button) => button.textContent === "↑")!.click();
+  controls.find((button) => button.textContent === "↓")!.click();
+  controls.find((button) => button.textContent === "Entfernen")!.click();
+  assert.deepEqual(session.document(), before);
+  controls
     .find((button) => button.textContent === "Verwerfen")!.click();
   assert.equal(panel.allowNavigation(), true);
   editor.value = "Ausdrücklich übernommen";
@@ -165,6 +176,99 @@ test("structured key navigation blocks a dirty draft until explicit apply or dis
   assert.equal((structuredRoom(session, room.id).key.sections[0] as { markdown: string }).markdown,
     "Ausdrücklich übernommen");
   panel.destroy();
+});
+
+test("search activation uses the editor navigation contract without document mutation", async () => {
+  const prepared = new Session(newDocument("Aktivierung", 30, 20, undefined, undefined, 4)),
+    ground = prepared.floors.values().next().value!, upper = addFloor(prepared),
+    room = createRoom(prepared, upper.id, outline(10), "QA/Räume"),
+    section = structuredRoom(prepared, room.id).key.sections[0]!;
+  assert.equal(section.kind, "markdown");
+  editMarkdownSection(prepared, room.id, section.id, "", "Die blaue Fackel wartet.");
+  const session = new Session(prepared.document());
+  const before = session.document(), dirty = session.dirty,
+    historySize = session.historySize, revision = session.revision;
+  let floorId = ground.id, selected: string[] = [], shown = false, keyOpen = false,
+    focusedSection: string | undefined, focusedRoom: string | undefined;
+  const result = await activateRoomKeySearchNavigation(session, {
+    roomId: room.id, floorId: upper.id, sectionId: section.id,
+  }, {
+    allow: () => true,
+    setFloor: (id) => { floorId = id; },
+    selectRoom: async (id) => { selected = [id]; },
+    showSearch: () => { shown = true; },
+    openKey: () => { keyOpen = true; },
+    focusSection: (id) => { focusedSection = id; return true; },
+    focusRoom: (id) => { focusedRoom = id; },
+  });
+  assert.equal(result, "activated");
+  assert.equal(floorId, upper.id);
+  assert.deepEqual(selected, [room.id]);
+  assert.equal(shown, true);
+  assert.equal(keyOpen, true);
+  assert.equal(focusedSection, section.id);
+  assert.equal(focusedRoom, room.id);
+  assert.deepEqual(session.document(), before);
+  assert.equal(session.dirty, dirty);
+  assert.equal(session.historySize, historySize);
+  assert.equal(session.revision, revision);
+});
+
+test("dirty editor guard stops search, floor, selection and canvas before view mutation", async () => {
+  const session = new Session(newDocument("Blockiert", 30, 20, undefined, undefined, 4)),
+    floor = session.floors.values().next().value!, room = createRoom(session, floor.id,
+      outline(1), "QA/Räume"), section = structuredRoom(session, room.id).key.sections[0]!;
+  assert.equal(section.kind, "markdown");
+  const view = { floorId: "vorher", selected: ["vorher"], camera: { x: 4, y: 5, scale: 2 } };
+  const beforeView = structuredClone(view), before = session.document(),
+    dirty = session.dirty, historySize = session.historySize, revision = session.revision;
+  let calls = 0, allowed = false;
+  const navigation = {
+    allow: () => allowed,
+    setFloor: (id: string) => { calls++; view.floorId = id; },
+    selectRoom: async (id: string) => { calls++; view.selected = [id]; },
+    showSearch: () => { calls++; }, openKey: () => { calls++; },
+    focusSection: () => { calls++; return true; },
+    focusRoom: () => { calls++; view.camera = { x: 9, y: 9, scale: 3 }; },
+  };
+  const result = await activateRoomKeySearchNavigation(session, {
+    roomId: room.id, floorId: floor.id, sectionId: section.id,
+  }, navigation);
+  assert.equal(result, "blocked");
+  assert.equal(calls, 0);
+
+  const methods = DungeonEditor.prototype as unknown as Record<string, Function>;
+  const fake = {
+    allowKeyNavigation: () => false,
+    floor: { value: "angefordert" }, renderer: { floorId: "vorher" },
+    applyFloor: () => { calls++; }, applySelection: () => { calls++; },
+    gesture: undefined, tool: "select", commitNote: () => { calls++; },
+  };
+  methods.switchFloor!.call(fake, floor.id);
+  await methods.selectMany!.call(fake, [room.id], false, room.id);
+  methods.begin!.call(fake, { button: 0 });
+  await methods.copyCurrentFloor!.call(fake);
+  methods.archiveCurrentFloor!.call(fake);
+  methods.setTool!.call(fake, "room");
+  assert.equal(fake.floor.value, "vorher");
+  assert.equal(calls, 0);
+  assert.deepEqual(view, beforeView);
+  assert.deepEqual(session.document(), before);
+  assert.equal(session.dirty, dirty);
+  assert.equal(session.historySize, historySize);
+  assert.equal(session.revision, revision);
+
+  allowed = true;
+  const retry = await activateRoomKeySearchNavigation(session, {
+    roomId: room.id, floorId: floor.id, sectionId: section.id,
+  }, navigation);
+  assert.equal(retry, "activated");
+  assert.equal(view.floorId, floor.id);
+  assert.deepEqual(view.selected, [room.id]);
+  assert.deepEqual(view.camera, { x: 9, y: 9, scale: 3 });
+  assert.deepEqual(session.document(), before);
+  assert.equal(session.dirty, dirty);
+  assert.equal(session.historySize, historySize);
 });
 
 test("room key search panel reports non-V4 sessions honestly", () => {

@@ -109,7 +109,7 @@ export class StructuredKeyPanel {
       if (section.id === this.selected) entry.setAttribute("aria-current", "true");
     }
     this.button(navigation, "+ Abschnitt", () => {
-      if (!this.commit()) return;
+      if (!this.allowNavigation()) return;
       this.selected = addMarkdownSection(this.session, this.roomId, this.selected);
       this.render();
     });
@@ -132,12 +132,12 @@ export class StructuredKeyPanel {
     if (!selected) return;
     const controls = this.root.createDiv({ cls: "dn-key-controls" });
     this.button(controls, "↑", () => {
-      if (!this.commit()) return;
+      if (!this.allowNavigation()) return;
       moveKeySection(this.session, this.roomId, selected.id, -1);
       this.render();
     });
     this.button(controls, "↓", () => {
-      if (!this.commit()) return;
+      if (!this.allowNavigation()) return;
       moveKeySection(this.session, this.roomId, selected.id, 1);
       this.render();
     });
@@ -151,7 +151,7 @@ export class StructuredKeyPanel {
       return;
     }
     this.button(controls, "Entfernen", () => {
-      if (!this.commit()) return;
+      if (!this.allowNavigation()) return;
       try {
         removeMarkdownSection(this.session, this.roomId, selected.id);
         this.selected = undefined;
