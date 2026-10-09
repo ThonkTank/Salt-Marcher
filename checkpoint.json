@@ -4083,17 +4083,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I37-CR",
-      "kind": "cleanup_review",
-      "startedAt": "2026-10-09T15:51:12.835377+00:00",
-      "focus": "Flussbelege CR",
-      "state": "completed",
-      "result": "Snapshot/acceptance/Plan/Architektur stimmen. Tatsächliche Downloadkopien, Rawhashes und Inventarbelegziele geprüft,65 CO-/24 CTY-Pflichten offen. Eigene Kopie geschlossen, ursprüngliches River aus angewendet, Kontrollausgabe bytegleich. Aufräumumfang ohne Restbefund. Nächste frühe Referenz prüft Küste/Hafen-Einfügung; nach überprüfter HEX-05-Übergabe unmittelbar CITY-01."
-    },
-    "nextRun": {
       "id": "CITY-00-I38-P",
       "kind": "reference_planning",
-      "focus": "Küste/Hafen aus kontrollierten Vorgaben planen; HEX-05 prüfen"
+      "startedAt": "2026-10-09T15:51:56.580605+00:00",
+      "focus": "Küste und Hafen",
+      "state": "completed",
+      "result": "Kontrollierter Coast-Rebuild mit vollständigem Gruppenumfang und Rückstellung geplant."
+    },
+    "nextRun": {
+      "id": "CITY-00-I38-I",
+      "kind": "reference_implementation",
+      "focus": "Coast-Feature und Hafenstruktur prüfen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
