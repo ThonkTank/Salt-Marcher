@@ -101851,6 +101851,20 @@
             "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-new-map-20261009/evidence/1791511450182-parity-tools-phase1-new-map-reopen/result.json"
           ],
           "remaining": "Unabhängiger Phase-1-Endbuild-Review offen; Originalpersistenz von Größenvorlagen, Eingabegrenzen und Namenskonflikte nicht aus diesem Lauf ableitbar."
+        },
+        "followUpPhase1TemplateRepair": {
+          "state": "candidate_review_pending",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "measuredScope": "Vier Standardvorlagen bleiben; eigene Vorlagen gelten nur im Prozess. Gleichnamige Einträge stehen getrennt, erneute Namenswahl trifft den ersten.",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-template-repair-20261009/implementation.md"
+          ],
+          "hostBuildSha256": "62b74463cd4e861aa04041fa8655370f112b9eaa7c69948afb26d97ecd3f20c1",
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-template-host-20261009/evidence/1791513927302-parity-tools-phase1-new-map-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-template-host-20261009/evidence/1791513967959-parity-tools-phase1-new-map-reopen/result.json"
+          ],
+          "remaining": "Unabhängiger Phase-1-Endbuild-Review offen; Zwischenwert-Rundung, obere Höhengrenze und Löschen bei doppeltem Namen nicht vollständig direkt gemessen."
         }
       },
       {
@@ -102564,6 +102578,20 @@
             "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-new-map-20261009/evidence/1791511450182-parity-tools-phase1-new-map-reopen/result.json"
           ],
           "remaining": "Unabhängiger Phase-1-Endbuild-Review offen; Originalpersistenz von Größenvorlagen, Eingabegrenzen und Namenskonflikte nicht aus diesem Lauf ableitbar."
+        },
+        "followUpPhase1TemplateRepair": {
+          "state": "candidate_review_pending",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "measuredScope": "Das Original listet denselben Vorlagennamen zweimal; der Host bewahrt beide Einträge im Prozess.",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-template-repair-20261009/implementation.md"
+          ],
+          "hostBuildSha256": "62b74463cd4e861aa04041fa8655370f112b9eaa7c69948afb26d97ecd3f20c1",
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-template-host-20261009/evidence/1791513927302-parity-tools-phase1-new-map-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-template-host-20261009/evidence/1791513967959-parity-tools-phase1-new-map-reopen/result.json"
+          ],
+          "remaining": "Unabhängiger Phase-1-Endbuild-Review offen; Zwischenwert-Rundung, obere Höhengrenze und Löschen bei doppeltem Namen nicht vollständig direkt gemessen."
         }
       },
       {
@@ -102632,6 +102660,20 @@
             "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-new-map-20261009/evidence/1791511450182-parity-tools-phase1-new-map-reopen/result.json"
           ],
           "remaining": "Unabhängiger Phase-1-Endbuild-Review offen; Originalpersistenz von Größenvorlagen, Eingabegrenzen und Namenskonflikte nicht aus diesem Lauf ableitbar."
+        },
+        "followUpPhase1TemplateRepair": {
+          "state": "candidate_review_pending",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "measuredScope": "0 und 7,5 ergeben im Original 8 Felder; 10001 Breite ergibt 128. Der Host normalisiert diese Vorlagenwerte.",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-template-repair-20261009/implementation.md"
+          ],
+          "hostBuildSha256": "62b74463cd4e861aa04041fa8655370f112b9eaa7c69948afb26d97ecd3f20c1",
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-template-host-20261009/evidence/1791513927302-parity-tools-phase1-new-map-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-template-host-20261009/evidence/1791513967959-parity-tools-phase1-new-map-reopen/result.json"
+          ],
+          "remaining": "Unabhängiger Phase-1-Endbuild-Review offen; Zwischenwert-Rundung, obere Höhengrenze und Löschen bei doppeltem Namen nicht vollständig direkt gemessen."
         }
       },
       {
@@ -102700,6 +102742,20 @@
             "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-new-map-20261009/evidence/1791511450182-parity-tools-phase1-new-map-reopen/result.json"
           ],
           "remaining": "Unabhängiger Phase-1-Endbuild-Review offen; Originalpersistenz von Größenvorlagen, Eingabegrenzen und Namenskonflikte nicht aus diesem Lauf ableitbar."
+        },
+        "followUpPhase1TemplateRepair": {
+          "state": "candidate_review_pending",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "measuredScope": "0 und 7,5 Höhe ergeben im Original 8 Felder; der Host normalisiert Vorlagenhöhen auf 8–128.",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-template-repair-20261009/implementation.md"
+          ],
+          "hostBuildSha256": "62b74463cd4e861aa04041fa8655370f112b9eaa7c69948afb26d97ecd3f20c1",
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-template-host-20261009/evidence/1791513927302-parity-tools-phase1-new-map-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-template-host-20261009/evidence/1791513967959-parity-tools-phase1-new-map-reopen/result.json"
+          ],
+          "remaining": "Unabhängiger Phase-1-Endbuild-Review offen; Zwischenwert-Rundung, obere Höhengrenze und Löschen bei doppeltem Namen nicht vollständig direkt gemessen."
         }
       },
       {
@@ -102785,6 +102841,20 @@
             "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-new-map-20261009/evidence/1791511450182-parity-tools-phase1-new-map-reopen/result.json"
           ],
           "remaining": "Unabhängiger Phase-1-Endbuild-Review offen; Originalpersistenz von Größenvorlagen, Eingabegrenzen und Namenskonflikte nicht aus diesem Lauf ableitbar."
+        },
+        "followUpPhase1TemplateRepair": {
+          "state": "candidate_review_pending",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "measuredScope": "Accept legt die eigene Vorlage für den laufenden Prozess an; nach Neustart zeigt New Map wieder nur vier Standardvorlagen.",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-template-repair-20261009/implementation.md"
+          ],
+          "hostBuildSha256": "62b74463cd4e861aa04041fa8655370f112b9eaa7c69948afb26d97ecd3f20c1",
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-template-host-20261009/evidence/1791513927302-parity-tools-phase1-new-map-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-template-host-20261009/evidence/1791513967959-parity-tools-phase1-new-map-reopen/result.json"
+          ],
+          "remaining": "Unabhängiger Phase-1-Endbuild-Review offen; Zwischenwert-Rundung, obere Höhengrenze und Löschen bei doppeltem Namen nicht vollständig direkt gemessen."
         }
       },
       {
@@ -102853,6 +102923,20 @@
             "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-new-map-20261009/evidence/1791511450182-parity-tools-phase1-new-map-reopen/result.json"
           ],
           "remaining": "Unabhängiger Phase-1-Endbuild-Review offen; Originalpersistenz von Größenvorlagen, Eingabegrenzen und Namenskonflikte nicht aus diesem Lauf ableitbar."
+        },
+        "followUpPhase1TemplateRepair": {
+          "state": "candidate_review_pending",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "measuredScope": "Cancel bleibt im Host ohne neue Vorlage; der frühere direkte Originalabbruch bleibt maßgeblich.",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-template-repair-20261009/implementation.md"
+          ],
+          "hostBuildSha256": "62b74463cd4e861aa04041fa8655370f112b9eaa7c69948afb26d97ecd3f20c1",
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-template-host-20261009/evidence/1791513927302-parity-tools-phase1-new-map-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-template-host-20261009/evidence/1791513967959-parity-tools-phase1-new-map-reopen/result.json"
+          ],
+          "remaining": "Unabhängiger Phase-1-Endbuild-Review offen; Zwischenwert-Rundung, obere Höhengrenze und Löschen bei doppeltem Namen nicht vollständig direkt gemessen."
         }
       },
       {
@@ -110653,6 +110737,19 @@
           "build": null,
           "evidence": [],
           "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+        },
+        "followUpPhase1OriginalProbe": {
+          "state": "original_measured_host_open",
+          "originalVersion": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "originalGesture": "Settings > Map Settings → Building Wear: NONE → Save",
+          "originalValue": null,
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-wear-original-20261009/original-probe.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-wear-20261009/runs/20261009-045219-3419331/evidence/screens/none-selected.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-wear-20261009/runs/20261009-045219-3419331/evidence/maps/none-saved.dungeondraft_map"
+          ],
+          "measuredScope": "Sofortige Wahl und Rohkartenspeicherung; alle fünf Karten behalten identische serialisierte Levels.",
+          "gap": "Hostwahl, ungefähr gleichwertige Gebäudewirkung, Host-Save/Reopen und unabhängiger Review offen; kombinierte Undo/Redo- und Mehrgeschossfolge nicht geprüft."
         }
       },
       {
@@ -110707,6 +110804,19 @@
           "build": null,
           "evidence": [],
           "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+        },
+        "followUpPhase1OriginalProbe": {
+          "state": "original_measured_host_open",
+          "originalVersion": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "originalGesture": "Settings > Map Settings → Building Wear: DUST → Save",
+          "originalValue": "res://textures/wear/dust.png",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-wear-original-20261009/original-probe.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-wear-20261009/runs/20261009-045219-3419331/evidence/screens/dust-selected.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-wear-20261009/runs/20261009-045219-3419331/evidence/maps/dust-saved.dungeondraft_map"
+          ],
+          "measuredScope": "Sofortige Wahl und Rohkartenspeicherung; alle fünf Karten behalten identische serialisierte Levels.",
+          "gap": "Hostwahl, ungefähr gleichwertige Gebäudewirkung, Host-Save/Reopen und unabhängiger Review offen; kombinierte Undo/Redo- und Mehrgeschossfolge nicht geprüft."
         }
       },
       {
@@ -110761,6 +110871,19 @@
           "build": null,
           "evidence": [],
           "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+        },
+        "followUpPhase1OriginalProbe": {
+          "state": "original_measured_host_open",
+          "originalVersion": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "originalGesture": "Settings > Map Settings → Building Wear: GRIME → Save",
+          "originalValue": "res://textures/wear/grime.png",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-wear-original-20261009/original-probe.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-wear-20261009/runs/20261009-045219-3419331/evidence/screens/grime-selected.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-wear-20261009/runs/20261009-045219-3419331/evidence/maps/grime-saved.dungeondraft_map"
+          ],
+          "measuredScope": "Sofortige Wahl und Rohkartenspeicherung; alle fünf Karten behalten identische serialisierte Levels.",
+          "gap": "Hostwahl, ungefähr gleichwertige Gebäudewirkung, Host-Save/Reopen und unabhängiger Review offen; kombinierte Undo/Redo- und Mehrgeschossfolge nicht geprüft."
         }
       },
       {
@@ -110815,6 +110938,19 @@
           "build": null,
           "evidence": [],
           "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+        },
+        "followUpPhase1OriginalProbe": {
+          "state": "original_measured_host_open",
+          "originalVersion": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "originalGesture": "Settings > Map Settings → Building Wear: NOISE → Save",
+          "originalValue": "res://textures/wear/noise.png",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-wear-original-20261009/original-probe.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-wear-20261009/runs/20261009-045219-3419331/evidence/screens/noise-selected.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-wear-20261009/runs/20261009-045219-3419331/evidence/maps/noise-saved.dungeondraft_map"
+          ],
+          "measuredScope": "Sofortige Wahl und Rohkartenspeicherung; alle fünf Karten behalten identische serialisierte Levels.",
+          "gap": "Hostwahl, ungefähr gleichwertige Gebäudewirkung, Host-Save/Reopen und unabhängiger Review offen; kombinierte Undo/Redo- und Mehrgeschossfolge nicht geprüft."
         }
       },
       {
@@ -110870,6 +111006,19 @@
           "build": null,
           "evidence": [],
           "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+        },
+        "followUpPhase1OriginalProbe": {
+          "state": "original_measured_host_open",
+          "originalVersion": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "originalGesture": "Settings > Map Settings → Building Wear: SCRATCHED → Save",
+          "originalValue": "res://textures/wear/scratched.png",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-wear-original-20261009/original-probe.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-wear-20261009/runs/20261009-045219-3419331/evidence/screens/scratched-selected.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-wear-20261009/runs/20261009-045219-3419331/evidence/maps/scratched-saved.dungeondraft_map"
+          ],
+          "measuredScope": "Sofortige Wahl und Rohkartenspeicherung; nach frischem Originalstart erneut markiert und Rohkarte bytegleich.",
+          "gap": "Hostwahl, ungefähr gleichwertige Gebäudewirkung, Host-Save/Reopen und unabhängiger Review offen; kombinierte Undo/Redo- und Mehrgeschossfolge nicht geprüft."
         }
       },
       {
@@ -116708,6 +116857,20 @@
             "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-new-map-20261009/evidence/1791511450182-parity-tools-phase1-new-map-reopen/result.json"
           ],
           "remaining": "Unabhängiger Phase-1-Endbuild-Review offen; Originalpersistenz von Größenvorlagen, Eingabegrenzen und Namenskonflikte nicht aus diesem Lauf ableitbar."
+        },
+        "followUpPhase1TemplateRepair": {
+          "state": "candidate_review_pending",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "measuredScope": "Plus öffnet den 8×8-Vorlagendialog; die ergänzten Grenzen und der Prozesszustand bestehen im Host.",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-template-repair-20261009/implementation.md"
+          ],
+          "hostBuildSha256": "62b74463cd4e861aa04041fa8655370f112b9eaa7c69948afb26d97ecd3f20c1",
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-template-host-20261009/evidence/1791513927302-parity-tools-phase1-new-map-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-template-host-20261009/evidence/1791513967959-parity-tools-phase1-new-map-reopen/result.json"
+          ],
+          "remaining": "Unabhängiger Phase-1-Endbuild-Review offen; Zwischenwert-Rundung, obere Höhengrenze und Löschen bei doppeltem Namen nicht vollständig direkt gemessen."
         }
       },
       {
@@ -117295,6 +117458,20 @@
             "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-new-map-20261009/evidence/1791511450182-parity-tools-phase1-new-map-reopen/result.json"
           ],
           "remaining": "Unabhängiger Phase-1-Endbuild-Review offen; Originalpersistenz von Größenvorlagen, Eingabegrenzen und Namenskonflikte nicht aus diesem Lauf ableitbar."
+        },
+        "followUpPhase1TemplateRepair": {
+          "state": "candidate_review_pending",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "measuredScope": "X schließt den Vorlagendialog ohne neue Vorlage; der frühere direkte Originalabbruch bleibt maßgeblich.",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-template-repair-20261009/implementation.md"
+          ],
+          "hostBuildSha256": "62b74463cd4e861aa04041fa8655370f112b9eaa7c69948afb26d97ecd3f20c1",
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-template-host-20261009/evidence/1791513927302-parity-tools-phase1-new-map-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-template-host-20261009/evidence/1791513967959-parity-tools-phase1-new-map-reopen/result.json"
+          ],
+          "remaining": "Unabhängiger Phase-1-Endbuild-Review offen; Zwischenwert-Rundung, obere Höhengrenze und Löschen bei doppeltem Namen nicht vollständig direkt gemessen."
         }
       },
       {
@@ -117867,6 +118044,20 @@
             "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-new-map-20261009/evidence/1791511450182-parity-tools-phase1-new-map-reopen/result.json"
           ],
           "remaining": "Unabhängiger Phase-1-Endbuild-Review offen; Originalpersistenz von Größenvorlagen, Eingabegrenzen und Namenskonflikte nicht aus diesem Lauf ableitbar."
+        },
+        "followUpPhase1TemplateRepair": {
+          "state": "candidate_review_pending",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "measuredScope": "Minus entfernt im Host den gewählten Prozess-Eintrag und behält die Kartenmaße; doppelter Name bleibt im Original-Löschpfad offen.",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-template-repair-20261009/implementation.md"
+          ],
+          "hostBuildSha256": "62b74463cd4e861aa04041fa8655370f112b9eaa7c69948afb26d97ecd3f20c1",
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-template-host-20261009/evidence/1791513927302-parity-tools-phase1-new-map-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-template-host-20261009/evidence/1791513967959-parity-tools-phase1-new-map-reopen/result.json"
+          ],
+          "remaining": "Unabhängiger Phase-1-Endbuild-Review offen; Zwischenwert-Rundung, obere Höhengrenze und Löschen bei doppeltem Namen nicht vollständig direkt gemessen."
         }
       },
       {

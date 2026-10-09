@@ -3,7 +3,7 @@ set -euo pipefail
 
 qa_root=${DUNGEON_PHASE1_NATIVE_QA_ROOT:-/home/aaron/.cache/dungeon-native-qa/parity-phase1-snap-20261007}
 source_app=/home/aaron/Downloads/Dungeondraft-1.2.0.1-Linux64
-source_map=/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/native/runs/20261005-120725-2872601/evidence/maps/C00-empty.dungeondraft_map
+source_map=${DUNGEON_PHASE1_NATIVE_SOURCE_MAP:-/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/groups/bau-01/native/runs/20261005-120725-2872601/evidence/maps/C00-empty.dungeondraft_map}
 xvnc=/home/aaron/.cache/dungeon-native-qa/xvnc/usr/bin/Xvnc
 run="$qa_root/runs/$(date +%Y%m%d-%H%M%S)-$$"
 mkdir -p "$run"/{config,data/Dungeondraft,cache,map,evidence/screens,evidence/maps}
@@ -23,6 +23,9 @@ done
 test -n "${display:-}" || exit 75
 cp --reflink=auto "$source_map" "$run/map/phase1-snap.dungeondraft_map"
 sha256sum "$source_app/Dungeondraft.x86_64" "$source_app/Dungeondraft.pck" "$source_map" > "$run/source.sha256"
+if [ -n "${DUNGEON_PHASE1_NATIVE_REUSE_DATA:-}" ]; then
+  cp -a "$DUNGEON_PHASE1_NATIVE_REUSE_DATA/." "$run/data/Dungeondraft/"
+else
 cat > "$run/data/Dungeondraft/config.ini" <<INI
 [Display]
 current_screen=0
@@ -39,6 +42,7 @@ disable_default_assets=false
 [Mods]
 active_mods=[  ]
 INI
+fi
 dd_pid=''
 xvnc_pid=''
 cleanup() {
