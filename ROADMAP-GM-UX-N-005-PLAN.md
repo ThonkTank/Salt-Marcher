@@ -155,3 +155,31 @@ Session-/Room-/Key-/Editorpfade und die Nichtmutationsgrenze ab. Ein PASS öffne
 nur `GM-UX-N-005-I01`; es ist keine Implementierungs-, UX-, Host- oder
 Fachfreigabe. Bei Pflichtbefund folgt ein eigener Planreparaturcommit und ein
 erneuter unabhängiger Review.
+
+## Umsetzungsstand
+
+`GM-UX-N-005-I01` ist auf dem exakten Reparaturstand
+`63f1270f124100b4b73088430584b92debcbd4cd` unabhängig reviewt und ohne
+verbleibenden Pflichtbefund bestanden. Die reine V4-Projektion liefert bei
+leerer Suche eine deterministische Raum-/Geschossübersicht und bei Textsuche
+einen Treffer je passendem Key-Abschnitt mit stabilem Ziel und sichtbarem
+Ausschnitt. Unicode-Normalisierung, Groß-/Kleinschreibung einschließlich
+kontextabhängigem Sigma, längenändernde Faltungen, lange Treffer, mehrere
+Geschosse, doppelte Raumnummern, Passage-/Featuretext und beschädigte Ziele
+sind durch Regressionen gedeckt. Dokument, Dirty-Zustand, History und Revision
+bleiben unverändert.
+
+Der erste Implementierungsreview verlangte vollständige Ausschnitte für lange
+Treffer und eine Offsetabbildung bei längenändernder Unicode-Faltung. Der erste
+Reparaturreview fand zusätzlich die kontextabhängige Sigma-Faltung. Beide
+Pflichtbefunde sind in den getrennten Reparaturcommits
+`b78ea9462d76b1600aa91dd909c7b87f3bc45e21` und
+`63f1270f124100b4b73088430584b92debcbd4cd` behoben; der abschließende
+read-only Review des exakten letzten Stands bestand.
+
+Damit ist nur `GM-UX-N-005-I01` abgeschlossen. `GM-UX-N-005-I02` mit Panel,
+Draft-Guard und Navigation, der Produktreview, der beschriebene
+Nebelwacht-Cloud-Hostlauf und der unabhängige Produkttester-Nachtest bleiben
+offen. Die verlinkten Acceptance-Einträge `EB-003` und `NATIVE-21` werden aus
+diesem hostneutralen Teilnachweis nicht verändert; es folgt keine UX-, Host-,
+Fach-, Paritäts- oder Gesamtfreigabe.

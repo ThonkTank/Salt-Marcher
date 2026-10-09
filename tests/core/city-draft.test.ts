@@ -312,3 +312,74 @@ test("Real City Apply and Terrain finish close after a throwing observer without
     console.error = original;
   }
 });
+
+test("A completed new street and house remain preview-only until one shared Apply", () => {
+  const history = new AtlasHistory();
+  const source = new CitySource(
+    newCityDocument("new-city", "Neuer Ort"),
+    history,
+  );
+  const before = source.read(),
+    draft = new CityDraft(source);
+  const edits: CityEdit[] = [
+    {
+      kind: "add-road",
+      nodes: [
+        { id: "west", point: { x: -10, y: 0 } },
+        { id: "east", point: { x: 10, y: 0 } },
+      ],
+      road: {
+        id: "street",
+        startNodeId: "west",
+        endNodeId: "east",
+        via: [{ x: 0, y: 2 }],
+        widthMeters: 4,
+      },
+    },
+    {
+      kind: "add-building",
+      building: { ...setup().source.read().buildings[0]!, id: "new-house" },
+    },
+  ];
+  const first = draft.setEdits(edits);
+  draft.clearPreview();
+  assert.throws(() => draft.apply("unfinished contour"));
+  assert.deepEqual(source.read(), before);
+  assert.equal(history.undoDepth, 0);
+  const ready = draft.setEdits(edits);
+  assert.deepEqual(ready, first);
+  assert(draft.apply("Straße und Haus anlegen"));
+  assert.equal(history.undoDepth, 1);
+  assert.equal(source.read().roads[0]!.id, "street");
+  assert.equal(source.read().buildings[0]!.id, "new-house");
+  history.undo();
+  assert.deepEqual(source.read(), before);
+  history.redo();
+  assert.deepEqual(source.read(), ready.document);
+});
+
+test("A codec-valid candidate with overflowing scene bounds clears the old ready preview", () => {
+  const { history, source, draft } = setup();
+  draft.setEdits([move(10)]);
+  const edits: CityEdit[] = [
+    { kind: "move-node", nodeId: "b", point: { x: 1e308, y: 0 } },
+    {
+      kind: "replace-road",
+      roadId: "road",
+      road: { ...draft.before.roads[0]!, widthMeters: 1.7e308 },
+    },
+  ];
+  // This distinguishes a scene failure from an already rejected CityEdit payload.
+  assert.doesNotThrow(() => editCity(draft.before, edits));
+  assert.throws(() => draft.setEdits(edits));
+  assert.equal(draft.state, "invalid");
+  assert.equal(draft.preview, null);
+  assert.throws(() => draft.apply("overflow"));
+  assert.deepEqual(source.read(), draft.before);
+  assert.equal(history.undoDepth, 0);
+  draft.clearPreview();
+  assert.equal(draft.state, "editing");
+  draft.setEdits([move(20)]);
+  assert(draft.apply("corrected"));
+  assert.equal(source.read().buildings[0]!.position.x, 20);
+});
