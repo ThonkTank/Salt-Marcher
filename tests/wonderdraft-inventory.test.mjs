@@ -336,6 +336,18 @@ test('historical raw-map replacement additionally requires unchanged current sav
     assert.equal(f.validate().valid, mode === 'valid');
   }
 });
+
+test('version-reference imports need their own current receipt and version assertion', () => {
+  for (const mode of ['valid', 'borrow-ui-frame', 'wrong-assertion']) {
+    const f = historicalFixture(); f.u.directEvidence = [f.e];
+    f.catalog.reference.directRuntimeEvidence = [f.old, f.e];
+    f.usage.owner = 'reference'; f.usage.assertion = { version: f.catalog.reference.version };
+    if (mode === 'borrow-ui-frame') f.catalog.reference.directRuntimeEvidence.pop();
+    if (mode === 'wrong-assertion') f.usage.assertion.version = 'unverified-other-version';
+    const r = f.validate(); assert.equal(r.valid, mode === 'valid');
+    if (mode === 'valid') assert.equal(r.historicalEvidenceIssues[0].owner, 'reference');
+  }
+});
 test('a claimed original probe requires pinned evidence, a different process and unchanged raw map', () => {
   for (const mutate of [
     f => { f.catalog.cases[0].original.evidence = ['direct-sequence']; },

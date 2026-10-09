@@ -62,7 +62,7 @@
   "hexAtlasExecution": {
     "scope": "HEX-00 bis HEX-28 und sämtliche eingeordneten CITY-00 bis CITY-09 vollständig",
     "phase": "HEX-00",
-    "state": "bounded_evidence_repair_verified_integration_pending",
+    "state": "bounded_evidence_repair_recorded_review_pending",
     "plan": "ROADMAP-HEX-00-PLAN.md",
     "currentRun": {
       "kind": "repair_implementation",
@@ -70,16 +70,22 @@
       "baseCommit": "cf91bde78d5c2914e5588d2e0642be9679c03b93",
       "focus": "R01-04/05: genau 59 aktive Altkennungen, explizite historische Quellenablösung und vier Paketrollen. Keine Fachfreigabe oder Aufräumphase.",
       "id": "HEX-00-N-I03",
-      "state": "implementation_verified_integration_pending",
+      "state": "completed_partial_reference_mapping",
       "evidence": [
         "/home/aaron/.cache/dungeon-native-qa/hex-00/evidence-repair-20261009-044709/manifest.json",
         "/home/aaron/.cache/dungeon-native-qa/hex-00/evidence-repair-20261009-044709/mapping-validation.json",
         "/home/aaron/.cache/dungeon-native-qa/hex-00/evidence-repair-20261009-044709/catalog-validation.json",
         "/home/aaron/.cache/dungeon-native-qa/hex-00/evidence-repair-20261009-044709/package-role-hints.json",
         "/home/aaron/.cache/dungeon-native-qa/hex-00/evidence-repair-20261009-044709/basis-checks.json",
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/evidence-repair-20261009-044709/published-integration-checks-before-incoming.json"
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/evidence-repair-20261009-044709/published-integration-checks-before-incoming.json",
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/evidence-repair-20261009-044709/integrated-basis-checks.json",
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/evidence-repair-20261009-044709/published-integration-checks.json",
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/evidence-repair-20261009-044709/complete-gate-validation.json",
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/evidence-repair-20261009-044709/validator-test-final.log"
       ],
-      "result": "Genau 59 alte Kennungen mit aktuellen Originalframes ergänzt; alle 652 UI-Einträge jetzt nativ zugeordnet. 113 alte Belegverweise mit ausdrücklichem owner-/quellenbezogenem Ersatzvertrag weiterhin ungeprüfte Historie. Eine der vier Paketrollen zugeordnet; benachbarte falsche wizard_panel-Rolle korrigiert; drei mit konkreter Aktivierungsprobe weiter offen. Keine Fachfreigabe."
+      "result": "Genau 59 alte Kennungen mit aktuellen Originalframes ergänzt; alle 652 UI-Einträge jetzt nativ zugeordnet. 113 alte Belegverweise mit ausdrücklichem owner-/quellenbezogenem Ersatzvertrag weiterhin ungeprüfte Historie. Eine der vier Paketrollen zugeordnet; benachbarte falsche wizard_panel-Rolle korrigiert; drei mit konkreter Aktivierungsprobe weiter offen. Keine Fachfreigabe.",
+      "endedAt": "2026-10-09T05:11:47.424720+02:00",
+      "integratedCommit": "e59c58424ffafd6ef21be052de424bcfe7121a73"
     },
     "nextRun": {
       "id": "HEX-00-N-I04",
@@ -126,25 +132,25 @@
     },
     "verification": {
       "check": "passed",
-      "tests": 180,
+      "tests": 181,
       "build": "passed",
-      "productBuildSha256": "970dedecd9f30117c06b6d9011621893c6fb35081180cad968557c3240df02cf",
-      "integratedCommit": "e8dbce87046c394afa5b5bf0740b0d7bc02cade7",
-      "host": "Zwei bisherige Hex-Kern-Hostnachweise gelten für Build b3211281. Nach Dungeon-Integration neuer Build 970dedec durch Typprüfung, Tests und Build geprüft; keine neue Hex-Hostabnahme dieses Builds.",
-      "testProvenance": "180 lokale Tests bestanden; veröffentlichbare Vorintegrationsquellen 180/183 mit denselben drei fehlenden externen Fixture-Fällen. Incoming 6fdd90f/1ac2f62/59e6cce noch zu integrieren und erneut zu prüfen.",
+      "productBuildSha256": "62b74463cd4e861aa04041fa8655370f112b9eaa7c69948afb26d97ecd3f20c1",
+      "integratedCommit": "e59c58424ffafd6ef21be052de424bcfe7121a73",
+      "host": "Zwei frühere Hex-Kern-Hostnachweise gelten für Build b3211281. Nach N-I03-Integration Build 62b74463 durch Typprüfung, lokale/veröffentlichte Tests und Build geprüft; keine neue Hex-Hostabnahme dieses Builds.",
+      "testProvenance": "181 lokale Tests bestanden; zwei fremde Teständerungen geschützt/unveröffentlicht. Veröffentlichter Quellbaum: 184 Tests, 181 bestanden, drei bekannte fehlende externe Fixture-Fälle.",
       "cleanTreeTest": {
         "state": "three_known_fixture_failures",
-        "tests": 177,
-        "passed": 174,
+        "tests": 184,
+        "passed": 181,
         "failed": 3,
-        "source": "/home/aaron/.cache/dungeon-native-qa/hex-00/options-repair-20261009-034511/published-integration-checks.json"
+        "source": "/home/aaron/.cache/dungeon-native-qa/hex-00/evidence-repair-20261009-044709/published-integration-checks.json"
       },
       "catalog": "652 UI-Einträge/83 Fälle aktuell mit gültigen nativen JSON-Frames zugeordnet. Keine aktiven Herkunfts-/Strukturfehler. 113 alte Quellen weiterhin ungeprüft und als owner-/quellenbezogen abgelöste Historie separat ausgewiesen. 136 frühe UI-Fragen, drei Paketrollen und Fachreview offen.",
       "physicalInput": "not_run",
       "largeMap": "not_run",
       "installation": "unchanged",
-      "testedProductCommit": "e8dbce87046c394afa5b5bf0740b0d7bc02cade7",
-      "incomingReviewIntegration": "ada9ae9/1535749/216bdfb integriert. Neue Dungeon-Host-/Großkarten-/Vault-Prüfer und Nachweise; src/, veröffentlichte tests/, Buildskript und Abhängigkeiten unverändert. Produktbuild b3211281 bleibt identisch; bestehende zwei Kern-Hostnachweise werden weitergeführt. 122a1a6/c8ee4d3 anschließend integriert: ausschließlich Dungeon-Review/Plan/Abnahme, geprüfte Quellen unverändert. 4c22eeb/5a9b320/6704cf7 im Reviewlauf integriert: Phase-7-spezifischer Hostdialog und Dokumentation, Produkt und Wonderdraft-Helfer unverändert. adbc951/4c5808e/df1c6f3/b6edbbe/3cf3210 im N-I01 integriert: Phase-7-Aufräumen/Hosthilfen und Dokumentation; Produkt, Tests und Wonderdraft-Helfer unverändert. N-I01-Prüfquellen identisch; Basis-/Kern-Hostnachweise weitergeführt. 7db890b anschließend integriert: ausschließlich übriger Dungeon-Werkzeugplan, geprüfte Quellen unverändert. N-I02: 0f4be9c/d4ecda9/7194ec8/269deb3 integriert: Dungeon-Zoomschritt, New-Map-Größenvorlagen/Schalter und Hostwerkzeuge. Produktquellen verändert; Basisprüfungen lokal und auf veröffentlichtem Quellbaum erneut ausgeführt, identische neue Buildhashes. Kein neuer Hex-Hostlauf/keine Installation. 6ffccde unmittelbar vor Push integriert (Merge e8dbce87): neuer Dungeon-Kartenassistent mit neuen Hosthilfen. Basis lokal erneut 174/174, veröffentlichter Quellbaum erneut 174/177 mit denselben drei fehlenden Fixtures; Build 970dedec. Eigene Wonderdraft-Zuordnungen und fremde Dungeon-Daten unverändert erhalten.",
+      "testedProductCommit": "e59c58424ffafd6ef21be052de424bcfe7121a73",
+      "incomingReviewIntegration": "ada9ae9/1535749/216bdfb integriert. Neue Dungeon-Host-/Großkarten-/Vault-Prüfer und Nachweise; src/, veröffentlichte tests/, Buildskript und Abhängigkeiten unverändert. Produktbuild b3211281 bleibt identisch; bestehende zwei Kern-Hostnachweise werden weitergeführt. 122a1a6/c8ee4d3 anschließend integriert: ausschließlich Dungeon-Review/Plan/Abnahme, geprüfte Quellen unverändert. 4c22eeb/5a9b320/6704cf7 im Reviewlauf integriert: Phase-7-spezifischer Hostdialog und Dokumentation, Produkt und Wonderdraft-Helfer unverändert. adbc951/4c5808e/df1c6f3/b6edbbe/3cf3210 im N-I01 integriert: Phase-7-Aufräumen/Hosthilfen und Dokumentation; Produkt, Tests und Wonderdraft-Helfer unverändert. N-I01-Prüfquellen identisch; Basis-/Kern-Hostnachweise weitergeführt. 7db890b anschließend integriert: ausschließlich übriger Dungeon-Werkzeugplan, geprüfte Quellen unverändert. N-I02: 0f4be9c/d4ecda9/7194ec8/269deb3 integriert: Dungeon-Zoomschritt, New-Map-Größenvorlagen/Schalter und Hostwerkzeuge. Produktquellen verändert; Basisprüfungen lokal und auf veröffentlichtem Quellbaum erneut ausgeführt, identische neue Buildhashes. Kein neuer Hex-Hostlauf/keine Installation. 6ffccde unmittelbar vor Push integriert (Merge e8dbce87): neuer Dungeon-Kartenassistent mit neuen Hosthilfen. Basis lokal erneut 174/174, veröffentlichter Quellbaum erneut 174/177 mit denselben drei fehlenden Fixtures; Build 970dedec. Eigene Wonderdraft-Zuordnungen und fremde Dungeon-Daten unverändert erhalten. N-I03: 6fdd90f/1ac2f62/59e6cce integriert (Merge e59c584): prozesslokale Dungeon-Größenvorlagen und direkte Building-Wear-Originalprobe. Produkt verändert; lokal erneut 181/181, veröffentlichter Quellbaum 181/184 mit denselben drei externen Fixture-Lücken; beide Builds identisch 62b74463. Wonderdraft-Katalog/Prüfer unverändert integriert, neu ergänzter Referenzbesitzer-Negativtest bestanden. Kein neuer Hex-Hostlauf/keine Installation.",
       "latestOriginalRun": {
         "manifest": "/home/aaron/.cache/dungeon-native-qa/hex-00/remaining-sequences-20261009-014011/manifest.json",
         "sessions": 4,
@@ -221,7 +227,7 @@
         "historicalUsageRecords": 113,
         "historicSourcesVerified": false,
         "currentEvidenceErrors": 0,
-        "validatorTests": 25,
+        "validatorTests": 26,
         "mappingValidation": "/home/aaron/.cache/dungeon-native-qa/hex-00/evidence-repair-20261009-044709/mapping-validation.json",
         "pendingPackageRoles": [
           "inspect_dialog",
@@ -232,7 +238,8 @@
         "newOriginalRun": false,
         "originalReview": "pending separate R02",
         "physicalInput": "not_run",
-        "installation": "unchanged"
+        "installation": "unchanged",
+        "gateValidation": "/home/aaron/.cache/dungeon-native-qa/hex-00/evidence-repair-20261009-044709/complete-gate-validation.json"
       }
     },
     "repairPlan": "ROADMAP-HEX-00-REPAIR-PLAN.md"
