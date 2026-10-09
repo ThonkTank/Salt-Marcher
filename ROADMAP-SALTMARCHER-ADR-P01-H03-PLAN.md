@@ -337,3 +337,18 @@ fehlender Pflichtmatrixzelle oder nicht reproduzierbarem Receipt.
 
 ADR-P02 bis ADR-P04, ADR-C01 und die Plattform-ADR bleiben in beiden Fällen
 gesperrt beziehungsweise vorgeschlagen.
+
+## Planreview ADR-P01-H03-P01-R01
+
+Der unabhängige schreibgeschützte Review bestand nach drei gezielten
+Nachbesserungen auf dem exakten Kandidatenkopf
+`a9de899262163f355f627931f527c6f5bd1d16d9` ohne verbleibenden Pflichtbefund.
+Er bestätigte insbesondere den vom Ziel-Inode unabhängigen Before-Payload-
+Snapshot, getrennte Zielverifikation und Capture, retained Konfliktwahrheiten,
+operationsspezifische Create-/Update-/Delete-Rollbacks, Parent-/Child-Retention,
+Rollback-Faultpunkte, Linux-only-Grenze, H02-Nichtwiederholung, P02-Sperre und
+verpflichtendes Cleanup.
+
+Dies ist ausschließlich eine Planfreigabe. Vertrag, Helper, vollständige
+Matrix, sauberes Receipt, Code-/Security-/Evidence-Review und Cleanup bleiben
+vor jedem H03-Befund erforderlich.

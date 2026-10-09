@@ -97,18 +97,19 @@
       "limits": "No target-platform decision or P02 authorization. Durable receipt/recovery, the full Create/Update/Delete fault matrix, installed-adapter bytes, Windows, macOS and accessibility remain not-run."
     },
     "adrP01H03": {
-      "run": "ADR-P01-H03-P01",
-      "state": "plan_pending_independent_review",
+      "run": "ADR-P01-H03-P01-R01",
+      "state": "plan_passed_implementation_pending",
       "document": "ROADMAP-SALTMARCHER-ADR-P01-H03-PLAN.md",
       "result": "Proposes a Linux-only native snapshot/capture/publish and parent/child recovery hypothesis using a durable Before snapshot from the immutable compare-and-write payload, independent target verification, exclusive current-name capture and no-replace publication, with a complete uncooperative-writer and fault matrix.",
-      "limits": "Unreviewed planning evidence only. No executable proof, Linux durability Go, target-platform decision or P02 authorization. Windows and macOS remain not-run."
+      "review": "Independent read-only review passed exact head a9de899262163f355f627931f527c6f5bd1d16d9 after closing pre-capture, immutable Before-payload and operation-specific rollback findings; no mandatory finding remains.",
+      "limits": "Reviewed planning evidence only. No executable proof, Linux durability Go, target-platform decision or P02 authorization. Windows and macOS remain not-run."
     },
     "coordination": {
       "local": "Three new local goal threads coordinate integration. Existing Hex/Atlas, City and Dungeon colleagues on three other devices retain their workstreams, evidence and non-overlapping ownership and contribute requirements to the platform decision.",
       "cloud": "Prior GM-UX-CLOUD worker is reassigned through GitHub Issue #1 to independent architecture and technical review only. Other cloud colleagues retain their established specialist review/test responsibilities.",
       "gui": "At most one graphical host/original instance per device; static and non-graphical checks may run separately."
     },
-    "next": "Independently review ADR-P01-H03 before any implementation. ADR-P02 remains blocked and the platform ADR remains proposed."
+    "next": "Implement and independently review only the bounded Linux ADR-P01-H03 transaction and fault-matrix candidate, then perform its required cleanup. ADR-P02 remains blocked and the platform ADR remains proposed."
   },
   "saltMarcherCatalogEncounter": {
     "schemaVersion": 1,
