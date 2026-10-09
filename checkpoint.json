@@ -4437,17 +4437,17 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-01-PREP-N08-CLEAN-P08",
-      "kind": "cleanup_planning",
-      "startedAt": "2026-10-09T18:44:52.815629+00:00",
-      "focus": "N08-Helfer und Dokumentationsgrenze bereinigen",
-      "state": "completed",
-      "result": "Schmaler privater Helfer ausreichend; Plan/Architektur/Nachweis aktualisieren, keine unnötigeRuntimeänderung."
-    },
-    "nextRun": {
       "id": "CITY-01-PREP-N08-CLEAN-I08",
       "kind": "cleanup_implementation",
-      "focus": "Plan und Architektur auf tatsächliche affine Probeumsetzung aktualisieren"
+      "startedAt": "2026-10-09T18:45:18.215839+00:00",
+      "focus": "N08-Zeichenarithmetik und Nachweisgrenzen dokumentieren",
+      "state": "completed",
+      "result": "Plan/Architektur nennen tatsächliche Formel, bestehenderCITY01Eintrag hält lokaleN08Evidenz; R12/Host offen."
+    },
+    "nextRun": {
+      "id": "CITY-01-PREP-N08-CLEAN-R08",
+      "kind": "cleanup_review",
+      "focus": "Quellenhashes/Planlinks/JSON und unveränderte Abnahmestände prüfen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
