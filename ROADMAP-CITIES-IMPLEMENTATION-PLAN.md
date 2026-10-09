@@ -979,3 +979,5 @@ CITY-00-I45-R45 Start 2026-10-09T19:22:35.160257+00:00; Parameterteilbelege best
 CITY-00-I45-REVIEW-CLEAN-P45 Start 2026-10-09T19:22:38.455169+00:00; Aufräumplan: Reviewbefund verknüpfen, Nachbesserung auf frische Vollaufnahmen ohne Generierung begrenzen.
 
 CITY-00-I45-REVIEW-CLEAN-I45 Start 2026-10-09T19:22:41.063781+00:00; Reviewbefund und präziser Vollaufnahmeplan verknüpft; alte Rawdateien geschützt.
+
+CITY-00-I45-REVIEW-CLEAN-R45 Start 2026-10-09T19:22:44.655023+00:00; R45-Befund/Planlinks/Rawhashes geprüft, keine vorweggenommene Freigabe. N45 ergänzt jetzt Originalübersichten.
