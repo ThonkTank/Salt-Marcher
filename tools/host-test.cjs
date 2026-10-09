@@ -59,6 +59,7 @@ const restart = process.argv.includes("--restart"),
   parityToolsPhase1StartOptions = process.argv.includes("--parity-tools-phase1-start-options"),
   parityToolsPhase1Wizard = process.argv.includes("--parity-tools-phase1-wizard"),
   parityToolsPhase1Wear = process.argv.includes("--parity-tools-phase1-wear"),
+  parityToolsPhase1WearHistory = process.argv.includes("--parity-tools-phase1-wear-history"),
   parityToolsPhase1Resize = process.argv.includes("--parity-tools-phase1-resize"),
   parityToolsPhase1MapInfo = process.argv.includes("--parity-tools-phase1-map-info"),
   gmUxN001 = process.argv.includes("--gm-ux-n001"),
@@ -652,9 +653,9 @@ async function workflow() {
     if (e.type() === "error")
       fs.appendFileSync(out + "/console.log", e.text() + "\n");
   });
-  if (parityPhase3Building || parityPhase7Combined || parityPhase7Large || parityPhase7Vault || parityToolsPhase1Wear || parityToolsPhase1Resize || parityToolsPhase1MapInfo || parityToolsPhase1SmartTiles || parityToolsPhase1BuildingFloor || parityToolsPhase1BuildingMixed || parityToolsPhase1BuildingPoint) {
+  if (parityPhase3Building || parityPhase7Combined || parityPhase7Large || parityPhase7Vault || parityToolsPhase1Wear || parityToolsPhase1WearHistory || parityToolsPhase1Resize || parityToolsPhase1MapInfo || parityToolsPhase1SmartTiles || parityToolsPhase1BuildingFloor || parityToolsPhase1BuildingMixed || parityToolsPhase1BuildingPoint) {
     let ready = false, observed;
-    for (let attempt = 0; attempt < (parityPhase7Combined || parityPhase7Large || parityPhase7Vault || parityToolsPhase1Wear || parityToolsPhase1Resize || parityToolsPhase1MapInfo || parityToolsPhase1SmartTiles || parityToolsPhase1BuildingFloor || parityToolsPhase1BuildingMixed ? 180 : 120); attempt++) {
+    for (let attempt = 0; attempt < (parityPhase7Combined || parityPhase7Large || parityPhase7Vault || parityToolsPhase1Wear || parityToolsPhase1WearHistory || parityToolsPhase1Resize || parityToolsPhase1MapInfo || parityToolsPhase1SmartTiles || parityToolsPhase1BuildingFloor || parityToolsPhase1BuildingMixed ? 180 : 120); attempt++) {
       try {
         observed = await page.evaluate(() => typeof app === "undefined" ? null : ({
           vault: app.vault?.adapter?.basePath,
@@ -779,6 +780,12 @@ async function workflow() {
   }
   if (gmUxN001) {
     const scenario = require("./host/gm-ux-n001.cjs")(scenarioContext);
+    if (restart) await scenario.reopen();
+    else await scenario.edit();
+    return;
+  }
+  if (parityToolsPhase1WearHistory) {
+    const scenario = require("./host/parity-tools-phase1-wear-history.cjs")(scenarioContext);
     if (restart) await scenario.reopen();
     else await scenario.edit();
     return;

@@ -1431,10 +1431,15 @@
     "followUpRoadmap": "ROADMAP-PARITY-TOOLS.md",
     "dd008Plan": {
       "date": "2026-10-09",
-      "state": "plan_ready_original_host_pair_open",
+      "state": "original_host_history_pair_candidate_review_pending",
       "plan": "ROADMAP-PARITY-TOOLS-PHASE1-DD008-PLAN.md",
       "source": "Dungeondraft 1.2.0.1: own-building-wear-scratched.dungeondraft_map; bisherige Original-Wahlprobe war leer",
-      "next": "Gleiche Building-Geometrie in Original und Host vergleichen, kombinierte History und zwei Geschosse direkt messen."
+      "originalHistory": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-20261009/original-history.md",
+      "implementation": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-20261009/implementation.md",
+      "pairedAudit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-20261009/paired-history-audit.json",
+      "hostEdit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-host-20261009/evidence/1791549046997-edit/result.json",
+      "hostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd008-host-20261009/evidence/1791549276477-reopen/result.json",
+      "next": "Neues Geometrie-/History-Paar unabhängig reviewen; anschließend die vier aktiven Modi auf gleicher Assetbasis und zwei Geschosse direkt prüfen."
     },
     "gmUxN001Plan": {
       "date": "2026-10-09",
