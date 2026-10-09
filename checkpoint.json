@@ -4918,17 +4918,17 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-E2E-R02-CLEAN-I",
-      "kind": "cleanup_implementation",
-      "startedAt": "2026-10-09T21:40:26.219086+00:00",
-      "focus": "Receipt und unveränderten Planblob kontrollieren",
-      "state": "completed",
-      "result": "Receipt-SHA/URL und Planblob bytegleich 1de3cee bestätigt; keine Ressourcen/duplizierte Architektur entstanden, kein Umbau nötig."
-    },
-    "nextRun": {
       "id": "CITY-E2E-R02-CLEAN-R",
       "kind": "cleanup_review",
-      "focus": "Fremdwurzeln/Abnahmen und PRübergabe prüfen"
+      "startedAt": "2026-10-09T21:40:44.043792+00:00",
+      "focus": "Receiptübergabe/Fremdschutz abschließen",
+      "state": "completed",
+      "result": "Geprüfter Planblob exakt erhalten, nur cityExecution nach R02 geändert; acceptance bytegleich. PRübergabe an unabhängigen Steward, keine Selbstintegration."
+    },
+    "nextRun": {
+      "id": "CITY-E2E-H01",
+      "kind": "coordination_handoff",
+      "focus": "Unabhängige PRintegration und gemeinsam versionierten Gatekatalog/Ownerannahmen in #12 prüfen; R02 nicht wiederholen, I48b bleibt bis Plan-Gate und neuer GUI-Slotantwort zurückgestellt."
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
