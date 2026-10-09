@@ -120259,6 +120259,20 @@
           "measuredScope": "8×8 Wood/Stone: Ein 1×1-Alt-Innenloch bei (3,2) erzeugt einen inneren Konturring. Original und Host speichern beide Ringe und unverändert 18 gleiche Zellwerte einschließlich des Wood-Felds unter dem Loch; visuelle Maskierung, Undo/Redo und frische Neuöffnung bestanden.",
           "remaining": "Weitere Lochgrößen und -formen, Übermalung im Loch, Konturpunkte, kombinierte Ränder und DD-038-Endreview offen. Keine Fallfreigabe; P7-2 physisch ungeprüft."
         },
+        "followUpPhase1BuildingPointOriginalProbe": {
+          "state": "original_measured_host_open",
+          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "originalReport": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-point-original-20261009/original-probe.md",
+          "originalAudit": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-point-original-20261009/original-audit.json",
+          "originalSource": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-floor-20261007/native-direct-two-style/runs/20261007-062733-1411559/evidence/maps/direct-two-style.dungeondraft_map",
+          "originalStoneMove": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-point-original-20261009/native-stone/runs/20261009-090135-3667392/evidence/maps/01-point-moved.dungeondraft_map",
+          "originalWoodMove": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-point-original-20261009/native-no-wall/runs/20261009-090011-3666504/evidence/maps/01-point-moved.dungeondraft_map",
+          "originalUndo": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-point-original-20261009/native-stone/runs/20261009-090135-3667392/evidence/maps/02-undo.dungeondraft_map",
+          "originalRedo": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-point-original-20261009/native-stone/runs/20261009-090135-3667392/evidence/maps/03-redo.dungeondraft_map",
+          "originalWallMove": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-point-original-20261009/native/runs/20261009-085807-3665129/evidence/maps/01-point-moved.dungeondraft_map",
+          "measuredScope": "8×8 Wood/Stone: Building-Punkt (1,1)→(1,0) erzeugt eine neue Kontur und 24 Zellen im vollen umschließenden Raster, alle im aktuell gewählten Wood- oder Stone-Stil. Undo stellt 18 gemischte Zellen wieder her, Redo 24 Stone-Zellen; frische Originalöffnung bytegleich. Aktive Battlements-Vorlage erzeugt beim Punktzug eine Wand.",
+          "remaining": "Host-Umsetzung und Rohdatenpaar, weitere Punktgesten, Löcher, kombinierte Ränder und DD-038-Endreview offen. Keine Fallfreigabe; P7-2 physisch ungeprüft."
+        },
         "followUpPhase1TerrainMaskCandidate": {
           "state": "seeded_host_masks_scoped_review_passed_case_open",
           "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
