@@ -92,13 +92,18 @@ Abhängigkeiten, bevor etwas zur Integration vorgeschlagen wird. Kein Folgepaket
 setzt den gelöschten Code oder eine Integration des Vorgänger-Harness voraus;
 es bindet ausschließlich dessen reviewten Aggregatbeleg als Eingangsoracle.
 
-Jeder Umsetzungslauf besitzt genau die unten genannten Dateien. Alle Plan-,
-Umsetzungs-, Review-, Fault-, GUI- und Lastläufe dieses Vorhabens laufen
-repositoryweit seriell: genau ein ausführender Agent und höchstens eine
-Testinstanz insgesamt, auch über mehrere Geräte hinweg. Während eines Laufs
-startet kein anderer Strang einen Agenten, Prototyp oder Lasttest. Kontrollierte
-Samples eines funktionierenden Kandidaten dürfen die unten geforderte Anzahl
-haben; nach höchstens zwei erfolglosen Versuchen oder 45 Minuten an derselben
+P01 bis P04 bleiben wegen ihrer fachlichen Eingangsorakel in dieser Reihenfolge
+sequenziell; kein Folgepaket beginnt vor dem Aufräumreview des Vorgängers. Jedes
+Paket hat genau einen Besitzer und ausschließlich die unten genannten Dateien.
+Diese Paketexklusivität sperrt keine andere, nicht überlappende Produktarbeit:
+statische und nichtgrafische Läufe dürfen in getrennten Worktrees parallel
+arbeiten. Pro physischem Gerät läuft jedoch gleichzeitig höchstens eine
+grafische Host-, Original- oder Prototypinstanz und nur ein GUI-, Fault- oder
+Lastlauf. Getrennte Geräte dürfen für denselben freigegebenen Paketkandidaten
+ihre plattformspezifischen Receipts parallel erzeugen; kein Lauf teilt dabei
+einen Evidence-Root oder schreibt dieselben Dateien. Kontrollierte Samples
+eines funktionierenden Kandidaten dürfen die unten geforderte Anzahl haben;
+nach höchstens zwei erfolglosen Versuchen oder 45 Minuten an derselben
 Hypothese wird anhand der vorhandenen Belege Go, No-Go oder eine neue
 Hypothese entschieden.
 
