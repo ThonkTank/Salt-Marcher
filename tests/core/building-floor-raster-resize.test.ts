@@ -1,9 +1,10 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { newDocument, parseDocument, serializeDocument, type Building } from "../../src/model";
-import { duplicateFloor, resizeMap } from "../../src/commands";
+import { duplicateFloor, planBuildingMutation, resizeMap } from "../../src/commands";
+import { composeBuilding } from "../../src/compute";
 import { Session } from "../../src/session";
-import { buildingFloorCells } from "../../src/features/material/building-floor-cells";
+import { buildingFloorCells, buildingFloorCellsAfterErase } from "../../src/features/material/building-floor-cells";
 
 const STYLE = "pack:dungeondraft-builtin-1.2.0.1:tileset:res%3A%2F%2Ftextures%2Ftilesets%2Fsmart%2Ftileset_wood_vertical.png";
 function building(id: string, floorId: string, y: number): Building {
@@ -70,4 +71,43 @@ test("tracked Building cells follow floor duplication and disappear with deletio
   assert.equal(session.smartTiles?.length, 4);
   session.undo();
   assert.equal(session.smartTiles?.length, 8);
+});
+
+test("Alt erase removes only the Wood cells covered by the changed contour in one undo step", () => {
+  const document = newDocument("Building erase", 18, 12);
+  const session = new Session(document), floorId = document.floors[0]!.id;
+  const wood = building("wood", floorId, 0);
+  const diamond = building("diamond", floorId, 3);
+  for (const item of [wood, diamond]) {
+    const before = session.smartTiles;
+    session.execute({ label: "Grundriss zeichnen",
+      entities: [{ id: item.id, before: null, after: item }],
+      smartTiles: { before, after: [...(before ?? []),
+        ...buildingFloorCells(item, 18, 12)] } });
+  }
+  const result = composeBuilding({ kind: "compose-building", nativeBuilding: true,
+    sources: [wood, diamond], shape: [{ outer: [
+      { x: 0, y: 0 }, { x: 1, y: 0 }, { x: 1, y: 2 }, { x: 0, y: 2 },
+    ], holes: [] }], erase: true });
+  const plan = planBuildingMutation({ entities: [...session.entities.values()],
+    floorId, result, expectedRevision: session.revision,
+    currentRevision: session.revision });
+  assert.ok(plan.command);
+  const previous = session.smartTiles;
+  session.execute({ ...plan.command, smartTiles: { before: previous,
+    after: buildingFloorCellsAfterErase(previous, plan.command.entities, 18, 12) } });
+  assert.deepEqual(coords(session), [[1, 0], [1, 1],
+    [0, 3], [1, 3], [0, 4], [1, 4]]);
+  const afterWood = session.entities.get("wood");
+  assert.equal(afterWood?.kind, "building");
+  if (afterWood?.kind !== "building") return;
+  assert.equal(afterWood.polygons.length, 1);
+  assert.deepEqual(new Set(afterWood.polygons[0]!.outer.map((point) =>
+    `${point.x}:${point.y}`)), new Set(["1:0", "2:0", "2:2", "1:2"]));
+  session.undo();
+  assert.equal(session.smartTiles?.length, 8);
+  session.redo();
+  assert.equal(session.smartTiles?.length, 6);
+  assert.deepEqual(parseDocument(serializeDocument(session.document())).smartTiles,
+    session.document().smartTiles);
 });
