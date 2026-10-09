@@ -24,6 +24,17 @@ function transform(pose: CityBuildingPose) {
         y: position.y + x * s + y * c,
       });
     },
+    precision(raw: Point): Point {
+      const p = cityInputPoint(raw);
+      // Scale terms before summing to avoid unnecessary coordinate-sum overflow.
+      const error =
+        8 *
+        (Math.abs(p.x) * Number.EPSILON +
+          Math.abs(p.y) * Number.EPSILON +
+          Math.abs(position.x) * Number.EPSILON +
+          Math.abs(position.y) * Number.EPSILON);
+      return cityInputPoint({ x: error / scale.x, y: error / scale.y });
+    },
     inverse(raw: Point): Point {
       const p = cityInputPoint(raw),
         x = p.x - position.x,
@@ -43,6 +54,13 @@ export function cityBuildingLocalPoint(
   point: Point,
 ): Point {
   return transform(pose).inverse(point);
+}
+/** Conservative inverse-pose roundoff estimate in building meters; not UI snapping. */
+export function cityBuildingLocalPrecision(
+  pose: CityBuildingPose,
+  point: Point,
+): Point {
+  return transform(pose).precision(point);
 }
 /** Building-local meters → city-local meters; the Atlas placement is not involved. */
 export function cityBuildingOutline(

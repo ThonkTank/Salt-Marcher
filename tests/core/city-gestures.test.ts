@@ -462,3 +462,102 @@ test("Current Atlas camera projections supply the same bound local gesture acros
   assert.equal(gesture.state, "editing");
   assert(gesture.cancel());
 });
+
+test("Rotated irrelevant-axis motions preserve exact City pose and redo at different coordinate magnitudes", () => {
+  for (const angle of [0.3, 0.71, 0.73, 1.2])
+    for (const axes of ["x", "y"] as const)
+      for (const large of [false, true]) {
+        const { history, source } = setup(angle);
+        const before = source.read(),
+          base = before.buildings[0]!;
+        const house = {
+          ...base,
+          position: large ? { x: 1e9, y: -1e9 } : base.position,
+          scale: { x: 1.7, y: 0.3 },
+        };
+        history.execute({
+          label: "pose",
+          changes: [
+            cityDocumentChange(before, { ...before, buildings: [house] }),
+          ],
+        });
+        const posed = source.read();
+        history.execute({
+          label: "redo candidate",
+          changes: [
+            cityDocumentChange(
+              posed,
+              editCity(posed, [
+                { kind: "move-node", nodeId: "c", point: { x: 0, y: 30 } },
+              ]),
+            ),
+          ],
+        });
+        history.undo();
+        const start = cityBuildingPoint(house, { x: 8, y: 10 }),
+          pointer = cityBuildingPoint(
+            house,
+            axes === "x" ? { x: 8, y: 20 } : { x: 16, y: 10 },
+          );
+        const gesture = new CityGesture(
+          source,
+          building("scale-building", axes),
+          start,
+        );
+        assert.deepEqual(gesture.update(pointer).document, posed);
+        assert.equal(gesture.apply("irrelevant axis"), false);
+        assert.equal(history.undoDepth, 1);
+        assert(history.canRedo);
+      }
+});
+
+test("Scale roundoff handling preserves meaningful tiny changes, negative grips and rejects reflection", () => {
+  const { history, source } = setup(0.71),
+    before = source.read();
+  const original = before.buildings[0]!;
+  const house = {
+    ...original,
+    position: { x: 0, y: 0 },
+    scale: { x: 0.001, y: 0.001 },
+  };
+  history.execute({
+    label: "millimeter house",
+    changes: [cityDocumentChange(before, { ...before, buildings: [house] })],
+  });
+  const start = cityBuildingPoint(house, { x: 8, y: 10 });
+  const gesture = new CityGesture(
+    source,
+    building("scale-building", "x"),
+    start,
+  );
+  const preview = gesture.update(
+    cityBuildingPoint(house, { x: 8 + 1e-7, y: 10 }),
+  );
+  assert(preview.document.buildings[0]!.scale.x > house.scale.x);
+  assert(gesture.apply("tiny real change"));
+  const current = source.read().buildings[0]!;
+  const negative = new CityGesture(
+    source,
+    building("scale-building"),
+    cityBuildingPoint(current, { x: 0, y: 0 }),
+  );
+  near(
+    negative.update(cityBuildingPoint(current, { x: -4, y: -5 })).document
+      .buildings[0]!.scale,
+    { x: current.scale.x * 2, y: current.scale.y * 2 },
+  );
+  assert.throws(() =>
+    negative.update(cityBuildingPoint(current, { x: 8, y: 10 })),
+  );
+  assert.equal(negative.preview, null);
+  assert.throws(() => negative.apply("reflection"));
+  assert.throws(
+    () =>
+      new CityGesture(
+        source,
+        building("scale-building", "x"),
+        cityBuildingPoint(current, { x: 4, y: 10 }),
+      ),
+  );
+  negative.cancel();
+});

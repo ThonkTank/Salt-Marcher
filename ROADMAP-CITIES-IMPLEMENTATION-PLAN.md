@@ -807,3 +807,12 @@ CITY-01-PREP-I06 Start 2026-10-09T18:00:16.650006+00:00; CityGesture bewegt Haus
 
 
 CITY-01-PREP-R08 Start 2026-10-09T18:06:15.198040+00:00; Separater Review reproduziert CITY-GESTURE-R08-01:6von8 gedrehten Achsgriffen ändern Pose/History bei ausschließlich ungewählter Achse (Größenordnung1e-15). Quellenhashes unverändert zuI06. Gegenprobe: /home/aaron/.cache/dungeon-native-qa/city-plans/city01-tools-20261009/r08-axis-probe.json; Review: /home/aaron/.cache/dungeon-native-qa/city-plans/city01-tools-20261009/review.json. N06 führt aus Double-Rundung/Koordinatengröße abgeleitete Fehlergrenze ein, erhält echte kleine Änderungen und lehnt Spiegelung/Nullhebel weiterhin ab. Kein Coreabschluss oder Hostnachweis.
+
+
+CITY-01-PREP-GESTURES-CLEAN-R06 Start 2026-10-09T18:08:26.898821+00:00; Getrennte CP/CI dokumentieren realen Gesturekern und offene R08-Lücke. Konkrete N06-Precision-Regel aus EPS-gewichteten Eingabe-/Posekoordinaten, ohne feste Meter-/Pixelklemmung. Quellhashes/Links/JSON geprüft, keine Runtimeänderung. Befund bleibt offen fürN06. Beleg: /home/aaron/.cache/dungeon-native-qa/city-plans/city01-tools-20261009/cleanup-review.json.
+
+
+CITY-01-PREP-N06 Start 2026-10-09T18:09:28.846154+00:00; CITY-GESTURE-R08-01 repariert: gemeinsame cityBuildingLocalPrecision schätzt inverse Double-Rundung aus Pointer/Poseposition und Anfangsskala, keine feste Meterklemmung. Unauflösbarer Anfangshebel abgewiesen; Null/Spiegelung vor No-op-Regel geprüft. Originalskala bleibt bei nichtauflösbarer relevanter Achsdifferenz exakt. Zwei neue Regressionen mit32gedrehten Achsfällen/Redo, großen Lagen, negativer Hebelseite und echter Kleinständerung am Millimeterhaus. Unabhängige Original8Gegenfälle jetzt0Fehlcommits statt6;144Vorherkonturen exakt. check,338Tests/build bestanden. R09 folgt separat;Host/Atlas offen. Beleg: /home/aaron/.cache/dungeon-native-qa/city-plans/city01-tools-20261009/refinement.json.
+
+
+Stadt-Team-Check-in 2026-10-09T18:12:38.814082+00:00: an sicherer N06-Grenze auf beide Integrationsanfragen in Issue1 geantwortet, Kommentar6086617328. Besitz/IDs/lesende CityScene und AtlasHistory-Befehlsgrenze bestätigt; keine LiveScene/SceneClock/Focus/Split/Rejoin/Travel-/Zeit-/Placement-/Router-API geliefert. Keine neue gemeinsame API vor Teamabgleich voraussetzen. Ausstehender bestehender N06-Review R09 bleibt erhalten, neues Feature-/Anschlusspaket erst nach konsolidierter Rückmeldung. Produktstand9f9e188 geprüft/gepusht;338Tests/check/build und Originalgegenproben, keine Hostabnahme.
