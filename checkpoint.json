@@ -291,28 +291,22 @@
   "hexAtlasExecution": {
     "scope": "HEX-00 bis HEX-28 und sämtliche eingeordneten CITY-00 bis CITY-09 vollständig",
     "phase": "HEX-00",
-    "state": "reference_review_passed_cleanup_pending",
-    "plan": "ROADMAP-HEX-00-REPAIR-PLAN.md",
+    "state": "cleanup_planning_passed",
+    "plan": "ROADMAP-HEX-00-CLEAN-PLAN.md",
     "currentRun": {
-      "kind": "review",
-      "startedAt": "2026-10-09T15:53:38.991845+02:00",
-      "baseCommit": "7f43d7e152671fbd96b59a134016033d71829a50",
-      "state": "passed",
-      "focus": "Six R01 findings,681 native surfaces,13 early scoped cases; critical original replay/fresh open and changed-build kernel host",
-      "id": "HEX-00-R02",
-      "evidence": [
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/r02-review-20261009-155338/manifest.json",
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/r02-review-20261009-155338/review.json",
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/r02-review-20261009-155338/catalog-reviewed.json",
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/r02-review-20261009-155338/r02-clean-basis.json"
-      ],
-      "endedAt": "2026-10-09T16:44:38.156626+02:00"
-    },
-    "nextRun": {
       "id": "HEX-00-CLEAN-P01",
       "kind": "cleanup_plan",
-      "focus": "RFB input/shot preflight C01 and evidence/process reproducibility; then implementation and own cleanup review",
-      "gate": "R02 reference and its own base7f43/build346 kernel passed. C01 is GUI-free helper validation; integrated19d kernel remains explicit separate obligation."
+      "startedAt": "2026-10-09T16:53:25.745490+02:00",
+      "endedAt": "2026-10-09T16:53:25.745490+02:00",
+      "baseCommit": "3c9444300e33f8f3df069864df2913006444f0ae",
+      "state": "planning_artifact_checks_passed",
+      "focus": "C01 syntax/shot/input preflight before socket and any input; no live negative original probe."
+    },
+    "nextRun": {
+      "id": "HEX-00-CLEAN-I01",
+      "kind": "cleanup_implementation",
+      "focus": "Extract complete preflight and self-contained no-connection regression tests",
+      "gate": "Own implementation and separate R01 review required."
     },
     "review": {
       "state": "passed",
@@ -324,8 +318,11 @@
       "next": "Reference and own kernel346 on R02 base7f43 passed. C01 cleanup next; later incoming19d kernel remains separate integration recheck."
     },
     "cleanup": {
-      "state": "not_started",
-      "next": "Nach Fachfreigabe eigener Aufräumplan, Umsetzung und Review; HEX-01 erst nach bestandenem Aufräumreview."
+      "state": "planned",
+      "plan": "ROADMAP-HEX-00-CLEAN-PLAN.md",
+      "finding": "HEX00-R01-C01",
+      "implementation": "not_started",
+      "review": "not_started"
     },
     "open": [
       "Incoming build19d89351 kernel recheck is separate from completed R02 base7f43/build346; pending CITY GUI release.",
