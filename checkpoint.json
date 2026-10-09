@@ -3372,17 +3372,20 @@
     "state": "city00_reference_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I03-CP",
-      "kind": "cleanup_planning",
-      "startedAt": "2026-10-09T12:30:19.373472+02:00",
-      "focus": "Zwei präzise Metadatenbefunde R01/R02 planen",
-      "state": "completed",
-      "result": "Vier Menübilder/zwei Ergebnisbilder plus Reload; Vorgabe von beobachteter Wirkung trennen"
-    },
-    "nextRun": {
       "id": "CITY-00-I03-CI",
       "kind": "cleanup_implementation",
-      "focus": "Manifest und Checkpoint präzisieren"
+      "startedAt": "2026-10-09T12:30:40.567591+02:00",
+      "focus": "Vier Menü-/zwei Ergebnisbilder plus Reload; besondere Gebäudetypen nur als Vorgaben",
+      "state": "completed_pending_review",
+      "result": "Bereinigtes Manifest separat erhalten; sieben Bilder mit Hashes; keine Sondergebäudewirkung abgenommen",
+      "evidence": [
+        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i03-20261009/manifest-cleaned.json"
+      ]
+    },
+    "nextRun": {
+      "id": "CITY-00-I03-CR",
+      "kind": "cleanup_review",
+      "focus": "Sieben Bildhashes und präzise Vorgaben-/Ergebnisgrenze überprüfen"
     },
     "open": [
       "CITY-00 direkte Referenzinventur/Galerie aller drei Produkte",
