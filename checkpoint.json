@@ -4070,17 +4070,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I35-CR",
-      "kind": "cleanup_review",
-      "startedAt": "2026-10-09T15:41:54.858122+00:00",
-      "focus": "Größe-/Recipebelege CR",
-      "state": "completed",
-      "result": "Snapshot/acceptance/Plan/Architektur stimmen,65 CO-/24 CTY-Pflichten offen. Alle tatsächlichen Downloadkopien und Rawhashes sowie Inventarbelegziele gültig. Eigene Kopie geschlossen, Kontrollkarte über sichtbaren From-URL-Weg bytegleich wiederhergestellt. Aufräumumfang ohne Restbefund. Nächste frühe Referenz prüft benutzerdefinierte Größe bei gehaltenem Seed; nach geprüftem HEX-05-Handoff CITY-01 statt weiterer Vorproben."
-    },
-    "nextRun": {
       "id": "CITY-00-I36-P",
       "kind": "reference_planning",
-      "focus": "Customgröße bei gehaltenem Seed planen; HEX-05 prüfen"
+      "startedAt": "2026-10-09T15:42:36.090055+00:00",
+      "focus": "Benutzerdefinierte Größe",
+      "state": "completed",
+      "result": "Kontrollierte Size19-Probe mit tatsächlichem Seedvergleich geplant."
+    },
+    "nextRun": {
+      "id": "CITY-00-I36-I",
+      "kind": "reference_implementation",
+      "focus": "Size-Feld und tatsächlichen Rebuild prüfen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
