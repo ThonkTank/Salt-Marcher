@@ -5013,7 +5013,8 @@
       "result": "Suchkern und Trefferaktivierung erfolgreich; aktivierter Raum12/Geschoss1-Key-Text vollständig und nach Close/Reopen unverändert. Dirty guard erhält Draft und blockiert Auswahl-/Close-Transition bis explizit Verwerfen. Datei-Hash vor/nach Save und Lauf identisch 56c38f8ff9e4365a165af4319da37bb03db20c09925d6ee38e5327e7559353c7. Teilbefund: Filter bleibt über normales Tab-Reopen bestehen; leerer Key-Dock kollabiert Suche/Inspector auf Breite 0 bis Schließen; Ergebniszeile im 256px Inspector zeigt Raum/Geschoss nicht sichtbar.",
       "evidence": "/workspace/scratch/gm-cloud-qa/evidence-95e7/01-installed-before-reload.png through 22-final-clear-search.png",
       "latency": "Nicht gemessen; CDP- und Automationszeiten nicht als Produktlatenz gewertet.",
-      "limits": "H01 ist ein begrenzter sichtbarer Cloud-Produkttest auf Shared 95e7bd2, keine physische Eingabe, kein frischer Electronprozess und keine Gesamtfreigabe. Der unabhängige R01-PASS gilt separat für I02-Commit 84440f1. UI-Follow-up dem Dungeon-Paketbesitzer in Issue #1 vorgeschlagen; N-006 bleibt getrennt offen."
+      "limits": "H01 ist ein begrenzter sichtbarer Cloud-Produkttest auf Shared 95e7bd2, keine physische Eingabe, kein frischer Electronprozess und keine Gesamtfreigabe. Der unabhängige R01-PASS gilt separat für I02-Commit 84440f1. UI-Follow-up dem Dungeon-Paketbesitzer in Issue #1 vorgeschlagen; N-006 bleibt getrennt offen.",
+      "issueComment": "6087535370"
     }
   }
 }
