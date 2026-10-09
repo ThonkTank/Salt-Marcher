@@ -4918,17 +4918,17 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-E2E-P01-CLEAN-I",
-      "kind": "cleanup_implementation",
-      "startedAt": "2026-10-09T21:23:24.885880+00:00",
-      "focus": "Verweise/IDs und Wiederaufnahmegate",
-      "state": "completed",
-      "result": "Relative Links und sieben IDs geprüft; kein technischer Umbau nötig; Fremdwurzeln geschützt."
-    },
-    "nextRun": {
       "id": "CITY-E2E-P01-CLEAN-R",
       "kind": "cleanup_review",
-      "focus": "Gesamtdiff/JSON/Scopegrenzen prüfen"
+      "startedAt": "2026-10-09T21:24:02.795641+00:00",
+      "focus": "Plan-Scope und Fremdschutz",
+      "state": "completed",
+      "result": "JSON/Verweise/IDs/Diff geprüft; acceptance bytegleich, keine GUI oder Produktmutation. Kandidat extern zu reviewen; gemeinsame Ratifikation offen."
+    },
+    "nextRun": {
+      "id": "CITY-E2E-R01",
+      "kind": "independent_plan_review",
+      "focus": "Konkrete Peer-/Architekturantwort in #12 prüfen; Kandidat nicht selbst integrieren. I48b erst nach gemeinsamem Plan-Gate und neuer Slotantwort."
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
