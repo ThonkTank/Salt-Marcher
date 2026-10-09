@@ -4512,17 +4512,17 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I44-REVIEW-CLEAN-R44",
-      "kind": "cleanup_review",
-      "startedAt": "2026-10-09T19:16:39.897987+00:00",
-      "focus": "REVIEW-CLEAN-R: FTG-Belegzuordnung korrigieren und Anforderungen erhalten",
+      "id": "CITY-00-I45-PLAN-CLEAN-I45",
+      "kind": "cleanup_implementation",
+      "startedAt": "2026-10-09T19:18:31.866072+00:00",
+      "focus": "FTG-Gebäudebedarfe: CLEAN-I",
       "state": "completed",
-      "result": "Aufräumreview bestanden: I02-Rawhashes, Links, 65 offene CO und 24 offene CTY sowie fremde JSON-Wurzeln unverändert."
+      "result": "Plan neben Roadmap verlinkt; eigene Formularprobe getrennt von alter QA-Karte und paralleler nativer GUI."
     },
     "nextRun": {
-      "id": "CITY-00-I45-P45",
-      "kind": "plan",
-      "focus": "Nächste vollständige Originallücke planen; Atlasintegration mit HEX05 abstimmen"
+      "id": "CITY-00-I45-PLAN-CLEAN-R45",
+      "kind": "cleanup_review",
+      "focus": "Plan und offene Anforderungen prüfen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
