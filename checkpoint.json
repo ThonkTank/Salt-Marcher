@@ -13,7 +13,7 @@
       "plan": "ROADMAP-SALTMARCHER-SMR-03-LIVE-SCENE-CONTRACT.md",
       "candidateBranch": "codex/smr-03-live-scene-contract-p01",
       "baseline": "7d35591be570d1c188998103b55e8e86e437f73d",
-      "integratedShared": "29dd23002bb4d38c49f58bfc27c7b4974c1f7c37",
+      "integratedShared": "adc7c2b13fc7a1d898eeb990a34993311a5dafcb",
       "planCandidateCommit": "840663fd83046457321283d9dad57db4a30ca8c7",
       "reviewedCandidate": "48b228cfc79d8d3fbcae2054d9958ae0916e7778",
       "review": "Independent architecture R03 fourth re-review in Issue comment 6088273526 left one P1: imported pending closure had no finish path when the target owner stays absent. The repair incorporates Campaign/Data decision 6088282319 for an explicit exact-envelope Core quarantine discard without owner semantics or token authority; focused owner and independent architecture re-reviews remain required.",
