@@ -3952,17 +3952,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I26-CR",
-      "kind": "cleanup_review",
-      "startedAt": "2026-10-09T14:54:14.332536+00:00",
-      "focus": "Snapshot, Hashes und Scope nachprüfen",
-      "state": "completed",
-      "result": "Aufräumumfang ohne Restbefund; vollständige Original- und Produktpflichten weiterhin offen."
-    },
-    "nextRun": {
       "id": "CITY-00-I27-P",
       "kind": "reference_planning",
-      "focus": "Forest-Wirkungsprobe mit bekanntem Show-trees-Zugang planen; HEX-05-Übergabe verfolgen"
+      "startedAt": "2026-10-09T14:54:59.446908+00:00",
+      "focus": "Forest-Wirkung und Ausgabe konkret planen",
+      "state": "completed",
+      "result": "Bekannter Show-trees-Zugang, tatsächliche Downloads und vollständiger Gruppenvergleich geplant."
+    },
+    "nextRun": {
+      "id": "CITY-00-I27-I",
+      "kind": "reference_probe",
+      "focus": "Forest off/on/off mit realen Ausgaben prüfen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
