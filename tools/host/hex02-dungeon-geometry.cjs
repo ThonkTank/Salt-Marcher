@@ -152,7 +152,17 @@ module.exports = ({
           .session.historySize === 1,
     );
     const moved = await state();
-    assert.deepEqual(moved.doc.entities[0].polygons[0].outer, after);
+    const actualAfter = moved.doc.entities[0].polygons[0].outer;
+    assert.equal(actualAfter.length, after.length);
+    for (const [i, point] of actualAfter.entries()) {
+      if (i === 1) {
+        // Native pointer coordinates pass through screen floats; stored snapshots remain exact.
+        assert(
+          Math.abs(point.x - after[i].x) < 1e-5 &&
+            Math.abs(point.y - after[i].y) < 1e-5,
+        );
+      } else assert.deepEqual(point, after[i]);
+    }
     assert.deepEqual(moved.doc.entities[0].key, doc.entities[0].key);
     await panel()
       .getByRole("button", { name: "Rückgängig", exact: true })
@@ -163,7 +173,10 @@ module.exports = ({
       .getByRole("button", { name: "Wiederholen", exact: true })
       .click();
     await settle();
-    assert.deepEqual((await state()).doc.entities[0].polygons[0].outer, after);
+    assert.deepEqual(
+      (await state()).doc.entities[0].polygons[0].outer,
+      actualAfter,
+    );
     await panel()
       .getByRole("button", { name: "Speichern", exact: true })
       .click();
@@ -173,10 +186,17 @@ module.exports = ({
           .session.dirty,
     );
     const saved = fs.readFileSync(path.join(vault, FILE), "utf8");
-    assert.deepEqual(JSON.parse(saved).entities[0].polygons[0].outer, after);
+    assert.deepEqual(
+      JSON.parse(saved).entities[0].polygons[0].outer,
+      actualAfter,
+    );
     fs.writeFileSync(
       baseline,
-      JSON.stringify({ saved, key: doc.entities[0].key }, null, 2),
+      JSON.stringify(
+        { saved, after: actualAfter, key: doc.entities[0].key },
+        null,
+        2,
+      ),
     );
     await page.screenshot({
       path: path.join(out, "geometry-insert-saved.png"),
@@ -189,7 +209,10 @@ module.exports = ({
     const saved = JSON.parse(fs.readFileSync(baseline, "utf8"));
     assert.equal(fs.readFileSync(path.join(vault, FILE), "utf8"), saved.saved);
     await open();
-    assert.deepEqual((await state()).doc.entities[0].polygons[0].outer, after);
+    assert.deepEqual(
+      (await state()).doc.entities[0].polygons[0].outer,
+      saved.after,
+    );
     assert.deepEqual((await state()).doc.entities[0].key, saved.key);
     await select();
     await edge({ x: 7.25, y: 1.5 }, 1);
