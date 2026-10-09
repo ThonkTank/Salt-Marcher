@@ -161,6 +161,31 @@ export function validateTranscriptData(transcript, inventory, { allowIncomplete 
       }
     }
   }
+  invariant(Array.isArray(inventory.helperDispositions), "Inventar benötigt eine Helper-Dispositionliste.");
+  const helperIndices = new Set();
+  for (const [index, disposition] of inventory.helperDispositions.entries()) {
+    object(disposition, `Helper-Disposition[${index}]`);
+    nonEmpty(disposition.helperIndex, `Helper-Disposition[${index}].helperIndex`);
+    nonEmpty(disposition.helperName, `Helper-Disposition[${index}].helperName`);
+    nonEmpty(disposition.sourceText, `Helper-Disposition[${index}].sourceText`);
+    invariant(!helperIndices.has(disposition.helperIndex),
+      `Doppelte Helper-Disposition ${disposition.helperIndex}.`);
+    helperIndices.add(disposition.helperIndex);
+    invariant(Array.isArray(disposition.sourceOccurrenceIds) && disposition.sourceOccurrenceIds.length > 0,
+      `${disposition.helperIndex} benötigt Quellenerscheinungen.`);
+    for (const occurrenceId of disposition.sourceOccurrenceIds)
+      invariant(occurrences.has(occurrenceId),
+        `${disposition.helperIndex} verweist auf unbekannte Occurrence ${occurrenceId}.`);
+    if (disposition.disposition === "pack-prose-only") {
+      invariant(disposition.canonicalId === null,
+        `${disposition.helperIndex} darf als pack-prose-only keine kanonische Primär-ID erfinden.`);
+      invariant(disposition.sourceOccurrenceIds.every(id => occurrences.get(id).sectionId === "equipment-packs"),
+        `${disposition.helperIndex} muss als pack-prose-only aus Equipment Packs belegt sein.`);
+    } else if (disposition.canonicalId !== null) {
+      invariant(occurrences.has(disposition.canonicalId),
+        `${disposition.helperIndex} verweist auf unbekannte kanonische Occurrence ${disposition.canonicalId}.`);
+    }
+  }
   const records = new Set();
   for (const record of transcript.records) {
     object(record, "Record");
@@ -258,6 +283,26 @@ function verifyPdfTranscriptFacts(pdfPath, transcript) {
     scope: "structured-table-and-sourced-description-facts" });
 }
 
+function verifyPdfHelperDispositions(pdfPath, inventory) {
+  const occurrences = new Map(inventory.occurrences.map(occurrence => [occurrence.id, occurrence]));
+  const pageText = new Map();
+  for (const disposition of inventory.helperDispositions) {
+    const pages = [...new Set(disposition.sourceOccurrenceIds.flatMap(id => {
+      const occurrence = occurrences.get(id);
+      return Array.from({ length: occurrence.lastPdfPage - occurrence.firstPdfPage + 1 },
+        (_, index) => occurrence.firstPdfPage + index);
+    }))].sort((left, right) => left - right);
+    const text = pages.map(page => {
+      if (!pageText.has(page)) pageText.set(page, normalizePdfPageText(extractPdfPage(pdfPath, page), page));
+      return pageText.get(page);
+    }).join(" ");
+    invariant(text.includes(normalizePdfText(disposition.sourceText)),
+      `${disposition.helperIndex}: PDF-Beleg für Helper-Disposition „${disposition.sourceText}“ fehlt.`);
+  }
+  return Object.freeze({ checkedDispositions: inventory.helperDispositions.length,
+    scope: "helper-disposition-source-text" });
+}
+
 async function json(path) {
   return JSON.parse(await readFile(path, "utf8"));
 }
@@ -307,7 +352,8 @@ export async function verifyItemsSourcePackage({ pdfPath, allowIncomplete = fals
     invariant(new RegExp(`^Pages:\\s+${manifest.source.pdfPages}$`, "m").test(info), "PDF-Seitenzahl stimmt nicht.");
     pdf = Object.freeze({ sha256: OFFICIAL_PDF_SHA256, bytes: bytes.length, pages: manifest.source.pdfPages,
       occurrenceEvidence: verifyPdfOccurrences(pdfPath, inventory),
-      transcriptEvidence: verifyPdfTranscriptFacts(pdfPath, transcript) });
+      transcriptEvidence: verifyPdfTranscriptFacts(pdfPath, transcript),
+      helperDispositionEvidence: verifyPdfHelperDispositions(pdfPath, inventory) });
   }
   return Object.freeze({
     complete: manifest.complete,
