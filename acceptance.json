@@ -111645,6 +111645,23 @@
           ],
           "measuredScope": "Übernehmen setzt oben +1, verschiebt Building und Objekt, markiert Dirty und speichert die 8×9-Karte.",
           "remaining": "Weitere Randrichtungen und Crop-Wirkung offen."
+        },
+        "followUpPhase1CancelOriginalProbe": {
+          "state": "original_measured_host_candidate_review_pending",
+          "originalVersion": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-original-final-20261009/original-probe.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-original-final-20261009/runs/20261009-053824-3468006/evidence/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-original-final-20261009/runs/20261009-053824-3468006/evidence/screens/09-ok-top-one.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-original-final-20261009/runs/20261009-053824-3468006/evidence/maps/after-ok.dungeondraft_map"
+          ],
+          "hostBuildSha256": "495efaf9c9eabb8a55ba1ae0e6d8c88e79d1d38b00b1b688499a4318b3b4a75e",
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-window-final-20261009/evidence/1791516812106-parity-tools-phase1-resize-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-window-final-20261009/evidence/1791516816609-parity-tools-phase1-resize-reopen/result.json"
+          ],
+          "measuredScope": "Oben +1 und OK ergeben 8×9; das Objekt wandert von y=1280 auf y=1536 native Einheiten.",
+          "remaining": "Weitere Randrichtungen, Smart-Tile-Crop und unabhängiger Review offen."
         }
       },
       {
@@ -111736,6 +111753,24 @@
           ],
           "measuredScope": "Nach Eingabe von oben +1 verwirft Host-Abbrechen den unbestätigten Wert; Dokument, Dateihash und History bleiben gleich.",
           "remaining": "Originalwirkung nach Eingabe direkt messen; unabhängiger Review offen."
+        },
+        "followUpPhase1CancelOriginalProbe": {
+          "state": "original_measured_host_candidate_review_pending",
+          "originalVersion": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-original-final-20261009/original-probe.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-original-final-20261009/runs/20261009-053824-3468006/evidence/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-original-final-20261009/runs/20261009-053824-3468006/evidence/screens/03-cancel-top-one.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-original-final-20261009/runs/20261009-053824-3468006/evidence/screens/05-reopen-after-cancel.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-original-final-20261009/runs/20261009-053824-3468006/evidence/maps/after-cancel.dungeondraft_map"
+          ],
+          "hostBuildSha256": "495efaf9c9eabb8a55ba1ae0e6d8c88e79d1d38b00b1b688499a4318b3b4a75e",
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-window-final-20261009/evidence/1791516812106-parity-tools-phase1-resize-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-window-final-20261009/evidence/1791516816609-parity-tools-phase1-resize-reopen/result.json"
+          ],
+          "measuredScope": "Oben +1 eingegeben, Cancel schließt ohne Übernahme; erneut 0 tiles, gespeicherte Karte 8×8 und zu X bytegleich.",
+          "remaining": "Andere Randwerte und unabhängiger Review offen."
         }
       },
       {
@@ -117522,6 +117557,24 @@
           ],
           "measuredScope": "Nach Eingabe von oben +1 verwirft Host-X den unbestätigten Wert; Dokument, Dateihash und History bleiben gleich.",
           "remaining": "Originalwirkung nach Eingabe direkt messen; unabhängiger Review offen."
+        },
+        "followUpPhase1CancelOriginalProbe": {
+          "state": "original_measured_host_candidate_review_pending",
+          "originalVersion": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "originalEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-original-final-20261009/original-probe.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-original-final-20261009/runs/20261009-053824-3468006/evidence/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-original-final-20261009/runs/20261009-053824-3468006/evidence/screens/06-x-top-one.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-original-final-20261009/runs/20261009-053824-3468006/evidence/screens/08-reopen-after-x.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-original-final-20261009/runs/20261009-053824-3468006/evidence/maps/after-x.dungeondraft_map"
+          ],
+          "hostBuildSha256": "495efaf9c9eabb8a55ba1ae0e6d8c88e79d1d38b00b1b688499a4318b3b4a75e",
+          "hostEvidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-window-final-20261009/evidence/1791516812106-parity-tools-phase1-resize-edit/result.json",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-resize-window-final-20261009/evidence/1791516816609-parity-tools-phase1-resize-reopen/result.json"
+          ],
+          "measuredScope": "Oben +1 eingegeben, X schließt ohne Übernahme; erneut 0 tiles, gespeicherte Karte 8×8 und zu Cancel bytegleich.",
+          "remaining": "Andere Randwerte und unabhängiger Review offen."
         }
       },
       {
