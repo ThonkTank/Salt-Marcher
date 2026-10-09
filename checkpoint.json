@@ -4394,7 +4394,7 @@
   },
   "gmProductTesting": {
     "date": "2026-10-09",
-    "state": "gm_ux_01_cloud_scenario_completed_with_open_findings_2a055f1",
+    "state": "gm_ux_01_cloud_scenario_completed_with_open_findings_d10ed1e",
     "plan": "ROADMAP-GM-PRODUCT-TESTING-PLAN.md",
     "focus": "Längere GM-Endanwenderabläufe, häufige Aktionen, Bedienkosten und UI-Überladung; belegte Nacharbeiten beauftragen und nachprüfen.",
     "currentRun": "GM-UX-01 isolierte Kopie: Asset-Suche, zehn Objektplatzierungen, Undo/Redo, Save/Close/Reopen; kurzer prüfbarer Cloud-Abschluss",
@@ -4537,7 +4537,7 @@
       "state": "completed",
       "supersedes": "GM-UX-ACCESS; Slotanfrage gemäß Nutzerkorrektur aufgehoben"
     },
-    "next": "GM-UX-01 Cloud-Szenario für diesen Build abgeschlossen. N-006-P01 ist beim Dungeon-Planbesitzer in Arbeit; N-005-I01 wartet auf unabhängigen PASS. Danach im Originalablauf nachtesten. Frischer Electronprozess und physische Eingabe bleiben offene Abnahmegrenzen.",
+    "next": "GM-UX-01 Cloud-Szenario bis zur Assetfolge auf Build 2a055f1 durchlaufen; auf aktuellem d10ed1e wurden nach App-Reload Kopie, Geheimgang, Objekte und Raum-Key sichtbar bestätigt. Noch keine komplette Suche/Undo/Redo-Folge auf d10ed1e. N-006-P01 ist beim Dungeon-Planbesitzer in Arbeit; N-005-I01 wartet auf unabhängigen PASS. Frischer Electronprozess und physische Eingabe bleiben offene Abnahmegrenzen.",
     "automation": "Stündliche GM-Produkttests in eigener Cloud; keine Laptop-Slotfreigabe erforderlich.",
     "executionEnvironment": "Eigene Cloud-Umgebung, getrennt vom Laptop der Kollegen",
     "cloudHost": {
@@ -4555,9 +4555,9 @@
         1000
       ],
       "input": "Playwright/CDP über sichtbare UI; keine physische Eingabeabnahme",
-      "productCommit": "2a055f10800c63678ca9fe991b0dd31a02483744",
-      "buildSha256": "99b4d9a6e293ce7bb90f1ceaee453cd327c33d1c0d21149237f594885e332aaf",
-      "verified": "Shared-Head 2a055f10800c63678ca9fe991b0dd31a02483744 in Cloud-Checkout integriert; Build auf 042fc71090d2b15a4078fbe03d0d1df7eb22c837 dirty:false. main.js/styles.css/manifest.json komplett installiert, alle drei SHA-256 verglichen und per sichtbarem Obsidian-Reload neu geladen. Assetfolge auf bytegleichem Tripel: Suchbegriffe Wooden Crate/Oak Barrel/Torch, 10 Objekte, Undo/Redo, Save, Close/Reopen; Notiz in Raum 14 erhalten. Originalkarte blieb byteidentisch. Kein frischer Electronprozess und keine physische Eingabeabnahme.",
+      "productCommit": "d10ed1e (Shared-Head; Build von d10ed1e plus lokale GM-Dokumentation a64da8b4cb39e8853175cbd821fb5d9ea3f71676)",
+      "buildSha256": "6896c7b53cb0100178d32c217b824b6c762122a33df38921e84acdd467234ba7",
+      "verified": "Shared-Head d10ed1e integriert; npm run build auf a64da8b4cb39e8853175cbd821fb5d9ea3f71676 dirty:false. Vollständiges main.js/styles.css/manifest.json-Tripel mit SHA-256 geprüft und per sichtbarem Reload in Obsidian 1.14.4 geladen. Auf 2a055f1-Bundle: Asset-Suche Wooden Crate/Oak Barrel/Torch, zehn Objekte, Undo/Redo, Save, Close/Reopen und Key in Raum 14. Auf neuem d10ed1e-Bundle: Karte erneut geöffnet, Geheimgang ausgewählt, alle Testobjekte und Raum-14-Key sichtbar. Vollständige Assetinteraktionen wurden auf d10ed1e nicht wiederholt. Originalkarte blieb byteidentisch. Kein frischer Electronprozess und keine physische Eingabeabnahme.",
       "evidence": [
         "176-n002-current-remote-switch.png",
         "177-n002-current-remote-open.png",
@@ -4619,7 +4619,15 @@
         "358-shared-2a055-after-reload.png",
         "359-shared-2a055-quick-switch.png",
         "363-shared-2a055-copy-reopened-visible.png",
-        "364-shared-2a055-copy-tree-open.png"
+        "364-shared-2a055-copy-tree-open.png",
+        "365-latest-d10-before-reload.png",
+        "366-latest-d10-reload-command.png",
+        "367-latest-d10-after-reload.png",
+        "368-latest-d10-copy-open.png",
+        "369-latest-d10-dungeon-panel.png",
+        "370-latest-d10-geheimgang-after-reopen.png",
+        "371-latest-d10-room14-selected.png",
+        "372-latest-d10-room14-content.png"
       ],
       "initialization": "Erste Eingaben während Hoststart ohne sichtbare Wirkung; später Befehlsleiste und Editor bedienbar. Kein reproduzierter Produktbefund.",
       "windowManager": "Openbox im isolierten dungeon-gm-cloud Container; Xvfb 1440x1000; maximiertes Obsidian-Fenster 1440x1000."
@@ -4719,6 +4727,6 @@
         "coordination": "Issue #1 Kommentar 6084269776. N-004 bis HEX-01-CLEAN-R01 ohne Kamera-/Gesten-/Geometrieänderungen geparkt; Issue #1 Kommentar 6084291328. Ergänzende DOM-Diagnose Issue #1 Kommentar 6084619486."
       }
     ],
-    "evidence": "/workspace/scratch/gm-cloud-qa/330-current-aea-reload-command.png bis 364-shared-2a055-copy-tree-open.png; ursprüngliche Kartenbelege 295–355 bleiben erhalten."
+    "evidence": "/workspace/scratch/gm-cloud-qa/330-current-aea-reload-command.png bis 372-latest-d10-room14-content.png; Interaktionen bis 355 auf dem 2a055f1-Bundle; Zustand auf d10ed1e in 365–372."
   }
 }
