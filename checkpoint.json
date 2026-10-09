@@ -2004,7 +2004,7 @@
       "repairBase": "972913fde69bd3824aedfe08fce86f74e66b3b22",
       "repair": "Plan staffelt referenzfreies read-only Overworld-Öffnen nach HEX-01, nichtleeren Transport und Kinddateivalidierung hinter Terrain-Lader plus Hostverdrahtung, History nach HEX-02-I01a/I01b, Save/Draft/Recovery nach I01c, Kopie/Discard nach I01d und Shellfälle nach der Plattformentscheidung. Dungeondraft DD-036 und Wonderdraft WD-003 bleiben getrennte Referenzwahrheiten. Ein operationsgenaues world.id-/Dateimanifest sowie prepared-/committed-/Draft-/Konfliktorakel binden alle späteren Läufe an den gemeinsamen FileStore-/FileTransaction-Weg.",
       "review": "Unabhängiger read-only Nachreview bestand den exakten Planstand f6e420db98060beebdb30704ca06a6299a01b40c nach einer Reparatur: O01a ist referenzfrei und read-only; O01b wartet auf Terrain-Lader und sichtbare Hostverdrahtung. Keine weitere Pflichtlücke.",
-      "limits": "Planreview-PASS, O01a read-only und O01b für genau ein Terrainkind eng hostgeprüft; keine Dungeondraft-Original-, City-/Dungeon-Kinddatei-, Save-, Import-, Recovery-, physische oder Gesamtparitätsfreigabe. Vollständiges O01b, HEX-02 und die reale Shell bleiben für weitere Fälle Voraussetzungen.",
+      "limits": "Planreview-PASS, O01a read-only, O01b für genau ein Terrainkind und H01 für einen sichtbaren Terrainbefehl eng hostgeprüft; keine Dungeondraft-Original-, City-/Dungeon-Kinddatei-, Save-, Import-, Recovery-, physische oder Gesamtparitätsfreigabe. Vollständiges O01b, weitere HEX-02-Pakete und die reale Shell bleiben für weitere Fälle Voraussetzungen.",
       "o01a": {
         "run": "DD-036-ATLAS-O01a",
         "state": "scoped_read_only_host_passed_independent_review_passed_full_cases_open",
@@ -2029,6 +2029,16 @@
         ],
         "result": "Synthetische nichtleere .overworld und tatsächliche Dateikopie in getrennten isolierten Vaults laden dieselben zwei Terrainzellen; Welt-SHA 1a2fd3e7871517fa3b5d5883445bd06ac342daad653a097311aee4899e362ced und Kind-SHA 81bff69edd957e7cb8ee21c2efa3327ff0477bfc90d24f9712c4235287e3e07e bleiben vor/nach Öffnen gleich. Fehlendes Terrainkind und Kind mit fremder worldId zeigen den jeweils spezifischen Fehler und laden keine Zellen. Alle vier Prozesse enden normal, 32 instrumentierte Vault-/Adaptermethoden melden null Atlas-Schreibaufrufe.",
         "review": "Unabhängiger read-only Review auf Shared-Head 2bf1043: PASS ausschließlich für das Terrainkind-Teilpaket. Synthetische Quelle, kein Dungeondraft-Original; City-/Dungeon-Kinder, geschützte Key-Bytes, Save/Import und vollständige DD-036.02/.16 bleiben offen."
+      },
+      "h01": {
+        "run": "DD-036-ATLAS-H01",
+        "state": "scoped_one_terrain_command_host_passed_independent_review_passed_full_cases_open",
+        "testCommit": "0d16451",
+        "reviewHead": "0d3eb7e",
+        "mainSha256": "764989aaaf98d7a5c8e09ba88047a0c001cc4f20c997cbc761b034c7ad35a697",
+        "evidence": "/home/aaron/.cache/dungeon-native-qa/dd036-h01-20261009/evidence/1791568181784-dd036-h01-edit/h01-result.json",
+        "result": "Isolierter Obsidian-Lauf mit synthetischer referenzfreier Welt: Ein sichtbarer Landklick erzeugt genau eine Terrainzelle und einen Befehl mit ownerId dd036-h01-world. Undo entfernt die Zelle, Redo stellt sie exakt wieder her; Kamerazentrum und Maßstab bleiben gleich. Die Weltdatei behält SHA-256 b532637bcea8f2367b811124832713b6d216547801d8d8a21fdc2ce20ba1ac39; 32 instrumentierte Vault-/Adaptermethoden melden null Atlas-Schreibaufrufe, kein Atlasdaten-Verzeichnis entsteht, normaler Prozessausgang.",
+        "review": "Unabhängiger read-only Review auf Shared-Head 0d3eb7e: PASS nur für eine sichtbare synthetische Terrainzelle. Dungeondraft-Originalfolge, Save/Neuöffnung, mehrere Besitzer und volle DD-036.04/.05 bleiben offen."
       },
       "next": "GM-UX-N-005-P01: als eigener Dungeon-Planlauf ausschließlich die belegte Raum-Key-Suche planen; nicht mit DD-036 oder Atlaspersistenz vermischen.",
       "followingRun": "DD-036-O01a und das Terrainkind-Teilpaket von O01b sind eng geprüft; O01b mit Stadt-/Dungeon-Kinddateien wartet auf deren Atlasreferenzen und sichtbare Hostprüfung."

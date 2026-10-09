@@ -130660,10 +130660,12 @@
           "evidence": []
         },
         "hostCheck": {
-          "state": "open",
-          "build": null,
-          "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "state": "scoped_h01_one_terrain_command_review_passed_full_case_open",
+          "build": "Obsidian 1.14.4; main.js SHA-256 764989aaaf98d7a5c8e09ba88047a0c001cc4f20c997cbc761b034c7ad35a697; Reviewstand 0d3eb7e",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/dd036-h01-20261009/evidence/1791568181784-dd036-h01-edit/h01-result.json"
+          ],
+          "gap": "Ein sichtbarer Terrainbefehl einer synthetischen Atlaswelt hat exaktes Undo/Redo bei gleicher ownerId, Kamera und Dateibytes. Dungeondraft-Originalwirkung, weitere Befehle/Besitzer, Save/Neuöffnung und vollständige Gleichwertigkeit bleiben offen."
         }
       },
       {
@@ -130713,10 +130715,12 @@
           "evidence": []
         },
         "hostCheck": {
-          "state": "open",
-          "build": null,
-          "evidence": [],
-          "gap": "Gleichwertigkeit am neuen isolierten Host noch nicht belegt."
+          "state": "scoped_h01_one_terrain_command_review_passed_full_case_open",
+          "build": "Obsidian 1.14.4; main.js SHA-256 764989aaaf98d7a5c8e09ba88047a0c001cc4f20c997cbc761b034c7ad35a697; Reviewstand 0d3eb7e",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/dd036-h01-20261009/evidence/1791568181784-dd036-h01-edit/h01-result.json"
+          ],
+          "gap": "Ein sichtbarer Terrainbefehl einer synthetischen Atlaswelt hat exaktes Undo/Redo bei gleicher ownerId, Kamera und Dateibytes. Dungeondraft-Originalwirkung, weitere Befehle/Besitzer, Save/Neuöffnung und vollständige Gleichwertigkeit bleiben offen."
         }
       },
       {
