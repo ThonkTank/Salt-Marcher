@@ -422,17 +422,18 @@
     "state": "r01_r02_pass_scoped_cleanup_open",
     "plan": "ROADMAP-HEX-02-PLAN.md",
     "currentRun": {
-      "id": "HEX-02-CLEAN-P01",
-      "kind": "cleanup_plan",
-      "startedAt": "2026-10-09T19:26:10.493235+00:00",
-      "finishedAt": "2026-10-09T19:26:10.493235+00:00",
-      "state": "completed",
-      "focus": "Exactly two cleanup findings: AST-preserving formatting of atlas-view/own native helper; accurate current provenance/next HEX03. No feature scope."
-    },
-    "nextRun": {
       "id": "HEX-02-CLEAN-I01",
       "kind": "cleanup_implementation",
-      "focus": "Format only two named files, AST-equivalence and same native buildtriplet plus clean gates; update own current evidence."
+      "startedAt": "2026-10-09T19:26:57.166076+00:00",
+      "state": "completed_implementation_review_open",
+      "focus": "Two named files formatted; exact AST unchanged. Clean gates/buildtriplet pending; own provenance state preserved.",
+      "finishedAt": "2026-10-09T19:28:26.260017+00:00",
+      "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/cleanup-implementation.json"
+    },
+    "nextRun": {
+      "id": "HEX-02-CLEAN-R01",
+      "kind": "cleanup_review",
+      "focus": "Separate own bounded format/provenance review, exact AST/native-triplet and foreign protection. Then HEX03."
     },
     "review": {
       "run": "HEX-02-R02",
@@ -461,7 +462,7 @@
     },
     "open": [
       "Cloud fresh Electron process remains unverified; empty-grid reload passed with correct plugin triplet. No product layout fix needed.",
-      "HEX02-R01/CLEAN after native Copy/Discard/A↔B/fresh completion; HEX03..05 Location/City/Dungeon common Atlas remains open.",
+      "HEX02 independent R01/R02 required findings closed; own CLEAN-R01 remains; HEX03..05 Location/City/Dungeon common Atlas remains open.",
       "HEX06..28/CITY product phases and 79 later Wonderdraft obligations remain.",
       "Full parity, physical input, large-map and installed-vault acceptance remain open."
     ],
@@ -1307,6 +1308,39 @@
           "Independent R02/CLEAN pending; common Atlas Location/City/Dungeon and complete Wonderdraft parity/large-map/install open"
         ],
         "userVault": "unchanged"
+      },
+      "hex02CleanupImplementation": {
+        "run": "HEX-02-CLEAN-I01",
+        "state": "completed_implementation_review_open",
+        "sourceCommit": "ad8283fb78ba5a4ced812be289b1d1a130a8f53f",
+        "finishedAt": "2026-10-09T19:28:26.260017+00:00",
+        "checkPassed": true,
+        "testsPassed": 373,
+        "buildPassed": true,
+        "triplet": {
+          "main.js": {
+            "bytes": 1402621,
+            "sha256": "4b78f558a89fd8c9969bd7668ab5fff308dd15170be834eb0cd274dbce04615c"
+          },
+          "styles.css": {
+            "bytes": 27503,
+            "sha256": "7662b340175931ff13ea91f0e03120566654981423466c5fbf5e02bbcd2e0b20"
+          },
+          "manifest.json": {
+            "bytes": 237,
+            "sha256": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64"
+          }
+        },
+        "nativeTripletUnchanged": true,
+        "astEvidence": "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/cleanup-ast.json",
+        "testLog": "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/cleanup-clean-test.log",
+        "nativeEvidence": "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/n01-native-implementation.json",
+        "newNativeHost": false,
+        "phaseApproval": false,
+        "initialValidationFailures": [
+          "Strict AST check treated additional equivalent parentheses as a structural difference; normalized comparison excludes only parenthesized wrappers and passes.",
+          "First clean-worktree command used an invalid ref and failed before reset; actual committed ad8283f then reset/check/test/build successfully. Shared checkout was not reset."
+        ]
       }
     },
     "repairPlan": "ROADMAP-HEX-02-REPAIR-PLAN.md",
