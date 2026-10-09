@@ -1019,7 +1019,16 @@
         "checkPassed": true,
         "buildPassed": true,
         "target": "Native sparse level0 chunks, lazy-source read guard, continuous atomic preview/stroke, shared document history",
-        "limits": "No terrain controls/render/Save/Host acceptance until I01b/c; no installed user-vault change"
+        "limits": "No terrain controls/render/Save/Host acceptance until I01b/c; no installed user-vault change",
+        "cleanGit": {
+          "sourceCommit": "8e521b9e851a8f94a0123c2d99397c082c6abede",
+          "testsPassed": 275,
+          "checkPassed": true,
+          "buildPassed": true,
+          "buildSha256": "afc186f846242f7225d1c19d48f15c776bb3b817df586dead7a872f85b1ef6c5",
+          "cityCodecIntegrated": true,
+          "scope": "Core-only, no terrain host yet"
+        }
       }
     },
     "repairPlan": "ROADMAP-HEX-00-REPAIR-PLAN.md",
