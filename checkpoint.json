@@ -2108,7 +2108,15 @@
         "mainSha256": "c77eed86d4ade60a3fdaca5edc8e338a9633a7b66fcfa195daab96664da6c997",
         "evidence": "/home/aaron/.cache/dungeon-native-qa/dd036-s01-noop-20261009/evidence/1791570558973-dd036-s01-noop-reopen/s01-noop-result.json",
         "result": "Isolierter frischer Obsidian-Prozess auf sauberem Testcommit öffnet eine tatsächlich gespeicherte 36-Zellen-Welt mit fünf referenzierten Terrainkinddateien. Ein sichtbarer erneuter Atlas-Save ohne Bearbeitung erhält alle sechs Dateien bytegleich; world.id, 34 aktuell geladene Zellen, fünf Referenzen, Kamera, Undo-Tiefe 0 und Status Gespeichert bleiben gleich. Draft und Journal fehlen vor und nach Save; normaler Prozessausgang.",
-        "review": "Unabhängiger read-only Nachreview des sauberen 96a645c-Laufs PASS für diesen engen Host-Noop. Build-Tripel und sechs Datei-SHA-256 wurden gegen installierte und aktuelle QA-Dateien geprüft. Der erste fehlgeschlagene Versuch nahm fälschlich vollständiges Laden aller 36 gespeicherten Zellen an; er belegte keinen Produktfehler. Dungeondraft schrieb bei einem zweiten Save andere Bytes; eine Bytegleichheit der Originaldatei wird nicht behauptet. Open Recent, City-/Dungeon-Kinder, harte Recovery und volle DD-036.03 bleiben offen."
+        "review": "Unabhängiger read-only Nachreview des sauberen 96a645c-Laufs PASS für diesen engen Host-Noop. Build-Tripel und sechs Datei-SHA-256 wurden gegen installierte und aktuelle QA-Dateien geprüft. Der erste fehlgeschlagene Versuch nahm fälschlich vollständiges Laden aller 36 gespeicherten Zellen an; er belegte keinen Produktfehler. Dungeondraft schrieb bei einem zweiten Save andere Bytes; eine Bytegleichheit der Originaldatei wird nicht behauptet. Open Recent, City-/Dungeon-Kinder, harte Recovery im Obsidian-Adapter und volle DD-036.03 bleiben offen; der externe FileTransaction-Abbruch steht gesondert unter s01Journal."
+      },
+      "s01Journal": {
+        "run": "DD-036-S01-J01",
+        "state": "scoped_disk_filetransaction_hard_process_recovery_independent_review_passed_full_host_case_open",
+        "sourceRevision": "5832001a7190bd67dab89f552288af7d0c1820b6",
+        "evidence": "/home/aaron/.cache/dungeon-native-qa/dd036-s01-j01-20261009/result.json",
+        "result": "Die fünf tatsächlich gespeicherten Terrainkinddateien einer 36-Zellen-QA-Welt, ihr Weltmanifest und ein validierter Fünf-Chunk-Draft bilden sieben Zielschreibungen. Zehn getrennte Node-Prozesse enden unmittelbar nach je einer abgeschlossenen CAS-Grenze; frische Prozesse rollen prepared nach Journalanlage und jeder der sieben Zielschreibungen vollständig auf Before zurück, behalten den committed-Nachherstand und finden nach Journal-Cleanup nichts mehr. Ein externer dritter Wert nach Teilwrite blockiert Recovery ohne weitere Byteänderung und erhält das Journal.",
+        "review": "Unabhängiger read-only Re-Review PASS für den externen plattenbasierten FileTransaction-Baustein. Draftvalidierung, sämtliche Einzeldatei-/Journalhashes und idempotentes zweites Recover geprüft. Kein Obsidian-VaultStore oder sichtbarer Host, keine fsync-/Power-Loss-/torn-write-Garantie, keine City-/Dungeon-Kinder, kein I01d-Verwerfen und kein vollständiges DD-036.03-/HEX-02-Go."
       },
       "o01Original": {
         "run": "DD-036-O01-ORIGINAL-03",
