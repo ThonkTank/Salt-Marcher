@@ -1,5 +1,12 @@
 import { sameAtlasValue, type AtlasValue } from "./atlas-history";
 import { parseOverworld, type OverworldDocument } from "./overworld";
+import { safePath } from "../../model";
+import { parseLocationDocument } from "../location/location-schema";
+import {
+  checkedLocationPlacements,
+  type LocationPlacement,
+} from "./location-placement";
+import { nativeArray, nativeId, nativeRecord } from "./native-values";
 import {
   checkedAxial,
   parseTerrainChunk,
@@ -11,7 +18,7 @@ export interface DraftChunk {
   readonly before: string | null;
   readonly after: string | null;
 }
-export interface AtlasDraft {
+export interface TerrainAtlasDraft {
   readonly kind: "overworld-draft";
   readonly version: 1;
   readonly worldId: string;
@@ -19,6 +26,20 @@ export interface AtlasDraft {
   readonly currentWorld: string;
   readonly chunks: readonly DraftChunk[];
 }
+export interface DraftLocation {
+  readonly id: string;
+  readonly path: string;
+  readonly before: string | null;
+  readonly after: string | null;
+}
+export interface LocationAtlasDraft extends Omit<TerrainAtlasDraft, "version"> {
+  readonly version: 2;
+  readonly locations: readonly DraftLocation[];
+}
+export type AtlasDraft = TerrainAtlasDraft | LocationAtlasDraft;
+type DraftWorld = Omit<OverworldDocument, "placements"> & {
+  readonly placements: readonly LocationPlacement[];
+};
 export function isTerrainFile(file: string): boolean {
   const match = /^terrain\/0_(-?(?:0|[1-9]\d*))_(-?(?:0|[1-9]\d*))\.json$/.exec(
     file,
@@ -32,49 +53,65 @@ export function isTerrainFile(file: string): boolean {
     return false;
   }
 }
-function sameWorld(a: OverworldDocument, b: OverworldDocument): boolean {
+function sameWorld(a: DraftWorld, b: DraftWorld, version: 1 | 2): boolean {
   return sameAtlasValue(
-    { ...a, chunks: [] } as unknown as AtlasValue,
-    { ...b, chunks: [] } as unknown as AtlasValue,
+    {
+      ...a,
+      chunks: [],
+      ...(version === 2 ? { placements: [] } : {}),
+    } as unknown as AtlasValue,
+    {
+      ...b,
+      chunks: [],
+      ...(version === 2 ? { placements: [] } : {}),
+    } as unknown as AtlasValue,
   );
 }
+/** V2 validates the reserved placement field without activating it in the runtime World parser. */
+function draftWorld(raw: string, version: 1 | 2): DraftWorld {
+  if (version === 1) return parseOverworld(raw);
+  const value = JSON.parse(raw),
+    placements = checkedLocationPlacements(value?.placements);
+  const world = parseOverworld(JSON.stringify({ ...value, placements: [] }));
+  if (placements.some((p) => p.locationId === world.id))
+    throw new Error("Ort und Welt benötigen verschiedene Dokumentkennungen.");
+  return Object.freeze({ ...world, placements });
+}
 /** Strict, native deltas. Unknown data is rejected before any file is changed. */
-export function parseAtlasDraft(raw: string): AtlasDraft {
-  const d = JSON.parse(raw) as AtlasDraft;
+export function checkedAtlasDraft(value: unknown): AtlasDraft {
+  const version =
+    value && typeof value === "object"
+      ? Object.getOwnPropertyDescriptor(value, "version")?.value
+      : undefined;
+  const keys = [
+    "kind",
+    "version",
+    "worldId",
+    "baselineWorld",
+    "currentWorld",
+    "chunks",
+  ];
+  const d = nativeRecord(value, version === 2 ? [...keys, "locations"] : keys);
   if (
-    !d ||
-    typeof d !== "object" ||
-    Object.keys(d).length !== 6 ||
-    ![
-      "kind",
-      "version",
-      "worldId",
-      "baselineWorld",
-      "currentWorld",
-      "chunks",
-    ].every((k) => Object.hasOwn(d, k)) ||
     d.kind !== "overworld-draft" ||
-    d.version !== 1 ||
+    (d.version !== 1 && d.version !== 2) ||
     typeof d.baselineWorld !== "string" ||
     typeof d.currentWorld !== "string" ||
-    !Array.isArray(d.chunks)
+    typeof d.worldId !== "string"
   )
     throw new Error("Unlesbarer Atlasentwurf; Datei bleibt erhalten.");
-  const baseline = parseOverworld(d.baselineWorld),
-    current = parseOverworld(d.currentWorld);
-  if (d.worldId !== baseline.id || !sameWorld(baseline, current))
+  const baseline = draftWorld(d.baselineWorld, d.version),
+    current = draftWorld(d.currentWorld, d.version);
+  if (d.worldId !== baseline.id || !sameWorld(baseline, current, d.version))
     throw new Error(
       "Atlasentwurf gehört zu einer anderen Welt oder einem anderen Maßstab.",
     );
   const beforeRefs = new Map(baseline.chunks.map((r) => [r.file, r])),
     afterRefs = new Map(current.chunks.map((r) => [r.file, r])),
     files = new Set<string>();
-  const chunks = d.chunks.map((c) => {
+  const chunks = nativeArray(d.chunks).map((value) => {
+    const c = nativeRecord(value, ["file", "before", "after"]);
     if (
-      !c ||
-      typeof c !== "object" ||
-      Object.keys(c).length !== 3 ||
-      !["file", "before", "after"].every((k) => Object.hasOwn(c, k)) ||
       typeof c.file !== "string" ||
       !isTerrainFile(c.file) ||
       files.has(c.file) ||
@@ -92,9 +129,14 @@ export function parseAtlasDraft(raw: string): AtlasDraft {
         throw new Error(
           "Entwurf und Landschaftsverweise passen nicht zusammen.",
         );
-      if (value !== null) parseTerrainChunk(value, d.worldId, ref!);
+      if (value !== null)
+        parseTerrainChunk(value as string, d.worldId as string, ref!);
     }
-    return Object.freeze({ ...c });
+    return Object.freeze({
+      file: c.file,
+      before: c.before as string | null,
+      after: c.after as string | null,
+    });
   });
   for (const file of new Set([...beforeRefs.keys(), ...afterRefs.keys()]))
     if (
@@ -105,8 +147,66 @@ export function parseAtlasDraft(raw: string): AtlasDraft {
       !files.has(file)
     )
       throw new Error("Landschaftsänderung fehlt im Atlasentwurf.");
-  return Object.freeze({ ...d, chunks: Object.freeze(chunks) });
+  const common = {
+    kind: "overworld-draft" as const,
+    worldId: d.worldId,
+    baselineWorld: d.baselineWorld,
+    currentWorld: d.currentWorld,
+    chunks: Object.freeze(chunks),
+  };
+  if (d.version === 1) return Object.freeze({ ...common, version: 1 });
+  const beforeIds = new Set(baseline.placements.map((p) => p.locationId)),
+    afterIds = new Set(current.placements.map((p) => p.locationId)),
+    ids = new Set<string>(),
+    paths = new Set<string>();
+  const locations = nativeArray(d.locations).map((value) => {
+    const l = nativeRecord(value, ["id", "path", "before", "after"]),
+      id = nativeId(l.id);
+    if (
+      typeof l.path !== "string" ||
+      !l.path.endsWith(".location") ||
+      ids.has(id) ||
+      paths.has(l.path) ||
+      id === d.worldId ||
+      ![l.before, l.after].every((v) => v === null || typeof v === "string") ||
+      l.before === l.after
+    )
+      throw new Error("Ungültiger Ortsentwurf; Datei bleibt erhalten.");
+    safePath(l.path);
+    if (l.before === null && l.path !== `Orte/${id}.location`)
+      throw new Error("Neuer Ort benötigt seinen eigenen Dateipfad.");
+    ids.add(id);
+    paths.add(l.path);
+    for (const [text, manifest] of [
+      [l.before, beforeIds],
+      [l.after, afterIds],
+    ] as const) {
+      if (text === null ? manifest.has(id) : !manifest.has(id))
+        throw new Error(
+          "Ortsentwurf und Atlasplatzierungen passen nicht zusammen.",
+        );
+      if (text !== null && parseLocationDocument(text as string).id !== id)
+        throw new Error("Ortsentwurf besitzt eine fremde Kennung.");
+    }
+    return Object.freeze({
+      id,
+      path: l.path,
+      before: l.before as string | null,
+      after: l.after as string | null,
+    });
+  });
+  for (const id of new Set([...beforeIds, ...afterIds]))
+    if (beforeIds.has(id) !== afterIds.has(id) && !ids.has(id))
+      throw new Error("Ortsanlage oder Entfernung fehlt im Atlasentwurf.");
+  return Object.freeze({
+    ...common,
+    version: 2,
+    locations: Object.freeze(locations),
+  });
+}
+export function parseAtlasDraft(raw: string): AtlasDraft {
+  return checkedAtlasDraft(JSON.parse(raw));
 }
 export function serializeAtlasDraft(draft: AtlasDraft): string {
-  return JSON.stringify(parseAtlasDraft(JSON.stringify(draft)), null, 2) + "\n";
+  return JSON.stringify(checkedAtlasDraft(draft), null, 2) + "\n";
 }
