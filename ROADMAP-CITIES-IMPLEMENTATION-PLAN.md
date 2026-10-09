@@ -879,3 +879,5 @@ CITY-01-PREP-N08-CLEAN-P08 Start 2026-10-09T18:44:52.815629+00:00; Fokus:radiusV
 CITY-01-PREP-N08-CLEAN-I08 Start 2026-10-09T18:45:18.215839+00:00; tatsächliche Probeformel/Failuregrenze undR12offen inPlan/Architektur festgehalten, vorhandenenCITY01Nachweis ergänzt. Keine Runtimeänderung oderCTYFreigabe.
 
 CITY-01-PREP-N08-CLEAN-R08 Start 2026-10-09T18:45:39.756178+00:00; Quellenhashes identisch zum354Tests/check/buildStand; JSON/Planlink/24offeneCTY geprüft. Keine Pflichtlücke imN08Aufräumen. SeparaterR12 gegen unabhängige affine Sollwerte folgt; Befundabschluss erst dort.
+
+CITY-01-PREP-R12 Start 2026-10-09T18:46:16Z; Quellreview und540unabhängigeaffineSollfälle bestehen, maximalerPixelabweichung3.638e-12.4Mehrhofebenen korrekt,100Zeichenläufe/200Kontexte vollständigfreigegeben. Geprüfte354Tests/check/buildQuellenhashes unverändert. R11-01 im lokalenRendererScope geschlossen, kein weiterer Pflichtbefund dort. Kein fremderReviewer/universellerFloat-/Pixel-/Hostbeweis. SeparatesReview-AufräumenP/I/R folgt. Beleg:/home/aaron/.cache/dungeon-native-qa/city-plans/city01-renderer-20261009/r12-review.json.
