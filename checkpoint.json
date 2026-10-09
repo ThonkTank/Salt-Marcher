@@ -3522,17 +3522,17 @@
     "state": "city00_reference_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I06-CR",
+      "id": "CITY-00-I06-NCR",
       "kind": "cleanup_review",
-      "startedAt": "2026-10-09T10:54:28.931093+00:00",
-      "focus": "Sperr- und Zielreparatur vor Originalstart reviewen",
+      "startedAt": "2026-10-09T11:12:26.386667+00:00",
+      "focus": "Metadatenreparatur und Belegintegrität prüfen",
       "state": "completed",
-      "result": "R01/R02 geschlossen; fünf Offline-Tests grün; check/build grün, drei fehlende externe Fixtures als offene Baselinegrenze erfasst. Freier GUI-Platz bestätigt."
+      "result": "NR01/NR02 geschlossen:52 Artefakte unverändert,51 eindeutige offene Pflichten, CTY unverändert. Kein Pflichtbefund im engen Paket."
     },
     "nextRun": {
-      "id": "CITY-00-I06-NI",
-      "kind": "native_original_probe",
-      "focus": "Ein enger COK-Start-/Werkzeugbeleg und normaler Abschluss unter eigener Sperre"
+      "id": "CITY-00-I07-P",
+      "kind": "reference_planning",
+      "focus": "Nächste Originaltiefe planen: Save-Dialogursache, benannte Stadt-/Gebäudepresets und Vollversionsumfang; GUI-Slot zuerst abstimmen"
     },
     "open": [
       "CITY-00 direkte Referenzinventur/Galerie aller drei Produkte",
