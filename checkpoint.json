@@ -3485,17 +3485,17 @@
     "state": "city00_reference_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I06-NCR",
-      "kind": "cleanup_review",
-      "startedAt": "2026-10-09T11:12:26.386667+00:00",
-      "focus": "Metadatenreparatur und Belegintegrität prüfen",
-      "state": "completed",
-      "result": "NR01/NR02 geschlossen:52 Artefakte unverändert,51 eindeutige offene Pflichten, CTY unverändert. Kein Pflichtbefund im engen Paket."
-    },
-    "nextRun": {
       "id": "CITY-00-I07-P",
       "kind": "reference_planning",
-      "focus": "Nächste Originaltiefe planen: Save-Dialogursache, benannte Stadt-/Gebäudepresets und Vollversionsumfang; GUI-Slot zuerst abstimmen"
+      "startedAt": "2026-10-09T11:15:07.552075+00:00",
+      "focus": "Vollständige Save-As-Folge aus bisherigen Originalframes ableiten",
+      "state": "completed",
+      "result": "Leeres File-Feld nach Path-Enter als unvollständiger Ablauf erkannt; einfache Filename-/Save-/Neuöffnungsprobe und benannte Presets geplant"
+    },
+    "nextRun": {
+      "id": "CITY-00-I07-I",
+      "kind": "native_original_probe",
+      "focus": "Privates Save-As samt neuer Prozessöffnung und Presetnamen prüfen"
     },
     "open": [
       "CITY-00 direkte Referenzinventur/Galerie aller drei Produkte",
