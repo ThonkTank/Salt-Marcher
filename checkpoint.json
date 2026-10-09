@@ -3854,17 +3854,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I20-CP",
-      "kind": "cleanup_planning",
-      "startedAt": "2026-10-09T13:56:48.774632+00:00",
-      "focus": "Save-Grenze und Stoppbedingungen planen",
-      "state": "completed",
-      "result": "Belegumfang vor manuellem Save präzisieren und beide gestoppten Hypothesen erhalten; eigene vollständige Undo/Redo-Pflicht unverändert."
-    },
-    "nextRun": {
       "id": "CITY-00-I20-CI",
       "kind": "cleanup_implementation",
-      "focus": "Scope/Captions bei Rohschutz ergänzen"
+      "startedAt": "2026-10-09T13:57:05.909135+00:00",
+      "focus": "Save-Scope und Versuchsstopp ergänzen",
+      "state": "completed",
+      "result": "Fünf Bildcaptions und Auto-Save-Grenze ergänzt; keine Rohänderung, beide begrenzten Historyhypothesen gestoppt."
+    },
+    "nextRun": {
+      "id": "CITY-00-I20-CR",
+      "kind": "cleanup_review",
+      "focus": "Rohschutz, Scope und offene Pflichten prüfen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
