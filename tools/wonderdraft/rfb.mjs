@@ -6,6 +6,7 @@ import net from 'node:net';
 import { createHash } from 'node:crypto';
 import { PNG } from 'pngjs';
 import { parseArgs } from 'node:util';
+import { preflightRfbInput, RFB_KEYS as keys } from './rfb-preflight.mjs';
 
 const { values } = parseArgs({ options: {
   session: { type: 'string' }, shot: { type: 'string' },
@@ -15,25 +16,10 @@ const { values } = parseArgs({ options: {
   hold: { type: 'string' }, 'drag-key': { type: 'string' },
   'settle-ms': { type: 'string' }, 'click-ms': { type: 'string' },
 } });
-const clickMs = values['click-ms'] === undefined ? 100 : Number(values['click-ms']);
-if (!Number.isInteger(clickMs) || clickMs < 100 || clickMs > 2000 || (values['click-ms'] !== undefined && !values.click))
-  throw new Error('Click duration requires click input and must be 100..2000 milliseconds');
-const settleMs = values['settle-ms'] === undefined ? undefined : Number(values['settle-ms']);
-if (settleMs !== undefined && (!Number.isInteger(settleMs) || settleMs < 100 || settleMs > 5000))
-  throw new Error('Settle time must be 100..5000 milliseconds');
-const heldNames = values.hold?.split('+') || [];
-if (heldNames.some(k => !['Control', 'Shift', 'Alt', 'Space'].includes(k)) || new Set(heldNames).size !== heldNames.length)
-  throw new Error('Held pointer keys: Control, Shift, Alt, Space; no duplicates');
-if (values.hold && (!(values.click || values.drag || values.wheel) || values.key || values.text))
-  throw new Error('Hold requires pointer input and cannot combine with key/text');
-if (values['drag-key'] && (!values.drag || values['drag-key'] !== 'Escape'))
-  throw new Error('Drag interruption supports Escape during a drag only');
-const buttonMask = { left: 1, middle: 2, right: 4 }[values.button];
-if (!buttonMask) throw new Error('Mouse button must be left, middle or right');
-if (values.button !== 'left' && !values.click && !values.drag) throw new Error('Mouse button requires click or drag');
-const sessionPath = values.session;
-const session = JSON.parse(fs.readFileSync(sessionPath, 'utf8'));
-if (session.state !== 'running' || session.role !== 'actual_original_runtime') throw new Error('Not a live original session');
+if (!values.session) throw new Error('Original session path required');
+const session = JSON.parse(fs.readFileSync(values.session, 'utf8'));
+const input = preflightRfbInput(values, session);
+const { clickMs, settleMs, heldNames, buttonMask } = input;
 for (const p of session.processes) {
   const ticks = fs.readFileSync(`/proc/${p.pid}/stat`, 'utf8').split(') ')[1].split(' ')[19];
   if (ticks !== p.startTicks || fs.realpathSync(`/proc/${p.pid}/exe`) !== fs.realpathSync(p.executable))
@@ -55,21 +41,12 @@ async function take(size) {
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
 const actions = [];
 let heldCodes = [];
-const point = value => {
-  const p = value.split(',').map(Number);
-  if (p.length !== 2 || !p.every(Number.isInteger) || p[0] < 0 || p[1] < 0 || p[0] >= session.width || p[1] >= session.height)
-    throw new Error('Coordinates outside original frame');
-  return p;
-};
 function pointer([x, y], buttons = 0) {
   const b = Buffer.alloc(6); b[0] = 5; b[1] = buttons; b.writeUInt16BE(x, 2); b.writeUInt16BE(y, 4); socket.write(b);
 }
 function key(symbol, down) {
   const b = Buffer.alloc(8); b[0] = 4; b[1] = down ? 1 : 0; b.writeUInt32BE(symbol, 4); socket.write(b);
 }
-const keys = { Escape: 0xff1b, Enter: 0xff0d, Tab: 0xff09, Backspace: 0xff08, Delete: 0xffff,
-  Control: 0xffe3, Shift: 0xffe1, Alt: 0xffe9, Space: 0x20, Left: 0xff51, Up: 0xff52, Right: 0xff53, Down: 0xff54 };
-for (let n = 1; n <= 12; n++) keys[`F${n}`] = 0xffbd + n;
 try {
   socket.write(await take(12));
   const count = (await take(1))[0];
@@ -85,17 +62,17 @@ try {
   format[14] = 16; format[15] = 8; socket.write(format);
   socket.write(Buffer.from([2, 0, 0, 1, 0, 0, 0, 0])); // raw rectangles only
   if (heldNames.length) {
-    heldCodes = heldNames.map(k => keys[k]);
+    heldCodes = input.heldCodes;
     for (const k of heldCodes) key(k, true);
     actions.push({ holdBegin: values.hold }); await pause(80);
   }
-  if (values.move) { pointer(point(values.move)); actions.push({ move: values.move }); }
+  if (values.move) { pointer(input.move); actions.push({ move: values.move }); }
   if (values.click) {
-    const p = point(values.click); pointer(p); await pause(100); pointer(p, buttonMask); await pause(clickMs); pointer(p);
+    const p = input.click; pointer(p); await pause(100); pointer(p, buttonMask); await pause(clickMs); pointer(p);
     actions.push({ click: values.click, button: values.button, pressMs: clickMs });
   }
   if (values.drag) {
-    const [a, b] = values.drag.split(':').map(point); if (!a || !b) throw new Error('drag start:end required');
+    const [a, b] = input.drag;
     pointer(a); await pause(100); pointer(a, buttonMask);
     for (let i = 1; i <= 16; i++) {
       pointer([Math.round(a[0] + (b[0] - a[0]) * i / 16), Math.round(a[1] + (b[1] - a[1]) * i / 16)], buttonMask); await pause(60);
@@ -107,8 +84,7 @@ try {
       ...(values['drag-key'] ? { duringDrag: { key: 'Escape', afterStep: 8, totalSteps: 16 } } : {}) });
   }
   if (values.wheel) {
-    const [position, ticks] = values.wheel.split(':'); const p = point(position), n = Number(ticks);
-    if (!Number.isInteger(n) || Math.abs(n) > 20) throw new Error('Wheel range -20..20');
+    const { point: p, ticks: n } = input.wheel;
     for (let i = 0; i < Math.abs(n); i++) { pointer(p, n > 0 ? 8 : 16); pointer(p); await pause(100); }
     actions.push({ wheel: values.wheel });
   }
@@ -117,14 +93,12 @@ try {
     heldCodes = []; actions.push({ holdEnd: values.hold }); await pause(80);
   }
   if (values.key) {
-    const codes = values.key.split('+').map(k => keys[k] ?? (k.length === 1 ? k.codePointAt(0) : undefined));
-    if (codes.some(k => k === undefined)) throw new Error('Unknown key');
+    const codes = input.keyCodes;
     for (const k of codes) key(k, true); await pause(80); for (const k of codes.toReversed()) key(k, false);
     actions.push({ key: values.key });
   }
   if (values.text) {
-    if (values.text.length > 1000) throw new Error('Input text too long');
-    for (const c of values.text) { const u = c.codePointAt(0); const k = u < 256 ? u : 0x01000000 + u; key(k, true); key(k, false); await pause(12); }
+    for (const k of input.textCodes) { key(k, true); key(k, false); await pause(12); }
     actions.push({ text: values.text });
   }
   const captureSettleMs = settleMs ?? (actions.length ? 650 : 100);
@@ -132,9 +106,7 @@ try {
   const record = { sessionId: session.id, role: session.role, executableSha256: session.executableSha256,
     capturedAt: new Date().toISOString(), inputKind: session.inputKind, actions, captureSettleMs };
   if (values.shot) {
-    if (!/^[A-Za-z0-9_-]+$/.test(values.shot)) throw new Error('Safe screenshot id required');
-    const target = path.join(session.run, 'screens', values.shot + '.png');
-    if (fs.existsSync(target)) throw new Error('Screenshot id already used');
+    const target = input.shotTarget;
     const request = Buffer.alloc(10); request[0] = 3; request.writeUInt16BE(width, 6); request.writeUInt16BE(height, 8); socket.write(request);
     const png = new PNG({ width, height });
     let painted = 0;
@@ -155,9 +127,9 @@ try {
         painted += w * h;
       }
     }
-    const bytes = PNG.sync.write(png); fs.writeFileSync(target, bytes);
+    const bytes = PNG.sync.write(png); fs.writeFileSync(target, bytes, { flag: 'wx' });
     Object.assign(record, { screenshot: target, screenshotSha256: createHash('sha256').update(bytes).digest('hex'), width, height });
-    fs.writeFileSync(target.replace(/\.png$/, '.json'), JSON.stringify(record, null, 2) + '\n');
+    fs.writeFileSync(input.metadataTarget, JSON.stringify(record, null, 2) + '\n', { flag: 'wx' });
     console.log(target);
   }
   fs.appendFileSync(path.join(session.run, 'input.jsonl'), JSON.stringify(record) + '\n');

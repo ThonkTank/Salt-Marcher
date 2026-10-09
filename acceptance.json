@@ -62724,7 +62724,12 @@
             "tools/wonderdraft/rfb.mjs: safe/unused shot check after pointer/key/text operations"
           ],
           "observed": "Ein ungültiger oder schon vorhandener Screenshotname wird erst nach der Eingabe abgewiesen. Das kann den QA-Zustand verändern, ohne den geplanten Frame zu erzeugen.",
-          "required": "Im eigenen Aufräumplan sämtliche syntaktischen Beleg-/Eingabeprüfungen vor Verbindung und Eingabe ziehen. Frühere Rohbelege unverändert; im Review keine negative Mutation an der laufenden Kontrollkarte provoziert."
+          "required": "Im eigenen Aufräumplan sämtliche syntaktischen Beleg-/Eingabeprüfungen vor Verbindung und Eingabe ziehen. Frühere Rohbelege unverändert; im Review keine negative Mutation an der laufenden Kontrollkarte provoziert.",
+          "implementation": {
+            "run": "HEX-00-CLEAN-I01",
+            "state": "implemented_review_pending",
+            "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-00/r02-review-20261009-155338/cleanup-implementation.json"
+          }
         }
       ],
       "initialOriginalScope": "All13 early scopes passed direct separate R02; full cases and paired coverage remain open.",
