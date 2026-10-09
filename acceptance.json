@@ -125270,6 +125270,18 @@
             "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-template-host-20261009/evidence/1791513967959-parity-tools-phase1-new-map-reopen/result.json"
           ],
           "remaining": "Unabhängiger Phase-1-Endbuild-Review offen; Zwischenwert-Rundung, obere Höhengrenze und Löschen bei doppeltem Namen nicht vollständig direkt gemessen."
+        },
+        "followUpPhase1OriginalFurtherProbe": {
+          "state": "conflicting_original_observation_reprobe_open",
+          "originalVersion": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd001002-20261009/original-probe-partial.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd001002-20261009/runs/20261009-150324-3867970/evidence/screens/08-duplicate-before.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd001002-20261009/runs/20261009-150324-3867970/evidence/screens/09-duplicate-12x9.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd001002-20261009/runs/20261009-150324-3867970/evidence/screens/13-duplicate-accept-again.png"
+          ],
+          "finding": "Im neuen Lauf blieb ein weiterer QA-95-Eintrag mit 12×9 nach Accept offen; ältere Originalprobe listet zwei LimitProbe-Namen. Ursache nicht entschieden; keine Regel für gleiche Namen aus diesem Lauf abgeleitet.",
+          "remaining": "Hostpaar und unabhängiger Review offen; bei gleichem Namen frische Originalprobe nötig."
         }
       },
       {
@@ -125352,6 +125364,18 @@
             "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-template-host-20261009/evidence/1791513967959-parity-tools-phase1-new-map-reopen/result.json"
           ],
           "remaining": "Unabhängiger Phase-1-Endbuild-Review offen; Zwischenwert-Rundung, obere Höhengrenze und Löschen bei doppeltem Namen nicht vollständig direkt gemessen."
+        },
+        "followUpPhase1OriginalFurtherProbe": {
+          "state": "original_partial_host_review_open",
+          "originalVersion": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd001002-20261009/original-probe-partial.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd001002-20261009/runs/20261009-150324-3867970/evidence/screens/05-before-95.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd001002-20261009/runs/20261009-150324-3867970/evidence/screens/06-template-95-fields.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd001002-20261009/runs/20261009-150324-3867970/evidence/screens/07-template-95-accepted.png"
+          ],
+          "finding": "Vorlagenbreite 9,5 zeigt vor Accept 10 Felder und danach in New Map 10; Ausgangskarte unverändert. Kein allgemeiner Rundungsbeweis für weitere Werte.",
+          "remaining": "Hostpaar und unabhängiger Review offen; bei gleichem Namen frische Originalprobe nötig."
         }
       },
       {
@@ -125434,6 +125458,17 @@
             "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-template-host-20261009/evidence/1791513967959-parity-tools-phase1-new-map-reopen/result.json"
           ],
           "remaining": "Unabhängiger Phase-1-Endbuild-Review offen; Zwischenwert-Rundung, obere Höhengrenze und Löschen bei doppeltem Namen nicht vollständig direkt gemessen."
+        },
+        "followUpPhase1OriginalFurtherProbe": {
+          "state": "original_partial_host_review_open",
+          "originalVersion": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd001002-20261009/original-probe-partial.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd001002-20261009/runs/20261009-150324-3867970/evidence/screens/03-template-input.png",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd001002-20261009/runs/20261009-150324-3867970/evidence/screens/04-accepted-94-heightmax.png"
+          ],
+          "finding": "Vorlagenhöhe 10001 ergibt nach Accept 128; Ausgangskarte unverändert.",
+          "remaining": "Hostpaar und unabhängiger Review offen; bei gleichem Namen frische Originalprobe nötig."
         }
       },
       {
@@ -142071,6 +142106,16 @@
             "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-template-host-20261009/evidence/1791513967959-parity-tools-phase1-new-map-reopen/result.json"
           ],
           "remaining": "Unabhängiger Phase-1-Endbuild-Review offen; Zwischenwert-Rundung, obere Höhengrenze und Löschen bei doppeltem Namen nicht vollständig direkt gemessen."
+        },
+        "followUpPhase1OriginalFurtherProbe": {
+          "state": "duplicate_delete_original_open",
+          "originalVersion": "Dungeondraft 1.2.0.1 Opulent Kirin",
+          "evidence": [
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd001002-20261009/original-probe-partial.md",
+            "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd001002-20261009/runs/20261009-150324-3867970/evidence/screens/13-duplicate-accept-again.png"
+          ],
+          "finding": "Minus bei doppeltem Namen wurde im neuen Lauf nicht erreicht; ältere Hostfolge ersetzt keine direkte Originalmessung.",
+          "remaining": "Hostpaar und unabhängiger Review offen; bei gleichem Namen frische Originalprobe nötig."
         }
       },
       {
