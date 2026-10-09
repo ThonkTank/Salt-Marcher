@@ -3691,17 +3691,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I16-I",
-      "kind": "reference_export_probe",
-      "startedAt": "2026-10-09T13:05:13.424921+00:00",
-      "focus": "Originalausgabe PNG/SVG/JSON direkt prüfen",
-      "state": "completed",
-      "result": "3 Originaldateien empfangen/bytegleich archiviert; PNG3874x4330 visuell,SVG XML,JSON14 Gruppen/669 Gebäudepolygone geprüft; SVG-Sichtnachweis policybedingt offen"
-    },
-    "nextRun": {
       "id": "CITY-00-I16-R",
       "kind": "requirements_review",
-      "focus": "Ausgabebelege und CITY-08-Formatplanung prüfen"
+      "startedAt": "2026-10-09T13:06:08.440238+00:00",
+      "focus": "Ausgabebelege und CITY-08-Formatplanung prüfen",
+      "state": "completed",
+      "result": "Dateibelege konsistent; I16-R01: SVG/JSON im konkreten CITY-08-Paket explizit planen, keine SVG-Sicht-/Produktfreigabe"
+    },
+    "nextRun": {
+      "id": "CITY-00-I16-CP",
+      "kind": "cleanup_planning",
+      "focus": "Expliziten Exportumfang und gemeinsamen Szenenvertrag präzisieren"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
