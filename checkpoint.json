@@ -1,33 +1,17 @@
 {
   "saltMarcherCatalogEncounter": {
     "date": "2026-10-09",
-    "state": "ce00_catalog_foundation_reviewed_ce01_plan_next",
+    "state": "dnd2014_only_scope_applied_ce01_plan_next",
     "plan": "ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md",
     "architecture": "ARCHITECTURE.md#geplante-katalog--und-encounter-erweiterung",
     "acceptance": "acceptance.json.saltMarcherCatalogEncounter",
     "currentRun": {
-      "id": "CE-00-N01",
-      "kind": "repair_implementation",
-      "state": "completed_checked_r02_passed",
-      "focus": "Repair CE-00-R01 provenance, attribution, immutability, query validation, ordering and bundle findings",
-      "result": "Exact manifest and independent artifact hash pinned; full linked notice and change provenance recorded; reference graph deeply immutable; invalid runtime queries rejected; ordering locale-independent; CE-01 eager-startup and notice packaging blocked pending explicit measured plan.",
-      "files": [
-        "src/features/catalog/creature-catalog.ts",
-        "src/features/catalog/data/srd-5.1.generated.json",
-        "src/features/catalog/SRD-5.1-ATTRIBUTION.md",
-        "tests/core/creature-catalog.test.ts",
-        "NOTICE.md"
-      ],
+      "id": "CE-SCOPE-2014",
+      "kind": "scope_correction",
+      "state": "completed_checked",
+      "focus": "Remove all D&D-2024 and dual-rule-mode requirements after direct user clarification",
+      "result": "Migration now targets D&D 2014 exclusively. Plan, architecture, acceptance, catalog query model and hourly automation contain no 2024 calculator, budget-table or rule-selector work.",
       "verification": {
-        "sourceSha256": "afdce83b65e0863e1247c6297f89460396fe8ce4fd6893139ae3284e8451073d",
-        "check": "passed",
-        "tests": "211/211 passed",
-        "build": "passed"
-      },
-      "integratedVerification": {
-        "commit": "f5fb834c5caa5b83b4ae624800dcec81287b606f",
-        "incomingCommits": 12,
-        "preserved": "City, Hex, resize, Canvas of Kings and GM testing changes integrated without conflict",
         "check": "passed",
         "tests": "212/212 passed",
         "build": "passed"
@@ -40,10 +24,10 @@
       "testSlotClarification": "one graphical host/original instance per device; colleagues on separate devices may test in parallel",
       "automation": "hourly continuation enabled"
     },
-    "verified": "CE-00-I01 passed 210 tests but R01 required changes. CE-00-N01 passes check, 211 tests and build; independent CE-00-R02 passed with no remaining R01 findings. Portable read-only catalog foundation only. No UI, Vault, Encounter or parity approval claimed.",
+    "verified": "CE-00-I01 passed 210 tests but R01 required changes. CE-00-N01 passed check, 211 tests and build; independent CE-00-R02 passed with no remaining R01 findings. The later direct user decision narrows the entire feature to D&D 2014 only; the scope correction passes check, 212 tests and build. Portable read-only catalog foundation only. No UI, Vault, Encounter or parity approval claimed.",
     "open": [
       "All CE-01 through CE-07 implementation, review and cleanup runs",
-      "Official pinned DMG-2024 budget table and golden masters",
+      "Pinned DMG-2014 encounter math and golden masters",
       "Real Obsidian host, restart, keyboard and damaged-data acceptance"
     ],
     "nextRun": {

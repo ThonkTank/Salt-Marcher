@@ -37,8 +37,6 @@ test("combined D&D Beyond catalog filters form an intersection", () => {
     senses: "blindsight",
     immunities: "fire",
     sourceIds: ["srd-5.1"],
-    rulesVersions: ["2014"],
-    legacy: true,
     sort: "cr",
   });
   assert.ok(page.total > 0);

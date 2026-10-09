@@ -9,15 +9,15 @@ ordnet den am 9. Oktober 2026 beauftragten Ausbau. Die folgenden Entscheidungen
 sind Zielarchitektur und noch keine Funktions- oder Fachfreigabe:
 
 - Der Monsterkatalog ist vaultweite, versionierte Referenzwahrheit mit
-  Quellen-/Regelversionskennzeichnung. SRD-5.1-Daten behalten Manifest,
+  Quellenkennzeichnung. SRD-5.1-Daten behalten Manifest,
   Inhaltshash und CC-BY-4.0-Attribution; Homebrew bleibt eine getrennte Quelle.
 - Gespeicherte Encounter-Pläne enthalten stabile Kreaturen-IDs, Mengen,
   Gruppierungsbedeutung und redaktionelle Felder, aber keine duplizierten
   Statblocks. Ein laufender Kampf besitzt davon getrennt Initiative, Runde,
   Zug, HP, Zustände, Würfelprotokoll und begrenztes Undo.
-- Jeder Encounter speichert `dmg2014` oder `dmg2024`. Beide Rechner verwenden
-  getrennte gepinnte Tabellen und Ergebnisbegriffe. 2024 darf vor direkter
-  offizieller Tabellenprovenienz nicht als fachlich bestanden erscheinen.
+- Encounter verwenden ausschließlich die gepinnten DMG-2014-Schwellen,
+  Monsterzahlmultiplikatoren und Ergebnisbegriffe. Es gibt keinen zweiten
+  Rechner, keinen auswählbaren Regelmodus und keine 2024-Daten.
 - Dungeon-Featuredefinitionen und Raum-Key-Texte bleiben bestehen. Spätere
   stabile Encounter-/Kreaturenverweise ergänzen sie optional und verändern
   vorhandenen Markdown-Wortlaut nicht stillschweigend.

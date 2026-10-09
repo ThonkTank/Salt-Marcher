@@ -2,7 +2,7 @@
   "saltMarcherCatalogEncounter": {
     "schemaVersion": 1,
     "updated": "2026-10-09T11:55:00Z",
-    "state": "ce00_catalog_foundation_reviewed_ce01_plan_next",
+    "state": "dnd2014_only_scope_applied_ce01_plan_next",
     "plan": "ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md",
     "architecture": "ARCHITECTURE.md#geplante-katalog--und-encounter-erweiterung",
     "sourceRepository": "ThonkTank/Salt-Marcher",
@@ -19,9 +19,15 @@
       "Initiative und Combat Tracker"
     ],
     "rules": {
+      "system": "dnd2014_only",
       "dmg2014": "planned_from_saltmarcher_not_yet_implemented",
-      "dmg2024": "official_table_provenance_required_before_implementation_approval",
-      "mixedMode": "forbidden"
+      "modeSelection": "not_applicable",
+      "dmg2024": "out_of_scope"
+    },
+    "scopeDecision": {
+      "date": "2026-10-09",
+      "authority": "Direct user instruction: Das Plugin muss nur auf 2014 ausgelegt werden.",
+      "effect": "All 2024 calculators, budget tables, rule-mode selectors, dual-mode acceptance and implementation work are removed from scope. D&D Beyond comparison is limited to comparable 2014 catalog, builder and tracker behavior."
     },
     "reference": {
       "saltMarcherAnalysis": "completed_read_only_current_implementation_has_known_normative_gaps",
@@ -36,7 +42,7 @@
     "cases": [
       {"id": "CE-AC-01", "title": "Combined catalog filters and reset", "state": "open"},
       {"id": "CE-AC-02", "title": "Catalog detail without state loss", "state": "open"},
-      {"id": "CE-AC-03", "title": "Separate reproducible 2014 and 2024 evaluation", "state": "open"},
+      {"id": "CE-AC-03", "title": "Reproducible DMG-2014 evaluation", "state": "open"},
       {"id": "CE-AC-04", "title": "Live party and roster recomputation", "state": "open"},
       {"id": "CE-AC-05", "title": "Individual and group initiative semantics", "state": "open"},
       {"id": "CE-AC-06", "title": "Persistent stable initiative ordering", "state": "open"},
@@ -64,7 +70,7 @@
         "tests": {"passed": 210, "failed": 0},
         "build": "passed"
       },
-      "limits": "Pure read-only domain foundation only; no Obsidian UI, Vault persistence, Encounter builder, 2024 rules or host acceptance. All CE acceptance cases remain open."
+      "limits": "Pure read-only domain foundation only; no Obsidian UI, Vault persistence, Encounter builder or host acceptance. All CE acceptance cases remain open. D&D 2024 is intentionally out of scope."
     },
     "review": {
       "run": "CE-00-R01",
