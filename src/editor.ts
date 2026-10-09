@@ -69,7 +69,7 @@ import { objectWheelDirection, rotateObjectRadians, scaleObjectStep } from "./fe
 import type { ObjectTagDocument } from "./features/objekte/object-tags";
 import { floorEraseActive } from "./drawing";
 import { buildingWearMode, isNativeFloorAssetId, type BuildingWearMode } from "./features/material/native-path-catalog";
-import { buildingFloorCells, buildingFloorCellsAfterDraw, buildingFloorCellsAfterErase, buildingFloorCellsAfterPointMove } from "./features/material/building-floor-cells";
+import { buildingFloorCells, buildingFloorCellsAfterDraw, buildingFloorCellsAfterErase, buildingFloorCellsAfterPointEdit } from "./features/material/building-floor-cells";
 import {
   buildingPointGripPixels,
   buildingVertexGrip,
@@ -2550,9 +2550,9 @@ export class DungeonEditor {
           material = this.settings.material;
         if (this.session.version === 4 && after?.kind === "building" &&
             after.floorTileRaster && isNativeFloorAssetId(material?.assetId) &&
-            proposal.edit.kind === "move") {
+            (proposal.edit.kind === "move" || proposal.edit.kind === "insert")) {
           const previous = this.session.smartTiles;
-          const next = buildingFloorCellsAfterPointMove(previous, after,
+          const next = buildingFloorCellsAfterPointEdit(previous, after,
             this.session.settings.width, this.session.settings.height,
             { assetId: material!.assetId!, color: this.settings.surfaces.floor.color });
           this.session.execute(next === previous ? command : {
@@ -3757,7 +3757,21 @@ export class DungeonEditor {
         this.hoveredBuildingVertex,
         this.currentBuildingWallStyle());
       if (result.command) {
-        this.session.execute(result.command);
+        const after = result.command.entities?.find((change) =>
+          change.id === building.id)?.after,
+          material = this.settings.material;
+        if (this.session.version === 4 && result.status === "command" &&
+            after?.kind === "building" && after.floorTileRaster &&
+            isNativeFloorAssetId(material?.assetId)) {
+          const previous = this.session.smartTiles;
+          const next = buildingFloorCellsAfterPointEdit(previous, after,
+            this.session.settings.width, this.session.settings.height,
+            { assetId: material!.assetId!, color: this.settings.surfaces.floor.color },
+            "remove");
+          this.session.execute(next === previous ? result.command : {
+            ...result.command, smartTiles: { before: previous, after: next },
+          });
+        } else this.session.execute(result.command);
         this.hoveredBuildingVertex = undefined;
         this.renderer.setBuildingPointHover();
       } else if (result.status === "protected-room")
