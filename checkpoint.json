@@ -4351,17 +4351,17 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-01-PREP-P06",
-      "kind": "plan",
-      "startedAt": "2026-10-09T17:55:18.088804+00:00",
-      "focus": "Stadtwerkzeugzüge an gemeinsamer Atlasprojektion konkret planen",
-      "state": "completed",
-      "result": "CityGesture für Haus/Knoten/Via, Drehung/Achsgriffe mit festem Anfang und einem CityDraft geplant; gemeinsame Posepunkte statt Formelkopie. Aktuelle Atlasroutergrenze auditiert und Hexbesitzer informiert."
-    },
-    "nextRun": {
       "id": "CITY-01-PREP-GESTURES-PLAN-CLEAN-P06",
       "kind": "cleanup_plan",
-      "focus": "Werkzeugplan auf numerische Grenzen, vorhandene Verträge und Architekturdrift prüfen"
+      "startedAt": "2026-10-09T17:58:04.402275+00:00",
+      "focus": "Werkzeugplan auf No-op-Rundung und Fehlervorschau prüfen",
+      "state": "completed",
+      "result": "No-op-Rundungsrisiko bei Pivotrückrechnung erkannt; Originalpose früh erhalten. Fehlergrenze und gemeinsame inverse Pose präzisieren; keine Runtimeänderung."
+    },
+    "nextRun": {
+      "id": "CITY-01-PREP-GESTURES-PLAN-CLEAN-I06",
+      "kind": "cleanup_implementation",
+      "focus": "Numerische No-op-Regel und Posebaseline im Werkzeugplan ergänzen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
