@@ -4918,17 +4918,17 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-E2E-R02-RECEIPT",
-      "kind": "review_receipt",
-      "startedAt": "2026-10-09T21:40:00.212260+00:00",
-      "focus": "Veröffentlichten unabhängigen R02 zuordnen",
-      "state": "completed",
-      "result": "Hex-R02 auf exakt 1de3cee PASS im Planscope, beide Befunde geschlossen. Planblob unverändert; gemeinsame Gates offen."
-    },
-    "nextRun": {
       "id": "CITY-E2E-R02-CLEAN-P",
       "kind": "cleanup_planning",
-      "focus": "Receiptbindung und unveränderten geprüften Planblob schützen"
+      "startedAt": "2026-10-09T21:40:10.463634+00:00",
+      "focus": "Prüfplan für R02-Receipt und Übergabe",
+      "state": "completed",
+      "result": "Prüfen: Receipt-SHA/URL, Planblob gegenüber 1de3cee bytegleich, nur eigene Checkpointwurzel, acceptance bytegleich; keine Produkt-/GUIfreigabe."
+    },
+    "nextRun": {
+      "id": "CITY-E2E-R02-CLEAN-I",
+      "kind": "cleanup_implementation",
+      "focus": "Receipt und Daten-/Verweisschutz kontrollieren"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
