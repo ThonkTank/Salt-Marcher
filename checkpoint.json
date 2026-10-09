@@ -248,7 +248,11 @@
         "/home/aaron/.cache/dungeon-native-qa/hex-00/move-path-final-repair-20261009-152726/protection-and-native-proof.json",
         "/home/aaron/.cache/dungeon-native-qa/hex-00/move-path-final-repair-20261009-152726/catalog-partial.json",
         "/home/aaron/.cache/dungeon-native-qa/hex-00/move-path-final-repair-20261009-152726/catalog-complete-gate.json",
-        "/home/aaron/.cache/dungeon-native-qa/hex-00/move-path-final-repair-20261009-152726/local-basis.json"
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/move-path-final-repair-20261009-152726/local-basis.json",
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/move-path-final-repair-20261009-152726/clean-git-basis.json",
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/move-path-final-repair-20261009-152726/clean-git-provenance.json",
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/move-path-final-repair-20261009-152726/pre-publication-integration-preservation.json",
+        "/home/aaron/.cache/dungeon-native-qa/hex-00/move-path-final-repair-20261009-152726/strict-gate-expectation.json"
       ],
       "completedAt": "2026-10-09T13:49:11.061386+00:00",
       "result": "Three final selected Move Path questions directly resolved; five prior UI/case mapping gaps appended with explicit scope,681 IDs/83 cases/113 historical sources retained. No early UI question remains;13 initial reviews and reference/cleanup gates still open."
@@ -761,7 +765,12 @@
         },
         "protectedFiles": 466,
         "productBuildSha256": "346f607b16dbfea258dbcbaf234988f1201454a3ea11d14593ae397b559c49c1",
-        "limitations": "Local foreign-test tree distinct from exact clean repository check. No new Hex/city/large/physical/installation or changed-build core host approval; R02 and cleanup pending."
+        "limitations": "Separate local222/exact clean225 test trees; changed build346f607 checked, no new core host approval yet. R02 repeats required kernel flow; all Hex/city/large/physical/installation approvals remain open.",
+        "cleanRepositoryTests": {
+          "passed": 225,
+          "failed": 0
+        },
+        "cleanRepositoryCommit": "b967c1c9c85938521373738dbc05c498f1292589"
       }
     },
     "repairPlan": "ROADMAP-HEX-00-REPAIR-PLAN.md",
