@@ -811,15 +811,18 @@ export class DungeonEditor {
         this.commitNote();
         const selectedEntity = this.selected ? this.session.entities.get(this.selected) : undefined;
         if (selectedEntity?.keyTarget) {
-          this.host.openRoomKey(selectedEntity.keyTarget.roomId,
-            selectedEntity.keyTarget.sectionId, selectedEntity.keyTarget.anchor);
+          this.openStructuredRoomKey(
+            selectedEntity.keyTarget.roomId,
+            selectedEntity.keyTarget.sectionId,
+            selectedEntity.keyTarget.anchor,
+          );
           return;
         }
         const room = this.selectedRoom();
         if (isStructuredRoom(room)) {
           const occurrence = this.session.content.occurrences.find((item) =>
             item.entityId === this.selected);
-          this.host.openRoomKey(room.id, occurrence?.sectionId);
+          this.openStructuredRoomKey(room.id, occurrence?.sectionId);
         }
         else if (this.notePath) this.host.openNote(this.notePath);
       }),
@@ -3575,6 +3578,15 @@ export class DungeonEditor {
   }
   private allowKeyNavigation(): boolean {
     return this.structuredPanel?.allowNavigation() ?? true;
+  }
+  private openStructuredRoomKey(
+    roomId: string,
+    sectionId?: string,
+    anchor?: string,
+  ): void {
+    if (!this.allowKeyNavigation()) return;
+    this.toggleKey(false);
+    this.host.openRoomKey(roomId, sectionId, anchor);
   }
   private async activateRoomKeySearchTarget(
     target: RoomKeySearchTarget,

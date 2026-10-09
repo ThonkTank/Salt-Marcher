@@ -150,6 +150,47 @@ test("room key search yields a clean key dock, but dirty draft blocks before lay
   ]);
 });
 
+test("opening a structured room key yields the clean dock before the existing workspace route", () => {
+  const methods = DungeonEditor.prototype as unknown as Record<string, Function>;
+  const calls: string[] = [];
+  const view = {
+    selection: ["room-12"],
+    camera: { x: 4, y: 5, scale: 2 },
+    document: { title: "Nebelwacht" },
+    dirty: false,
+    historySize: 7,
+    canUndo: true,
+    canRedo: false,
+  };
+  const before = structuredClone(view);
+  let allowed = false;
+  const fake = {
+    allowKeyNavigation: () => {
+      calls.push("allow");
+      return allowed;
+    },
+    toggleKey: (open: boolean) => calls.push(`key:${open}`),
+    host: {
+      openRoomKey: (roomId: string, sectionId?: string, anchor?: string) =>
+        calls.push(`open:${roomId}:${sectionId}:${anchor}`),
+    },
+  };
+
+  methods.openStructuredRoomKey!.call(fake, "room-12", "section-clue", "^lever");
+  assert.deepEqual(calls, ["allow"]);
+  assert.deepEqual(view, before);
+
+  calls.length = 0;
+  allowed = true;
+  methods.openStructuredRoomKey!.call(fake, "room-12", "section-clue", "^lever");
+  assert.deepEqual(calls, [
+    "allow",
+    "key:false",
+    "open:room-12:section-clue:^lever",
+  ]);
+  assert.deepEqual(view, before);
+});
+
 test("editor floor restore and programmatic switches use one nonmutating state port", () => {
   const session = new Session(newDocument("Geschosse", 20, 20, undefined, undefined, 4));
   const initial = session.floors.values().next().value!;
