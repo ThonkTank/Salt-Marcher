@@ -15,6 +15,7 @@ import {
   type TerrainCell,
   type TerrainChunk,
   type TerrainReference,
+  type TerrainExtent,
 } from "./terrain-schema";
 
 export type TerrainTool = "land" | "sea" | "forest" | "reset";
@@ -46,6 +47,19 @@ export class TerrainSource {
           }),
         ).values(),
       ].map((chunk) => this.ensureChunk(chunk)),
+    );
+  }
+  async ensureVisible(bounds: TerrainExtent): Promise<void> {
+    await Promise.all(
+      [...this.refs.values()]
+        .filter(
+          (ref) =>
+            ref.extent.maxQ >= bounds.minQ &&
+            ref.extent.minQ <= bounds.maxQ &&
+            ref.extent.maxR >= bounds.minR &&
+            ref.extent.minR <= bounds.maxR,
+        )
+        .map((ref) => this.ensureChunk(ref)),
     );
   }
   private async ensureChunk(chunk: AxialCell): Promise<void> {

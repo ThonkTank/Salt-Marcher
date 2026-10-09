@@ -152217,8 +152217,8 @@
   },
   "hexAtlas": {
     "scope": "HEX-00..28, shared native Atlas; phase-specific functional approvals only.",
-    "currentPhase": "HEX-01",
-    "state": "foundation_and_cleanup_passed_cloud_followup_open",
+    "currentPhase": "HEX-02",
+    "state": "early_native_terrain_checked_durable_editing_open",
     "referenceGate": "wonderdraftParity.coverageReview HEX-00-R02",
     "requirements": [
       {
@@ -152308,6 +152308,76 @@
           "/home/aaron/.cache/dungeon-native-qa/hex-01/p01-20261009151055/review.json"
         ],
         "observed": "Native screenshots reviewed: map dominance, compact controls, visible focus, legible mile and hex labels."
+      },
+      {
+        "id": "HEX02-001",
+        "requirement": "Spärliche native 3-Meilen-Landschaft über negative Bereichsgrenzen",
+        "state": "checked_implementation",
+        "implementationRun": "HEX-02-I01a/I01b",
+        "evidence": [
+          "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/i01b-native-implementation.json"
+        ],
+        "observed": "Six focused core cases; sparse chunks and unread-data protection."
+      },
+      {
+        "id": "HEX02-002",
+        "requirement": "Lückenloser Zug, Vorschau, Escape, genau ein Undo-Befehl",
+        "state": "checked_native_implementation",
+        "implementationRun": "HEX-02-I01a/I01b",
+        "evidence": [
+          "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/i01b-native-implementation.json"
+        ],
+        "observed": "WD004.01/.02 early land scope, source original1.1.8.2; other gesture contexts open."
+      },
+      {
+        "id": "HEX02-003",
+        "requirement": "Land/Meer/Wald und begrenzte manuelle Farbe tatsächlich malen",
+        "state": "checked_native_implementation",
+        "implementationRun": "HEX-02-I01a/I01b",
+        "evidence": [
+          "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/i01b-native-implementation.json"
+        ],
+        "observed": "WD007.01/021.01 text commit scope; full brushes, coast/color-picker/palette open."
+      },
+      {
+        "id": "HEX02-004",
+        "requirement": "Grenzenlos weiterzeichnen und belegten Inhalt einpassen",
+        "state": "checked_native_implementation",
+        "implementationRun": "HEX-02-I01a/I01b",
+        "evidence": [
+          "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/i01b-native-implementation.json"
+        ],
+        "observed": "36 cells, five referenced ranges, real pan and negative range boundary; camera/file allocation absent."
+      },
+      {
+        "id": "HEX02-005",
+        "requirement": "Speichern, dauerhafter Entwurf, Konflikt/Unterbruch und frischer Geländeprozess",
+        "state": "open",
+        "implementationRun": "HEX-02-I01a/I01b",
+        "evidence": [
+          "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/i01b-native-implementation.json"
+        ],
+        "observed": "I01c immediately next; transient island is not save/restart approval."
+      },
+      {
+        "id": "HEX02-006",
+        "requirement": "Kopie abbrechen/erstellen, A→B→A und Entwurf verwerfen",
+        "state": "open",
+        "implementationRun": "HEX-02-I01a/I01b",
+        "evidence": [
+          "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/i01b-native-implementation.json"
+        ],
+        "observed": "I01d after safe durable kernel."
+      },
+      {
+        "id": "HEX02-007",
+        "requirement": "Eigener Fachreview und getrennte Aufräumläufe",
+        "state": "open",
+        "implementationRun": "HEX-02-I01a/I01b",
+        "evidence": [
+          "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/i01b-native-implementation.json"
+        ],
+        "observed": "R01/CLEAN-P/I/R after complete usable save/reopen flow."
       }
     ],
     "cleanupFindings": [
@@ -152335,7 +152405,7 @@
         }
       }
     ],
-    "limits": "Terrain/history/drafts HEX02; location HEX03; Dungeon placement/composition HEX04/05; cities, full parity, large maps and physical input remain open.",
+    "limits": "I01b visible discrete level0 terrain only. Save/draft/fresh terrain reopening I01c mandatory; City/Location/Dungeon spatial integration, multilevel editing, full Wonderdraft parity, large-map/physical/installed-vault remain open.",
     "cloudFollowup": {
       "id": "GM-UX-N-004",
       "state": "resolved_observed_failure_app_reload_only",

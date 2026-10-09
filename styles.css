@@ -1102,6 +1102,10 @@
 .dn-atlas-viewport canvas { display: block; }
 .dn-atlas-viewport:focus-visible { outline: 2px solid var(--interactive-accent); outline-offset: -2px; }
 .dn-atlas-viewport.is-hand { cursor: grab; }
+.dn-atlas-viewport.is-paint { cursor: crosshair; }
+.dn-atlas-color { display: inline-flex; align-items: center; gap: 4px; font-size: .9em; }
+.dn-atlas-color input { width: calc(7ch + 24px); }
+.dn-atlas-save-status { margin-right: 12px; font-size: .9em; color: var(--text-muted); }
 .dn-atlas-footer { padding: 6px 12px; border-top: 1px solid var(--background-modifier-border); }
 .dn-atlas-selection { margin: 0 0 3px; }
 .dn-atlas-footer small { color: var(--text-muted); }
