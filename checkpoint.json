@@ -4745,16 +4745,16 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I47-CLEAN-I47",
-      "kind": "cleanup_implementation",
-      "startedAt": "2026-10-09T19:55:27.486404+00:00",
-      "focus": "COK-Atmosphärenprobe / C",
-      "state": "completed",
-      "result": "Plan mit begrenzter Reglerwirkung und offenen Vorlagen-/Wiederherstellungs-/Reopen-Grenzen ergänzt; externe Rohdaten geschützt, kein neuer Produkt-/APIstand."
-    },
-    "nextRun": {
       "id": "CITY-00-I47-CLEAN-R47",
       "kind": "cleanup_review",
+      "startedAt": "2026-10-09T19:55:37.671020+00:00",
+      "focus": "COK-Atmosphärenprobe / R",
+      "state": "completed",
+      "result": "Rawhashes, geschützte Quelle, ausschließlicher environment-Diff und partielle Restauration geprüft; 24CTY/65CO offen, 5 eigene Prozesse weg. Team-Handshake vor neuen Claims; R47 folgt per Heartbeat."
+    },
+    "nextRun": {
+      "id": "CITY-00-R47",
+      "kind": "reference_review",
       "focus": "Getrennte R47-Referenzreview nach Team-Abstimmung"
     },
     "open": [

@@ -1081,3 +1081,5 @@ CITY-00-I47 Start 2026-10-09T19:43:35.514Z; Originalwirkung Schatten230→34/Sch
 CITY-00-I47-CLEAN-P47 Start 2026-10-09T19:55:16.507511+00:00; Aufräumplan: Rawhashes/Kopien/Prozessende, partielle Wiederherstellung und fehlende Vorlagen-/Fresh-Reopen-Abnahme prüfen; eigenes Evidenzformat konsolidieren ohne APIs.
 
 CITY-00-I47-CLEAN-I47 Start 2026-10-09T19:55:27.486404+00:00; Plan mit begrenzter Reglerwirkung und offenen Vorlagen-/Wiederherstellungs-/Reopen-Grenzen ergänzt; externe Rohdaten geschützt, kein neuer Produkt-/APIstand.
+
+CITY-00-I47-CLEAN-R47 Start 2026-10-09T19:55:37.671020+00:00; Rawhashes, geschützte Quelle, ausschließlicher environment-Diff und partielle Restauration geprüft; 24CTY/65CO offen, 5 eigene Prozesse weg. Team-Handshake vor neuen Claims; R47 folgt per Heartbeat.
