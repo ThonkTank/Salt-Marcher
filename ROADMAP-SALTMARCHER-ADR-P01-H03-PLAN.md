@@ -420,3 +420,22 @@ schreibgeschützte Review bestand auf dem exakten Shared-Head
 (Issue #1, Kommentar 6084812709). Dies ist ausschließlich ein Plan-PASS;
 ausführbarer H03-Nachweis, Linux-Durability-Go, Plattform-ADR und P02 bleiben
 offen.
+
+## Contract-Review ADR-P01-H03-I01-R03
+
+Der erste Contract-Kandidat `e95f3eba325b3aa55620d39a617074ede425405d`
+bestand den unabhängigen Review nicht. Der Ersatzkandidat
+`f8fcdc1b2eacbfb17c7c5603f6c15cfd89c4296d` schloss die Parent-/Child- und
+Aggregatbindung, vollständige Zustands- und Operationsorakel, die
+Target-/Rename-Lebenszyklen, retained Konfliktbelege, globale Eindeutigkeit
+aller internen und Orphan-Namen, Identitäts-/Hash-/Längenregeln, Deep-Freeze
+und adversariale Golden DTOs. Ein letzter Reviewbefund zur Kollision von
+Orphan-Namen mit gebundenen Namen wurde im separaten Repair-Commit
+`0fc6277f8cdd273acecb0ab818f9fc53663d416e` geschlossen. Der anschließende
+unabhängige schreibgeschützte Exact-Head-Review bestand ohne Pflichtbefund.
+
+Dies ist ausschließlich die Contract-Freigabe für Schritt 1 der
+Ausführungsfolge. Native Helper, Faultmatrix, ausführbarer H03-Beleg,
+Linux-Durability-Go, Plattformentscheidung und P02-Autorisierung bleiben
+offen. Nächster Lauf plant begrenzt die nativen Child-State-Machines und die
+reine Create-/Update-/Delete-Faultmatrix aus Schritt 2.

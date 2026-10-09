@@ -120,9 +120,12 @@ sind eingehalten. Katalog-UI und Hostabnahme bleiben offen.
 - Hashprüfenden, einmalig cachenden Loader ergänzen.
 - Build um das hashgeprüfte virtuelle Gzip-/Base64-Modul und eine
   objektive Payload-Grenze erweitern: höchstens 122.880 Gzip-Bytes, höchstens
-  164.000 Base64-Zeichen und höchstens 180.000 Bytes Zuwachs von `main.js`
-  gegenüber der oben gebundenen 1.189.370-Byte-Baseline. Das Buildinventar
-  dokumentiert Quelle, Commit, Node-Version, Befehle und alle drei Werte.
+  164.000 Base64-Zeichen und höchstens 180.000 tatsächlich in `main.js`
+  emittierte Bytes des virtuellen Katalogpayloads. Das gesamte Wachstum von
+  `main.js` gegenüber der gebundenen 1.189.370-Byte-Baseline bleibt als
+  Inventarwert sichtbar, ist aber kein Kataloggate für spätere Atlas-, City-
+  oder andere Produktfunktionen. Das Buildinventar dokumentiert Quelle,
+  Commit, Node-Version, Befehl, Payloadanteil und Gesamtwachstum.
 - Lazy-, Fehler-/Retry-, Hash-, Notice- und Buildinventartests ergänzen.
 
 ### CE-01-I02 – View-Grundgerüst und Kernfluss

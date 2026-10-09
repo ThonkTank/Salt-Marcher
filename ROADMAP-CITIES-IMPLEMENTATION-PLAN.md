@@ -29,7 +29,7 @@ Alle 24 CTY-Unterfälle sind offen. Das reine native Stadtmodell mit Codec ist v
 | CITY-08 | Ausschnitt/Exportsettings unabhängig von Kamera; PNG/JPEG/SVG/JSON ausdrücklich, Raster und Vorlagen sowie zusätzliche FTG-Exportformate nach Inventar. Alle Formate verwenden denselben materialisierten Szenenstand; SVG Vektoren/Texte und JSON metrische Geometrie separat prüfen. Räumlicher Index, Viewport-Culling und Bedarfsladen; Workerabbruch, Dispose. | 5.000 Gebäude, mehrere Städte/Innenräume; p95 Navigation ≤33 ms, Vorschau ≤100 ms nach Laden; Save/Reload; Export entspricht demselben Dokumentstand. |
 | CITY-09 | Vollständiges Inventar gegen denselben Endbuild prüfen; gemeinsame HEX-28-Abnahme. Isolierter Testvault, Sicherung vor Installation. | Alle Pflichtfähigkeiten, Konflikt/Undo/Neustart/Export, installierter Build, Ergebnisvergleich und physische Bedienung jeweils eigene Belege. |
 
-Neue Modulpfade sind geplant, keine bereits vorhandenen APIs. Die konkreten HEX-05-Schnittstellen werden nach dessen Review übernommen; ein eigener Stadt-Atlas würde Architektur und Auftrag verletzen.
+Stadtmodell und Codec unter `src/features/city/` samt `newCityDocument`, `parseCityDocument` und `serializeCityDocument` sind vorbereitet und reviewt. Die übrigen Stadtmodulpfade und Hostanschlüsse sind geplant. Die konkreten HEX-05-Schnittstellen werden nach dessen Review übernommen; ein eigener Stadt-Atlas würde Architektur und Auftrag verletzen.
 
 ## Drei Referenzen und bisher zusätzlich fehlende Fähigkeiten
 
@@ -669,3 +669,18 @@ CITY-01-PREP-I01 Start 2026-10-09T16:28:02.695114+00:00; Abschluss 2026-10-09T16
 
 
 CITY-01-PREP-R01 Start 2026-10-09T16:39:42.180Z; Zwei konkrete Reviewlücken belegt: Listen-Zusatzfelder gehen im Serializer verloren (CITY-MODEL-R01-01); sparse Listen führen zu unverständlichem TypeError statt Formatfehler (CITY-MODEL-R01-02). Gegen strikten Datenvertrag ist damit Nachbesserung nötig. Bestehende Meter-/Graph-/Posefälle bleiben belegt, keine Host-/Paritätsfreigabe. N01: gemeinsame list-Prüfung auf dichte native Arrays, unbekannte Zusatzfelder und berechnete Indizes erweitern; gezielte Regressionen. Danach R02, Aufräum-P/I/R. Beleg: /home/aaron/.cache/dungeon-native-qa/city-plans/city01-model-20261009/review-probe.json.
+
+
+CITY-01-PREP-N01 Start 2026-10-09T16:40:57.836912+00:00; Abschluss 2026-10-09T16:42:58.872325+00:00; Gemeinsame Listenprüfung lehnt Zusatzfelder, Sparse-Arrays, berechnete Indizes und Array-Unterklassen kontrolliert ab. Beide R01-Lücken behoben; Regression umfasst alle sechs Sammlungen, verschachtelte Konturen, Getter und Zusatzfeld statt fehlendem Index. Typprüfung,276Tests (11 City-Fälle) und Build grün; keine gemeinsame Atlasquelle verändert. R02 folgt. Beleg: /home/aaron/.cache/dungeon-native-qa/city-plans/city01-model-20261009/repair.json.
+
+
+CITY-01-PREP-R02 Start 2026-10-09T16:44:07.400Z; Beide R01-Gegenfälle erneut am reparierten Codec kontrolliert abgelehnt; kanonischer Roundtrip unverändert.276Tests einschließlich11 City-Fällen, Typprüfung und Build an unveränderten geprüften Quellen bestätigt. Modellvertrag ohne weitere Fachlücke im begrenzten Vorbereitungsumfang. Aufräumreste: dimensionslose Skalierung im Typ kommentieren, pauschal geplante Modulpfade im Gesamtplan korrigieren und dichte Listen in Architektur dokumentieren. Alle Host-/Atlas-/Paritätspflichten bleiben offen. Beleg: /home/aaron/.cache/dungeon-native-qa/city-plans/city01-model-20261009/r02-review.json. Aufräum-P/I/R folgen getrennt.
+
+
+CITY-01-PREP-CLEAN-P01 Start 2026-10-09T16:46:15.720458+00:00; Plan: Nur drei R02-Reste bereinigen: dimensionslose Achsenskalierung direkt am Modelltyp kommentieren; Gesamtplan trennt existierende Modell-/Codec-APIs von geplanten Modulen; Architektur nennt dichte native Listen ohne Zusatz-/Accessorfelder. Kein Laufzeitumbau/Geometriekopie/öffentlicher API-Zuwachs. Generierten JS-Code vor/nach Kommentar vergleichen; frühere Rawbelege erhalten und abschließend CTY/CO/Verweise/Quellgrenzen prüfen. CI/CR getrennt.
+
+
+CITY-01-PREP-CLEAN-I01 Start 2026-10-09T16:47:08.177038+00:00; Dimensionslose Skalierung am Modelltyp gekennzeichnet; existierende Modell-/Codec-APIs von geplanten Stadtmodulen getrennt; Architektur dokumentiert dichte native Listen und kontrollierte Ablehnung. Keine ausführbare Änderung oder neue öffentliche Schnittstelle. JS-/Typquellgleichheit und abschließender Review folgen.
+
+
+CITY-01-PREP-CLEAN-R01 Start 2026-10-09T16:48:58.646070+00:00; Alle drei Aufräumreste erledigt: Skalierung korrekt dimensionslos kommentiert, vorhandene APIs im Gesamtplan erkennbar, dichte Listen in Architektur festgehalten. Ausschließlich Kommentaränderung am Modelltyp; exakte Typquelle nach Kommentarentfernung und erzeugtes JS identisch. Codec/Tests/gemeinsame Quellen unverändert gegenüber276grünenTests/Typprüfung/Build. Modellvorbereitung reviewt ohne Restbefund;24CTY/65CO-Fachpflichten und Atlas-/Host-/Saveintegration offen. Beleg: /home/aaron/.cache/dungeon-native-qa/city-plans/city01-model-20261009/cleanup-review.json. Nächster Lauf plant reine Stadtbefehle auf der inzwischen gelieferten gemeinsamen AtlasHistory; mit HEX-Besitzer abgleichen, keine eigene Historie oder Hostvorgriff.

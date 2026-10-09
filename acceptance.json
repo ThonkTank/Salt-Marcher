@@ -1,8 +1,8 @@
 {
   "saltMarcherReplacement": {
     "schemaVersion": 1,
-    "updated": "2026-10-09T16:29:38Z",
-    "state": "smr00_adr_p01_h03_contract_review_changes_required",
+    "updated": "2026-10-09T16:49:14Z",
+    "state": "smr00_adr_p01_h03_i02_plan_review_changes_required",
     "plan": "ROADMAP-SALTMARCHER-REPLACEMENT.md",
     "platformAdr": "ROADMAP-SALTMARCHER-PLATFORM-ADR.md",
     "architecture": "ARCHITECTURE.md#plattformoffene-saltmarcher-ablösung",
@@ -97,25 +97,27 @@
       "limits": "No target-platform decision or P02 authorization. Durable receipt/recovery, the full Create/Update/Delete fault matrix, installed-adapter bytes, Windows, macOS and accessibility remain not-run."
     },
     "adrP01H03": {
-      "run": "ADR-P01-H03-I01-R01",
-      "state": "contract_candidate_review_changes_required",
+      "run": "ADR-P01-H03-I02-P01-R01",
+      "state": "i02_p01_plan_review_changes_required",
       "document": "ROADMAP-SALTMARCHER-ADR-P01-H03-PLAN.md",
       "result": "Proposes a Linux-only native snapshot/capture/publish and parent/child recovery hypothesis using a durable Before snapshot from the immutable compare-and-write payload, independent target verification, exclusive current-name capture and no-replace publication, with a complete uncooperative-writer and fault matrix.",
-      "contractCandidate": "e95f3eba325b3aa55620d39a617074ede425405d",
-      "review": "The R02 plan remains passed, but independent contract review rejected exact candidate e95f3eba325b3aa55620d39a617074ede425405d. Mandatory gaps are the absent parent receipt/sorted child-set and aggregate digest contract, incomplete state/operation identity-hash-name oracles, non-distinct internal names, unstructured orphan evidence and insufficient adversarial tests.",
-      "limits": "R02 passed planning review only. No executable proof, Linux durability Go, target-platform decision or P02 authorization. Windows and macOS remain not-run."
+      "contractCandidate": "f8fcdc1b2eacbfb17c7c5603f6c15cfd89c4296d",
+      "integrationCommit": "0aecf2b4ce046c69a84cecb0890c949fd7962286",
+      "i02PlanCandidate": "e0cff1d0d112633fa3f6288d95973de936a5dbc3",
+      "review": "The reviewed p01-v3 contract remains passed. Independent read-only review rejected the first I02 plan candidate e0cff1d0d112633fa3f6288d95973de936a5dbc3: ten aggregate transition rows do not enumerate Parent receipt transitions, conflict transitions or the Update temp-synced receipt generation; durable receipt ordering is incomplete; and prose over killpoints/adversaries is not a complete operation-state-killpoint-adversary matrix with per-cell fresh-recovery oracles.",
+      "limits": "R02 and the p01-v3 contract passed their separate reviews. No native helper, complete fault matrix, executable H03 proof, Linux durability Go, target-platform decision or P02 authorization exists. Windows and macOS remain not-run."
     },
     "coordination": {
       "local": "Three new local goal threads coordinate integration. Existing Hex/Atlas, City and Dungeon colleagues on three other devices retain their workstreams, evidence and non-overlapping ownership and contribute requirements to the platform decision.",
       "cloud": "Prior GM-UX-CLOUD worker is reassigned through GitHub Issue #1 to independent architecture and technical review only. Other cloud colleagues retain their established specialist review/test responsibilities.",
       "gui": "At most one graphical host/original instance per device; static and non-graphical checks may run separately."
     },
-    "next": "Repair and independently re-review only the p01-v3 parent/child contract and adversarial Golden DTO matrix. Do not build the native helper or claim executable H03 evidence before the exact-head contract review passes; ADR-P02 remains blocked and the platform ADR remains proposed."
+    "next": "Repair and independently re-review the I02 plan with explicit Parent/Child/conflict receipt transitions and a complete operation-state-killpoint-adversary matrix with deterministic fresh-recovery oracles. Do not implement the helper or claim executable H03 evidence, Linux durability Go, platform selection or P02 authorization."
   },
   "saltMarcherCatalogEncounter": {
     "schemaVersion": 1,
-    "updated": "2026-10-09T16:36:53Z",
-    "state": "ce02_i02_plan_drafted_review_pending_ce01_physical_open",
+    "updated": "2026-10-09T16:50:41Z",
+    "state": "ce02_i02_plan_third_repair_review_pending_ce01_physical_open",
     "plan": "ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md",
     "architecture": "ARCHITECTURE.md#geplante-katalog--und-encounter-erweiterung",
     "sourceRepository": "ThonkTank/Salt-Marcher",
@@ -457,16 +459,42 @@
       "review": "Independent N01 re-review passed exact repair candidate 4d239004c4f000b2af6f66122a05135b0c353ffb without a remaining mandatory finding; the product remains the clean, checked commit 7469e64202e730175ee138136a69d82ad4f28ea6.",
       "limits": "No Item, saved Encounter, NPC, Faction, Place or Encounter-Table data is delivered; unavailable is not feature completion. No Encounter Builder, combat mutation, 2024 mode or physical/screenreader/platform acceptance. The local automated host smoke is scoped; all CE-AC cases remain open."
     },
+    "catalogBuildBudgetContract": {
+      "date": "2026-10-09",
+      "state": "verified_build_contract",
+      "requirement": "The CE-01 payload budget gates the catalog payload actually emitted into main.js; unrelated later product growth remains visible inventory and cannot consume the catalog payload allowance.",
+      "evidence": [
+        "tools/catalog-build-asset.mjs",
+        "build.mjs",
+        "tests/catalog-build-asset.test.mjs"
+      ],
+      "verified": {
+        "gzipBytes": 102021,
+        "gzipLimitBytes": 122880,
+        "base64Characters": 136028,
+        "base64LimitCharacters": 164000,
+        "catalogPayloadBytes": 136038,
+        "catalogPayloadLimitBytes": 180000,
+        "mainJsGrowthBytesInventoryOnly": 172854,
+        "focusedTests": "4/4",
+        "fullTests": "276/276",
+        "check": "passed",
+        "build": "passed"
+      },
+      "limits": "This verifies only the build-budget contract. It does not close CE-AC-01/02/14, host, physical-input, Atlas or overall acceptance."
+    },
     "next": "Plan and independently review CE-02-I02 for the first real non-Monster owner, including exact item provenance, schema, unavailable/error boundaries and isolated section state. Keep the other five unavailable providers explicitly undelivered; CE-01 physical-input, screenreader and other-platform gates remain open.",
     "ce02I02Plan": {
       "run": "CE-02-I02-P01",
-      "state": "drafted_review_pending",
+      "state": "n02_r01_changes_required_n03_review_pending",
       "document": "ROADMAP-SALTMARCHER-CE02-I02-PLAN.md",
       "sourceDocument": "https://media.wizards.com/2023/downloads/dnd/SRD_CC_v5.1.pdf",
       "sourceSha256": "2504d2a0abb0a4d491a939be4f17910a2dde0312570ab8d208080225ccf0a1f0",
       "result": "Defines a local read-only SRD 5.1 equipment and magic-item catalog, reproducible corpus, schema, source attribution, typed isolated failures, Item query/detail UI and separate review/host gates.",
-      "limits": "Plan only; Item data/provider and five other data owners remain unavailable. All CE-AC, physical-input, screenreader and other-platform gates remain open."
-    }  },
+      "limits": "Plan only; Item data/provider and five other data owners remain unavailable. All CE-AC, physical-input, screenreader and other-platform gates remain open.",
+      "review": "R01 on exact 8c5c5680054b8dddd89900733ac7bbfe966876f1 required seven repairs (Issue #1 comment 6085178049). N01-R01 on exact 01a02ef124e3ffc02b626019f89f5e216612f7ab required S01 cycle/schema repairs (Issue #1 comment 6085248851). N02-R01 on exact 3b7e5c933a107da6f406aa44037decf316d09b77 confirmed those and found one remaining variable-rarity schema gap (Issue #1 comment 6085306351). N03 awaits independent review."
+    }
+  },
   "cityPlans": {
     "schemaVersion": 1,
     "updated": "2026-10-09T15:18:47.917996+00:00",
@@ -729,7 +757,8 @@
         "implementation": {
           "state": "partial",
           "evidence": [
-            "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-model-20261009/implementation.json"
+            "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-model-20261009/implementation.json",
+            "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-model-20261009/repair.json"
           ],
           "remaining": "Atlas placement/scene/selection/common history, native file registration and save/reopen host sequence not implemented."
         },

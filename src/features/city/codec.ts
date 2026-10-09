@@ -40,6 +40,18 @@ function record(
 }
 function list(value: unknown): readonly unknown[] {
   if (!Array.isArray(value)) invalid("Liste fehlt.");
+  if (
+    Object.getPrototypeOf(value) !== Array.prototype ||
+    Reflect.ownKeys(value).length !== value.length + 1
+  )
+    invalid(
+      "Liste enthält ausgelassene Einträge oder unbekannte Zusatzfelder.",
+    );
+  for (let index = 0; index < value.length; index++) {
+    const descriptor = Object.getOwnPropertyDescriptor(value, String(index));
+    if (!descriptor || !Object.hasOwn(descriptor, "value"))
+      invalid("Liste enthält ausgelassene oder berechnete Einträge.");
+  }
   return value;
 }
 function id(value: unknown): string {

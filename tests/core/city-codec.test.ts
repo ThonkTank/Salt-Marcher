@@ -70,6 +70,48 @@ function parse(value: unknown) {
   return parseCityDocument(JSON.stringify(value));
 }
 
+test("native city lists reject extra data and missing entries before serialization loses them", () => {
+  for (const key of [
+    "roadNodes",
+    "roads",
+    "plazas",
+    "plots",
+    "districts",
+    "buildings",
+  ] as const) {
+    const extra = Object.assign([], { future: "must not disappear" });
+    assert.throws(
+      () => serializeCityDocument({ ...town(), [key]: extra }),
+      /Liste/,
+    );
+    const sparse = new Array(1);
+    assert.throws(
+      () => serializeCityDocument({ ...town(), [key]: sparse }),
+      /Liste/,
+    );
+  }
+  const nested = town();
+  Object.assign(nested.buildings[0]!.footprint.outer, { future: true });
+  assert.throws(() => serializeCityDocument(nested), /Liste/);
+  const accessor = town();
+  Object.defineProperty(accessor.roads[0]!.via, "0", {
+    get() {
+      throw new Error("must not run");
+    },
+    enumerable: true,
+  });
+  assert.throws(() => serializeCityDocument(accessor), /berechnete Einträge/);
+  const replacement = town();
+  delete replacement.roads[0]!.via[0];
+  Object.assign(replacement.roads[0]!.via, { future: true });
+  assert.throws(() => serializeCityDocument(replacement), /ausgelassene/);
+  class CustomList<T> extends Array<T> {}
+  assert.throws(
+    () => serializeCityDocument({ ...town(), roadNodes: new CustomList() }),
+    /Liste/,
+  );
+});
+
 test("native city roundtrip preserves materialized meters, all IDs, graph links and courtyard pose", () => {
   const source = town(),
     raw = serializeCityDocument(source),

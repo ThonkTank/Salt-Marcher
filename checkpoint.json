@@ -1,7 +1,7 @@
 {
   "saltMarcherReplacement": {
     "date": "2026-10-09",
-    "state": "smr00_adr_p01_h03_contract_review_changes_required",
+    "state": "smr00_adr_p01_h03_i02_plan_review_changes_required",
     "plan": "ROADMAP-SALTMARCHER-REPLACEMENT.md",
     "platformAdr": "ROADMAP-SALTMARCHER-PLATFORM-ADR.md",
     "prototypePlan": "ROADMAP-SALTMARCHER-ADR-PROTOTYPES.md",
@@ -101,12 +101,14 @@
     },
     "adrP01H03": {
       "date": "2026-10-09",
-      "state": "contract_candidate_review_changes_required",
+      "state": "i02_p01_plan_review_changes_required",
       "plan": "ROADMAP-SALTMARCHER-ADR-P01-H03-PLAN.md",
       "hypothesis": "Materialize the immutable expected Before payload supplied by the bounded compare-and-write request into a durable snapshot independent of the externally writable target inode, then verify/capture the current name and publish only with RENAME_NOREPLACE.",
-      "contractCandidate": "e95f3eba325b3aa55620d39a617074ede425405d",
-      "limits": "R02 passed planning review only. H02 remains No-Go; no executable H03 proof, Linux durability Go, platform decision or P02 authorization. Windows and macOS remain not-run.",
-      "review": "R01 passed a9de899 but later independent rechecks found three mandatory gaps (Issue #1 comments 6084665817, 6084697489). R02 repaired those and two follow-up matrix/oracle findings. Independent read-only R02 re-review passed exact shared head 25885d543c8576a3ae1d0556e7b04a51d40209c7. Contract review of exact candidate e95f3eba325b3aa55620d39a617074ede425405d requires repair: parent receipts and sorted child-set/digest binding are absent; state- and operation-specific identity/hash/name oracles are incomplete; internal names are not pairwise distinct; orphan evidence is unstructured; and the adversarial matrix tests are incomplete."
+      "contractCandidate": "f8fcdc1b2eacbfb17c7c5603f6c15cfd89c4296d",
+      "integrationCommit": "0aecf2b4ce046c69a84cecb0890c949fd7962286",
+      "i02PlanCandidate": "e0cff1d0d112633fa3f6288d95973de936a5dbc3",
+      "limits": "R02 and the p01-v3 contract passed their separate reviews. H02 remains No-Go; no native helper, complete fault matrix, executable H03 proof, Linux durability Go, platform decision or P02 authorization exists. Windows and macOS remain not-run.",
+      "review": "R01 passed a9de899 but later independent rechecks found three mandatory gaps (Issue #1 comments 6084665817, 6084697489). R02 repaired those and two follow-up matrix/oracle findings. Independent read-only R02 re-review passed exact shared head 25885d543c8576a3ae1d0556e7b04a51d40209c7. The first contract candidate e95f3eba325b3aa55620d39a617074ede425405d failed review. Its replacement on exact candidate f8fcdc1b2eacbfb17c7c5603f6c15cfd89c4296d passed independent read-only contract re-review after one repair. The first I02 plan candidate e0cff1d0d112633fa3f6288d95973de936a5dbc3 requires repair: its ten aggregate transition rows omit individual Parent and conflict transitions, the Update temp-synced receipt generation, complete durable receipt ordering, and an enumerated operation-state-killpoint-adversary matrix with deterministic recovery oracles."
     },
     "open": [
       "Replacement architecture hypothesis after ADR-P01 No-Go; ADR-P02 through ADR-P04 and ADR-C01 remain blocked",
@@ -115,25 +117,25 @@
       "Per-slice source-to-target mapping and host persistence/security decisions"
     ],
     "nextRun": {
-      "id": "ADR-P01-H03-I01-N01",
-      "kind": "review_finding_contract_repair",
+      "id": "ADR-P01-H03-I02-P01-N01",
+      "kind": "child_state_machine_plan_repair",
       "owner": "local_implementation_thread",
-      "focus": "Repair only the p01-v3 parent/child contract and adversarial Golden DTO matrix; no native helper, executable proof or Go claim before an independent exact-head contract re-review passes"
+      "focus": "Repair the I02 plan into explicit Parent/Child/conflict receipt transitions and a complete operation-state-killpoint-adversary matrix with per-cell recovery oracles; no helper implementation or Go claim"
     }
   },
   "saltMarcherCatalogEncounter": {
     "date": "2026-10-09",
-    "state": "ce02_i02_plan_drafted_review_pending_ce01_physical_open",
+    "state": "ce02_i02_plan_third_repair_review_pending_ce01_physical_open",
     "plan": "ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md",
     "architecture": "ARCHITECTURE.md#geplante-katalog--und-encounter-erweiterung",
     "acceptance": "acceptance.json.saltMarcherCatalogEncounter",
     "currentRun": {
-      "id": "CE-02-I02-P01",
-      "kind": "feature_plan",
+      "id": "CE-02-I02-P01-N03",
+      "kind": "plan_repair",
       "state": "drafted_review_pending",
-      "focus": "Pinned official SRD 5.1 Item provenance, corpus/schema/generator contract, isolated provider and error states, implementation and host gates",
+      "focus": "Resolve N02-R01 variable and variant-specific rarity schema/filter/Inspector finding",
       "plan": "ROADMAP-SALTMARCHER-CE02-I02-PLAN.md",
-      "result": "Plan drafted; no item data or provider implemented, no Item or CE-02 acceptance."
+      "result": "N02-R01 on 3b7e5c933a107da6f406aa44037decf316d09b77 found one remaining variable-rarity gap (Issue #1 comment 6085306351). N03 plan repair awaits exact-head review. No Item implementation or acceptance."
     },
     "implementationRun": {
       "id": "CE-01-I01",
@@ -303,6 +305,33 @@
       "review": "Independent N01 re-review passed exact repair candidate 4d239004c4f000b2af6f66122a05135b0c353ffb without a remaining mandatory finding; the product remains the clean, checked commit 7469e64202e730175ee138136a69d82ad4f28ea6.",
       "limits": "No new data owner is delivered. Items, saved Encounters, NPCs, Factions, Places and Encounter Tables remain explicitly unavailable. Local automated host smoke is scoped; physical-input, screenreader, non-Linux and full CE-02 acceptance remain open."
     },
+    "catalogBuildBudgetContract": {
+      "date": "2026-10-09",
+      "state": "checked_regression_passed",
+      "result": "The 180000-byte CE-01 gate now measures only the virtual SRD-5.1 payload bytes actually emitted into main.js from the esbuild metafile. Total main.js growth against the historical baseline remains inventory and no longer blocks unrelated Atlas, City or other product features.",
+      "verification": {
+        "check": "passed",
+        "tests": {
+          "passed": 276,
+          "failed": 0
+        },
+        "focusedCatalogBuildTests": {
+          "passed": 4,
+          "failed": 0
+        },
+        "build": "passed",
+        "inventory": {
+          "sourceBytes": 832272,
+          "gzipBytes": 102021,
+          "base64Characters": 136028,
+          "mainBytes": 1362224,
+          "mainJsGrowthBytesInventoryOnly": 172854,
+          "catalogPayloadBytes": 136038,
+          "catalogPayloadLimitBytes": 180000
+        }
+      },
+      "limits": "Build-contract repair only. No catalog data/provider/UI change and no CE, Atlas, host, physical-input or overall approval."
+    },
     "verified": "CE-00 and CE-01 implementation/review/repair cycles passed their scoped gates. CE-01-H01 passed its independently reviewed automated scope. CE-02-I01 product commit 7469e64202e730175ee138136a69d82ad4f28ea6 and metadata repair candidate 4d239004c4f000b2af6f66122a05135b0c353ffb passed independent review. Its six unavailable providers do not count as delivered catalog areas. Physical input, screenreader and other-platform acceptance remain open.",
     "open": [
       "CE-01 physical keyboard/mouse, screenreader and other-platform acceptance; CE-02-I02 through CE-07 runs",
@@ -310,10 +339,10 @@
       "Physical catalog input acceptance cannot be replaced by Playwright automation"
     ],
     "nextRun": {
-      "id": "CE-02-I02-P01-R01",
-      "kind": "independent_plan_review",
+      "id": "CE-02-I02-P01-N03-R01",
+      "kind": "independent_plan_re_review",
       "plan": "ROADMAP-SALTMARCHER-CE02-I02-PLAN.md",
-      "focus": "Review exact commit for source/license provenance, corpus feasibility/completeness, schema/null semantics, fail-closed provider behavior, owner isolation and executable I02 gates"
+      "focus": "Verify variable and variant-specific rarity is preserved through source inventory, transcript, schema, query filters, sort and Inspector with required Golden cases; confirm earlier repaired gates remain intact. Only after PASS begin S01, not I01."
     }
   },
   "repositoryWorkflow": {
@@ -4188,17 +4217,17 @@
     "state": "city01_model_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-01-PREP-R01",
-      "kind": "implementation_review",
-      "startedAt": "2026-10-09T16:40:19.778135+00:00",
-      "focus": "Stadtmodell gegen strikte Datenverlust-/Formatgrenzen reviewen",
+      "id": "CITY-01-PREP-CLEAN-R01",
+      "kind": "cleanup_review",
+      "startedAt": "2026-10-09T16:48:58.646070+00:00",
+      "focus": "Aufgeräumten Modell-/Codec-Vertrag und Codegleichheit prüfen",
       "state": "completed",
-      "result": "Zwei konkrete Reviewlücken belegt: Listen-Zusatzfelder gehen im Serializer verloren (CITY-MODEL-R01-01); sparse Listen führen zu unverständlichem TypeError statt Formatfehler (CITY-MODEL-R01-02). Gegen strikten Datenvertrag ist damit Nachbesserung nötig. Bestehende Meter-/Graph-/Posefälle bleiben belegt, keine Host-/Paritätsfreigabe."
+      "result": "Alle drei Aufräumreste erledigt: Skalierung korrekt dimensionslos kommentiert, vorhandene APIs im Gesamtplan erkennbar, dichte Listen in Architektur festgehalten. Ausschließlich Kommentaränderung am Modelltyp; exakte Typquelle nach Kommentarentfernung und erzeugtes JS identisch. Codec/Tests/gemeinsame Quellen unverändert gegenüber276grünenTests/Typprüfung/Build. Modellvorbereitung reviewt ohne Restbefund;24CTY/65CO-Fachpflichten und Atlas-/Host-/Saveintegration offen."
     },
     "nextRun": {
-      "id": "CITY-01-PREP-N01",
-      "kind": "implementation_repair",
-      "focus": "Dichte native Listen ohne Zusatz-/Accessorfelder prüfen und Regressionen ausführen"
+      "id": "CITY-01-PREP-P02",
+      "kind": "implementation_planning",
+      "focus": "Reine Stadtbefehle auf vorhandener AtlasHistory planen und Modulgrenze abstimmen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
@@ -4257,11 +4286,11 @@
   },
   "gmProductTesting": {
     "date": "2026-10-09",
-    "state": "gm_ux_n004_cloud_dom_diagnosis_sent_retest_pending_continue_gm_workflow",
+    "state": "current_build_product_retest_completed_followup_assignment_pending",
     "plan": "ROADMAP-GM-PRODUCT-TESTING-PLAN.md",
     "focus": "Längere GM-Endanwenderabläufe, häufige Aktionen, Bedienkosten und UI-Überladung; belegte Nacharbeiten beauftragen und nachprüfen.",
-    "currentRun": "GM-UX-N-004 old-build cloud DOM diagnosis at equal 548px panes",
-    "executedUiRuns": 6,
+    "currentRun": "3c2d882 Cloud atlas zoom retest and GM-UX-01 Nebelwacht session information lookup",
+    "executedUiRuns": 7,
     "observedFindings": [
       {
         "id": "GM-UX-001",
@@ -4333,7 +4362,7 @@
       {
         "id": "GM-UX-004",
         "priority": "P1-Kandidat",
-        "status": "cloud_dom_diagnosis_reported_issue1_fixbuild_retest_pending",
+        "status": "cloud_retest_passed_on_3c2d882_blank_atlas_only",
         "kind": "Eigene UI-Beobachtung in isoliertem Cloud-Obsidian; Ursache Produkt/Host offen",
         "build": "Obsidian 1.14.4, source commit 0dc85609a35bc4c4452f7afc2a360400922becab, main.js SHA-256 416c739776dd39cca0e2935aaeb0f966cfba54a36f65e6d846446122d9c8f159; build dirty only in GM docs/checkpoint",
         "scenario": "Synthetischer Atlas GM Atlas Zoom Test, Obsidian 1.14.4, App 1440x1000/DPR1; sichtbarer Splitterzug zu Atlas-/Spielansicht-Panes 546.5x960 und 549.5x960",
@@ -4343,8 +4372,37 @@
         "impact": "P1-Kandidat, weil neu sichtbare Atlas-Zoomfunktion aus GM-Sicht nicht beurteilbar ist; keine Nutzerzeit/Latenz gemessen.",
         "evidence": "/workspace/scratch/gm-cloud-qa/218-atlas-create-command.png; /workspace/scratch/gm-cloud-qa/220-atlas-empty-created.png; /workspace/scratch/gm-cloud-qa/221-atlas-initial-scale.png; /workspace/scratch/gm-cloud-qa/222-atlas-plus-three.png; /workspace/scratch/gm-cloud-qa/223-atlas-zoom-attempts.png; /workspace/scratch/gm-cloud-qa/224-atlas-after-pane-resize.png; /workspace/scratch/gm-cloud-qa/238-atlas-final-black-overflow.png; /workspace/scratch/gm-cloud-qa/239-atlas-two-pane-548.png; /workspace/scratch/gm-cloud-qa/240-atlas-exact-548-pane-dom.png",
         "latency": "Nicht gemessen; CDP-/Fernsteuerungszeit nicht als Produktlatenz gewertet.",
-        "retest": null,
-        "coordination": "Hex-/Atlas-Auftrag GM-UX-N-004, Issue #1 Kommentar 6084269776; Ursache und Nachtest offen; HEX-01-CLEAN-P01/R01-Auftragsgrenze, Issue #1 Kommentar 6084291328.; detailierte Cloud-DOM-/Canvas-/WebGL-/ResizeObserver-Fakten Issue #1 Kommentar 6084619486; Fixbuild-Nachtest offen."
+        "retest": {
+          "date": "2026-10-09",
+          "productCommit": "3c2d88296d775ad7afcddac0b3c704958d501baa",
+          "obsidian": "1.14.4",
+          "productArtifactSha256": {
+            "main.js": "bd13cb2ac5e823d21f81bcb2f8d32a6b6a0ebe49a7049cacb2c5035eb99370a4",
+            "styles.css": "65bfc79e064f9e49580dd7edf0955a20aaa19f1a40df0b1d82092d95fb80630d",
+            "manifest.json": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64"
+          },
+          "result": "Vollständiges Produkttripel installiert, Hashes stimmen. Leerer Atlas zeigt in Split- und breitem Pane Raster/Ursprung. Sichtbare +/−/Ctrl+Mausrad ändern Hexgröße, Einpassen stellt den Ausschnitt wieder her; schließen und Ctrl+O öffnen die leere Karte erneut. Kein schwarzer/überhoher Canvas auf diesem Stand reproduziert.",
+          "evidence": "/workspace/scratch/gm-cloud-qa/248-atlas-3c-baseline-split.png bis 259-atlas-3c-reopened.png",
+          "limits": "App-/Renderer-Reload, kein nachgewiesener frischer Electron-Prozess; keine befüllte Terrainfunktion oder physische Eingabe abgenommen; WebGL-Verfügbarkeit hier nicht erneut diagnostiziert; keine Produktlatenz gemessen."
+        },
+        "coordination": "Hex-/Atlas-Auftrag GM-UX-N-004, Issue #1 Kommentar 6084269776; Kollege meldete stale CSS als Ursache und abgeschlossenen Fix in 3c2d882. Eigener Cloud-Nachtest auf leerem Atlas sichtbar bestanden, befüllte Terrainfunktion und frischer Electron-Prozess bleiben offen; HEX-01-CLEAN-P01/R01-Auftragsgrenze, Issue #1 Kommentar 6084291328; Cloud-DOM-/Canvas-/WebGL-/ResizeObserver-Fakten Issue #1 Kommentar 6084619486."
+      },
+      {
+        "id": "GM-UX-005",
+        "priority": "P2-Kandidat",
+        "status": "reproduced_issue1_assignment_pending",
+        "kind": "Eigene UI-Beobachtung in isoliertem Cloud-Testvault; Such-/Fernsteuerungszeiten nicht als Produktlatenz",
+        "build": "Obsidian 1.14.4; Produktcommit 3c2d88296d775ad7afcddac0b3c704958d501baa; main.js SHA-256 bd13cb2ac5e823d21f81bcb2f8d32a6b6a0ebe49a7049cacb2c5035eb99370a4",
+        "scenario": "GM-UX-01 Nebelwacht, gespeicherter synthetischer Raum-12-Hinweis; Spielansicht Ebenenwechsel und GM-Informationssuche",
+        "reproduction": "In der Dungeon-Spielansicht Erdgeschoss/Geschoss 1 über Auswahlfeld wechseln; Raumklick öffnet keine Key-Info. Ctrl+Shift+F auf „Die blaue Fackel in Raum 12“, „Nebelwacht“ und „GM“ ergibt No matches found. Um den Hinweis zu finden: Ctrl+O, Kartennamen öffnen, Dungeon > Geschosse, Geschoss 1 auswählen, Raum 12 anklicken, Inhalte öffnen.",
+        "expected": "GM kann während einer simulierten Sitzung einen bekannten Begriff oder Raum-Key schnell finden und zum passenden Raum/Geschoss springen.",
+        "actual": "Obsidian-Suche zeigt bei allen drei Abfragen keine Treffer für die .dungeon-Karte; der gespeicherte Key ist nur über den Editorpfad auffindbar. Der Spielansicht-Raumklick öffnet keine Key-Information.",
+        "impact": "P2-Kandidat: mehrere Navigationseingaben unterbrechen die simulierte Spielsitzung. Suchbarkeit benutzerdefinierter Dateiinhalte und Häufigkeit bei anderen GMs nicht populationsgemessen.",
+        "evidence": "/workspace/scratch/gm-cloud-qa/268-nebelwacht-play-floor1.png, 270-play-room1-click.png, 271-search-open.png, 272-search-clue-results.png, 274-search-gm.png, 275-quick-switch-nebelwacht.png, 276-reopen-nebelwacht.png, 278-floor1-gm-editor.png, 279-room12-key-found.png",
+        "latency": "Nicht gemessen; Playwright/CDP-, Such- und Wartezeiten ausgeschlossen.",
+        "dataIntegrity": "Karte SHA-256 blieb identisch zu vorher: 56c38f8ff9e4365a165af4319da37bb03db20c09925d6ee38e5327e7559353c7.",
+        "proposedTask": "GM-UX-N-005: Dungeon-Verantwortlicher prüft eine sichtbare GM-Suche/Übersicht für Raum-Key-Texte. Abnahme: einzigartigen Begriff in isolierter Nebelwacht finden; Treffer zeigt Raum und Geschoss; Aktivierung führt zum Raum und öffnet Key, ohne Karte zu ändern; Leeren stellt Übersicht wieder her; Save/Reload erhält den Hinweis.",
+        "coordination": "Issue #1 Bericht und Auftragsannahme ausstehend; Ursache „Obsidian Core Search indexiert .dungeon nicht“ bleibt Hypothese."
       }
     ],
     "blocker": "Cloud-Testassets sind selbst erzeugte, ausdrücklich freigegebene synthetische Fixture-Daten; Original-Dungeondraft-Pakete und deren Produktabnahme bleiben offen. Kein Cloud-Test nutzt oder ändert Nutzerkarten.",
@@ -4355,7 +4413,7 @@
       "state": "completed",
       "supersedes": "GM-UX-ACCESS; Slotanfrage gemäß Nutzerkorrektur aufgehoben"
     },
-    "next": "Hex-Atlas-Verantwortlichen Fixbuild für den angekündigten eigenen Cloud-Nachtest abwarten; GM-UX-01 unabhängig mit Informationssuche/Ebenenwechsel fortsetzen. N-004-Wiederholung nur am exakten neuen Build; Baseline bleibt der alte 416c739-Build.",
+    "next": "GM-UX-N-005 an Dungeon-Verantwortlichen zur Übernahme in Issue #1 geben; danach Such-/Key-Nacharbeit im selben Nebelwacht-Szenario erneut prüfen. N-004 eigener Cloud-Nachtest auf installiertem 3c2d882: leeres synthetisches Raster/Zoom in Split und breitem Pane sichtbar; befüllte Terrainfunktion, physische Eingabe und frischer Electron-Prozess weiter offen.",
     "automation": "Stündliche GM-Produkttests in eigener Cloud; keine Laptop-Slotfreigabe erforderlich.",
     "executionEnvironment": "Eigene Cloud-Umgebung, getrennt vom Laptop der Kollegen",
     "cloudHost": {
@@ -4481,6 +4539,7 @@
         "next": "Fixbuild von Hex abwarten; derselbe Cloud-Host und 548px Splitpane werden für getrennten Nachtest verwendet.",
         "coordination": "Issue #1 Kommentar 6084269776. N-004 bis HEX-01-CLEAN-R01 ohne Kamera-/Gesten-/Geometrieänderungen geparkt; Issue #1 Kommentar 6084291328. Ergänzende DOM-Diagnose Issue #1 Kommentar 6084619486."
       }
-    ]
+    ],
+    "evidence": "/workspace/scratch/gm-cloud-qa/248-atlas-3c-baseline-split.png bis 279-room12-key-found.png"
   }
 }
