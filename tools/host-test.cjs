@@ -64,6 +64,7 @@ const restart = process.argv.includes("--restart"),
   parityToolsPhase1Resize = process.argv.includes("--parity-tools-phase1-resize"),
   parityToolsPhase1MapInfo = process.argv.includes("--parity-tools-phase1-map-info"),
   gmUxN001 = process.argv.includes("--gm-ux-n001"),
+  gmUxN002 = process.argv.includes("--gm-ux-n002"),
   parityToolsPhase1SmartTiles = process.argv.includes("--parity-tools-phase1-smart-tiles"),
   parityToolsPhase1TerrainMasks = process.argv.includes("--parity-tools-phase1-terrain-masks"),
   parityToolsPhase1BuildingFloor = process.argv.includes("--parity-tools-phase1-building-floor"),
@@ -673,7 +674,7 @@ async function workflow() {
   } else await page.waitForFunction(
     (expected) => typeof app !== "undefined" &&
       app.vault?.adapter?.basePath === expected && app.workspace?.layoutReady,
-    vault, { timeout: parityPhase7Combined || parityPhase6Repair2Rotation || parityPhase6Repair2Marquee || parityPhase6Repair2Overlap || parityPhase6Repair2Library || parityPhase6Repair2Focus || parityPhase6Repair || parityPhase6RepairSelection || parityPhase6Gestures || parityPhase3Wear || parityPhase4Objects || parityPhase5Objects || parityPhase5Review || parityPhase5Repair || parityPhase5Repair2 || parityPhase5AlphaReview || parityPhase5Visual || parityPhase5Light ? 90000 : 30000 },
+    vault, { timeout: gmUxN002 || parityPhase7Combined || parityPhase6Repair2Rotation || parityPhase6Repair2Marquee || parityPhase6Repair2Overlap || parityPhase6Repair2Library || parityPhase6Repair2Focus || parityPhase6Repair || parityPhase6RepairSelection || parityPhase6Gestures || parityPhase3Wear || parityPhase4Objects || parityPhase5Objects || parityPhase5Review || parityPhase5Repair || parityPhase5Repair2 || parityPhase5AlphaReview || parityPhase5Visual || parityPhase5Light ? 90000 : 30000 },
   );
   fs.writeFileSync(
     out + "/startup.json",
@@ -775,6 +776,12 @@ async function workflow() {
   }
   if (parityToolsPhase1MapInfo) {
     const scenario = require("./host/parity-tools-phase1-map-info.cjs")(scenarioContext);
+    if (restart) await scenario.reopen();
+    else await scenario.edit();
+    return;
+  }
+  if (gmUxN002) {
+    const scenario = require("./host/gm-ux-n002.cjs")(scenarioContext);
     if (restart) await scenario.reopen();
     else await scenario.edit();
     return;

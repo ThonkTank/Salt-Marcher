@@ -2,7 +2,7 @@ import type { AssetDefinition } from "../../assets";
 import type { Session } from "../../session";
 import {
   applyObjectSearch, chooseObjectSet, chooseObjectTag, clearObjectSearchText, enterObjectLibraryTab,
-  newObjectLibraryState, resetObjectSearch,
+  newObjectLibraryState, resetObjectSearch, updateObjectSearchText,
   sortedObjectAssetEntries, visibleObjectEntries, type ObjectAssetEntry,
   type ObjectLibraryState, type ObjectLibraryTab,
 } from "./object-library";
@@ -191,8 +191,9 @@ export class ObjectLibraryPanel {
     input.value = this.state.text;
     input.setAttribute("aria-label", "Objektbibliothek durchsuchen");
     input.addEventListener("input", () => {
-      this.state = { ...this.state, text: input.value };
+      this.state = updateObjectSearchText(this.state, input.value);
       x.hidden = !input.value;
+      this.renderTiles();
     });
     input.addEventListener("keydown", (event) => {
       if (event.key !== "Enter") return;
@@ -209,6 +210,7 @@ export class ObjectLibraryPanel {
     x.addEventListener("click", () => {
       this.state = clearObjectSearchText(this.state);
       input.value = ""; x.hidden = true; input.focus();
+      this.renderTiles();
     });
     const clear = document.createElement("button");
     clear.type = "button";
