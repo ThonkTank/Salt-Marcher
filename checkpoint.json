@@ -1844,10 +1844,12 @@
     },
     "dd036AtlasPlan": {
       "date": "2026-10-09",
-      "state": "scope_plan_written_original_effect_and_host_review_open",
+      "state": "independent_plan_review_failed_repair_required",
       "plan": "ROADMAP-PARITY-TOOLS-PHASE1-DD036-ATLAS-PLAN.md",
       "cases": "DD-036.01–.16",
-      "next": "Atlas-Speichern, Undo/Redo, Dirty-Warnung und frische Öffnung auf isolierter Kopie prüfen; Recent/Save As erst nach Atlasidentitäts- und Plattformentscheidung fachlich zuordnen."
+      "reviewedBase": "6ee65dae1eb462f269d253263d5f861fe28a8ef0",
+      "reviewFinding": "Pflichtlücken: aktueller Atlas besitzt noch keine ausführbare History-/Save-/Dirty-Grenze; Dungeondraft- und Wonderdraft-Belege müssen getrennt bleiben; Weltkennung/Kopierdateien brauchen ein exaktes Orakel; HEX-01-Compare/Write ist kein Journal-/Draft-/Recovery-Nachweis.",
+      "next": "DD-036-ATLAS-P01-R01: nur den Plan reparieren, Fälle nach ausführbarer HEX-02-Voraussetzung und realer Shell staffeln, Referenzquellen je Hostschritt trennen sowie Identitäts- und gemeinsamen FileTransaction-/Draft-Vertrag als prüfbare Orakel festlegen; danach unabhängiger Planreview."
     },
     "dd006ShadowPlan": {
       "date": "2026-10-09",
@@ -2435,7 +2437,7 @@
     "plan": "ROADMAP-PARITY-PLAN.md",
     "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
     "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
-    "nextRun": "ROADMAP-PARITY-TOOLS.md Phase 1: DD-038.01–.09 sind für den grenzenlosen Atlas ausgeschlossen; DD-039.01–.06 bestehen im separaten 8×8-Hostreview ohne Resize. DD-008.01–.05 sind im gemessenen Wahl-/Zwei-Geschoss-/Save-Scope reviewt; DD-006.03/.04 im per-Element-Render-/UI-/Save-Scope. DD-001/002/003 sowie die gebundenen Startschalter DD-006.01/.02 und DD-007.01/.02 sind keine direkten Vorbilder mehr. Als nächstes übertragbare Ansichts-/Dateifunktionen und globale Atlasoptionen nach Nutzerzweck prüfen; Phase-1-Gesamttor offen. Building-Boden-Werkzeuge und Atlaswachstum bleiben separat offen; P7-2 bleibt auf Nutzerwunsch physisch ungeprüft.",
+    "nextRun": "DD-036-ATLAS-P01-R01: den Dateiflussplan nach dem unabhängigen Review reparieren; read-only Öffnen von HEX-01, erst später ausführbare HEX-02-History-/Save-/Dirty-Folgen, getrennte Dungeondraft-/Wonderdraft-Referenzwahrheit, Weltkennungs-/Kopierorakel und gemeinsamen FileTransaction-/Draft-/Recovery-Weg präzise staffeln. Danach eigener Planreview; keine Host- oder Paritätsfreigabe. Globale Atlasoptionen und übrige Phase-1-Fälle bleiben offen.",
     "note": "P7-1, P7-3 und P7-4 sind in getrennten Edit-/Neuöffnungspaaren reviewt. P7-2 ist auf ausdrückliche Nutzeranweisung übersprungen, nicht physisch geprüft. Phase-7-Fachphasentor mit dieser Ausnahme bestanden; Produktbuild unverändert. Hex-Atlas- und Stadtstand erhalten.",
     "phase2Plan": "ROADMAP-PARITY-PHASE2-PLAN.md",
     "candidateBuildSha256": "b321128188b944c3324594663a410acfd84863f17860f637b9ed2e6ecc33b466",
