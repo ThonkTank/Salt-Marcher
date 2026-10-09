@@ -400,3 +400,5 @@ CITY-00-I23-I Ergebnis: QA-Eintrag inline von CITY23 Market zu CITY23 Market Rev
 CITY-00-I23-R Ergebnis: Rawhashes und empfangene Dateien bestätigt. 03/05/09 zeigen Anlegen/Korrektur/Entfernung, 08 nur Legendenlayout. Kein Vorher-SVG und keine Pin-/Persistenzfreigabe behauptet. 63 CO-/24 CTY-Pflichten erhalten. Ein Aufräumbefund: abgeleiteter Lückensnapshot noch I21; Korrektur/Delete-Teilwirkung darin aktualisieren.
 
 CITY-00-I23-CP Plan: I23-Teilwirkung aus acceptance in den abgeleiteten Snapshot übernehmen; Namenskorrektur/Delete von Legendenlayout und geographischer Position trennen. Rohbelege unverändert hashen und vorhandene Manifest-Verweise prüfen, keine neuen Pflichten/Freigaben/Statusdatenbanken. CI und CR separat.
+
+CITY-00-I23-CR Ergebnis: Snapshot entspricht acceptance-Teilscope, Rohbelege unverändert, 63 CO-/24 CTY-Pflichten erhalten. Eigene Testkopie geschlossen, QA-Eintrag gelöscht und Legendenplatzierung Auto zurückgesetzt. Aufräumen ohne weiteren Befund. Nächste getrennte Originalprobe untersucht Gassen-/Straßennetzdarstellung; Atlasübergabe weiterhin erforderlich.
