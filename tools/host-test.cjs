@@ -835,7 +835,9 @@ async function workflow() {
     return;
   }
   if (parityToolsPhase1Navigation) {
-    const scenario = require("./host/parity-tools-phase1-navigation.cjs")(scenarioContext);
+    const scenario = process.argv.includes("--pan-matrix")
+      ? require("./host/parity-tools-phase1-pan.cjs")(scenarioContext)
+      : require("./host/parity-tools-phase1-navigation.cjs")(scenarioContext);
     if (restart) await scenario.reopen();
     else await scenario.edit();
     return;
