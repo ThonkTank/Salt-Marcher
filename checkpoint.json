@@ -4555,17 +4555,17 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I45-CLEAN-R45",
-      "kind": "cleanup_review",
-      "startedAt": "2026-10-09T19:21:07.610814+00:00",
-      "focus": "Gebäudebedarfe: CLEAN-R",
-      "state": "completed",
-      "result": "Rohhashes/Planlinks/Entwurfgrenze geprüft; neuer Tab geschlossen, alte QA-Karte sichtbar erhalten. Anforderungsreview R45 noch offen."
-    },
-    "nextRun": {
       "id": "CITY-00-I45-R45",
       "kind": "reference_review",
-      "focus": "Formularbelege und deklarierte Ausnahmeregeln getrennt gegen Anforderungen prüfen"
+      "startedAt": "2026-10-09T19:22:35.160257+00:00",
+      "focus": "Originalbelege reviewen: R",
+      "state": "completed",
+      "result": "Parameterteilbelege bestanden; CITY-REF-R45-01 verlangt vollständige Übersichtssnapshots statt No-change-Diffs."
+    },
+    "nextRun": {
+      "id": "CITY-00-I45-REVIEW-CLEAN-P45",
+      "kind": "cleanup_plan",
+      "focus": "CITY-REF-R45-01 mit frischen vollständigen AX-Aufnahmen schließen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
