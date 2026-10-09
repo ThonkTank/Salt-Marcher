@@ -2403,18 +2403,18 @@
     },
     "gmUxN006Backlog": {
       "date": "2026-10-09",
-      "state": "i01_core_completed_i02_open",
-      "run": "GM-UX-N-006-I01",
+      "state": "i02_implementation_r02_passed_h01_open",
+      "run": "GM-UX-N-006-R02",
       "plan": "ROADMAP-GM-UX-N-006-PLAN.md",
       "source": "GM-UX-006 im getrennten Cloud-GM-Produkttest; Issue #1 Kommentar 6085700084",
       "ownership": "Kartograph/Dungeon-Strang beanspruchte GM-UX-N-006-I01/I02 nach erneutem Issue-/PR-/Branchabgleich exklusiv auf Shared-Base 05cf6aa6e83ad88950a90e6f69e0575cde54067e; Claim Issue #1 Kommentar 6087823210. N-005-H01 bleibt beim Cloud-GM-Produkttester; DD-036, Atlas/Hex, City, Migrationen und andere Featurepakete bleiben fremd.",
       "finding": "Auf isolierter Nebelwacht-Kopie blieben Geschoss Geheimgang, Räume 13–15, Türen, Key und Gang gespeichert; nach Schließen und Wiederöffnen war in zwei Läufen jeweils Erdgeschoss aktiv.",
       "planDecision": "Das letzte gültige aktive Geschoss derselben Karte automatisch über den bestehenden Obsidian-FileView-State plus einen flüchtigen, gleich codierten Tab-Reopen-Handoff wiederherstellen. Kein belegter Grund für absichtlichen Erdgeschoss-Reset oder zusätzliche Wiederaufnahmeoberfläche; kein Karten-, Draft-, History- oder Plugin-Datenzustand.",
-      "review": "Unabhängiger read-only Review des Plankandidaten 95a972cf05cb9ff99a646109a3642fcabde8e8b7 verlangte monotone Mehr-Leaf-Reihenfolge ohne stale Unload-Overwrite, Generation/Pfad/Editor-Guards nach allen Await-Grenzen und echte Obsidian-Layoutspeicherung über erhaltenen Base-State, ViewStateResult und requestSaveLayout. Der exakte Reparaturcommit e922b9c4a35ca4e2814ba7f747c251fb38ae02be bestand den unabhängigen Nachreview ohne weitere Pflichtlücke.",
-      "implementation": "I01-Produktcommit a86658c9825fe65ccf01eb08d7e1babd2d2e0ec2 ergänzt ausschließlich src/features/verwaltung/dungeon-view-state.ts, tests/core/dungeon-view-state.test.ts und den Testimport. Der exakte Drei-Feld-Codec verwirft Fremdpfad, Zusatzfelder, falsche Typen/Versionen und überlange/leere Werte. Das rein flüchtige Register hält validierten State, monotone Revision und Leaf-Token; Rename/Delete/Clear sind explizit, Unload veröffentlicht keinen stale Wert.",
-      "verification": "Fokussiert: drei Dungeon-View-State-Fälle bestanden (exakter Codec; monotone B-vor-stale-A-Reihenfolge; Rename/Delete/Plugin-Unload). npm run check bestanden; npm test 378/378 bestanden; npm run build bestanden. Produktartefakte aus dem geprüften Arbeitsbaum: main.js SHA-256 943e2ac12a596917797162cac69d5f1da7f86334ab666e9e4c9d27197fd436e7, styles.css a6d31c13219d4b9f49d2ecf6993106bedef2a33560c9bdfdb93106659d45bc2e, manifest.json 2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64. Kein externer oder GUI-Beleg in I01.",
-      "limits": "I01 hostneutral abgeschlossen; I02-View-/Editor-Verdrahtung, unabhängiger R01, zweifacher Cloud-Host-Reproduktionslauf H01 und GM-R01 bleiben offen. Frischer Prozess ohne wiederhergestelltes Leaf fällt weiterhin auf das erste Geschoss zurück. Kein Laptop-/GUI-Lauf, keine physische Eingabe, keine Karten-/Draft-/History-/Plugin-Datenpersistenz und keine UX-, Host-, Fach-, Paritäts- oder Gesamtfreigabe.",
-      "next": "GM-UX-N-006-I02: DungeonView und DungeonEditor über den bestehenden MapRenderer.setFloor-Weg an Codec/Register anbinden; Base-FileView-State, Lifecycle-/Race-Guards, Rename/Delete und requestSaveLayout fokussiert prüfen."
+      "review": "Planreview und I01 bleiben gültig. I02-R01 auf 03a87a276198cdc4e8fe5078ba6cf12dc40156fc verlangte den Dirty-Key-Guard samt Auswahlleerung für Same-file-setState sowie direkte DungeonView-Lifecyclefälle. Der reparierte exakte Kandidat acc4774027d44c30295fc28b4c1e51dd2e353446 bestand R02 ohne Pflichtbefund: frischer Init und laufender Workspace-Restore sind getrennt, Base-State/ViewStateResult erhalten, Lifecycle-/Ownership-/Release-/Rename/Delete/Clear- und Nichtpersistenzverträge konsistent. Issue #1 6087993684 und 6088059760.",
+      "implementation": "I01-Produktcommit a86658c9825fe65ccf01eb08d7e1babd2d2e0ec2 liefert Codec/Register. I02-Kandidat acc4774027d44c30295fc28b4c1e51dd2e353446 bindet DungeonView und DungeonEditor über den bestehenden MapRenderer.setFloor-Weg an: eigener Leaf-State vor Register-Handoff, normaler requestSaveLayout, alle Generation/Pfad/Map/Editor-Guards, idempotente Lease-Freigabe, Rename/Delete/Clear und geschützter Same-file-Restore. Kein Karten-, Draft-, History- oder Plugin-Datenzustand und keine zweite Kamera.",
+      "verification": "Sechs direkte DungeonView-Lifecyclefälle belegen Base-State plus identisches ViewStateResult, Same-file-State, own Leaf vor Register, zweimaliges Reopen, Close an acquire/ensureAssets/editor.init, Retarget, exakt eine Release, kein spätes Register/Layout und Rename. Vier Codec/Registerfälle und zwei Editor-Floorfälle belegen strikte Validierung, monotone Reihenfolge, Delete/Clear, Nichtmutation, Dirty-Key-Guard und Auswahlleerung. npm run check PASS; npm test 387/387 PASS; npm run build PASS. R02 wiederholte check, fokussiert 16/16 und vollständig 387/387. main.js SHA-256 36f18ea11095851aed901ea62b53566668cffcf40952f8b2887769d555df0df8; styles.css a6d31c13219d4b9f49d2ecf6993106bedef2a33560c9bdfdb93106659d45bc2e; manifest.json 2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64. Kein externer GUI-Beleg.",
+      "limits": "I01/I02 und unabhängiger R02 bestanden automatisiert. Der zweifache Cloud-Obsidian-Nebelwacht-Reproduktionslauf H01 und danach GM-R01 bleiben offen. Frischer Prozess ohne wiederhergestelltes Leaf fällt weiterhin auf das erste Geschoss zurück. Kein Laptop-/GUI-Lauf, keine physische Eingabe, kein OS-/Prozesscrash und keine UX-, Host-, Fach-, Paritäts- oder Gesamtfreigabe.",
+      "next": "GM-UX-N-006-H01: Cloud-GM-Produkttester wiederholt ausschließlich den veröffentlichten zweifachen Nebelwacht-Tab-Reopen-Ablauf auf dem verifizierten integrierten I02-Build und prüft Datei-/Dokument-/Dirty-/History-/Key-Orakel; danach bleibt GM-R01."
     },
     "dd006ShadowPlan": {
       "date": "2026-10-09",
@@ -4912,7 +4912,7 @@
       {
         "id": "GM-UX-006",
         "priority": "P2-Kandidat",
-        "status": "i01_core_completed_i02_and_host_retest_open",
+        "status": "i02_r02_passed_cloud_h01_and_gm_retest_open",
         "kind": "Eigene UI-Beobachtung, isolierte Cloud-Kartenkopie; keine physische Eingabeabnahme",
         "build": "Obsidian 1.14.4; Shared product commit 972913fde69bd3824aedfe08fce86f74e66b3b22; main.js SHA-256 afc186f846242f7225d1c19d48f15c776bb3b817df586dead7a872f85b1ef6c5",
         "scenario": "GM-UX-01 Nebelwacht/Karte 1.dungeon, zuletzt ausgewähltes drittes Geschoss „Geheimgang“",
@@ -4923,7 +4923,7 @@
         "evidence": "/workspace/scratch/gm-cloud-qa/321-secret-floor-saved.png, /workspace/scratch/gm-cloud-qa/322-copy-reopened.png, /workspace/scratch/gm-cloud-qa/323-geheimgang-after-reopen.png, /workspace/scratch/gm-cloud-qa/328-gang-after-reopen.png, /workspace/scratch/gm-cloud-qa/329-geheimgang-and-corridor-after-reopen.png",
         "dataIntegrity": "Original Karte.dungeon blieb SHA-256 56c38f8ff9e4365a165af4319da37bb03db20c09925d6ee38e5327e7559353c7. Nur UI-Kopie Karte 1.dungeon geändert.",
         "proposedTask": "GM-UX-N-006: Dungeon-Verantwortlicher prüft persistierte aktive Ebene beim Schließen/Wiederöffnen. Abnahme: auf isolierter Karte Geheimgang aktivieren, speichern, Tab schließen und Karte erneut öffnen; Geheimgang ist erneut aktiv. Mindestens zwei Wiederholungen; zusätzlich prüfen, dass anderer Karteninhalt und Key unverändert sind. Falls Reset beabsichtigt, dokumentierte UI-Begründung zurückmelden.",
-        "coordination": "N-006-P01 independently PASS-reviewed (40a9504). Erdgeschoss-Reset auf Shared 422718f erneut reproduziert. Kartograph/Dungeon-Strang claimte I01/I02 in Issue #1 Kommentar 6087823210; I01-Codec/Register ist in a86658c9825fe65ccf01eb08d7e1babd2d2e0ec2 automatisiert geprüft. I02, unabhängiger Produktreview, zweifacher Cloud-H01 und GM-R01 bleiben offen."
+        "coordination": "N-006-P01 und I01 bestanden. Kartograph/Dungeon-Strang implementierte I02 auf acc4774027d44c30295fc28b4c1e51dd2e353446; R01 verlangte Dirty-Key-/Selection- und Lifecycle-Reparatur, unabhängiger R02 bestand den reparierten exakten Kandidaten. Issue #1 6087823210, 6087993684, 6088059760. Zweifacher Cloud-H01 und GM-R01 bleiben offen."
       }
     ],
     "blocker": "Cloud-Testassets sind selbst erzeugte, ausdrücklich freigegebene synthetische Fixture-Daten; Original-Dungeondraft-Pakete und deren Produktabnahme bleiben offen. Kein Cloud-Test nutzt oder ändert Nutzerkarten.",
