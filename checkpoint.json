@@ -1474,10 +1474,11 @@
     "followUpRoadmap": "ROADMAP-PARITY-TOOLS.md",
     "dd001002Plan": {
       "date": "2026-10-09",
-      "state": "plan_written_original_probe_next",
+      "state": "original_partial_height_max_rounding_measured_followup_open",
       "plan": "ROADMAP-PARITY-TOOLS-PHASE1-DD001002-PLAN.md",
+      "originalPartial": "/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-dd001002-20261009/original-probe-partial.md",
       "source": "Dungeondraft 1.2.0.1 Opulent Kirin; frühere Start-/Vorlagenproben in TOOL-PARITY.md",
-      "next": "Bruchwertrundung, obere Höhengrenze, doppelte Namen/Minus und New-Map-OK/Cancel/X direkt im Original messen; danach Hostpaar und getrennten Review durchführen."
+      "next": "9,5→10 und Höhenmaximum 128 direkt gemessen; gleiche Namen/Minus und New-Map-OK/Cancel/X in frischer Originalprobe klären, danach Hostpaar und getrennten Review durchführen. Lokale GUI erfordert keine Kollegenslot-Freigabe."
     },
     "dd008Plan": {
       "date": "2026-10-09",
