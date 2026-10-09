@@ -3952,17 +3952,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I26-CI",
-      "kind": "cleanup_implementation",
-      "startedAt": "2026-10-09T14:53:41.596934+00:00",
-      "focus": "Abgeleiteten Lückensnapshot berichtigen",
-      "state": "completed",
-      "result": "Snapshot enthält getrennte Objektkombination und Demo-gesperrte Layerfähigkeit; aktuelle Anzahl64."
-    },
-    "nextRun": {
       "id": "CITY-00-I26-CR",
       "kind": "cleanup_review",
-      "focus": "Snapshotgleichheit, Hashes und fremde Wurzeln nachprüfen"
+      "startedAt": "2026-10-09T14:54:14.332536+00:00",
+      "focus": "Snapshot, Hashes und Scope nachprüfen",
+      "state": "completed",
+      "result": "Aufräumumfang ohne Restbefund; vollständige Original- und Produktpflichten weiterhin offen."
+    },
+    "nextRun": {
+      "id": "CITY-00-I27-P",
+      "kind": "reference_planning",
+      "focus": "Forest-Wirkungsprobe mit bekanntem Show-trees-Zugang planen; HEX-05-Übergabe verfolgen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
