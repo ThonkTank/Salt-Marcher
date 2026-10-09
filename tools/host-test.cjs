@@ -814,7 +814,8 @@ async function workflow() {
       2,
     ),
   );
-  if (!(await page.evaluate(() => !!app.plugins.getPlugin("dungeon-editor")))) {
+  const firstUseTrust = !(await page.evaluate(() => !!app.plugins.getPlugin("dungeon-editor")));
+  if (firstUseTrust) {
     await page
       .getByRole("button", {
         name: "Dem Ersteller vertrauen und Erweiterungen aktivieren",
@@ -827,6 +828,16 @@ async function workflow() {
     null,
     { timeout: 5000 },
   );
+  if (firstUseTrust) {
+    // The first-use trust transition can discard a command modal opened immediately after plugin registration.
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await page.waitForFunction(
+      (expected) => typeof app !== "undefined" && app.vault?.adapter?.basePath === expected &&
+        app.workspace?.layoutReady && !!app.plugins.getPlugin("dungeon-editor"),
+      vault,
+      { timeout: 30000 },
+    );
+  }
   await page.evaluate(() => {
     for (const leaf of app.workspace.getLeavesOfType("dungeon-native-map"))
       leaf.detach();
