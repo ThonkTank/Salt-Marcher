@@ -2507,6 +2507,19 @@
       "next": "GM-UX-N-005-N01-H01: der Cloud-GM-Produkttester wiederholt exakt den veröffentlichten Nebelwacht-H01-Ablauf auf integriertem a06703c-Produktstand; erst danach bleibt GM-R01 als unabhängiger Nachtest.",
       "followingRun": "GM-UX-N-006-P01 als eigener Planlauf: nach Abschluss des N-005-Plans den Workspace-/View-State-Vertrag prüfen und zwischen Ebenenwiederherstellung und sichtbarer Wiederaufnahme entscheiden; keine Vermischung mit N-005-Implementierung, DD-036 oder Atlaspersistenz."
     },
+    "gmUxN003Plan": {
+      "date": "2026-10-09",
+      "state": "plan_candidate_review_pending",
+      "run": "GM-UX-N-003-P01",
+      "plan": "ROADMAP-GM-UX-N-003-PLAN.md",
+      "source": "GM-UX-003 im isolierten Cloud-GM-Produkttest; Issue #1 Kommentar 6084205940; ROADMAP-GM-PRODUCT-TESTING-PLAN.md",
+      "ownership": "Dungeon-Strang beanspruchte ausschließlich GM-UX-N-003-P01 nach Issue-/PR-/Branchabgleich auf Shared-Base 71099f277c8de58f4d0a60dc62d56bbd9c8bc483; Claim Issue #8 Kommentar 6088872377. N-006-H01/GM-R01 bleibt beim Cloud-GM-Produkttester; N-005, DD-036, Hex/Atlas, City, Katalog, Migration und SMR bleiben fremd.",
+      "finding": "Auf zwei isolierten Karten blieb nach Raum-Key öffnen der eingebettete strukturierte Key-Editor sichtbar, während derselbe Hinweis zusätzlich in der Raumansicht erschien; der Kartenkontext wurde stark geteilt. Nutzungshäufigkeit und Produktlatenz sind nicht gemessen.",
+      "planDecision": "Nur für einen sauberen strukturierten Key den vorhandenen Dirty-Guard vor jeder Layoutmutation prüfen, das vollständige Raum-/Abschnitt-/Ankerziel erfassen, den bestehenden Key-Dock über toggleKey(false) weichen lassen und danach den unveränderten openRoomKey-Workspaceport nutzen. Auswahl, Kamera, Dokument, History, Persistenz und unstrukturierter Notizpfad bleiben unverändert.",
+      "verification": "Plan-Kandidat: JSON-, Verweis- und Diffprüfung vorgesehen; unabhängiger read-only Review des exakten Plancommits ausstehend.",
+      "limits": "Keine Produktänderung, automatisierte Produktregression, GUI-/Hostprüfung, physische Eingabe oder Save/App-Reload/Reopen-Wirkung. Keine UX-, Host-, Fach-, Paritäts- oder Gesamtfreigabe.",
+      "next": "GM-UX-N-003-P01-R01: unabhängiger read-only Review des exakten Plancommits; nur bei PASS folgt ein getrenntes I01-Produktpaket."
+    },
     "gmUxN006Backlog": {
       "date": "2026-10-09",
       "state": "i02_implementation_r02_passed_h01_open",
@@ -4803,17 +4816,17 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I47-CLEAN-R47",
+      "id": "CITY-00-R47-CLEAN-R47",
       "kind": "cleanup_review",
-      "startedAt": "2026-10-09T19:55:37.671020+00:00",
-      "focus": "COK-Atmosphärenprobe / R",
+      "startedAt": "2026-10-09T20:39:40.200319+00:00",
+      "focus": "R47 COK-Effekt-/Savebelege prüfen",
       "state": "completed",
-      "result": "Rawhashes, geschützte Quelle, ausschließlicher environment-Diff und partielle Restauration geprüft; 24CTY/65CO offen, 5 eigene Prozesse weg. Team-Handshake vor neuen Claims; R47 folgt per Heartbeat."
+      "result": "Aufräumreview PASS:43 Rawhashes/Reviewlink/JSON/Quellschutz und24CTY/65CO offen; keine fremde Wurzel verändert. Nächster Schritt Vorlagenlücke konkret planen, keine neue GUI bis Slotabsprache."
     },
     "nextRun": {
-      "id": "CITY-00-R47",
-      "kind": "reference_review",
-      "focus": "Getrennte R47-Referenzreview nach Team-Abstimmung"
+      "id": "CITY-00-P48",
+      "kind": "plan",
+      "focus": "COK-Vorlagenfunktion/Fresh-Reopen konkret planen; CITY01 wartet konkrete HEX04/05-Verträge"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
@@ -4858,10 +4871,12 @@
       "guiReturn": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1#issuecomment-6088178583",
       "heartbeat": {
         "automationId": "stadt-atlasfortsetzung",
-        "intervalMinutes": 60,
+        "intervalMinutes": 20,
         "state": "active"
       },
-      "nextSharedMilestone": "HEX-03 → HEX-04 → HEX-05 → CITY-01–04; no new product claim before team handshake"
+      "nextSharedMilestone": "HEX-03 → HEX-04 → HEX-05 → CITY-01–04; team handshake resolved, concrete integration contracts still pending",
+      "workIssue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/7",
+      "platformIssue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11"
     }
   },
   "testFixturePortability": {

@@ -1,6 +1,12 @@
 {
   "gmProductFollowups": {
     "date": "2026-10-09",
+    "GM-UX-N-003": {
+      "state": "plan_candidate_review_pending",
+      "source": "Issue #1 Kommentar 6084205940; ROADMAP-GM-PRODUCT-TESTING-PLAN.md; ROADMAP-GM-UX-N-003-PLAN.md",
+      "confirmed": "Der Cloud-GM-Produkttester reproduzierte die gleichzeitige strukturierte Key-Darstellung im eingebetteten Editor und in der geöffneten Raumansicht auf zwei isolierten Karten; Reproduktion, begrenzte P2-Wirkung und sichtbare Abnahme sind veröffentlicht. P01 grenzt einen vorhandenen Dirty-Guard-, Dock- und Workspaceweg ab.",
+      "notConfirmed": "Planreview, Produktänderung, Regressionen, echter Obsidian-Reparaturlauf und unabhängiger GM-R01 fehlen. Keine physische Eingabe-, UX-, Host-, Fach-, Paritäts- oder Gesamtfreigabe."
+    },
     "GM-UX-N-006": {
       "state": "i02_r02_passed_cloud_host_and_gm_retest_open",
       "source": "Issue #1 Kommentar 6085700084; ROADMAP-GM-PRODUCT-TESTING-PLAN.md; ROADMAP-GM-UX-N-006-PLAN.md",
@@ -1729,7 +1735,10 @@
         "comparisonEvidence": [],
         "usabilityEvidence": [],
         "review": {
-          "state": "not_run"
+          "state": "pass_bounded_effect_feature_partial",
+          "run": "CITY-00-R47",
+          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i47-20261009-r02/review.json",
+          "independentProductReview": false
         },
         "status": "open",
         "gap": "Schattenrichtung/Schneeschicht sichtbar und nativ gespeichert; Vorlagenanwendung, übrige Parameter, Fresh-Reopen und eigenes Produkt/Host/Bedienung offen.",
@@ -1739,7 +1748,8 @@
           "run": "CITY-00-I47",
           "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i47-20261009-r02/manifest.json",
           "state": "completed_bounded_probe",
-          "restoration": "snow0 visible only; saved snow0.6/shadow34 retained in own QA copy; source protected"
+          "restoration": "snow0 visible only; saved snow0.6/shadow34 retained in own QA copy; source protected",
+          "reviewManifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i47-20261009-r02/review.json"
         }
       },
       {
