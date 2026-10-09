@@ -421,25 +421,25 @@
   "hexAtlasExecution": {
     "scope": "HEX-00 bis HEX-28 und sämtliche eingeordneten CITY-00 bis CITY-09 vollständig",
     "phase": "HEX-03",
-    "state": "e2e_plan_repair_candidate_re_review_pending",
+    "state": "e2e_plans_peer_review_pass_contract_ratification_pending",
     "plan": "ROADMAP-HEX-03-PLAN.md",
     "currentRun": {
-      "id": "HEX-E2E-N01",
-      "kind": "plan_review_finding_repair",
-      "state": "implemented_checked_independent_re_review_pending",
-      "startedAt": "2026-10-09T21:36:05.586235+00:00",
-      "focus": "Repair mandatory Dungeon-owner/history/revision/Route and Markdown-action findings; align provisional full gate identities without changing native fixture bytes.",
+      "id": "HEX-E2E-H01",
+      "kind": "coordination_handoff",
+      "state": "completed_checked_candidate_metadata",
+      "startedAt": "2026-10-09T21:47:03.490302+00:00",
+      "focus": "Record real independent Hex/City R02 receipts, bridge ownership and own exact gate-catalog response; preserve reviewed plan and native fixture bytes.",
       "candidateBranch": "hex/hex03-p01-20261009",
-      "baseCommit": "bd4982b8777df476593e662d5d1d3788c78e23da",
-      "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/e2e-hex-repair.json",
+      "baseCommit": "1888f527bbec321778cab733bf78c93a20298992",
+      "result": "Own R02 and City R02/meta PASS narrowly; no self-integration, shared contracts/ratification still open.",
       "nativeOnThisBuild": false,
       "phaseApproval": false
     },
     "nextRun": {
-      "id": "HEX-E2E-R02",
-      "kind": "independent_plan_re_review_and_cross_owner_gate",
-      "focus": "Independent exact-SHA re-review of repaired own plan/manifest. Re-review repaired City peer plan in a separate reviewer run. Shared GateCatalog/first Steward/Gate-Code-Reviewer and executable Campaign/P02/P04 dependencies must be ratified before new isolated product work.",
-      "dependency": "Dungeon IDs/source ownership accepted. Atlas-QA accepts integrated host QA; native marker/Key/drag/zoom and durable common History/Revision/Transaction remain missing. No current GUI; future local slot coordinated anew with City."
+      "id": "HEX-E2E-P02",
+      "kind": "joint_contract_plan_gate",
+      "focus": "Confirm Campaign/Data bridge input and shared catalog corrections/version; agree persisted House→Dungeon and single History/Snapshot/Transaction contract plus real P02/P03/P04 implementation owners and independent Gate-Code-Reviewer. Integrate only reviewed candidates through agreed gate.",
+      "dependency": "No new isolated UI slice or repeated Codec/plan review. HEX03 marker remains next own product step within ratified E2E01 path. Future native slot coordinated anew with City."
     },
     "review": {
       "run": "HEX-02-R02",
@@ -524,8 +524,47 @@
         "sharedRatification": false,
         "dungeonBindingDecision": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6089536903",
         "gateCatalogDecision": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6089626939",
-        "independentOwnReview": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6089590808",
-        "independentCityPeerReview": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6089617467"
+        "independentOwnReview": {
+          "run": "HEX-E2E-R02",
+          "reviewer": "Dungeon",
+          "candidate": "1888f527bbec321778cab733bf78c93a20298992",
+          "result": "PASS bounded plan/fixture only",
+          "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/13#pullrequestreview-5475596270",
+          "closedFindings": [
+            "Dungeon ownership/confirmed IDs/Route/history/revision/double commit",
+            "Changed description vs preserved notes Markdown/section IDs"
+          ],
+          "limits": "No product/native/P02/team/E2E approval or self-integration"
+        },
+        "independentCityPeerReview": {
+          "run": "CITY-E2E-R02",
+          "candidate": "1de3ceead95b9a126419b79f1201fe95d9b22c7e",
+          "result": "PASS bounded plan only",
+          "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6089692756",
+          "metadataCandidate": "d4c8805caf8d51af600c23a94e0a1594909b4918",
+          "metadataResult": "PASS own cityExecution only, reviewed plan unchanged",
+          "metadataUrl": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/15#issuecomment-6089793423",
+          "receipt": "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/city-e2e-peer-r02-meta.json"
+        },
+        "gateCatalogCandidate": {
+          "pr": 16,
+          "candidate": "ba9661d4d79755ac27bc7eb9ecea03f6268227fe",
+          "ownResponse": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6089793770",
+          "state": "own_scope_supported_copy_import_identity_oracle_precision_requested; shared ratification pending"
+        },
+        "campaignAtlasBridge": {
+          "owner": "Hex for thin immutable-context/navigation adapter only",
+          "decision": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6089730661",
+          "campaignDataInput": "unconfirmed; lifecycle/context/reference/remap remain Campaign/Data",
+          "state": "owned_not_implemented_contract_review_pending",
+          "oracles": [
+            "same camera/history",
+            "stable ID lookup, reject foreign/missing/ambiguous/retired",
+            "pending key/gesture protected before switch",
+            "stale callbacks cannot affect new campaign",
+            "no automatic LiveSession/Party/Travel/Clock writes"
+          ]
+        }
       }
     },
     "verification": {
@@ -1628,7 +1667,7 @@
       "platformIssue": 11,
       "checkpointIsAuthoritative": true
     },
-    "updatedAt": "2026-10-09T21:36:05.586235+00:00"
+    "updatedAt": "2026-10-09T21:47:03.490302+00:00"
   },
   "phase": "Phase 6: zweiter Nachbesserungslauf teilweise umgesetzt; fünf Restpositionen und unabhängiger Review offen",
   "goal": "Dungeon-Pfad bis zur vollständigen beauftragten Dungeondraft-Verhaltensgleichheit verfolgen: Bedienung und Funktion angleichen, Grafik ungefähr gleichwertig. Zuerst ROADMAP-PARITY.md mit Building und Object Tool abschließen, danach übrige Dungeon-Werkzeuge. Jede Fachphase getrennt planen, umsetzen und unabhängig reviewen; Lücken mit eigenen Nachbesserungs- und Reviewläufen schließen; danach eigene Aufräumphase mit Plan, Umsetzung und Review.",
