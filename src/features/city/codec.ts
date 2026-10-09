@@ -1,5 +1,6 @@
 import { assertBuildingTopology } from "../../geometry";
 import { immutable, type Point, type Polygon } from "../../model";
+import { cityBuildingOutline } from "./geometry";
 import {
   CITY_FORMAT_VERSION,
   type CityArea,
@@ -172,22 +173,10 @@ function building(value: unknown): CityBuilding {
     rotationRadians = finite(d.rotationRadians),
     scalePoint = point(d.scale),
     scale = { x: positive(scalePoint.x), y: positive(scalePoint.y) },
-    plotId = optionalId(d, "plotId"),
-    c = Math.cos(rotationRadians),
-    s = Math.sin(rotationRadians);
-  const pose = (points: readonly Point[]) =>
-    points.map((p) => {
-      const x = p.x * scale.x,
-        y = p.y * scale.y;
-      return {
-        x: finite(position.x + x * c - y * s),
-        y: finite(position.y + x * s + y * c),
-      };
-    });
-  checkPolygon({
-    outer: pose(footprint.outer),
-    holes: footprint.holes.map(pose),
-  });
+    plotId = optionalId(d, "plotId");
+  checkPolygon(
+    cityBuildingOutline({ footprint, position, rotationRadians, scale }),
+  );
   return {
     id: id(d.id),
     name: name(d.name),

@@ -134,12 +134,12 @@
     "architecture": "ARCHITECTURE.md#geplante-katalog--und-encounter-erweiterung",
     "acceptance": "acceptance.json.saltMarcherCatalogEncounter",
     "currentRun": {
-      "id": "CE-02-I02-S01-W02",
+      "id": "CE-02-I02-S01-W03",
       "kind": "source_inventory_schema_transcript_intermediate",
       "state": "in_progress_verified_incomplete",
-      "focus": "Inventory and transcribe the bounded Armor table section with standards-based schema and real PDF evidence while preserving the incomplete gate",
+      "focus": "Inventory the bounded 37-row Weapons table in physical PDF order while preserving the incomplete gate",
       "plan": "ROADMAP-SALTMARCHER-CE02-I02-PLAN.md",
-      "result": "Captured all 13 Armor table occurrences in physical PDF order and 13 structured Armor transcript records. Draft-2020-12 validation now covers transcript and inventory, the 22-value equipment taxonomy is closed, artifact hashes are manifest-bound, and the real pinned PDF verifies all 13 row labels plus 49 structured table facts. The package remains incomplete: Armor narrative text and bounded cells, 206 other equipment primary occurrences, auxiliary/expansion dispositions and all magic items remain open; S01 review and I01 stay blocked."
+      "result": "After the W02 Armor package, captured all 37 Weapons table occurrences in physical PDF order. The real pinned PDF now verifies 50 total equipment occurrence labels; Weapons transcript and special descriptions remain open. Overall coverage is 50 of 219 primary equipment occurrences and 13 transcript records. S01 remains incomplete and I01 blocked."
     },
     "implementationRun": {
       "id": "CE-01-I01",
@@ -344,10 +344,10 @@
       "Physical catalog input acceptance cannot be replaced by Playwright automation"
     ],
     "nextRun": {
-      "id": "CE-02-I02-S01-W03",
+      "id": "CE-02-I02-S01-W03-T01",
       "kind": "source_inventory_schema_transcript_continuation",
       "plan": "ROADMAP-SALTMARCHER-CE02-I02-PLAN.md",
-      "focus": "Capture and transcribe the 37-row Weapons table in physical PDF order, add bounded PDF-backed weapon goldens, and continue the explicit equipment disposition/expansion ledger; keep complete false and I01 blocked"
+      "focus": "Transcribe all 37 Weapons rows with costs, positive weights, literal damage and ordered properties; add PDF-backed Spear, Blowgun and Net goldens and keep complete false"
     }
   },
   "repositoryWorkflow": {
@@ -2004,9 +2004,19 @@
       "repairBase": "972913fde69bd3824aedfe08fce86f74e66b3b22",
       "repair": "Plan staffelt referenzfreies read-only Overworld-Öffnen nach HEX-01, nichtleeren Transport und Kinddateivalidierung hinter Terrain-Lader plus Hostverdrahtung, History nach HEX-02-I01a/I01b, Save/Draft/Recovery nach I01c, Kopie/Discard nach I01d und Shellfälle nach der Plattformentscheidung. Dungeondraft DD-036 und Wonderdraft WD-003 bleiben getrennte Referenzwahrheiten. Ein operationsgenaues world.id-/Dateimanifest sowie prepared-/committed-/Draft-/Konfliktorakel binden alle späteren Läufe an den gemeinsamen FileStore-/FileTransaction-Weg.",
       "review": "Unabhängiger read-only Nachreview bestand den exakten Planstand f6e420db98060beebdb30704ca06a6299a01b40c nach einer Reparatur: O01a ist referenzfrei und read-only; O01b wartet auf Terrain-Lader und sichtbare Hostverdrahtung. Keine weitere Pflichtlücke.",
-      "limits": "Nur Planreparatur und Planreview; acceptance.json und Produktcode unverändert. Kein Host-, Original-, GUI-, Funktions- oder Paritäts-Go. O01a ist planbar, aber nicht gestartet; O01b, HEX-02 und die reale Shell bleiben Voraussetzungen.",
+      "limits": "Planreview-PASS und O01a als enger read-only Hostnachweis; keine Original-, Kinddatei-, Save-, Import-, Recovery-, physische oder Gesamtparitätsfreigabe. O01b, HEX-02 und die reale Shell bleiben für weitere Fälle Voraussetzungen.",
+      "o01a": {
+        "run": "DD-036-ATLAS-O01a",
+        "state": "scoped_read_only_host_passed_independent_review_passed_full_cases_open",
+        "productCommit": "fcc4ce612d17c47c720ce4bf7c0c5e216398f41e",
+        "mainSha256": "6896c7b53cb0100178d32c217b824b6c762122a33df38921e84acdd467234ba7",
+        "editEvidence": "/home/aaron/.cache/dungeon-native-qa/dd036-o01a-20261009/evidence/1791567176069-dd036-o01a-edit/o01a-result.json",
+        "reopenEvidence": "/home/aaron/.cache/dungeon-native-qa/dd036-o01a-20261009/evidence/1791567218121-dd036-o01a-reopen/o01a-result.json",
+        "result": "Zwei getrennte Obsidian-Prozesse öffnen referenzfreie Original-/bytegleiche Transportkopie mit world.id dd036-o01a-world; beide Dateien behalten SHA-256 e264ddbeedb32a83a5e35eb904fd044046af8f133665fcb5877409d3d9aa5efb, null beobachtete Atlas-Schreibaufrufe, kein Draft/Journal; normale Prozessausgänge. Synthetischer Hostlauf, keine Dungeondraft-Originalwirkung.",
+        "review": "Unabhängiger read-only Nachreview auf Shared-Head 018a310 bestand den engen O01a-Nachweis nach Erweiterung der Vault-/Adapter-Schreibinstrumentierung auf 32 Methoden; beide Hostläufe zeigen keine Atlas-Schreibaufrufe. Keine Freigabe für O01b oder vollständige DD-036-Fälle."
+      },
       "next": "GM-UX-N-005-P01: als eigener Dungeon-Planlauf ausschließlich die belegte Raum-Key-Suche planen; nicht mit DD-036 oder Atlaspersistenz vermischen.",
-      "followingRun": "DD-036-O01a bleibt als separater referenzfreier read-only Overworld-Öffnungslauf verfügbar, wird aber nicht mit GM-UX-N-005-P01 kombiniert."
+      "followingRun": "DD-036-O01a ist eng geprüft; O01b mit Kinddateien wartet auf den angeschlossenen Terrain-Lader und seine sichtbare Hostprüfung."
     },
     "gmUxN005Plan": {
       "date": "2026-10-09",
@@ -2023,13 +2033,16 @@
     },
     "gmUxN006Backlog": {
       "date": "2026-10-09",
-      "state": "claimed_separate_plan_pending",
+      "state": "plan_repaired_independent_re_review_passed",
       "run": "GM-UX-N-006-P01",
+      "plan": "ROADMAP-GM-UX-N-006-PLAN.md",
       "source": "GM-UX-006 im getrennten Cloud-GM-Produkttest; Issue #1 Kommentar 6085700084",
-      "ownership": "Dungeon-Strang; bei Claim keine offene PR, kein gleichnamiger Remote-Branch und kein anderer sichtbarer N-006-Besitzer.",
+      "ownership": "Dungeon-Strang; vor Fortsetzung auf Shared-Head 2a055f10800c63678ca9fe991b0dd31a02483744 keine offene PR, kein gleichnamiger Remote-Branch und kein anderer sichtbarer N-006-Besitzer. N-005-I01 wird durch denselben Dungeon-Strang unmittelbar nach veröffentlichtem N-006-P01-Review-PASS übernommen und bis dahin nicht parallel begonnen.",
       "finding": "Auf isolierter Nebelwacht-Kopie blieben Geschoss Geheimgang, Räume 13–15, Türen, Key und Gang gespeichert; nach Schließen und Wiederöffnen war in zwei Läufen jeweils Erdgeschoss aktiv.",
-      "planDecision": "Den aktuellen Workspace-/View-State-Vertrag lesen und belegt zwischen Wiederherstellung der letzten aktiven Ebene und einem absichtlichen Erdgeschoss-Start mit klar sichtbarer Wiederaufnahme entscheiden.",
-      "limits": "Nur nachfolgender Planbesitz; noch keine Produktänderung, GUI-/Hostprüfung oder Entscheidung. Getrennt von N-005-I01, DD-036 und Atlaspersistenz; Cloud-/CDP-Evidence ist keine physische Eingabe- oder Host-Gesamtfreigabe."
+      "planDecision": "Das letzte gültige aktive Geschoss derselben Karte automatisch über den bestehenden Obsidian-FileView-State plus einen flüchtigen, gleich codierten Tab-Reopen-Handoff wiederherstellen. Kein belegter Grund für absichtlichen Erdgeschoss-Reset oder zusätzliche Wiederaufnahmeoberfläche; kein Karten-, Draft-, History- oder Plugin-Datenzustand.",
+      "review": "Unabhängiger read-only Review des Plankandidaten 95a972cf05cb9ff99a646109a3642fcabde8e8b7 verlangte monotone Mehr-Leaf-Reihenfolge ohne stale Unload-Overwrite, Generation/Pfad/Editor-Guards nach allen Await-Grenzen und echte Obsidian-Layoutspeicherung über erhaltenen Base-State, ViewStateResult und requestSaveLayout. Der exakte Reparaturcommit e922b9c4a35ca4e2814ba7f747c251fb38ae02be bestand den unabhängigen Nachreview ohne weitere Pflichtlücke.",
+      "limits": "Nur technischer Plan; noch keine Produktänderung oder GUI-/Hostprüfung. Frischer Prozess ohne wiederhergestelltes Leaf fällt weiterhin auf das erste Geschoss zurück. Getrennt von N-005-I01, DD-036 und Atlaspersistenz; Cloud-/CDP-Evidence ist keine physische Eingabe- oder Host-Gesamtfreigabe.",
+      "next": "GM-UX-N-006-I01 ist planseitig geöffnet, aber nicht gestartet. Gemäß Koordination folgt zunächst der separat bestandene GM-UX-N-005-I01-Lauf beim selben Dungeon-Besitzer; vor Umsetzung Shared-Head und Besitz erneut prüfen."
     },
     "dd006ShadowPlan": {
       "date": "2026-10-09",
@@ -2617,7 +2630,7 @@
     "plan": "ROADMAP-PARITY-PLAN.md",
     "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
     "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
-    "nextRun": "GM-UX-N-006-P01: als eigener Dungeon-Planlauf den Workspace-/View-State-Vertrag prüfen und belegt entscheiden, ob die zuletzt aktive Ebene beim erneuten Öffnen wiederhergestellt wird oder ein absichtlicher Erdgeschoss-Start eine klar sichtbare Wiederaufnahme benötigt. N-005-I01, DD-036 und Atlaspersistenz bleiben getrennt; keine Implementierungs- oder Hostfreigabe aus der Planung.",
+    "nextRun": "GM-UX-N-005-I01: der Dungeon-Strang übernimmt nach veröffentlichtem N-006-P01-Review-PASS ausschließlich die reine V4-Raum-Key-Projektion und Suche aus ROADMAP-GM-UX-N-005-PLAN.md. Vor Umsetzung Shared-Head, Issue #1, PRs und Branches erneut prüfen; N-006-I01 bleibt separat planseitig offen, DD-036-O01a gehört dem getrennten Besitzer, Atlaspersistenz bleibt unberührt.",
     "note": "P7-1, P7-3 und P7-4 sind in getrennten Edit-/Neuöffnungspaaren reviewt. P7-2 ist auf ausdrückliche Nutzeranweisung übersprungen, nicht physisch geprüft. Phase-7-Fachphasentor mit dieser Ausnahme bestanden; Produktbuild unverändert. Hex-Atlas- und Stadtstand erhalten.",
     "phase2Plan": "ROADMAP-PARITY-PHASE2-PLAN.md",
     "candidateBuildSha256": "b321128188b944c3324594663a410acfd84863f17860f637b9ed2e6ecc33b466",
@@ -4309,20 +4322,20 @@
   "cityExecution": {
     "scope": "CITY-00 bis CITY-09; vollständige Funktionsgleichwertigkeit mit drei Vergleichsprogrammen und bessere Bedienung",
     "phase": "CITY-00",
-    "state": "city01_model_prepared_hex05_integration_pending",
+    "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-01-PREP-SCENE-PLAN-CLEAN-R04",
-      "kind": "cleanup_review",
-      "startedAt": "2026-10-09T17:17:42.773613+00:00",
-      "focus": "Finalen Szenenplan gegen Quellen und bestätigte Modulgrenze prüfen",
+      "id": "CITY-01-PREP-P05",
+      "kind": "implementation_planning",
+      "startedAt": "2026-10-09T17:35:42.174Z",
+      "focus": "Transiente CityDraft-Lebensdauer und gemeinsame Historyfehlergrenze planen",
       "state": "completed",
-      "result": "Konkrete lokale Szene/Treffer, gemeinsame Pose/Segmenthelper, finite Bounds und Dungeonbaseline geprüft; keine Restlücke im Plan-Aufräumen."
+      "result": "CityDraft-API konkret geplant; echte postcommit-Subscriberlücke belegt, koordinierte Reparatur erforderlich vor verlässlichem Apply."
     },
     "nextRun": {
-      "id": "CITY-01-PREP-I04",
-      "kind": "implementation",
-      "focus": "Lokale CityScene/Treffer und gemeinsame Pose/Streckenhelper mit Dungeonregressionen implementieren"
+      "id": "CITY-01-PREP-DRAFT-PLAN-CLEAN-P05",
+      "kind": "cleanup_planning",
+      "focus": "Draftplan auf Zustandsübergänge und koordinierte Historyreparatur prüfen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
@@ -4381,11 +4394,11 @@
   },
   "gmProductTesting": {
     "date": "2026-10-09",
-    "state": "current_build_product_retest_completed_followup_assignment_pending",
+    "state": "gm_ux_01_cloud_scenario_complete_open_work_gated_d153a57",
     "plan": "ROADMAP-GM-PRODUCT-TESTING-PLAN.md",
     "focus": "Längere GM-Endanwenderabläufe, häufige Aktionen, Bedienkosten und UI-Überladung; belegte Nacharbeiten beauftragen und nachprüfen.",
-    "currentRun": "3c2d882 Cloud atlas zoom retest and GM-UX-01 Nebelwacht session information lookup",
-    "executedUiRuns": 7,
+    "currentRun": "GM-UX-01 isolierte Kopie: Asset-Suche, zehn Objektplatzierungen, Undo/Redo, Save/Close/Reopen; kurzer prüfbarer Cloud-Abschluss",
+    "executedUiRuns": 9,
     "observedFindings": [
       {
         "id": "GM-UX-001",
@@ -4485,7 +4498,7 @@
       {
         "id": "GM-UX-005",
         "priority": "P2-Kandidat",
-        "status": "reproduced_issue1_assignment_pending",
+        "status": "reproduced_plan_pass_I01_blocked_by_team_checkin",
         "kind": "Eigene UI-Beobachtung in isoliertem Cloud-Testvault; Such-/Fernsteuerungszeiten nicht als Produktlatenz",
         "build": "Obsidian 1.14.4; Produktcommit 3c2d88296d775ad7afcddac0b3c704958d501baa; main.js SHA-256 bd13cb2ac5e823d21f81bcb2f8d32a6b6a0ebe49a7049cacb2c5035eb99370a4",
         "scenario": "GM-UX-01 Nebelwacht, gespeicherter synthetischer Raum-12-Hinweis; Spielansicht Ebenenwechsel und GM-Informationssuche",
@@ -4497,7 +4510,23 @@
         "latency": "Nicht gemessen; Playwright/CDP-, Such- und Wartezeiten ausgeschlossen.",
         "dataIntegrity": "Karte SHA-256 blieb identisch zu vorher: 56c38f8ff9e4365a165af4319da37bb03db20c09925d6ee38e5327e7559353c7.",
         "proposedTask": "GM-UX-N-005: Dungeon-Verantwortlicher prüft eine sichtbare GM-Suche/Übersicht für Raum-Key-Texte. Abnahme: einzigartigen Begriff in isolierter Nebelwacht finden; Treffer zeigt Raum und Geschoss; Aktivierung führt zum Raum und öffnet Key, ohne Karte zu ändern; Leeren stellt Übersicht wieder her; Save/Reload erhält den Hinweis.",
-        "coordination": "Issue #1 Bericht und Auftragsannahme ausstehend; Ursache „Obsidian Core Search indexiert .dungeon nicht“ bleibt Hypothese."
+        "coordination": "Beobachtung Issue #1 6085234573; N-005-P01 unabhängig abgeschlossen und veröffentlicht in 6085787270. N-005-I01 laut verbindlichem Gesamtteam-Check-in in 6085975796 gesperrt. Keine Produktimplementierung/Hostabnahme behauptet."
+      },
+      {
+        "id": "GM-UX-006",
+        "priority": "P2-Kandidat",
+        "status": "reproduced_twice_plan_pass_I01_blocked_by_team_checkin",
+        "kind": "Eigene UI-Beobachtung, isolierte Cloud-Kartenkopie; keine physische Eingabeabnahme",
+        "build": "Obsidian 1.14.4; Shared product commit 972913fde69bd3824aedfe08fce86f74e66b3b22; main.js SHA-256 afc186f846242f7225d1c19d48f15c776bb3b817df586dead7a872f85b1ef6c5",
+        "scenario": "GM-UX-01 Nebelwacht/Karte 1.dungeon, zuletzt ausgewähltes drittes Geschoss „Geheimgang“",
+        "reproduction": "Geschoss Geheimgang aktivieren und speichern; Zurück zum Layout; Dungeon-Tab schließen; Datei über Ctrl+O erneut öffnen. Zweimal ausgeführt; der Dungeon-Editor startete jeweils im Erdgeschoss. Erneut Dungeon > Geschosse öffnen und Geheimgang auswählen.",
+        "expected": "Fortsetzen der Sitzung auf der zuletzt benutzten Ebene, wie im GM-UX-01 Restore-Abschnitt vorgesehen.",
+        "actual": "Kartendaten, Räume und Key bleiben erhalten; aktuelle Geschossauswahl fällt beim erneuten Öffnen auf Erdgeschoss zurück und muss manuell gesetzt werden.",
+        "impact": "P2-Kandidat: ein wiederholter Navigationsschritt beim Fortsetzen auf höheren Ebenen; Häufigkeit in weiteren Kampagnen nicht populationsgemessen. Kein Datenverlust und keine Produktlatenz gemessen.",
+        "evidence": "/workspace/scratch/gm-cloud-qa/321-secret-floor-saved.png, /workspace/scratch/gm-cloud-qa/322-copy-reopened.png, /workspace/scratch/gm-cloud-qa/323-geheimgang-after-reopen.png, /workspace/scratch/gm-cloud-qa/328-gang-after-reopen.png, /workspace/scratch/gm-cloud-qa/329-geheimgang-and-corridor-after-reopen.png",
+        "dataIntegrity": "Original Karte.dungeon blieb SHA-256 56c38f8ff9e4365a165af4319da37bb03db20c09925d6ee38e5327e7559353c7. Nur UI-Kopie Karte 1.dungeon geändert.",
+        "proposedTask": "GM-UX-N-006: Dungeon-Verantwortlicher prüft persistierte aktive Ebene beim Schließen/Wiederöffnen. Abnahme: auf isolierter Karte Geheimgang aktivieren, speichern, Tab schließen und Karte erneut öffnen; Geheimgang ist erneut aktiv. Mindestens zwei Wiederholungen; zusätzlich prüfen, dass anderer Karteninhalt und Key unverändert sind. Falls Reset beabsichtigt, dokumentierte UI-Begründung zurückmelden.",
+        "coordination": "N-006-P01 unabhängig PASS-reviewt durch 40a9504 (integriert bis Shared 018a310); I01 bleibt laut Issue #1 6085975796 bis zum Gesamtteam-Check-in gesperrt. Cloud-UI-Beobachtung bleibt getrennt vom Kollegen-Planreview."
       }
     ],
     "blocker": "Cloud-Testassets sind selbst erzeugte, ausdrücklich freigegebene synthetische Fixture-Daten; Original-Dungeondraft-Pakete und deren Produktabnahme bleiben offen. Kein Cloud-Test nutzt oder ändert Nutzerkarten.",
@@ -4508,7 +4537,7 @@
       "state": "completed",
       "supersedes": "GM-UX-ACCESS; Slotanfrage gemäß Nutzerkorrektur aufgehoben"
     },
-    "next": "GM-UX-N-005 an Dungeon-Verantwortlichen zur Übernahme in Issue #1 geben; danach Such-/Key-Nacharbeit im selben Nebelwacht-Szenario erneut prüfen. N-004 eigener Cloud-Nachtest auf installiertem 3c2d882: leeres synthetisches Raster/Zoom in Split und breitem Pane sichtbar; befüllte Terrainfunktion, physische Eingabe und frischer Electron-Prozess weiter offen.",
+    "next": "GM-UX-01 Cloud-Szenario bis zur Assetfolge auf vor d10ed1e Bundle durchlaufen; auf aktueller Shared-d153a57-Version wurden nach App-Reload Kopie, Geheimgang, Objekte und Raum-Key sichtbar bestätigt. Volle Suche/Undo/Redo-Folge auf aktuellem Bundle nicht wiederholt. N-005-P01 und N-006-P01 sind unabhängig planreviewt; deren Implementierungen sind getrennte Aufgaben und warten auf Koordination/Dateibesitz. GM-Produkttest läuft im autorisierten Cloud-Umfang fort; physischer Input und frischer Electronprozess bleiben offene Evidenzgrenzen.",
     "automation": "Stündliche GM-Produkttests in eigener Cloud; keine Laptop-Slotfreigabe erforderlich.",
     "executionEnvironment": "Eigene Cloud-Umgebung, getrennt vom Laptop der Kollegen",
     "cloudHost": {
@@ -4522,23 +4551,87 @@
         1000
       ],
       "appViewport": [
-        1024,
-        800
+        1440,
+        1000
       ],
       "input": "Playwright/CDP über sichtbare UI; keine physische Eingabeabnahme",
-      "productCommit": "c00bd417c6cb8c65d303fc7765e7b3b393405eab",
-      "buildSha256": "cc92b1c03bf8c68db8f77294c5561edca5a1139482ec6ea26c0fc0485876b777",
-      "verified": "Aktueller Stand c00bd41 enthält Assetrenderer-Änderungen. Erster Build durch fehlende png-tools/fflate blockiert; npm install aus Lockfile installierte 22 Pakete; danach sauberer Build dirty:false, im isolierten Obsidian 1.14.4-Host reload. N-002 erneut: Live-Suche und Wechsel, × zeigt drei Assets; sichtbare Kachel-Auswahl, Platzierung, Toolbar-Undo/Redo, Speichern und Tab schließen/frisch öffnen; zehn ursprüngliche plus eine neue Testkiste (11 Entities) sichtbar. Keine Produktlatenz gemessen.",
+      "productCommit": "d153a57ce128c62e243e89bed1caebd80634128c (Shared-Head; nachfolgende Diffs seit 018a310 betreffen nur acceptance/checkpoint; Build auf aktueller Dokumentationsrevision folgt)",
+      "buildSha256": "6896c7b53cb0100178d32c217b824b6c762122a33df38921e84acdd467234ba7",
+      "verified": "Shared-Head d153a57 integriert; seit 018a310 keine Produktquellcodeänderung. Aktuell geladenes Bundle aus d10ed1e enthält dieselben Produktdateien. Auf vorherigem Bundle: Asset-Suche Wooden Crate/Oak Barrel/Torch, zehn Objekte, Undo/Redo, Save, Close/Reopen. Auf Bundle aus d10ed1e: Karte erneut geöffnet, Geheimgang ausgewählt, Testobjekte und Raum-14-Key sichtbar. Full interaction sequence nicht wiederholt. Originalkarte blieb byteidentisch. Kein frischer Electronprozess und keine physische Eingabeabnahme.",
       "evidence": [
         "176-n002-current-remote-switch.png",
         "177-n002-current-remote-open.png",
         "188-current-build-place.png",
         "191-latest-undo-visible.png",
         "192-latest-redo-visible.png",
-        "194-latest-final-reopen-eleven.png"
+        "194-latest-final-reopen-eleven.png",
+        "280-before-current-build-reload.png",
+        "281-reload-command-current.png",
+        "282-current-build-after-reload.png",
+        "287-nebelwacht-file-item.png",
+        "291-copy-opened.png",
+        "293-copy-editor-open.png",
+        "295-add-floor-dialog.png",
+        "296-secret-floor-named.png",
+        "297-building-tools.png",
+        "299-geheimgang-room13.png",
+        "301-geheimgang-first-room.png",
+        "302-geheimgang-three-rooms.png",
+        "303-corridor-tool.png",
+        "304-first-secret-corridor.png",
+        "305-passage-tool.png",
+        "306-door-room13.png",
+        "307-door-room14.png",
+        "308-small-corridor-between-doors.png",
+        "309-corridor-midgap.png",
+        "310-second-pair-doors.png",
+        "311-three-room-floor-connected.png",
+        "313-room14-content-open.png",
+        "314-improvise-room14-note.png",
+        "315-note-applied-saved.png",
+        "317-door-selected.png",
+        "318-door-moved.png",
+        "319-door-undo.png",
+        "320-door-redo.png",
+        "321-secret-floor-saved.png",
+        "322-copy-reopened.png",
+        "323-geheimgang-after-reopen.png",
+        "324-room14-note-after-reopen.png",
+        "325-gang-preview-isolated.png",
+        "326-gang-after-tool-switch.png",
+        "327-gang-saved.png",
+        "328-gang-after-reopen.png",
+        "329-geheimgang-and-corridor-after-reopen.png",
+        "330-current-aea-reload-command.png",
+        "335-library-three-assets.png",
+        "336-asset-search-crate.png",
+        "339-search-barrel.png",
+        "341-search-torch.png",
+        "343-search-cleared.png",
+        "350-ten-assets-placed.png",
+        "351-ten-asset-undo.png",
+        "352-ten-asset-redo.png",
+        "353-ten-assets-saved.png",
+        "354-ten-assets-reopen.png",
+        "355-ten-assets-room14-key.png",
+        "356-shared-2a055-before-reload.png",
+        "357-shared-2a055-reload-command.png",
+        "358-shared-2a055-after-reload.png",
+        "359-shared-2a055-quick-switch.png",
+        "363-shared-2a055-copy-reopened-visible.png",
+        "364-shared-2a055-copy-tree-open.png",
+        "365-latest-d10-before-reload.png",
+        "366-latest-d10-reload-command.png",
+        "367-latest-d10-after-reload.png",
+        "368-latest-d10-copy-open.png",
+        "369-latest-d10-dungeon-panel.png",
+        "370-latest-d10-geheimgang-after-reopen.png",
+        "371-latest-d10-room14-selected.png",
+        "372-latest-d10-room14-content.png"
       ],
       "initialization": "Erste Eingaben während Hoststart ohne sichtbare Wirkung; später Befehlsleiste und Editor bedienbar. Kein reproduzierter Produktbefund.",
-      "windowManager": "Openbox im isolierten dungeon-gm-cloud Container; Xvfb 1440x1000; maximiertes Obsidian-Fenster 1440x1000."
+      "windowManager": "Openbox im isolierten dungeon-gm-cloud Container; Xvfb 1440x1000; maximiertes Obsidian-Fenster 1440x1000.",
+      "buildRevision": "2cedb5594d4860e7ce1209664a0e38431afeb358 (dirty:false; npm run build; main.js/styles.css/manifest.json hashes stimmen mit isoliert installiertem Tripel überein)"
     },
     "latestScenario": {
       "environment": "Obsidian 1.14.4; eigener Cloud-Container; App 1024x800; sichtbare UI über Playwright/CDP; kein physischer Input",
@@ -4635,6 +4728,6 @@
         "coordination": "Issue #1 Kommentar 6084269776. N-004 bis HEX-01-CLEAN-R01 ohne Kamera-/Gesten-/Geometrieänderungen geparkt; Issue #1 Kommentar 6084291328. Ergänzende DOM-Diagnose Issue #1 Kommentar 6084619486."
       }
     ],
-    "evidence": "/workspace/scratch/gm-cloud-qa/248-atlas-3c-baseline-split.png bis 279-room12-key-found.png"
+    "evidence": "/workspace/scratch/gm-cloud-qa/330-current-aea-reload-command.png bis 372-latest-d10-room14-content.png; Interaktionen auf vorherigem Bundle; aktueller Zustand in 365–372."
   }
 }
