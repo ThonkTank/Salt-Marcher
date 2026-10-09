@@ -94,3 +94,19 @@ Eigene ausführbare Orakel in `tests/core/city-e2e-fixture.test.ts`: kanonischer
 Nach diesem Umsetzungslauf folgen getrennt CITY-E2E-R01-SEED gegen Zuordnung/Plan und Aufräum-P/I/R; danach Exact-SHA-Übergabe an Steward und unabhängiger Review, keine Selbstintegration.
 
 CITY-E2E-R01-SEED: Eigener getrennter Review auf Exact-SHA `6276312e87c082cfd78b0442e99ce0406a91c73e` gegen Steward6090818808 und geplanten vollständigen Citypayload ohne Pflichtbefund. Je2595Bytes/Hash bestätigt, Namen/IDs/Meter/Geometrie/Hof vollständig verglichen; tatsächliche Atlas10-/Location11/12-IDs am Stewardhead `8769c86d48343673e055333becc116c2176b8007` gelesen. Zwei neu gebündelte fokussierte Orakel PASS. Neuer Diff genau sieben eigene Dateien, keine Produktquellen/Atlasmanifeständerung, fremde Checkpointwurzeln und acceptance erhalten. Reviewbeleg: `/home/aaron/.cache/dungeon-native-qa/city-plans/city-e2e-r01-seed-20261010/review.json`. Baselineexpected bleibt Komponentenorakel; vollständige Fixtureclosure, realer Reopen/Import, Bindungsport und unabhängiger integrierter Code-/Hostreview offen. Keine Selbstfreigabe. Nächster getrennter Lauf Aufräumplanung CITY-E2E-SEED-CLEAN-P.
+
+## CITY-E2E-SEED-CLEAN-P – getrennte Aufräumplanung
+
+Fokus nach bestandenem eigenen Seedreview: Erzeugungsressourcen und Belegablage bereinigen; die geprüfte Komponentenarchitektur erhalten. Keine Produktumgestaltung, keine erneute Plan-/Fachreviewrunde.
+
+1. Die vier unten exakt identifizierten eigenen temporären Dateien zunächst mit Bytehashes in `/home/aaron/.cache/dungeon-native-qa/city-plans/city-e2e-i01-seed-20261010/` archivieren. Test-/Buildlogs erhalten echte Nachweise; Rohseed/Codecbundle dokumentieren die einmalige Erzeugung. Nur wenn aktueller Inhalt und archivierte Kopie denselben gepinnten Hash tragen, die jeweilige `/tmp`-Datei entfernen. Andere Dateien/Prozesse bleiben unberührt. Kein Fixturegenerator im Produkt oder automatische Erwartungsregeneration.
+2. Citymanifest/Test/Codecpayloads als eigenen Komponentenabschluss halten. Keine Aufnahme fremder Atlasdateien und kein Überschreiben von `manifest.json`. Input/expected-Baseline und SHA256 bleiben exakt gegen6276312; die redundanten Orakelbytes sind beabsichtigt, keine zweite Livequelle. Archiv-/Persistenz-/vollständige Remapclosure bleiben Stewardintegration.
+3. Bestätigte IDs100–106 und externe Gegenstellen10/11/12 unverändert erhalten. Keine House105-Bindung, Sessionrevision oder neue Kamera/History/Persistenz hinzufügen. Technischer Review zeigte keine strukturelle Produktkorrektur, deshalb kein künstlicher Architekturumbau.
+4. Eigene Checkpointwurzel auf aktuellen Cleanup-/Handoffstand halten und temporäre Belege an fester externer Stelle verorten. Fremde Wurzeln/acceptance/Cityproductquellen schützen. Bei tatsächlicher neuer Pflichtlücke gezielt nachbessern und getrennt reviewen.
+5. Getrennter CLEAN-R: archivierte Hashes und entfernte ausschließlich eigene temporäre Dateien, unveränderte Codecfixture-/Testbytes, ehrliche expected-Komponentenabgrenzung, JSON/Diff/Fremdwurzeln/Links und aktuellen Remote prüfen. Keine wiederholte volle Produkttestsuite für ausschließlich Log-/Metadatenbereinigung. Danach den abschließenden Exact-SHA samt Komponentendiff und offenen Ports an Hex PR13 übergeben; unabhängiger integrierter Code-/Hostreview bleibt offen.
+
+Gepinnte eigene temporäre Ressourcen für CLEAN-I:
+- `/tmp/city-e2e-seed.json`: SHA256 `f381a8906ae93ec80464bc094b6036a20a3669c32e4ef303d082c16a46698c7c`.
+- `/tmp/city-e2e-codec.cjs`: SHA256 `0bf6e6ba4f1c1e38afa4530e85f7665b966e5944a51690088276dd60b7bbf373`.
+- `/tmp/city-e2e-i01-test.log`: SHA256 `aaf1ea7a58e8d9ebbf68097a189c9fc3b43544cd647e9769b36a228d25b4ad13`.
+- `/tmp/city-e2e-i01-build.log`: SHA256 `46b9f8fcf4e7b9cb86af7eb0a51f6d130baf9f51f1ac8c29bc51b8be9305c369`.

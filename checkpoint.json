@@ -4930,17 +4930,17 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-E2E-R01-SEED",
-      "kind": "review",
-      "startedAt": "2026-10-09T23:14:30.767823+00:00",
-      "focus": "Own focused seed review against Steward6090818808, complete planned geometry and codec/snapshot/reference boundary",
-      "state": "completed",
-      "result": "PASS no mandatory seed finding on6276312; full payload/hash/foreign-ID/source boundary verified; focused2/2; independent integrated review/host pending"
-    },
-    "nextRun": {
       "id": "CITY-E2E-SEED-CLEAN-P",
       "kind": "cleanup_planning",
-      "focus": "Plan cleanup of seed component/test/manifest ownership and temporary generation resources; no new product authority"
+      "startedAt": "2026-10-09T23:15:35.510050+00:00",
+      "focus": "Plan exact-hash archive/removal of four own temporary seed generation/check files; preserve fixed fixture and component authority",
+      "state": "completed",
+      "result": "Cleanup plan with four pinned hashes and separate implementation/review scope; no product changes or acceptance claim"
+    },
+    "nextRun": {
+      "id": "CITY-E2E-SEED-CLEAN-I",
+      "kind": "cleanup_implementation",
+      "focus": "Archive exact own seed/codec/test/build temporary files with hash checks then remove only those unchanged files; protect fixture/product/foreign roots"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
