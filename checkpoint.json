@@ -3887,17 +3887,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I24-CP",
-      "kind": "cleanup_planning",
-      "startedAt": "2026-10-09T14:25:53.920339+00:00",
-      "focus": "Snapshot und Scopegrenzen planen",
-      "state": "completed",
-      "result": "I24-Snapshot und Verweis-/Hashschutz geplant; kein Produkt-/Architekturumbau aus Originalexport."
-    },
-    "nextRun": {
       "id": "CITY-00-I24-CI",
       "kind": "cleanup_implementation",
-      "focus": "Gassen-Snapshot aus acceptance aktualisieren"
+      "startedAt": "2026-10-09T14:26:23.614743+00:00",
+      "focus": "Snapshot berichtigen und Rohbelege erhalten",
+      "state": "completed",
+      "result": "I24-Snapshot mit Straßen-Ausgabeumfang berichtigt; Rawhashes und Manifest unverändert."
+    },
+    "nextRun": {
+      "id": "CITY-00-I24-CR",
+      "kind": "cleanup_review",
+      "focus": "Snapshot, Verweise und vollständigen Pflichtschutz prüfen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
