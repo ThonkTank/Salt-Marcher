@@ -702,3 +702,6 @@ CITY-01-PREP-I02 Start 2026-10-09T16:55:47.454518+00:00; Abschluss 2026-10-09T16
 
 
 CITY-01-PREP-R03 Start 2026-10-09T16:58:10.229Z; Separate gebündelte Modulgegenprobe bestätigt echte Terrain-/Cityowner: gemeinsames Undo, falsche Besitzer-ID verhindert jede Mutation und erhält Redo, stale Gesten abgelehnt, Metadaten vor JSON abgelehnt, Snapshots tief gefroren. Quellen exakt wie bei282grünenTests/Typprüfung/Build. Keine Fachlücke im reinen Befehlsumfang. Aufräumreste: vorhandene Befehls-/Ownergrenze in Architektur, Gesamt- und Anschlussplan kenntlich machen. CTY-/CO-/Host-/Savepflichten weiter offen. Beleg: /home/aaron/.cache/dungeon-native-qa/city-plans/city01-commands-20261009/review.json.
+
+
+CITY-01-PREP-COMMAND-CLEAN-P02 Start 2026-10-09T16:58:46.360612+00:00; Plan: vorhandene CitySource/cityDocumentChange und Owner-/JSONgrenze in ARCHITECTURE ergänzen, vorhandene Befehlsvorbereitung von geplanter UI-/Speicherintegration im Gesamt- und Anschlussplan trennen. Snapshotkopien und Wiederprüfung bleiben als bewusste Grenzvalidierung bestehen; kein unbelegter Performanceumbau. Keine Laufzeitänderung. Abschließend Quellenhashes, JSON/Links/fremde Roots und offene Abnahmen prüfen; CI/CR getrennt.

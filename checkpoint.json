@@ -4252,17 +4252,17 @@
     "state": "city01_model_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-01-PREP-R03",
-      "kind": "review",
-      "startedAt": "2026-10-09T16:58:10.229Z",
-      "focus": "Stadtbefehle separat gegen Anforderungen und Konflikte prüfen",
-      "state": "completed",
-      "result": "Gegenprobe und unveränderte geprüfte Quellen bestätigen Befehlsvertrag ohne Funktionslücke; Dokumentationsaufbereitung folgt."
-    },
-    "nextRun": {
       "id": "CITY-01-PREP-COMMAND-CLEAN-P02",
       "kind": "cleanup_planning",
-      "focus": "Architektur und Pläne an tatsächlichen Stadtbefehlsbaustein anpassen"
+      "startedAt": "2026-10-09T16:58:46.360612+00:00",
+      "focus": "Befehlsdokumentation und Architektur aufräumen",
+      "state": "completed",
+      "result": "Nur Dokumentationsgrenzen aktualisieren; Kopien/Validierung behalten, keine Laufzeitänderung."
+    },
+    "nextRun": {
+      "id": "CITY-01-PREP-COMMAND-CLEAN-I02",
+      "kind": "cleanup_implementation",
+      "focus": "Existierende Stadtbefehle in Architektur und Plänen kennzeichnen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
