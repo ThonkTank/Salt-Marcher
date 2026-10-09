@@ -1,4 +1,4 @@
-import { Application, Container, Graphics } from "pixi.js";
+import { Application, Container, Graphics, Text } from "pixi.js";
 import {
   initialAtlasCamera,
   panAtlas,
@@ -20,6 +20,7 @@ import type { OverworldDocument, WorldPoint } from "./overworld";
 import type { AtlasChange } from "./atlas-history";
 import { checkedTerrainCell, terrainTarget } from "./terrain-schema";
 import type { TerrainSource } from "./terrain-source";
+import type { LocationDocument } from "../location/location-schema";
 
 export class AtlasRenderer {
   readonly application = new Application();
@@ -28,6 +29,12 @@ export class AtlasRenderer {
   private readonly grid = new Graphics();
   private readonly landscape = new Graphics();
   private readonly overlay = new Graphics();
+  private readonly markers = new Graphics();
+  private readonly names = new Container();
+  private readonly locations = new Map<string, LocationDocument>();
+  private readonly labels = new Map<string, Text>();
+  selectedLocation?: string;
+  locationPreview?: { id: string; position: WorldPoint };
   private observer?: ResizeObserver;
   private frame?: number;
   private initialized = false;
@@ -55,6 +62,8 @@ export class AtlasRenderer {
       throw new Error("Landschaft gehört zu einer anderen Welt.");
     this.terrainSource = source;
     this.preview = [];
+    this.locationPreview = undefined;
+    this.locations.clear();
     this.schedule();
   }
   get camera(): AtlasCamera {
@@ -89,6 +98,8 @@ export class AtlasRenderer {
       this.grid,
       this.detailLayer,
       this.overlay,
+      this.markers,
+      this.names,
     );
     this.observer = new ResizeObserver(() => {
       this.application.renderer.resize(
@@ -111,26 +122,61 @@ export class AtlasRenderer {
     this.currentCamera = zoomAtlas(this.camera, this.viewport, anchor, factor);
     this.schedule();
   }
+  location(document: LocationDocument | null, id: string): void {
+    if (document) this.locations.set(id, document);
+    else this.locations.delete(id);
+  }
+  private markerPoints() {
+    return (this.terrain?.placements() ?? []).map((p) => ({
+      id: p.locationId,
+      point: worldToScreen(
+        this.camera,
+        this.viewport,
+        this.locationPreview?.id === p.locationId
+          ? this.locationPreview.position
+          : p.position,
+      ),
+    }));
+  }
+  visibleLocationIds(): string[] {
+    const size = this.viewport;
+    return this.markerPoints()
+      .filter(
+        ({ point: p }) =>
+          p.x >= -20 &&
+          p.y >= -20 &&
+          p.x <= size.width + 20 &&
+          p.y <= size.height + 20,
+      )
+      .map((p) => p.id);
+  }
+  locationAt(screen: WorldPoint): string | undefined {
+    return this.markerPoints()
+      .reverse()
+      .find(({ point: p }) => Math.hypot(screen.x - p.x, screen.y - p.y) <= 14)
+      ?.id;
+  }
   fit(): void {
     const refs = this.terrain?.references() ?? [];
-    if (!refs.length)
+    const points = refs.flatMap((ref) =>
+      [
+        [ref.extent.minQ, ref.extent.minR],
+        [ref.extent.minQ, ref.extent.maxR],
+        [ref.extent.maxQ, ref.extent.minR],
+        [ref.extent.maxQ, ref.extent.maxR],
+      ].map(([q, r]) =>
+        hexCenter(this.world, {
+          worldId: this.world.id,
+          level: 0,
+          q: q!,
+          r: r!,
+        }),
+      ),
+    );
+    points.push(...(this.terrain?.placements() ?? []).map((p) => p.position));
+    if (!points.length)
       this.currentCamera = initialAtlasCamera(this.world.origin);
     else {
-      const points = refs.flatMap((ref) =>
-        [
-          [ref.extent.minQ, ref.extent.minR],
-          [ref.extent.minQ, ref.extent.maxR],
-          [ref.extent.maxQ, ref.extent.minR],
-          [ref.extent.maxQ, ref.extent.maxR],
-        ].map(([q, r]) =>
-          hexCenter(this.world, {
-            worldId: this.world.id,
-            level: 0,
-            q: q!,
-            r: r!,
-          }),
-        ),
-      );
       const minX = Math.min(...points.map((p) => p.x)),
         maxX = Math.max(...points.map((p) => p.x));
       const minY = Math.min(...points.map((p) => p.y)),
@@ -294,8 +340,52 @@ export class AtlasRenderer {
     this.host.dataset.terrainCells = String(this.terrain?.cells().length ?? 0);
     this.host.dataset.visibleTerrainCells = String(visibleCells);
     this.host.dataset.previewCells = String(this.preview.length);
+    this.drawLocations();
     this.application.render();
     this.changed();
+  }
+  private drawLocations(): void {
+    this.markers.clear();
+    const placed = new Set(
+      (this.terrain?.placements() ?? []).map((p) => p.locationId),
+    );
+    for (const [id, label] of this.labels) {
+      label.visible = false;
+      if (!placed.has(id)) {
+        label.destroy();
+        this.labels.delete(id);
+      }
+    }
+    const visible = new Set(this.visibleLocationIds());
+    for (const { id, point: p } of this.markerPoints()) {
+      if (!visible.has(id)) continue;
+      const document = this.locations.get(id),
+        color = document?.type === "city" ? 0x704d29 : 0x27565c;
+      if (document?.type === "city")
+        this.markers.rect(p.x - 7, p.y - 7, 14, 14);
+      else
+        this.markers.poly(
+          [p.x, p.y - 8, p.x + 8, p.y, p.x, p.y + 8, p.x - 8, p.y],
+          true,
+        );
+      this.markers.fill(color).stroke({ color: 0xffffff, width: 2 });
+      if (id === this.selectedLocation)
+        this.markers.circle(p.x, p.y, 12).stroke({ color: 0x258a76, width: 2 });
+      let label = this.labels.get(id);
+      if (!label) {
+        label = new Text({
+          text: "",
+          style: { fontFamily: "sans-serif", fontSize: 12, fill: 0x26372e },
+        });
+        this.labels.set(id, label);
+        this.names.addChild(label);
+      }
+      label.text = document?.name ?? "Ort";
+      label.position.set(p.x + 15, p.y - 8);
+      label.visible = true;
+    }
+    this.host.dataset.visibleLocations = String(visible.size);
+    this.host.dataset.locations = String(placed.size);
   }
   destroy(): void {
     this.closed = true;

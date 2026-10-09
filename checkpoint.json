@@ -433,27 +433,28 @@
   "hexAtlasExecution": {
     "scope": "HEX-00 bis HEX-28 und sämtliche eingeordneten CITY-00 bis CITY-09 vollständig",
     "phase": "HEX-03",
-    "state": "e2e01_steward_handoff_complete_marker_editor_next",
+    "state": "e2e01_location_marker_native_checked_integration_next",
     "plan": "ROADMAP-HEX-03-PLAN.md",
     "currentRun": {
-      "id": "E2E-01-STEW-H01",
-      "kind": "confirmed_steward_handoff",
-      "state": "completed_exact_candidate_and_concrete_domain_tasks_handed_off",
-      "startedAt": "2026-10-09T23:06:02.130018+00:00",
-      "focus": "Accept actual collected team decision and reuse existing PR13 as one E2E01 integration candidate; retain component evidence and expose missing hard inputs without another planning/review round.",
-      "catalogSha": "cc93c31870f461527b2f8953fe88e433dada7cd1",
-      "integrationBase": "6bfb1f393722cd469dc4fd5f15d8dea12a154f6b",
-      "evidence": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6090741953",
-      "nativeOnThisBuild": false,
-      "phaseApproval": false,
-      "finishedAt": "2026-10-09T23:11:13.148935+00:00",
-      "handoff": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6090818808"
+      "startedAt": "2026-10-09T23:14:30.168Z",
+      "startTimeSource": "heartbeat dispatch",
+      "finishedAt": "2026-10-09T23:36:51.436463+00:00",
+      "baseline": "8769c86d48343673e055333becc116c2176b8007",
+      "gate": "E2E-01",
+      "catalog": "ROADMAP-E2E-GATES-CANDIDATE.md:13",
+      "scope": "Same-canvas location marker/name/Key/edit/reorder/drag + shared terrain History + location-enabled Save/Copy/Discard/Recovery host adapter.",
+      "id": "HEX-03-I01b-marker",
+      "state": "implemented_native_component_independent_review_pending",
+      "kind": "implementation",
+      "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/marker-implementation.json",
+      "nativeOnThisBuild": true,
+      "phaseApproval": false
     },
     "nextRun": {
-      "id": "HEX-03-I01b-marker",
-      "kind": "e2e01_visible_location_editor_component",
-      "focus": "E2E01 catalog user-flow row: activate same-canvas location creation/select/Key/drag using existing checked LocationRepository and shared terrain/location History, then exact native and separate fresh-process evidence. Dungeon and City enter the same shared candidate after their real adapter inputs.",
-      "dependency": "No full E2E01 PASS until CampaignLifecycle/Context, all spatial History/Snapshot/Transaction owners, P02, P04 CompleteImport and independent full-candidate code/native reviews are actually supplied. Fresh local GUI slot required per run."
+      "id": "E2E-01-STEW-I01",
+      "kind": "bounded_reviewed_source_integration",
+      "focus": "Integrate exactly accepted City272ddc4, Dungeon d01051c and Campaign06ac0ae into existing PR13, preserve all foreign roots and native fixture bytes, run combined basis and compose explicit source/fixture receipts. No second candidate and no new plan/review round.",
+      "dependency": "Real shared City/Dungeon placement/history/transaction, Campaign-to-Atlas, House105-to-Dungeon30 and P02/P04 complete import still need executable integration; independent integrated code/native gates remain required."
     },
     "review": {
       "run": "HEX-02-R02",
@@ -497,7 +498,7 @@
       "dungeonThread": "01a1204f-d184-7567-bfb3-d3ab06a0d07e",
       "fixtureReviewThread": "01a12031-2c30-73f7-bc01-6bd3eba86046",
       "publicationPolicy": "Bei fortlaufenden Shared-Branch-Pushrennen geprüftes Paket auf eigenem Branch sichern, regulären Servermerge in gemeinsamen active/installed-phase1 prüfen und lokal integrieren; keine Historienumschreibung.",
-      "nativeGuiSlot": "City normal Exit0 and explicit return to Hex confirmed by Issue6088178583 on their shared second laptop. Atlas-QA uses a separate local GUI; its runs do not reserve or block the Hex/City device.",
+      "nativeGuiSlot": "City granted named HEX03 marker/Key/drag/Fit repeat + fresh process; Hex explicitly returned after normal exits0. No standing GUI ownership.",
       "gmTestingThread": "01a12031-2c30-73f7-bc01-6bd3eba86046",
       "gmTestingPolicy": "Eigenständiger Cloud-GM-Endanwenderlauf nach direkter Nutzerpräzisierung, ohne lokalen QA-Slot; beobachtete Befunde/Nacharbeiten getrennt überIssue1 übernehmen, kein Ersatz durch technische Testzahlen.",
       "lastCheckIn": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1#issuecomment-6088562608",
@@ -607,7 +608,7 @@
         },
         "sharedSequence": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6090520231",
         "domainVoteMatrix": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6090727162",
-        "domainVoteMatrixState": "All seven domain RATIFY votes published without BLOCK; collected decision and explicit steward nomination still pending, no self-activation.",
+        "domainVoteMatrixState": "All seven RATIFY votes collected; actual decision6090732894 and nomination6090741953 accepted, E2E01 active only.",
         "sharedDecision": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6090732894",
         "steward": {
           "owner": "Hex",
@@ -627,10 +628,15 @@
           "gateProtocol": {
             "catalog": "ROADMAP-E2E-GATES-CANDIDATE.md",
             "gate": "E2E-01",
-            "state": "not_passed_inputs_and_visible_product_work_pending",
+            "state": "not_passed_marker_component_native_checked_full_integration_pending",
             "hexNextRow": "Shared same-canvas Hex→Location marker/Key/common Undo/Redo/Save/fresh process",
             "nativeQa": "Atlas-QA accepted separate exact-candidate fresh-host verification",
-            "independentCodeReviewer": "Cloud-Architecture requested for integrated Gate code review after real source handoff; explicit acceptance pending, no self-release"
+            "independentCodeReviewer": "Cloud-Architecture accepted independent integrated review in #12/6090828948; run only after full pinned source handoff, no current gate PASS.",
+            "hexMarkerRow": {
+              "catalogLine": 13,
+              "state": "native_component_checked_review_pending",
+              "receipt": "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/marker-implementation.json"
+            }
           },
           "ownership": {
             "campaignLifecycleContext": "Campaign/Data confirmed domain owner; actual input/implementation handoff pending",
@@ -642,7 +648,26 @@
           },
           "handoff": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6090818808",
           "initialPinnedCandidate": "8670cbf480865d7d9a4f4a64cfe87c3b33d7fbcc",
-          "fixtureManifestSha256": "5431128663236f1c07b06049f647fbc4c2f8495e9380cb25ac9dd19b6e8099df"
+          "fixtureManifestSha256": "5431128663236f1c07b06049f647fbc4c2f8495e9380cb25ac9dd19b6e8099df",
+          "acceptedInputsForNextIntegration": {
+            "city": {
+              "sha": "272ddc4bd0f2aad99a74bdf369cd03dd6dd6913c",
+              "handoff": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/7#issuecomment-6090895391",
+              "integrated": false
+            },
+            "dungeon": {
+              "sha": "d01051c0be74a66d9dffbbddd13575774e4b95b3",
+              "handoff": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6090920500",
+              "review": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6090917428",
+              "integrated": false
+            },
+            "campaign": {
+              "sha": "06ac0ae059702331ad4b8b2650122dba87382398",
+              "handoff": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6090985775",
+              "review": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/20#issuecomment-6090984072",
+              "integrated": false
+            }
+          }
         }
       }
     },
@@ -1703,6 +1728,91 @@
         "nativeOnThisBuild": false,
         "phaseApproval": false,
         "uiActivation": false
+      },
+      "locationMarkerEditor": {
+        "run": "HEX-03-I01b-marker",
+        "stage": "implemented_native_component_independent_review_pending",
+        "startedAt": "2026-10-09T23:14:30.168Z",
+        "startTimeSource": "heartbeat dispatch",
+        "finishedAt": "2026-10-09T23:36:51.436463+00:00",
+        "baseline": "8769c86d48343673e055333becc116c2176b8007",
+        "integrationBase": "6bfb1f393722cd469dc4fd5f15d8dea12a154f6b",
+        "gate": "E2E-01",
+        "catalog": "ROADMAP-E2E-GATES-CANDIDATE.md:13",
+        "scope": "Same-canvas location marker/name/Key/edit/reorder/drag + shared terrain History + location-enabled Save/Copy/Discard/Recovery host adapter.",
+        "sourceHashes": {
+          "src/features/atlas/atlas-editor.ts": "df7032f6a2386f3c1d57c372c387ca7961a585b0d90853459c348e471730f731",
+          "src/features/atlas/atlas-renderer.ts": "a367f2967ca80ede491d09da9d0d185fcffc1cb37f2487c122496937b99ab475",
+          "src/features/location/location-key-draft.ts": "53c006876547dad35ff78ee9b198f4ae60bfb27f4ff72a1f1886c89aec8b7280",
+          "src/ui/location-key-panel.ts": "4af455fc3ce452f28226c82914f2ea5c05dee3d1bdd16ae59038b9b5e318c23b",
+          "src/ui/atlas-view.ts": "2f7fb7cf991b7fce7b43489bba4b9c11da14d0b6944fbf59ad083c9e0feff486",
+          "styles.css": "cdf172e7d3c101d5917c16afe487641a19d9d5afe8ad23365b33c958ee1ac321",
+          "tests/core/location-key-draft.test.ts": "6354dbd4e68b33e2e745418586269b1c970e7c822fe8974407fcc3c73edec796",
+          "tests/core.test.ts": "fee202509e6f59a77df099813fc3c27974dc9b8d06fc00a5e064df74af04a094",
+          "tools/host/hex03-location.cjs": "e81f7fed7e9c59c0e3c0d4096424ab81e69468b8b639bc1256cae4110ed0cea3",
+          "tools/host-test.cjs": "a9f033f5eed17dc2656d9e620a5d65c6fd9a0d882779592d9192297c449f3135"
+        },
+        "buildFiles": {
+          "main.js": {
+            "bytes": 1435424,
+            "sha256": "289019a5161419068ebd301597d045adde493a4b722399cb8a856f9ebcc4f43b"
+          },
+          "manifest.json": {
+            "bytes": 237,
+            "sha256": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64"
+          },
+          "styles.css": {
+            "bytes": 28623,
+            "sha256": "cdf172e7d3c101d5917c16afe487641a19d9d5afe8ad23365b33c958ee1ac321"
+          }
+        },
+        "checks": {
+          "check": true,
+          "tests": {
+            "total": 422,
+            "passed": 422,
+            "failed": 0
+          },
+          "build": true,
+          "diff": true
+        },
+        "native": {
+          "edit": "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/marker-native-final/evidence/1791588898877-hex03-location-edit/result.json",
+          "reopen": "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/marker-native-final/evidence/1791588922877-hex03-location-reopen/result.json",
+          "editLifecycle": "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/marker-native-final/evidence/1791588898877-hex03-location-edit/process-lifecycle.json",
+          "reopenLifecycle": "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/marker-native-final/evidence/1791588922877-hex03-location-reopen/process-lifecycle.json",
+          "normalExitCodes": [
+            0,
+            0
+          ],
+          "syntheticInput": true,
+          "physicalInput": false,
+          "readDelayFaultInjection": true,
+          "screenshots": [
+            "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/marker-native-final/evidence/1791588898877-hex03-location-edit/01-marker-key.png",
+            "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/marker-native-final/evidence/1791588922877-hex03-location-reopen/01-fresh-saved.png",
+            "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/marker-native-final/evidence/1791588922877-hex03-location-reopen/02-fresh-recovery.png"
+          ]
+        },
+        "previousAttempt": {
+          "path": "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/marker-native/evidence/1791588568745-hex01-atlas-edit/result.json",
+          "failure": "Case-sensitive expectation used extern instead of actual Extern; corrected host probe only. Failure evidence retained."
+        },
+        "boundaries": {
+          "independentReview": false,
+          "fullE2E01": false,
+          "completeCampaignImport": false,
+          "largeMap": false,
+          "physicalInput": false,
+          "wonderdraftParity": false,
+          "userVaultInstallation": "unchanged"
+        },
+        "incomingShared": "6bfb1f393722cd469dc4fd5f15d8dea12a154f6b",
+        "acceptedInputsForNextSeparateIntegration": {
+          "city": "272ddc4bd0f2aad99a74bdf369cd03dd6dd6913c",
+          "dungeon": "d01051c0be74a66d9dffbbddd13575774e4b95b3",
+          "campaign": "06ac0ae059702331ad4b8b2650122dba87382398"
+        }
       }
     },
     "repairPlan": "ROADMAP-HEX-02-REPAIR-PLAN.md",

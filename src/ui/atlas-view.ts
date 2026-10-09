@@ -1,4 +1,13 @@
-import { App, FileView, Menu, Modal, Notice, Setting, TFile } from "obsidian";
+import {
+  App,
+  FileView,
+  MarkdownRenderer,
+  Menu,
+  Modal,
+  Notice,
+  Setting,
+  TFile,
+} from "obsidian";
 import { AtlasEditor } from "../features/atlas/atlas-editor";
 import {
   newOverworld,
@@ -67,6 +76,7 @@ export class AtlasView extends FileView {
         new VaultStore(this.app),
         file.path,
         this.app.vault,
+        { locations: true },
       );
       const source = await repository.open();
       if (generation !== this.generation) return;
@@ -80,6 +90,22 @@ export class AtlasView extends FileView {
         }),
         menu: (event) => this.showMenu(event, generation),
         discard: () => repository.discard(),
+        locations: {
+          read: (id) => repository.location(id).read(),
+          ensure: async (id) => (await repository.ensureLocation(id)).read(),
+          create: (document, placement) =>
+            repository.createLocation(document, placement),
+          edit: (document) => repository.editLocation(document),
+          move: (id, position) => repository.moveLocation(id, position),
+          markdown: (host, text, id) =>
+            MarkdownRenderer.render(
+              this.app,
+              text,
+              host,
+              `Orte/${id}.location`,
+              this,
+            ),
+        },
       });
       await this.editor.init();
     } catch (error) {
@@ -118,6 +144,7 @@ export class AtlasView extends FileView {
                 new VaultStore(this.app),
                 path,
                 this.app.vault,
+                { locations: true },
               );
               const state = await target.recoverCopy();
               return { state, open: this.openCopy(path, generation, editor) };
@@ -128,7 +155,9 @@ export class AtlasView extends FileView {
       .addItem((item) =>
         item
           .setTitle("Entwurf verwerfen …")
-          .setDisabled(!repository.dirty && !repository.hasDraft)
+          .setDisabled(
+            !repository.dirty && !repository.hasDraft && !editor.pendingKey,
+          )
           .onClick(() =>
             new DiscardAtlasModal(this.app, () => {
               if (generation === this.generation && this.editor === editor)

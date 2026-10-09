@@ -1,6 +1,13 @@
 import { AtlasRenderer } from "./atlas-renderer";
 import { hexAddressKey, hexAt } from "./hex";
 import type { OverworldDocument, WorldPoint } from "./overworld";
+import { sameAtlasValue, type AtlasValue } from "./atlas-history";
+import {
+  newLocation,
+  type LocationDocument,
+} from "../location/location-schema";
+import type { LocationPlacement } from "./location-placement";
+import { LocationKeyPanel } from "../../ui/location-key-panel";
 import {
   TERRAIN_COLORS,
   TerrainSource,
@@ -9,12 +16,21 @@ import {
 } from "./terrain-source";
 
 type Tool = "select" | "hand" | TerrainTool;
+type PointerAction = "pan" | "select" | "paint" | "location";
 export interface AtlasEditorStorage {
   save(): Promise<void>;
   changed(): Promise<void>;
   status(): { dirty: boolean; hasDraft: boolean };
   menu?(event: MouseEvent): void;
   discard?(): Promise<TerrainSource>;
+  locations?: {
+    read(id: string): LocationDocument | null;
+    ensure(id: string): Promise<LocationDocument | null>;
+    create(document: LocationDocument, placement: LocationPlacement): boolean;
+    edit(document: LocationDocument): boolean;
+    move(id: string, position: WorldPoint): boolean;
+    markdown?(host: HTMLElement, text: string, id: string): Promise<void>;
+  };
 }
 export class AtlasEditor {
   readonly renderer: AtlasRenderer;
@@ -38,9 +54,23 @@ export class AtlasEditor {
   private closed = false;
   private loadingVisible = false;
   private visibleLoadFailed = false;
+  private key?: LocationKeyPanel;
+  private selectedLocation?: string;
+  private selectionVersion = 0;
+  private loadedLocations = new Set<string>();
+  private failedLocations = new Set<string>();
+  private loadingLocations = false;
+  private drag?: {
+    id: string;
+    source: TerrainSource;
+    placements: AtlasValue;
+    metersPerPixel: number;
+    origin: WorldPoint;
+    position: WorldPoint;
+  };
   private pointer?: {
     id: number;
-    action: "pan" | "select" | "paint";
+    action: PointerAction;
     x: number;
     y: number;
     startX: number;
@@ -78,7 +108,14 @@ export class AtlasEditor {
     };
     const toolButtons = new Map<Tool, HTMLButtonElement>();
     const choose = (tool: Tool) => {
+      try {
+        this.key?.apply();
+      } catch (error) {
+        this.status.textContent = String(error);
+        return;
+      }
       this.finishStroke();
+      this.cancelDrag();
       this.tool = tool;
       for (const [id, b] of toolButtons)
         b.setAttribute("aria-pressed", String(id === tool));
@@ -137,8 +174,19 @@ export class AtlasEditor {
     button("+", "Atlas vergrößern", () => this.zoom(0.8));
     button("Einpassen", "Atlasinhalt einpassen", () => {
       this.finishStroke();
-      this.enqueue(() => this.renderer.fit());
+      this.enqueue(() => {
+        this.key?.apply();
+        this.renderer.fit();
+      });
     });
+    if (storage.locations) {
+      button("Stadt +", "Stadt in Kartenmitte anlegen", () =>
+        this.createLocation("city"),
+      );
+      button("POI +", "POI in Kartenmitte anlegen", () =>
+        this.createLocation("poi"),
+      );
+    }
     button("Speichern", "Atlas speichern", () => this.save());
     if (storage.menu)
       button("Karte ▾", "Atlas-Kartenmenü", (event) => storage.menu!(event));
@@ -166,7 +214,10 @@ export class AtlasEditor {
     hint.textContent =
       "Pinsel: 3-Meilen-Hexes. Mitte oder Leertaste ziehen verschiebt. Strg + Mausrad zoomt.";
     footer.append(this.selection, this.status, hint);
-    root.append(toolbar, this.viewport, footer);
+    const body = doc.createElement("div");
+    body.className = "dn-atlas-body";
+    body.append(this.viewport);
+    root.append(toolbar, body, footer);
     this.renderer = new AtlasRenderer(
       this.viewport,
       world,
@@ -176,6 +227,17 @@ export class AtlasEditor {
       },
       terrain,
     );
+    if (storage.locations) {
+      const host = doc.createElement("aside");
+      body.append(host);
+      this.key = new LocationKeyPanel(host, {
+        read: (id) => storage.locations!.read(id),
+        edit: (document) => storage.locations!.edit(document),
+        changed: () => this.refreshHistory(),
+        save: () => this.save(),
+        markdown: storage.locations.markdown,
+      });
+    }
     this.subscribeTerrain();
     choose("select");
     this.refreshHistory();
@@ -184,8 +246,12 @@ export class AtlasEditor {
   get terrain(): TerrainSource {
     return this.currentTerrain;
   }
+  get pendingKey(): boolean {
+    return this.key?.dirty ?? false;
+  }
   private subscribeTerrain(): void {
     this.unsubscribe = this.terrain.history.subscribe(() => {
+      this.syncLocations();
       this.refreshHistory();
       this.renderer.schedule();
       const version = ++this.persistenceVersion;
@@ -208,15 +274,18 @@ export class AtlasEditor {
     await this.renderer.init();
   }
   private refreshHistory(): void {
-    this.undoButton.disabled = !this.terrain.history.canUndo;
+    this.undoButton.disabled =
+      !this.terrain.history.canUndo && !this.pendingKey;
     this.redoButton.disabled = !this.terrain.history.canRedo;
     const state = this.storage.status();
-    this.status.textContent = state.dirty
-      ? state.hasDraft
-        ? "Entwurf gesichert"
-        : "Ungespeichert"
-      : "Gespeichert";
-    this.root.dataset.dirty = String(state.dirty);
+    this.status.textContent = this.pendingKey
+      ? "Text noch nicht übernommen"
+      : state.dirty
+        ? state.hasDraft
+          ? "Entwurf gesichert"
+          : "Ungespeichert"
+        : "Gespeichert";
+    this.root.dataset.dirty = String(state.dirty || this.pendingKey);
     this.root.dataset.hasDraft = String(state.hasDraft);
     this.root.dataset.undoDepth = String(this.terrain.history.undoDepth);
   }
@@ -230,13 +299,16 @@ export class AtlasEditor {
         if (!this.closed) {
           this.status.textContent = "Bearbeitung angehalten. " + String(error);
           this.renderer.preview = [];
+          this.renderer.locationPreview = undefined;
           this.renderer.schedule();
         }
       });
   }
   private save(): void {
     this.finishStroke();
+    this.finishDrag();
     this.enqueue(async () => {
+      this.key?.apply();
       const version = this.persistenceVersion;
       this.status.textContent = "Atlas wird gespeichert …";
       await this.storage.save();
@@ -248,6 +320,7 @@ export class AtlasEditor {
   discard(): void {
     if (!this.storage.discard) return;
     this.finishStroke();
+    this.cancelDrag();
     this.releasePointer();
     this.enqueue(async () => {
       this.flushing = true;
@@ -255,12 +328,17 @@ export class AtlasEditor {
         const source = await this.storage.discard!();
         this.unsubscribe();
         this.currentTerrain = source;
+        ++this.selectionVersion;
+        this.loadedLocations.clear();
+        this.failedLocations.clear();
+        this.key?.clear();
         this.renderer.useTerrain(source);
         this.subscribeTerrain();
         this.persistence = Promise.resolve();
         ++this.persistenceVersion;
         this.visibleLoadFailed = false;
         this.refreshHistory();
+        void this.loadLocations();
       } finally {
         this.flushing = false;
       }
@@ -269,16 +347,19 @@ export class AtlasEditor {
   /** Finish queued pointer work and retain its draft before a view is destroyed. */
   async flush(): Promise<void> {
     this.finishStroke();
+    this.finishDrag();
     this.releasePointer();
     this.flushing = true;
     try {
       await this.work;
+      this.key?.apply();
       await this.persistence;
     } finally {
       this.flushing = false;
     }
   }
   private async loadVisible(): Promise<void> {
+    void this.loadLocations();
     if (this.loadingVisible || this.closed || this.visibleLoadFailed) return;
     this.loadingVisible = true;
     const source = this.terrain,
@@ -302,6 +383,144 @@ export class AtlasEditor {
       this.loadingVisible = false;
       if (!this.closed && source !== this.terrain) this.renderer.schedule();
     }
+  }
+  private syncLocations(): void {
+    const port = this.storage.locations;
+    if (!port) return;
+    for (const id of this.loadedLocations)
+      this.renderer.location(port.read(id), id);
+    const id = this.selectedLocation;
+    const document = id && this.loadedLocations.has(id) ? port.read(id) : null;
+    if (
+      document &&
+      this.terrain.placements().some((p) => p.locationId === id)
+    ) {
+      this.key?.show(document);
+      this.selection.textContent = `${document.type === "city" ? "Stadt" : "POI"}: ${document.name}`;
+    } else if (!this.pendingKey) this.key?.clear();
+    this.renderer.selectedLocation = id;
+  }
+  private async loadLocations(): Promise<void> {
+    const port = this.storage.locations;
+    if (!port || this.loadingLocations || this.closed) return;
+    this.loadingLocations = true;
+    const source = this.terrain;
+    let changed = false;
+    try {
+      const ids = new Set(this.renderer.visibleLocationIds());
+      if (
+        this.selectedLocation &&
+        source.placements().some((p) => p.locationId === this.selectedLocation)
+      )
+        ids.add(this.selectedLocation);
+      for (const id of [...ids]
+        .filter(
+          (id) =>
+            !this.loadedLocations.has(id) && !this.failedLocations.has(id),
+        )
+        .slice(0, 40)) {
+        try {
+          await port.ensure(id);
+          if (this.closed || source !== this.terrain) return;
+          this.loadedLocations.add(id);
+          this.renderer.location(port.read(id), id);
+          changed = true;
+        } catch (error) {
+          if (source !== this.terrain || this.closed) return;
+          this.failedLocations.add(id);
+          this.status.textContent =
+            "Ort konnte nicht geladen werden. " + String(error);
+        }
+      }
+      if (changed && !this.closed && source === this.terrain) {
+        this.syncLocations();
+        this.renderer.schedule();
+      }
+    } finally {
+      this.loadingLocations = false;
+    }
+  }
+  private createLocation(type: "city" | "poi"): void {
+    this.finishStroke();
+    this.cancelDrag();
+    this.enqueue(() => {
+      this.key?.apply();
+      const id = crypto.randomUUID(),
+        document = newLocation(
+          id,
+          type === "city" ? "Neue Stadt" : "Neuer POI",
+          type,
+          [crypto.randomUUID(), crypto.randomUUID()],
+        );
+      if (
+        !this.storage.locations!.create(document, {
+          kind: "location",
+          id: crypto.randomUUID(),
+          locationId: id,
+          position: { ...this.renderer.camera.center },
+        })
+      )
+        throw new Error("Ort konnte nicht angelegt werden.");
+      this.loadedLocations.add(id);
+      ++this.selectionVersion;
+      this.selectedLocation = id;
+      this.syncLocations();
+      this.renderer.schedule();
+      this.key?.focusName();
+    });
+  }
+  private selectLocation(id: string): void {
+    const source = this.terrain,
+      version = ++this.selectionVersion;
+    this.enqueue(async () => {
+      this.key?.apply();
+      await this.storage.locations!.ensure(id);
+      if (
+        this.closed ||
+        version !== this.selectionVersion ||
+        source !== this.terrain ||
+        !source.placements().some((p) => p.locationId === id)
+      )
+        return;
+      this.loadedLocations.add(id);
+      this.key?.apply();
+      this.selectedLocation = id;
+      this.renderer.selected = undefined;
+      this.syncLocations();
+      this.renderer.schedule();
+    });
+  }
+  private cancelDrag(): void {
+    this.drag = undefined;
+    if (this.renderer) {
+      this.renderer.locationPreview = undefined;
+      this.renderer.schedule();
+    }
+  }
+  private finishDrag(): void {
+    const drag = this.drag,
+      moved = this.pointer?.moved;
+    this.cancelDrag();
+    if (!drag || !moved) return;
+    this.enqueue(() => {
+      this.key?.apply();
+      if (
+        !this.loadedLocations.has(drag.id) ||
+        !this.storage.locations!.read(drag.id)
+      )
+        throw new Error("Orts-Key muss vor dem Verschieben geladen sein.");
+      if (
+        drag.source !== this.terrain ||
+        !sameAtlasValue(
+          drag.placements,
+          this.terrain.placements() as unknown as AtlasValue,
+        )
+      )
+        throw new Error(
+          "Ortsposition wurde inzwischen geändert. Verschiebung abgebrochen.",
+        );
+      this.storage.locations!.move(drag.id, drag.position);
+    });
   }
   private local(event: MouseEvent): WorldPoint {
     const r = this.viewport.getBoundingClientRect();
@@ -339,12 +558,14 @@ export class AtlasEditor {
   }
   private historyAction(action: "undo" | "redo"): void {
     this.finishStroke();
+    this.cancelDrag();
     this.enqueue(() => {
+      this.key?.apply();
       this.terrain.history[action]();
     });
   }
   private zoom(factor: number): void {
-    if (this.stroke) return;
+    if (this.stroke || this.drag) return;
     this.renderer.zoom(
       { x: this.viewport.clientWidth / 2, y: this.viewport.clientHeight / 2 },
       factor,
@@ -363,15 +584,40 @@ export class AtlasEditor {
       (e) => {
         if ((e.button !== 0 && e.button !== 1) || this.pointer || this.flushing)
           return;
+        try {
+          this.key?.apply();
+        } catch (error) {
+          this.status.textContent = String(error);
+          return;
+        }
         e.preventDefault();
         this.viewport.focus();
         this.viewport.setPointerCapture(e.pointerId);
-        const action =
+        let action: PointerAction =
           e.button === 1 || this.space || this.tool === "hand"
             ? "pan"
             : this.tool === "select"
               ? "select"
               : "paint";
+        const locationId =
+          action === "select" && this.storage.locations
+            ? this.renderer.locationAt(this.local(e))
+            : undefined;
+        if (locationId) {
+          const placement = this.terrain
+            .placements()
+            .find((p) => p.locationId === locationId)!;
+          action = "location";
+          this.drag = {
+            id: locationId,
+            source: this.terrain,
+            placements: this.terrain.placements() as unknown as AtlasValue,
+            metersPerPixel: this.renderer.camera.metersPerPixel,
+            origin: placement.position,
+            position: placement.position,
+          };
+          this.selectLocation(locationId);
+        }
         this.pointer = {
           id: e.pointerId,
           action,
@@ -420,6 +666,21 @@ export class AtlasEditor {
         if (p.action === "pan")
           this.renderer.pan(e.clientX - p.x, e.clientY - p.y);
         if (p.action === "paint") this.paint(e);
+        if (p.action === "location" && this.drag && p.moved) {
+          this.drag.position = {
+            x:
+              this.drag.origin.x +
+              (e.clientX - p.startX) * this.drag.metersPerPixel,
+            y:
+              this.drag.origin.y +
+              (e.clientY - p.startY) * this.drag.metersPerPixel,
+          };
+          this.renderer.locationPreview = {
+            id: this.drag.id,
+            position: this.drag.position,
+          };
+          this.renderer.schedule();
+        }
         p.x = e.clientX;
         p.y = e.clientY;
       },
@@ -434,7 +695,12 @@ export class AtlasEditor {
           this.paint(e);
           this.finishStroke();
         }
+        if (p.action === "location") this.finishDrag();
         if (!p.moved && p.action === "select") {
+          ++this.selectionVersion;
+          this.selectedLocation = undefined;
+          this.key?.clear();
+          this.renderer.selectedLocation = undefined;
           const a = this.address(e, this.renderer.level);
           this.renderer.selected = a;
           this.renderer.schedule();
@@ -449,6 +715,7 @@ export class AtlasEditor {
     );
     const cancel = () => {
       this.finishStroke();
+      this.cancelDrag();
       this.releasePointer();
       this.space = false;
     };
@@ -477,10 +744,16 @@ export class AtlasEditor {
             this.finishStroke();
             this.pointer.action = "pan";
           }
+          if (this.pointer?.action === "location") {
+            this.cancelDrag();
+            this.pointer.action = "pan";
+          }
           e.preventDefault();
         }
         if (e.key === "Escape") {
           this.finishStroke();
+          this.cancelDrag();
+          this.releasePointer();
           e.preventDefault();
         }
         if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") {
@@ -512,7 +785,7 @@ export class AtlasEditor {
     this.viewport.addEventListener(
       "wheel",
       (e) => {
-        if (!e.ctrlKey || this.stroke) return;
+        if (!e.ctrlKey || this.stroke || this.drag) return;
         e.preventDefault();
         this.renderer.zoom(
           this.local(e),
@@ -531,6 +804,7 @@ export class AtlasEditor {
     this.closed = true;
     this.abort.abort();
     this.unsubscribe();
+    this.key?.destroy();
     this.renderer.destroy();
     this.root.classList.remove("dn-atlas");
     delete this.root.dataset.worldId;

@@ -152416,7 +152416,7 @@
   "hexAtlas": {
     "scope": "HEX-00..28, shared native Atlas; phase-specific functional approvals only.",
     "currentPhase": "HEX-03",
-    "state": "location_repository_checked_marker_key_native_open",
+    "state": "marker_key_native_component_checked_independent_review_and_detail_links_open",
     "referenceGate": "wonderdraftParity.coverageReview HEX-00-R02",
     "requirements": [
       {
@@ -152607,32 +152607,56 @@
       {
         "id": "HEX03-002",
         "requirement": "Ort und Weltplatzierung gemeinsam anlegen/rücknehmen",
-        "state": "open",
-        "plan": "ROADMAP-HEX-03-PLAN.md"
+        "state": "checked_native_component_review_pending",
+        "plan": "ROADMAP-HEX-03-PLAN.md",
+        "implementationRun": "HEX-03-I01b-marker",
+        "observed": "Native city/POI creation and creation Undo/Redo restore placement, marker and Key together; shared History backend validated. Independent review remains open.",
+        "evidence": [
+          "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/marker-implementation.json",
+          "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/marker-native-final/evidence/1791588898877-hex03-location-edit/result.json",
+          "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/marker-native-final/evidence/1791588922877-hex03-location-reopen/result.json"
+        ]
       },
       {
         "id": "HEX03-003",
         "requirement": "Orts-Key rechts lesen/bearbeiten/ordnen ohne Kartenkontextwechsel",
-        "state": "open",
-        "plan": "ROADMAP-HEX-03-PLAN.md"
+        "state": "checked_native_component_review_pending",
+        "plan": "ROADMAP-HEX-03-PLAN.md",
+        "implementationRun": "HEX-03-I01b-marker",
+        "observed": "Native same-canvas Key name/two Markdown sections/reorder/Unicode/Save/fresh open checked; untouched CRLF preservation, stale/invalid draft retention and text shortcut isolation covered by focused tests. No detail/section-link or rename-index acceptance.",
+        "evidence": [
+          "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/marker-implementation.json",
+          "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/marker-native-final/evidence/1791588898877-hex03-location-edit/result.json",
+          "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/marker-native-final/evidence/1791588922877-hex03-location-reopen/result.json"
+        ]
       },
       {
         "id": "HEX03-004",
         "requirement": "Ort verschieben, Hex bearbeiten und gemeinsam einpassen",
-        "state": "open",
-        "plan": "ROADMAP-HEX-03-PLAN.md"
+        "state": "checked_native_component_review_pending",
+        "plan": "ROADMAP-HEX-03-PLAN.md",
+        "implementationRun": "HEX-03-I01b-marker",
+        "observed": "Native marker preview/drag/Escape/Undo/Redo, terrain drawing in the same History, empty/location-only/mixed Fit and delayed selection-read guard checked. No large-world or physical-input acceptance.",
+        "evidence": [
+          "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/marker-implementation.json",
+          "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/marker-native-final/evidence/1791588898877-hex03-location-edit/result.json",
+          "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/marker-native-final/evidence/1791588922877-hex03-location-reopen/result.json"
+        ]
       },
       {
         "id": "HEX03-005",
         "requirement": "Gemeinsames Save/Draft/Discard/Copy/Recovery samt frischem Prozess",
-        "state": "open",
+        "state": "checked_native_component_review_pending",
         "plan": "ROADMAP-HEX-03-PLAN.md",
-        "implementationRun": "HEX-03-I01b-repository",
+        "implementationRun": "HEX-03-I01b-marker",
         "evidence": [
           "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/draft2-implementation.json",
-          "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/location-repository-implementation.json"
+          "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/location-repository-implementation.json",
+          "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/marker-implementation.json",
+          "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/marker-native-final/evidence/1791588898877-hex03-location-edit/result.json",
+          "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/marker-native-final/evidence/1791588922877-hex03-location-reopen/result.json"
         ],
-        "observed": "Full opt-in Repository terrain/placement/Location Save/Draft/Discard/Copy/Recovery checked in eleven focused cases and clean check/test417/build. Exact baselines, unloaded retention, internal recovery owner guards, fresh repository and late Key draft proved. Marker/Key host activation and native fresh-process full flow remain required; no phase Go."
+        "observed": "Native Save/external Location conflict/Copy identity remap/Discard camera preservation/file-transition draft/fresh saved and copied recovery flows checked; existing eleven Repository cases retain interrupted-save/copy journal proof. Full Campaign/P02/P04/crash and full-E2E gates remain open."
       },
       {
         "id": "HEX03-006",
