@@ -1,13 +1,13 @@
 # Referenzlücken vor den Stadtpaketen
 
-Abgeleitete Übersicht vom09.10.2026, CITY-00-I16-I. Maßgeblich bleibt `acceptance.json` unter `cityPlans.functionalInventory`. Ein Originalprobe-Status bezeichnet ausschließlich beobachteten Umfang; eigene Umsetzung, Hostvergleich und bessere Bedienung sind für alle Einträge offen. Diese Übersicht ersetzt keine Pflicht und kein Abnahmetor. Sie ist ein versionierter Snapshot, keine zusätzliche Statusdatenbank; spätere Änderungen werden aus acceptance in einem zusammengehörigen Planpaket neu zugeordnet.
+Abgeleitete Übersicht vom09.10.2026, CITY-00-I17-I. Maßgeblich bleibt `acceptance.json` unter `cityPlans.functionalInventory`. Ein Originalprobe-Status bezeichnet ausschließlich beobachteten Umfang; eigene Umsetzung, Hostvergleich und bessere Bedienung sind für alle Einträge offen. Diese Übersicht ersetzt keine Pflicht und kein Abnahmetor. Sie ist ein versionierter Snapshot, keine zusätzliche Statusdatenbank; spätere Änderungen werden aus acceptance in einem zusammengehörigen Planpaket neu zugeordnet.
 
-CITY-01 startet nach HEX-05. Frühe Referenzen: Save/Open CO-COK-0006 direkt belegt; FTG-Gebäudeverschiebung/Abbruch sowie Straßenzeichnung/Save/Reload/Entfernung CO-FTG-0015 direkt teilbelegt. COK-Undo CO-COK-0007 benötigt noch eine freigegebene native Sitzung. Weitere Originalwirkungen werden spätestens vor ihrer hier genannten Zielphase geprüft.
+CITY-01 startet nach HEX-05. Frühe Referenzen: Save/Open CO-COK-0006 direkt belegt; FTG-Gebäudeverschiebung/Abbruch sowie Straßenzeichnung/Save/Reload/Entfernung CO-FTG-0015 direkt teilbelegt. COK-Undo CO-COK-0007: zwei Versuche nach Save ohne beobachtete Rücknahme; erfolgreiche History-Folge und Einfluss von Save offen. Weitere Originalwirkungen werden spätestens vor ihrer hier genannten Zielphase geprüft.
 
 | Pflicht | Zielphase | Funktion | Originalbelegumfang |
 |---|---|---|---|
 | CO-COK-0006 | CITY-01 | Native Karten speichern und öffnen | save_and_fresh_open_observed |
-| CO-COK-0007 | CITY-01 | Rückgängig und Wiederherstellen | control_observed_only |
+| CO-COK-0007 | CITY-01 | Rückgängig und Wiederherstellen | two_undo_attempts_no_observed_effect_after_save; Redo ungeprüft |
 | CO-FTG-0015 | CITY-01 | Manuelle Kartenbearbeitung | road_draw_save_reload_remove_observed |
 | CO-FTG-0001 | CITY-02 | Siedlungsgröße und benannte Vorgaben | partial |
 | CO-FTG-0002 | CITY-02 | Straßenlayout und Bebauungsvorgaben | preset_parameter_change_observed_not_generated |

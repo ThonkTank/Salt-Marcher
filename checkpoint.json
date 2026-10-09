@@ -3730,17 +3730,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I17-P",
-      "kind": "early_reference_planning",
-      "startedAt": "2026-10-09T13:09:26.505151+00:00",
-      "focus": "Freigegebenen nativen COK Undo/Redo-Lauf planen",
-      "state": "completed",
-      "result": "Native Freigabe bestätigt und16 Kollegenprozesse tatsächlich weg; begrenzte Undo/Redo-Folge auf Kopie eigener gespeicherter Demokarte mit Rohwert-/Bild-/normaler Endprüfung geplant"
-    },
-    "nextRun": {
       "id": "CITY-00-I17-I",
       "kind": "reference_history_probe",
-      "focus": "COK Undo/Redo auf eigener QA-Kartenkopie direkt messen"
+      "startedAt": "2026-10-09T13:27:57.021215+00:00",
+      "focus": "Gespeicherte Straßenänderung und zwei Undo-Versuche im Original messen",
+      "state": "completed",
+      "result": "Nur Pfad0 und dessen Punkt-/Segmentobjekte geändert; Undo nach Save zweimal ohne beobachtete Wirkung, Redo ungeprüft. Original normal Exit0, fünf Identitäten weg; Vorlage geschützt."
+    },
+    "nextRun": {
+      "id": "CITY-00-I17-R",
+      "kind": "reference_review",
+      "focus": "Belegumfang und Save-/History-Lücke prüfen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",

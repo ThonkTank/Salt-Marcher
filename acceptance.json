@@ -169,7 +169,7 @@
   },
   "cityPlans": {
     "schemaVersion": 1,
-    "updated": "2026-10-09T13:07:13.410046+00:00",
+    "updated": "2026-10-09T13:27:57.021215+00:00",
     "plan": "ROADMAP-CITIES.md",
     "state": "planned_not_implemented",
     "comparisonMode": "functional_equivalence_and_independent_usability_tests",
@@ -2970,12 +2970,13 @@
         "product": "Canvas of Kings",
         "feature": "Rückgängig und Wiederherstellen",
         "sourceUrl": "steam://run/3122210",
-        "observedAt": "2026-10-09T11:03:19.264Z",
+        "observedAt": "2026-10-09T13:27:57.021215+00:00",
         "observedVersion": "Demo 0.4.06; Steam build16643264",
         "availability": "installed_demo_partial",
         "observationKind": "direct_demo_partial",
         "originalEvidence": [
-          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i06-20261009-01/reference-manifest.json"
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i06-20261009-01/reference-manifest.json",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i17-20261009/manifest.json"
         ],
         "task": "Pfad-/Plotänderung rücknehmen und wiederherstellen",
         "phase": "CITY-01",
@@ -2991,18 +2992,34 @@
           "state": "not_run"
         },
         "status": "open",
-        "gap": "Originalcontrol direkt sichtbar; konkrete Wirkung, Zugang und eigener Vergleich offen.",
+        "gap": "Undo/Redo controls visible; saved road change proven. Two Undo attempts after Save showed no rollback; Save/history boundary and successful Undo/Redo remain unverified. Own implementation, host and usability remain open.",
         "independentFunctionalRequirement": true,
         "mappingCoverage": "related_project_criteria_only; CO requirement remains independently required",
         "originalProbe": {
-          "run": "CITY-00-I06-NI",
-          "state": "control_observed_only",
-          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i06-20261009-01/reference-manifest.json",
-          "productVariant": "Canvas of Kings Demo 3122210",
-          "observation": "Undo/Redo menu controls only",
-          "sourceFrame": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i06-20261009-01/screens/018-main-menu.png",
-          "sourceScope": "installed_demo_control_not_full_version_description"
-        }
+          "run": "CITY-00-I17-I",
+          "state": "two_undo_attempts_no_observed_effect_after_save",
+          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i17-20261009/manifest.json",
+          "observation": "Saved single road endpoint z1.04→1.73; two Undo menu attempts, saved result still exactly changed; Redo untested",
+          "sourceScope": "installed demo; synthetic inputs; Save/history relationship unresolved"
+        },
+        "originalProbes": [
+          {
+            "run": "CITY-00-I06-NI",
+            "state": "control_observed_only",
+            "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i06-20261009-01/reference-manifest.json",
+            "productVariant": "Canvas of Kings Demo 3122210",
+            "observation": "Undo/Redo menu controls only",
+            "sourceFrame": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i06-20261009-01/screens/018-main-menu.png",
+            "sourceScope": "installed_demo_control_not_full_version_description"
+          },
+          {
+            "run": "CITY-00-I17-I",
+            "state": "two_undo_attempts_no_observed_effect_after_save",
+            "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i17-20261009/manifest.json",
+            "observation": "Saved single road endpoint z1.04→1.73; two Undo menu attempts, saved result still exactly changed; Redo untested",
+            "sourceScope": "installed demo; synthetic inputs; Save/history relationship unresolved"
+          }
+        ]
       },
       {
         "id": "CO-COK-0008",
@@ -3608,7 +3625,7 @@
     ],
     "functionalInventoryStatus": {
       "state": "partial_inventory_not_accepted",
-      "run": "CITY-00-I16-I",
+      "run": "CITY-00-I17-I",
       "products": 3,
       "candidates": 63,
       "directFormAreas": 13,
@@ -3635,7 +3652,8 @@
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i13-saved-settings-20261009/manifest.json",
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i14-warp-20261009/manifest.json",
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i15-warp-tools-20261009/manifest.json",
-        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i16-export-20261009/manifest.json"
+        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i16-export-20261009/manifest.json",
+        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i17-20261009/manifest.json"
       ],
       "resultReferences": [
         {
