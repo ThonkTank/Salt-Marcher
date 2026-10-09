@@ -419,21 +419,57 @@
   "hexAtlasExecution": {
     "scope": "HEX-00 bis HEX-28 und sämtliche eingeordneten CITY-00 bis CITY-09 vollständig",
     "phase": "HEX-02",
-    "state": "r01_r02_pass_scoped_cleanup_open",
+    "state": "passed_scoped_early_level0_island",
     "plan": "ROADMAP-HEX-02-PLAN.md",
     "currentRun": {
-      "id": "HEX-02-CLEAN-I01",
-      "kind": "cleanup_implementation",
-      "startedAt": "2026-10-09T19:26:57.166076+00:00",
-      "state": "completed_implementation_review_open",
-      "focus": "Two named files formatted; exact AST unchanged. Clean gates/buildtriplet pending; own provenance state preserved.",
-      "finishedAt": "2026-10-09T19:28:26.260017+00:00",
-      "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/cleanup-implementation.json"
+      "run": "HEX-02-CLEAN-R01",
+      "state": "completed_pass_scoped",
+      "reviewer": "Hex owner, separate bounded cleanup review; not an independent foreign reviewer",
+      "finishedAt": "2026-10-09T19:31:30.818592+00:00",
+      "findings": [],
+      "closed": [
+        "HEX02-C01",
+        "HEX02-C02"
+      ],
+      "astEvidence": "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/cleanup-ast.json",
+      "implementationEvidence": "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/cleanup-implementation.json",
+      "formatStable": true,
+      "ownFormatNativeTripletUnchanged": true,
+      "nativeSource": "63e1efb623a8b1d85d57e7b6cd73ed37415810a7",
+      "sameProductSourceAfterFormat": "ad8283fb78ba5a4ced812be289b1d1a130a8f53f",
+      "foreignTestsPreserved": true,
+      "foreignCheckpointRootsPreserved": true,
+      "integratedBasis": {
+        "sourceCommit": "fcc7600cf070fd1e840ed7408b7d908ec52232e6",
+        "checkPassed": true,
+        "testsPassed": 375,
+        "buildPassed": true,
+        "triplet": {
+          "main.js": {
+            "bytes": 1402761,
+            "sha256": "943e2ac12a596917797162cac69d5f1da7f86334ab666e9e4c9d27197fd436e7"
+          },
+          "styles.css": {
+            "bytes": 27726,
+            "sha256": "a6d31c13219d4b9f49d2ecf6993106bedef2a33560c9bdfdb93106659d45bc2e"
+          },
+          "manifest.json": {
+            "bytes": 237,
+            "sha256": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64"
+          }
+        },
+        "nativeOnThisBuild": false,
+        "phaseApproval": false,
+        "reason": "Incoming N005 Dungeon UI and scoped styles change bundle; Atlas sources unchanged, earlier native proof stays separately scoped."
+      },
+      "initialFormatterSecondPass": "Prettier collapsed only chained modal selector on second pass; normalized AST unchanged, settled helper syntax/format check passed.",
+      "id": "HEX-02-CLEAN-R01",
+      "kind": "cleanup_review"
     },
     "nextRun": {
-      "id": "HEX-02-CLEAN-R01",
-      "kind": "cleanup_review",
-      "focus": "Separate own bounded format/provenance review, exact AST/native-triplet and foreign protection. Then HEX03."
+      "id": "HEX-03-P01",
+      "kind": "location_plan",
+      "focus": "Concrete same-camera city/POI location Key+placement+common history/save/fresh flow; address city integration proposal persistence/fit/precision constraints in HEX03..05."
     },
     "review": {
       "run": "HEX-02-R02",
@@ -462,7 +498,7 @@
     },
     "open": [
       "Cloud fresh Electron process remains unverified; empty-grid reload passed with correct plugin triplet. No product layout fix needed.",
-      "HEX02 independent R01/R02 required findings closed; own CLEAN-R01 remains; HEX03..05 Location/City/Dungeon common Atlas remains open.",
+      "HEX02 scoped early island/review/CLEAN complete; HEX03..05 Location/City/Dungeon common Atlas remains open.",
       "HEX06..28/CITY product phases and 79 later Wonderdraft obligations remain.",
       "Full parity, physical input, large-map and installed-vault acceptance remain open."
     ],
@@ -472,7 +508,7 @@
       "cityThread": "01a12022-b67b-7da2-bed5-8ebde169d475",
       "cityPolicy": "Separater ausdrücklich beauftragter Stadtlauf in eigener Arbeitskopie; gemeinsame Atlaspräzisierungen mitgeteilt, Stadt- und Hexwurzeln erhalten, geprüfte Stadtcommits integrieren. Genau eine grafische QA-Instanz.",
       "overallObjective": "Nutzerziel aktualisiert: mit Kollegen koordinieren und Gesamtprodukt planmäßig fertigstellen; gemeinsame Atlasanforderungen und Abnahmetore gelten für alle Pfade.",
-      "nextJointGate": "HEX02-R01/CLEAN, then HEX03..05 shared camera/router/placement and first Location/City/Dungeon integration",
+      "nextJointGate": "HEX03 Location + HEX04/05 same-camera City/Dungeon composition; existing City proposal reviewed before interface implementation.",
       "dungeonThread": "01a1204f-d184-7567-bfb3-d3ab06a0d07e",
       "fixtureReviewThread": "01a12031-2c30-73f7-bc01-6bd3eba86046",
       "publicationPolicy": "Bei fortlaufenden Shared-Branch-Pushrennen geprüftes Paket auf eigenem Branch sichern, regulären Servermerge in gemeinsamen active/installed-phase1 prüfen und lokal integrieren; keine Historienumschreibung.",
@@ -1341,6 +1377,49 @@
           "Strict AST check treated additional equivalent parentheses as a structural difference; normalized comparison excludes only parenthesized wrappers and passes.",
           "First clean-worktree command used an invalid ref and failed before reset; actual committed ad8283f then reset/check/test/build successfully. Shared checkout was not reset."
         ]
+      },
+      "hex02CleanupReview": {
+        "run": "HEX-02-CLEAN-R01",
+        "state": "completed_pass_scoped",
+        "reviewer": "Hex owner, separate bounded cleanup review; not an independent foreign reviewer",
+        "finishedAt": "2026-10-09T19:31:30.818592+00:00",
+        "findings": [],
+        "closed": [
+          "HEX02-C01",
+          "HEX02-C02"
+        ],
+        "astEvidence": "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/cleanup-ast.json",
+        "implementationEvidence": "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/cleanup-implementation.json",
+        "formatStable": true,
+        "ownFormatNativeTripletUnchanged": true,
+        "nativeSource": "63e1efb623a8b1d85d57e7b6cd73ed37415810a7",
+        "sameProductSourceAfterFormat": "ad8283fb78ba5a4ced812be289b1d1a130a8f53f",
+        "foreignTestsPreserved": true,
+        "foreignCheckpointRootsPreserved": true,
+        "integratedBasis": {
+          "sourceCommit": "fcc7600cf070fd1e840ed7408b7d908ec52232e6",
+          "checkPassed": true,
+          "testsPassed": 375,
+          "buildPassed": true,
+          "triplet": {
+            "main.js": {
+              "bytes": 1402761,
+              "sha256": "943e2ac12a596917797162cac69d5f1da7f86334ab666e9e4c9d27197fd436e7"
+            },
+            "styles.css": {
+              "bytes": 27726,
+              "sha256": "a6d31c13219d4b9f49d2ecf6993106bedef2a33560c9bdfdb93106659d45bc2e"
+            },
+            "manifest.json": {
+              "bytes": 237,
+              "sha256": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64"
+            }
+          },
+          "nativeOnThisBuild": false,
+          "phaseApproval": false,
+          "reason": "Incoming N005 Dungeon UI and scoped styles change bundle; Atlas sources unchanged, earlier native proof stays separately scoped."
+        },
+        "initialFormatterSecondPass": "Prettier collapsed only chained modal selector on second pass; normalized AST unchanged, settled helper syntax/format check passed."
       }
     },
     "repairPlan": "ROADMAP-HEX-02-REPAIR-PLAN.md",
