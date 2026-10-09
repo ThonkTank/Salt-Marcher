@@ -57,3 +57,8 @@ alle früheren C01-Gates grün bleiben.
 
 Physische Tastatur/Maus, Screenreader und weitere Plattformen bleiben offen.
 CE-01 und das C01-Aufräumtor werden aus diesem Plan nicht freigegeben.
+
+Der unabhängige Read-only-Planreview auf `9bbacb5` bestätigte den Umfang ohne
+Pflichtbefund: eine einzige Paarquelle, gemeinsamer Input-/Debounce-/Enter-Pfad,
+erhaltene Name-UX, gezielte Matrix und erneute exakte Hostläufe. C01-N01 darf
+damit beginnen.
