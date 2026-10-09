@@ -28,7 +28,8 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out, checks }) =>
     });
   }
   async function create(name, orientation) {
-    await page.keyboard.press("Control+p");
+    await page.locator(".workspace-tab-header:visible").first().click();
+    await page.locator('.side-dock-ribbon-action[aria-label="Befehlspalette öffnen"]:visible, .side-dock-ribbon-action[aria-label="Open command palette"]:visible').last().click();
     await page.locator(".prompt-input").waitFor({ state: "visible" });
     await page.locator(".prompt-input").fill("Atlas anlegen");
     await page.locator(".suggestion-item").filter({ hasText: "Atlas anlegen" }).first().click();

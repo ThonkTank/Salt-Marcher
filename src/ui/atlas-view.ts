@@ -2,19 +2,19 @@ import { App, FileView, Modal, Notice, Setting, TFile } from "obsidian";
 import { AtlasEditor } from "../features/atlas/atlas-editor";
 import {
   newOverworld,
-  parseOverworld,
   serializeOverworld,
   type HexOrientation,
 } from "../features/atlas/overworld";
 import { VaultStore } from "../vault-stores";
 import { FileConflict } from "../persistence";
-import { AtlasHistory } from "../features/atlas/atlas-history";
-import { TerrainSource } from "../features/atlas/terrain-source";
+import { AtlasRepository } from "../features/atlas/atlas-repository";
 
 export const ATLAS_VIEW = "dungeon-native-atlas";
 export class AtlasView extends FileView {
   private editor?: AtlasEditor;
+  private repository?: AtlasRepository;
   private generation = 0;
+  private lifecycle: Promise<void> = Promise.resolve();
   getViewType(): string {
     return ATLAS_VIEW;
   }
@@ -24,29 +24,60 @@ export class AtlasView extends FileView {
   getIcon(): string {
     return "globe";
   }
-  async onLoadFile(file: TFile): Promise<void> {
+  onLoadFile(file: TFile): Promise<void> {
     const generation = ++this.generation;
-    this.editor?.destroy();
+    return this.sequence(async () => {
+      if (generation !== this.generation) return;
+      await this.closeEditor();
+      if (generation === this.generation)
+        await this.loadFileContent(file, generation);
+    });
+  }
+  private sequence(action: () => Promise<void>): Promise<void> {
+    const next = this.lifecycle.then(action);
+    this.lifecycle = next.catch(() => {});
+    return next;
+  }
+  private async closeEditor(): Promise<void> {
+    if (this.editor) {
+      try {
+        await this.editor.flush();
+        if (this.repository?.dirty || this.repository?.hasDraft)
+          await this.repository.persistDraft();
+      } catch (error) {
+        new Notice(
+          "Atlasentwurf konnte nicht gesichert werden. " + String(error),
+        );
+        throw error;
+      }
+      this.editor.destroy();
+    }
     this.editor = undefined;
+    this.repository = undefined;
+  }
+  private async loadFileContent(
+    file: TFile,
+    generation: number,
+  ): Promise<void> {
     this.contentEl.replaceChildren();
     this.contentEl.createEl("p", { text: "Atlas wird geöffnet …" });
     try {
-      const world = parseOverworld(await this.app.vault.read(file));
-      if (generation !== this.generation) return;
-      const store = new VaultStore(this.app);
-      const source = new TerrainSource(
-        world,
-        new AtlasHistory(),
-        async (ref) => {
-          const raw = await store.read(`Atlasdaten/${world.id}/${ref.file}`);
-          if (raw === null)
-            throw new Error(
-              "Ein Landschaftsbereich fehlt; Atlasdaten bleiben erhalten.",
-            );
-          return raw;
-        },
+      const repository = new AtlasRepository(
+        new VaultStore(this.app),
+        file.path,
+        this.app.vault,
       );
-      this.editor = new AtlasEditor(this.contentEl, world, source);
+      const source = await repository.open();
+      if (generation !== this.generation) return;
+      this.repository = repository;
+      this.editor = new AtlasEditor(this.contentEl, source.world, source, {
+        save: () => repository.save(),
+        changed: () => repository.persistDraft(),
+        status: () => ({
+          dirty: repository.dirty,
+          hasDraft: repository.hasDraft,
+        }),
+      });
       await this.editor.init();
     } catch (error) {
       if (generation !== this.generation) return;
@@ -58,11 +89,12 @@ export class AtlasView extends FileView {
       });
     }
   }
-  async onUnloadFile(): Promise<void> {
+  onUnloadFile(): Promise<void> {
     this.generation++;
-    this.editor?.destroy();
-    this.editor = undefined;
-    this.contentEl.replaceChildren();
+    return this.sequence(async () => {
+      await this.closeEditor();
+      this.contentEl.replaceChildren();
+    });
   }
 }
 export class CreateAtlasModal extends Modal {

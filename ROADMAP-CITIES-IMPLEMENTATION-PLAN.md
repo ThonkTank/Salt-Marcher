@@ -816,3 +816,15 @@ CITY-01-PREP-N06 Start 2026-10-09T18:09:28.846154+00:00; CITY-GESTURE-R08-01 rep
 
 
 Stadt-Team-Check-in 2026-10-09T18:12:38.814082+00:00: an sicherer N06-Grenze auf beide Integrationsanfragen in Issue1 geantwortet, Kommentar6086617328. Besitz/IDs/lesende CityScene und AtlasHistory-Befehlsgrenze bestätigt; keine LiveScene/SceneClock/Focus/Split/Rejoin/Travel-/Zeit-/Placement-/Router-API geliefert. Keine neue gemeinsame API vor Teamabgleich voraussetzen. Ausstehender bestehender N06-Review R09 bleibt erhalten, neues Feature-/Anschlusspaket erst nach konsolidierter Rückmeldung. Produktstand9f9e188 geprüft/gepusht;338Tests/check/build und Originalgegenproben, keine Hostabnahme.
+
+
+CITY-01-PREP-R09 Start 2026-10-09T18:14:21.267514+00:00; Quellenhashes unverändert zum grünen N06. Ursprüngliche8Achs-No-ops repariert; unabhängige Gegenprobe findet CITY-GESTURE-R09-01:unrotierte X-Kleinständerung wird bei großem ungewähltem Y wegen ungewichteter Precision verworfen. Keine neue Schnittstelle; bestehendes Paket braucht N07 mit Koeffizientengewichtung. Teamabgleich weiter ohne bestätigte neue API-Freigabe. Beleg:/home/aaron/.cache/dungeon-native-qa/city-plans/city01-tools-20261009/refinement-review.json.
+
+
+CITY-01-PREP-N06-REVIEW-CLEAN-P06 Start 2026-10-09T18:15:49.061830+00:00; Rotationsgewichtung der X-/Y-Fehleranteile und Regressionen festgelegt; vorhandenes Paket wird sicher abgeschlossen. Fokus:Bestehenden Precisionbefund ohne neue API bereinigen. Keine neue gemeinsame API, bestehendes Reparaturpaket.
+
+
+CITY-01-PREP-N06-REVIEW-CLEAN-I06 Start 2026-10-09T18:15:52.557951+00:00; Plan nennt Gewichtung mit abs(cos/sin); Architektur trennt reparierten R08 vom offenen R09. Keine Runtimeänderung. Fokus:Dokumentation und konkrete Gewichtung ergänzen. Keine neue gemeinsame API, bestehendes Reparaturpaket.
+
+
+CITY-01-PREP-N06-REVIEW-CLEAN-R06 Start 2026-10-09T18:15:56.309331+00:00; Eigene Links/JSON und N06-Quellenhashes geprüft. Bestehende Signatur unverändert; R09 offen für gezielte N07. Fokus:Finale Reviewbereinigung gegen Quellen prüfen. Keine neue gemeinsame API, bestehendes Reparaturpaket.
