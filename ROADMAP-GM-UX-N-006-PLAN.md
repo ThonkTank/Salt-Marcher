@@ -209,3 +209,26 @@ Damit ist ausschließlich I02 geöffnet. Die Verdrahtung in `DungeonView` und
 Cloud-Host, unabhängiger Produktreview und GM-Nachtest sind nicht nachgewiesen.
 I01 ist keine UX-, Host-, physische Eingabe-, Fach-, Paritäts- oder
 Gesamtfreigabe.
+
+## Implementierungsstand I02 und Reparaturreview
+
+Der I02-Erstkandidat `03a87a2` fiel im unabhängigen R01 durch: ein Same-file-
+`setState` konnte den Dirty-Key-Guard und die Auswahlleerung umgehen, und die
+direkten `DungeonView`-Lifecyclefälle fehlten. Diese Pflichtbefunde sind im
+exakten Reparaturkandidaten `acc4774027d44c30295fc28b4c1e51dd2e353446`
+geschlossen. Frischer Init verwendet einen mutationsfreien Initialweg; ein
+laufender Workspace-Restore verwendet den bestehenden geschützten
+`switchFloor`-Weg. Sechs direkte View-Lifecyclefälle prüfen Base-State und
+identisches `ViewStateResult`, own Leaf vor Register, zwei Neuöffnungen,
+Abbruch an allen drei Await-Grenzen, Retarget, genau eine Release, keinen späten
+Register-/Layoutwrite und Rename. Codec/Register und Editorfälle decken
+Delete/Clear, Dirty-Key-Guard, Auswahlleerung und Nichtmutation ab.
+
+`npm run check`, `npm test` (387/387) und `npm run build` bestanden. Der
+unabhängige R02 wiederholte Check, 16/16 fokussierte Fälle und 387/387
+Gesamttests und meldete PASS ohne Pflichtbefund. Damit ist nur H01 geöffnet:
+der Cloud-GM-Produkttester muss den veröffentlichten zweifachen
+Nebelwacht-Tab-Reopen-Ablauf mit Datei-, Dokument-, Dirty-, History- und
+Key-Orakel wiederholen. Danach bleibt GM-R01. Kein echter Host, keine physische
+Eingabe und keine UX-, Fach-, Paritäts- oder Gesamtfreigabe sind aus I02/R02
+abgeleitet.

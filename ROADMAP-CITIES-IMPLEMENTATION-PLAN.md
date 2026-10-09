@@ -1056,4 +1056,22 @@ CITY-00-I46-REVIEW-CLEAN-P46 Start 2026-10-09T19:38:22.320998+00:00; Aufräumpla
 
 CITY-00-I46-REVIEW-CLEAN-I46 Start 2026-10-09T19:38:24.745516+00:00; Reviewumfang und Profilgleichheitsgrenze lesbar ergänzt; keine Produktdaten-/APIänderung.
 
-CITY-00-I46-REVIEW-CLEAN-C46 Start 2026-10-09T19:38:27.357923+00:00; Reviewauf räumen abgeschlossen: Rawhashes, Link und offene eigene Abnahmen erhalten. Nächste offene COK-Licht-/Wetterfunktion konkret planen.
+CITY-00-I46-REVIEW-CLEAN-R46 Start 2026-10-09T19:38:27.357923+00:00; Aufräumen nach Review abgeschlossen: Rawhashes, Link und offene eigene Abnahmen erhalten. Nächste offene COK-Licht-/Wetterfunktion konkret planen.
+
+CITY-00-I47-P47 Start 2026-10-09T19:40:11.874000+00:00; Konkrete Demo-Licht/Wetterprobe auf geschützter eigener QA-Kopie geplant; frischer GUI-Slot angefragt, keine Instanz gestartet.
+
+CITY-00-I47-PLAN-CLEAN-P47 Start 2026-10-09T19:40:15.479130+00:00; Aufräumplan: Slot-/Rawschutz und Atmosphäre-gegen-Geometrie-Grenze prüfen; Planlink und vorige Reviewlaufbezeichnung konsolidieren.
+
+I47-Plan: [COK-Licht und Wetter](ROADMAP-CITIES-CITY00-COK-ATMOSPHERE-PLAN.md). Alte C46-Laufbezeichnung auf R46 konsolidiert; Startzeit/Ergebnis unverändert, veröffentlichter Gitverlauf erhalten.
+
+CITY-00-I47-PLAN-CLEAN-I47 Start 2026-10-09T19:40:17.946273+00:00; Plan verlinkt; vorige Reviewbezeichnung konsolidiert, Geometrie-/Kopien-/Slotgrenzen unverändert.
+
+CITY-00-I47-PLAN-CLEAN-R47 Start 2026-10-09T19:40:20.566144+00:00; Plan/JSON/QA-Input und offene Produktabnahmen geprüft. I47 bereit; Start erst nach konkreter GUI-Slotantwort, bis dahin unabhängige Originalarbeit möglich.
+
+CITY-HEX03-OWNER-R01 Start 2026-10-09T19:42:25.334736+00:00; Exakter cb869951-HEX03-Plan aus Citysicht ohne Pflichtlücke: drei Anschlussauflagen, frühe native Folge, vollständige Copy/Discard/Recovery enthalten. Keine Produkt/API-Freigabe.
+
+CITY-HEX03-OWNER-CLEAN-P01 Start 2026-10-09T19:42:29.373434+00:00; Aufräumplan: exakten Peerreviewbeleg verlinken, fachliche Planpass-Grenze von Produkt-/Vertragsabnahme trennen.
+
+CITY-HEX03-OWNER-CLEAN-I01 Start 2026-10-09T19:42:32.185182+00:00; Quellengebundenen Peerreview im Cityvorschlag verlinkt; noch fehlende konkrete Transform-/Router-/Citypersistenz-Implementierung offen gehalten.
+
+CITY-HEX03-OWNER-CLEAN-C01 Start 2026-10-09T19:42:35.161597+00:00; Peerreviewlink/Quellpin/JSON/Fremdwurzeln geprüft. COK I47-Originalprobe bleibt nächster Umsetzungslauf nach GUI-Koordination.

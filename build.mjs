@@ -130,6 +130,32 @@ if (test) await build({
     },
   }],
 });
+if (test) await build({
+  entryPoints: ["tests/dungeon-view-lifecycle.entry.ts"],
+  outfile: ".build/dungeon-view-lifecycle.cjs",
+  bundle: true,
+  format: "cjs",
+  platform: "node",
+  target: "es2022",
+  sourcemap: true,
+  logLevel: "info",
+  plugins: [{
+    name: "obsidian-dungeon-view-test-stub",
+    setup(builder) {
+      builder.onResolve({ filter: /^obsidian$/ }, () => ({
+        path: new URL("./tests/fixtures/obsidian-dungeon-view-stub.ts", import.meta.url).pathname,
+      }));
+      builder.onResolve({ filter: /^dungeon-compute-worker$/ }, () => ({
+        path: "compute-worker-stub",
+        namespace: "dungeon-view-test",
+      }));
+      builder.onLoad({ filter: /.*/, namespace: "dungeon-view-test" }, () => ({
+        contents: "export default '';",
+        loader: "js",
+      }));
+    },
+  }],
+});
 if (!test) {
   const mainBytes = (await stat("main.js")).size;
   const mainJsGrowthBytes = catalogMainJsGrowth(mainBytes, catalogAsset.identity);
