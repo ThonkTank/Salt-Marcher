@@ -1632,6 +1632,13 @@
       "finding": "Globale world-Schattenwerte ändern vorhandene Elemente im Original nicht rückwirkend; gespeicherte shadow-Felder von Wand und Objekt ändern ihre Bilder getrennt.",
       "next": "DD-006.03/.04 im per-Element-/UI-/Save-Scope reviewt; globale Atlasoptionen bei Atlasintegration nach Nutzerzweck prüfen. Danach verbleibende Phase-1-Datei-/Ansichtsfälle; Gesamttor offen."
     },
+    "dd041PanPlan": {
+      "date": "2026-10-09",
+      "state": "plan_recorded_host_recheck_open",
+      "plan": "ROADMAP-PARITY-TOOLS-PHASE1-DD041-PAN-PLAN.md",
+      "cases": "DD-041.02/.03",
+      "next": "Leertaste+Links und Mitteltaste auf dem aktuellen integrierten Build mit Auswahl, Polygonentwurf, Zeitfolgen und frischer V4-Öffnung gepaart prüfen."
+    },
     "dd04104NavigationReview": {
       "date": "2026-10-09",
       "state": "measured_wheel_step_review_passed_phase1_open",
