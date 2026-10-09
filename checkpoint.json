@@ -3854,17 +3854,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I20-CI",
-      "kind": "cleanup_implementation",
-      "startedAt": "2026-10-09T13:57:05.909135+00:00",
-      "focus": "Save-Scope und Versuchsstopp ergänzen",
-      "state": "completed",
-      "result": "Fünf Bildcaptions und Auto-Save-Grenze ergänzt; keine Rohänderung, beide begrenzten Historyhypothesen gestoppt."
-    },
-    "nextRun": {
       "id": "CITY-00-I20-CR",
       "kind": "cleanup_review",
-      "focus": "Rohschutz, Scope und offene Pflichten prüfen"
+      "startedAt": "2026-10-09T13:57:24.991800+00:00",
+      "focus": "Scope, Rohschutz und Pflichtstatus prüfen",
+      "state": "completed",
+      "result": "Aufräumreview bestanden; Original-History weiter offen, beide Hypothesen gestoppt, Slot zurückgegeben."
+    },
+    "nextRun": {
+      "id": "CITY-00-I21-P",
+      "kind": "reference_planning",
+      "focus": "HEX-05-Übergabe prüfen; nächste noch offene zugängliche Originalwirkung planen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
