@@ -49,14 +49,17 @@ export function buildingFloorCells(
   }] : []);
 }
 
-/** Native interior holes mask the floor visually but retain the stored tiles. */
+/** Native holes retain hidden tiles and repaint those touched by the erasing tool. */
 export function buildingFloorCellsAfterErase(
   cells: readonly SmartTileCell[] | undefined,
   changes: readonly RecordChange<Entity>[] | undefined,
   width: number, height: number,
+  shape?: readonly Polygon[],
+  paint?: { assetId: string; color: number },
 ): readonly SmartTileCell[] | undefined {
   if (!cells?.length || !changes?.length) return cells;
   const remaining = new Map<string, Set<string>>();
+  const repainted = new Map<string, Set<string>>();
   for (const change of changes) {
     if (change.before?.kind !== "building" || !change.before.floorTileRaster)
       continue;
@@ -66,14 +69,31 @@ export function buildingFloorCellsAfterErase(
         ({ ...polygon, holes: [] })) }, width, height)
         .map((cell) => `${cell.x}:${cell.y}`)
       : []));
+    if (after && shape?.length && paint && isNativeFloorAssetId(paint.assetId))
+      repainted.set(change.id, new Set(buildingFloorCells({ ...after,
+        polygons: shape,
+        material: { tileSize: 4, tint: paint.color, rotation: 0,
+          ...after.material, assetId: paint.assetId },
+      }, width, height).map((cell) => `${cell.x}:${cell.y}`)));
   }
   if (!remaining.size) return cells;
-  const next = cells.filter((cell) => {
+  let changed = false;
+  const next = cells.flatMap((cell) => {
     const allowed = cell.buildingId && remaining.get(cell.buildingId);
-    return !allowed || cell.x >= width || cell.y >= height ||
-      allowed.has(`${cell.x}:${cell.y}`);
+    const position = `${cell.x}:${cell.y}`;
+    if (allowed && cell.x < width && cell.y < height &&
+        !allowed.has(position)) {
+      changed = true;
+      return [];
+    }
+    if (paint && cell.buildingId && repainted.get(cell.buildingId)?.has(position) &&
+        (cell.assetId !== paint.assetId || cell.color !== paint.color)) {
+      changed = true;
+      return [{ ...cell, assetId: paint.assetId, color: paint.color }];
+    }
+    return [cell];
   });
-  return next.length === cells.length ? cells : next;
+  return changed ? next : cells;
 }
 
 /** Paint only the new gesture's cells, preserving earlier crop gaps. */
