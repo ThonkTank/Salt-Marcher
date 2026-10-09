@@ -4083,17 +4083,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I37-I",
-      "kind": "reference_implementation",
-      "startedAt": "2026-10-09T15:49:43.476948+00:00",
-      "focus": "Fluss-/Umgebungswirkung",
-      "state": "completed",
-      "result": "Kontrollierter River-Vergleich und bytegleiche Rückstellung gesichert; CITY-02/05-Umgebungsplan präzisiert."
-    },
-    "nextRun": {
       "id": "CITY-00-I37-R",
       "kind": "reference_review",
-      "focus": "Fluss-/Straßenvergleich und Topologiegrenzen prüfen"
+      "startedAt": "2026-10-09T15:50:32.573763+00:00",
+      "focus": "Flussbelege R",
+      "state": "completed",
+      "result": "Drei echte Downloadkopien, sieben Bilder/Rawhashes und13-Gruppenvergleich bestätigt. rivers0→1 und Straßen-/Bebauungswirkung,6 Gruppen geändert/7 gleich; planks leer, keine unbewiesene Brückentopologie. Rückstellung bytegleich. CTY-001.03-Zuordnung vorhanden. Aufräumbefunde: Snapshot noch ohne River-Wirkung; geplante Umgebungs-/Übergangsentscheidung in Architektur ergänzen."
+    },
+    "nextRun": {
+      "id": "CITY-00-I37-CP",
+      "kind": "cleanup_planning",
+      "focus": "Flussbelege und Snapshot CP"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
