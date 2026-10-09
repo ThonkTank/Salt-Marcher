@@ -1071,3 +1071,5 @@ CITY-00-I47-PLAN-CLEAN-R47 Start 2026-10-09T19:40:20.566144+00:00; Plan/JSON/QA-
 CITY-HEX03-OWNER-R01 Start 2026-10-09T19:42:25.334736+00:00; Exakter cb869951-HEX03-Plan aus Citysicht ohne Pflichtlücke: drei Anschlussauflagen, frühe native Folge, vollständige Copy/Discard/Recovery enthalten. Keine Produkt/API-Freigabe.
 
 CITY-HEX03-OWNER-CLEAN-P01 Start 2026-10-09T19:42:29.373434+00:00; Aufräumplan: exakten Peerreviewbeleg verlinken, fachliche Planpass-Grenze von Produkt-/Vertragsabnahme trennen.
+
+CITY-HEX03-OWNER-CLEAN-I01 Start 2026-10-09T19:42:32.185182+00:00; Quellengebundenen Peerreview im Cityvorschlag verlinkt; noch fehlende konkrete Transform-/Router-/Citypersistenz-Implementierung offen gehalten.

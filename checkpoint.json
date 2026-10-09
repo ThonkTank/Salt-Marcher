@@ -4697,16 +4697,16 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-HEX03-OWNER-CLEAN-P01",
-      "kind": "cleanup_plan",
-      "startedAt": "2026-10-09T19:42:29.373434+00:00",
-      "focus": "HEX03-Plan aus Stadtanschlusssicht: P",
-      "state": "completed",
-      "result": "Aufräumplan: exakten Peerreviewbeleg verlinken, fachliche Planpass-Grenze von Produkt-/Vertragsabnahme trennen."
-    },
-    "nextRun": {
       "id": "CITY-HEX03-OWNER-CLEAN-I01",
       "kind": "cleanup_implementation",
+      "startedAt": "2026-10-09T19:42:32.185182+00:00",
+      "focus": "HEX03-Plan aus Stadtanschlusssicht: I",
+      "state": "completed",
+      "result": "Quellengebundenen Peerreview im Cityvorschlag verlinkt; noch fehlende konkrete Transform-/Router-/Citypersistenz-Implementierung offen gehalten."
+    },
+    "nextRun": {
+      "id": "CITY-HEX03-OWNER-CLEAN-R01",
+      "kind": "cleanup_review",
       "focus": "Freigegebene COK-Licht/Wetterprobe auf eigener QA-Kopie durchführen"
     },
     "open": [

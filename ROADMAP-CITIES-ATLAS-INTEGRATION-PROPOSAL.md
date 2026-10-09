@@ -42,3 +42,5 @@ Diese Punkte sind verbindliche Umsetzung-/Abnahmepflichten des Anschlusses, kein
 N01-Aufräumen: Befundabschluss gilt ausschließlich für den Anschlussvorschlag. Quellen und Gegenprobe sind unter /home/aaron/.cache/dungeon-native-qa/city-plans/city01-integration-review-20261009/ erhalten. Keine Produktsource/API durch diesen Dokumentlauf geändert.
 
 R02-Aufräumen: Befundabschluss gilt ausschließlich für den Anschlussvorschlag. Quellen und Gegenprobe sind unter /home/aaron/.cache/dungeon-native-qa/city-plans/city01-integration-review-20261009/ erhalten. Keine Produktsource/API durch diesen Dokumentlauf geändert.
+
+HEX03-Peerreview: Exakter Plan cb869951a1bb5aad43fa422794247268669e04b2 enthält die drei Anschlussauflagen sowie die frühe native Ortsfolge und vollständige Copy/Discard/Recovery. Aus City-Planperspektive keine zusätzliche Pflichtlücke; keine Produkt-/API-/gemeinsame Vertragsfreigabe. Beleg: /home/aaron/.cache/dungeon-native-qa/city-plans/hex03-owner-plan-review-20261009/review.json.
