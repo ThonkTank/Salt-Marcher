@@ -937,3 +937,5 @@ CITY-00-I44-PLAN-CLEAN-P44 Start 2026-10-09T19:15:37.485866+00:00; Aufräumplan:
 I44-Korrekturplan: [FTG-Evidenzzuordnung](ROADMAP-CITIES-CITY00-FTG-MAPPING-PLAN.md).
 
 CITY-00-I44-PLAN-CLEAN-I44 Start 2026-10-09T19:15:41.046066+00:00; Links und Scopegrenzen konsolidiert; Rohbelege unverändert, keine weitere fachliche Datenhaltung.
+
+CITY-00-I44-PLAN-CLEAN-R44 Start 2026-10-09T19:15:44.532950+00:00; Aufräumreview bestanden: I02-Rawhashes, Links, 65 offene CO und 24 offene CTY sowie fremde JSON-Wurzeln unverändert.
