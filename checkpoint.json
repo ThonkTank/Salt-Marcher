@@ -63,7 +63,7 @@
   },
   "saltMarcherCatalogEncounter": {
     "date": "2026-10-09",
-  "state": "ce01_r01_changes_required_n01_next",
+  "state": "ce01_n01_reviewed_host_acceptance_next",
     "plan": "ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md",
     "architecture": "ARCHITECTURE.md#geplante-katalog--und-encounter-erweiterung",
     "acceptance": "acceptance.json.saltMarcherCatalogEncounter",
@@ -161,6 +161,23 @@
       "retained": "Host-neutral content boundary, draft/close race handling, ownerWindow use, combined filters and the static accessibility contract remain sound.",
       "limits": "No GUI or separate test run; real Obsidian acceptance remains open."
     },
+    "ce01N01": {
+      "id": "CE-01-N01",
+      "kind": "repair_implementation_and_review",
+      "state": "completed_checked_reviewed",
+      "commits": ["2c86971", "e93e2ba"],
+      "result": "One in-flight catalog opener now preserves and reveals a canonical leaf while removing duplicates; keyboard focus performs selector-safe dataset comparison for arbitrary parser-accepted IDs.",
+      "verification": {
+        "check": "passed",
+        "tests": {"passed": 239, "failed": 0},
+        "build": "passed",
+        "mainBytes": 1356752,
+        "mainJsGrowthBytes": 167382,
+        "mainJsGrowthLimitBytes": 180000
+      },
+      "review": "Passed after explicit canonical reveal, duplicate cleanup and actual adversarial target-focus assertions were added.",
+      "limits": "Real Obsidian restart, physical keyboard, damaged data and measured 900x650/1150x700 acceptance remain open."
+    },
     "coordination": {
       "catalogAnalysis": "completed read-only",
       "encounterAnalysis": "completed read-only",
@@ -168,16 +185,16 @@
       "testSlotClarification": "one graphical host/original instance per device; colleagues on separate devices may test in parallel",
       "cloudReviewHandoff": "Requested in GitHub Issue #1 comment 6081912800: prior GM-UX-CLOUD worker stops feature implementation and focuses architecture/technical reviews of local packages."
     },
-    "verified": "CE-00-I01 passed 210 tests but R01 required changes. CE-00-N01 passed check, 211 tests and build; independent CE-00-R02 passed. CE-01-I01 is independently reviewed; CE-01-I03 passed check, 235 tests, DOM harness and build. CE-01-R01 found a unique-view concurrency race and selector-unsafe adversarial ID path; both require repair. All real-host and CE-01 acceptance remain open.",
+    "verified": "CE-00-I01 passed 210 tests but R01 required changes. CE-00-N01 and R02 passed. CE-01-I03 passed check, DOM harness and build. CE-01-R01 found unique-view concurrency and selector-unsafe ID paths; CE-01-N01 repaired both and passed independent re-review plus the integrated 239-test/check/build gates. All real-host and CE-01 acceptance remain open.",
     "open": [
-      "CE-01-N01 repair and independent re-review, real Obsidian acceptance, cleanup and all CE-02 through CE-07 runs",
+      "CE-01-H01 real Obsidian acceptance, CE-01-C01 cleanup and all CE-02 through CE-07 runs",
       "Pinned DMG-2014 encounter math and golden masters",
       "Real Obsidian host, restart, keyboard and damaged-data acceptance"
     ],
     "nextRun": {
-      "id": "CE-01-N01",
-      "kind": "repair_implementation",
-      "focus": "Serialize unique catalog opening and replace selector interpolation with selector-safe focus lookup, with focused concurrent-open and adversarial-ID regressions"
+      "id": "CE-01-H01",
+      "kind": "real_host_acceptance",
+      "focus": "Verify command-palette opening, canonical focus, filter/detail state, close/reopen, fresh process, damaged asset behavior, physical keyboard and 900x650/1150x700 layouts in real Obsidian without closing unrelated applications"
     }
   },
   "repositoryWorkflow": {

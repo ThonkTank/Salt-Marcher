@@ -195,6 +195,10 @@ Obsidian- und 900×650-/1150×700-Abnahme bleiben offen.
 
 ## Nächster Lauf
 
-`CE-01-R01`: unabhängiger Gesamt-Review des CE-01-Kandidaten gegen
-CE-AC-01/02/14, SaltMarcher und vergleichbare D&D-Beyond-2014-Abläufe. Eine
-Fach- oder Hostfreigabe nicht aus Tests allein ableiten.
+`CE-01-H01`: echte Obsidian-Abnahme des nach `CE-01-R01`, `CE-01-N01` und
+`CE-01-R02` statisch bestandenen Kandidaten. Command-Palette, eindeutiger
+Fokus, Filter/Detailzustand, Schließen/Neuöffnen, frischer Prozess,
+beschädigtes Asset, physische Tastatur und 900×650/1150×700 bleiben bis zu
+diesem Lauf offen. Erst nach seinem Review folgt der getrennte
+`CE-01-C01`-Aufräumlauf; keine Fach- oder Hostfreigabe aus Tests allein
+ableiten.

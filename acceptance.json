@@ -71,8 +71,8 @@
   },
   "saltMarcherCatalogEncounter": {
     "schemaVersion": 1,
-  "updated": "2026-10-09T14:28:52Z",
-  "state": "ce01_r01_changes_required_n01_next",
+  "updated": "2026-10-09T14:38:00Z",
+  "state": "ce01_n01_reviewed_host_acceptance_next",
     "plan": "ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md",
     "architecture": "ARCHITECTURE.md#geplante-katalog--und-encounter-erweiterung",
     "sourceRepository": "ThonkTank/Salt-Marcher",
@@ -281,7 +281,23 @@
       "retained": "Host-neutral content boundary, draft/close race handling, ownerWindow use, combined filters and the static accessibility contract remain sound.",
       "limits": "Reviewer ran no separate tests or GUI. Real Obsidian command, restart, physical input, damaged-data and measured-size acceptance remain open."
     },
-    "next": "CE-01-N01 repairs unique-view concurrency and selector-safe keyboard focus with focused regressions, then receives an independent repair review before any real-host acceptance or CE-01 cleanup."
+    "ce01N01": {
+      "run": "CE-01-N01",
+      "state": "completed_checked_reviewed",
+      "commits": ["2c86971", "e93e2ba"],
+      "result": "Catalog opening is serialized through one in-flight operation, preserves and reveals one canonical leaf, and removes pre-existing duplicates. Keyboard row focus compares dataset values instead of interpolating untrusted IDs into a selector.",
+      "verification": {
+        "check": "passed",
+        "tests": {"passed": 239, "failed": 0},
+        "build": "passed",
+        "mainBytes": 1356752,
+        "mainJsGrowthBytes": 167382,
+        "mainJsGrowthLimitBytes": 180000
+      },
+      "review": "Passed after the repair review required explicit canonical reveal, duplicate cleanup and actual adversarial target-focus assertions.",
+      "limits": "No real Obsidian, restart, physical keyboard or measured 900x650/1150x700 acceptance. CE-AC-01, CE-AC-02 and CE-AC-14 remain open."
+    },
+    "next": "CE-01-H01 performs the real Obsidian command, focus, close/reopen, fresh-process, damaged-asset and measured 900x650/1150x700 acceptance. Only after its review may the separate CE-01-C01 cleanup begin."
   },
   "cityPlans": {
     "schemaVersion": 1,

@@ -190,6 +190,8 @@ Filtern, Sortierung, Paging, Auswahl und Statblock als geprüften
 Umsetzungskandidaten bereit. `CE-01-I03` ergänzt die übrigen 2014-Filter,
 Mehrfachwerte, Chips/Reset, Debounce/Stale-Schutz, responsive Barrierefreiheit,
 einen fokussierten DOM-Harness und atomare Draft-Übernahme beim Host-Lifecycle.
-Nächster Lauf ist `CE-01-R01`, der
-unabhängige Gesamt-Review gegen CE-AC-01/02/14. Noch keine CE-01- oder
-Encounter-Fachfreigabe behaupten.
+`CE-01-R01` fand einen Unique-View-Concurrency-Race und selectorunsicheren
+Tastaturfokus. `CE-01-N01` reparierte beide Pfade; `CE-01-R02` bestand nach
+expliziten Regressionen für kanonisches Reveal, Duplikatbereinigung und eine
+adversariale ID. Nächster Lauf ist `CE-01-H01`, die echte Obsidian-Abnahme.
+Noch keine CE-01- oder Encounter-Fachfreigabe behaupten.
