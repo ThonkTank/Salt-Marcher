@@ -4060,17 +4060,17 @@
     "state": "city00_result_gallery_complete_full_inventory_partial",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I33-I",
-      "kind": "reference_implementation",
-      "startedAt": "2026-10-09T15:31:15.126984+00:00",
-      "focus": "Kontrollierte Number3-Generationswirkung",
-      "state": "completed",
-      "result": "13 Gruppen verglichen, Default-Wiederherstellung bytegleich; konkrete CITY-02/05-Planpräzisierung."
-    },
-    "nextRun": {
       "id": "CITY-00-I33-R",
       "kind": "reference_review",
-      "focus": "Originalbelege und Vorgabenwiederherstellung prüfen"
+      "startedAt": "2026-10-09T15:31:59.274072+00:00",
+      "focus": "Straßenbelege R",
+      "state": "completed",
+      "result": "Drei echte Downloadkopien, sämtliche Rawhashes und13-Gruppenvergleich bestätigt; Default-Rebuild-Wiederherstellung bytegleich. Maximum nur sichtbarer Control, genaue Torzählung offen. Aufräumbefunde: CO-WAT-0010-Snapshot partial; I32-OFF-Rückstellung nur ausstehender UI-Wert, I33-Neutab zeigt GreensON. Keine dauerhafte globale Wiederherstellung aus I32 ableiten."
+    },
+    "nextRun": {
+      "id": "CITY-00-I33-CP",
+      "kind": "cleanup_planning",
+      "focus": "Straßenbelege und Snapshot CP"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
