@@ -76,8 +76,12 @@ validierte relative Namen. Jeder Dateischritt verwendet `openat2` mit
 `RESOLVE_BENEATH|RESOLVE_NO_SYMLINKS|RESOLVE_NO_MAGICLINKS`, prüft Root,
 Parent, Mount, Gerät, Inode, Typ und Linkzahl neu und verweigert Hardlinks.
 Temp-, Before-Snapshot-, Capture-, Child-Receipt- und Parent-Receipt-Namen
-enthalten eine zufällige 256-Bit-Transaktions-ID und entstehen mit
-`O_CREAT|O_EXCL` im selben Verzeichnis.
+enthalten eine zufällige 256-Bit-Transaktions-ID. Temp-, Snapshot- und
+Receiptdateien entstehen mit `O_CREAT|O_EXCL` im selben Verzeichnis.
+Capture-Zielnamen bleiben bis zum `RENAME_NOREPLACE` unbelegt; erst dieser
+Rename belegt sie exklusiv. Dasselbe gilt für Rollback-Capture-Zielnamen.
+Alle vorgesehenen Namen sind vor dem ersten Hilfsdateischritt im durablen
+Receipt gebunden; eine zufällige Kollision oder fremde Belegung ist Konflikt.
 
 Der H03-Adversary ist ein unkooperativer Editor des gebundenen fachlichen
 Zielnamens: Er darf ihn ersetzen, neu anlegen, löschen oder über einen bereits
@@ -105,11 +109,21 @@ Namensmutation als Konflikt.
 
 ### Child-State-Machines
 
-Jedes Child-Receipt bindet Operation, Parent-ID, Before-/After-Hash,
-Gerät/Inode/Linkzahl, Temp-/Before-Snapshot-/Capturenamen und genau einen Zustand. Jeder
+Das Parent-Receipt `prepared` wird vor dem ersten Child- oder Hilfsdateischritt
+durable publiziert und bindet sämtliche Child-IDs und vorgesehenen Namen. Jedes
+Child-Receipt `prepared` wird vor dessen erster Hilfsdatei durable publiziert;
+es bindet Operation, Parent-ID, Before-/After-Hash, Temp-/Before-Snapshot-/
+Capturenamen und genau einen Zustand. Identität (Gerät/Inode/Linkzahl) einer
+noch nicht vorhandenen Datei bleibt zunächst ausdrücklich `pending` und wird
+erst nach deren Erzeugung und Sync in einer neuen Receiptgeneration gebunden. Jeder
 Receiptwrite wird in eine exklusive neue Receiptdatei geschrieben,
 `fdatasync`/`fsync`-synchronisiert und per `RENAME_NOREPLACE` als nächste
 Generation publiziert; anschließend wird das Receipt-Verzeichnis synchronisiert.
+Vor der ersten Parent-Publikation darf nur dessen Receipt-Stagingdatei
+entstehen, keine Child-Hilfsdatei und keine Zielmutation. Ein Kill in dieser
+Phase lässt den Zielzustand unverändert; Recovery inventarisiert die
+Stagingdatei auch bei unvollständigem Inhalt und behält sie als ungebundenen
+Orphan-Beleg. Sie wird nie als gültiges `prepared` interpretiert.
 Vorherige Generationen bleiben bis zur Parent-Freigabe erhalten. H03 löscht
 Before-Snapshot, Capture oder Receiptgenerationen auch nach Parent-Commit
 nicht: sichere Reclamation gegenüber einem noch offenen fremden FD ist eine
@@ -118,8 +132,9 @@ enthält ausdrücklich keine Storage-/GC-Freigabe.
 
 **Create**
 
-1. After-Bytes in exklusives Temp schreiben und synchronisieren.
-2. Child-Receipt `prepared` durable publizieren.
+1. Child-Receipt `prepared` mit vorgesehenem Tempnamen durable publizieren.
+2. After-Bytes in exklusives Temp schreiben und synchronisieren; Identität und
+   After-Hash in `temp-synced` durable publizieren.
 3. Temp per `renameat2(..., RENAME_NOREPLACE)` zum freien Ziel publizieren.
 4. Zielidentität/After-Hash prüfen, Verzeichnis synchronisieren und Receipt
    `new-published`, danach `committed`, durable publizieren.
@@ -129,14 +144,17 @@ Receipt bleiben als sichtbarer Konflikt erhalten.
 
 **Update**
 
-1. Die gebundenen erwarteten Before-Bytes aus dem unveränderlichen Auftrag in
+1. Child-Receipt `prepared` mit vorgesehenen Snapshot-, Temp- und freien
+   Capturenamen durable publizieren. Die gebundenen erwarteten Before-Bytes aus
+   dem unveränderlichen Auftrag in
    einen exklusiven Before-Snapshot schreiben, synchronisieren und dessen Hash
-   gegen den gebundenen Before-Hash prüfen.
+   gegen den gebundenen Before-Hash prüfen; Identität und Hash als
+   `before-snapshotted` durable publizieren.
 2. Ziel-FD öffnen, Identität festhalten und seine beobachteten Bytes gegen den
    bereits unabhängig erhaltenen Before-Snapshot prüfen. Ein torn Read oder
    abweichender Hash stoppt ohne Namensmutation als Konflikt.
-3. After-Temp schreiben und synchronisieren; Receipt `before-snapshotted`,
-   danach `prepared`, mit Snapshotidentität durable publizieren.
+3. After-Temp schreiben und synchronisieren; Identität und After-Hash im
+   Receipt `ready-to-capture` durable publizieren.
 4. Den zu diesem Zeitpunkt aktuellen Zielnamen per
    `renameat2(target, exclusive-capture, RENAME_NOREPLACE)` capturen.
 5. Captureidentität/-hash prüfen und Verzeichnis synchronisieren. Entspricht
@@ -157,11 +175,14 @@ Konflikt. `RENAME_EXCHANGE` ist verboten.
 
 **Delete**
 
-1. Wie bei Update die gebundenen erwarteten Before-Bytes aus dem Auftrag in
+1. Wie bei Update zuerst Child-Receipt `prepared` mit vorgesehenem Snapshot-
+   und freiem Capturenamen durable publizieren. Danach die gebundenen
+   erwarteten Before-Bytes aus dem Auftrag in
    einen exklusiven Before-Snapshot schreiben, synchronisieren und hashen;
    danach Ziel-FD/Identität/Bytes gegen diesen Snapshot verifizieren. Torn Read
-   oder Abweichung stoppt ohne Namensmutation. Receipt `before-snapshotted`,
-   danach `prepared`, durable publizieren.
+   oder Abweichung stoppt ohne Namensmutation. Nach Snapshot-Sync wird dessen
+   Identität in `before-snapshotted`, nach Zielverifikation in
+   `ready-to-capture` durable publiziert.
 2. Den aktuellen Zielnamen per `RENAME_NOREPLACE` in den exklusiven
    Capturenamen bewegen.
 3. Captureidentität/Before-Hash prüfen. Bei Abweichung Snapshot und
@@ -184,17 +205,30 @@ Receiptgenerationen dürfen vor durablem Parent-`committed` oder verifiziertem
 Parent-`rolled-back` nicht gelöscht werden; H03 selbst gibt sie auch danach
 nur logisch, nicht physisch, frei.
 
-Recovery liest in einem frischen Helper ausschließlich Receipts, gebundene
-Namen, Identitäten und Hashes:
+Recovery liest in einem frischen Helper publizierte Receipts, gebundene
+Namen, Identitäten und Hashes sowie ein begrenztes Inventar aller
+Receipt-Stagingnamen im Transaktionsverzeichnis:
 
-- Parent `prepared` oder ein unvollständiger Child-Satz wird aus den
-  verifizierten Before-Snapshots vollständig auf den aggregierten
-  Before-Zustand zurückgeführt, aber nur per `RENAME_NOREPLACE` auf freie
-  Zielnamen;
+- Ein Parent-`prepared` ohne Child-Receipt hat noch keine Child-Hilfsdatei;
+  ein Child-`prepared` darf fehlende oder teilweise geschriebene gebundene
+  Hilfsdateien haben. Recovery inventarisiert auch diese Namen samt
+  Abwesenheit, Länge und vorhandenem Hash, lässt unvollständige Dateien
+  retained und bestätigt keinen After-Zustand. Für Create ist der alte Zustand
+  der verifiziert abwesende Zielname. Für Update/Delete darf vor Capture nur
+  ein erneut gegen den gebundenen Before-Hash verifiziertes Ziel als alter
+  Zustand gelten; jede Abweichung wird retained Konflikt. Erst nach
+  synchronisiertem Before-Snapshot darf Recovery einen Restore daraus
+  versuchen;
+
+- Parent `prepared` oder ein unvollständiger Child-Satz wird pro Child nach
+  dem oben beschriebenen Frühzustand oder aus verifizierten Before-Snapshots
+  vollständig auf den aggregierten Before-Zustand zurückgeführt; Restore-
+  Publikation ist nur per `RENAME_NOREPLACE` auf freie Zielnamen zulässig;
 - Parent `children-committed`/`committed` wird vollständig auf den
   aggregierten After-Zustand vervollständigt;
-- jeder dritte Hash, fremde Inode, unerwartete Namensbelegung, fehlende
-  Receiptgeneration oder verlorene Child-Retention wird `conflict`;
+- jeder dritte Hash, fremde Inode, unerwartete Namensbelegung, nach Beginn
+  eines Child-Hilfsdateischritts fehlende erforderliche Receiptgeneration
+  oder verlorene Child-Retention wird `conflict`;
 - Konfliktrecovery überschreibt und löscht nichts, sondern liefert ein
   begrenztes Inventar aller erhaltenen Wahrheiten.
 
@@ -241,7 +275,8 @@ ausgeführt:
 - vor/während/nach Before-Payload-Snapshot und Snapshot-Sync;
 - vor/während/nach Ziel-FD-Verifikation gegen den Before-Snapshot;
 - vor/nach Temp-Sync;
-- vor/nach durablem `prepared`;
+- vor/während/nach dem ersten durablen Parent- und jedem Child-`prepared`,
+  einschließlich partieller Receipt-Stagingdateien;
 - vor/nach Capture;
 - vor/nach Capture-Verzeichnissync;
 - vor/nach Publikation beziehungsweise Delete;
@@ -269,7 +304,15 @@ Pflichtzelle ist `not-run` und damit H03-No-Go, nicht übersprungen.
 
 ## Orakel und harte Gates
 
-- Create endet ausschließlich vollständig neu oder als erhaltener Konflikt.
+- Create endet ausschließlich vollständig neu, nach frühem Kill/Rollback im
+  verifiziert alten Zustand mit abwesendem Ziel oder als erhaltener Konflikt.
+  Nach durablem Child-`prepared` benötigt der alte Zustand ein Parent-/Child-
+  `prepared`- und `rolled-back`-Receipt, Zielabwesenheit und ein Inventar des
+  gebundenen Tempnamens (fehlend, teilweise oder vollständig) samt
+  Hash/Identität, falls vorhanden. Vor der ersten Parent-Publikation genügt
+  nur das verifizierte unveränderte Zielinventar mit retained Orphan-Receipt-
+  Stagingbeleg; dort existiert noch keine gültige Transaktion. Bloße
+  Zielabwesenheit ohne zugehörigen Phasenbeleg genügt nicht.
 - Update endet ausschließlich vollständig alt, vollständig neu oder als
   erhaltener Konflikt mit verifiziertem Before-Snapshot, beobachteter Capture,
   neuer Temp und gegebenenfalls konkurrierendem Ziel.
@@ -352,3 +395,13 @@ verpflichtendes Cleanup.
 Dies ist ausschließlich eine Planfreigabe. Vertrag, Helper, vollständige
 Matrix, sauberes Receipt, Code-/Security-/Evidence-Review und Cleanup bleiben
 vor jedem H03-Befund erforderlich.
+
+## Nachprüfung ADR-P01-H03-P01-R02
+
+Die unabhängige Nachprüfung auf `daa053967b4e7fa7228cfd89fd11996bb363d420`
+fand drei verbliebene Pflichtlücken: belegter Capture-Zielname bei
+`RENAME_NOREPLACE`, Hilfsdateien vor dem ersten durablen Receipt und das
+unvollständige Create-Abwesenheitsorakel. Die vorstehende R01-Freigabe ist
+damit kein gültiges Umsetzungsgate mehr. Diese R02-Fassung repariert die drei
+Stellen als Planentwurf; ihre unabhängige Prüfung auf dem exakten neuen
+Quellcommit ist noch offen. H03-I01 beginnt erst nach bestandenem R02-Review.
