@@ -4359,17 +4359,17 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-01-PREP-I06",
-      "kind": "implementation",
-      "startedAt": "2026-10-09T18:00:16.650006+00:00",
-      "focus": "CityGesture und gemeinsame Hausposepunkte implementieren",
-      "state": "completed",
-      "result": "Haus/Knoten/Viazüge, pivotfeste Drehung/Achsgriffe, feste Zieladresse und ein CityDraft implementiert.144Outlinevergleiche exakt;check,336Tests und Build bestanden. Separater R08 und Aufräumen folgen;Host offen."
-    },
-    "nextRun": {
       "id": "CITY-01-PREP-R08",
       "kind": "review",
-      "focus": "Werkzeugadapter gegen Gestenplan, numerische Grenzen und aktuelle Atlasverträge reviewen"
+      "startedAt": "2026-10-09T18:06:15.198040+00:00",
+      "focus": "Gedrehte Achsgriffe und numerische No-op-Grenzen prüfen",
+      "state": "completed",
+      "result": "CITY-GESTURE-R08-01 reproduziert:6von8 Bewegungen auf ungewählter Achse erzeugen Rundungsänderung/Undo. N06 braucht maßstabsabhängige Fehlergrenze und Regressionen für echte kleine Änderungen."
+    },
+    "nextRun": {
+      "id": "CITY-01-PREP-N06",
+      "kind": "refinement",
+      "focus": "Numerische Achs-No-ops ohne feste Meterklemmung reparieren"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
