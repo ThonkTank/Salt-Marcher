@@ -1061,12 +1061,13 @@
         "product": "Canvas of Kings",
         "feature": "Pfad-/Flächenplatzierung",
         "sourceUrl": "https://store.steampowered.com/app/2498570/Canvas_of_Kings/",
-        "observedAt": "2026-10-09T10:57:45.428Z",
+        "observedAt": "2026-10-09T11:49:19.144Z",
         "observedVersion": "Demo 0.4.06; Steam build16643264",
         "availability": "installed_demo_partial",
         "observationKind": "direct_demo_partial",
         "originalEvidence": [
-          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i06-20261009-01/reference-manifest.json"
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i06-20261009-01/reference-manifest.json",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i07-20261009-01/reference-manifest.json"
         ],
         "task": "Pfad und Fläche verändern; automatische Objekte folgen",
         "phase": "CITY-07",
@@ -1082,27 +1083,43 @@
           "state": "not_run"
         },
         "status": "open",
-        "gap": "Demo-Pfad/Plot und Kontrollpunktwirkung direkt belegt; volle Funktionstiefe, Vollversion und eigener Vergleich offen.",
+        "gap": "Direkte Demo-Teilprobe belegt; vollständiger Originalumfang, eigene Umsetzung und Host-/Bedienvergleich weiterhin offen.",
         "independentFunctionalRequirement": true,
         "mappingCoverage": "related_project_criteria_only; CO requirement remains independently required",
         "originalProbe": {
-          "run": "CITY-00-I06-NI",
-          "state": "path_plot_create_and_control_move_observed",
-          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i06-20261009-01/reference-manifest.json",
-          "productVariant": "Canvas of Kings Demo 3122210",
+          "run": "CITY-00-I07-I",
+          "state": "named_path_and_plot_effect_observed",
+          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i07-20261009-01/reference-manifest.json",
+          "sourceScope": "installed_demo_not_full_version",
+          "observation": "Named Wide dirt road/Market effect;13Path and6Plot preset labels visible",
           "remaining": [
-            "Full version inventory",
-            "Preset identities",
-            "Density/structure controls",
-            "Save/reopen",
-            "Own implementation and better usability"
+            "Demo-limited content and automatically reduced graphics",
+            "District/building layouts, density, detach individual buildings, fuller city result gallery unverified",
+            "Two --click flags in first road command parsed only last; input provenance has950,580, next command added360,580; no road failure inferred",
+            "Save-session exit closed RFB before requested screenshot; normal Originalexit0 recorded; no025 frame claimed",
+            "No original file structure parsing/modification; same file hash proves unchanged input, visual comparison only"
           ]
         },
         "documentationObservation": {
           "sourceUrl": "https://store.steampowered.com/app/2498570/Canvas_of_Kings/",
           "observedAt": "2026-10-09T12:15:44.926455+02:00",
           "scope": "official full-version description; distinct from partial demo probe"
-        }
+        },
+        "originalProbes": [
+          {
+            "run": "CITY-00-I06-NI",
+            "state": "path_plot_create_and_control_move_observed",
+            "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i06-20261009-01/reference-manifest.json",
+            "productVariant": "Canvas of Kings Demo 3122210",
+            "remaining": [
+              "Full version inventory",
+              "Preset identities",
+              "Density/structure controls",
+              "Save/reopen",
+              "Own implementation and better usability"
+            ]
+          }
+        ]
       },
       {
         "id": "CO-COK-0002",
@@ -2538,12 +2555,13 @@
         "product": "Canvas of Kings",
         "feature": "Native Karten speichern und öffnen",
         "sourceUrl": "steam://run/3122210",
-        "observedAt": "2026-10-09T11:03:19.264Z",
+        "observedAt": "2026-10-09T11:49:19.144Z",
         "observedVersion": "Demo 0.4.06; Steam build16643264",
         "availability": "installed_demo_partial",
         "observationKind": "direct_demo_partial",
         "originalEvidence": [
-          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i06-20261009-01/reference-manifest.json"
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i06-20261009-01/reference-manifest.json",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i07-20261009-01/reference-manifest.json"
         ],
         "task": "Neue Karte speichern und in frischem Prozess öffnen",
         "phase": "CITY-01",
@@ -2559,18 +2577,34 @@
           "state": "not_run"
         },
         "status": "open",
-        "gap": "Originalcontrol direkt sichtbar; konkrete Wirkung, Zugang und eigener Vergleich offen.",
+        "gap": "Direkte Demo-Teilprobe belegt; vollständiger Originalumfang, eigene Umsetzung und Host-/Bedienvergleich weiterhin offen.",
         "independentFunctionalRequirement": true,
         "mappingCoverage": "related_project_criteria_only; CO requirement remains independently required",
         "originalProbe": {
-          "run": "CITY-00-I06-NI",
-          "state": "control_observed_only",
-          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i06-20261009-01/reference-manifest.json",
-          "productVariant": "Canvas of Kings Demo 3122210",
-          "observation": "Save/Save As/Open/New menus; Save As dialog, no confirmed file",
-          "sourceFrame": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i06-20261009-01/screens/018-main-menu.png",
-          "sourceScope": "installed_demo_control_not_full_version_description"
-        }
+          "run": "CITY-00-I07-I",
+          "state": "save_and_fresh_open_observed",
+          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i07-20261009-01/reference-manifest.json",
+          "sourceScope": "installed_demo_not_full_version",
+          "observation": "Native Save/Open:12221bytes, unchangedSHA, fresh profile/process restores visible scene",
+          "remaining": [
+            "Demo-limited content and automatically reduced graphics",
+            "District/building layouts, density, detach individual buildings, fuller city result gallery unverified",
+            "Two --click flags in first road command parsed only last; input provenance has950,580, next command added360,580; no road failure inferred",
+            "Save-session exit closed RFB before requested screenshot; normal Originalexit0 recorded; no025 frame claimed",
+            "No original file structure parsing/modification; same file hash proves unchanged input, visual comparison only"
+          ]
+        },
+        "originalProbes": [
+          {
+            "run": "CITY-00-I06-NI",
+            "state": "control_observed_only",
+            "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i06-20261009-01/reference-manifest.json",
+            "productVariant": "Canvas of Kings Demo 3122210",
+            "observation": "Save/Save As/Open/New menus; Save As dialog, no confirmed file",
+            "sourceFrame": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i06-20261009-01/screens/018-main-menu.png",
+            "sourceScope": "installed_demo_control_not_full_version_description"
+          }
+        ]
       },
       {
         "id": "CO-COK-0007",
@@ -3215,7 +3249,7 @@
     ],
     "functionalInventoryStatus": {
       "state": "partial_inventory_not_accepted",
-      "run": "CITY-00-I08-I",
+      "run": "CITY-00-I07-I",
       "products": 3,
       "candidates": 63,
       "directFormAreas": 13,
@@ -3233,7 +3267,8 @@
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i05-20261009/manifest.json",
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i06-20261009-01/reference-manifest.json",
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i07-browser-20261009/manifest.json",
-        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i08-browser-20261009/manifest.json"
+        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i08-browser-20261009/manifest.json",
+        "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i07-20261009-01/reference-manifest.json"
       ],
       "resultReferences": [
         {
@@ -3329,7 +3364,7 @@
       ]
     },
     "inventoryComplete": false,
-    "inventoryStatus": "N-I15: zehn frühe Preferences-Fragen in acht Controls direkt geklärt: Undo0..64,BackupEvery1..60 Minuten/Limit1..64,Font8..28,Density0.1..10,Rotation0.1..90 Grad; einzelne Pfeilschritte belegt. EdgeDelay0..1/Speed50..1000 native Skalare über einzeln Apply und sechs unveränderte eigene Config-Snapshots, keine physikalische Einheit behauptet. Alle Kennungen/Defaults/Controltypen/Quellen,663 UI/83 Fälle erhalten.22 frühe Fragen,R02/Aufräumen offen; keine vollständige Inventar-/Paritätsfreigabe. Gemeinsamer grenzenloser Hex-/Stadt-/Dungeonatlas geplant, nicht implementiert.",
+    "inventoryStatus": "N-I16: alle14 frühen Interface-Farben0127–0140 direkt geöffnet und mit ihren tatsächlichen RGBA-Dezimalanzeigen/Hex-Wortlauten sowie einfachem Popupkontext pro Besitzer erfasst. 35Originalframes, normale Beendigung0; keine Farbeingabe/Apply/Skinänderung. Alle Kennungen, Defaults, Controltypen, Quellen und Gruppenindizes erhalten. Acht frühe Kontexte, eigener R02 und Aufräumen bleiben offen; keine vollständige Inventar-/Paritätsfreigabe. Gemeinsamer grenzenloser Hex-/Stadt-/Dungeonatlas geplant, nicht implementiert.",
     "legacyInventoryScope": "Das vorhandene Wurzelfeld inventoryComplete und strictParity beschreiben nur die bisherige Dungeondraft-Inventur; daraus folgt keine Wonderdraft-Abnahme.",
     "inventoryGate": {
       "phase": "HEX-00",
@@ -11656,7 +11691,7 @@
           "evidenceScope": "Angezeigter Zustand dieser Originalaufnahme; Persistenz und andere Kontexte nicht gemessen."
         },
         "rangeOrChoices": null,
-        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit.",
+        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit. N-I16: numerischer Ausgangswert und einfacher Popupkontext direkt erfasst; keine neue Eingabevalidierungs-/Wirkungs-/Persistenzabnahme.",
         "gesture": {
           "observed": "Öffnen/Anwählen über die protokollierte Original-UI.",
           "operation": "Werkzeug-Abschlussgesten noch nicht gemessen."
@@ -11678,6 +11713,27 @@
             "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/015-preferences-interface.json",
             "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/015-preferences-interface.png",
             "observation": "Preferences > Interface > Colors > Font Color: visible swatch."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/004-preferences-interface.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/004-preferences-interface.png",
+            "observation": "Preferences Interface vor Einzelprüfung: Large Icons/Font15/SkinDark und sämtliche14 Farben sichtbar."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/005-font-color-picker.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/005-font-color-picker.png",
+            "observation": "Preferences > Interface > Colors > Font Color: eigenes Farbfeld direkt geöffnet; numerische Anzeige R/G/B/A=255/255/255/255; #ffffff. Einfaches Popup über Preferences ohne Fenstertitel/OK/Cancel/X, mit Vorschau, Pipette, SV-Fläche, Hue-Leiste, einzelnen RGBA-Reglern und Zahlenfeldern, Darstellungsschalter OFF, #-Feld und +. Escape schließt dieses unveränderte Popup, Preferences bleibt offen. RGBA-Dezimalwerte und Hex-Wortlaut getrennt erhalten; keine Pixelmessung und keine Integernormalisierung. Nur dieser beobachtete Ausgangszustand/Kontext, kein allgemeiner Default. Farb-/Skinwirkung, Validierung, Apply, SaveAs und Kaltstart bleiben Fachpflicht HEX-26."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/006-font-color-close.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/006-font-color-close.png",
+            "observation": "Font Color: Escape nach reiner Anzeige schließt nur Picker; keine Farbeingabe und keine Commit-/Rücknahmebehauptung einer Änderung."
           }
         ],
         "classification": "user_function",
@@ -11696,10 +11752,99 @@
             "duePhase": "HEX-00",
             "reason": "Der Wortlaut benennt unbekannte Oberfläche, Wertebereich, Auswahl oder Eingabekontext; keine spätere Wirkung ersetzt diese Inventarpflicht.",
             "probe": "Originaloberfläche abgleichen: Numerischen Farbwert und Pickerkontext noch direkt erfassen.",
-            "state": "open",
-            "evidence": []
+            "state": "resolved",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/004-preferences-interface.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/004-preferences-interface.png",
+                "observation": "Preferences Interface vor Einzelprüfung: Large Icons/Font15/SkinDark und sämtliche14 Farben sichtbar."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/005-font-color-picker.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/005-font-color-picker.png",
+                "observation": "Preferences > Interface > Colors > Font Color: eigenes Farbfeld direkt geöffnet; numerische Anzeige R/G/B/A=255/255/255/255; #ffffff. Einfaches Popup über Preferences ohne Fenstertitel/OK/Cancel/X, mit Vorschau, Pipette, SV-Fläche, Hue-Leiste, einzelnen RGBA-Reglern und Zahlenfeldern, Darstellungsschalter OFF, #-Feld und +. Escape schließt dieses unveränderte Popup, Preferences bleibt offen. RGBA-Dezimalwerte und Hex-Wortlaut getrennt erhalten; keine Pixelmessung und keine Integernormalisierung. Nur dieser beobachtete Ausgangszustand/Kontext, kein allgemeiner Default. Farb-/Skinwirkung, Validierung, Apply, SaveAs und Kaltstart bleiben Fachpflicht HEX-26."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/006-font-color-close.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/006-font-color-close.png",
+                "observation": "Font Color: Escape nach reiner Anzeige schließt nur Picker; keine Farbeingabe und keine Commit-/Rücknahmebehauptung einer Änderung."
+              }
+            ],
+            "resolvedIn": "HEX-00-N-I16",
+            "resolution": "Preferences > Interface > Colors > Font Color: eigenes Farbfeld direkt geöffnet; numerische Anzeige R/G/B/A=255/255/255/255; #ffffff. Einfaches Popup über Preferences ohne Fenstertitel/OK/Cancel/X, mit Vorschau, Pipette, SV-Fläche, Hue-Leiste, einzelnen RGBA-Reglern und Zahlenfeldern, Darstellungsschalter OFF, #-Feld und +. Escape schließt dieses unveränderte Popup, Preferences bleibt offen. RGBA-Dezimalwerte und Hex-Wortlaut getrennt erhalten; keine Pixelmessung und keine Integernormalisierung. Nur dieser beobachtete Ausgangszustand/Kontext, kein allgemeiner Default. Farb-/Skinwirkung, Validierung, Apply, SaveAs und Kaltstart bleiben Fachpflicht HEX-26."
           }
-        ]
+        ],
+        "colorObservation": {
+          "run": "HEX-00-N-I16",
+          "rgbaDisplay": [
+            255,
+            255,
+            255,
+            255
+          ],
+          "hexDisplay": "ffffff",
+          "source": "Directly read native numeric fields, not screenshot swatch pixels.",
+          "scope": {
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+            "context": "Frisches festes privates Fensterprofil, vor New ohne geladene Karte, Interface Large Icons/Font15/SkinDark unverändert; keine Eingabe in Farben, kein Apply/SaveAs.",
+            "factoryDefaultsAsserted": false
+          },
+          "rangeMeasurement": "not_run",
+          "picker": {
+            "kind": "popup_without_modal_confirmation",
+            "titleVisible": false,
+            "okVisible": false,
+            "cancelVisible": false,
+            "xVisible": false,
+            "visibleControls": [
+              "color_preview",
+              "pipette",
+              "saturation_value_area",
+              "hue_bar",
+              "R_slider_and_number",
+              "G_slider_and_number",
+              "B_slider_and_number",
+              "A_slider_and_number",
+              "representation_toggle_OFF",
+              "hex_field",
+              "plus"
+            ],
+            "closeInput": "Escape",
+            "closeAfterEdit": "not_run",
+            "inputMutation": "not_run",
+            "owner": "WD-UI-0127"
+          },
+          "evidence": [
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/004-preferences-interface.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/004-preferences-interface.png",
+              "observation": "Preferences Interface vor Einzelprüfung: Large Icons/Font15/SkinDark und sämtliche14 Farben sichtbar."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/005-font-color-picker.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/005-font-color-picker.png",
+              "observation": "Preferences > Interface > Colors > Font Color: eigenes Farbfeld direkt geöffnet; numerische Anzeige R/G/B/A=255/255/255/255; #ffffff. Einfaches Popup über Preferences ohne Fenstertitel/OK/Cancel/X, mit Vorschau, Pipette, SV-Fläche, Hue-Leiste, einzelnen RGBA-Reglern und Zahlenfeldern, Darstellungsschalter OFF, #-Feld und +. Escape schließt dieses unveränderte Popup, Preferences bleibt offen. RGBA-Dezimalwerte und Hex-Wortlaut getrennt erhalten; keine Pixelmessung und keine Integernormalisierung. Nur dieser beobachtete Ausgangszustand/Kontext, kein allgemeiner Default. Farb-/Skinwirkung, Validierung, Apply, SaveAs und Kaltstart bleiben Fachpflicht HEX-26."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/006-font-color-close.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/006-font-color-close.png",
+              "observation": "Font Color: Escape nach reiner Anzeige schließt nur Picker; keine Farbeingabe und keine Commit-/Rücknahmebehauptung einer Änderung."
+            }
+          ]
+        }
       },
       {
         "id": "WD-UI-0128",
@@ -11713,7 +11858,7 @@
           "evidenceScope": "Angezeigter Zustand dieser Originalaufnahme; Persistenz und andere Kontexte nicht gemessen."
         },
         "rangeOrChoices": null,
-        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit.",
+        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit. N-I16: numerischer Ausgangswert und einfacher Popupkontext direkt erfasst; keine neue Eingabevalidierungs-/Wirkungs-/Persistenzabnahme.",
         "gesture": {
           "observed": "Öffnen/Anwählen über die protokollierte Original-UI.",
           "operation": "Werkzeug-Abschlussgesten noch nicht gemessen."
@@ -11735,6 +11880,27 @@
             "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/015-preferences-interface.json",
             "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/015-preferences-interface.png",
             "observation": "Preferences > Interface > Colors > Font Hover Color: visible swatch."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/004-preferences-interface.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/004-preferences-interface.png",
+            "observation": "Preferences Interface vor Einzelprüfung: Large Icons/Font15/SkinDark und sämtliche14 Farben sichtbar."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/007-font-hover-color-picker.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/007-font-hover-color-picker.png",
+            "observation": "Preferences > Interface > Colors > Font Hover Color: eigenes Farbfeld direkt geöffnet; numerische Anzeige R/G/B/A=0/191.25/255/255; #00bfff. Einfaches Popup über Preferences ohne Fenstertitel/OK/Cancel/X, mit Vorschau, Pipette, SV-Fläche, Hue-Leiste, einzelnen RGBA-Reglern und Zahlenfeldern, Darstellungsschalter OFF, #-Feld und +. Escape schließt dieses unveränderte Popup, Preferences bleibt offen. RGBA-Dezimalwerte und Hex-Wortlaut getrennt erhalten; keine Pixelmessung und keine Integernormalisierung. Nur dieser beobachtete Ausgangszustand/Kontext, kein allgemeiner Default. Farb-/Skinwirkung, Validierung, Apply, SaveAs und Kaltstart bleiben Fachpflicht HEX-26."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/008-font-hover-color-close.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/008-font-hover-color-close.png",
+            "observation": "Font Hover Color: Escape nach reiner Anzeige schließt nur Picker; keine Farbeingabe und keine Commit-/Rücknahmebehauptung einer Änderung."
           }
         ],
         "classification": "user_function",
@@ -11753,10 +11919,99 @@
             "duePhase": "HEX-00",
             "reason": "Der Wortlaut benennt unbekannte Oberfläche, Wertebereich, Auswahl oder Eingabekontext; keine spätere Wirkung ersetzt diese Inventarpflicht.",
             "probe": "Originaloberfläche abgleichen: Numerischen Farbwert und Pickerkontext noch direkt erfassen.",
-            "state": "open",
-            "evidence": []
+            "state": "resolved",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/004-preferences-interface.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/004-preferences-interface.png",
+                "observation": "Preferences Interface vor Einzelprüfung: Large Icons/Font15/SkinDark und sämtliche14 Farben sichtbar."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/007-font-hover-color-picker.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/007-font-hover-color-picker.png",
+                "observation": "Preferences > Interface > Colors > Font Hover Color: eigenes Farbfeld direkt geöffnet; numerische Anzeige R/G/B/A=0/191.25/255/255; #00bfff. Einfaches Popup über Preferences ohne Fenstertitel/OK/Cancel/X, mit Vorschau, Pipette, SV-Fläche, Hue-Leiste, einzelnen RGBA-Reglern und Zahlenfeldern, Darstellungsschalter OFF, #-Feld und +. Escape schließt dieses unveränderte Popup, Preferences bleibt offen. RGBA-Dezimalwerte und Hex-Wortlaut getrennt erhalten; keine Pixelmessung und keine Integernormalisierung. Nur dieser beobachtete Ausgangszustand/Kontext, kein allgemeiner Default. Farb-/Skinwirkung, Validierung, Apply, SaveAs und Kaltstart bleiben Fachpflicht HEX-26."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/008-font-hover-color-close.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/008-font-hover-color-close.png",
+                "observation": "Font Hover Color: Escape nach reiner Anzeige schließt nur Picker; keine Farbeingabe und keine Commit-/Rücknahmebehauptung einer Änderung."
+              }
+            ],
+            "resolvedIn": "HEX-00-N-I16",
+            "resolution": "Preferences > Interface > Colors > Font Hover Color: eigenes Farbfeld direkt geöffnet; numerische Anzeige R/G/B/A=0/191.25/255/255; #00bfff. Einfaches Popup über Preferences ohne Fenstertitel/OK/Cancel/X, mit Vorschau, Pipette, SV-Fläche, Hue-Leiste, einzelnen RGBA-Reglern und Zahlenfeldern, Darstellungsschalter OFF, #-Feld und +. Escape schließt dieses unveränderte Popup, Preferences bleibt offen. RGBA-Dezimalwerte und Hex-Wortlaut getrennt erhalten; keine Pixelmessung und keine Integernormalisierung. Nur dieser beobachtete Ausgangszustand/Kontext, kein allgemeiner Default. Farb-/Skinwirkung, Validierung, Apply, SaveAs und Kaltstart bleiben Fachpflicht HEX-26."
           }
-        ]
+        ],
+        "colorObservation": {
+          "run": "HEX-00-N-I16",
+          "rgbaDisplay": [
+            0,
+            191.25,
+            255,
+            255
+          ],
+          "hexDisplay": "00bfff",
+          "source": "Directly read native numeric fields, not screenshot swatch pixels.",
+          "scope": {
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+            "context": "Frisches festes privates Fensterprofil, vor New ohne geladene Karte, Interface Large Icons/Font15/SkinDark unverändert; keine Eingabe in Farben, kein Apply/SaveAs.",
+            "factoryDefaultsAsserted": false
+          },
+          "rangeMeasurement": "not_run",
+          "picker": {
+            "kind": "popup_without_modal_confirmation",
+            "titleVisible": false,
+            "okVisible": false,
+            "cancelVisible": false,
+            "xVisible": false,
+            "visibleControls": [
+              "color_preview",
+              "pipette",
+              "saturation_value_area",
+              "hue_bar",
+              "R_slider_and_number",
+              "G_slider_and_number",
+              "B_slider_and_number",
+              "A_slider_and_number",
+              "representation_toggle_OFF",
+              "hex_field",
+              "plus"
+            ],
+            "closeInput": "Escape",
+            "closeAfterEdit": "not_run",
+            "inputMutation": "not_run",
+            "owner": "WD-UI-0128"
+          },
+          "evidence": [
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/004-preferences-interface.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/004-preferences-interface.png",
+              "observation": "Preferences Interface vor Einzelprüfung: Large Icons/Font15/SkinDark und sämtliche14 Farben sichtbar."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/007-font-hover-color-picker.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/007-font-hover-color-picker.png",
+              "observation": "Preferences > Interface > Colors > Font Hover Color: eigenes Farbfeld direkt geöffnet; numerische Anzeige R/G/B/A=0/191.25/255/255; #00bfff. Einfaches Popup über Preferences ohne Fenstertitel/OK/Cancel/X, mit Vorschau, Pipette, SV-Fläche, Hue-Leiste, einzelnen RGBA-Reglern und Zahlenfeldern, Darstellungsschalter OFF, #-Feld und +. Escape schließt dieses unveränderte Popup, Preferences bleibt offen. RGBA-Dezimalwerte und Hex-Wortlaut getrennt erhalten; keine Pixelmessung und keine Integernormalisierung. Nur dieser beobachtete Ausgangszustand/Kontext, kein allgemeiner Default. Farb-/Skinwirkung, Validierung, Apply, SaveAs und Kaltstart bleiben Fachpflicht HEX-26."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/008-font-hover-color-close.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/008-font-hover-color-close.png",
+              "observation": "Font Hover Color: Escape nach reiner Anzeige schließt nur Picker; keine Farbeingabe und keine Commit-/Rücknahmebehauptung einer Änderung."
+            }
+          ]
+        }
       },
       {
         "id": "WD-UI-0129",
@@ -11770,7 +12025,7 @@
           "evidenceScope": "Angezeigter Zustand dieser Originalaufnahme; Persistenz und andere Kontexte nicht gemessen."
         },
         "rangeOrChoices": null,
-        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit.",
+        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit. N-I16: numerischer Ausgangswert und einfacher Popupkontext direkt erfasst; keine neue Eingabevalidierungs-/Wirkungs-/Persistenzabnahme.",
         "gesture": {
           "observed": "Öffnen/Anwählen über die protokollierte Original-UI.",
           "operation": "Werkzeug-Abschlussgesten noch nicht gemessen."
@@ -11792,6 +12047,27 @@
             "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/015-preferences-interface.json",
             "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/015-preferences-interface.png",
             "observation": "Preferences > Interface > Colors > Icon Color: visible swatch."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/004-preferences-interface.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/004-preferences-interface.png",
+            "observation": "Preferences Interface vor Einzelprüfung: Large Icons/Font15/SkinDark und sämtliche14 Farben sichtbar."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/009-icon-color-picker.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/009-icon-color-picker.png",
+            "observation": "Preferences > Interface > Colors > Icon Color: eigenes Farbfeld direkt geöffnet; numerische Anzeige R/G/B/A=255/255/255/255; #ffffff. Einfaches Popup über Preferences ohne Fenstertitel/OK/Cancel/X, mit Vorschau, Pipette, SV-Fläche, Hue-Leiste, einzelnen RGBA-Reglern und Zahlenfeldern, Darstellungsschalter OFF, #-Feld und +. Escape schließt dieses unveränderte Popup, Preferences bleibt offen. RGBA-Dezimalwerte und Hex-Wortlaut getrennt erhalten; keine Pixelmessung und keine Integernormalisierung. Nur dieser beobachtete Ausgangszustand/Kontext, kein allgemeiner Default. Farb-/Skinwirkung, Validierung, Apply, SaveAs und Kaltstart bleiben Fachpflicht HEX-26."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/010-icon-color-close.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/010-icon-color-close.png",
+            "observation": "Icon Color: Escape nach reiner Anzeige schließt nur Picker; keine Farbeingabe und keine Commit-/Rücknahmebehauptung einer Änderung."
           }
         ],
         "classification": "user_function",
@@ -11810,10 +12086,99 @@
             "duePhase": "HEX-00",
             "reason": "Der Wortlaut benennt unbekannte Oberfläche, Wertebereich, Auswahl oder Eingabekontext; keine spätere Wirkung ersetzt diese Inventarpflicht.",
             "probe": "Originaloberfläche abgleichen: Numerischen Farbwert und Pickerkontext noch direkt erfassen.",
-            "state": "open",
-            "evidence": []
+            "state": "resolved",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/004-preferences-interface.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/004-preferences-interface.png",
+                "observation": "Preferences Interface vor Einzelprüfung: Large Icons/Font15/SkinDark und sämtliche14 Farben sichtbar."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/009-icon-color-picker.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/009-icon-color-picker.png",
+                "observation": "Preferences > Interface > Colors > Icon Color: eigenes Farbfeld direkt geöffnet; numerische Anzeige R/G/B/A=255/255/255/255; #ffffff. Einfaches Popup über Preferences ohne Fenstertitel/OK/Cancel/X, mit Vorschau, Pipette, SV-Fläche, Hue-Leiste, einzelnen RGBA-Reglern und Zahlenfeldern, Darstellungsschalter OFF, #-Feld und +. Escape schließt dieses unveränderte Popup, Preferences bleibt offen. RGBA-Dezimalwerte und Hex-Wortlaut getrennt erhalten; keine Pixelmessung und keine Integernormalisierung. Nur dieser beobachtete Ausgangszustand/Kontext, kein allgemeiner Default. Farb-/Skinwirkung, Validierung, Apply, SaveAs und Kaltstart bleiben Fachpflicht HEX-26."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/010-icon-color-close.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/010-icon-color-close.png",
+                "observation": "Icon Color: Escape nach reiner Anzeige schließt nur Picker; keine Farbeingabe und keine Commit-/Rücknahmebehauptung einer Änderung."
+              }
+            ],
+            "resolvedIn": "HEX-00-N-I16",
+            "resolution": "Preferences > Interface > Colors > Icon Color: eigenes Farbfeld direkt geöffnet; numerische Anzeige R/G/B/A=255/255/255/255; #ffffff. Einfaches Popup über Preferences ohne Fenstertitel/OK/Cancel/X, mit Vorschau, Pipette, SV-Fläche, Hue-Leiste, einzelnen RGBA-Reglern und Zahlenfeldern, Darstellungsschalter OFF, #-Feld und +. Escape schließt dieses unveränderte Popup, Preferences bleibt offen. RGBA-Dezimalwerte und Hex-Wortlaut getrennt erhalten; keine Pixelmessung und keine Integernormalisierung. Nur dieser beobachtete Ausgangszustand/Kontext, kein allgemeiner Default. Farb-/Skinwirkung, Validierung, Apply, SaveAs und Kaltstart bleiben Fachpflicht HEX-26."
           }
-        ]
+        ],
+        "colorObservation": {
+          "run": "HEX-00-N-I16",
+          "rgbaDisplay": [
+            255,
+            255,
+            255,
+            255
+          ],
+          "hexDisplay": "ffffff",
+          "source": "Directly read native numeric fields, not screenshot swatch pixels.",
+          "scope": {
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+            "context": "Frisches festes privates Fensterprofil, vor New ohne geladene Karte, Interface Large Icons/Font15/SkinDark unverändert; keine Eingabe in Farben, kein Apply/SaveAs.",
+            "factoryDefaultsAsserted": false
+          },
+          "rangeMeasurement": "not_run",
+          "picker": {
+            "kind": "popup_without_modal_confirmation",
+            "titleVisible": false,
+            "okVisible": false,
+            "cancelVisible": false,
+            "xVisible": false,
+            "visibleControls": [
+              "color_preview",
+              "pipette",
+              "saturation_value_area",
+              "hue_bar",
+              "R_slider_and_number",
+              "G_slider_and_number",
+              "B_slider_and_number",
+              "A_slider_and_number",
+              "representation_toggle_OFF",
+              "hex_field",
+              "plus"
+            ],
+            "closeInput": "Escape",
+            "closeAfterEdit": "not_run",
+            "inputMutation": "not_run",
+            "owner": "WD-UI-0129"
+          },
+          "evidence": [
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/004-preferences-interface.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/004-preferences-interface.png",
+              "observation": "Preferences Interface vor Einzelprüfung: Large Icons/Font15/SkinDark und sämtliche14 Farben sichtbar."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/009-icon-color-picker.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/009-icon-color-picker.png",
+              "observation": "Preferences > Interface > Colors > Icon Color: eigenes Farbfeld direkt geöffnet; numerische Anzeige R/G/B/A=255/255/255/255; #ffffff. Einfaches Popup über Preferences ohne Fenstertitel/OK/Cancel/X, mit Vorschau, Pipette, SV-Fläche, Hue-Leiste, einzelnen RGBA-Reglern und Zahlenfeldern, Darstellungsschalter OFF, #-Feld und +. Escape schließt dieses unveränderte Popup, Preferences bleibt offen. RGBA-Dezimalwerte und Hex-Wortlaut getrennt erhalten; keine Pixelmessung und keine Integernormalisierung. Nur dieser beobachtete Ausgangszustand/Kontext, kein allgemeiner Default. Farb-/Skinwirkung, Validierung, Apply, SaveAs und Kaltstart bleiben Fachpflicht HEX-26."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/010-icon-color-close.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/010-icon-color-close.png",
+              "observation": "Icon Color: Escape nach reiner Anzeige schließt nur Picker; keine Farbeingabe und keine Commit-/Rücknahmebehauptung einer Änderung."
+            }
+          ]
+        }
       },
       {
         "id": "WD-UI-0130",
@@ -11827,7 +12192,7 @@
           "evidenceScope": "Angezeigter Zustand dieser Originalaufnahme; Persistenz und andere Kontexte nicht gemessen."
         },
         "rangeOrChoices": null,
-        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit.",
+        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit. N-I16: numerischer Ausgangswert und einfacher Popupkontext direkt erfasst; keine neue Eingabevalidierungs-/Wirkungs-/Persistenzabnahme.",
         "gesture": {
           "observed": "Öffnen/Anwählen über die protokollierte Original-UI.",
           "operation": "Werkzeug-Abschlussgesten noch nicht gemessen."
@@ -11849,6 +12214,27 @@
             "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/015-preferences-interface.json",
             "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/015-preferences-interface.png",
             "observation": "Preferences > Interface > Colors > Icon Hover Color: visible swatch."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/004-preferences-interface.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/004-preferences-interface.png",
+            "observation": "Preferences Interface vor Einzelprüfung: Large Icons/Font15/SkinDark und sämtliche14 Farben sichtbar."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/011-icon-hover-color-picker.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/011-icon-hover-color-picker.png",
+            "observation": "Preferences > Interface > Colors > Icon Hover Color: eigenes Farbfeld direkt geöffnet; numerische Anzeige R/G/B/A=0/191.25/255/255; #00bfff. Einfaches Popup über Preferences ohne Fenstertitel/OK/Cancel/X, mit Vorschau, Pipette, SV-Fläche, Hue-Leiste, einzelnen RGBA-Reglern und Zahlenfeldern, Darstellungsschalter OFF, #-Feld und +. Escape schließt dieses unveränderte Popup, Preferences bleibt offen. RGBA-Dezimalwerte und Hex-Wortlaut getrennt erhalten; keine Pixelmessung und keine Integernormalisierung. Nur dieser beobachtete Ausgangszustand/Kontext, kein allgemeiner Default. Farb-/Skinwirkung, Validierung, Apply, SaveAs und Kaltstart bleiben Fachpflicht HEX-26."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/012-icon-hover-color-close.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/012-icon-hover-color-close.png",
+            "observation": "Icon Hover Color: Escape nach reiner Anzeige schließt nur Picker; keine Farbeingabe und keine Commit-/Rücknahmebehauptung einer Änderung."
           }
         ],
         "classification": "user_function",
@@ -11867,10 +12253,99 @@
             "duePhase": "HEX-00",
             "reason": "Der Wortlaut benennt unbekannte Oberfläche, Wertebereich, Auswahl oder Eingabekontext; keine spätere Wirkung ersetzt diese Inventarpflicht.",
             "probe": "Originaloberfläche abgleichen: Numerischen Farbwert und Pickerkontext noch direkt erfassen.",
-            "state": "open",
-            "evidence": []
+            "state": "resolved",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/004-preferences-interface.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/004-preferences-interface.png",
+                "observation": "Preferences Interface vor Einzelprüfung: Large Icons/Font15/SkinDark und sämtliche14 Farben sichtbar."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/011-icon-hover-color-picker.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/011-icon-hover-color-picker.png",
+                "observation": "Preferences > Interface > Colors > Icon Hover Color: eigenes Farbfeld direkt geöffnet; numerische Anzeige R/G/B/A=0/191.25/255/255; #00bfff. Einfaches Popup über Preferences ohne Fenstertitel/OK/Cancel/X, mit Vorschau, Pipette, SV-Fläche, Hue-Leiste, einzelnen RGBA-Reglern und Zahlenfeldern, Darstellungsschalter OFF, #-Feld und +. Escape schließt dieses unveränderte Popup, Preferences bleibt offen. RGBA-Dezimalwerte und Hex-Wortlaut getrennt erhalten; keine Pixelmessung und keine Integernormalisierung. Nur dieser beobachtete Ausgangszustand/Kontext, kein allgemeiner Default. Farb-/Skinwirkung, Validierung, Apply, SaveAs und Kaltstart bleiben Fachpflicht HEX-26."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/012-icon-hover-color-close.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/012-icon-hover-color-close.png",
+                "observation": "Icon Hover Color: Escape nach reiner Anzeige schließt nur Picker; keine Farbeingabe und keine Commit-/Rücknahmebehauptung einer Änderung."
+              }
+            ],
+            "resolvedIn": "HEX-00-N-I16",
+            "resolution": "Preferences > Interface > Colors > Icon Hover Color: eigenes Farbfeld direkt geöffnet; numerische Anzeige R/G/B/A=0/191.25/255/255; #00bfff. Einfaches Popup über Preferences ohne Fenstertitel/OK/Cancel/X, mit Vorschau, Pipette, SV-Fläche, Hue-Leiste, einzelnen RGBA-Reglern und Zahlenfeldern, Darstellungsschalter OFF, #-Feld und +. Escape schließt dieses unveränderte Popup, Preferences bleibt offen. RGBA-Dezimalwerte und Hex-Wortlaut getrennt erhalten; keine Pixelmessung und keine Integernormalisierung. Nur dieser beobachtete Ausgangszustand/Kontext, kein allgemeiner Default. Farb-/Skinwirkung, Validierung, Apply, SaveAs und Kaltstart bleiben Fachpflicht HEX-26."
           }
-        ]
+        ],
+        "colorObservation": {
+          "run": "HEX-00-N-I16",
+          "rgbaDisplay": [
+            0,
+            191.25,
+            255,
+            255
+          ],
+          "hexDisplay": "00bfff",
+          "source": "Directly read native numeric fields, not screenshot swatch pixels.",
+          "scope": {
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+            "context": "Frisches festes privates Fensterprofil, vor New ohne geladene Karte, Interface Large Icons/Font15/SkinDark unverändert; keine Eingabe in Farben, kein Apply/SaveAs.",
+            "factoryDefaultsAsserted": false
+          },
+          "rangeMeasurement": "not_run",
+          "picker": {
+            "kind": "popup_without_modal_confirmation",
+            "titleVisible": false,
+            "okVisible": false,
+            "cancelVisible": false,
+            "xVisible": false,
+            "visibleControls": [
+              "color_preview",
+              "pipette",
+              "saturation_value_area",
+              "hue_bar",
+              "R_slider_and_number",
+              "G_slider_and_number",
+              "B_slider_and_number",
+              "A_slider_and_number",
+              "representation_toggle_OFF",
+              "hex_field",
+              "plus"
+            ],
+            "closeInput": "Escape",
+            "closeAfterEdit": "not_run",
+            "inputMutation": "not_run",
+            "owner": "WD-UI-0130"
+          },
+          "evidence": [
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/004-preferences-interface.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/004-preferences-interface.png",
+              "observation": "Preferences Interface vor Einzelprüfung: Large Icons/Font15/SkinDark und sämtliche14 Farben sichtbar."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/011-icon-hover-color-picker.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/011-icon-hover-color-picker.png",
+              "observation": "Preferences > Interface > Colors > Icon Hover Color: eigenes Farbfeld direkt geöffnet; numerische Anzeige R/G/B/A=0/191.25/255/255; #00bfff. Einfaches Popup über Preferences ohne Fenstertitel/OK/Cancel/X, mit Vorschau, Pipette, SV-Fläche, Hue-Leiste, einzelnen RGBA-Reglern und Zahlenfeldern, Darstellungsschalter OFF, #-Feld und +. Escape schließt dieses unveränderte Popup, Preferences bleibt offen. RGBA-Dezimalwerte und Hex-Wortlaut getrennt erhalten; keine Pixelmessung und keine Integernormalisierung. Nur dieser beobachtete Ausgangszustand/Kontext, kein allgemeiner Default. Farb-/Skinwirkung, Validierung, Apply, SaveAs und Kaltstart bleiben Fachpflicht HEX-26."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/012-icon-hover-color-close.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/012-icon-hover-color-close.png",
+              "observation": "Icon Hover Color: Escape nach reiner Anzeige schließt nur Picker; keine Farbeingabe und keine Commit-/Rücknahmebehauptung einer Änderung."
+            }
+          ]
+        }
       },
       {
         "id": "WD-UI-0131",
@@ -11884,7 +12359,7 @@
           "evidenceScope": "Angezeigter Zustand dieser Originalaufnahme; Persistenz und andere Kontexte nicht gemessen."
         },
         "rangeOrChoices": null,
-        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit.",
+        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit. N-I16: numerischer Ausgangswert und einfacher Popupkontext direkt erfasst; keine neue Eingabevalidierungs-/Wirkungs-/Persistenzabnahme.",
         "gesture": {
           "observed": "Öffnen/Anwählen über die protokollierte Original-UI.",
           "operation": "Werkzeug-Abschlussgesten noch nicht gemessen."
@@ -11906,6 +12381,27 @@
             "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/015-preferences-interface.json",
             "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/015-preferences-interface.png",
             "observation": "Preferences > Interface > Colors > Panel Color: visible swatch."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/004-preferences-interface.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/004-preferences-interface.png",
+            "observation": "Preferences Interface vor Einzelprüfung: Large Icons/Font15/SkinDark und sämtliche14 Farben sichtbar."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/013-panel-color-picker.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/013-panel-color-picker.png",
+            "observation": "Preferences > Interface > Colors > Panel Color: eigenes Farbfeld direkt geöffnet; numerische Anzeige R/G/B/A=48.45/48.45/48.45/255; #303030. Einfaches Popup über Preferences ohne Fenstertitel/OK/Cancel/X, mit Vorschau, Pipette, SV-Fläche, Hue-Leiste, einzelnen RGBA-Reglern und Zahlenfeldern, Darstellungsschalter OFF, #-Feld und +. Escape schließt dieses unveränderte Popup, Preferences bleibt offen. RGBA-Dezimalwerte und Hex-Wortlaut getrennt erhalten; keine Pixelmessung und keine Integernormalisierung. Nur dieser beobachtete Ausgangszustand/Kontext, kein allgemeiner Default. Farb-/Skinwirkung, Validierung, Apply, SaveAs und Kaltstart bleiben Fachpflicht HEX-26."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/014-panel-color-close.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/014-panel-color-close.png",
+            "observation": "Panel Color: Escape nach reiner Anzeige schließt nur Picker; keine Farbeingabe und keine Commit-/Rücknahmebehauptung einer Änderung."
           }
         ],
         "classification": "user_function",
@@ -11924,10 +12420,99 @@
             "duePhase": "HEX-00",
             "reason": "Der Wortlaut benennt unbekannte Oberfläche, Wertebereich, Auswahl oder Eingabekontext; keine spätere Wirkung ersetzt diese Inventarpflicht.",
             "probe": "Originaloberfläche abgleichen: Numerischen Farbwert und Pickerkontext noch direkt erfassen.",
-            "state": "open",
-            "evidence": []
+            "state": "resolved",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/004-preferences-interface.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/004-preferences-interface.png",
+                "observation": "Preferences Interface vor Einzelprüfung: Large Icons/Font15/SkinDark und sämtliche14 Farben sichtbar."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/013-panel-color-picker.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/013-panel-color-picker.png",
+                "observation": "Preferences > Interface > Colors > Panel Color: eigenes Farbfeld direkt geöffnet; numerische Anzeige R/G/B/A=48.45/48.45/48.45/255; #303030. Einfaches Popup über Preferences ohne Fenstertitel/OK/Cancel/X, mit Vorschau, Pipette, SV-Fläche, Hue-Leiste, einzelnen RGBA-Reglern und Zahlenfeldern, Darstellungsschalter OFF, #-Feld und +. Escape schließt dieses unveränderte Popup, Preferences bleibt offen. RGBA-Dezimalwerte und Hex-Wortlaut getrennt erhalten; keine Pixelmessung und keine Integernormalisierung. Nur dieser beobachtete Ausgangszustand/Kontext, kein allgemeiner Default. Farb-/Skinwirkung, Validierung, Apply, SaveAs und Kaltstart bleiben Fachpflicht HEX-26."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/014-panel-color-close.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/014-panel-color-close.png",
+                "observation": "Panel Color: Escape nach reiner Anzeige schließt nur Picker; keine Farbeingabe und keine Commit-/Rücknahmebehauptung einer Änderung."
+              }
+            ],
+            "resolvedIn": "HEX-00-N-I16",
+            "resolution": "Preferences > Interface > Colors > Panel Color: eigenes Farbfeld direkt geöffnet; numerische Anzeige R/G/B/A=48.45/48.45/48.45/255; #303030. Einfaches Popup über Preferences ohne Fenstertitel/OK/Cancel/X, mit Vorschau, Pipette, SV-Fläche, Hue-Leiste, einzelnen RGBA-Reglern und Zahlenfeldern, Darstellungsschalter OFF, #-Feld und +. Escape schließt dieses unveränderte Popup, Preferences bleibt offen. RGBA-Dezimalwerte und Hex-Wortlaut getrennt erhalten; keine Pixelmessung und keine Integernormalisierung. Nur dieser beobachtete Ausgangszustand/Kontext, kein allgemeiner Default. Farb-/Skinwirkung, Validierung, Apply, SaveAs und Kaltstart bleiben Fachpflicht HEX-26."
           }
-        ]
+        ],
+        "colorObservation": {
+          "run": "HEX-00-N-I16",
+          "rgbaDisplay": [
+            48.45,
+            48.45,
+            48.45,
+            255
+          ],
+          "hexDisplay": "303030",
+          "source": "Directly read native numeric fields, not screenshot swatch pixels.",
+          "scope": {
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+            "context": "Frisches festes privates Fensterprofil, vor New ohne geladene Karte, Interface Large Icons/Font15/SkinDark unverändert; keine Eingabe in Farben, kein Apply/SaveAs.",
+            "factoryDefaultsAsserted": false
+          },
+          "rangeMeasurement": "not_run",
+          "picker": {
+            "kind": "popup_without_modal_confirmation",
+            "titleVisible": false,
+            "okVisible": false,
+            "cancelVisible": false,
+            "xVisible": false,
+            "visibleControls": [
+              "color_preview",
+              "pipette",
+              "saturation_value_area",
+              "hue_bar",
+              "R_slider_and_number",
+              "G_slider_and_number",
+              "B_slider_and_number",
+              "A_slider_and_number",
+              "representation_toggle_OFF",
+              "hex_field",
+              "plus"
+            ],
+            "closeInput": "Escape",
+            "closeAfterEdit": "not_run",
+            "inputMutation": "not_run",
+            "owner": "WD-UI-0131"
+          },
+          "evidence": [
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/004-preferences-interface.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/004-preferences-interface.png",
+              "observation": "Preferences Interface vor Einzelprüfung: Large Icons/Font15/SkinDark und sämtliche14 Farben sichtbar."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/013-panel-color-picker.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/013-panel-color-picker.png",
+              "observation": "Preferences > Interface > Colors > Panel Color: eigenes Farbfeld direkt geöffnet; numerische Anzeige R/G/B/A=48.45/48.45/48.45/255; #303030. Einfaches Popup über Preferences ohne Fenstertitel/OK/Cancel/X, mit Vorschau, Pipette, SV-Fläche, Hue-Leiste, einzelnen RGBA-Reglern und Zahlenfeldern, Darstellungsschalter OFF, #-Feld und +. Escape schließt dieses unveränderte Popup, Preferences bleibt offen. RGBA-Dezimalwerte und Hex-Wortlaut getrennt erhalten; keine Pixelmessung und keine Integernormalisierung. Nur dieser beobachtete Ausgangszustand/Kontext, kein allgemeiner Default. Farb-/Skinwirkung, Validierung, Apply, SaveAs und Kaltstart bleiben Fachpflicht HEX-26."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/014-panel-color-close.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/014-panel-color-close.png",
+              "observation": "Panel Color: Escape nach reiner Anzeige schließt nur Picker; keine Farbeingabe und keine Commit-/Rücknahmebehauptung einer Änderung."
+            }
+          ]
+        }
       },
       {
         "id": "WD-UI-0132",
@@ -11941,7 +12526,7 @@
           "evidenceScope": "Angezeigter Zustand dieser Originalaufnahme; Persistenz und andere Kontexte nicht gemessen."
         },
         "rangeOrChoices": null,
-        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit.",
+        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit. N-I16: numerischer Ausgangswert und einfacher Popupkontext direkt erfasst; keine neue Eingabevalidierungs-/Wirkungs-/Persistenzabnahme.",
         "gesture": {
           "observed": "Öffnen/Anwählen über die protokollierte Original-UI.",
           "operation": "Werkzeug-Abschlussgesten noch nicht gemessen."
@@ -11963,6 +12548,27 @@
             "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/015-preferences-interface.json",
             "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/015-preferences-interface.png",
             "observation": "Preferences > Interface > Colors > Edit Panel Color: visible swatch."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/004-preferences-interface.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/004-preferences-interface.png",
+            "observation": "Preferences Interface vor Einzelprüfung: Large Icons/Font15/SkinDark und sämtliche14 Farben sichtbar."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/015-edit-panel-color-picker.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/015-edit-panel-color-picker.png",
+            "observation": "Preferences > Interface > Colors > Edit Panel Color: eigenes Farbfeld direkt geöffnet; numerische Anzeige R/G/B/A=35.7/35.7/35.7/255; #232323. Einfaches Popup über Preferences ohne Fenstertitel/OK/Cancel/X, mit Vorschau, Pipette, SV-Fläche, Hue-Leiste, einzelnen RGBA-Reglern und Zahlenfeldern, Darstellungsschalter OFF, #-Feld und +. Escape schließt dieses unveränderte Popup, Preferences bleibt offen. RGBA-Dezimalwerte und Hex-Wortlaut getrennt erhalten; keine Pixelmessung und keine Integernormalisierung. Nur dieser beobachtete Ausgangszustand/Kontext, kein allgemeiner Default. Farb-/Skinwirkung, Validierung, Apply, SaveAs und Kaltstart bleiben Fachpflicht HEX-26."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/016-edit-panel-color-close.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/016-edit-panel-color-close.png",
+            "observation": "Edit Panel Color: Escape nach reiner Anzeige schließt nur Picker; keine Farbeingabe und keine Commit-/Rücknahmebehauptung einer Änderung."
           }
         ],
         "classification": "user_function",
@@ -11981,10 +12587,99 @@
             "duePhase": "HEX-00",
             "reason": "Der Wortlaut benennt unbekannte Oberfläche, Wertebereich, Auswahl oder Eingabekontext; keine spätere Wirkung ersetzt diese Inventarpflicht.",
             "probe": "Originaloberfläche abgleichen: Numerischen Farbwert und Pickerkontext noch direkt erfassen.",
-            "state": "open",
-            "evidence": []
+            "state": "resolved",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/004-preferences-interface.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/004-preferences-interface.png",
+                "observation": "Preferences Interface vor Einzelprüfung: Large Icons/Font15/SkinDark und sämtliche14 Farben sichtbar."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/015-edit-panel-color-picker.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/015-edit-panel-color-picker.png",
+                "observation": "Preferences > Interface > Colors > Edit Panel Color: eigenes Farbfeld direkt geöffnet; numerische Anzeige R/G/B/A=35.7/35.7/35.7/255; #232323. Einfaches Popup über Preferences ohne Fenstertitel/OK/Cancel/X, mit Vorschau, Pipette, SV-Fläche, Hue-Leiste, einzelnen RGBA-Reglern und Zahlenfeldern, Darstellungsschalter OFF, #-Feld und +. Escape schließt dieses unveränderte Popup, Preferences bleibt offen. RGBA-Dezimalwerte und Hex-Wortlaut getrennt erhalten; keine Pixelmessung und keine Integernormalisierung. Nur dieser beobachtete Ausgangszustand/Kontext, kein allgemeiner Default. Farb-/Skinwirkung, Validierung, Apply, SaveAs und Kaltstart bleiben Fachpflicht HEX-26."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/016-edit-panel-color-close.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/016-edit-panel-color-close.png",
+                "observation": "Edit Panel Color: Escape nach reiner Anzeige schließt nur Picker; keine Farbeingabe und keine Commit-/Rücknahmebehauptung einer Änderung."
+              }
+            ],
+            "resolvedIn": "HEX-00-N-I16",
+            "resolution": "Preferences > Interface > Colors > Edit Panel Color: eigenes Farbfeld direkt geöffnet; numerische Anzeige R/G/B/A=35.7/35.7/35.7/255; #232323. Einfaches Popup über Preferences ohne Fenstertitel/OK/Cancel/X, mit Vorschau, Pipette, SV-Fläche, Hue-Leiste, einzelnen RGBA-Reglern und Zahlenfeldern, Darstellungsschalter OFF, #-Feld und +. Escape schließt dieses unveränderte Popup, Preferences bleibt offen. RGBA-Dezimalwerte und Hex-Wortlaut getrennt erhalten; keine Pixelmessung und keine Integernormalisierung. Nur dieser beobachtete Ausgangszustand/Kontext, kein allgemeiner Default. Farb-/Skinwirkung, Validierung, Apply, SaveAs und Kaltstart bleiben Fachpflicht HEX-26."
           }
-        ]
+        ],
+        "colorObservation": {
+          "run": "HEX-00-N-I16",
+          "rgbaDisplay": [
+            35.7,
+            35.7,
+            35.7,
+            255
+          ],
+          "hexDisplay": "232323",
+          "source": "Directly read native numeric fields, not screenshot swatch pixels.",
+          "scope": {
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+            "context": "Frisches festes privates Fensterprofil, vor New ohne geladene Karte, Interface Large Icons/Font15/SkinDark unverändert; keine Eingabe in Farben, kein Apply/SaveAs.",
+            "factoryDefaultsAsserted": false
+          },
+          "rangeMeasurement": "not_run",
+          "picker": {
+            "kind": "popup_without_modal_confirmation",
+            "titleVisible": false,
+            "okVisible": false,
+            "cancelVisible": false,
+            "xVisible": false,
+            "visibleControls": [
+              "color_preview",
+              "pipette",
+              "saturation_value_area",
+              "hue_bar",
+              "R_slider_and_number",
+              "G_slider_and_number",
+              "B_slider_and_number",
+              "A_slider_and_number",
+              "representation_toggle_OFF",
+              "hex_field",
+              "plus"
+            ],
+            "closeInput": "Escape",
+            "closeAfterEdit": "not_run",
+            "inputMutation": "not_run",
+            "owner": "WD-UI-0132"
+          },
+          "evidence": [
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/004-preferences-interface.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/004-preferences-interface.png",
+              "observation": "Preferences Interface vor Einzelprüfung: Large Icons/Font15/SkinDark und sämtliche14 Farben sichtbar."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/015-edit-panel-color-picker.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/015-edit-panel-color-picker.png",
+              "observation": "Preferences > Interface > Colors > Edit Panel Color: eigenes Farbfeld direkt geöffnet; numerische Anzeige R/G/B/A=35.7/35.7/35.7/255; #232323. Einfaches Popup über Preferences ohne Fenstertitel/OK/Cancel/X, mit Vorschau, Pipette, SV-Fläche, Hue-Leiste, einzelnen RGBA-Reglern und Zahlenfeldern, Darstellungsschalter OFF, #-Feld und +. Escape schließt dieses unveränderte Popup, Preferences bleibt offen. RGBA-Dezimalwerte und Hex-Wortlaut getrennt erhalten; keine Pixelmessung und keine Integernormalisierung. Nur dieser beobachtete Ausgangszustand/Kontext, kein allgemeiner Default. Farb-/Skinwirkung, Validierung, Apply, SaveAs und Kaltstart bleiben Fachpflicht HEX-26."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/016-edit-panel-color-close.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/016-edit-panel-color-close.png",
+              "observation": "Edit Panel Color: Escape nach reiner Anzeige schließt nur Picker; keine Farbeingabe und keine Commit-/Rücknahmebehauptung einer Änderung."
+            }
+          ]
+        }
       },
       {
         "id": "WD-UI-0133",
@@ -11998,7 +12693,7 @@
           "evidenceScope": "Angezeigter Zustand dieser Originalaufnahme; Persistenz und andere Kontexte nicht gemessen."
         },
         "rangeOrChoices": null,
-        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit.",
+        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit. N-I16: numerischer Ausgangswert und einfacher Popupkontext direkt erfasst; keine neue Eingabevalidierungs-/Wirkungs-/Persistenzabnahme.",
         "gesture": {
           "observed": "Öffnen/Anwählen über die protokollierte Original-UI.",
           "operation": "Werkzeug-Abschlussgesten noch nicht gemessen."
@@ -12020,6 +12715,27 @@
             "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/015-preferences-interface.json",
             "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/015-preferences-interface.png",
             "observation": "Preferences > Interface > Colors > Background Color: visible swatch."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/004-preferences-interface.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/004-preferences-interface.png",
+            "observation": "Preferences Interface vor Einzelprüfung: Large Icons/Font15/SkinDark und sämtliche14 Farben sichtbar."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/017-background-color-picker.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/017-background-color-picker.png",
+            "observation": "Preferences > Interface > Colors > Background Color: eigenes Farbfeld direkt geöffnet; numerische Anzeige R/G/B/A=40.8/40.8/40.8/255; #282828. Einfaches Popup über Preferences ohne Fenstertitel/OK/Cancel/X, mit Vorschau, Pipette, SV-Fläche, Hue-Leiste, einzelnen RGBA-Reglern und Zahlenfeldern, Darstellungsschalter OFF, #-Feld und +. Escape schließt dieses unveränderte Popup, Preferences bleibt offen. RGBA-Dezimalwerte und Hex-Wortlaut getrennt erhalten; keine Pixelmessung und keine Integernormalisierung. Nur dieser beobachtete Ausgangszustand/Kontext, kein allgemeiner Default. Farb-/Skinwirkung, Validierung, Apply, SaveAs und Kaltstart bleiben Fachpflicht HEX-26."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/018-background-color-close.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/018-background-color-close.png",
+            "observation": "Background Color: Escape nach reiner Anzeige schließt nur Picker; keine Farbeingabe und keine Commit-/Rücknahmebehauptung einer Änderung."
           }
         ],
         "classification": "user_function",
@@ -12038,10 +12754,99 @@
             "duePhase": "HEX-00",
             "reason": "Der Wortlaut benennt unbekannte Oberfläche, Wertebereich, Auswahl oder Eingabekontext; keine spätere Wirkung ersetzt diese Inventarpflicht.",
             "probe": "Originaloberfläche abgleichen: Numerischen Farbwert und Pickerkontext noch direkt erfassen.",
-            "state": "open",
-            "evidence": []
+            "state": "resolved",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/004-preferences-interface.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/004-preferences-interface.png",
+                "observation": "Preferences Interface vor Einzelprüfung: Large Icons/Font15/SkinDark und sämtliche14 Farben sichtbar."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/017-background-color-picker.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/017-background-color-picker.png",
+                "observation": "Preferences > Interface > Colors > Background Color: eigenes Farbfeld direkt geöffnet; numerische Anzeige R/G/B/A=40.8/40.8/40.8/255; #282828. Einfaches Popup über Preferences ohne Fenstertitel/OK/Cancel/X, mit Vorschau, Pipette, SV-Fläche, Hue-Leiste, einzelnen RGBA-Reglern und Zahlenfeldern, Darstellungsschalter OFF, #-Feld und +. Escape schließt dieses unveränderte Popup, Preferences bleibt offen. RGBA-Dezimalwerte und Hex-Wortlaut getrennt erhalten; keine Pixelmessung und keine Integernormalisierung. Nur dieser beobachtete Ausgangszustand/Kontext, kein allgemeiner Default. Farb-/Skinwirkung, Validierung, Apply, SaveAs und Kaltstart bleiben Fachpflicht HEX-26."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/018-background-color-close.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/018-background-color-close.png",
+                "observation": "Background Color: Escape nach reiner Anzeige schließt nur Picker; keine Farbeingabe und keine Commit-/Rücknahmebehauptung einer Änderung."
+              }
+            ],
+            "resolvedIn": "HEX-00-N-I16",
+            "resolution": "Preferences > Interface > Colors > Background Color: eigenes Farbfeld direkt geöffnet; numerische Anzeige R/G/B/A=40.8/40.8/40.8/255; #282828. Einfaches Popup über Preferences ohne Fenstertitel/OK/Cancel/X, mit Vorschau, Pipette, SV-Fläche, Hue-Leiste, einzelnen RGBA-Reglern und Zahlenfeldern, Darstellungsschalter OFF, #-Feld und +. Escape schließt dieses unveränderte Popup, Preferences bleibt offen. RGBA-Dezimalwerte und Hex-Wortlaut getrennt erhalten; keine Pixelmessung und keine Integernormalisierung. Nur dieser beobachtete Ausgangszustand/Kontext, kein allgemeiner Default. Farb-/Skinwirkung, Validierung, Apply, SaveAs und Kaltstart bleiben Fachpflicht HEX-26."
           }
-        ]
+        ],
+        "colorObservation": {
+          "run": "HEX-00-N-I16",
+          "rgbaDisplay": [
+            40.8,
+            40.8,
+            40.8,
+            255
+          ],
+          "hexDisplay": "282828",
+          "source": "Directly read native numeric fields, not screenshot swatch pixels.",
+          "scope": {
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+            "context": "Frisches festes privates Fensterprofil, vor New ohne geladene Karte, Interface Large Icons/Font15/SkinDark unverändert; keine Eingabe in Farben, kein Apply/SaveAs.",
+            "factoryDefaultsAsserted": false
+          },
+          "rangeMeasurement": "not_run",
+          "picker": {
+            "kind": "popup_without_modal_confirmation",
+            "titleVisible": false,
+            "okVisible": false,
+            "cancelVisible": false,
+            "xVisible": false,
+            "visibleControls": [
+              "color_preview",
+              "pipette",
+              "saturation_value_area",
+              "hue_bar",
+              "R_slider_and_number",
+              "G_slider_and_number",
+              "B_slider_and_number",
+              "A_slider_and_number",
+              "representation_toggle_OFF",
+              "hex_field",
+              "plus"
+            ],
+            "closeInput": "Escape",
+            "closeAfterEdit": "not_run",
+            "inputMutation": "not_run",
+            "owner": "WD-UI-0133"
+          },
+          "evidence": [
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/004-preferences-interface.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/004-preferences-interface.png",
+              "observation": "Preferences Interface vor Einzelprüfung: Large Icons/Font15/SkinDark und sämtliche14 Farben sichtbar."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/017-background-color-picker.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/017-background-color-picker.png",
+              "observation": "Preferences > Interface > Colors > Background Color: eigenes Farbfeld direkt geöffnet; numerische Anzeige R/G/B/A=40.8/40.8/40.8/255; #282828. Einfaches Popup über Preferences ohne Fenstertitel/OK/Cancel/X, mit Vorschau, Pipette, SV-Fläche, Hue-Leiste, einzelnen RGBA-Reglern und Zahlenfeldern, Darstellungsschalter OFF, #-Feld und +. Escape schließt dieses unveränderte Popup, Preferences bleibt offen. RGBA-Dezimalwerte und Hex-Wortlaut getrennt erhalten; keine Pixelmessung und keine Integernormalisierung. Nur dieser beobachtete Ausgangszustand/Kontext, kein allgemeiner Default. Farb-/Skinwirkung, Validierung, Apply, SaveAs und Kaltstart bleiben Fachpflicht HEX-26."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/018-background-color-close.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/018-background-color-close.png",
+              "observation": "Background Color: Escape nach reiner Anzeige schließt nur Picker; keine Farbeingabe und keine Commit-/Rücknahmebehauptung einer Änderung."
+            }
+          ]
+        }
       },
       {
         "id": "WD-UI-0134",
@@ -12055,7 +12860,7 @@
           "evidenceScope": "Angezeigter Zustand dieser Originalaufnahme; Persistenz und andere Kontexte nicht gemessen."
         },
         "rangeOrChoices": null,
-        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit.",
+        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit. N-I16: numerischer Ausgangswert und einfacher Popupkontext direkt erfasst; keine neue Eingabevalidierungs-/Wirkungs-/Persistenzabnahme.",
         "gesture": {
           "observed": "Öffnen/Anwählen über die protokollierte Original-UI.",
           "operation": "Werkzeug-Abschlussgesten noch nicht gemessen."
@@ -12077,6 +12882,27 @@
             "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/015-preferences-interface.json",
             "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/015-preferences-interface.png",
             "observation": "Preferences > Interface > Colors > Button Hover Color: visible swatch."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/004-preferences-interface.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/004-preferences-interface.png",
+            "observation": "Preferences Interface vor Einzelprüfung: Large Icons/Font15/SkinDark und sämtliche14 Farben sichtbar."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/019-button-hover-color-picker.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/019-button-hover-color-picker.png",
+            "observation": "Preferences > Interface > Colors > Button Hover Color: eigenes Farbfeld direkt geöffnet; numerische Anzeige R/G/B/A=63.75/63.75/63.75/255; #3f3f3f. Einfaches Popup über Preferences ohne Fenstertitel/OK/Cancel/X, mit Vorschau, Pipette, SV-Fläche, Hue-Leiste, einzelnen RGBA-Reglern und Zahlenfeldern, Darstellungsschalter OFF, #-Feld und +. Escape schließt dieses unveränderte Popup, Preferences bleibt offen. RGBA-Dezimalwerte und Hex-Wortlaut getrennt erhalten; keine Pixelmessung und keine Integernormalisierung. Nur dieser beobachtete Ausgangszustand/Kontext, kein allgemeiner Default. Farb-/Skinwirkung, Validierung, Apply, SaveAs und Kaltstart bleiben Fachpflicht HEX-26."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/020-button-hover-color-close.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/020-button-hover-color-close.png",
+            "observation": "Button Hover Color: Escape nach reiner Anzeige schließt nur Picker; keine Farbeingabe und keine Commit-/Rücknahmebehauptung einer Änderung."
           }
         ],
         "classification": "user_function",
@@ -12095,10 +12921,99 @@
             "duePhase": "HEX-00",
             "reason": "Der Wortlaut benennt unbekannte Oberfläche, Wertebereich, Auswahl oder Eingabekontext; keine spätere Wirkung ersetzt diese Inventarpflicht.",
             "probe": "Originaloberfläche abgleichen: Numerischen Farbwert und Pickerkontext noch direkt erfassen.",
-            "state": "open",
-            "evidence": []
+            "state": "resolved",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/004-preferences-interface.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/004-preferences-interface.png",
+                "observation": "Preferences Interface vor Einzelprüfung: Large Icons/Font15/SkinDark und sämtliche14 Farben sichtbar."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/019-button-hover-color-picker.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/019-button-hover-color-picker.png",
+                "observation": "Preferences > Interface > Colors > Button Hover Color: eigenes Farbfeld direkt geöffnet; numerische Anzeige R/G/B/A=63.75/63.75/63.75/255; #3f3f3f. Einfaches Popup über Preferences ohne Fenstertitel/OK/Cancel/X, mit Vorschau, Pipette, SV-Fläche, Hue-Leiste, einzelnen RGBA-Reglern und Zahlenfeldern, Darstellungsschalter OFF, #-Feld und +. Escape schließt dieses unveränderte Popup, Preferences bleibt offen. RGBA-Dezimalwerte und Hex-Wortlaut getrennt erhalten; keine Pixelmessung und keine Integernormalisierung. Nur dieser beobachtete Ausgangszustand/Kontext, kein allgemeiner Default. Farb-/Skinwirkung, Validierung, Apply, SaveAs und Kaltstart bleiben Fachpflicht HEX-26."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/020-button-hover-color-close.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/020-button-hover-color-close.png",
+                "observation": "Button Hover Color: Escape nach reiner Anzeige schließt nur Picker; keine Farbeingabe und keine Commit-/Rücknahmebehauptung einer Änderung."
+              }
+            ],
+            "resolvedIn": "HEX-00-N-I16",
+            "resolution": "Preferences > Interface > Colors > Button Hover Color: eigenes Farbfeld direkt geöffnet; numerische Anzeige R/G/B/A=63.75/63.75/63.75/255; #3f3f3f. Einfaches Popup über Preferences ohne Fenstertitel/OK/Cancel/X, mit Vorschau, Pipette, SV-Fläche, Hue-Leiste, einzelnen RGBA-Reglern und Zahlenfeldern, Darstellungsschalter OFF, #-Feld und +. Escape schließt dieses unveränderte Popup, Preferences bleibt offen. RGBA-Dezimalwerte und Hex-Wortlaut getrennt erhalten; keine Pixelmessung und keine Integernormalisierung. Nur dieser beobachtete Ausgangszustand/Kontext, kein allgemeiner Default. Farb-/Skinwirkung, Validierung, Apply, SaveAs und Kaltstart bleiben Fachpflicht HEX-26."
           }
-        ]
+        ],
+        "colorObservation": {
+          "run": "HEX-00-N-I16",
+          "rgbaDisplay": [
+            63.75,
+            63.75,
+            63.75,
+            255
+          ],
+          "hexDisplay": "3f3f3f",
+          "source": "Directly read native numeric fields, not screenshot swatch pixels.",
+          "scope": {
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+            "context": "Frisches festes privates Fensterprofil, vor New ohne geladene Karte, Interface Large Icons/Font15/SkinDark unverändert; keine Eingabe in Farben, kein Apply/SaveAs.",
+            "factoryDefaultsAsserted": false
+          },
+          "rangeMeasurement": "not_run",
+          "picker": {
+            "kind": "popup_without_modal_confirmation",
+            "titleVisible": false,
+            "okVisible": false,
+            "cancelVisible": false,
+            "xVisible": false,
+            "visibleControls": [
+              "color_preview",
+              "pipette",
+              "saturation_value_area",
+              "hue_bar",
+              "R_slider_and_number",
+              "G_slider_and_number",
+              "B_slider_and_number",
+              "A_slider_and_number",
+              "representation_toggle_OFF",
+              "hex_field",
+              "plus"
+            ],
+            "closeInput": "Escape",
+            "closeAfterEdit": "not_run",
+            "inputMutation": "not_run",
+            "owner": "WD-UI-0134"
+          },
+          "evidence": [
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/004-preferences-interface.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/004-preferences-interface.png",
+              "observation": "Preferences Interface vor Einzelprüfung: Large Icons/Font15/SkinDark und sämtliche14 Farben sichtbar."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/019-button-hover-color-picker.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/019-button-hover-color-picker.png",
+              "observation": "Preferences > Interface > Colors > Button Hover Color: eigenes Farbfeld direkt geöffnet; numerische Anzeige R/G/B/A=63.75/63.75/63.75/255; #3f3f3f. Einfaches Popup über Preferences ohne Fenstertitel/OK/Cancel/X, mit Vorschau, Pipette, SV-Fläche, Hue-Leiste, einzelnen RGBA-Reglern und Zahlenfeldern, Darstellungsschalter OFF, #-Feld und +. Escape schließt dieses unveränderte Popup, Preferences bleibt offen. RGBA-Dezimalwerte und Hex-Wortlaut getrennt erhalten; keine Pixelmessung und keine Integernormalisierung. Nur dieser beobachtete Ausgangszustand/Kontext, kein allgemeiner Default. Farb-/Skinwirkung, Validierung, Apply, SaveAs und Kaltstart bleiben Fachpflicht HEX-26."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/020-button-hover-color-close.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/020-button-hover-color-close.png",
+              "observation": "Button Hover Color: Escape nach reiner Anzeige schließt nur Picker; keine Farbeingabe und keine Commit-/Rücknahmebehauptung einer Änderung."
+            }
+          ]
+        }
       },
       {
         "id": "WD-UI-0135",
@@ -12112,7 +13027,7 @@
           "evidenceScope": "Angezeigter Zustand dieser Originalaufnahme; Persistenz und andere Kontexte nicht gemessen."
         },
         "rangeOrChoices": null,
-        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit.",
+        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit. N-I16: numerischer Ausgangswert und einfacher Popupkontext direkt erfasst; keine neue Eingabevalidierungs-/Wirkungs-/Persistenzabnahme.",
         "gesture": {
           "observed": "Öffnen/Anwählen über die protokollierte Original-UI.",
           "operation": "Werkzeug-Abschlussgesten noch nicht gemessen."
@@ -12134,6 +13049,27 @@
             "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/015-preferences-interface.json",
             "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/015-preferences-interface.png",
             "observation": "Preferences > Interface > Colors > Button Pressed Color: visible swatch."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/004-preferences-interface.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/004-preferences-interface.png",
+            "observation": "Preferences Interface vor Einzelprüfung: Large Icons/Font15/SkinDark und sämtliche14 Farben sichtbar."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/021-button-pressed-color-picker.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/021-button-pressed-color-picker.png",
+            "observation": "Preferences > Interface > Colors > Button Pressed Color: eigenes Farbfeld direkt geöffnet; numerische Anzeige R/G/B/A=35.7/35.7/35.7/255; #232323. Einfaches Popup über Preferences ohne Fenstertitel/OK/Cancel/X, mit Vorschau, Pipette, SV-Fläche, Hue-Leiste, einzelnen RGBA-Reglern und Zahlenfeldern, Darstellungsschalter OFF, #-Feld und +. Escape schließt dieses unveränderte Popup, Preferences bleibt offen. RGBA-Dezimalwerte und Hex-Wortlaut getrennt erhalten; keine Pixelmessung und keine Integernormalisierung. Nur dieser beobachtete Ausgangszustand/Kontext, kein allgemeiner Default. Farb-/Skinwirkung, Validierung, Apply, SaveAs und Kaltstart bleiben Fachpflicht HEX-26."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/022-button-pressed-color-close.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/022-button-pressed-color-close.png",
+            "observation": "Button Pressed Color: Escape nach reiner Anzeige schließt nur Picker; keine Farbeingabe und keine Commit-/Rücknahmebehauptung einer Änderung."
           }
         ],
         "classification": "user_function",
@@ -12152,10 +13088,99 @@
             "duePhase": "HEX-00",
             "reason": "Der Wortlaut benennt unbekannte Oberfläche, Wertebereich, Auswahl oder Eingabekontext; keine spätere Wirkung ersetzt diese Inventarpflicht.",
             "probe": "Originaloberfläche abgleichen: Numerischen Farbwert und Pickerkontext noch direkt erfassen.",
-            "state": "open",
-            "evidence": []
+            "state": "resolved",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/004-preferences-interface.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/004-preferences-interface.png",
+                "observation": "Preferences Interface vor Einzelprüfung: Large Icons/Font15/SkinDark und sämtliche14 Farben sichtbar."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/021-button-pressed-color-picker.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/021-button-pressed-color-picker.png",
+                "observation": "Preferences > Interface > Colors > Button Pressed Color: eigenes Farbfeld direkt geöffnet; numerische Anzeige R/G/B/A=35.7/35.7/35.7/255; #232323. Einfaches Popup über Preferences ohne Fenstertitel/OK/Cancel/X, mit Vorschau, Pipette, SV-Fläche, Hue-Leiste, einzelnen RGBA-Reglern und Zahlenfeldern, Darstellungsschalter OFF, #-Feld und +. Escape schließt dieses unveränderte Popup, Preferences bleibt offen. RGBA-Dezimalwerte und Hex-Wortlaut getrennt erhalten; keine Pixelmessung und keine Integernormalisierung. Nur dieser beobachtete Ausgangszustand/Kontext, kein allgemeiner Default. Farb-/Skinwirkung, Validierung, Apply, SaveAs und Kaltstart bleiben Fachpflicht HEX-26."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/022-button-pressed-color-close.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/022-button-pressed-color-close.png",
+                "observation": "Button Pressed Color: Escape nach reiner Anzeige schließt nur Picker; keine Farbeingabe und keine Commit-/Rücknahmebehauptung einer Änderung."
+              }
+            ],
+            "resolvedIn": "HEX-00-N-I16",
+            "resolution": "Preferences > Interface > Colors > Button Pressed Color: eigenes Farbfeld direkt geöffnet; numerische Anzeige R/G/B/A=35.7/35.7/35.7/255; #232323. Einfaches Popup über Preferences ohne Fenstertitel/OK/Cancel/X, mit Vorschau, Pipette, SV-Fläche, Hue-Leiste, einzelnen RGBA-Reglern und Zahlenfeldern, Darstellungsschalter OFF, #-Feld und +. Escape schließt dieses unveränderte Popup, Preferences bleibt offen. RGBA-Dezimalwerte und Hex-Wortlaut getrennt erhalten; keine Pixelmessung und keine Integernormalisierung. Nur dieser beobachtete Ausgangszustand/Kontext, kein allgemeiner Default. Farb-/Skinwirkung, Validierung, Apply, SaveAs und Kaltstart bleiben Fachpflicht HEX-26."
           }
-        ]
+        ],
+        "colorObservation": {
+          "run": "HEX-00-N-I16",
+          "rgbaDisplay": [
+            35.7,
+            35.7,
+            35.7,
+            255
+          ],
+          "hexDisplay": "232323",
+          "source": "Directly read native numeric fields, not screenshot swatch pixels.",
+          "scope": {
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+            "context": "Frisches festes privates Fensterprofil, vor New ohne geladene Karte, Interface Large Icons/Font15/SkinDark unverändert; keine Eingabe in Farben, kein Apply/SaveAs.",
+            "factoryDefaultsAsserted": false
+          },
+          "rangeMeasurement": "not_run",
+          "picker": {
+            "kind": "popup_without_modal_confirmation",
+            "titleVisible": false,
+            "okVisible": false,
+            "cancelVisible": false,
+            "xVisible": false,
+            "visibleControls": [
+              "color_preview",
+              "pipette",
+              "saturation_value_area",
+              "hue_bar",
+              "R_slider_and_number",
+              "G_slider_and_number",
+              "B_slider_and_number",
+              "A_slider_and_number",
+              "representation_toggle_OFF",
+              "hex_field",
+              "plus"
+            ],
+            "closeInput": "Escape",
+            "closeAfterEdit": "not_run",
+            "inputMutation": "not_run",
+            "owner": "WD-UI-0135"
+          },
+          "evidence": [
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/004-preferences-interface.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/004-preferences-interface.png",
+              "observation": "Preferences Interface vor Einzelprüfung: Large Icons/Font15/SkinDark und sämtliche14 Farben sichtbar."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/021-button-pressed-color-picker.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/021-button-pressed-color-picker.png",
+              "observation": "Preferences > Interface > Colors > Button Pressed Color: eigenes Farbfeld direkt geöffnet; numerische Anzeige R/G/B/A=35.7/35.7/35.7/255; #232323. Einfaches Popup über Preferences ohne Fenstertitel/OK/Cancel/X, mit Vorschau, Pipette, SV-Fläche, Hue-Leiste, einzelnen RGBA-Reglern und Zahlenfeldern, Darstellungsschalter OFF, #-Feld und +. Escape schließt dieses unveränderte Popup, Preferences bleibt offen. RGBA-Dezimalwerte und Hex-Wortlaut getrennt erhalten; keine Pixelmessung und keine Integernormalisierung. Nur dieser beobachtete Ausgangszustand/Kontext, kein allgemeiner Default. Farb-/Skinwirkung, Validierung, Apply, SaveAs und Kaltstart bleiben Fachpflicht HEX-26."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/022-button-pressed-color-close.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/022-button-pressed-color-close.png",
+              "observation": "Button Pressed Color: Escape nach reiner Anzeige schließt nur Picker; keine Farbeingabe und keine Commit-/Rücknahmebehauptung einer Änderung."
+            }
+          ]
+        }
       },
       {
         "id": "WD-UI-0136",
@@ -12169,7 +13194,7 @@
           "evidenceScope": "Angezeigter Zustand dieser Originalaufnahme; Persistenz und andere Kontexte nicht gemessen."
         },
         "rangeOrChoices": null,
-        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit.",
+        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit. N-I16: numerischer Ausgangswert und einfacher Popupkontext direkt erfasst; keine neue Eingabevalidierungs-/Wirkungs-/Persistenzabnahme.",
         "gesture": {
           "observed": "Öffnen/Anwählen über die protokollierte Original-UI.",
           "operation": "Werkzeug-Abschlussgesten noch nicht gemessen."
@@ -12191,6 +13216,27 @@
             "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/015-preferences-interface.json",
             "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/015-preferences-interface.png",
             "observation": "Preferences > Interface > Colors > Slider BG Color: visible swatch."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/004-preferences-interface.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/004-preferences-interface.png",
+            "observation": "Preferences Interface vor Einzelprüfung: Large Icons/Font15/SkinDark und sämtliche14 Farben sichtbar."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/023-slider-bg-color-picker.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/023-slider-bg-color-picker.png",
+            "observation": "Preferences > Interface > Colors > Slider BG Color: eigenes Farbfeld direkt geöffnet; numerische Anzeige R/G/B/A=43.35/43.35/43.35/255; #2b2b2b. Einfaches Popup über Preferences ohne Fenstertitel/OK/Cancel/X, mit Vorschau, Pipette, SV-Fläche, Hue-Leiste, einzelnen RGBA-Reglern und Zahlenfeldern, Darstellungsschalter OFF, #-Feld und +. Escape schließt dieses unveränderte Popup, Preferences bleibt offen. RGBA-Dezimalwerte und Hex-Wortlaut getrennt erhalten; keine Pixelmessung und keine Integernormalisierung. Nur dieser beobachtete Ausgangszustand/Kontext, kein allgemeiner Default. Farb-/Skinwirkung, Validierung, Apply, SaveAs und Kaltstart bleiben Fachpflicht HEX-26."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/024-slider-bg-color-close.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/024-slider-bg-color-close.png",
+            "observation": "Slider BG Color: Escape nach reiner Anzeige schließt nur Picker; keine Farbeingabe und keine Commit-/Rücknahmebehauptung einer Änderung."
           }
         ],
         "classification": "user_function",
@@ -12209,10 +13255,99 @@
             "duePhase": "HEX-00",
             "reason": "Der Wortlaut benennt unbekannte Oberfläche, Wertebereich, Auswahl oder Eingabekontext; keine spätere Wirkung ersetzt diese Inventarpflicht.",
             "probe": "Originaloberfläche abgleichen: Numerischen Farbwert und Pickerkontext noch direkt erfassen.",
-            "state": "open",
-            "evidence": []
+            "state": "resolved",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/004-preferences-interface.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/004-preferences-interface.png",
+                "observation": "Preferences Interface vor Einzelprüfung: Large Icons/Font15/SkinDark und sämtliche14 Farben sichtbar."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/023-slider-bg-color-picker.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/023-slider-bg-color-picker.png",
+                "observation": "Preferences > Interface > Colors > Slider BG Color: eigenes Farbfeld direkt geöffnet; numerische Anzeige R/G/B/A=43.35/43.35/43.35/255; #2b2b2b. Einfaches Popup über Preferences ohne Fenstertitel/OK/Cancel/X, mit Vorschau, Pipette, SV-Fläche, Hue-Leiste, einzelnen RGBA-Reglern und Zahlenfeldern, Darstellungsschalter OFF, #-Feld und +. Escape schließt dieses unveränderte Popup, Preferences bleibt offen. RGBA-Dezimalwerte und Hex-Wortlaut getrennt erhalten; keine Pixelmessung und keine Integernormalisierung. Nur dieser beobachtete Ausgangszustand/Kontext, kein allgemeiner Default. Farb-/Skinwirkung, Validierung, Apply, SaveAs und Kaltstart bleiben Fachpflicht HEX-26."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/024-slider-bg-color-close.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/024-slider-bg-color-close.png",
+                "observation": "Slider BG Color: Escape nach reiner Anzeige schließt nur Picker; keine Farbeingabe und keine Commit-/Rücknahmebehauptung einer Änderung."
+              }
+            ],
+            "resolvedIn": "HEX-00-N-I16",
+            "resolution": "Preferences > Interface > Colors > Slider BG Color: eigenes Farbfeld direkt geöffnet; numerische Anzeige R/G/B/A=43.35/43.35/43.35/255; #2b2b2b. Einfaches Popup über Preferences ohne Fenstertitel/OK/Cancel/X, mit Vorschau, Pipette, SV-Fläche, Hue-Leiste, einzelnen RGBA-Reglern und Zahlenfeldern, Darstellungsschalter OFF, #-Feld und +. Escape schließt dieses unveränderte Popup, Preferences bleibt offen. RGBA-Dezimalwerte und Hex-Wortlaut getrennt erhalten; keine Pixelmessung und keine Integernormalisierung. Nur dieser beobachtete Ausgangszustand/Kontext, kein allgemeiner Default. Farb-/Skinwirkung, Validierung, Apply, SaveAs und Kaltstart bleiben Fachpflicht HEX-26."
           }
-        ]
+        ],
+        "colorObservation": {
+          "run": "HEX-00-N-I16",
+          "rgbaDisplay": [
+            43.35,
+            43.35,
+            43.35,
+            255
+          ],
+          "hexDisplay": "2b2b2b",
+          "source": "Directly read native numeric fields, not screenshot swatch pixels.",
+          "scope": {
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+            "context": "Frisches festes privates Fensterprofil, vor New ohne geladene Karte, Interface Large Icons/Font15/SkinDark unverändert; keine Eingabe in Farben, kein Apply/SaveAs.",
+            "factoryDefaultsAsserted": false
+          },
+          "rangeMeasurement": "not_run",
+          "picker": {
+            "kind": "popup_without_modal_confirmation",
+            "titleVisible": false,
+            "okVisible": false,
+            "cancelVisible": false,
+            "xVisible": false,
+            "visibleControls": [
+              "color_preview",
+              "pipette",
+              "saturation_value_area",
+              "hue_bar",
+              "R_slider_and_number",
+              "G_slider_and_number",
+              "B_slider_and_number",
+              "A_slider_and_number",
+              "representation_toggle_OFF",
+              "hex_field",
+              "plus"
+            ],
+            "closeInput": "Escape",
+            "closeAfterEdit": "not_run",
+            "inputMutation": "not_run",
+            "owner": "WD-UI-0136"
+          },
+          "evidence": [
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/004-preferences-interface.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/004-preferences-interface.png",
+              "observation": "Preferences Interface vor Einzelprüfung: Large Icons/Font15/SkinDark und sämtliche14 Farben sichtbar."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/023-slider-bg-color-picker.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/023-slider-bg-color-picker.png",
+              "observation": "Preferences > Interface > Colors > Slider BG Color: eigenes Farbfeld direkt geöffnet; numerische Anzeige R/G/B/A=43.35/43.35/43.35/255; #2b2b2b. Einfaches Popup über Preferences ohne Fenstertitel/OK/Cancel/X, mit Vorschau, Pipette, SV-Fläche, Hue-Leiste, einzelnen RGBA-Reglern und Zahlenfeldern, Darstellungsschalter OFF, #-Feld und +. Escape schließt dieses unveränderte Popup, Preferences bleibt offen. RGBA-Dezimalwerte und Hex-Wortlaut getrennt erhalten; keine Pixelmessung und keine Integernormalisierung. Nur dieser beobachtete Ausgangszustand/Kontext, kein allgemeiner Default. Farb-/Skinwirkung, Validierung, Apply, SaveAs und Kaltstart bleiben Fachpflicht HEX-26."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/024-slider-bg-color-close.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/024-slider-bg-color-close.png",
+              "observation": "Slider BG Color: Escape nach reiner Anzeige schließt nur Picker; keine Farbeingabe und keine Commit-/Rücknahmebehauptung einer Änderung."
+            }
+          ]
+        }
       },
       {
         "id": "WD-UI-0137",
@@ -12226,7 +13361,7 @@
           "evidenceScope": "Angezeigter Zustand dieser Originalaufnahme; Persistenz und andere Kontexte nicht gemessen."
         },
         "rangeOrChoices": null,
-        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit.",
+        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit. N-I16: numerischer Ausgangswert und einfacher Popupkontext direkt erfasst; keine neue Eingabevalidierungs-/Wirkungs-/Persistenzabnahme.",
         "gesture": {
           "observed": "Öffnen/Anwählen über die protokollierte Original-UI.",
           "operation": "Werkzeug-Abschlussgesten noch nicht gemessen."
@@ -12248,6 +13383,27 @@
             "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/015-preferences-interface.json",
             "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/015-preferences-interface.png",
             "observation": "Preferences > Interface > Colors > Select Color: visible swatch."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/004-preferences-interface.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/004-preferences-interface.png",
+            "observation": "Preferences Interface vor Einzelprüfung: Large Icons/Font15/SkinDark und sämtliche14 Farben sichtbar."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/025-select-color-picker.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/025-select-color-picker.png",
+            "observation": "Preferences > Interface > Colors > Select Color: eigenes Farbfeld direkt geöffnet; numerische Anzeige R/G/B/A=0/191.25/255/255; #00bfff. Einfaches Popup über Preferences ohne Fenstertitel/OK/Cancel/X, mit Vorschau, Pipette, SV-Fläche, Hue-Leiste, einzelnen RGBA-Reglern und Zahlenfeldern, Darstellungsschalter OFF, #-Feld und +. Escape schließt dieses unveränderte Popup, Preferences bleibt offen. RGBA-Dezimalwerte und Hex-Wortlaut getrennt erhalten; keine Pixelmessung und keine Integernormalisierung. Nur dieser beobachtete Ausgangszustand/Kontext, kein allgemeiner Default. Farb-/Skinwirkung, Validierung, Apply, SaveAs und Kaltstart bleiben Fachpflicht HEX-26."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/026-select-color-close.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/026-select-color-close.png",
+            "observation": "Select Color: Escape nach reiner Anzeige schließt nur Picker; keine Farbeingabe und keine Commit-/Rücknahmebehauptung einer Änderung."
           }
         ],
         "classification": "user_function",
@@ -12266,10 +13422,99 @@
             "duePhase": "HEX-00",
             "reason": "Der Wortlaut benennt unbekannte Oberfläche, Wertebereich, Auswahl oder Eingabekontext; keine spätere Wirkung ersetzt diese Inventarpflicht.",
             "probe": "Originaloberfläche abgleichen: Numerischen Farbwert und Pickerkontext noch direkt erfassen.",
-            "state": "open",
-            "evidence": []
+            "state": "resolved",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/004-preferences-interface.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/004-preferences-interface.png",
+                "observation": "Preferences Interface vor Einzelprüfung: Large Icons/Font15/SkinDark und sämtliche14 Farben sichtbar."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/025-select-color-picker.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/025-select-color-picker.png",
+                "observation": "Preferences > Interface > Colors > Select Color: eigenes Farbfeld direkt geöffnet; numerische Anzeige R/G/B/A=0/191.25/255/255; #00bfff. Einfaches Popup über Preferences ohne Fenstertitel/OK/Cancel/X, mit Vorschau, Pipette, SV-Fläche, Hue-Leiste, einzelnen RGBA-Reglern und Zahlenfeldern, Darstellungsschalter OFF, #-Feld und +. Escape schließt dieses unveränderte Popup, Preferences bleibt offen. RGBA-Dezimalwerte und Hex-Wortlaut getrennt erhalten; keine Pixelmessung und keine Integernormalisierung. Nur dieser beobachtete Ausgangszustand/Kontext, kein allgemeiner Default. Farb-/Skinwirkung, Validierung, Apply, SaveAs und Kaltstart bleiben Fachpflicht HEX-26."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/026-select-color-close.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/026-select-color-close.png",
+                "observation": "Select Color: Escape nach reiner Anzeige schließt nur Picker; keine Farbeingabe und keine Commit-/Rücknahmebehauptung einer Änderung."
+              }
+            ],
+            "resolvedIn": "HEX-00-N-I16",
+            "resolution": "Preferences > Interface > Colors > Select Color: eigenes Farbfeld direkt geöffnet; numerische Anzeige R/G/B/A=0/191.25/255/255; #00bfff. Einfaches Popup über Preferences ohne Fenstertitel/OK/Cancel/X, mit Vorschau, Pipette, SV-Fläche, Hue-Leiste, einzelnen RGBA-Reglern und Zahlenfeldern, Darstellungsschalter OFF, #-Feld und +. Escape schließt dieses unveränderte Popup, Preferences bleibt offen. RGBA-Dezimalwerte und Hex-Wortlaut getrennt erhalten; keine Pixelmessung und keine Integernormalisierung. Nur dieser beobachtete Ausgangszustand/Kontext, kein allgemeiner Default. Farb-/Skinwirkung, Validierung, Apply, SaveAs und Kaltstart bleiben Fachpflicht HEX-26."
           }
-        ]
+        ],
+        "colorObservation": {
+          "run": "HEX-00-N-I16",
+          "rgbaDisplay": [
+            0,
+            191.25,
+            255,
+            255
+          ],
+          "hexDisplay": "00bfff",
+          "source": "Directly read native numeric fields, not screenshot swatch pixels.",
+          "scope": {
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+            "context": "Frisches festes privates Fensterprofil, vor New ohne geladene Karte, Interface Large Icons/Font15/SkinDark unverändert; keine Eingabe in Farben, kein Apply/SaveAs.",
+            "factoryDefaultsAsserted": false
+          },
+          "rangeMeasurement": "not_run",
+          "picker": {
+            "kind": "popup_without_modal_confirmation",
+            "titleVisible": false,
+            "okVisible": false,
+            "cancelVisible": false,
+            "xVisible": false,
+            "visibleControls": [
+              "color_preview",
+              "pipette",
+              "saturation_value_area",
+              "hue_bar",
+              "R_slider_and_number",
+              "G_slider_and_number",
+              "B_slider_and_number",
+              "A_slider_and_number",
+              "representation_toggle_OFF",
+              "hex_field",
+              "plus"
+            ],
+            "closeInput": "Escape",
+            "closeAfterEdit": "not_run",
+            "inputMutation": "not_run",
+            "owner": "WD-UI-0137"
+          },
+          "evidence": [
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/004-preferences-interface.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/004-preferences-interface.png",
+              "observation": "Preferences Interface vor Einzelprüfung: Large Icons/Font15/SkinDark und sämtliche14 Farben sichtbar."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/025-select-color-picker.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/025-select-color-picker.png",
+              "observation": "Preferences > Interface > Colors > Select Color: eigenes Farbfeld direkt geöffnet; numerische Anzeige R/G/B/A=0/191.25/255/255; #00bfff. Einfaches Popup über Preferences ohne Fenstertitel/OK/Cancel/X, mit Vorschau, Pipette, SV-Fläche, Hue-Leiste, einzelnen RGBA-Reglern und Zahlenfeldern, Darstellungsschalter OFF, #-Feld und +. Escape schließt dieses unveränderte Popup, Preferences bleibt offen. RGBA-Dezimalwerte und Hex-Wortlaut getrennt erhalten; keine Pixelmessung und keine Integernormalisierung. Nur dieser beobachtete Ausgangszustand/Kontext, kein allgemeiner Default. Farb-/Skinwirkung, Validierung, Apply, SaveAs und Kaltstart bleiben Fachpflicht HEX-26."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/026-select-color-close.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/026-select-color-close.png",
+              "observation": "Select Color: Escape nach reiner Anzeige schließt nur Picker; keine Farbeingabe und keine Commit-/Rücknahmebehauptung einer Änderung."
+            }
+          ]
+        }
       },
       {
         "id": "WD-UI-0138",
@@ -12283,7 +13528,7 @@
           "evidenceScope": "Angezeigter Zustand dieser Originalaufnahme; Persistenz und andere Kontexte nicht gemessen."
         },
         "rangeOrChoices": null,
-        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit.",
+        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit. N-I16: numerischer Ausgangswert und einfacher Popupkontext direkt erfasst; keine neue Eingabevalidierungs-/Wirkungs-/Persistenzabnahme.",
         "gesture": {
           "observed": "Öffnen/Anwählen über die protokollierte Original-UI.",
           "operation": "Werkzeug-Abschlussgesten noch nicht gemessen."
@@ -12305,6 +13550,27 @@
             "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/015-preferences-interface.json",
             "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/015-preferences-interface.png",
             "observation": "Preferences > Interface > Colors > Symbol Pressed Color: visible swatch."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/004-preferences-interface.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/004-preferences-interface.png",
+            "observation": "Preferences Interface vor Einzelprüfung: Large Icons/Font15/SkinDark und sämtliche14 Farben sichtbar."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/027-symbol-pressed-color-picker.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/027-symbol-pressed-color-picker.png",
+            "observation": "Preferences > Interface > Colors > Symbol Pressed Color: eigenes Farbfeld direkt geöffnet; numerische Anzeige R/G/B/A=33.15/33.15/33.15/255; #212121. Einfaches Popup über Preferences ohne Fenstertitel/OK/Cancel/X, mit Vorschau, Pipette, SV-Fläche, Hue-Leiste, einzelnen RGBA-Reglern und Zahlenfeldern, Darstellungsschalter OFF, #-Feld und +. Escape schließt dieses unveränderte Popup, Preferences bleibt offen. RGBA-Dezimalwerte und Hex-Wortlaut getrennt erhalten; keine Pixelmessung und keine Integernormalisierung. Nur dieser beobachtete Ausgangszustand/Kontext, kein allgemeiner Default. Farb-/Skinwirkung, Validierung, Apply, SaveAs und Kaltstart bleiben Fachpflicht HEX-26."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/028-symbol-pressed-color-close.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/028-symbol-pressed-color-close.png",
+            "observation": "Symbol Pressed Color: Escape nach reiner Anzeige schließt nur Picker; keine Farbeingabe und keine Commit-/Rücknahmebehauptung einer Änderung."
           }
         ],
         "classification": "user_function",
@@ -12323,10 +13589,99 @@
             "duePhase": "HEX-00",
             "reason": "Der Wortlaut benennt unbekannte Oberfläche, Wertebereich, Auswahl oder Eingabekontext; keine spätere Wirkung ersetzt diese Inventarpflicht.",
             "probe": "Originaloberfläche abgleichen: Numerischen Farbwert und Pickerkontext noch direkt erfassen.",
-            "state": "open",
-            "evidence": []
+            "state": "resolved",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/004-preferences-interface.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/004-preferences-interface.png",
+                "observation": "Preferences Interface vor Einzelprüfung: Large Icons/Font15/SkinDark und sämtliche14 Farben sichtbar."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/027-symbol-pressed-color-picker.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/027-symbol-pressed-color-picker.png",
+                "observation": "Preferences > Interface > Colors > Symbol Pressed Color: eigenes Farbfeld direkt geöffnet; numerische Anzeige R/G/B/A=33.15/33.15/33.15/255; #212121. Einfaches Popup über Preferences ohne Fenstertitel/OK/Cancel/X, mit Vorschau, Pipette, SV-Fläche, Hue-Leiste, einzelnen RGBA-Reglern und Zahlenfeldern, Darstellungsschalter OFF, #-Feld und +. Escape schließt dieses unveränderte Popup, Preferences bleibt offen. RGBA-Dezimalwerte und Hex-Wortlaut getrennt erhalten; keine Pixelmessung und keine Integernormalisierung. Nur dieser beobachtete Ausgangszustand/Kontext, kein allgemeiner Default. Farb-/Skinwirkung, Validierung, Apply, SaveAs und Kaltstart bleiben Fachpflicht HEX-26."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/028-symbol-pressed-color-close.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/028-symbol-pressed-color-close.png",
+                "observation": "Symbol Pressed Color: Escape nach reiner Anzeige schließt nur Picker; keine Farbeingabe und keine Commit-/Rücknahmebehauptung einer Änderung."
+              }
+            ],
+            "resolvedIn": "HEX-00-N-I16",
+            "resolution": "Preferences > Interface > Colors > Symbol Pressed Color: eigenes Farbfeld direkt geöffnet; numerische Anzeige R/G/B/A=33.15/33.15/33.15/255; #212121. Einfaches Popup über Preferences ohne Fenstertitel/OK/Cancel/X, mit Vorschau, Pipette, SV-Fläche, Hue-Leiste, einzelnen RGBA-Reglern und Zahlenfeldern, Darstellungsschalter OFF, #-Feld und +. Escape schließt dieses unveränderte Popup, Preferences bleibt offen. RGBA-Dezimalwerte und Hex-Wortlaut getrennt erhalten; keine Pixelmessung und keine Integernormalisierung. Nur dieser beobachtete Ausgangszustand/Kontext, kein allgemeiner Default. Farb-/Skinwirkung, Validierung, Apply, SaveAs und Kaltstart bleiben Fachpflicht HEX-26."
           }
-        ]
+        ],
+        "colorObservation": {
+          "run": "HEX-00-N-I16",
+          "rgbaDisplay": [
+            33.15,
+            33.15,
+            33.15,
+            255
+          ],
+          "hexDisplay": "212121",
+          "source": "Directly read native numeric fields, not screenshot swatch pixels.",
+          "scope": {
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+            "context": "Frisches festes privates Fensterprofil, vor New ohne geladene Karte, Interface Large Icons/Font15/SkinDark unverändert; keine Eingabe in Farben, kein Apply/SaveAs.",
+            "factoryDefaultsAsserted": false
+          },
+          "rangeMeasurement": "not_run",
+          "picker": {
+            "kind": "popup_without_modal_confirmation",
+            "titleVisible": false,
+            "okVisible": false,
+            "cancelVisible": false,
+            "xVisible": false,
+            "visibleControls": [
+              "color_preview",
+              "pipette",
+              "saturation_value_area",
+              "hue_bar",
+              "R_slider_and_number",
+              "G_slider_and_number",
+              "B_slider_and_number",
+              "A_slider_and_number",
+              "representation_toggle_OFF",
+              "hex_field",
+              "plus"
+            ],
+            "closeInput": "Escape",
+            "closeAfterEdit": "not_run",
+            "inputMutation": "not_run",
+            "owner": "WD-UI-0138"
+          },
+          "evidence": [
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/004-preferences-interface.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/004-preferences-interface.png",
+              "observation": "Preferences Interface vor Einzelprüfung: Large Icons/Font15/SkinDark und sämtliche14 Farben sichtbar."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/027-symbol-pressed-color-picker.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/027-symbol-pressed-color-picker.png",
+              "observation": "Preferences > Interface > Colors > Symbol Pressed Color: eigenes Farbfeld direkt geöffnet; numerische Anzeige R/G/B/A=33.15/33.15/33.15/255; #212121. Einfaches Popup über Preferences ohne Fenstertitel/OK/Cancel/X, mit Vorschau, Pipette, SV-Fläche, Hue-Leiste, einzelnen RGBA-Reglern und Zahlenfeldern, Darstellungsschalter OFF, #-Feld und +. Escape schließt dieses unveränderte Popup, Preferences bleibt offen. RGBA-Dezimalwerte und Hex-Wortlaut getrennt erhalten; keine Pixelmessung und keine Integernormalisierung. Nur dieser beobachtete Ausgangszustand/Kontext, kein allgemeiner Default. Farb-/Skinwirkung, Validierung, Apply, SaveAs und Kaltstart bleiben Fachpflicht HEX-26."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/028-symbol-pressed-color-close.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/028-symbol-pressed-color-close.png",
+              "observation": "Symbol Pressed Color: Escape nach reiner Anzeige schließt nur Picker; keine Farbeingabe und keine Commit-/Rücknahmebehauptung einer Änderung."
+            }
+          ]
+        }
       },
       {
         "id": "WD-UI-0139",
@@ -12340,7 +13695,7 @@
           "evidenceScope": "Angezeigter Zustand dieser Originalaufnahme; Persistenz und andere Kontexte nicht gemessen."
         },
         "rangeOrChoices": null,
-        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit.",
+        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit. N-I16: numerischer Ausgangswert und einfacher Popupkontext direkt erfasst; keine neue Eingabevalidierungs-/Wirkungs-/Persistenzabnahme.",
         "gesture": {
           "observed": "Öffnen/Anwählen über die protokollierte Original-UI.",
           "operation": "Werkzeug-Abschlussgesten noch nicht gemessen."
@@ -12362,6 +13717,27 @@
             "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/015-preferences-interface.json",
             "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/015-preferences-interface.png",
             "observation": "Preferences > Interface > Colors > Symbol Hover Color: visible swatch."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/004-preferences-interface.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/004-preferences-interface.png",
+            "observation": "Preferences Interface vor Einzelprüfung: Large Icons/Font15/SkinDark und sämtliche14 Farben sichtbar."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/029-symbol-hover-color-picker.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/029-symbol-hover-color-picker.png",
+            "observation": "Preferences > Interface > Colors > Symbol Hover Color: eigenes Farbfeld direkt geöffnet; numerische Anzeige R/G/B/A=63.75/63.75/63.75/255; #3f3f3f. Einfaches Popup über Preferences ohne Fenstertitel/OK/Cancel/X, mit Vorschau, Pipette, SV-Fläche, Hue-Leiste, einzelnen RGBA-Reglern und Zahlenfeldern, Darstellungsschalter OFF, #-Feld und +. Escape schließt dieses unveränderte Popup, Preferences bleibt offen. RGBA-Dezimalwerte und Hex-Wortlaut getrennt erhalten; keine Pixelmessung und keine Integernormalisierung. Nur dieser beobachtete Ausgangszustand/Kontext, kein allgemeiner Default. Farb-/Skinwirkung, Validierung, Apply, SaveAs und Kaltstart bleiben Fachpflicht HEX-26."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/030-symbol-hover-color-close.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/030-symbol-hover-color-close.png",
+            "observation": "Symbol Hover Color: Escape nach reiner Anzeige schließt nur Picker; keine Farbeingabe und keine Commit-/Rücknahmebehauptung einer Änderung."
           }
         ],
         "classification": "user_function",
@@ -12380,10 +13756,99 @@
             "duePhase": "HEX-00",
             "reason": "Der Wortlaut benennt unbekannte Oberfläche, Wertebereich, Auswahl oder Eingabekontext; keine spätere Wirkung ersetzt diese Inventarpflicht.",
             "probe": "Originaloberfläche abgleichen: Numerischen Farbwert und Pickerkontext noch direkt erfassen.",
-            "state": "open",
-            "evidence": []
+            "state": "resolved",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/004-preferences-interface.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/004-preferences-interface.png",
+                "observation": "Preferences Interface vor Einzelprüfung: Large Icons/Font15/SkinDark und sämtliche14 Farben sichtbar."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/029-symbol-hover-color-picker.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/029-symbol-hover-color-picker.png",
+                "observation": "Preferences > Interface > Colors > Symbol Hover Color: eigenes Farbfeld direkt geöffnet; numerische Anzeige R/G/B/A=63.75/63.75/63.75/255; #3f3f3f. Einfaches Popup über Preferences ohne Fenstertitel/OK/Cancel/X, mit Vorschau, Pipette, SV-Fläche, Hue-Leiste, einzelnen RGBA-Reglern und Zahlenfeldern, Darstellungsschalter OFF, #-Feld und +. Escape schließt dieses unveränderte Popup, Preferences bleibt offen. RGBA-Dezimalwerte und Hex-Wortlaut getrennt erhalten; keine Pixelmessung und keine Integernormalisierung. Nur dieser beobachtete Ausgangszustand/Kontext, kein allgemeiner Default. Farb-/Skinwirkung, Validierung, Apply, SaveAs und Kaltstart bleiben Fachpflicht HEX-26."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/030-symbol-hover-color-close.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/030-symbol-hover-color-close.png",
+                "observation": "Symbol Hover Color: Escape nach reiner Anzeige schließt nur Picker; keine Farbeingabe und keine Commit-/Rücknahmebehauptung einer Änderung."
+              }
+            ],
+            "resolvedIn": "HEX-00-N-I16",
+            "resolution": "Preferences > Interface > Colors > Symbol Hover Color: eigenes Farbfeld direkt geöffnet; numerische Anzeige R/G/B/A=63.75/63.75/63.75/255; #3f3f3f. Einfaches Popup über Preferences ohne Fenstertitel/OK/Cancel/X, mit Vorschau, Pipette, SV-Fläche, Hue-Leiste, einzelnen RGBA-Reglern und Zahlenfeldern, Darstellungsschalter OFF, #-Feld und +. Escape schließt dieses unveränderte Popup, Preferences bleibt offen. RGBA-Dezimalwerte und Hex-Wortlaut getrennt erhalten; keine Pixelmessung und keine Integernormalisierung. Nur dieser beobachtete Ausgangszustand/Kontext, kein allgemeiner Default. Farb-/Skinwirkung, Validierung, Apply, SaveAs und Kaltstart bleiben Fachpflicht HEX-26."
           }
-        ]
+        ],
+        "colorObservation": {
+          "run": "HEX-00-N-I16",
+          "rgbaDisplay": [
+            63.75,
+            63.75,
+            63.75,
+            255
+          ],
+          "hexDisplay": "3f3f3f",
+          "source": "Directly read native numeric fields, not screenshot swatch pixels.",
+          "scope": {
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+            "context": "Frisches festes privates Fensterprofil, vor New ohne geladene Karte, Interface Large Icons/Font15/SkinDark unverändert; keine Eingabe in Farben, kein Apply/SaveAs.",
+            "factoryDefaultsAsserted": false
+          },
+          "rangeMeasurement": "not_run",
+          "picker": {
+            "kind": "popup_without_modal_confirmation",
+            "titleVisible": false,
+            "okVisible": false,
+            "cancelVisible": false,
+            "xVisible": false,
+            "visibleControls": [
+              "color_preview",
+              "pipette",
+              "saturation_value_area",
+              "hue_bar",
+              "R_slider_and_number",
+              "G_slider_and_number",
+              "B_slider_and_number",
+              "A_slider_and_number",
+              "representation_toggle_OFF",
+              "hex_field",
+              "plus"
+            ],
+            "closeInput": "Escape",
+            "closeAfterEdit": "not_run",
+            "inputMutation": "not_run",
+            "owner": "WD-UI-0139"
+          },
+          "evidence": [
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/004-preferences-interface.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/004-preferences-interface.png",
+              "observation": "Preferences Interface vor Einzelprüfung: Large Icons/Font15/SkinDark und sämtliche14 Farben sichtbar."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/029-symbol-hover-color-picker.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/029-symbol-hover-color-picker.png",
+              "observation": "Preferences > Interface > Colors > Symbol Hover Color: eigenes Farbfeld direkt geöffnet; numerische Anzeige R/G/B/A=63.75/63.75/63.75/255; #3f3f3f. Einfaches Popup über Preferences ohne Fenstertitel/OK/Cancel/X, mit Vorschau, Pipette, SV-Fläche, Hue-Leiste, einzelnen RGBA-Reglern und Zahlenfeldern, Darstellungsschalter OFF, #-Feld und +. Escape schließt dieses unveränderte Popup, Preferences bleibt offen. RGBA-Dezimalwerte und Hex-Wortlaut getrennt erhalten; keine Pixelmessung und keine Integernormalisierung. Nur dieser beobachtete Ausgangszustand/Kontext, kein allgemeiner Default. Farb-/Skinwirkung, Validierung, Apply, SaveAs und Kaltstart bleiben Fachpflicht HEX-26."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/030-symbol-hover-color-close.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/030-symbol-hover-color-close.png",
+              "observation": "Symbol Hover Color: Escape nach reiner Anzeige schließt nur Picker; keine Farbeingabe und keine Commit-/Rücknahmebehauptung einer Änderung."
+            }
+          ]
+        }
       },
       {
         "id": "WD-UI-0140",
@@ -12397,7 +13862,7 @@
           "evidenceScope": "Angezeigter Zustand dieser Originalaufnahme; Persistenz und andere Kontexte nicht gemessen."
         },
         "rangeOrChoices": null,
-        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit.",
+        "validation": "Wirkung, Eingabevalidierung, History und Persistenz separat zu prüfen; keine Wirkungsabnahme aus Sichtbarkeit. N-I16: numerischer Ausgangswert und einfacher Popupkontext direkt erfasst; keine neue Eingabevalidierungs-/Wirkungs-/Persistenzabnahme.",
         "gesture": {
           "observed": "Öffnen/Anwählen über die protokollierte Original-UI.",
           "operation": "Werkzeug-Abschlussgesten noch nicht gemessen."
@@ -12419,6 +13884,27 @@
             "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/015-preferences-interface.json",
             "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/implementation-20261008-195108/original-inventory/screens/015-preferences-interface.png",
             "observation": "Preferences > Interface > Colors > Window Title Color: visible swatch."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/004-preferences-interface.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/004-preferences-interface.png",
+            "observation": "Preferences Interface vor Einzelprüfung: Large Icons/Font15/SkinDark und sämtliche14 Farben sichtbar."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/031-window-title-color-picker.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/031-window-title-color-picker.png",
+            "observation": "Preferences > Interface > Colors > Window Title Color: eigenes Farbfeld direkt geöffnet; numerische Anzeige R/G/B/A=216.75/216.75/216.75/255; #d8d8d8. Einfaches Popup über Preferences ohne Fenstertitel/OK/Cancel/X, mit Vorschau, Pipette, SV-Fläche, Hue-Leiste, einzelnen RGBA-Reglern und Zahlenfeldern, Darstellungsschalter OFF, #-Feld und +. Escape schließt dieses unveränderte Popup, Preferences bleibt offen. RGBA-Dezimalwerte und Hex-Wortlaut getrennt erhalten; keine Pixelmessung und keine Integernormalisierung. Nur dieser beobachtete Ausgangszustand/Kontext, kein allgemeiner Default. Farb-/Skinwirkung, Validierung, Apply, SaveAs und Kaltstart bleiben Fachpflicht HEX-26."
+          },
+          {
+            "role": "actual_original_runtime",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+            "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/032-interface-after-all-pickers.json",
+            "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/032-interface-after-all-pickers.png",
+            "observation": "Window Title Color: Escape nach reiner Anzeige schließt nur Picker; keine Farbeingabe und keine Commit-/Rücknahmebehauptung einer Änderung."
           }
         ],
         "classification": "user_function",
@@ -12437,10 +13923,99 @@
             "duePhase": "HEX-00",
             "reason": "Der Wortlaut benennt unbekannte Oberfläche, Wertebereich, Auswahl oder Eingabekontext; keine spätere Wirkung ersetzt diese Inventarpflicht.",
             "probe": "Originaloberfläche abgleichen: Numerischen Farbwert und Pickerkontext noch direkt erfassen.",
-            "state": "open",
-            "evidence": []
+            "state": "resolved",
+            "evidence": [
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/004-preferences-interface.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/004-preferences-interface.png",
+                "observation": "Preferences Interface vor Einzelprüfung: Large Icons/Font15/SkinDark und sämtliche14 Farben sichtbar."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/031-window-title-color-picker.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/031-window-title-color-picker.png",
+                "observation": "Preferences > Interface > Colors > Window Title Color: eigenes Farbfeld direkt geöffnet; numerische Anzeige R/G/B/A=216.75/216.75/216.75/255; #d8d8d8. Einfaches Popup über Preferences ohne Fenstertitel/OK/Cancel/X, mit Vorschau, Pipette, SV-Fläche, Hue-Leiste, einzelnen RGBA-Reglern und Zahlenfeldern, Darstellungsschalter OFF, #-Feld und +. Escape schließt dieses unveränderte Popup, Preferences bleibt offen. RGBA-Dezimalwerte und Hex-Wortlaut getrennt erhalten; keine Pixelmessung und keine Integernormalisierung. Nur dieser beobachtete Ausgangszustand/Kontext, kein allgemeiner Default. Farb-/Skinwirkung, Validierung, Apply, SaveAs und Kaltstart bleiben Fachpflicht HEX-26."
+              },
+              {
+                "role": "actual_original_runtime",
+                "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+                "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/032-interface-after-all-pickers.json",
+                "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/032-interface-after-all-pickers.png",
+                "observation": "Window Title Color: Escape nach reiner Anzeige schließt nur Picker; keine Farbeingabe und keine Commit-/Rücknahmebehauptung einer Änderung."
+              }
+            ],
+            "resolvedIn": "HEX-00-N-I16",
+            "resolution": "Preferences > Interface > Colors > Window Title Color: eigenes Farbfeld direkt geöffnet; numerische Anzeige R/G/B/A=216.75/216.75/216.75/255; #d8d8d8. Einfaches Popup über Preferences ohne Fenstertitel/OK/Cancel/X, mit Vorschau, Pipette, SV-Fläche, Hue-Leiste, einzelnen RGBA-Reglern und Zahlenfeldern, Darstellungsschalter OFF, #-Feld und +. Escape schließt dieses unveränderte Popup, Preferences bleibt offen. RGBA-Dezimalwerte und Hex-Wortlaut getrennt erhalten; keine Pixelmessung und keine Integernormalisierung. Nur dieser beobachtete Ausgangszustand/Kontext, kein allgemeiner Default. Farb-/Skinwirkung, Validierung, Apply, SaveAs und Kaltstart bleiben Fachpflicht HEX-26."
           }
-        ]
+        ],
+        "colorObservation": {
+          "run": "HEX-00-N-I16",
+          "rgbaDisplay": [
+            216.75,
+            216.75,
+            216.75,
+            255
+          ],
+          "hexDisplay": "d8d8d8",
+          "source": "Directly read native numeric fields, not screenshot swatch pixels.",
+          "scope": {
+            "version": "1.1.8.2",
+            "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+            "context": "Frisches festes privates Fensterprofil, vor New ohne geladene Karte, Interface Large Icons/Font15/SkinDark unverändert; keine Eingabe in Farben, kein Apply/SaveAs.",
+            "factoryDefaultsAsserted": false
+          },
+          "rangeMeasurement": "not_run",
+          "picker": {
+            "kind": "popup_without_modal_confirmation",
+            "titleVisible": false,
+            "okVisible": false,
+            "cancelVisible": false,
+            "xVisible": false,
+            "visibleControls": [
+              "color_preview",
+              "pipette",
+              "saturation_value_area",
+              "hue_bar",
+              "R_slider_and_number",
+              "G_slider_and_number",
+              "B_slider_and_number",
+              "A_slider_and_number",
+              "representation_toggle_OFF",
+              "hex_field",
+              "plus"
+            ],
+            "closeInput": "Escape",
+            "closeAfterEdit": "not_run",
+            "inputMutation": "not_run",
+            "owner": "WD-UI-0140"
+          },
+          "evidence": [
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/004-preferences-interface.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/004-preferences-interface.png",
+              "observation": "Preferences Interface vor Einzelprüfung: Large Icons/Font15/SkinDark und sämtliche14 Farben sichtbar."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/031-window-title-color-picker.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/031-window-title-color-picker.png",
+              "observation": "Preferences > Interface > Colors > Window Title Color: eigenes Farbfeld direkt geöffnet; numerische Anzeige R/G/B/A=216.75/216.75/216.75/255; #d8d8d8. Einfaches Popup über Preferences ohne Fenstertitel/OK/Cancel/X, mit Vorschau, Pipette, SV-Fläche, Hue-Leiste, einzelnen RGBA-Reglern und Zahlenfeldern, Darstellungsschalter OFF, #-Feld und +. Escape schließt dieses unveränderte Popup, Preferences bleibt offen. RGBA-Dezimalwerte und Hex-Wortlaut getrennt erhalten; keine Pixelmessung und keine Integernormalisierung. Nur dieser beobachtete Ausgangszustand/Kontext, kein allgemeiner Default. Farb-/Skinwirkung, Validierung, Apply, SaveAs und Kaltstart bleiben Fachpflicht HEX-26."
+            },
+            {
+              "role": "actual_original_runtime",
+              "session": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/session.json",
+              "metadata": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/032-interface-after-all-pickers.json",
+              "screenshot": "/home/aaron/.cache/dungeon-native-qa/hex-00/interface-colors-repair-20261009-133111/original/screens/032-interface-after-all-pickers.png",
+              "observation": "Window Title Color: Escape nach reiner Anzeige schließt nur Picker; keine Farbeingabe und keine Commit-/Rücknahmebehauptung einer Änderung."
+            }
+          ]
+        }
       },
       {
         "id": "WD-UI-0141",
