@@ -1055,3 +1055,5 @@ CITY-00-I46-R46 Start 2026-10-09T19:38:18.497531+00:00; R46 bestanden: Zweieraus
 CITY-00-I46-REVIEW-CLEAN-P46 Start 2026-10-09T19:38:22.320998+00:00; Aufräumplan: sichtbares Profilgleichheitsmaß von serialisierten IDs/Persistenz trennen; Reviewlink und Rohbelege erhalten.
 
 CITY-00-I46-REVIEW-CLEAN-I46 Start 2026-10-09T19:38:24.745516+00:00; Reviewumfang und Profilgleichheitsgrenze lesbar ergänzt; keine Produktdaten-/APIänderung.
+
+CITY-00-I46-REVIEW-CLEAN-C46 Start 2026-10-09T19:38:27.357923+00:00; Reviewauf räumen abgeschlossen: Rawhashes, Link und offene eigene Abnahmen erhalten. Nächste offene COK-Licht-/Wetterfunktion konkret planen.

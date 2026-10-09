@@ -4734,16 +4734,16 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I46-REVIEW-CLEAN-I46",
-      "kind": "cleanup_implementation",
-      "startedAt": "2026-10-09T19:38:24.745516+00:00",
-      "focus": "Massenbearbeitungsbeleg reviewen: I",
+      "id": "CITY-00-I46-REVIEW-CLEAN-C46",
+      "kind": "cleanup_review",
+      "startedAt": "2026-10-09T19:38:27.357923+00:00",
+      "focus": "Massenbearbeitungsbeleg reviewen: C",
       "state": "completed",
-      "result": "Reviewumfang und Profilgleichheitsgrenze lesbar ergänzt; keine Produktdaten-/APIänderung."
+      "result": "Reviewauf räumen abgeschlossen: Rawhashes, Link und offene eigene Abnahmen erhalten. Nächste offene COK-Licht-/Wetterfunktion konkret planen."
     },
     "nextRun": {
-      "id": "CITY-00-I46-REVIEW-CLEAN-R46",
-      "kind": "cleanup_review",
+      "id": "CITY-00-I47-P47",
+      "kind": "plan",
       "focus": "COK-Licht-/Wetterprobe mit Atlasbesitzer-GUI-Slot abstimmen und konkret planen"
     },
     "open": [
