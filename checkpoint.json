@@ -194,6 +194,7 @@
     "nextRun": {
       "id": "CE-01-H01",
       "kind": "real_host_acceptance",
+      "plan": "ROADMAP-SALTMARCHER-CE01-H01-PLAN.md",
       "focus": "Verify command-palette opening, canonical focus, filter/detail state, close/reopen, fresh process, damaged asset behavior, physical keyboard and 900x650/1150x700 layouts in real Obsidian without closing unrelated applications"
     }
   },

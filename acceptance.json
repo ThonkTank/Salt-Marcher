@@ -297,7 +297,7 @@
       "review": "Passed after the repair review required explicit canonical reveal, duplicate cleanup and actual adversarial target-focus assertions.",
       "limits": "No real Obsidian, restart, physical keyboard or measured 900x650/1150x700 acceptance. CE-AC-01, CE-AC-02 and CE-AC-14 remain open."
     },
-    "next": "CE-01-H01 performs the real Obsidian command, focus, close/reopen, fresh-process, damaged-asset and measured 900x650/1150x700 acceptance. Only after its review may the separate CE-01-C01 cleanup begin."
+    "next": "CE-01-H01 follows ROADMAP-SALTMARCHER-CE01-H01-PLAN.md for the real Obsidian command, focus, close/reopen, fresh-process, damaged-payload and measured 900x650/1150x700 acceptance. Only after its review may the separate CE-01-C01 cleanup begin."
   },
   "cityPlans": {
     "schemaVersion": 1,
