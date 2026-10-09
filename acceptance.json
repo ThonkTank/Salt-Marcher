@@ -759,9 +759,10 @@
           "evidence": [
             "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-model-20261009/implementation.json",
             "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-model-20261009/repair.json",
-            "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-commands-20261009/implementation.json"
+            "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-commands-20261009/implementation.json",
+            "/home/aaron/.cache/dungeon-native-qa/city-plans/city01-commands-20261009/cleanup-review.json"
           ],
-          "remaining": "Common History code adapter prepared, review pending. Atlas placement/scene/selection, native registration and save/reopen host sequence remain unimplemented."
+          "remaining": "Common History code adapter prepared and reviewed. Atlas placement/scene/selection, native registration and save/reopen host sequence remain unimplemented."
         },
         "hostCheck": {
           "state": "not_run",

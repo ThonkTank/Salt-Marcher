@@ -708,3 +708,6 @@ CITY-01-PREP-COMMAND-CLEAN-P02 Start 2026-10-09T16:58:46.360612+00:00; Plan: vor
 
 
 CITY-01-PREP-COMMAND-CLEAN-I02 Start 2026-10-09T16:59:36.296592+00:00; Architektur beschreibt vorhandene CitySource/cityDocumentChange mit einmaligem Owner, ausschließlich gemeinsamer History, strikter Konversion und Gestenanfangsstand. Gesamt-/Anschlussplan trennen diesen Code von noch geplanten Werkzeugen/Host/Save. Keine zusätzliche Cityrevision behauptet; Quellen/Kopien unverändert. Eingehendes HEX-I01b erweitert TerrainSource nur um ensureVisible; gemeinsame API unverändert, aktuelle Basisprüfungen vor Abschluss erneut ausführen. CR folgt.
+
+
+CITY-01-PREP-COMMAND-CLEAN-R02 Start 2026-10-09T17:00:39.825702+00:00; Architektur und Pläne trennen vorhandene CitySource/cityDocumentChange von geplanter UI-/Host-/Saveintegration. Keine zweite Stadtquelle, zusätzliche Revision, History oder Freezeimplementierung. Cityquellen/Tests/Codec/History unverändert; integriertes HEX-I01b mit aktueller Typprüfung,282Tests und Build bestätigt. Lokale Links/JSON/fremde Roots geprüft;24CTY-/65CO-Pflichten weiter offen. Aufräumumfang ohne Restbefund. Beleg: /home/aaron/.cache/dungeon-native-qa/city-plans/city01-commands-20261009/cleanup-review.json. Nächster Lauf plant reine Straßen-/Haus-Fachaktionen auf dieser Befehlsbasis, Hostanschluss weiterhin nach HEX05.

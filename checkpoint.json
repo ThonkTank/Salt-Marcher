@@ -4252,17 +4252,17 @@
     "state": "city01_model_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-01-PREP-COMMAND-CLEAN-I02",
-      "kind": "cleanup_implementation",
-      "startedAt": "2026-10-09T16:59:36.296592+00:00",
-      "focus": "Vorhandene Stadtbefehle in Architektur und Plänen kennzeichnen",
-      "state": "completed",
-      "result": "Architektur und Pläne stimmen mit vorbereitetem Befehlsadapter; keine Laufzeitänderung. Nach eingehendem HEX-I01b aktuelle Basischecks wiederholen."
-    },
-    "nextRun": {
       "id": "CITY-01-PREP-COMMAND-CLEAN-R02",
       "kind": "cleanup_review",
-      "focus": "Dokumentation, offene Abnahmen und integrierte Basischecks prüfen"
+      "startedAt": "2026-10-09T17:00:39.825702+00:00",
+      "focus": "Befehlsarchitektur und integrierte Basischecks prüfen",
+      "state": "completed",
+      "result": "Aufgeräumter Befehlsadapter reviewt; integrierte Typprüfung,282Tests und Build grün. Atlas-/Host-/Savepflichten offen."
+    },
+    "nextRun": {
+      "id": "CITY-01-PREP-P03",
+      "kind": "implementation_planning",
+      "focus": "Reine Straßen-/Haus-Fachaktionen auf CityDocumentchanges planen und mit Atlasbesitzer abstimmen"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
