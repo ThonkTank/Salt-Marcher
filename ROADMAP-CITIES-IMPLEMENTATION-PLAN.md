@@ -933,3 +933,7 @@ CITY-00-I43-REVIEW-CLEAN-R43 Start 2026-10-09T19:13:33.598213+00:00; alle 47 Raw
 CITY-00-I44-P44 Start 2026-10-09T19:15:28.500297+00:00; Drei Fehlzuordnungen identifiziert; konkreter Korrekturplan neben Roadmap, unveränderter Vorherkatalog extern gesichert.
 
 CITY-00-I44-PLAN-CLEAN-P44 Start 2026-10-09T19:15:37.485866+00:00; Aufräumplan: aktuelle Plan-/Reviewlinks konsolidieren, Rohbelege und Kennungen erhalten; keine Runtimeänderung.
+
+I44-Korrekturplan: [FTG-Evidenzzuordnung](ROADMAP-CITIES-CITY00-FTG-MAPPING-PLAN.md).
+
+CITY-00-I44-PLAN-CLEAN-I44 Start 2026-10-09T19:15:41.046066+00:00; Links und Scopegrenzen konsolidiert; Rohbelege unverändert, keine weitere fachliche Datenhaltung.
