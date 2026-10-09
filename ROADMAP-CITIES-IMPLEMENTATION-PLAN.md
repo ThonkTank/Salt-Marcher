@@ -524,3 +524,5 @@ CITY-02-Präzisierung aus I32: Generationsformular initialisiert sich aus den ve
 CITY-00-I32-R Start 2026-10-09T15:27:12.598540+00:00; Drei tatsächliche Downloadkopien und sämtliche Rawhashes bestätigt. Kontroll-Rebuild und Greens-Rebuild haben13 Gruppen, nicht14 wie ursprüngliche Küstenkarte. Nur buildings/fields/districts geändert; greens leer/wertgleich. Sichtbare Controls08 wieder aus, eigene Kopie geschlossen. Rebuild ist keine lokale Erhaltungsabnahme. Aufräumbefund: Snapshot CO-WAT-0001 noch unspezifisch partial.
 
 CITY-00-I32-CP Start 2026-10-09T15:27:23.327234+00:00; Plan: abgeleiteten CO-WAT-0001-Snapshot mit kontrolliertem Rebuild-Umfang und leerer Greens-Gruppe ergänzen. Belege unverändert erhalten;13-Gruppenvergleich, Downloadkopien, Hashes,64/24 offene Pflichten und fremde JSON-Wurzeln prüfen. Keine eigene Umsetzung aus Originalprobe ableiten.
+
+CITY-00-I32-CI Start 2026-10-09T15:27:34.360443+00:00; Snapshot auf I32 aktualisiert: ursprüngliche URL/Control-Differenz, Greens-Rebuild und leere Greens-Gruppe mit präziser Vergleichsgrenze dokumentiert.
