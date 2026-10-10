@@ -153024,7 +153024,7 @@
       {
         "id": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
         "requirement": "Thin Context/navigation consumer with actual native target validation, same Atlas owners and guarded Campaign switching",
-        "state": "product_navigation_hydration_repaired_core_DOM_PASS_native_ABA_pending",
+        "state": "native_ABA_PASS_independent_integrated_Host_review_pending",
         "implementationRun": "HEX-E2E01-HOST-SAVE-I02",
         "sourceCommit": "86bbbbfac44233509f084ac836e6dafa07b11a16",
         "catalog": "ROADMAP-E2E-GATES-CANDIDATE.md:13",
@@ -153966,7 +153966,7 @@
           "currentEvidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-manifest-host-save-i02-20261010/implementation.json",
           "scope": "Component review only; no native/Host/overall approval."
         },
-        "gap": "Actual native ABA still failed before the first Key/switch. A controlled production DOM test of the existing visible enabled building button independently reproduces the stale capture: pending visible terrain hydration changes History epoch 10 to 12 while Source, Context, Repository and Undo depth remain stable. This is a user-action conflict, not only the direct QA invocation. Next own bounded repair prepares the guarded current mount before initial capture and preserves Capture/Context ABA checks; fixed waits/retries and full-world loading are excluded. Exact earlier native epoch path remains unrecorded. No new GUI run or slot ownership; after repair new scoped native ABA and existing integrated Host review remain required.",
+        "gap": "The R01 hydration repair now has actual native H02 A→B→A PASS on PR13/892e20d: invalid Key blocks picker, independent B Key/UndoRedo, retained A draft and obsolete A callbacks/later capture use reject. Historical native H01 FAIL and D01/R01 source receipts remain unchanged. Existing independent integrated Host review including R01/H02, separate cleanup, Shared exact GM gate and full E2E remain open.",
         "qualifiedCampaignInputAndRollbackProbe": {
           "state": "qualified_component_contract_closed_productive_Host_implementation_now_present",
           "reviewSourceCommit": "ce2f9032dc9f72f994a307b5aac26e1ad8910065",
@@ -154164,6 +154164,44 @@
           "dirty": false,
           "newNativeRun": false,
           "fullE2E": false
+        },
+        "nativeCampaignABAValidation": {
+          "id": "HEX-E2E01-HOST-ABA-H02",
+          "state": "native_ABA_PASS_independent_integrated_Host_review_pending",
+          "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
+          "sourceCommit": "892e20d737c9e4868aa44b615f8da0f97d98fb39",
+          "productRepairCommit": "f03b9537d3daa28f80938d21528d76e0e683c3a6",
+          "publicationComposition": "6cf3164987c79f8a96981287cb26c351d305652a",
+          "consumedShared": "8671a1a880efc2f1316c520dd69493cdd998e379",
+          "fixtureVersions": [
+            "e2e01-spatial-v2",
+            "e2e01-campaign-b-v1"
+          ],
+          "nativeGUI": true,
+          "nativeABA": true,
+          "physicalInput": false,
+          "originalParity": false,
+          "largeWorld": false,
+          "installation": false,
+          "fullE2E": false,
+          "independentReview": "pending already assigned integrated Host review including R01; not self-approved",
+          "guiConfirmation": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/7#issuecomment-6099365969",
+          "guiReturn": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/7#issuecomment-6099388973",
+          "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-manifest-host-aba-20261010/h02/native-aba-evidence.json",
+          "sha256": "4ed1f2b2da15c5715498399a4c6c32369c6aaa36261a1382ebc5cdd359d34820",
+          "nativeProcessNormalExit": true,
+          "nativeInputFilesVerified": 16,
+          "frozenFilesVerified": 19,
+          "observed": [
+            "Actual picker cannot leave invalid A Key; same Context/Repository/History/Renderer and text remain",
+            "B has independent Context/Repository/Source/History/Renderer; old A lease, Undo/Redo, callback and delayed reuse of its actual navigation capture are rejected without B camera/history effects; delayed in-flight navigation/Context ABA remains separately covered by core regression",
+            "B actual native Key edit and its own Undo/Redo operate on independently supplied B contents",
+            "Actual picker A→B→A remounts fresh identities and restores A durable draft; both old campaigns retain separate unsaved Key contents",
+            "All sixteen confirmed A/B native and Campaign input files remain byte-exact; navigation stores drafts without publishing a new saved baseline"
+          ],
+          "nativeMainJsSha256": "159e8db18b8e6f797c7414bdcf6899f156c63c422b18b3388f70d209c936aa13",
+          "inputBoundary": "One actual isolated Obsidian process with synthetic native picker/Key/button input; initial location navigation invokes the actual Host method.",
+          "lateCaptureBoundary": "Old actual A capture is verified only after completed navigation and later B activation. Delayed in-flight navigation/Context ABA remains a separate core regression, not a claimed native reply test."
         }
       }
     ],
