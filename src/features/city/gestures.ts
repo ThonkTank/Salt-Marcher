@@ -106,9 +106,8 @@ export class CityGesture {
   ) {
     this.target = target(address, source.id);
     this.start = cityInputPoint(startPoint);
-    this.draft = new CityDraft(source);
     const t = this.target,
-      before = this.draft.before;
+      before = source.read();
     const moved = (position: Point, point: Point) =>
       cityInputPoint({
         x: position.x + (point.x - this.start.x),
@@ -230,6 +229,8 @@ export class CityGesture {
         }
       }
     }
+    // Only subscribe after target/pose validation; failed construction owns no draft.
+    this.draft = new CityDraft(source);
   }
   get before() {
     return this.draft.before;

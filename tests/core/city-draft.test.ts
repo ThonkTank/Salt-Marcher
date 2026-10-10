@@ -13,6 +13,7 @@ import {
 import { newCityDocument } from "../../src/features/city/codec";
 import { CityDraft } from "../../src/features/city/draft";
 import { editCity, type CityEdit } from "../../src/features/city/edit";
+import { CityGesture } from "../../src/features/city/gestures";
 
 function setup() {
   const history = new AtlasHistory();
@@ -117,13 +118,13 @@ test("City Apply creates one exact street and house undo step and closes the dra
 
 test("City Cancel and no-op Apply preserve redo without silently undoing a foreign edit", () => {
   const { history, source, draft } = setup();
+  draft.setEdits([move(50)]);
   const before = source.read();
   const after = editCity(before, [move(20)]);
   history.execute({
     label: "foreign",
     changes: [cityDocumentChange(before, after)],
   });
-  draft.setEdits([move(50)]);
   draft.cancel();
   closed(draft, "cancelled");
   assert.deepEqual(source.read(), after);
@@ -233,6 +234,142 @@ test("Real terrain commands share draft history; concurrent City edits fail with
   assert(stale.cancel());
   assert.deepEqual(source.read(), after);
   closed(stale, "cancelled");
+});
+
+test("City draft rejects A-B-A after Undo without consuming Redo; a fresh draft works", () => {
+  const { history, source, draft } = setup();
+  draft.setEdits([road]);
+  const before = source.read();
+  history.execute({ label: "other city edit", changes: [cityDocumentChange(before, editCity(before, [move(20)]))] });
+  assert(history.undo());
+  assert.deepEqual(source.read(), before);
+  const depth = history.undoDepth;
+  assert(history.canRedo);
+  assert.throws(() => draft.apply("late apply"), /kollidiert/);
+  closed(draft, "failed");
+  assert.equal(history.undoDepth, depth);
+  assert(history.canRedo);
+  assert.deepEqual(source.read(), before);
+  assert(history.redo());
+  const fresh = new CityDraft(source);
+  fresh.setEdits([road]);
+  assert(fresh.apply("fresh street"));
+  assert.equal(source.read().roadNodes[0]!.point.x, -10);
+});
+
+test("City draft rejects an update after A-B-A, including recovery from an invalid preview", () => {
+  for (const invalid of [false, true]) {
+    const { history, source, draft } = setup();
+    draft.setEdits([road]);
+    if (invalid) assert.throws(() => draft.setEdits([{ kind: "remove-node", nodeId: "a" }]));
+    const before = source.read();
+    history.execute({ label: "other city edit", changes: [cityDocumentChange(before, editCity(before, [move(20)]))] });
+    assert(history.undo());
+    assert.throws(() => draft.setEdits([move(40)]), /kollidiert/);
+    closed(draft, "failed");
+    assert(history.canRedo);
+    assert.deepEqual(source.read(), before);
+  }
+});
+
+for (const action of ["apply", "update"] as const)
+test(`Draft on an existing Undo state rejects ${action} after Redo-Undo restores the same reference`, () => {
+    const { history, source } = setup();
+    const before = source.read();
+    history.execute({ label: "existing city edit", changes: [cityDocumentChange(before, editCity(before, [move(20)]))] });
+    assert(history.undo());
+    const identity = history.read(source.id, "document");
+    const draft = new CityDraft(source);
+    draft.setEdits([road]);
+    assert(history.redo());
+    const intermediateState = draft.state;
+    assert(history.undo());
+    assert.equal(history.read(source.id, "document"), identity);
+    if (action === "apply") assert.throws(() => draft.apply("obsolete"));
+    else assert.throws(() => draft.setEdits([move(40)]));
+    closed(draft, "failed");
+    assert.equal(intermediateState, "failed");
+    assert(history.canRedo);
+    assert.equal(history.undoDepth, 0);
+    assert.deepEqual(source.read(), before);
+});
+
+for (const action of ["apply", "update"] as const)
+test(`City draft rejects ${action} when an earlier observer synchronously undoes Redo`, () => {
+  const { history, source, draft: initial } = setup();
+  initial.cancel();
+  const before = source.read();
+  history.execute({ label: "rename", changes: [cityDocumentChange(before, { ...before, name: "B" })] });
+  assert(history.undo());
+  let armed = true;
+  const removeEarlier = history.subscribe(() => {
+    if (armed) { armed = false; assert(history.undo()); }
+  });
+  const events: string[] = [];
+  const removeEvidence = history.subscribe((command) => {
+    assert(Object.isFrozen(command));
+    assert(Object.isFrozen(command.changes));
+    assert(Object.isFrozen(command.changes[0]!.after));
+    events.push(command.changes[0]!.ownerId);
+  });
+  const draft = new CityDraft(source);
+  draft.setEdits([road]);
+  assert(history.redo());
+  assert.deepEqual(source.read(), before);
+  assert.deepEqual(events, [source.id, source.id]);
+  if (action === "apply") assert.throws(() => draft.apply("obsolete"));
+  else assert.throws(() => draft.setEdits([move(40)]));
+  closed(draft, "failed");
+  assert(history.canRedo);
+  assert.equal(history.undoDepth, 0);
+  removeEvidence();
+  removeEarlier();
+});
+
+test("City draft releases its observer on Apply, Cancel, conflict and failed gesture construction", () => {
+  const { history, source, draft: initial } = setup();
+  initial.cancel();
+  const subscribe = history.subscribe.bind(history);
+  let live = 0;
+  history.subscribe = (listener) => {
+    live++;
+    const unsubscribe = subscribe(listener);
+    let attached = true;
+    return () => {
+      if (attached) { attached = false; live--; }
+      unsubscribe();
+    };
+  };
+  const applied = new CityDraft(source);
+  applied.setEdits([road]);
+  assert.equal(live, 1);
+  assert(applied.apply("apply"));
+  assert.equal(live, 0);
+  assert(history.undo());
+  assert.equal(applied.state, "applied");
+  const cancelled = new CityDraft(source);
+  cancelled.cancel();
+  assert.equal(live, 0);
+  assert(history.redo());
+  assert.equal(cancelled.state, "cancelled");
+  const stale = new CityDraft(source);
+  assert(history.undo());
+  closed(stale, "failed");
+  assert.equal(live, 0);
+  assert.throws(() => new CityGesture(source, { kind: "move-building", ownerId: source.id, buildingId: "missing" }, { x: 0, y: 0 }));
+  assert.equal(live, 0);
+  const noop = new CityDraft(source);
+  noop.setEdits([]);
+  assert.equal(noop.apply("no-op"), false);
+  assert.equal(live, 0);
+  const rejected = new CityDraft(source);
+  rejected.setEdits([road]);
+  const removePreflight = history.addPreflight(() => { throw Error("blocked"); });
+  assert.throws(() => rejected.apply("rejected"), /blocked/);
+  removePreflight();
+  closed(rejected, "failed");
+  assert.equal(live, 0);
+  assert(history.canRedo);
 });
 
 test("History observer exceptions are diagnosed separately after execute/undo/redo and never block later observers", () => {

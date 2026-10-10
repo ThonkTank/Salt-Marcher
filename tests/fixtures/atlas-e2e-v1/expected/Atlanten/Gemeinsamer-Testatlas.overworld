@@ -1,0 +1,62 @@
+{
+  "kind": "overworld",
+  "version": 1,
+  "id": "00000000-0000-4000-8000-000000000010",
+  "name": "Gemeinsamer Testatlas",
+  "orientation": "pointy",
+  "origin": {
+    "x": 0,
+    "y": 0
+  },
+  "metersPerMile": 1609.344,
+  "minHexMiles": 3,
+  "levelFactor": 3,
+  "chunks": [
+    {
+      "q": -1,
+      "r": 0,
+      "level": 0,
+      "file": "terrain/0_-1_0.json",
+      "cellCount": 1,
+      "extent": {
+        "minQ": -1,
+        "maxQ": -1,
+        "minR": 0,
+        "maxR": 0
+      }
+    },
+    {
+      "q": 0,
+      "r": 0,
+      "level": 0,
+      "file": "terrain/0_0_0.json",
+      "cellCount": 2,
+      "extent": {
+        "minQ": 0,
+        "maxQ": 1,
+        "minR": 0,
+        "maxR": 0
+      }
+    }
+  ],
+  "placements": [
+    {
+      "kind": "location",
+      "id": "00000000-0000-4000-8000-000000000013",
+      "locationId": "00000000-0000-4000-8000-000000000011",
+      "position": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "kind": "location",
+      "id": "00000000-0000-4000-8000-000000000014",
+      "locationId": "00000000-0000-4000-8000-000000000012",
+      "position": {
+        "x": 4828.032,
+        "y": 0
+      }
+    }
+  ]
+}

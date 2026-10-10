@@ -156,6 +156,49 @@ if (test) await build({
     },
   }],
 });
+if (test) await build({
+  entryPoints: ["tests/campaign-entry-dom.entry.ts"],
+  outfile: ".build/campaign-entry-dom.cjs",
+  bundle: true,
+  format: "cjs",
+  platform: "node",
+  target: "es2022",
+  sourcemap: true,
+  logLevel: "info",
+});
+if (test) await build({
+  entryPoints: ["tests/vault-campaign-runtime-source.entry.ts"],
+  outfile: ".build/vault-campaign-runtime-source.cjs",
+  bundle: true,
+  format: "cjs",
+  platform: "node",
+  target: "es2022",
+  sourcemap: true,
+  logLevel: "info",
+  plugins: [{
+    name: "obsidian-campaign-test-stub",
+    setup(builder) {
+      builder.onResolve({ filter: /^obsidian$/ }, () => ({
+        path: new URL("./tests/fixtures/obsidian-campaign-stub.ts", import.meta.url).pathname,
+      }));
+    },
+  }],
+});
+if (test) await build({
+  entryPoints: ["tests/atlas-detail-entry.entry.ts"], outfile: ".build/atlas-detail-entry.cjs",
+  bundle: true, format: "cjs", platform: "node", target: "es2022", sourcemap: true, logLevel: "info",
+});
+if (test) await build({
+  entryPoints: ["tests/world-notes-panel.entry.ts"], outfile: ".build/world-notes-panel.cjs",
+  bundle: true, format: "cjs", platform: "node", target: "es2022", sourcemap: true, logLevel: "info",
+});
+if (test) await build({
+  entryPoints: ["tests/atlas-campaign-host.entry.ts"], outfile: ".build/atlas-campaign-host.cjs",
+  bundle: true, format: "cjs", platform: "node", target: "es2022", sourcemap: true, logLevel: "info",
+  plugins: [{ name: "obsidian-atlas-host-test-stub", setup(builder) {
+    builder.onResolve({ filter: /^obsidian$/ }, () => ({ path: new URL("./tests/fixtures/obsidian-atlas-host-stub.ts", import.meta.url).pathname }));
+  } }],
+});
 if (!test) {
   const mainBytes = (await stat("main.js")).size;
   const mainJsGrowthBytes = catalogMainJsGrowth(mainBytes, catalogAsset.identity);
@@ -183,3 +226,5 @@ if (!test) {
   await writeFile(".build/catalog-build-inventory.json", JSON.stringify(inventory, null, 2) + "\n");
   console.log("catalog inventory", inventory);
 }
+
+if (test) await build({ entryPoints: ["tests/manual-planner-panel.entry.ts"], outfile: ".build/manual-planner-panel.cjs", bundle: true, format: "cjs", platform: "node", target: "es2022", logLevel: "info" });

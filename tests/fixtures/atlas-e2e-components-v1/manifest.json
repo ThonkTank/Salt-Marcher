@@ -1,0 +1,325 @@
+{
+  "kind": "atlas-e2e-component-composition",
+  "version": 1,
+  "fixtureVersion": "e2e01-component-closure-v1",
+  "gate": "E2E-01",
+  "steward": "Hex",
+  "state": "source_snapshot_history_closure_checked_full_gate_open",
+  "gateCatalog": {
+    "source": "cc93c31870f461527b2f8953fe88e433dada7cd1",
+    "path": "ROADMAP-E2E-GATES-CANDIDATE.md"
+  },
+  "sourceList": {
+    "Hex": "ffa6e90b6b164711623f80c32ddf178d848b7c8d",
+    "Stadt": "272ddc4bd0f2aad99a74bdf369cd03dd6dd6913c",
+    "Dungeon": "d01051c0be74a66d9dffbbddd13575774e4b95b3",
+    "CampaignData": "06ac0ae059702331ad4b8b2650122dba87382398"
+  },
+  "components": [
+    {
+      "owner": "Hex",
+      "manifest": "../atlas-e2e-v1/manifest.json",
+      "sha256": "5431128663236f1c07b06049f647fbc4c2f8495e9380cb25ac9dd19b6e8099df"
+    },
+    {
+      "owner": "Stadt",
+      "manifest": "../atlas-e2e-v1/city-manifest.json",
+      "sha256": "0faee40b2cd56e50b505531f80aac4001c1dfb91df9831823cf4c26bc7fba712"
+    },
+    {
+      "owner": "Dungeon",
+      "manifest": "../atlas-e2e-v1/dungeon-manifest.json",
+      "sha256": "b30fc892bb690fbab584e992ddca5918fb9c0a739acc7a40b6a3cbb7e1b39dd5"
+    }
+  ],
+  "input": [
+    {
+      "path": "Atlanten/Gemeinsamer-Testatlas.overworld",
+      "fixtureFile": "../atlas-e2e-v1/input/Atlanten/Gemeinsamer-Testatlas.overworld",
+      "sha256": "1de7b40c3a2562c648882fa92475188f0b8e20c191cff97a32bd88665e5ef9b0",
+      "bytes": 1171
+    },
+    {
+      "path": "Atlasdaten/00000000-0000-4000-8000-000000000010/terrain/0_-1_0.json",
+      "fixtureFile": "../atlas-e2e-v1/input/Atlasdaten/00000000-0000-4000-8000-000000000010/terrain/0_-1_0.json",
+      "sha256": "4e09dbcf59e5f81a35f0c72c44511b35073696cf079613f5d001baceeb59e358",
+      "bytes": 270
+    },
+    {
+      "path": "Atlasdaten/00000000-0000-4000-8000-000000000010/terrain/0_0_0.json",
+      "fixtureFile": "../atlas-e2e-v1/input/Atlasdaten/00000000-0000-4000-8000-000000000010/terrain/0_0_0.json",
+      "sha256": "c32ba3548aa7236e573e145ec0e3c6e75326cc6cd47134a19c2230d2d790f2f2",
+      "bytes": 267
+    },
+    {
+      "path": "Orte/00000000-0000-4000-8000-000000000011.location",
+      "fixtureFile": "../atlas-e2e-v1/input/Orte/00000000-0000-4000-8000-000000000011.location",
+      "sha256": "ac888059f997b3c0f697e2152c9d59375543d6d2004356f1eef482fd4ec27ab7",
+      "bytes": 457
+    },
+    {
+      "path": "Orte/00000000-0000-4000-8000-000000000012.location",
+      "fixtureFile": "../atlas-e2e-v1/input/Orte/00000000-0000-4000-8000-000000000012.location",
+      "sha256": "57b455592dc30e0ab9e3286a56f27a408453b7a2a3b617eee03ea089ed963b5b",
+      "bytes": 459
+    },
+    {
+      "fixtureFile": "../atlas-e2e-v1/input/Städte/00000000-0000-4000-8000-000000000100.city",
+      "sha256": "c2dcd6cc4b3a220ed8e46d02c4e63a3336bda5f8ee7e6152cfab136124aa395c",
+      "bytes": 2595,
+      "path": "Städte/00000000-0000-4000-8000-000000000100.city"
+    },
+    {
+      "path": "Dungeons/E2E-01-Testdungeon/Karte.dungeon",
+      "fixtureFile": "../atlas-e2e-v1/input/Dungeons/E2E-01-Testdungeon/Karte.dungeon",
+      "sha256": "c6fe58d1b5de5c707000a39b0b8da2883d31867b7d8bf347f63830021e2df742",
+      "bytes": 1747
+    }
+  ],
+  "expected": [
+    {
+      "path": "Atlanten/Gemeinsamer-Testatlas.overworld",
+      "fixtureFile": "../atlas-e2e-v1/expected/Atlanten/Gemeinsamer-Testatlas.overworld",
+      "sha256": "9eae525d1331026ddedd1a05d2170ae8893a3a90a4abc15fde32d54a2a5158e8",
+      "bytes": 1170
+    },
+    {
+      "path": "Atlasdaten/00000000-0000-4000-8000-000000000010/terrain/0_-1_0.json",
+      "fixtureFile": "../atlas-e2e-v1/expected/Atlasdaten/00000000-0000-4000-8000-000000000010/terrain/0_-1_0.json",
+      "sha256": "4e09dbcf59e5f81a35f0c72c44511b35073696cf079613f5d001baceeb59e358",
+      "bytes": 270
+    },
+    {
+      "path": "Atlasdaten/00000000-0000-4000-8000-000000000010/terrain/0_0_0.json",
+      "fixtureFile": "../atlas-e2e-v1/expected/Atlasdaten/00000000-0000-4000-8000-000000000010/terrain/0_0_0.json",
+      "sha256": "d9f83d8eca9aac665b97dc7752cff6cf253e06ce3e8a24e4788f2273ec82a850",
+      "bytes": 385
+    },
+    {
+      "path": "Orte/00000000-0000-4000-8000-000000000011.location",
+      "fixtureFile": "../atlas-e2e-v1/expected/Orte/00000000-0000-4000-8000-000000000011.location",
+      "sha256": "27b43050dcaec5b043f8ea2fb34441774ceb87ef3cd2b756ecf1ba0fc281a004",
+      "bytes": 511
+    },
+    {
+      "path": "Orte/00000000-0000-4000-8000-000000000012.location",
+      "fixtureFile": "../atlas-e2e-v1/expected/Orte/00000000-0000-4000-8000-000000000012.location",
+      "sha256": "57b455592dc30e0ab9e3286a56f27a408453b7a2a3b617eee03ea089ed963b5b",
+      "bytes": 459
+    },
+    {
+      "fixtureFile": "../atlas-e2e-v1/expected/Städte/00000000-0000-4000-8000-000000000100.city",
+      "sha256": "c2dcd6cc4b3a220ed8e46d02c4e63a3336bda5f8ee7e6152cfab136124aa395c",
+      "bytes": 2595,
+      "path": "Städte/00000000-0000-4000-8000-000000000100.city"
+    },
+    {
+      "path": "Dungeons/E2E-01-Testdungeon/Karte.dungeon",
+      "fixtureFile": "../atlas-e2e-v1/expected/Dungeons/E2E-01-Testdungeon/Karte.dungeon",
+      "sha256": "a86e366f64d44c81e797ee8660de3f54e05bf1ad4a09a2db9bb8002e6eac7429",
+      "bytes": 1790
+    }
+  ],
+  "identities": [
+    {
+      "id": "00000000-0000-4000-8000-000000000010",
+      "path": "Atlanten/Gemeinsamer-Testatlas.overworld",
+      "inputPointer": "/id",
+      "expectedPointer": "/id"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000013",
+      "path": "Atlanten/Gemeinsamer-Testatlas.overworld",
+      "inputPointer": "/placements/0/id",
+      "expectedPointer": "/placements/0/id"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000014",
+      "path": "Atlanten/Gemeinsamer-Testatlas.overworld",
+      "inputPointer": "/placements/1/id",
+      "expectedPointer": "/placements/1/id"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000011",
+      "path": "Orte/00000000-0000-4000-8000-000000000011.location",
+      "inputPointer": "/id",
+      "expectedPointer": "/id"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000015",
+      "path": "Orte/00000000-0000-4000-8000-000000000011.location",
+      "inputPointer": "/sections/0/id",
+      "expectedPointer": "/sections/1/id"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000016",
+      "path": "Orte/00000000-0000-4000-8000-000000000011.location",
+      "inputPointer": "/sections/1/id",
+      "expectedPointer": "/sections/0/id"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000012",
+      "path": "Orte/00000000-0000-4000-8000-000000000012.location",
+      "inputPointer": "/id",
+      "expectedPointer": "/id"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000017",
+      "path": "Orte/00000000-0000-4000-8000-000000000012.location",
+      "inputPointer": "/sections/0/id",
+      "expectedPointer": "/sections/0/id"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000018",
+      "path": "Orte/00000000-0000-4000-8000-000000000012.location",
+      "inputPointer": "/sections/1/id",
+      "expectedPointer": "/sections/1/id"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000100",
+      "path": "Städte/00000000-0000-4000-8000-000000000100.city",
+      "inputPointer": "/id",
+      "expectedPointer": "/id"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000101",
+      "path": "Städte/00000000-0000-4000-8000-000000000100.city",
+      "inputPointer": "/roadNodes/0/id",
+      "expectedPointer": "/roadNodes/0/id"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000102",
+      "path": "Städte/00000000-0000-4000-8000-000000000100.city",
+      "inputPointer": "/roadNodes/1/id",
+      "expectedPointer": "/roadNodes/1/id"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000103",
+      "path": "Städte/00000000-0000-4000-8000-000000000100.city",
+      "inputPointer": "/roads/0/id",
+      "expectedPointer": "/roads/0/id"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000104",
+      "path": "Städte/00000000-0000-4000-8000-000000000100.city",
+      "inputPointer": "/plazas/0/id",
+      "expectedPointer": "/plazas/0/id"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000105",
+      "path": "Städte/00000000-0000-4000-8000-000000000100.city",
+      "inputPointer": "/buildings/0/id",
+      "expectedPointer": "/buildings/0/id"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000106",
+      "path": "Städte/00000000-0000-4000-8000-000000000100.city",
+      "inputPointer": "/buildings/1/id",
+      "expectedPointer": "/buildings/1/id"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000030",
+      "path": "Dungeons/E2E-01-Testdungeon/Karte.dungeon",
+      "inputPointer": "/id",
+      "expectedPointer": "/id"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000032",
+      "path": "Dungeons/E2E-01-Testdungeon/Karte.dungeon",
+      "inputPointer": "/floors/0/id",
+      "expectedPointer": "/floors/0/id"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000031",
+      "path": "Dungeons/E2E-01-Testdungeon/Karte.dungeon",
+      "inputPointer": "/entities/0/id",
+      "expectedPointer": "/entities/0/id"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000034",
+      "path": "Dungeons/E2E-01-Testdungeon/Karte.dungeon",
+      "inputPointer": "/entities/0/key/sections/0/id",
+      "expectedPointer": "/entities/0/key/sections/0/id"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000033",
+      "path": "Dungeons/E2E-01-Testdungeon/Karte.dungeon",
+      "inputPointer": "/content/routes/0/id",
+      "expectedPointer": "/content/routes/0/id"
+    }
+  ],
+  "persistedReferences": [
+    {
+      "path": "Atlanten/Gemeinsamer-Testatlas.overworld",
+      "pointer": "/placements/0/locationId",
+      "targetId": "00000000-0000-4000-8000-000000000011"
+    },
+    {
+      "path": "Atlanten/Gemeinsamer-Testatlas.overworld",
+      "pointer": "/placements/1/locationId",
+      "targetId": "00000000-0000-4000-8000-000000000012"
+    },
+    {
+      "path": "Atlasdaten/00000000-0000-4000-8000-000000000010/terrain/0_-1_0.json",
+      "pointer": "/worldId",
+      "targetId": "00000000-0000-4000-8000-000000000010"
+    },
+    {
+      "path": "Atlasdaten/00000000-0000-4000-8000-000000000010/terrain/0_0_0.json",
+      "pointer": "/worldId",
+      "targetId": "00000000-0000-4000-8000-000000000010"
+    },
+    {
+      "path": "Städte/00000000-0000-4000-8000-000000000100.city",
+      "pointer": "/roads/0/startNodeId",
+      "targetId": "00000000-0000-4000-8000-000000000101"
+    },
+    {
+      "path": "Städte/00000000-0000-4000-8000-000000000100.city",
+      "pointer": "/roads/0/endNodeId",
+      "targetId": "00000000-0000-4000-8000-000000000102"
+    },
+    {
+      "path": "Dungeons/E2E-01-Testdungeon/Karte.dungeon",
+      "pointer": "/entities/0/floorId",
+      "targetId": "00000000-0000-4000-8000-000000000032"
+    },
+    {
+      "path": "Dungeons/E2E-01-Testdungeon/Karte.dungeon",
+      "pointer": "/content/routes/0/toRoomId",
+      "targetId": "00000000-0000-4000-8000-000000000031"
+    }
+  ],
+  "campaignRef": {
+    "id": "00000000-0000-4000-8000-000000000001",
+    "state": "reserved_reference_no_native_campaign_fixture"
+  },
+  "pendingSpatialBindings": [
+    {
+      "locationId": "00000000-0000-4000-8000-000000000011",
+      "cityId": "00000000-0000-4000-8000-000000000100",
+      "state": "not_persisted"
+    },
+    {
+      "cityId": "00000000-0000-4000-8000-000000000100",
+      "houseId": "00000000-0000-4000-8000-000000000105",
+      "dungeonId": "00000000-0000-4000-8000-000000000030",
+      "entranceRouteId": "00000000-0000-4000-8000-000000000033",
+      "state": "not_persisted"
+    }
+  ],
+  "historyOracle": [
+    "Open AtlasRepository and its real terrain/Location owners; inject that identical AtlasHistory into CitySource and DungeonAtlasSource.",
+    "One composed command changes terrain, POI placement, town name/Key/order and Dungeon Key; City is explicitly the unchanged delivered baseline.",
+    "One Undo restores all seven native input byte snapshots; one Redo restores all seven expected byte snapshots.",
+    "A stale Dungeon before-value rejects the whole composed command before any other owner mutates."
+  ],
+  "limitations": [
+    "This composition references the fixed component payloads without materializing a second live ID set.",
+    "City expected bytes deliberately remain unchanged; no integrated house-edit/reopen oracle is claimed.",
+    "The accepted Campaign contribution is host-neutral Lifecycle/Context/remap core only; no native Campaign payload, trusted domain registry or Vault adapter is fabricated.",
+    "Shared snapshot/History tests do not prove persisted spatial bindings, scene mounting, Campaign switching or a save transaction across all owners.",
+    "P02 Save/Reopen and P04 Complete-Import/remap, full E2E-01, fresh native host, physical input, large maps, original parity and installation remain separate open gates.",
+    "Historical component manifests and prior native receipts retain their original source and scope; this composition is a new explicit version."
+  ]
+}

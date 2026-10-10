@@ -4,6 +4,156 @@ Stand: 9. Oktober 2026
 
 Art: Fachplan für Items; keine Item-Implementierung und keine CE-02-Freigabe
 
+### Aktuelle Quellenlieferung
+
+S01 bleibt bis vollständigem Korpus und unabhängigem S01-R01 ausdrücklich
+unvollständig. Der direkte Nutzerauftrag vom 10. Oktober verlangt sinnvolle
+Produktbeiträge ohne künstliche Einzeleintrags-/Kleinstpaketbeschränkung.
+W23 liefert die zusammenhängende Armor-/Arrow-Gruppe (A–Z 10–13,
+physische/gedruckte Seiten 208–209) einschließlich Resistenz-d10-Tabelle,
+Fluchtext und Slaying-Regeln. Ein kompletter Heading-zu-Heading-XML-Abgleich
+prüft Prosa und physische Tabellenreihenfolge statt nur vorhandener Substrings.
+W23-N01 ersetzt nach dem unabhängigen P1-Befund die feste Footer-Y-Grenze:
+Nur der exakte SRD-Footer mit belegter Seitennummer wird entfernt, nie eine
+Bodyregion nach Koordinaten. Getrennte kursive Wort-/Satzzeichenläufe erhalten
+das Fehlen von Grenzleerraum aus den XML-Quellwerten; echte Leerzeichen und
+Interpunktion bleiben unangetastet. Ein hashgebundener echter Poppler-25.03-
+XML-Ausschnitt, verschobene/hohe Koordinaten, Footer-/Body-Adversarien und ein
+expliziter PDF-Integrationstest schützen diese Grenze. Der lokale echte PDF-
+Lauf ist kein behaupteter Poppler-25.07- oder fremder Host-PASS. Der unabhängige
+W23-N01-P1-Re-Review auf `8dfa06ac859acf84df1e35d481893cf289e062e3`
+bestätigt inzwischen den echten Poppler-25.07-PDF-Pfad als PASS
+([PR #48, Review 5479968350](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/48#pullrequestreview-5479968350));
+das ist keine vollständige S01-/Produktabnahme.
+
+W24 ergänzt die gesamte Bags-Gruppe (A–Z 14–17, Seiten 209–211): Beans,
+Devouring, Holding und Tricks. Alle zwölf d100-Effekte einschließlich `00`
+und der seitenübergreifenden Eierregel sowie alle drei farbgebundenen
+d8-Kreaturentabellen mit jeweils acht Zeilen bleiben vollständig erhalten.
+Tabellenlabels und Würfelergebnisse bleiben den jeweiligen Zellen zugeordnet;
+die drei Farben sind keine zusätzlichen Detailheadings oder erfundenen
+Variantenrecords/Merges. Beans-Gewichtsformel und Holding-Kapazität bleiben
+als vollständiger Quellwortlaut erhalten, nicht als erfundene numerische
+Umrechnung. Die optionalen strukturierten Kosten-/Gewichts-/Kapazitätsfelder
+werden in diesem Quellenabschnitt nicht ergänzt.
+
+Der Verifier verwendet dieselbe inhaltliche Footer-/Quellwhitespace-Policy wie
+W23-N01 und prüft jeden vollständigen Heading-Block einschließlich Tabellen,
+Seitenübergängen und der nächsten Überschrift. Eine unveränderte echte
+Poppler-25.03-XML-Ausgabe der drei kompletten Seiten mit Hash-/Lizenzreceipt
+liegt unter `tests/fixtures/items-srd51-bags-poppler-25.03.*`; sie macht die
+prüfentscheidenden Rohdaten offline zugänglich, behauptet aber keinen neuen
+PDF-/GUI-Lauf. Negative Goldens erhalten auch bei unverändertem
+Kreaturen-Multiset die Farb-/Würfelzuordnung. W24 wurde unabhängig auf
+`42a69b63a69fbf310f1ba4eb4b7128cee2e5c700` geprüft
+([Review 5480292230](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/56#pullrequestreview-5480292230))
+und regulär auf Shared `843562ac256eb293f1b8c95f10077a9a7a7c1a1b`
+integriert; kein Full-S01-/Produkt-/Host-PASS.
+
+W25 liefert den vollständigen verbleibenden B-Abschnitt, A–Z 18–32, Bead of
+Force bis Broom of Flying, physische/gedruckte Seiten 211–213. Alle Header,
+Prosa, Aufzählungen, bedingten Regeln, Recharge-Angaben und der
+seitenübergreifende Berserker-Fluch bleiben erhalten. Belt of Giant Strength
+hat fünf physische Tabellenzeilen mit fünf ordinalgebundenen Raritätschoices;
+die Quelle nennt sechs Varianten, fasst Stone/frost aber in einer Zeile
+zusammen. Diese Zeile bleibt kombiniert; die sechs Varianten und ihr
+unterschiedliches Aussehen/gleicher Effekt bleiben im vollständigen Fließtext.
+Keine erfundenen zusätzlichen Occurrences, Records oder Merges. Header
+`Weapon (any axe)` ergänzt das geschlossene Draft-v1-Subcategory-Enum um
+`weapon`; es wird nicht unbelegt als einfache/martiale Einzelwaffe klassifiziert.
+Gewicht, Kapazität und temperaturabhängige Regeln bleiben Quellenwortlaut,
+keine erfundenen Kosten oder Einheitenumrechnungen.
+
+`tools/items-srd51-b-section.mjs` vergleicht die vollständigen Blöcke bis zur
+Folgeüberschrift, einschließlich Tabellenzelleneigentum und Seitenwechsel.
+Originale drei vollständige Poppler-25.03-XML-Seiten samt Hash-/Lizenzreceipt
+liegen unter `tests/fixtures/items-srd51-b-section-poppler-25.03.*`.
+Negative Goldens schützen Variant-IDs/Rarität/Strength-Zellen, Fluchende,
+Aufzählungen, echte Minuszeichen, Recharge und Bedingungsgrenzen. W25 ist
+unabhängig auf `8772d950301b899c22f8bc4588e35bd2a5fe6dde` als PASS geprüft
+([Chronik-Review 5480446444](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/64#pullrequestreview-5480446444))
+und regulär auf Shared `ebb480eaac0c11640b843b4fa4297f541951d4ad` integriert
+([Stewardabschluss](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/64#issuecomment-6101348349)).
+Das schließt weder Full-S01 noch ein Produkt-/Hostgate.
+
+W26 ergänzt den vollständigen kohärenten C-Abschnitt A–Z 33–47, Candle of
+Invocation bis Cubic Gate, physische/gedruckte Seiten 213–215: alle Header,
+Prosa, Aufzählungen, bedingten Regeln und Seitenfortsetzungen. Die neun
+Candle-Alignmentzeilen, vier Carpet-Zeilen (Größe/Kapazität/Geschwindigkeit),
+sechs Cube-Faces mit Charges/Effekt und fünf Spell-/Item-Charge-Loss-Zeilen
+behalten Reihenfolge und Zelleigentum. Der vollständige Table-Wortlaut bleibt
+auch an seiner Position zwischen den Prosaabsätzen erhalten. Crystal Ball
+bleibt eine Occurrence mit vier quellgeordneten Raritätschoices: typischer
+Ball very-rare; Mind Reading, Telepathy und True Seeing legendary. Keine
+erfundenen Unterheadings, Records oder Merges; alle variantenspezifischen
+Regeln und Scrying-/Konzentrations-/Rechargegrenzen bleiben vollständige Prosa.
+
+`tools/items-srd51-c-section.mjs` vergleicht jeden vollständigen Headingblock
+einschließlich Table-Position und Seitenwechsel bis zur Folgeüberschrift.
+Originale komplette drei Poppler-25.03-XML-Seiten und Hash-/Lizenzreceipt
+liegen unter `tests/fixtures/items-srd51-c-section-poppler-25.03.*`.
+Negative Goldens schützen Table-/Variant-IDs, Rarität, Würfelbereiche,
+Kapazität, Charge-Loss, Fließtextbedingungen und Aufzählungen. Kein Schema-
+oder Produktvertrag wurde erweitert; der W25-Korpuscount-Test prüft nun die
+Inventarlänge statt den historischen Zwischenstand 252, ohne Quellenfakten
+oder W25-Orakel abzuschwächen. W26 ist unabhängig auf
+`67daede8eb4c5debafa98115f12b6e516c54e3be` geprüft
+([Stadt-Review 5480616259](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/66#pullrequestreview-5480616259))
+und regulär auf Shared `9e3a6c1bbd6484a356c00c268083b147cd7cc6ae` integriert
+([Stewardabschluss](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/66#issuecomment-6101632238)).
+
+W27 ergänzt den vollständigen D-Abschnitt A–Z48–62, Dagger of Venom bis
+Dwarven Thrower, physische/gedruckte Seiten215–220. Alle Header und Prosa,
+einschließlich Dancing-Sword-Seitenfortsetzung, Fluch, Recharge und
+bedingtem Dwarf-Attunement bleiben vollständig. Deck of Illusions behält
+33 physische Tabellenzeilen (Jokers(2) ist eine Zeile), Deck of Many Things
+alle22 Tabellenzeilen, die13-vs22-Fußnote und sämtliche22 Kartenwirkungen.
+Der vollständige eingebettete Avatar-of-Death-Statblock bleibt in der
+Quellreihenfolge unter Skull, ohne zusätzliche Item-Occurrence oder Änderung
+des Monsterkorpus. Dragon Scale Mail bewahrt zehn Drachen-/Resistenzzellen
+und ihre fünf physischen gepaarten Zeilen. Karten-/Drachentypen sind keine
+erfundenen Raritätsvarianten oder Detailheadings; optional strukturierte
+Kosten/Gewicht/Kampfwerte werden nicht aus Prosa erfunden.
+
+`tools/items-srd51-d-section.mjs` prüft vollständige Headingblöcke bis zur
+Folgeüberschrift. Originale sechs vollständige Poppler25.03-XML-Seiten samt
+Hash-/Lizenzreceipt liegen unter `tests/fixtures/items-srd51-d-section-poppler-25.03.*`.
+Goldens schützen Karten-/Suit-/Resistenzzuordnung trotz gleicher Wertemengen,
+Fußnote, alle Kartenregeln, Statblock, Einschränkungen und Quellinterpunktion.
+W27 ist unabhängig geprüft
+([Review5480792943](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/70#pullrequestreview-5480792943))
+und regulär auf Shared7ba2bf4 integriert
+([Stewardbeleg](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/70#issuecomment-6102297681)).
+Schema, Attribution, Produktcode und alte Quellen-/Verifiergoldens bleiben unverändert.
+
+Der aktuelle nächste Quellenumfang ist der vollständige E-Abschnitt A–Z63–70,
+Efficient Quiver bis Eyes of the Eagle, Seiten220–221. Efreeti-d100-Effekte
+einschließlich `91–00`, alle vier Gem→Elemental-Zuordnungen und vollständige
+Sicht-/Recharge-/Windbedingungen werden headinggebunden geprüft; Eyes of
+Charming bleibt einschließlich Seitenfortsetzung erhalten. Tabellenwirkungen
+erzeugen keine zusätzlichen Itemidentitäten oder Raritätsvarianten. Die
+originalen zwei XML-Seiten/Receipt und das Quellenorakel liegen unter
+`tests/fixtures/items-srd51-e-section-poppler-25.03.*` beziehungsweise
+`tools/items-srd51-e-section.mjs`. Aktueller Ausführungs-/Prüfstand ausschließlich
+in der eigenen CE-Checkpointwurzel und [Aufgabenissue58](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/58).
+Stand: 290 Occurrences /289 Records,71/239 A–Z-Headings
+(70 standalone plus Potion-of-Healing-Merge);168 A–Z-Headings plus Orb offen.
+Der Gesamtquellenauftrag endet nicht an diesem Zwischenstand; nächster
+kohärenter Abschnitt beginnt bei Feather Token. I01 bleibt vor unabhängigem
+vollständigem S01-R01 gesperrt.
+Der erwartete vollständige Occurrence-Count ist 459 (219 Ausrüstung +
+239 A–Z + Orb), nicht der jeweilige Zwischenstand; bekannte Mergezahl bisher 1,
+weitere Merge-/Helperprüfung bleibt offen. `complete:false` bleibt gesetzt.
+Der vollständige PDF-Test wird mit
+`SRD51_SOURCE_PDF=/pfad/SRD_CC_v5.1.pdf node --test tests/items-srd51-source.test.mjs`
+aktiviert. Ohne diese Quelle ist er ausdrücklich skipped; Offline-XML-Fixtures
+ersetzen keinen erneuten echten PDF-Lauf bei Quellenänderungen.
+Der Quellenstand und die direkten Review-/Veröffentlichungsbelege bleiben in
+`checkpoint.saltMarcherCatalogEncounter`, `acceptance.saltMarcherCatalogEncounter`
+und [Issue #9](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/9).
+Die nächsten Lieferungen folgen zusammenhängenden Quellabschnitten; die
+vollständigen Schema-/Provenienz-/Produkt-/Hostgates unten bleiben erhalten.
+
 ## Ziel und Grenze
 
 `Items` wird der erste echte Bereich nach `Monster` in der vorhandenen

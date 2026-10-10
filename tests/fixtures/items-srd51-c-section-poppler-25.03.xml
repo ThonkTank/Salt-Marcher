@@ -1,0 +1,405 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE pdf2xml SYSTEM "pdf2xml.dtd">
+
+<pdf2xml producer="poppler" version="25.03.0">
+<page number="213" position="absolute" top="0" left="0" height="1188" width="918">
+	<fontspec id="0" size="16" family="LUFRKP+Calibri" color="#000000"/>
+	<fontspec id="1" size="16" family="DXJJCX+GillSans-SemiBold" color="#000000"/>
+	<fontspec id="2" size="18" family="DXJJCX+GillSans-SemiBold" color="#943634"/>
+	<fontspec id="3" size="15" family="FNCRUV+Cambria" color="#000000"/>
+	<fontspec id="4" size="15" family="UHIGMC+Cambria" color="#000000"/>
+	<fontspec id="5" size="13" family="WWROEK+Calibri" color="#000000"/>
+	<fontspec id="6" size="13" family="LUFRKP+Calibri" color="#000000"/>
+<text top="1125" left="572" width="222" height="20" font="0">System   Reference   Document   5.1   </text>
+<text top="1125" left="842" width="26" height="19" font="1"><b>213</b></text>
+<text top="1125" left="869" width="4" height="20" font="0">   </text>
+<text top="108" left="86" width="131" height="21" font="2"><b>Broom of Flying </b></text>
+<text top="130" left="86" width="175" height="17" font="3"><i>Wondrous   item,   uncommon   </i></text>
+<text top="156" left="86" width="292" height="17" font="4">This   wooden   broom,   which   weighs   3   pounds,   </text>
+<text top="174" left="86" width="310" height="17" font="4">functions   like   a   mundane   broom   until   you   stand   </text>
+<text top="191" left="86" width="301" height="17" font="4">astride   it   and   speak   its   command   word.   It   then   </text>
+<text top="209" left="86" width="324" height="17" font="4">hovers   beneath   you   and   can   be   ridden   in   the   air.   It   </text>
+<text top="226" left="86" width="323" height="17" font="4">has   a   flying   speed   of   50   feet.   It   can   carry   up   to   400   </text>
+<text top="244" left="86" width="324" height="17" font="4">pounds,   but   its   flying   speed   becomes   30   feet   while   </text>
+<text top="262" left="86" width="283" height="17" font="4">carrying   over   200   pounds.   The   broom   stops   </text>
+<text top="279" left="86" width="161" height="17" font="4">hovering   when   you   land.   </text>
+<text top="297" left="86" width="294" height="17" font="4">    You   can   send   the   broom   to   travel   alone   to   a   </text>
+<text top="314" left="86" width="310" height="17" font="4">destination   within   1   mile   of   you   if   you   speak   the   </text>
+<text top="332" left="86" width="333" height="17" font="4">command   word,   name   the   location,   and   are   familiar   </text>
+<text top="350" left="86" width="335" height="17" font="4">with   that   place.   The   broom   comes   back   to   you   when   </text>
+<text top="367" left="86" width="319" height="17" font="4">you   speak   another   command   word,   provided   that   </text>
+<text top="385" left="86" width="245" height="17" font="4">the   broom   is   still   within   1   mile   of   you.   </text>
+<text top="415" left="86" width="167" height="21" font="2"><b>Candle of Invocation </b></text>
+<text top="437" left="86" width="305" height="17" font="3"><i>Wondrous   item,   very   rare   (requires   attunement)   </i></text>
+<text top="464" left="86" width="335" height="17" font="4">This   slender   taper   is   dedicated   to   a   deity   and   shares   </text>
+<text top="481" left="86" width="341" height="17" font="4">that   deity’s   alignment.   The   candle’s   alignment   can   be   </text>
+<text top="499" left="86" width="112" height="17" font="4">detected   with   the</text>
+<text top="499" left="198" width="128" height="17" font="3"><i>   detect   evil   and   good</i></text>
+<text top="499" left="326" width="92" height="17" font="4">   spell.   The   GM   </text>
+<text top="517" left="86" width="288" height="17" font="4">chooses   the   god   and   associated   alignment   or   </text>
+<text top="534" left="86" width="237" height="17" font="4">determines   the   alignment   randomly.   </text>
+<text top="561" left="95" width="24" height="16" font="5"><b>d20   </b></text>
+<text top="561" left="141" width="61" height="16" font="5"><b>Alignment   </b></text>
+<text top="577" left="96" width="23" height="16" font="6">1–2   </text>
+<text top="577" left="141" width="66" height="16" font="6">Chaotic   evil   </text>
+<text top="594" left="96" width="23" height="16" font="6">3–4   </text>
+<text top="594" left="141" width="87" height="16" font="6">Chaotic   neutral   </text>
+<text top="612" left="96" width="23" height="16" font="6">5–7   </text>
+<text top="612" left="141" width="75" height="16" font="6">Chaotic   good   </text>
+<text top="628" left="96" width="23" height="16" font="6">8–9   </text>
+<text top="628" left="141" width="66" height="16" font="6">Neutral   evil   </text>
+<text top="644" left="89" width="97" height="16" font="6">10–11    Neutral   </text>
+<text top="661" left="89" width="128" height="16" font="6">12–13    Neutral   good   </text>
+<text top="677" left="89" width="114" height="16" font="6">14–15    Lawful   evil   </text>
+<text top="694" left="89" width="134" height="16" font="6">16–17    Lawful   neutral   </text>
+<text top="710" left="89" width="122" height="16" font="6">18–20    Lawful   good   </text>
+<text top="744" left="86" width="336" height="17" font="4">    The   candle’s   magic   is   activated   when   the   candle   is   </text>
+<text top="762" left="86" width="308" height="17" font="4">lit,   which   requires   an   action.   After   burning   for   4   </text>
+<text top="780" left="86" width="324" height="17" font="4">hours,   the   candle   is   destroyed.   You   can   snuff   it   out   </text>
+<text top="797" left="86" width="296" height="17" font="4">early   for   use   at   a   later   time.   Deduct   the   time   it   </text>
+<text top="815" left="86" width="331" height="17" font="4">burned   in   increments   of   1   minute   from   the   candle’s   </text>
+<text top="832" left="86" width="103" height="17" font="4">total   burn   time.   </text>
+<text top="850" left="86" width="321" height="17" font="4">    While   lit,   the   candle   sheds   dim   light   in   a   30-­‐‑foot   </text>
+<text top="868" left="86" width="285" height="17" font="4">radius.   Any   creature   within   that   light   whose   </text>
+<text top="885" left="86" width="326" height="17" font="4">alignment   matches   that   of   the   candle   makes   attack   </text>
+<text top="903" left="86" width="282" height="17" font="4">rolls,   saving   throws,   and   ability   checks   with   </text>
+<text top="921" left="86" width="326" height="17" font="4">advantage.   In   addition,   a   cleric   or   druid   in   the   light   </text>
+<text top="938" left="86" width="328" height="17" font="4">whose   alignment   matches   the   candle’s   can   cast   1st-­‐‑</text>
+<text top="955" left="86" width="277" height="17" font="4">level   spells   he   or   she   has   prepared   without   </text>
+<text top="973" left="86" width="338" height="17" font="4">expending   spell   slots,   though   the   spell’s   effect   is   as   if   </text>
+<text top="991" left="86" width="160" height="17" font="4">cast   with   a   1st-­‐‑level   slot.   </text>
+<text top="108" left="493" width="317" height="17" font="4">    Alternatively,   when   you   light   the   candle   for   the   </text>
+<text top="126" left="493" width="171" height="17" font="4">first   time,   you   can   cast   the   </text>
+<text top="126" left="663" width="28" height="17" font="3"><i>gate</i></text>
+<text top="126" left="691" width="144" height="17" font="4">   spell   with   it.   Doing   so   </text>
+<text top="143" left="493" width="131" height="17" font="4">destroys   the   candle.   </text>
+<text top="174" left="493" width="200" height="21" font="2"><b>Cape of the Mountebank </b></text>
+<text top="196" left="493" width="132" height="17" font="3"><i>Wondrous   item,   rare   </i></text>
+<text top="222" left="493" width="338" height="17" font="4">This   cape   smells   faintly   of   brimstone.   While   wearing   </text>
+<text top="240" left="493" width="175" height="17" font="4">it,   you   can   use   it   to   cast   the   </text>
+<text top="240" left="668" width="97" height="17" font="3"><i>dimension   door</i></text>
+<text top="240" left="765" width="54" height="17" font="4">   spell   as   </text>
+<text top="257" left="493" width="315" height="17" font="4">an   action.   This   property   of   the   cape   can’t   be   used   </text>
+<text top="275" left="493" width="168" height="17" font="4">again   until   the   next   dawn.   </text>
+<text top="293" left="493" width="329" height="17" font="4">    When   you   disappear,   you   leave   behind   a   cloud   of   </text>
+<text top="310" left="493" width="341" height="17" font="4">smoke,   and   you   appear   in   a   similar   cloud   of   smoke   at   </text>
+<text top="328" left="493" width="314" height="17" font="4">your   destination.   The   smoke   lightly   obscures   the   </text>
+<text top="345" left="493" width="315" height="17" font="4">space   you   left   and   the   space   you   appear   in,   and   it   </text>
+<text top="363" left="493" width="312" height="17" font="4">dissipates   at   the   end   of   your   next   turn.   A   light   or   </text>
+<text top="381" left="493" width="231" height="17" font="4">stronger   wind   disperses   the   smoke.   </text>
+<text top="411" left="493" width="131" height="21" font="2"><b>Carpet of Flying </b></text>
+<text top="433" left="493" width="162" height="17" font="3"><i>Wondrous   item,   very   rare   </i></text>
+<text top="460" left="493" width="313" height="17" font="4">You   can   speak   the   carpet’s   command   word   as   an   </text>
+<text top="477" left="493" width="314" height="17" font="4">action   to   make   the   carpet   hover   and   fly.   It   moves   </text>
+<text top="495" left="493" width="327" height="17" font="4">according   to   your   spoken   directions,   provided   that   </text>
+<text top="513" left="493" width="175" height="17" font="4">you   are   within   30   feet   of   it.   </text>
+<text top="530" left="493" width="98" height="17" font="4">    Four   sizes   of   </text>
+<text top="530" left="591" width="94" height="17" font="3"><i>carpet   of   flying</i></text>
+<text top="530" left="685" width="147" height="17" font="4">   exist.   The   GM   chooses   </text>
+<text top="548" left="493" width="336" height="17" font="4">the   size   of   a   given   carpet   or   determines   it   randomly.   </text>
+<text top="574" left="499" width="31" height="16" font="5"><b>d100   </b></text>
+<text top="574" left="567" width="25" height="16" font="5"><b>Size   </b></text>
+<text top="574" left="623" width="137" height="16" font="5"><b>Capacity    Flying   Speed   </b></text>
+<text top="591" left="496" width="37" height="16" font="6">01–20   </text>
+<text top="591" left="550" width="60" height="16" font="6">3   ft.   ×   5   ft.   </text>
+<text top="591" left="628" width="40" height="16" font="6">200   lb.   </text>
+<text top="591" left="703" width="42" height="16" font="6">80   feet   </text>
+<text top="607" left="496" width="37" height="16" font="6">21–55   </text>
+<text top="607" left="550" width="60" height="16" font="6">4   ft.   ×   6   ft.   </text>
+<text top="607" left="628" width="40" height="16" font="6">400   lb.   </text>
+<text top="607" left="703" width="42" height="16" font="6">60   feet   </text>
+<text top="623" left="496" width="37" height="16" font="6">56–80   </text>
+<text top="623" left="550" width="60" height="16" font="6">5   ft.   ×   7   ft.   </text>
+<text top="623" left="628" width="40" height="16" font="6">600   lb.   </text>
+<text top="623" left="703" width="42" height="16" font="6">40   feet   </text>
+<text top="640" left="493" width="117" height="16" font="6">81–100    6   ft.   ×   9   ft.   </text>
+<text top="640" left="628" width="40" height="16" font="6">800   lb.   </text>
+<text top="640" left="703" width="42" height="16" font="6">30   feet   </text>
+<text top="674" left="493" width="325" height="17" font="4">    A   carpet   can   carry   up   to   twice   the   weight   shown   </text>
+<text top="692" left="493" width="306" height="17" font="4">on   the   table,   but   it   flies   at   half   speed   if   it   carries   </text>
+<text top="710" left="493" width="198" height="17" font="4">more   than   its   normal   capacity.   </text>
+<text top="740" left="493" width="296" height="21" font="2"><b>Censer of Controlling Air Elementals </b></text>
+<text top="762" left="493" width="132" height="17" font="3"><i>Wondrous   item,   rare   </i></text>
+<text top="788" left="493" width="331" height="17" font="4">While   incense   is   burning   in   this   censer,   you   can   use   </text>
+<text top="806" left="493" width="330" height="17" font="4">an   action   to   speak   the   censer’s   command   word   and   </text>
+<text top="824" left="493" width="305" height="17" font="4">summon   an   air   elemental,   as   if   you   had   cast   the   </text>
+<text top="841" left="493" width="112" height="17" font="3"><i>conjure   elemental</i></text>
+<text top="841" left="605" width="227" height="17" font="4">   spell.   The   censer   can’t   be   used   this   </text>
+<text top="859" left="493" width="198" height="17" font="4">way   again   until   the   next   dawn.   </text>
+<text top="877" left="493" width="326" height="17" font="4">    This   6-­‐‑inch-­‐‑wide,   1-­‐‑foot-­‐‑high   vessel   resembles   a   </text>
+<text top="894" left="493" width="302" height="17" font="4">chalice   with   a   decorated   lid.   It   weighs   1   pound.   </text>
+<text top="925" left="493" width="149" height="21" font="2"><b>Chime of Opening </b></text>
+<text top="946" left="493" width="132" height="17" font="3"><i>Wondrous   item,   rare   </i></text>
+<text top="973" left="493" width="327" height="17" font="4">This   hollow   metal   tube   measures   about   1   foot   long   </text>
+<text top="991" left="493" width="324" height="17" font="4">and   weighs   1   pound.   You   can   strike   it   as   an   action,   </text>
+<text top="1008" left="493" width="320" height="17" font="4">pointing   it   at   an   object   within   120   feet   of   you   that   </text>
+<text top="1026" left="493" width="339" height="17" font="4">can   be   opened,   such   as   a   door,   lid,   or   lock.   The   chime   </text>
+</page>
+<page number="214" position="absolute" top="0" left="0" height="1188" width="918">
+	<fontspec id="7" size="15" family="ZWSWFB+Symbol" color="#000000"/>
+	<fontspec id="8" size="15" family="EMJVBH+Cambria" color="#000000"/>
+<text top="1125" left="572" width="222" height="20" font="0">System   Reference   Document   5.1   </text>
+<text top="1125" left="842" width="26" height="19" font="1"><b>214</b></text>
+<text top="1125" left="869" width="4" height="20" font="0">   </text>
+<text top="108" left="86" width="303" height="17" font="4">issues   a   clear   tone,   and   one   lock   or   latch   on   the   </text>
+<text top="126" left="86" width="338" height="17" font="4">object   opens   unless   the   sound   can’t   reach   the   object.   </text>
+<text top="143" left="86" width="333" height="17" font="4">If   no   locks   or   latches   remain,   the   object   itself   opens.   </text>
+<text top="161" left="86" width="325" height="17" font="4">    The   chime   can   be   used   ten   times.   After   the   tenth   </text>
+<text top="178" left="86" width="232" height="17" font="4">time,   it   cracks   and   becomes   useless.   </text>
+<text top="209" left="86" width="145" height="21" font="2"><b>Circlet of Blasting </b></text>
+<text top="231" left="86" width="175" height="17" font="3"><i>Wondrous   item,   uncommon   </i></text>
+<text top="257" left="86" width="326" height="17" font="4">While   wearing   this   circlet,   you   can   use   an   action   to   </text>
+<text top="275" left="86" width="53" height="17" font="4">cast   the   </text>
+<text top="275" left="139" width="84" height="17" font="3"><i>scorching   ray</i></text>
+<text top="275" left="224" width="191" height="17" font="4">   spell   with   it.   When   you   make   </text>
+<text top="293" left="86" width="336" height="17" font="4">the   spell’s   attacks,   you   do   so   with   an   attack   bonus   of   </text>
+<text top="310" left="86" width="329" height="17" font="4">+5.   The   circlet   can’t   be   used   this   way   again   until   the</text>
+<text top="328" left="86" width="70" height="17" font="4">next   dawn.</text>
+<text top="359" left="86" width="156" height="21" font="2"><b>Cloak of Arachnida </b></text>
+<text top="381" left="86" width="305" height="17" font="3"><i>Wondrous   item,   very   rare   (requires   attunement)   </i></text>
+<text top="407" left="86" width="325" height="17" font="4">This   fine   garment   is   made   of   black   silk   interwoven   </text>
+<text top="424" left="86" width="337" height="17" font="4">with   faint   silvery   threads.   While   wearing   it,   you   gain   </text>
+<text top="442" left="86" width="146" height="17" font="4">the   following   benefits:   </text>
+<text top="473" left="86" width="7" height="15" font="7">•</text>
+<text top="470" left="100" width="247" height="17" font="4">You   have   resistance   to   poison   damage.</text>
+<text top="492" left="86" width="7" height="15" font="7">•</text>
+<text top="488" left="100" width="311" height="17" font="4">You   have   a   climbing   speed   equal   to   your   walking</text>
+<text top="505" left="100" width="41" height="17" font="4">speed.</text>
+<text top="528" left="86" width="7" height="15" font="7">•</text>
+<text top="524" left="100" width="278" height="17" font="4">You   can   move   up,   down,   and   across   vertical</text>
+<text top="541" left="100" width="298" height="17" font="4">surfaces   and   upside   down   along   ceilings,   while</text>
+<text top="559" left="100" width="153" height="17" font="4">leaving   your   hands   free.</text>
+<text top="581" left="86" width="7" height="15" font="7">•</text>
+<text top="578" left="100" width="301" height="17" font="4">You   can’t   be   caught   in   webs   of   any   sort   and   can</text>
+<text top="595" left="100" width="328" height="17" font="4">move   through   webs   as   if   they   were   difficult   terrain.</text>
+<text top="617" left="86" width="7" height="15" font="7">•</text>
+<text top="614" left="100" width="210" height="17" font="4">You   can   use   an   action   to   cast   the   </text>
+<text top="614" left="310" width="29" height="17" font="3"><i>web   </i></text>
+<text top="614" left="339" width="68" height="17" font="4">spell   (save</text>
+<text top="631" left="100" width="317" height="17" font="4">DC   13).   The   web   created   by   the   spell   fills   twice   its</text>
+<text top="649" left="100" width="317" height="17" font="4">normal   area.   Once   used,   this   property   of   the   cloak</text>
+<text top="666" left="100" width="252" height="17" font="4">can’t   be   used   again   until   the   next   dawn.</text>
+<text top="697" left="86" width="183" height="21" font="2"><b>Cloak of Displacement </b></text>
+<text top="719" left="86" width="275" height="17" font="3"><i>Wondrous   item,   rare   (requires   attunement)   </i></text>
+<text top="746" left="86" width="338" height="17" font="4">While   you   wear   this   cloak,   it   projects   an   illusion   that   </text>
+<text top="763" left="86" width="310" height="17" font="4">makes   you   appear   to   be   standing   in   a   place   near   </text>
+<text top="781" left="86" width="319" height="17" font="4">your   actual   location,   causing   any   creature   to   have   </text>
+<text top="798" left="86" width="333" height="17" font="4">disadvantage   on   attack   rolls   against   you.   If   you   take   </text>
+<text top="816" left="86" width="316" height="17" font="4">damage,   the   property   ceases   to   function   until   the   </text>
+<text top="833" left="86" width="330" height="17" font="4">start   of   your   next   turn.   This   property   is   suppressed   </text>
+<text top="851" left="86" width="341" height="17" font="4">while   you   are   incapacitated,   restrained,   or   otherwise   </text>
+<text top="869" left="86" width="105" height="17" font="4">unable   to   move.   </text>
+<text top="899" left="86" width="152" height="21" font="2"><b>Cloak of Elvenkind </b></text>
+<text top="921" left="86" width="318" height="17" font="3"><i>Wondrous   item,   uncommon   (requires   attunement)   </i></text>
+<text top="948" left="86" width="335" height="17" font="4">While   you   wear   this   cloak   with   its   hood   up,   Wisdom   </text>
+<text top="965" left="86" width="271" height="17" font="4">(Perception)   checks   made   to   see   you   have   </text>
+<text top="983" left="86" width="332" height="17" font="4">disadvantage,   and   you   have   advantage   on   Dexterity   </text>
+<text top="1000" left="86" width="319" height="17" font="4">(Stealth)   checks   made   to   hide,   as   the   cloak’s   color   </text>
+<text top="108" left="493" width="307" height="17" font="4">shifts   to   camouflage   you.   Pulling   the   hood   up   or   </text>
+<text top="126" left="493" width="162" height="17" font="4">down   requires   an   action.   </text>
+<text top="157" left="493" width="160" height="21" font="2"><b>Cloak of Protection </b></text>
+<text top="178" left="493" width="318" height="17" font="3"><i>Wondrous   item,   uncommon   (requires   attunement)   </i></text>
+<text top="205" left="493" width="329" height="17" font="4">You   gain   a   +1   bonus   to   AC   and   saving   throws   while   </text>
+<text top="222" left="493" width="130" height="17" font="4">you   wear   this   cloak.   </text>
+<text top="253" left="493" width="133" height="21" font="2"><b>Cloak of the Bat </b></text>
+<text top="275" left="493" width="275" height="17" font="3"><i>Wondrous   item,   rare   (requires   attunement)   </i></text>
+<text top="301" left="493" width="314" height="17" font="4">While   wearing   this   cloak,   you   have   advantage   on   </text>
+<text top="319" left="493" width="333" height="17" font="4">Dexterity   (Stealth)   checks.   In   an   area   of   dim   light   or   </text>
+<text top="337" left="493" width="320" height="17" font="4">darkness,   you   can   grip   the   edges   of   the   cloak   with   </text>
+<text top="354" left="493" width="322" height="17" font="4">both   hands   and   use   it   to   fly   at   a   speed   of   40   feet.   If   </text>
+<text top="372" left="493" width="333" height="17" font="4">you   ever   fail   to   grip   the   cloak’s   edges   while   flying   in   </text>
+<text top="390" left="493" width="299" height="17" font="4">this   way,   or   if   you   are   no   longer   in   dim   light   or   </text>
+<text top="407" left="493" width="232" height="17" font="4">darkness,   you   lose   this   flying   speed.   </text>
+<text top="424" left="493" width="332" height="17" font="4">    While   wearing   the   cloak   in   an   area   of   dim   light   or   </text>
+<text top="442" left="493" width="264" height="17" font="4">darkness,   you   can   use   your   action   to   cast   </text>
+<text top="442" left="757" width="68" height="17" font="3"><i>polymorph</i></text>
+<text top="442" left="825" width="3" height="17" font="4">   </text>
+<text top="460" left="493" width="341" height="17" font="4">on   yourself,   transforming   into   a   bat.   While   you   are   in   </text>
+<text top="477" left="493" width="309" height="17" font="4">the   form   of   the   bat,   you   retain   your   Intelligence,   </text>
+<text top="495" left="493" width="316" height="17" font="4">Wisdom,   and   Charisma   scores.   The   cloak   can’t   be   </text>
+<text top="513" left="493" width="259" height="17" font="4">used   this   way   again   until   the   next   dawn.   </text>
+<text top="543" left="493" width="189" height="21" font="2"><b>Cloak of the Manta Ray </b></text>
+<text top="565" left="493" width="175" height="17" font="3"><i>Wondrous   item,   uncommon   </i></text>
+<text top="591" left="493" width="324" height="17" font="4">While   wearing   this   cloak   with   its   hood   up,   you   can   </text>
+<text top="609" left="493" width="305" height="17" font="4">breathe   underwater,   and   you   have   a   swimming   </text>
+<text top="627" left="493" width="292" height="17" font="4">speed   of   60   feet.   Pulling   the   hood   up   or   down   </text>
+<text top="644" left="493" width="122" height="17" font="4">requires   an   action.   </text>
+<text top="675" left="493" width="95" height="21" font="2"><b>Crystal Ball </b></text>
+<text top="697" left="493" width="305" height="17" font="3"><i>Wondrous   item,   very   rare   or   legendary   (requires   </i></text>
+<text top="715" left="493" width="82" height="17" font="3"><i>attunement)   </i></text>
+<text top="741" left="493" width="74" height="17" font="4">The   typical   </text>
+<text top="741" left="567" width="69" height="17" font="3"><i>crystal   ball</i></text>
+<text top="741" left="636" width="180" height="17" font="4">,   a   very   rare   item,   is   about   6   </text>
+<text top="759" left="493" width="322" height="17" font="4">inches   in   diameter.   While   touching   it,   you   can   cast   </text>
+<text top="776" left="493" width="24" height="17" font="4">the   </text>
+<text top="776" left="517" width="45" height="17" font="3"><i>scrying</i></text>
+<text top="776" left="562" width="170" height="17" font="4">   spell   (save   DC   17)   with   it.   </text>
+<text top="794" left="493" width="105" height="17" font="4">    The   following   </text>
+<text top="794" left="598" width="69" height="17" font="3"><i>crystal   ball</i></text>
+<text top="794" left="667" width="150" height="17" font="4">   variants   are   legendary   </text>
+<text top="811" left="493" width="242" height="17" font="4">items   and   have   additional   properties.   </text>
+<text top="829" left="493" width="208" height="17" font="8"><i><b>    Crystal   Ball   of   Mind   Reading.</b></i></text>
+<text top="829" left="701" width="101" height="17" font="4">   You   can   use   an   </text>
+<text top="847" left="493" width="112" height="17" font="4">action   to   cast   the   </text>
+<text top="847" left="605" width="97" height="17" font="3"><i>detect   thoughts</i></text>
+<text top="847" left="702" width="122" height="17" font="4">   spell   (save   DC   17)   </text>
+<text top="864" left="493" width="196" height="17" font="4">while   you   are   scrying   with   the   </text>
+<text top="864" left="689" width="69" height="17" font="3"><i>crystal   ball</i></text>
+<text top="864" left="759" width="68" height="17" font="4">,   targeting   </text>
+<text top="882" left="493" width="317" height="17" font="4">creatures   you   can   see   within   30   feet   of   the   spell’s   </text>
+<text top="899" left="493" width="291" height="17" font="4">sensor.   You   don’t   need   to   concentrate   on   this   </text>
+<text top="899" left="784" width="42" height="17" font="3"><i>detect   </i></text>
+<text top="917" left="493" width="55" height="17" font="3"><i>thoughts</i></text>
+<text top="917" left="548" width="257" height="17" font="4">   to   maintain   it   during   its   duration,   but   it   </text>
+<text top="935" left="493" width="46" height="17" font="4">ends   if   </text>
+<text top="935" left="539" width="48" height="17" font="3"><i>scrying   </i></text>
+<text top="935" left="587" width="37" height="17" font="4">ends.   </text>
+<text top="952" left="493" width="182" height="17" font="8"><i><b>    Crystal   Ball   of   Telepathy.</b></i></text>
+<text top="952" left="675" width="151" height="17" font="4">   While   scrying   with   the   </text>
+<text top="970" left="493" width="342" height="17" font="4">crystal   ball,   you   can   communicate   telepathically   with   </text>
+<text top="987" left="493" width="317" height="17" font="4">creatures   you   can   see   within   30   feet   of   the   spell’s   </text>
+<text top="1005" left="493" width="288" height="17" font="4">sensor.   You   can   also   use   an   action   to   cast   the   </text>
+<text top="1022" left="493" width="67" height="17" font="3"><i>suggestion</i></text>
+<text top="1022" left="560" width="266" height="17" font="4">   spell   (save   DC   17)   through   the   sensor   on   </text>
+</page>
+<page number="215" position="absolute" top="0" left="0" height="1188" width="918">
+	<fontspec id="9" size="18" family="WWROEK+Calibri" color="#000000"/>
+	<fontspec id="10" size="13" family="EKJQRM+Calibri" color="#000000"/>
+<text top="1125" left="572" width="222" height="20" font="0">System   Reference   Document   5.1   </text>
+<text top="1125" left="842" width="26" height="19" font="1"><b>215</b></text>
+<text top="1125" left="869" width="4" height="20" font="0">   </text>
+<text top="108" left="86" width="264" height="17" font="4">one   of   those   creatures.   You   don’t   need   to   </text>
+<text top="126" left="86" width="126" height="17" font="4">concentrate   on   this   </text>
+<text top="126" left="213" width="67" height="17" font="3"><i>suggestion</i></text>
+<text top="126" left="280" width="139" height="17" font="4">   to   maintain   it   during   </text>
+<text top="143" left="86" width="164" height="17" font="4">its   duration,   but   it   ends   if   </text>
+<text top="143" left="251" width="48" height="17" font="3"><i>scrying   </i></text>
+<text top="143" left="299" width="109" height="17" font="4">ends.   Once   used,   </text>
+<text top="161" left="86" width="24" height="17" font="4">the   </text>
+<text top="161" left="110" width="67" height="17" font="3"><i>suggestion</i></text>
+<text top="161" left="177" width="88" height="17" font="4">   power   of   the   </text>
+<text top="161" left="265" width="69" height="17" font="3"><i>crystal   ball</i></text>
+<text top="161" left="334" width="90" height="17" font="4">   can’t   be   used   </text>
+<text top="178" left="86" width="168" height="17" font="4">again   until   the   next   dawn.   </text>
+<text top="196" left="86" width="198" height="17" font="8"><i><b>    Crystal   Ball   of   True   Seeing.   </b></i></text>
+<text top="196" left="284" width="123" height="17" font="4">While   scrying   with   </text>
+<text top="213" left="86" width="326" height="17" font="4">the   crystal   ball,   you   have   truesight   with   a   radius   of   </text>
+<text top="231" left="86" width="252" height="17" font="4">120   feet   centered   on   the   spell’s   sensor.   </text>
+<text top="262" left="86" width="117" height="21" font="2"><b>Cube of Force </b></text>
+<text top="284" left="86" width="275" height="17" font="3"><i>Wondrous   item,   rare   (requires   attunement)   </i></text>
+<text top="310" left="86" width="315" height="17" font="4">This   cube   is   about   an   inch   across.   Each   face   has   a   </text>
+<text top="328" left="86" width="333" height="17" font="4">distinct   marking   on   it   that   can   be   pressed.   The   cube   </text>
+<text top="345" left="86" width="341" height="17" font="4">starts   with   36   charges,   and   it   regains   1d20   expended   </text>
+<text top="363" left="86" width="145" height="17" font="4">charges   daily   at   dawn.   </text>
+<text top="381" left="86" width="319" height="17" font="4">    You   can   use   an   action   to   press   one   of   the   cube’s   </text>
+<text top="398" left="86" width="327" height="17" font="4">faces,   expending   a   number   of   charges   based   on   the   </text>
+<text top="416" left="86" width="313" height="17" font="4">chosen   face,   as   shown   in   the   Cube   of   Force   Faces   </text>
+<text top="433" left="86" width="334" height="17" font="4">table.   Each   face   has   a   different   effect.   If   the   cube   has   </text>
+<text top="451" left="86" width="314" height="17" font="4">insufficient   charges   remaining,   nothing   happens.   </text>
+<text top="468" left="86" width="321" height="17" font="4">Otherwise,   a   barrier   of   invisible   force   springs   into   </text>
+<text top="486" left="86" width="303" height="17" font="4">existence,   forming   a   cube   15   feet   on   a   side.   The   </text>
+<text top="504" left="86" width="340" height="17" font="4">barrier   is   centered   on   you,   moves   with   you,   and   lasts   </text>
+<text top="521" left="86" width="312" height="17" font="4">for   1   minute,   until   you   use   an   action   to   press   the   </text>
+<text top="539" left="86" width="314" height="17" font="4">cube’s   sixth   face,   or   the   cube   runs   out   of   charges.   </text>
+<text top="557" left="86" width="311" height="17" font="4">You   can   change   the   barrier’s   effect   by   pressing   a   </text>
+<text top="574" left="86" width="283" height="17" font="4">different   face   of   the   cube   and   expending   the   </text>
+<text top="591" left="86" width="333" height="17" font="4">requisite   number   of   charges,   resetting   the   duration.   </text>
+<text top="609" left="86" width="333" height="17" font="4">    If   your   movement   causes   the   barrier   to   come   into   </text>
+<text top="627" left="86" width="320" height="17" font="4">contact   with   a   solid   object   that   can’t   pass   through   </text>
+<text top="644" left="86" width="334" height="17" font="4">the   cube,   you   can’t   move   any   closer   to   that   object   as   </text>
+<text top="662" left="86" width="180" height="17" font="4">long   as   the   barrier   remains.   </text>
+<text top="688" left="86" width="151" height="22" font="9"><b>Cube   of   Force   Faces   </b></text>
+<text top="715" left="86" width="137" height="16" font="5"><b>Face    Charges    Effect   </b></text>
+<text top="731" left="96" width="10" height="16" font="6">1   </text>
+<text top="731" left="147" width="10" height="16" font="6">1   </text>
+<text top="731" left="189" width="221" height="16" font="6">Gases,   wind,   and   fog   can’t   pass   through   </text>
+<text top="748" left="189" width="65" height="16" font="6">the   barrier.   </text>
+<text top="764" left="96" width="10" height="16" font="6">2   </text>
+<text top="764" left="147" width="10" height="16" font="6">2   </text>
+<text top="764" left="189" width="221" height="16" font="6">Nonliving   matter   can’t   pass   through   the   </text>
+<text top="781" left="189" width="235" height="16" font="6">barrier.   Walls,   floors,   and   ceilings   can   pass   </text>
+<text top="797" left="189" width="150" height="16" font="6">through   at   your   discretion.   </text>
+<text top="814" left="96" width="10" height="16" font="6">3   </text>
+<text top="814" left="147" width="10" height="16" font="6">3   </text>
+<text top="814" left="189" width="201" height="16" font="6">Living   matter   can’t   pass   through   the   </text>
+<text top="830" left="189" width="44" height="16" font="6">barrier.   </text>
+<text top="847" left="96" width="10" height="16" font="6">4   </text>
+<text top="847" left="147" width="10" height="16" font="6">4   </text>
+<text top="847" left="189" width="239" height="16" font="6">Spell   effects   can’t   pass   through   the   barrier.   </text>
+<text top="863" left="96" width="10" height="16" font="6">5   </text>
+<text top="863" left="147" width="10" height="16" font="6">5   </text>
+<text top="863" left="189" width="209" height="16" font="6">Nothing   can   pass   through   the   barrier.   </text>
+<text top="880" left="189" width="238" height="16" font="6">Walls,   floors,   and   ceilings   can   pass   through   </text>
+<text top="896" left="189" width="103" height="16" font="6">at   your   discretion.   </text>
+<text top="913" left="96" width="10" height="16" font="6">6   </text>
+<text top="913" left="147" width="10" height="16" font="6">0   </text>
+<text top="913" left="189" width="133" height="16" font="6">The   barrier   deactivates.   </text>
+<text top="947" left="86" width="290" height="17" font="4">    The   cube   loses   charges   when   the   barrier   is   </text>
+<text top="964" left="86" width="338" height="17" font="4">targeted   by   certain   spells   or   comes   into   contact   with   </text>
+<text top="982" left="86" width="324" height="17" font="4">certain   spell   or   magic   item   effects,   as   shown   in   the   </text>
+<text top="1000" left="86" width="81" height="17" font="4">table   below.   </text>
+<text top="108" left="493" width="74" height="16" font="5"><b>Spell   or   Item   </b></text>
+<text top="108" left="612" width="74" height="16" font="5"><b>Charges   Lost   </b></text>
+<text top="124" left="493" width="70" height="16" font="10"><i>Disintegrate   </i></text>
+<text top="124" left="606" width="31" height="16" font="6">1d12   </text>
+<text top="141" left="493" width="91" height="16" font="10"><i>Horn   of   blasting   </i></text>
+<text top="141" left="606" width="31" height="16" font="6">1d10   </text>
+<text top="157" left="493" width="50" height="16" font="10"><i>Passwall   </i></text>
+<text top="157" left="606" width="24" height="16" font="6">1d6   </text>
+<text top="174" left="493" width="87" height="16" font="10"><i>Prismatic   spray   </i></text>
+<text top="174" left="606" width="31" height="16" font="6">1d20   </text>
+<text top="190" left="493" width="64" height="16" font="10"><i>Wall   of   fire   </i></text>
+<text top="190" left="606" width="24" height="16" font="6">1d4   </text>
+<text top="220" left="493" width="94" height="21" font="2"><b>Cubic Gate </b></text>
+<text top="242" left="493" width="168" height="17" font="3"><i>Wondrous   item,   legendary   </i></text>
+<text top="269" left="493" width="320" height="17" font="4">This   cube   is   3   inches   across   and   radiates   palpable   </text>
+<text top="286" left="493" width="319" height="17" font="4">magical   energy.   The   six   sides   of   the   cube   are   each   </text>
+<text top="303" left="493" width="334" height="17" font="4">keyed   to   a   different   plane   of   existence,   one   of   which   </text>
+<text top="321" left="493" width="323" height="17" font="4">is   the   Material   Plane.   The   other   sides   are   linked   to   </text>
+<text top="339" left="493" width="194" height="17" font="4">planes   determined   by   the   GM.   </text>
+<text top="356" left="507" width="325" height="17" font="4">You   can   use   an   action   to   press   one   side   of   the   cube   </text>
+<text top="374" left="493" width="69" height="17" font="4">to   cast   the   </text>
+<text top="374" left="562" width="28" height="17" font="3"><i>gate</i></text>
+<text top="374" left="590" width="233" height="17" font="4">   spell   with   it,   opening   a   portal   to   the   </text>
+<text top="392" left="493" width="332" height="17" font="4">plane   keyed   to   that   side.   Alternatively,   if   you   use   an   </text>
+<text top="409" left="493" width="300" height="17" font="4">action   to   press   one   side   twice,   you   can   cast   the   </text>
+<text top="409" left="793" width="38" height="17" font="3"><i>plane   </i></text>
+<text top="427" left="493" width="27" height="17" font="3"><i>shift</i></text>
+<text top="427" left="520" width="304" height="17" font="4">   spell   (save   DC   17)   with   the   cube   and   transport   </text>
+<text top="444" left="493" width="271" height="17" font="4">the   targets   to   the   plane   keyed   to   that   side.   </text>
+<text top="462" left="493" width="301" height="17" font="4">    The   cube   has   3   charges.   Each   use   of   the   cube   </text>
+<text top="480" left="493" width="324" height="17" font="4">expends   1   charge.   The   cube   regains   1d3   expended   </text>
+<text top="497" left="493" width="145" height="17" font="4">charges   daily   at   dawn.   </text>
+<text top="528" left="493" width="144" height="21" font="2"><b>Dagger of Venom </b></text>
+<text top="550" left="493" width="147" height="17" font="3"><i>Weapon   (dagger),   rare   </i></text>
+<text top="576" left="493" width="304" height="17" font="4">You   gain   a   +1   bonus   to   attack   and   damage   rolls   </text>
+<text top="594" left="493" width="197" height="17" font="4">made   with   this   magic   weapon.   </text>
+<text top="611" left="493" width="333" height="17" font="4">    You   can   use   an   action   to   cause   thick,   black   poison   </text>
+<text top="629" left="493" width="325" height="17" font="4">to   coat   the   blade.   The   poison   remains   for   1   minute   </text>
+<text top="647" left="493" width="330" height="17" font="4">or   until   an   attack   using   this   weapon   hits   a   creature.   </text>
+<text top="664" left="493" width="335" height="17" font="4">That   creature   must   succeed   on   a   DC   15   Constitution   </text>
+<text top="682" left="493" width="299" height="17" font="4">saving   throw   or   take   2d10   poison   damage   and   </text>
+<text top="699" left="493" width="329" height="17" font="4">become   poisoned   for   1   minute.   The   dagger   can’t   be   </text>
+<text top="717" left="493" width="259" height="17" font="4">used   this   way   again   until   the   next   dawn.   </text>
+<text top="748" left="493" width="125" height="21" font="2"><b>Dancing Sword </b></text>
+<text top="769" left="493" width="340" height="17" font="3"><i>Weapon   (any   sword),   very   rare   (requires   attunement)   </i></text>
+<text top="796" left="493" width="333" height="17" font="4">You   can   use   a   bonus   action   to   toss   this   magic   sword   </text>
+<text top="814" left="493" width="341" height="17" font="4">into   the   air   and   speak   the   command   word.   When   you   </text>
+<text top="831" left="493" width="330" height="17" font="4">do   so,   the   sword   begins   to   hover,   flies   up   to   30   feet,   </text>
+<text top="849" left="493" width="338" height="17" font="4">and   attacks   one   creature   of   your   choice   within   5   feet   </text>
+<text top="867" left="493" width="308" height="17" font="4">of   it.   The   sword   uses   your   attack   roll   and   ability   </text>
+<text top="884" left="493" width="201" height="17" font="4">score   modifier   to   damage   rolls.   </text>
+<text top="901" left="493" width="304" height="17" font="4">    While   the   sword   hovers,   you   can   use   a   bonus   </text>
+<text top="919" left="493" width="332" height="17" font="4">action   to   cause   it   to   fly   up   to   30   feet   to   another   spot   </text>
+<text top="937" left="493" width="307" height="17" font="4">within   30   feet   of   you.   As   part   of   the   same   bonus   </text>
+<text top="954" left="493" width="292" height="17" font="4">action,   you   can   cause   the   sword   to   attack   one   </text>
+<text top="972" left="493" width="173" height="17" font="4">creature   within   5   feet   of   it.   </text>
+<text top="989" left="493" width="317" height="17" font="4">    After   the   hovering   sword   attacks   for   the   fourth   </text>
+<text top="1007" left="493" width="332" height="17" font="4">time,   it   flies   up   to   30   feet   and   tries   to   return   to   your   </text>
+<text top="1025" left="493" width="332" height="17" font="4">hand.   If   you   have   no   hand   free,   it   falls   to   the   ground   </text>
+</page>
+<outline>
+<item page="1">SRD-CC_V1.1 preamble.pdf</item>
+<item page="3">SRD-OGL_V5.1.pdf</item>
+</outline>
+</pdf2xml>

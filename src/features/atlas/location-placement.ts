@@ -1,5 +1,7 @@
 import type { WorldPoint } from "./overworld";
 import { nativeArray, nativeId, nativeRecord } from "./native-values";
+import { immutable } from "../../model";
+import type { AtlasChange, AtlasValue } from "./atlas-history";
 
 export interface LocationPlacement {
   readonly kind: "location";
@@ -7,7 +9,7 @@ export interface LocationPlacement {
   readonly locationId: string;
   readonly position: WorldPoint;
 }
-/** This codec is not activated in Overworld until the complete storage path is connected. */
+/** Locations use continuous world positions, independently of the displayed hex level. */
 export function checkedLocationPlacement(value: unknown): LocationPlacement {
   const v = nativeRecord(value, ["kind", "id", "locationId", "position"]),
     p = nativeRecord(v.position, ["x", "y"]);
@@ -39,4 +41,16 @@ export function checkedLocationPlacements(
     locations.add(placement.locationId);
   }
   return Object.freeze(placements);
+}
+export function locationPlacementsChange(
+  worldId: string,
+  before: readonly LocationPlacement[],
+  after: readonly LocationPlacement[],
+): AtlasChange {
+  return immutable({
+    ownerId: nativeId(worldId),
+    target: "placements",
+    before: checkedLocationPlacements(before) as unknown as AtlasValue,
+    after: checkedLocationPlacements(after) as unknown as AtlasValue,
+  });
 }

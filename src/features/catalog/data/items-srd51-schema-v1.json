@@ -27,7 +27,8 @@
         "weapon-simple-melee", "weapon-simple-ranged", "weapon-martial-melee", "weapon-martial-ranged",
         "adventuring-gear-standard", "ammunition", "arcane-focus", "druidic-focus", "holy-symbol", "kit", "potion", "equipment-pack",
         "artisans-tools", "gaming-set", "musical-instrument", "other-tools",
-        "mount-or-animal", "tack-harness-or-drawn-vehicle", "waterborne-vehicle"
+        "mount-or-animal", "tack-harness-or-drawn-vehicle", "waterborne-vehicle",
+        "armor", "wondrous-item", "weapon"
       ]
     },
     "rarityValue": {
@@ -86,6 +87,25 @@
       "properties": {
         "sourceText": { "$ref": "#/$defs/nonEmpty" },
         "pounds": { "type": "string", "pattern": "^(?:[1-9][0-9]*(?:\\.[0-9]+)?|0\\.0*[1-9][0-9]*)$" }
+      }
+    },
+    "speed": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sourceText", "unit", "value"],
+      "properties": {
+        "sourceText": { "$ref": "#/$defs/nonEmpty" },
+        "unit": { "enum": ["ft/round", "mph"] },
+        "value": { "type": "string", "pattern": "^(?:[1-9][0-9]*(?:\\.[0-9]+)?|0\\.0*[1-9][0-9]*)$" }
+      }
+    },
+    "carryingCapacity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sourceText", "pounds"],
+      "properties": {
+        "sourceText": { "$ref": "#/$defs/nonEmpty" },
+        "pounds": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 }
       }
     },
     "sourcedText": {
@@ -152,8 +172,11 @@
         "magic": { "type": "boolean" },
         "rarity": { "$ref": "#/$defs/rarity" },
         "attunement": { "enum": ["required", "not-required", "unspecified"] },
+        "sourceHeader": { "$ref": "#/$defs/sourcedText" },
         "cost": { "$ref": "#/$defs/cost" },
         "weight": { "$ref": "#/$defs/weight" },
+        "speed": { "$ref": "#/$defs/speed" },
+        "carryingCapacity": { "$ref": "#/$defs/carryingCapacity" },
         "properties": { "type": "array", "items": { "$ref": "#/$defs/property" } },
         "description": { "type": "array", "items": { "$ref": "#/$defs/sourcedText" } },
         "damage": { "$ref": "#/$defs/damage" },
@@ -224,10 +247,29 @@
         "canonicalId": { "oneOf": [{ "$ref": "#/$defs/occurrenceId" }, { "type": "null" }] }
       }
     },
+    "inventoryCrossReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "feed", "sectionId", "sourceKind", "sourceTable", "sourceLabel", "sourceText", "firstPdfPage", "lastPdfPage", "firstPrintedPage", "lastPrintedPage", "targetSectionIds"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^srd51:(equipment|magic-item):[a-z0-9-]+:cross-reference:[0-9]+$" },
+        "feed": { "enum": ["equipment", "magic-item"] },
+        "sectionId": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+        "sourceKind": { "const": "cross-reference" },
+        "sourceTable": { "$ref": "#/$defs/nonEmpty" },
+        "sourceLabel": { "$ref": "#/$defs/nonEmpty" },
+        "sourceText": { "$ref": "#/$defs/nonEmpty" },
+        "firstPdfPage": { "type": "integer", "minimum": 1, "maximum": 403 },
+        "lastPdfPage": { "type": "integer", "minimum": 1, "maximum": 403 },
+        "firstPrintedPage": { "type": "integer", "minimum": 1, "maximum": 403 },
+        "lastPrintedPage": { "type": "integer", "minimum": 1, "maximum": 403 },
+        "targetSectionIds": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string", "pattern": "^[a-z0-9-]+$" } }
+      }
+    },
     "inventory": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["inventoryVersion", "complete", "expectedPrimaryOccurrences", "capturedPrimaryOccurrences", "sections", "occurrences", "helperDispositions"],
+      "required": ["inventoryVersion", "complete", "expectedPrimaryOccurrences", "capturedPrimaryOccurrences", "sections", "occurrences", "helperDispositions", "crossReferences"],
       "properties": {
         "inventoryVersion": { "const": 1 },
         "complete": { "type": "boolean" },
@@ -235,7 +277,8 @@
         "capturedPrimaryOccurrences": { "type": "integer", "minimum": 0 },
         "sections": { "type": "array", "items": { "$ref": "#/$defs/inventorySection" } },
         "occurrences": { "type": "array", "items": { "$ref": "#/$defs/inventoryOccurrence" } },
-        "helperDispositions": { "type": "array", "items": { "$ref": "#/$defs/helperDisposition" } }
+        "helperDispositions": { "type": "array", "items": { "$ref": "#/$defs/helperDisposition" } },
+        "crossReferences": { "type": "array", "items": { "$ref": "#/$defs/inventoryCrossReference" } }
       }
     }
   }

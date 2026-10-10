@@ -18,12 +18,19 @@ module.exports = ({ page, fs, path, assert, out, checks, vault }) => {
     return {x,y};
   }
   async function choose(label) { await toolbar().getByRole("button",{name:label,exact:true}).click(); }
+  async function released() {
+    await page.waitForFunction(() => {
+      const e=app.workspace.getLeavesOfType("dungeon-native-atlas").at(-1).view.editor;
+      return !e.pointer && !e.stroke && e.renderer.preview.length===0;
+    });
+  }
   async function stroke(tool,from,to=from,held=false) {
+    await released();
     await choose(tool); const a=await point(...from),b=await point(...to), before=await data();
     await page.mouse.move(a.x,a.y); await page.mouse.down(); await page.mouse.move(b.x,b.y);
     await page.waitForFunction(() => app.workspace.getLeavesOfType("dungeon-native-atlas").at(-1).view.editor.renderer.preview.length>0);
     const preview=await data(); assert.deepEqual(preview.cells,before.cells,"Preview does not mutate committed terrain");
-    if(!held) {await page.mouse.up();await page.waitForFunction(d=>app.workspace.getLeavesOfType("dungeon-native-atlas").at(-1).view.editor.terrain.history.undoDepth===d+1,before.depth);await settle();}
+    if(!held) {await page.mouse.up();await released();await page.waitForFunction(d=>app.workspace.getLeavesOfType("dungeon-native-atlas").at(-1).view.editor.terrain.history.undoDepth===d+1,before.depth);await settle();}
     return before;
   }
   async function clickCell(tool,q,r) { return stroke(tool,[q,r]); }
@@ -38,7 +45,7 @@ module.exports = ({ page, fs, path, assert, out, checks, vault }) => {
     const original=fs.readFileSync(path.join(vault,WORLD),"utf8");
     await stroke("Land malen",[-3,0],[3,0],true);
     await page.screenshot({path:path.join(out,"01-live-land-preview.png")});
-    await page.mouse.up();await page.waitForFunction(()=>app.workspace.getLeavesOfType("dungeon-native-atlas").at(-1).view.editor.terrain.history.undoDepth===1);await settle();
+    await page.mouse.up();await released();await page.waitForFunction(()=>app.workspace.getLeavesOfType("dungeon-native-atlas").at(-1).view.editor.terrain.history.undoDepth===1);await settle();
     assert.equal((await data()).cells.length,7,"Sparse long pointer jump paints all seven hexes");
     await stroke("Land malen",[-3,-1],[3,-1]); await stroke("Land malen",[-3,1],[3,1]);
     await stroke("Meer malen",[-4,0],[-4,2]); await stroke("Wald malen",[-1,0],[1,0]);

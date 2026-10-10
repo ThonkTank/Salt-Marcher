@@ -1,0 +1,30 @@
+name: Begrenzte Produktaufgabe
+description: "Ein überprüfbares Ergebnis mit Voraussetzungen und Abnahme."
+labels: ["kind:task"]
+body:
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Nutzerergebnis
+      description: "Welcher zusammenhängende Ablauf funktioniert danach? Hilfsarbeit nennt das konsumierende Umsetzungspaket oder die anstehende Entscheidung samt Empfänger."
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Arbeitsort, Scope und Voraussetzungen
+      description: "Fachissue, vorhandenen PR/Branch/Basis, Owner und Eingänge verlinken. Benötigte Umgebung/Fixtures/Zugriffe und freien Scope nennen; vorhandene Angaben nicht kopieren. Schritte bleiben im Paket (docs/WORKFLOW.md)."
+    validations:
+      required: true
+  - type: textarea
+    id: current_work
+    attributes:
+      label: Versionierter Arbeitsort
+      description: "Vorhandenen Fachplan mit Arbeitsstand: https://github.com/OWNER/REPO/blob/BRANCH/PFAD.md#arbeitsstand-N verlinken; dort Abschnitt Arbeitsstand #N pflegen (docs/REPOSITORY.md). Keine neue Statusdatei oder Kopie. Ohne vorhandenen Fachort aktuellen Eingang/Blocker und nächsten Beitrag hier manuell führen."
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Abnahme und nächster Empfänger
+      description: "Beobachtbares Ergebnis, kleinste ausreichende Prüfung nach docs/WORKFLOW.md und Empfänger. Vorhandene Belege nutzen, offene Grenzen nennen."
+    validations:
+      required: true

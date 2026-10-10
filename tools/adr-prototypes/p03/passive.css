@@ -1,0 +1,118 @@
+:root {
+  color-scheme: dark;
+  font-family: system-ui, sans-serif;
+  background: #0b1118;
+  color: #f7f3e8;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  min-width: 0;
+  min-height: 180px;
+  overflow-x: clip;
+}
+main {
+  min-width: 0;
+  min-height: 100vh;
+  display: grid;
+  grid-template-rows: auto minmax(8rem, 1fr) auto auto;
+  gap: 0.75rem;
+  padding: clamp(0.75rem, 3vw, 1.5rem);
+}
+header {
+  display: grid;
+  gap: 0.15rem;
+}
+.eyebrow {
+  margin: 0;
+  color: #a9c3d8;
+  font-size: 0.75rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+h1 {
+  margin: 0;
+  font-size: clamp(1.25rem, 5vw, 2.25rem);
+  overflow-wrap: anywhere;
+}
+#status {
+  margin: 0;
+  color: #c5d1da;
+}
+#surface {
+  position: relative;
+  overflow: hidden;
+  min-height: 8rem;
+  border: 2px solid #5d7485;
+  border-radius: 0.65rem;
+  background-color: #15202b;
+  background-image:
+    linear-gradient(#ffffff1a 1px, transparent 1px),
+    linear-gradient(90deg, #ffffff1a 1px, transparent 1px);
+  background-size: 2rem 2rem;
+}
+#surface[data-state="blank"],
+#surface[data-state="error"] {
+  background: #15202b;
+}
+#art {
+  position: absolute;
+  inset: 8% 6%;
+  border: 3px solid transparent;
+  border-radius: 50% 42% 48% 38%;
+  opacity: 0.7;
+}
+#markers {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+#markers li {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  width: max-content;
+  max-width: 9rem;
+  padding: 0.3rem 0.45rem;
+  border: 2px solid #0b1118;
+  border-radius: 0.35rem;
+  color: #09131c;
+  font-weight: 700;
+  font-size: 0.75rem;
+  overflow-wrap: anywhere;
+}
+button {
+  justify-self: start;
+  max-width: 100%;
+  min-height: 2.75rem;
+  padding: 0.55rem 0.8rem;
+  border: 2px solid #d9e8f2;
+  border-radius: 0.35rem;
+  background: #183248;
+  color: #fff;
+  font: inherit;
+  overflow-wrap: anywhere;
+}
+button:focus-visible {
+  outline: 4px solid #f6d365;
+  outline-offset: 2px;
+}
+#legend {
+  padding: 0.5rem;
+  border-left: 4px solid #8ee3ef;
+}
+@media (max-width: 400px), (max-height: 300px) {
+  main {
+    gap: 0.4rem;
+    padding: 0.5rem;
+  }
+  #surface {
+    min-height: 6rem;
+  }
+  .eyebrow {
+    display: none;
+  }
+}
