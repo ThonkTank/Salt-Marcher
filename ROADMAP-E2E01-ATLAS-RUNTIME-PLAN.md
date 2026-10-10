@@ -437,3 +437,16 @@ tatsächlichen Obsidian Save/Fresh/Recovery/A-B-A-Ablauf. Danach folgen bestehen
 integrierter Hostreview und getrenntes Aufräumen. Chronik besitzt BASE-CI-01;
 kein zusätzlicher Workflow oder Komponentenreview wird hier gestartet. Keine
 Shared-/Installations-/Native-/Gesamtfreigabe aus den automatisierten Prüfungen.
+
+**#40 / SHARED-LOCATION-KEY-R01 (10.10.2026):** Nach dem erhaltenen H01-FAIL und
+D01-Reparatureingang ist der enge Save-Fix im bestehenden PR62 umgesetzt.
+Der unabhängig qualifizierte Campaign/Data-Producer PR65 (`32dc3e8f`) und Shared
+`113e37f` wurden regulär konsumiert. Hex autorisiert die tatsächliche neue
+Location-/Section-/Worldmarker-Closure im nativen Adapter samt Prepare/Recovery;
+Navigation akzeptiert den geschlossenen lokalen Entwurf und hydriert seinen
+Source vor der Keynavigation. Save/Ack/Rollback bleiben beim bestehenden Journal.
+551 automatische Kern-/DOM-/Copy-/Vault-Tests, Typprüfung und Build PASS;
+[konkreter R01-Beleg und Grenzen](docs/reference/atlas-shared-location-r01/README.md).
+Nächster Eingang ist der unabhängige Review des veröffentlichten Reparaturheads,
+danach die gesondert neu koordinierte Obsidian-Save-/frischer-Prozess-Probe.
+H01 wird nicht umgeschrieben; #40 und das gemeinsame E2E-01-Gate bleiben offen.

@@ -17,18 +17,37 @@ import {
   CampaignRuntimeManifestSaveParticipant,
   type CampaignRuntimeOwnerSaveAuthority,
 } from "../campaign/campaign-runtime-save-participant";
-import { payloadDigest, type CampaignContextProjection } from "../campaign/campaign-contracts";
+import {
+  campaignLocalId,
+  payloadDigest,
+  type CampaignContextProjection,
+} from "../campaign/campaign-contracts";
 import type { FileStore } from "../../persistence";
 import { parseAtlasDraft } from "./atlas-draft";
 import type { AtlasNativeFile } from "./atlas-campaign-source";
-import type { AtlasFileJournal, AtlasFileWrite, FileTransaction, AtlasFileTransactionObserver } from "./file-transaction";
+import type {
+  AtlasFileJournal,
+  AtlasFileWrite,
+  FileTransaction,
+  AtlasFileTransactionObserver,
+} from "./file-transaction";
 import { parseSpatialWorld } from "./spatial-schema";
+import {
+  atlasLocationSaveExtensions,
+  type AtlasLocationSaveExtension,
+} from "./atlas-location-save-extension";
 
 const exact = (value: unknown) => JSON.stringify(value);
 type RecordBinding = { ownerId: string; kind: string; path: string };
 export interface AtlasCampaignRuntimeSavePort {
-  basis(): Promise<{ context: CampaignContextProjection; projection: CampaignDomainOwnershipProjectionV1 }>;
-  issued(participant: CampaignRuntimeManifestSaveParticipant, proof: CampaignRuntimeSaveAcknowledgmentV1 | CampaignRuntimeSaveRollbackV1): void;
+  basis(): Promise<{
+    context: CampaignContextProjection;
+    projection: CampaignDomainOwnershipProjectionV1;
+  }>;
+  issued(
+    participant: CampaignRuntimeManifestSaveParticipant,
+    proof: CampaignRuntimeSaveAcknowledgmentV1 | CampaignRuntimeSaveRollbackV1,
+  ): void;
   prepared(proof: CampaignRuntimeSaveAcknowledgmentV1): void;
   committed(proof: CampaignRuntimeSaveAcknowledgmentV1): Promise<void>;
   rolledBack(proof: CampaignRuntimeSaveRollbackV1): void;
@@ -46,9 +65,16 @@ function records(
   };
   for (const file of files) {
     const bytes = file[side];
+    if (
+      bytes === null &&
+      side === "before" &&
+      file.kind === "location" &&
+      file.after !== null
+    )
+      continue;
     if (bytes === null)
       throw new Error(
-        "Bestätigter Campaignbestand darf nicht erweitert oder gelöscht werden.",
+        "Bestätigte Campaigndatei darf nicht gelöscht werden.",
       );
     switch (file.kind) {
       case "world": {
@@ -111,14 +137,18 @@ function records(
   return result;
 }
 
-/** Thin native-owner adapter for the already authorized, immutable Campaign closure. */
+/** Native-owner proofs for the confirmed closure and explicitly checked local Location creates. */
 export class AtlasCampaignManifestSave {
   private manifestBytes: string;
   private recoveryManifest?: string;
   private saveParticipant?: CampaignRuntimeManifestSaveParticipant;
   readonly worldPath: string;
   readonly draftPath: string;
-  readonly additionalLocations: readonly { id: string; path: string }[];
+  get additionalLocations(): readonly { id: string; path: string }[] {
+    return parseCampaignRuntimeManifest(this.manifestBytes, this.digest)
+      .atlas.files.filter((f) => f.kind === "location")
+      .map((f) => ({ id: f.id!, path: f.path }));
+  }
   constructor(
     readonly manifestPath: string,
     manifestBytes: string,
@@ -131,9 +161,6 @@ export class AtlasCampaignManifestSave {
       (f) => f.kind === "world" && f.id === manifest.atlas.worldId,
     )!.path;
     this.draftPath = this.worldPath + ".draft";
-    this.additionalLocations = manifest.atlas.files
-      .filter((f) => f.kind === "location")
-      .map((f) => ({ id: f.id!, path: f.path }));
     // The Campaign participant itself validates the exact claimed manifest root.
     new CampaignRuntimeManifestSaveParticipant(manifestPath, digest, []);
   }
@@ -145,6 +172,7 @@ export class AtlasCampaignManifestSave {
     manifest: CampaignRuntimeManifestV1,
     files: readonly AtlasNativeFile[],
     side: "before" | "after",
+    extensions: readonly AtlasLocationSaveExtension[] = [],
   ): readonly CampaignDomainOwnerProjectionV1[] {
     const byId = records(files, side),
       byPath = new Map(files.map((f) => [f.path, f]));
@@ -153,7 +181,8 @@ export class AtlasCampaignManifestSave {
       throw new Error("Kein autorisierter nativer Owner-Save-Vertrag.");
     if (
       byId.size !==
-      manifest.registry.owners.reduce((n, o) => n + o.records.length, 0)
+      manifest.registry.owners.reduce((n, o) => n + o.records.length, 0) +
+        extensions.reduce((n, e) => n + e.document.sections.length + 2, 0)
     )
       throw new Error(
         "Native Recordclosure stimmt nicht mit dem autorisierten Campaignbestand überein.",
@@ -181,6 +210,11 @@ export class AtlasCampaignManifestSave {
         throw new Error(
           "Nicht unterstützter autorisierter Owner-Save-Vertrag.",
         );
+      const reference = (id: string) => ({
+        id: campaignLocalId(id),
+        scope: "campaign-local" as const,
+        schema: "atlas.e2e01.v1",
+      });
       const nextRecords = owner.records.map((r) => {
         const binding = byId.get(String(r.id));
         if (
@@ -193,10 +227,51 @@ export class AtlasCampaignManifestSave {
           );
         return {
           ...r,
+          references:
+            r.id === manifest.atlas.worldId && extensions.length
+              ? [
+                  ...r.references,
+                  ...extensions.map((e) => reference(e.placement.id)),
+                ].sort((a, b) => a.id.localeCompare(b.id))
+              : r.references,
           payloadDigest:
             binding.kind === "world" ? worldDigest : fileDigest(binding.path),
         };
       });
+      if (owner.ownerId === "atlas")
+        for (const e of extensions) {
+          const locationDigest = fileDigest(e.file.path);
+          nextRecords.push(
+            {
+              id: campaignLocalId(e.document.id),
+              recordType: "location",
+              references: e.document.sections
+                .map((s) => reference(s.id))
+                .sort((a, b) => a.id.localeCompare(b.id)),
+              payloadDigest: locationDigest,
+              media: null,
+            },
+            ...e.document.sections.map((s) => ({
+              id: campaignLocalId(s.id),
+              recordType: "location-section",
+              references: [reference(e.document.id)],
+              payloadDigest: locationDigest,
+              media: null,
+            })),
+            {
+              id: campaignLocalId(e.placement.id),
+              recordType: "location-placement",
+              references: [
+                reference(manifest.atlas.worldId),
+                reference(e.document.id),
+              ].sort((a, b) => a.id.localeCompare(b.id)),
+              payloadDigest: fileDigest(this.worldPath),
+              media: null,
+            },
+          );
+        }
+      if (extensions.length)
+        nextRecords.sort((a, b) => a.id.localeCompare(b.id));
       const suffix = campaignOwnershipDigestValue(
         {
           schema: "campaign-runtime-owner-fixture-v1",
@@ -222,33 +297,77 @@ export class AtlasCampaignManifestSave {
     files: readonly AtlasNativeFile[],
     transaction?: FileTransaction,
   ) {
+    const extensions = this.checkFiles(before, files);
     const beforeOwners = this.owners(before, files, "before"),
-      afterOwners = this.owners(before, files, "after");
+      afterOwners = this.owners(before, files, "after", extensions);
+    const afterFiles: CampaignRuntimeManifestV1["atlas"]["files"] = [
+      ...before.atlas.files,
+      ...extensions.map((e) => ({
+        kind: "location" as const,
+        id: e.document.id,
+        path: e.file.path,
+        savedDigest: this.digest(e.file.after!),
+      })),
+    ].map((f) => ({
+      ...f,
+      savedDigest: this.digest(files.find((w) => w.path === f.path)!.after!),
+    }));
+    const afterRecords: CampaignRuntimeManifestV1["atlas"]["records"] = [
+      ...before.atlas.records,
+      ...extensions.flatMap((e) => [
+        {
+          id: e.document.id,
+          kind: "location" as const,
+          documentId: e.document.id,
+          ownerId: "atlas",
+          availability: "available" as const,
+        },
+        ...e.document.sections.map((s) => ({
+          id: s.id,
+          kind: "location-section" as const,
+          documentId: e.document.id,
+          ownerId: "atlas",
+          availability: "available" as const,
+        })),
+      ]),
+    ];
     if (exact(beforeOwners) !== exact(before.registry.owners))
       throw new Error("Native Before-Ownerbelege sind veraltet oder erfunden.");
     const authorities: CampaignRuntimeOwnerSaveAuthority[] = beforeOwners.map(
-      (owner, index) => ({
-        ownerId: owner.ownerId,
-        verify: ({ beforeOwner, afterOwner, beforeFiles, afterFiles }) => {
+      (owner, index) => {
+        const verify: CampaignRuntimeOwnerSaveAuthority["verify"] = (
+          evidence,
+        ) => {
+          const writes = (values: readonly AtlasFileWrite[]) =>
+            values
+              .map(({ path, before, after }) => ({ path, before, after }))
+              .sort((a, b) => a.path.localeCompare(b.path));
+          const expectedWrites =
+            evidence.mode === "recovery"
+              ? files.filter((f) => f.before !== f.after)
+              : files;
           if (
-            exact(beforeOwner) !== exact(owner) ||
-            exact(afterOwner) !== exact(afterOwners[index]) ||
-            beforeFiles.some(
-              (f) =>
-                f.savedDigest !==
-                this.digest(files.find((w) => w.path === f.path)!.before!),
-            ) ||
-            afterFiles.some(
-              (f) =>
-                f.savedDigest !==
-                this.digest(files.find((w) => w.path === f.path)!.after!),
-            )
+            exact(evidence.beforeOwner) !== exact(owner) ||
+            exact(evidence.afterOwner) !== exact(afterOwners[index]) ||
+            exact(evidence.beforeFiles) !== exact(before.atlas.files) ||
+            exact(evidence.afterFiles) !== exact(afterFiles) ||
+            exact(evidence.beforeRecords) !== exact(before.atlas.records) ||
+            exact(evidence.afterRecords) !== exact(afterRecords) ||
+            exact(writes(evidence.nativeWrites)) !==
+              exact(writes(expectedWrites))
           )
             throw new Error(
               "Ownerprojektion ist nicht durch die exakten nativen Guards autorisiert.",
             );
-        },
-      }),
+        };
+        return {
+          ownerId: owner.ownerId,
+          verify,
+          ...(owner.ownerId === "atlas" && extensions.length
+            ? { verifyExtension: verify }
+            : {}),
+        };
+      },
     );
     return {
       participant: new CampaignRuntimeManifestSaveParticipant(
@@ -259,6 +378,8 @@ export class AtlasCampaignManifestSave {
       ),
       beforeOwners,
       afterOwners,
+      afterFiles,
+      afterRecords,
     };
   }
   prepare(
@@ -272,16 +393,15 @@ export class AtlasCampaignManifestSave {
     );
     this.checkFiles(before, files);
     this.checkDraft(draft, files);
-    const { participant, beforeOwners, afterOwners } = this.participant(
-      before,
-      files,
-      transaction,
-    );
+    const { participant, beforeOwners, afterOwners, afterFiles, afterRecords } =
+      this.participant(before, files, transaction);
     const result = participant.prepare({
       beforeManifestBytes: this.manifestBytes,
       nativeWrites: files,
       beforeOwners,
       afterOwners,
+      afterFiles,
+      afterRecords,
     });
     this.saveParticipant = result.length ? participant : undefined;
     // Even a no-op save guards the manifest baseline alongside all native files.
@@ -297,13 +417,23 @@ export class AtlasCampaignManifestSave {
   }
   /** The actual transaction owns journal read-back and rollback receipt issuance. */
   transactionObserver(): AtlasFileTransactionObserver | undefined {
-    const participant = this.saveParticipant, runtime = this.runtime;
+    const participant = this.saveParticipant,
+      runtime = this.runtime;
     if (!participant || !runtime) return undefined;
-    let basis: Awaited<ReturnType<AtlasCampaignRuntimeSavePort['basis']>> | undefined;
+    let basis:
+      | Awaited<ReturnType<AtlasCampaignRuntimeSavePort["basis"]>>
+      | undefined;
     let prepared: CampaignRuntimeSaveAcknowledgmentV1 | undefined;
     const proof = (journal: AtlasFileJournal) => {
-      if (!basis) throw new Error("Speicherbestätigung besitzt keine bestätigte Registrybasis.");
-      const value = participant.createAcknowledgment({ context: basis.context, beforeRegistry: basis.projection, journal });
+      if (!basis)
+        throw new Error(
+          "Speicherbestätigung besitzt keine bestätigte Registrybasis.",
+        );
+      const value = participant.createAcknowledgment({
+        context: basis.context,
+        beforeRegistry: basis.projection,
+        journal,
+      });
       runtime.issued(participant, value);
       return value;
     };
@@ -314,12 +444,16 @@ export class AtlasCampaignManifestSave {
         runtime.prepared(prepared);
       },
       committed: async (journal) => {
-        if (!prepared) throw new Error("Commit besitzt keine ursprüngliche Vorbereitung.");
+        if (!prepared)
+          throw new Error("Commit besitzt keine ursprüngliche Vorbereitung.");
         await runtime.committed(proof(journal));
       },
       rolledBack: (receipt) => {
         if (!prepared) return;
-        const rollback = participant.createRollbackAcknowledgment({ prepared, receipt });
+        const rollback = participant.createRollbackAcknowledgment({
+          prepared,
+          receipt,
+        });
         runtime.issued(participant, rollback);
         runtime.rolledBack(rollback);
       },
@@ -328,14 +462,15 @@ export class AtlasCampaignManifestSave {
   private checkFiles(
     manifest: CampaignRuntimeManifestV1,
     files: readonly AtlasNativeFile[],
-  ): void {
-    if (
-      new Set(files.map((f) => f.path)).size !== files.length ||
-      files.length !== manifest.atlas.files.length
-    )
-      throw new Error(
-        "Campaign-Save benötigt den vollständigen nativen Bestand.",
-      );
+  ): readonly AtlasLocationSaveExtension[] {
+    const extensions = atlasLocationSaveExtensions(
+      files,
+      manifest.atlas.files,
+      manifest.atlas.worldId,
+      manifest.registry.owners.flatMap((o) =>
+        o.records.map((r) => String(r.id)),
+      ),
+    );
     for (const f of manifest.atlas.files) {
       const w = files.find((w) => w.path === f.path);
       if (
@@ -350,6 +485,7 @@ export class AtlasCampaignManifestSave {
           "Native Guards passen nicht zur bestätigten Campaignbasis.",
         );
     }
+    return extensions;
   }
   private checkDraft(
     write: AtlasFileWrite,
@@ -396,13 +532,15 @@ export class AtlasCampaignManifestSave {
       (this.manifestBytes !== manifestWrite.before &&
         this.manifestBytes !== manifestWrite.after) ||
       exact(before.snapshot) !== exact(pinned.snapshot) ||
-      before.registry.registryId !== pinned.registry.registryId ||
-      exact(before.atlas.files.map(({ savedDigest, ...file }) => file)) !==
-        exact(pinned.atlas.files.map(({ savedDigest, ...file }) => file))
+      before.registry.registryId !== pinned.registry.registryId
     )
       throw new Error("Fremde Campaignbindung im Atlasjournal.");
+    const after = parseCampaignRuntimeManifest(
+      manifestWrite.after,
+      this.digest,
+    );
     const files: AtlasNativeFile[] = [];
-    for (const f of before.atlas.files) {
+    for (const f of after.atlas.files) {
       const w = journal.writes.find((w) => w.path === f.path);
       const bytes = w ? null : await store.read(f.path);
       files.push({

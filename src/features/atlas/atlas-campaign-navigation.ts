@@ -1,6 +1,7 @@
 import { immutable, isStructuredRoom, parseDocument, safePath } from "../../model";
 import { parseCityDocument } from "../city/codec";
 import { parseLocationDocument } from "../location/location-schema";
+import { atlasLocationSaveExtensions } from "./atlas-location-save-extension";
 import {
   campaignContext, campaignContextToken, campaignCommandId, campaignId,
   sameSnapshot, payloadDigest, revisionToken,
@@ -162,10 +163,15 @@ function inventory(raw: AtlasConfirmedInventory, p: CampaignDomainOwnershipProje
 function checkFiles(c: AtlasNativeCaptureV1, i: AtlasConfirmedInventory): void {
   if (c.worldId !== i.worldId) throw new Error("Fremde native Atlaswelt.");
   if (i.files.some((expected) => !c.files.some((f) => f.path === expected.path))) throw new Error("Atlasbestand ist unvollständig.");
+  const locations = atlasLocationSaveExtensions(
+    c.files.filter((f) => f.kind !== "terrain" || i.files.some((v) => v.path === f.path)),
+    i.files, i.worldId, i.records.map((r) => r.id),
+  );
   for (const f of c.files) {
     const expected = i.files.find((v) => v.path === f.path);
     // New terrain files are subordinate local World drafts, never new confirmed Records.
     if (!expected && f.kind === "terrain" && f.before === null) continue;
+    if (!expected && locations.some((e) => e.file === f)) continue;
     if (!expected || expected.kind !== f.kind || expected.id !== f.id || expected.savedDigest !== f.beforeDigest)
       throw new Error("Native Atlasdatei passt nicht zur bestätigten Basis.");
   }
@@ -290,6 +296,10 @@ export class AtlasCampaignNavigation {
     });
   }
   private async commitNavigation(entry: MountEntry, destination: AtlasNavigationTarget, guard: () => void): Promise<void> {
+    // Captured bytes prove the target; the existing Key UI also needs its real lazy Source.
+    if (destination.kind === "location" || destination.kind === "location-section") {
+      await entry.repository.ensureLocation(destination.documentId); guard();
+    }
     const captured = await this.capture(entry); guard(); checkFiles(captured, entry.input.inventory);
     const resolved = resolve(captured, destination);
     await this.verify(entry); guard();
