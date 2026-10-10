@@ -222,3 +222,5 @@ if (!test) {
   await writeFile(".build/catalog-build-inventory.json", JSON.stringify(inventory, null, 2) + "\n");
   console.log("catalog inventory", inventory);
 }
+
+if (test) await build({ entryPoints: ["tests/manual-planner-panel.entry.ts"], outfile: ".build/manual-planner-panel.cjs", bundle: true, format: "cjs", platform: "node", target: "es2022", logLevel: "info" });

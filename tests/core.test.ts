@@ -57,3 +57,4 @@ import "./core/campaign-b-fixture.test";
 import "./core/atlas-spatial-host.test";
 
 import "./core/atlas-mount-lease.test";
+import "./core/manual-planner.test";
