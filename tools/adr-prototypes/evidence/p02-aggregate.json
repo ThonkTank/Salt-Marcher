@@ -1,0 +1,3044 @@
+{
+  "schemaVersion": "p02-aggregate-v1",
+  "platform": "linux",
+  "architecture": "x64",
+  "node": "v22.22.2",
+  "runsPerFault": 10,
+  "faultPoints": [
+    "before_begin",
+    "after_begin",
+    "after_object",
+    "after_history",
+    "after_receipt",
+    "after_commit",
+    "before_response",
+    "during_backup"
+  ],
+  "profiles": 80,
+  "outcomes": {
+    "mixedTruth": 0,
+    "duplicateHistory": 0,
+    "sentinelMutations": 0,
+    "blindRetries": 0
+  },
+  "measurements": {
+    "hardFaultP95Ms": 121.264,
+    "safeWriteP95Ms": 119.532,
+    "safeWriteBudgetMs": 1000,
+    "crashResumeP95Ms": 724.015,
+    "resumeBudgetMs": 5000
+  },
+  "cases": [
+    {
+      "point": "before_begin",
+      "iteration": 1,
+      "faultElapsedMs": 104.52042,
+      "safeWriteMs": 108.48863499999993,
+      "resumeMs": 660.58798,
+      "inventoryBeforeRecovery": [
+        {
+          "name": "campaign.sqlite",
+          "kind": "file",
+          "bytes": 53248,
+          "sha256": "7de2793addff13467a6c1de16adb3b26d43243739d7ae90298dce9e53ad87b0b"
+        },
+        {
+          "name": "campaign.sqlite-shm",
+          "kind": "file",
+          "bytes": 32768,
+          "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+        },
+        {
+          "name": "campaign.sqlite-wal",
+          "kind": "file",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "observed": {
+        "mixedTruth": false,
+        "duplicateHistory": false,
+        "sentinelMutation": false,
+        "blindRetry": false
+      }
+    },
+    {
+      "point": "after_begin",
+      "iteration": 1,
+      "faultElapsedMs": 104.85232900000005,
+      "safeWriteMs": 109.31607099999974,
+      "resumeMs": 664.4459649999999,
+      "inventoryBeforeRecovery": [
+        {
+          "name": "campaign.sqlite",
+          "kind": "file",
+          "bytes": 53248,
+          "sha256": "7de2793addff13467a6c1de16adb3b26d43243739d7ae90298dce9e53ad87b0b"
+        },
+        {
+          "name": "campaign.sqlite-shm",
+          "kind": "file",
+          "bytes": 32768,
+          "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+        },
+        {
+          "name": "campaign.sqlite-wal",
+          "kind": "file",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "observed": {
+        "mixedTruth": false,
+        "duplicateHistory": false,
+        "sentinelMutation": false,
+        "blindRetry": false
+      }
+    },
+    {
+      "point": "after_object",
+      "iteration": 1,
+      "faultElapsedMs": 108.77065399999992,
+      "safeWriteMs": 108.04503600000044,
+      "resumeMs": 648.223238,
+      "inventoryBeforeRecovery": [
+        {
+          "name": "campaign.sqlite",
+          "kind": "file",
+          "bytes": 53248,
+          "sha256": "7de2793addff13467a6c1de16adb3b26d43243739d7ae90298dce9e53ad87b0b"
+        },
+        {
+          "name": "campaign.sqlite-shm",
+          "kind": "file",
+          "bytes": 32768,
+          "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+        },
+        {
+          "name": "campaign.sqlite-wal",
+          "kind": "file",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "observed": {
+        "mixedTruth": false,
+        "duplicateHistory": false,
+        "sentinelMutation": false,
+        "blindRetry": false
+      }
+    },
+    {
+      "point": "after_history",
+      "iteration": 1,
+      "faultElapsedMs": 107.43610900000022,
+      "safeWriteMs": 109.27990199999931,
+      "resumeMs": 673.999828,
+      "inventoryBeforeRecovery": [
+        {
+          "name": "campaign.sqlite",
+          "kind": "file",
+          "bytes": 53248,
+          "sha256": "7de2793addff13467a6c1de16adb3b26d43243739d7ae90298dce9e53ad87b0b"
+        },
+        {
+          "name": "campaign.sqlite-shm",
+          "kind": "file",
+          "bytes": 32768,
+          "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+        },
+        {
+          "name": "campaign.sqlite-wal",
+          "kind": "file",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "observed": {
+        "mixedTruth": false,
+        "duplicateHistory": false,
+        "sentinelMutation": false,
+        "blindRetry": false
+      }
+    },
+    {
+      "point": "after_receipt",
+      "iteration": 1,
+      "faultElapsedMs": 104.40981100000045,
+      "safeWriteMs": 112.81604799999877,
+      "resumeMs": 669.1942459999991,
+      "inventoryBeforeRecovery": [
+        {
+          "name": "campaign.sqlite",
+          "kind": "file",
+          "bytes": 53248,
+          "sha256": "7de2793addff13467a6c1de16adb3b26d43243739d7ae90298dce9e53ad87b0b"
+        },
+        {
+          "name": "campaign.sqlite-shm",
+          "kind": "file",
+          "bytes": 32768,
+          "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+        },
+        {
+          "name": "campaign.sqlite-wal",
+          "kind": "file",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "observed": {
+        "mixedTruth": false,
+        "duplicateHistory": false,
+        "sentinelMutation": false,
+        "blindRetry": false
+      }
+    },
+    {
+      "point": "after_commit",
+      "iteration": 1,
+      "faultElapsedMs": 108.95900299999994,
+      "safeWriteMs": 107.00259000000005,
+      "resumeMs": 685.3471929999996,
+      "inventoryBeforeRecovery": [
+        {
+          "name": "campaign.sqlite",
+          "kind": "file",
+          "bytes": 53248,
+          "sha256": "7de2793addff13467a6c1de16adb3b26d43243739d7ae90298dce9e53ad87b0b"
+        },
+        {
+          "name": "campaign.sqlite-shm",
+          "kind": "file",
+          "bytes": 32768,
+          "sha256": "31f944d01ae428a5849d201c52851bf531ae82f92c53875b65ce485a38d454cc"
+        },
+        {
+          "name": "campaign.sqlite-wal",
+          "kind": "file",
+          "bytes": 32992,
+          "sha256": "422d591ad9202e0afc9ddaf8d12e07280a6fc3e3378f92d4f9ee34421d844703"
+        }
+      ],
+      "observed": {
+        "mixedTruth": false,
+        "duplicateHistory": false,
+        "sentinelMutation": false,
+        "blindRetry": false
+      }
+    },
+    {
+      "point": "before_response",
+      "iteration": 1,
+      "faultElapsedMs": 104.92219900000055,
+      "safeWriteMs": 110.88320500000009,
+      "resumeMs": 662.8639510000012,
+      "inventoryBeforeRecovery": [
+        {
+          "name": "campaign.sqlite",
+          "kind": "file",
+          "bytes": 53248,
+          "sha256": "7de2793addff13467a6c1de16adb3b26d43243739d7ae90298dce9e53ad87b0b"
+        },
+        {
+          "name": "campaign.sqlite-shm",
+          "kind": "file",
+          "bytes": 32768,
+          "sha256": "d7b45c76cdff2145e215983a8ebf2928d59957319fb9cf2ba1201c38b951ea51"
+        },
+        {
+          "name": "campaign.sqlite-wal",
+          "kind": "file",
+          "bytes": 32992,
+          "sha256": "51c1bce5b4eb5e0cb23d4abd9e9315284d2545978212263a2b808d7640a4c1d7"
+        }
+      ],
+      "observed": {
+        "mixedTruth": false,
+        "duplicateHistory": false,
+        "sentinelMutation": false,
+        "blindRetry": false
+      }
+    },
+    {
+      "point": "during_backup",
+      "iteration": 1,
+      "faultElapsedMs": 110.30193700000018,
+      "inventoryBeforeRecovery": [
+        {
+          "name": ".p02-authority.lock",
+          "kind": "directory",
+          "bytes": null,
+          "sha256": null
+        },
+        {
+          "name": "campaign.sqlite",
+          "kind": "file",
+          "bytes": 53248,
+          "sha256": "a4596b5776a3b00e79430b0772faf86be7cd1eb70d92d52c184a1ff0ab1244fb"
+        },
+        {
+          "name": "campaign.sqlite-shm",
+          "kind": "file",
+          "bytes": 32768,
+          "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+        },
+        {
+          "name": "campaign.sqlite-wal",
+          "kind": "file",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "name": "backup.sqlite",
+          "kind": "file",
+          "bytes": 53248,
+          "sha256": "50361f63cc8375a94f9d208af3a2e908fb4c8fb524bc6547f382341ebeefe6f7"
+        },
+        {
+          "name": "backup.sqlite.pending",
+          "kind": "file",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "name": "backup.sqlite.pending-journal",
+          "kind": "file",
+          "bytes": 512,
+          "sha256": "10234958dd3500bf4ac8446928b70e0b4cad9040f8c65ce0899bca9050feee85"
+        },
+        {
+          "name": "backup.sqlite.pending-shm",
+          "kind": "file",
+          "bytes": 32768,
+          "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+        },
+        {
+          "name": "backup.sqlite.pending-wal",
+          "kind": "file",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "oldBackupPreserved": true,
+      "restoredOld": true,
+      "restoredNew": true,
+      "observed": {
+        "mixedTruth": false,
+        "duplicateHistory": false,
+        "sentinelMutation": false,
+        "blindRetry": false
+      }
+    },
+    {
+      "point": "before_begin",
+      "iteration": 2,
+      "faultElapsedMs": 106.93014099999891,
+      "safeWriteMs": 113.22325600000113,
+      "resumeMs": 670.4425309999988,
+      "inventoryBeforeRecovery": [
+        {
+          "name": "campaign.sqlite",
+          "kind": "file",
+          "bytes": 53248,
+          "sha256": "7de2793addff13467a6c1de16adb3b26d43243739d7ae90298dce9e53ad87b0b"
+        },
+        {
+          "name": "campaign.sqlite-shm",
+          "kind": "file",
+          "bytes": 32768,
+          "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+        },
+        {
+          "name": "campaign.sqlite-wal",
+          "kind": "file",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "observed": {
+        "mixedTruth": false,
+        "duplicateHistory": false,
+        "sentinelMutation": false,
+        "blindRetry": false
+      }
+    },
+    {
+      "point": "after_begin",
+      "iteration": 2,
+      "faultElapsedMs": 102.05177999999978,
+      "safeWriteMs": 106.04844400000002,
+      "resumeMs": 653.4826579999972,
+      "inventoryBeforeRecovery": [
+        {
+          "name": "campaign.sqlite",
+          "kind": "file",
+          "bytes": 53248,
+          "sha256": "7de2793addff13467a6c1de16adb3b26d43243739d7ae90298dce9e53ad87b0b"
+        },
+        {
+          "name": "campaign.sqlite-shm",
+          "kind": "file",
+          "bytes": 32768,
+          "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+        },
+        {
+          "name": "campaign.sqlite-wal",
+          "kind": "file",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "observed": {
+        "mixedTruth": false,
+        "duplicateHistory": false,
+        "sentinelMutation": false,
+        "blindRetry": false
+      }
+    },
+    {
+      "point": "after_object",
+      "iteration": 2,
+      "faultElapsedMs": 109.57806100000016,
+      "safeWriteMs": 112.35891999999876,
+      "resumeMs": 659.8439030000009,
+      "inventoryBeforeRecovery": [
+        {
+          "name": "campaign.sqlite",
+          "kind": "file",
+          "bytes": 53248,
+          "sha256": "7de2793addff13467a6c1de16adb3b26d43243739d7ae90298dce9e53ad87b0b"
+        },
+        {
+          "name": "campaign.sqlite-shm",
+          "kind": "file",
+          "bytes": 32768,
+          "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+        },
+        {
+          "name": "campaign.sqlite-wal",
+          "kind": "file",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "observed": {
+        "mixedTruth": false,
+        "duplicateHistory": false,
+        "sentinelMutation": false,
+        "blindRetry": false
+      }
+    },
+    {
+      "point": "after_history",
+      "iteration": 2,
+      "faultElapsedMs": 106.48347300000023,
+      "safeWriteMs": 108.45554500000071,
+      "resumeMs": 656.9963839999982,
+      "inventoryBeforeRecovery": [
+        {
+          "name": "campaign.sqlite",
+          "kind": "file",
+          "bytes": 53248,
+          "sha256": "7de2793addff13467a6c1de16adb3b26d43243739d7ae90298dce9e53ad87b0b"
+        },
+        {
+          "name": "campaign.sqlite-shm",
+          "kind": "file",
+          "bytes": 32768,
+          "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+        },
+        {
+          "name": "campaign.sqlite-wal",
+          "kind": "file",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "observed": {
+        "mixedTruth": false,
+        "duplicateHistory": false,
+        "sentinelMutation": false,
+        "blindRetry": false
+      }
+    },
+    {
+      "point": "after_receipt",
+      "iteration": 2,
+      "faultElapsedMs": 105.36758700000064,
+      "safeWriteMs": 110.87380499999927,
+      "resumeMs": 695.2159949999987,
+      "inventoryBeforeRecovery": [
+        {
+          "name": "campaign.sqlite",
+          "kind": "file",
+          "bytes": 53248,
+          "sha256": "7de2793addff13467a6c1de16adb3b26d43243739d7ae90298dce9e53ad87b0b"
+        },
+        {
+          "name": "campaign.sqlite-shm",
+          "kind": "file",
+          "bytes": 32768,
+          "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+        },
+        {
+          "name": "campaign.sqlite-wal",
+          "kind": "file",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "observed": {
+        "mixedTruth": false,
+        "duplicateHistory": false,
+        "sentinelMutation": false,
+        "blindRetry": false
+      }
+    },
+    {
+      "point": "after_commit",
+      "iteration": 2,
+      "faultElapsedMs": 104.4285000000018,
+      "safeWriteMs": 108.50591399999757,
+      "resumeMs": 654.2962850000004,
+      "inventoryBeforeRecovery": [
+        {
+          "name": "campaign.sqlite",
+          "kind": "file",
+          "bytes": 53248,
+          "sha256": "7de2793addff13467a6c1de16adb3b26d43243739d7ae90298dce9e53ad87b0b"
+        },
+        {
+          "name": "campaign.sqlite-shm",
+          "kind": "file",
+          "bytes": 32768,
+          "sha256": "2d80a5096396f11181666fa4d99bc3c4518c563c6fd72cddbb685ab95db8ca72"
+        },
+        {
+          "name": "campaign.sqlite-wal",
+          "kind": "file",
+          "bytes": 32992,
+          "sha256": "720487f70b1d75f143e35bf1dac3c9037029a1e839119d45856da857d14aaa2b"
+        }
+      ],
+      "observed": {
+        "mixedTruth": false,
+        "duplicateHistory": false,
+        "sentinelMutation": false,
+        "blindRetry": false
+      }
+    },
+    {
+      "point": "before_response",
+      "iteration": 2,
+      "faultElapsedMs": 112.57944900000075,
+      "safeWriteMs": 111.85621099999844,
+      "resumeMs": 686.0650299999979,
+      "inventoryBeforeRecovery": [
+        {
+          "name": "campaign.sqlite",
+          "kind": "file",
+          "bytes": 53248,
+          "sha256": "7de2793addff13467a6c1de16adb3b26d43243739d7ae90298dce9e53ad87b0b"
+        },
+        {
+          "name": "campaign.sqlite-shm",
+          "kind": "file",
+          "bytes": 32768,
+          "sha256": "79647a4f78ee07d42610aae5c99b6035324f839f9f67149b1b39e7d4bf149e69"
+        },
+        {
+          "name": "campaign.sqlite-wal",
+          "kind": "file",
+          "bytes": 32992,
+          "sha256": "f21972c6088e2f040952eedb87c5dc6f8a7d06a4fb844001cff77163943183d2"
+        }
+      ],
+      "observed": {
+        "mixedTruth": false,
+        "duplicateHistory": false,
+        "sentinelMutation": false,
+        "blindRetry": false
+      }
+    },
+    {
+      "point": "during_backup",
+      "iteration": 2,
+      "faultElapsedMs": 112.41831900000034,
+      "inventoryBeforeRecovery": [
+        {
+          "name": ".p02-authority.lock",
+          "kind": "directory",
+          "bytes": null,
+          "sha256": null
+        },
+        {
+          "name": "campaign.sqlite",
+          "kind": "file",
+          "bytes": 53248,
+          "sha256": "a4596b5776a3b00e79430b0772faf86be7cd1eb70d92d52c184a1ff0ab1244fb"
+        },
+        {
+          "name": "campaign.sqlite-shm",
+          "kind": "file",
+          "bytes": 32768,
+          "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+        },
+        {
+          "name": "campaign.sqlite-wal",
+          "kind": "file",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "name": "backup.sqlite",
+          "kind": "file",
+          "bytes": 53248,
+          "sha256": "50361f63cc8375a94f9d208af3a2e908fb4c8fb524bc6547f382341ebeefe6f7"
+        },
+        {
+          "name": "backup.sqlite.pending",
+          "kind": "file",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "name": "backup.sqlite.pending-journal",
+          "kind": "file",
+          "bytes": 512,
+          "sha256": "57ea729b82281291c5bdb109f65034b1613c499e64d2d8ad50b9e187b5db7d22"
+        },
+        {
+          "name": "backup.sqlite.pending-shm",
+          "kind": "file",
+          "bytes": 32768,
+          "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+        },
+        {
+          "name": "backup.sqlite.pending-wal",
+          "kind": "file",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "oldBackupPreserved": true,
+      "restoredOld": true,
+      "restoredNew": true,
+      "observed": {
+        "mixedTruth": false,
+        "duplicateHistory": false,
+        "sentinelMutation": false,
+        "blindRetry": false
+      }
+    },
+    {
+      "point": "before_begin",
+      "iteration": 3,
+      "faultElapsedMs": 105.66231600000174,
+      "safeWriteMs": 107.17412900000272,
+      "resumeMs": 652.6050309999991,
+      "inventoryBeforeRecovery": [
+        {
+          "name": "campaign.sqlite",
+          "kind": "file",
+          "bytes": 53248,
+          "sha256": "7de2793addff13467a6c1de16adb3b26d43243739d7ae90298dce9e53ad87b0b"
+        },
+        {
+          "name": "campaign.sqlite-shm",
+          "kind": "file",
+          "bytes": 32768,
+          "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+        },
+        {
+          "name": "campaign.sqlite-wal",
+          "kind": "file",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "observed": {
+        "mixedTruth": false,
+        "duplicateHistory": false,
+        "sentinelMutation": false,
+        "blindRetry": false
+      }
+    },
+    {
+      "point": "after_begin",
+      "iteration": 3,
+      "faultElapsedMs": 107.19307999999728,
+      "safeWriteMs": 113.31038500000068,
+      "resumeMs": 677.4317439999977,
+      "inventoryBeforeRecovery": [
+        {
+          "name": "campaign.sqlite",
+          "kind": "file",
+          "bytes": 53248,
+          "sha256": "7de2793addff13467a6c1de16adb3b26d43243739d7ae90298dce9e53ad87b0b"
+        },
+        {
+          "name": "campaign.sqlite-shm",
+          "kind": "file",
+          "bytes": 32768,
+          "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+        },
+        {
+          "name": "campaign.sqlite-wal",
+          "kind": "file",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "observed": {
+        "mixedTruth": false,
+        "duplicateHistory": false,
+        "sentinelMutation": false,
+        "blindRetry": false
+      }
+    },
+    {
+      "point": "after_object",
+      "iteration": 3,
+      "faultElapsedMs": 109.30434200000309,
+      "safeWriteMs": 112.56505900000047,
+      "resumeMs": 677.1503450000018,
+      "inventoryBeforeRecovery": [
+        {
+          "name": "campaign.sqlite",
+          "kind": "file",
+          "bytes": 53248,
+          "sha256": "7de2793addff13467a6c1de16adb3b26d43243739d7ae90298dce9e53ad87b0b"
+        },
+        {
+          "name": "campaign.sqlite-shm",
+          "kind": "file",
+          "bytes": 32768,
+          "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+        },
+        {
+          "name": "campaign.sqlite-wal",
+          "kind": "file",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "observed": {
+        "mixedTruth": false,
+        "duplicateHistory": false,
+        "sentinelMutation": false,
+        "blindRetry": false
+      }
+    },
+    {
+      "point": "after_history",
+      "iteration": 3,
+      "faultElapsedMs": 108.0116960000014,
+      "safeWriteMs": 106.51126199999999,
+      "resumeMs": 665.291032000001,
+      "inventoryBeforeRecovery": [
+        {
+          "name": "campaign.sqlite",
+          "kind": "file",
+          "bytes": 53248,
+          "sha256": "7de2793addff13467a6c1de16adb3b26d43243739d7ae90298dce9e53ad87b0b"
+        },
+        {
+          "name": "campaign.sqlite-shm",
+          "kind": "file",
+          "bytes": 32768,
+          "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+        },
+        {
+          "name": "campaign.sqlite-wal",
+          "kind": "file",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "observed": {
+        "mixedTruth": false,
+        "duplicateHistory": false,
+        "sentinelMutation": false,
+        "blindRetry": false
+      }
+    },
+    {
+      "point": "after_receipt",
+      "iteration": 3,
+      "faultElapsedMs": 108.32416500000545,
+      "safeWriteMs": 115.71891600000527,
+      "resumeMs": 666.267918000005,
+      "inventoryBeforeRecovery": [
+        {
+          "name": "campaign.sqlite",
+          "kind": "file",
+          "bytes": 53248,
+          "sha256": "7de2793addff13467a6c1de16adb3b26d43243739d7ae90298dce9e53ad87b0b"
+        },
+        {
+          "name": "campaign.sqlite-shm",
+          "kind": "file",
+          "bytes": 32768,
+          "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+        },
+        {
+          "name": "campaign.sqlite-wal",
+          "kind": "file",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "observed": {
+        "mixedTruth": false,
+        "duplicateHistory": false,
+        "sentinelMutation": false,
+        "blindRetry": false
+      }
+    },
+    {
+      "point": "after_commit",
+      "iteration": 3,
+      "faultElapsedMs": 124.43129200000112,
+      "safeWriteMs": 108.5461540000033,
+      "resumeMs": 674.4898259999973,
+      "inventoryBeforeRecovery": [
+        {
+          "name": "campaign.sqlite",
+          "kind": "file",
+          "bytes": 53248,
+          "sha256": "7de2793addff13467a6c1de16adb3b26d43243739d7ae90298dce9e53ad87b0b"
+        },
+        {
+          "name": "campaign.sqlite-shm",
+          "kind": "file",
+          "bytes": 32768,
+          "sha256": "2be653e8be6374df94bff6b9b21d7670585958f450ddfafb88e9833caa90107c"
+        },
+        {
+          "name": "campaign.sqlite-wal",
+          "kind": "file",
+          "bytes": 32992,
+          "sha256": "f48749a60e5e0783d21f91588eef2cb19eb4e5db440c072ff7c3b4c29f863639"
+        }
+      ],
+      "observed": {
+        "mixedTruth": false,
+        "duplicateHistory": false,
+        "sentinelMutation": false,
+        "blindRetry": false
+      }
+    },
+    {
+      "point": "before_response",
+      "iteration": 3,
+      "faultElapsedMs": 106.5705020000023,
+      "safeWriteMs": 109.22415100000217,
+      "resumeMs": 661.052248,
+      "inventoryBeforeRecovery": [
+        {
+          "name": "campaign.sqlite",
+          "kind": "file",
+          "bytes": 53248,
+          "sha256": "7de2793addff13467a6c1de16adb3b26d43243739d7ae90298dce9e53ad87b0b"
+        },
+        {
+          "name": "campaign.sqlite-shm",
+          "kind": "file",
+          "bytes": 32768,
+          "sha256": "24f03267fa615b8649e53156782cd8a38e1e95f1614a277f12caf84250990d7d"
+        },
+        {
+          "name": "campaign.sqlite-wal",
+          "kind": "file",
+          "bytes": 32992,
+          "sha256": "02557d7aa830ead2e0f16873185f7aa3dc513a66cfc318e83e4915e18c42006e"
+        }
+      ],
+      "observed": {
+        "mixedTruth": false,
+        "duplicateHistory": false,
+        "sentinelMutation": false,
+        "blindRetry": false
+      }
+    },
+    {
+      "point": "during_backup",
+      "iteration": 3,
+      "faultElapsedMs": 111.65243199999531,
+      "inventoryBeforeRecovery": [
+        {
+          "name": ".p02-authority.lock",
+          "kind": "directory",
+          "bytes": null,
+          "sha256": null
+        },
+        {
+          "name": "campaign.sqlite",
+          "kind": "file",
+          "bytes": 53248,
+          "sha256": "a4596b5776a3b00e79430b0772faf86be7cd1eb70d92d52c184a1ff0ab1244fb"
+        },
+        {
+          "name": "campaign.sqlite-shm",
+          "kind": "file",
+          "bytes": 32768,
+          "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+        },
+        {
+          "name": "campaign.sqlite-wal",
+          "kind": "file",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "name": "backup.sqlite",
+          "kind": "file",
+          "bytes": 53248,
+          "sha256": "50361f63cc8375a94f9d208af3a2e908fb4c8fb524bc6547f382341ebeefe6f7"
+        },
+        {
+          "name": "backup.sqlite.pending",
+          "kind": "file",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "name": "backup.sqlite.pending-journal",
+          "kind": "file",
+          "bytes": 512,
+          "sha256": "a1d2e1906f9ce1fe78da77191bdc03b21df79deff98bccb1f3a1416d81f49e71"
+        },
+        {
+          "name": "backup.sqlite.pending-shm",
+          "kind": "file",
+          "bytes": 32768,
+          "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+        },
+        {
+          "name": "backup.sqlite.pending-wal",
+          "kind": "file",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "oldBackupPreserved": true,
+      "restoredOld": true,
+      "restoredNew": true,
+      "observed": {
+        "mixedTruth": false,
+        "duplicateHistory": false,
+        "sentinelMutation": false,
+        "blindRetry": false
+      }
+    },
+    {
+      "point": "before_begin",
+      "iteration": 4,
+      "faultElapsedMs": 106.75711099999899,
+      "safeWriteMs": 110.11062800000218,
+      "resumeMs": 678.1286820000023,
+      "inventoryBeforeRecovery": [
+        {
+          "name": "campaign.sqlite",
+          "kind": "file",
+          "bytes": 53248,
+          "sha256": "7de2793addff13467a6c1de16adb3b26d43243739d7ae90298dce9e53ad87b0b"
+        },
+        {
+          "name": "campaign.sqlite-shm",
+          "kind": "file",
+          "bytes": 32768,
+          "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+        },
+        {
+          "name": "campaign.sqlite-wal",
+          "kind": "file",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "observed": {
+        "mixedTruth": false,
+        "duplicateHistory": false,
+        "sentinelMutation": false,
+        "blindRetry": false
+      }
+    },
+    {
+      "point": "after_begin",
+      "iteration": 4,
+      "faultElapsedMs": 104.39527100000123,
+      "safeWriteMs": 108.49814499999775,
+      "resumeMs": 662.1515240000008,
+      "inventoryBeforeRecovery": [
+        {
+          "name": "campaign.sqlite",
+          "kind": "file",
+          "bytes": 53248,
+          "sha256": "7de2793addff13467a6c1de16adb3b26d43243739d7ae90298dce9e53ad87b0b"
+        },
+        {
+          "name": "campaign.sqlite-shm",
+          "kind": "file",
+          "bytes": 32768,
+          "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+        },
+        {
+          "name": "campaign.sqlite-wal",
+          "kind": "file",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "observed": {
+        "mixedTruth": false,
+        "duplicateHistory": false,
+        "sentinelMutation": false,
+        "blindRetry": false
+      }
+    },
+    {
+      "point": "after_object",
+      "iteration": 4,
+      "faultElapsedMs": 111.2607330000028,
+      "safeWriteMs": 110.6198860000004,
+      "resumeMs": 671.1877390000009,
+      "inventoryBeforeRecovery": [
+        {
+          "name": "campaign.sqlite",
+          "kind": "file",
+          "bytes": 53248,
+          "sha256": "7de2793addff13467a6c1de16adb3b26d43243739d7ae90298dce9e53ad87b0b"
+        },
+        {
+          "name": "campaign.sqlite-shm",
+          "kind": "file",
+          "bytes": 32768,
+          "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+        },
+        {
+          "name": "campaign.sqlite-wal",
+          "kind": "file",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "observed": {
+        "mixedTruth": false,
+        "duplicateHistory": false,
+        "sentinelMutation": false,
+        "blindRetry": false
+      }
+    },
+    {
+      "point": "after_history",
+      "iteration": 4,
+      "faultElapsedMs": 105.63213600000017,
+      "safeWriteMs": 106.59086200000456,
+      "resumeMs": 651.514946000003,
+      "inventoryBeforeRecovery": [
+        {
+          "name": "campaign.sqlite",
+          "kind": "file",
+          "bytes": 53248,
+          "sha256": "7de2793addff13467a6c1de16adb3b26d43243739d7ae90298dce9e53ad87b0b"
+        },
+        {
+          "name": "campaign.sqlite-shm",
+          "kind": "file",
+          "bytes": 32768,
+          "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+        },
+        {
+          "name": "campaign.sqlite-wal",
+          "kind": "file",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "observed": {
+        "mixedTruth": false,
+        "duplicateHistory": false,
+        "sentinelMutation": false,
+        "blindRetry": false
+      }
+    },
+    {
+      "point": "after_receipt",
+      "iteration": 4,
+      "faultElapsedMs": 109.72553000000335,
+      "safeWriteMs": 107.08952999999747,
+      "resumeMs": 655.1363409999976,
+      "inventoryBeforeRecovery": [
+        {
+          "name": "campaign.sqlite",
+          "kind": "file",
+          "bytes": 53248,
+          "sha256": "7de2793addff13467a6c1de16adb3b26d43243739d7ae90298dce9e53ad87b0b"
+        },
+        {
+          "name": "campaign.sqlite-shm",
+          "kind": "file",
+          "bytes": 32768,
+          "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+        },
+        {
+          "name": "campaign.sqlite-wal",
+          "kind": "file",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "observed": {
+        "mixedTruth": false,
+        "duplicateHistory": false,
+        "sentinelMutation": false,
+        "blindRetry": false
+      }
+    },
+    {
+      "point": "after_commit",
+      "iteration": 4,
+      "faultElapsedMs": 111.84512100000575,
+      "safeWriteMs": 107.84415799999988,
+      "resumeMs": 670.5604509999976,
+      "inventoryBeforeRecovery": [
+        {
+          "name": "campaign.sqlite",
+          "kind": "file",
+          "bytes": 53248,
+          "sha256": "7de2793addff13467a6c1de16adb3b26d43243739d7ae90298dce9e53ad87b0b"
+        },
+        {
+          "name": "campaign.sqlite-shm",
+          "kind": "file",
+          "bytes": 32768,
+          "sha256": "b6fb95ba6d4f65f0449de2379be1623780f1f37a0d3917018361738925e62d19"
+        },
+        {
+          "name": "campaign.sqlite-wal",
+          "kind": "file",
+          "bytes": 32992,
+          "sha256": "ccf3590fccf826d651e8803d41ef420c7e4d57b1285ae61e70347a4311800750"
+        }
+      ],
+      "observed": {
+        "mixedTruth": false,
+        "duplicateHistory": false,
+        "sentinelMutation": false,
+        "blindRetry": false
+      }
+    },
+    {
+      "point": "before_response",
+      "iteration": 4,
+      "faultElapsedMs": 113.02957600000082,
+      "safeWriteMs": 106.94642100000056,
+      "resumeMs": 654.8311229999963,
+      "inventoryBeforeRecovery": [
+        {
+          "name": "campaign.sqlite",
+          "kind": "file",
+          "bytes": 53248,
+          "sha256": "7de2793addff13467a6c1de16adb3b26d43243739d7ae90298dce9e53ad87b0b"
+        },
+        {
+          "name": "campaign.sqlite-shm",
+          "kind": "file",
+          "bytes": 32768,
+          "sha256": "f297f0eea8ccdda04c99c3ea97c4d9df1c1467101f7537f410480d9f3224b3fb"
+        },
+        {
+          "name": "campaign.sqlite-wal",
+          "kind": "file",
+          "bytes": 32992,
+          "sha256": "17275ae242832ea98e740e10c6f85c013c7cac3a99246116a291a85416cbd528"
+        }
+      ],
+      "observed": {
+        "mixedTruth": false,
+        "duplicateHistory": false,
+        "sentinelMutation": false,
+        "blindRetry": false
+      }
+    },
+    {
+      "point": "during_backup",
+      "iteration": 4,
+      "faultElapsedMs": 119.4316519999993,
+      "inventoryBeforeRecovery": [
+        {
+          "name": ".p02-authority.lock",
+          "kind": "directory",
+          "bytes": null,
+          "sha256": null
+        },
+        {
+          "name": "campaign.sqlite",
+          "kind": "file",
+          "bytes": 53248,
+          "sha256": "a4596b5776a3b00e79430b0772faf86be7cd1eb70d92d52c184a1ff0ab1244fb"
+        },
+        {
+          "name": "campaign.sqlite-shm",
+          "kind": "file",
+          "bytes": 32768,
+          "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+        },
+        {
+          "name": "campaign.sqlite-wal",
+          "kind": "file",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "name": "backup.sqlite",
+          "kind": "file",
+          "bytes": 53248,
+          "sha256": "50361f63cc8375a94f9d208af3a2e908fb4c8fb524bc6547f382341ebeefe6f7"
+        },
+        {
+          "name": "backup.sqlite.pending",
+          "kind": "file",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "name": "backup.sqlite.pending-journal",
+          "kind": "file",
+          "bytes": 512,
+          "sha256": "bcc14a74e0fb046c3c69f3b7de9b2eb25d8935d1af081963ce0fce80976a010c"
+        },
+        {
+          "name": "backup.sqlite.pending-shm",
+          "kind": "file",
+          "bytes": 32768,
+          "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+        },
+        {
+          "name": "backup.sqlite.pending-wal",
+          "kind": "file",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "oldBackupPreserved": true,
+      "restoredOld": true,
+      "restoredNew": true,
+      "observed": {
+        "mixedTruth": false,
+        "duplicateHistory": false,
+        "sentinelMutation": false,
+        "blindRetry": false
+      }
+    },
+    {
+      "point": "before_begin",
+      "iteration": 5,
+      "faultElapsedMs": 107.6441879999984,
+      "safeWriteMs": 115.68216699999903,
+      "resumeMs": 671.544676999998,
+      "inventoryBeforeRecovery": [
+        {
+          "name": "campaign.sqlite",
+          "kind": "file",
+          "bytes": 53248,
+          "sha256": "7de2793addff13467a6c1de16adb3b26d43243739d7ae90298dce9e53ad87b0b"
+        },
+        {
+          "name": "campaign.sqlite-shm",
+          "kind": "file",
+          "bytes": 32768,
+          "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+        },
+        {
+          "name": "campaign.sqlite-wal",
+          "kind": "file",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "observed": {
+        "mixedTruth": false,
+        "duplicateHistory": false,
+        "sentinelMutation": false,
+        "blindRetry": false
+      }
+    },
+    {
+      "point": "after_begin",
+      "iteration": 5,
+      "faultElapsedMs": 104.14684199999465,
+      "safeWriteMs": 114.74525100000028,
+      "resumeMs": 663.7208580000006,
+      "inventoryBeforeRecovery": [
+        {
+          "name": "campaign.sqlite",
+          "kind": "file",
+          "bytes": 53248,
+          "sha256": "7de2793addff13467a6c1de16adb3b26d43243739d7ae90298dce9e53ad87b0b"
+        },
+        {
+          "name": "campaign.sqlite-shm",
+          "kind": "file",
+          "bytes": 32768,
+          "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+        },
+        {
+          "name": "campaign.sqlite-wal",
+          "kind": "file",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "observed": {
+        "mixedTruth": false,
+        "duplicateHistory": false,
+        "sentinelMutation": false,
+        "blindRetry": false
+      }
+    },
+    {
+      "point": "after_object",
+      "iteration": 5,
+      "faultElapsedMs": 110.15321799999947,
+      "safeWriteMs": 118.00818799999979,
+      "resumeMs": 724.015112000001,
+      "inventoryBeforeRecovery": [
+        {
+          "name": "campaign.sqlite",
+          "kind": "file",
+          "bytes": 53248,
+          "sha256": "7de2793addff13467a6c1de16adb3b26d43243739d7ae90298dce9e53ad87b0b"
+        },
+        {
+          "name": "campaign.sqlite-shm",
+          "kind": "file",
+          "bytes": 32768,
+          "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+        },
+        {
+          "name": "campaign.sqlite-wal",
+          "kind": "file",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "observed": {
+        "mixedTruth": false,
+        "duplicateHistory": false,
+        "sentinelMutation": false,
+        "blindRetry": false
+      }
+    },
+    {
+      "point": "after_history",
+      "iteration": 5,
+      "faultElapsedMs": 123.51905600000464,
+      "safeWriteMs": 129.07385400000203,
+      "resumeMs": 728.3884640000033,
+      "inventoryBeforeRecovery": [
+        {
+          "name": "campaign.sqlite",
+          "kind": "file",
+          "bytes": 53248,
+          "sha256": "7de2793addff13467a6c1de16adb3b26d43243739d7ae90298dce9e53ad87b0b"
+        },
+        {
+          "name": "campaign.sqlite-shm",
+          "kind": "file",
+          "bytes": 32768,
+          "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+        },
+        {
+          "name": "campaign.sqlite-wal",
+          "kind": "file",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "observed": {
+        "mixedTruth": false,
+        "duplicateHistory": false,
+        "sentinelMutation": false,
+        "blindRetry": false
+      }
+    },
+    {
+      "point": "after_receipt",
+      "iteration": 5,
+      "faultElapsedMs": 111.77597199998854,
+      "safeWriteMs": 118.35923599998932,
+      "resumeMs": 725.6486549999972,
+      "inventoryBeforeRecovery": [
+        {
+          "name": "campaign.sqlite",
+          "kind": "file",
+          "bytes": 53248,
+          "sha256": "7de2793addff13467a6c1de16adb3b26d43243739d7ae90298dce9e53ad87b0b"
+        },
+        {
+          "name": "campaign.sqlite-shm",
+          "kind": "file",
+          "bytes": 32768,
+          "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+        },
+        {
+          "name": "campaign.sqlite-wal",
+          "kind": "file",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "observed": {
+        "mixedTruth": false,
+        "duplicateHistory": false,
+        "sentinelMutation": false,
+        "blindRetry": false
+      }
+    },
+    {
+      "point": "after_commit",
+      "iteration": 5,
+      "faultElapsedMs": 110.03981800000474,
+      "safeWriteMs": 114.6909100000048,
+      "resumeMs": 685.5508520000003,
+      "inventoryBeforeRecovery": [
+        {
+          "name": "campaign.sqlite",
+          "kind": "file",
+          "bytes": 53248,
+          "sha256": "7de2793addff13467a6c1de16adb3b26d43243739d7ae90298dce9e53ad87b0b"
+        },
+        {
+          "name": "campaign.sqlite-shm",
+          "kind": "file",
+          "bytes": 32768,
+          "sha256": "041bad70dc98cb21f154b9ef2c4fc2ee3974ae614abe30463a5e41bca6ce4c6c"
+        },
+        {
+          "name": "campaign.sqlite-wal",
+          "kind": "file",
+          "bytes": 32992,
+          "sha256": "9823f2bbaa1c77d8db195dcf3378c3c2aed7cd8b2c3bee8bf9c1bb00ea9f31d2"
+        }
+      ],
+      "observed": {
+        "mixedTruth": false,
+        "duplicateHistory": false,
+        "sentinelMutation": false,
+        "blindRetry": false
+      }
+    },
+    {
+      "point": "before_response",
+      "iteration": 5,
+      "faultElapsedMs": 109.04465300000447,
+      "safeWriteMs": 107.10485099999642,
+      "resumeMs": 649.4949830000114,
+      "inventoryBeforeRecovery": [
+        {
+          "name": "campaign.sqlite",
+          "kind": "file",
+          "bytes": 53248,
+          "sha256": "7de2793addff13467a6c1de16adb3b26d43243739d7ae90298dce9e53ad87b0b"
+        },
+        {
+          "name": "campaign.sqlite-shm",
+          "kind": "file",
+          "bytes": 32768,
+          "sha256": "878766337f37ab47853fd38c1e28e79e8af3caac1fe034bc688da5b8bb8b0632"
+        },
+        {
+          "name": "campaign.sqlite-wal",
+          "kind": "file",
+          "bytes": 32992,
+          "sha256": "242f86635b91aba479419cf0c6ddd31d45a249904260ca6fb20ffef34f215928"
+        }
+      ],
+      "observed": {
+        "mixedTruth": false,
+        "duplicateHistory": false,
+        "sentinelMutation": false,
+        "blindRetry": false
+      }
+    },
+    {
+      "point": "during_backup",
+      "iteration": 5,
+      "faultElapsedMs": 122.79576899998938,
+      "inventoryBeforeRecovery": [
+        {
+          "name": ".p02-authority.lock",
+          "kind": "directory",
+          "bytes": null,
+          "sha256": null
+        },
+        {
+          "name": "campaign.sqlite",
+          "kind": "file",
+          "bytes": 53248,
+          "sha256": "a4596b5776a3b00e79430b0772faf86be7cd1eb70d92d52c184a1ff0ab1244fb"
+        },
+        {
+          "name": "campaign.sqlite-shm",
+          "kind": "file",
+          "bytes": 32768,
+          "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+        },
+        {
+          "name": "campaign.sqlite-wal",
+          "kind": "file",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "name": "backup.sqlite",
+          "kind": "file",
+          "bytes": 53248,
+          "sha256": "50361f63cc8375a94f9d208af3a2e908fb4c8fb524bc6547f382341ebeefe6f7"
+        },
+        {
+          "name": "backup.sqlite.pending",
+          "kind": "file",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "name": "backup.sqlite.pending-journal",
+          "kind": "file",
+          "bytes": 512,
+          "sha256": "cda03939c80e357ef5bfc471346235203e7be108f18d9f8d0e655e39758b8267"
+        },
+        {
+          "name": "backup.sqlite.pending-shm",
+          "kind": "file",
+          "bytes": 32768,
+          "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+        },
+        {
+          "name": "backup.sqlite.pending-wal",
+          "kind": "file",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "oldBackupPreserved": true,
+      "restoredOld": true,
+      "restoredNew": true,
+      "observed": {
+        "mixedTruth": false,
+        "duplicateHistory": false,
+        "sentinelMutation": false,
+        "blindRetry": false
+      }
+    },
+    {
+      "point": "before_begin",
+      "iteration": 6,
+      "faultElapsedMs": 119.99094999999215,
+      "safeWriteMs": 123.5163259999972,
+      "resumeMs": 697.2891759999911,
+      "inventoryBeforeRecovery": [
+        {
+          "name": "campaign.sqlite",
+          "kind": "file",
+          "bytes": 53248,
+          "sha256": "7de2793addff13467a6c1de16adb3b26d43243739d7ae90298dce9e53ad87b0b"
+        },
+        {
+          "name": "campaign.sqlite-shm",
+          "kind": "file",
+          "bytes": 32768,
+          "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+        },
+        {
+          "name": "campaign.sqlite-wal",
+          "kind": "file",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "observed": {
+        "mixedTruth": false,
+        "duplicateHistory": false,
+        "sentinelMutation": false,
+        "blindRetry": false
+      }
+    },
+    {
+      "point": "after_begin",
+      "iteration": 6,
+      "faultElapsedMs": 105.84778500000539,
+      "safeWriteMs": 108.1122469999973,
+      "resumeMs": 654.1626760000072,
+      "inventoryBeforeRecovery": [
+        {
+          "name": "campaign.sqlite",
+          "kind": "file",
+          "bytes": 53248,
+          "sha256": "7de2793addff13467a6c1de16adb3b26d43243739d7ae90298dce9e53ad87b0b"
+        },
+        {
+          "name": "campaign.sqlite-shm",
+          "kind": "file",
+          "bytes": 32768,
+          "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+        },
+        {
+          "name": "campaign.sqlite-wal",
+          "kind": "file",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "observed": {
+        "mixedTruth": false,
+        "duplicateHistory": false,
+        "sentinelMutation": false,
+        "blindRetry": false
+      }
+    },
+    {
+      "point": "after_object",
+      "iteration": 6,
+      "faultElapsedMs": 106.73985199999879,
+      "safeWriteMs": 118.1720970000024,
+      "resumeMs": 702.2208470000041,
+      "inventoryBeforeRecovery": [
+        {
+          "name": "campaign.sqlite",
+          "kind": "file",
+          "bytes": 53248,
+          "sha256": "7de2793addff13467a6c1de16adb3b26d43243739d7ae90298dce9e53ad87b0b"
+        },
+        {
+          "name": "campaign.sqlite-shm",
+          "kind": "file",
+          "bytes": 32768,
+          "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+        },
+        {
+          "name": "campaign.sqlite-wal",
+          "kind": "file",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "observed": {
+        "mixedTruth": false,
+        "duplicateHistory": false,
+        "sentinelMutation": false,
+        "blindRetry": false
+      }
+    },
+    {
+      "point": "after_history",
+      "iteration": 6,
+      "faultElapsedMs": 121.2641050000093,
+      "safeWriteMs": 115.88367599999765,
+      "resumeMs": 707.691995000001,
+      "inventoryBeforeRecovery": [
+        {
+          "name": "campaign.sqlite",
+          "kind": "file",
+          "bytes": 53248,
+          "sha256": "7de2793addff13467a6c1de16adb3b26d43243739d7ae90298dce9e53ad87b0b"
+        },
+        {
+          "name": "campaign.sqlite-shm",
+          "kind": "file",
+          "bytes": 32768,
+          "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+        },
+        {
+          "name": "campaign.sqlite-wal",
+          "kind": "file",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "observed": {
+        "mixedTruth": false,
+        "duplicateHistory": false,
+        "sentinelMutation": false,
+        "blindRetry": false
+      }
+    },
+    {
+      "point": "after_receipt",
+      "iteration": 6,
+      "faultElapsedMs": 115.85336500000267,
+      "safeWriteMs": 113.46693499998946,
+      "resumeMs": 742.7606680000026,
+      "inventoryBeforeRecovery": [
+        {
+          "name": "campaign.sqlite",
+          "kind": "file",
+          "bytes": 53248,
+          "sha256": "7de2793addff13467a6c1de16adb3b26d43243739d7ae90298dce9e53ad87b0b"
+        },
+        {
+          "name": "campaign.sqlite-shm",
+          "kind": "file",
+          "bytes": 32768,
+          "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+        },
+        {
+          "name": "campaign.sqlite-wal",
+          "kind": "file",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "observed": {
+        "mixedTruth": false,
+        "duplicateHistory": false,
+        "sentinelMutation": false,
+        "blindRetry": false
+      }
+    },
+    {
+      "point": "after_commit",
+      "iteration": 6,
+      "faultElapsedMs": 113.97789300000295,
+      "safeWriteMs": 111.95830100000603,
+      "resumeMs": 673.4818300000043,
+      "inventoryBeforeRecovery": [
+        {
+          "name": "campaign.sqlite",
+          "kind": "file",
+          "bytes": 53248,
+          "sha256": "7de2793addff13467a6c1de16adb3b26d43243739d7ae90298dce9e53ad87b0b"
+        },
+        {
+          "name": "campaign.sqlite-shm",
+          "kind": "file",
+          "bytes": 32768,
+          "sha256": "c7329cc8a58cdd7817a97492e54bf50d9f43596e0955f4041707532a8ca1e63d"
+        },
+        {
+          "name": "campaign.sqlite-wal",
+          "kind": "file",
+          "bytes": 32992,
+          "sha256": "497c913b96a9cb91c22a46ee7afe64fadcefa3900a4d3d5d620495a591843d3d"
+        }
+      ],
+      "observed": {
+        "mixedTruth": false,
+        "duplicateHistory": false,
+        "sentinelMutation": false,
+        "blindRetry": false
+      }
+    },
+    {
+      "point": "before_response",
+      "iteration": 6,
+      "faultElapsedMs": 111.76657199999318,
+      "safeWriteMs": 110.94382500000938,
+      "resumeMs": 669.3710060000012,
+      "inventoryBeforeRecovery": [
+        {
+          "name": "campaign.sqlite",
+          "kind": "file",
+          "bytes": 53248,
+          "sha256": "7de2793addff13467a6c1de16adb3b26d43243739d7ae90298dce9e53ad87b0b"
+        },
+        {
+          "name": "campaign.sqlite-shm",
+          "kind": "file",
+          "bytes": 32768,
+          "sha256": "a9116cb3559a6bc1392840b24f610422f9b1352fb5917e9bc63d94a83cf57359"
+        },
+        {
+          "name": "campaign.sqlite-wal",
+          "kind": "file",
+          "bytes": 32992,
+          "sha256": "68e8c0a4e8209233db684051f5c1a14375f4781d13e4cf4fa10939417151832f"
+        }
+      ],
+      "observed": {
+        "mixedTruth": false,
+        "duplicateHistory": false,
+        "sentinelMutation": false,
+        "blindRetry": false
+      }
+    },
+    {
+      "point": "during_backup",
+      "iteration": 6,
+      "faultElapsedMs": 112.2434699999867,
+      "inventoryBeforeRecovery": [
+        {
+          "name": ".p02-authority.lock",
+          "kind": "directory",
+          "bytes": null,
+          "sha256": null
+        },
+        {
+          "name": "campaign.sqlite",
+          "kind": "file",
+          "bytes": 53248,
+          "sha256": "a4596b5776a3b00e79430b0772faf86be7cd1eb70d92d52c184a1ff0ab1244fb"
+        },
+        {
+          "name": "campaign.sqlite-shm",
+          "kind": "file",
+          "bytes": 32768,
+          "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+        },
+        {
+          "name": "campaign.sqlite-wal",
+          "kind": "file",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "name": "backup.sqlite",
+          "kind": "file",
+          "bytes": 53248,
+          "sha256": "50361f63cc8375a94f9d208af3a2e908fb4c8fb524bc6547f382341ebeefe6f7"
+        },
+        {
+          "name": "backup.sqlite.pending",
+          "kind": "file",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "name": "backup.sqlite.pending-journal",
+          "kind": "file",
+          "bytes": 512,
+          "sha256": "8214ec2dd0aa05a08baf06150375e292a5726765fe3367bcba5f6572df11dadf"
+        },
+        {
+          "name": "backup.sqlite.pending-shm",
+          "kind": "file",
+          "bytes": 32768,
+          "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+        },
+        {
+          "name": "backup.sqlite.pending-wal",
+          "kind": "file",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "oldBackupPreserved": true,
+      "restoredOld": true,
+      "restoredNew": true,
+      "observed": {
+        "mixedTruth": false,
+        "duplicateHistory": false,
+        "sentinelMutation": false,
+        "blindRetry": false
+      }
+    },
+    {
+      "point": "before_begin",
+      "iteration": 7,
+      "faultElapsedMs": 104.08102199999848,
+      "safeWriteMs": 113.7937840000086,
+      "resumeMs": 675.7076910000033,
+      "inventoryBeforeRecovery": [
+        {
+          "name": "campaign.sqlite",
+          "kind": "file",
+          "bytes": 53248,
+          "sha256": "7de2793addff13467a6c1de16adb3b26d43243739d7ae90298dce9e53ad87b0b"
+        },
+        {
+          "name": "campaign.sqlite-shm",
+          "kind": "file",
+          "bytes": 32768,
+          "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+        },
+        {
+          "name": "campaign.sqlite-wal",
+          "kind": "file",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "observed": {
+        "mixedTruth": false,
+        "duplicateHistory": false,
+        "sentinelMutation": false,
+        "blindRetry": false
+      }
+    },
+    {
+      "point": "after_begin",
+      "iteration": 7,
+      "faultElapsedMs": 103.32518500000879,
+      "safeWriteMs": 106.89054100000067,
+      "resumeMs": 658.2017300000007,
+      "inventoryBeforeRecovery": [
+        {
+          "name": "campaign.sqlite",
+          "kind": "file",
+          "bytes": 53248,
+          "sha256": "7de2793addff13467a6c1de16adb3b26d43243739d7ae90298dce9e53ad87b0b"
+        },
+        {
+          "name": "campaign.sqlite-shm",
+          "kind": "file",
+          "bytes": 32768,
+          "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+        },
+        {
+          "name": "campaign.sqlite-wal",
+          "kind": "file",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "observed": {
+        "mixedTruth": false,
+        "duplicateHistory": false,
+        "sentinelMutation": false,
+        "blindRetry": false
+      }
+    },
+    {
+      "point": "after_object",
+      "iteration": 7,
+      "faultElapsedMs": 102.74538700000267,
+      "safeWriteMs": 114.03947299999709,
+      "resumeMs": 675.2027429999871,
+      "inventoryBeforeRecovery": [
+        {
+          "name": "campaign.sqlite",
+          "kind": "file",
+          "bytes": 53248,
+          "sha256": "7de2793addff13467a6c1de16adb3b26d43243739d7ae90298dce9e53ad87b0b"
+        },
+        {
+          "name": "campaign.sqlite-shm",
+          "kind": "file",
+          "bytes": 32768,
+          "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+        },
+        {
+          "name": "campaign.sqlite-wal",
+          "kind": "file",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "observed": {
+        "mixedTruth": false,
+        "duplicateHistory": false,
+        "sentinelMutation": false,
+        "blindRetry": false
+      }
+    },
+    {
+      "point": "after_history",
+      "iteration": 7,
+      "faultElapsedMs": 110.61529699999664,
+      "safeWriteMs": 109.71640999999363,
+      "resumeMs": 670.7906899999944,
+      "inventoryBeforeRecovery": [
+        {
+          "name": "campaign.sqlite",
+          "kind": "file",
+          "bytes": 53248,
+          "sha256": "7de2793addff13467a6c1de16adb3b26d43243739d7ae90298dce9e53ad87b0b"
+        },
+        {
+          "name": "campaign.sqlite-shm",
+          "kind": "file",
+          "bytes": 32768,
+          "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+        },
+        {
+          "name": "campaign.sqlite-wal",
+          "kind": "file",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "observed": {
+        "mixedTruth": false,
+        "duplicateHistory": false,
+        "sentinelMutation": false,
+        "blindRetry": false
+      }
+    },
+    {
+      "point": "after_receipt",
+      "iteration": 7,
+      "faultElapsedMs": 104.29441100000986,
+      "safeWriteMs": 107.52158900001086,
+      "resumeMs": 652.3213220000034,
+      "inventoryBeforeRecovery": [
+        {
+          "name": "campaign.sqlite",
+          "kind": "file",
+          "bytes": 53248,
+          "sha256": "7de2793addff13467a6c1de16adb3b26d43243739d7ae90298dce9e53ad87b0b"
+        },
+        {
+          "name": "campaign.sqlite-shm",
+          "kind": "file",
+          "bytes": 32768,
+          "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+        },
+        {
+          "name": "campaign.sqlite-wal",
+          "kind": "file",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "observed": {
+        "mixedTruth": false,
+        "duplicateHistory": false,
+        "sentinelMutation": false,
+        "blindRetry": false
+      }
+    },
+    {
+      "point": "after_commit",
+      "iteration": 7,
+      "faultElapsedMs": 110.9207449999958,
+      "safeWriteMs": 111.13141400000313,
+      "resumeMs": 671.8731459999981,
+      "inventoryBeforeRecovery": [
+        {
+          "name": "campaign.sqlite",
+          "kind": "file",
+          "bytes": 53248,
+          "sha256": "7de2793addff13467a6c1de16adb3b26d43243739d7ae90298dce9e53ad87b0b"
+        },
+        {
+          "name": "campaign.sqlite-shm",
+          "kind": "file",
+          "bytes": 32768,
+          "sha256": "17f3bf50e2ff7b7164a9646fe97b1b0290abfbaf21fbd02ccc3737eab1cc314b"
+        },
+        {
+          "name": "campaign.sqlite-wal",
+          "kind": "file",
+          "bytes": 32992,
+          "sha256": "0d68b54c359637a1ad4feab574cff5a7d06e9f58bb655c463d4a5c7c0024c237"
+        }
+      ],
+      "observed": {
+        "mixedTruth": false,
+        "duplicateHistory": false,
+        "sentinelMutation": false,
+        "blindRetry": false
+      }
+    },
+    {
+      "point": "before_response",
+      "iteration": 7,
+      "faultElapsedMs": 104.52270000000135,
+      "safeWriteMs": 107.61194800000521,
+      "resumeMs": 652.8198209999973,
+      "inventoryBeforeRecovery": [
+        {
+          "name": "campaign.sqlite",
+          "kind": "file",
+          "bytes": 53248,
+          "sha256": "7de2793addff13467a6c1de16adb3b26d43243739d7ae90298dce9e53ad87b0b"
+        },
+        {
+          "name": "campaign.sqlite-shm",
+          "kind": "file",
+          "bytes": 32768,
+          "sha256": "0983e588d7e1b42e7b9e0e4bbb171c640c4257d66c5af3439694ce52ff037baf"
+        },
+        {
+          "name": "campaign.sqlite-wal",
+          "kind": "file",
+          "bytes": 32992,
+          "sha256": "c7afa48f95f6331dd8bf6d6c5e0b6887140b05e2887f2de53c6c2403dece26e5"
+        }
+      ],
+      "observed": {
+        "mixedTruth": false,
+        "duplicateHistory": false,
+        "sentinelMutation": false,
+        "blindRetry": false
+      }
+    },
+    {
+      "point": "during_backup",
+      "iteration": 7,
+      "faultElapsedMs": 106.8238810000039,
+      "inventoryBeforeRecovery": [
+        {
+          "name": ".p02-authority.lock",
+          "kind": "directory",
+          "bytes": null,
+          "sha256": null
+        },
+        {
+          "name": "campaign.sqlite",
+          "kind": "file",
+          "bytes": 53248,
+          "sha256": "a4596b5776a3b00e79430b0772faf86be7cd1eb70d92d52c184a1ff0ab1244fb"
+        },
+        {
+          "name": "campaign.sqlite-shm",
+          "kind": "file",
+          "bytes": 32768,
+          "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+        },
+        {
+          "name": "campaign.sqlite-wal",
+          "kind": "file",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "name": "backup.sqlite",
+          "kind": "file",
+          "bytes": 53248,
+          "sha256": "50361f63cc8375a94f9d208af3a2e908fb4c8fb524bc6547f382341ebeefe6f7"
+        },
+        {
+          "name": "backup.sqlite.pending",
+          "kind": "file",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "name": "backup.sqlite.pending-journal",
+          "kind": "file",
+          "bytes": 512,
+          "sha256": "d2f71f9259222b493167ef8798f27d12d93733e718afbecae5c861a542c09e3c"
+        },
+        {
+          "name": "backup.sqlite.pending-shm",
+          "kind": "file",
+          "bytes": 32768,
+          "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+        },
+        {
+          "name": "backup.sqlite.pending-wal",
+          "kind": "file",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "oldBackupPreserved": true,
+      "restoredOld": true,
+      "restoredNew": true,
+      "observed": {
+        "mixedTruth": false,
+        "duplicateHistory": false,
+        "sentinelMutation": false,
+        "blindRetry": false
+      }
+    },
+    {
+      "point": "before_begin",
+      "iteration": 8,
+      "faultElapsedMs": 107.30310999999347,
+      "safeWriteMs": 113.02535699999135,
+      "resumeMs": 686.1827300000004,
+      "inventoryBeforeRecovery": [
+        {
+          "name": "campaign.sqlite",
+          "kind": "file",
+          "bytes": 53248,
+          "sha256": "7de2793addff13467a6c1de16adb3b26d43243739d7ae90298dce9e53ad87b0b"
+        },
+        {
+          "name": "campaign.sqlite-shm",
+          "kind": "file",
+          "bytes": 32768,
+          "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+        },
+        {
+          "name": "campaign.sqlite-wal",
+          "kind": "file",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "observed": {
+        "mixedTruth": false,
+        "duplicateHistory": false,
+        "sentinelMutation": false,
+        "blindRetry": false
+      }
+    },
+    {
+      "point": "after_begin",
+      "iteration": 8,
+      "faultElapsedMs": 103.9045419999893,
+      "safeWriteMs": 111.97420100000454,
+      "resumeMs": 656.110108000008,
+      "inventoryBeforeRecovery": [
+        {
+          "name": "campaign.sqlite",
+          "kind": "file",
+          "bytes": 53248,
+          "sha256": "7de2793addff13467a6c1de16adb3b26d43243739d7ae90298dce9e53ad87b0b"
+        },
+        {
+          "name": "campaign.sqlite-shm",
+          "kind": "file",
+          "bytes": 32768,
+          "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+        },
+        {
+          "name": "campaign.sqlite-wal",
+          "kind": "file",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "observed": {
+        "mixedTruth": false,
+        "duplicateHistory": false,
+        "sentinelMutation": false,
+        "blindRetry": false
+      }
+    },
+    {
+      "point": "after_object",
+      "iteration": 8,
+      "faultElapsedMs": 106.6489229999861,
+      "safeWriteMs": 119.53185099999246,
+      "resumeMs": 679.1795769999881,
+      "inventoryBeforeRecovery": [
+        {
+          "name": "campaign.sqlite",
+          "kind": "file",
+          "bytes": 53248,
+          "sha256": "7de2793addff13467a6c1de16adb3b26d43243739d7ae90298dce9e53ad87b0b"
+        },
+        {
+          "name": "campaign.sqlite-shm",
+          "kind": "file",
+          "bytes": 32768,
+          "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+        },
+        {
+          "name": "campaign.sqlite-wal",
+          "kind": "file",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "observed": {
+        "mixedTruth": false,
+        "duplicateHistory": false,
+        "sentinelMutation": false,
+        "blindRetry": false
+      }
+    },
+    {
+      "point": "after_history",
+      "iteration": 8,
+      "faultElapsedMs": 107.41187899999204,
+      "safeWriteMs": 110.5662169999996,
+      "resumeMs": 678.3738410000078,
+      "inventoryBeforeRecovery": [
+        {
+          "name": "campaign.sqlite",
+          "kind": "file",
+          "bytes": 53248,
+          "sha256": "7de2793addff13467a6c1de16adb3b26d43243739d7ae90298dce9e53ad87b0b"
+        },
+        {
+          "name": "campaign.sqlite-shm",
+          "kind": "file",
+          "bytes": 32768,
+          "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+        },
+        {
+          "name": "campaign.sqlite-wal",
+          "kind": "file",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "observed": {
+        "mixedTruth": false,
+        "duplicateHistory": false,
+        "sentinelMutation": false,
+        "blindRetry": false
+      }
+    },
+    {
+      "point": "after_receipt",
+      "iteration": 8,
+      "faultElapsedMs": 108.03968599998916,
+      "safeWriteMs": 107.78708700000425,
+      "resumeMs": 655.1188120000006,
+      "inventoryBeforeRecovery": [
+        {
+          "name": "campaign.sqlite",
+          "kind": "file",
+          "bytes": 53248,
+          "sha256": "7de2793addff13467a6c1de16adb3b26d43243739d7ae90298dce9e53ad87b0b"
+        },
+        {
+          "name": "campaign.sqlite-shm",
+          "kind": "file",
+          "bytes": 32768,
+          "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+        },
+        {
+          "name": "campaign.sqlite-wal",
+          "kind": "file",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "observed": {
+        "mixedTruth": false,
+        "duplicateHistory": false,
+        "sentinelMutation": false,
+        "blindRetry": false
+      }
+    },
+    {
+      "point": "after_commit",
+      "iteration": 8,
+      "faultElapsedMs": 109.75028999999631,
+      "safeWriteMs": 109.1487119999947,
+      "resumeMs": 678.1646110000001,
+      "inventoryBeforeRecovery": [
+        {
+          "name": "campaign.sqlite",
+          "kind": "file",
+          "bytes": 53248,
+          "sha256": "7de2793addff13467a6c1de16adb3b26d43243739d7ae90298dce9e53ad87b0b"
+        },
+        {
+          "name": "campaign.sqlite-shm",
+          "kind": "file",
+          "bytes": 32768,
+          "sha256": "75ec177d015f44023757e5e00e6829e73426ab74bfb0a5333bef228765b2a03f"
+        },
+        {
+          "name": "campaign.sqlite-wal",
+          "kind": "file",
+          "bytes": 32992,
+          "sha256": "f84e2cc69d60b19597003f84f775233ee20f669c41494d37b3dacb1d5ef070ff"
+        }
+      ],
+      "observed": {
+        "mixedTruth": false,
+        "duplicateHistory": false,
+        "sentinelMutation": false,
+        "blindRetry": false
+      }
+    },
+    {
+      "point": "before_response",
+      "iteration": 8,
+      "faultElapsedMs": 114.02588299999479,
+      "safeWriteMs": 109.46123099999386,
+      "resumeMs": 650.0057010000019,
+      "inventoryBeforeRecovery": [
+        {
+          "name": "campaign.sqlite",
+          "kind": "file",
+          "bytes": 53248,
+          "sha256": "7de2793addff13467a6c1de16adb3b26d43243739d7ae90298dce9e53ad87b0b"
+        },
+        {
+          "name": "campaign.sqlite-shm",
+          "kind": "file",
+          "bytes": 32768,
+          "sha256": "3aff4cc4d0e9b452ac1bbb8e3e36145d9ca6cdf873e56b36114cc10a82a5f1dd"
+        },
+        {
+          "name": "campaign.sqlite-wal",
+          "kind": "file",
+          "bytes": 32992,
+          "sha256": "106ca5ce713dce603e03432408c4c8a35ed38b4483e9f329447fba56f2a6145c"
+        }
+      ],
+      "observed": {
+        "mixedTruth": false,
+        "duplicateHistory": false,
+        "sentinelMutation": false,
+        "blindRetry": false
+      }
+    },
+    {
+      "point": "during_backup",
+      "iteration": 8,
+      "faultElapsedMs": 109.86762999999337,
+      "inventoryBeforeRecovery": [
+        {
+          "name": ".p02-authority.lock",
+          "kind": "directory",
+          "bytes": null,
+          "sha256": null
+        },
+        {
+          "name": "campaign.sqlite",
+          "kind": "file",
+          "bytes": 53248,
+          "sha256": "a4596b5776a3b00e79430b0772faf86be7cd1eb70d92d52c184a1ff0ab1244fb"
+        },
+        {
+          "name": "campaign.sqlite-shm",
+          "kind": "file",
+          "bytes": 32768,
+          "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+        },
+        {
+          "name": "campaign.sqlite-wal",
+          "kind": "file",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "name": "backup.sqlite",
+          "kind": "file",
+          "bytes": 53248,
+          "sha256": "50361f63cc8375a94f9d208af3a2e908fb4c8fb524bc6547f382341ebeefe6f7"
+        },
+        {
+          "name": "backup.sqlite.pending",
+          "kind": "file",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "name": "backup.sqlite.pending-journal",
+          "kind": "file",
+          "bytes": 512,
+          "sha256": "1ca5ab95d5a277e326c2cbb8c2d75d5eeb1fbc984552164f005592001f7d29a6"
+        },
+        {
+          "name": "backup.sqlite.pending-shm",
+          "kind": "file",
+          "bytes": 32768,
+          "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+        },
+        {
+          "name": "backup.sqlite.pending-wal",
+          "kind": "file",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "oldBackupPreserved": true,
+      "restoredOld": true,
+      "restoredNew": true,
+      "observed": {
+        "mixedTruth": false,
+        "duplicateHistory": false,
+        "sentinelMutation": false,
+        "blindRetry": false
+      }
+    },
+    {
+      "point": "before_begin",
+      "iteration": 9,
+      "faultElapsedMs": 105.31703700000071,
+      "safeWriteMs": 107.93270699999994,
+      "resumeMs": 656.2215580000047,
+      "inventoryBeforeRecovery": [
+        {
+          "name": "campaign.sqlite",
+          "kind": "file",
+          "bytes": 53248,
+          "sha256": "7de2793addff13467a6c1de16adb3b26d43243739d7ae90298dce9e53ad87b0b"
+        },
+        {
+          "name": "campaign.sqlite-shm",
+          "kind": "file",
+          "bytes": 32768,
+          "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+        },
+        {
+          "name": "campaign.sqlite-wal",
+          "kind": "file",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "observed": {
+        "mixedTruth": false,
+        "duplicateHistory": false,
+        "sentinelMutation": false,
+        "blindRetry": false
+      }
+    },
+    {
+      "point": "after_begin",
+      "iteration": 9,
+      "faultElapsedMs": 111.99606099999801,
+      "safeWriteMs": 108.79334399999061,
+      "resumeMs": 672.1724950000062,
+      "inventoryBeforeRecovery": [
+        {
+          "name": "campaign.sqlite",
+          "kind": "file",
+          "bytes": 53248,
+          "sha256": "7de2793addff13467a6c1de16adb3b26d43243739d7ae90298dce9e53ad87b0b"
+        },
+        {
+          "name": "campaign.sqlite-shm",
+          "kind": "file",
+          "bytes": 32768,
+          "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+        },
+        {
+          "name": "campaign.sqlite-wal",
+          "kind": "file",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "observed": {
+        "mixedTruth": false,
+        "duplicateHistory": false,
+        "sentinelMutation": false,
+        "blindRetry": false
+      }
+    },
+    {
+      "point": "after_object",
+      "iteration": 9,
+      "faultElapsedMs": 105.99687500001164,
+      "safeWriteMs": 110.53974699998798,
+      "resumeMs": 655.4717600000004,
+      "inventoryBeforeRecovery": [
+        {
+          "name": "campaign.sqlite",
+          "kind": "file",
+          "bytes": 53248,
+          "sha256": "7de2793addff13467a6c1de16adb3b26d43243739d7ae90298dce9e53ad87b0b"
+        },
+        {
+          "name": "campaign.sqlite-shm",
+          "kind": "file",
+          "bytes": 32768,
+          "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+        },
+        {
+          "name": "campaign.sqlite-wal",
+          "kind": "file",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "observed": {
+        "mixedTruth": false,
+        "duplicateHistory": false,
+        "sentinelMutation": false,
+        "blindRetry": false
+      }
+    },
+    {
+      "point": "after_history",
+      "iteration": 9,
+      "faultElapsedMs": 109.8855290000065,
+      "safeWriteMs": 120.50692800000252,
+      "resumeMs": 690.1048640000081,
+      "inventoryBeforeRecovery": [
+        {
+          "name": "campaign.sqlite",
+          "kind": "file",
+          "bytes": 53248,
+          "sha256": "7de2793addff13467a6c1de16adb3b26d43243739d7ae90298dce9e53ad87b0b"
+        },
+        {
+          "name": "campaign.sqlite-shm",
+          "kind": "file",
+          "bytes": 32768,
+          "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+        },
+        {
+          "name": "campaign.sqlite-wal",
+          "kind": "file",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "observed": {
+        "mixedTruth": false,
+        "duplicateHistory": false,
+        "sentinelMutation": false,
+        "blindRetry": false
+      }
+    },
+    {
+      "point": "after_receipt",
+      "iteration": 9,
+      "faultElapsedMs": 110.15758800000185,
+      "safeWriteMs": 105.71928499999922,
+      "resumeMs": 644.2505639999872,
+      "inventoryBeforeRecovery": [
+        {
+          "name": "campaign.sqlite",
+          "kind": "file",
+          "bytes": 53248,
+          "sha256": "7de2793addff13467a6c1de16adb3b26d43243739d7ae90298dce9e53ad87b0b"
+        },
+        {
+          "name": "campaign.sqlite-shm",
+          "kind": "file",
+          "bytes": 32768,
+          "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+        },
+        {
+          "name": "campaign.sqlite-wal",
+          "kind": "file",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "observed": {
+        "mixedTruth": false,
+        "duplicateHistory": false,
+        "sentinelMutation": false,
+        "blindRetry": false
+      }
+    },
+    {
+      "point": "after_commit",
+      "iteration": 9,
+      "faultElapsedMs": 113.71411500000977,
+      "safeWriteMs": 108.85656299999391,
+      "resumeMs": 674.1308070000086,
+      "inventoryBeforeRecovery": [
+        {
+          "name": "campaign.sqlite",
+          "kind": "file",
+          "bytes": 53248,
+          "sha256": "7de2793addff13467a6c1de16adb3b26d43243739d7ae90298dce9e53ad87b0b"
+        },
+        {
+          "name": "campaign.sqlite-shm",
+          "kind": "file",
+          "bytes": 32768,
+          "sha256": "e9372f5fe73a2ce444cbaec4d4b8974e43e4a9b7e0f879c66a38ecaa7388f8ff"
+        },
+        {
+          "name": "campaign.sqlite-wal",
+          "kind": "file",
+          "bytes": 32992,
+          "sha256": "c112857d2fca7b3f964f75c056012af1665d152cca6a9aca12fa5f9f941f0aeb"
+        }
+      ],
+      "observed": {
+        "mixedTruth": false,
+        "duplicateHistory": false,
+        "sentinelMutation": false,
+        "blindRetry": false
+      }
+    },
+    {
+      "point": "before_response",
+      "iteration": 9,
+      "faultElapsedMs": 143.19256799999857,
+      "safeWriteMs": 112.15925000001153,
+      "resumeMs": 680.3233230000042,
+      "inventoryBeforeRecovery": [
+        {
+          "name": "campaign.sqlite",
+          "kind": "file",
+          "bytes": 53248,
+          "sha256": "7de2793addff13467a6c1de16adb3b26d43243739d7ae90298dce9e53ad87b0b"
+        },
+        {
+          "name": "campaign.sqlite-shm",
+          "kind": "file",
+          "bytes": 32768,
+          "sha256": "67be11786ffafe9b6a215285487e6ba79b44d1e26dee2e30fbd961a461561a0f"
+        },
+        {
+          "name": "campaign.sqlite-wal",
+          "kind": "file",
+          "bytes": 32992,
+          "sha256": "a2b89f2c24259bc76c592fb4303c96860430d57eca7e709990b5e61bf57189d1"
+        }
+      ],
+      "observed": {
+        "mixedTruth": false,
+        "duplicateHistory": false,
+        "sentinelMutation": false,
+        "blindRetry": false
+      }
+    },
+    {
+      "point": "during_backup",
+      "iteration": 9,
+      "faultElapsedMs": 113.3208350000059,
+      "inventoryBeforeRecovery": [
+        {
+          "name": ".p02-authority.lock",
+          "kind": "directory",
+          "bytes": null,
+          "sha256": null
+        },
+        {
+          "name": "campaign.sqlite",
+          "kind": "file",
+          "bytes": 53248,
+          "sha256": "a4596b5776a3b00e79430b0772faf86be7cd1eb70d92d52c184a1ff0ab1244fb"
+        },
+        {
+          "name": "campaign.sqlite-shm",
+          "kind": "file",
+          "bytes": 32768,
+          "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+        },
+        {
+          "name": "campaign.sqlite-wal",
+          "kind": "file",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "name": "backup.sqlite",
+          "kind": "file",
+          "bytes": 53248,
+          "sha256": "50361f63cc8375a94f9d208af3a2e908fb4c8fb524bc6547f382341ebeefe6f7"
+        },
+        {
+          "name": "backup.sqlite.pending",
+          "kind": "file",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "name": "backup.sqlite.pending-journal",
+          "kind": "file",
+          "bytes": 512,
+          "sha256": "3a800075da6160f20a742b233dbbc32245d9502d6106a7c117993becc56cf45e"
+        },
+        {
+          "name": "backup.sqlite.pending-shm",
+          "kind": "file",
+          "bytes": 32768,
+          "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+        },
+        {
+          "name": "backup.sqlite.pending-wal",
+          "kind": "file",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "oldBackupPreserved": true,
+      "restoredOld": true,
+      "restoredNew": true,
+      "observed": {
+        "mixedTruth": false,
+        "duplicateHistory": false,
+        "sentinelMutation": false,
+        "blindRetry": false
+      }
+    },
+    {
+      "point": "before_begin",
+      "iteration": 10,
+      "faultElapsedMs": 103.91447300001164,
+      "safeWriteMs": 110.25926699998672,
+      "resumeMs": 659.4527440000093,
+      "inventoryBeforeRecovery": [
+        {
+          "name": "campaign.sqlite",
+          "kind": "file",
+          "bytes": 53248,
+          "sha256": "7de2793addff13467a6c1de16adb3b26d43243739d7ae90298dce9e53ad87b0b"
+        },
+        {
+          "name": "campaign.sqlite-shm",
+          "kind": "file",
+          "bytes": 32768,
+          "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+        },
+        {
+          "name": "campaign.sqlite-wal",
+          "kind": "file",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "observed": {
+        "mixedTruth": false,
+        "duplicateHistory": false,
+        "sentinelMutation": false,
+        "blindRetry": false
+      }
+    },
+    {
+      "point": "after_begin",
+      "iteration": 10,
+      "faultElapsedMs": 105.12203800000134,
+      "safeWriteMs": 111.12316400001873,
+      "resumeMs": 685.7416410000005,
+      "inventoryBeforeRecovery": [
+        {
+          "name": "campaign.sqlite",
+          "kind": "file",
+          "bytes": 53248,
+          "sha256": "7de2793addff13467a6c1de16adb3b26d43243739d7ae90298dce9e53ad87b0b"
+        },
+        {
+          "name": "campaign.sqlite-shm",
+          "kind": "file",
+          "bytes": 32768,
+          "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+        },
+        {
+          "name": "campaign.sqlite-wal",
+          "kind": "file",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "observed": {
+        "mixedTruth": false,
+        "duplicateHistory": false,
+        "sentinelMutation": false,
+        "blindRetry": false
+      }
+    },
+    {
+      "point": "after_object",
+      "iteration": 10,
+      "faultElapsedMs": 103.82345299998997,
+      "safeWriteMs": 107.72442699997919,
+      "resumeMs": 656.4557659999991,
+      "inventoryBeforeRecovery": [
+        {
+          "name": "campaign.sqlite",
+          "kind": "file",
+          "bytes": 53248,
+          "sha256": "7de2793addff13467a6c1de16adb3b26d43243739d7ae90298dce9e53ad87b0b"
+        },
+        {
+          "name": "campaign.sqlite-shm",
+          "kind": "file",
+          "bytes": 32768,
+          "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+        },
+        {
+          "name": "campaign.sqlite-wal",
+          "kind": "file",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "observed": {
+        "mixedTruth": false,
+        "duplicateHistory": false,
+        "sentinelMutation": false,
+        "blindRetry": false
+      }
+    },
+    {
+      "point": "after_history",
+      "iteration": 10,
+      "faultElapsedMs": 109.02267299999949,
+      "safeWriteMs": 113.86087400000542,
+      "resumeMs": 683.6699300000037,
+      "inventoryBeforeRecovery": [
+        {
+          "name": "campaign.sqlite",
+          "kind": "file",
+          "bytes": 53248,
+          "sha256": "7de2793addff13467a6c1de16adb3b26d43243739d7ae90298dce9e53ad87b0b"
+        },
+        {
+          "name": "campaign.sqlite-shm",
+          "kind": "file",
+          "bytes": 32768,
+          "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+        },
+        {
+          "name": "campaign.sqlite-wal",
+          "kind": "file",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "observed": {
+        "mixedTruth": false,
+        "duplicateHistory": false,
+        "sentinelMutation": false,
+        "blindRetry": false
+      }
+    },
+    {
+      "point": "after_receipt",
+      "iteration": 10,
+      "faultElapsedMs": 109.48107999999775,
+      "safeWriteMs": 107.00245100000757,
+      "resumeMs": 659.7416139999987,
+      "inventoryBeforeRecovery": [
+        {
+          "name": "campaign.sqlite",
+          "kind": "file",
+          "bytes": 53248,
+          "sha256": "7de2793addff13467a6c1de16adb3b26d43243739d7ae90298dce9e53ad87b0b"
+        },
+        {
+          "name": "campaign.sqlite-shm",
+          "kind": "file",
+          "bytes": 32768,
+          "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+        },
+        {
+          "name": "campaign.sqlite-wal",
+          "kind": "file",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "observed": {
+        "mixedTruth": false,
+        "duplicateHistory": false,
+        "sentinelMutation": false,
+        "blindRetry": false
+      }
+    },
+    {
+      "point": "after_commit",
+      "iteration": 10,
+      "faultElapsedMs": 110.40469799999846,
+      "safeWriteMs": 111.06899400000111,
+      "resumeMs": 667.565602000017,
+      "inventoryBeforeRecovery": [
+        {
+          "name": "campaign.sqlite",
+          "kind": "file",
+          "bytes": 53248,
+          "sha256": "7de2793addff13467a6c1de16adb3b26d43243739d7ae90298dce9e53ad87b0b"
+        },
+        {
+          "name": "campaign.sqlite-shm",
+          "kind": "file",
+          "bytes": 32768,
+          "sha256": "0f4dda2534300fe7ef6feb96b218eca03b057eb30e8e20cd6c735f4f51222b0d"
+        },
+        {
+          "name": "campaign.sqlite-wal",
+          "kind": "file",
+          "bytes": 32992,
+          "sha256": "4c246905a9ae03def166263a81a7e1fbc7697c679290896306eba890f3d45bbd"
+        }
+      ],
+      "observed": {
+        "mixedTruth": false,
+        "duplicateHistory": false,
+        "sentinelMutation": false,
+        "blindRetry": false
+      }
+    },
+    {
+      "point": "before_response",
+      "iteration": 10,
+      "faultElapsedMs": 108.0021570000099,
+      "safeWriteMs": 111.33032300000195,
+      "resumeMs": 688.5518900000025,
+      "inventoryBeforeRecovery": [
+        {
+          "name": "campaign.sqlite",
+          "kind": "file",
+          "bytes": 53248,
+          "sha256": "7de2793addff13467a6c1de16adb3b26d43243739d7ae90298dce9e53ad87b0b"
+        },
+        {
+          "name": "campaign.sqlite-shm",
+          "kind": "file",
+          "bytes": 32768,
+          "sha256": "9e3c9440c3a0c2dee43180b97670a2e3683f59f1b77b35d6bb28fe6d2d00f8db"
+        },
+        {
+          "name": "campaign.sqlite-wal",
+          "kind": "file",
+          "bytes": 32992,
+          "sha256": "393ba51230596802b12c0db4d7a790e0e2ad16452f3aa1d96b2db380facbe017"
+        }
+      ],
+      "observed": {
+        "mixedTruth": false,
+        "duplicateHistory": false,
+        "sentinelMutation": false,
+        "blindRetry": false
+      }
+    },
+    {
+      "point": "during_backup",
+      "iteration": 10,
+      "faultElapsedMs": 108.36311500001466,
+      "inventoryBeforeRecovery": [
+        {
+          "name": ".p02-authority.lock",
+          "kind": "directory",
+          "bytes": null,
+          "sha256": null
+        },
+        {
+          "name": "campaign.sqlite",
+          "kind": "file",
+          "bytes": 53248,
+          "sha256": "a4596b5776a3b00e79430b0772faf86be7cd1eb70d92d52c184a1ff0ab1244fb"
+        },
+        {
+          "name": "campaign.sqlite-shm",
+          "kind": "file",
+          "bytes": 32768,
+          "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+        },
+        {
+          "name": "campaign.sqlite-wal",
+          "kind": "file",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "name": "backup.sqlite",
+          "kind": "file",
+          "bytes": 53248,
+          "sha256": "50361f63cc8375a94f9d208af3a2e908fb4c8fb524bc6547f382341ebeefe6f7"
+        },
+        {
+          "name": "backup.sqlite.pending",
+          "kind": "file",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "name": "backup.sqlite.pending-journal",
+          "kind": "file",
+          "bytes": 512,
+          "sha256": "01e1be63f9e0308162561b00006e77b305d2b951e05847467faecab14ccb9e9a"
+        },
+        {
+          "name": "backup.sqlite.pending-shm",
+          "kind": "file",
+          "bytes": 32768,
+          "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+        },
+        {
+          "name": "backup.sqlite.pending-wal",
+          "kind": "file",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "oldBackupPreserved": true,
+      "restoredOld": true,
+      "restoredNew": true,
+      "observed": {
+        "mixedTruth": false,
+        "duplicateHistory": false,
+        "sentinelMutation": false,
+        "blindRetry": false
+      }
+    }
+  ],
+  "aggregateDigest": "272c3a0dab5fa624d2d2edc55827dfdc69cc347eb5f5e15dc73cd3bb95c3d74f"
+}

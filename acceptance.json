@@ -165,6 +165,23 @@
       "review": "The reviewed p01-v3 contract remains passed. I02 plan R01 through R03 failed and independent R04 passed exact N03 candidate c9f05806c94a1900ab276940730cae24ee94850f. Code/Security R01 on implementation candidate 1cb104f105441f78a796c2e1daea74ccbde3196c requires repair: matrix composition and one durable create primitive exist, but Parent/Child receipt generations, Create/Update/Delete state machines, conflict/rollback/fresh double recovery, live 3,393-cell execution, eleven adversaries, complete identity and errno oracles, runtime/byte/process limits and adversarial tests are not implemented. The status correctly makes no Evidence or Go claim.",
       "limits": "R02 and the p01-v3 contract passed their separate reviews. No native helper, complete fault matrix, executable H03 proof, Linux durability Go, target-platform decision or P02 authorization exists. Windows and macOS remain not-run."
     },
+    "adrP02I01": {
+      "run": "ADR-P02-I01",
+      "state": "linux_candidate_review_passed_no_go",
+      "issue": 41,
+      "result": "A synthetic single-Campaign SQLite authority atomically binds object mutation, History, revision and canonical durable receipt; real child-process kills, reconciliation, retry blocking, concurrent writers and verified backup/restore are exercised on Linux.",
+      "evidence": {
+        "contract": "tools/adr-prototypes/contracts/p02-v1/contract.mjs",
+        "aggregate": "tools/adr-prototypes/evidence/p02-aggregate.json",
+        "aggregateDigest": "272c3a0dab5fa624d2d2edc55827dfdc69cc347eb5f5e15dc73cd3bb95c3d74f",
+        "profiles": 80,
+        "safeWriteP95Ms": 119.532,
+        "crashResumeP95Ms": 724.015,
+        "tests": 503
+      },
+      "review": "Independent code/safety re-review passed after repairs for retry authority, receipt binding, concurrency, closure, backup publication and crash-lock recovery. Exact-source Linux evidence was regenerated after the final code change.",
+      "limits": "No P02 Go, platform selection, P03 authorization or product acceptance. This is Linux-only synthetic evidence; Windows, macOS, production Campaign integration and the remaining ADR prototypes stay open."
+    },
     "coordination": {
       "local": "Three new local goal threads coordinate integration. Existing Hex/Atlas, City and Dungeon colleagues on three other devices retain their workstreams, evidence and non-overlapping ownership and contribute requirements to the platform decision.",
       "cloud": "Prior GM-UX-CLOUD worker is reassigned through GitHub Issue #1 to independent architecture and technical review only. Other cloud colleagues retain their established specialist review/test responsibilities.",
