@@ -38,6 +38,8 @@ Die jeweiligen exakten `sourceUrl`, beobachteten Zeiten, Originalbelege und `gap
 
 Planungsergebnis: die vier verlangten Themen besitzen konkrete bestehende Pakete, Dateien, offene Vertragsgrenzen und zukünftige Produktorakel. Die Roadmap-/Scope-Umsetzung und deren unabhängiger Review folgen getrennt; keine Produktfunktion wird hier freigegeben.
 
+**Aufräum-P01 — Plan:** Die JSON-Serialisierung hat fremde kompakte Checkpointformatierung aufgeweitet, obwohl deren Werte unverändert blieben. Im getrennten Aufräum-I01 ausschließlich die originale Formatierung außerhalb `cityExecution.currentRun/nextRun` wiederherstellen. Danach Bytevergleich der übrigen Checkpointsegmente, offene Inventar-IDs und Repository-/Diffprüfung; keine neue Statusdatei.
+
 ## Technische Arbeitspakete
 
 | Phase | Umsetzung und Zuständigkeit | Nachweis vor Freigabe |
