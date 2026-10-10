@@ -155291,6 +155291,27 @@
           "finishedAt": "2026-10-10T22:29:57.555698+00:00",
           "receipt": "docs/reference/atlas-detail-binding-d01/dungeon-at-location-n02.json",
           "sha256": "22f68235d1ce5cf2bfc716f78e172c6189d4ba957bf1a354bc37990dd1e6c715"
+        },
+        "dungeonAtLocationQualification": {
+          "state": "independent_R02_PASS_integrated_native_and_GM_pending",
+          "issue": 80,
+          "candidate": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/81",
+          "reviewedCandidate": "29a793ab645446f005992db96a2c61cf96cf1b14",
+          "reviewer": "Chronik, independent existing colleague",
+          "reviewVerdict": "PASS",
+          "reviewEvidence": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/81#pullrequestreview-5481144233",
+          "integratedShared": "ef07a3ab6d7dbb27c3b680b9311ba65bb7e7c81e",
+          "integrationEvidence": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/81#issuecomment-6103211834",
+          "mergeTree": "f6103d3e97e139f17a2e5c0d18d2a155110ad78d",
+          "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
+          "e2e01UserLine": 13,
+          "nativeObsidian": false,
+          "freshElectronProcess": false,
+          "physicalInput": false,
+          "originalParity": false,
+          "largeMap": false,
+          "userVaultInstalled": false,
+          "fullE2E": false
         }
       }
     ],

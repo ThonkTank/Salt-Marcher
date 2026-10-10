@@ -43,21 +43,26 @@ Kandidat: https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/81
 
 Eingang: https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/78
 
-Die native Save-/Referenz-/Recoverybasis ist konsumiert; vorhandenen Dungeon am
-Ort verorten und Raum-Key/Zurück/UndoRedo bedienen ist im gemeinsamen Editor
-angeschlossen. Atlas-QAs [R01-Befund](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/81#issuecomment-6102786765)
-zum zurückgebliebenen Link nach Ort A → B ist gezielt repariert: alter Ortslink,
-neuer Ortslink und dieselbe Platzierung ändern sich in einer History-Aktion.
-Andere Verweise/Texte bleiben erhalten; Core/DOM, Save/erneutes Modellladen,
-Copy/Discard und Prepared/Committed-Recovery binden den
+Vorhandenen Dungeon am Ort verorten und Raum-Key/Zurück/UndoRedo bedienen ist
+im gemeinsamen Editor angeschlossen. Der zurückgebliebene Link nach Ort A → B
+ist repariert; die gebundene Core-/DOM-/Speicherprüfung steht im
 [N02-Beleg](docs/reference/atlas-detail-binding-d01/dungeon-at-location-n02.json).
+[Chroniks unabhängiger R02](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/81#pullrequestreview-5481144233)
+schließt den R01-Befund. Der geprüfte Anschluss ist durch die
+[unabhängige Stewardintegration](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/81#issuecomment-6103211834)
+in Shared konsumierbar; eine weitere Reparaturreviewrunde ist nicht offen.
 
-Nächster begrenzter Beitrag: Atlas-QAs unabhängiger R02 am korrigierten Kandidaten.
-Anschließend getrennte echte Obsidian-/Frischstartprobe nach neuer lokaler
-Slotkoordination und frühe Cloud-GM-Nutzung am erreichbaren GUI-Weg.
-Keine Selbstintegration oder weitere abhängige Featureerweiterung vor dem
-Nutzungsfeedback. E2E-01 und native/physische/Original-/Großkarten-/Installations-
-abnahmen bleiben offen.
+Jetzt ausführbar: Hex prüft diesen Anschluss im isolierten tatsächlichen
+Obsidianhost einschließlich normalem Ende und frischem Electronprozess; zuvor
+den lokalen Slot neu koordinieren. Die vorhandenen Dungeon-/Placementkennungen
+und Orts-/Raumtexte müssen beim Verorten, A → B, gemeinsamen Undo/Redo und Save
+in der nativen Wiederöffnung erhalten bleiben. Danach den startbaren Hostweg
+am Aufgabenort dem bestehenden Cloud-GM-Kollegen zur frühen freien Nutzung
+übergeben, bevor darauf aufbauender Ausbau beginnt.
+
+Obsidian-/Frischprozess- und GM-Nutzungsbelege fehlen weiterhin. E2E-01 und
+physische/Original-/Großkarten-/Installationsabnahmen bleiben offen; R02 und
+Integration bestätigen ausschließlich ihren Repository-/History-/Speicherscope.
 
 ## Historische Planbasis und Lieferbelege
 
