@@ -104,8 +104,20 @@ zu setzen und auf `(-18,8)` zu verschieben. Haus B und sein Hof bleiben erhalten
 damit überlappen die beiden Häuser nicht. Dungeonbytes, Raum/Key/Floor/Route-IDs
 bleiben erhalten. Hauslokaler Ursprung `(0,0)` und Dungeonpunkt `(4,4)` werden
 explizit ausgerichtet, ohne aus der Entrance-Route eine physische Tür zu erfinden.
-Das ist ein **Vorschlag für den gemeinsamen Oraclebestand**, keine nachträglich
-veränderte Bereichsfixture oder schon bestätigte City-/Dungeon-Fachentscheidung.
+Die [konkrete City-Fachantwort #7/6091472576](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/7#issuecomment-6091472576)
+bestätigt diese Hausgeometrie/Pose und ihre Materialisierung durch Hex mit nativen
+CityEdit-Aktionen. Die [Dungeon-Fachantwort #12/6091516581](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6091516581)
+bestätigt den Dock-/Floor-/Route-/Keyteil und dasselbe v2-Orakel. Damit sind diese
+engen fachlichen Eingänge bestätigt; der vollständige neue Oraclebestand ist noch
+nicht materialisiert. Die eingefrorene Bereichsfixture wird dadurch nicht geändert.
+
+Bei der späteren Materialisierung werden Grundriss und Pose über zwei aufeinander
+folgende reine `editCity`-Aufrufe berechnet: Das bestehende API verbietet zwei
+Schreibaktionen auf dieselbe Haus-ID in einem Aktionspaket. Erst der vollständige
+Endstand wird mit dem ursprünglichen Before über einen `cityDocumentChange`
+übernommen; kein Zwischenstand wird veröffentlicht und kein zweiter Historycommit
+benötigt. Das ist eine aus dem tatsächlichen API gelesene Anschlussvorgabe, noch
+keine ausgeführte v2-Materialisierung.
 
 Die aktive Version wird erst nach konkreter Ownerbestätigung und Materialisierung
 der vollständigen v2-Input-/Expectedbytes und SHA-Liste atomar umgestellt.
@@ -148,16 +160,17 @@ Eingabe, große Welt, Originalparität, Zielhost und Installation bleiben eigene
 Nachweise. Vollständiges E2E-01 erhält weiterhin die unveränderten harten
 Campaign-/Katalog-/P02/P04-Eingänge, keine positive LiveSession-Abhängigkeit.
 
-## Konkrete noch erforderliche Ownerantworten
+## Konkrete Ownerantworten und verbleibende Eingänge
 
 | Owner         | Enge Eingangsfrage; keine allgemeine Sammelrunde                                                                                                                                                                                                                                                                                                       |
 | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Stadt         | Starre Cityplatzierung und Hausdock mit separatem physischem Dungeonmaßstab: Haus-Skalierung bewegt den Dockpunkt, verzerrt jedoch keine Dungeonräume. Bitte diese konkrete Semantik und die vorgeschlagene v2-Hausgeometrie/Pose bestätigen oder genau korrigieren. City-v1-Schema bleibt unverändert; Quelle/Geste/Renderer sind bereits angenommen. |
-| Dungeon       | Bitte explizites Dock `(4,4)` ↔ Hausursprung, Floor32/Room31/Entrance-Route33 sowie Source-basierte Keyänderung ohne Session bestätigen. Eine reine Projektion bestehender Geometriegesten ist für I01c zusätzlich erforderlich; es existiert heute noch kein bestätigter schreibfreier Gestureport.                                                  |
+| Stadt         | Bestätigt durch [#7/6091472576](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/7#issuecomment-6091472576) auf `a86a3a4`: starre Cityplatzierung, skalierter Hausdockpunkt ohne Dungeonverformung und neue v2-Hausgeometrie/Pose. Entfernung gebundener Häuser braucht prospektive Ablehnung oder atomare Entkopplung. Keine erneute City-Prüfrunde ohne neuen konkreten Diff/Befund. |
+| Dungeon       | Bestätigt durch [#12/6091516581](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6091516581) auf `a86a3a4`: Dock `(4,4)` ↔ Hausursprung, 1,524 m/Feld, Floor32/Room31/Entrance-Route33/Key34 und direkte Source-Keyänderung ohne schreibende Session. Route33 bleibt semantisch. Der schreibfreie Geometrie-Gestureport für I01c bleibt offen und sperrt den ersten Raum-/Keyanschluss nicht. |
 | Campaign/Data | Für den späteren echten Publish: ausführbare versionierte World-/Domain-Ownershipprojektion, Bindung an aktuellen Context und Semantik eines räumlichen Mehrownerwrites/CampaignRevision liefern. `create`/`rename` wird nicht dafür missbraucht; trusted Remapregistry kommt unabhängig von den gelieferten Inventories vom zuständigen Owner.        |
 
-Hex übernimmt diese Antworten nicht stellvertretend. I01a darf nach enger
-Prüfung des vorgeschlagenen Raum-/Dateivertrags beginnen; fehlende spätere
+Hex übernimmt diese Antworten nicht stellvertretend. Die tatsächlichen engen
+City-/Dungeon-Antworten sind in E2E-01-SPACE-R01 gegen Vertrag, native Quellen und
+Fixturebytes geprüft; I01a darf beginnen. Fehlende spätere
 Campaign-/Importeingänge verhindern keine entsprechend begrenzte räumliche
 Probe, sperren jedoch den Gesamt-PASS. Ein konkret neuer Pflichtbefund wird
 gezielt nachgebessert. Aufräumen ist ein eigener anschließender P/I/R-Zyklus,

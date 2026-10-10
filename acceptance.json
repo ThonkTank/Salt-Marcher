@@ -152694,14 +152694,20 @@
       {
         "id": "E2E01-HEX-SPACE-PLAN-001",
         "requirement": "Konkrete gespeicherte Raum-/Transform-/Frame-/Speichergrenze aus tatsächlichen Owner-APIs",
-        "state": "checked_plan_only_owner_confirmation_and_implementation_open",
+        "state": "checked_plan_narrow_city_dungeon_inputs_confirmed_implementation_open",
         "plan": "ROADMAP-E2E01-SPATIAL-INTEGRATION-PLAN.md",
         "planRun": "E2E-01-SPACE-P01",
         "catalog": "ROADMAP-E2E-GATES-CANDIDATE.md:13",
         "evidence": [
-          "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/space-plan.json"
+          "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/space-plan.json",
+          "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/space-owner-r01/review.json"
         ],
-        "observed": "Proposed WorldV2/strict DraftV3, prospective same-History closure, relative one-camera project/unproject, rigid physical house dock, shared City/Dungeon owner byte snapshots and first native vertical flow immediately after storage slice. Delivered 4x6m house vs 15.24x12.192m Dungeon room requires explicit new aligned fixture oracle; frozen native bytes preserved. No implementation, API ratification, native or gate claim."
+        "observed": "Actual City and Dungeon owners confirm on exacta86a3a4 rigid City/house dock, native1.524m/field, explicit(4,4) dock and Floor32/Room31/semantic Route33/Key34 closure, Source-based one-History Key and future aligned v2 house105. Native APIs/fixture bytes read checked; City footprint/pose needs two pure editCity calls and one final City change. WorldV2/DraftV3/relative frame/all-owner storage and native integrated flow remain unimplemented. Frozen source/fixture bytes preserved; no total contract/native/E2E approval. Later Campaign publish and Dungeon geometry port remain open.",
+        "ownerInputRun": "E2E-01-SPACE-R01",
+        "ownerInputs": {
+          "city": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/7#issuecomment-6091472576",
+          "dungeon": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6091516581"
+        }
       }
     ],
     "cleanupFindings": [

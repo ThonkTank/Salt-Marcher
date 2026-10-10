@@ -419,6 +419,17 @@ oder fachübergreifend bestätigt**. Der [begrenzte Anschlussplan](ROADMAP-E2E01
 ordnet Umsetzung und echte frühe Bedienprüfung ein. Der ratifizierte
 E2E-Gatekatalog bleibt unverändert.
 
+Enger Fachinput aus [Stadt, #7/6091472576](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/7#issuecomment-6091472576)
+bestätigt am Exact-Planstand `a86a3a4d59ad62b5dc6d69697a996821ca1aa046`
+die starre Cityplatzierung, den skalierten Hausdockpunkt mit physisch starrem
+Dungeon und die vorgeschlagene neue Hausgeometrie/Pose des gemeinsamen v2-Orakels.
+Die [Dungeon-Fachantwort #12/6091516581](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6091516581)
+bestätigt auf demselben Exact-Planstand Dock `(4,4)` ↔ Hausursprung, 1,524 m/Feld,
+Floor32/Room31/Entrance-Route33/Key34, starre Physik und direkte Source-Keyänderung.
+Beide Antworten bestätigen ausschließlich ihre engen Domainteile. Umsetzung,
+gemeinsame Speicherung, spätere schreibfreie Dungeon-Geometrieaktionen,
+Campaign-Publish und Gesamtfreigabe bleiben offen.
+
 **Native Verortung:** Overworld-Version2 behält die bisherigen Landschafts- und
 Locationplacements und ergänzt ausdrücklich `detailPlacements`. Version1 bleibt
 exakt lesbar; keine stille Umdeutung unbekannter Felder. Erst die erste

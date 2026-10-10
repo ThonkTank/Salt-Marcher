@@ -492,32 +492,31 @@
   "hexAtlasExecution": {
     "scope": "HEX-00 bis HEX-28 und sämtliche eingeordneten CITY-00 bis CITY-09 vollständig",
     "phase": "HEX-03",
-    "state": "e2e01_spatial_contract_proposed_concrete_owner_inputs_pending",
+    "state": "e2e01_narrow_spatial_inputs_confirmed_implementation_next",
     "plan": "ROADMAP-E2E01-SPATIAL-INTEGRATION-PLAN.md",
     "currentRun": {
-      "id": "E2E-01-SPACE-P01",
-      "kind": "bounded_spatial_integration_plan",
-      "state": "planned_verified_not_implemented_not_ratified",
-      "startedAt": "2026-10-09T23:59:20Z",
-      "startTimeSource": "first actual UTC clock read in this bounded heartbeat run",
-      "finishedAt": "2026-10-10T00:10:39.624718+00:00",
-      "baseline": "3bfa5110139a53dc5d8f1d2a29ae9962e977838b",
+      "id": "E2E-01-SPACE-R01",
+      "kind": "bounded_concrete_contract_owner_input",
+      "state": "completed_narrow_city_and_dungeon_inputs_checked",
+      "startedAt": "2026-10-10T00:16:27Z",
+      "startTimeSource": "first actual UTC clock read in this bounded run",
+      "finishedAt": "2026-10-10T00:20:28.649339+00:00",
+      "baseline": "a86a3a4d59ad62b5dc6d69697a996821ca1aa046",
       "synchronizedShared": "d394b8ea3d2c0cbbb42e81f49211508b329d53f2",
-      "mergeBasis": "c1d5a37bb70b90ac5832abb9e4f9e35963fd8cd9",
       "gate": "E2E-01",
       "catalog": "ROADMAP-E2E-GATES-CANDIDATE.md:13",
-      "scope": "Plan only: actual World/Location/City/House/Dungeon graph, precision/camera/frame/hit and all-owner snapshot/save/draft/copy/discard/recovery; first native vertical flow scheduled immediately after storage basis.",
-      "plan": "ROADMAP-E2E01-SPATIAL-INTEGRATION-PLAN.md",
-      "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/space-plan.json",
+      "scope": "Read only actual City and Dungeon owner replies against exact proposed contract, native pose/Edit/Source APIs and fixture byte/ID closure. Record narrow confirmations and one City materialization API constraint. No product implementation, overall review or substituted owner vote.",
+      "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/space-owner-r01/review.json",
+      "requiredContractRepairs": [],
       "nativeOnThisBuild": false,
       "phaseApproval": false
     },
     "nextRun": {
-      "id": "E2E-01-SPACE-R01",
-      "kind": "bounded_concrete_contract_owner_input",
-      "focus": "Inspect actual narrow City/Dungeon replies on WorldV2/dock/relative transform/preflight and the physically mismatched seed dimensions; repair only concrete required findings. Then I01a storage/graph basis, immediately I01b native shared mount/Key/zoom. No catalog/general ratification round or parallel City package.",
-      "dependency": "Exact published proposed room contract needs real City/Dungeon confirmation; Campaign spatial revision/ownership/Publish input remains a separately required later full-gate input. No inferred approval.",
-      "cleanup": "Separate bounded CLEAN-P/I/R after scoped review/implementation closure; not performed in plan run."
+      "id": "E2E-01-SPACE-I01a-1",
+      "kind": "bounded_spatial_graph_foundation_implementation",
+      "focus": "Begin approved I01a with strict WorldV2 detail-binding codec, pure rigid City/house/Dungeon transform graph and prospective same-History closure validation plus focused tests. Preserve frozen fixtures and V1 bytes; no GUI/fixture activation or all-owner-storage claim from this foundation. Complete remaining storage snapshot/draft/save/copy/discard/recovery inside I01a, then immediately I01b shared native zoom/Key before comfort/generator work.",
+      "dependency": "Actual narrow City/Dungeon inputs checked on a86a3a4; no repeated general ratification round. Campaign spatial revision/ownership/Publish and Dungeon pure geometry Gestureport remain later I01c full-gate inputs, not blockers for the scoped graph/first-room-Key slice.",
+      "cleanup": "Separate bounded CLEAN-P/I/R after scoped review/implementation closure; not folded into this review run."
     },
     "review": {
       "run": "HEX-02-R02",
@@ -1939,6 +1938,71 @@
         "productTestsRun": false,
         "native": false,
         "ownerRatification": false
+      },
+      "e2e01SpatialContractInputs": {
+        "run": "E2E-01-SPACE-R01",
+        "state": "narrow_city_and_dungeon_checked_implementation_next",
+        "reviewedCandidate": "a86a3a4d59ad62b5dc6d69697a996821ca1aa046",
+        "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/space-owner-r01/review.json",
+        "requiredContractRepairs": [],
+        "implementationConstraints": [
+          {
+            "id": "SPACE-R01-CITY-EDIT",
+            "kind": "implementation_constraint_not_contract_blocker",
+            "source": "src/features/city/edit.ts:139",
+            "detail": "editCity claims a building ID once per operation package. Compute footprint and pose in two sequential pure editCity calls, then use one cityDocumentChange(originalBefore, finalAfter); no source mutation, intermediate publish or second History commit."
+          }
+        ],
+        "protectedSourceFiles": 227,
+        "productTestsRun": false,
+        "native": false,
+        "fullContractRatification": false,
+        "ownerInputs": {
+          "city": {
+            "owner": "Stadt",
+            "run": "CITY-E2E-SPACE-OWNER-R01",
+            "result": "confirmed City domain only",
+            "candidate": "a86a3a4d59ad62b5dc6d69697a996821ca1aa046",
+            "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/7#issuecomment-6091472576",
+            "createdAt": "2026-10-10T00:14:16Z",
+            "bodySha256": "8fcb6759c6c1ba8ecdea21290191d3e9d5525a5efe0f89ddfe3a87ad2f4b0b0c",
+            "confirmed": [
+              "Rigid City placement in meters",
+              "Scaled native house dock point, rigid Dungeon basis at1.524m/field",
+              "Derived child position after one City commit; prospective removal guard or explicit atomic detach",
+              "Hex may materialize new aligned v2 house105 via native CityEdit; frozen component seed and house106/courtyard preserved"
+            ],
+            "doesNotApprove": [
+              "Dungeon dock/Floor/Room/Route/Key domain",
+              "Executed WorldV2/transform/storage implementation",
+              "Fixture activation",
+              "Native or total E2E gate"
+            ]
+          },
+          "dungeon": {
+            "owner": "Dungeon",
+            "run": "E2E-01-SPACE-DUNGEON-OWNER-R01",
+            "result": "confirmed narrow Dungeon domain only",
+            "candidate": "a86a3a4d59ad62b5dc6d69697a996821ca1aa046",
+            "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6091516581",
+            "createdAt": "2026-10-10T00:18:50Z",
+            "bodySha256": "df0c941bf34cac07189200ecb21f0d9f88ee754668e4635c70cbeba2b9540b50",
+            "confirmed": [
+              "Explicit Dungeon point(4,4) to house-origin(0,0), native1.524m/field",
+              "Floor32/Room31/semantic Route33/Key34 exact native closure",
+              "Rigid Dungeon basis follows house translation/rotation but no X/Y scale",
+              "One Source-based dungeonDocumentChange via external AtlasHistory, no writing Session",
+              "Aligned future v2 oracle with existing IDs; frozen native v1 remains byte-identical"
+            ],
+            "doesNotApprove": [
+              "Complete spatial implementation/storage",
+              "Later pure geometry Gestureport, still absent",
+              "Campaign/context/Publish/CompleteImport",
+              "Native or overall E2E gate"
+            ]
+          }
+        },
+        "narrowDomainInputsConfirmed": true
       }
     },
     "repairPlan": "ROADMAP-HEX-02-REPAIR-PLAN.md",
@@ -1982,7 +2046,7 @@
       "platformIssue": 11,
       "checkpointIsAuthoritative": true
     },
-    "updatedAt": "2026-10-10T00:10:39.624718+00:00"
+    "updatedAt": "2026-10-10T00:20:28.649339+00:00"
   },
   "phase": "Phase 6: zweiter Nachbesserungslauf teilweise umgesetzt; fünf Restpositionen und unabhängiger Review offen",
   "goal": "Dungeon-Pfad bis zur vollständigen beauftragten Dungeondraft-Verhaltensgleichheit verfolgen: Bedienung und Funktion angleichen, Grafik ungefähr gleichwertig. Zuerst ROADMAP-PARITY.md mit Building und Object Tool abschließen, danach übrige Dungeon-Werkzeuge. Jede Fachphase getrennt planen, umsetzen und unabhängig reviewen; Lücken mit eigenen Nachbesserungs- und Reviewläufen schließen; danach eigene Aufräumphase mit Plan, Umsetzung und Review.",
