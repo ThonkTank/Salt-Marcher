@@ -5038,7 +5038,7 @@
     "plan": "ROADMAP-GM-PRODUCT-TESTING-PLAN.md",
     "focus": "Längere GM-Endanwenderabläufe, häufige Aktionen, Bedienkosten und UI-Überladung; belegte Nacharbeiten beauftragen und nachprüfen.",
     "currentRun": "H01 erneut auf exakt gebautem Shared-/Bundle-Commit db47c8a: Raum-Key-Suche, Raum12/Geschoss1/Key, Dirty-Guard/Verwerfen, Save/Tab-Reopen und erneute Aktivierung bestanden; Filterpersistenz, 18px Suchfeld bei leerem Dock und 30px visuell gekürzte Trefferzeile reproduziert.",
-    "executedUiRuns": 13,
+    "executedUiRuns": 14,
     "observedFindings": [
       {
         "id": "GM-UX-001",
@@ -5406,13 +5406,15 @@
       },
       {
         "id": "GM-UX-OBS-04",
-        "status": "cloud_observation_owner_triage_requested",
-        "kind": "Eigene UI-Beobachtung im isolierten Cloud-Testvault; keine bestätigte Fehlfunktion",
-        "build": "Obsidian 1.14.4; Produktcommit 6bfb1f393722cd469dc4fd5f15d8dea12a154f6b; main.js c8eced850cad83d4d58731cfe9bc5dcb7c293646b9d9961ede37be0c8bb7c37f; styles.css a6d31c13219d4b9f49d2ecf6993106bedef2a33560c9bdfdb93106659d45bc2e; manifest.json 2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64",
+        "status": "cloud_gm_view_interaction_gap_reproduced_fix_requested",
+        "kind": "Eigene UI-Beobachtung; im internen Dungeon-GM-View reproduzierter Interaktionsausfall, Fix-Nachtest ausstehend",
+        "build": "Eigener Cloud-Nachtest auf Shared/Build-Commit d394b8ea3d2c0cbbb42e81f49211508b329d53f2; npm run build dirty:false; Obsidian 1.14.4; main.js c8eced850cad83d4d58731cfe9bc5dcb7c293646b9d9961ede37be0c8bb7c37f; styles.css a6d31c13219d4b9f49d2ecf6993106bedef2a33560c9bdfdb93106659d45bc2e; manifest.json 2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64",
         "scenario": "GM-UX-01-C/D-Fortsetzung, isolierte Nebelwacht-Kartenkopie, 1440x1000",
-        "observation": "Spielansicht > Geschoss 1 > Raum 12 zeigte keinen Key. Nach Rückkehr zum Editor fand Inhalte > Raum-Keys durchsuchen den gespeicherten improvisierten Nordtür-Hinweis und aktivierte Raum 12. Das kann beabsichtigte Trennung von GM-Notizen und Spieleransicht sein; es wurde nicht als Produktfehler eingestuft.",
-        "evidence": "/workspace/scratch/gm-cloud-qa/evidence-gmux01-c-restore-20261009/37-play-session-view.png, 39-play-floor-switch.png, 40-play-room12-click.png, 44-search-improvised-note.png, 45-search-hit-activated.png",
-        "followUp": "Issue #8: Dungeon-Verantwortlicher soll die erwartete GM-/Spieler-Sichtbarkeitsgrenze klären und, falls GM-Zugriff während des Leitens erwartet wird, einen ausdrücklichen GM-Zugriffspfad samt Abnahmekriterien ohne Offenlegung an Spieler vorschlagen; bis zur Entscheidung keine Implementierung beauftragt."
+        "observation": "Die sichtbare Editor-Menüfolge Menü > Spielansicht öffnete die interne Dungeon-Spielansicht im Obsidian-Right-Leaf; dies war keine separate PlayerProjection. Nach Zurück zum Layout und Auswahl von Geschoss 1 klickte ich einmal den sichtbaren Raum-12-Körper bei (1171,635) und einmal das Raumlabel bei (1192,602). Beide Klicks trafen laut elementFromPoint das sichtbare Play-View-Canvas. In beiden anschließenden Screenshots fehlten Info-Inspector, „Text öffnen“ und Room-Key-Ansicht. Keine Kartenmutation. Die frühere Beobachtung „kein Key beim Raumklick“ ist damit für diesen internen GM-View präzisiert; privater Keytext wurde weiterhin nicht direkt in die Spielkarte projiziert.",
+        "impact": "Der in der internen GM-Spielansicht vorgesehene Raum-/Key-Zugriff ist über Körper- und Labelklick nicht erreichbar; der GM muss zu einem anderen Editor-Suchweg wechseln. Einzelner Cloud-GM-Lauf, keine Population-/Häufigkeitsmessung.",
+        "evidence": "/workspace/scratch/gm-cloud-qa/evidence-gmux01-c-restore-20261009/37-play-session-view.png, 40-play-room12-click.png; /workspace/scratch/gm-cloud-qa/evidence-gmux01-obs04-clarification-20261010/00-pre.png, 01-editor-menu.png, 03-layout-return.png, 05-floor1.png, 06-body-click.png, 07-label-click.png",
+        "sourceCorrelation": "src/ui/views.ts:153-158 aktiviert Klicks nur bei compact=true; DungeonPlayView.render src/ui/views.ts:569-573 ruft createDungeonMap ohne compact auf; createDungeonMap defaultet compact auf false in src/main.ts:526-537. Das korreliert mit dem reproduzierten Nicht-Interagieren; kein Code wurde geändert.",
+        "followUp": "Issue #8: Dungeon-Verantwortlicher beauftragt, die interne GM-Spielansicht so zu reparieren, dass Raumkörperklick einen Raum-Inspector mit explizitem „Text öffnen“ und Labelklick den passenden Room-Key öffnet; Keyinhalt nicht automatisch in der Karte rendern. Nach integrierter Änderung denselben Cloud-Ablauf nachtesten. PlayerProjection/Spieler-Rollenverhalten bleibt separat und unbewertet."
       }
     ],
     "evidence": "/workspace/scratch/gm-cloud-qa/373-current-422-before-reload.png–393-current-422-key-reopened.png; earlier full GM-UX-01 run/evidence retained.",
@@ -5565,6 +5567,28 @@
       "issue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/8",
       "limits": "Kein frischer Electronprozess, keine physische Eingabeabnahme, keine Produktlatenz, keine GM-/Spieler-Sichtbarkeitsentscheidung, keine Gesamtfreigabe; volle GM-UX-01 bleibt partial. Keine Implementierungsänderung.",
       "next": "Dungeon-Verantwortlicher klärt OBS-04-Sichtbarkeitsgrenze in Issue #8; danach nächster bislang nicht belegter GM-UX-01-Teilabschnitt."
+    },
+    "latestObs04Clarification": {
+      "id": "GM-UX-OBS-04-EVIDENCE-CLARIFICATION-20261010-01",
+      "status": "completed_reproduced_fix_requested",
+      "branch": "active/installed-phase1",
+      "sharedBuildCommit": "d394b8ea3d2c0cbbb42e81f49211508b329d53f2",
+      "build": "npm run build passed, dirty:false, Node v24.19.0; Obsidian 1.14.4; installed triplet byte-identical to build",
+      "artifactSha256": {
+        "main.js": "c8eced850cad83d4d58731cfe9bc5dcb7c293646b9d9961ede37be0c8bb7c37f",
+        "styles.css": "a6d31c13219d4b9f49d2ecf6993106bedef2a33560c9bdfdb93106659d45bc2e",
+        "manifest.json": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64"
+      },
+      "qaCopySha256BeforeAfter": "6779ca9d4c39564a80c453dbfd9de33a09363cda43fed1176708a1273c450279",
+      "steps": "Sichtbares Editor-Menü > Spielansicht; Zurück zum Layout zeigt interne Dungeon-Spielansicht im rechten Obsidian-Leaf; sichtbaren Geschoss-Select auf Geschoss 1 stellen; Raum-12-Körper bei (1171,635), danach Label bei (1192,602) anklicken; sichtbare Panels/Views prüfen.",
+      "result": "Beide gezielten Klicks trafen das Play-View-Canvas, öffneten aber weder Room-Inspector noch „Text öffnen“ oder Key-Ansicht. Sichtbarkeit war interne GM-Spielansicht, keine separate PlayerProjection. Kein Karteninhalt geändert.",
+      "sourceCorrelation": "src/ui/views.ts:153-158 checks this.compact before activateAt; src/ui/views.ts:569-573 constructs DungeonPlayView card without compact:true; src/main.ts:526-537 defaults compact=false.",
+      "evidencePath": "/workspace/scratch/gm-cloud-qa/evidence-gmux01-obs04-clarification-20261010/",
+      "changedFiles": ["checkpoint.json", "ROADMAP-GM-PRODUCT-TESTING-PLAN.md"],
+      "commit": null,
+      "issue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/8",
+      "limits": "Kein frischer Electron-Prozess, keine physische Eingabeabnahme, keine Produktlatenz, keine separate Spielerprojektion oder Berechtigungs-/Datenschutzfreigabe; ein einzelner Cloud-GM-Lauf. Keine Produktimplementierung.",
+      "next": "Dungeon-Verantwortlicher implementiert den eng begrenzten GM-View-Interaktionsfix und meldet Produktcommit/Abnahmekriterien in Issue #8; Cloud-GM wiederholt genau Körper-/Label-Klick, sichtbaren Key-Pfad und Hashschutz auf integriertem Build."
     }
   }
 }
