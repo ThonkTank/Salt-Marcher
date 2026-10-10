@@ -254,7 +254,7 @@ export class CampaignRuntimeSource {
   private unsubscribe?: () => void;
   private readonly changed = new Set<(epoch: number, change: CampaignRuntimeStorageChange) => void>();
   private readonly projectionSources = new Map<string, string | null>();
-  private readonly acknowledgmentLeases = new WeakSet<object>();
+  private readonly acknowledgmentLeases = new WeakMap<object, string>();
   private readonly acknowledgedSaves = new Map<string, {
     readonly proof: string;
     readonly epoch: number;
@@ -411,7 +411,7 @@ export class CampaignRuntimeSource {
         !current || current.path !== proof.manifestPath || current.bytes !== proof.beforeManifestBytes || this.invalidated)
       throw new Error("Campaign-Save-Acknowledgment besitzt keine aktuelle bestätigte Registrybasis.");
     const lease = immutable({ transactionId: proof.transactionId, sourceEpoch: this.changeEpoch });
-    this.acknowledgmentLeases.add(lease);
+    this.acknowledgmentLeases.set(lease, normalizedSaveProof(proof));
     return lease;
   }
   async acknowledgeCommittedSave(
@@ -422,8 +422,11 @@ export class CampaignRuntimeSource {
     if (!this.acknowledgmentValidator)
       throw new Error("Campaignquelle besitzt keine Save-Acknowledgment-Autorität.");
     this.acknowledgmentValidator.validateAcknowledgment(proof);
-    if (!this.acknowledgmentLeases.has(lease))
+    const preparedProof = this.acknowledgmentLeases.get(lease);
+    if (!preparedProof)
       throw new Error("Campaign-Save-Acknowledgment besitzt keine ausgestellte Source-Lease.");
+    if (preparedProof !== normalizedSaveProof(proof))
+      throw new Error("Campaign-Save-Acknowledgment passt nicht zur vorbereiteten Source-Lease.");
     const proofBytes = JSON.stringify(proof), replay = this.acknowledgedSaves.get(proof.transactionId);
     if (replay) {
       if (replay.proof !== proofBytes || replay.epoch !== this.changeEpoch || this.invalidated)

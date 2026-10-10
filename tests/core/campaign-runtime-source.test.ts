@@ -259,6 +259,39 @@ test("navigation provider keeps one mount only for the participant-sealed exact 
   await assert.rejects(provider.activate(campaignCommandId(uuid(310)), a, "open"), /geschlossen/);
 });
 
+test("runtime source binds an acknowledgment lease to its exact prepared proof", async () => {
+  const storage = new Storage(), path = "Kampagnen/SaltMarcher/a.campaign.json",
+    beforeBytes = manifest(a, worldA), nativePath = `Atlanten/${worldA}.overworld`,
+    participant = new CampaignRuntimeManifestSaveParticipant(path, digest,
+      [{ ownerId: "atlas", verify: () => undefined }]);
+  storage.set([{ path, bytes: beforeBytes }]);
+  const source = new CampaignRuntimeSource(storage, digest, participant), service = lifecycle(source),
+    activation = await service.activate(campaignCommandId(uuid(311)), a), context = activation.context!,
+    beforeRead = await source.registry.read(context), before = parseCampaignRuntimeManifest(beforeBytes, digest);
+  assert.equal(beforeRead.kind, "confirmed"); if (beforeRead.kind !== "confirmed") return;
+  const changedOwner = (savedBytes: string, revision: string) => ({
+      ...before.registry.owners[0]!, ownerRevision: `owner:${revision}`, snapshotRevision: `snapshot:${revision}`,
+      source: { ...before.registry.owners[0]!.source, generation: `source:${revision}` },
+      records: before.registry.owners[0]!.records.map((record) => ({
+        ...record, payloadDigest: sha(savedBytes),
+      })),
+    }),
+    prepared = (savedBytes: string, revision: string) => {
+      const nativeWrite = { path: nativePath, before: "bytes", after: savedBytes },
+        [manifestWrite] = participant.prepare({ beforeManifestBytes: beforeBytes, nativeWrites: [nativeWrite],
+          beforeOwners: before.registry.owners, afterOwners: [changedOwner(savedBytes, revision)] });
+      return participant.createAcknowledgment({ context, beforeRegistry: beforeRead.projection,
+        journal: { transactionId: "transaction:lease-binding", state: "prepared",
+          writes: [nativeWrite, manifestWrite!] } });
+    },
+    proofA = prepared("saved-a", "2"), proofB = prepared("saved-b", "3"),
+    leaseA = source.prepareSaveAcknowledgment(proofA),
+    committedB = participant.createAcknowledgment({ context, beforeRegistry: beforeRead.projection,
+      journal: { ...proofB.journal, state: "committed" } });
+  assert.notEqual(proofA.afterManifestBytes, committedB.afterManifestBytes);
+  await assert.rejects(source.acknowledgeCommittedSave(committedB, leaseA), /vorbereiteten Source-Lease/);
+});
+
 test("registry verify detects an Atlas-only manifest edit", async () => {
   const storage = new Storage(), path = "Kampagnen/SaltMarcher/a.campaign.json", raw = manifest(a, worldA);
   storage.set([{ path, bytes: raw }]);
