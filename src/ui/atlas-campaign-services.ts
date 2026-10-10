@@ -6,6 +6,7 @@ import {
   type CampaignRuntimeStorage,
   type CampaignRuntimeSaveAcknowledgmentV1,
   type CampaignRuntimeSaveRollbackV1,
+  type CampaignRuntimeSaveAcknowledgmentValidator,
 } from "../features/campaign/campaign-runtime-source";
 import {
   campaignId,
@@ -18,7 +19,7 @@ import {
 import type { CampaignOwnershipDigest } from "../features/campaign/campaign-ownership";
 import type { AtlasCampaignServices } from "./atlas-campaign-host";
 import { AtlasCampaignManifestSave } from "../features/atlas/atlas-campaign-save";
-import type { CampaignRuntimeManifestSaveParticipant } from "../features/campaign/campaign-runtime-save-participant";
+import { WorldNotesCampaignCommitParticipant } from "../features/campaign/world-notes-commit";
 import {
   MwsImportMediaInventory,
   type MwsImportMediaByteDigest,
@@ -34,10 +35,10 @@ export function atlasCampaignServices(
     readonly digest: MwsImportMediaByteDigest;
   },
 ): AtlasCampaignServices & { close(): void } {
-  const issuers = new WeakMap<object, CampaignRuntimeManifestSaveParticipant>();
+  const issuers = new WeakMap<object, CampaignRuntimeSaveAcknowledgmentValidator>();
   const issuer = (proof: object) => {
     const participant = issuers.get(proof);
-    if (!participant) throw new Error("Campaign-Receipt wurde nicht vom zuständigen Atlas-Save ausgestellt.");
+    if (!participant) throw new Error("Campaign-Receipt wurde nicht vom zuständigen Save-Participant ausgestellt.");
     return participant;
   };
   const source = new CampaignRuntimeSource(storage, digest, {
@@ -145,6 +146,50 @@ export function atlasCampaignServices(
         prepared: (proof) => { guard(); provider.prepareSaveAcknowledgment(proof); },
         committed: async (proof) => { await provider.acknowledgeCommittedSave(proof); guard(); },
         rolledBack: (proof) => { provider.cancelSaveAcknowledgment(proof); guard(); },
+      });
+    },
+    createWorldNotesSave: async (input) => {
+      const guard = () => {
+        assertOpen(); input.assertCurrent();
+        const context = provider.currentContext();
+        if (!context || !sameSnapshot(context, input.context) ||
+            context.contextToken !== input.context.contextToken)
+          throw new Error("World-Save besitzt keinen aktuellen Campaigncontext.");
+      };
+      guard();
+      const matches = (await storage.list()).filter((file) => {
+        try {
+          return parseCampaignRuntimeManifest(file.bytes, digest).snapshot.campaignId ===
+            input.context.campaignId;
+        } catch { return false; }
+      });
+      guard();
+      if (matches.length !== 1)
+        throw new Error("World-Save besitzt kein eindeutiges Campaignmanifest.");
+      const file = matches[0]!, manifest = parseCampaignRuntimeManifest(file.bytes, digest);
+      if (!sameSnapshot(manifest.snapshot, input.context))
+        throw new Error("World-Save-Manifest passt nicht zum bestätigten Context.");
+      return new WorldNotesCampaignCommitParticipant(file.path, file.bytes, digest, {
+        basis: async () => {
+          guard();
+          const read = await provider.registry.read(input.context);
+          guard();
+          if (read.kind !== "confirmed")
+            throw new Error("World-Save benötigt eine bestätigte Registrybasis.");
+          return { context: input.context, projection: read.projection };
+        },
+        issued: (participant, proof) => {
+          assertOpen(); issuers.set(proof, participant);
+        },
+        prepared: (proof) => {
+          guard(); provider.prepareSaveAcknowledgment(proof);
+        },
+        committed: async (proof) => {
+          await provider.acknowledgeCommittedSave(proof); guard();
+        },
+        rolledBack: (proof) => {
+          provider.cancelSaveAcknowledgment(proof); guard();
+        },
       });
     },
     close: () => {
