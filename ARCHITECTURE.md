@@ -550,8 +550,49 @@ gegen schreibenden Wiedereintritt geschützt. Relative Kamera-/Projektionsports
 halten Anker, Offset und Parenttranslationen getrennt, erhalten Detailpräzision bei
 Pan/Pointerzoom und lehnen numerisch unzuverlässige Treffer ab. Diese Ports sind
 noch nicht im Host montiert. Dreizehn neue Kernfälle und die Basisprüfungen sind
-bestanden; gemeinsame Snapshot-/DraftV3-/Save-/Copy-/Discard-/Recovery-Speicherung,
-native Darstellung und vollständige E2E-Abnahme bleiben die folgenden Schritte.
+bestanden; die Speicheranbindung folgt im unten beschriebenen I01a-2. Native
+Darstellung und vollständige E2E-Abnahme bleiben danach offen.
+
+E2E-01-SPACE-I01a-2 verbindet die tatsächlichen City-/DungeonSources mit derselben
+AtlasRepository-Warteschlange, TerrainSource, AtlasHistory und FileTransaction.
+Das Kern-Opt-in `details: true` benötigt Ortsowner und eine injizierte typisierte
+Auflösung, die alle Treffer einer Kennung im geprüften Atlasbereich liefert.
+Fehlende, fremde, falsche oder mehrdeutige native Dokumente erzeugen keine Ersatzdaten.
+Der Host bleibt zunächst V1-geschlossen; der Kern kann V1 durch genau einen
+Worldowner-Befehl zu V2 verorten und über DraftV3 wieder öffnen. V1/V2-Drafts
+bleiben getrennt kompatibel.
+
+Repositorymomentaufnahmen enthalten den tatsächlichen World-/Location-/City-/
+Dungeonstand. DraftV3 hält native Before-/Afterbytes und geschlossene Typ-/Pfad-/
+ID-Deltas; vor kanonischem Save und Journalreparatur wird die vollständige
+betroffene native Referenzclosure geprüft. Save schützt auch unveränderte geladene
+native Dateien durch Baselineguards. Spätere Raum-Keyänderungen bleiben ein neuer
+Entwurf; externe Änderungen, Umbenennungen oder mehrere Dateitreffer blockieren
+kanonisches Save, Copy und Discard. Discard ersetzt die gesamte History und
+Ladegeneration; entkoppelte bearbeitete Detailowner bleiben bis Save/Discard geladen.
+
+Copy erfasst den Aufrufstand, lädt die vollständige tatsächlich referenzierte
+lokale Closure und remappt dokumentbezogene World-/Ort-/Stadt-/Haus-/Dungeon-/
+Geschoss-/Raum-/Routen-/Abschnittskennungen, native Verweise und lokale Keyziele.
+Markdown, externe Atlaslinks, Assetkennungen und shared Definitionen bleiben
+unverändert. Die Kopie schreibt neue native Dateien im bestehenden gemeinsamen
+Journal; die Quelle behält auch spätere Änderungen als eigenen Entwurf.
+Prepared-/Committed-Journale werden vor jeder Reparatur anhand tatsächlicher
+nativer Before-/Afterzustände geprüft. Geschlossene neue Kopierjournale können
+auch ohne neue Rootdatei zurückgenommen oder fertiggestellt werden.
+
+**Konkreter Campaign/Data-Anschlusspunkt:** `AtlasRepository.spatialGraph.world()`
+liefert die geschlossene echte WorldV1-/V2-Projektion mit World-ID, Ortsplatzierungen
+und typisierten Detailbindings; der bestehende Worldowner besitzt dafür die Ziele
+`placements` und `spatial`. `spatialState()` liefert Version und Detailplacements.
+`detail(kind, id)`/`ensureDetail(kind, id)` liefern dieselben tatsächlichen nativen
+Sources derselben History. Dies ist keine Campaign-Ownershipautorität und enthält
+keine erfundenen Registry-/Owner-/Snapshotrevisionen. Die bestätigte Campaign/Data-
+Lücke aus Issue12/6091818151 bleibt für den getrennten OWNERSHIP-P01-Vertrag:
+CampaignId/Revision/Namespace/ContextToken, Registry-/Owner-/Schema-/Snapshotrevisionen
+und ursprüngliche CommandId/ReceiptId müssen von deren autoritativem Port kommen.
+I01b montiert als Nächstes diese Speichergrenze und die relative Kamera gemeinsam
+im Host; das aktuelle Kernergebnis ist kein nativer oder vollständiger E2E-PASS.
 
 ## Dungeondraft-Kartenassistent beim Kartenstart
 

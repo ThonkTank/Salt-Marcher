@@ -492,43 +492,44 @@
   "hexAtlasExecution": {
     "scope": "HEX-00 bis HEX-28 und sämtliche eingeordneten CITY-00 bis CITY-09 vollständig",
     "phase": "HEX-03",
-    "state": "e2e01_spatial_foundation_checked_storage_integration_next",
+    "state": "e2e01_spatial_storage_checked_native_mount_next",
     "plan": "ROADMAP-E2E01-SPATIAL-INTEGRATION-PLAN.md",
     "currentRun": {
-      "id": "E2E-01-SPACE-I01a-1",
-      "kind": "bounded_spatial_graph_foundation_implementation",
-      "state": "implemented_checked_foundation_only_full_spatial_storage_pending",
-      "startedAt": "2026-10-10T00:23:32Z",
+      "id": "E2E-01-SPACE-I01a-2",
+      "kind": "bounded_spatial_persistence_integration",
+      "state": "implemented_checked_core_storage_native_mount_next",
+      "startedAt": "2026-10-10T00:44:10Z",
       "startTimeSource": "first actual UTC clock read in this run",
-      "finishedAt": "2026-10-10T00:38:30.598769+00:00",
-      "baseline": "0737a65cf7207fd8d42b970738cad17c9ff37763",
-      "synchronizedShared": "d394b8ea3d2c0cbbb42e81f49211508b329d53f2",
+      "finishedAt": "2026-10-10T01:11:52.043213+00:00",
+      "baseline": "f6491d80a39e56d8259ed429c8e71d241efba596",
+      "sourceCommit": "05078b40659bf0eca99a61a8281329a1708596f3",
+      "synchronizedShared": "ad7b2a0f28a96540fd270c1d7334903306f16dc4",
       "gate": "E2E-01",
       "catalog": "ROADMAP-E2E-GATES-CANDIDATE.md:13",
-      "scope": "Strict native WorldV2 codec, optional spatial state under existing Worldowner, actual Source graph/prospective History closure and precise relative camera/frame ports; no host or storage activation.",
-      "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/space-i01a1/implementation.json",
+      "scope": "Actual typed native City/Dungeon owners in one Repository snapshot/History/backend queue; strict DraftV3, captured Save/Copy, all-owner Discard and closed recovery, native identity/generation/conflict protection. Core-only opt-in; Host remains V1-closed.",
+      "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/space-i01a2/implementation.json",
       "verification": {
         "check": true,
-        "testsPassed": 458,
+        "testsPassed": 475,
         "testsFailed": 0,
         "build": true,
-        "newFocusedCases": 13,
-        "productSourceTreeSha256": "4428c4b32b6087ed72dd809ae0a320cb01b2100ff356e162900e72555f8f0811",
+        "newFocusedCases": 16,
+        "productSourceTreeSha256": "053b0c586d83bea59d1b3f0416349bdc2aa881f71ae54848468c96bc84c5d8ec",
         "logs": {
-          "check": "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/space-i01a1/check.log",
-          "tests": "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/space-i01a1/tests.log",
-          "build": "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/space-i01a1/build.log"
+          "check": "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/space-i01a2/check.log",
+          "tests": "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/space-i01a2/tests.log",
+          "build": "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/space-i01a2/build.log"
         }
       },
       "nativeOnThisBuild": false,
       "phaseApproval": false
     },
     "nextRun": {
-      "id": "E2E-01-SPACE-I01a-2",
-      "kind": "bounded_spatial_persistence_integration",
-      "focus": "Integrate actual typed City/Dungeon owners and the new World state into one AtlasRepository snapshot, strict DraftV3, Save/Copy/Discard/Recovery and generation/identity protection. Preserve byte baselines, remap full actual local closure, retain detached dirty owners and reject unverified/foreign/duplicate identities before writes. Keep host closed until this complete storage boundary passes focused failure/reopen tests; then immediately I01b native common mount/zoom/Key/Undo/Save/fresh process.",
-      "dependency": "Narrow City/Dungeon inputs are confirmed. Foundation tests prove only graph/frame/History behavior, not storage or native editing. No general ratification round, second candidate or second live fixture. Campaign Publish and Dungeon pure geometry port remain later I01c inputs.",
-      "cleanup": "Review/repair and Cleanup-P/I/R remain distinct following full scoped phase; foundation is a tested implementation substep, not a phase completion."
+      "id": "E2E-01-SPACE-I01b",
+      "kind": "bounded_native_common_spatial_mount_zoom_key",
+      "focus": "Mount the checked Repository spatial owners and relative one-camera ports in the existing Atlas canvas. Materialize one aligned native fixture v2 preserving frozen component v1 inputs and IDs; one source list/catalog line/receipt. Display City/house/Dungeon surfaces by zoom, direct Location/house/room hit and native Key edit through the same History; actual Save then fresh process. No editor modes, no second History or writing Session.",
+      "dependency": "Core storage on 05078b40659bf0eca99a61a8281329a1708596f3 passes16 new focused cases within475 tests/check/build; no native proof yet. Coordinate the one local GUI slot in Issue7 before any GUI run. Campaign/Data Ownership-P01 will pin this actual WorldV2 projection separately; no invented registry/owner revisions. I01c Campaign publish/CompleteImport/context and Dungeon pure geometry port remain open.",
+      "cleanup": "Independent spatial review/repair and Cleanup-P/I/R follow the completed scoped spatial implementation; no general ratification loop, parallel City slice or E2E02–04."
     },
     "review": {
       "run": "HEX-02-R02",
@@ -572,7 +573,7 @@
       "dungeonThread": "01a1204f-d184-7567-bfb3-d3ab06a0d07e",
       "fixtureReviewThread": "01a12031-2c30-73f7-bc01-6bd3eba86046",
       "publicationPolicy": "Bei fortlaufenden Shared-Branch-Pushrennen geprüftes Paket auf eigenem Branch sichern, regulären Servermerge in gemeinsamen active/installed-phase1 prüfen und lokal integrieren; keine Historienumschreibung.",
-      "nativeGuiSlot": "City granted named HEX03 marker/Key/drag/Fit repeat + fresh process; Hex explicitly returned after normal exits0. No standing GUI ownership.",
+      "nativeGuiSlot": "No GUI requested or used for I01a-2; explicit renewed slot coordination required before I01b.",
       "gmTestingThread": "01a12031-2c30-73f7-bc01-6bd3eba86046",
       "gmTestingPolicy": "Eigenständiger Cloud-GM-Endanwenderlauf nach direkter Nutzerpräzisierung, ohne lokalen QA-Slot; beobachtete Befunde/Nacharbeiten getrennt überIssue1 übernehmen, kein Ersatz durch technische Testzahlen.",
       "lastCheckIn": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1#issuecomment-6088562608",
@@ -760,6 +761,20 @@
           "nativeComponentPayloadPath": "tests/fixtures/atlas-e2e-v1",
           "initialSeedManifestSha256": "5431128663236f1c07b06049f647fbc4c2f8495e9380cb25ac9dd19b6e8099df"
         }
+      },
+      "campaignOwnershipInput": {
+        "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6091818151",
+        "state": "actual_missing_provider_and_envelope_following_ownership_p01",
+        "worldProjection": {
+          "api": "AtlasRepository.spatialGraph.world()",
+          "ownerId": "native World ID",
+          "targets": [
+            "placements",
+            "spatial"
+          ],
+          "value": "actual WorldV1/V2 with typed detailPlacements, spatialState version/bindings; no fabricated Campaign/Registry revisions"
+        },
+        "sourceCommit": "05078b40659bf0eca99a61a8281329a1708596f3"
       }
     },
     "verification": {
@@ -2035,6 +2050,27 @@
         "fixtureActivated": false,
         "native": false,
         "phaseApproval": false
+      },
+      "e2e01SpatialPersistence": {
+        "run": "E2E-01-SPACE-I01a-2",
+        "state": "implemented_checked_core_storage_native_mount_next",
+        "sourceCommit": "05078b40659bf0eca99a61a8281329a1708596f3",
+        "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/space-i01a2/implementation.json",
+        "check": true,
+        "testsPassed": 475,
+        "testsFailed": 0,
+        "build": true,
+        "newFocusedCases": 16,
+        "productSourceTreeSha256": "053b0c586d83bea59d1b3f0416349bdc2aa881f71ae54848468c96bc84c5d8ec",
+        "logs": {
+          "check": "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/space-i01a2/check.log",
+          "tests": "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/space-i01a2/tests.log",
+          "build": "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/space-i01a2/build.log"
+        },
+        "hostActivated": false,
+        "fixtureActivated": false,
+        "native": false,
+        "phaseApproval": false
       }
     },
     "repairPlan": "ROADMAP-HEX-02-REPAIR-PLAN.md",
@@ -2078,7 +2114,7 @@
       "platformIssue": 11,
       "checkpointIsAuthoritative": true
     },
-    "updatedAt": "2026-10-10T00:38:30.598769+00:00"
+    "updatedAt": "2026-10-10T01:11:52.043213+00:00"
   },
   "phase": "Phase 6: zweiter Nachbesserungslauf teilweise umgesetzt; fünf Restpositionen und unabhängiger Review offen",
   "goal": "Dungeon-Pfad bis zur vollständigen beauftragten Dungeondraft-Verhaltensgleichheit verfolgen: Bedienung und Funktion angleichen, Grafik ungefähr gleichwertig. Zuerst ROADMAP-PARITY.md mit Building und Object Tool abschließen, danach übrige Dungeon-Werkzeuge. Jede Fachphase getrennt planen, umsetzen und unabhängig reviewen; Lücken mit eigenen Nachbesserungs- und Reviewläufen schließen; danach eigene Aufräumphase mit Plan, Umsetzung und Review.",

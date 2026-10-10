@@ -152424,7 +152424,7 @@
   "hexAtlas": {
     "scope": "HEX-00..28, shared native Atlas; phase-specific functional approvals only.",
     "currentPhase": "HEX-03",
-    "state": "marker_native_and_source_history_composition_checked_full_spatial_gate_open",
+    "state": "e2e01_core_storage_checked_native_mount_open",
     "referenceGate": "wonderdraftParity.coverageReview HEX-00-R02",
     "requirements": [
       {
@@ -152720,6 +152720,19 @@
           "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/space-i01a1/implementation.json"
         ],
         "observed": "13 focused cases within458/458 tests plus check/build. Native Source adapters attach via one Worldowner, compose house/Key/bindings once, restore V1/component bytes by Undo, reject unloaded/wrong/aliased identities and dangling houses/floors/routes/local sections before any mutation; explicit detach preserves Dungeon owner. Relative projections/hits, pixel Pan and Pointer Zoom preserve centimeter detail at±1e16m, house translations stay separate and house scale never deforms physical Dungeon vectors. No active WorldV2 host/storage, fixture activation, native/integrated independent review or E2E approval."
+      },
+      {
+        "id": "E2E01-HEX-SPACE-STORE-001",
+        "requirement": "Actual WorldV2/Location/City/Dungeon shared Snapshot/DraftV3/Save/Copy/Discard/Recovery with scoped identity and generation protection",
+        "state": "checked_core_storage_host_review_full_gate_open",
+        "implementationRun": "E2E-01-SPACE-I01a-2",
+        "sourceCommit": "05078b40659bf0eca99a61a8281329a1708596f3",
+        "catalog": "ROADMAP-E2E-GATES-CANDIDATE.md:13",
+        "evidence": [
+          "tests/core/atlas-spatial-repository.test.ts",
+          "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/space-i01a2/implementation.json"
+        ],
+        "observed": "16 new focused cases within475/475 integrated tests plus check/build. Actual owners share one History/Repository queue/journal; V1 upgrade via one World command; combined terrain/Location/house/binding/room Key undo/redo, native DraftV3/reopen/Save/Discard, captured late keys, complete scoped native Copy ID/reference remap with exact Markdown/external-link/shared-definition preservation, prepared/committed Save/Copy crash recovery including missing root, rejection of external/wrong/missing/duplicate/renamed identities and forged native graph journals, detached dirty owners and stale generation. Host/fixture not activated; no native/full E2E or Campaign ownership/Publish proof."
       }
     ],
     "cleanupFindings": [
@@ -152771,7 +152784,7 @@
         }
       }
     ],
-    "limits": "Spatial foundation is now core checked:458/458 tests, check/build; actual Source graph and relative one-camera replacement ports are not mounted in the host. WorldV2 remains opt-in and current Repository/Host remain V1-closed until all-owner Snapshot/DraftV3/Save/Copy/Discard/Recovery is integrated. Frozen fixture/source authority and earlier exact marker native receipts retain their own scope. Native shared City/Dungeon zoom/Key, Campaign/context/publish/CompleteImport, independent integrated review, physical input, large world, original parity and installed-vault acceptance remain open; no E2E01 PASS.",
+    "limits": "Spatial core storage now checked on 05078b40659bf0eca99a61a8281329a1708596f3:475/475 integrated tests, check/build and16 new actual native Repository cases. WorldV2/DraftV3/typed owner persistence remains core opt-in; Host remains V1-closed pending next I01b common camera/mount/Key/Save/fresh process. Frozen component fixture/source receipts and earlier native marker receipts retain exact scope. Campaign Registry/Ownershipprovider and Mehrowner-envelope explicitly absent (Issue12/6091818151); I01c context/publish/CompleteImport and Dungeon pure geometry port remain open. Independent spatial review/cleanup, native integrated, physical input, large world, original parity and installed-vault acceptance remain open; no E2E01 PASS.",
     "cloudFollowup": {
       "id": "GM-UX-N-004",
       "state": "resolved_observed_failure_app_reload_only",
