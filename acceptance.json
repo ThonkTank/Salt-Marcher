@@ -153022,7 +153022,7 @@
       {
         "id": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
         "requirement": "Thin Context/navigation consumer with actual native target validation, same Atlas owners and guarded Campaign switching",
-        "state": "productive_Save_receipts_and_same_mount_refresh_implemented_baseline_green_native_gate_open",
+        "state": "native_Save_Fresh_Rollback_CommitRecovery_PASS_ABA_fixture_dependency_open",
         "implementationRun": "HEX-E2E01-HOST-SAVE-I02",
         "sourceCommit": "86bbbbfac44233509f084ac836e6dafa07b11a16",
         "catalog": "ROADMAP-E2E-GATES-CANDIDATE.md:13",
@@ -153047,7 +153047,7 @@
           "/home/aaron/.cache/dungeon-native-qa/hex-03/city-ui-i01-r01-20261010/review.json"
         ],
         "observed": "Actual AtlasView Save button calls FileTransaction and retained native owner Participant/Provider; exact Prepared/Committed journal read-back issues the real proofs.; Same Navigator queue refreshes confirmed Registry/Inventory before unblocking input; Repository, Sources, History, renderer, camera, Context token and mount generation remain.; Actual Vault first-native CAS failure rolls back before snapshot, issues a transaction-sealed receipt, releases pending Provider lease and retries in the same editable Atlas with a new transaction UUID.; Actual DOM View/services close and fresh View/services reopen retain saved Location and Room names under native Campaign fixture; this is not a fresh Electron process.; FileTransaction regressions exercise all before/after CAS reply-loss boundaries, reject copied/foreign rollback receipts, protect unchanged native guards, and preserve won canonical bytes if committed consumer acknowledgment fails.",
-        "notConfirmed": "No Shared promotion, user-vault installation, physical input, original parity, large-world or total E2E PASS. No fresh History/remount workaround during Save, private Campaign flags, new Source activation or frozen-contract edits. Actual Obsidian Save/Fresh/Recovery/A-B-A, integrated Host review and cleanup remain open; the fresh View/services DOM check is not a fresh process.",
+        "notConfirmed": "Actual synthetic native Obsidian small-fixture Save/Fresh/Rollback/CommitRecovery passes are separate from DOM/core/18-case matrix proofs. Native A-B-A, independent integrated Host review, physical input, original parity, large-world, installed user vault and full E2E remain unconfirmed. One failed complex-object diagnostic remains failed with forced QA termination recorded; no product acceptance derived from it. Shared promotion, P02/P04/CompleteImport and multiowner publication remain separate.",
         "independentReview": {
           "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/13#issuecomment-6094804164",
           "gate": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6094804323",
@@ -153963,7 +153963,7 @@
           "currentEvidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-manifest-host-save-i02-20261010/implementation.json",
           "scope": "Component review only; no native/Host/overall approval."
         },
-        "gap": "Productive receipt and same-mount refresh implementation completed. Next: newly coordinated actual native Host probe, then existing integrated review; CI owned separately by Chronik.",
+        "gap": "Native Save/Fresh/Rollback/Committed-Recovery and post-Save Undo/Redo now have actual Obsidian process evidence. Missing required native A-B-A input: a second actual owner-confirmed Campaign/World/Registry/Inventory fixture, with explicit byte oracle and provenance. Existing integrated Host review and separate cleanup remain open.",
         "qualifiedCampaignInputAndRollbackProbe": {
           "state": "qualified_component_contract_closed_productive_Host_implementation_now_present",
           "reviewSourceCommit": "ce2f9032dc9f72f994a307b5aac26e1ad8910065",
@@ -154014,6 +154014,23 @@
           "nativeRan": false,
           "freshProcess": false,
           "fullE2E": false
+        },
+        "nativeCampaignHostProbe": {
+          "id": "HEX-E2E01-HOST-SAVE-I02-H01",
+          "state": "native_Save_Fresh_Rollback_CommitRecovery_PASS_ABA_fixture_dependency_open",
+          "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
+          "sourceCommit": "11ba72c540959e86a1a1c8ce80dfaba8bbf526b1",
+          "productSource": "86bbbbfac44233509f084ac836e6dafa07b11a16",
+          "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-manifest-host-save-i02-h01-20261010/native-evidence.json",
+          "sha256": "3ccb22c6dba8a3c5ae102a90e3e6b48e0ae189bce7425c69b8a62a65cb123b69",
+          "nativeSave": true,
+          "nativeRollbackRetry": true,
+          "nativePostSaveUndoRedo": true,
+          "freshProcess": true,
+          "nativeCommittedRecovery": true,
+          "ABA": false,
+          "fullE2E": false,
+          "independentReview": "pending existing integrated review after native ABA input; not self-approved"
         }
       }
     ],

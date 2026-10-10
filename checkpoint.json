@@ -769,7 +769,7 @@
   "hexAtlasExecution": {
     "scope": "HEX-00 bis HEX-28 und sämtliche eingeordneten CITY-00 bis CITY-09 vollständig",
     "phase": "HEX-03",
-    "state": "productive_Save_receipts_and_same_mount_refresh_implemented_baseline_green_native_gate_open",
+    "state": "native_Save_Fresh_Rollback_CommitRecovery_PASS_ABA_fixture_dependency_open",
     "plan": "ROADMAP-E2E01-SPATIAL-INTEGRATION-PLAN.md",
     "currentRun": {
       "id": "E2E-01-SPACE-I01b",
@@ -816,23 +816,36 @@
       "phaseApproval": false
     },
     "nextRun": {
-      "id": "E2E-01-SPACE-I01c-RUNTIME-MANIFEST-I02-HOST-PROBE",
-      "kind": "bounded_actual_Obsidian_Save_Fresh_Recovery_ABA_probe",
-      "focus": "Coordinate the one GUI slot explicitly, then probe the actual managed Save/Fresh/Recovery/A-B-A flow on the productive receipt/refresh implementation. Preserve one Atlas camera and History during Save; do not substitute DOM/core passes for native process evidence.",
+      "id": "E2E-01-SPACE-I01c-RUNTIME-MANIFEST-I02-HOST-ABA",
+      "kind": "bounded_actual_confirmed_second_Campaign_fixture_consumption_then_native_ABA",
+      "state": "native_Save_Fresh_Rollback_CommitRecovery_passed_waiting_actual_B_fixture",
+      "focus": "Consume only an actual second owner-confirmed Campaign fixture, then freshly coordinate the single local GUI slot and probe the native existing picker A-B-A with old lease/late-response and draft isolation. Keep PR13 as the only candidate, existing Spatial-V2 unchanged. Do not repeat the completed Save/Fresh/Rollback/Committed-Recovery or Codec/component packages.",
       "sourcePlan": "ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md",
       "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
-      "testedProductSource": "86bbbbfac44233509f084ac836e6dafa07b11a16",
-      "fixtureVersion": "e2e01-spatial-v2",
-      "consumedShared": "6482dc6373132aab1b27ac66c76cee6dddeb3285",
-      "dependency": "No pending Campaign contract delivery. A newly coordinated GUI slot is required; Chronik owns the BASE-CI-01 workflow. No Host REVIEW_READY until required native evidence exists.",
-      "after": "Existing integrated Host review, required repair, separate cleanup. No further component or general planning round.",
-      "limits": "No Shared promotion, user-vault installation, physical input, original parity, large-world or total E2E PASS. No fresh History/remount workaround during Save, private Campaign flags, new Source activation or frozen-contract edits.",
-      "state": "native_not_started_fresh_GUI_slot_confirmation_pending",
-      "slotRequest": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/7#issuecomment-6097830484",
-      "slotConfirmed": false,
-      "preflight": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-manifest-host-save-i02-h01-20261010/preflight.json",
-      "preflightSha256": "ee195dbc4b0100808bd70a7d76b12700422a27bd3f255295560fe4375ca5b0c7",
-      "probeRequirement": "tools/host-test.cjs --atlas-spatial copies only manifest.input (seven native files), not the actual manifest.campaign input. tools/host/atlas-spatial.cjs reads standalone view.repository. Therefore that unchanged historical run would not prove the new managed Campaign Save path."
+      "evidence": {
+        "id": "HEX-E2E01-HOST-SAVE-I02-H01",
+        "state": "native_Save_Fresh_Rollback_CommitRecovery_PASS_ABA_fixture_dependency_open",
+        "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
+        "sourceCommit": "11ba72c540959e86a1a1c8ce80dfaba8bbf526b1",
+        "productSource": "86bbbbfac44233509f084ac836e6dafa07b11a16",
+        "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-manifest-host-save-i02-h01-20261010/native-evidence.json",
+        "sha256": "3ccb22c6dba8a3c5ae102a90e3e6b48e0ae189bce7425c69b8a62a65cb123b69",
+        "nativeSave": true,
+        "nativeRollbackRetry": true,
+        "nativePostSaveUndoRedo": true,
+        "freshProcess": true,
+        "nativeCommittedRecovery": true,
+        "ABA": false,
+        "fullE2E": false,
+        "independentReview": "pending existing integrated review after native ABA input; not self-approved"
+      },
+      "requiredInput": "Campaign/Data: second owner-confirmed Campaign runtime manifest and non-overlapping native World/detail/terrain bytes with actual Registry/Inventory provenance, explicit fixture/version/SHA list and initial oracle, usable by the existing native picker. No copied A authority or DOM-generated substitute.",
+      "dependency": "Campaign/Data supplies exact second native Campaign/World/Registry/Inventory fixture and provenance. Current native fixtures contain only Campaign A; GUI slot is returned after this run. No clone of A authority or DOM-generated B substitute.",
+      "after": "Existing independent integrated Host review, required repair, separate cleanup. No extra component/general-plan round.",
+      "limits": "Small frozen fixture and synthetic native gestures only; controlled fault injection, not power-loss durability. No new Campaign authority, Source activation during Save, fixture mutation, user-vault install or full E2E approval.",
+      "slotConfirmation": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/7#issuecomment-6097870608",
+      "slotConfirmedForCompletedRun": true,
+      "slotRequiredAgain": true
     },
     "review": {
       "run": "HEX-02-R02",
@@ -864,7 +877,7 @@
       "HEX02 scoped early island/review/CLEAN complete; HEX03..05 Location/City/Dungeon common Atlas remains open.",
       "HEX06..28/CITY product phases and 79 later Wonderdraft obligations remain.",
       "Full parity, physical input, large-map and installed-vault acceptance remain open.",
-      "Productive Save hook and same-mount refresh pass actual Host DOM checks; actual Obsidian Save/Fresh/Recovery/A-B-A, integrated Host review, cleanup and total E2E remain open."
+      "Actual Campaign Host Save/Fresh/Rollback/Committed-Recovery and post-Save Undo/Redo pass on the frozen small native fixture. Native A-B-A requires an actual second Campaign fixture; existing integrated Host review, separate cleanup and full E2E remain open."
     ],
     "coordination": {
       "issue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1",
@@ -5282,7 +5295,7 @@
       "platformIssue": 11,
       "checkpointIsAuthoritative": true
     },
-    "updatedAt": "2026-10-10T13:02:19.431050+00:00",
+    "updatedAt": "2026-10-10T13:32:49.598081+00:00",
     "consumerMatrix": {
       "id": "RUNTIME-MANIFEST-I02-CONSUMER-MATRIX-V1",
       "state": "frozen_complete_matrix_green_on_productive_Host_source",
@@ -5349,8 +5362,25 @@
       "nativeRan": false,
       "freshProcess": false,
       "fullE2E": false,
-      "next": "Explicitly coordinate new single GUI slot; bounded actual Obsidian Save/Fresh/Recovery/A-B-A probe on this product tree; then existing integrated Host review and separate cleanup.",
+      "next": "Implementation receipt remains source-bound; actual native follow-up is nativeCampaignHostProbe. Remaining next input is an owner-confirmed Campaign B for native A-B-A, followed by existing integrated review and separate cleanup.",
       "independentReview": "Implementation owner checks only; existing integrated Host reviewer later, after native evidence. No self-approval."
+    },
+    "nativeCampaignHostProbe": {
+      "id": "HEX-E2E01-HOST-SAVE-I02-H01",
+      "state": "native_Save_Fresh_Rollback_CommitRecovery_PASS_ABA_fixture_dependency_open",
+      "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
+      "sourceCommit": "11ba72c540959e86a1a1c8ce80dfaba8bbf526b1",
+      "productSource": "86bbbbfac44233509f084ac836e6dafa07b11a16",
+      "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-manifest-host-save-i02-h01-20261010/native-evidence.json",
+      "sha256": "3ccb22c6dba8a3c5ae102a90e3e6b48e0ae189bce7425c69b8a62a65cb123b69",
+      "nativeSave": true,
+      "nativeRollbackRetry": true,
+      "nativePostSaveUndoRedo": true,
+      "freshProcess": true,
+      "nativeCommittedRecovery": true,
+      "ABA": false,
+      "fullE2E": false,
+      "independentReview": "pending existing integrated review after native ABA input; not self-approved"
     }
   },
   "phase": "Phase 6: zweiter Nachbesserungslauf teilweise umgesetzt; fünf Restpositionen und unabhängiger Review offen",
