@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 import {
   normalizePdfText,
+  validateBoundedAdventuringGearTableRows,
   validateBoundedArmorTableRows,
   validateBoundedWeaponTableRows,
   validateJsonSchemas,
@@ -324,6 +325,44 @@ test("adventuring gear transcript preserves all 99 rows, exact omissions and sou
   assert.equal(records.find(record => record.name === "Climber’s kit").subcategory, "kit");
   assert.equal(records.find(record => record.name === "Crystal").subcategory, "arcane-focus");
   assert.equal(records.find(record => record.name === "Amulet").subcategory, "holy-symbol");
+});
+
+test("adventuring gear bounded matching isolates complete cells inside two-column physical rows", async () => {
+  const [checkedInventory, checkedTranscript] = await Promise.all([
+    readFile(new URL("items-srd51-inventory.json", dataRoot), "utf8").then(JSON.parse),
+    readFile(new URL("items-srd51-transcript.json", dataRoot), "utf8").then(JSON.parse),
+  ]);
+  const occurrences = checkedInventory.occurrences.filter(item => item.sectionId === "adventuring-gear");
+  const records = new Map(checkedTranscript.records.map(record => [record.id, record]));
+  const segments = occurrences.map(item => {
+    const record = records.get(item.id);
+    return `${item.sourceLabel} ${record.cost.sourceText} ${record.weight?.sourceText ?? "—"}`;
+  });
+  const columnBreak = Math.ceil(segments.length / 2);
+  const pageLines = { 69: Array.from({ length: columnBreak }, (_, index) =>
+    [segments[index], segments[index + columnBreak]].filter(Boolean).join("     ")) };
+  assert.deepEqual(validateBoundedAdventuringGearTableRows(pageLines, checkedTranscript, checkedInventory), {
+    checkedRows: 99,
+    scope: "exact-normalized-pdftotext-layout-row-segment-for-two-column-table-with-source-missing-markers",
+  });
+
+  const wrongCell = structuredClone(checkedTranscript);
+  wrongCell.records.find(record => record.name === "Spyglass").cost.sourceText = "100 gp";
+  assert.throws(() => validateBoundedAdventuringGearTableRows(pageLines, wrongCell, checkedInventory),
+    /nicht exakt einmal als zusammenhängendes Segment derselben physischen Tabellenzeile/);
+
+  const pageWideOnly = structuredClone(pageLines);
+  const waterskin = "Waterskin 2 sp 5 lb. (full)";
+  const waterskinLine = pageWideOnly[69].findIndex(line => line.includes(waterskin));
+  pageWideOnly[69][waterskinLine] = pageWideOnly[69][waterskinLine].replace(waterskin, "Waterskin");
+  pageWideOnly[69].push("2 sp", "5 lb. (full)");
+  assert.throws(() => validateBoundedAdventuringGearTableRows(pageWideOnly, checkedTranscript, checkedInventory),
+    /nicht exakt einmal als zusammenhängendes Segment derselben physischen Tabellenzeile/);
+
+  const duplicateSegment = structuredClone(pageLines);
+  duplicateSegment[69][0] += `     ${segments[0]}`;
+  assert.throws(() => validateBoundedAdventuringGearTableRows(duplicateSegment, checkedTranscript, checkedInventory),
+    /nicht exakt einmal als zusammenhängendes Segment derselben physischen Tabellenzeile/);
 });
 
 test("Potion of healing keeps its first physical occurrence as canonical magic identity", async () => {
