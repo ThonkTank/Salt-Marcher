@@ -1748,13 +1748,13 @@
         "comparisonEvidence": [],
         "usabilityEvidence": [],
         "review": {
-          "state": "pass_bounded_effect_feature_partial",
-          "run": "CITY-00-R47",
-          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i47-20261009-r02/review.json",
+          "state": "pass_bounded_template_reopen_feature_partial",
+          "run": "CITY-00-R48",
+          "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i48b-20261010-r01/reference-review-r48.json",
           "independentProductReview": false
         },
         "status": "open",
-        "gap": "I48a saved/loaded own template; I48b fresh process Map-Reopen and two-value template restoration completed. Separate cleanup and R48 pending; other parameters/ranges and own product/host/usability/full-version acceptance open.",
+        "gap": "I48a/I48b template creation/load, visual Cancel, saved two-field environment delta and genuine fresh-process Map/template reopen pass bounded R48. Cleanup planning next. Other controls/ranges, own product/host/usability/physical/full-version acceptance remain open.",
         "independentFunctionalRequirement": true,
         "mappingCoverage": "new_required_function_not_covered_by_existing_CTY",
         "originalProbe": {
@@ -1767,12 +1767,12 @@
         "templateProbe": {
           "run": "CITY-00-I48a",
           "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i48a-20261009-r01/manifest.json",
-          "state": "completed_bounded_pending_R48",
+          "state": "completed_bounded_R48_pass",
           "templateEffect": "immediate combined Light/Weather load, two changed values restored",
           "freshReopen": {
             "run": "CITY-00-I48b",
             "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i48b-20261010-r01/manifest.json",
-            "state": "completed_bounded_pending_cleanup_and_R48",
+            "state": "completed_bounded_cleanup_and_R48_pass",
             "mapBeforeAnySliderOrSave": "shadow230/snow0; byte-equal I48a final copy",
             "freshTemplateEffect": "shadow5→230 and snow0.6→0 immediately on own template Open/Enter; no separate Apply",
             "normalExit": true,
