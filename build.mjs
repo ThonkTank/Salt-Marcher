@@ -189,6 +189,10 @@ if (test) await build({
   bundle: true, format: "cjs", platform: "node", target: "es2022", sourcemap: true, logLevel: "info",
 });
 if (test) await build({
+  entryPoints: ["tests/world-notes-panel.entry.ts"], outfile: ".build/world-notes-panel.cjs",
+  bundle: true, format: "cjs", platform: "node", target: "es2022", sourcemap: true, logLevel: "info",
+});
+if (test) await build({
   entryPoints: ["tests/atlas-campaign-host.entry.ts"], outfile: ".build/atlas-campaign-host.cjs",
   bundle: true, format: "cjs", platform: "node", target: "es2022", sourcemap: true, logLevel: "info",
   plugins: [{ name: "obsidian-atlas-host-test-stub", setup(builder) {
