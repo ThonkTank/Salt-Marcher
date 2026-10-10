@@ -9,7 +9,10 @@ module.exports = ({ page, fs, path, assert, qa, out, vault, root, checks }) => {
   const id = (n) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
   const panel = () => page.locator(".dn-atlas:visible").last(),
     viewport = () => panel().locator(".dn-atlas-viewport");
-  const button = (name) => panel().locator(".dn-atlas-toolbar").getByRole("button", { name, exact: true });
+  const button = (name) =>
+    panel()
+      .locator(".dn-atlas-toolbar")
+      .getByRole("button", { name, exact: true });
   const settle = () =>
     page.evaluate(
       () =>
@@ -147,12 +150,43 @@ module.exports = ({ page, fs, path, assert, qa, out, vault, root, checks }) => {
   async function edit() {
     await open();
     await exact("input");
+    await button("Atlasinhalt einpassen").click();
+    await settle();
+    await exact("input");
     const initial = await state();
     assert.equal(initial.depth, 0);
     await zoom(0.25);
     assert.equal(await viewport().getAttribute("data-visible-cities"), "1");
     assert.equal(await viewport().getAttribute("data-visible-rooms"), "0");
     await record("City roof visible in same viewport without mode change");
+    // Existing road handle and Location Key are edited on the same surface and undone to the seed oracle.
+    const road = await screen({ x: -10, y: 0 });
+    await page.mouse.click(road.x, road.y);
+    await settle();
+    await drag({ x: -10, y: 0 }, 2, -1);
+    assert.equal((await state()).depth, 1);
+    assert.deepEqual((await state()).city.roadNodes[0].point, { x: -8, y: -1 });
+    await undo();
+    assert.deepEqual((await state()).city.roadNodes, initial.city.roadNodes);
+    const marker = await screen({ x: 0, y: 0 });
+    await page.mouse.click(marker.x, marker.y);
+    const locationKey = panel().locator(
+      ".dn-location-key:not(.dn-atlas-room-key)",
+    );
+    await locationKey.waitFor({ state: "visible" });
+    await locationKey
+      .getByRole("textbox", { name: "Ortsname", exact: true })
+      .fill("Atlas-Ortsprobe");
+    await locationKey
+      .getByRole("button", { name: "Übernehmen", exact: true })
+      .click();
+    await settle();
+    assert.equal((await state()).depth, 1);
+    await undo();
+    assert.equal((await state()).depth, 0);
+    await record(
+      "Native road handle and Location Key share the existing camera, owner sources and Undo",
+    );
     const center = { x: -10.38, y: 14.096 };
     for (const cancel of ["escape", "pointercancel"]) {
       await drag(center, 4, -2, cancel);

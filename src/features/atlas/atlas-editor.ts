@@ -265,7 +265,16 @@ export class AtlasEditor {
         ...storage.spatial,
         source: () => this.terrain,
       });
-      this.renderer.beforeRender = () => this.spatial!.draw();
+      this.renderer.detailFitPoints = () => this.spatial!.fitPoints();
+      this.renderer.beforeRender = () => {
+        try {
+          this.spatial!.draw();
+        } catch (error) {
+          this.status.textContent =
+            "Detailkarte kann nicht dargestellt werden. " + String(error);
+          this.renderer.host.dataset.spatialError = String(error);
+        }
+      };
       const host = doc.createElement("aside");
       body.append(host);
       this.roomKey = new AtlasRoomKeyPanel(host, {

@@ -101,14 +101,12 @@ function originTerms(
     ...frame.offsetsMeters.map((p) => spatialPoint(p)[axis]),
   ];
 }
-export function projectLocal(
+export function relativeLocalMeters(
   frame: RigidFrame,
   camera: RelativeAtlasCamera,
-  viewport: ViewportSize,
   raw: WorldPoint,
 ): WorldPoint {
   checkedFrame(frame, camera);
-  size(viewport);
   const p = spatialPoint(raw),
     local = spatialPoint({
       x: (p.x - frame.originUnits.x) * frame.metersPerUnit,
@@ -126,13 +124,23 @@ export function projectLocal(
       "Lokale Kartenkoordinaten sind nicht zuverlässig projizierbar.",
     );
   const r = rotateMeters(local, frame.rotationRadians);
+  return spatialPoint({
+    x: sum([...originTerms(frame, camera, "x"), r.x]),
+    y: sum([...originTerms(frame, camera, "y"), r.y]),
+  });
+}
+export function projectLocal(
+  frame: RigidFrame,
+  camera: RelativeAtlasCamera,
+  viewport: ViewportSize,
+  raw: WorldPoint,
+): WorldPoint {
+  checkedFrame(frame, camera);
+  size(viewport);
+  const relative = relativeLocalMeters(frame, camera, raw);
   const result = spatialPoint({
-    x:
-      viewport.width / 2 +
-      sum([...originTerms(frame, camera, "x"), r.x]) / camera.metersPerPixel,
-    y:
-      viewport.height / 2 +
-      sum([...originTerms(frame, camera, "y"), r.y]) / camera.metersPerPixel,
+    x: viewport.width / 2 + relative.x / camera.metersPerPixel,
+    y: viewport.height / 2 + relative.y / camera.metersPerPixel,
   });
   if (
     Math.max(Math.abs(result.x), Math.abs(result.y)) * Number.EPSILON * 4 >

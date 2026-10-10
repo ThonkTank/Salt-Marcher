@@ -12,6 +12,7 @@ import {
   unprojectLocal,
   type RelativeAtlasCamera,
   type RigidFrame,
+  relativeLocalMeters,
 } from "./relative-frame";
 import {
   displayHexLevel,
@@ -46,6 +47,7 @@ export class AtlasRenderer {
   private closed = false;
   private currentCamera: RelativeAtlasCamera;
   beforeRender?: () => void;
+  detailFitPoints?: () => readonly { frame: RigidFrame; point: WorldPoint }[];
   level = 0;
   selected?: HexAddress;
   preview: readonly AtlasChange[] = [];
@@ -219,22 +221,37 @@ export class AtlasRenderer {
       ),
     );
     points.push(...(this.terrain?.placements() ?? []).map((p) => p.position));
-    if (!points.length)
+    const framed = [
+      ...points.map((point) => ({
+        frame: this.worldFrame(point),
+        point: { x: 0, y: 0 },
+      })),
+      ...(this.detailFitPoints?.() ?? []),
+    ];
+    if (!framed.length)
       this.currentCamera = relativeCamera(
         this.world.origin,
         { x: 0, y: 0 },
         initialAtlasCamera(this.world.origin).metersPerPixel,
       );
     else {
-      const minX = Math.min(...points.map((p) => p.x)),
-        maxX = Math.max(...points.map((p) => p.x));
-      const minY = Math.min(...points.map((p) => p.y)),
-        maxY = Math.max(...points.map((p) => p.y));
-      const padding = hexDistanceMeters(0) * 2;
+      const anchor = framed[0]!.frame.anchor,
+        probe = relativeCamera(anchor, { x: 0, y: 0 }, 1e15);
+      const relative = framed.map((p) =>
+        relativeLocalMeters(p.frame, probe, p.point),
+      );
+      const minX = Math.min(...relative.map((p) => p.x)),
+        maxX = Math.max(...relative.map((p) => p.x)),
+        minY = Math.min(...relative.map((p) => p.y)),
+        maxY = Math.max(...relative.map((p) => p.y));
+      const padding = refs.length
+        ? hexDistanceMeters(0) * 2
+        : Math.max(1, (maxX - minX) * 0.2, (maxY - minY) * 0.2);
       this.currentCamera = relativeCamera(
+        anchor,
         { x: minX / 2 + maxX / 2, y: minY / 2 + maxY / 2 },
-        { x: 0, y: 0 },
         Math.max(
+          0.005,
           (maxX - minX + padding) / Math.max(1, this.viewport.width - 64),
           (maxY - minY + padding) / Math.max(1, this.viewport.height - 64),
         ),

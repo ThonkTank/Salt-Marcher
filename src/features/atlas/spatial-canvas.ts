@@ -1,5 +1,5 @@
 import { Graphics } from "pixi.js";
-import { inside } from "../../geometry";
+import { inside, nearestSegmentPoint } from "../../geometry";
 import { isStructuredRoom, type RoomV4 } from "../../model";
 import { CitySource } from "../city/commands";
 import { parseCityDocument, serializeCityDocument } from "../city/codec";
@@ -16,6 +16,7 @@ import type { AtlasRenderer } from "./atlas-renderer";
 import type { AtlasReadView, AtlasValue } from "./atlas-history";
 import {
   projectLocal,
+  relativeLocalMeters,
   unprojectLocal,
   type RigidFrame,
 } from "./relative-frame";
@@ -82,6 +83,47 @@ export class SpatialCanvas {
           ]),
     };
   }
+  fitPoints(): readonly { frame: RigidFrame; point: WorldPoint }[] {
+    const graph = this.access.graph(),
+      world = graph.world();
+    if (world.version !== 2) return [];
+    return world.detailPlacements.flatMap((p) => {
+      const frame = graph.frame(p.documentId);
+      if (p.kind === "dungeon")
+        return this.access
+          .dungeon(p.documentId)
+          .read()
+          .document.entities.filter(isStructuredRoom)
+          .filter((r) => r.floorId === p.surfaceFloorId)
+          .flatMap((r) =>
+            r.polygons.flatMap((poly) =>
+              poly.outer.map((point) => ({ frame, point })),
+            ),
+          );
+      const extent = cityScene(this.access.city(p.documentId).read()).extent;
+      return extent
+        ? [
+            { frame, point: { x: extent.minX, y: extent.minY } },
+            { frame, point: { x: extent.maxX, y: extent.minY } },
+            { frame, point: { x: extent.maxX, y: extent.maxY } },
+            { frame, point: { x: extent.minX, y: extent.maxY } },
+          ]
+        : [];
+    });
+  }
+  private near(frame: RigidFrame, point: WorldPoint): boolean {
+    const camera = this.renderer.relativeCamera;
+    const relative = relativeLocalMeters(
+      frame,
+      { ...camera, metersPerPixel: 1e15 },
+      point,
+    );
+    return (
+      Math.max(Math.abs(relative.x), Math.abs(relative.y)) /
+        camera.metersPerPixel <
+      1e10
+    );
+  }
   draw(): void {
     const graph = this.access.graph(),
       world = graph.world(),
@@ -104,6 +146,10 @@ export class SpatialCanvas {
         .sort((a, b) => a.layer - b.layer);
       const points = rooms.flatMap((r) => r.polygons.flatMap((p) => p.outer));
       if (!points.length) continue;
+      if (!points.some((point) => this.near(frame, point))) {
+        this.roomLOD.delete(p.documentId);
+        continue;
+      }
       const projected = points.map((point) =>
         projectLocal(frame, camera, viewport, point),
       );
@@ -136,6 +182,13 @@ export class SpatialCanvas {
         ),
         original = cityScene(document);
       if (!original.extent) continue;
+      if (
+        !this.near(frame, {
+          x: original.extent.minX / 2 + original.extent.maxX / 2,
+          y: original.extent.minY / 2 + original.extent.maxY / 2,
+        })
+      )
+        continue;
       const a = projectLocal(frame, camera, viewport, {
           x: original.extent.minX,
           y: original.extent.minY,
@@ -217,10 +270,27 @@ export class SpatialCanvas {
     for (const { room, frame, ownerId } of [...this.roomDisplays].reverse()) {
       const point = unprojectLocal(frame, camera, viewport, screen);
       if (
-        room.polygons.some(
-          (p) =>
-            inside(point, p.outer) && !p.holes.some((h) => inside(point, h)),
-        )
+        room.polygons.some((p) => {
+          if (
+            (room.floorAlpha ?? 1) > 0 &&
+            inside(point, p.outer) &&
+            !p.holes.some((h) => inside(point, h))
+          )
+            return true;
+          const tolerance =
+            (camera.metersPerPixel * 6) / frame.metersPerUnit +
+            room.wallWidth / 2;
+          return (
+            (room.wallAlpha ?? 1) > 0 &&
+            [p.outer, ...p.holes].some((ring) =>
+              ring.some(
+                (a, i) =>
+                  nearestSegmentPoint(point, a, ring[(i + 1) % ring.length]!)
+                    .distance <= tolerance,
+              ),
+            )
+          );
+        })
       )
         return { kind: "room", ownerId, roomId: room.id };
     }

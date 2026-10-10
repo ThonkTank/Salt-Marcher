@@ -13,7 +13,7 @@ import {
 } from "../../src/features/dungeon/atlas-source";
 import { AtlasRoomKeyDraft } from "../../src/features/dungeon/atlas-room-key-draft";
 import { SpatialCanvas } from "../../src/features/atlas/spatial-canvas";
-import type { AtlasRenderer } from "../../src/features/atlas/atlas-renderer";
+import { AtlasRenderer } from "../../src/features/atlas/atlas-renderer";
 import {
   projectLocal,
   relativeCamera,
@@ -241,5 +241,51 @@ test("Native host oracle City + Room Key saves exact seven-file closure", async 
       readFileSync(fixture + row.fixtureFile, "utf8"),
       row.path,
     );
+  f.canvas.destroy();
+});
+
+test("City-only and mixed content Fit uses native bounds through the same relative camera", async () => {
+  const f = await setup();
+  for (const anchor of [0, -1e16]) {
+    if (anchor) f.repo.moveLocation(id(11), { x: anchor, y: anchor });
+    const fit = Object.assign(Object.create(AtlasRenderer.prototype), {
+      host: { clientWidth: 800, clientHeight: 600 },
+      world: f.source.world,
+      currentCamera: relativeCamera(
+        { x: anchor, y: anchor },
+        { x: 0, y: 0 },
+        1,
+      ),
+      terrainSource: { references: () => [], placements: () => [] },
+      detailFitPoints: () => f.canvas.fitPoints(),
+    }) as AtlasRenderer;
+    fit.fit();
+    assert(fit.camera.metersPerPixel < 1);
+    for (const p of f.canvas.fitPoints()) {
+      const screen = projectLocal(
+        p.frame,
+        fit.relativeCamera,
+        fit.viewport,
+        p.point,
+      );
+      assert(
+        screen.x >= 0 && screen.x <= 800 && screen.y >= 0 && screen.y <= 600,
+      );
+    }
+  }
+  f.canvas.destroy();
+});
+test("Distant City is safely absent; large negative dock still draws and hits centimetre details", async () => {
+  const f = await setup(0.01);
+  f.repo.moveLocation(id(11), { x: -1e16, y: -1e16 });
+  f.canvas.draw();
+  assert.equal(f.host.dataset.visibleCities, "0");
+  assert.equal(f.host.dataset.visibleRooms, "0");
+  (f.renderer as unknown as { relativeCamera: unknown }).relativeCamera =
+    relativeCamera({ x: -1e16, y: -1e16 }, { x: -10, y: 14 }, 0.01);
+  f.canvas.draw();
+  assert.equal(f.host.dataset.visibleCities, "1");
+  assert.equal(f.host.dataset.visibleRooms, "1");
+  assert.equal(f.canvas.hit(f.screen(id(30), { x: 8, y: 8 }))?.kind, "room");
   f.canvas.destroy();
 });
