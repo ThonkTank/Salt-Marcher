@@ -1834,7 +1834,17 @@
         "result": "PASS two-value original Map/template/fresh-process evidence; CO-COK-0004 remains open. One nonblocking stale cleanup-next sentence, no new cleanup/review round required.",
         "limits": "Read-only review on stored original receipts/55 frames, no GUI or PR27 integration. Actual same-lifetime Campaign Host Save seam remains the next product dependency.",
         "publishedReview": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/27#pullrequestreview-5478706757",
-        "workHandoff": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/7#issuecomment-6096811320"
+        "workHandoff": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/7#issuecomment-6096811320",
+        "integration": {
+          "state": "qualified_reference_documentation_merged_no_product_or_E2E_approval",
+          "candidate": "12ad4a3b4c7a3fc695239f1c0bd0f34dc38c4a73",
+          "sharedMerge": "821936601d5130e1bd72bda80e060207f177678f",
+          "mergedAt": "2026-10-10T11:12:20Z",
+          "receipt": "/home/aaron/.cache/dungeon-native-qa/hex-03/city00-cok-r48-independent-r01-20261010/integration-decision.json",
+          "sha256": "31606e4ae3950ce633ab62b45cef1cf6d9c905d1f302d179e1da05c5097f34aa",
+          "scope": "Original two-value Map/template/fresh-session reference documentation only; verified nonblocking metadata correction and normal Shared sync; CO-COK-0004 remains open. No new original/GUI/Cleanup review.",
+          "productGate": "E2E-01 remains not passed; qualified Campaign owned-save seam and same-mount Host Save/fresh process plus independent integrated gate remain open."
+        }
       },
       "runtimePlanning": {
         "id": "E2E-01-SPACE-I01c-RUNTIME-P01",
