@@ -153437,7 +153437,7 @@
           "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-manifest-host-aba-20261010/repair/repair.json"
         ],
         "observed": "Actual AtlasView Save button calls FileTransaction and retained native owner Participant/Provider; exact Prepared/Committed journal read-back issues the real proofs.; Same Navigator queue refreshes confirmed Registry/Inventory before unblocking input; Repository, Sources, History, renderer, camera, Context token and mount generation remain.; Actual Vault first-native CAS failure rolls back before snapshot, issues a transaction-sealed receipt, releases pending Provider lease and retries in the same editable Atlas with a new transaction UUID.; Actual DOM View/services close and fresh View/services reopen retain saved Location and Room names under native Campaign fixture; this is not a fresh Electron process.; FileTransaction regressions exercise all before/after CAS reply-loss boundaries, reject copied/foreign rollback receipts, protect unchanged native guards, and preserve won canonical bytes if committed consumer acknowledgment fails.",
-        "notConfirmed": "The #40 Location/Key/Move/shared UndoRedo/new and no-op Save/fresh-process milestone is accepted after direct Stadt H02 PASS, Campaign/Data oracle PASS, Chronik H02-R02-N01 PASS and separate exact-parent PR72 integration/CI. Common E2E-01 row13 remains open; own cleanup is next and separate. No new GUI/build/model test, physical/original/large-world/installation/Detail/CITY/P02/P04/E2E02-04 acceptance or Copy/Discard/Recovery fault matrix. All historical receipts and native currentRun retain their original sources/scopes, including H01 FAIL.",
+        "notConfirmed": "The qualified #40 Location/Key/Move/shared UndoRedo/new and no-op Save/fresh-process milestone is complete; its owned temporary source checkout is archived, entry hashes verified, then normally removed without force. Canonical H01/D01/R01/N02/R02/H02/N01/qualification receipts and raw images, synthetic saved QA vault/plugin, other worktrees and foreign files remain. Common E2E-01 row13 and its Detail/located-Dungeon/Room-Key route stay open. No new native/build/model tests, physical/original/large-world/installation/Detail/CITY/P02/P04/E2E02-04 acceptance or Copy/Discard/Recovery fault matrix. Historical currentRun stays unchanged.",
         "independentReview": {
           "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/13#issuecomment-6094804164",
           "gate": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6094804323",
@@ -155025,6 +155025,70 @@
           "evidence": "docs/reference/atlas-shared-location-h02/qualification.json",
           "sha256": "71e3fef652677072a17eb4593d1a73b79f1d0292605d8028cbe493e7e893d4ba",
           "originalReceiptSha256": "12856a4f351af562952cd50ce8616dae734f14b91fc8abbaabed6eab17ab94bf",
+          "nativeRepeated": false,
+          "guiSlotUsed": false
+        },
+        "sharedLocationKeyNativeH02Cleanup": {
+          "id": "E2E-01-SHARED-LOCATION-KEY-H02-OWN-CLEANUP",
+          "owner": "Hex",
+          "issue": 40,
+          "e2e01UserLine": 13,
+          "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
+          "state": "PASS_bounded_own_transient_source_cleanup",
+          "finishedAt": "2026-10-10T21:12:55Z",
+          "qualifiedNativeSource": "4515088772b759cda2e19d249367699c9868c72c",
+          "removed": [
+            {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-03/shared-location-h02-20261010-2029/source-4515088",
+              "kind": "clean detached owned test source worktree",
+              "normalGitWorktreeRemove": true,
+              "force": false
+            }
+          ],
+          "retainedSourceArchive": {
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-03/shared-location-h02-cleanup-20261010-2110/retained-source-4515088.tar.gz",
+            "sha256": "c5bc8562def856fd3ed7837783010b83a46a144fdf8036166b6d5e5c86fc3662",
+            "bytes": 6086171,
+            "entries": 939,
+            "allEntryBytesAndSymlinksVerified": true,
+            "manifest": "/home/aaron/.cache/dungeon-native-qa/hex-03/shared-location-h02-cleanup-20261010-2110/retained-source-manifest.json",
+            "manifestSha256": "2de84625752f0a0323fa446b4cdd0cad0bae8f079d06b643eb42594d757ca84f"
+          },
+          "preservation": {
+            "allCanonicalHistoricalFilesVerified": 82,
+            "originalH02Artifacts": 40,
+            "originalH02ReceiptSha256": "12856a4f351af562952cd50ce8616dae734f14b91fc8abbaabed6eab17ab94bf",
+            "allHostQAFilesOutsideRemovedCheckoutUnchanged": 177,
+            "savedNativeVaultFilesVerified": 9,
+            "installedSyntheticQAPluginTriplet": {
+              "main.js": "76bb453acca65f260e2276a385da66c5039a643fa10681b9b7a20fc5209c1322",
+              "styles.css": "68e1cf101ceaadd624168b431fddc297c90e8a5bc6be25a15f0926ebb569a5ea",
+              "manifest.json": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64"
+            },
+            "otherRegisteredWorktreesExact": 6,
+            "ownedDependencyTargetInodeUnchanged": 45467981,
+            "protectedOriginalForeignChangesAndDependencyInodeUnchanged": true,
+            "nativeProcessPidsAbsent": [
+              3243598,
+              3243624,
+              3243701,
+              3243708,
+              3243722,
+              3244554,
+              3244584,
+              3244661,
+              3244668,
+              3244694
+            ],
+            "userVaultUsed": false,
+            "sourcesEdited": false
+          },
+          "next": "Location milestone stays complete; next productive Hex scope is the concrete existing E2E-01 detail/located-Dungeon/Room-Key route. No new product implementation in this cleanup run and no new general plan/review cycle.",
+          "fullE2E": false,
+          "commonGateClosed": false,
+          "evidence": "docs/reference/atlas-shared-location-h02/cleanup.json",
+          "sha256": "85104415b1db06d3e6e5340f05c9fccde20c1a9911621ee8308ca90d48cc2a56",
+          "productEdited": false,
           "nativeRepeated": false,
           "guiSlotUsed": false
         }

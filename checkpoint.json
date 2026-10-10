@@ -898,7 +898,7 @@
   "hexAtlasExecution": {
     "scope": "HEX-00 bis HEX-28 und sämtliche eingeordneten CITY-00 bis CITY-09 vollständig",
     "phase": "HEX-03",
-    "state": "scoped_native_Location_Save_fresh_process_accepted_own_cleanup_pending",
+    "state": "scoped_native_Location_Save_fresh_process_accepted_own_cleanup_complete",
     "plan": "ROADMAP-E2E01-SPATIAL-INTEGRATION-PLAN.md",
     "currentRun": {
       "id": "E2E-01-SPACE-I01b",
@@ -945,21 +945,22 @@
       "phaseApproval": false
     },
     "nextRun": {
-      "id": "E2E-01-SHARED-LOCATION-KEY-H02-OWN-CLEANUP",
-      "kind": "bounded_own_cleanup_only",
+      "id": "E2E-01-HEX-REMAINING-DETAIL-DUNGEON-ROOM-KEY",
+      "kind": "resume_existing_user_line13_remaining_detail_route",
       "owner": "Hex",
-      "issue": 40,
+      "issue": 12,
+      "domainIssue": 7,
+      "closedLocationIssue": 40,
       "e2e01UserLine": 13,
       "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
       "sourcePlan": "ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md",
-      "focus": "Separate bounded own cleanup of no-longer-needed owned transient resources only; preserve all canonical and historical evidence and unrelated files. No further general review or GUI run without a concrete new finding.",
-      "input": "checkpoint.hexAtlasExecution.latestSharedLocationKeyNativeH02Qualification",
-      "sourceCommit": "4515088772b759cda2e19d249367699c9868c72c",
+      "focus": "Location/Key/Move/shared UndoRedo/Save/fresh-process milestone and its own cleanup are complete. Resume only the still-open Detail/located-Dungeon/Room-Key part of the existing E2E-01 user line, using the latest actual source and current owner handoffs. Identify the next concrete missing implementation; no new general plan/review cycle or reopening of qualified codec/native Location evidence.",
+      "input": "checkpoint.hexAtlasExecution.latestSharedLocationKeyNativeH02Cleanup",
       "fixtureVersion": "e2e01-spatial-v2",
       "slotConfirmedForNextRun": false,
       "slotRequiredAgain": false,
-      "after": "The accepted Location milestone remains scoped. Details follow only as the next concrete authorized product step; no CITY/E2E02-04 advance in cleanup.",
-      "limits": "Only #40 scoped Location Save/fresh-process acceptance. Synthetic native input, no physical GM acceptance. No new Copy/Discard/Recovery fault matrix, Detail/CITY/P02/P04/E2E02-04/original parity/large-world/installation/full-E2E acceptance. Later Shared docs and unrelated package changes are not a new native run."
+      "guiRule": "Any actual future GUI run needs a separately justified scenario and fresh explicit local slot coordination. This cleanup holds no slot.",
+      "limits": "No product implementation or GUI in this cleanup run; no CITY/P02/P04/E2E02-04/physical/original/large-world/installation/full-E2E advance."
     },
     "review": {
       "run": "HEX-02-R02",
@@ -5409,7 +5410,7 @@
       "platformIssue": 11,
       "checkpointIsAuthoritative": true
     },
-    "updatedAt": "2026-10-10T21:02:43Z",
+    "updatedAt": "2026-10-10T21:12:55Z",
     "consumerMatrix": {
       "id": "RUNTIME-MANIFEST-I02-CONSUMER-MATRIX-V1",
       "state": "frozen_complete_matrix_green_on_productive_Host_source",
@@ -6429,6 +6430,70 @@
       "evidence": "docs/reference/atlas-shared-location-h02/qualification.json",
       "sha256": "71e3fef652677072a17eb4593d1a73b79f1d0292605d8028cbe493e7e893d4ba",
       "originalReceiptSha256": "12856a4f351af562952cd50ce8616dae734f14b91fc8abbaabed6eab17ab94bf",
+      "nativeRepeated": false,
+      "guiSlotUsed": false
+    },
+    "latestSharedLocationKeyNativeH02Cleanup": {
+      "id": "E2E-01-SHARED-LOCATION-KEY-H02-OWN-CLEANUP",
+      "owner": "Hex",
+      "issue": 40,
+      "e2e01UserLine": 13,
+      "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
+      "state": "PASS_bounded_own_transient_source_cleanup",
+      "finishedAt": "2026-10-10T21:12:55Z",
+      "qualifiedNativeSource": "4515088772b759cda2e19d249367699c9868c72c",
+      "removed": [
+        {
+          "path": "/home/aaron/.cache/dungeon-native-qa/hex-03/shared-location-h02-20261010-2029/source-4515088",
+          "kind": "clean detached owned test source worktree",
+          "normalGitWorktreeRemove": true,
+          "force": false
+        }
+      ],
+      "retainedSourceArchive": {
+        "path": "/home/aaron/.cache/dungeon-native-qa/hex-03/shared-location-h02-cleanup-20261010-2110/retained-source-4515088.tar.gz",
+        "sha256": "c5bc8562def856fd3ed7837783010b83a46a144fdf8036166b6d5e5c86fc3662",
+        "bytes": 6086171,
+        "entries": 939,
+        "allEntryBytesAndSymlinksVerified": true,
+        "manifest": "/home/aaron/.cache/dungeon-native-qa/hex-03/shared-location-h02-cleanup-20261010-2110/retained-source-manifest.json",
+        "manifestSha256": "2de84625752f0a0323fa446b4cdd0cad0bae8f079d06b643eb42594d757ca84f"
+      },
+      "preservation": {
+        "allCanonicalHistoricalFilesVerified": 82,
+        "originalH02Artifacts": 40,
+        "originalH02ReceiptSha256": "12856a4f351af562952cd50ce8616dae734f14b91fc8abbaabed6eab17ab94bf",
+        "allHostQAFilesOutsideRemovedCheckoutUnchanged": 177,
+        "savedNativeVaultFilesVerified": 9,
+        "installedSyntheticQAPluginTriplet": {
+          "main.js": "76bb453acca65f260e2276a385da66c5039a643fa10681b9b7a20fc5209c1322",
+          "styles.css": "68e1cf101ceaadd624168b431fddc297c90e8a5bc6be25a15f0926ebb569a5ea",
+          "manifest.json": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64"
+        },
+        "otherRegisteredWorktreesExact": 6,
+        "ownedDependencyTargetInodeUnchanged": 45467981,
+        "protectedOriginalForeignChangesAndDependencyInodeUnchanged": true,
+        "nativeProcessPidsAbsent": [
+          3243598,
+          3243624,
+          3243701,
+          3243708,
+          3243722,
+          3244554,
+          3244584,
+          3244661,
+          3244668,
+          3244694
+        ],
+        "userVaultUsed": false,
+        "sourcesEdited": false
+      },
+      "next": "Location milestone stays complete; next productive Hex scope is the concrete existing E2E-01 detail/located-Dungeon/Room-Key route. No new product implementation in this cleanup run and no new general plan/review cycle.",
+      "fullE2E": false,
+      "commonGateClosed": false,
+      "evidence": "docs/reference/atlas-shared-location-h02/cleanup.json",
+      "sha256": "85104415b1db06d3e6e5340f05c9fccde20c1a9911621ee8308ca90d48cc2a56",
+      "productEdited": false,
       "nativeRepeated": false,
       "guiSlotUsed": false
     }

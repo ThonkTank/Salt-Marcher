@@ -9,9 +9,12 @@ und [separate PR72-Stewardintegration](https://github.com/ThonkTank/Obsidian-Dun
 sind konsumiert. [Qualifikationsentscheidung](docs/reference/atlas-shared-location-h02/qualification.json).
 Der tatsächliche native Source bleibt `4515088772b759cda2e19d249367699c9868c72c`;
 spätere Shared-Commits sind kein neuer nativer Hostlauf. Das gemeinsame E2E-01-Gate
-bleibt offen. Nächster eigener Schritt ist die begrenzte Bereinigung in einem
-getrennten Lauf gemäß aktuellem Nutzerauftrag; dafür ist kein GUI-Slot nötig.
-Detaillinks/CITY oder E2E-02–04 werden in diesem Qualifikationslauf nicht begonnen.
+bleibt offen. Die [eigene begrenzte Bereinigung](docs/reference/atlas-shared-location-h02/cleanup.json)
+ist abgeschlossen: vollständiges hashgeprüftes Archiv des H02-Prüfcheckouts,
+danach normale Entfernung nur dieses Checkouts; Belege und Testvault erhalten.
+Nächster produktiver Hex-Anschluss bleibt die konkrete Detail-/verortete-Dungeon-/
+Raum-Key-Folge derselben E2E-01-Zeile. In diesem Bereinigungslauf werden keine
+Produktänderung, GUI, CITY oder E2E-02–04 begonnen.
 
 ## Historische Planbasis und Lieferbelege
 
