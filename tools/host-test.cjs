@@ -25,7 +25,8 @@ const restart = process.argv.includes("--restart"),
   dd036S01HardCrash = process.argv.includes("--dd036-s01-hard-crash"),
   hex02Save = process.argv.includes("--hex02-save"),
   atlasCampaignABA = process.argv.includes("--atlas-campaign-aba"),
-  atlasCampaignRuntime = process.argv.includes("--atlas-campaign-runtime") || atlasCampaignABA,
+  worldNotesNative = process.argv.includes("--world-notes-native"),
+  atlasCampaignRuntime = process.argv.includes("--atlas-campaign-runtime") || atlasCampaignABA || worldNotesNative,
   atlasSpatial = process.argv.includes("--atlas-spatial") || atlasCampaignRuntime,
   hex03Location = process.argv.includes("--hex03-location"),
   hex02Terrain = process.argv.includes("--hex02-terrain") || hex02Save,
@@ -917,6 +918,11 @@ async function workflow() {
       };
     });
   const scenarioContext = { page, browser, fs, path, assert, crypto, PNG, root, pluginRoot, qa, vault, sourceVault, restart, out, checks, chooseTool, editorAction, selectOnlyObjects, waitForFileAbsent, sleep, resolveQaAppCgroup };
+  if (worldNotesNative) {
+    const scenario = require("./host/world-notes-native.cjs")(scenarioContext);
+    if (restart) await scenario.reopen(); else await scenario.edit();
+    return;
+  }
   if (atlasCampaignABA) {
     assert.equal(restart, false, "ABA uses one real process with fresh Campaign activations");
     await require("./host/atlas-campaign-aba.cjs")(scenarioContext)();
