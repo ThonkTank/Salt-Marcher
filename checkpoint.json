@@ -9445,17 +9445,18 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-DRAFT-ABA-I01",
-      "status": "implemented_review_pending",
+      "id": "CITY-DRAFT-ABA-N01",
+      "status": "implemented_delta_review_pending",
       "kind": "bugfix",
-      "focus": "Reject obsolete CityDraft after same-city A-B-A without consuming Redo; retain independent Terrain composition",
+      "focus": "Observe existing History notifications; reject existing-Redo→Undo ABA terminally; detach observers on terminal states and failed gesture construction",
       "baseSha": "843562ac256eb293f1b8c95f10077a9a7a7c1a1b",
-      "nextStep": "Independent exact-SHA code review of snapshot binding and ABA regressions"
+      "nextStep": "Independent delta review of N01 against111d8239 on same PR63",
+      "reviewFinding": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/63#pullrequestreview-5480419361"
     },
     "nextRun": {
-      "id": "CITY-DRAFT-ABA-R01",
+      "id": "CITY-DRAFT-ABA-R02",
       "kind": "independent_code_review",
-      "focus": "Snapshot identity remains existing History authority; stale update/apply terminal, Redo preserved, no GUI or integration approval"
+      "focus": "Only Redo-Undo recurrence and observer lifecycle delta; retain independent Terrain compatibility"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",

@@ -20,9 +20,13 @@ export class CityDraft {
   private currentState: CityDraftState = "editing";
   private candidate: CityDraftPreview | null = null;
   private readonly baselineIdentity;
+  private unsubscribe: () => void = () => {};
   constructor(private readonly source: CitySource) {
     this.before = source.read();
     this.baselineIdentity = source.snapshotIdentity;
+    this.unsubscribe = source.history.subscribe(() => {
+      if (source.snapshotIdentity !== this.baselineIdentity) this.fail();
+    });
   }
   get state(): CityDraftState {
     return this.currentState;
@@ -31,13 +35,23 @@ export class CityDraft {
     return this.candidate;
   }
   private assertEditable(): void {
+    if (this.currentState === "failed")
+      throw new Error("Stadtentwurf fehlgeschlagen oder mit dem aktuellen Stand kollidiert.");
     if (this.currentState !== "editing" && this.currentState !== "invalid")
       throw new Error("Stadtentwurf bereits abgeschlossen.");
     if (this.source.snapshotIdentity !== this.baselineIdentity) {
-      this.currentState = "failed";
-      this.candidate = null;
+      this.fail();
       throw new Error("Stadtentwurf kollidiert mit einem geänderten Stadtstand.");
     }
+  }
+  private detach(): void {
+    this.unsubscribe();
+    this.unsubscribe = () => {};
+  }
+  private fail(): void {
+    this.detach();
+    this.currentState = "failed";
+    this.candidate = null;
   }
   setEdits(edits: readonly CityEdit[]): CityDraftPreview {
     this.assertEditable();
@@ -65,6 +79,8 @@ export class CityDraft {
     if (typeof label !== "string" || !label.trim() || label.length > 200)
       throw new Error("Ungültige Stadt-Befehlsbezeichnung.");
     try {
+      // Own synchronous commit must not invalidate itself through its notification.
+      this.detach();
       const changed = this.source.history.execute({
         label,
         changes: [cityDocumentChange(this.before, this.candidate.document)],
@@ -73,14 +89,14 @@ export class CityDraft {
       this.candidate = null;
       return changed;
     } catch (error) {
-      this.currentState = "failed";
-      this.candidate = null;
+      this.fail();
       throw error;
     }
   }
   cancel(): boolean {
     if (this.currentState === "applied" || this.currentState === "cancelled")
       return false;
+    this.detach();
     this.candidate = null;
     this.currentState = "cancelled";
     return true;

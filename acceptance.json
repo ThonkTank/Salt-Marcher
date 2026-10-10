@@ -4853,12 +4853,13 @@
       }
     },
     "draftAbaRegression": {
-      "state": "implementation_review_pending",
+      "state": "delta_review_pending",
       "trigger": "City edit A→B, Undo to byte-identical A, late Apply of pre-existing draft",
       "before": "old draft committed and erased Redo",
-      "after": "update/apply reject changed City snapshot identity, clear candidate and become terminal failed",
+      "after": "Existing History notifications invalidate same-city drafts terminally even if Redo→Undo restores the same object reference; observers detach on Apply/Cancel/failure, and invalid gesture construction subscribes to nothing",
       "compatibility": "independent Terrain changes remain allowed; no new revision/history/persistence authority",
-      "limits": "Core regression only; independent review, City host/integration and full parity remain open"
+      "limits": "Code delta awaiting independent review; core tests are not City host/integration or full parity approval",
+      "reviewFinding": "PR63/5480419361; first reference-only implementation was insufficient"
     }
   },
   "wonderdraftParity": {

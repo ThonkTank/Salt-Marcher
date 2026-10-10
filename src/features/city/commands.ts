@@ -40,7 +40,7 @@ export class CitySource {
   read(): CityDocument {
     return checked(this.snapshotIdentity, this.id);
   }
-  /** Existing immutable History value; Undo does not revive an older draft binding. */
+  /** Existing immutable History value; callers observe changes to reject revived bindings. */
   get snapshotIdentity(): AtlasValue {
     return this.history.read(this.id, DOCUMENT_TARGET);
   }
