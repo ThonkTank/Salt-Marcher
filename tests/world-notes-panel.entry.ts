@@ -56,6 +56,8 @@ function fixture() {
 
 test("GM creates, searches, edits and reopens exact authored prose through confirmed snapshots", async () => {
   const f = fixture();
+  assert.equal(f.host.querySelector('details summary')?.textContent, "Hilfe zu Kampagnenwissen");
+  assert.equal(f.host.querySelector('[role="region"]')?.getAttribute("aria-label"), "Kampagnenwissen");
   f.click("NPC anlegen"); f.input("Name", "Älva");
   f.input("Vorlesetext", "  Licht fällt.\n"); f.input("GM-Notizen", "# Geheim\n\n[[Tor]]");
   f.input("Kreaturreferenz", "srd:wizard"); await f.save();

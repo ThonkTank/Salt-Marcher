@@ -32,8 +32,14 @@ export class WorldNotesPanel {
   constructor(host: HTMLElement, private readonly options: WorldNotesPanelOptions) {
     const doc = host.ownerDocument;
     this.root = doc.createElement("div"); this.root.className = "dn-world-notes";
+    this.root.setAttribute("role", "region");
     this.root.setAttribute("aria-label", "Kampagnenwissen");
     const title = doc.createElement("h2"); title.textContent = "Kampagnenwissen";
+    const help = doc.createElement("details");
+    const helpTitle = doc.createElement("summary"); helpTitle.textContent = "Hilfe zu Kampagnenwissen";
+    const helpText = doc.createElement("p");
+    helpText.textContent = "NPCs, Fraktionen, Quests und Gerüchte behalten ihre IDs. Vorlesetext und GM-Notizen sind getrennt. Beziehungen verweisen auf bestehende Einträge; Löschen benötigt eine Bestätigung.";
+    help.append(helpTitle, helpText);
     this.search = doc.createElement("input"); this.search.type = "search";
     this.search.setAttribute("aria-label", "Notizen durchsuchen");
     this.search.addEventListener("input", () => this.renderList());
@@ -52,7 +58,7 @@ export class WorldNotesPanel {
     this.list = doc.createElement("ul"); this.list.className = "dn-world-notes-list";
     this.editor = doc.createElement("div"); this.editor.className = "dn-world-notes-editor";
     this.status = doc.createElement("p"); this.status.setAttribute("role", "status");
-    this.root.append(title, this.search, actions, this.list, this.editor, this.status);
+    this.root.append(title, help, this.search, actions, this.list, this.editor, this.status);
     host.append(this.root);
   }
   update(snapshot: WorldNotesSnapshotV1): void {
