@@ -2862,6 +2862,13 @@ async function workflow() {
       checks,
       errors,
       guardFailure,
+      failure: failure
+        ? {
+            name: failure instanceof Error ? failure.name : "NonErrorThrown",
+            message: failure instanceof Error ? failure.message : String(failure),
+            stack: failure instanceof Error ? failure.stack : undefined,
+          }
+        : null,
       peakBytes: peak,
       passed: !failure && !errors.length && !guardFailure,
     };
