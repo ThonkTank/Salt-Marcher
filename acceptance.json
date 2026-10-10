@@ -152708,6 +152708,18 @@
           "city": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/7#issuecomment-6091472576",
           "dungeon": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6091516581"
         }
+      },
+      {
+        "id": "E2E01-HEX-SPACE-CORE-001",
+        "requirement": "Native WorldV2 bindings, actual Source graph, prospective shared History and relative physical frame precision",
+        "state": "checked_core_foundation_only_storage_host_review_open",
+        "implementationRun": "E2E-01-SPACE-I01a-1",
+        "catalog": "ROADMAP-E2E-GATES-CANDIDATE.md:13",
+        "evidence": [
+          "tests/core/atlas-spatial.test.ts",
+          "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/space-i01a1/implementation.json"
+        ],
+        "observed": "13 focused cases within458/458 tests plus check/build. Native Source adapters attach via one Worldowner, compose house/Key/bindings once, restore V1/component bytes by Undo, reject unloaded/wrong/aliased identities and dangling houses/floors/routes/local sections before any mutation; explicit detach preserves Dungeon owner. Relative projections/hits, pixel Pan and Pointer Zoom preserve centimeter detail at±1e16m, house translations stay separate and house scale never deforms physical Dungeon vectors. No active WorldV2 host/storage, fixture activation, native/integrated independent review or E2E approval."
       }
     ],
     "cleanupFindings": [
@@ -152759,7 +152771,7 @@
         }
       }
     ],
-    "limits": "Earlier HEX02 scoped native/review/CLEAN and HEX03 marker native receipts retain their exact source/scope. The reviewed City/Dungeon/Campaign sources now share a checked seven-file native snapshot/History composition; spatial bindings, City/Dungeon rendering by zoom, all-owner persistence, Campaign/context/registry and P02/P04 Complete-Import remain open. Latest source-integration basis: check, 445/445 tests and build only; no new native, physical, large-map, original-parity or installation proof, no E2E01 PASS.",
+    "limits": "Spatial foundation is now core checked:458/458 tests, check/build; actual Source graph and relative one-camera replacement ports are not mounted in the host. WorldV2 remains opt-in and current Repository/Host remain V1-closed until all-owner Snapshot/DraftV3/Save/Copy/Discard/Recovery is integrated. Frozen fixture/source authority and earlier exact marker native receipts retain their own scope. Native shared City/Dungeon zoom/Key, Campaign/context/publish/CompleteImport, independent integrated review, physical input, large world, original parity and installed-vault acceptance remain open; no E2E01 PASS.",
     "cloudFollowup": {
       "id": "GM-UX-N-004",
       "state": "resolved_observed_failure_app_reload_only",

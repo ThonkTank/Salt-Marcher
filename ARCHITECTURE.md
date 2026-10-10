@@ -537,6 +537,22 @@ diese Autorität nicht. Campaign/Data liefert die konkrete Ownership-/Revision-
 und Publishsemantik, Hex verbindet den bestätigten minimalen Vaultadapter.
 Die räumliche Zwischenprobe bleibt klar vom vollständigen P02/P04-/E2E-PASS getrennt.
 
+E2E-01-SPACE-I01a-1 implementiert davon ausschließlich das Raumfundament:
+`spatial-schema.ts` bietet einen geschlossenen separaten WorldV2-Codec und einen
+Version-/Bindingzustand unter dem bestehenden Worldowner. TerrainSource aktiviert
+dieses Ziel nur ausdrücklich; der Host-/Repositoryparser bleibt bis zur vollständigen
+Speicheranbindung bei V1. `SpatialGraph` hält tatsächliche Location-/City-/Dungeon-
+Sources derselben History, prüft Parent-/Haus-/Geschoss-/Raum-/Routen- und lokale
+Keyclosure und erzeugt starre relative Rahmen. `AtlasHistory.addPreflight` prüft
+den vollständigen geplanten Zustand vor execute/undo/redo; `check` verwendet
+dieselbe Prüfung ohne Mutation. Die Prüfansicht ist unveränderlich, synchron und
+gegen schreibenden Wiedereintritt geschützt. Relative Kamera-/Projektionsports
+halten Anker, Offset und Parenttranslationen getrennt, erhalten Detailpräzision bei
+Pan/Pointerzoom und lehnen numerisch unzuverlässige Treffer ab. Diese Ports sind
+noch nicht im Host montiert. Dreizehn neue Kernfälle und die Basisprüfungen sind
+bestanden; gemeinsame Snapshot-/DraftV3-/Save-/Copy-/Discard-/Recovery-Speicherung,
+native Darstellung und vollständige E2E-Abnahme bleiben die folgenden Schritte.
+
 ## Dungeondraft-Kartenassistent beim Kartenstart
 
 Die New-Map-Auswahl für den Assistenten ist pro Pluginprozess gemerkt. Eine neue Karte entsteht zuerst als leerer, noch nicht gespeicherter V4-Entwurf; die Pending-View übergibt nur das einmalige Startsignal an den seitlichen Editor-Assistenten. DUNGEON/CAVE und die Vorschau bleiben Editorzustand. „Neu generieren“ ersetzt nur die Kennungen des vorherigen Vorschlags dieser Assistentenansicht, „Fertigstellen“ wechselt zurück zur Werkzeugansicht und lässt die erzeugten Entitäten bearbeitbar. Das gespeicherte V4-Format erhält dafür kein neues Pflichtfeld. Native Generatorparameter und Materialwirkung bleiben Gegenstand von `DD-004/005`; der Phase-1-Startpfad ist noch nicht unabhängig reviewt.

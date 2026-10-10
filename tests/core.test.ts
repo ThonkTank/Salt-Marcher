@@ -42,3 +42,4 @@ import "./core/city-renderer.test";
 import "./core/city-e2e-fixture.test";
 import "./core/dungeon-atlas-source.test";
 import "./core/atlas-e2e-composition.test";
+import "./core/atlas-spatial.test";

@@ -17,6 +17,11 @@ export interface AtlasCommand {
   readonly changes: readonly AtlasChange[];
 }
 type Validator = (target: string, value: AtlasValue) => void;
+export interface AtlasReadView {
+  read(ownerId: string, target: string): AtlasValue;
+  entries(ownerId: string): readonly (readonly [string, AtlasValue])[];
+}
+export type AtlasPreflight = (view: AtlasReadView) => void;
 interface Owner {
   values: Map<string, AtlasValue>;
   validate: Validator;
@@ -67,7 +72,23 @@ export class AtlasHistory {
   private undoStack: AtlasCommand[] = [];
   private redoStack: AtlasCommand[] = [];
   private listeners = new Set<() => void>();
+  private preflights = new Set<AtlasPreflight>();
+  private checking = false;
+  private writable(): void {
+    if (this.checking)
+      throw new Error("Atlasprüfung darf den Zustand nicht ändern.");
+  }
+  /** Check the complete prospective state, never a partially applied command. */
+  addPreflight(validate: AtlasPreflight): () => void {
+    this.writable();
+    this.preflights.add(validate);
+    return () => {
+      this.writable();
+      this.preflights.delete(validate);
+    };
+  }
   register(ownerId: string, validate: Validator): void {
+    this.writable();
     if (!ownerId || this.owners.has(ownerId))
       throw new Error("Atlasbesitzer bereits registriert.");
     this.owners.set(ownerId, { values: new Map(), validate });
@@ -82,6 +103,7 @@ export class AtlasHistory {
     ownerId: string,
     entries: Iterable<readonly [string, AtlasValue]>,
   ): void {
+    this.writable();
     const owner = this.owner(ownerId),
       next = new Map(owner.values);
     for (const [target, raw] of entries) {
@@ -99,26 +121,57 @@ export class AtlasHistory {
   entries(ownerId: string): readonly (readonly [string, AtlasValue])[] {
     return [...this.owner(ownerId).values.entries()];
   }
-  private apply(command: AtlasCommand, reverse: boolean): void {
+  private apply(command: AtlasCommand, reverse: boolean, commit = true): void {
+    this.writable();
     const pending = new Map<string, Map<string, AtlasValue>>(),
       seen = new Set<string>();
-    for (const c of command.changes) {
-      const key = JSON.stringify([c.ownerId, c.target]);
-      if (seen.has(key)) throw new Error("Doppeltes Atlas-Befehlsziel.");
-      seen.add(key);
-      const owner = this.owner(c.ownerId),
-        before = reverse ? c.after : c.before,
-        after = reverse ? c.before : c.after;
-      if (!sameAtlasValue(owner.values.get(c.target) ?? null, before))
-        throw new Error("Atlasänderung kollidiert mit dem aktuellen Stand.");
-      owner.validate(c.target, after);
-      let next = pending.get(c.ownerId);
-      if (!next) pending.set(c.ownerId, (next = new Map(owner.values)));
-      next.set(c.target, after);
+    this.checking = true;
+    try {
+      for (const c of command.changes) {
+        const key = JSON.stringify([c.ownerId, c.target]);
+        if (seen.has(key)) throw new Error("Doppeltes Atlas-Befehlsziel.");
+        seen.add(key);
+        const owner = this.owner(c.ownerId),
+          before = reverse ? c.after : c.before,
+          after = reverse ? c.before : c.after;
+        if (!sameAtlasValue(owner.values.get(c.target) ?? null, before))
+          throw new Error("Atlasänderung kollidiert mit dem aktuellen Stand.");
+        owner.validate(c.target, after);
+        let next = pending.get(c.ownerId);
+        if (!next) pending.set(c.ownerId, (next = new Map(owner.values)));
+        next.set(c.target, after);
+      }
+      if (this.preflights.size) {
+        const snapshot = new Map(
+          [...this.owners].map(
+            ([id, owner]) => [id, pending.get(id) ?? owner.values] as const,
+          ),
+        );
+        const values = (id: string) => {
+          const result = snapshot.get(id);
+          if (!result) throw new Error("Unbekannter Atlasbesitzer.");
+          return result;
+        };
+        const view: AtlasReadView = Object.freeze({
+          read: (id: string, target: string) => values(id).get(target) ?? null,
+          entries: (id: string) =>
+            Object.freeze([...values(id)].map((entry) => Object.freeze(entry))),
+        });
+        for (const validate of this.preflights) {
+          const result: unknown = validate(view);
+          if (result !== undefined)
+            throw new Error(
+              "Prospektive Atlasprüfung muss synchron und schreibfrei sein.",
+            );
+        }
+      }
+    } finally {
+      this.checking = false;
     }
+    if (!commit) return;
     for (const [id, values] of pending) this.owner(id).values = values;
   }
-  execute(raw: AtlasCommand): boolean {
+  private command(raw: AtlasCommand): AtlasCommand {
     const changes = raw.changes.map((c) =>
       Object.freeze({
         ...c,
@@ -130,6 +183,15 @@ export class AtlasHistory {
       label: raw.label,
       changes: Object.freeze(changes),
     });
+    return command;
+  }
+  /** Preview uses the identical validators without changing owners or either stack. */
+  check(raw: AtlasCommand): void {
+    this.apply(this.command(raw), false, false);
+  }
+  execute(raw: AtlasCommand): boolean {
+    const command = this.command(raw),
+      changes = command.changes;
     // Validate no-ops too: a stale command must not be accepted just because before equals after.
     this.apply(command, false);
     if (changes.every((c) => sameAtlasValue(c.before, c.after))) return false;
