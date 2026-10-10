@@ -375,7 +375,15 @@ function countExactNormalizedLineSegments(lines, expected) {
   const needle = ` ${expected} `;
   return lines.reduce((count, line) => {
     const haystack = ` ${normalizePdfText(line)} `;
-    return count + haystack.split(needle).length - 1;
+    let matches = 0;
+    let offset = 0;
+    while (offset <= haystack.length - needle.length) {
+      const match = haystack.indexOf(needle, offset);
+      if (match < 0) break;
+      matches += 1;
+      offset = match + 1;
+    }
+    return count + matches;
   }, 0);
 }
 
@@ -411,6 +419,39 @@ function verifyPdfAdventuringGearTableRows(pdfPath, transcript, inventory) {
   const pageLines = Object.fromEntries(pages.map(page => [String(page),
     extractPdfPage(pdfPath, page, true).split(/\r?\n/).filter(line => line.trim().length > 0)]));
   return validateBoundedAdventuringGearTableRows(pageLines, transcript, inventory);
+}
+
+export function validateBoundedToolsTableRows(pageLines, transcript, inventory) {
+  object(pageLines, "Tools-Tabellenzeilen");
+  const occurrences = inventory.occurrences.filter(occurrence => occurrence.sectionId === "tools");
+  invariant(occurrences.length === 35, "Bounded Tools-Prüfung benötigt exakt 35 Inventarzeilen.");
+  const records = new Map(transcript.records.map(record => [record.id, record]));
+  for (const occurrence of occurrences) {
+    const record = records.get(occurrence.id);
+    invariant(record, `${occurrence.id}: Record für bounded Tools-Prüfung fehlt.`);
+    invariant(record.cost, `${occurrence.id}: strukturierte Tools-Kostenzelle fehlt.`);
+    const expected = normalizePdfText([
+      occurrence.sourceLabel,
+      record.cost.sourceText,
+      record.weight?.sourceText ?? "—",
+    ].join(" "));
+    const lines = pageLines[String(occurrence.firstPdfPage)];
+    invariant(Array.isArray(lines), `${occurrence.id}: Layoutzeilen für PDF-Seite ${occurrence.firstPdfPage} fehlen.`);
+    const matches = countExactNormalizedLineSegments(lines, expected);
+    invariant(matches === 1,
+      `${occurrence.id}: erwartete Tools-Zellen stehen nicht exakt einmal als zusammenhängendes Segment derselben physischen Tabellenzeile.`);
+  }
+  return Object.freeze({ checkedRows: occurrences.length,
+    scope: "exact-normalized-pdftotext-layout-row-segment-with-source-missing-markers" });
+}
+
+function verifyPdfToolsTableRows(pdfPath, transcript, inventory) {
+  const pages = [...new Set(inventory.occurrences
+    .filter(occurrence => occurrence.sectionId === "tools")
+    .map(occurrence => occurrence.firstPdfPage))];
+  const pageLines = Object.fromEntries(pages.map(page => [String(page),
+    extractPdfPage(pdfPath, page, true).split(/\r?\n/).filter(line => line.trim().length > 0)]));
+  return validateBoundedToolsTableRows(pageLines, transcript, inventory);
 }
 
 function verifyPdfOccurrences(pdfPath, inventory) {
@@ -546,6 +587,7 @@ export async function verifyItemsSourcePackage({ pdfPath, allowIncomplete = fals
       boundedArmorTableEvidence: verifyPdfArmorTableRows(pdfPath, transcript, inventory),
       boundedWeaponTableEvidence: verifyPdfWeaponTableRows(pdfPath, transcript, inventory),
       boundedAdventuringGearTableEvidence: verifyPdfAdventuringGearTableRows(pdfPath, transcript, inventory),
+      boundedToolsTableEvidence: verifyPdfToolsTableRows(pdfPath, transcript, inventory),
       helperDispositionEvidence: verifyPdfHelperDispositions(pdfPath, inventory),
       crossReferenceEvidence: verifyPdfCrossReferences(pdfPath, inventory) });
   }
