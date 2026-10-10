@@ -188,22 +188,22 @@
     "architecture": "ARCHITECTURE.md#geplante-katalog--und-encounter-erweiterung",
     "acceptance": "acceptance.json.saltMarcherCatalogEncounter",
     "currentRun": {
-      "id": "CE-02-I02-S01-W17",
+      "id": "CE-02-I02-S01-W17-N01",
       "kind": "source_inventory_schema_transcript_intermediate",
       "state": "in_progress_verified_incomplete",
-      "focus": "Capture the explicit Potion-of-Healing equipment-to-magic-item detail merge and its fail-closed golden cases",
+      "focus": "Repair the Potion-of-Healing A–Z ordinal to 142 and derive it independently from wrapped physical PDF headings",
       "plan": "ROADMAP-SALTMARCHER-CE02-I02-PLAN.md",
-      "result": "Potion of healing retains canonical ID srd51:equipment:adventuring-gear:76 and explicitly merges later detail occurrence srd51:magic-item:magic-items-a-z:143 from physical/printed PDF page 234. The complete header proves attunement not-required and variable rarity; four ordered, occurrence-bound variant IDs preserve Healing, Greater healing, Superior healing and Supreme healing with their exact rarity and HP rows. Unknown/later/chained targets, duplicate canonical records, missing source membership, wrong variant ordinals and altered rows fail closed. The real pinned PDF verifies 220 occurrence labels, 681 captured transcript facts and the explicit merge/header/table evidence in addition to all earlier bounded equipment evidence. S01 remains incomplete and I01 blocked.",
+      "result": "Potion of healing retains canonical ID srd51:equipment:adventuring-gear:76 and explicitly merges later detail occurrence srd51:magic-item:magic-items-a-z:142 from physical/printed PDF page 234. The ordinal is independently derived from all 242 PDF headings, including the wrapped Amulet of Proof against Detection and Location heading. The complete header proves attunement not-required and variable rarity; four ordered, occurrence-bound variant IDs preserve Healing, Greater healing, Superior healing and Supreme healing with their exact rarity and HP rows. Unknown/later/chained targets, duplicate canonical records, missing source membership, wrong variant ordinals and altered rows fail closed. The real pinned PDF verifies 220 occurrence labels, 681 captured transcript facts and the explicit merge/header/table evidence in addition to all earlier bounded equipment evidence. S01 remains incomplete and I01 blocked.",
       "verification": {
-        "sourceRevision": "aa4a0eeccfa9a3b41caab061b90526e12d47065d+dirty",
+        "sourceRevision": "2b4912f48b996a0fc249ce4af6a2f48cab34c868+dirty",
         "check": "passed",
         "tests": {
-          "passed": 431,
+          "passed": 432,
           "failed": 0
         },
         "build": "passed",
         "focusedTests": {
-          "passed": 26,
+          "passed": 27,
           "failed": 0
         },
         "pdfSha256": "2504d2a0abb0a4d491a939be4f17910a2dde0312570ab8d208080225ccf0a1f0",
@@ -213,6 +213,7 @@
         "potionHealingMergedRecords": 1,
         "potionHealingRarityChoices": 4,
         "potionHealingRows": 4,
+        "potionHealingDerivedHeadingOrdinal": 142,
         "boundedArmorTableRows": 13,
         "boundedWeaponTableRows": 37,
         "boundedAdventuringGearTableRows": 99,
@@ -231,7 +232,7 @@
         "status": "partial",
         "branch": "active/installed-phase1",
         "baseCommit": "aa4a0eeccfa9a3b41caab061b90526e12d47065d",
-        "issue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/9#issuecomment-6096269327",
+        "issue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/9#issuecomment-6096351369",
         "changedFiles": [
           "acceptance.json",
           "checkpoint.json",

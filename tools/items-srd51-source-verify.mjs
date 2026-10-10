@@ -43,6 +43,40 @@ export function normalizePdfText(value) {
     .trim();
 }
 
+function decodeXmlText(value) {
+  return value.replace(/<[^>]+>/g, "")
+    .replaceAll("&amp;", "&").replaceAll("&quot;", "\"").replaceAll("&apos;", "'")
+    .replaceAll("&lt;", "<").replaceAll("&gt;", ">");
+}
+
+export function extractMagicItemAzHeadingsFromPdfXml(xml) {
+  nonEmpty(xml, "Magic-Item-A–Z-XML");
+  const fontSizes = new Map([...xml.matchAll(/<fontspec id="(\d+)" size="(\d+)"/g)]
+    .map(match => [match[1], Number(match[2])]));
+  const nodes = [...xml.matchAll(/<text\b([^>]*)>([\s\S]*?)<\/text>/g)].map(match => ({
+    font: /\bfont="(\d+)"/.exec(match[1])?.[1],
+    bold: /<b>/.test(match[2]),
+    italic: /<i>/.test(match[2]),
+    text: normalizePdfText(decodeXmlText(match[2])),
+  })).filter(node => node.text.length > 0);
+  const headings = [];
+  for (let index = 0; index < nodes.length;) {
+    if (!nodes[index].bold || fontSizes.get(nodes[index].font) !== 18) {
+      index += 1;
+      continue;
+    }
+    const lines = [];
+    while (index < nodes.length && nodes[index].bold && fontSizes.get(nodes[index].font) === 18) {
+      lines.push(nodes[index].text);
+      index += 1;
+    }
+    if (nodes[index]?.italic
+      && /^(Armor|Potion|Ring|Rod|Scroll|Staff|Wand|Weapon|Wondrous item)\b/.test(nodes[index].text))
+      headings.push(lines.join(" "));
+  }
+  return Object.freeze(headings);
+}
+
 function normalizePdfPageText(value, page) {
   return normalizePdfText(value).replaceAll(`System Reference Document 5.1 ${page}`, "").trim();
 }
@@ -291,7 +325,7 @@ export function validateTranscriptData(transcript, inventory, { allowIncomplete 
 
 export function validatePotionHealingMerge(transcript, inventory) {
   const canonicalId = "srd51:equipment:adventuring-gear:76";
-  const detailId = "srd51:magic-item:magic-items-a-z:143";
+  const detailId = "srd51:magic-item:magic-items-a-z:142";
   const occurrences = new Map(inventory.occurrences.map(occurrence => [occurrence.id, occurrence]));
   const records = new Map(transcript.records.map(record => [record.id, record]));
   const canonicalOccurrence = occurrences.get(canonicalId);
@@ -299,9 +333,9 @@ export function validatePotionHealingMerge(transcript, inventory) {
   invariant(canonicalOccurrence?.sourceLabel === "Potion of healing",
     "Potion-of-Healing-Merge benötigt die kanonische Ausrüstungs-Occurrence.");
   invariant(detailOccurrence?.sourceLabel === "Potion of Healing" && detailOccurrence.sourceKind === "detail-heading"
-    && detailOccurrence.sourceTable === "Magic Items A–Z" && detailOccurrence.ordinal === 143
+    && detailOccurrence.sourceTable === "Magic Items A–Z" && detailOccurrence.ordinal === 142
     && detailOccurrence.firstPdfPage === 234 && detailOccurrence.lastPdfPage === 234,
-  "Potion-of-Healing-Detail muss als A–Z-Heading 143 auf physischer Seite 234 belegt sein.");
+  "Potion-of-Healing-Detail muss als A–Z-Heading 142 auf physischer Seite 234 belegt sein.");
   invariant(detailOccurrence.mergeIntoId === canonicalId,
     "Potion-of-Healing-Detail muss explizit in die erste Ausrüstungs-Occurrence mergen.");
   invariant(!records.has(detailId), "Potion-of-Healing-Detail darf keinen doppelten kanonischen Record erzeugen.");
@@ -683,6 +717,12 @@ function verifyPdfTranscriptFacts(pdfPath, transcript) {
 
 function verifyPdfPotionHealingMerge(pdfPath, transcript, inventory) {
   const evidence = validatePotionHealingMerge(transcript, inventory);
+  const headings = extractMagicItemAzHeadingsFromPdfXml(execFileSync("pdftohtml",
+    ["-xml", "-f", "207", "-l", "251", "-stdout", resolve(pdfPath)],
+    { encoding: "utf8", maxBuffer: 16 * 1024 * 1024 }));
+  invariant(headings[141] === "Potion of Healing"
+    && headings[140] === "Potion of Growth" && headings[142] === "Potion of Heroism",
+  "Potion of Healing muss aus der physischen A–Z-Headingfolge als Ordinal 142 abgeleitet werden.");
   const pageText = normalizePdfPageText(extractPdfPage(pdfPath, 234), 234);
   for (const fact of ["Potion of Healing", "Potion, rarity varies", "Potions of Healing",
     "Healing Common 2d4 + 2", "Greater healing Uncommon 4d4 + 4",
@@ -690,7 +730,7 @@ function verifyPdfPotionHealingMerge(pdfPath, transcript, inventory) {
     invariant(pageText.includes(normalizePdfText(fact)),
       `Potion-of-Healing-PDF-Beleg für „${fact}“ fehlt.`);
   }
-  return Object.freeze({ ...evidence, physicalPdfPage: 234,
+  return Object.freeze({ ...evidence, physicalPdfPage: 234, derivedHeadingOrdinal: 142,
     scope: "explicit-earliest-occurrence-merge-header-rarity-and-four-healing-rows" });
 }
 
