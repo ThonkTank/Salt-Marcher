@@ -3,13 +3,18 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 import {
   normalizePdfText,
+  extractMagicItemAzHeadingsFromPdfXml,
   validateBoundedAdventuringGearTableRows,
   validateBoundedArmorTableRows,
   validateBoundedMountsTableRows,
   validateBoundedTackTableRows,
   validateBoundedToolsTableRows,
+  validateBoundedWaterborneTableRows,
   validateBoundedWeaponTableRows,
   validateJsonSchemas,
+  validateMagicItemAzAnimatedShield,
+  validateMagicItemAzOpeningSlice,
+  validatePotionHealingMerge,
   validateTranscriptData,
   verifyItemsSourcePackage,
 } from "../tools/items-srd51-source-verify.mjs";
@@ -70,8 +75,11 @@ test("items source package is explicitly incomplete and fails closed by default"
   await assert.rejects(verifyItemsSourcePackage(), /S01 ist unvollständig/);
   const result = await verifyItemsSourcePackage({ allowIncomplete: true });
   assert.equal(result.complete, false);
-  assert.equal(result.validation.occurrenceCount, 219);
-  assert.equal(result.validation.recordCount, 219);
+  assert.equal(result.validation.occurrenceCount, 226);
+  assert.equal(result.validation.recordCount, 225);
+  assert.equal(result.magicItemAzOpeningSlice.capturedRecords, 5);
+  assert.equal(result.magicItemAzAnimatedShield.ordinal, 6);
+  assert.equal(result.potionHealingMerge.mergedRecords, 1);
   assert.ok(result.blockers.length >= 5);
 });
 
@@ -82,6 +90,19 @@ test("normalization expands ligatures and proven wrap artifacts while preserving
   assert.equal(normalizePdfText("item—\n an orb, wand-\u2011like item—\n designed"),
     "item—an orb, wand-like item—designed");
   assert.equal(normalizePdfText("co\u00adoperate – −"), "co\u00adoperate – −");
+});
+
+test("Magic Item A–Z ordinal extraction folds a wrapped heading into one occurrence", () => {
+  const xml = `<pdf2xml><fontspec id="5" size="18"/><fontspec id="6" size="15"/>
+    <text font="5"><b>Amulet of Health </b></text><text font="6"><i>Wondrous item, rare</i></text>
+    <text font="5"><b>Amulet of Proof against Detection and </b></text>
+    <text font="5"><b>Location </b></text><text font="6"><i>Wondrous item, uncommon</i></text>
+    <text font="5"><b>Decorative Table Heading</b></text><text font="6">not an item header</text>
+    <text font="5"><b>Amulet of the Planes </b></text><text font="6"><i>Wondrous item, very rare</i></text>
+  </pdf2xml>`;
+  assert.deepEqual(extractMagicItemAzHeadingsFromPdfXml(xml), [
+    "Amulet of Health", "Amulet of Proof against Detection and Location", "Amulet of the Planes",
+  ]);
 });
 
 test("variable rarity golden preserves ordered, sourced +1/+2/+3 choices", () => {
@@ -115,6 +136,101 @@ test("variant identities and occurrence references fail closed", () => {
   bad.records[0].source.occurrenceIds = ["srd51:magic-item:missing:1"];
   assert.throws(() => validateTranscriptData(bad,
     inventory(occurrence)), /unbekannte Occurrence/);
+});
+
+test("first five Magic Items A–Z preserve order, headers, rarity, attunement and full prose", async () => {
+  const [checkedInventory, checkedTranscript] = await Promise.all([
+    readFile(new URL("items-srd51-inventory.json", dataRoot), "utf8").then(JSON.parse),
+    readFile(new URL("items-srd51-transcript.json", dataRoot), "utf8").then(JSON.parse),
+  ]);
+  assert.deepEqual(validateMagicItemAzOpeningSlice(checkedTranscript, checkedInventory), {
+    capturedRecords: 5,
+    physicalPdfPage: 207,
+    fixedRarities: 4,
+    variableRarityChoices: 3,
+    attunementRequired: 3,
+    attunementNotRequired: 2,
+  });
+  const ids = Array.from({ length: 5 }, (_, index) => `srd51:magic-item:magic-items-a-z:${index + 1}`);
+  const records = ids.map(id => checkedTranscript.records.find(record => record.id === id));
+  assert.deepEqual(records.map(record => record.name), [
+    "Adamantine Armor", "Ammunition, +1, +2, or +3", "Amulet of Health",
+    "Amulet of Proof against Detection and Location", "Amulet of the Planes",
+  ]);
+  assert.deepEqual(records.map(record => record.attunement),
+    ["not-required", "not-required", "required", "required", "required"]);
+  assert.deepEqual(records.map(record => record.sourceHeader.text), [
+    "Armor (medium or heavy, but not hide), uncommon",
+    "Weapon (any ammunition), uncommon (+1), rare (+2), or very rare (+3)",
+    "Wondrous item, rare (requires attunement)",
+    "Wondrous item, uncommon (requires attunement)",
+    "Wondrous item, very rare (requires attunement)",
+  ]);
+  assert.deepEqual(records.map(record => record.sourceHeader.occurrenceId), ids);
+  assert.deepEqual(records[1].rarity.choices.map(choice => [choice.label, choice.value]),
+    [["+1", "uncommon"], ["+2", "rare"], ["+3", "very-rare"]]);
+  assert.match(records[4].description[0].text, /On a 61–100.*randomly determined plane of existence\.$/);
+});
+
+test("opening Magic Items A–Z slice fails closed on identity, header facts and prose drift", async () => {
+  const [checkedInventory, checkedTranscript] = await Promise.all([
+    readFile(new URL("items-srd51-inventory.json", dataRoot), "utf8").then(JSON.parse),
+    readFile(new URL("items-srd51-transcript.json", dataRoot), "utf8").then(JSON.parse),
+  ]);
+  const wrongOrdinal = structuredClone(checkedInventory);
+  wrongOrdinal.occurrences.find(item => item.id === "srd51:magic-item:magic-items-a-z:1").ordinal = 2;
+  assert.throws(() => validateMagicItemAzOpeningSlice(checkedTranscript, wrongOrdinal), /Occurrence 1/);
+  const wrongAttunement = structuredClone(checkedTranscript);
+  wrongAttunement.records.find(record => record.id.endsWith("a-z:3")).attunement = "not-required";
+  assert.throws(() => validateMagicItemAzOpeningSlice(wrongAttunement, checkedInventory), /Record 3/);
+  const wrongVariant = structuredClone(checkedTranscript);
+  wrongVariant.records.find(record => record.id.endsWith("a-z:2")).rarity.choices[1].value = "uncommon";
+  assert.throws(() => validateMagicItemAzOpeningSlice(wrongVariant, checkedInventory), /Variante 2/);
+  const truncated = structuredClone(checkedTranscript);
+  truncated.records.find(record => record.id.endsWith("a-z:5")).description[0].text = "While wearing this amulet.";
+  assert.throws(() => validateMagicItemAzOpeningSlice(truncated, checkedInventory), /Record 5/);
+  const reducedHeader = structuredClone(checkedTranscript);
+  reducedHeader.records.find(record => record.id.endsWith("a-z:1")).sourceHeader.text = "Armor, uncommon";
+  assert.throws(() => validateMagicItemAzOpeningSlice(reducedHeader, checkedInventory), /Record 1/);
+  const wrongHeaderOccurrence = structuredClone(checkedTranscript);
+  wrongHeaderOccurrence.records.find(record => record.id.endsWith("a-z:2")).sourceHeader.occurrenceId =
+    "srd51:magic-item:magic-items-a-z:1";
+  assert.throws(() => validateTranscriptData(wrongHeaderOccurrence, checkedInventory, { allowIncomplete: true }),
+    /Textfakt außerhalb seiner Quellenliste/);
+});
+
+test("Animated Shield preserves ordinal, full header, rarity, attunement and full prose", async () => {
+  const [checkedInventory, checkedTranscript] = await Promise.all([
+    readFile(new URL("items-srd51-inventory.json", dataRoot), "utf8").then(JSON.parse),
+    readFile(new URL("items-srd51-transcript.json", dataRoot), "utf8").then(JSON.parse),
+  ]);
+  assert.deepEqual(validateMagicItemAzAnimatedShield(checkedTranscript, checkedInventory), {
+    id: "srd51:magic-item:magic-items-a-z:6",
+    ordinal: 6,
+    physicalPdfPage: 208,
+    rarity: "very-rare",
+    attunement: "required",
+  });
+});
+
+test("Animated Shield fails closed on occurrence, header, rules and prose drift", async () => {
+  const [checkedInventory, checkedTranscript] = await Promise.all([
+    readFile(new URL("items-srd51-inventory.json", dataRoot), "utf8").then(JSON.parse),
+    readFile(new URL("items-srd51-transcript.json", dataRoot), "utf8").then(JSON.parse),
+  ]);
+  const wrongPage = structuredClone(checkedInventory);
+  wrongPage.occurrences.find(item => item.id.endsWith("a-z:6")).firstPdfPage = 207;
+  assert.throws(() => validateMagicItemAzAnimatedShield(checkedTranscript, wrongPage), /Occurrence 6/);
+  for (const mutate of [
+    record => { record.sourceHeader.text = "Armor (shield), very rare"; },
+    record => { record.rarity.value = "rare"; },
+    record => { record.attunement = "not-required"; },
+    record => { record.description[0].text = "The shield animates."; },
+  ]) {
+    const damaged = structuredClone(checkedTranscript);
+    mutate(damaged.records.find(record => record.id.endsWith("a-z:6")));
+    assert.throws(() => validateMagicItemAzAnimatedShield(damaged, checkedInventory), /Animated-Shield-Record/);
+  }
 });
 
 test("Draft 2020-12 schemas validate the checked-in equipment inventory and transcript", async () => {
@@ -368,7 +484,7 @@ test("adventuring gear bounded matching isolates complete cells inside two-colum
     /nicht exakt einmal als zusammenhängendes Segment derselben physischen Tabellenzeile/);
 });
 
-test("Potion of healing keeps its first physical occurrence as canonical magic identity", async () => {
+test("Potion of healing merges the later detail into its first physical occurrence", async () => {
   const [checkedInventory, checkedTranscript] = await Promise.all([
     readFile(new URL("items-srd51-inventory.json", dataRoot), "utf8").then(JSON.parse),
     readFile(new URL("items-srd51-transcript.json", dataRoot), "utf8").then(JSON.parse),
@@ -381,7 +497,73 @@ test("Potion of healing keeps its first physical occurrence as canonical magic i
   assert.equal(potion.subcategory, "potion");
   assert.match(potion.description[0].text, /magical red fluid/);
   assert.equal(occurrence.mergeIntoId, null);
+  assert.equal(potion.attunement, "not-required");
+  assert.deepEqual(potion.source.occurrenceIds, [
+    "srd51:equipment:adventuring-gear:76",
+    "srd51:magic-item:magic-items-a-z:142",
+  ]);
+  assert.deepEqual(potion.rarity.choices.map(choice => [choice.label, choice.value]), [
+    ["Healing", "common"],
+    ["Greater healing", "uncommon"],
+    ["Superior healing", "rare"],
+    ["Supreme healing", "very-rare"],
+  ]);
+  assert.deepEqual(validatePotionHealingMerge(checkedTranscript, checkedInventory), {
+    canonicalId: "srd51:equipment:adventuring-gear:76",
+    detailId: "srd51:magic-item:magic-items-a-z:142",
+    mergedRecords: 1,
+    rarityChoices: 4,
+    healingRows: 4,
+  });
   assert.equal(checkedTranscript.complete, false);
+});
+
+test("Potion-of-Healing merge identity, ordering, source and variants fail closed", async () => {
+  const [checkedInventory, checkedTranscript] = await Promise.all([
+    readFile(new URL("items-srd51-inventory.json", dataRoot), "utf8").then(JSON.parse),
+    readFile(new URL("items-srd51-transcript.json", dataRoot), "utf8").then(JSON.parse),
+  ]);
+  const detailId = "srd51:magic-item:magic-items-a-z:142";
+  const potionId = "srd51:equipment:adventuring-gear:76";
+
+  const unknownTarget = structuredClone(checkedInventory);
+  unknownTarget.occurrences.find(item => item.id === detailId).mergeIntoId = "srd51:equipment:adventuring-gear:999";
+  assert.throws(() => validateTranscriptData(checkedTranscript, unknownTarget, { allowIncomplete: true }),
+    /unbekanntes Merge-Ziel/);
+
+  const laterTarget = structuredClone(checkedInventory);
+  const detailIndex = laterTarget.occurrences.findIndex(item => item.id === detailId);
+  laterTarget.occurrences.unshift(laterTarget.occurrences.splice(detailIndex, 1)[0]);
+  assert.throws(() => validateTranscriptData(checkedTranscript, laterTarget, { allowIncomplete: true }),
+    /frühere physische Occurrence/);
+
+  const chainedTarget = structuredClone(checkedInventory);
+  chainedTarget.occurrences.find(item => item.id === potionId).mergeIntoId = "srd51:equipment:adventuring-gear:75";
+  assert.throws(() => validateTranscriptData(checkedTranscript, chainedTarget, { allowIncomplete: true }),
+    /keine Merge-Kette/);
+
+  const duplicate = structuredClone(checkedTranscript);
+  const secondRecord = structuredClone(duplicate.records.find(record => record.id === potionId));
+  secondRecord.id = detailId;
+  duplicate.records.push(secondRecord);
+  assert.throws(() => validateTranscriptData(duplicate, checkedInventory, { allowIncomplete: true }),
+    /keinen zweiten kanonischen Record/);
+
+  const missingSource = structuredClone(checkedTranscript);
+  missingSource.records.find(record => record.id === potionId).source.occurrenceIds = [potionId];
+  assert.throws(() => validateTranscriptData(missingSource, checkedInventory, { allowIncomplete: true }),
+    /Raritätsvariante außerhalb seiner Quellenliste|gemergte Occurrence/);
+
+  const wrongVariant = structuredClone(checkedTranscript);
+  wrongVariant.records.find(record => record.id === potionId).rarity.choices[2].variantId = `${detailId}#variant:9`;
+  assert.throws(() => validateTranscriptData(wrongVariant, checkedInventory, { allowIncomplete: true }),
+    /ordinale Variant-ID/);
+
+  const wrongHealingRow = structuredClone(checkedTranscript);
+  wrongHealingRow.records.find(record => record.id === potionId).description.at(-1).text =
+    "Supreme healing Very rare 10d4 + 19";
+  assert.throws(() => validatePotionHealingMerge(wrongHealingRow, checkedInventory),
+    /Heilungszeilen/);
 });
 
 test("equipment packs preserve physical order, exact costs and complete published contents", async () => {
@@ -762,4 +944,43 @@ test("waterborne vehicles preserve physical order, fractional mph and Rowed Vess
   mismatchedWeight.records.find(record => record.name === "Rowboat").weight.pounds = "10";
   assert.throws(() => validateTranscriptData(mismatchedWeight, checkedInventory, { allowIncomplete: true }),
     /weight\.pounds stimmt nicht/);
+});
+
+test("waterborne bounded matching keeps fractional source speeds on one physical PDF row", async () => {
+  const [checkedInventory, checkedTranscript] = await Promise.all([
+    readFile(new URL("items-srd51-inventory.json", dataRoot), "utf8").then(JSON.parse),
+    readFile(new URL("items-srd51-transcript.json", dataRoot), "utf8").then(JSON.parse),
+  ]);
+  const occurrences = checkedInventory.occurrences
+    .filter(item => item.sectionId === "waterborne-vehicles");
+  const records = new Map(checkedTranscript.records.map(record => [record.id, record]));
+  const segments = occurrences.map(item => {
+    const record = records.get(item.id);
+    return `${item.sourceLabel} ${record.cost.sourceText} ${record.speed.sourceText}`;
+  });
+  const pageLines = {
+    72: segments.map((segment, index) => `${segment}     Unrelated right-column expenses ${index}`),
+  };
+  assert.deepEqual(validateBoundedWaterborneTableRows(pageLines, checkedTranscript, checkedInventory), {
+    checkedRows: 6,
+    scope: "exact-normalized-pdftotext-layout-row-segment-with-fractional-source-speeds",
+  });
+
+  const wrongCell = structuredClone(checkedTranscript);
+  wrongCell.records.find(record => record.name === "Warship").speed.sourceText = "2 mph";
+  assert.throws(() => validateBoundedWaterborneTableRows(pageLines, wrongCell, checkedInventory),
+    /nicht exakt einmal als zusammenhängendes Segment derselben physischen Tabellenzeile/);
+
+  const pageWideOnly = structuredClone(pageLines);
+  const rowboat = "Rowboat 50 gp 1½ mph";
+  const rowboatLine = pageWideOnly[72].findIndex(line => line.includes(rowboat));
+  pageWideOnly[72][rowboatLine] = pageWideOnly[72][rowboatLine].replace(rowboat, "Rowboat");
+  pageWideOnly[72].push("50 gp", "1½ mph");
+  assert.throws(() => validateBoundedWaterborneTableRows(pageWideOnly, checkedTranscript, checkedInventory),
+    /nicht exakt einmal als zusammenhängendes Segment derselben physischen Tabellenzeile/);
+
+  const duplicateSegment = structuredClone(pageLines);
+  duplicateSegment[72][0] += `     ${segments[0]}`;
+  assert.throws(() => validateBoundedWaterborneTableRows(duplicateSegment, checkedTranscript, checkedInventory),
+    /nicht exakt einmal als zusammenhängendes Segment derselben physischen Tabellenzeile/);
 });

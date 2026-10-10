@@ -14,8 +14,11 @@ import {
 } from "./detail-record";
 import { nativeId } from "./native-values";
 import type { TerrainSource } from "./terrain-source";
+import type { AtlasCampaignManifestSave } from "./atlas-campaign-save";
 
 export interface AtlasSpatialOptions extends AtlasLocationOptions {
+  /** Exact Campaign-owned manifest contribution to this Repository's one journal. */
+  readonly campaignSave?: AtlasCampaignManifestSave;
   /** Core opt-in only; the UI stays closed until native I01b. */
   readonly details?: boolean;
   /** Host supplies all matches in this atlas's verified scope; never a guessed filename. */

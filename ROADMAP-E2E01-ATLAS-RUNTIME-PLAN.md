@@ -269,3 +269,110 @@ Jeder Abschluss bleibt im einzigen PR-13-Kandidaten mit Source-/Fixture-/SHA-Lis
 und einem kurzen Gateprotokoll zu Zeile13. Tests, Build, native Probe, unabhängiger
 Review, physische Eingabe, Originalparität, Großwelt und Installation werden jeweils
 als eigener Nachweis geführt. Eine Planprüfung ist kein Produkt-PASS.
+
+## Einmalige Consumer-Matrix für den restlichen RUNTIME-MANIFEST-I02-Pfad
+
+Die konkrete [Prozessentscheidung in #12/6097273698](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6097273698)
+setzt für diesen Pfad die bisherigen einzelnen Producer-/Consumer-Runden außer
+Kraft. Hex besitzt vorübergehend die Integration; Campaign/Data liefert genau
+einen Patch innerhalb seiner Fachgrenze. Die bereits geschlossenen I02-01/-02-
+Belege und ihre Exact-SHAs bleiben gültig. Es beginnt keine weitere allgemeine
+Plan- oder Reviewrunde.
+
+**Eingefrorener ausführbarer Vertrag:**
+`RUNTIME-MANIFEST-I02-CONSUMER-MATRIX-V1` in
+[tests/campaign-manifest-consumer-matrix.contract.json](tests/campaign-manifest-consumer-matrix.contract.json),
+mit dem [Consumer](tests/campaign-manifest-consumer-matrix.entry.ts) und dem
+[Runner](tools/verify-campaign-manifest-consumer-matrix.mjs). Der Vertrag pinnt
+Test, Runner und alle vorhandenen Spatial-V2-Dateien mit SHA256. Der nächste
+Producerpatch verändert diese Bytes nicht. Alle Fälle müssen in einem vollständigen
+Lauf auf derselben sauberen Candidate-SHA bestehen; kein `--test-name-pattern`,
+kein Skip, keine private Flagänderung oder Ersatzimplementierung.
+
+| Fall | Tatsächlich geprüfte Wirkung |
+| --- | --- |
+| M01-first / M01-manifest | Echtes Repository-Save und gewonnenes Prepared-Journal; erster nativer CAS bzw. Manifest-CAS scheitert; alle Beforebytes und Draft bleiben; geprüfte Rückgabe, danach Retry in derselben Lebensdauer. |
+| M02 | Gewonnenes Prepared-Journal mit verlorener Antwort; tatsächliches Rollback, Rückgabe und Retry. |
+| M03 | Tatsächlicher Commit, genaues Receipt-Replay, neue bestätigte Registry/Inventory bei gleichem Context. |
+| M04 | Antwortverlust nach gewonnenem Committed-CAS; Roll-forward, keine Rollback-Rückgabe eines gewonnenen Saves. |
+| M05 | Eigenes synchrones Pending-Vaultevent, gewonnenes Journal, verzögert aufgelöste Bytes; vorher kein bestätigtes Receipt. |
+| M06 | Fremdes unbekanntes Modify widerruft alte Mount-/Historywirkung synchron vor dem Lesen seiner Bytes. |
+| M07 | Fremde/widersprüchliche Eventauflösung während Vorbereitung; keine Commit-/Release-Autorität oder automatische Neuaktivierung. |
+| M08 | Alte verspätete Auflösung nach neuer Aktivierung: neuer Context und tatsächlicher neuer Save bleiben gültig; alte History bleibt widerrufen. |
+| M09 | Unversiegelte, fremde, doppelte oder bytefalsche Rückgabe; noch vorhandenes Journal; legitime ursprüngliche Rückgabe und Retry bleiben möglich. |
+| M10 | Source schließt nach gewonnenem Prepared; Journal/Draft bleiben, alte Rückgabe und Retry abgelehnt. |
+| M11 | Provider schließt nach tatsächlichem Rollback; alte Rückgabe/History abgelehnt. |
+| M12 | Closure während Commit-Acknowledgment auf Bytes wartet; Antwort abgelehnt, gewonnene Afterbytes erhalten. |
+| M13 | Manifestevent bereits beobachtet, Committed-CAS scheitert, echtes Rollback; alte Source wird nicht durch Release reaktiviert. |
+| M14 | Rückgabe aus A1 nach neuer Aktivierung A2 abgelehnt, ohne A2 zu widerrufen. |
+| M15 | Prepared-CAS scheitert vor Mutation; keine erfundene Vorbereitung, derselbe Mount kann erneut speichern. |
+| M16 | Cleanup-CAS nach gewonnenem Commit scheitert; tatsächliche Recovery rollt vorwärts, Receipt genau einmal. |
+| M17 | Rückgabe beendet wartende Bestätigung; verspäteter Commit und wiederverwendete Transaktion abgelehnt, erhaltene History bleibt gültig. |
+
+Die bestehende native Fixture bleibt maßgeblich: sieben Dateien,
+City-IDs **100–106**, Haus105 mit seinem vorhandenen Vorher-/Nachher-Poseorakel,
+native `CitySource`-/`DungeonAtlasSource`-Snapshots und vorhandener
+`AtlasRoomKeyDraft`/Abschnitt34 samt exaktem Markdown. Rollback und Retry behalten
+die tatsächliche `AtlasHistory`, Repository-, Mount- und Rendereridentität.
+Der Renderer-/Kamerabesitz wird an einem ausdrücklich kontrollierten Port geprüft;
+dies ist keine grafische oder physische Eingabeabnahme. Keine neue City-Fixture,
+History oder City-Persistenz wird angelegt. Die Speicherfehler passieren über den
+tatsächlichen `AtlasRepository.save` → `FileTransaction`; der Runner ersetzt den
+Produktjournalcode nicht.
+
+**Öffentlicher Producervertrag der tatsächlichen Lieferung:** Der während dieses
+Matrixlaufs direkt gelesene PR35-Kandidat
+`8a25c92c89962a4b1fbf4b15a209205e5704bbc3` liefert diese API bereits. Seine
+bisherigen Ownerchecks/-reviews bleiben Vorbelege; er ist vor dem vollständigen
+Matrixlauf und dem hier vereinbarten Chronikreview nicht in PR13 integriert.
+
+- Der Participant konsumiert als optionalen vierten Constructorparameter
+  `CampaignRuntimeSaveRollbackAuthority.validateRollbackReceipt(receipt)`.
+  Hex stellt ein versiegeltes Receipt erst nach tatsächlichem validiertem
+  Rollback aus: `transactionId`, `outcome: "rolled_back"`,
+  `journalState: "absent"`, exakt geordnete
+  `writes: [{ path, before, after, current }]`, jedes `current === before`.
+- `CampaignRuntimeManifestSaveParticipant.createRollbackAcknowledgment({ prepared, receipt })`
+  validiert dieses Receipt und den ursprünglich ausgestellten Prepared-Proof
+  und versiegelt einen eigenen Rollback-Proof.
+- `CampaignRuntimeNavigationProvider.cancelSaveAcknowledgment(proof)`
+  konsumiert nur die identische aktuelle, noch nicht eventbeobachtete Vorbereitung.
+  Gleicher Context/Sourceepoch bleiben erhalten; foreign, stale, committed,
+  closed, bytefalsche und doppelte Rückgaben werden abgelehnt. Klone/fremde
+  Rückgaben dürfen eine legitime Vorbereitung oder neue Aktivierung nicht
+  zerstören; authentische eventbeobachtete Rückgabe darf nicht reaktivieren.
+  Abgebrochene Transaktionen/Leases werden konsumiert; späte Callbacks verlieren
+  ohne die erhaltene History zu widerrufen; Retry hat eine neue Transaktions-ID.
+
+Die Testautorität prüft die tatsächlich zurückgelesenen gewonnenen Journalbytes,
+Journalabsenz, ganze geordnete Writeclosure und aktuelle wiederhergestellte Bytes,
+bevor sie ein Receipt in ihrem privaten WeakSet versiegelt. Sie liefert keinen
+Produkt-Recoveryadapter und keinen erfundenen Commit. Die laufenden produktiven
+Campaignquellen bleiben in diesem Freeze-Schritt unverändert. Keine neue
+Lifecycle-Aktivierung oder private Source-Flagänderung als Ersatz.
+
+Reproduzierbarer Lauf aus der Candidate-Wurzel:
+
+```sh
+node tools/verify-campaign-manifest-consumer-matrix.mjs \
+  --output /home/aaron/.cache/dungeon-native-qa/campaign-consumer-matrix-report.json
+```
+
+Der Runner prüft vorab die eingefrorenen Datei-/Fixturebytes und protokolliert
+Candidate-SHA, Quellhashes, alle 18 Fälle, Exitcode, unveränderte Checkoutbindung
+und `reviewReady`. Ein schmutziger Diagnoselauf mit `--allow-dirty` wird niemals
+`REVIEW_READY`. Ein fehlender Release-Vertrag ist ROT, auch in Negativfällen;
+Methodenabwesenheit zählt nicht als korrekter fachlicher Reject. Diese offene
+Consumer-Matrix ist bis zur Lieferung ausdrücklich ein separater Vertragslauf,
+kein Include in der grünen Basissuite.
+
+Campaign/Data übergibt **einmal**: Exact-SHA, unveränderte Matrix-/Fixturehashes,
+vollständiges grünes Report und seine passende Basisprüfung. Erst dann
+`REVIEW_READY` und **ein** unabhängiger Chronikreview auf derselben SHA. Keine
+Einzelhandoffs pro Fall und keine Vollreviews geschlossener Belege. Danach bindet
+Hex die beobachteten Prepared-/Committed-/Released-Grenzen im Produkt an und
+aktualisiert Registry/Inventory in demselben Navigator/Mount/History. Dieser
+Testlauf aktiviert den noch fehlenden `AtlasView`-Savehook nicht. Der echte
+Host-Save/Fresh/Recovery-Lauf mit neu koordiniertem GUI-Slot sowie Stadt- und
+Gesamtintegrationsreview bleiben separate offene Nachweise. Diese konkrete
+Prozessänderung ersetzt keine vollständige Produktparität oder E2E-01-Freigabe.

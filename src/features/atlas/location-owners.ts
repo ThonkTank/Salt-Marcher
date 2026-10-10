@@ -21,6 +21,8 @@ import type { OverworldDocument } from "./overworld";
 import type { TerrainSource } from "./terrain-source";
 
 export interface AtlasLocationOptions {
+  /** Optional host lifetime. A revoked mount cannot hydrate or mutate native owners. */
+  readonly assertCurrent?: () => void;
   /** Remains opt-in until marker/Key editing is connected in the host. */
   readonly locations?: boolean;
   readonly resolveLocation?: (id: string) => Promise<string>;

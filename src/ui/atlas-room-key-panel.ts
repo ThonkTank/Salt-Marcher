@@ -128,12 +128,15 @@ export class AtlasRoomKeyPanel {
     field("Raumnummer", draft.number, (v) => (this.draft!.number = v));
     for (const [index, s] of draft.room.key.sections.entries()) {
       if (s.kind === "markdown")
+      {
         field(
           "Raumtext " + (index + 1),
           s.markdown,
           (v) => this.draft!.markdown.set(s.id, v),
           true,
         );
+        this.host.lastElementChild!.setAttribute("data-section-id", s.id);
+      }
       else {
         const p = doc.createElement("p");
         p.textContent = "Durchgang: " + s.doorId;

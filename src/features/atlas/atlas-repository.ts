@@ -116,12 +116,17 @@ export class AtlasRepository {
     safePath(worldPath);
     if (options.details && !options.locations)
       throw new Error("Räumliche Details benötigen Ortsowner.");
+    if (
+      options.campaignSave &&
+      (!options.details || options.campaignSave.worldPath !== worldPath)
+    )
+      throw new Error("Campaign-Save benötigt die bestätigte räumliche Welt.");
     this.draftPath = worldPath + ".draft";
     this.journalPath = worldPath + ".journal";
   }
   private exclusive<T>(operation: () => Promise<T>): Promise<T> {
     const result = (queues.get(this.scope) ?? Promise.resolve()).then(
-      operation,
+      () => { this.options.assertCurrent?.(); return operation(); },
     );
     queues.set(
       this.scope,
@@ -161,6 +166,13 @@ export class AtlasRepository {
   }
   /** Broad parsing is confined to recovery; exact owner/manifest validation precedes repair. */
   private async validateRecovery(journal: AtlasFileJournal): Promise<void> {
+    if (this.options.campaignSave) {
+      await this.options.campaignSave.validateRecovery(this.store, journal);
+      journal = {
+        ...journal,
+        writes: journal.writes.filter((w) => !this.options.campaignSave!.owns(w.path)),
+      };
+    }
     if (this.options.details)
       return validateSpatialRecovery(
         this.store,
@@ -246,14 +258,17 @@ export class AtlasRepository {
         (p) =>
           p === this.worldPath ||
           p === this.draftPath ||
+          !!this.options.campaignSave?.owns(p) ||
           this.terrainPath(p) ||
           (this.options.locations === true && p.endsWith(".location")) ||
           (this.options.details === true &&
             (p.endsWith(".city") || p.endsWith(".dungeon"))),
         this.scope,
         (journal) => this.validateRecovery(journal),
+        () => this.options.assertCurrent?.(),
       );
       await recovery.recover();
+      await this.options.campaignSave?.recovered(this.store);
       raw = await this.store.read(this.worldPath);
       if (raw === null)
         throw new Error("Atlasdatei fehlt nach Wiederherstellung.");
@@ -294,16 +309,19 @@ export class AtlasRepository {
         (p) =>
           p === this.worldPath ||
           p === this.draftPath ||
+          !!this.options.campaignSave?.owns(p) ||
           this.terrainPath(p) ||
           this.locationPaths.has(p) ||
           !!this.details?.pathsOwned.includes(p),
         this.scope,
         (journal) => this.validateRecovery(journal),
+        () => this.options.assertCurrent?.(),
       );
       return this.source!;
     });
   }
   private live(stamp: number): void {
+    this.options.assertCurrent?.();
     if (stamp !== this.generation)
       throw new Error("Veralteter Atlas-Ladevorgang.");
   }
@@ -319,7 +337,7 @@ export class AtlasRepository {
     const stamp = ++this.generation;
     this.source = new TerrainSource(
       spatialBase(current),
-      new AtlasHistory(),
+      new AtlasHistory(() => this.options.assertCurrent?.()),
       (ref) => this.load(ref, stamp),
       this.options.details ? spatialState(current) : undefined,
     );
@@ -450,6 +468,128 @@ export class AtlasRepository {
     )
       throw new Error("Native Atlas-Erfassung ist veraltet.");
   }
+  private async nativeFiles(
+    snapshot: Snapshot,
+    extra: readonly { id: string; path: string }[],
+    assertCurrent: () => void,
+  ): Promise<{ files: AtlasNativeFile[]; extraLocations: ReadonlySet<string> }> {
+    const files: AtlasNativeFile[] = [
+      {
+        kind: "world",
+        id: snapshot.world.id,
+        path: this.worldPath,
+        before: this.baseline,
+        after: sameWorld(snapshot.world, this.baselineWorld)
+          ? this.baseline
+          : this.worldText(snapshot.world),
+      },
+    ];
+    const locations = new Map(snapshot.locations);
+    const locationIds = new Set([
+      ...snapshot.world.placements.map((p) => p.locationId),
+      ...locations.keys(),
+    ]);
+    const extraLocations = new Set<string>();
+    for (const id of locationIds) {
+      const bytes = await this.locations.captureBytes(id, locations);
+      assertCurrent();
+      files.push({ kind: "location", id, ...bytes });
+      locations.set(id, bytes.after);
+    }
+    for (const loc of extra) {
+      const existing = files.find((file) => file.id === loc.id);
+      if (existing) {
+        if (existing.kind !== "location" || existing.path !== loc.path)
+          throw new Error(
+            "Zusätzlicher Ortsbestand besitzt eine fremde Bindung.",
+          );
+        continue;
+      }
+      const bytes = await this.store.read(loc.path);
+      assertCurrent();
+      if (bytes === null || parseLocationDocument(bytes).id !== loc.id)
+        throw new Error(
+          "Zusätzliche Ortsdatei fehlt oder besitzt eine fremde Kennung.",
+        );
+      files.push({
+        kind: "location",
+        id: loc.id,
+        path: loc.path,
+        before: bytes,
+        after: bytes,
+      });
+      locations.set(loc.id, bytes);
+      extraLocations.add(loc.id);
+    }
+    const details = new Map(snapshot.details);
+    const references = new Map(detailReferences(snapshot.world, locations));
+    for (const record of details.values()) {
+      if (
+        references.has(record.id) &&
+        references.get(record.id) !== record.kind
+      )
+        throw new Error("Fremder nativer Detailtyp.");
+      references.set(record.id, record.kind);
+    }
+    for (const [id, kind] of references) {
+      if (!this.details)
+        throw new Error("Native Detailquellen sind nicht angeschlossen.");
+      const captured = await this.details.captured(kind, id, details);
+      assertCurrent();
+      const record = captured.record;
+      details.set(id, record);
+      files.push({
+        kind,
+        id,
+        path: record.path,
+        before: captured.saved,
+        after: same(record.bytes, captured.saved)
+          ? captured.saved
+          : record.bytes,
+      });
+    }
+    checkSpatialSnapshot(snapshot.world, locations, details);
+    const currentRefs = new Map(
+      snapshot.world.chunks.map((ref) => [ref.file, ref]),
+    );
+    const beforeRefs = new Map(
+      this.baselineWorld.chunks.map((ref) => [ref.file, ref]),
+    );
+    const chunkFiles = new Set([
+      ...currentRefs.keys(),
+      ...beforeRefs.keys(),
+      ...this.bases.keys(),
+      ...this.restored.keys(),
+    ]);
+    for (const file of chunkFiles) {
+      const path = this.dataPath(file),
+        before = await this.store.read(path);
+      assertCurrent();
+      if (
+        (this.bases.has(file) && this.bases.get(file) !== before) ||
+        (beforeRefs.has(file) && before === null) ||
+        (!beforeRefs.has(file) && !this.bases.has(file) && before !== null)
+      )
+        throw new FileConflict(path);
+      if (beforeRefs.has(file))
+        parseTerrainChunk(before!, snapshot.world.id, beforeRefs.get(file)!);
+      const ref = currentRefs.get(file);
+      const after = ref
+        ? (snapshot.loaded.get(file) ??
+          (this.restored.has(file) ? this.restored.get(file)! : before))
+        : null;
+      if (ref) {
+        if (after === null)
+          throw new Error("Referenzierte Landschaftsdatei fehlt.");
+        parseTerrainChunk(after, snapshot.world.id, ref);
+      }
+      // Nonreferenced files retained by the Source may represent a deleted/new local chunk.
+      if (before !== null || after !== null)
+        files.push({ kind: "terrain", id: null, path, before, after });
+    }
+    assertCurrent();
+    return { files, extraLocations };
+  }
   /** Full referenced native bytes; never hydrates Sources, writes files or asserts Campaign authority. */
   captureNative(request: AtlasCaptureRequest): Promise<AtlasNativeCaptureV1> {
     if (!this.source || nativeId(request.worldId) !== this.source.world.id)
@@ -482,120 +622,11 @@ export class AtlasRepository {
     }
     return this.exclusive(async () => {
       this.captureCurrent(pin);
-      const files: AtlasNativeFile[] = [
-        {
-          kind: "world",
-          id: snapshot.world.id,
-          path: this.worldPath,
-          before: this.baseline,
-          after: sameWorld(snapshot.world, this.baselineWorld)
-            ? this.baseline
-            : this.worldText(snapshot.world),
-        },
-      ];
-      const locations = new Map(snapshot.locations);
-      const locationIds = new Set([
-        ...snapshot.world.placements.map((p) => p.locationId),
-        ...locations.keys(),
-      ]);
-      const extraLocations = new Set<string>();
-      for (const id of locationIds) {
-        const bytes = await this.locations.captureBytes(id, locations);
-        this.captureCurrent(pin);
-        files.push({ kind: "location", id, ...bytes });
-        locations.set(id, bytes.after);
-      }
-      for (const loc of extra) {
-        const existing = files.find((file) => file.id === loc.id);
-        if (existing) {
-          if (existing.kind !== "location" || existing.path !== loc.path)
-            throw new Error(
-              "Zusätzlicher Ortsbestand besitzt eine fremde Bindung.",
-            );
-          continue;
-        }
-        const bytes = await this.store.read(loc.path);
-        this.captureCurrent(pin);
-        if (bytes === null || parseLocationDocument(bytes).id !== loc.id)
-          throw new Error(
-            "Zusätzliche Ortsdatei fehlt oder besitzt eine fremde Kennung.",
-          );
-        files.push({
-          kind: "location",
-          id: loc.id,
-          path: loc.path,
-          before: bytes,
-          after: bytes,
-        });
-        locations.set(loc.id, bytes);
-        extraLocations.add(loc.id);
-      }
-      const details = new Map(snapshot.details);
-      const references = new Map(detailReferences(snapshot.world, locations));
-      for (const record of details.values()) {
-        if (
-          references.has(record.id) &&
-          references.get(record.id) !== record.kind
-        )
-          throw new Error("Fremder nativer Detailtyp.");
-        references.set(record.id, record.kind);
-      }
-      for (const [id, kind] of references) {
-        if (!this.details)
-          throw new Error("Native Detailquellen sind nicht angeschlossen.");
-        const captured = await this.details.captured(kind, id, details);
-        this.captureCurrent(pin);
-        const record = captured.record;
-        details.set(id, record);
-        files.push({
-          kind,
-          id,
-          path: record.path,
-          before: captured.saved,
-          after: same(record.bytes, captured.saved)
-            ? captured.saved
-            : record.bytes,
-        });
-      }
-      checkSpatialSnapshot(snapshot.world, locations, details);
-      const currentRefs = new Map(
-        snapshot.world.chunks.map((ref) => [ref.file, ref]),
+      const { files, extraLocations } = await this.nativeFiles(
+        snapshot,
+        extra,
+        () => this.captureCurrent(pin),
       );
-      const beforeRefs = new Map(
-        this.baselineWorld.chunks.map((ref) => [ref.file, ref]),
-      );
-      const chunkFiles = new Set([
-        ...currentRefs.keys(),
-        ...beforeRefs.keys(),
-        ...this.bases.keys(),
-        ...this.restored.keys(),
-      ]);
-      for (const file of chunkFiles) {
-        const path = this.dataPath(file),
-          before = await this.store.read(path);
-        this.captureCurrent(pin);
-        if (
-          (this.bases.has(file) && this.bases.get(file) !== before) ||
-          (beforeRefs.has(file) && before === null) ||
-          (!beforeRefs.has(file) && !this.bases.has(file) && before !== null)
-        )
-          throw new FileConflict(path);
-        if (beforeRefs.has(file))
-          parseTerrainChunk(before!, snapshot.world.id, beforeRefs.get(file)!);
-        const ref = currentRefs.get(file);
-        const after = ref
-          ? (snapshot.loaded.get(file) ??
-            (this.restored.has(file) ? this.restored.get(file)! : before))
-          : null;
-        if (ref) {
-          if (after === null)
-            throw new Error("Referenzierte Landschaftsdatei fehlt.");
-          parseTerrainChunk(after, snapshot.world.id, ref);
-        }
-        // Nonreferenced files retained by the Source may represent a deleted/new local chunk.
-        if (before !== null || after !== null)
-          files.push({ kind: "terrain", id: null, path, before, after });
-      }
       const draft = await this.store.read(this.draftPath),
         journal = await this.store.read(this.journalPath);
       this.captureCurrent(pin);
@@ -772,6 +803,8 @@ export class AtlasRepository {
           (this.options.details === true &&
             (p.endsWith(".city") || p.endsWith(".dungeon"))),
         this.scope,
+        undefined,
+        () => this.options.assertCurrent?.(),
       );
       return transaction.recover(async (journal) => {
         if ((await this.store.read(this.draftPath)) !== null)
@@ -935,6 +968,8 @@ export class AtlasRepository {
         path + ".journal",
         (p) => allowed.has(p),
         this.scope,
+        undefined,
+        () => this.options.assertCurrent?.(),
       ).commit(writes);
     });
   }
@@ -1016,6 +1051,7 @@ export class AtlasRepository {
       (p) => allowed.has(p),
       this.scope,
       (j) => validateSpatialCopyJournal(path, j),
+      () => this.options.assertCurrent?.(),
     ).commit(writes);
   }
   /** Retire only this draft; return a fresh saved source without changing canonical files. */
@@ -1113,6 +1149,7 @@ export class AtlasRepository {
   }
   save(): Promise<void> {
     const snapshot = this.snapshot();
+    const historyEpoch = this.source!.history.epoch;
     return this.mutating(async () => {
       // Retain the complete local work even if the subsequent canonical save conflicts.
       await this.persist(snapshot);
@@ -1155,7 +1192,36 @@ export class AtlasRepository {
         { path: this.worldPath, before: this.baseline, after: worldText },
         { path: this.draftPath, before: this.draftRaw, after: null },
       );
+      const campaign = this.options.campaignSave;
+      if (campaign) {
+        const current = () => {
+          this.options.assertCurrent?.();
+          if (this.source!.history.epoch !== historyEpoch)
+            throw new Error(
+              "Atlas wurde während der Campaign-Save-Erfassung weiterbearbeitet.",
+            );
+        };
+        current();
+        const { files } = await this.nativeFiles(
+          snapshot,
+          campaign.additionalLocations,
+          current,
+        );
+        const draft = writes.find((w) => w.path === this.draftPath)!;
+        const canonical = writes.filter((w) => w.path !== this.draftPath);
+        for (const write of canonical) {
+          const file = files.find((f) => f.path === write.path);
+          if (!file || file.before !== write.before || file.after !== write.after)
+            throw new Error("Campaign- und Atlas-Save-Guards sind nicht deckungsgleich.");
+        }
+        for (const file of files)
+          if (!writes.some((w) => w.path === file.path))
+            writes.push({ path: file.path, before: file.before, after: file.after });
+        writes.push(...campaign.prepare(files, draft));
+        current();
+      }
       await this.transaction.commit(writes);
+      campaign?.saved(writes);
       this.baseline = worldText;
       this.baselineWorld = this.parseWorld(worldText);
       for (const c of chunks) this.bases.set(c.file, c.after);

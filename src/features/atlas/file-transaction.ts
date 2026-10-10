@@ -30,6 +30,7 @@ export class FileTransaction {
     private recoveryValidator?: (
       journal: AtlasFileJournal,
     ) => void | Promise<void>,
+    private assertCurrent: () => void = () => {},
   ) {
     safePath(journalPath);
   }
@@ -37,7 +38,7 @@ export class FileTransaction {
     let queue = queues.get(this.serializationScope);
     if (!queue) queues.set(this.serializationScope, (queue = new Map()));
     const result = (queue.get(this.journalPath) ?? Promise.resolve()).then(
-      operation,
+      () => { this.assertCurrent(); return operation(); },
     );
     queue.set(
       this.journalPath,
@@ -131,6 +132,8 @@ export class FileTransaction {
       )
         throw new FileConflict(write.path);
     }
+    // Once repair begins it belongs to this journal's old identity and must finish there.
+    this.assertCurrent();
     if (journal.state === "prepared") {
       for (const write of [...journal.writes].reverse()) {
         const value = await this.store.read(write.path);
@@ -151,6 +154,7 @@ export class FileTransaction {
       for (const write of snapshot)
         if ((await this.store.read(write.path)) !== write.before)
           throw new FileConflict(write.path);
+      this.assertCurrent();
       const changed = snapshot.filter((write) => write.before !== write.after);
       if (!changed.length) return false;
       const journal: AtlasFileJournal = {
@@ -165,6 +169,7 @@ export class FileTransaction {
         committed = JSON.stringify({ ...journal, state: "committed" });
       let commitAcknowledged = false;
       try {
+        this.assertCurrent();
         await this.store.compareAndWrite(this.journalPath, null, prepared);
         for (const write of changed)
           await this.store.compareAndWrite(
