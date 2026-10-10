@@ -228,7 +228,7 @@ const fixture = {
   fixtureVersion: "e2e01-campaign-b-v1",
   gate: "E2E-01",
   steward: "Campaign/Data",
-  sourceCommit: "9ff11e8e515f162272eab3edf59f5a823349c7aa",
+  baseCommit: "9ff11e8e515f162272eab3edf59f5a823349c7aa",
   materialization: "independent native domain values; generator reads no Campaign-A fixture",
   input: native.map((file) => ({ kind: file.kind, path: file.path,
     fixtureFile: `input/${file.path}`, sha256: sha(file.bytes).slice(7), bytes: Buffer.byteLength(file.bytes) }))

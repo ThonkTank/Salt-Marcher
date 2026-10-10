@@ -357,6 +357,49 @@ test("invalid Location Key stops actual campaign activation; A-B-A remounts fres
   assert.ok(f.services.retainedDrafts!.length > 0);
 });
 
+test("the actual picker switches between independent native A and B mounts", async () => {
+  const f = await fixture();
+  const campaignButton = (name: string) =>
+    [...f.content.querySelectorAll<HTMLLIElement>(".dn-campaign-entry li")]
+      .find((row) => row.textContent?.includes(name))
+      ?.querySelector<HTMLButtonElement>("button");
+  const host = f.host(),
+    openCampaign = host.openCampaign.bind(host);
+  let pickerOpen: Promise<void> | undefined;
+  host.openCampaign = (id) => (pickerOpen = openCampaign(id));
+  const first = active(f);
+  const openB = campaignButton(bSeed.initialOracle.picker.label);
+  assert.ok(openB);
+  f.click(openB);
+  assert.ok(pickerOpen);
+  await pickerOpen;
+  await tick();
+  const second = active(f);
+  assert.equal(second.context.campaignId, b);
+  assert.equal(second.inventory.worldId, bSeed.initialOracle.worldId);
+  assert.notEqual(second.context.contextToken, first.context.contextToken);
+  assert.notEqual(second.repository, first.repository);
+  assert.notEqual(second.history, first.history);
+  assert.equal(f.content.textContent?.includes(bSeed.initialOracle.worldName), true);
+
+  const openA = campaignButton(aRuntime.snapshot.name);
+  assert.ok(openA);
+  pickerOpen = undefined;
+  f.click(openA);
+  assert.ok(pickerOpen);
+  await pickerOpen;
+  await tick();
+  const third = active(f);
+  assert.equal(third.context.campaignId, a);
+  assert.notEqual(third.context.contextToken, first.context.contextToken);
+  assert.notEqual(third.context.contextToken, second.context.contextToken);
+  assert.notEqual(third.repository, first.repository);
+  assert.notEqual(third.repository, second.repository);
+  assert.notEqual(third.history, first.history);
+  assert.notEqual(third.history, second.history);
+  await f.close();
+});
+
 test("synchronous manifest invalidation detaches old UI, blocks History and preserves uncommitted Key across view lifetimes", async () => {
   const f = await fixture();
   await f.host().navigate(locationTarget);

@@ -12,6 +12,10 @@ import {
   CampaignRuntimeSource,
   parseCampaignRuntimeManifest,
 } from "../../src/features/campaign/campaign-runtime-source";
+import {
+  campaignDomainOwnerPolicyDigest,
+  campaignOwnershipDigestValue,
+} from "../../src/features/campaign/campaign-ownership";
 import { FileConflict, type FileStore } from "../../src/persistence";
 
 const aRoot = "tests/fixtures/atlas-e2e-spatial-v2/";
@@ -45,6 +49,8 @@ class Store implements FileStore {
 test("Campaign B fixture is an independent native, hashed and parseable closure", async () => {
   assert.equal(bManifest.fixtureVersion, "e2e01-campaign-b-v1");
   assert.equal(bManifest.steward, "Campaign/Data");
+  assert.equal(bManifest.baseCommit, "9ff11e8e515f162272eab3edf59f5a823349c7aa");
+  assert.equal(Object.hasOwn(bManifest, "sourceCommit"), false);
   assert.match(bManifest.materialization, /reads no Campaign-A fixture/);
 
   const bFiles = [...bManifest.input, bManifest.campaign];
@@ -72,6 +78,8 @@ test("Campaign B fixture is an independent native, hashed and parseable closure"
 
   const worldFile = bManifest.input.find((file: { kind: string }) => file.kind === "world")!;
   const world = parseSpatialWorld(bytes(bRoot, worldFile));
+  assert.equal(world.version, 2);
+  if (world.version !== 2) throw new Error("Campaign B requires a spatial-v2 world.");
   assert.equal(world.id, bManifest.initialOracle.worldId);
   assert.equal(world.name, bManifest.initialOracle.worldName);
   for (const reference of world.chunks) {
@@ -100,6 +108,61 @@ test("Campaign B fixture is an independent native, hashed and parseable closure"
     assert.ok(fixture, file.path);
     assert.equal(file.savedDigest, sha(bytes(bRoot, fixture)), file.path);
   }
+
+  const saved = new Map(runtime.atlas.files.map((file) => [file.path, file.savedDigest]!));
+  const worldClosureDigest = campaignOwnershipDigestValue(
+    {
+      schema: "campaign-runtime-world-file-closure-v1",
+      world: saved.get(worldFile.path),
+      terrain: runtime.atlas.files
+        .filter((file) => file.kind === "terrain")
+        .map((file) => ({ path: file.path, savedDigest: file.savedDigest }))
+        .sort((a, b) => a.path.localeCompare(b.path)),
+    },
+    sha,
+  );
+  assert.equal(bManifest.provenance.worldClosureDigest, worldClosureDigest);
+  const atlasPayloads = new Map<string, string>([[world.id, worldClosureDigest]]);
+  for (const file of bManifest.input.filter((value: { kind: string }) => value.kind === "location")) {
+    const raw = bytes(bRoot, file), location = parseLocationDocument(raw), digest = sha(raw);
+    atlasPayloads.set(location.id, digest);
+    for (const section of location.sections) atlasPayloads.set(section.id, digest);
+  }
+  const rawWorldDigest = saved.get(worldFile.path)!;
+  for (const placement of [...world.placements, ...world.detailPlacements])
+    atlasPayloads.set(placement.id, rawWorldDigest);
+  const cityDigest = saved.get(bManifest.input.find((file: { kind: string }) => file.kind === "city")!.path)!;
+  const dungeonDigest = saved.get(bManifest.input.find((file: { kind: string }) => file.kind === "dungeon")!.path)!;
+  for (const owner of runtime.registry.owners) {
+    for (const record of owner.records) {
+      const expected = owner.ownerId === "atlas" ? atlasPayloads.get(record.id)
+        : owner.ownerId === "city" ? cityDigest : dungeonDigest;
+      assert.equal(record.payloadDigest, expected, `${owner.ownerId}:${record.recordType}:${record.id}`);
+    }
+    const suffix = campaignOwnershipDigestValue(
+      { schema: "campaign-runtime-owner-fixture-v1", ownerId: owner.ownerId,
+        records: owner.records.map(({ id, payloadDigest }) => ({ id, payloadDigest })) },
+      sha,
+    ).slice("sha256:".length);
+    assert.equal(owner.ownerRevision, `owner:${suffix}`);
+    assert.equal(owner.snapshotRevision, `snapshot:${suffix}`);
+    assert.equal(owner.source.generation, `source:${suffix}`);
+    assert.equal(owner.policyDigest, campaignDomainOwnerPolicyDigest(owner, sha));
+    const declared = bManifest.provenance.owners.find(
+      (value: { ownerId: string }) => value.ownerId === owner.ownerId,
+    );
+    assert.deepEqual(declared, {
+      ownerId: owner.ownerId,
+      ownerRevision: owner.ownerRevision,
+      snapshotRevision: owner.snapshotRevision,
+      policyRevision: owner.policyRevision,
+      policyDigest: owner.policyDigest,
+      adapterType: owner.source.adapterType,
+      generation: owner.source.generation,
+    });
+  }
+  const { registryContentDigest, ...registryContent } = runtime.registry;
+  assert.equal(registryContentDigest, campaignOwnershipDigestValue(registryContent, sha));
 
   const store = new Store();
   const repository = new AtlasRepository(store, worldFile.path, store, {
