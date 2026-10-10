@@ -327,6 +327,50 @@ function verifyPdfArmorTableRows(pdfPath, transcript, inventory) {
   return validateBoundedArmorTableRows(pageLines, transcript, inventory);
 }
 
+function weaponPropertiesSourceText(properties) {
+  if (properties.length === 0) return "—";
+  return properties.map((property, index) => {
+    const name = index === 0 ? property.name : `${property.name[0].toLowerCase()}${property.name.slice(1)}`;
+    return property.description === undefined ? name : `${name} (${property.description})`;
+  }).join(", ");
+}
+
+export function validateBoundedWeaponTableRows(pageLines, transcript, inventory) {
+  object(pageLines, "Weapons-Tabellenzeilen");
+  const occurrences = inventory.occurrences.filter(occurrence => occurrence.sectionId === "weapons");
+  invariant(occurrences.length === 37, "Bounded Weapons-Prüfung benötigt exakt 37 Inventarzeilen.");
+  const records = new Map(transcript.records.map(record => [record.id, record]));
+  for (const occurrence of occurrences) {
+    const record = records.get(occurrence.id);
+    invariant(record, `${occurrence.id}: Record für bounded Weapons-Prüfung fehlt.`);
+    invariant(record.cost && Array.isArray(record.properties),
+      `${occurrence.id}: strukturierte Weapons-Tabellenzellen fehlen.`);
+    const expected = normalizePdfText([
+      occurrence.sourceLabel,
+      record.cost.sourceText,
+      record.damage ? `${record.damage.diceText} ${record.damage.typeText}` : "—",
+      record.weight?.sourceText ?? "—",
+      weaponPropertiesSourceText(record.properties),
+    ].join(" "));
+    const lines = pageLines[String(occurrence.firstPdfPage)];
+    invariant(Array.isArray(lines), `${occurrence.id}: Layoutzeilen für PDF-Seite ${occurrence.firstPdfPage} fehlen.`);
+    const matches = lines.map(normalizePdfText).filter(line => line === expected).length;
+    invariant(matches === 1,
+      `${occurrence.id}: erwartete Weapons-Zellen stehen nicht exakt einmal in derselben physischen Tabellenzeile.`);
+  }
+  return Object.freeze({ checkedRows: occurrences.length,
+    scope: "exact-normalized-pdftotext-layout-row-with-source-missing-markers-and-ordered-properties" });
+}
+
+function verifyPdfWeaponTableRows(pdfPath, transcript, inventory) {
+  const pages = [...new Set(inventory.occurrences
+    .filter(occurrence => occurrence.sectionId === "weapons")
+    .map(occurrence => occurrence.firstPdfPage))];
+  const pageLines = Object.fromEntries(pages.map(page => [String(page),
+    extractPdfPage(pdfPath, page, true).split(/\r?\n/).filter(line => line.trim().length > 0)]));
+  return validateBoundedWeaponTableRows(pageLines, transcript, inventory);
+}
+
 function verifyPdfOccurrences(pdfPath, inventory) {
   const pageText = new Map();
   for (const occurrence of inventory.occurrences) {
@@ -458,6 +502,7 @@ export async function verifyItemsSourcePackage({ pdfPath, allowIncomplete = fals
       occurrenceEvidence: verifyPdfOccurrences(pdfPath, inventory),
       transcriptEvidence: verifyPdfTranscriptFacts(pdfPath, transcript),
       boundedArmorTableEvidence: verifyPdfArmorTableRows(pdfPath, transcript, inventory),
+      boundedWeaponTableEvidence: verifyPdfWeaponTableRows(pdfPath, transcript, inventory),
       helperDispositionEvidence: verifyPdfHelperDispositions(pdfPath, inventory),
       crossReferenceEvidence: verifyPdfCrossReferences(pdfPath, inventory) });
   }

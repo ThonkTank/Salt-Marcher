@@ -32,7 +32,7 @@
   "sectionBoundaries": [
     { "id": "equipment-context", "firstPdfPage": 62, "firstPrintedPage": 62, "lastPdfPage": 72, "lastPrintedPage": 72, "reviewState": "full-boundary-inventoried" },
     { "id": "armor", "firstPdfPage": 63, "firstPrintedPage": 63, "lastPdfPage": 64, "lastPrintedPage": 64, "expectedPrimaryOccurrences": 13, "reviewState": "inventory-narrative-transcript-and-bounded-table-rows-complete-review-open" },
-    { "id": "weapons", "firstPdfPage": 65, "firstPrintedPage": 65, "lastPdfPage": 66, "lastPrintedPage": 66, "expectedPrimaryOccurrences": 37, "reviewState": "inventory-and-structured-transcript-complete-bounded-cells-open" },
+    { "id": "weapons", "firstPdfPage": 65, "firstPrintedPage": 65, "lastPdfPage": 66, "lastPrintedPage": 66, "expectedPrimaryOccurrences": 37, "reviewState": "inventory-structured-transcript-and-bounded-table-rows-complete-review-open" },
     { "id": "adventuring-gear", "firstPdfPage": 68, "firstPrintedPage": 68, "lastPdfPage": 69, "lastPrintedPage": 69, "expectedPrimaryOccurrences": 99, "reviewState": "inventory-and-source-transcript-complete-merge-review-open" },
     { "id": "equipment-packs", "firstPdfPage": 70, "firstPrintedPage": 70, "lastPdfPage": 70, "lastPrintedPage": 70, "expectedPrimaryOccurrences": 7, "reviewState": "inventory-transcript-and-pack-only-helper-dispositions-complete-review-open" },
     { "id": "tools", "firstPdfPage": 70, "firstPrintedPage": 70, "lastPdfPage": 71, "lastPrintedPage": 71, "expectedPrimaryOccurrences": 35, "reviewState": "inventory-transcript-and-cross-reference-complete-review-open" },
@@ -53,6 +53,7 @@
     "equipmentCrossReferenceRows": 1,
     "capturedEquipmentCrossReferenceRows": 1,
     "boundedArmorTableRows": 13,
+    "boundedWeaponTableRows": 37,
     "extractionHelperEquipmentRecords": 237,
     "helperReconciliation": "218 mapped primary rows + 7 pack-prose-only components + 12 net Donkey/Mule and Barding expansions = 237; Potion of healing retains its first physical occurrence as canonical ID while its later magic-item detail merge remains open",
     "expectedMagicItemAzHeadings": 242,
@@ -65,7 +66,7 @@
   },
   "blockingOpenSections": [
     "Armor inventory, structured table transcript and all thirteen published item narratives are captured; all 13 table rows pass exact same-physical-row bounded matching including source em dashes, while independent review remains open.",
-    "Weapons inventory and structured transcript cover all 37 table rows and both special-weapon descriptions; bounded table-cell matching and independent review remain open.",
+    "Weapons inventory and structured transcript cover all 37 table rows and both special-weapon descriptions; all 37 rows pass exact same-physical-row bounded matching including source em dashes and ordered property text, while independent review remains open.",
     "Adventuring Gear inventory and source transcript cover all 99 table leaf rows, costs, optional weights and published narrative descriptions; the later Potion-of-Healing detail merge and independent review remain open.",
     "Equipment Packs inventory and source transcript cover all seven entries, exact prices and full published contents prose; all seven pack-only helper components have PDF-backed pack-prose-only dispositions with no invented primary identity, while independent review remains open.",
     "Tools inventory and source transcript cover all 35 physical leaf rows, exact prices, optional weights and the published shared/per-item narratives; the Vehicles row is preserved separately as a PDF-backed cross-reference without inventing a primary item identity, while independent review remains open.",
@@ -76,7 +77,7 @@
     "All 242 Magic Items A-Z headings and the Orb of Dragonkind artifact still require full description and page-range transcription.",
     "All 362 helper magic-item records still require parent/variant reconciliation against the 243 official source headings.",
     "The closed 23-value source subcategory enum exists, but all source-table mappings are not yet represented by transcript records.",
-    "Draft-2020-12 validation plus PDF-backed occurrence-label and captured-fact checks are active; bounded Armor table-row matching is active, while bounded matching for other structured tables and the still-uncaptured sections remain open.",
+    "Draft-2020-12 validation plus PDF-backed occurrence-label and captured-fact checks are active; bounded Armor and Weapons table-row matching is active, while bounded matching for other structured tables and the still-uncaptured sections remain open.",
     "Golden coverage still lacks same-name, merge, ligature, line-break hyphen, punctuation, attunement-header and byte-identical projection cases.",
     "Section boundaries and final pre/post-merge counts require independent full-page review.",
     "The inventory and transcript remain incomplete and must not feed a product artifact, provider, or UI."
