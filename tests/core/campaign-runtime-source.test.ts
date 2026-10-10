@@ -218,9 +218,11 @@ test("navigation provider keeps one mount only for the participant-sealed exact 
     finalCommitted = participant.createAcknowledgment({ context: reopenedContext, beforeRegistry: reopenedRead.projection,
       journal: { ...finalPrepared.journal, state: "committed" } }),
     originalAcknowledge = source.acknowledgeCommittedSave.bind(source);
+  let switchedContext = reopenedContext;
   source.acknowledgeCommittedSave = async (proof, lease) => {
     const result = await originalAcknowledge(proof, lease);
-    storage.listener?.({ kind: "modify", path: "Kampagnen/SaltMarcher/foreign.campaign.json", bytes: "{}" });
+    const switched = await provider.activate(campaignCommandId(uuid(309)), a, "open");
+    switchedContext = switched.context!;
     return result;
   };
   provider.prepareSaveAcknowledgment(finalPrepared);
@@ -228,10 +230,33 @@ test("navigation provider keeps one mount only for the participant-sealed exact 
   storage.set([{ path, bytes: finalPrepared.afterManifestBytes }]);
   await assert.rejects(finalPromise, /während der Speicherbestätigung/);
   source.acknowledgeCommittedSave = originalAcknowledge;
+  assert.equal(provider.currentContext()?.contextToken, switchedContext.contextToken);
+  const switchedRead = await source.registry.read(switchedContext);
+  assert.equal(switchedRead.kind, "confirmed"); if (switchedRead.kind !== "confirmed") return;
+  const finalManifest = parseCampaignRuntimeManifest(finalPrepared.afterManifestBytes, digest),
+    finalCurrentOwner = finalManifest.registry.owners[0]!,
+    fourthOwner = { ...finalCurrentOwner, ownerRevision: "owner:5", snapshotRevision: "snapshot:5",
+      source: { ...finalCurrentOwner.source, generation: "source:5" },
+      records: finalCurrentOwner.records.map((record) => ({ ...record, payloadDigest: sha("saved-fourth") })) },
+    fourthNativeWrite = { path: nativePath, before: "saved-final", after: "saved-fourth" },
+    [fourthManifestWrite] = participant.prepare({ beforeManifestBytes: finalPrepared.afterManifestBytes,
+      nativeWrites: [fourthNativeWrite], beforeOwners: finalManifest.registry.owners, afterOwners: [fourthOwner] }),
+    fourthPrepared = participant.createAcknowledgment({ context: switchedContext, beforeRegistry: switchedRead.projection,
+      journal: { transactionId: "transaction:4", state: "prepared",
+        writes: [fourthNativeWrite, fourthManifestWrite!] } }),
+    fourthCommitted = participant.createAcknowledgment({ context: switchedContext, beforeRegistry: switchedRead.projection,
+      journal: { ...fourthPrepared.journal, state: "committed" } }),
+    mismatchedCommitted = participant.createAcknowledgment({ context: switchedContext, beforeRegistry: switchedRead.projection,
+      journal: { ...fourthPrepared.journal, transactionId: "transaction:foreign", state: "committed" } });
+  provider.prepareSaveAcknowledgment(fourthPrepared);
+  const fourthPromise = provider.acknowledgeCommittedSave(fourthCommitted),
+    mismatchedPromise = provider.acknowledgeCommittedSave(mismatchedCommitted);
+  await assert.rejects(mismatchedPromise, /Save-Receipt wechselte/);
+  await assert.rejects(fourthPromise, /fremdes Save-Receipt/);
   assert.equal(provider.currentContext(), null);
   provider.close();
   assert.equal(provider.currentContext(), null);
-  await assert.rejects(provider.activate(campaignCommandId(uuid(309)), a, "open"), /geschlossen/);
+  await assert.rejects(provider.activate(campaignCommandId(uuid(310)), a, "open"), /geschlossen/);
 });
 
 test("registry verify detects an Atlas-only manifest edit", async () => {

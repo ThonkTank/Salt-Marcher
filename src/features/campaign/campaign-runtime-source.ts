@@ -544,6 +544,8 @@ export class CampaignRuntimeNavigationProvider {
     if (!this.pending || this.pending.proof !== normalized ||
         JSON.stringify(this.lifecycle.context) !== JSON.stringify(proof.context)) {
       const notify = this.sourceCurrent || this.pending !== undefined;
+      for (const waiter of this.pending?.waiters.splice(0) ?? [])
+        waiter.reject(new Error("Ein fremdes Save-Receipt widerrief die ausstehende Speicherbestätigung."));
       this.pending = undefined; this.sourceCurrent = false; if (notify) this.notify();
       return Promise.reject(new Error("CampaignContext oder Save-Receipt wechselte vor der Speicherbestätigung."));
     }
@@ -570,8 +572,11 @@ export class CampaignRuntimeNavigationProvider {
       this.completed.set(proof.transactionId, { proof: normalized, lease: pending.lease, result });
       return result;
     } catch (error) {
-      const notify = this.sourceCurrent || this.pending !== undefined;
-      this.pending = undefined; this.sourceCurrent = false; if (notify) this.notify(); throw error;
+      if (this.pending === pending) {
+        const notify = this.sourceCurrent || this.pending !== undefined;
+        this.pending = undefined; this.sourceCurrent = false; if (notify) this.notify();
+      }
+      throw error;
     }
   }
   close(): void {
