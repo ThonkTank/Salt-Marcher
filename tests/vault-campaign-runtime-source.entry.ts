@@ -50,8 +50,8 @@ test("vault campaign storage announces modify before a deferred read and resolve
     read: (target: TFile) => new Promise<string>((resolve) => { releases.set(target.path, resolve); }),
     on: (name: string, handler: (...args: never[]) => void) => { handlers.set(name, handler); return { name }; },
     offref: () => undefined };
-  const storage = new VaultCampaignRuntimeStorage({ vault } as never), changes: unknown[] = [];
-  storage.subscribe((change) => { changes.push(change); });
+  const storage = new VaultCampaignRuntimeStorage({ vault } as never), changes: unknown[] = [],
+    stop = storage.subscribe((change) => { changes.push(change); });
   const first = `${CAMPAIGN_RUNTIME_ROOT}/a.campaign.json`, second = `${CAMPAIGN_RUNTIME_ROOT}/b.campaign.json`;
   handlers.get("modify")?.(file(first) as never);
   handlers.get("modify")?.(file(second) as never);
@@ -68,4 +68,11 @@ test("vault campaign storage announces modify before a deferred read and resolve
     { kind: "modify", phase: "resolved", eventId: 1, path: first, bytes: "bytes:a" },
     { kind: "modify", phase: "resolved", eventId: 2, path: second, bytes: "bytes:b" },
   ]);
+  const third = `${CAMPAIGN_RUNTIME_ROOT}/c.campaign.json`;
+  handlers.get("modify")?.(file(third) as never);
+  assert.deepEqual(changes.at(-1), { kind: "modify", phase: "pending", eventId: 3, path: third });
+  stop(); const stoppedLength = changes.length;
+  releases.get(third)?.("bytes:c");
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(changes.length, stoppedLength);
 });

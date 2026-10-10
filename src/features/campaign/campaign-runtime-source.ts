@@ -257,6 +257,7 @@ export class CampaignRuntimeSource {
   private unsubscribe?: () => void;
   private readonly changed = new Set<(epoch: number, change: CampaignRuntimeStorageChange) => void>();
   private readonly projectionSources = new Map<string, string | null>();
+  private readonly modifyReservations = new Map<number, { readonly path: string; readonly epoch: number }>();
   private readonly acknowledgmentLeases = new WeakMap<object, string>();
   private readonly acknowledgedSaves = new Map<string, {
     readonly proof: string;
@@ -269,8 +270,21 @@ export class CampaignRuntimeSource {
     private readonly acknowledgmentValidator?: CampaignRuntimeSaveAcknowledgmentValidator,
   ) {
     this.unsubscribe = storage.subscribe?.((change) => {
+      if (change.kind === "modify" && change.phase === "resolved") {
+        const reservation = change.eventId === undefined ? undefined : this.modifyReservations.get(change.eventId);
+        if (reservation && reservation.path === change.path) {
+          this.modifyReservations.delete(change.eventId!);
+          for (const listener of this.changed) listener(reservation.epoch, change);
+          return;
+        }
+        if (change.eventId !== undefined) this.modifyReservations.delete(change.eventId);
+      }
       this.invalidated = true;
-      if (!(change.kind === "modify" && change.phase === "resolved")) this.changeEpoch++;
+      this.changeEpoch++;
+      if (change.kind === "modify" && change.phase === "pending" && change.eventId !== undefined) {
+        if (this.modifyReservations.has(change.eventId)) this.modifyReservations.delete(change.eventId);
+        else this.modifyReservations.set(change.eventId, { path: change.path, epoch: this.changeEpoch });
+      }
       for (const listener of this.changed) listener(this.changeEpoch, change);
     });
   }
@@ -281,6 +295,7 @@ export class CampaignRuntimeSource {
   close(): void {
     this.unsubscribe?.(); this.unsubscribe = undefined; this.invalidated = true;
     this.closed = true; this.changeEpoch++; this.loadSequence++;
+    this.modifyReservations.clear();
     for (const listener of this.changed)
       listener(this.changeEpoch, { kind: "delete", path: "" });
     this.changed.clear();
@@ -476,6 +491,8 @@ export class CampaignRuntimeNavigationProvider {
   private readonly unsubscribe: () => void;
   private sourceCurrent = true;
   private closed = false;
+  private latestEpoch = 0;
+  private contextEpoch = 0;
   private pending?: { readonly proof: string; readonly manifestPath: string; readonly afterManifestBytes: string;
     readonly lease: CampaignRuntimeSaveAcknowledgmentLease; eventObserved: boolean;
     storageEventId?: number;
@@ -492,6 +509,13 @@ export class CampaignRuntimeNavigationProvider {
     this.registry = source.registry;
     this.inventory = source.inventory;
     this.unsubscribe = source.subscribe((epoch, change) => {
+      this.latestEpoch = Math.max(this.latestEpoch, epoch);
+      if (change.kind === "modify" && change.phase === "resolved") {
+        const expectedEpoch = this.pending?.lease.sourceEpoch === undefined ? undefined :
+          this.pending.lease.sourceEpoch + 1;
+        if ((expectedEpoch === undefined && epoch <= this.contextEpoch) ||
+            (expectedEpoch !== undefined && epoch < expectedEpoch)) return;
+      }
       if (this.pending && epoch === this.pending.lease.sourceEpoch + 1 && change.kind === "modify" &&
           change.path === this.pending.manifestPath) {
         if (change.phase === "pending" && change.eventId !== undefined &&
@@ -538,7 +562,7 @@ export class CampaignRuntimeNavigationProvider {
     const result = await this.lifecycle.activate(
       campaignCommandId(String(commandId)), campaignId(String(targetId)), kind,
     );
-    if (result.applied) { this.sourceCurrent = true; this.notify(); }
+    if (result.applied) { this.sourceCurrent = true; this.contextEpoch = this.latestEpoch; this.notify(); }
     return result;
   }
   prepareSaveAcknowledgment(proof: CampaignRuntimeSaveAcknowledgmentV1): CampaignRuntimeSaveAcknowledgmentLease {
@@ -588,6 +612,7 @@ export class CampaignRuntimeNavigationProvider {
           JSON.stringify(this.lifecycle.context) !== JSON.stringify(proof.context))
         throw new Error("CampaignContext wechselte während der Speicherbestätigung.");
       this.pending = undefined; this.sourceCurrent = true;
+      this.contextEpoch = this.latestEpoch;
       this.completed.set(proof.transactionId, { proof: normalized, lease: pending.lease, result });
       return result;
     } catch (error) {

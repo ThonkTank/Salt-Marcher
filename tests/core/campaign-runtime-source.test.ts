@@ -8,11 +8,13 @@ import {
   campaignNamespace,
   campaignReceiptId,
   campaignSnapshot,
+  type CampaignContextProjection,
   type CampaignId,
 } from "../../src/features/campaign/campaign-contracts";
 import { CampaignLifecycle } from "../../src/features/campaign/campaign-lifecycle";
 import { campaignDomainOwnerPolicyDigest, campaignOwnershipDigestValue,
-  type CampaignDomainOwnerProjectionV1 } from "../../src/features/campaign/campaign-ownership";
+  type CampaignDomainOwnerProjectionV1, type CampaignDomainOwnershipProjectionV1 } from
+  "../../src/features/campaign/campaign-ownership";
 import {
   CampaignRuntimeSource,
   CampaignRuntimeNavigationProvider,
@@ -71,32 +73,47 @@ function lifecycle(source: CampaignRuntimeSource) {
     contextToken: () => campaignContextToken(`runtime:${++token}`), receiptId: () => campaignReceiptId(uuid(200 + ++receipt)) });
 }
 
-async function acknowledgmentFixture(command: number, transactionId: string, savedBytes: string) {
-  const storage = new Storage(), path = "Kampagnen/SaltMarcher/a.campaign.json",
-    beforeBytes = manifest(a, worldA), nativePath = `Atlanten/${worldA}.overworld`,
-    participant = new CampaignRuntimeManifestSaveParticipant(path, digest,
-      [{ ownerId: "atlas", verify: () => undefined }]);
-  storage.set([{ path, bytes: beforeBytes }]);
-  const source = new CampaignRuntimeSource(storage, digest, participant), service = lifecycle(source),
-    provider = new CampaignRuntimeNavigationProvider(source, service),
-    activation = await provider.activate(campaignCommandId(uuid(command)), a, "open"), context = activation.context!,
-    beforeRead = await source.registry.read(context), before = parseCampaignRuntimeManifest(beforeBytes, digest);
-  assert.equal(beforeRead.kind, "confirmed");
-  if (beforeRead.kind !== "confirmed") throw new Error("Fixture benötigt bestätigte Registry.");
-  const nextOwner = { ...before.registry.owners[0]!, ownerRevision: `owner:${command}`,
-      snapshotRevision: `snapshot:${command}`,
-      source: { ...before.registry.owners[0]!.source, generation: `source:${command}` },
+function saveAcknowledgments(
+  participant: CampaignRuntimeManifestSaveParticipant,
+  beforeBytes: string,
+  context: CampaignContextProjection,
+  beforeRegistry: CampaignDomainOwnershipProjectionV1,
+  transactionId: string,
+  savedBytes: string,
+  revision: string,
+) {
+  const before = parseCampaignRuntimeManifest(beforeBytes, digest), nativePath = `Atlanten/${worldA}.overworld`,
+    nextOwner = { ...before.registry.owners[0]!, ownerRevision: `owner:${revision}`,
+      snapshotRevision: `snapshot:${revision}`,
+      source: { ...before.registry.owners[0]!.source, generation: `source:${revision}` },
       records: before.registry.owners[0]!.records.map((record) => ({
         ...record, payloadDigest: sha(savedBytes),
       })) },
     nativeWrite = { path: nativePath, before: "bytes", after: savedBytes },
     [manifestWrite] = participant.prepare({ beforeManifestBytes: beforeBytes, nativeWrites: [nativeWrite],
       beforeOwners: before.registry.owners, afterOwners: [nextOwner] }),
-    prepared = participant.createAcknowledgment({ context, beforeRegistry: beforeRead.projection,
+    prepared = participant.createAcknowledgment({ context, beforeRegistry,
       journal: { transactionId, state: "prepared", writes: [nativeWrite, manifestWrite!] } }),
-    committed = participant.createAcknowledgment({ context, beforeRegistry: beforeRead.projection,
+    committed = participant.createAcknowledgment({ context, beforeRegistry,
       journal: { ...prepared.journal, state: "committed" } });
-  return { storage, path, source, provider, context, prepared, committed };
+  return { prepared, committed };
+}
+
+async function acknowledgmentFixture(command: number, transactionId: string, savedBytes: string) {
+  const storage = new Storage(), path = "Kampagnen/SaltMarcher/a.campaign.json",
+    beforeBytes = manifest(a, worldA),
+    participant = new CampaignRuntimeManifestSaveParticipant(path, digest,
+      [{ ownerId: "atlas", verify: () => undefined }]);
+  storage.set([{ path, bytes: beforeBytes }]);
+  const source = new CampaignRuntimeSource(storage, digest, participant), service = lifecycle(source),
+    provider = new CampaignRuntimeNavigationProvider(source, service),
+    activation = await provider.activate(campaignCommandId(uuid(command)), a, "open"), context = activation.context!,
+    beforeRead = await source.registry.read(context);
+  assert.equal(beforeRead.kind, "confirmed");
+  if (beforeRead.kind !== "confirmed") throw new Error("Fixture benötigt bestätigte Registry.");
+  const { prepared, committed } = saveAcknowledgments(participant, beforeBytes, context, beforeRead.projection,
+    transactionId, savedBytes, String(command));
+  return { storage, path, source, provider, participant, beforeBytes, context, prepared, committed };
 }
 
 test("runtime source opens persisted campaigns and derives a fresh context-bound registry and inventory", async () => {
@@ -169,6 +186,29 @@ test("navigation provider blocks pending Vault reads unless one exact own save i
   const foreign = await acknowledgmentFixture(312, "transaction:no-lease", "saved-no-lease");
   foreign.storage.listener?.({ kind: "modify", phase: "pending", eventId: 1, path: foreign.path });
   assert.equal(foreign.provider.currentContext(), null);
+  const fresh = await foreign.provider.activate(campaignCommandId(uuid(316)), a, "open");
+  foreign.storage.listener?.({ kind: "modify", phase: "resolved", eventId: 1, path: foreign.path,
+    bytes: foreign.beforeBytes });
+  assert.equal(foreign.provider.currentContext()?.contextToken, fresh.context?.contextToken);
+
+  const overlap = await acknowledgmentFixture(317, "transaction:obsolete", "saved-obsolete");
+  overlap.storage.listener?.({ kind: "modify", phase: "pending", eventId: 1, path: overlap.path });
+  const replacement = await overlap.provider.activate(campaignCommandId(uuid(318)), a, "open"),
+    replacementContext = replacement.context!, replacementRead = await overlap.source.registry.read(replacementContext);
+  assert.equal(replacementRead.kind, "confirmed");
+  if (replacementRead.kind !== "confirmed") throw new Error("Replacement benötigt bestätigte Registry.");
+  const replacementSave = saveAcknowledgments(overlap.participant, overlap.beforeBytes, replacementContext,
+    replacementRead.projection, "transaction:replacement", "saved-replacement", "318");
+  overlap.provider.prepareSaveAcknowledgment(replacementSave.prepared);
+  const replacementPromise = overlap.provider.acknowledgeCommittedSave(replacementSave.committed);
+  overlap.storage.files = [{ path: overlap.path, bytes: replacementSave.prepared.afterManifestBytes }];
+  overlap.storage.listener?.({ kind: "modify", phase: "pending", eventId: 2, path: overlap.path });
+  overlap.storage.listener?.({ kind: "modify", phase: "resolved", eventId: 1, path: overlap.path,
+    bytes: overlap.beforeBytes });
+  assert.equal(overlap.provider.currentContext()?.contextToken, replacementContext.contextToken);
+  overlap.storage.listener?.({ kind: "modify", phase: "resolved", eventId: 2, path: overlap.path,
+    bytes: replacementSave.prepared.afterManifestBytes });
+  assert.equal((await replacementPromise).context.contextToken, replacementContext.contextToken);
 
   const exact = await acknowledgmentFixture(313, "transaction:deferred-exact", "saved-exact");
   exact.provider.prepareSaveAcknowledgment(exact.prepared);
