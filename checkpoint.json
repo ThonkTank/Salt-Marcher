@@ -4956,18 +4956,19 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-R48-CLEAN-R",
-      "kind": "cleanup_review",
-      "startedAt": "2026-10-10T04:50:39Z",
-      "completedAt": "2026-10-10T04:50:40.192468+00:00",
+      "id": "CITY-00-R48-META-N01",
+      "kind": "metadata_correction",
+      "startedAt": "2026-10-10T11:02:01.318089+00:00",
+      "completedAt": "2026-10-10T11:02:01.318089+00:00",
       "state": "completed",
-      "result": "PASS exact planned helper absent;135 protected hashes unchanged; plan/implementation binding, product/tools/tests and foreign roots preserved. R48 cleanup closed; no recursive cleanup. PR27 independent reference review pending.",
-      "receipt": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i48b-20261010-r01/r48-cleanup-review.json"
+      "result": "HEX-COK-R48-META-01 corrected: completed R48 cleanup stated; independent bounded Hex reference review recorded, CO-COK-0004 remains open. No repeated probe/cleanup or product approval.",
+      "receipt": "/home/aaron/.cache/dungeon-native-qa/hex-03/city00-cok-r48-independent-r01-20261010/review.json",
+      "reviewedCandidate": "9c4afe102c00e42ba814d0a32cf721ddcccfc820"
     },
     "nextRun": {
-      "id": "E2E-01-SPACE-I01c-CAMPAIGN-INTEGRATION-R01",
+      "id": "E2E-01-CAMPAIGN-SAVE-ACK-INTEGRATION-R01",
       "kind": "independent_integration_review",
-      "focus": "Read current exact PR13 handoff: full Campaign owner branch composition, actual Campaign Core signatures and preserved Atlas/City/Dungeon/history/fixture boundaries; no generic Campaign/MWS review or runtime acceptance"
+      "focus": "Await actual qualified Campaign owned-save acknowledgment delivery and Chronik review, then exact Hex integrated Host handoff; no repeated prior core/Host/COK review or speculative CITY-01 activation."
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
