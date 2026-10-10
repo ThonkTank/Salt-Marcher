@@ -554,7 +554,7 @@
     },
     "ce02I02Source": {
       "run": "CE-02-I02-S01-W24",
-      "state": "source_checked_independent_review_pending_incomplete",
+      "state": "source_review_pass_composition_checked_steward_pending_incomplete",
       "sourceDocument": "https://media.wizards.com/2023/downloads/dnd/SRD_CC_v5.1.pdf",
       "sourceSha256": "2504d2a0abb0a4d491a939be4f17910a2dde0312570ab8d208080225ccf0a1f0",
       "helperCommit": "3f5593ea004c4f5a2af95603087ce4de72689d9f",
@@ -609,10 +609,10 @@
         "Bags A–Z ordinals 14–17: all twelve source d100 ranges/effects, twenty-four color/die-bound creatures, complete prose/header/physical spans and full heading-block XML oracle with real hash-bound original pages"
       ],
       "verification": {
-        "sourceRevision": "136fd12b92208edae8be0a9c51414bd07c7aa2d0+dirty",
+        "sourceRevision": "d297c6aefa8c39d08c4f81cd3835b0d61055f691",
         "check": "passed",
         "tests": {
-          "passed": 502,
+          "passed": 711,
           "failed": 0,
           "skipped": 0,
           "officialPdfEnabled": true
@@ -727,8 +727,8 @@
         "incompleteGate": "passed",
         "buildArtifact": {
           "path": "main.js",
-          "bytes": 1422978,
-          "sha256": "0e26628c2e58a0cc10e64641305cc74a2d77ad027a18d41396e0968207deef37"
+          "bytes": 1613470,
+          "sha256": "a48bb388cdc4d7cf28d156c7574aa68ea98fdc10ed173436bf0c12a7990623b0"
         },
         "magicItemAzArmorArrows": {
           "ordinals": [
@@ -748,7 +748,7 @@
         },
         "repositoryStructure": "passed",
         "repositoryTests": {
-          "passed": 23,
+          "passed": 25,
           "failed": 0,
           "skipped": 0
         },
@@ -787,7 +787,7 @@
           "oracle": "complete-heading-bounded stream with exact source die ranges, color ownership and split-page continuation"
         }
       },
-      "limits": "Intermediate source only: 221 A–Z headings plus Orb, magic-item helper reconciliation, remaining goldens and independent W24/S01-R01 remain open. Item artifact/provider/UI and I01 blocked. No Obsidian installation, GUI, physical, full E2E or Encounter runtime approval; exclusively 2014.",
+      "limits": "Intermediate source only: 221 A–Z headings plus Orb, magic-item helper reconciliation, remaining goldens and independent S01-R01 remains open; W24 is independently PASS, regular shared integration remains open. Item artifact/provider/UI and I01 blocked. No Obsidian installation, GUI, physical, full E2E or Encounter runtime approval; exclusively 2014.",
       "magicItemAzArmorArrowsEvidence": "A–Z ordinals 10–13 on physical/printed pages 208–209 preserve complete headers and prose, vulnerability curse, slaying rules and ten ordered die-bound resistance choices. Full heading-bounded XML text and physical two-column table order are checked, not merely substring presence.",
       "repairReview": {
         "state": "PASS",
@@ -795,7 +795,22 @@
         "issue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/48#pullrequestreview-5479968350",
         "scope": "Independent P1 repair/W23 PDF oracle, genuine Poppler 25.07 official PDF and 48/48 tests; no S01/product/host overall approval"
       },
-      "magicItemAzBagsEvidence": "Preserves complete Beans/Devouring/Holding/Tricks prose and headers, all twelve d100 effects including 00 and the split-page egg outcome, and all three color-bound eight-row d8 tables. Every heading-bounded XML interval and page span is compared exactly. No invented variants, merges, costs, capacity or conditional-weight conversions. Full official PDF verification passes; complete false and Item product gates remain closed."
+      "magicItemAzBagsEvidence": "Preserves complete Beans/Devouring/Holding/Tricks prose and headers, all twelve d100 effects including 00 and the split-page egg outcome, and all three color-bound eight-row d8 tables. Every heading-bounded XML interval and page span is compared exactly. No invented variants, merges, costs, capacity or conditional-weight conversions. Full official PDF verification passes; complete false and Item product gates remain closed.",
+      "w24Review": {
+        "state": "PASS",
+        "reviewedCommit": "42a69b63a69fbf310f1ba4eb4b7128cee2e5c700",
+        "issue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/56#pullrequestreview-5480292230",
+        "scope": "Independent full four-item Bags source/PDF review on genuine Poppler26.01, twelve effects and twenty-four color-bound cells; source/tool/test/fixture bytes unchanged in composition. No Full-S01/product/host approval."
+      },
+      "composition": {
+        "id": "W24-COMPOSE-01",
+        "state": "checked_steward_handoff_pending",
+        "sharedCommit": "6a41f1640de3e4a4311d905d95f66cd79d91b698",
+        "testedCommit": "d297c6aefa8c39d08c4f81cd3835b0d61055f691",
+        "claim": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/56#issuecomment-6100853466",
+        "resolution": "Retain entire current Shared package.json and add only Bags test once directly after Sources; all four Atlas/Campaign bundles and unique check/test keys retained. No source/product fix.",
+        "next": "Stadt consumes exact-SHA CI and narrowly closes regular integration; no new source review."
+      }
     }
   },
   "cityPlans": {

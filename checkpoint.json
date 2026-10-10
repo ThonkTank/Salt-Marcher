@@ -216,15 +216,15 @@
     "currentRun": {
       "id": "CE-02-I02-S01-W24",
       "kind": "source_inventory_schema_transcript_continuation",
-      "state": "source_checked_independent_review_pending_incomplete",
+      "state": "source_review_pass_composition_checked_steward_pending_incomplete",
       "focus": "Complete four-item Bags source group, A–Z ordinals 14–17, physical/printed pages 209–211",
       "plan": "ROADMAP-SALTMARCHER-CE02-I02-PLAN.md",
       "result": "Preserves complete Beans/Devouring/Holding/Tricks prose and headers, all twelve d100 effects including 00 and the split-page egg outcome, and all three color-bound eight-row d8 tables. Every heading-bounded XML interval and page span is compared exactly. No invented variants, merges, costs, capacity or conditional-weight conversions. Full official PDF verification passes; complete false and Item product gates remain closed.",
       "verification": {
-        "sourceRevision": "136fd12b92208edae8be0a9c51414bd07c7aa2d0+dirty",
+        "sourceRevision": "d297c6aefa8c39d08c4f81cd3835b0d61055f691",
         "check": "passed",
         "tests": {
-          "passed": 502,
+          "passed": 711,
           "failed": 0,
           "skipped": 0,
           "officialPdfEnabled": true
@@ -253,10 +253,10 @@
           "previousHeading": "Armor, +1, +2, or +3",
           "nextHeading": "Armor of Resistance"
         },
-        "mainBytes": 1422978,
-        "mainSha256": "0e26628c2e58a0cc10e64641305cc74a2d77ad027a18d41396e0968207deef37",
+        "mainBytes": 1613470,
+        "mainSha256": "a48bb388cdc4d7cf28d156c7574aa68ea98fdc10ed173436bf0c12a7990623b0",
         "manifestSha256": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64",
-        "stylesSha256": "a6d31c13219d4b9f49d2ecf6993106bedef2a33560c9bdfdb93106659d45bc2e",
+        "stylesSha256": "68e1cf101ceaadd624168b431fddc297c90e8a5bc6be25a15f0926ebb569a5ea",
         "magicItemAzArmorArrows": {
           "ordinals": [
             10,
@@ -275,7 +275,7 @@
         },
         "repositoryStructure": "passed",
         "repositoryTests": {
-          "passed": 23,
+          "passed": 25,
           "failed": 0,
           "skipped": 0
         },
@@ -314,7 +314,7 @@
           "xmlFixtureBytes": 46411
         }
       },
-      "limits": "Intermediate source only: 221 A–Z headings plus Orb, magic-item helper reconciliation, remaining goldens and independent W24/S01-R01 remain open. Item artifact/provider/UI and I01 blocked. No Obsidian installation, GUI, physical, full E2E or Encounter runtime approval; exclusively 2014.",
+      "limits": "Intermediate source only: 221 A–Z headings plus Orb, magic-item helper reconciliation, remaining goldens and independent S01-R01 remains open; W24 is independently PASS, regular shared integration remains open. Item artifact/provider/UI and I01 blocked. No Obsidian installation, GUI, physical, full E2E or Encounter runtime approval; exclusively 2014.",
       "documentation": {
         "status": "partial",
         "branch": "catalog/ce02-s01-w24-bags",
@@ -342,17 +342,19 @@
           "scope": "Original complete three-page XML is committed and reviewer-accessible. Canonical /home/aaron cache is not writable on this cloud host; raw CLI logs use explicit ephemeral /tmp fallback. Local official PDF and clean-SHA build, not installed triplet, GUI or physical input. Real 25.07 evidence belongs solely to the previous independent W23 review."
         },
         "notProven": [
-          "independent W24 review and shared integration",
+          "shared W24 integration",
           "221 A–Z headings / Orb / helper reconciliation / remaining goldens / S01-R01",
           "Item product artifact/provider/UI/I01",
           "installed Obsidian/GUI/physical/E2E acceptance",
           "Encounter runtime"
         ],
-        "next": "Independent complete Bags/PDF review, regular Steward integration, then next coherent source group from Bead of Force onward."
+        "next": "Stadt narrow composition/integration completion on repaired candidate; then next coherent source group from Bead of Force."
       },
       "review": {
-        "state": "independent_W24_source_review_pending",
-        "scope": "Four full Bags source entries/table boundaries/identity, actual official PDF and relevant stream-extraction refactor"
+        "state": "PASS",
+        "reviewedCommit": "42a69b63a69fbf310f1ba4eb4b7128cee2e5c700",
+        "issue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/56#pullrequestreview-5480292230",
+        "scope": "Independent full four-item Bags source/PDF review on genuine Poppler26.01, twelve effects and twenty-four color-bound cells; source/tool/test/fixture bytes unchanged in composition. No Full-S01/product/host approval."
       },
       "dependencies": {
         "w23P1Review": {
@@ -362,6 +364,15 @@
           "scope": "Independent P1 repair/W23 PDF oracle, genuine Poppler 25.07 official PDF and 48/48 tests; no S01/product/host overall approval"
         },
         "w23Integration": "completed: independent Stadt stewardship merged PR48/8dfa06a into shared 6ce52f1c8915c006dfdefe2261f0c0c6d77b8483; consumed receipt https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/48#issuecomment-6100664463. W24 source bytes unchanged; W24 review/full S01/product gates remain open."
+      },
+      "composition": {
+        "id": "W24-COMPOSE-01",
+        "state": "checked_steward_handoff_pending",
+        "sharedCommit": "6a41f1640de3e4a4311d905d95f66cd79d91b698",
+        "testedCommit": "d297c6aefa8c39d08c4f81cd3835b0d61055f691",
+        "claim": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/56#issuecomment-6100853466",
+        "resolution": "Retain entire current Shared package.json and add only Bags test once directly after Sources; all four Atlas/Campaign bundles and unique check/test keys retained. No source/product fix.",
+        "next": "Stadt consumes exact-SHA CI and narrowly closes regular integration; no new source review."
       }
     },
     "implementationRun": {
@@ -573,10 +584,10 @@
       "Physical catalog input acceptance cannot be replaced by Playwright automation"
     ],
     "nextRun": {
-      "id": "CE-02-I02-S01-W24-R01",
-      "kind": "independent_source_review",
+      "id": "CE-02-I02-S01-W24-INTEGRATE",
+      "kind": "independent_steward_integration",
       "plan": "ROADMAP-SALTMARCHER-CE02-I02-PLAN.md",
-      "focus": "Review the complete Bags source group/PDF boundaries and relevant stream refactor on exact candidate SHA. After PASS and integration continue coherent A–Z source section from Bead of Force; keep Item product gates blocked until complete S01-R01."
+      "focus": "Stadt consumes repaired exact-SHA composition/CI and closes regular PR56 integration; W24 source PASS transfers only with unchanged source/tool/test/fixture bytes. Then continue coherent source group from Bead of Force; Full-S01/product gates stay closed."
     }
   },
   "repositoryWorkflow": {
