@@ -5739,7 +5739,7 @@
     },
     "latestFreshProcessAttempt": {
       "id": "GM-UX-01-D-FRESH-PROCESS-20261010-01",
-      "status": "not_started_preflight_recorded",
+      "status": "host_ready_ui_test_not_started",
       "owner": "Cloud-GM-Produkttester",
       "branch": "active/installed-phase1",
       "documentationBase": "a72c9501f5dd6649fb624420b9141903534be345",
@@ -5759,6 +5759,16 @@
         "productFilesSinceProductSource": "Nur GM-Dokumentation/Checkpoint; Produktbuild ist der exakte integrierte Produktcommit eefbe6f505f0158ec6156c2eaf359fbf19b24a0e.",
         "currentForwardedHost": "CDP 9228 antwortet read-only mit Obsidian 1.14.4/Electron 43.7.7; kein Zugriff auf dessen Prozessstart.",
         "executorBlocker": "DISPLAY leer; /opt/Obsidian/obsidian und andere Obsidian-Binary-Pfade fehlen. Docker daemon lokal erreichbar (Server 28.4.0, vfs). Eigenen containerisierten Xvfb-/Obsidianhost wird eingerichtet, statt den bestehenden Host oder Laptop anzutasten.",
+        "hostSetup": {
+          "officialPackage": "Obsidian 1.14.4 amd64 .deb von offizieller GitHub Release v1.14.4; erwarteter und gemessener SHA-256 85b10dcba6edfc1c0460a6d18260cf31c30447a444bd858a6440b9c9c8806d25.",
+          "containerImage": "gm-obsidian-qa:1.14.4, image ID sha256:54ba6eda7e0c2ba4ae25ec4c4ded61093ae11fdc636b71fd89dd2bbdcebf7477; Debian 13, Xvfb 1440x1000; image built with proxy/system CA mounted only as BuildKit secrets.",
+          "containerId": "4047ad84db9e5e527d70c7a59f150ea430c6137f941f2d4d8a90e36f1c8134b0",
+          "profile": "/workspace/scratch/gm-cloud-qa/fresh-process-20261010/profile",
+          "vault": "/workspace/scratch/gm-cloud-qa/fresh-process-20261010/vault",
+          "cdp": "http://127.0.0.1:9230 via loopback socat relay to container-local CDP; visible onboarding reports Obsidian 1.14.4.",
+          "appLogs": "Application starts and DevTools responds; update checks fail with ERR_CERT_AUTHORITY_INVALID in isolated container and D-Bus system bus is absent. These setup diagnostics did not prevent UI startup; not product-behavior observations.",
+          "firstPortProbe": "Initial container exposed loopback-only DevTools and CDP connect failed (socket hang up); rebuilt with socat relay and confirmed successful Playwright/CDP connection."
+        },
         "existingTriplet": {
           "main.js": "522823730ddce4d0ba83e0476f60887b60a07c517f84e8e270814b6d597efa43",
           "styles.css": "a6d31c13219d4b9f49d2ecf6993106bedef2a33560c9bdfdb93106659d45bc2e",
@@ -5769,9 +5779,10 @@
         "plannedEvidence": "/workspace/scratch/gm-cloud-qa/evidence-gmux01-fresh-process-20261010/"
       },
       "filesChanged": ["checkpoint.json", "ROADMAP-GM-PRODUCT-TESTING-PLAN.md"],
-      "checksBeforeRun": "Issue #1/6087478045 gelesen; Issue #8 und GM-Roadmap gelesen; origin/active/installed-phase1 fetch/sync PASS; QA-Host CDP-Versionabfrage PASS; keine UI-Interaktion oder Produktprüfung begonnen.",
-      "limits": "Noch kein frischer Prozess, kein sichtbarer Test, keine Save-/Reopen-Abnahme, kein Testschluss. Remote-CDP-Sichtbarkeit allein belegt keinen eigenen Prozess. N-005-R03 bleibt separater, nicht übernommener Kartograph-Auftrag.",
-      "next": "Eigenen isolierten Obsidian-1.14.4-Prozess mit virtuellem Display und separatem User-Data-Dir/Testvault aufbauen; bei Installations-/Startblocker exakte Meldung, Container- und Netzwerkbedingungen in Issue #8/GM-Checkpoint dokumentieren."
+      "checksBeforeRun": "Issue #1/6087478045 gelesen; Issue #8 und GM-Roadmap gelesen; origin/active/installed-phase1 fetch/sync PASS; offizieller Obsidian-v1.14.4-amd64 .deb-Digest exakt verifiziert; Docker image build PASS; neuer unabhängiger containerisierter Obsidian-1.14.4-Prozess gestartet; neue CDP-Verbindung und sichtbare Onboardingseite PASS. Noch keine Testkarte im neuen Host geöffnet oder editiert.",
+      "startupEvidence": "/workspace/scratch/gm-cloud-qa/evidence-gmux01-fresh-process-20261010/00-new-cloud-process.png",
+      "limits": "Eigener Host ist bereit, aber noch keine Testfolge ausgeführt. Native Dateiauswahl/QA-Kartenöffnung ist noch nicht gezeigt; kein Save-/Prozessende-/Reopen-Nachweis. Updater-Zertifikatwarnungen und fehlender D-Bus sind Containerdiagnosen. N-005-R03 bleibt separater, nicht übernommener Kartograph-Auftrag.",
+      "next": "Separaten nativen Dateiauswahlschritt über sichtbare UI ermöglichen; anschließend nur den geplanten Save→Prozessende→frischer Start→Key/Hash-Nachweis durchführen."
     }
   }
 }
