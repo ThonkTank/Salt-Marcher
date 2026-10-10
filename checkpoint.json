@@ -4930,18 +4930,18 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I48b-CLEAN-I",
-      "kind": "cleanup_implementation",
-      "startedAt": "2026-10-10T04:37:36.106891+00:00",
-      "focus": "Remove only exact own regenerable Vulkan/Godot/Mesa cache directories after all guards",
-      "state": "completed",
-      "result": "Three enumerated own cache directories/547 files/13,431,760bytes removed after exact cache/protected hashes and normalExit/PID/path checks; separate review pending.",
-      "receipt": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i48b-20261010-r01/cleanup-implementation.json"
-    },
-    "nextRun": {
       "id": "CITY-00-I48b-CLEAN-R",
       "kind": "cleanup_review",
-      "focus": "Review protected hashes, source/map/template preservation, exact absence and process/path boundaries; then R48"
+      "startedAt": "2026-10-10T04:38:52.728361+00:00",
+      "focus": "Exact absence, raw/protected/source hashes, process/ownership boundaries",
+      "state": "completed",
+      "result": "PASS no cleanup finding; 77 protected files and all Rawmanifest hashes intact, sources/copies unchanged, three caches absent, five PID identities gone, product/tools/tests and foreign roots match current Shared.",
+      "receipt": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i48b-20261010-r01/cleanup-review.json"
+    },
+    "nextRun": {
+      "id": "CITY-00-R48",
+      "kind": "reference_review",
+      "focus": "Review both original I48a/I48b evidence chains, template sections/effect/cancel and fresh process boundaries; no product or full parity claim"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
