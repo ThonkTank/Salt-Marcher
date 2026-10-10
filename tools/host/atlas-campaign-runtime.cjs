@@ -164,7 +164,8 @@ module.exports = (context) => {
       const probe = window.__hexCampaignProbe;
       return { kind: view.campaignHost.state.kind, reason: view.campaignHost.state.reason,
         cleanupFailures: probe.cleanupFailures, transactions: probe.transactions,
-        retainedMounts: view.campaignHost.navigation.retainedMounts };
+        retainedMounts: view.campaignHost.navigation.retainedMounts.map((entry) => ({
+          campaignId: entry.context.campaignId, reason: entry.reason })) };
     });
     const raw = fs.readFileSync(path.join(vault, journalPath), "utf8");
     const journal = JSON.parse(raw);
@@ -173,8 +174,10 @@ module.exports = (context) => {
       assert.equal(fs.readFileSync(path.join(vault, row.path), "utf8"),
         fs.readFileSync(path.join(fixture, row.fixtureFile), "utf8"), row.path);
     exactCampaign("expected");
-    for (const write of journal.writes)
-      assert.equal(fs.readFileSync(path.join(vault, write.path), "utf8"), write.after, write.path);
+    for (const write of journal.writes) {
+      const file = path.join(vault, write.path);
+      assert.equal(fs.existsSync(file) ? fs.readFileSync(file, "utf8") : null, write.after, write.path);
+    }
     fs.writeFileSync(path.join(out, "actual-committed-journal.json"), raw);
     fs.writeFileSync(path.join(out, "actual-commit-cleanup-failure.json"), JSON.stringify(actual, null, 2));
     checks.push("Actual committed cleanup failure keeps exact After bytes and durable journal; obsolete mount is unavailable");
