@@ -6,6 +6,7 @@ import {
   validateBoundedAdventuringGearTableRows,
   validateBoundedArmorTableRows,
   validateBoundedMountsTableRows,
+  validateBoundedTackTableRows,
   validateBoundedToolsTableRows,
   validateBoundedWeaponTableRows,
   validateJsonSchemas,
@@ -680,6 +681,45 @@ test("tack and drawn vehicles preserve formulas, missing weight and sourced Bard
   inventedFormula.records.find(record => record.name === "Barding").cost.copperPieces = 400;
   assert.throws(() => validateTranscriptData(inventedFormula, checkedInventory, { allowIncomplete: true }),
     /cost ist nicht eindeutig umrechenbar/);
+});
+
+test("tack bounded matching keeps formulas and source missing marker on one physical PDF row", async () => {
+  const [checkedInventory, checkedTranscript] = await Promise.all([
+    readFile(new URL("items-srd51-inventory.json", dataRoot), "utf8").then(JSON.parse),
+    readFile(new URL("items-srd51-transcript.json", dataRoot), "utf8").then(JSON.parse),
+  ]);
+  const occurrences = checkedInventory.occurrences
+    .filter(item => item.sectionId === "tack-harness-drawn-vehicles");
+  const records = new Map(checkedTranscript.records.map(record => [record.id, record]));
+  const segments = occurrences.map(item => {
+    const record = records.get(item.id);
+    return `${item.sourceLabel} ${record.cost.sourceText} ${record.weight.sourceText}`;
+  });
+  const pageLines = {
+    72: segments.map((segment, index) => `${segment}     Unrelated right-column trade goods ${index}`),
+  };
+  assert.deepEqual(validateBoundedTackTableRows(pageLines, checkedTranscript, checkedInventory), {
+    checkedRows: 14,
+    scope: "exact-normalized-pdftotext-layout-row-segment-with-formula-and-source-missing-marker",
+  });
+
+  const wrongCell = structuredClone(checkedTranscript);
+  wrongCell.records.find(record => record.name === "Saddle, Exotic").weight.sourceText = "50 lb.";
+  assert.throws(() => validateBoundedTackTableRows(pageLines, wrongCell, checkedInventory),
+    /nicht exakt einmal als zusammenhängendes Segment derselben physischen Tabellenzeile/);
+
+  const pageWideOnly = structuredClone(pageLines);
+  const wagon = "Wagon 35 gp 400 lb.";
+  const wagonLine = pageWideOnly[72].findIndex(line => line.includes(wagon));
+  pageWideOnly[72][wagonLine] = pageWideOnly[72][wagonLine].replace(wagon, "Wagon");
+  pageWideOnly[72].push("35 gp", "400 lb.");
+  assert.throws(() => validateBoundedTackTableRows(pageWideOnly, checkedTranscript, checkedInventory),
+    /nicht exakt einmal als zusammenhängendes Segment derselben physischen Tabellenzeile/);
+
+  const duplicateSegment = structuredClone(pageLines);
+  duplicateSegment[72][0] += `     ${segments[0]}`;
+  assert.throws(() => validateBoundedTackTableRows(duplicateSegment, checkedTranscript, checkedInventory),
+    /nicht exakt einmal als zusammenhängendes Segment derselben physischen Tabellenzeile/);
 });
 
 test("waterborne vehicles preserve physical order, fractional mph and Rowed Vessels facts", async () => {
