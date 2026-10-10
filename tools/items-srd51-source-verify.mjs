@@ -97,7 +97,7 @@ function validateStructuredConversions(record) {
       `${record.id}.cost.copperPieces stimmt nicht mit dem Quelltext überein.`);
   }
   if (record.weight?.pounds !== undefined) {
-    const match = /^(\d[\d,]*|1\/2|1\/4|1½) lb\.$/.exec(record.weight.sourceText);
+    const match = /^(\d[\d,]*|1\/2|1\/4|1½) (?:lb\.|pounds)$/.exec(record.weight.sourceText);
     invariant(match, `${record.id}.weight ist nicht eindeutig in Pfund umrechenbar.`);
     const pounds = match[1] === "1/2" ? "0.5" : match[1] === "1/4" ? "0.25" : match[1] === "1½" ? "1.5"
       : match[1].replaceAll(",", "");
