@@ -371,6 +371,48 @@ function verifyPdfWeaponTableRows(pdfPath, transcript, inventory) {
   return validateBoundedWeaponTableRows(pageLines, transcript, inventory);
 }
 
+function countExactNormalizedLineSegments(lines, expected) {
+  const needle = ` ${expected} `;
+  return lines.reduce((count, line) => {
+    const haystack = ` ${normalizePdfText(line)} `;
+    return count + haystack.split(needle).length - 1;
+  }, 0);
+}
+
+export function validateBoundedAdventuringGearTableRows(pageLines, transcript, inventory) {
+  object(pageLines, "Adventuring-Gear-Tabellenzeilen");
+  const occurrences = inventory.occurrences.filter(occurrence => occurrence.sectionId === "adventuring-gear");
+  invariant(occurrences.length === 99,
+    "Bounded Adventuring-Gear-Prüfung benötigt exakt 99 Inventarzeilen.");
+  const records = new Map(transcript.records.map(record => [record.id, record]));
+  for (const occurrence of occurrences) {
+    const record = records.get(occurrence.id);
+    invariant(record, `${occurrence.id}: Record für bounded Adventuring-Gear-Prüfung fehlt.`);
+    invariant(record.cost, `${occurrence.id}: strukturierte Adventuring-Gear-Kostenzelle fehlt.`);
+    const expected = normalizePdfText([
+      occurrence.sourceLabel,
+      record.cost.sourceText,
+      record.weight?.sourceText ?? "—",
+    ].join(" "));
+    const lines = pageLines[String(occurrence.firstPdfPage)];
+    invariant(Array.isArray(lines), `${occurrence.id}: Layoutzeilen für PDF-Seite ${occurrence.firstPdfPage} fehlen.`);
+    const matches = countExactNormalizedLineSegments(lines, expected);
+    invariant(matches === 1,
+      `${occurrence.id}: erwartete Adventuring-Gear-Zellen stehen nicht exakt einmal als zusammenhängendes Segment derselben physischen Tabellenzeile.`);
+  }
+  return Object.freeze({ checkedRows: occurrences.length,
+    scope: "exact-normalized-pdftotext-layout-row-segment-for-two-column-table-with-source-missing-markers" });
+}
+
+function verifyPdfAdventuringGearTableRows(pdfPath, transcript, inventory) {
+  const pages = [...new Set(inventory.occurrences
+    .filter(occurrence => occurrence.sectionId === "adventuring-gear")
+    .map(occurrence => occurrence.firstPdfPage))];
+  const pageLines = Object.fromEntries(pages.map(page => [String(page),
+    extractPdfPage(pdfPath, page, true).split(/\r?\n/).filter(line => line.trim().length > 0)]));
+  return validateBoundedAdventuringGearTableRows(pageLines, transcript, inventory);
+}
+
 function verifyPdfOccurrences(pdfPath, inventory) {
   const pageText = new Map();
   for (const occurrence of inventory.occurrences) {
@@ -503,6 +545,7 @@ export async function verifyItemsSourcePackage({ pdfPath, allowIncomplete = fals
       transcriptEvidence: verifyPdfTranscriptFacts(pdfPath, transcript),
       boundedArmorTableEvidence: verifyPdfArmorTableRows(pdfPath, transcript, inventory),
       boundedWeaponTableEvidence: verifyPdfWeaponTableRows(pdfPath, transcript, inventory),
+      boundedAdventuringGearTableEvidence: verifyPdfAdventuringGearTableRows(pdfPath, transcript, inventory),
       helperDispositionEvidence: verifyPdfHelperDispositions(pdfPath, inventory),
       crossReferenceEvidence: verifyPdfCrossReferences(pdfPath, inventory) });
   }
