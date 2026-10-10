@@ -20,6 +20,7 @@ import {
   CampaignRuntimeSource,
   CampaignRuntimeNavigationProvider,
   parseCampaignRuntimeManifest,
+  type CampaignRuntimeStorageChange,
 } from "../../src/features/campaign/campaign-runtime-source";
 import { CampaignLifecycle } from "../../src/features/campaign/campaign-lifecycle";
 import {
@@ -32,6 +33,9 @@ import { campaignOwnershipDigestValue } from "../../src/features/campaign/campai
 import { FileConflict, type FileStore } from "../../src/persistence";
 import type { AtlasFileJournal } from "../../src/features/atlas/file-transaction";
 import type { AtlasSpatialOptions } from "../../src/features/atlas/detail-owners";
+import { newLocationPath } from "../../src/features/atlas/location-owners";
+import { parseLocationDocument } from "../../src/features/location/location-schema";
+import { atlasCampaignServices } from "../../src/ui/atlas-campaign-services";
 
 const root = "tests/fixtures/atlas-e2e-spatial-v2/";
 const fixture = JSON.parse(readFileSync(root + "manifest.json", "utf8"));
@@ -73,6 +77,8 @@ class Store implements FileStore {
   readonly journals: AtlasFileJournal[] = [];
   readHook?: (path: string) => void;
   fault?: (path: string, after: string | null) => boolean;
+  failOnce?: string;
+  manifestChanged?: (change: CampaignRuntimeStorageChange) => void;
   offline = false;
   constructor() {
     this.files.set(campaignPath, inputManifest);
@@ -88,6 +94,10 @@ class Store implements FileStore {
   ) {
     if (this.offline) throw new Error("process stopped");
     if ((this.files.get(path) ?? null) !== before) throw new FileConflict(path);
+    if (this.failOnce === path) {
+      this.failOnce = undefined;
+      throw new Error("first native CAS failed");
+    }
     if (this.fault?.(path, after)) {
       this.offline = true;
       throw new Error("interruption");
@@ -95,6 +105,8 @@ class Store implements FileStore {
     this.writes.push(path);
     if (after === null) this.files.delete(path);
     else this.files.set(path, after);
+    if (path === campaignPath && after !== null)
+      this.manifestChanged?.({ kind: "modify", path, bytes: after });
     if (path === worldPath + ".journal" && after !== null)
       this.journals.push(JSON.parse(after));
   }
@@ -114,7 +126,7 @@ function options(store: Store, campaign = adapter(store)): AtlasSpatialOptions {
     resolveLocation: async (id) =>
       [...store.files].find(
         ([p, b]) => p.endsWith(".location") && JSON.parse(b).id === id,
-      )![0],
+      )?.[0] ?? newLocationPath(id),
     resolveDetail: async (_world, kind, id) =>
       [...store.files]
         .filter(([p, b]) => p.endsWith("." + kind) && JSON.parse(b).id === id)
@@ -466,4 +478,454 @@ test("A schema-valid forged record proof cannot authorize a native save", async 
   await assert.rejects(f.repo.save(), /Before-Ownerbelege/);
   assert.equal(f.store.files.get(campaignPath), JSON.stringify(value));
   assert.equal(f.repo.hasDraft, true);
+});
+
+// Reuse the immutable native H01 failure's actual created/edited/moved payload.
+const createdLocation = JSON.parse(
+  readFileSync(
+    "docs/reference/atlas-shared-location-h01/raw/02-created.json",
+    "utf8",
+  ),
+);
+const movedLocation = JSON.parse(
+  readFileSync(
+    "docs/reference/atlas-shared-location-h01/raw/04-marker-moved.json",
+    "utf8",
+  ),
+);
+const locationPath = newLocationPath(movedLocation.location.id);
+function createMovedLocation(repo: AtlasRepository) {
+  const history = repo.terrainSource.history,
+    original = repo.terrainSource.placements();
+  repo.createLocation(
+    createdLocation.location,
+    createdLocation.placements.find(
+      (p: any) => p.locationId === createdLocation.location.id,
+    ),
+  );
+  history.undo();
+  assert.deepEqual(repo.terrainSource.placements(), original);
+  history.redo();
+  assert.deepEqual(
+    repo.location(createdLocation.location.id).read(),
+    createdLocation.location,
+  );
+  repo.editLocation(movedLocation.location);
+  repo.moveLocation(
+    movedLocation.location.id,
+    movedLocation.placements.find(
+      (p: any) => p.locationId === movedLocation.location.id,
+    ).position,
+  );
+  assert.equal(history.undoDepth, 3);
+  assert.deepEqual(
+    repo.location(movedLocation.location.id).read(),
+    movedLocation.location,
+  );
+}
+function savedLocationClosure(store: Store) {
+  const before = parseCampaignRuntimeManifest(inputManifest, sha),
+    after = parseCampaignRuntimeManifest(store.files.get(campaignPath)!, sha),
+    owner = after.registry.owners.find((o) => o.ownerId === "atlas")!,
+    location = parseLocationDocument(store.files.get(locationPath)!),
+    placement = JSON.parse(store.files.get(worldPath)!).placements.find(
+      (p: any) => p.locationId === location.id,
+    );
+  assert.deepEqual(location, movedLocation.location);
+  assert.deepEqual(
+    placement,
+    movedLocation.placements.find((p: any) => p.locationId === location.id),
+  );
+  assert.deepEqual(after.snapshot, before.snapshot);
+  assert.equal(after.registry.registryId, before.registry.registryId);
+  assert.notEqual(
+    after.registry.registryRevision,
+    before.registry.registryRevision,
+  );
+  assert.deepEqual(
+    after.atlas.records.slice(0, before.atlas.records.length),
+    before.atlas.records,
+  );
+  assert.deepEqual(
+    after.atlas.files
+      .slice(0, before.atlas.files.length)
+      .map(({ savedDigest, ...f }) => f),
+    before.atlas.files.map(({ savedDigest, ...f }) => f),
+  );
+  for (const foreign of before.registry.owners.filter(
+    (o) => o.ownerId !== "atlas",
+  ))
+    assert.deepEqual(
+      after.registry.owners.find((o) => o.ownerId === foreign.ownerId),
+      foreign,
+    );
+  for (const f of after.atlas.files)
+    assert.equal(f.savedDigest, sha(store.files.get(f.path)!));
+  const ref = (id: string) => ({
+    id,
+    scope: "campaign-local",
+    schema: "atlas.e2e01.v1",
+  });
+  assert.deepEqual(
+    owner.records.find((r) => r.id === location.id)!.references,
+    location.sections
+      .map((s) => ref(s.id))
+      .sort((a, b) => a.id.localeCompare(b.id)),
+  );
+  for (const s of location.sections) {
+    assert.deepEqual(owner.records.find((r) => r.id === s.id)!.references, [
+      ref(location.id),
+    ]);
+    assert.deepEqual(
+      after.atlas.records.find((r) => r.id === s.id),
+      {
+        id: s.id,
+        kind: "location-section",
+        documentId: location.id,
+        ownerId: "atlas",
+        availability: "available",
+      },
+    );
+  }
+  assert.deepEqual(
+    owner.records.find((r) => r.id === placement.id)!.references,
+    [ref(location.id), ref(before.atlas.worldId)].sort((a, b) =>
+      a.id.localeCompare(b.id),
+    ),
+  );
+  assert.ok(
+    owner.records
+      .find((r) => r.id === before.atlas.worldId)!
+      .references.some((r) => r.id === placement.id),
+  );
+  for (const row of fixture.input.filter((r: any) => r.path !== worldPath))
+    assert.equal(
+      store.files.get(row.path),
+      readFileSync(root + row.fixtureFile, "utf8"),
+    );
+  assert.equal(store.files.has(worldPath + ".journal"), false);
+  assert.equal(store.files.has(worldPath + ".draft"), false);
+}
+async function liveNavigation(store = new Store()) {
+  const services = atlasCampaignServices(
+      {
+        list: async () => [
+          { path: campaignPath, bytes: store.files.get(campaignPath)! },
+        ],
+        subscribe: (changed) => {
+          store.manifestChanged = changed;
+          return () => {
+            store.manifestChanged = undefined;
+          };
+        },
+      },
+      sha,
+    ),
+    provider = services.provider,
+    manifest = parseCampaignRuntimeManifest(
+      store.files.get(campaignPath)!,
+      sha,
+    );
+  await provider.activate(
+    campaignCommandId(id(991)),
+    manifest.snapshot.campaignId,
+    "open",
+  );
+  const renderer = {},
+    blocked: boolean[] = [];
+  let disposed = 0,
+    resumed = 0;
+  const navigation = new AtlasCampaignNavigation({
+    currentContext: provider.currentContext,
+    registry: provider.registry,
+    inventory: provider.inventory,
+    activate: (command, cid, kind) => provider.activate(command, cid, kind),
+    openNative: async (input) => {
+      const campaign = await services.createSave!(input),
+        repo = new AtlasRepository(store, worldPath, store, {
+          ...options(store, campaign),
+          assertCurrent: input.assertCurrent,
+        });
+      await repo.open();
+      return {
+        repository: repo,
+        renderer,
+        setInputBlocked: (b) => {
+          blocked.push(b);
+        },
+        prepareNavigation: async (guard) => guard(),
+        prepareLeave: async (guard) => {
+          guard();
+          await repo.persistDraft();
+        },
+        navigate: (_target, guard) => {
+          guard();
+          return undefined;
+        },
+        resume: (guard) => {
+          guard();
+          resumed++;
+        },
+        suspend: () => "recoverable",
+        dispose: () => {
+          disposed++;
+        },
+      };
+    },
+  });
+  await navigation.open(provider.currentContext()!, manifest.atlas.worldId);
+  const state = navigation.state;
+  assert.equal(state.kind, "active");
+  return {
+    store,
+    services,
+    navigation,
+    state,
+    blocked,
+    disposed: () => disposed,
+    resumed: () => resumed,
+  };
+}
+
+test("H01 Location create then Undo saves as a no-op on the same live mount and retains Redo", async () => {
+  const f = await liveNavigation(),
+    repo = f.state.repository,
+    history = f.state.history,
+    before = new Map(f.store.files);
+  repo.createLocation(
+    createdLocation.location,
+    createdLocation.placements.find(
+      (p: any) => p.locationId === createdLocation.location.id,
+    ),
+  );
+  const source = repo.location(createdLocation.location.id);
+  history.undo();
+  assert.equal(repo.dirty, false);
+  assert.equal(source.read(), null);
+  await f.navigation.save();
+  const after = f.navigation.state;
+  assert.equal(after.kind, "active");
+  assert.equal(after.repository, repo);
+  assert.equal(after.history, history);
+  assert.equal(after.renderer, f.state.renderer);
+  assert.deepEqual(after.context, f.state.context);
+  assert.equal(after.generation, f.state.generation);
+  assert.equal(f.disposed(), 0);
+  assert.equal(f.blocked.at(-1), false);
+  assert.deepEqual(f.store.files, before);
+  assert.equal(f.store.writes.length, 0);
+  const capture = await repo.captureNative({ worldId: id(10) });
+  assert.equal(capture.files.some((file) => file.path === locationPath), false);
+  history.redo();
+  assert.equal(repo.location(createdLocation.location.id), source);
+  assert.deepEqual(source.read(), createdLocation.location);
+  await f.navigation.save();
+  assert.deepEqual(
+    parseLocationDocument(f.store.files.get(locationPath)!),
+    createdLocation.location,
+  );
+  assert.equal(repo.dirty, false);
+  assert.equal(f.navigation.state.kind, "active");
+  assert.equal(f.disposed(), 0);
+  f.services.close();
+});
+
+test("Undo of a saved Location stays in native capture and cannot bypass Campaign deletion authority", async () => {
+  const f = await liveNavigation(),
+    repo = f.state.repository;
+  repo.createLocation(
+    createdLocation.location,
+    createdLocation.placements.find(
+      (p: any) => p.locationId === createdLocation.location.id,
+    ),
+  );
+  await f.navigation.save();
+  f.state.history.undo();
+  await repo.persistDraft();
+  const capture = await repo.captureNative({ worldId: id(10) }),
+    location = capture.files.find((file) => file.path === locationPath)!;
+  assert.equal(location.before, f.store.files.get(locationPath));
+  assert.notEqual(location.before, null);
+  assert.equal(location.after, null);
+  const before = new Map(f.store.files),
+    writes = f.store.writes.length;
+  await assert.rejects(f.navigation.save());
+  assert.deepEqual(f.store.files, before);
+  assert.equal(f.store.writes.length, writes);
+  f.services.close();
+});
+
+test("H01 Location create/Key/move saves through real runtime Ack on the same mount/History and admits fresh navigation", async () => {
+  const f = await liveNavigation(),
+    history = f.state.history,
+    renderer = f.state.renderer,
+    context = f.state.context;
+  createMovedLocation(f.state.repository);
+  await f.navigation.save();
+  savedLocationClosure(f.store);
+  const after = f.navigation.state;
+  assert.equal(after.kind, "active");
+  assert.equal(after.repository, f.state.repository);
+  assert.equal(after.history, history);
+  assert.equal(after.renderer, renderer);
+  assert.deepEqual(after.context, context);
+  assert.equal(f.disposed(), 0);
+  assert.equal(f.resumed(), 1);
+  assert.equal(f.blocked.at(-1), false);
+  assert.equal(after.repository.dirty, false);
+  assert.ok(
+    after.inventory.records.some(
+      (r) => r.id === movedLocation.location.sections[0].id,
+    ),
+  );
+  const saved = new Map(f.store.files);
+  await f.navigation.save();
+  assert.deepEqual(f.store.files, saved);
+  history.undo();
+  await f.navigation.save();
+  history.redo();
+  await f.navigation.save();
+  savedLocationClosure(f.store);
+  f.services.close();
+  const fresh = await liveNavigation(f.store);
+  assert.equal(fresh.state.repository.dirty, false);
+  assert.deepEqual(
+    (
+      await fresh.state.repository.ensureLocation(movedLocation.location.id)
+    ).read(),
+    movedLocation.location,
+  );
+  assert.ok(
+    fresh.state.inventory.records.some(
+      (r) => r.id === movedLocation.location.id,
+    ),
+  );
+  await fresh.navigation.save();
+  savedLocationClosure(fresh.store);
+  fresh.services.close();
+});
+
+test("New Location native CAS failure rolls back authority and retains editable current runtime, draft and retry", async () => {
+  const f = await liveNavigation();
+  createMovedLocation(f.state.repository);
+  await f.state.repository.persistDraft();
+  const retained = f.store.files.get(worldPath + ".draft"),
+    original = new Map(f.store.files);
+  f.store.failOnce = worldPath;
+  await assert.rejects(f.navigation.save(), /first native CAS failed/);
+  assert.equal(f.navigation.state.kind, "active");
+  assert.equal(f.disposed(), 0);
+  assert.equal(f.blocked.at(-1), false);
+  assert.equal(f.store.files.get(worldPath + ".draft"), retained);
+  assert.equal(f.store.files.get(campaignPath), inputManifest);
+  assert.deepEqual(f.store.files, original);
+  await f.navigation.save();
+  savedLocationClosure(f.store);
+  f.services.close();
+});
+
+test("Prepared Location extension recovers BeforeNull and complete draft; committed reply loss rolls forward exactly once", async () => {
+  for (const state of ["prepared", "committed"] as const) {
+    const f = await opened();
+    createMovedLocation(f.repo);
+    f.store.fault =
+      state === "prepared"
+        ? (p) => p === campaignPath
+        : (p, after) =>
+            p === worldPath + ".journal" &&
+            after === null &&
+            f.store.files.get(campaignPath) !== inputManifest;
+    await assert.rejects(f.repo.save(), AggregateError);
+    assert.equal(
+      JSON.parse(f.store.files.get(worldPath + ".journal")!).state,
+      state,
+    );
+    f.store.offline = false;
+    f.store.fault = undefined;
+    const fresh = await opened(f.store);
+    if (state === "prepared") {
+      assert.equal(f.store.files.has(locationPath), false);
+      assert.equal(f.store.files.get(campaignPath), inputManifest);
+      assert.equal(fresh.repo.hasDraft, true);
+      assert.equal(fresh.repo.dirty, true);
+      assert.deepEqual(
+        fresh.repo.location(movedLocation.location.id).read(),
+        movedLocation.location,
+      );
+    } else assert.equal(fresh.repo.dirty, false);
+    await fresh.repo.save();
+    savedLocationClosure(f.store);
+  }
+});
+
+test("Location extension authority rejects noncanonical paths, foreign sections, missing markers and unqualified Detaillinks", async () => {
+  const f = await opened();
+  createMovedLocation(f.repo);
+  const capture = await f.repo.captureNative({ worldId: id(10) }),
+    draft = { path: worldPath + ".draft", before: null, after: null };
+  const attempt = (mutate: (files: any[]) => void) => {
+    const files = structuredClone([...capture.files]);
+    mutate(files);
+    assert.throws(() => adapter(f.store).prepare(files, draft));
+  };
+  attempt((files) => {
+    files.find((f) => f.path === locationPath).path = "Orte/Fremd.location";
+  });
+  attempt((files) => {
+    const f = files.find((f) => f.path === locationPath),
+      doc = JSON.parse(f.after);
+    doc.sections[0].id = id(105);
+    f.after = JSON.stringify(doc);
+  });
+  attempt((files) => {
+    const f = files.find((f) => f.path === worldPath),
+      doc = JSON.parse(f.after);
+    doc.placements = doc.placements.filter(
+      (p: any) => p.locationId !== movedLocation.location.id,
+    );
+    f.after = JSON.stringify(doc);
+  });
+  attempt((files) => {
+    const f = files.find((f) => f.path === locationPath),
+      doc = JSON.parse(f.after);
+    doc.detailMaps = [{ kind: "dungeon", documentId: id(30) }];
+    f.after = JSON.stringify(doc);
+  });
+  assert.equal(f.store.writes.length, 0);
+});
+
+test("Location extension recovery rejects a missing create and forged owner closure without writing", async () => {
+  const f = await opened();
+  createMovedLocation(f.repo);
+  f.store.fault = (p) => p === campaignPath;
+  await assert.rejects(f.repo.save(), AggregateError);
+  f.store.offline = false;
+  f.store.fault = undefined;
+  const journal: AtlasFileJournal = JSON.parse(
+      f.store.files.get(worldPath + ".journal")!,
+    ),
+    before = new Map(f.store.files),
+    writes = f.store.writes.length;
+  await assert.rejects(
+    adapter(f.store).validateRecovery(f.store, {
+      ...journal,
+      writes: journal.writes.filter((w) => w.path !== locationPath),
+    }),
+  );
+  const forged = structuredClone(journal),
+    manifestWrite = forged.writes.find((w) => w.path === campaignPath)!,
+    manifest = JSON.parse(manifestWrite.after!);
+  manifest.registry.owners
+    .find((o: any) => o.ownerId === "atlas")
+    .records.find((r: any) => r.id === movedLocation.location.id).references =
+    [];
+  const { registryContentDigest: _, ...unsigned } = manifest.registry;
+  manifest.registry.registryContentDigest = campaignOwnershipDigestValue(
+    unsigned,
+    sha,
+  );
+  (manifestWrite as any).after = JSON.stringify(manifest, null, 2) + "\n";
+  await assert.rejects(adapter(f.store).validateRecovery(f.store, forged));
+  assert.deepEqual(f.store.files, before);
+  assert.equal(f.store.writes.length, writes);
 });

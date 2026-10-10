@@ -677,6 +677,105 @@ test("actual managed Save releases a real rolled-back first-native failure and r
   await f.close();
 });
 
+test("actual managed Save button publishes a new H01 Location closure across pending/resolved Vault events and reopens its Key", async () => {
+  const f = await fixture(true),
+    before = active(f),
+    editor = f.editor()!,
+    created = JSON.parse(
+      readFileSync(
+        "docs/reference/atlas-shared-location-h01/raw/02-created.json",
+        "utf8",
+      ),
+    ),
+    moved = JSON.parse(
+      readFileSync(
+        "docs/reference/atlas-shared-location-h01/raw/04-marker-moved.json",
+        "utf8",
+      ),
+    ),
+    locationId = moved.location.id,
+    locationPath = `Orte/${locationId}.location`;
+  before.repository.createLocation(
+    created.location,
+    created.placements.find((p: any) => p.locationId === locationId),
+  );
+  before.history.undo();
+  before.history.redo();
+  before.repository.editLocation(moved.location);
+  before.repository.moveLocation(
+    locationId,
+    moved.placements.find((p: any) => p.locationId === locationId).position,
+  );
+  await editor.flush();
+  const camera = editor.renderer.relativeCamera,
+    depth = before.history.undoDepth;
+  assert.equal(f.vault.bytes.has(locationPath), false);
+  f.click(
+    f.content.querySelector<HTMLButtonElement>(
+      '[aria-label="Atlas speichern"]',
+    )!,
+  );
+  await settled(
+    () =>
+      !before.repository.dirty &&
+      !before.repository.hasDraft &&
+      f.host().state.kind === "active",
+    () => f.content.textContent ?? "",
+  );
+  await editor.flush();
+  const after = active(f);
+  assert.equal(after.repository, before.repository);
+  assert.equal(after.history, before.history);
+  assert.equal(after.renderer, before.renderer);
+  assert.equal(after.generation, before.generation);
+  assert.deepEqual(after.context, before.context);
+  assert.equal(after.history.undoDepth, depth);
+  assert.deepEqual(editor.renderer.relativeCamera, camera);
+  assert.deepEqual(
+    parseLocationDocument(f.vault.bytes.get(locationPath)!),
+    moved.location,
+  );
+  assert.ok(
+    after.inventory.records.some((r) => r.id === moved.location.sections[0].id),
+  );
+  await f
+    .host()
+    .navigate({
+      kind: "location-section",
+      documentId: locationId,
+      recordId: moved.location.sections[0].id,
+      roomId: null,
+    });
+  assert.ok(f.content.textContent?.includes(moved.location.name));
+  await f.close();
+  const app = { document: f.document, vault: f.vault } as any,
+    services = atlasCampaignServices(new VaultCampaignRuntimeStorage(app), sha),
+    view = new AtlasView(
+      { app, contentEl: f.content, openFile: async () => {} } as any,
+      services,
+    );
+  await view.onLoadFile(f.vault.files.get(aPath)!);
+  const host = (view as any).campaignHost as AtlasCampaignHost,
+    fresh = host.state;
+  assert.equal(fresh.kind, "active");
+  if (fresh.kind === "active") {
+    assert.notEqual(fresh.history, before.history);
+    assert.equal(fresh.repository.dirty, false);
+    await host.navigate({
+      kind: "location-section",
+      documentId: locationId,
+      recordId: moved.location.sections[0].id,
+      roomId: null,
+    });
+    assert.deepEqual(
+      fresh.repository.location(locationId).read(),
+      moved.location,
+    );
+  }
+  await view.onUnloadFile();
+  services.close();
+});
+
 test("bad or foreign manifest membership cannot fall through into an unguarded standalone atlas", async () => {
   const f = await fixture();
   const path = seed.campaign.path as string;

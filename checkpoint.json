@@ -912,7 +912,7 @@
   "hexAtlasExecution": {
     "scope": "HEX-00 bis HEX-28 und sämtliche eingeordneten CITY-00 bis CITY-09 vollständig",
     "phase": "HEX-03",
-    "state": "Shared_promoted_scoped_own_cleanup_complete_Location_Key_GM_pending",
+    "state": "targeted_noop_Save_repair_checks_pass_independent_review_native_pending",
     "plan": "ROADMAP-E2E01-SPATIAL-INTEGRATION-PLAN.md",
     "currentRun": {
       "id": "E2E-01-SPACE-I01b",
@@ -959,29 +959,19 @@
       "phaseApproval": false
     },
     "nextRun": {
-      "id": "E2E-01-SHARED-LOCATION-KEY-H01",
-      "kind": "bounded_native_Shared_Location_Key_acceptance",
-      "state": "own_cleanup_complete_GUI_slot_not_claimed",
-      "issue": 40,
+      "id": "E2E-01-SHARED-LOCATION-SAVE-N02-REVIEW",
+      "kind": "await_independent_exact_head_review",
       "owner": "Hex",
+      "issue": 40,
       "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
       "sourcePlan": "ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md",
-      "focus": "Direct Shared Location/Key host flow after explicitly coordinating a new local GUI slot. Creation/selection/move/Key/shared Undo-Redo/Save/fresh process; any new mandatory finding handled within this existing task.",
-      "promotionExecution": "checkpoint.hexAtlasExecution.latestPromotionExecution",
-      "cleanup": "checkpoint.hexAtlasExecution.latestPostPromotionCleanup",
-      "independentSaveInput": "checkpoint.hexAtlasExecution.latestSaveFreshRecoveryIndependentReview",
-      "nativeABAInput": "checkpoint.hexAtlasExecution.latestNativeABAIndependentReview",
-      "requiredInput": "Fetch/integrate qualified current Shared; direct current #40 scope and claims; explicitly obtain the single local GUI slot for this bounded probe. Previous return is not ownership.",
+      "focus": "Consume the actual independent Chronik R02 continuation on the published PR62 no-op repair head, not a new general review round. A concrete mandatory finding permits one separate targeted repair; no selfreview or unqualified selfintegration.",
+      "input": "checkpoint.hexAtlasExecution.latestSharedLocationKeyNoopRepair",
+      "requiredInput": "Independent exact-head R02 continuation and successful actual exact-SHA CI for PR62; then qualified integration/host source for the separate native rerun.",
       "slotConfirmedForNextRun": false,
       "slotRequiredAgain": true,
-      "fixtureVersions": [
-        "e2e01-spatial-v2",
-        "e2e01-campaign-b-v1"
-      ],
-      "checks": "Current integrated CI plus direct actual Host/Save/fresh-process evidence and file/text/ID oracles. Distinguish synthetic native input from physical GM input. New defects get bounded diagnosis/repair in separate runs.",
-      "after": "Consume required independent #40 acceptance or repair a concrete finding; no general new plan/review round. Subsequent Detail/CITY scope only after this owned result.",
-      "limits": "No user-vault write, physical/original/large-world/installation/P02/P04/CompleteImport/full-E2E claim. E2E-02–04 remain inactive.",
-      "currentShared": "c932bbab534c5a70a15cc4628728c0d1b92f162a"
+      "after": "Separate newly coordinated actual Obsidian Save and fresh-process run on qualified source; no general new plan/review round.",
+      "limits": "No foreign package claim, new chat/subagent, selfintegration, Detail/CITY/E2E-02-04, user-vault installation or full gate closure."
     },
     "review": {
       "run": "HEX-02-R02",
@@ -5431,7 +5421,7 @@
       "platformIssue": 11,
       "checkpointIsAuthoritative": true
     },
-    "updatedAt": "2026-10-10T18:40:11.975822+00:00",
+    "updatedAt": "2026-10-10T19:44:38.305357+00:00",
     "consumerMatrix": {
       "id": "RUNTIME-MANIFEST-I02-CONSUMER-MATRIX-V1",
       "state": "frozen_complete_matrix_green_on_productive_Host_source",
@@ -6114,6 +6104,105 @@
         "sha256": "9a91be4f78e157174d5eecadf19d83d2136f452a67122da98ccfa14a5514eccf",
         "handoff": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/59#issuecomment-6100899267",
         "scope": "Isolated synthetic P02 prototype and repository role rules; critical Atlas product/evidence unchanged."
+      }
+    },
+    "latestSharedLocationKeyHostProbe": {
+      "id": "E2E-01-SHARED-LOCATION-KEY-H01",
+      "state": "FAIL_actual_Save_new_Location_D01_pending",
+      "issue": 40,
+      "sourceCommit": "b87a066e38f1a0000def253bf50e45ee4a5d604f",
+      "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
+      "evidence": "docs/reference/atlas-shared-location-h01/receipt.json",
+      "sha256": "e628cacae0c0c9bf2c646dc3ec345ee743181133685962efe3cd458002bcf144",
+      "finding": "SHARED-LOCATION-H01-SAVE-01",
+      "freshProcessStarted": false,
+      "guiSlotReturned": true,
+      "productEdited": false,
+      "independentAcceptance": "pending; no PASS"
+    },
+    "latestSharedLocationKeyDiagnosis": {
+      "id": "E2E-01-SHARED-LOCATION-KEY-D01",
+      "state": "root_cause_reproduced_product_repair_open",
+      "issue": 40,
+      "owner": "Hex",
+      "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
+      "sourcePlan": "ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md",
+      "evidence": "docs/reference/atlas-shared-location-d01/receipt.json",
+      "finding": "SHARED-LOCATION-H01-SAVE-01",
+      "diagnosisSourceCommit": "a6c4d89df40746bcce1cc0726f725c97708bc4b7",
+      "consumedShared": "93b670aca7927e1915f4c299eb131b4faa8b9fe3",
+      "originalH01EvidencePreserved": true,
+      "originalDraftByteEqual": true,
+      "repositorySaveCallsInModel": 0,
+      "writesInModelAfterSaveRequest": 0,
+      "modelCasesPerSource": 6,
+      "sourceTrees": 2,
+      "productEdited": false,
+      "nativeRepeated": false,
+      "freshProcessStarted": false,
+      "guiSlotUsed": false,
+      "independentAcceptance": "pending actual repair/native/independent #40 acceptance; no product PASS",
+      "next": "Targeted Hex navigation/native adapter repair; concrete Campaign-owned authorized native Location closure extension is required as input.",
+      "sha256": "7bde44397cd9e3b3a586a5e8fdf88d6c757145fb9cc0e0afdcfe357af27b4e01"
+    },
+    "latestSharedLocationKeyRepair": {
+      "id": "E2E-01-SHARED-LOCATION-KEY-R01",
+      "state": "targeted_Save_repair_model_DOM_pass_review_native_pending",
+      "owner": "Hex",
+      "issue": 40,
+      "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
+      "sourcePlan": "ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md",
+      "evidence": "docs/reference/atlas-shared-location-r01/receipt.json",
+      "sha256": "a2a0545702efc7f69eaa65c8964b9a9bf49bd82914d6765682b41e6d76ef3160",
+      "consumedShared": "113e37f21670abb42c19b62f4f4480b511e65544",
+      "consumedCampaign": "32dc3e8f205421dd8e7c6309b75868c7622cb79f",
+      "testsPassed": 551,
+      "productEdited": true,
+      "nativeRepeated": false,
+      "freshProcessStarted": false,
+      "guiSlotUsed": false,
+      "originalH01AndD01Preserved": true,
+      "independentReview": "pending separate exact-head review",
+      "fullE2E": false,
+      "latestComposition": {
+        "evidence": "docs/reference/atlas-shared-location-r01/composition.json",
+        "sha256": "8ea01a86886be2b1e7650101cb1d494d5b71e9e28a90fa8d336cbe76aa85210b",
+        "consumedShared": "315f09b610af22984652ff17a304eafbce11ed88",
+        "testsPassed": 558,
+        "repairCodeUnchanged": true
+      }
+    },
+    "latestSharedLocationKeyNoopRepair": {
+      "id": "E2E-01-SHARED-LOCATION-SAVE-N02",
+      "owner": "Hex",
+      "issue": 40,
+      "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
+      "sourcePlan": "ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md",
+      "state": "targeted_noop_Save_repair_checks_pass_independent_review_native_pending",
+      "evidence": "docs/reference/atlas-shared-location-r01/noop-repair.json",
+      "sha256": "ca29a6cb1da09bd7aa92e47dde3b227e1eac80aa65bfa933426a08e932bbf221",
+      "sourceCommit": "bc98b720d742693025563df7f93282be9936eb62",
+      "consumedShared": "11b40200bd0fa3a86de2a81c85ce62e4edb2afcd",
+      "reviewInput": {
+        "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/62#pullrequestreview-5480579984",
+        "sourceCommit": "3c6b87c9f8153646fe1a1c92c9c641dbe4f45b0b",
+        "result": "CHANGES_REQUIRED",
+        "readDirectly": true
+      },
+      "testsPassed": 560,
+      "repositoryTestsPassed": 27,
+      "productEdited": true,
+      "nativeRepeated": false,
+      "freshProcessStarted": false,
+      "guiSlotUsed": false,
+      "independentRereview": "pending",
+      "fullE2E": false,
+      "latestComposition": {
+        "source": "f147794947ea49961df1bca8042593ce2dd87941",
+        "consumedShared": "9e3a6c1bbd6484a356c00c268083b147cd7cc6ae",
+        "repairCodeAndTestsUnchanged": true,
+        "type": true,
+        "build": true
       }
     }
   },

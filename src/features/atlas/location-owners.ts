@@ -244,11 +244,14 @@ export class LocationOwners {
     return changes.sort((a, b) => a.id.localeCompare(b.id));
   }
   guards() {
-    return [...this.bases.values()].map((b) => ({
-      path: b.path,
-      before: b.before,
-      after: b.before,
-    }));
+    // New files are guarded by their creation write; absent tombstones have no file.
+    return [...this.bases.values()]
+      .filter((b) => b.before !== null)
+      .map((b) => ({
+        path: b.path,
+        before: b.before,
+        after: b.before,
+      }));
   }
   saved(changes: readonly DraftLocation[]): void {
     for (const c of changes)
