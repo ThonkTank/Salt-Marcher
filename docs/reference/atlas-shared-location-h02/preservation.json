@@ -1,0 +1,39 @@
+{
+  "protectedOriginal": {
+    "status": "M checkpoint.json\n M tests/core/assets.test.ts\n M tests/object-colorable-tags.test.mjs",
+    "files": {
+      "checkpoint.json": "296f4db1da1c1dfb0642400fa9e594706756bfaedea020146fbad8d5606f9891",
+      "tests/core/assets.test.ts": "f255c4fad0f5766c533c4da9209420677ef058ed28d83248fbc947cba8c5f2ff",
+      "tests/object-colorable-tags.test.mjs": "4b5ec9893f70ce047f901316beb1216f0f469a219e6efc24ec236aaf1f648a95"
+    },
+    "nodeModulesInode": 45340102
+  },
+  "unchangedAtRecording": true,
+  "sourceCheckoutClean": true,
+  "priorReceipts": [
+    {
+      "path": "docs/reference/atlas-shared-location-h01/receipt.json",
+      "sha256": "e628cacae0c0c9bf2c646dc3ec345ee743181133685962efe3cd458002bcf144",
+      "artifactsVerified": 25
+    },
+    {
+      "path": "docs/reference/atlas-shared-location-d01/receipt.json",
+      "sha256": "7bde44397cd9e3b3a586a5e8fdf88d6c757145fb9cc0e0afdcfe357af27b4e01",
+      "artifactsVerified": 7
+    },
+    {
+      "path": "docs/reference/atlas-shared-location-r01/receipt.json",
+      "sha256": "a2a0545702efc7f69eaa65c8964b9a9bf49bd82914d6765682b41e6d76ef3160",
+      "artifactsVerified": 2
+    },
+    {
+      "path": "docs/reference/atlas-shared-location-r01/noop-repair.json",
+      "sha256": "ca29a6cb1da09bd7aa92e47dde3b227e1eac80aa65bfa933426a08e932bbf221"
+    }
+  ],
+  "originalH01RetainedDraftSha256": "101ac69851e8dd87e742c67eb3e1f62ecdde84e43bddea1f401fd3b63474c585",
+  "userVaultUsed": false,
+  "sourcesEdited": false,
+  "productEdited": false,
+  "testsEdited": false
+}
