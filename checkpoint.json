@@ -106,6 +106,19 @@
         "build": "PASS",
         "limits": "Repository navigation and existing regression checks; no new product/host acceptance."
       }
+    },
+    "nextTaskCommand": "npm run next",
+    "taskDiscoveryAudit": {
+      "date": "2026-10-10",
+      "finding": "The ready queue was empty and parent #44 still advertised completed #46.",
+      "resolution": "Created bounded existing-scope tasks #51/#52, updated parent #44 and added live task discovery to the entrypoints.",
+      "parentIssue": 44,
+      "followupIssues": [
+        51,
+        52
+      ],
+      "verification": "Live query PASS; #51 was already claimed by Chronik and excluded, #52 returned as the first ready task. 21/21 navigation/structure/task tests PASS on Node 22.",
+      "limits": "Availability is live, not promised permanently. No reassignment of active work and no product/host approval."
     }
   },
   "saltMarcherReplacement": {

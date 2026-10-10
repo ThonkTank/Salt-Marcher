@@ -33,6 +33,8 @@ Die bestehenden Root-Dokumente und bereits veröffentlichten Kandidatenpfade ble
 4. **Bei Abschluss:** erst das vereinbarte Ergebnis belegen, dann Issue schließen und aktive/blocked/ready-Labels entfernen. Bei einem Teilergebnis nur das Teilpaket schließen; das Produktgate bleibt offen. Abhängige Aufgaben neu bewerten, freigewordene Arbeit gegebenenfalls als `status:ready` kennzeichnen.
 5. **Bei gemeinsamer Integration:** Paketowner liefert Checkpoint-/Abnahmeänderung und Dokumentationsdelta; Integrationsowner übernimmt sie und zieht einen geänderten Lieferfokus in ROADMAP/README/#12 nach. Keine erneute Meldung ohne Ergebnis, geänderten Blocker oder Übergabe.
 
+`npm run next` liest die freie Aufgabenliste live. Bei einem abgeschlossenen Einstiegs-/Teilpaket den Verweis im Parentissue aktualisieren; ein geschlossener Vorgänger ist keine freie Aufgabe. Ist die Liste leer, klar angeben, ob alle konkreten Pakete besessen/blockiert sind oder ein bereits beschlossener Restbedarf noch in ein ausführbares Teilpaket zerlegt werden muss. Keine bloße Beschäftigungsaufgabe erzeugen und keinen Owner durch Umkennzeichnung verdrängen.
+
 Ein Claim verfällt nicht stillschweigend nach Zeitablauf. Bei ausbleibendem Fortschritt den bisherigen Owner im bestehenden Thread erreichen und Ergebnis, Blocker oder ausdrückliche Rückgabe klären. Keinen konkurrierenden Kandidaten allein aufgrund eines alten Zeitstempels eröffnen. Es werden keine zusätzlichen Heartbeats oder automatischen Schließungen eingerichtet.
 
 ## Pläne ablösen und alte Verweise erhalten

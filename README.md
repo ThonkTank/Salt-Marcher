@@ -11,6 +11,7 @@ Ein lokaler Arbeitsraum für Spielleitungen: Karten und Raum-Keys bearbeiten, Ka
 | das Ziel und den Lieferumfang verstehen | [Produktziele](docs/PRODUCT.md) und [vollständiger Quellenabgleich](docs/SCOPE.md) |
 | wissen, was zuerst fertig werden muss | [Produktroadmap und aktueller Engpass](docs/ROADMAP.md) |
 | als Agent sofort mitarbeiten | [Agenteneinstieg mit Aufgaben und Voraussetzungen](CONTRIBUTING.md#agenteneinstieg) |
+| die nächste freie Aufgabe lesen | `npm run next` (GitHub live, Voraussetzungen und Abnahme im gewählten Issue) |
 | eine Aufgabe übernehmen oder reviewen | [Contributor-Leitfaden](CONTRIBUTING.md) |
 | einen Fachplan oder einen Nachweis finden | [Dokumentationsindex](docs/INDEX.md) |
 | die Ordnung langfristig erhalten | [Pflegevertrag und automatische Strukturprüfung](docs/REPOSITORY.md) |
