@@ -253,6 +253,88 @@ const locationTarget = {
   roomId: null,
 };
 
+test("diagnostic: enabled native detail button rejects navigation during queued terrain hydration", async () => {
+  const f = await fixture();
+  await f.host().navigate(locationTarget);
+  const before = active(f), editor = f.editor()!, repository = before.repository as any;
+  const camera = editor.renderer.relativeCamera;
+  const bytes = new Map(f.vault.bytes), writes = f.vault.writes.length;
+  const houseLabel = f.host().details(uuid(11)).entries
+    .find((entry) => entry.target.kind === "building" && entry.target.recordId === uuid(105))!.label;
+  const house = [...f.content.querySelectorAll<HTMLButtonElement>(".dn-atlas-detail-entry li button")]
+    .find((button) => button.textContent === houseLabel)!;
+  assert.ok(house);
+  assert.equal(house.disabled, false);
+  assert.equal((editor as any).inputBlocked, false);
+  assert.equal(editor.terrain.loadedChunks().length, 0);
+
+  let release!: () => void, entered!: () => void;
+  const gate = new Promise<void>((resolve) => { release = resolve; });
+  const started = new Promise<void>((resolve) => { entered = resolve; });
+  let gated = false;
+  f.vault.readHook = async (path) => {
+    if (!gated && path.includes("/terrain/")) {
+      gated = true; entered(); await gate;
+    }
+  };
+  const trace: Record<string, unknown>[] = [];
+  const captureCurrent = repository.captureCurrent;
+  repository.captureCurrent = function (pin: any) {
+    const row = { pin: { generation: pin.generation, repositoryEpoch: pin.repositoryEpoch, historyEpoch: pin.historyEpoch },
+      actual: { generation: this.generation, repositoryEpoch: this.nativeEpoch, historyEpoch: editor.terrain.history.epoch },
+      sameSource: this.source === pin.source, inputBlocked: (editor as any).inputBlocked,
+      loadingVisible: (editor as any).loadingVisible, loadingLocations: (editor as any).loadingLocations,
+      terrainCells: editor.terrain.cells().length, failed: false };
+    trace.push(row);
+    try { return captureCurrent.call(this, pin); }
+    catch (error) { row.failed = true; throw error; }
+  };
+  const loading: Promise<void> = (editor as any).loadVisible();
+  await started;
+  let navigation: Promise<void> | undefined;
+  const navigate = f.host().navigate.bind(f.host());
+  f.host().navigate = (target) => (navigation = navigate(target));
+  // Location loading rebuilds the dock. Use the current visible button, never a detached old row.
+  const currentHouse = [...f.content.querySelectorAll<HTMLButtonElement>(".dn-atlas-detail-entry li button")]
+    .find((button) => button.textContent === houseLabel)!;
+  assert.ok(currentHouse);
+  assert.equal(currentHouse.disabled, false);
+  assert.equal((editor as any).loadingVisible, true);
+  // Exercise the existing visible, enabled DetailEntry callback, not a direct test-only target.
+  f.click(currentHouse);
+  assert.ok(navigation);
+  const failedNavigation = assert.rejects(navigation, /Native Atlas-Erfassung ist veraltet/);
+  release();
+  await loading;
+  await failedNavigation;
+  await tick();
+  assert.equal(trace.length, 1);
+  const failed = trace[0] as any;
+  assert.equal(failed.failed, true);
+  assert.equal(failed.sameSource, true);
+  assert.equal(failed.actual.generation, failed.pin.generation);
+  assert.equal(failed.actual.repositoryEpoch, failed.pin.repositoryEpoch);
+  assert.ok(failed.actual.historyEpoch > failed.pin.historyEpoch);
+  assert.equal(failed.inputBlocked, false);
+  assert.ok(failed.terrainCells > 0);
+  assert.equal(active(f).context.contextToken, before.context.contextToken);
+  assert.equal(active(f).history, before.history);
+  assert.equal(editor.renderer.relativeCamera, camera);
+  assert.equal(before.history.undoDepth, 0);
+  assert.match(f.content.textContent!, /Ziel konnte nicht geöffnet werden/);
+  assert.deepEqual(f.vault.bytes, bytes);
+  assert.equal(f.vault.writes.length, writes);
+  console.log("HEX_CAPTURE_HYDRATION_DIAGNOSIS " + JSON.stringify({
+    kind: "actual_AtlasView_DOM_Vault_controlled_read_delay", trace,
+    visibleButtonEnabled: true, fileWrites: 0, historyCommands: 0,
+    contextUnchanged: true, cameraUnchanged: true,
+    nativeGUI: false, productDefectStillOpen: true,
+  }));
+  repository.captureCurrent = captureCurrent;
+  f.vault.readHook = undefined;
+  await f.close();
+});
+
 test("actual AtlasView mounts real Vault provider; Location dock reaches house and Room Key with one renderer/history", async () => {
   const f = await fixture(),
     before = active(f),
