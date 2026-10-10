@@ -43,13 +43,6 @@ Typprüfung, Build und 551 Kern-/Host-/Copy-/Vault-Tests sind bestanden.
 Prüfkommandos, Quellhashes, Loghashes und Erhaltung stehen im
 [R01-Receipt](receipt.json); große Logs liegen am darin benannten lokalen QA-Ort.
 
-Der unmittelbar danach integrierte Shared `315f09b` mit dem qualifizierten
-City-/History-Callbackeingang wurde zusätzlich regulär übernommen. Die fünf
-R01-Produkt-/Testdateien bleiben exakt auf ihren Receipt-Hashes. Typprüfung,
-Build und die komponierte Suite bestehen mit **558/558**; die tatsächlichen
-Atlas-Consumer vertragen den additiven immutable Command im History-Callback.
-[Kompositionsnachweis](composition.json). Das ist keine eigene City-Abnahme.
-
 ## Nächster eigener Eingang
 
 Unabhängiger Review des veröffentlichten PR62-Heads, anschließend ein separat
