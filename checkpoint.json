@@ -6999,7 +6999,7 @@
     },
     "latestObs04SharedIntegration": {
       "id": "GM-UX-OBS-04-SHARED-INTEGRATION-01",
-      "state": "independent_owner_review_pass_shared_merge_checked_cloud_retest_pending",
+      "state": "independent_owner_review_pass_shared_merge_cloud_five_point_retest_pass_broad_gates_open",
       "steward": "Hex",
       "sharedBase": "22231aa412982d186f705438eae5e543d9eaeb71",
       "reviewedOwner": "f4ad089d1084dbdbf98feec1d41a85a7014d1b84",
@@ -7033,11 +7033,46 @@
       },
       "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/obs04-shared-integration-20261010",
       "preservation": "Both complete Cloud candidate-smoke and implementation evidence retained; all foreign checkpoint/acceptance roots unchanged; product/test blobs match reviewed exact owner; Shared source includes only this reviewed OBS-04 fix, not PR13 Atlas or PR25 Campaign.",
-      "host": false,
+      "host": true,
       "freshProcess": false,
       "physicalInput": false,
       "fullE2E": false,
-      "next": "Cloud-GM uses actual published Shared descendant of this checked merge, rebuilds exact clean bundle, and repeats only room12 body/explicit button/label/no unsolicited key text/unchanged QA hash. Candidate smoke is prior evidence."
+      "next": "OBS-04 integrierter Cloud-Fünfpunkttest ist auf eefbe6f abgeschlossen. Kein weiterer OBS-04-Lauf beauftragt; frischer Prozess, physische Eingabe und PlayerProjection bleiben offene Grenzen."
+    },
+    "latestObs04IntegratedRetest": {
+      "id": "GM-UX-OBS-04-INTEGRATED-CLOUD-RETEST-20261010-01",
+      "status": "completed_integrated_five_point_cloud_ui_pass_with_gates_open",
+      "branch": "active/installed-phase1",
+      "sharedHead": "eefbe6f505f0158ec6156c2eaf359fbf19b24a0e",
+      "productMerge": "734a7b9c5714acf2ca5aa0395d9706594a5d4ecd",
+      "pr": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/21",
+      "coordination": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/8",
+      "scope": "Nur die vorhandene Fünfpunktefolge: Raum-12-Körper auf Geschoss 1 zum Inspector/Text-öffnen; Schaltfläche öffnet unveränderten Key; Raumlabel öffnet denselben Key direkt; kein ungefragter Keytext auf der Karte; QA-Dateihash unverändert.",
+      "checks": {
+        "build": "npm run build auf exakt eefbe6f505f0158ec6156c2eaf359fbf19b24a0e, dirty:false, bestanden",
+        "installedTripletMatches": true,
+        "bodyInspectorAndExplicitOpen": "PASS: sichtbarer Körperklick auf Raum 12 zeigte 12 · Raum 12 und Text öffnen.",
+        "buttonOpensStoredKey": "PASS: sichtbarer Text-öffnen-Klick zeigte den vollständigen vorhandenen Hinweis akut und Sitzungshinweis.",
+        "labelOpensSameKey": "PASS: sichtbarer Labelklick öffnete denselben Raum-12-Key direkt.",
+        "noUnsolicitedKeyText": "PASS: Geschoss-1-Ausgangsbilder vor beiden Öffnungswegen zeigten keinen Keytext auf der Karte.",
+        "qaCardHashUnchanged": "PASS: vor/nach SHA-256 6779ca9d4c39564a80c453dbfd9de33a09363cda43fed1176708a1273c450279",
+        "testSuite": "Nicht ausgeführt; der UI-Nachtest wurde nicht durch eine unveränderte Gesamtsuite ersetzt."
+      },
+      "host": {
+        "app": "Obsidian 1.14.4, Electron 43.7.7",
+        "window": "1440x1000, DPR 1",
+        "mode": "isolierter Cloud-QA-Vault, bestehender Prozess/CDP 9228; UI-Aktionen über sichtbare Oberfläche via Playwright/CDP"
+      },
+      "buildTripletSha256": {
+        "main.js": "522823730ddce4d0ba83e0476f60887b60a07c517f84e8e270814b6d597efa43",
+        "styles.css": "a6d31c13219d4b9f49d2ecf6993106bedef2a33560c9bdfdb93106659d45bc2e",
+        "manifest.json": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64"
+      },
+      "qaCard": "/workspace/scratch/gm-cloud-qa/vault/_QA-GM-UX-01-C-RESTORE-20261009/Nebelwacht-Improvisation.dungeon",
+      "evidence": "/workspace/scratch/gm-cloud-qa/evidence-gmux01-obs04-integrated-20261010/00-pre-reload.png–12-reopened-playview.png; insbesondere 07-floor-1-no-key.png, 08-room12-body.png, 09-room12-text-open.png, 10-label-start-no-key.png, 11-room12-label.png",
+      "limits": "Kein frischer Electronprozess, keine physische Eingabeabnahme, keine Produktlatenz, keine PlayerProjection-/Redactionprüfung, keine breite UX-/E2E-/Gesamtfreigabe. Die CDP-/Playwright-Wartezeiten sind Harness-Zeiten.",
+      "docsCommit": "e581343de2b951f4643c4f5ce0dcef8f50cfccbc",
+      "next": "Kein weiterer OBS-04-Retest nötig. Getrennte FreshProcess-, physische Eingabe- und PlayerProjection-Gates bleiben offen und benötigen eigene Aufträge."
     }
   }
 }
