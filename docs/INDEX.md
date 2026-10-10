@@ -25,6 +25,7 @@
 - Architektur: [ARCHITECTURE](../ARCHITECTURE.md); anhand der betroffenen Entscheidung lesen.
 - Ausführung und Abnahme: [checkpoint.json](../checkpoint.json) und [acceptance.json](../acceptance.json). Mit `context` gezielt auswählen; alte Top-Level-Felder sind kein Gesamtproduktstatus. `--full` gibt den gewählten Eintrag vollständig aus.
 - Veröffentlichung, Fachphasen und Hostschutz: [Arbeitsregeln](WORKFLOW.md).
+- Wiederkehrende Contributor-/Pflege-/Berichtsaufträge: [Arbeitsrollen](AGENT-ROLES.md); gemeinsame Regeln bleiben im Einstieg und Pflege-/Arbeitsvertrag.
 - Synthetische Fixtures ohne GUI: [Campaign B reproduzieren](CONTRIBUTOR-FIXTURE-B.md).
 - Gepinnte Atlas-Host-Belege bei konkretem Bedarf: [H02-Rohbelege und Buildprovenienz](reference/atlas-host-h02/H02-PROVENANCE.md); [ursprüngliche Save/Fresh/Recovery-Belege](reference/atlas-host-save-i02-h01/SAVE-PROVENANCE.md).
 - Bestehende Detailpläne und historische Pakete: [Fachplanregister](reference/PLAN-REGISTER.md). Keine Pflichtlektüre beim Einstieg; stabile Pfade bleiben erhalten.
