@@ -838,7 +838,7 @@
       "qualifiedOwnerCandidate": "a6e61b497fe522e7be959f7ce76ce5c4cfcdfa18",
       "checkedIntegratedSourceCommit": "f888a665d6ba06a2f891a65b1edfcdb134553f7a",
       "latestCheckedIntegratedSourceCommit": "964c85f9789e33f6e22324ae34534ca6fe944ef4",
-      "latestConsumedShared": "1310905fa0b5290b42fa3dae4204300b17f2368d"
+      "latestConsumedShared": "5eaa945967dd806344f791c551791df915a4a539"
     },
     "review": {
       "run": "HEX-02-R02",
