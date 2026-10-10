@@ -5501,12 +5501,20 @@
       "productUnchanged": true
     },
     "latestSharedIntegration": {
-      "sourceCommit": "6cf3164987c79f8a96981287cb26c351d305652a",
-      "consumedShared": "8671a1a880efc2f1316c520dd69493cdd998e379",
-      "scope": "Qualified incoming Shared documentation/onboarding only; product, harness and fixtures byte-identical to native-tested PR13/892e20d. No repeated broad tests or native approval of Shared.",
+      "id": "HEX-E2E01-SHARED-STRUCTURE-SYNC",
+      "state": "qualified_Shared_repository_structure_integrated",
+      "sourceCommit": "76e037b0c6baf0b7a04eaec4d47050b90146aea6",
+      "consumedShared": "11e493807c7016e3a085c6d48257f6b4c3b5004a",
+      "scope": "Incoming repository maintenance/structure CI only, no Atlas product/harness/fixture changes or Host review decision.",
+      "testsPassed": 663,
+      "structuralTestsPassed": 13,
+      "offlineStructureAndReferences": true,
+      "newNativeRun": false,
       "nativeSource": "892e20d737c9e4868aa44b615f8da0f97d98fb39",
-      "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-manifest-host-aba-20261010/h02/native-aba-evidence.json",
-      "sha256": "4ed1f2b2da15c5715498399a4c6c32369c6aaa36261a1382ebc5cdd359d34820"
+      "independentHostReview": "pending existing reviewer; no general review restart",
+      "fullE2E": false,
+      "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-manifest-host-aba-20261010/shared-structure-sync/integration.json",
+      "sha256": "924b62da92ad1e1c3b362a6a881e7f0c379b20ac57d3c8d33f350a3c21980fc1"
     },
     "latestCampaignBIntegration": {
       "id": "HEX-E2E01-FIXTURE-B-I01",
