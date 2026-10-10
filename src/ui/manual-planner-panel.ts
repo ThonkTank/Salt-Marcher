@@ -36,6 +36,24 @@ export class ManualPlannerPanel {
           : "Aktion fehlgeschlagen. Entwurf bleibt erhalten.";
     }
   }
+  /** Bind every DOM callback to the displayed workspace, including external selection changes. */
+  private displayedGuard(): () => void {
+    const epoch = this.renderEpoch;
+    const plan = this.planner.active;
+    const sceneId = this.planner.selectedSceneId;
+    return () => {
+      const current = this.planner.active;
+      if (
+        epoch !== this.renderEpoch ||
+        current?.id !== plan?.id ||
+        current?.revision !== plan?.revision ||
+        this.planner.selectedSceneId !== sceneId
+      )
+        throw new Error(
+          "Ansicht geändert. Entwurf behalten; aktuelle Aktion verwenden.",
+        );
+    };
+  }
   private button(
     parent: HTMLElement,
     text: string,
@@ -44,13 +62,12 @@ export class ManualPlannerPanel {
   ): void {
     const b = this.root.ownerDocument.createElement("button");
     b.type = "button";
-    const epoch = this.renderEpoch;
+    const assertDisplayed = this.displayedGuard();
     b.textContent = text;
     b.disabled = disabled;
     b.addEventListener("click", () =>
       this.run(() => {
-        if (epoch !== this.renderEpoch)
-          throw new Error("Ansicht geändert. Aktuelle Aktion verwenden.");
+        assertDisplayed();
         action();
       }),
     );
@@ -87,10 +104,10 @@ export class ManualPlannerPanel {
     );
     if (selectedOption) selectedOption.selected = true;
     this.label(toolbar, "Plan", select);
-    const epoch = this.renderEpoch;
+    const assertDisplayed = this.displayedGuard();
     select.addEventListener("change", () => {
       this.run(() => {
-        if (epoch !== this.renderEpoch) throw new Error("Ansicht geändert.");
+        assertDisplayed();
         this.planner.switchPlan(select.value as CampaignLocalId);
       });
       const currentOption = [...select.options].find(
@@ -175,8 +192,7 @@ export class ManualPlannerPanel {
         this.label(inspector, "Ort (optional)", location);
         const edit = () =>
           this.runInput(() => {
-            if (epoch !== this.renderEpoch)
-              throw new Error("Ansicht geändert. Entwurf nicht umgeleitet.");
+            assertDisplayed();
             this.planner.editDraft({
               title: title.value,
               notes: notes.value,

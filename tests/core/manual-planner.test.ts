@@ -138,3 +138,27 @@ test("manual planner: invalid codec/accessor/context blocks before mutation; con
   );
   assert.deepEqual(p.catalog, before);
 });
+
+test("manual planner codec rejects holes, extra keys, symbols and getters before hydration", () => {
+  let calls = 0;
+  const getter: unknown[] = [];
+  Object.defineProperty(getter, "0", {
+    get() {
+      calls++;
+      throw new Error("must not invoke");
+    },
+  });
+  for (const scenes of [
+    Array(1),
+    Object.assign([], { meta: "x" }),
+    Object.assign([], { [Symbol("meta")]: "x" }),
+    getter,
+  ]) {
+    assert.throws(
+      () =>
+        manualPlan({ version: 1, id: id(1), revision: 1, name: "", scenes }),
+      /Ungültige.*Szenen/,
+    );
+  }
+  assert.equal(calls, 0);
+});

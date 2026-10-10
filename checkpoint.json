@@ -9678,26 +9678,35 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "MANUAL-PLANNER-I01",
+      "id": "MANUAL-PLANNER-N01",
       "issue": 69,
-      "state": "core_dom_implemented_storage_contract_pending",
+      "state": "review_findings_repaired_delta_review_pending",
       "branch": "city/manual-session-planner",
-      "basis": "b02925c87f07e882919348521d380f54a8b4f6b4",
+      "basis": "2a484df43bd2146217e0efb3986fd1971d8b55e1",
       "claim": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/69#issuecomment-6102030111",
       "plan": "docs/plans/campaign/manual-session-planner.md",
-      "next": "Independent core/DOM review, Campaign/Data native Owner/closure/file-plan contract, then same-package Host Save/Fresh-Reopen; no second publisher",
+      "next": "Independent delta recheck R01-01/R01-02 on existing PR71; confirmed Campaign/Data native storage contract then same-package Host Save/Fresh-Reopen",
       "verification": {
         "typecheck": "PASS",
         "repository": "PASS",
         "fullSuite": {
-          "tests": 829,
-          "passed": 828,
+          "tests": 835,
+          "passed": 834,
           "failed": 0,
           "pdfEnvironmentSkip": 1
         },
-        "focusedCoreDom": "7/7 PASS",
+        "focusedCoreDom": "13/13 PASS",
         "build": "PASS",
         "nativeHost": "not activated/not run"
+      },
+      "reviewRepair": {
+        "source": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/71#pullrequestreview-5480783392",
+        "findings": [
+          "R01-01 displayed identity/revision/scene guard including external model switches and retained input/commit/discard callbacks",
+          "R01-02 dense closed descriptor-only scenes array; holes/extra keys/symbols/getters rejected before reads"
+        ],
+        "regressionBefore": "four added external-plan DOM cases FAIL before repair; PASS afterwards",
+        "independentRecheck": "pending"
       }
     },
     "nextRun": {

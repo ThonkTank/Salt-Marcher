@@ -85,7 +85,16 @@ export function manualPlan(raw: unknown): ManualPlan {
     !Array.isArray(d.scenes)
   )
     throw new Error("Ungültige Planrevision oder Szenen.");
-  const scenes = d.scenes.map(scene);
+  // Validate descriptors before reading values: map skips holes and invokes getters.
+  if (Reflect.ownKeys(d.scenes).length !== d.scenes.length + 1)
+    throw new Error("Ungültige Szenenliste.");
+  const scenes: ManualScene[] = [];
+  for (let i = 0; i < d.scenes.length; i++) {
+    const descriptor = Object.getOwnPropertyDescriptor(d.scenes, String(i));
+    if (!descriptor || !("value" in descriptor))
+      throw new Error("Ungültige Szenenliste.");
+    scenes.push(scene(descriptor.value));
+  }
   if (new Set(scenes.map((s) => s.id)).size !== scenes.length)
     throw new Error("Doppelte Szene.");
   return Object.freeze({

@@ -81,3 +81,56 @@ test("manual planner UI: stale switch keeps inspector and exact draft visible wi
   assert.equal(f.p.draft!.fields.notes, "do not lose");
   assert.match(f.host.textContent!, /Entwurf behalten/);
 });
+
+for (const action of [
+  "Szene löschen",
+  "Entwurf verwerfen",
+  "Entwurf übernehmen",
+  "input",
+]) {
+  test(`manual planner UI: external plan switch rejects retained ${action} without losing target draft`, () => {
+    const f = fixture();
+    button(f.host, "Neuer Plan").click();
+    button(f.host, "Szene hinzufügen").click();
+    const old =
+      action === "input"
+        ? (f.host.querySelector(
+            '[aria-label="Notizen"]',
+          ) as HTMLTextAreaElement)
+        : button(f.host, action);
+    f.p.create();
+    f.p.addScene(f.p.binding());
+    f.p.editDraft({ title: "B", notes: "must survive", locationId: null });
+    const before = f.p.catalog;
+    const draft = f.p.draft;
+    if (action === "input") {
+      (old as HTMLTextAreaElement).value = "old A text";
+      old.dispatchEvent(new f.document.defaultView!.Event("input"));
+    } else (old as HTMLButtonElement).click();
+    assert.deepEqual(f.p.catalog, before);
+    assert.equal(f.p.draft, draft);
+    assert.match(f.host.textContent!, /Ansicht geändert/);
+    f.ui.destroy();
+  });
+}
+
+test("manual planner UI: retained scene action rejects external selection change within same revision", () => {
+  const f = fixture();
+  button(f.host, "Neuer Plan").click();
+  button(f.host, "Szene hinzufügen").click();
+  button(f.host, "Szene hinzufügen").click();
+  const old = button(f.host, "Szene löschen");
+  f.p.selectScene(f.p.active!.scenes[0]!.id);
+  f.p.editDraft({
+    title: "first",
+    notes: "keep selected scene",
+    locationId: null,
+  });
+  const before = f.p.catalog;
+  const draft = f.p.draft;
+  old.click();
+  assert.deepEqual(f.p.catalog, before);
+  assert.equal(f.p.draft, draft);
+  assert.match(f.host.textContent!, /Ansicht geändert/);
+  f.ui.destroy();
+});
