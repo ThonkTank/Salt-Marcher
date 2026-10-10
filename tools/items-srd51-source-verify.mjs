@@ -720,6 +720,7 @@ function verifyPdfPotionHealingMerge(pdfPath, transcript, inventory) {
   const headings = extractMagicItemAzHeadingsFromPdfXml(execFileSync("pdftohtml",
     ["-xml", "-f", "207", "-l", "251", "-stdout", resolve(pdfPath)],
     { encoding: "utf8", maxBuffer: 16 * 1024 * 1024 }));
+  invariant(headings.length === 239, "Magic Items A–Z muss exakt 239 physische Item-Detailheadings enthalten.");
   invariant(headings[141] === "Potion of Healing"
     && headings[140] === "Potion of Growth" && headings[142] === "Potion of Heroism",
   "Potion of Healing muss aus der physischen A–Z-Headingfolge als Ordinal 142 abgeleitet werden.");
@@ -730,7 +731,7 @@ function verifyPdfPotionHealingMerge(pdfPath, transcript, inventory) {
     invariant(pageText.includes(normalizePdfText(fact)),
       `Potion-of-Healing-PDF-Beleg für „${fact}“ fehlt.`);
   }
-  return Object.freeze({ ...evidence, physicalPdfPage: 234, derivedHeadingOrdinal: 142,
+  return Object.freeze({ ...evidence, physicalPdfPage: 234, derivedHeadingCount: 239, derivedHeadingOrdinal: 142,
     scope: "explicit-earliest-occurrence-merge-header-rarity-and-four-healing-rows" });
 }
 
