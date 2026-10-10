@@ -1,57 +1,23 @@
 # Beitragen
 
-Beginne mit den [Produktzielen](docs/PRODUCT.md) und der [Roadmap](docs/ROADMAP.md). Der gemeinsame Integrationsbranch ist `active/installed-phase1`. [AGENTS.md](AGENTS.md) gilt für automatisierte Arbeit; Schutz vorhandener Daten und Quellenbindung gelten auch für die hier beschriebenen Beiträge. Aktuelle Nutzeraufträge und bereits erteilte Freigaben haben Vorrang; fachliche Abnahmeanforderungen bleiben am jeweiligen Paket sichtbar.
+[Produktziele](docs/PRODUCT.md) und [Roadmap](docs/ROADMAP.md) erklären Ziel und Lieferfolge. Gemeinsamer Integrationsbranch: `active/installed-phase1`; Entwicklung mit Node.js 22. Für automatisierte Arbeit gilt [AGENTS.md](AGENTS.md). Repositoryzugang und `gh`-Authentifizierung sind nötig.
 
 ## Agenteneinstieg
 
-**Nächste freie Aufgabe: `npm run next`.** Der Befehl liest GitHub live, zeigt aktuelle Produktengpässe separat, ordnet freie Aufgaben nach Priorität und zeigt den ersten Auftrag samt Voraussetzungen, konkreter Abnahme und letzten drei Kommentaren. GitHub-Zugriff über `gh` erforderlich; keine npm-Installation oder GUI nötig. `npm run next -- --list` zeigt nur die freie Liste. Einen zwischenzeitlichen Claim/PR prüfen und im Aufgabenissue übernehmen. Ohne freie Aufgabe benennt der Befehl den leeren Zustand ausdrücklich; dann die aktuelle Übergabe in #12 prüfen.
+1. `git fetch origin` und **`npm run next`** ausführen. Der Befehl zeigt aktuelle Produktengpässe getrennt von freien Aufgaben und den ersten freien Auftrag mit Voraussetzungen, Abnahme und letzten drei Kommentaren. `npm run next -- --list` zeigt die Listen ohne Auftragstext; npm-Abhängigkeiten und GUI sind dafür nicht nötig.
+2. Im gewählten Issue die neueste Übernahme und vorhandenen PR prüfen. Freie Arbeit übernehmen oder den bestehenden Owner unterstützen; [Übernahme und Selbstorganisation](docs/REPOSITORY.md#selbstorganisation-ohne-zentrale-zuweisung). Eine leere freie Liste bedeutet keine bestätigte freie Aufgabe: den Engpass in [#12](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12) prüfen, keinen Auftrag aus einem alten Plan ableiten.
+3. `npm run context -- --area <bereich>` ausführen. Die [Bereichskarte](docs/INDEX.md) verlinkt den passenden Fachvertrag und Koordinationsort. Checkout-SHA und aktuellen Kandidaten unterscheiden; große JSON-Dateien nur für den betroffenen Eintrag lesen.
+4. Nach den [Paket- und Prüfregeln](docs/WORKFLOW.md) ein überprüfbares Ergebnis liefern. Im Aufgabenissue Ergebnis, Beleg und nächsten Schritt übergeben; [Kommunikation](docs/REPOSITORY.md#kommunikation-nach-inhalt-und-anlass).
 
-**Arbeitsauftrag:** Lies [#12 und seine neuesten Kommentare](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12) und das Repository, setze den wichtigsten sinnvollen nächsten Schritt für einen nutzbaren Dungeon-Editor um und melde Ergebnis oder konkreten Blocker; beachte [AGENTS.md](AGENTS.md). Produktziele und Roadmap erklären Ziel und Reihenfolge; der aktuelle Aufgaben-/PR-Verlauf entscheidet, was noch offen und bereits besessen ist.
-
-1. `git fetch origin`; gemeinsame Basis, offene PRs und aktuelle Übernahmen prüfen. Die folgenden Befehle geben einen Überblick, ersetzen aber nicht das Lesen des gewählten Issues und seiner letzten Kommentare.
-2. Eine Aufgabe passend zu Zugriff und Fähigkeiten wählen. Ohne GUI kannst du Modell-/Regressionstests, Quellenabgleich und begrenzte Dokumentation liefern; native Bedienabnahmen brauchen den tatsächlichen Host. Ein privater QA-Pfad ist keine Voraussetzung für alle Beiträge.
-3. Das konkrete freie Paket im Aufgabenissue übernehmen: **Agent/Rolle, begrenzter Scope, Basis-SHA, Branch oder vorhandener PR, geplante Prüfung und nächster Empfänger**. Bei bereits benanntem Owner dessen vorhandene Arbeit unterstützen. Für ein freies, autorisiertes Paket braucht es keine zusätzliche allgemeine Zustimmungsrunde. GitHub-Assignees allein unterscheiden die unter demselben Account arbeitenden Agenten nicht.
-4. Den passenden Bereich über `npm run context -- --area <bereich>` auswählen, relevante Checkpoint-/Acceptanceeinträge und Fachplan lesen, ein überprüfbares Ergebnis liefern und mit Commit, Tests und offenen Grenzen übergeben. Eine noch offene Ownerentscheidung als konkreten Blocker ausweisen; außerhalb davon weiterarbeiten.
-
-```bash
-gh issue list --repo ThonkTank/Obsidian-Dungeon-Editor-Phase1 --state open --label 'status:ready'
-gh pr list --repo ThonkTank/Obsidian-Dungeon-Editor-Phase1 --state open
-gh issue view 12 --repo ThonkTank/Obsidian-Dungeon-Editor-Phase1 --json body --jq .body
-```
-
-| Deine Umgebung | Sinnvoller Einstieg | Grenze |
+| Zugang / Fähigkeiten | Sinnvolle Arbeit | Voraussetzung |
 | --- | --- | --- |
-| Git und Markdown/JSON, Repositoryzugriff; keine GUI nötig | [frei übernehmbare Aufgaben](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues?q=is%3Aissue+is%3Aopen+label%3A%22status%3Aready%22); genaue Quellen, Scope und Abnahme stehen im gewählten Issue | Quellenabgleich; offene Zielentscheidungen und Produktabnahmen bleiben offen |
-| Weitere Quellen-/Plananalyse ohne GUI | [#44: genau einen offenen Quellen-/Fachpaketpunkt zuordnen](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/44), zunächst den begrenzten Punkt nennen | Offene Zielentscheidungen nicht selbst als entschieden markieren |
-| Produktentwicklung oder Review | Aktuellen Owner-/PR-Scope aus #12 und dem Bereichsissue wählen; z. B. vorhandenen PR #13 unterstützen | Kein zweiter Atlas-Kandidat; integrierte/native Abnahme braucht ihren tatsächlichen Lauf |
-| Obsidian, passende Fixtures und zugängliche Belege | Bestehenden Hostfall im Fachbereich übernehmen | GUI-Slot auf demselben Gerät abstimmen; bei fehlendem Zugriff präzisen Eingang nennen |
+| Git und Markdown/JSON ohne GUI | Konkreten Quellen- oder Vertragseingang für ein Umsetzungspaket schließen | Benannter Verbraucher, zugängliche Quelle; keine Produktabnahme daraus ableiten |
+| Produktentwicklung oder Review | Vorhandenen Produkt-PR fertigstellen, prüfen oder seinen Engpass lösen | Bestehenden Besitz erhalten; keine zweite Implementierung desselben Kandidaten |
+| Modell-/Dateitests ohne GUI | Begrenzte Regression am gewählten Paket; [Campaign-B-Fixture](docs/CONTRIBUTOR-FIXTURE-B.md) reproduzieren | Tatsächliche Source-/Fixtureidentität angeben |
+| Obsidian mit Fixtures und Belegen | Erforderlichen Hostfall des Fachpakets prüfen | Abgestimmter Geräteslot und direkter Evidenzzugriff |
 
-Den gewählten Bereich mit `npm run context -- --area <bereich>` auswählen; [Bereichskarte](docs/INDEX.md). Checkout-SHA und aktuelle PR-Heads unterscheiden. Für einen reproduzierbaren Datei-/Modelltest ohne GUI die [gepinnte Campaign-B-Anleitung](docs/CONTRIBUTOR-FIXTURE-B.md) verwenden.
+Weitere Wege: [offene PRs](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pulls), [Beiträge gesucht](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22) und [freie Aufgaben](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues?q=is%3Aissue+is%3Aopen+label%3A%22status%3Aready%22). Priorität oder `help wanted` allein bedeutet keinen freien Implementierungsbesitz.
 
-## Eine Aufgabe finden
+## Während des Beitrags
 
-Zuerst vorhandene Produktarbeit bis zur Integration bringen oder ihren konkreten Engpass lösen. Ein zusammenhängender Nutzerablauf bildet das Paket; Hilfsarbeit braucht einen benannten Umsetzungsverbraucher. [Paketgrenzen und passende Prüfung](docs/WORKFLOW.md). Eine frei angebotene Planaufgabe hat dadurch nicht automatisch Vorrang vor einem notwendigen Review/Fix im laufenden Produktpfad.
-
-- [Frei übernehmbare Aufgaben](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues?q=is%3Aissue+is%3Aopen+label%3A%22status%3Aready%22): zuerst aktuellen Scope und Kommentare prüfen.
-- [Einstiegsaufgaben](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22): kleine, abgegrenzte Beiträge mit eigener Abnahme.
-- [Beiträge gesucht](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22): dort zunächst den gewünschten Scope und bestehende Owner prüfen.
-- [Aktueller kritischer Pfad](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues?q=is%3Aissue+is%3Aopen+label%3A%22kind%3Atask%22+label%3A%22priority%3Anow%22).
-- [Offene PRs](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pulls): Review vorhandener Arbeit kann den nächsten Nutzerablauf schneller entsperren als ein neuer Branch.
-
-`kind:coordination` kennzeichnet Bereichsindizes; sie sind keine kleinen Übernahmeaufgaben. `kind:process` betrifft Arbeitsabläufe. `status:ready` bezeichnet ein ausführbares, noch unbeanspruchtes Paket; bei Übernahme durch `status:active` ersetzen und den Owner/Scope im Issue nennen. Aufgaben mit `status:blocked` brauchen zuerst den im Text benannten Eingang; bei Lieferung neu bewerten. Ein aktives Paket kann zugleich durch einen konkreten Eingang blockiert sein. `priority:next` wird nach seinen Abhängigkeiten bearbeitet. Keine automatisierte Zuweisung fremder Personen: vor Implementierung im Aufgabenissue Scope, bestehenden/gewünschten Branch und nächsten Empfänger festhalten; Überschneidungen mit dem bestehenden Owner klären.
-
-## Änderung vorbereiten und liefern
-
-Nach der Aufgabenwahl die passenden [Arbeitsregeln](docs/WORKFLOW.md) anwenden: eigene begrenzte Änderung, relevante Prüfungen, eingehende Arbeit integrieren, geprüft committen/pushen und mit Beleg/offenen Grenzen übergeben. Bereits erteilte Nutzerfreigaben nicht erneut erfragen; vereinbarte Fachreviews bleiben erforderlich. Build oder Push installieren kein Plugin im Nutzervault.
-
-## Wo Fragen und Entscheidungen hingehören
-
-[#12](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12): Produktfolge und Gateentscheidungen. [#1](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1): Paketkoordination. Bereichsissues und Fachverträge stehen in der [Bereichskarte](docs/INDEX.md).
-
-Neue Aufgaben bekommen eine eigene kleine Beschreibung mit Abnahme und verlinken ihren Bereich. Detaillierte Laufprotokolle gehören in den bestehenden Fachort; im Gesamtindex genügt die Entscheidung oder der Blocker mit Link.
-
-## Ordnung bei jedem Beitrag erhalten
-
-Das Team [organisiert Aufgaben, Reviewübernahmen und nächste Teilpakete selbst](docs/REPOSITORY.md#selbstorganisation-ohne-zentrale-zuweisung). Bestehende Claims erhalten; bei Übergabe einen konkreten Empfänger oder eine ausdrücklich offene Rolle nennen. Aus bestätigten unbesetzten Restbedarfen selbst ausführbare Nachfolger bilden, statt eine zentrale Zuweisung abzuwarten.
-
-Der [Repository-Pflegevertrag](docs/REPOSITORY.md) legt Ablage, kanonische Informationsorte und Zuständigkeit fest. Neue Paketpläne liegen unter `docs/plans/<bereich>/` nach der [Vorlage](docs/templates/PACKAGE-PLAN.md) und werden im Index verlinkt. Bei Übernahme, Blockerwechsel und Abschluss Haupttext, Statuslabels und Abhängigkeiten nachziehen; bei Integration einen geänderten Lieferfokus aktualisieren. Kein zusätzlicher Freigabe- oder Meldelauf. `npm run audit:backlog` prüft mit GitHub-Zugriff ausschließlich lesend auf widersprüchliche Statuslabels.
+[WORKFLOW](docs/WORKFLOW.md) führt Umsetzung, passende Prüfung, Sync/Push und Daten-/Hostschutz. [REPOSITORY](docs/REPOSITORY.md) führt Informationsorte, Labels, Übergabe und Ablage. Diese Regeln am betreffenden Anlass anwenden; keine zusätzliche Plan-, Freigabe- oder Berichtsrunde. Bereits erteilte Nutzerfreigaben gelten weiter; vereinbarte Fachabnahmen benötigen ihren direkten Nachweis.
