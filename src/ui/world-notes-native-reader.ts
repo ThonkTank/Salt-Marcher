@@ -44,8 +44,16 @@ export async function readConfirmedWorldNotes(input: {
   if (!file.path.startsWith("Kampagnen/SaltMarcher/") || !file.path.endsWith(".campaign.json"))
     throw new Error("World Notes benötigen ein natives Campaignmanifest.");
   if (owners.length > 1) throw new Error("World-Notes-Owner ist mehrdeutig.");
-  if (!owners.length) return { manifestPath: file.path, manifestBytes: file.bytes,
-    snapshot: emptyWorldNotes(input.context) };
+  const assertManifestUnchanged = async () => {
+    if (await input.files.read(file.path) !== file.bytes)
+      throw new Error("Campaignmanifest wurde während des World-Notes-Lesens geändert.");
+    assertCurrent();
+  };
+  if (!owners.length) {
+    await assertManifestUnchanged();
+    return { manifestPath: file.path, manifestBytes: file.bytes,
+      snapshot: emptyWorldNotes(input.context) };
+  }
   const owner = owners[0]!;
   if (owner.schemaRevision !== "schema:world-notes:v1" ||
       owner.policyRevision !== "policy:world-notes:v1" ||
@@ -82,6 +90,6 @@ export async function readConfirmedWorldNotes(input: {
   if (!Number.isSafeInteger(revision)) throw new Error("World-Notes-Revision ist ungültig.");
   const snapshot = worldNotesSnapshot({ version: 1, campaignId: input.context.campaignId,
     namespace: input.context.namespace, revision, records });
-  assertCurrent();
+  await assertManifestUnchanged();
   return { manifestPath: file.path, manifestBytes: file.bytes, snapshot };
 }

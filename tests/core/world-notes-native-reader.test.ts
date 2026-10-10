@@ -61,4 +61,15 @@ test("fresh World Notes read derives the exact aggregate from confirmed native n
   for (const write of secondPrepared.writes) files.set(write.path, write.after!);
   assert.deepEqual(afterSecond.records.map((record) => record.id), [second.id, change.id]);
   assert.deepEqual((await readConfirmedWorldNotes(input)).snapshot, afterSecond);
+
+  // A manifest replacement between inventory selection and the last note read
+  // must not be returned as an authoritative aggregate for the old manifest.
+  const oldManifest = files.get(manifestPath)!;
+  await assert.rejects(readConfirmedWorldNotes({ ...input,
+    storage: { list: async () => [{ path: manifestPath, bytes: oldManifest }] },
+    files: { ...store, read: async (path: string) => {
+      if (path !== manifestPath) files.set(manifestPath, manifestBytes);
+      return files.get(path) ?? null;
+    } },
+  }), /während des World-Notes-Lesens geändert/);
 });
