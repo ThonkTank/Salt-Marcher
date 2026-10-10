@@ -4,15 +4,15 @@
     "state": "completed",
     "roleContract": "docs/AGENT-ROLES.md#repository-maintenance",
     "repositoryContract": "docs/REPOSITORY.md",
-    "evaluatedShared": "22d664e5cba23881eb9bb975f1757b2beafc2b05",
-    "scope": "Make canonical work-state upkeep an explicit agent instruction and resolve task-maintenance handoff without extending its repository rights. Existing seven project automations already load current default-branch contracts.",
-    "next": "Apply the common role contract during substantive package work: owner replaces consequences at the declared source, support routes one evidence-backed change, unchanged runs remain silent. Extend existing-plan links as owned packages are actually edited; no extra cleanup controller.",
+    "evaluatedShared": "1c7350e52e21942c2eb0f771f9b110ea818db168",
+    "scope": "Systemic self-organization: read explicitly linked ownerbranch work sections at a pinned SHA; shared agent workflow keeps delivery, consumption and current-state upkeep with package participants. Remove central owner checks and wake-cycle claim reminders.",
+    "next": "Agents apply the current common contract in their owned packages; producers and consumers clarify inputs directly and update their declared work source on substantive delivery. Maintenance fixes reported structural entry gaps, not individual owner progress. No individual task edits or automation/controller additions in this change.",
     "verification": [
-      "Documentation-only contract/source/diff and repository-structure checks; no product/GUI qualification",
-      "Seven enabled project automation prompts inspected: all load AGENTS and AGENT-ROLES from the current default branch; no copied procedure or schedule changes",
-      "Only repositoryOrientation edited; all foreign checkpoint/acceptance bytes preserved"
+      "42/42 repository/tool tests PASS, repository structure and diff checks PASS; candidate sources distinguished from Shared and no missing-source fallback",
+      "Current remote integrated before publication; no product, GUI or domain acceptance claimed",
+      "Only repositoryOrientation edited; all foreign checkpoint and acceptance bytes preserved"
     ],
-    "previousOrientation": "22d664e"
+    "previousOrientation": "22d664e5cba23881eb9bb975f1757b2beafc2b05"
   },
   "saltMarcherReplacement": {
     "date": "2026-10-10",

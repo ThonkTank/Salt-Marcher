@@ -272,6 +272,7 @@ export class CampaignRuntimeSource {
   private readonly changed = new Set<(epoch: number, change: CampaignRuntimeStorageChange) => void>();
   private readonly projectionSources = new Map<string, string | null>();
   private readonly modifyReservations = new Map<number, { readonly path: string; readonly epoch: number }>();
+  private readonly observedChanges = new Map<number, CampaignRuntimeStorageChange>();
   private readonly acknowledgmentLeases = new WeakMap<object, string>();
   private readonly acknowledgedSaves = new Map<string, {
     readonly proof: string;
@@ -289,6 +290,7 @@ export class CampaignRuntimeSource {
         const reservation = change.eventId === undefined ? undefined : this.modifyReservations.get(change.eventId);
         if (reservation && reservation.path === change.path) {
           this.modifyReservations.delete(change.eventId!);
+          this.rememberChange(reservation.epoch, change);
           for (const listener of this.changed) listener(reservation.epoch, change);
           return;
         }
@@ -300,8 +302,14 @@ export class CampaignRuntimeSource {
         if (this.modifyReservations.has(change.eventId)) this.modifyReservations.delete(change.eventId);
         else this.modifyReservations.set(change.eventId, { path: change.path, epoch: this.changeEpoch });
       }
+      this.rememberChange(this.changeEpoch, change);
       for (const listener of this.changed) listener(this.changeEpoch, change);
     });
+  }
+  private rememberChange(epoch: number, change: CampaignRuntimeStorageChange): void {
+    this.observedChanges.set(epoch, change);
+    for (const value of [...this.observedChanges.keys()].sort((a, b) => a - b).slice(0, -8))
+      this.observedChanges.delete(value);
   }
   subscribe(changed: (epoch: number, change: CampaignRuntimeStorageChange) => void): () => void {
     if (this.closed) throw new Error("Campaignquelle ist geschlossen.");
@@ -311,6 +319,7 @@ export class CampaignRuntimeSource {
     this.unsubscribe?.(); this.unsubscribe = undefined; this.invalidated = true;
     this.closed = true; this.changeEpoch++; this.loadSequence++;
     this.modifyReservations.clear();
+    this.observedChanges.clear();
     for (const listener of this.changed)
       listener(this.changeEpoch, { kind: "delete", path: "" });
     this.changed.clear();
@@ -507,11 +516,21 @@ export class CampaignRuntimeSource {
     lease: CampaignRuntimeSaveAcknowledgmentLease,
   ): void {
     this.validateSaveRollback(proof, lease);
-    const current = this.loaded?.manifests.get(proof.prepared.context.campaignId);
-    if (this.acknowledgedSaves.has(proof.transactionId) || this.changeEpoch !== lease.sourceEpoch ||
-        this.invalidated || !current ||
+    const current = this.loaded?.manifests.get(proof.prepared.context.campaignId),
+      afterChange = this.observedChanges.get(lease.sourceEpoch + 1),
+      beforeChange = this.observedChanges.get(lease.sourceEpoch + 2),
+      exactModify = (change: CampaignRuntimeStorageChange | undefined, bytes: string) =>
+        change?.kind === "modify" && change.path === proof.prepared.manifestPath &&
+        change.phase !== "pending" && change.bytes === bytes,
+      lateRestoration = this.changeEpoch === lease.sourceEpoch + 2 &&
+        exactModify(afterChange, proof.prepared.afterManifestBytes) &&
+        exactModify(beforeChange, proof.prepared.beforeManifestBytes),
+      untouched = this.changeEpoch === lease.sourceEpoch && !this.invalidated;
+    if (this.acknowledgedSaves.has(proof.transactionId) || (!untouched && !lateRestoration) ||
+        !current ||
         current.path !== proof.prepared.manifestPath || current.bytes !== proof.prepared.beforeManifestBytes)
       throw new Error("Campaign-Save-Rollback besitzt keine unveränderte Sourcebasis.");
+    if (lateRestoration) this.invalidated = false;
     this.acknowledgmentLeases.delete(lease);
     this.cancelledSaves.add(proof.transactionId);
   }
@@ -541,8 +560,11 @@ export class CampaignRuntimeNavigationProvider {
   private latestEpoch = 0;
   private contextEpoch = 0;
   private pending?: { readonly proof: string; readonly manifestPath: string; readonly afterManifestBytes: string;
+    readonly beforeManifestBytes: string;
     readonly lease: CampaignRuntimeSaveAcknowledgmentLease; eventObserved: boolean;
+    rollbackObserved: boolean;
     storageEventId?: number;
+    rollbackStorageEventId?: number;
     readonly waiters: { resolve(): void; reject(error: Error): void }[];
     inFlight?: Promise<CampaignRuntimeSaveAcknowledgmentResult> };
   private readonly completed = new Map<string, { readonly proof: string;
@@ -578,6 +600,23 @@ export class CampaignRuntimeNavigationProvider {
         if ((orderedResolution || atomicObservation) && change.bytes === this.pending.afterManifestBytes) {
           this.pending.eventObserved = true;
           for (const waiter of this.pending.waiters.splice(0)) waiter.resolve();
+          return;
+        }
+      }
+      if (this.pending && this.pending.eventObserved && !this.pending.inFlight &&
+          epoch === this.pending.lease.sourceEpoch + 2 && change.kind === "modify" &&
+          change.path === this.pending.manifestPath) {
+        if (change.phase === "pending" && change.eventId !== undefined &&
+            this.pending.rollbackStorageEventId === undefined) {
+          this.pending.rollbackStorageEventId = change.eventId;
+          return;
+        }
+        const orderedResolution = change.phase === "resolved" && change.eventId !== undefined &&
+          change.eventId === this.pending.rollbackStorageEventId;
+        const atomicObservation = change.phase === undefined && change.eventId === undefined &&
+          this.pending.rollbackStorageEventId === undefined;
+        if ((orderedResolution || atomicObservation) && change.bytes === this.pending.beforeManifestBytes) {
+          this.pending.rollbackObserved = true;
           return;
         }
       }
@@ -621,7 +660,8 @@ export class CampaignRuntimeNavigationProvider {
       throw new Error("CampaignContext wechselte vor der Speichervorbereitung.");
     const lease = this.source.prepareSaveAcknowledgment(proof), normalized = normalizedSaveProof(proof);
     this.pending = { proof: normalized, manifestPath: proof.manifestPath,
-      afterManifestBytes: proof.afterManifestBytes, lease, eventObserved: false, waiters: [] };
+      beforeManifestBytes: proof.beforeManifestBytes, afterManifestBytes: proof.afterManifestBytes,
+      lease, eventObserved: false, rollbackObserved: false, waiters: [] };
     return lease;
   }
   acknowledgeCommittedSave(proof: CampaignRuntimeSaveAcknowledgmentV1): Promise<CampaignRuntimeSaveAcknowledgmentResult> {
@@ -661,7 +701,7 @@ export class CampaignRuntimeNavigationProvider {
     if (pending.proof !== normalized ||
         JSON.stringify(this.lifecycle.context) !== JSON.stringify(proof.prepared.context))
       throw new Error("Campaign-Save-Rollback besitzt eine fremde Vorbereitung.");
-    if (pending.eventObserved || pending.storageEventId !== undefined) {
+    if ((pending.eventObserved || pending.storageEventId !== undefined) && !pending.rollbackObserved) {
       for (const waiter of pending.waiters.splice(0))
         waiter.reject(new Error("Campaign-Save-Rollback verlor das Rennen gegen ein Manifestevent."));
       this.pending = undefined; this.sourceCurrent = false; this.notify();
@@ -678,6 +718,7 @@ export class CampaignRuntimeNavigationProvider {
     if (this.pending !== pending || !this.sourceCurrent)
       throw new Error("Campaign-Save-Rollback verlor seine vorbereitete Source-Lease.");
     this.pending = undefined;
+    this.contextEpoch = this.latestEpoch;
     this.cancelled.set(proof.transactionId, normalized);
     for (const waiter of pending.waiters.splice(0))
       waiter.reject(new Error("Campaign-Save-Acknowledgment-Transaktion wurde zurückgerollt."));

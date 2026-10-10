@@ -89,6 +89,7 @@ if (fs.existsSync('queue.json') && args[1] === 'list') {
   process.exit(0);
 }
 if (args[1] === 'repos/test/repo') { process.stdout.write(JSON.stringify({default_branch:'main'})); process.exit(0); }
+if (args[1] === 'repos/test/repo/git/matching-refs/heads/city') { process.stdout.write(JSON.stringify([{ref:'refs/heads/city/planner',object:{type:'commit',sha:'b'.repeat(40)}}])); process.exit(0); }
 if (args[1] === 'repos/test/repo/commits/main') { process.stdout.write(JSON.stringify({sha:'a'.repeat(40)})); process.exit(0); }
 if (args[1].startsWith('repos/test/repo/contents/')) {
   process.stdout.write(JSON.stringify({type:'file',encoding:'base64',content:Buffer.from(fs.readFileSync('plan.md','utf8')).toString('base64')})); process.exit(0);
@@ -161,6 +162,9 @@ process.stdout.write(JSON.stringify({ ...issue, html_url: issue.url, state: issu
   assert.doesNotMatch(live.stdout, /Unrelated history|More history|Long optional contract/);
   const structured = JSON.parse(run(connected, ['--json']).stdout);
   assert.equal(structured.live.source.revision, 'a'.repeat(40));
+  const candidate = run({ ...connected, body: connected.body.replace('/blob/main/', '/blob/city/planner/') });
+  assert.equal(candidate.status, 0, candidate.stderr);
+  assert.match(candidate.stdout, /Candidate work context \(no integration\/acceptance evidence\).*b{40}.*city\/planner/);
   fs.writeFileSync(path.join(root, 'plan.md'), '### Missing section');
   const failed = run(connected);
   assert.match(failed.stdout, /section is missing.*No historical fallback/);
