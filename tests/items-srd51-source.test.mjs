@@ -5,6 +5,7 @@ import {
   normalizePdfText,
   validateBoundedAdventuringGearTableRows,
   validateBoundedArmorTableRows,
+  validateBoundedToolsTableRows,
   validateBoundedWeaponTableRows,
   validateJsonSchemas,
   validateTranscriptData,
@@ -457,6 +458,42 @@ test("tools preserve all 35 leaf rows, physical order, categories and optional w
   assert.match(byName.get("Dice set").description[0].text, /Three-Dragon Ante/);
   assert.match(byName.get("Navigator’s tools").description[0].text, /navigator's tools.*ship's course/);
   assert.match(byName.get("Thieves’ tools").description[0].text, /narrow-bladed scissors/);
+});
+
+test("tools bounded matching keeps every complete cell segment on one physical PDF row", async () => {
+  const [checkedInventory, checkedTranscript] = await Promise.all([
+    readFile(new URL("items-srd51-inventory.json", dataRoot), "utf8").then(JSON.parse),
+    readFile(new URL("items-srd51-transcript.json", dataRoot), "utf8").then(JSON.parse),
+  ]);
+  const occurrences = checkedInventory.occurrences.filter(item => item.sectionId === "tools");
+  const records = new Map(checkedTranscript.records.map(record => [record.id, record]));
+  const segments = occurrences.map(item => {
+    const record = records.get(item.id);
+    return `${item.sourceLabel} ${record.cost.sourceText} ${record.weight?.sourceText ?? "—"}`;
+  });
+  const pageLines = { 70: segments.map((segment, index) => `Unrelated left-column prose ${index}     ${segment}`) };
+  assert.deepEqual(validateBoundedToolsTableRows(pageLines, checkedTranscript, checkedInventory), {
+    checkedRows: 35,
+    scope: "exact-normalized-pdftotext-layout-row-segment-with-source-missing-markers",
+  });
+
+  const wrongCell = structuredClone(checkedTranscript);
+  wrongCell.records.find(record => record.name === "Alchemist’s supplies").cost.sourceText = "5 gp";
+  assert.throws(() => validateBoundedToolsTableRows(pageLines, wrongCell, checkedInventory),
+    /nicht exakt einmal als zusammenhängendes Segment derselben physischen Tabellenzeile/);
+
+  const pageWideOnly = structuredClone(pageLines);
+  const thievesTools = "Thieves’ tools 25 gp 1 lb.";
+  const thievesToolsLine = pageWideOnly[70].findIndex(line => line.includes(thievesTools));
+  pageWideOnly[70][thievesToolsLine] = pageWideOnly[70][thievesToolsLine].replace(thievesTools, "Thieves’ tools");
+  pageWideOnly[70].push("25 gp", "1 lb.");
+  assert.throws(() => validateBoundedToolsTableRows(pageWideOnly, checkedTranscript, checkedInventory),
+    /nicht exakt einmal als zusammenhängendes Segment derselben physischen Tabellenzeile/);
+
+  const duplicateSegment = structuredClone(pageLines);
+  duplicateSegment[70][0] += `     ${segments[0]}`;
+  assert.throws(() => validateBoundedToolsTableRows(duplicateSegment, checkedTranscript, checkedInventory),
+    /nicht exakt einmal als zusammenhängendes Segment derselben physischen Tabellenzeile/);
 });
 
 test("Tools Vehicles row remains a sourced cross-reference without a primary item identity", async () => {
