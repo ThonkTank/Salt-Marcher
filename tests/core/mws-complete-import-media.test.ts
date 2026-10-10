@@ -168,6 +168,13 @@ test("salvage requires explicit matching confirmation and distinguishes omission
     ["runtime-audio", "omit"], ["manual-decision", "transfer"],
     ["ambience-override", "fresh-target"],
   ]);
+  const omittedAudio = omission.rows.find((row) => row.recordType === "audio-source")!,
+    omittedCue = omission.rows.find((row) => row.recordType === "music-cue")!;
+  assert.deepEqual([omittedAudio.reason, omittedAudio.impact],
+    ["Datei fehlt", "Musik ist nach Import nicht verfügbar."]);
+  assert.deepEqual([omittedCue.reason, omittedCue.impact],
+    ["Audioabhängigkeit fehlt", "Abhängige Audiokonfiguration wird ausgelassen."]);
+  assert.match(omittedAudio.message, /Datei fehlt.*Musik ist nach Import nicht verfügbar/);
   await assert.rejects(() => missing.adapter.accept(omission, "salvage.other"), /nicht ausdrücklich bestätigt/);
   assert.equal((await missing.adapter.accept(omission, "salvage.mws.v1")).kind, "salvage-import");
 
@@ -176,6 +183,8 @@ test("salvage requires explicit matching confirmation and distinguishes omission
   const quarantine = await changed.adapter.review(context(), salvageInput("quarantine"));
   assert.equal(quarantine.rows[0]!.action, "quarantine");
   assert.equal(quarantine.rows.filter((row) => row.action === "quarantine").length, 4);
+  assert.deepEqual([quarantine.rows[0]!.reason, quarantine.rows[0]!.retention],
+    ["Bytehash weicht ab", "unknown-retained"]);
   assert.equal((await changed.adapter.accept(quarantine, "salvage.mws.v1")).salvage!.quarantine[0]!.sourceId, ids.audio);
 });
 

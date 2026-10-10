@@ -56,6 +56,9 @@ export interface MwsCompleteImportMediaRowV1 {
   readonly status: "verified" | "missing" | "hash-mismatch" | "retained" |
     "fresh-target" | "omitted" | "quarantined";
   readonly action: "transfer" | "fresh-target" | "omit" | "quarantine";
+  readonly reason: string | null;
+  readonly impact: string | null;
+  readonly retention: "opaque" | "unknown-retained" | null;
   readonly message: string;
 }
 
@@ -251,6 +254,8 @@ export class MwsCompleteImportMediaAdapter {
       else if (asset.metadataDigest !== record.media!.metadataDigest || asset.byteDigest !== record.media!.byteDigest)
         status = "hash-mismatch";
       let action: MwsCompleteImportMediaRowV1["action"] = "transfer", message = "Medium vollständig verifiziert.";
+      let reason: string | null = null, impact: string | null = null,
+        retention: MwsCompleteImportMediaRowV1["retention"] = null;
       if (inputSnapshot.kind === "complete-import") {
         if (status !== "verified") { blocked = true; message = status === "missing"
           ? "Medium fehlt; Complete-Import ist blockiert."
@@ -261,33 +266,42 @@ export class MwsCompleteImportMediaAdapter {
         action = "omit";
         if (!omissions.has(record.id) || mapped.has(record.id) || quarantine.has(record.id)) {
           blocked = true; message = "Fehlendes Medium braucht genau eine offengelegte Auslassung.";
-        } else message = omissions.get(record.id)!.impact;
+        } else {
+          const item = omissions.get(record.id)!;
+          reason = item.reason; impact = item.impact; message = `${item.reason}: ${item.impact}`;
+        }
       } else {
         action = "quarantine";
         if (!quarantine.has(record.id) || mapped.has(record.id) || omissions.has(record.id)) {
           blocked = true; message = "Hashabweichung braucht genau eine retained Quarantäne.";
         } else {
           const item = quarantine.get(record.id)!;
+          reason = item.reason; retention = item.retention;
           message = `${item.reason} (${item.retention})`;
         }
       }
-      return Object.freeze({ sourceId: record.id, recordType: record.recordType, status, action, message });
+      return Object.freeze({ sourceId: record.id, recordType: record.recordType, status, action,
+        reason, impact, retention, message });
     });
     const otherRows = projection.owners.flatMap((owner) => owner.records.filter((record) =>
       MEDIA_TYPES.has(record.recordType) && record.recordType !== "audio-source").map((record): MwsCompleteImportMediaRowV1 => {
       if (record.recordType === "ambience-override") return Object.freeze({
         sourceId: record.id, recordType: record.recordType, status: "fresh-target" as const,
         action: "fresh-target" as const,
+        reason: null, impact: null, retention: null,
         message: "Quellengebundener Override wird nicht übertragen; frische Zielprojektion ist bestätigt.",
       });
       const omission = omissions.get(record.id), retained = quarantine.get(record.id);
       if (omission) return Object.freeze({ sourceId: record.id, recordType: record.recordType,
-        status: "omitted" as const, action: "omit" as const, message: omission.impact });
+        status: "omitted" as const, action: "omit" as const, reason: omission.reason,
+        impact: omission.impact, retention: null, message: `${omission.reason}: ${omission.impact}` });
       if (retained) return Object.freeze({ sourceId: record.id, recordType: record.recordType,
         status: "quarantined" as const, action: "quarantine" as const,
+        reason: retained.reason, impact: null, retention: retained.retention,
         message: `${retained.reason} (${retained.retention})` });
       return Object.freeze({ sourceId: record.id, recordType: record.recordType,
         status: "retained" as const, action: "transfer" as const,
+        reason: null, impact: null, retention: null,
         message: record.recordType === "manual-decision"
           ? "Dauerhafte manuelle Entscheidung bleibt als Survivor erhalten."
           : "Medienabhängigkeit wird mit vollständigem ID-Remap übertragen." });
