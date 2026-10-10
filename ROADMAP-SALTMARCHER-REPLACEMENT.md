@@ -157,6 +157,9 @@ Integrationsweg, nicht automatisch die gesamte Karten-/Stadtfunktion.
 
 ### SMR-07 – Reise, Kalender und autoritative Zeit
 
+- Kalender-/Zeitkern und providerneutrale Reise parallel entwickeln. Kalenderregeln
+  warten nicht auf die fertige Reise; autoritative Scene-Zeit konsumiert den
+  bestätigten Scene-/Owner-/Publishvertrag. Bestehenden Fachbesitz in #10 erhalten.
 - Hex-, Dungeon- und Atlasprovider hinter einem hostneutralen Vertrag
   vereinen; Preview/Confirm, Unterbrechung, Ereignisse, Tracks und kausales
   Undo/Redo umsetzen.
@@ -255,8 +258,10 @@ Fachabnahmen und rechtfertigt keinen eigenen Shop-/Wetter-/Music-Snapshotstore.
 - `SMR-05` benötigt Katalog und Party/Scene. Manuelles `SMR-06` benötigt Campaign
   und seinen eigenen Schreibvertrag; Orte sind optional. Erst die
   Encounter-/Reward-Generierung benötigt zusätzlich Party, Encounter und Loot.
-- `SMR-07` benötigt Scene und Karten. Kalender/Zeit sind Voraussetzung für
-  Restock, Wetter und Autonomie in `SMR-08/09`.
+- Reise in `SMR-07` benötigt Scene, Kartenposition und den Zeitport; Kalenderregeln
+  benötigen keinen abgeschlossenen Reiseablauf. Autoritative Scene-Zeit braucht
+  ihren konkreten Scene-/Owner-/Publishvertrag. Restock, zeitabhängiges Wetter und
+  Autonomie konsumieren diesen Port, nicht den Abschluss sämtlicher Reisearbeit.
 - Aktuellen Rollenvertrag und Claim verwenden; historische Teamaufteilungen
   sind keine Beschränkung neuer Beiträge. Geprüfte Pfade, Belege und
   Dateibesitze bleiben erhalten. Kein zweiter Besitzer ändert gleichzeitig

@@ -96,9 +96,36 @@ Negative Goldens schützen Table-/Variant-IDs, Rarität, Würfelbereiche,
 Kapazität, Charge-Loss, Fließtextbedingungen und Aufzählungen. Kein Schema-
 oder Produktvertrag wurde erweitert; der W25-Korpuscount-Test prüft nun die
 Inventarlänge statt den historischen Zwischenstand 252, ohne Quellenfakten
-oder W25-Orakel abzuschwächen. W26-Review/Integration bleiben offen.
-Stand: 267 Occurrences / 266 Records, 48/239 A–Z-Headings
-(47 standalone plus Potion-of-Healing-Merge); 191 A–Z-Headings plus Orb offen.
+oder W25-Orakel abzuschwächen. W26 ist unabhängig auf
+`67daede8eb4c5debafa98115f12b6e516c54e3be` geprüft
+([Stadt-Review 5480616259](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/66#pullrequestreview-5480616259))
+und regulär auf Shared `9e3a6c1bbd6484a356c00c268083b147cd7cc6ae` integriert
+([Stewardabschluss](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/66#issuecomment-6101632238)).
+
+W27 ergänzt den vollständigen D-Abschnitt A–Z48–62, Dagger of Venom bis
+Dwarven Thrower, physische/gedruckte Seiten215–220. Alle Header und Prosa,
+einschließlich Dancing-Sword-Seitenfortsetzung, Fluch, Recharge und
+bedingtem Dwarf-Attunement bleiben vollständig. Deck of Illusions behält
+33 physische Tabellenzeilen (Jokers(2) ist eine Zeile), Deck of Many Things
+alle22 Tabellenzeilen, die13-vs22-Fußnote und sämtliche22 Kartenwirkungen.
+Der vollständige eingebettete Avatar-of-Death-Statblock bleibt in der
+Quellreihenfolge unter Skull, ohne zusätzliche Item-Occurrence oder Änderung
+des Monsterkorpus. Dragon Scale Mail bewahrt zehn Drachen-/Resistenzzellen
+und ihre fünf physischen gepaarten Zeilen. Karten-/Drachentypen sind keine
+erfundenen Raritätsvarianten oder Detailheadings; optional strukturierte
+Kosten/Gewicht/Kampfwerte werden nicht aus Prosa erfunden.
+
+`tools/items-srd51-d-section.mjs` prüft vollständige Headingblöcke bis zur
+Folgeüberschrift. Originale sechs vollständige Poppler25.03-XML-Seiten samt
+Hash-/Lizenzreceipt liegen unter `tests/fixtures/items-srd51-d-section-poppler-25.03.*`.
+Goldens schützen Karten-/Suit-/Resistenzzuordnung trotz gleicher Wertemengen,
+Fußnote, alle Kartenregeln, Statblock, Einschränkungen und Quellinterpunktion.
+W27-Review/Integration bleiben offen; Schema, Attribution, Produktcode und
+alte Quellen-/Verifiergoldens bleiben unverändert. Der Gesamtquellenauftrag
+endet nicht an diesem Zwischenstand: nächster kohärenter Abschnitt beginnt
+bei Efficient Quiver; I01 bleibt vor unabhängigem vollständigem S01-R01 gesperrt.
+Stand: 282 Occurrences / 281 Records, 63/239 A–Z-Headings
+(62 standalone plus Potion-of-Healing-Merge); 176 A–Z-Headings plus Orb offen.
 Der erwartete vollständige Occurrence-Count ist 459 (219 Ausrüstung +
 239 A–Z + Orb), nicht der jeweilige Zwischenstand; bekannte Mergezahl bisher 1,
 weitere Merge-/Helperprüfung bleibt offen. `complete:false` bleibt gesetzt.
