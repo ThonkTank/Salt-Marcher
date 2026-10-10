@@ -30,7 +30,7 @@ test("remaining B-section: complete original three-page XML hash, attribution an
   assert.equal(Buffer.byteLength(xml), receipt.xmlBytes);
   assert.equal(checkXml(xml).records, 15);
   assert.equal(inventory.expectedPrimaryOccurrences, 459);
-  assert.equal(inventory.capturedPrimaryOccurrences, 252);
+  assert.equal(inventory.capturedPrimaryOccurrences, inventory.occurrences.length);
   assert.equal(inventory.complete, false);
   assert.equal(transcript.complete, false);
 });

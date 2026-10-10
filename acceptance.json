@@ -570,7 +570,7 @@
       "review": "R01 on exact 8c5c5680054b8dddd89900733ac7bbfe966876f1 required seven repairs (Issue #1 comment 6085178049). N01-R01 on exact 01a02ef124e3ffc02b626019f89f5e216612f7ab required S01 cycle/schema repairs (Issue #1 comment 6085248851). N02-R01 on exact 3b7e5c933a107da6f406aa44037decf316d09b77 found a variable-rarity schema gap (Issue #1 comment 6085306351). N03-R01 PASSED exact 679d432e145bd9afe766393346e4b788931886ea with no remaining mandatory plan finding (Issue #1 comment 6085341786). This approves planning only; S01 and I01 are undelivered."
     },
     "ce02I02Source": {
-      "run": "CE-02-I02-S01-W25",
+      "run": "CE-02-I02-S01-W26",
       "state": "source_checked_independent_review_pending_incomplete",
       "sourceDocument": "https://media.wizards.com/2023/downloads/dnd/SRD_CC_v5.1.pdf",
       "sourceSha256": "2504d2a0abb0a4d491a939be4f17910a2dde0312570ab8d208080225ccf0a1f0",
@@ -616,7 +616,7 @@
         "Armor, +1, +2, or +3 captured as exact A–Z ordinal 8 with occurrence-bound full header/prose, explicit not-required attunement and ordered +1/+2/+3 mappings to rare/very-rare/legendary",
         "Armor of Invulnerability captured as exact A–Z ordinal 9 with occurrence-bound full header/prose, fixed legendary rarity and required attunement",
         "explicit first-occurrence Potion-of-Healing detail merge with complete no-attunement header, variable rarity and four occurrence-bound variants",
-        "real-PDF evidence for 252 occurrence labels, 848 structured or sourced-description facts, dedicated Apparatus, Armor +1/+2/+3 and Armor of Invulnerability gates, the Potion-of-Healing merge/header/four-row table, 13 bounded Armor rows, 37 bounded Weapons rows, 99 bounded Adventuring Gear rows, 35 bounded Tools rows, 8 bounded Mounts rows, 14 bounded Tack rows, 6 bounded Waterborne rows, 21 helper dispositions and one cross-reference with two facts",
+        "real-PDF evidence for 267 occurrence labels, 954 structured or sourced-description facts, dedicated Apparatus, Armor +1/+2/+3 and Armor of Invulnerability gates, the Potion-of-Healing merge/header/four-row table, 13 bounded Armor rows, 37 bounded Weapons rows, 99 bounded Adventuring Gear rows, 35 bounded Tools rows, 8 bounded Mounts rows, 14 bounded Tack rows, 6 bounded Waterborne rows, 21 helper dispositions and one cross-reference with two facts",
         "Armor, Weapons, two-column Adventuring Gear, right-column Tools, split-page Mounts, left-column Tack and Waterborne same-row bounded-cell rejection, Potion merge identity/ordering/source/variant rejection, Spear, Blowgun, Sling, Net, Adventuring Gear omissions/grouping, Equipment Pack ordering/content, Tools ordering/categories/optional weights/punctuation, Mount ordering/structured facts/helper expansion, Barding formula/source expansion, missing Stabling weight, Waterborne fractional mph/Rowboat weight and no-invented-cross-reference-identity goldens",
         "Animated Shield, Apparatus, Armor +1/+2/+3 and Armor of Invulnerability identity/page/ordinal/header/rarity/attunement/prose rejection, ordered Armor variant rejection and Apparatus lever-table row/cell-order rejection",
         "fail-closed incomplete-package gate",
@@ -624,35 +624,28 @@
         "Armor/Arrow ordinals 10–13, full curse/prose, all ten resistance choices, exact whole-heading PDF stream and negative identity/fact/table/page/heading goldens",
         "W23-N01 replaces the absolute footer Y band by exact SRD-footer/page identification and preserves all body text; real hash-bound Poppler XML, derived high-coordinate shapes, invalid footer/body failures and opt-in full official PDF integration test",
         "Bags A–Z ordinals 14–17: all twelve source d100 ranges/effects, twenty-four color/die-bound creatures, complete prose/header/physical spans and full heading-block XML oracle with real hash-bound original pages",
-        "Entire remaining B-section headings18–32: every source header/prose/bullet, five physical Giant-Strength rows with ordinal-bound rarity choices and full six-varieties prose, cross-page Berserker curse, exact whole-heading PDF/real-XML goldens; final expected occurrence count459, captured252, complete:false"
+        "Entire remaining B-section headings18–32: every source header/prose/bullet, five physical Giant-Strength rows with ordinal-bound rarity choices and full six-varieties prose, cross-page Berserker curse, exact whole-heading PDF/real-XML goldens; final expected occurrence count459, captured252, complete:false",
+        "Complete C-section A–Z33–47 on physical/printed pages213–215: fifteen full headers/prose/conditional rules and page continuations; nine Candle alignment rows, four Carpet size/capacity/speed rows, four Crystal Ball variant-specific rarity choices, six Cube faces and five charge-loss rows. Tables remain also in original prose order; whole-heading PDF/XML/schema/identity gates pass. No invented occurrences, merges, costs or conversions. All complete flags false, no Item product activation."
       ],
       "verification": {
-        "sourceRevision": "93b670aca7927e1915f4c299eb131b4faa8b9fe3+working-source-changes",
+        "sourceRevision": "113e37f21670abb42c19b62f4f4480b511e65544+working-source-changes",
         "check": "passed",
-        "tests": {
-          "command": "SRD51_SOURCE_PDF=/tmp/SRD_CC_v5.1.pdf npm test",
-          "passed": 765,
-          "failed": 0,
-          "skipped": 0,
-          "officialPdfEnabled": true,
-          "integratedShared": "93b670aca7927e1915f4c299eb131b4faa8b9fe3"
-        },
         "build": "passed",
         "focusedTests": {
-          "command": "SRD51_SOURCE_PDF=/tmp/SRD_CC_v5.1.pdf node --test --test-concurrency=1 tests/items-srd51-source.test.mjs tests/items-srd51-bags.test.mjs tests/items-srd51-b-section.test.mjs",
-          "passed": 95,
+          "command": "SRD51_SOURCE_PDF=/tmp/SRD_CC_v5.1.pdf node --test --test-concurrency=1 tests/items-srd51-source.test.mjs tests/items-srd51-bags.test.mjs tests/items-srd51-b-section.test.mjs tests/items-srd51-c-section.test.mjs",
+          "passed": 130,
           "failed": 0,
           "skipped": 0
         },
         "pdfIdentity": "passed",
         "occurrences": {
-          "checked": 252
+          "checked": 267
         },
         "transcriptRecords": {
-          "checked": 251
+          "checked": 266
         },
         "structuredAndDescriptionFacts": {
-          "checked": 848
+          "checked": 954
         },
         "magicItemAzOpeningSlice": {
           "records": 5,
@@ -775,13 +768,13 @@
           "localPoppler2507Executed": false
         },
         "toolchain": {
-          "node": "official Node.js22.22.2",
+          "node": "official Node22.22.2",
           "poppler": "pdftohtml/pdftotext25.03.0",
           "pdfPath": "/tmp/SRD_CC_v5.1.pdf",
           "pdfSha256": "2504d2a0abb0a4d491a939be4f17910a2dde0312570ab8d208080225ccf0a1f0",
-          "xmlPath": "tests/fixtures/items-srd51-b-section-poppler-25.03.xml",
-          "xmlSha256": "0313b37e900151b1f7e8f099303f64a3a0f198c6501bb4ff5effdcb620d56df2",
-          "xmlBytes": 42516
+          "xmlPath": "tests/fixtures/items-srd51-c-section-poppler-25.03.xml",
+          "xmlSha256": "8934d79d1b7c9abaabb9376eb58a026d6843ed6b0cec3a7660bd16ec23cc9aaa",
+          "xmlBytes": 45910
         },
         "magicItemAzBags": {
           "ordinals": [
@@ -804,13 +797,13 @@
         },
         "sourceHashes": {
           "attribution": "f66d55442488e79895501fc0fcd7b2bb62deb2bd6e589e0fffb5f5932ed5b767",
-          "inventory": "a424c2c6e9c2e39d8692267d4438bba5e5a99b1d437242c0e59f6ae040bc5f97",
-          "manifest": "d972a3b5b6c1eb5a19e596940a950715921107f9cf7bf215c693798f9ef2228b",
+          "inventory": "cc313d24d5f859e46697e0da54c086ea688858cf5e859a738123b429ee762432",
+          "manifest": "d0b3c64f5e3eeb921704ba34f23769ae1a279963dcb1815eaa1f80d7f768f779",
           "schema": "f34513e5c8921edecdfc270889a1948330837470fe108fcda92d2fea7d75f50f",
-          "transcript": "d0baf90057e8189ab6b284bc880791b7759ba1e606ff5af190094c935687392d"
+          "transcript": "b27c75e17e4798a354ddd494cf8045c21b3d5a2f458a4407bc9a33334e3307df"
         },
-        "records": 251,
-        "transcriptFacts": 848,
+        "records": 266,
+        "transcriptFacts": 954,
         "magicItemAzBSection": {
           "ordinals": [
             18,
@@ -841,14 +834,47 @@
         },
         "pdf": {
           "records": 15,
-          "beltTableRows": 5,
-          "beltProseVarieties": 6,
+          "candleAlignmentRows": 9,
+          "carpetRows": 4,
+          "crystalBallChoices": 4,
+          "cubeFaceRows": 6,
+          "cubeChargeLossRows": 5,
           "derivedHeadingCount": 239,
-          "scope": "complete-heading-bounded-stream-with-combined-variant-row-and-cross-page-curse"
+          "scope": "complete-heading-stream-with-interleaved-tables-variant-prose-and-page-continuations"
         },
-        "typecheck": "passed on integrated Shared93b670a plus W25 source changes"
+        "magicItemAzCSection": {
+          "ordinals": [
+            33,
+            34,
+            35,
+            36,
+            37,
+            38,
+            39,
+            40,
+            41,
+            42,
+            43,
+            44,
+            45,
+            46,
+            47
+          ],
+          "records": 15,
+          "pages": [
+            213,
+            214,
+            215
+          ],
+          "candleAlignmentRows": 9,
+          "carpetRows": 4,
+          "crystalBallChoices": 4,
+          "cubeFaceRows": 6,
+          "cubeChargeLossRows": 5
+        },
+        "basisChecks": "Offline source/tool package: source+schema+real-PDF+focused regression+repo/diff/retention checks. Exact-SHA CI supplies full type/test/build after publication; no local repeated unrelated full-suite/host requirement from old conversation cycles."
       },
-      "limits": "Partial full-S01 corpus: 206 A–Z headings plus Orb, all362 magic-item helper dispositions, remaining goldens and independent complete S01-R01 remain open. W25 independent source review/integration pending. complete:false, Item artifact/provider/UI/I01 blocked; no installation, GUI, physical, E2E or Encounter runtime approval.",
+      "limits": "Partial fullS01:191 A–Z headings plus Orb, all362 magic helper dispositions, remaining goldens and independent complete S01-R01 open. Independent W26 source review/regular integration pending; Item artifact/provider/UI/I01 blocked, no installation/GUI/physical/E2E/Encounter runtime approval. D&D2014 only.",
       "magicItemAzArmorArrowsEvidence": "A–Z ordinals 10–13 on physical/printed pages 208–209 preserve complete headers and prose, vulnerability curse, slaying rules and ten ordered die-bound resistance choices. Full heading-bounded XML text and physical two-column table order are checked, not merely substring presence.",
       "repairReview": {
         "state": "PASS",
@@ -893,7 +919,26 @@
         "compositionReview": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/56#issuecomment-6100998871",
         "receipt": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/56#issuecomment-6101011261",
         "limits": "Independent Stadt/Dungeon evidence, not repeated or self-ratified; no complete-S01/product/host gate"
-      }
+      },
+      "w25Review": {
+        "state": "PASS",
+        "reviewedCommit": "8772d950301b899c22f8bc4588e35bd2a5fe6dde",
+        "issue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/64#pullrequestreview-5480446444",
+        "scope": "Independent Chronik full15-item visual/PDF review, actual Poppler25.07 and765/765PDF suite; not author-owned or a fullS01/product/host gate"
+      },
+      "w25Integration": {
+        "state": "completed",
+        "sharedCommit": "ebb480eaac0c11640b843b4fa4297f541951d4ad",
+        "candidateCommit": "8772d950301b899c22f8bc4588e35bd2a5fe6dde",
+        "receipt": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/64#issuecomment-6101348349",
+        "sourceReview": {
+          "state": "PASS",
+          "reviewedCommit": "8772d950301b899c22f8bc4588e35bd2a5fe6dde",
+          "issue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/64#pullrequestreview-5480446444",
+          "scope": "Independent Chronik full15-item visual/PDF review, actual Poppler25.07 and765/765PDF suite; not author-owned or a fullS01/product/host gate"
+        }
+      },
+      "magicItemAzCSectionEvidence": "Complete C-section A–Z33–47 on physical/printed pages213–215: fifteen full headers/prose/conditional rules and page continuations; nine Candle alignment rows, four Carpet size/capacity/speed rows, four Crystal Ball variant-specific rarity choices, six Cube faces and five charge-loss rows. Tables remain also in original prose order; whole-heading PDF/XML/schema/identity gates pass. No invented occurrences, merges, costs or conversions. All complete flags false, no Item product activation."
     }
   },
   "cityPlans": {
