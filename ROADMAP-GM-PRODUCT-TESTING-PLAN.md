@@ -1,5 +1,13 @@
 # Produkttests aus GM-Sicht
 
+Aktueller rollenübergreifender GUI-Testauftrag: [gm-test](docs/AGENT-ROLES.md#gm-test).
+Er umfasst das integrierte Gesamtprodukt entlang der [Lieferwege](docs/ROADMAP.md),
+einschließlich Erreichbarkeit aus dem normalen Produkteinstieg und Fortsetzung
+über Featuregrenzen. Die folgenden Dungeon-Szenarien und datierten Laufbelege
+bleiben konkrete Testquellen, keine Beschränkung auf Dungeon oder Pflichtlektüre
+bei jedem Einstieg. Aktuelle Fortsetzung im Aufgabenissue und gezielt in
+`checkpoint.gmProductTesting` lesen; historische Nachweise nur bei Bedarf.
+
 ## Auftrag und aktueller Stand
 
 Direkter Nutzerauftrag vom 09.10.2026: das Produkt wie ein Endanwender in längeren Arbeitsabläufen benutzen; Hindernisse, unnötige Umwege, langsame häufige GM-Aktionen und störende selten gebrauchte UI erfassen. Daraus konkrete Nacharbeiten planen, an zuständige Kollegen beauftragen und anschließend erneut im Nutzerablauf prüfen.
@@ -71,8 +79,8 @@ Priorisierung: P0 Daten-/Textverlust oder blockierter Kernablauf; P1 häufig wie
 - **GM-UX-CLOUD – dieser Cloud-Arbeitsstrang:** isolierten Obsidian-Host mit eigenem Testvault und bedienbarer Oberfläche einrichten. Ergebnis: dokumentierte Obsidian-Version, Produktbuild, Bildschirmgröße, Eingabeweg und Cloud-Belegpfad. Keine Slotfreigabe oder Laptopverbindung erforderlich. GM-UX-ACCESS ist durch die Nutzerkorrektur aufgehoben.
 - **GM-UX-01 – dieser Arbeitsstrang:** ersten Cloud-Produktlauf durchspielen, Belege prüfen und priorisierte Befunde aufbereiten. Kein Ersatz durch wiederholte technische Standardtests.
 - **GM-UX-N-001 – Dungeon-Verantwortlicher:** Rechteck-Raum-Schnellmodus; Umsetzung separat reviewt, eigener Cloud-Nachtest bestanden. Folgeaufgaben nach Befund: zuständiger Produktkollege nach Eingrenzung.
-- **GM-UX-N-### – zuständiger Produktkollege nach Befund:** pro Nacharbeit ein kleiner Auftrag mit Bezug auf GM-UX-ID, Nutzerproblem, begrenztem Änderungsziel, betroffenen Dateien/Komponenten, Priorität, Abhängigkeiten und überprüfbarem Abnahmekriterium. Dungeonverhalten an den Dungeon-Verantwortlichen, Atlas an Hex, Stadt an City; gemeinsame UI einer Person zur Umsetzung geben. Zuteilung im Koordinationsthread ausdrücklich melden und Annahme/Verfügbarkeit erfassen.
-- **GM-UX-R-### – dieser Arbeitsstrang:** denselben Nutzerablauf auf dem gelieferten Build wiederholen. Abnahme umfasst erreichtes Nutzerziel, vorher/nachher Bedienkosten, erhaltene Texte/Links, Undo/Redo und Speichern/Neuöffnen soweit betroffen. Bei UI-Verschiebungen auch den seltenen ausgelagerten Befehl wiederfinden und bedienen.
+- **GM-UX-N-### – Befund im bestehenden Produktpaket:** zusammenhängendes Nutzerproblem samt Beleg, betroffener Wirkung und überprüfbarem Ergebnis an den vorhandenen Paket-/Fachowner übergeben. Neues Issue nur für eigenständigen unbesetzten Reparaturbedarf; keine Karte je Befundfeld/Prüfphase. Besitz/Selbstübernahme nach [REPOSITORY](docs/REPOSITORY.md#selbstorganisation-ohne-zentrale-zuweisung), keine zentrale Zuteilung oder zusätzliche Koordinationsrunde.
+- **GM-UX-R-### – Nachtest im selben Ergebnispaket:** denselben betroffenen Nutzerablauf auf dem gelieferten Build wiederholen. Erreichtes Nutzerziel, vorher/nachher Bedienkosten, erhaltene Texte/Links, Undo/Redo und Speichern/Neuöffnen soweit betroffen; bei UI-Verschiebungen auch den ausgelagerten Befehl wiederfinden und bedienen. Kennungen referenzieren Nachweise, keine separaten allgemeinen Review-/Cleanupaufträge.
 
 Neue Nacharbeitstickets entstehen aus belegten Befunden. GM-UX-N-001 und GM-UX-N-002 sind nach Cloud-Nachtests für die beschriebenen Abläufe abgeschlossen. Der fortlaufende GM-Szenariotest, breiter Fenstervergleich zu GM-UX-OBS-01 und weitere Spielinformationssuche stehen aus. Abschluss eines Tickets erst nach erfolgreicher Nachprüfung, ohne die separaten HEX-/CITY-/Originalparitätsgates zu schließen.
 

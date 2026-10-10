@@ -4,14 +4,15 @@
     "state": "completed",
     "roleContract": "docs/AGENT-ROLES.md#repository-maintenance",
     "repositoryContract": "docs/REPOSITORY.md",
-    "evaluatedShared": "a4d63424091c9159efdf94e522352d6da332cc36",
-    "scope": "Implemented the revised task-maintenance role in the existing remote-loaded contract. Existing automation enabled with unchanged two-hour schedule and authority; no extra role/controller.",
-    "next": "Follow docs/AGENT-ROLES.md; task-maintenance repairs evidenced coordination gaps, product-value owns priority and package/domain owners retain delivery decisions. No duplicate queue or prompt rules.",
+    "evaluatedShared": "87b37142a2c1478a06746d9d85600ea5ae2163d2",
+    "scope": "Strengthened existing gm-test role for integrated user-visible workflows, discoverability and real GUI consumption; aligned legacy task instructions without changing historical evidence or GM-owned state.",
+    "next": "Existing gm-test automation loads the current role on next entry. Select runnable integrated user workflows; retain scope-specific evidence and owner boundaries, report missing UI connections at the package.",
     "verification": [
-      "check:repo and affected diff/JSON preservation check",
-      "Enabled task-maintenance automation reads AGENTS.md and docs/AGENT-ROLES.md from default branch; prompt/schedule unchanged"
+      "check:repo and affected source/diff preservation PASS",
+      "Enabled hourly gm-test automation uses current default-branch role contract",
+      "Historical GM evidence, foreign role sections/checkpoint roots and acceptance preserved"
     ],
-    "previousOrientation": "a4d6342"
+    "previousOrientation": "87b3714"
   },
   "saltMarcherReplacement": {
     "date": "2026-10-10",
