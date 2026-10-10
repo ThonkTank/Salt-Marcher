@@ -7,6 +7,7 @@ import {
   Notice,
   Setting,
   TFile,
+  type WorkspaceLeaf,
 } from "obsidian";
 import { AtlasEditor } from "../features/atlas/atlas-editor";
 import {
@@ -22,6 +23,12 @@ import { parseDocument } from "../model";
 import { CitySource } from "../features/city/commands";
 import { DungeonAtlasSource } from "../features/dungeon/atlas-source";
 import { CopyAtlasModal } from "./atlas-copy-modal";
+import { AtlasCampaignHost, type AtlasCampaignServices } from "./atlas-campaign-host";
+import type { AtlasCampaignMount, AtlasMountInput } from "../features/atlas/atlas-campaign-navigation";
+import { sameSnapshot } from "../features/campaign/campaign-contracts";
+import { parseLocationDocument } from "../features/location/location-schema";
+import { newLocationPath } from "../features/atlas/location-owners";
+import type { RelativeAtlasCamera } from "../features/atlas/relative-frame";
 
 export const ATLAS_VIEW = "dungeon-native-atlas";
 export class AtlasView extends FileView {
@@ -29,6 +36,15 @@ export class AtlasView extends FileView {
   private repository?: AtlasRepository;
   private generation = 0;
   private lifecycle: Promise<void> = Promise.resolve();
+  private campaignHost?: AtlasCampaignHost;
+  private pickerHost?: HTMLElement;
+  private canvasHost?: HTMLElement;
+  private retainedHost?: HTMLElement;
+  private statusHost?: HTMLElement;
+  private managed = false;
+  private discardedCamera?: { contextToken: string; camera: RelativeAtlasCamera };
+  private assertCurrent: () => void = () => {};
+  constructor(leaf: WorkspaceLeaf, private readonly campaigns?: AtlasCampaignServices) { super(leaf); }
   getViewType(): string {
     return ATLAS_VIEW;
   }
@@ -43,6 +59,8 @@ export class AtlasView extends FileView {
     return this.sequence(async () => {
       if (generation !== this.generation) return;
       await this.closeEditor();
+      if (this.campaignHost && this.pickerHost) this.campaignHost.destroy(this.pickerHost);
+      this.campaignHost = undefined;
       if (generation === this.generation)
         await this.loadFileContent(file, generation);
     });
@@ -68,6 +86,115 @@ export class AtlasView extends FileView {
     }
     this.editor = undefined;
     this.repository = undefined;
+    this.managed = false;
+    this.assertCurrent = () => {};
+  }
+  private async campaignMount(input: AtlasMountInput): Promise<AtlasCampaignMount> {
+    let alive = true, disposed = false, retained = false;
+    const lease = () => {
+      this.campaigns!.assertOpen?.();
+      const context = this.campaigns!.provider.currentContext();
+      if (!alive || !context || !sameSnapshot(context, input.context) || context.contextToken !== input.context.contextToken)
+        throw new Error("Die Kampagnenbindung dieses Atlas wurde widerrufen.");
+    };
+    const vault = new VaultStore(this.app);
+    const repository = new AtlasRepository({
+      read: async (path) => { lease(); const raw = await vault.read(path); lease(); return raw; },
+      // FileTransaction guards the initial journal boundary. Its won old journal must finish under its old paths.
+      compareAndWrite: (path, before, after) => vault.compareAndWrite(path, before, after),
+    }, input.inventory.files.find((f) => f.kind === "world" && f.id === input.inventory.worldId)!.path, this.app.vault, {
+      ...this.spatialOptions(), assertCurrent: lease,
+      resolveLocation: async (id) => {
+        lease();
+        const expected = input.inventory.files.find((f) => f.kind === "location" && f.id === id);
+        if (!expected) return newLocationPath(id); // explicitly local, unregistered drafts
+        const matches: string[] = [];
+        for (const file of this.app.vault.getFiles().filter((f) => f.extension === "location")) {
+          lease(); const raw = await this.app.vault.read(file); lease();
+          try { if (parseLocationDocument(raw).id === id) matches.push(file.path); } catch { /* nonmatching malformed candidate */ }
+        }
+        if (matches.length !== 1 || matches[0] !== expected.path) throw new Error("Bestätigte Ortsdatei fehlt oder ist mehrdeutig.");
+        return expected.path;
+      },
+      resolveDetail: async (worldId, kind, id) => {
+        lease();
+        const matches = await this.spatialOptions().resolveDetail(worldId, kind, id); lease();
+        const expected = input.inventory.files.find((f) => f.kind === kind && f.id === id);
+        if (!expected || matches.length !== 1 || matches[0] !== expected.path) throw new Error("Bestätigte Detaildatei fehlt oder ist mehrdeutig.");
+        return matches;
+      },
+    });
+    const source = await repository.open(); lease(); input.assertCurrent();
+    const root = this.contentEl.ownerDocument.createElement("div");
+    const editor = new AtlasEditor(root, source.world, source, {
+      assertCurrent: lease,
+      navigation: { details: (id) => this.campaignHost!.details(id), navigate: (target) => { lease(); return this.campaignHost!.navigate(target); } },
+      save: async () => { lease(); await repository.save(); lease(); },
+      changed: async () => { lease(); await repository.persistDraft(); lease(); },
+      status: () => ({ dirty: repository.dirty, hasDraft: repository.hasDraft }),
+      menu: (event) => { lease(); this.showMenu(event, this.generation); },
+      discard: async () => {
+        lease(); const next = await repository.discard(); lease();
+        return next;
+      },
+      discarded: () => {
+        this.discardedCamera = { contextToken: input.context.contextToken, camera: editor.renderer.relativeCamera };
+        queueMicrotask(() => { void this.campaignHost?.reopenAfterDiscard().catch((error) => new Notice(String(error))); });
+      },
+      spatial: {
+        graph: () => repository.spatialGraph,
+        city: (id) => { const s = repository.detail("city", id); if (!(s instanceof CitySource)) throw new Error("Stadtowner fehlt."); return s; },
+        dungeon: (id) => { const s = repository.detail("dungeon", id); if (!(s instanceof DungeonAtlasSource)) throw new Error("Dungeonowner fehlt."); return s; },
+      },
+      locations: {
+        read: (id) => repository.location(id).read(),
+        ensure: async (id) => { lease(); const s = await repository.ensureLocation(id); lease(); return s.read(); },
+        create: (doc, placement) => { lease(); return repository.createLocation(doc, placement); },
+        edit: (doc) => { lease(); return repository.editLocation(doc); },
+        move: (id, position) => { lease(); return repository.moveLocation(id, position); },
+        markdown: (host, text, id) => MarkdownRenderer.render(this.app, text, host,
+          input.inventory.files.find((f) => f.id === id)?.path ?? newLocationPath(id), this),
+      },
+    });
+    editor.setInputBlocked(true);
+    return {
+      repository, renderer: editor.renderer,
+      setInputBlocked: (blocked) => { editor.setInputBlocked(blocked); },
+      prepareNavigation: async (current) => { current(); await editor.flush(); current(); },
+      prepareLeave: async (current) => { current(); await editor.flush(); current(); await repository.persistDraft(); current(); },
+      navigate: (target, current) => { current(); editor.navigate(target, current); },
+      resume: (current) => {
+        current(); lease(); this.canvasHost!.replaceChildren(root);
+        this.editor = editor; this.repository = repository; this.managed = true; this.assertCurrent = lease;
+        if (this.discardedCamera?.contextToken === input.context.contextToken) editor.renderer.restoreCamera(this.discardedCamera.camera);
+        this.discardedCamera = undefined;
+        editor.setInputBlocked(false);
+        void editor.init().catch((error) => { if (alive) { editor.setInputBlocked(true); root.dataset.loadError = String(error); new Notice(String(error)); } });
+      },
+      suspend: () => {
+        alive = false;
+        retained = editor.pendingKey || repository.dirty || repository.hasDraft;
+        if (retained) editor.suspend();
+        return retained ? "blocked-unsaved" : "recoverable";
+      },
+      dispose: () => {
+        if (disposed) return;
+        disposed = true; alive = false;
+        if (this.editor === editor) { this.editor = undefined; this.repository = undefined; this.managed = false; }
+        root.remove();
+        if (retained) {
+          const draft = { title: `Erhaltener Entwurf: ${input.context.name} – ${source.world.name}`, element: root };
+          this.campaigns?.retainDraft?.(draft);
+          this.showRetained(draft);
+        } else editor.destroy();
+      },
+    };
+  }
+  private showRetained(draft: { title: string; element: HTMLElement }): void {
+    const summary = draft.element.ownerDocument.createElement("summary");
+    summary.textContent = draft.title;
+    const details = draft.element.ownerDocument.createElement("details");
+    details.append(summary, draft.element); this.retainedHost?.append(details);
   }
   private spatialOptions() {
     return {
@@ -103,7 +230,27 @@ export class AtlasView extends FileView {
     generation: number,
   ): Promise<void> {
     this.contentEl.replaceChildren();
-    this.contentEl.createEl("p", { text: "Atlas wird geöffnet …" });
+    this.canvasHost = this.contentEl;
+    if (this.campaigns) {
+      this.contentEl.classList.add("dn-atlas-host");
+      this.pickerHost = this.contentEl.createDiv({ cls: "dn-atlas-campaign-dock" });
+      this.statusHost = this.contentEl.createEl("p", { attr: { role: "status" } });
+      this.statusHost.className = "dn-atlas-host-status";
+      this.canvasHost = this.contentEl.createDiv({ cls: "dn-atlas-canvas-host" });
+      this.retainedHost = this.contentEl.createDiv({ cls: "dn-atlas-retained-drafts" });
+      for (const draft of this.campaigns.retainedDrafts ?? []) this.showRetained(draft);
+      this.campaignHost = new AtlasCampaignHost(this.pickerHost, this.campaigns, {
+        openNative: (input) => this.campaignMount(input),
+        prepareUnbound: async () => { if (this.editor && !this.managed) await this.closeEditor(); },
+        changed: (reason) => { if (this.statusHost) this.statusHost.textContent = reason ?? ""; },
+      });
+      try { await this.campaignHost.refresh(); }
+      catch (error) { this.statusHost.textContent = "Kampagnenbestand konnte nicht gelesen werden. " + String(error); return; }
+      if (generation !== this.generation) return;
+      try { if (await this.campaignHost.openFile(file.path)) return; }
+      catch (error) { this.statusHost.textContent = "Kampagne konnte nicht geöffnet werden. " + String(error); return; }
+    }
+    this.canvasHost.createEl("p", { text: "Atlas wird geöffnet …" });
     try {
       const repository = new AtlasRepository(
         new VaultStore(this.app),
@@ -114,7 +261,7 @@ export class AtlasView extends FileView {
       const source = await repository.open();
       if (generation !== this.generation) return;
       this.repository = repository;
-      this.editor = new AtlasEditor(this.contentEl, source.world, source, {
+      this.editor = new AtlasEditor(this.canvasHost, source.world, source, {
         save: () => repository.save(),
         changed: () => repository.persistDraft(),
         status: () => ({
@@ -160,8 +307,8 @@ export class AtlasView extends FileView {
       if (generation !== this.generation) return;
       this.editor?.destroy();
       this.editor = undefined;
-      this.contentEl.replaceChildren();
-      this.contentEl.createEl("p", {
+      this.canvasHost.replaceChildren();
+      this.canvasHost.createEl("p", {
         text: "Atlas konnte nicht geöffnet werden. " + String(error),
       });
     }
@@ -170,6 +317,8 @@ export class AtlasView extends FileView {
     const editor = this.editor,
       repository = this.repository;
     if (!editor || !repository || generation !== this.generation) return;
+    const guard = this.assertCurrent;
+    guard();
     new Menu()
       .addItem((item) =>
         item.setTitle("Speichern unter …").onClick(() => {
@@ -177,9 +326,11 @@ export class AtlasView extends FileView {
             this.app,
             editor.terrain.world.name,
             async (name) => {
+              guard();
               if (generation !== this.generation || this.editor !== editor)
                 throw new Error("Die Ausgangskarte ist nicht mehr geöffnet.");
               await editor.flush();
+              guard();
               if (generation !== this.generation || this.editor !== editor)
                 throw new Error("Die Ausgangskarte ist nicht mehr geöffnet.");
               const path = `Atlanten/${name}.overworld`;
@@ -187,14 +338,16 @@ export class AtlasView extends FileView {
               return this.openCopy(path, generation, editor);
             },
             async (name) => {
+              guard();
               const path = `Atlanten/${name}.overworld`;
               const target = new AtlasRepository(
                 new VaultStore(this.app),
                 path,
                 this.app.vault,
-                this.spatialOptions(),
+                { ...this.spatialOptions(), assertCurrent: guard },
               );
               const state = await target.recoverCopy();
+              guard();
               return { state, open: this.openCopy(path, generation, editor) };
             },
           ).open();
@@ -208,6 +361,7 @@ export class AtlasView extends FileView {
           )
           .onClick(() =>
             new DiscardAtlasModal(this.app, () => {
+              guard();
               if (generation === this.generation && this.editor === editor)
                 editor.discard();
             }).open(),
@@ -230,6 +384,8 @@ export class AtlasView extends FileView {
     this.generation++;
     return this.sequence(async () => {
       await this.closeEditor();
+      if (this.campaignHost && this.pickerHost) this.campaignHost.destroy(this.pickerHost);
+      this.campaignHost = undefined;
       this.contentEl.replaceChildren();
     });
   }

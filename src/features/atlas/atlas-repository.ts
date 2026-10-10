@@ -121,7 +121,7 @@ export class AtlasRepository {
   }
   private exclusive<T>(operation: () => Promise<T>): Promise<T> {
     const result = (queues.get(this.scope) ?? Promise.resolve()).then(
-      operation,
+      () => { this.options.assertCurrent?.(); return operation(); },
     );
     queues.set(
       this.scope,
@@ -252,6 +252,7 @@ export class AtlasRepository {
             (p.endsWith(".city") || p.endsWith(".dungeon"))),
         this.scope,
         (journal) => this.validateRecovery(journal),
+        () => this.options.assertCurrent?.(),
       );
       await recovery.recover();
       raw = await this.store.read(this.worldPath);
@@ -299,11 +300,13 @@ export class AtlasRepository {
           !!this.details?.pathsOwned.includes(p),
         this.scope,
         (journal) => this.validateRecovery(journal),
+        () => this.options.assertCurrent?.(),
       );
       return this.source!;
     });
   }
   private live(stamp: number): void {
+    this.options.assertCurrent?.();
     if (stamp !== this.generation)
       throw new Error("Veralteter Atlas-Ladevorgang.");
   }
@@ -319,7 +322,7 @@ export class AtlasRepository {
     const stamp = ++this.generation;
     this.source = new TerrainSource(
       spatialBase(current),
-      new AtlasHistory(),
+      new AtlasHistory(() => this.options.assertCurrent?.()),
       (ref) => this.load(ref, stamp),
       this.options.details ? spatialState(current) : undefined,
     );
@@ -772,6 +775,8 @@ export class AtlasRepository {
           (this.options.details === true &&
             (p.endsWith(".city") || p.endsWith(".dungeon"))),
         this.scope,
+        undefined,
+        () => this.options.assertCurrent?.(),
       );
       return transaction.recover(async (journal) => {
         if ((await this.store.read(this.draftPath)) !== null)
@@ -935,6 +940,8 @@ export class AtlasRepository {
         path + ".journal",
         (p) => allowed.has(p),
         this.scope,
+        undefined,
+        () => this.options.assertCurrent?.(),
       ).commit(writes);
     });
   }
@@ -1016,6 +1023,7 @@ export class AtlasRepository {
       (p) => allowed.has(p),
       this.scope,
       (j) => validateSpatialCopyJournal(path, j),
+      () => this.options.assertCurrent?.(),
     ).commit(writes);
   }
   /** Retire only this draft; return a fresh saved source without changing canonical files. */

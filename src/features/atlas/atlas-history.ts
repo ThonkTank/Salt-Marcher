@@ -68,6 +68,7 @@ export function sameAtlasValue(a: AtlasValue, b: AtlasValue): boolean {
 }
 /** One history for every owner in the atlas. All owners are validated before any state changes. */
 export class AtlasHistory {
+  constructor(private readonly assertCurrent: () => void = () => {}) {}
   private owners = new Map<string, Owner>();
   private undoStack: AtlasCommand[] = [];
   private redoStack: AtlasCommand[] = [];
@@ -85,6 +86,7 @@ export class AtlasHistory {
     this.epochValue++;
   }
   private writable(): void {
+    this.assertCurrent();
     if (this.checking)
       throw new Error("Atlasprüfung darf den Zustand nicht ändern.");
   }
@@ -215,6 +217,7 @@ export class AtlasHistory {
     return true;
   }
   undo(): boolean {
+    this.writable();
     const command = this.undoStack.at(-1);
     if (!command) return false;
     this.apply(command, true);
@@ -224,6 +227,7 @@ export class AtlasHistory {
     return true;
   }
   redo(): boolean {
+    this.writable();
     const command = this.redoStack.at(-1);
     if (!command) return false;
     this.apply(command, false);

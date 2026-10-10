@@ -55,6 +55,8 @@ import { CreatureCatalogLoader } from "./features/catalog/creature-catalog-loade
 import { CreatureCatalogView } from "./features/catalog/creature-catalog-view";
 import { createUniqueCatalogOpener } from "./features/catalog/creature-catalog-view-content";
 import { ATLAS_VIEW, AtlasView, CreateAtlasModal } from "./ui/atlas-view";
+import { atlasCampaignServices } from "./ui/atlas-campaign-services";
+import { VaultCampaignRuntimeStorage } from "./vault-campaign-runtime-source";
 
 export interface OpenMap {
   session: Session;
@@ -147,6 +149,15 @@ interface CreationAppearance {
   readonly buildingWearMode?: "none" | "grime";
 }
 export default class DungeonPlugin extends Plugin {
+  private campaignServices?: ReturnType<typeof atlasCampaignServices>;
+  private atlasCampaigns(): ReturnType<typeof atlasCampaignServices> {
+    if (!this.campaignServices) {
+      this.campaignServices = atlasCampaignServices(new VaultCampaignRuntimeStorage(this.app),
+        (text) => `sha256:${createHash("sha256").update(text).digest("hex")}`);
+      this.register(() => this.campaignServices?.close());
+    }
+    return this.campaignServices;
+  }
   disableBuildingWearForNewMap = false;
   startWizardForNewMap = false;
   private readonly sessionSizePresets: SizePreset[] = [];
@@ -259,7 +270,7 @@ export default class DungeonPlugin extends Plugin {
     this.registerView(PLAY_VIEW, (leaf) => new DungeonPlayView(leaf, this));
     this.registerView(ROOM_VIEW, (leaf) => new DungeonRoomView(leaf, this));
     this.registerView(CREATURE_CATALOG_VIEW, (leaf) => new CreatureCatalogView(leaf, this));
-    this.registerView(ATLAS_VIEW, (leaf) => new AtlasView(leaf));
+    this.registerView(ATLAS_VIEW, (leaf) => new AtlasView(leaf, this.atlasCampaigns()));
     this.registerObsidianProtocolHandler("dungeon-room", (params) => {
       void this.openRoomLink(params).catch((error) => new Notice(String(error)));
     });

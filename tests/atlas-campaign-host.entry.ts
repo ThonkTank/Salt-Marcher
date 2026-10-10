@@ -1,0 +1,625 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { createHash } from "node:crypto";
+import { parseHTML } from "linkedom";
+import { TFile } from "obsidian";
+import { AtlasView } from "../src/ui/atlas-view";
+import { AtlasRenderer } from "../src/features/atlas/atlas-renderer";
+import { AtlasCampaignHost } from "../src/ui/atlas-campaign-host";
+import { atlasCampaignServices } from "../src/ui/atlas-campaign-services";
+import { VaultCampaignRuntimeStorage } from "../src/vault-campaign-runtime-source";
+import { parseCampaignRuntimeManifest } from "../src/features/campaign/campaign-runtime-source";
+import {
+  campaignId,
+  campaignNamespace,
+  campaignSnapshot,
+  campaignContext,
+  campaignContextToken,
+} from "../src/features/campaign/campaign-contracts";
+import {
+  campaignDomainOwnerPolicyDigest,
+  campaignOwnershipDigestValue,
+  campaignDomainOwnershipProjection,
+  type CampaignDomainOwnerProjectionV1,
+} from "../src/features/campaign/campaign-ownership";
+import { AtlasRepository } from "../src/features/atlas/atlas-repository";
+import { parseLocationDocument } from "../src/features/location/location-schema";
+import { parseCityDocument } from "../src/features/city/codec";
+import { isStructuredRoom, parseDocument } from "../src/model";
+import type { AtlasEditor } from "../src/features/atlas/atlas-editor";
+import { FileConflict } from "../src/persistence";
+
+const uuid = (n: number) =>
+  `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
+const a = campaignId(uuid(700)),
+  b = campaignId(uuid(701));
+const root = "tests/fixtures/atlas-e2e-spatial-v2/";
+const seed = JSON.parse(readFileSync(root + "manifest.json", "utf8"));
+const aPath = seed.input[0].path as string;
+const bPath = "Atlanten/B.overworld";
+const sha = (text: string) =>
+  `sha256:${createHash("sha256").update(text).digest("hex")}`;
+const tick = () => new Promise<void>((resolve) => setImmediate(resolve));
+async function settled(fn: () => boolean, detail: () => string = () => "") {
+  for (let n = 0; n < 200; n++) {
+    if (fn()) return;
+    await new Promise<void>((resolve) => setTimeout(resolve, 10));
+  }
+  assert.ok(fn(), "asynchronous host action did not settle: " + detail());
+}
+class Vault {
+  readonly bytes = new Map<string, string>(
+    seed.input.map((f: { path: string; fixtureFile: string }) => [
+      f.path,
+      readFileSync(root + f.fixtureFile, "utf8"),
+    ]),
+  );
+  readonly files = new Map<string, TFile>();
+  readonly folders = new Set<string>();
+  readonly listeners = new Map<string, Set<(...args: any[]) => void>>();
+  readHook?: (path: string) => Promise<void>;
+  writes: string[] = [];
+  constructor() {
+    for (const path of this.bytes.keys())
+      this.files.set(path, new (TFile as any)(path));
+  }
+  getFiles() {
+    return [...this.files.values()];
+  }
+  getAbstractFileByPath(path: string) {
+    return this.files.get(path) ?? (this.folders.has(path) ? {} : null);
+  }
+  async read(f: TFile) {
+    await this.readHook?.(f.path);
+    const raw = this.bytes.get(f.path);
+    if (raw === undefined) throw new Error("missing " + f.path);
+    return raw;
+  }
+  on(name: string, fn: (...args: any[]) => void) {
+    const set = this.listeners.get(name) ?? new Set();
+    this.listeners.set(name, set);
+    set.add(fn);
+    return { name, fn };
+  }
+  offref(ref: { name: string; fn: (...args: any[]) => void }) {
+    this.listeners.get(ref.name)?.delete(ref.fn);
+  }
+  emit(name: string, ...args: any[]) {
+    for (const fn of this.listeners.get(name) ?? []) fn(...args);
+  }
+  async createFolder(path: string) {
+    this.folders.add(path);
+  }
+  async create(path: string, raw: string) {
+    if (this.bytes.has(path)) throw new FileConflict(path);
+    const f = new (TFile as any)(path);
+    this.files.set(path, f);
+    this.bytes.set(path, raw);
+    this.writes.push(path);
+    this.emit("create", f);
+    return f;
+  }
+  async process(f: TFile, fn: (raw: string) => string) {
+    this.bytes.set(f.path, fn(await this.read(f)));
+    this.writes.push(f.path);
+    this.emit("modify", f);
+  }
+  async trash(f: TFile) {
+    this.bytes.delete(f.path);
+    this.files.delete(f.path);
+    this.writes.push(f.path);
+    this.emit("delete", f);
+  }
+  async cas(path: string, before: string | null, after: string | null) {
+    if ((this.bytes.get(path) ?? null) !== before) throw new FileConflict(path);
+    if (after === null) {
+      const f = this.files.get(path);
+      if (f) await this.trash(f);
+    } else if (before === null) await this.create(path, after);
+    else await this.process(this.files.get(path)!, () => after);
+  }
+}
+function setupDOM() {
+  const { document, window } = parseHTML(
+    '<html><body><div id="host"></div></body></html>',
+  );
+  let focused: HTMLElement | null = null;
+  Object.defineProperty(document, "activeElement", { get: () => focused });
+  Object.defineProperty(window.HTMLElement.prototype, "focus", {
+    configurable: true,
+    value(this: HTMLElement) {
+      focused = this;
+    },
+  });
+  Object.defineProperty(window.HTMLElement.prototype, "createEl", {
+    configurable: true,
+    value(this: HTMLElement, tag: string, opts: any = {}) {
+      const child = this.ownerDocument.createElement(tag);
+      if (opts.text) child.textContent = opts.text;
+      if (opts.cls) child.className = opts.cls;
+      for (const [k, v] of Object.entries(opts.attr ?? {}))
+        child.setAttribute(k, String(v));
+      this.append(child);
+      return child;
+    },
+  });
+  Object.defineProperty(window.HTMLElement.prototype, "createDiv", {
+    configurable: true,
+    value(this: any, opts: any) {
+      return this.createEl("div", opts);
+    },
+  });
+  Object.defineProperty(window.HTMLElement.prototype, "empty", {
+    configurable: true,
+    value(this: HTMLElement) {
+      this.replaceChildren();
+    },
+  });
+  Object.defineProperty(window.HTMLElement.prototype, "clientWidth", {
+    configurable: true,
+    get: () => 800,
+  });
+  Object.defineProperty(window.HTMLElement.prototype, "clientHeight", {
+    configurable: true,
+    get: () => 600,
+  });
+  Object.assign(globalThis, {
+    window,
+    document,
+    requestAnimationFrame: () => 1,
+    cancelAnimationFrame: () => {},
+  });
+  // DOM adapter evidence, not GPU/native evidence: only the GPU initialization is excluded.
+  AtlasRenderer.prototype.init = async () => {};
+  return {
+    document,
+    window,
+    content: document.querySelector<HTMLElement>("#host")!,
+  };
+}
+async function manifest(
+  vault: Vault,
+  path: string,
+  cid: typeof a,
+  namespace: string,
+) {
+  const options = {
+    locations: true as const,
+    details: true as const,
+    resolveLocation: async (id: string) =>
+      [...vault.bytes].find(
+        ([p, raw]) =>
+          p.endsWith(".location") && parseLocationDocument(raw).id === id,
+      )![0],
+    resolveDetail: async (
+      _world: string,
+      kind: "city" | "dungeon",
+      id: string,
+    ) =>
+      [...vault.bytes]
+        .filter(
+          ([p, raw]) =>
+            p.endsWith("." + kind) &&
+            (kind === "city" ? parseCityDocument(raw) : parseDocument(raw))
+              .id === id,
+        )
+        .map(([p]) => p),
+  };
+  const repo = new AtlasRepository(
+    {
+      read: async (p) => vault.bytes.get(p) ?? null,
+      compareAndWrite: (p, before, after) => vault.cas(p, before, after),
+    },
+    path,
+    vault,
+    options,
+  );
+  await repo.open();
+  const capture = await repo.captureNative({
+    worldId: repo.terrainSource.world.id,
+  });
+  const records: any[] = [],
+    payloads = new Map<string, unknown>();
+  const add = (
+    kind: string,
+    id: string,
+    documentId: string,
+    payload: unknown,
+  ) => {
+    records.push({
+      id,
+      kind,
+      documentId,
+      ownerId:
+        kind === "city" || kind === "building"
+          ? "city"
+          : ["dungeon", "room", "room-section"].includes(kind)
+            ? "dungeon"
+            : "atlas",
+      availability: "available",
+    });
+    payloads.set(id, payload);
+  };
+  for (const f of capture.files) {
+    if (f.kind === "terrain") continue;
+    const raw = JSON.parse(f.after!);
+    add(f.kind, raw.id, raw.id, raw);
+    if (f.kind === "location")
+      for (const s of parseLocationDocument(f.after!).sections)
+        add("location-section", s.id, raw.id, s);
+    if (f.kind === "city")
+      for (const h of parseCityDocument(f.after!).buildings)
+        add("building", h.id, raw.id, h);
+    if (f.kind === "dungeon")
+      for (const room of parseDocument(f.after!).entities)
+        if (isStructuredRoom(room)) {
+          add("room", room.id, raw.id, room);
+          for (const s of room.key.sections)
+            add("room-section", s.id, raw.id, s);
+        }
+  }
+  const owners = ["atlas", "city", "dungeon"].map((ownerId) => {
+    const owner: CampaignDomainOwnerProjectionV1 = {
+      ownerId,
+      ownerRevision: "test-owner:1",
+      schemaRevision: "schema:1",
+      snapshotRevision: "snapshot:1",
+      policyRevision: "policy:1",
+      policyDigest: sha("placeholder"),
+      availability: "confirmed",
+      emptyConfirmed: false,
+      referenceSchemas: ["native:1"],
+      source: {
+        adapterType: "native-test-fixture",
+        generation: "test-source:1",
+      },
+      records: records
+        .filter((r) => r.ownerId === ownerId)
+        .map((r) => ({
+          id: r.id,
+          recordType: r.kind,
+          references: [],
+          payloadDigest: sha(JSON.stringify(payloads.get(r.id))),
+          media: null,
+        })),
+      transferPolicies: [],
+    };
+    return {
+      ...owner,
+      policyDigest: campaignDomainOwnerPolicyDigest(owner, sha),
+    };
+  });
+  const snapshot = campaignSnapshot({
+    schemaVersion: 1,
+    campaignId: cid,
+    revision: 1,
+    name: cid === a ? "A" : "B",
+    namespace: campaignNamespace(namespace),
+    lifecycle: "active",
+  });
+  const normalized = campaignDomainOwnershipProjection({
+    version: 1,
+    registryId: `native-fixture:${cid}`,
+    registryRevision: "registry:1",
+    projectionDigest: sha("test"),
+    context: campaignContext(snapshot, campaignContextToken("test-fixture")),
+    owners,
+  }).owners;
+  const registry = {
+    version: 1,
+    registryId: `native-fixture:${cid}`,
+    registryRevision: "registry:1",
+    campaignId: cid,
+    campaignRevision: 1,
+    namespace: snapshot.namespace,
+    owners: normalized,
+  };
+  const value = {
+    version: 1,
+    snapshot,
+    registry: {
+      ...registry,
+      registryContentDigest: campaignOwnershipDigestValue(registry, sha),
+    },
+    atlas: {
+      worldId: capture.worldId,
+      files: capture.files.map((f) => ({
+        kind: f.kind,
+        id: f.id,
+        path: f.path,
+        savedDigest: f.beforeDigest,
+      })),
+      records,
+    },
+  };
+  parseCampaignRuntimeManifest(JSON.stringify(value), sha);
+  await vault.create(
+    `Kampagnen/SaltMarcher/${cid}.campaign.json`,
+    JSON.stringify(value),
+  );
+  return { repo, value };
+}
+async function fixture() {
+  const dom = setupDOM(),
+    vault = new Vault();
+  const first = await manifest(vault, aPath, a, uuid(710));
+  await first.repo.copy(bPath, uuid(999), "B");
+  await manifest(vault, bPath, b, uuid(711));
+  const app = { document: dom.document, vault } as any;
+  const services = atlasCampaignServices(
+    new VaultCampaignRuntimeStorage(app),
+    sha,
+  );
+  const leaf = {
+    app,
+    contentEl: dom.content,
+    openFile: async (_file: TFile) => {},
+  } as any;
+  const view = new AtlasView(leaf, services);
+  await view.onLoadFile(vault.files.get(aPath)!);
+  const host = () => (view as any).campaignHost as AtlasCampaignHost;
+  const editor = () => (view as any).editor as AtlasEditor | undefined;
+  const click = (e: HTMLElement) =>
+    e.dispatchEvent(new dom.window.Event("click", { bubbles: true }));
+  const input = (selector: string, value: string) => {
+    const field = dom.content.querySelector<
+      HTMLInputElement | HTMLTextAreaElement
+    >(selector)!;
+    field.value = value;
+    field.dispatchEvent(new dom.window.Event("input", { bubbles: true }));
+    return field;
+  };
+  const close = async () => {
+    await view.onUnloadFile();
+    services.close();
+  };
+  return { ...dom, vault, services, view, host, editor, click, input, close };
+}
+function active(f: Awaited<ReturnType<typeof fixture>>) {
+  const s = f.host().state;
+  if (s.kind !== "active")
+    assert.fail(s.reason + " : " + f.content.textContent);
+  return s;
+}
+const locationTarget = {
+  kind: "location" as const,
+  documentId: uuid(11),
+  recordId: uuid(11),
+  roomId: null,
+};
+
+test("actual AtlasView mounts real Vault provider; Location dock reaches house and Room Key with one renderer/history", async () => {
+  const f = await fixture(),
+    before = active(f),
+    editor = f.editor()!;
+  await f.host().navigate(locationTarget);
+  assert.match(f.content.textContent!, /Stadtplan:/);
+  assert.match(f.content.textContent!, /Dungeonkarte/);
+  f.input('[aria-label="Ortsname"]', "Neue Ortsbezeichnung");
+  const house =
+    [
+      ...f.content.querySelectorAll<HTMLButtonElement>(
+        ".dn-atlas-detail-entry li button",
+      ),
+    ].find((b) => b.textContent === "E2E-Haus") ??
+    [
+      ...f.content.querySelectorAll<HTMLButtonElement>(
+        ".dn-atlas-detail-entry li button",
+      ),
+    ].find((b) => b.textContent?.includes("Haus"))!;
+  let navigation: Promise<void> | undefined;
+  const navigate = f.host().navigate.bind(f.host());
+  f.host().navigate = (target) => (navigation = navigate(target));
+  assert.ok(house);
+  f.click(house);
+  assert.ok(navigation);
+  await navigation;
+  await tick();
+  assert.equal(editor.renderer.relativeCamera.metersPerPixel, 0.1);
+  assert.deepEqual(editor.renderer.camera.center, { x: -18, y: 8 });
+  assert.equal(active(f).history, before.history);
+  assert.equal(f.editor()!.renderer, editor.renderer);
+  assert.equal(
+    before.repository.location(uuid(11)).read()!.name,
+    "Neue Ortsbezeichnung",
+  );
+  const room = [
+    ...f.content.querySelectorAll<HTMLButtonElement>(
+      ".dn-atlas-detail-entry li button",
+    ),
+  ].find((b) => b.textContent?.startsWith("Raum "))!;
+  assert.ok(room);
+  f.click(room);
+  await navigation;
+  await tick();
+  assert.ok(f.content.querySelector('[aria-label="Raumname"]'));
+  f.input('[aria-label="Raumname"]', "Gemeinsamer Raum-Key");
+  await editor.flush();
+  assert.equal(active(f).history, before.history);
+  assert.ok(before.history.undoDepth >= 2);
+  before.history.undo();
+  before.history.redo();
+  await editor.flush();
+  assert.equal(
+    f.content.querySelector<HTMLInputElement>('[aria-label="Raumname"]')!.value,
+    "Gemeinsamer Raum-Key",
+  );
+  await f.close();
+});
+
+test("invalid Location Key stops actual campaign activation; A-B-A remounts fresh native identities and retains old drafts", async () => {
+  const f = await fixture();
+  await f.host().navigate(locationTarget);
+  const old = active(f),
+    renderer = f.editor()!.renderer;
+  f.input('[aria-label="Ortsname"]', "");
+  await assert.rejects(f.host().openCampaign(b));
+  assert.equal(f.services.provider.currentContext()!.campaignId, a);
+  assert.equal(f.editor()!.renderer, renderer);
+  assert.equal(
+    f.content.querySelector<HTMLInputElement>('[aria-label="Ortsname"]')!.value,
+    "",
+  );
+  f.input('[aria-label="Ortsname"]', "Gesicherter Wechselentwurf");
+  await f.host().openCampaign(b);
+  const second = active(f);
+  assert.equal(second.context.campaignId, b);
+  assert.notEqual(second.history, old.history);
+  assert.throws(() => old.history.undo(), /widerrufen/);
+  await f.host().openCampaign(a);
+  const third = active(f);
+  assert.notEqual(third.context.contextToken, old.context.contextToken);
+  assert.notEqual(third.history, old.history);
+  assert.equal(
+    third.repository.location(uuid(11)).read()!.name,
+    "Gesicherter Wechselentwurf",
+  );
+  assert.equal(
+    f.content.querySelectorAll(".dn-atlas-canvas-host > .dn-atlas").length,
+    1,
+  );
+  await f.close();
+  assert.ok(f.services.retainedDrafts!.length > 0);
+});
+
+test("synchronous manifest invalidation detaches old UI, blocks History and preserves uncommitted Key across view lifetimes", async () => {
+  const f = await fixture();
+  await f.host().navigate(locationTarget);
+  const old = active(f),
+    oldRoot = f.content.querySelector<HTMLElement>(".dn-atlas")!;
+  const text = f.input(
+    '[aria-label="Ortsname"]',
+    "Nicht übernommener alter Text",
+  );
+  const path = `Kampagnen/SaltMarcher/${a}.campaign.json`;
+  await f.vault.process(f.vault.files.get(path)!, (raw) => raw + " ");
+  assert.equal(f.host().state.kind, "unavailable");
+  assert.equal(f.editor(), undefined);
+  assert.equal(oldRoot.inert, true);
+  const writes = f.vault.writes.length;
+  assert.throws(() => old.history.undo(), /widerrufen/);
+  assert.equal(f.vault.writes.length, writes);
+  await f.view.onUnloadFile();
+  assert.equal(text.value, "Nicht übernommener alter Text");
+  assert.ok(f.services.retainedDrafts!.some((d) => d.element.contains(text)));
+  f.services.close();
+});
+
+test("discard resets Sources through a fresh guarded mount, without retaining a writable obsolete editor", async () => {
+  const f = await fixture();
+  await f.host().navigate(locationTarget);
+  const old = active(f);
+  f.input('[aria-label="Ortsname"]', "Verwerfen");
+  await f.editor()!.flush();
+  f.editor()!.discard();
+  await settled(
+    () =>
+      f.host().state.kind === "active" &&
+      (f.host().state as any).history !== old.history,
+  );
+  const fresh = active(f);
+  assert.equal(fresh.repository.dirty, false);
+  assert.equal(fresh.repository.hasDraft, false);
+  assert.equal(fresh.repository.location(uuid(11)).read()!.name, "Torheim");
+  assert.throws(() => old.history.undo(), /widerrufen/);
+  await f.close();
+});
+
+test("local save succeeds but an unchanged read-only manifest is rejected on fresh mount: concrete producer boundary", async () => {
+  const f = await fixture();
+  await f.host().navigate(locationTarget);
+  f.input('[aria-label="Ortsname"]', "Lokal gespeichert");
+  await f.editor()!.flush();
+  const state = active(f);
+  await state.repository.save();
+  assert.equal(state.repository.dirty, false);
+  const saved = f.vault.bytes.get(`Orte/${uuid(11)}.location`)!;
+  assert.match(saved, /Lokal gespeichert/);
+  await assert.rejects(f.host().openCampaign(a), /bestätigten Basis/);
+  assert.equal(f.services.provider.currentContext()!.campaignId, a);
+  assert.equal(f.editor(), undefined);
+  assert.match(f.content.textContent!, /bestätigten Basis/);
+  assert.equal(f.vault.bytes.get(`Orte/${uuid(11)}.location`), saved);
+  await f.close();
+});
+
+test("bad or foreign manifest membership cannot fall through into an unguarded standalone atlas", async () => {
+  const f = await fixture();
+  const path = `Kampagnen/SaltMarcher/${a}.campaign.json`;
+  await f.vault.process(f.vault.files.get(path)!, () => "{damaged");
+  await f.view.onLoadFile(f.vault.files.get(aPath)!);
+  assert.equal(f.editor(), undefined);
+  assert.match(f.content.textContent!, /keinem bestätigten Kampagnenbestand/);
+  await f.close();
+});
+
+test("late native detail load after actual provider invalidation cannot hydrate or attach an obsolete Atlas", async () => {
+  const f = await fixture();
+  let release!: () => void, entered!: () => void;
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  const started = new Promise<void>((resolve) => {
+    entered = resolve;
+  });
+  f.vault.readHook = async (path) => {
+    if (path.endsWith(".city")) {
+      entered();
+      await gate;
+    }
+  };
+  const opening = f.view.onLoadFile(f.vault.files.get(aPath)!);
+  await started;
+  const path = `Kampagnen/SaltMarcher/${a}.campaign.json`;
+  await f.vault.process(f.vault.files.get(path)!, (raw) => raw + " ");
+  const writes = f.vault.writes.length;
+  release();
+  await opening;
+  assert.equal(f.editor(), undefined);
+  assert.equal(
+    f.content.querySelector(".dn-atlas-canvas-host .dn-atlas"),
+    null,
+  );
+  assert.equal(f.vault.writes.length, writes);
+  assert.match(f.content.textContent!, /widerrufen|veraltet/);
+  f.vault.readHook = undefined;
+  await f.close();
+});
+
+test("retained old detail callback cannot navigate or edit a newer active campaign", async () => {
+  const f = await fixture();
+  await f.host().navigate(locationTarget);
+  const oldButton = f.content.querySelector<HTMLButtonElement>(
+    ".dn-atlas-detail-entry li button",
+  )!;
+  f.input('[aria-label="Ortsname"]', "Alter ungesicherter Text");
+  const path = `Kampagnen/SaltMarcher/${a}.campaign.json`;
+  await f.vault.process(f.vault.files.get(path)!, (raw) => raw + " ");
+  await f.host().openCampaign(b);
+  const current = active(f),
+    editor = f.editor()!,
+    camera = editor.renderer.relativeCamera;
+  const writes = f.vault.writes.length;
+  f.click(oldButton);
+  await tick();
+  assert.equal(f.editor(), editor);
+  assert.equal(active(f).history, current.history);
+  assert.equal(editor.renderer.relativeCamera, camera);
+  assert.equal(f.vault.writes.length, writes);
+  assert.equal(current.history.undoDepth, 0);
+  await f.close();
+});
+
+test("closing the actual host services synchronously freezes retained mounts and their write leases", async () => {
+  const f = await fixture();
+  await f.host().navigate(locationTarget);
+  const old = active(f);
+  f.input('[aria-label="Ortsname"]', "Geschlossener alter Text");
+  f.services.close();
+  assert.equal(f.editor(), undefined);
+  assert.equal(f.host().state.kind, "unavailable");
+  assert.throws(() => old.history.undo(), /geschlossen/);
+  await assert.rejects(old.repository.save(), /geschlossen/);
+  await f.view.onUnloadFile();
+});

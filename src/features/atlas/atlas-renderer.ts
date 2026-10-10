@@ -90,6 +90,15 @@ export class AtlasRenderer {
   get relativeCamera(): RelativeAtlasCamera {
     return this.currentCamera;
   }
+  restoreCamera(camera: RelativeAtlasCamera): void {
+    this.currentCamera = relativeCamera(camera.anchor, camera.offsetMeters, camera.metersPerPixel);
+    this.schedule();
+  }
+  focus(frame: RigidFrame, point: WorldPoint, metersPerPixel: number): void {
+    const base = relativeCamera(frame.anchor, { x: 0, y: 0 }, metersPerPixel);
+    this.currentCamera = relativeCamera(frame.anchor, relativeLocalMeters(frame, base, point), metersPerPixel);
+    this.schedule();
+  }
   private worldFrame(point: WorldPoint): RigidFrame {
     return {
       anchor: point,

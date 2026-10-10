@@ -50,3 +50,5 @@ import "./core/atlas-spatial-repository.test";
 import "./core/atlas-campaign-source.test";
 import "./core/atlas-campaign-navigation.test";
 import "./core/atlas-spatial-host.test";
+
+import "./core/atlas-mount-lease.test";
