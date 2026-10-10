@@ -153366,7 +153366,7 @@
       {
         "id": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
         "requirement": "Thin Context/navigation consumer with actual native target validation, same Atlas owners and guarded Campaign switching",
-        "state": "targeted_Save_repair_model_DOM_pass_review_native_pending",
+        "state": "targeted_noop_Save_repair_checks_pass_independent_review_native_pending",
         "implementationRun": "HEX-E2E01-HOST-SAVE-I02",
         "sourceCommit": "86bbbbfac44233509f084ac836e6dafa07b11a16",
         "catalog": "ROADMAP-E2E-GATES-CANDIDATE.md:13",
@@ -153392,7 +153392,7 @@
           "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-manifest-host-aba-20261010/repair/repair.json"
         ],
         "observed": "Actual AtlasView Save button calls FileTransaction and retained native owner Participant/Provider; exact Prepared/Committed journal read-back issues the real proofs.; Same Navigator queue refreshes confirmed Registry/Inventory before unblocking input; Repository, Sources, History, renderer, camera, Context token and mount generation remain.; Actual Vault first-native CAS failure rolls back before snapshot, issues a transaction-sealed receipt, releases pending Provider lease and retries in the same editable Atlas with a new transaction UUID.; Actual DOM View/services close and fresh View/services reopen retain saved Location and Room names under native Campaign fixture; this is not a fresh Electron process.; FileTransaction regressions exercise all before/after CAS reply-loss boundaries, reject copied/foreign rollback receipts, protect unchanged native guards, and preserve won canonical bytes if committed consumer acknowledgment fails.",
-        "notConfirmed": "R01 repairs original H01 new-Location Save closure through qualified Campaign input and native Atlas authority, with 551 model/DOM/Core/Copy/Vault tests plus Type/Build. Actual DOM Vault events, same mount/camera/History, Rollback/retry, prepared/committed Recovery and fresh View are checked. Original H01 native FAIL and D01 receipts remain unchanged. No new Obsidian/GUI/fresh native process or independent R01 review; #40 and E2E gate remain open. Originalparity, physical GM input, large worlds, user-vault installation, Detail/CITY, P02/P04 and full E2E remain separate.",
+        "notConfirmed": "N02 repairs independent R02 create-Undo-Save no-op finding on the two native boundaries. 560 Atlas Core/DOM/Copy/Vault tests and Type/Build plus 27 repository tests pass; Redo remains usable, saved deletion stays fail-closed. Independent R02 continuation and native Save/fresh Obsidian process remain open. H01/D01/R01 receipts preserved; no GUI or full E2E/CITY/P02/P04/parity/installation acceptance.",
         "independentReview": {
           "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/13#issuecomment-6094804164",
           "gate": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6094804323",
@@ -154710,6 +154710,32 @@
             "testsPassed": 558,
             "repairCodeUnchanged": true
           }
+        },
+        "sharedLocationKeyNoopRepair": {
+          "id": "E2E-01-SHARED-LOCATION-SAVE-N02",
+          "owner": "Hex",
+          "issue": 40,
+          "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
+          "sourcePlan": "ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md",
+          "state": "targeted_noop_Save_repair_checks_pass_independent_review_native_pending",
+          "evidence": "docs/reference/atlas-shared-location-r01/noop-repair.json",
+          "sha256": "5b446a656cd099866b0cb367ef74b2206ee99e2b519da701ab80d2479c95b1e5",
+          "sourceCommit": "bc98b720d742693025563df7f93282be9936eb62",
+          "consumedShared": "11b40200bd0fa3a86de2a81c85ce62e4edb2afcd",
+          "reviewInput": {
+            "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/62#pullrequestreview-5480579984",
+            "sourceCommit": "3c6b87c9f8153646fe1a1c92c9c641dbe4f45b0b",
+            "result": "CHANGES_REQUIRED",
+            "readDirectly": true
+          },
+          "testsPassed": 560,
+          "repositoryTestsPassed": 27,
+          "productEdited": true,
+          "nativeRepeated": false,
+          "freshProcessStarted": false,
+          "guiSlotUsed": false,
+          "independentRereview": "pending",
+          "fullE2E": false
         }
       }
     ],

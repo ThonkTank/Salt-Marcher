@@ -450,3 +450,19 @@ Source vor der Keynavigation. Save/Ack/Rollback bleiben beim bestehenden Journal
 Nächster Eingang ist der unabhängige Review des veröffentlichten Reparaturheads,
 danach die gesondert neu koordinierte Obsidian-Save-/frischer-Prozess-Probe.
 H01 wird nicht umgeschrieben; #40 und das gemeinsame E2E-01-Gate bleiben offen.
+
+**#40 / SHARED-LOCATION-SAVE-N02 (10.10.2026):** Der unabhängige
+[R02-Befund auf PR62/3c6b87c](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/62#pullrequestreview-5480579984)
+ist im bestehenden Paket gezielt nachgebessert. Vollständig zurückgenommene,
+nie gespeicherte Locations behalten ihren Source für Redo, erscheinen aber nicht
+als Null/Null-Datei im Capture oder Null/Null-Guard im Save. Der tatsächliche
+Navigation-Save ist ohne Writes und erhält Mount/History/Renderer/Context;
+anschließendes Redo und Save funktionieren. Gespeicherte Ortslöschungen bleiben
+erfasst und ohne zusätzliche Campaign-Freigabe abgelehnt. Produktcommit
+`bc98b720d742693025563df7f93282be9936eb62`, konsumierter Shared `11b4020`;
+560 Atlas-Kern-/DOM-/Copy-/Vault-Tests, Typ/Build und 27 Repositorytests PASS.
+[Quellgebundener N02-Beleg](docs/reference/atlas-shared-location-r01/noop-repair.json).
+Jetzt setzt der bestehende unabhängige Reviewer R02 auf dem veröffentlichten
+Reparaturhead fort; die separat neu koordinierte echte Save-/frischer-Prozess-
+Probe folgt erst auf qualifiziertem Stand. H01/D01/R01 bleiben bytegleich und
+#40 sowie E2E-01 offen; kein GUI-Lauf oder Selbstmerge in dieser Nachbesserung.
