@@ -153024,7 +153024,7 @@
       {
         "id": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
         "requirement": "Thin Context/navigation consumer with actual native target validation, same Atlas owners and guarded Campaign switching",
-        "state": "native_Save_Fresh_Rollback_CommitRecovery_PASS_ABA_fixture_dependency_open",
+        "state": "native_Save_Fresh_Rollback_CommitRecovery_PASS_ABA_initial_capture_FAILED",
         "implementationRun": "HEX-E2E01-HOST-SAVE-I02",
         "sourceCommit": "86bbbbfac44233509f084ac836e6dafa07b11a16",
         "catalog": "ROADMAP-E2E-GATES-CANDIDATE.md:13",
@@ -153049,7 +153049,7 @@
           "/home/aaron/.cache/dungeon-native-qa/hex-03/city-ui-i01-r01-20261010/review.json"
         ],
         "observed": "Actual AtlasView Save button calls FileTransaction and retained native owner Participant/Provider; exact Prepared/Committed journal read-back issues the real proofs.; Same Navigator queue refreshes confirmed Registry/Inventory before unblocking input; Repository, Sources, History, renderer, camera, Context token and mount generation remain.; Actual Vault first-native CAS failure rolls back before snapshot, issues a transaction-sealed receipt, releases pending Provider lease and retries in the same editable Atlas with a new transaction UUID.; Actual DOM View/services close and fresh View/services reopen retain saved Location and Room names under native Campaign fixture; this is not a fresh Electron process.; FileTransaction regressions exercise all before/after CAS reply-loss boundaries, reject copied/foreign rollback receipts, protect unchanged native guards, and preserve won canonical bytes if committed consumer acknowledgment fails.",
-        "notConfirmed": "Actual synthetic native Obsidian small-fixture Save/Fresh/Rollback/CommitRecovery passes are separate from DOM/core/18-case matrix proofs. Native A-B-A, independent integrated Host review, physical input, original parity, large-world, installed user vault and full E2E remain unconfirmed. One failed complex-object diagnostic remains failed with forced QA termination recorded; no product acceptance derived from it. Shared promotion, P02/P04/CompleteImport and multiowner publication remain separate.",
+        "notConfirmed": "Native ABA attempt is FAILED, not a passing switch/Key/history/draft/revocation proof. Exact root cause remains unconfirmed. Previous synthetic native Save/Fresh/Rollback/Committed-Recovery passes remain separate, as do DOM/core/matrix checks. Independent integrated Host review, physical input, original parity, large world, installed user vault and full E2E remain open. No Source/fixture/product modifications or user-vault installation in this probe.",
         "independentReview": {
           "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/13#issuecomment-6094804164",
           "gate": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6094804323",
@@ -153965,7 +153965,7 @@
           "currentEvidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-manifest-host-save-i02-20261010/implementation.json",
           "scope": "Component review only; no native/Host/overall approval."
         },
-        "gap": "Current qualified Campaign B eacf6abd is integrated with eight exact native/manifest files, disjoint IDs/paths/digests and actual runtime parser/Registry/Inventory plus DOM picker-click checks. Native A-B-A remains open; the scoped fresh GUI confirmation covers exactly the next published-candidate run. Existing independent integrated Host review and separate cleanup remain open. Previous native Save/Fresh/Rollback/Committed-Recovery and post-Save Undo/Redo evidence is unchanged.",
+        "gap": "Qualified Campaign B is integrated. First actual native ABA attempt on cd4a06d fails at initial A Location capture before opening a Key or switching campaigns. CaptureCurrent detects a changed native baseline; classify exact epoch/hydration cause before any correction. GUI process ended normally and slot explicitly returned; next GUI run requires fresh coordination. Actual ABA, existing independent integrated Host review and separate cleanup remain open; historical Save/Fresh/Rollback/CommitRecovery proofs unchanged.",
         "qualifiedCampaignInputAndRollbackProbe": {
           "state": "qualified_component_contract_closed_productive_Host_implementation_now_present",
           "reviewSourceCommit": "ce2f9032dc9f72f994a307b5aac26e1ad8910065",
@@ -154050,6 +154050,34 @@
           "nativeInputFilesVerified": 8,
           "nativeABA": false,
           "fullE2E": false
+        },
+        "nativeCampaignABAProbe": {
+          "id": "HEX-E2E01-HOST-ABA-H01",
+          "state": "native_ABA_FAILED_initial_location_capture_before_switch",
+          "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
+          "sourceCommit": "cd4a06d620a8a454aa5a82e9bc27a040cda3a374",
+          "consumedShared": "8b8d4049a0d9ded1e20001802ef40d012e6ccd98",
+          "confirmedCampaignBInput": "eacf6abd57523a246c4d5399ac119bd9af2a0e03",
+          "check": true,
+          "testsPassed": 644,
+          "build": true,
+          "dirty": false,
+          "fullE2E": false,
+          "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-manifest-host-aba-20261010/native-aba-evidence.json",
+          "sha256": "f7b338a7003f700fac8b6d6ebe67ca3aeb894546bc78f78c26d8f5e9789f8a0d",
+          "nativeABA": false,
+          "nativeProcessNormalExit": true,
+          "guiReturned": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/7#issuecomment-6098946838",
+          "failure": {
+            "message": "Native Atlas-Erfassung ist veraltet.",
+            "site": "AtlasRepository.captureCurrent -> AtlasCampaignHost.navigate initial A Location, before any Key edit/picker switch",
+            "hypothesis": "Concurrent initial renderer/visible location or terrain hydration changes the Repository/History epoch while capture is pending. Source guards prove this possibility; exact responsible change has not yet been instrumented.",
+            "confirmedRootCause": false,
+            "nextDiagnosis": "Record scalar initialization/loading and capture generation/Repository/History epoch values, classify premature synthetic invocation versus visibly enabled navigation during hydration. Do not silently mask a user-visible navigation race with fixed sleeps or automatic retries."
+          },
+          "protectedOriginalUnchanged": true,
+          "frozenFilesVerified": 19,
+          "nativeInputFilesVerified": 16
         }
       }
     ],

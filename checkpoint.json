@@ -769,7 +769,7 @@
   "hexAtlasExecution": {
     "scope": "HEX-00 bis HEX-28 und sämtliche eingeordneten CITY-00 bis CITY-09 vollständig",
     "phase": "HEX-03",
-    "state": "native_Save_Fresh_Rollback_CommitRecovery_PASS_CampaignB_integrated_native_ABA_pending",
+    "state": "native_Save_Fresh_Rollback_CommitRecovery_PASS_CampaignB_integrated_native_ABA_initial_capture_FAILED",
     "plan": "ROADMAP-E2E01-SPATIAL-INTEGRATION-PLAN.md",
     "currentRun": {
       "id": "E2E-01-SPACE-I01b",
@@ -816,10 +816,10 @@
       "phaseApproval": false
     },
     "nextRun": {
-      "id": "E2E-01-SPACE-I01c-RUNTIME-MANIFEST-I02-HOST-ABA",
-      "kind": "bounded_native_actual_Campaign_ABA",
-      "state": "actual_Campaign_B_integrated_native_probe_pending",
-      "focus": "Use the qualified static e2e01-campaign-b-v1 input alongside unchanged Spatial-V2 A in the isolated native QA harness. Freshly coordinate the single GUI slot, then probe the existing picker A-B-A, fresh context/repository/history, revoked old lease/late response and retained draft isolation. Keep PR13 as the only candidate. Do not repeat completed Save/Fresh/Rollback/Committed-Recovery, Codec or component packages.",
+      "id": "E2E-01-SPACE-I01c-RUNTIME-MANIFEST-I02-HOST-ABA-DIAGNOSE",
+      "kind": "bounded_native_initial_navigation_capture_diagnosis",
+      "state": "initial_A_navigation_capture_failed_before_ABA",
+      "focus": "Record scalar initialization/loading and capture generation/Repository/History epoch values, classify premature synthetic invocation versus visibly enabled navigation during hydration. Do not silently mask a user-visible navigation race with fixed sleeps or automatic retries.",
       "sourcePlan": "ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md",
       "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
       "evidence": {
@@ -839,13 +839,13 @@
         "fullE2E": false,
         "independentReview": "pending existing integrated review after native ABA input; not self-approved"
       },
-      "requiredInput": "Use exact e2e01-campaign-b-v1 manifest and seven native files alongside unchanged Spatial-V2 A. Fresh scoped GUI confirmation #7/6098768371 covers exactly the next native A-B-A run after publication; check the slot before launch.",
-      "dependency": "Campaign B is closed by current PR37/eacf6abd57523a246c4d5399ac119bd9af2a0e03 and clean integration f5aa463e0309ad8304c4af7bf8f6dbdb78c8e5e4. City grants the next scoped native A-B-A GUI slot after publication; no general or permanent slot ownership.",
-      "after": "Existing independent integrated Host review, required repair, separate cleanup. No extra component/general-plan round.",
+      "requiredInput": "Existing exact Campaign A+B and actual failed native capture evidence; no new fixture or component plan.",
+      "dependency": "No external input dependency. Native GUI retry requires new scoped single-slot confirmation.",
+      "after": "Resolve classified readiness/capture defect in separate repair, then new scoped native ABA probe; existing integrated Host review only after actual passing proof.",
       "limits": "Small frozen fixture and synthetic native gestures only; controlled fault injection, not power-loss durability. No new Campaign authority, Source activation during Save, fixture mutation, user-vault install or full E2E approval.",
       "slotConfirmation": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/7#issuecomment-6098768371",
-      "slotConfirmedForCompletedRun": false,
-      "slotRequiredAgain": false,
+      "slotConfirmedForCompletedRun": true,
+      "slotRequiredAgain": true,
       "priorityDecision": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1#issuecomment-6098079622",
       "inputOwnerAck": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6098704236",
       "confirmedCampaignBInput": {
@@ -865,8 +865,38 @@
         "nativeABA": false,
         "fullE2E": false
       },
-      "slotConfirmedForNextRun": true,
-      "slotScope": "Exactly one next native A-B-A on the published PR13/current Campaign-B composition in isolated cache vault, then normal exit and explicit return. No GUI launched in this integration run."
+      "slotConfirmedForNextRun": false,
+      "slotScope": "Previous one-process native attempt normally ended and explicitly returned; no continuing reservation.",
+      "latestAttempt": {
+        "id": "HEX-E2E01-HOST-ABA-H01",
+        "state": "native_ABA_FAILED_initial_location_capture_before_switch",
+        "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
+        "sourceCommit": "cd4a06d620a8a454aa5a82e9bc27a040cda3a374",
+        "consumedShared": "8b8d4049a0d9ded1e20001802ef40d012e6ccd98",
+        "confirmedCampaignBInput": "eacf6abd57523a246c4d5399ac119bd9af2a0e03",
+        "check": true,
+        "testsPassed": 644,
+        "build": true,
+        "dirty": false,
+        "fullE2E": false,
+        "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-manifest-host-aba-20261010/native-aba-evidence.json",
+        "sha256": "f7b338a7003f700fac8b6d6ebe67ca3aeb894546bc78f78c26d8f5e9789f8a0d",
+        "nativeABA": false,
+        "nativeProcessNormalExit": true,
+        "guiReturned": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/7#issuecomment-6098946838",
+        "failure": {
+          "message": "Native Atlas-Erfassung ist veraltet.",
+          "site": "AtlasRepository.captureCurrent -> AtlasCampaignHost.navigate initial A Location, before any Key edit/picker switch",
+          "hypothesis": "Concurrent initial renderer/visible location or terrain hydration changes the Repository/History epoch while capture is pending. Source guards prove this possibility; exact responsible change has not yet been instrumented.",
+          "confirmedRootCause": false,
+          "nextDiagnosis": "Record scalar initialization/loading and capture generation/Repository/History epoch values, classify premature synthetic invocation versus visibly enabled navigation during hydration. Do not silently mask a user-visible navigation race with fixed sleeps or automatic retries."
+        },
+        "protectedOriginalUnchanged": true,
+        "frozenFilesVerified": 19,
+        "nativeInputFilesVerified": 16
+      },
+      "nextValueDecision": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1#issuecomment-6098878157",
+      "nextValueGate": "PVC-ATLAS-LOCATION-004: After completed actual native ABA and independent integrated Host decision, activate visible Location/Key package on Shared exact SHA; fresh actual GM creates/selects/moves/edits/saves/reopens one Location/Key, proved by raw images and native file oracle. No separate editor mode. Existing PR13 functionality is input; no new general plan."
     },
     "review": {
       "run": "HEX-02-R02",
@@ -5316,7 +5346,7 @@
       "platformIssue": 11,
       "checkpointIsAuthoritative": true
     },
-    "updatedAt": "2026-10-10T14:59:39.391672+00:00",
+    "updatedAt": "2026-10-10T15:13:48.899188+00:00",
     "consumerMatrix": {
       "id": "RUNTIME-MANIFEST-I02-CONSUMER-MATRIX-V1",
       "state": "frozen_complete_matrix_green_on_productive_Host_source",
@@ -5437,6 +5467,34 @@
       "nativeInputFilesVerified": 8,
       "nativeABA": false,
       "fullE2E": false
+    },
+    "latestNativeABA": {
+      "id": "HEX-E2E01-HOST-ABA-H01",
+      "state": "native_ABA_FAILED_initial_location_capture_before_switch",
+      "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
+      "sourceCommit": "cd4a06d620a8a454aa5a82e9bc27a040cda3a374",
+      "consumedShared": "8b8d4049a0d9ded1e20001802ef40d012e6ccd98",
+      "confirmedCampaignBInput": "eacf6abd57523a246c4d5399ac119bd9af2a0e03",
+      "check": true,
+      "testsPassed": 644,
+      "build": true,
+      "dirty": false,
+      "fullE2E": false,
+      "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-manifest-host-aba-20261010/native-aba-evidence.json",
+      "sha256": "f7b338a7003f700fac8b6d6ebe67ca3aeb894546bc78f78c26d8f5e9789f8a0d",
+      "nativeABA": false,
+      "nativeProcessNormalExit": true,
+      "guiReturned": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/7#issuecomment-6098946838",
+      "failure": {
+        "message": "Native Atlas-Erfassung ist veraltet.",
+        "site": "AtlasRepository.captureCurrent -> AtlasCampaignHost.navigate initial A Location, before any Key edit/picker switch",
+        "hypothesis": "Concurrent initial renderer/visible location or terrain hydration changes the Repository/History epoch while capture is pending. Source guards prove this possibility; exact responsible change has not yet been instrumented.",
+        "confirmedRootCause": false,
+        "nextDiagnosis": "Record scalar initialization/loading and capture generation/Repository/History epoch values, classify premature synthetic invocation versus visibly enabled navigation during hydration. Do not silently mask a user-visible navigation race with fixed sleeps or automatic retries."
+      },
+      "protectedOriginalUnchanged": true,
+      "frozenFilesVerified": 19,
+      "nativeInputFilesVerified": 16
     }
   },
   "phase": "Phase 6: zweiter Nachbesserungslauf teilweise umgesetzt; fünf Restpositionen und unabhängiger Review offen",
