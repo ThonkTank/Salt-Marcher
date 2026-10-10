@@ -939,7 +939,7 @@
   "hexAtlasExecution": {
     "scope": "HEX-00 bis HEX-28 und sämtliche eingeordneten CITY-00 bis CITY-09 vollständig",
     "phase": "HEX-03",
-    "state": "independent_integrated_scope_PASS_Shared_promotion_authorized_with_exact_CI_guard",
+    "state": "Shared_promoted_scoped_own_cleanup_complete_Location_Key_GM_pending",
     "plan": "ROADMAP-E2E01-SPATIAL-INTEGRATION-PLAN.md",
     "currentRun": {
       "id": "E2E-01-SPACE-I01b",
@@ -986,144 +986,29 @@
       "phaseApproval": false
     },
     "nextRun": {
-      "id": "E2E-01-PR13-POST-PROMOTION-CLEANUP",
-      "kind": "bounded_own_cleanup_after_confirmed_Shared_promotion",
-      "state": "independent_integrated_inputs_closed_promotion_decision_authorized_execution_guarded",
-      "focus": "Verify the actual #39 promotion receipt on Shared, then perform only the required bounded own cleanup as a separate run. Preserve source/evidence/input/user-vault/foreign roots; no new general review or product package.",
-      "sourcePlan": "ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md",
+      "id": "E2E-01-SHARED-LOCATION-KEY-H01",
+      "kind": "bounded_native_Shared_Location_Key_acceptance",
+      "state": "own_cleanup_complete_GUI_slot_not_claimed",
+      "issue": 40,
+      "owner": "Hex",
       "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
-      "evidence": {
-        "id": "HEX-E2E01-HOST-ABA-H02",
-        "state": "native_ABA_PASS_independent_integrated_Host_review_pending",
-        "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
-        "sourceCommit": "892e20d737c9e4868aa44b615f8da0f97d98fb39",
-        "productRepairCommit": "f03b9537d3daa28f80938d21528d76e0e683c3a6",
-        "publicationComposition": "6cf3164987c79f8a96981287cb26c351d305652a",
-        "consumedShared": "8671a1a880efc2f1316c520dd69493cdd998e379",
-        "fixtureVersions": [
-          "e2e01-spatial-v2",
-          "e2e01-campaign-b-v1"
-        ],
-        "nativeGUI": true,
-        "nativeABA": true,
-        "physicalInput": false,
-        "originalParity": false,
-        "largeWorld": false,
-        "installation": false,
-        "fullE2E": false,
-        "independentReview": "pending already assigned integrated Host review including R01; not self-approved",
-        "guiConfirmation": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/7#issuecomment-6099365969",
-        "guiReturn": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/7#issuecomment-6099388973",
-        "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-manifest-host-aba-20261010/h02/native-aba-evidence.json",
-        "sha256": "4ed1f2b2da15c5715498399a4c6c32369c6aaa36261a1382ebc5cdd359d34820",
-        "nativeProcessNormalExit": true,
-        "nativeInputFilesVerified": 16,
-        "frozenFilesVerified": 19,
-        "observed": [
-          "Actual picker cannot leave invalid A Key; same Context/Repository/History/Renderer and text remain",
-          "B has independent Context/Repository/Source/History/Renderer; old A lease, Undo/Redo, callback and delayed reuse of its actual navigation capture are rejected without B camera/history effects; delayed in-flight navigation/Context ABA remains separately covered by core regression",
-          "B actual native Key edit and its own Undo/Redo operate on independently supplied B contents",
-          "Actual picker A→B→A remounts fresh identities and restores A durable draft; both old campaigns retain separate unsaved Key contents",
-          "All sixteen confirmed A/B native and Campaign input files remain byte-exact; navigation stores drafts without publishing a new saved baseline"
-        ],
-        "nativeMainJsSha256": "159e8db18b8e6f797c7414bdcf6899f156c63c422b18b3388f70d209c936aa13",
-        "inputBoundary": "One actual isolated Obsidian process with synthetic native picker/Key/button input; initial location navigation invokes the actual Host method.",
-        "lateCaptureBoundary": "Old actual A capture is verified only after completed navigation and later B activation. Delayed in-flight navigation/Context ABA remains a separate core regression, not a claimed native reply test."
-      },
-      "requiredInput": "Normal promotion outcome in #39/#12 matching the current exact candidate and Shared composition; independently accepted Save/Fresh/Recovery input is already closed.",
-      "after": "Issue40 / existing Hex marker package: Shared Location/Key real GM-host flow with current CI and independent review. Explicitly coordinate a fresh local GUI slot before any GUI action. P02/P04/CompleteImport/full E2E remain separate.",
+      "sourcePlan": "ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md",
+      "focus": "Direct Shared Location/Key host flow after explicitly coordinating a new local GUI slot. Creation/selection/move/Key/shared Undo-Redo/Save/fresh process; any new mandatory finding handled within this existing task.",
+      "promotionExecution": "checkpoint.hexAtlasExecution.latestPromotionExecution",
+      "cleanup": "checkpoint.hexAtlasExecution.latestPostPromotionCleanup",
+      "independentSaveInput": "checkpoint.hexAtlasExecution.latestSaveFreshRecoveryIndependentReview",
+      "nativeABAInput": "checkpoint.hexAtlasExecution.latestNativeABAIndependentReview",
+      "requiredInput": "Fetch/integrate qualified current Shared; direct current #40 scope and claims; explicitly obtain the single local GUI slot for this bounded probe. Previous return is not ownership.",
       "slotConfirmedForNextRun": false,
       "slotRequiredAgain": true,
-      "slotScope": "H02 process ended normally; scoped GUI slot explicitly returned in #7/6099388973. No GUI ownership remains.",
-      "limits": "H02 uses one real Obsidian process and synthetic UI inputs; no physical, original, large-world, installed-vault or full-E2E approval.",
-      "independentReviewer": {
-        "name": "Chronik",
-        "claim": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/38#issuecomment-6099707771",
-        "reviewSource": "379d55c0311e9455e5089c6b11bd0a33e9b833d2",
-        "state": "PASS_scoped_R01_H02_build_binding",
-        "scope": "Historical R01/H02 decision retained; distinct Save/Fresh/Recovery independent PASS now consumed by latestSaveFreshRecoveryIndependentReview. No new review round.",
-        "finding": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/13#issuecomment-6099834538",
-        "previousReviewSource": "de11ab0436cb9861d178a08bd19551f95bb47411",
-        "decision": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/13#issuecomment-6100198777"
-      },
-      "evidenceBinding": {
-        "id": "HEX-E2E01-HOST-ABA-H02-EVIDENCE-BINDING-R02",
-        "state": "original_evidence_access_delivered_reviewer_build_difference_unresolved",
-        "sourceCommit": "892e20d737c9e4868aa44b615f8da0f97d98fb39",
-        "consumedShared": "5b57706b68f131c2d292bed6159cd6d3221f2ef8",
-        "finding": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/13#issuecomment-6099834538",
-        "originalReceiptSha256": "4ed1f2b2da15c5715498399a4c6c32369c6aaa36261a1382ebc5cdd359d34820",
-        "repositoryEvidence": "docs/reference/atlas-host-h02/binding-r02.json",
-        "artifactIndex": "docs/reference/atlas-host-h02/ARTIFACTS.json",
-        "sha256": "14fe2d520df171a635681f0de14cb2884e7a66d9f982d55249e7865e727a7653",
-        "checks": {
-          "allOriginalArtifactsByteExact": 10,
-          "nativeInputFilesByteExact": 16,
-          "retainedInstalledTripletByteExact": true,
-          "freshLockedDependencyInstallation": true,
-          "cleanReproductionNode22_22_0": "159e8db18b8e6f797c7414bdcf6899f156c63c422b18b3388f70d209c936aa13",
-          "cleanReproductionNode22_22_2": "159e8db18b8e6f797c7414bdcf6899f156c63c422b18b3388f70d209c936aa13",
-          "buildSourceInputsPublished": 563
-        },
-        "reviewerMainJsSha256": "a7f2db0b104804be4a14a10888ef34248a0310f2daedee6aa64009cd5143bae7",
-        "mismatchResolved": false,
-        "newNativeRun": false,
-        "independentReview": "Existing Chronik CHANGES_REQUIRED build binding; accessible R02 delivery awaits same reviewer comparison. No new review round.",
-        "fullE2E": false,
-        "externalEvidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-manifest-host-aba-20261010/evidence-binding-r02/binding-r02.json"
-      },
-      "independentReviewConsumption": {
-        "id": "HEX-E2E01-HOST-ABA-H02-INDEPENDENT-R02",
-        "state": "PASS_scoped_R01_H02_build_binding",
-        "reviewer": "Chronik",
-        "reviewedCandidate": "379d55c0311e9455e5089c6b11bd0a33e9b833d2",
-        "reviewedBase": "fbf34d05a8a4ef50463031e4b5caaf5320d43c01",
-        "nativeSourceCommit": "892e20d737c9e4868aa44b615f8da0f97d98fb39",
-        "decision": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/13#issuecomment-6100198777",
-        "issue38Closure": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/38#issuecomment-6100199927",
-        "issue39Input": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/39#issuecomment-6100202191",
-        "originalReceiptSha256": "4ed1f2b2da15c5715498399a4c6c32369c6aaa36261a1382ebc5cdd359d34820",
-        "mismatchResolved": true,
-        "independentIndexedArtifactsVerified": 37,
-        "independentSourceInputsVerified": 563,
-        "buildResolution": "Official npm Node22.22.2/zlib1.3.1-e00f703 reproduces H02 159e8db. Fedora Node22.22.2/zlib1.3.1.zlib-ng yields a7f2db; only virtual gzip/base64 catalog source differs, decompressed catalog identical. Reviewer finding resolved; no different product source.",
-        "independentNativeProcessNormalExitVerified": true,
-        "newNativeRun": false,
-        "promotion": false,
-        "fullE2E": false,
-        "limits": "R01 code and existing synthetic native H02 A→B→A evidence only. Save/Fresh/Recovery input audit and independent integrated promotion decision remain #39. Physical input, original parity, large world, user-vault installation and total E2E remain distinct."
-      },
-      "promotionAudit": {
-        "id": "HEX-E2E01-PR13-PROMOTION-AUDIT-01",
-        "decision": "NOT_PROMOTED",
-        "state": "retained_Save_Fresh_Recovery_independent_binding_missing",
-        "candidateBefore": "2880a7e7ac3af2bd5f6f1f0d70181c4e0cfd7c4a",
-        "auditedComposition": "5950ef844e6c2081b7a0907cf0131754fc2a5dad",
-        "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
-        "checkpoint": "checkpoint.hexAtlasExecution.latestPromotionAudit",
-        "mandatoryFinding": "E2E01-PROMOTION-01",
-        "nextOwnAction": "Publish unchanged original Save/Fresh/Recovery artifacts for existing integrated review; no new GUI."
-      },
-      "saveFreshRecoveryEvidenceAccess": {
-        "id": "HEX-E2E01-SAVE-FRESH-RECOVERY-EVIDENCE-BINDING-01",
-        "state": "original_artifacts_access_delivered_independent_scope_review_pending",
-        "checkpoint": "checkpoint.hexAtlasExecution.latestSaveFreshRecoveryEvidenceBinding",
-        "repositoryEvidence": "docs/reference/atlas-host-save-i02-h01/SAVE-PROVENANCE.md",
-        "binding": "docs/reference/atlas-host-save-i02-h01/binding.json",
-        "bindingSha256": "d77e2ceb2919be1e78291bdcd91b63cabe8e03efe7e11b6b9c39f5c1fccc9846",
-        "finding": "E2E01-PROMOTION-01",
-        "independentApproval": false,
-        "promotion": false
-      },
-      "promotionDecision": {
-        "id": "HEX-E2E01-PR13-PROMOTION-DECISION-02",
-        "checkpoint": "checkpoint.hexAtlasExecution.latestPromotionDecision"
-      },
-      "saveFreshRecoveryIndependentReview": {
-        "id": "HEX-E2E01-SAVE-FRESH-RECOVERY-INDEPENDENT-01",
-        "checkpoint": "checkpoint.hexAtlasExecution.latestSaveFreshRecoveryIndependentReview",
-        "decision": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/13#issuecomment-6100666965"
-      }
+      "fixtureVersions": [
+        "e2e01-spatial-v2",
+        "e2e01-campaign-b-v1"
+      ],
+      "checks": "Current integrated CI plus direct actual Host/Save/fresh-process evidence and file/text/ID oracles. Distinguish synthetic native input from physical GM input. New defects get bounded diagnosis/repair in separate runs.",
+      "after": "Consume required independent #40 acceptance or repair a concrete finding; no general new plan/review round. Subsequent Detail/CITY scope only after this owned result.",
+      "limits": "No user-vault write, physical/original/large-world/installation/P02/P04/CompleteImport/full-E2E claim. E2E-02–04 remain inactive.",
+      "currentShared": "c932bbab534c5a70a15cc4628728c0d1b92f162a"
     },
     "review": {
       "run": "HEX-02-R02",
@@ -1155,7 +1040,7 @@
       "HEX02 scoped early island/review/CLEAN complete; HEX03..05 Location/City/Dungeon common Atlas remains open.",
       "HEX06..28/CITY product phases and 79 later Wonderdraft obligations remain.",
       "Full parity, physical input, large-map and installed-vault acceptance remain open.",
-      "Actual Campaign Host Save/Fresh/Rollback/Committed-Recovery/post-Save Undo/Redo and repaired H02 A→B→A are independently qualified within their synthetic fixture scopes. Issue39 Shared promotion is authorized with exact CI/remote guards; required separate cleanup, Issue40 Shared GM and full E2E remain open."
+      "Actual PR13 promotion to Shared is confirmed and separate own cleanup is complete. Issue40 Shared Location/Key GM-host flow remains open; a fresh local GUI slot must be coordinated. Existing independent synthetic Save/Fresh/Recovery and R01/H02 scopes are retained. P02/P04/CompleteImport, physical/original/large-world/user-vault installation and full E2E remain separate."
     ],
     "coordination": {
       "issue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1",
@@ -5573,7 +5458,7 @@
       "platformIssue": 11,
       "checkpointIsAuthoritative": true
     },
-    "updatedAt": "2026-10-10T18:29:10.396369+00:00",
+    "updatedAt": "2026-10-10T18:40:11.975822+00:00",
     "consumerMatrix": {
       "id": "RUNTIME-MANIFEST-I02-CONSUMER-MATRIX-V1",
       "state": "frozen_complete_matrix_green_on_productive_Host_source",
@@ -6208,6 +6093,55 @@
         "Issue40 Shared Location/Key real GM-host acceptance; explicitly re-coordinate local GUI slot",
         "Remaining P02/P04/CompleteImport and all full E2E entries remain separate"
       ]
+    },
+    "latestPromotionExecution": {
+      "id": "HEX-E2E01-PR13-PROMOTION-EXECUTION-02",
+      "decision": "PROMOTED_TO_SHARED_SCOPED",
+      "candidate": "4b2cffb36ad208039e68c77736d0fcd40ad94197",
+      "mergeCommit": "6a41f1640de3e4a4311d905d95f66cd79d91b698",
+      "mergeTree": "89d43082401cdfa945b26431d8be3fcf5b7eff3d",
+      "mergeTreeEqualsAuditedCandidate": true,
+      "parentHandoff": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6100849702",
+      "exactCandidateCI": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/actions/runs/38076004847",
+      "exactCandidateCIResult": "success",
+      "sharedStructureCI": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/actions/runs/38076171674",
+      "sharedStructureCIResult": "success",
+      "noAuthorReviewApproval": true,
+      "newNativeRun": false,
+      "installation": false,
+      "fullE2E": false,
+      "decisionEvidence": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/39#issuecomment-6100834444"
+    },
+    "latestPostPromotionCleanup": {
+      "id": "HEX-E2E01-POST-PROMOTION-CLEAN-01",
+      "state": "own_cleanup_complete_retention_and_handoff_only",
+      "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
+      "sourceCommit": "6a41f1640de3e4a4311d905d95f66cd79d91b698",
+      "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/post-promotion-cleanup-20261010-1836/retention.json",
+      "sha256": "5ae56822688ae574a8afc3cfb2ca87f8cc90c0b18451b23e7fec16b6a3dea7a4",
+      "protectedTrackedFiles": 723,
+      "retainedGeneratedFiles": 24,
+      "retainedGeneratedBytes": 59388891,
+      "indexedArtifactsVerified": {
+        "docs/reference/atlas-host-h02": 37,
+        "docs/reference/atlas-host-save-i02-h01": 68
+      },
+      "frozenFilesVerified": 19,
+      "originalSaveFailureH02ReceiptsVerified": 3,
+      "deleteFiles": [],
+      "removeDirectories": [],
+      "productChanged": false,
+      "newNativeRun": false,
+      "independentProductApprovalAdded": false,
+      "fullE2E": false,
+      "nextIssue": 40,
+      "publicationShared": "c932bbab534c5a70a15cc4628728c0d1b92f162a",
+      "qualifiedIncoming": {
+        "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/post-promotion-cleanup-20261010-1836/shared-consumption.json",
+        "sha256": "9a91be4f78e157174d5eecadf19d83d2136f452a67122da98ccfa14a5514eccf",
+        "handoff": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/59#issuecomment-6100899267",
+        "scope": "Isolated synthetic P02 prototype and repository role rules; critical Atlas product/evidence unchanged."
+      }
     }
   },
   "phase": "Phase 6: zweiter Nachbesserungslauf teilweise umgesetzt; fünf Restpositionen und unabhängiger Review offen",
