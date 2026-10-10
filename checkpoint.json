@@ -542,7 +542,7 @@
       "id": "E2E-01-SPACE-I01c",
       "kind": "bounded_required_integration_after_actual_owner_contracts",
       "focus": "Use actual Campaign/Vault context, registry/ownership participant revisions and original CommandId/ReceiptId publish boundary, then pure Dungeon geometry Gestureport and one real P02/P04 CompleteImport variant. Keep one candidate/camera/history/fixture; no E2E02–04.",
-      "dependency": "Campaign generic Contract/Validator/Testport input remains qualified on 7aa47beb1bad3d0b1560666fa1cb1677bdc8cd4e, not source-integrated. M/W/S N02 repair candidate d06354c37ea24c249a23310f1a186a0a5ee4e936 is published and direct PR25 head verified; scoped independent media-owner review and corrected eligible handoff remain pending, old Hex handoff stays suspended. Do not repeat generic review or create parallel repair. Actual productive Campaign/Vault context, Registryprovider, persistable Publish boundary and P02/P04 remain open. Dungeon N02 ea9ecd3f5c7e284b86c554d7e4a9cb99672d73c2 passed independent narrow Hex Code-R03; all R01 code findings closed. Product Cleanup-P01 is published on 46e31ed120fd22dc608338bf7e5b0d594f7ca39f: await actual separate atomic sample Cleanup-I01 completion/request, then narrow Hex Cleanup-R01 and secured exact-SHA eligible steward handoff before I01c adoption. No code integration or host/E2E approval yet. No synthetic Registry/provider or port; World projection remains actual Repository.spatialGraph.world() and placements/spatial targets.",
+      "dependency": "Campaign generic Contract/Validator/Testport input remains qualified on 7aa47beb1bad3d0b1560666fa1cb1677bdc8cd4e, not source-integrated. M/W/S N02 repair candidate d06354c37ea24c249a23310f1a186a0a5ee4e936 is published and direct PR25 head verified; scoped independent media-owner review and corrected eligible handoff remain pending, old Hex handoff stays suspended. Do not repeat generic review or create parallel repair. Actual productive Campaign/Vault context, Registryprovider, persistable Publish boundary and P02/P04 remain open. Dungeon Product-Cleanup-I01 c8bd27d6d223403b46748d3051409c3e1c498224 passed independent Hex PRODUCT-CL-R01 against all seven oracles (check, 495 tests, build, actual callback/atomic sample/terminal basis/positive geometry counterprobes); prior R01 code findings remain closed. Await actual secured exact-SHA eligible Dungeon owner/steward handoff as its separate next step, before Hex I01c port adoption. No cleanup recursion, code integration or host/E2E approval yet. No synthetic Registry/provider or port; World projection remains actual Repository.spatialGraph.world() and placements/spatial targets.",
       "review": "Independent integrated code/host review follows complete pinned I01c handoff per #12; repairs and Cleanup-P/I/R are separate runs. Current native I01b is a narrow implementation proof, not full gate approval."
     },
     "review": {
@@ -852,7 +852,7 @@
       },
       "dungeonGeometryPlanInput": {
         "run": "E2E-01-DUNGEON-GEOMETRY-P01-R01",
-        "state": "independent_product_code_r03_pass_owner_cleanup_and_secured_handoff_pending",
+        "state": "independent_product_cleanup_r01_pass_secured_owner_handoff_pending",
         "owner": "Dungeon",
         "reviewer": "Hex independent Atlas interface recipient",
         "candidate": "ea46ba5437596aceaad955330e21c3ef4e739451",
@@ -870,7 +870,7 @@
           "full E2E gate",
           "cleanup"
         ],
-        "next": "Separate owner product Cleanup-P/I/R and secured exact-SHA steward handoff remain. Hex I01c adoption awaits that eligible owner handoff plus actual Campaign/Vault registry/publish and P02/P04 inputs; no repeated generic plan or prior reviews.",
+        "next": "Dungeon secured exact-SHA owner/steward handoff as separate next step. Hex I01c adoption awaits that actual eligible handoff and productive Campaign/Vault registry/publish/P02/P04 inputs; no new cleanup recursion or prior-review duplication.",
         "synchronizedShared": "89a3ffbad44ed6acec2e25566a1b017166fa9f7c",
         "synchronizationVerification": {
           "check": true,
@@ -1129,7 +1129,7 @@
         },
         "productCleanupInput": {
           "run": "E2E-01-DUNGEON-GEOMETRY-PRODUCT-CL-P01",
-          "state": "owner_plan_published_separate_cleanup_implementation_and_review_pending",
+          "state": "plan_received_cleanup_implementation_independently_reviewed_pass",
           "sha": "46e31ed120fd22dc608338bf7e5b0d594f7ca39f",
           "base": "ea9ecd3f5c7e284b86c554d7e4a9cb99672d73c2",
           "plan": "ROADMAP-E2E01-DUNGEON-GEOMETRY-PRODUCT-CLEANUP-PLAN.md",
@@ -1138,10 +1138,71 @@
           "planReadDirectly": true,
           "productTestToolFixtureAcceptanceUnchanged": true,
           "scope": "Single atomic fail-closed sample operation: revoke old proposal before deferred coordinate resolution, preserve existing validation/Source/History/basis/Handoff contracts; no new runtime or router.",
-          "independentReview": false,
+          "independentReview": true,
           "codeR03PassRetained": true,
           "sourceIntegrated": false,
-          "next": "Dungeon separate PRODUCT-CL-I01 publishes exact SHA; Hex narrow independent PRODUCT-CL-R01 only after actual completion/request. Secured steward handoff follows independent cleanup PASS."
+          "next": "Dungeon secured exact-SHA owner/steward handoff as separate next step. Hex I01c adoption awaits that actual eligible handoff and productive Campaign/Vault registry/publish/P02/P04 inputs; no new cleanup recursion or prior-review duplication.",
+          "review": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/26#issuecomment-6093376162"
+        },
+        "productCleanupReview": {
+          "run": "E2E-01-DUNGEON-GEOMETRY-PRODUCT-CL-R01",
+          "state": "PASS_product_cleanup_code_only",
+          "reviewer": "Hex independent Atlas interface recipient",
+          "candidate": "c8bd27d6d223403b46748d3051409c3e1c498224",
+          "productCommit": "5675cbd13be6f0fa096c3651743f1eb40d93f845",
+          "reviewBase": "46e31ed120fd22dc608338bf7e5b0d594f7ca39f",
+          "plan": "ROADMAP-E2E01-DUNGEON-GEOMETRY-PRODUCT-CLEANUP-PLAN.md",
+          "startedAt": "2026-10-10T03:32:25Z",
+          "finishedAt": "2026-10-10T03:36:48Z",
+          "start": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/26#issuecomment-6093341201",
+          "request": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/26#issuecomment-6093323775",
+          "review": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/26#issuecomment-6093376162",
+          "handoff": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6093376283",
+          "checks": {
+            "check": true,
+            "testsPassed": 495,
+            "testsFailed": 0,
+            "build": true,
+            "cleanExactSha": true,
+            "bundleSha256": "0b1edc823e08ed627bd0befe23639b855ceacf2bcddaf35a98d40723c5cd5a6c"
+          },
+          "remainingFindings": [],
+          "oracles": {
+            "1": "PASS: old proposal already absent inside resolver; actual nonfinite/precision conversion error and release preserve source/history/exact original Redo and zero history-bound draft signals",
+            "2": "PASS: direct non-finite/topology rejection leaves no preview/handoff/source/history effect",
+            "3": "PASS: later valid sample commits only latest visible bytes exactly once; Fresh Begin remains valid",
+            "4": "PASS: parent/binding A-B-A remains terminal through late actual pointerup; byte-equal source/graph/history replacement remains terminal and preserves both lifetimes",
+            "5": "PASS: immutable actual Beginpointer, snap boundaries, dependent portal follow, document/floor/route/section IDs and exact Markdown closure retained; 1.524 meters per field",
+            "6": "PASS: preview/check/cancel/rejection pure; exactly one Handoff and one shared execute, second Handoff null; Undo/Redo exact",
+            "7": "PASS: actual AtlasEditor.bind pointermove/pointerup callbacks used; catch only clears visible preview/status, public update/rejectSample protocol removed"
+          },
+          "scopePreservation": {
+            "ownerOnlyDelta": [
+              "src/features/dungeon/geometry-change.ts",
+              "src/features/atlas/atlas-editor.ts",
+              "tests/core/atlas-spatial.test.ts",
+              "ROADMAP-E2E01-DUNGEON-GEOMETRY-PRODUCT-CLEANUP-PLAN.md",
+              "checkpoint.json"
+            ],
+            "changedCheckpointRoots": [
+              "e2e01DungeonGeometryPlan",
+              "e2e01DungeonGeometryProductCleanup"
+            ],
+            "foreignJsonRootsEqual": true,
+            "fixtureAcceptanceSessionArchitectureToolsUnchanged": true,
+            "trackedExportClean": true,
+            "ownProductUnchanged": true,
+            "sharedForeignFilesUntouched": true
+          },
+          "reproScope": "Actual owner code and native fixture with in-memory event/source doubles; synthetic negative inputs, no GUI/physical acceptance. History-bound draft signals are not a full persistence acceptance.",
+          "synchronizedShared": "38f333d4eda6cd2203443efd35b7140e7bf72e07",
+          "sharedAlreadyIntegrated": "f128d0357133705d0292e531cceaeec2cfc223fc",
+          "integrated": false,
+          "host": false,
+          "physicalInput": false,
+          "fullE2E": false,
+          "next": "Dungeon secured exact-SHA owner/steward handoff as separate next step. Hex I01c adoption awaits that actual eligible handoff and productive Campaign/Vault registry/publish/P02/P04 inputs; no new cleanup recursion or prior-review duplication.",
+          "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/dungeon-geometry-product-cl-r01/review.json"
         }
       }
     },
