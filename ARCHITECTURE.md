@@ -610,7 +610,7 @@ Umsetzungsarbeit. Der unabhängige Kompositionsreview auf `ef6e851` und dessen
 getrenntes Reviewartefakt-Aufräumen bestehen; sie bestätigen ausschließlich
 Quell- und Vertragstreue, keinen produktiven Laufzeitadapter.
 
-**Nächster konkreter Runtimeplan, noch zur Prüfung:**
+**Konkreter Runtimeplan, unabhängig begrenzt geprüft:**
 [E2E-01-SPACE-I01c-RUNTIME-P01](ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md) teilt den
 Anschluss in native Atlas-Sourceerfassung, dünnen Context-/Navigationsconsumer
 und frühen echten Hostlauf. Lokale Source-Digests und räumliche Closures sind
@@ -622,6 +622,33 @@ externe Wechsel widerrufen alte Mountaktionen, erhalten alte Entwürfe und berei
 gewonnenes Roll-forward unter der alten Identität. Tatsächliche Registry-/Host-
 und Publishprovider bleiben injizierte Fremdeingänge. Dieser Plan aktiviert
 keinen produktiven Adapter und ändert die bestehenden nativen Belege nicht.
+Plan-R01 auf `3c80d89` und das getrennte Aufräumen des unabhängigen Reviewers
+bestehen; der folgende Code benötigt seinen eigenen unabhängigen Review.
+
+**Runtime-I01a, native Capturequelle:** `AtlasRepository.captureNative` erfasst
+tatsächliche World-/Orts-/Placement-/Terrainbytes sowie City-/Dungeonabhängigkeiten
+schreibfrei in derselben Backendwarteschlange. `verifyNativeCapture` akzeptiert
+nur die Originalprojektion derselben Repository-Lebensdauer mit ursprünglichem
+Consumer-Guard. Die immutable DTO trägt native Before-/Afterbytes und SHA-256,
+lokale Generation/History-/Repositoryepochs, eigene Records und ausdrücklich
+unclassified Referenzen. Terrain bleibt World-Unterdaten; der Worldrecord-Digest
+bindet auch Geländeänderungen bei unveränderten Zählwerten und Grenzen.
+Unsichtbare referenzierte Chunks und ausdrücklich gelieferte unverortete Orte
+werden gelesen, niemals als leere Ersatzdaten erzeugt. Entfernte lokale Orte
+bleiben als Before-/null-After-Tombstone enthalten. Die Coverage bleibt
+`spatial-closure`; weder Zusatzbestände noch Digests sind Registryautorität.
+
+Der monotone `AtlasHistory.epoch` beobachtet Register, neue Hydration und
+execute/undo/redo einschließlich Source-A→B→A. Bestehende Repository-Speicher-
+und Baselineoperationen widerrufen Captures über eine getrennte lokale Epoch.
+Capture/Verify prüfen deren Bindung und den ursprünglichen synchronen Consumer-
+Guard nach asynchronem Lesen erneut; native IDs/Locatoren, Dateibaselines und
+Draft-/Journalgrenzen werden vor Rückgabe nachgeprüft. Dies bindet noch keine
+gewöhnliche Editor-/Saveaktion an einen CampaignContext. Beobachtete Dateibytes
+sind keine atomare Dateisnapshot-/CASautorität; unbeobachtete externe Datei-ABA
+benötigt zusätzlich eine tatsächliche Providerrevision. Source `ad265b2` besteht
+Typecheck, 530 Tests mit 16 neuen Fällen und sauberen Build. Navigation, echte
+Provider, Host-/Neustartprobe und Full-E2E bleiben nachfolgende getrennte Belege.
 
 **Stand E2E-01-SPACE-I01b:** AtlasView aktiviert die tatsächlichen typisierten
 City-/DungeonSources. Der native Kennungsindex liest alle passenden Dateien im

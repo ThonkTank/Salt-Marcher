@@ -793,7 +793,7 @@
   "hexAtlasExecution": {
     "scope": "HEX-00 bis HEX-28 und sämtliche eingeordneten CITY-00 bis CITY-09 vollständig",
     "phase": "HEX-03",
-    "state": "e2e01_runtime_p01_concrete_plan_published_independent_plan_review_pending",
+    "state": "e2e01_runtime_capture_i01a_checked_core_independent_code_review_pending",
     "plan": "ROADMAP-E2E01-SPATIAL-INTEGRATION-PLAN.md",
     "currentRun": {
       "id": "E2E-01-SPACE-I01b",
@@ -840,12 +840,12 @@
       "phaseApproval": false
     },
     "nextRun": {
-      "id": "E2E-01-SPACE-I01c-RUNTIME-R01",
-      "kind": "existing_peer_independent_bounded_plan_review",
-      "focus": "Existing Stadt peer independently reviews the exact PR13 Runtime-P01 plan against actual native Source/Repository/History and delivered Campaign contracts. Narrow concrete findings only; no generic source/owner reratification.",
-      "dependency": "Concrete plan is delivered in the sole PR13 candidate; actual Campaign source integration R01 and its cleanup already PASS. No new ownership handoff or PR27 reference review mixed into this run.",
-      "afterPass": "Next separate implementation I01a: actual native Atlas capture and focused source-state regression. Navigation/host remain subsequent small deliveries.",
-      "review": "Plan, code, independent review/repair and cleanup remain separate; no runtime or native/full-E2E evidence from P01."
+      "id": "E2E-01-SPACE-I01c-RUNTIME-I01a-R01",
+      "kind": "existing_peer_independent_bounded_code_review",
+      "focus": "Stadt reviews exact published I01a source composition/API/16 regressions. Verify actual Source ABA counters, Hydration/Repository and asynchronous capture/verify guard coverage, immutable bytes/World terrain digest, explicit closure/owner authority limits. No generic plan/source/owner reratification.",
+      "dependency": "Exact code/core checks and fresh Shared delivered in sole PR13 candidate; actual plan R01 and reviewer cleanup directly consumed. No GUI or foreign provider dependencies for this code review.",
+      "afterPass": "Separate own cleanup P/I/R for I01a, then planned I01b Context/navigation. Any concrete required code findings go through separate repair/re-review.",
+      "review": "Ordinary Campaign-bound writes, prepareLeave/mount/navigation and actual Registry/Host/P02/P04 provider/atomic publish/CompleteImport remain open; no I01c Host or E2E02-04 work in this run."
     },
     "review": {
       "run": "HEX-02-R02",
@@ -1815,7 +1815,7 @@
       },
       "runtimePlanning": {
         "id": "E2E-01-SPACE-I01c-RUNTIME-P01",
-        "state": "concrete_own_plan_independent_review_pending",
+        "state": "independent_plan_review_and_reviewer_cleanup_pass_capture_implemented_navigation_host_next",
         "plan": "ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md",
         "gate": "E2E-01",
         "catalog": "ROADMAP-E2E-GATES-CANDIDATE.md:13",
@@ -1847,6 +1847,92 @@
         "fixtureVersion": "e2e01-spatial-v2",
         "fixtureChanged": false,
         "native": false,
+        "fullE2E": false,
+        "independentReview": {
+          "state": "PASS_bounded_plan",
+          "candidate": "3c80d89bc49239de2bb241820bb6937e58030e61",
+          "reviewer": "Stadt, existing independent peer",
+          "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/13#issuecomment-6094207144",
+          "gate": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6094207235",
+          "readDirectly": true,
+          "actualEvidence": "/home/aaron/.cache/dungeon-native-qa/city-plans/runtime-p01-r01-20261010/review.json",
+          "cleanup": {
+            "state": "PASS_separate_reviewer_cleanup_P_I_R",
+            "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6094224023",
+            "actualEvidence": "/home/aaron/.cache/dungeon-native-qa/city-plans/runtime-p01-r01-20261010/cleanup-review.json",
+            "readDirectly": true
+          },
+          "obligations": [
+            "Actual change/lifetime binding rejects Source ABA; byte equality alone insufficient",
+            "Historypreflight does not guard Hydration/async Repositoryoperation alone",
+            "I01b prepareLeave error must block activation; not implemented in I01a",
+            "Real providers and fresh host required for I01c; P02/P04/fullE2E remain separate"
+          ]
+        }
+      },
+      "runtimeCapture": {
+        "id": "E2E-01-SPACE-I01c-RUNTIME-I01a",
+        "state": "checked_core_code_independent_review_pending",
+        "plan": "ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md",
+        "gate": "E2E-01",
+        "catalog": "ROADMAP-E2E-GATES-CANDIDATE.md:13",
+        "base": "3c80d89bc49239de2bb241820bb6937e58030e61",
+        "source": "ad265b257a626ea23c35ab8b0074da255a6144a6",
+        "codeCommit": "80e97e4b3a65d6ee8183cbd427adfd8e9ab8b737",
+        "consumedShared": "d08e151cf4231bfe3c757220b3f3b48e639bb5c6",
+        "sharedMerge": "2ecafe30398ec45f9c0007b4d36d03ffc60e1def",
+        "api": [
+          "AtlasRepository.captureNative({worldId, assertCurrent?, additionalLocations?})",
+          "AtlasRepository.verifyNativeCapture(originalCapture)",
+          "AtlasHistory.epoch"
+        ],
+        "checks": {
+          "check": true,
+          "testsPassed": 530,
+          "testsFailed": 0,
+          "newFocusedCases": 16,
+          "build": true,
+          "cleanExactSourceBuild": true,
+          "unchangedProtectedTrackedFiles": 530,
+          "activeAndHistoricalFixturesUnchanged": true,
+          "gmRootExactIncomingShared": true,
+          "originalSharedDirtyFilesUnchanged": true
+        },
+        "sourceFiles": [
+          "src/features/atlas/atlas-campaign-source.ts",
+          "src/features/atlas/atlas-history.ts",
+          "src/features/atlas/atlas-repository.ts",
+          "src/features/atlas/location-owners.ts",
+          "tests/core/atlas-campaign-source.test.ts",
+          "tests/core.test.ts"
+        ],
+        "sourceBlobs": {
+          "src/features/atlas/atlas-campaign-source.ts": "cb8da1afd07c082310fb0c9f6b91a1e8596d1552",
+          "src/features/atlas/atlas-history.ts": "750080aa76a604ad9de7981074645b4e398f353e",
+          "src/features/atlas/atlas-repository.ts": "1f69933c6dd10bb478aff49b995aef708f2fe20d",
+          "src/features/atlas/location-owners.ts": "7ece90fa55b03523776e694b5eb171c4cd4fd8dc",
+          "tests/core/atlas-campaign-source.test.ts": "fccd6e024af9c21a4258908e320f85ebbdcd4c7e",
+          "tests/core.test.ts": "ce5b40ff128a50d5c30ea4735841b0ba8fc1afcc"
+        },
+        "artifactSha256": {
+          "main.js": "fc5dd3261c823a8ae734098540aa413dcfa4117eb0950edffdd35cd1735abba2",
+          "styles.css": "cdf172e7d3c101d5917c16afe487641a19d9d5afe8ad23365b33c958ee1ac321",
+          "manifest.json": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64"
+        },
+        "fixtureVersion": "e2e01-spatial-v2",
+        "fixtureChanged": false,
+        "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-capture-i01a-20261010/run.json",
+        "implemented": "Read-only native World/Location/Section/Placement/Terrain record and byte capture plus foreign City/Dungeon dependencies. Immutable DTO, all referenced loaded/unloaded terrain, explicit unplaced Location input, Before/tombstone, payload/source SHA256, real monotone History epoch, Repository baseline/journal lifetime and original synchronous consumer guard; recheck IDs/locators/files/draft/journal after async reads.",
+        "limits": [
+          "Guards cover capture/verify only; ordinary Source/History/Repository writes are not yet bound to Campaign context.",
+          "FileStore read comparisons are not atomic CAS or global revision authority; unobservable external file ABA requires a real provider revision guard.",
+          "No new host/native/physical/parity/large-world/installation/full-E2E evidence."
+        ],
+        "scope": "Native spatial closure only, no complete Campaign inventory/Registry revision/ordinary Source-write context guard/provider/navigation/atomic publish.",
+        "independentReview": "pending_new_code_only",
+        "cleanup": "separate_after_independent_code_review_and_required_repairs",
+        "nativeOnThisSource": false,
+        "physicalInput": false,
         "fullE2E": false
       }
     },
@@ -3209,7 +3295,7 @@
       "platformIssue": 11,
       "checkpointIsAuthoritative": true
     },
-    "updatedAt": "2026-10-10T05:24:17.130210Z"
+    "updatedAt": "2026-10-10T05:52:37.670148Z"
   },
   "phase": "Phase 6: zweiter Nachbesserungslauf teilweise umgesetzt; fünf Restpositionen und unabhängiger Review offen",
   "goal": "Dungeon-Pfad bis zur vollständigen beauftragten Dungeondraft-Verhaltensgleichheit verfolgen: Bedienung und Funktion angleichen, Grafik ungefähr gleichwertig. Zuerst ROADMAP-PARITY.md mit Building und Object Tool abschließen, danach übrige Dungeon-Werkzeuge. Jede Fachphase getrennt planen, umsetzen und unabhängig reviewen; Lücken mit eigenen Nachbesserungs- und Reviewläufen schließen; danach eigene Aufräumphase mit Plan, Umsetzung und Review.",
