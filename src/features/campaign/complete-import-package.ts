@@ -13,7 +13,7 @@ type Digest = string;
 
 export interface CompleteImportPackageFilePort {
   list(root: string): Promise<readonly string[] | null>;
-  /** Must reject before allocating or returning more than maxBytes. */
+  /** Must preflight known host size before reading and reject a returned result above maxBytes. */
   read(path: string, maxBytes: number): Promise<Uint8Array | null>;
 }
 
