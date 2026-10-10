@@ -19,11 +19,13 @@ function fixture() {
   let snapshot = emptyWorldNotes(context), nextId = 10;
   const calls: { change: WorldNoteChange; expected: number }[] = [];
   let refuse = false;
+  let substitute: ((change: WorldNoteChange, expected: number) => typeof snapshot) | null = null;
   const panel = new WorldNotesPanel(host, {
     newId: () => id(nextId++),
     commit: async (change, expected) => {
       calls.push({ change, expected });
       if (refuse) throw new Error("Speicher gesperrt");
+      if (substitute) return snapshot = substitute(change, expected);
       snapshot = changeWorldNotes(snapshot, context, context, expected, change);
       return snapshot;
     },
@@ -48,6 +50,7 @@ function fixture() {
   };
   return { host, panel, click, input, save, calls, snapshot: () => snapshot,
     setSnapshot: (value: typeof snapshot) => { snapshot = value; panel.update(value); },
+    substitute: (value: typeof substitute) => { substitute = value; },
     refuse: (value: boolean) => { refuse = value; }, window };
 }
 
@@ -101,5 +104,75 @@ test("external revision retains typed text but stale edit and detached controls 
   f.panel.update({ ...external, campaignId: campaignId("00000000-0000-4000-8000-000000000099") });
   oldRow.dispatchEvent(new f.window.Event("click", { bubbles: true }));
   assert.equal(f.host.querySelector("form"), null);
+  f.panel.destroy();
+});
+
+test("switching records or campaigns does not silently discard an authored draft", () => {
+  const f = fixture(); f.click("Fraktion anlegen"); f.input("Name", "Nebelbund");
+  f.input("GM-Notizen", "Mein geheimer Text");
+  f.click("Quest anlegen");
+  assert.equal(f.host.querySelector<HTMLInputElement>("form input")?.value, "Nebelbund");
+  assert.match(f.host.querySelector('[role="alert"]')!.textContent!, /offenen Entwurf/);
+  const other = { ...f.snapshot(), campaignId: campaignId("00000000-0000-4000-8000-000000000099") };
+  f.panel.update(other);
+  assert.equal(f.host.querySelector("form"), null);
+  f.panel.update(f.snapshot());
+  assert.equal(f.host.querySelectorAll<HTMLTextAreaElement>("textarea")[1]?.value, "Mein geheimer Text");
+  f.click("Entwurf verwerfen");
+  assert.equal(f.host.querySelector("form") !== null, true);
+  f.click("Verwerfen bestätigen");
+  assert.equal(f.host.querySelector("form"), null);
+  assert.equal(f.snapshot().records.length, 0);
+  f.panel.destroy();
+});
+
+test("unrelated higher commit revision cannot acknowledge a requested record or erase its draft", async () => {
+  const f = fixture(); f.click("Quest anlegen"); f.input("Name", "Requested");
+  f.input("GM-Notizen", "Nur mein Entwurf");
+  f.substitute((_change, expected) => changeWorldNotes(f.snapshot(), context, context, expected,
+    { kind: "create", id: id(99), draft: { kind: "quest", title: "Unrelated",
+      readAloud: "", gmNotes: "", relations: [], creatureId: null } }));
+  await f.save();
+  assert.match(f.host.querySelector('[role="alert"]')!.textContent!, /nicht bestätigt/);
+  assert.equal(f.host.querySelector<HTMLInputElement>("form input")?.value, "Requested");
+  assert.equal(f.host.querySelectorAll<HTMLTextAreaElement>("textarea")[1]?.value, "Nur mein Entwurf");
+  assert.equal(f.snapshot().records[0]?.id, id(99));
+  f.panel.destroy();
+});
+
+test("older and same-revision divergent host projections cannot roll back visible authority", async () => {
+  const f = fixture(); const old = f.snapshot();
+  f.click("Quest anlegen"); f.input("Name", "Newest"); await f.save();
+  f.click("Quest: Newest"); f.input("GM-Notizen", "Entwurf bleibt");
+  assert.match(f.host.querySelector("ul")!.textContent!, /Newest/);
+  f.panel.update(old);
+  assert.match(f.host.querySelector("ul")!.textContent!, /Newest/);
+  assert.equal(f.host.querySelectorAll<HTMLTextAreaElement>("textarea")[1]?.value, "Entwurf bleibt");
+  assert.match(f.host.querySelector('[role="alert"]')!.textContent!, /verworfen/);
+  f.panel.update({ ...f.snapshot(), records: [{ ...f.snapshot().records[0]!, title: "Divergent" }] });
+  assert.match(f.host.querySelector("ul")!.textContent!, /Newest/);
+  assert.doesNotMatch(f.host.querySelector("ul")!.textContent!, /Divergent/);
+  assert.equal(f.host.querySelectorAll<HTMLTextAreaElement>("textarea")[1]?.value, "Entwurf bleibt");
+  f.panel.destroy();
+});
+
+test("a mismatched update and an unconfirmed delete retain the editable record", async () => {
+  const f = fixture(); f.click("NPC anlegen"); f.input("Name", "Älva"); await f.save();
+  f.click("NPC: Älva"); f.input("GM-Notizen", "Neuer Text");
+  f.substitute((_change, expected) => changeWorldNotes(f.snapshot(), context, context, expected,
+    { kind: "update", id: id(10), expectedRevision: 1, draft: { kind: "npc", title: "Älva",
+      readAloud: "", gmNotes: "Anderer Text", relations: [], creatureId: null } }));
+  await f.save();
+  assert.match(f.host.querySelector('[role="alert"]')!.textContent!, /nicht bestätigt/);
+  assert.equal(f.host.querySelectorAll<HTMLTextAreaElement>("textarea")[1]?.value, "Neuer Text");
+  f.setSnapshot(f.snapshot());
+  f.click("Entwurf verwerfen"); f.click("Verwerfen bestätigen");
+  f.click("NPC: Älva"); f.click("Löschen");
+  f.substitute((_change, expected) => changeWorldNotes(f.snapshot(), context, context, expected,
+    { kind: "update", id: id(10), expectedRevision: 2, draft: { kind: "npc", title: "Älva",
+      readAloud: "", gmNotes: "Immer noch da", relations: [], creatureId: null } }));
+  f.click("Löschen bestätigen"); await tick();
+  assert.match(f.host.querySelector('[role="alert"]')!.textContent!, /nicht bestätigt/);
+  assert.equal(f.host.querySelector("form") !== null, true);
   f.panel.destroy();
 });

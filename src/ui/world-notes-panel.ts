@@ -25,6 +25,7 @@ export class WorldNotesPanel {
   private snapshot: WorldNotesSnapshotV1 | null = null;
   private pending: { id: CampaignLocalId; draft: WorldNoteDraft; create: boolean;
     baseRevision: number | null } | null = null;
+  private readonly retainedDrafts = new Map<string, NonNullable<WorldNotesPanel["pending"]>>();
   private busy = false;
   private destroyed = false;
   private generation = 0;
@@ -42,6 +43,7 @@ export class WorldNotesPanel {
       button.textContent = `${labels[kind]} anlegen`;
       button.addEventListener("click", () => {
         if (this.busy || !this.snapshot) return;
+        if (this.pending) { this.message("Erst den offenen Entwurf speichern oder ausdrücklich verwerfen.", true); return; }
         this.pending = { id: options.newId(), draft: blank(kind), create: true, baseRevision: null };
         this.renderEditor();
       });
@@ -56,15 +58,56 @@ export class WorldNotesPanel {
   update(snapshot: WorldNotesSnapshotV1): void {
     if (this.destroyed) return;
     const next = worldNotesSnapshot(snapshot);
+    if (this.snapshot && next.campaignId === this.snapshot.campaignId &&
+        next.namespace === this.snapshot.namespace) {
+      if (next.revision < this.snapshot.revision ||
+          (next.revision === this.snapshot.revision && !this.sameSnapshot(next, this.snapshot))) {
+        this.message("Veralteter oder widersprüchlicher World-Stand verworfen.", true);
+        return;
+      }
+      if (next.revision === this.snapshot.revision) return;
+    }
     if (this.snapshot && (next.campaignId !== this.snapshot.campaignId ||
         next.namespace !== this.snapshot.namespace)) {
-      this.pending = null; this.search.value = "";
+      if (this.pending) this.retainedDrafts.set(this.draftKey(this.snapshot), this.pending);
+      this.pending = this.retainedDrafts.get(this.draftKey(next)) ?? null;
+      this.search.value = "";
     }
     const changedDuringEdit = this.pending && this.snapshot &&
       next.revision !== this.snapshot.revision;
     this.generation++; this.snapshot = next; this.busy = false;
     this.renderList(); this.renderEditor();
     if (changedDuringEdit) this.message("Bestand geändert; Entwurf behalten. Speichern prüft den alten Eintragsstand.", true);
+  }
+  private draftKey(snapshot: WorldNotesSnapshotV1): string {
+    return `${snapshot.campaignId}/${snapshot.namespace}`;
+  }
+  private sameSnapshot(a: WorldNotesSnapshotV1, b: WorldNotesSnapshotV1): boolean {
+    return JSON.stringify(a.records) === JSON.stringify(b.records);
+  }
+  private confirms(change: WorldNoteChange, before: WorldNotesSnapshotV1,
+    after: WorldNotesSnapshotV1): boolean {
+    if (after.revision !== before.revision + 1) return false;
+    if (after.records.length !== before.records.length + (change.kind === "create" ? 1 : 0) ||
+        before.records.some((item) => item.id !== change.id &&
+          JSON.stringify(after.records.find((candidate) => candidate.id === item.id)) !== JSON.stringify(item)))
+      return false;
+    const record = after.records.find((item) => item.id === change.id);
+    if (!record) return false;
+    const old = before.records.find((item) => item.id === change.id);
+    if (change.kind === "delete") return !!old && !old.deleted && old.revision === change.expectedRevision &&
+      record.deleted && record.revision === change.expectedRevision + 1 &&
+      record.title === old.title && record.readAloud === old.readAloud && record.gmNotes === old.gmNotes;
+    if (record.deleted || record.kind !== change.draft.kind ||
+        record.title !== change.draft.title || record.readAloud !== change.draft.readAloud ||
+        record.gmNotes !== change.draft.gmNotes || record.creatureId !== change.draft.creatureId ||
+        record.relations.length !== change.draft.relations.length ||
+        record.relations.some((relation, index) => relation.targetId !== change.draft.relations[index]?.targetId ||
+          relation.label !== change.draft.relations[index]?.label)) return false;
+    return change.kind === "create"
+      ? !before.records.some((item) => item.id === change.id) && record.revision === 1
+      : !!old && !old.deleted && old.revision === change.expectedRevision &&
+        record.revision === change.expectedRevision + 1;
   }
   private renderList(): void {
     this.list.replaceChildren();
@@ -77,6 +120,7 @@ export class WorldNotesPanel {
       button.dataset.worldId = record.id;
       button.addEventListener("click", () => {
         if (this.busy || this.snapshot !== boundSnapshot) return;
+        if (this.pending) { this.message("Erst den offenen Entwurf speichern oder ausdrücklich verwerfen.", true); return; }
         this.pending = { id: record.id, draft: { kind: record.kind, title: record.title,
           readAloud: record.readAloud, gmNotes: record.gmNotes, creatureId: record.creatureId,
           relations: record.relations.map((relation) => ({ ...relation })) }, create: false,
@@ -146,6 +190,17 @@ export class WorldNotesPanel {
     form.append(relationTitle, relationList, relationTarget, relationLabel, addRelation);
     const save = doc.createElement("button"); save.type = "submit"; save.textContent = "Speichern";
     form.append(save);
+    const discard = doc.createElement("button"); discard.type = "button";
+    discard.textContent = "Entwurf verwerfen"; form.append(discard);
+    discard.addEventListener("click", () => {
+      if (this.busy || this.pending !== pending) return;
+      if (discard.textContent !== "Verwerfen bestätigen") {
+        discard.textContent = "Verwerfen bestätigen"; return;
+      }
+      this.pending = null;
+      this.retainedDrafts.delete(this.draftKey(snapshot));
+      this.message("Entwurf verworfen"); this.renderEditor();
+    });
     form.addEventListener("submit", (event) => {
       event.preventDefault();
       if (this.busy || !this.snapshot || this.pending !== pending) return;
@@ -179,13 +234,15 @@ export class WorldNotesPanel {
       const confirmed = worldNotesSnapshot(await this.options.commit(change, before.revision));
       if (this.destroyed || stamp !== this.generation) return;
       if (confirmed.campaignId !== before.campaignId || confirmed.namespace !== before.namespace ||
-          confirmed.revision <= before.revision) throw new Error("Bestätigter World-Stand fehlt.");
+          !this.confirms(change, before, confirmed))
+        throw new Error("Angeforderte World-Änderung wurde nicht bestätigt.");
       this.snapshot = confirmed;
       this.pending = null; this.message("Gespeichert");
+      this.retainedDrafts.delete(this.draftKey(confirmed));
       this.renderList(); this.renderEditor();
     } catch (error) {
       if (!this.destroyed && stamp === this.generation) {
-        this.message(`Nicht gespeichert: ${String(error)}`, true);
+        this.message(`Speicherung nicht bestätigt: ${String(error)}`, true);
       }
     } finally {
       if (!this.destroyed && stamp === this.generation) this.busy = false;
