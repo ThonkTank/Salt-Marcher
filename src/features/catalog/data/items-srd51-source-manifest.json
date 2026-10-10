@@ -25,9 +25,9 @@
   },
   "artifactHashes": {
     "attributionSha256": "f66d55442488e79895501fc0fcd7b2bb62deb2bd6e589e0fffb5f5932ed5b767",
-    "inventorySha256": "30c45c4090d3d5481f9ac7a80d81bebcd5f4137280b985f54d4d745b985c9028",
+    "inventorySha256": "43e4e15ba4a2f142b4f0be635a68e67d1912fa98e9004ad1e3e3b9032a0b1e5b",
     "schemaSha256": "b9b6aa9ccb314e9f976ce6115aa89770d61ee5f001bd2aca5e574a1cd17481bb",
-    "transcriptSha256": "f6407925b3a1170da587c3c2ba7ba62db50c7a5e6179ea147a1631be88d8fcca"
+    "transcriptSha256": "51add2bdb0e64138eb3424b6891a3e03899b2466c256862736251c5432072bcb"
   },
   "sectionBoundaries": [
     { "id": "equipment-context", "firstPdfPage": 62, "firstPrintedPage": 62, "lastPdfPage": 72, "lastPrintedPage": 72, "reviewState": "full-boundary-inventoried" },
@@ -37,14 +37,14 @@
     { "id": "equipment-packs", "firstPdfPage": 70, "firstPrintedPage": 70, "lastPdfPage": 70, "lastPrintedPage": 70, "expectedPrimaryOccurrences": 7, "reviewState": "inventory-transcript-and-pack-only-helper-dispositions-complete-review-open" },
     { "id": "tools", "firstPdfPage": 70, "firstPrintedPage": 70, "lastPdfPage": 71, "lastPrintedPage": 71, "expectedPrimaryOccurrences": 35, "reviewState": "inventory-transcript-and-cross-reference-complete-review-open" },
     { "id": "mounts-other-animals", "firstPdfPage": 71, "firstPrintedPage": 71, "lastPdfPage": 72, "lastPrintedPage": 72, "expectedPrimaryOccurrences": 8, "reviewState": "inventory-transcript-and-helper-expansion-complete-review-open" },
-    { "id": "tack-harness-drawn-vehicles", "firstPdfPage": 72, "firstPrintedPage": 72, "lastPdfPage": 72, "lastPrintedPage": 72, "expectedPrimaryOccurrences": 14, "reviewState": "count-and-sequence-researched" },
+    { "id": "tack-harness-drawn-vehicles", "firstPdfPage": 72, "firstPrintedPage": 72, "lastPdfPage": 72, "lastPrintedPage": 72, "expectedPrimaryOccurrences": 14, "reviewState": "inventory-transcript-and-barding-expansion-complete-review-open" },
     { "id": "waterborne-vehicles", "firstPdfPage": 72, "firstPrintedPage": 72, "lastPdfPage": 72, "lastPrintedPage": 72, "expectedPrimaryOccurrences": 6, "reviewState": "count-and-sequence-researched" },
     { "id": "magic-items-a-z", "firstPdfPage": 207, "firstPrintedPage": 207, "lastPdfPage": 251, "lastPrintedPage": 251, "reviewState": "boundary-draft" },
     { "id": "artifact-orb-of-dragonkind", "firstPdfPage": 252, "firstPrintedPage": 252, "lastPdfPage": 253, "lastPrintedPage": 253, "reviewState": "boundary-draft" }
   ],
   "coverage": {
-    "inventoryOccurrences": 199,
-    "transcriptRecords": 199,
+    "inventoryOccurrences": 213,
+    "transcriptRecords": 213,
     "expectedEquipmentPrimaryOccurrences": 219,
     "expectedEquipmentTableLeafRows": 212,
     "expectedEquipmentPackEntries": 7,
@@ -57,8 +57,8 @@
     "expectedMagicItemAzHeadings": 242,
     "expectedArtifactHeadings": 1,
     "extractionHelperMagicItemRecords": 362,
-    "unresolvedEquipmentPrimaryOccurrences": 20,
-    "unresolvedEquipmentHelperRecords": 31,
+    "unresolvedEquipmentPrimaryOccurrences": 6,
+    "unresolvedEquipmentHelperRecords": 6,
     "unresolvedMagicItemSourceHeadings": 243,
     "unresolvedMagicItemHelperRecords": 362
   },
@@ -69,8 +69,9 @@
     "Equipment Packs inventory and source transcript cover all seven entries, exact prices and full published contents prose; all seven pack-only helper components have PDF-backed pack-prose-only dispositions with no invented primary identity, while independent review remains open.",
     "Tools inventory and source transcript cover all 35 physical leaf rows, exact prices, optional weights and the published shared/per-item narratives; the Vehicles row is preserved separately as a PDF-backed cross-reference without inventing a primary item identity, while independent review remains open.",
     "Mounts and Other Animals inventory and source transcript cover all eight physical rows, exact prices, speeds, carrying capacities and shared narrative; Donkey and Mule helper identities explicitly resolve to the single combined source occurrence, while independent review remains open.",
-    "The other 20 primary equipment occurrences and 31 corresponding/helper-derived records still require checked-in inventory/transcript reconciliation.",
-    "The Barding expansion and Potion-of-Healing detail merge still require an explicit disposition/expansion ledger.",
+    "Tack, Harness, and Drawn Vehicles inventory and source transcript cover all 14 physical rows, exact prices, source weights or explicit formula/missing values and applicable narratives; twelve Barding helper identities resolve to the single Barding row plus their respective Armor occurrence. Non-authoritative helper conflicts such as Exotic Saddle weight 50 instead of the official 40 lb. and Ring Mail Barding cost 12 gp instead of the official ×4 formula are not adopted.",
+    "The other six primary equipment occurrences and six corresponding helper records still require checked-in inventory/transcript reconciliation.",
+    "The Potion-of-Healing detail merge still requires an explicit disposition/expansion ledger.",
     "All 242 Magic Items A-Z headings and the Orb of Dragonkind artifact still require full description and page-range transcription.",
     "All 362 helper magic-item records still require parent/variant reconciliation against the 243 official source headings.",
     "The closed 23-value source subcategory enum exists, but all source-table mappings are not yet represented by transcript records.",
