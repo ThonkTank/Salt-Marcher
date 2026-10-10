@@ -562,6 +562,43 @@ export function validateMagicItemAzApparatusOfTheCrab(transcript, inventory) {
     leverCells: expectedProperties.length });
 }
 
+export function validateMagicItemAzArmorPlusOneTwoThree(transcript, inventory) {
+  const id = "srd51:magic-item:magic-items-a-z:8";
+  const occurrence = inventory.occurrences.find(item => item.id === id);
+  invariant(occurrence?.sourceLabel === "Armor, +1, +2, or +3" && occurrence.ordinal === 8
+    && occurrence.sourceTable === "Magic Items A–Z" && occurrence.sourceKind === "detail-heading"
+    && occurrence.firstPdfPage === 208 && occurrence.lastPdfPage === 208
+    && occurrence.firstPrintedPage === 208 && occurrence.lastPrintedPage === 208
+    && occurrence.variantId === null && occurrence.mergeIntoId === null,
+  "Armor-Plus-1-2-3-Occurrence 8 ist nicht exakt als Seite-208-Heading belegt.");
+  const header = "Armor (light, medium, or heavy), rare (+1), very rare (+2), or legendary (+3)";
+  const description = "You have a bonus to AC while wearing this armor. The bonus is determined by its rarity.";
+  const choices = [["+1", "rare"], ["+2", "very-rare"], ["+3", "legendary"]];
+  const record = transcript.records.find(item => item.id === id);
+  invariant(record?.name === "Armor, +1, +2, or +3" && record.category === "magic-item"
+    && record.subcategory === "armor" && record.magic === true
+    && record.rarity?.kind === "varies"
+    && record.rarity.sourceText === "rare (+1), very rare (+2), or legendary (+3)"
+    && record.rarity.choices.length === choices.length
+    && record.attunement === "not-required"
+    && record.sourceHeader?.text === header && record.sourceHeader.occurrenceId === id
+    && record.properties.length === 0
+    && record.description.length === 1 && record.description[0].occurrenceId === id
+    && record.description[0].text === description
+    && JSON.stringify(record.source.pdfPages) === "[208]"
+    && JSON.stringify(record.source.printedPages) === "[208]"
+    && JSON.stringify(record.source.occurrenceIds) === JSON.stringify([id]),
+  "Armor-Plus-1-2-3-Record ist unvollständig oder nicht quellengetreu.");
+  for (const [index, [label, value]] of choices.entries()) {
+    const choice = record.rarity.choices[index];
+    invariant(choice.variantId === `${id}#variant:${index + 1}` && choice.label === label
+      && choice.value === value && choice.occurrenceId === id,
+    `Armor-Plus-1-2-3-Variante ${index + 1} widerspricht dem Quellenheader.`);
+  }
+  return Object.freeze({ id, ordinal: 8, physicalPdfPage: 208, attunement: "not-required",
+    variableRarityChoices: choices.length, descriptionFacts: 1 });
+}
+
 function formatAjvErrors(errors) {
   return [...(errors ?? [])]
     .sort((left, right) => [left.instancePath, left.schemaPath, left.keyword, left.message]
@@ -990,6 +1027,26 @@ function verifyPdfMagicItemAzApparatusOfTheCrab(pdfPath, transcript, inventory) 
     scope: "ordinal-seven-full-header-prose-statistics-and-ten-row-lever-table" });
 }
 
+function verifyPdfMagicItemAzArmorPlusOneTwoThree(pdfPath, transcript, inventory) {
+  const evidence = validateMagicItemAzArmorPlusOneTwoThree(transcript, inventory);
+  const headings = extractMagicItemAzHeadingsFromPdfXml(execFileSync("pdftohtml",
+    ["-xml", "-f", "207", "-l", "251", "-stdout", resolve(pdfPath)],
+    { encoding: "utf8", maxBuffer: 16 * 1024 * 1024 }));
+  invariant(headings.length === 239 && headings[6] === "Apparatus of the Crab"
+    && headings[7] === "Armor, +1, +2, or +3" && headings[8] === "Armor of Invulnerability",
+  "Armor, +1, +2, or +3 muss im PDF exakt Ordinal 8 zwischen Apparatus of the Crab und Armor of Invulnerability sein.");
+  const record = transcript.records.find(item => item.id === evidence.id);
+  const pageText = normalizePdfPageText(extractPdfPage(pdfPath, 208), 208);
+  const facts = [record.sourceHeader.text, record.description[0].text];
+  for (const fact of facts) {
+    invariant(pageText.includes(normalizePdfText(fact)),
+      `Armor-Plus-1-2-3-PDF-Beleg für „${fact}“ fehlt.`);
+  }
+  return Object.freeze({ ...evidence, checkedPdfFacts: facts.length,
+    derivedHeadingCount: headings.length, previousHeading: headings[6], nextHeading: headings[8],
+    scope: "ordinal-eight-full-header-ordered-rarity-variants-attunement-and-description" });
+}
+
 function verifyPdfHelperDispositions(pdfPath, inventory) {
   const occurrences = new Map(inventory.occurrences.map(occurrence => [occurrence.id, occurrence]));
   const pageText = new Map();
@@ -1070,7 +1127,7 @@ export async function verifyItemsSourcePackage({ pdfPath, allowIncomplete = fals
     "Manifest-Transkriptcount stimmt nicht.");
   const magicItemAzSection = inventory.sections.find(section => section.id === "magic-items-a-z");
   invariant(manifest.coverage.capturedMagicItemAzHeadings === magicItemAzSection?.capturedOccurrences
-    && manifest.coverage.capturedMagicItemAzStandaloneRecords === 7
+    && manifest.coverage.capturedMagicItemAzStandaloneRecords === 8
     && manifest.coverage.capturedMagicItemAzMergedDetails === 1
     && manifest.coverage.unresolvedMagicItemSourceHeadings
       === magicItemAzSection.expectedOccurrences - magicItemAzSection.capturedOccurrences,
@@ -1083,6 +1140,7 @@ export async function verifyItemsSourcePackage({ pdfPath, allowIncomplete = fals
   const magicItemAzOpeningSlice = validateMagicItemAzOpeningSlice(transcript, inventory);
   const magicItemAzAnimatedShield = validateMagicItemAzAnimatedShield(transcript, inventory);
   const magicItemAzApparatusOfTheCrab = validateMagicItemAzApparatusOfTheCrab(transcript, inventory);
+  const magicItemAzArmorPlusOneTwoThree = validateMagicItemAzArmorPlusOneTwoThree(transcript, inventory);
   let pdf;
   if (pdfPath) {
     const bytes = await readFile(resolve(pdfPath));
@@ -1097,6 +1155,8 @@ export async function verifyItemsSourcePackage({ pdfPath, allowIncomplete = fals
       magicItemAzAnimatedShieldEvidence: verifyPdfMagicItemAzAnimatedShield(pdfPath, transcript, inventory),
       magicItemAzApparatusOfTheCrabEvidence:
         verifyPdfMagicItemAzApparatusOfTheCrab(pdfPath, transcript, inventory),
+      magicItemAzArmorPlusOneTwoThreeEvidence:
+        verifyPdfMagicItemAzArmorPlusOneTwoThree(pdfPath, transcript, inventory),
       potionHealingMergeEvidence: verifyPdfPotionHealingMerge(pdfPath, transcript, inventory),
       boundedArmorTableEvidence: verifyPdfArmorTableRows(pdfPath, transcript, inventory),
       boundedWeaponTableEvidence: verifyPdfWeaponTableRows(pdfPath, transcript, inventory),
@@ -1114,6 +1174,7 @@ export async function verifyItemsSourcePackage({ pdfPath, allowIncomplete = fals
     magicItemAzOpeningSlice,
     magicItemAzAnimatedShield,
     magicItemAzApparatusOfTheCrab,
+    magicItemAzArmorPlusOneTwoThree,
     potionHealingMerge,
     pdf,
     hashes: Object.freeze({
