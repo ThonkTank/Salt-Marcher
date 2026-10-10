@@ -4,6 +4,8 @@
 
 [README](../README.md) → [Produktziele](PRODUCT.md) / [vollständiger Zielumfang](SCOPE.md) → [Roadmap und aktuelle Aufgaben](ROADMAP.md) → [Beitragen](../CONTRIBUTING.md).
 
+Für automatisierte Beiträge direkt zum [Agenteneinstieg](../CONTRIBUTING.md#agenteneinstieg): Aufgabenwahl, Voraussetzungen und Übergabe.
+
 ## Verbindliche Fachorte
 
 | Frage | Dokument / Arbeitsort |

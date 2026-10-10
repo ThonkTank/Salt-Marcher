@@ -17,6 +17,13 @@ body:
     validations:
       required: true
   - type: textarea
+    id: prerequisites
+    attributes:
+      label: Voraussetzungen und Übernahme
+      description: Tatsächliche Branch-/Commitbasis, Dateien/Fixtures, benötigte Umgebung und Zugriffe, bereits benannter Owner oder frei übernehmbarer Scope. Ist ein GUI-Slot nötig?
+    validations:
+      required: true
+  - type: textarea
     id: acceptance
     attributes:
       label: Abnahme und nächster Empfänger
