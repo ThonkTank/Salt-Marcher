@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import Ajv2020 from "ajv/dist/2020.js";
 import { validateArmorArrowsSlice, validateArmorArrowsPdfXml } from "./items-srd51-armor-arrows.mjs";
 import { validateBagsSlice, validateBagsPdfXml } from "./items-srd51-bags.mjs";
+import { validateBSectionSlice, validateBSectionPdfXml } from "./items-srd51-b-section.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const dataRoot = resolve(root, "src/features/catalog/data");
@@ -1195,6 +1196,7 @@ export async function verifyItemsSourcePackage({ pdfPath, allowIncomplete = fals
   const magicItemAzArmorOfInvulnerability = validateMagicItemAzArmorOfInvulnerability(transcript, inventory);
   const magicItemAzArmorArrows = validateArmorArrowsSlice(transcript, inventory);
   const magicItemAzBags = validateBagsSlice(transcript, inventory);
+  const magicItemAzBSection = validateBSectionSlice(transcript, inventory);
   let pdf;
   if (pdfPath) {
     const bytes = await readFile(resolve(pdfPath));
@@ -1210,6 +1212,9 @@ export async function verifyItemsSourcePackage({ pdfPath, allowIncomplete = fals
       { encoding: "utf8", maxBuffer: 16 * 1024 * 1024 }));
     pdf = Object.freeze({ sha256: OFFICIAL_PDF_SHA256, bytes: bytes.length, pages: manifest.source.pdfPages,
       magicItemAzBagsEvidence: validateBagsPdfXml(bagsXml, bagsHeadings, normalizePdfText),
+      magicItemAzBSectionEvidence: validateBSectionPdfXml(execFileSync("pdftohtml",
+        ["-xml", "-f", "211", "-l", "213", "-stdout", "-i", resolve(pdfPath)],
+        { encoding: "utf8", maxBuffer: 16 * 1024 * 1024 }), bagsHeadings, normalizePdfText),
       occurrenceEvidence: verifyPdfOccurrences(pdfPath, inventory),
       transcriptEvidence: verifyPdfTranscriptFacts(pdfPath, transcript),
       magicItemAzOpeningSliceEvidence: verifyPdfMagicItemAzOpeningSlice(pdfPath, transcript, inventory),
@@ -1247,6 +1252,7 @@ export async function verifyItemsSourcePackage({ pdfPath, allowIncomplete = fals
     magicItemAzArmorOfInvulnerability,
     magicItemAzArmorArrows,
     magicItemAzBags,
+    magicItemAzBSection,
     potionHealingMerge,
     pdf,
     hashes: Object.freeze({

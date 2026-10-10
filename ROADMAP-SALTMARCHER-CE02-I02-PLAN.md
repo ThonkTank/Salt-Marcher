@@ -44,9 +44,38 @@ Poppler-25.03-XML-Ausgabe der drei kompletten Seiten mit Hash-/Lizenzreceipt
 liegt unter `tests/fixtures/items-srd51-bags-poppler-25.03.*`; sie macht die
 prüfentscheidenden Rohdaten offline zugänglich, behauptet aber keinen neuen
 PDF-/GUI-Lauf. Negative Goldens erhalten auch bei unverändertem
-Kreaturen-Multiset die Farb-/Würfelzuordnung. W24 bleibt bis unabhängigem
-Quellenreview offen. Stand: 237 Occurrences / 236 Records, 18/239 A–Z-Headings
-(17 standalone plus Potion-of-Healing-Merge); 221 A–Z-Headings plus Orb offen.
+Kreaturen-Multiset die Farb-/Würfelzuordnung. W24 wurde unabhängig auf
+`42a69b63a69fbf310f1ba4eb4b7128cee2e5c700` geprüft
+([Review 5480292230](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/56#pullrequestreview-5480292230))
+und regulär auf Shared `843562ac256eb293f1b8c95f10077a9a7a7c1a1b`
+integriert; kein Full-S01-/Produkt-/Host-PASS.
+
+W25 liefert den vollständigen verbleibenden B-Abschnitt, A–Z 18–32, Bead of
+Force bis Broom of Flying, physische/gedruckte Seiten 211–213. Alle Header,
+Prosa, Aufzählungen, bedingten Regeln, Recharge-Angaben und der
+seitenübergreifende Berserker-Fluch bleiben erhalten. Belt of Giant Strength
+hat fünf physische Tabellenzeilen mit fünf ordinalgebundenen Raritätschoices;
+die Quelle nennt sechs Varianten, fasst Stone/frost aber in einer Zeile
+zusammen. Diese Zeile bleibt kombiniert; die sechs Varianten und ihr
+unterschiedliches Aussehen/gleicher Effekt bleiben im vollständigen Fließtext.
+Keine erfundenen zusätzlichen Occurrences, Records oder Merges. Header
+`Weapon (any axe)` ergänzt das geschlossene Draft-v1-Subcategory-Enum um
+`weapon`; es wird nicht unbelegt als einfache/martiale Einzelwaffe klassifiziert.
+Gewicht, Kapazität und temperaturabhängige Regeln bleiben Quellenwortlaut,
+keine erfundenen Kosten oder Einheitenumrechnungen.
+
+`tools/items-srd51-b-section.mjs` vergleicht die vollständigen Blöcke bis zur
+Folgeüberschrift, einschließlich Tabellenzelleneigentum und Seitenwechsel.
+Originale drei vollständige Poppler-25.03-XML-Seiten samt Hash-/Lizenzreceipt
+liegen unter `tests/fixtures/items-srd51-b-section-poppler-25.03.*`.
+Negative Goldens schützen Variant-IDs/Rarität/Strength-Zellen, Fluchende,
+Aufzählungen, echte Minuszeichen, Recharge und Bedingungsgrenzen. W25 ist
+ein Quellenkandidat; unabhängiger Review und Integration bleiben offen.
+Stand: 252 Occurrences / 251 Records, 33/239 A–Z-Headings
+(32 standalone plus Potion-of-Healing-Merge); 206 A–Z-Headings plus Orb offen.
+Der erwartete vollständige Occurrence-Count ist 459 (219 Ausrüstung +
+239 A–Z + Orb), nicht der jeweilige Zwischenstand; bekannte Mergezahl bisher 1,
+weitere Merge-/Helperprüfung bleibt offen. `complete:false` bleibt gesetzt.
 Der vollständige PDF-Test wird mit
 `SRD51_SOURCE_PDF=/pfad/SRD_CC_v5.1.pdf node --test tests/items-srd51-source.test.mjs`
 aktiviert. Ohne diese Quelle ist er ausdrücklich skipped; Offline-XML-Fixtures
