@@ -1463,7 +1463,14 @@
         },
         "ownerHandoff": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/13#issuecomment-6093406920",
         "gui": false,
-        "independentIntegrationReview": "pending",
+        "independentIntegrationReview": {
+          "state": "in_progress_by_independent_city_peer",
+          "target": "7dc8f8a864f8ada9246fa6754b43bf2f1514d448",
+          "start": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/7#issuecomment-6093489819",
+          "readDirectly": true,
+          "scopeUnchangedAfterSharedSync": true,
+          "notAPass": true
+        },
         "sharedMerge": "b93a3734e31363635c61356cdb6122fe27b3d326",
         "productConflicts": [],
         "ownerProductBlobsExact": [
@@ -1514,6 +1521,43 @@
           "Owner documentation retains one inherited blank line at EOF reported by diff --check; no product conflict or functional failure. No unsolicited owner-doc change.",
           "Shared checkout foreign dirty checkpoint and two test files untouched; recorded file hashes unchanged."
         ]
+      },
+      "incomingSharedSynchronization": {
+        "id": "E2E-01-INCOMING-SHARED-W11-SYNC",
+        "startedAt": "2026-10-10T03:54:50.130744+00:00",
+        "hexBase": "7dc8f8a864f8ada9246fa6754b43bf2f1514d448",
+        "shared": "22231aa412982d186f705438eae5e543d9eaeb71",
+        "independentReviewTarget": "7dc8f8a864f8ada9246fa6754b43bf2f1514d448",
+        "gui": false,
+        "mergeCandidate": "9b6adb48c6ad644727fb47c65853cb8bd01051e1",
+        "sourceAndFixtureBlobsExact": true,
+        "updatedOwnerRoots": {
+          "checkpoint.json": [
+            "saltMarcherCatalogEncounter"
+          ],
+          "acceptance.json": [
+            "saltMarcherCatalogEncounter"
+          ]
+        },
+        "finishedAt": "2026-10-10T03:55:52Z",
+        "checks": {
+          "check": true,
+          "testsPassed": 496,
+          "testsFailed": 0,
+          "build": true,
+          "cleanExactMergeSha": true,
+          "diffCheck": true
+        },
+        "artifactSha256": {
+          "main.js": "0b1edc823e08ed627bd0befe23639b855ceacf2bcddaf35a98d40723c5cd5a6c",
+          "styles.css": "cdf172e7d3c101d5917c16afe487641a19d9d5afe8ad23365b33c958ee1ac321",
+          "manifest.json": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64"
+        },
+        "nativeOnThisBuild": false,
+        "fullE2E": false,
+        "independentReviewScope": "Unchanged exact target 7dc8f8a, Atlas/domain source and fixture blobs equal after sync; incoming delta only catalog-source manifest, verifier/tests and catalog owner metadata.",
+        "reviewStart": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/7#issuecomment-6093489819",
+        "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/shared-w11-sync-20261010"
       }
     },
     "verification": {
@@ -2875,7 +2919,7 @@
       "platformIssue": 11,
       "checkpointIsAuthoritative": true
     },
-    "updatedAt": "2026-10-10T03:49:52Z"
+    "updatedAt": "2026-10-10T03:55:52Z"
   },
   "phase": "Phase 6: zweiter Nachbesserungslauf teilweise umgesetzt; fünf Restpositionen und unabhängiger Review offen",
   "goal": "Dungeon-Pfad bis zur vollständigen beauftragten Dungeondraft-Verhaltensgleichheit verfolgen: Bedienung und Funktion angleichen, Grafik ungefähr gleichwertig. Zuerst ROADMAP-PARITY.md mit Building und Object Tool abschließen, danach übrige Dungeon-Werkzeuge. Jede Fachphase getrennt planen, umsetzen und unabhängig reviewen; Lücken mit eigenen Nachbesserungs- und Reviewläufen schließen; danach eigene Aufräumphase mit Plan, Umsetzung und Review.",
