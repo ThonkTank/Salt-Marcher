@@ -1,24 +1,47 @@
-# Arbeitsregeln nach Aufgabenwahl
+# Produktarbeit und passende Prüfung
 
-Diese Regeln gelten für ihren jeweiligen Arbeitsschritt; der aktuelle Nutzerauftrag und seine Freigaben haben Vorrang. Für den Einstieg [CONTRIBUTING](../CONTRIBUTING.md#agenteneinstieg) und nur den [gewählten Bereich](INDEX.md) lesen.
+Nutzerauftrag und erteilte Freigaben haben Vorrang. Diese Regeln ersetzen allgemeine getrennte Plan-/Umsetzungs-/Review-/Aufräumzyklen älterer Pläne. Konkrete Produktanforderungen, unabhängige Fachabnahmen und Daten-/Hostschutz bleiben bindend. Besitz und Kommunikation: [REPOSITORY](REPOSITORY.md).
+
+## Sinnvolle Arbeit wählen und begrenzen
+
+- Zuerst den aktuellen Engpass in [#12](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12) lösen oder vorhandene Produktarbeit integrieren; danach den nächsten nutzbaren Ablauf liefern. Ein ausführbares Paket bis zum Ergebnis verfolgen; bei echtem Blocker andere passende Arbeit unterstützen.
+- **Ein Paket, ein zusammenhängendes Ergebnis:** etwa Ort anlegen → Key ändern → Undo → speichern → frisch öffnen. Planung, Implementierung, Regressionen, Review, Nachbesserung und Bereinigung gehören ins vorhandene Issue/Branch/PR; mehrere Commits sind möglich. Eng gekoppelte Teil-PRs zusammenführen.
+- Nur teilen bei eigenständigem Nutzen, tatsächlich unterschiedlichem Besitz/Eingang oder einer notwendigen unabhängig prüfbaren Risikogrenze. Einzelne Felder, Tests und Reviews sind normalerweise Checklistenpunkte; Parallelisierung allein begründet keine Teilung.
+- Hilfsarbeit an Planung, Quellen, Infrastruktur oder Prozessen nennt das **konkrete konsumierende Umsetzungspaket oder die anstehende Entscheidung**. Erforderliche Quellen-/Lizenzgates zählen dazu. Ohne Verbraucher bleibt der Bedarf im Backlog; eine leere Liste rechtfertigt keine neue Planarbeit. Die Hilfsarbeit endet mit dem gelösten Eingang.
+
+## Umsetzung, Review und Abschluss
+
+Ein kurzer Plan im Issue/PR genügt. Eine eigene Plandatei hilft bei komplexen Verträgen/Quellenmatrizen. Review an der lauffähigen Änderung bündeln; vorgezogene Planreviews bei strittigen Daten-/Schnittstellenverträgen oder teuren irreversiblen Entscheidungen. Nachbesserungen nur am betroffenen Befund nachprüfen, ohne zusätzliche allgemeine Aufräumreviewrunde.
+
+Dungeon-Arbeit führt `checkpoint.parityRoadmap`, Hex-Arbeit `checkpoint.hexAtlasExecution`; fremde Wurzeln erhalten. Funktionale Ergebnisse bestimmen [Dungeon-Parität](../ROADMAP-PARITY.md), [Hex-Atlas](../ROADMAP-HEX-ATLAS.md) und die jeweiligen Fachverträge. Eine Plan-/Dokumentationsprüfung erteilt keine Produktabnahme.
+
+## Prüfaufwand nach Änderung und Risiko
+
+| Änderung | Passende Prüfung |
+| --- | --- |
+| Orientierung, Verweise, Quellenabgleich | `npm run check:repo` und betroffene Quellen-/JSON-/Diffprüfung; keine lokale Vollsuite/Typprüfung/Build bei unverändertem Produkt-/Buildpfad. |
+| Offline-Werkzeug | Strukturprüfung und gezielte Werkzeugtests; kein Host-/Großkartenlauf für einen Backlogbefehl. |
+| Produkt, Buildpfad, Abhängigkeiten | Typprüfung, Tests und Build einmal am integrierten Stand plus passende Regression. Vorhandene Exact-SHA-CI nutzen; lokal zusätzlich für Diagnose oder fehlende Prüfung. |
+| Speicherformat, geschützte Texte/IDs, Recovery, Host-/Kampagnenwechsel, Spielerzugriff | Direkte Fehler-/Erhaltungsfälle sowie unabhängiger Review und tatsächliche Host-/Reopen-/Recovery-Abnahme, soweit der Fachvertrag es verlangt. Gesamtqualifikation bleibt an ihren eigenen Gates. |
+
+Belege gelten für ihre tatsächliche Source-/Build-/Fixtureidentität. Bei unverändertem relevantem Pfad können sie mit Diffnachweis weiter gelten; eine neue SHA allein verlangt keinen neuen GUI-Lauf. Geänderte Pfade, Fixtures, relevante Hostbedingungen, Fehlbefunde oder fehlende Evidenz begründen weitere Prüfung. Reviewer bewerten Belege und Risiken, statt automatisch dieselbe Vollsuite zu wiederholen; Herkunft stets korrekt angeben.
+
+## Fortschritt beurteilen und Schleifen beenden
+
+Fortschritt ist zusätzlicher GM-Nutzen oder ein gelöster Umsetzungseingang, keine Zahl von Commits, Issues, Tests oder PASS-Meldungen. Folgen zwei Übergaben ohne neue Funktion, gelösten Eingang oder notwendigen Befund, den Lauf stoppen und bündeln, umsetzen oder den echten Blocker nennen. Keine zusätzliche Mess-/Berichtsrunde.
+
+Kostet weitere Organisation/Prüfung voraussichtlich mehr als die Änderung, das konkrete Risiko nennen und auf die kleinste ausreichende Prüfung reduzieren; echte Daten-/Sicherheits-/Abnahmegrenzen erhalten. Nach zwei erfolglosen Versuchen oder 45 Minuten an derselben technischen Hypothese anhand der Belege neu entscheiden.
 
 ## Veröffentlichen und eingehende Arbeit integrieren
 
-Nutzeranweisung vom 08.10.: Fortschritt regelmäßig committen und pushen, eingehende Repository-Änderungen lokal integrieren. Diese Freigabe gilt für die beauftragten Arbeitspakete; keine erneute Push-Rückfrage nötig. Vor jedem Arbeitspaket und unmittelbar vor Veröffentlichung Remote/Upstream abrufen und eingehende Änderungen übernehmen. Vor dem Anlegen eines Kandidatenbranches auch offene Pull Requests, gleichnamige Remote-Branches und die aktuelle Paketkoordination in Issue #1 prüfen; einen bereits besessenen Lauf gezielt reviewen oder mit dessen Besitzer abstimmen, keinen parallelen Kandidaten dafür anlegen. Nach jedem abgeschlossenen Plan-, Umsetzungs-, Review-, Nachbesserungs- oder Aufräumpaket geprüft committen/pushen; bei langen Phasen spätestens nach dem täglichen Arbeitsabschluss einen prüfbaren Zwischenstand sichern. Planänderungen durch JSON-/Verweis-/Diffprüfung, Produktänderungen durch die Basisprüfungen und passende Regressionen prüfen. Offene Host-/Paritätsabnahmen bleiben ausdrücklich offen. Push-Erfolg gegen den Remote-Commit prüfen. Lokale fremde Änderungen vor Integration sichern und erhalten; nur eigene zusammengehörige Änderungen committen. Veröffentlichten Verlauf nicht umschreiben, kein Force-Push. Divergierende Änderungen integrieren, Konflikte gezielt lösen und betroffene Prüfungen wiederholen. Aktueller gemeinsamer Branch ist `active/installed-phase1`; den tatsächlichen Upstream bei jedem Lauf erneut prüfen. Synchronisation installiert keinen Produktbuild im Obsidian-Vault.
+Die bestehende Freigabe umfasst Commit/Push und GitHub-Koordination. Vor Beginn und unmittelbar vor Veröffentlichung Remote/Upstream abrufen und eingehende Arbeit integrieren. Vor neuem Branch Claims, PRs und Remote-Branches prüfen. Geprüften zusammenhängenden Stand veröffentlichen; bei längerer Arbeit spätestens zum täglichen Abschluss einen prüfbaren Zwischenstand sichern.
 
-## Fachphasen
-
-Das jeweils beauftragte Ziel zyklisch umsetzen. Dungeon-Arbeiten folgen [ROADMAP-PARITY](../ROADMAP-PARITY.md) und führen ihren aktuellen Lauf in checkpoint.parityRoadmap; Hex-Atlas-Arbeiten folgen [ROADMAP-HEX-ATLAS](../ROADMAP-HEX-ATLAS.md) einschließlich der eingeordneten Stadtphasen und führen ihren aktuellen Lauf in checkpoint.hexAtlasExecution. Den Stand des jeweils anderen Pfads erhalten. Jede Fachphase beginnt mit offenen Punkten und konkretem technischem Plan im bestehenden Fachort. Für neue Paketdateien gilt `docs/plans/<bereich>/` mit Owner-/Issue-/Checkpointzuordnung und Indexlink; vorhandene referenzierte Root-Pläne bleiben erhalten. Planung, Umsetzung, Review und Nachbesserung sind eigene Arbeitsläufe mit eigenem Start, Fokus und Ergebnis. Review/Nachbesserung wiederholen, bis keine Pflichtlücke bleibt. Anschließend eine eigene Aufräumphase mit getrenntem Plan-, Umsetzungs- und Reviewlauf durchführen und erforderliche Nachbesserungen erneut reviewen. Erst danach die nächste Phase beginnen. Keine Fachfreigabe aus einer Planprüfung oder bloßen Testzahl ableiten. Bedienung und Funktion müssen dem jeweiligen vereinbarten Originalvergleich entsprechen; für die Grafik genügt eine ungefähr gleichwertige Darstellung. Nutzeranweisung vom 08.10.: bei Bedarf über GitHub mit anderen Agenten koordinieren, Änderungen vor dem Push integrieren und fremde Kennungen/Belege erhalten.
-
+Nur eigene Änderungen committen; lokale fremde Änderungen sichern und erhalten. Kein Force-Push; Konflikte gezielt integrieren und betroffene Prüfungen wiederholen. Shared: `active/installed-phase1`; tatsächlichen Upstream prüfen und Remote-Commit nach Push bestätigen. Build/Sync/Push installieren kein Plugin im Nutzervault. Übergabe nach dem [Kommunikationsvertrag](REPOSITORY.md#kommunikation-nach-inhalt-und-anlass), ohne Bericht je Commit.
 
 ## Hosttests und Schutz
 
-Nur eine Testinstanz auf demselben Gerät; keine parallelen Agenten/Lasttests, andere Programme nicht schließen. Vor echtem Hostlauf den GUI-Slot im Bereich koordinieren. Isolierte Testvaults und synthetische oder eigens freigegebene Daten benutzen. Vor Installation den aktuellen Produktstand sichern; bestehende Karten, Raumtexte und fremde Änderungen schützen.
+Nur eine Testinstanz pro Gerät, keine parallelen Agenten-/Lasttests und keine anderen Programme schließen. Geräteslot im Bereich abstimmen. Isolierte Testvaults mit synthetischen oder ausdrücklich freigegebenen Daten nutzen; vor Installation aktuellen Produktstand sichern. Karten, Raumtexte und fremde Änderungen erhalten.
 
-Nutzerfreigabe vom 02.10.: feste Speicherlimits und hohe Startreserve entfallen für die neuen Tests; normale CPU/GPU/Speicherverwaltung. Nur die Notbremse bei akutem systemweitem Speichermangel bleibt (unter 256 MiB verfügbar oder über 50 Prozent Vollspeicherblockade während zwei Sekunden). Schutzstopps, synthetische Eingaben und Kleinkartenprüfungen nicht als umfassende Abnahme ausgeben.
+Freigabe vom 02.10.: keine festen Speicherlimits/hohe Startreserve; normale Ressourcenverwaltung. Notbremse bei akutem systemweitem Speichermangel: unter 256 MiB verfügbar oder über 50 Prozent Vollspeicherblockade während zwei Sekunden.
 
-Große QA-Dateien und Laufprotokolle liegen außerhalb des Nutzervaults unter `/home/aaron/.cache/dungeon-native-qa/`. Fehlender Zugriff ist kein lokal verifizierter PASS. Ein Handoff nennt Branch/Commit, Build, Fixtureversion/Hashes, tatsächlichen Ablauf, Datei-/Text-/ID-Orakel, Ergebnis, zugänglichen Beleg oder fehlenden Zugriff, offene Grenzen und nächsten Empfänger. Synthetische Eingabe, physische Bedienung und frischen Hostprozess getrennt ausweisen.
-
-## Prüfen
-
-Dokumentation: `npm run check:repo` und passende JSON-/Diffprüfung. Produktcode: `npm run check`, `npm test`, `npm run build` und passende Regressionen. Echte Obsidian-, Großkarten-, Lese- und Bedienabnahme bleiben zusätzlich erforderlich. Höchstens zwei erfolglose Versuche oder 45 Minuten an derselben Hypothese, dann anhand der Belege entscheiden. Kein zusätzlicher Review allein durch diese Ablage; ausdrücklich vereinbarte Fachreviews bleiben am Paket erhalten.
+Große QA-Dateien/Logs liegen außerhalb des Nutzervaults unter `/home/aaron/.cache/dungeon-native-qa/`. Direkter Beleg: Commit/Build, Fixtureversion/Hashes, tatsächlicher Ablauf, Ergebnis und zugängliche Referenz oder fehlender Zugriff. Synthetische Eingabe, physische Bedienung und frischer Hostprozess unterscheiden. Schutzstopps und Kleinkartenprüfungen gelten nur für ihren Scope; unzugängliche Evidenz ist kein selbst verifizierter PASS.

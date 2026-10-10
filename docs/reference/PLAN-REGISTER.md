@@ -149,3 +149,5 @@ Diese Pfade waren vor Einführung der Strukturprüfung bereits im Kandidaten vor
 ## Frühere Koordinationshaupttexte
 
 [Snapshot von #1, #12 und #38 vor der Einstiegskürzung am 10.10.2026](COORDINATION-SNAPSHOT-20261010.json). Enthält ursprüngliche Anforderungen und damalige Status-/Ratifikationsentwürfe mit Herkunft und Texthash; keine aktuellen Arbeitsaufträge. Kommentare und direkte Ownerbelege bleiben in GitHub erhalten.
+
+Frühere Haupttexte der Bereichskoordination #6–#11: [Snapshot vom 10.10.2026](COORDINATION-AREAS-SNAPSHOT-20261010.json), nur für die historische Einordnung. Aktuelle Eingänge stehen im jeweiligen Issue.

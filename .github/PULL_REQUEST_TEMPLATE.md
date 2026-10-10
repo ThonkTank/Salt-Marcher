@@ -1,15 +1,11 @@
 ## Nutzerproblem und Ergebnis
 
-<!-- Konkreter Ablauf vor/nach dieser Änderung. -->
+<!-- Was funktioniert danach? Hilfsarbeit nennt ihren konkreten Verbraucher. -->
 
 ## Aufgabe und Grenzen
 
-<!-- Aufgabenissue, Fachort, bestehender Kandidat, Abhängigkeiten und eigener Scope. Bei neuen/abgelösten Dokumenten den Index im selben Paket pflegen; geänderten Status und nächsten Empfänger im Issue nachziehen. -->
+<!-- Aufgabenissue verlinken; nur Abweichungen vom dort beschriebenen Scope oder neue Abhängigkeiten ergänzen. -->
 
-## Prüfung
+## Prüfung und offene Grenzen
 
-<!-- npm run check:repo und tatsächlich ausgeführte Befehle mit Ergebnissen; relevanter Commit/Build/Fixture und zugängliche Belege. -->
-
-## Offene Abnahmen und Review
-
-<!-- Host, Originalparität, physische Eingabe, Recovery etc. nur soweit relevant. Unabhängigen Reviewer und nächsten Empfänger benennen; kein PASS aus Testzahlen ableiten. -->
+<!-- Tatsächliche Belege mit Commit/Herkunft verlinken, passende Prüfung nach docs/WORKFLOW.md. Fehlende Evidenz und offene Risiken nennen; vorhandene Prüfprotokolle nicht kopieren. -->

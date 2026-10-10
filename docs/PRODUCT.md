@@ -4,28 +4,23 @@
 
 Eine Spielleitung soll eine Kampagne als zusammenhängenden lokalen Arbeitsraum benutzen: Welt und Orte erkunden, Städte und Dungeons bearbeiten, Texte und Encounter vorbereiten und daraus einen Spielabend führen. Gespeicherte Daten müssen nach Neustart und Fehlern zuverlässig wieder auffindbar sein. Ein weiterer isolierter Editor oder ein nur theoretisch beschriebener Fachvertrag erfüllt dieses Ziel noch nicht.
 
-Die vollständige [SaltMarcher-Ablösung](../ROADMAP-SALTMARCHER-REPLACEMENT.md) ist der verbindliche Gesamtumfang. Diese Seite fasst die vorhandenen Ziele zusammen; sie ersetzt weder die Fachanforderungen noch deren Abnahme. Der [vollständige Quellenabgleich](SCOPE.md) macht alle erfassten Zielbereiche, zusätzliche Fachabnahmen und noch offene Quellenkollisionen sichtbar. Die vier Abläufe unten sind Integrationsgates; sie allein beschreiben nicht den gesamten Funktionsumfang.
+Die vollständige [SaltMarcher-Ablösung](../ROADMAP-SALTMARCHER-REPLACEMENT.md) ist der verbindliche Gesamtumfang. Diese Seite fasst die vorhandenen Ziele zusammen; sie ersetzt weder die Fachanforderungen noch deren Abnahme. Der [vollständige Quellenabgleich](SCOPE.md) macht alle erfassten Zielbereiche, zusätzliche Fachabnahmen und noch offene Quellenkollisionen sichtbar. Die Integrationsgates allein beschreiben nicht den gesamten Funktionsumfang.
 
 ## Vier Lieferergebnisse
 
-| Ergebnis | Sichtbarer Nutzen | Abnahme |
-| --- | --- | --- |
-| Kampagne und gemeinsamer Raum | Welt → Ort → Stadt → Haus/Dungeon → Raum-Key bearbeiten, gemeinsam speichern und nach vollständigem Neustart unverändert öffnen | E2E-01 |
-| Vorbereitung und Live-Spiel | Vorbereitung ausdrücklich in eine eigenständige LiveSession überführen; Party, Szenen und Encounter ausführen, ohne die Vorbereitung ungewollt zu verändern | E2E-02 |
-| Reise und Weltreaktion | Reise, Zeit und Kalender konsistent fortschreiben; Wetter, Shops und Musik reagieren ohne doppelte Wirkung bei Retry oder Restart | E2E-03 |
-| Portabilität und sichere Anzeige | Kampagne und Assets vollständig übertragen/wiederherstellen; Spieler sehen nur freigegebene Informationen; Bedienung funktioniert auf den unterstützten Hosts | E2E-04 |
+Die [Roadmap](ROADMAP.md#lieferfolge-des-gesamtprodukts) führt E2E-01 bis E2E-04 mit Ablauf, Reihenfolge und Eingängen. Das folgende Portfolio beschreibt den gesamten Zielumfang, einschließlich der zusätzlichen Fachabnahmen.
 
 ## Vollständiges Funktionsportfolio
 
 | Zielbereich | Was zusätzlich zum Integrationsablauf fertig werden muss |
 | --- | --- |
 | Kampagne und Wissen | Gesamter Datenlebenszyklus; Katalog, Regeln, Referenzgraph, Notizsuche, NPCs/Orte/Fraktionen/Quests/Gerüchte und World Planner |
-| Party, Planung und Live-Spiel | Roster/aktuelle/erwartete Party getrennt; Adventuring Day; manuelle Timeline; reproduzierbare Session-/Reward-Generierung; ständig verfügbare Primary/Split Scenes und mehrere Encounter-/Chase-Masken |
+| Party, Planung und Live-Spiel | Vorbereitung ausdrücklich in eine unabhängige LiveSession überführen, ohne Planner-Rückwirkung; Roster/aktuelle/erwartete Party getrennt; Adventuring Day; manuelle Timeline; reproduzierbare Session-/Reward-Generierung; ständig verfügbare Primary/Split Scenes und mehrere Encounter-/Chase-Masken |
 | Kampf und Nachbereitung | Encounter Tables, Initiative/HP/Zustände/Undo, Abschluss, XP/Level, Treasures und Charakterlootledger, Handel, kumulativer Lootausgleich und erklärbare Korrekturhistorie |
 | Atlas und Kartenwerkzeuge | Vollständige beauftragte Dungeon-/Wonderdraft-Werkzeugfunktion, Welt-/Hexgestaltung, Assets, Ebenen, Licht, Labels, Detailkarten und Ausgabe; ein durchgehend bearbeitbarer Atlas |
 | Erweiterter Dungeon | Kontinuierliche 3D-Räume/Höhen, Paths/Passages, Graph-Entwurf, Key-Batchbearbeitung, Attributvererbung, Inhaltsvorlagen, dynamische Beschreibungen, Geheim-/Trap-Features und Dokument-/Paketausgabe; konkrete Zuordnung noch offen |
 | Städte | Volle Funktionsergebnisse von Canvas of Kings, Watabou und Fantasy Town Generator, einschließlich Erzeugung, Bewohnern/Beziehungen/Fraktionen/Tagesabläufen; geschützte Regeneration, Innenräume und Ausgabe |
-| Reise und Weltzeit | Hex-/Dungeonreise, Unterbrechungen/Tracks/Perception, eigene Scene-Zeiten, Fantasykalender, einmalige gemeinsame Worldfolgen und kausales Undo |
+| Reise und Weltzeit | Hex-/Dungeonreise, Unterbrechungen/Tracks/Perception, eigene Scene-Zeiten, Fantasykalender, einmalige gemeinsame Worldfolgen auch bei Retry/Restart und kausales Undo |
 | Unterstützende Systeme | Shops/Restock, regionales Wetter/Klima, lokale Musik/Autoplay und geschichtete Ambience mit Vorrang manueller GM-Entscheidungen |
 | Actor Autonomy | Ausdrücklich freigegebene NPC-/Monsterbedürfnisse, Jobs/Reservierungen, begrenzte Konflikte, Erklärbarkeit und atomare zeitgebundene Steps; Partygefahr bleibt beim GM |
 | Anzeige, Daten und Erweiterung | Sichere passive Spielerprojektion mit getrenntem Wissen/aktueller Sicht; automatische Speicherung/Recovery; komplette unabhängige Im-/Exporte; installierbare Extensions mit begrenzten widerrufbaren Rechten |
@@ -37,7 +32,7 @@ Quellen, Lieferphasen und verbleibende Zuordnungslücken stehen in [SCOPE.md](SC
 
 - Eine gemeinsame Atlasfläche mit einer Kamera, History und Savegrenze verbindet Hex, Orte, Städte und Dungeons. Navigation erfolgt durch Zoom statt erforderlicher Editorwechsel.
 - Karten-, Raum- und Abschnittsidentitäten bleiben stabil. Markdown und geschützte Nutzertexte bleiben wortgetreu; fremde oder veraltete Schreibautorität wird gesperrt.
-- Lokale Offline-Nutzung, nachvollziehbare Quellen, portable Daten/Assets, automatische Speicherung ohne manuelle Savepflicht und konfliktgeschützte Persistenz gehören zum Produkt. Sinnvolle Laufzustände und bestätigte Fakten bleiben nach Neustart erhalten.
+- Lokale Offline-Nutzung, nachvollziehbare Quellen, portable Daten/Assets, automatische Speicherung ohne manuelle Savepflicht und konfliktgeschützte Persistenz gehören zum Produkt. Sinnvolle Laufzustände und bestätigte Fakten bleiben nach vollständigem Neustart erhalten.
 - Dungeon-/Wonderdraft-Bedienung und Funktion werden direkt gegen die vereinbarten Originale geprüft, mit den ausdrücklich beschlossenen Atlasanpassungen. Stadtfunktionen sind vollständig gleichwertig mit den drei Vorbildern bei besserer eigener Bedienung; Stadt-Originalgesten sind keine Pflicht. Für Dungeon-Grafik genügt die vereinbarte ungefähr gleichwertige Darstellung. Testzahlen ersetzen keinen Originalvergleich.
 - Physische Bedienung, große Karten/Welten, Tastatur, 200-Prozent-Skalierung, Accessibility und die erforderlichen Betriebssysteme benötigen eigene Nachweise.
 
