@@ -2,140 +2,29 @@
   "repositoryOrientation": {
     "date": "2026-10-10",
     "state": "integrated_with_direct_user_authorization",
-    "scope": "Product navigation, contributor workflow and GitHub backlog organization only; no product or acceptance approval",
+    "scope": "Repository orientation, proportional contributor communication and GitHub main-text cleanup; no product or acceptance approval.",
     "branch": "active/installed-phase1",
-    "integrationPullRequest": 43,
-    "integrationCommit": "3bfb90a20dc59642c56e4b415b1a08aa15349919",
-    "authorization": "Direct user instruction to integrate this cleanup without the independent review requirement.",
     "entrypoint": "README.md",
     "productGoals": "docs/PRODUCT.md",
     "deliveryOrder": "docs/ROADMAP.md",
     "contributing": "CONTRIBUTING.md",
     "documentIndex": "docs/INDEX.md",
     "coordinationIssue": 12,
-    "tasks": [
-      38,
-      39,
-      40,
-      41,
-      42
-    ],
-    "scopeAudit": {
-      "date": "2026-10-10",
-      "document": "docs/SCOPE.md",
-      "sourceRegister": "docs/scope-sources.json",
-      "sourceRepository": "ThonkTank/Salt-Marcher",
-      "sourceRevision": "9de85c1a26f526acbc1af332ac5962e185c0aab2",
-      "requirementsFiles": 36,
-      "technicalNeeds": 38,
-      "capabilitySubsections": 39,
-      "capabilityAcceptanceReferences": 80,
-      "targetSmrAcceptanceCases": 18,
-      "followupIssue": 44,
-      "assessment": "Known source domains explicitly covered; detailed target-rule conflicts, Dungeon work-package mapping and complete original inventories remain open. No acceptance states changed."
-    },
-    "next": "Package owners keep current task main text/labels and their own checkpoint root aligned at handoff. Integration decisions remain in issue #12; no stale run narratives in entrypoints.",
-    "agentEntry": "CONTRIBUTING.md#agenteneinstieg",
-    "contributorAudit": {
-      "date": "2026-10-10",
-      "readyTaskBase": "active/installed-phase1",
-      "fixtureGenerator": "tests/core/pack-fixtures.ts",
-      "taskStatusLabels": [
-        "status:ready",
-        "status:active",
-        "status:blocked"
-      ],
-      "limits": "No product, original or native host acceptance; existing product-owner candidates preserved.",
-      "cleanCheckoutVerification": {
-        "commit": "321a41c1fa651e6c77f005566ebbafc7080eb960",
-        "node": "v22.23.3",
-        "install": "npm ci PASS",
-        "check": "npm run check PASS",
-        "tests": 443,
-        "testState": "PASS",
-        "build": "npm run build PASS",
-        "targetedModelTest": "1/1 PASS",
-        "requiresHost": false
-      },
-      "issueDependencies": {
-        "39": [
-          38
-        ],
-        "40": [
-          39
-        ]
-      },
-      "completedStarter": {
-        "issue": 42,
-        "owner": "Chronik",
-        "pullRequest": 45,
-        "integrationCommit": "7ef025c94fe438c31b20fdc8632b2c9d31b6bc68",
-        "document": "docs/CONTRIBUTOR-FIXTURE-B.md"
-      },
-      "initialStarterIssue": 46
-    },
-    "sustainabilityAudit": {
-      "date": "2026-10-10",
-      "policy": "docs/REPOSITORY.md",
-      "compatibilityInventory": "docs/repository-policy.json",
-      "offlineCheck": "npm run check:repo",
-      "guardTests": "npm run test:repo",
-      "readOnlyGitHubAudit": "npm run audit:backlog",
-      "ci": "Structure gate in PR baseline and on push to active/installed-phase1",
-      "newPlanLocation": "docs/plans/<area>/",
-      "legacySharedPlans": 94,
-      "existingCandidatePlanPaths": 16,
-      "guardTestCount": 13,
-      "backlogLabelAudit": "PASS; read-only; no task mutation",
-      "branchProtection": "Cannot verify/configure with current access: protection endpoint 403; private-repository rulesets API reports plan restriction. CI reports violations but does not prevent direct pushes.",
-      "limits": "Semantic roadmap freshness and acceptance remain with package/integration/domain owners; no product, architecture or acceptance states changed."
-    },
+    "repositoryContract": "docs/REPOSITORY.md",
+    "workContract": "docs/WORKFLOW.md",
     "contextTool": "npm run context",
-    "referenceRegister": "docs/reference/PLAN-REGISTER.md",
-    "navigationCleanup": {
-      "date": "2026-10-10",
-      "scope": "Short area-based entrypoints, optional historical register, exact acceptance/context selectors and coordination main-text cleanup; no product or gate approval.",
-      "preserved": "All existing Fachplan paths, foreign checkpoint roots, acceptance entries, architecture and pinned scope evidence. Historical issue main texts archived; live owner comments untouched.",
-      "next": "Package owners keep current task main text/labels and their own checkpoint root aligned at handoff. Integration decisions remain in issue #12; no stale run narratives in entrypoints.",
-      "verification": {
-        "node": "v22.23.3",
-        "structure": "PASS",
-        "navigationAndGuardTests": 18,
-        "typecheck": "PASS",
-        "tests": 461,
-        "build": "PASS",
-        "limits": "Repository navigation and existing regression checks; no new product/host acceptance."
-      }
-    },
     "nextTaskCommand": "npm run next",
-    "taskDiscoveryAudit": {
-      "date": "2026-10-10",
-      "finding": "The ready queue was empty and parent #44 still advertised completed #46.",
-      "resolution": "Created bounded existing-scope tasks #51/#52, updated parent #44 and added live task discovery to the entrypoints.",
-      "parentIssue": 44,
-      "followupIssues": [
-        51,
-        52
-      ],
-      "verification": "Live query PASS; #51 was already claimed by Chronik and excluded, #52 returned as the first ready task. 21/21 navigation/structure/task tests PASS on Node 22.",
-      "limits": "Availability is live, not promised permanently. No reassignment of active work and no product/host approval."
+    "referenceRegister": "docs/reference/PLAN-REGISTER.md",
+    "next": "Read the live product bottleneck and task claims with npm run next; delivery decisions remain in #12. Owners replace their current main text/checkpoint at meaningful handoffs, without repeated full reports.",
+    "verification": {
+      "documentationCommit": "f0965feab2931e78739e44a1000e68b82208ceb7",
+      "structure": "PASS",
+      "ci": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/actions/runs/38071524658",
+      "backlogLabels": "PASS after removing stale active label from closed #51",
+      "preserved": "Product code, complete product scope, pinned sources, architecture, acceptance and all foreign checkpoint roots unchanged."
     },
-    "teamOrganization": {
-      "date": "2026-10-10",
-      "contract": "docs/REPOSITORY.md#selbstorganisation-ohne-zentrale-zuweisung",
-      "scope": "Self-selected executable tasks, explicit claims, independent review uptake where agreed, bounded successors from confirmed unowned scope and owner-led handoffs.",
-      "observedEvidence": "Chronik claimed #51 and published PR #53 without central assignment. This demonstrates task uptake and delivery; integrated product gates and sustained team throughput remain unproven.",
-      "limits": "No automatic claim expiry, reassignment, product decision or approval. Existing domain evidence and device-slot requirements remain."
-    },
-    "productWorkPolicy": {
-      "date": "2026-10-10",
-      "contract": "docs/WORKFLOW.md",
-      "change": "One useful outcome per package; implementation, necessary tests and cleanup together; risk-based checks and direct consumers for enabling work. Replaces generic separate plan/review/cleanup cycles.",
-      "taskDiscovery": "Live priority:now tasks visible separately without reassigning them; product tasks before documentation at equal priority.",
-      "backlogAdjustment": "Unclaimed #52 deferred until a concrete implementation consumer/decision owner is named. Active #51 and product-owner candidates retained.",
-      "verification": "23/23 structure/context/task selection tests PASS on Node 22; offline references PASS.",
-      "limits": "No product, architecture, acceptance or independent host-gate approval; semantic value and proportional review remain owner decisions."
-    }
+    "limits": "Semantic freshness and product/domain/host acceptance remain with their owners. Branch protection could not be configured or verified with existing access.",
+    "previousOrientation": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/blob/f0965feab2931e78739e44a1000e68b82208ceb7/checkpoint.json"
   },
   "saltMarcherReplacement": {
     "date": "2026-10-10",
