@@ -45,4 +45,5 @@ import "./core/dungeon-atlas-source.test";
 import "./core/atlas-e2e-composition.test";
 import "./core/atlas-spatial.test";
 import "./core/atlas-spatial-repository.test";
+import "./core/atlas-campaign-source.test";
 import "./core/atlas-spatial-host.test";

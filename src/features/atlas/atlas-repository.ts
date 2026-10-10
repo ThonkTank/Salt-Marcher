@@ -22,7 +22,17 @@ import {
   type TerrainReference,
 } from "./terrain-schema";
 import { TerrainSource } from "./terrain-source";
-import { LocationOwners, newLocationPath } from "./location-owners";
+import {
+  LocationOwners,
+  newLocationPath,
+  locationPath,
+} from "./location-owners";
+import {
+  projectAtlasNativeCapture,
+  type AtlasCaptureRequest,
+  type AtlasNativeCaptureV1,
+  type AtlasNativeFile,
+} from "./atlas-campaign-source";
 import {
   parseLocationDocument,
   serializeLocationDocument,
@@ -53,6 +63,13 @@ interface Snapshot {
   readonly locations: ReadonlyMap<string, string | null>;
   readonly details: ReadonlyMap<string, DetailRecord>;
 }
+interface NativeCapturePin {
+  readonly source: TerrainSource;
+  readonly generation: number;
+  readonly historyEpoch: number;
+  readonly repositoryEpoch: number;
+  readonly assertCurrent: () => void;
+}
 // All Atlas leaves of one backend share the queue, including draft/open operations.
 const queues = new WeakMap<object, Promise<unknown>>();
 function same(a: unknown, b: unknown): boolean {
@@ -80,6 +97,16 @@ export class AtlasRepository {
   private details?: DetailOwners;
   private graph?: SpatialGraph;
   private generation = 0;
+  private nativeEpoch = 0;
+  private nativeCaptures = new WeakMap<
+    AtlasNativeCaptureV1,
+    {
+      pin: NativeCapturePin;
+      extraLocations: ReadonlySet<string>;
+      draft: string | null;
+      journal: string | null;
+    }
+  >();
   constructor(
     readonly store: FileStore,
     readonly worldPath: string,
@@ -101,6 +128,17 @@ export class AtlasRepository {
       result.catch(() => {}),
     );
     return result;
+  }
+  /** Baseline/journal activity invalidates captures even if eventual native bytes equal before. */
+  private mutating<T>(operation: () => Promise<T>): Promise<T> {
+    return this.exclusive(async () => {
+      this.nativeEpoch++;
+      try {
+        return await operation();
+      } finally {
+        this.nativeEpoch++;
+      }
+    });
   }
   private dataPath(file: string): string {
     if (!isTerrainFile(file)) throw new Error("Unzulässige Landschaftsdatei.");
@@ -197,7 +235,7 @@ export class AtlasRepository {
         );
   }
   open(): Promise<TerrainSource> {
-    return this.exclusive(async () => {
+    return this.mutating(async () => {
       if (this.source) throw new Error("Atlas ist bereits geöffnet.");
       let raw = await this.store.read(this.worldPath);
       if (raw === null) throw new Error("Atlasdatei fehlt.");
@@ -395,6 +433,231 @@ export class AtlasRepository {
       details: this.details?.snapshot() ?? new Map(),
     };
   }
+  private captureCurrent(pin: NativeCapturePin): void {
+    const result: unknown = pin.assertCurrent();
+    if (result !== undefined)
+      throw new Error("Captureprüfung muss synchron und schreibfrei sein.");
+    if (
+      this.source !== pin.source ||
+      this.generation !== pin.generation ||
+      this.nativeEpoch !== pin.repositoryEpoch ||
+      pin.source.history.epoch !== pin.historyEpoch
+    )
+      throw new Error("Native Atlas-Erfassung ist veraltet.");
+  }
+  /** Full referenced native bytes; never hydrates Sources, writes files or asserts Campaign authority. */
+  captureNative(request: AtlasCaptureRequest): Promise<AtlasNativeCaptureV1> {
+    if (!this.source || nativeId(request.worldId) !== this.source.world.id)
+      throw new Error(
+        "Native Atlas-Erfassung benötigt die aktuelle Weltkennung.",
+      );
+    const assertCurrent = request.assertCurrent ?? (() => {});
+    const guardResult: unknown = assertCurrent();
+    if (guardResult !== undefined)
+      throw new Error("Captureprüfung muss synchron und schreibfrei sein.");
+    const pin: NativeCapturePin = {
+      source: this.source,
+      generation: this.generation,
+      historyEpoch: this.source.history.epoch,
+      repositoryEpoch: this.nativeEpoch,
+      assertCurrent,
+    };
+    const snapshot = this.snapshot();
+    const extra = (request.additionalLocations ?? []).map((loc) => ({
+      id: nativeId(loc.id),
+      path: locationPath(loc.path),
+    }));
+    const seenExtra = new Set<string>(),
+      seenPaths = new Set<string>();
+    for (const loc of extra) {
+      if (seenExtra.has(loc.id) || seenPaths.has(loc.path))
+        throw new Error("Mehrdeutiger zusätzlicher Ortsbestand.");
+      seenExtra.add(loc.id);
+      seenPaths.add(loc.path);
+    }
+    return this.exclusive(async () => {
+      this.captureCurrent(pin);
+      const files: AtlasNativeFile[] = [
+        {
+          kind: "world",
+          id: snapshot.world.id,
+          path: this.worldPath,
+          before: this.baseline,
+          after: sameWorld(snapshot.world, this.baselineWorld)
+            ? this.baseline
+            : this.worldText(snapshot.world),
+        },
+      ];
+      const locations = new Map(snapshot.locations);
+      const locationIds = new Set([
+        ...snapshot.world.placements.map((p) => p.locationId),
+        ...locations.keys(),
+      ]);
+      const extraLocations = new Set<string>();
+      for (const id of locationIds) {
+        const bytes = await this.locations.captureBytes(id, locations);
+        this.captureCurrent(pin);
+        files.push({ kind: "location", id, ...bytes });
+        locations.set(id, bytes.after);
+      }
+      for (const loc of extra) {
+        const existing = files.find((file) => file.id === loc.id);
+        if (existing) {
+          if (existing.kind !== "location" || existing.path !== loc.path)
+            throw new Error(
+              "Zusätzlicher Ortsbestand besitzt eine fremde Bindung.",
+            );
+          continue;
+        }
+        const bytes = await this.store.read(loc.path);
+        this.captureCurrent(pin);
+        if (bytes === null || parseLocationDocument(bytes).id !== loc.id)
+          throw new Error(
+            "Zusätzliche Ortsdatei fehlt oder besitzt eine fremde Kennung.",
+          );
+        files.push({
+          kind: "location",
+          id: loc.id,
+          path: loc.path,
+          before: bytes,
+          after: bytes,
+        });
+        locations.set(loc.id, bytes);
+        extraLocations.add(loc.id);
+      }
+      const details = new Map(snapshot.details);
+      const references = new Map(detailReferences(snapshot.world, locations));
+      for (const record of details.values()) {
+        if (
+          references.has(record.id) &&
+          references.get(record.id) !== record.kind
+        )
+          throw new Error("Fremder nativer Detailtyp.");
+        references.set(record.id, record.kind);
+      }
+      for (const [id, kind] of references) {
+        if (!this.details)
+          throw new Error("Native Detailquellen sind nicht angeschlossen.");
+        const captured = await this.details.captured(kind, id, details);
+        this.captureCurrent(pin);
+        const record = captured.record;
+        details.set(id, record);
+        files.push({
+          kind,
+          id,
+          path: record.path,
+          before: captured.saved,
+          after: same(record.bytes, captured.saved)
+            ? captured.saved
+            : record.bytes,
+        });
+      }
+      checkSpatialSnapshot(snapshot.world, locations, details);
+      const currentRefs = new Map(
+        snapshot.world.chunks.map((ref) => [ref.file, ref]),
+      );
+      const beforeRefs = new Map(
+        this.baselineWorld.chunks.map((ref) => [ref.file, ref]),
+      );
+      const chunkFiles = new Set([
+        ...currentRefs.keys(),
+        ...beforeRefs.keys(),
+        ...this.bases.keys(),
+        ...this.restored.keys(),
+      ]);
+      for (const file of chunkFiles) {
+        const path = this.dataPath(file),
+          before = await this.store.read(path);
+        this.captureCurrent(pin);
+        if (
+          (this.bases.has(file) && this.bases.get(file) !== before) ||
+          (beforeRefs.has(file) && before === null) ||
+          (!beforeRefs.has(file) && !this.bases.has(file) && before !== null)
+        )
+          throw new FileConflict(path);
+        if (beforeRefs.has(file))
+          parseTerrainChunk(before!, snapshot.world.id, beforeRefs.get(file)!);
+        const ref = currentRefs.get(file);
+        const after = ref
+          ? (snapshot.loaded.get(file) ??
+            (this.restored.has(file) ? this.restored.get(file)! : before))
+          : null;
+        if (ref) {
+          if (after === null)
+            throw new Error("Referenzierte Landschaftsdatei fehlt.");
+          parseTerrainChunk(after, snapshot.world.id, ref);
+        }
+        // Nonreferenced files retained by the Source may represent a deleted/new local chunk.
+        if (before !== null || after !== null)
+          files.push({ kind: "terrain", id: null, path, before, after });
+      }
+      const draft = await this.store.read(this.draftPath),
+        journal = await this.store.read(this.journalPath);
+      this.captureCurrent(pin);
+      if (draft !== this.draftRaw || journal !== null)
+        throw new FileConflict(
+          journal !== null ? this.journalPath : this.draftPath,
+        );
+      const capture = await projectAtlasNativeCapture(
+        {
+          generation: pin.generation,
+          historyEpoch: pin.historyEpoch,
+          repositoryEpoch: pin.repositoryEpoch,
+        },
+        snapshot.world,
+        files,
+      );
+      this.captureCurrent(pin);
+      const entry = { pin, extraLocations, draft, journal };
+      await this.verifyNativeFiles(capture, entry);
+      this.nativeCaptures.set(capture, entry);
+      return capture;
+    });
+  }
+  /** Verify only a capture issued by this Repository, under its original consumer guard. */
+  verifyNativeCapture(capture: AtlasNativeCaptureV1): Promise<void> {
+    const entry = this.nativeCaptures.get(capture);
+    if (!entry)
+      return Promise.reject(
+        new Error("Native Erfassung gehört zu einer fremden Lebensdauer."),
+      );
+    return this.exclusive(() => this.verifyNativeFiles(capture, entry));
+  }
+  private async verifyNativeFiles(
+    capture: AtlasNativeCaptureV1,
+    entry: {
+      pin: NativeCapturePin;
+      extraLocations: ReadonlySet<string>;
+      draft: string | null;
+      journal: string | null;
+    },
+  ): Promise<void> {
+    this.captureCurrent(entry.pin);
+    for (const file of capture.files) {
+      if (file.kind === "location" && !entry.extraLocations.has(file.id!)) {
+        if ((await this.locations.resolve(file.id!)) !== file.path)
+          throw new FileConflict(file.path);
+      } else if (file.kind === "city" || file.kind === "dungeon") {
+        if (
+          !this.details ||
+          (await this.details.resolve(file.kind, file.id!)) !== file.path
+        )
+          throw new FileConflict(file.path);
+      }
+      this.captureCurrent(entry.pin);
+      if ((await this.store.read(file.path)) !== file.before)
+        throw new FileConflict(file.path);
+      this.captureCurrent(entry.pin);
+    }
+    for (const [path, bytes] of [
+      [this.draftPath, entry.draft],
+      [this.journalPath, entry.journal],
+    ] as const) {
+      if ((await this.store.read(path)) !== bytes)
+        throw new Error("Native Atlas-Dateigrenze ist veraltet.");
+      this.captureCurrent(entry.pin);
+    }
+  }
   private changes(snapshot: Snapshot): readonly DraftChunk[] {
     const refs = new Map(snapshot.world.chunks.map((r) => [r.file, r])),
       beforeRefs = new Map(this.baselineWorld.chunks.map((r) => [r.file, r])),
@@ -491,7 +754,7 @@ export class AtlasRepository {
   }
   /** Explicitly recover only a closed new-copy journal, even without its root file. */
   recoverCopy(): Promise<AtlasRecovery> {
-    return this.exclusive(async () => {
+    return this.mutating(async () => {
       if (!this.worldPath.endsWith(".overworld"))
         throw new Error("Die Wiederherstellung benötigt einen Atlasnamen.");
       const transaction = new FileTransaction(
@@ -560,7 +823,7 @@ export class AtlasRepository {
       throw new Error(
         "Die Kopie benötigt einen eigenen Atlasnamen und eine neue Weltkennung.",
       );
-    return this.exclusive(async () => {
+    return this.mutating(async () => {
       // Never recover or replace another owner's destination journal/draft.
       for (const target of [path, path + ".draft", path + ".journal"])
         if ((await this.store.read(target)) !== null)
@@ -762,7 +1025,7 @@ export class AtlasRepository {
         same([...current.details], [...snapshot.details])
       );
     };
-    return this.exclusive(async () => {
+    return this.mutating(async () => {
       if (!unchanged())
         throw new Error("Atlas wurde während des Verwerfens weiterbearbeitet.");
       await this.details?.verify(snapshot.details);
@@ -799,7 +1062,7 @@ export class AtlasRepository {
   }
   persistDraft(): Promise<void> {
     const snapshot = this.snapshot();
-    return this.exclusive(() => this.persist(snapshot));
+    return this.mutating(() => this.persist(snapshot));
   }
   private async persist(snapshot: Snapshot): Promise<void> {
     if (this.details)
@@ -845,7 +1108,7 @@ export class AtlasRepository {
   }
   save(): Promise<void> {
     const snapshot = this.snapshot();
-    return this.exclusive(async () => {
+    return this.mutating(async () => {
       // Retain the complete local work even if the subsequent canonical save conflicts.
       await this.persist(snapshot);
       await this.details?.verify(snapshot.details);

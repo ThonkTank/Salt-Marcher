@@ -270,4 +270,24 @@ export class LocationOwners {
       throw new Error("Ortsdatei fehlt; Kopie wurde nicht angelegt.");
     return { path, saved, document: document(raw, id) };
   }
+  /** Read-only native evidence, including a locally removed owner's tombstone. */
+  async captureBytes(id: string, loaded: ReadonlyMap<string, string | null>) {
+    const path = this.paths.get(id);
+    if (!path || (await this.resolve(id)) !== path)
+      throw new Error("Orts-Capture besitzt eine fremde Pfadbindung.");
+    const before = await this.store.read(path),
+      base = this.bases.get(id);
+    if (base && before !== base.before) throw new FileConflict(path);
+    let after = loaded.has(id) ? loaded.get(id)! : before;
+    if (after === null && !loaded.has(id)) throw new Error("Ortsdatei fehlt.");
+    if (after !== null) {
+      document(after, id);
+      if (
+        before !== null &&
+        serializeLocationDocument(document(before, id)) === after
+      )
+        after = before;
+    }
+    return { path, before, after };
+  }
 }

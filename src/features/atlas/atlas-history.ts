@@ -74,6 +74,16 @@ export class AtlasHistory {
   private listeners = new Set<() => void>();
   private preflights = new Set<AtlasPreflight>();
   private checking = false;
+  private epochValue = 0;
+  /** Local source evidence only. Undo never restores an earlier epoch (including A→B→A). */
+  get epoch(): number {
+    return this.epochValue;
+  }
+  private advanceEpoch(): void {
+    if (this.epochValue === Number.MAX_SAFE_INTEGER)
+      throw new Error("Atlas-Quellzähler ist ausgeschöpft.");
+    this.epochValue++;
+  }
   private writable(): void {
     if (this.checking)
       throw new Error("Atlasprüfung darf den Zustand nicht ändern.");
@@ -91,6 +101,7 @@ export class AtlasHistory {
     this.writable();
     if (!ownerId || this.owners.has(ownerId))
       throw new Error("Atlasbesitzer bereits registriert.");
+    this.advanceEpoch();
     this.owners.set(ownerId, { values: new Map(), validate });
   }
   private owner(id: string): Owner {
@@ -113,6 +124,7 @@ export class AtlasHistory {
         throw new Error("Laden würde eine Atlasänderung ersetzen.");
       next.set(target, value);
     }
+    if (next.size !== owner.values.size) this.advanceEpoch();
     owner.values = next;
   }
   read(ownerId: string, target: string): AtlasValue {
@@ -169,6 +181,8 @@ export class AtlasHistory {
       this.checking = false;
     }
     if (!commit) return;
+    if (command.changes.some((c) => !sameAtlasValue(c.before, c.after)))
+      this.advanceEpoch();
     for (const [id, values] of pending) this.owner(id).values = values;
   }
   private command(raw: AtlasCommand): AtlasCommand {
