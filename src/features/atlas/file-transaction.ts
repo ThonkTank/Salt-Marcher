@@ -15,6 +15,17 @@ export interface AtlasFileJournal {
   readonly writes: readonly AtlasFileWrite[];
 }
 export type AtlasRecovery = "none" | "rolled_back" | "committed";
+export interface AtlasFileRollbackReceipt {
+  readonly transactionId: string;
+  readonly outcome: "rolled_back";
+  readonly journalState: "absent";
+  readonly writes: readonly (AtlasFileWrite & { readonly current: string | null })[];
+}
+export interface AtlasFileTransactionObserver {
+  prepared(journal: AtlasFileJournal): void | Promise<void>;
+  committed(journal: AtlasFileJournal): void | Promise<void>;
+  rolledBack(receipt: AtlasFileRollbackReceipt): void | Promise<void>;
+}
 const queues = new WeakMap<object, Map<string, Promise<unknown>>>();
 
 /**
@@ -22,6 +33,7 @@ const queues = new WeakMap<object, Map<string, Promise<unknown>>>();
  * This does not promise filesystem fsync/TOCTOU guarantees. Hosts share one scope per backend.
  */
 export class FileTransaction {
+  private readonly rollbackReceipts = new WeakSet<object>();
   constructor(
     readonly store: FileStore,
     readonly journalPath: string,
@@ -30,6 +42,7 @@ export class FileTransaction {
     private recoveryValidator?: (
       journal: AtlasFileJournal,
     ) => void | Promise<void>,
+    private assertCurrent: () => void = () => {},
   ) {
     safePath(journalPath);
   }
@@ -37,7 +50,7 @@ export class FileTransaction {
     let queue = queues.get(this.serializationScope);
     if (!queue) queues.set(this.serializationScope, (queue = new Map()));
     const result = (queue.get(this.journalPath) ?? Promise.resolve()).then(
-      operation,
+      () => { this.assertCurrent(); return operation(); },
     );
     queue.set(
       this.journalPath,
@@ -131,6 +144,8 @@ export class FileTransaction {
       )
         throw new FileConflict(write.path);
     }
+    // Once repair begins it belongs to this journal's old identity and must finish there.
+    this.assertCurrent();
     if (journal.state === "prepared") {
       for (const write of [...journal.writes].reverse()) {
         const value = await this.store.read(write.path);
@@ -143,7 +158,11 @@ export class FileTransaction {
     await this.store.compareAndWrite(this.journalPath, raw, null);
     return journal.state === "committed" ? "committed" : "rolled_back";
   }
-  commit(writes: readonly AtlasFileWrite[]): Promise<boolean> {
+  validateRollbackReceipt(receipt: AtlasFileRollbackReceipt): void {
+    if (!this.rollbackReceipts.has(receipt))
+      throw new Error("Rollback-Receipt stammt nicht aus dieser Dateitransaktion.");
+  }
+  commit(writes: readonly AtlasFileWrite[], observer?: AtlasFileTransactionObserver): Promise<boolean> {
     // Capture caller values before waiting for an older operation.
     const snapshot = this.writes(writes);
     return this.exclusive(async () => {
@@ -151,6 +170,7 @@ export class FileTransaction {
       for (const write of snapshot)
         if ((await this.store.read(write.path)) !== write.before)
           throw new FileConflict(write.path);
+      this.assertCurrent();
       const changed = snapshot.filter((write) => write.before !== write.after);
       if (!changed.length) return false;
       const journal: AtlasFileJournal = {
@@ -164,8 +184,25 @@ export class FileTransaction {
       const prepared = JSON.stringify(journal),
         committed = JSON.stringify({ ...journal, state: "committed" });
       let commitAcknowledged = false;
+      let preparedObserved = false;
+      let wonCommitted: AtlasFileJournal | undefined;
+      const observePrepared = async () => {
+        if (!observer || preparedObserved) return;
+        if (await this.store.read(this.journalPath) !== prepared)
+          throw new FileConflict(this.journalPath);
+        preparedObserved = true;
+        await observer.prepared(this.parse(prepared));
+      };
+      const observeCommitted = async () => {
+        if (!observer) return;
+        if (await this.store.read(this.journalPath) !== committed)
+          throw new FileConflict(this.journalPath);
+        wonCommitted = this.parse(committed);
+      };
       try {
+        this.assertCurrent();
         await this.store.compareAndWrite(this.journalPath, null, prepared);
+        await observePrepared();
         for (const write of changed)
           await this.store.compareAndWrite(
             write.path,
@@ -174,27 +211,45 @@ export class FileTransaction {
           );
         await this.store.compareAndWrite(this.journalPath, prepared, committed);
         commitAcknowledged = true;
+        await observeCommitted();
         await this.store.compareAndWrite(this.journalPath, committed, null);
-        return true;
       } catch (error) {
         try {
           const current = await this.store.read(this.journalPath);
           if (current !== null && current !== prepared && current !== committed)
             throw new FileConflict(this.journalPath);
+          if (current === prepared) await observePrepared();
+          if (current === committed) await observeCommitted();
           const recovered = await this.recoverNow();
-          if (
-            recovered === "committed" ||
-            (recovered === "none" && commitAcknowledged)
-          )
-            return true;
+          const saved = recovered === "committed" || (recovered === "none" && commitAcknowledged);
+          if (!saved) {
+            if (observer && preparedObserved && recovered === "rolled_back") {
+              // Guard the entire original closure, including unchanged native files.
+              for (const write of snapshot)
+                if (await this.store.read(write.path) !== write.before) throw new FileConflict(write.path);
+              if (await this.store.read(this.journalPath) !== null) throw new FileConflict(this.journalPath);
+              const receipt: AtlasFileRollbackReceipt = Object.freeze({
+                transactionId: journal.transactionId, outcome: "rolled_back", journalState: "absent",
+                writes: Object.freeze(changed.map((write) => Object.freeze({ ...write, current: write.before }))),
+              });
+              this.rollbackReceipts.add(receipt);
+              await observer.rolledBack(receipt);
+            }
+          } else commitAcknowledged = true;
         } catch (recovery) {
           throw new AggregateError(
             [error, recovery],
             "Speicherung unterbrochen. Journal und fremde Änderungen bleiben erhalten.",
           );
         }
-        throw error;
+        if (!commitAcknowledged) throw error;
       }
+      // Notification failure cannot turn a won canonical save into a rollback.
+      if (observer) {
+        if (!wonCommitted) throw new Error("Gewonnene Speicherung besitzt kein zurückgelesenes Commitjournal.");
+        await observer.committed(wonCommitted);
+      }
+      return true;
     });
   }
 }
