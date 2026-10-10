@@ -542,7 +542,7 @@
       "id": "E2E-01-SPACE-I01c",
       "kind": "bounded_required_integration_after_actual_owner_contracts",
       "focus": "Use actual Campaign/Vault context, registry/ownership participant revisions and original CommandId/ReceiptId publish boundary, then pure Dungeon geometry Gestureport and one real P02/P04 CompleteImport variant. Keep one candidate/camera/history/fixture; no E2E02–04.",
-      "dependency": "Campaign generic Contract/Validator/Testport input is qualified on 7aa47beb1bad3d0b1560666fa1cb1677bdc8cd4e, not source-integrated. M/W/S transfer/retention owner repair has begun but still awaits an exact new SHA and scoped owner re-review; no repeated generic review. Actual productive Campaign/Vault context, Registryprovider, persistable Publish boundary and P02/P04 remain open. Actual pure Dungeon geometry port: N02 ea9ecd3f5c7e284b86c554d7e4a9cb99672d73c2 passed independent narrow Hex Code-R03 (check, 495 tests, build and actual callback counterprobes); remaining DUN-GEO-I01-R01-01 closed. R01-02/-03 remain closed from R02. Product Cleanup-P/I/R and secured exact-SHA eligible owner/steward handoff remain before Hex I01c port adoption; no code integration or host/E2E approval yet. No synthetic Registry/provider or port; World projection remains actual Repository.spatialGraph.world() and placements/spatial targets.",
+      "dependency": "Campaign generic Contract/Validator/Testport input remains qualified on 7aa47beb1bad3d0b1560666fa1cb1677bdc8cd4e, not source-integrated. M/W/S N02 repair candidate d06354c37ea24c249a23310f1a186a0a5ee4e936 is published and direct PR25 head verified; scoped independent media-owner review and corrected eligible handoff remain pending, old Hex handoff stays suspended. Do not repeat generic review or create parallel repair. Actual productive Campaign/Vault context, Registryprovider, persistable Publish boundary and P02/P04 remain open. Dungeon N02 ea9ecd3f5c7e284b86c554d7e4a9cb99672d73c2 passed independent narrow Hex Code-R03; all R01 code findings closed. Product Cleanup-P01 is published on 46e31ed120fd22dc608338bf7e5b0d594f7ca39f: await actual separate atomic sample Cleanup-I01 completion/request, then narrow Hex Cleanup-R01 and secured exact-SHA eligible steward handoff before I01c adoption. No code integration or host/E2E approval yet. No synthetic Registry/provider or port; World projection remains actual Repository.spatialGraph.world() and placements/spatial targets.",
       "review": "Independent integrated code/host review follows complete pinned I01c handoff per #12; repairs and Cleanup-P/I/R are separate runs. Current native I01b is a narrow implementation proof, not full gate approval."
     },
     "review": {
@@ -819,7 +819,7 @@
           "sourceIntegrated": false
         },
         "mediaOwnerGate": {
-          "state": "CHANGES_REQUIRED_wait_exact_repair_sha_and_scoped_owner_rereview",
+          "state": "repair_candidate_published_scoped_independent_media_owner_review_pending",
           "reviewedSha": "7aa47beb1bad3d0b1560666fa1cb1677bdc8cd4e",
           "review": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/25#issuecomment-6092636859",
           "gateCorrection": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6092638831",
@@ -827,8 +827,26 @@
             "ManualDecision may still be omitted/quarantined by Salvage although the confirmed campaign decision must be retained until its defined end.",
             "Source-scene-bound AmbienceOverride may still survive/remap into an independent target; retirement suspends source state and target requires a fresh projection."
           ],
-          "required": "Owner-confirmed digest-bound transfer/retention policy in projection, envelope and atomic Publish preconditions, including policy-change race negatives; new exact repair SHA and narrow M/W/S owner re-review.",
-          "adoption": "Do not adopt 7aa47beb for M/W/S. Generic Contract R02 PASS remains valid; no global hold on other owner work."
+          "required": "Exact N02 candidate is published and direct PR head verified. Await scoped independent M/W/S owner review on d06354c37ea24c249a23310f1a186a0a5ee4e936 and corrected eligible steward handoff; no concurrent Hex repair or duplicate generic review.",
+          "adoption": "Do not adopt 7aa47beb for M/W/S. Generic Contract R02 PASS remains valid; no global hold on other owner work.",
+          "repairCandidate": {
+            "run": "OWNERSHIP-I01-N02",
+            "sha": "d06354c37ea24c249a23310f1a186a0a5ee4e936",
+            "base": "7aa47beb1bad3d0b1560666fa1cb1677bdc8cd4e",
+            "request": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/25#issuecomment-6093271781",
+            "handoff": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6093273849",
+            "headVerifiedAt": "2026-10-10T03:27:32Z",
+            "headVerifiedDirectly": true,
+            "ownerReportedChecks": {
+              "provenance": "Campaign/Data owner report, not independent Hex verification",
+              "check": "PASS",
+              "tests": "500/500 PASS",
+              "build": "PASS"
+            },
+            "independentMediaOwnerReview": "pending",
+            "sourceIntegrated": false,
+            "scope": "Digest-bound TransferRetentionPolicy repair candidate only; old Hex handoff stays suspended until scoped M/W/S owner PASS. Productive RuntimeRegistry/Vault/Publish/P02/P04/Host/E2E remain unproven."
+          }
         },
         "receipt": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6092697089"
       },
@@ -1108,6 +1126,22 @@
           "cleanup": false,
           "next": "Separate owner product Cleanup-P/I/R and secured exact-SHA steward handoff remain. Hex I01c adoption awaits that eligible owner handoff plus actual Campaign/Vault registry/publish and P02/P04 inputs; no repeated generic plan or prior reviews.",
           "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/dungeon-geometry-code-r03/review.json"
+        },
+        "productCleanupInput": {
+          "run": "E2E-01-DUNGEON-GEOMETRY-PRODUCT-CL-P01",
+          "state": "owner_plan_published_separate_cleanup_implementation_and_review_pending",
+          "sha": "46e31ed120fd22dc608338bf7e5b0d594f7ca39f",
+          "base": "ea9ecd3f5c7e284b86c554d7e4a9cb99672d73c2",
+          "plan": "ROADMAP-E2E01-DUNGEON-GEOMETRY-PRODUCT-CLEANUP-PLAN.md",
+          "handoff": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6093286041",
+          "headVerifiedDirectly": true,
+          "planReadDirectly": true,
+          "productTestToolFixtureAcceptanceUnchanged": true,
+          "scope": "Single atomic fail-closed sample operation: revoke old proposal before deferred coordinate resolution, preserve existing validation/Source/History/basis/Handoff contracts; no new runtime or router.",
+          "independentReview": false,
+          "codeR03PassRetained": true,
+          "sourceIntegrated": false,
+          "next": "Dungeon separate PRODUCT-CL-I01 publishes exact SHA; Hex narrow independent PRODUCT-CL-R01 only after actual completion/request. Secured steward handoff follows independent cleanup PASS."
         }
       }
     },
