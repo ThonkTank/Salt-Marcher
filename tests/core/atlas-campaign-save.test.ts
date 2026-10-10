@@ -25,19 +25,26 @@ import {
 import { CampaignLifecycle } from "../../src/features/campaign/campaign-lifecycle";
 import {
   campaignCommandId,
+  campaignLocalId,
   campaignContextToken,
   campaignNamespace,
   campaignReceiptId,
 } from "../../src/features/campaign/campaign-contracts";
 import { campaignOwnershipDigestValue } from "../../src/features/campaign/campaign-ownership";
 import { FileConflict, type FileStore } from "../../src/persistence";
-import type { AtlasFileJournal } from "../../src/features/atlas/file-transaction";
+import { FileTransaction, type AtlasFileJournal } from "../../src/features/atlas/file-transaction";
 import type { AtlasSpatialOptions } from "../../src/features/atlas/detail-owners";
 import { newLocationPath } from "../../src/features/atlas/location-owners";
 import { parseLocationDocument } from "../../src/features/location/location-schema";
 import { locationDocumentChange } from "../../src/features/location/location-source";
 import { spatialChange } from "../../src/features/atlas/spatial-schema";
 import { atlasCampaignServices } from "../../src/ui/atlas-campaign-services";
+import {
+  changeWorldNotes,
+  emptyWorldNotes,
+  serializeWorldNote,
+} from "../../src/features/world/world-notes";
+import { worldNotePath } from "../../src/features/campaign/world-notes-commit";
 
 const root = "tests/fixtures/atlas-e2e-spatial-v2/";
 const fixture = JSON.parse(readFileSync(root + "manifest.json", "utf8"));
@@ -80,6 +87,7 @@ class Store implements FileStore {
   readHook?: (path: string) => void;
   fault?: (path: string, after: string | null) => boolean;
   failOnce?: string;
+  failCommittedJournalOnce?: string;
   manifestChanged?: (change: CampaignRuntimeStorageChange) => void;
   offline = false;
   constructor() {
@@ -99,6 +107,11 @@ class Store implements FileStore {
     if (this.failOnce === path) {
       this.failOnce = undefined;
       throw new Error("first native CAS failed");
+    }
+    if (this.failCommittedJournalOnce === path && after !== null &&
+        JSON.parse(after).state === "committed") {
+      this.failCommittedJournalOnce = undefined;
+      throw new Error("committed journal CAS failed");
     }
     if (this.fault?.(path, after)) {
       this.offline = true;
@@ -308,6 +321,123 @@ test("Campaign no-op guards the complete basis without manufacturing revisions o
   await f.repo.save();
   assert.equal(f.store.files.get(campaignPath), inputManifest);
   assert.deepEqual(f.store.writes, []);
+});
+
+test("World Notes save acknowledgment retains the active Campaign Context through the manifest event", async () => {
+  const f = await liveNavigation(), context = f.services.provider.currentContext()!;
+  let current = true;
+  const before = emptyWorldNotes(context), noteId = campaignLocalId(id(945)),
+    change = { kind: "create" as const, id: noteId,
+      draft: { kind: "rumor" as const, title: "Die Hafenglocke", readAloud: "Drei Schläge.",
+        gmNotes: "Nur bei Nebel.", relations: [], creatureId: null } },
+    after = changeWorldNotes(before, context, context, before.revision, change),
+    participant = await f.services.createWorldNotesSave!({
+      context,
+      assertCurrent: () => {
+        if (!current) throw new Error("World-Save wurde widerrufen.");
+      },
+    }),
+    notePath = worldNotePath(context.namespace, "rumor", noteId),
+    prepared = participant.prepare({
+      commandId: campaignCommandId(id(946)),
+      context,
+      beforeSnapshot: before,
+      afterSnapshot: after,
+      change,
+      nativeWrites: [{ path: notePath, before: null, after: serializeWorldNote(after.records[0]!) }],
+    }),
+    transaction = new FileTransaction(
+      f.store,
+      worldPath + ".journal",
+      (path) => prepared.writes.some((write) => write.path === path),
+      f.store,
+      (journal) => participant.validateRecovery(journal),
+    );
+  let receipt;
+  await transaction.commit(prepared.writes, participant.transactionObserver(
+    prepared,
+    transaction,
+    (value) => { receipt = value; },
+  ));
+  assert.ok(receipt);
+  participant.validateReceipt(receipt);
+  assert.deepEqual(f.services.provider.currentContext(), context);
+  assert.equal(f.navigation.state.kind, "active");
+  assert.equal(f.store.files.get(notePath), serializeWorldNote(after.records[0]!));
+  assert.ok(parseCampaignRuntimeManifest(f.store.files.get(campaignPath)!, sha)
+    .registry.owners.some((owner) => owner.ownerId === "world-notes"));
+  current = false;
+  f.services.close();
+});
+
+test("World Notes prepared acknowledgment cancels cleanly after FileTransaction rollback", async () => {
+  const f = await liveNavigation(), context = f.services.provider.currentContext()!,
+    beforeManifest = f.store.files.get(campaignPath)!,
+    before = emptyWorldNotes(context), noteId = campaignLocalId(id(947)),
+    change = { kind: "create" as const, id: noteId,
+      draft: { kind: "quest" as const, title: "Das verlorene Licht", readAloud: "", gmNotes: "",
+        relations: [], creatureId: null } },
+    after = changeWorldNotes(before, context, context, before.revision, change),
+    participant = await f.services.createWorldNotesSave!({ context, assertCurrent: () => {} }),
+    notePath = worldNotePath(context.namespace, "quest", noteId),
+    prepared = participant.prepare({
+      commandId: campaignCommandId(id(948)), context, beforeSnapshot: before,
+      afterSnapshot: after, change,
+      nativeWrites: [{ path: notePath, before: null, after: serializeWorldNote(after.records[0]!) }],
+    }),
+    transaction = new FileTransaction(
+      f.store, worldPath + ".journal",
+      (path) => prepared.writes.some((write) => write.path === path),
+      f.store, (journal) => participant.validateRecovery(journal),
+    );
+  f.store.failOnce = notePath;
+  await assert.rejects(transaction.commit(prepared.writes, participant.transactionObserver(
+    prepared, transaction, () => { throw new Error("Rollback darf kein Receipt ausstellen."); },
+  )), /first native CAS failed/);
+  assert.deepEqual(f.services.provider.currentContext(), context);
+  assert.equal(f.navigation.state.kind, "active");
+  assert.equal(f.store.files.get(campaignPath), beforeManifest);
+  assert.equal(f.store.files.has(notePath), false);
+  assert.equal(f.store.files.has(worldPath + ".journal"), false);
+  const rolledBackJournal = f.store.journals.at(-1)!;
+  assert.throws(() => participant.createReceipt(prepared, {
+    ...rolledBackJournal,
+    state: "committed",
+  }), /bereits verbraucht/);
+  f.services.close();
+});
+
+test("World Notes late prepared rollback consumes the exact After-to-Before manifest event", async () => {
+  const f = await liveNavigation(), context = f.services.provider.currentContext()!,
+    beforeManifest = f.store.files.get(campaignPath)!, before = emptyWorldNotes(context),
+    noteId = campaignLocalId(id(949)),
+    change = { kind: "create" as const, id: noteId,
+      draft: { kind: "faction" as const, title: "Die Lotsen", readAloud: "", gmNotes: "",
+        relations: [], creatureId: null } },
+    after = changeWorldNotes(before, context, context, before.revision, change),
+    participant = await f.services.createWorldNotesSave!({ context, assertCurrent: () => {} }),
+    notePath = worldNotePath(context.namespace, "faction", noteId),
+    prepared = participant.prepare({
+      commandId: campaignCommandId(id(950)), context, beforeSnapshot: before,
+      afterSnapshot: after, change,
+      nativeWrites: [{ path: notePath, before: null, after: serializeWorldNote(after.records[0]!) }],
+    }),
+    journalPath = worldPath + ".journal",
+    transaction = new FileTransaction(
+      f.store, journalPath,
+      (path) => prepared.writes.some((write) => write.path === path),
+      f.store, (journal) => participant.validateRecovery(journal),
+    );
+  f.store.failCommittedJournalOnce = journalPath;
+  await assert.rejects(transaction.commit(prepared.writes, participant.transactionObserver(
+    prepared, transaction, () => { throw new Error("Rollback darf kein Receipt ausstellen."); },
+  )), /committed journal CAS failed/);
+  assert.deepEqual(f.services.provider.currentContext(), context);
+  assert.equal(f.navigation.state.kind, "active");
+  assert.equal(f.store.files.get(campaignPath), beforeManifest);
+  assert.equal(f.store.files.has(notePath), false);
+  assert.equal(f.store.files.has(journalPath), false);
+  f.services.close();
 });
 
 test("Atlas save preserves an unrelated World Notes owner without claiming its authority", async () => {

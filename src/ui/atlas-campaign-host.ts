@@ -16,6 +16,8 @@ import { DungeonAtlasSource } from "../features/dungeon/atlas-source";
 import { isStructuredRoom } from "../model";
 import type { AtlasCampaignManifestSave } from "../features/atlas/atlas-campaign-save";
 import type { MwsImportMediaInventoryPort } from "../features/campaign/mws-complete-import-media";
+import type { CampaignContextProjection } from "../features/campaign/campaign-contracts";
+import type { WorldNotesCampaignCommitParticipant } from "../features/campaign/world-notes-commit";
 
 export interface AtlasCampaignServices {
   readonly provider: CampaignRuntimeNavigationProvider;
@@ -33,6 +35,11 @@ export interface AtlasCampaignServices {
   worldHint(id: CampaignId): Promise<string>;
   campaignHint(path: string): Promise<CampaignId | null>;
   createSave?(input: AtlasMountInput): Promise<AtlasCampaignManifestSave>;
+  /** Campaign-authorized World Notes producer bound to the current manifest and Context. */
+  createWorldNotesSave?(input: {
+    readonly context: CampaignContextProjection;
+    readonly assertCurrent: () => void;
+  }): Promise<WorldNotesCampaignCommitParticipant>;
   /** Host-bound bytes for the existing Complete-Import media review. */
   createImportMediaInventory?(root: string): MwsImportMediaInventoryPort;
 }

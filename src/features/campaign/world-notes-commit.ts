@@ -1,5 +1,11 @@
 import { immutable, safePath } from "../../model";
-import type { AtlasFileWrite, AtlasFileJournal } from "../atlas/file-transaction";
+import type {
+  AtlasFileWrite,
+  AtlasFileJournal,
+  AtlasFileRollbackReceipt,
+  AtlasFileTransactionObserver,
+  FileTransaction,
+} from "../atlas/file-transaction";
 import {
   changeWorldNotes,
   serializeWorldNote,
@@ -15,6 +21,7 @@ import {
   campaignLocalId,
   campaignNamespace,
   payloadDigest,
+  revisionToken,
   sameSnapshot,
   type CampaignCommandId,
   type CampaignContextProjection,
@@ -23,12 +30,18 @@ import {
 } from "./campaign-contracts";
 import {
   campaignOwnershipDigestValue,
+  campaignDomainOwnershipProjection,
+  campaignDomainOwnershipProjectionDigest,
   type CampaignDomainOwnerProjectionV1,
+  type CampaignDomainOwnershipProjectionV1,
   type CampaignOwnershipDigest,
   type CampaignOwnershipRecordV1,
 } from "./campaign-ownership";
 import {
   parseCampaignRuntimeManifest,
+  type CampaignRuntimeSaveAcknowledgmentV1,
+  type CampaignRuntimeSaveAcknowledgmentValidator,
+  type CampaignRuntimeSaveRollbackV1,
   type CampaignRuntimeManifestV1,
 } from "./campaign-runtime-source";
 
@@ -72,6 +85,20 @@ export interface WorldNotesCommitReceiptV1 {
   readonly afterRecordRevision: number;
   readonly afterPayloadDigest: string;
   readonly deleted: boolean;
+}
+
+export interface WorldNotesCampaignRuntimeSavePort {
+  basis(): Promise<{
+    readonly context: CampaignContextProjection;
+    readonly projection: CampaignDomainOwnershipProjectionV1;
+  }>;
+  issued(
+    participant: CampaignRuntimeSaveAcknowledgmentValidator,
+    proof: CampaignRuntimeSaveAcknowledgmentV1 | CampaignRuntimeSaveRollbackV1,
+  ): void;
+  prepared(proof: CampaignRuntimeSaveAcknowledgmentV1): void;
+  committed(proof: CampaignRuntimeSaveAcknowledgmentV1): Promise<void>;
+  rolledBack(proof: CampaignRuntimeSaveRollbackV1): void;
 }
 
 function recordType(kind: WorldNoteKind): string {
@@ -233,13 +260,16 @@ function validTransition(before: WorldNoteV1 | null, after: WorldNoteV1): boolea
 }
 
 /** Campaign-owned producer contribution; the host supplies the actual FileTransaction. */
-export class WorldNotesCampaignCommitParticipant {
+export class WorldNotesCampaignCommitParticipant implements CampaignRuntimeSaveAcknowledgmentValidator {
   private readonly preparations = new WeakSet<object>();
+  private readonly acknowledgments = new WeakSet<object>();
+  private readonly rollbacks = new WeakSet<object>();
   private readonly receipts = new WeakSet<object>();
   constructor(
     readonly manifestPath: string,
     private readonly beforeManifestBytes: string,
     private readonly digest: CampaignOwnershipDigest,
+    private readonly runtime?: WorldNotesCampaignRuntimeSavePort,
   ) {
     safePath(manifestPath);
     if (!manifestPath.startsWith("Kampagnen/SaltMarcher/") ||
@@ -371,6 +401,135 @@ export class WorldNotesCampaignCommitParticipant {
     if (exact(expectedOwner) !== exact(newOwner) ||
         manifestBytes(beforeManifest, afterManifest.registry.owners, this.digest) !== manifestWrite.after)
       throw new Error("World-Recoverymanifest ist nicht aus den nativen Bytes abgeleitet.");
+  }
+
+  createAcknowledgment(input: {
+    readonly prepared: WorldNotesPreparedCommitV1;
+    readonly context: CampaignContextProjection;
+    readonly beforeRegistry: CampaignDomainOwnershipProjectionV1;
+    readonly journal: AtlasFileJournal;
+  }): CampaignRuntimeSaveAcknowledgmentV1 {
+    if (!this.preparations.has(input.prepared) ||
+        !["prepared", "committed"].includes(input.journal.state))
+      throw new Error("World-Save-Acknowledgment besitzt keine autorisierte Vorbereitung.");
+    const expectedWrites = input.prepared.writes
+      .filter((write) => write.before !== write.after)
+      .sort((a, b) => a.path.localeCompare(b.path));
+    if (exact([...input.journal.writes].sort((a, b) => a.path.localeCompare(b.path))) !==
+        exact(expectedWrites))
+      throw new Error("World-Save-Acknowledgment passt nicht zu den vorbereiteten Writes.");
+    this.validateRecovery(input.journal);
+    const transactionId = revisionToken(input.journal.transactionId, "Transaktions-ID"),
+      manifestWrite = input.journal.writes.find((write) => write.path === this.manifestPath)!;
+    if (!sameSnapshot(input.prepared.context, input.context) ||
+        input.prepared.context.contextToken !== input.context.contextToken ||
+        manifestWrite.before !== this.beforeManifestBytes || manifestWrite.after === null)
+      throw new Error("World-Save-Acknowledgment gehört zu einer fremden Campaignbasis.");
+    const before = parseCampaignRuntimeManifest(manifestWrite.before, this.digest),
+      candidate = campaignDomainOwnershipProjection({
+        version: 1,
+        registryId: before.registry.registryId,
+        registryRevision: before.registry.registryRevision,
+        projectionDigest: `sha256:${"0".repeat(64)}`,
+        context: input.context,
+        owners: before.registry.owners,
+      }),
+      expected = campaignDomainOwnershipProjection({
+        ...candidate,
+        projectionDigest: campaignDomainOwnershipProjectionDigest(candidate, this.digest),
+      });
+    if (exact(expected) !== exact(input.beforeRegistry))
+      throw new Error("World-Save-Acknowledgment besitzt eine fremde Registrybasis.");
+    const proof = immutable({
+      version: 1 as const,
+      transactionId,
+      manifestPath: this.manifestPath,
+      beforeManifestBytes: manifestWrite.before,
+      afterManifestBytes: manifestWrite.after,
+      context: input.context,
+      beforeRegistry: input.beforeRegistry,
+      journal: input.journal,
+    });
+    this.acknowledgments.add(proof);
+    return proof;
+  }
+
+  validateAcknowledgment(proof: CampaignRuntimeSaveAcknowledgmentV1): void {
+    if (!this.acknowledgments.has(proof))
+      throw new Error("World-Save-Acknowledgment wurde nicht vom zuständigen Participant ausgestellt.");
+  }
+
+  createRollbackAcknowledgment(
+    prepared: CampaignRuntimeSaveAcknowledgmentV1,
+    receipt: AtlasFileRollbackReceipt,
+    transaction: FileTransaction,
+  ): CampaignRuntimeSaveRollbackV1 {
+    transaction.validateRollbackReceipt(receipt);
+    this.validateAcknowledgment(prepared);
+    if (prepared.journal.state !== "prepared" || receipt.outcome !== "rolled_back" ||
+        receipt.journalState !== "absent" || receipt.transactionId !== prepared.transactionId ||
+        receipt.writes.length !== prepared.journal.writes.length ||
+        prepared.journal.writes.some((write, index) =>
+          receipt.writes[index]?.path !== write.path ||
+          receipt.writes[index]?.before !== write.before ||
+          receipt.writes[index]?.after !== write.after ||
+          receipt.writes[index]?.current !== write.before))
+      throw new Error("World-Save-Rollback bestätigt nicht die vollständige vorbereitete Transaktion.");
+    const proof = immutable({
+      version: 1 as const,
+      transactionId: prepared.transactionId,
+      prepared,
+      receipt,
+    });
+    this.rollbacks.add(proof);
+    return proof;
+  }
+
+  validateRollback(proof: CampaignRuntimeSaveRollbackV1): void {
+    if (!this.rollbacks.has(proof))
+      throw new Error("World-Save-Rollback wurde nicht vom zuständigen Participant ausgestellt.");
+  }
+
+  transactionObserver(
+    preparedCommit: WorldNotesPreparedCommitV1,
+    transaction: FileTransaction,
+    committed: (receipt: WorldNotesCommitReceiptV1) => void | Promise<void>,
+  ): AtlasFileTransactionObserver {
+    const runtime = this.runtime;
+    if (!runtime) throw new Error("World-Save besitzt keinen Campaign-Runtimeanschluss.");
+    let basis: Awaited<ReturnType<WorldNotesCampaignRuntimeSavePort["basis"]>> | undefined,
+      preparedProof: CampaignRuntimeSaveAcknowledgmentV1 | undefined;
+    const proof = (journal: AtlasFileJournal) => {
+      if (!basis) throw new Error("World-Save besitzt keine bestätigte Registrybasis.");
+      const value = this.createAcknowledgment({
+        prepared: preparedCommit,
+        context: basis.context,
+        beforeRegistry: basis.projection,
+        journal,
+      });
+      runtime.issued(this, value);
+      return value;
+    };
+    return {
+      prepared: async (journal) => {
+        basis = await runtime.basis();
+        preparedProof = proof(journal);
+        runtime.prepared(preparedProof);
+      },
+      committed: async (journal) => {
+        if (!preparedProof)
+          throw new Error("World-Commit besitzt keine ursprüngliche Vorbereitung.");
+        await runtime.committed(proof(journal));
+        await committed(this.createReceipt(preparedCommit, journal));
+      },
+      rolledBack: (receipt) => {
+        if (!preparedProof) return;
+        const rollback = this.createRollbackAcknowledgment(preparedProof, receipt, transaction);
+        this.preparations.delete(preparedCommit);
+        runtime.issued(this, rollback);
+        runtime.rolledBack(rollback);
+      },
+    };
   }
 
   createReceipt(
