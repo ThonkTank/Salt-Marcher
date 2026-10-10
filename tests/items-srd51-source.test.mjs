@@ -14,6 +14,7 @@ import {
   validateBoundedWeaponTableRows,
   validateJsonSchemas,
   validateMagicItemAzApparatusOfTheCrab,
+  validateMagicItemAzArmorPlusOneTwoThree,
   validateMagicItemAzAnimatedShield,
   validateMagicItemAzOpeningSlice,
   validatePotionHealingMerge,
@@ -77,11 +78,12 @@ test("items source package is explicitly incomplete and fails closed by default"
   await assert.rejects(verifyItemsSourcePackage(), /S01 ist unvollständig/);
   const result = await verifyItemsSourcePackage({ allowIncomplete: true });
   assert.equal(result.complete, false);
-  assert.equal(result.validation.occurrenceCount, 227);
-  assert.equal(result.validation.recordCount, 226);
+  assert.equal(result.validation.occurrenceCount, 228);
+  assert.equal(result.validation.recordCount, 227);
   assert.equal(result.magicItemAzOpeningSlice.capturedRecords, 5);
   assert.equal(result.magicItemAzAnimatedShield.ordinal, 6);
   assert.equal(result.magicItemAzApparatusOfTheCrab.leverRows, 10);
+  assert.equal(result.magicItemAzArmorPlusOneTwoThree.variableRarityChoices, 3);
   assert.equal(result.potionHealingMerge.mergedRecords, 1);
   assert.ok(result.blockers.length >= 5);
 });
@@ -303,6 +305,49 @@ test("Apparatus of the Crab fails closed on occurrence, header, prose and lever-
   const properties = swappedCells.records.find(record => record.id.endsWith("a-z:7")).properties;
   [properties[0], properties[1]] = [properties[1], properties[0]];
   assert.throws(() => validateMagicItemAzApparatusOfTheCrab(swappedCells, checkedInventory), /Levertabelle/);
+});
+
+test("Armor +1/+2/+3 preserves ordinal, full header and ordered rarity variants", async () => {
+  const [checkedInventory, checkedTranscript] = await Promise.all([
+    readFile(new URL("items-srd51-inventory.json", dataRoot), "utf8").then(JSON.parse),
+    readFile(new URL("items-srd51-transcript.json", dataRoot), "utf8").then(JSON.parse),
+  ]);
+  assert.deepEqual(validateMagicItemAzArmorPlusOneTwoThree(checkedTranscript, checkedInventory), {
+    id: "srd51:magic-item:magic-items-a-z:8",
+    ordinal: 8,
+    physicalPdfPage: 208,
+    attunement: "not-required",
+    variableRarityChoices: 3,
+    descriptionFacts: 1,
+  });
+  const record = checkedTranscript.records.find(item => item.id.endsWith("a-z:8"));
+  assert.deepEqual(record.rarity.choices.map(choice => [choice.variantId, choice.label, choice.value]), [
+    ["srd51:magic-item:magic-items-a-z:8#variant:1", "+1", "rare"],
+    ["srd51:magic-item:magic-items-a-z:8#variant:2", "+2", "very-rare"],
+    ["srd51:magic-item:magic-items-a-z:8#variant:3", "+3", "legendary"],
+  ]);
+});
+
+test("Armor +1/+2/+3 fails closed on occurrence, header, variants, attunement and prose drift", async () => {
+  const [checkedInventory, checkedTranscript] = await Promise.all([
+    readFile(new URL("items-srd51-inventory.json", dataRoot), "utf8").then(JSON.parse),
+    readFile(new URL("items-srd51-transcript.json", dataRoot), "utf8").then(JSON.parse),
+  ]);
+  const wrongPage = structuredClone(checkedInventory);
+  wrongPage.occurrences.find(item => item.id.endsWith("a-z:8")).firstPdfPage = 209;
+  assert.throws(() => validateMagicItemAzArmorPlusOneTwoThree(checkedTranscript, wrongPage), /Occurrence 8/);
+  for (const [mutate, pattern] of [
+    [record => { record.sourceHeader.text = "Armor, rarity varies"; }, /Record/],
+    [record => { record.attunement = "required"; }, /Record/],
+    [record => { record.description[0].text = "You have a bonus to AC."; }, /Record/],
+    [record => { record.rarity.choices[1].value = "rare"; }, /Variante 2/],
+    [record => { [record.rarity.choices[0], record.rarity.choices[1]] =
+      [record.rarity.choices[1], record.rarity.choices[0]]; }, /Variante 1/],
+  ]) {
+    const damaged = structuredClone(checkedTranscript);
+    mutate(damaged.records.find(record => record.id.endsWith("a-z:8")));
+    assert.throws(() => validateMagicItemAzArmorPlusOneTwoThree(damaged, checkedInventory), pattern);
+  }
 });
 
 test("Draft 2020-12 schemas validate the checked-in equipment inventory and transcript", async () => {
