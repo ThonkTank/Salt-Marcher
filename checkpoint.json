@@ -5059,18 +5059,18 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-FTG-SCOPE-CLEAN-R01",
+      "id": "CITY-FTG-SCOPE-I01",
       "status": "complete",
-      "kind": "cleanup_review",
-      "focus": "Plan cleanup passed: foreign checkpoint and acceptance bytes preserved; 8 inventory IDs verified",
+      "kind": "documentation_implementation",
+      "focus": "FTG lifecycle mapped in existing roadmap/SCOPE; common Campaign time explicit; product acceptance remains open",
       "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
       "baseSha": "e157462ee1a4c2b82b0c927df664a8c06fc38cb1",
-      "nextStep": "CITY-FTG-SCOPE-I01: implement roadmap and scope mapping separately"
+      "nextStep": "Separate implementation cleanup P/I/R, then independent CITY-FTG-SCOPE-R01"
     },
     "nextRun": {
-      "id": "CITY-FTG-SCOPE-I01",
-      "kind": "documentation_implementation",
-      "focus": "Implement the scoped roadmap/SCOPE mapping without changing acceptance claims or ratifying a separate City clock"
+      "id": "CITY-FTG-SCOPE-R01",
+      "kind": "independent_documentation_review",
+      "focus": "Review exact PR50 diff against issue44 and P01; no product approval"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
