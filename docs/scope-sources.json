@@ -111,6 +111,7 @@
       "sha256": "b29b35a2daeff9eacfbdc7583ffd4b98021f58f4122872ca2863f2445fe4c2f3",
       "scope_area": "encounter",
       "target_phases": [
+        "SMR-01",
         "SMR-05",
         "SMR-06"
       ],

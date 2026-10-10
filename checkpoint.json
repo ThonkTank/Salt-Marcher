@@ -4,15 +4,15 @@
     "state": "completed",
     "roleContract": "docs/AGENT-ROLES.md#repository-maintenance",
     "repositoryContract": "docs/REPOSITORY.md",
-    "evaluatedShared": "527398c6f9e26f37d2ffdb9d305359e1daf0e708",
-    "scope": "Follow-up scope audit: SMR-07 travel/calendar/track/perception user delivery and SMR-10 knowledge/display boundary. No domain, host or product approval.",
-    "next": "Use existing SMR-07/10 consumers and owners. Resolve complete-Party versus focused-Scene display source boundary at 44/11/10; no competing route/time/knowledge truth.",
+    "evaluatedShared": "b6c57c636983328c0c169209d90772ea1d557db6",
+    "scope": "Feature-plan scope audit: missing generator preset settings, shared Scene/Session composition and Combat partition delivery added to CE03/04. Obsolete generic split review/cleanup dispatch removed; no product/domain approval.",
+    "next": "Follow existing CE package owners at 9/10/6; preset registry authority is a confirmed Campaign/Data input, not a second controller. Scope conflicts and unknown original inventory remain at 44.",
     "verification": [
-      "36 pinned requirement identities/phase mappings, 12 phases, 18 cases and 38 technical needs retained",
-      "Affected travel/state, calendar and display source/diff checks plus check:repo PASS",
-      "Foreign checkpoint and all acceptance bytes preserved"
+      "36 source hashes and phase mappings checked; 12 phases, 18 cases, 38 TN retained",
+      "Only Encounter Generation phase mapping extended to SMR01; all other source-registry fields preserved",
+      "check:repo and affected source/diff checks PASS; foreign checkpoint/acceptance preserved"
     ],
-    "previousOrientation": "527398c"
+    "previousOrientation": "b6c57c6"
   },
   "saltMarcherReplacement": {
     "date": "2026-10-10",

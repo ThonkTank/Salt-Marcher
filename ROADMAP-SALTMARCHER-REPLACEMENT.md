@@ -174,6 +174,11 @@ Integrationsweg, nicht automatisch die gesamte Karten-/Stadtfunktion.
 ### SMR-05 – Encounter, Combat, Loot und Rewards
 
 - Laufende `CE-03` bis `CE-06` Arbeit gegen D&D 2014 fertigstellen.
+- [CE-03/04](ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md#ce-03--encounter-builder-und-planpersistenz)
+  liefert bearbeitbare installationseigene Generatorpresets mit ausdrücklicher
+  Campaignzuweisung bis gleicher Scene-/Sessionkomposition und gespeicherter
+  Combat-Mobpartition. Einstellungs- und Consumerpfad zusammen verfolgen; Preset ist
+  Kompositionspolitik, keine Regel-/Katalogversionsauswahl. #9/#10/#6, AC-06/07.
 - Encounter Tables, Combat-Maske, Rewards, Gruppenloot und Charakterledger
   über stabile Referenzen und atomare Kommandos verbinden.
 - Vom Gruppeneditor bis zur Nachbereitung liefern: manuelle Monster-/Lootauswahl,
