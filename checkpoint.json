@@ -4930,18 +4930,18 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I48b-CLEAN-R",
-      "kind": "cleanup_review",
-      "startedAt": "2026-10-10T04:38:52.728361+00:00",
-      "focus": "Exact absence, raw/protected/source hashes, process/ownership boundaries",
-      "state": "changes_required",
-      "result": "Cache removal and all77 protected hashes PASS, but I48b manifest.files empty due absolute /home exclusion. Empty raw inventory is not evidence completeness. Review qualified CHANGES_REQUIRED CITY-I48B-CL-R01-01; preserve manifest and repair additive inventory separately.",
-      "receipt": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i48b-20261010-r01/cleanup-review.json"
-    },
-    "nextRun": {
       "id": "CITY-00-I48b-CLEAN-N01",
       "kind": "cleanup_repair",
-      "focus": "Add complete run-relative evidence inventory without editing original manifest/rawfiles, cross-check preserved77 hashes; then separate re-review before R48"
+      "startedAt": "2026-10-10T04:40:40.208850+00:00",
+      "focus": "Add immutable-manifest supplement using correct run-relative inventory boundary",
+      "state": "completed",
+      "result": "Supplementary inventory includes60 raw files/23 image-metadata pairs and actual session/input/map/template/exit provenance;77protected files unchanged. Missing list repaired additively, original manifest unchanged; separate R02 pending.",
+      "receipt": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i48b-20261010-r01/evidence-inventory-repair.json"
+    },
+    "nextRun": {
+      "id": "CITY-00-I48b-CLEAN-R02",
+      "kind": "cleanup_review",
+      "focus": "Independently reconstruct inventory membership/hash/frame provenance and protected77 boundaries; close CL-R01-01 only after PASS, then R48"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
