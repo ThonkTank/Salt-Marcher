@@ -27,6 +27,7 @@ import {
   newLocationPath,
   locationPath,
 } from "./location-owners";
+import { locationDocumentChange } from "../location/location-source";
 import {
   projectAtlasNativeCapture,
   type AtlasCaptureRequest,
@@ -48,6 +49,7 @@ import {
   serializeSpatialWorld,
   spatialBase,
   spatialState,
+  spatialChange,
   type SpatialWorld,
 } from "./spatial-schema";
 import { checkSpatialSnapshot, detailReferences } from "./spatial-storage";
@@ -783,6 +785,50 @@ export class AtlasRepository {
   }
   editLocation(document: LocationDocument): boolean {
     return this.locations.edit(document);
+  }
+  /** Move one existing placement and its local detail link in the same native History command. */
+  bindDungeonAtLocation(locationId: string, placementId: string): boolean {
+    this.options.assertCurrent?.();
+    nativeId(locationId); nativeId(placementId);
+    const source = this.terrainSource,
+      before = source.spatialState(),
+      placement = before.detailPlacements.find((p) => p.id === placementId),
+      location = this.locations.get(locationId).read();
+    if (!this.options.locations || !location ||
+        !source.placements().some((p) => p.locationId === locationId))
+      throw new Error("Dungeon benötigt einen geladenen, verorteten Ort.");
+    if (!placement || placement.kind !== "dungeon")
+      throw new Error("Vorhandene Dungeonplatzierung fehlt.");
+    // Resolving/loading the real owner is a prerequisite, never an empty replacement.
+    this.detail("dungeon", placement.documentId);
+    const linked = location.detailMaps.some((r) => r.kind === "dungeon" && r.documentId === placement.documentId),
+      placed = placement.parent.kind === "location" && placement.parent.locationId === locationId;
+    if (linked && placed) return false;
+    const changes = [];
+    if (!placed && placement.parent.kind === "location") {
+      const previous = this.locations.get(placement.parent.locationId).read();
+      if (!previous) throw new Error("Bisheriger Dungeonort ist nicht geladen.");
+      const detailMaps = previous.detailMaps.filter((r) =>
+        r.kind !== "dungeon" || r.documentId !== placement.documentId);
+      if (detailMaps.length !== previous.detailMaps.length)
+        changes.push(locationDocumentChange(previous.id, previous, {
+          ...previous,
+          detailMaps,
+        }));
+    }
+    if (!linked) changes.push(locationDocumentChange(locationId, location, {
+      ...location,
+      detailMaps: [...location.detailMaps, { kind: "dungeon", documentId: placement.documentId }],
+    }));
+    if (!placed) changes.push(spatialChange(source.world.id, before, {
+      ...before,
+      detailPlacements: before.detailPlacements.map((p) => p.id === placementId ? {
+        ...placement,
+        parent: { kind: "location", locationId },
+        anchor: { ...placement.anchor, parentPointMeters: { x: 0, y: 0 } },
+      } : p),
+    }));
+    return source.history.execute({ label: "Dungeon am Ort verorten", changes });
   }
   moveLocation(id: string, position: LocationPlacement["position"]): boolean {
     return this.locations.move(id, position);

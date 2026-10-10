@@ -44,6 +44,7 @@ export interface AtlasEditorStorage {
   navigation?: {
     details(locationId: string): AtlasDetailEntryModel;
     navigate(target: Readonly<AtlasNavigationTarget>): Promise<void>;
+    bindDungeon?(locationId: string, placementId: string): boolean;
   };
   save(): Promise<void>;
   changed(): Promise<void>;
@@ -303,7 +304,10 @@ export class AtlasEditor {
         this.detailHost = doc.createElement("div");
         host.append(this.detailHost);
         this.detailHost.hidden = true;
-        this.detailEntry = new AtlasDetailEntry(this.detailHost, { onNavigate: (target) => storage.navigation!.navigate(target) });
+        this.detailEntry = new AtlasDetailEntry(this.detailHost, {
+          onNavigate: (target) => storage.navigation!.navigate(target),
+          onBindDungeon: storage.navigation.bindDungeon ? (id) => this.bindDungeon(id) : undefined,
+        });
       }
     }
     if (storage.spatial) {
@@ -356,8 +360,10 @@ export class AtlasEditor {
   }
   navigate(target: AtlasResolvedNavigation, assertCurrent: () => void): void {
     assertCurrent();
+    ++this.selectionVersion;
     if (target.key?.kind === "location") {
       this.roomKey?.clear(); this.selectedRoom = undefined;
+      if (this.spatial) this.spatial.selectedRoom = undefined;
       this.selectedLocation = target.key.documentId;
       this.loadedLocations.add(target.key.documentId);
     } else if (target.key?.kind === "room") {
@@ -501,6 +507,24 @@ export class AtlasEditor {
           this.renderer.schedule();
         }
       });
+  }
+  private bindDungeon(placementId: string): Promise<void> {
+    if (this.closed || this.inputBlocked || this.flushing || !this.selectedLocation)
+      return Promise.reject(new Error("Ort ist nicht zur Bearbeitung verfügbar."));
+    const locationId = this.selectedLocation, source = this.terrain, selectionVersion = this.selectionVersion;
+    this.cancelDungeon(); this.finishCity(); this.finishStroke(); this.finishDrag(); this.releasePointer();
+    const operation = this.work.then(async () => {
+      this.storage.assertCurrent?.();
+      if (this.closed || this.inputBlocked || source !== this.terrain ||
+          this.selectedLocation !== locationId || this.selectionVersion !== selectionVersion)
+        throw new Error("Ortsauswahl wurde inzwischen geändert.");
+      this.applyKeys();
+      this.storage.navigation!.bindDungeon!(locationId, placementId);
+      await this.persistence;
+      this.storage.assertCurrent?.();
+    });
+    this.work = operation.catch(() => {});
+    return operation;
   }
   private save(): void {
     if (this.inputBlocked || this.closed) return;
