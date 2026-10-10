@@ -61,9 +61,15 @@ verbleibende Abweichungen in `checkpoint.json` und `acceptance.json` fest.
 
 ## Lieferphasen
 
+SMR-00–11 sind Fachfolgen mit eigenen Abnahmen, keine globale serielle
+Implementierungsfolge. Die [gemeinsame Lieferroadmap](docs/ROADMAP.md#parallele-umsetzung-und-zusammenführung)
+führt ihre parallel umsetzbaren Nutzerergebnisse und Zusammenführungen;
+aktuelle Aufgaben und Besitz stehen an den dort verlinkten Arbeitsorten.
+
 ### SMR-00 – Portfolivertrag und Quelleninventar
 
-- Diese Roadmap und die Acceptance-Matrix vollständig reviewen.
+- Quellenumfang und betroffene Acceptance-Zuordnung am konkreten Produktpaket
+  prüfen; den bestehenden Quellenabgleich verwenden.
 - `SMR-00-ADR-01` entscheidet anhand der UX-/Funktionsvorgaben über Zielhost,
   Verteilung, Datenbesitz, Erweiterbarkeit und den Migrationspfad. Mindestens
   Obsidian-Plugin, eigenständige Desktop-App und ein schrittweise entkoppeltes
@@ -90,6 +96,8 @@ verbleibende Abweichungen in `checkpoint.json` und `acceptance.json` fest.
 - Laufende `CE-01` bis `CE-02` Katalogarbeit abschließen.
 - Items, PCs/NPCs, Orte, Fraktionen, Quests, Gerüchte, Besitz, Notizen und
   Referenzgraph als getrennte, stabile Dokumente ergänzen.
+- Manuelle World-Inhalte parallel zur Katalogfolge liefern; der vollständige
+  Itemkorpus ist nur für seine tatsächlichen Itemverbraucher Voraussetzung.
 - Aktuelle Definition und eingefrorene historische Verwendung trennen.
 
 ### SMR-03 – Party, Scene und Live Session
@@ -113,6 +121,9 @@ verbleibende Abweichungen in `checkpoint.json` und `acceptance.json` fest.
 
 ### SMR-06 – Session Planner und reproduzierbare Generierung
 
+- Zuerst einen eigenständig nutzbaren manuellen Plan mit geordneter Timeline,
+  Notizen und optionalem Ort bearbeiten, speichern und frisch öffnen;
+  ohne erforderliche Party, Encounter, Loot oder Generator.
 - World-, Party-, Encounter- und Lootbedingungen in gestufte Runs binden.
 - Vorschläge einzeln regenerieren, akzeptieren und in Scene/Atlas platzieren;
   Inputs, Profile, Rundung und Outputs prüfbar speichern.
@@ -131,6 +142,8 @@ verbleibende Abweichungen in `checkpoint.json` und `acceptance.json` fest.
 - Wetter/Klima als begrenzte autonome regionale Entwicklung implementieren.
 - Lokale Musikbibliothek/Player mit Tags, Scene-Queue, Fade, Autoplay und
   vorrangiger manueller Steuerung bereitstellen.
+- Manuelle Bibliothek/Player benötigt keinen Reiseabschluss; Scene-Automatik
+  und zeitabhängige Umweltlayer erst an bestätigte Fachprojektionen anschließen.
 
 ### SMR-09 – Actor Autonomy
 
@@ -149,31 +162,34 @@ verbleibende Abweichungen in `checkpoint.json` und `acceptance.json` fest.
 
 ### SMR-11 – Tutorial, A11y, Performance und Abschluss
 
+- Featurequalität mit jeder nutzbaren Lieferung umsetzen; dieser Abschluss
+  bündelt die noch offenen Gesamt-/OS-/Lastbeweise.
 - Feature-/Versions-Tutorials, Lokalisierung, Tastatur, 200 %, Kontrast und
   Nicht-Farb-Signale vollständig qualifizieren.
 - Latenz-, große Daten-, Speicher-, Abbruch-, Offline- und Privacy-Gates gegen
   Program Technical Needs prüfen.
-- Eigener Gesamtreview, Nachbesserung, erneuter Review und getrennte
-  Aufräumphase. Erst danach Gesamtfreigabe.
+- Gesamtqualifikation samt erforderlicher unabhängiger Prüfung,
+  gezielter Nachbesserung und Bereinigung zusammenführen. Keine zusätzliche
+  allgemeine Aufräumreviewrunde; fehlende Fachabnahme bleibt offen.
 
 ## Abhängigkeiten und Parallelität
 
 - `SMR-00-ADR-01` ist Voraussetzung für neue hostspezifische Kopplung; reine
   Domänen-, Daten- und Vertragsarbeit darf parallel weiterlaufen.
-- `SMR-01` ist Voraussetzung für alle schreibenden Bereiche.
+- Schreibende Bereiche benötigen den konkret konsumierten SMR-01-Identitäts-,
+  Owner- und Publish-/Recoveryvertrag, nicht den Abschluss aller SMR-01-Funktionen.
+  Fehlende Autorität sperrt produktiven Publish; kompatible Implementierung im
+  eigenen Scope läuft weiter. Modell-/Portbelege sind keine Speicherfreigabe.
 - `SMR-02` und `SMR-04` dürfen nach dem Quellenvertrag parallel laufen.
 - `SMR-03` benötigt Kampagnenidentität und World-Referenzen.
-- `SMR-05` benötigt Katalog und Party/Scene; `SMR-06` zusätzlich Encounter und
-  Loot.
+- `SMR-05` benötigt Katalog und Party/Scene. Manuelles `SMR-06` benötigt Campaign
+  und seinen eigenen Schreibvertrag; Orte sind optional. Erst die
+  Encounter-/Reward-Generierung benötigt zusätzlich Party, Encounter und Loot.
 - `SMR-07` benötigt Scene und Karten. Kalender/Zeit sind Voraussetzung für
   Restock, Wetter und Autonomie in `SMR-08/09`.
-- Der konkret abgelöste Cloud-GM-Strang arbeitet nur noch an unabhängigen
-  Architektur-/Technikreviews. Andere Cloud-Kollegen behalten ihre bereits
-  belegten Review-/Testrollen; sie werden nicht pauschal ersetzt.
-- Neben den drei neuen lokalen Integrationssträngen bleiben die drei
-  Gerätekollegen für Hex/Atlas, Stadt und Dungeon vollwertige Teammitglieder.
-  Ihre geprüften Pfade, Belege und Dateibesitze werden in den Plattformentscheid
-  einbezogen und nicht neu begonnen. Kein zweiter Besitzer ändert gleichzeitig
+- Aktuellen Rollenvertrag und Claim verwenden; historische Teamaufteilungen
+  sind keine Beschränkung neuer Beiträge. Geprüfte Pfade, Belege und
+  Dateibesitze bleiben erhalten. Kein zweiter Besitzer ändert gleichzeitig
   dieselbe Datei oder Aggregategrenze.
 - Pro Gerät läuft höchstens eine grafische Host-/Originalinstanz. Statische
   Analyse und nichtgrafische Basisprüfungen dürfen getrennt laufen.
@@ -191,10 +207,11 @@ verbleibende Abweichungen in `checkpoint.json` und `acceptance.json` fest.
 
 ## Aktueller nächster Schritt
 
-`SMR-00-ADR-01`: gemeinsamer Architekturentscheid über Zielplattform und
-Migrationspfad, mit unabhängigem Cloud-Architektur-/Technikreview. Parallel
-bleibt `CE-01-I03` geteilt möglich: Query-/State-/Render-Controller und dessen
-DOM-Tests bleiben hostneutral und nutzen injizierte Ports; der bestehende
-Obsidian-`ItemView` bleibt ein dünner, ausdrücklich befristeter Adapter mit
-eigenen Übergangstests.
-Dungeon-, Hex- und Stadtpfade laufen in ihren bestehenden Roadmaps weiter.
+Der gemeinsame nächste Schritt steht ausschließlich in
+[#12](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12),
+ausführbare eigene oder freie Arbeit in `npm run next`. Die
+[Lieferroadmap](docs/ROADMAP.md#parallele-umsetzung-und-zusammenführung)
+verbindet parallel umsetzbare Produktpakete mit dem vollständigen Umfang.
+`SMR-00-ADR-01` bleibt die offene Plattformentscheidung in #11; sie hält
+hostneutrale Produktarbeit und den bestehenden befristeten Obsidianadapter
+nicht pauschal an. Neue dauerhafte Hostkopplung braucht ihre bestätigte Grundlage.
