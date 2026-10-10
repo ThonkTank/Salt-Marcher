@@ -41,7 +41,7 @@ Produktänderung, GUI, CITY oder E2E-02–04 begonnen.
 
 Kandidat: https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/81
 
-Eingang: https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/78
+Konsumierte Save-/Referenzbasis: [PR #78](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/78).
 
 Vorhandenen Dungeon am Ort verorten und Raum-Key/Zurück/UndoRedo bedienen ist
 im gemeinsamen Editor angeschlossen. Der zurückgebliebene Link nach Ort A → B
