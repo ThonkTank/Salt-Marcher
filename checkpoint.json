@@ -6180,7 +6180,7 @@
       "sourcePlan": "ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md",
       "state": "targeted_noop_Save_repair_checks_pass_independent_review_native_pending",
       "evidence": "docs/reference/atlas-shared-location-r01/noop-repair.json",
-      "sha256": "5b446a656cd099866b0cb367ef74b2206ee99e2b519da701ab80d2479c95b1e5",
+      "sha256": "ca29a6cb1da09bd7aa92e47dde3b227e1eac80aa65bfa933426a08e932bbf221",
       "sourceCommit": "bc98b720d742693025563df7f93282be9936eb62",
       "consumedShared": "11b40200bd0fa3a86de2a81c85ce62e4edb2afcd",
       "reviewInput": {
@@ -6196,7 +6196,14 @@
       "freshProcessStarted": false,
       "guiSlotUsed": false,
       "independentRereview": "pending",
-      "fullE2E": false
+      "fullE2E": false,
+      "latestComposition": {
+        "source": "f147794947ea49961df1bca8042593ce2dd87941",
+        "consumedShared": "9e3a6c1bbd6484a356c00c268083b147cd7cc6ae",
+        "repairCodeAndTestsUnchanged": true,
+        "type": true,
+        "build": true
+      }
     }
   },
   "phase": "Phase 6: zweiter Nachbesserungslauf teilweise umgesetzt; fünf Restpositionen und unabhängiger Review offen",

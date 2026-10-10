@@ -100,5 +100,23 @@
   "independentRereview": "pending on published repair head",
   "fullE2E": false,
   "next": "Existing Chronik reviewer resumes only the concrete R02 repair and remaining consumer/recovery checks on the new exact PR62 head; then a separately coordinated qualified native Save/fresh-process run.",
-  "limits": "No selfreview, selfintegration, H01 replacement, user-vault install, physical-input/original-parity/large-map/CITY/E2E02-04/P02/P04/full-gate PASS."
+  "limits": "No selfreview, selfintegration, H01 replacement, user-vault install, physical-input/original-parity/large-map/CITY/E2E02-04/P02/P04/full-gate PASS.",
+  "latestComposition": {
+    "source": "f147794947ea49961df1bca8042593ce2dd87941",
+    "consumedShared": "9e3a6c1bbd6484a356c00c268083b147cd7cc6ae",
+    "foreignCheckpointRootsMatchIncoming": 43,
+    "foreignAcceptanceRootsMatchIncoming": true,
+    "ownHexRawMatchesBeforeMerge": true,
+    "AtlasCampaignLocationAndTestsUnchanged": true,
+    "steward": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/66#issuecomment-6101632238",
+    "checks": {
+      "type": true,
+      "build": true,
+      "Atlas560TestsRetainedWithRelevantPathDiff": true,
+      "logs": {
+        "composed-check.log": "079b4802c6da64fa1d4244b135be0c1fad7ce6c952c6dda76f3320c685743d4c",
+        "composed-build.log": "b80c08264df275dab20ebc463facbb7a5ec8c2dd9edfc85d191170f507f272ec"
+      }
+    }
+  }
 }
