@@ -1,67 +1,69 @@
 # Das Repository übersichtlich halten
 
-Die Ordnung wird im Arbeitspaket gepflegt. Paketowner ist die im Aufgabenissue benannte Agent-/Ownerrolle; Integrationsowner ist der in #12 benannte Steward des gemeinsamen Kandidaten. Nutzerauftrag und erteilte Freigaben haben Vorrang.
+Paketowner ist die im Aufgabenissue benannte Agent-/Ownerrolle, Integrationsowner der Steward des gemeinsamen Kandidaten in #12. Ordnung und Kommunikation werden im Arbeitspaket gepflegt.
 
 ## Ein verbindlicher Ort je Information
 
-| Information | Verbindlicher Ort | Pflegeanlass / Zuständigkeit |
-| --- | --- | --- |
-| Produktziele und Umfang | [PRODUCT](PRODUCT.md), Details in [SCOPE](SCOPE.md) | Bestätigte Zieländerung samt Quellenzuordnung übernehmen |
-| Lieferfolge und gemeinsame Entscheidung | [ROADMAP](ROADMAP.md), Issue #12 | Integrationsowner bei geändertem kritischem Pfad oder Gate |
-| Aufgabe, Besitz, Abhängigkeit | Konkretes GitHub-Issue und PR | Paketowner bei Übernahme, Blockerwechsel und Abschluss |
-| Aktueller Ausführungsstand | Eigene Wurzel in `checkpoint.json` | Paketowner ersetzt seinen Laufstand nach dem Paket; fremde Wurzeln erhalten |
-| Fachliche Abnahme | `acceptance.json` | Fachowner bindet direkten Nachweis; fehlende Evidenz bleibt offen |
-| Architekturentscheidung | `ARCHITECTURE.md` | Owner der angenommenen Entscheidung; frühere Begründung erhalten |
-| Fachvertrag / Paketplan | Bestehender Fachort, neue Pläne unter `docs/plans/<bereich>/` | Paketowner pflegt Verweis und Ablösung |
+| Information | Ort und Pflege |
+| --- | --- |
+| Ziele / vollständiger Umfang | [PRODUCT](PRODUCT.md) / [SCOPE](SCOPE.md); bestätigte Zieländerung samt Quellenzuordnung |
+| Dauerhafte Lieferfolge | [ROADMAP](ROADMAP.md); Integrationsowner bei geändertem Lieferpfad |
+| Aktueller gemeinsamer Schritt / Gateentscheidung | Issue #12; Integrationsowner mit direktem Beleg |
+| Aufgabe, Besitz, Abhängigkeit | Konkretes Issue/PR; Paketowner bei Übernahme, Blockerwechsel und Abschluss |
+| Ausführungsstand | Eigene Wurzel in `checkpoint.json`; aktuellen Lauf ersetzen, fremde Wurzeln erhalten |
+| Abnahme | `acceptance.json`; Fachowner bindet direkte Evidenz, fehlender Nachweis bleibt offen |
+| Architektur | `ARCHITECTURE.md`; angenommene Entscheidung mit früheren Begründungen |
+| Fachvertrag / Paketplan | Bestehender Fachort; neue Pläne unter `docs/plans/<bereich>/` |
 
-README und CONTRIBUTING sind Einstiege, [INDEX](INDEX.md) ist die Bereichskarte, das [Fachplanregister](reference/PLAN-REGISTER.md) optionale Vertiefung. Sie verlinken Aufgaben statt deren Laufberichte zu kopieren. `npm run context` liefert begrenzten Checkoutkontext; aktuelle Kandidaten und datierte Belege bleiben unterscheidbar. Issue #1 ist der Paketindex, #6–#11 sind Bereichskoordination, #12 führt bereichsübergreifende Entscheidungen. Keine zweite Live-Aufgabenliste oder tägliche Statuschronik anlegen.
+README/CONTRIBUTING führen hinein, [INDEX](INDEX.md) ist die einzige Bereichskarte, das [Fachplanregister](reference/PLAN-REGISTER.md) optionale Vertiefung. #1 verweist auf diese Karte; #6–#11 führen Bereichsfragen. Einstiege verlinken statt Laufberichte zu kopieren. Keine zweite Live-Aufgabenliste oder tägliche Statuschronik; `npm run context` ist ausdrücklich Checkoutkontext.
 
 ## Selbstorganisation ohne zentrale Zuweisung
 
-Zuerst vorhandene Produktarbeit fertigstellen oder ihren konkreten Engpass lösen; `npm run next` zeigt Engpässe und freie Aufgaben. [WORKFLOW](WORKFLOW.md) bestimmt sinnvolle Paketgrenzen. Zugriff und Fähigkeiten müssen zur Aufgabe passen.
+`npm run next` zeigt Produktengpässe und freie Arbeit. Zugriff/Fähigkeiten müssen passen; [WORKFLOW](WORKFLOW.md) bestimmt Paketgrenzen und Prüfung.
 
-| Anlass | Handlung im bestehenden Aufgabenissue / PR |
+| Anlass | Änderung am bestehenden Aufgabenissue / PR |
 | --- | --- |
-| Übernahme | Neueste Claims und PRs prüfen; Agent/Rolle, Scope und Branch/Basis nennen, soweit noch nicht eindeutig. `status:ready` durch `status:active` ersetzen. Der erste eindeutige, nicht zurückgegebene Claim gilt; spätere Contributors unterstützen oder vereinbaren getrennte Scopes. Assignees desselben Accounts reichen nicht. |
-| Blocker | Fehlenden Eingang und zuständigen Empfänger nennen; `status:blocked` und gegebenenfalls GitHub-Abhängigkeit pflegen. Nach Lieferung neu bewerten. Eine aktive Aufgabe kann blockiert sein. |
-| Reviewbedarf | Offene Reviewerrolle und Prüfgrenze im vorhandenen PR anbieten, bei Bedarf `help wanted`. Contributor übernimmt dort selbst; exakten Commit binden. Vereinbarter unabhängiger Reviewer ist ein anderer als der Autor. Besessene Prüfung und Hostslot erhalten. Der Implementierungsbesitz bleibt aktiv. |
-| Übergabe | Ergebnis, tatsächlichen Beleg, offene Grenze und nächsten Eingang/Empfänger nennen. Haupttext auf den aktuellen nächsten Schritt bringen; benötigte Details verlinken. |
-| Abschluss | Vereinbartes Ergebnis belegen, Issue schließen und Arbeitsstatuslabels entfernen. Parentverweise und abhängige Aufgaben nachziehen; nur tatsächlich ausführbare freie Nachfolger als `status:ready` anbieten. Ein Teilabschluss schließt kein Produktgate. |
-| Integration | Eigene Checkpoint-/Abnahmeänderung und Dokumentationsdelta mitliefern. Integrationsowner zieht nur den geänderten Lieferfokus in ROADMAP/#12 und gegebenenfalls README nach. |
+| Übernahme | Claims/PRs prüfen, Rolle und Scope mit Branch/Basis nennen, soweit nicht eindeutig. `ready` durch `active` ersetzen. Erster eindeutiger, nicht zurückgegebener Claim gilt; spätere Contributors unterstützen oder vereinbaren getrennte Scopes. Assignees desselben Accounts reichen nicht. |
+| Blocker | Fehlenden Eingang/Empfänger nennen; `blocked` und gegebenenfalls GitHub-Abhängigkeit pflegen. Nach Lieferung neu bewerten; aktive Arbeit darf blockiert sein. |
+| Reviewbedarf | Offene Rolle/Prüfgrenze im vorhandenen PR anbieten, gegebenenfalls `help wanted`. Reviewer übernimmt dort selbst und bindet exakten Commit. Vereinbarter unabhängiger Reviewer ist ein anderer als der Autor; besessene Prüfung/Hostslot erhalten. Implementierungsbesitz bleibt aktiv. |
+| Übergabe | Ergebnis/Beleg und nächsten Schritt in Haupttext/Kommentar nachführen, wie unten beschrieben. |
+| Abschluss | Ergebnis belegen, Issue schließen, Arbeitsstatuslabels entfernen; Parent und Abhängigkeiten nachziehen. Nur ausführbare freie Nachfolger als `ready` anbieten. Teilabschluss schließt kein Produktgate. |
+| Integration | Eigene Checkpoint-/Abnahmeänderung und Dokumentationsdelta mitliefern; Integrationsowner aktualisiert nur den betroffenen gemeinsamen Lieferpfad. |
 
-`kind:task` bezeichnet ein Ergebnispaket, `kind:coordination` einen Bereichsindex, `kind:process` Arbeitsabläufe. `priority:now` bezeichnet den aktuellen Produktengpass, `priority:next` die Folgearbeit; beide vergeben keinen Besitz. `status:ready` ist frei und ausführbar und darf weder aktiv noch blockiert sein.
+Labelnamen tragen `status:`: `ready` ist frei/ausführbar und weder aktiv noch blockiert. `kind:task` meint ein Ergebnispaket, `kind:coordination` einen Bereichsindex, `kind:process` Arbeitsabläufe. `priority:now` meint den Produktengpass, `priority:next` die Folgearbeit; Priorität vergibt keinen Besitz.
 
-Bestätigte unbesetzte Restbedarfe kann jeder Contributor im Parentissue zu ausführbaren Ergebnispaketen machen: konkreter Nutzen/Verbraucher, Quellen, Voraussetzungen und Abnahme. Eine leere freie Liste rechtfertigt keine Beschäftigungsaufgabe. Ein Claim verfällt nicht durch Zeitablauf; mit dem Owner Ergebnis, Blocker oder Rückgabe klären, keinen konkurrierenden Kandidaten eröffnen. Zusätzliche Heartbeats oder automatische Schließungen sind nicht vorgesehen.
+Jeder Contributor kann bestätigte unbesetzte Restbedarfe im Parent zu ausführbaren Ergebnispaketen machen: Nutzen/Verbraucher, Quellen, Voraussetzungen, Abnahme. Leere Liste ist kein Grund für Beschäftigungsarbeit. Claims verfallen nicht durch Zeitablauf: Ergebnis, Blocker oder Rückgabe mit dem Owner klären. Keine konkurrierenden Kandidaten, Heartbeats oder automatischen Schließungen.
 
-Bereichsfragen im Fachissue klären; bereichsübergreifende Konflikte in #12 mit Optionen und Entscheidungsbedarf. Den Nutzer bei offenen Produktzielen/Nutzerentscheidungen einbeziehen; Routineverteilung organisiert das Team selbst. Fachabnahmen behalten ihre direkten Nachweise.
+Bereichsfragen im Fachissue, gemeinsame Konflikte/Entscheidungen in #12. Den Nutzer bei offenen Produktzielen/Nutzerentscheidungen einbeziehen; Routineverteilung organisiert das Team selbst.
 
 ## Kommunikation nach Inhalt und Anlass
 
-**Melden, wenn sich Ergebnis, Blocker, Besitz oder Entscheidungsbedarf ändert.** Die Länge folgt dem Inhalt: eine Routineübergabe braucht meist wenige Sätze; ein komplexer Fehler- oder Abnahmenachweis darf ausführlich sein.
+**Ein vollständiger Bericht am Aufgabenort, sonst nur das relevante Delta mit Link.** Melden bei geändertem Ergebnis, Blocker, Besitz oder Entscheidungsbedarf. Routine meist in wenigen Sätzen; komplexe Fehler-/Abnahmenachweise entsprechend ausführlich.
 
-- **Übernahme:** Rolle übernimmt Scope auf Branch/Basis. Nur Abweichungen von den bereits beschriebenen Voraussetzungen/Prüfungen ergänzen.
-- **Übergabe:** Beobachtbares Ergebnis oder konkreter Blocker → Commit/Beleglink und offene Grenze → nächster Empfänger/Schritt.
-- **Entscheidung:** Konkrete Frage, relevante Optionen und Belege, Entscheidung mit Geltungsbereich. Ungeklärte Punkte ausdrücklich offen lassen.
+| Meldung | Nötiger Inhalt |
+| --- | --- |
+| Claim | Rolle, Scope, Branch/Basis; nur Abweichungen von bereits beschriebenen Voraussetzungen/Prüfungen |
+| Übergabe | Beobachtbares Ergebnis oder Blocker → Commit/Beleglink und offene Grenze → nächster Empfänger/Schritt |
+| Entscheidung | Frage, relevante Optionen/Belege, Entscheidung mit Geltungsbereich; ungeklärte Punkte offen |
 
-Die vollständige Übergabe steht einmal am Aufgabenissue/PR. Im Bereichsindex genügt der geänderte Eingang mit Link; #12 braucht nur Änderungen am gemeinsamen Produktpfad oder Gate. Keine identischen Vollberichte, wiederholten Regeltexte oder Meldungen ohne Änderung. Lange Logs, Hashlisten und Prüftabellen gehören an den bestehenden Fach-/Evidenzort und werden verlinkt. Ein Haupttext zeigt Scope und nächsten Schritt mit datiertem Beleg; Kommentare dokumentieren Verlauf. Veraltete Anweisungen im Haupttext ersetzen, frühere Belege erhalten.
+Der aktuelle Haupttext zeigt Scope und nächsten Schritt mit datiertem Beleg; Kommentare bewahren den Verlauf. Regeln und bekannte Voraussetzungen nicht je Lauf wiederholen. Lange Logs, Hashlisten und Prüftabellen an den bestehenden Fach-/Evidenzort verlinken. Bereichsindex nur bei geändertem Eingang, #12 nur bei geändertem gemeinsamen Produktpfad/Gate aktualisieren. Veraltete Anweisungen ersetzen, frühere Belege erhalten; kein Bericht je Commit und keine identischen Vollberichte in mehreren Threads.
 
 ## Wo neue Dateien hingehören
 
-- `src/`: Produktcode; `tests/`: gezielte Tests und kleine synthetische Fixtures; `tools/`: wiederverwendbare Werkzeuge mit dokumentiertem Aufruf.
-- `docs/`: Anleitungen und begründete Quellzuordnungen; jede Markdown-Datei ist über INDEX erreichbar, direkt oder über eine verlinkte Anleitung.
-- `docs/plans/<bereich>/`: vorhandenen passenden Plan fortführen; eigene neue Plandatei nach [Vorlage](templates/PACKAGE-PLAN.md) nur bei hilfreichem Vertrags-/Quellenumfang. Für Routinearbeit genügt Issue/PR.
-- Große QA-Dateien und Rohprotokolle bleiben am bestehenden QA-Ort außerhalb des Nutzervaults; prüfbare Identität, Hash und Zugriffsvoraussetzung im Repository angeben.
+- `src/`: Produktcode; `tests/`: gezielte Tests/kleine synthetische Fixtures; `tools/`: wiederverwendbare Werkzeuge mit dokumentiertem Aufruf.
+- `docs/`: Anleitungen/Quellzuordnungen, über INDEX erreichbar. Vorhandenen passenden Plan fortführen; neue Plandatei unter `docs/plans/<bereich>/` nur bei hilfreichem Vertrags-/Quellenumfang, nach [Vorlage](templates/PACKAGE-PLAN.md). Routineplan im Issue/PR genügt.
+- Große QA-Dateien/Logs: bestehender QA-Ort außerhalb des Nutzervaults; Identität, Hash und Zugriff im Repository dokumentieren.
 
-Extern referenzierte Root- und Kandidatenpfade bleiben kompatibel; [repository-policy.json](repository-policy.json) hält diesen festen Bestand. Keine neuen Root-Markdown-Dateien oder Bestandserweiterung zur Umgehung der Prüfung. Notwendige Strukturänderungen führen betroffene Verweise und Übergänge mit.
+Referenzierte Root-/Kandidatenpfade bleiben kompatibel; [repository-policy.json](repository-policy.json) führt den festen Bestand. Keine neuen Root-Markdown-Dateien oder Erweiterung zur Prüfumgehung. Strukturänderungen führen Verweise/Übergänge mit.
 
 ## Pläne ablösen und alte Verweise erhalten
 
-Neue Pläne nennen Bereich, Ownerrolle, Issue, Dokumentstatus und eigene Checkpointwurzel. `complete` meint das Paketdokument, keine Produktabnahme; `superseded` nennt den Nachfolger. Alten Plan und Indexverweis kennzeichnen, aktuelle Aufgabe auf den Nachfolger richten. Historische IDs und Belege erhalten; extern referenzierte Dateien nur mit ihren Verweisen und Übergängen verschieben.
+Neue Pläne: Bereich, Ownerrolle, Issue, Dokumentstatus, eigene Checkpointwurzel. `complete` meint das Paketdokument, keine Produktabnahme; `superseded` nennt den Nachfolger. Alten Plan/Index kennzeichnen, aktuelle Aufgabe auf Nachfolger richten. Historische IDs/Belege erhalten; externe Pfade nur mit ihren Verweisen/Übergängen verschieben.
 
 ## Was automatisch geprüft wird
 
-- `npm run check:repo`: offline Verweise/Anker der Einstiege und `docs/`, Indexerreichbarkeit, Rootbestand, neue Planmetadaten und Quellenregister. Historische Quellenhashes gelten für ihren Snapshot; alte Fachtexte mit privaten QA-Pfaden sind nicht vollständig linkgeprüft.
-- `npm run test:repo`: gezielte Tests dieser Regeln. Strukturprüfung läuft in PR-CI und bei Push auf Shared.
-- `npm run audit:backlog`: mit GitHub-Zugriff ausschließlich lesend widersprüchliche Statuslabels erkennen; keine Zuweisung oder Fachentscheidung.
+- `npm run check:repo`: offline Links/Anker der Einstiege und `docs/`, Indexerreichbarkeit, Rootbestand, neue Planmetadaten, Quellenregister. Alte Fachtexte/private QA-Pfade sind nicht vollständig linkgeprüft; historische Hashes gelten für ihren Snapshot.
+- `npm run test:repo`: gezielte Regeltests; Strukturprüfung läuft in PR-CI und bei Shared-Push.
+- `npm run audit:backlog`: GitHub-Statuslabels ausschließlich lesend prüfen.
 
-Diese Prüfungen beweisen keine sachliche Aktualität, sinnvolle Priorität oder Produktabnahme; dafür bleiben die Owner zuständig. CI meldet Verstöße. Branchschutz konnte mit dem aktuellen Zugriff nicht eingerichtet oder verifiziert werden.
+Sachliche Aktualität, Priorität und Produktabnahme bleiben Owneraufgaben. CI meldet Verstöße; Branchschutz konnte mit dem bisherigen Zugriff nicht eingerichtet/verifiziert werden.
