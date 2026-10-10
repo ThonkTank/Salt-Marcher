@@ -43,10 +43,18 @@ export async function readConfirmedWorldNotes(input: {
   safePath(file.path);
   if (!file.path.startsWith("Kampagnen/SaltMarcher/") || !file.path.endsWith(".campaign.json"))
     throw new Error("World Notes benötigen ein natives Campaignmanifest.");
+  const journalPath = file.path.replace(/\.campaign\.json$/, ".world-notes.journal");
+  const assertJournalAbsent = async () => {
+    if (await input.files.read(journalPath) !== null)
+      throw new Error("World-Notes-Journal ist noch offen; Kampagne vor dem erneuten Öffnen sicher schließen.");
+    assertCurrent();
+  };
+  await assertJournalAbsent();
   if (owners.length > 1) throw new Error("World-Notes-Owner ist mehrdeutig.");
   const assertManifestUnchanged = async () => {
     if (await input.files.read(file.path) !== file.bytes)
       throw new Error("Campaignmanifest wurde während des World-Notes-Lesens geändert.");
+    await assertJournalAbsent();
     assertCurrent();
   };
   if (!owners.length) {
