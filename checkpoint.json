@@ -1801,12 +1801,21 @@
         "pr": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/27",
         "requestedSource": "0f6defef4f8d50343e7ee9060bad5cc4e9f42ce7",
         "handoff": "Concrete completed I48b/R48 reference package from existing City peer chat; read-only independent review requested, queued as a separate bounded run. No source integration or review PASS assumed.",
-        "state": "qualified_reference_review_request_queued_no_review_started",
+        "state": "completed_independent_bounded_reference_PASS_no_product_or_integration_approval",
         "evidenceRoots": [
           "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i48a-20261009-r01",
           "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i48b-20261010-r01"
         ],
-        "scope": "Only original two-value Map/Template/fresh-session evidence and CO-COK-0004 qualification; no GUI, implementation, full parity or general review round."
+        "scope": "Only original two-value Map/Template/fresh-session evidence and CO-COK-0004 qualification; no GUI, implementation, full parity or general review round.",
+        "reviewedSource": "9c4afe102c00e42ba814d0a32cf721ddcccfc820",
+        "run": "HEX-CITY00-COK-R48-R01",
+        "completedAt": "2026-10-10T10:59:03.913247+00:00",
+        "receipt": "/home/aaron/.cache/dungeon-native-qa/hex-03/city00-cok-r48-independent-r01-20261010/review.json",
+        "sha256": "1d7eb3307b39e2e2551208904e98f1ef3aad885dec46e415794386d0761f6de2",
+        "result": "PASS two-value original Map/template/fresh-process evidence; CO-COK-0004 remains open. One nonblocking stale cleanup-next sentence, no new cleanup/review round required.",
+        "limits": "Read-only review on stored original receipts/55 frames, no GUI or PR27 integration. Actual same-lifetime Campaign Host Save seam remains the next product dependency.",
+        "publishedReview": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/27#pullrequestreview-5478706757",
+        "workHandoff": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/7#issuecomment-6096811320"
       },
       "runtimePlanning": {
         "id": "E2E-01-SPACE-I01c-RUNTIME-P01",
@@ -3204,7 +3213,13 @@
         "nativeRan": false,
         "freshProcessRan": false,
         "fullE2E": false,
-        "next": "Concrete Campaign/Data owner delivery for HEX-MANIFEST-I02-01; then resume the same bounded Host-I02, consume acknowledgment and confirm new Registry/Inventory in the existing mount, actual Save/Fresh/A-B-A, freshly coordinated Obsidian probe and separate independent integrated review. No new general plan/owner/review cycle."
+        "next": "Concrete Campaign/Data owner delivery for HEX-MANIFEST-I02-01; then resume the same bounded Host-I02, consume acknowledgment and confirm new Registry/Inventory in the existing mount, actual Save/Fresh/A-B-A, freshly coordinated Obsidian probe and separate independent integrated review. No new general plan/owner/review cycle.",
+        "ownerAcceptance": {
+          "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6096696254",
+          "observedAt": "2026-10-10T10:59:03.921644+00:00",
+          "state": "owner_accepted_narrow_implementation_scope_no_qualified_delivery_yet",
+          "scope": "Campaign Source/Save-Participant and their two core test files; exact committed-journal proof, same original ContextToken and verified Registry/Inventory after; synchronous invalidation preserved. Owner checks/push and independent Chronik review required before consumption."
+        }
       }
     },
     "verification": {
