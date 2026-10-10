@@ -43,6 +43,40 @@ export function normalizePdfText(value) {
     .trim();
 }
 
+function decodeXmlText(value) {
+  return value.replace(/<[^>]+>/g, "")
+    .replaceAll("&amp;", "&").replaceAll("&quot;", "\"").replaceAll("&apos;", "'")
+    .replaceAll("&lt;", "<").replaceAll("&gt;", ">");
+}
+
+export function extractMagicItemAzHeadingsFromPdfXml(xml) {
+  nonEmpty(xml, "Magic-Item-A–Z-XML");
+  const fontSizes = new Map([...xml.matchAll(/<fontspec id="(\d+)" size="(\d+)"/g)]
+    .map(match => [match[1], Number(match[2])]));
+  const nodes = [...xml.matchAll(/<text\b([^>]*)>([\s\S]*?)<\/text>/g)].map(match => ({
+    font: /\bfont="(\d+)"/.exec(match[1])?.[1],
+    bold: /<b>/.test(match[2]),
+    italic: /<i>/.test(match[2]),
+    text: normalizePdfText(decodeXmlText(match[2])),
+  })).filter(node => node.text.length > 0);
+  const headings = [];
+  for (let index = 0; index < nodes.length;) {
+    if (!nodes[index].bold || fontSizes.get(nodes[index].font) !== 18) {
+      index += 1;
+      continue;
+    }
+    const lines = [];
+    while (index < nodes.length && nodes[index].bold && fontSizes.get(nodes[index].font) === 18) {
+      lines.push(nodes[index].text);
+      index += 1;
+    }
+    if (nodes[index]?.italic
+      && /^(Armor|Potion|Ring|Rod|Scroll|Staff|Wand|Weapon|Wondrous item)\b/.test(nodes[index].text))
+      headings.push(lines.join(" "));
+  }
+  return Object.freeze(headings);
+}
+
 function normalizePdfPageText(value, page) {
   return normalizePdfText(value).replaceAll(`System Reference Document 5.1 ${page}`, "").trim();
 }
@@ -148,7 +182,8 @@ export function validateTranscriptData(transcript, inventory, { allowIncomplete 
       `${section.id} ist trotz Countlücke vollständig markiert.`);
   }
   const occurrences = new Map();
-  for (const occurrence of inventory.occurrences) {
+  const occurrenceOrder = new Map();
+  for (const [occurrenceIndex, occurrence] of inventory.occurrences.entries()) {
     object(occurrence, "Occurrence");
     invariant(occurrencePattern.test(occurrence.id), `Ungültige Occurrence-ID ${occurrence.id}.`);
     invariant(!occurrences.has(occurrence.id), `Doppelte Occurrence-ID ${occurrence.id}.`);
@@ -160,6 +195,7 @@ export function validateTranscriptData(transcript, inventory, { allowIncomplete 
     invariant(occurrence.firstPdfPage <= occurrence.lastPdfPage, `${occurrence.id} hat umgekehrte PDF-Seiten.`);
     invariant(occurrence.firstPrintedPage <= occurrence.lastPrintedPage, `${occurrence.id} hat umgekehrte Druckseiten.`);
     occurrences.set(occurrence.id, occurrence);
+    occurrenceOrder.set(occurrence.id, occurrenceIndex);
   }
   for (const section of inventory.sections) {
     const sectionOccurrences = inventory.occurrences.filter(occurrence => occurrence.sectionId === section.id);
@@ -229,12 +265,12 @@ export function validateTranscriptData(transcript, inventory, { allowIncomplete 
         `${disposition.helperIndex} verweist auf unbekannte kanonische Occurrence ${disposition.canonicalId}.`);
     }
   }
-  const records = new Set();
+  const records = new Map();
   for (const record of transcript.records) {
     object(record, "Record");
     invariant(occurrencePattern.test(record.id), `Ungültige Record-ID ${record.id}.`);
     invariant(!records.has(record.id), `Doppelte Record-ID ${record.id}.`);
-    records.add(record.id);
+    records.set(record.id, record);
     nonEmpty(record.name, `${record.id}.name`);
     invariant(record.category === "equipment" || record.category === "magic-item", `${record.id}.category ist ungültig.`);
     invariant(typeof record.magic === "boolean", `${record.id}.magic ist ungültig.`);
@@ -254,7 +290,12 @@ export function validateTranscriptData(transcript, inventory, { allowIncomplete 
       `${record.id} benötigt streng aufsteigende Quellseiten.`);
     for (const occurrenceId of record.source.occurrenceIds)
       invariant(occurrences.has(occurrenceId), `${record.id} verweist auf unbekannte Occurrence ${occurrenceId}.`);
-    for (const sourced of [...record.properties, ...record.description]) {
+    for (const choice of record.rarity?.choices ?? []) {
+      invariant(occurrences.has(choice.occurrenceId), `${record.id} hat eine unbelegte Raritätsvariante.`);
+      invariant(record.source.occurrenceIds.includes(choice.occurrenceId),
+        `${record.id} hat eine Raritätsvariante außerhalb seiner Quellenliste.`);
+    }
+    for (const sourced of [record.sourceHeader, ...record.properties, ...record.description].filter(Boolean)) {
       object(sourced, `${record.id}.Textfakt`);
       invariant(occurrences.has(sourced.occurrenceId), `${record.id} hat unbelegte Textfakten.`);
       invariant(record.source.occurrenceIds.includes(sourced.occurrenceId),
@@ -262,7 +303,142 @@ export function validateTranscriptData(transcript, inventory, { allowIncomplete 
     }
     validateStructuredConversions(record);
   }
+  for (const occurrence of inventory.occurrences.filter(candidate => candidate.mergeIntoId !== null)) {
+    const target = occurrences.get(occurrence.mergeIntoId);
+    invariant(target, `${occurrence.id} verweist auf ein unbekanntes Merge-Ziel ${occurrence.mergeIntoId}.`);
+    invariant(occurrenceOrder.get(target.id) < occurrenceOrder.get(occurrence.id),
+      `${occurrence.id} muss in die frühere physische Occurrence gemergt werden.`);
+    invariant(target.mergeIntoId === null, `${occurrence.id} darf keine Merge-Kette erzeugen.`);
+  }
+  for (const occurrence of inventory.occurrences.filter(candidate => candidate.mergeIntoId !== null)) {
+    const target = occurrences.get(occurrence.mergeIntoId);
+    invariant(!records.has(occurrence.id), `${occurrence.id} darf keinen zweiten kanonischen Record erzeugen.`);
+    const canonical = records.get(target.id);
+    invariant(canonical, `${occurrence.id} benötigt den kanonischen Record ${target.id}.`);
+    invariant(canonical.source.occurrenceIds[0] === target.id,
+      `${target.id} muss seine erste physische Occurrence als erste Quelle behalten.`);
+    invariant(canonical.source.occurrenceIds.includes(occurrence.id),
+      `${target.id} muss die gemergte Occurrence ${occurrence.id} als Quelle belegen.`);
+  }
   return Object.freeze({ occurrenceCount: occurrences.size, recordCount: records.size, complete: transcript.complete });
+}
+
+export function validatePotionHealingMerge(transcript, inventory) {
+  const canonicalId = "srd51:equipment:adventuring-gear:76";
+  const detailId = "srd51:magic-item:magic-items-a-z:142";
+  const occurrences = new Map(inventory.occurrences.map(occurrence => [occurrence.id, occurrence]));
+  const records = new Map(transcript.records.map(record => [record.id, record]));
+  const canonicalOccurrence = occurrences.get(canonicalId);
+  const detailOccurrence = occurrences.get(detailId);
+  invariant(canonicalOccurrence?.sourceLabel === "Potion of healing",
+    "Potion-of-Healing-Merge benötigt die kanonische Ausrüstungs-Occurrence.");
+  invariant(detailOccurrence?.sourceLabel === "Potion of Healing" && detailOccurrence.sourceKind === "detail-heading"
+    && detailOccurrence.sourceTable === "Magic Items A–Z" && detailOccurrence.ordinal === 142
+    && detailOccurrence.firstPdfPage === 234 && detailOccurrence.lastPdfPage === 234,
+  "Potion-of-Healing-Detail muss als A–Z-Heading 142 auf physischer Seite 234 belegt sein.");
+  invariant(detailOccurrence.mergeIntoId === canonicalId,
+    "Potion-of-Healing-Detail muss explizit in die erste Ausrüstungs-Occurrence mergen.");
+  invariant(!records.has(detailId), "Potion-of-Healing-Detail darf keinen doppelten kanonischen Record erzeugen.");
+  const record = records.get(canonicalId);
+  invariant(record?.category === "magic-item" && record.subcategory === "potion" && record.magic === true,
+    "Potion of healing muss ihre kanonische magische Potion-Identität behalten.");
+  invariant(record.attunement === "not-required",
+    "Der vollständige Potion-of-Healing-Header belegt keine erforderliche Einstimmung.");
+  invariant(JSON.stringify(record.source.occurrenceIds) === JSON.stringify([canonicalId, detailId]),
+    "Potion of healing muss exakt beide Occurrences in physischer Reihenfolge belegen.");
+  invariant(JSON.stringify(record.source.pdfPages) === JSON.stringify([68, 69, 234])
+    && JSON.stringify(record.source.printedPages) === JSON.stringify([68, 69, 234]),
+  "Potion of healing muss die Ausrüstungs- und Detailseiten getrennt belegen.");
+  const expectedChoices = [
+    ["Healing", "common"],
+    ["Greater healing", "uncommon"],
+    ["Superior healing", "rare"],
+    ["Supreme healing", "very-rare"],
+  ];
+  invariant(record.rarity?.kind === "varies" && record.rarity.sourceText === "rarity varies"
+    && record.rarity.choices.length === expectedChoices.length,
+  "Potion of healing benötigt die belegte variable Rarität mit vier Varianten.");
+  for (const [index, [label, value]] of expectedChoices.entries()) {
+    const choice = record.rarity.choices[index];
+    invariant(choice.variantId === `${detailId}#variant:${index + 1}` && choice.label === label
+      && choice.value === value && choice.occurrenceId === detailId,
+    `Potion-of-Healing-Variante ${index + 1} widerspricht der Quelltabelle.`);
+  }
+  const expectedDetailFacts = [
+    "You regain hit points when you drink this potion. The number of hit points depends on the potion’s rarity, as shown in the Potions of Healing table. Whatever its potency, the potion’s red liquid glimmers when agitated.",
+    "Potions of Healing",
+    "Potion of … Rarity HP Regained",
+    "Healing Common 2d4 + 2",
+    "Greater healing Uncommon 4d4 + 4",
+    "Superior healing Rare 8d4 + 8",
+    "Supreme healing Very rare 10d4 + 20",
+  ];
+  const detailFacts = record.description.filter(fact => fact.occurrenceId === detailId).map(fact => fact.text);
+  invariant(JSON.stringify(detailFacts) === JSON.stringify(expectedDetailFacts),
+    "Potion-of-Healing-Detailprosa oder Heilungszeilen sind unvollständig oder umgeordnet.");
+  return Object.freeze({ canonicalId, detailId, mergedRecords: 1, rarityChoices: 4, healingRows: 4 });
+}
+
+export function validateMagicItemAzOpeningSlice(transcript, inventory) {
+  const expected = [
+    { name: "Adamantine Armor", header: "Armor (medium or heavy, but not hide), uncommon",
+      subcategory: "armor", rarity: { kind: "fixed", value: "uncommon" },
+      attunement: "not-required", description: "This suit of armor is reinforced with adamantine, one of the hardest substances in existence. While you’re wearing it, any critical hit against you becomes a normal hit." },
+    { name: "Ammunition, +1, +2, or +3",
+      header: "Weapon (any ammunition), uncommon (+1), rare (+2), or very rare (+3)", subcategory: "ammunition",
+      rarity: { kind: "varies", sourceText: "uncommon (+1), rare (+2), or very rare (+3)",
+        choices: [["+1", "uncommon"], ["+2", "rare"], ["+3", "very-rare"]] },
+      attunement: "not-required", description: "You have a bonus to attack and damage rolls made with this piece of magic ammunition. The bonus is determined by the rarity of the ammunition. Once it hits a target, the ammunition is no longer magical." },
+    { name: "Amulet of Health", header: "Wondrous item, rare (requires attunement)",
+      subcategory: "wondrous-item", rarity: { kind: "fixed", value: "rare" },
+      attunement: "required", description: "Your Constitution score is 19 while you wear this amulet. It has no effect on you if your Constitution is already 19 or higher." },
+    { name: "Amulet of Proof against Detection and Location",
+      header: "Wondrous item, uncommon (requires attunement)", subcategory: "wondrous-item",
+      rarity: { kind: "fixed", value: "uncommon" }, attunement: "required",
+      description: "While wearing this amulet, you are hidden from divination magic. You can’t be targeted by such magic or perceived through magical scrying sensors." },
+    { name: "Amulet of the Planes", header: "Wondrous item, very rare (requires attunement)",
+      subcategory: "wondrous-item", rarity: { kind: "fixed", value: "very-rare" },
+      attunement: "required", description: "While wearing this amulet, you can use an action to name a location that you are familiar with on another plane of existence. Then make a DC 15 Intelligence check. On a successful check, you cast the plane shift spell. On a failure, you and each creature and object within 15 feet of you travel to a random destination. Roll a d100. On a 1–60, you travel to a random location on the plane you named. On a 61–100, you travel to a randomly determined plane of existence." },
+  ];
+  const occurrences = new Map(inventory.occurrences.map(item => [item.id, item]));
+  const records = new Map(transcript.records.map(record => [record.id, record]));
+  for (const [index, item] of expected.entries()) {
+    const ordinal = index + 1;
+    const id = `srd51:magic-item:magic-items-a-z:${ordinal}`;
+    const occurrence = occurrences.get(id);
+    invariant(occurrence?.sourceLabel === item.name && occurrence.ordinal === ordinal
+      && occurrence.sourceTable === "Magic Items A–Z" && occurrence.sourceKind === "detail-heading"
+      && occurrence.firstPdfPage === 207 && occurrence.lastPdfPage === 207
+      && occurrence.firstPrintedPage === 207 && occurrence.lastPrintedPage === 207
+      && occurrence.mergeIntoId === null,
+    `Magic-Items-A–Z-Occurrence ${ordinal} ist nicht exakt als Seite-207-Heading belegt.`);
+    const record = records.get(id);
+    invariant(record?.name === item.name && record.category === "magic-item" && record.magic === true
+      && record.subcategory === item.subcategory && record.attunement === item.attunement
+      && record.sourceHeader?.text === item.header && record.sourceHeader.occurrenceId === id
+      && JSON.stringify(record.source.pdfPages) === "[207]"
+      && JSON.stringify(record.source.printedPages) === "[207]"
+      && JSON.stringify(record.source.occurrenceIds) === JSON.stringify([id])
+      && record.description.length === 1 && record.description[0].occurrenceId === id
+      && record.description[0].text === item.description,
+    `Magic-Items-A–Z-Record ${ordinal} ist unvollständig oder nicht quellengetreu.`);
+    if (item.rarity.kind === "fixed") {
+      invariant(record.rarity?.kind === "fixed" && record.rarity.value === item.rarity.value,
+        `Magic-Items-A–Z-Record ${ordinal} hat nicht die belegte feste Rarität.`);
+    } else {
+      invariant(record.rarity?.kind === "varies" && record.rarity.sourceText === item.rarity.sourceText
+        && record.rarity.choices.length === item.rarity.choices.length,
+      `Magic-Items-A–Z-Record ${ordinal} hat nicht die belegte variable Rarität.`);
+      for (const [choiceIndex, [label, value]] of item.rarity.choices.entries()) {
+        const choice = record.rarity.choices[choiceIndex];
+        invariant(choice.variantId === `${id}#variant:${choiceIndex + 1}` && choice.label === label
+          && choice.value === value && choice.occurrenceId === id,
+        `Magic-Items-A–Z-Record ${ordinal}, Variante ${choiceIndex + 1}, widerspricht dem Header.`);
+      }
+    }
+  }
+  return Object.freeze({ capturedRecords: 5, physicalPdfPage: 207, fixedRarities: 4,
+    variableRarityChoices: 3, attunementRequired: 3, attunementNotRequired: 2 });
 }
 
 function formatAjvErrors(errors) {
@@ -491,6 +667,78 @@ function verifyPdfMountsTableRows(pdfPath, transcript, inventory) {
   return validateBoundedMountsTableRows(pageLines, transcript, inventory);
 }
 
+export function validateBoundedTackTableRows(pageLines, transcript, inventory) {
+  object(pageLines, "Tack-Harness-and-Drawn-Vehicles-Tabellenzeilen");
+  const occurrences = inventory.occurrences
+    .filter(occurrence => occurrence.sectionId === "tack-harness-drawn-vehicles");
+  invariant(occurrences.length === 14,
+    "Bounded Tack-Harness-and-Drawn-Vehicles-Prüfung benötigt exakt 14 Inventarzeilen.");
+  const records = new Map(transcript.records.map(record => [record.id, record]));
+  for (const occurrence of occurrences) {
+    const record = records.get(occurrence.id);
+    invariant(record, `${occurrence.id}: Record für bounded Tack-Harness-and-Drawn-Vehicles-Prüfung fehlt.`);
+    invariant(record.cost && record.weight,
+      `${occurrence.id}: strukturierte Tack-Harness-and-Drawn-Vehicles-Tabellenzellen fehlen.`);
+    const expected = normalizePdfText([
+      occurrence.sourceLabel,
+      record.cost.sourceText,
+      record.weight.sourceText,
+    ].join(" "));
+    const lines = pageLines[String(occurrence.firstPdfPage)];
+    invariant(Array.isArray(lines), `${occurrence.id}: Layoutzeilen für PDF-Seite ${occurrence.firstPdfPage} fehlen.`);
+    const matches = countExactNormalizedLineSegments(lines, expected);
+    invariant(matches === 1,
+      `${occurrence.id}: erwartete Tack-Harness-and-Drawn-Vehicles-Zellen stehen nicht exakt einmal als zusammenhängendes Segment derselben physischen Tabellenzeile.`);
+  }
+  return Object.freeze({ checkedRows: occurrences.length,
+    scope: "exact-normalized-pdftotext-layout-row-segment-with-formula-and-source-missing-marker" });
+}
+
+function verifyPdfTackTableRows(pdfPath, transcript, inventory) {
+  const pages = [...new Set(inventory.occurrences
+    .filter(occurrence => occurrence.sectionId === "tack-harness-drawn-vehicles")
+    .map(occurrence => occurrence.firstPdfPage))];
+  const pageLines = Object.fromEntries(pages.map(page => [String(page),
+    extractPdfPage(pdfPath, page, true).split(/\r?\n/).filter(line => line.trim().length > 0)]));
+  return validateBoundedTackTableRows(pageLines, transcript, inventory);
+}
+
+export function validateBoundedWaterborneTableRows(pageLines, transcript, inventory) {
+  object(pageLines, "Waterborne-Vehicles-Tabellenzeilen");
+  const occurrences = inventory.occurrences
+    .filter(occurrence => occurrence.sectionId === "waterborne-vehicles");
+  invariant(occurrences.length === 6,
+    "Bounded Waterborne-Vehicles-Prüfung benötigt exakt sechs Inventarzeilen.");
+  const records = new Map(transcript.records.map(record => [record.id, record]));
+  for (const occurrence of occurrences) {
+    const record = records.get(occurrence.id);
+    invariant(record, `${occurrence.id}: Record für bounded Waterborne-Vehicles-Prüfung fehlt.`);
+    invariant(record.cost && record.speed,
+      `${occurrence.id}: strukturierte Waterborne-Vehicles-Tabellenzellen fehlen.`);
+    const expected = normalizePdfText([
+      occurrence.sourceLabel,
+      record.cost.sourceText,
+      record.speed.sourceText,
+    ].join(" "));
+    const lines = pageLines[String(occurrence.firstPdfPage)];
+    invariant(Array.isArray(lines), `${occurrence.id}: Layoutzeilen für PDF-Seite ${occurrence.firstPdfPage} fehlen.`);
+    const matches = countExactNormalizedLineSegments(lines, expected);
+    invariant(matches === 1,
+      `${occurrence.id}: erwartete Waterborne-Vehicles-Zellen stehen nicht exakt einmal als zusammenhängendes Segment derselben physischen Tabellenzeile.`);
+  }
+  return Object.freeze({ checkedRows: occurrences.length,
+    scope: "exact-normalized-pdftotext-layout-row-segment-with-fractional-source-speeds" });
+}
+
+function verifyPdfWaterborneTableRows(pdfPath, transcript, inventory) {
+  const pages = [...new Set(inventory.occurrences
+    .filter(occurrence => occurrence.sectionId === "waterborne-vehicles")
+    .map(occurrence => occurrence.firstPdfPage))];
+  const pageLines = Object.fromEntries(pages.map(page => [String(page),
+    extractPdfPage(pdfPath, page, true).split(/\r?\n/).filter(line => line.trim().length > 0)]));
+  return validateBoundedWaterborneTableRows(pageLines, transcript, inventory);
+}
+
 function verifyPdfOccurrences(pdfPath, inventory) {
   const pageText = new Map();
   for (const occurrence of inventory.occurrences) {
@@ -514,7 +762,7 @@ function verifyPdfTranscriptFacts(pdfPath, transcript) {
       if (!pageText.has(page)) pageText.set(page, normalizePdfPageText(extractPdfPage(pdfPath, page), page));
       return pageText.get(page);
     }).join(" ");
-    const facts = [record.cost?.sourceText, record.weight?.sourceText, record.speed?.sourceText,
+    const facts = [record.sourceHeader?.text, record.cost?.sourceText, record.weight?.sourceText, record.speed?.sourceText,
       record.carryingCapacity?.sourceText, record.damage?.diceText,
       record.damage?.typeText, record.damage?.versatileDiceText, record.armor?.armorClassText,
       record.armor?.strengthRequirementText, record.armor?.stealthRuleText,
@@ -527,6 +775,50 @@ function verifyPdfTranscriptFacts(pdfPath, transcript) {
   }
   return Object.freeze({ checkedRecords: transcript.records.length, checkedFacts,
     scope: "structured-table-and-sourced-description-facts" });
+}
+
+function verifyPdfPotionHealingMerge(pdfPath, transcript, inventory) {
+  const evidence = validatePotionHealingMerge(transcript, inventory);
+  const headings = extractMagicItemAzHeadingsFromPdfXml(execFileSync("pdftohtml",
+    ["-xml", "-f", "207", "-l", "251", "-stdout", resolve(pdfPath)],
+    { encoding: "utf8", maxBuffer: 16 * 1024 * 1024 }));
+  invariant(headings.length === 239, "Magic Items A–Z muss exakt 239 physische Item-Detailheadings enthalten.");
+  invariant(headings[141] === "Potion of Healing"
+    && headings[140] === "Potion of Growth" && headings[142] === "Potion of Heroism",
+  "Potion of Healing muss aus der physischen A–Z-Headingfolge als Ordinal 142 abgeleitet werden.");
+  const pageText = normalizePdfPageText(extractPdfPage(pdfPath, 234), 234);
+  for (const fact of ["Potion of Healing", "Potion, rarity varies", "Potions of Healing",
+    "Healing Common 2d4 + 2", "Greater healing Uncommon 4d4 + 4",
+    "Superior healing Rare 8d4 + 8", "Supreme healing Very rare 10d4 + 20"]) {
+    invariant(pageText.includes(normalizePdfText(fact)),
+      `Potion-of-Healing-PDF-Beleg für „${fact}“ fehlt.`);
+  }
+  return Object.freeze({ ...evidence, physicalPdfPage: 234, derivedHeadingCount: 239, derivedHeadingOrdinal: 142,
+    scope: "explicit-earliest-occurrence-merge-header-rarity-and-four-healing-rows" });
+}
+
+function verifyPdfMagicItemAzOpeningSlice(pdfPath, transcript, inventory) {
+  const evidence = validateMagicItemAzOpeningSlice(transcript, inventory);
+  const headings = extractMagicItemAzHeadingsFromPdfXml(execFileSync("pdftohtml",
+    ["-xml", "-f", "207", "-l", "251", "-stdout", resolve(pdfPath)],
+    { encoding: "utf8", maxBuffer: 16 * 1024 * 1024 }));
+  const expectedHeadings = ["Adamantine Armor", "Ammunition, +1, +2, or +3", "Amulet of Health",
+    "Amulet of Proof against Detection and Location", "Amulet of the Planes"];
+  invariant(headings.length === 239 && JSON.stringify(headings.slice(0, 5)) === JSON.stringify(expectedHeadings),
+    "Die ersten fünf Magic-Items-A–Z-Headings oder der Gesamtcount 239 widersprechen dem PDF.");
+  const records = new Map(transcript.records.map(record => [record.id, record]));
+  for (let ordinal = 1; ordinal <= 5; ordinal += 1) {
+    const id = `srd51:magic-item:magic-items-a-z:${ordinal}`;
+    const record = records.get(id);
+    invariant(record.sourceHeader.occurrenceId === id && record.source.pdfPages.length === 1,
+      `${id}: Magic-Item-Header ist nicht eindeutig occurrence-/seitengebunden.`);
+    const page = record.source.pdfPages[0];
+    const pageText = normalizePdfPageText(extractPdfPage(pdfPath, page), page);
+    invariant(pageText.includes(normalizePdfText(record.sourceHeader.text)),
+      `${id}: PDF-Beleg für vollständigen Magic-Item-Header „${record.sourceHeader.text}“ fehlt.`);
+  }
+  return Object.freeze({ ...evidence, derivedHeadingCount: headings.length,
+    scope: "first-five-a-z-headings-full-headers-rarity-attunement-and-descriptions" });
 }
 
 function verifyPdfHelperDispositions(pdfPath, inventory) {
@@ -607,10 +899,19 @@ export async function verifyItemsSourcePackage({ pdfPath, allowIncomplete = fals
     "Manifest-Inventarcount stimmt nicht.");
   invariant(manifest.coverage.transcriptRecords === transcript.records.length,
     "Manifest-Transkriptcount stimmt nicht.");
+  const magicItemAzSection = inventory.sections.find(section => section.id === "magic-items-a-z");
+  invariant(manifest.coverage.capturedMagicItemAzHeadings === magicItemAzSection?.capturedOccurrences
+    && manifest.coverage.capturedMagicItemAzStandaloneRecords === 5
+    && manifest.coverage.capturedMagicItemAzMergedDetails === 1
+    && manifest.coverage.unresolvedMagicItemSourceHeadings
+      === magicItemAzSection.expectedOccurrences - magicItemAzSection.capturedOccurrences,
+  "Manifest-Magic-Items-A–Z-Coverage stimmt nicht mit Inventar und Merge-Stand überein.");
   invariant(manifest.coverage.capturedEquipmentCrossReferenceRows === inventory.crossReferences.length,
     "Manifest-Cross-reference-Count stimmt nicht.");
   validateJsonSchemas(schema, transcript, inventory);
   const validation = validateTranscriptData(transcript, inventory, { allowIncomplete });
+  const potionHealingMerge = validatePotionHealingMerge(transcript, inventory);
+  const magicItemAzOpeningSlice = validateMagicItemAzOpeningSlice(transcript, inventory);
   let pdf;
   if (pdfPath) {
     const bytes = await readFile(resolve(pdfPath));
@@ -621,17 +922,23 @@ export async function verifyItemsSourcePackage({ pdfPath, allowIncomplete = fals
     pdf = Object.freeze({ sha256: OFFICIAL_PDF_SHA256, bytes: bytes.length, pages: manifest.source.pdfPages,
       occurrenceEvidence: verifyPdfOccurrences(pdfPath, inventory),
       transcriptEvidence: verifyPdfTranscriptFacts(pdfPath, transcript),
+      magicItemAzOpeningSliceEvidence: verifyPdfMagicItemAzOpeningSlice(pdfPath, transcript, inventory),
+      potionHealingMergeEvidence: verifyPdfPotionHealingMerge(pdfPath, transcript, inventory),
       boundedArmorTableEvidence: verifyPdfArmorTableRows(pdfPath, transcript, inventory),
       boundedWeaponTableEvidence: verifyPdfWeaponTableRows(pdfPath, transcript, inventory),
       boundedAdventuringGearTableEvidence: verifyPdfAdventuringGearTableRows(pdfPath, transcript, inventory),
       boundedToolsTableEvidence: verifyPdfToolsTableRows(pdfPath, transcript, inventory),
       boundedMountsTableEvidence: verifyPdfMountsTableRows(pdfPath, transcript, inventory),
+      boundedTackTableEvidence: verifyPdfTackTableRows(pdfPath, transcript, inventory),
+      boundedWaterborneTableEvidence: verifyPdfWaterborneTableRows(pdfPath, transcript, inventory),
       helperDispositionEvidence: verifyPdfHelperDispositions(pdfPath, inventory),
       crossReferenceEvidence: verifyPdfCrossReferences(pdfPath, inventory) });
   }
   return Object.freeze({
     complete: manifest.complete,
     validation,
+    magicItemAzOpeningSlice,
+    potionHealingMerge,
     pdf,
     hashes: Object.freeze({
       attribution: sha256(Buffer.from(attribution)),
