@@ -1109,3 +1109,22 @@ CITY-00-I48a-CLEAN-P48 Start 2026-10-09T21:16:18.825990+00:00; Aufräumplan: Tem
 CITY-00-I48a-CLEAN-I48 Start 2026-10-09T21:16:32.775761+00:00; Gemessene2Regler vs vollständige Vorlagenfelder sowie visueller Cancel getrennt dokumentiert; genaue I48b-Quellkopien verlinkt, keine API-/Produktänderung.
 
 CITY-00-I48a-CLEAN-R48 Start 2026-10-09T21:16:51.071531+00:00; Rawhashes/Quelle/finale Bytegleichheit/Templateumfang/5 Prozessende geprüft,24CTY/65CO offen. I48b eigener nächster Prozesslauf nach erneuter Slotabsprache; R48 folgt danach.
+
+## HOST-RECEIPT-P01 – Ergebnis bei fehlgeschlagenem Prozessabschluss erhalten
+
+Eigenständiger technischer Plan von Stadt. Nutzerziel: Eine fehlgeschlagene native Stadt-/Atlasprobe bleibt diagnostizierbar, auch wenn das Beenden des QA-Prozesses fehlschlägt. Kein Produkt-, GUI- oder Paritäts-PASS aus einem geschriebenen Receipt.
+
+Befund auf Shared `321a41c`: Der abschließende Workflow in `tools/host-test.cjs` wartet ungeschützt auf `shutdown()`. Eine dort geworfene Ausnahme überspringt die gesamte `result.json`-Erzeugung. PR17/bd7f428 enthält bereits unabhängig geprüfte main()-Fehlerfelder, schützt aber diese Abschlussgrenze ausdrücklich nicht. Kein erneuter Review dieses geschlossenen Scopes.
+
+Umsetzung als nächster getrennter Lauf:
+
+1. Vor Quellenänderung den vorhandenen Atlas-QA-Owner in PR17 über die ergänzende Grenze informieren und dessen aktuellen Kandidaten konsumieren; keine konkurrierende Umgestaltung des Runners. Veränderliche Grenze ausschließlich Workflowabschluss, gezielte selbständige Node-Gegenproben; keine Produktdateien, Fixturebytes oder GUI-Ressourcen.
+2. Hauptfehler und Shutdownfehler getrennt erfassen. Shutdown weiterhin genau einmal versuchen. Unabhängig von einer geworfenen Shutdownausnahme anschließend das Receipt schreiben, sofern das Ausgabeverzeichnis beschreibbar ist. Kein automatischer Prozessneustart und keine Behauptung normalen Prozessendes.
+3. Vorhandene Receiptfelder erhalten; Hauptfehler bleibt primäre Ursache. Eigenes additives shutdownFailure-Feld enthält nur Name/Meldung/Stack, keine zyklischen Editorobjekte. Jeder Shutdownfehler erzwingt passed:false und Exitcode1; Hauptfehler+Shutdownfehler bleiben beide sichtbar.
+4. Fehler des Receipt-Schreibens separat am Terminal melden und Exitcode1 erhalten. Nicht behaupten, dass bei defektem Dateisystem ein persistiertes Receipt garantiert werden kann.
+
+Abnahme: kontrollierte Node-Proben ohne Obsidian für Erfolg, Hauptfehler, Shutdownfehler, beide Fehler, Nicht-Error-Würfe und nicht beschreibbares Ausgabeziel. Tatsächlichen Workflowabschluss aus dem Kandidaten ausführen, keine bloße Nachbildung seiner Bedingungen. Anzahl der Shutdownaufrufe und Exitcode/Dateiinhalt prüfen; keine Sleeps oder nativen Wiederholungen. Syntax-/Diffprüfung sowie Repository-Basisgates vor Produktkandidatenveröffentlichung. Anschließend unabhängiger enger Review; native E2E-Abnahme bleibt separat.
+
+Aufräumplan nach Fachabschluss: eigene temporäre Node-Proben/Logs inventarisieren; notwendige Regressionsproben im Repository behalten, Rohlogs außerhalb des Vaults. Aufräumumsetzung und Review getrennt; fremde QA-Artefakte nicht entfernen.
+
+Planabschluss: nur diese Planung veröffentlicht. Umsetzung, Gegenproben, unabhängiger Review und Aufräum-P/I/R sind noch offen.
