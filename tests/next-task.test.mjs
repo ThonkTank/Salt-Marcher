@@ -61,6 +61,17 @@ test('candidate choice applies product priority across issues and PR support wit
   assert.equal(taskCandidate([], [{ ...review, state: 'closed' }, { ...review, labels: [] }]), undefined);
 });
 
+test('free product packages enable parallel implementation before equal-priority support without bypassing bottlenecks', () => {
+  const free = task(73, ['priority:next']);
+  const support = { number: 58, state: 'open', labels: ['kind:task', 'status:active', 'help wanted', 'priority:next'] };
+  const review = { number: 70, state: 'open', labels: ['help wanted', 'priority:next'] };
+  assert.equal(taskCandidate([support, free], [review]).number, 73);
+  assert.equal(taskCandidate([support, { ...free, labels: [...free.labels, 'status:active'] }], [review]).number, 58);
+  assert.equal(taskCandidate([free, { ...support, labels: [...support.labels, 'priority:now'] }], [review]).number, 58);
+  assert.equal(taskCandidate([task(1, ['priority:next', 'documentation']), support], []).number, 58);
+  assert.equal(taskCandidate([free], [{ ...review, number: 73 }]).source, undefined);
+});
+
 test('owned-package resume works without queue access and still rejects closed/non-task targets', {
   skip: process.platform === 'win32' ? 'Executable gh stub requires POSIX' : false,
 }, t => {
@@ -73,6 +84,10 @@ test('owned-package resume works without queue access and still rejects closed/n
 const fs = require('node:fs');
 const args = process.argv.slice(2);
 fs.appendFileSync('calls.jsonl', JSON.stringify(args) + '\\n');
+if (fs.existsSync('queue.json') && args[1] === 'list') {
+  process.stdout.write(args[0] === 'issue' ? fs.readFileSync('queue.json', 'utf8') : '[]');
+  process.exit(0);
+}
 if (args[0] !== 'issue' || args[1] !== 'view' || args[2] !== '40') {
   process.stderr.write('Unrelated queue queries are unavailable');
   process.exit(8);
@@ -84,10 +99,10 @@ process.stdout.write(fs.readFileSync('issue.json', 'utf8'));
       { name: 'status:active' }, { name: 'status:blocked' }],
     comments: [1, 2, 3, 4].map(number => ({ url: `comment/${number}`,
       body: `handoff ${number}\n${'evidence '.repeat(100)}full-tail-${number}` })) };
-  const run = (value, extra = []) => {
+  const run = (value, extra = [], resume = true) => {
     fs.writeFileSync(path.join(root, 'issue.json'), JSON.stringify(value));
     return spawnSync(process.execPath, [fileURLToPath(new URL('../tools/next-task.mjs', import.meta.url)),
-      '--task', '40', ...extra], { cwd: root, encoding: 'utf8', env: { ...process.env,
+      ...(resume ? ['--task', '40'] : []), ...extra], { cwd: root, encoding: 'utf8', env: { ...process.env,
         PATH: path.join(root, 'bin') + path.delimiter + process.env.PATH } });
   };
   const result = run(issue);
@@ -111,4 +126,16 @@ process.stdout.write(fs.readFileSync('issue.json', 'utf8'));
     assert.equal(rejected.status, 1);
     assert.match(rejected.stderr, /closed or is not a work package/);
   }
+  const free = { ...issue, labels: [{ name: 'kind:task' }, { name: 'status:ready' }] };
+  const owned = { ...issue, number: 90, title: 'Unrelated owned package' };
+  fs.writeFileSync(path.join(root, 'queue.json'), JSON.stringify([free, owned]));
+  const compact = run(free, [], false);
+  assert.equal(compact.status, 0, compact.stderr);
+  assert.match(compact.stdout, /Free candidate #40/);
+  assert.match(compact.stdout, /1 free packages, 0 support invitations/);
+  assert.doesNotMatch(compact.stdout, /Unrelated owned package|Owned packages:/);
+  const overview = run(free, ['--list'], false);
+  assert.equal(overview.status, 0, overview.stderr);
+  assert.match(overview.stdout, /Unrelated owned package/);
+  assert.doesNotMatch(overview.stdout, /Continue the owned repair/);
 });

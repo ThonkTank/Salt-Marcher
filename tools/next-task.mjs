@@ -31,11 +31,15 @@ export function supportTasks(issues) {
 }
 
 export function taskCandidate(issues, prs) {
-  // A review PR is not inherently more useful than an implementation input.
-  // Apply the existing priority order to both invitations and free packages.
-  return [...readyTasks(issues), ...supportTasks(issues),
+  // Preserve explicit bottleneck priority. At equal priority, offer a free
+  // product package before support so available workers can implement in parallel.
+  const free = readyTasks(issues);
+  const freeNumbers = new Set(free.map(issue => issue.number));
+  const invitation = issue => issue.source === 'pr' || !freeNumbers.has(issue.number) ? 1 : 0;
+  return [...free, ...supportTasks(issues),
     ...prs.filter(pr => pr.state === 'open' && labels(pr).includes('help wanted'))
-      .map(pr => ({ ...pr, source: 'pr' }))].sort(workOrder)[0];
+      .map(pr => ({ ...pr, source: 'pr' }))].sort((a, b) => priority(a) - priority(b)
+        || preparation(a) - preparation(b) || invitation(a) - invitation(b) || a.number - b.number)[0];
 }
 
 export function tasksForArea(issues, area) {
@@ -96,21 +100,27 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.a
         '--limit', '1000', '--json', 'number,title,url,state,labels']))
         .map(pr => ({ ...pr, state: pr.state.toLowerCase() }));
       const supportPRs = tasksForArea(prs.filter(pr => labels(pr).includes('help wanted')), area);
-      console.log('Live task queue; no automatic claim. Priority first; within equal priority, product work before documentation, then issue number.');
+      console.log('Live task queue; no automatic claim. Priority first; then product before documentation, free package before support, then issue number.');
       console.log('\nCurrent product bottlenecks: check existing owners and requested support before opening more work.');
       const bottlenecks = criticalTasks(issues);
       for (const issue of bottlenecks) console.log(`#${issue.number} ${issue.title} [${issue.labels.map(l => l.name).filter(l => l.startsWith('status:')).join(', ') || 'ownership to check'}]\n${issue.url}`);
       if (!bottlenecks.length) console.log('No task is marked priority:now; check the current delivery decision in #12.');
-      console.log('\nFree executable tasks:');
-      if (!queue.length) console.log('No free implementation package is labelled ready. Continue owned work, then check the support invitations below and confirmed unowned needs; an empty ready list alone is not a blocker.');
-      for (const issue of queue) console.log(`#${issue.number} ${issue.title}\n${issue.url}`);
-      console.log('\nOwned packages: continue your role with --task <number>; these are not free work.');
-      for (const issue of available.filter(issue => labels(issue).includes('status:active')))
-        console.log(`#${issue.number} ${issue.title} [${labels(issue).filter(tag => tag.startsWith('status:')).join(', ')}]\n${issue.url}`);
-      console.log('\nSupport invitations: read the offered scope and prerequisites; parent ownership and blockers remain.');
-      for (const issue of support) console.log(`#${issue.number} ${issue.title}\n${issue.url}`);
-      for (const pr of supportPRs) console.log(`PR #${pr.number} ${pr.title}\n${pr.url}`);
-      if (!support.length && !supportPRs.length) console.log('No explicit support invitation in this selection. Check #12 and the relevant area for a confirmed unmet input; do not manufacture work.');
+      if (list) {
+        console.log('\nFree executable tasks:');
+        if (!queue.length) console.log('No free implementation package is labelled ready. Continue owned work, then check the support invitations below and confirmed unowned needs; an empty ready list alone is not a blocker.');
+        for (const issue of queue) console.log(`#${issue.number} ${issue.title}\n${issue.url}`);
+        console.log('\nOwned packages: continue your role with --task <number>; these are not free work.');
+        for (const issue of available.filter(issue => labels(issue).includes('status:active')))
+          console.log(`#${issue.number} ${issue.title} [${labels(issue).filter(tag => tag.startsWith('status:')).join(', ')}]\n${issue.url}`);
+        console.log('\nSupport invitations: read the offered scope and prerequisites; parent ownership and blockers remain.');
+        for (const issue of support) console.log(`#${issue.number} ${issue.title}\n${issue.url}`);
+        for (const pr of supportPRs) console.log(`PR #${pr.number} ${pr.title}\n${pr.url}`);
+        if (!support.length && !supportPRs.length) console.log('No explicit support invitation in this selection. Check #12 and the relevant area for a confirmed unmet input; do not manufacture work.');
+      } else {
+        console.log(`\nSelection: ${queue.length} free packages, ${support.length + supportPRs.length} support invitations. --list shows the full queue; --task <number> resumes owned work.`);
+        if (!queue.length && !support.length && !supportPRs.length)
+          console.log('No invitation in this selection. Check confirmed unmet inputs at the relevant area; an empty list alone is not a blocker.');
+      }
       if (!list || task) {
         const chosen = task ? { number: task } : taskCandidate(available, supportPRs);
         if (chosen) showPackage(call, repository, chosen, Boolean(task), fullComments);

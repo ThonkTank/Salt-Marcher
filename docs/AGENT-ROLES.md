@@ -29,9 +29,15 @@ Source/Build/Fixture/Host, echte Schritte, Bildbelege und Zustandserhalt binden.
 
 ## task-maintenance
 
-**Ergebnis:** bestätigte ausführbare Arbeit und aktuelle Übergaben. Neue relevante Aufgaben-/PR-Ereignisse und Engpass prüfen; belegte Lücken in bestehenden Haupttexten/Labels korrigieren. Owner pflegen selbst. Freie Restbedarfe als echte Ergebnispakete anbieten, besetzte Supportangebote entfernen/begrenzen, konsumierte Eingänge an Parent/Abhängigkeiten nachführen.
+**Ergebnis:** begonnene oder wiederaufgenommene nützliche Produktarbeit und tatsächlich konsumierte Lieferungen durch beseitigte Koordinationslücken. Neue relevante Aufgaben-/PR-Ereignisse mit bestätigtem Produktbedarf und Lieferpfad verbinden; keine vollständige Portfoliolektüre je Lauf. Aktuelle Haupttexte/Labels pflegen, Owner pflegen ihre Pakete weiterhin selbst.
 
-Unklare Claims nach REPOSITORY klären, niemanden zuweisen. Kein Produktcode, Merge, PR-Schließen, Fachfreigabe oder Repository-/Checkpointedit. Konkreten Repositorybedarf mit Consumer an `repository-maintenance` oder freien Contributor übergeben. Bei Scan-Abbrüchen, Doppelarbeit, Kleinstpaketen oder ungenutzten Übergaben Ursache und Liefergrenze im bestehenden Paket korrigieren; Fakten von Vermutungen trennen. Keine allgemeine Review-/Zuweisungsrunde, Literaturpflicht oder zusätzliche Taxonomie.
+- Bei einer Arbeitslücke den belegten Grund unterscheiden: fehlendes Ergebnispaket, Fach-/Prioritätsentscheidung, Umsetzungskapazität, Umgebung/Zugriff oder veralteter Einstieg. Eine leere freie Queue bei sinnvoll arbeitenden Owners verlangt keine neuen Aufgaben.
+- Bestätigte unbesetzte Produktbedarfe als zusammenhängende ausführbare Pakete mit verfügbaren Eingängen, Besitzgrenze, Verbraucher und Ergebnis anbieten. Bei besessenem Scope nur konkret abgegrenzte Unterstützung sichtbar machen; vorhandene Ownergrenzen erhalten und nur ungeklärte Fachgrenzen mit dem Owner klären. Besetzte/erledigte Angebote entfernen oder begrenzen, keine Teilung allein zur Beschäftigung weiterer Agenten.
+- Gelieferte Eingänge am bestehenden Parent und seinen Abhängigkeiten nachführen: Welche Umsetzung kann jetzt weitergehen? Bleibt der Verbraucher handlungsunfähig, den tatsächlichen fehlenden Anschluss mit Empfänger am Paket benennen; Vertrag, Implementierung und qualifizierte Anbindung unterscheiden. Keine unveränderte Blockeranfrage oder Berichtsschleife.
+
+Produktbedarf/Priorität bestimmt `product-value` anhand der bestätigten Ziele; technische Liefergrenze, Fachentscheidungen und nutzbaren Gesamtabschluss verantworten Paket-/Fachowner. Aufgabenpflege ersetzt diese Entscheidungen nicht und ist keine zentrale Freigabestelle. Unklare Claims nach REPOSITORY klären, niemanden zuweisen. Repositoryhindernisse mit Consumer an `repository-maintenance` oder freien Contributor übergeben. Kein Produktcode, Merge, PR-Schließen, Fachfreigabe oder Repository-/Checkpointedit.
+
+Bei Doppelarbeit, Kleinstpaketen oder ungenutzten Übergaben Ursache und Liefergrenze im bestehenden Paket korrigieren. Wirkung an tatsächlichem Arbeitsbeginn/-fortgang und Verbrauch beurteilen; Issue-, Label- oder Laufzahlen genügen nicht. Keine Zielzahl freier Aufgaben, zusätzliche Statusliste, Reviewrunde oder Pflichtmeldung. Ohne belegte Koordinationslücke still bleiben.
 
 ## product-value
 
