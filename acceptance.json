@@ -152769,6 +152769,24 @@
         "fixtureManifest": "tests/fixtures/atlas-e2e-spatial-v2/manifest.json",
         "fixtureManifestSha256": "01a154bb8a66dd275246754e775aa2c616343513c07586196957880ae70d1d42",
         "observed": "484/484 integrated tests/check/build with9 focused cases. Roof/room projected-size hysteresis, same native draw/hit order, courtyard transparency and only visible handles; transient house preview moves native child without owner mutation. Relative City-only/mixed Fit and distant/negative1e16 docks retain detail. Actual isolated Obsidian on exact88babcd: Fit, road node/Location-Key edit+Undo, house move/Escape/pointercancel, zoom to native room and repeated room-Key editing, Hex edit/cancel/common UndoRedo, Save writes exact seven-file v2 oracle; normal exit then distinct new native process restores geometry/IDs/text and reachable room Key. Synthetic input only. Full ownership/context/Publish/CompleteImport/Dungeon geometry and independent overall review remain open."
+      },
+      {
+        "id": "E2E01-HEX-SPACE-CAMPAIGN-SOURCE-001",
+        "requirement": "Qualified actual Campaign ownership contract in the sole current Atlas candidate without fabricated runtime authority",
+        "state": "checked_source_integration_independent_review_runtime_full_gate_open",
+        "implementationRun": "E2E-01-SPACE-I01c-CAMPAIGN-INTEGRATION-01",
+        "sourceCommit": "5700fd2de749cb55716258e60505481ba90884ff",
+        "ownerCommit": "d06354c37ea24c249a23310f1a186a0a5ee4e936",
+        "catalog": "ROADMAP-E2E-GATES-CANDIDATE.md:13",
+        "fixtureVersion": "e2e01-spatial-v2",
+        "fixtureUnchanged": true,
+        "evidence": [
+          "src/features/campaign/campaign-ownership.ts",
+          "tests/core/campaign-ownership.test.ts",
+          "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/campaign-integration-01-20261010/run.json",
+          "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/25#issuecomment-6093614522"
+        ],
+        "observed": "Full normal merge of qualified d06354c branch after fresh Shared a72c950. All four imported plan/product/aggregator/test blobs exact owner; existing Atlas/City/Dungeon and fixture bytes preserved. 513/513 tests, check and clean build on5700fd2; 16 owner ownership cases plus existing native-source/history/repository regressions. Buildtriplet remains byteequal previous verified Atlas. Contracts alone add no runtime Registryprovider, Campaign-to-Atlas bridge, Vault/P02/P04 publish or visible CompleteImport. Historical native88babcd evidence is separate; narrow independent integration review and runtime/native/full E2E gates open."
       }
     ],
     "cleanupFindings": [

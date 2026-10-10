@@ -749,7 +749,7 @@
   "hexAtlasExecution": {
     "scope": "HEX-00 bis HEX-28 und sämtliche eingeordneten CITY-00 bis CITY-09 vollständig",
     "phase": "HEX-03",
-    "state": "e2e01_verified_obs04_shared_consumed_campaign_owner_integration_ready",
+    "state": "e2e01_campaign_owner_source_integrated_checked_narrow_integration_review_pending",
     "plan": "ROADMAP-E2E01-SPATIAL-INTEGRATION-PLAN.md",
     "currentRun": {
       "id": "E2E-01-SPACE-I01b",
@@ -796,11 +796,11 @@
       "phaseApproval": false
     },
     "nextRun": {
-      "id": "E2E-01-SPACE-I01c-CAMPAIGN-INTEGRATION-01",
-      "kind": "bounded_product_integration_actual_secured_owner_ready",
-      "focus": "On actual eligible Campaign/Data handoff, consume the full published repaired branch basis on sole PR13 candidate; compare real contracts/owner revisions/current Atlas World placements/spatial against existing ownership contract. Integrate and test available secured code, then narrow affected integration review separately. Do not replace actual Vault/Registry/Publish adapters with synthetic providers or drag remaining P02/P04/E2E02-04 forward.",
-      "dependency": "Qualified corrected owner handoff6093614522 on exact d06354c is actually available and read; full branch/tree/review chain are recorded in coordination.campaignOwnershipInput. Shared eefbe6f OBS-04 is normally merged and consumed in PR13, own check/497 tests/build/callbackprobes passed. Proceed with actual available secured ownership code in the next separate product-integration run. Runtime Campaign/Vault context, trusted registry/provider, real Publish CommandId/ReceiptId and P02/P04 remain later actual inputs, not fabricated prerequisites or reasons for another receipt-only round.",
-      "review": "Prior exact-owner generic/MWS reviews and narrow Dungeon integration/review cleanup are closed evidence. Narrow affected integration review after consuming actual code; native and full-E2E gates remain open. No more owner handoff request."
+      "id": "E2E-01-SPACE-I01c-CAMPAIGN-INTEGRATION-R01",
+      "kind": "independent_read_only_affected_source_integration_review",
+      "focus": "Review actual full owner adoption d06354c on sole PR13 product merge5700fd2: exact imported contract/test blobs, fresh Shared a72c950, preserved native Atlas/City/Dungeon and one History/Repository/fixture; 513 tests/check/clean build. Do not repeat generic Campaign/MWS owner reviews or call host-neutral imports a wired runtime provider.",
+      "dependency": "Campaign qualified owner branch is fully normally merged and checked on actual current Atlas basis; no missing receipt or new owner handoff. Separate independent narrow review of this composition is next. Actual Registryprovider/context/publish/Vault/P02/P04/payload/media/CompleteImport remain later runtime gates, not implemented by this import.",
+      "review": "Existing real peer reviews this exact merged source read-only; findings, repair and scoped re-review if needed, then separate cleanup. No GUI or full E2E approval."
     },
     "review": {
       "run": "HEX-02-R02",
@@ -844,7 +844,7 @@
       "dungeonThread": "01a1204f-d184-7567-bfb3-d3ab06a0d07e",
       "fixtureReviewThread": "01a12031-2c30-73f7-bc01-6bd3eba86046",
       "publicationPolicy": "Bei fortlaufenden Shared-Branch-Pushrennen geprüftes Paket auf eigenem Branch sichern, regulären Servermerge in gemeinsamen active/installed-phase1 prüfen und lokal integrieren; keine Historienumschreibung.",
-      "nativeGuiSlot": "E2E-01-SPACE-I01b granted in #7/6092101041; all owned processes exited normally, slot explicitly returned in #7/6092276047. New GUI runs require fresh coordination. Fresh explicit handoff to Stadt for CITY-00-I48b: https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/7#issuecomment-6093746466. Reserved for one isolated COK Demo Map-/Open-Template-reopen process until normal Exit/PID/slot return; Hex current/next Campaign code integration uses no local GUI. Cloud GM uses separate durable cloud host.",
+      "nativeGuiSlot": "Historical Hex I01b slot returned normally in #7/6092276047. Fresh I48b handoff #7/6093746466 is completed: actual City owner return #7/6093818542 reports Menu/Exit0, five owned PID/startTicks gone and no forced stop. No Hex GUI in this Campaign source-integration run; any next GUI run requires fresh explicit coordination. CloudGM separate.",
       "gmTestingThread": "01a12031-2c30-73f7-bc01-6bd3eba86046",
       "gmTestingPolicy": "Eigenständiger Cloud-GM-Endanwenderlauf nach direkter Nutzerpräzisierung, ohne lokalen QA-Slot; beobachtete Befunde/Nacharbeiten getrennt überIssue1 übernehmen, kein Ersatz durch technische Testzahlen.",
       "lastCheckIn": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1#issuecomment-6088562608",
@@ -1048,7 +1048,7 @@
       },
       "campaignOwnershipInput": {
         "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6091818151",
-        "state": "secured_owner_contract_ready_for_separate_integration_runtime_provider_pending",
+        "state": "qualified_owner_source_integrated_core_checked_runtime_provider_and_independent_integration_review_pending",
         "worldProjection": {
           "api": "AtlasRepository.spatialGraph.world()",
           "ownerId": "native World ID",
@@ -1074,17 +1074,18 @@
             "mediaOwnerReReview": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/25#issuecomment-6093447911",
             "mediaOwnerReviewedSha": "d06354c37ea24c249a23310f1a186a0a5ee4e936"
           },
-          "scope": "Secured full host-neutral registry/projection/validator/coordinator/publish-status contract input. Actual runtime Registryprovider/Vault/FileTransaction/P02/P04/Host/E2E remain separate open gates; not yet source-integrated into Hex.",
+          "scope": "Secured full host-neutral registry/projection/validator/coordinator/publish-status contract source normally adopted on5700fd2. Independent narrow integration review and actual runtime Registryprovider/Vault/FileTransaction/P02/P04/Host/E2E remain open.",
           "reviewerEvidence": {
             "provenance": "Actual independent Campaign/MWS review and owner secured handoff, not a new Hex test run",
             "check": "PASS",
             "tests": "500/500 PASS",
             "build": "PASS clean exact d06354c"
           },
-          "sourceIntegrated": false
+          "sourceIntegrated": true,
+          "integratedProductCandidate": "5700fd2de749cb55716258e60505481ba90884ff"
         },
         "mediaOwnerGate": {
-          "state": "scoped_repair_review_pass_corrected_secured_owner_handoff_received",
+          "state": "scoped_repair_review_pass_qualified_full_source_integrated_narrow_integration_review_pending",
           "reviewedSha": "7aa47beb1bad3d0b1560666fa1cb1677bdc8cd4e",
           "review": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/25#issuecomment-6092636859",
           "gateCorrection": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6092638831",
@@ -1092,8 +1093,8 @@
             "ManualDecision may still be omitted/quarantined by Salvage although the confirmed campaign decision must be retained until its defined end.",
             "Source-scene-bound AmbienceOverride may still survive/remap into an independent target; retirement suspends source state and target requires a fresh projection."
           ],
-          "required": "Actual corrected secured owner handoff6093614522 is received and read directly; next is separate bounded Hex full-branch integration on sole PR13 candidate, with affected checks. No further owner request or generic/MWS review.",
-          "adoption": "d06354c replaces old 7aa47be as the actual eligible secured input; consumption source integration is the next separate run.",
+          "required": "Secured actual d06354c branch was fully normally merged on5700fd2 and checked. Next is narrow separate independent source-integration review, no new generic/MWS owner review or handoff request.",
+          "adoption": "d06354c supersedes7aa47be and is now a full merge ancestor of the only PR13 candidate5700fd2. Actual runtime owner/provider adapters remain open.",
           "repairCandidate": {
             "run": "OWNERSHIP-I01-N02",
             "sha": "d06354c37ea24c249a23310f1a186a0a5ee4e936",
@@ -1109,8 +1110,9 @@
               "build": "PASS"
             },
             "independentMediaOwnerReview": "PASS_exact_d06354c_6093447911",
-            "sourceIntegrated": false,
-            "scope": "Digest-bound TransferRetentionPolicy repair candidate only; old Hex handoff stays suspended until scoped M/W/S owner PASS. Productive RuntimeRegistry/Vault/Publish/P02/P04/Host/E2E remain unproven."
+            "sourceIntegrated": true,
+            "scope": "Digest-bound TransferRetentionPolicy repair candidate only; old Hex handoff stays suspended until scoped M/W/S owner PASS. Productive RuntimeRegistry/Vault/Publish/P02/P04/Host/E2E remain unproven.",
+            "integratedProductCandidate": "5700fd2de749cb55716258e60505481ba90884ff"
           },
           "independentRepairReview": {
             "candidate": "d06354c37ea24c249a23310f1a186a0a5ee4e936",
@@ -1119,9 +1121,10 @@
             "readDirectly": true,
             "state": "PASS_scoped_media_owner_repair_only",
             "ownerIndependentChecks": "check, 500 tests and clean build passed, not rerun by Hex",
-            "sourceIntegrated": false,
+            "sourceIntegrated": true,
             "host": false,
-            "fullE2E": false
+            "fullE2E": false,
+            "integratedProductCandidate": "5700fd2de749cb55716258e60505481ba90884ff"
           }
         },
         "receipt": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/25#issuecomment-6093614522"
@@ -1614,7 +1617,61 @@
         },
         "ownerReview": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/21#issuecomment-6093614585",
         "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/obs04-shared-integration-20261010",
-        "scope": "Consume the normally verified merged Shared OBS-04 fix; no new E2E01 feature or unreviewed owner source adoption."
+        "scope": "Consume the normally verified merged Shared OBS-04 fix; no new E2E01 feature or unreviewed owner source adoption.",
+        "latestMetadataConsumption": {
+          "shared": "a72c9501f5dd6649fb624420b9141903534be345",
+          "merge": "07a3fb4d190ab03f808f7ecde4613aae81ed5eb8",
+          "state": "fresh_cloud_obs04_evidence_consumed_exact",
+          "ownerRecord": "gmProductTesting.latestObs04IntegratedRetest",
+          "scope": "Exact Shared Cloud-GM narrow five-point retest on eefbe6f passed; no fresh Electronprocess/physical/player projection/fullE2E. Imported as owner evidence, not a Hex native test."
+        }
+      },
+      "campaignIntegration": {
+        "id": "E2E-01-SPACE-I01c-CAMPAIGN-INTEGRATION-01",
+        "state": "full_qualified_owner_branch_normally_merged_core_checks_pass_independent_integration_review_pending",
+        "gate": "E2E-01",
+        "catalog": "ROADMAP-E2E-GATES-CANDIDATE.md:13",
+        "atlasBase": "37d9ef0c7b5b11946d31a813756c78b0cd3fe897",
+        "consumedShared": "a72c9501f5dd6649fb624420b9141903534be345",
+        "sharedMerge": "07a3fb4d190ab03f808f7ecde4613aae81ed5eb8",
+        "qualifiedOwner": "d06354c37ea24c249a23310f1a186a0a5ee4e936",
+        "ownerTree": "68549ac317b2b4723faab01dbb6dd683709402da",
+        "productCandidate": "5700fd2de749cb55716258e60505481ba90884ff",
+        "parents": [
+          "07a3fb4d190ab03f808f7ecde4613aae81ed5eb8",
+          "d06354c37ea24c249a23310f1a186a0a5ee4e936"
+        ],
+        "conflicts": [],
+        "importedBlobs": {
+          "ROADMAP-E2E01-CAMPAIGN-OWNERSHIP-PLAN.md": "fad66302d0884481ee7c46daf5fe2bec926a9b24",
+          "src/features/campaign/campaign-ownership.ts": "acbf70d504cbb6a6eea2dc480f449d1f755dde45",
+          "tests/core.test.ts": "21aaa0d8c3a5cf4dc38178986a4e42c97232d82b",
+          "tests/core/campaign-ownership.test.ts": "869e77960858b154d3c82dd6883ade4d931e1e34"
+        },
+        "checks": {
+          "check": true,
+          "testsPassed": 513,
+          "testsFailed": 0,
+          "ownershipCases": 16,
+          "build": true,
+          "cleanBuild": true,
+          "jsonAndDiff": true
+        },
+        "artifactSha256": {
+          "main.js": "df0e0d9b3dd716aed1a4dd2db85145276b0d57ab61f2075f1d01520bdfa9bd5d",
+          "styles.css": "cdf172e7d3c101d5917c16afe487641a19d9d5afe8ad23365b33c958ee1ac321",
+          "manifest.json": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64"
+        },
+        "preservation": "All pre-existing Atlas/City/Dungeon sources and active/historical fixture blobs unchanged; existing Hex currentRun native evidence kept exactly on88babcd; owner saltMarcherReplacement root exact d063 and fresh gmProductTesting root exact a72c950; all other roots unchanged; original Shared dirty bytes and user vault untouched.",
+        "scope": "Host-neutral registry/projection/validator/coordinator/multi-owner command/status contract source adoption only. No productive runtime Registryprovider/context/Vault/Publish/P02/P04 adapter or visible import; main/styles/manifest bytes unchanged versus previous verified Atlas build. No test-only provider promoted into product.",
+        "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/campaign-integration-01-20261010/run.json",
+        "ownerHandoff": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/25#issuecomment-6093614522",
+        "claim": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/13#issuecomment-6093803333",
+        "independentIntegrationReview": "pending separate exact-source run",
+        "nativeOnThisBuild": false,
+        "physicalInput": false,
+        "fullE2E": false,
+        "next": "Review actual full owner adoption d06354c on sole PR13 product merge5700fd2: exact imported contract/test blobs, fresh Shared a72c950, preserved native Atlas/City/Dungeon and one History/Repository/fixture; 513 tests/check/clean build. Do not repeat generic Campaign/MWS owner reviews or call host-neutral imports a wired runtime provider."
       }
     },
     "verification": {

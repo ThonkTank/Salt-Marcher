@@ -595,6 +595,19 @@ Der unten beschriebene I01b-Anschluss montiert diese Speichergrenze und die rela
 Kamera im Host. Die lokale FileTransaction bleibt vom Campaign-Publish-Vertrag
 getrennt; das Kernergebnis ist keine vollständige E2E-Freigabe.
 
+**Ownership-Quellintegration E2E-01-SPACE-I01c:** Der qualifiziert übergebene
+hostneutrale Campaign-Ownership-Vertrag ist als vollständiger Ownerbranch
+`d06354c` normal auf der aktuellen Atlasbasis in `5700fd2` übernommen.
+`CampaignOwnerRegistryPort.read/verify` und
+`CampaignMultiOwnerPublishPort.publish/status` bleiben injizierte Grenzen.
+Der Coordinator trägt Context-, Registry-, Owner-, Participant-Before- und
+Medienpolicy-Bindungen bis an dieselbe atomare Publishgrenze und löst verlorene
+Ausgänge nur mit ursprünglicher CommandId/ReceiptId auf. Der vollständige
+Quellimport aktiviert keinen Registryprovider oder Vault-/P02-/P04-Adapter;
+der bestehende Atlas-Speicherweg bleibt die bisherige lokale Grenze.
+Der echte Campaign→Atlas-Kontext-/Registry-/Publishanschluss ist weiterhin
+Umsetzungsarbeit, die unabhängige Integrationsprüfung ein getrenntes Gate.
+
 **Stand E2E-01-SPACE-I01b:** AtlasView aktiviert die tatsächlichen typisierten
 City-/DungeonSources. Der native Kennungsindex liest alle passenden Dateien im
 aktuellen Vault und liefert alle Treffer; fehlende oder doppelte Kennungen bleiben
