@@ -481,3 +481,17 @@ diesem qualifizierten Shared-Source: GUI-Slot neu ausdrücklich koordinieren,
 danach echter Orts-/Key-/Move-/UndoRedo-/Save-/frischer-Obsidian-Prozess-Nachweis.
 Kein GUI-Slot oder Hostlauf in der Reviewübernahme; #40 und E2E-01 bleiben offen,
 H01/D01/R01/N02 und der historische currentRun bleiben unverändert.
+
+**H02 echter Ort-Save/Frischstart (10.10.2026):** Auf qualifiziertem Shared
+`4515088772b759cda2e19d249367699c9868c72c` bestehen der tatsächliche POI-/Key-/Move-/gemeinsame
+UndoRedo-/Save-Weg und ein sequenzieller frischer Obsidianprozess. Auch
+create→Undo→No-op-Save→Redo erhält aktive Mount/History/Renderer und alle acht
+gespeicherten Eingangsdateien. Neun gespeicherte Dateien sowie Orts-/Marker-/
+Abschnittskennungen, Texte und Position sind im frischen Prozess bytegleich.
+Build `76bb453acca65f260e2276a385da66c5039a643fa10681b9b7a20fc5209c1322`; zwei normale Prozessenden, alle eigenen PIDs
+weg, Slot6101912782 ausdrücklich zurückgegeben. Synthetische native Eingabe;
+H01/D01/R01/N02/R02, H01-Draft und historischer currentRun unverändert.
+[Quellgebundene H02-Rohbelege](docs/reference/atlas-shared-location-h02/README.md)
+gehen an das bestehende #40-/E2E01-Gate. Host-/Gesamtqualifikation und eigene
+Bereinigung bleiben getrennt; keine neue allgemeine Reviewrunde, weitere GUI,
+Details/CITY/P02/P04/Großkarten-/Installations-/physische oder Gesamtfreigabe.
