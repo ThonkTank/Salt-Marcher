@@ -570,8 +570,8 @@
       "review": "R01 on exact 8c5c5680054b8dddd89900733ac7bbfe966876f1 required seven repairs (Issue #1 comment 6085178049). N01-R01 on exact 01a02ef124e3ffc02b626019f89f5e216612f7ab required S01 cycle/schema repairs (Issue #1 comment 6085248851). N02-R01 on exact 3b7e5c933a107da6f406aa44037decf316d09b77 found a variable-rarity schema gap (Issue #1 comment 6085306351). N03-R01 PASSED exact 679d432e145bd9afe766393346e4b788931886ea with no remaining mandatory plan finding (Issue #1 comment 6085341786). This approves planning only; S01 and I01 are undelivered."
     },
     "ce02I02Source": {
-      "run": "CE-02-I02-S01-W23-N01",
-      "state": "repair_checked_independent_review_pending_incomplete",
+      "run": "CE-02-I02-S01-W24",
+      "state": "source_review_pass_composition_checked_steward_pending_incomplete",
       "sourceDocument": "https://media.wizards.com/2023/downloads/dnd/SRD_CC_v5.1.pdf",
       "sourceSha256": "2504d2a0abb0a4d491a939be4f17910a2dde0312570ab8d208080225ccf0a1f0",
       "helperCommit": "3f5593ea004c4f5a2af95603087ce4de72689d9f",
@@ -616,39 +616,40 @@
         "Armor, +1, +2, or +3 captured as exact A–Z ordinal 8 with occurrence-bound full header/prose, explicit not-required attunement and ordered +1/+2/+3 mappings to rare/very-rare/legendary",
         "Armor of Invulnerability captured as exact A–Z ordinal 9 with occurrence-bound full header/prose, fixed legendary rarity and required attunement",
         "explicit first-occurrence Potion-of-Healing detail merge with complete no-attunement header, variable rarity and four occurrence-bound variants",
-        "real-PDF evidence for 233 occurrence labels, 731 structured or sourced-description facts, dedicated Apparatus, Armor +1/+2/+3 and Armor of Invulnerability gates, the Potion-of-Healing merge/header/four-row table, 13 bounded Armor rows, 37 bounded Weapons rows, 99 bounded Adventuring Gear rows, 35 bounded Tools rows, 8 bounded Mounts rows, 14 bounded Tack rows, 6 bounded Waterborne rows, 21 helper dispositions and one cross-reference with two facts",
+        "real-PDF evidence for 237 occurrence labels, 793 structured or sourced-description facts, dedicated Apparatus, Armor +1/+2/+3 and Armor of Invulnerability gates, the Potion-of-Healing merge/header/four-row table, 13 bounded Armor rows, 37 bounded Weapons rows, 99 bounded Adventuring Gear rows, 35 bounded Tools rows, 8 bounded Mounts rows, 14 bounded Tack rows, 6 bounded Waterborne rows, 21 helper dispositions and one cross-reference with two facts",
         "Armor, Weapons, two-column Adventuring Gear, right-column Tools, split-page Mounts, left-column Tack and Waterborne same-row bounded-cell rejection, Potion merge identity/ordering/source/variant rejection, Spear, Blowgun, Sling, Net, Adventuring Gear omissions/grouping, Equipment Pack ordering/content, Tools ordering/categories/optional weights/punctuation, Mount ordering/structured facts/helper expansion, Barding formula/source expansion, missing Stabling weight, Waterborne fractional mph/Rowboat weight and no-invented-cross-reference-identity goldens",
         "Animated Shield, Apparatus, Armor +1/+2/+3 and Armor of Invulnerability identity/page/ordinal/header/rarity/attunement/prose rejection, ordered Armor variant rejection and Apparatus lever-table row/cell-order rejection",
         "fail-closed incomplete-package gate",
         "fixed and variable rarity identity regressions",
         "Armor/Arrow ordinals 10–13, full curse/prose, all ten resistance choices, exact whole-heading PDF stream and negative identity/fact/table/page/heading goldens",
-        "W23-N01 replaces the absolute footer Y band by exact SRD-footer/page identification and preserves all body text; real hash-bound Poppler XML, derived high-coordinate shapes, invalid footer/body failures and opt-in full official PDF integration test"
+        "W23-N01 replaces the absolute footer Y band by exact SRD-footer/page identification and preserves all body text; real hash-bound Poppler XML, derived high-coordinate shapes, invalid footer/body failures and opt-in full official PDF integration test",
+        "Bags A–Z ordinals 14–17: all twelve source d100 ranges/effects, twenty-four color/die-bound creatures, complete prose/header/physical spans and full heading-block XML oracle with real hash-bound original pages"
       ],
       "verification": {
-        "sourceRevision": "94e48847174e1b7a3dce93cb9d6377e34f5b1b98+dirty",
+        "sourceRevision": "82c6f0ad1e75b0d8f0fb9ab68aed17b72b06798f",
         "check": "passed",
         "tests": {
-          "passed": 482,
+          "passed": 723,
           "failed": 0,
-          "skipped": 0,
-          "officialPdfEnabled": true
+          "skipped": 1,
+          "officialPdfEnabled": false
         },
         "build": "passed",
         "focusedTests": {
-          "passed": 48,
+          "passed": 61,
           "failed": 0,
           "skipped": 0,
           "officialPdfEnabled": true
         },
         "pdfIdentity": "passed",
         "occurrences": {
-          "checked": 233
+          "checked": 237
         },
         "transcriptRecords": {
-          "checked": 232
+          "checked": 236
         },
         "structuredAndDescriptionFacts": {
-          "checked": 731
+          "checked": 793
         },
         "magicItemAzOpeningSlice": {
           "records": 5,
@@ -743,8 +744,8 @@
         "incompleteGate": "passed",
         "buildArtifact": {
           "path": "main.js",
-          "bytes": 1422956,
-          "sha256": "522823730ddce4d0ba83e0476f60887b60a07c517f84e8e270814b6d597efa43"
+          "bytes": 1613470,
+          "sha256": "a48bb388cdc4d7cf28d156c7574aa68ea98fdc10ed173436bf0c12a7990623b0"
         },
         "magicItemAzArmorArrows": {
           "ordinals": [
@@ -764,8 +765,9 @@
         },
         "repositoryStructure": "passed",
         "repositoryTests": {
-          "passed": 18,
-          "failed": 0
+          "passed": 25,
+          "failed": 0,
+          "skipped": 0
         },
         "extractorRepair": {
           "localVersion": "pdftohtml 25.03.0",
@@ -773,16 +775,70 @@
           "fullExtractSha256": "7a6eac1d4a81499d4bb136aac27a4bc2527ffd67985e8ddf4f24a242481cb3de",
           "highCoordinateCases": "derived from real XML; shifted +10000 and reported heading/body top shape 1153/1156",
           "localPoppler2507Executed": false
-        }
+        },
+        "toolchain": {
+          "node": "official Node.js v22.22.2 linux-x64",
+          "nodeArchiveSha256": "88fd1ce767091fd8d4a99fdb2356e98c819f93f3b1f8663853a2dee9b438068a",
+          "zlib": "1.3.1-e00f703",
+          "poppler": "pdftohtml/pdftotext 25.03.0",
+          "xmlFixtureSha256": "53d10bd6a4e56f6a28b1c9e33f8cfb63afe5ab4979e7ae8b546adb7de0b008bf",
+          "xmlFixtureBytes": 46411
+        },
+        "magicItemAzBags": {
+          "ordinals": [
+            14,
+            15,
+            16,
+            17
+          ],
+          "physicalPdfPages": [
+            209,
+            210,
+            211
+          ],
+          "records": 4,
+          "beansEffectRows": 12,
+          "tricksTables": 3,
+          "tricksCreatureRows": 24,
+          "derivedHeadingCount": 239,
+          "oracle": "complete-heading-bounded stream with exact source die ranges, color ownership and split-page continuation"
+        },
+        "pdfEvidenceCarry": "Existing true official-PDF W24 tests/review preserved by exact byte comparison of every W24 Source/Tool/Test/Fixture path to independently reviewed42a69b6. No new PDF run inferred from the skipped test."
       },
-      "limits": "W23 source remains partial and not independently approved after P1. Local official PDF runs use Poppler 25.03.0; transformed XML cases are not a claimed 25.07 extraction. 225 A–Z headings, Orb, helper reconciliation, remaining goldens, S01-R01 and all Item product/host gates remain open. No source corpus identity/value changed and no Item product artifact/provider/UI, host or I01 approval.",
+      "limits": "Intermediate source only: 221 A–Z headings plus Orb, magic-item helper reconciliation, remaining goldens and independent S01-R01 remains open; W24 is independently PASS, regular shared integration remains open. Item artifact/provider/UI and I01 blocked. No Obsidian installation, GUI, physical, full E2E or Encounter runtime approval; exclusively 2014.",
       "magicItemAzArmorArrowsEvidence": "A–Z ordinals 10–13 on physical/printed pages 208–209 preserve complete headers and prose, vulnerability curse, slaying rules and ten ordered die-bound resistance choices. Full heading-bounded XML text and physical two-column table order are checked, not merely substring presence.",
       "repairReview": {
-        "state": "changes_required_repair_re_review_pending",
-        "reviewedCommit": "243f3ee884f2109fda23ffd4e2555abb73db4d56",
-        "issue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/48#pullrequestreview-5479813046",
-        "finding": "P1: absolute top<1100 discards body headings on independent Poppler 25.07.0 host",
-        "repair": "implemented and locally checked; independent exact-SHA and 25.07 host confirmation not yet received"
+        "state": "PASS",
+        "reviewedCommit": "8dfa06ac859acf84df1e35d481893cf289e062e3",
+        "issue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/48#pullrequestreview-5479968350",
+        "scope": "Independent P1 repair/W23 PDF oracle, genuine Poppler 25.07 official PDF and 48/48 tests; no S01/product/host overall approval"
+      },
+      "magicItemAzBagsEvidence": "Preserves complete Beans/Devouring/Holding/Tricks prose and headers, all twelve d100 effects including 00 and the split-page egg outcome, and all three color-bound eight-row d8 tables. Every heading-bounded XML interval and page span is compared exactly. No invented variants, merges, costs, capacity or conditional-weight conversions. Full official PDF verification passes; complete false and Item product gates remain closed.",
+      "w24Review": {
+        "state": "PASS",
+        "reviewedCommit": "42a69b63a69fbf310f1ba4eb4b7128cee2e5c700",
+        "issue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/56#pullrequestreview-5480292230",
+        "scope": "Independent full four-item Bags source/PDF review on genuine Poppler26.01, twelve effects and twenty-four color-bound cells; source/tool/test/fixture bytes unchanged in composition. No Full-S01/product/host approval."
+      },
+      "composition": {
+        "id": "W24-COMPOSE-01",
+        "state": "checked_steward_handoff_pending",
+        "sharedCommit": "c932bbab534c5a70a15cc4628728c0d1b92f162a",
+        "testedCommit": "82c6f0ad1e75b0d8f0fb9ab68aed17b72b06798f",
+        "claim": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/56#issuecomment-6100853466",
+        "resolution": "Retain entire current Shared package.json and add only Bags test once directly after Sources; all four Atlas/Campaign bundles and unique check/test keys retained. No source/product fix.",
+        "next": "Stadt consumes exact-SHA CI and narrowly closes regular integration; no new source review.",
+        "roleContract": {
+          "role": "migration",
+          "defaultBranch": "active/installed-phase1",
+          "loadedCommit": "c932bbab534c5a70a15cc4628728c0d1b92f162a",
+          "documents": [
+            "AGENTS.md",
+            "docs/AGENT-ROLES.md"
+          ],
+          "authority": "Existing authorized migration/product scope, exclusively D&D2014; no expansion from repository role rules"
+        },
+        "installation": "Current Shared lockfile installed with official Node22 npm ci; initial missing better-sqlite3 local dependency failures cleared. No P02 source edit or foreign gate approval."
       }
     }
   },
