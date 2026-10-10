@@ -223,11 +223,39 @@ Integrationsweg, nicht automatisch die gesamte Karten-/Stadtfunktion.
 - Kalender-/Zeitkern und providerneutrale Reise parallel entwickeln. Kalenderregeln
   warten nicht auf die fertige Reise; autoritative Scene-Zeit konsumiert den
   bestätigten Scene-/Owner-/Publishvertrag. Bestehenden Fachbesitz in #10 erhalten.
-- Hex-, Dungeon- und Atlasprovider hinter einem hostneutralen Vertrag
-  vereinen; Preview/Confirm, Unterbrechung, Ereignisse, Tracks und kausales
-  Undo/Redo umsetzen.
-- Kampagnenkalender und unabhängige Scene-Zeiten einführen. Gemeinsame Folgen
-  werden exakt einmal angewandt; narrative Entscheidungen bleiben beim GM.
+- Den realen Sceneweg liefern: vollständige/partielle PC-Gruppe wählen → Ziel oder
+  geordnete Wegpunkte auswerten → ausdrücklich reisen → am Checkpoint pausieren/
+  inspizieren/fortsetzen oder abbrechen → frisch öffnen. Ortswechsel der kompletten
+  Gruppe erhält die Scene, Teilgruppenwechsel erstellt/betritt eine andere; Suborte
+  verfeinern nur die Position. Administrative Platzierung ist keine Reise und
+  erzeugt keine automatische Zeit-/Eventwirkung. Position und Scene-Zeit committen
+  gemeinsam; Präsentationsgeschwindigkeit ändert nicht die In-World-Dauer. Faktor-
+  und Enddaueroverride zeigen, Enddauer gewinnt. Provider validieren reale Hex-/
+  Dungeon-/Atlasfakten; kein paralleler Route-/Positionstore. Cross-map-Routing
+  bleibt optionale spätere Bequemlichkeit.
+- Event, Trap, relevante Spur oder entdeckter NPC hält vor weiterem Routefortschritt
+  zur GM-Inspektion an; keinen Encounter automatisch starten. Tracks aus bestätigter
+  Bewegung mit Quellen-/Zeit-/Richtungsfakten erzeugen, einzeln korrigieren/
+  unterdrücken und zeitabhängig verfallen lassen. Entdeckung per bestätigtem
+  Perception/Survival-/GM-Ergebnis; segmentweise Verfolgung stoppt bei verlorener
+  oder mehrdeutiger Spur. Fehlende optionale PC-Werte sperren nur die benötigte
+  Automatik, nicht manuelle Reise oder andere PC-Funktionen.
+- Gerichtete Wahrnehmung und dauerhaftes Wissen getrennt führen: D&D-2014-Sinne,
+  Licht/Sichtlinie/Distanz/Deckung/Höhe, Wetter und Schall konsumieren bestätigte
+  Raum-/Umweltfakten. Aktives GM-Ergebnis und Known/Unknown-Override bleiben bis
+  ausdrücklicher Freigabe/Neubewertung wirksam. Neue Partygefahr pausiert Route und
+  betroffene Autonomy vor Auflösung. Dieselben Fakten liefern anschließend die
+  sichere Anzeige in SMR-10; unabhängige Wissens-/Spurinspektion bleibt möglich.
+- Kampagnenkalender mit Monats-/Tageslängen, Wochentagen und Jahreszählung bearbeiten,
+  Feiertag/Event an Zeit und/oder Ort binden → Relevanz in zwei unterschiedlich
+  fortgeschrittenen Scenes sehen → speichern/frisch öffnen. Eventrelevanz ist pro
+  Scene zu bewerten, bestätigte gemeinsame Worldfolge dagegen exakt einmal bei
+  Retry/Restart/Catch-up. Frühere Zeitkonflikte warnen, bleiben erlaubt und sichtbar
+  bis ausdrücklicher Auflösung; keine narrative Entscheidung oder globale Zeit-
+  Rückabwicklung. Mehrstufiges kausales Reise-Undo/Redo erhält spätere fremde Fakten.
+  Quellen: Hex/Dungeon Travel und State, SRC-T01–04/Q05, TN-08–14/23/24;
+  #10/#6/#7/#8, SMR-AC-08/09. UI, erforderliche Persistenz und Consumeranschluss
+  gehören zum selben Ergebnis, nicht nur ein Clock-/Providerport.
 
 ### SMR-08 – Shops, Wetter und Musik
 
@@ -315,6 +343,16 @@ Fachabnahmen und rechtfertigt keinen eigenen Shop-/Wetter-/Music-Snapshotstore.
   fokussierte Scene zeigt freigegebene Karte/Art, GM kann blanken/ersetzen;
   Secrets/Mechanik bleiben unsichtbar, auch nach Fokuswechsel und Restart.
   Der synthetische Fensterprototyp ist ein Eingang, keine Produktanzeige-Abnahme.
+- Wissen pro Charakter, aktuelle Sicht und rein temporäre GM-Anzeigeentscheidung
+  auseinanderhalten. Travelmap zeigt bekannte Geometrie getrennt von aktuell
+  sichtbaren Details; Orte zeigen Art, NPC-Art nur ausdrücklich hervorgehoben
+  beziehungsweise im bestätigten Encounter-/Chase-Automatikscope. Split/Fokuswechsel,
+  manuelles Reveal/Hide/Blank und Reopen dürfen kein fremdes Scenewissen, Secrets
+  oder nicht wahrgenommene Live-Details offenlegen; Präsentationsoverride verändert
+  keine Discoverywahrheit. Quellkonflikt in #44/#11/#10: Dungeon Travel nennt
+  komplette Partyunion/Explorationkamera, SRC-L05/T04 fokussierte Sceneunion.
+  Nicht beide Filter zugleich als Sicherheitsvertrag freigeben; P03 liefert nur
+  den Beweiskanal, nicht diese Fachentscheidung. SMR-AC-14/TN-24 bleibt separat.
 - Interne Extension-Grenze mit Default-Deny, Einwilligung und Widerruf bauen;
   Host-Erweiterungen nicht als sichere Sandbox voraussetzen.
 - Tatsächliche Erweiterung installieren → Rechte bestätigen → Inhaltsart/Maske/

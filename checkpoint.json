@@ -4,15 +4,15 @@
     "state": "completed",
     "roleContract": "docs/AGENT-ROLES.md#repository-maintenance",
     "repositoryContract": "docs/REPOSITORY.md",
-    "evaluatedShared": "e559282ae2b516b0035a02645f7f8ba718ab63f6",
-    "scope": "Source-bound portfolio planning audit: concrete SMR-01/06/09 user delivery paths and explicit Preparation/Resume source boundaries. No product, host or domain approval.",
-    "next": "Continue existing package ownership. Resolve Preparation target semantics at issue 44/10 before dependent generation; use current issue/PR for candidate state, not roadmap claims.",
+    "evaluatedShared": "527398c6f9e26f37d2ffdb9d305359e1daf0e708",
+    "scope": "Follow-up scope audit: SMR-07 travel/calendar/track/perception user delivery and SMR-10 knowledge/display boundary. No domain, host or product approval.",
+    "next": "Use existing SMR-07/10 consumers and owners. Resolve complete-Party versus focused-Scene display source boundary at 44/11/10; no competing route/time/knowledge truth.",
     "verification": [
-      "36 pinned requirement hashes and phase mappings checked; all 12 phases, 18 acceptance cases and 38 technical needs retained",
-      "Affected Campaign/Planner/Generation/Autonomy and capability sources compared; check:repo and diff checks PASS",
-      "Only repositoryOrientation edited; foreign checkpoint and all acceptance preserved"
+      "36 pinned requirement identities/phase mappings, 12 phases, 18 cases and 38 technical needs retained",
+      "Affected travel/state, calendar and display source/diff checks plus check:repo PASS",
+      "Foreign checkpoint and all acceptance bytes preserved"
     ],
-    "previousOrientation": "e559282"
+    "previousOrientation": "527398c"
   },
   "saltMarcherReplacement": {
     "date": "2026-10-10",
