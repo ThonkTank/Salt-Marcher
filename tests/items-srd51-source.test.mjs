@@ -11,6 +11,7 @@ import {
   validateBoundedWaterborneTableRows,
   validateBoundedWeaponTableRows,
   validateJsonSchemas,
+  validatePotionHealingMerge,
   validateTranscriptData,
   verifyItemsSourcePackage,
 } from "../tools/items-srd51-source-verify.mjs";
@@ -71,8 +72,9 @@ test("items source package is explicitly incomplete and fails closed by default"
   await assert.rejects(verifyItemsSourcePackage(), /S01 ist unvollständig/);
   const result = await verifyItemsSourcePackage({ allowIncomplete: true });
   assert.equal(result.complete, false);
-  assert.equal(result.validation.occurrenceCount, 219);
+  assert.equal(result.validation.occurrenceCount, 220);
   assert.equal(result.validation.recordCount, 219);
+  assert.equal(result.potionHealingMerge.mergedRecords, 1);
   assert.ok(result.blockers.length >= 5);
 });
 
@@ -369,7 +371,7 @@ test("adventuring gear bounded matching isolates complete cells inside two-colum
     /nicht exakt einmal als zusammenhängendes Segment derselben physischen Tabellenzeile/);
 });
 
-test("Potion of healing keeps its first physical occurrence as canonical magic identity", async () => {
+test("Potion of healing merges the later detail into its first physical occurrence", async () => {
   const [checkedInventory, checkedTranscript] = await Promise.all([
     readFile(new URL("items-srd51-inventory.json", dataRoot), "utf8").then(JSON.parse),
     readFile(new URL("items-srd51-transcript.json", dataRoot), "utf8").then(JSON.parse),
@@ -382,7 +384,73 @@ test("Potion of healing keeps its first physical occurrence as canonical magic i
   assert.equal(potion.subcategory, "potion");
   assert.match(potion.description[0].text, /magical red fluid/);
   assert.equal(occurrence.mergeIntoId, null);
+  assert.equal(potion.attunement, "not-required");
+  assert.deepEqual(potion.source.occurrenceIds, [
+    "srd51:equipment:adventuring-gear:76",
+    "srd51:magic-item:magic-items-a-z:143",
+  ]);
+  assert.deepEqual(potion.rarity.choices.map(choice => [choice.label, choice.value]), [
+    ["Healing", "common"],
+    ["Greater healing", "uncommon"],
+    ["Superior healing", "rare"],
+    ["Supreme healing", "very-rare"],
+  ]);
+  assert.deepEqual(validatePotionHealingMerge(checkedTranscript, checkedInventory), {
+    canonicalId: "srd51:equipment:adventuring-gear:76",
+    detailId: "srd51:magic-item:magic-items-a-z:143",
+    mergedRecords: 1,
+    rarityChoices: 4,
+    healingRows: 4,
+  });
   assert.equal(checkedTranscript.complete, false);
+});
+
+test("Potion-of-Healing merge identity, ordering, source and variants fail closed", async () => {
+  const [checkedInventory, checkedTranscript] = await Promise.all([
+    readFile(new URL("items-srd51-inventory.json", dataRoot), "utf8").then(JSON.parse),
+    readFile(new URL("items-srd51-transcript.json", dataRoot), "utf8").then(JSON.parse),
+  ]);
+  const detailId = "srd51:magic-item:magic-items-a-z:143";
+  const potionId = "srd51:equipment:adventuring-gear:76";
+
+  const unknownTarget = structuredClone(checkedInventory);
+  unknownTarget.occurrences.find(item => item.id === detailId).mergeIntoId = "srd51:equipment:adventuring-gear:999";
+  assert.throws(() => validateTranscriptData(checkedTranscript, unknownTarget, { allowIncomplete: true }),
+    /unbekanntes Merge-Ziel/);
+
+  const laterTarget = structuredClone(checkedInventory);
+  const detailIndex = laterTarget.occurrences.findIndex(item => item.id === detailId);
+  laterTarget.occurrences.unshift(laterTarget.occurrences.splice(detailIndex, 1)[0]);
+  assert.throws(() => validateTranscriptData(checkedTranscript, laterTarget, { allowIncomplete: true }),
+    /frühere physische Occurrence/);
+
+  const chainedTarget = structuredClone(checkedInventory);
+  chainedTarget.occurrences.find(item => item.id === potionId).mergeIntoId = "srd51:equipment:adventuring-gear:75";
+  assert.throws(() => validateTranscriptData(checkedTranscript, chainedTarget, { allowIncomplete: true }),
+    /keine Merge-Kette/);
+
+  const duplicate = structuredClone(checkedTranscript);
+  const secondRecord = structuredClone(duplicate.records.find(record => record.id === potionId));
+  secondRecord.id = detailId;
+  duplicate.records.push(secondRecord);
+  assert.throws(() => validateTranscriptData(duplicate, checkedInventory, { allowIncomplete: true }),
+    /keinen zweiten kanonischen Record/);
+
+  const missingSource = structuredClone(checkedTranscript);
+  missingSource.records.find(record => record.id === potionId).source.occurrenceIds = [potionId];
+  assert.throws(() => validateTranscriptData(missingSource, checkedInventory, { allowIncomplete: true }),
+    /Raritätsvariante außerhalb seiner Quellenliste|gemergte Occurrence/);
+
+  const wrongVariant = structuredClone(checkedTranscript);
+  wrongVariant.records.find(record => record.id === potionId).rarity.choices[2].variantId = `${detailId}#variant:9`;
+  assert.throws(() => validateTranscriptData(wrongVariant, checkedInventory, { allowIncomplete: true }),
+    /ordinale Variant-ID/);
+
+  const wrongHealingRow = structuredClone(checkedTranscript);
+  wrongHealingRow.records.find(record => record.id === potionId).description.at(-1).text =
+    "Supreme healing Very rare 10d4 + 19";
+  assert.throws(() => validatePotionHealingMerge(wrongHealingRow, checkedInventory),
+    /Heilungszeilen/);
 });
 
 test("equipment packs preserve physical order, exact costs and complete published contents", async () => {

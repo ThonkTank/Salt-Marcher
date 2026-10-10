@@ -134,28 +134,31 @@
     "architecture": "ARCHITECTURE.md#geplante-katalog--und-encounter-erweiterung",
     "acceptance": "acceptance.json.saltMarcherCatalogEncounter",
     "currentRun": {
-      "id": "CE-02-I02-S01-W16",
+      "id": "CE-02-I02-S01-W17",
       "kind": "source_inventory_schema_transcript_intermediate",
       "state": "in_progress_verified_incomplete",
-      "focus": "Enforce same-physical-row bounded PDF matching for all six Waterborne Vehicles table rows",
+      "focus": "Capture the explicit Potion-of-Healing equipment-to-magic-item detail merge and its fail-closed golden cases",
       "plan": "ROADMAP-SALTMARCHER-CE02-I02-PLAN.md",
-      "result": "All six Waterborne Vehicles rows are reconstructed from source label, cost and speed and must occur exactly once as a contiguous normalized segment of one pdftotext-layout line on official PDF page 72. This preserves the Rowboat 1½ mph and Warship 2½ mph source fractions; the prose-only Rowboat weight remains a separately verified fact and is not invented as a table cell. Wrong-cell, page-wide-split and duplicate-segment fixtures fail. The real pinned PDF verifies all 219 equipment occurrence labels, 674 captured transcript facts, 13 bounded Armor rows, 37 bounded Weapons rows, 99 bounded Adventuring Gear rows, 35 bounded Tools rows, eight bounded Mounts rows, fourteen bounded Tack rows, six bounded Waterborne rows, 21 helper dispositions and one cross-reference with two facts. S01 remains incomplete and I01 blocked.",
+      "result": "Potion of healing retains canonical ID srd51:equipment:adventuring-gear:76 and explicitly merges later detail occurrence srd51:magic-item:magic-items-a-z:143 from physical/printed PDF page 234. The complete header proves attunement not-required and variable rarity; four ordered, occurrence-bound variant IDs preserve Healing, Greater healing, Superior healing and Supreme healing with their exact rarity and HP rows. Unknown/later/chained targets, duplicate canonical records, missing source membership, wrong variant ordinals and altered rows fail closed. The real pinned PDF verifies 220 occurrence labels, 681 captured transcript facts and the explicit merge/header/table evidence in addition to all earlier bounded equipment evidence. S01 remains incomplete and I01 blocked.",
       "verification": {
-        "sourceRevision": "9d33e15b5e56a71541e703453a8d84727daf3035+dirty",
+        "sourceRevision": "aa4a0eeccfa9a3b41caab061b90526e12d47065d+dirty",
         "check": "passed",
         "tests": {
-          "passed": 430,
+          "passed": 431,
           "failed": 0
         },
         "build": "passed",
         "focusedTests": {
-          "passed": 25,
+          "passed": 26,
           "failed": 0
         },
         "pdfSha256": "2504d2a0abb0a4d491a939be4f17910a2dde0312570ab8d208080225ccf0a1f0",
-        "occurrences": 219,
+        "occurrences": 220,
         "records": 219,
-        "transcriptFacts": 674,
+        "transcriptFacts": 681,
+        "potionHealingMergedRecords": 1,
+        "potionHealingRarityChoices": 4,
+        "potionHealingRows": 4,
         "boundedArmorTableRows": 13,
         "boundedWeaponTableRows": 37,
         "boundedAdventuringGearTableRows": 99,
@@ -169,30 +172,31 @@
         "mainBytes": 1422956,
         "mainSha256": "522823730ddce4d0ba83e0476f60887b60a07c517f84e8e270814b6d597efa43"
       },
-      "limits": "Source-package intermediate only. No product Item artifact/provider/UI, Obsidian installation or host acceptance, Magic Items, Encounter runtime or 2024 rules. The Potion detail merge, remaining structured Magic Item tables/transcripts, remaining goldens and independent S01-R01 remain open; I01 stays blocked.",
+      "limits": "Source-package intermediate only. No product Item artifact/provider/UI, Obsidian installation or host acceptance, Encounter runtime or 2024 rules. The remaining 241 Magic Items A–Z headings, Orb of Dragonkind, structured Magic Item tables/transcripts, remaining goldens, independent W17 review and S01-R01 remain open; I01 stays blocked.",
       "documentation": {
         "status": "partial",
         "branch": "active/installed-phase1",
-        "baseCommit": "9d33e15b5e56a71541e703453a8d84727daf3035",
-        "issue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/9#issuecomment-6095820491",
+        "baseCommit": "aa4a0eeccfa9a3b41caab061b90526e12d47065d",
+        "issue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/9#issuecomment-6096269327",
         "changedFiles": [
           "acceptance.json",
           "checkpoint.json",
+          "src/features/catalog/data/items-srd51-inventory.json",
           "src/features/catalog/data/items-srd51-source-manifest.json",
+          "src/features/catalog/data/items-srd51-transcript.json",
           "tests/items-srd51-source.test.mjs",
           "tools/items-srd51-source-verify.mjs"
         ],
         "externalEvidence": {
           "path": "/tmp/SRD_CC_v5.1.pdf and main.js",
-          "scope": "Local official-PDF verification against pinned bytes plus build artifact hash bound to the dirty base revision; ephemeral cloud-host paths, not an installed-plugin or GUI receipt."
+          "scope": "Local official-PDF verification against pinned bytes, including physical/printed page 234, plus build artifact hashes bound to the dirty base revision; ephemeral cloud-host paths, not an installed-plugin or GUI receipt."
         },
         "publication": "Pending final upstream synchronization, commit and non-force push; the exact publication SHA and remote verification will be recorded in the Issue #9 close receipt.",
         "commit": "see Issue #9 close receipt",
         "notProven": [
           "complete SRD 5.1 Item corpus",
+          "remaining 241 Magic Items A–Z headings and Orb of Dragonkind",
           "remaining structured Magic Item tables and transcripts",
-          "Potion of Healing detail merge",
-          "Magic Items",
           "remaining goldens",
           "independent S01-R01",
           "Item product artifact/provider/UI",
@@ -200,7 +204,7 @@
           "Encounter runtime",
           "any 2024 rules"
         ],
-        "next": "Request independent review of the published W16 source slice before starting the separately documented W17 Potion-of-Healing detail-merge package."
+        "next": "Request independent review of the published W17 Potion-of-Healing merge slice before starting a separately documented W18 Magic Items A–Z source slice."
       }
     },
     "implementationRun": {
@@ -404,7 +408,7 @@
       },
       "limits": "Build-contract repair only. No catalog data/provider/UI change and no CE, Atlas, host, physical-input or overall approval."
     },
-    "verified": "CE-00 and CE-01 implementation/review/repair cycles passed their scoped gates. CE-01-H01 passed its independently reviewed automated scope. CE-02-I01 product commit 7469e64202e730175ee138136a69d82ad4f28ea6 and metadata repair candidate 4d239004c4f000b2af6f66122a05135b0c353ffb passed independent review. CE-02-I02-S01 now has a checked fail-closed source package with all 219 equipment occurrences and transcripts plus explicit reconciliation of all 237 helper equipment records; all thirteen Armor narratives plus all 13 Armor, 37 Weapons, 99 Adventuring Gear, 35 Tools, eight Mounts, fourteen Tack and six Waterborne bounded table rows are captured. The Potion detail merge, Magic Items, remaining goldens, S01 review and Item product feature remain open. Physical input, screenreader and other-platform acceptance remain open.",
+    "verified": "CE-00 and CE-01 implementation/review/repair cycles passed their scoped gates. CE-01-H01 passed its independently reviewed automated scope. CE-02-I01 product commit 7469e64202e730175ee138136a69d82ad4f28ea6 and metadata repair candidate 4d239004c4f000b2af6f66122a05135b0c353ffb passed independent review. CE-02-I02-S01 now has a checked fail-closed source package with all 219 equipment occurrences and transcripts plus explicit reconciliation of all 237 helper equipment records; all thirteen Armor narratives plus all 13 Armor, 37 Weapons, 99 Adventuring Gear, 35 Tools, eight Mounts, fourteen Tack and six Waterborne bounded table rows are captured. Potion of healing now explicitly retains its first equipment occurrence and merges the later Magic Items A–Z heading, variable rarity, no-attunement header and four healing variants. Remaining Magic Items, goldens, S01 review and Item product feature remain open. Physical input, screenreader and other-platform acceptance remain open.",
     "open": [
       "CE-01 physical keyboard/mouse, screenreader and other-platform acceptance; CE-02-I02 through CE-07 runs",
       "CE-02-I02-S01 complete official inventory, transcript, closed subcategory enum, full PDF matching, complete golden cases and independent S01-R01 review",
@@ -412,10 +416,10 @@
       "Physical catalog input acceptance cannot be replaced by Playwright automation"
     ],
     "nextRun": {
-      "id": "CE-02-I02-S01-W17",
+      "id": "CE-02-I02-S01-W18",
       "kind": "source_inventory_schema_transcript_continuation",
       "plan": "ROADMAP-SALTMARCHER-CE02-I02-PLAN.md",
-      "focus": "Add the explicit Potion-of-Healing equipment-to-magic-item detail merge ledger and its fail-closed golden cases while keeping complete false until every remaining S01 obligation is closed"
+      "focus": "After independent W17 review, capture the next bounded Magic Items A–Z source slice while keeping complete false until every remaining S01 obligation is closed"
     }
   },
   "repositoryWorkflow": {

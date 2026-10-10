@@ -148,7 +148,8 @@ export function validateTranscriptData(transcript, inventory, { allowIncomplete 
       `${section.id} ist trotz Countlücke vollständig markiert.`);
   }
   const occurrences = new Map();
-  for (const occurrence of inventory.occurrences) {
+  const occurrenceOrder = new Map();
+  for (const [occurrenceIndex, occurrence] of inventory.occurrences.entries()) {
     object(occurrence, "Occurrence");
     invariant(occurrencePattern.test(occurrence.id), `Ungültige Occurrence-ID ${occurrence.id}.`);
     invariant(!occurrences.has(occurrence.id), `Doppelte Occurrence-ID ${occurrence.id}.`);
@@ -160,6 +161,7 @@ export function validateTranscriptData(transcript, inventory, { allowIncomplete 
     invariant(occurrence.firstPdfPage <= occurrence.lastPdfPage, `${occurrence.id} hat umgekehrte PDF-Seiten.`);
     invariant(occurrence.firstPrintedPage <= occurrence.lastPrintedPage, `${occurrence.id} hat umgekehrte Druckseiten.`);
     occurrences.set(occurrence.id, occurrence);
+    occurrenceOrder.set(occurrence.id, occurrenceIndex);
   }
   for (const section of inventory.sections) {
     const sectionOccurrences = inventory.occurrences.filter(occurrence => occurrence.sectionId === section.id);
@@ -229,12 +231,12 @@ export function validateTranscriptData(transcript, inventory, { allowIncomplete 
         `${disposition.helperIndex} verweist auf unbekannte kanonische Occurrence ${disposition.canonicalId}.`);
     }
   }
-  const records = new Set();
+  const records = new Map();
   for (const record of transcript.records) {
     object(record, "Record");
     invariant(occurrencePattern.test(record.id), `Ungültige Record-ID ${record.id}.`);
     invariant(!records.has(record.id), `Doppelte Record-ID ${record.id}.`);
-    records.add(record.id);
+    records.set(record.id, record);
     nonEmpty(record.name, `${record.id}.name`);
     invariant(record.category === "equipment" || record.category === "magic-item", `${record.id}.category ist ungültig.`);
     invariant(typeof record.magic === "boolean", `${record.id}.magic ist ungültig.`);
@@ -254,6 +256,11 @@ export function validateTranscriptData(transcript, inventory, { allowIncomplete 
       `${record.id} benötigt streng aufsteigende Quellseiten.`);
     for (const occurrenceId of record.source.occurrenceIds)
       invariant(occurrences.has(occurrenceId), `${record.id} verweist auf unbekannte Occurrence ${occurrenceId}.`);
+    for (const choice of record.rarity?.choices ?? []) {
+      invariant(occurrences.has(choice.occurrenceId), `${record.id} hat eine unbelegte Raritätsvariante.`);
+      invariant(record.source.occurrenceIds.includes(choice.occurrenceId),
+        `${record.id} hat eine Raritätsvariante außerhalb seiner Quellenliste.`);
+    }
     for (const sourced of [...record.properties, ...record.description]) {
       object(sourced, `${record.id}.Textfakt`);
       invariant(occurrences.has(sourced.occurrenceId), `${record.id} hat unbelegte Textfakten.`);
@@ -262,7 +269,80 @@ export function validateTranscriptData(transcript, inventory, { allowIncomplete 
     }
     validateStructuredConversions(record);
   }
+  for (const occurrence of inventory.occurrences.filter(candidate => candidate.mergeIntoId !== null)) {
+    const target = occurrences.get(occurrence.mergeIntoId);
+    invariant(target, `${occurrence.id} verweist auf ein unbekanntes Merge-Ziel ${occurrence.mergeIntoId}.`);
+    invariant(occurrenceOrder.get(target.id) < occurrenceOrder.get(occurrence.id),
+      `${occurrence.id} muss in die frühere physische Occurrence gemergt werden.`);
+    invariant(target.mergeIntoId === null, `${occurrence.id} darf keine Merge-Kette erzeugen.`);
+  }
+  for (const occurrence of inventory.occurrences.filter(candidate => candidate.mergeIntoId !== null)) {
+    const target = occurrences.get(occurrence.mergeIntoId);
+    invariant(!records.has(occurrence.id), `${occurrence.id} darf keinen zweiten kanonischen Record erzeugen.`);
+    const canonical = records.get(target.id);
+    invariant(canonical, `${occurrence.id} benötigt den kanonischen Record ${target.id}.`);
+    invariant(canonical.source.occurrenceIds[0] === target.id,
+      `${target.id} muss seine erste physische Occurrence als erste Quelle behalten.`);
+    invariant(canonical.source.occurrenceIds.includes(occurrence.id),
+      `${target.id} muss die gemergte Occurrence ${occurrence.id} als Quelle belegen.`);
+  }
   return Object.freeze({ occurrenceCount: occurrences.size, recordCount: records.size, complete: transcript.complete });
+}
+
+export function validatePotionHealingMerge(transcript, inventory) {
+  const canonicalId = "srd51:equipment:adventuring-gear:76";
+  const detailId = "srd51:magic-item:magic-items-a-z:143";
+  const occurrences = new Map(inventory.occurrences.map(occurrence => [occurrence.id, occurrence]));
+  const records = new Map(transcript.records.map(record => [record.id, record]));
+  const canonicalOccurrence = occurrences.get(canonicalId);
+  const detailOccurrence = occurrences.get(detailId);
+  invariant(canonicalOccurrence?.sourceLabel === "Potion of healing",
+    "Potion-of-Healing-Merge benötigt die kanonische Ausrüstungs-Occurrence.");
+  invariant(detailOccurrence?.sourceLabel === "Potion of Healing" && detailOccurrence.sourceKind === "detail-heading"
+    && detailOccurrence.sourceTable === "Magic Items A–Z" && detailOccurrence.ordinal === 143
+    && detailOccurrence.firstPdfPage === 234 && detailOccurrence.lastPdfPage === 234,
+  "Potion-of-Healing-Detail muss als A–Z-Heading 143 auf physischer Seite 234 belegt sein.");
+  invariant(detailOccurrence.mergeIntoId === canonicalId,
+    "Potion-of-Healing-Detail muss explizit in die erste Ausrüstungs-Occurrence mergen.");
+  invariant(!records.has(detailId), "Potion-of-Healing-Detail darf keinen doppelten kanonischen Record erzeugen.");
+  const record = records.get(canonicalId);
+  invariant(record?.category === "magic-item" && record.subcategory === "potion" && record.magic === true,
+    "Potion of healing muss ihre kanonische magische Potion-Identität behalten.");
+  invariant(record.attunement === "not-required",
+    "Der vollständige Potion-of-Healing-Header belegt keine erforderliche Einstimmung.");
+  invariant(JSON.stringify(record.source.occurrenceIds) === JSON.stringify([canonicalId, detailId]),
+    "Potion of healing muss exakt beide Occurrences in physischer Reihenfolge belegen.");
+  invariant(JSON.stringify(record.source.pdfPages) === JSON.stringify([68, 69, 234])
+    && JSON.stringify(record.source.printedPages) === JSON.stringify([68, 69, 234]),
+  "Potion of healing muss die Ausrüstungs- und Detailseiten getrennt belegen.");
+  const expectedChoices = [
+    ["Healing", "common"],
+    ["Greater healing", "uncommon"],
+    ["Superior healing", "rare"],
+    ["Supreme healing", "very-rare"],
+  ];
+  invariant(record.rarity?.kind === "varies" && record.rarity.sourceText === "rarity varies"
+    && record.rarity.choices.length === expectedChoices.length,
+  "Potion of healing benötigt die belegte variable Rarität mit vier Varianten.");
+  for (const [index, [label, value]] of expectedChoices.entries()) {
+    const choice = record.rarity.choices[index];
+    invariant(choice.variantId === `${detailId}#variant:${index + 1}` && choice.label === label
+      && choice.value === value && choice.occurrenceId === detailId,
+    `Potion-of-Healing-Variante ${index + 1} widerspricht der Quelltabelle.`);
+  }
+  const expectedDetailFacts = [
+    "You regain hit points when you drink this potion. The number of hit points depends on the potion’s rarity, as shown in the Potions of Healing table. Whatever its potency, the potion’s red liquid glimmers when agitated.",
+    "Potions of Healing",
+    "Potion of … Rarity HP Regained",
+    "Healing Common 2d4 + 2",
+    "Greater healing Uncommon 4d4 + 4",
+    "Superior healing Rare 8d4 + 8",
+    "Supreme healing Very rare 10d4 + 20",
+  ];
+  const detailFacts = record.description.filter(fact => fact.occurrenceId === detailId).map(fact => fact.text);
+  invariant(JSON.stringify(detailFacts) === JSON.stringify(expectedDetailFacts),
+    "Potion-of-Healing-Detailprosa oder Heilungszeilen sind unvollständig oder umgeordnet.");
+  return Object.freeze({ canonicalId, detailId, mergedRecords: 1, rarityChoices: 4, healingRows: 4 });
 }
 
 function formatAjvErrors(errors) {
@@ -601,6 +681,19 @@ function verifyPdfTranscriptFacts(pdfPath, transcript) {
     scope: "structured-table-and-sourced-description-facts" });
 }
 
+function verifyPdfPotionHealingMerge(pdfPath, transcript, inventory) {
+  const evidence = validatePotionHealingMerge(transcript, inventory);
+  const pageText = normalizePdfPageText(extractPdfPage(pdfPath, 234), 234);
+  for (const fact of ["Potion of Healing", "Potion, rarity varies", "Potions of Healing",
+    "Healing Common 2d4 + 2", "Greater healing Uncommon 4d4 + 4",
+    "Superior healing Rare 8d4 + 8", "Supreme healing Very rare 10d4 + 20"]) {
+    invariant(pageText.includes(normalizePdfText(fact)),
+      `Potion-of-Healing-PDF-Beleg für „${fact}“ fehlt.`);
+  }
+  return Object.freeze({ ...evidence, physicalPdfPage: 234,
+    scope: "explicit-earliest-occurrence-merge-header-rarity-and-four-healing-rows" });
+}
+
 function verifyPdfHelperDispositions(pdfPath, inventory) {
   const occurrences = new Map(inventory.occurrences.map(occurrence => [occurrence.id, occurrence]));
   const pageText = new Map();
@@ -683,6 +776,7 @@ export async function verifyItemsSourcePackage({ pdfPath, allowIncomplete = fals
     "Manifest-Cross-reference-Count stimmt nicht.");
   validateJsonSchemas(schema, transcript, inventory);
   const validation = validateTranscriptData(transcript, inventory, { allowIncomplete });
+  const potionHealingMerge = validatePotionHealingMerge(transcript, inventory);
   let pdf;
   if (pdfPath) {
     const bytes = await readFile(resolve(pdfPath));
@@ -693,6 +787,7 @@ export async function verifyItemsSourcePackage({ pdfPath, allowIncomplete = fals
     pdf = Object.freeze({ sha256: OFFICIAL_PDF_SHA256, bytes: bytes.length, pages: manifest.source.pdfPages,
       occurrenceEvidence: verifyPdfOccurrences(pdfPath, inventory),
       transcriptEvidence: verifyPdfTranscriptFacts(pdfPath, transcript),
+      potionHealingMergeEvidence: verifyPdfPotionHealingMerge(pdfPath, transcript, inventory),
       boundedArmorTableEvidence: verifyPdfArmorTableRows(pdfPath, transcript, inventory),
       boundedWeaponTableEvidence: verifyPdfWeaponTableRows(pdfPath, transcript, inventory),
       boundedAdventuringGearTableEvidence: verifyPdfAdventuringGearTableRows(pdfPath, transcript, inventory),
@@ -706,6 +801,7 @@ export async function verifyItemsSourcePackage({ pdfPath, allowIncomplete = fals
   return Object.freeze({
     complete: manifest.complete,
     validation,
+    potionHealingMerge,
     pdf,
     hashes: Object.freeze({
       attribution: sha256(Buffer.from(attribution)),
