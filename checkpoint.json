@@ -4,15 +4,15 @@
     "state": "completed",
     "roleContract": "docs/AGENT-ROLES.md#repository-maintenance",
     "repositoryContract": "docs/REPOSITORY.md",
-    "evaluatedShared": "e559282ae2b516b0035a02645f7f8ba718ab63f6",
-    "scope": "Source-bound portfolio planning audit: concrete SMR-01/06/09 user delivery paths and explicit Preparation/Resume source boundaries. No product, host or domain approval.",
-    "next": "Continue existing package ownership. Resolve Preparation target semantics at issue 44/10 before dependent generation; use current issue/PR for candidate state, not roadmap claims.",
+    "evaluatedShared": "b6c57c636983328c0c169209d90772ea1d557db6",
+    "scope": "Feature-plan scope audit: missing generator preset settings, shared Scene/Session composition and Combat partition delivery added to CE03/04. Obsolete generic split review/cleanup dispatch removed; no product/domain approval.",
+    "next": "Follow existing CE package owners at 9/10/6; preset registry authority is a confirmed Campaign/Data input, not a second controller. Scope conflicts and unknown original inventory remain at 44.",
     "verification": [
-      "36 pinned requirement hashes and phase mappings checked; all 12 phases, 18 acceptance cases and 38 technical needs retained",
-      "Affected Campaign/Planner/Generation/Autonomy and capability sources compared; check:repo and diff checks PASS",
-      "Only repositoryOrientation edited; foreign checkpoint and all acceptance preserved"
+      "36 source hashes and phase mappings checked; 12 phases, 18 cases, 38 TN retained",
+      "Only Encounter Generation phase mapping extended to SMR01; all other source-registry fields preserved",
+      "check:repo and affected source/diff checks PASS; foreign checkpoint/acceptance preserved"
     ],
-    "previousOrientation": "e559282"
+    "previousOrientation": "b6c57c6"
   },
   "saltMarcherReplacement": {
     "date": "2026-10-10",
