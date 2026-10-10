@@ -25,9 +25,9 @@
   },
   "artifactHashes": {
     "attributionSha256": "f66d55442488e79895501fc0fcd7b2bb62deb2bd6e589e0fffb5f5932ed5b767",
-    "inventorySha256": "cc313d24d5f859e46697e0da54c086ea688858cf5e859a738123b429ee762432",
+    "inventorySha256": "c325ceabb98b9c79a0f03ceeefeb4a6c54cd072c45f9fdc77abeee839f6f1034",
     "schemaSha256": "f34513e5c8921edecdfc270889a1948330837470fe108fcda92d2fea7d75f50f",
-    "transcriptSha256": "b27c75e17e4798a354ddd494cf8045c21b3d5a2f458a4407bc9a33334e3307df"
+    "transcriptSha256": "cd308b70eb92237a238c5a19c78c8adda38a12a8202d7a750102a29cb004ec30"
   },
   "sectionBoundaries": [
     {
@@ -116,7 +116,7 @@
       "firstPrintedPage": 207,
       "lastPdfPage": 251,
       "lastPrintedPage": 251,
-      "reviewState": "boundary-first-forty-seven-headings-and-potion-of-healing-heading-142-merge-captured-inventory-incomplete"
+      "reviewState": "boundary-first-sixty-two-headings-and-potion-of-healing-heading-142-merge-captured-inventory-incomplete"
     },
     {
       "id": "artifact-orb-of-dragonkind",
@@ -128,8 +128,8 @@
     }
   ],
   "coverage": {
-    "inventoryOccurrences": 267,
-    "transcriptRecords": 266,
+    "inventoryOccurrences": 282,
+    "transcriptRecords": 281,
     "expectedEquipmentPrimaryOccurrences": 219,
     "expectedEquipmentTableLeafRows": 212,
     "expectedEquipmentPackEntries": 7,
@@ -151,10 +151,10 @@
     "extractionHelperMagicItemRecords": 362,
     "unresolvedEquipmentPrimaryOccurrences": 0,
     "unresolvedEquipmentHelperRecords": 0,
-    "capturedMagicItemAzHeadings": 48,
-    "capturedMagicItemAzStandaloneRecords": 47,
+    "capturedMagicItemAzHeadings": 63,
+    "capturedMagicItemAzStandaloneRecords": 62,
     "capturedMagicItemAzMergedDetails": 1,
-    "unresolvedMagicItemSourceHeadings": 191,
+    "unresolvedMagicItemSourceHeadings": 176,
     "unresolvedMagicItemHelperRecords": 362
   },
   "blockingOpenSections": [
@@ -167,12 +167,12 @@
     "Tack, Harness, and Drawn Vehicles inventory and source transcript cover all 14 physical rows, exact prices, source weights or explicit formula/missing values and applicable narratives; all 14 rows pass bounded same-physical-row segment matching including Barding formulas and the Stabling source em dash. Twelve Barding helper identities resolve to the single Barding row plus their respective Armor occurrence. Non-authoritative helper conflicts such as Exotic Saddle weight 50 instead of the official 40 lb. and Ring Mail Barding cost 12 gp instead of the official ×4 formula are not adopted, while independent review remains open.",
     "Waterborne Vehicles inventory and source transcript cover all six physical rows, exact costs, mph speeds including fractional source values, the shared Vehicle Proficiency text and the Rowed Vessels facts for Keelboat and Rowboat; all six table rows pass bounded same-physical-row segment matching. The prose-only 100-pound Rowboat weight is retained as a structured fact but is not invented as a table cell, while independent review remains open.",
     "The Potion-of-Healing detail merge is captured but still requires independent review with this W17 slice.",
-    "The first thirteen Magic Items A-Z headings are independently reviewed; W23-N01 P1 PASS binds the real Poppler-25.07 PDF path. Ordinals 14–17 preserve all Bags headers/prose, twelve Beans effects and three distinct eight-row Tricks tables across physical pages 209–211; independent W24 review5480292230 and regular PR56 integration843562a are complete. Ordinals18–32 preserve all remaining B-section headers/prose, five Belt-of-Giant-Strength rows and rarity choices, six prose varieties without invented headings, and the cross-page Berserker curse; independent W25 review5480446444 and regular integration ebb480e are complete. Ordinals33–47 preserve the complete C-section, nine alignment rows, four carpet rows, four Crystal Ball raritychoices and six cube-face/five charge-loss rows with complete prose and page continuations; independent W26 review remains open.",
-    "The remaining 191 Magic Items A-Z headings and the Orb of Dragonkind artifact still require full description and page-range transcription.",
+    "The first thirteen Magic Items A-Z headings are independently reviewed; W23-N01 P1 PASS binds the real Poppler-25.07 PDF path. Ordinals 14–17 preserve all Bags headers/prose, twelve Beans effects and three distinct eight-row Tricks tables across physical pages 209–211; independent W24 review5480292230 and regular PR56 integration843562a are complete. Ordinals18–32 preserve all remaining B-section headers/prose, five Belt-of-Giant-Strength rows and rarity choices, six prose varieties without invented headings, and the cross-page Berserker curse; independent W25 review5480446444 and regular integration ebb480e are complete. Ordinals33–47 preserve the complete C-section, nine alignment rows, four carpet rows, four Crystal Ball raritychoices and six cube-face/five charge-loss rows with complete prose and page continuations; independent W26 review5480616259 and regular integration9e3a6c1 are complete. Ordinals48–62 preserve the entire D-section:33 Illusions card rows,22 Many Things rows and all22 card rules with embedded Avatar of Death, ten Dragon resistance cells and full headers/prose/page spans; independent W27 review remains open.",
+    "The remaining 176 Magic Items A-Z headings and the Orb of Dragonkind artifact still require full description and page-range transcription.",
     "All 362 helper magic-item records still require parent/variant reconciliation against the 240 official source headings.",
     "The controlled 26-value source subcategory enum now includes the captured Armor, Wondrous item and Weapon magic-header mappings, but the enum remains a draft until the complete magic-item inventory fixes every source-header mapping.",
     "Draft-2020-12 validation plus PDF-backed occurrence-label and captured-fact checks are active; bounded Armor, Weapons, Adventuring Gear, Tools, Mounts, Tack and Waterborne table-row matching is active, while bounded matching for other structured tables and the still-uncaptured sections remain open.",
-    "Golden coverage now includes the first forty-seven A-Z identities and full descriptions, fixed and ordered variable rarity including the Armor +1/+2/+3 mapping, required/not-required attunement including Armor of Invulnerability, the complete ten-row Apparatus lever table, plus the Potion-of-Healing earliest-occurrence merge; same-name non-merge, remaining merge shapes and byte-identical projection cases remain open.",
+    "Golden coverage now includes the first sixty-two A-Z identities and full descriptions, fixed and ordered variable rarity including the Armor +1/+2/+3 mapping, required/not-required attunement including Armor of Invulnerability, the complete ten-row Apparatus lever table, plus the Potion-of-Healing earliest-occurrence merge; same-name non-merge, remaining merge shapes and byte-identical projection cases remain open.",
     "Section boundaries and final pre/post-merge counts require independent full-page review.",
     "The inventory and transcript remain incomplete and must not feed a product artifact, provider, or UI."
   ]
