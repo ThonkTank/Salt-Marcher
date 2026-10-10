@@ -491,13 +491,21 @@
   },
   "e2e01DungeonGeometryPlan": {
     "run": "E2E-01-DUNGEON-GEOMETRY-P01",
-    "state": "plan_candidate_independent_review_required",
+    "state": "plan_review_changes_required_cleanup_then_n01",
     "owner": "Dungeon-Strang (Thread Obsidian Dungeon Repo ansehen)",
     "branch": "dungeon/e2e01-geometry-p01-20261010",
     "baseCommit": "e5a19a93ce417b4e48fa86512d1c7f1be4d41eea",
     "plan": "ROADMAP-E2E01-DUNGEON-GEOMETRY-PLAN.md",
     "coordination": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6092383202",
     "details": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/8#issuecomment-6092383345",
+    "candidateCommit": "ea46ba5437596aceaad955330e21c3ef4e739451",
+    "review": {
+      "run": "E2E-01-DUNGEON-GEOMETRY-P01-R01",
+      "result": "CHANGES_REQUIRED",
+      "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/23#issuecomment-6092483393",
+      "requiredFinding": "DUN-GEO-P01-R01-01",
+      "boundary": "Identische Dungeonbytes schützen nicht gegen eine während der Gesture geänderte Parent-/Bindingbasis; N01 muss die tatsächliche Source-/History-/Parentbasis bis Update und Handoff ohne Auto-Rebase binden."
+    },
     "scope": "Plan-only: äußerer Konturpunktzug Room31/Floor32 über bestehende pure Geometrieplaner, transientes Preview/Cancel und genau ein kanonischer ownergebundener Before→After-AtlasChange für die gemeinsame check/execute-Komposition.",
     "files": [
       "ROADMAP-E2E01-DUNGEON-GEOMETRY-PLAN.md",
@@ -506,8 +514,28 @@
     ],
     "verification": "Plan-/JSON-/Verweis-/Diffprüfung vor Veröffentlichung; keine Produktquelle geändert und deshalb keine Produktbasisprüfung oder GUI als Planbeleg.",
     "externalEvidence": "Ownerinput #12/6092359086 und technische Quellanalyse #8/6092363698 auf PR13 Exact-Head e5a19a93ce417b4e48fa86512d1c7f1be4d41eea. Keine neue externe Lauf- oder Hostevidenz in P01.",
-    "notVerified": "Unabhängiger Planreview, Implementierung, Code-Review, Reparatur, Cleanup-P/I/R, Host, physische Eingabe, vollständige Mehrownerkomposition und E2E-01-PASS bleiben offen.",
-    "next": "Kandidaten-SHA normal pushen und unabhängigen engen P01-R01 anfragen. I01 darf erst nach explizitem PASS auf dem Exact-SHA beginnen."
+    "notVerified": "Plan-PASS, Cleanup-I/R, N01-Reparatur und Exact-SHA-Re-Review, Implementierung, Code-Review, Host, physische Eingabe, vollständige Mehrownerkomposition und E2E-01-PASS bleiben offen.",
+    "next": "Getrennte Cleanup-P/I/R für das P01-Vertragsartefakt abschließen; danach genau DUN-GEO-P01-R01-01 in N01 reparieren und unabhängig re-reviewen. I01 bleibt bis PASS geschlossen."
+  },
+  "e2e01DungeonGeometryCleanup": {
+    "run": "E2E-01-DUNGEON-GEOMETRY-CL-P01",
+    "state": "cleanup_plan_candidate_review_open_after_publish",
+    "owner": "Dungeon-Strang (Thread Obsidian Dungeon Repo ansehen)",
+    "branch": "dungeon/e2e01-geometry-cleanup-p01-20261010",
+    "baseCommit": "ea46ba5437596aceaad955330e21c3ef4e739451",
+    "plan": "ROADMAP-E2E01-DUNGEON-GEOMETRY-CLEANUP-PLAN.md",
+    "coordination": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/8#issuecomment-6092514801",
+    "gateHandoff": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6092515006",
+    "scope": "Plan-only für die Bereinigung von normativem Vertrag versus illustrativer Typform, Rollen-/Lebensdauerbegriffen, Review-/Phasentraceability und eigener Checkpointmetadaten; keine Fachreparatur oder Produktänderung.",
+    "files": [
+      "ROADMAP-E2E01-DUNGEON-GEOMETRY-CLEANUP-PLAN.md",
+      "ROADMAP-E2E01-DUNGEON-GEOMETRY-PLAN.md",
+      "checkpoint.json"
+    ],
+    "reviewFindingPreserved": "DUN-GEO-P01-R01-01 bleibt vollständig offen und gehört erst nach Cleanup-PASS in einen getrennten N01-Plan-Repair.",
+    "verification": "JSON-/Verweis-/Diff-/Fremdwurzelschutz vor Veröffentlichung; keine Produktbasisprüfung oder GUI, weil CL-P01 ausschließlich plant.",
+    "notVerified": "Cleanup-Umsetzung, unabhängiger Cleanupreview, N01, Produkt-I01, Host, physische Eingabe und E2E-01-PASS bleiben offen.",
+    "next": "CL-P01-Kandidaten normal pushen; danach CL-I01 und unabhängigen CL-R01 als getrennte Läufe durchführen."
   },
   "hexAtlasExecution": {
     "scope": "HEX-00 bis HEX-28 und sämtliche eingeordneten CITY-00 bis CITY-09 vollständig",

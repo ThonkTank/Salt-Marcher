@@ -9,6 +9,14 @@ die Quellanalyse in
 Dieser Plan ist nur ein I01c-Eingang für den einen E2E-01-Kandidaten. Er ist
 keine Implementierungs-, Host-, Cleanup- oder E2E-Freigabe.
 
+Der unabhängige P01-R01 auf Exact-SHA `ea46ba5437596aceaad955330e21c3ef4e739451`
+fordert mit `DUN-GEO-P01-R01-01` genau eine spätere Fachreparatur. Vor deren
+eigenem N01-Lauf folgt der getrennte
+[`E2E-01-DUNGEON-GEOMETRY-CL-P01`](ROADMAP-E2E01-DUNGEON-GEOMETRY-CLEANUP-PLAN.md),
+der ausschließlich Rollen-, Begriffs- und Phasentraceability dieses
+Vertragsartefakts aufräumt. Weder dieser Verweis noch der Cleanup reparieren
+den Befund oder öffnen I01.
+
 ## Enger Auftrag und Nichtziele
 
 Der erste Port bearbeitet ausschließlich einen Punkt der **äußeren Kontur**
