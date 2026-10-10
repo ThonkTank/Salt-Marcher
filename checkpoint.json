@@ -4,15 +4,15 @@
     "state": "completed",
     "roleContract": "docs/AGENT-ROLES.md#repository-maintenance",
     "repositoryContract": "docs/REPOSITORY.md",
-    "evaluatedShared": "1c7350e52e21942c2eb0f771f9b110ea818db168",
-    "scope": "Systemic self-organization: read explicitly linked ownerbranch work sections at a pinned SHA; shared agent workflow keeps delivery, consumption and current-state upkeep with package participants. Remove central owner checks and wake-cycle claim reminders.",
-    "next": "Agents apply the current common contract in their owned packages; producers and consumers clarify inputs directly and update their declared work source on substantive delivery. Maintenance fixes reported structural entry gaps, not individual owner progress. No individual task edits or automation/controller additions in this change.",
+    "evaluatedShared": "e6933c010b042a7e225ea3b4f03c5a242c586ca1",
+    "scope": "Product-value checks compact full scope and delivery coverage at every existing six-hour run, including dormant feature and quality requirements; package participants record changed downstream inputs as part of substantive delivery.",
+    "next": "Existing product-value automation loads the published default-branch role contract on its next run. Participants keep delivery consequences current themselves; role investigates only changed sources or evidenced gaps, without individual owner monitoring or duplicate coverage reports.",
     "verification": [
-      "42/42 repository/tool tests PASS, repository structure and diff checks PASS; candidate sources distinguished from Shared and no missing-source fallback",
-      "Current remote integrated before publication; no product, GUI or domain acceptance claimed",
-      "Only repositoryOrientation edited; all foreign checkpoint and acceptance bytes preserved"
+      "Enabled product-value automation inspected: six-hour schedule and current default-branch AGENTS/AGENT-ROLES entry confirmed; schedule and prompt unchanged",
+      "Documentation source/diff and repository structure checks PASS; no product, domain or GUI acceptance claimed",
+      "Only repositoryOrientation edited; foreign checkpoint and acceptance bytes preserved"
     ],
-    "previousOrientation": "22d664e5cba23881eb9bb975f1757b2beafc2b05"
+    "previousOrientation": "1c7350e52e21942c2eb0f771f9b110ea818db168"
   },
   "saltMarcherReplacement": {
     "date": "2026-10-10",
@@ -9882,18 +9882,20 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-DRAFT-ABA-N02",
-      "status": "implemented_delta_review_pending",
-      "kind": "bugfix",
-      "focus": "Existing immutable History command event binds affected City owner through nested Redo/Undo; remove reference-only API and retain listener lifecycle",
-      "baseSha": "843562ac256eb293f1b8c95f10077a9a7a7c1a1b",
-      "nextStep": "Independent N02 delta review against6e39dcb on PR63",
-      "reviewFinding": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/63#pullrequestreview-5480419361"
+      "id": "MANUAL-PLANNER-COMPOUND-N02",
+      "issue": 69,
+      "state": "atomic_rename_move_ready_for_independent_delta_review",
+      "branch": "city/manual-session-planner",
+      "plan": "docs/plans/campaign/manual-session-planner.md",
+      "finding": "Dirty draft published before failed rename/move second revision; 2 actual panel probes FAIL before repair",
+      "verification": "24 focused core/panel PASS; final-context and missing-target failures retain draft and allow exact successful retry",
+      "next": "Existing reviewer checks compound action delta; native Planner ownership/file/publish contract still open",
+      "qualifiedPriorInput": "Focus review5481049475 and visible Cloud-GM6102960484 PASS on59f04fe",
+      "limits": "No native storage/plugin/Save/Fresh/Recovery or overall product acceptance"
     },
     "nextRun": {
-      "id": "CITY-DRAFT-ABA-R03",
-      "kind": "independent_code_review",
-      "focus": "Affected-owner event payload, nested observer Redo-Undo, backward-compatible argumentless observers, Terrain and listener lifecycle"
+      "id": "MANUAL-PLANNER-I01-CONSUME",
+      "focus": "Finish current manual Planner package; bind confirmed Campaign persistence and review inputs. P04-HOST-I01 remains separately owned awaiting its declared payload/archive inputs."
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
