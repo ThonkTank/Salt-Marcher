@@ -803,7 +803,7 @@
   "hexAtlasExecution": {
     "scope": "HEX-00 bis HEX-28 und sämtliche eingeordneten CITY-00 bis CITY-09 vollständig",
     "phase": "HEX-03",
-    "state": "e2e01_host_cleanup_I01_retention_checked_independent_cleanup_review_next",
+    "state": "e2e01_campaign_manifest_core_save_checked_visible_host_I02_next",
     "plan": "ROADMAP-E2E01-SPATIAL-INTEGRATION-PLAN.md",
     "currentRun": {
       "id": "E2E-01-SPACE-I01b",
@@ -850,14 +850,14 @@
       "phaseApproval": false
     },
     "nextRun": {
-      "id": "E2E-01-SPACE-I01c-RUNTIME-CLEAN-R01",
-      "kind": "bounded_existing_peer_independent_host_cleanup_review",
-      "focus": "Existing Stadt checks actual published CLEAN-I01 candidate,58 retained evidence hashes/exact inventory,protected source and fixture bindings,own metadata-only diff and qualified incoming2b4912f integration. No repeated product review or general plan round.",
-      "sourcePlan": "ROADMAP-E2E01-ATLAS-HOST-CLEANUP-PLAN.md",
+      "id": "E2E-01-SPACE-I01c-RUNTIME-MANIFEST-I02",
+      "kind": "bounded_visible_host_manifest_save_integration",
+      "focus": "Wire the actual checked Repository Campaign participant in existing AtlasView, then exact won-manifest acknowledgment through existing runtime/lifecycle lease; keep one camera and History. Actual host Save/Fresh/A-B-A tests, then newly coordinated Obsidian probe/fresh process. No new component/owner/plan round.",
+      "sourcePlan": "ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md",
       "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
-      "dependency": "Exact I01 publication and retention receipt; existing independent Stadt reviewer, no new agent.",
-      "after": "After actual CLEAN-R01 PASS consume qualified PR32/0a62015cf82de1c179a040c65bf3d78b85cabeb4 in existing Atlas journal; seven native guards/exact WorldDraft,Manifest+native closure,Prepared/Committed recovery,Save/Fresh. Actual Obsidian probe requires fresh GUI-slot coordination.",
-      "limits": "No independent cleanup PASS claimed by Hex. No new native/fresh/physical/original-parity/large-map/install/full E2E proof. Historical native currentRun unchanged; E2E02–04 not started."
+      "dependency": "Qualified PR32/0a62015c consumed; core data save/recovery passed on39d48e6. Visible host/lifetime acknowledgment is now the concrete own implementation step, not a missing owner delivery.",
+      "after": "Separate independent integrated peer review, targeted repair if needed, own separate cleanup P/I/R.",
+      "limits": "Explicit confirmed native-atlas/city/dungeon PR32 fixed closure only; creation/retirement/record inventory changes remain unavailable. Core provider/repository rebuild proves data/navigation, not Obsidian/process/UI. Copy/P02/P04/CompleteImport/media/multiowner publisher remain separate gates. No installed-vault,physical,large-map or Wonderdraft parity approval."
     },
     "review": {
       "run": "HEX-02-R02",
@@ -2874,7 +2874,7 @@
       },
       "runtimeVisibleHostRepair": {
         "id": "E2E-01-SPACE-I01c-RUNTIME-N01c",
-        "state": "host_lifetime_repair_independent_R02_pass_own_cleanup_planned",
+        "state": "host_lifetime_repair_independent_R02_and_host_cleanup_P_I_R_pass",
         "sourceCommit": "2bc2d0ea13285eecf6863d4ef5802ebb66a81805",
         "consumedShared": "aa4a0eeccfa9a3b41caab061b90526e12d47065d",
         "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
@@ -2984,7 +2984,7 @@
             "scope": "Reviewer cleanup only; no Hex cleanup or new product/native/full E2E approval"
           }
         },
-        "cleanup": "Own separate CLEAN-P01 and CLEAN-I01 retention completed; independent existing Stadt CLEAN-R01 pending.",
+        "cleanup": "Actual CITY-HOST-OWNER-CLEAN-R01 PASS;58 retained files byte/hash exact, no disposable reviewer artifacts. Cleanup P/I/R closed.",
         "nativeRan": false,
         "fullE2E": false,
         "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-visible-host-n01c-20261010/implementation.json",
@@ -3043,7 +3043,7 @@
       },
       "runtimeVisibleHostCleanup": {
         "id": "E2E-01-SPACE-I01c-RUNTIME-CLEAN-P01",
-        "state": "retention_implemented_independent_cleanup_review_pending",
+        "state": "PASS_own_host_cleanup_P_I_R_closed",
         "startedAt": "2026-10-10T09:45:26.594211+00:00",
         "finishedAt": "2026-10-10T09:52:14.547387+00:00",
         "base": "4c35a7d6482bc5583e10bf9155ce65e55e438889",
@@ -3070,10 +3070,10 @@
         "qualifiedReview": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-visible-host-cleanup-20261010/p01/qualified-review-and-cleanup-receipt.json",
         "qualifiedReviewSha256": "de527b98f1ad939b55a68630c0259e559c0efa434f06a4eb3db25527170610e2",
         "validationEvidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-visible-host-cleanup-20261010/p01/plan-validation.json",
-        "next": "Separate own CLEAN-I01 retention verification, then existing independent Stadt CLEAN-R01; qualified PR32 single-journal Manifest Save integration follows. No additional general plan or owner round.",
+        "next": "Qualified PR32 consumed in checked core single-journal save; next visible Host-I02 and actual native probe.",
         "implementation": {
           "id": "E2E-01-SPACE-I01c-RUNTIME-CLEAN-I01",
-          "state": "PASS_implemented_retention_only_independent_cleanup_review_pending",
+          "state": "PASS_retention_implemented_and_independently_reviewed",
           "startedAt": "2026-10-10T09:56:56.734396+00:00",
           "completedAt": "2026-10-10T09:59:48.633766+00:00",
           "planCandidate": "c14fadeb3e40aeba5f94c2c2fede03bdc6c11f56",
@@ -3106,11 +3106,79 @@
           "nativeRan": false,
           "freshProcessRan": false,
           "fullE2E": false,
-          "next": "Existing independent Stadt CLEAN-R01 on exact published I01 candidate; qualified PR32 single-journal Manifest Save follows.",
+          "next": "Host cleanup P/I/R closed; Manifest core I01 implemented, visible Host-I02 next.",
           "retentionEvidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-visible-host-cleanup-20261010/i01/retention.json",
           "retentionSha256": "4e607eae6ce92a96048070c24129e8d890ab9fc52fa9ea817ae081ba77931803",
           "metadataValidation": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-visible-host-cleanup-20261010/i01/metadata-validation.json"
+        },
+        "independentReview": {
+          "id": "CITY-HOST-OWNER-CLEAN-R01",
+          "state": "PASS",
+          "candidate": "c85692f4cb0e1c17574d0eb6e62b0ffd018f595c",
+          "findings": [],
+          "actualEvidence": "/home/aaron/.cache/dungeon-native-qa/city-plans/city-host-owner-clean-r01-20261010/review.json",
+          "sha256": "9836e9d880b62dcbfd5e430238593bfa16b125d90475f6fd9b99b942cf164143",
+          "readDirectly": true,
+          "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/13#issuecomment-6096386247",
+          "gate": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6096386433",
+          "retainedFiles": 58,
+          "retainedBytes": 40985197,
+          "deletedFiles": 0,
+          "reviewerDisposableArtifacts": 0,
+          "reviewerCleanupRequired": false,
+          "nativeRan": false,
+          "fullE2E": false
         }
+      },
+      "campaignManifestSaveCore": {
+        "id": "E2E-01-SPACE-I01c-RUNTIME-MANIFEST-I01",
+        "state": "core_manifest_single_journal_implemented_checked_host_I02_next",
+        "sourceCommit": "39d48e64eaf32f7453af142e61b7a49b82ad7a1b",
+        "ownImplementationCommit": "bdc2995df4c3c2873ec9485103301c9cc4bf22fb",
+        "consumedShared": "b971e98cdc1197a9faa4fab9ba333e5ae5cc1e3d",
+        "qualifiedCampaignInput": "0a62015cf82de1c179a040c65bf3d78b85cabeb4",
+        "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
+        "checks": {
+          "check": "PASS",
+          "tests": 620,
+          "passed": 620,
+          "failed": 0,
+          "skipped": 0,
+          "focused": 10,
+          "cleanBuild": "PASS dirty=false exact source",
+          "diffCheck": "PASS"
+        },
+        "triplet": {
+          "main.js": {
+            "bytes": 1578045,
+            "sha256": "b76677f1b8fe246bf01678ce227ef9edc8247c9602a9403919f6a4cab0545e02"
+          },
+          "styles.css": {
+            "bytes": 29780,
+            "sha256": "68e1cf101ceaadd624168b431fddc297c90e8a5bc6be25a15f0926ebb569a5ea"
+          },
+          "manifest.json": {
+            "bytes": 237,
+            "sha256": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64"
+          }
+        },
+        "observed": [
+          "Full seven native Before/After guards and exact manifest share the existing one FileTransaction journal; no second publication/rebase.",
+          "Typed native owner/record bindings and confirmed PR32 proof protocol checked before publish; schema-valid invented record proof rejected.",
+          "Existing house/RoomKey/history snapshot saved exactly to original expected native bytes plus expected Campaign manifest. Undo/re-save/redo/re-save and no-op preserve one History and manifest guards.",
+          "Unloaded terrain,foreign manifest and wrong World draft path fail closed; full draft and external bytes retained.",
+          "Prepared recovery rolls back native+manifest and retains complete draft; retry succeeds. Committed reply loss acknowledges exact won journal once. Foreign unchanged terrain blocks recovery before any repair.",
+          "New actual CampaignRuntimeSource/Lifecycle/NavigationProvider/AtlasRepository/Navigator mount validates fresh saved native inventory and navigates real Room; renderer is an inert test object, no GUI claim."
+        ],
+        "hostWired": false,
+        "nativeRan": false,
+        "freshProcessRan": false,
+        "fullE2E": false,
+        "next": "E2E-01-SPACE-I01c-RUNTIME-MANIFEST-I02: wire this checked Repository participant in actual AtlasView and acknowledge exact won manifest through existing runtime/lifecycle lease, preserve camera/History; focused actual host Save/Fresh/A-B-A tests, then newly coordinated Obsidian slot and separate independent integrated review.",
+        "limits": "Explicit confirmed native-atlas/city/dungeon PR32 fixed closure only; creation/retirement/record inventory changes remain unavailable. Core provider/repository rebuild proves data/navigation, not Obsidian/process/UI. Copy/P02/P04/CompleteImport/media/multiowner publisher remain separate gates. No installed-vault,physical,large-map or Wonderdraft parity approval.",
+        "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/campaign-manifest-save-i01-20261010/implementation.json",
+        "sha256": "891ba0c17a6a47f65c13eb8e0df54c7d65e42d2b928b0d841057c575b4ff8909",
+        "independentIntegrationReview": "Pending after next bounded visible Host-I02 completion; no new general owner/plan round"
       }
     },
     "verification": {
@@ -4561,7 +4629,7 @@
       },
       "runtimeVisibleHostRepair": {
         "id": "E2E-01-SPACE-I01c-RUNTIME-N01c",
-        "state": "host_lifetime_repair_independent_R02_pass_own_cleanup_planned",
+        "state": "host_lifetime_repair_independent_R02_and_host_cleanup_P_I_R_pass",
         "sourceCommit": "2bc2d0ea13285eecf6863d4ef5802ebb66a81805",
         "consumedShared": "aa4a0eeccfa9a3b41caab061b90526e12d47065d",
         "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
@@ -4671,7 +4739,7 @@
             "scope": "Reviewer cleanup only; no Hex cleanup or new product/native/full E2E approval"
           }
         },
-        "cleanup": "Own separate CLEAN-P01 and CLEAN-I01 retention completed; independent existing Stadt CLEAN-R01 pending.",
+        "cleanup": "Actual CITY-HOST-OWNER-CLEAN-R01 PASS;58 retained files byte/hash exact, no disposable reviewer artifacts. Cleanup P/I/R closed.",
         "nativeRan": false,
         "fullE2E": false,
         "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-visible-host-n01c-20261010/implementation.json",
@@ -4730,7 +4798,7 @@
       },
       "runtimeVisibleHostCleanup": {
         "id": "E2E-01-SPACE-I01c-RUNTIME-CLEAN-P01",
-        "state": "retention_implemented_independent_cleanup_review_pending",
+        "state": "PASS_own_host_cleanup_P_I_R_closed",
         "startedAt": "2026-10-10T09:45:26.594211+00:00",
         "finishedAt": "2026-10-10T09:52:14.547387+00:00",
         "base": "4c35a7d6482bc5583e10bf9155ce65e55e438889",
@@ -4757,10 +4825,10 @@
         "qualifiedReview": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-visible-host-cleanup-20261010/p01/qualified-review-and-cleanup-receipt.json",
         "qualifiedReviewSha256": "de527b98f1ad939b55a68630c0259e559c0efa434f06a4eb3db25527170610e2",
         "validationEvidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-visible-host-cleanup-20261010/p01/plan-validation.json",
-        "next": "Separate own CLEAN-I01 retention verification, then existing independent Stadt CLEAN-R01; qualified PR32 single-journal Manifest Save integration follows. No additional general plan or owner round.",
+        "next": "Qualified PR32 consumed in checked core single-journal save; next visible Host-I02 and actual native probe.",
         "implementation": {
           "id": "E2E-01-SPACE-I01c-RUNTIME-CLEAN-I01",
-          "state": "PASS_implemented_retention_only_independent_cleanup_review_pending",
+          "state": "PASS_retention_implemented_and_independently_reviewed",
           "startedAt": "2026-10-10T09:56:56.734396+00:00",
           "completedAt": "2026-10-10T09:59:48.633766+00:00",
           "planCandidate": "c14fadeb3e40aeba5f94c2c2fede03bdc6c11f56",
@@ -4793,11 +4861,79 @@
           "nativeRan": false,
           "freshProcessRan": false,
           "fullE2E": false,
-          "next": "Existing independent Stadt CLEAN-R01 on exact published I01 candidate; qualified PR32 single-journal Manifest Save follows.",
+          "next": "Host cleanup P/I/R closed; Manifest core I01 implemented, visible Host-I02 next.",
           "retentionEvidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-visible-host-cleanup-20261010/i01/retention.json",
           "retentionSha256": "4e607eae6ce92a96048070c24129e8d890ab9fc52fa9ea817ae081ba77931803",
           "metadataValidation": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-visible-host-cleanup-20261010/i01/metadata-validation.json"
+        },
+        "independentReview": {
+          "id": "CITY-HOST-OWNER-CLEAN-R01",
+          "state": "PASS",
+          "candidate": "c85692f4cb0e1c17574d0eb6e62b0ffd018f595c",
+          "findings": [],
+          "actualEvidence": "/home/aaron/.cache/dungeon-native-qa/city-plans/city-host-owner-clean-r01-20261010/review.json",
+          "sha256": "9836e9d880b62dcbfd5e430238593bfa16b125d90475f6fd9b99b942cf164143",
+          "readDirectly": true,
+          "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/13#issuecomment-6096386247",
+          "gate": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6096386433",
+          "retainedFiles": 58,
+          "retainedBytes": 40985197,
+          "deletedFiles": 0,
+          "reviewerDisposableArtifacts": 0,
+          "reviewerCleanupRequired": false,
+          "nativeRan": false,
+          "fullE2E": false
         }
+      },
+      "campaignManifestSaveCore": {
+        "id": "E2E-01-SPACE-I01c-RUNTIME-MANIFEST-I01",
+        "state": "core_manifest_single_journal_implemented_checked_host_I02_next",
+        "sourceCommit": "39d48e64eaf32f7453af142e61b7a49b82ad7a1b",
+        "ownImplementationCommit": "bdc2995df4c3c2873ec9485103301c9cc4bf22fb",
+        "consumedShared": "b971e98cdc1197a9faa4fab9ba333e5ae5cc1e3d",
+        "qualifiedCampaignInput": "0a62015cf82de1c179a040c65bf3d78b85cabeb4",
+        "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
+        "checks": {
+          "check": "PASS",
+          "tests": 620,
+          "passed": 620,
+          "failed": 0,
+          "skipped": 0,
+          "focused": 10,
+          "cleanBuild": "PASS dirty=false exact source",
+          "diffCheck": "PASS"
+        },
+        "triplet": {
+          "main.js": {
+            "bytes": 1578045,
+            "sha256": "b76677f1b8fe246bf01678ce227ef9edc8247c9602a9403919f6a4cab0545e02"
+          },
+          "styles.css": {
+            "bytes": 29780,
+            "sha256": "68e1cf101ceaadd624168b431fddc297c90e8a5bc6be25a15f0926ebb569a5ea"
+          },
+          "manifest.json": {
+            "bytes": 237,
+            "sha256": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64"
+          }
+        },
+        "observed": [
+          "Full seven native Before/After guards and exact manifest share the existing one FileTransaction journal; no second publication/rebase.",
+          "Typed native owner/record bindings and confirmed PR32 proof protocol checked before publish; schema-valid invented record proof rejected.",
+          "Existing house/RoomKey/history snapshot saved exactly to original expected native bytes plus expected Campaign manifest. Undo/re-save/redo/re-save and no-op preserve one History and manifest guards.",
+          "Unloaded terrain,foreign manifest and wrong World draft path fail closed; full draft and external bytes retained.",
+          "Prepared recovery rolls back native+manifest and retains complete draft; retry succeeds. Committed reply loss acknowledges exact won journal once. Foreign unchanged terrain blocks recovery before any repair.",
+          "New actual CampaignRuntimeSource/Lifecycle/NavigationProvider/AtlasRepository/Navigator mount validates fresh saved native inventory and navigates real Room; renderer is an inert test object, no GUI claim."
+        ],
+        "hostWired": false,
+        "nativeRan": false,
+        "freshProcessRan": false,
+        "fullE2E": false,
+        "next": "E2E-01-SPACE-I01c-RUNTIME-MANIFEST-I02: wire this checked Repository participant in actual AtlasView and acknowledge exact won manifest through existing runtime/lifecycle lease, preserve camera/History; focused actual host Save/Fresh/A-B-A tests, then newly coordinated Obsidian slot and separate independent integrated review.",
+        "limits": "Explicit confirmed native-atlas/city/dungeon PR32 fixed closure only; creation/retirement/record inventory changes remain unavailable. Core provider/repository rebuild proves data/navigation, not Obsidian/process/UI. Copy/P02/P04/CompleteImport/media/multiowner publisher remain separate gates. No installed-vault,physical,large-map or Wonderdraft parity approval.",
+        "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/campaign-manifest-save-i01-20261010/implementation.json",
+        "sha256": "891ba0c17a6a47f65c13eb8e0df54c7d65e42d2b928b0d841057c575b4ff8909",
+        "independentIntegrationReview": "Pending after next bounded visible Host-I02 completion; no new general owner/plan round"
       }
     },
     "repairPlan": "ROADMAP-HEX-02-REPAIR-PLAN.md",
@@ -4841,7 +4977,7 @@
       "platformIssue": 11,
       "checkpointIsAuthoritative": true
     },
-    "updatedAt": "2026-10-10T09:59:48.633766+00:00"
+    "updatedAt": "2026-10-10T10:31:46.452488+00:00"
   },
   "phase": "Phase 6: zweiter Nachbesserungslauf teilweise umgesetzt; fünf Restpositionen und unabhängiger Review offen",
   "goal": "Dungeon-Pfad bis zur vollständigen beauftragten Dungeondraft-Verhaltensgleichheit verfolgen: Bedienung und Funktion angleichen, Grafik ungefähr gleichwertig. Zuerst ROADMAP-PARITY.md mit Building und Object Tool abschließen, danach übrige Dungeon-Werkzeuge. Jede Fachphase getrennt planen, umsetzen und unabhängig reviewen; Lücken mit eigenen Nachbesserungs- und Reviewläufen schließen; danach eigene Aufräumphase mit Plan, Umsetzung und Review.",
