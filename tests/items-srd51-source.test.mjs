@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 import {
   normalizePdfText,
+  extractMagicItemAzHeadingsFromPdfXml,
   validateBoundedAdventuringGearTableRows,
   validateBoundedArmorTableRows,
   validateBoundedMountsTableRows,
@@ -85,6 +86,19 @@ test("normalization expands ligatures and proven wrap artifacts while preserving
   assert.equal(normalizePdfText("item—\n an orb, wand-\u2011like item—\n designed"),
     "item—an orb, wand-like item—designed");
   assert.equal(normalizePdfText("co\u00adoperate – −"), "co\u00adoperate – −");
+});
+
+test("Magic Item A–Z ordinal extraction folds a wrapped heading into one occurrence", () => {
+  const xml = `<pdf2xml><fontspec id="5" size="18"/><fontspec id="6" size="15"/>
+    <text font="5"><b>Amulet of Health </b></text><text font="6"><i>Wondrous item, rare</i></text>
+    <text font="5"><b>Amulet of Proof against Detection and </b></text>
+    <text font="5"><b>Location </b></text><text font="6"><i>Wondrous item, uncommon</i></text>
+    <text font="5"><b>Decorative Table Heading</b></text><text font="6">not an item header</text>
+    <text font="5"><b>Amulet of the Planes </b></text><text font="6"><i>Wondrous item, very rare</i></text>
+  </pdf2xml>`;
+  assert.deepEqual(extractMagicItemAzHeadingsFromPdfXml(xml), [
+    "Amulet of Health", "Amulet of Proof against Detection and Location", "Amulet of the Planes",
+  ]);
 });
 
 test("variable rarity golden preserves ordered, sourced +1/+2/+3 choices", () => {
@@ -387,7 +401,7 @@ test("Potion of healing merges the later detail into its first physical occurren
   assert.equal(potion.attunement, "not-required");
   assert.deepEqual(potion.source.occurrenceIds, [
     "srd51:equipment:adventuring-gear:76",
-    "srd51:magic-item:magic-items-a-z:143",
+    "srd51:magic-item:magic-items-a-z:142",
   ]);
   assert.deepEqual(potion.rarity.choices.map(choice => [choice.label, choice.value]), [
     ["Healing", "common"],
@@ -397,7 +411,7 @@ test("Potion of healing merges the later detail into its first physical occurren
   ]);
   assert.deepEqual(validatePotionHealingMerge(checkedTranscript, checkedInventory), {
     canonicalId: "srd51:equipment:adventuring-gear:76",
-    detailId: "srd51:magic-item:magic-items-a-z:143",
+    detailId: "srd51:magic-item:magic-items-a-z:142",
     mergedRecords: 1,
     rarityChoices: 4,
     healingRows: 4,
@@ -410,7 +424,7 @@ test("Potion-of-Healing merge identity, ordering, source and variants fail close
     readFile(new URL("items-srd51-inventory.json", dataRoot), "utf8").then(JSON.parse),
     readFile(new URL("items-srd51-transcript.json", dataRoot), "utf8").then(JSON.parse),
   ]);
-  const detailId = "srd51:magic-item:magic-items-a-z:143";
+  const detailId = "srd51:magic-item:magic-items-a-z:142";
   const potionId = "srd51:equipment:adventuring-gear:76";
 
   const unknownTarget = structuredClone(checkedInventory);

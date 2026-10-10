@@ -25,9 +25,9 @@
   },
   "artifactHashes": {
     "attributionSha256": "f66d55442488e79895501fc0fcd7b2bb62deb2bd6e589e0fffb5f5932ed5b767",
-    "inventorySha256": "18563da23007a6f8006867f7034d028d0cb997ff15731eb597ef173f45fabe81",
+    "inventorySha256": "7f98f900574b07cb9194b07a542490325942d2328b719e83516ed82212f36dd5",
     "schemaSha256": "b9b6aa9ccb314e9f976ce6115aa89770d61ee5f001bd2aca5e574a1cd17481bb",
-    "transcriptSha256": "90ece20d639d85d91df5720ff8ff9f48876319a720fd70602eeb8e2d1c629cee"
+    "transcriptSha256": "c0c24ac82417d0fb05759f1b0cee0a8b0ada3b09e599b1df473b157370e41994"
   },
   "sectionBoundaries": [
     { "id": "equipment-context", "firstPdfPage": 62, "firstPrintedPage": 62, "lastPdfPage": 72, "lastPrintedPage": 72, "reviewState": "full-boundary-inventoried" },
@@ -72,7 +72,7 @@
   "blockingOpenSections": [
     "Armor inventory, structured table transcript and all thirteen published item narratives are captured; all 13 table rows pass exact same-physical-row bounded matching including source em dashes, while independent review remains open.",
     "Weapons inventory and structured transcript cover all 37 table rows and both special-weapon descriptions; all 37 rows pass exact same-physical-row bounded matching including source em dashes and ordered property text, while independent review remains open.",
-    "Adventuring Gear inventory and source transcript cover all 99 table leaf rows, costs, optional weights and published narrative descriptions; all 99 two-column table rows pass bounded same-physical-row segment matching including source em dashes. Potion of healing retains the earlier equipment ID and explicitly merges the later Magic Items A–Z heading 143, header, detail prose and four healing-table variants; independent review remains open.",
+    "Adventuring Gear inventory and source transcript cover all 99 table leaf rows, costs, optional weights and published narrative descriptions; all 99 two-column table rows pass bounded same-physical-row segment matching including source em dashes. Potion of healing retains the earlier equipment ID and explicitly merges the later Magic Items A–Z heading 142, header, detail prose and four healing-table variants; independent review remains open.",
     "Equipment Packs inventory and source transcript cover all seven entries, exact prices and full published contents prose; all seven pack-only helper components have PDF-backed pack-prose-only dispositions with no invented primary identity, while independent review remains open.",
     "Tools inventory and source transcript cover all 35 physical leaf rows, exact prices, optional weights and the published shared/per-item narratives; all 35 right-column table rows pass bounded same-physical-row segment matching including source em dashes, and the Vehicles row remains a separate PDF-backed cross-reference without an invented primary identity, while independent review remains open.",
     "Mounts and Other Animals inventory and source transcript cover all eight physical rows, exact prices, speeds, carrying capacities and shared narrative; all eight split-page table rows pass bounded same-physical-row segment matching, and Donkey and Mule helper identities explicitly resolve to the single combined source occurrence, while independent review remains open.",
