@@ -769,7 +769,7 @@
   "hexAtlasExecution": {
     "scope": "HEX-00 bis HEX-28 und sämtliche eingeordneten CITY-00 bis CITY-09 vollständig",
     "phase": "HEX-03",
-    "state": "native_Save_Fresh_Rollback_CommitRecovery_PASS_CampaignB_integrated_native_ABA_initial_capture_FAILED",
+    "state": "native_ABA_failed_enabled_navigation_hydration_conflict_reproduced_DOM_repair_pending",
     "plan": "ROADMAP-E2E01-SPATIAL-INTEGRATION-PLAN.md",
     "currentRun": {
       "id": "E2E-01-SPACE-I01b",
@@ -816,10 +816,10 @@
       "phaseApproval": false
     },
     "nextRun": {
-      "id": "E2E-01-SPACE-I01c-RUNTIME-MANIFEST-I02-HOST-ABA-DIAGNOSE",
-      "kind": "bounded_native_initial_navigation_capture_diagnosis",
-      "state": "initial_A_navigation_capture_failed_before_ABA",
-      "focus": "Record scalar initialization/loading and capture generation/Repository/History epoch values, classify premature synthetic invocation versus visibly enabled navigation during hydration. Do not silently mask a user-visible navigation race with fixed sleeps or automatic retries.",
+      "id": "E2E-01-SPACE-I01c-RUNTIME-MANIFEST-I02-HOST-ABA-R01",
+      "kind": "bounded_product_navigation_hydration_repair",
+      "state": "confirmed_enabled_detail_navigation_capture_race_repair_pending",
+      "focus": "One guarded current-mount preparation before the first navigation capture, including completion of already pending visible terrain/Location hydration; keep capture and Context freshness checks intact.",
       "sourcePlan": "ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md",
       "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
       "evidence": {
@@ -839,12 +839,12 @@
         "fullE2E": false,
         "independentReview": "pending existing integrated review after native ABA input; not self-approved"
       },
-      "requiredInput": "Existing exact Campaign A+B and actual failed native capture evidence; no new fixture or component plan.",
-      "dependency": "No external input dependency. Native GUI retry requires new scoped single-slot confirmation.",
-      "after": "Resolve classified readiness/capture defect in separate repair, then new scoped native ABA probe; existing integrated Host review only after actual passing proof.",
+      "requiredInput": "Actual failed native capture plus deterministic enabled DetailEntry DOM reproduction; existing qualified A+B fixtures and current PR13 candidate.",
+      "dependency": "No external producer dependency for own bounded repair. Do not launch native GUI without new scoped single-slot confirmation.",
+      "after": "Bounded product repair with actual core/DOM checks, then newly scoped actual native ABA; the already assigned integrated Host review covers the repair and native result before cleanup/PVC-ATLAS-LOCATION-004 Shared exact GM gate. No additional component/general review round.",
       "limits": "Small frozen fixture and synthetic native gestures only; controlled fault injection, not power-loss durability. No new Campaign authority, Source activation during Save, fixture mutation, user-vault install or full E2E approval.",
       "slotConfirmation": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/7#issuecomment-6098768371",
-      "slotConfirmedForCompletedRun": true,
+      "slotConfirmedForCompletedRun": false,
       "slotRequiredAgain": true,
       "priorityDecision": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1#issuecomment-6098079622",
       "inputOwnerAck": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6098704236",
@@ -866,7 +866,7 @@
         "fullE2E": false
       },
       "slotConfirmedForNextRun": false,
-      "slotScope": "Previous one-process native attempt normally ended and explicitly returned; no continuing reservation.",
+      "slotScope": "No GUI in diagnostic run. Prior failed native run normally ended and slot was explicitly returned.",
       "latestAttempt": {
         "id": "HEX-E2E01-HOST-ABA-H01",
         "state": "native_ABA_FAILED_initial_location_capture_before_switch",
@@ -896,7 +896,70 @@
         "nativeInputFilesVerified": 16
       },
       "nextValueDecision": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1#issuecomment-6098878157",
-      "nextValueGate": "PVC-ATLAS-LOCATION-004: After completed actual native ABA and independent integrated Host decision, activate visible Location/Key package on Shared exact SHA; fresh actual GM creates/selects/moves/edits/saves/reopens one Location/Key, proved by raw images and native file oracle. No separate editor mode. Existing PR13 functionality is input; no new general plan."
+      "nextValueGate": "PVC-ATLAS-LOCATION-004: After completed actual native ABA and independent integrated Host decision, activate visible Location/Key package on Shared exact SHA; fresh actual GM creates/selects/moves/edits/saves/reopens one Location/Key, proved by raw images and native file oracle. No separate editor mode. Existing PR13 functionality is input; no new general plan.",
+      "technicalBoundary": {
+        "next": "One guarded current-mount preparation before the first navigation capture, including completion of already pending visible terrain/Location hydration; keep capture and Context freshness checks intact.",
+        "exclude": [
+          "No automatic navigation retry or fixed wait",
+          "No preloading every boundless world chunk",
+          "No changes to native Capture/History ABA and conflict contracts",
+          "No separate edit mode, new camera/history, fixture or Campaign authority",
+          "No unrelated Save/Copy/Discard/Recovery rewrite"
+        ],
+        "proof": "Replace diagnostic expected user-flow failure with successful enabled-button navigation after controlled pending visible read while preserving Context/Repository/History/renderer/camera ownership. Keep invalid Context, obsolete callback and capture ABA tests rejecting. Then fresh scoped actual native ABA and existing integrated Host review."
+      },
+      "diagnosis": {
+        "id": "HEX-E2E01-HOST-ABA-D01",
+        "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
+        "state": "enabled_detail_navigation_hydration_race_reproduced_DOM_product_repair_pending",
+        "sourceCommit": "595fa04d68496c981b235511f0b7a643d6cca3d1",
+        "baseCommit": "c55fdcd29988c0d4b99d8ace544d8d84a34df3e4",
+        "consumedShared": "8b8d4049a0d9ded1e20001802ef40d012e6ccd98",
+        "basisChecks": {
+          "check": true,
+          "testsPassed": 645,
+          "build": true,
+          "dirty": false
+        },
+        "productSourcesUnchanged": true,
+        "frozenFilesVerified": 19,
+        "fullE2E": false,
+        "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-manifest-host-aba-20261010/diagnosis/diagnosis.json",
+        "sha256": "b58a2c8430d652dd379d1fac6619688b66d9d7d1aae51838f44f242cb5c92f8a",
+        "observed": {
+          "kind": "actual_AtlasView_DOM_Vault_controlled_read_delay",
+          "trace": [
+            {
+              "pin": {
+                "generation": 1,
+                "repositoryEpoch": 2,
+                "historyEpoch": 10
+              },
+              "actual": {
+                "generation": 1,
+                "repositoryEpoch": 2,
+                "historyEpoch": 12
+              },
+              "sameSource": true,
+              "inputBlocked": false,
+              "loadingVisible": true,
+              "loadingLocations": false,
+              "terrainCells": 2,
+              "failed": true
+            }
+          ],
+          "visibleButtonEnabled": true,
+          "fileWrites": 0,
+          "historyCommands": 0,
+          "contextUnchanged": true,
+          "cameraUnchanged": true,
+          "nativeGUI": false,
+          "productDefectStillOpen": true
+        },
+        "nativeGUI": false,
+        "productRepaired": false,
+        "earlierNativeStillFailed": true
+      }
     },
     "review": {
       "run": "HEX-02-R02",
@@ -5346,7 +5409,7 @@
       "platformIssue": 11,
       "checkpointIsAuthoritative": true
     },
-    "updatedAt": "2026-10-10T15:13:48.899188+00:00",
+    "updatedAt": "2026-10-10T15:23:32.260050+00:00",
     "consumerMatrix": {
       "id": "RUNTIME-MANIFEST-I02-CONSUMER-MATRIX-V1",
       "state": "frozen_complete_matrix_green_on_productive_Host_source",
@@ -5495,6 +5558,58 @@
       "protectedOriginalUnchanged": true,
       "frozenFilesVerified": 19,
       "nativeInputFilesVerified": 16
+    },
+    "latestNativeABADiagnosis": {
+      "id": "HEX-E2E01-HOST-ABA-D01",
+      "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
+      "state": "enabled_detail_navigation_hydration_race_reproduced_DOM_product_repair_pending",
+      "sourceCommit": "595fa04d68496c981b235511f0b7a643d6cca3d1",
+      "baseCommit": "c55fdcd29988c0d4b99d8ace544d8d84a34df3e4",
+      "consumedShared": "8b8d4049a0d9ded1e20001802ef40d012e6ccd98",
+      "basisChecks": {
+        "check": true,
+        "testsPassed": 645,
+        "build": true,
+        "dirty": false
+      },
+      "productSourcesUnchanged": true,
+      "frozenFilesVerified": 19,
+      "fullE2E": false,
+      "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-manifest-host-aba-20261010/diagnosis/diagnosis.json",
+      "sha256": "b58a2c8430d652dd379d1fac6619688b66d9d7d1aae51838f44f242cb5c92f8a",
+      "observed": {
+        "kind": "actual_AtlasView_DOM_Vault_controlled_read_delay",
+        "trace": [
+          {
+            "pin": {
+              "generation": 1,
+              "repositoryEpoch": 2,
+              "historyEpoch": 10
+            },
+            "actual": {
+              "generation": 1,
+              "repositoryEpoch": 2,
+              "historyEpoch": 12
+            },
+            "sameSource": true,
+            "inputBlocked": false,
+            "loadingVisible": true,
+            "loadingLocations": false,
+            "terrainCells": 2,
+            "failed": true
+          }
+        ],
+        "visibleButtonEnabled": true,
+        "fileWrites": 0,
+        "historyCommands": 0,
+        "contextUnchanged": true,
+        "cameraUnchanged": true,
+        "nativeGUI": false,
+        "productDefectStillOpen": true
+      },
+      "nativeGUI": false,
+      "productRepaired": false,
+      "earlierNativeStillFailed": true
     }
   },
   "phase": "Phase 6: zweiter Nachbesserungslauf teilweise umgesetzt; fünf Restpositionen und unabhängiger Review offen",

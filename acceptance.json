@@ -153024,7 +153024,7 @@
       {
         "id": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
         "requirement": "Thin Context/navigation consumer with actual native target validation, same Atlas owners and guarded Campaign switching",
-        "state": "native_Save_Fresh_Rollback_CommitRecovery_PASS_ABA_initial_capture_FAILED",
+        "state": "enabled_detail_navigation_hydration_race_reproduced_DOM_product_repair_pending",
         "implementationRun": "HEX-E2E01-HOST-SAVE-I02",
         "sourceCommit": "86bbbbfac44233509f084ac836e6dafa07b11a16",
         "catalog": "ROADMAP-E2E-GATES-CANDIDATE.md:13",
@@ -153965,7 +153965,7 @@
           "currentEvidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-manifest-host-save-i02-20261010/implementation.json",
           "scope": "Component review only; no native/Host/overall approval."
         },
-        "gap": "Qualified Campaign B is integrated. First actual native ABA attempt on cd4a06d fails at initial A Location capture before opening a Key or switching campaigns. CaptureCurrent detects a changed native baseline; classify exact epoch/hydration cause before any correction. GUI process ended normally and slot explicitly returned; next GUI run requires fresh coordination. Actual ABA, existing independent integrated Host review and separate cleanup remain open; historical Save/Fresh/Rollback/CommitRecovery proofs unchanged.",
+        "gap": "Actual native ABA still failed before the first Key/switch. A controlled production DOM test of the existing visible enabled building button independently reproduces the stale capture: pending visible terrain hydration changes History epoch 10 to 12 while Source, Context, Repository and Undo depth remain stable. This is a user-action conflict, not only the direct QA invocation. Next own bounded repair prepares the guarded current mount before initial capture and preserves Capture/Context ABA checks; fixed waits/retries and full-world loading are excluded. Exact earlier native epoch path remains unrecorded. No new GUI run or slot ownership; after repair new scoped native ABA and existing integrated Host review remain required.",
         "qualifiedCampaignInputAndRollbackProbe": {
           "state": "qualified_component_contract_closed_productive_Host_implementation_now_present",
           "reviewSourceCommit": "ce2f9032dc9f72f994a307b5aac26e1ad8910065",
@@ -154078,6 +154078,58 @@
           "protectedOriginalUnchanged": true,
           "frozenFilesVerified": 19,
           "nativeInputFilesVerified": 16
+        },
+        "nativeCampaignABADiagnosis": {
+          "id": "HEX-E2E01-HOST-ABA-D01",
+          "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
+          "state": "enabled_detail_navigation_hydration_race_reproduced_DOM_product_repair_pending",
+          "sourceCommit": "595fa04d68496c981b235511f0b7a643d6cca3d1",
+          "baseCommit": "c55fdcd29988c0d4b99d8ace544d8d84a34df3e4",
+          "consumedShared": "8b8d4049a0d9ded1e20001802ef40d012e6ccd98",
+          "basisChecks": {
+            "check": true,
+            "testsPassed": 645,
+            "build": true,
+            "dirty": false
+          },
+          "productSourcesUnchanged": true,
+          "frozenFilesVerified": 19,
+          "fullE2E": false,
+          "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-manifest-host-aba-20261010/diagnosis/diagnosis.json",
+          "sha256": "b58a2c8430d652dd379d1fac6619688b66d9d7d1aae51838f44f242cb5c92f8a",
+          "observed": {
+            "kind": "actual_AtlasView_DOM_Vault_controlled_read_delay",
+            "trace": [
+              {
+                "pin": {
+                  "generation": 1,
+                  "repositoryEpoch": 2,
+                  "historyEpoch": 10
+                },
+                "actual": {
+                  "generation": 1,
+                  "repositoryEpoch": 2,
+                  "historyEpoch": 12
+                },
+                "sameSource": true,
+                "inputBlocked": false,
+                "loadingVisible": true,
+                "loadingLocations": false,
+                "terrainCells": 2,
+                "failed": true
+              }
+            ],
+            "visibleButtonEnabled": true,
+            "fileWrites": 0,
+            "historyCommands": 0,
+            "contextUnchanged": true,
+            "cameraUnchanged": true,
+            "nativeGUI": false,
+            "productDefectStillOpen": true
+          },
+          "nativeGUI": false,
+          "productRepaired": false,
+          "earlierNativeStillFailed": true
         }
       }
     ],
