@@ -833,6 +833,16 @@
           "testsFailed": 0,
           "build": true,
           "scope": "Approved shared catalog upstream synchronization and own metadata; not geometry implementation or plan PASS."
+        },
+        "sequenceClarification": {
+          "run": "E2E-01-SEQ-C01",
+          "state": "concrete_cleanup_before_repair_dependency_corrected_owner_n01_pending",
+          "at": "2026-10-10T02:08:31.313881+00:00",
+          "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6092538208",
+          "trigger": "Dungeon cleanup claim #12/6092515006 places CL-P/I/R before the unresolved DUN-GEO-P01-R01-01 repair.",
+          "rule": "AGENTS.md section9 and Dungeon plan ea46ba5 lines193–208: repair and re-review until mandatory findings close, then separate cleanup. No added cleanup prerequisite or repeated full plan/ratification.",
+          "next": "Dungeon narrow N01 plan delta, independent exact-SHA R02, then gated I01; retain prepared cleanup draft for subsequent dedicated cleanup.",
+          "phaseApproval": false
         }
       }
     },
