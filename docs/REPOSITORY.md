@@ -14,6 +14,7 @@ Paketowner ist die im Aufgabenissue benannte Agent-/Ownerrolle, Integrationsowne
 | Abnahme | `acceptance.json`; Fachowner bindet direkte Evidenz, fehlender Nachweis bleibt offen |
 | Architektur | `ARCHITECTURE.md`; angenommene Entscheidung mit früheren Begründungen |
 | Fachvertrag / Paketplan | Bestehender Fachort; neue Pläne unter `docs/plans/<bereich>/` |
+| Wiederkehrende Arbeitsrollen | [AGENT-ROLES](AGENT-ROLES.md); Repositorypflege bei belegtem Änderungsbedarf |
 
 README/CONTRIBUTING führen hinein, [INDEX](INDEX.md) ist die einzige Bereichskarte, das [Fachplanregister](reference/PLAN-REGISTER.md) optionale Vertiefung. #1 verweist auf diese Karte; #6–#11 führen Bereichsfragen. Einstiege verlinken statt Laufberichte zu kopieren. Keine zweite Live-Aufgabenliste oder tägliche Statuschronik; `npm run context` ist ausdrücklich Checkoutkontext.
 
@@ -38,7 +39,7 @@ Ein Paket umfasst Umsetzung und erforderliche Prüfung bis zur nutzbaren Überga
 
 Claims sollen innerhalb zweier erwartbarer Aufwachzyklen einen erreichbaren Branch/Commit/PR oder konkreten Blocker zeigen. Fehlt beides, verlangt die Prozesspflege einmal am Paket Bestätigung, erreichbaren Stand oder Rückgabe bis zu den nächsten zwei erwartbaren Zyklen. Das ist kein Heartbeat für belegte längere Implementierung. Fehlende Branchsichtbarkeit allein beweist keine aufgegebene Arbeit. Bei ausbleibender Antwort entscheidet der Integrationsowner in #12 ausdrücklich über Rückgabe oder weitere Klärung; unveröffentlichte Arbeit und fremde Branches erhalten, keine automatische Übernahme/Schließung. Ein Claim wird erst durch ausdrückliche Rückgabe oder begründete Stewardentscheidung frei.
 
-Die bestehende Automation **Agentenprozess optimieren** pflegt bei materiellen Änderungen diesen Arbeitsbestand: bestätigte Pakete in vorhandenen Issues konkretisieren, nötigenfalls ein eigenständiges Produktpaket anlegen, passende Status-/Supportlabels und veraltete Haupttexte korrigieren. Sie weist keine fremden Owner zu und erfindet keine Produktprioritäten. **Produktwert steuern** klärt geänderte Portfolioentscheidungen in #12; **Projektorientierung pflegen** hält Einstiege und Verweise konsistent. Contributors pflegen ihre Pakete selbst; die Prozesspflege fängt belegte Lücken auf, ohne einen zweiten Controller oder eine Queue-Datei anzulegen.
+Die [Arbeitsrollen](AGENT-ROLES.md) trennen Pflegezuständigkeiten: `task-maintenance` korrigiert den GitHub-Arbeitsbestand, `product-value` prüft Ergebnisse und Portfolioentscheidungen, `repository-maintenance` besitzt gemeinsame Dokumentations-/Rollenregeln und allein `checkpoint.repositoryOrientation`. Contributors pflegen ihre Pakete selbst. Gespeicherte Startaufträge verweisen auf diese veränderlichen Verträge; aktuelle Piloten und Aufgaben bleiben am Aufgabenort. Keine zweite Queue, parallele Schreibzuständigkeit oder neue Reflexionsautomation.
 
 Ausführungshindernisse unterscheiden: fehlender Produktinput, besessener Scope, unpassende Fähigkeiten/Zugriffe oder nicht wiederhergestellte Laufumgebung. Nur den tatsächlich beobachteten Grund nennen. Routing kann einen kaputten Host oder fehlende Runtime-Wiederherstellung nicht reparieren.
 
