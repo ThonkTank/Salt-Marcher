@@ -687,6 +687,74 @@ async function liveNavigation(store = new Store()) {
   };
 }
 
+test("H01 Location create then Undo saves as a no-op on the same live mount and retains Redo", async () => {
+  const f = await liveNavigation(),
+    repo = f.state.repository,
+    history = f.state.history,
+    before = new Map(f.store.files);
+  repo.createLocation(
+    createdLocation.location,
+    createdLocation.placements.find(
+      (p: any) => p.locationId === createdLocation.location.id,
+    ),
+  );
+  const source = repo.location(createdLocation.location.id);
+  history.undo();
+  assert.equal(repo.dirty, false);
+  assert.equal(source.read(), null);
+  await f.navigation.save();
+  const after = f.navigation.state;
+  assert.equal(after.kind, "active");
+  assert.equal(after.repository, repo);
+  assert.equal(after.history, history);
+  assert.equal(after.renderer, f.state.renderer);
+  assert.deepEqual(after.context, f.state.context);
+  assert.equal(after.generation, f.state.generation);
+  assert.equal(f.disposed(), 0);
+  assert.equal(f.blocked.at(-1), false);
+  assert.deepEqual(f.store.files, before);
+  assert.equal(f.store.writes.length, 0);
+  const capture = await repo.captureNative({ worldId: id(10) });
+  assert.equal(capture.files.some((file) => file.path === locationPath), false);
+  history.redo();
+  assert.equal(repo.location(createdLocation.location.id), source);
+  assert.deepEqual(source.read(), createdLocation.location);
+  await f.navigation.save();
+  assert.deepEqual(
+    parseLocationDocument(f.store.files.get(locationPath)!),
+    createdLocation.location,
+  );
+  assert.equal(repo.dirty, false);
+  assert.equal(f.navigation.state.kind, "active");
+  assert.equal(f.disposed(), 0);
+  f.services.close();
+});
+
+test("Undo of a saved Location stays in native capture and cannot bypass Campaign deletion authority", async () => {
+  const f = await liveNavigation(),
+    repo = f.state.repository;
+  repo.createLocation(
+    createdLocation.location,
+    createdLocation.placements.find(
+      (p: any) => p.locationId === createdLocation.location.id,
+    ),
+  );
+  await f.navigation.save();
+  f.state.history.undo();
+  await repo.persistDraft();
+  const capture = await repo.captureNative({ worldId: id(10) }),
+    location = capture.files.find((file) => file.path === locationPath)!;
+  assert.equal(location.before, f.store.files.get(locationPath));
+  assert.notEqual(location.before, null);
+  assert.equal(location.after, null);
+  const before = new Map(f.store.files),
+    writes = f.store.writes.length;
+  await assert.rejects(f.navigation.save());
+  assert.deepEqual(f.store.files, before);
+  assert.equal(f.store.writes.length, writes);
+  f.services.close();
+});
+
 test("H01 Location create/Key/move saves through real runtime Ack on the same mount/History and admits fresh navigation", async () => {
   const f = await liveNavigation(),
     history = f.state.history,

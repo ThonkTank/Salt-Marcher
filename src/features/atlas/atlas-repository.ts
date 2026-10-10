@@ -493,7 +493,9 @@ export class AtlasRepository {
     for (const id of locationIds) {
       const bytes = await this.locations.captureBytes(id, locations);
       assertCurrent();
-      files.push({ kind: "location", id, ...bytes });
+      // Retain undone new Sources for Redo, but capture only actual native files.
+      if (bytes.before !== null || bytes.after !== null)
+        files.push({ kind: "location", id, ...bytes });
       locations.set(id, bytes.after);
     }
     for (const loc of extra) {
