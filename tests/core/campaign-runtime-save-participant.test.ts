@@ -550,6 +550,108 @@ test("campaign manifest participant binds terrain-only save to the complete Worl
   });
 });
 
+test("campaign manifest participant admits only an explicitly owner-authorized Location extension", () => {
+  const beforeBytes = manifest(nativeRows("input"), "input"),
+    before = parsed(beforeBytes),
+    rows = nativeRows("input"),
+    world = rows.find((row) => row.path.endsWith(".overworld"))!,
+    locationId = id("900"),
+    sectionId = id("901"),
+    placementId = id("902"),
+    locationPath = `Orte/${locationId}.location`,
+    locationBytes = JSON.stringify({ kind: "location", version: 1, id: locationId,
+      name: "Neuer Ort", type: "poi", sections: [{ id: sectionId, title: "Beschreibung", markdown: "Key" }],
+      detailMaps: [], keyLinks: [] }, null, 2) + "\n",
+    worldDocument = JSON.parse(world.bytes),
+    worldBytes = JSON.stringify({ ...worldDocument, placements: [...worldDocument.placements,
+      { kind: "location", id: placementId, locationId, position: { x: 10, y: 20 } }] }, null, 2) + "\n",
+    nativeWrites: CampaignManifestNativeWrite[] = rows.map((row) => ({
+      path: row.path,
+      before: row.bytes,
+      after: row.path === world.path ? worldBytes : row.bytes,
+    }));
+  nativeWrites.push({ path: locationPath, before: null, after: locationBytes });
+  const afterFiles = [
+      ...before.atlas.files.map((file) => ({ ...file,
+        savedDigest: sha(nativeWrites.find((write) => write.path === file.path)!.after!) })),
+      { kind: "location" as const, id: locationId, path: locationPath, savedDigest: sha(locationBytes) },
+    ],
+    afterRecords = [
+      ...before.atlas.records,
+      { id: locationId, kind: "location" as const, documentId: locationId, ownerId: "atlas", availability: "available" as const },
+      { id: sectionId, kind: "location-section" as const, documentId: locationId, ownerId: "atlas", availability: "available" as const },
+    ],
+    reference = (referenceId: string) => ({ id: referenceId, scope: "campaign-local" as const, schema }),
+    worldDigest = worldClosureDigest(afterFiles),
+    pathById = idsByPath(rows),
+    oldAtlas = before.registry.owners.find((owner) => owner.ownerId === "atlas")!,
+    atlasRecords = [
+      ...oldAtlas.records.map((record) => ({ ...record,
+        references: record.id === before.atlas.worldId
+          ? [...record.references, reference(placementId)].sort((a, b) => a.id.localeCompare(b.id))
+          : record.references,
+        payloadDigest: record.id === before.atlas.worldId
+          ? worldDigest
+          : pathById.get(record.id) === world.path
+            ? sha(nativeWrites.find((write) => write.path === world.path)!.after!)
+            : record.payloadDigest })),
+      { id: locationId as never, recordType: "location", references: [reference(sectionId)],
+        payloadDigest: sha(locationBytes), media: null },
+      { id: sectionId as never, recordType: "location-section", references: [reference(locationId)],
+        payloadDigest: sha(locationBytes), media: null },
+      { id: placementId as never, recordType: "location-placement",
+        references: [reference(before.atlas.worldId), reference(locationId)].sort((a, b) => a.id.localeCompare(b.id)),
+        payloadDigest: sha(nativeWrites.find((write) => write.path === world.path)!.after!), media: null },
+    ].sort((a, b) => String(a.id).localeCompare(String(b.id))),
+    afterAtlas = signedOwner("atlas", atlasRecords),
+    afterOwners = before.registry.owners.map((owner) => owner.ownerId === "atlas" ? afterAtlas : owner),
+    expectedExtension = JSON.stringify({ afterFiles, afterRecords, afterAtlas }),
+    extensionAuthorities = authorities().map((authority) => authority.ownerId !== "atlas" ? authority : {
+      ...authority,
+      verifyExtension: ({ afterFiles: files, afterRecords: records, afterOwner, nativeWrites: writes }: Parameters<
+        NonNullable<CampaignRuntimeOwnerSaveAuthority["verifyExtension"]>
+      >[0]) => {
+        assert.equal(JSON.stringify({ afterFiles: files, afterRecords: records, afterAtlas: afterOwner }), expectedExtension);
+        const location = JSON.parse(writes.find((write) => write.path === locationPath)!.after!),
+          savedWorld = JSON.parse(writes.find((write) => write.path === world.path)!.after!);
+        assert.equal(location.id, locationId);
+        assert.deepEqual(location.sections.map((section: { id: string }) => section.id), [sectionId]);
+        assert.deepEqual(savedWorld.placements.find((placement: { id: string }) => placement.id === placementId),
+          { kind: "location", id: placementId, locationId, position: { x: 10, y: 20 } });
+      },
+    }),
+    participant = new CampaignRuntimeManifestSaveParticipant(campaignPath, digest, extensionAuthorities),
+    input = { beforeManifestBytes: beforeBytes, nativeWrites, beforeOwners: before.registry.owners,
+      afterOwners, afterFiles, afterRecords },
+    [manifestWrite] = participant.prepare(input),
+    after = parsed(manifestWrite!.after!);
+  assert.equal(after.atlas.files.at(-1)?.path, locationPath);
+  assert.deepEqual(after.atlas.records.slice(-2), afterRecords.slice(-2));
+  assert.deepEqual(after.registry.owners.find((owner) => owner.ownerId === "atlas"), afterAtlas);
+  assert.doesNotThrow(() => participant.validateRecovery({ writes: [
+    nativeWrites.find((write) => write.path === world.path)!,
+    nativeWrites.at(-1)!,
+    manifestWrite!,
+  ] }));
+  const closed = new CampaignRuntimeManifestSaveParticipant(campaignPath, digest, authorities());
+  assert.throws(() => closed.prepare(input), /Recordclosure|Erweiterungsautorität/);
+  const mutatingAuthorities = extensionAuthorities.map((authority) => authority.ownerId !== "atlas" ? authority : {
+      ...authority,
+      verifyExtension: ({ afterFiles: files }: Parameters<
+        NonNullable<CampaignRuntimeOwnerSaveAuthority["verifyExtension"]>
+      >[0]) => (files as unknown[]).push({}),
+    }),
+    mutating = new CampaignRuntimeManifestSaveParticipant(campaignPath, digest, mutatingAuthorities),
+    fileCount = afterFiles.length;
+  assert.throws(() => mutating.prepare(input), TypeError);
+  assert.equal(afterFiles.length, fileCount);
+  assert.throws(() => participant.prepare({ ...input, afterFiles: afterFiles.map((file) =>
+    file.path === locationPath ? { ...file, kind: "city" as const } : file) }), /Locationdatei/);
+  assert.throws(() => participant.validateRecovery({ writes: [
+    nativeWrites.find((write) => write.path === world.path)!, manifestWrite!,
+  ] }), /nicht exakt/);
+});
+
 test("campaign manifest participant fails closed for incomplete guards and invented owner authority", () => {
   const beforeBytes = manifest(nativeRows("input"), "input"),
     before = parsed(beforeBytes),
