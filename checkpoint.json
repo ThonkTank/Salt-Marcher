@@ -826,7 +826,13 @@
       "consumedShared": "6482dc6373132aab1b27ac66c76cee6dddeb3285",
       "dependency": "No pending Campaign contract delivery. A newly coordinated GUI slot is required; Chronik owns the BASE-CI-01 workflow. No Host REVIEW_READY until required native evidence exists.",
       "after": "Existing integrated Host review, required repair, separate cleanup. No further component or general planning round.",
-      "limits": "No Shared promotion, user-vault installation, physical input, original parity, large-world or total E2E PASS. No fresh History/remount workaround during Save, private Campaign flags, new Source activation or frozen-contract edits."
+      "limits": "No Shared promotion, user-vault installation, physical input, original parity, large-world or total E2E PASS. No fresh History/remount workaround during Save, private Campaign flags, new Source activation or frozen-contract edits.",
+      "state": "native_not_started_fresh_GUI_slot_confirmation_pending",
+      "slotRequest": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/7#issuecomment-6097830484",
+      "slotConfirmed": false,
+      "preflight": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-manifest-host-save-i02-h01-20261010/preflight.json",
+      "preflightSha256": "ee195dbc4b0100808bd70a7d76b12700422a27bd3f255295560fe4375ca5b0c7",
+      "probeRequirement": "tools/host-test.cjs --atlas-spatial copies only manifest.input (seven native files), not the actual manifest.campaign input. tools/host/atlas-spatial.cjs reads standalone view.repository. Therefore that unchanged historical run would not prove the new managed Campaign Save path."
     },
     "review": {
       "run": "HEX-02-R02",
