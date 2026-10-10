@@ -153020,7 +153020,7 @@
       {
         "id": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
         "requirement": "Thin Context/navigation consumer with actual native target validation, same Atlas owners and guarded Campaign switching",
-        "state": "specific_Campaign_owned_save_lifetime_seam_missing_reproduced",
+        "state": "specific_owner_acknowledgment_delivery_has_mandatory_consumer_and_independent_findings",
         "implementationRun": "E2E-01-SPACE-I01c-RUNTIME-I01b",
         "sourceCommit": "e6ad27e73066bb2394d67e555ca9556dd25a0660",
         "catalog": "ROADMAP-E2E-GATES-CANDIDATE.md:13",
@@ -153994,7 +153994,83 @@
           "freshProcessRan": false,
           "fullE2E": false,
           "next": "Concrete Campaign/Data owner delivery for HEX-MANIFEST-I02-01; then resume the same bounded Host-I02, consume acknowledgment and confirm new Registry/Inventory in the existing mount, actual Save/Fresh/A-B-A, freshly coordinated Obsidian probe and separate independent integrated review. No new general plan/owner/review cycle."
-        }
+        },
+        "campaignSaveAcknowledgmentQualification": {
+          "id": "E2E-01-SPACE-I01c-RUNTIME-MANIFEST-I02-S02",
+          "kind": "bounded_owner_delivery_consumer_qualification",
+          "state": "mandatory_foreign_event_guard_failure_reproduced",
+          "sourceCommit": "7f57bd78ae8f17f73c6d0beb2071563ee786080e",
+          "ownerCandidate": "5310ec6c6b7319598f39a510a643c7d3915438b0",
+          "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
+          "finding": {
+            "id": "HEX-MANIFEST-I02-02",
+            "owner": "Campaign/Data",
+            "trigger": "Mounted real AtlasView; foreign same-path manifest whitespace modification; actual Vault modify event before its asynchronous read resolves. No prepared owned-save proof or lease exists.",
+            "expected": "Unknown/foreign modification synchronously revokes write authority, regardless of read latency.",
+            "observed": "The asynchronous Vault.read delays Source notification; Provider.currentContext still equals old Context; Host remains active and existing mount assertCurrent accepts. Even after another event-loop tick this persists until read release, after which revocation occurs.",
+            "location": {
+              "file": "src/vault-campaign-runtime-source.ts",
+              "lines": [
+                20,
+                21,
+                22
+              ]
+            },
+            "required": "Preserve synchronous write blocking and observable event ordering through the actual Vault adapter while allowing only participant-sealed exact own-save acknowledgment; no generic unknown modify event may leave old writes authorized pending asynchronous I/O."
+          },
+          "checks": {
+            "actualConsumerCounterprobes": 1,
+            "passed": 1,
+            "failed": 0,
+            "resultMeaning": "Reproduced blocker and eventual fail-closed control, not functional save approval.",
+            "actualCampaignSourceProviderHostAndAtlasView": true,
+            "gpuInitStubbed": true,
+            "ownerProductIntegrated": false,
+            "repoProductChanged": false,
+            "nativeRan": false,
+            "freshProcessRan": false,
+            "fullE2E": false
+          },
+          "qualification": {
+            "state": "independent_Chronik_review_reported_FAIL_no_qualified_owner_delivery",
+            "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6096982559",
+            "candidate": "5310ec6c6b7319598f39a510a643c7d3915438b0",
+            "readDirectly": true,
+            "reportedFinding": "Source-Lease from prepared A can acknowledge different participant-sealed committed B with same transaction ID/epoch; exact normalized Prepared-Proof binding missing in Source.",
+            "ownCounterprobeForChronikFinding": false
+          },
+          "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/campaign-save-ack-preflight-20261010/finding.json",
+          "sha256": "69728926e748a295e9f4ef202658007b4e24636d7673767e0964af7fd7254763",
+          "ownerHandoff": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/33#issuecomment-6097003722",
+          "jointHandoff": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6097004785",
+          "incoming": {
+            "checkedAt": "2026-10-10T11:27:46.884134+00:00",
+            "shared": "821936601d5130e1bd72bda80e060207f177678f",
+            "sharedAlreadyIntegrated": true,
+            "ownBefore": "7f57bd78ae8f17f73c6d0beb2071563ee786080e",
+            "ownerCandidateCounterprobed": "5310ec6c6b7319598f39a510a643c7d3915438b0",
+            "newerOwnerCandidate": "99f09931826c58190b36768a784d1c533e228d3a",
+            "newerOwnerHandoff": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6097003399",
+            "newerDelta": "Source WeakMap exact Prepared-Proof binding closed by actual Chronik R02; adapter unchanged, independently confirmed HEX-MANIFEST-I02-02 remains open. Owner narrow repair and Chronik R03 required before qualified adoption.",
+            "vaultAdapterByteExactUnchanged": true,
+            "ownRuntimeSourcesChanged": false,
+            "ownerCandidateIntegrated": false
+          },
+          "nativeRan": false,
+          "freshProcessRan": false,
+          "fullE2E": false,
+          "independentR02": {
+            "state": "CHANGES_REQUIRED",
+            "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6097018990",
+            "candidate": "99f09931826c58190b36768a784d1c533e228d3a",
+            "readDirectly": true,
+            "previousSourceLeaseFindingClosed": true,
+            "HEX-MANIFEST-I02-02": "Independent Chronik counterprobe confirms zero synchronous modify events until asynchronous read resolves; actual old Context/Mount authority remains active without prepared lease.",
+            "ownerNext": "Campaign/Data narrow immediate ordered event observation repair; Chronik R03 then qualified Hex consumption.",
+            "scope": "Independent existing Chronik review report, no own substitute review/approval or source integration."
+          }
+        },
+        "gap": "PR33 owned-save API is delivered. Actual foreign Vault modify still leaves previous mounted write authority valid until asynchronous bytes read completes (HEX-MANIFEST-I02-02); independently confirmed by Chronik R02 on99f0993. Previous Source proof/lease finding is closed. Specific immediate ordered-event owner repair and Chronik R03 qualification, actual Host journal/acknowledgment integration, same-mount Save/Fresh/Recovery and native integrated E2E remain open."
       }
     ],
     "cleanupFindings": [
