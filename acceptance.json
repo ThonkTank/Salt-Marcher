@@ -153020,7 +153020,7 @@
       {
         "id": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
         "requirement": "Thin Context/navigation consumer with actual native target validation, same Atlas owners and guarded Campaign switching",
-        "state": "specific_owner_acknowledgment_delivery_has_mandatory_consumer_and_independent_findings",
+        "state": "qualified_manifest_acknowledgment_integrated_prepared_rollback_release_and_host_gate_open",
         "implementationRun": "E2E-01-SPACE-I01c-RUNTIME-I01b",
         "sourceCommit": "e6ad27e73066bb2394d67e555ca9556dd25a0660",
         "catalog": "ROADMAP-E2E-GATES-CANDIDATE.md:13",
@@ -154070,7 +154070,82 @@
             "scope": "Independent existing Chronik review report, no own substitute review/approval or source integration."
           }
         },
-        "gap": "PR33 owned-save API is delivered. Actual foreign Vault modify still leaves previous mounted write authority valid until asynchronous bytes read completes (HEX-MANIFEST-I02-02); independently confirmed by Chronik R02 on99f0993. Previous Source proof/lease finding is closed. Specific immediate ordered-event owner repair and Chronik R03 qualification, actual Host journal/acknowledgment integration, same-mount Save/Fresh/Recovery and native integrated E2E remain open."
+        "gap": "Qualified exact PR33/a6e61b4 with independent Chronik R03 is integrated and checked (626/626,check,clean build). Its previous proof/event findings are closed. Actual FileTransaction prepare→native-CAS failure→successful rollback→retry rejects because Provider pending preparation has no public checked release (HEX-MANIFEST-I02-03). Await that narrow owner seam before productive Host hook; same-mount Save/Fresh/Recovery/A-B-A and independent native integrated E2E remain open.",
+        "qualifiedCampaignInputAndRollbackProbe": {
+          "id": "E2E-01-SPACE-I01c-RUNTIME-MANIFEST-I02-S03",
+          "state": "qualified_Campaign_contract_integrated_new_actual_rollback_release_dependency",
+          "startedAt": "2026-10-10T11:43:30.782568+00:00",
+          "finishedAt": "2026-10-10T11:51:06.359771+00:00",
+          "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
+          "checkedSourceCommit": "f888a665d6ba06a2f891a65b1edfcdb134553f7a",
+          "qualifiedOwnerCandidate": "a6e61b497fe522e7be959f7ce76ce5c4cfcdfa18",
+          "ownerMergeCommit": "f067eb71e0feb03d501b90ae1391a80d3a1b885e",
+          "ownerPRState": "MERGED_CLOSED",
+          "consumedShared": "de877533ab9d1573b473858314d6cafc2576fbdd",
+          "qualifiedIndependentR03": {
+            "state": "PASS",
+            "candidate": "a6e61b497fe522e7be959f7ce76ce5c4cfcdfa18",
+            "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6097094635",
+            "readDirectly": true,
+            "closedFindings": [
+              "HEX-MANIFEST-I02-02",
+              "Chronik R01 Prepared-Proof Source binding"
+            ],
+            "scope": "Qualified exact Campaign acknowledgment contract only; not integrated Host/native/E2E gate"
+          },
+          "qualifiedIncomingBoundary": {
+            "src/features/campaign/campaign-runtime-save-participant.ts": "6ecb8ac1a5dcc9b891dfaf699b9c086f5e704b423d68b1883bcac8e62f7d7c17",
+            "src/features/campaign/campaign-runtime-source.ts": "6231690234b53bca4452abd7a448e2396e39919fd6a03a342ebb25126f0fa0dd",
+            "src/vault-campaign-runtime-source.ts": "ff3bb68bb97c5f33899cd709f616f30f9c08df2d680ba39248394e905f357b44",
+            "tests/core/campaign-runtime-save-participant.test.ts": "7e84c77934c086e06f35f723a535396445e3f930c4d1076a4987456e823b6000",
+            "tests/core/campaign-runtime-source.test.ts": "c2f3c0060b47d646d63b65946bab4cb344cb42406b2d348a05b9278dfc213900",
+            "tests/vault-campaign-runtime-source.entry.ts": "ecf4abc39a8718fe509cb169b4961ab7da926ef142078396c8a6e2312ad06857"
+          },
+          "sharedIncomingBoundary": [
+            "checkpoint.json: gmProductTesting",
+            "ROADMAP-GM-PRODUCT-TESTING-PLAN.md"
+          ],
+          "sharedForeignRootExactlyConsumed": true,
+          "otherForeignCheckpointRawRootsRetained": 40,
+          "checks": {
+            "check": "PASS",
+            "tests": 626,
+            "passed": 626,
+            "failed": 0,
+            "skipped": 0,
+            "build": "PASS clean exact integrated source",
+            "buildInventory": "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/save-clean/.build/catalog-build-inventory.json",
+            "diffCheck": "PASS",
+            "actualJournalFailureCounterprobe": 1,
+            "counterprobeResult": "PASS reproduces specific missing release, not user workflow PASS"
+          },
+          "triplet": {
+            "main.js": {
+              "sha256": "01c6cad5f277e6d4f824e1a5154f57d0f65f68c4f2f08b8efd3bf7c3cd70277e",
+              "bytes": 1587500
+            },
+            "styles.css": {
+              "sha256": "68e1cf101ceaadd624168b431fddc297c90e8a5bc6be25a15f0926ebb569a5ea",
+              "bytes": 29780
+            },
+            "manifest.json": {
+              "sha256": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64",
+              "bytes": 237
+            }
+          },
+          "finding": "HEX-MANIFEST-I02-03",
+          "findingEvidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/campaign-manifest-host-i02-ack-20261010/finding.json",
+          "findingSha256": "0a6ead315f87288edd5e5d6e29bcfe726b40f9e0cbbf1381bac108a65d28fc43",
+          "findingHandoff": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6097180923",
+          "ownProductSourceChanged": false,
+          "hostHookActivated": false,
+          "nativeRan": false,
+          "freshProcessRan": false,
+          "fullE2E": false,
+          "after": "Specific qualified prepared-rollback release, then FileTransaction/actual AtlasView hook plus same Registry/Inventory/mount/history and real Host Save/Fresh/Recovery/A-B-A. No general ownership/plan round.",
+          "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/campaign-manifest-host-i02-ack-20261010/integration.json",
+          "sha256": "141ccbe41a1d92c11ceb11dc010dbd8a49654259d3388ddb2e09a5253c263344"
+        }
       }
     ],
     "cleanupFindings": [

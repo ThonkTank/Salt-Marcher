@@ -843,20 +843,25 @@
     "nextRun": {
       "id": "E2E-01-SPACE-I01c-RUNTIME-MANIFEST-I02",
       "kind": "bounded_host_save_integration_resume_after_specific_owner_seam",
-      "focus": "After specific qualified Campaign repair, bind actual prepared/committed journal proofs to provider and consume updated Registry/Inventory in same Navigator/AtlasView; preserve Context, camera, History.",
+      "focus": "Consume the concrete qualified Campaign prepared-save release after an actual validated journal rollback, then wire prepared/committed/released proofs into existing FileTransaction/AtlasView and refresh Registry/Inventory in the same Navigator/mount/history.",
       "sourcePlan": "ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md",
       "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
-      "dependency": "PR33 actual owned-save acknowledgment delivered. Source Prepared-Proof binding repaired in99f0993 and closed by Chronik R02. HEX-MANIFEST-I02-02 independently confirmed: actual foreign Vault modify leaves old mounted write authority active during asynchronous read. Await specific owner ordered-event repair and Chronik R03 qualified exact-SHA handoff; do not repeat qualified PR32 core or open a general owner/review round.",
-      "finding": "HEX-MANIFEST-I02-01",
-      "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/campaign-save-ack-preflight-20261010/finding.json",
-      "evidenceSha256": "69728926e748a295e9f4ef202658007b4e24636d7673767e0964af7fd7254763",
+      "dependency": "PR33 exact a6e61b4 and independent Chronik R03 PASS integrated normally; old proof and foreign-event findings closed. Real FileTransaction failure before own Manifest event rolls back exact bytes but actual Provider keeps pending preparation and rejects retry (HEX-MANIFEST-I02-03). Await this specific owner release seam; no repeated Codec/core or general planning/review round.",
+      "finding": "HEX-MANIFEST-I02-03",
+      "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/campaign-manifest-host-i02-ack-20261010/finding.json",
+      "evidenceSha256": "0a6ead315f87288edd5e5d6e29bcfe726b40f9e0cbbf1381bac108a65d28fc43",
       "after": "Focused actual Host Save/Fresh/Recovery/A-B-A after qualified API consumption; newly coordinated GUI slot and true Obsidian/fresh process; independent integrated review then separate cleanup P/I/R.",
       "limits": "No source event suppression, private sourceCurrent mutation, second publish,automatic reactivation/new History or product/native/E2E claim. Existing scoped producer/Host reviews remain valid; this is the new concrete integration precondition.",
       "findings": [
-        "HEX-MANIFEST-I02-01",
-        "HEX-MANIFEST-I02-02"
+        "HEX-MANIFEST-I02-03"
       ],
-      "ownerHandoff": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6097004785"
+      "ownerHandoff": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6097180923",
+      "closedFindings": [
+        "HEX-MANIFEST-I02-02",
+        "Chronik R01 Prepared-Proof Source binding"
+      ],
+      "qualifiedOwnerCandidate": "a6e61b497fe522e7be959f7ce76ce5c4cfcdfa18",
+      "checkedIntegratedSourceCommit": "f888a665d6ba06a2f891a65b1edfcdb134553f7a"
     },
     "review": {
       "run": "HEX-02-R02",
@@ -3201,7 +3206,7 @@
       },
       "campaignManifestHostPrecondition": {
         "id": "E2E-01-SPACE-I01c-RUNTIME-MANIFEST-I02-S01",
-        "state": "specific_Campaign_owned_save_lifetime_seam_missing_reproduced",
+        "state": "qualified_acknowledgment_source_consumed_actual_prepared_rollback_release_missing",
         "sourceCommit": "a2bc971144fb75314305deff8225b603f9b57439",
         "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
         "finding": {
@@ -3249,27 +3254,19 @@
         "fullE2E": false,
         "next": "Concrete Campaign/Data owner delivery for HEX-MANIFEST-I02-01; then resume the same bounded Host-I02, consume acknowledgment and confirm new Registry/Inventory in the existing mount, actual Save/Fresh/A-B-A, freshly coordinated Obsidian probe and separate independent integrated review. No new general plan/owner/review cycle.",
         "ownerAcceptance": {
-          "state": "specific_owner_api_delivered_but_actual_consumer_and_independent_findings_require_repair",
-          "originalScope": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6096696254",
-          "actualOwnerHandoff": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6096939067",
-          "candidate": "5310ec6c6b7319598f39a510a643c7d3915438b0",
-          "newerCandidate": "99f09931826c58190b36768a784d1c533e228d3a",
-          "qualified": false,
-          "blockedBy": [
-            "HEX-MANIFEST-I02-02: actual foreign Vault modify waits for asynchronous read before revoking existing write authority; confirmed independently by Chronik R02; Campaign repair and R03 required"
+          "state": "qualified_actual_owner_API_consumed_narrow_failure_release_still_required",
+          "candidate": "a6e61b497fe522e7be959f7ce76ce5c4cfcdfa18",
+          "review": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6097094635",
+          "ownerMergeCommit": "f067eb71e0feb03d501b90ae1391a80d3a1b885e",
+          "reviewReadDirectly": true,
+          "qualifiedOriginalScope": true,
+          "closedFindings": [
+            "HEX-MANIFEST-I02-02",
+            "Chronik R01 Prepared-Proof Source binding"
           ],
-          "preserved": "Existing PR32 participant/core and scoped Host reviews remain qualified. No production activation/integration of PR33.",
-          "next": "Specific owner repair and actual qualified exact-SHA handoff, then same Host-I02 consumer integration; no general planning/review round.",
-          "independentR02": {
-            "state": "CHANGES_REQUIRED",
-            "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6097018990",
-            "candidate": "99f09931826c58190b36768a784d1c533e228d3a",
-            "readDirectly": true,
-            "previousSourceLeaseFindingClosed": true,
-            "HEX-MANIFEST-I02-02": "Independent Chronik counterprobe confirms zero synchronous modify events until asynchronous read resolves; actual old Context/Mount authority remains active without prepared lease.",
-            "ownerNext": "Campaign/Data narrow immediate ordered event observation repair; Chronik R03 then qualified Hex consumption.",
-            "scope": "Independent existing Chronik review report, no own substitute review/approval or source integration."
-          }
+          "newSpecificDependency": "HEX-MANIFEST-I02-03: real prepared rollback leaves Provider.pending and rejects same-context retry; release/abort has not yet been supplied in the current public contract.",
+          "handoff": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6097180923",
+          "next": "Concrete qualified cancellation/release after original validated native rollback; no synthetic commit acknowledgment, private flag mutation or automatic context reactivation. Original R03 scoped PASS remains intact."
         },
         "consumerDeliveryQualification": {
           "id": "E2E-01-SPACE-I01c-RUNTIME-MANIFEST-I02-S02",
@@ -3345,6 +3342,81 @@
             "ownerNext": "Campaign/Data narrow immediate ordered event observation repair; Chronik R03 then qualified Hex consumption.",
             "scope": "Independent existing Chronik review report, no own substitute review/approval or source integration."
           }
+        },
+        "qualifiedInputAndJournalRollbackProbe": {
+          "id": "E2E-01-SPACE-I01c-RUNTIME-MANIFEST-I02-S03",
+          "state": "qualified_Campaign_contract_integrated_new_actual_rollback_release_dependency",
+          "startedAt": "2026-10-10T11:43:30.782568+00:00",
+          "finishedAt": "2026-10-10T11:51:06.359771+00:00",
+          "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
+          "checkedSourceCommit": "f888a665d6ba06a2f891a65b1edfcdb134553f7a",
+          "qualifiedOwnerCandidate": "a6e61b497fe522e7be959f7ce76ce5c4cfcdfa18",
+          "ownerMergeCommit": "f067eb71e0feb03d501b90ae1391a80d3a1b885e",
+          "ownerPRState": "MERGED_CLOSED",
+          "consumedShared": "de877533ab9d1573b473858314d6cafc2576fbdd",
+          "qualifiedIndependentR03": {
+            "state": "PASS",
+            "candidate": "a6e61b497fe522e7be959f7ce76ce5c4cfcdfa18",
+            "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6097094635",
+            "readDirectly": true,
+            "closedFindings": [
+              "HEX-MANIFEST-I02-02",
+              "Chronik R01 Prepared-Proof Source binding"
+            ],
+            "scope": "Qualified exact Campaign acknowledgment contract only; not integrated Host/native/E2E gate"
+          },
+          "qualifiedIncomingBoundary": {
+            "src/features/campaign/campaign-runtime-save-participant.ts": "6ecb8ac1a5dcc9b891dfaf699b9c086f5e704b423d68b1883bcac8e62f7d7c17",
+            "src/features/campaign/campaign-runtime-source.ts": "6231690234b53bca4452abd7a448e2396e39919fd6a03a342ebb25126f0fa0dd",
+            "src/vault-campaign-runtime-source.ts": "ff3bb68bb97c5f33899cd709f616f30f9c08df2d680ba39248394e905f357b44",
+            "tests/core/campaign-runtime-save-participant.test.ts": "7e84c77934c086e06f35f723a535396445e3f930c4d1076a4987456e823b6000",
+            "tests/core/campaign-runtime-source.test.ts": "c2f3c0060b47d646d63b65946bab4cb344cb42406b2d348a05b9278dfc213900",
+            "tests/vault-campaign-runtime-source.entry.ts": "ecf4abc39a8718fe509cb169b4961ab7da926ef142078396c8a6e2312ad06857"
+          },
+          "sharedIncomingBoundary": [
+            "checkpoint.json: gmProductTesting",
+            "ROADMAP-GM-PRODUCT-TESTING-PLAN.md"
+          ],
+          "sharedForeignRootExactlyConsumed": true,
+          "otherForeignCheckpointRawRootsRetained": 40,
+          "checks": {
+            "check": "PASS",
+            "tests": 626,
+            "passed": 626,
+            "failed": 0,
+            "skipped": 0,
+            "build": "PASS clean exact integrated source",
+            "buildInventory": "/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/save-clean/.build/catalog-build-inventory.json",
+            "diffCheck": "PASS",
+            "actualJournalFailureCounterprobe": 1,
+            "counterprobeResult": "PASS reproduces specific missing release, not user workflow PASS"
+          },
+          "triplet": {
+            "main.js": {
+              "sha256": "01c6cad5f277e6d4f824e1a5154f57d0f65f68c4f2f08b8efd3bf7c3cd70277e",
+              "bytes": 1587500
+            },
+            "styles.css": {
+              "sha256": "68e1cf101ceaadd624168b431fddc297c90e8a5bc6be25a15f0926ebb569a5ea",
+              "bytes": 29780
+            },
+            "manifest.json": {
+              "sha256": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64",
+              "bytes": 237
+            }
+          },
+          "finding": "HEX-MANIFEST-I02-03",
+          "findingEvidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/campaign-manifest-host-i02-ack-20261010/finding.json",
+          "findingSha256": "0a6ead315f87288edd5e5d6e29bcfe726b40f9e0cbbf1381bac108a65d28fc43",
+          "findingHandoff": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6097180923",
+          "ownProductSourceChanged": false,
+          "hostHookActivated": false,
+          "nativeRan": false,
+          "freshProcessRan": false,
+          "fullE2E": false,
+          "after": "Specific qualified prepared-rollback release, then FileTransaction/actual AtlasView hook plus same Registry/Inventory/mount/history and real Host Save/Fresh/Recovery/A-B-A. No general ownership/plan round.",
+          "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/campaign-manifest-host-i02-ack-20261010/integration.json",
+          "sha256": "141ccbe41a1d92c11ceb11dc010dbd8a49654259d3388ddb2e09a5253c263344"
         }
       }
     },
