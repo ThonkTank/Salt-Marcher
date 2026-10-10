@@ -153024,7 +153024,7 @@
       {
         "id": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
         "requirement": "Thin Context/navigation consumer with actual native target validation, same Atlas owners and guarded Campaign switching",
-        "state": "native_ABA_PASS_independent_integrated_Host_review_pending",
+        "state": "native_ABA_evidence_access_delivered_build_binding_review_pending",
         "implementationRun": "HEX-E2E01-HOST-SAVE-I02",
         "sourceCommit": "86bbbbfac44233509f084ac836e6dafa07b11a16",
         "catalog": "ROADMAP-E2E-GATES-CANDIDATE.md:13",
@@ -153966,7 +153966,7 @@
           "currentEvidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-manifest-host-save-i02-20261010/implementation.json",
           "scope": "Component review only; no native/Host/overall approval."
         },
-        "gap": "The R01 hydration repair now has actual native H02 A→B→A PASS on PR13/892e20d: invalid Key blocks picker, independent B Key/UndoRedo, retained A draft and obsolete A callbacks/later capture use reject. Historical native H01 FAIL and D01/R01 source receipts remain unchanged. Existing independent integrated Host review including R01/H02, separate cleanup, Shared exact GM gate and full E2E remain open.",
+        "gap": "Chronik integrated Host review is CHANGES_REQUIRED on H02 build/evidence binding. Original H02 receipt and ten referenced artifacts, sixteen native inputs and two clean locked build provenances are now repository-accessible. Both Node22.22.0 and Node22.22.2 reproduce historical 159e8db; reviewer a7f2db remains unconfirmed here. Same existing reviewer must compare actual build inventory/source inputs/payload or artifact before #38/#39 approval. No new native run or product change; historical H01/H02 and Save/Fresh/Recovery receipts preserved.",
         "qualifiedCampaignInputAndRollbackProbe": {
           "state": "qualified_component_contract_closed_productive_Host_implementation_now_present",
           "reviewSourceCommit": "ce2f9032dc9f72f994a307b5aac26e1ad8910065",
@@ -154202,6 +154202,32 @@
           "nativeMainJsSha256": "159e8db18b8e6f797c7414bdcf6899f156c63c422b18b3388f70d209c936aa13",
           "inputBoundary": "One actual isolated Obsidian process with synthetic native picker/Key/button input; initial location navigation invokes the actual Host method.",
           "lateCaptureBoundary": "Old actual A capture is verified only after completed navigation and later B activation. Delayed in-flight navigation/Context ABA remains a separate core regression, not a claimed native reply test."
+        },
+        "nativeCampaignABAEvidenceBinding": {
+          "id": "HEX-E2E01-HOST-ABA-H02-EVIDENCE-BINDING-R02",
+          "state": "original_evidence_access_delivered_reviewer_build_difference_unresolved",
+          "sourceCommit": "892e20d737c9e4868aa44b615f8da0f97d98fb39",
+          "consumedShared": "5b57706b68f131c2d292bed6159cd6d3221f2ef8",
+          "finding": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/13#issuecomment-6099834538",
+          "originalReceiptSha256": "4ed1f2b2da15c5715498399a4c6c32369c6aaa36261a1382ebc5cdd359d34820",
+          "repositoryEvidence": "docs/reference/atlas-host-h02/binding-r02.json",
+          "artifactIndex": "docs/reference/atlas-host-h02/ARTIFACTS.json",
+          "sha256": "14fe2d520df171a635681f0de14cb2884e7a66d9f982d55249e7865e727a7653",
+          "checks": {
+            "allOriginalArtifactsByteExact": 10,
+            "nativeInputFilesByteExact": 16,
+            "retainedInstalledTripletByteExact": true,
+            "freshLockedDependencyInstallation": true,
+            "cleanReproductionNode22_22_0": "159e8db18b8e6f797c7414bdcf6899f156c63c422b18b3388f70d209c936aa13",
+            "cleanReproductionNode22_22_2": "159e8db18b8e6f797c7414bdcf6899f156c63c422b18b3388f70d209c936aa13",
+            "buildSourceInputsPublished": 563
+          },
+          "reviewerMainJsSha256": "a7f2db0b104804be4a14a10888ef34248a0310f2daedee6aa64009cd5143bae7",
+          "mismatchResolved": false,
+          "newNativeRun": false,
+          "independentReview": "Existing Chronik CHANGES_REQUIRED build binding; accessible R02 delivery awaits same reviewer comparison. No new review round.",
+          "fullE2E": false,
+          "externalEvidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-manifest-host-aba-20261010/evidence-binding-r02/binding-r02.json"
         }
       }
     ],
