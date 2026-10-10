@@ -19,11 +19,20 @@ import type { CampaignOwnershipDigest } from "../features/campaign/campaign-owne
 import type { AtlasCampaignServices } from "./atlas-campaign-host";
 import { AtlasCampaignManifestSave } from "../features/atlas/atlas-campaign-save";
 import type { CampaignRuntimeManifestSaveParticipant } from "../features/campaign/campaign-runtime-save-participant";
+import {
+  MwsImportMediaInventory,
+  type MwsImportMediaByteDigest,
+  type MwsImportMediaFilePort,
+} from "../features/campaign/mws-import-media-inventory";
 
 /** Instantiate once per host. Manifest lookups request targets; only the provider confirms authority. */
 export function atlasCampaignServices(
   storage: CampaignRuntimeStorage,
   digest: CampaignOwnershipDigest,
+  importMedia?: {
+    readonly files: MwsImportMediaFilePort;
+    readonly digest: MwsImportMediaByteDigest;
+  },
 ): AtlasCampaignServices & { close(): void } {
   const issuers = new WeakMap<object, CampaignRuntimeManifestSaveParticipant>();
   const issuer = (proof: object) => {
@@ -103,6 +112,9 @@ export function atlasCampaignServices(
         throw new Error("Atlas ist mehreren Kampagnenbeständen zugeordnet.");
       return matches[0]!.snapshot.campaignId;
     },
+    createImportMediaInventory: importMedia
+      ? (root) => new MwsImportMediaInventory(importMedia.files, root, importMedia.digest)
+      : undefined,
     createSave: async (input) => {
       const guard = () => {
         assertOpen(); input.assertCurrent();

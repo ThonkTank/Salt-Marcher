@@ -57,6 +57,7 @@ import { createUniqueCatalogOpener } from "./features/catalog/creature-catalog-v
 import { ATLAS_VIEW, AtlasView, CreateAtlasModal } from "./ui/atlas-view";
 import { atlasCampaignServices } from "./ui/atlas-campaign-services";
 import { VaultCampaignRuntimeStorage } from "./vault-campaign-runtime-source";
+import { VaultMwsImportMediaFiles } from "./vault-mws-import-media";
 
 export interface OpenMap {
   session: Session;
@@ -153,7 +154,10 @@ export default class DungeonPlugin extends Plugin {
   private atlasCampaigns(): ReturnType<typeof atlasCampaignServices> {
     if (!this.campaignServices) {
       this.campaignServices = atlasCampaignServices(new VaultCampaignRuntimeStorage(this.app),
-        (text) => `sha256:${createHash("sha256").update(text).digest("hex")}`);
+        (text) => `sha256:${createHash("sha256").update(text).digest("hex")}`, {
+          files: new VaultMwsImportMediaFiles(this.app),
+          digest: (bytes) => `sha256:${createHash("sha256").update(bytes).digest("hex")}`,
+        });
       this.register(() => this.campaignServices?.close());
     }
     return this.campaignServices;

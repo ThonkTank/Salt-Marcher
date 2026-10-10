@@ -10953,5 +10953,30 @@
       "postRunReport": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/8#issuecomment-6100717372",
       "documentationCommit": "5e34270fd51162706f363260a92d12ec92bcc865"
     }
+  },
+  "p04MediaInventoryHost": {
+    "run": "P04-HOST-MEDIA-I01",
+    "state": "implementation_r01_repair_candidate_checked_r02_pending",
+    "owner": "independent support contributor; parent ownership remains Campaign/Data",
+    "issue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/41",
+    "claim": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/41#issuecomment-6100900813",
+    "branch": "campaign/p04-media-inventory-host-i01",
+    "base": "6a41f1640de3e4a4311d905d95f66cd79d91b698",
+    "verifiedUpstream": "843562ac256eb293f1b8c95f10077a9a7a7c1a1b",
+    "scope": "Materialized import-media inventory bound to the exact CampaignContext and Registry; actual Vault metadata/media bytes are SHA-256 hashed and reverified before the existing M/W/S Complete-Import review can be accepted.",
+    "changedFiles": [
+      "src/features/campaign/mws-import-media-inventory.ts",
+      "src/vault-mws-import-media.ts",
+      "src/ui/atlas-campaign-services.ts",
+      "src/ui/atlas-campaign-host.ts",
+      "src/main.ts",
+      "tests/core/mws-import-media-inventory.test.ts",
+      "tests/core.test.ts",
+      "checkpoint.json",
+      "acceptance.json"
+    ],
+    "checks": "R01 repair candidate on current Shared: seven focused materialized-inventory cases PASS, including deterministic verify-vs-conflicting-read interleaving; repository check 25/25 PASS; TypeScript PASS; full test 730 PASS, 1 environment-dependent PDF SKIP, 0 FAIL; build PASS; main.js sha256 3d2b13e325b46d52eff22460bada618f97cb78b986030eac03bf595d18b3643d.",
+    "limits": "No archive/ZIP reader, import publisher, P02 transaction, GUI flow, OS matrix, P04 Go, platform decision or E2E-01 PASS.",
+    "next": "Publish the narrow R01 race repair and obtain an independent exact-SHA re-review before stewardship."
   }
 }
