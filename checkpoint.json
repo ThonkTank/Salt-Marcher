@@ -188,14 +188,14 @@
     "architecture": "ARCHITECTURE.md#geplante-katalog--und-encounter-erweiterung",
     "acceptance": "acceptance.json.saltMarcherCatalogEncounter",
     "currentRun": {
-      "id": "CE-02-I02-S01-W17-N01",
+      "id": "CE-02-I02-S01-W17-N03",
       "kind": "source_inventory_schema_transcript_intermediate",
       "state": "in_progress_verified_incomplete",
-      "focus": "Repair the Potion-of-Healing A–Z ordinal to 142 and derive it independently from wrapped physical PDF headings",
+      "focus": "Correct the final stale manifest review label after the 239-count and ordinal-142 repairs",
       "plan": "ROADMAP-SALTMARCHER-CE02-I02-PLAN.md",
-      "result": "Potion of healing retains canonical ID srd51:equipment:adventuring-gear:76 and explicitly merges later detail occurrence srd51:magic-item:magic-items-a-z:142 from physical/printed PDF page 234. The ordinal is independently derived from all 242 PDF headings, including the wrapped Amulet of Proof against Detection and Location heading. The complete header proves attunement not-required and variable rarity; four ordered, occurrence-bound variant IDs preserve Healing, Greater healing, Superior healing and Supreme healing with their exact rarity and HP rows. Unknown/later/chained targets, duplicate canonical records, missing source membership, wrong variant ordinals and altered rows fail closed. The real pinned PDF verifies 220 occurrence labels, 681 captured transcript facts and the explicit merge/header/table evidence in addition to all earlier bounded equipment evidence. S01 remains incomplete and I01 blocked.",
+      "result": "Potion of healing retains canonical ID srd51:equipment:adventuring-gear:76 and explicitly merges later detail occurrence srd51:magic-item:magic-items-a-z:142 from physical/printed PDF page 234. The ordinal is independently derived from the reproducible set of 239 physical A–Z item-detail headings, including the wrapped Amulet of Proof against Detection and Location heading and excluding embedded creature/decorative headings. The complete header proves attunement not-required and variable rarity; four ordered, occurrence-bound variant IDs preserve Healing, Greater healing, Superior healing and Supreme healing with their exact rarity and HP rows. Unknown/later/chained targets, duplicate canonical records, missing source membership, wrong variant ordinals and altered rows fail closed. The real pinned PDF verifies 220 occurrence labels, 681 captured transcript facts and the explicit merge/header/table evidence in addition to all earlier bounded equipment evidence. S01 remains incomplete and I01 blocked.",
       "verification": {
-        "sourceRevision": "2b4912f48b996a0fc249ce4af6a2f48cab34c868+dirty",
+        "sourceRevision": "71a5c61690dee67acf59f0097bfb95e3771bf92f+dirty",
         "check": "passed",
         "tests": {
           "passed": 432,
@@ -214,6 +214,7 @@
         "potionHealingRarityChoices": 4,
         "potionHealingRows": 4,
         "potionHealingDerivedHeadingOrdinal": 142,
+        "magicItemAzDerivedHeadingCount": 239,
         "boundedArmorTableRows": 13,
         "boundedWeaponTableRows": 37,
         "boundedAdventuringGearTableRows": 99,
@@ -227,12 +228,12 @@
         "mainBytes": 1422956,
         "mainSha256": "522823730ddce4d0ba83e0476f60887b60a07c517f84e8e270814b6d597efa43"
       },
-      "limits": "Source-package intermediate only. No product Item artifact/provider/UI, Obsidian installation or host acceptance, Encounter runtime or 2024 rules. The remaining 241 Magic Items A–Z headings, Orb of Dragonkind, structured Magic Item tables/transcripts, remaining goldens, independent W17 review and S01-R01 remain open; I01 stays blocked.",
+      "limits": "Source-package intermediate only. No product Item artifact/provider/UI, Obsidian installation or host acceptance, Encounter runtime or 2024 rules. The remaining 238 Magic Items A–Z headings, Orb of Dragonkind, structured Magic Item tables/transcripts, remaining goldens, independent W17 review and S01-R01 remain open; I01 stays blocked.",
       "documentation": {
         "status": "partial",
         "branch": "active/installed-phase1",
         "baseCommit": "aa4a0eeccfa9a3b41caab061b90526e12d47065d",
-        "issue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/9#issuecomment-6096351369",
+        "issue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/9#issuecomment-6096443701",
         "changedFiles": [
           "acceptance.json",
           "checkpoint.json",
@@ -250,7 +251,7 @@
         "commit": "see Issue #9 close receipt",
         "notProven": [
           "complete SRD 5.1 Item corpus",
-          "remaining 241 Magic Items A–Z headings and Orb of Dragonkind",
+          "remaining 238 Magic Items A–Z headings and Orb of Dragonkind",
           "remaining structured Magic Item tables and transcripts",
           "remaining goldens",
           "independent S01-R01",
