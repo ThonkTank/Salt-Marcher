@@ -1,12 +1,30 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { readyTasks, criticalTasks } from '../tools/next-task.mjs';
+import { readyTasks, criticalTasks, supportTasks, tasksForArea } from '../tools/next-task.mjs';
 
 const task = (number, extra = [], state = 'open') => ({ number, state, labels: ['kind:task', 'status:ready', ...extra] });
 test('task discovery excludes owned, blocked, closed and coordination work even with a ready label', () => {
   const valid = task(4);
   assert.deepEqual(readyTasks([task(1, ['status:active']), task(2, ['status:blocked']), task(3, [], 'closed'), valid,
     { number: 5, state: 'open', labels: ['kind:coordination', 'status:ready'] }]), [valid]);
+});
+
+test('support invitations on owned or blocked parents remain visible without becoming free work', () => {
+  const owned = { number: 39, state: 'open', labels: ['kind:task', 'status:active', 'help wanted'] };
+  const blocked = { ...owned, number: 41, labels: [...owned.labels, 'status:blocked'] };
+  const closed = { ...owned, number: 42, state: 'closed' };
+  const coordination = { ...owned, number: 12, labels: ['kind:coordination', 'help wanted'] };
+  assert.deepEqual(supportTasks([blocked, closed, coordination, owned, task(1, ['help wanted'])]), [owned, blocked]);
+  assert.deepEqual(readyTasks([owned, blocked]), []);
+});
+
+test('area selection respects shared atlas/city and GM/dungeon boundaries and rejects typos', () => {
+  const city = task(1, ['area:atlas-city']);
+  const gm = task(2, ['area:dungeon']);
+  assert.deepEqual(tasksForArea([city, gm]), [city, gm]);
+  assert.deepEqual(tasksForArea([city, gm], 'atlas'), [city]);
+  assert.deepEqual(tasksForArea([city, gm], 'gm'), [gm]);
+  assert.throws(() => tasksForArea([city], 'typo'), /Unknown area/);
 });
 test('critical-path priority wins; equal priorities use a stable issue order', () => {
   assert.deepEqual(readyTasks([task(1), task(8, ['priority:next']), task(9, ['priority:now']), task(3, ['priority:next'])])
