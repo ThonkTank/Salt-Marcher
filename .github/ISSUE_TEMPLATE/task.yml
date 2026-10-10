@@ -1,32 +1,25 @@
 name: Begrenzte Produktaufgabe
-description: "Ein überprüfbares Ergebnis mit Abhängigkeiten und Abnahme."
+description: "Ein überprüfbares Ergebnis mit Voraussetzungen und Abnahme."
 labels: ["kind:task"]
 body:
   - type: textarea
     id: outcome
     attributes:
       label: Nutzerergebnis
-      description: "Welcher zusammenhängende Nutzerablauf funktioniert danach? Bei Hilfsarbeit: welches konkrete Umsetzungspaket oder welche anstehende Entscheidung wird möglich, wer konsumiert den Eingang?"
+      description: "Welcher zusammenhängende Ablauf funktioniert danach? Hilfsarbeit nennt das konsumierende Umsetzungspaket oder die anstehende Entscheidung samt Empfänger."
     validations:
       required: true
   - type: textarea
     id: scope
     attributes:
-      label: Scope, bestehende Arbeit und Abhängigkeiten
-      description: "Fachissue, Gate, vorhandenen PR/Branch, Owner und Eingänge verlinken. Schritte als Checkliste im Paket halten; Teilung nur bei eigenständigem Nutzen, unterschiedlichem Besitz/Eingang oder echter Risikogrenze."
-    validations:
-      required: true
-  - type: textarea
-    id: prerequisites
-    attributes:
-      label: Voraussetzungen und Übernahme
-      description: "Tatsächliche Branch-/Commitbasis, Dateien/Fixtures, benötigte Umgebung und Zugriffe, bereits benannter Owner oder frei übernehmbarer Scope. Ist ein GUI-Slot nötig?"
+      label: Arbeitsort, Scope und Voraussetzungen
+      description: "Fachissue, vorhandenen PR/Branch/Basis, Owner und Eingänge verlinken. Benötigte Umgebung/Fixtures/Zugriffe und freien Scope nennen; vorhandene Angaben nicht kopieren. Schritte bleiben im Paket (docs/WORKFLOW.md)."
     validations:
       required: true
   - type: textarea
     id: acceptance
     attributes:
       label: Abnahme und nächster Empfänger
-      description: "Beobachtbares Ergebnis und kleinste ausreichende Prüfung nach docs/WORKFLOW.md. Unabhängiger Review nur soweit für das konkrete Risiko/Fachgate erforderlich; vorhandene Belege weiterverwenden."
+      description: "Beobachtbares Ergebnis, kleinste ausreichende Prüfung nach docs/WORKFLOW.md und Empfänger. Vorhandene Belege nutzen, offene Grenzen nennen."
     validations:
       required: true

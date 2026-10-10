@@ -2,7 +2,7 @@
   "repositoryOrientation": {
     "date": "2026-10-10",
     "state": "integrated_with_direct_user_authorization",
-    "scope": "Repository orientation, proportional contributor communication and GitHub main-text cleanup; no product or acceptance approval.",
+    "scope": "Consolidated product/gate navigation, contributor communication, task and PR templates; no product or acceptance approval.",
     "branch": "active/installed-phase1",
     "entrypoint": "README.md",
     "productGoals": "docs/PRODUCT.md",
@@ -17,14 +17,13 @@
     "referenceRegister": "docs/reference/PLAN-REGISTER.md",
     "next": "Read the live product bottleneck and task claims with npm run next; delivery decisions remain in #12. Owners replace their current main text/checkpoint at meaningful handoffs, without repeated full reports.",
     "verification": {
-      "documentationCommit": "f0965feab2931e78739e44a1000e68b82208ceb7",
       "structure": "PASS",
-      "ci": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/actions/runs/38071524658",
-      "backlogLabels": "PASS after removing stale active label from closed #51",
-      "preserved": "Product code, complete product scope, pinned sources, architecture, acceptance and all foreign checkpoint roots unchanged."
+      "taskForm": "Three distinct required fields; parsed YAML and existing task label preserved.",
+      "preserved": "Product code, full source scope, architecture, acceptance and all foreign checkpoint bytes unchanged.",
+      "ci": "Repository structure workflow on the published commit."
     },
     "limits": "Semantic freshness and product/domain/host acceptance remain with their owners. Branch protection could not be configured or verified with existing access.",
-    "previousOrientation": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/blob/f0965feab2931e78739e44a1000e68b82208ceb7/checkpoint.json"
+    "previousOrientation": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/blob/abaf7c682c42fbe985c749bc12d96a0fac035c96/checkpoint.json"
   },
   "saltMarcherReplacement": {
     "date": "2026-10-10",
