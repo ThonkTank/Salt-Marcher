@@ -5081,11 +5081,11 @@
   },
   "gmProductTesting": {
     "date": "2026-10-09",
-    "state": "gm_ux_n005_n01_h01_r02_blocked_r03_not_started",
+    "state": "gm_ux_atlas_zoom_sequence_bounded_pass",
     "plan": "ROADMAP-GM-PRODUCT-TESTING-PLAN.md",
     "focus": "Längere GM-Endanwenderabläufe, häufige Aktionen, Bedienkosten und UI-Überladung; belegte Nacharbeiten beauftragen und nachprüfen.",
-    "currentRun": "GM-UX-01-ROOM-KEY-OPEN-CLUTTER-REPEAT-20261010-01 completed for the bounded visible open/close observation on exact Shared 699a2a0; existing full GM-UX-N-003-GM-R01/save-reopen gate remains separate and open.",
-    "executedUiRuns": 15,
+    "currentRun": "GM-UX-ATLAS-ZOOM-SEQ-20261010-01 completed for visible zoom-control sequence in narrow and wide Obsidian panes on exact Shared 821936601d5130e1bd72bda80e060207f177678f; no product defect or broad Atlas acceptance inferred.",
+    "executedUiRuns": 16,
     "observedFindings": [
       {
         "id": "GM-UX-001",
@@ -5237,7 +5237,7 @@
       "state": "completed",
       "supersedes": "GM-UX-ACCESS; Slotanfrage gemäß Nutzerkorrektur aufgehoben"
     },
-    "next": "Dungeon owner retains the existing GM-UX-N-003 follow-up/GM-R01 ownership. Use the ROADMAP-GM-UX-N-003-PLAN.md exact save/reload/reopen sequence if/when that package is scheduled; clarify whether Obsidian restoring its pre-existing Outline sidebar after closing Room-Key is expected. Do not infer full H01/R01, physical input, latency, or broad UX approval from this one open/close observation.",
+    "next": "Retest the same zoom controls in combination with visible terrain/location data only after the Hex-owned atlas marker/Key UI is integrated and marked runnable. Current completed scope: empty synthetic Atlas, +/−/Ctrl+wheel/Einpassen in 380px and 980x584 canvases. No fresh Electron, physical input, camera-anchor precision or broad Atlas/Dungeon/E2E acceptance.",
     "automation": "Stündliche GM-Produkttests in eigener Cloud; keine Laptop-Slotfreigabe erforderlich.",
     "executionEnvironment": "Eigene Cloud-Umgebung, getrennt vom Laptop der Kollegen",
     "cloudHost": {
@@ -6174,6 +6174,64 @@
         "No full GM-UX-N-003-H01/GM-R01 acceptance, no broad UX/functional/E2E approval."
       ],
       "next": "Existing Dungeon-owned GM-UX-N-003-GM-R01 remains the follow-up for the full plan-specified Save/Reload/Reopen/hash criteria; clarify the observed right-side Outline return only within that owner scope. No new product fix is requested from this bounded observation."
+    },
+    "latestAtlasZoomSequence": {
+      "id": "GM-UX-ATLAS-ZOOM-SEQ-20261010-01",
+      "status": "completed_pass_for_visible_zoom_controls_empty_atlas_narrow_and_wide_panes",
+      "owner": "Cloud-GM-Produkttester",
+      "branch": "active/installed-phase1",
+      "sharedProductCommit": "821936601d5130e1bd72bda80e060207f177678f",
+      "comparison": "Since prior integrated OBS-04 product source eefbe6f505f0158ec6156c2eaf359fbf19b24a0e, no Atlas/Dungeon UI source files changed; catalog data/source validator and documentation changed. Current build main.js hash is identical to prior installed bundle.",
+      "coordination": {
+        "issue1DocumentationContract": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1#issuecomment-6087478045",
+        "issue7PreRun": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/7#issuecomment-6097082925",
+        "issue7BuildInstall": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/7#issuecomment-6097089850",
+        "issue7PreZoom": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/7#issuecomment-6097100243",
+        "issue8Ownership": "Issue #8 latest Dungeon scan 6097054357; no new GM repair owner or overlapping Atlas UI run identified."
+      },
+      "build": {
+        "command": "npm run build",
+        "result": "PASS; dirty:false; Node v24.19.0; sourceRevision exact Shared SHA.",
+        "mainJsSha256": "522823730ddce4d0ba83e0476f60887b60a07c517f84e8e270814b6d597efa43",
+        "stylesCssSha256": "a6d31c13219d4b9f49d2ecf6993106bedef2a33560c9bdfdb93106659d45bc2e",
+        "manifestJsonSha256": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64",
+        "installedTriplet": "All three installed QA plugin files matched the fresh build byte-for-byte."
+      },
+      "host": {
+        "containerId": "6b89f4c325373b1c28b9f15ae6b8e23493d61a85fe46cc8aa45f4f1379e81c92",
+        "obsidian": "1.14.4",
+        "electron": "43.7.7",
+        "viewport": "1024x800 CSS px; devicePixelRatio 1",
+        "profile": "/workspace/scratch/gm-cloud-qa/room-key-open-clean-20261010/profile",
+        "vault": "/workspace/scratch/gm-cloud-qa/room-key-open-clean-20261010/vault",
+        "input": "Visible Obsidian UI via isolated Cloud CDP 9232; no laptop process."
+      },
+      "scope": "Visible UI sequence using currently implemented Atlas +/−, Ctrl+wheel, and Fit controls in a narrow workspace pane and widened/full-width workspace, on a new empty synthetic .overworld only. No terrain, location, or project data edit.",
+      "uiSteps": [
+        "Visible command palette: Atlas anlegen; named empty synthetic Atlas GM QA Zoomfolge 2026-10-10, default pointy orientation; UI showed 3 Meilen pro Hex and grid/origin.",
+        "Narrow 380px pane: capture baseline; click + three times; Ctrl+wheel up once at visible canvas center; click − once; click Einpassen once.",
+        "Widen workspace by visible Toggle right sidebar and Toggle left sidebar commands; Atlas canvas became about 980x584 CSS px.",
+        "Wide pane: capture baseline; click + twice; Ctrl+wheel up once; click − once; click Einpassen once.",
+        "Visible Toggle left sidebar and Toggle right sidebar commands restored the prior 300/380/300 pane layout."
+      ],
+      "result": "Visible hex geometry enlarged after + and Ctrl+wheel, reduced after −, and Einpassen returned each viewport to an initial-looking centered grid. The label remained 3 Meilen pro Hex. No control was obscured and no blank/black Atlas was observed.",
+      "dataOracles": {
+        "qaAtlasPath": "Atlanten/GM QA Zoomfolge 2026-10-10.overworld",
+        "qaAtlasSha256BeforeAfterZoom": "9f8ea64229c608ee4f4d5454f5782ffbb73170f36bbf9e6a8a28c19d13c30d17",
+        "existingDungeonQaCardSha256BeforeAfter": "56c38f8ff9e4365a165af4319da37bb03db20c09925d6ee38e5327e7559353c7"
+      },
+      "evidence": {
+        "directory": "/workspace/scratch/gm-cloud-qa/evidence-gmux-atlas-zoom-seq-20261010-01/",
+        "screenshots": "00-before.png through 20-restored-split.png; manifest SHA256SUMS.txt; UI action log RUN-NOTES.md.",
+        "keyFrames": "06-atlas-created.png; 07-split-baseline.png; 08-split-plus-1.png..08-split-plus-3.png; 09-split-ctrl-wheel-in.png; 10-split-minus.png; 11-split-fit.png; 14-full-baseline.png; 16-full-plus-2.png; 17-full-ctrl-wheel-in.png; 18-full-minus.png; 19-full-fit.png; 20-restored-split.png."
+      },
+      "checks": "npm run build PASS dirty:false; build/install triplet SHA-256 equality PASS; pre/post Atlas and Dungeon QA file hashes equal; screenshot manifest generated. No test suite run.",
+      "filesChanged": [
+        "checkpoint.json: gmProductTesting only",
+        "ROADMAP-GM-PRODUCT-TESTING-PLAN.md: append bounded Atlas zoom-sequence result"
+      ],
+      "limits": "CDP remote UI, not physical input; no product latency; no zoom-anchor precision or persistence; no populated Atlas/terrain/location; no fresh Electron process; no broad Hex/Atlas/Dungeon/E2E or product approval. This bounded PASS produced no evidence-backed implementation repair task.",
+      "next": "When Hex-owned visible location/Key UI is integrated and runnable, test the same zoom sequence with visible Atlas content and its map/room navigation; otherwise no additional unchanged empty-Atlas replay."
     }
   }
 }
