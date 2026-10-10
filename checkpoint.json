@@ -4934,14 +4934,14 @@
       "kind": "cleanup_review",
       "startedAt": "2026-10-10T04:38:52.728361+00:00",
       "focus": "Exact absence, raw/protected/source hashes, process/ownership boundaries",
-      "state": "completed",
-      "result": "PASS no cleanup finding; 77 protected files and all Rawmanifest hashes intact, sources/copies unchanged, three caches absent, five PID identities gone, product/tools/tests and foreign roots match current Shared.",
+      "state": "changes_required",
+      "result": "Cache removal and all77 protected hashes PASS, but I48b manifest.files empty due absolute /home exclusion. Empty raw inventory is not evidence completeness. Review qualified CHANGES_REQUIRED CITY-I48B-CL-R01-01; preserve manifest and repair additive inventory separately.",
       "receipt": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i48b-20261010-r01/cleanup-review.json"
     },
     "nextRun": {
-      "id": "CITY-00-R48",
-      "kind": "reference_review",
-      "focus": "Review both original I48a/I48b evidence chains, template sections/effect/cancel and fresh process boundaries; no product or full parity claim"
+      "id": "CITY-00-I48b-CLEAN-N01",
+      "kind": "cleanup_repair",
+      "focus": "Add complete run-relative evidence inventory without editing original manifest/rawfiles, cross-check preserved77 hashes; then separate re-review before R48"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
