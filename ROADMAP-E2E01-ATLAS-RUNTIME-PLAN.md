@@ -43,14 +43,21 @@ Kandidat: https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/81
 
 Eingang: https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/78
 
-Die integrierte native Referenz-/Save-/Recoverybasis ist konsumiert. Sichtbare
-Verortung einer vorhandenen Dungeonkarte am geladenen Ort und der gemeinsame
-Raum-Key-/Zurück-/UndoRedo-/Save-Weg sind an den bestehenden Editor angeschlossen.
-[Quellgebundener I01-Beleg](docs/reference/atlas-detail-binding-d01/dungeon-at-location-i01.json).
-Nächster ausführbarer Beitrag: gezielter unabhängiger Dungeon-/Atlas-Review dieses
-Kandidaten. Anschließend echte Obsidian-/Frischstartprobe nach frischer lokaler
-Slotkoordination und frühe Cloud-GM-Nutzungsprüfung am erreichbaren GUI-Weg.
-E2E-01 und native/physische/Original-/Großkarten-/Installationsabnahmen bleiben offen.
+Die native Save-/Referenz-/Recoverybasis ist konsumiert; vorhandenen Dungeon am
+Ort verorten und Raum-Key/Zurück/UndoRedo bedienen ist im gemeinsamen Editor
+angeschlossen. Atlas-QAs [R01-Befund](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/81#issuecomment-6102786765)
+zum zurückgebliebenen Link nach Ort A → B ist gezielt repariert: alter Ortslink,
+neuer Ortslink und dieselbe Platzierung ändern sich in einer History-Aktion.
+Andere Verweise/Texte bleiben erhalten; Core/DOM, Save/erneutes Modellladen,
+Copy/Discard und Prepared/Committed-Recovery binden den
+[N02-Beleg](docs/reference/atlas-detail-binding-d01/dungeon-at-location-n02.json).
+
+Nächster begrenzter Beitrag: Atlas-QAs unabhängiger R02 am korrigierten Kandidaten.
+Anschließend getrennte echte Obsidian-/Frischstartprobe nach neuer lokaler
+Slotkoordination und frühe Cloud-GM-Nutzung am erreichbaren GUI-Weg.
+Keine Selbstintegration oder weitere abhängige Featureerweiterung vor dem
+Nutzungsfeedback. E2E-01 und native/physische/Original-/Großkarten-/Installations-
+abnahmen bleiben offen.
 
 ## Historische Planbasis und Lieferbelege
 
