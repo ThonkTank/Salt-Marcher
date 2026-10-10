@@ -34,7 +34,46 @@
       "followupIssue": 44,
       "assessment": "Known source domains explicitly covered; detailed target-rule conflicts, Dungeon work-package mapping and complete original inventories remain open. No acceptance states changed."
     },
-    "next": "Product owners continue the existing integration path; resolve scope mappings and source conflicts in #44 using docs/SCOPE.md."
+    "next": "A new contributor can claim #46 on Shared; #42 is complete and its pinned fixture guide is available. Product owners continue PR13 integration; scope mappings remain in #44.",
+    "agentEntry": "CONTRIBUTING.md#agenteneinstieg",
+    "contributorAudit": {
+      "date": "2026-10-10",
+      "readyIssue": 46,
+      "readyTaskBase": "active/installed-phase1",
+      "fixtureGenerator": "tests/core/pack-fixtures.ts",
+      "taskStatusLabels": [
+        "status:ready",
+        "status:active",
+        "status:blocked"
+      ],
+      "limits": "No product, original or native host acceptance; existing product-owner candidates preserved.",
+      "cleanCheckoutVerification": {
+        "commit": "321a41c1fa651e6c77f005566ebbafc7080eb960",
+        "node": "v22.23.3",
+        "install": "npm ci PASS",
+        "check": "npm run check PASS",
+        "tests": 443,
+        "testState": "PASS",
+        "build": "npm run build PASS",
+        "targetedModelTest": "1/1 PASS",
+        "requiresHost": false
+      },
+      "issueDependencies": {
+        "39": [
+          38
+        ],
+        "40": [
+          39
+        ]
+      },
+      "completedStarter": {
+        "issue": 42,
+        "owner": "Chronik",
+        "pullRequest": 45,
+        "integrationCommit": "7ef025c94fe438c31b20fdc8632b2c9d31b6bc68",
+        "document": "docs/CONTRIBUTOR-FIXTURE-B.md"
+      }
+    }
   },
   "saltMarcherReplacement": {
     "date": "2026-10-10",
