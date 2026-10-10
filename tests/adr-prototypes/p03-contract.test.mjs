@@ -67,6 +67,45 @@ test("P03 rejects extra private fields and nonempty fail-closed states", () => {
   );
 });
 
+test("P03 exact shapes reject inherited substitutions, accessors, symbols and hidden fields", () => {
+  const valid = projection();
+  const inherited = Object.assign(Object.create({ statusCode: "READY" }), {
+    ...valid,
+    statusCode: undefined,
+  });
+  delete inherited.statusCode;
+  inherited.privateNote = "P03_PRIVATE_BYPASS";
+  assert.equal(
+    Reflect.ownKeys(inherited).length,
+    Reflect.ownKeys(valid).length,
+  );
+  assert.throws(() => validateProjection(inherited), /invalid shape/);
+
+  let getterReads = 0;
+  const accessor = { ...valid };
+  Object.defineProperty(accessor, "statusCode", {
+    enumerable: true,
+    get() {
+      getterReads += 1;
+      return "READY";
+    },
+  });
+  assert.throws(() => validateProjection(accessor), /invalid shape/);
+  assert.equal(getterReads, 0);
+
+  assert.throws(
+    () => validateProjection({ ...valid, [Symbol("private")]: "secret" }),
+    /invalid shape/,
+  );
+  const hidden = { ...valid };
+  Object.defineProperty(hidden, "privateNote", { value: "secret" });
+  assert.throws(() => validateProjection(hidden), /invalid shape/);
+
+  const marked = projection();
+  marked.releasedMarkers.privateNote = "secret";
+  assert.throws(() => validateProjection(marked), /releasedMarkers is invalid/);
+});
+
 test("P03 status is a minimal immutable projection of current state", () => {
   assert.deepEqual(statusFor(projection()), {
     schemaVersion: SCHEMA_VERSION,

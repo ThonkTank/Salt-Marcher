@@ -7,17 +7,33 @@
   const markers = document.querySelector("#markers");
   const legend = document.querySelector("#legend");
   const details = document.querySelector("#details");
+  let rendered = null;
 
   function clearChildren(element) {
     while (element.firstChild) element.firstChild.remove();
   }
 
   function render(value) {
+    if (rendered) {
+      if (value.generation < rendered.generation) return;
+      if (value.generation === rendered.generation) {
+        const renderedTerminal = rendered.state !== "blank";
+        if (
+          (renderedTerminal && value.state !== rendered.state) ||
+          (!renderedTerminal && value.state === "blank")
+        )
+          return;
+      }
+    }
+    rendered = { generation: value.generation, state: value.state };
     document.documentElement.dataset.generation = String(value.generation);
     document.documentElement.dataset.projectionState = value.state;
     surface.dataset.state = value.state;
     clearChildren(markers);
     clearChildren(legend);
+    surface.removeAttribute("style");
+    art.removeAttribute("style");
+    art.setAttribute("aria-label", "No released art");
     if (value.state !== "ready") {
       heading.textContent =
         value.state === "error" ? "Scene unavailable" : "Changing scene";
@@ -25,9 +41,6 @@
         value.state === "error"
           ? "No party-safe scene is available"
           : "Preparing released view";
-      surface.removeAttribute("style");
-      art.removeAttribute("style");
-      art.setAttribute("aria-label", "No released art");
       details.hidden = true;
       legend.hidden = true;
       return;

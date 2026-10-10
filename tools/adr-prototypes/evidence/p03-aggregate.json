@@ -78,23 +78,23 @@
     "samples": [
       {
         "step": "a0-blank",
-        "milliseconds": 0.29241000000001804
+        "milliseconds": 0.3236689999999953
       },
       {
         "step": "a0-ready",
-        "milliseconds": 378.17334099999994
+        "milliseconds": 388.172827
       },
       {
         "step": "aba-blank",
-        "milliseconds": 0.2749989999999798
+        "milliseconds": 0.19625900000005458
       },
       {
         "step": "aba-ready",
-        "milliseconds": 366.90540999999985
+        "milliseconds": 364.5099379999999
       }
     ],
-    "blankP95Ms": 0.29241000000001804,
-    "readyP95Ms": 378.17334099999994,
+    "blankP95Ms": 0.3236689999999953,
+    "readyP95Ms": 388.172827,
     "budgetsMs": {
       "blank": 100,
       "ready": 1000
@@ -130,11 +130,11 @@
   },
   "gmWindow": {
     "before": {
-      "ticks": 109,
+      "ticks": 111,
       "note": "GM window remains independent"
     },
     "after": {
-      "ticks": 115,
+      "ticks": 116,
       "note": "GM window remains independent"
     },
     "unaffected": true

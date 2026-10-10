@@ -2,15 +2,42 @@ export const SCHEMA_VERSION = "p03-v1";
 export const PROJECTION_STATES = Object.freeze(["blank", "ready", "error"]);
 
 const exact = (value, keys, label) => {
-  if (
-    !value ||
-    typeof value !== "object" ||
-    Array.isArray(value) ||
-    Object.keys(value).length !== keys.length ||
-    keys.some((key) => !(key in value))
-  ) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
     throw new Error(`${label} has an invalid shape`);
   }
+  const prototype = Object.getPrototypeOf(value);
+  const ownKeys = Reflect.ownKeys(value);
+  if (
+    (prototype !== Object.prototype && prototype !== null) ||
+    ownKeys.length !== keys.length ||
+    ownKeys.some((key) => typeof key !== "string" || !keys.includes(key)) ||
+    keys.some((key) => {
+      const descriptor = Object.getOwnPropertyDescriptor(value, key);
+      return !descriptor || !("value" in descriptor) || !descriptor.enumerable;
+    })
+  )
+    throw new Error(`${label} has an invalid shape`);
+};
+
+const exactArray = (value, label, max) => {
+  if (!Array.isArray(value) || value.length > max) {
+    throw new Error(`${label} is invalid`);
+  }
+  const keys = Reflect.ownKeys(value);
+  if (
+    keys.length !== value.length + 1 ||
+    keys.at(-1) !== "length" ||
+    keys.slice(0, -1).some((key, index) => {
+      const descriptor = Object.getOwnPropertyDescriptor(value, key);
+      return (
+        key !== String(index) ||
+        !descriptor ||
+        !("value" in descriptor) ||
+        !descriptor.enumerable
+      );
+    })
+  )
+    throw new Error(`${label} is invalid`);
 };
 
 const text = (value, label, min = 1, max = 256) => {
@@ -101,12 +128,7 @@ export function validateProjection(value) {
   if (!PROJECTION_STATES.includes(value.state))
     throw new Error("unsupported projection state");
   text(value.statusCode, "statusCode", 2, 40);
-  if (
-    !Array.isArray(value.releasedMarkers) ||
-    value.releasedMarkers.length > 64
-  ) {
-    throw new Error("releasedMarkers is invalid");
-  }
+  exactArray(value.releasedMarkers, "releasedMarkers", 64);
   const markers = value.releasedMarkers.map(validateMarker);
   if (new Set(markers.map((marker) => marker.id)).size !== markers.length) {
     throw new Error("released marker ids must be unique");
