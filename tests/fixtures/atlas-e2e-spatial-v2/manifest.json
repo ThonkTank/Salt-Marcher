@@ -93,6 +93,19 @@
       "bytes": 267
     }
   ],
+  "campaign": {
+    "path": "Kampagnen/SaltMarcher/E2E-01-Atlas-Save.campaign.json",
+    "input": {
+      "fixtureFile": "input/Kampagnen/SaltMarcher/E2E-01-Atlas-Save.campaign.json",
+      "sha256": "e66a9c557016357d3dea7491fa7110f9db0eeccf6fed5d1f9510885f6990a6df",
+      "bytes": 23427
+    },
+    "expected": {
+      "fixtureFile": "expected/Kampagnen/SaltMarcher/E2E-01-Atlas-Save.campaign.json",
+      "sha256": "aa8474971afb0e42a8abd83b0b2842fdde67dca2d539a83dcd982b971779fa5f",
+      "bytes": 23486
+    }
+  },
   "oracle": {
     "houseId": "00000000-0000-4000-8000-000000000105",
     "inputPosition": {
