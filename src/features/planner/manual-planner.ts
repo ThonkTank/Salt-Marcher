@@ -184,6 +184,15 @@ export class ManualPlanner {
   }
   act(binding: PlanBinding, action: ManualPlanAction): ManualPlan {
     const p = this.current(binding);
+    const next = this.apply(p, action);
+    const prospective = new Map(this.plans);
+    prospective.set(p.id, next);
+    this.assertUniqueScenes(prospective);
+    this.plans.set(p.id, next);
+    return next;
+  }
+  /** Stage a local payload change without publishing it. */
+  private apply(p: ManualPlan, action: ManualPlanAction): ManualPlan {
     let name = p.name;
     const scenes = [...p.scenes];
     if (action.kind === "rename") name = text(action.name);
@@ -202,11 +211,44 @@ export class ManualPlanner {
         [scenes[i], scenes[j]] = [scenes[j]!, scenes[i]!];
       }
     }
-    const next = manualPlan({ ...p, revision: p.revision + 1, name, scenes });
-    const prospective = new Map(this.plans);
+    return manualPlan({ ...p, revision: p.revision + 1, name, scenes });
+  }
+  /** Commit the displayed draft and rename/reorder as one local publication. */
+  actWithDraft(
+    binding: PlanBinding,
+    action: Extract<ManualPlanAction, { kind: "rename" | "move" }>,
+  ): ManualPlan {
+    const p = this.current(binding);
+    if (p.id !== this.activeId) throw new Error("Plan nicht mehr ausgewählt.");
+    const draft = this.draftValue;
+    const selection = this.sceneId;
+    const baseline = new Map(this.plans);
+    let staged = p;
+    if (draft) {
+      this.current(draft.binding);
+      if (draft.binding.id !== p.id || draft.sceneId !== selection)
+        throw new Error("Entwurf nicht mehr ausgewählt.");
+      staged = this.apply(p, {
+        kind: "edit",
+        sceneId: draft.sceneId,
+        fields: draft.fields,
+      });
+    }
+    const next = this.apply(staged, action);
+    const prospective = new Map(baseline);
     prospective.set(p.id, next);
     this.assertUniqueScenes(prospective);
-    this.plans.set(p.id, next);
+    this.current(binding);
+    if (
+      this.activeId !== p.id ||
+      this.sceneId !== selection ||
+      this.draftValue !== draft ||
+      this.plans.size !== baseline.size ||
+      [...baseline].some(([id, plan]) => this.plans.get(id) !== plan)
+    )
+      throw new Error("Plan geändert. Entwurf behalten.");
+    this.plans = prospective;
+    this.draftValue = null;
     return next;
   }
   deletePlan(binding: PlanBinding): void {

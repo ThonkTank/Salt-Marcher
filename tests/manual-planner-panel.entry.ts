@@ -255,3 +255,53 @@ test("manual planner UI: refresh retains stale draft until explicit discard", ()
   assert.deepEqual(f.p.catalog, before);
   f.ui.destroy();
 });
+
+for (const action of ["Umbenennen", "Szene nach oben"] as const) {
+  test(`manual planner UI: compound ${action} revision failure retains confirmed payload and exact dirty draft`, () => {
+    const { document } = parseHTML(
+      '<html><body><div id="host"></div></body></html>',
+    );
+    const host = document.querySelector("#host") as HTMLElement;
+    const id = (n: number) =>
+      campaignLocalId(`00000000-0000-4000-8000-${String(n).padStart(12, "0")}`);
+    const p = new ManualPlanner(
+      () => id(9),
+      () => {},
+      [
+        {
+          version: 1,
+          id: id(1),
+          revision: Number.MAX_SAFE_INTEGER - 1,
+          name: "old",
+          scenes: [
+            { id: id(2), title: "first", notes: "", locationId: null },
+            {
+              id: id(3),
+              title: "second",
+              notes: "confirmed",
+              locationId: null,
+            },
+          ],
+        },
+      ],
+    );
+    p.selectScene(id(3));
+    p.editDraft({
+      title: "edited",
+      notes: "  exact\n日本語\t",
+      locationId: null,
+    });
+    const ui = new ManualPlannerPanel(host, p);
+    (host.querySelector('[aria-label="Planname"]') as HTMLInputElement).value =
+      "new";
+    const before = p.active;
+    const draft = p.draft;
+    const selection = p.selectedSceneId;
+    button(host, action).click();
+    assert.equal(p.active, before);
+    assert.equal(p.draft, draft);
+    assert.equal(p.selectedSceneId, selection);
+    assert.match(host.textContent!, /Ungültige Planrevision/);
+    ui.destroy();
+  });
+}

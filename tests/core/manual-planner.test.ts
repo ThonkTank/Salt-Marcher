@@ -203,3 +203,71 @@ for (const failure of ["collision", "allocator", "revision"] as const) {
     assert.equal(p.selectedSceneId, selection);
   });
 }
+
+for (const failure of ["target", "context"] as const) {
+  test(`manual planner: compound action ${failure} failure preserves draft and permits retry`, () => {
+    let rejectFinal = false;
+    let calls = 0;
+    const p = new ManualPlanner(
+      () => id(9),
+      () => {
+        if (rejectFinal && ++calls === 3) throw new Error("Context stale");
+      },
+      [
+        {
+          version: 1,
+          id: id(1),
+          revision: 1,
+          name: "",
+          scenes: [
+            { id: id(2), title: "first", notes: "", locationId: null },
+            {
+              id: id(3),
+              title: "second",
+              notes: "confirmed",
+              locationId: null,
+            },
+          ],
+        },
+      ],
+    );
+    p.selectScene(id(3));
+    p.editDraft({
+      title: "edited",
+      notes: " exact\n日本語 ",
+      locationId: null,
+    });
+    const before = p.active;
+    const draft = p.draft;
+    rejectFinal = failure === "context";
+    assert.throws(() =>
+      p.actWithDraft(p.binding(), {
+        kind: "move",
+        sceneId: failure === "target" ? id(8) : id(3),
+        direction: -1,
+      }),
+    );
+    assert.equal(p.active, before);
+    assert.equal(p.draft, draft);
+    assert.equal(p.selectedSceneId, id(3));
+    rejectFinal = false;
+    const moved = p.actWithDraft(p.binding(), {
+      kind: "move",
+      sceneId: id(3),
+      direction: -1,
+    });
+    assert.equal(moved.revision, 3);
+    assert.equal(moved.scenes[0]!.id, id(3));
+    assert.equal(moved.scenes[0]!.notes, " exact\n日本語 ");
+    assert.equal(p.draft, null);
+    p.editDraft({ title: "renamed", notes: "next", locationId: null });
+    const renamed = p.actWithDraft(p.binding(), {
+      kind: "rename",
+      name: "plan",
+    });
+    assert.equal(renamed.revision, 5);
+    assert.equal(renamed.name, "plan");
+    assert.equal(renamed.scenes[0]!.title, "renamed");
+    assert.equal(p.draft, null);
+  });
+}

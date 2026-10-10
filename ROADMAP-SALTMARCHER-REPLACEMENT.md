@@ -256,10 +256,14 @@ Er nutzt das reale Panel mit ortsloser Blankplanung, Szenen/Notizen/Reihenfolge 
 Memory-only: Neuladen/Schließen verwirft sämtliche Arbeit; keine alternative Speicherung.
 Der [Cloud-GM-Lauf](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/69#issuecomment-6102831310)
 bestätigt den manuellen Bedienweg, fand Fokusverlust bei Szenenauswahl.
-Stadt repariert die Übergabe an das Titelfeld; gezielte DOMregression11/11 PASS.
-Nächster Beitrag: enger unabhängiger Fokus-Deltareview und derselbe sichtbare GM-Retest;
-Stadt konsumiert danach den bestätigten nativen Speicherport.
-Vor größerem Partybudget-/Encounter-/Generatorausbau konkrete GM-Befunde schließen.
+Fokusreparatur auf59f04fe durch unabhängigen Review5481049475 und
+[sichtbaren GM-Retest](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/69#issuecomment-6102960484)
+bestätigt: Klick/Enter führt zu Szenentitel, nächster Tab zu Notizen; Plan-/Text-/Order-Erhalt.
+Neuer eigener Fehlerfall: Rename/Move nach Dirty-Draft-Übernahme konnte bei zweitem
+Revisionsfehler teilwirken. Gemeinsamer atomarer Modellpfad geliefert, 24 fokussierte
+Core-/Panel-Fälle PASS; neuer enger unabhängiger Deltareview vor Integration.
+Stadt konsumiert anschließend den bestätigten nativen Speicherport; #68 liefert
+World-Notes-Acknowledgment, weiterhin keine Plannerdatei-/Ownerautorität.
 Native Save/Fresh-/Recoveryabnahme, wirksamer 200%-Zoom und physische Tastatur bleiben offen.
 
 ### SMR-07 – Reise, Kalender und autoritative Zeit

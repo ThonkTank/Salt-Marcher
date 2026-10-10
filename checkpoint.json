@@ -9882,20 +9882,16 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "MANUAL-PLANNER-GM-FOCUS-N01",
+      "id": "MANUAL-PLANNER-COMPOUND-N02",
       "issue": 69,
-      "state": "focus_repair_ready_for_delta_review_and_browser_retest",
+      "state": "atomic_rename_move_ready_for_independent_delta_review",
       "branch": "city/manual-session-planner",
       "plan": "docs/plans/campaign/manual-session-planner.md",
-      "next": "Existing independent reviewer checks focus delta; same Cloud-GM repeats scene selection/Tab; native Campaign port still missing",
-      "verification": {
-        "before": "success-focus FAIL; stale-no-focus PASS",
-        "after": "11/11 Panel DOM PASS, type/repo/diff PASS, preview rebuild PASS",
-        "nativeAndBrowserRetest": "not run"
-      },
-      "priorCoreReview": "Atomic Add PASS5480881955 on ca25844; existing Core/Refresh PASS retained",
-      "limits": "No Campaign writer/plugin activation; no durable persistence/Recovery/Fresh/GM acceptance",
-      "gmFinding": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/69#issuecomment-6102831310"
+      "finding": "Dirty draft published before failed rename/move second revision; 2 actual panel probes FAIL before repair",
+      "verification": "24 focused core/panel PASS; final-context and missing-target failures retain draft and allow exact successful retry",
+      "next": "Existing reviewer checks compound action delta; native Planner ownership/file/publish contract still open",
+      "qualifiedPriorInput": "Focus review5481049475 and visible Cloud-GM6102960484 PASS on59f04fe",
+      "limits": "No native storage/plugin/Save/Fresh/Recovery or overall product acceptance"
     },
     "nextRun": {
       "id": "MANUAL-PLANNER-I01-CONSUME",

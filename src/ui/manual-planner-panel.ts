@@ -138,14 +138,7 @@ export class ManualPlannerPanel {
       name.placeholder = "Unbenannter Plan";
       this.label(toolbar, "Planname", name);
       this.button(toolbar, "Umbenennen", () => {
-        // Draft commit changes the revision; bind rename to the ensuing same plan only.
-        if (
-          this.planner.binding().id !== binding.id ||
-          this.planner.binding().revision !== binding.revision
-        )
-          throw new Error("Plan geändert. Erneut öffnen.");
-        this.planner.commitDraft();
-        this.planner.act(this.planner.binding(), {
+        this.planner.actWithDraft(binding, {
           kind: "rename",
           name: name.value,
         });
@@ -235,13 +228,7 @@ export class ManualPlannerPanel {
             inspector,
             text,
             () => {
-              if (
-                this.planner.binding().id !== binding.id ||
-                this.planner.binding().revision !== binding.revision
-              )
-                throw new Error("Plan geändert. Entwurf behalten.");
-              this.planner.commitDraft();
-              this.planner.act(this.planner.binding(), {
+              this.planner.actWithDraft(binding, {
                 kind: "move",
                 sceneId: s.id,
                 direction,

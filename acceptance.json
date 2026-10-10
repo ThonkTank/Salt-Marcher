@@ -4851,7 +4851,7 @@
         "output": ".build/manual-planner-preview/index.html",
         "scope": "Real ManualPlannerPanel memory-only browser host; no alternate native storage",
         "technicalSmoke": "PASS actual bundle blank/create/exact Unicode whitespace notes/second plan/visible volatile limit",
-        "independentGmUse": "Cloud-GM6102831310: visible create/notes/order/switch PASS; scene focus P2 found, repaired, browser retest pending; 200 percent not achieved",
+        "independentGmUse": "6102831310 manual path and focus P2; 6102960484 focused successful repair retest PASS on59f04fe; no native/200 percent acceptance",
         "nativeSaveFreshRecovery": "open; Campaign/Data authority missing"
       },
       "gmFocusRepair": {
@@ -4859,7 +4859,13 @@
         "change": "Successful scene selection focuses newly rendered title; failed stale action never redirects focus",
         "before": "1 FAIL /1 PASS",
         "after": "11/11 panel DOM PASS",
-        "independentReviewAndBrowserRetest": "pending"
+        "independentReviewAndBrowserRetest": "PASS5481049475 and Cloud-GM6102960484 on59f04fe; pointer/Enter/title/next Tab/notes/plan order preservation"
+      },
+      "atomicRenameMove": {
+        "before": "2 actual panel revision-failure probes FAIL",
+        "after": "24 focused core/panel PASS, including missing target/final context rejection and successful retry",
+        "scope": "Stage draft edit and rename/move before any publication; retain exact original payload/draft/selection on failure",
+        "independentDeltaReview": "pending"
       }
     }
   },
