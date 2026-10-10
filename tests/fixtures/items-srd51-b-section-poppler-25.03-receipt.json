@@ -1,0 +1,31 @@
+{
+  "fixtureVersion": 1,
+  "source": "official-SRD-5.1",
+  "license": "CC-BY-4.0",
+  "attributionAsset": "src/features/catalog/SRD-5.1-ITEMS-ATTRIBUTION.md",
+  "sourcePdfSha256": "2504d2a0abb0a4d491a939be4f17910a2dde0312570ab8d208080225ccf0a1f0",
+  "sourcePdfBytes": 3158713,
+  "sourcePdfPages": 403,
+  "sourcePdfUrl": "https://media.wizards.com/2023/downloads/dnd/SRD_CC_v5.1.pdf",
+  "extractor": "pdftohtml",
+  "extractorVersion": "25.03.0",
+  "arguments": [
+    "-xml",
+    "-f",
+    "211",
+    "-l",
+    "213",
+    "-stdout",
+    "-i",
+    "<hash-pinned-official-pdf>"
+  ],
+  "physicalPages": [
+    211,
+    212,
+    213
+  ],
+  "xmlSha256": "0313b37e900151b1f7e8f099303f64a3a0f198c6501bb4ff5effdcb620d56df2",
+  "xmlBytes": 42516,
+  "modification": "none: complete original three-page XML, no text, coordinates or fonts rewritten",
+  "limits": "Actual local Poppler25.03; offline XML is not a fresh PDF run or any installed/GUI/physical/E2E acceptance."
+}

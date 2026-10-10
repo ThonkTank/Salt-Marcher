@@ -309,6 +309,686 @@
     {"id":"srd51:magic-item:magic-items-a-z:14","name":"Bag of Beans","category":"magic-item","subcategory":"wondrous-item","magic":true,"rarity":{"kind":"fixed","value":"rare"},"attunement":"not-required","sourceHeader":{"text":"Wondrous item, rare","occurrenceId":"srd51:magic-item:magic-items-a-z:14"},"properties":[{"name":"01","description":"5d4 toadstools sprout. If a creature eats a toadstool, roll any die. On an odd roll, the eater must succeed on a DC 15 Constitution saving throw or take 5d6 poison damage and become poisoned for 1 hour. On an even roll, the eater gains 5d6 temporary hit points for 1 hour.","occurrenceId":"srd51:magic-item:magic-items-a-z:14"},{"name":"02–10","description":"A geyser erupts and spouts water, beer, berry juice, tea, vinegar, wine, or oil (GM’s choice) 30 feet into the air for 1d12 rounds.","occurrenceId":"srd51:magic-item:magic-items-a-z:14"},{"name":"11–20","description":"A treant sprouts. There’s a 50 percent chance that the treant is chaotic evil and attacks.","occurrenceId":"srd51:magic-item:magic-items-a-z:14"},{"name":"21–30","description":"An animate, immobile stone statue in your likeness rises. It makes verbal threats against you. If you leave it and others come near, it describes you as the most heinous of villains and directs the newcomers to find and attack you. If you are on the same plane of existence as the statue, it knows where you are. The statue becomes inanimate after 24 hours.","occurrenceId":"srd51:magic-item:magic-items-a-z:14"},{"name":"31–40","description":"A campfire with blue flames springs forth and burns for 24 hours (or until it is extinguished).","occurrenceId":"srd51:magic-item:magic-items-a-z:14"},{"name":"41–50","description":"1d6 + 6 shriekers sprout","occurrenceId":"srd51:magic-item:magic-items-a-z:14"},{"name":"51–60","description":"1d4 + 8 bright pink toads crawl forth. Whenever a toad is touched, it transforms into a Large or smaller monster of the GM’s choice. The monster remains for 1 minute, then disappears in a puff of bright pink smoke.","occurrenceId":"srd51:magic-item:magic-items-a-z:14"},{"name":"61–70","description":"A hungry bulette burrows up and attacks.","occurrenceId":"srd51:magic-item:magic-items-a-z:14"},{"name":"71–80","description":"A fruit tree grows. It has 1d10 + 20 fruit, 1d8 of which act as randomly determined magic potions, while one acts as an ingested poison of the GM’s choice. The tree vanishes after 1 hour. Picked fruit remains, retaining any magic for 30 days.","occurrenceId":"srd51:magic-item:magic-items-a-z:14"},{"name":"81–90","description":"A nest of 1d4 + 3 eggs springs up. Any creature that eats an egg must make a DC 20 Constitution saving throw. On a successful save, a creature permanently increases its lowest ability score by 1, randomly choosing among equally low scores. On a failed save, the creature takes 10d6 force damage from an internal magical explosion.","occurrenceId":"srd51:magic-item:magic-items-a-z:14"},{"name":"91–99","description":"A pyramid with a 60-foot-square base bursts upward. Inside is a sarcophagus containing a mummy lord. The pyramid is treated as the mummy lord’s lair, and its sarcophagus contains treasure of the GM’s choice.","occurrenceId":"srd51:magic-item:magic-items-a-z:14"},{"name":"00","description":"A giant beanstalk sprouts, growing to a height of the GM’s choice. The top leads where the GM chooses, such as to a great view, a cloud giant’s castle, or a different plane of existence.","occurrenceId":"srd51:magic-item:magic-items-a-z:14"}],"description":[{"text":"Inside this heavy cloth bag are 3d4 dry beans. The bag weighs 1/2 pound plus 1/4 pound for each bean it contains.","occurrenceId":"srd51:magic-item:magic-items-a-z:14"},{"text":"If you dump the bag’s contents out on the ground, they explode in a 10-foot radius, extending from the beans. Each creature in the area, including you, must make a DC 15 Dexterity saving throw, taking 5d4 fire damage on a failed save, or half as much damage on a successful one. The fire ignites flammable objects in the area that aren’t being worn or carried.","occurrenceId":"srd51:magic-item:magic-items-a-z:14"},{"text":"If you remove a bean from the bag, plant it in dirt or sand, and then water it, the bean produces an effect 1 minute later from the ground where it was planted. The GM can choose an effect from the following table, determine it randomly, or create an effect.","occurrenceId":"srd51:magic-item:magic-items-a-z:14"},{"text":"d100 Effect","occurrenceId":"srd51:magic-item:magic-items-a-z:14"}],"source":{"document":"SRD 5.1","pdfUrl":"https://media.wizards.com/2023/downloads/dnd/SRD_CC_v5.1.pdf","pdfPages":[209,210],"printedPages":[209,210],"occurrenceIds":["srd51:magic-item:magic-items-a-z:14"]}},
     {"id":"srd51:magic-item:magic-items-a-z:15","name":"Bag of Devouring","category":"magic-item","subcategory":"wondrous-item","magic":true,"rarity":{"kind":"fixed","value":"very-rare"},"attunement":"not-required","sourceHeader":{"text":"Wondrous item, very rare","occurrenceId":"srd51:magic-item:magic-items-a-z:15"},"properties":[],"description":[{"text":"This bag superficially resembles a bag of holding but is a feeding orifice for a gigantic extradimensional creature. Turning the bag inside out closes the orifice.","occurrenceId":"srd51:magic-item:magic-items-a-z:15"},{"text":"The extradimensional creature attached to the bag can sense whatever is placed inside the bag. Animal or vegetable matter placed wholly in the bag is devoured and lost forever. When part of a living creature is placed in the bag, as happens when someone reaches inside it, there is a 50 percent chance that the creature is pulled inside the bag. A creature inside the bag can use its action to try to escape with a successful DC 15 Strength check. Another creature can use its action to reach into the bag to pull a creature out, doing so with a successful DC 20 Strength check (provided it isn’t pulled inside the bag first). Any creature that starts its turn inside the bag is devoured, its body destroyed.","occurrenceId":"srd51:magic-item:magic-items-a-z:15"},{"text":"Inanimate objects can be stored in the bag, which can hold a cubic foot of such material. However, once each day, the bag swallows any objects inside it and spits them out into another plane of existence. The GM determines the time and plane.","occurrenceId":"srd51:magic-item:magic-items-a-z:15"},{"text":"If the bag is pierced or torn, it is destroyed, and anything contained within it is transported to a random location on the Astral Plane.","occurrenceId":"srd51:magic-item:magic-items-a-z:15"}],"source":{"document":"SRD 5.1","pdfUrl":"https://media.wizards.com/2023/downloads/dnd/SRD_CC_v5.1.pdf","pdfPages":[210],"printedPages":[210],"occurrenceIds":["srd51:magic-item:magic-items-a-z:15"]}},
     {"id":"srd51:magic-item:magic-items-a-z:16","name":"Bag of Holding","category":"magic-item","subcategory":"wondrous-item","magic":true,"rarity":{"kind":"fixed","value":"uncommon"},"attunement":"not-required","sourceHeader":{"text":"Wondrous item, uncommon","occurrenceId":"srd51:magic-item:magic-items-a-z:16"},"properties":[],"description":[{"text":"This bag has an interior space considerably larger than its outside dimensions, roughly 2 feet in diameter at the mouth and 4 feet deep. The bag can hold up to 500 pounds, not exceeding a volume of 64 cubic feet. The bag weighs 15 pounds, regardless of its contents. Retrieving an item from the bag requires an action.","occurrenceId":"srd51:magic-item:magic-items-a-z:16"},{"text":"If the bag is overloaded, pierced, or torn, it ruptures and is destroyed, and its contents are scattered in the Astral Plane. If the bag is turned inside out, its contents spill forth, unharmed, but the bag must be put right before it can be used again.","occurrenceId":"srd51:magic-item:magic-items-a-z:16"},{"text":"Breathing creatures inside the bag can survive up to a number of minutes equal to 10 divided by the number of creatures (minimum 1 minute), after which time they begin to suffocate.","occurrenceId":"srd51:magic-item:magic-items-a-z:16"},{"text":"Placing a bag of holding inside an extradimensional space created by a handy haversack, portable hole, or similar item instantly destroys both items and opens a gate to the Astral Plane. The gate originates where the one item was placed inside the other. Any creature within 10 feet of the gate is sucked through it to a random location on the Astral Plane. The gate then closes. The gate is one-way only and can’t be reopened.","occurrenceId":"srd51:magic-item:magic-items-a-z:16"}],"source":{"document":"SRD 5.1","pdfUrl":"https://media.wizards.com/2023/downloads/dnd/SRD_CC_v5.1.pdf","pdfPages":[210],"printedPages":[210],"occurrenceIds":["srd51:magic-item:magic-items-a-z:16"]}},
-    {"id":"srd51:magic-item:magic-items-a-z:17","name":"Bag of Tricks","category":"magic-item","subcategory":"wondrous-item","magic":true,"rarity":{"kind":"fixed","value":"uncommon"},"attunement":"not-required","sourceHeader":{"text":"Wondrous item, uncommon","occurrenceId":"srd51:magic-item:magic-items-a-z:17"},"properties":[{"name":"Gray Bag of Tricks: 1","description":"Weasel","occurrenceId":"srd51:magic-item:magic-items-a-z:17"},{"name":"Gray Bag of Tricks: 2","description":"Giant rat","occurrenceId":"srd51:magic-item:magic-items-a-z:17"},{"name":"Gray Bag of Tricks: 3","description":"Badger","occurrenceId":"srd51:magic-item:magic-items-a-z:17"},{"name":"Gray Bag of Tricks: 4","description":"Boar","occurrenceId":"srd51:magic-item:magic-items-a-z:17"},{"name":"Gray Bag of Tricks: 5","description":"Panther","occurrenceId":"srd51:magic-item:magic-items-a-z:17"},{"name":"Gray Bag of Tricks: 6","description":"Giant badger","occurrenceId":"srd51:magic-item:magic-items-a-z:17"},{"name":"Gray Bag of Tricks: 7","description":"Dire wolf","occurrenceId":"srd51:magic-item:magic-items-a-z:17"},{"name":"Gray Bag of Tricks: 8","description":"Giant elk","occurrenceId":"srd51:magic-item:magic-items-a-z:17"},{"name":"Rust Bag of Tricks: 1","description":"Rat","occurrenceId":"srd51:magic-item:magic-items-a-z:17"},{"name":"Rust Bag of Tricks: 2","description":"Owl","occurrenceId":"srd51:magic-item:magic-items-a-z:17"},{"name":"Rust Bag of Tricks: 3","description":"Mastiff","occurrenceId":"srd51:magic-item:magic-items-a-z:17"},{"name":"Rust Bag of Tricks: 4","description":"Goat","occurrenceId":"srd51:magic-item:magic-items-a-z:17"},{"name":"Rust Bag of Tricks: 5","description":"Giant goat","occurrenceId":"srd51:magic-item:magic-items-a-z:17"},{"name":"Rust Bag of Tricks: 6","description":"Giant boar","occurrenceId":"srd51:magic-item:magic-items-a-z:17"},{"name":"Rust Bag of Tricks: 7","description":"Lion","occurrenceId":"srd51:magic-item:magic-items-a-z:17"},{"name":"Rust Bag of Tricks: 8","description":"Brown bear","occurrenceId":"srd51:magic-item:magic-items-a-z:17"},{"name":"Tan Bag of Tricks: 1","description":"Jackal","occurrenceId":"srd51:magic-item:magic-items-a-z:17"},{"name":"Tan Bag of Tricks: 2","description":"Ape","occurrenceId":"srd51:magic-item:magic-items-a-z:17"},{"name":"Tan Bag of Tricks: 3","description":"Baboon","occurrenceId":"srd51:magic-item:magic-items-a-z:17"},{"name":"Tan Bag of Tricks: 4","description":"Axe beak","occurrenceId":"srd51:magic-item:magic-items-a-z:17"},{"name":"Tan Bag of Tricks: 5","description":"Black bear","occurrenceId":"srd51:magic-item:magic-items-a-z:17"},{"name":"Tan Bag of Tricks: 6","description":"Giant weasel","occurrenceId":"srd51:magic-item:magic-items-a-z:17"},{"name":"Tan Bag of Tricks: 7","description":"Giant hyena","occurrenceId":"srd51:magic-item:magic-items-a-z:17"},{"name":"Tan Bag of Tricks: 8","description":"Tiger","occurrenceId":"srd51:magic-item:magic-items-a-z:17"}],"description":[{"text":"This ordinary bag, made from gray, rust, or tan cloth, appears empty. Reaching inside the bag, however, reveals the presence of a small, fuzzy object. The bag weighs 1/2 pound.","occurrenceId":"srd51:magic-item:magic-items-a-z:17"},{"text":"You can use an action to pull the fuzzy object from the bag and throw it up to 20 feet. When the object lands, it transforms into a creature you determine by rolling a d8 and consulting the table that corresponds to the bag’s color. The creature vanishes at the next dawn or when it is reduced to 0 hit points.","occurrenceId":"srd51:magic-item:magic-items-a-z:17"},{"text":"The creature is friendly to you and your companions, and it acts on your turn. You can use a bonus action to command how the creature moves and what action it takes on its next turn, or to give it general orders, such as to attack your enemies. In the absence of such orders, the creature acts in a fashion appropriate to its nature.","occurrenceId":"srd51:magic-item:magic-items-a-z:17"},{"text":"Once three fuzzy objects have been pulled from the bag, the bag can’t be used again until the next dawn.","occurrenceId":"srd51:magic-item:magic-items-a-z:17"},{"text":"Gray Bag of Tricks","occurrenceId":"srd51:magic-item:magic-items-a-z:17"},{"text":"d8 Creature","occurrenceId":"srd51:magic-item:magic-items-a-z:17"},{"text":"Rust Bag of Tricks","occurrenceId":"srd51:magic-item:magic-items-a-z:17"},{"text":"d8 Creature","occurrenceId":"srd51:magic-item:magic-items-a-z:17"},{"text":"Tan Bag of Tricks","occurrenceId":"srd51:magic-item:magic-items-a-z:17"},{"text":"d8 Creature","occurrenceId":"srd51:magic-item:magic-items-a-z:17"}],"source":{"document":"SRD 5.1","pdfUrl":"https://media.wizards.com/2023/downloads/dnd/SRD_CC_v5.1.pdf","pdfPages":[210,211],"printedPages":[210,211],"occurrenceIds":["srd51:magic-item:magic-items-a-z:17"]}}
+    {"id":"srd51:magic-item:magic-items-a-z:17","name":"Bag of Tricks","category":"magic-item","subcategory":"wondrous-item","magic":true,"rarity":{"kind":"fixed","value":"uncommon"},"attunement":"not-required","sourceHeader":{"text":"Wondrous item, uncommon","occurrenceId":"srd51:magic-item:magic-items-a-z:17"},"properties":[{"name":"Gray Bag of Tricks: 1","description":"Weasel","occurrenceId":"srd51:magic-item:magic-items-a-z:17"},{"name":"Gray Bag of Tricks: 2","description":"Giant rat","occurrenceId":"srd51:magic-item:magic-items-a-z:17"},{"name":"Gray Bag of Tricks: 3","description":"Badger","occurrenceId":"srd51:magic-item:magic-items-a-z:17"},{"name":"Gray Bag of Tricks: 4","description":"Boar","occurrenceId":"srd51:magic-item:magic-items-a-z:17"},{"name":"Gray Bag of Tricks: 5","description":"Panther","occurrenceId":"srd51:magic-item:magic-items-a-z:17"},{"name":"Gray Bag of Tricks: 6","description":"Giant badger","occurrenceId":"srd51:magic-item:magic-items-a-z:17"},{"name":"Gray Bag of Tricks: 7","description":"Dire wolf","occurrenceId":"srd51:magic-item:magic-items-a-z:17"},{"name":"Gray Bag of Tricks: 8","description":"Giant elk","occurrenceId":"srd51:magic-item:magic-items-a-z:17"},{"name":"Rust Bag of Tricks: 1","description":"Rat","occurrenceId":"srd51:magic-item:magic-items-a-z:17"},{"name":"Rust Bag of Tricks: 2","description":"Owl","occurrenceId":"srd51:magic-item:magic-items-a-z:17"},{"name":"Rust Bag of Tricks: 3","description":"Mastiff","occurrenceId":"srd51:magic-item:magic-items-a-z:17"},{"name":"Rust Bag of Tricks: 4","description":"Goat","occurrenceId":"srd51:magic-item:magic-items-a-z:17"},{"name":"Rust Bag of Tricks: 5","description":"Giant goat","occurrenceId":"srd51:magic-item:magic-items-a-z:17"},{"name":"Rust Bag of Tricks: 6","description":"Giant boar","occurrenceId":"srd51:magic-item:magic-items-a-z:17"},{"name":"Rust Bag of Tricks: 7","description":"Lion","occurrenceId":"srd51:magic-item:magic-items-a-z:17"},{"name":"Rust Bag of Tricks: 8","description":"Brown bear","occurrenceId":"srd51:magic-item:magic-items-a-z:17"},{"name":"Tan Bag of Tricks: 1","description":"Jackal","occurrenceId":"srd51:magic-item:magic-items-a-z:17"},{"name":"Tan Bag of Tricks: 2","description":"Ape","occurrenceId":"srd51:magic-item:magic-items-a-z:17"},{"name":"Tan Bag of Tricks: 3","description":"Baboon","occurrenceId":"srd51:magic-item:magic-items-a-z:17"},{"name":"Tan Bag of Tricks: 4","description":"Axe beak","occurrenceId":"srd51:magic-item:magic-items-a-z:17"},{"name":"Tan Bag of Tricks: 5","description":"Black bear","occurrenceId":"srd51:magic-item:magic-items-a-z:17"},{"name":"Tan Bag of Tricks: 6","description":"Giant weasel","occurrenceId":"srd51:magic-item:magic-items-a-z:17"},{"name":"Tan Bag of Tricks: 7","description":"Giant hyena","occurrenceId":"srd51:magic-item:magic-items-a-z:17"},{"name":"Tan Bag of Tricks: 8","description":"Tiger","occurrenceId":"srd51:magic-item:magic-items-a-z:17"}],"description":[{"text":"This ordinary bag, made from gray, rust, or tan cloth, appears empty. Reaching inside the bag, however, reveals the presence of a small, fuzzy object. The bag weighs 1/2 pound.","occurrenceId":"srd51:magic-item:magic-items-a-z:17"},{"text":"You can use an action to pull the fuzzy object from the bag and throw it up to 20 feet. When the object lands, it transforms into a creature you determine by rolling a d8 and consulting the table that corresponds to the bag’s color. The creature vanishes at the next dawn or when it is reduced to 0 hit points.","occurrenceId":"srd51:magic-item:magic-items-a-z:17"},{"text":"The creature is friendly to you and your companions, and it acts on your turn. You can use a bonus action to command how the creature moves and what action it takes on its next turn, or to give it general orders, such as to attack your enemies. In the absence of such orders, the creature acts in a fashion appropriate to its nature.","occurrenceId":"srd51:magic-item:magic-items-a-z:17"},{"text":"Once three fuzzy objects have been pulled from the bag, the bag can’t be used again until the next dawn.","occurrenceId":"srd51:magic-item:magic-items-a-z:17"},{"text":"Gray Bag of Tricks","occurrenceId":"srd51:magic-item:magic-items-a-z:17"},{"text":"d8 Creature","occurrenceId":"srd51:magic-item:magic-items-a-z:17"},{"text":"Rust Bag of Tricks","occurrenceId":"srd51:magic-item:magic-items-a-z:17"},{"text":"d8 Creature","occurrenceId":"srd51:magic-item:magic-items-a-z:17"},{"text":"Tan Bag of Tricks","occurrenceId":"srd51:magic-item:magic-items-a-z:17"},{"text":"d8 Creature","occurrenceId":"srd51:magic-item:magic-items-a-z:17"}],"source":{"document":"SRD 5.1","pdfUrl":"https://media.wizards.com/2023/downloads/dnd/SRD_CC_v5.1.pdf","pdfPages":[210,211],"printedPages":[210,211],"occurrenceIds":["srd51:magic-item:magic-items-a-z:17"]}},
+    {
+      "id": "srd51:magic-item:magic-items-a-z:18",
+      "name": "Bead of Force",
+      "category": "magic-item",
+      "subcategory": "wondrous-item",
+      "magic": true,
+      "rarity": {
+        "kind": "fixed",
+        "value": "rare"
+      },
+      "attunement": "not-required",
+      "sourceHeader": {
+        "text": "Wondrous item, rare",
+        "occurrenceId": "srd51:magic-item:magic-items-a-z:18"
+      },
+      "properties": [],
+      "description": [
+        {
+          "text": "This small black sphere measures 3/4 of an inch in diameter and weighs an ounce. Typically, 1d4 + 4 beads of force are found together.",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:18"
+        },
+        {
+          "text": "You can use an action to throw the bead up to 60 feet. The bead explodes on impact and is destroyed. Each creature within a 10-foot radius of where the bead landed must succeed on a DC 15 Dexterity saving throw or take 5d4 force damage. A sphere of transparent force then encloses the area for 1 minute. Any creature that failed the save and is completely within the area is trapped inside this sphere. Creatures that succeeded on the save, or are partially within the area, are pushed away from the center of the sphere until they are no longer inside it. Only breathable air can pass through the sphere’s wall. No attack or other effect can.",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:18"
+        },
+        {
+          "text": "An enclosed creature can use its action to push against the sphere’s wall, moving the sphere up to half the creature’s walking speed. The sphere can be picked up, and its magic causes it to weigh only 1 pound, regardless of the weight of creatures inside.",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:18"
+        }
+      ],
+      "source": {
+        "document": "SRD 5.1",
+        "pdfUrl": "https://media.wizards.com/2023/downloads/dnd/SRD_CC_v5.1.pdf",
+        "pdfPages": [
+          211
+        ],
+        "printedPages": [
+          211
+        ],
+        "occurrenceIds": [
+          "srd51:magic-item:magic-items-a-z:18"
+        ]
+      }
+    },
+    {
+      "id": "srd51:magic-item:magic-items-a-z:19",
+      "name": "Belt of Dwarvenkind",
+      "category": "magic-item",
+      "subcategory": "wondrous-item",
+      "magic": true,
+      "rarity": {
+        "kind": "fixed",
+        "value": "rare"
+      },
+      "attunement": "required",
+      "sourceHeader": {
+        "text": "Wondrous item, rare (requires attunement)",
+        "occurrenceId": "srd51:magic-item:magic-items-a-z:19"
+      },
+      "properties": [],
+      "description": [
+        {
+          "text": "While wearing this belt, you gain the following benefits:",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:19"
+        },
+        {
+          "text": "• Your Constitution score increases by 2, to a maximum of 20.",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:19"
+        },
+        {
+          "text": "• You have advantage on Charisma (Persuasion) checks made to interact with dwarves.",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:19"
+        },
+        {
+          "text": "In addition, while attuned to the belt, you have a 50 percent chance each day at dawn of growing a full beard if you’re capable of growing one, or a visibly thicker beard if you already have one.",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:19"
+        },
+        {
+          "text": "If you aren’t a dwarf, you gain the following additional benefits while wearing the belt:",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:19"
+        },
+        {
+          "text": "• You have advantage on saving throws against poison, and you have resistance against poison damage.",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:19"
+        },
+        {
+          "text": "• You have darkvision out to a range of 60 feet.",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:19"
+        },
+        {
+          "text": "• You can speak, read, and write Dwarvish.",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:19"
+        }
+      ],
+      "source": {
+        "document": "SRD 5.1",
+        "pdfUrl": "https://media.wizards.com/2023/downloads/dnd/SRD_CC_v5.1.pdf",
+        "pdfPages": [
+          211
+        ],
+        "printedPages": [
+          211
+        ],
+        "occurrenceIds": [
+          "srd51:magic-item:magic-items-a-z:19"
+        ]
+      }
+    },
+    {
+      "id": "srd51:magic-item:magic-items-a-z:20",
+      "name": "Belt of Giant Strength",
+      "category": "magic-item",
+      "subcategory": "wondrous-item",
+      "magic": true,
+      "rarity": {
+        "kind": "varies",
+        "sourceText": "rarity varies",
+        "choices": [
+          {
+            "variantId": "srd51:magic-item:magic-items-a-z:20#variant:1",
+            "label": "Hill giant",
+            "value": "rare",
+            "occurrenceId": "srd51:magic-item:magic-items-a-z:20"
+          },
+          {
+            "variantId": "srd51:magic-item:magic-items-a-z:20#variant:2",
+            "label": "Stone/frost giant",
+            "value": "very-rare",
+            "occurrenceId": "srd51:magic-item:magic-items-a-z:20"
+          },
+          {
+            "variantId": "srd51:magic-item:magic-items-a-z:20#variant:3",
+            "label": "Fire giant",
+            "value": "very-rare",
+            "occurrenceId": "srd51:magic-item:magic-items-a-z:20"
+          },
+          {
+            "variantId": "srd51:magic-item:magic-items-a-z:20#variant:4",
+            "label": "Cloud giant",
+            "value": "legendary",
+            "occurrenceId": "srd51:magic-item:magic-items-a-z:20"
+          },
+          {
+            "variantId": "srd51:magic-item:magic-items-a-z:20#variant:5",
+            "label": "Storm giant",
+            "value": "legendary",
+            "occurrenceId": "srd51:magic-item:magic-items-a-z:20"
+          }
+        ]
+      },
+      "attunement": "required",
+      "sourceHeader": {
+        "text": "Wondrous item, rarity varies (requires attunement)",
+        "occurrenceId": "srd51:magic-item:magic-items-a-z:20"
+      },
+      "properties": [
+        {
+          "name": "Hill giant",
+          "description": "21 Rare",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:20"
+        },
+        {
+          "name": "Stone/frost giant",
+          "description": "23 Very rare",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:20"
+        },
+        {
+          "name": "Fire giant",
+          "description": "25 Very rare",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:20"
+        },
+        {
+          "name": "Cloud giant",
+          "description": "27 Legendary",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:20"
+        },
+        {
+          "name": "Storm giant",
+          "description": "29 Legendary",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:20"
+        }
+      ],
+      "description": [
+        {
+          "text": "While wearing this belt, your Strength score changes to a score granted by the belt. If your Strength is already equal to or greater than the belt’s score, the item has no effect on you.",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:20"
+        },
+        {
+          "text": "Six varieties of this belt exist, corresponding with and having rarity according to the six kinds of true giants. The belt of stone giant strength and the belt of frost giant strength look different, but they have the same effect.",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:20"
+        },
+        {
+          "text": "Type Strength Rarity",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:20"
+        }
+      ],
+      "source": {
+        "document": "SRD 5.1",
+        "pdfUrl": "https://media.wizards.com/2023/downloads/dnd/SRD_CC_v5.1.pdf",
+        "pdfPages": [
+          211
+        ],
+        "printedPages": [
+          211
+        ],
+        "occurrenceIds": [
+          "srd51:magic-item:magic-items-a-z:20"
+        ]
+      }
+    },
+    {
+      "id": "srd51:magic-item:magic-items-a-z:21",
+      "name": "Berserker Axe",
+      "category": "magic-item",
+      "subcategory": "weapon",
+      "magic": true,
+      "rarity": {
+        "kind": "fixed",
+        "value": "rare"
+      },
+      "attunement": "required",
+      "sourceHeader": {
+        "text": "Weapon (any axe), rare (requires attunement)",
+        "occurrenceId": "srd51:magic-item:magic-items-a-z:21"
+      },
+      "properties": [],
+      "description": [
+        {
+          "text": "You gain a +1 bonus to attack and damage rolls made with this magic weapon. In addition, while you are attuned to this weapon, your hit point maximum increases by 1 for each level you have attained.",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:21"
+        },
+        {
+          "text": "Curse. This axe is cursed, and becoming attuned to it extends the curse to you. As long as you remain cursed, you are unwilling to part with the axe, keeping it within reach at all times. You also have disadvantage on attack rolls with weapons other than this one, unless no foe is within 60 feet of you that you can see or hear.",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:21"
+        },
+        {
+          "text": "Whenever a hostile creature damages you while the axe is in your possession, you must succeed on a DC 15 Wisdom saving throw or go berserk. While berserk, you must use your action each round to attack the creature nearest to you with the axe. If you can make extra attacks as part of the Attack action, you use those extra attacks, moving to attack the next nearest creature after you fell your current target. If you have multiple possible targets, you attack one at random. You are berserk until you start your turn with no creatures within 60 feet of you that you can see or hear.",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:21"
+        }
+      ],
+      "source": {
+        "document": "SRD 5.1",
+        "pdfUrl": "https://media.wizards.com/2023/downloads/dnd/SRD_CC_v5.1.pdf",
+        "pdfPages": [
+          211,
+          212
+        ],
+        "printedPages": [
+          211,
+          212
+        ],
+        "occurrenceIds": [
+          "srd51:magic-item:magic-items-a-z:21"
+        ]
+      }
+    },
+    {
+      "id": "srd51:magic-item:magic-items-a-z:22",
+      "name": "Boots of Elvenkind",
+      "category": "magic-item",
+      "subcategory": "wondrous-item",
+      "magic": true,
+      "rarity": {
+        "kind": "fixed",
+        "value": "uncommon"
+      },
+      "attunement": "not-required",
+      "sourceHeader": {
+        "text": "Wondrous item, uncommon",
+        "occurrenceId": "srd51:magic-item:magic-items-a-z:22"
+      },
+      "properties": [],
+      "description": [
+        {
+          "text": "While you wear these boots, your steps make no sound, regardless of the surface you are moving across. You also have advantage on Dexterity (Stealth) checks that rely on moving silently.",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:22"
+        }
+      ],
+      "source": {
+        "document": "SRD 5.1",
+        "pdfUrl": "https://media.wizards.com/2023/downloads/dnd/SRD_CC_v5.1.pdf",
+        "pdfPages": [
+          212
+        ],
+        "printedPages": [
+          212
+        ],
+        "occurrenceIds": [
+          "srd51:magic-item:magic-items-a-z:22"
+        ]
+      }
+    },
+    {
+      "id": "srd51:magic-item:magic-items-a-z:23",
+      "name": "Boots of Levitation",
+      "category": "magic-item",
+      "subcategory": "wondrous-item",
+      "magic": true,
+      "rarity": {
+        "kind": "fixed",
+        "value": "rare"
+      },
+      "attunement": "required",
+      "sourceHeader": {
+        "text": "Wondrous item, rare (requires attunement)",
+        "occurrenceId": "srd51:magic-item:magic-items-a-z:23"
+      },
+      "properties": [],
+      "description": [
+        {
+          "text": "While you wear these boots, you can use an action to cast the levitate spell on yourself at will.",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:23"
+        }
+      ],
+      "source": {
+        "document": "SRD 5.1",
+        "pdfUrl": "https://media.wizards.com/2023/downloads/dnd/SRD_CC_v5.1.pdf",
+        "pdfPages": [
+          212
+        ],
+        "printedPages": [
+          212
+        ],
+        "occurrenceIds": [
+          "srd51:magic-item:magic-items-a-z:23"
+        ]
+      }
+    },
+    {
+      "id": "srd51:magic-item:magic-items-a-z:24",
+      "name": "Boots of Speed",
+      "category": "magic-item",
+      "subcategory": "wondrous-item",
+      "magic": true,
+      "rarity": {
+        "kind": "fixed",
+        "value": "rare"
+      },
+      "attunement": "required",
+      "sourceHeader": {
+        "text": "Wondrous item, rare (requires attunement)",
+        "occurrenceId": "srd51:magic-item:magic-items-a-z:24"
+      },
+      "properties": [],
+      "description": [
+        {
+          "text": "While you wear these boots, you can use a bonus action and click the boots’ heels together. If you do, the boots double your walking speed, and any creature that makes an opportunity attack against you has disadvantage on the attack roll. If you click your heels together again, you end the effect.",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:24"
+        },
+        {
+          "text": "When the boots’ property has been used for a total of 10 minutes, the magic ceases to function until you finish a long rest.",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:24"
+        }
+      ],
+      "source": {
+        "document": "SRD 5.1",
+        "pdfUrl": "https://media.wizards.com/2023/downloads/dnd/SRD_CC_v5.1.pdf",
+        "pdfPages": [
+          212
+        ],
+        "printedPages": [
+          212
+        ],
+        "occurrenceIds": [
+          "srd51:magic-item:magic-items-a-z:24"
+        ]
+      }
+    },
+    {
+      "id": "srd51:magic-item:magic-items-a-z:25",
+      "name": "Boots of Striding and Springing",
+      "category": "magic-item",
+      "subcategory": "wondrous-item",
+      "magic": true,
+      "rarity": {
+        "kind": "fixed",
+        "value": "uncommon"
+      },
+      "attunement": "required",
+      "sourceHeader": {
+        "text": "Wondrous item, uncommon (requires attunement)",
+        "occurrenceId": "srd51:magic-item:magic-items-a-z:25"
+      },
+      "properties": [],
+      "description": [
+        {
+          "text": "While you wear these boots, your walking speed becomes 30 feet, unless your walking speed is higher, and your speed isn’t reduced if you are encumbered or wearing heavy armor. In addition, you can jump three times the normal distance, though you can’t jump farther than your remaining movement would allow.",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:25"
+        }
+      ],
+      "source": {
+        "document": "SRD 5.1",
+        "pdfUrl": "https://media.wizards.com/2023/downloads/dnd/SRD_CC_v5.1.pdf",
+        "pdfPages": [
+          212
+        ],
+        "printedPages": [
+          212
+        ],
+        "occurrenceIds": [
+          "srd51:magic-item:magic-items-a-z:25"
+        ]
+      }
+    },
+    {
+      "id": "srd51:magic-item:magic-items-a-z:26",
+      "name": "Boots of the Winterlands",
+      "category": "magic-item",
+      "subcategory": "wondrous-item",
+      "magic": true,
+      "rarity": {
+        "kind": "fixed",
+        "value": "uncommon"
+      },
+      "attunement": "required",
+      "sourceHeader": {
+        "text": "Wondrous item, uncommon (requires attunement)",
+        "occurrenceId": "srd51:magic-item:magic-items-a-z:26"
+      },
+      "properties": [],
+      "description": [
+        {
+          "text": "These furred boots are snug and feel quite warm. While you wear them, you gain the following benefits:",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:26"
+        },
+        {
+          "text": "• You have resistance to cold damage.",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:26"
+        },
+        {
+          "text": "• You ignore difficult terrain created by ice or snow.",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:26"
+        },
+        {
+          "text": "• You can tolerate temperatures as low as −50 degrees Fahrenheit without any additional protection. If you wear heavy clothes, you can tolerate temperatures as low as −100 degrees Fahrenheit.",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:26"
+        }
+      ],
+      "source": {
+        "document": "SRD 5.1",
+        "pdfUrl": "https://media.wizards.com/2023/downloads/dnd/SRD_CC_v5.1.pdf",
+        "pdfPages": [
+          212
+        ],
+        "printedPages": [
+          212
+        ],
+        "occurrenceIds": [
+          "srd51:magic-item:magic-items-a-z:26"
+        ]
+      }
+    },
+    {
+      "id": "srd51:magic-item:magic-items-a-z:27",
+      "name": "Bowl of Commanding Water Elementals",
+      "category": "magic-item",
+      "subcategory": "wondrous-item",
+      "magic": true,
+      "rarity": {
+        "kind": "fixed",
+        "value": "rare"
+      },
+      "attunement": "not-required",
+      "sourceHeader": {
+        "text": "Wondrous item, rare",
+        "occurrenceId": "srd51:magic-item:magic-items-a-z:27"
+      },
+      "properties": [],
+      "description": [
+        {
+          "text": "While this bowl is filled with water, you can use an action to speak the bowl’s command word and summon a water elemental, as if you had cast the conjure elemental spell. The bowl can’t be used this way again until the next dawn.",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:27"
+        },
+        {
+          "text": "The bowl is about 1 foot in diameter and half as deep. It weighs 3 pounds and holds about 3 gallons.",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:27"
+        }
+      ],
+      "source": {
+        "document": "SRD 5.1",
+        "pdfUrl": "https://media.wizards.com/2023/downloads/dnd/SRD_CC_v5.1.pdf",
+        "pdfPages": [
+          212
+        ],
+        "printedPages": [
+          212
+        ],
+        "occurrenceIds": [
+          "srd51:magic-item:magic-items-a-z:27"
+        ]
+      }
+    },
+    {
+      "id": "srd51:magic-item:magic-items-a-z:28",
+      "name": "Bracers of Archery",
+      "category": "magic-item",
+      "subcategory": "wondrous-item",
+      "magic": true,
+      "rarity": {
+        "kind": "fixed",
+        "value": "uncommon"
+      },
+      "attunement": "required",
+      "sourceHeader": {
+        "text": "Wondrous item, uncommon (requires attunement)",
+        "occurrenceId": "srd51:magic-item:magic-items-a-z:28"
+      },
+      "properties": [],
+      "description": [
+        {
+          "text": "While wearing these bracers, you have proficiency with the longbow and shortbow, and you gain a +2 bonus to damage rolls on ranged attacks made with such weapons.",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:28"
+        }
+      ],
+      "source": {
+        "document": "SRD 5.1",
+        "pdfUrl": "https://media.wizards.com/2023/downloads/dnd/SRD_CC_v5.1.pdf",
+        "pdfPages": [
+          212
+        ],
+        "printedPages": [
+          212
+        ],
+        "occurrenceIds": [
+          "srd51:magic-item:magic-items-a-z:28"
+        ]
+      }
+    },
+    {
+      "id": "srd51:magic-item:magic-items-a-z:29",
+      "name": "Bracers of Defense",
+      "category": "magic-item",
+      "subcategory": "wondrous-item",
+      "magic": true,
+      "rarity": {
+        "kind": "fixed",
+        "value": "rare"
+      },
+      "attunement": "required",
+      "sourceHeader": {
+        "text": "Wondrous item, rare (requires attunement)",
+        "occurrenceId": "srd51:magic-item:magic-items-a-z:29"
+      },
+      "properties": [],
+      "description": [
+        {
+          "text": "While wearing these bracers, you gain a +2 bonus to AC if you are wearing no armor and using no shield.",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:29"
+        }
+      ],
+      "source": {
+        "document": "SRD 5.1",
+        "pdfUrl": "https://media.wizards.com/2023/downloads/dnd/SRD_CC_v5.1.pdf",
+        "pdfPages": [
+          212
+        ],
+        "printedPages": [
+          212
+        ],
+        "occurrenceIds": [
+          "srd51:magic-item:magic-items-a-z:29"
+        ]
+      }
+    },
+    {
+      "id": "srd51:magic-item:magic-items-a-z:30",
+      "name": "Brazier of Commanding Fire Elementals",
+      "category": "magic-item",
+      "subcategory": "wondrous-item",
+      "magic": true,
+      "rarity": {
+        "kind": "fixed",
+        "value": "rare"
+      },
+      "attunement": "not-required",
+      "sourceHeader": {
+        "text": "Wondrous item, rare",
+        "occurrenceId": "srd51:magic-item:magic-items-a-z:30"
+      },
+      "properties": [],
+      "description": [
+        {
+          "text": "While a fire burns in this brass brazier, you can use an action to speak the brazier’s command word and summon a fire elemental, as if you had cast the conjure elemental spell. The brazier can’t be used this way again until the next dawn.",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:30"
+        },
+        {
+          "text": "The brazier weighs 5 pounds.",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:30"
+        }
+      ],
+      "source": {
+        "document": "SRD 5.1",
+        "pdfUrl": "https://media.wizards.com/2023/downloads/dnd/SRD_CC_v5.1.pdf",
+        "pdfPages": [
+          212
+        ],
+        "printedPages": [
+          212
+        ],
+        "occurrenceIds": [
+          "srd51:magic-item:magic-items-a-z:30"
+        ]
+      }
+    },
+    {
+      "id": "srd51:magic-item:magic-items-a-z:31",
+      "name": "Brooch of Shielding",
+      "category": "magic-item",
+      "subcategory": "wondrous-item",
+      "magic": true,
+      "rarity": {
+        "kind": "fixed",
+        "value": "uncommon"
+      },
+      "attunement": "required",
+      "sourceHeader": {
+        "text": "Wondrous item, uncommon (requires attunement)",
+        "occurrenceId": "srd51:magic-item:magic-items-a-z:31"
+      },
+      "properties": [],
+      "description": [
+        {
+          "text": "While wearing this brooch, you have resistance to force damage, and you have immunity to damage from the magic missile spell.",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:31"
+        }
+      ],
+      "source": {
+        "document": "SRD 5.1",
+        "pdfUrl": "https://media.wizards.com/2023/downloads/dnd/SRD_CC_v5.1.pdf",
+        "pdfPages": [
+          212
+        ],
+        "printedPages": [
+          212
+        ],
+        "occurrenceIds": [
+          "srd51:magic-item:magic-items-a-z:31"
+        ]
+      }
+    },
+    {
+      "id": "srd51:magic-item:magic-items-a-z:32",
+      "name": "Broom of Flying",
+      "category": "magic-item",
+      "subcategory": "wondrous-item",
+      "magic": true,
+      "rarity": {
+        "kind": "fixed",
+        "value": "uncommon"
+      },
+      "attunement": "not-required",
+      "sourceHeader": {
+        "text": "Wondrous item, uncommon",
+        "occurrenceId": "srd51:magic-item:magic-items-a-z:32"
+      },
+      "properties": [],
+      "description": [
+        {
+          "text": "This wooden broom, which weighs 3 pounds, functions like a mundane broom until you stand astride it and speak its command word. It then hovers beneath you and can be ridden in the air. It has a flying speed of 50 feet. It can carry up to 400 pounds, but its flying speed becomes 30 feet while carrying over 200 pounds. The broom stops hovering when you land.",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:32"
+        },
+        {
+          "text": "You can send the broom to travel alone to a destination within 1 mile of you if you speak the command word, name the location, and are familiar with that place. The broom comes back to you when you speak another command word, provided that the broom is still within 1 mile of you.",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:32"
+        }
+      ],
+      "source": {
+        "document": "SRD 5.1",
+        "pdfUrl": "https://media.wizards.com/2023/downloads/dnd/SRD_CC_v5.1.pdf",
+        "pdfPages": [
+          213
+        ],
+        "printedPages": [
+          213
+        ],
+        "occurrenceIds": [
+          "srd51:magic-item:magic-items-a-z:32"
+        ]
+      }
+    }
   ]
 }

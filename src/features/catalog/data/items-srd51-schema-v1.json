@@ -28,7 +28,7 @@
         "adventuring-gear-standard", "ammunition", "arcane-focus", "druidic-focus", "holy-symbol", "kit", "potion", "equipment-pack",
         "artisans-tools", "gaming-set", "musical-instrument", "other-tools",
         "mount-or-animal", "tack-harness-or-drawn-vehicle", "waterborne-vehicle",
-        "armor", "wondrous-item"
+        "armor", "wondrous-item", "weapon"
       ]
     },
     "rarityValue": {
