@@ -542,7 +542,7 @@
       "id": "E2E-01-SPACE-I01c",
       "kind": "bounded_required_integration_after_actual_owner_contracts",
       "focus": "Use actual Campaign/Vault context, registry/ownership participant revisions and original CommandId/ReceiptId publish boundary, then pure Dungeon geometry Gestureport and one real P02/P04 CompleteImport variant. Keep one candidate/camera/history/fixture; no E2E02–04.",
-      "dependency": "Campaign generic Contract/Validator/Testport input is qualified on 7aa47beb1bad3d0b1560666fa1cb1677bdc8cd4e, not source-integrated. M/W/S transfer/retention awaits an exact repair SHA and scoped owner re-review. Actual productive Campaign/Vault context, Registryprovider, persistable Publish boundary and P02/P04 remain open. Reviewed pure Dungeon geometry port remains required: CL-R01 passed documentation-only cleanup on 060abca8432b0005b0544043778378df3e1814c5; separate narrow Dungeon N01 and independent Hex P01-R02 must close DUN-GEO-P01-R01-01 before geometry I01 and later code review. No synthetic Registry/provider or port; World projection remains actual Repository.spatialGraph.world() and placements/spatial targets.",
+      "dependency": "Campaign generic Contract/Validator/Testport input is qualified on 7aa47beb1bad3d0b1560666fa1cb1677bdc8cd4e, not source-integrated. M/W/S transfer/retention awaits an exact repair SHA and scoped owner re-review. Actual productive Campaign/Vault context, Registryprovider, persistable Publish boundary and P02/P04 remain open. Actual pure Dungeon geometry port remains required: N01 plan repair passed independent Hex P01-R02 on 58c24b161a967017112d8bfc68471b19ad70e72b, closing DUN-GEO-P01-R01-01 in plan only. Separate Dungeon Product-I01, executable regression proof and independent code review precede Hex adoption; no unreviewed port integration. No synthetic Registry/provider or port; World projection remains actual Repository.spatialGraph.world() and placements/spatial targets.",
       "review": "Independent integrated code/host review follows complete pinned I01c handoff per #12; repairs and Cleanup-P/I/R are separate runs. Current native I01b is a narrow implementation proof, not full gate approval."
     },
     "review": {
@@ -834,7 +834,7 @@
       },
       "dungeonGeometryPlanInput": {
         "run": "E2E-01-DUNGEON-GEOMETRY-P01-R01",
-        "state": "independent_plan_review_changes_required_n01_r02_before_i01",
+        "state": "independent_plan_repair_r02_pass_owner_product_i01_next",
         "owner": "Dungeon",
         "reviewer": "Hex independent Atlas interface recipient",
         "candidate": "ea46ba5437596aceaad955330e21c3ef4e739451",
@@ -852,7 +852,7 @@
           "full E2E gate",
           "cleanup"
         ],
-        "next": "Dungeon supplies narrow N01 plan delta and exact-SHA independent R02 before I01; no owner code adopted.",
+        "next": "DUN-GEO-P01-R01-01 closed in exact-SHA N01 plan review. Separate Dungeon Product-I01 now; executable regression proof and independent code review before any Hex port adoption. No repeated general plan, cleanup or Campaign review.",
         "synchronizedShared": "89a3ffbad44ed6acec2e25566a1b017166fa9f7c",
         "synchronizationVerification": {
           "check": true,
@@ -896,6 +896,25 @@
           "productPlanPass": false,
           "codeHostE2EPass": false,
           "integrated": false
+        },
+        "planRepairReview": {
+          "run": "E2E-01-DUNGEON-GEOMETRY-P01-R02",
+          "state": "PASS_plan_repair_only",
+          "reviewer": "Hex independent Atlas interface recipient",
+          "base": "060abca8432b0005b0544043778378df3e1814c5",
+          "candidate": "58c24b161a967017112d8bfc68471b19ad70e72b",
+          "startedAt": "2026-10-10T02:26:50Z",
+          "finishedAt": "2026-10-10T02:30:16.484356+00:00",
+          "review": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/24#issuecomment-6092752617",
+          "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/dungeon-geometry-p01-r02/review.json",
+          "findingClosedInPlan": "DUN-GEO-P01-R01-01",
+          "scope": "Only N01 delta: actual Source/Graph/History identities and full frozen Parent/Binding/RigidFrame; terminal changed-basis including A-B-A, equal-byte replacement and late-up; Fresh Begin and pure single-AtlasChange composition retained.",
+          "verification": "JSON/diff/ancestor, exact two-file scope, foreign checkpoint roots equal, UUID sequence and local link preserved, actual source blobs equal reviewed SHA; product/tests/tools/fixtures/acceptance/architecture/cleanup plan unchanged.",
+          "opensOnly": "Separate Dungeon Product-I01; independent code review before exact owner port adoption.",
+          "implementationProven": false,
+          "codeHostE2EPass": false,
+          "integrated": false,
+          "handoff": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6092759862"
         }
       }
     },
