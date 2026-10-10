@@ -295,7 +295,7 @@ export function validateTranscriptData(transcript, inventory, { allowIncomplete 
       invariant(record.source.occurrenceIds.includes(choice.occurrenceId),
         `${record.id} hat eine Raritätsvariante außerhalb seiner Quellenliste.`);
     }
-    for (const sourced of [...record.properties, ...record.description]) {
+    for (const sourced of [record.sourceHeader, ...record.properties, ...record.description].filter(Boolean)) {
       object(sourced, `${record.id}.Textfakt`);
       invariant(occurrences.has(sourced.occurrenceId), `${record.id} hat unbelegte Textfakten.`);
       invariant(record.source.occurrenceIds.includes(sourced.occurrenceId),
@@ -381,18 +381,23 @@ export function validatePotionHealingMerge(transcript, inventory) {
 
 export function validateMagicItemAzOpeningSlice(transcript, inventory) {
   const expected = [
-    { name: "Adamantine Armor", subcategory: "armor", rarity: { kind: "fixed", value: "uncommon" },
+    { name: "Adamantine Armor", header: "Armor (medium or heavy, but not hide), uncommon",
+      subcategory: "armor", rarity: { kind: "fixed", value: "uncommon" },
       attunement: "not-required", description: "This suit of armor is reinforced with adamantine, one of the hardest substances in existence. While you’re wearing it, any critical hit against you becomes a normal hit." },
-    { name: "Ammunition, +1, +2, or +3", subcategory: "ammunition",
+    { name: "Ammunition, +1, +2, or +3",
+      header: "Weapon (any ammunition), uncommon (+1), rare (+2), or very rare (+3)", subcategory: "ammunition",
       rarity: { kind: "varies", sourceText: "uncommon (+1), rare (+2), or very rare (+3)",
         choices: [["+1", "uncommon"], ["+2", "rare"], ["+3", "very-rare"]] },
       attunement: "not-required", description: "You have a bonus to attack and damage rolls made with this piece of magic ammunition. The bonus is determined by the rarity of the ammunition. Once it hits a target, the ammunition is no longer magical." },
-    { name: "Amulet of Health", subcategory: "wondrous-item", rarity: { kind: "fixed", value: "rare" },
+    { name: "Amulet of Health", header: "Wondrous item, rare (requires attunement)",
+      subcategory: "wondrous-item", rarity: { kind: "fixed", value: "rare" },
       attunement: "required", description: "Your Constitution score is 19 while you wear this amulet. It has no effect on you if your Constitution is already 19 or higher." },
-    { name: "Amulet of Proof against Detection and Location", subcategory: "wondrous-item",
+    { name: "Amulet of Proof against Detection and Location",
+      header: "Wondrous item, uncommon (requires attunement)", subcategory: "wondrous-item",
       rarity: { kind: "fixed", value: "uncommon" }, attunement: "required",
       description: "While wearing this amulet, you are hidden from divination magic. You can’t be targeted by such magic or perceived through magical scrying sensors." },
-    { name: "Amulet of the Planes", subcategory: "wondrous-item", rarity: { kind: "fixed", value: "very-rare" },
+    { name: "Amulet of the Planes", header: "Wondrous item, very rare (requires attunement)",
+      subcategory: "wondrous-item", rarity: { kind: "fixed", value: "very-rare" },
       attunement: "required", description: "While wearing this amulet, you can use an action to name a location that you are familiar with on another plane of existence. Then make a DC 15 Intelligence check. On a successful check, you cast the plane shift spell. On a failure, you and each creature and object within 15 feet of you travel to a random destination. Roll a d100. On a 1–60, you travel to a random location on the plane you named. On a 61–100, you travel to a randomly determined plane of existence." },
   ];
   const occurrences = new Map(inventory.occurrences.map(item => [item.id, item]));
@@ -410,6 +415,7 @@ export function validateMagicItemAzOpeningSlice(transcript, inventory) {
     const record = records.get(id);
     invariant(record?.name === item.name && record.category === "magic-item" && record.magic === true
       && record.subcategory === item.subcategory && record.attunement === item.attunement
+      && record.sourceHeader?.text === item.header && record.sourceHeader.occurrenceId === id
       && JSON.stringify(record.source.pdfPages) === "[207]"
       && JSON.stringify(record.source.printedPages) === "[207]"
       && JSON.stringify(record.source.occurrenceIds) === JSON.stringify([id])
@@ -756,7 +762,7 @@ function verifyPdfTranscriptFacts(pdfPath, transcript) {
       if (!pageText.has(page)) pageText.set(page, normalizePdfPageText(extractPdfPage(pdfPath, page), page));
       return pageText.get(page);
     }).join(" ");
-    const facts = [record.cost?.sourceText, record.weight?.sourceText, record.speed?.sourceText,
+    const facts = [record.sourceHeader?.text, record.cost?.sourceText, record.weight?.sourceText, record.speed?.sourceText,
       record.carryingCapacity?.sourceText, record.damage?.diceText,
       record.damage?.typeText, record.damage?.versatileDiceText, record.armor?.armorClassText,
       record.armor?.strengthRequirementText, record.armor?.stealthRuleText,
@@ -800,14 +806,17 @@ function verifyPdfMagicItemAzOpeningSlice(pdfPath, transcript, inventory) {
     "Amulet of Proof against Detection and Location", "Amulet of the Planes"];
   invariant(headings.length === 239 && JSON.stringify(headings.slice(0, 5)) === JSON.stringify(expectedHeadings),
     "Die ersten fünf Magic-Items-A–Z-Headings oder der Gesamtcount 239 widersprechen dem PDF.");
-  const pageText = normalizePdfPageText(extractPdfPage(pdfPath, 207), 207);
-  for (const header of [
-    "Armor (medium or heavy, but not hide), uncommon",
-    "Weapon (any ammunition), uncommon (+1), rare (+2), or very rare (+3)",
-    "Wondrous item, rare (requires attunement)",
-    "Wondrous item, uncommon (requires attunement)",
-    "Wondrous item, very rare (requires attunement)",
-  ]) invariant(pageText.includes(normalizePdfText(header)), `Magic-Item-Header-PDF-Beleg für „${header}“ fehlt.`);
+  const records = new Map(transcript.records.map(record => [record.id, record]));
+  for (let ordinal = 1; ordinal <= 5; ordinal += 1) {
+    const id = `srd51:magic-item:magic-items-a-z:${ordinal}`;
+    const record = records.get(id);
+    invariant(record.sourceHeader.occurrenceId === id && record.source.pdfPages.length === 1,
+      `${id}: Magic-Item-Header ist nicht eindeutig occurrence-/seitengebunden.`);
+    const page = record.source.pdfPages[0];
+    const pageText = normalizePdfPageText(extractPdfPage(pdfPath, page), page);
+    invariant(pageText.includes(normalizePdfText(record.sourceHeader.text)),
+      `${id}: PDF-Beleg für vollständigen Magic-Item-Header „${record.sourceHeader.text}“ fehlt.`);
+  }
   return Object.freeze({ ...evidence, derivedHeadingCount: headings.length,
     scope: "first-five-a-z-headings-full-headers-rarity-attunement-and-descriptions" });
 }

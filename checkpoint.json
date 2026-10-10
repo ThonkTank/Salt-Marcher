@@ -188,14 +188,14 @@
     "architecture": "ARCHITECTURE.md#geplante-katalog--und-encounter-erweiterung",
     "acceptance": "acceptance.json.saltMarcherCatalogEncounter",
     "currentRun": {
-      "id": "CE-02-I02-S01-W18",
+      "id": "CE-02-I02-S01-W18-N01",
       "kind": "source_inventory_schema_transcript_intermediate",
       "state": "in_progress_verified_incomplete",
-      "focus": "Capture the first five Magic Items A–Z headings as a bounded physical-page-207 source slice",
+      "focus": "Repair W18 by preserving and verifying each complete page-207 header as an occurrence-bound source fact",
       "plan": "ROADMAP-SALTMARCHER-CE02-I02-PLAN.md",
-      "result": "Magic Items A–Z ordinals 1–5 now have stable physical occurrences and complete canonical records: Adamantine Armor, Ammunition +1/+2/+3, Amulet of Health, Amulet of Proof against Detection and Location, and Amulet of the Planes. Exact page-207 headers, descriptions, four fixed rarities, the ordered three-choice variable rarity, two negative and three positive attunement states are fail-closed and PDF-backed. The source package now contains 225 occurrences and 224 records; complete remains false, 233 A–Z headings plus Orb of Dragonkind remain open, and I01 remains blocked.",
+      "result": "W18-R01 header-loss finding repaired: Magic Items A–Z ordinals 1–5 now retain each complete normalized page-207 source header as a typed occurrence-bound fact, including medium-or-heavy-but-not-hide and any-ammunition qualifiers. Generic source-reference validation, exact opening-slice validation, recordwise PDF-page matching and negative header/occurrence drift goldens fail closed. The source package remains 225 occurrences and 224 records with complete false; 233 A–Z headings plus Orb of Dragonkind remain open, and I01 remains blocked.",
       "verification": {
-        "sourceRevision": "b971e98cdc1197a9faa4fab9ba333e5ae5cc1e3d+dirty",
+        "sourceRevision": "699a2a0701a2a9ff84fd29837b116fd9111ed120+dirty",
         "check": "passed",
         "tests": { "passed": 434, "failed": 0 },
         "build": "passed",
@@ -205,7 +205,8 @@
         "pdfPages": 403,
         "occurrences": 225,
         "records": 224,
-        "transcriptFacts": 686,
+        "transcriptFacts": 691,
+        "occurrenceBoundSourceHeaders": 5,
         "magicItemAzOpeningRecords": 5,
         "magicItemAzFixedRarities": 4,
         "magicItemAzVariableRarityChoices": 3,
@@ -221,17 +222,17 @@
       "documentation": {
         "status": "partial",
         "branch": "active/installed-phase1",
-        "baseCommit": "b971e98cdc1197a9faa4fab9ba333e5ae5cc1e3d",
-        "issue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/9#issuecomment-6096691084",
+        "baseCommit": "699a2a0701a2a9ff84fd29837b116fd9111ed120",
+        "issue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/9#issuecomment-6096756787",
         "changedFiles": ["acceptance.json", "checkpoint.json", "src/features/catalog/data/items-srd51-inventory.json", "src/features/catalog/data/items-srd51-schema-v1.json", "src/features/catalog/data/items-srd51-source-manifest.json", "src/features/catalog/data/items-srd51-transcript.json", "tests/items-srd51-source.test.mjs", "tools/items-srd51-source-verify.mjs"],
         "externalEvidence": {
-          "path": "/tmp/SRD_CC_v5.1.pdf, /tmp/w18-source-verify.json, main.js, manifest.json, styles.css",
+          "path": "/tmp/SRD_CC_v5.1.pdf, /tmp/w18-n01-source-verify.json, main.js, manifest.json, styles.css",
           "scope": "Local official-PDF verification against pinned bytes and physical/printed page 207 plus local build hashes on the dirty base revision; ephemeral cloud-host paths, not installed-plugin or GUI evidence."
         },
         "publication": "Pending final upstream synchronization, commit and non-force push; exact publication SHA and remote verification will be recorded in the Issue #9 close receipt.",
         "commit": "see Issue #9 close receipt",
         "notProven": ["complete SRD 5.1 Item corpus", "remaining 233 Magic Items A–Z headings and Orb of Dragonkind", "magic-item helper reconciliation", "remaining goldens", "independent W18 review and S01-R01", "Item product artifact/provider/UI", "Obsidian host acceptance", "Encounter runtime", "any 2024 rules"],
-        "next": "Request independent review of the published W18 five-heading slice; only after PASS begin a separately documented W19 source slice."
+        "next": "Request independent re-review of the published W18-N01 repair; only after PASS begin a separately documented W19 source slice."
       }
     },
     "implementationRun": {
