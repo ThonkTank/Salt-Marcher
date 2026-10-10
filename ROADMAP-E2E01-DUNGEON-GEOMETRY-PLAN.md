@@ -339,7 +339,9 @@ Produktänderung keine Produktbasisprüfung als Funktionsbeleg an.
 | N01 | dieser Planrepair; nur `DUN-GEO-P01-R01-01` | unabhängigen Exact-SHA-P01-R02 | Produkt-I01, Host- oder E2E-Go |
 | P01-R02 `58c24b161a…` | unabhängiger enger PASS; nur Planrepair | Produkt-I01 | Host- oder E2E-Go |
 | Produkt-I01 `400fb47e2f…` | Implementierungskandidat; check, 490/490 Tests und Build bestanden | unabhängigen Code-R01 | Stewardintegration ohne Review |
-| Code-R01 und nötige N01/R02 | offen | erst bei PASS den geprüften Owner-SHA | fremde Domainratifikation |
+| Code-R01 `455b7e606f…` | `CHANGES_REQUIRED`, genau `DUN-GEO-I01-R01-01..03` | getrennten engen Produkt-N01 | Port-Handoff oder Cleanup |
+| Produkt-N01 `7d3f0deaca…` | Reparaturkandidat; check, 494/494 Tests und Build bestanden | unabhängigen engen Code-R02 | Stewardintegration vor PASS |
+| Code-R02 | offen | erst bei PASS den geprüften Owner-SHA | fremde Domainratifikation |
 | Steward-Handoff | offen | Übernahme des geprüften Owner-SHA in den einzigen PR-#13-Kandidaten | zweiten Kandidaten oder Dungeon-eigenes Execute |
 | Produkt-Cleanup-P/I/R | offen und weiterhin nach der Funktionsabnahme | ausschließlich bereinigten geprüften Produktstand | Gesamtfreigabe |
 
@@ -364,6 +366,33 @@ Dungeonbytes, Binding-/Anchor- und A→B→A-Wechsel, bytegleiche Source-/Graph-
 Historyersetzung, late Handoff ohne Wirkung, normalen Redostand, Fresh Begin,
 abhängigen Portal-Follow, unveränderte IDs/Markdownclosure und den vorhandenen
 Maßstab 1,524 m/Feld. `npm run check`, `npm test` mit 490/490 Fällen und
-`npm run build` bestanden. Fixturebytes wurden nicht geändert. Kein GUI- oder
-Hostlauf wurde ausgeführt; unabhängiger Code-R01 und danach getrennte
-Produkt-Cleanup-P/I/R bleiben offen.
+`npm run build` bestanden. Fixturebytes wurden nicht geändert. Der darauf
+folgende unabhängige Code-R01 verlangte die drei unten dokumentierten
+Reparaturen; kein GUI- oder Hostlauf wurde ausgeführt.
+
+## Produkt-N01-Ergebnis nach Code-R01
+
+Der unabhängige Code-R01 auf Exact-SHA
+`455b7e606f9b753043e8f8f94896f8ffd60924f8` forderte ausschließlich drei
+Reparaturen. Produktcommit `7d3f0deaca89f5bb2667a1478047475d9e28bee3`
+adressiert diese Grenzen ohne neuen Portumfang:
+
+- `DungeonGeometryGesture.update()` verwirft vor jedem Sample das bisherige
+  Proposal. Nullsegment-, sonstige Topologie- und nicht-finite Ablehnungen
+  lassen daher dieselbe leere Sicht für Preview und Handoff zurück; ein später
+  gültiges Sample kann ausschließlich seinen aktuell sichtbaren Stand liefern.
+- Der bei Begin tatsächlich getroffene Pointer wird als immutable Wert
+  gehalten und bleibt der Delta-Ursprung für off-center, Rückkehr und Snap.
+- `projectRecordChanges()` ist die eine reine RecordChange-Prüfungs- und
+  Anwendungsgrenze für `projectDocumentCommand()` und `Session.apply()`;
+  beide verwenden außerdem dieselbe Indexergänzung und Reihenfolgelogik.
+
+Die fokussierten Regressionen reproduzieren valid→Nullsegment/non-finite→
+release ohne Source-, History- oder Redowirkung, Korrektur auf ein neues
+sichtbares Proposal, off-center/Rückkehr/Nullzug mit und ohne Snap sowie den
+gleichen Kontur-/Portalcommand über pure Projektion und native Session mit
+identischen Bytes, Kennungsreihenfolge und stale-/invalid-Ablehnung.
+`npm run check`, `npm test` mit 494/494 Fällen, `npm run build` und
+`git diff --check` bestanden. Fixturebytes wurden nicht geändert. Code-R02,
+Cleanup-P/I/R, GUI-/Host-/physische Eingabe und E2E-01 bleiben ausdrücklich
+offen; der N01-Kandidat ist noch kein Steward-Handoff oder Produkt-Go.

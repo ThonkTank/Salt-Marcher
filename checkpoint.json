@@ -490,15 +490,15 @@
     "next": "Kandidaten-SHA veröffentlichen, eng unabhängig reviewen lassen und anschließend nur als Source-Handoff an den einen PR-#13-Steward übergeben; keine eigene Integration."
   },
   "e2e01DungeonGeometryPlan": {
-    "run": "E2E-01-DUNGEON-GEOMETRY-I01",
-    "state": "implementation_candidate_pending_independent_code_review",
+    "run": "E2E-01-DUNGEON-GEOMETRY-N01",
+    "state": "code_repair_candidate_pending_independent_r02",
     "owner": "Dungeon-Strang (Thread Obsidian Dungeon Repo ansehen)",
     "branch": "dungeon/e2e01-geometry-i01-20261010",
     "baseCommit": "58c24b161a967017112d8bfc68471b19ad70e72b",
-    "synchronizedShared": "89a3ffbad44ed6acec2e25566a1b017166fa9f7c",
+    "synchronizedShared": "38f333d4eda6cd2203443efd35b7140e7bf72e07",
     "plan": "ROADMAP-E2E01-DUNGEON-GEOMETRY-PLAN.md",
-    "coordination": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6092383202",
-    "details": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/8#issuecomment-6092383345",
+    "coordination": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6093025989",
+    "details": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/8#issuecomment-6093025792",
     "planCandidateCommit": "ea46ba5437596aceaad955330e21c3ef4e739451",
     "review": {
       "run": "E2E-01-DUNGEON-GEOMETRY-P01-R01",
@@ -542,6 +542,28 @@
       "review": "independent_code_r01_required",
       "host": false
     },
+    "codeReview": {
+      "run": "E2E-01-DUNGEON-GEOMETRY-I01-R01",
+      "result": "CHANGES_REQUIRED",
+      "commit": "455b7e606f9b753043e8f8f94896f8ffd60924f8",
+      "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/26#issuecomment-6092998283",
+      "findings": [
+        "DUN-GEO-I01-R01-01: Ein ungültiges oder nicht-finites Update ließ ein älteres unsichtbares Proposal finalisierbar.",
+        "DUN-GEO-I01-R01-02: Der Konturzug verwendete den Vertex statt des tatsächlichen Beginpointers als Delta-Ursprung.",
+        "DUN-GEO-I01-R01-03: Pure Dokumentprojektion und native Session duplizierten RecordChange-Validierung und -Anwendung."
+      ],
+      "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/dungeon-geometry-code-r01/{review.json,probes.ts,probes.json,check.log,test.log,build.log}",
+      "boundary": "Actual Source-/History-/Parent-/Framebindung und terminales A-B-A bestanden als Teilbefund; keine Port-, Host- oder E2E-Freigabe."
+    },
+    "codeRepair": {
+      "run": "E2E-01-DUNGEON-GEOMETRY-N01",
+      "commit": "7d3f0deaca89f5bb2667a1478047475d9e28bee3",
+      "start": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/8#issuecomment-6093025792",
+      "scope": "Ausschließlich DUN-GEO-I01-R01-01..03: jedes neue Sample ersetzt die Finalisierbarkeit, immutable tatsächlicher Beginpointer und eine gemeinsame reine RecordChange-Projektion für projectDocumentCommand und Session.apply.",
+      "oracles": "Valid-zu-Nullsegment beziehungsweise non-finite entzieht Preview und Handoff ohne Source-/History-/Redo-Wirkung; ein danach gültiges Sample liefert nur den sichtbaren Stand; off-center, Rückkehr und Snap benutzen den tatsächlichen Beginpointer; pure Projektion und native Session liefern gleiche Kontur-/Portalbytes und Reihenfolge sowie gleiche stale-/invalid-Ablehnung.",
+      "review": "independent_code_r02_required",
+      "host": false
+    },
     "scope": "Implementierungskandidat: äußerer Konturpunktzug Room31/Floor32 über bestehende pure Geometrieplaner, transientes Preview/Cancel und genau ein kanonischer ownergebundener Before→After-AtlasChange für die gemeinsame check/execute-Komposition.",
     "files": [
       "src/features/dungeon/geometry-change.ts",
@@ -554,10 +576,10 @@
       "checkpoint.json",
       "acceptance.json"
     ],
-    "verification": "npm run check PASS; npm test 490/490 PASS; npm run build PASS; git diff --check PASS. Fokussierte Corefälle verwenden die eingefrorene e2e01-v1-Dungeonfixture und verändern keine Fixturebytes.",
-    "externalEvidence": "Plan-R02-Beleg /home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/dungeon-geometry-p01-r02/review.json auf 58c24b1. Keine neue GUI-, Host- oder physische Eingabeevidenz in Produkt-I01.",
-    "notVerified": "Unabhängiger Code-R01, Produkt-Cleanup-P/I/R, Hex-Stewardintegration, tatsächlicher Hostlauf, physische Eingabe, vollständige Mehrownerkomposition und E2E-01-PASS bleiben offen.",
-    "next": "Kandidatenbranch und Exact-SHA veröffentlichen; unabhängigen engen Code-R01 anfragen. Erst dessen PASS erlaubt den Owner-SHA-Handoff an Hex."
+    "verification": "npm run check PASS; npm test 494/494 PASS; npm run build PASS; git diff --check PASS. Fokussierte Corefälle verwenden die eingefrorene e2e01-v1-Dungeonfixture und verändern keine Fixturebytes.",
+    "externalEvidence": "Code-R01-Beleg /home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/dungeon-geometry-code-r01 auf 455b7e6; N01 ist ausschließlich automatisiert geprüft. Keine neue GUI-, Host- oder physische Eingabeevidenz.",
+    "notVerified": "Unabhängiger Code-R02, Produkt-Cleanup-P/I/R, Hex-Stewardintegration, tatsächlicher Hostlauf, physische Eingabe, vollständige Mehrownerkomposition und E2E-01-PASS bleiben offen.",
+    "next": "N01-Exact-SHA auf bestehendem PR #26 veröffentlichen und ausschließlich das Reparaturdelta unabhängig durch Hex als Code-R02 prüfen lassen; vor PASS kein Owner-SHA-Handoff."
   },
   "e2e01DungeonGeometryCleanup": {
     "run": "E2E-01-DUNGEON-GEOMETRY-CL-I01",
