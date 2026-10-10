@@ -1619,11 +1619,11 @@
         "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/obs04-shared-integration-20261010",
         "scope": "Consume the normally verified merged Shared OBS-04 fix; no new E2E01 feature or unreviewed owner source adoption.",
         "latestMetadataConsumption": {
-          "shared": "a72c9501f5dd6649fb624420b9141903534be345",
-          "merge": "07a3fb4d190ab03f808f7ecde4613aae81ed5eb8",
-          "state": "fresh_cloud_obs04_evidence_consumed_exact",
-          "ownerRecord": "gmProductTesting.latestObs04IntegratedRetest",
-          "scope": "Exact Shared Cloud-GM narrow five-point retest on eefbe6f passed; no fresh Electronprocess/physical/player projection/fullE2E. Imported as owner evidence, not a Hex native test."
+          "shared": "601a226911efe8ad1aac19f74457ffde52af558d",
+          "merge": "688afde30e07f444802b68646567099144d1eb9e",
+          "state": "fresh_cloud_obs04_retest_and_separate_host_setup_evidence_consumed_exact",
+          "ownerRecord": "gmProductTesting.latestObs04IntegratedRetest and latestFreshProcessAttempt",
+          "scope": "Completed narrow five-point Cloud retest stays exact on eefbe6f; separate fresh-process host setup is not_started_preflight_recorded. Owner metadata only, no Hex native test."
         }
       },
       "campaignIntegration": {
@@ -1671,7 +1671,12 @@
         "nativeOnThisBuild": false,
         "physicalInput": false,
         "fullE2E": false,
-        "next": "Review actual full owner adoption d06354c on sole PR13 product merge5700fd2: exact imported contract/test blobs, fresh Shared a72c950, preserved native Atlas/City/Dungeon and one History/Repository/fixture; 513 tests/check/clean build. Do not repeat generic Campaign/MWS owner reviews or call host-neutral imports a wired runtime provider."
+        "next": "Review actual full owner adoption d06354c on sole PR13 product merge5700fd2: exact imported contract/test blobs, fresh Shared a72c950, preserved native Atlas/City/Dungeon and one History/Repository/fixture; 513 tests/check/clean build. Do not repeat generic Campaign/MWS owner reviews or call host-neutral imports a wired runtime provider.",
+        "postCheckSharedMetadata": {
+          "shared": "601a226911efe8ad1aac19f74457ffde52af558d",
+          "merge": "688afde30e07f444802b68646567099144d1eb9e",
+          "scope": "Only fresh separate Cloud-GM host-setup preflight metadata. No product or fixture delta after tested5700fd2; no new native evidence."
+        }
       }
     },
     "verification": {
