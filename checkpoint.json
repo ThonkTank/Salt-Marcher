@@ -719,7 +719,7 @@
   "hexAtlasExecution": {
     "scope": "HEX-00 bis HEX-28 und sämtliche eingeordneten CITY-00 bis CITY-09 vollständig",
     "phase": "HEX-03",
-    "state": "e2e01_dungeon_integration_review_cleanup_pass_campaign_corrected_handoff_pending",
+    "state": "e2e01_verified_obs04_shared_consumed_campaign_owner_integration_ready",
     "plan": "ROADMAP-E2E01-SPATIAL-INTEGRATION-PLAN.md",
     "currentRun": {
       "id": "E2E-01-SPACE-I01b",
@@ -767,10 +767,10 @@
     },
     "nextRun": {
       "id": "E2E-01-SPACE-I01c-CAMPAIGN-INTEGRATION-01",
-      "kind": "bounded_product_integration_after_actual_corrected_owner_handoff",
+      "kind": "bounded_product_integration_actual_secured_owner_ready",
       "focus": "On actual eligible Campaign/Data handoff, consume the full published repaired branch basis on sole PR13 candidate; compare real contracts/owner revisions/current Atlas World placements/spatial against existing ownership contract. Integrate and test available secured code, then narrow affected integration review separately. Do not replace actual Vault/Registry/Publish adapters with synthetic providers or drag remaining P02/P04/E2E02-04 forward.",
-      "dependency": "Actual corrected eligible Campaign owner/steward handoff on d06354c remains absent after direct PR13/PR25/#12 reads. N02 owner #12/6093273849 explicitly says scoped PASS permits corrected handoff; old handoff remains suspended. M/W/S repair PASS is already complete, Dungeon independent integration R01 and read-only review Cleanup-P/I/R complete. Runtime Campaign/Vault context, trusted registry/provider, real Publish CommandId/ReceiptId and P02/P04 remain actual later inputs.",
-      "review": "Prior exact owner and narrow Dungeon integration reviews remain closed evidence. No new generic review/cleanup/plan round; current native/full-E2E gates remain open. Corrected handoff was already requested by Stadt in #12/6093455337, no duplicate request."
+      "dependency": "Qualified corrected owner handoff6093614522 on exact d06354c is actually available and read; full branch/tree/review chain are recorded in coordination.campaignOwnershipInput. Shared eefbe6f OBS-04 is normally merged and consumed in PR13, own check/497 tests/build/callbackprobes passed. Proceed with actual available secured ownership code in the next separate product-integration run. Runtime Campaign/Vault context, trusted registry/provider, real Publish CommandId/ReceiptId and P02/P04 remain later actual inputs, not fabricated prerequisites or reasons for another receipt-only round.",
+      "review": "Prior exact-owner generic/MWS reviews and narrow Dungeon integration/review cleanup are closed evidence. Narrow affected integration review after consuming actual code; native and full-E2E gates remain open. No more owner handoff request."
     },
     "review": {
       "run": "HEX-02-R02",
@@ -1018,7 +1018,7 @@
       },
       "campaignOwnershipInput": {
         "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6091818151",
-        "state": "generic_contract_and_media_repair_review_pass_corrected_owner_handoff_runtime_pending",
+        "state": "secured_owner_contract_ready_for_separate_integration_runtime_provider_pending",
         "worldProjection": {
           "api": "AtlasRepository.spatialGraph.world()",
           "ownerId": "native World ID",
@@ -1032,21 +1032,29 @@
         "nextOwnerPlanReadyOn": "88babcd2eee05f8d99a914129fd176b264bdcb26",
         "followup": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6092204700",
         "qualifiedContract": {
-          "sha": "7aa47beb1bad3d0b1560666fa1cb1677bdc8cd4e",
+          "sha": "d06354c37ea24c249a23310f1a186a0a5ee4e936",
+          "tree": "68549ac317b2b4723faab01dbb6dd683709402da",
+          "branch": "codex/e2e01-campaign-ownership-i01",
           "planSha": "51d58bf32f2225182218ee53a8f9bd377333141a",
-          "review": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/25#issuecomment-6092625524",
-          "handoff": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6092626310",
-          "scope": "Host-neutral Ownership Contract/Validator/Testport only; generic R02 findings closed. This is a qualified input, not productive Registryprovider, Vault/FileTransaction, P02/P04, Host, E2E01 or merge approval.",
+          "handoff": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/25#issuecomment-6093614522",
+          "readDirectly": true,
+          "reviewChain": {
+            "genericR02": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/25#issuecomment-6092625524",
+            "genericR02Sha": "7aa47beb1bad3d0b1560666fa1cb1677bdc8cd4e",
+            "mediaOwnerReReview": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/25#issuecomment-6093447911",
+            "mediaOwnerReviewedSha": "d06354c37ea24c249a23310f1a186a0a5ee4e936"
+          },
+          "scope": "Secured full host-neutral registry/projection/validator/coordinator/publish-status contract input. Actual runtime Registryprovider/Vault/FileTransaction/P02/P04/Host/E2E remain separate open gates; not yet source-integrated into Hex.",
           "reviewerEvidence": {
-            "provenance": "Independent Campaign review; not a new Hex test run",
+            "provenance": "Actual independent Campaign/MWS review and owner secured handoff, not a new Hex test run",
             "check": "PASS",
-            "tests": "498/498 PASS",
-            "build": "PASS"
+            "tests": "500/500 PASS",
+            "build": "PASS clean exact d06354c"
           },
           "sourceIntegrated": false
         },
         "mediaOwnerGate": {
-          "state": "scoped_independent_media_owner_review_pass_corrected_owner_handoff_pending",
+          "state": "scoped_repair_review_pass_corrected_secured_owner_handoff_received",
           "reviewedSha": "7aa47beb1bad3d0b1560666fa1cb1677bdc8cd4e",
           "review": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/25#issuecomment-6092636859",
           "gateCorrection": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6092638831",
@@ -1054,8 +1062,8 @@
             "ManualDecision may still be omitted/quarantined by Salvage although the confirmed campaign decision must be retained until its defined end.",
             "Source-scene-bound AmbienceOverride may still survive/remap into an independent target; retirement suspends source state and target requires a fresh projection."
           ],
-          "required": "Actual corrected eligible Campaign/Data owner/steward handoff on repaired exact SHA d06354c37ea24c249a23310f1a186a0a5ee4e936. Scoped independent M/W/S PASS already exists and is read directly; do not repeat generic or M/W/S review. Owner statement #12/6093273849 explicitly requires corrected steward handoff after PASS; no such handoff on PR13/PR25/#12 at this check.",
-          "adoption": "Old 7aa47be M/W/S handoff remains suspended; repaired d06354c is independently qualified but not source-integrated. Corrected owner handoff is the remaining entry condition, not another review.",
+          "required": "Actual corrected secured owner handoff6093614522 is received and read directly; next is separate bounded Hex full-branch integration on sole PR13 candidate, with affected checks. No further owner request or generic/MWS review.",
+          "adoption": "d06354c replaces old 7aa47be as the actual eligible secured input; consumption source integration is the next separate run.",
           "repairCandidate": {
             "run": "OWNERSHIP-I01-N02",
             "sha": "d06354c37ea24c249a23310f1a186a0a5ee4e936",
@@ -1086,7 +1094,7 @@
             "fullE2E": false
           }
         },
-        "receipt": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6092697089"
+        "receipt": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/25#issuecomment-6093614522"
       },
       "dungeonGeometryPlanInput": {
         "run": "E2E-01-DUNGEON-GEOMETRY-P01-R01",
@@ -1536,41 +1544,47 @@
         }
       },
       "incomingSharedSynchronization": {
-        "id": "E2E-01-INCOMING-SHARED-W11-SYNC",
-        "startedAt": "2026-10-10T03:54:50.130744+00:00",
-        "hexBase": "7dc8f8a864f8ada9246fa6754b43bf2f1514d448",
-        "shared": "22231aa412982d186f705438eae5e543d9eaeb71",
-        "independentReviewTarget": "7dc8f8a864f8ada9246fa6754b43bf2f1514d448",
-        "gui": false,
-        "mergeCandidate": "9b6adb48c6ad644727fb47c65853cb8bd01051e1",
-        "sourceAndFixtureBlobsExact": true,
-        "updatedOwnerRoots": {
-          "checkpoint.json": [
-            "saltMarcherCatalogEncounter"
-          ],
-          "acceptance.json": [
-            "saltMarcherCatalogEncounter"
-          ]
-        },
-        "finishedAt": "2026-10-10T03:55:52Z",
+        "productCandidate": "11b5ae9fa845e2e31f7b732fed9c550ca678dd19",
+        "parentBranchBase": "3397e7e462066c11259c6b876596b4aea446359e",
+        "consumedShared": "eefbe6f505f0158ec6156c2eaf359fbf19b24a0e",
+        "geometrySourcesFixturesAndForeignRootsPreserved": true,
         "checks": {
           "check": true,
-          "testsPassed": 496,
+          "testsPassed": 497,
           "testsFailed": 0,
           "build": true,
-          "cleanExactMergeSha": true,
-          "diffCheck": true
+          "cleanProductCandidate": true,
+          "eventProbe": {
+            "pass": true,
+            "groups": [
+              "playview-real-card-wiring",
+              "body-explicit-key",
+              "label-same-key",
+              "drag-cancel-pointer-boundaries",
+              "room-values-unchanged"
+            ],
+            "boundary": "deterministic renderer hit adapter; no GPU, vault, physical input or fresh process evidence"
+          }
         },
         "artifactSha256": {
-          "main.js": "0b1edc823e08ed627bd0befe23639b855ceacf2bcddaf35a98d40723c5cd5a6c",
+          "main.js": "df0e0d9b3dd716aed1a4dd2db85145276b0d57ab61f2075f1d01520bdfa9bd5d",
           "styles.css": "cdf172e7d3c101d5917c16afe487641a19d9d5afe8ad23365b33c958ee1ac321",
           "manifest.json": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64"
         },
         "nativeOnThisBuild": false,
         "fullE2E": false,
-        "independentReviewScope": "Unchanged exact target 7dc8f8a, Atlas/domain source and fixture blobs equal after sync; incoming delta only catalog-source manifest, verifier/tests and catalog owner metadata.",
-        "reviewStart": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/7#issuecomment-6093489819",
-        "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/shared-w11-sync-20261010"
+        "id": "GM-UX-OBS-04-SHARED-INTEGRATION-01",
+        "sharedProductMerge": "734a7b9c5714acf2ca5aa0395d9706594a5d4ecd",
+        "sharedVerifiedPublication": {
+          "sha": "eefbe6f505f0158ec6156c2eaf359fbf19b24a0e",
+          "verifiedExactRemote": true,
+          "cleanPublicationBuild": true,
+          "result": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/21#issuecomment-6093714949",
+          "cloudHandoff": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/8#issuecomment-6093715100"
+        },
+        "ownerReview": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/21#issuecomment-6093614585",
+        "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/obs04-shared-integration-20261010",
+        "scope": "Consume the normally verified merged Shared OBS-04 fix; no new E2E01 feature or unreviewed owner source adoption."
       }
     },
     "verification": {
@@ -2932,7 +2946,7 @@
       "platformIssue": 11,
       "checkpointIsAuthoritative": true
     },
-    "updatedAt": "2026-10-10T04:01:51Z"
+    "updatedAt": "2026-10-10T04:23:54Z"
   },
   "phase": "Phase 6: zweiter Nachbesserungslauf teilweise umgesetzt; fünf Restpositionen und unabhängiger Review offen",
   "goal": "Dungeon-Pfad bis zur vollständigen beauftragten Dungeondraft-Verhaltensgleichheit verfolgen: Bedienung und Funktion angleichen, Grafik ungefähr gleichwertig. Zuerst ROADMAP-PARITY.md mit Building und Object Tool abschließen, danach übrige Dungeon-Werkzeuge. Jede Fachphase getrennt planen, umsetzen und unabhängig reviewen; Lücken mit eigenen Nachbesserungs- und Reviewläufen schließen; danach eigene Aufräumphase mit Plan, Umsetzung und Review.",
