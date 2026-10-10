@@ -45,12 +45,6 @@ Automatische Speicherung und vollständige Wiederaufnahme sind bereits querschni
 3. Aktueller Aufgabenstatus steht im konkreten Aufgabenissue/PR; bereichsübergreifende Annahmen und Entscheidungen in #12. Ältere Issue-Haupttexte und Planstände können überholt sein. Bei Widerspruch den genauen Commit und direkten Beleg prüfen, nicht die günstigste Statusmeldung wählen.
 4. `checkpoint.json` führt bereichseigene Ausführungsstände; `acceptance.json` führt direkte Anforderungen/Nachweise. Ihre älteren Top-Level-Felder beschreiben teils den Dungeon-Lieferweg und sind kein Gesamtproduktstatus. Fremde Wurzeln werden nicht pauschal überschrieben.
 
-## Backlog pflegen
+## Arbeit aufnehmen und nachführen
 
-`status:ready` bezeichnet frei übernehmbare, ausführbare Arbeit; `status:active` eine bereits übernommene Aufgabe. `priority:now` bezeichnet den konkreten Engpass zum nächsten integrierten Nutzerablauf, `priority:next` die folgende abhängige Arbeit. `status:blocked` nennt seinen Eingang im Text; nach dessen Lieferung konkret entfernen. `kind:task` braucht ein begrenztes Ergebnis und eine überprüfbare Abnahme. Bereichsindizes (`kind:coordination`) bleiben übergreifend und erhalten deshalb keinen irreführenden Einzelmeilenstein. Prozessakten (`kind:process`) werden nicht als Produktfeature priorisiert.
-
-Ein Aufgabenabschluss liefert ein zusammenhängendes Nutzerergebnis oder einen gelösten Eingang für ein benanntes Umsetzungspaket, mit Beleg und nächstem Empfänger. Vor weiterer Planarbeit vorhandene Produkt-PRs fertigstellen; Schritte und Aufräumen im selben Paket bündeln. [Paketgrenzen und Prüfaufwand](WORKFLOW.md). Nur bei neuem Ergebnis, geändertem Blocker oder Reviewbedarf einen neuen Status veröffentlichen. Keine deltafreien Meldeschleifen. Bereits vorhandene PRs reviewen und ihre Abhängigkeiten klären; dieses Aufräumen schließt oder merged keine unbewertete fremde Arbeit.
-
-Für den Einstieg unabhängig vom GUI-Engpass: [aktuell frei übernehmbare Aufgaben](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues?q=is%3Aissue+is%3Aopen+label%3A%22status%3Aready%22). Die [Fixture-B-Anleitung #42](CONTRIBUTOR-FIXTURE-B.md) ist über PR #45 abgeschlossen; weitere Wege und ein geprüfter Modelltest stehen im [Agenteneinstieg](../CONTRIBUTING.md#agenteneinstieg).
-
-Bei Status-/Abhängigkeitswechsel aktualisiert der Paketowner sein Issue; bei geänderter Lieferkette zieht der Integrationsowner diese Roadmap nach. Ablage, Ablösung und automatische Prüfungen folgen dem [Repository-Pflegevertrag](REPOSITORY.md).
+`npm run next` zeigt den aktuellen Produktengpass und freie Aufgaben. [CONTRIBUTING](../CONTRIBUTING.md#agenteneinstieg) führt zur Übernahme; [WORKFLOW](WORKFLOW.md) bestimmt Paketgrenzen und Prüfung, [REPOSITORY](REPOSITORY.md#selbstorganisation-ohne-zentrale-zuweisung) Besitz, Labels und Übergabe. Bei geändertem Lieferpfad zieht der Integrationsowner diese Roadmap nach; konkrete Laufstände bleiben im Aufgabenissue.

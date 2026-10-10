@@ -37,7 +37,7 @@ Der Integrationsowner hält in #12 den neu auf Shared nutzbaren Ablauf oder den 
 
 Die bestehende Nutzerfreigabe umfasst regelmäßiges Committen/Pushen und GitHub-Koordination. Vor Beginn und unmittelbar vor Veröffentlichung Remote/Upstream abrufen und eingehende Änderungen integrieren. Vor einem neuen Branch offene PRs, Remote-Branches und die Paketkoordination [#1](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1) prüfen. Einen geprüften zusammenhängenden Ergebnisstand veröffentlichen; bei langen Arbeiten spätestens zum täglichen Abschluss einen prüfbaren Zwischenstand sichern. Ein Commit benötigt keine eigene Statusrunde.
 
-Nur eigene Änderungen committen; lokale fremde Änderungen sichern und erhalten. Veröffentlichten Verlauf erhalten, kein Force-Push. Konflikte gezielt integrieren und nur betroffene Prüfungen wiederholen. Shared ist `active/installed-phase1`; tatsächlichen Upstream prüfen und Push gegen den Remote-Commit bestätigen. Build, Synchronisation und Push installieren kein Plugin im Nutzervault. Im Aufgabenissue genügt eine kurze Übergabe mit Beleglink; #12 nur bei geändertem kritischem Pfad/Integration aktualisieren, keine identischen Vollberichte in mehreren Threads.
+Nur eigene Änderungen committen; lokale fremde Änderungen sichern und erhalten. Veröffentlichten Verlauf erhalten, kein Force-Push. Konflikte gezielt integrieren und nur betroffene Prüfungen wiederholen. Shared ist `active/installed-phase1`; tatsächlichen Upstream prüfen und Push gegen den Remote-Commit bestätigen. Build, Synchronisation und Push installieren kein Plugin im Nutzervault. Übergabe und Informationsorte folgen dem [Kommunikationsvertrag](REPOSITORY.md#kommunikation-nach-inhalt-und-anlass).
 
 ## Hosttests und Schutz
 
