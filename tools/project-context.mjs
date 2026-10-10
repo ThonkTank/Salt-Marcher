@@ -8,7 +8,7 @@ export const areas = {
   atlas: { issue: 7, checkpoint: ['hexAtlasExecution'], acceptance: ['hexAtlas', 'wonderdraftParity'], plan: 'ROADMAP-HEX-ATLAS.md' },
   city: { issue: 7, checkpoint: ['cityExecution'], acceptance: ['cityPlans'], plan: 'ROADMAP-CITIES-IMPLEMENTATION-PLAN.md' },
   dungeon: { issue: 8, checkpoint: ['parityRoadmap'], acceptance: ['strictParity', 'requirements'], plan: 'ROADMAP-PARITY-TOOLS.md' },
-  gm: { issue: 8, checkpoint: ['gmProductTesting'], acceptance: ['gmProductFollowups'], plan: 'ROADMAP-GM-PRODUCT-TESTING-PLAN.md' },
+  gm: { issue: 8, checkpoint: ['gmProductTesting'], acceptance: ['gmProductFollowups'], plan: 'docs/AGENT-ROLES.md', section: 'gm-test' },
   catalog: { issue: 9, checkpoint: ['saltMarcherCatalogEncounter'], acceptance: ['saltMarcherCatalogEncounter'], plan: 'ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md' },
   campaign: { issue: 10, checkpoint: [], acceptance: ['saltMarcherReplacement'], plan: 'ROADMAP-SALTMARCHER-REPLACEMENT.md' },
   runtime: { issue: 6, checkpoint: [], acceptance: ['saltMarcherReplacement'], plan: 'ROADMAP-SALTMARCHER-REPLACEMENT.md' },
@@ -101,6 +101,7 @@ export function buildContext(root, args) {
     return [key, select.full ? data[key] : areaSummary(data[key], execution)];
   }));
   return { ...base, area: select.area, plan: route.plan,
+    ...(route.section ? { planSection: route.section } : {}),
     coordination: `https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/${route.issue}`,
     checkpoint: selectRoots(checkpoint, route.checkpoint, true), acceptance: selectRoots(acceptance, route.acceptance, false),
     ...(!route.checkpoint.length ? { note: 'No dedicated execution root mapped on this checkout. Read the current owner issue/PR; acceptance below is the overall portfolio contract.' } : {}),

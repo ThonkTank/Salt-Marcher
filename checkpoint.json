@@ -4,15 +4,15 @@
     "state": "completed",
     "roleContract": "docs/AGENT-ROLES.md#repository-maintenance",
     "repositoryContract": "docs/REPOSITORY.md",
-    "evaluatedShared": "87b37142a2c1478a06746d9d85600ea5ae2163d2",
-    "scope": "Strengthened existing gm-test role for integrated user-visible workflows, discoverability and real GUI consumption; aligned legacy task instructions without changing historical evidence or GM-owned state.",
-    "next": "Existing gm-test automation loads the current role on next entry. Select runnable integrated user workflows; retain scope-specific evidence and owner boundaries, report missing UI connections at the package.",
+    "evaluatedShared": "117360b57d505ab56a3376e498e2b3d768398ff9",
+    "scope": "Information architecture upkeep: direct GM navigation to current role, preserve historical evidence as optional lookup, keep run chronicles out of active plans, correct stale task/index mains. No product approval.",
+    "next": "Use INDEX and bounded next/context tools. Issue mains own current package state; REPOSITORY owns information lifecycle. Historical evidence remains targeted lookup, not mandatory startup context.",
     "verification": [
-      "check:repo and affected source/diff preservation PASS",
-      "Enabled hourly gm-test automation uses current default-branch role contract",
-      "Historical GM evidence, foreign role sections/checkpoint roots and acceptance preserved"
+      "check:repo and test:repo 28/28 PASS; read-only backlog label audit PASS",
+      "Affected source/diff and foreign checkpoint/acceptance preservation checked",
+      "Issue 8/73 current claims, closure and PR/remote evidence identity inspected; updates at existing information locations"
     ],
-    "previousOrientation": "87b3714"
+    "previousOrientation": "117360b"
   },
   "saltMarcherReplacement": {
     "date": "2026-10-10",
