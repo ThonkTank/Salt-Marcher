@@ -48,6 +48,8 @@ Planungsergebnis: die vier verlangten Themen besitzen konkrete bestehende Pakete
 
 **I01-Aufräum-P01 — Plan:** Prüfen, dass die neue Scope-Tabelle ausschließlich Quellenkennungen referenziert und keine Originalbelege dupliziert, die Trap-Zuordnung unverändert bleibt, CITY-00–09 vollständig erhalten sind und außerhalb der eigenen Laufobjekte keine Checkpointbytes verändert wurden. Nur gefundene Redundanz oder Widersprüche bereinigen.
 
+**I01-Aufräum-I01 — Ergebnis:** Scope verweist auf die kanonische Inventarliste statt Originalbelege zu kopieren. Keine redundanten Dateien oder technische Bereinigung erforderlich; Traptext, sämtliche zehn Phasen, Produkt-/Acceptancebytes und fremde Checkpointsegmente erhalten.
+
 ## Technische Arbeitspakete
 
 | Phase | Umsetzung und Zuständigkeit | Nachweis vor Freigabe |
