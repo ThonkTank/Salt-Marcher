@@ -5059,13 +5059,13 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-FTG-SCOPE-P01",
+      "id": "CITY-FTG-SCOPE-CLEAN-R01",
       "status": "complete",
-      "kind": "planning",
-      "focus": "Issue44 FTG lifecycle mapping to existing CITY06/07, exact inventory IDs and future acceptance",
+      "kind": "cleanup_review",
+      "focus": "Plan cleanup passed: foreign checkpoint and acceptance bytes preserved; 8 inventory IDs verified",
       "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
       "baseSha": "e157462ee1a4c2b82b0c927df664a8c06fc38cb1",
-      "nextStep": "Separate cleanup plan/implementation/review, then CITY-FTG-SCOPE-I01"
+      "nextStep": "CITY-FTG-SCOPE-I01: implement roadmap and scope mapping separately"
     },
     "nextRun": {
       "id": "CITY-FTG-SCOPE-I01",

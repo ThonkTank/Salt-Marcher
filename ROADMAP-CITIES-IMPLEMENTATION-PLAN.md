@@ -42,6 +42,8 @@ Planungsergebnis: die vier verlangten Themen besitzen konkrete bestehende Pakete
 
 **Aufräum-I01 — Ergebnis:** Fremde Checkpointformatierung aus der gepinnten Sharedbasis wiederhergestellt; ausschließlich die beiden eigenen Laufobjekte ersetzt. Plan und Inventarzuordnung unverändert, keine Testartefakte oder zusätzlichen Dateien erzeugt.
 
+**Aufräum-R01 — PASS:** Fremde Checkpointsegmente bytegleich zur Sharedbasis, sämtliche Acceptancebytes unverändert und alle acht referenzierten Inventarkennungen vorhanden/offen. Repository-/Verweisprüfung und Diffprüfung bestehen. Keine verbliebene Bereinigungslücke im Planpaket; nächster Fachlauf ist CITY-FTG-SCOPE-I01.
+
 ## Technische Arbeitspakete
 
 | Phase | Umsetzung und Zuständigkeit | Nachweis vor Freigabe |
