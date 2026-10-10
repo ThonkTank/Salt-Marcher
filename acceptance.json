@@ -154367,6 +154367,33 @@
           "next": "Hex owns the productive FileTransaction/AtlasView prepared/committed/terminal-rollback receipt integration and same-Navigator Registry/Inventory refresh. Then separate actual Obsidian Save/Fresh/Recovery/A-B-A and integrated host review.",
           "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-manifest-qualified-integration-20261010/integration.json",
           "sha256": "1c9a149bb5c06b7afcc95927c00f7a9ba448ef411ff79019787baa342a723e60"
+        },
+        "qualifiedRollbackPublicationComposition": {
+          "id": "RUNTIME-MANIFEST-I02-PUBLICATION-SHARED-COMPOSITION",
+          "state": "incoming_Shared_readiness_documentation_integrated_product_source_unchanged",
+          "checkedAt": "2026-10-10T12:41:14.563654+00:00",
+          "compositionCommit": "1af7adf08232d1e469b7660609fec5d714bdafdd",
+          "consumedShared": "d3e2ebbee0da796604154eccf982ed769b526472",
+          "actualTestedSourceCommit": "8f0d39a9ada55e351e306317736892c6b89a68ab",
+          "deltaFromTestedSource": [
+            "ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md",
+            "ROADMAP-GM-PRODUCT-TESTING-PLAN.md",
+            "acceptance.json",
+            "checkpoint.json"
+          ],
+          "productSourcesTestsToolsIdenticalToTestedSource": true,
+          "frozenFilesRetained": 19,
+          "changedForeignRootsConsumedExactlyFromShared": [
+            "gmProductTesting"
+          ],
+          "otherForeignRootsAndHistoricalNativeCurrentRunRetained": true,
+          "baselineEvidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-manifest-qualified-integration-20261010/integration.json",
+          "baselineEvidenceSha256": "1c9a149bb5c06b7afcc95927c00f7a9ba448ef411ff79019787baa342a723e60",
+          "limits": "Only incoming GM readiness documentation and own metadata differ from clean 8f0d39a actual check/629-tests/build/18-matrix run. No repeat suite or changed-source PASS relabeling. Shared visible-Location prerequisite remains valid; PR13 product candidate is not Shared-promoted or native-runnable handed off.",
+          "nativeRan": false,
+          "fullE2E": false,
+          "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-manifest-qualified-integration-20261010/publication-composition.json",
+          "sha256": "51ec3b419b3847b14868d9f82fe60f7f5902b59ba7cf3bd90a6e307a10d08896"
         }
       }
     ],
