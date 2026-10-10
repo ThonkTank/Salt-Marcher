@@ -7,9 +7,9 @@ checkpoint: saltMarcherReplacement
 ---
 # SMR-03-I01 – Hostneutraler Party-/Scene-/Live-Session-Kern
 
-Status: **Planrepair auf Exact-SHA `PASS`; I01-A ist als geprüfter
-Implementierungskandidat veröffentlicht und wartet auf unabhängigen Review;
-kein Persistenz-, Host- oder Gesamtprodukt-Go.**
+Status: **Planrepair und unabhängige I01-A-Reviews auf Exact-SHA `PASS`;
+Integration des Kandidaten steht aus; kein Persistenz-, Host- oder
+Gesamtprodukt-Go.**
 
 ## Gebundener Stand
 
@@ -443,10 +443,13 @@ Felder, falsche Campaign-/Revisionbindungen und asymmetrische aktive
 Party-/Scene-Mitgliedschaft werden vor einer Projektion abgewiesen.
 
 Kandidat und exakte Prüfrevision stehen im Aufgabenissue #60. Der Kandidat ist
-gegen den dort genannten aktuellen Shared-Stand integriert; Typecheck,
-vollständige Core-/Boundarytests, Produktbuild und Repositorystruktur müssen am
-veröffentlichten SHA grün sein. Offen bleiben der unabhängige technische
-Exact-SHA-Review und der enge Consumerreview der immutable Projektionen.
+gegen den dort genannten Shared-Stand integriert; Typecheck,
+vollständige Core-/Boundarytests, Produktbuild und Repositorystruktur sind am
+veröffentlichten SHA grün. Campaign/Data hat die unveränderte
+PreparationSnapshot-Grenze bestätigt, Music/Weather/Shops die reparierte
+immutable Consumerprojektion und Cloud Architektur/Technik alle drei
+Pflichtbefunde einschließlich der AST-basierten Importgrenze geschlossen.
+Offen bleibt die Integration von PR #88 in Shared.
 
 Mutationen, History, Coordinator, Persistenz, Host, Clockmutation und Passive
 Display sind ausdrücklich nicht implementiert. `PreparationSnapshot` ist in

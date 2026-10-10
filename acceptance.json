@@ -183,23 +183,25 @@
       "limits": "No P02 Go, platform selection, P03 authorization or product acceptance. This is Linux-only synthetic evidence; Windows, macOS, production Campaign integration and the remaining ADR prototypes stay open."
     },
     "smr03I01A": {
-      "state": "implementation_candidate_checked_review_pending",
+      "state": "implementation_review_passed_integration_pending",
       "issue": 60,
       "branch": "codex/smr-03-i01a-contracts",
       "integratedShared": "178ce81755a35ea59deab5bd6198c163e4da0bef",
+      "implementationCandidate": "4bc886433f26a56cf56ba28fc296db1c16a0de16",
       "requirements": [
-        "Opaque Campaign, Character, Scene, Mask and owner identities plus safe monotonically positive revisions reject malformed inputs.",
+        "Opaque Campaign, Character, Scene, Mask and owner identities plus safe nonnegative revisions reject malformed inputs.",
         "Party, Focus, LiveScene, LiveSession and PreparationSnapshot DTOs are strict, deeply immutable and free of host capabilities.",
         "Projections fail closed for stale, foreign, damaged, sparse, calculated or asymmetrically related source graphs.",
         "No Passive Display, mutation, persistence, host, IPC or Clock authority is exported."
       ],
       "confirmed": [
-        "Typecheck, repository structure, product build and the full serial suite pass on the current integrated composition: 982 passed, 0 failed and one intentional official-PDF integration skip; the focused core/boundary run passes 568 cases.",
+        "Typecheck, repository structure, product build and the full serial suite pass on the current integrated composition: 985 passed, 0 failed and one intentional official-PDF integration skip; the focused core/boundary run passes 571 cases.",
         "Boundary regressions reject sparse arrays, accessors, non-native prototypes, extra keys and missing active Party members in the focused Scene.",
-        "The public live-session module exports only the I01-A parser, DTO and projection surface."
+        "The public live-session module exports only the I01-A parser, DTO and projection surface; its AST dependency guard permits only the three declared local static dependencies and rejects Node, Electron, Obsidian, dynamic-import and require forms.",
+        "Campaign/Data PREPARATION-SNAPSHOT-R01 is revalidated PASS on f941ce4; Music/Weather/Shops Consumer R02 is PASS on f941ce4; Cloud Architecture/Technical closes ARCH-01/02 on f941ce4 and ARCH-03 on 4bc8864."
       ],
       "notConfirmed": [
-        "Independent exact-SHA architecture/technical and immutable-consumer reviews remain open.",
+        "PR #88 integration into Shared remains open; review PASS is not a product or host acceptance.",
         "I01-B/I01-C mutations, History and coordination are not implemented.",
         "Persistence, host, UI, restart, OS, performance, accessibility, Passive Display and complete product acceptance are not claimed."
       ]
