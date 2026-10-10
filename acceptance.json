@@ -153272,7 +153272,7 @@
       {
         "id": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
         "requirement": "Thin Context/navigation consumer with actual native target validation, same Atlas owners and guarded Campaign switching",
-        "state": "native_location_Save_fresh_process_pass_existing_gate_qualification_pending",
+        "state": "scoped_native_Location_Save_fresh_process_accepted_full_E2E_open",
         "implementationRun": "HEX-E2E01-HOST-SAVE-I02",
         "sourceCommit": "86bbbbfac44233509f084ac836e6dafa07b11a16",
         "catalog": "ROADMAP-E2E-GATES-CANDIDATE.md:13",
@@ -153298,7 +153298,7 @@
           "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-manifest-host-aba-20261010/repair/repair.json"
         ],
         "observed": "Actual AtlasView Save button calls FileTransaction and retained native owner Participant/Provider; exact Prepared/Committed journal read-back issues the real proofs.; Same Navigator queue refreshes confirmed Registry/Inventory before unblocking input; Repository, Sources, History, renderer, camera, Context token and mount generation remain.; Actual Vault first-native CAS failure rolls back before snapshot, issues a transaction-sealed receipt, releases pending Provider lease and retries in the same editable Atlas with a new transaction UUID.; Actual DOM View/services close and fresh View/services reopen retain saved Location and Room names under native Campaign fixture; this is not a fresh Electron process.; FileTransaction regressions exercise all before/after CAS reply-loss boundaries, reject copied/foreign rollback receipts, protect unchanged native guards, and preserve won canonical bytes if committed consumer acknowledgment fails.",
-        "notConfirmed": "H02 native Location/Key/Move/shared UndoRedo/new and no-op Save/fresh-process evidence has independent Stadt PASS and Campaign/Data file-closure PASS. Chronik found only the nextRun slot flag contradiction; N01 sets slotRequiredAgain=false, pending confirmation by that existing reviewer. #40 and full E2E remain open; separate own cleanup follows. No new GUI, model suite, product edit, physical/original/large-world/user-vault installation/Details/CITY/P02/P04/E2E02-04 acceptance. Historical H01/D01/R01/N02/R02/H02 receipts, proofs and native currentRun unchanged; no new Copy/Discard/Recovery fault matrix.",
+        "notConfirmed": "The qualified #40 Location/Key/Move/shared UndoRedo/new and no-op Save/fresh-process milestone is complete; its owned temporary source checkout is archived, entry hashes verified, then normally removed without force. Canonical H01/D01/R01/N02/R02/H02/N01/qualification receipts and raw images, synthetic saved QA vault/plugin, other worktrees and foreign files remain. Common E2E-01 row13 and its Detail/located-Dungeon/Room-Key route stay open. No new native/build/model tests, physical/original/large-world/installation/Detail/CITY/P02/P04/E2E02-04 acceptance or Copy/Discard/Recovery fault matrix. Historical currentRun stays unchanged.",
         "independentReview": {
           "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/13#issuecomment-6094804164",
           "gate": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6094804323",
@@ -154818,6 +154818,233 @@
           "originalReceiptSha256": "12856a4f351af562952cd50ce8616dae734f14b91fc8abbaabed6eab17ab94bf",
           "nativeRepeated": false,
           "guiSlotUsed": false
+        },
+        "sharedLocationKeyNativeH02Qualification": {
+          "id": "E2E-01-SHARED-LOCATION-KEY-H02-QUALIFICATION",
+          "owner": "Hex",
+          "issue": 40,
+          "e2e01UserLine": 13,
+          "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
+          "state": "accepted_scoped_native_Location_Key_Move_UndoRedo_Save_fresh_process",
+          "actualNativeSource": "4515088772b759cda2e19d249367699c9868c72c",
+          "buildSha256": "76bb453acca65f260e2276a385da66c5039a643fa10681b9b7a20fc5209c1322",
+          "fixtureVersion": "e2e01-spatial-v2",
+          "reviewedEvidenceHead": "c706df1f8fa2f6e242c0db32fc1930db74b1e19b",
+          "consumedShared": "2a484df43bd2146217e0efb3986fd1971d8b55e1",
+          "independentReviews": [
+            {
+              "reviewer": "Stadt",
+              "id": 6101960077,
+              "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/40#issuecomment-6101960077",
+              "result": "PASS_original_native_H02_evidence",
+              "commentBodySha256": "bf990c4f375162ec0e85e8f47c03ed23f507acca11fff60a4ff358f7b6f2ca54",
+              "readDirectly": true
+            },
+            {
+              "reviewer": "Campaign/Data",
+              "id": 6101957277,
+              "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/40#issuecomment-6101957277",
+              "result": "PASS_file_and_owner_closure_oracle",
+              "commentBodySha256": "b64b596181634658f85429f1b6d1e84cb3337123f5fe0803fd9caac4e42b3b3b",
+              "readDirectly": true
+            },
+            {
+              "reviewer": "Chronik",
+              "id": 6102084191,
+              "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/40#issuecomment-6102084191",
+              "result": "PASS_H02_R02_N01",
+              "commentBodySha256": "a66f31da6e95d6bad480061b8ce78e2315c18b91c9284e7e3c892d84b401f432",
+              "readDirectly": true
+            }
+          ],
+          "independentStewardIntegration": {
+            "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/72#issuecomment-6102108341",
+            "commentBodySha256": "61d11135c49b152dfe10190fe0d1c3ac2d0645c2445233374cd1586c82aa6aa0",
+            "readDirectly": true,
+            "source": "41f09273abd4f536f4f1098d6bf726f7567a0d1b",
+            "exactSecondParent": "c706df1f8fa2f6e242c0db32fc1930db74b1e19b",
+            "nativeEvidenceAndProductInputsByteEqualQualifiedHead": true,
+            "HexSelfMerge": false
+          },
+          "candidateCI": {
+            "headSha": "c706df1f8fa2f6e242c0db32fc1930db74b1e19b",
+            "conclusion": "success",
+            "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/actions/runs/38085710437",
+            "readDirectly": true
+          },
+          "sharedStructureCI": {
+            "headSha": "41f09273abd4f536f4f1098d6bf726f7567a0d1b",
+            "conclusion": "success",
+            "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/actions/runs/38085800782",
+            "readDirectly": true,
+            "scope": "repository structure only"
+          },
+          "next": "Separate bounded own cleanup of no-longer-needed owned transient resources only; preserve all canonical and historical evidence and unrelated files. No further general review or GUI run without a concrete new finding.",
+          "limits": "Only #40 scoped Location Save/fresh-process acceptance. Synthetic native input, no physical GM acceptance. No new Copy/Discard/Recovery fault matrix, Detail/CITY/P02/P04/E2E02-04/original parity/large-world/installation/full-E2E acceptance. Later Shared docs and unrelated package changes are not a new native run.",
+          "fullE2E": false,
+          "commonGateClosed": false,
+          "evidence": "docs/reference/atlas-shared-location-h02/qualification.json",
+          "sha256": "71e3fef652677072a17eb4593d1a73b79f1d0292605d8028cbe493e7e893d4ba",
+          "originalReceiptSha256": "12856a4f351af562952cd50ce8616dae734f14b91fc8abbaabed6eab17ab94bf",
+          "nativeRepeated": false,
+          "guiSlotUsed": false
+        },
+        "sharedLocationKeyNativeH02Cleanup": {
+          "id": "E2E-01-SHARED-LOCATION-KEY-H02-OWN-CLEANUP",
+          "owner": "Hex",
+          "issue": 40,
+          "e2e01UserLine": 13,
+          "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
+          "state": "PASS_bounded_own_transient_source_cleanup",
+          "finishedAt": "2026-10-10T21:12:55Z",
+          "qualifiedNativeSource": "4515088772b759cda2e19d249367699c9868c72c",
+          "removed": [
+            {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-03/shared-location-h02-20261010-2029/source-4515088",
+              "kind": "clean detached owned test source worktree",
+              "normalGitWorktreeRemove": true,
+              "force": false
+            }
+          ],
+          "retainedSourceArchive": {
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-03/shared-location-h02-cleanup-20261010-2110/retained-source-4515088.tar.gz",
+            "sha256": "c5bc8562def856fd3ed7837783010b83a46a144fdf8036166b6d5e5c86fc3662",
+            "bytes": 6086171,
+            "entries": 939,
+            "allEntryBytesAndSymlinksVerified": true,
+            "manifest": "/home/aaron/.cache/dungeon-native-qa/hex-03/shared-location-h02-cleanup-20261010-2110/retained-source-manifest.json",
+            "manifestSha256": "2de84625752f0a0323fa446b4cdd0cad0bae8f079d06b643eb42594d757ca84f"
+          },
+          "preservation": {
+            "allCanonicalHistoricalFilesVerified": 82,
+            "originalH02Artifacts": 40,
+            "originalH02ReceiptSha256": "12856a4f351af562952cd50ce8616dae734f14b91fc8abbaabed6eab17ab94bf",
+            "allHostQAFilesOutsideRemovedCheckoutUnchanged": 177,
+            "savedNativeVaultFilesVerified": 9,
+            "installedSyntheticQAPluginTriplet": {
+              "main.js": "76bb453acca65f260e2276a385da66c5039a643fa10681b9b7a20fc5209c1322",
+              "styles.css": "68e1cf101ceaadd624168b431fddc297c90e8a5bc6be25a15f0926ebb569a5ea",
+              "manifest.json": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64"
+            },
+            "otherRegisteredWorktreesExact": 6,
+            "ownedDependencyTargetInodeUnchanged": 45467981,
+            "protectedOriginalForeignChangesAndDependencyInodeUnchanged": true,
+            "nativeProcessPidsAbsent": [
+              3243598,
+              3243624,
+              3243701,
+              3243708,
+              3243722,
+              3244554,
+              3244584,
+              3244661,
+              3244668,
+              3244694
+            ],
+            "userVaultUsed": false,
+            "sourcesEdited": false
+          },
+          "next": "Location milestone stays complete; next productive Hex scope is the concrete existing E2E-01 detail/located-Dungeon/Room-Key route. No new product implementation in this cleanup run and no new general plan/review cycle.",
+          "fullE2E": false,
+          "commonGateClosed": false,
+          "evidence": "docs/reference/atlas-shared-location-h02/cleanup.json",
+          "sha256": "85104415b1db06d3e6e5340f05c9fccde20c1a9911621ee8308ca90d48cc2a56",
+          "productEdited": false,
+          "nativeRepeated": false,
+          "guiSlotUsed": false
+        },
+        "detailBindingDiagnosticD01": {
+          "id": "E2E-01-HEX04-DETAIL-BINDING-D01",
+          "state": "reproduced_native_save_keeps_stale_atlas_registry_references",
+          "sourceCommit": "7ec9f85ef9d6b263504ea2398ca1bbfc41b97899",
+          "sharedInput": "7ba2bf499765154f8ff8cd7fcef32584b43f94c3",
+          "issue": 7,
+          "e2eIssue": 12,
+          "e2e01UserLine": 13,
+          "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
+          "fixtureVersion": "e2e01-spatial-v2",
+          "fixtureUnchanged": true,
+          "finishedAt": "2026-10-10T21:25:33.097276+00:00",
+          "observed": [
+            "Unmodified fixture no-op Save performs zero writes and native/registry references agree.",
+            "Existing saved Location detailMaps addition and same-ID Dungeon reparent are accepted by shared History; Undo/Redo is exact and native Save succeeds.",
+            "A fresh model Repository reads saved native bytes; native capture identifies missing Dungeon reference in Location registry record and missing new Location/stale City+Building references in the Dungeon-placement registry record.",
+            "The actual Dungeon file remains byte-identical in all cases; only World/Location/Campaign bytes change in successful binding cases.",
+            "Changing the placement identity is currently rejected before any Save writes, retains draft and dirty state. This case is a bound limitation, not permission to remap existing identities.",
+            "Static production-callsite inspection finds a target navigator, not an action that creates an existing Dungeon placement at the selected Location."
+          ],
+          "rootCause": "AtlasCampaignManifestSave.owners updates payloadDigest but preserves r.references except the additive new-Location world references. Native Location detailMaps and Dungeon parent changes therefore do not update their declared registry reference closure.",
+          "nextOwnStep": "Targeted repair of existing atlas-owned reference projection and regressions before exposing Dungeon-at-Location placement UI. Preserve original IDs, Dungeon bytes, owner schemas, Context/receipt/history guards and independent Campaign/Data/Dungeon ownership. New placement-record creation remains a later concrete extension, not approved by this diagnosis.",
+          "productEdited": false,
+          "testsEdited": false,
+          "guiRun": false,
+          "nativeElectronReopen": false,
+          "fullE2E": false,
+          "qualifiedLocationScopeReopened": false,
+          "evidence": "docs/reference/atlas-detail-binding-d01/receipt.json",
+          "sha256": "2ff39c51e511c1d35a946db518675ec737d85b573a4fab690b3740df639e387f",
+          "reproduction": "docs/reference/atlas-detail-binding-d01/diagnostic.entry.ts",
+          "modelCases": 4
+        },
+        "detailReferenceRepairN01": {
+          "id": "E2E-01-HEX04-DETAIL-REFERENCE-N01",
+          "state": "targeted_repair_core_checked_independent_review_pending",
+          "owner": "Hex",
+          "sourceCommit": "9784d03ec33cccefebb6878383f6f7e80e034102",
+          "productCommit": "552c6e828906f79c4bad5517fe8ad110035128ba",
+          "consumedShared": "527398c6f9e26f37d2ffdb9d305359e1daf0e708",
+          "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
+          "e2e01UserLine": 13,
+          "fixtureVersion": "e2e01-spatial-v2",
+          "checks": {
+            "typecheck": {
+              "command": "npm run check",
+              "status": "PASS",
+              "log": "/home/aaron/.cache/dungeon-native-qa/hex-04/detail-reference-n01-20261010-2130/typecheck.integrated.log",
+              "sha256": "079b4802c6da64fa1d4244b135be0c1fad7ce6c952c6dda76f3320c685743d4c"
+            },
+            "tests": {
+              "command": "npm test",
+              "status": "PASS",
+              "tests": 881,
+              "pass": 880,
+              "fail": 0,
+              "skip": 1,
+              "skipReason": "Optional hash-pinned official SRD 5.1 PDF unavailable; offline cases retained.",
+              "log": "/home/aaron/.cache/dungeon-native-qa/hex-04/detail-reference-n01-20261010-2130/tests.integrated.log",
+              "sha256": "3166f01c18b832e49f7439d0471ded564d557cd4c47c56c237da99186fcd252a"
+            },
+            "build": {
+              "command": "npm run build",
+              "status": "PASS",
+              "log": "/home/aaron/.cache/dungeon-native-qa/hex-04/detail-reference-n01-20261010-2130/build.integrated.log",
+              "sha256": "ae6a9ea961f74697a54bf5fd8ab4fc8f8528391539241180a94f8281c635a5f4"
+            },
+            "baselineSensitivity": {
+              "sourceSave": "62db558e4cbef825101a5913578ec33e91499954",
+              "tests": 9,
+              "expectedFailures": 8,
+              "unchangedNewIdGuardPass": 1,
+              "log": "/home/aaron/.cache/dungeon-native-qa/hex-04/detail-reference-n01-20261010-2130/baseline-regression.final.log",
+              "sha256": "a776140c34cee5f6d446c61bd921d3915fdd38dd82482f39662e8a560fd9f0ac",
+              "method": "Bundle the same regression source with only AtlasCampaignManifestSave loaded from the pre-repair commit; repository/native files are not mutated."
+            }
+          },
+          "scope": {
+            "gui": false,
+            "nativeObsidian": false,
+            "freshElectronProcess": false,
+            "physicalInput": false,
+            "userVaultInstalled": false,
+            "originalParity": false,
+            "largeMap": false,
+            "fullE2E": false,
+            "independentReview": "pending Campaign/Data owner exact candidate review",
+            "newPlacementIdentityAuthority": false,
+            "visibleDungeonPlacementUI": false
+          },
+          "receipt": "docs/reference/atlas-detail-binding-d01/repair-n01.json",
+          "sha256": "cb57edf035bb7acb51d276e3d75e52e3cd57657cb9aab08ed407f3667ca3f7c7"
         }
       }
     ],
