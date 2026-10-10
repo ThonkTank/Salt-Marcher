@@ -24,7 +24,7 @@ Diese Begriffe bezeichnen jeweils genau eine Ebene:
 | Begriff | Bedeutung | Keine Bedeutung |
 | --- | --- | --- |
 | `snapshot` | Ein kanonischer immutable Read aus `DungeonAtlasSource` mit nativen Dungeonbytes, Dokument und abgeleiteter Keyclosure. | Keine Revision, kein Preview und kein schreibender Sessionzustand. |
-| `gesture state` | Flüchtiger Editorzustand zwischen Begin und Cancel/Handoff. Seine genaue Gültigkeitsbasis ist wegen `DUN-GEO-P01-R01-01` noch **nicht** beschlossen und bleibt N01 vorbehalten. | Kein Sourcewert, kein Historieneintrag und keine persistente Sessionrevision. |
+| `gesture state` | Flüchtiger Editorzustand zwischen Begin und Cancel/Handoff. Er gehört genau einer tatsächlichen Source-/History-/Graph-Lebensdauer und einer bei Begin eingefrorenen räumlichen Parentbasis. | Kein Sourcewert, kein Historieneintrag und keine persistente Sessionrevision. |
 | `preview` | Ein aus dem Gesturezustand abgeleitetes immutable Dokument, das nur die bestehende räumliche Lesesicht überlagert. | Kein Draft, kein Save und keine Mutation eines Owners. |
 | `proposal` | Das schreibfrei validierte Paar aus Previewdokument und möglichem ownergebundenem `AtlasChange`. | Kein Commit und keine Erlaubnis zum Execute. |
 | `AtlasChange` | Kanonischer Before→After-Beitrag genau des Dungeonowners. | Kein vollständiger Mehrownerbefehl und kein eigener Undo-Schritt. |
@@ -94,6 +94,7 @@ interface DungeonGeometryAddress {
 interface DungeonGeometryProposal {
   before: DungeonAtlasSnapshot;
   address: DungeonGeometryAddress;
+  basis: DungeonGeometryBasis;
   preview: MapDocument;
   change: AtlasChange;
 }
@@ -128,35 +129,96 @@ den Byte-Snapshot, aus dem auch die Vorschau stammt. Es hat keine
 | --- | --- | --- | --- |
 | `DungeonAtlasSource` | Tatsächliche registrierte Ownerwerte derselben `AtlasHistory`; liefert einen Zeitpunktssnapshot. | Kanonische Dungeonbytes, immutable Dokument und abgeleitete Keyclosure. | Keine Gesture, kein Preview, keine Session-/Dateioperation. |
 | Pure Command→Document-Projektion | Eingefrorenes Dokument plus ein vom vorhandenen Konturplaner validiertes `Command`; nur für eine Proposalberechnung. | Neues vollständig validiertes immutable `MapDocument`. | Kein `Session.execute`, kein eigener Historystack und keine duplizierte Portal-/Reihenfolgesemantik. |
-| Dungeon-Gesturezustand | Begin bis Cancel oder Handoff; hält nur die für Adresse, Pointer und Proposal nötigen flüchtigen Werte. | Aktuelles Preview oder noch nicht ausgeführter Dungeonbeitrag. | Keine Source-, History-, Draft-, Repository-, Vault- oder Dateimutation. Die noch offene Basisgültigkeit wird hier nicht vorweggenommen. |
+| Dungeon-Gesturezustand | Begin bis Cancel oder Handoff; hält Adresse, Pointer, tatsächliche Source-/History-/Graph-Identitäten und die eingefrorene Parentbasis. Ein History-Abonnement macht jede zwischenzeitliche Änderung terminal stale. | Nur bei unveränderter Basis aktuelles Preview oder noch nicht ausgeführter Dungeonbeitrag. | Keine Source-, History-, Draft-, Repository-, Vault- oder Dateimutation; kein Auto-Rebase. |
 | `SpatialCanvas` | Liest tatsächliche räumliche Sources und optional genau einen ownergebundenen Previewoverride für einen Draw/Hit-Zyklus. | Darstellung, Grip und Treffer in derselben relativen Kamera. | Keine zweite Kamera, kein Sourcewrite und keine Finalisierung. |
 | Atlas-Editor | Besitzt Begin/Update/Cancel und gibt bei erfolgreichem Abschluss höchstens einen Beitrag weiter. | UI-Zustand und Handoff an den bestehenden Orchestrator. | Kein eigener Dungeon-Execute, Save oder Sessioncommit. |
 | PR-#13-Orchestrator | Empfängt noch nicht ausgeführte Beiträge tatsächlicher Owner für genau einen vollständigen Befehl. | Erst `check()` auf dem vollständigen Befehl, danach genau ein `execute()` auf demselben Befehl. | Kein Teilcommit, keine zweite History und keine stellvertretende Domainautorität. |
 
 Diese Tabelle ordnet vorhandene Verantwortlichkeiten; sie führt keine zweite
-Source-, Transform-, History- oder Persistenzarchitektur ein. Der konkrete
-Freshnessvertrag der Gesturebasis bleibt ausschließlich der offene
-`DUN-GEO-P01-R01-01`-Gegenstand.
+Source-, Transform-, History- oder Persistenzarchitektur ein.
+
+## N01: tatsächliche Gesturebasis und ChangedBasis
+
+`DUN-GEO-P01-R01-01` soll durch einen rein flüchtigen
+`DungeonGeometryBasis`-Guard geschlossen werden; erst P01-R02 bestätigt die
+Reparatur. Der Guard wird bei Begin aus den **heute
+existierenden tatsächlichen Objekten und Records** gebildet und weder
+persistiert noch als Campaign-/Worldrevision ausgegeben:
+
+- Objektidentität von `TerrainSource`, `SpatialGraph`,
+  `DungeonAtlasSource`, dem tatsächlichen `LocationSource`, gegebenenfalls
+  `CitySource` und ihrer einen gemeinsamen `AtlasHistory`; der Resolver nutzt
+  dafür die vorhandene Ownerregistry des Graphen, keine zweite Registry;
+- Dungeonowner-ID und die kanonischen `documentBytes` des Begin-Snapshots;
+- der vollständige `DungeonPlacement`-Record für dieses Dokument aus dem
+  bestehenden `spatial`-Target, einschließlich Placement-ID, Parent,
+  Anchor, Rotation, Surface-Floor und Entrances;
+- der vollständige zugehörige `LocationPlacement`-Record aus dem bestehenden
+  `placements`-Target;
+- bei `city-building` zusätzlich der vollständige `CityPlacement`-Record und
+  der exakte adressierte `CityBuilding`-Record mit ID, Footprint, Position,
+  Rotation und Scale;
+- der aus genau dieser Kette berechnete `RigidFrame` einschließlich
+  `metersPerUnit` und `originUnits`.
+
+Ein einziger reiner Resolver liest dieselbe Kette bei Begin, vor jedem neuen
+Preview und unmittelbar vor Handoff erneut. Er verlangt dieselben Source-,
+Graph- und Historyobjekte sowie strukturelle Gleichheit jedes genannten
+Records, der Dungeonbytes und des Frames. Er leitet keine Revision aus
+Payloads ab und akzeptiert keinen gleich aussehenden Ersatzadapter.
+
+Zusätzlich abonniert der Gesturezustand beim Begin genau diese
+`AtlasHistory`. Jede Benachrichtigung durch Execute, Undo oder Redo setzt ihn
+terminal auf `changed-basis`, entfernt das Preview und löst das Abonnement.
+Damit bleibt auch A→B→A stale: spätere Rückkehr zu strukturell gleichen
+Records reaktiviert eine alte Geste nicht. Eine direkte Source-/Graph-/
+History-Auswechslung mit bytegleichen Dungeondaten wird durch die
+Objektidentitäten und den erneuten Resolververgleich erkannt.
+
+`changed-basis` ist ein Abbruchzustand, kein Rebase. Update erzeugt danach
+kein Preview; Handoff gibt keinen `AtlasChange` zurück; ein verspätetes
+Pointer-up bleibt wirkungslos. Ein neuer Zug darf erst mit einem neuen Begin
+auf der dann aktuellen Basis starten. Der Guard besitzt keine Execute-,
+Save-, Draft-, Repository-, Vault- oder Dateioperation.
+
+Der erfolgreiche Handoff prüft die Basis ein letztes Mal und läuft ohne
+asynchronen Yield im selben Aufruf weiter zur bestehenden Komposition. Er
+übergibt weiterhin **genau einen** Dungeon-`AtlasChange`; der Orchestrator
+führt weiterhin den vollständigen Befehl durch ein `check()` und genau ein
+`execute()`. Vor Handoff wird das History-Abonnement gelöst, sodass das
+anschließende beabsichtigte gemeinsame Execute keinen bereits übergebenen
+UI-Zustand reaktiviert. Es entsteht weder eine zweite Autorität noch ein
+zweiter Commit.
 
 ## Gesture- und Vorschaulebensdauer
 
 1. Pointer-down im Select-Werkzeug trifft Room31 und zusätzlich einen
    expliziten äußeren Vertexgrip. Der Editor friert Owner/Floor/Room,
-   Kontur-/Punktadresse, Gripkoordinate, Sourcebytes, Frame und Pointerstart
-   ein. Ein normaler Raumtreffer ohne Grip behält sein heutiges Verhalten.
-2. Pointer-move wird mit dem eingefrorenen Frame und derselben relativen
-   Kamera in Dungeonfelder zurückprojiziert. Update berechnet rein ein neues
-   Proposal. `SpatialCanvas` liest dessen `preview` als ownergebundenen
+   Kontur-/Punktadresse, Gripkoordinate, Sourcebytes, Pointerstart und die
+   vollständige oben definierte Gesturebasis ein und aktiviert ihr
+   History-Abonnement. Ein normaler Raumtreffer ohne Grip behält sein heutiges
+   Verhalten.
+2. Pointer-move prüft zuerst Source-/History-/Parentbasis. Nur bei Gleichheit
+   wird mit dem eingefrorenen Frame und derselben relativen Kamera in
+   Dungeonfelder zurückprojiziert und rein ein neues Proposal berechnet.
+   `SpatialCanvas` liest dessen `preview` als ownergebundenen
    Dokumentoverride; Source und `AtlasHistory` bleiben unangetastet.
-3. Escape, `pointercancel`, Fenster-`blur`, Tool-/Source-/Dokumentwechsel und
-   ein explizites Cancel löschen nur Gesture und Preview. Nach Cancel darf ein
+3. Ein Historyereignis oder ungleiche aktuelle Basis wechselt terminal auf
+   `changed-basis` und entfernt Preview/Abonnement. Escape, `pointercancel`,
+   Fenster-`blur`, Tool-/Source-/Dokumentwechsel und ein explizites Cancel
+   tun dasselbe ohne Historywirkung. Nach jedem dieser Endzustände darf ein
    verspätetes Pointer-up nichts finalisieren.
-4. Pointer-up finalisiert nicht selbst. Der Editor übergibt höchstens den
-   eingefrorenen `AtlasChange` an den bestehenden PR-#13-Orchestrator. Dieser
-   setzt ihn mit den tatsächlichen anderen Ownerbeiträgen zu einem Befehl
-   zusammen, ruft `check()` auf diesem Gesamtbefehl und anschließend genau
-   einmal `execute()` auf demselben Gesamtbefehl auf.
-5. Save, Draft, Journal, Copy/Discard und frischer Prozess konsumieren danach
+4. Die Undo-/Redo-Aktion des Atlas-Editors bricht einen aktiven Dungeonzug vor
+   dem Historyaufruf ab. Die angeforderte Historyaktion läuft danach normal;
+   der Abbruch selbst erzeugt keinen Eintrag und leert insbesondere keinen
+   vorhandenen Redostand.
+5. Pointer-up finalisiert nicht selbst. Nach letzter Basisprüfung löst der
+   Editor das Abonnement und übergibt höchstens den eingefrorenen einzelnen
+   `AtlasChange` synchron an den bestehenden PR-#13-Orchestrator. Dieser setzt
+   ihn mit tatsächlichen anderen Ownerbeiträgen zu einem Befehl zusammen,
+   ruft `check()` auf diesem Gesamtbefehl und anschließend genau einmal
+   `execute()` auf demselben Gesamtbefehl auf.
+6. Save, Draft, Journal, Copy/Discard und frischer Prozess konsumieren danach
    unverändert die bereits registrierten tatsächlichen Sources und den
    vorhandenen Repository-/FileTransaction-Weg.
 
@@ -177,11 +239,13 @@ Für I01 gelten alle folgenden Orakel:
    Floor, Room, Kontur, Punkt, Gripkoordinate, nicht äußerer Ring, gelöschter
    Datensatz, locked Room sowie nicht endliche Koordinaten werden vor einem
    sichtbaren Proposal abgewiesen.
-2. **Stale-Prüfung:** Die `before`-Bytes des finalen Change sind exakt die beim
-   Begin eingefrorenen Sourcebytes. Hat sich der tatsächliche Owner geändert,
-   muss spätestens `AtlasHistory.check()` kollisionsfrei vor jeder Wirkung
-   scheitern. Die Ownerfunktion darf einen fremden aktuellen Snapshot nicht
-   still als neues Before übernehmen.
+2. **Source-/Basis-Stale-Prüfung:** Die `before`-Bytes des finalen Change sind
+   exakt die beim Begin eingefrorenen Sourcebytes. Source-, Graph- und
+   Historyobjekte sowie DungeonPlacement/Binding, LocationPlacement,
+   gegebenenfalls CityPlacement/House und berechneter Frame müssen bis zum
+   Handoff dieselben bleiben. Historyereignis oder Vergleichsabweichung führt
+   terminal zu `changed-basis`; kein Auto-Rebase und kein stilles Übernehmen
+   eines bytegleichen Ersatzowners.
 3. **Topologie und Closure:** ungültige Polygone sowie nicht auflösbare oder
    inkonsistente abhängige Portalanker scheitern über denselben
    `planBuildingContourMutation`-/Dokumentvalidator wie der native Editor.
@@ -207,6 +271,34 @@ Für I01 gelten alle folgenden Orakel:
    `RigidFrame` mit `1.524 m/Feld`. Verschieben des gebundenen Hauses ändert
    die starre Projektion, nicht die gespeicherte Dungeonkontur.
 
+### N01-Pflichtrepros für I01
+
+Jede Folge beginnt mit gültigem Room31/Floor32-Preview und endet mit exakten
+Zähler-, Byte- und Dateivergleichen:
+
+1. Haus105 verschieben, Geste beginnen, gemeinsames Undo der Hausbewegung,
+   Update und verspätetes Pointer-up: Preview weg, kein Dungeonchange, Undo
+   erzeugt den normalen Redostand und der Abbruch leert ihn nicht.
+2. Dasselbe mit Redo sowie mit einer Locationbewegung. Ein Historyereignis
+   invalidiert auch dann terminal, wenn A→B→A am Ende wieder dieselben Records
+   und denselben Frame ergibt.
+3. DungeonBinding/Anchor oder zugehöriges CityPlacement ändern, ohne die
+   Dungeonbytes zu ändern: Update/Handoff blockiert; nach Rückkehr kein
+   Wiederaufleben der alten Geste.
+4. `DungeonAtlasSource`, `LocationSource`, gegebenenfalls `CitySource`,
+   `TerrainSource`/`SpatialGraph` oder die gemeinsame `AtlasHistory` durch
+   einen neuen Adapter mit identischen Dungeonbytes und strukturell gleichen
+   Records ersetzen: alte Geste blockiert.
+5. Nach jedem `changed-basis`, Escape, `pointercancel`, `blur` und
+   Sourcewechsel ein late pointer-up senden: null AtlasChanges, gegenüber dem
+   unmittelbar nach einer erlaubten Historyaktion gemessenen Stand keine
+   zusätzliche Undo-/Redo-Änderung, kein Repositorydirty, kein Draft-/Datei-
+   oder Journalwrite.
+6. Anschließend auf der aktuellen Basis neu beginnen: Preview und finaler
+   einzelner Dungeonchange verwenden denselben aktuellen Frame; gemeinsame
+   `check`/einmalige-`execute`-Komposition und ein Undo/Redo-Schritt bleiben
+   unverändert.
+
 ## I01-Dateigrenze und Prüfplan
 
 Voraussichtlicher I01-Besitz:
@@ -223,8 +315,8 @@ Coretests frieren Sourcebytes, Closure, Historytiefen und Dateidoubles vor
 jeder Folge ein. Positive Fälle prüfen Grip, Update, bytegleichen
 Preview/Final-Stand, abhängigen Portal-Follow und genau einen komponierten
 Undo/Redo-Schritt. Negative Tabellen decken jede Adress-/Stale-/Locked-/
-Topologie-/Closure-Grenze sowie Escape, `pointercancel`, `blur`, Sourcewechsel
-und verspätetes Pointer-up ab. Ein Instrumentierungsfall verbietet
+Topologie-/Closure-Grenze sowie sämtliche sechs N01-Pflichtrepros ab. Ein
+Instrumentierungsfall verbietet
 `Session.execute`, `AtlasHistory.execute`, Repository- und Dateiaufrufe während
 Begin/Update/Cancel. Die aktive v2-Fixture und ihre nicht betroffenen SHA-/
 Markdownwerte werden vor und nach dem komponierten Corefall verglichen.
@@ -242,9 +334,10 @@ Produktänderung keine Produktbasisprüfung als Funktionsbeleg an.
 | P01 `ea46ba5437…` | abgeschlossenes Planartefakt | unabhängigen P01-R01 | Produkt-I01 oder E2E-01 |
 | P01-R01 | `CHANGES_REQUIRED`, genau `DUN-GEO-P01-R01-01` | getrennte dokumentierte Nacharbeit | Portimplementierung |
 | CL-P01 `e01622170d…` | abgeschlossen | CL-I01 | Fachreparatur |
-| CL-I01 | laufende Vertragsartefaktbereinigung | unabhängigen CL-R01 auf Exact-SHA | N01, Produktcode oder Self-Merge |
-| CL-R01 | offen | bei PASS den getrennten N01-Lauf | Produkt-I01 |
-| N01 / P01-R02 | offen; nur der eine Parent-/Bindingbasis-Befund | bei unabhängigem Exact-SHA-PASS Produkt-I01 | Host- oder E2E-Go |
+| CL-I01 `060abca843…` | abgeschlossen | unabhängigen CL-R01 auf Exact-SHA | N01, Produktcode oder Self-Merge |
+| CL-R01 `060abca843…` | enger Dokumentations-PASS | den getrennten N01-Lauf | Produkt-I01 |
+| N01 | dieser Planrepair; nur `DUN-GEO-P01-R01-01` | unabhängigen Exact-SHA-P01-R02 | Produkt-I01, Host- oder E2E-Go |
+| P01-R02 | offen; prüft nur das N01-Delta | bei PASS Produkt-I01 | Host- oder E2E-Go |
 | Produkt-I01 | geschlossen | nach Basisprüfungen den unabhängigen Code-R01 | Stewardintegration ohne Review |
 | Code-R01 und nötige N01/R02 | offen | erst bei PASS den geprüften Owner-SHA | fremde Domainratifikation |
 | Steward-Handoff | offen | Übernahme des geprüften Owner-SHA in den einzigen PR-#13-Kandidaten | zweiten Kandidaten oder Dungeon-eigenes Execute |

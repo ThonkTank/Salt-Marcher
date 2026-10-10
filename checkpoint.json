@@ -491,7 +491,7 @@
   },
   "e2e01DungeonGeometryPlan": {
     "run": "E2E-01-DUNGEON-GEOMETRY-P01",
-    "state": "plan_review_changes_required_cleanup_then_n01",
+    "state": "n01_plan_repair_candidate_independent_r02_required",
     "owner": "Dungeon-Strang (Thread Obsidian Dungeon Repo ansehen)",
     "branch": "dungeon/e2e01-geometry-p01-20261010",
     "baseCommit": "e5a19a93ce417b4e48fa86512d1c7f1be4d41eea",
@@ -506,6 +506,24 @@
       "requiredFinding": "DUN-GEO-P01-R01-01",
       "boundary": "Identische Dungeonbytes schützen nicht gegen eine während der Gesture geänderte Parent-/Bindingbasis; N01 muss die tatsächliche Source-/History-/Parentbasis bis Update und Handoff ohne Auto-Rebase binden."
     },
+    "repair": {
+      "run": "DUN-GEO-P01-N01",
+      "baseCommit": "060abca8432b0005b0544043778378df3e1814c5",
+      "finding": "DUN-GEO-P01-R01-01",
+      "coordination": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/8#issuecomment-6092654185",
+      "gateStart": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6092654362",
+      "scope": "Planrepair: tatsächliche Terrain-/Graph-/Dungeon-/Location-/City-Source- und AtlasHistory-Identität plus eingefrorene DungeonPlacement-/Binding-/LocationPlacement-/CityPlacement-/House-/RigidFrame-Basis bis Preview/Handoff; Historyereignis oder ChangedBasis verwirft terminal ohne Auto-Rebase.",
+      "oracles": [
+        "House-/Location-UndoRedo während Gesture einschließlich A-B-A und late pointer-up",
+        "DungeonBinding-/Anchor-/CityPlacement-Wechsel bei identischen Dungeonbytes",
+        "bytegleicher DungeonSource-/LocationSource-/CitySource-/TerrainSource-/SpatialGraph-/AtlasHistory-Austausch",
+        "null Dungeonchanges und keine zusätzliche Undo-/Redo-, Repository-, Draft-, Journal- oder Dateiwirkung nach Abbruch",
+        "neuer Begin auf aktueller Basis liefert weiterhin genau einen Dungeon-AtlasChange für eine gemeinsame check/execute-Komposition"
+      ],
+      "implementation": false,
+      "host": false,
+      "next": "Exact-SHA veröffentlichen und ausschließlich das N01-Delta unabhängig in P01-R02 prüfen lassen."
+    },
     "scope": "Plan-only: äußerer Konturpunktzug Room31/Floor32 über bestehende pure Geometrieplaner, transientes Preview/Cancel und genau ein kanonischer ownergebundener Before→After-AtlasChange für die gemeinsame check/execute-Komposition.",
     "files": [
       "ROADMAP-E2E01-DUNGEON-GEOMETRY-PLAN.md",
@@ -514,12 +532,12 @@
     ],
     "verification": "Plan-/JSON-/Verweis-/Diffprüfung vor Veröffentlichung; keine Produktquelle geändert und deshalb keine Produktbasisprüfung oder GUI als Planbeleg.",
     "externalEvidence": "Ownerinput #12/6092359086 und technische Quellanalyse #8/6092363698 auf PR13 Exact-Head e5a19a93ce417b4e48fa86512d1c7f1be4d41eea. Keine neue externe Lauf- oder Hostevidenz in P01.",
-    "notVerified": "Plan-PASS, Cleanup-I/R, N01-Reparatur und Exact-SHA-Re-Review, Implementierung, Code-Review, Host, physische Eingabe, vollständige Mehrownerkomposition und E2E-01-PASS bleiben offen.",
-    "next": "CL-I01 auf Exact-SHA unabhängig in CL-R01 prüfen; bei PASS danach genau DUN-GEO-P01-R01-01 in N01 reparieren und unabhängig re-reviewen. Produkt-I01 bleibt bis PASS geschlossen."
+    "notVerified": "N01-P01-R02-PASS, Implementierung, Code-Review, Host, physische Eingabe, vollständige Mehrownerkomposition und E2E-01-PASS bleiben offen.",
+    "next": "N01-Exact-SHA ausschließlich in P01-R02 prüfen lassen. Produkt-I01 bleibt bis unabhängigem PASS geschlossen."
   },
   "e2e01DungeonGeometryCleanup": {
     "run": "E2E-01-DUNGEON-GEOMETRY-CL-I01",
-    "state": "cleanup_implementation_candidate_independent_review_required",
+    "state": "cleanup_independent_review_passed_terminal",
     "owner": "Dungeon-Strang (Thread Obsidian Dungeon Repo ansehen)",
     "branch": "dungeon/e2e01-geometry-cleanup-p01-20261010",
     "baseCommit": "ea46ba5437596aceaad955330e21c3ef4e739451",
@@ -529,6 +547,13 @@
     "gateHandoff": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6092515006",
     "implementationCoordination": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/8#issuecomment-6092549437",
     "implementationGateStart": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6092549672",
+    "implementationCommit": "060abca8432b0005b0544043778378df3e1814c5",
+    "review": {
+      "run": "E2E-01-DUNGEON-GEOMETRY-CL-R01",
+      "result": "PASS",
+      "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/24#issuecomment-6092627937",
+      "scope": "Enger Dokumentationsreview; keine Fach-, Produkt-, Host- oder E2E-Freigabe."
+    },
     "scope": "Bereinigung von normativem Vertrag versus illustrativer Typform, eindeutiges Glossar, zentrale Rollen-/Lebensdauer-/Wirkungsmatrix, Review-/Phasenmatrix und eigene Checkpointmetadaten; keine Fachreparatur oder Produktänderung.",
     "files": [
       "ROADMAP-E2E01-DUNGEON-GEOMETRY-PLAN.md",
@@ -536,8 +561,8 @@
     ],
     "reviewFindingPreserved": "DUN-GEO-P01-R01-01 bleibt vollständig offen und gehört erst nach Cleanup-PASS in einen getrennten N01-Plan-Repair.",
     "verification": "JSON-/Verweis-/Diff-/Fremdwurzelschutz vor Veröffentlichung; Produktquellen, Acceptance, Architektur, Tests, Tools und Fixtures unverändert. Keine Produktbasisprüfung oder GUI, weil CL-I01 ausschließlich das Vertragsartefakt bereinigt.",
-    "notVerified": "Unabhängiger CL-R01, N01, Produkt-I01, Host, physische Eingabe und E2E-01-PASS bleiben offen.",
-    "next": "CL-I01-Exact-SHA unabhängig in CL-R01 prüfen lassen. Keine N01- oder Produktarbeit vor dem getrennten nächsten Auftrag."
+    "notVerified": "N01/P01-R02, Produkt-I01, Host, physische Eingabe und E2E-01-PASS bleiben offen.",
+    "next": "Cleanup terminal; keine weitere Cleanuprekursion. Getrennter N01-Planrepair läuft in e2e01DungeonGeometryPlan."
   },
   "hexAtlasExecution": {
     "scope": "HEX-00 bis HEX-28 und sämtliche eingeordneten CITY-00 bis CITY-09 vollständig",
