@@ -1,6 +1,6 @@
 // Real isolated Obsidian Campaign Host. Synthetic input; no physical acceptance.
 module.exports = (context) => {
-  const { page, fs, path, assert, root, vault, out, checks, restart } = context;
+  const { page, fs, path, assert, root, vault, out, checks, restart, recoveryAfterCommit } = context;
   const fixture = path.join(root, "tests/fixtures/atlas-e2e-spatial-v2");
   const manifest = JSON.parse(fs.readFileSync(path.join(fixture, "manifest.json"), "utf8"));
   const journalPath = manifest.input[0].path + ".journal";
@@ -58,12 +58,16 @@ module.exports = (context) => {
     return current;
   }
   let before;
-  return require("./atlas-spatial.cjs")({ ...context,
+  const hooks = {
     afterOpen: async () => {
       exactCampaign(restart ? "expected" : "input");
       const actual = await membership();
       fs.writeFileSync(path.join(out, "campaign-membership.json"), JSON.stringify(actual, null, 2));
       checks.push("Actual Campaign manifest mounts its confirmed native repository/history/renderer");
+      if (restart && recoveryAfterCommit) {
+        assert.equal(fs.existsSync(path.join(vault, journalPath)), false);
+        checks.push("New actual process consumes the prior committed journal and reopens confirmed After bytes");
+      }
     },
     beforeSave: async () => {
       before = await membership();
@@ -136,5 +140,47 @@ module.exports = (context) => {
       fs.writeFileSync(path.join(out, "actual-save-refresh.json"), JSON.stringify(saved, null, 2));
       checks.push("Retry has a new transaction UUID; exact Campaign After bytes and same camera/history/mount remain usable after Save");
     },
-  });
+  };
+  if (recoveryAfterCommit && !restart) hooks.saveOverride = async () => {
+    await hooks.beforeSave();
+    await page.evaluate((journalPath) => {
+      const probe = window.__hexCampaignProbe;
+      probe.trash = app.vault.trash; probe.cleanupFailures = 0;
+      app.vault.trash = async function(file, ...args) {
+        if (file.path === journalPath) {
+          probe.cleanupFailures++;
+          throw new Error("HEX-H01 controlled committed-journal cleanup failure");
+        }
+        return probe.trash.call(this, file, ...args);
+      };
+    }, journalPath);
+    await button().click();
+    await page.waitForFunction(() => {
+      const view = app.workspace.getLeavesOfType("dungeon-native-atlas").at(-1).view;
+      return window.__hexCampaignProbe.cleanupFailures >= 2 && view.campaignHost.state.kind === "unavailable";
+    });
+    const actual = await page.evaluate(() => {
+      const view = app.workspace.getLeavesOfType("dungeon-native-atlas").at(-1).view;
+      const probe = window.__hexCampaignProbe;
+      return { kind: view.campaignHost.state.kind, reason: view.campaignHost.state.reason,
+        cleanupFailures: probe.cleanupFailures, transactions: probe.transactions,
+        retainedMounts: view.campaignHost.navigation.retainedMounts };
+    });
+    const raw = fs.readFileSync(path.join(vault, journalPath), "utf8");
+    const journal = JSON.parse(raw);
+    assert.equal(journal.state, "committed");
+    for (const row of manifest.expected)
+      assert.equal(fs.readFileSync(path.join(vault, row.path), "utf8"),
+        fs.readFileSync(path.join(fixture, row.fixtureFile), "utf8"), row.path);
+    exactCampaign("expected");
+    for (const write of journal.writes)
+      assert.equal(fs.readFileSync(path.join(vault, write.path), "utf8"), write.after, write.path);
+    fs.writeFileSync(path.join(out, "actual-committed-journal.json"), raw);
+    fs.writeFileSync(path.join(out, "actual-commit-cleanup-failure.json"), JSON.stringify(actual, null, 2));
+    checks.push("Actual committed cleanup failure keeps exact After bytes and durable journal; obsolete mount is unavailable");
+    await page.screenshot({ path: path.join(out, "commit-cleanup-blocked.png") });
+    // The injected cleanup fault stays installed until normal process exit. No live retry substitutes for restart.
+    return false;
+  };
+  return require("./atlas-spatial.cjs")({ ...context, ...hooks });
 };

@@ -906,7 +906,8 @@ async function workflow() {
   if (atlasSpatial) {
     const scenario = require(atlasCampaignRuntime
       ? "./host/atlas-campaign-runtime.cjs"
-      : "./host/atlas-spatial.cjs")(scenarioContext);
+      : "./host/atlas-spatial.cjs")({ ...scenarioContext,
+        recoveryAfterCommit: process.argv.includes("--atlas-campaign-commit-recovery") });
     if(restart)await scenario.reopen();else await scenario.edit();
     return;
   }

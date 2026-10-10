@@ -1,6 +1,6 @@
 // Isolated native Obsidian host proof; synthetic gestures, never physical-input acceptance.
 module.exports = ({ page, fs, path, assert, qa, out, vault, root, checks,
-  afterOpen, beforeSave, afterSave }) => {
+  afterOpen, beforeSave, afterSave, saveOverride }) => {
   const manifest = JSON.parse(
     fs.readFileSync(
       path.join(root, "tests/fixtures/atlas-e2e-spatial-v2/manifest.json"),
@@ -138,6 +138,7 @@ module.exports = ({ page, fs, path, assert, qa, out, vault, root, checks,
       );
   }
   async function save() {
+    if (saveOverride) return saveOverride();
     await beforeSave?.();
     await button("Atlas speichern").click();
     await page.waitForFunction(() => {
@@ -264,7 +265,7 @@ module.exports = ({ page, fs, path, assert, qa, out, vault, root, checks,
     assert.equal((await state()).depth, depth);
     assert.deepEqual((await state()).cells, initial.cells);
     await button("Hex auswählen").click();
-    await save();
+    if (await save() === false) return;
     await exact("expected");
     await record(
       "Hex/room/house share Undo/Redo and Save writes exact native seven-file oracle",
