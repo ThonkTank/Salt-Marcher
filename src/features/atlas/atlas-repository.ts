@@ -373,6 +373,11 @@ export class AtlasRepository {
       throw new Error("Räumliche Owner sind noch nicht angeschlossen.");
     return this.graph;
   }
+  /** Actual owner identity for a guarded mount; never a reconstructed Source. */
+  get terrainSource(): TerrainSource {
+    if (!this.source) throw new Error("Atlas wurde noch nicht geöffnet.");
+    return this.source;
+  }
   ensureDetail(kind: DetailKind, id: string) {
     const stamp = this.generation;
     return this.exclusive(async () => {
