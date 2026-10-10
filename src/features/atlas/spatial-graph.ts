@@ -13,8 +13,11 @@ import {
   checkedLocationDocument,
   type LocationDocument,
 } from "../location/location-schema";
-import type { AtlasReadView } from "./atlas-history";
-import { checkedLocationPlacements } from "./location-placement";
+import { sameAtlasValue, type AtlasReadView, type AtlasValue } from "./atlas-history";
+import {
+  checkedLocationPlacements,
+  type LocationPlacement,
+} from "./location-placement";
 import {
   checkedSpatialState,
   checkedSpatialWorld,
@@ -174,6 +177,42 @@ export function validateSpatialRecords(
 }
 
 export type SpatialOwner = LocationSource | CitySource | DungeonAtlasSource;
+
+/** Exact live owner/parent chain captured by one transient dungeon gesture. */
+export interface DungeonSpatialBasis {
+  readonly graph: SpatialGraph;
+  readonly terrainSource: TerrainSource;
+  readonly history: TerrainSource["history"];
+  readonly dungeonSource: DungeonAtlasSource;
+  readonly locationSource: LocationSource;
+  readonly citySource?: CitySource;
+  readonly dungeonPlacement: DungeonPlacement;
+  readonly locationPlacement: LocationPlacement;
+  readonly cityPlacement?: CityPlacement;
+  readonly cityBuilding?: CityDocument["buildings"][number];
+  readonly frame: RigidFrame;
+}
+
+const atlasRecord = (value: unknown): AtlasValue => value as AtlasValue;
+
+export function sameDungeonSpatialBasis(
+  before: DungeonSpatialBasis,
+  after: DungeonSpatialBasis,
+): boolean {
+  return (
+    before.graph === after.graph &&
+    before.terrainSource === after.terrainSource &&
+    before.history === after.history &&
+    before.dungeonSource === after.dungeonSource &&
+    before.locationSource === after.locationSource &&
+    before.citySource === after.citySource &&
+    sameAtlasValue(atlasRecord(before.dungeonPlacement), atlasRecord(after.dungeonPlacement)) &&
+    sameAtlasValue(atlasRecord(before.locationPlacement), atlasRecord(after.locationPlacement)) &&
+    sameAtlasValue(atlasRecord(before.cityPlacement ?? null), atlasRecord(after.cityPlacement ?? null)) &&
+    sameAtlasValue(atlasRecord(before.cityBuilding ?? null), atlasRecord(after.cityBuilding ?? null)) &&
+    sameAtlasValue(atlasRecord(before.frame), atlasRecord(after.frame))
+  );
+}
 /** Only actual native adapters enter this registry; it is not an inventory-derived Campaign registry. */
 export class SpatialGraph {
   private owners = new Map<string, SpatialOwner>();
@@ -315,6 +354,66 @@ export class SpatialGraph {
         precisionMeters: 0,
       });
     return this.dungeonFrame(p, world, view, loc);
+  }
+
+  /** Resolve the existing registry and full rigid parent chain; never cache it. */
+  dungeonBasis(
+    documentId: string,
+    view: AtlasReadView = this.source.history,
+  ): DungeonSpatialBasis {
+    this.validate(view);
+    const world = this.worldAt(view),
+      dungeonPlacement =
+        world.version === 2
+          ? world.detailPlacements.find(
+              (placement): placement is DungeonPlacement =>
+                placement.kind === "dungeon" &&
+                placement.documentId === documentId,
+            )
+          : undefined;
+    if (!dungeonPlacement) throw new Error("Dungeon ist nicht verortet.");
+    const dungeonSource = this.owner(documentId, DungeonAtlasSource),
+      cityPlacement =
+        dungeonPlacement.parent.kind === "city-building"
+          ? this.cityPlacement(world, dungeonPlacement.parent.cityId)
+          : undefined,
+      locationId =
+        dungeonPlacement.parent.kind === "location"
+          ? dungeonPlacement.parent.locationId
+          : cityPlacement!.parent.locationId,
+      locationPlacement = world.placements.find(
+        (placement) => placement.locationId === locationId,
+      ),
+      locationSource = this.owner(locationId, LocationSource);
+    if (!locationPlacement) throw new Error("Ortsparent ist nicht verortet.");
+    const citySource = cityPlacement
+        ? this.owner(cityPlacement.documentId, CitySource)
+        : undefined,
+      buildingId =
+        dungeonPlacement.parent.kind === "city-building"
+          ? dungeonPlacement.parent.buildingId
+          : undefined,
+      cityBuilding =
+        cityPlacement && buildingId
+          ? this.city(cityPlacement.documentId, view).buildings.find(
+              (building) => building.id === buildingId,
+            )
+          : undefined;
+    if (cityPlacement && !cityBuilding)
+      throw new Error("Gebundenes Haus fehlt; zuerst gemeinsam entkoppeln.");
+    return Object.freeze({
+      graph: this,
+      terrainSource: this.source,
+      history: this.source.history,
+      dungeonSource,
+      locationSource,
+      ...(citySource ? { citySource } : {}),
+      dungeonPlacement,
+      locationPlacement,
+      ...(cityPlacement ? { cityPlacement } : {}),
+      ...(cityBuilding ? { cityBuilding } : {}),
+      frame: this.frame(documentId, view),
+    });
   }
   private dungeonFrame(
     p: DungeonPlacement,

@@ -5,7 +5,16 @@
     "required": "Ein kanonischer nativer Dungeon mit stabilen Dungeon-/Geschoss-/Raum-/Eingangsroute-/Section-IDs und exakten Markdownbytes nimmt an genau einem externen AtlasHistory-Befehl teil, ohne parallel in Session-History zu committen oder Session.revision zu persistieren.",
     "confirmed": "Input c6fe58d1b5de5c707000a39b0b8da2883d31867b7d8bf347f63830021e2df742 und Erwartung a86e366f64d44c81e797ee8660de3f54e05bf1ad4a09a2db9bb8002e6eac7429 sind kanonische V4-.dungeon-Bytes. Raum-Key-Closure wird daraus abgeleitet. Kombinierte Dungeon-/räumliche Änderungen sind ein AtlasHistory-Schritt; Undo/Redo, Fremdkennung, ungültiges Ziel und stale Snapshot sind fokussiert geprüft. Typprüfung, 333/333 Coretests, 422/422 vollständige Tests und Produktbuild bestanden.",
     "evidence": "tests/fixtures/atlas-e2e-v1/dungeon-manifest.json; tests/core/dungeon-atlas-source.test.ts; Issue #12 Kommentar 6090859580",
-    "notConfirmed": "Unabhängiger Review sowie House-Bindung, gemeinsamer Vault-/FileTransaction-Schritt, Renderer/Placement, Native Host, frischer Prozess, physische Eingabe und vollständiger E2E-01-Lauf stehen aus; keine Produkt-, Host- oder Gesamtfreigabe."
+    "notConfirmed": "Unabhängiger Review sowie House-Bindung, gemeinsamer Vault-/FileTransaction-Schritt, Renderer/Placement, Native Host, frischer Prozess, physische Eingabe und vollständiger E2E-01-Lauf stehen aus; keine Produkt-, Host- oder Gesamtfreigabe.",
+    "geometryPort": {
+      "id": "E2E-01-DUNGEON-GEOMETRY-I01",
+      "state": "cleanup_review_passed_owner_handoff_ready",
+      "productCommit": "5675cbd13be6f0fa096c3651743f1eb40d93f845",
+      "reviewedCommit": "c8bd27d6d223403b46748d3051409c3e1c498224",
+      "confirmed": "Der reine äußere Room31/Floor32-Konturpunktzug nutzt die vorhandenen Building-Punkt-, Kontur- und Portalplaner, projiziert ohne Session-/History-/Dateiwirkung und liefert höchstens einen kanonischen Dungeon-AtlasChange. Die tatsächliche Terrain-/Graph-/Dungeon-/Location-/City-/History-Identität sowie vollständige Placement-/House-/RigidFrame-Basis bleiben bis Preview/Handoff eingefroren; Historyereignisse einschließlich A-B-A und bytegleiche Adapterersetzung invalidieren terminal. Code-R02 schloss Beginpointer und gemeinsame RecordChange-Grenze, Code-R03 den Vor-update-Umrechnungsfehler. Der Cleanup bündelt Proposalwiderruf und verzögerte Koordinatenauflösung in einer fail-closed sample()-Grenze; tatsächliche bind()-Callbacks, later-valid/Fresh Begin, Portal-/ID-/Markdownclosure, 1,524 Meter pro Feld und genau eine Historywirkung bestanden den unabhängigen PRODUCT-CL-R01 ohne Pflichtlücke. Typprüfung, 495/495 Tests und Build bestanden.",
+      "evidence": "src/features/dungeon/geometry-change.ts; src/features/atlas/atlas-editor.ts; tests/core/atlas-spatial.test.ts; ROADMAP-E2E01-DUNGEON-GEOMETRY-PRODUCT-CLEANUP-PLAN.md; PR #26 Kommentare 6093160433, 6093242380 und 6093376162; Issue #12 Kommentar 6093376283; /home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/dungeon-geometry-product-cl-r01/",
+      "notConfirmed": "Hex-Stewardintegration, persistente House-zu-Dungeon-Bindung, gemeinsamer Vault-/FileTransaction-/Publishschritt, vollständige Mehrownerkomposition, Save/Restart auf dem integrierten Kandidaten, echte GUI-/Hostbedienung, physische Eingabe und vollständiger E2E-01-Lauf bleiben offen; keine Produkt-, Host-, Fach- oder Gesamtfreigabe."
+    }
   },
   "gmProductFollowups": {
     "date": "2026-10-09",

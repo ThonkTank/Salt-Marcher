@@ -489,6 +489,233 @@
     ],
     "next": "Kandidaten-SHA veröffentlichen, eng unabhängig reviewen lassen und anschließend nur als Source-Handoff an den einen PR-#13-Steward übergeben; keine eigene Integration."
   },
+  "e2e01DungeonGeometryPlan": {
+    "run": "E2E-01-DUNGEON-GEOMETRY-OWNER-HANDOFF-01",
+    "state": "cleanup_review_passed_owner_handoff_ready",
+    "owner": "Dungeon-Strang (Thread Obsidian Dungeon Repo ansehen)",
+    "branch": "dungeon/e2e01-geometry-i01-20261010",
+    "baseCommit": "58c24b161a967017112d8bfc68471b19ad70e72b",
+    "synchronizedShared": "38f333d4eda6cd2203443efd35b7140e7bf72e07",
+    "plan": "ROADMAP-E2E01-DUNGEON-GEOMETRY-PLAN.md",
+    "coordination": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6093174339",
+    "details": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/8#issuecomment-6093174238",
+    "planCandidateCommit": "ea46ba5437596aceaad955330e21c3ef4e739451",
+    "review": {
+      "run": "E2E-01-DUNGEON-GEOMETRY-P01-R01",
+      "result": "CHANGES_REQUIRED",
+      "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/23#issuecomment-6092483393",
+      "requiredFinding": "DUN-GEO-P01-R01-01",
+      "boundary": "Identische Dungeonbytes schützen nicht gegen eine während der Gesture geänderte Parent-/Bindingbasis; N01 muss die tatsächliche Source-/History-/Parentbasis bis Update und Handoff ohne Auto-Rebase binden."
+    },
+    "repair": {
+      "run": "DUN-GEO-P01-N01",
+      "baseCommit": "060abca8432b0005b0544043778378df3e1814c5",
+      "finding": "DUN-GEO-P01-R01-01",
+      "coordination": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/8#issuecomment-6092654185",
+      "gateStart": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6092654362",
+      "scope": "Planrepair: tatsächliche Terrain-/Graph-/Dungeon-/Location-/City-Source- und AtlasHistory-Identität plus eingefrorene DungeonPlacement-/Binding-/LocationPlacement-/CityPlacement-/House-/RigidFrame-Basis bis Preview/Handoff; Historyereignis oder ChangedBasis verwirft terminal ohne Auto-Rebase.",
+      "oracles": [
+        "House-/Location-UndoRedo während Gesture einschließlich A-B-A und late pointer-up",
+        "DungeonBinding-/Anchor-/CityPlacement-Wechsel bei identischen Dungeonbytes",
+        "bytegleicher DungeonSource-/LocationSource-/CitySource-/TerrainSource-/SpatialGraph-/AtlasHistory-Austausch",
+        "null Dungeonchanges und keine zusätzliche Undo-/Redo-, Repository-, Draft-, Journal- oder Dateiwirkung nach Abbruch",
+        "neuer Begin auf aktueller Basis liefert weiterhin genau einen Dungeon-AtlasChange für eine gemeinsame check/execute-Komposition"
+      ],
+      "implementation": false,
+      "host": false,
+      "next": "Exact-SHA veröffentlichen und ausschließlich das N01-Delta unabhängig in P01-R02 prüfen lassen.",
+      "review": {
+        "run": "E2E-01-DUNGEON-GEOMETRY-P01-R02",
+        "result": "PASS",
+        "commit": "58c24b161a967017112d8bfc68471b19ad70e72b",
+        "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/24#issuecomment-6092752617",
+        "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/dungeon-geometry-p01-r02/review.json",
+        "boundary": "Nur Planrepair; öffnet Produkt-I01, aber keine Produkt-, Host- oder E2E-Freigabe."
+      }
+    },
+    "implementation": {
+      "run": "E2E-01-DUNGEON-GEOMETRY-I01",
+      "commit": "400fb47e2f9acfb15321b68a09ec5947b37c4c6a",
+      "start": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/8#issuecomment-6092791689",
+      "scope": "Äußerer Room31/Floor32-Konturpunktzug über vorhandene Building-Punkt-/Kontur-/Portalplaner; reine Dokumentprojektion, ownergebundener Previewoverride, eingefrorene tatsächliche Source-/Graph-/History-/Parent-/Binding-/RigidFrame-Basis, terminale Stale-Grenze und genau ein Dungeon-AtlasChange.",
+      "oracles": "Parent-Undo mit identischen Dungeonbytes, Binding-/Anchor- und A-B-A-Wechsel, bytegleicher Source-/Graph-/Historyersatz, late handoff null, Redoschutz, Fresh Begin, abhängiger Portal-Follow, stabile IDs/Markdownclosure und 1.524 m/Feld bestanden.",
+      "review": "independent_code_r01_required",
+      "host": false
+    },
+    "codeReview": {
+      "run": "E2E-01-DUNGEON-GEOMETRY-I01-R01",
+      "result": "CHANGES_REQUIRED",
+      "commit": "455b7e606f9b753043e8f8f94896f8ffd60924f8",
+      "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/26#issuecomment-6092998283",
+      "findings": [
+        "DUN-GEO-I01-R01-01: Ein ungültiges oder nicht-finites Update ließ ein älteres unsichtbares Proposal finalisierbar.",
+        "DUN-GEO-I01-R01-02: Der Konturzug verwendete den Vertex statt des tatsächlichen Beginpointers als Delta-Ursprung.",
+        "DUN-GEO-I01-R01-03: Pure Dokumentprojektion und native Session duplizierten RecordChange-Validierung und -Anwendung."
+      ],
+      "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/dungeon-geometry-code-r01/{review.json,probes.ts,probes.json,check.log,test.log,build.log}",
+      "boundary": "Actual Source-/History-/Parent-/Framebindung und terminales A-B-A bestanden als Teilbefund; keine Port-, Host- oder E2E-Freigabe."
+    },
+    "codeRepair": {
+      "run": "E2E-01-DUNGEON-GEOMETRY-N01",
+      "commit": "7d3f0deaca89f5bb2667a1478047475d9e28bee3",
+      "start": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/8#issuecomment-6093025792",
+      "scope": "Ausschließlich DUN-GEO-I01-R01-01..03: jedes neue Sample ersetzt die Finalisierbarkeit, immutable tatsächlicher Beginpointer und eine gemeinsame reine RecordChange-Projektion für projectDocumentCommand und Session.apply.",
+      "oracles": "Valid-zu-Nullsegment beziehungsweise non-finite entzieht Preview und Handoff ohne Source-/History-/Redo-Wirkung; ein danach gültiges Sample liefert nur den sichtbaren Stand; off-center, Rückkehr und Snap benutzen den tatsächlichen Beginpointer; pure Projektion und native Session liefern gleiche Kontur-/Portalbytes und Reihenfolge sowie gleiche stale-/invalid-Ablehnung.",
+      "review": "independent_code_r02_required",
+      "host": false
+    },
+    "codeReviewR02": {
+      "run": "E2E-01-DUNGEON-GEOMETRY-I01-R02",
+      "result": "CHANGES_REQUIRED",
+      "commit": "cfe6e0e4db95176c42c8b19c4096c27eae627e53",
+      "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/26#issuecomment-6093160433",
+      "closed": [
+        "DUN-GEO-I01-R01-02: immutable tatsächlicher Beginpointer einschließlich Offset, Rückkehr und Snap",
+        "DUN-GEO-I01-R01-03: gemeinsame RecordChange-Projektion für pure Projektion und native Session"
+      ],
+      "remaining": "DUN-GEO-I01-R01-01: unprojectLocal kann im AtlasEditor-Pointermove vor gesture.update werfen; der Catch verbarg nur Preview und ließ ein älteres Proposal finalisierbar.",
+      "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/dungeon-geometry-code-r02/{review.json,probes.ts,probes-required.ts,probes.json,probes-error.log,check.log,test.log,build.log}",
+      "boundary": "Synthetischer tatsächlicher Callback-Repro; keine physische Eingabe-, GUI-, Host- oder E2E-Freigabe."
+    },
+    "codeRepairN02": {
+      "run": "E2E-01-DUNGEON-GEOMETRY-N02",
+      "commit": "26a29e816d23a2a08a0e932a2cb60f78b080651b",
+      "start": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/8#issuecomment-6093174238",
+      "scope": "Ausschließlich verbleibender Vor-update-Fehlerpfad aus DUN-GEO-I01-R01-01: AtlasEditor widerruft bei fehlgeschlagener Koordinatenumrechnung jedes ältere Dungeonproposal.",
+      "oracle": "Tatsächliche bind()-Pointermove/-Pointerup-Callbacks: gültige Vorschau, non-finite Umrechnungsfehler vor update, leere Preview/Handoff, unveränderte Dungeonbytes, Undo-Tiefe, Redo und Draftsignal; frischer Begin bleibt möglich.",
+      "review": "independent_code_r03_required",
+      "host": false
+    },
+    "codeReviewR03": {
+      "run": "E2E-01-DUNGEON-GEOMETRY-I01-R03",
+      "result": "PASS",
+      "commit": "ea9ecd3f5c7e284b86c554d7e4a9cb99672d73c2",
+      "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/26#issuecomment-6093242380",
+      "coordination": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6093242523",
+      "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/dungeon-geometry-code-r03/{review.json,probes.ts,probes.json,check.log,test.log,build.log}",
+      "closed": "DUN-GEO-I01-R01-01: Auch ein Fehler in der Koordinatenumrechnung vor update widerruft das ältere Proposal; Release bleibt ohne Source-, History-, Redo- oder Draftwirkung.",
+      "boundary": "Nur unabhängiger Review des letzten Codepflichtbefunds; keine GUI-, Host-, physische Eingabe-, Cleanup-, Steward- oder E2E-Freigabe."
+    },
+    "productCleanupReview": {
+      "run": "E2E-01-DUNGEON-GEOMETRY-PRODUCT-CL-R01",
+      "result": "PASS",
+      "commit": "c8bd27d6d223403b46748d3051409c3e1c498224",
+      "productCommit": "5675cbd13be6f0fa096c3651743f1eb40d93f845",
+      "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/26#issuecomment-6093376162",
+      "coordination": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6093376283",
+      "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/dungeon-geometry-product-cl-r01/{review.json,probes.ts,probes.json,check.log,test.log,build.log}",
+      "closed": "Alle sieben Cleanup-Orakel bestanden ohne Pflichtlücke: atomarer Widerruf vor Resolver, Ablehnungsnullwirkung, later-valid/Fresh Begin, terminale Lebensdauer, positive Geometrie/Closure, genau ein Ownerchange und tatsächliche AtlasEditor.bind()-Callbacks.",
+      "boundary": "Nur unabhängiger Cleanupreview des Exact-SHA; keine Integration, GUI-, Host-, physische Eingabe-, Persistenz-, Mehrowner- oder E2E-Freigabe."
+    },
+    "stewardHandoff": {
+      "run": "E2E-01-DUNGEON-GEOMETRY-OWNER-HANDOFF-01",
+      "status": "ready_for_hex_pr13_steward",
+      "owner": "Hex-Steward auf PR #13",
+      "target": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/13",
+      "reviewedCommit": "c8bd27d6d223403b46748d3051409c3e1c498224",
+      "productCommit": "5675cbd13be6f0fa096c3651743f1eb40d93f845",
+      "branch": "dungeon/e2e01-geometry-i01-20261010",
+      "start": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/8#issuecomment-6093389327",
+      "gateStart": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6093389464",
+      "inputs": [
+        "Dungeon 00000000-0000-4000-8000-000000000030, Floor 00000000-0000-4000-8000-000000000032, Room 00000000-0000-4000-8000-000000000031, semantische Entrance-Route 00000000-0000-4000-8000-000000000033 und Section 00000000-0000-4000-8000-000000000034.",
+        "Bestehende DungeonAtlasSource-, SpatialGraph- und AtlasHistory-Lebensdauer; tatsächliche Terrain-/Dungeon-/Location-/City-Source-Identität und eingefrorene Parent-/Binding-/House-/RigidFrame-Basis.",
+        "DungeonGeometryGesture.sample() liefert nur transientes Preview; handoff() liefert höchstens einen ownergebundenen Dungeon-AtlasChange für die eine gemeinsame AtlasHistory.check()/execute()-Komposition.",
+        "Location 00000000-0000-4000-8000-000000000011 und House 00000000-0000-4000-8000-000000000105 bleiben die Gegenstellen des vom Steward materialisierten Bindungsvertrags."
+      ],
+      "open": "Gemeinsamer Vault-/FileTransaction-/Publishschritt, persistente House-zu-Dungeon-Bindung, vollständige Mehrownerkomposition, Save/Restart im integrierten Kandidaten, GUI/Host und physische Eingabe bleiben beim Steward beziehungsweise ihren benannten Ownern offen. Keine Sessionrevision persistieren und keinen zweiten Session-History-Commit erzeugen."
+    },
+    "scope": "Implementierungskandidat: äußerer Konturpunktzug Room31/Floor32 über bestehende pure Geometrieplaner, transientes Preview/Cancel und genau ein kanonischer ownergebundener Before→After-AtlasChange für die gemeinsame check/execute-Komposition.",
+    "files": [
+      "src/features/dungeon/geometry-change.ts",
+      "src/features/atlas/spatial-graph.ts",
+      "src/features/atlas/spatial-canvas.ts",
+      "src/features/atlas/atlas-editor.ts",
+      "src/session.ts",
+      "tests/core/atlas-spatial.test.ts",
+      "ROADMAP-E2E01-DUNGEON-GEOMETRY-PLAN.md",
+      "checkpoint.json",
+      "acceptance.json"
+    ],
+    "verification": "Auf dem sauberen Produktcommit 5675cbd bestanden npm run check, acht fokussierte Dungeon-/AtlasEditor.bind()-Callbacktests, npm test 495/495, npm run build und git diff --check. Der unabhängige PRODUCT-CL-R01 reproduzierte alle sieben Orakel auf Exact-SHA c8bd27d ohne Pflichtlücke; Fixturebytes blieben unverändert.",
+    "externalEvidence": "Code-R02: /home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/dungeon-geometry-code-r02/; Code-R03: /home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/dungeon-geometry-code-r03/; PRODUCT-CL-R01: /home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/dungeon-geometry-product-cl-r01/. Keine GUI-, Host- oder physische Eingabeevidenz.",
+    "notVerified": "Hex-Stewardintegration, gemeinsamer Vault-/FileTransaction-/Publishschritt, persistente House-zu-Dungeon-Bindung, tatsächlicher Hostlauf, physische Eingabe, vollständige Mehrownerkomposition und E2E-01-PASS bleiben offen.",
+    "next": "Den unabhängig geprüften Exact-SHA c8bd27d6d223403b46748d3051409c3e1c498224 samt bytegleicher Produktbasis an den Hex-Steward auf PR #13 übergeben. Integration und deren Gates gehören ausschließlich in den nachfolgenden Stewardlauf."
+  },
+  "e2e01DungeonGeometryProductCleanup": {
+    "run": "E2E-01-DUNGEON-GEOMETRY-PRODUCT-CL-R01",
+    "state": "cleanup_independent_review_passed_terminal",
+    "owner": "Dungeon-Strang (Thread Obsidian Dungeon Repo ansehen)",
+    "branch": "dungeon/e2e01-geometry-i01-20261010",
+    "baseCommit": "ea9ecd3f5c7e284b86c554d7e4a9cb99672d73c2",
+    "planCommit": "46e31ed120fd22dc608338bf7e5b0d594f7ca39f",
+    "implementationBase": "46e31ed120fd22dc608338bf7e5b0d594f7ca39f",
+    "productCommit": "5675cbd13be6f0fa096c3651743f1eb40d93f845",
+    "synchronizedShared": "38f333d4eda6cd2203443efd35b7140e7bf72e07",
+    "plan": "ROADMAP-E2E01-DUNGEON-GEOMETRY-PRODUCT-CLEANUP-PLAN.md",
+    "coordination": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/8#issuecomment-6093263521",
+    "gateStart": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6093263663",
+    "implementationCoordination": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/8#issuecomment-6093299522",
+    "implementationGateStart": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6093299667",
+    "review": {
+      "result": "PASS",
+      "commit": "c8bd27d6d223403b46748d3051409c3e1c498224",
+      "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/26#issuecomment-6093376162",
+      "coordination": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6093376283",
+      "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/dungeon-geometry-product-cl-r01/{review.json,probes.ts,probes.json,check.log,test.log,build.log}",
+      "oracles": "Sieben von sieben unabhängig bestanden; keine Pflichtlücke.",
+      "boundary": "Kein Integrations-, GUI-, Host-, physischer Eingabe-, Persistenz-, Mehrowner- oder E2E-PASS."
+    },
+    "scope": "Planung einer einzigen fail-closed Sample-Grenze in DungeonGeometryGesture: altes Proposal vor der verzögerten Koordinatenauflösung widerrufen, bestehende Prüfung und Projektion wiederverwenden, getrenntes öffentliches rejectSample-Protokoll entfernen.",
+    "plannedFiles": [
+      "src/features/dungeon/geometry-change.ts",
+      "src/features/atlas/atlas-editor.ts",
+      "tests/core/atlas-spatial.test.ts",
+      "ROADMAP-E2E01-DUNGEON-GEOMETRY-PRODUCT-CLEANUP-PLAN.md",
+      "checkpoint.json"
+    ],
+    "protection": "Keine zweite Kamera, Geometrie, Source, Session, History oder Persistenz; PR #21, PR-#13-Fixturebytes, fremde Checkpoint-Wurzeln und vorhandene Belege bleiben unverändert.",
+    "implementedFiles": [
+      "src/features/dungeon/geometry-change.ts",
+      "src/features/atlas/atlas-editor.ts",
+      "tests/core/atlas-spatial.test.ts",
+      "ROADMAP-E2E01-DUNGEON-GEOMETRY-PRODUCT-CLEANUP-PLAN.md",
+      "checkpoint.json"
+    ],
+    "verification": "Auf sauberem Produktcommit: npm run check PASS; acht fokussierte Dungeon-/AtlasEditor.bind()-Callbacktests PASS; npm test 495/495 PASS; npm run build PASS; git diff --check PASS. main.js SHA-256 0b1edc823e08ed627bd0befe23639b855ceacf2bcddaf35a98d40723c5cd5a6c, styles.css cdf172e7d3c101d5917c16afe487641a19d9d5afe8ad23365b33c958ee1ac321, manifest.json 2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64.",
+    "externalEvidence": "Unabhängiger PRODUCT-CL-R01 auf c8bd27d: /home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/dungeon-geometry-product-cl-r01/; vorheriger Code-R03-Beleg bleibt unter /home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/dungeon-geometry-code-r03/ erhalten.",
+    "notVerified": "GUI, Host, physische Eingabe, Stewardintegration, gemeinsamer Persistenzweg und E2E-01-PASS bleiben offen.",
+    "next": "Cleanup terminal; keine Rekursion. Den geprüften Exact-SHA im getrennten E2E-01-DUNGEON-GEOMETRY-OWNER-HANDOFF-01 an den Hex-Steward übergeben."
+  },
+  "e2e01DungeonGeometryCleanup": {
+    "run": "E2E-01-DUNGEON-GEOMETRY-CL-I01",
+    "state": "cleanup_independent_review_passed_terminal",
+    "owner": "Dungeon-Strang (Thread Obsidian Dungeon Repo ansehen)",
+    "branch": "dungeon/e2e01-geometry-cleanup-p01-20261010",
+    "baseCommit": "ea46ba5437596aceaad955330e21c3ef4e739451",
+    "implementationBase": "e01622170da904bbb5da1f859a425e5e85c87a23",
+    "plan": "ROADMAP-E2E01-DUNGEON-GEOMETRY-CLEANUP-PLAN.md",
+    "coordination": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/8#issuecomment-6092514801",
+    "gateHandoff": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6092515006",
+    "implementationCoordination": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/8#issuecomment-6092549437",
+    "implementationGateStart": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6092549672",
+    "implementationCommit": "060abca8432b0005b0544043778378df3e1814c5",
+    "review": {
+      "run": "E2E-01-DUNGEON-GEOMETRY-CL-R01",
+      "result": "PASS",
+      "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/24#issuecomment-6092627937",
+      "scope": "Enger Dokumentationsreview; keine Fach-, Produkt-, Host- oder E2E-Freigabe."
+    },
+    "scope": "Bereinigung von normativem Vertrag versus illustrativer Typform, eindeutiges Glossar, zentrale Rollen-/Lebensdauer-/Wirkungsmatrix, Review-/Phasenmatrix und eigene Checkpointmetadaten; keine Fachreparatur oder Produktänderung.",
+    "files": [
+      "ROADMAP-E2E01-DUNGEON-GEOMETRY-PLAN.md",
+      "checkpoint.json"
+    ],
+    "reviewFindingPreserved": "DUN-GEO-P01-R01-01 bleibt vollständig offen und gehört erst nach Cleanup-PASS in einen getrennten N01-Plan-Repair.",
+    "verification": "JSON-/Verweis-/Diff-/Fremdwurzelschutz vor Veröffentlichung; Produktquellen, Acceptance, Architektur, Tests, Tools und Fixtures unverändert. Keine Produktbasisprüfung oder GUI, weil CL-I01 ausschließlich das Vertragsartefakt bereinigt.",
+    "notVerified": "N01/P01-R02, Produkt-I01, Host, physische Eingabe und E2E-01-PASS bleiben offen.",
+    "next": "Cleanup terminal; keine weitere Cleanuprekursion. Getrennter N01-Planrepair läuft in e2e01DungeonGeometryPlan."
+  },
   "hexAtlasExecution": {
     "scope": "HEX-00 bis HEX-28 und sämtliche eingeordneten CITY-00 bis CITY-09 vollständig",
     "phase": "HEX-03",
