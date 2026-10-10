@@ -2,16 +2,16 @@
   "repositoryOrientation": {
     "date": "2026-10-10",
     "state": "completed",
-    "scope": "Source-bound full-portfolio delivery mapping, with explicit unified Atlas, climate/weather and music/ambience outcomes; no product/domain/host approval.",
+    "scope": "Compact live entry: selected contribution instead of whole queue, concise #41 inputs and evidence-backed #40 closure in #12. No product/domain/host approval.",
     "roleContract": "docs/AGENT-ROLES.md",
     "repositoryContract": "docs/REPOSITORY.md",
-    "evaluatedShared": "7d45912312d50f412f7974aebd25839ed2c9c4f7",
-    "next": "Follow current task ownership and docs/ROADMAP.md delivery map; SMR-04/08 explain the concrete consumer chains. Resolve only actual dependent model/format/host inputs at existing #7/#10/#11/#44 work sites, not a second dispatch list.",
+    "evaluatedShared": "071555a12858efaa1d36b7a10d20638f382f0faa",
+    "next": "Read the current package with npm run next -- --task <issue>; use --list only for portfolio selection and relevant comment links/--comments for detail. Current state belongs in issue main texts, not copied into this orientation.",
     "verification": {
-      "sources": "All 36 pinned requirement hashes/phase links verified at 9de85c1; all 12 SMR areas and 18 existing acceptance cases mapped, 38 technical needs retained. Targeted Atlas/CITY, SRC-P04/L03/L04/T05, TN-14/25/26 and existing music candidate checked. Unknown original subfunctions remain outside a complete detail inventory.",
-      "structure": "Offline links/structure and affected source/diff check PASS; ratified gate catalog, product code and all acceptance bytes unchanged."
+      "tools": "27 repository/tool tests PASS: default selection omits unrelated owned work, --list retains overview, comment previews and full-text retrieval remain available. Selection priority/claim checks unchanged.",
+      "sources": "Fresh #40 owner closure and #12 handoff read; #41 two actual Campaign/Data inputs retained. Foreign checkpoint and acceptance bytes unchanged; no product approval."
     },
-    "previousOrientation": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/blob/7d45912312d50f412f7974aebd25839ed2c9c4f7/checkpoint.json"
+    "previousOrientation": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/blob/071555a12858efaa1d36b7a10d20638f382f0faa/checkpoint.json"
   },
   "saltMarcherReplacement": {
     "date": "2026-10-10",
