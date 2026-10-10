@@ -7154,42 +7154,25 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-UI-R01",
-      "kind": "independent_component_review",
-      "completedAt": "2026-10-10T07:37:10.736941+00:00",
+      "id": "CITY-UI-I01-CLEAN-R",
+      "kind": "cleanup_review",
+      "completedAt": "2026-10-10T07:39:03.368374+00:00",
       "state": "completed",
-      "result": "Actual independent Hex PASS; no mandatory findings; 551 existing, 8 DOM and 4 independent counterprobes PASS",
-      "review": {
-        "state": "PASS",
-        "reviewer": "Hex",
-        "head": "5e72857ca9f794ce0027765766365bd0982e827d",
-        "testedCode": "f5f50cf70277f442fc54140128bb6abebf06e30c",
-        "receipt": "/home/aaron/.cache/dungeon-native-qa/hex-03/city-ui-i01-r01-20261010/review.json",
-        "sha256": "ee59c7344598a74023dd1ccb6b8fd3acf6d1ab747d74d76006cc6ed7558b290f",
-        "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/29#issuecomment-6095156261",
-        "findings": [],
-        "counterprobes": {
-          "pass": 4,
-          "fail": 0,
-          "cases": [
-            "Filtering pending work preserves locks and exact immutable target after primitive rejection/retry",
-            "Late success of obsolete location preserves newer pending action",
-            "Synchronous host update/reentrant new navigation preserves new pending UI",
-            "Two panels isolate all ten router events; destruction preserves sibling and existing Key"
-          ]
-        },
-        "limits": [
-          "Isolated component/DOM review; no real native Atlas host mounting or physical input receipt",
-          "build.mjs/package.json hookup remains agreed Hex integration work",
-          "Host must supply confirmed actual targets and Source/Context/Key guards; productive providers/full E2E/original parity remain open"
-        ]
-      },
-      "receipt": "/home/aaron/.cache/dungeon-native-qa/city-plans/city-ui-i01-20261010/independent-review-consumption.json"
+      "result": "All protected files/foreign roots retained; exact own generated inventory removed; dependency target retained",
+      "cleanup": {
+        "result": "PASS",
+        "plan": "ROADMAP-CITIES-ATLAS-DETAIL-ENTRY-CLEANUP-PLAN.md",
+        "receipt": "/home/aaron/.cache/dungeon-native-qa/city-plans/city-ui-i01-20261010/cleanup/review.json",
+        "sha256": "0eeb1c65e757b8b149b6f452932d5cef4fa38aaf729b5a9d4b3581b97ced1de9",
+        "deletedFiles": 15,
+        "deletedBytes": 46469066,
+        "protectedFiles": 555
+      }
     },
     "nextRun": {
-      "id": "CITY-UI-I01-CLEAN-P",
-      "kind": "cleanup_plan",
-      "focus": "Inventory own generated build/map/DOM bundle and dependency symlink; preserve sources, receipts, artifact triplet and foreign roots"
+      "id": "CITY-UI-HANDOFF-I01",
+      "kind": "qualified_handoff",
+      "focus": "Hex mounts independently reviewed component in existing Atlas and owns build.mjs/package.json hook; actual Host/Save/fresh process/physical evidence pending"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",

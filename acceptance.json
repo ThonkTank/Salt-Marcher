@@ -4496,8 +4496,8 @@
     "currentUserGoal": "09.10.2026: vollständige Funktionsgleichwertigkeit mit Canvas of Kings, Watabou und Fantasy Town Generator, bessere Bedienung; bisherige Zweiprodukt-Ergebnisbegrenzung durch direkten Auftrag erweitert.",
     "atlasDetailEntry": {
       "plan": "ROADMAP-CITIES-ATLAS-DETAIL-ENTRY-PLAN.md",
-      "state": "component_independently_reviewed_cleanup_and_host_pending",
-      "updatedAt": "2026-10-10T07:37:10.736941+00:00",
+      "state": "component_review_and_cleanup_pass_host_pending",
+      "updatedAt": "2026-10-10T07:39:03.368374+00:00",
       "requirements": [
         "CTY-001.01",
         "CTY-009.01"
@@ -4531,10 +4531,10 @@
       "evidence": [
         "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/13#issuecomment-6094937083",
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city-ui-i01-20261010/run.json",
-        "/home/aaron/.cache/dungeon-native-qa/city-plans/city-ui-i01-20261010/independent-review-consumption.json"
+        "/home/aaron/.cache/dungeon-native-qa/city-plans/city-ui-i01-20261010/independent-review-consumption.json",
+        "/home/aaron/.cache/dungeon-native-qa/city-plans/city-ui-i01-20261010/cleanup/review.json"
       ],
       "open": [
-        "Own cleanup P/I/R",
         "Hex runner hookup and actual mount with confirmed targets/guards",
         "Native same-Atlas route, Save/fresh process and physical usability"
       ],
@@ -4544,6 +4544,15 @@
         "existingTests": 551,
         "focusedDOMTests": 8,
         "cleanBuild": "PASS"
+      },
+      "cleanup": {
+        "result": "PASS",
+        "plan": "ROADMAP-CITIES-ATLAS-DETAIL-ENTRY-CLEANUP-PLAN.md",
+        "receipt": "/home/aaron/.cache/dungeon-native-qa/city-plans/city-ui-i01-20261010/cleanup/review.json",
+        "sha256": "0eeb1c65e757b8b149b6f452932d5cef4fa38aaf729b5a9d4b3581b97ced1de9",
+        "deletedFiles": 15,
+        "deletedBytes": 46469066,
+        "protectedFiles": 555
       }
     }
   },

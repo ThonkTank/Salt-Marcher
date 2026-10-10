@@ -17,3 +17,5 @@ Inventarhashes vor jedem Löschen prüfen, nur gelistete Dateien entfernen; dana
 Separater Reviewlauf: alle Schutzhashes, erhaltenes Dependency-Ziel, `.git`, tatsächliche Löschliste und fremde JSON-Spannen prüfen. Keine erneute Produkttestsuite für unveränderte Quellen. Danach qualifizierte Exact-SHA-Übergabe an Hex zur vorhandenen Hostmontage und Test-Runneranbindung.
 
 Umsetzung abgeschlossen: 15 inventarisierte Dateien (46.469.066 Bytes) entfernt, eigener Symlink entknüpft; Dependency-Ziel erhalten. Quellen und Auslieferungsdateien unverändert. Hashgebundener Beleg: `/home/aaron/.cache/dungeon-native-qa/city-plans/city-ui-i01-20261010/cleanup/implementation.json`.
+
+Separater Aufräumreview PASS: 555 Schutzhashes stimmen, genau 15 Dateien fehlen, Dependency-Ziel und `.git` erhalten; fremde JSON-Spannen entsprechen dem integrierten Hex-Upstream. Komponentenquellen unverändert zum unabhängigen Hex-R01. Beleg: `/home/aaron/.cache/dungeon-native-qa/city-plans/city-ui-i01-20261010/cleanup/review.json`. Hostmontage/Save/Reopen/physische Bedienung bleiben offen.
