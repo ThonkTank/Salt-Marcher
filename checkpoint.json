@@ -912,7 +912,7 @@
   "hexAtlasExecution": {
     "scope": "HEX-00 bis HEX-28 und sämtliche eingeordneten CITY-00 bis CITY-09 vollständig",
     "phase": "HEX-03",
-    "state": "targeted_noop_Save_repair_checks_pass_independent_review_native_pending",
+    "state": "native_location_Save_fresh_process_pass_existing_gate_qualification_pending",
     "plan": "ROADMAP-E2E01-SPATIAL-INTEGRATION-PLAN.md",
     "currentRun": {
       "id": "E2E-01-SPACE-I01b",
@@ -959,19 +959,21 @@
       "phaseApproval": false
     },
     "nextRun": {
-      "id": "E2E-01-SHARED-LOCATION-SAVE-N02-REVIEW",
-      "kind": "await_independent_exact_head_review",
+      "id": "E2E-01-SHARED-LOCATION-KEY-H02-GATE-HANDOFF",
+      "kind": "consume_existing_host_gate_qualification_then_own_cleanup",
       "owner": "Hex",
       "issue": 40,
       "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
+      "e2e01UserLine": 13,
       "sourcePlan": "ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md",
-      "focus": "Consume the actual independent Chronik R02 continuation on the published PR62 no-op repair head, not a new general review round. A concrete mandatory finding permits one separate targeted repair; no selfreview or unqualified selfintegration.",
-      "input": "checkpoint.hexAtlasExecution.latestSharedLocationKeyNoopRepair",
-      "requiredInput": "Independent exact-head R02 continuation and successful actual exact-SHA CI for PR62; then qualified integration/host source for the separate native rerun.",
+      "focus": "Consume qualification of this actual H02 source/build/fixture/native file and process receipt at the existing #40/E2E01 gate. Native user flow is observed; no repeat plan/codec/product review or new GUI without concrete finding. Own cleanup follows separately.",
+      "input": "checkpoint.hexAtlasExecution.latestSharedLocationKeyNativeH02",
+      "sourceCommit": "4515088772b759cda2e19d249367699c9868c72c",
+      "fixtureVersion": "e2e01-spatial-v2",
       "slotConfirmedForNextRun": false,
-      "slotRequiredAgain": true,
-      "after": "Separate newly coordinated actual Obsidian Save and fresh-process run on qualified source; no general new plan/review round.",
-      "limits": "No foreign package claim, new chat/subagent, selfintegration, Detail/CITY/E2E-02-04, user-vault installation or full gate closure."
+      "slotRequiredAgain": false,
+      "after": "Existing qualified gate handoff and separate own cleanup; Details only after this Location milestone is accepted. No CITY/E2E02-04 advance.",
+      "limits": "No new general review round, foreign package, selfintegration, physical/parity/large-world/user-vault installation/full-E2E claim. H01 remains immutable historical FAIL."
     },
     "review": {
       "run": "HEX-02-R02",
@@ -5421,7 +5423,7 @@
       "platformIssue": 11,
       "checkpointIsAuthoritative": true
     },
-    "updatedAt": "2026-10-10T19:44:38.305357+00:00",
+    "updatedAt": "2026-10-10T20:34:20.205Z",
     "consumerMatrix": {
       "id": "RUNTIME-MANIFEST-I02-CONSUMER-MATRIX-V1",
       "state": "frozen_complete_matrix_green_on_productive_Host_source",
@@ -6204,6 +6206,175 @@
         "type": true,
         "build": true
       }
+    },
+    "latestSharedLocationKeyR02": {
+      "id": "E2E-01-SHARED-LOCATION-SAVE-R02-CONSUMED",
+      "owner": "Hex",
+      "issue": 40,
+      "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
+      "e2e01UserLine": 13,
+      "sourcePlan": "ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md",
+      "state": "qualified_location_Save_source_native_probe_pending",
+      "candidate": "92ad4a06883fc48349598bb79d98e4e38035dbe2",
+      "qualifiedSharedSource": "4515088772b759cda2e19d249367699c9868c72c",
+      "candidateSharedTreeByteEqual": true,
+      "review": {
+        "reviewer": "Chronik, existing independent reviewer",
+        "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/62#pullrequestreview-5480666699",
+        "id": 5480666699,
+        "candidate": "92ad4a06883fc48349598bb79d98e4e38035dbe2",
+        "result": "PASS_consumer_contract_only",
+        "readDirectly": true,
+        "mandatoryFindings": 0,
+        "minorFindings": 0,
+        "reviewerReportedChecks": {
+          "focusedPassed": 8,
+          "tests": 818,
+          "passed": 817,
+          "failed": 0,
+          "skipped": 1,
+          "skip": "existing PDF environment skip",
+          "type": true,
+          "build": true,
+          "repo": true,
+          "diff": true,
+          "cleanWorktree": true
+        },
+        "HexTestReplay": false
+      },
+      "producerConsumption": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/62#issuecomment-6101743830",
+      "stewardIntegration": {
+        "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/62#issuecomment-6101774442",
+        "source": "4515088772b759cda2e19d249367699c9868c72c",
+        "parents": [
+          "9e3a6c1bbd6484a356c00c268083b147cd7cc6ae",
+          "92ad4a06883fc48349598bb79d98e4e38035dbe2"
+        ],
+        "HexSelfMerge": false
+      },
+      "candidateCI": {
+        "conclusion": "success",
+        "headSha": "92ad4a06883fc48349598bb79d98e4e38035dbe2",
+        "status": "completed",
+        "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/actions/runs/38082382444"
+      },
+      "sharedStructureCI": {
+        "conclusion": "success",
+        "headSha": "4515088772b759cda2e19d249367699c9868c72c",
+        "status": "completed",
+        "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/actions/runs/38083220356"
+      },
+      "fixtureVersion": "e2e01-spatial-v2",
+      "fixtureManifestSha256": "23735bb6c95107b7dec93ffa56ec66405a0f4fe0ec3822fc0476d90d2920188d",
+      "priorReceiptHashes": {
+        "docs/reference/atlas-shared-location-h01/receipt.json": "e628cacae0c0c9bf2c646dc3ec345ee743181133685962efe3cd458002bcf144",
+        "docs/reference/atlas-shared-location-d01/receipt.json": "7bde44397cd9e3b3a586a5e8fdf88d6c757145fb9cc0e0afdcfe357af27b4e01",
+        "docs/reference/atlas-shared-location-r01/receipt.json": "a2a0545702efc7f69eaa65c8964b9a9bf49bd82914d6765682b41e6d76ef3160",
+        "docs/reference/atlas-shared-location-r01/noop-repair.json": "ca29a6cb1da09bd7aa92e47dde3b227e1eac80aa65bfa933426a08e932bbf221"
+      },
+      "qaRoot": "/home/aaron/.cache/dungeon-native-qa/hex-03/shared-location-r02-consume-20261010-2019",
+      "productEdited": false,
+      "nativeRepeated": false,
+      "freshProcessStarted": false,
+      "guiSlotUsed": false,
+      "fullE2E": false,
+      "next": "Newly coordinate the sole local GUI slot before the separate real Obsidian marker/Key/move/UndoRedo/Save/fresh-process probe on the qualified Shared source.",
+      "limits": "Review and integration establish only qualified source. H01 remains historical native FAIL. No native/physical/parity/large-map/installation/CITY/P02/P04/E2E02-04/full-gate PASS."
+    },
+    "latestSharedLocationKeyNativeH02": {
+      "id": "E2E-01-SHARED-LOCATION-KEY-H02",
+      "state": "PASS_native_location_Key_Move_UndoRedo_Save_fresh_process_scoped",
+      "issue": 40,
+      "owner": "Hex",
+      "e2e01UserLine": 13,
+      "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
+      "sourcePlan": "ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md",
+      "evidence": "docs/reference/atlas-shared-location-h02/receipt.json",
+      "sha256": "12856a4f351af562952cd50ce8616dae734f14b91fc8abbaabed6eab17ab94bf",
+      "sourceCommit": "4515088772b759cda2e19d249367699c9868c72c",
+      "buildSha256": "76bb453acca65f260e2276a385da66c5039a643fa10681b9b7a20fc5209c1322",
+      "fixtureVersion": "e2e01-spatial-v2",
+      "fixtureManifestSha256": "23735bb6c95107b7dec93ffa56ec66405a0f4fe0ec3822fc0476d90d2920188d",
+      "nativeRuns": [
+        "1791664420877-atlas-spatial-edit",
+        "1791664455627-atlas-spatial-reopen"
+      ],
+      "actualNativeProcesses": 2,
+      "nativeRepeated": true,
+      "freshProcessStarted": true,
+      "syntheticInput": true,
+      "physicalInput": false,
+      "newLocationId": "0cd27335-111d-45cc-9792-7fef17ee2bfa",
+      "sectionIds": [
+        "1ed509d6-bd14-439e-8f0e-abe5dbdd4a8a",
+        "812e6e67-b179-4bb2-8a3c-bb9672e848b7"
+      ],
+      "markerId": "fe5a8db6-0db5-4683-9d49-f91da7d78073",
+      "noOpUndoSaveRedo": true,
+      "oneCanvasCameraHistory": true,
+      "allNineFreshFilesByteEqualSaved": true,
+      "guiSlotReturned": true,
+      "guiSlotReturn": 6101912782,
+      "normalProcessEnds": true,
+      "forcedTermination": false,
+      "productEdited": false,
+      "historicalEvidencePreserved": true,
+      "independentNativeAcceptance": "pending existing gate owner; no self-ratification",
+      "fullE2E": false,
+      "limits": "Two native processes only; no new Copy/Discard/Recovery fault matrix, physical/original/large-world/user-vault installation/Details/CITY/P02/P04/E2E02-04/full-gate claim."
+    },
+    "latestSharedLocationKeyNativeH02MetadataN01": {
+      "id": "E2E-01-SHARED-LOCATION-KEY-H02-N01",
+      "owner": "Hex",
+      "issue": 40,
+      "e2e01UserLine": 13,
+      "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
+      "state": "targeted_metadata_fix_published_pending_existing_Chronik_R02_confirmation",
+      "actualNativeSource": "4515088772b759cda2e19d249367699c9868c72c",
+      "buildSha256": "76bb453acca65f260e2276a385da66c5039a643fa10681b9b7a20fc5209c1322",
+      "fixtureVersion": "e2e01-spatial-v2",
+      "existingIndependentReviews": {
+        "Stadt": {
+          "id": 6101960077,
+          "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/40#issuecomment-6101960077",
+          "result": "PASS_original_H02_native_evidence_only",
+          "findings": 0,
+          "readDirectly": true,
+          "commentBodySha256": "bf990c4f375162ec0e85e8f47c03ed23f507acca11fff60a4ff358f7b6f2ca54"
+        },
+        "CampaignData": {
+          "id": 6101957277,
+          "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/40#issuecomment-6101957277",
+          "result": "PASS_file_and_owner_closure_oracle_only",
+          "findings": 0,
+          "readDirectly": true,
+          "commentBodySha256": "b64b596181634658f85429f1b6d1e84cb3337123f5fe0803fd9caac4e42b3b3b"
+        },
+        "Chronik": {
+          "id": 6101982101,
+          "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/40#issuecomment-6101982101",
+          "result": "CHANGES_REQUIRED_authoritative_nextRun_slot_flag_only",
+          "nativeEvidenceFindings": 0,
+          "readDirectly": true,
+          "commentBodySha256": "1aa1564b08a2b731b4fe8d0dbe3f982a7a75d0986c449af1fd75f9fb87f7d882"
+        }
+      },
+      "correction": {
+        "path": "checkpoint.hexAtlasExecution.nextRun.slotRequiredAgain",
+        "before": true,
+        "after": false,
+        "reason": "Next run consumes existing gate qualification without GUI; require a fresh slot only for a separately justified actual future GUI run.",
+        "repeatedGUI": false
+      },
+      "next": "Existing Chronik R02 reads only the new metadata head for the one reported slot flag. No new general review/plan round. #40 remains open until that result is consumed; separate own cleanup follows. Details/CITY/E2E02-04 are not started here.",
+      "limits": "Historical native source4515088 and H02 build remain exact. Incoming Sharedb02925c is not a new native run. No physical GM/Copy-Discard-Recovery fault matrix/original parity/large-world/installation/P02/P04/full-E2E acceptance.",
+      "fullE2E": false,
+      "issue40Closed": false,
+      "evidence": "docs/reference/atlas-shared-location-h02/metadata-repair.json",
+      "sha256": "4776407068ec6654a7ff143874bc62ef6af97577c6c83fb65b6da809efb3fb32",
+      "originalReceiptSha256": "12856a4f351af562952cd50ce8616dae734f14b91fc8abbaabed6eab17ab94bf",
+      "nativeRepeated": false,
+      "guiSlotUsed": false
     }
   },
   "phase": "Phase 6: zweiter Nachbesserungslauf teilweise umgesetzt; fünf Restpositionen und unabhängiger Review offen",
