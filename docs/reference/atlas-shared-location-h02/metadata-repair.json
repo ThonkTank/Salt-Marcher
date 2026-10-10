@@ -1,0 +1,70 @@
+{
+  "id": "E2E-01-SHARED-LOCATION-KEY-H02-N01",
+  "owner": "Hex",
+  "issue": 40,
+  "e2e01UserLine": 13,
+  "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
+  "state": "targeted_metadata_fix_published_pending_existing_Chronik_R02_confirmation",
+  "recordedAt": "2026-10-10T20:46:42Z",
+  "evidenceHead": "2ff0c698d0eb6bd2ffac7a428de0fece7a8be537",
+  "actualNativeSource": "4515088772b759cda2e19d249367699c9868c72c",
+  "buildSha256": "76bb453acca65f260e2276a385da66c5039a643fa10681b9b7a20fc5209c1322",
+  "fixtureVersion": "e2e01-spatial-v2",
+  "fixtureManifestSha256": "23735bb6c95107b7dec93ffa56ec66405a0f4fe0ec3822fc0476d90d2920188d",
+  "consumptionBase": "70138104a1a5ec5044bf9510e1e36ad716f323d3",
+  "incomingShared": "b02925c87f07e882919348521d380f54a8b4f6b4",
+  "originalReceipt": {
+    "path": "docs/reference/atlas-shared-location-h02/receipt.json",
+    "sha256": "12856a4f351af562952cd50ce8616dae734f14b91fc8abbaabed6eab17ab94bf",
+    "artifactsVerified": 40,
+    "unchanged": true
+  },
+  "existingIndependentReviews": {
+    "Stadt": {
+      "id": 6101960077,
+      "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/40#issuecomment-6101960077",
+      "result": "PASS_original_H02_native_evidence_only",
+      "findings": 0,
+      "readDirectly": true,
+      "commentBodySha256": "bf990c4f375162ec0e85e8f47c03ed23f507acca11fff60a4ff358f7b6f2ca54"
+    },
+    "CampaignData": {
+      "id": 6101957277,
+      "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/40#issuecomment-6101957277",
+      "result": "PASS_file_and_owner_closure_oracle_only",
+      "findings": 0,
+      "readDirectly": true,
+      "commentBodySha256": "b64b596181634658f85429f1b6d1e84cb3337123f5fe0803fd9caac4e42b3b3b"
+    },
+    "Chronik": {
+      "id": 6101982101,
+      "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/40#issuecomment-6101982101",
+      "result": "CHANGES_REQUIRED_authoritative_nextRun_slot_flag_only",
+      "nativeEvidenceFindings": 0,
+      "readDirectly": true,
+      "commentBodySha256": "1aa1564b08a2b731b4fe8d0dbe3f982a7a75d0986c449af1fd75f9fb87f7d882"
+    }
+  },
+  "correction": {
+    "path": "checkpoint.hexAtlasExecution.nextRun.slotRequiredAgain",
+    "before": true,
+    "after": false,
+    "reason": "Next run consumes existing gate qualification without GUI; require a fresh slot only for a separately justified actual future GUI run.",
+    "repeatedGUI": false
+  },
+  "checks": {
+    "original40ArtifactsAndReceiptExact": true,
+    "historicalReceiptsExact": true,
+    "productEdited": false,
+    "testsEdited": false,
+    "modelTestsRepeated": false,
+    "nativeRepeated": false,
+    "freshProcessStarted": false,
+    "guiSlotUsed": false
+  },
+  "next": "Existing Chronik R02 reads only the new metadata head for the one reported slot flag. No new general review/plan round. #40 remains open until that result is consumed; separate own cleanup follows. Details/CITY/E2E02-04 are not started here.",
+  "limits": "Historical native source4515088 and H02 build remain exact. Incoming Sharedb02925c is not a new native run. No physical GM/Copy-Discard-Recovery fault matrix/original parity/large-world/installation/P02/P04/full-E2E acceptance.",
+  "fullE2E": false,
+  "issue40Closed": false,
+  "selfIntegration": false
+}
