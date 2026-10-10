@@ -1,0 +1,82 @@
+{
+  "format": "dungeon-map",
+  "version": 4,
+  "id": "00000000-0000-4000-8000-000000000030",
+  "settings": {
+    "name": "E2E-01 Testdungeon",
+    "width": 32,
+    "height": 24,
+    "feetPerField": 5,
+    "wallShadows": true,
+    "objectShadows": true,
+    "buildingWear": 0,
+    "nativeBuildingWear": true,
+    "buildingWearMode": "grime"
+  },
+  "floors": [
+    {
+      "id": "00000000-0000-4000-8000-000000000032",
+      "name": "Erdgeschoss",
+      "elevation": 0
+    }
+  ],
+  "entities": [
+    {
+      "id": "00000000-0000-4000-8000-000000000031",
+      "floorId": "00000000-0000-4000-8000-000000000032",
+      "kind": "building",
+      "polygons": [
+        {
+          "outer": [
+            {
+              "x": 4,
+              "y": 4
+            },
+            {
+              "x": 14,
+              "y": 4
+            },
+            {
+              "x": 14,
+              "y": 12
+            },
+            {
+              "x": 4,
+              "y": 12
+            }
+          ],
+          "holes": []
+        }
+      ],
+      "layer": 0,
+      "fill": 4210752,
+      "wall": 9474192,
+      "wallWidth": 0.2,
+      "name": "Torraum",
+      "number": "1",
+      "key": {
+        "sections": [
+          {
+            "id": "00000000-0000-4000-8000-000000000034",
+            "kind": "markdown",
+            "markdown": "## Eingang\r\nDie Basalttür ist geschlossen.  \r\n"
+          }
+        ]
+      }
+    }
+  ],
+  "content": {
+    "definitions": [],
+    "occurrences": [],
+    "routes": [
+      {
+        "id": "00000000-0000-4000-8000-000000000033",
+        "name": "Haupteingang",
+        "entrance": true,
+        "toRoomId": "00000000-0000-4000-8000-000000000031",
+        "prerequisites": []
+      }
+    ],
+    "archive": []
+  }
+}

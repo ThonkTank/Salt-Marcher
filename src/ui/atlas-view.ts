@@ -17,6 +17,10 @@ import {
 import { VaultStore } from "../vault-stores";
 import { FileConflict } from "../persistence";
 import { AtlasRepository } from "../features/atlas/atlas-repository";
+import { parseCityDocument } from "../features/city/codec";
+import { parseDocument } from "../model";
+import { CitySource } from "../features/city/commands";
+import { DungeonAtlasSource } from "../features/dungeon/atlas-source";
 import { CopyAtlasModal } from "./atlas-copy-modal";
 
 export const ATLAS_VIEW = "dungeon-native-atlas";
@@ -65,6 +69,35 @@ export class AtlasView extends FileView {
     this.editor = undefined;
     this.repository = undefined;
   }
+  private spatialOptions() {
+    return {
+      locations: true as const,
+      details: true as const,
+      resolveDetail: async (
+        _worldId: string,
+        kind: "city" | "dungeon",
+        id: string,
+      ) => {
+        const matches: string[] = [];
+        // Native ID lookup over the actual vault; every match is returned, so duplicates fail closed.
+        for (const file of this.app.vault
+          .getFiles()
+          .filter((file) => file.extension === kind)) {
+          let nativeId: string;
+          try {
+            const bytes = await this.app.vault.read(file);
+            nativeId = (
+              kind === "city" ? parseCityDocument(bytes) : parseDocument(bytes)
+            ).id;
+          } catch {
+            continue;
+          }
+          if (nativeId === id) matches.push(file.path);
+        }
+        return matches;
+      },
+    };
+  }
   private async loadFileContent(
     file: TFile,
     generation: number,
@@ -76,7 +109,7 @@ export class AtlasView extends FileView {
         new VaultStore(this.app),
         file.path,
         this.app.vault,
-        { locations: true },
+        this.spatialOptions(),
       );
       const source = await repository.open();
       if (generation !== this.generation) return;
@@ -90,6 +123,21 @@ export class AtlasView extends FileView {
         }),
         menu: (event) => this.showMenu(event, generation),
         discard: () => repository.discard(),
+        spatial: {
+          graph: () => repository.spatialGraph,
+          city: (id) => {
+            const value = repository.detail("city", id);
+            if (!(value instanceof CitySource))
+              throw new Error("Stadtowner fehlt.");
+            return value;
+          },
+          dungeon: (id) => {
+            const value = repository.detail("dungeon", id);
+            if (!(value instanceof DungeonAtlasSource))
+              throw new Error("Dungeonowner fehlt.");
+            return value;
+          },
+        },
         locations: {
           read: (id) => repository.location(id).read(),
           ensure: async (id) => (await repository.ensureLocation(id)).read(),
@@ -144,7 +192,7 @@ export class AtlasView extends FileView {
                 new VaultStore(this.app),
                 path,
                 this.app.vault,
-                { locations: true },
+                this.spatialOptions(),
               );
               const state = await target.recoverCopy();
               return { state, open: this.openCopy(path, generation, editor) };

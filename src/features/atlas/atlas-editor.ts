@@ -1,3 +1,12 @@
+import { SpatialCanvas, type SpatialCanvasAccess } from "./spatial-canvas";
+import { CityGesture } from "../city/gestures";
+import { cityDocumentChange } from "../city/commands";
+import {
+  unprojectLocal,
+  type RigidFrame,
+  type RelativeAtlasCamera,
+} from "./relative-frame";
+import { AtlasRoomKeyPanel } from "../../ui/atlas-room-key-panel";
 import { AtlasRenderer } from "./atlas-renderer";
 import { hexAddressKey, hexAt } from "./hex";
 import type { OverworldDocument, WorldPoint } from "./overworld";
@@ -16,13 +25,14 @@ import {
 } from "./terrain-source";
 
 type Tool = "select" | "hand" | TerrainTool;
-type PointerAction = "pan" | "select" | "paint" | "location";
+type PointerAction = "pan" | "select" | "paint" | "location" | "city" | "room";
 export interface AtlasEditorStorage {
   save(): Promise<void>;
   changed(): Promise<void>;
   status(): { dirty: boolean; hasDraft: boolean };
   menu?(event: MouseEvent): void;
   discard?(): Promise<TerrainSource>;
+  spatial?: Omit<SpatialCanvasAccess, "source">;
   locations?: {
     read(id: string): LocationDocument | null;
     ensure(id: string): Promise<LocationDocument | null>;
@@ -47,6 +57,7 @@ export class AtlasEditor {
   private space = false;
   private tool: Tool = "select";
   private stroke?: TerrainStroke;
+  private cancelledStrokes = new WeakSet<TerrainStroke>();
   private work: Promise<void> = Promise.resolve();
   private persistence: Promise<void> = Promise.resolve();
   private persistenceVersion = 0;
@@ -55,6 +66,16 @@ export class AtlasEditor {
   private loadingVisible = false;
   private visibleLoadFailed = false;
   private key?: LocationKeyPanel;
+  private roomKey?: AtlasRoomKeyPanel;
+  private spatial?: SpatialCanvas;
+  private cityDrag?: {
+    gesture: CityGesture;
+    frame: RigidFrame;
+    camera: RelativeAtlasCamera;
+    valid: boolean;
+    error?: unknown;
+  };
+  private selectedRoom?: { ownerId: string; roomId: string };
   private selectedLocation?: string;
   private selectionVersion = 0;
   private loadedLocations = new Set<string>();
@@ -109,7 +130,8 @@ export class AtlasEditor {
     const toolButtons = new Map<Tool, HTMLButtonElement>();
     const choose = (tool: Tool) => {
       try {
-        this.key?.apply();
+        this.finishCity();
+        this.applyKeys();
       } catch (error) {
         this.status.textContent = String(error);
         return;
@@ -175,7 +197,7 @@ export class AtlasEditor {
     button("Einpassen", "Atlasinhalt einpassen", () => {
       this.finishStroke();
       this.enqueue(() => {
-        this.key?.apply();
+        this.applyKeys();
         this.renderer.fit();
       });
     });
@@ -238,6 +260,20 @@ export class AtlasEditor {
         markdown: storage.locations.markdown,
       });
     }
+    if (storage.spatial) {
+      this.spatial = new SpatialCanvas(this.renderer, {
+        ...storage.spatial,
+        source: () => this.terrain,
+      });
+      this.renderer.beforeRender = () => this.spatial!.draw();
+      const host = doc.createElement("aside");
+      body.append(host);
+      this.roomKey = new AtlasRoomKeyPanel(host, {
+        read: (id) => storage.spatial!.dungeon(id),
+        changed: () => this.refreshHistory(),
+        save: () => this.save(),
+      });
+    }
     this.subscribeTerrain();
     choose("select");
     this.refreshHistory();
@@ -247,7 +283,48 @@ export class AtlasEditor {
     return this.currentTerrain;
   }
   get pendingKey(): boolean {
-    return this.key?.dirty ?? false;
+    return !!(this.key?.dirty || this.roomKey?.dirty);
+  }
+  private applyKeys(): void {
+    this.key?.apply();
+    this.roomKey?.apply();
+  }
+  private cancelCity(): void {
+    this.cityDrag?.gesture.cancel();
+    this.cityDrag = undefined;
+    if (this.spatial) this.spatial.preview = undefined;
+    this.renderer?.schedule();
+  }
+  private finishCity(): void {
+    const drag = this.cityDrag;
+    if (!drag) return;
+    if (!this.pointer?.moved) {
+      this.cancelCity();
+      return;
+    }
+    if (!drag.valid || !drag.gesture.preview)
+      throw new Error(
+        "Stadtvorschau ist ungültig. Eingabe bleibt erhalten; Escape verwirft sie.",
+      );
+    // Preflight before completing the native draft keeps stale/invalid input available for explicit cancellation.
+    this.terrain.history.check({
+      label: "Stadt verschieben",
+      changes: [
+        cityDocumentChange(drag.gesture.before, drag.gesture.preview.document),
+      ],
+    });
+    drag.gesture.apply("Stadt verschieben");
+    this.cityDrag = undefined;
+    if (this.spatial) this.spatial.preview = undefined;
+    this.renderer.schedule();
+  }
+  private cancelStroke(): void {
+    if (this.stroke) this.cancelledStrokes.add(this.stroke);
+    this.stroke = undefined;
+    this.enqueue(() => {
+      this.renderer.preview = [];
+      this.renderer.schedule();
+    });
   }
   private subscribeTerrain(): void {
     this.unsubscribe = this.terrain.history.subscribe(() => {
@@ -305,10 +382,16 @@ export class AtlasEditor {
       });
   }
   private save(): void {
+    try {
+      this.finishCity();
+    } catch (error) {
+      this.status.textContent = String(error);
+      return;
+    }
     this.finishStroke();
     this.finishDrag();
     this.enqueue(async () => {
-      this.key?.apply();
+      this.applyKeys();
       const version = this.persistenceVersion;
       this.status.textContent = "Atlas wird gespeichert …";
       await this.storage.save();
@@ -319,7 +402,14 @@ export class AtlasEditor {
   }
   discard(): void {
     if (!this.storage.discard) return;
-    this.finishStroke();
+    try {
+      this.applyKeys();
+      this.finishCity();
+    } catch (error) {
+      this.status.textContent = String(error);
+      return;
+    }
+    this.cancelStroke();
     this.cancelDrag();
     this.releasePointer();
     this.enqueue(async () => {
@@ -332,6 +422,12 @@ export class AtlasEditor {
         this.loadedLocations.clear();
         this.failedLocations.clear();
         this.key?.clear();
+        this.roomKey?.clear();
+        this.selectedRoom = undefined;
+        if (this.spatial) {
+          this.spatial.selection = undefined;
+          this.spatial.selectedRoom = undefined;
+        }
         this.renderer.useTerrain(source);
         this.subscribeTerrain();
         this.persistence = Promise.resolve();
@@ -346,13 +442,14 @@ export class AtlasEditor {
   }
   /** Finish queued pointer work and retain its draft before a view is destroyed. */
   async flush(): Promise<void> {
+    this.finishCity();
     this.finishStroke();
     this.finishDrag();
     this.releasePointer();
     this.flushing = true;
     try {
       await this.work;
-      this.key?.apply();
+      this.applyKeys();
       await this.persistence;
     } finally {
       this.flushing = false;
@@ -385,6 +482,11 @@ export class AtlasEditor {
     }
   }
   private syncLocations(): void {
+    if (this.selectedRoom && this.roomKey) {
+      this.roomKey.show(this.selectedRoom.ownerId, this.selectedRoom.roomId);
+      this.selection.textContent = "Raum-Key";
+      return;
+    }
     const port = this.storage.locations;
     if (!port) return;
     for (const id of this.loadedLocations)
@@ -444,7 +546,7 @@ export class AtlasEditor {
     this.finishStroke();
     this.cancelDrag();
     this.enqueue(() => {
-      this.key?.apply();
+      this.applyKeys();
       const id = crypto.randomUUID(),
         document = newLocation(
           id,
@@ -473,7 +575,7 @@ export class AtlasEditor {
     const source = this.terrain,
       version = ++this.selectionVersion;
     this.enqueue(async () => {
-      this.key?.apply();
+      this.applyKeys();
       await this.storage.locations!.ensure(id);
       if (
         this.closed ||
@@ -483,7 +585,10 @@ export class AtlasEditor {
       )
         return;
       this.loadedLocations.add(id);
-      this.key?.apply();
+      this.applyKeys();
+      this.roomKey?.clear();
+      this.selectedRoom = undefined;
+      if (this.spatial) this.spatial.selectedRoom = undefined;
       this.selectedLocation = id;
       this.renderer.selected = undefined;
       this.syncLocations();
@@ -503,7 +608,7 @@ export class AtlasEditor {
     this.cancelDrag();
     if (!drag || !moved) return;
     this.enqueue(() => {
-      this.key?.apply();
+      this.applyKeys();
       if (
         !this.loadedLocations.has(drag.id) ||
         !this.storage.locations!.read(drag.id)
@@ -539,13 +644,13 @@ export class AtlasEditor {
     const address = this.address(event);
     this.enqueue(async () => {
       await this.terrain.ensure(stroke.next(address));
-      if (this.closed) return;
+      if (this.closed || this.cancelledStrokes.has(stroke)) return;
       stroke.add(address);
       this.renderer.preview = stroke.preview();
       this.renderer.schedule();
     });
   }
-  /** Escape retains the painted land gesture as one undoable command, as in the original. */
+  /** Pointer-up/Save commits; Escape, blur and pointer cancellation discard the unfinished preview. */
   private finishStroke(): void {
     const stroke = this.stroke;
     if (!stroke) return;
@@ -557,15 +662,21 @@ export class AtlasEditor {
     });
   }
   private historyAction(action: "undo" | "redo"): void {
+    try {
+      this.finishCity();
+    } catch (error) {
+      this.status.textContent = String(error);
+      return;
+    }
     this.finishStroke();
     this.cancelDrag();
     this.enqueue(() => {
-      this.key?.apply();
+      this.applyKeys();
       this.terrain.history[action]();
     });
   }
   private zoom(factor: number): void {
-    if (this.stroke || this.drag) return;
+    if (this.stroke || this.drag || this.cityDrag) return;
     this.renderer.zoom(
       { x: this.viewport.clientWidth / 2, y: this.viewport.clientHeight / 2 },
       factor,
@@ -585,7 +696,7 @@ export class AtlasEditor {
         if ((e.button !== 0 && e.button !== 1) || this.pointer || this.flushing)
           return;
         try {
-          this.key?.apply();
+          this.applyKeys();
         } catch (error) {
           this.status.textContent = String(error);
           return;
@@ -617,6 +728,59 @@ export class AtlasEditor {
             position: placement.position,
           };
           this.selectLocation(locationId);
+        }
+        if (action === "select" && this.spatial) {
+          const hit = this.spatial.hit(this.local(e));
+          if (hit?.kind === "room") {
+            this.key?.clear();
+            this.selectedLocation = undefined;
+            this.selectedRoom = { ownerId: hit.ownerId, roomId: hit.roomId };
+            this.spatial.selectedRoom = this.selectedRoom;
+            this.spatial.selection = undefined;
+            this.renderer.selected = undefined;
+            this.renderer.selectedLocation = undefined;
+            this.syncLocations();
+            action = "room";
+          } else if (hit?.kind === "city") {
+            this.roomKey?.clear();
+            this.selectedRoom = undefined;
+            this.spatial.selectedRoom = undefined;
+            this.spatial.selection = hit.hit;
+            this.renderer.selected = undefined;
+            action = "city";
+            if (hit.hit.kind === "building" || hit.hit.kind === "node") {
+              const target =
+                hit.hit.kind === "building"
+                  ? {
+                      kind: "move-building" as const,
+                      ownerId: hit.hit.ownerId,
+                      buildingId: hit.hit.elementId,
+                    }
+                  : {
+                      kind: "move-node" as const,
+                      ownerId: hit.hit.ownerId,
+                      nodeId: hit.hit.elementId,
+                    };
+              this.cityDrag = {
+                gesture: new CityGesture(
+                  this.storage.spatial!.city(hit.hit.ownerId),
+                  target,
+                  unprojectLocal(
+                    hit.frame,
+                    this.renderer.relativeCamera,
+                    this.renderer.viewport,
+                    this.local(e),
+                  ),
+                ),
+                frame: hit.frame,
+                camera: this.renderer.relativeCamera,
+                valid: true,
+              };
+            }
+            this.selection.textContent =
+              hit.hit.kind === "building" ? "Haus verschieben" : "Stadtelement";
+          }
+          this.renderer.schedule();
         }
         this.pointer = {
           id: e.pointerId,
@@ -681,6 +845,34 @@ export class AtlasEditor {
           };
           this.renderer.schedule();
         }
+        if (p.action === "city" && this.cityDrag && p.moved) {
+          const drag = this.cityDrag;
+          try {
+            const preview = drag.gesture.update(
+              unprojectLocal(
+                drag.frame,
+                drag.camera,
+                this.renderer.viewport,
+                this.local(e),
+              ),
+            );
+            this.terrain.history.check({
+              label: "Stadt verschieben",
+              changes: [
+                cityDocumentChange(drag.gesture.before, preview.document),
+              ],
+            });
+            drag.valid = true;
+            drag.error = undefined;
+            this.spatial!.preview = preview.document;
+          } catch (error) {
+            drag.valid = false;
+            drag.error = error;
+            this.spatial!.preview = undefined;
+            this.status.textContent = String(error);
+          }
+          this.renderer.schedule();
+        }
         p.x = e.clientX;
         p.y = e.clientY;
       },
@@ -696,10 +888,24 @@ export class AtlasEditor {
           this.finishStroke();
         }
         if (p.action === "location") this.finishDrag();
+        if (p.action === "city") {
+          try {
+            this.finishCity();
+          } catch (error) {
+            this.status.textContent = String(error);
+            return;
+          }
+        }
         if (!p.moved && p.action === "select") {
           ++this.selectionVersion;
           this.selectedLocation = undefined;
           this.key?.clear();
+          this.roomKey?.clear();
+          this.selectedRoom = undefined;
+          if (this.spatial) {
+            this.spatial.selection = undefined;
+            this.spatial.selectedRoom = undefined;
+          }
           this.renderer.selectedLocation = undefined;
           const a = this.address(e, this.renderer.level);
           this.renderer.selected = a;
@@ -714,7 +920,8 @@ export class AtlasEditor {
       opts,
     );
     const cancel = () => {
-      this.finishStroke();
+      this.cancelCity();
+      this.cancelStroke();
       this.cancelDrag();
       this.releasePointer();
       this.space = false;
@@ -751,7 +958,8 @@ export class AtlasEditor {
           e.preventDefault();
         }
         if (e.key === "Escape") {
-          this.finishStroke();
+          this.cancelCity();
+          this.cancelStroke();
           this.cancelDrag();
           this.releasePointer();
           e.preventDefault();
@@ -785,7 +993,7 @@ export class AtlasEditor {
     this.viewport.addEventListener(
       "wheel",
       (e) => {
-        if (!e.ctrlKey || this.stroke || this.drag) return;
+        if (!e.ctrlKey || this.stroke || this.drag || this.cityDrag) return;
         e.preventDefault();
         this.renderer.zoom(
           this.local(e),
@@ -805,6 +1013,8 @@ export class AtlasEditor {
     this.abort.abort();
     this.unsubscribe();
     this.key?.destroy();
+    this.roomKey?.destroy();
+    this.spatial?.destroy();
     this.renderer.destroy();
     this.root.classList.remove("dn-atlas");
     delete this.root.dataset.worldId;
