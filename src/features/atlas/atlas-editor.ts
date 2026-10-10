@@ -363,6 +363,7 @@ export class AtlasEditor {
     ++this.selectionVersion;
     if (target.key?.kind === "location") {
       this.roomKey?.clear(); this.selectedRoom = undefined;
+      if (this.spatial) this.spatial.selectedRoom = undefined;
       this.selectedLocation = target.key.documentId;
       this.loadedLocations.add(target.key.documentId);
     } else if (target.key?.kind === "room") {

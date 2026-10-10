@@ -290,6 +290,7 @@ test("visible Dungeon-at-Location action, Room Key, back, Undo/Redo and Save sha
     .find((button) => button.textContent === 'Orts-Key')!;
   f.click(back);
   await settled(() => (editor as any).selectedRoom === undefined && !f.content.querySelector<HTMLElement>('.dn-location-key-panel')?.hidden);
+  assert.equal((editor as any).spatial.selectedRoom, undefined);
   assert.equal(active(f).repository, before.repository); assert.equal(active(f).history, before.history);
   assert.equal(active(f).renderer, before.renderer); assert.equal(active(f).context.contextToken, before.context.contextToken);
   const undo = f.content.querySelector<HTMLButtonElement>('[aria-label="Atlasänderung rückgängig"]')!,
