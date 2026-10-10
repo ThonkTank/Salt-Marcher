@@ -803,7 +803,7 @@
   "hexAtlasExecution": {
     "scope": "HEX-00 bis HEX-28 und sämtliche eingeordneten CITY-00 bis CITY-09 vollständig",
     "phase": "HEX-03",
-    "state": "e2e01_campaign_manifest_core_save_checked_visible_host_I02_next",
+    "state": "e2e01_host_I02_specific_Campaign_owned_save_lifetime_seam_missing",
     "plan": "ROADMAP-E2E01-SPATIAL-INTEGRATION-PLAN.md",
     "currentRun": {
       "id": "E2E-01-SPACE-I01b",
@@ -851,13 +851,16 @@
     },
     "nextRun": {
       "id": "E2E-01-SPACE-I01c-RUNTIME-MANIFEST-I02",
-      "kind": "bounded_visible_host_manifest_save_integration",
-      "focus": "Wire the actual checked Repository Campaign participant in existing AtlasView, then exact won-manifest acknowledgment through existing runtime/lifecycle lease; keep one camera and History. Actual host Save/Fresh/A-B-A tests, then newly coordinated Obsidian probe/fresh process. No new component/owner/plan round.",
+      "kind": "bounded_host_save_integration_resume_after_specific_owner_seam",
+      "focus": "Consume concrete Campaign/Data owned-save lifetime acknowledgment for HEX-MANIFEST-I02-01, wire checked Participant in existing AtlasView and rebind same Navigator to confirmed updated Registry/Inventory; preserve Context, camera and History.",
       "sourcePlan": "ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md",
       "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
-      "dependency": "Qualified PR32/0a62015c consumed; core data save/recovery passed on39d48e6. Visible host/lifetime acknowledgment is now the concrete own implementation step, not a missing owner delivery.",
-      "after": "Separate independent integrated peer review, targeted repair if needed, own separate cleanup P/I/R.",
-      "limits": "Explicit confirmed native-atlas/city/dungeon PR32 fixed closure only; creation/retirement/record inventory changes remain unavailable. Core provider/repository rebuild proves data/navigation, not Obsidian/process/UI. Copy/P02/P04/CompleteImport/media/multiowner publisher remain separate gates. No installed-vault,physical,large-map or Wonderdraft parity approval."
+      "dependency": "Actual Source/Provider contract lacks exact owned-save acknowledgment. Await concrete qualified owner delivery in #12/6096668419, not another general plan/owner/review round. PR32 data Participant and the checked seven-file core remain consumed; do not repeat them.",
+      "finding": "HEX-MANIFEST-I02-01",
+      "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/campaign-manifest-host-i02-20261010/finding.json",
+      "evidenceSha256": "a36e567b48d4203d4ced44b09914885d1221b4c5b9885186e35ebaf02bad6772",
+      "after": "Actual host Save/Fresh/A-B-A; fresh explicit GUI-slot coordination and real Obsidian/fresh process; separate independent integrated review and own cleanup P/I/R.",
+      "limits": "No source event suppression, private sourceCurrent mutation, second publish,automatic reactivation/new History or product/native/E2E claim. Existing scoped producer/Host reviews remain valid; this is the new concrete integration precondition."
     },
     "review": {
       "run": "HEX-02-R02",
@@ -888,7 +891,8 @@
       "Cloud fresh Electron process remains unverified; empty-grid reload passed with correct plugin triplet. No product layout fix needed.",
       "HEX02 scoped early island/review/CLEAN complete; HEX03..05 Location/City/Dungeon common Atlas remains open.",
       "HEX06..28/CITY product phases and 79 later Wonderdraft obligations remain.",
-      "Full parity, physical input, large-map and installed-vault acceptance remain open."
+      "Full parity, physical input, large-map and installed-vault acceptance remain open.",
+      "HEX-MANIFEST-I02-01: successful same-journal native/manifest write synchronously revokes current visible Atlas via Campaign notifications. Concrete Campaign/Data owned-save lifetime acknowledgment required; reproduced in actual Host DOM on qualified PR32 fixture, no product activation."
     ],
     "coordination": {
       "issue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1",
@@ -3179,6 +3183,56 @@
         "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/campaign-manifest-save-i01-20261010/implementation.json",
         "sha256": "891ba0c17a6a47f65c13eb8e0df54c7d65e42d2b928b0d841057c575b4ff8909",
         "independentIntegrationReview": "Pending after next bounded visible Host-I02 completion; no new general owner/plan round"
+      },
+      "campaignManifestHostPrecondition": {
+        "id": "E2E-01-SPACE-I01c-RUNTIME-MANIFEST-I02-S01",
+        "state": "specific_Campaign_owned_save_lifetime_seam_missing_reproduced",
+        "sourceCommit": "a2bc971144fb75314305deff8225b603f9b57439",
+        "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
+        "finding": {
+          "id": "HEX-MANIFEST-I02-01",
+          "ownerDependency": "Campaign/Data: explicit owned canonical-save lifetime acknowledgment; Hex: consume qualified seam and rebind same Navigator mount to confirmed new projection/inventory",
+          "trigger": "One actual existing FileTransaction successfully commits exact native Expected bytes and exact qualified PR32 Expected manifest while a real AtlasView is mounted.",
+          "observed": "Synchronous Vault.modify notification calls Source.changed and Provider.sourceCurrent=false; Host.contextChanged disposes the active editor. History preflight rejects all further work. The common data journal completes correctly but no old lifetime can acknowledge the own save.",
+          "locations": [
+            {
+              "file": "src/vault-campaign-runtime-source.ts",
+              "line": 19
+            },
+            {
+              "file": "src/features/campaign/campaign-runtime-source.ts",
+              "line": 226
+            },
+            {
+              "file": "src/features/campaign/campaign-runtime-source.ts",
+              "line": 362
+            },
+            {
+              "file": "src/ui/atlas-campaign-host.ts",
+              "line": 80
+            }
+          ],
+          "currentPublicRecovery": "Provider.activate resets sourceCurrent but generates a new ContextToken and requires fresh mount/History; it is not same-editor save acknowledgment.",
+          "requiredOwnerSeam": "A concrete qualified owner-supported exact Before/After manifest/journal-bound own-save acknowledgment which preserves the same current Campaign activation while returning confirmed updated Registry/Inventory. Foreign changes,duplicate IDs,closure/context changes and unexpected bytes still revoke synchronously. No blanket event suppression or private flag mutation. Hex remains sole owner of Repository/journal/mount rebinding.",
+          "limits": "This new seam was not promised by read-only PR31 or data Participant PR32; their existing scoped PASS is not revoked. No second publish,post-save digest invention,automatic reactivation or UI reset is accepted as a fix."
+        },
+        "checks": {
+          "counterprobes": 2,
+          "passed": 2,
+          "failed": 0,
+          "basis620TestsStillBoundToUnchangedProduct": true,
+          "productSourceChanged": false,
+          "hostActivatedNewSaveHook": false
+        },
+        "actualEvidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/campaign-manifest-host-i02-20261010/finding.json",
+        "sha256": "a36e567b48d4203d4ced44b09914885d1221b4c5b9885186e35ebaf02bad6772",
+        "ownerHandoff": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6096668419",
+        "workHandoff": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/7#issuecomment-6096668566",
+        "productChanged": false,
+        "nativeRan": false,
+        "freshProcessRan": false,
+        "fullE2E": false,
+        "next": "Concrete Campaign/Data owner delivery for HEX-MANIFEST-I02-01; then resume the same bounded Host-I02, consume acknowledgment and confirm new Registry/Inventory in the existing mount, actual Save/Fresh/A-B-A, freshly coordinated Obsidian probe and separate independent integrated review. No new general plan/owner/review cycle."
       }
     },
     "verification": {
@@ -4934,6 +4988,56 @@
         "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/campaign-manifest-save-i01-20261010/implementation.json",
         "sha256": "891ba0c17a6a47f65c13eb8e0df54c7d65e42d2b928b0d841057c575b4ff8909",
         "independentIntegrationReview": "Pending after next bounded visible Host-I02 completion; no new general owner/plan round"
+      },
+      "campaignManifestHostPrecondition": {
+        "id": "E2E-01-SPACE-I01c-RUNTIME-MANIFEST-I02-S01",
+        "state": "specific_Campaign_owned_save_lifetime_seam_missing_reproduced",
+        "sourceCommit": "a2bc971144fb75314305deff8225b603f9b57439",
+        "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
+        "finding": {
+          "id": "HEX-MANIFEST-I02-01",
+          "ownerDependency": "Campaign/Data: explicit owned canonical-save lifetime acknowledgment; Hex: consume qualified seam and rebind same Navigator mount to confirmed new projection/inventory",
+          "trigger": "One actual existing FileTransaction successfully commits exact native Expected bytes and exact qualified PR32 Expected manifest while a real AtlasView is mounted.",
+          "observed": "Synchronous Vault.modify notification calls Source.changed and Provider.sourceCurrent=false; Host.contextChanged disposes the active editor. History preflight rejects all further work. The common data journal completes correctly but no old lifetime can acknowledge the own save.",
+          "locations": [
+            {
+              "file": "src/vault-campaign-runtime-source.ts",
+              "line": 19
+            },
+            {
+              "file": "src/features/campaign/campaign-runtime-source.ts",
+              "line": 226
+            },
+            {
+              "file": "src/features/campaign/campaign-runtime-source.ts",
+              "line": 362
+            },
+            {
+              "file": "src/ui/atlas-campaign-host.ts",
+              "line": 80
+            }
+          ],
+          "currentPublicRecovery": "Provider.activate resets sourceCurrent but generates a new ContextToken and requires fresh mount/History; it is not same-editor save acknowledgment.",
+          "requiredOwnerSeam": "A concrete qualified owner-supported exact Before/After manifest/journal-bound own-save acknowledgment which preserves the same current Campaign activation while returning confirmed updated Registry/Inventory. Foreign changes,duplicate IDs,closure/context changes and unexpected bytes still revoke synchronously. No blanket event suppression or private flag mutation. Hex remains sole owner of Repository/journal/mount rebinding.",
+          "limits": "This new seam was not promised by read-only PR31 or data Participant PR32; their existing scoped PASS is not revoked. No second publish,post-save digest invention,automatic reactivation or UI reset is accepted as a fix."
+        },
+        "checks": {
+          "counterprobes": 2,
+          "passed": 2,
+          "failed": 0,
+          "basis620TestsStillBoundToUnchangedProduct": true,
+          "productSourceChanged": false,
+          "hostActivatedNewSaveHook": false
+        },
+        "actualEvidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/campaign-manifest-host-i02-20261010/finding.json",
+        "sha256": "a36e567b48d4203d4ced44b09914885d1221b4c5b9885186e35ebaf02bad6772",
+        "ownerHandoff": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6096668419",
+        "workHandoff": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/7#issuecomment-6096668566",
+        "productChanged": false,
+        "nativeRan": false,
+        "freshProcessRan": false,
+        "fullE2E": false,
+        "next": "Concrete Campaign/Data owner delivery for HEX-MANIFEST-I02-01; then resume the same bounded Host-I02, consume acknowledgment and confirm new Registry/Inventory in the existing mount, actual Save/Fresh/A-B-A, freshly coordinated Obsidian probe and separate independent integrated review. No new general plan/owner/review cycle."
       }
     },
     "repairPlan": "ROADMAP-HEX-02-REPAIR-PLAN.md",
@@ -4977,7 +5081,7 @@
       "platformIssue": 11,
       "checkpointIsAuthoritative": true
     },
-    "updatedAt": "2026-10-10T10:31:46.452488+00:00"
+    "updatedAt": "2026-10-10T10:43:32.336426+00:00"
   },
   "phase": "Phase 6: zweiter Nachbesserungslauf teilweise umgesetzt; fünf Restpositionen und unabhängiger Review offen",
   "goal": "Dungeon-Pfad bis zur vollständigen beauftragten Dungeondraft-Verhaltensgleichheit verfolgen: Bedienung und Funktion angleichen, Grafik ungefähr gleichwertig. Zuerst ROADMAP-PARITY.md mit Building und Object Tool abschließen, danach übrige Dungeon-Werkzeuge. Jede Fachphase getrennt planen, umsetzen und unabhängig reviewen; Lücken mit eigenen Nachbesserungs- und Reviewläufen schließen; danach eigene Aufräumphase mit Plan, Umsetzung und Review.",
