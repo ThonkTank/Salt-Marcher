@@ -67,11 +67,14 @@ const rows = [...log.matchAll(/^(ok|not ok) \d+ - (M\d+[^\r\n]*)$/gm)].map(
 );
 const finishHead = head(),
   finishStatus = status();
-const sourceFiles = execFileSync("git", ["ls-files", "src", "tests", "tools"], {
-  encoding: "utf8",
-})
-  .trim()
-  .split("\n")
+const sourceFiles = execFileSync(
+  "git",
+  ["ls-files", "-z", "src", "tests", "tools"],
+  {
+    encoding: "utf8",
+  },
+)
+  .split("\0")
   .filter(Boolean);
 const sourceHashes = sourceFiles.map((path) => ({
   path,

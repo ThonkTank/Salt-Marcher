@@ -10,7 +10,7 @@
     },
     {
       "path": "tools/verify-campaign-manifest-consumer-matrix.mjs",
-      "sha256": "b067c375e72d8f554121cdcb2503092129383e2ca467abefc3ebc4d23e64c576"
+      "sha256": "98f6be22f554c0effd2f30b6ea2bc9410f6e7bc6732374a5c73ba5d80f06c9f5"
     },
     {
       "path": "tests/fixtures/atlas-e2e-spatial-v2/expected/Atlanten/Gemeinsamer-Testatlas.overworld",
