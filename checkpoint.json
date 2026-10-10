@@ -719,7 +719,7 @@
   "hexAtlasExecution": {
     "scope": "HEX-00 bis HEX-28 und sämtliche eingeordneten CITY-00 bis CITY-09 vollständig",
     "phase": "HEX-03",
-    "state": "e2e01_native_spatial_mount_checked_i01c_owner_inputs_next",
+    "state": "e2e01_dungeon_owner_integrated_checks_pass_independent_integration_review_pending",
     "plan": "ROADMAP-E2E01-SPATIAL-INTEGRATION-PLAN.md",
     "currentRun": {
       "id": "E2E-01-SPACE-I01b",
@@ -766,11 +766,11 @@
       "phaseApproval": false
     },
     "nextRun": {
-      "id": "E2E-01-SPACE-I01c",
-      "kind": "bounded_required_integration_after_actual_owner_contracts",
-      "focus": "Use actual Campaign/Vault context, registry/ownership participant revisions and original CommandId/ReceiptId publish boundary, then pure Dungeon geometry Gestureport and one real P02/P04 CompleteImport variant. Keep one candidate/camera/history/fixture; no E2E02–04.",
-      "dependency": "Campaign generic Contract/Validator/Testport input remains qualified on 7aa47beb1bad3d0b1560666fa1cb1677bdc8cd4e, not source-integrated. M/W/S N02 repair candidate d06354c37ea24c249a23310f1a186a0a5ee4e936 is published and direct PR25 head verified; scoped independent media-owner review and corrected eligible handoff remain pending, old Hex handoff stays suspended. Do not repeat generic review or create parallel repair. Actual productive Campaign/Vault context, Registryprovider, persistable Publish boundary and P02/P04 remain open. Dungeon Product-Cleanup-I01 c8bd27d6d223403b46748d3051409c3e1c498224 passed independent Hex PRODUCT-CL-R01 against all seven oracles (check, 495 tests, build, actual callback/atomic sample/terminal basis/positive geometry counterprobes); prior R01 code findings remain closed. Await actual secured exact-SHA eligible Dungeon owner/steward handoff as its separate next step, before Hex I01c port adoption. No cleanup recursion, code integration or host/E2E approval yet. No synthetic Registry/provider or port; World projection remains actual Repository.spatialGraph.world() and placements/spatial targets.",
-      "review": "Independent integrated code/host review follows complete pinned I01c handoff per #12; repairs and Cleanup-P/I/R are separate runs. Current native I01b is a narrow implementation proof, not full gate approval."
+      "id": "E2E-01-SPACE-I01c-DUNGEON-INTEGRATION-R01",
+      "kind": "separate_narrow_independent_integration_review",
+      "focus": "Review the actual normal full-owner merge on sole PR13 candidate a8ff4104f58e454799996463103931712879f034: shared History/composer, native rigid parent/identity chain, invalid sample/late release closure, unchanged current fixture and foreign metadata. Existing exact-owner code/cleanup reviews are prior evidence; no repeat plan/cleanup or Campaign review.",
+      "dependency": "Dungeon full owner d02a546df50e891dcb65ec2be548c06b66090bbe is integrated with check/495 tests/build and seven-oracle counterprobes. Narrow independent integration review remains; no native evidence for this build. Actual corrected eligible Campaign handoff on independently repaired M/W/S SHA d06354c37ea24c249a23310f1a186a0a5ee4e936 follows separately; real productive Campaign/Vault context, trusted Registryprovider, persistable Publish and original CommandId/ReceiptId plus P02/P04 remain open. No synthetic provider or World-target reinterpretation.",
+      "review": "No final complete-I01c or full-E2E approval from this narrow Dungeon integration; preserve historical narrow native I01b and its source SHA."
     },
     "review": {
       "run": "HEX-02-R02",
@@ -1046,7 +1046,7 @@
           "sourceIntegrated": false
         },
         "mediaOwnerGate": {
-          "state": "repair_candidate_published_scoped_independent_media_owner_review_pending",
+          "state": "scoped_independent_media_owner_review_pass_corrected_owner_handoff_pending",
           "reviewedSha": "7aa47beb1bad3d0b1560666fa1cb1677bdc8cd4e",
           "review": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/25#issuecomment-6092636859",
           "gateCorrection": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6092638831",
@@ -1073,13 +1073,24 @@
             "independentMediaOwnerReview": "pending",
             "sourceIntegrated": false,
             "scope": "Digest-bound TransferRetentionPolicy repair candidate only; old Hex handoff stays suspended until scoped M/W/S owner PASS. Productive RuntimeRegistry/Vault/Publish/P02/P04/Host/E2E remain unproven."
+          },
+          "independentRepairReview": {
+            "candidate": "d06354c37ea24c249a23310f1a186a0a5ee4e936",
+            "review": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/25#issuecomment-6093447911",
+            "gate": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6093449602",
+            "readDirectly": true,
+            "state": "PASS_scoped_media_owner_repair_only",
+            "ownerIndependentChecks": "check, 500 tests and clean build passed, not rerun by Hex",
+            "sourceIntegrated": false,
+            "host": false,
+            "fullE2E": false
           }
         },
         "receipt": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6092697089"
       },
       "dungeonGeometryPlanInput": {
         "run": "E2E-01-DUNGEON-GEOMETRY-P01-R01",
-        "state": "independent_product_cleanup_r01_pass_secured_owner_handoff_pending",
+        "state": "secured_full_owner_branch_integrated_checks_pass_independent_integration_review_pending",
         "owner": "Dungeon",
         "reviewer": "Hex independent Atlas interface recipient",
         "candidate": "ea46ba5437596aceaad955330e21c3ef4e739451",
@@ -1430,7 +1441,79 @@
           "fullE2E": false,
           "next": "Dungeon secured exact-SHA owner/steward handoff as separate next step. Hex I01c adoption awaits that actual eligible handoff and productive Campaign/Vault registry/publish/P02/P04 inputs; no new cleanup recursion or prior-review duplication.",
           "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/dungeon-geometry-product-cl-r01/review.json"
+        },
+        "securedOwnerHandoff": {
+          "sha": "d02a546df50e891dcb65ec2be548c06b66090bbe",
+          "reviewedProduct": "c8bd27d6d223403b46748d3051409c3e1c498224",
+          "input": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/13#issuecomment-6093406920",
+          "candidate": "a8ff4104f58e454799996463103931712879f034",
+          "fullBranchAncestryPreserved": true,
+          "sourceIntegrated": true,
+          "independentIntegrationReview": "pending"
         }
+      },
+      "dungeonIntegration": {
+        "id": "E2E-01-SPACE-I01c-DUNGEON-INTEGRATION-01",
+        "startedAt": "2026-10-10T03:43:15Z",
+        "refs": {
+          "hexBaseline": "757671a33bf77b04754581b1d404af263e69b169",
+          "shared": "5a4abadfa9e4bd9d2f6be704e5802b62849a3c7a",
+          "owner": "d02a546df50e891dcb65ec2be548c06b66090bbe",
+          "reviewedProduct": "c8bd27d6d223403b46748d3051409c3e1c498224"
+        },
+        "ownerHandoff": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/13#issuecomment-6093406920",
+        "gui": false,
+        "independentIntegrationReview": "pending",
+        "sharedMerge": "b93a3734e31363635c61356cdb6122fe27b3d326",
+        "productConflicts": [],
+        "ownerProductBlobsExact": [
+          "src/features/atlas/atlas-editor.ts",
+          "src/features/atlas/spatial-canvas.ts",
+          "src/features/atlas/spatial-graph.ts",
+          "src/features/dungeon/geometry-change.ts",
+          "src/session.ts",
+          "tests/core/atlas-spatial.test.ts"
+        ],
+        "preservedMetadataRoots": {
+          "checkpoint.json": [
+            "e2e01DungeonGeometryCleanup",
+            "e2e01DungeonGeometryPlan",
+            "e2e01DungeonGeometryProductCleanup"
+          ],
+          "acceptance.json": [
+            "e2e01DungeonContribution"
+          ]
+        },
+        "fixtureBlobsUnchanged": true,
+        "integrationCandidate": "a8ff4104f58e454799996463103931712879f034",
+        "mergeParents": [
+          "b93a3734e31363635c61356cdb6122fe27b3d326",
+          "d02a546df50e891dcb65ec2be548c06b66090bbe"
+        ],
+        "finishedAt": "2026-10-10T03:49:52Z",
+        "state": "integrated_checks_pass_independent_integration_review_pending",
+        "checks": {
+          "check": true,
+          "testsPassed": 495,
+          "testsFailed": 0,
+          "build": true,
+          "cleanProductCandidate": true,
+          "probeGroupsPassed": 8,
+          "sevenRequiredOracles": "PASS on actual integrated source with callback doubles, not host acceptance"
+        },
+        "artifactSha256": {
+          "main.js": "0b1edc823e08ed627bd0befe23639b855ceacf2bcddaf35a98d40723c5cd5a6c",
+          "styles.css": "cdf172e7d3c101d5917c16afe487641a19d9d5afe8ad23365b33c958ee1ac321",
+          "manifest.json": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64"
+        },
+        "nativeOnThisBuild": false,
+        "physicalInput": false,
+        "fullE2E": false,
+        "sharedInstalled": false,
+        "notes": [
+          "Owner documentation retains one inherited blank line at EOF reported by diff --check; no product conflict or functional failure. No unsolicited owner-doc change.",
+          "Shared checkout foreign dirty checkpoint and two test files untouched; recorded file hashes unchanged."
+        ]
       }
     },
     "verification": {
@@ -2792,7 +2875,7 @@
       "platformIssue": 11,
       "checkpointIsAuthoritative": true
     },
-    "updatedAt": "2026-10-10T01:40:38.720457+00:00"
+    "updatedAt": "2026-10-10T03:49:52Z"
   },
   "phase": "Phase 6: zweiter Nachbesserungslauf teilweise umgesetzt; fünf Restpositionen und unabhängiger Review offen",
   "goal": "Dungeon-Pfad bis zur vollständigen beauftragten Dungeondraft-Verhaltensgleichheit verfolgen: Bedienung und Funktion angleichen, Grafik ungefähr gleichwertig. Zuerst ROADMAP-PARITY.md mit Building und Object Tool abschließen, danach übrige Dungeon-Werkzeuge. Jede Fachphase getrennt planen, umsetzen und unabhängig reviewen; Lücken mit eigenen Nachbesserungs- und Reviewläufen schließen; danach eigene Aufräumphase mit Plan, Umsetzung und Review.",
