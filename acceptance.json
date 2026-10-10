@@ -4496,20 +4496,44 @@
     "currentUserGoal": "09.10.2026: vollständige Funktionsgleichwertigkeit mit Canvas of Kings, Watabou und Fantasy Town Generator, bessere Bedienung; bisherige Zweiprodukt-Ergebnisbegrenzung durch direkten Auftrag erweitert.",
     "atlasDetailEntry": {
       "plan": "ROADMAP-CITIES-ATLAS-DETAIL-ENTRY-PLAN.md",
-      "state": "component_implemented_independent_review_and_host_pending",
-      "updatedAt": "2026-10-10T07:22:22.529714+00:00",
+      "state": "component_independently_reviewed_cleanup_and_host_pending",
+      "updatedAt": "2026-10-10T07:37:10.736941+00:00",
       "requirements": [
         "CTY-001.01",
         "CTY-009.01"
       ],
-      "componentReview": "not_run",
+      "componentReview": {
+        "state": "PASS",
+        "reviewer": "Hex",
+        "head": "5e72857ca9f794ce0027765766365bd0982e827d",
+        "testedCode": "f5f50cf70277f442fc54140128bb6abebf06e30c",
+        "receipt": "/home/aaron/.cache/dungeon-native-qa/hex-03/city-ui-i01-r01-20261010/review.json",
+        "sha256": "ee59c7344598a74023dd1ccb6b8fd3acf6d1ab747d74d76006cc6ed7558b290f",
+        "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/29#issuecomment-6095156261",
+        "findings": [],
+        "counterprobes": {
+          "pass": 4,
+          "fail": 0,
+          "cases": [
+            "Filtering pending work preserves locks and exact immutable target after primitive rejection/retry",
+            "Late success of obsolete location preserves newer pending action",
+            "Synchronous host update/reentrant new navigation preserves new pending UI",
+            "Two panels isolate all ten router events; destruction preserves sibling and existing Key"
+          ]
+        },
+        "limits": [
+          "Isolated component/DOM review; no real native Atlas host mounting or physical input receipt",
+          "build.mjs/package.json hookup remains agreed Hex integration work",
+          "Host must supply confirmed actual targets and Source/Context/Key guards; productive providers/full E2E/original parity remain open"
+        ]
+      },
       "hostCheck": "not_run",
       "evidence": [
         "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/13#issuecomment-6094937083",
-        "/home/aaron/.cache/dungeon-native-qa/city-plans/city-ui-i01-20261010/run.json"
+        "/home/aaron/.cache/dungeon-native-qa/city-plans/city-ui-i01-20261010/run.json",
+        "/home/aaron/.cache/dungeon-native-qa/city-plans/city-ui-i01-20261010/independent-review-consumption.json"
       ],
       "open": [
-        "Independent exact-SHA component review and any targeted repairs",
         "Own cleanup P/I/R",
         "Hex runner hookup and actual mount with confirmed targets/guards",
         "Native same-Atlas route, Save/fresh process and physical usability"
