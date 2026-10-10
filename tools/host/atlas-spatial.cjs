@@ -9,7 +9,7 @@ module.exports = ({ page, fs, path, assert, qa, out, vault, root, checks }) => {
   const id = (n) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
   const panel = () => page.locator(".dn-atlas:visible").last(),
     viewport = () => panel().locator(".dn-atlas-viewport");
-  const button = (name) => panel().getByRole("button", { name, exact: true });
+  const button = (name) => panel().locator(".dn-atlas-toolbar").getByRole("button", { name, exact: true });
   const settle = () =>
     page.evaluate(
       () =>
