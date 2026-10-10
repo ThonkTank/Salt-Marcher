@@ -153007,7 +153007,7 @@
       {
         "id": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
         "requirement": "Thin Context/navigation consumer with actual native target validation, same Atlas owners and guarded Campaign switching",
-        "state": "navigation_and_qualified_city_component_pass_reviewer_cleanup_and_visible_host_open",
+        "state": "qualified_inputs_pass_reviewer_cleanup_implementation_applied_review_and_visible_host_open",
         "implementationRun": "E2E-01-SPACE-I01c-RUNTIME-I01b",
         "sourceCommit": "e6ad27e73066bb2394d67e555ca9556dd25a0660",
         "catalog": "ROADMAP-E2E-GATES-CANDIDATE.md:13",
@@ -153182,8 +153182,8 @@
             ]
           },
           "componentContract": "City UI consumes readonly labelled AtlasNavigationTarget values and onNavigate(target) callback in current dock. Hex supplies actual native targets, validates current Source/Context/Key guards, owns camera/history/persistence and mounts the component. No City edits to existing AtlasView/Editor/Renderer/Repository, no fake Registry or new view.",
-          "state": "qualified_city_component_integrated_own_reviewer_cleanup_I_R_then_visible_host",
-          "gate": "Navigation code/cleanup, City component/owner cleanup, productive Campaign provider R03/cleanup and M/W/S scoped R03 PASS consumed; merged check/573 tests/clean build PASS. Own reviewer cleanup planned only; actual visible host/native/full E2E remain open.",
+          "state": "qualified_inputs_integrated_own_reviewer_cleanup_applied_R_pending_then_visible_host",
+          "gate": "Qualified Navigation/City/Campaign/media inputs integrated with actual check/573 tests/clean build and City DOM8. Reviewer cleanup I01 applied exact plan; separate CLEAN-R01 pending. Visible host/native/full E2E remain open.",
           "confirmedBy": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/7#issuecomment-6094937416",
           "campaignDataSeam": {
             "state": "actual_qualified_provider_R03_and_cleanup_PASS_integrated_visible_host_open",
@@ -153263,7 +153263,7 @@
             "hostMounted": false,
             "ownReviewerCleanup": {
               "id": "CITY-UI-I01-R01-CLEAN-P01",
-              "state": "planned_only_separate_I_R_pending",
+              "state": "implementation_applied_separate_review_pending",
               "owner": "Hex, independent City UI reviewer",
               "plan": "/home/aaron/.cache/dungeon-native-qa/hex-03/city-ui-i01-r01-20261010/cleanup/p01/cleanup-plan.json",
               "planSha256": "8e5f293a9528ec57445cb2fe9a7393e66fc09fa0114192e5ddaa00493f6b372a",
@@ -153283,15 +153283,35 @@
               "reviewSha256": "ee59c7344598a74023dd1ccb6b8fd3acf6d1ab747d74d76006cc6ed7558b290f",
               "validationEvidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/city-ui-i01-r01-20261010/cleanup/p01/plan-validation.json",
               "validationSha256": "db7db29f4682d9c6bcafc12281cfc1aad07a1f533e0daafb2d116acdb92bb998",
-              "mutationsApplied": false,
-              "next": "Separate CLEAN-I01 then CLEAN-R01; afterwards existing visible I01c host montage and normal DOM runner hookup."
+              "mutationsApplied": true,
+              "next": "Separate own reviewer CLEAN-R01; then already-planned visible I01c Atlas host/provider/picker montage and normal City DOM runner hookup.",
+              "implementation": {
+                "id": "CITY-UI-I01-R01-CLEAN-I01",
+                "state": "applied_exact_plan_separate_review_pending",
+                "base": "1df1b4be0241db45010dfc7a89338271e7653bc2",
+                "consumedShared": "0c100613fdcbb232f07e3eeff23b32c27be4499d",
+                "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/city-ui-i01-r01-20261010/cleanup/i01/implementation.json",
+                "sha256": "f0eecac4dbb3d7bd580d9736ab1fa893aade80fe26e51dda2dd2c2788b16ff4f",
+                "actionsEvidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/city-ui-i01-r01-20261010/cleanup/i01/actions.json",
+                "actionsSha256": "4604f9c9a750725f771a52115cde2125b0e85110b0941a82d2f97270d74a68d9",
+                "protectedFilesVerifiedBeforeAndAfter": 570,
+                "deletedFiles": 40,
+                "deletedBytes": 46215609,
+                "unlinkedOwnSymlinks": 1,
+                "removedEmptyDirectories": 18,
+                "dependencyPhysicalTargetUnchanged": true,
+                "borrowedGitObjectTargetUnchanged": true,
+                "originalDirtyFilesUnchanged": true,
+                "productChanged": false,
+                "formalCleanupReview": "pending separate CLEAN-R01"
+              }
             },
             "limits": [
               "Isolated component/DOM review; no real native Atlas host mounting or physical input receipt",
               "build.mjs/package.json hookup remains agreed Hex integration work",
               "Host must supply confirmed actual targets and Source/Context/Key guards; productive providers/full E2E/original parity remain open"
             ],
-            "next": "Separate own reviewer CLEAN-I/R; then already-planned visible I01c Atlas host montage and runner hookup. No new general plan or component code review.",
+            "next": "Separate own reviewer CLEAN-R01; then already-planned visible I01c Atlas host/provider/picker montage and normal City DOM runner hookup.",
             "qualifiedOwnerHandoff": {
               "state": "PASS_actual_qualified_owner_P_I_R_handoff_consumed",
               "candidate": "b6d38c587a402e0fba7a398379fb04e40b171c5e",
