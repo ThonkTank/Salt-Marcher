@@ -1,13 +1,19 @@
-import { safePath } from "../../model";
-import { payloadDigest } from "./campaign-contracts";
+import { immutable, safePath } from "../../model";
+import { payloadDigest, revisionToken, sameSnapshot, type CampaignContextProjection } from "./campaign-contracts";
 import {
+  campaignDomainOwnershipProjection,
+  campaignDomainOwnershipProjectionDigest,
   campaignOwnershipDigestValue,
   type CampaignDomainOwnerProjectionV1,
+  type CampaignDomainOwnershipProjectionV1,
   type CampaignOwnershipDigest,
 } from "./campaign-ownership";
 import {
   parseCampaignRuntimeManifest,
+  type CampaignRuntimeSaveJournal,
   type CampaignRuntimeManifestV1,
+  type CampaignRuntimeSaveAcknowledgmentV1,
+  type CampaignRuntimeSaveAcknowledgmentValidator,
 } from "./campaign-runtime-source";
 
 export interface CampaignManifestNativeWrite {
@@ -24,6 +30,11 @@ export interface CampaignManifestSaveInput {
 }
 export interface CampaignManifestRecoveryJournal {
   readonly writes: readonly CampaignManifestNativeWrite[];
+}
+export interface CampaignManifestSaveAcknowledgmentInput {
+  readonly context: CampaignContextProjection;
+  readonly beforeRegistry: CampaignDomainOwnershipProjectionV1;
+  readonly journal: CampaignRuntimeSaveJournal;
 }
 export interface CampaignRuntimeOwnerSaveAuthority {
   readonly ownerId: string;
@@ -106,8 +117,9 @@ function serialize(
 }
 
 /** Campaign-owned, stateless contribution to a host-owned native transaction. */
-export class CampaignRuntimeManifestSaveParticipant {
+export class CampaignRuntimeManifestSaveParticipant implements CampaignRuntimeSaveAcknowledgmentValidator {
   readonly manifestPath: string;
+  private readonly acknowledgments = new WeakSet<object>();
   constructor(
     manifestPath: string,
     private readonly digest: CampaignOwnershipDigest,
@@ -328,6 +340,39 @@ export class CampaignRuntimeManifestSaveParticipant {
         after: serialize(candidate, this.digest),
       },
     ]);
+  }
+
+  createAcknowledgment(input: CampaignManifestSaveAcknowledgmentInput): CampaignRuntimeSaveAcknowledgmentV1 {
+    if (!input || !["prepared", "committed"].includes(input.journal.state))
+      throw new Error("Campaign-Save-Acknowledgment benötigt ein vorbereitetes oder gewonnenes Journal.");
+    const transactionId = revisionToken(input.journal.transactionId, "Transaktions-ID");
+    this.validateRecovery(input.journal);
+    const manifestWrites = input.journal.writes.filter((write) => this.owns(write.path));
+    if (manifestWrites.length !== 1)
+      throw new Error("Campaign-Save-Acknowledgment benötigt genau einen Manifestwrite.");
+    const write = manifestWrites[0]!;
+    if (write.before === null || write.after === null)
+      throw new Error("Campaign-Save-Acknowledgment besitzt keine exakten Manifestbytes.");
+    const before = parseCampaignRuntimeManifest(write.before, this.digest);
+    if (!sameSnapshot(before.snapshot, input.context))
+      throw new Error("Campaign-Save-Acknowledgment gehört zu einem fremden Context.");
+    const candidate = campaignDomainOwnershipProjection({ version: 1,
+      registryId: before.registry.registryId, registryRevision: before.registry.registryRevision,
+      projectionDigest: `sha256:${"0".repeat(64)}`, context: input.context, owners: before.registry.owners });
+    const expected = campaignDomainOwnershipProjection({ ...candidate,
+      projectionDigest: campaignDomainOwnershipProjectionDigest(candidate, this.digest) });
+    if (exact(expected) !== exact(input.beforeRegistry))
+      throw new Error("Campaign-Save-Acknowledgment besitzt eine fremde Registrybasis.");
+    const proof = immutable({ version: 1 as const, transactionId, manifestPath: this.manifestPath,
+      beforeManifestBytes: write.before, afterManifestBytes: write.after,
+      context: input.context, beforeRegistry: input.beforeRegistry, journal: input.journal });
+    this.acknowledgments.add(proof);
+    return proof;
+  }
+
+  validateAcknowledgment(proof: CampaignRuntimeSaveAcknowledgmentV1): void {
+    if (!this.acknowledgments.has(proof))
+      throw new Error("Campaign-Save-Acknowledgment wurde nicht vom zuständigen Participant ausgestellt.");
   }
 
   validateRecovery(journal: CampaignManifestRecoveryJournal): void {

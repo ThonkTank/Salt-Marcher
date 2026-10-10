@@ -19,7 +19,10 @@ import {
   parseCampaignRuntimeManifest,
   type CampaignRuntimeFile,
   type CampaignRuntimeStorage,
+  type CampaignRuntimeStorageChange,
 } from "../../src/features/campaign/campaign-runtime-source";
+import { CampaignRuntimeManifestSaveParticipant } from
+  "../../src/features/campaign/campaign-runtime-save-participant";
 
 const uuid = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
 const sha = (value: string) => `sha256:${createHash("sha256").update(value).digest("hex")}`;
@@ -51,10 +54,16 @@ function resign(raw: Record<string, any>): string {
 }
 class Storage implements CampaignRuntimeStorage {
   files: CampaignRuntimeFile[] = [];
-  listener?: () => void;
+  listener?: (change: CampaignRuntimeStorageChange) => void;
   async list() { return this.files; }
-  subscribe(changed: () => void) { this.listener = changed; return () => { this.listener = undefined; }; }
-  set(files: CampaignRuntimeFile[]) { this.files = files; this.listener?.(); }
+  subscribe(changed: (change: CampaignRuntimeStorageChange) => void) {
+    this.listener = changed; return () => { this.listener = undefined; };
+  }
+  set(files: CampaignRuntimeFile[]) {
+    const old = this.files[0], current = files[0]; this.files = files;
+    this.listener?.(current ? { kind: old ? "modify" : "create", path: current.path, bytes: current.bytes }
+      : { kind: "delete", path: old?.path ?? "Kampagnen/SaltMarcher/unknown.campaign.json" });
+  }
 }
 function lifecycle(source: CampaignRuntimeSource) {
   let token = 0, receipt = 0;
@@ -126,6 +135,103 @@ test("navigation provider exposes the exact Campaign ports and announces activat
   storage.set([{ path: "Kampagnen/SaltMarcher/a.campaign.json", bytes: manifest(a, worldA, "Geändert", 2) }]);
   assert.equal(changes, 2); assert.equal(provider.currentContext(), null);
   stop(); provider.close(); storage.set([]); assert.equal(changes, 2);
+});
+
+test("navigation provider keeps one mount only for the participant-sealed exact save event", async () => {
+  const storage = new Storage(), path = "Kampagnen/SaltMarcher/a.campaign.json",
+    beforeBytes = manifest(a, worldA), nativePath = `Atlanten/${worldA}.overworld`,
+    participant = new CampaignRuntimeManifestSaveParticipant(path, digest,
+      [{ ownerId: "atlas", verify: () => undefined }]);
+  storage.set([{ path, bytes: beforeBytes }]);
+  const source = new CampaignRuntimeSource(storage, digest, participant), service = lifecycle(source),
+    provider = new CampaignRuntimeNavigationProvider(source, service);
+  let contextChanges = 0; provider.subscribeContextChanged(() => contextChanges++);
+  const activation = await provider.activate(campaignCommandId(uuid(307)), a, "open"),
+    context = activation.context!, beforeRead = await source.registry.read(context),
+    before = parseCampaignRuntimeManifest(beforeBytes, digest);
+  assert.equal(beforeRead.kind, "confirmed"); if (beforeRead.kind !== "confirmed") return;
+  const nextOwner = { ...before.registry.owners[0]!, ownerRevision: "owner:2", snapshotRevision: "snapshot:2",
+    source: { ...before.registry.owners[0]!.source, generation: "source:2" },
+    records: before.registry.owners[0]!.records.map((record) => ({ ...record, payloadDigest: sha("saved-bytes") })) };
+  const nativeWrite = { path: nativePath, before: "bytes", after: "saved-bytes" },
+    [manifestWrite] = participant.prepare({ beforeManifestBytes: beforeBytes, nativeWrites: [nativeWrite],
+      beforeOwners: before.registry.owners, afterOwners: [nextOwner] }),
+    prepared = participant.createAcknowledgment({ context, beforeRegistry: beforeRead.projection,
+      journal: { transactionId: "transaction:1", state: "prepared", writes: [nativeWrite, manifestWrite!] } });
+  assert.throws(() => provider.prepareSaveAcknowledgment({ ...prepared }), /nicht vom zuständigen Participant/);
+  provider.prepareSaveAcknowledgment(prepared);
+  const committed = participant.createAcknowledgment({ context, beforeRegistry: beforeRead.projection,
+      journal: { ...prepared.journal, state: "committed" } }),
+    acknowledgmentPromise = provider.acknowledgeCommittedSave(committed),
+    duplicatePromise = provider.acknowledgeCommittedSave(committed);
+  assert.equal(duplicatePromise, acknowledgmentPromise);
+  await Promise.resolve();
+  assert.equal(provider.currentContext()?.contextToken, context.contextToken);
+  storage.set([{ path, bytes: prepared.afterManifestBytes }]);
+  assert.equal(provider.currentContext()?.contextToken, context.contextToken);
+  assert.equal(contextChanges, 1);
+  const acknowledged = await acknowledgmentPromise;
+  assert.equal(await duplicatePromise, acknowledged);
+  assert.equal(provider.currentContext()?.contextToken, context.contextToken);
+  assert.equal(contextChanges, 1);
+  assert.notEqual(acknowledged.registry.registryRevision, beforeRead.projection.registryRevision);
+  assert.equal(acknowledged.inventory.files[0]?.savedDigest, sha("saved-bytes"));
+  assert.equal(await provider.acknowledgeCommittedSave(committed), acknowledged);
+  const saved = parseCampaignRuntimeManifest(prepared.afterManifestBytes, digest), savedOwner = saved.registry.owners[0]!,
+    nextOwnerAgain = { ...savedOwner, ownerRevision: "owner:3", snapshotRevision: "snapshot:3",
+      source: { ...savedOwner.source, generation: "source:3" },
+      records: savedOwner.records.map((record) => ({ ...record, payloadDigest: sha("saved-again") })) },
+    secondNativeWrite = { path: nativePath, before: "saved-bytes", after: "saved-again" },
+    [secondManifestWrite] = participant.prepare({ beforeManifestBytes: prepared.afterManifestBytes,
+      nativeWrites: [secondNativeWrite], beforeOwners: saved.registry.owners, afterOwners: [nextOwnerAgain] }),
+    secondPrepared = participant.createAcknowledgment({ context, beforeRegistry: acknowledged.registry,
+      journal: { transactionId: "transaction:2", state: "prepared",
+        writes: [secondNativeWrite, secondManifestWrite!] } });
+  provider.prepareSaveAcknowledgment(secondPrepared);
+  const secondCommitted = participant.createAcknowledgment({ context, beforeRegistry: acknowledged.registry,
+      journal: { ...secondPrepared.journal, state: "committed" } }),
+    secondPromise = provider.acknowledgeCommittedSave(secondCommitted);
+  storage.set([{ path, bytes: secondPrepared.afterManifestBytes }]);
+  assert.equal(provider.currentContext()?.contextToken, context.contextToken);
+  storage.listener?.({ kind: "modify", path: "Kampagnen/SaltMarcher/foreign.campaign.json", bytes: "{}" });
+  assert.equal(provider.currentContext(), null); assert.equal(contextChanges, 2);
+  await assert.rejects(secondPromise, /fremdes Storageevent|fremde Eventfolge|verlor seine vorbereitete Source-Lease/);
+  await assert.rejects(provider.acknowledgeCommittedSave(committed), /nicht mehr aktuell|Context oder Save-Receipt/);
+  const reopened = await provider.activate(campaignCommandId(uuid(308)), a, "open"),
+    reopenedContext = reopened.context!;
+  assert.notEqual(reopenedContext.contextToken, context.contextToken);
+  await assert.rejects(provider.acknowledgeCommittedSave(committed), /fremden aktuellen Context/);
+  assert.equal(provider.currentContext()?.contextToken, reopenedContext.contextToken);
+  const reopenedRead = await source.registry.read(reopenedContext);
+  assert.equal(reopenedRead.kind, "confirmed"); if (reopenedRead.kind !== "confirmed") return;
+  const current = parseCampaignRuntimeManifest(secondPrepared.afterManifestBytes, digest),
+    currentOwner = current.registry.owners[0]!,
+    finalOwner = { ...currentOwner, ownerRevision: "owner:4", snapshotRevision: "snapshot:4",
+      source: { ...currentOwner.source, generation: "source:4" },
+      records: currentOwner.records.map((record) => ({ ...record, payloadDigest: sha("saved-final") })) },
+    finalNativeWrite = { path: nativePath, before: "saved-again", after: "saved-final" },
+    [finalManifestWrite] = participant.prepare({ beforeManifestBytes: secondPrepared.afterManifestBytes,
+      nativeWrites: [finalNativeWrite], beforeOwners: current.registry.owners, afterOwners: [finalOwner] }),
+    finalPrepared = participant.createAcknowledgment({ context: reopenedContext, beforeRegistry: reopenedRead.projection,
+      journal: { transactionId: "transaction:3", state: "prepared",
+        writes: [finalNativeWrite, finalManifestWrite!] } }),
+    finalCommitted = participant.createAcknowledgment({ context: reopenedContext, beforeRegistry: reopenedRead.projection,
+      journal: { ...finalPrepared.journal, state: "committed" } }),
+    originalAcknowledge = source.acknowledgeCommittedSave.bind(source);
+  source.acknowledgeCommittedSave = async (proof, lease) => {
+    const result = await originalAcknowledge(proof, lease);
+    storage.listener?.({ kind: "modify", path: "Kampagnen/SaltMarcher/foreign.campaign.json", bytes: "{}" });
+    return result;
+  };
+  provider.prepareSaveAcknowledgment(finalPrepared);
+  const finalPromise = provider.acknowledgeCommittedSave(finalCommitted);
+  storage.set([{ path, bytes: finalPrepared.afterManifestBytes }]);
+  await assert.rejects(finalPromise, /während der Speicherbestätigung/);
+  source.acknowledgeCommittedSave = originalAcknowledge;
+  assert.equal(provider.currentContext(), null);
+  provider.close();
+  assert.equal(provider.currentContext(), null);
+  await assert.rejects(provider.activate(campaignCommandId(uuid(309)), a, "open"), /geschlossen/);
 });
 
 test("registry verify detects an Atlas-only manifest edit", async () => {

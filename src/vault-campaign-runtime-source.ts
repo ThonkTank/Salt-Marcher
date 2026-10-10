@@ -1,5 +1,6 @@
 import { App, TFile } from "obsidian";
-import type { CampaignRuntimeFile, CampaignRuntimeStorage } from "./features/campaign/campaign-runtime-source";
+import type { CampaignRuntimeFile, CampaignRuntimeStorage,
+  CampaignRuntimeStorageChange } from "./features/campaign/campaign-runtime-source";
 
 export const CAMPAIGN_RUNTIME_ROOT = "Kampagnen/SaltMarcher";
 
@@ -11,15 +12,18 @@ export class VaultCampaignRuntimeStorage implements CampaignRuntimeStorage {
       .sort((a, b) => a.path.localeCompare(b.path));
     return Promise.all(files.map(async (file) => Object.freeze({ path: file.path, bytes: await this.app.vault.read(file) })));
   }
-  subscribe(changed: () => void): () => void {
-    const relevant = (file: unknown) => file instanceof TFile &&
+  subscribe(changed: (change: CampaignRuntimeStorageChange) => void): () => void {
+    const relevant = (file: unknown): file is TFile => file instanceof TFile &&
       file.path.startsWith(CAMPAIGN_RUNTIME_ROOT + "/") && file.path.endsWith(".campaign.json");
     const refs = [
-      this.app.vault.on("create", (file) => { if (relevant(file)) changed(); }),
-      this.app.vault.on("modify", (file) => { if (relevant(file)) changed(); }),
-      this.app.vault.on("delete", (file) => { if (relevant(file)) changed(); }),
+      this.app.vault.on("create", (file) => { if (relevant(file)) changed({ kind: "create", path: file.path }); }),
+      this.app.vault.on("modify", (file) => { if (relevant(file)) void this.app.vault.read(file).then(
+        (bytes) => changed({ kind: "modify", path: file.path, bytes }),
+        () => changed({ kind: "modify", path: file.path })); }),
+      this.app.vault.on("delete", (file) => { if (relevant(file)) changed({ kind: "delete", path: file.path }); }),
       this.app.vault.on("rename", (file, oldPath) => {
-        if (relevant(file) || oldPath.startsWith(CAMPAIGN_RUNTIME_ROOT + "/")) changed();
+        if (relevant(file) || oldPath.startsWith(CAMPAIGN_RUNTIME_ROOT + "/"))
+          changed({ kind: "rename", path: file.path, oldPath });
       }),
     ];
     return () => refs.forEach((ref) => this.app.vault.offref(ref));

@@ -16,16 +16,26 @@ test("vault campaign storage lists only sorted manifest files below its product 
   ]);
 });
 
-test("vault campaign storage emits only relevant create, modify, delete and rename changes", () => {
+test("vault campaign storage emits typed relevant changes and exact modified bytes", async () => {
   const handlers = new Map<string, (...args: never[]) => void>(), removed: unknown[] = [];
   const vault = { getFiles: () => [], read: async () => "",
     on: (name: string, handler: (...args: never[]) => void) => { handlers.set(name, handler); return { name }; },
     offref: (ref: unknown) => removed.push(ref) };
-  const storage = new VaultCampaignRuntimeStorage({ vault } as never); let changes = 0;
-  const stop = storage.subscribe(() => { changes++; });
+  const storage = new VaultCampaignRuntimeStorage({ vault } as never); const changes: unknown[] = [];
+  const stop = storage.subscribe((change) => { changes.push(change); });
   handlers.get("create")?.(file(`${CAMPAIGN_RUNTIME_ROOT}/a.campaign.json`) as never);
   handlers.get("modify")?.(file("Atlanten/a.overworld") as never);
   handlers.get("delete")?.(file(`${CAMPAIGN_RUNTIME_ROOT}/a.campaign.json`) as never);
   handlers.get("rename")?.(file("Elsewhere/a.json") as never, `${CAMPAIGN_RUNTIME_ROOT}/old.campaign.json` as never);
-  assert.equal(changes, 3); stop(); assert.equal(removed.length, 4);
+  await Promise.resolve();
+  assert.deepEqual(changes, [
+    { kind: "create", path: `${CAMPAIGN_RUNTIME_ROOT}/a.campaign.json` },
+    { kind: "delete", path: `${CAMPAIGN_RUNTIME_ROOT}/a.campaign.json` },
+    { kind: "rename", path: "Elsewhere/a.json", oldPath: `${CAMPAIGN_RUNTIME_ROOT}/old.campaign.json` },
+  ]);
+  handlers.get("modify")?.(file(`${CAMPAIGN_RUNTIME_ROOT}/a.campaign.json`) as never);
+  await Promise.resolve();
+  assert.deepEqual(changes.at(-1),
+    { kind: "modify", path: `${CAMPAIGN_RUNTIME_ROOT}/a.campaign.json`, bytes: "" });
+  stop(); assert.equal(removed.length, 4);
 });
