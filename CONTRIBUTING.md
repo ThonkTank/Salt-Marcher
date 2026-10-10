@@ -26,6 +26,8 @@ Bei einer komplexen Fachphase gelten die getrennten Plan-/Umsetzungs-/Review-/Na
 
 Für einen manuellen Einstieg die [README](README.md) verwenden. Nur isolierte Testvaults und synthetische/eigens freigegebene Testdaten benutzen. Vor echtem Hostlauf den einzelnen GUI-Slot im zuständigen Bereich koordinieren. Große QA-Dateien und Rohprotokolle gehören außerhalb des Nutzervaults nach `/home/aaron/.cache/dungeon-native-qa/`; diese lokalen Pfade sind auf einem anderen Rechner nicht automatisch zugänglich.
 
+Wer zunächst ohne GUI-Slot einen eingecheckten Beleg nachvollziehen möchte, kann das [Campaign-B-Fixture in einem frischen Checkout reproduzieren](docs/CONTRIBUTOR-FIXTURE-B.md). Die Anleitung trennt den deterministischen Datei-/Modelltest ausdrücklich von einem echten Obsidian-Hostlauf.
+
 Ein Handoff nennt: Branch/Commit, Build, Fixtureversion und Hashes, ausgeführten Ablauf, Datei-/Text-/ID-Orakel, Ergebnis, zugängliche Belegreferenz oder ausdrücklich fehlenden Zugriff, offene Grenzen und nächsten Empfänger. Eine fehlende lokale Evidenzdatei ist kein lokal verifizierter PASS. Synthetische Eingabe, physische Bedienung und ein tatsächlich frischer Hostprozess getrennt ausweisen.
 
 ## Wo Fragen und Entscheidungen hingehören

@@ -136,6 +136,8 @@ Die bestehenden Pfade bleiben stabil, weil Checkpoints, Acceptance, externe Hand
 
 Eingecheckte synthetische Fixtures liegen unter `tests/fixtures/` und `tools/fixtures/`. Große native Rohbelege liegen oft auf dem Rechner des jeweiligen Prüfers außerhalb des Vaults. Ein historischer absoluter Dateipfad bestätigt weder Zugriff noch eine eigene Rückprüfung. Fehlenden Zugriff ausdrücklich melden; keinen historischen PASS in einen aktuellen Gesamt-PASS umdeuten.
 
+Für einen reproduzierbaren Einstieg zeigt [Campaign-B-Fixture reproduzieren](CONTRIBUTOR-FIXTURE-B.md), wie ein einzelnes synthetisches Fixture in einem frischen Checkout materialisiert und mit seinen vorhandenen Hash- und Modelltests geprüft wird.
+
 ## Diesen Index pflegen
 
 Bei neuen Fachplänen im passenden Registerabschnitt einen relativen Link ergänzen; konkrete Priorität und Abhängigkeiten in Aufgabenissues und der Produktroadmap halten. Abgelöste Pläne als solche kenntlich machen, bevor sie verschoben werden; Pfadverweise und bestehende externe Handoffs berücksichtigen.
