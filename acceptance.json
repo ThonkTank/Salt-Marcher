@@ -153024,7 +153024,7 @@
       {
         "id": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
         "requirement": "Thin Context/navigation consumer with actual native target validation, same Atlas owners and guarded Campaign switching",
-        "state": "enabled_detail_navigation_hydration_race_reproduced_DOM_product_repair_pending",
+        "state": "product_navigation_hydration_repaired_core_DOM_PASS_native_ABA_pending",
         "implementationRun": "HEX-E2E01-HOST-SAVE-I02",
         "sourceCommit": "86bbbbfac44233509f084ac836e6dafa07b11a16",
         "catalog": "ROADMAP-E2E-GATES-CANDIDATE.md:13",
@@ -153046,7 +153046,8 @@
           "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-navigation-i01b-cleanup-20261010/i01/metadata-validation.json",
           "/home/aaron/.cache/dungeon-native-qa/city-plans/runtime-i01b-clean-r01-20261010/review.json",
           "/home/aaron/.cache/dungeon-native-qa/city-plans/runtime-i01b-clean-r01-20261010/cleanup-review.json",
-          "/home/aaron/.cache/dungeon-native-qa/hex-03/city-ui-i01-r01-20261010/review.json"
+          "/home/aaron/.cache/dungeon-native-qa/hex-03/city-ui-i01-r01-20261010/review.json",
+          "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-manifest-host-aba-20261010/repair/repair.json"
         ],
         "observed": "Actual AtlasView Save button calls FileTransaction and retained native owner Participant/Provider; exact Prepared/Committed journal read-back issues the real proofs.; Same Navigator queue refreshes confirmed Registry/Inventory before unblocking input; Repository, Sources, History, renderer, camera, Context token and mount generation remain.; Actual Vault first-native CAS failure rolls back before snapshot, issues a transaction-sealed receipt, releases pending Provider lease and retries in the same editable Atlas with a new transaction UUID.; Actual DOM View/services close and fresh View/services reopen retain saved Location and Room names under native Campaign fixture; this is not a fresh Electron process.; FileTransaction regressions exercise all before/after CAS reply-loss boundaries, reject copied/foreign rollback receipts, protect unchanged native guards, and preserve won canonical bytes if committed consumer acknowledgment fails.",
         "notConfirmed": "Native ABA attempt is FAILED, not a passing switch/Key/history/draft/revocation proof. Exact root cause remains unconfirmed. Previous synthetic native Save/Fresh/Rollback/Committed-Recovery passes remain separate, as do DOM/core/matrix checks. Independent integrated Host review, physical input, original parity, large world, installed user vault and full E2E remain open. No Source/fixture/product modifications or user-vault installation in this probe.",
@@ -154130,6 +154131,27 @@
           "nativeGUI": false,
           "productRepaired": false,
           "earlierNativeStillFailed": true
+        },
+        "nativeCampaignABARepair": {
+          "id": "HEX-E2E01-HOST-ABA-R01",
+          "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
+          "state": "product_navigation_hydration_repaired_core_DOM_PASS_native_ABA_pending",
+          "sourceCommit": "6513dab7075b4a64bf5ef9f2064705a030a77b5f",
+          "productRepairCommit": "f03b9537d3daa28f80938d21528d76e0e683c3a6",
+          "consumedShared": "04fc464bbf4fe6ad8cca9dcbd13b5f439d45be08",
+          "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-manifest-host-aba-20261010/repair/repair.json",
+          "sha256": "4adbfba33562a2578b75d594c85d56bd49db37154bd014af200bda169cc065a9",
+          "check": true,
+          "testsPassed": 650,
+          "build": true,
+          "dirty": false,
+          "focusedRegressionCount": 6,
+          "frozenFilesVerified": 19,
+          "nativeInputFilesUnchanged": 16,
+          "nativeGUI": false,
+          "nativeABA": false,
+          "fullE2E": false,
+          "independentReview": "existing integrated Host review pending; no new component/general review round or self-approval"
         }
       }
     ],
