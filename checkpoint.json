@@ -5079,18 +5079,18 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "HOST-RECEIPT-CLEAN-R01",
-      "kind": "cleanup_review",
+      "id": "CITY-FTG-SCOPE-I01-CLEAN-R01",
       "status": "complete",
-      "focus": "Cleanup passed; reviewed QA sources unchanged, incoming suite composition preserved",
-      "evidence": "/home/aaron/.cache/dungeon-native-qa/city-host-shutdown-cleanup/review.json",
-      "sha256": "9884cea70599ed8c0806876fdea74cbee1c21a0bc61c83434e06d86b7e2273d9",
-      "nextStep": "Independent final candidate composition review and stewardship decision"
+      "kind": "cleanup_review",
+      "focus": "Implementation cleanup passed: mapped requirements, preserved foreign/product/acceptance bytes",
+      "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
+      "baseSha": "e157462ee1a4c2b82b0c927df664a8c06fc38cb1",
+      "nextStep": "Independent CITY-FTG-SCOPE-R01 on published PR50 exact SHA"
     },
     "nextRun": {
-      "id": "E2E-01-CAMPAIGN-SAVE-ACK-INTEGRATION-R01",
-      "kind": "independent_integration_review",
-      "focus": "Await actual qualified Campaign owned-save acknowledgment delivery and Chronik review, then exact Hex integrated Host handoff; no repeated prior core/Host/COK review or speculative CITY-01 activation."
+      "id": "CITY-FTG-SCOPE-R01",
+      "kind": "independent_documentation_review",
+      "focus": "Review exact PR50 diff against issue44 and P01; no product approval"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
