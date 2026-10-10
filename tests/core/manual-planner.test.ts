@@ -20,8 +20,11 @@ test("manual planner: unnamed undated plans and repeated same-location scenes re
   const a = p.addScene(p.binding());
   const notes = "  日本語\n\t[[Hafen]]\n";
   p.editDraft({ title: "", notes, locationId: id(900) });
-  p.commitDraft();
+  const revision = p.binding().revision;
   const b = p.addScene(p.binding());
+  assert.equal(p.binding().revision, revision + 2);
+  assert.equal(p.draft, null);
+  assert.equal(p.selectedSceneId, b.id);
   p.editDraft({ title: "Rückkehr", notes: "", locationId: id(900) });
   p.commitDraft();
   assert.notEqual(a.id, b.id);
@@ -162,3 +165,41 @@ test("manual planner codec rejects holes, extra keys, symbols and getters before
   }
   assert.equal(calls, 0);
 });
+
+for (const failure of ["collision", "allocator", "revision"] as const) {
+  test(`manual planner: failed compound add (${failure}) preserves exact draft, payload and selection`, () => {
+    let n = 0;
+    let fail = false;
+    const existing = {
+      version: 1,
+      id: id(1),
+      revision: failure === "revision" ? Number.MAX_SAFE_INTEGER - 1 : 1,
+      name: "",
+      scenes: [
+        { id: id(2), title: "old", notes: "confirmed", locationId: null },
+      ],
+    } as const;
+    const p = new ManualPlanner(
+      () => {
+        if (fail && failure === "allocator")
+          throw new Error("allocator failed");
+        if (fail && failure === "collision") return id(2);
+        return id(10 + ++n);
+      },
+      () => {},
+      [existing],
+    );
+    p.selectScene(id(2));
+    p.editDraft({ title: "new", notes: "must stay draft", locationId: null });
+    fail = true;
+    const catalog = p.catalog;
+    const active = p.active;
+    const draft = p.draft;
+    const selection = p.selectedSceneId;
+    assert.throws(() => p.addScene(p.binding()));
+    assert.deepEqual(p.catalog, catalog);
+    assert.equal(p.active, active);
+    assert.equal(p.draft, draft);
+    assert.equal(p.selectedSceneId, selection);
+  });
+}

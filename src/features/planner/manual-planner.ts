@@ -270,17 +270,47 @@ export class ManualPlanner {
     this.draftValue = null;
   }
   addScene(binding: PlanBinding): ManualScene {
-    this.current(binding);
+    const p = this.current(binding);
     if (binding.id !== this.activeId)
       throw new Error("Plan nicht mehr ausgewählt.");
-    this.commitDraft();
+    const draft = this.draftValue;
+    const selection = this.sceneId;
+    const scenes = [...p.scenes];
+    if (draft) {
+      this.current(draft.binding);
+      const i = scenes.findIndex((s) => s.id === draft.sceneId);
+      if (draft.binding.id !== p.id || i < 0 || draft.sceneId !== selection)
+        throw new Error("Entwurf nicht mehr ausgewählt.");
+      scenes[i] = scene({ id: draft.sceneId, ...draft.fields });
+    }
     const s = scene({
       id: this.makeId(),
       title: "",
       notes: "",
       locationId: null,
     });
-    this.act(this.binding(), { kind: "add", scene: s });
+    // Stage both effects before publishing either: allocation, collisions and
+    // revision exhaustion must leave the original authored draft untouched.
+    const next = manualPlan({
+      ...p,
+      revision: p.revision + (draft ? 2 : 1),
+      scenes: [...scenes, s],
+    });
+    const baseline = new Map(this.plans);
+    const prospective = new Map(baseline);
+    prospective.set(p.id, next);
+    this.assertUniqueScenes(prospective);
+    this.current(binding);
+    if (
+      this.activeId !== p.id ||
+      this.sceneId !== selection ||
+      this.draftValue !== draft ||
+      this.plans.size !== baseline.size ||
+      [...baseline].some(([id, plan]) => this.plans.get(id) !== plan)
+    )
+      throw new Error("Plan geändert. Entwurf behalten.");
+    this.plans = prospective;
+    this.draftValue = null;
     this.sceneId = s.id;
     return s;
   }

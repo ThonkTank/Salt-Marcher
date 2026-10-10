@@ -9668,24 +9668,24 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "MANUAL-PLANNER-I02-REFRESH",
+      "id": "MANUAL-PLANNER-N02-ATOMIC-ADD",
       "issue": 69,
-      "state": "nonmutating_view_recovery_implemented_review_pending",
+      "state": "compound_scene_creation_atomic_review_pending",
       "branch": "city/manual-session-planner",
-      "basis": "7d45912312d50f412f7974aebd25839ed2c9c4f7",
+      "basis": "117360b57d505ab56a3376e498e2b3d768398ff9",
       "claim": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/69#issuecomment-6102030111",
       "plan": "docs/plans/campaign/manual-session-planner.md",
-      "next": "Independent narrow refresh DOM review; confirmed Campaign/Data native storage contract then same-package Host Save/Fresh-Reopen",
+      "next": "Independent narrow atomic add review on PR71; confirmed Campaign/Data native storage contract then same-package Host Save/Fresh-Reopen",
       "verification": {
         "typecheck": "PASS",
         "repository": "PASS",
         "fullSuite": {
-          "tests": 837,
-          "passed": 836,
+          "tests": 879,
+          "passed": 878,
           "failed": 0,
           "pdfEnvironmentSkip": 1
         },
-        "focusedCoreDom": "15/15 PASS",
+        "focusedCoreDom": "18/18 PASS; final core includes successful dirty-draft compound add/exact prose/revision/selection proof",
         "build": "PASS",
         "nativeHost": "not activated/not run"
       },
@@ -9704,7 +9704,13 @@
           "external switch refresh renders unchanged B draft then supports editing; old delete stays closed",
           "external revision refresh preserves stale draft, commit stays closed, explicit discard works"
         ],
-        "review": "pending"
+        "review": "PASS4726d28 https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/71#issuecomment-6102236072"
+      },
+      "atomicSceneAdd": {
+        "cause": "commitDraft preceded allocation/add validation, allowing partial effects on later failure",
+        "repair": "stage draft edit and new scene, validate final codec/IDs/context/selection and publish together",
+        "negativeBefore": "collision/allocator/revision 3/3 failed before correction; pass after correction",
+        "independentReview": "pending"
       }
     },
     "nextRun": {
