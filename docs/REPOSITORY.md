@@ -25,6 +25,17 @@ README und CONTRIBUTING führen zu diesen Orten. Der Index ist eine Bereichskart
 
 Die bestehenden Root-Dokumente und bereits veröffentlichten Kandidatenpfade bleiben kompatibel. [repository-policy.json](repository-policy.json) hält diesen festen Bestand fest; sie ist keine Aufgaben- oder Statusliste. Neue Root-Markdown-Dateien sind nicht vorgesehen. Den Bestand nicht zur Umgehung der Prüfung erweitern. Eine später notwendige Strukturänderung muss ihre betroffenen Verweise und Übergänge ausdrücklich mitführen.
 
+## Selbstorganisation ohne zentrale Zuweisung
+
+Das Team organisiert ausführbare Arbeit innerhalb des bestätigten Produktumfangs selbst. Dafür braucht es keine zusätzliche Nutzerfreigabe oder feste Teamleitung je Teilpaket.
+
+1. **Arbeit wählen:** `npm run next` liefert freie Aufgaben nach Priorität. Zugriff und Fähigkeiten müssen zu den Voraussetzungen passen. Vor dem Claim vorhandene PRs und neueste Übernahmen prüfen.
+2. **Besitz klären:** Ein Implementierungspaket hat einen benannten Owner. Maßgeblich ist der erste eindeutige, nicht zurückgegebene Claim für diesen Scope im Aufgabenissue. Bei gleichzeitiger Übernahme unterstützt der spätere Contributor das bestehende Paket oder wählt eine andere Aufgabe; getrennte Teilscopes ausdrücklich vereinbaren. Assignees unter demselben Account reichen dafür nicht.
+3. **Reviews selbst übernehmen:** Ein freier Contributor kann einen angefragten Review im vorhandenen Aufgabenissue/PR übernehmen, soweit Zugriff und Fachkenntnis passen. Reviewerrolle, exakten Commit und Prüfgrenze dort nennen; eine bereits besessene Prüfung erhalten. Bei vereinbartem unabhängigem Review übernimmt ein anderer Contributor als der Autor. Für dieselbe Übergabe kein zusätzliches Koordinationsissue anlegen. Echte Hostläufe brauchen den abgestimmten Geräteslot.
+4. **Arbeit nachführen:** Paketowner benennt bei Übergabe den nächsten konkreten Eingang und Empfänger. Fehlt noch ein Reviewer oder Adapterowner, die offene Rolle samt Scope im Haupttext sichtbar anbieten und bei Bedarf `help wanted` setzen. `status:active` für die laufende Implementierung bleibt korrekt; ein Reviewgesuch macht sie nicht frei.
+5. **Nachschub bilden:** Jeder Contributor kann einen noch unbesetzten, bereits bestätigten Restbedarf im vorhandenen Parentissue in ein begrenztes Teilpaket zerlegen. Ergebnis, Quellen, Voraussetzungen, Abhängigkeiten, Abnahme und nächsten Empfänger angeben. Erst ein tatsächlich ausführbares Paket als `status:ready` anbieten; einen fehlenden Eingang als `status:blocked` führen. Bestehende Owner-/PR-Scopes zuvor prüfen. Beim Abschluss abhängige Pakete und Parentverweise nachziehen.
+6. **Entscheidungen am richtigen Ort treffen:** Bereichsfragen im zuständigen Fachissue, bereichsübergreifende Konflikte und Integrationsentscheidungen in #12 mit Optionen, Belegen und konkretem Entscheidungsbedarf klären. Neue Produktziele oder offene Nutzerentscheidungen bleiben ausdrücklich offen. Nur dafür den Nutzer einbeziehen; Aufgabenverteilung und Routineübergaben organisiert das Team selbst. Vereinbarte Fachabnahmen brauchen ihre direkten Nachweise.
+
 ## Aufgabe übernehmen, übergeben und abschließen
 
 1. **Vor Beginn:** neuesten Claim und vorhandenen PR prüfen. Bei Übernahme `status:ready` entfernen, `status:active` setzen und Agent/Rolle, Scope, Basis und nächsten Empfänger im Issue nennen. Überschneidungen im vorhandenen Paket klären.

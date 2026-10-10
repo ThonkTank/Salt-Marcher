@@ -50,4 +50,6 @@ Neue Aufgaben bekommen eine eigene kleine Beschreibung mit Abnahme und verlinken
 
 ## Ordnung bei jedem Beitrag erhalten
 
+Das Team [organisiert Aufgaben, Reviewübernahmen und nächste Teilpakete selbst](docs/REPOSITORY.md#selbstorganisation-ohne-zentrale-zuweisung). Bestehende Claims erhalten; bei Übergabe einen konkreten Empfänger oder eine ausdrücklich offene Rolle nennen. Aus bestätigten unbesetzten Restbedarfen selbst ausführbare Nachfolger bilden, statt eine zentrale Zuweisung abzuwarten.
+
 Der [Repository-Pflegevertrag](docs/REPOSITORY.md) legt Ablage, kanonische Informationsorte und Zuständigkeit fest. Neue Paketpläne liegen unter `docs/plans/<bereich>/` nach der [Vorlage](docs/templates/PACKAGE-PLAN.md) und werden im Index verlinkt. Bei Übernahme, Blockerwechsel und Abschluss Haupttext, Statuslabels und Abhängigkeiten nachziehen; bei Integration einen geänderten Lieferfokus aktualisieren. Kein zusätzlicher Freigabe- oder Meldelauf. `npm run audit:backlog` prüft mit GitHub-Zugriff ausschließlich lesend auf widersprüchliche Statuslabels.

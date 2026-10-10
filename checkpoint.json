@@ -119,6 +119,13 @@
       ],
       "verification": "Live query PASS; #51 was already claimed by Chronik and excluded, #52 returned as the first ready task. 21/21 navigation/structure/task tests PASS on Node 22.",
       "limits": "Availability is live, not promised permanently. No reassignment of active work and no product/host approval."
+    },
+    "teamOrganization": {
+      "date": "2026-10-10",
+      "contract": "docs/REPOSITORY.md#selbstorganisation-ohne-zentrale-zuweisung",
+      "scope": "Self-selected executable tasks, explicit claims, independent review uptake where agreed, bounded successors from confirmed unowned scope and owner-led handoffs.",
+      "observedEvidence": "Chronik claimed #51 and published PR #53 without central assignment. This demonstrates task uptake and delivery; integrated product gates and sustained team throughput remain unproven.",
+      "limits": "No automatic claim expiry, reassignment, product decision or approval. Existing domain evidence and device-slot requirements remain."
     }
   },
   "saltMarcherReplacement": {
