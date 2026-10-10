@@ -178,9 +178,12 @@ test("native Atlas capture: World record digest binds terrain-only edits at unch
   const cell = JSON.parse(store.files.get(chunkPath)!).cells[0];
   await source.ensure([cell]);
   const before = await repository.captureNative(request);
-  const stroke = new TerrainStroke(source, "forest");
+  const stroke = new TerrainStroke(
+    source,
+    cell.terrain === "forest" ? "land" : "forest",
+  );
   stroke.add(cell);
-  stroke.finish();
+  assert.equal(stroke.finish(), true);
   const after = await repository.captureNative(request);
   assert.deepEqual(after.world, before.world);
   assert.notEqual(
