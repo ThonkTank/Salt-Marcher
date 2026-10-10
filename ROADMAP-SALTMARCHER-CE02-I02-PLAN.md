@@ -13,9 +13,18 @@ W23 liefert daher die zusammenhängende Armor-/Arrow-Gruppe (A–Z 10–13,
 physische/gedruckte Seiten 208–209) einschließlich Resistenz-d10-Tabelle,
 Fluchtext und Slaying-Regeln. Ein kompletter Heading-zu-Heading-XML-Abgleich
 prüft Prosa und physische Tabellenreihenfolge statt nur vorhandener Substrings.
-Bei unmittelbar angrenzenden kursiven XML-Textläufen wird Satzzeichenabstand
-nur mit gleicher Seite/Zeile und nachgewiesener physischer Anschlussposition
-rekonstruiert; globale Interpunktionskorrekturen erfolgen nicht.
+W23-N01 ersetzt nach dem unabhängigen P1-Befund die feste Footer-Y-Grenze:
+Nur der exakte SRD-Footer mit belegter Seitennummer wird entfernt, nie eine
+Bodyregion nach Koordinaten. Getrennte kursive Wort-/Satzzeichenläufe erhalten
+das Fehlen von Grenzleerraum aus den XML-Quellwerten; echte Leerzeichen und
+Interpunktion bleiben unangetastet. Ein hashgebundener echter Poppler-25.03-
+XML-Ausschnitt, verschobene/hohe Koordinaten, Footer-/Body-Adversarien und ein
+expliziter PDF-Integrationstest schützen diese Grenze. Der lokale echte PDF-
+Lauf ist kein behaupteter Poppler-25.07- oder fremder Host-PASS.
+Der vollständige PDF-Test wird mit
+`SRD51_SOURCE_PDF=/pfad/SRD_CC_v5.1.pdf node --test tests/items-srd51-source.test.mjs`
+aktiviert. Ohne diese Quelle ist er ausdrücklich skipped; Offline-XML-Fixtures
+ersetzen keinen erneuten echten PDF-Lauf bei Quellenänderungen.
 Der Quellenstand und die direkten Review-/Veröffentlichungsbelege bleiben in
 `checkpoint.saltMarcherCatalogEncounter`, `acceptance.saltMarcherCatalogEncounter`
 und [Issue #9](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/9).

@@ -80,22 +80,38 @@ export function validateArmorArrowsPdfXml(xml, headings, normalize) {
   const nodes = [];
   for (const pageMatch of xml.matchAll(/<page\b[^>]*number="(\d+)"[^>]*>([\s\S]*?)<\/page>/g)) {
     const page = Number(pageMatch[1]);
+    const pageNodes = [];
     for (const match of pageMatch[2].matchAll(/<text\b([^>]*)>([\s\S]*?)<\/text>/g)) {
-      const top = Number(/\btop="(\d+)"/.exec(match[1])?.[1]);
-      if (!(top < 1100)) continue;
-      const text = normalize(match[2].replace(/<[^>]+>/g, "").replaceAll("&amp;", "&")
+      const rawText = match[2].replace(/<[^>]+>/g, "").replaceAll("&amp;", "&")
         .replaceAll("&quot;", '"').replaceAll("&apos;", "'")
-        .replaceAll("&lt;", "<").replaceAll("&gt;", ">"));
-      const left = Number(/\bleft="(\d+)"/.exec(match[1])?.[1]);
-      const width = Number(/\bwidth="(\d+)"/.exec(match[1])?.[1]);
-      const previous = nodes.at(-1);
+        .replaceAll("&lt;", "<").replaceAll("&gt;", ">");
+      const text = normalize(rawText);
+      const previous = pageNodes.at(-1);
       // Poppler splits italic slaying names from the immediately adjacent
-      // punctuation run. Do not introduce a space at a proven same-line,
-      // physically touching run boundary; do not strip punctuation globally.
-      const touchesPunctuation = /^[.,;:!?)]/.test(text) && previous?.page === page
-        && previous.top === top && Math.abs(left - previous.left - previous.width) <= 2;
-      if (text) nodes.push({ page, top, left, width, text, join: touchesPunctuation ? "" : " " });
+      // punctuation run. Preserve the source runs' lack of boundary whitespace
+      // instead of introducing a separator and correcting it by coordinates.
+      // Genuine whitespace or altered punctuation still fails the exact oracle.
+      const touchesPunctuation = /^[.,;:!?)]/.test(rawText) && previous?.page === page
+        && !/\s$/.test(previous.rawText);
+      if (text) pageNodes.push({ page, rawText, text, join: touchesPunctuation ? "" : " " });
     }
+    // Poppler versions/hosts can report body text below an apparent page
+    // height. Identify only the actual SRD footer, never an absolute Y band.
+    // The page number must be part of that footer or its next nonempty run;
+    // do not remove unrelated numeric/table nodes by position or value alone.
+    const footers = pageNodes.flatMap((node, index) =>
+      /^System Reference Document 5\.1(?: \d+)?$/.test(node.text) ? [index] : []);
+    assert.equal(footers.length, 1, `PDF page ${page}: exactly one SRD footer required`);
+    const footer = footers[0];
+    const footerNodes = new Set([footer]);
+    if (pageNodes[footer].text === "System Reference Document 5.1") {
+      assert.equal(pageNodes[footer + 1]?.text, String(page), `PDF page ${page}: footer page number`);
+      footerNodes.add(footer + 1);
+    } else {
+      assert.equal(pageNodes[footer].text, `System Reference Document 5.1 ${page}`,
+        `PDF page ${page}: footer page number`);
+    }
+    nodes.push(...pageNodes.filter((_, index) => !footerNodes.has(index)));
   }
   for (const [index, item] of ARMOR_ARROWS.entries()) {
     const start = nodes.findIndex(node => node.text === item.name);

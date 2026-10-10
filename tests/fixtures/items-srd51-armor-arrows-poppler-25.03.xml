@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<pdf2xml producer="poppler" version="25.03.0">
+<page number="208" position="absolute" top="0" left="0" height="1188" width="918">
+<fontspec id="0" size="16" family="LUFRKP+Calibri" color="#000000"/>
+<fontspec id="1" size="16" family="DXJJCX+GillSans-SemiBold" color="#000000"/>
+<fontspec id="2" size="18" family="DXJJCX+GillSans-SemiBold" color="#943634"/>
+<fontspec id="3" size="15" family="FNCRUV+Cambria" color="#000000"/>
+<fontspec id="4" size="15" family="UHIGMC+Cambria" color="#000000"/>
+<fontspec id="5" size="15" family="AOPMZV+Cambria" color="#000000"/>
+<fontspec id="6" size="18" family="WWROEK+Calibri" color="#000000"/>
+<fontspec id="7" size="13" family="WWROEK+Calibri" color="#000000"/>
+<fontspec id="8" size="13" family="LUFRKP+Calibri" color="#000000"/>
+<text top="1125" left="572" width="222" height="20" font="0">System   Reference   Document   5.1   </text>
+<text top="1125" left="842" width="26" height="19" font="1"><b>208</b></text>
+<text top="897" left="493" width="166" height="21" font="2"><b>Armor of Resistance </b></text>
+<text top="919" left="493" width="298" height="17" font="3"><i>Armor   (light,   medium,   or   heavy),   rare   (requires   </i></text>
+<text top="936" left="493" width="82" height="17" font="3"><i>attunement)   </i></text>
+<text top="963" left="493" width="340" height="17" font="4">You   have   resistance   to   one   type   of   damage   while   you   </text>
+<text top="981" left="493" width="289" height="17" font="4">wear   this   armor.   The   GM   chooses   the   type   or   </text>
+<text top="998" left="493" width="310" height="17" font="4">determines   it   randomly   from   the   options   below.   </text>
+</page>
+<page number="209" position="absolute" top="0" left="0" height="1188" width="918">
+<fontspec id="9" size="15" family="EMJVBH+Cambria" color="#000000"/>
+<text top="1125" left="572" width="222" height="20" font="0">System   Reference   Document   5.1   </text>
+<text top="1125" left="842" width="26" height="19" font="1"><b>209</b></text>
+<text top="1125" left="869" width="4" height="20" font="0">   </text>
+<text top="108" left="86" width="116" height="16" font="7"><b>d10    Damage   Type   </b></text>
+<text top="108" left="233" width="117" height="16" font="7"><b>d10    Damage   Type   </b></text>
+<text top="124" left="93" width="10" height="16" font="8">1   </text>
+<text top="124" left="123" width="27" height="16" font="8">Acid   </text>
+<text top="124" left="240" width="10" height="16" font="8">6   </text>
+<text top="124" left="270" width="49" height="16" font="8">Necrotic   </text>
+<text top="141" left="93" width="10" height="16" font="8">2   </text>
+<text top="141" left="123" width="28" height="16" font="8">Cold   </text>
+<text top="141" left="240" width="10" height="16" font="8">7   </text>
+<text top="141" left="270" width="40" height="16" font="8">Poison   </text>
+<text top="157" left="93" width="10" height="16" font="8">3   </text>
+<text top="157" left="123" width="24" height="16" font="8">Fire   </text>
+<text top="157" left="240" width="10" height="16" font="8">8   </text>
+<text top="157" left="270" width="43" height="16" font="8">Psychic   </text>
+<text top="174" left="93" width="10" height="16" font="8">4   </text>
+<text top="174" left="123" width="33" height="16" font="8">Force   </text>
+<text top="174" left="240" width="10" height="16" font="8">9   </text>
+<text top="174" left="270" width="45" height="16" font="8">Radiant   </text>
+<text top="190" left="93" width="10" height="16" font="8">5   </text>
+<text top="190" left="123" width="53" height="16" font="8">Lightning   </text>
+<text top="190" left="236" width="17" height="16" font="8">10   </text>
+<text top="190" left="270" width="49" height="16" font="8">Thunder   </text>
+<text top="220" left="86" width="184" height="21" font="2"><b>Armor of Vulnerability </b></text>
+<text top="242" left="86" width="266" height="17" font="3"><i>Armor   (plate),   rare   (requires   attunement)   </i></text>
+<text top="269" left="86" width="316" height="17" font="4">While   wearing   this   armor,   you   have   resistance   to   </text>
+<text top="286" left="86" width="312" height="17" font="4">one   of   the   following   damage   types:   bludgeoning,   </text>
+<text top="304" left="86" width="315" height="17" font="4">piercing,   or   slashing.   The   GM   chooses   the   type   or   </text>
+<text top="321" left="86" width="157" height="17" font="4">determines   it   randomly.   </text>
+<text top="339" left="100" width="41" height="17" font="9"><i><b>Curse.</b></i></text>
+<text top="339" left="142" width="280" height="17" font="4">   This   armor   is   cursed,   a   fact   that   is   revealed   </text>
+<text top="356" left="86" width="89" height="17" font="4">only   when   an   </text>
+<text top="356" left="176" width="47" height="17" font="3"><i>identify</i></text>
+<text top="356" left="223" width="184" height="17" font="4">   spell   is   cast   on   the   armor   or   </text>
+<text top="374" left="86" width="319" height="17" font="4">you   attune   to   it.   Attuning   to   the   armor   curses   you   </text>
+<text top="392" left="86" width="185" height="17" font="4">until   you   are   targeted   by   the   </text>
+<text top="392" left="271" width="83" height="17" font="3"><i>remove   curse</i></text>
+<text top="392" left="354" width="54" height="17" font="4">   spell   or   </text>
+<text top="409" left="86" width="323" height="17" font="4">similar   magic;   removing   the   armor   fails   to   end   the   </text>
+<text top="427" left="86" width="338" height="17" font="4">curse.   While   cursed,   you   have   vulnerability   to   two   of   </text>
+<text top="444" left="86" width="323" height="17" font="4">the   three   damage   types   associated   with   the   armor   </text>
+<text top="462" left="86" width="274" height="17" font="4">(not   the   one   to   which   it   grants   resistance).   </text>
+<text top="493" left="86" width="185" height="21" font="2"><b>Arrow-Catching Shield </b></text>
+<text top="514" left="86" width="271" height="17" font="3"><i>Armor   (shield),   rare   (requires   attunement)   </i></text>
+<text top="541" left="86" width="316" height="17" font="4">You   gain   a   +2   bonus   to   AC   against   ranged   attacks   </text>
+<text top="559" left="86" width="337" height="17" font="4">while   you   wield   this   shield.   This   bonus   is   in   addition   </text>
+<text top="576" left="86" width="301" height="17" font="4">to   the   shield’s   normal   bonus   to   AC.   In   addition,   </text>
+<text top="594" left="86" width="338" height="17" font="4">whenever   an   attacker   makes   a   ranged   attack   against   </text>
+<text top="611" left="86" width="294" height="17" font="4">a   target   within   5   feet   of   you,   you   can   use   your   </text>
+<text top="629" left="86" width="327" height="17" font="4">reaction   to   become   the   target   of   the   attack   instead.   </text>
+<text top="660" left="86" width="137" height="21" font="2"><b>Arrow of Slaying </b></text>
+<text top="681" left="86" width="171" height="17" font="3"><i>Weapon   (arrow),   very   rare   </i></text>
+<text top="708" left="86" width="21" height="17" font="4">An   </text>
+<text top="708" left="107" width="102" height="17" font="3"><i>arrow   of   slaying</i></text>
+<text top="708" left="209" width="212" height="17" font="4">   is   a   magic   weapon   meant   to   slay   </text>
+<text top="726" left="86" width="339" height="17" font="4">a   particular   kind   of   creature.   Some   are   more   focused   </text>
+<text top="743" left="86" width="258" height="17" font="4">than   others;   for   example,   there   are   both   </text>
+<text top="743" left="344" width="63" height="17" font="3"><i>arrows   of   </i></text>
+<text top="761" left="86" width="93" height="17" font="3"><i>dragon   slaying</i></text>
+<text top="761" left="179" width="31" height="17" font="4">   and   </text>
+<text top="761" left="210" width="186" height="17" font="3"><i>arrows   of   blue   dragon   slaying</i></text>
+<text top="761" left="396" width="30" height="17" font="4">.   If   a   </text>
+<text top="778" left="86" width="292" height="17" font="4">creature   belonging   to   the   type,   race,   or   group   </text>
+<text top="796" left="86" width="122" height="17" font="4">associated   with   an   </text>
+<text top="796" left="208" width="102" height="17" font="3"><i>arrow   of   slaying</i></text>
+<text top="796" left="310" width="94" height="17" font="4">   takes   damage   </text>
+<text top="814" left="86" width="312" height="17" font="4">from   the   arrow,   the   creature   must   make   a   DC   17   </text>
+<text top="831" left="86" width="308" height="17" font="4">Constitution   saving   throw,   taking   an   extra   6d10   </text>
+<text top="849" left="86" width="315" height="17" font="4">piercing   damage   on   a   failed   save,   or   half   as   much   </text>
+<text top="867" left="86" width="219" height="17" font="4">extra   damage   on   a   successful   one.   </text>
+<text top="884" left="86" width="68" height="17" font="4">    Once   an   </text>
+<text top="884" left="155" width="102" height="17" font="3"><i>arrow   of   slaying</i></text>
+<text top="884" left="256" width="165" height="17" font="4">   deals   its   extra   damage   to   </text>
+<text top="901" left="86" width="277" height="17" font="4">a   creature,   it   becomes   a   nonmagical   arrow.   </text>
+<text top="919" left="86" width="342" height="17" font="4">    Other   types   of   magic   ammunition   of   this   kind   exist,   </text>
+<text top="937" left="86" width="50" height="17" font="4">such   as   </text>
+<text top="937" left="136" width="93" height="17" font="3"><i>bolts   of   slaying</i></text>
+<text top="937" left="230" width="196" height="17" font="4">   meant   for   a   crossbow,   though   </text>
+<text top="954" left="86" width="171" height="17" font="4">arrows   are   most   common.   </text>
+<text top="108" left="493" width="105" height="21" font="2"><b>Bag of Beans </b></text>
+</page>
+</pdf2xml>

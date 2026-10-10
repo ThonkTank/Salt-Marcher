@@ -243,23 +243,27 @@
     "architecture": "ARCHITECTURE.md#geplante-katalog--und-encounter-erweiterung",
     "acceptance": "acceptance.json.saltMarcherCatalogEncounter",
     "currentRun": {
-      "id": "CE-02-I02-S01-W23",
-      "kind": "source_inventory_schema_transcript_intermediate",
-      "state": "in_progress_verified_incomplete",
-      "focus": "Complete Armor/Arrow source group, A–Z ordinals 10–13, physical/printed pages 208–209",
+      "id": "CE-02-I02-S01-W23-N01",
+      "kind": "source_verifier_repair",
+      "state": "repair_checked_independent_review_pending_incomplete",
+      "focus": "Repair PR48 P1: extractor-coordinate-independent footer/body separation with real XML and official PDF regressions",
       "plan": "ROADMAP-SALTMARCHER-CE02-I02-PLAN.md",
-      "result": "Four complete source entries with full headers/prose, three required and one not-required attunement states, vulnerability curse, slaying rules and all ten die-bound resistance choices. Full heading-bounded PDF text and physical two-column table order are verified. Source package remains incomplete; no product artifact/provider/UI.",
+      "result": "Removed the absolute footer Y threshold. Only the exact SRD footer plus its page number is excluded; every body run survives regardless of reported coordinates. Italic/punctuation boundaries preserve source whitespace without geometric heuristics. Real hash-bound XML and high-coordinate/invalid-footer/body adversaries pass; complete source facts and product bytes are unchanged. Independent Poppler-25.07 re-review remains open.",
       "verification": {
-        "sourceRevision": "321a41c1fa651e6c77f005566ebbafc7080eb960+dirty",
+        "sourceRevision": "94e48847174e1b7a3dce93cb9d6377e34f5b1b98+dirty",
         "check": "passed",
         "tests": {
-          "passed": 449,
-          "failed": 0
+          "passed": 482,
+          "failed": 0,
+          "skipped": 0,
+          "officialPdfEnabled": true
         },
         "build": "passed",
         "focusedTests": {
-          "passed": 44,
-          "failed": 0
+          "passed": 48,
+          "failed": 0,
+          "skipped": 0,
+          "officialPdfEnabled": true
         },
         "pdfSha256": "2504d2a0abb0a4d491a939be4f17910a2dde0312570ab8d208080225ccf0a1f0",
         "pdfBytes": 3158713,
@@ -296,43 +300,60 @@
           "records": 4,
           "resistanceTableRows": 10,
           "derivedHeadingCount": 239,
-          "oracle": "complete heading-bounded XML stream; adjacent punctuation joined only with physical coordinate proof"
+          "oracle": "complete heading-bounded XML stream; exact SRD footer/page identity; source-run boundary whitespace preserved independently of coordinates"
+        },
+        "repositoryStructure": "passed",
+        "repositoryTests": {
+          "passed": 18,
+          "failed": 0
+        },
+        "extractorRepair": {
+          "localVersion": "pdftohtml 25.03.0",
+          "realFixtureSha256": "817a22fe85a82a972d905ae58e19db42c210fb7ed989b8acb79ba47f63221048",
+          "fullExtractSha256": "7a6eac1d4a81499d4bb136aac27a4bc2527ffd67985e8ddf4f24a242481cb3de",
+          "highCoordinateCases": "derived from real XML; shifted +10000 and reported heading/body top shape 1153/1156",
+          "localPoppler2507Executed": false
         }
       },
-      "limits": "Source package partial: 225 A–Z headings plus Orb of Dragonkind, magic-item helper reconciliation, remaining goldens and independent W23/S01 reviews remain open. Product artifact/provider/UI and I01 stay blocked; no GUI/physical/E2E or 2024 approval.",
+      "limits": "W23 source remains partial and not independently approved after P1. Local official PDF runs use Poppler 25.03.0; transformed XML cases are not a claimed 25.07 extraction. 225 A–Z headings, Orb, helper reconciliation, remaining goldens, S01-R01 and all Item product/host gates remain open.",
       "documentation": {
         "status": "partial",
         "branch": "catalog/ce02-s01-w23-armor-arrows",
-        "baseCommit": "321a41c1fa651e6c77f005566ebbafc7080eb960",
-        "issue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/9#issuecomment-6099299639",
+        "baseCommit": "94e48847174e1b7a3dce93cb9d6377e34f5b1b98",
+        "issue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/9#issuecomment-6099799191",
+        "pr": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/48",
         "changedFiles": [
-          "src/features/catalog/data/items-srd51-inventory.json",
-          "src/features/catalog/data/items-srd51-transcript.json",
-          "src/features/catalog/data/items-srd51-source-manifest.json",
-          "tools/items-srd51-source-verify.mjs",
-          "tests/items-srd51-source.test.mjs",
-          "acceptance.json",
-          "checkpoint.json",
           "tools/items-srd51-armor-arrows.mjs",
-          "ROADMAP-SALTMARCHER-CE02-I02-PLAN.md"
+          "tests/items-srd51-source.test.mjs",
+          "tests/fixtures/items-srd51-armor-arrows-poppler-25.03.xml",
+          "tests/fixtures/items-srd51-armor-arrows-poppler-25.03-receipt.json",
+          "ROADMAP-SALTMARCHER-CE02-I02-PLAN.md",
+          "checkpoint.json",
+          "acceptance.json"
         ],
         "externalEvidence": {
-          "path": "/tmp/SRD_CC_v5.1.pdf, /tmp/w23-pdf.json, /tmp/w23-exact-pdf.json, main.js, manifest.json, styles.css",
-          "scope": "Official PDF/local CLI/build evidence only; exact-SHA receipt is published in Issue #9/linked candidate PR. No installed triplet, user-vault write, visible Obsidian UI or physical acceptance."
+          "path": "/tmp/SRD_CC_v5.1.pdf, /tmp/ce02-w23-n01-evidence/, committed XML fixture/receipt, local main.js/manifest.json/styles.css",
+          "scope": "Local Poppler 25.03.0 official-PDF and build evidence; genuine XML fixture is repository-accessible. /home/aaron/.cache/dungeon-native-qa is not writable on this cloud host (Permission denied); logs use explicit ephemeral /tmp fallback. No foreign 25.07/GUI/installed triplet/physical acceptance."
         },
-        "publication": "Candidate PR/close receipt follow upstream integration and non-force push; independent review required before shared integration.",
-        "commit": "see Issue #9 close receipt and candidate PR",
+        "publication": "Existing PR48 updated by non-force push after final upstream sync; exact clean-SHA checks and CI results belong to its close receipt.",
+        "commit": "see PR48 and Issue #9 repair close receipt",
         "notProven": [
-          "complete Item corpus",
-          "225 remaining A–Z headings and Orb",
-          "magic-item helper reconciliation and remaining goldens",
-          "W23 independent review and S01-R01",
-          "Item artifact/provider/UI",
-          "Obsidian/physical/E2E acceptance",
+          "independent P1 re-review / Poppler 25.07 execution",
+          "complete Item corpus and S01-R01",
+          "225 remaining A–Z headings / Orb / helper reconciliation / remaining goldens",
+          "Item product artifact/provider/UI",
+          "installed Obsidian/GUI/physical/E2E acceptance",
           "Encounter runtime",
           "2024 rules"
         ],
-        "next": "Independent candidate review, then continue a coherent source section rather than single-entry micro-runs."
+        "next": "Independent exact-SHA P1 re-review in PR48; after PASS integrate W23 and continue coherent Bags source work."
+      },
+      "review": {
+        "state": "changes_required_repair_re_review_pending",
+        "reviewedCommit": "243f3ee884f2109fda23ffd4e2555abb73db4d56",
+        "issue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/48#pullrequestreview-5479813046",
+        "finding": "P1: absolute top<1100 discards body headings on independent Poppler 25.07.0 host",
+        "repair": "implemented and locally checked; independent exact-SHA and 25.07 host confirmation not yet received"
       }
     },
     "implementationRun": {
@@ -544,10 +565,10 @@
       "Physical catalog input acceptance cannot be replaced by Playwright automation"
     ],
     "nextRun": {
-      "id": "CE-02-I02-S01-W24",
-      "kind": "source_inventory_schema_transcript_continuation",
+      "id": "CE-02-I02-S01-W23-N01-R01",
+      "kind": "independent_source_verifier_re_review",
       "plan": "ROADMAP-SALTMARCHER-CE02-I02-PLAN.md",
-      "focus": "Continue the coherent Bags source group with complete tables/page spans after W23 review/integration; keep complete false until all S01 obligations are closed"
+      "focus": "Re-review P1 on exact repaired PR48 SHA, including independent Poppler 25.07 official PDF run. Then integrate W23 and continue the coherent Bags group in W24."
     }
   },
   "repositoryWorkflow": {

@@ -526,8 +526,8 @@
       "review": "R01 on exact 8c5c5680054b8dddd89900733ac7bbfe966876f1 required seven repairs (Issue #1 comment 6085178049). N01-R01 on exact 01a02ef124e3ffc02b626019f89f5e216612f7ab required S01 cycle/schema repairs (Issue #1 comment 6085248851). N02-R01 on exact 3b7e5c933a107da6f406aa44037decf316d09b77 found a variable-rarity schema gap (Issue #1 comment 6085306351). N03-R01 PASSED exact 679d432e145bd9afe766393346e4b788931886ea with no remaining mandatory plan finding (Issue #1 comment 6085341786). This approves planning only; S01 and I01 are undelivered."
     },
     "ce02I02Source": {
-      "run": "CE-02-I02-S01-W23",
-      "state": "in_progress_verified_incomplete",
+      "run": "CE-02-I02-S01-W23-N01",
+      "state": "repair_checked_independent_review_pending_incomplete",
       "sourceDocument": "https://media.wizards.com/2023/downloads/dnd/SRD_CC_v5.1.pdf",
       "sourceSha256": "2504d2a0abb0a4d491a939be4f17910a2dde0312570ab8d208080225ccf0a1f0",
       "helperCommit": "3f5593ea004c4f5a2af95603087ce4de72689d9f",
@@ -577,19 +577,24 @@
         "Animated Shield, Apparatus, Armor +1/+2/+3 and Armor of Invulnerability identity/page/ordinal/header/rarity/attunement/prose rejection, ordered Armor variant rejection and Apparatus lever-table row/cell-order rejection",
         "fail-closed incomplete-package gate",
         "fixed and variable rarity identity regressions",
-        "Armor/Arrow ordinals 10–13, full curse/prose, all ten resistance choices, exact whole-heading PDF stream and negative identity/fact/table/page/heading goldens"
+        "Armor/Arrow ordinals 10–13, full curse/prose, all ten resistance choices, exact whole-heading PDF stream and negative identity/fact/table/page/heading goldens",
+        "W23-N01 replaces the absolute footer Y band by exact SRD-footer/page identification and preserves all body text; real hash-bound Poppler XML, derived high-coordinate shapes, invalid footer/body failures and opt-in full official PDF integration test"
       ],
       "verification": {
-        "sourceRevision": "321a41c1fa651e6c77f005566ebbafc7080eb960+dirty",
+        "sourceRevision": "94e48847174e1b7a3dce93cb9d6377e34f5b1b98+dirty",
         "check": "passed",
         "tests": {
-          "passed": 449,
-          "failed": 0
+          "passed": 482,
+          "failed": 0,
+          "skipped": 0,
+          "officialPdfEnabled": true
         },
         "build": "passed",
         "focusedTests": {
-          "passed": 44,
-          "failed": 0
+          "passed": 48,
+          "failed": 0,
+          "skipped": 0,
+          "officialPdfEnabled": true
         },
         "pdfIdentity": "passed",
         "occurrences": {
@@ -711,11 +716,30 @@
           "records": 4,
           "resistanceTableRows": 10,
           "derivedHeadingCount": 239,
-          "oracle": "complete heading-bounded XML stream; adjacent punctuation joined only with physical coordinate proof"
+          "oracle": "complete heading-bounded XML stream; exact SRD footer/page identity; source-run boundary whitespace preserved independently of coordinates"
+        },
+        "repositoryStructure": "passed",
+        "repositoryTests": {
+          "passed": 18,
+          "failed": 0
+        },
+        "extractorRepair": {
+          "localVersion": "pdftohtml 25.03.0",
+          "realFixtureSha256": "817a22fe85a82a972d905ae58e19db42c210fb7ed989b8acb79ba47f63221048",
+          "fullExtractSha256": "7a6eac1d4a81499d4bb136aac27a4bc2527ffd67985e8ddf4f24a242481cb3de",
+          "highCoordinateCases": "derived from real XML; shifted +10000 and reported heading/body top shape 1153/1156",
+          "localPoppler2507Executed": false
         }
       },
-      "limits": "Intermediate: 219 equipment occurrences and 237 helper equipment records remain covered/reconciled; A–Z 1–13 and merged Potion-of-Healing heading 142 are captured. Remaining 225 A–Z headings, Orb, magic-item helper reconciliation, remaining tables/goldens and independent W23/S01 reviews stay open. No product artifact/provider/UI, host or I01 approval.",
-      "magicItemAzArmorArrowsEvidence": "A–Z ordinals 10–13 on physical/printed pages 208–209 preserve complete headers and prose, vulnerability curse, slaying rules and ten ordered die-bound resistance choices. Full heading-bounded XML text and physical two-column table order are checked, not merely substring presence."
+      "limits": "W23 source remains partial and not independently approved after P1. Local official PDF runs use Poppler 25.03.0; transformed XML cases are not a claimed 25.07 extraction. 225 A–Z headings, Orb, helper reconciliation, remaining goldens, S01-R01 and all Item product/host gates remain open. No source corpus identity/value changed and no Item product artifact/provider/UI, host or I01 approval.",
+      "magicItemAzArmorArrowsEvidence": "A–Z ordinals 10–13 on physical/printed pages 208–209 preserve complete headers and prose, vulnerability curse, slaying rules and ten ordered die-bound resistance choices. Full heading-bounded XML text and physical two-column table order are checked, not merely substring presence.",
+      "repairReview": {
+        "state": "changes_required_repair_re_review_pending",
+        "reviewedCommit": "243f3ee884f2109fda23ffd4e2555abb73db4d56",
+        "issue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/48#pullrequestreview-5479813046",
+        "finding": "P1: absolute top<1100 discards body headings on independent Poppler 25.07.0 host",
+        "repair": "implemented and locally checked; independent exact-SHA and 25.07 host confirmation not yet received"
+      }
     }
   },
   "cityPlans": {
