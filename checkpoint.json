@@ -226,24 +226,24 @@
     "architecture": "ARCHITECTURE.md#geplante-katalog--und-encounter-erweiterung",
     "acceptance": "acceptance.json.saltMarcherCatalogEncounter",
     "currentRun": {
-      "id": "CE-02-I02-S01-W23-N01",
-      "kind": "source_verifier_repair",
-      "state": "repair_checked_independent_review_pending_incomplete",
-      "focus": "Repair PR48 P1: extractor-coordinate-independent footer/body separation with real XML and official PDF regressions",
+      "id": "CE-02-I02-S01-W24",
+      "kind": "source_inventory_schema_transcript_continuation",
+      "state": "source_review_pass_composition_checked_steward_pending_incomplete",
+      "focus": "Complete four-item Bags source group, A–Z ordinals 14–17, physical/printed pages 209–211",
       "plan": "ROADMAP-SALTMARCHER-CE02-I02-PLAN.md",
-      "result": "Removed the absolute footer Y threshold. Only the exact SRD footer plus its page number is excluded; every body run survives regardless of reported coordinates. Italic/punctuation boundaries preserve source whitespace without geometric heuristics. Real hash-bound XML and high-coordinate/invalid-footer/body adversaries pass; complete source facts and product bytes are unchanged. Independent Poppler-25.07 re-review remains open.",
+      "result": "Preserves complete Beans/Devouring/Holding/Tricks prose and headers, all twelve d100 effects including 00 and the split-page egg outcome, and all three color-bound eight-row d8 tables. Every heading-bounded XML interval and page span is compared exactly. No invented variants, merges, costs, capacity or conditional-weight conversions. Full official PDF verification passes; complete false and Item product gates remain closed.",
       "verification": {
-        "sourceRevision": "94e48847174e1b7a3dce93cb9d6377e34f5b1b98+dirty",
+        "sourceRevision": "82c6f0ad1e75b0d8f0fb9ab68aed17b72b06798f",
         "check": "passed",
         "tests": {
-          "passed": 482,
+          "passed": 723,
           "failed": 0,
-          "skipped": 0,
-          "officialPdfEnabled": true
+          "skipped": 1,
+          "officialPdfEnabled": false
         },
         "build": "passed",
         "focusedTests": {
-          "passed": 48,
+          "passed": 61,
           "failed": 0,
           "skipped": 0,
           "officialPdfEnabled": true
@@ -251,9 +251,9 @@
         "pdfSha256": "2504d2a0abb0a4d491a939be4f17910a2dde0312570ab8d208080225ccf0a1f0",
         "pdfBytes": 3158713,
         "pdfPages": 403,
-        "occurrences": 233,
-        "records": 232,
-        "transcriptFacts": 731,
+        "occurrences": 237,
+        "records": 236,
+        "transcriptFacts": 793,
         "magicItemAzArmorOfInvulnerability": {
           "ordinal": 9,
           "physicalPdfPage": 208,
@@ -265,10 +265,10 @@
           "previousHeading": "Armor, +1, +2, or +3",
           "nextHeading": "Armor of Resistance"
         },
-        "mainBytes": 1422956,
-        "mainSha256": "522823730ddce4d0ba83e0476f60887b60a07c517f84e8e270814b6d597efa43",
+        "mainBytes": 1613470,
+        "mainSha256": "a48bb388cdc4d7cf28d156c7574aa68ea98fdc10ed173436bf0c12a7990623b0",
         "manifestSha256": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64",
-        "stylesSha256": "a6d31c13219d4b9f49d2ecf6993106bedef2a33560c9bdfdb93106659d45bc2e",
+        "stylesSha256": "68e1cf101ceaadd624168b431fddc297c90e8a5bc6be25a15f0926ebb569a5ea",
         "magicItemAzArmorArrows": {
           "ordinals": [
             10,
@@ -287,8 +287,9 @@
         },
         "repositoryStructure": "passed",
         "repositoryTests": {
-          "passed": 18,
-          "failed": 0
+          "passed": 25,
+          "failed": 0,
+          "skipped": 0
         },
         "extractorRepair": {
           "localVersion": "pdftohtml 25.03.0",
@@ -296,47 +297,106 @@
           "fullExtractSha256": "7a6eac1d4a81499d4bb136aac27a4bc2527ffd67985e8ddf4f24a242481cb3de",
           "highCoordinateCases": "derived from real XML; shifted +10000 and reported heading/body top shape 1153/1156",
           "localPoppler2507Executed": false
-        }
+        },
+        "magicItemAzBags": {
+          "ordinals": [
+            14,
+            15,
+            16,
+            17
+          ],
+          "physicalPdfPages": [
+            209,
+            210,
+            211
+          ],
+          "records": 4,
+          "beansEffectRows": 12,
+          "tricksTables": 3,
+          "tricksCreatureRows": 24,
+          "derivedHeadingCount": 239,
+          "oracle": "complete-heading-bounded stream with exact source die ranges, color ownership and split-page continuation"
+        },
+        "toolchain": {
+          "node": "official Node.js v22.22.2 linux-x64",
+          "nodeArchiveSha256": "88fd1ce767091fd8d4a99fdb2356e98c819f93f3b1f8663853a2dee9b438068a",
+          "zlib": "1.3.1-e00f703",
+          "poppler": "pdftohtml/pdftotext 25.03.0",
+          "xmlFixtureSha256": "53d10bd6a4e56f6a28b1c9e33f8cfb63afe5ab4979e7ae8b546adb7de0b008bf",
+          "xmlFixtureBytes": 46411
+        },
+        "pdfEvidenceCarry": "Existing true official-PDF W24 tests/review preserved by exact byte comparison of every W24 Source/Tool/Test/Fixture path to independently reviewed42a69b6. No new PDF run inferred from the skipped test."
       },
-      "limits": "W23 source remains partial and not independently approved after P1. Local official PDF runs use Poppler 25.03.0; transformed XML cases are not a claimed 25.07 extraction. 225 A–Z headings, Orb, helper reconciliation, remaining goldens, S01-R01 and all Item product/host gates remain open.",
+      "limits": "Intermediate source only: 221 A–Z headings plus Orb, magic-item helper reconciliation, remaining goldens and independent S01-R01 remains open; W24 is independently PASS, regular shared integration remains open. Item artifact/provider/UI and I01 blocked. No Obsidian installation, GUI, physical, full E2E or Encounter runtime approval; exclusively 2014.",
       "documentation": {
         "status": "partial",
-        "branch": "catalog/ce02-s01-w23-armor-arrows",
-        "baseCommit": "94e48847174e1b7a3dce93cb9d6377e34f5b1b98",
-        "issue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/9#issuecomment-6099799191",
-        "pr": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/48",
+        "branch": "catalog/ce02-s01-w24-bags",
+        "baseCommit": "5412367e8f1ac80bfc69cf1272cf29ffc44af17b",
+        "issue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/9#issuecomment-6100419212",
+        "commit": "see exact-SHA close receipt and candidate PR in Issue #9",
         "changedFiles": [
+          "src/features/catalog/data/items-srd51-inventory.json",
+          "src/features/catalog/data/items-srd51-transcript.json",
+          "src/features/catalog/data/items-srd51-source-manifest.json",
+          "tools/items-srd51-bags.mjs",
           "tools/items-srd51-armor-arrows.mjs",
+          "tools/items-srd51-source-verify.mjs",
+          "tests/items-srd51-bags.test.mjs",
           "tests/items-srd51-source.test.mjs",
-          "tests/fixtures/items-srd51-armor-arrows-poppler-25.03.xml",
-          "tests/fixtures/items-srd51-armor-arrows-poppler-25.03-receipt.json",
+          "tests/fixtures/items-srd51-bags-poppler-25.03.xml",
+          "tests/fixtures/items-srd51-bags-poppler-25.03-receipt.json",
+          "package.json",
           "ROADMAP-SALTMARCHER-CE02-I02-PLAN.md",
           "checkpoint.json",
           "acceptance.json"
         ],
         "externalEvidence": {
-          "path": "/tmp/SRD_CC_v5.1.pdf, /tmp/ce02-w23-n01-evidence/, committed XML fixture/receipt, local main.js/manifest.json/styles.css",
-          "scope": "Local Poppler 25.03.0 official-PDF and build evidence; genuine XML fixture is repository-accessible. /home/aaron/.cache/dungeon-native-qa is not writable on this cloud host (Permission denied); logs use explicit ephemeral /tmp fallback. No foreign 25.07/GUI/installed triplet/physical acceptance."
+          "path": "Committed original XML/receipt; /tmp/SRD_CC_v5.1.pdf; /tmp/w24-integrated-{check,tests,build}.log, /tmp/w24-integrated-pdf.json, /tmp/w24-focused.log, /tmp/w24-{repo-tests,final-repo-check}.log. Clean exact-SHA receipt follows in Issue #9/PR.; latest role-contract composition /tmp/w24-role-{repo-check,repo-tests,check,install,tests-installed,build}.log on82c6f0a",
+          "scope": "Original complete three-page XML is committed and reviewer-accessible. Canonical /home/aaron cache is not writable on this cloud host; raw CLI logs use explicit ephemeral /tmp fallback. Local official PDF and clean-SHA build, not installed triplet, GUI or physical input. Real 25.07 evidence belongs solely to the previous independent W23 review."
         },
-        "publication": "Existing PR48 updated by non-force push after final upstream sync; exact clean-SHA checks and CI results belong to its close receipt.",
-        "commit": "see PR48 and Issue #9 repair close receipt",
         "notProven": [
-          "independent P1 re-review / Poppler 25.07 execution",
-          "complete Item corpus and S01-R01",
-          "225 remaining A–Z headings / Orb / helper reconciliation / remaining goldens",
-          "Item product artifact/provider/UI",
+          "shared W24 integration",
+          "221 A–Z headings / Orb / helper reconciliation / remaining goldens / S01-R01",
+          "Item product artifact/provider/UI/I01",
           "installed Obsidian/GUI/physical/E2E acceptance",
-          "Encounter runtime",
-          "2024 rules"
+          "Encounter runtime"
         ],
-        "next": "Independent exact-SHA P1 re-review in PR48; after PASS integrate W23 and continue coherent Bags source work."
+        "next": "Stadt narrow composition/integration completion on repaired candidate; then next coherent source group from Bead of Force."
       },
       "review": {
-        "state": "changes_required_repair_re_review_pending",
-        "reviewedCommit": "243f3ee884f2109fda23ffd4e2555abb73db4d56",
-        "issue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/48#pullrequestreview-5479813046",
-        "finding": "P1: absolute top<1100 discards body headings on independent Poppler 25.07.0 host",
-        "repair": "implemented and locally checked; independent exact-SHA and 25.07 host confirmation not yet received"
+        "state": "PASS",
+        "reviewedCommit": "42a69b63a69fbf310f1ba4eb4b7128cee2e5c700",
+        "issue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/56#pullrequestreview-5480292230",
+        "scope": "Independent full four-item Bags source/PDF review on genuine Poppler26.01, twelve effects and twenty-four color-bound cells; source/tool/test/fixture bytes unchanged in composition. No Full-S01/product/host approval."
+      },
+      "dependencies": {
+        "w23P1Review": {
+          "state": "PASS",
+          "reviewedCommit": "8dfa06ac859acf84df1e35d481893cf289e062e3",
+          "issue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/48#pullrequestreview-5479968350",
+          "scope": "Independent P1 repair/W23 PDF oracle, genuine Poppler 25.07 official PDF and 48/48 tests; no S01/product/host overall approval"
+        },
+        "w23Integration": "completed: independent Stadt stewardship merged PR48/8dfa06a into shared 6ce52f1c8915c006dfdefe2261f0c0c6d77b8483; consumed receipt https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/48#issuecomment-6100664463. W24 source bytes unchanged; W24 review/full S01/product gates remain open."
+      },
+      "composition": {
+        "id": "W24-COMPOSE-01",
+        "state": "checked_steward_handoff_pending",
+        "sharedCommit": "c932bbab534c5a70a15cc4628728c0d1b92f162a",
+        "testedCommit": "82c6f0ad1e75b0d8f0fb9ab68aed17b72b06798f",
+        "claim": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/56#issuecomment-6100853466",
+        "resolution": "Retain entire current Shared package.json and add only Bags test once directly after Sources; all four Atlas/Campaign bundles and unique check/test keys retained. No source/product fix.",
+        "next": "Stadt consumes exact-SHA CI and narrowly closes regular integration; no new source review.",
+        "roleContract": {
+          "role": "migration",
+          "defaultBranch": "active/installed-phase1",
+          "loadedCommit": "c932bbab534c5a70a15cc4628728c0d1b92f162a",
+          "documents": [
+            "AGENTS.md",
+            "docs/AGENT-ROLES.md"
+          ],
+          "authority": "Existing authorized migration/product scope, exclusively D&D2014; no expansion from repository role rules"
+        },
+        "installation": "Current Shared lockfile installed with official Node22 npm ci; initial missing better-sqlite3 local dependency failures cleared. No P02 source edit or foreign gate approval."
       }
     },
     "implementationRun": {
@@ -540,7 +600,7 @@
       },
       "limits": "Build-contract repair only. No catalog data/provider/UI change and no CE, Atlas, host, physical-input or overall approval."
     },
-    "verified": "CE-00 and CE-01 implementation/review/repair cycles passed their scoped gates. CE-01-H01 passed its independently reviewed automated scope. CE-02-I01 product commit 7469e64202e730175ee138136a69d82ad4f28ea6 and metadata repair candidate 4d239004c4f000b2af6f66122a05135b0c353ffb passed independent review. CE-02-I02-S01 has a checked fail-closed source package with all 219 equipment occurrences and transcripts plus explicit reconciliation of all 237 helper equipment records. Potion of healing retains its earliest equipment identity and merges A–Z heading 142. A–Z headings 1–13 now preserve exact identities, headers, descriptions, rarity and attunement facts across physical pages 207–209; Apparatus of the Crab preserves its full ten-row Up/Down lever table, Armor +1/+2/+3 preserves all three ordered rarity variants and Armor of Invulnerability preserves its fixed legendary rarity and required attunement. The Armor/Arrow group preserves the full vulnerability curse and all ten resistance-table choices with whole-block PDF verification. The remaining 225 A–Z headings, Orb of Dragonkind, helper reconciliation, goldens, W23/S01 reviews and Item product feature remain open. Physical input, screenreader and other-platform acceptance remain open.",
+    "verified": "CE-00 and CE-01 implementation/review/repair cycles passed their scoped gates. CE-01-H01 passed its independently reviewed automated scope. CE-02-I01 product commit 7469e64202e730175ee138136a69d82ad4f28ea6 and metadata repair candidate 4d239004c4f000b2af6f66122a05135b0c353ffb passed independent review. CE-02-I02-S01 has a checked fail-closed source package with all 219 equipment occurrences and transcripts plus explicit reconciliation of all 237 helper equipment records. Potion of healing retains its earliest equipment identity and merges A–Z heading 142. A–Z headings 1–17 now preserve exact identities, headers, descriptions, rarity and attunement facts across physical pages 207–211; Apparatus of the Crab preserves its full ten-row Up/Down lever table, Armor +1/+2/+3 preserves all three ordered rarity variants and Armor of Invulnerability preserves its fixed legendary rarity and required attunement. The Armor/Arrow group preserves the full vulnerability curse and all ten resistance-table choices with whole-block PDF verification. The Bags group preserves all twelve Beans effects and three color-bound d8 tables across source page boundaries. Independent W23-N01 P1 review passed on exact 8dfa06a with real Poppler 25.07 evidence. The remaining 221 A–Z headings, Orb of Dragonkind, helper reconciliation, goldens, W24/S01 reviews and Item product feature remain open. Physical input, screenreader and other-platform acceptance remain open.",
     "open": [
       "CE-01 physical keyboard/mouse, screenreader and other-platform acceptance; CE-02-I02 through CE-07 runs",
       "CE-02-I02-S01 complete official inventory, transcript, closed subcategory enum, full PDF matching, complete golden cases and independent S01-R01 review",
@@ -548,10 +608,10 @@
       "Physical catalog input acceptance cannot be replaced by Playwright automation"
     ],
     "nextRun": {
-      "id": "CE-02-I02-S01-W23-N01-R01",
-      "kind": "independent_source_verifier_re_review",
+      "id": "CE-02-I02-S01-W24-INTEGRATE",
+      "kind": "independent_steward_integration",
       "plan": "ROADMAP-SALTMARCHER-CE02-I02-PLAN.md",
-      "focus": "Re-review P1 on exact repaired PR48 SHA, including independent Poppler 25.07 official PDF run. Then integrate W23 and continue the coherent Bags group in W24."
+      "focus": "Stadt consumes repaired exact-SHA composition/CI and closes regular PR56 integration; W24 source PASS transfers only with unchanged source/tool/test/fixture bytes. Then continue coherent source group from Bead of Force; Full-S01/product gates stay closed."
     }
   },
   "repositoryWorkflow": {

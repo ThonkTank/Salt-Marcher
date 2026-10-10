@@ -5,6 +5,7 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import Ajv2020 from "ajv/dist/2020.js";
 import { validateArmorArrowsSlice, validateArmorArrowsPdfXml } from "./items-srd51-armor-arrows.mjs";
+import { validateBagsSlice, validateBagsPdfXml } from "./items-srd51-bags.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const dataRoot = resolve(root, "src/features/catalog/data");
@@ -1193,6 +1194,7 @@ export async function verifyItemsSourcePackage({ pdfPath, allowIncomplete = fals
   const magicItemAzArmorPlusOneTwoThree = validateMagicItemAzArmorPlusOneTwoThree(transcript, inventory);
   const magicItemAzArmorOfInvulnerability = validateMagicItemAzArmorOfInvulnerability(transcript, inventory);
   const magicItemAzArmorArrows = validateArmorArrowsSlice(transcript, inventory);
+  const magicItemAzBags = validateBagsSlice(transcript, inventory);
   let pdf;
   if (pdfPath) {
     const bytes = await readFile(resolve(pdfPath));
@@ -1200,7 +1202,14 @@ export async function verifyItemsSourcePackage({ pdfPath, allowIncomplete = fals
     invariant(bytes.length === manifest.source.pdfBytes, "Offizielle SRD-5.1-PDF-Größe stimmt nicht.");
     const info = execFileSync("pdfinfo", [resolve(pdfPath)], { encoding: "utf8" });
     invariant(new RegExp(`^Pages:\\s+${manifest.source.pdfPages}$`, "m").test(info), "PDF-Seitenzahl stimmt nicht.");
+    const bagsXml = execFileSync("pdftohtml",
+      ["-xml", "-f", "209", "-l", "211", "-stdout", "-i", resolve(pdfPath)],
+      { encoding: "utf8", maxBuffer: 16 * 1024 * 1024 });
+    const bagsHeadings = extractMagicItemAzHeadingsFromPdfXml(execFileSync("pdftohtml",
+      ["-xml", "-f", "207", "-l", "251", "-stdout", "-i", resolve(pdfPath)],
+      { encoding: "utf8", maxBuffer: 16 * 1024 * 1024 }));
     pdf = Object.freeze({ sha256: OFFICIAL_PDF_SHA256, bytes: bytes.length, pages: manifest.source.pdfPages,
+      magicItemAzBagsEvidence: validateBagsPdfXml(bagsXml, bagsHeadings, normalizePdfText),
       occurrenceEvidence: verifyPdfOccurrences(pdfPath, inventory),
       transcriptEvidence: verifyPdfTranscriptFacts(pdfPath, transcript),
       magicItemAzOpeningSliceEvidence: verifyPdfMagicItemAzOpeningSlice(pdfPath, transcript, inventory),
@@ -1237,6 +1246,7 @@ export async function verifyItemsSourcePackage({ pdfPath, allowIncomplete = fals
     magicItemAzArmorPlusOneTwoThree,
     magicItemAzArmorOfInvulnerability,
     magicItemAzArmorArrows,
+    magicItemAzBags,
     potionHealingMerge,
     pdf,
     hashes: Object.freeze({
