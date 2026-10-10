@@ -96,7 +96,7 @@ export function recentComments(call, repository, number, source = 'issue') {
   return result.data.repository[source].comments.nodes;
 }
 
-// Explicit same-repository default-branch Markdown source, pinned before loading.
+// Explicit same-repository branch Markdown source, pinned before loading.
 // No body mutation and no fallback to historical prose when a declared source fails.
 export function taskContext(call, repository, number, body) {
   const links = body.split('\n').filter(line => /^Arbeitsstand:/.test(line));
@@ -105,14 +105,29 @@ export function taskContext(call, repository, number, body) {
     if (links.length !== 1) throw new Error('Expected exactly one Arbeitsstand link.');
     const url = links[0].slice('Arbeitsstand:'.length).trim();
     const metadata = JSON.parse(call(['api', `repos/${repository}`]));
-    const prefix = `https://github.com/${repository}/blob/${metadata.default_branch}/`;
-    if (!url.startsWith(prefix)) throw new Error('Arbeitsstand must refer to this repository default branch.');
-    const suffix = url.slice(prefix.length), fragment = `#arbeitsstand-${number}`;
-    if (!suffix.endsWith(fragment)) throw new Error('Arbeitsstand anchor must match the task number.');
-    const path = suffix.slice(0, -fragment.length);
-    if (!/^[A-Za-z0-9_./-]+\.md$/.test(path) || path.split('/').some(p => !p || p === '.' || p === '..'))
-      throw new Error('Expected an existing Markdown file path.');
-    const commit = JSON.parse(call(['api', `repos/${repository}/commits/${encodeURIComponent(metadata.default_branch)}`]));
+    const prefix = `https://github.com/${repository}/blob/`;
+    const fragment = `#arbeitsstand-${number}`;
+    if (!url.startsWith(prefix) || !url.endsWith(fragment))
+      throw new Error('Arbeitsstand must link this repository and the matching task anchor.');
+    const target = url.slice(prefix.length, -fragment.length);
+    if (!/^[A-Za-z0-9_./-]+\.md$/.test(target) || target.split('/').some(p => !p || p === '.' || p === '..'))
+      throw new Error('Expected an explicit branch and existing Markdown file path.');
+    let branch, commit;
+    if (target.startsWith(metadata.default_branch + '/')) {
+      branch = metadata.default_branch;
+      commit = JSON.parse(call(['api', `repos/${repository}/commits/${encodeURIComponent(branch)}`]));
+    } else {
+      // Resolve only the branch spelled out in the URL. Never select a candidate PR.
+      const refs = JSON.parse(call(['api', `repos/${repository}/git/matching-refs/heads/${encodeURIComponent(target.split('/')[0])}`]));
+      const matches = refs.filter(ref => ref.ref?.startsWith('refs/heads/')
+        && target.startsWith(ref.ref.slice('refs/heads/'.length) + '/'));
+      if (matches.length !== 1 || matches[0].object?.type !== 'commit')
+        throw new Error('Declared branch is missing or ambiguous; no replacement branch selected.');
+      branch = matches[0].ref.slice('refs/heads/'.length);
+      commit = { sha: matches[0].object.sha };
+    }
+    const path = target.slice(branch.length + 1);
+    const mode = branch === metadata.default_branch ? 'shared' : 'candidate';
     if (!/^[a-f0-9]{40}$/.test(commit.sha)) throw new Error('Missing source revision.');
     const file = JSON.parse(call(['api', `repos/${repository}/contents/${path}?ref=${commit.sha}`]));
     if (file.type !== 'file' || file.encoding !== 'base64' || typeof file.content !== 'string')
@@ -123,7 +138,7 @@ export function taskContext(call, repository, number, body) {
     if (section.text.length > 6000) throw new Error('Current-work section exceeds 6000 characters; compact it at its existing source.');
     if (workSection(body)) throw new Error('Both issue and versioned current-work sections exist; remove the duplicate.');
     const current = '## Aktueller Arbeitsstand\n' + section.text.slice(section.heading.length);
-    return { source: { url, path, revision: commit.sha, text: section.text }, ...liveFacts(call, repository, current) };
+    return { source: { url, path, branch, mode, revision: commit.sha, text: section.text }, ...liveFacts(call, repository, current) };
   } catch (error) {
     return { source: null, facts: [], warnings: [`Versioned work context unavailable: ${error.message.split('\n')[0]}. No historical fallback.`] };
   }

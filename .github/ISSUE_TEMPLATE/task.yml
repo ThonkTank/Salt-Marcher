@@ -20,7 +20,7 @@ body:
     id: current_work
     attributes:
       label: Versionierter Arbeitsort
-      description: "Vorhandenen Fachplan mit Arbeitsstand: https://github.com/OWNER/REPO/blob/DEFAULTBRANCH/PFAD.md#arbeitsstand-N verlinken; dort Abschnitt Arbeitsstand #N pflegen (docs/REPOSITORY.md). Keine neue Statusdatei oder Kopie. Ohne vorhandenen Fachort aktuellen Eingang/Blocker und nächsten Beitrag hier manuell führen."
+      description: "Vorhandenen Fachplan mit Arbeitsstand: https://github.com/OWNER/REPO/blob/BRANCH/PFAD.md#arbeitsstand-N verlinken; dort Abschnitt Arbeitsstand #N pflegen (docs/REPOSITORY.md). Keine neue Statusdatei oder Kopie. Ohne vorhandenen Fachort aktuellen Eingang/Blocker und nächsten Beitrag hier manuell führen."
   - type: textarea
     id: acceptance
     attributes:
