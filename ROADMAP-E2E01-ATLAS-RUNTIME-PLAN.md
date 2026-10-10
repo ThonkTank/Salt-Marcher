@@ -419,11 +419,21 @@ Integrationslauf besteht die unveränderte Matrix mit **18/18**, Typprüfung,
 Der neue Report bindet ausdrücklich den Integrations-SHA; er benennt keine
 neue Producerübergabe oder Komponentenreviewrunde.
 
-Der nächste eigene Umsetzungsschritt ist der produktive Anschluss der tatsächlich
-beobachteten Prepared-/Committed-/terminalen Rollbackgrenzen von FileTransaction
-über den zuständigen Participant an Provider und AtlasView. Der anschließende
-Registry-/Inventory-Refresh läuft in derselben Navigatorwarteschlange und erhält
-Mount, Repository, Renderer, Kamera und History. Erst danach wird Eingabe wieder
-zugelassen. Die freigegebene Campaign-API und eingefrorene Matrix werden dabei
-nicht parallel nachgebessert. Tatsächlicher Obsidian Save/Fresh/Recovery/A-B-A,
-integrierter Hostreview, Aufräumen und Gesamtfreigabe bleiben getrennte Schritte.
+**Aktueller Produktstand: `HEX-E2E01-HOST-SAVE-I02`.** Der tatsächliche Save-Button
+ist auf Quellstand `86bbbbfac44233509f084ac836e6dafa07b11a16` mit den
+zurückgelesenen FileTransaction-Journalen, dem zuständigen Participant und
+Provider verbunden. Registry und Inventory werden in derselben Navigatorqueue
+erneuert; Mount, Sources, Repository, History, Renderer und Kamera bleiben.
+Die DOM-Probe belegt außerdem die Wiederholung nach einem vollständig
+zurückgenommenen ersten nativen Schreibfehler und eine frische View-/Service-
+Lebensdauer mit gespeicherten Orts-/Raumnamen. Sie ist kein neuer Obsidianprozess.
+Nach regulärer Übernahme von Shared `a6b132d` bestehen Typprüfung, **637/637 Tests**,
+sauberer Build und die unveränderte **18/18**-Matrix. Direkter vollständiger Beleg:
+[implementation.json](/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-manifest-host-save-i02-20261010/implementation.json).
+
+PR13 bleibt ACTIVE; die qualifizierten Komponenten sind INPUT-Vorbelege. Der
+nächste begrenzte Hex-Lauf koordiniert den einzigen GUI-Slot neu und prüft den
+tatsächlichen Obsidian Save/Fresh/Recovery/A-B-A-Ablauf. Danach folgen bestehender
+integrierter Hostreview und getrenntes Aufräumen. Chronik besitzt BASE-CI-01;
+kein zusätzlicher Workflow oder Komponentenreview wird hier gestartet. Keine
+Shared-/Installations-/Native-/Gesamtfreigabe aus den automatisierten Prüfungen.
