@@ -844,15 +844,14 @@
       "phaseApproval": false
     },
     "nextRun": {
-      "id": "E2E-01-SPACE-I01c-MANIFEST-SAVE-INTEGRATION",
-      "kind": "bounded_actual_dependency_consumption_then_native_host",
-      "focus": "Consume only actual independent Chronik PASS + owner cleanup + exact Campaign/Data Manifest Save Participant/validator and native Campaign fixture handoff. Hex alone integrates existing AtlasRepository/FileTransaction/recovery/host callsite in PR13 and the common Save-to-Fresh oracle. Current visible host code is finished and separately reviewable by the existing Stadt reviewer.",
+      "id": "E2E-01-SPACE-I01c-RUNTIME-R02c",
+      "kind": "bounded_existing_peer_rereview_after_actual_targeted_repair",
+      "focus": "Existing Stadt narrow independent rereview of CITY-HOST-R01-01 on actual repaired source2bc2d0e and published PR13 candidate. Do not restart general plan/provider/owner rounds.",
       "sourcePlan": "ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md",
       "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
-      "dependency": "Concrete active producer E2E-01-CAMPAIGN-MANIFEST-SAVE-I01, #12/6095847669; file boundary #12/6095908675 and Hex #12/6095914801. No native owner-confirmed fixture yet; do not generate productive substitute from DOM test authority or consume unreviewed candidate.",
-      "checks": "Integrate qualified input normally; actual check/test/build; atomic native+Manifest journal Before/After/crash cases; re-coordinate a new single GUI slot and then real Obsidian/Fresh/A-B-A flow.",
-      "after": "Existing independent Stadt host/integration review, targeted repair, separate cleanup. No new general plan/owner round.",
-      "limits": "No native/physical/parity/large-map/install/P02/P04/full-E2E claim. Sources and user vault unchanged. Last native currentRun remains historical I01b receipt."
+      "dependency": "Actual existing Stadt R02 receipt; separately, qualified Campaign/Data Manifest Save Participant and owner-confirmed native fixture after Chronik PASS and owner cleanup.",
+      "after": "Any new mandatory finding gets a targeted repair; otherwise separate own host cleanup P/I/R, then consume only qualified actual Manifest Save input. Hex alone owns AtlasRepository/FileTransaction/recovery/host hooks and joint Save/Fresh integration.",
+      "limits": "No native/fresh/physical/original-parity/large-map/install/full E2E claim. Last native currentRun remains exact historical I01b receipt; user vault and sources unchanged."
     },
     "review": {
       "run": "HEX-02-R02",
@@ -2853,9 +2852,71 @@
           "CampaignData": "Campaign-only Participant/validator and input/expected fixture, then independent Chronik code review/cleanup/exact handoff",
           "Hex": "Only existing AtlasRepository/FileTransaction/Recovery/Host callsites, joint save-fresh integration and PR13 consumption after qualified handoff"
         },
-        "independentReview": "pending existing Stadt reviewer; no self-approval",
+        "independentReview": {
+          "id": "CITY-HOST-R01",
+          "state": "CHANGES_REQUIRED",
+          "candidate": "b572f787c84f375c04e8fbce639edce28762e2ea",
+          "finding": "CITY-HOST-R01-01",
+          "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/13#issuecomment-6096044905",
+          "gate": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6096045108",
+          "actualEvidence": "/home/aaron/.cache/dungeon-native-qa/city-plans/city-host-r01-20261010/review.json",
+          "sha256": "23760a26946994fdb630a094c3831181388b4c0e37fbbf0baf1f1fa653e8d503",
+          "readDirectly": true
+        },
         "fullE2E": false,
         "sourceTreeSha256": "84a63ae911f411f1b14523d94d6257db28b91975dfb956c67f38e22746170034"
+      },
+      "runtimeVisibleHostRepair": {
+        "id": "E2E-01-SPACE-I01c-RUNTIME-N01c",
+        "state": "host_lifetime_repair_checked_independent_rereview_pending",
+        "sourceCommit": "2bc2d0ea13285eecf6863d4ef5802ebb66a81805",
+        "consumedShared": "47fd331ba6745ff89a249bf567373d022718ef00",
+        "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
+        "review": {
+          "id": "CITY-HOST-R01",
+          "state": "CHANGES_REQUIRED",
+          "candidate": "b572f787c84f375c04e8fbce639edce28762e2ea",
+          "finding": "CITY-HOST-R01-01",
+          "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/13#issuecomment-6096044905",
+          "gate": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6096045108",
+          "actualEvidence": "/home/aaron/.cache/dungeon-native-qa/city-plans/city-host-r01-20261010/review.json",
+          "sha256": "23760a26946994fdb630a094c3831181388b4c0e37fbbf0baf1f1fa653e8d503",
+          "readDirectly": true
+        },
+        "finding": "CITY-HOST-R01-01",
+        "checks": {
+          "check": "PASS",
+          "tests": 605,
+          "failures": 0,
+          "skipped": 0,
+          "hostDOMCases": 19,
+          "newFocusedCases": 9,
+          "originalReviewerCounterprobesReplayed": 2,
+          "replayResult": "PASS_actual_original_reproductions_on_repaired_product_not_independent_rereview",
+          "cleanExactSHABuild": "PASS",
+          "dirty": false,
+          "diff": "PASS"
+        },
+        "triplet": {
+          "main.js": {
+            "bytes": 1576851,
+            "sha256": "dc0a5b1ce1844c46cfea7d1852e6d37025bfd0099b8cf8e15dc27216107424a5"
+          },
+          "manifest.json": {
+            "bytes": 237,
+            "sha256": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64"
+          },
+          "styles.css": {
+            "bytes": 29780,
+            "sha256": "68e1cf101ceaadd624168b431fddc297c90e8a5bc6be25a15f0926ebb569a5ea"
+          }
+        },
+        "independentRereview": "pending existing Stadt reviewer on exact repaired candidate",
+        "cleanup": "separate own cleanup P/I/R after qualified R02; not claimed here",
+        "nativeRan": false,
+        "fullE2E": false,
+        "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-visible-host-n01c-20261010/implementation.json",
+        "sha256": "311af0efdf62a0cf041db6d71e2b485ea12fdc998323cfb585108fb45d9e769d"
       }
     },
     "verification": {
@@ -4290,9 +4351,71 @@
           "CampaignData": "Campaign-only Participant/validator and input/expected fixture, then independent Chronik code review/cleanup/exact handoff",
           "Hex": "Only existing AtlasRepository/FileTransaction/Recovery/Host callsites, joint save-fresh integration and PR13 consumption after qualified handoff"
         },
-        "independentReview": "pending existing Stadt reviewer; no self-approval",
+        "independentReview": {
+          "id": "CITY-HOST-R01",
+          "state": "CHANGES_REQUIRED",
+          "candidate": "b572f787c84f375c04e8fbce639edce28762e2ea",
+          "finding": "CITY-HOST-R01-01",
+          "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/13#issuecomment-6096044905",
+          "gate": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6096045108",
+          "actualEvidence": "/home/aaron/.cache/dungeon-native-qa/city-plans/city-host-r01-20261010/review.json",
+          "sha256": "23760a26946994fdb630a094c3831181388b4c0e37fbbf0baf1f1fa653e8d503",
+          "readDirectly": true
+        },
         "fullE2E": false,
         "sourceTreeSha256": "84a63ae911f411f1b14523d94d6257db28b91975dfb956c67f38e22746170034"
+      },
+      "runtimeVisibleHostRepair": {
+        "id": "E2E-01-SPACE-I01c-RUNTIME-N01c",
+        "state": "host_lifetime_repair_checked_independent_rereview_pending",
+        "sourceCommit": "2bc2d0ea13285eecf6863d4ef5802ebb66a81805",
+        "consumedShared": "47fd331ba6745ff89a249bf567373d022718ef00",
+        "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
+        "review": {
+          "id": "CITY-HOST-R01",
+          "state": "CHANGES_REQUIRED",
+          "candidate": "b572f787c84f375c04e8fbce639edce28762e2ea",
+          "finding": "CITY-HOST-R01-01",
+          "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/13#issuecomment-6096044905",
+          "gate": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6096045108",
+          "actualEvidence": "/home/aaron/.cache/dungeon-native-qa/city-plans/city-host-r01-20261010/review.json",
+          "sha256": "23760a26946994fdb630a094c3831181388b4c0e37fbbf0baf1f1fa653e8d503",
+          "readDirectly": true
+        },
+        "finding": "CITY-HOST-R01-01",
+        "checks": {
+          "check": "PASS",
+          "tests": 605,
+          "failures": 0,
+          "skipped": 0,
+          "hostDOMCases": 19,
+          "newFocusedCases": 9,
+          "originalReviewerCounterprobesReplayed": 2,
+          "replayResult": "PASS_actual_original_reproductions_on_repaired_product_not_independent_rereview",
+          "cleanExactSHABuild": "PASS",
+          "dirty": false,
+          "diff": "PASS"
+        },
+        "triplet": {
+          "main.js": {
+            "bytes": 1576851,
+            "sha256": "dc0a5b1ce1844c46cfea7d1852e6d37025bfd0099b8cf8e15dc27216107424a5"
+          },
+          "manifest.json": {
+            "bytes": 237,
+            "sha256": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64"
+          },
+          "styles.css": {
+            "bytes": 29780,
+            "sha256": "68e1cf101ceaadd624168b431fddc297c90e8a5bc6be25a15f0926ebb569a5ea"
+          }
+        },
+        "independentRereview": "pending existing Stadt reviewer on exact repaired candidate",
+        "cleanup": "separate own cleanup P/I/R after qualified R02; not claimed here",
+        "nativeRan": false,
+        "fullE2E": false,
+        "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-visible-host-n01c-20261010/implementation.json",
+        "sha256": "311af0efdf62a0cf041db6d71e2b485ea12fdc998323cfb585108fb45d9e769d"
       }
     },
     "repairPlan": "ROADMAP-HEX-02-REPAIR-PLAN.md",
