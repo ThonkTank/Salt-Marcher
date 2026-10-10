@@ -38,7 +38,17 @@ Labelnamen tragen `status:`: `ready` ist frei/ausführbar und weder aktiv noch b
 
 [WORKFLOW](WORKFLOW.md#sinnvolle-arbeit-wählen-und-begrenzen) bestimmt Liefergrenzen und Prüfung. Contributors können bestätigte unbesetzte Restbedarfe im Parent als Ergebnispaket anbieten: Nutzen/Verbraucher, Quellen, Voraussetzungen, Abnahme. Keine Zielzahl freier Karten oder Pakete je Quellrecord.
 
-Claims sollen innerhalb zweier erwartbarer Aufwachzyklen einen erreichbaren Branch/Commit/PR oder konkreten Blocker zeigen. Fehlt beides, verlangt die Prozesspflege einmal am Paket Bestätigung, erreichbaren Stand oder Rückgabe bis zu den nächsten zwei erwartbaren Zyklen. Das ist kein Heartbeat für belegte längere Implementierung. Fehlende Branchsichtbarkeit allein beweist keine aufgegebene Arbeit. Bei ausbleibender Antwort entscheidet der Integrationsowner in #12 ausdrücklich über Rückgabe oder weitere Klärung; unveröffentlichte Arbeit und fremde Branches erhalten, keine automatische Übernahme/Schließung. Ein Claim wird erst durch ausdrückliche Rückgabe oder begründete Stewardentscheidung frei.
+Paketowner pflegen Besitz und nächste Handlung selbst. Fehlt ein Eingang, benennt
+der Consumer dem zuständigen Producer einmal das jetzt benötigte Ergebnis und
+verfolgt dessen Verwendung im eigenen Paket. Der Producer liefert es, benennt
+seinen konkreten Blocker oder gibt einen abgegrenzten Beitrag ausdrücklich frei.
+Beteiligte klären Überschneidungen und Übergaben direkt am bestehenden Arbeitsort;
+keine zentrale Erinnerung, Zuweisung oder Statusabfrage abwarten. Bei ungelöstem
+Besitz-/Prioritätskonflikt die konkrete Entscheidung an den zuständigen
+Integrationsowner beziehungsweise die Produktwertrolle geben. Fehlende
+Branchsichtbarkeit beweist keine aufgegebene Arbeit; Besitz wird nur durch
+explizite Rückgabe oder begründete Stewardentscheidung frei. Keine automatische
+Übernahme, Branchlöschung oder wiederholte Aufforderung nach Aufwachzyklen.
 
 Die [Arbeitsrollen](AGENT-ROLES.md) bestimmen Pflegezuständigkeiten; `repository-maintenance` besitzt allein `checkpoint.repositoryOrientation`. Contributors pflegen ihre Pakete selbst. Startaufträge verweisen auf die Verträge; keine zweite Queue, parallele Schreibzuständigkeit oder Reflexionsautomation.
 
@@ -66,13 +76,17 @@ Projektgedächtnis bleibt ein aktueller Snapshot in der eigenen Checkpointwurzel
 Verweis im Issue verbindet den vorhandenen Fachplan:
 
 ```text
-Arbeitsstand: https://github.com/OWNER/REPO/blob/DEFAULTBRANCH/PFAD.md#arbeitsstand-N
+Arbeitsstand: https://github.com/OWNER/REPO/blob/BRANCH/PFAD.md#arbeitsstand-N
 ```
 
 Im Plan heißt der Abschnitt `#### Arbeitsstand #N`; er enthält aktuellen Eingang,
 Blocker, Beleg, offene Grenze und nächste ausführbare Beiträge. Keine neue Datei
-oder zusätzliche Aufgabenliste dafür anlegen. `next` löst den aktuellen Defaultbranch
-auf eine konkrete Commitrevision auf und liest nur diesen Abschnitt. Fehlender
+oder zusätzliche Aufgabenliste dafür anlegen. `next` löst ausschließlich den
+explizit verlinkten Branch auf eine Commitrevision auf und liest diesen Abschnitt.
+Der Defaultbranch liefert Shared-Kontext; ein anderer Ownerbranch wird ausdrücklich
+als Kandidatenstand ohne Integrations-/Abnahmenachweis gezeigt. Keine automatische
+Kandidatenauswahl oder Ersatzquelle. Nach Zusammenführung den Verweis bei der
+nächsten sachlichen Übergabe auf den passenden aktuellen Branch nachführen. Fehlender
 Zugriff, doppelte/fehlende Abschnitte oder mehr als 6000 Zeichen werden ausdrücklich
 als unbrauchbarer Einstieg gemeldet; historische Kommentare ersetzen ihn nicht.
 Ziel und Besitz bleiben im Issue, persönliche Fortsetzung in der eigenen

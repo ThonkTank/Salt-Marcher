@@ -115,6 +115,7 @@ function remote(content, calls = []) {
 test('versioned context reads one default-branch revision, bounded named section and explicit live candidate', () => {
   const calls = [];
   const result = taskContext(remote('### SMR-02\nStable scope\n#### Arbeitsstand #68\nKandidat: https://github.com/test/repo/pull/75\nNext GUI, native unapproved.\n### SMR-03\nUnrelated history', calls), 'test/repo', 68, pointer);
+  assert.equal(result.source.mode, 'shared'); assert.equal(result.source.branch, 'active/installed-phase1');
   assert.equal(result.source.revision, revision); assert.match(result.source.text, /Next GUI/);
   assert.doesNotMatch(result.source.text, /Stable scope|Unrelated history/);
   assert.equal(result.facts[0].head, 'live-head'); assert.deepEqual(result.warnings, []);
@@ -135,6 +136,40 @@ test('missing, duplicate, oversized, unsafe and unavailable versioned sources do
   assert.match(unavailable.warnings[0], /401/);
   const duplicate = taskContext(remote('#### Arbeitsstand #68\nNew'), 'test/repo', 68, pointer + '\n' + body);
   assert.match(duplicate.warnings[0], /duplicate/);
+});
+
+test('explicit ownerbranch URL resolves only its named ref and loads that exact SHA as candidate context', () => {
+  const candidate = 'b'.repeat(40), calls = [];
+  const link = pointer.replace('active/installed-phase1', 'city/manual-session-planner');
+  const call = args => {
+    calls.push(args);
+    if (args[1] === 'repos/test/repo') return JSON.stringify({ default_branch: 'active/installed-phase1' });
+    if (args[1] === 'repos/test/repo/git/matching-refs/heads/city') return JSON.stringify([
+      { ref: 'refs/heads/city/other', object: { type: 'commit', sha: revision } },
+      { ref: 'refs/heads/city/manual-session-planner', object: { type: 'commit', sha: candidate } }]);
+    assert.equal(args[1], `repos/test/repo/contents/PLAN.md?ref=${candidate}`);
+    return JSON.stringify({ type: 'file', encoding: 'base64', content: Buffer.from('#### Arbeitsstand #68\nStart the delivered GUI. Native Save unapproved.').toString('base64') });
+  };
+  const result = taskContext(call, 'test/repo', 68, link);
+  assert.equal(result.source.branch, 'city/manual-session-planner');
+  assert.equal(result.source.mode, 'candidate'); assert.equal(result.source.revision, candidate);
+  assert.match(result.source.text, /delivered GUI/); assert.deepEqual(result.warnings, []);
+  assert.equal(calls.length, 3); assert(!calls.some(c => c[0] === 'pr' || c[1]?.includes('/commits/')));
+});
+
+test('deleted or ambiguous declared ownerbranch never falls back to Shared or another candidate', () => {
+  for (const refs of [[], [
+    { ref: 'refs/heads/city', object: { type: 'commit', sha: revision } },
+    { ref: 'refs/heads/city/manual-session-planner', object: { type: 'commit', sha: revision } }]]) {
+    const calls = [];
+    const result = taskContext(args => {
+      calls.push(args);
+      return JSON.stringify(args[1] === 'repos/test/repo' ? { default_branch: 'main' } : refs);
+    }, 'test/repo', 68, pointer.replace('active/installed-phase1', 'city/manual-session-planner'));
+    assert.equal(result.source, null); assert.deepEqual(result.facts, []);
+    assert.match(result.warnings[0], /missing or ambiguous.*No historical fallback/);
+    assert.equal(calls.length, 2);
+  }
 });
 
 test('versioned tasks cannot create a second issue work section through the preview helper', () => {

@@ -72,7 +72,7 @@ function showPackage(call, repository, chosen, requested = false, fullComments =
       .map(title => markdownSection(current.body, title)?.text).filter(Boolean).join('\n');
     console.log(entry.slice(0, 4000));
     if (entry.length > 4000) console.log('Entry shortened; full fixed scope/claims at the issue link.');
-    console.log(`\nVersioned work context @ ${live.source.revision}\n${live.source.url}\n${live.source.text}`);
+    console.log(`\n${live.source.mode === 'candidate' ? 'Candidate work context (no integration/acceptance evidence)' : 'Versioned work context'} @ ${live.source.revision} [${live.source.branch}]\n${live.source.url}\n${live.source.text}`);
   } else {
     console.log(current.body.slice(0, 6000));
     if (current.body.length > 6000) console.log('Issue text shortened; full text at the issue link.');
