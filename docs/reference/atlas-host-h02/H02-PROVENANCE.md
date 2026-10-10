@@ -39,4 +39,6 @@ Die Tabelle hält die hier tatsächlich beobachteten Ergebnisse fest; sie verspr
 
 Chroniks `a7f2db0b104804be4a14a10888ef34248a0310f2daedee6aa64009cd5143bae7` wurde auf diesem Host nicht reproduziert. Der vorhandene Reviewer kann jetzt Originalreceipt und Rohdateien unabhängig lesen. Wenn der Unterschied fortbesteht, werden sein tatsächliches `.build/catalog-build-inventory.json`, die Quelleingangs-/Payloaddigests oder sein gebautes Artefakt für den direkten Vergleich benötigt. Keine Spekulation über die Ursache und kein automatischer nativer Wiederholungslauf. #38 bleibt bis zur bestehenden unabhängigen Entscheidung offen; #39/Shared-GM/Promotion und vollständiges E2E sind weiterhin nachgeordnet.
 
+Die [Veröffentlichungskomposition](composition.json) bindet die vor Veröffentlichung zusätzlich übernommenen Shared-Werkzeuge/Dokumente an 108f104, 21 Strukturprüfungen und 682 vollständige Tests samt sauberem Build. Die ursprünglichen H02-/R02-Rohbytes bleiben unverändert.
+
 Die H02-Probe nutzt synthetische Bedienung in einem echten isolierten Obsidianprozess. Ihr damaliger Build und normaler Prozessabschluss bleiben unverändert gebunden. Dieser Nachweis ersetzt keine physische, Originalparitäts-, Großwelt- oder Nutzervault-Abnahme.

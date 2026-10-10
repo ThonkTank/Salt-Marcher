@@ -179,8 +179,13 @@
     },
     {
       "path": "H02-PROVENANCE.md",
-      "bytes": 4619,
-      "sha256": "1019cb905c3288ddd8c96b49b1ab30db91e91ac92101129d4c214babef61d20b"
+      "bytes": 4903,
+      "sha256": "80b28f6e1b58d6a5d7307d939bd7db2137f07480ed0f12c5360de18a485a42c4"
+    },
+    {
+      "path": "composition.json",
+      "bytes": 1532,
+      "sha256": "1e884ee5d45d8f78a4a9c26fd79a8b2298b6a2193fb15874c6f5dc5b3cea7c78"
     }
   ]
 }

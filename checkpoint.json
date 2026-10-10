@@ -5572,13 +5572,21 @@
       "productUnchanged": true
     },
     "latestSharedIntegration": {
-      "id": "HEX-E2E01-SHARED-GM-DOC-SYNC",
-      "state": "qualified_Shared_GM_findings_integrated",
-      "sourceCommit": "9af8a14f1c8f17f22bac19935b6a21848d4851a8",
-      "consumedShared": "5b57706b68f131c2d292bed6159cd6d3221f2ef8",
-      "scope": "Incoming Shared GM documentation/checkpoint only, integrated before evidence-binding R02. No product/tests/runner/build/lock/fixture change.",
-      "evidence": "docs/reference/atlas-host-h02/binding-r02.json",
-      "sha256": "14fe2d520df171a635681f0de14cb2884e7a66d9f982d55249e7865e727a7653",
+      "id": "HEX-E2E01-SHARED-TASK-CITY-SCOPE-SYNC",
+      "state": "qualified_Shared_task_tools_and_City_scope_integrated",
+      "sourceCommit": "108f1042b08ddd281b9bf3b4837676c8790b9104",
+      "consumedShared": "7211bc0ac4ce9ef9b56ad511c87199479c3bc196",
+      "scope": "Shared live task selector/self-organization documentation and qualified PR50 City/FTG scope plus owner checkpoint. All existing Atlas/Campaign/native test suites retained; next-task regressions added. No product/src, Host helper, build source, locked dependencies or A/B fixture change.",
+      "checks": {
+        "repositoryAndReferences": true,
+        "repositoryTests": 21,
+        "typeCheck": true,
+        "fullTests": 682,
+        "cleanBuild": true,
+        "cleanSource": true
+      },
+      "repositoryEvidence": "docs/reference/atlas-host-h02/composition.json",
+      "sha256": "1e884ee5d45d8f78a4a9c26fd79a8b2298b6a2193fb15874c6f5dc5b3cea7c78",
       "newNativeRun": false,
       "fullE2E": false
     },
