@@ -15,6 +15,7 @@ import { CitySource } from "../features/city/commands";
 import { DungeonAtlasSource } from "../features/dungeon/atlas-source";
 import { isStructuredRoom } from "../model";
 import type { AtlasCampaignManifestSave } from "../features/atlas/atlas-campaign-save";
+import type { MwsImportMediaInventoryPort } from "../features/campaign/mws-complete-import-media";
 
 export interface AtlasCampaignServices {
   readonly provider: CampaignRuntimeNavigationProvider;
@@ -32,6 +33,8 @@ export interface AtlasCampaignServices {
   worldHint(id: CampaignId): Promise<string>;
   campaignHint(path: string): Promise<CampaignId | null>;
   createSave?(input: AtlasMountInput): Promise<AtlasCampaignManifestSave>;
+  /** Host-bound bytes for the existing Complete-Import media review. */
+  createImportMediaInventory?(root: string): MwsImportMediaInventoryPort;
 }
 
 /** One visible consumer of the actual Campaign provider and the existing safe Navigator. */
