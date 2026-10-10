@@ -454,6 +454,43 @@ function verifyPdfToolsTableRows(pdfPath, transcript, inventory) {
   return validateBoundedToolsTableRows(pageLines, transcript, inventory);
 }
 
+export function validateBoundedMountsTableRows(pageLines, transcript, inventory) {
+  object(pageLines, "Mounts-and-Other-Animals-Tabellenzeilen");
+  const occurrences = inventory.occurrences
+    .filter(occurrence => occurrence.sectionId === "mounts-other-animals");
+  invariant(occurrences.length === 8,
+    "Bounded Mounts-and-Other-Animals-Prüfung benötigt exakt acht Inventarzeilen.");
+  const records = new Map(transcript.records.map(record => [record.id, record]));
+  for (const occurrence of occurrences) {
+    const record = records.get(occurrence.id);
+    invariant(record, `${occurrence.id}: Record für bounded Mounts-and-Other-Animals-Prüfung fehlt.`);
+    invariant(record.cost && record.speed && record.carryingCapacity,
+      `${occurrence.id}: strukturierte Mounts-and-Other-Animals-Tabellenzellen fehlen.`);
+    const expected = normalizePdfText([
+      occurrence.sourceLabel,
+      record.cost.sourceText,
+      record.speed.sourceText,
+      record.carryingCapacity.sourceText,
+    ].join(" "));
+    const lines = pageLines[String(occurrence.firstPdfPage)];
+    invariant(Array.isArray(lines), `${occurrence.id}: Layoutzeilen für PDF-Seite ${occurrence.firstPdfPage} fehlen.`);
+    const matches = countExactNormalizedLineSegments(lines, expected);
+    invariant(matches === 1,
+      `${occurrence.id}: erwartete Mounts-and-Other-Animals-Zellen stehen nicht exakt einmal als zusammenhängendes Segment derselben physischen Tabellenzeile.`);
+  }
+  return Object.freeze({ checkedRows: occurrences.length,
+    scope: "exact-normalized-pdftotext-layout-row-segment-across-split-table-pages" });
+}
+
+function verifyPdfMountsTableRows(pdfPath, transcript, inventory) {
+  const pages = [...new Set(inventory.occurrences
+    .filter(occurrence => occurrence.sectionId === "mounts-other-animals")
+    .map(occurrence => occurrence.firstPdfPage))];
+  const pageLines = Object.fromEntries(pages.map(page => [String(page),
+    extractPdfPage(pdfPath, page, true).split(/\r?\n/).filter(line => line.trim().length > 0)]));
+  return validateBoundedMountsTableRows(pageLines, transcript, inventory);
+}
+
 function verifyPdfOccurrences(pdfPath, inventory) {
   const pageText = new Map();
   for (const occurrence of inventory.occurrences) {
@@ -588,6 +625,7 @@ export async function verifyItemsSourcePackage({ pdfPath, allowIncomplete = fals
       boundedWeaponTableEvidence: verifyPdfWeaponTableRows(pdfPath, transcript, inventory),
       boundedAdventuringGearTableEvidence: verifyPdfAdventuringGearTableRows(pdfPath, transcript, inventory),
       boundedToolsTableEvidence: verifyPdfToolsTableRows(pdfPath, transcript, inventory),
+      boundedMountsTableEvidence: verifyPdfMountsTableRows(pdfPath, transcript, inventory),
       helperDispositionEvidence: verifyPdfHelperDispositions(pdfPath, inventory),
       crossReferenceEvidence: verifyPdfCrossReferences(pdfPath, inventory) });
   }
