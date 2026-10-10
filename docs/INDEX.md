@@ -27,7 +27,7 @@
 - Veröffentlichung, Fachphasen und Hostschutz: [Arbeitsregeln](WORKFLOW.md).
 - Wiederkehrende Contributor-/Pflege-/Berichtsaufträge: [Arbeitsrollen](AGENT-ROLES.md); gemeinsame Regeln bleiben im Einstieg und Pflege-/Arbeitsvertrag.
 - Synthetische Fixtures ohne GUI: [Campaign B reproduzieren](CONTRIBUTOR-FIXTURE-B.md).
-- Gepinnte Atlas-Host-Belege bei konkretem Bedarf: [H02-Rohbelege und Buildprovenienz](reference/atlas-host-h02/H02-PROVENANCE.md); [ursprüngliche Save/Fresh/Recovery-Belege](reference/atlas-host-save-i02-h01/SAVE-PROVENANCE.md); [Shared-Ort/Key H01: Save-Befund zu #40](reference/atlas-shared-location-h01/README.md).
+- Gepinnte Atlas-Host-Belege bei konkretem Bedarf: [H02-Rohbelege und Buildprovenienz](reference/atlas-host-h02/H02-PROVENANCE.md); [ursprüngliche Save/Fresh/Recovery-Belege](reference/atlas-host-save-i02-h01/SAVE-PROVENANCE.md); [Shared-Ort/Key H01: Save-Befund zu #40](reference/atlas-shared-location-h01/README.md); [D01: konkrete Save-Ursache und Reparatureingang](reference/atlas-shared-location-d01/README.md).
 - Bestehende Detailpläne und historische Pakete: [Fachplanregister](reference/PLAN-REGISTER.md). Keine Pflichtlektüre beim Einstieg; stabile Pfade bleiben erhalten.
 - Attribution: [NOTICE](../NOTICE.md), [SRD](../src/features/catalog/SRD-5.1-ATTRIBUTION.md), [Items](../src/features/catalog/SRD-5.1-ITEMS-ATTRIBUTION.md).
 - Neue Paketpläne: [Vorlage](templates/PACKAGE-PLAN.md), unter `docs/plans/<bereich>/` ablegen und von hier oder dem Fachplanregister erreichbar machen. `npm run check:repo` prüft die Verweise.

@@ -939,7 +939,7 @@
   "hexAtlasExecution": {
     "scope": "HEX-00 bis HEX-28 und sämtliche eingeordneten CITY-00 bis CITY-09 vollständig",
     "phase": "HEX-03",
-    "state": "Shared_Location_Key_H01_Save_FAIL_targeted_D01_pending",
+    "state": "Shared_Location_Key_D01_root_cause_reproduced_targeted_repair_open",
     "plan": "ROADMAP-E2E01-SPATIAL-INTEGRATION-PLAN.md",
     "currentRun": {
       "id": "E2E-01-SPACE-I01b",
@@ -986,21 +986,21 @@
       "phaseApproval": false
     },
     "nextRun": {
-      "id": "E2E-01-SHARED-LOCATION-KEY-D01",
-      "kind": "bounded_Save_failure_diagnosis",
-      "state": "actual_H01_finding_ready_for_own_diagnosis",
+      "id": "E2E-01-SHARED-LOCATION-KEY-R01",
+      "kind": "bounded_targeted_Save_repair",
+      "state": "D01_complete_concrete_repair_and_Campaign_contract_input_identified",
       "issue": 40,
       "owner": "Hex",
       "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
       "sourcePlan": "ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md",
-      "focus": "Diagnose SHARED-LOCATION-H01-SAVE-01 from the exact H01 new-Location Save failure; derive one targeted repair input without a general new plan/review cycle.",
-      "input": "checkpoint.hexAtlasExecution.latestSharedLocationKeyHostProbe",
-      "requiredInput": "Fetch/integrate qualified current Shared; preserve H01 original process/UI/draft/file evidence and the unchanged Before bytes.",
+      "focus": "Repair actual new-Location Save closure mismatch and pre-transaction mount retirement. Hex owns navigation/native Atlas adapter; consume an exact qualified Campaign-owned Location addition contract at the existing save participant boundary, do not simply bypass guards or take foreign producer scope.",
+      "input": "checkpoint.hexAtlasExecution.latestSharedLocationKeyDiagnosis",
+      "requiredInput": "Current qualified Shared plus concrete Campaign/Data Save-Participant support for Atlas-owned new Location, sections and Worldplacement: exact new-file Before null + full before/after owner/inventory closure + atomic Acknowledgment/Rollback/Recovery. Preserve exact H01 retained draft and Beforebytes.",
       "slotConfirmedForNextRun": false,
       "slotRequiredAgain": true,
-      "checks": "Diagnosis scoped to actual Save/new-Location path; source/model probes do not replace a later real Save/fresh-process acceptance.",
-      "after": "Targeted repair as a separate bounded run, then newly coordinated native rerun and required independent #40 acceptance.",
-      "limits": "No Detail/CITY, physical/original/large-world/user-vault installation/P02/P04/full-E2E claim; no repair or second native process in H01."
+      "checks": "Focused model regressions for actual successful Save, Before-null/ID/path races and pre-commit failure retaining editable mount; qualified atomic journal/rollback/recovery/retry/Fresh-open. No native claim from model.",
+      "after": "Separate newly coordinated native Save/fresh-process rerun and independent #40 acceptance; no general planning/owner round.",
+      "limits": "No Detail/CITY or E2E-02–04; no foreign packages, product selfintegration, physical/original/large-world/user-vault installation/P02/P04/full-E2E claim."
     },
     "review": {
       "run": "HEX-02-R02",
@@ -5450,7 +5450,7 @@
       "platformIssue": 11,
       "checkpointIsAuthoritative": true
     },
-    "updatedAt": "2026-10-10T18:53:01.570Z",
+    "updatedAt": "2026-10-10T19:10:52.470372+00:00",
     "consumerMatrix": {
       "id": "RUNTIME-MANIFEST-I02-CONSUMER-MATRIX-V1",
       "state": "frozen_complete_matrix_green_on_productive_Host_source",
@@ -6148,6 +6148,31 @@
       "guiSlotReturned": true,
       "productEdited": false,
       "independentAcceptance": "pending; no PASS"
+    },
+    "latestSharedLocationKeyDiagnosis": {
+      "id": "E2E-01-SHARED-LOCATION-KEY-D01",
+      "state": "root_cause_reproduced_product_repair_open",
+      "issue": 40,
+      "owner": "Hex",
+      "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
+      "sourcePlan": "ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md",
+      "evidence": "docs/reference/atlas-shared-location-d01/receipt.json",
+      "finding": "SHARED-LOCATION-H01-SAVE-01",
+      "diagnosisSourceCommit": "a6c4d89df40746bcce1cc0726f725c97708bc4b7",
+      "consumedShared": "93b670aca7927e1915f4c299eb131b4faa8b9fe3",
+      "originalH01EvidencePreserved": true,
+      "originalDraftByteEqual": true,
+      "repositorySaveCallsInModel": 0,
+      "writesInModelAfterSaveRequest": 0,
+      "modelCasesPerSource": 6,
+      "sourceTrees": 2,
+      "productEdited": false,
+      "nativeRepeated": false,
+      "freshProcessStarted": false,
+      "guiSlotUsed": false,
+      "independentAcceptance": "pending actual repair/native/independent #40 acceptance; no product PASS",
+      "next": "Targeted Hex navigation/native adapter repair; concrete Campaign-owned authorized native Location closure extension is required as input.",
+      "sha256": "7bde44397cd9e3b3a586a5e8fdf88d6c757145fb9cc0e0afdcfe357af27b4e01"
     }
   },
   "phase": "Phase 6: zweiter Nachbesserungslauf teilweise umgesetzt; fünf Restpositionen und unabhängiger Review offen",

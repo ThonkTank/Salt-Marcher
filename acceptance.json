@@ -153303,7 +153303,7 @@
       {
         "id": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
         "requirement": "Thin Context/navigation consumer with actual native target validation, same Atlas owners and guarded Campaign switching",
-        "state": "Shared_Location_Key_H01_Save_FAIL_targeted_D01_pending",
+        "state": "Shared_Location_Key_D01_root_cause_reproduced_targeted_repair_open",
         "implementationRun": "HEX-E2E01-HOST-SAVE-I02",
         "sourceCommit": "86bbbbfac44233509f084ac836e6dafa07b11a16",
         "catalog": "ROADMAP-E2E-GATES-CANDIDATE.md:13",
@@ -153329,7 +153329,7 @@
           "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-manifest-host-aba-20261010/repair/repair.json"
         ],
         "observed": "Actual AtlasView Save button calls FileTransaction and retained native owner Participant/Provider; exact Prepared/Committed journal read-back issues the real proofs.; Same Navigator queue refreshes confirmed Registry/Inventory before unblocking input; Repository, Sources, History, renderer, camera, Context token and mount generation remain.; Actual Vault first-native CAS failure rolls back before snapshot, issues a transaction-sealed receipt, releases pending Provider lease and retries in the same editable Atlas with a new transaction UUID.; Actual DOM View/services close and fresh View/services reopen retain saved Location and Room names under native Campaign fixture; this is not a fresh Electron process.; FileTransaction regressions exercise all before/after CAS reply-loss boundaries, reject copied/foreign rollback receipts, protect unchanged native guards, and preserve won canonical bytes if committed consumer acknowledgment fails.",
-        "notConfirmed": "Direct Shared H01 proves actual new Location/Key/move/common Undo-Redo only. Actual Save fails with an unconfirmed storage baseline and unmounted canvas; all eight saved Before files remain exact, new Location stays in retained draft. No fresh process started; diagnosis/targeted repair and independent #40 acceptance remain open. Historical H02 and Save/Fresh/Recovery receipts retained. No physical/original/large-world/user-vault installation/P02/P04/full-E2E approval.",
+        "notConfirmed": "D01 reproduces exact native H01 retained draft on H01/current source and proves the current new-Location Save guards retire the mount before repository Save. No product repair or repeated native Save/fresh-process probe; H01 FAIL unchanged. Campaign-owned explicit Atlas Location/section/placement closure extension is a concrete repair input, not a new general owner round or foreign package claim. Independent #40 acceptance, physical/original/large-world/user-vault installation/P02/P04/full E2E remain open.",
         "independentReview": {
           "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/13#issuecomment-6094804164",
           "gate": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6094804323",
@@ -154595,6 +154595,31 @@
           "guiSlotReturned": true,
           "productEdited": false,
           "independentAcceptance": "pending; no PASS"
+        },
+        "sharedLocationKeyDiagnosis": {
+          "id": "E2E-01-SHARED-LOCATION-KEY-D01",
+          "state": "root_cause_reproduced_product_repair_open",
+          "issue": 40,
+          "owner": "Hex",
+          "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
+          "sourcePlan": "ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md",
+          "evidence": "docs/reference/atlas-shared-location-d01/receipt.json",
+          "finding": "SHARED-LOCATION-H01-SAVE-01",
+          "diagnosisSourceCommit": "a6c4d89df40746bcce1cc0726f725c97708bc4b7",
+          "consumedShared": "93b670aca7927e1915f4c299eb131b4faa8b9fe3",
+          "originalH01EvidencePreserved": true,
+          "originalDraftByteEqual": true,
+          "repositorySaveCallsInModel": 0,
+          "writesInModelAfterSaveRequest": 0,
+          "modelCasesPerSource": 6,
+          "sourceTrees": 2,
+          "productEdited": false,
+          "nativeRepeated": false,
+          "freshProcessStarted": false,
+          "guiSlotUsed": false,
+          "independentAcceptance": "pending actual repair/native/independent #40 acceptance; no product PASS",
+          "next": "Targeted Hex navigation/native adapter repair; concrete Campaign-owned authorized native Location closure extension is required as input.",
+          "sha256": "7bde44397cd9e3b3a586a5e8fdf88d6c757145fb9cc0e0afdcfe357af27b4e01"
         }
       }
     ],
