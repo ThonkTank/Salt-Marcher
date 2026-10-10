@@ -109,13 +109,12 @@ export function checkRepository(root, suppliedFiles) {
   }
   for (const file of managed.filter(f => f.startsWith('docs/')))
     if (!reachable.has(file)) errors.push(`${file}: not reachable from docs/INDEX.md`);
-  const index = exists('docs/INDEX.md') ? read('docs/INDEX.md') : '';
-  const indexLinks = graph.get('docs/INDEX.md') ?? new Set();
+  const reachableSources = new Set([...reachable].filter(f => graph.has(f)).flatMap(f => markdownLinks(read(f))));
   for (const file of files) {
     if (file.includes('/') || !isMarkdown(file) || policy.coreRootDocs.includes(file)) continue;
     const flight = policy.inFlightRootDocs.find(p => p.path === file);
-    if (!indexLinks.has(file) && !(flight && index.includes(flight.source)))
-      errors.push(`${file}: root Fachplan missing from docs/INDEX.md`);
+    if (!reachable.has(file) && !(flight && reachableSources.has(flight.source)))
+      errors.push(`${file}: root Fachplan missing from docs/INDEX.md navigation`);
   }
   for (const file of managed.filter(f => f.startsWith('docs/plans/'))) {
     if (!/^docs\/plans\/[^/]+\/[^/]+\.md$/.test(file)) errors.push(`${file}: use docs/plans/<area>/<package>.md`);

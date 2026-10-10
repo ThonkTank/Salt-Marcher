@@ -51,6 +51,18 @@ test('unindexed documentation and removed legacy index entries fail', t => {
   assert(f.check().some(e => e.includes('LOST.md: not reachable')));
   assert(f.check().some(e => e.includes('ROADMAP-OLD.md: root Fachplan missing')));
 });
+test('legacy and candidate references can live in a reachable secondary register, never an orphan', t => {
+  const f = fixture(t), source = `https://github.com/example/repo/blob/${'b'.repeat(40)}/ROADMAP-INFLIGHT.md`;
+  f.policy.inFlightRootDocs.push({ path: 'ROADMAP-INFLIGHT.md', source, reason: 'Existing candidate' });
+  f.write('docs/repository-policy.json', f.policy); f.write('ROADMAP-INFLIGHT.md', '# Existing');
+  f.write('docs/reference/REGISTER.md', `[Old](../../ROADMAP-OLD.md)\n[Candidate](${source})`);
+  f.write('docs/INDEX.md', '[Guide](GUIDE.md)\n[Register](reference/REGISTER.md)');
+  assert.deepEqual(f.check(), []);
+  f.write('docs/INDEX.md', '[Guide](GUIDE.md)');
+  assert(f.check().some(e => e.includes('REGISTER.md: not reachable')));
+  assert(f.check().some(e => e.includes('ROADMAP-OLD.md: root Fachplan missing')));
+  assert(f.check().some(e => e.includes('ROADMAP-INFLIGHT.md: root Fachplan missing')));
+});
 test('new package plans bind scope, owner, issue and checkpoint root', t => {
   const f = fixture(t); f.write('docs/INDEX.md', '[Old](../ROADMAP-OLD.md)\n[Guide](GUIDE.md)\n[Plan](plans/dungeon/trap.md)');
   f.write('docs/plans/dungeon/trap.md', '---\narea: dungeon\nowner: Agent\nissue: 46\nstatus: active\ncheckpoint: dungeon\n---\n# Plan');

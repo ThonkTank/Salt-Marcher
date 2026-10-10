@@ -18,7 +18,7 @@ Ein lokaler Arbeitsraum für Spielleitungen: Karten und Raum-Keys bearbeiten, Ka
 
 ## Aktueller Fokus
 
-Der erste vollständige Nutzerablauf ist **Kampagne → Atlas → Ort/Stadt/Dungeon/Raum-Key → gemeinsames Speichern → frischer Start** (E2E-01). Zuerst wird das native Kampagnenwechsel-Gate in [PR #13](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/13) geschlossen. Danach folgen unabhängiger Integrationsreview und der sichtbare Location-/Key-Ablauf auf dem gemeinsamen Stand. Details und konkrete Aufgaben stehen in der [Roadmap](docs/ROADMAP.md).
+Der erste vollständige Nutzerablauf ist **Kampagne → Atlas → Ort/Stadt/Dungeon/Raum-Key → gemeinsames Speichern → frischer Start** (E2E-01). Die [Roadmap](docs/ROADMAP.md) führt seine Lieferkette; [#12](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12) nennt den aktuellen offenen Schritt und dessen Belege. Mit `npm run context -- --area atlas` nur den passenden Checkoutkontext lesen.
 
 ## Lokal entwickeln
 
@@ -44,6 +44,6 @@ Der Build erzeugt `main.js` und `main.js.map`. Für einen manuellen Smoke aussch
 - `tools/`: Build-, Referenz-, Fixture- und Hostprüfwerkzeuge.
 - `docs/`: lesbarer Produkteinstieg und Orientierung.
 - `ARCHITECTURE.md`: Architekturentscheidungen; `acceptance.json`: Anforderungen und direkte Abnahmen; `checkpoint.json`: bereichseigene Ausführungsstände.
-- `ROADMAP-*.md`: bestehende Fach- und Paketpläne, über den [Index](docs/INDEX.md) auffindbar. Die alte Root-[ROADMAP.md](ROADMAP.md) dokumentiert den früheren Raum-Key-Lieferweg.
+- `ROADMAP-*.md`: bestehende Fach- und Paketpläne, bei Bedarf im [Fachplanregister](docs/reference/PLAN-REGISTER.md) auffindbar. Die alte Root-[ROADMAP.md](ROADMAP.md) dokumentiert den früheren Raum-Key-Lieferweg.
 
 Quellen- und Datenattribution: [NOTICE.md](NOTICE.md), [SRD 5.1](src/features/catalog/SRD-5.1-ATTRIBUTION.md) und [Itemquellen](src/features/catalog/SRD-5.1-ITEMS-ATTRIBUTION.md).

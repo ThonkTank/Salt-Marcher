@@ -9,7 +9,7 @@ Beginne mit den [Produktzielen](docs/PRODUCT.md) und der [Roadmap](docs/ROADMAP.
 1. `git fetch origin`; gemeinsame Basis, offene PRs und aktuelle Übernahmen prüfen. Die folgenden Befehle geben einen Überblick, ersetzen aber nicht das Lesen des gewählten Issues und seiner letzten Kommentare.
 2. Eine Aufgabe passend zu Zugriff und Fähigkeiten wählen. Ohne GUI kannst du Modell-/Regressionstests, Quellenabgleich und begrenzte Dokumentation liefern; native Bedienabnahmen brauchen den tatsächlichen Host. Ein privater QA-Pfad ist keine Voraussetzung für alle Beiträge.
 3. Das konkrete freie Paket im Aufgabenissue übernehmen: **Agent/Rolle, begrenzter Scope, Basis-SHA, Branch oder vorhandener PR, geplante Prüfung und nächster Empfänger**. Bei bereits benanntem Owner dessen vorhandene Arbeit unterstützen. Für ein freies, autorisiertes Paket braucht es keine zusätzliche allgemeine Zustimmungsrunde. GitHub-Assignees allein unterscheiden die unter demselben Account arbeitenden Agenten nicht.
-4. Relevante Checkpoint-/Acceptancewurzel und Fachplan lesen, ein überprüfbares Ergebnis liefern und mit Commit, Tests und offenen Grenzen übergeben. Eine noch offene Ownerentscheidung als konkreten Blocker ausweisen; außerhalb davon weiterarbeiten.
+4. Den passenden Bereich über `npm run context -- --area <bereich>` auswählen, relevante Checkpoint-/Acceptanceeinträge und Fachplan lesen, ein überprüfbares Ergebnis liefern und mit Commit, Tests und offenen Grenzen übergeben. Eine noch offene Ownerentscheidung als konkreten Blocker ausweisen; außerhalb davon weiterarbeiten.
 
 ```bash
 gh issue list --repo ThonkTank/Obsidian-Dungeon-Editor-Phase1 --state open --label 'status:ready'
@@ -24,15 +24,7 @@ gh issue view 12 --repo ThonkTank/Obsidian-Dungeon-Editor-Phase1 --json body,com
 | Produktentwicklung oder Review | Aktuellen Owner-/PR-Scope aus #12 und dem Bereichsissue wählen; z. B. vorhandenen PR #13 unterstützen | Kein zweiter Atlas-Kandidat; integrierte/native Abnahme braucht ihren tatsächlichen Lauf |
 | Obsidian, passende Fixtures und zugängliche Belege | Bestehenden Hostfall im Fachbereich übernehmen | GUI-Slot auf demselben Gerät abstimmen; bei fehlendem Zugriff präzisen Eingang nennen |
 
-Der gemeinsame Branch enthält noch nicht alle Kandidateneingänge. Campaign B aus PR #37 liegt im PR-13-Kandidaten, nicht automatisch auf Shared. #42 wurde von Chronik abgeschlossen und über PR #45 integriert. Die [fertige Fixture-Anleitung](docs/CONTRIBUTOR-FIXTURE-B.md) pinnt die tatsächliche Kandidatenbasis; sie kann jetzt ohne GUI nachvollzogen werden.
-
-Der lokale Einstieg wurde auf einem frischen Shared-Checkout `321a41c1fa651e6c77f005566ebbafc7080eb960` mit Node 22 geprüft: `npm ci`, Typprüfung, 443 Tests und Build bestanden ohne Obsidian oder private QA-Dateien. Ein gezielter Modelltest lässt sich anschließend so ausführen:
-
-```bash
-node --test --test-concurrency=1 --test-name-pattern='^Dungeondraft packages keep image payloads lazy and expose stable assets$' .build/tests.cjs
-```
-
-Erwartet: ein bestandener Test. Die synthetische Paketquelle liegt unter `tests/core/pack-fixtures.ts`, der Test unter `tests/core/assets.test.ts`; proprietäre Assetpakete werden dafür nicht benötigt. Nach Quelländerungen zuerst `node build.mjs --test` ausführen, damit das Testbundle aktuell ist. Dieser Lauf bestätigt den Modelltest, keine Original- oder native Hostabnahme.
+Den gewählten Bereich mit `npm run context -- --area <bereich>` auswählen; [Bereichskarte](docs/INDEX.md). Checkout-SHA und aktuelle PR-Heads unterscheiden. Für einen reproduzierbaren Datei-/Modelltest ohne GUI die [gepinnte Campaign-B-Anleitung](docs/CONTRIBUTOR-FIXTURE-B.md) verwenden.
 
 ## Eine Aufgabe finden
 
@@ -46,35 +38,11 @@ Erwartet: ein bestandener Test. Die synthetische Paketquelle liegt unter `tests/
 
 ## Änderung vorbereiten und liefern
 
-1. Aktuellen Branch, offene PRs, Remote-Branches und die Paketkoordination in [#1](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1) prüfen. Einen bereits besessenen Lauf gezielt unterstützen; keinen Doppel-Kandidaten eröffnen.
-2. `git fetch origin`; einen neuen eigenen Branch von `origin/active/installed-phase1` erstellen. Aktuelle Dateien, relevante `checkpoint.json`-/`acceptance.json`-Einträge und `ARCHITECTURE.md` lesen.
-3. Ein zusammenhängendes, begrenztes Ergebnis umsetzen. Quellen nach `src/`, Tests nach `tests/`, wiederverwendbare Hilfen nach `tools/`. Nur eigene Checkpoint-/Abnahmewurzeln aktualisieren; fremde Kennungen und Nachweise erhalten.
-4. Prüfen: `npm run check:repo` für Struktur und Verweise; Dokumentation außerdem durch passende JSON-/Diffprüfung; Produktcode durch `npm run check`, `npm test`, `npm run build` und passende Regressionen. Tatsächlich ausgeführte Checks mit Ergebnis berichten. Host- und Originalabnahmen nur nach entsprechendem Lauf behaupten.
-5. Unmittelbar vor Veröffentlichung erneut fetchen und eingegangene Änderungen integrieren. Nur eigene zusammengehörige Änderungen committen/pushen, veröffentlichten Verlauf erhalten. Remote-Commit mit dem lokalen Commit vergleichen.
-6. PR gegen `active/installed-phase1` öffnen: Nutzerproblem und Ergebnis, Aufgabe, Abhängigkeiten, relevante Checks und verbleibende Abnahmegrenzen. Gemäß konkretem Auftrag und geltendem Paketvertrag integrieren; bereits erteilte Nutzerfreigaben nicht erneut erfragen. Wo der Fachvertrag unabhängigen Review verlangt, bleibt dessen Ergebnis erforderlich. Der PR-CI-Workflow prüft den exakten Headcommit.
-
-Bei einer komplexen Fachphase gelten die getrennten Plan-/Umsetzungs-/Review-/Nachbesserungs-/Aufräumläufe aus AGENTS.md und dem jeweiligen Fachplan. Eine kleine Korrektur braucht keine neue konkurrierende Produktroadmap.
-
-## Hosttests und Belege
-
-Für einen manuellen Einstieg die [README](README.md) verwenden. Nur isolierte Testvaults und synthetische/eigens freigegebene Testdaten benutzen. Vor echtem Hostlauf den einzelnen GUI-Slot im zuständigen Bereich koordinieren. Große QA-Dateien und Rohprotokolle gehören außerhalb des Nutzervaults nach `/home/aaron/.cache/dungeon-native-qa/`; diese lokalen Pfade sind auf einem anderen Rechner nicht automatisch zugänglich.
-
-Wer zunächst ohne GUI-Slot einen eingecheckten Beleg nachvollziehen möchte, kann das [Campaign-B-Fixture in einem frischen Checkout reproduzieren](docs/CONTRIBUTOR-FIXTURE-B.md). Die Anleitung trennt den deterministischen Datei-/Modelltest ausdrücklich von einem echten Obsidian-Hostlauf.
-
-Ein Handoff nennt: Branch/Commit, Build, Fixtureversion und Hashes, ausgeführten Ablauf, Datei-/Text-/ID-Orakel, Ergebnis, zugängliche Belegreferenz oder ausdrücklich fehlenden Zugriff, offene Grenzen und nächsten Empfänger. Eine fehlende lokale Evidenzdatei ist kein lokal verifizierter PASS. Synthetische Eingabe, physische Bedienung und ein tatsächlich frischer Hostprozess getrennt ausweisen.
+Nach der Aufgabenwahl die passenden [Arbeitsregeln](docs/WORKFLOW.md) anwenden: eigene begrenzte Änderung, relevante Prüfungen, eingehende Arbeit integrieren, geprüft committen/pushen und mit Beleg/offenen Grenzen übergeben. Bereits erteilte Nutzerfreigaben nicht erneut erfragen; vereinbarte Fachreviews bleiben erforderlich. Build oder Push installieren kein Plugin im Nutzervault.
 
 ## Wo Fragen und Entscheidungen hingehören
 
-| Thema | Ort |
-| --- | --- |
-| Produktfolge, bereichsübergreifende Gateentscheidung | [#12](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12) |
-| Paketindex und gemeinsame Arbeitskoordination | [#1](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1) |
-| Party / LiveSession | [#6](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/6) |
-| Atlas / Stadt | [#7](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/7) |
-| Dungeon / GM-Test | [#8](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/8) |
-| Katalog / Encounter | [#9](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/9) |
-| Campaign / Planner / Reise und Consumer | [#10](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/10) |
-| Plattform / Recovery / Spielerdisplay | [#11](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11) |
+[#12](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12): Produktfolge und Gateentscheidungen. [#1](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1): Paketkoordination. Bereichsissues und Fachverträge stehen in der [Bereichskarte](docs/INDEX.md).
 
 Neue Aufgaben bekommen eine eigene kleine Beschreibung mit Abnahme und verlinken ihren Bereich. Detaillierte Laufprotokolle gehören in den bestehenden Fachort; im Gesamtindex genügt die Entscheidung oder der Blocker mit Link.
 

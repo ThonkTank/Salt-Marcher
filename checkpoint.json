@@ -34,11 +34,10 @@
       "followupIssue": 44,
       "assessment": "Known source domains explicitly covered; detailed target-rule conflicts, Dungeon work-package mapping and complete original inventories remain open. No acceptance states changed."
     },
-    "next": "Package owners maintain canonical task/checkpoint/evidence state at handoff and closure; integration owner updates shared focus when the critical path changes. Run the offline structure check before publishing and use the read-only backlog audit for status consistency.",
+    "next": "Package owners keep current task main text/labels and their own checkpoint root aligned at handoff. Integration decisions remain in issue #12; no stale run narratives in entrypoints.",
     "agentEntry": "CONTRIBUTING.md#agenteneinstieg",
     "contributorAudit": {
       "date": "2026-10-10",
-      "readyIssue": 46,
       "readyTaskBase": "active/installed-phase1",
       "fixtureGenerator": "tests/core/pack-fixtures.ts",
       "taskStatusLabels": [
@@ -72,7 +71,8 @@
         "pullRequest": 45,
         "integrationCommit": "7ef025c94fe438c31b20fdc8632b2c9d31b6bc68",
         "document": "docs/CONTRIBUTOR-FIXTURE-B.md"
-      }
+      },
+      "initialStarterIssue": 46
     },
     "sustainabilityAudit": {
       "date": "2026-10-10",
@@ -89,6 +89,23 @@
       "backlogLabelAudit": "PASS; read-only; no task mutation",
       "branchProtection": "Cannot verify/configure with current access: protection endpoint 403; private-repository rulesets API reports plan restriction. CI reports violations but does not prevent direct pushes.",
       "limits": "Semantic roadmap freshness and acceptance remain with package/integration/domain owners; no product, architecture or acceptance states changed."
+    },
+    "contextTool": "npm run context",
+    "referenceRegister": "docs/reference/PLAN-REGISTER.md",
+    "navigationCleanup": {
+      "date": "2026-10-10",
+      "scope": "Short area-based entrypoints, optional historical register, exact acceptance/context selectors and coordination main-text cleanup; no product or gate approval.",
+      "preserved": "All existing Fachplan paths, foreign checkpoint roots, acceptance entries, architecture and pinned scope evidence. Historical issue main texts archived; live owner comments untouched.",
+      "next": "Package owners keep current task main text/labels and their own checkpoint root aligned at handoff. Integration decisions remain in issue #12; no stale run narratives in entrypoints.",
+      "verification": {
+        "node": "v22.23.3",
+        "structure": "PASS",
+        "navigationAndGuardTests": 18,
+        "typecheck": "PASS",
+        "tests": 461,
+        "build": "PASS",
+        "limits": "Repository navigation and existing regression checks; no new product/host acceptance."
+      }
     }
   },
   "saltMarcherReplacement": {
