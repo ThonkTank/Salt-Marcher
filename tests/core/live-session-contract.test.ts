@@ -321,6 +321,70 @@ test("LiveSession composition fails closed for mismatched Party or Scene evidenc
   );
 });
 
+test("downstream projection builders revalidate structurally forged focus evidence", () => {
+  const forgedFocus = {
+    kind: "focus-projection",
+    version: 1,
+    status: "active",
+    campaignId: "campaign-a",
+    focusRevision: -1,
+    liveSceneId: "scene-a",
+    sceneRevision: 4,
+  };
+  assert.throws(
+    () => projectLiveScene(sceneRaw(), forgedFocus),
+    /FocusProjection\.focusRevision|Revision/,
+  );
+  assert.throws(
+    () => projectLiveSession(partyRaw(), forgedFocus),
+    /FocusProjection\.focusRevision|Revision/,
+  );
+});
+
+test("LiveSession reparses and detaches a structurally supplied Scene projection", () => {
+  const focus = projectFocus(activeFocus(), sceneRaw()),
+    projected = projectLiveScene(sceneRaw(), focus);
+  assert.equal(projected.status, "active");
+  if (projected.status !== "active") return;
+  const mutablePins = projected.projection.contentPins.map((entry) => ({
+      ...entry,
+    })),
+    supplied = {
+      status: "active",
+      projection: {
+        ...projected.projection,
+        focus: { ...projected.projection.focus },
+        characterIds: [...projected.projection.characterIds],
+        pendingAssignments: [...projected.projection.pendingAssignments],
+        groupRefs: [...projected.projection.groupRefs],
+        maskRefs: [...projected.projection.maskRefs],
+        reconciliations: [...projected.projection.reconciliations],
+        contentPins: mutablePins,
+      },
+    },
+    session = projectLiveSession(partyRaw(), focus, supplied);
+  assert.equal(session.status, "active");
+  assert(frozenGraph(session));
+  if (session.status !== "active") return;
+  assert.notEqual(session.scene, supplied.projection);
+  mutablePins[0]!.referenceId = "mutated" as never;
+  supplied.projection.characterIds.push("character-z" as never);
+  assert.equal(session.scene.contentPins[0]?.referenceId, "note-a");
+  assert.deepEqual(session.scene.characterIds, ["character-a"]);
+
+  const inconsistentFocus = {
+    ...supplied,
+    projection: {
+      ...supplied.projection,
+      focus: { status: "not-focused" },
+    },
+  };
+  assert.equal(
+    projectLiveSession(partyRaw(), focus, inconsistentFocus).status,
+    "unavailable",
+  );
+});
+
 test("strict source parsers reject duplicate and incomplete reference evidence", () => {
   const duplicate = sceneRaw();
   duplicate.contentPins = [

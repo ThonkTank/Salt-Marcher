@@ -18,6 +18,13 @@ import type {
   OwnerId,
   Revision,
 } from "./ids";
+import {
+  campaignId,
+  commandId,
+  liveSceneId,
+  ownerId,
+  revision,
+} from "./ids";
 
 export type FocusUnavailableReason =
   | "owner-unavailable"
@@ -114,6 +121,284 @@ export type LiveSessionProjection =
       readonly focusRevision: Revision;
     };
 
+function record(
+  value: unknown,
+  required: readonly string[],
+  optional: readonly string[] = [],
+  label = "Wert",
+): Record<string, unknown> {
+  if (!value || typeof value !== "object" || Array.isArray(value))
+    throw new Error(`${label} muss ein Objekt sein.`);
+  const result = value as Record<string, unknown>,
+    prototype = Object.getPrototypeOf(result),
+    keys = Reflect.ownKeys(result),
+    allowed = new Set([...required, ...optional]);
+  if (
+    (prototype !== Object.prototype && prototype !== null) ||
+    required.some((key) => !Object.hasOwn(result, key)) ||
+    keys.some((key) => typeof key !== "string" || !allowed.has(key)) ||
+    Object.values(Object.getOwnPropertyDescriptors(result)).some(
+      (descriptor) => !Object.hasOwn(descriptor, "value"),
+    )
+  )
+    throw new Error(
+      `${label} enthält unbekannte, berechnete oder unvollständige Daten.`,
+    );
+  return result;
+}
+
+function parseFocusProjection(value: unknown): FocusProjection {
+  const base = record(
+    value,
+    ["kind", "version", "status", "campaignId", "focusRevision", "liveSceneId"],
+    ["sceneRevision", "commandId", "reason", "ownerId"],
+    "FocusProjection",
+  );
+  if (base.kind !== "focus-projection" || base.version !== 1)
+    throw new Error("FocusProjection besitzt einen unbekannten Vertrag.");
+  const common = {
+    kind: "focus-projection" as const,
+    version: 1 as const,
+    campaignId: campaignId(base.campaignId, "FocusProjection.campaignId"),
+    focusRevision: revision(base.focusRevision, "FocusProjection.focusRevision"),
+  };
+  if (base.status === "active") {
+    const row = record(
+      value,
+      [
+        "kind",
+        "version",
+        "status",
+        "campaignId",
+        "focusRevision",
+        "liveSceneId",
+        "sceneRevision",
+      ],
+      [],
+      "FocusProjection",
+    );
+    return Object.freeze({
+      ...common,
+      status: "active",
+      liveSceneId: liveSceneId(row.liveSceneId, "FocusProjection.liveSceneId"),
+      sceneRevision: revision(row.sceneRevision, "FocusProjection.sceneRevision"),
+    });
+  }
+  if (base.status === "none") {
+    record(
+      value,
+      ["kind", "version", "status", "campaignId", "focusRevision", "liveSceneId"],
+      [],
+      "FocusProjection",
+    );
+    if (base.liveSceneId !== null)
+      throw new Error("FocusProjection.none darf keine LiveScene tragen.");
+    return Object.freeze({ ...common, status: "none", liveSceneId: null });
+  }
+  if (base.status === "pending") {
+    const row = record(
+      value,
+      [
+        "kind",
+        "version",
+        "status",
+        "campaignId",
+        "focusRevision",
+        "liveSceneId",
+        "commandId",
+      ],
+      [],
+      "FocusProjection",
+    );
+    if (row.liveSceneId !== null)
+      throw new Error("FocusProjection.pending darf keine LiveScene tragen.");
+    return Object.freeze({
+      ...common,
+      status: "pending",
+      liveSceneId: null,
+      commandId: commandId(row.commandId, "FocusProjection.commandId"),
+    });
+  }
+  if (base.status === "unavailable") {
+    const row = record(
+      value,
+      [
+        "kind",
+        "version",
+        "status",
+        "campaignId",
+        "focusRevision",
+        "liveSceneId",
+        "reason",
+      ],
+      ["ownerId"],
+      "FocusProjection",
+    );
+    if (
+      row.liveSceneId !== null ||
+      !(
+        [
+          "owner-unavailable",
+          "missing-scene",
+          "invalid-scene",
+          "foreign-scene",
+          "stale-scene",
+          "inactive-scene",
+        ] as const
+      ).includes(row.reason as never)
+    )
+      throw new Error("FocusProjection.unavailable ist widersprüchlich.");
+    return Object.freeze({
+      ...common,
+      status: "unavailable",
+      liveSceneId: null,
+      reason: row.reason as FocusUnavailableReason,
+      ...(row.ownerId === undefined
+        ? {}
+        : { ownerId: ownerId(row.ownerId, "FocusProjection.ownerId") }),
+    });
+  }
+  throw new Error("FocusProjection.status ist unbekannt.");
+}
+
+function parseLiveSceneProjection(value: unknown): LiveSceneProjection {
+  const row = record(
+      value,
+      [
+        "kind",
+        "version",
+        "campaignId",
+        "liveSceneId",
+        "sceneRevision",
+        "primary",
+        "focus",
+        "characterIds",
+        "pendingAssignments",
+        "groupRefs",
+        "maskRefs",
+        "reconciliations",
+        "contentPins",
+      ],
+      ["locationRef", "sceneClockRef"],
+      "LiveSceneProjection",
+    ),
+    focusBase = record(
+      row.focus,
+      ["status"],
+      ["focusRevision"],
+      "LiveSceneProjection.focus",
+    );
+  if (row.kind !== "live-scene-projection" || row.version !== 1)
+    throw new Error("LiveSceneProjection besitzt einen unbekannten Vertrag.");
+  const focus =
+    focusBase.status === "focused"
+      ? (() => {
+          const focused = record(
+            row.focus,
+            ["status", "focusRevision"],
+            [],
+            "LiveSceneProjection.focus",
+          );
+          return Object.freeze({
+            status: "focused" as const,
+            focusRevision: revision(
+              focused.focusRevision,
+              "LiveSceneProjection.focus.focusRevision",
+            ),
+          });
+        })()
+      : focusBase.status === "not-focused"
+        ? (() => {
+            record(row.focus, ["status"], [], "LiveSceneProjection.focus");
+            return Object.freeze({ status: "not-focused" as const });
+          })()
+        : (() => {
+            throw new Error("LiveSceneProjection.focus.status ist unbekannt.");
+          })(),
+    source = parseLiveSceneSource({
+      kind: "live-scene-source",
+      version: 1,
+      campaignId: row.campaignId,
+      liveSceneId: row.liveSceneId,
+      sceneRevision: row.sceneRevision,
+      lifecycle: "active",
+      primary: row.primary,
+      characterIds: row.characterIds,
+      pendingAssignments: row.pendingAssignments,
+      ...(row.locationRef === undefined ? {} : { locationRef: row.locationRef }),
+      ...(row.sceneClockRef === undefined
+        ? {}
+        : { sceneClockRef: row.sceneClockRef }),
+      groupRefs: row.groupRefs,
+      maskRefs: row.maskRefs,
+      reconciliations: row.reconciliations,
+      contentPins: row.contentPins,
+    });
+  return Object.freeze({
+    kind: "live-scene-projection",
+    version: 1,
+    campaignId: source.campaignId,
+    liveSceneId: source.liveSceneId,
+    sceneRevision: source.sceneRevision,
+    primary: source.primary,
+    focus,
+    characterIds: source.characterIds,
+    pendingAssignments: source.pendingAssignments,
+    ...(source.locationRef === undefined
+      ? {}
+      : { locationRef: source.locationRef }),
+    ...(source.sceneClockRef === undefined
+      ? {}
+      : { sceneClockRef: source.sceneClockRef }),
+    groupRefs: source.groupRefs,
+    maskRefs: source.maskRefs,
+    reconciliations: source.reconciliations,
+    contentPins: source.contentPins,
+  });
+}
+
+function parseLiveSceneProjectionResult(
+  value: unknown,
+): LiveSceneProjectionResult {
+  const base = record(
+    value,
+    ["status"],
+    ["projection", "reason"],
+    "LiveSceneProjectionResult",
+  );
+  if (base.status === "active") {
+    const row = record(
+      value,
+      ["status", "projection"],
+      [],
+      "LiveSceneProjectionResult",
+    );
+    return Object.freeze({
+      status: "active",
+      projection: parseLiveSceneProjection(row.projection),
+    });
+  }
+  if (base.status === "unavailable") {
+    const row = record(
+      value,
+      ["status", "reason"],
+      [],
+      "LiveSceneProjectionResult",
+    );
+    if (
+      !(["invalid-scene", "foreign-scene", "inactive-scene"] as const).includes(
+        row.reason as never,
+      )
+    )
+      throw new Error("LiveSceneProjectionResult.reason ist unbekannt.");
+    return Object.freeze({
+      status: "unavailable",
+      reason: row.reason as "invalid-scene" | "foreign-scene" | "inactive-scene",
+    });
+  }
+  throw new Error("LiveSceneProjectionResult.status ist unbekannt.");
+}
+
 function unavailableFocus(
   focus: FocusSourceSnapshot,
   reason: FocusUnavailableReason,
@@ -186,8 +471,9 @@ export function projectFocus(
 
 export function projectLiveScene(
   sceneValue: unknown,
-  focus: FocusProjection,
+  focusValue: unknown,
 ): LiveSceneProjectionResult {
+  const focus = parseFocusProjection(focusValue);
   let scene: LiveSceneSourceSnapshot;
   try {
     scene = parseLiveSceneSource(sceneValue);
@@ -274,10 +560,15 @@ function activeSceneMatchesParty(
 
 export function projectLiveSession(
   partyValue: unknown,
-  focus: FocusProjection,
-  sceneResult?: LiveSceneProjectionResult,
+  focusValue: unknown,
+  sceneResultValue?: unknown,
 ): LiveSessionProjection {
   const party = parsePartyProjection(partyValue),
+    focus = parseFocusProjection(focusValue),
+    sceneResult =
+      sceneResultValue === undefined
+        ? undefined
+        : parseLiveSceneProjectionResult(sceneResultValue),
     common = {
       kind: "live-session-projection" as const,
       version: 1 as const,
@@ -294,6 +585,8 @@ export function projectLiveSession(
     sceneResult.projection.campaignId !== focus.campaignId ||
     sceneResult.projection.liveSceneId !== focus.liveSceneId ||
     sceneResult.projection.sceneRevision !== focus.sceneRevision ||
+    sceneResult.projection.focus.status !== "focused" ||
+    sceneResult.projection.focus.focusRevision !== focus.focusRevision ||
     !activeSceneMatchesParty(party, sceneResult.projection)
   )
     return Object.freeze({ ...common, status: "unavailable" });
