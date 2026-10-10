@@ -133,6 +133,16 @@ module.exports = (context) => {
         const probe = window.__hexCampaignProbe;
         app.vault.process = probe.process; app.vault.create = probe.create;
       });
+      const toolbar = page.locator(".dn-atlas:visible").last().locator(".dn-atlas-toolbar");
+      await toolbar.getByRole("button", { name: "Atlasänderung rückgängig", exact: true }).click();
+      await page.evaluate(() => app.workspace.getLeavesOfType("dungeon-native-atlas").at(-1).view.editor.flush());
+      assert.equal((await identity()).depth, saved.depth - 1);
+      await toolbar.getByRole("button", { name: "Atlasänderung wiederholen", exact: true }).click();
+      await page.evaluate(() => app.workspace.getLeavesOfType("dungeon-native-atlas").at(-1).view.editor.flush());
+      const redone = await identity();
+      assert.equal(redone.depth, saved.depth);
+      assert.deepEqual(redone.camera, saved.camera);
+      checks.push("Actual Undo/Redo remains usable in the refreshed saved Atlas without replacing history or camera");
       // The actual toolbar remains usable after refresh; a no-op Save must not issue a new revision.
       await button().click();
       await page.evaluate(() => app.workspace.getLeavesOfType("dungeon-native-atlas").at(-1).view.editor.flush());
