@@ -117,8 +117,10 @@ export function serializeWorldNote(value: WorldNoteV1): string {
 }
 export function worldNotesSnapshot(value: WorldNotesSnapshotV1): WorldNotesSnapshotV1 {
   validate(value);
-  return immutable({ ...value, records: value.records.map((record) => ({ ...record,
-    relations: record.relations.map((relation) => ({ ...relation })) })) });
+  return immutable({ ...value, records: [...value.records]
+    .sort((a, b) => a.id.localeCompare(b.id))
+    .map((record) => ({ ...record,
+      relations: record.relations.map((relation) => ({ ...relation })) })) });
 }
 function assertContext(snapshot: WorldNotesSnapshotV1, expected: CampaignContextProjection,
   current: CampaignContextProjection | null): void {
