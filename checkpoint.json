@@ -845,7 +845,8 @@
       "limits": "Small frozen fixture and synthetic native gestures only; controlled fault injection, not power-loss durability. No new Campaign authority, Source activation during Save, fixture mutation, user-vault install or full E2E approval.",
       "slotConfirmation": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/7#issuecomment-6097870608",
       "slotConfirmedForCompletedRun": true,
-      "slotRequiredAgain": true
+      "slotRequiredAgain": true,
+      "priorityDecision": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1#issuecomment-6098079622"
     },
     "review": {
       "run": "HEX-02-R02",
@@ -5295,7 +5296,7 @@
       "platformIssue": 11,
       "checkpointIsAuthoritative": true
     },
-    "updatedAt": "2026-10-10T13:32:49.598081+00:00",
+    "updatedAt": "2026-10-10T13:50:29.221212+00:00",
     "consumerMatrix": {
       "id": "RUNTIME-MANIFEST-I02-CONSUMER-MATRIX-V1",
       "state": "frozen_complete_matrix_green_on_productive_Host_source",
@@ -5387,6 +5388,16 @@
       "sha256": "beaaa8f1d8103a4afc2248ba49f35dd877fd181abd0d7e7ccd82cda3456eba84",
       "consumedShared": "fcb5e4db6fa69c65423e15390cda60756c385623",
       "productUnchanged": true
+    },
+    "latestSharedIntegration": {
+      "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-manifest-host-save-i02-h01-20261010/shared-690a6f6-integration.json",
+      "sha256": "c0854619c043a15a871a7ae5255166a9f83c50d5ed0b80799bd4ba8cb6cf1b27",
+      "sourceCommit": "57208eac0559ed0f6f046d8b367affeb5870b209",
+      "consumedShared": "690a6f61a42bfccfed718bd495c9329136cbacfd",
+      "testsPassed": 639,
+      "nativeSourcesUnchanged": true,
+      "newNativeRun": false,
+      "fullE2E": false
     }
   },
   "phase": "Phase 6: zweiter Nachbesserungslauf teilweise umgesetzt; fünf Restpositionen und unabhängiger Review offen",
