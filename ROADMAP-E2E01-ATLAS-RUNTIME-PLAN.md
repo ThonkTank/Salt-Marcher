@@ -407,3 +407,23 @@ Anschluss echter FileTransaction-/Host-Receipts und des Registry-/Inventory-
 Refreshs im selben Navigator/Mount/History. Keine Shared-/Installations- oder
 Gesamtpromotion aus dem Komponentenreview; der tatsächliche
 Host-Save/Fresh/Recovery/A-B-A-Nachweis bleibt offen.
+
+**Qualifizierte Übernahme im einzigen PR13-Kandidaten:** Der unabhängig geprüfte
+Campaign-Stand `ce2f9032dc9f72f994a307b5aac26e1ad8910065` ist regulär als
+Merge `8f0d39a9ada55e351e306317736892c6b89a68ab` übernommen. Produktquellen
+und Tests stimmen vollständig mit der geprüften Reviewbasis überein; gegenüber
+dieser Basis unterscheiden sich nur die vorhandenen Hex-Metadaten. Alle 19
+Freeze-Dateien und bestehende Übergaben bleiben unverändert. Der saubere lokale
+Integrationslauf besteht die unveränderte Matrix mit **18/18**, Typprüfung,
+**629/629 Basistests** und Build mit exakter Quellkennung und `dirty:false`.
+Der neue Report bindet ausdrücklich den Integrations-SHA; er benennt keine
+neue Producerübergabe oder Komponentenreviewrunde.
+
+Der nächste eigene Umsetzungsschritt ist der produktive Anschluss der tatsächlich
+beobachteten Prepared-/Committed-/terminalen Rollbackgrenzen von FileTransaction
+über den zuständigen Participant an Provider und AtlasView. Der anschließende
+Registry-/Inventory-Refresh läuft in derselben Navigatorwarteschlange und erhält
+Mount, Repository, Renderer, Kamera und History. Erst danach wird Eingabe wieder
+zugelassen. Die freigegebene Campaign-API und eingefrorene Matrix werden dabei
+nicht parallel nachgebessert. Tatsächlicher Obsidian Save/Fresh/Recovery/A-B-A,
+integrierter Hostreview, Aufräumen und Gesamtfreigabe bleiben getrennte Schritte.

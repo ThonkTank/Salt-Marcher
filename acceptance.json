@@ -154071,7 +154071,7 @@
             "scope": "Independent existing Chronik review report, no own substitute review/approval or source integration."
           }
         },
-        "gap": "Actual clean integrated ce2f903 owner and independent Chronik runs both 18/18; one integrated review PASS received, no mandatory findings. Hex directly verified ancestry/19 frozen files/four-file Campaign boundary. Normal qualified PR13 consumption is next; productive Host receipts and same-mount registry/inventory refresh, actual Obsidian Save/Fresh/Recovery/A-B-A and full E2E remain open.",
+        "gap": "Qualified ce2f903 Campaign rollback source now normally consumed in the single PR13 candidate at clean 8f0d39a; direct local frozen matrix 18/18 and baseline 629/629/check/build PASS. Product sources are identical to independent Chronik-PASS ce2f903, frozen 19 files retained. Productive FileTransaction/AtlasView receipt hook and same-mount Registry/Inventory refresh, actual Obsidian Save/Fresh/Recovery/A-B-A, integrated host review and full E2E remain open.",
         "qualifiedCampaignInputAndRollbackProbe": {
           "id": "E2E-01-SPACE-I01c-RUNTIME-MANIFEST-I02-S03",
           "state": "qualified_Campaign_contract_integrated_new_actual_rollback_release_dependency",
@@ -154301,6 +154301,72 @@
           "next": "Normal qualified PR13 consumption of exact ce2f903, then productive FileTransaction/AtlasView receipts and same-Navigator registry/inventory refresh. No further producer review or matrix handoff.",
           "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-manifest-matrix-handoff-20261010/review-consumption.json",
           "sha256": "28f8f982bc06bf08c6bb26d7c5f85817d72df0418d33a96648a1d63d5651e917"
+        },
+        "qualifiedCampaignRollbackIntegration": {
+          "id": "RUNTIME-MANIFEST-I02-QUALIFIED-CAMPAIGN-INTEGRATION",
+          "state": "qualified_campaign_rollback_source_integrated_clean_local_matrix_and_baseline_PASS",
+          "checkedAt": "2026-10-10T12:38:52.083261+00:00",
+          "sourceCommit": "8f0d39a9ada55e351e306317736892c6b89a68ab",
+          "qualifiedOwnerCommit": "ce2f9032dc9f72f994a307b5aac26e1ad8910065",
+          "candidateBefore": "b28b91d92663143986bbb5c88225617e8867060c",
+          "consumedShared": "5eaa945967dd806344f791c551791df915a4a539",
+          "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
+          "independentReview": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6097491451",
+          "composition": {
+            "integrationSource": "8f0d39a9ada55e351e306317736892c6b89a68ab",
+            "qualifiedOwnerSource": "ce2f9032dc9f72f994a307b5aac26e1ad8910065",
+            "parents": [
+              "b28b91d92663143986bbb5c88225617e8867060c",
+              "ce2f9032dc9f72f994a307b5aac26e1ad8910065"
+            ],
+            "qualifiedSourceContained": true,
+            "deltaFromReviewedSource": [
+              "ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md",
+              "acceptance.json",
+              "checkpoint.json"
+            ],
+            "productSourceByteIdenticalToReviewedSource": true,
+            "frozenFiles": 19,
+            "contractSha256": "92b766263ed73fd5dc5e24b2023e55af6f5f17b006830adb45f10734dfba69d6",
+            "clean": true,
+            "nativeRan": false,
+            "fullE2E": false
+          },
+          "checks": {
+            "check": "PASS",
+            "tests": 629,
+            "passed": 629,
+            "failed": 0,
+            "skipped": 0,
+            "build": "PASS clean exact source",
+            "diff": "PASS"
+          },
+          "localMatrix": {
+            "candidateSha": "8f0d39a9ada55e351e306317736892c6b89a68ab",
+            "passed": 18,
+            "expected": 18,
+            "allGreen": true,
+            "reviewReady": true,
+            "dirty": false,
+            "unchangedCheckout": true,
+            "exitCode": 0,
+            "contractSha256": "92b766263ed73fd5dc5e24b2023e55af6f5f17b006830adb45f10734dfba69d6",
+            "report": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-manifest-qualified-integration-20261010/matrix.json",
+            "sha256": "b90ff5e25541c0826e638df1128e17296f4cdeb599c1dbba31e8df94c81a522d"
+          },
+          "logSha256": {
+            "check.log": "079b4802c6da64fa1d4244b135be0c1fad7ce6c952c6dda76f3320c685743d4c",
+            "tests.log": "19d96da309ca974853e09a3308c9922ed1a90587296850b38129b91d50c39613",
+            "build.log": "7ca722b6a1c6401692959d48f41471b2d5a94f90169c531b409cc6e563d5ee17",
+            "matrix.log": "79b027975351b997beb7fdf04e7124dfa5b97368b71e78edf5f0a2c557ec8ec0"
+          },
+          "scope": "Normal consumption of independently qualified Campaign rollback API in the single PR13 candidate. All product sources/tests are byte-identical to the reviewed ce2f903; delta is existing Hex metadata only. No producer fix, new review round or productive Host callback activation.",
+          "nativeRan": false,
+          "freshProcessRan": false,
+          "fullE2E": false,
+          "next": "Hex owns the productive FileTransaction/AtlasView prepared/committed/terminal-rollback receipt integration and same-Navigator Registry/Inventory refresh. Then separate actual Obsidian Save/Fresh/Recovery/A-B-A and integrated host review.",
+          "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-manifest-qualified-integration-20261010/integration.json",
+          "sha256": "1c9a149bb5c06b7afcc95927c00f7a9ba448ef411ff79019787baa342a723e60"
         }
       }
     ],
