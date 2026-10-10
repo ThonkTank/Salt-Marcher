@@ -152945,7 +152945,7 @@
       {
         "id": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
         "requirement": "Thin Context/navigation consumer with actual native target validation, same Atlas owners and guarded Campaign switching",
-        "state": "checked_core_implementation_independent_review_pending",
+        "state": "required_repair_checked_independent_rereview_pending",
         "implementationRun": "E2E-01-SPACE-I01c-RUNTIME-I01b",
         "sourceCommit": "e6ad27e73066bb2394d67e555ca9556dd25a0660",
         "catalog": "ROADMAP-E2E-GATES-CANDIDATE.md:13",
@@ -152957,11 +152957,120 @@
           "src/features/atlas/atlas-repository.ts",
           "tests/core/atlas-campaign-navigation.test.ts",
           "tests/core.test.ts",
-          "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-navigation-i01b-20261010/run.json"
+          "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-navigation-i01b-20261010/run.json",
+          "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-navigation-n01b-20261010/run.json"
         ],
         "observed": "actual native World/Location/section/City/building/Dungeon/structured room/section resolution in seven-file fixture; same Repository/History/renderer and relative frames, no writes for navigation; unknown/stale/foreign/duplicate/unavailable/retired/Source edit-Undo ABA and replaced Source rejection before camera/key effects; requested prepareLeave failure blocks actual Lifecycle.activate and restores old editability; retained native Key draft precedes successful activation; external Context change revokes old leases; A-to-B-to-A uses fresh Sources/History; late inert mounts and native initial reads cannot activate old UI or hydrate via guarded factory; confirmed new activation load failure/trashed/applied=false preserve actual new Context without automatic rollback; won actual native journal Save rolls forward only in old Store while its detached mount cannot touch new B",
         "notConfirmed": "Consumer core with actual native Sources in controlled injected ports; no productive Registry/native inventory/Host provider invented; Mount adapter contracts must guard each asynchronous hydration/write/UI effect; ordinary existing Editor/Repository writes have no general Campaign gate until I01c actual adapter; No new GUI run, native restart, installed-vault, original parity, physical input, large-world or full E2E receipt; P02/P04/atomic multiowner publish/CompleteImport/media remain actual owner dependencies; no cancellation or substitute CommandId/ReceiptId created",
-        "independentReview": "pending existing Stadt peer on exact published candidate; cleanup separate after PASS"
+        "independentReview": {
+          "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/13#issuecomment-6094804164",
+          "gate": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6094804323",
+          "actualEvidence": "/home/aaron/.cache/dungeon-native-qa/city-plans/runtime-i01b-r01-20261010/review.json",
+          "readDirectly": true,
+          "hashes": {
+            "review.json": "8da6e6dba8657558c38d1f237d841c3fd632344a9549b2d527c2ee2bf6c509cb",
+            "source-bindings.json": "7d8e04537e8e0aceabdfb10e6892912c323869aed23bfef3723afa58fd2e53bb",
+            "counterprobes.ts": "cbd842f493b216b2c02e94a204846693cbb2b5a91407e1d7384c96d4929527f1",
+            "counterprobes.log": "35b6ee39f3912e4c410acd19e2534bc61e25ec707cf1ff0e3dfc524bc0168456"
+          },
+          "sourceBindingsVerified": 541,
+          "result": "CHANGES_REQUIRED",
+          "findings": [
+            {
+              "id": "RUNTIME-I01b-R01-01",
+              "file": "src/features/atlas/atlas-campaign-navigation.ts",
+              "lines": [
+                372,
+                380
+              ],
+              "summary": "Late applied activation reply retires a fresh mount under the same confirmed Context and mounts again",
+              "repro": "Hold actual Lifecycle.activate result in injected async port after activation; notify contextChanged; open fresh B and retain unsaved key; release activation reply. Fresh B is disposed and a third mount created.",
+              "required": "Prevent an obsolete switch continuation from retiring/replacing a newer mount or pending open; preserve fresh B Repository/History/UI and unsaved work, without rolling back confirmed Lifecycle."
+            }
+          ],
+          "candidate": "d024b4e61b60a72937a17e4ce9a0103c8c20733d",
+          "reviewerCleanup": {
+            "state": "PASS_separate_reviewer_cleanup_P_I_R",
+            "actualEvidence": "/home/aaron/.cache/dungeon-native-qa/city-plans/runtime-i01b-r01-20261010/cleanup-review.json",
+            "sha256": "8a98a558b6af9373863bd25afa639a3b441a284d110f80ee4a0e5ec54d4486cb",
+            "planSha256": "735e1966f6ae8d9c32c0870a65a4a450d89868c669f04f1949f6b83a05d40d36",
+            "implementationSha256": "6a0da21fdbf8a1b1d961d76d0de1f150aca2df4a350008b72b9993b18564844b",
+            "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6094832423",
+            "readDirectly": true
+          }
+        },
+        "repair": {
+          "run": "E2E-01-SPACE-I01c-RUNTIME-N01b",
+          "finding": "RUNTIME-I01b-R01-01",
+          "repairSource": "e982c2fa9e5f6528e409ae4ec95a6f05140334e1",
+          "testedIntegratedSource": "81c6a257af95b8dd9de0cbbd1fb76b6c1380521c",
+          "consumedShared": "8f561783cd24defae9a31f490711fc00db0d172f",
+          "change": "An actually accepted run retains its local token independently from the busy lock. After awaited activation, a closed or superseded continuation rejects before retiring, mounting or changing busy; observed Context change alone allows original activation to finish. Lifecycle outcome is not rolled back.",
+          "checks": {
+            "check": true,
+            "testsPassedBeforeSharedIntegration": 550,
+            "testsPassed": 551,
+            "testsFailed": 0,
+            "cleanBuild": true,
+            "newFocusedRegressions": 4,
+            "redBeforeFix": {
+              "passed": 1,
+              "failed": 3,
+              "log": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-navigation-n01b-20261010/red-regressions.log"
+            },
+            "ownerReplayOfActualReviewerCounterprobes": {
+              "passed": 3,
+              "failed": 0,
+              "independentRereview": false,
+              "source": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-navigation-n01b-20261010/owner-replay-counterprobes.ts",
+              "onlyTenImportLocatorsRebound": true,
+              "originalCounterprobeUnchanged": true
+            },
+            "buildInventory": {
+              "source": "src/features/catalog/data/srd-5.1.generated.json",
+              "sha256": "afdce83b65e0863e1247c6297f89460396fe8ce4fd6893139ae3284e8451073d",
+              "sourceBytes": 832272,
+              "gzipBytes": 102021,
+              "base64Characters": 136028,
+              "baselineCommit": "86ce73179ede452ee6a9f5d3197ee325544a58b8",
+              "baselineMainBytes": 1189370,
+              "mainBytes": 1516884,
+              "mainJsGrowthBytes": 327514,
+              "catalogPayloadBytes": 136038,
+              "catalogPayloadLimitBytes": 180000,
+              "node": "v22.22.0",
+              "commit": "81c6a257af95b8dd9de0cbbd1fb76b6c1380521c",
+              "dirty": false,
+              "sourceRevision": "81c6a257af95b8dd9de0cbbd1fb76b6c1380521c",
+              "command": "npm run build"
+            },
+            "buildTriplet": {
+              "main.js": "d3f2325452673bf00605d7e36489f4ee1402bc53bed24ff7e7ce25abf95ee4bc",
+              "styles.css": "cdf172e7d3c101d5917c16afe487641a19d9d5afe8ad23365b33c958ee1ac321",
+              "manifest.json": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64"
+            }
+          },
+          "independentRereview": "pending existing Stadt peer on exact published repaired candidate; original CHANGES_REQUIRED preserved until actual R02"
+        },
+        "visibleNextSlice": {
+          "userDecision": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6094840948",
+          "scope": "Next visible same-Atlas route: select Location/Key, navigate to linked City/building/Dungeon/room, edit Room Key, zoom back, shared Undo/Redo and native Save/fresh start. No separate mode/camera/history.",
+          "fileBoundaries": {
+            "Hex": [
+              "src/ui/atlas-view.ts",
+              "src/features/atlas/atlas-editor.ts",
+              "src/features/atlas/atlas-renderer.ts",
+              "existing repository/native mount integration"
+            ],
+            "Stadt": [
+              "new src/ui/atlas-detail-entry.ts",
+              "new isolated DOM test for that component"
+            ]
+          },
+          "componentContract": "City UI consumes readonly labelled AtlasNavigationTarget values and onNavigate(target) callback in current dock. Hex supplies actual native targets, validates current Source/Context/Key guards, owns camera/history/persistence and mounts the component. No City edits to existing AtlasView/Editor/Renderer/Repository, no fake Registry or new view.",
+          "state": "confirmed_conflict_free_boundaries_for_offered_City_UI_contribution_next_slice_not_started_in_N01b",
+          "gate": "After narrow N01b re-review and separate own cleanup; actual provider/Host/native/full E2E claims remain separate."
+        }
       }
     ],
     "cleanupFindings": [
@@ -153053,6 +153162,21 @@
           "candidate": "0fdc76c3cae7aa3b65b26308697c8fd716e997ef",
           "evidence": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1#issuecomment-6087698506"
         }
+      },
+      {
+        "id": "RUNTIME-I01b-R01-01",
+        "state": "implementation_checked_independent_rereview_pending",
+        "title": "Verspätete applied-Aktivierungsantwort darf neueren Atlas nicht ersetzen",
+        "candidate": "d024b4e61b60a72937a17e4ce9a0103c8c20733d",
+        "review": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/13#issuecomment-6094804164",
+        "required": "Prevent an obsolete switch continuation from retiring/replacing a newer mount or pending open; preserve fresh B Repository/History/UI and unsaved work, without rolling back confirmed Lifecycle.",
+        "implementedBy": {
+          "run": "E2E-01-SPACE-I01c-RUNTIME-N01b",
+          "source": "e982c2fa9e5f6528e409ae4ec95a6f05140334e1",
+          "integratedTestedSource": "81c6a257af95b8dd9de0cbbd1fb76b6c1380521c",
+          "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-navigation-n01b-20261010/run.json"
+        },
+        "independentRereview": "pending existing Stadt R02"
       }
     ]
   }

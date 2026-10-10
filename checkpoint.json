@@ -795,7 +795,7 @@
   "hexAtlasExecution": {
     "scope": "HEX-00 bis HEX-28 und sämtliche eingeordneten CITY-00 bis CITY-09 vollständig",
     "phase": "HEX-03",
-    "state": "e2e01_runtime_navigation_core_checked_independent_code_review_pending",
+    "state": "e2e01_runtime_navigation_required_repair_checked_independent_rereview_pending",
     "plan": "ROADMAP-E2E01-SPATIAL-INTEGRATION-PLAN.md",
     "currentRun": {
       "id": "E2E-01-SPACE-I01b",
@@ -842,13 +842,13 @@
       "phaseApproval": false
     },
     "nextRun": {
-      "id": "E2E-01-SPACE-I01c-RUNTIME-I01b-R01",
-      "kind": "existing_peer_independent_bounded_code_review",
+      "id": "E2E-01-SPACE-I01c-RUNTIME-I01b-R02",
+      "kind": "existing_peer_independent_bounded_repair_rereview",
       "plan": "ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md",
-      "focus": "Existing Stadt reviews actual native-source navigation, prepareLeave and external Context invalidation against exact PR13 head. No new plan/owner/provider round.",
-      "dependency": "This single I01b code implementation with 15 new cases/546 tests, clean build; actual I01a independent own CLEAN-R01 consumed.",
-      "afterPass": "Separate own I01b cleanup plan/implementation/review; then I01c real Host route only with actual provider inputs.",
-      "review": "Independent code review pending; productive provider/Host/native/full E2E remain open."
+      "focus": "Existing Stadt re-reviews only actual N01b repair for RUNTIME-I01b-R01-01 on exact new candidate: active/pending/failed newer open preserved; normal Context notification completes switch.",
+      "dependency": "Actual review/failing reproduction consumed; 4 new regressions, owner replay3/3, integrated551 tests/check/clean build.",
+      "afterPass": "Separate own I01b cleanup then visible same-Atlas editor slice with confirmed Hex/City UI file boundaries.",
+      "review": "Original CHANGES_REQUIRED remains until actual independent R02; no I01c/full E2E approval from owner checks."
     },
     "review": {
       "run": "HEX-02-R02",
@@ -2022,7 +2022,7 @@
       },
       "runtimeNavigation": {
         "run": "E2E-01-SPACE-I01c-RUNTIME-I01b",
-        "state": "checked_core_implementation_independent_review_pending",
+        "state": "required_repair_checked_independent_rereview_pending",
         "startedAt": "2026-10-10T06:22:53.804468+00:00",
         "finishedAt": "2026-10-10T06:39:36.543782+00:00",
         "base": "8770e06ebbd850b57cd9b54f4e0b966adc9769c8",
@@ -2068,7 +2068,43 @@
           "No new GUI run, native restart, installed-vault, original parity, physical input, large-world or full E2E receipt",
           "P02/P04/atomic multiowner publish/CompleteImport/media remain actual owner dependencies; no cancellation or substitute CommandId/ReceiptId created"
         ],
-        "independentReview": "pending existing Stadt peer on exact published candidate; cleanup separate after PASS",
+        "independentReview": {
+          "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/13#issuecomment-6094804164",
+          "gate": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6094804323",
+          "actualEvidence": "/home/aaron/.cache/dungeon-native-qa/city-plans/runtime-i01b-r01-20261010/review.json",
+          "readDirectly": true,
+          "hashes": {
+            "review.json": "8da6e6dba8657558c38d1f237d841c3fd632344a9549b2d527c2ee2bf6c509cb",
+            "source-bindings.json": "7d8e04537e8e0aceabdfb10e6892912c323869aed23bfef3723afa58fd2e53bb",
+            "counterprobes.ts": "cbd842f493b216b2c02e94a204846693cbb2b5a91407e1d7384c96d4929527f1",
+            "counterprobes.log": "35b6ee39f3912e4c410acd19e2534bc61e25ec707cf1ff0e3dfc524bc0168456"
+          },
+          "sourceBindingsVerified": 541,
+          "result": "CHANGES_REQUIRED",
+          "findings": [
+            {
+              "id": "RUNTIME-I01b-R01-01",
+              "file": "src/features/atlas/atlas-campaign-navigation.ts",
+              "lines": [
+                372,
+                380
+              ],
+              "summary": "Late applied activation reply retires a fresh mount under the same confirmed Context and mounts again",
+              "repro": "Hold actual Lifecycle.activate result in injected async port after activation; notify contextChanged; open fresh B and retain unsaved key; release activation reply. Fresh B is disposed and a third mount created.",
+              "required": "Prevent an obsolete switch continuation from retiring/replacing a newer mount or pending open; preserve fresh B Repository/History/UI and unsaved work, without rolling back confirmed Lifecycle."
+            }
+          ],
+          "candidate": "d024b4e61b60a72937a17e4ce9a0103c8c20733d",
+          "reviewerCleanup": {
+            "state": "PASS_separate_reviewer_cleanup_P_I_R",
+            "actualEvidence": "/home/aaron/.cache/dungeon-native-qa/city-plans/runtime-i01b-r01-20261010/cleanup-review.json",
+            "sha256": "8a98a558b6af9373863bd25afa639a3b441a284d110f80ee4a0e5ec54d4486cb",
+            "planSha256": "735e1966f6ae8d9c32c0870a65a4a450d89868c669f04f1949f6b83a05d40d36",
+            "implementationSha256": "6a0da21fdbf8a1b1d961d76d0de1f150aca2df4a350008b72b9993b18564844b",
+            "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6094832423",
+            "readDirectly": true
+          }
+        },
         "next": "Independent bounded code review; required fixes if any; separate own cleanup P/I/R; then actual-provider I01c host route.",
         "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-navigation-i01b-20261010/run.json",
         "postCheckSharedSynchronization": {
@@ -2089,6 +2125,82 @@
             "tests/object-colorable-tags.test.mjs": true
           },
           "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-navigation-i01b-20261010/shared-preservation.json"
+        },
+        "repair": {
+          "run": "E2E-01-SPACE-I01c-RUNTIME-N01b",
+          "state": "required_repair_checked_independent_rereview_pending",
+          "finding": "RUNTIME-I01b-R01-01",
+          "base": "d024b4e61b60a72937a17e4ce9a0103c8c20733d",
+          "repairSource": "e982c2fa9e5f6528e409ae4ec95a6f05140334e1",
+          "testedIntegratedSource": "81c6a257af95b8dd9de0cbbd1fb76b6c1380521c",
+          "consumedShared": "8f561783cd24defae9a31f490711fc00db0d172f",
+          "change": "An actually accepted run retains its local token independently from the busy lock. After awaited activation, a closed or superseded continuation rejects before retiring, mounting or changing busy; observed Context change alone allows original activation to finish. Lifecycle outcome is not rolled back.",
+          "checks": {
+            "check": true,
+            "testsPassedBeforeSharedIntegration": 550,
+            "testsPassed": 551,
+            "testsFailed": 0,
+            "cleanBuild": true,
+            "newFocusedRegressions": 4,
+            "redBeforeFix": {
+              "passed": 1,
+              "failed": 3,
+              "log": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-navigation-n01b-20261010/red-regressions.log"
+            },
+            "ownerReplayOfActualReviewerCounterprobes": {
+              "passed": 3,
+              "failed": 0,
+              "independentRereview": false,
+              "source": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-navigation-n01b-20261010/owner-replay-counterprobes.ts",
+              "onlyTenImportLocatorsRebound": true,
+              "originalCounterprobeUnchanged": true
+            },
+            "buildInventory": {
+              "source": "src/features/catalog/data/srd-5.1.generated.json",
+              "sha256": "afdce83b65e0863e1247c6297f89460396fe8ce4fd6893139ae3284e8451073d",
+              "sourceBytes": 832272,
+              "gzipBytes": 102021,
+              "base64Characters": 136028,
+              "baselineCommit": "86ce73179ede452ee6a9f5d3197ee325544a58b8",
+              "baselineMainBytes": 1189370,
+              "mainBytes": 1516884,
+              "mainJsGrowthBytes": 327514,
+              "catalogPayloadBytes": 136038,
+              "catalogPayloadLimitBytes": 180000,
+              "node": "v22.22.0",
+              "commit": "81c6a257af95b8dd9de0cbbd1fb76b6c1380521c",
+              "dirty": false,
+              "sourceRevision": "81c6a257af95b8dd9de0cbbd1fb76b6c1380521c",
+              "command": "npm run build"
+            },
+            "buildTriplet": {
+              "main.js": "d3f2325452673bf00605d7e36489f4ee1402bc53bed24ff7e7ce25abf95ee4bc",
+              "styles.css": "cdf172e7d3c101d5917c16afe487641a19d9d5afe8ad23365b33c958ee1ac321",
+              "manifest.json": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64"
+            }
+          },
+          "independentRereview": "pending existing Stadt peer on exact published repaired candidate; original CHANGES_REQUIRED preserved until actual R02",
+          "next": "Existing Stadt narrow R02, then required own cleanup and visible same-Atlas UI slice; no repeated generic plan/owner review.",
+          "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-navigation-n01b-20261010/run.json"
+        },
+        "visibleNextSlice": {
+          "userDecision": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6094840948",
+          "scope": "Next visible same-Atlas route: select Location/Key, navigate to linked City/building/Dungeon/room, edit Room Key, zoom back, shared Undo/Redo and native Save/fresh start. No separate mode/camera/history.",
+          "fileBoundaries": {
+            "Hex": [
+              "src/ui/atlas-view.ts",
+              "src/features/atlas/atlas-editor.ts",
+              "src/features/atlas/atlas-renderer.ts",
+              "existing repository/native mount integration"
+            ],
+            "Stadt": [
+              "new src/ui/atlas-detail-entry.ts",
+              "new isolated DOM test for that component"
+            ]
+          },
+          "componentContract": "City UI consumes readonly labelled AtlasNavigationTarget values and onNavigate(target) callback in current dock. Hex supplies actual native targets, validates current Source/Context/Key guards, owns camera/history/persistence and mounts the component. No City edits to existing AtlasView/Editor/Renderer/Repository, no fake Registry or new view.",
+          "state": "confirmed_conflict_free_boundaries_for_offered_City_UI_contribution_next_slice_not_started_in_N01b",
+          "gate": "After narrow N01b re-review and separate own cleanup; actual provider/Host/native/full E2E claims remain separate."
         }
       }
     },
@@ -3451,7 +3563,7 @@
       "platformIssue": 11,
       "checkpointIsAuthoritative": true
     },
-    "updatedAt": "2026-10-10T06:41:19.716111+00:00"
+    "updatedAt": "2026-10-10T07:00:55.436216+00:00"
   },
   "phase": "Phase 6: zweiter Nachbesserungslauf teilweise umgesetzt; fünf Restpositionen und unabhängiger Review offen",
   "goal": "Dungeon-Pfad bis zur vollständigen beauftragten Dungeondraft-Verhaltensgleichheit verfolgen: Bedienung und Funktion angleichen, Grafik ungefähr gleichwertig. Zuerst ROADMAP-PARITY.md mit Building und Object Tool abschließen, danach übrige Dungeon-Werkzeuge. Jede Fachphase getrennt planen, umsetzen und unabhängig reviewen; Lücken mit eigenen Nachbesserungs- und Reviewläufen schließen; danach eigene Aufräumphase mit Plan, Umsetzung und Review.",
