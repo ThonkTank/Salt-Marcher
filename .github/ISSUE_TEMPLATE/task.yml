@@ -1,32 +1,32 @@
 name: Begrenzte Produktaufgabe
-description: Ein überprüfbares Ergebnis mit Abhängigkeiten und Abnahme.
+description: "Ein überprüfbares Ergebnis mit Abhängigkeiten und Abnahme."
 labels: ["kind:task"]
 body:
   - type: textarea
     id: outcome
     attributes:
       label: Nutzerergebnis
-      description: Welcher konkrete Ablauf funktioniert nach dieser Aufgabe?
+      description: "Welcher zusammenhängende Nutzerablauf funktioniert danach? Bei Hilfsarbeit: welches konkrete Umsetzungspaket oder welche anstehende Entscheidung wird möglich, wer konsumiert den Eingang?"
     validations:
       required: true
   - type: textarea
     id: scope
     attributes:
       label: Scope, bestehende Arbeit und Abhängigkeiten
-      description: Fachissue, Gate, vorhandener PR/Branch, Owner und benötigte Eingänge verlinken.
+      description: "Fachissue, Gate, vorhandenen PR/Branch, Owner und Eingänge verlinken. Schritte als Checkliste im Paket halten; Teilung nur bei eigenständigem Nutzen, unterschiedlichem Besitz/Eingang oder echter Risikogrenze."
     validations:
       required: true
   - type: textarea
     id: prerequisites
     attributes:
       label: Voraussetzungen und Übernahme
-      description: Tatsächliche Branch-/Commitbasis, Dateien/Fixtures, benötigte Umgebung und Zugriffe, bereits benannter Owner oder frei übernehmbarer Scope. Ist ein GUI-Slot nötig?
+      description: "Tatsächliche Branch-/Commitbasis, Dateien/Fixtures, benötigte Umgebung und Zugriffe, bereits benannter Owner oder frei übernehmbarer Scope. Ist ein GUI-Slot nötig?"
     validations:
       required: true
   - type: textarea
     id: acceptance
     attributes:
       label: Abnahme und nächster Empfänger
-      description: Beobachtbares Ergebnis, passende Checks/Hostfälle und unabhängiger Review.
+      description: "Beobachtbares Ergebnis und kleinste ausreichende Prüfung nach docs/WORKFLOW.md. Unabhängiger Review nur soweit für das konkrete Risiko/Fachgate erforderlich; vorhandene Belege weiterverwenden."
     validations:
       required: true

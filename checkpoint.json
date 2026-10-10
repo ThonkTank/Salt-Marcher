@@ -126,6 +126,15 @@
       "scope": "Self-selected executable tasks, explicit claims, independent review uptake where agreed, bounded successors from confirmed unowned scope and owner-led handoffs.",
       "observedEvidence": "Chronik claimed #51 and published PR #53 without central assignment. This demonstrates task uptake and delivery; integrated product gates and sustained team throughput remain unproven.",
       "limits": "No automatic claim expiry, reassignment, product decision or approval. Existing domain evidence and device-slot requirements remain."
+    },
+    "productWorkPolicy": {
+      "date": "2026-10-10",
+      "contract": "docs/WORKFLOW.md",
+      "change": "One useful outcome per package; implementation, necessary tests and cleanup together; risk-based checks and direct consumers for enabling work. Replaces generic separate plan/review/cleanup cycles.",
+      "taskDiscovery": "Live priority:now tasks visible separately without reassigning them; product tasks before documentation at equal priority.",
+      "backlogAdjustment": "Unclaimed #52 deferred until a concrete implementation consumer/decision owner is named. Active #51 and product-owner candidates retained.",
+      "verification": "23/23 structure/context/task selection tests PASS on Node 22; offline references PASS.",
+      "limits": "No product, architecture, acceptance or independent host-gate approval; semantic value and proportional review remain owner decisions."
     }
   },
   "saltMarcherReplacement": {

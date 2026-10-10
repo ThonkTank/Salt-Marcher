@@ -1,6 +1,6 @@
 # Vorlage für einen begrenzten Paketplan
 
-Kopiere die folgende Struktur nach `docs/plans/<bereich>/<paket>.md`, ersetze die Beispielwerte und verlinke den Plan im passenden Abschnitt von [INDEX](../INDEX.md). `checkpoint` nennt eine eigene bereits vorhandene Wurzel in `checkpoint.json`; eine neue Zuständigkeit und Wurzel ausdrücklich im Paket festhalten. Keine fremde Wurzel übernehmen.
+Ein kurzer Plan im bestehenden Issue/PR genügt für Routinearbeit. Eine eigene Datei hilft bei komplexen Verträgen/Quellenmatrizen. Dann kopiere die folgende Struktur nach `docs/plans/<bereich>/<paket>.md`, ersetze die Beispielwerte und verlinke den Plan im passenden Abschnitt von [INDEX](../INDEX.md). `checkpoint` nennt eine eigene bereits vorhandene Wurzel in `checkpoint.json`; eine neue Zuständigkeit und Wurzel ausdrücklich im Paket festhalten. Keine fremde Wurzel übernehmen.
 
 ```markdown
 ---
@@ -17,7 +17,9 @@ Vorhandener Fachvertrag, Quellen, Kandidat, benötigte Eingänge und geschützte
 
 ## Vorgehen und Abnahme
 Begrenzte Änderung; direkte beobachtbare Ergebnisse und passende Prüfungen.
-Getrennte Plan-/Umsetzungs-/Review-/Reparaturabschnitte nach Fachvertrag.
+Ein zusammenhängendes Ergebnispaket; notwendige Tests und Bereinigung dazugehören lassen.
+Hilfsarbeit nennt das konkrete konsumierende Umsetzungspaket/den Owner.
+Nur teilen, wenn der Teil eigenständig nützt oder eine echte Übergangsgrenze braucht.
 
 ## Übergabe
 Exakter Commit, ausgeführte Prüfungen, offene Grenzen und nächster Empfänger.
