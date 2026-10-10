@@ -46,7 +46,7 @@ export function tasksForArea(issues, area) {
   return issues.filter(issue => labels(issue).includes(`area:${areas[area]}`));
 }
 
-function showPackage(call, repository, chosen, requested = false) {
+function showPackage(call, repository, chosen, requested = false, fullComments = false) {
   const source = chosen.source || 'issue';
   const current = JSON.parse(call([source, 'view', String(chosen.number), '--repo', repository,
     '--json', 'number,title,body,comments,state,labels,url']));
@@ -57,19 +57,25 @@ function showPackage(call, repository, chosen, requested = false) {
     || source === 'issue' && !requested && !readyTasks([fresh]).length && !supportTasks([fresh]).length)
     throw new Error('Task changed while reading. Rerun npm run next.');
   console.log(`\n${requested ? 'Requested package' : readyTasks([fresh]).length ? 'Free candidate' : 'Support invitation'} ${source === 'pr' ? 'PR ' : ''}#${chosen.number}: ${current.title}\n${current.url}\n${current.body}`);
-  for (const comment of current.comments.slice(-3)) console.log(`\nRecent comment ${comment.url}:\n${comment.body}`);
+  for (const comment of current.comments.slice(-3)) {
+    const preview = comment.body.replace(/\s+/g, ' ').trim();
+    console.log(fullComments ? `\nRecent comment ${comment.url}:\n${comment.body}`
+      : `\nRecent comment preview ${comment.url}:\n${preview.slice(0, 240)}${preview.length > 240 ? '…' : ''}`);
+  }
+  if (!fullComments && current.comments.length) console.log('\nComment previews are incomplete context, not claim clearance. Open relevant links; --comments prints the latest three in full.');
   console.log('\nResume only your own scope. Before a new claim, check unresolved claims and linked PRs, including older comments. After posting, reread claims: the first unreturned claim owns that scope. Only a free whole package changes ready to active; support never takes over its parent. See docs/REPOSITORY.md.');
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
   try {
     const args = process.argv.slice(2);
-    let list = false, area, task;
+    let list = false, fullComments = false, area, task;
     for (let i = 0; i < args.length; i++) {
       if (args[i] === '--list') list = true;
+      else if (args[i] === '--comments') fullComments = true;
       else if (args[i] === '--area' && args[i + 1]) area = args[++i];
       else if (args[i] === '--task' && /^[1-9]\d*$/.test(args[i + 1] || '')) task = Number(args[++i]);
-      else throw new Error('Usage: npm run next -- [--list] [--area <area>] [--task <issue>]');
+      else throw new Error('Usage: npm run next -- [--list] [--area <area>] [--task <issue>] [--comments]');
     }
     const { repository } = JSON.parse(fs.readFileSync('docs/repository-policy.json', 'utf8'));
     const call = params => execFileSync('gh', params, { encoding: 'utf8', maxBuffer: 4 * 1024 * 1024 });
@@ -77,7 +83,7 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.a
     // --list explicitly requests the overview as well as the named package.
     if (task && !list) {
       if (area) tasksForArea([], area);
-      showPackage(call, repository, { number: task }, true);
+      showPackage(call, repository, { number: task }, true, fullComments);
     } else {
       const issues = JSON.parse(call(['issue', 'list', '--repo', repository, '--state', 'open', '--label', 'kind:task',
         '--limit', '1000', '--json', 'number,title,url,state,labels'])).map(issue => ({ ...issue, state: issue.state.toLowerCase() }));
@@ -107,7 +113,7 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.a
       if (!support.length && !supportPRs.length) console.log('No explicit support invitation in this selection. Check #12 and the relevant area for a confirmed unmet input; do not manufacture work.');
       if (!list || task) {
         const chosen = task ? { number: task } : taskCandidate(available, supportPRs);
-        if (chosen) showPackage(call, repository, chosen, Boolean(task));
+        if (chosen) showPackage(call, repository, chosen, Boolean(task), fullComments);
       }
       if (issues.length === 1000 || prs.length === 1000) console.log('Query reached 1000 items; use GitHub search for the complete inventory.');
     }
