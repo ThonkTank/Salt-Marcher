@@ -168,7 +168,11 @@ export async function projectAtlasNativeCapture(
     });
   };
   const details = world.version === 2 ? world.detailPlacements : [];
-  await add("world", world.id, world, [
+  // Terrain is subordinate World payload: equal extents/counts do not imply equal landscape.
+  const terrain = files
+    .filter((file) => file.kind === "terrain" && file.after !== null)
+    .map((file) => ({ path: file.path, bytes: file.after }));
+  await add("world", world.id, { document: world, terrain }, [
     ...world.placements.map((p) =>
       reference("location-placement", p.id, "atlas.world.v1"),
     ),

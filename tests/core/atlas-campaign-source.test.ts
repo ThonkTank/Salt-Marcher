@@ -173,6 +173,23 @@ test("native Atlas capture: unsaved Key preserves Markdown bytes; new terrain ch
   assert.equal(store.writes, 0);
 });
 
+test("native Atlas capture: World record digest binds terrain-only edits at unchanged counts/extents", async () => {
+  const { repository, source, store } = await opened();
+  const cell = JSON.parse(store.files.get(chunkPath)!).cells[0];
+  await source.ensure([cell]);
+  const before = await repository.captureNative(request);
+  const stroke = new TerrainStroke(source, "forest");
+  stroke.add(cell);
+  stroke.finish();
+  const after = await repository.captureNative(request);
+  assert.deepEqual(after.world, before.world);
+  assert.notEqual(
+    after.records.find((r) => r.kind === "world")!.payloadDigest,
+    before.records.find((r) => r.kind === "world")!.payloadDigest,
+  );
+  assert.equal(after.files.filter((f) => f.kind === "terrain").length, 2);
+});
+
 test("native Atlas capture: Source A→B→A during read rejects despite identical final values", async () => {
   const { repository, source, store } = await opened();
   const before = repository.spatialGraph.world();
