@@ -29,6 +29,9 @@ export interface CampaignManifestSaveInput {
   /** Full projections supplied by their actual owners, never inferred from file bytes. */
   readonly beforeOwners: readonly CampaignDomainOwnerProjectionV1[];
   readonly afterOwners: readonly CampaignDomainOwnerProjectionV1[];
+  /** Explicit post-save inventory. Omit only when the immutable file/record closure is unchanged. */
+  readonly afterFiles?: CampaignRuntimeManifestV1["atlas"]["files"];
+  readonly afterRecords?: CampaignRuntimeManifestV1["atlas"]["records"];
 }
 export interface CampaignManifestRecoveryJournal {
   readonly writes: readonly CampaignManifestNativeWrite[];
@@ -53,6 +56,18 @@ export interface CampaignRuntimeOwnerSaveAuthority {
     readonly afterOwner: CampaignDomainOwnerProjectionV1;
     readonly beforeFiles: CampaignRuntimeManifestV1["atlas"]["files"];
     readonly afterFiles: CampaignRuntimeManifestV1["atlas"]["files"];
+    readonly beforeRecords: CampaignRuntimeManifestV1["atlas"]["records"];
+    readonly afterRecords: CampaignRuntimeManifestV1["atlas"]["records"];
+    readonly nativeWrites: readonly CampaignManifestNativeWrite[];
+  }): void;
+  /** Required in addition to verify() when this owner authorizes new records or changed references. */
+  verifyExtension?(input: {
+    readonly beforeOwner: CampaignDomainOwnerProjectionV1;
+    readonly afterOwner: CampaignDomainOwnerProjectionV1;
+    readonly beforeFiles: CampaignRuntimeManifestV1["atlas"]["files"];
+    readonly afterFiles: CampaignRuntimeManifestV1["atlas"]["files"];
+    readonly beforeRecords: CampaignRuntimeManifestV1["atlas"]["records"];
+    readonly afterRecords: CampaignRuntimeManifestV1["atlas"]["records"];
     readonly nativeWrites: readonly CampaignManifestNativeWrite[];
   }): void;
 }
@@ -86,35 +101,18 @@ function ownerClosure(owner: CampaignDomainOwnerProjectionV1): unknown {
     transferPolicies: owner.transferPolicies,
   };
 }
-function payloads(owner: CampaignDomainOwnerProjectionV1): unknown {
-  return owner.records.map(({ id, payloadDigest: digest }) => ({
-    id,
-    payloadDigest: digest,
-  }));
-}
-function immutableManifestClosure(
-  manifest: CampaignRuntimeManifestV1,
-): unknown {
-  return {
-    snapshot: manifest.snapshot,
-    registry: {
-      version: manifest.registry.version,
-      registryId: manifest.registry.registryId,
-      campaignId: manifest.registry.campaignId,
-      campaignRevision: manifest.registry.campaignRevision,
-      namespace: manifest.registry.namespace,
-      owners: manifest.registry.owners.map(ownerClosure),
-    },
-    atlas: {
-      worldId: manifest.atlas.worldId,
-      files: manifest.atlas.files.map(({ kind, id, path }) => ({
-        kind,
-        id,
-        path,
-      })),
-      records: manifest.atlas.records,
-    },
+function ownerStableClosure(owner: CampaignDomainOwnerProjectionV1): unknown {
+  const { records: _records, ...closure } = ownerClosure(owner) as {
+    records: unknown;
+    [key: string]: unknown;
   };
+  return closure;
+}
+function recordClosure(
+  record: CampaignDomainOwnerProjectionV1["records"][number],
+): unknown {
+  const { payloadDigest: _payloadDigest, ...closure } = record;
+  return closure;
 }
 function serialize(
   manifest: CampaignRuntimeManifestV1,
@@ -161,6 +159,7 @@ export class CampaignRuntimeManifestSaveParticipant implements CampaignRuntimeSa
   private authorizedOwners(
     before: CampaignRuntimeManifestV1,
     afterFiles: CampaignRuntimeManifestV1["atlas"]["files"],
+    afterRecords: CampaignRuntimeManifestV1["atlas"]["records"],
     afterOwners: readonly CampaignDomainOwnerProjectionV1[],
     nativeWrites: readonly CampaignManifestNativeWrite[],
     changedFiles: ReadonlySet<string>,
@@ -185,11 +184,28 @@ export class CampaignRuntimeManifestSaveParticipant implements CampaignRuntimeSa
     const changedOwnerIds = new Set<string>();
     const owners = before.registry.owners.map((oldOwner) => {
       const next = afterById.get(oldOwner.ownerId);
-      if (!next || exact(ownerClosure(oldOwner)) !== exact(ownerClosure(next)))
-        throw new Error("Owner-Closure wurde im lokalen Save verändert.");
-      const payloadChanged =
-        exact(payloads(oldOwner)) !== exact(payloads(next));
-      if (!payloadChanged) {
+      if (!next || exact(ownerStableClosure(oldOwner)) !== exact(ownerStableClosure(next)))
+        throw new Error("Stabile Owner-Closure wurde im lokalen Save verändert.");
+      const authority = authorityById.get(oldOwner.ownerId)!,
+        nextRecords = new Map(next.records.map((record) => [record.id, record])),
+        closureChanged = exact(ownerClosure(oldOwner)) !== exact(ownerClosure(next));
+      for (const oldRecord of oldOwner.records) {
+        const nextRecord = nextRecords.get(oldRecord.id);
+        if (!nextRecord)
+          throw new Error("Bestehende Owner-Recordclosure wurde im lokalen Save entfernt.");
+        if (!authority.verifyExtension && exact(recordClosure(oldRecord)) !== exact(recordClosure(nextRecord)))
+          throw new Error("Bestehende Owner-Recordclosure wurde im lokalen Save verändert.");
+      }
+      for (const record of next.records) {
+        if (oldOwner.records.some((old) => old.id === record.id)) continue;
+        const inventory = afterRecords.find((candidate) => candidate.id === record.id);
+        if (inventory && (inventory.ownerId !== oldOwner.ownerId || inventory.kind !== record.recordType))
+          throw new Error("Neue Owner-Recordclosure besitzt keinen exakten Atlasbestand.");
+        if (!inventory && !authority.verifyExtension)
+          throw new Error("Neue nicht navigierbare Owner-Recordclosure besitzt keine Erweiterungsautorität.");
+      }
+      const ownerChanged = exact(oldOwner.records) !== exact(next.records);
+      if (!ownerChanged) {
         if (exact(oldOwner) !== exact(next))
           throw new Error("Unveränderter Owner trägt eine erfundene Revision.");
       } else {
@@ -203,26 +219,34 @@ export class CampaignRuntimeManifestSaveParticipant implements CampaignRuntimeSa
           );
         changedOwnerIds.add(oldOwner.ownerId);
       }
-      authorityById.get(oldOwner.ownerId)!.verify({
+      const evidence = {
         beforeOwner: oldOwner,
         afterOwner: next,
         beforeFiles: before.atlas.files,
         afterFiles,
+        beforeRecords: before.atlas.records,
+        afterRecords,
         nativeWrites,
-      });
+      };
+      authority.verify(evidence);
+      if (closureChanged) {
+        if (!authority.verifyExtension)
+          throw new Error("Owner-Closure wurde ohne Erweiterungsautorität verändert.");
+        authority.verifyExtension(evidence);
+      }
       return next;
     });
     const expectedChangedOwners = new Set<string>();
-    for (const file of before.atlas.files) {
+    for (const file of afterFiles) {
       if (!changedFiles.has(file.path)) continue;
       if (file.kind === "terrain") {
-        const world = before.atlas.records.find(
+        const world = afterRecords.find(
           (record) =>
             record.kind === "world" && record.id === before.atlas.worldId,
         );
         if (world) expectedChangedOwners.add(world.ownerId);
       } else {
-        for (const record of before.atlas.records)
+        for (const record of afterRecords)
           if (record.documentId === file.id)
             expectedChangedOwners.add(record.ownerId);
       }
@@ -268,25 +292,36 @@ export class CampaignRuntimeManifestSaveParticipant implements CampaignRuntimeSa
       );
     if (!Array.isArray(input.nativeWrites) || !Array.isArray(input.afterOwners))
       throw new Error("Unvollständiger Campaign-Save-Vertrag.");
-    const expectedPaths = new Set(before.atlas.files.map((file) => file.path)),
+    const requestedFiles = input.afterFiles ?? before.atlas.files,
+      requestedRecords = input.afterRecords ?? before.atlas.records,
+      expectedPaths = new Set(before.atlas.files.map((file) => file.path)),
+      requestedByPath = new Map<string, CampaignRuntimeManifestV1["atlas"]["files"][number]>(),
       byPath = new Map<string, CampaignManifestNativeWrite>();
+    if (!Array.isArray(requestedFiles) || !Array.isArray(requestedRecords))
+      throw new Error("Post-Save-Atlasclosure ist unvollständig.");
+    for (const file of requestedFiles) requestedByPath.set(file.path, file);
+    if (requestedByPath.size !== requestedFiles.length)
+      throw new Error("Post-Save-Atlasbestand ist doppelt.");
     for (const write of input.nativeWrites) {
       safePath(write.path);
-      if (!expectedPaths.has(write.path) || byPath.has(write.path))
+      if (!requestedByPath.has(write.path) || byPath.has(write.path))
         throw new Error("Fremdes oder doppeltes natives Speicherziel.");
-      if (write.before === null || write.after === null)
+      if (expectedPaths.has(write.path) && (write.before === null || write.after === null))
         throw new Error(
           "Bestätigte native Datei darf nicht erzeugt oder gelöscht werden.",
         );
       byPath.set(write.path, write);
     }
-    if (byPath.size !== expectedPaths.size)
+    if (byPath.size !== requestedByPath.size)
       throw new Error(
-        "Native Speicherziele decken das Campaignmanifest nicht exakt.",
+        "Native Speicherziele decken den Post-Save-Atlasbestand nicht exakt.",
       );
     const changedFiles = new Set<string>();
     const files = before.atlas.files.map((file) => {
       const write = byPath.get(file.path)!;
+      const requested = requestedByPath.get(file.path);
+      if (!requested || requested.kind !== file.kind || requested.id !== file.id)
+        throw new Error("Bestätigte Atlasdateibindung wurde verändert.");
       if (
         file.savedDigest === null ||
         payloadDigest(this.digest(write.before!)) !== file.savedDigest
@@ -298,9 +333,27 @@ export class CampaignRuntimeManifestSaveParticipant implements CampaignRuntimeSa
         savedDigest: payloadDigest(this.digest(write.after!)),
       });
     });
+    const additions = requestedFiles
+      .filter((file) => !expectedPaths.has(file.path))
+      .sort((a, b) => a.path.localeCompare(b.path));
+    for (const file of additions) {
+      const write = byPath.get(file.path)!;
+      if (file.kind !== "location" || file.id === null || write.before !== null || write.after === null)
+        throw new Error("Nur eine autorisierte neue Locationdatei darf den Campaignbestand erweitern.");
+      changedFiles.add(file.path);
+      files.push(Object.freeze({ ...file, savedDigest: payloadDigest(this.digest(write.after)) }));
+    }
+    for (const oldRecord of before.atlas.records) {
+      const next = requestedRecords.find((record) => record.id === oldRecord.id);
+      if (!next || exact(next) !== exact(oldRecord))
+        throw new Error("Bestehender Atlasrecord wurde im lokalen Save verändert.");
+    }
+    if (new Set(requestedRecords.map((record) => record.id)).size !== requestedRecords.length)
+      throw new Error("Post-Save-Atlasrecords sind doppelt.");
     const owners = this.authorizedOwners(
       before,
       files,
+      requestedRecords,
       input.afterOwners,
       input.nativeWrites,
       changedFiles,
@@ -333,14 +386,13 @@ export class CampaignRuntimeManifestSaveParticipant implements CampaignRuntimeSa
             this.digest,
           ),
         },
-        atlas: { ...before.atlas, files },
+        atlas: { ...before.atlas, files, records: requestedRecords },
       }),
       this.digest,
     );
-    if (
-      exact(immutableManifestClosure(before)) !==
-      exact(immutableManifestClosure(candidate))
-    )
+    if (exact(before.snapshot) !== exact(candidate.snapshot) ||
+        before.registry.registryId !== candidate.registry.registryId ||
+        before.atlas.worldId !== candidate.atlas.worldId)
       throw new Error(
         "Campaignmanifest-Closure wurde im lokalen Save verändert.",
       );
@@ -452,14 +504,25 @@ export class CampaignRuntimeManifestSaveParticipant implements CampaignRuntimeSa
         this.digest,
       ),
       after = parseCampaignRuntimeManifest(manifestWrite.after, this.digest);
-    if (
-      exact(immutableManifestClosure(before)) !==
-      exact(immutableManifestClosure(after))
-    )
+    if (exact(before.snapshot) !== exact(after.snapshot) ||
+        before.registry.registryId !== after.registry.registryId ||
+        before.atlas.worldId !== after.atlas.worldId)
       throw new Error(
         "Campaignmanifest-Closure wurde im Recoveryjournal verändert.",
       );
-    const filePaths = new Set(before.atlas.files.map((file) => file.path)),
+    const beforeByPath = new Map(before.atlas.files.map((file) => [file.path, file])),
+      afterByPath = new Map(after.atlas.files.map((file) => [file.path, file]));
+    for (const oldFile of before.atlas.files) {
+      const next = afterByPath.get(oldFile.path);
+      if (!next || next.kind !== oldFile.kind || next.id !== oldFile.id)
+        throw new Error("Bestehende Atlasdateibindung wurde im Recoveryjournal verändert.");
+    }
+    for (const oldRecord of before.atlas.records) {
+      const next = after.atlas.records.find((record) => record.id === oldRecord.id);
+      if (!next || exact(next) !== exact(oldRecord))
+        throw new Error("Bestehender Atlasrecord wurde im Recoveryjournal verändert.");
+    }
+    const filePaths = new Set(after.atlas.files.map((file) => file.path)),
       worldFile = before.atlas.files.find(
         (file) => file.kind === "world" && file.id === before.atlas.worldId,
       ),
@@ -468,11 +531,8 @@ export class CampaignRuntimeManifestSaveParticipant implements CampaignRuntimeSa
         filePaths.has(write.path),
       ),
       changedFiles = new Set(
-        before.atlas.files
-          .filter(
-            (file, index) =>
-              file.savedDigest !== after.atlas.files[index]!.savedDigest,
-          )
+        after.atlas.files
+          .filter((file) => beforeByPath.get(file.path)?.savedDigest !== file.savedDigest)
           .map((file) => file.path),
       );
     if (!changedFiles.size)
@@ -494,24 +554,22 @@ export class CampaignRuntimeManifestSaveParticipant implements CampaignRuntimeSa
         "Campaign-Recoveryjournal deckt die nativen Änderungen nicht exakt.",
       );
     for (const write of nativeWrites) {
-      const oldFile = before.atlas.files.find(
-          (file) => file.path === write.path,
-        )!,
+      const oldFile = beforeByPath.get(write.path),
         newFile = after.atlas.files.find((file) => file.path === write.path)!;
-      if (
-        write.before === null ||
-        write.after === null ||
-        oldFile.savedDigest !== payloadDigest(this.digest(write.before)) ||
-        newFile.savedDigest !== payloadDigest(this.digest(write.after))
-      )
+      if (write.after === null ||
+          (oldFile
+            ? write.before === null || oldFile.savedDigest !== payloadDigest(this.digest(write.before))
+            : newFile.kind !== "location" || newFile.id === null || write.before !== null) ||
+          newFile.savedDigest !== payloadDigest(this.digest(write.after)))
         throw new Error(
           "Campaign-Recoveryjournal besitzt falsche native Bytes.",
         );
     }
     const owners = this.authorizedOwners(
-        before,
-        after.atlas.files,
-        after.registry.owners,
+      before,
+      after.atlas.files,
+      after.atlas.records,
+      after.registry.owners,
         nativeWrites,
         changedFiles,
       ),
