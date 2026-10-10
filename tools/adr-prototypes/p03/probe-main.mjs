@@ -10,9 +10,6 @@ import { canaryPixels, findPrivateRaster, readPng } from "./pixel-oracle.mjs";
 
 app.commandLine.appendSwitch("headless");
 app.commandLine.appendSwitch("disable-gpu");
-// CI cannot install Electron's root-owned SUID helper. Keep Chromium's
-// user-namespace sandbox and the explicit sandboxed renderer preference.
-app.commandLine.appendSwitch("disable-setuid-sandbox");
 app.commandLine.appendSwitch("disable-breakpad");
 app.commandLine.appendSwitch("disable-crash-reporter");
 

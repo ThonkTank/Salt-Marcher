@@ -12,7 +12,7 @@
     "test:adr-p02": "node --test --test-concurrency=1 tests/adr-prototypes/p02-contract.test.mjs tests/adr-prototypes/p02-concurrency.test.mjs tests/adr-prototypes/p02-process.test.mjs",
     "adr:p02:matrix": "node tools/adr-prototypes/p02/matrix.mjs --runs 10 --out tools/adr-prototypes/evidence/p02-aggregate.json",
     "test:adr-p03": "node --test --test-concurrency=1 tests/adr-prototypes/p03-contract.test.mjs tests/adr-prototypes/p03-channel.test.mjs tests/adr-prototypes/p03-pixel-oracle.test.mjs tests/adr-prototypes/p03-process.test.mjs",
-    "adr:p03:probe": "electron tools/adr-prototypes/p03/probe-main.mjs --out tools/adr-prototypes/evidence/p03-aggregate.json --frames tools/adr-prototypes/evidence/p03-frames",
+    "adr:p03:probe": "electron --disable-setuid-sandbox tools/adr-prototypes/p03/probe-main.mjs --out tools/adr-prototypes/evidence/p03-aggregate.json --frames tools/adr-prototypes/evidence/p03-frames",
     "audit:backlog": "node tools/check-repository.mjs --github",
     "context": "node tools/project-context.mjs",
     "next": "node tools/next-task.mjs"
