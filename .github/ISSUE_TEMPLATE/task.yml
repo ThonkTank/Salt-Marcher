@@ -1,0 +1,25 @@
+name: Begrenzte Produktaufgabe
+description: Ein überprüfbares Ergebnis mit Abhängigkeiten und Abnahme.
+labels: ["kind:task"]
+body:
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Nutzerergebnis
+      description: Welcher konkrete Ablauf funktioniert nach dieser Aufgabe?
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope, bestehende Arbeit und Abhängigkeiten
+      description: Fachissue, Gate, vorhandener PR/Branch, Owner und benötigte Eingänge verlinken.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Abnahme und nächster Empfänger
+      description: Beobachtbares Ergebnis, passende Checks/Hostfälle und unabhängiger Review.
+    validations:
+      required: true

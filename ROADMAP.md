@@ -1,3 +1,5 @@
+> **Einordnung:** Diese Datei dokumentiert den früheren Raum-Key-Lieferweg einschließlich seiner damaligen Termine. Die aktuelle Gesamtproduktfolge und Aufgaben stehen in [docs/ROADMAP.md](docs/ROADMAP.md); Einstieg und Contributor-Weg in [README.md](README.md). Die Nachweise unten bleiben in ihrem ursprünglichen Scope erhalten.
+
 # Roadmap: Räume und Objekte mit Raum-Keys verbinden
 
 Ziel: Bis zum 7. Oktober 2026 morgens lassen sich Räume zeichnen, Objekte platzieren und die benötigten Beschreibungen sowie Features im passenden Raum-Key finden. Die Phasen 1–3 sind abgeschlossen. Danach folgen zuerst die strukturierte Key-Technik und die Verbindung von Features mit Objekten auf eigenen Testdaten; die Drachenhöhle wird erst in Phase 6 migriert und vollständig abgenommen. Produktive Karten und Bestandstexte bleiben bis dahin geschützt.

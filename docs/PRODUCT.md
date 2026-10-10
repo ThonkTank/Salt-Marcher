@@ -1,0 +1,32 @@
+# Produktziele
+
+## Für wen und wozu?
+
+Eine Spielleitung soll eine Kampagne als zusammenhängenden lokalen Arbeitsraum benutzen: Welt und Orte erkunden, Städte und Dungeons bearbeiten, Texte und Encounter vorbereiten und daraus einen Spielabend führen. Gespeicherte Daten müssen nach Neustart und Fehlern zuverlässig wieder auffindbar sein. Ein weiterer isolierter Editor oder ein nur theoretisch beschriebener Fachvertrag erfüllt dieses Ziel noch nicht.
+
+Die vollständige [SaltMarcher-Ablösung](../ROADMAP-SALTMARCHER-REPLACEMENT.md) ist der verbindliche Gesamtumfang. Diese Seite fasst die vorhandenen Ziele zusammen; sie ersetzt weder die Fachanforderungen noch deren Abnahme.
+
+## Vier Lieferergebnisse
+
+| Ergebnis | Sichtbarer Nutzen | Abnahme |
+| --- | --- | --- |
+| Kampagne und gemeinsamer Raum | Welt → Ort → Stadt → Haus/Dungeon → Raum-Key bearbeiten, gemeinsam speichern und nach vollständigem Neustart unverändert öffnen | E2E-01 |
+| Vorbereitung und Live-Spiel | Vorbereitung ausdrücklich in eine eigenständige LiveSession überführen; Party, Szenen und Encounter ausführen, ohne die Vorbereitung ungewollt zu verändern | E2E-02 |
+| Reise und Weltreaktion | Reise, Zeit und Kalender konsistent fortschreiben; Wetter, Shops und Musik reagieren ohne doppelte Wirkung bei Retry oder Restart | E2E-03 |
+| Portabilität und sichere Anzeige | Kampagne und Assets vollständig übertragen/wiederherstellen; Spieler sehen nur freigegebene Informationen; Bedienung funktioniert auf den unterstützten Hosts | E2E-04 |
+
+## Verbindliche Qualitätsziele
+
+- Eine gemeinsame Atlasfläche mit einer Kamera, History und Savegrenze verbindet Hex, Orte, Städte und Dungeons. Navigation erfolgt durch Zoom statt erforderlicher Editorwechsel.
+- Karten-, Raum- und Abschnittsidentitäten bleiben stabil. Markdown und geschützte Nutzertexte bleiben wortgetreu; fremde oder veraltete Schreibautorität wird gesperrt.
+- Lokale Offline-Nutzung, nachvollziehbare Quellen, portable Daten/Assets und konfliktgeschützte Persistenz gehören zum Produkt.
+- Bedienung und Funktion werden direkt gegen die vereinbarten Originale geprüft. Für Dungeon-Grafik genügt die vereinbarte ungefähr gleichwertige Darstellung. Testzahlen ersetzen keinen Originalvergleich.
+- Physische Bedienung, große Karten/Welten, Tastatur, 200-Prozent-Skalierung, Accessibility und die erforderlichen Betriebssysteme benötigen eigene Nachweise.
+
+## Gegenwärtiger Stand und offene Entscheidungen
+
+Dungeonzeichnung, strukturierte Raum-Keys und zahlreiche Speicher-/Hostfälle sind bereits belegt, jeweils innerhalb ihres dokumentierten Scopes. Atlas-/City-/Campaign-Integration liegt teilweise auf Kandidatenbranches. Vollständige E2E-Freigaben, sämtliche Item-/Encounter-/Live-/Reise-/Displayfunktionen sind daraus nicht ableitbar.
+
+Obsidian ist aktuell Arbeits- und Testhost. Obsidian, Desktop oder Hybrid als endgültige Produktlinie bleibt in [#11](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11) offen und hängt an P01–P04 und den notwendigen OS-/Recovery-/Capability-Beweisen. Plattformwahl, Encounter-/Combat-/Loot-Implementierungsbesitz, Travel/Clock/Calendar und PlayerProjection benötigen ausdrücklich bestätigte Entscheidungen beziehungsweise Owner. Ein Bereichsreview besetzt diese Rollen nicht automatisch.
+
+Der erste Lieferfokus ist E2E-01; der vollständige Umfang einschließlich Planner, World Planner, Actor Autonomy, Erweiterungen und Tutorials bleibt in der SaltMarcher-Roadmap erhalten. Lieferreihenfolge und offene Eingänge: [Roadmap](ROADMAP.md).

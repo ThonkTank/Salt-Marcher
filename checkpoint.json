@@ -1,4 +1,24 @@
 {
+  "repositoryOrientation": {
+    "date": "2026-10-10",
+    "state": "documentation_candidate_pending_independent_review",
+    "scope": "Product navigation, contributor workflow and GitHub backlog organization only; no product or acceptance approval",
+    "branch": "docs/product-orientation-20261010",
+    "entrypoint": "README.md",
+    "productGoals": "docs/PRODUCT.md",
+    "deliveryOrder": "docs/ROADMAP.md",
+    "contributing": "CONTRIBUTING.md",
+    "documentIndex": "docs/INDEX.md",
+    "coordinationIssue": 12,
+    "tasks": [
+      38,
+      39,
+      40,
+      41,
+      42
+    ],
+    "next": "Independent documentation review and integration; product owners continue existing candidates and current #38 blocker."
+  },
   "saltMarcherReplacement": {
     "date": "2026-10-10",
     "state": "smr00_adr_p01_h03_i02_implementation_review_changes_required",
