@@ -143,9 +143,15 @@
       "verification": {
         "sourceRevision": "699a2a0701a2a9ff84fd29837b116fd9111ed120+dirty",
         "check": "passed",
-        "tests": { "passed": 434, "failed": 0 },
+        "tests": {
+          "passed": 434,
+          "failed": 0
+        },
         "build": "passed",
-        "focusedTests": { "passed": 29, "failed": 0 },
+        "focusedTests": {
+          "passed": 29,
+          "failed": 0
+        },
         "pdfSha256": "2504d2a0abb0a4d491a939be4f17910a2dde0312570ab8d208080225ccf0a1f0",
         "pdfBytes": 3158713,
         "pdfPages": 403,
@@ -170,14 +176,27 @@
         "branch": "active/installed-phase1",
         "baseCommit": "80410c44951da28152c6bf2effeb1caae740460d",
         "issue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/9#issuecomment-6096820997",
-        "changedFiles": ["acceptance.json", "checkpoint.json"],
+        "changedFiles": [
+          "acceptance.json",
+          "checkpoint.json"
+        ],
         "externalEvidence": {
           "path": "/tmp/SRD_CC_v5.1.pdf, /tmp/w18-n01-source-verify.json, main.js, manifest.json, styles.css",
           "scope": "Local official-PDF verification against pinned bytes and physical/printed page 207 plus local build hashes on the dirty base revision; ephemeral cloud-host paths, not installed-plugin or GUI evidence."
         },
         "publication": "Pending final upstream synchronization, commit and non-force push; exact publication SHA and remote verification will be recorded in the Issue #9 close receipt.",
         "commit": "see Issue #9 close receipt",
-        "notProven": ["complete SRD 5.1 Item corpus", "remaining 233 Magic Items A–Z headings and Orb of Dragonkind", "magic-item helper reconciliation", "remaining goldens", "independent W18 review and S01-R01", "Item product artifact/provider/UI", "Obsidian host acceptance", "Encounter runtime", "any 2024 rules"],
+        "notProven": [
+          "complete SRD 5.1 Item corpus",
+          "remaining 233 Magic Items A–Z headings and Orb of Dragonkind",
+          "magic-item helper reconciliation",
+          "remaining goldens",
+          "independent W18 review and S01-R01",
+          "Item product artifact/provider/UI",
+          "Obsidian host acceptance",
+          "Encounter runtime",
+          "any 2024 rules"
+        ],
         "next": "Request independent re-review of the published W18-N02 metadata repair; only after PASS begin a separately documented W19 source slice."
       }
     },
@@ -5063,7 +5082,7 @@
     "state": "gm_ux_n005_n01_h01_r02_blocked_r03_not_started",
     "plan": "ROADMAP-GM-PRODUCT-TESTING-PLAN.md",
     "focus": "Längere GM-Endanwenderabläufe, häufige Aktionen, Bedienkosten und UI-Überladung; belegte Nacharbeiten beauftragen und nachprüfen.",
-    "currentRun": "GM-UX-01-D-PASTE-SEMANTICS-OWNER-SYNC-20261010-01 completed: Dungeon owner confirmed viewport-center paste as expected behavior in Issue #8/6095769157; no third UI test or product change.",
+    "currentRun": "GM-UX-01-ROOM-KEY-OPEN-CLUTTER-REPEAT-20261010-01 completed for the bounded visible open/close observation on exact Shared 699a2a0; existing full GM-UX-N-003-GM-R01/save-reopen gate remains separate and open.",
     "executedUiRuns": 15,
     "observedFindings": [
       {
@@ -5121,7 +5140,7 @@
       {
         "id": "GM-UX-003",
         "priority": "P2-Kandidat",
-        "status": "reproduced_in_second_card_assigned_issue1_retest_pending",
+        "status": "current_shared_bounded_retest_open_action_no_duplicate_editor_close_restores_outline_pane",
         "kind": "Eigene UI-Beobachtung; isolierter Cloud-Testvault; Fernsteuerung, keine physische Bedienabnahme",
         "build": "Obsidian 1.14.4, Produktcommit 2a9a7d55a31c2c8c3d0183fd4980b81caf226714, main.js SHA-256 3388ddf4d380971f4b6d659c6344f6623a2299f014957ebb5e6adc20d6ec5773",
         "scenario": "GM-UX-01 Schnellmodus-Nachtest, Raum 1, Fenster 1440x1000; vorherige Reproduktion in GM-UX-01 Nebelwacht, Raum 12",
@@ -5131,7 +5150,19 @@
         "impact": "P2-Kandidat: unnötig doppelte Informationsdarstellung und geteilter Kartenkontext. GM-Nutzungshäufigkeit/Produktzeit nicht populationsgemessen; Parallelansicht kann beabsichtigt sein.",
         "evidence": "/workspace/scratch/gm-cloud-qa/168-nebelwacht-room12-key-open.png; /workspace/scratch/gm-cloud-qa/213-current-build-second-card-key.png; /workspace/scratch/gm-cloud-qa/214-current-build-room-note-open.png; /workspace/scratch/gm-cloud-qa/215-current-build-note-after-close-editor.png; /workspace/scratch/gm-cloud-qa/216-second-card-after-reload.png; /workspace/scratch/gm-cloud-qa/217-second-card-key-after-reload.png",
         "latency": "Keine Produktlatenz gemessen; CDP-/Koordinatensteuerung nicht als Produktzeit gewertet.",
-        "retest": null,
+        "retest": {
+          "date": "2026-10-10",
+          "productCommit": "699a2a0701a2a9ff84fd29837b116fd9111ed120",
+          "buildTripletSha256": {
+            "main.js": "522823730ddce4d0ba83e0476f60887b60a07c517f84e8e270814b6d597efa43",
+            "styles.css": "a6d31c13219d4b9f49d2ecf6993106bedef2a33560c9bdfdb93106659d45bc2e",
+            "manifest.json": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64"
+          },
+          "qaCardSha256BeforeAfter": "56c38f8ff9e4365a165af4319da37bb03db20c09925d6ee38e5327e7559353c7",
+          "result": "On the exact current shared build, the separate Room-Key view opened and kept Room 12/map visible while the embedded Key-Dock closed; duplicate visible editor text was not reproduced. Map workspace width fell 680→380 px; after closing the note, Obsidian left a 300 px Outline pane and the map remained 380 px. Bounded result only; full H01/R01 Save/Reload/Reopen not run.",
+          "evidence": "/workspace/scratch/gm-cloud-qa/evidence-gmux01-room-key-open-clutter-repeat-20261010-01/55-clean-latest-before.png through 60-latest-after-key-close.png",
+          "coordination": "Final result to be recorded in Issue #8; existing GM-UX-N-003 owner/task remains unchanged."
+        },
         "coordination": "GM-UX-N-003 an Dungeon-Verantwortlichen, Issue #1 Kommentar 6084205940; Umsetzung und erneute Abnahme offen."
       },
       {
@@ -5204,7 +5235,7 @@
       "state": "completed",
       "supersedes": "GM-UX-ACCESS; Slotanfrage gemäß Nutzerkorrektur aufgehoben"
     },
-    "next": "No additional paste test is needed: the owner confirmed viewport-center semantics in Issue #8/6095769157. Select only a new, uncovered GM user task or a concrete product delta for the next run; do not repeat completed N-005/N-006/GM-R01 or GM-UX-01 sequences without a specific change, and do not claim wider acceptance.",
+    "next": "Dungeon owner retains the existing GM-UX-N-003 follow-up/GM-R01 ownership. Use the ROADMAP-GM-UX-N-003-PLAN.md exact save/reload/reopen sequence if/when that package is scheduled; clarify whether Obsidian restoring its pre-existing Outline sidebar after closing Room-Key is expected. Do not infer full H01/R01, physical input, latency, or broad UX approval from this one open/close observation.",
     "automation": "Stündliche GM-Produkttests in eigener Cloud; keine Laptop-Slotfreigabe erforderlich.",
     "executionEnvironment": "Eigene Cloud-Umgebung, getrennt vom Laptop der Kollegen",
     "cloudHost": {
@@ -6068,6 +6099,79 @@
       "limits": "Own Cloud UI automation, not physical input or laptop. No product latency measured (remote control timings excluded). No user card/text changed. No expected paste semantics, repair, broad UX/Dungeon/E2E approval, N-006 conclusion, or physical/PlayerProjection test. Product code unchanged.",
       "next": "Ask Dungeon product owner in Issue #8 to state intended duplicate placement semantics (without requesting implementation yet). If a target-position interaction is chosen, add explicit UI acceptance criteria and run only that bounded follow-up; otherwise record center placement as expected behavior. Continue broader GM scenario only after current ownership sync.",
       "documentationCommit": "b22f7f5d93881d3c2dafd40fbab471754e439589"
+    },
+    "latestRoomKeyOpenClutterRepeat": {
+      "id": "GM-UX-01-ROOM-KEY-OPEN-CLUTTER-REPEAT-20261010-01",
+      "status": "completed_bounded_visible_open_close_observation",
+      "owner": "Cloud-GM-Produkttester",
+      "branch": "active/installed-phase1",
+      "documentedHead": "699a2a0701a2a9ff84fd29837b116fd9111ed120",
+      "testedProductBuildSource": "699a2a0701a2a9ff84fd29837b116fd9111ed120",
+      "preRunCoordination": {
+        "issue1DocumentationContract": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1#issuecomment-6087478045",
+        "issue8Scope": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/8#issuecomment-6096630459",
+        "issue8InitialPartial": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/8#issuecomment-6096730629",
+        "issue8CleanHostContinuation": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/8#issuecomment-6096778547",
+        "issue8CurrentBuildPreUi": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/8#issuecomment-6096808029"
+      },
+      "build": {
+        "command": "npm run build",
+        "result": "PASS; dirty:false; sourceRevision=699a2a0701a2a9ff84fd29837b116fd9111ed120; Node v24.19.0",
+        "installedTripletSha256": {
+          "main.js": "522823730ddce4d0ba83e0476f60887b60a07c517f84e8e270814b6d597efa43",
+          "styles.css": "a6d31c13219d4b9f49d2ecf6993106bedef2a33560c9bdfdb93106659d45bc2e",
+          "manifest.json": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64"
+        },
+        "buildTripletEqualsInstalled": "true; complete main.js/styles.css/manifest.json copied before visible Reload app without saving; hashes match the prior b971e98 build because upstream delta was catalog source/validation metadata only."
+      },
+      "host": {
+        "container": "gm-obsidian-room-key-clutter-20261010; container ID 6b89f4c325373b1c28b9f15ae6b8e23493d61a85fe46cc8aa45f4f1379e81c92",
+        "image": "gm-obsidian-qa:1.14.4",
+        "obsidian": "1.14.4; Electron 43.7.7",
+        "display": "1440x1000; captured app viewport 1024x800",
+        "profile": "/workspace/scratch/gm-cloud-qa/room-key-open-clean-20261010/profile",
+        "vault": "/workspace/scratch/gm-cloud-qa/room-key-open-clean-20261010/vault",
+        "qaCard": "GM-UX-01/Nebelwacht-Key-View-Repeat.dungeon",
+        "qaCardSha256BeforeAfter": "56c38f8ff9e4365a165af4319da37bb03db20c09925d6ee38e5327e7559353c7"
+      },
+      "uiSequence": [
+        "Fresh profile: trust isolated QA vault, leave Restricted mode through visible Community plugins settings, confirm Dungeon-Editor installed/enabled; a prior incomplete setup state showed the .dungeon file unsupported and no Dungeon commands while Restricted mode was active.",
+        "Visible file explorer: open the single QA .dungeon file. Dungeon > Geschosse: select Geschoss 1. Click Raum 12, then Inhalte > Key bearbeiten; existing key text was visible and unchanged.",
+        "Capture clean baseline with one active map leaf: 680 CSS px workspace width at 1024x800 app viewport; click Raum-Key öffnen once.",
+        "Room-Key opens in a 300 px right leaf. Map leaf shrinks from 680 to 380 CSS px; selected Room 12 remains visible. The Room-Key note shows its Room 12 map preview and saved key text. The prior embedded Key-Dock is closed by the current behavior, so the original duplicate editor view was not seen on this current build.",
+        "Close current Room-Key tab with Ctrl+W. The map remains visible at 380 px and the right leaf returns to Obsidian Outline (No headings found), leaving the prior 300 px right pane open. This is a visible workspace return observation; no attempt was made to alter or save the card."
+      ],
+      "observation": "On exact Shared 699a2a0 the previously reported simultaneous visible embedded Key-Editor + separate Room-Key text was not reproduced: the current open action showed one Room-Key note while the map stayed visible, though narrower. Closing that note restored a right Outline pane rather than the original 680 px map width. This is a bounded Cloud UI observation; it does not claim whether the remaining Obsidian sidebar is expected or a product defect.",
+      "checks": {
+        "coordination": "Read current Issue #1 coordination and documentation contract 6087478045, current Issue #8 claim/plan, branch remote before the final UI sequence.",
+        "sync": "PASS: fetch + fast-forward from b971e98 to exact Shared 699a2a0701a2a9ff84fd29837b116fd9111ed120; diff was four catalog source/data/validation/checkpoint changes, no Dungeon UI source changes.",
+        "build": "PASS, dirty:false on exact 699a2a0.",
+        "installAndReload": "PASS: complete triplet SHA-256 equals build; visible Reload app without saving executed before final observation.",
+        "cardIntegrity": "PASS: QA .dungeon hash unchanged before/after; no map or note save/edit.",
+        "testSuite": "Not run; no automated suite was used as a UI substitute."
+      },
+      "evidenceDirectory": "/workspace/scratch/gm-cloud-qa/evidence-gmux01-room-key-open-clutter-repeat-20261010-01/",
+      "keyScreenshots": [
+        "55-clean-latest-before.png",
+        "56-latest-floor-one.png",
+        "57-latest-room12-content-before.png",
+        "58-latest-before-key-open.png",
+        "59-latest-after-key-open.png",
+        "60-latest-after-key-close.png"
+      ],
+      "sha256Manifest": "/workspace/scratch/gm-cloud-qa/evidence-gmux01-room-key-open-clutter-repeat-20261010-01/SHA256SUMS.txt",
+      "filesChanged": [
+        "checkpoint.json (gmProductTesting root only)",
+        "ROADMAP-GM-PRODUCT-TESTING-PLAN.md"
+      ],
+      "limits": [
+        "No product latency measured; Playwright/CDP input and wait durations excluded.",
+        "No physical input test.",
+        "No save/reload/reopen after Room-Key action; no content was edited.",
+        "No user vault/card touched.",
+        "No full GM-UX-N-003-H01/GM-R01 acceptance, no broad UX/functional/E2E approval."
+      ],
+      "next": "Existing Dungeon-owned GM-UX-N-003-GM-R01 remains the follow-up for the full plan-specified Save/Reload/Reopen/hash criteria; clarify the observed right-side Outline return only within that owner scope. No new product fix is requested from this bounded observation."
     }
   }
 }
