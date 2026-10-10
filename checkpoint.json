@@ -4930,18 +4930,18 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I48b-CLEAN-P",
-      "kind": "cleanup_plan",
-      "startedAt": "2026-10-10T04:36:17.497651+00:00",
-      "focus": "Enumerate only own regenerable Vulkan/Godot/Mesa caches, protect all raw evidence and map/template sources",
-      "state": "completed",
-      "result": "Three exact cache directories/13431760 bytes planned, normalExit0 and five process identities absent; full cache/protected hash inventory external, nothing deleted.",
-      "plan": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i48b-20261010-r01/cleanup-plan.json"
-    },
-    "nextRun": {
       "id": "CITY-00-I48b-CLEAN-I",
       "kind": "cleanup_implementation",
-      "focus": "Implement exact three own cache removals with hash/path/process guards, then separate cleanup review; R48 afterwards"
+      "startedAt": "2026-10-10T04:37:36.106891+00:00",
+      "focus": "Remove only exact own regenerable Vulkan/Godot/Mesa cache directories after all guards",
+      "state": "completed",
+      "result": "Three enumerated own cache directories/547 files/13,431,760bytes removed after exact cache/protected hashes and normalExit/PID/path checks; separate review pending.",
+      "receipt": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i48b-20261010-r01/cleanup-implementation.json"
+    },
+    "nextRun": {
+      "id": "CITY-00-I48b-CLEAN-R",
+      "kind": "cleanup_review",
+      "focus": "Review protected hashes, source/map/template preservation, exact absence and process/path boundaries; then R48"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
