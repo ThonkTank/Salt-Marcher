@@ -154952,6 +154952,39 @@
           "productEdited": false,
           "nativeRepeated": false,
           "guiSlotUsed": false
+        },
+        "detailBindingDiagnosticD01": {
+          "id": "E2E-01-HEX04-DETAIL-BINDING-D01",
+          "state": "reproduced_native_save_keeps_stale_atlas_registry_references",
+          "sourceCommit": "7ec9f85ef9d6b263504ea2398ca1bbfc41b97899",
+          "sharedInput": "7ba2bf499765154f8ff8cd7fcef32584b43f94c3",
+          "issue": 7,
+          "e2eIssue": 12,
+          "e2e01UserLine": 13,
+          "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
+          "fixtureVersion": "e2e01-spatial-v2",
+          "fixtureUnchanged": true,
+          "finishedAt": "2026-10-10T21:25:33.097276+00:00",
+          "observed": [
+            "Unmodified fixture no-op Save performs zero writes and native/registry references agree.",
+            "Existing saved Location detailMaps addition and same-ID Dungeon reparent are accepted by shared History; Undo/Redo is exact and native Save succeeds.",
+            "A fresh model Repository reads saved native bytes; native capture identifies missing Dungeon reference in Location registry record and missing new Location/stale City+Building references in the Dungeon-placement registry record.",
+            "The actual Dungeon file remains byte-identical in all cases; only World/Location/Campaign bytes change in successful binding cases.",
+            "Changing the placement identity is currently rejected before any Save writes, retains draft and dirty state. This case is a bound limitation, not permission to remap existing identities.",
+            "Static production-callsite inspection finds a target navigator, not an action that creates an existing Dungeon placement at the selected Location."
+          ],
+          "rootCause": "AtlasCampaignManifestSave.owners updates payloadDigest but preserves r.references except the additive new-Location world references. Native Location detailMaps and Dungeon parent changes therefore do not update their declared registry reference closure.",
+          "nextOwnStep": "Targeted repair of existing atlas-owned reference projection and regressions before exposing Dungeon-at-Location placement UI. Preserve original IDs, Dungeon bytes, owner schemas, Context/receipt/history guards and independent Campaign/Data/Dungeon ownership. New placement-record creation remains a later concrete extension, not approved by this diagnosis.",
+          "productEdited": false,
+          "testsEdited": false,
+          "guiRun": false,
+          "nativeElectronReopen": false,
+          "fullE2E": false,
+          "qualifiedLocationScopeReopened": false,
+          "evidence": "docs/reference/atlas-detail-binding-d01/receipt.json",
+          "sha256": "2ff39c51e511c1d35a946db518675ec737d85b573a4fab690b3740df639e387f",
+          "reproduction": "docs/reference/atlas-detail-binding-d01/diagnostic.entry.ts",
+          "modelCases": 4
         }
       }
     ],

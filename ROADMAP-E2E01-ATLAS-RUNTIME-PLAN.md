@@ -1,5 +1,20 @@
 # E2E-01-SPACE-I01c-RUNTIME-P01: Kampagne zum bestehenden Atlas verbinden
 
+## Konkreter nächster HEX-04-Eingang
+
+[D01-Modellbefund](docs/reference/atlas-detail-binding-d01/README.md) auf
+`7ec9f85ef9d6b263504ea2398ca1bbfc41b97899`, E2E-01 Nutzerzeile13:
+Save eines Detaillinks am bestehenden Ort und des geänderten Parents einer
+bestehenden Dungeonplatzierung gelingt, behält jedoch veraltete Atlas-Registryreferenzen.
+Eine frische Modell-Repositoryinstanz bestätigt die gespeicherten nativen Bindungen
+und ihre abweichende Registryclosure; Dungeonbytes und Undo/Redo bleiben exakt.
+Nächster eigener getrennter Lauf ist die gezielte Reparatur der bestehenden
+`AtlasCampaignManifestSave.owners`-Referenzprojektion samt Regression. Danach
+folgt der noch fehlende sichtbare Verortungsanschluss. Neue Placementkennungen
+sind derzeit abgewiesen und werden nicht durch diese Diagnose freigegeben.
+Kein GUI-/Electron-/physischer oder Gesamt-E2E-Nachweis und keine neue allgemeine
+Plan-/Reviewrunde. Der begrenzte abgeschlossene #40-Scope bleibt erhalten.
+
 Der begrenzte Orts-/Key-/Verschiebe-/UndoRedo-/Save-/Frischstart-Meilenstein
 [#40](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/40) ist
 qualifiziert: [Stadt H02](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/40#issuecomment-6101960077),

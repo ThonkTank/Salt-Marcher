@@ -902,7 +902,7 @@
   "hexAtlasExecution": {
     "scope": "HEX-00 bis HEX-28 und sämtliche eingeordneten CITY-00 bis CITY-09 vollständig",
     "phase": "HEX-03",
-    "state": "scoped_native_Location_Save_fresh_process_accepted_own_cleanup_complete",
+    "state": "detail_binding_registry_reference_gap_reproduced_targeted_repair_next",
     "plan": "ROADMAP-E2E01-SPATIAL-INTEGRATION-PLAN.md",
     "currentRun": {
       "id": "E2E-01-SPACE-I01b",
@@ -949,22 +949,21 @@
       "phaseApproval": false
     },
     "nextRun": {
-      "id": "E2E-01-HEX-REMAINING-DETAIL-DUNGEON-ROOM-KEY",
-      "kind": "resume_existing_user_line13_remaining_detail_route",
+      "id": "E2E-01-HEX04-DETAIL-REFERENCE-N01",
+      "kind": "targeted_repair_of_reproduced_native_binding_reference_gap",
       "owner": "Hex",
-      "issue": 12,
-      "domainIssue": 7,
-      "closedLocationIssue": 40,
+      "issue": 7,
+      "e2eIssue": 12,
       "e2e01UserLine": 13,
       "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
       "sourcePlan": "ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md",
-      "focus": "Location/Key/Move/shared UndoRedo/Save/fresh-process milestone and its own cleanup are complete. Resume only the still-open Detail/located-Dungeon/Room-Key part of the existing E2E-01 user line, using the latest actual source and current owner handoffs. Identify the next concrete missing implementation; no new general plan/review cycle or reopening of qualified codec/native Location evidence.",
-      "input": "checkpoint.hexAtlasExecution.latestSharedLocationKeyNativeH02Cleanup",
+      "input": "checkpoint.hexAtlasExecution.latestDetailBindingDiagnosticD01",
+      "focus": "Repair AtlasCampaignManifestSave existing atlas-owned references for Location detailMaps and same-ID Dungeon parent changes from exact native before/after closure, with targeted regressions, before adding Dungeon-at-Location UI. Keep schemas, source/file/Context/receipt guards, original IDs and native Dungeon bytes. New placement-record creation remains a later explicit extension.",
       "fixtureVersion": "e2e01-spatial-v2",
-      "slotConfirmedForNextRun": false,
       "slotRequiredAgain": false,
-      "guiRule": "Any actual future GUI run needs a separately justified scenario and fresh explicit local slot coordination. This cleanup holds no slot.",
-      "limits": "No product implementation or GUI in this cleanup run; no CITY/P02/P04/E2E02-04/physical/original/large-world/installation/full-E2E advance."
+      "slotConfirmedForNextRun": false,
+      "guiRule": "No GUI is required for this targeted repair; any later actual GUI must freshly coordinate the sole local slot.",
+      "limits": "Separate implementation/independent review/repair/native/cleanup runs per current user instruction; no new generic plan or review round, no #40 reopening, no CITY/P02/P04/E2E02-04/physical/original/large-world/installation/full-E2E advancement."
     },
     "review": {
       "run": "HEX-02-R02",
@@ -5414,7 +5413,7 @@
       "platformIssue": 11,
       "checkpointIsAuthoritative": true
     },
-    "updatedAt": "2026-10-10T21:12:55Z",
+    "updatedAt": "2026-10-10T21:25:33.097276+00:00",
     "consumerMatrix": {
       "id": "RUNTIME-MANIFEST-I02-CONSUMER-MATRIX-V1",
       "state": "frozen_complete_matrix_green_on_productive_Host_source",
@@ -6500,6 +6499,39 @@
       "productEdited": false,
       "nativeRepeated": false,
       "guiSlotUsed": false
+    },
+    "latestDetailBindingDiagnosticD01": {
+      "id": "E2E-01-HEX04-DETAIL-BINDING-D01",
+      "state": "reproduced_native_save_keeps_stale_atlas_registry_references",
+      "sourceCommit": "7ec9f85ef9d6b263504ea2398ca1bbfc41b97899",
+      "sharedInput": "7ba2bf499765154f8ff8cd7fcef32584b43f94c3",
+      "issue": 7,
+      "e2eIssue": 12,
+      "e2e01UserLine": 13,
+      "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
+      "fixtureVersion": "e2e01-spatial-v2",
+      "fixtureUnchanged": true,
+      "finishedAt": "2026-10-10T21:25:33.097276+00:00",
+      "observed": [
+        "Unmodified fixture no-op Save performs zero writes and native/registry references agree.",
+        "Existing saved Location detailMaps addition and same-ID Dungeon reparent are accepted by shared History; Undo/Redo is exact and native Save succeeds.",
+        "A fresh model Repository reads saved native bytes; native capture identifies missing Dungeon reference in Location registry record and missing new Location/stale City+Building references in the Dungeon-placement registry record.",
+        "The actual Dungeon file remains byte-identical in all cases; only World/Location/Campaign bytes change in successful binding cases.",
+        "Changing the placement identity is currently rejected before any Save writes, retains draft and dirty state. This case is a bound limitation, not permission to remap existing identities.",
+        "Static production-callsite inspection finds a target navigator, not an action that creates an existing Dungeon placement at the selected Location."
+      ],
+      "rootCause": "AtlasCampaignManifestSave.owners updates payloadDigest but preserves r.references except the additive new-Location world references. Native Location detailMaps and Dungeon parent changes therefore do not update their declared registry reference closure.",
+      "nextOwnStep": "Targeted repair of existing atlas-owned reference projection and regressions before exposing Dungeon-at-Location placement UI. Preserve original IDs, Dungeon bytes, owner schemas, Context/receipt/history guards and independent Campaign/Data/Dungeon ownership. New placement-record creation remains a later concrete extension, not approved by this diagnosis.",
+      "productEdited": false,
+      "testsEdited": false,
+      "guiRun": false,
+      "nativeElectronReopen": false,
+      "fullE2E": false,
+      "qualifiedLocationScopeReopened": false,
+      "evidence": "docs/reference/atlas-detail-binding-d01/receipt.json",
+      "sha256": "2ff39c51e511c1d35a946db518675ec737d85b573a4fab690b3740df639e387f",
+      "reproduction": "docs/reference/atlas-detail-binding-d01/diagnostic.entry.ts",
+      "modelCases": 4
     }
   },
   "phase": "Phase 6: zweiter Nachbesserungslauf teilweise umgesetzt; fünf Restpositionen und unabhängiger Review offen",
