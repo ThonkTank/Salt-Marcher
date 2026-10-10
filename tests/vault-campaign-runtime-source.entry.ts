@@ -34,8 +34,38 @@ test("vault campaign storage emits typed relevant changes and exact modified byt
     { kind: "rename", path: "Elsewhere/a.json", oldPath: `${CAMPAIGN_RUNTIME_ROOT}/old.campaign.json` },
   ]);
   handlers.get("modify")?.(file(`${CAMPAIGN_RUNTIME_ROOT}/a.campaign.json`) as never);
-  await Promise.resolve();
   assert.deepEqual(changes.at(-1),
-    { kind: "modify", path: `${CAMPAIGN_RUNTIME_ROOT}/a.campaign.json`, bytes: "" });
+    { kind: "modify", phase: "pending", eventId: 1, path: `${CAMPAIGN_RUNTIME_ROOT}/a.campaign.json` });
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.deepEqual(changes.at(-1),
+    { kind: "modify", phase: "resolved", eventId: 1,
+      path: `${CAMPAIGN_RUNTIME_ROOT}/a.campaign.json`, bytes: "" });
   stop(); assert.equal(removed.length, 4);
+});
+
+test("vault campaign storage announces modify before a deferred read and resolves events in source order", async () => {
+  const handlers = new Map<string, (...args: never[]) => void>(),
+    releases = new Map<string, (bytes: string) => void>();
+  const vault = { getFiles: () => [],
+    read: (target: TFile) => new Promise<string>((resolve) => { releases.set(target.path, resolve); }),
+    on: (name: string, handler: (...args: never[]) => void) => { handlers.set(name, handler); return { name }; },
+    offref: () => undefined };
+  const storage = new VaultCampaignRuntimeStorage({ vault } as never), changes: unknown[] = [];
+  storage.subscribe((change) => { changes.push(change); });
+  const first = `${CAMPAIGN_RUNTIME_ROOT}/a.campaign.json`, second = `${CAMPAIGN_RUNTIME_ROOT}/b.campaign.json`;
+  handlers.get("modify")?.(file(first) as never);
+  handlers.get("modify")?.(file(second) as never);
+  assert.deepEqual(changes, [
+    { kind: "modify", phase: "pending", eventId: 1, path: first },
+    { kind: "modify", phase: "pending", eventId: 2, path: second },
+  ]);
+  releases.get(second)?.("bytes:b");
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(changes.length, 2);
+  releases.get(first)?.("bytes:a");
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.deepEqual(changes.slice(2), [
+    { kind: "modify", phase: "resolved", eventId: 1, path: first, bytes: "bytes:a" },
+    { kind: "modify", phase: "resolved", eventId: 2, path: second, bytes: "bytes:b" },
+  ]);
 });

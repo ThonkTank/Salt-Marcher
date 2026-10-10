@@ -73,6 +73,9 @@ export interface CampaignRuntimeStorageChange {
   readonly kind: "create" | "modify" | "delete" | "rename";
   readonly path: string;
   readonly oldPath?: string;
+  /** Vault modify is announced synchronously, then resolved in the same event order. */
+  readonly phase?: "pending" | "resolved";
+  readonly eventId?: number;
   /** Exact post-event bytes when observable. Missing bytes always revoke. */
   readonly bytes?: string;
 }
@@ -266,7 +269,8 @@ export class CampaignRuntimeSource {
     private readonly acknowledgmentValidator?: CampaignRuntimeSaveAcknowledgmentValidator,
   ) {
     this.unsubscribe = storage.subscribe?.((change) => {
-      this.invalidated = true; this.changeEpoch++;
+      this.invalidated = true;
+      if (!(change.kind === "modify" && change.phase === "resolved")) this.changeEpoch++;
       for (const listener of this.changed) listener(this.changeEpoch, change);
     });
   }
@@ -474,6 +478,7 @@ export class CampaignRuntimeNavigationProvider {
   private closed = false;
   private pending?: { readonly proof: string; readonly manifestPath: string; readonly afterManifestBytes: string;
     readonly lease: CampaignRuntimeSaveAcknowledgmentLease; eventObserved: boolean;
+    storageEventId?: number;
     readonly waiters: { resolve(): void; reject(error: Error): void }[];
     inFlight?: Promise<CampaignRuntimeSaveAcknowledgmentResult> };
   private readonly completed = new Map<string, { readonly proof: string;
@@ -488,10 +493,21 @@ export class CampaignRuntimeNavigationProvider {
     this.inventory = source.inventory;
     this.unsubscribe = source.subscribe((epoch, change) => {
       if (this.pending && epoch === this.pending.lease.sourceEpoch + 1 && change.kind === "modify" &&
-          change.path === this.pending.manifestPath && change.bytes === this.pending.afterManifestBytes) {
-        this.pending.eventObserved = true;
-        for (const waiter of this.pending.waiters.splice(0)) waiter.resolve();
-        return;
+          change.path === this.pending.manifestPath) {
+        if (change.phase === "pending" && change.eventId !== undefined &&
+            this.pending.storageEventId === undefined) {
+          this.pending.storageEventId = change.eventId;
+          return;
+        }
+        const orderedResolution = change.phase === "resolved" && change.eventId !== undefined &&
+          change.eventId === this.pending.storageEventId;
+        const atomicObservation = change.phase === undefined && change.eventId === undefined &&
+          this.pending.storageEventId === undefined;
+        if ((orderedResolution || atomicObservation) && change.bytes === this.pending.afterManifestBytes) {
+          this.pending.eventObserved = true;
+          for (const waiter of this.pending.waiters.splice(0)) waiter.resolve();
+          return;
+        }
       }
       for (const waiter of this.pending?.waiters.splice(0) ?? [])
         waiter.reject(new Error("Campaign-Save-Acknowledgment beobachtete ein fremdes Storageevent."));

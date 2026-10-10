@@ -71,6 +71,34 @@ function lifecycle(source: CampaignRuntimeSource) {
     contextToken: () => campaignContextToken(`runtime:${++token}`), receiptId: () => campaignReceiptId(uuid(200 + ++receipt)) });
 }
 
+async function acknowledgmentFixture(command: number, transactionId: string, savedBytes: string) {
+  const storage = new Storage(), path = "Kampagnen/SaltMarcher/a.campaign.json",
+    beforeBytes = manifest(a, worldA), nativePath = `Atlanten/${worldA}.overworld`,
+    participant = new CampaignRuntimeManifestSaveParticipant(path, digest,
+      [{ ownerId: "atlas", verify: () => undefined }]);
+  storage.set([{ path, bytes: beforeBytes }]);
+  const source = new CampaignRuntimeSource(storage, digest, participant), service = lifecycle(source),
+    provider = new CampaignRuntimeNavigationProvider(source, service),
+    activation = await provider.activate(campaignCommandId(uuid(command)), a, "open"), context = activation.context!,
+    beforeRead = await source.registry.read(context), before = parseCampaignRuntimeManifest(beforeBytes, digest);
+  assert.equal(beforeRead.kind, "confirmed");
+  if (beforeRead.kind !== "confirmed") throw new Error("Fixture benötigt bestätigte Registry.");
+  const nextOwner = { ...before.registry.owners[0]!, ownerRevision: `owner:${command}`,
+      snapshotRevision: `snapshot:${command}`,
+      source: { ...before.registry.owners[0]!.source, generation: `source:${command}` },
+      records: before.registry.owners[0]!.records.map((record) => ({
+        ...record, payloadDigest: sha(savedBytes),
+      })) },
+    nativeWrite = { path: nativePath, before: "bytes", after: savedBytes },
+    [manifestWrite] = participant.prepare({ beforeManifestBytes: beforeBytes, nativeWrites: [nativeWrite],
+      beforeOwners: before.registry.owners, afterOwners: [nextOwner] }),
+    prepared = participant.createAcknowledgment({ context, beforeRegistry: beforeRead.projection,
+      journal: { transactionId, state: "prepared", writes: [nativeWrite, manifestWrite!] } }),
+    committed = participant.createAcknowledgment({ context, beforeRegistry: beforeRead.projection,
+      journal: { ...prepared.journal, state: "committed" } });
+  return { storage, path, source, provider, context, prepared, committed };
+}
+
 test("runtime source opens persisted campaigns and derives a fresh context-bound registry and inventory", async () => {
   const storage = new Storage(); storage.set([{ path: "Kampagnen/SaltMarcher/a.campaign.json", bytes: manifest(a, worldA) }]);
   const source = new CampaignRuntimeSource(storage, digest), service = lifecycle(source);
@@ -135,6 +163,39 @@ test("navigation provider exposes the exact Campaign ports and announces activat
   storage.set([{ path: "Kampagnen/SaltMarcher/a.campaign.json", bytes: manifest(a, worldA, "Geändert", 2) }]);
   assert.equal(changes, 2); assert.equal(provider.currentContext(), null);
   stop(); provider.close(); storage.set([]); assert.equal(changes, 2);
+});
+
+test("navigation provider blocks pending Vault reads unless one exact own save is already prepared", async () => {
+  const foreign = await acknowledgmentFixture(312, "transaction:no-lease", "saved-no-lease");
+  foreign.storage.listener?.({ kind: "modify", phase: "pending", eventId: 1, path: foreign.path });
+  assert.equal(foreign.provider.currentContext(), null);
+
+  const exact = await acknowledgmentFixture(313, "transaction:deferred-exact", "saved-exact");
+  exact.provider.prepareSaveAcknowledgment(exact.prepared);
+  const exactPromise = exact.provider.acknowledgeCommittedSave(exact.committed);
+  exact.storage.files = [{ path: exact.path, bytes: exact.prepared.afterManifestBytes }];
+  exact.storage.listener?.({ kind: "modify", phase: "pending", eventId: 1, path: exact.path });
+  assert.equal(exact.provider.currentContext()?.contextToken, exact.context.contextToken);
+  exact.storage.listener?.({ kind: "modify", phase: "resolved", eventId: 1, path: exact.path,
+    bytes: exact.prepared.afterManifestBytes });
+  assert.equal((await exactPromise).context.contextToken, exact.context.contextToken);
+
+  const wrong = await acknowledgmentFixture(314, "transaction:deferred-wrong", "saved-expected");
+  wrong.provider.prepareSaveAcknowledgment(wrong.prepared);
+  const wrongPromise = wrong.provider.acknowledgeCommittedSave(wrong.committed);
+  wrong.storage.listener?.({ kind: "modify", phase: "pending", eventId: 1, path: wrong.path });
+  assert.equal(wrong.provider.currentContext()?.contextToken, wrong.context.contextToken);
+  wrong.storage.listener?.({ kind: "modify", phase: "resolved", eventId: 1, path: wrong.path, bytes: "wrong" });
+  await assert.rejects(wrongPromise, /fremdes Storageevent/);
+  assert.equal(wrong.provider.currentContext(), null);
+
+  const repeated = await acknowledgmentFixture(315, "transaction:deferred-repeated", "saved-once");
+  repeated.provider.prepareSaveAcknowledgment(repeated.prepared);
+  const repeatedPromise = repeated.provider.acknowledgeCommittedSave(repeated.committed);
+  repeated.storage.listener?.({ kind: "modify", phase: "pending", eventId: 1, path: repeated.path });
+  repeated.storage.listener?.({ kind: "modify", phase: "pending", eventId: 2, path: repeated.path });
+  await assert.rejects(repeatedPromise, /fremdes Storageevent/);
+  assert.equal(repeated.provider.currentContext(), null);
 });
 
 test("navigation provider keeps one mount only for the participant-sealed exact save event", async () => {
