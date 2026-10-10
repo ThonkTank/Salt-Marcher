@@ -144,3 +144,40 @@ Vertragsumbau nicht beauftragt.
    einen PR-#13-Steward gemeldet werden. Integration, Hostmontage und E2E-PASS
    bleiben dessen getrennte Gates.
 
+## PRODUCT-CL-I01-Ergebnis
+
+Produktcommit `5675cbd13be6f0fa096c3651743f1eb40d93f845` setzt genau die
+geplante Sample-Grenze um:
+
+- `DungeonGeometryGesture.sample()` widerruft das vorherige Proposal, bevor es
+  den verzögerten Pointerresolver ausführt. Danach verwendet es unverändert die
+  bestehende Finite-, Basis-, Geometrie-, Closure- und Changeprojektion.
+- Das getrennte öffentliche `rejectSample()` entfällt. Der Dungeon-Pointermove
+  des `AtlasEditor` reicht `unprojectLocal(...)` als Resolver ein; sein Catch
+  leert nur die sichtbare Vorschau und meldet den Fehler.
+- Die fokussierten Regressionen verwenden dieselbe Sample-Grenze für
+  non-finite Werte, Nullsegmente und ungültige Topologie. Ein zusätzlicher
+  Resolverfehler entzieht das alte Proposal; ein danach gültiges Sample
+  derselben aktiven Geste liefert ausschließlich seinen neuen sichtbaren Stand.
+- Der tatsächliche `AtlasEditor.bind()`-Callback-Repro bleibt erhalten.
+  Beginpointer, Snap, Portal-Follow, Kennungen, Markdownclosure, 1,524 Meter pro
+  Feld, terminale Parent-/Binding-/Source-/Graph-/Historybasis und genau eine
+  AtlasHistory-Wirkung bleiben durch die bestehenden positiven und negativen
+  Orakel abgedeckt.
+
+Auf dem sauberen Produktcommit bestanden `npm run check`, acht fokussierte
+Dungeon-/Callbacktests, `npm test` mit 495/495 Fällen, `npm run build` und
+`git diff --check`. Der Produktbuild erzeugte `main.js` SHA-256
+`0b1edc823e08ed627bd0befe23639b855ceacf2bcddaf35a98d40723c5cd5a6c`,
+`styles.css` SHA-256
+`cdf172e7d3c101d5917c16afe487641a19d9d5afe8ad23365b33c958ee1ac321`
+und `manifest.json` SHA-256
+`2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64`.
+Fixturebytes und alle nicht genannten Produktpfade blieben unverändert.
+
+PRODUCT-CL-R01 ist noch offen und muss den Exact-SHA des veröffentlichten
+I01-Kandidaten unabhängig gegen die sieben Orakel prüfen. Es gab keinen GUI-,
+Host- oder physischen Eingabelauf; synthetische Callbacks ersetzen diese
+Abnahmen nicht. Stewardintegration, Mehrowner-E2E und E2E-01-PASS bleiben
+ebenfalls offen.
+

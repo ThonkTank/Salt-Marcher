@@ -490,8 +490,8 @@
     "next": "Kandidaten-SHA veröffentlichen, eng unabhängig reviewen lassen und anschließend nur als Source-Handoff an den einen PR-#13-Steward übergeben; keine eigene Integration."
   },
   "e2e01DungeonGeometryPlan": {
-    "run": "E2E-01-DUNGEON-GEOMETRY-PRODUCT-CL-P01",
-    "state": "code_r03_passed_product_cleanup_plan_active",
+    "run": "E2E-01-DUNGEON-GEOMETRY-PRODUCT-CL-I01",
+    "state": "product_cleanup_implementation_candidate_pending_independent_review",
     "owner": "Dungeon-Strang (Thread Obsidian Dungeon Repo ansehen)",
     "branch": "dungeon/e2e01-geometry-i01-20261010",
     "baseCommit": "58c24b161a967017112d8bfc68471b19ad70e72b",
@@ -610,19 +610,24 @@
     ],
     "verification": "npm run check PASS; npm test 495/495 PASS; npm run build PASS; git diff --check PASS. Der neue Corefall verwendet die tatsächlichen AtlasEditor.bind()-Callbacks mit synthetischem non-finite Pointer und verändert keine Fixturebytes.",
     "externalEvidence": "Code-R02-Beleg /home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/dungeon-geometry-code-r02 auf cfe6e0e; N02 ist ausschließlich automatisiert geprüft. Keine neue GUI-, Host- oder physische Eingabeevidenz.",
-    "notVerified": "Produkt-Cleanup-I/R, Hex-Stewardintegration, tatsächlicher Hostlauf, physische Eingabe, vollständige Mehrownerkomposition und E2E-01-PASS bleiben offen.",
-    "next": "Den getrennten Produkt-Cleanup-Plan als Exact-SHA veröffentlichen; danach ausschließlich PRODUCT-CL-I01 und einen unabhängigen PRODUCT-CL-R01 durchführen. Vor deren PASS kein Owner-SHA-Handoff."
+    "notVerified": "Unabhängiger Produkt-Cleanup-R01, Hex-Stewardintegration, tatsächlicher Hostlauf, physische Eingabe, vollständige Mehrownerkomposition und E2E-01-PASS bleiben offen.",
+    "next": "Den PRODUCT-CL-I01-Exact-SHA veröffentlichen und ausschließlich das Cleanupdelta unabhängig durch Hex als PRODUCT-CL-R01 prüfen lassen. Vor dessen PASS kein Owner-SHA-Handoff."
   },
   "e2e01DungeonGeometryProductCleanup": {
-    "run": "E2E-01-DUNGEON-GEOMETRY-PRODUCT-CL-P01",
-    "state": "cleanup_plan_candidate_pending_publication",
+    "run": "E2E-01-DUNGEON-GEOMETRY-PRODUCT-CL-I01",
+    "state": "cleanup_implementation_candidate_pending_independent_review",
     "owner": "Dungeon-Strang (Thread Obsidian Dungeon Repo ansehen)",
     "branch": "dungeon/e2e01-geometry-i01-20261010",
     "baseCommit": "ea9ecd3f5c7e284b86c554d7e4a9cb99672d73c2",
+    "planCommit": "46e31ed120fd22dc608338bf7e5b0d594f7ca39f",
+    "implementationBase": "46e31ed120fd22dc608338bf7e5b0d594f7ca39f",
+    "productCommit": "5675cbd13be6f0fa096c3651743f1eb40d93f845",
     "synchronizedShared": "38f333d4eda6cd2203443efd35b7140e7bf72e07",
     "plan": "ROADMAP-E2E01-DUNGEON-GEOMETRY-PRODUCT-CLEANUP-PLAN.md",
     "coordination": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/8#issuecomment-6093263521",
     "gateStart": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6093263663",
+    "implementationCoordination": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/8#issuecomment-6093299522",
+    "implementationGateStart": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6093299667",
     "scope": "Planung einer einzigen fail-closed Sample-Grenze in DungeonGeometryGesture: altes Proposal vor der verzögerten Koordinatenauflösung widerrufen, bestehende Prüfung und Projektion wiederverwenden, getrenntes öffentliches rejectSample-Protokoll entfernen.",
     "plannedFiles": [
       "src/features/dungeon/geometry-change.ts",
@@ -632,10 +637,17 @@
       "checkpoint.json"
     ],
     "protection": "Keine zweite Kamera, Geometrie, Source, Session, History oder Persistenz; PR #21, PR-#13-Fixturebytes, fremde Checkpoint-Wurzeln und vorhandene Belege bleiben unverändert.",
-    "verification": "Für P01: JSON-Parse, relative Links, git diff --check und Fremdwurzeldiff. Keine Produktbasisprüfung oder GUI, weil dieser Lauf ausschließlich plant.",
-    "externalEvidence": "Code-R03 auf ea9ecd3: /home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/dungeon-geometry-code-r03/; kein neuer externer Lauf in P01.",
-    "notVerified": "Cleanup-Implementierung, unabhängiger Cleanup-Code-Review, GUI, Host, physische Eingabe, Stewardintegration und E2E-01-PASS bleiben offen.",
-    "next": "P01-Kandidaten-SHA veröffentlichen; anschließend getrennten PRODUCT-CL-I01 umsetzen und dessen Exact-SHA unabhängig als PRODUCT-CL-R01 prüfen lassen."
+    "implementedFiles": [
+      "src/features/dungeon/geometry-change.ts",
+      "src/features/atlas/atlas-editor.ts",
+      "tests/core/atlas-spatial.test.ts",
+      "ROADMAP-E2E01-DUNGEON-GEOMETRY-PRODUCT-CLEANUP-PLAN.md",
+      "checkpoint.json"
+    ],
+    "verification": "Auf sauberem Produktcommit: npm run check PASS; acht fokussierte Dungeon-/AtlasEditor.bind()-Callbacktests PASS; npm test 495/495 PASS; npm run build PASS; git diff --check PASS. main.js SHA-256 0b1edc823e08ed627bd0befe23639b855ceacf2bcddaf35a98d40723c5cd5a6c, styles.css cdf172e7d3c101d5917c16afe487641a19d9d5afe8ad23365b33c958ee1ac321, manifest.json 2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64.",
+    "externalEvidence": "Kein neuer externer Lauf. Vorheriger Code-R03-Beleg auf ea9ecd3 bleibt unter /home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/dungeon-geometry-code-r03/ erhalten; PRODUCT-CL-I01 ist ausschließlich automatisiert geprüft.",
+    "notVerified": "Unabhängiger PRODUCT-CL-R01, GUI, Host, physische Eingabe, Stewardintegration und E2E-01-PASS bleiben offen.",
+    "next": "I01-Kandidaten-SHA normal veröffentlichen und ausschließlich das Cleanupdelta unabhängig durch Hex als PRODUCT-CL-R01 prüfen lassen; vor PASS kein Self-Merge oder Steward-Handoff."
   },
   "e2e01DungeonGeometryCleanup": {
     "run": "E2E-01-DUNGEON-GEOMETRY-CL-I01",
