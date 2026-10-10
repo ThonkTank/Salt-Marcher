@@ -228,140 +228,148 @@
     "architecture": "ARCHITECTURE.md#geplante-katalog--und-encounter-erweiterung",
     "acceptance": "acceptance.json.saltMarcherCatalogEncounter",
     "currentRun": {
-      "id": "CE-02-I02-S01-W25",
+      "id": "CE-02-I02-S01-W26",
       "kind": "source_inventory_schema_transcript_continuation",
       "state": "source_checked_independent_review_pending_incomplete",
       "plan": "ROADMAP-SALTMARCHER-CE02-I02-PLAN.md",
-      "focus": "Complete remaining B-section, A–Z18–32, Bead of Force through Broom of Flying",
-      "result": "Complete remaining B-section: fifteen A–Z headings18–32 on physical/printed pages211–213, every header/prose/bullet/recharge/conditional rule, full cross-page Berserker curse, five physical Giant-Strength table rows with ordinal-bound rarity choices and complete six-varieties prose. Exact whole-heading XML and genuine PDF matching pass; no invented costs, conversions, variants, merges or product activation.",
+      "focus": "Complete coherent C-section, A–Z33–47, Candle of Invocation through Cubic Gate",
+      "result": "Complete C-section A–Z33–47 on physical/printed pages213–215: fifteen full headers/prose/conditional rules and page continuations; nine Candle alignment rows, four Carpet size/capacity/speed rows, four Crystal Ball variant-specific rarity choices, six Cube faces and five charge-loss rows. Tables remain also in original prose order; whole-heading PDF/XML/schema/identity gates pass. No invented occurrences, merges, costs or conversions. All complete flags false, no Item product activation.",
       "verification": {
-        "sourceRevision": "93b670aca7927e1915f4c299eb131b4faa8b9fe3+working-source-changes",
+        "sourceRevision": "113e37f21670abb42c19b62f4f4480b511e65544+working-source-changes",
         "sourceHashes": {
           "attribution": "f66d55442488e79895501fc0fcd7b2bb62deb2bd6e589e0fffb5f5932ed5b767",
-          "inventory": "a424c2c6e9c2e39d8692267d4438bba5e5a99b1d437242c0e59f6ae040bc5f97",
-          "manifest": "d972a3b5b6c1eb5a19e596940a950715921107f9cf7bf215c693798f9ef2228b",
+          "inventory": "cc313d24d5f859e46697e0da54c086ea688858cf5e859a738123b429ee762432",
+          "manifest": "d0b3c64f5e3eeb921704ba34f23769ae1a279963dcb1815eaa1f80d7f768f779",
           "schema": "f34513e5c8921edecdfc270889a1948330837470fe108fcda92d2fea7d75f50f",
-          "transcript": "d0baf90057e8189ab6b284bc880791b7759ba1e606ff5af190094c935687392d"
+          "transcript": "b27c75e17e4798a354ddd494cf8045c21b3d5a2f458a4407bc9a33334e3307df"
         },
-        "occurrences": 252,
-        "records": 251,
-        "transcriptFacts": 848,
-        "magicItemAzBSection": {
+        "occurrences": 267,
+        "records": 266,
+        "transcriptFacts": 954,
+        "magicItemAzCSection": {
           "ordinals": [
-            18,
-            19,
-            20,
-            21,
-            22,
-            23,
-            24,
-            25,
-            26,
-            27,
-            28,
-            29,
-            30,
-            31,
-            32
+            33,
+            34,
+            35,
+            36,
+            37,
+            38,
+            39,
+            40,
+            41,
+            42,
+            43,
+            44,
+            45,
+            46,
+            47
           ],
           "records": 15,
           "pages": [
-            211,
-            212,
-            213
+            213,
+            214,
+            215
           ],
-          "beltTableRows": 5,
-          "beltRarityChoices": 5,
-          "beltProseVarieties": 6
+          "candleAlignmentRows": 9,
+          "carpetRows": 4,
+          "crystalBallChoices": 4,
+          "cubeFaceRows": 6,
+          "cubeChargeLossRows": 5
         },
         "pdf": {
           "records": 15,
-          "beltTableRows": 5,
-          "beltProseVarieties": 6,
+          "candleAlignmentRows": 9,
+          "carpetRows": 4,
+          "crystalBallChoices": 4,
+          "cubeFaceRows": 6,
+          "cubeChargeLossRows": 5,
           "derivedHeadingCount": 239,
-          "scope": "complete-heading-bounded-stream-with-combined-variant-row-and-cross-page-curse"
-        },
-        "tests": {
-          "command": "SRD51_SOURCE_PDF=/tmp/SRD_CC_v5.1.pdf npm test",
-          "passed": 765,
-          "failed": 0,
-          "skipped": 0,
-          "officialPdfEnabled": true,
-          "integratedShared": "93b670aca7927e1915f4c299eb131b4faa8b9fe3"
+          "scope": "complete-heading-stream-with-interleaved-tables-variant-prose-and-page-continuations"
         },
         "focusedTests": {
-          "command": "SRD51_SOURCE_PDF=/tmp/SRD_CC_v5.1.pdf node --test --test-concurrency=1 tests/items-srd51-source.test.mjs tests/items-srd51-bags.test.mjs tests/items-srd51-b-section.test.mjs",
-          "passed": 95,
+          "command": "SRD51_SOURCE_PDF=/tmp/SRD_CC_v5.1.pdf node --test --test-concurrency=1 tests/items-srd51-source.test.mjs tests/items-srd51-bags.test.mjs tests/items-srd51-b-section.test.mjs tests/items-srd51-c-section.test.mjs",
+          "passed": 130,
           "failed": 0,
           "skipped": 0
         },
+        "repositoryStructure": "passed",
         "repositoryTests": {
           "passed": 25,
           "failed": 0,
           "skipped": 0
         },
-        "typecheck": "passed on integrated Shared93b670a plus W25 source changes",
-        "repositoryStructure": "passed",
+        "basisChecks": "Offline source/tool package: source+schema+real-PDF+focused regression+repo/diff/retention checks. Exact-SHA CI supplies full type/test/build after publication; no local repeated unrelated full-suite/host requirement from old conversation cycles.",
         "toolchain": {
-          "node": "official Node.js22.22.2",
+          "node": "official Node22.22.2",
           "poppler": "pdftohtml/pdftotext25.03.0",
           "pdfPath": "/tmp/SRD_CC_v5.1.pdf",
           "pdfSha256": "2504d2a0abb0a4d491a939be4f17910a2dde0312570ab8d208080225ccf0a1f0",
-          "xmlPath": "tests/fixtures/items-srd51-b-section-poppler-25.03.xml",
-          "xmlSha256": "0313b37e900151b1f7e8f099303f64a3a0f198c6501bb4ff5effdcb620d56df2",
-          "xmlBytes": 42516
+          "xmlPath": "tests/fixtures/items-srd51-c-section-poppler-25.03.xml",
+          "xmlSha256": "8934d79d1b7c9abaabb9376eb58a026d6843ed6b0cec3a7660bd16ec23cc9aaa",
+          "xmlBytes": 45910
         }
       },
       "dependencies": {
-        "w24Integration": {
+        "w25Integration": {
           "state": "completed",
-          "sharedCommit": "843562ac256eb293f1b8c95f10077a9a7a7c1a1b",
-          "reviewedHead": "ad87fa65064e0b1f1695dd9ec4c716328cbe1e5d",
-          "sourceReview": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/56#pullrequestreview-5480292230",
-          "compositionReview": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/56#issuecomment-6100998871",
-          "receipt": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/56#issuecomment-6101011261",
-          "limits": "Independent Stadt/Dungeon evidence, not repeated or self-ratified; no complete-S01/product/host gate"
+          "sharedCommit": "ebb480eaac0c11640b843b4fa4297f541951d4ad",
+          "candidateCommit": "8772d950301b899c22f8bc4588e35bd2a5fe6dde",
+          "receipt": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/64#issuecomment-6101348349",
+          "sourceReview": {
+            "state": "PASS",
+            "reviewedCommit": "8772d950301b899c22f8bc4588e35bd2a5fe6dde",
+            "issue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/64#pullrequestreview-5480446444",
+            "scope": "Independent Chronik full15-item visual/PDF review, actual Poppler25.07 and765/765PDF suite; not author-owned or a fullS01/product/host gate"
+          }
         }
       },
       "review": {
         "state": "pending",
-        "scope": "Independent full fifteen-item official PDF/source/variant/merge/page review on published exact SHA"
+        "scope": "Independent complete15-item official PDF/variant/table/page/merge/identity source review"
       },
-      "limits": "Partial full-S01 corpus: 206 A–Z headings plus Orb, all362 magic-item helper dispositions, remaining goldens and independent complete S01-R01 remain open. W25 independent source review/integration pending. complete:false, Item artifact/provider/UI/I01 blocked; no installation, GUI, physical, E2E or Encounter runtime approval.",
+      "limits": "Partial fullS01:191 A–Z headings plus Orb, all362 magic helper dispositions, remaining goldens and independent complete S01-R01 open. Independent W26 source review/regular integration pending; Item artifact/provider/UI/I01 blocked, no installation/GUI/physical/E2E/Encounter runtime approval. D&D2014 only.",
       "documentation": {
         "status": "partial",
-        "branch": "catalog/ce02-s01-w25-b-section",
-        "baseCommit": "843562ac256eb293f1b8c95f10077a9a7a7c1a1b",
-        "integratedShared": "93b670aca7927e1915f4c299eb131b4faa8b9fe3",
-        "issue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/58#issuecomment-6101024786",
-        "commit": "Published exact SHA and checks in linked candidate PR/Issue58 closing receipt; no product approval",
+        "branch": "catalog/ce02-s01-w26-c-section",
+        "baseCommit": "113e37f21670abb42c19b62f4f4480b511e65544",
+        "issue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/58#issuecomment-6101360659",
+        "commit": "Published exact SHA/PR/CI and final checks in canonical Issue58 closing receipt",
         "changedFiles": [
           "src/features/catalog/data/items-srd51-inventory.json",
           "src/features/catalog/data/items-srd51-transcript.json",
           "src/features/catalog/data/items-srd51-source-manifest.json",
-          "src/features/catalog/data/items-srd51-schema-v1.json",
-          "tools/items-srd51-b-section.mjs",
+          "tools/items-srd51-c-section.mjs",
           "tools/items-srd51-source-verify.mjs",
-          "tests/items-srd51-b-section.test.mjs",
+          "tests/items-srd51-c-section.test.mjs",
           "tests/items-srd51-source.test.mjs",
-          "tests/fixtures/items-srd51-b-section-poppler-25.03.xml",
-          "tests/fixtures/items-srd51-b-section-poppler-25.03-receipt.json",
+          "tests/items-srd51-b-section.test.mjs",
+          "tests/fixtures/items-srd51-c-section-poppler-25.03.xml",
+          "tests/fixtures/items-srd51-c-section-poppler-25.03-receipt.json",
           "package.json",
           "ROADMAP-SALTMARCHER-CE02-I02-PLAN.md",
           "checkpoint.json",
           "acceptance.json"
         ],
+        "roleContract": {
+          "role": "migration",
+          "defaultBranch": "active/installed-phase1",
+          "loadedCommit": "113e37f21670abb42c19b62f4f4480b511e65544",
+          "documents": [
+            "AGENTS.md",
+            "docs/AGENT-ROLES.md"
+          ]
+        },
         "externalEvidence": {
-          "path": "Committed original XML/receipt; /tmp/SRD_CC_v5.1.pdf; /tmp/w25-{pdf.json,focused.log,tests.log,check.log,repo-tests.log}; final integrated checks and exact-SHA CI receipt in PR/Issue58; /tmp/w25-integrated-{tests,check}.log",
-          "limits": "Raw cloud logs/PDF are ephemeral /tmp; durable three-page original XML/licensed receipt committed. Actual local Poppler25.03; no claim of25.07/26.01/Obsidian install, GUI, physical or E2E observation."
+          "path": "Committed original XML/receipt; /tmp/SRD_CC_v5.1.pdf; /tmp/w26-{pdf.json,focused-final.log,repo-tests.log}; published CI/build proof in PR/Issue58",
+          "limits": "Cloud raw logs/PDF in ephemeral /tmp; committed original XML is durable and independently accessible. Only local Poppler25.03; no claim of25.07/Obsidian install/GUI/physical/E2E."
         },
         "notProven": [
-          "independent W25 source review and integration",
-          "206 A–Z headings / Orb /362 magic helper dispositions / fullS01-R01",
-          "Item product/provider/UI/I01 and complete runtime corpus",
-          "installed/GUI/physical/E2E/Encounter runtime"
+          "independent W26 source review and integration",
+          "191 A–Z headings / Orb /362 magic helper dispositions /fullS01-R01",
+          "Item artifact/provider/UI/I01 and complete runtime corpus",
+          "installation/GUI/physical/E2E/Encounter runtime"
         ],
-        "next": "Independent complete W25 source review; continue coherent C-section from Candle of Invocation within existing full-corpus ownership, no new per-item task"
+        "next": "Independent complete W26 source review as support in Issue58; producer continues coherent next source section from Dagger of Venom in existing corpus ownership"
       }
     },
     "implementationRun": {
@@ -565,7 +573,7 @@
       },
       "limits": "Build-contract repair only. No catalog data/provider/UI change and no CE, Atlas, host, physical-input or overall approval."
     },
-    "verified": "CE-00 and CE-01 implementation/review/repair cycles passed their scoped gates. CE-01-H01 passed its independently reviewed automated scope. CE-02-I01 product commit 7469e64202e730175ee138136a69d82ad4f28ea6 and metadata repair candidate 4d239004c4f000b2af6f66122a05135b0c353ffb passed independent review. CE-02-I02-S01 has a checked fail-closed source package with all 219 equipment occurrences and transcripts plus explicit reconciliation of all 237 helper equipment records. Potion of healing retains its earliest equipment identity and merges A–Z heading 142. A–Z headings 1–32 now preserve exact identities, headers, descriptions, rarity and attunement facts across physical pages 207–213; Apparatus of the Crab preserves its full ten-row Up/Down lever table, Armor +1/+2/+3 preserves all three ordered rarity variants and Armor of Invulnerability preserves its fixed legendary rarity and required attunement. The Armor/Arrow group preserves the full vulnerability curse and all ten resistance-table choices with whole-block PDF verification. The Bags group preserves all twelve Beans effects and three color-bound d8 tables across source page boundaries. Independent W23-N01 P1 review passed on exact 8dfa06a with real Poppler 25.07 evidence. The remaining B-section preserves all fifteen entries, complete Giant-Strength table/rarity choices and cross-page Berserker curse. W24 was independently reviewed and regularly integrated on Shared843562a. The remaining 206 A–Z headings, Orb of Dragonkind, helper reconciliation, goldens, W25/S01 reviews and Item product feature remain open. Physical input, screenreader and other-platform acceptance remain open.",
+    "verified": "CE-00 and CE-01 implementation/review/repair cycles passed their scoped gates. CE-01-H01 passed its independently reviewed automated scope. CE-02-I01 product commit 7469e64202e730175ee138136a69d82ad4f28ea6 and metadata repair candidate 4d239004c4f000b2af6f66122a05135b0c353ffb passed independent review. CE-02-I02-S01 has a checked fail-closed source package with all 219 equipment occurrences and transcripts plus explicit reconciliation of all 237 helper equipment records. Potion of healing retains its earliest equipment identity and merges A–Z heading 142. A–Z headings 1–47 now preserve exact identities, headers, descriptions, rarity and attunement facts across physical pages 207–215; Apparatus of the Crab preserves its full ten-row Up/Down lever table, Armor +1/+2/+3 preserves all three ordered rarity variants and Armor of Invulnerability preserves its fixed legendary rarity and required attunement. The Armor/Arrow group preserves the full vulnerability curse and all ten resistance-table choices with whole-block PDF verification. The Bags group preserves all twelve Beans effects and three color-bound d8 tables across source page boundaries. Independent W23-N01 P1 review passed on exact 8dfa06a with real Poppler 25.07 evidence. The remaining B-section preserves all fifteen entries, complete Giant-Strength table/rarity choices and cross-page Berserker curse. W24 was independently reviewed and regularly integrated on Shared843562a. W25 was independently reviewed by Chronik on8772d95 and regularly integrated by Stadt onShared ebb480e. The complete C-section preserves all fifteen records, twenty-four table rows and four Crystal Ball rarity choices with whole-block PDF matching. The remaining 191 A–Z headings, Orb of Dragonkind, helper reconciliation, goldens, W26/S01 reviews and Item product feature remain open. Physical input, screenreader and other-platform acceptance remain open.",
     "open": [
       "CE-01 physical keyboard/mouse, screenreader and other-platform acceptance; CE-02-I02 through CE-07 runs",
       "CE-02-I02-S01 complete official inventory, transcript, closed subcategory enum, full PDF matching, complete golden cases and independent S01-R01 review",
@@ -576,7 +584,7 @@
       "id": "CE-02-I02-S01-CONTINUE",
       "plan": "ROADMAP-SALTMARCHER-CE02-I02-PLAN.md",
       "kind": "coherent_source_continuation",
-      "focus": "Independent W25 source review as support in Issue58; producer continues complete C-section from Candle of Invocation, keeping complete:false and fullS01/product gates closed"
+      "focus": "Review W26 complete C-section as free support; producer continues coherent next section from Dagger of Venom, no product activation before fullS01-R01"
     }
   },
   "repositoryWorkflow": {
