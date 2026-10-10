@@ -635,6 +635,16 @@ test("campaign manifest participant admits only an explicitly owner-authorized L
   ] }));
   const closed = new CampaignRuntimeManifestSaveParticipant(campaignPath, digest, authorities());
   assert.throws(() => closed.prepare(input), /Recordclosure|Erweiterungsautorität/);
+  const mutatingAuthorities = extensionAuthorities.map((authority) => authority.ownerId !== "atlas" ? authority : {
+      ...authority,
+      verifyExtension: ({ afterFiles: files }: Parameters<
+        NonNullable<CampaignRuntimeOwnerSaveAuthority["verifyExtension"]>
+      >[0]) => (files as unknown[]).push({}),
+    }),
+    mutating = new CampaignRuntimeManifestSaveParticipant(campaignPath, digest, mutatingAuthorities),
+    fileCount = afterFiles.length;
+  assert.throws(() => mutating.prepare(input), TypeError);
+  assert.equal(afterFiles.length, fileCount);
   assert.throws(() => participant.prepare({ ...input, afterFiles: afterFiles.map((file) =>
     file.path === locationPath ? { ...file, kind: "city" as const } : file) }), /Locationdatei/);
   assert.throws(() => participant.validateRecovery({ writes: [

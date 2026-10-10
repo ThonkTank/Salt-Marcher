@@ -25,6 +25,7 @@ export interface CampaignManifestNativeWrite {
 }
 export interface CampaignManifestSaveInput {
   readonly beforeManifestBytes: string;
+  /** Complete native guard set for the requested post-save Atlas inventory. */
   readonly nativeWrites: readonly CampaignManifestNativeWrite[];
   /** Full projections supplied by their actual owners, never inferred from file bytes. */
   readonly beforeOwners: readonly CampaignDomainOwnerProjectionV1[];
@@ -52,6 +53,7 @@ export interface CampaignRuntimeOwnerSaveAuthority {
   readonly ownerId: string;
   /** Deterministic owner adapter; it must bind every record proof to these exact native guards. */
   verify(input: {
+    readonly mode: "prepare" | "recovery";
     readonly beforeOwner: CampaignDomainOwnerProjectionV1;
     readonly afterOwner: CampaignDomainOwnerProjectionV1;
     readonly beforeFiles: CampaignRuntimeManifestV1["atlas"]["files"];
@@ -62,6 +64,7 @@ export interface CampaignRuntimeOwnerSaveAuthority {
   }): void;
   /** Required in addition to verify() when this owner authorizes new records or changed references. */
   verifyExtension?(input: {
+    readonly mode: "prepare" | "recovery";
     readonly beforeOwner: CampaignDomainOwnerProjectionV1;
     readonly afterOwner: CampaignDomainOwnerProjectionV1;
     readonly beforeFiles: CampaignRuntimeManifestV1["atlas"]["files"];
@@ -74,6 +77,9 @@ export interface CampaignRuntimeOwnerSaveAuthority {
 
 function exact(value: unknown): string {
   return JSON.stringify(value);
+}
+function snapshot<T>(value: T): T {
+  return immutable(JSON.parse(JSON.stringify(value)) as T);
 }
 function revision(
   label: string,
@@ -157,6 +163,7 @@ export class CampaignRuntimeManifestSaveParticipant implements CampaignRuntimeSa
   }
 
   private authorizedOwners(
+    mode: "prepare" | "recovery",
     before: CampaignRuntimeManifestV1,
     afterFiles: CampaignRuntimeManifestV1["atlas"]["files"],
     afterRecords: CampaignRuntimeManifestV1["atlas"]["records"],
@@ -219,7 +226,8 @@ export class CampaignRuntimeManifestSaveParticipant implements CampaignRuntimeSa
           );
         changedOwnerIds.add(oldOwner.ownerId);
       }
-      const evidence = {
+      const evidence = immutable({
+        mode,
         beforeOwner: oldOwner,
         afterOwner: next,
         beforeFiles: before.atlas.files,
@@ -227,7 +235,7 @@ export class CampaignRuntimeManifestSaveParticipant implements CampaignRuntimeSa
         beforeRecords: before.atlas.records,
         afterRecords,
         nativeWrites,
-      };
+      });
       authority.verify(evidence);
       if (closureChanged) {
         if (!authority.verifyExtension)
@@ -290,19 +298,21 @@ export class CampaignRuntimeManifestSaveParticipant implements CampaignRuntimeSa
       throw new Error(
         "Before-Ownerprojektion passt nicht zum Campaignmanifest.",
       );
-    if (!Array.isArray(input.nativeWrites) || !Array.isArray(input.afterOwners))
+    if (!Array.isArray(input.nativeWrites) || !Array.isArray(input.afterOwners) ||
+        input.afterFiles !== undefined && !Array.isArray(input.afterFiles) ||
+        input.afterRecords !== undefined && !Array.isArray(input.afterRecords))
       throw new Error("Unvollständiger Campaign-Save-Vertrag.");
-    const requestedFiles = input.afterFiles ?? before.atlas.files,
-      requestedRecords = input.afterRecords ?? before.atlas.records,
+    const nativeWrites = snapshot(input.nativeWrites),
+      afterOwners = snapshot(input.afterOwners),
+      requestedFiles = snapshot(input.afterFiles ?? before.atlas.files),
+      requestedRecords = snapshot(input.afterRecords ?? before.atlas.records),
       expectedPaths = new Set(before.atlas.files.map((file) => file.path)),
       requestedByPath = new Map<string, CampaignRuntimeManifestV1["atlas"]["files"][number]>(),
       byPath = new Map<string, CampaignManifestNativeWrite>();
-    if (!Array.isArray(requestedFiles) || !Array.isArray(requestedRecords))
-      throw new Error("Post-Save-Atlasclosure ist unvollständig.");
     for (const file of requestedFiles) requestedByPath.set(file.path, file);
     if (requestedByPath.size !== requestedFiles.length)
       throw new Error("Post-Save-Atlasbestand ist doppelt.");
-    for (const write of input.nativeWrites) {
+    for (const write of nativeWrites) {
       safePath(write.path);
       if (!requestedByPath.has(write.path) || byPath.has(write.path))
         throw new Error("Fremdes oder doppeltes natives Speicherziel.");
@@ -351,11 +361,12 @@ export class CampaignRuntimeManifestSaveParticipant implements CampaignRuntimeSa
     if (new Set(requestedRecords.map((record) => record.id)).size !== requestedRecords.length)
       throw new Error("Post-Save-Atlasrecords sind doppelt.");
     const owners = this.authorizedOwners(
+      "prepare",
       before,
       files,
       requestedRecords,
-      input.afterOwners,
-      input.nativeWrites,
+      afterOwners,
+      nativeWrites,
       changedFiles,
     );
     if (!changedFiles.size) {
@@ -527,9 +538,9 @@ export class CampaignRuntimeManifestSaveParticipant implements CampaignRuntimeSa
         (file) => file.kind === "world" && file.id === before.atlas.worldId,
       ),
       draftPath = worldFile ? `${worldFile.path}.draft` : "",
-      nativeWrites = journal.writes.filter((write) =>
+      nativeWrites = snapshot(journal.writes.filter((write) =>
         filePaths.has(write.path),
-      ),
+      )),
       changedFiles = new Set(
         after.atlas.files
           .filter((file) => beforeByPath.get(file.path)?.savedDigest !== file.savedDigest)
@@ -566,6 +577,7 @@ export class CampaignRuntimeManifestSaveParticipant implements CampaignRuntimeSa
         );
     }
     const owners = this.authorizedOwners(
+      "recovery",
       before,
       after.atlas.files,
       after.atlas.records,
