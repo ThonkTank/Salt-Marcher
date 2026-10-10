@@ -1,6 +1,6 @@
 # SaltMarcher-Katalog- und Encounter-Migration
 
-Stand: 9. Oktober 2026. Dieser Plan überführt die Katalog- und Encounter-
+Stand: 10. Oktober 2026. Dieser Plan überführt die Katalog- und Encounter-
 Funktionen aus `ThonkTank/Salt-Marcher` in das Obsidian-Plugin. SaltMarcher ist
 die Implementierungs- und Verhaltensquelle; die vergleichbaren aktuellen
 D&D-Beyond-Abläufe bilden die Mindestabnahme. Der bestehende Dungeon-, Hex- und
@@ -33,6 +33,8 @@ SaltMarcher-Quellen:
 - `docs/creatures/requirements/requirements-creatures-catalog.md`
 - `docs/creatures/requirements/requirements-creatures-details.md`
 - `docs/encounter/requirements/requirements-encounter.md`
+- `docs/encounter/requirements/requirements-encounter-generation.md`
+- `docs/campaign/requirements/requirements-campaign-management.md`
 - `docs/encounter/requirements/requirements-encounter-state-tab.md`
 - `src/core/creatures/catalog.ts`
 - `src/core/creatures/srd-5.1.generated.json`
@@ -105,6 +107,25 @@ Offizielle Produktreferenzen für die Mindestabnahme:
   nach DMG 2014. Es gibt keinen auswählbaren Regelmodus.
 - Plan anlegen, automatisch speichern, laden, duplizieren, neu starten, suchen,
   sortieren und löschen; Name, Kurzfassung, Beschreibung und Notizen erhalten.
+- Generatorvorgaben bis zum Nutzerweg liefern: Einstellungen öffnen → geschütztes
+  Systempreset kopieren → Rollen-/CR-Matrix, gültige Kombinationen, Mengenbereiche,
+  Difficultygewichte und Mobschwelle bearbeiten → speichern → ausdrücklich einer
+  Campaign zuweisen → Scene-/Sessiongenerierung konsumieren → frisch öffnen.
+  Kopieren/Speichern weist nichts zu; Löschen eines Custompresets führt seine
+  Campaigns auf den Systemfallback. Kein Regelversionswähler. Tastatur/Painting,
+  Dirty-Wechsel, 200 %, stale Save mit erhaltenem Draft/Load-or-Copy und unbekannter
+  Commandausgang über Receipt im selben Ergebnis prüfen. Installation besitzt
+  Registry, Campaign nur Zuweisung; produktive Schreib-/Recoveryautorität mit
+  Campaign/Data (#10) bestätigen, keine zweite Campaignregistry.
+- Scene und Session konsumieren einen gemeinsamen Compositionselector und dieselbe
+  kanonische Presetrevision/Confighash-Provenienz. Kandidaten vor Ranking gegen
+  Rollen/Mengen/Kombinationen/Stock/Statblockkapazität prüfen; Domainranking geht vor
+  seeded Entropie. Scene-„Auffüllen“ erhält vorhandene Mitglieder als additive Basis;
+  fehlgeschlagene konkrete Materialisierung schwächt keinen gewählten CR-Block ab.
+  Gleiche verfügbare Inputs ergeben gleiche abstrakte Blocks; erst der Encounterowner
+  löst konkrete Creatures auf. Sourceartefakt/Gültigkeit, Scene-/Sessionparität und
+  getrenntes <100-ms-p95-Selectorprofil nach Encounter Generation qualifizieren.
+  Keine Übernahme der alten Electronmodal-/Schemaarchitektur durch diesen Lieferweg.
 
 ### CE-04 – Initiative und fortsetzbarer Kampf
 
@@ -114,6 +135,13 @@ Offizielle Produktreferenzen für die Mindestabnahme:
 - Aktuelle/maximale/temporäre HP, Max-HP-Override, Schaden, Heilung, AC,
   Zustände, Zustandsimmunitäts-Hinweis und Bloodied/Dead-Ableitung.
 - Jede Mutation wird atomar gespeichert; Neustart setzt denselben Stand fort.
+- Effektives Preset/Revision/Hash und Mobschwelle beim Prepare festhalten. Null
+  liefert individuelle Sources, die bestätigte Schwelle bündelt lebende Mengen.
+  Explizite Sourceidentität/Partition speichern; Mobverstärkung bleibt Mob,
+  vorhandene Individuals bleiben individuell. Erst ohne überlebende Source neu
+  partitionieren. Schwellenwechsel, Verstärkung, Entfernen und Neustart erhalten
+  Initiative-/HP-/Partitionwahrheit; keine Ableitung aus Namen oder Row-ID-Parsing.
+  Quelle: Encounter Generation „Combat Consumption“, #9/#6, SMR-AC-06.
 
 ### CE-05 – Statblock-Aktionen und Live-Anpassung
 
@@ -135,8 +163,9 @@ Offizielle Produktreferenzen für die Mindestabnahme:
 
 - Alle Abnahmefälle auf frischem Obsidian-Prozess, Reload und beschädigten
   Fixtures prüfen; 900×650 und 1150×700 ohne horizontales Hauptscrollen.
-- Eigener Reviewlauf, erforderliche Nachbesserungen mit erneutem Review, danach
-  separater Aufräumplan, Umsetzung und Review.
+- Erforderlichen unabhängigen Review, gezielte Nachbesserung und Bereinigung mit
+  dem jeweiligen nutzbaren CE-Ergebnis bündeln; keine allgemeine zusätzliche
+  Aufräum-P/I/R-Folge. Fehlende Fach-/Hostabnahmen bleiben explizit offen.
 
 ## Mindestabnahme gegenüber D&D Beyond
 
@@ -166,20 +195,23 @@ Offizielle Produktreferenzen für die Mindestabnahme:
 
 - Der gemeinsame Branch bleibt `active/installed-phase1`; tatsächlichen
   Upstream vor jedem Paket und direkt vor jedem Push erneut bestimmen.
-- Katalogschema/-daten, Encounter-Domäne/-speicher, UI und Hostabnahme werden
-  als getrennte Pakete mit expliziten Schnittstellen vergeben. Keine zwei
-  Kollegen ändern gleichzeitig dieselbe Besitzdatei.
+- Paketowner verfolgt den Nutzerweg einschließlich benötigter Schema-/Daten-/UI-/
+  Hostbeiträge; Fachbesitz und nötige Risikogrenzen bleiben erhalten. Technische
+  Schichten sind keine automatische Paketteilung. Keine zwei Kollegen ändern
+  gleichzeitig dieselbe Besitzdatei.
 - Nutzerpräzisierung vom 9. Oktober 2026: Die Testinstanzbegrenzung gilt pro
   Gerät. Kollegen auf unterschiedlichen Geräten dürfen parallel testen. Auf
   jedem einzelnen Gerät läuft höchstens eine grafische Host-/Originalinstanz.
 - Fremde Änderungen, Kennungen und Belege bleiben erhalten. Konflikte werden
   regulär integriert; kein Force-Push und keine veröffentlichte Historie
   umschreiben.
-- Jedes Plan-, Umsetzungs-, Review-, Nachbesserungs- und Aufräumpaket wird
-  getrennt geprüft, committed und gepusht. Ein grüner Basistest ersetzt keine
-  Fach-, Host- oder Bedienabnahme.
+- Umsetzung, passende Prüfung, Nachbesserung und Pflege zusammengehörig
+  veröffentlichen; [WORKFLOW](docs/WORKFLOW.md) bestimmt den Prüfaufwand. Ein grüner
+  Basistest ersetzt keine Fach-, Host- oder Bedienabnahme.
 
 ## Nächster Lauf
+
+Aktuelles eigenes Paket und Besitz in [#9](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/9) beziehungsweise [#58](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/58) prüfen; `npm run next` verwenden. Der folgende CE-01-Verlauf ist gezielter historischer Kontext, keine aktuelle Dispatchanweisung.
 
 CE-01 folgt dem technischen Fachplan
 [`ROADMAP-SALTMARCHER-CE01-PLAN.md`](ROADMAP-SALTMARCHER-CE01-PLAN.md).
@@ -196,7 +228,7 @@ expliziten Regressionen. `CE-01-H01` bestand seinen automatisierten echten
 Obsidian-Umfang. `CE-01-C01` zentralisierte Restore-, Default- und Draftregeln;
 sein erster Review fand eine verbleibende Content-Duplizierung, die
 `CE-01-C01-N01` beseitigte. Der unabhängige Re-Review schloss das Aufräumtor.
-Nächster Lauf ist `CE-02-P01`, der eigene technische Fachplan für den
+Historischer Nachfolger war `CE-02-P01`, der eigene technische Fachplan für den
 vollständigen SaltMarcher-Katalog. Physische CE-01-Eingabe, Screenreader und
 weitere Plattformen bleiben offen; noch keine vollständige CE-01- oder
 Encounter-Fachfreigabe behaupten.

@@ -1,17 +1,40 @@
 # E2E-01-SPACE-I01c-RUNTIME-P01: Kampagne zum bestehenden Atlas verbinden
 
-Aktueller Arbeitsort ist [#40](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/40)
-mit dem bestehenden Hex-Paket und quellgebundenem H02-Save-/Frischstartbeleg.
-Review und Stewardintegration von PR62 sind
-[belegt](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/62#issuecomment-6101774442).
-[Stadts unabhängiger H02-Belegreview](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/40#issuecomment-6101960077)
-hat keinen Befund. [Chronik-R02](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/40#issuecomment-6101982101)
-fordert ausschließlich die Korrektur der nächsten GUI-Slotpflicht. Diese ist in
-[N01](docs/reference/atlas-shared-location-h02/metadata-repair.json) auf `false`
-gesetzt; die Bestätigung dieses Metadatenheads bleibt offen. Der nächste Eingang
-benötigt keinen GUI-Slot und keinen weiteren Hostlauf. #40 und das gemeinsame
-E2E-01-Gate bleiben offen; eigene Bereinigung folgt nach der Qualifikation in
-einem getrennten Lauf gemäß aktuellem Nutzerauftrag.
+## Konkreter nächster HEX-04-Eingang
+
+[D01-Modellbefund](docs/reference/atlas-detail-binding-d01/README.md) auf
+`7ec9f85ef9d6b263504ea2398ca1bbfc41b97899`, E2E-01 Nutzerzeile13:
+Save eines Detaillinks am bestehenden Ort und des geänderten Parents einer
+bestehenden Dungeonplatzierung gelingt, behält jedoch veraltete Atlas-Registryreferenzen.
+Eine frische Modell-Repositoryinstanz bestätigt die gespeicherten nativen Bindungen
+und ihre abweichende Registryclosure; Dungeonbytes und Undo/Redo bleiben exakt.
+Die [N01-Reparatur](docs/reference/atlas-detail-binding-d01/repair-n01.json) auf
+`9784d03ec33cccefebb6878383f6f7e80e034102` leitet die Atlasreferenzen aus exakten
+nativen Before-/Afterdaten ab und nutzt die vorhandene Campaign-Erweiterungsautorität.
+Neun neue Regressionen prüfen Save/Undo/Redo, frischen Modell-Mount, Recovery und
+gefälschte Referenzbelege; der gemeinsame Stand mit Shared527398c besteht Typprüfung,
+880 Tests (ein optionaler PDF-Test ausgelassen) und Build. Nächster getrennter
+Schritt ist der unabhängige Campaign/Data-Review dieses konkreten Speicherkandidaten.
+Nach Annahme/Integration folgt der noch fehlende sichtbare Verortungsanschluss. Neue Placementkennungen
+sind derzeit abgewiesen und werden nicht durch diese Diagnose freigegeben.
+N01 liefert keinen GUI-/Electron-/physischen oder Gesamt-E2E-Nachweis und keine neue allgemeine
+Plan-/Reviewrunde. Der begrenzte abgeschlossene #40-Scope bleibt erhalten.
+
+Der begrenzte Orts-/Key-/Verschiebe-/UndoRedo-/Save-/Frischstart-Meilenstein
+[#40](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/40) ist
+qualifiziert: [Stadt H02](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/40#issuecomment-6101960077),
+[Campaign/Data-Dateiorakel](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/40#issuecomment-6101957277),
+[Chronik R02-N01](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/40#issuecomment-6102084191)
+und [separate PR72-Stewardintegration](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/72#issuecomment-6102108341)
+sind konsumiert. [Qualifikationsentscheidung](docs/reference/atlas-shared-location-h02/qualification.json).
+Der tatsächliche native Source bleibt `4515088772b759cda2e19d249367699c9868c72c`;
+spätere Shared-Commits sind kein neuer nativer Hostlauf. Das gemeinsame E2E-01-Gate
+bleibt offen. Die [eigene begrenzte Bereinigung](docs/reference/atlas-shared-location-h02/cleanup.json)
+ist abgeschlossen: vollständiges hashgeprüftes Archiv des H02-Prüfcheckouts,
+danach normale Entfernung nur dieses Checkouts; Belege und Testvault erhalten.
+Nächster produktiver Hex-Anschluss bleibt die konkrete Detail-/verortete-Dungeon-/
+Raum-Key-Folge derselben E2E-01-Zeile. In diesem Bereinigungslauf werden keine
+Produktänderung, GUI, CITY oder E2E-02–04 begonnen.
 
 ## Historische Planbasis und Lieferbelege
 

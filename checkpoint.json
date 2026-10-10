@@ -4,15 +4,15 @@
     "state": "completed",
     "roleContract": "docs/AGENT-ROLES.md#repository-maintenance",
     "repositoryContract": "docs/REPOSITORY.md",
-    "evaluatedShared": "e559282ae2b516b0035a02645f7f8ba718ab63f6",
-    "scope": "Source-bound portfolio planning audit: concrete SMR-01/06/09 user delivery paths and explicit Preparation/Resume source boundaries. No product, host or domain approval.",
-    "next": "Continue existing package ownership. Resolve Preparation target semantics at issue 44/10 before dependent generation; use current issue/PR for candidate state, not roadmap claims.",
+    "evaluatedShared": "6c0663763311085385a5beeb370c5b51030efebd",
+    "scope": "Replace automatic issue-body writes with preview-only tooling and revision-pinned work context in the existing SaltMarcher plan for 68/69. Preserve package ownership and all product/host gates.",
+    "next": "Maintain task delivery context in its explicitly linked existing plan with substantive package work; next reads the default-branch section at an identified revision. No automatic issue-body publication. Reconcile concurrent same-section edits before normal Git push.",
     "verification": [
-      "36 pinned requirement hashes and phase mappings checked; all 12 phases, 18 acceptance cases and 38 technical needs retained",
-      "Affected Campaign/Planner/Generation/Autonomy and capability sources compared; check:repo and diff checks PASS",
-      "Only repositoryOrientation edited; foreign checkpoint and all acceptance preserved"
+      "check:repo and test:repo 40/40 PASS, including indented headings, disabled apply, unavailable/duplicate sources and an actual two-checkout stale push/merge conflict",
+      "68/69 unchanged claims and latest consumer handoffs used; GUI/native Save/Fresh qualification remains open",
+      "Only repositoryOrientation changed; foreign checkpoint and acceptance bytes preserved"
     ],
-    "previousOrientation": "e559282"
+    "previousOrientation": "3f6e071"
   },
   "saltMarcherReplacement": {
     "date": "2026-10-10",
@@ -215,126 +215,109 @@
     "architecture": "ARCHITECTURE.md#geplante-katalog--und-encounter-erweiterung",
     "acceptance": "acceptance.json.saltMarcherCatalogEncounter",
     "currentRun": {
-      "id": "CE-02-I02-S01-W27",
+      "id": "CE-02-I02-S01-W28",
       "kind": "source_inventory_schema_transcript_continuation",
       "state": "source_checked_independent_review_pending_incomplete",
       "plan": "ROADMAP-SALTMARCHER-CE02-I02-PLAN.md",
-      "focus": "Complete D-section, A–Z48–62, Dagger of Venom through Dwarven Thrower",
-      "result": "Complete D-section A–Z48–62 on physical/printed pages215–220: all fifteen headers/prose/conditional rules and page continuations;33 Illusions table rows,22 Many Things table rows with13-vs22 footnote, all22 complete card rules and embedded Avatar of Death statblock, ten Dragon resistance cells in five paired physical rows, conditional dwarf attunement. One occurrence per item, no new card/Avatar/dragon variants or merges. Whole-heading PDF/XML/schema/identity gates pass; all complete flags false, no Item product activation.",
+      "focus": "Complete E-section A–Z63–70",
+      "result": "Entire E-section A–Z63–70, Efficient Quiver through Eyes of the Eagle, physical/printed pages220–221: eight complete headers/prose with all capacity, wind, target/sight and recharge conditions; three full Efreeti d100 effects including91–00/fourth opening/limited wishes; four owned Gem→Elemental cells. Eyes of Charming page continuation preserved. No invented item identities, rarity variants, merges or optional numeric facts. Whole-heading PDF/schema/hash gates pass; complete:false and no Item product activation.",
       "verification": {
-        "sourceRevision": "b02925c87f07e882919348521d380f54a8b4f6b4+working-source-changes",
+        "sourceRevision": "aa7e7dedd4a2bd479618e75c7adf9c33269eb082+working-source-changes",
         "sourceHashes": {
           "attribution": "f66d55442488e79895501fc0fcd7b2bb62deb2bd6e589e0fffb5f5932ed5b767",
-          "inventory": "c325ceabb98b9c79a0f03ceeefeb4a6c54cd072c45f9fdc77abeee839f6f1034",
-          "manifest": "96916d4976ff129c9fe07af2f3d8c9811f3b51a9c4accb61bbcfecb5488ef3e2",
+          "inventory": "0a7bf9accdb0b5643441a066421fef25e0924525bf27d7fb26575d14631af5da",
+          "manifest": "9442ab3591f59a66a620de2893bc622b88325c3bb0b839e34d4bf6f83dd2981c",
           "schema": "f34513e5c8921edecdfc270889a1948330837470fe108fcda92d2fea7d75f50f",
-          "transcript": "cd308b70eb92237a238c5a19c78c8adda38a12a8202d7a750102a29cb004ec30"
+          "transcript": "92de9b88756d0249e2ab8c0dbb5cdc25a8b365fc2a43e7cebf7f23a4818b5dc0"
         },
-        "occurrences": 282,
-        "records": 281,
-        "transcriptFacts": 1171,
-        "magicItemAzDSection": {
+        "occurrences": 290,
+        "records": 289,
+        "transcriptFacts": 1206,
+        "magicItemAzESection": {
           "ordinals": [
-            48,
-            49,
-            50,
-            51,
-            52,
-            53,
-            54,
-            55,
-            56,
-            57,
-            58,
-            59,
-            60,
-            61,
-            62
+            63,
+            64,
+            65,
+            66,
+            67,
+            68,
+            69,
+            70
           ],
-          "records": 15,
+          "records": 8,
           "pages": [
-            215,
-            216,
-            217,
-            218,
-            219,
-            220
+            220,
+            221
           ],
-          "illusionTableRows": 33,
-          "manyThingsTableRows": 22,
-          "manyThingsCardRules": 22,
-          "embeddedAvatarStatblocks": 1,
-          "dragonResistanceCells": 10
+          "efreetiEffectRows": 3,
+          "elementalGemRows": 4
         },
         "pdf": {
-          "records": 15,
-          "illusionTableRows": 33,
-          "manyThingsTableRows": 22,
-          "manyThingsCardRules": 22,
-          "embeddedAvatarStatblocks": 1,
-          "dragonResistanceCells": 10,
+          "records": 8,
+          "efreetiEffectRows": 3,
+          "elementalGemRows": 4,
           "derivedHeadingCount": 239,
-          "scope": "complete-heading-stream-with-owned-tables-all-card-rules-embedded-statblock-and-page-continuations"
+          "scope": "complete-heading-stream-with-owned-roll-gem-tables-conditional-rules-and-page-continuation"
         },
         "focusedTests": {
-          "command": "SRD51_SOURCE_PDF=/tmp/SRD_CC_v5.1.pdf node --test --test-concurrency=1 tests/items-srd51-source.test.mjs tests/items-srd51-bags.test.mjs tests/items-srd51-b-section.test.mjs tests/items-srd51-c-section.test.mjs tests/items-srd51-d-section.test.mjs",
-          "passed": 168,
+          "command": "SRD51_SOURCE_PDF=/tmp/SRD_CC_v5.1.pdf node --test --test-concurrency=1 tests/items-srd51-source.test.mjs tests/items-srd51-bags.test.mjs tests/items-srd51-b-section.test.mjs tests/items-srd51-c-section.test.mjs tests/items-srd51-d-section.test.mjs tests/items-srd51-e-section.test.mjs",
+          "passed": 191,
           "failed": 0,
           "skipped": 0
         },
         "repositoryStructure": "passed",
         "repositoryTests": {
-          "passed": 27,
+          "passed": 28,
           "failed": 0,
           "skipped": 0
         },
-        "basisChecks": "Offline source/tool package: source/schema/real-PDF/focused regressions/repo/diff/retention checks. Full type/test/build supplied separately by Exact-SHA CI after publication, not claimed before observation. No local unrelated fullsuite or GUI run.",
+        "basisChecks": "Offline source/tool checks: real-PDF/source/schema/hash/identity/focused regressions/repo/diff/retention. Full type/test/build only from subsequently observed Exact-SHA CI; no local unrelated fullsuite or GUI execution.",
         "toolchain": {
           "node": "official Node22.22.2",
           "poppler": "pdftohtml/pdftotext25.03.0",
           "pdfPath": "/tmp/SRD_CC_v5.1.pdf",
           "pdfSha256": "2504d2a0abb0a4d491a939be4f17910a2dde0312570ab8d208080225ccf0a1f0",
-          "xmlPath": "tests/fixtures/items-srd51-d-section-poppler-25.03.xml",
-          "xmlSha256": "e98d58f51a63730f5be255a237c4e61da4776ca3e29e3300cc767d09a8f9f924",
-          "xmlBytes": 93286
+          "xmlPath": "tests/fixtures/items-srd51-e-section-poppler-25.03.xml",
+          "xmlSha256": "a2213f5b16d9f1fd64bb96ef06ee9c0070e21fd6d400764971bc3641d4f14780",
+          "xmlBytes": 29679
         }
       },
       "dependencies": {
-        "w26Integration": {
+        "w27Integration": {
           "state": "completed",
-          "sharedCommit": "9e3a6c1bbd6484a356c00c268083b147cd7cc6ae",
-          "candidateCommit": "67daede8eb4c5debafa98115f12b6e516c54e3be",
-          "receipt": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/66#issuecomment-6101632238",
+          "sharedCommit": "7ba2bf499765154f8ff8cd7fcef32584b43f94c3",
+          "candidateCommit": "dc6aedfa1bbe542d4ed887607c1963424c86cbd0",
+          "receipt": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/70#issuecomment-6102297681",
           "sourceReview": {
             "state": "PASS",
-            "reviewedCommit": "67daede8eb4c5debafa98115f12b6e516c54e3be",
-            "issue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/66#pullrequestreview-5480616259",
-            "scope": "Independent Stadt full15-item visual/PDF review, actual Poppler26.01; no fullS01/product/host gate"
+            "reviewedCommit": "dc6aedfa1bbe542d4ed887607c1963424c86cbd0",
+            "issue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/70#pullrequestreview-5480792943",
+            "scope": "Independent Cloud-Fortschritt complete15-item original PDF review;168/168 real-PDF focused tests. Existing external evidence, not this author run or fullS01/product gate."
           },
-          "producerReceipt": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/58#issuecomment-6101473813"
+          "producerReceipt": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/58#issuecomment-6102085304"
         }
       },
       "review": {
         "state": "pending",
-        "scope": "Independent complete15-item official PDF/table/card/statblock/page/merge/identity source review"
+        "scope": "Independent full8-item official PDF/roll-table/gem-table/page/header/identity source review"
       },
-      "limits": "Partial fullS01:176 A–Z headings plus Orb, all362 magic helper dispositions, remaining goldens and independent complete S01-R01 open. Independent W27 source review/regular integration pending; Item artifact/provider/UI/I01 blocked, no installed host/GUI/physical/E2E/Encounter runtime approval. D&D2014 only.",
+      "limits": "Partial fullS01:168 A–Z headings plus Orb, all362 magic helper dispositions, remaining goldens and independent complete S01-R01 open. Independent W28 source review/regular integration pending; Item artifact/provider/UI/I01 closed. No installed-host/GUI/physical/E2E/Encounter runtime approval; D&D2014 only.",
       "documentation": {
         "status": "partial",
-        "branch": "catalog/ce02-s01-w27-d-section",
-        "baseCommit": "540334f7d5582f8e773325374a2327920e6e13c0",
-        "issue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/58#issuecomment-6102006560",
-        "commit": "Exact published SHA/PR/CI bound in canonical Issue58 handoff receipt",
+        "branch": "catalog/ce02-s01-w28-e-section",
+        "baseCommit": "aa7e7dedd4a2bd479618e75c7adf9c33269eb082",
+        "issue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/58#issuecomment-6102489831",
+        "commit": "Published exact SHA/PR/CI in canonical Issue58 handoff receipt",
         "changedFiles": [
           "src/features/catalog/data/items-srd51-inventory.json",
           "src/features/catalog/data/items-srd51-transcript.json",
           "src/features/catalog/data/items-srd51-source-manifest.json",
-          "tools/items-srd51-d-section.mjs",
+          "tools/items-srd51-e-section.mjs",
           "tools/items-srd51-source-verify.mjs",
-          "tests/items-srd51-d-section.test.mjs",
+          "tests/items-srd51-e-section.test.mjs",
           "tests/items-srd51-source.test.mjs",
-          "tests/fixtures/items-srd51-d-section-poppler-25.03.xml",
-          "tests/fixtures/items-srd51-d-section-poppler-25.03-receipt.json",
+          "tests/fixtures/items-srd51-e-section-poppler-25.03.xml",
+          "tests/fixtures/items-srd51-e-section-poppler-25.03-receipt.json",
           "package.json",
           "ROADMAP-SALTMARCHER-CE02-I02-PLAN.md",
           "checkpoint.json",
@@ -343,23 +326,23 @@
         "roleContract": {
           "role": "migration",
           "defaultBranch": "active/installed-phase1",
-          "loadedCommit": "b02925c87f07e882919348521d380f54a8b4f6b4",
+          "loadedCommit": "181bec40db372b831f16e5c0b4813af236537071",
           "documents": [
             "AGENTS.md",
             "docs/AGENT-ROLES.md"
           ]
         },
         "externalEvidence": {
-          "path": "Committed original six-page XML/receipt; /tmp/SRD_CC_v5.1.pdf; /tmp/w27-{pdf.json,focused-final.log,repo.log}; CI linked at publication. Shared540334f integrated before publication; relevant source/tool paths unchanged from checked b02925c composition.",
-          "limits": "Cloud raw logs/PDF ephemeral; committed XML durable. Actual local Poppler25.03, not the prior reviewer26.01 or any installed/GUI/physical/E2E evidence."
+          "path": "Committed original XML/receipt; /tmp/SRD_CC_v5.1.pdf; /tmp/w28-{pdf.json,focused.log,repo.log}; published CI link in Issue58 handoff",
+          "limits": "PDF/cloud logs ephemeral; original XML durable. Only own actual Poppler25.03/Node22.22.2, no installed/UI/physical/E2E evidence."
         },
         "notProven": [
-          "independent W27 source review and integration",
-          "176 A–Z headings / Orb /362 helper dispositions /fullS01-R01",
-          "Item artifact/provider/UI/I01 and runtime corpus",
+          "independent W28 review/integration",
+          "168 A–Z+Orb /362helper dispositions /fullS01-R01",
+          "Item artifact/provider/UI/I01",
           "installed host/GUI/physical/E2E/Encounter runtime"
         ],
-        "next": "Independent complete W27 source review as support in Issue58; producer continues next coherent E-section from Efficient Quiver, full corpus package stays owned"
+        "next": "Full E-source review as support in Issue58; producer continues coherent F-section from Feather Token in owned full-corpus package"
       }
     },
     "implementationRun": {
@@ -563,7 +546,7 @@
       },
       "limits": "Build-contract repair only. No catalog data/provider/UI change and no CE, Atlas, host, physical-input or overall approval."
     },
-    "verified": "CE-00 and CE-01 implementation/review/repair cycles passed their scoped gates. CE-01-H01 passed its independently reviewed automated scope. CE-02-I01 product commit 7469e64202e730175ee138136a69d82ad4f28ea6 and metadata repair candidate 4d239004c4f000b2af6f66122a05135b0c353ffb passed independent review. CE-02-I02-S01 has a checked fail-closed source package with all 219 equipment occurrences and transcripts plus explicit reconciliation of all 237 helper equipment records. Potion of healing retains its earliest equipment identity and merges A–Z heading 142. A–Z headings 1–62 now preserve exact identities, headers, descriptions, rarity and attunement facts across physical pages 207–220; Apparatus of the Crab preserves its full ten-row Up/Down lever table, Armor +1/+2/+3 preserves all three ordered rarity variants and Armor of Invulnerability preserves its fixed legendary rarity and required attunement. The Armor/Arrow group preserves the full vulnerability curse and all ten resistance-table choices with whole-block PDF verification. The Bags group preserves all twelve Beans effects and three color-bound d8 tables across source page boundaries. Independent W23-N01 P1 review passed on exact 8dfa06a with real Poppler 25.07 evidence. The remaining B-section preserves all fifteen entries, complete Giant-Strength table/rarity choices and cross-page Berserker curse. W24 was independently reviewed and regularly integrated on Shared843562a. W25 was independently reviewed by Chronik on8772d95 and regularly integrated by Stadt onShared ebb480e. The complete C-section preserves all fifteen records, twenty-four table rows and four Crystal Ball rarity choices with whole-block PDF matching. W26 was independently reviewed on67daede and regularly integrated onShared9e3a6c1. The entire D-section preserves both Deck tables, all22 Many Things rules and embedded Avatar of Death, ten Dragon resistance cells and conditional dwarf attunement with full heading-block PDF matching. The remaining 176 A–Z headings, Orb of Dragonkind, helper reconciliation, goldens, W27/S01 reviews and Item product feature remain open. Physical input, screenreader and other-platform acceptance remain open.",
+    "verified": "CE-00 and CE-01 implementation/review/repair cycles passed their scoped gates. CE-01-H01 passed its independently reviewed automated scope. CE-02-I01 product commit 7469e64202e730175ee138136a69d82ad4f28ea6 and metadata repair candidate 4d239004c4f000b2af6f66122a05135b0c353ffb passed independent review. CE-02-I02-S01 has a checked fail-closed source package with all 219 equipment occurrences and transcripts plus explicit reconciliation of all 237 helper equipment records. Potion of healing retains its earliest equipment identity and merges A–Z heading 142. A–Z headings 1–70 now preserve exact identities, headers, descriptions, rarity and attunement facts across physical pages 207–221; Apparatus of the Crab preserves its full ten-row Up/Down lever table, Armor +1/+2/+3 preserves all three ordered rarity variants and Armor of Invulnerability preserves its fixed legendary rarity and required attunement. The Armor/Arrow group preserves the full vulnerability curse and all ten resistance-table choices with whole-block PDF verification. The Bags group preserves all twelve Beans effects and three color-bound d8 tables across source page boundaries. Independent W23-N01 P1 review passed on exact 8dfa06a with real Poppler 25.07 evidence. The remaining B-section preserves all fifteen entries, complete Giant-Strength table/rarity choices and cross-page Berserker curse. W24 was independently reviewed and regularly integrated on Shared843562a. W25 was independently reviewed by Chronik on8772d95 and regularly integrated by Stadt onShared ebb480e. The complete C-section preserves all fifteen records, twenty-four table rows and four Crystal Ball rarity choices with whole-block PDF matching. W26 was independently reviewed on67daede and regularly integrated onShared9e3a6c1. The entire D-section preserves both Deck tables, all22 Many Things rules and embedded Avatar of Death, ten Dragon resistance cells and conditional dwarf attunement with full heading-block PDF matching. W27 independent review5480792943 and regular integration7ba2bf4 are consumed. The full eight-item E-section preserves owned Efreeti/Gem tables and complete page-spanning sight, recharge and wind rules. The remaining 168 A–Z headings, Orb of Dragonkind, helper reconciliation, goldens, W28/S01 reviews and Item product feature remain open. Physical input, screenreader and other-platform acceptance remain open.",
     "open": [
       "CE-01 physical keyboard/mouse, screenreader and other-platform acceptance; CE-02-I02 through CE-07 runs",
       "CE-02-I02-S01 complete official inventory, transcript, closed subcategory enum, full PDF matching, complete golden cases and independent S01-R01 review",
@@ -574,7 +557,7 @@
       "id": "CE-02-I02-S01-CONTINUE",
       "plan": "ROADMAP-SALTMARCHER-CE02-I02-PLAN.md",
       "kind": "coherent_source_continuation",
-      "focus": "Complete next coherent E-section from Efficient Quiver; W27 source review as independent support, no Item product activation before fullS01-R01"
+      "focus": "Coherent F-section from Feather Token; W28 review support does not halt independent source continuation; no Item product activation before fullS01-R01"
     }
   },
   "repositoryWorkflow": {
@@ -902,7 +885,7 @@
   "hexAtlasExecution": {
     "scope": "HEX-00 bis HEX-28 und sämtliche eingeordneten CITY-00 bis CITY-09 vollständig",
     "phase": "HEX-03",
-    "state": "native_location_Save_fresh_process_pass_existing_gate_qualification_pending",
+    "state": "detail_binding_reference_repair_implemented_independent_review_pending",
     "plan": "ROADMAP-E2E01-SPATIAL-INTEGRATION-PLAN.md",
     "currentRun": {
       "id": "E2E-01-SPACE-I01b",
@@ -949,21 +932,25 @@
       "phaseApproval": false
     },
     "nextRun": {
-      "id": "E2E-01-SHARED-LOCATION-KEY-H02-GATE-HANDOFF",
-      "kind": "consume_existing_host_gate_qualification_then_own_cleanup",
+      "id": "E2E-01-HEX04-DETAIL-REFERENCE-R01",
+      "kind": "targeted_independent_review_of_repaired_storage_reference_closure",
       "owner": "Hex",
-      "issue": 40,
-      "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
+      "reviewer": "Campaign/Data owner (existing colleague)",
+      "issue": 7,
+      "e2eIssue": 12,
       "e2e01UserLine": 13,
-      "sourcePlan": "ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md",
-      "focus": "Consume qualification of this actual H02 source/build/fixture/native file and process receipt at the existing #40/E2E01 gate. Native user flow is observed; no repeat plan/codec/product review or new GUI without concrete finding. Own cleanup follows separately.",
-      "input": "checkpoint.hexAtlasExecution.latestSharedLocationKeyNativeH02",
-      "sourceCommit": "4515088772b759cda2e19d249367699c9868c72c",
+      "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
+      "input": "checkpoint.hexAtlasExecution.latestDetailReferenceRepairN01",
+      "focus": "Review exact candidate native Before/After reference closure, guarded Atlas verifyExtension, same-ID binding Save/Undo/Redo and prepared/committed recovery. No self-integration; visible Dungeon-at-Location UI follows acceptance in its own run.",
       "fixtureVersion": "e2e01-spatial-v2",
-      "slotConfirmedForNextRun": false,
       "slotRequiredAgain": false,
-      "after": "Existing qualified gate handoff and separate own cleanup; Details only after this Location milestone is accepted. No CITY/E2E02-04 advance.",
-      "limits": "No new general review round, foreign package, selfintegration, physical/parity/large-world/user-vault installation/full-E2E claim. H01 remains immutable historical FAIL."
+      "slotConfirmedForNextRun": false,
+      "guiRule": "No GUI in this repair/review. A later actual Obsidian run needs fresh sole-local-slot coordination.",
+      "limits": [
+        "No new placement IDs or new native owner/schema authority",
+        "No City/Dungeon owner edits or proxy review",
+        "No full-E2E/native/physical/original/large-map/install PASS"
+      ]
     },
     "review": {
       "run": "HEX-02-R02",
@@ -5413,7 +5400,7 @@
       "platformIssue": 11,
       "checkpointIsAuthoritative": true
     },
-    "updatedAt": "2026-10-10T20:34:20.205Z",
+    "updatedAt": "2026-10-10T21:42:48.747792+00:00",
     "consumerMatrix": {
       "id": "RUNTIME-MANIFEST-I02-CONSUMER-MATRIX-V1",
       "state": "frozen_complete_matrix_green_on_productive_Host_source",
@@ -6365,6 +6352,233 @@
       "originalReceiptSha256": "12856a4f351af562952cd50ce8616dae734f14b91fc8abbaabed6eab17ab94bf",
       "nativeRepeated": false,
       "guiSlotUsed": false
+    },
+    "latestSharedLocationKeyNativeH02Qualification": {
+      "id": "E2E-01-SHARED-LOCATION-KEY-H02-QUALIFICATION",
+      "owner": "Hex",
+      "issue": 40,
+      "e2e01UserLine": 13,
+      "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
+      "state": "accepted_scoped_native_Location_Key_Move_UndoRedo_Save_fresh_process",
+      "actualNativeSource": "4515088772b759cda2e19d249367699c9868c72c",
+      "buildSha256": "76bb453acca65f260e2276a385da66c5039a643fa10681b9b7a20fc5209c1322",
+      "fixtureVersion": "e2e01-spatial-v2",
+      "reviewedEvidenceHead": "c706df1f8fa2f6e242c0db32fc1930db74b1e19b",
+      "consumedShared": "2a484df43bd2146217e0efb3986fd1971d8b55e1",
+      "independentReviews": [
+        {
+          "reviewer": "Stadt",
+          "id": 6101960077,
+          "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/40#issuecomment-6101960077",
+          "result": "PASS_original_native_H02_evidence",
+          "commentBodySha256": "bf990c4f375162ec0e85e8f47c03ed23f507acca11fff60a4ff358f7b6f2ca54",
+          "readDirectly": true
+        },
+        {
+          "reviewer": "Campaign/Data",
+          "id": 6101957277,
+          "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/40#issuecomment-6101957277",
+          "result": "PASS_file_and_owner_closure_oracle",
+          "commentBodySha256": "b64b596181634658f85429f1b6d1e84cb3337123f5fe0803fd9caac4e42b3b3b",
+          "readDirectly": true
+        },
+        {
+          "reviewer": "Chronik",
+          "id": 6102084191,
+          "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/40#issuecomment-6102084191",
+          "result": "PASS_H02_R02_N01",
+          "commentBodySha256": "a66f31da6e95d6bad480061b8ce78e2315c18b91c9284e7e3c892d84b401f432",
+          "readDirectly": true
+        }
+      ],
+      "independentStewardIntegration": {
+        "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/72#issuecomment-6102108341",
+        "commentBodySha256": "61d11135c49b152dfe10190fe0d1c3ac2d0645c2445233374cd1586c82aa6aa0",
+        "readDirectly": true,
+        "source": "41f09273abd4f536f4f1098d6bf726f7567a0d1b",
+        "exactSecondParent": "c706df1f8fa2f6e242c0db32fc1930db74b1e19b",
+        "nativeEvidenceAndProductInputsByteEqualQualifiedHead": true,
+        "HexSelfMerge": false
+      },
+      "candidateCI": {
+        "headSha": "c706df1f8fa2f6e242c0db32fc1930db74b1e19b",
+        "conclusion": "success",
+        "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/actions/runs/38085710437",
+        "readDirectly": true
+      },
+      "sharedStructureCI": {
+        "headSha": "41f09273abd4f536f4f1098d6bf726f7567a0d1b",
+        "conclusion": "success",
+        "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/actions/runs/38085800782",
+        "readDirectly": true,
+        "scope": "repository structure only"
+      },
+      "next": "Separate bounded own cleanup of no-longer-needed owned transient resources only; preserve all canonical and historical evidence and unrelated files. No further general review or GUI run without a concrete new finding.",
+      "limits": "Only #40 scoped Location Save/fresh-process acceptance. Synthetic native input, no physical GM acceptance. No new Copy/Discard/Recovery fault matrix, Detail/CITY/P02/P04/E2E02-04/original parity/large-world/installation/full-E2E acceptance. Later Shared docs and unrelated package changes are not a new native run.",
+      "fullE2E": false,
+      "commonGateClosed": false,
+      "evidence": "docs/reference/atlas-shared-location-h02/qualification.json",
+      "sha256": "71e3fef652677072a17eb4593d1a73b79f1d0292605d8028cbe493e7e893d4ba",
+      "originalReceiptSha256": "12856a4f351af562952cd50ce8616dae734f14b91fc8abbaabed6eab17ab94bf",
+      "nativeRepeated": false,
+      "guiSlotUsed": false
+    },
+    "latestSharedLocationKeyNativeH02Cleanup": {
+      "id": "E2E-01-SHARED-LOCATION-KEY-H02-OWN-CLEANUP",
+      "owner": "Hex",
+      "issue": 40,
+      "e2e01UserLine": 13,
+      "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
+      "state": "PASS_bounded_own_transient_source_cleanup",
+      "finishedAt": "2026-10-10T21:12:55Z",
+      "qualifiedNativeSource": "4515088772b759cda2e19d249367699c9868c72c",
+      "removed": [
+        {
+          "path": "/home/aaron/.cache/dungeon-native-qa/hex-03/shared-location-h02-20261010-2029/source-4515088",
+          "kind": "clean detached owned test source worktree",
+          "normalGitWorktreeRemove": true,
+          "force": false
+        }
+      ],
+      "retainedSourceArchive": {
+        "path": "/home/aaron/.cache/dungeon-native-qa/hex-03/shared-location-h02-cleanup-20261010-2110/retained-source-4515088.tar.gz",
+        "sha256": "c5bc8562def856fd3ed7837783010b83a46a144fdf8036166b6d5e5c86fc3662",
+        "bytes": 6086171,
+        "entries": 939,
+        "allEntryBytesAndSymlinksVerified": true,
+        "manifest": "/home/aaron/.cache/dungeon-native-qa/hex-03/shared-location-h02-cleanup-20261010-2110/retained-source-manifest.json",
+        "manifestSha256": "2de84625752f0a0323fa446b4cdd0cad0bae8f079d06b643eb42594d757ca84f"
+      },
+      "preservation": {
+        "allCanonicalHistoricalFilesVerified": 82,
+        "originalH02Artifacts": 40,
+        "originalH02ReceiptSha256": "12856a4f351af562952cd50ce8616dae734f14b91fc8abbaabed6eab17ab94bf",
+        "allHostQAFilesOutsideRemovedCheckoutUnchanged": 177,
+        "savedNativeVaultFilesVerified": 9,
+        "installedSyntheticQAPluginTriplet": {
+          "main.js": "76bb453acca65f260e2276a385da66c5039a643fa10681b9b7a20fc5209c1322",
+          "styles.css": "68e1cf101ceaadd624168b431fddc297c90e8a5bc6be25a15f0926ebb569a5ea",
+          "manifest.json": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64"
+        },
+        "otherRegisteredWorktreesExact": 6,
+        "ownedDependencyTargetInodeUnchanged": 45467981,
+        "protectedOriginalForeignChangesAndDependencyInodeUnchanged": true,
+        "nativeProcessPidsAbsent": [
+          3243598,
+          3243624,
+          3243701,
+          3243708,
+          3243722,
+          3244554,
+          3244584,
+          3244661,
+          3244668,
+          3244694
+        ],
+        "userVaultUsed": false,
+        "sourcesEdited": false
+      },
+      "next": "Location milestone stays complete; next productive Hex scope is the concrete existing E2E-01 detail/located-Dungeon/Room-Key route. No new product implementation in this cleanup run and no new general plan/review cycle.",
+      "fullE2E": false,
+      "commonGateClosed": false,
+      "evidence": "docs/reference/atlas-shared-location-h02/cleanup.json",
+      "sha256": "85104415b1db06d3e6e5340f05c9fccde20c1a9911621ee8308ca90d48cc2a56",
+      "productEdited": false,
+      "nativeRepeated": false,
+      "guiSlotUsed": false
+    },
+    "latestDetailBindingDiagnosticD01": {
+      "id": "E2E-01-HEX04-DETAIL-BINDING-D01",
+      "state": "reproduced_native_save_keeps_stale_atlas_registry_references",
+      "sourceCommit": "7ec9f85ef9d6b263504ea2398ca1bbfc41b97899",
+      "sharedInput": "7ba2bf499765154f8ff8cd7fcef32584b43f94c3",
+      "issue": 7,
+      "e2eIssue": 12,
+      "e2e01UserLine": 13,
+      "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
+      "fixtureVersion": "e2e01-spatial-v2",
+      "fixtureUnchanged": true,
+      "finishedAt": "2026-10-10T21:25:33.097276+00:00",
+      "observed": [
+        "Unmodified fixture no-op Save performs zero writes and native/registry references agree.",
+        "Existing saved Location detailMaps addition and same-ID Dungeon reparent are accepted by shared History; Undo/Redo is exact and native Save succeeds.",
+        "A fresh model Repository reads saved native bytes; native capture identifies missing Dungeon reference in Location registry record and missing new Location/stale City+Building references in the Dungeon-placement registry record.",
+        "The actual Dungeon file remains byte-identical in all cases; only World/Location/Campaign bytes change in successful binding cases.",
+        "Changing the placement identity is currently rejected before any Save writes, retains draft and dirty state. This case is a bound limitation, not permission to remap existing identities.",
+        "Static production-callsite inspection finds a target navigator, not an action that creates an existing Dungeon placement at the selected Location."
+      ],
+      "rootCause": "AtlasCampaignManifestSave.owners updates payloadDigest but preserves r.references except the additive new-Location world references. Native Location detailMaps and Dungeon parent changes therefore do not update their declared registry reference closure.",
+      "nextOwnStep": "Targeted repair of existing atlas-owned reference projection and regressions before exposing Dungeon-at-Location placement UI. Preserve original IDs, Dungeon bytes, owner schemas, Context/receipt/history guards and independent Campaign/Data/Dungeon ownership. New placement-record creation remains a later concrete extension, not approved by this diagnosis.",
+      "productEdited": false,
+      "testsEdited": false,
+      "guiRun": false,
+      "nativeElectronReopen": false,
+      "fullE2E": false,
+      "qualifiedLocationScopeReopened": false,
+      "evidence": "docs/reference/atlas-detail-binding-d01/receipt.json",
+      "sha256": "2ff39c51e511c1d35a946db518675ec737d85b573a4fab690b3740df639e387f",
+      "reproduction": "docs/reference/atlas-detail-binding-d01/diagnostic.entry.ts",
+      "modelCases": 4
+    },
+    "latestDetailReferenceRepairN01": {
+      "id": "E2E-01-HEX04-DETAIL-REFERENCE-N01",
+      "state": "targeted_repair_core_checked_independent_review_pending",
+      "owner": "Hex",
+      "sourceCommit": "9784d03ec33cccefebb6878383f6f7e80e034102",
+      "productCommit": "552c6e828906f79c4bad5517fe8ad110035128ba",
+      "consumedShared": "527398c6f9e26f37d2ffdb9d305359e1daf0e708",
+      "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
+      "e2e01UserLine": 13,
+      "fixtureVersion": "e2e01-spatial-v2",
+      "checks": {
+        "typecheck": {
+          "command": "npm run check",
+          "status": "PASS",
+          "log": "/home/aaron/.cache/dungeon-native-qa/hex-04/detail-reference-n01-20261010-2130/typecheck.integrated.log",
+          "sha256": "079b4802c6da64fa1d4244b135be0c1fad7ce6c952c6dda76f3320c685743d4c"
+        },
+        "tests": {
+          "command": "npm test",
+          "status": "PASS",
+          "tests": 881,
+          "pass": 880,
+          "fail": 0,
+          "skip": 1,
+          "skipReason": "Optional hash-pinned official SRD 5.1 PDF unavailable; offline cases retained.",
+          "log": "/home/aaron/.cache/dungeon-native-qa/hex-04/detail-reference-n01-20261010-2130/tests.integrated.log",
+          "sha256": "3166f01c18b832e49f7439d0471ded564d557cd4c47c56c237da99186fcd252a"
+        },
+        "build": {
+          "command": "npm run build",
+          "status": "PASS",
+          "log": "/home/aaron/.cache/dungeon-native-qa/hex-04/detail-reference-n01-20261010-2130/build.integrated.log",
+          "sha256": "ae6a9ea961f74697a54bf5fd8ab4fc8f8528391539241180a94f8281c635a5f4"
+        },
+        "baselineSensitivity": {
+          "sourceSave": "62db558e4cbef825101a5913578ec33e91499954",
+          "tests": 9,
+          "expectedFailures": 8,
+          "unchangedNewIdGuardPass": 1,
+          "log": "/home/aaron/.cache/dungeon-native-qa/hex-04/detail-reference-n01-20261010-2130/baseline-regression.final.log",
+          "sha256": "a776140c34cee5f6d446c61bd921d3915fdd38dd82482f39662e8a560fd9f0ac",
+          "method": "Bundle the same regression source with only AtlasCampaignManifestSave loaded from the pre-repair commit; repository/native files are not mutated."
+        }
+      },
+      "scope": {
+        "gui": false,
+        "nativeObsidian": false,
+        "freshElectronProcess": false,
+        "physicalInput": false,
+        "userVaultInstalled": false,
+        "originalParity": false,
+        "largeMap": false,
+        "fullE2E": false,
+        "independentReview": "pending Campaign/Data owner exact candidate review",
+        "newPlacementIdentityAuthority": false,
+        "visibleDungeonPlacementUI": false
+      },
+      "receipt": "docs/reference/atlas-detail-binding-d01/repair-n01.json",
+      "sha256": "cb57edf035bb7acb51d276e3d75e52e3cd57657cb9aab08ed407f3667ca3f7c7"
     }
   },
   "phase": "Phase 6: zweiter Nachbesserungslauf teilweise umgesetzt; fünf Restpositionen und unabhängiger Review offen",

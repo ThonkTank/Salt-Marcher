@@ -6,7 +6,7 @@ Dieser Nachschlageort wird nur für den ausgewählten Fachvertrag oder einen kon
 
 [H02-Rohbelege und Buildprovenienz](atlas-host-h02/H02-PROVENANCE.md); [ursprüngliche Save/Fresh/Recovery-Belege](atlas-host-save-i02-h01/SAVE-PROVENANCE.md); [Orts-Save H01](atlas-shared-location-h01/README.md), [D01-Ursache](atlas-shared-location-d01/README.md), [R01-Reparatur](atlas-shared-location-r01/README.md), [damalige Komposition mit Shared315f09b](atlas-shared-location-r01/composition.json), [N02-No-op-Save](atlas-shared-location-r01/noop-repair.json), [Shared-Ort/Key H02: echter Save und frischer Prozess](atlas-shared-location-h02/README.md).
 
-Diese Belege gelten für ihre damalige Source/Fixture. Aktuellen Arbeitsstand in #40 lesen; damalige nächste Schritte sind keine aktuellen Aufträge.
+Diese Belege gelten für ihre damalige Source/Fixture. #40 ist im Orts-/Key-Scope abgeschlossen. [D01: konkreter Save-Eingang für Dungeonverortung](atlas-detail-binding-d01/README.md) und [N01: gezielte Referenzreparatur](atlas-detail-binding-d01/repair-n01.json) binden Befund und Kandidat an #7 und E2E-01 Zeile13; damalige nächste Schritte sind keine aktuellen Aufträge.
 
 ## Bestehende Fach- und Paketpläne
 
