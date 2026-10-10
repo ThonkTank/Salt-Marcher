@@ -4930,18 +4930,18 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I48b-CLEAN-N01",
-      "kind": "cleanup_repair",
-      "startedAt": "2026-10-10T04:40:40.208850+00:00",
-      "focus": "Add immutable-manifest supplement using correct run-relative inventory boundary",
-      "state": "completed",
-      "result": "Supplementary inventory includes60 raw files/23 image-metadata pairs and actual session/input/map/template/exit provenance;77protected files unchanged. Missing list repaired additively, original manifest unchanged; separate R02 pending.",
-      "receipt": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i48b-20261010-r01/evidence-inventory-repair.json"
-    },
-    "nextRun": {
       "id": "CITY-00-I48b-CLEAN-R02",
       "kind": "cleanup_review",
-      "focus": "Independently reconstruct inventory membership/hash/frame provenance and protected77 boundaries; close CL-R01-01 only after PASS, then R48"
+      "startedAt": "2026-10-10T04:42:04.964883+00:00",
+      "focus": "Independent exact inventory reconstruction, provenance and protected source/process/ownership boundaries",
+      "state": "completed",
+      "result": "PASS CL-R01-01 closed: independent60-file membership/hash reconstruction and23 frame pairs bound to actual session/executable/time/input/dimensions;77 protected files including original manifest unchanged, source/copies and cache/process/product/foreign boundaries PASS. Cleanup complete, R48 open.",
+      "receipt": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i48b-20261010-r01/evidence-inventory-review.json"
+    },
+    "nextRun": {
+      "id": "CITY-00-R48",
+      "kind": "reference_review",
+      "focus": "Review visible I48a/I48b template/map effects, scope/cancel/two genuine processes and limitations; preserve original open product/host/fullparity requirements"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
