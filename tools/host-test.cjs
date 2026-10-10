@@ -24,7 +24,8 @@ const restart = process.argv.includes("--restart"),
   dd036S01Recovery = process.argv.includes("--dd036-s01-recovery") || process.argv.includes("--dd036-s01-hard-crash"),
   dd036S01HardCrash = process.argv.includes("--dd036-s01-hard-crash"),
   hex02Save = process.argv.includes("--hex02-save"),
-  atlasSpatial = process.argv.includes("--atlas-spatial"),
+  atlasCampaignRuntime = process.argv.includes("--atlas-campaign-runtime"),
+  atlasSpatial = process.argv.includes("--atlas-spatial") || atlasCampaignRuntime,
   hex03Location = process.argv.includes("--hex03-location"),
   hex02Terrain = process.argv.includes("--hex02-terrain") || hex02Save,
   hex01Atlas = process.argv.includes("--hex01-atlas") || process.argv.includes("--hex01-layout") || hex02Terrain || hex03Location || atlasSpatial || dd036O01a || !!dd036O01b || dd036H01 || dd036S01Recovery,
@@ -354,7 +355,17 @@ function prepare() {
   if(atlasSpatial && !restart) {
     const fixture=path.join(root,"tests/fixtures/atlas-e2e-spatial-v2");
     const manifest=JSON.parse(fs.readFileSync(path.join(fixture,"manifest.json"),"utf8"));
-    for(const row of manifest.input){const destination=path.join(vault,row.path);fs.mkdirSync(path.dirname(destination),{recursive:true});fs.copyFileSync(path.join(fixture,row.fixtureFile),destination);}
+    const rows = atlasCampaignRuntime
+      ? [...manifest.input, { path: manifest.campaign.path, ...manifest.campaign.input }]
+      : manifest.input;
+    for (const row of rows) {
+      const bytes = fs.readFileSync(path.join(fixture, row.fixtureFile));
+      assert.equal(bytes.length, row.bytes, row.path);
+      assert.equal(crypto.createHash("sha256").update(bytes).digest("hex"), row.sha256, row.path);
+      const destination = path.join(vault, row.path);
+      fs.mkdirSync(path.dirname(destination), { recursive: true });
+      fs.writeFileSync(destination, bytes);
+    }
   }
   for (const f of ["main.js", "manifest.json", "styles.css"])
     fs.copyFileSync(
@@ -893,7 +904,9 @@ async function workflow() {
     });
   const scenarioContext = { page, browser, fs, path, assert, crypto, PNG, root, pluginRoot, qa, vault, sourceVault, restart, out, checks, chooseTool, editorAction, selectOnlyObjects, waitForFileAbsent, sleep, resolveQaAppCgroup };
   if (atlasSpatial) {
-    const scenario = require("./host/atlas-spatial.cjs")(scenarioContext);
+    const scenario = require(atlasCampaignRuntime
+      ? "./host/atlas-campaign-runtime.cjs"
+      : "./host/atlas-spatial.cjs")(scenarioContext);
     if(restart)await scenario.reopen();else await scenario.edit();
     return;
   }

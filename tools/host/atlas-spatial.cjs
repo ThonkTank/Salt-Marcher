@@ -1,5 +1,6 @@
 // Isolated native Obsidian host proof; synthetic gestures, never physical-input acceptance.
-module.exports = ({ page, fs, path, assert, qa, out, vault, root, checks }) => {
+module.exports = ({ page, fs, path, assert, qa, out, vault, root, checks,
+  afterOpen, beforeSave, afterSave }) => {
   const manifest = JSON.parse(
     fs.readFileSync(
       path.join(root, "tests/fixtures/atlas-e2e-spatial-v2/manifest.json"),
@@ -58,6 +59,7 @@ module.exports = ({ page, fs, path, assert, qa, out, vault, root, checks }) => {
     );
     await viewport().locator("canvas").waitFor({ state: "visible" });
     await settle();
+    await afterOpen?.();
   }
   async function screen(p) {
     const s = await state(),
@@ -136,6 +138,7 @@ module.exports = ({ page, fs, path, assert, qa, out, vault, root, checks }) => {
       );
   }
   async function save() {
+    await beforeSave?.();
     await button("Atlas speichern").click();
     await page.waitForFunction(() => {
       const v = app.workspace
@@ -146,6 +149,7 @@ module.exports = ({ page, fs, path, assert, qa, out, vault, root, checks }) => {
       );
     });
     await settle();
+    await afterSave?.();
   }
   async function edit() {
     await open();
