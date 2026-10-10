@@ -77,6 +77,41 @@ export function extractMagicItemAzHeadingsFromPdfXml(xml) {
   return Object.freeze(headings);
 }
 
+export function extractApparatusLeverCellsFromPdfXml(xml) {
+  nonEmpty(xml, "Apparatus-Lever-XML");
+  const nodes = [...xml.matchAll(/<text\b([^>]*)>([\s\S]*?)<\/text>/g)].map(match => ({
+    top: Number(/\btop="(\d+)"/.exec(match[1])?.[1]),
+    left: Number(/\bleft="(\d+)"/.exec(match[1])?.[1]),
+    font: /\bfont="(\d+)"/.exec(match[1])?.[1],
+    text: normalizePdfText(decodeXmlText(match[2])),
+  })).filter(node => node.font === "8" && node.text.length > 0);
+  const join = selected => normalizePdfText(selected.sort((left, right) => left.top - right.top || left.left - right.left)
+    .map(node => node.text).join(" "));
+  const joinOrdered = (...selections) => normalizePdfText(selections.map(selected => join(selected)).join(" "));
+  const rows = [{
+    lever: 1,
+    up: joinOrdered(nodes.filter(node => node.left >= 125 && node.left < 280 && node.top >= 1026),
+      nodes.filter(node => node.left >= 530 && node.left < 690 && node.top < 174)),
+    down: joinOrdered(nodes.filter(node => node.left >= 280 && node.left < 480 && node.top >= 1026),
+      nodes.filter(node => node.left >= 690 && node.top < 174)),
+  }];
+  const starts = nodes.filter(node => node.left >= 490 && node.left < 525
+    && node.top >= 174 && node.top < 616 && /^(?:[2-9]|10)$/.test(node.text))
+    .sort((left, right) => left.top - right.top);
+  invariant(JSON.stringify(starts.map(node => Number(node.text))) === JSON.stringify([2, 3, 4, 5, 6, 7, 8, 9, 10]),
+    "Apparatus-Levertabelle muss die physischen Zeilen 2 bis 10 exakt einmal enthalten.");
+  for (const [index, start] of starts.entries()) {
+    const end = starts[index + 1]?.top ?? 616;
+    rows.push({ lever: Number(start.text),
+      up: join(nodes.filter(node => node.left >= 530 && node.left < 690
+        && node.top >= start.top && node.top < end)),
+      down: join(nodes.filter(node => node.left >= 690 && node.top >= start.top && node.top < end)) });
+  }
+  invariant(rows.every(row => row.up.length > 0 && row.down.length > 0),
+    "Apparatus-Levertabelle enthält eine leere Up-/Down-Zelle.");
+  return Object.freeze(rows.map(row => Object.freeze(row)));
+}
+
 function normalizePdfPageText(value, page) {
   return normalizePdfText(value).replaceAll(`System Reference Document 5.1 ${page}`, "").trim();
 }
@@ -468,6 +503,65 @@ export function validateMagicItemAzAnimatedShield(transcript, inventory) {
     rarity: "very-rare", attunement: "required" });
 }
 
+export function validateMagicItemAzApparatusOfTheCrab(transcript, inventory) {
+  const id = "srd51:magic-item:magic-items-a-z:7";
+  const occurrence = inventory.occurrences.find(item => item.id === id);
+  invariant(occurrence?.sourceLabel === "Apparatus of the Crab" && occurrence.ordinal === 7
+    && occurrence.sourceTable === "Magic Items A–Z" && occurrence.sourceKind === "detail-heading"
+    && occurrence.firstPdfPage === 208 && occurrence.lastPdfPage === 208
+    && occurrence.firstPrintedPage === 208 && occurrence.lastPrintedPage === 208
+    && occurrence.variantId === null && occurrence.mergeIntoId === null,
+  "Apparatus-of-the-Crab-Occurrence 7 ist nicht exakt als Seite-208-Heading belegt.");
+  const description = [
+    "This item first appears to be a Large sealed iron barrel weighing 500 pounds. The barrel has a hidden catch, which can be found with a successful DC 20 Intelligence (Investigation) check. Releasing the catch unlocks a hatch at one end of the barrel, allowing two Medium or smaller creatures to crawl inside. Ten levers are set in a row at the far end, each in a neutral position, able to move either up or down. When certain levers are used, the apparatus transforms to resemble a giant lobster.",
+    "The apparatus of the Crab is a Large object with the following statistics:",
+    "Armor Class: 20",
+    "Hit Points: 200",
+    "Speed: 30 ft., swim 30 ft. (or 0 ft. for both if the legs and tail aren’t extended)",
+    "Damage Immunities: poison, psychic",
+    "To be used as a vehicle, the apparatus requires one pilot. While the apparatus’s hatch is closed, the compartment is airtight and watertight. The compartment holds enough air for 10 hours of breathing, divided by the number of breathing creatures inside.",
+    "The apparatus floats on water. It can also go underwater to a depth of 900 feet. Below that, the vehicle takes 2d6 bludgeoning damage per minute from pressure.",
+    "A creature in the compartment can use an action to move as many as two of the apparatus’s levers up or down. After each use, a lever goes back to its neutral position. Each lever, from left to right, functions as shown in the Apparatus of the Crab Levers table.",
+    "Apparatus of the Crab Levers",
+    "Lever Up Down",
+  ];
+  const levers = [
+    ["Legs and tail extend, allowing the apparatus to walk and swim.", "Legs and tail retract, reducing the apparatus’s speed to 0 and making it unable to benefit from bonuses to speed."],
+    ["Forward window shutter opens.", "Forward window shutter closes."],
+    ["Side window shutters open (two per side).", "Side window shutters close (two per side)."],
+    ["Two claws extend from the front sides of the apparatus.", "The claws retract."],
+    ["Each extended claw makes the following melee weapon attack: +8 to hit, reach 5 ft., one target. Hit: 7 (2d6) bludgeoning damage.", "Each extended claw makes the following melee weapon attack: +8 to hit, reach 5 ft., one target. Hit: The target is grappled (escape DC 15)."],
+    ["The apparatus walks or swims forward.", "The apparatus walks or swims backward."],
+    ["The apparatus turns 90 degrees left.", "The apparatus turns 90 degrees right."],
+    ["Eyelike fixtures emit bright light in a 30-foot radius and dim light for an additional 30 feet.", "The light turns off."],
+    ["The apparatus sinks as much as 20 feet in liquid.", "The apparatus rises up to 20 feet in liquid."],
+    ["The rear hatch unseals and opens.", "The rear hatch closes and seals."],
+  ];
+  const record = transcript.records.find(item => item.id === id);
+  invariant(record?.name === "Apparatus of the Crab" && record.category === "magic-item"
+    && record.subcategory === "wondrous-item" && record.magic === true
+    && record.rarity?.kind === "fixed" && record.rarity.value === "legendary"
+    && record.attunement === "not-required"
+    && record.sourceHeader?.text === "Wondrous item, legendary"
+    && record.sourceHeader.occurrenceId === id
+    && JSON.stringify(record.description.map(fact => fact.text)) === JSON.stringify(description)
+    && record.description.every(fact => fact.occurrenceId === id)
+    && JSON.stringify(record.source.pdfPages) === "[208]"
+    && JSON.stringify(record.source.printedPages) === "[208]"
+    && JSON.stringify(record.source.occurrenceIds) === JSON.stringify([id]),
+  "Apparatus-of-the-Crab-Record ist unvollständig oder nicht quellengetreu.");
+  const expectedProperties = levers.flatMap((cells, rowIndex) => cells.map((cell, cellIndex) => ({
+    name: `Lever ${rowIndex + 1} — ${cellIndex === 0 ? "Up" : "Down"}`,
+    description: cell,
+    occurrenceId: id,
+  })));
+  invariant(JSON.stringify(record.properties) === JSON.stringify(expectedProperties),
+    "Apparatus-of-the-Crab-Levertabelle ist unvollständig, umgeordnet oder nicht quellengetreu.");
+  return Object.freeze({ id, ordinal: 7, physicalPdfPage: 208, rarity: "legendary",
+    attunement: "not-required", descriptionFacts: description.length, leverRows: levers.length,
+    leverCells: expectedProperties.length });
+}
+
 function formatAjvErrors(errors) {
   return [...(errors ?? [])]
     .sort((left, right) => [left.instancePath, left.schemaPath, left.keyword, left.message]
@@ -793,7 +887,8 @@ function verifyPdfTranscriptFacts(pdfPath, transcript) {
       record.carryingCapacity?.sourceText, record.damage?.diceText,
       record.damage?.typeText, record.damage?.versatileDiceText, record.armor?.armorClassText,
       record.armor?.strengthRequirementText, record.armor?.stealthRuleText,
-      ...record.properties.map(property => property.description),
+      ...(record.id === "srd51:magic-item:magic-items-a-z:7"
+        ? [] : record.properties.map(property => property.description)),
       ...record.description.map(description => description.text)].filter(Boolean);
     for (const fact of facts) {
       invariant(text.includes(normalizePdfText(fact)), `${record.id}: PDF-Beleg für „${fact}“ fehlt.`);
@@ -865,6 +960,34 @@ function verifyPdfMagicItemAzAnimatedShield(pdfPath, transcript, inventory) {
   return Object.freeze({ ...evidence, derivedHeadingCount: headings.length,
     previousHeading: headings[4], nextHeading: headings[6],
     scope: "ordinal-six-full-header-rarity-attunement-and-description" });
+}
+
+function verifyPdfMagicItemAzApparatusOfTheCrab(pdfPath, transcript, inventory) {
+  const evidence = validateMagicItemAzApparatusOfTheCrab(transcript, inventory);
+  const headings = extractMagicItemAzHeadingsFromPdfXml(execFileSync("pdftohtml",
+    ["-xml", "-f", "207", "-l", "251", "-stdout", resolve(pdfPath)],
+    { encoding: "utf8", maxBuffer: 16 * 1024 * 1024 }));
+  invariant(headings.length === 239 && headings[5] === "Animated Shield"
+    && headings[6] === "Apparatus of the Crab" && headings[7] === "Armor, +1, +2, or +3",
+  "Apparatus of the Crab muss im PDF exakt Ordinal 7 zwischen Animated Shield und Armor, +1, +2, or +3 sein.");
+  const record = transcript.records.find(item => item.id === evidence.id);
+  const pageText = normalizePdfPageText(extractPdfPage(pdfPath, 208), 208);
+  const facts = [record.sourceHeader.text, ...record.description.map(fact => fact.text)];
+  for (const fact of facts) {
+    invariant(pageText.includes(normalizePdfText(fact)),
+      `Apparatus-of-the-Crab-PDF-Beleg für „${fact}“ fehlt.`);
+  }
+  const leverRows = extractApparatusLeverCellsFromPdfXml(execFileSync("pdftohtml",
+    ["-xml", "-f", "208", "-l", "208", "-stdout", resolve(pdfPath)],
+    { encoding: "utf8", maxBuffer: 4 * 1024 * 1024 }));
+  const expectedLeverRows = Array.from({ length: 10 }, (_, index) => ({ lever: index + 1,
+    up: record.properties[index * 2].description, down: record.properties[index * 2 + 1].description }));
+  invariant(JSON.stringify(leverRows) === JSON.stringify(expectedLeverRows),
+    "Apparatus-of-the-Crab-PDF-Leverzellen widersprechen dem Transkript.");
+  return Object.freeze({ ...evidence, checkedPdfFacts: facts.length + evidence.leverCells,
+    derivedHeadingCount: headings.length,
+    previousHeading: headings[5], nextHeading: headings[7],
+    scope: "ordinal-seven-full-header-prose-statistics-and-ten-row-lever-table" });
 }
 
 function verifyPdfHelperDispositions(pdfPath, inventory) {
@@ -947,7 +1070,7 @@ export async function verifyItemsSourcePackage({ pdfPath, allowIncomplete = fals
     "Manifest-Transkriptcount stimmt nicht.");
   const magicItemAzSection = inventory.sections.find(section => section.id === "magic-items-a-z");
   invariant(manifest.coverage.capturedMagicItemAzHeadings === magicItemAzSection?.capturedOccurrences
-    && manifest.coverage.capturedMagicItemAzStandaloneRecords === 6
+    && manifest.coverage.capturedMagicItemAzStandaloneRecords === 7
     && manifest.coverage.capturedMagicItemAzMergedDetails === 1
     && manifest.coverage.unresolvedMagicItemSourceHeadings
       === magicItemAzSection.expectedOccurrences - magicItemAzSection.capturedOccurrences,
@@ -959,6 +1082,7 @@ export async function verifyItemsSourcePackage({ pdfPath, allowIncomplete = fals
   const potionHealingMerge = validatePotionHealingMerge(transcript, inventory);
   const magicItemAzOpeningSlice = validateMagicItemAzOpeningSlice(transcript, inventory);
   const magicItemAzAnimatedShield = validateMagicItemAzAnimatedShield(transcript, inventory);
+  const magicItemAzApparatusOfTheCrab = validateMagicItemAzApparatusOfTheCrab(transcript, inventory);
   let pdf;
   if (pdfPath) {
     const bytes = await readFile(resolve(pdfPath));
@@ -971,6 +1095,8 @@ export async function verifyItemsSourcePackage({ pdfPath, allowIncomplete = fals
       transcriptEvidence: verifyPdfTranscriptFacts(pdfPath, transcript),
       magicItemAzOpeningSliceEvidence: verifyPdfMagicItemAzOpeningSlice(pdfPath, transcript, inventory),
       magicItemAzAnimatedShieldEvidence: verifyPdfMagicItemAzAnimatedShield(pdfPath, transcript, inventory),
+      magicItemAzApparatusOfTheCrabEvidence:
+        verifyPdfMagicItemAzApparatusOfTheCrab(pdfPath, transcript, inventory),
       potionHealingMergeEvidence: verifyPdfPotionHealingMerge(pdfPath, transcript, inventory),
       boundedArmorTableEvidence: verifyPdfArmorTableRows(pdfPath, transcript, inventory),
       boundedWeaponTableEvidence: verifyPdfWeaponTableRows(pdfPath, transcript, inventory),
@@ -987,6 +1113,7 @@ export async function verifyItemsSourcePackage({ pdfPath, allowIncomplete = fals
     validation,
     magicItemAzOpeningSlice,
     magicItemAzAnimatedShield,
+    magicItemAzApparatusOfTheCrab,
     potionHealingMerge,
     pdf,
     hashes: Object.freeze({

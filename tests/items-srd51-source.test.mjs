@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 import {
+  extractApparatusLeverCellsFromPdfXml,
   normalizePdfText,
   extractMagicItemAzHeadingsFromPdfXml,
   validateBoundedAdventuringGearTableRows,
@@ -12,6 +13,7 @@ import {
   validateBoundedWaterborneTableRows,
   validateBoundedWeaponTableRows,
   validateJsonSchemas,
+  validateMagicItemAzApparatusOfTheCrab,
   validateMagicItemAzAnimatedShield,
   validateMagicItemAzOpeningSlice,
   validatePotionHealingMerge,
@@ -75,10 +77,11 @@ test("items source package is explicitly incomplete and fails closed by default"
   await assert.rejects(verifyItemsSourcePackage(), /S01 ist unvollständig/);
   const result = await verifyItemsSourcePackage({ allowIncomplete: true });
   assert.equal(result.complete, false);
-  assert.equal(result.validation.occurrenceCount, 226);
-  assert.equal(result.validation.recordCount, 225);
+  assert.equal(result.validation.occurrenceCount, 227);
+  assert.equal(result.validation.recordCount, 226);
   assert.equal(result.magicItemAzOpeningSlice.capturedRecords, 5);
   assert.equal(result.magicItemAzAnimatedShield.ordinal, 6);
+  assert.equal(result.magicItemAzApparatusOfTheCrab.leverRows, 10);
   assert.equal(result.potionHealingMerge.mergedRecords, 1);
   assert.ok(result.blockers.length >= 5);
 });
@@ -103,6 +106,25 @@ test("Magic Item A–Z ordinal extraction folds a wrapped heading into one occur
   assert.deepEqual(extractMagicItemAzHeadingsFromPdfXml(xml), [
     "Amulet of Health", "Amulet of Proof against Detection and Location", "Amulet of the Planes",
   ]);
+});
+
+test("Apparatus lever extraction preserves physical row and Up/Down cell ownership", () => {
+  const xml = `<pdf2xml><page>
+    <text top="1026" left="98" font="8">1</text>
+    <text top="1026" left="133" font="8">Up one</text><text top="1026" left="287" font="8">Down one</text>
+    <text top="108" left="540" font="8">continued up.</text><text top="108" left="693" font="8">continued down.</text>
+    ${Array.from({ length: 9 }, (_, index) => {
+      const lever = index + 2;
+      const top = 174 + index * 40;
+      return `<text top="${top}" left="505" font="8">${lever}</text>
+        <text top="${top}" left="540" font="8">Up ${lever}.</text>
+        <text top="${top}" left="693" font="8">Down ${lever}.</text>`;
+    }).join("\n")}
+  </page></pdf2xml>`;
+  const rows = extractApparatusLeverCellsFromPdfXml(xml);
+  assert.deepEqual(rows[0], { lever: 1, up: "Up one continued up.", down: "Down one continued down." });
+  assert.deepEqual(rows.slice(1).map(row => row.lever), [2, 3, 4, 5, 6, 7, 8, 9, 10]);
+  assert.deepEqual(rows[9], { lever: 10, up: "Up 10.", down: "Down 10." });
 });
 
 test("variable rarity golden preserves ordered, sourced +1/+2/+3 choices", () => {
@@ -231,6 +253,56 @@ test("Animated Shield fails closed on occurrence, header, rules and prose drift"
     mutate(damaged.records.find(record => record.id.endsWith("a-z:6")));
     assert.throws(() => validateMagicItemAzAnimatedShield(damaged, checkedInventory), /Animated-Shield-Record/);
   }
+});
+
+test("Apparatus of the Crab preserves ordinal, all prose, statistics and ten lever rows", async () => {
+  const [checkedInventory, checkedTranscript] = await Promise.all([
+    readFile(new URL("items-srd51-inventory.json", dataRoot), "utf8").then(JSON.parse),
+    readFile(new URL("items-srd51-transcript.json", dataRoot), "utf8").then(JSON.parse),
+  ]);
+  assert.deepEqual(validateMagicItemAzApparatusOfTheCrab(checkedTranscript, checkedInventory), {
+    id: "srd51:magic-item:magic-items-a-z:7",
+    ordinal: 7,
+    physicalPdfPage: 208,
+    rarity: "legendary",
+    attunement: "not-required",
+    descriptionFacts: 11,
+    leverRows: 10,
+    leverCells: 20,
+  });
+  const record = checkedTranscript.records.find(item => item.id.endsWith("a-z:7"));
+  assert.deepEqual(record.properties.filter((_, index) => index % 2 === 0).map(property => property.name),
+    Array.from({ length: 10 }, (_, index) => `Lever ${index + 1} — Up`));
+  assert.deepEqual(record.properties.filter((_, index) => index % 2 === 1).map(property => property.name),
+    Array.from({ length: 10 }, (_, index) => `Lever ${index + 1} — Down`));
+});
+
+test("Apparatus of the Crab fails closed on occurrence, header, prose and lever-table drift", async () => {
+  const [checkedInventory, checkedTranscript] = await Promise.all([
+    readFile(new URL("items-srd51-inventory.json", dataRoot), "utf8").then(JSON.parse),
+    readFile(new URL("items-srd51-transcript.json", dataRoot), "utf8").then(JSON.parse),
+  ]);
+  const wrongOrdinal = structuredClone(checkedInventory);
+  wrongOrdinal.occurrences.find(item => item.id.endsWith("a-z:7")).ordinal = 8;
+  assert.throws(() => validateMagicItemAzApparatusOfTheCrab(checkedTranscript, wrongOrdinal), /Occurrence 7/);
+  for (const mutate of [
+    record => { record.sourceHeader.text = "Wondrous item"; },
+    record => { record.rarity.value = "very-rare"; },
+    record => { record.attunement = "required"; },
+    record => { record.description[4].text = "Speed: 30 ft."; },
+  ]) {
+    const damaged = structuredClone(checkedTranscript);
+    mutate(damaged.records.find(record => record.id.endsWith("a-z:7")));
+    assert.throws(() => validateMagicItemAzApparatusOfTheCrab(damaged, checkedInventory),
+      /Apparatus-of-the-Crab-Record/);
+  }
+  const missingCell = structuredClone(checkedTranscript);
+  missingCell.records.find(record => record.id.endsWith("a-z:7")).properties.pop();
+  assert.throws(() => validateMagicItemAzApparatusOfTheCrab(missingCell, checkedInventory), /Levertabelle/);
+  const swappedCells = structuredClone(checkedTranscript);
+  const properties = swappedCells.records.find(record => record.id.endsWith("a-z:7")).properties;
+  [properties[0], properties[1]] = [properties[1], properties[0]];
+  assert.throws(() => validateMagicItemAzApparatusOfTheCrab(swappedCells, checkedInventory), /Levertabelle/);
 });
 
 test("Draft 2020-12 schemas validate the checked-in equipment inventory and transcript", async () => {
