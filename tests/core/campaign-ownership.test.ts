@@ -56,7 +56,10 @@ const snapshot = campaignSnapshot({ schemaVersion: 1, campaignId: ids.campaign,
 const context = (token = "context.a1") => campaignContext(snapshot, token as ReturnType<typeof campaignContext>["contextToken"]);
 const refs = (id: string) => [{ id, scope: "campaign-local" as const, schema: "refs.v1" }];
 const worldRecords = [
-  { id: ids.world, recordType: "world", references: refs(ids.location) },
+  { id: ids.world, recordType: "world", references: [
+    ...refs(ids.location),
+    { id: "00000000-0000-4000-8000-000000000099", scope: "shared" as const, schema: "refs.v1" },
+  ] },
   { id: ids.location, recordType: "location", references: refs(ids.city) },
   { id: ids.city, recordType: "city", references: refs(ids.building) },
   { id: ids.building, recordType: "building", references: refs(ids.dungeon) },
@@ -114,6 +117,8 @@ class Publisher implements CampaignMultiOwnerPublishPort {
   calls = 0;
   beforeCompare?: () => void;
   returnUnknownAfterPublish = false;
+  throwAfterPublish = false;
+  currentBefore = new Map(participants().map((participant) => [participant.ownerId, participant.beforeDigest]));
   async publish(request: CampaignMultiOwnerPublishRequestV1) {
     this.calls += 1; this.beforeCompare?.();
     const key = `${request.envelope.commandId}:${request.envelope.receiptId}`, prior = this.published.get(key);
@@ -126,10 +131,15 @@ class Publisher implements CampaignMultiOwnerPublishPort {
     for (const participant of p.participants) {
       const owner = this.current.owners.find((item) => item.ownerId === participant.ownerId);
       if (!owner || owner.ownerRevision !== participant.ownerRevision || owner.schemaRevision !== participant.schemaRevision ||
-          owner.snapshotRevision !== participant.snapshotRevision) return { kind: "conflict" as const };
+          owner.snapshotRevision !== participant.snapshotRevision ||
+          this.currentBefore.get(participant.ownerId) !== participant.beforeDigest) return { kind: "conflict" as const };
     }
     const outcome = { kind: "confirmed" as const };
     this.published.set(key, { fingerprint: request.envelope.fingerprint, outcome });
+    if (this.throwAfterPublish) {
+      this.throwAfterPublish = false;
+      throw new Error("Transport nach durablem Publish abgebrochen.");
+    }
     if (this.returnUnknownAfterPublish) {
       this.returnUnknownAfterPublish = false;
       return { kind: "outcome_unknown" as const };
@@ -174,33 +184,34 @@ test("complete command freezes original context, registry, participants, command
   await assert.rejects(() => coordinator.stage({ ...input, receiptId: campaignReceiptId("00000000-0000-4000-8000-000000000203") }), /anderem Ownership-Auftrag/);
 });
 
-test("post-verify context, registry and owner races fail at the atomic publish boundary", async () => {
-  for (const race of ["context", "registry", "owner"] as const) {
+test("post-verify context, registry, owner and participant-before races fail at the atomic publish boundary", async () => {
+  for (const race of ["context", "registry", "owner", "before"] as const) {
     const initial = context(), { coordinator, registry, publisher, setContext } = setup(initial), input = completeInput();
     await coordinator.stage(input);
     registry.afterVerify = () => {
       if (race === "context") {
         const changed = context("context.a2"); setContext(changed); publisher.current = projection(changed);
       } else if (race === "registry") publisher.current = { ...projection(initial), registryRevision: "registry.v2" };
-      else publisher.current = { ...projection(initial), owners: projection(initial).owners.map((owner) =>
+      else if (race === "owner") publisher.current = { ...projection(initial), owners: projection(initial).owners.map((owner) =>
         owner.ownerId === "world" ? { ...owner, snapshotRevision: "world.snapshot.v2" } : owner) };
+      else publisher.currentBefore.set("world", digest("0"));
     };
     assert.deepEqual(await coordinator.publish(input.commandId), { kind: "conflict" }, race);
     assert.equal(publisher.published.size, 0, race);
-    assert.deepEqual(await coordinator.status(input.commandId), { kind: "outcome_unknown" }, race);
+    assert.deepEqual(await coordinator.status(input.commandId), { kind: "conflict" }, race);
   }
 });
 
-test("race at the linearization callback has no partial effect and retry keeps one receipt", async () => {
+test("conflict at the linearization callback is terminal and never publishes on retry", async () => {
   const { coordinator, publisher } = setup(), input = completeInput();
   await coordinator.stage(input);
   publisher.beforeCompare = () => { publisher.current = { ...projection(), registryRevision: "registry.v2" }; };
   assert.deepEqual(await coordinator.publish(input.commandId), { kind: "conflict" });
   assert.equal(publisher.published.size, 0);
   publisher.beforeCompare = undefined; publisher.current = projection();
-  assert.deepEqual(await coordinator.publish(input.commandId), { kind: "confirmed" });
-  assert.deepEqual(await coordinator.publish(input.commandId), { kind: "confirmed" });
-  assert.equal(publisher.published.size, 1);
+  assert.deepEqual(await coordinator.publish(input.commandId), { kind: "conflict" });
+  assert.equal(publisher.calls, 1);
+  assert.equal(publisher.published.size, 0);
 });
 
 test("lost publish outcome resolves through the original receipt without a second effect", async () => {
@@ -210,7 +221,18 @@ test("lost publish outcome resolves through the original receipt without a secon
   assert.equal(publisher.published.size, 1);
   assert.deepEqual(await coordinator.status(input.commandId), { kind: "confirmed" });
   assert.deepEqual(await coordinator.publish(input.commandId), { kind: "confirmed" });
+  assert.equal(publisher.calls, 1);
   assert.equal(publisher.published.size, 1);
+});
+
+test("publish exception can only resolve through original status and never republishes", async () => {
+  const { coordinator, publisher } = setup(), input = completeInput();
+  await coordinator.stage(input); publisher.throwAfterPublish = true;
+  await assert.rejects(() => coordinator.publish(input.commandId), /Transport/);
+  assert.equal(publisher.calls, 1); assert.equal(publisher.published.size, 1);
+  assert.deepEqual(await coordinator.publish(input.commandId), { kind: "confirmed" });
+  assert.deepEqual(await coordinator.status(input.commandId), { kind: "confirmed" });
+  assert.equal(publisher.calls, 1); assert.equal(publisher.published.size, 1);
 });
 
 test("projection digest, participant revision and closure ID-type binding fail before publish", async () => {
@@ -270,6 +292,22 @@ test("salvage keeps a disjoint closed survivor, omission and quarantine partitio
   ], salvage: plan });
   assert.equal(envelope.salvage!.quarantine[0]!.retention, "unknown-retained");
   assert.equal(Object.isFrozen(envelope.salvage!.quarantine), true);
+});
+
+test("salvage survivor digest and published closure must describe the identical remap", async () => {
+  const { coordinator } = setup(), input = completeInput(), plan = salvage(), changed = plan.survivors.map((item, index) =>
+    index === 0 ? { ...item, targetId: "00000000-0000-4000-8000-000000009999" } : item);
+  await assert.rejects(() => coordinator.stage({ ...input, kind: "salvage-import",
+    closure: [...input.closure.slice(0, 2), ...changed], salvage: plan }), /stimmt nicht mit Survivors/);
+});
+
+test("copy and import reject campaign, namespace, local and shared source identities as targets", async () => {
+  const input = completeInput(), sharedId = "00000000-0000-4000-8000-000000000099";
+  for (const forbidden of [ids.campaign, ids.namespace, ids.world, sharedId]) {
+    const { coordinator } = setup();
+    await assert.rejects(() => coordinator.stage({ ...input, closure: input.closure.map((item) =>
+      item.sourceId === ids.room ? { ...item, targetId: forbidden } : item) }), /Sourceidentität|nicht unabhängig/);
+  }
 });
 
 test("dangling media survivors and lost quarantine or unknown-retained references fail closed", async () => {

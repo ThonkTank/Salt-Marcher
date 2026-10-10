@@ -386,12 +386,18 @@ function checkedPublishOutcome(value: CampaignMultiOwnerPublishOutcome): Campaig
     throw new Error("Ungültiger Mehrowner-Publish-Ausgang.");
   return Object.freeze({ kind: value.kind });
 }
+function canonicalRemaps(value: readonly CampaignIdRemapV1[]): string {
+  return JSON.stringify([...value].sort((a, b) =>
+    `${a.sourceId}:${a.entityType}:${a.targetId}`.localeCompare(`${b.sourceId}:${b.entityType}:${b.targetId}`)));
+}
 
 export class CampaignOwnershipCoordinator {
   private readonly commands = new Map<CampaignCommandId, {
     readonly inputFingerprint: Digest;
     readonly envelope: CampaignMultiOwnerCommandEnvelopeV1;
     readonly projection: CampaignDomainOwnershipProjectionV1;
+    publishStarted: boolean;
+    terminal?: CampaignMultiOwnerPublishOutcome;
     running?: Promise<CampaignMultiOwnerPublishOutcome>;
   }>();
 
@@ -442,7 +448,13 @@ export class CampaignOwnershipCoordinator {
         (keepsIdentity ? targetCampaignId !== context.campaignId || targetNamespace !== context.namespace
           : targetCampaignId === context.campaignId || targetNamespace === context.namespace))
       throw new Error("Campaign-/Namespace-Closure ist ungültig.");
-    const sourceRecordIds = new Set(recordIds);
+    const sourceRecordIds = new Set(recordIds), forbiddenTargets = new Set<string>([
+      context.campaignId, context.namespace, ...recordIds,
+      ...allRecords.flatMap((record) => record.references
+        .filter((reference) => reference.scope === "shared").map((reference) => reference.id)),
+    ]);
+    if (!keepsIdentity && closure.some((item) => forbiddenTargets.has(item.targetId)))
+      throw new Error("Remapziel verwendet eine Sourceidentität wieder.");
     for (const item of closure) {
       if (item.entityType === "campaign" || item.entityType === "namespace") continue;
       const record = recordsById.get(campaignLocalId(item.sourceId));
@@ -456,7 +468,8 @@ export class CampaignOwnershipCoordinator {
     if (inputSnapshot.kind === "salvage-import") {
       if (!inputSnapshot.salvage) throw new Error("Salvage-Projektion fehlt.");
       salvage = checkedSalvage(inputSnapshot.salvage, projection, this.digest);
-      if (JSON.stringify([...mapped].sort()) !== JSON.stringify(salvage.survivors.map((item) => item.sourceId).sort()))
+      const commandSurvivors = closure.filter((item) => item.entityType !== "campaign" && item.entityType !== "namespace");
+      if (canonicalRemaps(commandSurvivors) !== canonicalRemaps(salvage.survivors))
         throw new Error("Salvage-Closure stimmt nicht mit Survivors überein.");
     } else {
       if (inputSnapshot.salvage) throw new Error("Complete-/Spatial-Command darf kein Salvage tragen.");
@@ -468,29 +481,44 @@ export class CampaignOwnershipCoordinator {
       registryId: projection.registryId, registryRevision: projection.registryRevision,
       projectionDigest: projection.projectionDigest, participants: Object.freeze(participants), closure, salvage,
     }, envelope = Object.freeze({ ...withoutFingerprint, fingerprint: checkedDigest(this.digest, withoutFingerprint) });
-    this.commands.set(commandId, { inputFingerprint, envelope, projection });
+    this.commands.set(commandId, { inputFingerprint, envelope, projection, publishStarted: false });
     return envelope;
   }
 
   publish(commandIdRaw: CampaignCommandId): Promise<CampaignMultiOwnerPublishOutcome> {
     const commandId = campaignCommandId(String(commandIdRaw)), command = this.commands.get(commandId);
     if (!command) return Promise.reject(new Error("Ownership-Command ist unbekannt."));
+    if (command.terminal) return Promise.resolve(command.terminal);
     if (command.running) return command.running;
-    command.running = this.publishOnce(command.envelope, command.projection).finally(() => { command.running = undefined; });
+    command.running = (command.publishStarted ? this.resolveStatus(command) : this.publishOnce(command))
+      .finally(() => { command.running = undefined; });
     return command.running;
   }
 
-  private async publishOnce(
-    envelope: CampaignMultiOwnerCommandEnvelopeV1,
-    projection: CampaignDomainOwnershipProjectionV1,
-  ): Promise<CampaignMultiOwnerPublishOutcome> {
+  private terminal(
+    command: { terminal?: CampaignMultiOwnerPublishOutcome },
+    outcome: CampaignMultiOwnerPublishOutcome,
+  ): CampaignMultiOwnerPublishOutcome {
+    if (outcome.kind === "confirmed" || outcome.kind === "conflict") command.terminal = outcome;
+    return outcome;
+  }
+
+  private async publishOnce(command: {
+    readonly envelope: CampaignMultiOwnerCommandEnvelopeV1;
+    readonly projection: CampaignDomainOwnershipProjectionV1;
+    publishStarted: boolean;
+    terminal?: CampaignMultiOwnerPublishOutcome;
+  }): Promise<CampaignMultiOwnerPublishOutcome> {
+    const { envelope, projection } = command;
     const current = this.currentContext();
-    if (!current || !sameContext(current, envelope.context)) return Object.freeze({ kind: "conflict" });
+    if (!current || !sameContext(current, envelope.context))
+      return this.terminal(command, Object.freeze({ kind: "conflict" }));
     const verified = await this.registry.verify(projection);
-    if (verified.kind === "stale") return Object.freeze({ kind: "conflict" });
+    if (verified.kind === "stale") return this.terminal(command, Object.freeze({ kind: "conflict" }));
     if (verified.kind !== "current") return Object.freeze({ kind: "outcome_unknown" });
     const afterVerify = this.currentContext();
-    if (!afterVerify || !sameContext(afterVerify, envelope.context)) return Object.freeze({ kind: "conflict" });
+    if (!afterVerify || !sameContext(afterVerify, envelope.context))
+      return this.terminal(command, Object.freeze({ kind: "conflict" }));
     const request = Object.freeze({
       version: 1 as const, envelope,
       preconditions: Object.freeze({
@@ -499,12 +527,28 @@ export class CampaignOwnershipCoordinator {
         participants: envelope.participants,
       }),
     });
-    return checkedPublishOutcome(await this.publisher.publish(request));
+    command.publishStarted = true;
+    return this.terminal(command, checkedPublishOutcome(await this.publisher.publish(request)));
+  }
+
+  private async resolveStatus(command: {
+    readonly envelope: CampaignMultiOwnerCommandEnvelopeV1;
+    terminal?: CampaignMultiOwnerPublishOutcome;
+  }): Promise<CampaignMultiOwnerPublishOutcome> {
+    const outcome = checkedPublishOutcome(await this.publisher.status(
+      command.envelope.commandId,
+      command.envelope.receiptId,
+    ));
+    return this.terminal(command, outcome);
   }
 
   status(commandIdRaw: CampaignCommandId): Promise<CampaignMultiOwnerPublishOutcome> {
     const commandId = campaignCommandId(String(commandIdRaw)), command = this.commands.get(commandId);
     if (!command) return Promise.reject(new Error("Ownership-Command ist unbekannt."));
-    return this.publisher.status(commandId, command.envelope.receiptId).then(checkedPublishOutcome);
+    if (command.terminal) return Promise.resolve(command.terminal);
+    if (!command.publishStarted) return Promise.resolve(Object.freeze({ kind: "outcome_unknown" }));
+    if (command.running) return command.running;
+    command.running = this.resolveStatus(command).finally(() => { command.running = undefined; });
+    return command.running;
   }
 }
