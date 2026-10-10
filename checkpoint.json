@@ -134,14 +134,14 @@
     "architecture": "ARCHITECTURE.md#geplante-katalog--und-encounter-erweiterung",
     "acceptance": "acceptance.json.saltMarcherCatalogEncounter",
     "currentRun": {
-      "id": "CE-02-I02-S01-W20",
+      "id": "CE-02-I02-S01-W20-N01",
       "kind": "source_inventory_schema_transcript_intermediate",
       "state": "in_progress_verified_incomplete",
-      "focus": "Capture Apparatus of the Crab as Magic Items A–Z ordinal 7 with complete prose, statistics and the ten-row lever table",
+      "focus": "Repair only the stale W19 Acceptance metadata identified by W20-R01",
       "plan": "ROADMAP-SALTMARCHER-CE02-I02-PLAN.md",
-      "result": "Apparatus of the Crab is captured as exact A–Z ordinal 7 on physical/printed page 208 with its full header, legendary rarity, explicit no-attunement state, complete prose and all 20 Up/Down lever cells. A coordinate-aware PDF-XML gate preserves physical row and column ownership where raw pdftotext interleaves the two-column continuation. The source package remains explicitly incomplete and Item product work remains blocked.",
+      "result": "W20-R01 passed every Apparatus source, PDF, table, golden and fail-closed gate and found only stale W19 Acceptance metadata. Acceptance now records W20 counts, Apparatus evidence and remaining scope; source artifacts and product code are unchanged, complete remains false and Item product work remains blocked.",
       "verification": {
-        "sourceRevision": "d3e2ebbee0da796604154eccf982ed769b526472+dirty",
+        "sourceRevision": "a6b132d89478cf543635ccaacc31a578a7f7e8fa+dirty",
         "check": "passed",
         "tests": { "passed": 439, "failed": 0 },
         "build": "passed",
@@ -158,21 +158,21 @@
         "manifestSha256": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64",
         "stylesSha256": "a6d31c13219d4b9f49d2ecf6993106bedef2a33560c9bdfdb93106659d45bc2e"
       },
-      "limits": "Source-package work only. No Item artifact/provider/UI, installed Obsidian or physical host acceptance, Encounter runtime or 2024 rules. The remaining 231 Magic Items A–Z headings, Orb of Dragonkind, magic-item helper reconciliation, remaining goldens, independent W20 review and S01-R01 remain open; I01 stays blocked.",
+      "limits": "Acceptance/checkpoint metadata repair only. No source or product change, Item artifact/provider/UI, installed Obsidian or physical host acceptance, Encounter runtime or 2024 rules. The remaining 231 Magic Items A–Z headings, Orb of Dragonkind, magic-item helper reconciliation, remaining goldens, independent W20-N01 re-review and S01-R01 remain open; I01 stays blocked.",
       "documentation": {
         "status": "partial",
         "branch": "active/installed-phase1",
-        "baseCommit": "d3e2ebbee0da796604154eccf982ed769b526472",
-        "issue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/9#issuecomment-6097612054",
-        "changedFiles": ["src/features/catalog/data/items-srd51-inventory.json", "src/features/catalog/data/items-srd51-transcript.json", "src/features/catalog/data/items-srd51-source-manifest.json", "tools/items-srd51-source-verify.mjs", "tests/items-srd51-source.test.mjs", "checkpoint.json"],
+        "baseCommit": "a6b132d89478cf543635ccaacc31a578a7f7e8fa",
+        "issue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/9#issuecomment-6097760685",
+        "changedFiles": ["acceptance.json", "checkpoint.json"],
         "externalEvidence": {
           "path": "/tmp/SRD_CC_v5.1.pdf, /tmp/w20-pdf-verify.json, main.js, manifest.json, styles.css",
-          "scope": "Local official-PDF verification confirms 227 occurrence labels, 705 generic transcript facts and the dedicated 32-fact Apparatus gate including all 20 coordinate-owned table cells; local build hashes are from the dirty W20 revision. These are ephemeral cloud-host paths, not installed-plugin or GUI evidence."
+          "scope": "Repeated local official-PDF verification confirms the unchanged W20 source package: 227 occurrence labels, 705 generic transcript facts and the dedicated 32-fact Apparatus gate including all 20 coordinate-owned table cells. These are ephemeral cloud-host paths and local build artifacts, not installed-plugin or GUI evidence."
         },
         "publication": "Pending final upstream synchronization, commit and non-force push; exact publication SHA and remote verification will be recorded in the Issue #9 close receipt.",
         "commit": "see Issue #9 close receipt",
-        "notProven": ["complete SRD 5.1 Item corpus", "remaining 231 Magic Items A–Z headings and Orb of Dragonkind", "magic-item helper reconciliation", "remaining goldens", "independent W20 review and S01-R01", "Item product artifact/provider/UI", "Obsidian host acceptance", "Encounter runtime", "any 2024 rules"],
-        "next": "Publish W20 and request independent read-only review; do not begin W21 before PASS."
+        "notProven": ["complete SRD 5.1 Item corpus", "remaining 231 Magic Items A–Z headings and Orb of Dragonkind", "magic-item helper reconciliation", "remaining goldens", "independent W20-N01 re-review and S01-R01", "Item product artifact/provider/UI", "Obsidian host acceptance", "Encounter runtime", "any 2024 rules"],
+        "next": "Publish W20-N01 and request independent read-only re-review; do not begin W21 before PASS."
       }
     },
     "implementationRun": {
