@@ -4,15 +4,15 @@
     "state": "completed",
     "roleContract": "docs/AGENT-ROLES.md#repository-maintenance",
     "repositoryContract": "docs/REPOSITORY.md",
-    "evaluatedShared": "797e12b97dd01e143e2348776497e2e85fa54e02",
-    "scope": "Parallel delivery dependencies and compact contributor entry; no product/domain/host approval.",
-    "next": "Resume own package with npm run next -- --task <issue>. Selection preserves priority, then product work, then free packages before support. Current package state stays in issue main texts; detailed evidence is linked, not copied.",
+    "evaluatedShared": "e934577eb776125c4058c5a9fd84f13d0d1a3171",
+    "scope": "Scope audit: concretized reference/catalog consumption, live reconciliation/history, loot outcome, extension/player delivery and shared UI consumers. No domain/host/product approval; automation audit read-only.",
+    "next": "Use current docs/ROADMAP.md and linked SMR sections; issue mains own executable work. Existing task-maintenance/product-value automations own queue/priorities; no second controller.",
     "verification": [
-      "check:repo PASS",
-      "test:repo 28/28 PASS",
-      "Issue #58 source/claim/review comparison; main text shortened, evidence retained"
+      "check:repo PASS; affected source/diff check",
+      "36 pinned requirement hashes and 38 TN / 18 AC preserved",
+      "Only four shared-UI source delivery mappings extended; foreign memory and acceptance preserved"
     ],
-    "previousOrientation": "797e12b"
+    "previousOrientation": "e934577"
   },
   "saltMarcherReplacement": {
     "date": "2026-10-10",
