@@ -152806,7 +152806,7 @@
       {
         "id": "E2E01-HEX-SPACE-RUNTIME-PLAN-001",
         "requirement": "Concrete actual native Atlas capture and thin CampaignContext-to-Atlas navigation with early visible host route",
-        "state": "checked_plan_and_capture_independent_reviews_pass_own_capture_cleanup_open",
+        "state": "checked_plan_and_capture_cleanup_pass_navigation_core_review_pending",
         "plan": "ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md",
         "planRun": "E2E-01-SPACE-I01c-RUNTIME-P01",
         "catalog": "ROADMAP-E2E-GATES-CANDIDATE.md:13",
@@ -152817,7 +152817,7 @@
           "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-p01-20261010/plan-validation.json"
         ],
         "observed": "Plan names actual existing APIs and small own files for I01a native capture, I01b guarded context/navigation and I01c early real host/restart. Explicit native Source-vs-authority distinction, complete-vs-closure inventory, one camera/history, pending Keys/gesture/draft checks before requested activation, external switch and won-publish preservation, unknown/stale/duplicate/foreign/retired/A-to-B-to-A oracles. No product sources, fixture, user vault, native installation or runtime authority changed.",
-        "notConfirmed": "Plan and I01a Code-R01 plus separate reviewer cleanup passed; own I01a cleanup implementation is checked but its independent CLEAN-R01 remains open. I01b navigation, real Registry/Host/native inventory providers, multiowner publish/P02/P04/CompleteImport/media and native/full E2E remain open.",
+        "notConfirmed": "I01b navigation core checked but independent review and own cleanup pending; real Registry/Host/native inventory providers, multiowner publish/P02/P04/CompleteImport/media and native/full E2E remain open.",
         "independentReview": {
           "state": "PASS_bounded_plan",
           "candidate": "3c80d89bc49239de2bb241820bb6937e58030e61",
@@ -152843,7 +152843,7 @@
       {
         "id": "E2E01-HEX-SPACE-RUNTIME-CAPTURE-001",
         "requirement": "Actual immutable Atlas native payload capture with observed Source/History/Repository lifetime and byte guards, no invented Campaign authority",
-        "state": "checked_core_independent_code_review_pass_own_cleanup_implementation_checked_review_pending",
+        "state": "checked_core_independent_code_review_and_separate_own_cleanup_pass",
         "implementationRun": "E2E-01-SPACE-I01c-RUNTIME-I01a",
         "sourceCommit": "ad265b257a626ea23c35ab8b0074da255a6144a6",
         "catalog": "ROADMAP-E2E-GATES-CANDIDATE.md:13",
@@ -152858,10 +152858,11 @@
           "/home/aaron/.cache/dungeon-native-qa/city-plans/runtime-i01a-r01-20261010/review.json",
           "ROADMAP-E2E01-ATLAS-CAPTURE-CLEANUP-PLAN.md",
           "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-capture-i01a-cleanup-20261010/p01/plan-validation.json",
-          "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-capture-i01a-cleanup-20261010/i01/implementation.json"
+          "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-capture-i01a-cleanup-20261010/i01/implementation.json",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/runtime-i01a-clean-r01-20261010/review.json"
         ],
         "observed": "16 new actual native-source regressions within530/530 tests, check and clean build onad265b2. Seven spatial-v2 native files captured read-only; all referenced invisible terrain plus explicit unplaced Location input, exact native IDs/Markdown, World-terrain aggregate digest, owned Location/Section/Placement records versus foreign City/Dungeon dependencies, immutable Before/After and local tombstones. Source edits/Undo ABA, Hydration, saved/discarded Repository lifetime, original consumer guard and late reads invalidate capture/verification; external observed bytes/locator/duplicate/missing/unknown/forged capture and pending sidecar reject without overwrite. Actual file read checks are not global revision/CAS authority; coverage remains spatial-closure and references unclassified. Original fixture/source IDs and user vault preserved; fresh Shared GM root exactd08 consumed.",
-        "notConfirmed": "Own independent CLEAN-R01, ordinary write-side Campaign gating, Context/prepareLeave/navigation, actual confirmed Registry/inventory/Host and P02/P04/atomic publish/CompleteImport/media remain open. No new native/fresh-process/physical/large-world/original-parity/installed-vault/full-E2E receipt.",
+        "notConfirmed": "Ordinary write-side Campaign gating, actual confirmed Registry/inventory/Host and P02/P04/atomic publish/CompleteImport/media remain open. Context/navigation implemented in own I01b but independent review pending; no new native/full E2E receipt.",
         "independentReview": {
           "state": "PASS_bounded_native_capture_code",
           "candidate": "80580c1fbdb45d818d758018201b35f8e4080a06",
@@ -152894,7 +152895,7 @@
         },
         "cleanup": {
           "run": "E2E-01-SPACE-I01c-RUNTIME-I01a-CLEAN-P01",
-          "state": "implementation_checked_independent_cleanup_review_pending",
+          "state": "PASS_separate_own_cleanup_P_I_R",
           "plan": "ROADMAP-E2E01-ATLAS-CAPTURE-CLEANUP-PLAN.md",
           "planSha256": "d1a0f2ea957f95cc99d5a6e5504e54372ae6c78806c04174e0ec373bfe6fd0ed",
           "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-capture-i01a-cleanup-20261010/p01/plan-validation.json",
@@ -152926,10 +152927,40 @@
             "nativeOnThisSource": false,
             "fullE2E": false
           },
-          "independentReview": "pending_existing_Stadt_peer_CLEAN_R01_on_published_I01_exact_SHA",
+          "independentReview": {
+            "head": "8770e06ebbd850b57cd9b54f4e0b966adc9769c8",
+            "result": "PASS_BOUNDED_CLEANUP",
+            "actualEvidence": "/home/aaron/.cache/dungeon-native-qa/city-plans/runtime-i01a-clean-r01-20261010/review.json",
+            "sha256": "f842495ddafe0c7509f8beec594d3f484ede00a1e057787cc50b3b92e4a8397d",
+            "sourceBindingsSha256": "7518cab97147e7622c6d84d9996571a7a051dbeb2e05e0d575d31a1f2ee72972",
+            "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/13#issuecomment-6094564981",
+            "gate": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6094565063",
+            "readDirectly": true
+          },
           "nativeOnThisSource": false,
           "fullE2E": false
         }
+      },
+      {
+        "id": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
+        "requirement": "Thin Context/navigation consumer with actual native target validation, same Atlas owners and guarded Campaign switching",
+        "state": "checked_core_implementation_independent_review_pending",
+        "implementationRun": "E2E-01-SPACE-I01c-RUNTIME-I01b",
+        "sourceCommit": "e6ad27e73066bb2394d67e555ca9556dd25a0660",
+        "catalog": "ROADMAP-E2E-GATES-CANDIDATE.md:13",
+        "plan": "ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md",
+        "fixtureVersion": "e2e01-spatial-v2",
+        "fixtureUnchanged": true,
+        "evidence": [
+          "src/features/atlas/atlas-campaign-navigation.ts",
+          "src/features/atlas/atlas-repository.ts",
+          "tests/core/atlas-campaign-navigation.test.ts",
+          "tests/core.test.ts",
+          "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-navigation-i01b-20261010/run.json"
+        ],
+        "observed": "actual native World/Location/section/City/building/Dungeon/structured room/section resolution in seven-file fixture; same Repository/History/renderer and relative frames, no writes for navigation; unknown/stale/foreign/duplicate/unavailable/retired/Source edit-Undo ABA and replaced Source rejection before camera/key effects; requested prepareLeave failure blocks actual Lifecycle.activate and restores old editability; retained native Key draft precedes successful activation; external Context change revokes old leases; A-to-B-to-A uses fresh Sources/History; late inert mounts and native initial reads cannot activate old UI or hydrate via guarded factory; confirmed new activation load failure/trashed/applied=false preserve actual new Context without automatic rollback; won actual native journal Save rolls forward only in old Store while its detached mount cannot touch new B",
+        "notConfirmed": "Consumer core with actual native Sources in controlled injected ports; no productive Registry/native inventory/Host provider invented; Mount adapter contracts must guard each asynchronous hydration/write/UI effect; ordinary existing Editor/Repository writes have no general Campaign gate until I01c actual adapter; No new GUI run, native restart, installed-vault, original parity, physical input, large-world or full E2E receipt; P02/P04/atomic multiowner publish/CompleteImport/media remain actual owner dependencies; no cancellation or substitute CommandId/ReceiptId created",
+        "independentReview": "pending existing Stadt peer on exact published candidate; cleanup separate after PASS"
       }
     ],
     "cleanupFindings": [
