@@ -1,12 +1,28 @@
 import type { CampaignLocalId } from "../features/campaign/campaign-contracts";
+import { campaignCommandId, payloadDigest,
+  type CampaignContextProjection, type CampaignCommandId } from "../features/campaign/campaign-contracts";
+import { campaignOwnershipDigestValue,
+  type CampaignOwnershipDigest } from "../features/campaign/campaign-ownership";
+import { worldNotePath,
+  type WorldNotesCommitReceiptV1 } from "../features/campaign/world-notes-commit";
 import { searchWorldNotes, worldNotesSnapshot,
+  serializeWorldNote,
   type WorldNoteChange, type WorldNoteDraft, type WorldNoteKind,
   type WorldNoteRelation, type WorldNotesSnapshotV1 } from "../features/world/world-notes";
 
+export interface WorldNotesCommitResult {
+  readonly snapshot: WorldNotesSnapshotV1;
+  readonly receipt: WorldNotesCommitReceiptV1;
+}
 export interface WorldNotesPanelOptions {
   readonly newId: () => CampaignLocalId;
-  /** Must return the confirmed published snapshot, never an uncommitted local proposal. */
-  readonly commit: (change: WorldNoteChange, expectedRevision: number) => Promise<WorldNotesSnapshotV1>;
+  readonly currentContext: () => CampaignContextProjection | null;
+  readonly digest: CampaignOwnershipDigest;
+  /** Must reject a receipt that was not issued by the Campaign-owned participant. */
+  readonly validateReceipt: (receipt: WorldNotesCommitReceiptV1) => void;
+  /** Must return the published projection and its causal committed receipt. */
+  readonly commit: (commandId: CampaignCommandId, change: WorldNoteChange,
+    expectedRevision: number) => Promise<WorldNotesCommitResult>;
 }
 const kinds: readonly WorldNoteKind[] = ["npc", "faction", "quest", "rumor"];
 const labels: Record<WorldNoteKind, string> = {
@@ -117,6 +133,31 @@ export class WorldNotesPanel {
       ? !before.records.some((item) => item.id === change.id) && record.revision === 1
       : !!old && !old.deleted && old.revision === change.expectedRevision &&
         record.revision === change.expectedRevision + 1;
+  }
+  private confirmsReceipt(commandId: CampaignCommandId, change: WorldNoteChange,
+    before: WorldNotesSnapshotV1, after: WorldNotesSnapshotV1,
+    context: CampaignContextProjection, receipt: WorldNotesCommitReceiptV1): boolean {
+    this.options.validateReceipt(receipt);
+    const current = this.options.currentContext(),
+      record = after.records.find((item) => item.id === change.id),
+      old = before.records.find((item) => item.id === change.id);
+    return !!current && current.lifecycle === "active" &&
+      current.contextToken === context.contextToken &&
+      current.campaignId === context.campaignId && current.namespace === context.namespace &&
+      current.revision === context.revision &&
+      !!record && receipt.version === 1 && receipt.status === "committed" &&
+      receipt.commandId === commandId && receipt.contextToken === context.contextToken &&
+      receipt.changeDigest === campaignOwnershipDigestValue(change, this.options.digest) &&
+      receipt.recordId === change.id &&
+      receipt.notePath === worldNotePath(after.namespace, record.kind, record.id) &&
+      receipt.beforeSnapshotRevision === before.revision &&
+      receipt.afterSnapshotRevision === after.revision &&
+      receipt.beforeSnapshotDigest === campaignOwnershipDigestValue(before, this.options.digest) &&
+      receipt.afterSnapshotDigest === campaignOwnershipDigestValue(after, this.options.digest) &&
+      receipt.beforeRecordRevision === (old?.revision ?? null) &&
+      receipt.afterRecordRevision === record.revision &&
+      receipt.afterPayloadDigest === payloadDigest(this.options.digest(serializeWorldNote(record))) &&
+      receipt.deleted === record.deleted;
   }
   private renderList(): void {
     this.list.replaceChildren();
@@ -241,10 +282,17 @@ export class WorldNotesPanel {
     this.busy = true; this.message("Speichern läuft");
     const stamp = ++this.generation;
     try {
-      const confirmed = worldNotesSnapshot(await this.options.commit(change, before.revision));
+      const context = this.options.currentContext();
+      if (!context || context.lifecycle !== "active" || context.campaignId !== before.campaignId ||
+          context.namespace !== before.namespace)
+        throw new Error("World-Kontext ist nicht aktiv.");
+      const commandId = campaignCommandId(crypto.randomUUID()),
+        result = await this.options.commit(commandId, change, before.revision),
+        confirmed = worldNotesSnapshot(result.snapshot);
       if (this.destroyed || stamp !== this.generation) return;
       if (confirmed.campaignId !== before.campaignId || confirmed.namespace !== before.namespace ||
-          !this.confirms(change, before, confirmed))
+          !this.confirms(change, before, confirmed) ||
+          !this.confirmsReceipt(commandId, change, before, confirmed, context, result.receipt))
         throw new Error("Angeforderte World-Änderung wurde nicht bestätigt.");
       this.snapshot = confirmed;
       this.pending = null; this.message("Gespeichert");
