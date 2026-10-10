@@ -6885,7 +6885,10 @@
       "steps": "Isolierte Karte öffnen; Geschoss 1 und Raum 12 wählen; improvisierten Key-Hinweis übernehmen; Verbindung Raum 11/12 verschieben und Undo/Redo; synthetische GM-Testassets aktivieren, Wooden Crate platzieren/duplizieren und Undo/Redo; speichern, schließen und frisch im Tab wiederöffnen; Zustand prüfen; Spielansicht öffnen und Raum-Key-Suchweg zurück zum Hinweis prüfen; temporäre Türänderung zurück auf gespeicherten Zustand setzen.",
       "result": "Gespeicherter Key, Türposition und zwei Kisten überlebten Tab-Reopen; Suchtreffer aktivierte Raum 12/Geschoss 1. In Spielansicht zeigte Raumklick keinen Key. Quelle blieb byteidentisch; ausschließlich isolierte Kopie geändert.",
       "evidencePath": "/workspace/scratch/gm-cloud-qa/evidence-gmux01-c-restore-20261009/",
-      "changedFiles": ["checkpoint.json", "ROADMAP-GM-PRODUCT-TESTING-PLAN.md"],
+      "changedFiles": [
+        "checkpoint.json",
+        "ROADMAP-GM-PRODUCT-TESTING-PLAN.md"
+      ],
       "commit": "6880b3b4c7a96d7ae0d8c5622e2db07646d88dfa",
       "issue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/8",
       "limits": "Kein frischer Electronprozess, keine physische Eingabeabnahme, keine Produktlatenz, keine GM-/Spieler-Sichtbarkeitsentscheidung, keine Gesamtfreigabe; volle GM-UX-01 bleibt partial. Keine Implementierungsänderung.",
@@ -6907,7 +6910,10 @@
       "result": "Beide gezielten Klicks trafen das Play-View-Canvas, öffneten aber weder Room-Inspector noch „Text öffnen“ oder Key-Ansicht. Sichtbarkeit war interne GM-Spielansicht, keine separate PlayerProjection. Kein Karteninhalt geändert.",
       "sourceCorrelation": "src/ui/views.ts:153-158 checks this.compact before activateAt; src/ui/views.ts:569-573 constructs DungeonPlayView card without compact:true; src/main.ts:526-537 defaults compact=false.",
       "evidencePath": "/workspace/scratch/gm-cloud-qa/evidence-gmux01-obs04-clarification-20261010/",
-      "changedFiles": ["checkpoint.json", "ROADMAP-GM-PRODUCT-TESTING-PLAN.md"],
+      "changedFiles": [
+        "checkpoint.json",
+        "ROADMAP-GM-PRODUCT-TESTING-PLAN.md"
+      ],
       "commit": null,
       "issue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/8",
       "limits": "Kein frischer Electron-Prozess, keine physische Eingabeabnahme, keine Produktlatenz, keine separate Spielerprojektion oder Berechtigungs-/Datenschutzfreigabe; ein einzelner Cloud-GM-Lauf. Keine Produktimplementierung.",
@@ -6937,13 +6943,87 @@
       "steps": "Vollständiges PR-Kandidatentripel kopiert, Hashgleichheit geprüft und sichtbarer Reload app without saving; QA-Karte über Ctrl+O geöffnet; Menü > Spielansicht > Zurück zum Layout; sichtbares Geschossfeld Geschoss 1. Einmal Raum-12-Körper (1195,637) geklickt: Trefferziel war Canvas, Inspector zeigte 12 · Raum 12 und Text öffnen. Text öffnen geklickt: RoomView zeigte den gespeicherten Raum-12-Key vollständig. Danach Editor über Ctrl+O erneut geöffnet, dieselbe Spielansicht und Geschoss 1 gewählt; einmal Raum-12-Label (1196,616) geklickt: Trefferziel Canvas, RoomView öffnete denselben gespeicherten Key direkt. Vollständiges vorheriges Plugintripel wiederhergestellt und sichtbarer App-Reload ausgeführt.",
       "result": "Vorläufiger Kandidaten-Smoke sichtbar bestanden: Körperklick öffnet Inspector mit Text öffnen; explizite Aktion öffnet Key; Labelklick öffnet denselben Key direkt; Keytext erschien nicht ungefragt in der Kartenansicht. QA-Kartenhash unverändert.",
       "evidencePath": "/workspace/scratch/gm-cloud-qa/evidence-gmux01-obs04-candidate-20261010/",
-      "evidence": ["00-pre.png", "06-playview-enter.png", "08-floor-1.png", "09-room12-body.png", "10-room12-text-open.png", "12-playview-label-start.png", "13-room12-label.png", "14-restored-shared-plugin.png"],
-      "changedFiles": ["checkpoint.json", "ROADMAP-GM-PRODUCT-TESTING-PLAN.md"],
+      "evidence": [
+        "00-pre.png",
+        "06-playview-enter.png",
+        "08-floor-1.png",
+        "09-room12-body.png",
+        "10-room12-text-open.png",
+        "12-playview-label-start.png",
+        "13-room12-label.png",
+        "14-restored-shared-plugin.png"
+      ],
+      "changedFiles": [
+        "checkpoint.json",
+        "ROADMAP-GM-PRODUCT-TESTING-PLAN.md"
+      ],
       "commit": "8a7812057d37f5374eba62199dd68abe2af4182c",
       "issueComment": "6093368409",
       "latency": "Not measured; Playwright/CDP action and 150–500 ms harness waits are not product latency.",
       "limits": "Candidate PR is still open/unmerged and had no independent review at test time; this is not integrated acceptance. Existing Electron process only, no fresh process or physical input; no player projection/privacy review, no broad Dungeon/GM approval. No map mutation; no save was required.",
       "next": "After independent PR #21 review and normal merge, rebuild/install exact current Shared bundle and repeat only the same body/Text öffnen/label/hash protection flow."
+    },
+    "latestObs04Implementation": {
+      "id": "GM-UX-OBS-04-I01",
+      "status": "completed_automated_verification_cloud_retest_and_independent_review_open",
+      "branch": "codex/gm-ux-obs04-i01-20261010",
+      "baseCommit": "ad7b2a0f28a96540fd270c1d7334903306f16dc4",
+      "productCommit": "97bf78e228073081e04e9261bac81b5c7c8c2fe5",
+      "issueClaim": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/8#issuecomment-6092231003",
+      "changedFiles": [
+        "src/ui/views.ts",
+        "tests/dungeon-view-lifecycle.entry.ts",
+        "checkpoint.json",
+        "acceptance.json",
+        "ROADMAP-GM-PRODUCT-TESTING-PLAN.md"
+      ],
+      "result": "DungeonPlayView fordert den bereits vorhandenen interaktiven DungeonMapCard-Modus an. Raumkörper und Raumlabel verwenden dadurch die bestehenden Inspector-/RoomView-Wege; keine Karten-, Key-, Session-, History- oder Persistenzlogik wurde dupliziert oder geändert.",
+      "verification": "Focused dungeon-view lifecycle 7/7 PASS; npm run check PASS; npm test 422/422 PASS; npm run build PASS. Clean product build 97bf78e: main.js 522823730ddce4d0ba83e0476f60887b60a07c517f84e8e270814b6d597efa43; styles.css a6d31c13219d4b9f49d2ecf6993106bedef2a33560c9bdfdb93106659d45bc2e; manifest.json 2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64.",
+      "externalEvidence": "/workspace/scratch/gm-cloud-qa/evidence-gmux01-obs04-clarification-20261010/ on tested build d394b8ea3d2c0cbbb42e81f49211508b329d53f2; tester issue comment 6091803168. Evidence reproduced the pre-fix failure and was not rerun by the implementer.",
+      "limits": "Kein Fixbuild-Cloud-Nachtest, kein unabhängiger Produktreview, kein frischer Electronprozess, keine physische Eingabe und keine PlayerProjection-/Redactionprüfung. Keine breite UX-, Host-, Dungeon-, E2E- oder Gesamtfreigabe.",
+      "next": "Nach normaler Integration wiederholt Cloud-GM ausschließlich die bereits veröffentlichte Raum-12-Körper-/Label-/Keyfolge samt Kartenhash; ein unabhängiger Prüfer liest den engen Produktdiff."
+    },
+    "latestObs04SharedIntegration": {
+      "id": "GM-UX-OBS-04-SHARED-INTEGRATION-01",
+      "state": "independent_owner_review_pass_shared_merge_checked_cloud_retest_pending",
+      "steward": "Hex",
+      "sharedBase": "22231aa412982d186f705438eae5e543d9eaeb71",
+      "reviewedOwner": "f4ad089d1084dbdbf98feec1d41a85a7014d1b84",
+      "integrationProductCommit": "734a7b9c5714acf2ca5aa0395d9706594a5d4ecd",
+      "ownerHandoff": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/21#issuecomment-6093634507",
+      "independentReview": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/21#issuecomment-6093614585",
+      "reviewArtifactCleanup": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/8#issuecomment-6093620157",
+      "checks": {
+        "check": true,
+        "testsPassed": 425,
+        "testsFailed": 0,
+        "build": true,
+        "cleanExactProductMerge": true,
+        "eventProbe": {
+          "pass": true,
+          "groups": [
+            "playview-real-card-wiring",
+            "body-explicit-key",
+            "label-same-key",
+            "drag-cancel-pointer-boundaries",
+            "room-values-unchanged"
+          ],
+          "boundary": "deterministic renderer hit adapter; no GPU, vault, physical input or fresh process evidence"
+        },
+        "diffCheck": true
+      },
+      "artifactSha256": {
+        "main.js": "522823730ddce4d0ba83e0476f60887b60a07c517f84e8e270814b6d597efa43",
+        "styles.css": "a6d31c13219d4b9f49d2ecf6993106bedef2a33560c9bdfdb93106659d45bc2e",
+        "manifest.json": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64"
+      },
+      "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/obs04-shared-integration-20261010",
+      "preservation": "Both complete Cloud candidate-smoke and implementation evidence retained; all foreign checkpoint/acceptance roots unchanged; product/test blobs match reviewed exact owner; Shared source includes only this reviewed OBS-04 fix, not PR13 Atlas or PR25 Campaign.",
+      "host": false,
+      "freshProcess": false,
+      "physicalInput": false,
+      "fullE2E": false,
+      "next": "Cloud-GM uses actual published Shared descendant of this checked merge, rebuilds exact clean bundle, and repeats only room12 body/explicit button/label/no unsolicited key text/unchanged QA hash. Candidate smoke is prior evidence."
     }
   }
 }
