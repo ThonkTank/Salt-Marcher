@@ -31,6 +31,7 @@ import {
 import {
   campaignDomainOwnershipProjection,
   campaignDomainOwnershipProjectionDigest,
+  campaignDomainOwnerPolicyDigest,
   campaignOwnershipDigestValue,
   type CampaignDomainOwnerProjectionV1,
   type CampaignDomainOwnershipProjectionV1,
@@ -136,6 +137,9 @@ function checkedRegistry(
     context,
     owners: content.owners,
   });
+  for (const owner of validated.owners)
+    if (campaignDomainOwnerPolicyDigest(owner, digest) !== owner.policyDigest)
+      throw new Error("Owner-Policy-Digest stimmt nicht.");
   const normalized = { ...content, owners: validated.owners };
   const expected = campaignOwnershipDigestValue(normalized, digest);
   if (payloadDigest(String(value.registryContentDigest)) !== expected)
@@ -191,6 +195,12 @@ export function parseCampaignRuntimeManifest(
     if (!owned || owned.recordType !== record.kind)
       throw new Error("Atlasrecord gehört keinem bestätigten Registryowner.");
   }
+  const navigable = registry.owners.flatMap((owner) => owner.records
+    .filter((record) => navigationKinds.includes(record.recordType as AtlasNavigationKind))
+    .map((record) => `${owner.ownerId}:${record.recordType}:${record.id}`)).sort(),
+    inventoried = atlas.records.map((record) => `${record.ownerId}:${record.kind}:${record.id}`).sort();
+  if (navigable.length !== inventoried.length || navigable.some((value, index) => value !== inventoried[index]))
+    throw new Error("Atlasinventar deckt die bestätigten Registryrecords nicht vollständig.");
   return immutable({ version: 1, snapshot, registry, atlas });
 }
 
@@ -203,6 +213,7 @@ export class CampaignRuntimeSource {
   private loaded?: LoadedSet;
   private unsubscribe?: () => void;
   private readonly changed = new Set<() => void>();
+  private readonly projectionSources = new Map<string, string>();
   constructor(
     private readonly storage: CampaignRuntimeStorage,
     private readonly digest: CampaignOwnershipDigest,
@@ -289,18 +300,22 @@ export class CampaignRuntimeSource {
   readonly registry: CampaignOwnerRegistryPort = {
     read: async (expected) => {
       try {
-        const manifest = (await this.load(true)).manifests.get(expected.campaignId)?.manifest;
-        if (!manifest || manifest.snapshot.lifecycle !== "active") return { kind: "unavailable" };
-        return { kind: "confirmed", projection: this.projection(manifest, expected) };
+        const loaded = (await this.load(true)).manifests.get(expected.campaignId), manifest = loaded?.manifest;
+        if (!loaded || !manifest || manifest.snapshot.lifecycle !== "active") return { kind: "unavailable" };
+        const projection = this.projection(manifest, expected);
+        this.projectionSources.set(projection.projectionDigest, payloadDigest(this.digest(loaded.bytes)));
+        return { kind: "confirmed", projection };
       } catch { return { kind: "unavailable" }; }
     },
     verify: async (expected) => {
       try {
-        const manifest = (await this.load(true)).manifests.get(expected.context.campaignId)?.manifest;
-        if (!manifest || manifest.snapshot.lifecycle !== "active") return { kind: "unavailable" };
+        const loaded = (await this.load(true)).manifests.get(expected.context.campaignId), manifest = loaded?.manifest;
+        if (!loaded || !manifest || manifest.snapshot.lifecycle !== "active") return { kind: "unavailable" };
         const current = this.projection(manifest, expected.context);
         return current.registryId === expected.registryId && current.registryRevision === expected.registryRevision &&
-          current.projectionDigest === expected.projectionDigest ? { kind: "current" } : { kind: "stale" };
+          current.projectionDigest === expected.projectionDigest &&
+          this.projectionSources.get(expected.projectionDigest) === payloadDigest(this.digest(loaded.bytes))
+          ? { kind: "current" } : { kind: "stale" };
       } catch { return { kind: "unavailable" }; }
     },
   };
@@ -326,6 +341,7 @@ export class CampaignRuntimeSource {
 export class CampaignRuntimeNavigationProvider {
   private readonly changed = new Set<() => void>();
   private readonly unsubscribe: () => void;
+  private sourceCurrent = true;
   readonly registry: CampaignOwnerRegistryPort;
   readonly inventory: AtlasInventoryPort;
   constructor(
@@ -334,9 +350,9 @@ export class CampaignRuntimeNavigationProvider {
   ) {
     this.registry = source.registry;
     this.inventory = source.inventory;
-    this.unsubscribe = source.subscribe(() => this.notify());
+    this.unsubscribe = source.subscribe(() => { this.sourceCurrent = false; this.notify(); });
   }
-  currentContext = (): CampaignContextProjection | null => this.lifecycle.context;
+  currentContext = (): CampaignContextProjection | null => this.sourceCurrent ? this.lifecycle.context : null;
   entries(): Promise<readonly CampaignRuntimeEntry[]> { return this.source.entries(); }
   subscribeContextChanged(changed: () => void): () => void {
     this.changed.add(changed); return () => this.changed.delete(changed);
@@ -350,7 +366,7 @@ export class CampaignRuntimeNavigationProvider {
     const result = await this.lifecycle.activate(
       campaignCommandId(String(commandId)), campaignId(String(targetId)), kind,
     );
-    if (result.applied) this.notify();
+    if (result.applied) { this.sourceCurrent = true; this.notify(); }
     return result;
   }
   close(): void { this.unsubscribe(); this.changed.clear(); }

@@ -39,6 +39,7 @@ test("campaign picker blocks duplicate clicks and exposes a current-campaign fai
 test("campaign picker ignores stale completion after update and destroy", async () => {
   const first = deferred(), f = fixture(async () => { await first.promise; return { activeCampaignId: a }; }); f.view.update(model());
   (f.host.querySelector("button") as HTMLButtonElement).click(); f.view.update(model(a));
+  assert.equal((f.host.querySelector("button") as HTMLButtonElement).disabled, false);
   first.resolve(); await tick(); assert.equal(f.host.querySelector("[data-active=true]")?.textContent.includes("Alpha"), true);
   const second = deferred(), g = fixture(async () => { await second.promise; return { activeCampaignId: a }; }); g.view.update(model());
   (g.host.querySelector("button") as HTMLButtonElement).click(); g.view.destroy(); second.resolve(); await tick();

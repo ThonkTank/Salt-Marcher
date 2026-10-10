@@ -36,7 +36,7 @@ export class CampaignEntry {
   }
   update(model: CampaignEntryModel): void {
     if (this.destroyed) return;
-    this.generation++;
+    this.generation++; this.busy = false;
     this.model = Object.freeze({
       activeCampaignId: model.activeCampaignId,
       activeUnavailableReason: model.activeUnavailableReason,

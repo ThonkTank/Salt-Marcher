@@ -11,7 +11,8 @@ import {
   type CampaignId,
 } from "../../src/features/campaign/campaign-contracts";
 import { CampaignLifecycle } from "../../src/features/campaign/campaign-lifecycle";
-import { campaignOwnershipDigestValue } from "../../src/features/campaign/campaign-ownership";
+import { campaignDomainOwnerPolicyDigest, campaignOwnershipDigestValue,
+  type CampaignDomainOwnerProjectionV1 } from "../../src/features/campaign/campaign-ownership";
 import {
   CampaignRuntimeSource,
   CampaignRuntimeNavigationProvider,
@@ -28,18 +29,25 @@ const a = campaignId(uuid(1)), b = campaignId(uuid(2)), worldA = uuid(101), worl
 function manifest(id: CampaignId, worldId: string, name = "Salzmarsch", revision = 1): string {
   const snapshot = campaignSnapshot({ schemaVersion: 1, campaignId: id, revision, name,
     namespace: campaignNamespace(id === a ? uuid(11) : uuid(12)), lifecycle: "active" });
-  const owners = [{ ownerId: "atlas", ownerRevision: "owner:1", schemaRevision: "schema:1",
-    snapshotRevision: "snapshot:1", policyRevision: "policy:1", policyDigest: sha("policy"),
+  const owner = { ownerId: "atlas", ownerRevision: "owner:1", schemaRevision: "schema:1",
+    snapshotRevision: "snapshot:1", policyRevision: "policy:1", policyDigest: sha("placeholder"),
     availability: "confirmed", emptyConfirmed: false, referenceSchemas: ["atlas:1"],
     source: { adapterType: "native-atlas", generation: "source:1" },
     records: [{ id: worldId, recordType: "world", references: [], payloadDigest: sha("world"), media: null }],
-    transferPolicies: [] }];
+    transferPolicies: [] };
+  owner.policyDigest = campaignDomainOwnerPolicyDigest(owner as unknown as CampaignDomainOwnerProjectionV1, digest);
+  const owners = [owner];
   const registryContent = { version: 1, registryId: "registry:1", registryRevision: "registry-revision:1",
     campaignId: id, campaignRevision: revision, namespace: snapshot.namespace, owners };
   return JSON.stringify({ version: 1, snapshot,
     registry: { ...registryContent, registryContentDigest: campaignOwnershipDigestValue(registryContent, digest) },
     atlas: { worldId, files: [{ kind: "world", id: worldId, path: `Atlanten/${worldId}.overworld`, savedDigest: sha("bytes") }],
       records: [{ id: worldId, kind: "world", documentId: worldId, ownerId: "atlas", availability: "available" }] } });
+}
+function resign(raw: Record<string, any>): string {
+  const { registryContentDigest: _old, ...content } = raw.registry;
+  raw.registry.registryContentDigest = campaignOwnershipDigestValue(content, digest);
+  return JSON.stringify(raw);
 }
 class Storage implements CampaignRuntimeStorage {
   files: CampaignRuntimeFile[] = [];
@@ -87,8 +95,15 @@ test("runtime source fails closed for stale, duplicated, trashed and malformed m
   assert.equal(await source.lifecycle.read(a), null);
   const damaged = JSON.parse(manifest(b, worldB)); damaged.registry.registryContentDigest = sha("foreign");
   assert.throws(() => parseCampaignRuntimeManifest(JSON.stringify(damaged), digest), /Digest/);
-  damaged.registry.registryContentDigest = campaignOwnershipDigestValue({ ...damaged.registry,
-    registryContentDigest: undefined }, digest);
+});
+
+test("runtime manifest requires canonical owner policy and complete Registry to Atlas inventory coverage", () => {
+  const policy = JSON.parse(manifest(a, worldA)); policy.registry.owners[0].policyDigest = sha("foreign-policy");
+  assert.throws(() => parseCampaignRuntimeManifest(resign(policy), digest), /Policy-Digest/);
+  const incomplete = JSON.parse(manifest(a, worldA));
+  incomplete.registry.owners[0].records.push({ id: uuid(120), recordType: "location", references: [],
+    payloadDigest: sha("location"), media: null });
+  assert.throws(() => parseCampaignRuntimeManifest(resign(incomplete), digest), /nicht vollständig/);
 });
 
 test("runtime source exposes no create or rename publication path", async () => {
@@ -106,8 +121,19 @@ test("navigation provider exposes the exact Campaign ports and announces activat
   const result = await provider.activate(campaignCommandId(uuid(305)), a, "open");
   assert.equal(result.applied, true); assert.equal(provider.currentContext()?.campaignId, a); assert.equal(changes, 1);
   storage.set([{ path: "Kampagnen/SaltMarcher/a.campaign.json", bytes: manifest(a, worldA, "Geändert", 2) }]);
-  assert.equal(changes, 2);
+  assert.equal(changes, 2); assert.equal(provider.currentContext(), null);
   stop(); provider.close(); storage.set([]); assert.equal(changes, 2);
+});
+
+test("registry verify detects an Atlas-only manifest edit", async () => {
+  const storage = new Storage(), path = "Kampagnen/SaltMarcher/a.campaign.json", raw = manifest(a, worldA);
+  storage.set([{ path, bytes: raw }]);
+  const source = new CampaignRuntimeSource(storage, digest), service = lifecycle(source),
+    activation = await service.activate(campaignCommandId(uuid(306)), a), read = await source.registry.read(activation.context!);
+  assert.equal(read.kind, "confirmed"); if (read.kind !== "confirmed") return;
+  const edited = JSON.parse(raw); edited.atlas.files[0].savedDigest = sha("changed-atlas-bytes");
+  storage.set([{ path, bytes: JSON.stringify(edited) }]);
+  assert.equal((await source.registry.verify(read.projection)).kind, "stale");
 });
 
 test("runtime source rejects an out-of-order list answer and keeps the newest manifest set", async () => {
