@@ -82,11 +82,12 @@ process.stdout.write(fs.readFileSync('issue.json', 'utf8'));
   const issue = { number: 40, title: 'Save and fresh reopen', url: 'https://example.test/40',
     body: 'Continue the owned repair.', state: 'OPEN', labels: [{ name: 'kind:task' },
       { name: 'status:active' }, { name: 'status:blocked' }],
-    comments: [1, 2, 3, 4].map(number => ({ url: `comment/${number}`, body: `handoff ${number}` })) };
-  const run = value => {
+    comments: [1, 2, 3, 4].map(number => ({ url: `comment/${number}`,
+      body: `handoff ${number}\n${'evidence '.repeat(100)}full-tail-${number}` })) };
+  const run = (value, extra = []) => {
     fs.writeFileSync(path.join(root, 'issue.json'), JSON.stringify(value));
     return spawnSync(process.execPath, [fileURLToPath(new URL('../tools/next-task.mjs', import.meta.url)),
-      '--task', '40'], { cwd: root, encoding: 'utf8', env: { ...process.env,
+      '--task', '40', ...extra], { cwd: root, encoding: 'utf8', env: { ...process.env,
         PATH: path.join(root, 'bin') + path.delimiter + process.env.PATH } });
   };
   const result = run(issue);
@@ -98,6 +99,13 @@ process.stdout.write(fs.readFileSync('issue.json', 'utf8'));
   const calls = fs.readFileSync(path.join(root, 'calls.jsonl'), 'utf8').trim().split('\n').map(JSON.parse);
   assert.equal(calls.length, 1);
   assert.deepEqual(calls[0].slice(0, 5), ['issue', 'view', '40', '--repo', 'test/repo']);
+  assert.match(result.stdout, /previews are incomplete context, not claim clearance/);
+  assert.doesNotMatch(result.stdout, /full-tail/);
+  assert(result.stdout.length < 1800, 'Default resume must not expand long evidence comments');
+  const expanded = run(issue, ['--comments']);
+  assert.equal(expanded.status, 0, expanded.stderr);
+  for (const number of [2, 3, 4]) assert.match(expanded.stdout, new RegExp(`full-tail-${number}`));
+  assert.doesNotMatch(expanded.stdout, /full-tail-1|comment preview/);
   for (const invalid of [{ ...issue, state: 'CLOSED' }, { ...issue, labels: [{ name: 'kind:coordination' }] }]) {
     const rejected = run(invalid);
     assert.equal(rejected.status, 1);

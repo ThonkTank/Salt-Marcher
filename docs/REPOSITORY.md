@@ -22,7 +22,7 @@ README/CONTRIBUTING führen hinein, [INDEX](INDEX.md) ist die einzige Bereichska
 
 **Offene Aufgabenissues und ihre verlinkten PRs sind der einzige ausführbare Arbeitsbestand.** `npm run next` zeigt Produktengpässe, freie Pakete und ausdrücklich angebotene Unterstützung; `--task <nummer>` öffnet ein bekanntes eigenes Paket, `--area <bereich>` begrenzt die Auswahl. Eine Kommentar-`READY_FRONTIER` ist keine zweite Queue. #12 führt die gemeinsame Gateentscheidung, nicht eine Kopie aller Aufgaben. Zugriff/Fähigkeiten müssen passen; [WORKFLOW](WORKFLOW.md) bestimmt Paketgrenzen und Prüfung.
 
-Beim Aufwachen eigene begonnene Arbeit fortsetzen. Bei einem echten Blocker den fehlenden Eingang einmal am Paket nennen, dann passende Unterstützung oder freie unabhängige Produktarbeit wählen, auch außerhalb des bisherigen Bereichs. Ist keine passende Einladung vorhanden, bestätigte unbesetzte Restbedarfe am Fachort prüfen und bei erfüllten Voraussetzungen selbst ein Ergebnispaket anbieten. Eine leere `ready`-Liste allein beendet diese Auswahl nicht. Wenn nach dieser Prüfung nur besessene, unerreichbare oder tatsächlich blockierte Arbeit bleibt, ruhig warten; keine Pflicht zur Auslastung oder erneuter Meldung desselben Zustands.
+Eigene Arbeit fortsetzen. Bei echtem Blocker fehlenden Eingang einmal am Paket nennen, dann passende Unterstützung oder unabhängige Produktarbeit wählen, auch außerhalb des bisherigen Bereichs. Ohne Einladung bestätigte unbesetzte Restbedarfe am Fachort prüfen. Eine leere `ready`-Liste allein beendet die Auswahl nicht; bleibt nur besessene, unerreichbare oder blockierte Arbeit, ruhig warten.
 
 | Anlass | Änderung am bestehenden Aufgabenissue / PR |
 | --- | --- |
@@ -35,11 +35,11 @@ Beim Aufwachen eigene begonnene Arbeit fortsetzen. Bei einem echten Blocker den 
 
 Labelnamen tragen `status:`: `ready` ist frei/ausführbar und weder aktiv noch blockiert. `kind:task` meint ein Ergebnispaket, `kind:coordination` einen Bereichsindex, `kind:process` Arbeitsabläufe. `priority:now` meint den Produktengpass, `priority:next` die Folgearbeit; Priorität vergibt keinen Besitz.
 
-Ein Paket umfasst Umsetzung und erforderliche Prüfung bis zur nutzbaren Übergabe. Getrennte Pakete nur bei unabhängigen Ergebnissen, Besitz-/Schnittstellengrenzen oder realen Voraussetzungen; weder Zielzahl freier Karten noch einzelne Quellrecords als Arbeitspakete. Bei Übergabe benennt der Owner den nächsten Verbraucher und bietet bestätigte freie Folgearbeit an. Jeder Contributor kann bestätigte unbesetzte Restbedarfe im Parent zu ausführbaren Ergebnispaketen machen: Nutzen/Verbraucher, Quellen, Voraussetzungen, Abnahme.
+[WORKFLOW](WORKFLOW.md#sinnvolle-arbeit-wählen-und-begrenzen) bestimmt Liefergrenzen und Prüfung. Contributors können bestätigte unbesetzte Restbedarfe im Parent als Ergebnispaket anbieten: Nutzen/Verbraucher, Quellen, Voraussetzungen, Abnahme. Keine Zielzahl freier Karten oder Pakete je Quellrecord.
 
 Claims sollen innerhalb zweier erwartbarer Aufwachzyklen einen erreichbaren Branch/Commit/PR oder konkreten Blocker zeigen. Fehlt beides, verlangt die Prozesspflege einmal am Paket Bestätigung, erreichbaren Stand oder Rückgabe bis zu den nächsten zwei erwartbaren Zyklen. Das ist kein Heartbeat für belegte längere Implementierung. Fehlende Branchsichtbarkeit allein beweist keine aufgegebene Arbeit. Bei ausbleibender Antwort entscheidet der Integrationsowner in #12 ausdrücklich über Rückgabe oder weitere Klärung; unveröffentlichte Arbeit und fremde Branches erhalten, keine automatische Übernahme/Schließung. Ein Claim wird erst durch ausdrückliche Rückgabe oder begründete Stewardentscheidung frei.
 
-Die [Arbeitsrollen](AGENT-ROLES.md) trennen Pflegezuständigkeiten: `task-maintenance` korrigiert den GitHub-Arbeitsbestand, `product-value` prüft Ergebnisse und Portfolioentscheidungen, `repository-maintenance` besitzt gemeinsame Dokumentations-/Rollenregeln und allein `checkpoint.repositoryOrientation`. Contributors pflegen ihre Pakete selbst. Gespeicherte Startaufträge verweisen auf diese veränderlichen Verträge; aktuelle Piloten und Aufgaben bleiben am Aufgabenort. Keine zweite Queue, parallele Schreibzuständigkeit oder neue Reflexionsautomation.
+Die [Arbeitsrollen](AGENT-ROLES.md) bestimmen Pflegezuständigkeiten; `repository-maintenance` besitzt allein `checkpoint.repositoryOrientation`. Contributors pflegen ihre Pakete selbst. Startaufträge verweisen auf die Verträge; keine zweite Queue, parallele Schreibzuständigkeit oder Reflexionsautomation.
 
 Ausführungshindernisse unterscheiden: fehlender Produktinput, besessener Scope, unpassende Fähigkeiten/Zugriffe oder nicht wiederhergestellte Laufumgebung. Nur den tatsächlich beobachteten Grund nennen. Routing kann einen kaputten Host oder fehlende Runtime-Wiederherstellung nicht reparieren.
 
@@ -47,7 +47,7 @@ Bereichsfragen im Fachissue, gemeinsame Konflikte/Entscheidungen in #12. Den Nut
 
 ## Kommunikation nach Inhalt und Anlass
 
-**Ein vollständiger Bericht am Aufgabenort, sonst nur das relevante Delta mit Link.** Melden bei geändertem Ergebnis, Blocker, Besitz oder Entscheidungsbedarf. Routine meist in wenigen Sätzen; komplexe Fehler-/Abnahmenachweise entsprechend ausführlich.
+**Der Aufgabenhaupttext ist der aktuelle Arbeitsstand:** Ergebnis, Besitz/Branch, verfügbarer Eingang, verbleibender Blocker und nächster Schritt mit direktem Beleg. Bei Übergabe diese Angaben ersetzen; erledigte Warteanweisungen und Zwischenstände entfernen. Kommentare bewahren Claims und relevante Entscheidungen, werden aber nicht zur zweiten laufenden Aufgabenbeschreibung. Ein neuer Contributor muss den aktuellen Stand ohne Rekonstruktion der Kommentarchronik verstehen können; ältere Claims/Belege nur bei Unklarheit gezielt prüfen.
 
 | Meldung | Nötiger Inhalt |
 | --- | --- |
@@ -55,7 +55,9 @@ Bereichsfragen im Fachissue, gemeinsame Konflikte/Entscheidungen in #12. Den Nut
 | Übergabe | Beobachtbares Ergebnis oder Blocker → Commit/Beleglink und offene Grenze → nächster Empfänger/Schritt |
 | Entscheidung | Frage, relevante Optionen/Belege, Entscheidung mit Geltungsbereich; ungeklärte Punkte offen |
 
-Der aktuelle Haupttext zeigt Scope und nächsten Schritt mit datiertem Beleg; Kommentare bewahren den Verlauf. Regeln und bekannte Voraussetzungen nicht je Lauf wiederholen. Lange Logs, Hashlisten und Prüftabellen an den bestehenden Fach-/Evidenzort verlinken. Bereichsindex nur bei geändertem Eingang, #12 nur bei geändertem gemeinsamen Produktpfad/Gate aktualisieren. Veraltete Anweisungen ersetzen, frühere Belege erhalten; kein Bericht je Commit und keine identischen Vollberichte in mehreren Threads.
+Ein Ergebnis einmal am zuständigen Ort veröffentlichen; andernorts nur eine geänderte Konsequenz mit Link. Logs, Hashlisten, Prüftabellen und technische Detailchronik an vorhandene Evidenz-/Fachorte verlinken. Kommentare nur für neue Ergebnisse, echte Blocker, Besitz oder Entscheidungen; kein Hoststart-, Sync-, CI- oder Wiederholungsbericht ohne neue Konsequenz. Bereichsindex nur bei geändertem Eingang, #12 nur bei geändertem gemeinsamen Schritt/Gate.
+
+Projektgedächtnis bleibt ein aktueller Snapshot in der eigenen Checkpointwurzel: Fortsetzung, noch offene Fragen und benötigte Belege. Erledigte Zwischenstände ersetzen statt anhängen; Ziele, Regeln und fremde Dispatchzustände verlinken statt kopieren. Acceptance bewahrt Anforderungen und direkte Abnahmeidentitäten, Git/Beleglinks den Verlauf. Keine Löschung fremder Wurzeln oder gepinnter Nachweise; kein zusätzliches Tages-/Laufarchiv.
 
 ## Wo neue Dateien hingehören
 
