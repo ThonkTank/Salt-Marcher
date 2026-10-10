@@ -344,12 +344,16 @@ async function manifest(
   );
   return { repo, value };
 }
-async function fixture() {
+async function fixture(nativeSave = false) {
   const dom = setupDOM(),
     vault = new Vault();
-  const first = await manifest(vault, aPath, a, uuid(710));
-  await first.repo.copy(bPath, uuid(999), "B");
-  await manifest(vault, bPath, b, uuid(711));
+  if (nativeSave) {
+    await vault.create(seed.campaign.path, readFileSync(root + seed.campaign.input.fixtureFile, "utf8"));
+  } else {
+    const first = await manifest(vault, aPath, a, uuid(710));
+    await first.repo.copy(bPath, uuid(999), "B");
+    await manifest(vault, bPath, b, uuid(711));
+  }
   const app = { document: dom.document, vault } as any;
   const services = atlasCampaignServices(
     new VaultCampaignRuntimeStorage(app),
@@ -530,21 +534,103 @@ test("discard resets Sources through a fresh guarded mount, without retaining a 
   await f.close();
 });
 
-test("local save succeeds but an unchanged read-only manifest is rejected on fresh mount: concrete producer boundary", async () => {
+test("an unsupported generic owner contract cannot publish local files through the managed Save path", async () => {
   const f = await fixture();
   await f.host().navigate(locationTarget);
   f.input('[aria-label="Ortsname"]', "Lokal gespeichert");
   await f.editor()!.flush();
   const state = active(f);
-  await state.repository.save();
-  assert.equal(state.repository.dirty, false);
+  const before = f.vault.bytes.get(`Orte/${uuid(11)}.location`)!;
+  await assert.rejects(state.repository.save(), /Native Recordclosure stimmt nicht/);
+  assert.equal(state.repository.dirty, true);
   const saved = f.vault.bytes.get(`Orte/${uuid(11)}.location`)!;
-  assert.match(saved, /Lokal gespeichert/);
-  await assert.rejects(f.host().openCampaign(a), /bestätigten Basis/);
+  assert.equal(saved, before);
+  assert.match(f.vault.bytes.get(aPath+'.draft')!, /Lokal gespeichert/);
   assert.equal(f.services.provider.currentContext()!.campaignId, a);
-  assert.equal(f.editor(), undefined);
-  assert.match(f.content.textContent!, /bestätigten Basis/);
-  assert.equal(f.vault.bytes.get(`Orte/${uuid(11)}.location`), saved);
+  await f.close();
+});
+
+test("actual Save button acknowledges the native Campaign manifest and refreshes the same mount/history/camera for navigation and retry", async () => {
+  const f = await fixture(true), before = active(f), editor = f.editor()!;
+  await f.host().navigate(locationTarget);
+  f.input('[aria-label="Ortsname"]', 'Gemeinsam gespeichert');
+  const room = before.inventory.records.find((r) => r.kind === 'room')!;
+  await f.host().navigate({ kind: 'room', documentId: room.documentId, recordId: room.id, roomId: null });
+  f.input('[aria-label="Raumname"]', 'Raum im gespeicherten Atlas');
+  await editor.flush();
+  const camera = editor.renderer.relativeCamera, undoDepth = before.history.undoDepth;
+  const saveButton = f.content.querySelector<HTMLButtonElement>('[aria-label="Atlas speichern"]')!;
+  assert.ok(saveButton);
+  f.click(saveButton);
+  await settled(() => !before.repository.dirty && !before.repository.hasDraft && active(f).projection.registryRevision !== before.projection.registryRevision,
+    () => f.content.textContent ?? '');
+  await editor.flush();
+  const after = active(f);
+  assert.equal(after.repository, before.repository);
+  assert.equal(after.history, before.history);
+  assert.equal(after.renderer, before.renderer);
+  assert.equal(after.generation, before.generation);
+  assert.equal(after.context.contextToken, before.context.contextToken);
+  assert.equal(after.history.undoDepth, undoDepth);
+  assert.deepEqual(editor.renderer.relativeCamera, camera);
+  assert.equal(f.vault.bytes.has(aPath+'.journal'), false);
+  assert.equal(parseLocationDocument(f.vault.bytes.get(`Orte/${uuid(11)}.location`)!).name, 'Gemeinsam gespeichert');
+  const manifest = parseCampaignRuntimeManifest(f.vault.bytes.get(seed.campaign.path)!, sha);
+  for (const file of manifest.atlas.files) assert.equal(file.savedDigest, sha(f.vault.bytes.get(file.path)!), file.path);
+  await f.host().navigate(locationTarget);
+  assert.equal(active(f).repository, before.repository);
+  before.history.undo(); before.history.redo(); await editor.flush();
+  await (editor as any).storage.save(); // No-op save keeps the same confirmed authority.
+  assert.equal(active(f).history, before.history);
+  await f.close();
+  const app = { document: f.document, vault: f.vault } as any;
+  const services = atlasCampaignServices(new VaultCampaignRuntimeStorage(app), sha);
+  const view = new AtlasView({ app, contentEl: f.content, openFile: async () => {} } as any, services);
+  await view.onLoadFile(f.vault.files.get(aPath)!);
+  const fresh = ((view as any).campaignHost as AtlasCampaignHost).state;
+  assert.equal(fresh.kind, 'active');
+  if (fresh.kind === 'active') {
+    assert.notEqual(fresh.history, before.history);
+    assert.equal(fresh.repository.location(uuid(11)).read()!.name, 'Gemeinsam gespeichert');
+    const document = fresh.repository.detail('dungeon', room.documentId) as any;
+    assert.equal(document.read().document.entities.find((r: any) => r.id === room.id).name, 'Raum im gespeicherten Atlas');
+  }
+  await view.onUnloadFile(); services.close();
+});
+
+test("actual managed Save releases a real rolled-back first-native failure and retries without replacing Context or History", async () => {
+  const f = await fixture(true), before = active(f), editor = f.editor()!;
+  await f.host().navigate(locationTarget);
+  f.input('[aria-label="Ortsname"]', 'Retry im selben Atlas'); await editor.flush();
+  const native = `Orte/${uuid(11)}.location`, oldBytes = f.vault.bytes.get(native),
+    camera = editor.renderer.relativeCamera, original = f.vault.process.bind(f.vault);
+  const transactions: string[] = [];
+  f.vault.writeHook = (path, bytes) => {
+    if (path === aPath+'.journal' && bytes) {
+      const j = JSON.parse(bytes);
+      if (j.state === 'prepared' && j.writes.some((w: any) => w.path === seed.campaign.path)) transactions.push(j.transactionId);
+    }
+  };
+  let failed = false;
+  f.vault.process = async (file, change) => {
+    if (!failed && file.path === native) { failed = true; throw new Error('first native CAS failed'); }
+    return original(file, change);
+  };
+  await assert.rejects((editor as any).storage.save(), /first native CAS failed/);
+  assert.equal(failed, true);
+  assert.equal(f.vault.bytes.get(native), oldBytes);
+  assert.equal(f.vault.bytes.has(aPath+'.journal'), false);
+  assert.equal(before.repository.dirty, true); assert.equal(before.repository.hasDraft, true);
+  assert.equal(active(f).history, before.history);
+  assert.equal(active(f).context.contextToken, before.context.contextToken);
+  assert.deepEqual(editor.renderer.relativeCamera, camera);
+  await (editor as any).storage.save();
+  assert.equal(active(f).repository, before.repository);
+  assert.equal(active(f).history, before.history);
+  assert.equal(before.repository.dirty, false);
+  assert.equal(new Set(transactions).size, 2);
+  assert.equal(parseLocationDocument(f.vault.bytes.get(native)!).name, 'Retry im selben Atlas');
+  f.vault.writeHook = undefined;
   await f.close();
 });
 

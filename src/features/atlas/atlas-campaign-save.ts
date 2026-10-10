@@ -5,24 +5,34 @@ import {
   campaignOwnershipDigestValue,
   type CampaignDomainOwnerProjectionV1,
   type CampaignOwnershipDigest,
+  type CampaignDomainOwnershipProjectionV1,
 } from "../campaign/campaign-ownership";
 import {
   parseCampaignRuntimeManifest,
   type CampaignRuntimeManifestV1,
+  type CampaignRuntimeSaveAcknowledgmentV1,
+  type CampaignRuntimeSaveRollbackV1,
 } from "../campaign/campaign-runtime-source";
 import {
   CampaignRuntimeManifestSaveParticipant,
   type CampaignRuntimeOwnerSaveAuthority,
 } from "../campaign/campaign-runtime-save-participant";
-import { payloadDigest } from "../campaign/campaign-contracts";
+import { payloadDigest, type CampaignContextProjection } from "../campaign/campaign-contracts";
 import type { FileStore } from "../../persistence";
 import { parseAtlasDraft } from "./atlas-draft";
 import type { AtlasNativeFile } from "./atlas-campaign-source";
-import type { AtlasFileJournal, AtlasFileWrite } from "./file-transaction";
+import type { AtlasFileJournal, AtlasFileWrite, FileTransaction, AtlasFileTransactionObserver } from "./file-transaction";
 import { parseSpatialWorld } from "./spatial-schema";
 
 const exact = (value: unknown) => JSON.stringify(value);
 type RecordBinding = { ownerId: string; kind: string; path: string };
+export interface AtlasCampaignRuntimeSavePort {
+  basis(): Promise<{ context: CampaignContextProjection; projection: CampaignDomainOwnershipProjectionV1 }>;
+  issued(participant: CampaignRuntimeManifestSaveParticipant, proof: CampaignRuntimeSaveAcknowledgmentV1 | CampaignRuntimeSaveRollbackV1): void;
+  prepared(proof: CampaignRuntimeSaveAcknowledgmentV1): void;
+  committed(proof: CampaignRuntimeSaveAcknowledgmentV1): Promise<void>;
+  rolledBack(proof: CampaignRuntimeSaveRollbackV1): void;
+}
 
 /** The explicit native-atlas/city/dungeon proof protocol supplied by PR32. No owner discovery. */
 function records(
@@ -105,6 +115,7 @@ function records(
 export class AtlasCampaignManifestSave {
   private manifestBytes: string;
   private recoveryManifest?: string;
+  private saveParticipant?: CampaignRuntimeManifestSaveParticipant;
   readonly worldPath: string;
   readonly draftPath: string;
   readonly additionalLocations: readonly { id: string; path: string }[];
@@ -112,6 +123,7 @@ export class AtlasCampaignManifestSave {
     readonly manifestPath: string,
     manifestBytes: string,
     private readonly digest: CampaignOwnershipDigest,
+    private readonly runtime?: AtlasCampaignRuntimeSavePort,
   ) {
     this.manifestBytes = manifestBytes;
     const manifest = parseCampaignRuntimeManifest(manifestBytes, digest);
@@ -208,6 +220,7 @@ export class AtlasCampaignManifestSave {
   private participant(
     before: CampaignRuntimeManifestV1,
     files: readonly AtlasNativeFile[],
+    transaction?: FileTransaction,
   ) {
     const beforeOwners = this.owners(before, files, "before"),
       afterOwners = this.owners(before, files, "after");
@@ -242,6 +255,7 @@ export class AtlasCampaignManifestSave {
         this.manifestPath,
         this.digest,
         authorities,
+        transaction,
       ),
       beforeOwners,
       afterOwners,
@@ -250,6 +264,7 @@ export class AtlasCampaignManifestSave {
   prepare(
     files: readonly AtlasNativeFile[],
     draft: AtlasFileWrite,
+    transaction?: FileTransaction,
   ): readonly AtlasFileWrite[] {
     const before = parseCampaignRuntimeManifest(
       this.manifestBytes,
@@ -260,6 +275,7 @@ export class AtlasCampaignManifestSave {
     const { participant, beforeOwners, afterOwners } = this.participant(
       before,
       files,
+      transaction,
     );
     const result = participant.prepare({
       beforeManifestBytes: this.manifestBytes,
@@ -267,6 +283,7 @@ export class AtlasCampaignManifestSave {
       beforeOwners,
       afterOwners,
     });
+    this.saveParticipant = result.length ? participant : undefined;
     // Even a no-op save guards the manifest baseline alongside all native files.
     return result.length
       ? result
@@ -277,6 +294,36 @@ export class AtlasCampaignManifestSave {
             after: this.manifestBytes,
           },
         ];
+  }
+  /** The actual transaction owns journal read-back and rollback receipt issuance. */
+  transactionObserver(): AtlasFileTransactionObserver | undefined {
+    const participant = this.saveParticipant, runtime = this.runtime;
+    if (!participant || !runtime) return undefined;
+    let basis: Awaited<ReturnType<AtlasCampaignRuntimeSavePort['basis']>> | undefined;
+    let prepared: CampaignRuntimeSaveAcknowledgmentV1 | undefined;
+    const proof = (journal: AtlasFileJournal) => {
+      if (!basis) throw new Error("Speicherbestätigung besitzt keine bestätigte Registrybasis.");
+      const value = participant.createAcknowledgment({ context: basis.context, beforeRegistry: basis.projection, journal });
+      runtime.issued(participant, value);
+      return value;
+    };
+    return {
+      prepared: async (journal) => {
+        basis = await runtime.basis();
+        prepared = proof(journal);
+        runtime.prepared(prepared);
+      },
+      committed: async (journal) => {
+        if (!prepared) throw new Error("Commit besitzt keine ursprüngliche Vorbereitung.");
+        await runtime.committed(proof(journal));
+      },
+      rolledBack: (receipt) => {
+        if (!prepared) return;
+        const rollback = participant.createRollbackAcknowledgment({ prepared, receipt });
+        runtime.issued(participant, rollback);
+        runtime.rolledBack(rollback);
+      },
+    };
   }
   private checkFiles(
     manifest: CampaignRuntimeManifestV1,

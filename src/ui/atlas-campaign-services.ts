@@ -4,6 +4,8 @@ import {
   CampaignRuntimeNavigationProvider,
   parseCampaignRuntimeManifest,
   type CampaignRuntimeStorage,
+  type CampaignRuntimeSaveAcknowledgmentV1,
+  type CampaignRuntimeSaveRollbackV1,
 } from "../features/campaign/campaign-runtime-source";
 import {
   campaignId,
@@ -11,16 +13,28 @@ import {
   campaignContextToken,
   campaignReceiptId,
   type CampaignId,
+  sameSnapshot,
 } from "../features/campaign/campaign-contracts";
 import type { CampaignOwnershipDigest } from "../features/campaign/campaign-ownership";
 import type { AtlasCampaignServices } from "./atlas-campaign-host";
+import { AtlasCampaignManifestSave } from "../features/atlas/atlas-campaign-save";
+import type { CampaignRuntimeManifestSaveParticipant } from "../features/campaign/campaign-runtime-save-participant";
 
 /** Instantiate once per host. Manifest lookups request targets; only the provider confirms authority. */
 export function atlasCampaignServices(
   storage: CampaignRuntimeStorage,
   digest: CampaignOwnershipDigest,
 ): AtlasCampaignServices & { close(): void } {
-  const source = new CampaignRuntimeSource(storage, digest);
+  const issuers = new WeakMap<object, CampaignRuntimeManifestSaveParticipant>();
+  const issuer = (proof: object) => {
+    const participant = issuers.get(proof);
+    if (!participant) throw new Error("Campaign-Receipt wurde nicht vom zuständigen Atlas-Save ausgestellt.");
+    return participant;
+  };
+  const source = new CampaignRuntimeSource(storage, digest, {
+    validateAcknowledgment: (proof: CampaignRuntimeSaveAcknowledgmentV1) => issuer(proof).validateAcknowledgment(proof),
+    validateRollback: (proof: CampaignRuntimeSaveRollbackV1) => issuer(proof).validateRollback(proof),
+  });
   const lifecycle = new CampaignLifecycle(source.lifecycle, {
     campaignId: () => campaignId(crypto.randomUUID()),
     namespace: () => campaignNamespace(crypto.randomUUID()),
@@ -88,6 +102,38 @@ export function atlasCampaignServices(
       )
         throw new Error("Atlas ist mehreren Kampagnenbeständen zugeordnet.");
       return matches[0]!.snapshot.campaignId;
+    },
+    createSave: async (input) => {
+      const guard = () => {
+        assertOpen(); input.assertCurrent();
+        const context = provider.currentContext();
+        if (!context || !sameSnapshot(context, input.context) || context.contextToken !== input.context.contextToken)
+          throw new Error("Atlas-Save besitzt keinen aktuellen Campaigncontext.");
+      };
+      guard();
+      const matches = (await storage.list()).filter((file) => {
+        try { return parseCampaignRuntimeManifest(file.bytes, digest).snapshot.campaignId === input.context.campaignId; }
+        catch { return false; }
+      });
+      guard();
+      if (matches.length !== 1) throw new Error("Atlas-Save besitzt kein eindeutiges Campaignmanifest.");
+      const file = matches[0]!, manifest = parseCampaignRuntimeManifest(file.bytes, digest);
+      if (!sameSnapshot(manifest.snapshot, input.context) || manifest.atlas.worldId !== input.inventory.worldId ||
+          manifest.registry.registryId !== input.projection.registryId || manifest.registry.registryRevision !== input.projection.registryRevision ||
+          manifest.atlas.files.length !== input.inventory.files.length || manifest.atlas.files.some((f) =>
+            !input.inventory.files.some((i) => i.path === f.path && i.kind === f.kind && i.id === f.id && i.savedDigest === f.savedDigest)))
+        throw new Error("Atlas-Save-Manifest passt nicht zum bestätigten Bestand.");
+      return new AtlasCampaignManifestSave(file.path, file.bytes, digest, {
+        basis: async () => {
+          guard(); const read = await provider.registry.read(input.context); guard();
+          if (read.kind !== "confirmed") throw new Error("Atlas-Save benötigt eine bestätigte Registrybasis.");
+          return { context: input.context, projection: read.projection };
+        },
+        issued: (participant, proof) => { assertOpen(); issuers.set(proof, participant); },
+        prepared: (proof) => { guard(); provider.prepareSaveAcknowledgment(proof); },
+        committed: async (proof) => { await provider.acknowledgeCommittedSave(proof); guard(); },
+        rolledBack: (proof) => { provider.cancelSaveAcknowledgment(proof); guard(); },
+      });
     },
     close: () => {
       if (closed) return;

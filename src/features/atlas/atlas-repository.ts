@@ -1217,10 +1217,10 @@ export class AtlasRepository {
         for (const file of files)
           if (!writes.some((w) => w.path === file.path))
             writes.push({ path: file.path, before: file.before, after: file.after });
-        writes.push(...campaign.prepare(files, draft));
+        writes.push(...campaign.prepare(files, draft, this.transaction));
         current();
       }
-      await this.transaction.commit(writes);
+      await this.transaction.commit(writes, campaign?.transactionObserver());
       campaign?.saved(writes);
       this.baseline = worldText;
       this.baselineWorld = this.parseWorld(worldText);

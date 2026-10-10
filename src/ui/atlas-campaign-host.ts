@@ -14,6 +14,7 @@ import type { AtlasDetailEntryModel } from "./atlas-detail-entry";
 import { CitySource } from "../features/city/commands";
 import { DungeonAtlasSource } from "../features/dungeon/atlas-source";
 import { isStructuredRoom } from "../model";
+import type { AtlasCampaignManifestSave } from "../features/atlas/atlas-campaign-save";
 
 export interface AtlasCampaignServices {
   readonly provider: CampaignRuntimeNavigationProvider;
@@ -30,6 +31,7 @@ export interface AtlasCampaignServices {
   /** A requested target only. The Navigator independently confirms Registry and inventory. */
   worldHint(id: CampaignId): Promise<string>;
   campaignHint(path: string): Promise<CampaignId | null>;
+  createSave?(input: AtlasMountInput): Promise<AtlasCampaignManifestSave>;
 }
 
 /** One visible consumer of the actual Campaign provider and the existing safe Navigator. */
@@ -106,6 +108,12 @@ export class AtlasCampaignHost {
   }
   get state() {
     return this.navigation.state;
+  }
+  async save(): Promise<void> {
+    const navigation = this.navigation;
+    if (this.closed) throw new Error("Atlasansicht ist geschlossen.");
+    try { await navigation.save(); }
+    finally { if (!this.closed && navigation === this.navigation) this.update(); }
   }
   showUnregisteredAtlas(): void {
     // An existing native atlas remains usable when no campaign manifests exist.

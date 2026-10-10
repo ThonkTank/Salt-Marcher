@@ -112,12 +112,14 @@ export class AtlasView extends FileView {
         throw new Error("Die Kampagnenbindung dieses Atlas wurde widerrufen.");
     };
     const vault = new VaultStore(this.app);
+    const campaignSave = await this.campaigns!.createSave?.(input);
+    lease(); input.assertCurrent();
     const repository = new AtlasRepository({
       read: async (path) => { lease(); const raw = await vault.read(path); lease(); return raw; },
       // FileTransaction guards the initial journal boundary. Its won old journal must finish under its old paths.
       compareAndWrite: (path, before, after) => vault.compareAndWrite(path, before, after),
     }, input.inventory.files.find((f) => f.kind === "world" && f.id === input.inventory.worldId)!.path, this.app.vault, {
-      ...this.spatialOptions(), assertCurrent: lease,
+      ...this.spatialOptions(), assertCurrent: lease, campaignSave,
       resolveLocation: async (id) => {
         lease();
         const expected = input.inventory.files.find((f) => f.kind === "location" && f.id === id);
@@ -143,7 +145,11 @@ export class AtlasView extends FileView {
     const editor = new AtlasEditor(root, source.world, source, {
       assertCurrent: lease,
       navigation: { details: (id) => this.campaignHost!.details(id), navigate: (target) => { lease(); return this.campaignHost!.navigate(target); } },
-      save: async () => { lease(); await repository.save(); lease(); },
+      save: async () => {
+        lease();
+        if (!campaignSave) throw new Error("Bestätigter Campaign-Speicheranschluss fehlt.");
+        await this.campaignHost!.save(); lease();
+      },
       changed: async () => { lease(); await repository.persistDraft(); lease(); },
       status: () => ({ dirty: repository.dirty, hasDraft: repository.hasDraft }),
       menu: (event) => { lease(); this.showMenu(event, this.generation); },

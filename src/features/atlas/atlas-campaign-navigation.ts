@@ -110,7 +110,7 @@ interface MountEntry {
   readonly source: AtlasRepository["terrainSource"];
   readonly history: AtlasRepository["terrainSource"]["history"];
   readonly renderer: object;
-  readonly input: AtlasMountInput;
+  input: AtlasMountInput;
 }
 const kinds: readonly AtlasNavigationKind[] = ["world", "location", "location-section", "city", "building", "dungeon", "room", "room-section"];
 function context(raw: CampaignContextProjection): CampaignContextProjection {
@@ -353,6 +353,51 @@ export class AtlasCampaignNavigation {
         if (entry.mount.navigate(immutable({ target: request.target, ...resolved, frame }), guard) !== undefined)
           throw new Error("Kamera-/Keynavigation muss synchron abschließen.");
       } finally { if (this.active === entry && sameContext(entry.input.context, this.ports.currentContext())) entry.mount.setInputBlocked(false); }
+    });
+  }
+  /** Save and authority refresh share the navigation queue and the existing native mount. */
+  async save(): Promise<void> {
+    return this.run(async () => {
+      const entry = this.active;
+      if (!entry) throw new Error("Kein aktiver Atlasmount.");
+      const guard = () => this.guard(entry.input.context, entry.input.generation, entry);
+      let releaseInput = false;
+      entry.mount.setInputBlocked(true);
+      try {
+        guard(); await this.verify(entry); guard();
+        // The editor has already committed gestures/Keys inside its current Save action.
+        // Calling its flush here would await that same action and deadlock.
+        const before = await this.capture(entry); guard(); checkFiles(before, entry.input.inventory);
+        await entry.repository.verifyNativeCapture(before); guard();
+        await entry.repository.save(); guard();
+        const read = await this.ports.registry.read(entry.input.context); guard();
+        if (read.kind !== "confirmed") throw new Error("Gespeicherte Atlasregistry ist nicht bestätigt.");
+        const projection = campaignDomainOwnershipProjection(read.projection);
+        if (!sameContext(projection.context, entry.input.context)) throw new Error("Fremder gespeicherter Context.");
+        const outcome = await this.ports.inventory.read(projection, entry.input.inventory.worldId); guard();
+        if (outcome.kind !== "confirmed") throw new Error("Gespeicherter Atlasbestand ist nicht bestätigt.");
+        const inv = inventory(outcome.inventory, projection, entry.input.inventory.worldId);
+        const captured = await this.capture(entry); guard(); checkFiles(captured, inv);
+        await entry.repository.verifyNativeCapture(captured); guard();
+        const current = await this.ports.registry.verify(projection); guard();
+        if (current.kind !== "current") throw new Error("Gespeicherte Registry wurde abgelöst.");
+        entry.input = Object.freeze({ ...entry.input, projection, inventory: inv });
+        releaseInput = true;
+      } catch (error) {
+        try {
+          guard(); await this.verify(entry); guard();
+          const captured = await this.capture(entry); guard(); checkFiles(captured, entry.input.inventory);
+          await entry.repository.verifyNativeCapture(captured); guard();
+          releaseInput = true; // Authoritative rollback retains this same editable mount.
+        } catch {
+          if (this.active === entry) this.retire("Speicherbasis ist unbestätigt; alte Arbeit bleibt erhalten.");
+          this.unavailable = "Speicherbasis ist unbestätigt; Atlas unter seiner alten Identität erhalten.";
+        }
+        throw error;
+      } finally {
+        if (releaseInput && this.active === entry && sameContext(entry.input.context, this.ports.currentContext()))
+          entry.mount.setInputBlocked(false);
+      }
     });
   }
   async switchCampaign(expected: CampaignContextProjection | null, commandId: CampaignCommandId, targetId: CampaignId, worldId: string): Promise<CampaignActivationResult> {
