@@ -542,7 +542,7 @@
       "id": "E2E-01-SPACE-I01c",
       "kind": "bounded_required_integration_after_actual_owner_contracts",
       "focus": "Use actual Campaign/Vault context, registry/ownership participant revisions and original CommandId/ReceiptId publish boundary, then pure Dungeon geometry Gestureport and one real P02/P04 CompleteImport variant. Keep one candidate/camera/history/fixture; no E2E02–04.",
-      "dependency": "Actual Campaign OWNERSHIP/provider/envelope and reviewed pure Dungeon geometry port remain required owner deliveries. Source-verified active Dungeon CL-I01 and independent narrow CL-R01 precede the immediate N01/R02 for DUN-GEO-P01-R01-01; protect the active run and start no competing repair. Geometry I01 waits for that exact-SHA plan PASS and then independent code review. No synthetic Registry/provider or port; World projection remains actual Repository.spatialGraph.world() and placements/spatial targets.",
+      "dependency": "Actual Campaign OWNERSHIP/provider/envelope and reviewed pure Dungeon geometry port remain required owner deliveries. Dungeon CL-R01 passed documentation-only cleanup on 060abca8432b0005b0544043778378df3e1814c5; next is immediate narrow Dungeon N01 and independent Hex P01-R02 for the still-open DUN-GEO-P01-R01-01. Geometry I01 waits for that exact-SHA plan PASS and later independent code review. No synthetic Registry/provider or port; World projection remains actual Repository.spatialGraph.world() and placements/spatial targets.",
       "review": "Independent integrated code/host review follows complete pinned I01c handoff per #12; repairs and Cleanup-P/I/R are separate runs. Current native I01b is a narrow implementation proof, not full gate approval."
     },
     "review": {
@@ -848,10 +848,27 @@
             "timestamp": "2026-10-09T10:08:30.192Z",
             "instruction": "After each phase separate cleanup planning, implementation and review; every step separate run. Actual initial user message read directly, not only peer paraphrase."
           },
-          "activeOwnerRun": "Dungeon CL-I01 on PR24, base e01622170da904bbb5da1f859a425e5e85c87a23; no interruption or competing N01.",
-          "next": "Existing bounded CL-I01, independent narrow CL-R01, immediately Dungeon N01 and Hex independent exact-SHA R02. No additional generic plan, ratification or recursive cleanup.",
+          "activeOwnerRun": "Dungeon CL-I01 completed on PR24/060abca; independent Hex CL-R01 passed documentation scope only.",
+          "next": "Immediately Dungeon narrow N01 for DUN-GEO-P01-R01-01 and Hex independent exact-SHA P01-R02; no competing generic plan or cleanup recursion.",
           "findingStillOpen": "DUN-GEO-P01-R01-01",
           "phaseApproval": false
+        },
+        "cleanupReview": {
+          "run": "E2E-01-DUNGEON-GEOMETRY-CL-R01",
+          "state": "PASS_documentation_cleanup_only_finding_unresolved_n01_next",
+          "reviewer": "Hex independent Atlas interface recipient",
+          "base": "e01622170da904bbb5da1f859a425e5e85c87a23",
+          "candidate": "060abca8432b0005b0544043778378df3e1814c5",
+          "startedAt": "2026-10-10T02:13:16Z",
+          "finishedAt": "2026-10-10T02:18:01.517184+00:00",
+          "review": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/24#issuecomment-6092627937",
+          "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/dungeon-geometry-cl-r01/review.json",
+          "scope": "Only normative/illustrative contract, glossary/roles/gates and preservation. Five normative sections and open finding boundary byte-identical; foreign JSON roots equal; product/fixtures unchanged.",
+          "next": "Dungeon narrow N01 and independent exact-SHA P01-R02; no further generic plan or cleanup cycle.",
+          "findingStillOpen": "DUN-GEO-P01-R01-01",
+          "productPlanPass": false,
+          "codeHostE2EPass": false,
+          "integrated": false
         }
       }
     },
