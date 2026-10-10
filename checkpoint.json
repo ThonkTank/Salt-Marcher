@@ -5616,7 +5616,7 @@
       "evidencePath": "/workspace/scratch/gm-cloud-qa/evidence-gmux01-obs04-candidate-20261010/",
       "evidence": ["00-pre.png", "06-playview-enter.png", "08-floor-1.png", "09-room12-body.png", "10-room12-text-open.png", "12-playview-label-start.png", "13-room12-label.png", "14-restored-shared-plugin.png"],
       "changedFiles": ["checkpoint.json", "ROADMAP-GM-PRODUCT-TESTING-PLAN.md"],
-      "commit": null,
+      "commit": "8a7812057d37f5374eba62199dd68abe2af4182c",
       "issueComment": "6093368409",
       "latency": "Not measured; Playwright/CDP action and 150–500 ms harness waits are not product latency.",
       "limits": "Candidate PR is still open/unmerged and had no independent review at test time; this is not integrated acceptance. Existing Electron process only, no fresh process or physical input; no player projection/privacy review, no broad Dungeon/GM approval. No map mutation; no save was required.",
