@@ -194,18 +194,62 @@
       "focus": "Enforce two-column-safe same-physical-row bounded PDF matching for all 99 Adventuring Gear table rows",
       "plan": "ROADMAP-SALTMARCHER-CE02-I02-PLAN.md",
       "result": "All 99 Adventuring Gear rows are reconstructed from source label, cost and weight or source em dash and must occur exactly once as a contiguous normalized segment of one pdftotext-layout line on the official two-column PDF page 69. Wrong-cell, page-wide-split and duplicate-segment fixtures fail. The real pinned PDF verifies all 219 equipment occurrence labels, 674 captured transcript facts, 13 bounded Armor rows, 37 bounded Weapons rows, 99 bounded Adventuring Gear rows, 21 helper dispositions and one cross-reference with two facts. S01 remains incomplete and I01 blocked.",
-      "verification": {"sourceRevision": "eac70ecc3bf2d0ebeaeacc9d11436f8316b8943b+dirty", "check": "passed", "tests": {"passed": 426, "failed": 0}, "build": "passed", "focusedTests": {"passed": 21, "failed": 0}, "pdfSha256": "2504d2a0abb0a4d491a939be4f17910a2dde0312570ab8d208080225ccf0a1f0", "occurrences": 219, "records": 219, "transcriptFacts": 674, "boundedArmorTableRows": 13, "boundedWeaponTableRows": 37, "boundedAdventuringGearTableRows": 99, "helperDispositions": 21, "crossReferences": 1, "crossReferenceFacts": 2, "mainBytes": 1422956, "mainSha256": "522823730ddce4d0ba83e0476f60887b60a07c517f84e8e270814b6d597efa43"},
+      "verification": {
+        "sourceRevision": "eac70ecc3bf2d0ebeaeacc9d11436f8316b8943b+dirty",
+        "check": "passed",
+        "tests": {
+          "passed": 426,
+          "failed": 0
+        },
+        "build": "passed",
+        "focusedTests": {
+          "passed": 21,
+          "failed": 0
+        },
+        "pdfSha256": "2504d2a0abb0a4d491a939be4f17910a2dde0312570ab8d208080225ccf0a1f0",
+        "occurrences": 219,
+        "records": 219,
+        "transcriptFacts": 674,
+        "boundedArmorTableRows": 13,
+        "boundedWeaponTableRows": 37,
+        "boundedAdventuringGearTableRows": 99,
+        "helperDispositions": 21,
+        "crossReferences": 1,
+        "crossReferenceFacts": 2,
+        "mainBytes": 1422956,
+        "mainSha256": "522823730ddce4d0ba83e0476f60887b60a07c517f84e8e270814b6d597efa43"
+      },
       "limits": "Source-package intermediate only. No product Item artifact/provider/UI, Obsidian installation or host acceptance, Magic Items, Encounter runtime or 2024 rules. Bounded matching for Tools and other remaining structured tables, the Potion detail merge, remaining goldens and independent S01-R01 remain open; I01 stays blocked.",
       "documentation": {
         "status": "partial",
         "branch": "active/installed-phase1",
         "baseCommit": "eac70ecc3bf2d0ebeaeacc9d11436f8316b8943b",
         "issue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/9#issuecomment-6093937819",
-        "changedFiles": ["acceptance.json", "checkpoint.json", "src/features/catalog/data/items-srd51-source-manifest.json", "tests/items-srd51-source.test.mjs", "tools/items-srd51-source-verify.mjs"],
-        "externalEvidence": {"path": "/tmp/SRD_CC_v5.1.pdf and main.js", "scope": "Local official-PDF verification against pinned bytes plus build artifact hash bound to the dirty base revision; ephemeral cloud-host paths, not an installed-plugin or GUI receipt."},
+        "changedFiles": [
+          "acceptance.json",
+          "checkpoint.json",
+          "src/features/catalog/data/items-srd51-source-manifest.json",
+          "tests/items-srd51-source.test.mjs",
+          "tools/items-srd51-source-verify.mjs"
+        ],
+        "externalEvidence": {
+          "path": "/tmp/SRD_CC_v5.1.pdf and main.js",
+          "scope": "Local official-PDF verification against pinned bytes plus build artifact hash bound to the dirty base revision; ephemeral cloud-host paths, not an installed-plugin or GUI receipt."
+        },
         "publication": "Pending final upstream synchronization, commit and non-force push; the exact publication SHA and remote verification will be recorded in the Issue #9 close receipt.",
         "commit": "see Issue #9 close receipt",
-        "notProven": ["complete SRD 5.1 Item corpus", "bounded matching for Tools and other remaining structured tables", "Potion of Healing detail merge", "Magic Items", "remaining goldens", "independent S01-R01", "Item product artifact/provider/UI", "Obsidian host acceptance", "Encounter runtime", "any 2024 rules"],
+        "notProven": [
+          "complete SRD 5.1 Item corpus",
+          "bounded matching for Tools and other remaining structured tables",
+          "Potion of Healing detail merge",
+          "Magic Items",
+          "remaining goldens",
+          "independent S01-R01",
+          "Item product artifact/provider/UI",
+          "Obsidian host acceptance",
+          "Encounter runtime",
+          "any 2024 rules"
+        ],
         "next": "Request independent review of the published W12 source slice before starting the separately documented W13 Tools bounded-table package."
       }
     },
@@ -6626,7 +6670,7 @@
       "state": "completed",
       "supersedes": "GM-UX-ACCESS; Slotanfrage gemäß Nutzerkorrektur aufgehoben"
     },
-    "next": "GM-UX-01-D-FRESH-PROCESS-20261010-01: isolierten eigenen Cloud-Obsidian-Host mit separatem Profil/Testvault bereitstellen und Save→Prozessende→frischer Start auf QA-Kopie prüfen. Separater GM-UX-N-005-N01-H01-R03 bleibt davon getrennt und an Kartograph; keine Übernahme seiner Such-/Dirty-Guard-Prüfung.",
+    "next": "GM-UX-OBS-04-INTEGRATED-RETEST-HANDOFF-20261010-02 abgeschlossen (fünf Kriterien PASS). GM-UX-01-D-FRESH-PROCESS-20261010-01 bleibt pausiert/not started und benötigt getrennte Fortsetzung; keine andere offene Produktfreigabe aus dem engen Retest abgeleitet.",
     "automation": "Stündliche GM-Produkttests in eigener Cloud; keine Laptop-Slotfreigabe erforderlich.",
     "executionEnvironment": "Eigene Cloud-Umgebung, getrennt vom Laptop der Kollegen",
     "cloudHost": {
@@ -7227,7 +7271,10 @@
         "plannedIsolatedVault": "/workspace/scratch/gm-cloud-qa/fresh-process-20261010/vault",
         "plannedEvidence": "/workspace/scratch/gm-cloud-qa/evidence-gmux01-fresh-process-20261010/"
       },
-      "filesChanged": ["checkpoint.json", "ROADMAP-GM-PRODUCT-TESTING-PLAN.md"],
+      "filesChanged": [
+        "checkpoint.json",
+        "ROADMAP-GM-PRODUCT-TESTING-PLAN.md"
+      ],
       "checksBeforeRun": "Issue #1/6087478045 gelesen; Issue #8 und GM-Roadmap gelesen; origin/active/installed-phase1 fetch/sync PASS; offizieller Obsidian-v1.14.4-amd64 .deb-Digest exakt verifiziert; Docker image build PASS; neuer unabhängiger containerisierter Obsidian-1.14.4-Prozess gestartet; neue CDP-Verbindung und sichtbare Onboardingseite PASS. Noch keine Testkarte im neuen Host geöffnet oder editiert.",
       "startupEvidence": "/workspace/scratch/gm-cloud-qa/evidence-gmux01-fresh-process-20261010/00-new-cloud-process.png",
       "limits": "Eigener Host ist bereit, aber noch keine Testfolge ausgeführt. Native Dateiauswahl/QA-Kartenöffnung ist noch nicht gezeigt; kein Save-/Prozessende-/Reopen-Nachweis. Updater-Zertifikatwarnungen und fehlender D-Bus sind Containerdiagnosen. N-005-R03 bleibt separater, nicht übernommener Kartograph-Auftrag.",
@@ -7236,10 +7283,11 @@
     },
     "latestObs04SharedRetest": {
       "id": "GM-UX-OBS-04-INTEGRATED-RETEST-HANDOFF-20261010-02",
-      "status": "built_installed_ui_not_started",
+      "status": "completed_pass_for_fivepoint_cloud_ui_scope",
       "owner": "Cloud-GM-Produkttester",
       "branch": "active/installed-phase1",
-      "sharedHead": "77c4f1da8675b733f4ca3a323177c2a1e819497f",
+      "sharedHead": "decb94aaf43c9c4139ac00197f6db07879d8b05e",
+      "sharedHeadAtPreflight": "77c4f1da8675b733f4ca3a323177c2a1e819497f",
       "productMerge": "734a7b9c5714acf2ca5aa0395d9706594a5d4ecd",
       "integratedProductSource": "eefbe6f505f0158ec6156c2eaf359fbf19b24a0e",
       "preRunIssueComment": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/8#issuecomment-6093867208",
@@ -7249,18 +7297,19 @@
         "issue1DocumentationContract": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1#issuecomment-6087478045",
         "issue8Ownership": "#8 gelesen; integrierter OBS-04 Vorläufer 6093766868 bleibt erhalten; kein fremder aktiver OBS-04-UI-Besitzer gefunden.",
         "issue12": "Gesamtprodukt-/E2E-Koordination gelesen; dieses Paket beansprucht kein E2E-Gate.",
-        "remote": "git fetch origin --prune; origin/active/installed-phase1 = 77c4f1da8675b733f4ca3a323177c2a1e819497f.",
+        "remote": "Preflight git fetch: origin/active/installed-phase1 = 77c4f1da8675b733f4ca3a323177c2a1e819497f. Während der UI-Folge neuer Upstream decb94a erkannt, regulär fast-forward integriert, aktuelle Referenz anschließend remote-verifiziert.",
         "freshProcess": "GM-UX-01-D-FRESH-PROCESS-20261010-01 bleibt paused/not started; kein UI-Schritt daraus ausgeführt."
       },
       "build": {
         "command": "npm run build",
-        "buildCommit": "77c4f1da8675b733f4ca3a323177c2a1e819497f",
-        "worktree": "/workspace/scratch/gm-cloud-qa/obs04-shared-build",
-        "result": "PASS; dirty:false; sourceRevision exakt 77c4f1da8675b733f4ca3a323177c2a1e819497f",
+        "testBuildAtStartCommit": "77c4f1da8675b733f4ca3a323177c2a1e819497f",
+        "currentSharedBuildCommit": "decb94aaf43c9c4139ac00197f6db07879d8b05e",
+        "currentSharedBuildWorktree": "/workspace/scratch/gm-cloud-qa/obs04-shared-build-decb94",
+        "result": "PASS; dirty:false auf 77c4f1d und nach normaler Integration erneut PASS/dirty:false auf aktuellem Shared decb94a. Beide erzeugen dasselbe Tripel; aus decb94a in den isolierten Vault kopiert und erneut gehasht. Das laufende Obsidian hatte die byteidentischen Dateien bereits geladen.",
         "mainJsSha256": "522823730ddce4d0ba83e0476f60887b60a07c517f84e8e270814b6d597efa43",
         "stylesCssSha256": "a6d31c13219d4b9f49d2ecf6993106bedef2a33560c9bdfdb93106659d45bc2e",
         "manifestJsonSha256": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64",
-        "productFilesSinceIntegratedProductSource": "Keine; git diff eefbe6f..77c4f1d für Produkt-/Builddateien leer."
+        "productFilesSinceIntegratedProductSource": "Keine Dungeon-/OBS-04-Produktquelle; decb94a hat keinen Bundleeffekt, SHA-256 der drei Builddateien bleibt identisch."
       },
       "host": {
         "containerId": "4047ad84db9e5e527d70c7a59f150ea430c6137f941f2d4d8a90e36f1c8134b0",
@@ -7269,22 +7318,64 @@
         "cdp": "http://127.0.0.1:9230",
         "obsidianVersion": "1.14.4",
         "electronVersion": "43.7.7",
-        "windowBeforeOpen": "800x650 CSS px; DPR 1; sichtbares frisches Onboarding, Vault noch nicht geöffnet.",
-        "pluginTripletBeforeUi": "Im isolierten Testvault vorhanden; main.js/styles.css/manifest.json stimmen bytegenau mit dem sauberen Build auf 77c4f1d überein.",
+        "windowAfterOpen": "1440x1000 CSS px; DPR 1; unabhängiger Xvfb-Container.",
+        "pluginLoadedEvidence": "Sichtbare Obsidian-Community-Plugins-Einstellungen: Dungeon-Editor v0.1.0 aktiv; Screenshot 12-trust-and-maximized.png. Plugintripel entspricht SHA-gleich dem sauberen Build auf aktuellem Shared decb94a.",
         "communityPlugins": "[\"dungeon-editor\"]",
-        "restrictedMode": false
+        "restrictedMode": false,
+        "nativeFolderDialog": "Sichtbare Ordnernavigation Other Locations > Computer > qa > vault > Open. Erstöffnung fragte nach Pluginvertrauen; im eigenen QA-Vault bestätigt. xdotool/Xvfb steuerte nur diesen nativen Dialog."
       },
       "qaCard": {
         "path": "/workspace/scratch/gm-cloud-qa/fresh-process-20261010/vault/_QA-GM-UX-01-C-RESTORE-20261009/Nebelwacht-Improvisation.dungeon",
         "sha256BeforeUi": "6779ca9d4c39564a80c453dbfd9de33a09363cda43fed1176708a1273c450279",
-        "sourceAndUserVaults": "Nur bytegleiche Kopie in isoliertem QA-Vault; kein Nutzer-Vault angefasst."
+        "sha256AfterUi": "6779ca9d4c39564a80c453dbfd9de33a09363cda43fed1176708a1273c450279",
+        "previousIsolatedQaCopySameHash": "/workspace/scratch/gm-cloud-qa/vault/_QA-GM-UX-01-C-RESTORE-20261009/Nebelwacht-Improvisation.dungeon; same SHA-256 before/after, 6779ca9d4c39564a80c453dbfd9de33a09363cda43fed1176708a1273c450279.",
+        "sourceAndUserVaults": "Nur isolierte Kopie in eigenem Container geöffnet; kein Nutzer-Vault oder Originaltext geändert."
       },
       "preUiEvidence": "/workspace/scratch/gm-cloud-qa/evidence-obs04-shared-retest-20261010/00-pre-open-vault-0.png",
       "checksBeforeUi": "Issue #1/6087478045, #8, #12, aktuelle #8 Claims und origin/active/installed-phase1 geprüft; sauberer Shared-Worktree-Build PASS/dirty:false; installed triplet hashes PASS; QA file pre-hash PASS; neues Obsidian-Onboarding sichtbar, aber QA-Vault/Karte noch nicht geöffnet.",
-      "filesChanged": ["checkpoint.json", "ROADMAP-GM-PRODUCT-TESTING-PLAN.md"],
-      "tests": "Keine Produktsuite ausgeführt. UI-Test nicht gestartet.",
-      "limits": "Die fünf UI-Kriterien, Plugin-Ladung im geöffneten Vault, Nachhash und neue Lauf-Rohbilder sind nicht nachgewiesen. Kein FreshProcess, keine physische Eingabe, keine Produktlatenz, keine PlayerProjection, kein E2E-/Gesamtfreigabenachweis.",
-      "next": "Nur den isolierten QA-Vault sichtbar öffnen, Pluginladung und 1440x1000 Arbeitslayout dokumentieren, dann die fünf vereinbarten Schritte einmal durchführen und Datei-/Texthash vor/nach vergleichen."
+      "filesChanged": [
+        "checkpoint.json",
+        "ROADMAP-GM-PRODUCT-TESTING-PLAN.md"
+      ],
+      "tests": "Keine Test-Suite; Produktergebnis nur aus der sichtbaren fünfpunktigen Cloud-UI-Folge. npm run build auf 77c4f1d und erneut auf aktuellem Shared decb94a PASS, beide dirty:false; Buildtripel bytegleich.",
+      "limits": "PASS nur für die fünf vereinbarten OBS-04 Cloud-UI-Kriterien auf byteidentischem Bundle. Keine physische Eingabe, kein frischer Prozesswechsel während der OBS-04-Folge, keine Produktlatenz, keine PlayerProjection/Redaction, keine breite GM-UX-, Dungeon-, E2E- oder Gesamtfreigabe. FreshProcess-Paket bleibt paused/not started. Der neue Upstream decb94a wurde erst nach der sichtbaren Folge integriert; sauberer Build und installierte Dateien sind bytegleich, aber keine erneute UI-Folge auf getrennt gestarteter decb94a-App ausgeführt.",
+      "next": "Kein weiterer OBS-04-Test in dieser Fünfpunktefolge. Getrennte FreshProcess-, physische Eingabe- und PlayerProjection-Gates benötigen separate Aufträge.",
+      "sharedHeadAtUiStart": "eac70ecc3bf2d0ebeaeacc9d11436f8316b8943b",
+      "sharedHeadAfterUpstreamSync": "decb94aaf43c9c4139ac00197f6db07879d8b05e",
+      "productChangesAfterIntegratedMerge": "Keine Dungeon-/PlayView-Produktdateien seit eefbe6f. Upstream decb94a enthält Catalog-Quellmanifest/Test/Tool/Acceptance/Checkpoint-Änderungen; sauberer Build daraus ist bytegleich zum bereits getesteten UI-Bundle.",
+      "uiRun": {
+        "sequence": [
+          "Über die sichtbare Quick-Switcher-Aktion Ctrl+O die QA-Kopie Nebelwacht-Improvisation.dungeon öffnen; Spielansicht über das sichtbare Dungeon-Menü öffnen; vor dem Test die sichtbare Aktion Zurück zum Layout wählen, da ein geerbter maximierter Editor die zuvor wiederhergestellte Spielansicht überdeckte.",
+          "Geschoss 1 in der sichtbaren Spielansicht wählen; Screenshot 26 zeigt Räume 7–12 ohne Keytext.",
+          "Ein Klick auf Körper Raum 12 bei Bildschirmkoordinate (1170,650); elementFromPoint war Canvas. Inspector zeigt 12 · Raum 12, Schließen, Text öffnen, Raum einpassen.",
+          "Ein sichtbarer Klick auf Text öffnen; RoomView zeigt unveränderten gespeicherten Key plus Sitzungshinweis.",
+          "Zur Dungeon-Spielansicht zurückkehren, Inspector mit Schließen schließen; Kartenbild enthält nur Raumlabels, keinen Keytext.",
+          "Ein Klick auf Raum-12-Label bei Bildschirmkoordinate (1195,602); elementFromPoint war Canvas; derselbe RoomView-Key öffnet direkt."
+        ],
+        "savedKeyVisible": "Hinweis akut: Die blaue Fackel in Raum 12 öffnet den Geheimgang.\nSitzungshinweis: Die Nordtür klemmt; Umweg über Raum 11.",
+        "criteria": {
+          "roomBodyToInspector": "PASS: 12 · Raum 12 samt Text öffnen sichtbar nach Canvas-Körperklick.",
+          "buttonToSavedKey": "PASS: Text öffnen zeigt exakt den bestehenden Hinweis und Sitzungshinweis.",
+          "labelToSameKey": "PASS: Labelklick öffnet denselben Text direkt; kein Inhalt editiert.",
+          "noUnpromptedKeyInMap": "PASS: Screenshot der sauberen Geschoss-1-Karte vor Labelklick zeigt Raumlabels, aber keinen Keytext.",
+          "qaFileUnchanged": "PASS: SHA-256 vor/nach 6779ca9d4c39564a80c453dbfd9de33a09363cda43fed1176708a1273c450279."
+        },
+        "harnessDurationsMs": "Playwright/CDP-Remote-Harness meldete Body-Klick 311 ms, Button/Text 501 ms, Wechsel Spielansicht-Tab 381 ms, Inspector schließen 397 ms, Labelklick 312 ms; diese Remote-/Harness-Wartezeiten sind keine Produktlatenzen und werden nicht als solche ausgewertet.",
+        "filesEditedInQa": "Keine; kein Speichern ausgelöst."
+      },
+      "evidence": {
+        "directory": "/workspace/scratch/gm-cloud-qa/evidence-obs04-shared-retest-20261010/",
+        "screenshots": {
+          "preOpen": "00-pre-open-vault-0.png; sha256 e5aff25018b0fba4526d6bfcfc77f572913fe40cc77e99604b965534ea3330b9",
+          "vaultOpened": "11-vault-opened.png; sha256 2bb9367e3d6b5a1d1f4ffc3ac6091c5ecb0086955743fadace581de20d8d4741",
+          "pluginEnabled": "12-trust-and-maximized.png; sha256 0d13e71856126fac68f9ee29c12c1a243c67f5a09f21adb1fa47981062db6916",
+          "cleanFloor1Map": "26-layout-restored.png; sha256 c50274dcf863b74ba9104e11fd64cb2623feaaddd37b2160be54efc3b4c108a8",
+          "bodyClickInspector": "27-room12-body-click.png; sha256 6e978dc203be97951639c663a4a5b45f2d42a8a7ddaa9bfa1dfd9081150ec8be",
+          "buttonSavedKey": "28-body-button-text-open.png; sha256 5af63bf446894f1dff2fd3fa2fc2a6369254212e423ecde7e136fddb5e9f2068",
+          "mapWithoutKeyText": "30-map-clean-before-label.png; sha256 0767b87e26cee1a28853313407bc782b6b285b4172ed4fc14fcff5c092565745",
+          "labelSameKey": "31-room12-label-click.png; sha256 2317a5ac826d5660b8ed7bb55a8557c3252069cf94f7a6efc503f1921ceb238c"
+        }
+      }
     }
   }
 }
