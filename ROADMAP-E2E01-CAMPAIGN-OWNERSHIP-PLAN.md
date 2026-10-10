@@ -102,6 +102,11 @@ eingefroren. `read` muss CampaignId, Revision, Namespace und ContextToken treffe
 Snapshotrevision. Die Portimplementierung darf keine Schreibmethode, kein Lazy-
 Repair und keine Receiptallokation besitzen.
 
+`verify` ist nur ein früher schreibfreier Abbruchpunkt und niemals die
+Linearization-Grenze. Zwischen seinem Ergebnis und Publish darf sich Zustand ändern.
+Darum werden dieselben erwarteten Context-/Registry-/Ownerwerte zusätzlich als
+Compare-Preconditions an die unten beschriebene dauerhafte Publishgrenze getragen.
+
 ## Mehrowner-Command- und Receipt-Envelope
 
 `CampaignMultiOwnerCommandEnvelopeV1` friert vor der ersten Mutation ein:
@@ -124,9 +129,30 @@ ursprünglichen Receipt aufgelöst. `outcome_unknown` darf weder Finalize noch e
 zweiten Publish erlauben.
 
 Vor Publish ruft der Coordinator `verify` auf und prüft zusätzlich den aktuellen
-Campaigncontext. Jede Abweichung beendet den Auftrag vor der ersten sichtbaren
-Wirkung. Nach einem bestätigten Publish darf Cancel nicht zurückrollen; Recovery
-und Finalize bleiben Aufgabe des gemeinsamen P02/P04-Ports.
+Campaigncontext. Jede dort erkannte Abweichung beendet den Auftrag früh, aber ein
+grünes `verify` erteilt noch keine Schreibfreigabe.
+
+Der Envelope wird unverändert Bestandteil eines
+`CampaignMultiOwnerPublishRequestV1`. Dieser Request trägt die erwartete vollständige
+Contextprojektion, Registry-ID/-Revision und Projection-Digest, alle Owner-/Schema-/
+Snapshotrevisionen sowie jeden Participant-Before-Digest als Compare-Bedingungen bis
+an **dieselbe dauerhafte Publish-/Linearization-Grenze**. Der spätere gemeinsame
+P02/P04-Port muss dort atomar genau eines tun:
+
+1. alle Preconditions gegen die autoritativen aktuellen Zustände vergleichen und
+   genau eine Wirkung unter der ursprünglichen CommandId/ReceiptId publizieren;
+2. ohne sichtbare Teilwirkung `conflict` ablehnen; oder
+3. nach erreichter dauerhafter Linearization ausschließlich einen belegten
+   Recoveryzustand hinterlassen, der mit derselben CommandId/ReceiptId und demselben
+   Fingerprint nur vorwärts aufgelöst werden kann.
+
+Es gibt keinen Zustand, in dem einzelne Owner sichtbar sind, andere fehlen und ein
+neuer Publish erlaubt ist. Ein verspätetes `verify`- oder Participant-Ergebnis kann
+die Compare-Bedingungen nicht aktualisieren. Nach einem bestätigten oder dauerhaft
+linearisierten Publish darf Cancel nicht zurückrollen; Status/Recovery/Finalize
+verwenden das ursprüngliche Receipt. Der I01-Vertragslauf liefert Requesttyp,
+Precondition-Validator und ein ausführbares atomisches Port-Testdouble, aber keinen
+produktiven P02/P04-Adapter.
 
 ## Complete und Salvage sind verschiedene Befehle
 
@@ -146,6 +172,27 @@ aufgeführte beschädigte/fehlende Payloads dürfen ausgelassen werden. Shared
 Definitionen, erhaltene opaque Daten und manuelle Medienentscheidungen bleiben
 unverändert.
 
+Zusätzlich enthält jeder Salvage-Envelope eine aus der vollständigen Registryclosure
+abgeleitete `CampaignSalvageProjectionV1` mit drei disjunkten Mengen:
+
+- **survivors:** erhaltene Records samt vollständig rebindbarer lokaler Referenzen;
+- **omissions:** ausdrücklich ausgelassene Records mit Identität, Grund und
+  Auswirkung;
+- **quarantine:** unverändert erhaltene, nicht sicher interpretier- oder
+  rebindbare opaque/unknown-retained Bytes samt Owner, stabiler Identität,
+  Originaldigest, Quarantänegrund und Referenzbezug.
+
+Die Survivorprojektion ist referenziell geschlossen: Jede lokale Referenz eines
+Survivors zielt auf einen Survivor beziehungsweise dessen geplantes Remap-Ziel.
+Verweist ein Cue-, Scene- oder Runtime-Record auf eine ausgelassene AudioSource,
+muss der abhängige Record entweder nachweislich unabhängig/rebindbar bleiben,
+ebenfalls mit Identität und Auswirkung ausgelassen oder mitsamt unveränderten Bytes
+quarantänisiert werden. Ein dangling Survivor, eine nur teilweise erklärte
+Abhängigkeitsclosure, verlorene opaque/unknown-retained Bytes oder ein fehlender
+Quarantänebeleg blockiert Salvage vor Publish. Survivor-, Omission- und
+Quarantänedigests werden Teil von Command-Fingerprint, Receipt und atomaren
+Publish-Preconditions.
+
 ## Fail-closed-Orakel und geplante Negativfälle
 
 Der I01-Vertragslauf muss mindestens beweisen:
@@ -164,7 +211,13 @@ Der I01-Vertragslauf muss mindestens beweisen:
 10. Complete mit Auslassung sowie Salvage ohne DecisionId, Grund oder Auswirkung;
 11. gleiche CommandId mit geändertem Envelope, neue ReceiptId beim Retry und
     `outcome_unknown` gefolgt von unerlaubtem zweitem Publish;
-12. Mutation eines zurückgegebenen Snapshots oder der enthaltenen Arrays/Records.
+12. Context-, Registry- und Ownerwechsel jeweils nach grünem `verify`, aber vor
+    oder an Publish; verspätete Verify-/Participant-Antwort; jeweils null sichtbare
+    Teilwirkung oder ausschließlich ein vorwärts auflösbares ursprüngliches Receipt;
+13. beschädigte AudioSource mit nicht vollständig erklärter Cue-/Scene-/Runtime-
+    Abhängigkeit, dangling Survivor, verlorene Quarantänebytes oder verlorener
+    unknown-retained Beleg;
+14. Mutation eines zurückgegebenen Snapshots oder der enthaltenen Arrays/Records.
 
 Der positive Test verwendet die tatsächlichen stabilen IDs der aktiven räumlichen
 Fixture und einen nichtleeren AudioSource-Fall. Er darf fremde Payloadbytes nur als
@@ -178,8 +231,10 @@ markiert sein und sind kein produktiver Registrybeleg.
 2. **R01:** unabhängiger read-only Exact-SHA-Planreview. Pflichtbefunde werden in
    einem eigenen N-Lauf repariert und erneut geprüft.
 3. **I01:** erst nach Plan-PASS; hostneutrale Contracttypen, Validator,
-   read-only Portgrenze, Envelope-/Fingerprint-/Preflightlogik und fokussierte
-   positive/negative Tests. Kein produktiver Vault-, P02- oder P04-Adapter.
+   read-only Portgrenze, Envelope-/Fingerprint-/Preflightlogik, atomare
+   Publish-Precondition-Grenze als Testport sowie Survivor-/Quarantäneprojektion und
+   fokussierte positive/negative Tests. Kein produktiver Vault-, P02- oder
+   P04-Adapter.
 4. **R02/N01:** unabhängiger Code-/Contract-Review und getrennte Reparatur.
 5. **C01:** ausschließlich reviewte Scope-/Metadatenbereinigung. Der geprüfte
    Exact-SHA geht als Source-Handoff an den einen PR-#13-Steward; kein Selbstmerge.
