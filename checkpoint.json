@@ -1017,6 +1017,18 @@
         "nativeABA": false,
         "fullE2E": false,
         "independentReview": "existing integrated Host review pending; no new component/general review round or self-approval"
+      },
+      "publicationComposition": {
+        "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-manifest-host-aba-20261010/repair/publication-composition.json",
+        "sha256": "c279057089726d6c323fcaeedcd835a2b7ff35ec50c6054d71399f0e15effc6e",
+        "sourceCommit": "bd15baf50496a3cc0562892898f3a83117bbef26",
+        "gatedProductSource": "6513dab7075b4a64bf5ef9f2064705a030a77b5f",
+        "consumedShared": "321a41c1fa651e6c77f005566ebbafc7080eb960",
+        "checkAnd650Tests": "PASS on gatedProductSource; verified byte-identical src/tests/tools/dependencies",
+        "build": true,
+        "dirty": false,
+        "newNativeRun": false,
+        "fullE2E": false
       }
     },
     "review": {
@@ -5561,17 +5573,16 @@
       "productUnchanged": true
     },
     "latestSharedIntegration": {
-      "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-manifest-host-aba-20261010/repair/repair.json",
-      "sha256": "4adbfba33562a2578b75d594c85d56bd49db37154bd014af200bda169cc065a9",
-      "sourceCommit": "6513dab7075b4a64bf5ef9f2064705a030a77b5f",
-      "consumedShared": "04fc464bbf4fe6ad8cca9dcbd13b5f439d45be08",
-      "check": true,
-      "testsPassed": 650,
+      "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-manifest-host-aba-20261010/repair/publication-composition.json",
+      "sha256": "c279057089726d6c323fcaeedcd835a2b7ff35ec50c6054d71399f0e15effc6e",
+      "sourceCommit": "bd15baf50496a3cc0562892898f3a83117bbef26",
+      "gatedProductSource": "6513dab7075b4a64bf5ef9f2064705a030a77b5f",
+      "consumedShared": "321a41c1fa651e6c77f005566ebbafc7080eb960",
+      "checkAnd650Tests": "PASS on gatedProductSource; verified byte-identical src/tests/tools/dependencies",
       "build": true,
       "dirty": false,
-      "fullE2E": false,
-      "nativeSourcesUnchangedBySharedDocumentationMerge": true,
-      "newNativeRun": false
+      "newNativeRun": false,
+      "fullE2E": false
     },
     "latestCampaignBIntegration": {
       "id": "HEX-E2E01-FIXTURE-B-I01",

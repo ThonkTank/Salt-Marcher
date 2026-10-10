@@ -154152,6 +154152,18 @@
           "nativeABA": false,
           "fullE2E": false,
           "independentReview": "existing integrated Host review pending; no new component/general review round or self-approval"
+        },
+        "nativeCampaignABARepairPublication": {
+          "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-manifest-host-aba-20261010/repair/publication-composition.json",
+          "sha256": "c279057089726d6c323fcaeedcd835a2b7ff35ec50c6054d71399f0e15effc6e",
+          "sourceCommit": "bd15baf50496a3cc0562892898f3a83117bbef26",
+          "gatedProductSource": "6513dab7075b4a64bf5ef9f2064705a030a77b5f",
+          "consumedShared": "321a41c1fa651e6c77f005566ebbafc7080eb960",
+          "checkAnd650Tests": "PASS on gatedProductSource; verified byte-identical src/tests/tools/dependencies",
+          "build": true,
+          "dirty": false,
+          "newNativeRun": false,
+          "fullE2E": false
         }
       }
     ],
