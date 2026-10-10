@@ -39,7 +39,7 @@
     { "id": "mounts-other-animals", "firstPdfPage": 71, "firstPrintedPage": 71, "lastPdfPage": 72, "lastPrintedPage": 72, "expectedPrimaryOccurrences": 8, "reviewState": "inventory-transcript-helper-expansion-and-bounded-table-rows-complete-review-open" },
     { "id": "tack-harness-drawn-vehicles", "firstPdfPage": 72, "firstPrintedPage": 72, "lastPdfPage": 72, "lastPrintedPage": 72, "expectedPrimaryOccurrences": 14, "reviewState": "inventory-transcript-barding-expansion-and-bounded-table-rows-complete-review-open" },
     { "id": "waterborne-vehicles", "firstPdfPage": 72, "firstPrintedPage": 72, "lastPdfPage": 72, "lastPrintedPage": 72, "expectedPrimaryOccurrences": 6, "reviewState": "inventory-source-transcript-and-bounded-table-rows-complete-review-open" },
-    { "id": "magic-items-a-z", "firstPdfPage": 207, "firstPrintedPage": 207, "lastPdfPage": 251, "lastPrintedPage": 251, "reviewState": "boundary-and-potion-of-healing-heading-143-merge-captured-inventory-incomplete" },
+    { "id": "magic-items-a-z", "firstPdfPage": 207, "firstPrintedPage": 207, "lastPdfPage": 251, "lastPrintedPage": 251, "reviewState": "boundary-and-potion-of-healing-heading-142-merge-captured-inventory-incomplete" },
     { "id": "artifact-orb-of-dragonkind", "firstPdfPage": 252, "firstPrintedPage": 252, "lastPdfPage": 253, "lastPrintedPage": 253, "reviewState": "boundary-draft" }
   ],
   "coverage": {
