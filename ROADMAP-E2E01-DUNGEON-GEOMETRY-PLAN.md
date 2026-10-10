@@ -341,7 +341,9 @@ Produktänderung keine Produktbasisprüfung als Funktionsbeleg an.
 | Produkt-I01 `400fb47e2f…` | Implementierungskandidat; check, 490/490 Tests und Build bestanden | unabhängigen Code-R01 | Stewardintegration ohne Review |
 | Code-R01 `455b7e606f…` | `CHANGES_REQUIRED`, genau `DUN-GEO-I01-R01-01..03` | getrennten engen Produkt-N01 | Port-Handoff oder Cleanup |
 | Produkt-N01 `7d3f0deaca…` | Reparaturkandidat; check, 494/494 Tests und Build bestanden | unabhängigen engen Code-R02 | Stewardintegration vor PASS |
-| Code-R02 | offen | erst bei PASS den geprüften Owner-SHA | fremde Domainratifikation |
+| Code-R02 `cfe6e0e4db…` | `CHANGES_REQUIRED`; R01-02/03 geschlossen, ein Vor-`update()`-Pfad aus R01-01 offen | engen Produkt-N02 | Stewardintegration oder Cleanup |
+| Produkt-N02 `26a29e816d…` | Restreparaturkandidat; check, 495/495 Tests und Build bestanden | unabhängigen engen Code-R03 | Stewardintegration vor PASS |
+| Code-R03 | offen | erst bei PASS den geprüften Owner-SHA | fremde Domainratifikation |
 | Steward-Handoff | offen | Übernahme des geprüften Owner-SHA in den einzigen PR-#13-Kandidaten | zweiten Kandidaten oder Dungeon-eigenes Execute |
 | Produkt-Cleanup-P/I/R | offen und weiterhin nach der Funktionsabnahme | ausschließlich bereinigten geprüften Produktstand | Gesamtfreigabe |
 
@@ -396,3 +398,29 @@ identischen Bytes, Kennungsreihenfolge und stale-/invalid-Ablehnung.
 `git diff --check` bestanden. Fixturebytes wurden nicht geändert. Code-R02,
 Cleanup-P/I/R, GUI-/Host-/physische Eingabe und E2E-01 bleiben ausdrücklich
 offen; der N01-Kandidat ist noch kein Steward-Handoff oder Produkt-Go.
+
+## Produkt-N02-Ergebnis nach Code-R02
+
+Der unabhängige Code-R02 auf Exact-SHA
+`cfe6e0e4db95176c42c8b19c4096c27eae627e53` bestätigte R01-02 und
+R01-03. Offen blieb ausschließlich ein Pfad aus R01-01: Im tatsächlichen
+`AtlasEditor.bind()` konnte `unprojectLocal()` vor `gesture.update()` werfen.
+Der Catch entfernte dann nur die sichtbare Vorschau, während Pointer-up das
+ältere Proposal weiter finalisieren konnte.
+
+Produktcommit `26a29e816d23a2a08a0e932a2cb60f78b080651b` ergänzt dafür genau eine
+enge Grenze. `DungeonGeometryGesture.rejectSample()` widerruft nur das aktuelle
+Proposal einer weiterhin aktiven Geste. Der bestehende Dungeon-Pointermove ruft
+diese Grenze im Catch vor dem Leeren der sichtbaren Vorschau auf. Erfolgreiche
+Updates, Beginpointer-, RecordChange-, Basis-, History- und Handoff-Semantik
+bleiben unverändert.
+
+Die fokussierte Regression registriert die tatsächlichen `bind()`-Callbacks,
+erzeugt eine gültige Vorschau, löst anschließend mit einem synthetischen
+nicht-finiten Pointer den Umrechnungsfehler vor `update()` aus und sendet den
+tatsächlichen Pointer-up. Dungeonbytes, Undo-Tiefe, vorhandenes Redo und
+Draftsignal bleiben unverändert; ein frischer Begin kann danach wieder ein
+gültiges Proposal erzeugen. `npm run check`, `npm test` mit 495/495 Fällen,
+`npm run build` und `git diff --check` bestanden. Code-R03, Cleanup-P/I/R,
+GUI-/Host-/physische Eingabe und E2E-01 bleiben offen; N02 ist kein
+Steward-Handoff oder Produkt-Go.

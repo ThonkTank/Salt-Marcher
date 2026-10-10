@@ -8,11 +8,11 @@
     "notConfirmed": "Unabhängiger Review sowie House-Bindung, gemeinsamer Vault-/FileTransaction-Schritt, Renderer/Placement, Native Host, frischer Prozess, physische Eingabe und vollständiger E2E-01-Lauf stehen aus; keine Produkt-, Host- oder Gesamtfreigabe.",
     "geometryPort": {
       "id": "E2E-01-DUNGEON-GEOMETRY-I01",
-      "state": "code_repair_candidate_pending_independent_r02",
-      "productCommit": "7d3f0deaca89f5bb2667a1478047475d9e28bee3",
-      "confirmed": "Der reine äußere Room31/Floor32-Konturpunktzug nutzt die vorhandenen Building-Punkt-, Kontur- und Portalplaner, projiziert ohne Session-/History-/Dateiwirkung und liefert genau einen kanonischen Dungeon-AtlasChange. Die tatsächliche Terrain-/Graph-/Dungeon-/Location-/City-/History-Identität sowie vollständige Placement-/House-/RigidFrame-Basis bleiben bis Preview/Handoff eingefroren; Historyereignisse einschließlich A-B-A und bytegleiche Adapterersetzung invalidieren terminal. N01 entzieht einem alten Proposal bei jedem ungültigen oder nicht-finiten Update die Finalisierbarkeit, hält den tatsächlichen Beginpointer immutable und führt pure Projektion sowie native Session über dieselbe RecordChange-Validierungs-/Anwendungsgrenze. Die exakten R01-Repros, Portal-/Order-Gegenprobe, Typprüfung, 494/494 Tests und Build bestanden.",
-      "evidence": "src/features/dungeon/geometry-change.ts; src/session.ts; tests/core/atlas-spatial.test.ts; ROADMAP-E2E01-DUNGEON-GEOMETRY-PLAN.md; PR #26 Kommentar 6092998283; Issue #8 Kommentar 6093025792",
-      "notConfirmed": "Unabhängiger Code-R02, Produkt-Cleanup-P/I/R, Hex-Stewardintegration, echte GUI-/Hostbedienung, physische Eingabe und vollständiger E2E-01-Lauf bleiben offen; keine Produkt-, Host-, Fach- oder Gesamtfreigabe."
+      "state": "code_repair_candidate_pending_independent_r03",
+      "productCommit": "26a29e816d23a2a08a0e932a2cb60f78b080651b",
+      "confirmed": "Der reine äußere Room31/Floor32-Konturpunktzug nutzt die vorhandenen Building-Punkt-, Kontur- und Portalplaner, projiziert ohne Session-/History-/Dateiwirkung und liefert genau einen kanonischen Dungeon-AtlasChange. Die tatsächliche Terrain-/Graph-/Dungeon-/Location-/City-/History-Identität sowie vollständige Placement-/House-/RigidFrame-Basis bleiben bis Preview/Handoff eingefroren; Historyereignisse einschließlich A-B-A und bytegleiche Adapterersetzung invalidieren terminal. R02 bestätigte den immutable Beginpointer und die gemeinsame RecordChange-Grenze. N02 widerruft zusätzlich im tatsächlichen AtlasEditor-Catch jedes alte Proposal, wenn die Koordinatenumrechnung vor update scheitert. Der bind()-Callback-Repro erhält Dungeonbytes, Undo-Tiefe, Redo und Draftsignal; Typprüfung, 495/495 Tests und Build bestanden.",
+      "evidence": "src/features/dungeon/geometry-change.ts; src/features/atlas/atlas-editor.ts; tests/core/atlas-spatial.test.ts; ROADMAP-E2E01-DUNGEON-GEOMETRY-PLAN.md; PR #26 Kommentar 6093160433; Issue #8 Kommentar 6093174238",
+      "notConfirmed": "Unabhängiger Code-R03, Produkt-Cleanup-P/I/R, Hex-Stewardintegration, echte GUI-/Hostbedienung, physische Eingabe und vollständiger E2E-01-Lauf bleiben offen; keine Produkt-, Host-, Fach- oder Gesamtfreigabe."
     }
   },
   "gmProductFollowups": {

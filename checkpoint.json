@@ -490,15 +490,15 @@
     "next": "Kandidaten-SHA veröffentlichen, eng unabhängig reviewen lassen und anschließend nur als Source-Handoff an den einen PR-#13-Steward übergeben; keine eigene Integration."
   },
   "e2e01DungeonGeometryPlan": {
-    "run": "E2E-01-DUNGEON-GEOMETRY-N01",
-    "state": "code_repair_candidate_pending_independent_r02",
+    "run": "E2E-01-DUNGEON-GEOMETRY-N02",
+    "state": "code_repair_candidate_pending_independent_r03",
     "owner": "Dungeon-Strang (Thread Obsidian Dungeon Repo ansehen)",
     "branch": "dungeon/e2e01-geometry-i01-20261010",
     "baseCommit": "58c24b161a967017112d8bfc68471b19ad70e72b",
     "synchronizedShared": "38f333d4eda6cd2203443efd35b7140e7bf72e07",
     "plan": "ROADMAP-E2E01-DUNGEON-GEOMETRY-PLAN.md",
-    "coordination": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6093025989",
-    "details": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/8#issuecomment-6093025792",
+    "coordination": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6093174339",
+    "details": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/8#issuecomment-6093174238",
     "planCandidateCommit": "ea46ba5437596aceaad955330e21c3ef4e739451",
     "review": {
       "run": "E2E-01-DUNGEON-GEOMETRY-P01-R01",
@@ -564,6 +564,28 @@
       "review": "independent_code_r02_required",
       "host": false
     },
+    "codeReviewR02": {
+      "run": "E2E-01-DUNGEON-GEOMETRY-I01-R02",
+      "result": "CHANGES_REQUIRED",
+      "commit": "cfe6e0e4db95176c42c8b19c4096c27eae627e53",
+      "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/26#issuecomment-6093160433",
+      "closed": [
+        "DUN-GEO-I01-R01-02: immutable tatsächlicher Beginpointer einschließlich Offset, Rückkehr und Snap",
+        "DUN-GEO-I01-R01-03: gemeinsame RecordChange-Projektion für pure Projektion und native Session"
+      ],
+      "remaining": "DUN-GEO-I01-R01-01: unprojectLocal kann im AtlasEditor-Pointermove vor gesture.update werfen; der Catch verbarg nur Preview und ließ ein älteres Proposal finalisierbar.",
+      "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/dungeon-geometry-code-r02/{review.json,probes.ts,probes-required.ts,probes.json,probes-error.log,check.log,test.log,build.log}",
+      "boundary": "Synthetischer tatsächlicher Callback-Repro; keine physische Eingabe-, GUI-, Host- oder E2E-Freigabe."
+    },
+    "codeRepairN02": {
+      "run": "E2E-01-DUNGEON-GEOMETRY-N02",
+      "commit": "26a29e816d23a2a08a0e932a2cb60f78b080651b",
+      "start": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/8#issuecomment-6093174238",
+      "scope": "Ausschließlich verbleibender Vor-update-Fehlerpfad aus DUN-GEO-I01-R01-01: AtlasEditor widerruft bei fehlgeschlagener Koordinatenumrechnung jedes ältere Dungeonproposal.",
+      "oracle": "Tatsächliche bind()-Pointermove/-Pointerup-Callbacks: gültige Vorschau, non-finite Umrechnungsfehler vor update, leere Preview/Handoff, unveränderte Dungeonbytes, Undo-Tiefe, Redo und Draftsignal; frischer Begin bleibt möglich.",
+      "review": "independent_code_r03_required",
+      "host": false
+    },
     "scope": "Implementierungskandidat: äußerer Konturpunktzug Room31/Floor32 über bestehende pure Geometrieplaner, transientes Preview/Cancel und genau ein kanonischer ownergebundener Before→After-AtlasChange für die gemeinsame check/execute-Komposition.",
     "files": [
       "src/features/dungeon/geometry-change.ts",
@@ -576,10 +598,10 @@
       "checkpoint.json",
       "acceptance.json"
     ],
-    "verification": "npm run check PASS; npm test 494/494 PASS; npm run build PASS; git diff --check PASS. Fokussierte Corefälle verwenden die eingefrorene e2e01-v1-Dungeonfixture und verändern keine Fixturebytes.",
-    "externalEvidence": "Code-R01-Beleg /home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/dungeon-geometry-code-r01 auf 455b7e6; N01 ist ausschließlich automatisiert geprüft. Keine neue GUI-, Host- oder physische Eingabeevidenz.",
-    "notVerified": "Unabhängiger Code-R02, Produkt-Cleanup-P/I/R, Hex-Stewardintegration, tatsächlicher Hostlauf, physische Eingabe, vollständige Mehrownerkomposition und E2E-01-PASS bleiben offen.",
-    "next": "N01-Exact-SHA auf bestehendem PR #26 veröffentlichen und ausschließlich das Reparaturdelta unabhängig durch Hex als Code-R02 prüfen lassen; vor PASS kein Owner-SHA-Handoff."
+    "verification": "npm run check PASS; npm test 495/495 PASS; npm run build PASS; git diff --check PASS. Der neue Corefall verwendet die tatsächlichen AtlasEditor.bind()-Callbacks mit synthetischem non-finite Pointer und verändert keine Fixturebytes.",
+    "externalEvidence": "Code-R02-Beleg /home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/dungeon-geometry-code-r02 auf cfe6e0e; N02 ist ausschließlich automatisiert geprüft. Keine neue GUI-, Host- oder physische Eingabeevidenz.",
+    "notVerified": "Unabhängiger Code-R03, Produkt-Cleanup-P/I/R, Hex-Stewardintegration, tatsächlicher Hostlauf, physische Eingabe, vollständige Mehrownerkomposition und E2E-01-PASS bleiben offen.",
+    "next": "N02-Exact-SHA auf bestehendem PR #26 veröffentlichen und ausschließlich das Restdelta unabhängig durch Hex als Code-R03 prüfen lassen; vor PASS kein Owner-SHA-Handoff."
   },
   "e2e01DungeonGeometryCleanup": {
     "run": "E2E-01-DUNGEON-GEOMETRY-CL-I01",
