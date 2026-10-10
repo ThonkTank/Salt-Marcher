@@ -4,7 +4,7 @@
 
 Eine Spielleitung soll eine Kampagne als zusammenhängenden lokalen Arbeitsraum benutzen: Welt und Orte erkunden, Städte und Dungeons bearbeiten, Texte und Encounter vorbereiten und daraus einen Spielabend führen. Gespeicherte Daten müssen nach Neustart und Fehlern zuverlässig wieder auffindbar sein. Ein weiterer isolierter Editor oder ein nur theoretisch beschriebener Fachvertrag erfüllt dieses Ziel noch nicht.
 
-Die vollständige [SaltMarcher-Ablösung](../ROADMAP-SALTMARCHER-REPLACEMENT.md) ist der verbindliche Gesamtumfang. Diese Seite fasst die vorhandenen Ziele zusammen; sie ersetzt weder die Fachanforderungen noch deren Abnahme.
+Die vollständige [SaltMarcher-Ablösung](../ROADMAP-SALTMARCHER-REPLACEMENT.md) ist der verbindliche Gesamtumfang. Diese Seite fasst die vorhandenen Ziele zusammen; sie ersetzt weder die Fachanforderungen noch deren Abnahme. Der [vollständige Quellenabgleich](SCOPE.md) macht alle erfassten Zielbereiche, zusätzliche Fachabnahmen und noch offene Quellenkollisionen sichtbar. Die vier Abläufe unten sind Integrationsgates; sie allein beschreiben nicht den gesamten Funktionsumfang.
 
 ## Vier Lieferergebnisse
 
@@ -15,12 +15,30 @@ Die vollständige [SaltMarcher-Ablösung](../ROADMAP-SALTMARCHER-REPLACEMENT.md)
 | Reise und Weltreaktion | Reise, Zeit und Kalender konsistent fortschreiben; Wetter, Shops und Musik reagieren ohne doppelte Wirkung bei Retry oder Restart | E2E-03 |
 | Portabilität und sichere Anzeige | Kampagne und Assets vollständig übertragen/wiederherstellen; Spieler sehen nur freigegebene Informationen; Bedienung funktioniert auf den unterstützten Hosts | E2E-04 |
 
+## Vollständiges Funktionsportfolio
+
+| Zielbereich | Was zusätzlich zum Integrationsablauf fertig werden muss |
+| --- | --- |
+| Kampagne und Wissen | Gesamter Datenlebenszyklus; Katalog, Regeln, Referenzgraph, Notizsuche, NPCs/Orte/Fraktionen/Quests/Gerüchte und World Planner |
+| Party, Planung und Live-Spiel | Roster/aktuelle/erwartete Party getrennt; Adventuring Day; manuelle Timeline; reproduzierbare Session-/Reward-Generierung; ständig verfügbare Primary/Split Scenes und mehrere Encounter-/Chase-Masken |
+| Kampf und Nachbereitung | Encounter Tables, Initiative/HP/Zustände/Undo, Abschluss, XP/Level, Treasures und Charakterlootledger, Handel, kumulativer Lootausgleich und erklärbare Korrekturhistorie |
+| Atlas und Kartenwerkzeuge | Vollständige beauftragte Dungeon-/Wonderdraft-Werkzeugfunktion, Welt-/Hexgestaltung, Assets, Ebenen, Licht, Labels, Detailkarten und Ausgabe; ein durchgehend bearbeitbarer Atlas |
+| Erweiterter Dungeon | Kontinuierliche 3D-Räume/Höhen, Paths/Passages, Graph-Entwurf, Key-Batchbearbeitung, Attributvererbung, Inhaltsvorlagen, dynamische Beschreibungen, Geheim-/Trap-Features und Dokument-/Paketausgabe; konkrete Zuordnung noch offen |
+| Städte | Volle Funktionsergebnisse von Canvas of Kings, Watabou und Fantasy Town Generator, einschließlich Erzeugung, Bewohnern/Beziehungen/Fraktionen/Tagesabläufen; geschützte Regeneration, Innenräume und Ausgabe |
+| Reise und Weltzeit | Hex-/Dungeonreise, Unterbrechungen/Tracks/Perception, eigene Scene-Zeiten, Fantasykalender, einmalige gemeinsame Worldfolgen und kausales Undo |
+| Unterstützende Systeme | Shops/Restock, regionales Wetter/Klima, lokale Musik/Autoplay und geschichtete Ambience mit Vorrang manueller GM-Entscheidungen |
+| Actor Autonomy | Ausdrücklich freigegebene NPC-/Monsterbedürfnisse, Jobs/Reservierungen, begrenzte Konflikte, Erklärbarkeit und atomare zeitgebundene Steps; Partygefahr bleibt beim GM |
+| Anzeige, Daten und Erweiterung | Sichere passive Spielerprojektion mit getrenntem Wissen/aktueller Sicht; automatische Speicherung/Recovery; komplette unabhängige Im-/Exporte; installierbare Extensions mit begrenzten widerrufbaren Rechten |
+| Gesamtqualifikation | Linux/Windows/macOS, Offline/Privacy, selbständige Installation, Lokalisierung/Tastatur/200 %/Kontrast, vollständige versionierte In-game-Tutorials, Latenz/Skalierung, Cancel-/Fehlerisolation und Originalvergleiche |
+
+Quellen, Lieferphasen und verbleibende Zuordnungslücken stehen in [SCOPE.md](SCOPE.md). Insbesondere ersetzen Dungeondraft-Parität und E2E-01 die zusätzlichen Dungeon-Fachanforderungen nicht. [#44](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/44) führt die konkreten offenen Zuordnungen und Zielregeln.
+
 ## Verbindliche Qualitätsziele
 
 - Eine gemeinsame Atlasfläche mit einer Kamera, History und Savegrenze verbindet Hex, Orte, Städte und Dungeons. Navigation erfolgt durch Zoom statt erforderlicher Editorwechsel.
 - Karten-, Raum- und Abschnittsidentitäten bleiben stabil. Markdown und geschützte Nutzertexte bleiben wortgetreu; fremde oder veraltete Schreibautorität wird gesperrt.
-- Lokale Offline-Nutzung, nachvollziehbare Quellen, portable Daten/Assets und konfliktgeschützte Persistenz gehören zum Produkt.
-- Bedienung und Funktion werden direkt gegen die vereinbarten Originale geprüft. Für Dungeon-Grafik genügt die vereinbarte ungefähr gleichwertige Darstellung. Testzahlen ersetzen keinen Originalvergleich.
+- Lokale Offline-Nutzung, nachvollziehbare Quellen, portable Daten/Assets, automatische Speicherung ohne manuelle Savepflicht und konfliktgeschützte Persistenz gehören zum Produkt. Sinnvolle Laufzustände und bestätigte Fakten bleiben nach Neustart erhalten.
+- Dungeon-/Wonderdraft-Bedienung und Funktion werden direkt gegen die vereinbarten Originale geprüft, mit den ausdrücklich beschlossenen Atlasanpassungen. Stadtfunktionen sind vollständig gleichwertig mit den drei Vorbildern bei besserer eigener Bedienung; Stadt-Originalgesten sind keine Pflicht. Für Dungeon-Grafik genügt die vereinbarte ungefähr gleichwertige Darstellung. Testzahlen ersetzen keinen Originalvergleich.
 - Physische Bedienung, große Karten/Welten, Tastatur, 200-Prozent-Skalierung, Accessibility und die erforderlichen Betriebssysteme benötigen eigene Nachweise.
 
 ## Gegenwärtiger Stand und offene Entscheidungen

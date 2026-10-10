@@ -28,6 +28,21 @@ Der dokumentierte A→B→A-Lauf auf `cd4a06d620a8a454aa5a82e9bc27a040cda3a374` 
 
 Vorbereitende Vertrags-/Quellenarbeit kann erforderliche Eingänge liefern. Die **nummerierten Integrationsgates beginnen nacheinander**, jeweils nach integriertem PASS des Vorgängers; das ist keine Anweisung, alle übrige Facharbeit zu stoppen. Es gibt keine erfundenen Fertigstellungstermine oder Gesamtprozente.
 
+## Zusätzliche Lieferergebnisse außerhalb der vier Gate-Kurzfassungen
+
+Der [Quellenabgleich](SCOPE.md) führt den gesamten erfassten Umfang. Diese Funktionen brauchen zusätzlich konkrete Fachpakete und direkte Abnahmen:
+
+| Fachfolge | Eigenes Ergebnis | Abhängigkeit / bestehender Arbeitsort |
+| --- | --- | --- |
+| SMR-02 | World Planner, vollständiger Katalog/Referenzgraph und Notizsuche | Campaign-/Identitätsgrundlage; #9/#10; vorhandene CE-Arbeit |
+| SMR-04 | Volle Dungeon-/Hex-/Stadtfunktion einschließlich 3D-/Graph-/Template-/Beschreibungsbedarf und FTG-Lebensdaten | Vorhandene Atlas-/Paritäts-/CITY-Folgen weiterführen; fehlende Detailzuordnung #44 in #7/#8/#12 |
+| SMR-06 | Manuelle Sessionplanung und reproduzierbare Vorschlags-/Reward-Generierung, ohne angenommene World-Inhalte zu verlieren | Campaign, Quellen/Party, Encounter/Loot und Ortsreferenzen; #9/#10; positive Übergabe in E2E-02 |
+| SMR-09 | Opt-in-Autonomy mit Bedürfnissen/Jobs/Reservierungen und begrenzten nicht-partybezogenen Konflikten | SMR-02/03/04/07; Zeit-/World-/Actor-Owner klären in #10/#12; eigene AC-13-Abnahme |
+| SMR-10 | Installierbare, widerrufbar befähigte Extensions und austauschbare Capabilitybereiche | Daten-/Rechte-/Hostgrenzen, unabhängige Fail/Remove/Replace/Restore-Nachweise; #11; eigene AC-16-Abnahme |
+| SMR-11 | Vollständige Tutorials je Version, OS-Auslieferung, Accessibility/Lokalisierung und messbare Gesamtqualität | Jedes exponierte Feature, unterstützte OS-/Display-/Lastprofile; #11/#12; AC-17/18 und Bereichsbudgets |
+
+Automatische Speicherung und vollständige Wiederaufnahme sind bereits querschnittliche SMR-01-Bedarfe. Ein manueller Save/Reopen-Beleg ersetzt diese Normalbetriebsanforderung nicht. Die zusätzlichen Ergebnisse ändern die bereits ratifizierte Gate-Reihenfolge nicht; Gesamtfreigabe verlangt sämtliche Fach- und Querschnittsabnahmen.
+
 ## Welche Quelle gilt?
 
 1. Der vollständige Lieferumfang folgt [SaltMarcher-Ablösung](../ROADMAP-SALTMARCHER-REPLACEMENT.md) und den dort gebundenen fachlichen Quellen. Architekturentscheidungen bleiben in [ARCHITECTURE.md](../ARCHITECTURE.md).

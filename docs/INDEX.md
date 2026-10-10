@@ -2,13 +2,13 @@
 
 ## Die kurzen Einstiege
 
-[README](../README.md) → [Produktziele](PRODUCT.md) → [Roadmap und aktuelle Aufgaben](ROADMAP.md) → [Beitragen](../CONTRIBUTING.md).
+[README](../README.md) → [Produktziele](PRODUCT.md) / [vollständiger Zielumfang](SCOPE.md) → [Roadmap und aktuelle Aufgaben](ROADMAP.md) → [Beitragen](../CONTRIBUTING.md).
 
 ## Verbindliche Fachorte
 
 | Frage | Dokument / Arbeitsort |
 | --- | --- |
-| Gesamtumfang und Herkunft der Anforderungen | [SaltMarcher-Ablösung](../ROADMAP-SALTMARCHER-REPLACEMENT.md), [Produktziele](PRODUCT.md) |
+| Gesamtumfang und Herkunft der Anforderungen | [Scope-Abgleich mit offenen Zielregeln](SCOPE.md), [Quellenregister](scope-sources.json), [SaltMarcher-Ablösung](../ROADMAP-SALTMARCHER-REPLACEMENT.md) |
 | Integrationsfolge und Gatebedeutungen | [Produktroadmap](ROADMAP.md), [Gatekatalog](../ROADMAP-E2E-GATES-CANDIDATE.md), [#12](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12) |
 | Architekturentscheidungen | [ARCHITECTURE.md](../ARCHITECTURE.md) |
 | Nachweise je Anforderung | [acceptance.json](../acceptance.json) |
