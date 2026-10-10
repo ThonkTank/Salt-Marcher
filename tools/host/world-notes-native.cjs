@@ -42,19 +42,42 @@ module.exports = ({ page, fs, path, assert, vault, out, checks }) => {
       await editForm.getByRole("button", { name: "Beziehung hinzufügen" }).click();
       await editForm.getByRole("button", { name: "Speichern", exact: true }).click();
       await panel.getByRole("status").filter({ hasText: "Gespeichert" }).waitFor();
+      for (const [kind, title, notes] of [
+        ["Quest", "Wacht am Tor", "Die Glocke fehlt."],
+        ["Gerücht", "Nebelzeichen", "Am Kai gesehen."],
+      ]) {
+        await panel.getByRole("button", { name: `${kind} anlegen` }).click();
+        const entry = panel.locator("form");
+        await entry.locator("label").filter({ hasText: "Name" }).locator("input").fill(title);
+        await entry.locator("label").filter({ hasText: "GM-Notizen" }).locator("textarea").fill(notes);
+        await entry.getByRole("button", { name: "Speichern", exact: true }).click();
+        await panel.getByRole("status").filter({ hasText: "Gespeichert" }).waitFor();
+      }
+      await panel.getByRole("button", { name: "Gerücht: Nebelzeichen" }).click();
+      await panel.getByRole("button", { name: "Löschen", exact: true }).click();
+      await panel.getByRole("button", { name: "Löschen bestätigen" }).click();
+      await panel.getByRole("status").filter({ hasText: "Gespeichert" }).waitFor();
+      assert.equal(await panel.getByRole("button", { name: "Gerücht: Nebelzeichen" }).count(), 0);
       const savedManifest = JSON.parse(fs.readFileSync(path.join(vault, manifestPath), "utf8"));
       const savedOwner = savedManifest.registry.owners.find((item) => item.ownerId === "world-notes");
-      assert(savedOwner && savedOwner.records.length === 2);
+      assert(savedOwner && savedOwner.records.length === 4);
       const faction = savedOwner.records.find((item) => item.recordType === "world-faction");
-      assert(faction);
+      const quest = savedOwner.records.find((item) => item.recordType === "world-quest");
+      const rumor = savedOwner.records.find((item) => item.recordType === "world-rumor");
+      assert(faction && quest && rumor);
       const factionPath = `Kampagnen/SaltMarcher/${namespace}/Weltwissen/faction/${faction.id}.world-note.json`;
+      const questPath = `Kampagnen/SaltMarcher/${namespace}/Weltwissen/quest/${quest.id}.world-note.json`;
+      const rumorPath = `Kampagnen/SaltMarcher/${namespace}/Weltwissen/rumor/${rumor.id}.world-note.json`;
       assert.equal(JSON.parse(fs.readFileSync(path.join(vault, factionPath), "utf8")).gmNotes, "Treffen am Kai.");
+      assert.equal(JSON.parse(fs.readFileSync(path.join(vault, questPath), "utf8")).gmNotes, "Die Glocke fehlt.");
+      assert.equal(JSON.parse(fs.readFileSync(path.join(vault, rumorPath), "utf8")).deleted, true);
       const updated = JSON.parse(fs.readFileSync(path.join(vault, notePath), "utf8"));
       assert.equal(updated.gmNotes, "Kennt den alten Kai und den Nebelbund.");
       assert.deepEqual(updated.relations, [{ targetId: faction.id, label: "kennt" }]);
       assert.equal(fs.existsSync(path.join(vault, manifestPath.replace(/\.campaign\.json$/, ".world-notes.journal"))), false);
-      fs.writeFileSync(path.join(out, "saved-note.json"), JSON.stringify({ notePath, factionPath, updated, faction }, null, 2));
-      checks.push("Real Obsidian picker, NPC and faction create, native update and relationship Save PASS");
+      fs.writeFileSync(path.join(out, "saved-note.json"), JSON.stringify({ notePath, factionPath, questPath, rumorPath,
+        updated, faction, quest, rumor }, null, 2));
+      checks.push("Real Obsidian creates all four kinds, updates a relationship and saves a native rumor tombstone PASS");
     },
     reopen: async () => {
       const panel = await open();
@@ -70,7 +93,13 @@ module.exports = ({ page, fs, path, assert, vault, out, checks }) => {
       await panel.getByRole("button", { name: "Fraktion: Nebelbund" }).click();
       assert.equal(await panel.locator("form label").filter({ hasText: "GM-Notizen" }).locator("textarea").inputValue(),
         "Treffen am Kai.");
-      checks.push("Fresh real Obsidian process reopens exact NPC/faction prose and native relationship PASS");
+      await panel.getByRole("button", { name: "Entwurf verwerfen" }).click();
+      await panel.getByRole("button", { name: "Verwerfen bestätigen" }).click();
+      await panel.getByRole("button", { name: "Quest: Wacht am Tor" }).click();
+      assert.equal(await panel.locator("form label").filter({ hasText: "GM-Notizen" }).locator("textarea").inputValue(),
+        "Die Glocke fehlt.");
+      assert.equal(await panel.getByRole("button", { name: "Gerücht: Nebelzeichen" }).count(), 0);
+      checks.push("Fresh real Obsidian process reopens exact prose/relationship and hides the persisted rumor tombstone PASS");
     },
   };
 };
