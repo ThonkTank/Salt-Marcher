@@ -836,7 +836,9 @@
         "Chronik R01 Prepared-Proof Source binding"
       ],
       "qualifiedOwnerCandidate": "a6e61b497fe522e7be959f7ce76ce5c4cfcdfa18",
-      "checkedIntegratedSourceCommit": "f888a665d6ba06a2f891a65b1edfcdb134553f7a"
+      "checkedIntegratedSourceCommit": "f888a665d6ba06a2f891a65b1edfcdb134553f7a",
+      "latestCheckedIntegratedSourceCommit": "964c85f9789e33f6e22324ae34534ca6fe944ef4",
+      "latestConsumedShared": "1310905fa0b5290b42fa3dae4204300b17f2368d"
     },
     "review": {
       "run": "HEX-02-R02",
@@ -3391,7 +3393,52 @@
           "fullE2E": false,
           "after": "Specific qualified prepared-rollback release, then FileTransaction/actual AtlasView hook plus same Registry/Inventory/mount/history and real Host Save/Fresh/Recovery/A-B-A. No general ownership/plan round.",
           "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/campaign-manifest-host-i02-ack-20261010/integration.json",
-          "sha256": "141ccbe41a1d92c11ceb11dc010dbd8a49654259d3388ddb2e09a5253c263344"
+          "sha256": "141ccbe41a1d92c11ceb11dc010dbd8a49654259d3388ddb2e09a5253c263344",
+          "publicationSynchronization": {
+            "state": "incoming_catalog_source_slice_integrated_checked_no_Atlas_authority_change",
+            "checkedAt": "2026-10-10T11:54:09.967259+00:00",
+            "checkedSourceCommit": "964c85f9789e33f6e22324ae34534ca6fe944ef4",
+            "consumedShared": "1310905fa0b5290b42fa3dae4204300b17f2368d",
+            "incomingCommit": "1310905fa0b5290b42fa3dae4204300b17f2368d",
+            "incomingFiles": [
+              "checkpoint.json: saltMarcherCatalogEncounter",
+              "acceptance.json: saltMarcherCatalogEncounter",
+              "src/features/catalog/data/items-srd51-inventory.json",
+              "src/features/catalog/data/items-srd51-source-manifest.json",
+              "src/features/catalog/data/items-srd51-transcript.json",
+              "tests/items-srd51-source.test.mjs",
+              "tools/items-srd51-source-verify.mjs"
+            ],
+            "foreignCatalogCheckpointMatchesIncomingLiteral": true,
+            "foreignGmCheckpointMatchesIncomingLiteral": true,
+            "counterprobedAtlasCampaignVaultSourcesAndSpatialFixtureByteExactUnchanged": true,
+            "checks": {
+              "check": "PASS",
+              "tests": 628,
+              "passed": 628,
+              "failed": 0,
+              "skipped": 0,
+              "build": "PASS clean exact source",
+              "diffCheck": "PASS"
+            },
+            "triplet": {
+              "main.js": {
+                "bytes": 1587500,
+                "sha256": "01c6cad5f277e6d4f824e1a5154f57d0f65f68c4f2f08b8efd3bf7c3cd70277e"
+              },
+              "styles.css": {
+                "bytes": 29780,
+                "sha256": "68e1cf101ceaadd624168b431fddc297c90e8a5bc6be25a15f0926ebb569a5ea"
+              },
+              "manifest.json": {
+                "bytes": 237,
+                "sha256": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64"
+              }
+            },
+            "doesNotApprove": "Pending Catalog source review and item completeness retained; no Catalog/Atlas native/full E2E promotion.",
+            "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/campaign-manifest-host-i02-ack-20261010/publication-synchronization.json",
+            "sha256": "fa70c9b5d30801a3c0de20edb7661d9f4e8809d722ad4a6227c453f499fc945a"
+          }
         }
       }
     },
