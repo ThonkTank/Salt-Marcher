@@ -1,8 +1,8 @@
 {
   "repositoryOrientation": {
     "date": "2026-10-10",
-    "state": "integrated_with_direct_user_authorization",
-    "scope": "Consolidated product/gate navigation, contributor communication, task and PR templates; no product or acceptance approval.",
+    "state": "completed",
+    "scope": "Unified live task/support discovery and ownership lifecycle; materialized existing product packages and aligned recurring worker/controller instructions. No product or acceptance approval.",
     "branch": "active/installed-phase1",
     "entrypoint": "README.md",
     "productGoals": "docs/PRODUCT.md",
@@ -15,12 +15,12 @@
     "contextTool": "npm run context",
     "nextTaskCommand": "npm run next",
     "referenceRegister": "docs/reference/PLAN-REGISTER.md",
-    "next": "Read the live product bottleneck and task claims with npm run next; delivery decisions remain in #12. Owners replace their current main text/checkpoint at meaningful handoffs, without repeated full reports.",
+    "next": "Process maintainer observes two independent existing product packages and corrects actual queue gaps; preserve gates and owners.",
     "verification": {
-      "structure": "PASS",
-      "taskForm": "Three distinct required fields; parsed YAML and existing task label preserved.",
-      "preserved": "Product code, full source scope, architecture, acceptance and all foreign checkpoint bytes unchanged.",
-      "ci": "Repository structure workflow on the published commit."
+      "repositoryStructure": "PASS",
+      "repositoryRuleTests": "PASS 25/25 on Node 22",
+      "liveDispatch": "PASS: complete inventory, catalog filter and owned #57 resumption; offers on PR48/PR56; no automatic claims",
+      "foreignCheckpointAndAcceptance": "Preserved; no product or acceptance approval"
     },
     "limits": "Semantic freshness and product/domain/host acceptance remain with their owners. Branch protection could not be configured or verified with existing access.",
     "previousOrientation": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/blob/abaf7c682c42fbe985c749bc12d96a0fac035c96/checkpoint.json"
@@ -214,45 +214,117 @@
     "architecture": "ARCHITECTURE.md#geplante-katalog--und-encounter-erweiterung",
     "acceptance": "acceptance.json.saltMarcherCatalogEncounter",
     "currentRun": {
-      "id": "CE-02-I02-S01-W22",
-      "kind": "source_inventory_schema_transcript_intermediate",
-      "state": "in_progress_verified_incomplete",
-      "focus": "Capture Armor of Invulnerability as Magic Items A–Z ordinal 9 with exact fixed rarity and required attunement",
+      "id": "CE-02-I02-S01-W23-N01",
+      "kind": "source_verifier_repair",
+      "state": "repair_checked_independent_review_pending_incomplete",
+      "focus": "Repair PR48 P1: extractor-coordinate-independent footer/body separation with real XML and official PDF regressions",
       "plan": "ROADMAP-SALTMARCHER-CE02-I02-PLAN.md",
-      "result": "Armor of Invulnerability is captured as exact A–Z ordinal 9 on physical/printed page 208 with its full Armor (plate) header, fixed legendary rarity, required attunement and complete prose. The source package remains explicitly incomplete and Item product work remains blocked.",
+      "result": "Removed the absolute footer Y threshold. Only the exact SRD footer plus its page number is excluded; every body run survives regardless of reported coordinates. Italic/punctuation boundaries preserve source whitespace without geometric heuristics. Real hash-bound XML and high-coordinate/invalid-footer/body adversaries pass; complete source facts and product bytes are unchanged. Independent Poppler-25.07 re-review remains open.",
       "verification": {
-        "sourceRevision": "dd3732510f721f20d95b7a1abeb1dd1593ceb69c+dirty",
+        "sourceRevision": "94e48847174e1b7a3dce93cb9d6377e34f5b1b98+dirty",
         "check": "passed",
-        "tests": { "passed": 443, "failed": 0 },
+        "tests": {
+          "passed": 482,
+          "failed": 0,
+          "skipped": 0,
+          "officialPdfEnabled": true
+        },
         "build": "passed",
-        "focusedTests": { "passed": 38, "failed": 0 },
+        "focusedTests": {
+          "passed": 48,
+          "failed": 0,
+          "skipped": 0,
+          "officialPdfEnabled": true
+        },
         "pdfSha256": "2504d2a0abb0a4d491a939be4f17910a2dde0312570ab8d208080225ccf0a1f0",
         "pdfBytes": 3158713,
         "pdfPages": 403,
-        "occurrences": 229,
-        "records": 228,
-        "transcriptFacts": 709,
-        "magicItemAzArmorOfInvulnerability": { "ordinal": 9, "physicalPdfPage": 208, "rarity": "legendary", "attunement": "required", "descriptionFacts": 1, "dedicatedPdfFacts": 2, "derivedHeadingCount": 239, "previousHeading": "Armor, +1, +2, or +3", "nextHeading": "Armor of Resistance" },
+        "occurrences": 233,
+        "records": 232,
+        "transcriptFacts": 731,
+        "magicItemAzArmorOfInvulnerability": {
+          "ordinal": 9,
+          "physicalPdfPage": 208,
+          "rarity": "legendary",
+          "attunement": "required",
+          "descriptionFacts": 1,
+          "dedicatedPdfFacts": 2,
+          "derivedHeadingCount": 239,
+          "previousHeading": "Armor, +1, +2, or +3",
+          "nextHeading": "Armor of Resistance"
+        },
         "mainBytes": 1422956,
         "mainSha256": "522823730ddce4d0ba83e0476f60887b60a07c517f84e8e270814b6d597efa43",
         "manifestSha256": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64",
-        "stylesSha256": "a6d31c13219d4b9f49d2ecf6993106bedef2a33560c9bdfdb93106659d45bc2e"
+        "stylesSha256": "a6d31c13219d4b9f49d2ecf6993106bedef2a33560c9bdfdb93106659d45bc2e",
+        "magicItemAzArmorArrows": {
+          "ordinals": [
+            10,
+            11,
+            12,
+            13
+          ],
+          "physicalPdfPages": [
+            208,
+            209
+          ],
+          "records": 4,
+          "resistanceTableRows": 10,
+          "derivedHeadingCount": 239,
+          "oracle": "complete heading-bounded XML stream; exact SRD footer/page identity; source-run boundary whitespace preserved independently of coordinates"
+        },
+        "repositoryStructure": "passed",
+        "repositoryTests": {
+          "passed": 18,
+          "failed": 0
+        },
+        "extractorRepair": {
+          "localVersion": "pdftohtml 25.03.0",
+          "realFixtureSha256": "817a22fe85a82a972d905ae58e19db42c210fb7ed989b8acb79ba47f63221048",
+          "fullExtractSha256": "7a6eac1d4a81499d4bb136aac27a4bc2527ffd67985e8ddf4f24a242481cb3de",
+          "highCoordinateCases": "derived from real XML; shifted +10000 and reported heading/body top shape 1153/1156",
+          "localPoppler2507Executed": false
+        }
       },
-      "limits": "Source-package work only. No Item artifact/provider/UI, installed Obsidian or physical host acceptance, Encounter runtime or 2024 rules. The remaining 229 Magic Items A–Z headings, Orb of Dragonkind, magic-item helper reconciliation, remaining goldens, independent W22 review and S01-R01 remain open; I01 stays blocked.",
+      "limits": "W23 source remains partial and not independently approved after P1. Local official PDF runs use Poppler 25.03.0; transformed XML cases are not a claimed 25.07 extraction. 225 A–Z headings, Orb, helper reconciliation, remaining goldens, S01-R01 and all Item product/host gates remain open.",
       "documentation": {
         "status": "partial",
-        "branch": "active/installed-phase1",
-        "baseCommit": "dd3732510f721f20d95b7a1abeb1dd1593ceb69c",
-        "issue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/9#issuecomment-6098648755",
-        "changedFiles": ["src/features/catalog/data/items-srd51-inventory.json", "src/features/catalog/data/items-srd51-transcript.json", "src/features/catalog/data/items-srd51-source-manifest.json", "tools/items-srd51-source-verify.mjs", "tests/items-srd51-source.test.mjs", "acceptance.json", "checkpoint.json"],
+        "branch": "catalog/ce02-s01-w23-armor-arrows",
+        "baseCommit": "94e48847174e1b7a3dce93cb9d6377e34f5b1b98",
+        "issue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/9#issuecomment-6099799191",
+        "pr": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/48",
+        "changedFiles": [
+          "tools/items-srd51-armor-arrows.mjs",
+          "tests/items-srd51-source.test.mjs",
+          "tests/fixtures/items-srd51-armor-arrows-poppler-25.03.xml",
+          "tests/fixtures/items-srd51-armor-arrows-poppler-25.03-receipt.json",
+          "ROADMAP-SALTMARCHER-CE02-I02-PLAN.md",
+          "checkpoint.json",
+          "acceptance.json"
+        ],
         "externalEvidence": {
-          "path": "/tmp/SRD_CC_v5.1.pdf, /tmp/w22-pdf-verify.json, main.js, manifest.json, styles.css",
-          "scope": "Local official-PDF verification confirms 229 occurrence labels, 709 generic transcript facts and the dedicated Armor of Invulnerability gate with fixed legendary rarity and required attunement. These are ephemeral cloud-host paths and local build artifacts, not installed-plugin or GUI evidence."
+          "path": "/tmp/SRD_CC_v5.1.pdf, /tmp/ce02-w23-n01-evidence/, committed XML fixture/receipt, local main.js/manifest.json/styles.css",
+          "scope": "Local Poppler 25.03.0 official-PDF and build evidence; genuine XML fixture is repository-accessible. /home/aaron/.cache/dungeon-native-qa is not writable on this cloud host (Permission denied); logs use explicit ephemeral /tmp fallback. No foreign 25.07/GUI/installed triplet/physical acceptance."
         },
-        "publication": "Pending final upstream synchronization, commit and non-force push; exact publication SHA and remote verification will be recorded in the Issue #9 close receipt.",
-        "commit": "see Issue #9 close receipt",
-        "notProven": ["complete SRD 5.1 Item corpus", "remaining 229 Magic Items A–Z headings and Orb of Dragonkind", "magic-item helper reconciliation", "remaining goldens", "independent W22 review and S01-R01", "Item product artifact/provider/UI", "Obsidian host acceptance", "Encounter runtime", "any 2024 rules"],
-        "next": "Publish W22 and request independent read-only review; do not begin W23 before PASS."
+        "publication": "Existing PR48 updated by non-force push after final upstream sync; exact clean-SHA checks and CI results belong to its close receipt.",
+        "commit": "see PR48 and Issue #9 repair close receipt",
+        "notProven": [
+          "independent P1 re-review / Poppler 25.07 execution",
+          "complete Item corpus and S01-R01",
+          "225 remaining A–Z headings / Orb / helper reconciliation / remaining goldens",
+          "Item product artifact/provider/UI",
+          "installed Obsidian/GUI/physical/E2E acceptance",
+          "Encounter runtime",
+          "2024 rules"
+        ],
+        "next": "Independent exact-SHA P1 re-review in PR48; after PASS integrate W23 and continue coherent Bags source work."
+      },
+      "review": {
+        "state": "changes_required_repair_re_review_pending",
+        "reviewedCommit": "243f3ee884f2109fda23ffd4e2555abb73db4d56",
+        "issue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/48#pullrequestreview-5479813046",
+        "finding": "P1: absolute top<1100 discards body headings on independent Poppler 25.07.0 host",
+        "repair": "implemented and locally checked; independent exact-SHA and 25.07 host confirmation not yet received"
       }
     },
     "implementationRun": {
@@ -456,7 +528,7 @@
       },
       "limits": "Build-contract repair only. No catalog data/provider/UI change and no CE, Atlas, host, physical-input or overall approval."
     },
-    "verified": "CE-00 and CE-01 implementation/review/repair cycles passed their scoped gates. CE-01-H01 passed its independently reviewed automated scope. CE-02-I01 product commit 7469e64202e730175ee138136a69d82ad4f28ea6 and metadata repair candidate 4d239004c4f000b2af6f66122a05135b0c353ffb passed independent review. CE-02-I02-S01 has a checked fail-closed source package with all 219 equipment occurrences and transcripts plus explicit reconciliation of all 237 helper equipment records. Potion of healing retains its earliest equipment identity and merges A–Z heading 142. A–Z headings 1–9 now preserve exact identities, headers, descriptions, rarity and attunement facts across physical pages 207–208; Apparatus of the Crab preserves its full ten-row Up/Down lever table, Armor +1/+2/+3 preserves all three ordered rarity variants and Armor of Invulnerability preserves its fixed legendary rarity and required attunement. The remaining 229 A–Z headings, Orb of Dragonkind, helper reconciliation, goldens, W22/S01 reviews and Item product feature remain open. Physical input, screenreader and other-platform acceptance remain open.",
+    "verified": "CE-00 and CE-01 implementation/review/repair cycles passed their scoped gates. CE-01-H01 passed its independently reviewed automated scope. CE-02-I01 product commit 7469e64202e730175ee138136a69d82ad4f28ea6 and metadata repair candidate 4d239004c4f000b2af6f66122a05135b0c353ffb passed independent review. CE-02-I02-S01 has a checked fail-closed source package with all 219 equipment occurrences and transcripts plus explicit reconciliation of all 237 helper equipment records. Potion of healing retains its earliest equipment identity and merges A–Z heading 142. A–Z headings 1–13 now preserve exact identities, headers, descriptions, rarity and attunement facts across physical pages 207–209; Apparatus of the Crab preserves its full ten-row Up/Down lever table, Armor +1/+2/+3 preserves all three ordered rarity variants and Armor of Invulnerability preserves its fixed legendary rarity and required attunement. The Armor/Arrow group preserves the full vulnerability curse and all ten resistance-table choices with whole-block PDF verification. The remaining 225 A–Z headings, Orb of Dragonkind, helper reconciliation, goldens, W23/S01 reviews and Item product feature remain open. Physical input, screenreader and other-platform acceptance remain open.",
     "open": [
       "CE-01 physical keyboard/mouse, screenreader and other-platform acceptance; CE-02-I02 through CE-07 runs",
       "CE-02-I02-S01 complete official inventory, transcript, closed subcategory enum, full PDF matching, complete golden cases and independent S01-R01 review",
@@ -464,10 +536,10 @@
       "Physical catalog input acceptance cannot be replaced by Playwright automation"
     ],
     "nextRun": {
-      "id": "CE-02-I02-S01-W23",
-      "kind": "source_inventory_schema_transcript_continuation",
+      "id": "CE-02-I02-S01-W23-N01-R01",
+      "kind": "independent_source_verifier_re_review",
       "plan": "ROADMAP-SALTMARCHER-CE02-I02-PLAN.md",
-      "focus": "After independent W22 review, capture the next bounded Magic Items A–Z source slice while keeping complete false until every remaining S01 obligation is closed"
+      "focus": "Re-review P1 on exact repaired PR48 SHA, including independent Poppler 25.07 official PDF run. Then integrate W23 and continue the coherent Bags group in W24."
     }
   },
   "repositoryWorkflow": {
@@ -9374,65 +9446,60 @@
   },
   "gmProductTesting": {
     "date": "2026-10-10",
-    "state": "gm_product_testing_partial_room_key_undo_followup_open; atlas_location_key_readiness_gate_still_hex_owned",
+    "state": "gm_product_testing_partial_other_scenarios_open; trap_content_undo_cloud_retest_passed; atlas_location_key_readiness_gate_still_hex_owned",
     "plan": "ROADMAP-GM-PRODUCT-TESTING-PLAN.md",
     "focus": "Längere GM-Endanwenderabläufe, häufige Aktionen, Bedienkosten und UI-Überladung; belegte Nacharbeiten beauftragen und nachprüfen.",
     "currentRun": {
-      "id": "GM-UX-TRAP-CONTENT-20261010-01",
-      "status": "partial",
-      "uiRun": "completed_visible_save_reopen; undo_redo_text_contract_not_met",
+      "id": "GM-UX-TRAP-CONTENT-UNDO-CLOUD-RETEST-20261010-01",
+      "status": "completed",
       "owner": "Cloud-GM-Produkttester",
       "branch": "active/installed-phase1",
-      "sharedHead": "5e380b25df36f6aeb726ab6db7ec39d57e6e6992",
-      "request": "Test a bounded synthetic GM trap-content workflow via visible Dungeon UI: define trap, link it to Room 2, write trigger/reaction/location notes, apply an improvisation, inspect undo behavior, save, close and reopen.",
-      "scope": "Only Dungeon content authoring in a newly created synthetic QA map; trap is descriptive GM note only. No user map, Atlas/Hex, mechanics, PlayerProjection, product implementation, or laptop host.",
-      "coordination": "Issue #1 documentation contract comment 6087478045; Issue #8 preflight 6099735317; post-run report 6099894041.",
+      "sharedHead": "7098269810801f93be247423862373e912cda210",
+      "productCommit": "7098269810801f93be247423862373e912cda210",
+      "candidateCommit": "b410e7d8069a879ab79adcf4861ed321f68fd612",
+      "request": "Exklusiver Cloud-GM-Nachtest des synthetischen Trap-Key-Note-Ablaufs nach PR55: Dirty-Guard, Apply, Undo/Redo, Save, Close/Reopen.",
+      "scope": "Nur derselbe synthetische Room-2/Marker-A/Trap-Key im isolierten QA-Vault. Keine Nutzerkarte, Trapmechanik, Atlas/Hex, Produktänderung oder breite Freigabe.",
+      "coordination": "Issue #1 contract 6087478045; Issue #8 preflight 6100517787; final report to be added after doc commit.",
       "checks": [
-        "git status/HEAD verified clean at exact Shared source 5e380b25df36f6aeb726ab6db7ec39d57e6e6992 before build/UI",
-        "npm run build: PASS, dirty:false, Node v24.19.0, sourceRevision equals Shared 5e380b25df36f6aeb726ab6db7ec39d57e6e6992",
-        "Installed main.js/styles.css/manifest.json triplet compared against build and byte-identical; visible Reload app without saving executed",
-        "Visible UI: two rooms drawn; attempted Gang connection displayed “Zwei nummerierte Räume dürfen nicht vereinigt werden”; used Dungeon-Inhalte route metadata instead; definition Nadelwerferfalle linked to Room 2 with marker A and 3-paragraph GM text",
-        "Dirty key draft + toolbar Undo displayed “Key-Entwurf zuerst Übernehmen oder Verwerfen”; after Apply toolbar Undo removed Room 2 selection/key panel while the text remained; Redo remained disabled and did not restore selection/text history",
-        "Visible Save, Ctrl+W close, Ctrl+O Quick Switcher reopen, select Room 2 marker, reopen key; definition, occurrence, room link, and text visible after reopen",
-        "QA map SHA-256 before improvisation 0b35f4df84a00616481a49a142f0dab4b7612539c41705e04565876646a8fe04; after save and after reopen 12661953ec93498bcfca15df2c1e1cf45c546201077ef47eb313cd7b7e4894db (same)",
-        "JSON oracle after reopen: version 4; 2 building entities, one marker entity; 1 definition, 1 occurrence referencing Room 2 marker A, 1 route; final key text contains the improvised sentence",
-        "PNG SHA-256 manifest generated; no full test suite run"
+        "git fetch und normaler --ff-only-Integrationsschritt PASS; clean exact Shared HEAD 7098269810801f93be247423862373e912cda210.",
+        "git diff b410e7d8069a879ab79adcf4861ed321f68fd612..7098269810801f93be247423862373e912cda210 -- src/editor.ts tests/room-key-search-panel.entry.ts: leer; reviewed candidate product/test files unchanged.",
+        "npm run build: PASS; dirty:false; sourceRevision 7098269810801f93be247423862373e912cda210; Node v24.19.0.",
+        "Complete installed main.js/styles.css/manifest.json triplet byte-equal to Shared build after visible Reload app without saving. SHA-256 main=0e26628c2e58a0cc10e64641305cc74a2d77ad027a18d41396e0968207deef37; styles=a6d31c13219d4b9f49d2ecf6993106bedef2a33560c9bdfdb93106659d45bc2e; manifest=2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64. Previous installed main.js was 522823730ddce4d0ba83e0476f60887b60a07c517f84e8e270814b6d597efa43.",
+        "Visible room/key history: after fresh app reload, Undo had no available history and was disabled. One textual Apply established a session-history entry; subsequent Undo restored previous text without losing Room 2/Marker A/Key context, Redo restored exact text and kept context.",
+        "Visible dirty guard: with Undo enabled and second draft uncommitted, toolbar Undo showed “Key-Entwurf zuerst Übernehmen oder Verwerfen.” and preserved draft and applied text. Verwerfen removed only probe draft.",
+        "Visible save/close/reopen: Save status Gespeichert; Ctrl+W, Ctrl+O Quick Switcher, same QA Karte.dungeon, Room 2/Marker A/Key reopened. Final text/trap context visible. QA-file SHA before=12661953ec93498bcfca15df2c1e1cf45c546201077ef47eb313cd7b7e4894db; after Save and after Reopen=741a159b249c99938df9ce6bcc1775f837eaf5b68eb50109aa531269c69192d7.",
+        "No full test suite was run; bounded visible product retest only."
       ],
-      "build": {
-        "obsidian": "1.14.4",
-        "electron": "43.7.7",
-        "window": "1440x1000 CSS px",
-        "host": "existing Cloud container dungeon-gm-cloud; loopback CDP 9228; own isolated vault /workspace/scratch/gm-cloud-qa/vault; no laptop session",
-        "tripletSha256": {
-          "main.js": "522823730ddce4d0ba83e0476f60887b60a07c517f84e8e270814b6d597efa43",
-          "styles.css": "a6d31c13219d4b9f49d2ecf6993106bedef2a33560c9bdfdb93106659d45bc2e",
-          "manifest.json": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64"
-        }
-      },
-      "evidence": {
-        "path": "/workspace/scratch/gm-cloud-qa/evidence-gmux-trap-content-20261010-01/",
-        "screenshots": "screenshots/01..48-*.png; SHA256SUMS.txt; BUILD-SHA256.txt; INSTALL-SHA256.txt; QA-FILE-HASH-BEFORE-IMPROV.txt; QA-FILE-HASH-AFTER-SAVE.txt; QA-FILE-HASH-AFTER-REOPEN.txt; RUN-NOTES.md",
-        "rawEvidenceLimits": "Cloud visible UI via CDP, not physical keyboard/mouse. Remote automation times excluded from product latency."
-      },
-      "finding": "Bounded persistence PASS for synthetic descriptive trap content. Undo/Redo for room-key text is not demonstrated: dirty draft is guarded; after Apply, Undo left text intact and cleared the selected room/key panel; Redo was disabled. Gang-line attempt did not create a physical passage; a logical content route was used. A command-palette result order observation was single-trial only.",
-      "linkedFollowup": "Dungeon owner review requested: make text edit Undo/Redo behavior explicit; if supported, Undo restores the prior note and preserves room selection, Redo restores the exact edit, dirty-draft guard remains. If intentionally unsupported, explain that in the visible controls and avoid clearing selection as the only apparent effect. Retest this exact workflow.",
+      "uiRun": "completed_visible_apply_undo_redo_dirty_guard_save_close_reopen_pass",
+      "finding": "PASS for the bounded applied key-text history contract, dirty-draft guard and persisted final state. Undo/Redo retained Room 2, marker A, Nadelwerferfalle and the Key panel.",
+      "historySetup": "After reload/reopen, toolbar Undo was disabled because the app session had no history. One Apply of the target control-note line seeded one history action; Undo and Redo then reverted/restored that line. Guard was separately checked with a second draft and active Undo.",
       "changedFiles": [
         "checkpoint.json (gmProductTesting root only)",
-        "ROADMAP-GM-PRODUCT-TESTING-PLAN.md"
+        "acceptance.json (gmProductFollowups only)",
+        "ROADMAP-GM-PRODUCT-TESTING-PLAN.md",
+        "No product or test source files."
       ],
+      "evidence": "/workspace/scratch/gm-cloud-qa/evidence-gmux-trap-content-undo-cloud-retest-20261010-01/ (RUN-NOTES.md; BUILD.txt; INSTALL.txt; triplet-hashes.json; QA-FILE-HASHES.txt; SCREENSHOT-SHA256SUMS.txt; screenshots/01..20)",
       "notDemonstrated": [
-        "No physical passage geometry or wall opening; logical route metadata only.",
-        "No trap mechanics, rule adjudication, player-facing projection, or gameplay resolution.",
-        "No text Undo/Redo PASS, no product latency, no physical input, no fresh Electron process, no broad Dungeon/Atlas/E2E/product acceptance.",
-        "No user map/text or other QA file changed; no product source file changed."
+        "Physical keyboard/mouse or local laptop UI.",
+        "Fresh Electron process; only in-app Reload app without saving and normal tab close/reopen.",
+        "Trap mechanics, rules resolution, PlayerProjection, original-map parity, product latency, broad Dungeon/E2E/Atlas acceptance."
       ],
-      "next": "Dungeon product owner to review the linked GM key-text Undo/Redo semantics task and provide exact runnable build; Cloud GM then performs only the bounded same-note Undo/Redo/Save/Reopen retest. Atlas Location/Key remains separately blocked on Hex-owned runnable integration.",
-      "publishedOnSharedHead": "e157462ee1a4c2b82b0c927df664a8c06fc38cb1",
-      "sourceDiffSinceTest": "After UI/build on 5e380b2, normal upstream integration advanced Shared to e157462; 13 commits were integrated and git diff 5e380b..e157462 -- src was empty, so no product source changed.",
-      "postRunReport": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/8#issuecomment-6099894041",
-      "documentationCommit": "9c829c6db469e6fb9d2988c53245ab997aaf10bc"
+      "next": "No additional GM-UX-TRAP-CONTENT-UNDO product change or retest requested after this bounded PASS. Overall GM scenario and separate Hex-owned Atlas/Location gates remain outside this result.",
+      "priorAttempt": {
+        "id": "GM-UX-TRAP-CONTENT-20261010-01",
+        "status": "partial",
+        "issue8": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/8#issuecomment-6099894041"
+      },
+      "publishedOnSharedHead": "5e34270fd51162706f363260a92d12ec92bcc865; final post-run receipt Issue #8 comment 6100717372",
+      "sourceDiffSinceTest": "Shared advanced after the UI run from tested commit 7098269810801f93be247423862373e912cda210 to 6ce52f1c8915c006dfdefe2261f0c0c6d77b8483. Target src/editor.ts and tests/room-key-search-panel.entry.ts did not change. Later source diff is limited to catalog inventory/source-manifest/transcript JSON files. A fresh build from current Shared plus documentation commit 1c8d31ac004cb58e5053888a4088405d66163e7b was dirty:false; built main.js/styles.css/manifest.json equal the installed and visibly tested triplet, so no second UI sequence was needed.",
+      "postRunSharedHead": "6ce52f1c8915c006dfdefe2261f0c0c6d77b8483",
+      "postRunCurrentBuildSource": "1c8d31ac004cb58e5053888a4088405d66163e7b (documentation commit atop Shared 6ce52f1; npm run build PASS, dirty:false)",
+      "currentBuildTriplet": "main.js 0e26628c2e58a0cc10e64641305cc74a2d77ad027a18d41396e0968207deef37; styles.css a6d31c13219d4b9f49d2ecf6993106bedef2a33560c9bdfdb93106659d45bc2e; manifest.json 2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64; all match installed and visible test artifacts byte-for-byte.",
+      "postRunReport": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/8#issuecomment-6100717372",
+      "documentationCommit": "5e34270fd51162706f363260a92d12ec92bcc865"
     },
-    "executedUiRuns": 18,
+    "executedUiRuns": 19,
     "observedFindings": [
       {
         "id": "GM-UX-001",
@@ -9600,7 +9667,7 @@
       "state": "completed",
       "supersedes": "GM-UX-ACCESS; Slotanfrage gemäß Nutzerkorrektur aufgehoben"
     },
-    "next": "Dungeon owner: review GM-UX-TRAP-CONTENT-UNDO follow-up in Issue #8 and return exact runnable product build; Cloud GM retests only this note Undo/Redo/Save/Reopen slice. Separate Atlas Location/Key test remains gated on Hex-owned HEX-03-I01b-marker integration.",
+    "next": "No additional GM-UX-TRAP-CONTENT-UNDO product change or retest requested after this bounded PASS. Overall GM scenario and separate Hex-owned Atlas/Location gates remain outside this result.",
     "automation": "Stündliche GM-Produkttests in eigener Cloud; keine Laptop-Slotfreigabe erforderlich.",
     "executionEnvironment": "Eigene Cloud-Umgebung, getrennt vom Laptop der Kollegen",
     "cloudHost": {
@@ -9618,8 +9685,8 @@
         1000
       ],
       "input": "Playwright/CDP über sichtbare UI; keine physische Eingabeabnahme",
-      "productCommit": "95e7bd214f96fe7be894e6cc6dcecf2609c10dc3",
-      "buildSha256": "260aed21ccc7767e5ef703b6de2229c2d3916c67e3501c85a9ef3f1cdb90eb6f",
+      "productCommit": "7098269810801f93be247423862373e912cda210",
+      "buildSha256": "0e26628c2e58a0cc10e64641305cc74a2d77ad027a18d41396e0968207deef37",
       "verified": "Shared 95e7bd2 built dirty:false, full triplet hash-equal installed and visibly reloaded in Obsidian 1.14.4. H01 search/activation/key/floor/camera and dirty-draft guard exercised; normal tab close/reopen confirmed exact key and unchanged card bytes. Search filter persists after reopen, clean Key dock can collapse search to zero width, and result metadata is visually clipped at 256px. No physical input, fresh Electron, latency or overall acceptance; R01 passed separately on I02 commit 84440f1.",
       "evidence": [
         "176-n002-current-remote-switch.png",
@@ -9730,7 +9797,7 @@
       ],
       "initialization": "Erste Eingaben während Hoststart ohne sichtbare Wirkung; später Befehlsleiste und Editor bedienbar. Kein reproduzierter Produktbefund.",
       "windowManager": "Openbox im isolierten dungeon-gm-cloud Container; Xvfb 1440x1000; maximiertes Obsidian-Fenster 1440x1000.",
-      "buildRevision": "95e7bd214f96fe7be894e6cc6dcecf2609c10dc3 (dirty:false; complete installed triplet hash-equal; visible reload)"
+      "buildRevision": "7098269810801f93be247423862373e912cda210 (dirty:false; exact installed triplet; visible reload; bounded trap key undo/redo/dirty guard/save/reopen PASS)"
     },
     "latestScenario": {
       "environment": "Obsidian 1.14.4; eigener Cloud-Container; App 1024x800; sichtbare UI über Playwright/CDP; kein physischer Input",
@@ -9932,25 +9999,11 @@
       "owner": "Kartograph – Dungeon-Strang; GM-UX-N-005-N01 laut Issue #1 Kommentar 6087711097"
     },
     "lastRun": {
-      "id": "GM-UX-N-005-N01-H01-R02",
-      "status": "blocked",
-      "branch": "active/installed-phase1",
-      "baseCommit": "2f522daf6887bf0c51aba9036ee43b821ad069ba",
-      "productCommit": "a06703c31766a064c6a8e8510a1cb5eaa46ca549",
-      "buildDirty": false,
-      "buildSha256": {
-        "mainJs": "943e2ac12a596917797162cac69d5f1da7f86334ab666e9e4c9d27197fd436e7",
-        "stylesCss": "a6d31c13219d4b9f49d2ecf6993106bedef2a33560c9bdfdb93106659d45bc2e",
-        "manifestJson": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64"
-      },
-      "result": "Build/install hashgleich, UI-Teilfolge ausgeführt, aber Screenshots und DOM-Messungen wechselten widersprüchlich; mehrere alte CDP-Clients mit gleichem Obsidian-Prozess verbunden. Keine Abnahmebehauptung.",
-      "cardSha256BeforeAfter": "56c38f8ff9e4365a165af4319da37bb03db20c09925d6ee38e5327e7559353c7",
-      "changedFiles": [],
-      "commit": null,
-      "issueComment": "6087877294",
-      "evidence": "/workspace/scratch/gm-cloud-qa/evidence-n01-h01-r02/01-reload-command.png through 13-inspect-after-activation.png",
-      "limits": "Keine Karte geändert; keine Produktdatei; kein physischer Input; kein frischer Electronprozess; N01-H01 Abnahme blocked.",
-      "next": "GM-UX-N-005-N01-H01-R03 not started: separater Obsidian-Prozess, eigene User-Data-Dir und kopierte isolierte Vault."
+      "id": "GM-UX-TRAP-CONTENT-UNDO-CLOUD-RETEST-20261010-01",
+      "status": "completed",
+      "productCommit": "7098269810801f93be247423862373e912cda210",
+      "issue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/8",
+      "source": "Visible isolated Cloud Obsidian; evidence /workspace/scratch/gm-cloud-qa/evidence-gmux-trap-content-undo-cloud-retest-20261010-01/"
     },
     "r03PreRun": {
       "id": "GM-UX-N-005-N01-H01-R03",
@@ -10712,59 +10765,54 @@
       "next": "Wait for integrated runnable HEX-03-I01b-marker before testing Location/Key UI; do not replay unchanged empty or terrain zoom cases."
     },
     "latestTrapContent": {
-      "id": "GM-UX-TRAP-CONTENT-20261010-01",
-      "status": "partial",
-      "uiRun": "completed_visible_save_reopen; undo_redo_text_contract_not_met",
+      "id": "GM-UX-TRAP-CONTENT-UNDO-CLOUD-RETEST-20261010-01",
+      "status": "completed",
       "owner": "Cloud-GM-Produkttester",
       "branch": "active/installed-phase1",
-      "sharedHead": "5e380b25df36f6aeb726ab6db7ec39d57e6e6992",
-      "request": "Test a bounded synthetic GM trap-content workflow via visible Dungeon UI: define trap, link it to Room 2, write trigger/reaction/location notes, apply an improvisation, inspect undo behavior, save, close and reopen.",
-      "scope": "Only Dungeon content authoring in a newly created synthetic QA map; trap is descriptive GM note only. No user map, Atlas/Hex, mechanics, PlayerProjection, product implementation, or laptop host.",
-      "coordination": "Issue #1 documentation contract comment 6087478045; Issue #8 preflight 6099735317; post-run report 6099894041.",
+      "sharedHead": "7098269810801f93be247423862373e912cda210",
+      "productCommit": "7098269810801f93be247423862373e912cda210",
+      "candidateCommit": "b410e7d8069a879ab79adcf4861ed321f68fd612",
+      "request": "Exklusiver Cloud-GM-Nachtest des synthetischen Trap-Key-Note-Ablaufs nach PR55: Dirty-Guard, Apply, Undo/Redo, Save, Close/Reopen.",
+      "scope": "Nur derselbe synthetische Room-2/Marker-A/Trap-Key im isolierten QA-Vault. Keine Nutzerkarte, Trapmechanik, Atlas/Hex, Produktänderung oder breite Freigabe.",
+      "coordination": "Issue #1 contract 6087478045; Issue #8 preflight 6100517787; final report to be added after doc commit.",
       "checks": [
-        "git status/HEAD verified clean at exact Shared source 5e380b25df36f6aeb726ab6db7ec39d57e6e6992 before build/UI",
-        "npm run build: PASS, dirty:false, Node v24.19.0, sourceRevision equals Shared 5e380b25df36f6aeb726ab6db7ec39d57e6e6992",
-        "Installed main.js/styles.css/manifest.json triplet compared against build and byte-identical; visible Reload app without saving executed",
-        "Visible UI: two rooms drawn; attempted Gang connection displayed “Zwei nummerierte Räume dürfen nicht vereinigt werden”; used Dungeon-Inhalte route metadata instead; definition Nadelwerferfalle linked to Room 2 with marker A and 3-paragraph GM text",
-        "Dirty key draft + toolbar Undo displayed “Key-Entwurf zuerst Übernehmen oder Verwerfen”; after Apply toolbar Undo removed Room 2 selection/key panel while the text remained; Redo remained disabled and did not restore selection/text history",
-        "Visible Save, Ctrl+W close, Ctrl+O Quick Switcher reopen, select Room 2 marker, reopen key; definition, occurrence, room link, and text visible after reopen",
-        "QA map SHA-256 before improvisation 0b35f4df84a00616481a49a142f0dab4b7612539c41705e04565876646a8fe04; after save and after reopen 12661953ec93498bcfca15df2c1e1cf45c546201077ef47eb313cd7b7e4894db (same)",
-        "JSON oracle after reopen: version 4; 2 building entities, one marker entity; 1 definition, 1 occurrence referencing Room 2 marker A, 1 route; final key text contains the improvised sentence",
-        "PNG SHA-256 manifest generated; no full test suite run"
+        "git fetch und normaler --ff-only-Integrationsschritt PASS; clean exact Shared HEAD 7098269810801f93be247423862373e912cda210.",
+        "git diff b410e7d8069a879ab79adcf4861ed321f68fd612..7098269810801f93be247423862373e912cda210 -- src/editor.ts tests/room-key-search-panel.entry.ts: leer; reviewed candidate product/test files unchanged.",
+        "npm run build: PASS; dirty:false; sourceRevision 7098269810801f93be247423862373e912cda210; Node v24.19.0.",
+        "Complete installed main.js/styles.css/manifest.json triplet byte-equal to Shared build after visible Reload app without saving. SHA-256 main=0e26628c2e58a0cc10e64641305cc74a2d77ad027a18d41396e0968207deef37; styles=a6d31c13219d4b9f49d2ecf6993106bedef2a33560c9bdfdb93106659d45bc2e; manifest=2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64. Previous installed main.js was 522823730ddce4d0ba83e0476f60887b60a07c517f84e8e270814b6d597efa43.",
+        "Visible room/key history: after fresh app reload, Undo had no available history and was disabled. One textual Apply established a session-history entry; subsequent Undo restored previous text without losing Room 2/Marker A/Key context, Redo restored exact text and kept context.",
+        "Visible dirty guard: with Undo enabled and second draft uncommitted, toolbar Undo showed “Key-Entwurf zuerst Übernehmen oder Verwerfen.” and preserved draft and applied text. Verwerfen removed only probe draft.",
+        "Visible save/close/reopen: Save status Gespeichert; Ctrl+W, Ctrl+O Quick Switcher, same QA Karte.dungeon, Room 2/Marker A/Key reopened. Final text/trap context visible. QA-file SHA before=12661953ec93498bcfca15df2c1e1cf45c546201077ef47eb313cd7b7e4894db; after Save and after Reopen=741a159b249c99938df9ce6bcc1775f837eaf5b68eb50109aa531269c69192d7.",
+        "No full test suite was run; bounded visible product retest only."
       ],
-      "build": {
-        "obsidian": "1.14.4",
-        "electron": "43.7.7",
-        "window": "1440x1000 CSS px",
-        "host": "existing Cloud container dungeon-gm-cloud; loopback CDP 9228; own isolated vault /workspace/scratch/gm-cloud-qa/vault; no laptop session",
-        "tripletSha256": {
-          "main.js": "522823730ddce4d0ba83e0476f60887b60a07c517f84e8e270814b6d597efa43",
-          "styles.css": "a6d31c13219d4b9f49d2ecf6993106bedef2a33560c9bdfdb93106659d45bc2e",
-          "manifest.json": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64"
-        }
-      },
-      "evidence": {
-        "path": "/workspace/scratch/gm-cloud-qa/evidence-gmux-trap-content-20261010-01/",
-        "screenshots": "screenshots/01..48-*.png; SHA256SUMS.txt; BUILD-SHA256.txt; INSTALL-SHA256.txt; QA-FILE-HASH-BEFORE-IMPROV.txt; QA-FILE-HASH-AFTER-SAVE.txt; QA-FILE-HASH-AFTER-REOPEN.txt; RUN-NOTES.md",
-        "rawEvidenceLimits": "Cloud visible UI via CDP, not physical keyboard/mouse. Remote automation times excluded from product latency."
-      },
-      "finding": "Bounded persistence PASS for synthetic descriptive trap content. Undo/Redo for room-key text is not demonstrated: dirty draft is guarded; after Apply, Undo left text intact and cleared the selected room/key panel; Redo was disabled. Gang-line attempt did not create a physical passage; a logical content route was used. A command-palette result order observation was single-trial only.",
-      "linkedFollowup": "Dungeon owner review requested: make text edit Undo/Redo behavior explicit; if supported, Undo restores the prior note and preserves room selection, Redo restores the exact edit, dirty-draft guard remains. If intentionally unsupported, explain that in the visible controls and avoid clearing selection as the only apparent effect. Retest this exact workflow.",
+      "uiRun": "completed_visible_apply_undo_redo_dirty_guard_save_close_reopen_pass",
+      "finding": "PASS for the bounded applied key-text history contract, dirty-draft guard and persisted final state. Undo/Redo retained Room 2, marker A, Nadelwerferfalle and the Key panel.",
+      "historySetup": "After reload/reopen, toolbar Undo was disabled because the app session had no history. One Apply of the target control-note line seeded one history action; Undo and Redo then reverted/restored that line. Guard was separately checked with a second draft and active Undo.",
       "changedFiles": [
         "checkpoint.json (gmProductTesting root only)",
-        "ROADMAP-GM-PRODUCT-TESTING-PLAN.md"
+        "acceptance.json (gmProductFollowups only)",
+        "ROADMAP-GM-PRODUCT-TESTING-PLAN.md",
+        "No product or test source files."
       ],
+      "evidence": "/workspace/scratch/gm-cloud-qa/evidence-gmux-trap-content-undo-cloud-retest-20261010-01/ (RUN-NOTES.md; BUILD.txt; INSTALL.txt; triplet-hashes.json; QA-FILE-HASHES.txt; SCREENSHOT-SHA256SUMS.txt; screenshots/01..20)",
       "notDemonstrated": [
-        "No physical passage geometry or wall opening; logical route metadata only.",
-        "No trap mechanics, rule adjudication, player-facing projection, or gameplay resolution.",
-        "No text Undo/Redo PASS, no product latency, no physical input, no fresh Electron process, no broad Dungeon/Atlas/E2E/product acceptance.",
-        "No user map/text or other QA file changed; no product source file changed."
+        "Physical keyboard/mouse or local laptop UI.",
+        "Fresh Electron process; only in-app Reload app without saving and normal tab close/reopen.",
+        "Trap mechanics, rules resolution, PlayerProjection, original-map parity, product latency, broad Dungeon/E2E/Atlas acceptance."
       ],
-      "next": "Dungeon product owner to review the linked GM key-text Undo/Redo semantics task and provide exact runnable build; Cloud GM then performs only the bounded same-note Undo/Redo/Save/Reopen retest. Atlas Location/Key remains separately blocked on Hex-owned runnable integration.",
-      "publishedOnSharedHead": "e157462ee1a4c2b82b0c927df664a8c06fc38cb1",
-      "sourceDiffSinceTest": "After UI/build on 5e380b2, normal upstream integration advanced Shared to e157462; 13 commits were integrated and git diff 5e380b..e157462 -- src was empty, so no product source changed.",
-      "postRunReport": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/8#issuecomment-6099894041",
-      "documentationCommit": "9c829c6db469e6fb9d2988c53245ab997aaf10bc"
+      "next": "No additional GM-UX-TRAP-CONTENT-UNDO product change or retest requested after this bounded PASS. Overall GM scenario and separate Hex-owned Atlas/Location gates remain outside this result.",
+      "priorAttempt": {
+        "id": "GM-UX-TRAP-CONTENT-20261010-01",
+        "status": "partial",
+        "issue8": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/8#issuecomment-6099894041"
+      },
+      "publishedOnSharedHead": "5e34270fd51162706f363260a92d12ec92bcc865; final post-run receipt Issue #8 comment 6100717372",
+      "sourceDiffSinceTest": "Shared advanced after the UI run from tested commit 7098269810801f93be247423862373e912cda210 to 6ce52f1c8915c006dfdefe2261f0c0c6d77b8483. Target src/editor.ts and tests/room-key-search-panel.entry.ts did not change. Later source diff is limited to catalog inventory/source-manifest/transcript JSON files. A fresh build from current Shared plus documentation commit 1c8d31ac004cb58e5053888a4088405d66163e7b was dirty:false; built main.js/styles.css/manifest.json equal the installed and visibly tested triplet, so no second UI sequence was needed.",
+      "postRunSharedHead": "6ce52f1c8915c006dfdefe2261f0c0c6d77b8483",
+      "postRunCurrentBuildSource": "1c8d31ac004cb58e5053888a4088405d66163e7b (documentation commit atop Shared 6ce52f1; npm run build PASS, dirty:false)",
+      "currentBuildTriplet": "main.js 0e26628c2e58a0cc10e64641305cc74a2d77ad027a18d41396e0968207deef37; styles.css a6d31c13219d4b9f49d2ecf6993106bedef2a33560c9bdfdb93106659d45bc2e; manifest.json 2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64; all match installed and visible test artifacts byte-for-byte.",
+      "postRunReport": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/8#issuecomment-6100717372",
+      "documentationCommit": "5e34270fd51162706f363260a92d12ec92bcc865"
     }
   }
 }

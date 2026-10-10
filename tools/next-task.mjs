@@ -3,8 +3,8 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
+const labels = issue => issue.labels.map(label => typeof label === 'string' ? label : label.name);
 export function readyTasks(issues) {
-  const labels = issue => issue.labels.map(label => typeof label === 'string' ? label : label.name);
   const priority = issue => labels(issue).includes('priority:now') ? 0 : labels(issue).includes('priority:next') ? 1 : 2;
   const preparation = issue => labels(issue).includes('documentation') ? 1 : 0;
   return issues.filter(issue => {
@@ -16,43 +16,82 @@ export function readyTasks(issues) {
 
 export function criticalTasks(issues) {
   return issues.filter(issue => {
-    const tags = issue.labels.map(label => typeof label === 'string' ? label : label.name);
+    const tags = labels(issue);
     return issue.state === 'open' && tags.includes('kind:task') && tags.includes('priority:now');
   }).sort((a, b) => a.number - b.number);
+}
+
+// Support is an invitation to the described boundary, never ownership of the
+// parent implementation. Blocked parents can still have executable support.
+export function supportTasks(issues) {
+  return issues.filter(issue => issue.state === 'open' && labels(issue).includes('kind:task')
+    && labels(issue).includes('help wanted') && !readyTasks([issue]).length)
+    .sort((a, b) => a.number - b.number);
+}
+
+export function tasksForArea(issues, area) {
+  if (!area) return issues;
+  const areas = { atlas: 'atlas-city', city: 'atlas-city', dungeon: 'dungeon', gm: 'dungeon',
+    catalog: 'catalog', campaign: 'campaign', runtime: 'runtime', platform: 'platform', repository: 'repository' };
+  if (!Object.hasOwn(areas, area)) throw new Error(`Unknown area: ${area}`);
+  return issues.filter(issue => labels(issue).includes(`area:${areas[area]}`));
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
   try {
     const args = process.argv.slice(2);
-    if (args.length > 1 || args.length && args[0] !== '--list') throw new Error('Usage: npm run next -- [--list]');
+    let list = false, area, task;
+    for (let i = 0; i < args.length; i++) {
+      if (args[i] === '--list') list = true;
+      else if (args[i] === '--area' && args[i + 1]) area = args[++i];
+      else if (args[i] === '--task' && /^[1-9]\d*$/.test(args[i + 1] || '')) task = Number(args[++i]);
+      else throw new Error('Usage: npm run next -- [--list] [--area <area>] [--task <issue>]');
+    }
     const { repository } = JSON.parse(fs.readFileSync('docs/repository-policy.json', 'utf8'));
     const call = params => execFileSync('gh', params, { encoding: 'utf8', maxBuffer: 4 * 1024 * 1024 });
-    const issues = JSON.parse(call(['issue', 'list', '--repo', repository, '--state', 'open', '--label', 'status:ready',
-      '--limit', '100', '--json', 'number,title,url,state,labels']));
-    const critical = JSON.parse(call(['issue', 'list', '--repo', repository, '--state', 'open', '--label', 'kind:task',
-      '--label', 'priority:now', '--limit', '100', '--json', 'number,title,url,state,labels']));
-    const queue = readyTasks(issues.map(issue => ({ ...issue, state: issue.state.toLowerCase() })));
+    const issues = JSON.parse(call(['issue', 'list', '--repo', repository, '--state', 'open', '--label', 'kind:task',
+      '--limit', '1000', '--json', 'number,title,url,state,labels'])).map(issue => ({ ...issue, state: issue.state.toLowerCase() }));
+    const available = tasksForArea(issues, area);
+    const queue = readyTasks(available);
+    const support = supportTasks(available);
+    // Read the live PR connection, then filter locally: label search indexing
+    // can lag behind a newly published support invitation.
+    const prs = JSON.parse(call(['pr', 'list', '--repo', repository, '--state', 'open',
+      '--limit', '1000', '--json', 'number,title,url,labels']));
+    const supportPRs = tasksForArea(prs.filter(pr => labels(pr).includes('help wanted')), area);
     console.log('Live task queue; no automatic claim. Priority first; within equal priority, product work before documentation, then issue number.');
     console.log('\nCurrent product bottlenecks: check existing owners and requested support before opening more work.');
-    const bottlenecks = criticalTasks(critical.map(issue => ({ ...issue, state: issue.state.toLowerCase() })));
+    const bottlenecks = criticalTasks(issues);
     for (const issue of bottlenecks) console.log(`#${issue.number} ${issue.title} [${issue.labels.map(l => l.name).filter(l => l.startsWith('status:')).join(', ') || 'ownership to check'}]\n${issue.url}`);
     if (!bottlenecks.length) console.log('No task is marked priority:now; check the current delivery decision in #12.');
     console.log('\nFree executable tasks:');
-    if (!queue.length) console.log('No free executable task is labelled ready. Check #12 for the current handoff; do not start owned or blocked work.');
-    else {
-      for (const issue of queue) console.log(`#${issue.number} ${issue.title}\n${issue.url}`);
-      if (!args.includes('--list')) {
-        const chosen = queue[0];
-        const current = JSON.parse(call(['issue', 'view', String(chosen.number), '--repo', repository,
-          '--json', 'body,comments,state,labels', '--jq', '{body,comments:.comments[-3:],state,labels}']));
-        if (!readyTasks([{ ...chosen, ...current, state: current.state.toLowerCase() }]).length)
+    if (!queue.length) console.log('No free implementation package is labelled ready. Continue owned work, then check the support invitations below and confirmed unowned needs; an empty ready list alone is not a blocker.');
+    for (const issue of queue) console.log(`#${issue.number} ${issue.title}\n${issue.url}`);
+    console.log('\nOwned packages: continue your role with --task <number>; these are not free work.');
+    for (const issue of available.filter(issue => labels(issue).includes('status:active')))
+      console.log(`#${issue.number} ${issue.title} [${labels(issue).filter(tag => tag.startsWith('status:')).join(', ')}]\n${issue.url}`);
+    console.log('\nSupport invitations: read the offered scope and prerequisites; parent ownership and blockers remain.');
+    for (const issue of support) console.log(`#${issue.number} ${issue.title}\n${issue.url}`);
+    for (const pr of supportPRs) console.log(`PR #${pr.number} ${pr.title}\n${pr.url}`);
+    if (!support.length && !supportPRs.length) console.log('No explicit support invitation in this selection. Check #12 and the relevant area for a confirmed unmet input; do not manufacture work.');
+    if (!list || task) {
+        const chosen = task ? { number: task } : queue[0]
+          || (supportPRs[0] && { ...supportPRs[0], source: 'pr' }) || support[0];
+        if (chosen) {
+        const source = chosen.source || 'issue';
+        const current = JSON.parse(call([source, 'view', String(chosen.number), '--repo', repository,
+          '--json', 'number,title,body,comments,state,labels,url']));
+        const fresh = { ...current, state: current.state.toLowerCase() };
+        if (fresh.state !== 'open' || source === 'issue' && !labels(fresh).includes('kind:task'))
+          throw new Error('Selected task is closed or is not a work package.');
+        if (source === 'pr' && !labels(fresh).includes('help wanted')
+          || source === 'issue' && !task && !readyTasks([fresh]).length && !supportTasks([fresh]).length)
           throw new Error('Task changed while reading. Rerun npm run next.');
-        console.log(`\nFirst free candidate #${chosen.number} (check product benefit and consumer before claiming):\n${current.body}`);
-        for (const comment of current.comments) console.log(`\nRecent comment ${comment.url}:\n${comment.body}`);
-        console.log('\nBefore starting, check these comments and existing PRs for a claim; claim this exact scope in the task issue and replace ready with active.');
+        console.log(`\n${task ? 'Requested package' : readyTasks([fresh]).length ? 'Free candidate' : 'Support invitation'} ${source === 'pr' ? 'PR ' : ''}#${chosen.number}: ${current.title}\n${current.body}`);
+        for (const comment of current.comments.slice(-3)) console.log(`\nRecent comment ${comment.url}:\n${comment.body}`);
+        console.log('\nResume only your own scope. Before a new claim, check unresolved claims and linked PRs, including older comments. After posting, reread claims: the first unreturned claim owns that scope. Only a free whole package changes ready to active; support never takes over its parent. See docs/REPOSITORY.md.');
+        }
       }
-    }
-    if (issues.length === 100) console.log('Query limited to 100 ready issues; use GitHub search for the complete queue.');
-    if (critical.length === 100) console.log('Product bottleneck query limited to 100 issues; use GitHub search for the complete list.');
+    if (issues.length === 1000 || prs.length === 1000) console.log('Query reached 1000 items; use GitHub search for the complete inventory.');
   } catch (error) { console.error(`Task lookup failed: ${error.message}`); process.exitCode = 1; }
 }

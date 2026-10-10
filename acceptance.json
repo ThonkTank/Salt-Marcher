@@ -41,6 +41,16 @@
       "independentReview": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/21#issuecomment-6093614585",
       "integrationProductCommit": "734a7b9c5714acf2ca5aa0395d9706594a5d4ecd",
       "integrationChecks": "check,425/425 tests,clean build and five actual callback probe groups PASS; GPU/Vault/Host not claimed"
+    },
+    "GM-UX-TRAP-CONTENT-UNDO": {
+      "state": "bounded_integrated_cloud_retest_passed",
+      "source": "Issue #8 preflight 6100517787 and final retest report; ROADMAP-GM-PRODUCT-TESTING-PLAN.md; checkpoint.json.gmProductTesting.latestTrapContent",
+      "productCommit": "7098269810801f93be247423862373e912cda210",
+      "independentReview": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/55#issuecomment-6100485936",
+      "confirmed": "On the exact installed Shared build, applied structured Room-Key note text was undone and redone through visible toolbar actions while Room 2, marker A, trap key and key panel remained selected. Dirty-draft Undo guard showed “Key-Entwurf zuerst Übernehmen oder Verwerfen.” and preserved both texts until the draft was discarded. Save, tab close, Quick Switcher reopen and reopening the same key preserved the final note; pre-run map hash 12661953ec93498bcfca15df2c1e1cf45c546201077ef47eb313cd7b7e4894db, post-save/reopen hash 741a159b249c99938df9ce6bcc1775f837eaf5b68eb50109aa531269c69192d7.",
+      "notConfirmed": "No physical input, fresh Electron process, product latency, trap mechanics, PlayerProjection, original-map parity, Atlas promotion or broad Dungeon/E2E/product approval. The Undo toolbar had no enabled history immediately after in-app reload; one Apply was used to establish a history step before testing undo/redo.",
+      "cloudEvidence": "/workspace/scratch/gm-cloud-qa/evidence-gmux-trap-content-undo-cloud-retest-20261010-01/; 20 visible UI screenshots, exact build/install triplet hashes, QA file hashes and run notes.",
+      "currentSharedVerification": "Latest upstream Shared product head 6ce52f1c8915c006dfdefe2261f0c0c6d77b8483; fresh dirty:false build at documentation commit 1c8d31ac004cb58e5053888a4088405d66163e7b produced a byte-identical installed/visible-tested triplet. No second UI sequence."
     }
   },
   "saltMarcherReplacement": {
@@ -543,8 +553,8 @@
       "review": "R01 on exact 8c5c5680054b8dddd89900733ac7bbfe966876f1 required seven repairs (Issue #1 comment 6085178049). N01-R01 on exact 01a02ef124e3ffc02b626019f89f5e216612f7ab required S01 cycle/schema repairs (Issue #1 comment 6085248851). N02-R01 on exact 3b7e5c933a107da6f406aa44037decf316d09b77 found a variable-rarity schema gap (Issue #1 comment 6085306351). N03-R01 PASSED exact 679d432e145bd9afe766393346e4b788931886ea with no remaining mandatory plan finding (Issue #1 comment 6085341786). This approves planning only; S01 and I01 are undelivered."
     },
     "ce02I02Source": {
-      "run": "CE-02-I02-S01-W22",
-      "state": "in_progress_verified_incomplete",
+      "run": "CE-02-I02-S01-W23-N01",
+      "state": "repair_checked_independent_review_pending_incomplete",
       "sourceDocument": "https://media.wizards.com/2023/downloads/dnd/SRD_CC_v5.1.pdf",
       "sourceSha256": "2504d2a0abb0a4d491a939be4f17910a2dde0312570ab8d208080225ccf0a1f0",
       "helperCommit": "3f5593ea004c4f5a2af95603087ce4de72689d9f",
@@ -558,9 +568,205 @@
       "magicItemAzApparatusEvidence": "ordinal 7 on physical/printed page 208 is Apparatus of the Crab with exact standalone identity, full Wondrous item header, fixed legendary rarity, explicit not-required attunement, complete prose and all ten Up/Down lever rows; coordinate-aware PDF-XML extraction preserves physical row and column ownership where raw text interleaves the table across page columns",
       "magicItemAzArmorPlusEvidence": "ordinal 8 on physical/printed page 208 is Armor, +1, +2, or +3 with exact standalone identity, the full light/medium/heavy header, explicit not-required attunement, complete prose and three ordered occurrence-bound variants mapping +1/+2/+3 to rare/very-rare/legendary; the PDF-derived 239-heading sequence proves its position between Apparatus of the Crab and Armor of Invulnerability",
       "magicItemAzArmorInvulnerabilityEvidence": "ordinal 9 on physical/printed page 208 is Armor of Invulnerability with exact standalone identity, the full Armor (plate) header, fixed legendary rarity, required attunement and complete prose; the PDF-derived 239-heading sequence proves its position between Armor, +1, +2, or +3 and Armor of Resistance",
-      "covered": ["exact official source byte identity, size and 403-page count", "SaltMarcher-pinned extraction-helper revision and file hashes", "canonical attribution asset and manifest-bound artifact hashes", "Draft 2020-12 transcript and inventory schemas validated by pinned Ajv", "controlled 25-value source subcategory enum draft; final closure remains blocked on the complete magic-item inventory", "13/13 Armor row inventory, structured table transcript and published item narratives", "13/13 Armor rows matched as exact single physical pdftotext-layout lines including source em-dash cells", "37/37 Weapons row inventory and structured transcript including both special descriptions", "37/37 Weapons rows matched as exact single physical pdftotext-layout lines including missing damage or weight markers and ordered property text", "99/99 Adventuring Gear table-leaf inventory and source transcript with costs, optional weights, table groups and published narratives", "99/99 Adventuring Gear rows matched as exact contiguous segments of single physical pdftotext-layout lines in the two-column table including 19 missing-weight markers", "7/7 Equipment Pack entries in physical order with exact prices and complete published contents prose", "35/35 Tools table leaf rows in physical order with exact prices, optional weights and published shared/per-item narratives", "35/35 Tools rows matched as exact contiguous segments of single physical pdftotext-layout lines in the right-column table including two missing-weight markers", "8/8 Mounts and Other Animals rows in physical order with exact prices, speeds, carrying capacities and published shared narrative", "8/8 Mounts and Other Animals rows matched as exact contiguous segments of single physical pdftotext-layout lines across split PDF pages 71–72", "14/14 Tack, Harness, and Drawn Vehicles rows with exact prices, numeric or explicit formula/missing weights and applicable narratives", "14/14 Tack, Harness, and Drawn Vehicles rows matched as exact contiguous segments of single physical pdftotext-layout lines including Barding formulas and the Stabling source em dash", "6/6 Waterborne Vehicles rows in physical order with exact prices, mph speeds, fractional source values, Vehicle Proficiency and Rowed Vessels facts", "6/6 Waterborne Vehicles rows matched as exact contiguous segments of single physical pdftotext-layout lines with source-faithful fractional speeds and no invented Rowboat weight cell", "one typed PDF-backed Vehicles cross-reference targeting all three Mounts and Vehicles sections without a primary item identity", "7/7 pack-only helper records with typed pack-prose-only disposition, null canonical identity and direct PDF source-text evidence", "Donkey and Mule extraction-helper identities explicitly reconciled to the one combined Donkey or mule primary source occurrence", "twelve Barding helper identities explicitly reconciled to the one formula row and their respective Armor source occurrence without adopting conflicting helper values", "all 237 extraction-helper equipment records reconciled to official primary rows, pack prose or explicit expansions", "Animated Shield captured as exact A–Z ordinal 6 with occurrence-bound full header, fixed very-rare rarity, required attunement and complete page-208 prose", "Apparatus of the Crab captured as exact A–Z ordinal 7 with occurrence-bound full header, fixed legendary rarity, explicit not-required attunement, complete page-208 prose/statistics and all ten Up/Down lever rows", "Armor, +1, +2, or +3 captured as exact A–Z ordinal 8 with occurrence-bound full header/prose, explicit not-required attunement and ordered +1/+2/+3 mappings to rare/very-rare/legendary", "Armor of Invulnerability captured as exact A–Z ordinal 9 with occurrence-bound full header/prose, fixed legendary rarity and required attunement", "explicit first-occurrence Potion-of-Healing detail merge with complete no-attunement header, variable rarity and four occurrence-bound variants", "real-PDF evidence for 229 occurrence labels, 709 structured or sourced-description facts, dedicated Apparatus, Armor +1/+2/+3 and Armor of Invulnerability gates, the Potion-of-Healing merge/header/four-row table, 13 bounded Armor rows, 37 bounded Weapons rows, 99 bounded Adventuring Gear rows, 35 bounded Tools rows, 8 bounded Mounts rows, 14 bounded Tack rows, 6 bounded Waterborne rows, 21 helper dispositions and one cross-reference with two facts", "Armor, Weapons, two-column Adventuring Gear, right-column Tools, split-page Mounts, left-column Tack and Waterborne same-row bounded-cell rejection, Potion merge identity/ordering/source/variant rejection, Spear, Blowgun, Sling, Net, Adventuring Gear omissions/grouping, Equipment Pack ordering/content, Tools ordering/categories/optional weights/punctuation, Mount ordering/structured facts/helper expansion, Barding formula/source expansion, missing Stabling weight, Waterborne fractional mph/Rowboat weight and no-invented-cross-reference-identity goldens", "Animated Shield, Apparatus, Armor +1/+2/+3 and Armor of Invulnerability identity/page/ordinal/header/rarity/attunement/prose rejection, ordered Armor variant rejection and Apparatus lever-table row/cell-order rejection", "fail-closed incomplete-package gate", "fixed and variable rarity identity regressions"],
-      "verification": {"sourceRevision": "dd3732510f721f20d95b7a1abeb1dd1593ceb69c+dirty", "check": "passed", "tests": {"passed": 443, "failed": 0}, "build": "passed", "focusedTests": {"passed": 38, "failed": 0}, "pdfIdentity": "passed", "occurrences": {"checked": 229}, "transcriptRecords": {"checked": 228}, "structuredAndDescriptionFacts": {"checked": 709}, "magicItemAzOpeningSlice": {"records": 5, "occurrenceBoundSourceHeaders": 5, "physicalPdfPage": 207, "derivedHeadingCount": 239, "fixedRarities": 4, "variableRarityChoices": 3, "attunementRequired": 3, "attunementNotRequired": 2}, "magicItemAzAnimatedShield": {"ordinal": 6, "physicalPdfPage": 208, "derivedHeadingCount": 239, "previousHeading": "Amulet of the Planes", "nextHeading": "Apparatus of the Crab", "rarity": "very-rare", "attunement": "required"}, "magicItemAzApparatusOfTheCrab": {"ordinal": 7, "physicalPdfPage": 208, "derivedHeadingCount": 239, "previousHeading": "Animated Shield", "nextHeading": "Armor, +1, +2, or +3", "rarity": "legendary", "attunement": "not-required", "descriptionFacts": 11, "leverRows": 10, "leverCells": 20, "checkedPdfFacts": 32}, "magicItemAzArmorPlusOneTwoThree": {"ordinal": 8, "physicalPdfPage": 208, "derivedHeadingCount": 239, "previousHeading": "Apparatus of the Crab", "nextHeading": "Armor of Invulnerability", "attunement": "not-required", "variableRarityChoices": 3, "descriptionFacts": 1, "checkedPdfFacts": 2}, "magicItemAzArmorOfInvulnerability": {"ordinal": 9, "physicalPdfPage": 208, "derivedHeadingCount": 239, "previousHeading": "Armor, +1, +2, or +3", "nextHeading": "Armor of Resistance", "rarity": "legendary", "attunement": "required", "descriptionFacts": 1, "checkedPdfFacts": 2}, "potionHealingMerge": {"mergedRecords": 1, "rarityChoices": 4, "healingRows": 4, "physicalPdfPage": 234, "derivedHeadingCount": 239, "derivedHeadingOrdinal": 142}, "boundedArmorTableRows": {"checked": 13}, "boundedWeaponTableRows": {"checked": 37}, "boundedAdventuringGearTableRows": {"checked": 99}, "boundedToolsTableRows": {"checked": 35}, "boundedMountsTableRows": {"checked": 8}, "boundedTackTableRows": {"checked": 14}, "boundedWaterborneTableRows": {"checked": 6}, "helperDispositions": {"checked": 21}, "crossReferences": {"checked": 1, "facts": 2}, "incompleteGate": "passed", "buildArtifact": {"path": "main.js", "bytes": 1422956, "sha256": "522823730ddce4d0ba83e0476f60887b60a07c517f84e8e270814b6d597efa43"}},
-      "limits": "Intermediate only: all 219 primary equipment occurrences and all 237 helper equipment records remain covered or explicitly reconciled; A–Z headings 1–9 and the merged Potion-of-Healing heading 142 are captured. The remaining 229 A–Z headings, Orb of Dragonkind, magic-item helper reconciliation, remaining structured Magic Item tables/transcripts, remaining goldens, independent W22 review and S01-R01 are open. No product artifact, provider, UI, host acceptance or I01 work is authorized."
+      "covered": [
+        "exact official source byte identity, size and 403-page count",
+        "SaltMarcher-pinned extraction-helper revision and file hashes",
+        "canonical attribution asset and manifest-bound artifact hashes",
+        "Draft 2020-12 transcript and inventory schemas validated by pinned Ajv",
+        "controlled 25-value source subcategory enum draft; final closure remains blocked on the complete magic-item inventory",
+        "13/13 Armor row inventory, structured table transcript and published item narratives",
+        "13/13 Armor rows matched as exact single physical pdftotext-layout lines including source em-dash cells",
+        "37/37 Weapons row inventory and structured transcript including both special descriptions",
+        "37/37 Weapons rows matched as exact single physical pdftotext-layout lines including missing damage or weight markers and ordered property text",
+        "99/99 Adventuring Gear table-leaf inventory and source transcript with costs, optional weights, table groups and published narratives",
+        "99/99 Adventuring Gear rows matched as exact contiguous segments of single physical pdftotext-layout lines in the two-column table including 19 missing-weight markers",
+        "7/7 Equipment Pack entries in physical order with exact prices and complete published contents prose",
+        "35/35 Tools table leaf rows in physical order with exact prices, optional weights and published shared/per-item narratives",
+        "35/35 Tools rows matched as exact contiguous segments of single physical pdftotext-layout lines in the right-column table including two missing-weight markers",
+        "8/8 Mounts and Other Animals rows in physical order with exact prices, speeds, carrying capacities and published shared narrative",
+        "8/8 Mounts and Other Animals rows matched as exact contiguous segments of single physical pdftotext-layout lines across split PDF pages 71–72",
+        "14/14 Tack, Harness, and Drawn Vehicles rows with exact prices, numeric or explicit formula/missing weights and applicable narratives",
+        "14/14 Tack, Harness, and Drawn Vehicles rows matched as exact contiguous segments of single physical pdftotext-layout lines including Barding formulas and the Stabling source em dash",
+        "6/6 Waterborne Vehicles rows in physical order with exact prices, mph speeds, fractional source values, Vehicle Proficiency and Rowed Vessels facts",
+        "6/6 Waterborne Vehicles rows matched as exact contiguous segments of single physical pdftotext-layout lines with source-faithful fractional speeds and no invented Rowboat weight cell",
+        "one typed PDF-backed Vehicles cross-reference targeting all three Mounts and Vehicles sections without a primary item identity",
+        "7/7 pack-only helper records with typed pack-prose-only disposition, null canonical identity and direct PDF source-text evidence",
+        "Donkey and Mule extraction-helper identities explicitly reconciled to the one combined Donkey or mule primary source occurrence",
+        "twelve Barding helper identities explicitly reconciled to the one formula row and their respective Armor source occurrence without adopting conflicting helper values",
+        "all 237 extraction-helper equipment records reconciled to official primary rows, pack prose or explicit expansions",
+        "Animated Shield captured as exact A–Z ordinal 6 with occurrence-bound full header, fixed very-rare rarity, required attunement and complete page-208 prose",
+        "Apparatus of the Crab captured as exact A–Z ordinal 7 with occurrence-bound full header, fixed legendary rarity, explicit not-required attunement, complete page-208 prose/statistics and all ten Up/Down lever rows",
+        "Armor, +1, +2, or +3 captured as exact A–Z ordinal 8 with occurrence-bound full header/prose, explicit not-required attunement and ordered +1/+2/+3 mappings to rare/very-rare/legendary",
+        "Armor of Invulnerability captured as exact A–Z ordinal 9 with occurrence-bound full header/prose, fixed legendary rarity and required attunement",
+        "explicit first-occurrence Potion-of-Healing detail merge with complete no-attunement header, variable rarity and four occurrence-bound variants",
+        "real-PDF evidence for 233 occurrence labels, 731 structured or sourced-description facts, dedicated Apparatus, Armor +1/+2/+3 and Armor of Invulnerability gates, the Potion-of-Healing merge/header/four-row table, 13 bounded Armor rows, 37 bounded Weapons rows, 99 bounded Adventuring Gear rows, 35 bounded Tools rows, 8 bounded Mounts rows, 14 bounded Tack rows, 6 bounded Waterborne rows, 21 helper dispositions and one cross-reference with two facts",
+        "Armor, Weapons, two-column Adventuring Gear, right-column Tools, split-page Mounts, left-column Tack and Waterborne same-row bounded-cell rejection, Potion merge identity/ordering/source/variant rejection, Spear, Blowgun, Sling, Net, Adventuring Gear omissions/grouping, Equipment Pack ordering/content, Tools ordering/categories/optional weights/punctuation, Mount ordering/structured facts/helper expansion, Barding formula/source expansion, missing Stabling weight, Waterborne fractional mph/Rowboat weight and no-invented-cross-reference-identity goldens",
+        "Animated Shield, Apparatus, Armor +1/+2/+3 and Armor of Invulnerability identity/page/ordinal/header/rarity/attunement/prose rejection, ordered Armor variant rejection and Apparatus lever-table row/cell-order rejection",
+        "fail-closed incomplete-package gate",
+        "fixed and variable rarity identity regressions",
+        "Armor/Arrow ordinals 10–13, full curse/prose, all ten resistance choices, exact whole-heading PDF stream and negative identity/fact/table/page/heading goldens",
+        "W23-N01 replaces the absolute footer Y band by exact SRD-footer/page identification and preserves all body text; real hash-bound Poppler XML, derived high-coordinate shapes, invalid footer/body failures and opt-in full official PDF integration test"
+      ],
+      "verification": {
+        "sourceRevision": "94e48847174e1b7a3dce93cb9d6377e34f5b1b98+dirty",
+        "check": "passed",
+        "tests": {
+          "passed": 482,
+          "failed": 0,
+          "skipped": 0,
+          "officialPdfEnabled": true
+        },
+        "build": "passed",
+        "focusedTests": {
+          "passed": 48,
+          "failed": 0,
+          "skipped": 0,
+          "officialPdfEnabled": true
+        },
+        "pdfIdentity": "passed",
+        "occurrences": {
+          "checked": 233
+        },
+        "transcriptRecords": {
+          "checked": 232
+        },
+        "structuredAndDescriptionFacts": {
+          "checked": 731
+        },
+        "magicItemAzOpeningSlice": {
+          "records": 5,
+          "occurrenceBoundSourceHeaders": 5,
+          "physicalPdfPage": 207,
+          "derivedHeadingCount": 239,
+          "fixedRarities": 4,
+          "variableRarityChoices": 3,
+          "attunementRequired": 3,
+          "attunementNotRequired": 2
+        },
+        "magicItemAzAnimatedShield": {
+          "ordinal": 6,
+          "physicalPdfPage": 208,
+          "derivedHeadingCount": 239,
+          "previousHeading": "Amulet of the Planes",
+          "nextHeading": "Apparatus of the Crab",
+          "rarity": "very-rare",
+          "attunement": "required"
+        },
+        "magicItemAzApparatusOfTheCrab": {
+          "ordinal": 7,
+          "physicalPdfPage": 208,
+          "derivedHeadingCount": 239,
+          "previousHeading": "Animated Shield",
+          "nextHeading": "Armor, +1, +2, or +3",
+          "rarity": "legendary",
+          "attunement": "not-required",
+          "descriptionFacts": 11,
+          "leverRows": 10,
+          "leverCells": 20,
+          "checkedPdfFacts": 32
+        },
+        "magicItemAzArmorPlusOneTwoThree": {
+          "ordinal": 8,
+          "physicalPdfPage": 208,
+          "derivedHeadingCount": 239,
+          "previousHeading": "Apparatus of the Crab",
+          "nextHeading": "Armor of Invulnerability",
+          "attunement": "not-required",
+          "variableRarityChoices": 3,
+          "descriptionFacts": 1,
+          "checkedPdfFacts": 2
+        },
+        "magicItemAzArmorOfInvulnerability": {
+          "ordinal": 9,
+          "physicalPdfPage": 208,
+          "derivedHeadingCount": 239,
+          "previousHeading": "Armor, +1, +2, or +3",
+          "nextHeading": "Armor of Resistance",
+          "rarity": "legendary",
+          "attunement": "required",
+          "descriptionFacts": 1,
+          "checkedPdfFacts": 2
+        },
+        "potionHealingMerge": {
+          "mergedRecords": 1,
+          "rarityChoices": 4,
+          "healingRows": 4,
+          "physicalPdfPage": 234,
+          "derivedHeadingCount": 239,
+          "derivedHeadingOrdinal": 142
+        },
+        "boundedArmorTableRows": {
+          "checked": 13
+        },
+        "boundedWeaponTableRows": {
+          "checked": 37
+        },
+        "boundedAdventuringGearTableRows": {
+          "checked": 99
+        },
+        "boundedToolsTableRows": {
+          "checked": 35
+        },
+        "boundedMountsTableRows": {
+          "checked": 8
+        },
+        "boundedTackTableRows": {
+          "checked": 14
+        },
+        "boundedWaterborneTableRows": {
+          "checked": 6
+        },
+        "helperDispositions": {
+          "checked": 21
+        },
+        "crossReferences": {
+          "checked": 1,
+          "facts": 2
+        },
+        "incompleteGate": "passed",
+        "buildArtifact": {
+          "path": "main.js",
+          "bytes": 1422956,
+          "sha256": "522823730ddce4d0ba83e0476f60887b60a07c517f84e8e270814b6d597efa43"
+        },
+        "magicItemAzArmorArrows": {
+          "ordinals": [
+            10,
+            11,
+            12,
+            13
+          ],
+          "physicalPdfPages": [
+            208,
+            209
+          ],
+          "records": 4,
+          "resistanceTableRows": 10,
+          "derivedHeadingCount": 239,
+          "oracle": "complete heading-bounded XML stream; exact SRD footer/page identity; source-run boundary whitespace preserved independently of coordinates"
+        },
+        "repositoryStructure": "passed",
+        "repositoryTests": {
+          "passed": 18,
+          "failed": 0
+        },
+        "extractorRepair": {
+          "localVersion": "pdftohtml 25.03.0",
+          "realFixtureSha256": "817a22fe85a82a972d905ae58e19db42c210fb7ed989b8acb79ba47f63221048",
+          "fullExtractSha256": "7a6eac1d4a81499d4bb136aac27a4bc2527ffd67985e8ddf4f24a242481cb3de",
+          "highCoordinateCases": "derived from real XML; shifted +10000 and reported heading/body top shape 1153/1156",
+          "localPoppler2507Executed": false
+        }
+      },
+      "limits": "W23 source remains partial and not independently approved after P1. Local official PDF runs use Poppler 25.03.0; transformed XML cases are not a claimed 25.07 extraction. 225 A–Z headings, Orb, helper reconciliation, remaining goldens, S01-R01 and all Item product/host gates remain open. No source corpus identity/value changed and no Item product artifact/provider/UI, host or I01 approval.",
+      "magicItemAzArmorArrowsEvidence": "A–Z ordinals 10–13 on physical/printed pages 208–209 preserve complete headers and prose, vulnerability curse, slaying rules and ten ordered die-bound resistance choices. Full heading-bounded XML text and physical two-column table order are checked, not merely substring presence.",
+      "repairReview": {
+        "state": "changes_required_repair_re_review_pending",
+        "reviewedCommit": "243f3ee884f2109fda23ffd4e2555abb73db4d56",
+        "issue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/48#pullrequestreview-5479813046",
+        "finding": "P1: absolute top<1100 discards body headings on independent Poppler 25.07.0 host",
+        "repair": "implemented and locally checked; independent exact-SHA and 25.07 host confirmation not yet received"
+      }
     }
   },
   "cityPlans": {
