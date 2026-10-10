@@ -34,7 +34,7 @@
     },
     "smr01CampaignOwnership": {
       "date": "2026-10-10",
-      "state": "e2e01_campaign_ownership_p01_n01_re_review_pending",
+      "state": "e2e01_campaign_ownership_i01_checked_code_review_pending",
       "plan": "ROADMAP-E2E01-CAMPAIGN-OWNERSHIP-PLAN.md",
       "baseline": "e5a19a93ce417b4e48fa86512d1c7f1be4d41eea",
       "spatialProductSource": "88babcd2eee05f8d99a914129fd176b264bdcb26",
@@ -45,8 +45,21 @@
         "media": "Issue #12 comment 6092021476: AudioSource identity/type, availability/confirmed-empty, owner/schema/snapshot revisions, metadata and manifest-bound byte digest, complete Cue/Scene/Runtime references"
       },
       "review": "Independent R01 on 2bb151857d4453ee2392802e3ef01e289eb8d0ec required two narrow repairs: carry context/registry/owner and participant-before preconditions to the same durable publish linearization boundary, including post-verify race oracles; and define a referentially closed survivor/omission/quarantine projection that retains opaque or unknown data and prevents dangling media dependents.",
-      "limits": "Plan only. No productive registry provider, foreign payload reconstruction, Campaign-to-Atlas adapter, Vault/FileTransaction, P02/P04 adapter, CompleteImport, host evidence or E2E-01 PASS.",
-      "next": "Publish the narrow N01 plan repair and obtain an independent exact-SHA re-review of the two repaired findings before any I01 implementation."
+      "reviewedPlanCandidate": "51d58bf32f2225182218ee53a8f9bd377333141a",
+      "implementationBranch": "codex/e2e01-campaign-ownership-i01",
+      "implementation": "Validated and deeply immutable CampaignDomainOwnershipProjectionV1 behind an injected read-only CampaignOwnerRegistryPort; complete context/registry/owner/record/payload/media bindings; deterministic projection, command and salvage digests; original CommandId/ReceiptId multi-owner envelopes; atomic publish preconditions through the port linearization boundary; idempotent outcome recovery; distinct Complete/Salvage commands; and referentially closed survivor/omission/quarantine projections retaining opaque or unknown data.",
+      "verification": {
+        "check": "passed",
+        "tests": {
+          "passed": 495,
+          "failed": 0,
+          "focusedOwnershipCases": 11
+        },
+        "build": "passed",
+        "jsonAndDiff": "passed"
+      },
+      "limits": "Host-neutral contract implementation only. No productive registry provider, foreign payload reconstruction, Campaign-to-Atlas adapter, Vault/FileTransaction, P02/P04 adapter, visible CompleteImport, host evidence or E2E-01 PASS.",
+      "next": "Publish one exact I01 candidate and obtain independent code/contract review before any steward handoff or dependent I01c integration."
     },
     "source": {
       "repository": "ThonkTank/Salt-Marcher",
