@@ -153024,7 +153024,7 @@
       {
         "id": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
         "requirement": "Thin Context/navigation consumer with actual native target validation, same Atlas owners and guarded Campaign switching",
-        "state": "promotion_NOT_GRANTED_retained_Save_Fresh_Recovery_binding_missing",
+        "state": "promotion_NOT_GRANTED_retained_Save_Fresh_Recovery_independent_review_pending",
         "implementationRun": "HEX-E2E01-HOST-SAVE-I02",
         "sourceCommit": "86bbbbfac44233509f084ac836e6dafa07b11a16",
         "catalog": "ROADMAP-E2E-GATES-CANDIDATE.md:13",
@@ -153966,7 +153966,7 @@
           "currentEvidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-manifest-host-save-i02-20261010/implementation.json",
           "scope": "Component review only; no native/Host/overall approval."
         },
-        "gap": "#39 audited the actual independent scopes: Dungeon/City/Campaign component inputs and R01/H02 remain PASS, but the retained owner-native Save/Fresh/Rollback/Committed-Recovery proof has no consumed independent binding to current composition. Explicit NOT_PROMOTED; E2E01-PROMOTION-01 is a scope/evidence gap. Original four-run receipt and 46 referenced files verified locally; next own action publishes them for existing integrated review. No new product defect or automatic GUI rerun.",
+        "gap": "E2E01-PROMOTION-01: original Save/Fresh/Rollback/Committed-Recovery access delivered (receipt 3ccb22c6; 46 definitive hash-bound files plus retained build/harness and actual seven-source delta). Existing integrated Chronik independent scope decision remains #39 input; no promotion or new GUI. #38/R01/H02 stays closed; full E2E and Shared GM/installation/physical/original/large-world remain separate.",
         "qualifiedCampaignInputAndRollbackProbe": {
           "state": "qualified_component_contract_closed_productive_Host_implementation_now_present",
           "reviewSourceCommit": "ce2f9032dc9f72f994a307b5aac26e1ad8910065",
@@ -154260,6 +154260,17 @@
           "checkpoint": "checkpoint.hexAtlasExecution.latestPromotionAudit",
           "mandatoryFinding": "E2E01-PROMOTION-01",
           "nextOwnAction": "Publish unchanged original Save/Fresh/Recovery artifacts for existing integrated review; no new GUI."
+        },
+        "nativeSaveFreshRecoveryEvidenceAccess": {
+          "id": "HEX-E2E01-SAVE-FRESH-RECOVERY-EVIDENCE-BINDING-01",
+          "state": "original_artifacts_access_delivered_independent_scope_review_pending",
+          "checkpoint": "checkpoint.hexAtlasExecution.latestSaveFreshRecoveryEvidenceBinding",
+          "repositoryEvidence": "docs/reference/atlas-host-save-i02-h01/SAVE-PROVENANCE.md",
+          "binding": "docs/reference/atlas-host-save-i02-h01/binding.json",
+          "bindingSha256": "9840fd9ee31bd029497932bd2f4bef52cf6e18a982f799a121afbcb9f2b2862f",
+          "finding": "E2E01-PROMOTION-01",
+          "independentApproval": false,
+          "promotion": false
         }
       }
     ],

@@ -795,7 +795,7 @@
   "hexAtlasExecution": {
     "scope": "HEX-00 bis HEX-28 und sämtliche eingeordneten CITY-00 bis CITY-09 vollständig",
     "phase": "HEX-03",
-    "state": "promotion_NOT_GRANTED_retained_Save_Fresh_Recovery_binding_missing",
+    "state": "promotion_NOT_GRANTED_retained_Save_Fresh_Recovery_independent_review_pending",
     "plan": "ROADMAP-E2E01-SPATIAL-INTEGRATION-PLAN.md",
     "currentRun": {
       "id": "E2E-01-SPACE-I01b",
@@ -843,9 +843,9 @@
     },
     "nextRun": {
       "id": "E2E-01-PR13-SAVE-FRESH-RECOVERY-EVIDENCE-BINDING",
-      "kind": "bounded_original_evidence_publication_for_existing_integrated_review",
-      "state": "own_artifact_publication_next",
-      "focus": "Resolve only E2E01-PROMOTION-01 within #39: publish original retained four-run Save/Fresh/Rollback/Committed-Recovery receipt/raw files/build provenance, preserve hashes and map actual saved-source→current deltas. Then consume the existing integrated reviewer decision; no general review round or automatic GUI repeat.",
+      "kind": "consume_existing_integrated_Save_scope_review",
+      "state": "original_artifacts_access_delivered_external_independent_scope_decision_pending",
+      "focus": "Consume only the existing integrated reviewer decision for E2E01-PROMOTION-01 in #39. Original four-run Save/Fresh/Rollback/Committed-Recovery receipt and 46 hash-bound raw files are repository-accessible, with exact historical build and current source/harness deltas. No author approval, new broad review or automatic GUI repeat.",
       "sourcePlan": "ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md",
       "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
       "evidence": {
@@ -886,7 +886,7 @@
         "inputBoundary": "One actual isolated Obsidian process with synthetic native picker/Key/button input; initial location navigation invokes the actual Host method.",
         "lateCaptureBoundary": "Old actual A capture is verified only after completed navigation and later B activation. Delayed in-flight navigation/Context ABA remains a separate core regression, not a claimed native reply test."
       },
-      "requiredInput": "Existing own receipt 3ccb22c6 and 46 local hash-bound files are available. Hex prepares repository access for the existing integrated Chronik review; #38 is closed and must stay closed.",
+      "requiredInput": "Independent Chronik scope decision on the published original retained Save/Fresh/Rollback/Committed-Recovery evidence within existing integrated #39 review. Own evidence-access preparation is complete; #38 stays closed.",
       "after": "Explicit independent scope acceptance for retained Save/Fresh/Recovery, then #39 promotion decision; required cleanup and #40 Shared GM gate remain separate. No Full-E2E inference.",
       "slotConfirmedForNextRun": false,
       "slotRequiredAgain": true,
@@ -959,6 +959,17 @@
         "checkpoint": "checkpoint.hexAtlasExecution.latestPromotionAudit",
         "mandatoryFinding": "E2E01-PROMOTION-01",
         "nextOwnAction": "Publish unchanged original Save/Fresh/Recovery artifacts for existing integrated review; no new GUI."
+      },
+      "saveFreshRecoveryEvidenceAccess": {
+        "id": "HEX-E2E01-SAVE-FRESH-RECOVERY-EVIDENCE-BINDING-01",
+        "state": "original_artifacts_access_delivered_independent_scope_review_pending",
+        "checkpoint": "checkpoint.hexAtlasExecution.latestSaveFreshRecoveryEvidenceBinding",
+        "repositoryEvidence": "docs/reference/atlas-host-save-i02-h01/SAVE-PROVENANCE.md",
+        "binding": "docs/reference/atlas-host-save-i02-h01/binding.json",
+        "bindingSha256": "9840fd9ee31bd029497932bd2f4bef52cf6e18a982f799a121afbcb9f2b2862f",
+        "finding": "E2E01-PROMOTION-01",
+        "independentApproval": false,
+        "promotion": false
       }
     },
     "review": {
@@ -5409,7 +5420,7 @@
       "platformIssue": 11,
       "checkpointIsAuthoritative": true
     },
-    "updatedAt": "2026-10-10T15:59:42.437524+00:00",
+    "updatedAt": "2026-10-10T17:52:51.678661+00:00",
     "consumerMatrix": {
       "id": "RUNTIME-MANIFEST-I02-CONSUMER-MATRIX-V1",
       "state": "frozen_complete_matrix_green_on_productive_Host_source",
@@ -5796,6 +5807,102 @@
       "mergePerformed": false,
       "newNativeRun": false,
       "fullE2E": false
+    },
+    "latestSaveFreshRecoveryEvidenceBinding": {
+      "id": "HEX-E2E01-SAVE-FRESH-RECOVERY-EVIDENCE-BINDING-01",
+      "state": "original_artifacts_access_delivered_independent_scope_review_pending",
+      "finding": "E2E01-PROMOTION-01",
+      "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
+      "e2eRow": 13,
+      "consumerIssue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/39",
+      "repositoryEvidence": "docs/reference/atlas-host-save-i02-h01/SAVE-PROVENANCE.md",
+      "binding": "docs/reference/atlas-host-save-i02-h01/binding.json",
+      "bindingSha256": "9840fd9ee31bd029497932bd2f4bef52cf6e18a982f799a121afbcb9f2b2862f",
+      "artifactIndex": "docs/reference/atlas-host-save-i02-h01/ARTIFACTS.json",
+      "artifactIndexSha256": "bd3e442c1f5eedb346adf23fb7a4f3c2e323ac44da67eba771bab84e194c9b19",
+      "indexedArtifacts": 66,
+      "definitiveReceiptHashedFiles": 46,
+      "originalReceiptSha256": "3ccb22c6dba8a3c5ae102a90e3e6b48e0ae189bce7425c69b8a62a65cb123b69",
+      "historicalProductSource": "86bbbbfac44233509f084ac836e6dafa07b11a16",
+      "compositionBeforePublication": "5fd5463560c99e884e76dabcb5dd5fa0ebd8b91c",
+      "consumedShared": "a5288d8ae71911bab7b8ddd67967246581c507f5",
+      "savedToCurrentSourceChanges": [
+        {
+          "path": "src/features/atlas/atlas-campaign-navigation.ts",
+          "oldSha256": "4832b68186193e78b4549106dace69a7ac972ea7696df7753eb294617875246e",
+          "currentSha256": "51510708e73fd83484000313f6d7df164422e3ede431889cb4c33a884dec1c94",
+          "oldGitBlob": "ed2cc75d56da3f8f0f3ad7cd9bfc2925294228ff",
+          "currentGitBlob": "3cab1160e17fc2e90094c63e39e956aeb85cc4aa",
+          "classification": "R01 navigation preparation/current guards and removal of duplicate Host capture; reviewer must assess retained Save scope"
+        },
+        {
+          "path": "src/features/atlas/atlas-editor.ts",
+          "oldSha256": "34951fde65f4189ada3396efb0aded461a8d0bf42c406ab265b9e1a4d759b3cf",
+          "currentSha256": "b7c1c2c68541295a2c5bd00cfe718ed761cd1b9030ddf4e9c2294404b9ef7267",
+          "oldGitBlob": "e4781a0045d14c1e7702842b3dcbeb33a36e2128",
+          "currentGitBlob": "c0519688dd6e930926084c7167c3ea7b9abc99c0",
+          "classification": "R01 navigation preparation/current guards and removal of duplicate Host capture; reviewer must assess retained Save scope"
+        },
+        {
+          "path": "src/features/catalog/data/items-srd51-inventory.json",
+          "oldSha256": "eec607199a7b51162bf3de1a6beb048214888ba1a905db0f79801c7835d6a320",
+          "currentSha256": "ed896d0f27a0c8e7d1924424de2896c84826208ac0a732ff9b46b6dfcee26aec",
+          "oldGitBlob": "e0ad37ac333df85ec0d172494905be0c773b7fbf",
+          "currentGitBlob": "f62757a6627a687b0e291915058df5324f79d298",
+          "classification": "qualified Shared catalog data"
+        },
+        {
+          "path": "src/features/catalog/data/items-srd51-source-manifest.json",
+          "oldSha256": "2e7855eb8ecfb1ad5fcc665abbba53538f4407f36a19188a5e0d5ec644f5b33e",
+          "currentSha256": "47834b3d83966cc74c251c82b9ca7387b63a0f8dd4b0b9c9fad0c9dd7216be24",
+          "oldGitBlob": "653483abff6677097a6e3f3a5eca95235ecee7ff",
+          "currentGitBlob": "9ded79c0674ae05d50fd4734488e9dd1564321c8",
+          "classification": "qualified Shared catalog data"
+        },
+        {
+          "path": "src/features/catalog/data/items-srd51-transcript.json",
+          "oldSha256": "0fba5dcf207267434d049055ea156515ffb78ee29bdf787296b053e1c2a1b41d",
+          "currentSha256": "b937fdd33193e176373f48e639ea66d3c542387d63d646bbe24691d39fd5b1fd",
+          "oldGitBlob": "61350fd21e7df12d1e981af723171e28573c58fa",
+          "currentGitBlob": "d302c7ac028d2c8356befc808d6812d87495de19",
+          "classification": "qualified Shared catalog data"
+        },
+        {
+          "path": "src/ui/atlas-campaign-host.ts",
+          "oldSha256": "8b3ad3d94dab0678cb6a41eef4bc2e82519889d082ba2aded38af2b10d1bea3d",
+          "currentSha256": "a758357de05b2b17686bc06a06da9945c117c8912fcef586ce71ea98e055d8aa",
+          "oldGitBlob": "eec07719c24637048f36d2fef7978b089fe3d0e9",
+          "currentGitBlob": "cb0eda02b81f4d67b783397061300c4131dde3a7",
+          "classification": "R01 navigation preparation/current guards and removal of duplicate Host capture; reviewer must assess retained Save scope"
+        },
+        {
+          "path": "src/ui/atlas-view.ts",
+          "oldSha256": "9b46edf8cb527a8da09a98a8977f74fcadf3773a76c5a067205a73f83f6cf10a",
+          "currentSha256": "68ac4797d71579f9b5f9eea01acdfb5069c5a12e46385ec9a70e6dac06a115d0",
+          "oldGitBlob": "f6a466084976514fa0af2887ecf47d6552c46658",
+          "currentGitBlob": "e7398a97507b06635c11920218cbebbdaed7d38a",
+          "classification": "R01 navigation preparation/current guards and removal of duplicate Host capture; reviewer must assess retained Save scope"
+        }
+      ],
+      "historicalHarnessToCurrent": {
+        "path": "docs/reference/atlas-host-save-i02-h01/provenance/saved-harness-to-current.patch",
+        "sha256": "d77af49a0e61eecea735671956282b2baaa4d04cd89326474b4b5f812d839700",
+        "changedFiles": [
+          "tools/host-test.cjs"
+        ],
+        "currentShutdownReceiptChange": "e4261ac899dadddffab1226b23eb3c8612dfead2 adds explicit main/shutdown failure retention; old four successful probes have separate normal-exit/no-forced-termination receipts; reviewer must assess historical result semantics"
+      },
+      "fourOriginalRunsPassed": true,
+      "fourOriginalNormalExits": true,
+      "historicalFailurePreserved": true,
+      "newNativeRun": false,
+      "newBuild": false,
+      "productChange": false,
+      "independentApproval": false,
+      "promotion": false,
+      "fullE2E": false,
+      "next": "Existing integrated Chronik reviewer assesses this missing retained Save/Fresh/Rollback/Committed-Recovery scope; #39 stays NOT_PROMOTED until independent decision. #38 remains closed.",
+      "reviewerInputClaim": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/39#issuecomment-6100399886"
     }
   },
   "phase": "Phase 6: zweiter Nachbesserungslauf teilweise umgesetzt; fünf Restpositionen und unabhängiger Review offen",
