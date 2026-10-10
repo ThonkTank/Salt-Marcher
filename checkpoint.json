@@ -489,6 +489,26 @@
     ],
     "next": "Kandidaten-SHA veröffentlichen, eng unabhängig reviewen lassen und anschließend nur als Source-Handoff an den einen PR-#13-Steward übergeben; keine eigene Integration."
   },
+  "e2e01DungeonGeometryPlan": {
+    "run": "E2E-01-DUNGEON-GEOMETRY-P01",
+    "state": "plan_candidate_independent_review_required",
+    "owner": "Dungeon-Strang (Thread Obsidian Dungeon Repo ansehen)",
+    "branch": "dungeon/e2e01-geometry-p01-20261010",
+    "baseCommit": "e5a19a93ce417b4e48fa86512d1c7f1be4d41eea",
+    "plan": "ROADMAP-E2E01-DUNGEON-GEOMETRY-PLAN.md",
+    "coordination": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6092383202",
+    "details": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/8#issuecomment-6092383345",
+    "scope": "Plan-only: äußerer Konturpunktzug Room31/Floor32 über bestehende pure Geometrieplaner, transientes Preview/Cancel und genau ein kanonischer ownergebundener Before→After-AtlasChange für die gemeinsame check/execute-Komposition.",
+    "files": [
+      "ROADMAP-E2E01-DUNGEON-GEOMETRY-PLAN.md",
+      "ROADMAP-E2E01-SPATIAL-INTEGRATION-PLAN.md",
+      "checkpoint.json"
+    ],
+    "verification": "Plan-/JSON-/Verweis-/Diffprüfung vor Veröffentlichung; keine Produktquelle geändert und deshalb keine Produktbasisprüfung oder GUI als Planbeleg.",
+    "externalEvidence": "Ownerinput #12/6092359086 und technische Quellanalyse #8/6092363698 auf PR13 Exact-Head e5a19a93ce417b4e48fa86512d1c7f1be4d41eea. Keine neue externe Lauf- oder Hostevidenz in P01.",
+    "notVerified": "Unabhängiger Planreview, Implementierung, Code-Review, Reparatur, Cleanup-P/I/R, Host, physische Eingabe, vollständige Mehrownerkomposition und E2E-01-PASS bleiben offen.",
+    "next": "Kandidaten-SHA normal pushen und unabhängigen engen P01-R01 anfragen. I01 darf erst nach explizitem PASS auf dem Exact-SHA beginnen."
+  },
   "hexAtlasExecution": {
     "scope": "HEX-00 bis HEX-28 und sämtliche eingeordneten CITY-00 bis CITY-09 vollständig",
     "phase": "HEX-03",
