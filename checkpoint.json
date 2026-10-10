@@ -801,7 +801,7 @@
   "hexAtlasExecution": {
     "scope": "HEX-00 bis HEX-28 und sämtliche eingeordneten CITY-00 bis CITY-09 vollständig",
     "phase": "HEX-03",
-    "state": "e2e01_host_R02_pass_own_cleanup_planned_single_journal_save_next",
+    "state": "e2e01_host_cleanup_I01_retention_checked_independent_cleanup_review_next",
     "plan": "ROADMAP-E2E01-SPATIAL-INTEGRATION-PLAN.md",
     "currentRun": {
       "id": "E2E-01-SPACE-I01b",
@@ -848,14 +848,14 @@
       "phaseApproval": false
     },
     "nextRun": {
-      "id": "E2E-01-SPACE-I01c-RUNTIME-CLEAN-I01",
-      "kind": "bounded_own_retention_cleanup_implementation_no_deletion",
-      "focus": "Verify all58 retained evidence hashes and protected source/fixture blobs against frozen P01 inventory; write external retention receipt and own metadata only. No product edits, native run, cleanup deletion or repeated product review.",
+      "id": "E2E-01-SPACE-I01c-RUNTIME-CLEAN-R01",
+      "kind": "bounded_existing_peer_independent_host_cleanup_review",
+      "focus": "Existing Stadt checks actual published CLEAN-I01 candidate,58 retained evidence hashes/exact inventory,protected source and fixture bindings,own metadata-only diff and qualified incoming2b4912f integration. No repeated product review or general plan round.",
       "sourcePlan": "ROADMAP-E2E01-ATLAS-HOST-CLEANUP-PLAN.md",
       "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
-      "dependency": "CITY-HOST-R02 and separate reviewer cleanup actually PASS and hash-bound. Existing Stadt independent CLEAN-R01 follows the own I01 candidate.",
-      "after": "Consume qualified Campaign/Data PR32 exact0a62015cf82de1c179a040c65bf3d78b85cabeb4 with actual review/owner-cleanup/fixture receipts. Hex alone wires existing AtlasRepository/FileTransaction/Recovery/Host: seven native guards and exact WorldDraft co-validation, one journal for Manifest/native writes, Prepared/Committed recovery, Save/Fresh provider-repository-mount. Re-coordinate GUI slot for subsequent actual Obsidian probe.",
-      "limits": "No new native/fresh/physical/original-parity/large-map/install/full E2E approval. Historical native currentRun and foreign checkpoint roots remain literal unchanged. E2E02–04 not started."
+      "dependency": "Exact I01 publication and retention receipt; existing independent Stadt reviewer, no new agent.",
+      "after": "After actual CLEAN-R01 PASS consume qualified PR32/0a62015cf82de1c179a040c65bf3d78b85cabeb4 in existing Atlas journal; seven native guards/exact WorldDraft,Manifest+native closure,Prepared/Committed recovery,Save/Fresh. Actual Obsidian probe requires fresh GUI-slot coordination.",
+      "limits": "No independent cleanup PASS claimed by Hex. No new native/fresh/physical/original-parity/large-map/install/full E2E proof. Historical native currentRun unchanged; E2E02–04 not started."
     },
     "review": {
       "run": "HEX-02-R02",
@@ -2982,7 +2982,7 @@
             "scope": "Reviewer cleanup only; no Hex cleanup or new product/native/full E2E approval"
           }
         },
-        "cleanup": "Own separate CLEAN-P01 planned only; CLEAN-I01 retention and independent CLEAN-R01 not yet executed.",
+        "cleanup": "Own separate CLEAN-P01 and CLEAN-I01 retention completed; independent existing Stadt CLEAN-R01 pending.",
         "nativeRan": false,
         "fullE2E": false,
         "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-visible-host-n01c-20261010/implementation.json",
@@ -3041,7 +3041,7 @@
       },
       "runtimeVisibleHostCleanup": {
         "id": "E2E-01-SPACE-I01c-RUNTIME-CLEAN-P01",
-        "state": "planned_only_not_implemented_or_reviewed",
+        "state": "retention_implemented_independent_cleanup_review_pending",
         "startedAt": "2026-10-10T09:45:26.594211+00:00",
         "finishedAt": "2026-10-10T09:52:14.547387+00:00",
         "base": "4c35a7d6482bc5583e10bf9155ce65e55e438889",
@@ -3068,7 +3068,47 @@
         "qualifiedReview": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-visible-host-cleanup-20261010/p01/qualified-review-and-cleanup-receipt.json",
         "qualifiedReviewSha256": "de527b98f1ad939b55a68630c0259e559c0efa434f06a4eb3db25527170610e2",
         "validationEvidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-visible-host-cleanup-20261010/p01/plan-validation.json",
-        "next": "Separate own CLEAN-I01 retention verification, then existing independent Stadt CLEAN-R01; qualified PR32 single-journal Manifest Save integration follows. No additional general plan or owner round."
+        "next": "Separate own CLEAN-I01 retention verification, then existing independent Stadt CLEAN-R01; qualified PR32 single-journal Manifest Save integration follows. No additional general plan or owner round.",
+        "implementation": {
+          "id": "E2E-01-SPACE-I01c-RUNTIME-CLEAN-I01",
+          "state": "PASS_implemented_retention_only_independent_cleanup_review_pending",
+          "startedAt": "2026-10-10T09:56:56.734396+00:00",
+          "completedAt": "2026-10-10T09:59:48.633766+00:00",
+          "planCandidate": "c14fadeb3e40aeba5f94c2c2fede03bdc6c11f56",
+          "checkedIntegratedSource": "550d9486d272ee9b86bc54bba6c3aedb20ed59c4",
+          "plan": "ROADMAP-E2E01-ATLAS-HOST-CLEANUP-PLAN.md",
+          "planSha256": "7b6560717f96dc994a9371f420d28eb94b5cce2dec12fa3e33200845b3136007",
+          "inventorySha256": "91c1ef87f8a1118f424e4a4796efe14f79e5c1fa83f4077496556fbe2f6194f6",
+          "retainedFilesVerified": 58,
+          "retainedBytesVerified": 40985197,
+          "retainedFileSetExact": true,
+          "allRetainedHashesUnchanged": true,
+          "protectedPlannedTrackedBindings": 561,
+          "unchangedPlannedFilesOutsideMetadataAndQualifiedIncoming": 554,
+          "protectedAllFixtureFilesVerified": 39,
+          "reviewedNativeFixtureFiles": 32,
+          "currentSourceBindings": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-visible-host-cleanup-20261010/i01/protected-source-bindings.json",
+          "sourceBindingsSha256": "15064a034d083377a6f9cc06ee38cfbb5d093fdc1388ca9e5c42ef4dc9abc9ab",
+          "currentTrackedFileBindings": 562,
+          "originalDirtyFilesVerified": 3,
+          "originalCheckoutStatusAndDirtyBytesUnchanged": true,
+          "borrowedDependencyIdentityUnchanged": true,
+          "deleteFiles": [],
+          "removeDirectories": [],
+          "deletedFiles": 0,
+          "removedDirectories": 0,
+          "unlinkedDependencies": 0,
+          "ownProductChanged": false,
+          "qualifiedIncomingIntegration": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-visible-host-cleanup-20261010/i01/incoming-integration.json",
+          "qualifiedIncomingIntegrationSha256": "d7f80075dc7caff6d05be6bc2a5d1c013378801d08f492d8d98eb58559915365",
+          "nativeRan": false,
+          "freshProcessRan": false,
+          "fullE2E": false,
+          "next": "Existing independent Stadt CLEAN-R01 on exact published I01 candidate; qualified PR32 single-journal Manifest Save follows.",
+          "retentionEvidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-visible-host-cleanup-20261010/i01/retention.json",
+          "retentionSha256": "4e607eae6ce92a96048070c24129e8d890ab9fc52fa9ea817ae081ba77931803",
+          "metadataValidation": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-visible-host-cleanup-20261010/i01/metadata-validation.json"
+        }
       }
     },
     "verification": {
@@ -4629,7 +4669,7 @@
             "scope": "Reviewer cleanup only; no Hex cleanup or new product/native/full E2E approval"
           }
         },
-        "cleanup": "Own separate CLEAN-P01 planned only; CLEAN-I01 retention and independent CLEAN-R01 not yet executed.",
+        "cleanup": "Own separate CLEAN-P01 and CLEAN-I01 retention completed; independent existing Stadt CLEAN-R01 pending.",
         "nativeRan": false,
         "fullE2E": false,
         "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-visible-host-n01c-20261010/implementation.json",
@@ -4688,7 +4728,7 @@
       },
       "runtimeVisibleHostCleanup": {
         "id": "E2E-01-SPACE-I01c-RUNTIME-CLEAN-P01",
-        "state": "planned_only_not_implemented_or_reviewed",
+        "state": "retention_implemented_independent_cleanup_review_pending",
         "startedAt": "2026-10-10T09:45:26.594211+00:00",
         "finishedAt": "2026-10-10T09:52:14.547387+00:00",
         "base": "4c35a7d6482bc5583e10bf9155ce65e55e438889",
@@ -4715,7 +4755,47 @@
         "qualifiedReview": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-visible-host-cleanup-20261010/p01/qualified-review-and-cleanup-receipt.json",
         "qualifiedReviewSha256": "de527b98f1ad939b55a68630c0259e559c0efa434f06a4eb3db25527170610e2",
         "validationEvidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-visible-host-cleanup-20261010/p01/plan-validation.json",
-        "next": "Separate own CLEAN-I01 retention verification, then existing independent Stadt CLEAN-R01; qualified PR32 single-journal Manifest Save integration follows. No additional general plan or owner round."
+        "next": "Separate own CLEAN-I01 retention verification, then existing independent Stadt CLEAN-R01; qualified PR32 single-journal Manifest Save integration follows. No additional general plan or owner round.",
+        "implementation": {
+          "id": "E2E-01-SPACE-I01c-RUNTIME-CLEAN-I01",
+          "state": "PASS_implemented_retention_only_independent_cleanup_review_pending",
+          "startedAt": "2026-10-10T09:56:56.734396+00:00",
+          "completedAt": "2026-10-10T09:59:48.633766+00:00",
+          "planCandidate": "c14fadeb3e40aeba5f94c2c2fede03bdc6c11f56",
+          "checkedIntegratedSource": "550d9486d272ee9b86bc54bba6c3aedb20ed59c4",
+          "plan": "ROADMAP-E2E01-ATLAS-HOST-CLEANUP-PLAN.md",
+          "planSha256": "7b6560717f96dc994a9371f420d28eb94b5cce2dec12fa3e33200845b3136007",
+          "inventorySha256": "91c1ef87f8a1118f424e4a4796efe14f79e5c1fa83f4077496556fbe2f6194f6",
+          "retainedFilesVerified": 58,
+          "retainedBytesVerified": 40985197,
+          "retainedFileSetExact": true,
+          "allRetainedHashesUnchanged": true,
+          "protectedPlannedTrackedBindings": 561,
+          "unchangedPlannedFilesOutsideMetadataAndQualifiedIncoming": 554,
+          "protectedAllFixtureFilesVerified": 39,
+          "reviewedNativeFixtureFiles": 32,
+          "currentSourceBindings": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-visible-host-cleanup-20261010/i01/protected-source-bindings.json",
+          "sourceBindingsSha256": "15064a034d083377a6f9cc06ee38cfbb5d093fdc1388ca9e5c42ef4dc9abc9ab",
+          "currentTrackedFileBindings": 562,
+          "originalDirtyFilesVerified": 3,
+          "originalCheckoutStatusAndDirtyBytesUnchanged": true,
+          "borrowedDependencyIdentityUnchanged": true,
+          "deleteFiles": [],
+          "removeDirectories": [],
+          "deletedFiles": 0,
+          "removedDirectories": 0,
+          "unlinkedDependencies": 0,
+          "ownProductChanged": false,
+          "qualifiedIncomingIntegration": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-visible-host-cleanup-20261010/i01/incoming-integration.json",
+          "qualifiedIncomingIntegrationSha256": "d7f80075dc7caff6d05be6bc2a5d1c013378801d08f492d8d98eb58559915365",
+          "nativeRan": false,
+          "freshProcessRan": false,
+          "fullE2E": false,
+          "next": "Existing independent Stadt CLEAN-R01 on exact published I01 candidate; qualified PR32 single-journal Manifest Save follows.",
+          "retentionEvidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-visible-host-cleanup-20261010/i01/retention.json",
+          "retentionSha256": "4e607eae6ce92a96048070c24129e8d890ab9fc52fa9ea817ae081ba77931803",
+          "metadataValidation": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-visible-host-cleanup-20261010/i01/metadata-validation.json"
+        }
       }
     },
     "repairPlan": "ROADMAP-HEX-02-REPAIR-PLAN.md",
@@ -4759,7 +4839,7 @@
       "platformIssue": 11,
       "checkpointIsAuthoritative": true
     },
-    "updatedAt": "2026-10-10T09:52:14.547387+00:00"
+    "updatedAt": "2026-10-10T09:59:48.633766+00:00"
   },
   "phase": "Phase 6: zweiter Nachbesserungslauf teilweise umgesetzt; fünf Restpositionen und unabhängiger Review offen",
   "goal": "Dungeon-Pfad bis zur vollständigen beauftragten Dungeondraft-Verhaltensgleichheit verfolgen: Bedienung und Funktion angleichen, Grafik ungefähr gleichwertig. Zuerst ROADMAP-PARITY.md mit Building und Object Tool abschließen, danach übrige Dungeon-Werkzeuge. Jede Fachphase getrennt planen, umsetzen und unabhängig reviewen; Lücken mit eigenen Nachbesserungs- und Reviewläufen schließen; danach eigene Aufräumphase mit Plan, Umsetzung und Review.",
