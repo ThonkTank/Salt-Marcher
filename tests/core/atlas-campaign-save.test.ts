@@ -87,6 +87,7 @@ class Store implements FileStore {
   readHook?: (path: string) => void;
   fault?: (path: string, after: string | null) => boolean;
   failOnce?: string;
+  failCommittedJournalOnce?: string;
   manifestChanged?: (change: CampaignRuntimeStorageChange) => void;
   offline = false;
   constructor() {
@@ -106,6 +107,11 @@ class Store implements FileStore {
     if (this.failOnce === path) {
       this.failOnce = undefined;
       throw new Error("first native CAS failed");
+    }
+    if (this.failCommittedJournalOnce === path && after !== null &&
+        JSON.parse(after).state === "committed") {
+      this.failCommittedJournalOnce = undefined;
+      throw new Error("committed journal CAS failed");
     }
     if (this.fault?.(path, after)) {
       this.offline = true;
@@ -398,6 +404,39 @@ test("World Notes prepared acknowledgment cancels cleanly after FileTransaction 
     ...rolledBackJournal,
     state: "committed",
   }), /bereits verbraucht/);
+  f.services.close();
+});
+
+test("World Notes late prepared rollback consumes the exact After-to-Before manifest event", async () => {
+  const f = await liveNavigation(), context = f.services.provider.currentContext()!,
+    beforeManifest = f.store.files.get(campaignPath)!, before = emptyWorldNotes(context),
+    noteId = campaignLocalId(id(949)),
+    change = { kind: "create" as const, id: noteId,
+      draft: { kind: "faction" as const, title: "Die Lotsen", readAloud: "", gmNotes: "",
+        relations: [], creatureId: null } },
+    after = changeWorldNotes(before, context, context, before.revision, change),
+    participant = await f.services.createWorldNotesSave!({ context, assertCurrent: () => {} }),
+    notePath = worldNotePath(context.namespace, "faction", noteId),
+    prepared = participant.prepare({
+      commandId: campaignCommandId(id(950)), context, beforeSnapshot: before,
+      afterSnapshot: after, change,
+      nativeWrites: [{ path: notePath, before: null, after: serializeWorldNote(after.records[0]!) }],
+    }),
+    journalPath = worldPath + ".journal",
+    transaction = new FileTransaction(
+      f.store, journalPath,
+      (path) => prepared.writes.some((write) => write.path === path),
+      f.store, (journal) => participant.validateRecovery(journal),
+    );
+  f.store.failCommittedJournalOnce = journalPath;
+  await assert.rejects(transaction.commit(prepared.writes, participant.transactionObserver(
+    prepared, transaction, () => { throw new Error("Rollback darf kein Receipt ausstellen."); },
+  )), /committed journal CAS failed/);
+  assert.deepEqual(f.services.provider.currentContext(), context);
+  assert.equal(f.navigation.state.kind, "active");
+  assert.equal(f.store.files.get(campaignPath), beforeManifest);
+  assert.equal(f.store.files.has(notePath), false);
+  assert.equal(f.store.files.has(journalPath), false);
   f.services.close();
 });
 
