@@ -186,11 +186,15 @@ export class DungeonGeometryGesture {
     }
   }
 
-  update(pointer: Point, snap: boolean): DungeonGeometryProposal | null {
-    // Every pointer sample replaces the visible/finalizable proposal. An
-    // invalid or rejected sample must never leave an older, hidden proposal
-    // available to pointer-up.
+  sample(
+    resolvePointer: () => Point,
+    snap: boolean,
+  ): DungeonGeometryProposal | null {
+    // Revoke the previous proposal before resolving this sample. Coordinate
+    // conversion and all later validation are therefore fail-closed without
+    // requiring a second caller-owned rejection protocol.
     this.current = undefined;
+    const pointer = resolvePointer();
     const basis = this.currentBasis();
     if (!basis || !Number.isFinite(pointer.x) || !Number.isFinite(pointer.y))
       return null;
@@ -241,11 +245,6 @@ export class DungeonGeometryGesture {
 
   cancel(): void {
     this.finish("cancelled");
-  }
-
-  /** Revoke a sample rejected by the caller before it reached update(). */
-  rejectSample(): void {
-    if (this.state === "active") this.current = undefined;
   }
 
   /** Return at most one owner change; the caller remains the only executor. */

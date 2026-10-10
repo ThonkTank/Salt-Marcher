@@ -755,7 +755,7 @@ test("Dungeon geometry proposal is pure, preserves native closure and hands off 
   assert.equal(gesture.address.contour, 0);
   assert.equal(gesture.address.point, 0);
 
-  const proposal = gesture.update({ x: 3, y: 4 }, true);
+  const proposal = gesture.sample(() => ({ x: 3, y: 4 }), true);
   assert.ok(proposal);
   assert.equal(f.dungeon.read().documentBytes, before.documentBytes);
   assert.deepEqual(f.dungeon.read().keyClosure, before.keyClosure);
@@ -817,9 +817,9 @@ test("Rejected Dungeon geometry samples revoke the visible proposal and cannot c
   f.history.undo();
   const before = snapshot(f),
     invalidTopology = geometryGesture(f);
-  assert.ok(invalidTopology.update({ x: 3, y: 4 }, false));
+  assert.ok(invalidTopology.sample(() => ({ x: 3, y: 4 }), false));
   assert.throws(
-    () => invalidTopology.update({ x: 14, y: 4 }, false),
+    () => invalidTopology.sample(() => ({ x: 14, y: 4 }), false),
     /Nullsegment/,
   );
   assert.equal(invalidTopology.preview, undefined);
@@ -827,24 +827,46 @@ test("Rejected Dungeon geometry samples revoke the visible proposal and cannot c
   assert.equal(snapshot(f), before);
 
   const invalidCoordinate = geometryGesture(f);
-  assert.ok(invalidCoordinate.update({ x: 3, y: 4 }, false));
-  assert.equal(invalidCoordinate.update({ x: Number.NaN, y: 4 }, false), null);
+  assert.ok(invalidCoordinate.sample(() => ({ x: 3, y: 4 }), false));
+  assert.equal(
+    invalidCoordinate.sample(() => ({ x: Number.NaN, y: 4 }), false),
+    null,
+  );
   assert.equal(invalidCoordinate.preview, undefined);
   assert.equal(invalidCoordinate.handoff(), null);
   assert.equal(snapshot(f), before);
 
   const corrected = geometryGesture(f);
-  const first = corrected.update({ x: 3, y: 4 }, false);
+  const first = corrected.sample(() => ({ x: 3, y: 4 }), false);
   assert.ok(first);
-  assert.throws(() => corrected.update({ x: 14, y: 4 }, false), /Nullsegment/);
-  const visible = corrected.update({ x: 2, y: 4 }, false);
+  assert.throws(
+    () => corrected.sample(() => ({ x: 14, y: 4 }), false),
+    /Nullsegment/,
+  );
+  const visible = corrected.sample(() => ({ x: 2, y: 4 }), false);
   assert.ok(visible);
   assert.notEqual(visible.change.after, first.change.after);
   assert.deepEqual(corrected.handoff(), visible.change);
   assert.equal(snapshot(f), before);
+
+  const failedResolution = geometryGesture(f),
+    initial = failedResolution.sample(() => ({ x: 3, y: 4 }), false);
+  assert.ok(initial);
+  assert.throws(
+    () => failedResolution.sample(() => {
+      throw new Error("Koordinatenauflösung fehlgeschlagen");
+    }, false),
+    /Koordinatenauflösung fehlgeschlagen/,
+  );
+  assert.equal(failedResolution.preview, undefined);
+  const recovered = failedResolution.sample(() => ({ x: 2, y: 4 }), false);
+  assert.ok(recovered);
+  assert.notEqual(recovered.change.after, initial.change.after);
+  assert.deepEqual(failedResolution.handoff(), recovered.change);
+  assert.equal(snapshot(f), before);
 });
 
-test("Atlas pointer callbacks revoke a Dungeon proposal when unprojection fails before update", () => {
+test("Atlas pointer callbacks revoke a Dungeon proposal when delayed unprojection fails", () => {
   const f = fixture();
   f.attach();
   const cityBefore = f.city.read(),
@@ -942,7 +964,7 @@ test("Atlas pointer callbacks revoke a Dungeon proposal when unprojection fails 
   assert.equal((editor as any).pointer, undefined);
 
   const fresh = geometryGesture(f);
-  assert.ok(fresh.update({ x: 2, y: 4 }, false));
+  assert.ok(fresh.sample(() => ({ x: 2, y: 4 }), false));
   fresh.cancel();
   unsubscribe();
   (editor as any).abort.abort();
@@ -958,15 +980,15 @@ test("Dungeon geometry uses the immutable actual begin pointer for off-center an
   assert.deepEqual(gesture.startPointer, { x: 4.2, y: 4.2 });
   assert.ok(Object.isFrozen(gesture.startPointer));
 
-  const shifted = gesture.update({ x: 3.2, y: 4.2 }, false),
+  const shifted = gesture.sample(() => ({ x: 3.2, y: 4.2 }), false),
     shiftedRoom = shifted?.preview.entities.find((entity) => entity.id === id(31));
   assert.ok(shiftedRoom && isStructuredRoom(shiftedRoom));
   if (shiftedRoom && isStructuredRoom(shiftedRoom))
     assert.deepEqual(shiftedRoom.polygons[0]!.outer[0], { x: 3, y: 4 });
-  assert.equal(gesture.update({ x: 4.2, y: 4.2 }, false), null);
+  assert.equal(gesture.sample(() => ({ x: 4.2, y: 4.2 }), false), null);
   assert.equal(gesture.preview, undefined);
-  assert.equal(gesture.update({ x: 3.71, y: 4.2 }, true), null);
-  const snapped = gesture.update({ x: 3.69, y: 4.2 }, true),
+  assert.equal(gesture.sample(() => ({ x: 3.71, y: 4.2 }), true), null);
+  const snapped = gesture.sample(() => ({ x: 3.69, y: 4.2 }), true),
     snappedRoom = snapped?.preview.entities.find((entity) => entity.id === id(31));
   assert.ok(snappedRoom && isStructuredRoom(snappedRoom));
   if (snappedRoom && isStructuredRoom(snappedRoom))
@@ -1056,12 +1078,12 @@ test("Parent undo invalidates a Dungeon gesture terminally without consuming its
   });
   const bytes = f.dungeon.read().documentBytes,
     gesture = geometryGesture(f);
-  assert.ok(gesture.update({ x: 3, y: 4 }, true));
+  assert.ok(gesture.sample(() => ({ x: 3, y: 4 }), true));
   const depth = f.history.undoDepth;
   assert.equal(f.history.undo(), true);
   assert.equal(gesture.status, "changed-basis");
   assert.equal(gesture.preview, undefined);
-  assert.equal(gesture.update({ x: 2, y: 4 }, true), null);
+  assert.equal(gesture.sample(() => ({ x: 2, y: 4 }), true), null);
   assert.equal(gesture.handoff(), null);
   assert.equal(f.history.undoDepth, depth - 1);
   assert.equal(f.history.canRedo, true);
@@ -1082,11 +1104,11 @@ test("Binding changes and A-to-B-to-A history remain terminally stale; a fresh b
   f.history.undo();
   assert.deepEqual(f.source.spatialState(), beforeState);
   assert.equal(gesture.status, "changed-basis");
-  assert.equal(gesture.update({ x: 3, y: 4 }, true), null);
+  assert.equal(gesture.sample(() => ({ x: 3, y: 4 }), true), null);
   assert.equal(gesture.handoff(), null);
 
   const fresh = geometryGesture(f),
-    proposal = fresh.update({ x: 3, y: 4 }, true);
+    proposal = fresh.sample(() => ({ x: 3, y: 4 }), true);
   assert.ok(proposal);
   assert.equal(fresh.status, "active");
   fresh.cancel();
@@ -1112,9 +1134,9 @@ test("Byte-identical Source, Graph and History replacement blocks the old gestur
       pointer: { x: 4, y: 4 },
       tolerance: 0.5,
     });
-  assert.ok(old.update({ x: 3, y: 4 }, true));
+  assert.ok(old.sample(() => ({ x: 3, y: 4 }), true));
   current = b;
-  assert.equal(old.update({ x: 2, y: 4 }, true), null);
+  assert.equal(old.sample(() => ({ x: 2, y: 4 }), true), null);
   assert.equal(old.status, "changed-basis");
   assert.equal(old.handoff(), null);
   assert.equal(a.history.undoDepth, 1);
@@ -1126,7 +1148,7 @@ test("Byte-identical Source, Graph and History replacement blocks the old gestur
     pointer: { x: 4, y: 4 },
     tolerance: 0.5,
   });
-  assert.ok(fresh.update({ x: 3, y: 4 }, true));
+  assert.ok(fresh.sample(() => ({ x: 3, y: 4 }), true));
   fresh.cancel();
 });
 
@@ -1135,7 +1157,7 @@ test("Dungeon geometry rejects null, locked and non-outer grips without history 
   f.attach();
   const before = snapshot(f),
     gesture = geometryGesture(f);
-  assert.equal(gesture.update({ x: 4, y: 4 }, true), null);
+  assert.equal(gesture.sample(() => ({ x: 4, y: 4 }), true), null);
   assert.equal(gesture.handoff(), null);
   assert.equal(snapshot(f), before);
 

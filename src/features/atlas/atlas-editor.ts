@@ -973,8 +973,8 @@ export class AtlasEditor {
         if (p.action === "dungeon" && this.dungeonDrag && p.moved) {
           const drag = this.dungeonDrag;
           try {
-            const preview = drag.gesture.update(
-              unprojectLocal(
+            const preview = drag.gesture.sample(
+              () => unprojectLocal(
                 drag.frame,
                 drag.camera,
                 this.renderer.viewport,
@@ -984,9 +984,6 @@ export class AtlasEditor {
             );
             this.spatial!.dungeonPreview = preview?.preview;
           } catch (error) {
-            // Coordinate conversion can fail before update(), so explicitly
-            // revoke any older proposal that is no longer visible.
-            drag.gesture.rejectSample();
             this.spatial!.dungeonPreview = undefined;
             this.status.textContent = String(error);
           }
