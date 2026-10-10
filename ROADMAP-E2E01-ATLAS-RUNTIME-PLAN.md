@@ -39,6 +39,8 @@ Produktänderung, GUI, CITY oder E2E-02–04 begonnen.
 
 #### Arbeitsstand #80
 
+Kandidat: https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/81
+
 Eingang: https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/78
 
 Die integrierte native Referenz-/Save-/Recoverybasis ist konsumiert. Sichtbare
