@@ -1,5 +1,11 @@
 # E2E-01-DUNGEON-GEOMETRY-CL-P01: P01-Vertragsartefakt aufräumen
 
+Historischer, abgeschlossener Vertrags-Cleanup. Planrepair/Produktbeitrag sind
+geliefert und über PR13 auf Shared integriert; [aktueller Anschluss](ROADMAP-E2E01-DUNGEON-GEOMETRY-PLAN.md#aktueller-anschluss-statt-erneutem-phasenlauf).
+Die folgenden getrennten Gates dokumentieren den damaligen Ablauf, keine
+neuen Cleanup- oder Reparaturaufträge. Konkrete künftige Bereinigung mit dem
+betroffenen Produktpaket nach [WORKFLOW](docs/WORKFLOW.md) liefern.
+
 Getrennter Cleanup-Planlauf des Dungeon-Strangs, 10. Oktober 2026. Basis ist
 der exakt unabhängig geprüfte PR-#23-Stand
 `ea46ba5437596aceaad955330e21c3ef4e739451`. Der Review lautet

@@ -2,7 +2,7 @@
   "repositoryOrientation": {
     "date": "2026-10-10",
     "state": "completed",
-    "scope": "Outcome delivery boundaries for #40/#41/#58, current producer consumption and removal of active specialty cleanup phase instructions. No product or acceptance approval.",
+    "scope": "Contributor continuation and priority-based task/support selection; current Dungeon geometry consumption replaces stale phase handoffs. No product or acceptance approval.",
     "branch": "active/installed-phase1",
     "entrypoint": "README.md",
     "productGoals": "docs/PRODUCT.md",
@@ -15,14 +15,16 @@
     "contextTool": "npm run context",
     "nextTaskCommand": "npm run next",
     "referenceRegister": "docs/reference/PLAN-REGISTER.md",
-    "next": "Existing package owners continue through usable flows or complete source input; task-maintenance keeps actual free implementation/support offers current, product-value translates confirmed portfolio gaps into executable delivery. No second dispatch controller.",
+    "next": "Resume owned packages directly with next --task; consume qualified Shared geometry in the current product path. Existing task-maintenance and product-value retain queue and portfolio decisions; productive #41 host-owner/authority inputs remain open.",
     "verification": {
       "repositoryStructure": "PASS (offline structure and references)",
-      "affectedSourcesAndDiff": "Read current Shared113e37f, producer integrations/claims and affected specialty instructions; documentation-only, no product tests required",
-      "foreignCheckpointAndAcceptance": "Foreign checkpoint roots and acceptance bytes preserved; no product or acceptance approval"
+      "repositoryRuleTests": "PASS 27/27 on Node22; direct CLI resume with unavailable queue, rejection of closed/non-task entries and cross-issue/PR priority regressions",
+      "liveTaskLookup": "Requested #40 resumed without queue; campaign selection opens #41. No ownership reassignment or fabricated ready package.",
+      "affectedSourcesAndDiff": "Qualified Dungeon producer/metadata heads are ancestors of promoted6a41f16; geometry module byte-identical on Shared315f09b; existing reviewer evidence cited, not repeated",
+      "foreignCheckpointAndAcceptance": "Foreign raw checkpoint segments and acceptance bytes preserved; no product or acceptance approval"
     },
     "limits": "Semantic freshness and product/domain/host acceptance remain with their owners; role contracts do not grant additional permissions.",
-    "previousOrientation": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/blob/d4c77d366659cfddf9d8ad2567ea2843d996c619/checkpoint.json",
+    "previousOrientation": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/blob/57b6c4103e1f2181aff94fca2c45f37631e627c4/checkpoint.json",
     "roleContract": "docs/AGENT-ROLES.md"
   },
   "saltMarcherReplacement": {

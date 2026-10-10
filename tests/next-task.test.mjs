@@ -1,6 +1,11 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { readyTasks, criticalTasks, supportTasks, tasksForArea } from '../tools/next-task.mjs';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { spawnSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
+import { readyTasks, criticalTasks, supportTasks, taskCandidate, tasksForArea } from '../tools/next-task.mjs';
 
 const task = (number, extra = [], state = 'open') => ({ number, state, labels: ['kind:task', 'status:ready', ...extra] });
 test('task discovery excludes owned, blocked, closed and coordination work even with a ready label', () => {
@@ -44,4 +49,58 @@ test('critical owned work stays visible without becoming a free task or showing 
   const index = { number: 12, state: 'open', labels: ['kind:coordination', 'priority:now'] };
   assert.deepEqual(criticalTasks([closed, index, owned]), [owned]);
   assert.deepEqual(readyTasks([owned]), []);
+});
+
+test('candidate choice applies product priority across issues and PR support without a review-first bias', () => {
+  const implementation = { number: 41, state: 'open', labels: ['kind:task', 'help wanted', 'priority:next'] };
+  const review = { number: 66, state: 'open', labels: ['help wanted', 'priority:next'] };
+  assert.equal(taskCandidate([implementation], [review]).number, 41);
+  const bottleneckReview = { ...review, labels: ['help wanted', 'priority:now'] };
+  assert.equal(taskCandidate([task(42, ['priority:next'])], [bottleneckReview]).source, 'pr');
+  assert.equal(taskCandidate([task(42, ['priority:now'])], [review]).number, 42);
+  assert.equal(taskCandidate([], [{ ...review, state: 'closed' }, { ...review, labels: [] }]), undefined);
+});
+
+test('owned-package resume works without queue access and still rejects closed/non-task targets', {
+  skip: process.platform === 'win32' ? 'Executable gh stub requires POSIX' : false,
+}, t => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'next-resume-'));
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+  fs.mkdirSync(path.join(root, 'docs'));
+  fs.mkdirSync(path.join(root, 'bin'));
+  fs.writeFileSync(path.join(root, 'docs/repository-policy.json'), JSON.stringify({ repository: 'test/repo' }));
+  fs.writeFileSync(path.join(root, 'bin/gh'), `#!/usr/bin/env node
+const fs = require('node:fs');
+const args = process.argv.slice(2);
+fs.appendFileSync('calls.jsonl', JSON.stringify(args) + '\\n');
+if (args[0] !== 'issue' || args[1] !== 'view' || args[2] !== '40') {
+  process.stderr.write('Unrelated queue queries are unavailable');
+  process.exit(8);
+}
+process.stdout.write(fs.readFileSync('issue.json', 'utf8'));
+`, { mode: 0o755 });
+  const issue = { number: 40, title: 'Save and fresh reopen', url: 'https://example.test/40',
+    body: 'Continue the owned repair.', state: 'OPEN', labels: [{ name: 'kind:task' },
+      { name: 'status:active' }, { name: 'status:blocked' }],
+    comments: [1, 2, 3, 4].map(number => ({ url: `comment/${number}`, body: `handoff ${number}` })) };
+  const run = value => {
+    fs.writeFileSync(path.join(root, 'issue.json'), JSON.stringify(value));
+    return spawnSync(process.execPath, [fileURLToPath(new URL('../tools/next-task.mjs', import.meta.url)),
+      '--task', '40'], { cwd: root, encoding: 'utf8', env: { ...process.env,
+        PATH: path.join(root, 'bin') + path.delimiter + process.env.PATH } });
+  };
+  const result = run(issue);
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /Requested package #40/);
+  assert.match(result.stdout, /Continue the owned repair/);
+  assert.doesNotMatch(result.stdout, /Live task queue|Free executable tasks|handoff 1/);
+  for (const number of [2, 3, 4]) assert.match(result.stdout, new RegExp(`handoff ${number}`));
+  const calls = fs.readFileSync(path.join(root, 'calls.jsonl'), 'utf8').trim().split('\n').map(JSON.parse);
+  assert.equal(calls.length, 1);
+  assert.deepEqual(calls[0].slice(0, 5), ['issue', 'view', '40', '--repo', 'test/repo']);
+  for (const invalid of [{ ...issue, state: 'CLOSED' }, { ...issue, labels: [{ name: 'kind:coordination' }] }]) {
+    const rejected = run(invalid);
+    assert.equal(rejected.status, 1);
+    assert.match(rejected.stderr, /closed or is not a work package/);
+  }
 });
