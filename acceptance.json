@@ -32,7 +32,8 @@
       "independentReview": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/55#issuecomment-6100485936",
       "confirmed": "On the exact installed Shared build, applied structured Room-Key note text was undone and redone through visible toolbar actions while Room 2, marker A, trap key and key panel remained selected. Dirty-draft Undo guard showed “Key-Entwurf zuerst Übernehmen oder Verwerfen.” and preserved both texts until the draft was discarded. Save, tab close, Quick Switcher reopen and reopening the same key preserved the final note; pre-run map hash 12661953ec93498bcfca15df2c1e1cf45c546201077ef47eb313cd7b7e4894db, post-save/reopen hash 741a159b249c99938df9ce6bcc1775f837eaf5b68eb50109aa531269c69192d7.",
       "notConfirmed": "No physical input, fresh Electron process, product latency, trap mechanics, PlayerProjection, original-map parity, Atlas promotion or broad Dungeon/E2E/product approval. The Undo toolbar had no enabled history immediately after in-app reload; one Apply was used to establish a history step before testing undo/redo.",
-      "cloudEvidence": "/workspace/scratch/gm-cloud-qa/evidence-gmux-trap-content-undo-cloud-retest-20261010-01/; 20 visible UI screenshots, exact build/install triplet hashes, QA file hashes and run notes."
+      "cloudEvidence": "/workspace/scratch/gm-cloud-qa/evidence-gmux-trap-content-undo-cloud-retest-20261010-01/; 20 visible UI screenshots, exact build/install triplet hashes, QA file hashes and run notes.",
+      "currentSharedVerification": "Latest upstream Shared product head 6ce52f1c8915c006dfdefe2261f0c0c6d77b8483; fresh dirty:false build at documentation commit 1c8d31ac004cb58e5053888a4088405d66163e7b produced a byte-identical installed/visible-tested triplet. No second UI sequence."
     }
   },
   "saltMarcherReplacement": {

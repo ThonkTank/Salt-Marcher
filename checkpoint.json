@@ -5198,8 +5198,11 @@
         "status": "partial",
         "issue8": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/8#issuecomment-6099894041"
       },
-      "publishedOnSharedHead": "2983113a3249b881c59ff74d223ad935ac2b7633 (after UI; normally integrated, no product source or target test file changed)",
-      "sourceDiffSinceTest": "Shared advanced from tested product commit 7098269810801f93be247423862373e912cda210 to 2983113a3249b881c59ff74d223ad935ac2b7633 during documentation; upstream commit changed AGENTS/CONTRIBUTING/checkpoint.repositoryOrientation/docs/REPOSITORY/tests-next-task/tools-next-task only. src/editor.ts and tests/room-key-search-panel.entry.ts remain byte-identical to tested candidate b410e7d."
+      "publishedOnSharedHead": "Shared source base integrated at 6ce52f1c8915c006dfdefe2261f0c0c6d77b8483; this documentation will publish as a normal descendant and exact commit is recorded in the Issue #8 final report.",
+      "sourceDiffSinceTest": "Shared advanced after the UI run from tested commit 7098269810801f93be247423862373e912cda210 to 6ce52f1c8915c006dfdefe2261f0c0c6d77b8483. Target src/editor.ts and tests/room-key-search-panel.entry.ts did not change. Later source diff is limited to catalog inventory/source-manifest/transcript JSON files. A fresh build from current Shared plus documentation commit 1c8d31ac004cb58e5053888a4088405d66163e7b was dirty:false; built main.js/styles.css/manifest.json equal the installed and visibly tested triplet, so no second UI sequence was needed.",
+      "postRunSharedHead": "6ce52f1c8915c006dfdefe2261f0c0c6d77b8483",
+      "postRunCurrentBuildSource": "1c8d31ac004cb58e5053888a4088405d66163e7b (documentation commit atop Shared 6ce52f1; npm run build PASS, dirty:false)",
+      "currentBuildTriplet": "main.js 0e26628c2e58a0cc10e64641305cc74a2d77ad027a18d41396e0968207deef37; styles.css a6d31c13219d4b9f49d2ecf6993106bedef2a33560c9bdfdb93106659d45bc2e; manifest.json 2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64; all match installed and visible test artifacts byte-for-byte."
     },
     "executedUiRuns": 19,
     "observedFindings": [
@@ -6508,8 +6511,11 @@
         "status": "partial",
         "issue8": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/8#issuecomment-6099894041"
       },
-      "publishedOnSharedHead": "2983113a3249b881c59ff74d223ad935ac2b7633 (after UI; normally integrated, no product source or target test file changed)",
-      "sourceDiffSinceTest": "Shared advanced from tested product commit 7098269810801f93be247423862373e912cda210 to 2983113a3249b881c59ff74d223ad935ac2b7633 during documentation; upstream commit changed AGENTS/CONTRIBUTING/checkpoint.repositoryOrientation/docs/REPOSITORY/tests-next-task/tools-next-task only. src/editor.ts and tests/room-key-search-panel.entry.ts remain byte-identical to tested candidate b410e7d."
+      "publishedOnSharedHead": "Shared source base integrated at 6ce52f1c8915c006dfdefe2261f0c0c6d77b8483; this documentation will publish as a normal descendant and exact commit is recorded in the Issue #8 final report.",
+      "sourceDiffSinceTest": "Shared advanced after the UI run from tested commit 7098269810801f93be247423862373e912cda210 to 6ce52f1c8915c006dfdefe2261f0c0c6d77b8483. Target src/editor.ts and tests/room-key-search-panel.entry.ts did not change. Later source diff is limited to catalog inventory/source-manifest/transcript JSON files. A fresh build from current Shared plus documentation commit 1c8d31ac004cb58e5053888a4088405d66163e7b was dirty:false; built main.js/styles.css/manifest.json equal the installed and visibly tested triplet, so no second UI sequence was needed.",
+      "postRunSharedHead": "6ce52f1c8915c006dfdefe2261f0c0c6d77b8483",
+      "postRunCurrentBuildSource": "1c8d31ac004cb58e5053888a4088405d66163e7b (documentation commit atop Shared 6ce52f1; npm run build PASS, dirty:false)",
+      "currentBuildTriplet": "main.js 0e26628c2e58a0cc10e64641305cc74a2d77ad027a18d41396e0968207deef37; styles.css a6d31c13219d4b9f49d2ecf6993106bedef2a33560c9bdfdb93106659d45bc2e; manifest.json 2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64; all match installed and visible test artifacts byte-for-byte."
     }
   }
 }
