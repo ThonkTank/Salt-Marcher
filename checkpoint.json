@@ -5501,20 +5501,22 @@
       "productUnchanged": true
     },
     "latestSharedIntegration": {
-      "id": "HEX-E2E01-SHARED-STRUCTURE-SYNC",
-      "state": "qualified_Shared_repository_structure_integrated",
-      "sourceCommit": "76e037b0c6baf0b7a04eaec4d47050b90146aea6",
-      "consumedShared": "11e493807c7016e3a085c6d48257f6b4c3b5004a",
-      "scope": "Incoming repository maintenance/structure CI only, no Atlas product/harness/fixture changes or Host review decision.",
-      "testsPassed": 663,
-      "structuralTestsPassed": 13,
-      "offlineStructureAndReferences": true,
+      "id": "HEX-E2E01-SHARED-TRAP-DOC-SYNC",
+      "state": "qualified_Shared_scope_mapping_integrated",
+      "sourceCommit": "ea6077884f4448e33790aa71f93b583c681e436c",
+      "consumedShared": "2f9f8857fe48c4437168fe1217bdc89174baa9b3",
+      "scope": "Shared PR49 docs/SCOPE.md trap lifecycle/persistence-transfer mapping only; no product, runtime, native harness, fixture, model or accepted gate change.",
+      "checks": {
+        "offlineStructureAndReferences": true,
+        "JSON": true,
+        "productTests": "Not repeated locally: product/tests/tools/dependencies byte-identical to fbaf009; check/663 tests/build remain directly bound to 76e037b0c6baf0b7a04eaec4d47050b90146aea6 and existing prior CI."
+      },
       "newNativeRun": false,
       "nativeSource": "892e20d737c9e4868aa44b615f8da0f97d98fb39",
-      "independentHostReview": "pending existing reviewer; no general review restart",
+      "independentHostReview": "pending existing reviewer; not restarted",
       "fullE2E": false,
-      "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-manifest-host-aba-20261010/shared-structure-sync/integration.json",
-      "sha256": "924b62da92ad1e1c3b362a6a881e7f0c379b20ac57d3c8d33f350a3c21980fc1"
+      "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-manifest-host-aba-20261010/shared-trap-sync/integration.json",
+      "sha256": "3ce6f33247a23bf746145ed2acb76f9e04962a6468ea0ce4af81238c971c07a1"
     },
     "latestCampaignBIntegration": {
       "id": "HEX-E2E01-FIXTURE-B-I01",
