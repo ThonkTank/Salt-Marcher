@@ -32,8 +32,14 @@ export class WorldNotesPanel {
   constructor(host: HTMLElement, private readonly options: WorldNotesPanelOptions) {
     const doc = host.ownerDocument;
     this.root = doc.createElement("div"); this.root.className = "dn-world-notes";
+    this.root.setAttribute("role", "region");
     this.root.setAttribute("aria-label", "Kampagnenwissen");
     const title = doc.createElement("h2"); title.textContent = "Kampagnenwissen";
+    const help = doc.createElement("details");
+    const helpTitle = doc.createElement("summary"); helpTitle.textContent = "Hilfe zu Kampagnenwissen";
+    const helpText = doc.createElement("p");
+    helpText.textContent = "Lege NPCs, Fraktionen, Quests und Gerüchte an. Vorlesetext und GM-Notizen bleiben getrennt. Beziehungen verweisen auf bestehende Einträge; Löschen muss bestätigt werden.";
+    help.append(helpTitle, helpText);
     this.search = doc.createElement("input"); this.search.type = "search";
     this.search.setAttribute("aria-label", "Notizen durchsuchen");
     this.search.addEventListener("input", () => this.renderList());
@@ -45,14 +51,14 @@ export class WorldNotesPanel {
         if (this.busy || !this.snapshot) return;
         if (this.pending) { this.message("Erst den offenen Entwurf speichern oder ausdrücklich verwerfen.", true); return; }
         this.pending = { id: options.newId(), draft: blank(kind), create: true, baseRevision: null };
-        this.renderEditor();
+        this.renderEditor(true);
       });
       actions.append(button);
     }
     this.list = doc.createElement("ul"); this.list.className = "dn-world-notes-list";
     this.editor = doc.createElement("div"); this.editor.className = "dn-world-notes-editor";
     this.status = doc.createElement("p"); this.status.setAttribute("role", "status");
-    this.root.append(title, this.search, actions, this.list, this.editor, this.status);
+    this.root.append(title, help, this.search, actions, this.list, this.editor, this.status);
     host.append(this.root);
   }
   update(snapshot: WorldNotesSnapshotV1): void {
@@ -128,12 +134,12 @@ export class WorldNotesPanel {
           readAloud: record.readAloud, gmNotes: record.gmNotes, creatureId: record.creatureId,
           relations: record.relations.map((relation) => ({ ...relation })) }, create: false,
           baseRevision: record.revision };
-        this.renderEditor();
+        this.renderEditor(true);
       });
       row.append(button); this.list.append(row);
     }
   }
-  private renderEditor(): void {
+  private renderEditor(focusName = false): void {
     this.editor.replaceChildren();
     const pending = this.pending, snapshot = this.snapshot;
     if (!pending || !snapshot) return;
@@ -202,7 +208,7 @@ export class WorldNotesPanel {
       }
       this.pending = null;
       this.retainedDrafts.delete(this.draftKey(snapshot));
-      this.message("Entwurf verworfen"); this.renderEditor();
+      this.message("Entwurf verworfen"); this.renderEditor(); this.search.focus();
     });
     form.addEventListener("submit", (event) => {
       event.preventDefault();
@@ -229,6 +235,7 @@ export class WorldNotesPanel {
       });
     }
     this.editor.append(form);
+    if (focusName) name.focus();
   }
   private async commit(change: WorldNoteChange, before: WorldNotesSnapshotV1): Promise<void> {
     this.busy = true; this.message("Speichern läuft");
@@ -243,6 +250,8 @@ export class WorldNotesPanel {
       this.pending = null; this.message("Gespeichert");
       this.retainedDrafts.delete(this.draftKey(confirmed));
       this.renderList(); this.renderEditor();
+      (Array.from(this.list.querySelectorAll<HTMLButtonElement>("button"))
+        .find((button) => button.dataset.worldId === change.id) ?? this.search).focus();
     } catch (error) {
       if (!this.destroyed && stamp === this.generation) {
         this.message(`Speicherung nicht bestätigt: ${String(error)}`, true);

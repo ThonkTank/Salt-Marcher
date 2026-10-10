@@ -208,12 +208,18 @@ export class AtlasCampaignManifestSave {
   ): readonly CampaignDomainOwnerProjectionV1[] {
     const byId = records(files, side),
       byPath = new Map(files.map((f) => [f.path, f]));
-    const ownerIds = manifest.registry.owners.map((o) => o.ownerId).sort();
-    if (exact(ownerIds) !== exact(["atlas", "city", "dungeon"]))
+    const nativeOwnerIds = new Set(["atlas", "city", "dungeon"]),
+      ownerIds = manifest.registry.owners
+        .filter((owner) => nativeOwnerIds.has(owner.ownerId))
+        .map((owner) => owner.ownerId)
+        .sort();
+    if (exact(ownerIds) !== exact([...nativeOwnerIds].sort()))
       throw new Error("Kein autorisierter nativer Owner-Save-Vertrag.");
     if (
       byId.size !==
-      manifest.registry.owners.reduce((n, o) => n + o.records.length, 0) +
+      manifest.registry.owners
+        .filter((owner) => nativeOwnerIds.has(owner.ownerId))
+        .reduce((n, o) => n + o.records.length, 0) +
         extensions.reduce((n, e) => n + e.document.sections.length + 2, 0)
     )
       throw new Error(
@@ -233,6 +239,9 @@ export class AtlasCampaignManifestSave {
       this.digest,
     );
     return manifest.registry.owners.map((owner) => {
+      // Native Atlas save proves only its three owners. Other Campaign owners
+      // remain byte-for-byte unchanged and are still covered by the manifest CAS.
+      if (!nativeOwnerIds.has(owner.ownerId)) return owner;
       if (
         owner.source.adapterType !== `native-${owner.ownerId}` ||
         owner.schemaRevision !== `schema:${owner.ownerId}:e2e01` ||

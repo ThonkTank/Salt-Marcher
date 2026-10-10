@@ -30,7 +30,7 @@ Eigene Arbeit fortsetzen. Bei echtem Blocker fehlenden Eingang einmal am Paket n
 | Übernahme | Claims/PRs prüfen, Rolle und Scope mit Branch/Basis nennen, soweit nicht eindeutig. Nach dem Claim erneut lesen: Erster eindeutiger, nicht zurückgegebener Claim gilt; bei Kollision vor Änderungen stoppen und getrennten Beitrag wählen. `ready` durch `active` ersetzen und aktuellen Owner im Haupttext pflegen. GitHub-Labels sind keine atomare Reservierung; Assignees desselben Accounts reichen nicht. |
 | Blocker | Fehlenden Eingang/Empfänger nennen; `blocked` und gegebenenfalls GitHub-Abhängigkeit pflegen. Nach Lieferung neu bewerten; aktive Arbeit darf blockiert sein. |
 | Unterstützung / Review | Freien Beitrag mit Eingang, Grenze, Umgebung und Empfänger im bestehenden Issue/PR anbieten und `help wanted` setzen; bei Besetzung/Erledigung entfernen oder verbleibendes Angebot nachführen. Reviewer übernimmt dort selbst und bindet exakten Commit. Vereinbarter unabhängiger Reviewer ist ein anderer als der Autor; besessene Prüfung/Hostslot erhalten. Unterstützungsclaim übernimmt nicht das Parentpaket. Kein eigenes Issue je Review-/Testschritt. |
-| Übergabe | Ergebnis/Beleg und nächsten Schritt in Haupttext/Kommentar nachführen, wie unten beschrieben. |
+| Übergabe | Paketowner ersetzt den verlinkten Lieferstand mit der Lieferung; Unterstützer nennt einmal Ergebnis/Beleg und die Konsequenz für den Empfänger. Keine laufende Issuekopie, siehe unten. |
 | Abschluss | Ergebnis belegen, Issue schließen, Arbeitsstatuslabels entfernen; Parent und Abhängigkeiten nachziehen. Nur ausführbare freie Nachfolger als `ready` anbieten. Teilabschluss schließt kein Produktgate. |
 | Integration | Eigene Checkpoint-/Abnahmeänderung und Dokumentationsdelta mitliefern; Integrationsowner aktualisiert nur den betroffenen gemeinsamen Lieferpfad. |
 
@@ -85,10 +85,24 @@ liefert Quellenrevision und vollständigen Issue-Snapshot, `--comments` nur die
 letzten drei Kommentare. Ältere Claims/Entscheidungen bei Bedarf direkt prüfen.
 
 Arbeitsabschnitt mit der zusammengehörigen Lieferung oder tatsächlichem
-Blockerwechsel ändern. Contributors liefern Ergebnisse einmal am zuständigen
-PR/Issue; der Paketowner führt ihre Konsequenz im vorhandenen Fachort nach.
-Unterstützung überträgt keinen Parent-/Fachbesitz. Aufgabenpflege korrigiert
-veraltete Einstiege, eröffnet aber keinen konkurrierenden Lieferstand.
+Blockerwechsel ändern. Der Paketowner ersetzt dabei erledigte Warteanweisungen,
+benennt jetzt konsumierbare Eingänge und den nächsten ausführbaren Beitrag samt
+Empfänger; weiter offene Grenzen bleiben sichtbar. Kein angehängter Laufbericht.
+Neue Hinweise beim Wiedereinstieg auf diese Konsequenz prüfen und dann umsetzen,
+begründet verwerfen oder den tatsächlichen fehlenden Eingang benennen.
+
+Unterstützer veröffentlichen Ergebnis/Beleg und geänderte Konsequenz einmal am
+zuständigen PR/Issue. Der Paketowner übernimmt nur deren Konsequenz in den Fachort;
+keine kopierten Vollberichte und kein zweiter Kommentar über die Gedächtnispflege.
+Ohne Plan-/Repositorybefugnis die Änderung dem Owner übergeben, statt im Issue
+einen konkurrierenden Stand anzulegen. Unterstützung überträgt keinen Parentbesitz.
+Unveränderte Eingänge erzeugen keine Aktualisierung oder erneute Blockermeldung.
+
+Besitzt das eigene aktive Paket einen passenden vorhandenen Fachplan, bei dessen
+nächster sachlicher Bearbeitung den bestehenden Issueeinstieg einmal daran
+anschließen und die alte veränderliche Kopie entfernen. Keine zusätzliche
+Migrationsaufgabe, neue Statusdatei oder flächendeckende Aufräumrunde. Verweise,
+fremde Inhalte und Besitz erhalten; feste Issueänderungen wie unten kontrollieren.
 
 Vor Bearbeitung Remote lesen; vor Veröffentlichung erneut fetch und eingehende
 Arbeit integrieren. Hat sich derselbe Arbeitsabschnitt gegenüber der eigenen

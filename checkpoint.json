@@ -4,15 +4,15 @@
     "state": "completed",
     "roleContract": "docs/AGENT-ROLES.md#repository-maintenance",
     "repositoryContract": "docs/REPOSITORY.md",
-    "evaluatedShared": "6c0663763311085385a5beeb370c5b51030efebd",
-    "scope": "Replace automatic issue-body writes with preview-only tooling and revision-pinned work context in the existing SaltMarcher plan for 68/69. Preserve package ownership and all product/host gates.",
-    "next": "Maintain task delivery context in its explicitly linked existing plan with substantive package work; next reads the default-branch section at an identified revision. No automatic issue-body publication. Reconcile concurrent same-section edits before normal Git push.",
+    "evaluatedShared": "22d664e5cba23881eb9bb975f1757b2beafc2b05",
+    "scope": "Make canonical work-state upkeep an explicit agent instruction and resolve task-maintenance handoff without extending its repository rights. Existing seven project automations already load current default-branch contracts.",
+    "next": "Apply the common role contract during substantive package work: owner replaces consequences at the declared source, support routes one evidence-backed change, unchanged runs remain silent. Extend existing-plan links as owned packages are actually edited; no extra cleanup controller.",
     "verification": [
-      "check:repo and test:repo 40/40 PASS, including indented headings, disabled apply, unavailable/duplicate sources and an actual two-checkout stale push/merge conflict",
-      "68/69 unchanged claims and latest consumer handoffs used; GUI/native Save/Fresh qualification remains open",
-      "Only repositoryOrientation changed; foreign checkpoint and acceptance bytes preserved"
+      "Documentation-only contract/source/diff and repository-structure checks; no product/GUI qualification",
+      "Seven enabled project automation prompts inspected: all load AGENTS and AGENT-ROLES from the current default branch; no copied procedure or schedule changes",
+      "Only repositoryOrientation edited; all foreign checkpoint/acceptance bytes preserved"
     ],
-    "previousOrientation": "3f6e071"
+    "previousOrientation": "22d664e"
   },
   "saltMarcherReplacement": {
     "date": "2026-10-10",
