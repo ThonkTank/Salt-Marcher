@@ -188,45 +188,12 @@ export class AtlasCampaignHost {
     }
   }
   async navigate(target: Readonly<AtlasNavigationTarget>): Promise<void> {
-    const navigation = this.navigation,
-      state = navigation.state;
+    const navigation = this.navigation, state = navigation.state;
     if (state.kind !== "active") throw new Error(state.reason);
-    const record = state.inventory.records.find(
-      (r) =>
-        r.kind === target.kind &&
-        r.documentId === target.documentId &&
-        r.id === target.recordId,
-    );
-    const owner = state.projection.owners.find(
-      (o) => o.ownerId === record?.ownerId,
-    );
-    if (!record || !owner)
-      throw new Error(
-        "Dieses Ziel ist noch kein bestätigter Kampagnenbestand.",
-      );
-    const capture = await state.repository.captureNative({
-      worldId: state.inventory.worldId,
-      assertCurrent: state.assertCurrent,
-      additionalLocations: state.inventory.files
-        .filter((f) => f.kind === "location")
-        .map((f) => ({ id: f.id!, path: f.path })),
-    });
     state.assertCurrent();
     if (this.closed || navigation !== this.navigation)
       throw new Error("Atlasansicht wurde abgelöst.");
-    await navigation.navigate({
-      context: state.context,
-      worldId: state.inventory.worldId,
-      mountGeneration: state.generation,
-      registryRevision: state.projection.registryRevision,
-      projectionDigest: state.projection.projectionDigest,
-      ownerId: owner.ownerId,
-      ownerRevision: owner.ownerRevision,
-      sourceGeneration: owner.source.generation,
-      sourceDigest: capture.sourceDigest,
-      basis: capture.basis,
-      target: { ...target },
-    });
+    await navigation.navigateCurrent(target);
   }
   details(locationId: string): AtlasDetailEntryModel {
     const state = this.navigation.state;

@@ -184,9 +184,10 @@ function setupDOM() {
     content: document.querySelector<HTMLElement>("#host")!,
   };
 }
-async function fixture(nativeSave = false, unsupportedOwner = false) {
+async function fixture(nativeSave = false, unsupportedOwner = false, initialReady?: Promise<void>) {
   const dom = setupDOM(),
     vault = new Vault();
+  if (initialReady) AtlasRenderer.prototype.init = async () => { await initialReady; };
   let aManifestBytes = readFileSync(
     root + seed.campaign.input.fixtureFile,
     "utf8",
@@ -253,7 +254,7 @@ const locationTarget = {
   roomId: null,
 };
 
-test("diagnostic: enabled native detail button rejects navigation during queued terrain hydration", async () => {
+test("enabled native detail button waits for queued terrain hydration before guarded navigation", async () => {
   const f = await fixture();
   await f.host().navigate(locationTarget);
   const before = active(f), editor = f.editor()!, repository = before.repository as any;
@@ -303,34 +304,85 @@ test("diagnostic: enabled native detail button rejects navigation during queued 
   // Exercise the existing visible, enabled DetailEntry callback, not a direct test-only target.
   f.click(currentHouse);
   assert.ok(navigation);
-  const failedNavigation = assert.rejects(navigation, /Native Atlas-Erfassung ist veraltet/);
+  await tick();
+  assert.equal((editor as any).inputBlocked, true);
+  assert.equal(editor.renderer.relativeCamera, camera);
+  assert.equal(trace.length, 0); // No capture before the requested hydration completes.
   release();
   await loading;
-  await failedNavigation;
+  await navigation;
   await tick();
-  assert.equal(trace.length, 1);
-  const failed = trace[0] as any;
-  assert.equal(failed.failed, true);
-  assert.equal(failed.sameSource, true);
-  assert.equal(failed.actual.generation, failed.pin.generation);
-  assert.equal(failed.actual.repositoryEpoch, failed.pin.repositoryEpoch);
-  assert.ok(failed.actual.historyEpoch > failed.pin.historyEpoch);
-  assert.equal(failed.inputBlocked, false);
-  assert.ok(failed.terrainCells > 0);
+  assert.ok(trace.length > 0);
+  for (const row of trace as any[]) {
+    assert.equal(row.failed, false);
+    assert.equal(row.sameSource, true);
+    assert.deepEqual(row.actual, row.pin);
+    assert.equal(row.inputBlocked, true);
+    assert.equal(row.loadingVisible, false);
+    assert.equal(row.loadingLocations, false);
+    assert.ok(row.terrainCells > 0);
+  }
+  assert.equal((editor as any).inputBlocked, false);
   assert.equal(active(f).context.contextToken, before.context.contextToken);
+  assert.equal(active(f).repository, before.repository);
   assert.equal(active(f).history, before.history);
-  assert.equal(editor.renderer.relativeCamera, camera);
+  assert.equal(active(f).renderer, before.renderer);
+  assert.equal(editor.terrain, before.repository.terrainSource);
+  assert.equal(editor.renderer.relativeCamera.metersPerPixel, 0.1);
+  assert.deepEqual(editor.renderer.camera.center, { x: -18, y: 8 });
   assert.equal(before.history.undoDepth, 0);
-  assert.match(f.content.textContent!, /Ziel konnte nicht geöffnet werden/);
+  assert.doesNotMatch(f.content.textContent!, /Ziel konnte nicht geöffnet werden/);
   assert.deepEqual(f.vault.bytes, bytes);
   assert.equal(f.vault.writes.length, writes);
-  console.log("HEX_CAPTURE_HYDRATION_DIAGNOSIS " + JSON.stringify({
+  console.log("HEX_CAPTURE_HYDRATION_REPAIR " + JSON.stringify({
     kind: "actual_AtlasView_DOM_Vault_controlled_read_delay", trace,
     visibleButtonEnabled: true, fileWrites: 0, historyCommands: 0,
-    contextUnchanged: true, cameraUnchanged: true,
-    nativeGUI: false, productDefectStillOpen: true,
+    contextUnchanged: true, sameRepositoryHistoryRenderer: true, cameraReachedHouse: true,
+    nativeGUI: false, controlledDOMRegressionPassed: true,
   }));
   repository.captureCurrent = captureCurrent;
+  f.vault.readHook = undefined;
+  await f.close();
+});
+
+test("actual current Host navigation awaits pending renderer initialization before its first capture", async () => {
+  let release!: () => void;
+  const ready = new Promise<void>((resolve) => { release = resolve; });
+  const f = await fixture(false, false, ready), before = active(f), editor = f.editor()!;
+  const camera = editor.renderer.relativeCamera;
+  let captures = 0;
+  const capture = before.repository.captureNative.bind(before.repository);
+  before.repository.captureNative = (request) => { captures++; return capture(request); };
+  const pending = f.host().navigate(locationTarget);
+  await tick();
+  assert.equal(captures, 0); assert.equal(editor.renderer.relativeCamera, camera);
+  assert.equal((editor as any).inputBlocked, true);
+  release(); await pending;
+  assert.ok(captures > 0); assert.equal((editor as any).inputBlocked, false);
+  assert.equal(active(f).repository, before.repository); assert.equal(active(f).renderer, before.renderer);
+  assert.match(f.content.textContent!, /Stadtplan:/);
+  await f.close();
+});
+
+test("failed pending visible terrain read rejects current navigation before capture and camera effects", async () => {
+  const f = await fixture(), before = active(f), editor = f.editor()!;
+  let release!: () => void, entered!: () => void;
+  const gate = new Promise<void>((resolve) => { release = resolve; });
+  const started = new Promise<void>((resolve) => { entered = resolve; });
+  const camera = editor.renderer.relativeCamera, bytes = new Map(f.vault.bytes), writes = f.vault.writes.length;
+  f.vault.readHook = async (path) => {
+    if (path.includes("/terrain/")) { entered(); await gate; throw new Error("controlled terrain read failure"); }
+  };
+  let captures = 0;
+  const capture = before.repository.captureNative.bind(before.repository);
+  before.repository.captureNative = (request) => { captures++; return capture(request); };
+  const loading = (editor as any).loadVisible(); await started;
+  const pending = f.host().navigate(locationTarget), rejected = assert.rejects(pending, /Landschaft konnte nicht geladen werden/);
+  release(); await loading; await rejected;
+  assert.equal(captures, 0); assert.equal(editor.renderer.relativeCamera, camera);
+  assert.equal(active(f).repository, before.repository); assert.equal(active(f).history, before.history);
+  assert.equal((editor as any).inputBlocked, false);
+  assert.deepEqual(f.vault.bytes, bytes); assert.equal(f.vault.writes.length, writes);
   f.vault.readHook = undefined;
   await f.close();
 });

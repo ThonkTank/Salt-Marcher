@@ -180,7 +180,7 @@ export class AtlasView extends FileView {
     return {
       repository, renderer: editor.renderer,
       setInputBlocked: (blocked) => { editor.setInputBlocked(blocked); },
-      prepareNavigation: async (current) => { current(); await editor.flush(); current(); },
+      prepareNavigation: async (current) => { current(); await editor.prepareNavigation(); current(); },
       prepareLeave: async (current) => { current(); await editor.flush(); current(); await repository.persistDraft(); current(); },
       navigate: (target, current) => { current(); editor.navigate(target, current); },
       resume: (current) => {

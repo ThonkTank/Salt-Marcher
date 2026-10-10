@@ -266,6 +266,44 @@ export class AtlasCampaignNavigation {
       assertCurrent: () => this.guard(entry.input.context, entry.input.generation, entry),
       additionalLocations: entry.input.inventory.files.filter((f) => f.kind === "location").map((f) => ({ id: f.id!, path: f.path })) });
   }
+  /** A current UI action has no earlier Source basis. Prepare and capture in one owned run. */
+  async navigateCurrent(raw: AtlasNavigationTarget): Promise<void> {
+    const destination = target(raw);
+    return this.run(async () => {
+      const entry = this.active; if (!entry) throw new Error("Kein aktiver Atlasmount.");
+      const guard = () => this.guard(entry.input.context, entry.input.generation, entry);
+      guard();
+      const record = entry.input.inventory.records.find((r) => r.id === destination.recordId &&
+        r.documentId === destination.documentId && r.kind === destination.kind);
+      if (!record || record.availability !== "available" ||
+          !entry.input.projection.owners.some((o) => o.ownerId === record.ownerId))
+        throw new Error("Dieses Ziel ist noch kein bestätigter Kampagnenbestand.");
+      entry.mount.setInputBlocked(true);
+      try {
+        await this.verify(entry); guard();
+        await entry.mount.prepareNavigation(guard); guard();
+        await this.commitNavigation(entry, destination, guard);
+      } finally {
+        if (this.active === entry && sameContext(entry.input.context, this.ports.currentContext()))
+          entry.mount.setInputBlocked(false);
+      }
+    });
+  }
+  private async commitNavigation(entry: MountEntry, destination: AtlasNavigationTarget, guard: () => void): Promise<void> {
+    const captured = await this.capture(entry); guard(); checkFiles(captured, entry.input.inventory);
+    const resolved = resolve(captured, destination);
+    await this.verify(entry); guard();
+    await entry.repository.verifyNativeCapture(captured); guard();
+    let frame: RigidFrame | null = null;
+    if (destination.kind === "world") frame = { anchor: captured.world.origin, offsetsMeters: [], rotationRadians: 0, metersPerUnit: 1, originUnits: { x: 0, y: 0 }, precisionMeters: 0 };
+    else if (destination.kind === "location" || destination.kind === "location-section") {
+      const placement = captured.world.placements.find((p) => p.locationId === destination.documentId);
+      if (placement) frame = { anchor: placement.position, offsetsMeters: [], rotationRadians: 0, metersPerUnit: 1, originUnits: { x: 0, y: 0 }, precisionMeters: 0 };
+    } else frame = entry.repository.spatialGraph.frame(destination.documentId);
+    guard();
+    if (entry.mount.navigate(immutable({ target: destination, ...resolved, frame }), guard) !== undefined)
+      throw new Error("Kamera-/Keynavigation muss synchron abschließen.");
+  }
   async open(expected: CampaignContextProjection, worldId: string): Promise<void> {
     const c = context(expected), id = nativeId(worldId);
     return this.run(() => this.mount(c, id));
@@ -339,19 +377,7 @@ export class AtlasCampaignNavigation {
       entry.mount.setInputBlocked(true);
       try {
         await entry.mount.prepareNavigation(guard); guard();
-        const captured = await this.capture(entry); guard(); checkFiles(captured, i);
-        const resolved = resolve(captured, request.target);
-        await this.verify(entry); guard();
-        await entry.repository.verifyNativeCapture(captured); guard();
-        let frame: RigidFrame | null = null;
-        if (request.target.kind === "world") frame = { anchor: captured.world.origin, offsetsMeters: [], rotationRadians: 0, metersPerUnit: 1, originUnits: { x: 0, y: 0 }, precisionMeters: 0 };
-        else if (request.target.kind === "location" || request.target.kind === "location-section") {
-          const placement = captured.world.placements.find((p) => p.locationId === request.target.documentId);
-          if (placement) frame = { anchor: placement.position, offsetsMeters: [], rotationRadians: 0, metersPerUnit: 1, originUnits: { x: 0, y: 0 }, precisionMeters: 0 };
-        } else frame = entry.repository.spatialGraph.frame(request.target.documentId);
-        guard();
-        if (entry.mount.navigate(immutable({ target: request.target, ...resolved, frame }), guard) !== undefined)
-          throw new Error("Kamera-/Keynavigation muss synchron abschließen.");
+        await this.commitNavigation(entry, request.target, guard);
       } finally { if (this.active === entry && sameContext(entry.input.context, this.ports.currentContext())) entry.mount.setInputBlocked(false); }
     });
   }

@@ -183,6 +183,61 @@ test("navigation rejects stale expected Context/Owner/Source/basis and keeps cam
   assert.equal(m.focus, null); assert.equal(m.prepareCalls, 0); assert.equal(m.blocked, false); assert.deepEqual(m.store.writes, []);
 });
 
+test("current UI target preparation owns the queue, copies the target and captures only after preparation", async () => {
+  const f = await fixture(), m = await f.open(), entered = deferred(), resume = deferred();
+  const history = m.repository.terrainSource.history, renderer = m.renderer;
+  let reads = 0;
+  m.store.onRead = async () => { reads++; };
+  m.prepareHook = async (guard) => { guard(); entered.resolve(); await resume.promise; guard(); };
+  const destination = { ...room }, pending = f.navigation.navigateCurrent(destination);
+  await entered.promise;
+  assert.equal(reads, 0); assert.equal(m.blocked, true); assert.equal(m.focus, null);
+  destination.recordId = id(999);
+  await assert.rejects(f.navigation.navigateCurrent(loc), /beschäftigt/);
+  resume.resolve(); await pending;
+  assert.deepEqual(m.focus!.target, room); assert.equal(m.blocked, false); assert.equal(m.prepareCalls, 1);
+  assert.equal(m.repository.terrainSource.history, history); assert.equal(m.renderer, renderer);
+  assert.deepEqual(m.store.writes, []);
+});
+
+test("late current-target preparation after Context ABA cannot commit or release the newer run", async () => {
+  const f = await fixture(), old = await f.open(), entered = deferred(), resume = deferred();
+  old.prepareHook = async (guard) => { entered.resolve(); await resume.promise; guard(); };
+  const pending = f.navigation.navigateCurrent(loc), rejected = assert.rejects(pending, /veraltet/);
+  await entered.promise;
+  await f.service.activate(command(2), b); f.navigation.contextChanged();
+  await f.service.activate(command(3), a); f.navigation.contextChanged();
+  const fresh = await f.open(), freshEntered = deferred(), freshResume = deferred();
+  fresh.prepareHook = async (guard) => { freshEntered.resolve(); await freshResume.promise; guard(); };
+  const freshPending = f.navigation.navigateCurrent(room);
+  await freshEntered.promise; resume.resolve(); await rejected;
+  assert.equal(old.focus, null); assert.equal(old.disposed, true); assert.equal(old.blocked, true);
+  assert.equal(fresh.blocked, true); assert.equal(fresh.focus, null);
+  const current = f.navigation.state;
+  if (current.kind !== "active") assert.fail(current.reason);
+  assert.equal(current.renderer, fresh.renderer);
+  await assert.rejects(f.navigation.navigateCurrent(loc), /beschäftigt/);
+  freshResume.resolve(); await freshPending;
+  assert.deepEqual(fresh.focus!.target, room); assert.equal(fresh.blocked, false);
+  assert.deepEqual(old.store.writes, []);
+});
+
+test("current-target capture still rejects edit/Undo ABA during its native read without retry", async () => {
+  const f = await fixture(), m = await f.open(), entered = deferred(), resume = deferred();
+  let captureReads = 0;
+  m.store.onRead = async (path) => {
+    if (path === manifest.input[0]!.path) { captureReads++; entered.resolve(); await resume.promise; }
+  };
+  const pending = f.navigation.navigateCurrent(room), rejected = assert.rejects(pending, /Native Atlas-Erfassung ist veraltet/);
+  await entered.promise;
+  const document = m.repository.location(id(11)).read()!;
+  m.repository.editLocation({ ...document, name: document.name + " changed" });
+  m.repository.terrainSource.history.undo();
+  resume.resolve(); await rejected;
+  assert.equal(captureReads, 1); assert.equal(m.focus, null); assert.equal(m.blocked, false);
+  assert.deepEqual(m.store.writes, []);
+});
+
 test("unknown/unavailable/stale Registry and foreign/duplicate/unavailable inventory fail without mount activation", async () => {
   for (const mode of ["unknown", "unavailable"] as const) {
     const f = await fixture(); f.registryMode(mode); await assert.rejects(f.open()); assert.equal(f.mounts.length, 0);

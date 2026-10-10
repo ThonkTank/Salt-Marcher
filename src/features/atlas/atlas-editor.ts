@@ -83,9 +83,11 @@ export class AtlasEditor {
   private flushing = false;
   private closed = false;
   private inputBlocked = false;
+  private initialization?: Promise<void>;
   private detailEntry?: AtlasDetailEntry;
   private detailHost?: HTMLElement;
   private loadingVisible = false;
+  private visibleLoad: Promise<void> = Promise.resolve();
   private visibleLoadFailed = false;
   private key?: LocationKeyPanel;
   private roomKey?: AtlasRoomKeyPanel;
@@ -108,6 +110,7 @@ export class AtlasEditor {
   private loadedLocations = new Set<string>();
   private failedLocations = new Set<string>();
   private loadingLocations = false;
+  private locationLoad: Promise<void> = Promise.resolve();
   private drag?: {
     id: string;
     source: TerrainSource;
@@ -338,8 +341,10 @@ export class AtlasEditor {
     return !!(this.key?.dirty || this.roomKey?.dirty);
   }
   setInputBlocked(blocked: boolean): void {
+    const released = this.inputBlocked && !blocked;
     this.inputBlocked = blocked;
     this.root.inert = blocked;
+    if (released && !this.closed) this.renderer.schedule();
   }
   /** A revoked old draft remains inspectable under its old identity; no more map effects. */
   suspend(): void {
@@ -459,8 +464,8 @@ export class AtlasEditor {
       );
     });
   }
-  async init(): Promise<void> {
-    await this.renderer.init();
+  init(): Promise<void> {
+    return this.initialization ??= this.renderer.init();
   }
   private refreshHistory(): void {
     this.undoButton.disabled =
@@ -580,9 +585,24 @@ export class AtlasEditor {
       this.flushing = false;
     }
   }
-  private async loadVisible(): Promise<void> {
+  /** The navigator blocks input first, so only already requested visible data can finish. */
+  async prepareNavigation(): Promise<void> {
+    this.storage.assertCurrent?.();
+    await this.init();
+    this.storage.assertCurrent?.();
+    await Promise.all([this.visibleLoad, this.locationLoad]);
+    this.storage.assertCurrent?.();
+    if (this.visibleLoadFailed) throw new Error("Landschaft konnte nicht geladen werden.");
+    await this.flush();
+    this.storage.assertCurrent?.();
+  }
+  private loadVisible(): Promise<void> {
+    if (this.closed || this.inputBlocked) return this.visibleLoad;
     void this.loadLocations();
-    if (this.loadingVisible || this.closed || this.visibleLoadFailed || this.inputBlocked) return;
+    if (this.loadingVisible || this.visibleLoadFailed) return this.visibleLoad;
+    return this.visibleLoad = this.hydrateVisible();
+  }
+  private async hydrateVisible(): Promise<void> {
     this.loadingVisible = true;
     const source = this.terrain,
       bounds = this.renderer.visibleTerrainBounds(),
@@ -631,7 +651,11 @@ export class AtlasEditor {
     } else if (!this.pendingKey) this.key?.clear();
     this.renderer.selectedLocation = id;
   }
-  private async loadLocations(): Promise<void> {
+  private loadLocations(): Promise<void> {
+    if (this.closed || this.inputBlocked || this.loadingLocations) return this.locationLoad;
+    return this.locationLoad = this.hydrateLocations();
+  }
+  private async hydrateLocations(): Promise<void> {
     const port = this.storage.locations;
     if (!port || this.loadingLocations || this.closed) return;
     this.loadingLocations = true;
