@@ -154754,5 +154754,25 @@
         }
       }
     ]
+  },
+  "p04MediaInventoryHost": {
+    "state": "implementation_r01_repair_candidate_checked_r02_pending",
+    "issue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/41",
+    "requirements": [
+      "Bind one materialized media inventory to the exact CampaignContext, Registry ID/revision, ownership projection digest and complete AudioSource ID set.",
+      "Hash the actual stable metadata and media bytes; never accept manifest-asserted byte digests without reading their files.",
+      "Reject unsafe, duplicate or colliding paths and malformed available/missing records before exposing a confirmed inventory.",
+      "Fail closed if manifest or asset bytes change during read, and return stale if any bound byte changes before acceptance.",
+      "Use the existing MwsImportMediaInventoryPort and M/W/S review contract without creating another ownership, remap or publish authority."
+    ],
+    "confirmed": [
+      "Seven focused automated cases cover actual byte hashing, late mutation, manifest/asset read races, context/registry/ID/path guards, permanent and concurrent cross-Campaign ambiguity and explicit missing assets.",
+      "The Obsidian service now supplies a thin Vault byte reader and factory for the existing Complete-Import media review port."
+    ],
+    "notConfirmed": [
+      "Independent code/contract review and Shared integration.",
+      "Visible import UI, archive validation, total remap/publish, source removal, restart, hostile archive matrix or cross-OS roundtrip.",
+      "P02/P04, E2E-01 or platform acceptance."
+    ]
   }
 }
