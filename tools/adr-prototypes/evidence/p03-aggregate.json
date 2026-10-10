@@ -1,0 +1,264 @@
+{
+  "schemaVersion": "p03-evidence-v1",
+  "platform": "linux",
+  "architecture": "x64",
+  "electron": "44.7.0",
+  "chromium": "152.0.7977.130",
+  "windowRoles": [
+    "gm",
+    "passive-display"
+  ],
+  "passiveBridgeKeys": [
+    "readCoreStatus",
+    "readProjection",
+    "subscribeProjectionChanged"
+  ],
+  "passiveWebPreferences": {
+    "sandbox": true,
+    "contextIsolation": true,
+    "nodeIntegration": false,
+    "devTools": false,
+    "ephemeralPartition": true
+  },
+  "sequence": "scene_a:0/scene_b:50(stale)/scene_a:100/error/error/scene_b:50/restart",
+  "transitions": [
+    {
+      "generation": 1,
+      "state": "blank"
+    },
+    {
+      "generation": 1,
+      "state": "ready"
+    },
+    {
+      "generation": 2,
+      "state": "blank"
+    },
+    {
+      "generation": 3,
+      "state": "blank"
+    },
+    {
+      "generation": 3,
+      "state": "ready"
+    },
+    {
+      "generation": 4,
+      "state": "blank"
+    },
+    {
+      "generation": 4,
+      "state": "error"
+    },
+    {
+      "generation": 5,
+      "state": "blank"
+    },
+    {
+      "generation": 5,
+      "state": "error"
+    },
+    {
+      "generation": 6,
+      "state": "blank"
+    },
+    {
+      "generation": 6,
+      "state": "ready"
+    }
+  ],
+  "staleRepliesPublished": 0,
+  "privateStringMatches": 0,
+  "privateIdentityMatches": 0,
+  "privateRasterMatches": 0,
+  "pixelOraclePositiveControls": 2,
+  "messageCount": 11,
+  "messageBytes": 2623,
+  "timings": {
+    "samples": [
+      {
+        "step": "a0-blank",
+        "milliseconds": 0.3236689999999953
+      },
+      {
+        "step": "a0-ready",
+        "milliseconds": 388.172827
+      },
+      {
+        "step": "aba-blank",
+        "milliseconds": 0.19625900000005458
+      },
+      {
+        "step": "aba-ready",
+        "milliseconds": 364.5099379999999
+      }
+    ],
+    "blankP95Ms": 0.3236689999999953,
+    "readyP95Ms": 388.172827,
+    "budgetsMs": {
+      "blank": 100,
+      "ready": 1000
+    }
+  },
+  "deniedSinks": {
+    "attempts": {
+      "popup": true,
+      "network": true,
+      "file": true,
+      "clipboard": true,
+      "permission": true,
+      "storageWriteSucceeded": true,
+      "cacheWriteSucceeded": true,
+      "indexedDbWriteSucceeded": true,
+      "serviceWorkerBlocked": true,
+      "navigation": true
+    },
+    "observedMainDenials": [
+      "download",
+      "navigation",
+      "permission",
+      "popup"
+    ],
+    "protectedSinkTouches": 0
+  },
+  "passiveCapabilities": {
+    "mutation": 0,
+    "arbitraryIpc": 0,
+    "file": 0,
+    "database": 0,
+    "gmBridge": 0
+  },
+  "gmWindow": {
+    "before": {
+      "ticks": 111,
+      "note": "GM window remains independent"
+    },
+    "after": {
+      "ticks": 116,
+      "note": "GM window remains independent"
+    },
+    "unaffected": true
+  },
+  "keyboard": {
+    "active": "details",
+    "expanded": "true"
+  },
+  "accessibility": {
+    "semantic": {
+      "lang": "en",
+      "headings": 1,
+      "liveRegions": 1,
+      "unlabeledButtons": 0,
+      "horizontalOverflow": false,
+      "buttonHidden": false
+    },
+    "nodeCount": 33,
+    "names": [
+      "Party display",
+      "Old observatory",
+      "Released scene map",
+      "Show known locations",
+      "Known location legend",
+      "Old observatory",
+      "Silent observatory",
+      "Known locations",
+      "Show known locations",
+      "Old observatory",
+      "Released party-safe scene",
+      "Show known ",
+      "locations",
+      "Stone stair",
+      "Copper dome",
+      "Old ",
+      "observatory",
+      "Released party-safe ",
+      "scene",
+      "Stone stair",
+      "Copper dome",
+      "Stone stair",
+      "Copper dome",
+      "Stone stair",
+      "Copper dome"
+    ]
+  },
+  "persistenceAfterRestart": {
+    "webStorageEntries": 0,
+    "cacheKeys": 0,
+    "serviceWorkerRegistrations": 0,
+    "indexedDatabases": 0,
+    "currentGeneration": 6,
+    "currentScene": "scene_b"
+  },
+  "frames": [
+    {
+      "label": "01-a0-blank",
+      "file": "p03-frames/01-a0-blank.png",
+      "sha256": "5e03081a699fe31ed369da04b92b77a1f84d3e3714672057a141e6f193944727",
+      "width": 800,
+      "height": 492,
+      "privateRasterMatches": 0
+    },
+    {
+      "label": "02-a0-ready",
+      "file": "p03-frames/02-a0-ready.png",
+      "sha256": "b9c9dfbe82f71f59c39950023f74a5a17d8ea1f59991e6c7c7938b3c8cf70599",
+      "width": 800,
+      "height": 492,
+      "privateRasterMatches": 0
+    },
+    {
+      "label": "03-aba-blank",
+      "file": "p03-frames/03-aba-blank.png",
+      "sha256": "5e03081a699fe31ed369da04b92b77a1f84d3e3714672057a141e6f193944727",
+      "width": 800,
+      "height": 492,
+      "privateRasterMatches": 0
+    },
+    {
+      "label": "04-aba-ready",
+      "file": "p03-frames/04-aba-ready.png",
+      "sha256": "35366dffa80dbbdbc163bdc9e8c492c0b05baee2f0feed5cab38993ee339c88a",
+      "width": 800,
+      "height": 492,
+      "privateRasterMatches": 0
+    },
+    {
+      "label": "05-asset-missing",
+      "file": "p03-frames/05-asset-missing.png",
+      "sha256": "4a60a48c55be138f9a48058e2f84677db23f147cc054194015af43ba98b3e504",
+      "width": 800,
+      "height": 492,
+      "privateRasterMatches": 0
+    },
+    {
+      "label": "06-asset-corrupt",
+      "file": "p03-frames/06-asset-corrupt.png",
+      "sha256": "4a60a48c55be138f9a48058e2f84677db23f147cc054194015af43ba98b3e504",
+      "width": 800,
+      "height": 492,
+      "privateRasterMatches": 0
+    },
+    {
+      "label": "07-small-200-percent",
+      "file": "p03-frames/07-small-200-percent.png",
+      "sha256": "438a09c1d991285d684f1da51f17ce9e99add31e197915f45af8b5a22ea3a672",
+      "width": 360,
+      "height": 212,
+      "privateRasterMatches": 0
+    },
+    {
+      "label": "08-restart-current-only",
+      "file": "p03-frames/08-restart-current-only.png",
+      "sha256": "4372e2525bc1469f82e077319cef8667e62c18211b9c250b9ea50b86a5eb11f6",
+      "width": 800,
+      "height": 492,
+      "privateRasterMatches": 0
+    }
+  ],
+  "openGates": [
+    "windows",
+    "macos",
+    "heterogeneous-displays",
+    "screenreader-smoke"
+  ]
+}

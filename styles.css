@@ -1126,6 +1126,20 @@
 .dn-campaign-entry h3 { margin: 0 0 4px; }
 .dn-campaign-entry ul { display: flex; flex-wrap: wrap; gap: 8px; padding: 0; margin: 0 0 4px; list-style: none; }
 .dn-campaign-entry li { display: flex; align-items: center; gap: 6px; }
+.dn-world-notes { display: flex; flex-direction: column; gap: 8px; min-width: 0; max-width: 100%; overflow: auto; }
+.dn-world-notes h2, .dn-world-notes h3, .dn-world-notes h4, .dn-world-notes p { margin: 0; }
+.dn-world-notes-actions, .dn-world-notes-editor form { display: flex; flex-wrap: wrap; gap: 8px; min-width: 0; }
+.dn-world-notes-actions button { flex: 1 1 9rem; white-space: normal; }
+.dn-world-notes input, .dn-world-notes select, .dn-world-notes textarea { max-width: 100%; min-width: 0; }
+.dn-world-notes > input, .dn-world-notes-editor form > label { width: 100%; }
+.dn-world-notes-editor form > h3, .dn-world-notes-editor form > h4,
+.dn-world-notes-editor form > ul, .dn-world-notes-editor form > select,
+.dn-world-notes-editor form > input { width: 100%; }
+.dn-world-notes-editor label { display: flex; flex-direction: column; gap: 4px; }
+.dn-world-notes-editor textarea { width: 100%; min-height: 6em; resize: vertical; }
+.dn-world-notes-list { list-style: none; padding: 0; margin: 0; max-height: 14em; overflow: auto; }
+.dn-world-notes-list button { width: 100%; text-align: left; white-space: normal; overflow-wrap: anywhere; }
+.dn-world-notes [role="alert"] { color: var(--text-error); }
 .dn-campaign-active { color: var(--text-accent); }
 .dn-atlas-host-status { padding: 0 12px; margin: 4px 0; }
 .dn-atlas-host-status:empty, .dn-atlas-retained-drafts:empty { display: none; }
