@@ -569,6 +569,7 @@ export class DungeonPlayView extends ItemView {
     this.card = this.plugin.createDungeonMap({
       path: this.path,
       focusRoom: this.roomId,
+      compact: true,
     });
     this.contentEl.append(this.card.el);
   }

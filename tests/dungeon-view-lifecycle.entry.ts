@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { DungeonView } from "../src/ui/views";
+import { DungeonPlayView, DungeonView } from "../src/ui/views";
 import {
   dungeonViewState,
   withDungeonViewState,
@@ -222,4 +222,39 @@ test("DungeonView rename keeps serialized path and stale retarget cannot publish
   assert.equal(h.remembered.at(-1)?.path, "Maps/Test.dungeon");
   await h.view.onUnloadFile();
   assert.equal(h.releases.length, 1);
+});
+
+test("DungeonPlayView enables the existing interactive room map", async () => {
+  const { document, root } = dungeonViewTestDom();
+  const inputs: Array<{
+    path: string;
+    focusRoom?: string | null;
+    compact?: boolean;
+  }> = [];
+  let destroys = 0;
+  const plugin = {
+    createDungeonMap: (input: (typeof inputs)[number]) => {
+      inputs.push(input);
+      return {
+        el: document.createElement("div"),
+        destroy: () => { destroys++; },
+      };
+    },
+  };
+  const view = new DungeonPlayView(
+    { contentEl: root, app: {} } as never,
+    plugin as never,
+  );
+
+  await view.setState({ path: "Maps/Test.dungeon", roomId: "room-12" });
+
+  assert.deepEqual(inputs, [{
+    path: "Maps/Test.dungeon",
+    focusRoom: "room-12",
+    compact: true,
+  }]);
+  assert.equal(root.childElementCount, 1);
+
+  await view.onClose();
+  assert.equal(destroys, 1);
 });
