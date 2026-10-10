@@ -4493,7 +4493,27 @@
         }
       ]
     },
-    "currentUserGoal": "09.10.2026: vollständige Funktionsgleichwertigkeit mit Canvas of Kings, Watabou und Fantasy Town Generator, bessere Bedienung; bisherige Zweiprodukt-Ergebnisbegrenzung durch direkten Auftrag erweitert."
+    "currentUserGoal": "09.10.2026: vollständige Funktionsgleichwertigkeit mit Canvas of Kings, Watabou und Fantasy Town Generator, bessere Bedienung; bisherige Zweiprodukt-Ergebnisbegrenzung durch direkten Auftrag erweitert.",
+    "atlasDetailEntry": {
+      "plan": "ROADMAP-CITIES-ATLAS-DETAIL-ENTRY-PLAN.md",
+      "state": "planned_component_not_host_delivered",
+      "updatedAt": "2026-10-10T07:11:28.491061+00:00",
+      "requirements": [
+        "CTY-001.01",
+        "CTY-009.01"
+      ],
+      "componentReview": "not_run",
+      "hostCheck": "not_run",
+      "evidence": [
+        "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/13#issuecomment-6094937083"
+      ],
+      "open": [
+        "Implement component and meaningful DOM regressions",
+        "Independent exact-SHA review",
+        "Hex actual mount with confirmed targets/guards",
+        "Native same-Atlas route, Save/fresh process and physical usability"
+      ]
+    }
   },
   "wonderdraftParity": {
     "schemaVersion": 1,
