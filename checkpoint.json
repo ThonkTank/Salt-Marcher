@@ -542,7 +542,7 @@
       "id": "E2E-01-SPACE-I01c",
       "kind": "bounded_required_integration_after_actual_owner_contracts",
       "focus": "Use actual Campaign/Vault context, registry/ownership participant revisions and original CommandId/ReceiptId publish boundary, then pure Dungeon geometry Gestureport and one real P02/P04 CompleteImport variant. Keep one candidate/camera/history/fixture; no E2E02–04.",
-      "dependency": "Actual Campaign OWNERSHIP/provider/envelope and reviewed pure Dungeon geometry port remain required owner deliveries. Dungeon CL-R01 passed documentation-only cleanup on 060abca8432b0005b0544043778378df3e1814c5; next is immediate narrow Dungeon N01 and independent Hex P01-R02 for the still-open DUN-GEO-P01-R01-01. Geometry I01 waits for that exact-SHA plan PASS and later independent code review. No synthetic Registry/provider or port; World projection remains actual Repository.spatialGraph.world() and placements/spatial targets.",
+      "dependency": "Campaign generic Contract/Validator/Testport input is qualified on 7aa47beb1bad3d0b1560666fa1cb1677bdc8cd4e, not source-integrated. M/W/S transfer/retention awaits an exact repair SHA and scoped owner re-review. Actual productive Campaign/Vault context, Registryprovider, persistable Publish boundary and P02/P04 remain open. Reviewed pure Dungeon geometry port remains required: CL-R01 passed documentation-only cleanup on 060abca8432b0005b0544043778378df3e1814c5; separate narrow Dungeon N01 and independent Hex P01-R02 must close DUN-GEO-P01-R01-01 before geometry I01 and later code review. No synthetic Registry/provider or port; World projection remains actual Repository.spatialGraph.world() and placements/spatial targets.",
       "review": "Independent integrated code/host review follows complete pinned I01c handoff per #12; repairs and Cleanup-P/I/R are separate runs. Current native I01b is a narrow implementation proof, not full gate approval."
     },
     "review": {
@@ -791,7 +791,7 @@
       },
       "campaignOwnershipInput": {
         "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6091818151",
-        "state": "actual_missing_provider_and_envelope_following_ownership_p01",
+        "state": "generic_contract_review_pass_media_owner_hold_host_provider_pending",
         "worldProjection": {
           "api": "AtlasRepository.spatialGraph.world()",
           "ownerId": "native World ID",
@@ -803,7 +803,34 @@
         },
         "sourceCommit": "05078b40659bf0eca99a61a8281329a1708596f3",
         "nextOwnerPlanReadyOn": "88babcd2eee05f8d99a914129fd176b264bdcb26",
-        "followup": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6092204700"
+        "followup": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6092204700",
+        "qualifiedContract": {
+          "sha": "7aa47beb1bad3d0b1560666fa1cb1677bdc8cd4e",
+          "planSha": "51d58bf32f2225182218ee53a8f9bd377333141a",
+          "review": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/25#issuecomment-6092625524",
+          "handoff": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6092626310",
+          "scope": "Host-neutral Ownership Contract/Validator/Testport only; generic R02 findings closed. This is a qualified input, not productive Registryprovider, Vault/FileTransaction, P02/P04, Host, E2E01 or merge approval.",
+          "reviewerEvidence": {
+            "provenance": "Independent Campaign review; not a new Hex test run",
+            "check": "PASS",
+            "tests": "498/498 PASS",
+            "build": "PASS"
+          },
+          "sourceIntegrated": false
+        },
+        "mediaOwnerGate": {
+          "state": "CHANGES_REQUIRED_wait_exact_repair_sha_and_scoped_owner_rereview",
+          "reviewedSha": "7aa47beb1bad3d0b1560666fa1cb1677bdc8cd4e",
+          "review": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/25#issuecomment-6092636859",
+          "gateCorrection": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6092638831",
+          "findings": [
+            "ManualDecision may still be omitted/quarantined by Salvage although the confirmed campaign decision must be retained until its defined end.",
+            "Source-scene-bound AmbienceOverride may still survive/remap into an independent target; retirement suspends source state and target requires a fresh projection."
+          ],
+          "required": "Owner-confirmed digest-bound transfer/retention policy in projection, envelope and atomic Publish preconditions, including policy-change race negatives; new exact repair SHA and narrow M/W/S owner re-review.",
+          "adoption": "Do not adopt 7aa47beb for M/W/S. Generic Contract R02 PASS remains valid; no global hold on other owner work."
+        },
+        "receipt": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6092697089"
       },
       "dungeonGeometryPlanInput": {
         "run": "E2E-01-DUNGEON-GEOMETRY-P01-R01",
