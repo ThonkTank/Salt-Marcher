@@ -7,7 +7,7 @@ import { VaultCampaignRuntimeStorage } from "../vault-campaign-runtime-source";
 import type { AtlasCampaignServices } from "./atlas-campaign-host";
 import { CampaignEntry } from "./campaign-entry";
 import { WorldNotesPanel } from "./world-notes-panel";
-import { WorldNotesNativeSession } from "./world-notes-native-session";
+import { WorldNotesNativeSession, recoverWorldNotesBeforeActivation } from "./world-notes-native-session";
 
 export const WORLD_NOTES_VIEW = "dungeon-world-notes";
 const digest = (bytes: string) => `sha256:${createHash("sha256").update(bytes).digest("hex")}`;
@@ -73,12 +73,15 @@ export class WorldNotesView extends ItemView {
     this.picker.update({ entries,
       activeCampaignId: this.services.provider.currentContext()?.campaignId ?? null });
   }
-  private async openCampaign(id: CampaignId, kind: "open" | "switch"): Promise<void> {
+  private async openCampaign(id: CampaignId, _kind: "open" | "switch"): Promise<void> {
     const current = this.services.provider.currentContext();
     if (current && current.campaignId !== id)
       throw new Error("Kampagne zuerst im Atlas wechseln, damit offene Atlasentwürfe gesichert werden.");
     if (current?.campaignId === id) { await this.mount(current); return; }
-    const activated = await this.services.provider.activate(campaignCommandId(crypto.randomUUID()), id, kind);
+    await recoverWorldNotesBeforeActivation({ campaignId: id,
+      storage: new VaultCampaignRuntimeStorage(this.app), files: new VaultStore(this.app),
+      digest, serializationScope: this.app.vault });
+    const activated = await this.services.provider.activate(campaignCommandId(crypto.randomUUID()), id, "open");
     if (!activated) throw new Error("Kampagne konnte nicht bestätigt werden.");
     const context = this.services.provider.currentContext();
     if (!context || context.campaignId !== id) throw new Error("Kampagne wurde nicht aktiviert.");

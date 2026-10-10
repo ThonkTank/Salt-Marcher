@@ -1,16 +1,51 @@
 import type { FileStore } from "../persistence";
 import { FileTransaction } from "../features/atlas/file-transaction";
 import { campaignLocalId, sameSnapshot,
-  type CampaignCommandId, type CampaignContextProjection } from "../features/campaign/campaign-contracts";
+  type CampaignCommandId, type CampaignContextProjection, type CampaignId,
+  type CampaignNamespace } from "../features/campaign/campaign-contracts";
 import type { CampaignOwnershipDigest } from "../features/campaign/campaign-ownership";
-import { worldNotePath, type WorldNotesCommitReceiptV1,
-  type WorldNotesCampaignCommitParticipant } from "../features/campaign/world-notes-commit";
-import type { CampaignRuntimeStorage } from "../features/campaign/campaign-runtime-source";
+import { WorldNotesCampaignCommitParticipant, worldNotePath,
+  type WorldNotesCommitReceiptV1 } from "../features/campaign/world-notes-commit";
+import { parseCampaignRuntimeManifest, type CampaignRuntimeStorage } from "../features/campaign/campaign-runtime-source";
 import { changeWorldNotes, serializeWorldNote,
   type WorldNoteChange, type WorldNoteKind, type WorldNotesSnapshotV1 } from "../features/world/world-notes";
 import type { AtlasCampaignServices } from "./atlas-campaign-host";
 import { readConfirmedWorldNotes, type ConfirmedWorldNotes } from "./world-notes-native-reader";
 import type { WorldNotesCommitResult } from "./world-notes-panel";
+
+function transactionFor(input: { readonly files: FileStore; readonly manifestPath: string;
+  readonly namespace: CampaignNamespace; readonly scope: object;
+  readonly participant: WorldNotesCampaignCommitParticipant; readonly assertCurrent?: () => void }): FileTransaction {
+  const journalPath = input.manifestPath.replace(/\.campaign\.json$/, ".world-notes.journal");
+  const allowed = (path: string) => {
+    if (path === input.manifestPath) return true;
+    const match = /^Kampagnen\/SaltMarcher\/[^/]+\/Weltwissen\/(npc|faction|quest|rumor)\/([^/]+)\.world-note\.json$/.exec(path);
+    if (!match) return false;
+    try { return worldNotePath(input.namespace, match[1] as WorldNoteKind,
+      campaignLocalId(match[2]!)) === path; } catch { return false; }
+  };
+  return new FileTransaction(input.files, journalPath, allowed, input.scope,
+    (journal) => input.participant.validateRecovery(journal), input.assertCurrent);
+}
+
+/** Resolve an interrupted note journal before activating a fresh Campaign mount. */
+export async function recoverWorldNotesBeforeActivation(input: {
+  readonly campaignId: CampaignId;
+  readonly storage: CampaignRuntimeStorage;
+  readonly files: FileStore;
+  readonly digest: CampaignOwnershipDigest;
+  readonly serializationScope: object;
+}): Promise<void> {
+  const matches = (await input.storage.list()).filter((file) => {
+    try { return parseCampaignRuntimeManifest(file.bytes, input.digest).snapshot.campaignId === input.campaignId; }
+    catch { return false; }
+  });
+  if (matches.length !== 1) throw new Error("World-Recovery benötigt genau ein bestätigtes Campaignmanifest.");
+  const file = matches[0]!, manifest = parseCampaignRuntimeManifest(file.bytes, input.digest),
+    participant = new WorldNotesCampaignCommitParticipant(file.path, file.bytes, input.digest);
+  await transactionFor({ files: input.files, manifestPath: file.path,
+    namespace: manifest.snapshot.namespace, scope: input.serializationScope, participant }).recover();
+}
 
 /** One mounted Campaign context. Every write goes through its owner participant and FileTransaction. */
 export class WorldNotesNativeSession {
@@ -76,16 +111,9 @@ export class WorldNotesNativeSession {
     });
     const prepared = participant.prepare({ commandId, context: this.context,
       beforeSnapshot: current.snapshot, afterSnapshot: after, change, nativeWrites });
-    const journalPath = current.manifestPath.replace(/\.campaign\.json$/, ".world-notes.journal");
-    const allowed = (path: string) => {
-      if (path === current.manifestPath) return true;
-      const match = /^Kampagnen\/SaltMarcher\/[^/]+\/Weltwissen\/(npc|faction|quest|rumor)\/([^/]+)\.world-note\.json$/.exec(path);
-      if (!match) return false;
-      try { return worldNotePath(after.namespace, match[1] as WorldNoteKind,
-        campaignLocalId(match[2]!)) === path; } catch { return false; }
-    };
-    const transaction = new FileTransaction(this.files, journalPath, allowed,
-      this.serializationScope, (journal) => participant.validateRecovery(journal), this.assertCurrent);
+    const transaction = transactionFor({ files: this.files, manifestPath: current.manifestPath,
+      namespace: after.namespace, scope: this.serializationScope, participant,
+      assertCurrent: this.assertCurrent });
     let receipt: WorldNotesCommitReceiptV1 | null = null;
     const changed = await transaction.commit(prepared.writes,
       participant.transactionObserver(prepared, transaction, (issued) => {

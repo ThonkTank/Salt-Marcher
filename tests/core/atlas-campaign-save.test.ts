@@ -25,6 +25,7 @@ import {
 import { CampaignLifecycle } from "../../src/features/campaign/campaign-lifecycle";
 import {
   campaignCommandId,
+  campaignContext,
   campaignLocalId,
   campaignContextToken,
   campaignNamespace,
@@ -44,8 +45,8 @@ import {
   emptyWorldNotes,
   serializeWorldNote,
 } from "../../src/features/world/world-notes";
-import { worldNotePath } from "../../src/features/campaign/world-notes-commit";
-import { WorldNotesNativeSession } from "../../src/ui/world-notes-native-session";
+import { WorldNotesCampaignCommitParticipant, worldNotePath } from "../../src/features/campaign/world-notes-commit";
+import { WorldNotesNativeSession, recoverWorldNotesBeforeActivation } from "../../src/ui/world-notes-native-session";
 
 const root = "tests/fixtures/atlas-e2e-spatial-v2/";
 const fixture = JSON.parse(readFileSync(root + "manifest.json", "utf8"));
@@ -396,6 +397,34 @@ test("native World Notes session rolls back late failure, retries, and reads con
   const fresh = new WorldNotesNativeSession(f.services, storage, f.store, sha, f.store, context);
   assert.deepEqual(await fresh.open(), result.snapshot);
   fresh.close(); session.close(); f.services.close();
+});
+
+test("fresh World Notes activation resolves a committed native journal before mounting", async () => {
+  const store = new Store(), manifest = parseCampaignRuntimeManifest(inputManifest, sha),
+    context = campaignContext(manifest.snapshot, campaignContextToken("world-notes:fresh-recovery")),
+    before = emptyWorldNotes(context),
+    change = { kind: "create" as const, id: campaignLocalId(id(953)),
+      draft: { kind: "quest" as const, title: "Wacht am Tor", readAloud: "Die Glocke läutet.",
+        gmNotes: "Nur nachts.", relations: [], creatureId: null } },
+    after = changeWorldNotes(before, context, context, before.revision, change),
+    participant = new WorldNotesCampaignCommitParticipant(campaignPath, inputManifest, sha),
+    notePath = worldNotePath(context.namespace, "quest", change.id),
+    prepared = participant.prepare({ commandId: campaignCommandId(id(954)), context,
+      beforeSnapshot: before, afterSnapshot: after, change,
+      nativeWrites: [{ path: notePath, before: null, after: serializeWorldNote(after.records[0]!) }] }),
+    journal = campaignPath.replace(/\.campaign\.json$/, ".world-notes.journal"),
+    transaction = new FileTransaction(store, journal,
+      (path) => prepared.writes.some((write) => write.path === path), store,
+      (entry) => participant.validateRecovery(entry));
+  store.fault = (path, bytes) => path === journal && bytes === null;
+  await assert.rejects(transaction.commit(prepared.writes), /unterbrochen/);
+  assert.equal(JSON.parse(store.files.get(journal)!).state, "committed");
+  store.offline = false; store.fault = undefined;
+  await recoverWorldNotesBeforeActivation({ campaignId: context.campaignId,
+    storage: { list: async () => [{ path: campaignPath, bytes: store.files.get(campaignPath)! }] },
+    files: store, digest: sha, serializationScope: store });
+  assert.equal(store.files.has(journal), false);
+  assert.equal(store.files.get(notePath), serializeWorldNote(after.records[0]!));
 });
 
 test("World Notes prepared acknowledgment cancels cleanly after FileTransaction rollback", async () => {
