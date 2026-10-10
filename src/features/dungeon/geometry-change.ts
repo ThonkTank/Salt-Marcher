@@ -96,6 +96,7 @@ export class DungeonGeometryGesture {
   readonly address: DungeonGeometryAddress;
   readonly basis: DungeonSpatialBasis;
   readonly grip: BuildingVertexGrip;
+  readonly startPointer: Point;
   private state: GestureState = "active";
   private unsubscribe: () => void;
   private current?: DungeonGeometryProposal;
@@ -129,6 +130,7 @@ export class DungeonGeometryGesture {
     this.before = before;
     this.basis = basis;
     this.grip = Object.freeze({ ...grip, point: Object.freeze({ ...grip.point }) });
+    this.startPointer = Object.freeze({ ...request.pointer });
     this.address = Object.freeze({
       ownerId: request.ownerId,
       floorId: request.floorId,
@@ -185,6 +187,10 @@ export class DungeonGeometryGesture {
   }
 
   update(pointer: Point, snap: boolean): DungeonGeometryProposal | null {
+    // Every pointer sample replaces the visible/finalizable proposal. An
+    // invalid or rejected sample must never leave an older, hidden proposal
+    // available to pointer-up.
+    this.current = undefined;
     const basis = this.currentBasis();
     if (!basis || !Number.isFinite(pointer.x) || !Number.isFinite(pointer.y))
       return null;
@@ -195,17 +201,15 @@ export class DungeonGeometryGesture {
       ),
       destination = buildingPointDragDestination(
         this.grip,
-        this.grip.point,
+        this.startPointer,
         pointer,
         snap,
       );
     if (destination.x === this.grip.point.x && destination.y === this.grip.point.y) {
-      this.current = undefined;
       return null;
     }
     const geometry = proposeBuildingPointDrag(beforeRoom, this.grip, destination);
     if (!geometry) {
-      this.current = undefined;
       return null;
     }
     const command = planBuildingContourMutation({
@@ -214,7 +218,6 @@ export class DungeonGeometryGesture {
       ...geometry,
     });
     if (!command) {
-      this.current = undefined;
       return null;
     }
     const preview = projectDocumentCommand(this.before.document, command),

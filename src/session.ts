@@ -86,6 +86,9 @@ interface NoteDraft {
 function sameOrder(a: readonly Id[], b: readonly Id[]): boolean {
   return a.length === b.length && a.every((id, index) => id === b[index]);
 }
+function sameValue(a: unknown, b: unknown): boolean {
+  return a === b || JSON.stringify(a) === JSON.stringify(b);
+}
 function ordered<T>(
   records: ReadonlyMap<Id, T>,
   changes: readonly RecordChange<T>[],
@@ -113,6 +116,59 @@ function ordered<T>(
   return new Map(entries);
 }
 
+function indexedRecordChanges<T>(
+  changes: readonly RecordChange<T>[] | undefined,
+  records: ReadonlyMap<Id, T>,
+): readonly RecordChange<T>[] | undefined {
+  if (!changes) return undefined;
+  const positions = new Map(
+    [...records.keys()].map((id, index) => [id, index]),
+  );
+  let append = records.size;
+  return changes.map((change) => {
+    const current = positions.get(change.id);
+    return {
+      ...change,
+      ...(change.before
+        ? { beforeIndex: change.beforeIndex ?? current }
+        : {}),
+      ...(change.after
+        ? {
+            afterIndex:
+              change.afterIndex ?? (change.before ? current : append++),
+          }
+        : {}),
+    };
+  });
+}
+
+/** Validate and apply one record-change set without mutating its input. */
+function projectRecordChanges<T>(
+  records: ReadonlyMap<Id, T>,
+  changes: readonly RecordChange<T>[],
+): Map<Id, T> {
+  if (new Set(changes.map((change) => change.id)).size !== changes.length)
+    throw new Error("Mehrfache Änderung derselben Kennung.");
+  const next = new Map(records);
+  for (const change of changes) {
+    if (!sameValue(records.get(change.id) ?? null, change.before))
+      throw new Error("Veraltete Änderung: " + change.id);
+    if (
+      change.after &&
+      typeof change.after === "object" &&
+      "id" in change.after &&
+      (change.after as { id?: unknown }).id !== change.id
+    )
+      throw new Error("Abweichende Datensatzkennung: " + change.id);
+    for (const index of [change.beforeIndex, change.afterIndex])
+      if (index !== undefined && (!Number.isInteger(index) || index < 0))
+        throw new Error("Ungültige Datensatzposition: " + change.id);
+    if (change.after) next.set(change.id, change.after);
+    else next.delete(change.id);
+  }
+  return ordered(next, changes);
+}
+
 /**
  * Apply one already planned map command to an immutable document without a
  * Session, history, note, draft or persistence side effect.
@@ -128,58 +184,29 @@ export function projectDocumentCommand(
   validateDocument(raw);
   if (command.texts?.some((patch) => patch.before !== patch.after || patch.create))
     throw new Error("Raumtexte brauchen den bestehenden Session-Dateipfad.");
-  const equal = (a: unknown, b: unknown) =>
-      a === b || JSON.stringify(a) === JSON.stringify(b),
-    entities = new Map(raw.entities.map((entity) => [entity.id, entity])),
+  const entities = new Map(raw.entities.map((entity) => [entity.id, entity])),
     floors = new Map(raw.floors.map((floor) => [floor.id, floor]));
-  const check = <T>(
-    changes: readonly RecordChange<T>[],
-    records: ReadonlyMap<Id, T>,
-  ) => {
-    if (new Set(changes.map((change) => change.id)).size !== changes.length)
-      throw new Error("Mehrfache Änderung derselben Kennung.");
-    for (const change of changes) {
-      if (!equal(records.get(change.id) ?? null, change.before))
-        throw new Error("Veraltete Änderung: " + change.id);
-      if (
-        change.after &&
-        typeof change.after === "object" &&
-        "id" in (change.after as object) &&
-        (change.after as { id?: unknown }).id !== change.id
-      )
-        throw new Error("Abweichende Datensatzkennung: " + change.id);
-      for (const index of [change.beforeIndex, change.afterIndex])
-        if (index !== undefined && (!Number.isInteger(index) || index < 0))
-          throw new Error("Ungültige Datensatzposition: " + change.id);
-    }
-  };
-  const entityChanges = command.entities ?? [],
-    floorChanges = command.floors ?? [];
-  check(entityChanges, entities);
-  check(floorChanges, floors);
-  if (command.settings && !equal(command.settings.before, raw.settings))
+  const entityChanges = indexedRecordChanges(command.entities, entities) ?? [],
+    floorChanges = indexedRecordChanges(command.floors, floors) ?? [],
+    nextEntities = projectRecordChanges(entities, entityChanges),
+    nextFloors = projectRecordChanges(floors, floorChanges);
+  if (command.settings && !sameValue(command.settings.before, raw.settings))
     throw new Error("Veraltete Karteneinstellungen.");
-  if (command.content && !equal(command.content.before, raw.content))
+  if (command.content && !sameValue(command.content.before, raw.content))
     throw new Error("Veraltete Dungeon-Inhalte.");
-  if (command.smartTiles && !equal(command.smartTiles.before, raw.smartTiles))
+  if (command.smartTiles && !sameValue(command.smartTiles.before, raw.smartTiles))
     throw new Error("Veraltete Smart-Tile-Zellen.");
   if (
     command.terrainMasks &&
-    !equal(command.terrainMasks.before, raw.terrainMasks)
+    !sameValue(command.terrainMasks.before, raw.terrainMasks)
   )
     throw new Error("Veraltete Terrainmasken.");
-  for (const change of entityChanges)
-    if (change.after) entities.set(change.id, change.after);
-    else entities.delete(change.id);
-  for (const change of floorChanges)
-    if (change.after) floors.set(change.id, change.after);
-    else floors.delete(change.id);
-  if (!floors.size) throw new Error("Mindestens ein Geschoss bleibt erforderlich.");
+  if (!nextFloors.size) throw new Error("Mindestens ein Geschoss bleibt erforderlich.");
   const document = immutable(
     structuredClone({
       ...raw,
-      entities: [...ordered(entities, entityChanges).values()],
-      floors: [...ordered(floors, floorChanges).values()],
+      entities: [...nextEntities.values()],
+      floors: [...nextFloors.values()],
       settings: command.settings?.after ?? raw.settings,
       content: command.content?.after ?? raw.content,
       ...(command.smartTiles
@@ -487,40 +514,14 @@ export class Session {
       )
     )
       return;
-    const indexed = <T>(
-        changes: readonly RecordChange<T>[] | undefined,
-        records: ReadonlyMap<Id, T>,
-      ): readonly RecordChange<T>[] | undefined => {
-        if (!changes) return undefined;
-        const positions = new Map(
-          [...records.keys()].map((id, index) => [id, index]),
-        );
-        let append = records.size;
-        return changes.map((change) => {
-          const current = positions.get(change.id);
-          return {
-            ...change,
-            ...(change.before
-              ? { beforeIndex: change.beforeIndex ?? current }
-              : {}),
-            ...(change.after
-              ? {
-                  afterIndex:
-                    change.afterIndex ??
-                    (change.before ? current : append++),
-                }
-              : {}),
-          };
-        });
-      },
-      owned = immutable(
+    const owned = immutable(
         structuredClone({
           ...command,
           ...(command.entities
-            ? { entities: indexed(command.entities, this.records) }
+            ? { entities: indexedRecordChanges(command.entities, this.records) }
             : {}),
           ...(command.floors
-            ? { floors: indexed(command.floors, this.levels) }
+            ? { floors: indexedRecordChanges(command.floors, this.levels) }
             : {}),
         }),
       ),
@@ -595,39 +596,13 @@ export class Session {
           }
         : p,
     );
-    const byId = new Map(entityChanges.map((p) => [p.id, p]));
-    const get = (id: Id): Entity | undefined => {
-      const p = byId.get(id);
-      return p ? (p.after ?? undefined) : this.records.get(id);
-    };
-    const equal = (a: unknown, b: unknown) =>
-      a === b || JSON.stringify(a) === JSON.stringify(b);
-    const check = <T>(
-      changes: readonly RecordChange<T>[],
-      store: ReadonlyMap<Id, T>,
-    ) => {
-      if (new Set(changes.map((p) => p.id)).size !== changes.length)
-        throw new Error("Mehrfache Änderung derselben Kennung.");
-      for (const p of changes) {
-        if (!equal(store.get(p.id) ?? null, p.before))
-          throw new Error("Veraltete Änderung: " + p.id);
-        for (const index of [p.beforeIndex, p.afterIndex])
-          if (
-            index !== undefined &&
-            (!Number.isInteger(index) || index < 0)
-          )
-            throw new Error("Ungültige Datensatzposition: " + p.id);
-      }
-    };
-    check(entityChanges, this.records);
-    check(floorChanges, this.levels);
-    const nextFloors = floorChanges.length ? new Map(this.levels) : this.levels;
+    const nextEntities = projectRecordChanges(this.records, entityChanges),
+      nextFloors = projectRecordChanges(this.levels, floorChanges),
+      get = (id: Id): Entity | undefined => nextEntities.get(id);
     for (const p of floorChanges) {
       if (p.after) {
-        if (p.after.id !== p.id) throw new Error("Ungültiges Geschoss.");
         validateFloor(p.after);
-        nextFloors.set(p.id, p.after);
-      } else nextFloors.delete(p.id);
+      }
     }
     if (!nextFloors.size)
       throw new Error("Mindestens ein Geschoss bleibt erforderlich.");
@@ -651,7 +626,7 @@ export class Session {
     if (c.settings) {
       const before = inverse ? c.settings.after : c.settings.before;
       settings = inverse ? c.settings.before : c.settings.after;
-      if (!equal(before, this.stateSettings))
+      if (!sameValue(before, this.stateSettings))
         throw new Error("Veraltete Karteneinstellungen.");
       validateSettings(settings);
     }
@@ -659,14 +634,14 @@ export class Session {
     if (c.content) {
       const before = inverse ? c.content.after : c.content.before;
       content = inverse ? c.content.before : c.content.after;
-      if (!equal(before, this.stateContent))
+      if (!sameValue(before, this.stateContent))
         throw new Error("Veraltete Dungeon-Inhalte.");
     }
     let smartTiles = this.stateSmartTiles;
     if (c.smartTiles) {
       const before = inverse ? c.smartTiles.after : c.smartTiles.before;
       smartTiles = inverse ? c.smartTiles.before : c.smartTiles.after;
-      if (!equal(before, this.stateSmartTiles))
+      if (!sameValue(before, this.stateSmartTiles))
         throw new Error("Veraltete Smart-Tile-Zellen.");
       if (smartTiles !== undefined)
         validateSmartTileCells(smartTiles, settings.width, settings.height, nextFloors, true);
@@ -675,16 +650,11 @@ export class Session {
     if (c.terrainMasks) {
       const before = inverse ? c.terrainMasks.after : c.terrainMasks.before;
       terrainMasks = inverse ? c.terrainMasks.before : c.terrainMasks.after;
-      if (!equal(before, this.stateTerrainMasks))
+      if (!sameValue(before, this.stateTerrainMasks))
         throw new Error("Veraltete Terrainmasken.");
     }
     if (terrainMasks !== undefined && (c.terrainMasks || c.settings || floorChanges.length))
       validateTerrainMasks(terrainMasks, settings.width, settings.height, nextFloors);
-    const nextEntities = entityChanges.length ? new Map(this.records) : this.records;
-    if (entityChanges.length)
-      for (const change of entityChanges)
-        if (change.after) nextEntities.set(change.id, change.after);
-        else nextEntities.delete(change.id);
     validateContent(content, nextEntities, this.version);
     const noteValues = new Map<string, string | null>();
     const patches = inverse ? [...(c.texts ?? [])].reverse() : (c.texts ?? []);
@@ -728,16 +698,13 @@ export class Session {
     for (const p of entityChanges) {
       const previous = this.records.get(p.id);
       if (previous) this.index(previous, false);
-      if (p.after) {
-        this.records.set(p.id, p.after);
-        this.index(p.after, true);
-      } else this.records.delete(p.id);
-      if (equal(this.savedRecords.get(p.id) ?? null, p.after))
+      if (p.after) this.index(p.after, true);
+      if (sameValue(this.savedRecords.get(p.id) ?? null, p.after))
         this.dirtyIds.delete(p.id);
       else this.dirtyIds.add(p.id);
     }
     if (entityChanges.length)
-      this.records = ordered(this.records, entityChanges);
+      this.records = nextEntities;
     const entityOrder = entityChanges.length > 0 &&
       !sameOrder(previousOrder, [...this.records.keys()]);
     if (entityChanges.length)
@@ -745,18 +712,16 @@ export class Session {
         [...this.records.keys()], [...this.savedRecords.keys()],
       );
     for (const p of floorChanges) {
-      if (p.after) this.levels.set(p.id, p.after);
-      else this.levels.delete(p.id);
-      if (equal(this.savedFloors.get(p.id) ?? null, p.after))
+      if (sameValue(this.savedFloors.get(p.id) ?? null, p.after))
         this.dirtyFloors.delete(p.id);
       else this.dirtyFloors.add(p.id);
     }
     if (floorChanges.length)
-      this.levels = ordered(this.levels, floorChanges);
-    this.stateSettings = equal(settings, this.savedSettings)
+      this.levels = nextFloors;
+    this.stateSettings = sameValue(settings, this.savedSettings)
       ? this.savedSettings
       : settings;
-    this.stateContent = equal(content, this.savedContent)
+    this.stateContent = sameValue(content, this.savedContent)
       ? this.savedContent
       : content;
     this.stateSmartTiles = smartTiles;

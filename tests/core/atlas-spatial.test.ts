@@ -39,6 +39,11 @@ import {
 } from "../../src/features/dungeon/atlas-source";
 import { DungeonGeometryGesture } from "../../src/features/dungeon/geometry-change";
 import {
+  buildingVertexGrip,
+  proposeBuildingPointDrag,
+} from "../../src/features/bau/building-point-gestures";
+import { planBuildingContourMutation } from "../../src/commands";
+import {
   LocationSource,
   locationDocumentChange,
 } from "../../src/features/location/location-source";
@@ -52,6 +57,7 @@ import {
   serializeDocument,
   type Door,
 } from "../../src/model";
+import { projectDocumentCommand, Session } from "../../src/session";
 
 const id = (n: number) =>
   `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
@@ -696,7 +702,10 @@ test("Prospective validation protects Undo/Redo, immutable retained snapshots an
   assert.equal(h.read("x", "a"), 1);
 });
 
-function geometryGesture(f: ReturnType<typeof fixture>) {
+function geometryGesture(
+  f: ReturnType<typeof fixture>,
+  pointer = { x: 4, y: 4 },
+) {
   const access = {
     graph: () => f.graph,
     dungeon: (ownerId: string) => {
@@ -708,7 +717,7 @@ function geometryGesture(f: ReturnType<typeof fixture>) {
     ownerId: id(30),
     floorId: id(32),
     roomId: id(31),
-    pointer: { x: 4, y: 4 },
+    pointer,
     tolerance: 0.5,
   });
 }
@@ -785,6 +794,142 @@ test("Dungeon geometry proposal is pure, preserves native closure and hands off 
   assert.equal(f.dungeon.read().documentBytes, before.documentBytes);
   assert.equal(f.history.redo(), true);
   assert.equal(f.dungeon.read().documentBytes, proposal.change.after);
+});
+
+test("Rejected Dungeon geometry samples revoke the visible proposal and cannot commit an older drag", () => {
+  const f = fixture();
+  f.attach();
+  const cityBefore = f.city.read(),
+    cityAfter = editCity(cityBefore, [{
+      kind: "set-building-pose",
+      buildingId: id(105),
+      position: { x: -18, y: 8 },
+      rotationRadians: 0,
+      scale: { x: 1, y: 1 },
+    }]);
+  f.history.execute({
+    label: "Redostand vorbereiten",
+    changes: [cityDocumentChange(cityBefore, cityAfter)],
+  });
+  f.history.undo();
+  const before = snapshot(f),
+    invalidTopology = geometryGesture(f);
+  assert.ok(invalidTopology.update({ x: 3, y: 4 }, false));
+  assert.throws(
+    () => invalidTopology.update({ x: 14, y: 4 }, false),
+    /Nullsegment/,
+  );
+  assert.equal(invalidTopology.preview, undefined);
+  assert.equal(invalidTopology.handoff(), null);
+  assert.equal(snapshot(f), before);
+
+  const invalidCoordinate = geometryGesture(f);
+  assert.ok(invalidCoordinate.update({ x: 3, y: 4 }, false));
+  assert.equal(invalidCoordinate.update({ x: Number.NaN, y: 4 }, false), null);
+  assert.equal(invalidCoordinate.preview, undefined);
+  assert.equal(invalidCoordinate.handoff(), null);
+  assert.equal(snapshot(f), before);
+
+  const corrected = geometryGesture(f);
+  const first = corrected.update({ x: 3, y: 4 }, false);
+  assert.ok(first);
+  assert.throws(() => corrected.update({ x: 14, y: 4 }, false), /Nullsegment/);
+  const visible = corrected.update({ x: 2, y: 4 }, false);
+  assert.ok(visible);
+  assert.notEqual(visible.change.after, first.change.after);
+  assert.deepEqual(corrected.handoff(), visible.change);
+  assert.equal(snapshot(f), before);
+});
+
+test("Dungeon geometry uses the immutable actual begin pointer for off-center and snapped deltas", () => {
+  const f = fixture();
+  f.attach();
+  const start = { x: 4.2, y: 4.2 },
+    gesture = geometryGesture(f, start);
+  start.x = 99;
+  start.y = 99;
+  assert.deepEqual(gesture.startPointer, { x: 4.2, y: 4.2 });
+  assert.ok(Object.isFrozen(gesture.startPointer));
+
+  const shifted = gesture.update({ x: 3.2, y: 4.2 }, false),
+    shiftedRoom = shifted?.preview.entities.find((entity) => entity.id === id(31));
+  assert.ok(shiftedRoom && isStructuredRoom(shiftedRoom));
+  if (shiftedRoom && isStructuredRoom(shiftedRoom))
+    assert.deepEqual(shiftedRoom.polygons[0]!.outer[0], { x: 3, y: 4 });
+  assert.equal(gesture.update({ x: 4.2, y: 4.2 }, false), null);
+  assert.equal(gesture.preview, undefined);
+  assert.equal(gesture.update({ x: 3.71, y: 4.2 }, true), null);
+  const snapped = gesture.update({ x: 3.69, y: 4.2 }, true),
+    snappedRoom = snapped?.preview.entities.find((entity) => entity.id === id(31));
+  assert.ok(snappedRoom && isStructuredRoom(snappedRoom));
+  if (snappedRoom && isStructuredRoom(snappedRoom))
+    assert.deepEqual(snappedRoom.polygons[0]!.outer[0], { x: 3, y: 4 });
+  gesture.cancel();
+});
+
+test("Pure document projection and native Session share record validation, ordering and portal application", () => {
+  const f = fixture();
+  f.attach();
+  const base = f.dungeon.read().document,
+    door: Door = {
+      id: id(35),
+      kind: "door",
+      floorId: id(32),
+      anchor: { boundaryId: id(31), contour: 0, at: 0.125 },
+      width: 1,
+      variant: "door",
+    },
+    document = { ...base, entities: [...base.entities, door] },
+    room = document.entities.find((entity) => entity.id === id(31));
+  assert.ok(room && isStructuredRoom(room));
+  if (!room || !isStructuredRoom(room)) return;
+  const grip = buildingVertexGrip(room, { x: 4, y: 4 }, 0.5),
+    geometry = grip && proposeBuildingPointDrag(room, grip, { x: 3, y: 4 });
+  assert.ok(grip && geometry);
+  if (!grip || !geometry) return;
+  const command = planBuildingContourMutation({
+    entities: document.entities,
+    before: room,
+    ...geometry,
+  });
+  assert.ok(command);
+  if (!command) return;
+
+  const beforeBytes = serializeDocument(document),
+    projected = projectDocumentCommand(document, command),
+    native = new Session(document);
+  native.execute(command);
+  assert.equal(serializeDocument(native.document()), serializeDocument(projected));
+  assert.deepEqual(
+    native.document().entities.map((entity) => entity.id),
+    projected.entities.map((entity) => entity.id),
+  );
+  assert.equal(serializeDocument(document), beforeBytes);
+
+  assert.throws(() => projectDocumentCommand(projected, command), /Veraltete Änderung/);
+  assert.throws(() => native.execute(command), /Veraltete Änderung/);
+
+  const invalidRoom = structuredClone(
+      command.entities?.find((change) => change.id === room.id)?.after,
+    );
+  assert.ok(invalidRoom && isStructuredRoom(invalidRoom));
+  if (!invalidRoom || !isStructuredRoom(invalidRoom)) return;
+  const invalidAfter = { ...invalidRoom, id: id(999) };
+  const invalid = {
+    ...command,
+    entities: command.entities?.map((change) =>
+      change.id === room.id ? { ...change, after: invalidAfter } : change,
+    ),
+  };
+  assert.throws(
+    () => projectDocumentCommand(document, invalid),
+    /Abweichende Datensatzkennung/,
+  );
+  assert.throws(
+    () => new Session(document).execute(invalid),
+    /Abweichende Datensatzkennung/,
+  );
+  assert.equal(serializeDocument(document), beforeBytes);
 });
 
 test("Parent undo invalidates a Dungeon gesture terminally without consuming its normal Redo", () => {
