@@ -64,8 +64,8 @@ test("items source package is explicitly incomplete and fails closed by default"
   await assert.rejects(verifyItemsSourcePackage(), /S01 ist unvollständig/);
   const result = await verifyItemsSourcePackage({ allowIncomplete: true });
   assert.equal(result.complete, false);
-  assert.equal(result.validation.occurrenceCount, 213);
-  assert.equal(result.validation.recordCount, 213);
+  assert.equal(result.validation.occurrenceCount, 219);
+  assert.equal(result.validation.recordCount, 219);
   assert.ok(result.blockers.length >= 5);
 });
 
@@ -454,4 +454,46 @@ test("tack and drawn vehicles preserve formulas, missing weight and sourced Bard
   inventedFormula.records.find(record => record.name === "Barding").cost.copperPieces = 400;
   assert.throws(() => validateTranscriptData(inventedFormula, checkedInventory, { allowIncomplete: true }),
     /cost ist nicht eindeutig umrechenbar/);
+});
+
+test("waterborne vehicles preserve physical order, fractional mph and Rowed Vessels facts", async () => {
+  const [checkedInventory, checkedTranscript] = await Promise.all([
+    readFile(new URL("items-srd51-inventory.json", dataRoot), "utf8").then(JSON.parse),
+    readFile(new URL("items-srd51-transcript.json", dataRoot), "utf8").then(JSON.parse),
+  ]);
+  const occurrences = checkedInventory.occurrences.filter(item => item.sectionId === "waterborne-vehicles");
+  const records = checkedTranscript.records.filter(record => record.subcategory === "waterborne-vehicle");
+  assert.deepEqual(occurrences.map(item => item.sourceLabel),
+    ["Galley", "Keelboat", "Longship", "Rowboat", "Sailing ship", "Warship"]);
+  assert.deepEqual(occurrences.map(item => item.id),
+    Array.from({ length: 6 }, (_, index) => `srd51:equipment:waterborne-vehicles:${index + 1}`));
+  assert.deepEqual(records.map(record => record.id), occurrences.map(item => item.id));
+  assert.deepEqual(records.map(record => record.cost.sourceText),
+    ["30,000 gp", "3,000 gp", "10,000 gp", "50 gp", "10,000 gp", "25,000 gp"]);
+  assert.deepEqual(records.map(record => record.speed), [
+    { sourceText: "4 mph", unit: "mph", value: "4" },
+    { sourceText: "1 mph", unit: "mph", value: "1" },
+    { sourceText: "3 mph", unit: "mph", value: "3" },
+    { sourceText: "1½ mph", unit: "mph", value: "1.5" },
+    { sourceText: "2 mph", unit: "mph", value: "2" },
+    { sourceText: "2½ mph", unit: "mph", value: "2.5" },
+  ]);
+  const byName = new Map(records.map(record => [record.name, record]));
+  assert.deepEqual(byName.get("Rowboat").weight, { sourceText: "100 pounds", pounds: "100" });
+  assert.equal(records.filter(record => record.weight !== undefined).length, 1);
+  assert.equal(records.every(record => record.description[0].text.startsWith(
+    "If you have proficiency with a certain kind of vehicle")), true);
+  assert.deepEqual(records.filter(record => record.description.length === 2).map(record => record.name),
+    ["Keelboat", "Rowboat"]);
+  assert.match(byName.get("Keelboat").description[1].text, /can’t be rowed.*rowboat weighs 100 pounds/);
+  assert.equal(records.every(record => record.source.pdfPages.join() === "71,72"), true);
+
+  const mismatchedSpeed = structuredClone(checkedTranscript);
+  mismatchedSpeed.records.find(record => record.name === "Warship").speed.value = "2";
+  assert.throws(() => validateTranscriptData(mismatchedSpeed, checkedInventory, { allowIncomplete: true }),
+    /speed stimmt nicht/);
+  const mismatchedWeight = structuredClone(checkedTranscript);
+  mismatchedWeight.records.find(record => record.name === "Rowboat").weight.pounds = "10";
+  assert.throws(() => validateTranscriptData(mismatchedWeight, checkedInventory, { allowIncomplete: true }),
+    /weight\.pounds stimmt nicht/);
 });
