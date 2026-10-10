@@ -4,15 +4,14 @@
     "state": "completed",
     "roleContract": "docs/AGENT-ROLES.md#repository-maintenance",
     "repositoryContract": "docs/REPOSITORY.md",
-    "evaluatedShared": "e934577eb776125c4058c5a9fd84f13d0d1a3171",
-    "scope": "Scope audit: concretized reference/catalog consumption, live reconciliation/history, loot outcome, extension/player delivery and shared UI consumers. No domain/host/product approval; automation audit read-only.",
-    "next": "Use current docs/ROADMAP.md and linked SMR sections; issue mains own executable work. Existing task-maintenance/product-value automations own queue/priorities; no second controller.",
+    "evaluatedShared": "a4d63424091c9159efdf94e522352d6da332cc36",
+    "scope": "Implemented the revised task-maintenance role in the existing remote-loaded contract. Existing automation enabled with unchanged two-hour schedule and authority; no extra role/controller.",
+    "next": "Follow docs/AGENT-ROLES.md; task-maintenance repairs evidenced coordination gaps, product-value owns priority and package/domain owners retain delivery decisions. No duplicate queue or prompt rules.",
     "verification": [
-      "check:repo PASS; affected source/diff check",
-      "36 pinned requirement hashes and 38 TN / 18 AC preserved",
-      "Only four shared-UI source delivery mappings extended; foreign memory and acceptance preserved"
+      "check:repo and affected diff/JSON preservation check",
+      "Enabled task-maintenance automation reads AGENTS.md and docs/AGENT-ROLES.md from default branch; prompt/schedule unchanged"
     ],
-    "previousOrientation": "e934577"
+    "previousOrientation": "a4d6342"
   },
   "saltMarcherReplacement": {
     "date": "2026-10-10",
