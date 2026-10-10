@@ -21,6 +21,7 @@
 ## Vertiefung bei konkretem Bedarf
 
 - Vollständiger Zielumfang: [SCOPE](SCOPE.md), [gepinnte Quellen](scope-sources.json), [Gatekatalog](../ROADMAP-E2E-GATES-CANDIDATE.md).
+- Erweiterter räumlicher Dungeon: [3D-/Room-/Path-/Passage-Coverage](plans/dungeon/smr04-spatial-coverage.md) für die Abgrenzung heutiger 2D-Grundlagen und fehlender SMR-04-Folgepakete.
 - Architektur: [ARCHITECTURE](../ARCHITECTURE.md); anhand der betroffenen Entscheidung lesen.
 - Ausführung und Abnahme: [checkpoint.json](../checkpoint.json) und [acceptance.json](../acceptance.json). Mit `context` gezielt auswählen; alte Top-Level-Felder sind kein Gesamtproduktstatus. `--full` gibt den gewählten Eintrag vollständig aus.
 - Veröffentlichung, Fachphasen und Hostschutz: [Arbeitsregeln](WORKFLOW.md).
