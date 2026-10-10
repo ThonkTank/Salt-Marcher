@@ -8,7 +8,7 @@ Ein lokaler Arbeitsraum für Spielleitungen: Karten und Raum-Keys bearbeiten, Ka
 
 | Ich möchte … | Einstieg |
 | --- | --- |
-| das Ziel und den Lieferumfang verstehen | [Produktziele](docs/PRODUCT.md) |
+| das Ziel und den Lieferumfang verstehen | [Produktziele](docs/PRODUCT.md) und [vollständiger Quellenabgleich](docs/SCOPE.md) |
 | wissen, was zuerst fertig werden muss | [Produktroadmap und aktueller Engpass](docs/ROADMAP.md) |
 | eine Aufgabe übernehmen oder reviewen | [Contributor-Leitfaden](CONTRIBUTING.md) |
 | einen Fachplan oder einen Nachweis finden | [Dokumentationsindex](docs/INDEX.md) |

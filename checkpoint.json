@@ -20,7 +20,21 @@
       41,
       42
     ],
-    "next": "Product owners continue existing candidates and current #38 blocker; contributor entry points and backlog are integrated."
+    "scopeAudit": {
+      "date": "2026-10-10",
+      "document": "docs/SCOPE.md",
+      "sourceRegister": "docs/scope-sources.json",
+      "sourceRepository": "ThonkTank/Salt-Marcher",
+      "sourceRevision": "9de85c1a26f526acbc1af332ac5962e185c0aab2",
+      "requirementsFiles": 36,
+      "technicalNeeds": 38,
+      "capabilitySubsections": 39,
+      "capabilityAcceptanceReferences": 80,
+      "targetSmrAcceptanceCases": 18,
+      "followupIssue": 44,
+      "assessment": "Known source domains explicitly covered; detailed target-rule conflicts, Dungeon work-package mapping and complete original inventories remain open. No acceptance states changed."
+    },
+    "next": "Product owners continue the existing integration path; resolve scope mappings and source conflicts in #44 using docs/SCOPE.md."
   },
   "saltMarcherReplacement": {
     "date": "2026-10-10",
