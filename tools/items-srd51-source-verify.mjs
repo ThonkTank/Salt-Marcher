@@ -441,6 +441,33 @@ export function validateMagicItemAzOpeningSlice(transcript, inventory) {
     variableRarityChoices: 3, attunementRequired: 3, attunementNotRequired: 2 });
 }
 
+export function validateMagicItemAzAnimatedShield(transcript, inventory) {
+  const id = "srd51:magic-item:magic-items-a-z:6";
+  const occurrence = inventory.occurrences.find(item => item.id === id);
+  invariant(occurrence?.sourceLabel === "Animated Shield" && occurrence.ordinal === 6
+    && occurrence.sourceTable === "Magic Items A–Z" && occurrence.sourceKind === "detail-heading"
+    && occurrence.firstPdfPage === 208 && occurrence.lastPdfPage === 208
+    && occurrence.firstPrintedPage === 208 && occurrence.lastPrintedPage === 208
+    && occurrence.variantId === null && occurrence.mergeIntoId === null,
+  "Animated-Shield-Occurrence 6 ist nicht exakt als Seite-208-Heading belegt.");
+  const record = transcript.records.find(item => item.id === id);
+  invariant(record?.name === "Animated Shield" && record.category === "magic-item"
+    && record.subcategory === "shield" && record.magic === true
+    && record.rarity?.kind === "fixed" && record.rarity.value === "very-rare"
+    && record.attunement === "required"
+    && record.sourceHeader?.text === "Armor (shield), very rare (requires attunement)"
+    && record.sourceHeader.occurrenceId === id
+    && record.properties.length === 0
+    && record.description.length === 1 && record.description[0].occurrenceId === id
+    && record.description[0].text === "While holding this shield, you can speak its command word as a bonus action to cause it to animate. The shield leaps into the air and hovers in your space to protect you as if you were wielding it, leaving your hands free. The shield remains animated for 1 minute, until you use a bonus action to end this effect, or until you are incapacitated or die, at which point the shield falls to the ground or into your hand if you have one free."
+    && JSON.stringify(record.source.pdfPages) === "[208]"
+    && JSON.stringify(record.source.printedPages) === "[208]"
+    && JSON.stringify(record.source.occurrenceIds) === JSON.stringify([id]),
+  "Animated-Shield-Record ist unvollständig oder nicht quellengetreu.");
+  return Object.freeze({ id, ordinal: 6, physicalPdfPage: 208,
+    rarity: "very-rare", attunement: "required" });
+}
+
 function formatAjvErrors(errors) {
   return [...(errors ?? [])]
     .sort((left, right) => [left.instancePath, left.schemaPath, left.keyword, left.message]
@@ -821,6 +848,25 @@ function verifyPdfMagicItemAzOpeningSlice(pdfPath, transcript, inventory) {
     scope: "first-five-a-z-headings-full-headers-rarity-attunement-and-descriptions" });
 }
 
+function verifyPdfMagicItemAzAnimatedShield(pdfPath, transcript, inventory) {
+  const evidence = validateMagicItemAzAnimatedShield(transcript, inventory);
+  const headings = extractMagicItemAzHeadingsFromPdfXml(execFileSync("pdftohtml",
+    ["-xml", "-f", "207", "-l", "251", "-stdout", resolve(pdfPath)],
+    { encoding: "utf8", maxBuffer: 16 * 1024 * 1024 }));
+  invariant(headings.length === 239 && headings[4] === "Amulet of the Planes"
+    && headings[5] === "Animated Shield" && headings[6] === "Apparatus of the Crab",
+  "Animated Shield muss im PDF exakt Ordinal 6 zwischen Amulet of the Planes und Apparatus of the Crab sein.");
+  const record = transcript.records.find(item => item.id === evidence.id);
+  const pageText = normalizePdfPageText(extractPdfPage(pdfPath, 208), 208);
+  for (const fact of [record.sourceHeader.text, record.description[0].text]) {
+    invariant(pageText.includes(normalizePdfText(fact)),
+      `Animated-Shield-PDF-Beleg für „${fact}“ fehlt.`);
+  }
+  return Object.freeze({ ...evidence, derivedHeadingCount: headings.length,
+    previousHeading: headings[4], nextHeading: headings[6],
+    scope: "ordinal-six-full-header-rarity-attunement-and-description" });
+}
+
 function verifyPdfHelperDispositions(pdfPath, inventory) {
   const occurrences = new Map(inventory.occurrences.map(occurrence => [occurrence.id, occurrence]));
   const pageText = new Map();
@@ -901,7 +947,7 @@ export async function verifyItemsSourcePackage({ pdfPath, allowIncomplete = fals
     "Manifest-Transkriptcount stimmt nicht.");
   const magicItemAzSection = inventory.sections.find(section => section.id === "magic-items-a-z");
   invariant(manifest.coverage.capturedMagicItemAzHeadings === magicItemAzSection?.capturedOccurrences
-    && manifest.coverage.capturedMagicItemAzStandaloneRecords === 5
+    && manifest.coverage.capturedMagicItemAzStandaloneRecords === 6
     && manifest.coverage.capturedMagicItemAzMergedDetails === 1
     && manifest.coverage.unresolvedMagicItemSourceHeadings
       === magicItemAzSection.expectedOccurrences - magicItemAzSection.capturedOccurrences,
@@ -912,6 +958,7 @@ export async function verifyItemsSourcePackage({ pdfPath, allowIncomplete = fals
   const validation = validateTranscriptData(transcript, inventory, { allowIncomplete });
   const potionHealingMerge = validatePotionHealingMerge(transcript, inventory);
   const magicItemAzOpeningSlice = validateMagicItemAzOpeningSlice(transcript, inventory);
+  const magicItemAzAnimatedShield = validateMagicItemAzAnimatedShield(transcript, inventory);
   let pdf;
   if (pdfPath) {
     const bytes = await readFile(resolve(pdfPath));
@@ -923,6 +970,7 @@ export async function verifyItemsSourcePackage({ pdfPath, allowIncomplete = fals
       occurrenceEvidence: verifyPdfOccurrences(pdfPath, inventory),
       transcriptEvidence: verifyPdfTranscriptFacts(pdfPath, transcript),
       magicItemAzOpeningSliceEvidence: verifyPdfMagicItemAzOpeningSlice(pdfPath, transcript, inventory),
+      magicItemAzAnimatedShieldEvidence: verifyPdfMagicItemAzAnimatedShield(pdfPath, transcript, inventory),
       potionHealingMergeEvidence: verifyPdfPotionHealingMerge(pdfPath, transcript, inventory),
       boundedArmorTableEvidence: verifyPdfArmorTableRows(pdfPath, transcript, inventory),
       boundedWeaponTableEvidence: verifyPdfWeaponTableRows(pdfPath, transcript, inventory),
@@ -938,6 +986,7 @@ export async function verifyItemsSourcePackage({ pdfPath, allowIncomplete = fals
     complete: manifest.complete,
     validation,
     magicItemAzOpeningSlice,
+    magicItemAzAnimatedShield,
     potionHealingMerge,
     pdf,
     hashes: Object.freeze({
