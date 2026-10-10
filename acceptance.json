@@ -153024,7 +153024,7 @@
       {
         "id": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
         "requirement": "Thin Context/navigation consumer with actual native target validation, same Atlas owners and guarded Campaign switching",
-        "state": "native_ABA_evidence_access_delivered_build_binding_review_pending",
+        "state": "native_ABA_independent_R02_PASS_integrated_promotion_pending",
         "implementationRun": "HEX-E2E01-HOST-SAVE-I02",
         "sourceCommit": "86bbbbfac44233509f084ac836e6dafa07b11a16",
         "catalog": "ROADMAP-E2E-GATES-CANDIDATE.md:13",
@@ -153050,7 +153050,7 @@
           "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-manifest-host-aba-20261010/repair/repair.json"
         ],
         "observed": "Actual AtlasView Save button calls FileTransaction and retained native owner Participant/Provider; exact Prepared/Committed journal read-back issues the real proofs.; Same Navigator queue refreshes confirmed Registry/Inventory before unblocking input; Repository, Sources, History, renderer, camera, Context token and mount generation remain.; Actual Vault first-native CAS failure rolls back before snapshot, issues a transaction-sealed receipt, releases pending Provider lease and retries in the same editable Atlas with a new transaction UUID.; Actual DOM View/services close and fresh View/services reopen retain saved Location and Room names under native Campaign fixture; this is not a fresh Electron process.; FileTransaction regressions exercise all before/after CAS reply-loss boundaries, reject copied/foreign rollback receipts, protect unchanged native guards, and preserve won canonical bytes if committed consumer acknowledgment fails.",
-        "notConfirmed": "Native ABA attempt is FAILED, not a passing switch/Key/history/draft/revocation proof. Exact root cause remains unconfirmed. Previous synthetic native Save/Fresh/Rollback/Committed-Recovery passes remain separate, as do DOM/core/matrix checks. Independent integrated Host review, physical input, original parity, large world, installed user vault and full E2E remain open. No Source/fixture/product modifications or user-vault installation in this probe.",
+        "notConfirmed": "Historical H01 remains a recorded native failure; the repaired later H02 A→B→A is independently PASS within its existing synthetic isolated-vault scope. This consumption runs no GUI. Integrated promotion, physical input, original parity, large world, user-vault installation and full E2E remain unapproved; Save/Fresh/Recovery keeps its separate actual source-bound receipt.",
         "independentReview": {
           "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/13#issuecomment-6094804164",
           "gate": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6094804323",
@@ -153966,7 +153966,7 @@
           "currentEvidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-manifest-host-save-i02-20261010/implementation.json",
           "scope": "Component review only; no native/Host/overall approval."
         },
-        "gap": "Chronik integrated Host review is CHANGES_REQUIRED on H02 build/evidence binding. Original H02 receipt and ten referenced artifacts, sixteen native inputs and two clean locked build provenances are now repository-accessible. Both Node22.22.0 and Node22.22.2 reproduce historical 159e8db; reviewer a7f2db remains unconfirmed here. Same existing reviewer must compare actual build inventory/source inputs/payload or artifact before #38/#39 approval. No new native run or product change; historical H01/H02 and Save/Fresh/Recovery receipts preserved.",
+        "gap": "Chronik R02 independently confirms R01 code and existing native H02 evidence on exact PR13 379d55c; the Fedora zlib-ng vs official Node gzip difference resolves the buildhash finding. #38 is CLOSED. #39 now owns the integrated qualified-input audit and explicit promotion/nonpromotion decision; remaining E2E/Shared-GM/product gates stay distinct.",
         "qualifiedCampaignInputAndRollbackProbe": {
           "state": "qualified_component_contract_closed_productive_Host_implementation_now_present",
           "reviewSourceCommit": "ce2f9032dc9f72f994a307b5aac26e1ad8910065",
@@ -154228,6 +154228,27 @@
           "independentReview": "Existing Chronik CHANGES_REQUIRED build binding; accessible R02 delivery awaits same reviewer comparison. No new review round.",
           "fullE2E": false,
           "externalEvidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-manifest-host-aba-20261010/evidence-binding-r02/binding-r02.json"
+        },
+        "nativeCampaignABAIndependentReview": {
+          "id": "HEX-E2E01-HOST-ABA-H02-INDEPENDENT-R02",
+          "state": "PASS_scoped_R01_H02_build_binding",
+          "reviewer": "Chronik",
+          "reviewedCandidate": "379d55c0311e9455e5089c6b11bd0a33e9b833d2",
+          "reviewedBase": "fbf34d05a8a4ef50463031e4b5caaf5320d43c01",
+          "nativeSourceCommit": "892e20d737c9e4868aa44b615f8da0f97d98fb39",
+          "decision": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/13#issuecomment-6100198777",
+          "issue38Closure": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/38#issuecomment-6100199927",
+          "issue39Input": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/39#issuecomment-6100202191",
+          "originalReceiptSha256": "4ed1f2b2da15c5715498399a4c6c32369c6aaa36261a1382ebc5cdd359d34820",
+          "mismatchResolved": true,
+          "independentIndexedArtifactsVerified": 37,
+          "independentSourceInputsVerified": 563,
+          "buildResolution": "Official npm Node22.22.2/zlib1.3.1-e00f703 reproduces H02 159e8db. Fedora Node22.22.2/zlib1.3.1.zlib-ng yields a7f2db; only virtual gzip/base64 catalog source differs, decompressed catalog identical. Reviewer finding resolved; no different product source.",
+          "independentNativeProcessNormalExitVerified": true,
+          "newNativeRun": false,
+          "promotion": false,
+          "fullE2E": false,
+          "limits": "R01 code and existing synthetic native H02 A→B→A evidence only. Save/Fresh/Recovery input audit and independent integrated promotion decision remain #39. Physical input, original parity, large world, user-vault installation and total E2E remain distinct."
         }
       }
     ],
