@@ -542,7 +542,7 @@
       "id": "E2E-01-SPACE-I01c",
       "kind": "bounded_required_integration_after_actual_owner_contracts",
       "focus": "Use actual Campaign/Vault context, registry/ownership participant revisions and original CommandId/ReceiptId publish boundary, then pure Dungeon geometry Gestureport and one real P02/P04 CompleteImport variant. Keep one candidate/camera/history/fixture; no E2E02–04.",
-      "dependency": "Campaign/Data OWNERSHIP-P01 on published I01b head follows #12/6092204700; world projection remains actual Repository.spatialGraph.world() and placements/spatial targets. Authoritative registry/provider/Mehrowner-envelope and pure Dungeon geometry port are still absent; no synthetic substitutes. Wait for exact reviewed owner deliveries before dependent product changes.",
+      "dependency": "Campaign/Data OWNERSHIP contracts and pure Dungeon geometry port remain actual owner deliveries. Dungeon P01 ea46ba5437596aceaad955330e21c3ef4e739451 received independent CHANGES_REQUIRED for spatial parent/binding freshness; separate N01/R02 must pass before its I01/code review. Actual Registry/provider/envelope and geometry port are not supplied or integrated. World projection remains actual Repository.spatialGraph.world() and placements/spatial targets; no synthetic substitutes.",
       "review": "Independent integrated code/host review follows complete pinned I01c handoff per #12; repairs and Cleanup-P/I/R are separate runs. Current native I01b is a narrow implementation proof, not full gate approval."
     },
     "review": {
@@ -804,6 +804,36 @@
         "sourceCommit": "05078b40659bf0eca99a61a8281329a1708596f3",
         "nextOwnerPlanReadyOn": "88babcd2eee05f8d99a914129fd176b264bdcb26",
         "followup": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6092204700"
+      },
+      "dungeonGeometryPlanInput": {
+        "run": "E2E-01-DUNGEON-GEOMETRY-P01-R01",
+        "state": "independent_plan_review_changes_required_n01_r02_before_i01",
+        "owner": "Dungeon",
+        "reviewer": "Hex independent Atlas interface recipient",
+        "candidate": "ea46ba5437596aceaad955330e21c3ef4e739451",
+        "base": "e5a19a93ce417b4e48fa86512d1c7f1be4d41eea",
+        "startedAt": "2026-10-10T01:56:31Z",
+        "finishedAt": "2026-10-10T02:03:17.634615+00:00",
+        "review": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/23#issuecomment-6092483393",
+        "handoff": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6092491287",
+        "finding": "DUN-GEO-P01-R01-01: parent/binding/frame freshness is not implied by unchanged Dungeon Beforebytes and current prospective closure; freeze actual Source/History lifetime and parent basis, block/cancel on change without rebasing and protect late-up.",
+        "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/dungeon-geometry-p01-r01/review.json",
+        "notProven": [
+          "owner implementation",
+          "code review",
+          "native/physical input",
+          "full E2E gate",
+          "cleanup"
+        ],
+        "next": "Dungeon supplies narrow N01 plan delta and exact-SHA independent R02 before I01; no owner code adopted.",
+        "synchronizedShared": "89a3ffbad44ed6acec2e25566a1b017166fa9f7c",
+        "synchronizationVerification": {
+          "check": true,
+          "testsPassed": 485,
+          "testsFailed": 0,
+          "build": true,
+          "scope": "Approved shared catalog upstream synchronization and own metadata; not geometry implementation or plan PASS."
+        }
       }
     },
     "verification": {
