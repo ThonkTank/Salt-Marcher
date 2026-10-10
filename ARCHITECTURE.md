@@ -606,7 +606,9 @@ Ausgänge nur mit ursprünglicher CommandId/ReceiptId auf. Der vollständige
 Quellimport aktiviert keinen Registryprovider oder Vault-/P02-/P04-Adapter;
 der bestehende Atlas-Speicherweg bleibt die bisherige lokale Grenze.
 Der echte Campaign→Atlas-Kontext-/Registry-/Publishanschluss ist weiterhin
-Umsetzungsarbeit, die unabhängige Integrationsprüfung ein getrenntes Gate.
+Umsetzungsarbeit. Der unabhängige Kompositionsreview auf `ef6e851` und dessen
+getrenntes Reviewartefakt-Aufräumen bestehen; sie bestätigen ausschließlich
+Quell- und Vertragstreue, keinen produktiven Laufzeitadapter.
 
 **Stand E2E-01-SPACE-I01b:** AtlasView aktiviert die tatsächlichen typisierten
 City-/DungeonSources. Der native Kennungsindex liest alle passenden Dateien im

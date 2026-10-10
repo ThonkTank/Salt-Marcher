@@ -793,7 +793,7 @@
   "hexAtlasExecution": {
     "scope": "HEX-00 bis HEX-28 und sämtliche eingeordneten CITY-00 bis CITY-09 vollständig",
     "phase": "HEX-03",
-    "state": "e2e01_campaign_owner_source_integrated_checked_narrow_integration_review_pending",
+    "state": "e2e01_campaign_source_review_and_cleanup_pass_current_shared_synced_runtime_plan_next",
     "plan": "ROADMAP-E2E01-SPATIAL-INTEGRATION-PLAN.md",
     "currentRun": {
       "id": "E2E-01-SPACE-I01b",
@@ -840,11 +840,11 @@
       "phaseApproval": false
     },
     "nextRun": {
-      "id": "E2E-01-SPACE-I01c-CAMPAIGN-INTEGRATION-R01",
-      "kind": "independent_read_only_affected_source_integration_review",
-      "focus": "Review actual full owner adoption d06354c on sole PR13 product merge5700fd2: exact imported contract/test blobs, fresh Shared a72c950, preserved native Atlas/City/Dungeon and one History/Repository/fixture; 513 tests/check/clean build. Do not repeat generic Campaign/MWS owner reviews or call host-neutral imports a wired runtime provider.",
-      "dependency": "Campaign qualified owner branch is fully normally merged and checked on actual current Atlas basis; no missing receipt or new owner handoff. Separate independent narrow review of this composition is next. Actual Registryprovider/context/publish/Vault/P02/P04/payload/media/CompleteImport remain later runtime gates, not implemented by this import.",
-      "review": "Existing real peer reviews this exact merged source read-only; findings, repair and scoped re-review if needed, then separate cleanup. No GUI or full E2E approval."
+      "id": "E2E-01-SPACE-I01c-RUNTIME-P01",
+      "kind": "bounded_concrete_own_runtime_adapter_plan",
+      "focus": "Specify the next executable Worldowner/native Source identity-revision-digest projection and thin CampaignContext-to-Atlas open/navigation adapter using actual existing AtlasRepository/SpatialGraph/History and delivered Campaign ports. Pin own files, fail-closed unknown/stale/ambiguous/A-to-B-to-A/pending-Key-and-gesture oracles and first user-visible route. Keep one camera/history; no writing Session or invented registry provider.",
+      "dependency": "Qualified Campaign contract source and independent composition R01 plus separate reviewer cleanup are available and closed. Current Shared/catalog normally consumed and tested, duplicate status hold resolved. Real registry/media/P02/P04 provider responsibilities remain explicit ports and later owner deliveries; no new generic handoff request needed.",
+      "review": "Plan, implementation, independent review/repair and cleanup remain separate runs. This synchronization creates no runtime code and claims no new native/full E2E gate."
     },
     "review": {
       "run": "HEX-02-R02",
@@ -1092,7 +1092,7 @@
       },
       "campaignOwnershipInput": {
         "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6091818151",
-        "state": "qualified_owner_source_integrated_core_checked_runtime_provider_and_independent_integration_review_pending",
+        "state": "actual_source_integrated_independent_composition_review_pass_runtime_adapters_pending",
         "worldProjection": {
           "api": "AtlasRepository.spatialGraph.world()",
           "ownerId": "native World ID",
@@ -1126,10 +1126,11 @@
             "build": "PASS clean exact d06354c"
           },
           "sourceIntegrated": true,
-          "integratedProductCandidate": "5700fd2de749cb55716258e60505481ba90884ff"
+          "integratedProductCandidate": "5700fd2de749cb55716258e60505481ba90884ff",
+          "independentIntegrationReview": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/13#issuecomment-6093998767"
         },
         "mediaOwnerGate": {
-          "state": "scoped_repair_review_pass_qualified_full_source_integrated_narrow_integration_review_pending",
+          "state": "scoped_media_owner_repair_and_source_integration_review_pass_runtime_adapters_pending",
           "reviewedSha": "7aa47beb1bad3d0b1560666fa1cb1677bdc8cd4e",
           "review": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/25#issuecomment-6092636859",
           "gateCorrection": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6092638831",
@@ -1137,7 +1138,7 @@
             "ManualDecision may still be omitted/quarantined by Salvage although the confirmed campaign decision must be retained until its defined end.",
             "Source-scene-bound AmbienceOverride may still survive/remap into an independent target; retirement suspends source state and target requires a fresh projection."
           ],
-          "required": "Secured actual d06354c branch was fully normally merged on5700fd2 and checked. Next is narrow separate independent source-integration review, no new generic/MWS owner review or handoff request.",
+          "required": "No further generic/MWS/source integration review or owner handoff. Actual source composition R01 and separate review cleanup passed; next own runtimeadapter plan and later actual native/runtime checks.",
           "adoption": "d06354c supersedes7aa47be and is now a full merge ancestor of the only PR13 candidate5700fd2. Actual runtime owner/provider adapters remain open.",
           "repairCandidate": {
             "run": "OWNERSHIP-I01-N02",
@@ -1663,16 +1664,38 @@
         "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/obs04-shared-integration-20261010",
         "scope": "Consume the normally verified merged Shared OBS-04 fix; no new E2E01 feature or unreviewed owner source adoption.",
         "latestMetadataConsumption": {
-          "shared": "601a226911efe8ad1aac19f74457ffde52af558d",
-          "merge": "688afde30e07f444802b68646567099144d1eb9e",
-          "state": "fresh_cloud_obs04_retest_and_separate_host_setup_evidence_consumed_exact",
-          "ownerRecord": "gmProductTesting.latestObs04IntegratedRetest and latestFreshProcessAttempt",
-          "scope": "Completed narrow five-point Cloud retest stays exact on eefbe6f; separate fresh-process host setup is not_started_preflight_recorded. Owner metadata only, no Hex native test."
+          "shared": "e09d1959e26536c9dcaff7d2d13b601cf3077e36",
+          "merge": "a659d873eb39c7bf7379313bee797d14d94fdb6b",
+          "state": "actual_unique_owner_metadata_and_catalog_source_progress_normally_consumed_checked",
+          "scope": "Catalog decb94a plus completed narrow GM retest metadata e09d195. Exact owner roots; no new Hex native/fresh-process claim."
+        },
+        "latestSourceSynchronization": {
+          "id": "E2E-01-SPACE-I01c-SHARED-CATALOG-SYNC-20261010-0501",
+          "productCandidate": "a659d873eb39c7bf7379313bee797d14d94fdb6b",
+          "sourceShared": "e09d1959e26536c9dcaff7d2d13b601cf3077e36",
+          "catalogSource": "decb94aaf43c9c4139ac00197f6db07879d8b05e",
+          "normalFullMerge": true,
+          "checks": {
+            "check": true,
+            "testsPassed": 514,
+            "testsFailed": 0,
+            "cleanBuild": true,
+            "jsonUniqueAndDiff": true
+          },
+          "artifactSha256": {
+            "main.js": "df0e0d9b3dd716aed1a4dd2db85145276b0d57ab61f2075f1d01520bdfa9bd5d",
+            "styles.css": "cdf172e7d3c101d5917c16afe487641a19d9d5afe8ad23365b33c958ee1ac321",
+            "manifest.json": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64"
+          },
+          "geometryAndNativeFixtureBytesUnchanged": true,
+          "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/shared-catalog-sync-20261010-0501/run.json",
+          "nativeOnThisBuild": false,
+          "fullE2E": false
         }
       },
       "campaignIntegration": {
         "id": "E2E-01-SPACE-I01c-CAMPAIGN-INTEGRATION-01",
-        "state": "full_qualified_owner_branch_normally_merged_core_checks_pass_independent_integration_review_pending",
+        "state": "qualified_full_branch_integrated_checked_independent_source_composition_review_and_its_cleanup_pass_runtime_open",
         "gate": "E2E-01",
         "catalog": "ROADMAP-E2E-GATES-CANDIDATE.md:13",
         "atlasBase": "37d9ef0c7b5b11946d31a813756c78b0cd3fe897",
@@ -1711,11 +1734,44 @@
         "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/campaign-integration-01-20261010/run.json",
         "ownerHandoff": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/25#issuecomment-6093614522",
         "claim": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/13#issuecomment-6093803333",
-        "independentIntegrationReview": "pending separate exact-source run",
+        "independentIntegrationReview": {
+          "id": "E2E-01-SPACE-I01c-CAMPAIGN-INTEGRATION-R01",
+          "state": "PASS_bounded_source_composition",
+          "reviewer": "Stadt (existing independent peer)",
+          "testedCandidate": "ef6e85161a0895ad5906e8c0c8d634843080aa5e",
+          "productMerge": "5700fd2de749cb55716258e60505481ba90884ff",
+          "qualifiedOwner": "d06354c37ea24c249a23310f1a186a0a5ee4e936",
+          "laterMetadataChecked": "f9e286ee21e00ec2265ac8bf451076c54493a251",
+          "review": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/13#issuecomment-6093998767",
+          "gate": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6093998836",
+          "readDirectly": true,
+          "actualReviewerEvidence": "/home/aaron/.cache/dungeon-native-qa/city-plans/campaign-integration-r01-20261010/review.json",
+          "checks": {
+            "provenance": "Actual independent reviewer, not a new Hex rerun of generic owner review",
+            "check": true,
+            "testsPassed": 513,
+            "testsFailed": 0,
+            "cleanBuild": true,
+            "fourOwnerBlobsExact": true,
+            "535TrackedSnapshotBlobsUnchanged": true,
+            "coreSignatureCompatibility": true,
+            "noProductRuntimeImport": true
+          },
+          "limits": "Source-contract composition only; runtime Registryprovider/Campaign-to-Atlas context/Vault/atomic publish/P02/P04/payload/media/CompleteImport and native/full E2E remain open. Atomic CAS is still a port contract, not runtime proof.",
+          "cleanup": {
+            "state": "PASS_terminal_review_artifact_cleanup",
+            "readDirectly": true,
+            "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6094023183",
+            "evidence": "/home/aaron/.cache/dungeon-native-qa/city-plans/campaign-integration-r01-20261010/cleanup-review.json",
+            "scope": "Own reviewer artifacts only, 545 protected files preserved; no recursive cleanup or product approval."
+          },
+          "nativeOnThisBuild": false,
+          "fullE2E": false
+        },
         "nativeOnThisBuild": false,
         "physicalInput": false,
         "fullE2E": false,
-        "next": "Review actual full owner adoption d06354c on sole PR13 product merge5700fd2: exact imported contract/test blobs, fresh Shared a72c950, preserved native Atlas/City/Dungeon and one History/Repository/fixture; 513 tests/check/clean build. Do not repeat generic Campaign/MWS owner reviews or call host-neutral imports a wired runtime provider.",
+        "next": "Separate own E2E-01-SPACE-I01c-RUNTIME-P01: concrete native World owner projection and thin immutable Campaign context/navigation adapter; actual owner/provider boundaries retained; no fabricated registry/receipt or foreign P02/P04 implementation.",
         "postCheckSharedMetadata": {
           "shared": "601a226911efe8ad1aac19f74457ffde52af558d",
           "merge": "688afde30e07f444802b68646567099144d1eb9e",
@@ -1724,7 +1780,7 @@
       },
       "incomingSharedMetadataHold": {
         "id": "HEX-SYNC-META-01",
-        "state": "one_shared_metadata_adoption_deferred_owner_duplicate_status_correction_pending",
+        "state": "resolved_actual_owner_shared_unique_normally_consumed",
         "incoming": "eac70ecc3bf2d0ebeaeacc9d11436f8316b8943b",
         "lastConsumedShared": "77c4f1da8675b733f4ca3a323177c2a1e819497f",
         "pointer": "/gmProductTesting/latestFreshProcessAttempt/status",
@@ -1739,7 +1795,22 @@
         "finding": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/8#issuecomment-6093952721",
         "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/shared-json-duplicate-20261010-0451/finding.json",
         "scope": "Incoming GM metadata only; all actual Atlas product, fixture, old Native evidence and the already requested separate Campaign integration review remain unchanged. Owner correction required; no foreign-root rewrite, product test or new general review request.",
-        "next": "Read actual owner correction and validate a unique status before normal incoming Shared adoption. Await existing independent Campaign integration review separately."
+        "next": "No remaining metadata adoption hold. Historical eac finding retained; do not repeat status correction or general review.",
+        "ownerCorrectedShared": "e09d1959e26536c9dcaff7d2d13b601cf3077e36",
+        "candidateMerge": "a659d873eb39c7bf7379313bee797d14d94fdb6b",
+        "decodedOwnerRootPreserved": true,
+        "allKeysUnique": true
+      },
+      "pendingIndependentCityReferenceReview": {
+        "pr": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/27",
+        "requestedSource": "0f6defef4f8d50343e7ee9060bad5cc4e9f42ce7",
+        "handoff": "Concrete completed I48b/R48 reference package from existing City peer chat; read-only independent review requested, queued as a separate bounded run. No source integration or review PASS assumed.",
+        "state": "qualified_reference_review_request_queued_no_review_started",
+        "evidenceRoots": [
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i48a-20261009-r01",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i48b-20261010-r01"
+        ],
+        "scope": "Only original two-value Map/Template/fresh-session evidence and CO-COK-0004 qualification; no GUI, implementation, full parity or general review round."
       }
     },
     "verification": {
