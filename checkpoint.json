@@ -5084,7 +5084,7 @@
     "state": "gm_ux_n005_n01_h01_r02_blocked_r03_not_started",
     "plan": "ROADMAP-GM-PRODUCT-TESTING-PLAN.md",
     "focus": "Längere GM-Endanwenderabläufe, häufige Aktionen, Bedienkosten und UI-Überladung; belegte Nacharbeiten beauftragen und nachprüfen.",
-    "currentRun": "GM-UX-01-D-PASTE-ALT-LAYOUT-20261010-01 completed: second visible copy/paste probe in zoomed+panned layout; viewport-center placement reproduced, desired semantics remain undecided.",
+    "currentRun": "GM-UX-01-D-PASTE-SEMANTICS-OWNER-SYNC-20261010-01 completed: requested explicit paste-position semantics from the Dungeon product owner in Issue #8/6095748363; no UI test or product change. A further paste test is blocked until the owner decides.",
     "executedUiRuns": 15,
     "observedFindings": [
       {
@@ -5225,7 +5225,7 @@
       "state": "completed",
       "supersedes": "GM-UX-ACCESS; Slotanfrage gemäß Nutzerkorrektur aufgehoben"
     },
-    "next": "Ask Dungeon product owner in Issue #8 to state intended duplicate placement semantics (without requesting implementation yet). If a target-position interaction is chosen, add explicit UI acceptance criteria and run only that bounded follow-up; otherwise record center placement as expected behavior. Continue broader GM scenario only after current ownership sync.",
+    "next": "Await the Dungeon product owner's paste-position decision requested in Issue #8/6095748363. If a target-position interaction is chosen, agree visible acceptance criteria and run only that bounded follow-up; otherwise record viewport-center placement as expected behavior. Continue unrelated GM scenarios only where ownership and product scope are clear; do not repeat completed N-005/N-006/GM-R01 or claim wider acceptance.",
     "automation": "Stündliche GM-Produkttests in eigener Cloud; keine Laptop-Slotfreigabe erforderlich.",
     "executionEnvironment": "Eigene Cloud-Umgebung, getrennt vom Laptop der Kollegen",
     "cloudHost": {
