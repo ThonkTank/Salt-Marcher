@@ -64,8 +64,8 @@ test("items source package is explicitly incomplete and fails closed by default"
   await assert.rejects(verifyItemsSourcePackage(), /S01 ist unvollständig/);
   const result = await verifyItemsSourcePackage({ allowIncomplete: true });
   assert.equal(result.complete, false);
-  assert.equal(result.validation.occurrenceCount, 199);
-  assert.equal(result.validation.recordCount, 199);
+  assert.equal(result.validation.occurrenceCount, 213);
+  assert.equal(result.validation.recordCount, 213);
   assert.ok(result.blockers.length >= 5);
 });
 
@@ -374,7 +374,8 @@ test("mounts preserve eight physical rows and reconcile the Donkey or mule helpe
   assert.equal(records.every(record => !("weight" in record)), true);
   assert.equal(records.filter(record => record.name === "Donkey or mule").length, 1);
   const expansions = checkedInventory.helperDispositions.filter(item =>
-    item.disposition === "expanded-primary-occurrences");
+    item.disposition === "expanded-primary-occurrences"
+    && item.canonicalId === "srd51:equipment:mounts-other-animals:2");
   assert.deepEqual(expansions.map(item => [item.helperIndex, item.helperName]),
     [["donkey", "Donkey"], ["mule", "Mule"]]);
   assert.equal(expansions.every(item => item.sourceText === "Donkey or mule"
@@ -394,4 +395,63 @@ test("mounts preserve eight physical rows and reconcile the Donkey or mule helpe
   mismatchedCapacity.records.find(record => record.name === "Elephant").carryingCapacity.pounds = 132;
   assert.throws(() => validateTranscriptData(mismatchedCapacity, checkedInventory, { allowIncomplete: true }),
     /carryingCapacity\.pounds stimmt nicht/);
+});
+
+test("tack and drawn vehicles preserve formulas, missing weight and sourced Barding expansions", async () => {
+  const [checkedInventory, checkedTranscript] = await Promise.all([
+    readFile(new URL("items-srd51-inventory.json", dataRoot), "utf8").then(JSON.parse),
+    readFile(new URL("items-srd51-transcript.json", dataRoot), "utf8").then(JSON.parse),
+  ]);
+  const occurrences = checkedInventory.occurrences.filter(item => item.sectionId === "tack-harness-drawn-vehicles");
+  const records = checkedTranscript.records.filter(record =>
+    record.id.includes(":tack-harness-drawn-vehicles:"));
+  assert.deepEqual(occurrences.map(item => item.sourceLabel), [
+    "Barding", "Bit and bridle", "Carriage", "Cart", "Chariot", "Feed (per day)", "Exotic", "Military",
+    "Pack", "Riding", "Saddlebags", "Sled", "Stabling (per day)", "Wagon",
+  ]);
+  assert.deepEqual(occurrences.map(item => item.id),
+    Array.from({ length: 14 }, (_, index) => `srd51:equipment:tack-harness-drawn-vehicles:${index + 1}`));
+  assert.deepEqual(records.map(record => record.id), occurrences.map(item => item.id));
+  assert.deepEqual(records.map(record => record.name), [
+    "Barding", "Bit and bridle", "Carriage", "Cart", "Chariot", "Feed (per day)", "Saddle, Exotic",
+    "Saddle, Military", "Saddle, Pack", "Saddle, Riding", "Saddlebags", "Sled", "Stabling (per day)", "Wagon",
+  ]);
+  assert.deepEqual(records.map(record => record.cost.sourceText),
+    ["×4", "2 gp", "100 gp", "15 gp", "250 gp", "5 cp", "60 gp", "20 gp", "5 gp", "10 gp", "4 gp",
+      "20 gp", "5 sp", "35 gp"]);
+  assert.deepEqual(records.map(record => record.weight.sourceText),
+    ["×2", "1 lb.", "600 lb.", "200 lb.", "100 lb.", "10 lb.", "40 lb.", "30 lb.", "15 lb.",
+      "25 lb.", "8 lb.", "300 lb.", "—", "400 lb."]);
+  const byName = new Map(records.map(record => [record.name, record]));
+  assert.equal("copperPieces" in byName.get("Barding").cost, false);
+  assert.equal("pounds" in byName.get("Barding").weight, false);
+  assert.equal("pounds" in byName.get("Stabling (per day)").weight, false);
+  assert.deepEqual(byName.get("Saddle, Exotic").weight, { sourceText: "40 lb.", pounds: "40" });
+  assert.match(byName.get("Barding").description[0].text, /cost is four times.*weighs twice/);
+  assert.match(byName.get("Saddle, Military").description[0].text, /advantage.*remain mounted/);
+  assert.match(byName.get("Saddle, Exotic").description[0].text, /aquatic or flying mount/);
+  assert.equal(["Carriage", "Cart", "Chariot", "Sled", "Wagon"].every(name =>
+    byName.get(name).description[0].text.startsWith("If you have proficiency with a certain kind of vehicle")), true);
+
+  const bardingId = "srd51:equipment:tack-harness-drawn-vehicles:1";
+  const barding = checkedInventory.helperDispositions.filter(item =>
+    item.disposition === "expanded-primary-occurrences" && item.canonicalId === bardingId);
+  assert.deepEqual(barding.map(item => item.helperIndex), [
+    "barding-padded", "barding-leather", "barding-studded-leather", "barding-hide", "barding-chain-shirt",
+    "barding-scale-mail", "barding-breastplate", "barding-half-plate", "barding-ring-mail",
+    "barding-chain-mail", "barding-splint", "barding-plate",
+  ]);
+  assert.equal(barding.every((item, index) => item.sourceText === "Barding"
+    && item.sourceOccurrenceIds[0] === bardingId
+    && item.sourceOccurrenceIds[1] === `srd51:equipment:armor:${index + 1}`), true);
+
+  const missingCanonicalSource = structuredClone(checkedInventory);
+  missingCanonicalSource.helperDispositions.find(item => item.helperIndex === "barding-padded")
+    .sourceOccurrenceIds = ["srd51:equipment:armor:1"];
+  assert.throws(() => validateTranscriptData(checkedTranscript, missingCanonicalSource, { allowIncomplete: true }),
+    /kanonische Primär-ID belegen/);
+  const inventedFormula = structuredClone(checkedTranscript);
+  inventedFormula.records.find(record => record.name === "Barding").cost.copperPieces = 400;
+  assert.throws(() => validateTranscriptData(inventedFormula, checkedInventory, { allowIncomplete: true }),
+    /cost ist nicht eindeutig umrechenbar/);
 });

@@ -222,9 +222,8 @@ export function validateTranscriptData(transcript, inventory, { allowIncomplete 
     } else if (disposition.disposition === "expanded-primary-occurrences") {
       invariant(disposition.canonicalId !== null,
         `${disposition.helperIndex} benötigt als expanded-primary-occurrences eine kanonische Primär-ID.`);
-      invariant(disposition.sourceOccurrenceIds.length === 1
-        && disposition.sourceOccurrenceIds[0] === disposition.canonicalId,
-        `${disposition.helperIndex} muss als expanded-primary-occurrences genau seine kanonische Primär-ID belegen.`);
+      invariant(disposition.sourceOccurrenceIds.includes(disposition.canonicalId),
+        `${disposition.helperIndex} muss als expanded-primary-occurrences seine kanonische Primär-ID belegen.`);
     } else if (disposition.canonicalId !== null) {
       invariant(occurrences.has(disposition.canonicalId),
         `${disposition.helperIndex} verweist auf unbekannte kanonische Occurrence ${disposition.canonicalId}.`);
