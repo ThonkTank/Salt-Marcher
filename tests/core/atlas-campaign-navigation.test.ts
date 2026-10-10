@@ -106,6 +106,7 @@ async function fixture() {
   let inventoryMode: "confirmed" | "unknown" | "unavailable" = "confirmed";
   let mutateInventory: ((i: AtlasConfirmedInventory) => AtlasConfirmedInventory) | undefined;
   let activateCalls = 0;
+  let activationReplyHook: (() => Promise<void>) | undefined;
   const projections = new Map<string, CampaignDomainOwnershipProjectionV1>();
   const projection = (c: CampaignContextProjection) => {
     const existing = projections.get(c.contextToken); if (existing) return existing;
@@ -124,7 +125,12 @@ async function fixture() {
       const inv: AtlasConfirmedInventory = { context: p.context, registryId: p.registryId, registryRevision: p.registryRevision, projectionDigest: p.projectionDigest, worldId: world, files: native.files, records: native.records };
       return { kind: "confirmed", inventory: mutateInventory ? mutateInventory(inv) : inv };
     } },
-    activate: (cmd, id, kind) => { activateCalls++; events.push("activate"); return service.activate(cmd, id, kind); },
+    activate: async (cmd, id, kind) => {
+      activateCalls++; events.push("activate");
+      const result = await service.activate(cmd, id, kind);
+      await activationReplyHook?.();
+      return result;
+    },
     openNative: async (input) => {
       const store = stores.get(input.context.campaignId)!;
       let opening = true;
@@ -151,6 +157,7 @@ async function fixture() {
     return { context: s.context, worldId, mountGeneration: s.generation, registryRevision: s.projection.registryRevision, projectionDigest: s.projection.projectionDigest, ownerId: owner.ownerId, ownerRevision: owner.ownerRevision, sourceGeneration: owner.source.generation, sourceDigest: capture.sourceDigest, basis: capture.basis, target };
   }
   return { navigation, service, stores, mounts, open, request, readGates, events, projection, activateCalls: () => activateCalls,
+    activationReplyHook: (hook?: () => Promise<void>) => { activationReplyHook = hook; },
     verifyHook: (hook?: () => Promise<void>) => { verifyHook = hook; }, openHook: (hook?: () => Promise<void>) => { openHook = hook; },
     registryMode: (v: typeof registryMode) => { registryMode = v; }, verifyMode: (v: typeof verifyMode) => { verifyMode = v; }, inventoryMode: (v: typeof inventoryMode) => { inventoryMode = v; },
     mutateInventory: (fn?: typeof mutateInventory) => { mutateInventory = fn; } };
@@ -302,4 +309,70 @@ test("won native save rolls forward only under old paths while its suspended mou
   resume.resolve(); await pending; m.pendingPublish = false;
   assert.match(m.store.files.get(`Orte/${id(11)}.location`)!, / saved/); assert.deepEqual([...fresh.store.files], newFiles);
   assert.equal(m.store.files.has(m.repository.journalPath), false); assert.equal(f.navigation.retainedMounts[0]!.reason, "publish-pending"); assert.throws(m.input.assertCurrent, /veraltet/);
+});
+
+test("RUNTIME-I01b-R01-01: late applied reply preserves fresh B mount, native Key and UI owners", async () => {
+  const f = await fixture(), old = await f.open(), entered = deferred(), reply = deferred();
+  f.activationReplyHook(async () => { entered.resolve(); await reply.promise; });
+  const pending = f.navigation.switchCampaign(f.service.context!, command(2), b, worldId);
+  const outcome = pending.then(() => null, (error: unknown) => error);
+  await entered.promise; const confirmed = f.service.context!;
+  f.navigation.contextChanged(); const fresh = await f.open();
+  await f.navigation.navigate(await f.request(loc));
+  const doc = fresh.repository.location(id(11))!.read()!;
+  fresh.repository.editLocation({ ...doc, sections: doc.sections.map((s, n) => n ? s : { ...s, markdown: "Ungesicherter B-Key" }) });
+  fresh.unsavedKey = true;
+  const source = fresh.repository.terrainSource, history = source.history, epoch = history.epoch, focus = fresh.focus;
+  reply.resolve(); const error = await outcome;
+  assert.equal(fresh.disposed, false); assert.equal(fresh.blocked, false); assert.equal(f.mounts.length, 2);
+  const active = f.navigation.state; assert.equal(active.kind, "active");
+  if (active.kind === "active") { assert.equal(active.repository, fresh.repository); assert.equal(active.history, history); assert.equal(active.renderer, fresh.renderer); }
+  assert.equal(fresh.repository.terrainSource, source); assert.equal(history.epoch, epoch); assert.equal(fresh.focus, focus);
+  assert.equal(fresh.repository.location(id(11))!.read()!.sections[0]!.markdown, "Ungesicherter B-Key"); assert.equal(fresh.unsavedKey, true);
+  assert.equal(f.service.context, confirmed); fresh.input.assertCurrent(); assert.equal(old.disposed, true);
+  assert.match(String(error), /neueren Atlasauftrag/); assert.deepEqual(fresh.store.writes, []);
+});
+
+test("RUNTIME-I01b-R01-01: late applied reply cannot overtake pending B open or release its lock", async () => {
+  const f = await fixture(); await f.open();
+  const entered = deferred(), reply = deferred(), openEntered = deferred(), openResume = deferred();
+  f.activationReplyHook(async () => { entered.resolve(); await reply.promise; });
+  const pending = f.navigation.switchCampaign(f.service.context!, command(2), b, worldId);
+  const outcome = pending.then(() => null, (error: unknown) => error);
+  await entered.promise; const confirmed = f.service.context!; f.navigation.contextChanged();
+  f.openHook(async () => { f.openHook(); openEntered.resolve(); await openResume.promise; });
+  const opening = f.open(); const openOutcome = opening.then((mount) => ({ mount }), (error: unknown) => ({ error }));
+  await openEntered.promise; const fresh = f.mounts[1]!; fresh.unsavedKey = true;
+  try {
+    reply.resolve(); const error = await outcome;
+    assert.match(String(error), /neueren Atlasauftrag/); assert.equal(f.mounts.length, 2); assert.equal(fresh.disposed, false);
+    fresh.input.assertCurrent(); assert.equal(fresh.resumed, 0);
+    await assert.rejects(f.navigation.open(confirmed, worldId), /beschäftigt/);
+  } finally { openResume.resolve(); }
+  const opened = await openOutcome; assert.ok("mount" in opened); if ("mount" in opened) assert.equal(opened.mount, fresh);
+  assert.equal(fresh.resumed, 1); assert.equal(fresh.disposed, false); assert.equal(fresh.unsavedKey, true);
+  assert.equal(f.service.context, confirmed); fresh.input.assertCurrent(); assert.equal(f.mounts.length, 2);
+});
+
+test("RUNTIME-I01b-R01-01: failed newer B open is not retried by obsolete applied reply", async () => {
+  const f = await fixture(); await f.open(); const entered = deferred(), reply = deferred();
+  f.activationReplyHook(async () => { entered.resolve(); await reply.promise; });
+  const pending = f.navigation.switchCampaign(f.service.context!, command(2), b, worldId);
+  const outcome = pending.then(() => null, (error: unknown) => error);
+  await entered.promise; const confirmed = f.service.context!; f.navigation.contextChanged();
+  f.inventoryMode("unavailable"); await assert.rejects(f.open(), /nicht bestätigt/);
+  const state = f.navigation.state; f.inventoryMode("confirmed"); reply.resolve(); const error = await outcome;
+  assert.match(String(error), /neueren Atlasauftrag/); assert.deepEqual(f.navigation.state, state);
+  assert.equal(f.service.context, confirmed); assert.equal(f.mounts.length, 1);
+});
+
+test("RUNTIME-I01b-R01-01: Context notification alone still allows original switch to mount confirmed B", async () => {
+  const f = await fixture(); const old = await f.open(), entered = deferred(), reply = deferred();
+  f.activationReplyHook(async () => { entered.resolve(); await reply.promise; });
+  const pending = f.navigation.switchCampaign(f.service.context!, command(2), b, worldId);
+  await entered.promise; const confirmed = f.service.context!; f.navigation.contextChanged();
+  reply.resolve(); const result = await pending;
+  assert.equal(result.applied, true); assert.equal(result.context, confirmed); assert.equal(f.service.context, confirmed);
+  assert.equal(f.mounts.length, 2); assert.equal(old.disposed, true); assert.equal(f.mounts[1]!.resumed, 1);
+  assert.equal(f.navigation.state.kind, "active"); assert.deepEqual(f.navigation.state.context, confirmed);
 });

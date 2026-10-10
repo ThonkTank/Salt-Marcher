@@ -207,6 +207,8 @@ export class AtlasCampaignNavigation {
   private active?: MountEntry;
   private pendingContext: CampaignContextProjection | null = null;
   private busy?: object;
+  /** Context notification releases busy; only an accepted newer run supersedes a reply. */
+  private latestRun?: object;
   private closed = false;
   private readonly usedSources = new WeakSet<object>();
   private readonly retained: { context: CampaignContextProjection; mount: AtlasCampaignMount; reason: string }[] = [];
@@ -251,7 +253,7 @@ export class AtlasCampaignNavigation {
   private async run<T>(action: (token: object) => Promise<T>): Promise<T> {
     this.contextChanged();
     if (this.closed || this.busy) throw new Error("Atlasnavigation ist geschlossen oder beschäftigt.");
-    const token = {}; this.busy = token;
+    const token = {}; this.busy = token; this.latestRun = token;
     try { return await action(token); } finally { if (this.busy === token) this.busy = undefined; }
   }
   private async verify(entry: MountEntry): Promise<void> {
@@ -364,6 +366,10 @@ export class AtlasCampaignNavigation {
       try {
         guard(); if (old) { await old.mount.prepareLeave(guard); guard(); }
         result = await this.ports.activate(command, id, c ? "switch" : "open");
+        // Activation may already be applied while its port reply is delayed.
+        // Preserve any newer active/pending/failed open and its own busy token.
+        if (this.closed || this.latestRun !== token)
+          throw new Error("Campaignwechsel wurde durch einen neueren Atlasauftrag abgelöst.");
       } catch (error) {
         this.contextChanged();
         if (old && this.active === old && sameContext(c, this.ports.currentContext())) old.mount.setInputBlocked(false);
