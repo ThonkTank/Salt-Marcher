@@ -4930,17 +4930,18 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-R48-CLEAN-P",
-      "kind": "cleanup_plan",
-      "startedAt": "2026-10-10T04:48:26Z",
-      "state": "completed",
-      "result": "Concrete plan: remove only own exact /tmp helper (7721 bytes); protect 135 evidence hashes, no repeated cache cleanup or GUI. Implementation and independent cleanup review remain separate.",
-      "receipt": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i48b-20261010-r01/r48-cleanup-plan.json"
-    },
-    "nextRun": {
       "id": "CITY-00-R48-CLEAN-I",
       "kind": "cleanup_implementation",
-      "focus": "Revalidate helper path/type/hash, remove only planned own helper, preserve protected evidence; then separate cleanup review and Campaign integration review handoff"
+      "startedAt": "2026-10-10T04:49:32Z",
+      "completedAt": "2026-10-10T04:49:33.213617+00:00",
+      "state": "completed",
+      "result": "Removed only exact own temporary R48 review helper, 7721 bytes.135 protected hashes unchanged before/after; no recursive/cache/product/GUI action. Separate cleanup review pending.",
+      "receipt": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i48b-20261010-r01/r48-cleanup-implementation.json"
+    },
+    "nextRun": {
+      "id": "CITY-00-R48-CLEAN-R",
+      "kind": "cleanup_review",
+      "focus": "Verify exact planned deletion,135 protected hashes, receipt/plan binding and foreign/product boundaries; then hand off to concrete Campaign composition review"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
