@@ -4,6 +4,7 @@ import { readFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import Ajv2020 from "ajv/dist/2020.js";
+import { validateArmorArrowsSlice, validateArmorArrowsPdfXml } from "./items-srd51-armor-arrows.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const dataRoot = resolve(root, "src/features/catalog/data");
@@ -1175,7 +1176,8 @@ export async function verifyItemsSourcePackage({ pdfPath, allowIncomplete = fals
     "Manifest-Transkriptcount stimmt nicht.");
   const magicItemAzSection = inventory.sections.find(section => section.id === "magic-items-a-z");
   invariant(manifest.coverage.capturedMagicItemAzHeadings === magicItemAzSection?.capturedOccurrences
-    && manifest.coverage.capturedMagicItemAzStandaloneRecords === 9
+    && manifest.coverage.capturedMagicItemAzStandaloneRecords === inventory.occurrences
+      .filter(row => row.sectionId === "magic-items-a-z" && row.mergeIntoId === null).length
     && manifest.coverage.capturedMagicItemAzMergedDetails === 1
     && manifest.coverage.unresolvedMagicItemSourceHeadings
       === magicItemAzSection.expectedOccurrences - magicItemAzSection.capturedOccurrences,
@@ -1190,6 +1192,7 @@ export async function verifyItemsSourcePackage({ pdfPath, allowIncomplete = fals
   const magicItemAzApparatusOfTheCrab = validateMagicItemAzApparatusOfTheCrab(transcript, inventory);
   const magicItemAzArmorPlusOneTwoThree = validateMagicItemAzArmorPlusOneTwoThree(transcript, inventory);
   const magicItemAzArmorOfInvulnerability = validateMagicItemAzArmorOfInvulnerability(transcript, inventory);
+  const magicItemAzArmorArrows = validateArmorArrowsSlice(transcript, inventory);
   let pdf;
   if (pdfPath) {
     const bytes = await readFile(resolve(pdfPath));
@@ -1208,6 +1211,12 @@ export async function verifyItemsSourcePackage({ pdfPath, allowIncomplete = fals
         verifyPdfMagicItemAzArmorPlusOneTwoThree(pdfPath, transcript, inventory),
       magicItemAzArmorOfInvulnerabilityEvidence:
         verifyPdfMagicItemAzArmorOfInvulnerability(pdfPath, transcript, inventory),
+      magicItemAzArmorArrowsEvidence: validateArmorArrowsPdfXml(
+        execFileSync("pdftohtml", ["-xml", "-f", "208", "-l", "209", "-stdout", resolve(pdfPath)],
+          { encoding: "utf8", maxBuffer: 4 * 1024 * 1024 }),
+        extractMagicItemAzHeadingsFromPdfXml(execFileSync("pdftohtml",
+          ["-xml", "-f", "207", "-l", "251", "-stdout", resolve(pdfPath)],
+          { encoding: "utf8", maxBuffer: 16 * 1024 * 1024 })), normalizePdfText),
       potionHealingMergeEvidence: verifyPdfPotionHealingMerge(pdfPath, transcript, inventory),
       boundedArmorTableEvidence: verifyPdfArmorTableRows(pdfPath, transcript, inventory),
       boundedWeaponTableEvidence: verifyPdfWeaponTableRows(pdfPath, transcript, inventory),
@@ -1227,6 +1236,7 @@ export async function verifyItemsSourcePackage({ pdfPath, allowIncomplete = fals
     magicItemAzApparatusOfTheCrab,
     magicItemAzArmorPlusOneTwoThree,
     magicItemAzArmorOfInvulnerability,
+    magicItemAzArmorArrows,
     potionHealingMerge,
     pdf,
     hashes: Object.freeze({

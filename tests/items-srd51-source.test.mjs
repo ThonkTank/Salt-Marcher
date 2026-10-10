@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
+import { ARMOR_ARROWS, armorArrowsSourceRows, validateArmorArrowsSlice,
+  validateArmorArrowsPdfXml } from "../tools/items-srd51-armor-arrows.mjs";
 import {
   extractApparatusLeverCellsFromPdfXml,
   normalizePdfText,
@@ -79,15 +82,159 @@ test("items source package is explicitly incomplete and fails closed by default"
   await assert.rejects(verifyItemsSourcePackage(), /S01 ist unvollständig/);
   const result = await verifyItemsSourcePackage({ allowIncomplete: true });
   assert.equal(result.complete, false);
-  assert.equal(result.validation.occurrenceCount, 229);
-  assert.equal(result.validation.recordCount, 228);
+  assert.equal(result.validation.occurrenceCount, 233);
+  assert.equal(result.validation.recordCount, 232);
   assert.equal(result.magicItemAzOpeningSlice.capturedRecords, 5);
   assert.equal(result.magicItemAzAnimatedShield.ordinal, 6);
   assert.equal(result.magicItemAzApparatusOfTheCrab.leverRows, 10);
   assert.equal(result.magicItemAzArmorPlusOneTwoThree.variableRarityChoices, 3);
   assert.equal(result.magicItemAzArmorOfInvulnerability.attunement, "required");
+  assert.equal(result.magicItemAzArmorArrows.resistanceTableRows, 10);
   assert.equal(result.potionHealingMerge.mergedRecords, 1);
   assert.ok(result.blockers.length >= 5);
+});
+
+for (const item of ARMOR_ARROWS) {
+  test(`${item.name} preserves complete source facts and rejects identity/fact drift`, async () => {
+    const inventory = JSON.parse(await readFile(new URL("items-srd51-inventory.json", dataRoot)));
+    const transcript = JSON.parse(await readFile(new URL("items-srd51-transcript.json", dataRoot)));
+    assert.equal(validateArmorArrowsSlice(transcript, inventory).records, 4);
+    const id = `srd51:magic-item:magic-items-a-z:${item.ordinal}`;
+    for (const mutate of [row => row.ordinal++, row => row.lastPdfPage++,
+      row => row.mergeIntoId = "srd51:magic-item:magic-items-a-z:9",
+      row => row.sourceLabel += " wrong"]) {
+      const damaged = structuredClone(inventory);
+      mutate(damaged.occurrences.find(row => row.id === id));
+      assert.throws(() => validateArmorArrowsSlice(transcript, damaged), /occurrence identity/);
+    }
+    for (const mutate of [row => row.sourceHeader.text += " wrong",
+      row => row.rarity.value = "common", row => row.attunement = "unspecified",
+      row => row.description[0].text = row.description[0].text.slice(0, -15),
+      row => row.description[0].occurrenceId = "srd51:magic-item:magic-items-a-z:9",
+      row => row.source.pdfPages = [207], row => row.cost = { sourceText: "1 gp", copperPieces: 100 }]) {
+      const damaged = structuredClone(transcript);
+      mutate(damaged.records.find(row => row.id === id));
+      assert.throws(() => validateArmorArrowsSlice(damaged, inventory), /full header/);
+    }
+  });
+}
+
+test("Armor of Resistance retains all ten die-bound damage choices without inventing rarity variants", () => {
+  const row = armorArrowsSourceRows()[0].record;
+  assert.deepEqual(row.properties.map(p => [p.name, p.description]),
+    [["1", "Acid"], ["2", "Cold"], ["3", "Fire"], ["4", "Force"], ["5", "Lightning"],
+      ["6", "Necrotic"], ["7", "Poison"], ["8", "Psychic"], ["9", "Radiant"], ["10", "Thunder"]]);
+  const inventory = { occurrences: armorArrowsSourceRows().map(row => row.occurrence) };
+  for (const mutate of [p => p.reverse(), p => p.pop(), p => p[0].description = "Poison"]) {
+    const records = armorArrowsSourceRows().map(row => row.record);
+    mutate(records[0].properties);
+    assert.throws(() => validateArmorArrowsSlice({ records }, inventory), /full header/);
+  }
+  assert.deepEqual(row.rarity, { kind: "fixed", value: "rare" });
+});
+
+function armorArrowsXmlFixture() {
+  const text = value => `<text top="100">${value.replaceAll("&", "&amp;")}</text>`;
+  const first = ARMOR_ARROWS[0];
+  const table = "d10 Damage Type d10 Damage Type " + first.damageTypes.slice(0, 5)
+    .map((type, index) => `${index + 1} ${type} ${index + 6} ${first.damageTypes[index + 5]}`).join(" ");
+  return `<page number="208">${[first.name, first.header, ...first.description].map(text).join("")}
+    <text top="1125">System Reference Document 5.1 208</text></page>
+    <page number="209"><text top="1125">System Reference Document 5.1 209</text>${text(table)}${ARMOR_ARROWS.slice(1)
+      .flatMap(item => [item.name, item.header, ...item.description]).map(text).join("")}
+      ${text("Bag of Beans")}</page>`;
+}
+
+function armorArrowsHeadings() {
+  const headings = Array.from({ length: 239 }, (_, index) => `Heading ${index + 1}`);
+  headings.splice(8, 6, "Armor of Invulnerability", ...ARMOR_ARROWS.map(row => row.name), "Bag of Beans");
+  return headings;
+}
+
+test("heading-bounded PDF oracle rejects incomplete prose, wrong tables, pages and heading sequence", () => {
+  const headings = armorArrowsHeadings();
+  const xml = armorArrowsXmlFixture();
+  assert.equal(validateArmorArrowsPdfXml(xml, headings, normalizePdfText).records, 4);
+  // Retain the lack of whitespace at the italic/punctuation source boundary,
+  // independent of extractor coordinates. Genuine source whitespace survives.
+  const fragmented = xml.replace('<text top="100">An arrow',
+    '<text top="100" left="0" width="30">An arrow')
+    .replace("blue dragon slaying. If", 'blue dragon slaying</text><text top="100" left="30" width="20">. If');
+  assert.equal(validateArmorArrowsPdfXml(fragmented, headings, normalizePdfText).records, 4);
+  assert.equal(validateArmorArrowsPdfXml(fragmented.replace('left="30"', 'left="50"'),
+    headings, normalizePdfText).records, 4);
+  assert.throws(() => validateArmorArrowsPdfXml(fragmented.replace('>. If', '> . If'),
+    headings, normalizePdfText), /complete heading-bounded/);
+  for (const damaged of [xml.replace("1 Acid 6 Necrotic", "1 Necrotic 6 Acid"),
+    xml.replace("removing the armor fails to end the curse.", ""),
+    xml.replace('number="209"', 'number="210"'), xml.replace("Bag of Beans", "Wrong boundary"),
+    xml.replace("1 Acid 6 Necrotic", "1 Acid")])
+    assert.throws(() => validateArmorArrowsPdfXml(damaged, headings, normalizePdfText));
+  const wrongHeadings = [...headings];
+  [wrongHeadings[9], wrongHeadings[10]] = [wrongHeadings[10], wrongHeadings[9]];
+  assert.throws(() => validateArmorArrowsPdfXml(xml, wrongHeadings, normalizePdfText), /boundary sequence/);
+  assert.throws(() => validateArmorArrowsPdfXml(xml, headings.slice(1), normalizePdfText), /heading count/);
+});
+
+async function realArmorArrowsXml() {
+  const xml = await readFile(new URL("./fixtures/items-srd51-armor-arrows-poppler-25.03.xml", import.meta.url), "utf8");
+  const receipt = JSON.parse(await readFile(new URL(
+    "./fixtures/items-srd51-armor-arrows-poppler-25.03-receipt.json", import.meta.url), "utf8"));
+  assert.equal(createHash("sha256").update(xml).digest("hex"), receipt.fixtureSha256);
+  assert.equal(receipt.pdfSha256, "2504d2a0abb0a4d491a939be4f17910a2dde0312570ab8d208080225ccf0a1f0");
+  assert.equal(receipt.pdfBytes, 3158713);
+  assert.deepEqual(receipt.physicalPdfPages, [208, 209]);
+  assert.equal(receipt.license, "CC-BY-4.0");
+  return xml;
+}
+
+test("real hash-bound Poppler XML preserves complete Armor/Arrow source blocks", async () => {
+  assert.equal(validateArmorArrowsPdfXml(await realArmorArrowsXml(),
+    armorArrowsHeadings(), normalizePdfText).records, 4);
+});
+
+test("real XML body survives shifted/high coordinates instead of an absolute footer band", async () => {
+  const xml = await realArmorArrowsXml();
+  // These are derived adversaries of a real fixture, not claims that Poppler
+  // 25.07.0 was run here. The original 25.03.0 bytes/hash remain unchanged.
+  const shifted = xml.replace(/top="(\d+)"/g, (_, value) => `top="${Number(value) + 10000}"`);
+  assert.equal(validateArmorArrowsPdfXml(shifted, armorArrowsHeadings(), normalizePdfText).records, 4);
+  const reportedCoordinateShape = xml.replace(/<text\b([^>]*)>([\s\S]*?)<\/text>/g,
+    (_, attrs, body) => `<text${attrs.replace(/top="\d+"/, `top="${/<b>/.test(body) ? 1153 : 1156}"`)}>${body}</text>`);
+  assert.equal(validateArmorArrowsPdfXml(reportedCoordinateShape,
+    armorArrowsHeadings(), normalizePdfText).records, 4);
+  // Extra content in that formerly discarded region must still fail closed.
+  const extraFact = shifted.replace("Curse.", "Unpublished invented fact. Curse.");
+  assert.notEqual(extraFact, shifted);
+  assert.throws(() => validateArmorArrowsPdfXml(extraFact, armorArrowsHeadings(), normalizePdfText),
+  /complete heading-bounded/);
+});
+
+test("content-bound footer detection rejects missing/duplicate/wrong footers and retains body numbers", async () => {
+  const xml = await realArmorArrowsXml();
+  const footer = /<text\b[^>]*>System[\s\S]*?<\/text>/;
+  const matched = footer.exec(xml)?.[0];
+  assert.ok(matched);
+  assert.throws(() => validateArmorArrowsPdfXml(xml.replace(matched, ""),
+    armorArrowsHeadings(), normalizePdfText), /exactly one SRD footer/);
+  assert.throws(() => validateArmorArrowsPdfXml(xml.replace(matched, matched + matched),
+    armorArrowsHeadings(), normalizePdfText), /exactly one SRD footer/);
+  assert.throws(() => validateArmorArrowsPdfXml(xml.replace('<b>208</b>', '<b>209</b>'),
+    armorArrowsHeadings(), normalizePdfText), /footer page number/);
+  const extraBodyNumber = xml.replace('Armor of Resistance </b></text>',
+    'Armor of Resistance </b></text><text top="12000">208</text>');
+  assert.notEqual(extraBodyNumber, xml);
+  assert.throws(() => validateArmorArrowsPdfXml(extraBodyNumber,
+    armorArrowsHeadings(), normalizePdfText), /complete heading-bounded/);
+});
+
+test("official PDF integration checks the complete source package and Armor/Arrow blocks", {
+  skip: process.env.SRD51_SOURCE_PDF ? false : "Set SRD51_SOURCE_PDF to the hash-pinned official SRD 5.1 PDF; offline fixtures are not a full PDF run",
+}, async () => {
+  const result = await verifyItemsSourcePackage({ allowIncomplete: true, pdfPath: process.env.SRD51_SOURCE_PDF });
+  assert.equal(result.pdf.magicItemAzArmorArrowsEvidence.records, 4);
+  assert.equal(result.pdf.magicItemAzArmorArrowsEvidence.resistanceTableRows, 10);
+  assert.equal(result.complete, false);
 });
 
 test("normalization expands ligatures and proven wrap artifacts while preserving punctuation", () => {
