@@ -591,8 +591,48 @@ keine erfundenen Registry-/Owner-/Snapshotrevisionen. Die bestätigte Campaign/D
 Lücke aus Issue12/6091818151 bleibt für den getrennten OWNERSHIP-P01-Vertrag:
 CampaignId/Revision/Namespace/ContextToken, Registry-/Owner-/Schema-/Snapshotrevisionen
 und ursprüngliche CommandId/ReceiptId müssen von deren autoritativem Port kommen.
-I01b montiert als Nächstes diese Speichergrenze und die relative Kamera gemeinsam
-im Host; das aktuelle Kernergebnis ist kein nativer oder vollständiger E2E-PASS.
+Der unten beschriebene I01b-Anschluss montiert diese Speichergrenze und die relative
+Kamera im Host. Die lokale FileTransaction bleibt vom Campaign-Publish-Vertrag
+getrennt; das Kernergebnis ist keine vollständige E2E-Freigabe.
+
+**Stand E2E-01-SPACE-I01b:** AtlasView aktiviert die tatsächlichen typisierten
+City-/DungeonSources. Der native Kennungsindex liest alle passenden Dateien im
+aktuellen Vault und liefert alle Treffer; fehlende oder doppelte Kennungen bleiben
+Fehler. Dieser Dateilookup behauptet keine Campaign-Registry- oder Ownershipautorität.
+`AtlasRenderer` speichert genau eine relative Kamera; der bisherige absolute
+Kameralesewert ist ausschließlich eine abgeleitete Kompatibilitätsansicht.
+Terrain und Ortsmarker verwenden dieselbe Projektion. City-/Dungeonrahmen bleiben
+relativ bis zur Pixelprojektion; Einpassen berücksichtigt native Detailgrenzen,
+und weit entfernte Details werden vor einer unzuverlässigen Pixelprojektion ausgelassen.
+
+`SpatialCanvas` montiert CityRenderer und die erste native Raumzeichnung in derselben
+Pixi-Application vor deren Renderaufruf. Dach-/Raumsichtbarkeit richtet sich mit
+Hysterese nach projizierter Größe. Geometrie, Innenhöfe und sichtbare Griffe bestimmen
+die Trefferfolge; der aktive Werkzeugkontext wechselt beim Zoomen nicht. Vorläufige
+Citygesten projizieren abhängige Dungeons gegen dieselbe prospektive Historyansicht.
+Erst der gültige Abschluss schreibt einen nativen Citybefehl. Pointerup/Save/Flush
+übernehmen den gültigen Zug einmal; Escape, pointercancel und blur verwerfen die
+unbestätigte Vorschau, jetzt ausdrücklich auch beim Terrainpinsel. Ungültige/stale
+Stadtvorschauen blockieren den Abschluss und bleiben bis zum expliziten Abbruch erhalten.
+
+Der neue Raum-Key-Entwurf liest unmittelbar DungeonAtlasSource und schreibt über
+dungeonDocumentChange in dieselbe History. Raumname, Nummer und bestehende Markdown-
+Abschnitte sind bearbeitbar; unveränderte Texte, Passagen, Geometrie und Kennungen
+bleiben erhalten. Erneute Eingabe nach Übernehmen bezieht sich auf den aktuellen
+nativen Stand. Orts- und Raum-Keyadapter sowie Detailquellen lesen nach Discard die
+neue Repository-/Historygeneration statt alte Sources weiterzuverwenden.
+
+Die aktive räumliche Fixture `e2e01-spatial-v2` enthält sieben vollständige native
+Input-/Expecteddateien. Haus105 entsteht durch zwei reine CityEdit-Aufrufe für
+15,24 × 12,192 Meter und Pose(-18,8), mit den ursprünglichen Kennungen und einem
+starren 1,524-Meter-Dungeonmaßstab. Haus106/Hof und die eingefrorenen v1-Bytes bleiben
+unverändert. Der native Ablauf prüft Straße/Orts-Key/Haus, Gestenabbruch, Zoom/Raum-Key,
+Hex, gemeinsames Undo/Redo, exaktes Save und einen wirklich neu gestarteten Obsidian-
+Prozess. Er verwendet synthetische Eingaben in einem isolierten Vault. I01c benötigt
+weiterhin den autoritativen Campaigncontext/Ownership-/Command-/Receiptport, den
+reinen Dungeon-Geometrieport und CompleteImport. Unabhängiger integrierter Review,
+Cleanup und vollständiges E2E-Gate folgen getrennt; Installation, Originalparität,
+physische Eingabe und Großkarten sind damit nicht abgenommen.
 
 ## Dungeondraft-Kartenassistent beim Kartenstart
 

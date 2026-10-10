@@ -152424,7 +152424,7 @@
   "hexAtlas": {
     "scope": "HEX-00..28, shared native Atlas; phase-specific functional approvals only.",
     "currentPhase": "HEX-03",
-    "state": "e2e01_core_storage_checked_native_mount_open",
+    "state": "native_spatial_slice_checked_full_e2e_gate_open",
     "referenceGate": "wonderdraftParity.coverageReview HEX-00-R02",
     "requirements": [
       {
@@ -152733,6 +152733,23 @@
           "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/space-i01a2/implementation.json"
         ],
         "observed": "16 new focused cases within475/475 integrated tests plus check/build. Actual owners share one History/Repository queue/journal; V1 upgrade via one World command; combined terrain/Location/house/binding/room Key undo/redo, native DraftV3/reopen/Save/Discard, captured late keys, complete scoped native Copy ID/reference remap with exact Markdown/external-link/shared-definition preservation, prepared/committed Save/Copy crash recovery including missing root, rejection of external/wrong/missing/duplicate/renamed identities and forged native graph journals, detached dirty owners and stale generation. Host/fixture not activated; no native/full E2E or Campaign ownership/Publish proof."
+      },
+      {
+        "id": "E2E01-HEX-SPACE-HOST-001",
+        "requirement": "Native City/house/Dungeon drawing, zoom and Source-based Keys in the same relative Atlas camera/History/Repository, exact Save and fresh process",
+        "state": "checked_core_and_native_scoped_slice_review_full_gate_open",
+        "implementationRun": "E2E-01-SPACE-I01b",
+        "sourceCommit": "88babcd2eee05f8d99a914129fd176b264bdcb26",
+        "catalog": "ROADMAP-E2E-GATES-CANDIDATE.md:13",
+        "evidence": [
+          "tests/core/atlas-spatial-host.test.ts",
+          "tools/host/atlas-spatial.cjs",
+          "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/space-i01b/implementation.json"
+        ],
+        "fixtureVersion": "e2e01-spatial-v2",
+        "fixtureManifest": "tests/fixtures/atlas-e2e-spatial-v2/manifest.json",
+        "fixtureManifestSha256": "01a154bb8a66dd275246754e775aa2c616343513c07586196957880ae70d1d42",
+        "observed": "484/484 integrated tests/check/build with9 focused cases. Roof/room projected-size hysteresis, same native draw/hit order, courtyard transparency and only visible handles; transient house preview moves native child without owner mutation. Relative City-only/mixed Fit and distant/negative1e16 docks retain detail. Actual isolated Obsidian on exact88babcd: Fit, road node/Location-Key edit+Undo, house move/Escape/pointercancel, zoom to native room and repeated room-Key editing, Hex edit/cancel/common UndoRedo, Save writes exact seven-file v2 oracle; normal exit then distinct new native process restores geometry/IDs/text and reachable room Key. Synthetic input only. Full ownership/context/Publish/CompleteImport/Dungeon geometry and independent overall review remain open."
       }
     ],
     "cleanupFindings": [
@@ -152784,7 +152801,7 @@
         }
       }
     ],
-    "limits": "Spatial core storage now checked on 05078b40659bf0eca99a61a8281329a1708596f3:475/475 integrated tests, check/build and16 new actual native Repository cases. WorldV2/DraftV3/typed owner persistence remains core opt-in; Host remains V1-closed pending next I01b common camera/mount/Key/Save/fresh process. Frozen component fixture/source receipts and earlier native marker receipts retain exact scope. Campaign Registry/Ownershipprovider and Mehrowner-envelope explicitly absent (Issue12/6091818151); I01c context/publish/CompleteImport and Dungeon pure geometry port remain open. Independent spatial review/cleanup, native integrated, physical input, large world, original parity and installed-vault acceptance remain open; no E2E01 PASS.",
+    "limits": "WorldV2 host now mounted on source88babcd2eee05f8d99a914129fd176b264bdcb26 with one relative camera, City/native room drawing, direct Source Keys and shared History/Repository. 484 integrated tests/check/build and actual isolated Obsidian Save/fresh process prove only the native spatial slice. Active fixture is e2e01-spatial-v2; historical component/v1 payloads and source receipts remain frozen. Campaign Registry/Ownershipprovider/Mehrowner-envelope, original CommandId/ReceiptId publish, Dungeon geometry Gestureport and CompleteImport remain I01c. Independent integrated review/cleanup, full E2E01, physical input, large world, original parity and installed-vault acceptance remain open; user vault unchanged.",
     "cloudFollowup": {
       "id": "GM-UX-N-004",
       "state": "resolved_observed_failure_app_reload_only",
