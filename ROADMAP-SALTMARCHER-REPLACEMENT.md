@@ -108,10 +108,37 @@ aktuelle Aufgaben und Besitz stehen an den dort verlinkten Arbeitsorten.
 
 ### SMR-04 – Gemeinsamer Atlas und Karten
 
-- Bestehende Dungeon-Paritäts-, Hex-Atlas- und Stadtroadmaps planmäßig
-  abschließen; ihre geprüften Kennungen und Belege nicht neu beginnen.
-- Gemeinsame Weltkoordinaten, direkte Zoom-Bearbeitung, Dungeon-/Stadtbindung,
-  Karten-History, Fehlerwiederholung und große/negative Räume qualifizieren.
+Der Produktweg ist **Hex → Ort/Stadt → Haus/Dungeon → Raum-Key → zurück**,
+ausschließlich durch Zoom auf einer bearbeitbaren Fläche. Ein verorteter
+Marker, ein isolierter CityRenderer oder ein Dungeoneditor allein genügt nicht.
+
+1. HEX-04 bindet bestehende Dungeonidentität, lokalen Eingangsanker,
+   Weltposition, Drehung und realen Maßstab; HEX-05 zeigt und bearbeitet
+   dessen Geometrie und Keys im Atlas. CITY-01/02 liefern zeichnbare und
+   reproduzierbar generierte Städte; CITY-03 komponiert Stadt-, Gebäude- und
+   Dungeontransformationen. Vorhandene Sources/History konsumieren, kein
+   zweiter Atlas oder Stadt-/Dungeonmodus.
+2. Die gemeinsame Kamera, Auswahl und Werkzeugwahl durch alle Zoomstufen,
+   gemischtes Undo/Redo und Mehrowner-Save/Fresh-Reopen/Recovery qualifizieren.
+   Elternbewegung ändert keine lokalen Räume/Keys; stale Sources, externe
+   Konflikte und kaputte Bindungen verlieren keine Texte. HEX-22 erweitert
+   denselben Weg auf mehrere Detailkarten, große/negative Räume und Streaming.
+3. CITY-04–09 liefern geschützte Regeneration, Innenräume/Dekoration,
+   Bewohner/Haushalte/Berufe/Beziehungen/Fraktionen, Tagesabläufe und Ausgabe.
+   CITY-Zeitfunktionen konsumieren SMR-07, keine eigene SceneClock. Die volle
+   Wonderdraft-, Dungeondraft- und Dreiprodukt-Stadtinventur samt Originalbelegen
+   bleibt verpflichtend, auch wenn der erste gemeinsame Weg funktioniert.
+4. Zusätzlichen Dungeonumfang im selben Raum anschließen: [3D-Volumes →
+   Room-Lifecycle → Paths/Passages](docs/plans/dungeon/smr04-spatial-coverage.md),
+   Graph-Entwurf/geschützte Vorschau, Attributvererbung/Templates/Beschreibungen,
+   Trap-Trigger/Charges/Reset und Dokument-/Paketausgabe. Reise, Playeranzeige
+   und Autonomy konsumieren bestätigte Raum-/Passage-/Runtimefakten; fehlende
+   Schema-/Transferentscheidungen aus #44 bleiben offen.
+
+Arbeitsorte: [HEX-Meilenstein B](ROADMAP-HEX-ATLAS.md#meilenstein-b--hex--ort--dungeon--raum-key--zurück),
+[CITY-01–09](ROADMAP-CITIES-IMPLEMENTATION-PLAN.md#technische-arbeitspakete),
+#7/#8/#44. Direkte Endabnahme SMR-AC-05; E2E-01 prüft den gemeinsamen
+Integrationsweg, nicht automatisch die gesamte Karten-/Stadtfunktion.
 
 ### SMR-05 – Encounter, Combat, Loot und Rewards
 
@@ -138,12 +165,55 @@ aktuelle Aufgaben und Besitz stehen an den dort verlinkten Arbeitsorten.
 
 ### SMR-08 – Shops, Wetter und Musik
 
-- Shops an NPC/Ort, Scene-Verfügbarkeit, Ledger und Kalender-Restock binden.
-- Wetter/Klima als begrenzte autonome regionale Entwicklung implementieren.
-- Lokale Musikbibliothek/Player mit Tags, Scene-Queue, Fade, Autoplay und
-  vorrangiger manueller Steuerung bereitstellen.
-- Manuelle Bibliothek/Player benötigt keinen Reiseabschluss; Scene-Automatik
-  und zeitabhängige Umweltlayer erst an bestätigte Fachprojektionen anschließen.
+Drei eigenständige Produktlieferungen verbinden sich über bestätigte
+World-/Scene-/Zeitprojektionen. Die Quellen sind [SRC-P04/L03/L04/T05/S01–03](docs/scope-sources.json)
+auf SaltMarcher `9de85c1a26f526acbc1af332ac5962e185c0aab2`, TN-14/25/26.
+Aktueller Besitz und konkrete Fachentscheidungen in #10, Hostgrenzen in #11.
+
+- **Shops / SMR-AC-10:** genau einen NPC-/Ortowner und Stock/Preise bearbeiten,
+  Scenezugriff herstellen, Kauf/Verkauf atomar mit Charakterledger verbinden;
+  keine automatische Münzabbuchung. Danach manuellen, festen oder gewichteten
+  Restock an Kalender/Zeit binden. Owner-Trash/Restore, Retry, Undo und Neustart
+  müssen Bestand und Ledger gemeinsam erhalten.
+- **Wetter / SMR-AC-11:** Kartenfallback und regionale Klimazonen bearbeiten;
+  saisonale Baselines und kohärent bewegte Phänomene aus Ort/Terrain/Klima und
+  autoritativer Scene-Zeit ableiten. GM kann Wetterereignisse mit Gebiet,
+  Intensität, Bewegung, Dauer, Notizen und Effekten anlegen/pausieren/ändern/beenden.
+  Kein Sessionplan oder Generator ist Voraussetzung. Der Wetterowner muss vor
+  Qualifikation Modell, räumlich/zeitliche Auflösung und maximale Änderungen
+  pro Schritt bestätigen (TN-25); diese Entscheidung ist noch kein gelieferter
+  Algorithmus. Gleiche etablierte Inputs verwenden dasselbe Ergebnis; Sprünge
+  brauchen explizite Ursache. Getrennte Scene-Zeiten, regionale Kontinuität,
+  Override bis Freigabe und Restart prüfen. Strukturierte Sicht-/Reise-/
+  Perception-/Temperatur-/Ambienceeffekte an Consumer liefern; relevante Meldung
+  bleibt bis Wetterende/Dismiss, stoppt Reise nicht selbst. Kampfhinweise
+  bleiben GM-Auflösung. Keine zweite WorldClock oder Live-Wettersimulation im
+  wall-clock-Hintergrund erfinden.
+- **Musik / SMR-AC-12:** lokale portable Songs hinzufügen, Mood/Intensity/
+  Vibe/Genre bearbeiten/suchen und über tatsächlichen Audioport abspielen;
+  manuelle Queue, Auswahl, Stop/Skip/Back, Loop und Fade samt durable Entscheidungen
+  bis Reopen/Complete-Transfer verfolgen. Beschädigte/langsame/fehlende Medien
+  isolieren; Scene, Bearbeitung und Speicherung laufen weiter. Moodachsen und
+  Kategorisierung bleiben Produktprüfung, keine erfundene Taxonomie.
+  Den [vorhandenen Vertragskandidaten](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/blob/codex/smr-08-music-library-contract/ROADMAP-SALTMARCHER-SMR-08-MUSIC-LIBRARY-PLAN.md)
+  konsumieren; er liefert noch keinen Player und keine Hostfreigabe. Bibliothek
+  und manueller Player benötigen keinen Reise-/Wetterabschluss.
+  Danach optionalen Autoplay an die fokussierte Scene und ihre Sliders/
+  Inhalts-Tags binden; Kontextwechsel aktualisiert Queue und blendet unpassende
+  Songs aus. Umwelt-/Wetterlayer automatisch mischen; GM kann Sounds hinzufügen
+  oder unterdrücken. Manuelle Entscheidungen bleiben vorrangig bis Ende/
+  Freigabe; Automatik setzt aus **aktuellem** Kontext fort. Fokuswechsel,
+  stale Antworten, Campaignwechsel, Overridefreigabe und Neustart direkt prüfen;
+  konkrete Cursor-/Transport-Recovery nach bestätigt vorhandenem Vertrag,
+  nicht aus einem Bibliotheks-/Medieninventar-PASS ableiten.
+
+Ortsverschachtelung liefert Wetter-/Musik-/Ambiencefaktoren über bestätigte
+Readonly-Projektionen: je Faktorgruppe additiv (Default) oder ausdrücklich
+ersetzend. SMR-07 bindet Zeitfolgen, SMR-01 Speicher-/Importautorität; SMR-04
+liefert räumliche Eingänge. Domäne/Bearbeitung können parallel entstehen;
+produktive abhängige Wirkung wartet auf diese konkreten Ports. E2E-03 verbindet
+Reise → Zeit → Wetter/Shops/Musik; seine Kurzfassung ersetzt keine der drei
+Fachabnahmen und rechtfertigt keinen eigenen Shop-/Wetter-/Music-Snapshotstore.
 
 ### SMR-09 – Actor Autonomy
 
