@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'unsafe-inline'; connect-src 'none'; img-src 'none'; base-uri 'none'; form-action 'none'">
+<title>Manuelle Sessionplanung – Bedienprobe</title>
+<style>
+  :root { color-scheme: light dark; font: 1rem/1.5 system-ui, sans-serif; }
+  body { max-width: 64rem; margin: auto; padding: 1rem; }
+  header { margin-bottom: 1.5rem; }
+  label { display: flex; flex-direction: column; gap: .25rem; max-width: 100%; }
+  button, input, textarea, select { font: inherit; padding: .5rem; max-width: 100%; box-sizing: border-box; }
+  textarea { min-height: 10rem; }
+  button { cursor: pointer; }
+  button:disabled { cursor: default; }
+  :focus-visible { outline: 3px solid #527acc; outline-offset: 2px; }
+  li { margin-block: .4rem; }
+  .dn-manual-planner > div { display: flex; flex-wrap: wrap; gap: .6rem; }
+  .dn-manual-planner > div > label:has(textarea) { flex-basis: 100%; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Manuelle Sessionplanung</h1>
+  <p>Plane eine Sitzung mit Szenen und Notizen. Party, Datum und Ort sind optional.</p>
+  <p><strong>Flüchtige Bedienprobe:</strong> Änderungen bleiben nur in diesem offenen Tab.
+    Neuladen oder Schließen verwirft alle Pläne. Dies ist kein Obsidian-Vault und keine Speicherprüfung.</p>
+</header>
+<main id="planner"></main>
+<script src="preview.js" defer></script>
+</body>
+</html>

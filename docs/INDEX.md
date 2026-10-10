@@ -34,3 +34,5 @@
 - Neue Paketpläne: [Vorlage](templates/PACKAGE-PLAN.md), unter `docs/plans/<bereich>/` ablegen und von hier oder dem Fachplanregister erreichbar machen. `npm run check:repo` prüft die Verweise.
 
 Große native Rohbelege liegen häufig auf dem Rechner des Prüfers. Ein historischer absoluter Pfad bestätigt keinen eigenen Zugriff; fehlenden Zugriff und offene Abnahme ausdrücklich nennen.
+
+- Manuelle GM-Sessionplanung: [Implementierung und Campaign-Speicheranschluss](plans/campaign/manual-session-planner.md) zu #69.

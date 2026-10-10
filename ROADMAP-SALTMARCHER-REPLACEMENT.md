@@ -249,11 +249,22 @@ Campaign/Data benötigt den [konkreten nativen Plannerconsumer](https://github.c
 mit Plan-/Sceneclosure, kanonischem Dateibesitz und kausaler Publish-/Receipt-/Recoverybindung.
 Der in #68 besessene Producer ist Anknüpfung, keine gelieferte Plannerautorität.
 
-Nächster Beitrag: Stadt konsumiert den bestätigten Speicherport und stellt den
-ersten isolierten GUI-Weg ortslose Timeline → Notizen/Reihenfolge → Kontextwechsel
-am [Paket](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/69) zur GM-Nutzung bereit.
-Vor größerem Partybudget-/Encounter-/Generatorausbau GM-Befunde konsumieren.
-Native Save/Fresh-Abnahme bleibt offen; Format und Speicher-PASS werden nicht angenommen.
+Ein startbarer synthetischer Browser-GUI-Weg ist im Kandidaten vorbereitet:
+`node tools/manual-planner-preview/build.mjs`, danach `.build/manual-planner-preview/index.html` öffnen.
+Er nutzt das reale Panel mit ortsloser Blankplanung, Szenen/Notizen/Reihenfolge und Planwechsel.
+[Startanleitung und Grenzen](docs/plans/campaign/manual-session-planner.md#startbarer-flüchtiger-gui-frühtest).
+Memory-only: Neuladen/Schließen verwirft sämtliche Arbeit; keine alternative Speicherung.
+Der [Cloud-GM-Lauf](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/69#issuecomment-6102831310)
+bestätigt den manuellen Bedienweg, fand Fokusverlust bei Szenenauswahl.
+Fokusreparatur auf59f04fe durch unabhängigen Review5481049475 und
+[sichtbaren GM-Retest](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/69#issuecomment-6102960484)
+bestätigt: Klick/Enter führt zu Szenentitel, nächster Tab zu Notizen; Plan-/Text-/Order-Erhalt.
+Neuer eigener Fehlerfall: Rename/Move nach Dirty-Draft-Übernahme konnte bei zweitem
+Revisionsfehler teilwirken. Gemeinsamer atomarer Modellpfad geliefert, 24 fokussierte
+Core-/Panel-Fälle PASS; neuer enger unabhängiger Deltareview vor Integration.
+Stadt konsumiert anschließend den bestätigten nativen Speicherport; #68 liefert
+World-Notes-Acknowledgment, weiterhin keine Plannerdatei-/Ownerautorität.
+Native Save/Fresh-/Recoveryabnahme, wirksamer 200%-Zoom und physische Tastatur bleiben offen.
 
 ### SMR-07 – Reise, Kalender und autoritative Zeit
 
