@@ -5178,7 +5178,7 @@
       "state": "completed",
       "supersedes": "GM-UX-ACCESS; Slotanfrage gemäß Nutzerkorrektur aufgehoben"
     },
-    "next": "GM-UX-N-005-N01-H01-R03 not started auf Base e3d6f81. Separate Electron/User-Data-Dir nicht startbar (DISPLAY leer, ausführbare Umgebung ohne Obsidian-Binary/Hoststart-Capability). Gebündelter Test auf bestehendem isolierten Cloudhost/Vault nach Beenden nur verwaister Playwright-CDP-Clients; wenn UI-Provenienz unstet bleibt, blocked. Kartograph bleibt Dungeon-N01-Besitzer.",
+    "next": "GM-UX-01-D-FRESH-PROCESS-20261010-01: isolierten eigenen Cloud-Obsidian-Host mit separatem Profil/Testvault bereitstellen und Save→Prozessende→frischer Start auf QA-Kopie prüfen. Separater GM-UX-N-005-N01-H01-R03 bleibt davon getrennt und an Kartograph; keine Übernahme seiner Such-/Dirty-Guard-Prüfung.",
     "automation": "Stündliche GM-Produkttests in eigener Cloud; keine Laptop-Slotfreigabe erforderlich.",
     "executionEnvironment": "Eigene Cloud-Umgebung, getrennt vom Laptop der Kollegen",
     "cloudHost": {
@@ -5736,6 +5736,42 @@
       "limits": "Kein frischer Electronprozess, keine physische Eingabeabnahme, keine Produktlatenz, keine PlayerProjection-/Redactionprüfung, keine breite UX-/E2E-/Gesamtfreigabe. Die CDP-/Playwright-Wartezeiten sind Harness-Zeiten.",
       "docsCommit": "e581343de2b951f4643c4f5ce0dcef8f50cfccbc",
       "next": "Kein weiterer OBS-04-Retest nötig. Getrennte FreshProcess-, physische Eingabe- und PlayerProjection-Gates bleiben offen und benötigen eigene Aufträge."
+    },
+    "latestFreshProcessAttempt": {
+      "id": "GM-UX-01-D-FRESH-PROCESS-20261010-01",
+      "status": "not_started_preflight_recorded",
+      "owner": "Cloud-GM-Produkttester",
+      "branch": "active/installed-phase1",
+      "documentationBase": "a72c9501f5dd6649fb624420b9141903534be345",
+      "productSourceCommit": "eefbe6f505f0158ec6156c2eaf359fbf19b24a0e",
+      "issueContract": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1#issuecomment-6087478045",
+      "coordinationIssue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/8",
+      "scope": "Auf isolierter QA-Kopie einen vorhandenen Keytext sichtbar ändern und speichern, Obsidian-Prozess wirklich beenden, denselben separaten Vault/Profile in einem neuen Obsidian-Prozess öffnen und gespeicherten Keytext/Kartenhash prüfen. Nur sichtbare UI; kein Nutzer-Vault, kein Produktcode. Keine N-005-Suche/Dirty-Guard-Retest.",
+      "acceptance": [
+        "Separater Cloud-Obsidian-Prozess mit eigenem User-Data-Dir und eigenem Testvault startet; App-/Electronversion und CDP-Port dokumentiert.",
+        "Exaktes Shared-Produkttripel wird im Testvault installiert und vor/nach Prozesswechsel gehasht.",
+        "Ein sichtbarer QA-Key-Edit und Save bestätigt den neuen Testtext im Datei-Orakel.",
+        "Der alte Prozess ist beendet; frischer Prozess öffnet denselben Vault und dieselbe Karte sichtbar und zeigt den gespeicherten Text.",
+        "QA-Kartenhash vor/nach dem Reopen dokumentiert; keine Nutzerdatei berührt."
+      ],
+      "preflight": {
+        "sharedHead": "a72c9501f5dd6649fb624420b9141903534be345",
+        "productFilesSinceProductSource": "Nur GM-Dokumentation/Checkpoint; Produktbuild ist der exakte integrierte Produktcommit eefbe6f505f0158ec6156c2eaf359fbf19b24a0e.",
+        "currentForwardedHost": "CDP 9228 antwortet read-only mit Obsidian 1.14.4/Electron 43.7.7; kein Zugriff auf dessen Prozessstart.",
+        "executorBlocker": "DISPLAY leer; /opt/Obsidian/obsidian und andere Obsidian-Binary-Pfade fehlen. Docker daemon lokal erreichbar (Server 28.4.0, vfs). Eigenen containerisierten Xvfb-/Obsidianhost wird eingerichtet, statt den bestehenden Host oder Laptop anzutasten.",
+        "existingTriplet": {
+          "main.js": "522823730ddce4d0ba83e0476f60887b60a07c517f84e8e270814b6d597efa43",
+          "styles.css": "a6d31c13219d4b9f49d2ecf6993106bedef2a33560c9bdfdb93106659d45bc2e",
+          "manifest.json": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64"
+        },
+        "qaSource": "/workspace/scratch/gm-cloud-qa/vault/_QA-GM-UX-01-C-RESTORE-20261009/Nebelwacht-Improvisation.dungeon",
+        "plannedIsolatedVault": "/workspace/scratch/gm-cloud-qa/fresh-process-20261010/vault",
+        "plannedEvidence": "/workspace/scratch/gm-cloud-qa/evidence-gmux01-fresh-process-20261010/"
+      },
+      "filesChanged": ["checkpoint.json", "ROADMAP-GM-PRODUCT-TESTING-PLAN.md"],
+      "checksBeforeRun": "Issue #1/6087478045 gelesen; Issue #8 und GM-Roadmap gelesen; origin/active/installed-phase1 fetch/sync PASS; QA-Host CDP-Versionabfrage PASS; keine UI-Interaktion oder Produktprüfung begonnen.",
+      "limits": "Noch kein frischer Prozess, kein sichtbarer Test, keine Save-/Reopen-Abnahme, kein Testschluss. Remote-CDP-Sichtbarkeit allein belegt keinen eigenen Prozess. N-005-R03 bleibt separater, nicht übernommener Kartograph-Auftrag.",
+      "next": "Eigenen isolierten Obsidian-1.14.4-Prozess mit virtuellem Display und separatem User-Data-Dir/Testvault aufbauen; bei Installations-/Startblocker exakte Meldung, Container- und Netzwerkbedingungen in Issue #8/GM-Checkpoint dokumentieren."
     }
   }
 }
