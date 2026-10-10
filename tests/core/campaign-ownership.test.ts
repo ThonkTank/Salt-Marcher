@@ -14,6 +14,7 @@ import {
 } from "../../src/features/campaign/campaign-contracts";
 import {
   CampaignOwnershipCoordinator,
+  campaignDomainOwnerPolicyDigest,
   campaignDomainOwnershipProjection,
   campaignDomainOwnershipProjectionDigest,
   campaignOwnershipDigestValue,
@@ -43,6 +44,8 @@ const ids = {
   cue: campaignLocalId("00000000-0000-4000-8000-000000000051"),
   scene: campaignLocalId("00000000-0000-4000-8000-000000000052"),
   runtime: campaignLocalId("00000000-0000-4000-8000-000000000053"),
+  decision: campaignLocalId("00000000-0000-4000-8000-000000000054"),
+  override: campaignLocalId("00000000-0000-4000-8000-000000000055"),
 };
 const target = (id: string) => id.replace(/0000([0-9a-f]{4})$/, "1000$1");
 const digest = (letter: string) => `sha256:${letter.repeat(64)}`;
@@ -74,24 +77,36 @@ const mediaRecords = [
   { id: ids.cue, recordType: "music-cue", references: refs(ids.audio) },
   { id: ids.scene, recordType: "scene-audio", references: refs(ids.cue) },
   { id: ids.runtime, recordType: "runtime-audio", references: refs(ids.scene) },
+  { id: ids.decision, recordType: "manual-decision", references: [] },
+  { id: ids.override, recordType: "ambience-override", references: refs(ids.scene) },
 ];
 const recordTypes = new Map([...worldRecords, ...mediaRecords].map((record) => [record.id, record.recordType]));
 const projection = (ctx = context()): CampaignDomainOwnershipProjectionV1 => {
-  const result: CampaignDomainOwnershipProjectionV1 = {
+  let result: CampaignDomainOwnershipProjectionV1 = {
     version: 1, registryId: "e2e01.registry", registryRevision: "registry.v1",
     projectionDigest: digest("f"), context: ctx,
     owners: [
     { ownerId: "media", ownerRevision: "media.owner.v1", schemaRevision: "media.schema.v1",
-      snapshotRevision: "media.snapshot.v1", availability: "confirmed", emptyConfirmed: false,
+      snapshotRevision: "media.snapshot.v1", policyRevision: "media.policy.v1", policyDigest: digest("f"),
+      availability: "confirmed", emptyConfirmed: false,
       referenceSchemas: ["refs.v1"], source: { adapterType: "media-library", generation: "media.g1" },
       records: mediaRecords.map((record, index) => ({ ...record, payloadDigest: digest(String.fromCharCode(97 + index)),
-        media: record.recordType === "audio-source" ? { metadataDigest: digest("d"), byteDigest: digest("e") } : null })) },
+        media: record.recordType === "audio-source" ? { metadataDigest: digest("d"), byteDigest: digest("e") } : null })),
+      transferPolicies: [
+        { recordId: ids.decision, transfer: "remap-required", sourceDisposition: "retain" },
+        { recordId: ids.override, transfer: "fresh-target-required", sourceDisposition: "owner-suspend-after-publish" },
+      ] },
     { ownerId: "world", ownerRevision: "world.owner.v1", schemaRevision: "world.schema.v2",
-      snapshotRevision: "world.snapshot.v1", availability: "confirmed", emptyConfirmed: false,
+      snapshotRevision: "world.snapshot.v1", policyRevision: "world.policy.v1", policyDigest: digest("f"),
+      availability: "confirmed", emptyConfirmed: false,
       referenceSchemas: ["refs.v1"], source: { adapterType: "atlas-spatial-graph", generation: "repository.g7" },
-      records: worldRecords.map((record, index) => ({ ...record, payloadDigest: digest((index + 1).toString(16)), media: null })) },
+      records: worldRecords.map((record, index) => ({ ...record, payloadDigest: digest((index + 1).toString(16)), media: null })),
+      transferPolicies: [] },
     ],
   };
+  result = { ...result, owners: result.owners.map((owner) => ({
+    ...owner, policyDigest: campaignDomainOwnerPolicyDigest(owner, digestPort),
+  })) };
   return { ...result, projectionDigest: campaignDomainOwnershipProjectionDigest(result, digestPort) };
 };
 const closure = (recordIds = [...worldRecords, ...mediaRecords].map((record) => record.id)): readonly CampaignIdRemapV1[] => [
@@ -101,8 +116,14 @@ const closure = (recordIds = [...worldRecords, ...mediaRecords].map((record) => 
 ];
 const participants = () => projection().owners.map((owner, index) => ({
   ownerId: owner.ownerId, ownerRevision: owner.ownerRevision, schemaRevision: owner.schemaRevision,
-  snapshotRevision: owner.snapshotRevision, beforeDigest: digest(index ? "8" : "6"), afterDigest: digest(index ? "9" : "7"),
+  snapshotRevision: owner.snapshotRevision, policyRevision: owner.policyRevision, policyDigest: owner.policyDigest,
+  beforeDigest: digest(index ? "8" : "6"), afterDigest: digest(index ? "9" : "7"),
 }));
+const freshTargets = () => [{
+  ownerId: "media", sourceRecordId: ids.override, recordType: "ambience-override",
+  targetId: campaignLocalId(target(ids.override)), targetDigest: digest("4"),
+  policyRevision: projection().owners[0]!.policyRevision, policyDigest: projection().owners[0]!.policyDigest,
+}];
 
 class Registry implements CampaignOwnerRegistryPort {
   current = projection();
@@ -132,6 +153,7 @@ class Publisher implements CampaignMultiOwnerPublishPort {
       const owner = this.current.owners.find((item) => item.ownerId === participant.ownerId);
       if (!owner || owner.ownerRevision !== participant.ownerRevision || owner.schemaRevision !== participant.schemaRevision ||
           owner.snapshotRevision !== participant.snapshotRevision ||
+          owner.policyRevision !== participant.policyRevision || owner.policyDigest !== participant.policyDigest ||
           this.currentBefore.get(participant.ownerId) !== participant.beforeDigest) return { kind: "conflict" as const };
     }
     const outcome = { kind: "confirmed" as const };
@@ -159,7 +181,9 @@ const setup = (ctx: CampaignContextProjection = context()) => {
 };
 const completeInput = () => ({ commandId: campaignCommandId("00000000-0000-4000-8000-000000000201"),
   receiptId: campaignReceiptId("00000000-0000-4000-8000-000000000202"), kind: "complete-import" as const,
-  participants: participants(), closure: closure(), salvage: null });
+  participants: participants(), closure: closure([...worldRecords, ...mediaRecords]
+    .filter((record) => record.id !== ids.override).map((record) => record.id)),
+  freshTargets: freshTargets(), salvage: null });
 
 test("ownership projection is immutable, complete and keeps media byte evidence", () => {
   const checked = campaignDomainOwnershipProjection(projection());
@@ -184,8 +208,8 @@ test("complete command freezes original context, registry, participants, command
   await assert.rejects(() => coordinator.stage({ ...input, receiptId: campaignReceiptId("00000000-0000-4000-8000-000000000203") }), /anderem Ownership-Auftrag/);
 });
 
-test("post-verify context, registry, owner and participant-before races fail at the atomic publish boundary", async () => {
-  for (const race of ["context", "registry", "owner", "before"] as const) {
+test("post-verify context, registry, owner, policy and participant-before races fail at the atomic publish boundary", async () => {
+  for (const race of ["context", "registry", "owner", "policy", "before"] as const) {
     const initial = context(), { coordinator, registry, publisher, setContext } = setup(initial), input = completeInput();
     await coordinator.stage(input);
     registry.afterVerify = () => {
@@ -194,6 +218,8 @@ test("post-verify context, registry, owner and participant-before races fail at 
       } else if (race === "registry") publisher.current = { ...projection(initial), registryRevision: "registry.v2" };
       else if (race === "owner") publisher.current = { ...projection(initial), owners: projection(initial).owners.map((owner) =>
         owner.ownerId === "world" ? { ...owner, snapshotRevision: "world.snapshot.v2" } : owner) };
+      else if (race === "policy") publisher.current = { ...projection(initial), owners: projection(initial).owners.map((owner) =>
+        owner.ownerId === "media" ? { ...owner, policyRevision: "media.policy.v2", policyDigest: digest("0") } : owner) };
       else publisher.currentBefore.set("world", digest("0"));
     };
     assert.deepEqual(await coordinator.publish(input.commandId), { kind: "conflict" }, race);
@@ -248,6 +274,10 @@ test("projection digest, participant revision and closure ID-type binding fail b
   await assert.rejects(() => wrongType.coordinator.stage({ ...input,
     closure: input.closure.map((item) => item.sourceId === ids.room ? { ...item, entityType: "floor" } : item),
   }), /ID-Typ-Bindung/);
+  const stalePolicy = setup();
+  stalePolicy.registry.current = { ...projection(), owners: projection().owners.map((owner) =>
+    owner.ownerId === "media" ? { ...owner, policyDigest: digest("0") } : owner) };
+  await assert.rejects(() => stalePolicy.coordinator.stage(completeInput()), /Transferpolicy-Digest/);
 });
 
 test("complete cannot carry salvage and salvage cannot omit its explicit decision", async () => {
@@ -261,20 +291,22 @@ test("complete cannot carry salvage and salvage cannot omit its explicit decisio
 test("spatial write keeps campaign, namespace and local identities while new imports remap them", async () => {
   const input = completeInput(), spatial = setup();
   const identityClosure = input.closure.map((item) => ({ ...item, targetId: item.sourceId }));
-  const envelope = await spatial.coordinator.stage({ ...input, kind: "spatial-write", closure: identityClosure });
+  const envelope = await spatial.coordinator.stage({ ...input, kind: "spatial-write", closure: closure().map((item) => ({
+    ...item, targetId: item.sourceId,
+  })), freshTargets: [] });
   assert.equal(envelope.closure.every((item) => item.sourceId === item.targetId), true);
   const reusedImport = setup();
   await assert.rejects(() => reusedImport.coordinator.stage({ ...input, closure: identityClosure }), /Campaign-\/Namespace|nicht unabhängig/);
 });
 
 const salvage = (changes: Partial<CampaignSalvageProjectionV1> = {}): CampaignSalvageProjectionV1 => ({
-  decisionId: "salvage.decision.v1", survivors: closure(worldRecords.map((record) => record.id)).slice(2),
+  decisionId: "salvage.decision.v1", survivors: closure([...worldRecords.map((record) => record.id), ids.decision]).slice(2),
   omissions: [{ sourceId: ids.audio, reason: "Bytehash beschädigt", impact: "Audio fehlt sichtbar" },
     { sourceId: ids.cue, reason: "Audioabhängigkeit", impact: "Cue fehlt sichtbar" },
     { sourceId: ids.scene, reason: "Cue-Abhängigkeit", impact: "Scene-Audio fehlt sichtbar" }],
   quarantine: [{ sourceId: ids.runtime, retention: "unknown-retained", originalDigest: digest("d"),
     reason: "Runtime bleibt opaque erhalten", referenceIds: [ids.scene] }],
-  survivorDigest: campaignOwnershipDigestValue(closure(worldRecords.map((record) => record.id)).slice(2), digestPort),
+  survivorDigest: campaignOwnershipDigestValue(closure([...worldRecords.map((record) => record.id), ids.decision]).slice(2), digestPort),
   omissionDigest: campaignOwnershipDigestValue([
     { sourceId: ids.audio, reason: "Bytehash beschädigt", impact: "Audio fehlt sichtbar" },
     { sourceId: ids.cue, reason: "Audioabhängigkeit", impact: "Cue fehlt sichtbar" },
@@ -292,6 +324,46 @@ test("salvage keeps a disjoint closed survivor, omission and quarantine partitio
   ], salvage: plan });
   assert.equal(envelope.salvage!.quarantine[0]!.retention, "unknown-retained");
   assert.equal(Object.isFrozen(envelope.salvage!.quarantine), true);
+});
+
+test("ManualDecision cannot be omitted or quarantined by salvage", async () => {
+  const input = completeInput(), base = salvage(), withoutDecision = base.survivors.filter((item) => item.sourceId !== ids.decision),
+    omitted = { ...base, survivors: withoutDecision,
+      omissions: [...base.omissions, { sourceId: ids.decision, reason: "falsch als Medium behandelt", impact: "Entscheidung fehlt" }],
+      survivorDigest: campaignOwnershipDigestValue(withoutDecision, digestPort),
+      omissionDigest: campaignOwnershipDigestValue([...base.omissions,
+        { sourceId: ids.decision, reason: "falsch als Medium behandelt", impact: "Entscheidung fehlt" }], digestPort) },
+    decisionQuarantine = { sourceId: ids.decision, retention: "unknown-retained" as const,
+      originalDigest: digest("e"), reason: "falsch quarantänisiert", referenceIds: [] },
+    quarantined = { ...base, survivors: withoutDecision, quarantine: [...base.quarantine, decisionQuarantine],
+      survivorDigest: campaignOwnershipDigestValue(withoutDecision, digestPort),
+      quarantineDigest: campaignOwnershipDigestValue([...base.quarantine, decisionQuarantine], digestPort) };
+  for (const plan of [omitted, quarantined]) {
+    const { coordinator } = setup();
+    await assert.rejects(() => coordinator.stage({ ...input, kind: "salvage-import",
+      closure: [...input.closure.slice(0, 2), ...plan.survivors], salvage: plan }), /ManualDecision/);
+  }
+});
+
+test("AmbienceOverride cannot survive or remap and requires a distinct fresh target", async () => {
+  const input = completeInput(), overrideRemap = {
+    entityType: "ambience-override", sourceId: ids.override, targetId: target(ids.override),
+  };
+  const remapped = setup();
+  await assert.rejects(() => remapped.coordinator.stage({ ...input,
+    closure: [...input.closure, overrideRemap] }), /Fresh-Target-Policy/);
+
+  const base = salvage(), survivors = [...base.survivors, overrideRemap], survived = { ...base, survivors,
+    survivorDigest: campaignOwnershipDigestValue(survivors, digestPort) }, survivor = setup();
+  await assert.rejects(() => survivor.coordinator.stage({ ...input, kind: "salvage-import",
+    closure: [...input.closure.slice(0, 2), ...survivors], salvage: survived }), /unbekannten Record|Fresh-Target/);
+
+  const missing = setup();
+  await assert.rejects(() => missing.coordinator.stage({ ...input, freshTargets: [] }), /unvollständig/);
+  const colliding = setup();
+  await assert.rejects(() => colliding.coordinator.stage({ ...input, freshTargets: freshTargets().map((item) => ({
+    ...item, targetId: campaignLocalId(input.closure[2]!.targetId),
+  })) }), /kollidieren/);
 });
 
 test("salvage survivor digest and published closure must describe the identical remap", async () => {

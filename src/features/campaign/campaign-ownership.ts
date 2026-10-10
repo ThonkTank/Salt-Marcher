@@ -35,11 +35,18 @@ export interface CampaignOwnershipRecordV1 {
     readonly byteDigest: Digest;
   } | null;
 }
+export interface CampaignRecordTransferPolicyV1 {
+  readonly recordId: CampaignLocalId;
+  readonly transfer: "remap-required" | "fresh-target-required";
+  readonly sourceDisposition: "retain" | "owner-suspend-after-publish";
+}
 export interface CampaignDomainOwnerProjectionV1 {
   readonly ownerId: string;
   readonly ownerRevision: string;
   readonly schemaRevision: string;
   readonly snapshotRevision: string;
+  readonly policyRevision: string;
+  readonly policyDigest: Digest;
   readonly availability: "confirmed";
   readonly emptyConfirmed: boolean;
   readonly referenceSchemas: readonly string[];
@@ -48,6 +55,7 @@ export interface CampaignDomainOwnerProjectionV1 {
     readonly generation: string;
   };
   readonly records: readonly CampaignOwnershipRecordV1[];
+  readonly transferPolicies: readonly CampaignRecordTransferPolicyV1[];
 }
 export interface CampaignDomainOwnershipProjectionV1 {
   readonly version: 1;
@@ -73,8 +81,19 @@ export interface CampaignCommandParticipantV1 {
   readonly ownerRevision: string;
   readonly schemaRevision: string;
   readonly snapshotRevision: string;
+  readonly policyRevision: string;
+  readonly policyDigest: Digest;
   readonly beforeDigest: Digest;
   readonly afterDigest: Digest;
+}
+export interface CampaignFreshTargetV1 {
+  readonly ownerId: string;
+  readonly sourceRecordId: CampaignLocalId;
+  readonly recordType: string;
+  readonly targetId: CampaignLocalId;
+  readonly targetDigest: Digest;
+  readonly policyRevision: string;
+  readonly policyDigest: Digest;
 }
 export interface CampaignSalvageOmissionV1 {
   readonly sourceId: CampaignLocalId;
@@ -114,6 +133,7 @@ export interface CampaignMultiOwnerCommandEnvelopeV1 {
   readonly projectionDigest: Digest;
   readonly participants: readonly CampaignCommandParticipantV1[];
   readonly closure: readonly CampaignIdRemapV1[];
+  readonly freshTargets: readonly CampaignFreshTargetV1[];
   readonly salvage: CampaignSalvageProjectionV1 | null;
 }
 export interface CampaignMultiOwnerPublishRequestV1 {
@@ -144,6 +164,7 @@ export interface CampaignMultiOwnerStageInputV1 {
   readonly kind: CampaignMultiOwnerCommandKind;
   readonly participants: readonly CampaignCommandParticipantV1[];
   readonly closure: readonly CampaignIdRemapV1[];
+  readonly freshTargets: readonly CampaignFreshTargetV1[];
   readonly salvage: CampaignSalvageProjectionV1 | null;
 }
 
@@ -247,6 +268,30 @@ export function campaignDomainOwnershipProjection(
       recordOwners.set(recordId, id);
       return checked;
     }).sort((a, b) => a.id.localeCompare(b.id));
+    const ownRecords = new Map(checkedRecords.map((record) => [record.id, record])),
+      transferPolicies = array(owner.transferPolicies, "Transferpolicies").map((policyRaw) => {
+        if (!policyRaw || typeof policyRaw !== "object") throw new Error("Ungültige Transferpolicy.");
+        const policy = policyRaw as CampaignRecordTransferPolicyV1,
+          recordId = campaignLocalId(String(policy.recordId)), record = ownRecords.get(recordId);
+        if (!record) throw new Error("Transferpolicy gehört zu keinem Ownerrecord.");
+        if (policy.transfer !== "remap-required" && policy.transfer !== "fresh-target-required")
+          throw new Error("Ungültige Transferpolicy.");
+        if (policy.sourceDisposition !== "retain" && policy.sourceDisposition !== "owner-suspend-after-publish")
+          throw new Error("Ungültige Source-Disposition.");
+        if (record.recordType === "manual-decision" &&
+            (policy.transfer !== "remap-required" || policy.sourceDisposition !== "retain"))
+          throw new Error("ManualDecision-Policy ist nicht dauerhaft.");
+        if (record.recordType === "ambience-override" &&
+            (policy.transfer !== "fresh-target-required" || policy.sourceDisposition !== "owner-suspend-after-publish"))
+          throw new Error("AmbienceOverride-Policy ist nicht sourcegebunden.");
+        return Object.freeze({ recordId, transfer: policy.transfer, sourceDisposition: policy.sourceDisposition });
+      }).sort((a, b) => a.recordId.localeCompare(b.recordId));
+    if (new Set(transferPolicies.map((policy) => policy.recordId)).size !== transferPolicies.length)
+      throw new Error("Doppelte Transferpolicy.");
+    for (const record of checkedRecords)
+      if ((record.recordType === "manual-decision" || record.recordType === "ambience-override") &&
+          !transferPolicies.some((policy) => policy.recordId === record.id))
+        throw new Error("Ownerpolicy für langlebigen Medienzustand fehlt.");
     if ((checkedRecords.length === 0) !== owner.emptyConfirmed)
       throw new Error("Owner-Leerzustand ist nicht bestätigt.");
     return Object.freeze({
@@ -254,6 +299,8 @@ export function campaignDomainOwnershipProjection(
       ownerRevision: token(owner.ownerRevision, "Ownerrevision"),
       schemaRevision: token(owner.schemaRevision, "Schemarevision"),
       snapshotRevision: token(owner.snapshotRevision, "Snapshotrevision"),
+      policyRevision: token(owner.policyRevision, "Policyrevision"),
+      policyDigest: payloadDigest(owner.policyDigest),
       availability: "confirmed" as const,
       emptyConfirmed: owner.emptyConfirmed,
       referenceSchemas: Object.freeze(schemas),
@@ -262,6 +309,7 @@ export function campaignDomainOwnershipProjection(
         generation: token(owner.source?.generation, "Ownergeneration"),
       }),
       records: Object.freeze(checkedRecords),
+      transferPolicies: Object.freeze(transferPolicies),
     });
   }).sort((a, b) => a.ownerId.localeCompare(b.ownerId));
   if (!owners.length || new Set(owners.map((owner) => owner.ownerId)).size !== owners.length)
@@ -292,14 +340,38 @@ export function campaignDomainOwnershipProjectionDigest(
   return checkedDigest(digest, content);
 }
 
+export function campaignDomainOwnerPolicyDigest(
+  value: CampaignDomainOwnerProjectionV1,
+  digest: CampaignOwnershipDigest,
+): Digest {
+  return checkedDigest(digest, {
+    ownerId: value.ownerId,
+    policyRevision: value.policyRevision,
+    transferPolicies: value.transferPolicies,
+  });
+}
+
 function checkedParticipant(value: CampaignCommandParticipantV1): CampaignCommandParticipantV1 {
   return Object.freeze({
     ownerId: ownerId(value.ownerId),
     ownerRevision: token(value.ownerRevision, "Ownerrevision"),
     schemaRevision: token(value.schemaRevision, "Schemarevision"),
     snapshotRevision: token(value.snapshotRevision, "Snapshotrevision"),
+    policyRevision: token(value.policyRevision, "Policyrevision"),
+    policyDigest: payloadDigest(value.policyDigest),
     beforeDigest: payloadDigest(value.beforeDigest),
     afterDigest: payloadDigest(value.afterDigest),
+  });
+}
+function checkedFreshTarget(value: CampaignFreshTargetV1): CampaignFreshTargetV1 {
+  return Object.freeze({
+    ownerId: ownerId(value.ownerId),
+    sourceRecordId: campaignLocalId(String(value.sourceRecordId)),
+    recordType: identityType(value.recordType),
+    targetId: campaignLocalId(String(value.targetId)),
+    targetDigest: payloadDigest(value.targetDigest),
+    policyRevision: token(value.policyRevision, "Policyrevision"),
+    policyDigest: payloadDigest(value.policyDigest),
   });
 }
 function checkedClosure(value: readonly CampaignIdRemapV1[]): readonly CampaignIdRemapV1[] {
@@ -319,8 +391,10 @@ function checkedSalvage(
   raw: CampaignSalvageProjectionV1,
   projection: CampaignDomainOwnershipProjectionV1,
   digest: CampaignOwnershipDigest,
+  excluded: ReadonlySet<CampaignLocalId>,
 ): CampaignSalvageProjectionV1 {
-  const records = new Map(projection.owners.flatMap((owner) => owner.records.map((record) => [record.id, record] as const))),
+  const records = new Map(projection.owners.flatMap((owner) => owner.records
+      .filter((record) => !excluded.has(record.id)).map((record) => [record.id, record] as const))),
     survivors = checkedClosure(raw.survivors), survivorIds = new Set(survivors.map((item) => {
       if (item.entityType === "campaign" || item.entityType === "namespace")
         throw new Error("Salvage-Survivor muss ein Ownerrecord sein.");
@@ -377,7 +451,8 @@ function checkedSalvage(
 
 function baseStageFingerprint(input: CampaignMultiOwnerStageInputV1): unknown {
   return { commandId: input.commandId, receiptId: input.receiptId, kind: input.kind,
-    participants: input.participants, closure: input.closure, salvage: input.salvage };
+    participants: input.participants, closure: input.closure, freshTargets: input.freshTargets,
+    salvage: input.salvage };
 }
 function checkedPublishOutcome(value: CampaignMultiOwnerPublishOutcome): CampaignMultiOwnerPublishOutcome {
   if (!value || typeof value !== "object" ||
@@ -425,6 +500,9 @@ export class CampaignOwnershipCoordinator {
     if (!sameContext(context, projection.context)) throw new Error("Owner-Registry gehört zu einem anderen Campaigncontext.");
     if (campaignDomainOwnershipProjectionDigest(projection, this.digest) !== projection.projectionDigest)
       throw new Error("Ownership-Projektionsdigest ist stale.");
+    for (const owner of projection.owners)
+      if (campaignDomainOwnerPolicyDigest(owner, this.digest) !== owner.policyDigest)
+        throw new Error("Owner-Transferpolicy-Digest ist stale.");
     const participants = array(inputSnapshot.participants, "Command-Teilnehmer").map((raw) =>
       checkedParticipant(raw as CampaignCommandParticipantV1)).sort((a, b) => a.ownerId.localeCompare(b.ownerId));
     if (participants.length !== projection.owners.length || new Set(participants.map((item) => item.ownerId)).size !== participants.length)
@@ -432,12 +510,17 @@ export class CampaignOwnershipCoordinator {
     for (let index = 0; index < participants.length; index += 1) {
       const participant = participants[index]!, owner = projection.owners[index]!;
       if (participant.ownerId !== owner.ownerId || participant.ownerRevision !== owner.ownerRevision ||
-          participant.schemaRevision !== owner.schemaRevision || participant.snapshotRevision !== owner.snapshotRevision)
+          participant.schemaRevision !== owner.schemaRevision || participant.snapshotRevision !== owner.snapshotRevision ||
+          participant.policyRevision !== owner.policyRevision || participant.policyDigest !== owner.policyDigest)
         throw new Error("Command-Teilnehmer ist stale.");
     }
     const closure = checkedClosure(inputSnapshot.closure), allRecords = projection.owners.flatMap((owner) => owner.records),
       recordIds = allRecords.map((record) => record.id), recordsById = new Map(allRecords.map((record) => [record.id, record])),
       mapped = new Set(closure.filter((item) => item.entityType !== "campaign" && item.entityType !== "namespace").map((item) => item.sourceId));
+    const policyByRecord = new Map(projection.owners.flatMap((owner) => owner.transferPolicies.map((policy) =>
+        [policy.recordId, { owner, policy }] as const))),
+      freshPolicyIds = new Set([...policyByRecord].filter(([, value]) => value.policy.transfer === "fresh-target-required")
+        .map(([id]) => id));
     const campaignMappings = closure.filter((item) => item.entityType === "campaign"),
       namespaceMappings = closure.filter((item) => item.entityType === "namespace");
     const targetCampaignId = campaignId(campaignMappings[0]?.targetId ?? ""),
@@ -460,26 +543,58 @@ export class CampaignOwnershipCoordinator {
       const record = recordsById.get(campaignLocalId(item.sourceId));
       if (!record || record.recordType !== item.entityType)
         throw new Error("Closure verletzt die Record-ID-Typ-Bindung.");
+      if (!keepsIdentity && freshPolicyIds.has(record.id))
+        throw new Error("Fresh-Target-Policy darf nicht als Remap übertragen werden.");
       const targetId = campaignLocalId(item.targetId);
       if (keepsIdentity ? targetId !== record.id : sourceRecordIds.has(targetId))
         throw new Error("Closure-Ziel ist für die Commandart nicht unabhängig.");
     }
+    const freshTargets = array(inputSnapshot.freshTargets, "frische Zielprojektionen").map((raw) =>
+      checkedFreshTarget(raw as CampaignFreshTargetV1)).sort((a, b) => a.sourceRecordId.localeCompare(b.sourceRecordId));
+    if (new Set(freshTargets.map((target) => target.sourceRecordId)).size !== freshTargets.length ||
+        new Set(freshTargets.map((target) => target.targetId)).size !== freshTargets.length)
+      throw new Error("Frische Zielprojektionen sind doppelt.");
+    if (keepsIdentity && freshTargets.length)
+      throw new Error("Spatial-Command darf keine frische Zielprojektion anlegen.");
+    if (!keepsIdentity) {
+      if (freshTargets.length !== freshPolicyIds.size)
+        throw new Error("Frische Zielprojektionen sind unvollständig.");
+      for (const target of freshTargets) {
+        const binding = policyByRecord.get(target.sourceRecordId), record = recordsById.get(target.sourceRecordId);
+        if (!binding || !record || binding.policy.transfer !== "fresh-target-required" ||
+            target.ownerId !== binding.owner.ownerId || target.recordType !== record.recordType ||
+            target.policyRevision !== binding.owner.policyRevision || target.policyDigest !== binding.owner.policyDigest)
+          throw new Error("Frische Zielprojektion verletzt die Ownerpolicy.");
+        if (forbiddenTargets.has(target.targetId))
+          throw new Error("Frisches Ziel verwendet eine Sourceidentität wieder.");
+      }
+      const allTargets = [...closure.map((item) => item.targetId), ...freshTargets.map((target) => target.targetId)];
+      if (new Set(allTargets).size !== allTargets.length)
+        throw new Error("Remap- und Fresh-Ziele kollidieren.");
+    }
     let salvage: CampaignSalvageProjectionV1 | null = null;
     if (inputSnapshot.kind === "salvage-import") {
       if (!inputSnapshot.salvage) throw new Error("Salvage-Projektion fehlt.");
-      salvage = checkedSalvage(inputSnapshot.salvage, projection, this.digest);
+      salvage = checkedSalvage(inputSnapshot.salvage, projection, this.digest, freshPolicyIds);
       const commandSurvivors = closure.filter((item) => item.entityType !== "campaign" && item.entityType !== "namespace");
       if (canonicalRemaps(commandSurvivors) !== canonicalRemaps(salvage.survivors))
         throw new Error("Salvage-Closure stimmt nicht mit Survivors überein.");
+      for (const owner of projection.owners)
+        for (const record of owner.records)
+          if (record.recordType === "manual-decision" &&
+              !salvage.survivors.some((survivor) => survivor.sourceId === record.id))
+            throw new Error("ManualDecision muss dauerhaft als Survivor erhalten bleiben.");
     } else {
       if (inputSnapshot.salvage) throw new Error("Complete-/Spatial-Command darf kein Salvage tragen.");
-      if (JSON.stringify([...mapped].sort()) !== JSON.stringify([...recordIds].sort()))
+      const expected = keepsIdentity ? recordIds : recordIds.filter((id) => !freshPolicyIds.has(id));
+      if (JSON.stringify([...mapped].sort()) !== JSON.stringify([...expected].sort()))
         throw new Error("Complete-Closure ist unvollständig.");
     }
     const withoutFingerprint = {
       version: 1 as const, commandId, receiptId, kind: inputSnapshot.kind, context,
       registryId: projection.registryId, registryRevision: projection.registryRevision,
-      projectionDigest: projection.projectionDigest, participants: Object.freeze(participants), closure, salvage,
+      projectionDigest: projection.projectionDigest, participants: Object.freeze(participants), closure,
+      freshTargets: Object.freeze(freshTargets), salvage,
     }, envelope = Object.freeze({ ...withoutFingerprint, fingerprint: checkedDigest(this.digest, withoutFingerprint) });
     this.commands.set(commandId, { inputFingerprint, envelope, projection, publishStarted: false });
     return envelope;

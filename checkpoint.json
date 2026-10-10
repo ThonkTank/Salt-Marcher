@@ -34,7 +34,7 @@
     },
     "smr01CampaignOwnership": {
       "date": "2026-10-10",
-      "state": "e2e01_campaign_ownership_i01_n01_checked_re_review_pending",
+      "state": "e2e01_campaign_ownership_i01_n02_checked_media_re_review_pending",
       "plan": "ROADMAP-E2E01-CAMPAIGN-OWNERSHIP-PLAN.md",
       "baseline": "e5a19a93ce417b4e48fa86512d1c7f1be4d41eea",
       "spatialProductSource": "88babcd2eee05f8d99a914129fd176b264bdcb26",
@@ -47,20 +47,20 @@
       "review": "Independent R01 on 2bb151857d4453ee2392802e3ef01e289eb8d0ec required two narrow repairs: carry context/registry/owner and participant-before preconditions to the same durable publish linearization boundary, including post-verify race oracles; and define a referentially closed survivor/omission/quarantine projection that retains opaque or unknown data and prevents dangling media dependents.",
       "reviewedPlanCandidate": "51d58bf32f2225182218ee53a8f9bd377333141a",
       "implementationBranch": "codex/e2e01-campaign-ownership-i01",
-      "implementation": "Validated and deeply immutable CampaignDomainOwnershipProjectionV1 behind an injected read-only CampaignOwnerRegistryPort; complete context/registry/owner/record/payload/media bindings; deterministic projection, command and salvage digests; original CommandId/ReceiptId multi-owner envelopes; atomic publish preconditions through the port linearization boundary; idempotent outcome recovery; distinct Complete/Salvage commands; and referentially closed survivor/omission/quarantine projections retaining opaque or unknown data.",
-      "codeReview": "Independent R01 on cc172463a9e7d61f951c124f2ff2a866356830fc required four repairs: cache confirmed/conflict and resolve unknown or publish exceptions only through the original receipt status; compare participant-before digests at the atomic boundary; require the exact same full remap in Salvage survivors and the envelope closure; and forbid every campaign, namespace, local or shared source identity as a Copy/Import target.",
+      "implementation": "Validated and deeply immutable CampaignDomainOwnershipProjectionV1 behind an injected read-only CampaignOwnerRegistryPort; complete context/registry/owner/record/payload/media bindings; deterministic projection, command, salvage and owner-policy digests; original CommandId/ReceiptId multi-owner envelopes; atomic publish preconditions through the port linearization boundary; idempotent outcome recovery; distinct Complete/Salvage commands; referentially closed survivor/omission/quarantine projections retaining opaque or unknown data; and owner-confirmed transfer/retention rules that retain ManualDecision while requiring a fresh target projection instead of transferring source-scene AmbienceOverride.",
+      "codeReview": "Independent R01 on cc172463a9e7d61f951c124f2ff2a866356830fc required four repairs: cache confirmed/conflict and resolve unknown or publish exceptions only through the original receipt status; compare participant-before digests at the atomic boundary; require the exact same full remap in Salvage survivors and the envelope closure; and forbid every campaign, namespace, local or shared source identity as a Copy/Import target. Independent generic R02 passed 7aa47beb1bad3d0b1560666fa1cb1677bdc8cd4e. The narrower M/W/S review in PR #25 comment 6092636859 then required digest-bound ManualDecision retention, non-transferable AmbienceOverride with a fresh target projection, and a policy race oracle; N02 implements that bounded repair.",
       "verification": {
         "check": "passed",
         "tests": {
-          "passed": 498,
+          "passed": 500,
           "failed": 0,
-          "focusedOwnershipCases": 14
+          "focusedOwnershipCases": 16
         },
         "build": "passed",
         "jsonAndDiff": "passed"
       },
       "limits": "Host-neutral contract implementation only. No productive registry provider, foreign payload reconstruction, Campaign-to-Atlas adapter, Vault/FileTransaction, P02/P04 adapter, visible CompleteImport, host evidence or E2E-01 PASS.",
-      "next": "Publish the narrow N01 repair and obtain independent exact-SHA re-review of all four R01 findings before any steward handoff or dependent I01c integration."
+      "next": "Publish the narrow N02 media-policy repair and obtain an independent exact-SHA M/W/S re-review before replacing the suspended Hex steward handoff or permitting dependent I01c integration."
     },
     "source": {
       "repository": "ThonkTank/Salt-Marcher",
