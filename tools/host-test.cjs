@@ -24,8 +24,9 @@ const restart = process.argv.includes("--restart"),
   dd036S01Recovery = process.argv.includes("--dd036-s01-recovery") || process.argv.includes("--dd036-s01-hard-crash"),
   dd036S01HardCrash = process.argv.includes("--dd036-s01-hard-crash"),
   hex02Save = process.argv.includes("--hex02-save"),
+  hex04DungeonAtLocation = process.argv.includes("--hex04-dungeon-at-location"),
   atlasCampaignABA = process.argv.includes("--atlas-campaign-aba"),
-  atlasCampaignRuntime = process.argv.includes("--atlas-campaign-runtime") || atlasCampaignABA,
+  atlasCampaignRuntime = process.argv.includes("--atlas-campaign-runtime") || atlasCampaignABA || hex04DungeonAtLocation,
   atlasSpatial = process.argv.includes("--atlas-spatial") || atlasCampaignRuntime,
   hex03Location = process.argv.includes("--hex03-location"),
   hex02Terrain = process.argv.includes("--hex02-terrain") || hex02Save,
@@ -923,7 +924,9 @@ async function workflow() {
     return;
   }
   if (atlasSpatial) {
-    const scenario = require(atlasCampaignRuntime
+    const scenario = require(hex04DungeonAtLocation
+      ? "./host/hex04-dungeon-at-location.cjs"
+      : atlasCampaignRuntime
       ? "./host/atlas-campaign-runtime.cjs"
       : "./host/atlas-spatial.cjs")({ ...scenarioContext,
         recoveryAfterCommit: process.argv.includes("--atlas-campaign-commit-recovery") });
