@@ -29,18 +29,9 @@ test(
       const output = path.join(directory, "aggregate.json"),
         frames = path.join(directory, "frames");
       const result = await new Promise((resolve, reject) => {
-        // GitHub runners cannot install Electron's root-owned SUID helper.
-        // Disable only that helper; Chromium's user-namespace sandbox remains.
         const child = spawn(
           electron,
-          [
-            "--disable-setuid-sandbox",
-            main,
-            "--out",
-            output,
-            "--frames",
-            frames,
-          ],
+          [main, "--out", output, "--frames", frames],
           { cwd: root, stdio: ["ignore", "pipe", "pipe"] },
         );
         let stdout = "",
