@@ -54,6 +54,7 @@ import "./core/atlas-campaign-source.test";
 import "./core/atlas-campaign-navigation.test";
 import "./core/atlas-campaign-save.test";
 import "./core/campaign-b-fixture.test";
+import "./core/world-notes.test";
 import "./core/atlas-spatial-host.test";
 
 import "./core/atlas-mount-lease.test";
