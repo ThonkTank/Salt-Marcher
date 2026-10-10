@@ -1,13 +1,20 @@
+---
+area: runtime
+owner: Chronik
+issue: 60
+status: active
+checkpoint: saltMarcherReplacement
+---
 # SMR-03-I01 – Hostneutraler Party-/Scene-/Live-Session-Kern
 
-Status: **Exact-SHA-Re-review des Planrepairs `PASS`; I01-A bleibt ein
-getrennt zu beanspruchender und zu reviewender Implementierungsslice; kein
-Persistenz-, Host- oder Gesamtprodukt-Go.**
+Status: **Planrepair auf Exact-SHA `PASS`; I01-A ist als geprüfter
+Implementierungskandidat veröffentlicht und wartet auf unabhängigen Review;
+kein Persistenz-, Host- oder Gesamtprodukt-Go.**
 
 ## Gebundener Stand
 
 - Fachvertrag:
-  `ROADMAP-SALTMARCHER-SMR-03-LIVE-SCENE-CONTRACT.md` auf dem semantischen
+  [`smr03-live-scene-contract.md`](smr03-live-scene-contract.md) auf dem semantischen
   Exact-SHA `0254d575e61df130b3f85dbcef810faef54ce0d5`.
 - Exact-SHA-Architekturreview: Issue #6, Kommentar `6088985728`, `PASS`.
 - Source-Owner-Ratifikation: Issue #6, Kommentar `6088996383`.
@@ -426,3 +433,23 @@ Vor I01-A sind für diesen Plan erforderlich:
 
 Ein Plan-PASS ist keine Produkt-, Host-, Persistenz-, Acceptance- oder
 Gesamtfreigabe.
+
+#### Arbeitsstand #60
+
+I01-A liefert die hostneutralen ID-/Revisionsparser, strikt validierte und tief
+eingefrorene Party-/Focus-/LiveScene-/LiveSession-DTOs sowie fail-closed
+Projektionen. Sparse oder berechnete Eingaben, fremde Prototypen, unbekannte
+Felder, falsche Campaign-/Revisionbindungen und asymmetrische aktive
+Party-/Scene-Mitgliedschaft werden vor einer Projektion abgewiesen.
+
+Kandidat und exakte Prüfrevision stehen im Aufgabenissue #60. Der Kandidat ist
+gegen den dort genannten aktuellen Shared-Stand integriert; Typecheck,
+vollständige Core-/Boundarytests, Produktbuild und Repositorystruktur müssen am
+veröffentlichten SHA grün sein. Offen bleiben der unabhängige technische
+Exact-SHA-Review und der enge Consumerreview der immutable Projektionen.
+
+Mutationen, History, Coordinator, Persistenz, Host, Clockmutation und Passive
+Display sind ausdrücklich nicht implementiert. `PreparationSnapshot` ist in
+I01-A nur ein immutable Eingabevertrag; seine Erzeugung, Speicherung und
+Übernahme bleiben getrennte Pakete. Nach Review-PASS ist I01-B der nächste
+Runtime-Slice.
