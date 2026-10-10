@@ -17,6 +17,25 @@ der ausschließlich Rollen-, Begriffs- und Phasentraceability dieses
 Vertragsartefakts aufräumt. Weder dieser Verweis noch der Cleanup reparieren
 den Befund oder öffnen I01.
 
+## Vertragsbegriffe
+
+Diese Begriffe bezeichnen jeweils genau eine Ebene:
+
+| Begriff | Bedeutung | Keine Bedeutung |
+| --- | --- | --- |
+| `snapshot` | Ein kanonischer immutable Read aus `DungeonAtlasSource` mit nativen Dungeonbytes, Dokument und abgeleiteter Keyclosure. | Keine Revision, kein Preview und kein schreibender Sessionzustand. |
+| `gesture state` | Flüchtiger Editorzustand zwischen Begin und Cancel/Handoff. Seine genaue Gültigkeitsbasis ist wegen `DUN-GEO-P01-R01-01` noch **nicht** beschlossen und bleibt N01 vorbehalten. | Kein Sourcewert, kein Historieneintrag und keine persistente Sessionrevision. |
+| `preview` | Ein aus dem Gesturezustand abgeleitetes immutable Dokument, das nur die bestehende räumliche Lesesicht überlagert. | Kein Draft, kein Save und keine Mutation eines Owners. |
+| `proposal` | Das schreibfrei validierte Paar aus Previewdokument und möglichem ownergebundenem `AtlasChange`. | Kein Commit und keine Erlaubnis zum Execute. |
+| `AtlasChange` | Kanonischer Before→After-Beitrag genau des Dungeonowners. | Kein vollständiger Mehrownerbefehl und kein eigener Undo-Schritt. |
+| `composed command` | Vollständiger, vom PR-#13-Orchestrator zusammengestellter Befehl aller beteiligten tatsächlichen Owner. | Keine Dungeon-eigene Parallelhistory. |
+| `handoff` | Übergabe eines noch nicht ausgeführten Dungeonbeitrags an den Orchestrator. | Weder `check()` noch `execute()` und keine Speicherwirkung. |
+
+Die normativen Aussagen dieses Plans sind Scope, Eingaben, Ausgaben,
+Wirkungsverbote, Erhaltungsgrenzen und Gates. Bezeichner, TypeScript-Form,
+Dateizuschnitt und Sichtbarkeit sind erst nach bestandenem N01-Re-Review im
+getrennten Produkt-I01 festzulegen.
+
 ## Enger Auftrag und Nichtziele
 
 Der erste Port bearbeitet ausschließlich einen Punkt der **äußeren Kontur**
@@ -57,9 +76,11 @@ unverändert.
 
 ## Geplanter ownerseitiger Port
 
-Die I01-Umsetzung erhält ein enges Modul
-`src/features/dungeon/geometry-change.ts`. Es exportiert keinen Executor und
-keine Speicherfunktion. Der öffentliche Vertrag ist sinngemäß:
+Eine mögliche I01-Umsetzung bündelt den reinen Port beispielsweise in
+`src/features/dungeon/geometry-change.ts`; der Dateiname ist nicht normativ.
+Der Port exportiert keinen Executor und keine Speicherfunktion. Die folgende Form ist **nur illustrativ**, keine
+festgelegte öffentliche ABI. Normativ ist, dass die genannten Informationen
+ohne Schreibwirkung bis zum Handoff verfügbar bleiben:
 
 ```ts
 interface DungeonGeometryAddress {
@@ -100,6 +121,22 @@ danach die einzige Atlas-Change-Erzeugung.
 Ein Nullzug liefert kein Proposal. Ein erfolgreiches Proposal enthält genau
 den Byte-Snapshot, aus dem auch die Vorschau stammt. Es hat keine
 `execute`-, `undo`, `save`, `flush`-, Repository-, Vault- oder Dateimethode.
+
+## Rollen- und Wirkungsgrenzen
+
+| Rolle | Eingabe und Lebensdauer | Erlaubte Ausgabe | Verbotene Wirkung |
+| --- | --- | --- | --- |
+| `DungeonAtlasSource` | Tatsächliche registrierte Ownerwerte derselben `AtlasHistory`; liefert einen Zeitpunktssnapshot. | Kanonische Dungeonbytes, immutable Dokument und abgeleitete Keyclosure. | Keine Gesture, kein Preview, keine Session-/Dateioperation. |
+| Pure Command→Document-Projektion | Eingefrorenes Dokument plus ein vom vorhandenen Konturplaner validiertes `Command`; nur für eine Proposalberechnung. | Neues vollständig validiertes immutable `MapDocument`. | Kein `Session.execute`, kein eigener Historystack und keine duplizierte Portal-/Reihenfolgesemantik. |
+| Dungeon-Gesturezustand | Begin bis Cancel oder Handoff; hält nur die für Adresse, Pointer und Proposal nötigen flüchtigen Werte. | Aktuelles Preview oder noch nicht ausgeführter Dungeonbeitrag. | Keine Source-, History-, Draft-, Repository-, Vault- oder Dateimutation. Die noch offene Basisgültigkeit wird hier nicht vorweggenommen. |
+| `SpatialCanvas` | Liest tatsächliche räumliche Sources und optional genau einen ownergebundenen Previewoverride für einen Draw/Hit-Zyklus. | Darstellung, Grip und Treffer in derselben relativen Kamera. | Keine zweite Kamera, kein Sourcewrite und keine Finalisierung. |
+| Atlas-Editor | Besitzt Begin/Update/Cancel und gibt bei erfolgreichem Abschluss höchstens einen Beitrag weiter. | UI-Zustand und Handoff an den bestehenden Orchestrator. | Kein eigener Dungeon-Execute, Save oder Sessioncommit. |
+| PR-#13-Orchestrator | Empfängt noch nicht ausgeführte Beiträge tatsächlicher Owner für genau einen vollständigen Befehl. | Erst `check()` auf dem vollständigen Befehl, danach genau ein `execute()` auf demselben Befehl. | Kein Teilcommit, keine zweite History und keine stellvertretende Domainautorität. |
+
+Diese Tabelle ordnet vorhandene Verantwortlichkeiten; sie führt keine zweite
+Source-, Transform-, History- oder Persistenzarchitektur ein. Der konkrete
+Freshnessvertrag der Gesturebasis bleibt ausschließlich der offene
+`DUN-GEO-P01-R01-01`-Gegenstand.
 
 ## Gesture- und Vorschaulebensdauer
 
@@ -198,24 +235,22 @@ unabhängigem Code-Review in ein getrenntes Paket; er benutzt den vereinbarten
 isolierten Host. Dieser P01-Planlauf startet keine GUI und führt mangels
 Produktänderung keine Produktbasisprüfung als Funktionsbeleg an.
 
-## Getrennte Gates und Übergabe
+## Phasen, Gates und Übergabe
 
-1. **P01 (dieser Lauf):** Plan-/JSON-/Verweis-/Diffprüfung, Kandidat pushen,
-   unabhängigen Reviewer anfragen.
-2. **P01-R01:** Ein nicht am Plan beteiligter Reviewer prüft Scope,
-   Wiederverwendung, Orakel und Einmaligkeitsgrenze. Nur ein expliziter PASS
-   auf dem Exact-SHA öffnet I01.
-3. **I01:** Produktport auf eigenem Dungeon-Branch, ohne Steward- oder
-   OBS-04-Dateien verdeckt zu übernehmen.
-4. **I01-R01 und nötigenfalls N01/R02:** unabhängiger Code-/Regressionreview;
-   Pflichtbefunde werden separat repariert und erneut geprüft.
-5. **Steward-Handoff:** Erst der geprüfte Owner-SHA geht an den Hex-E2E-01-
-   Steward für den einzigen PR-#13-Kandidaten. Der Steward besitzt die
-   Mehrownerkomposition; der Dungeon-Strang ratifiziert keine fremden Owner.
-6. **Cleanup-P/I/R:** Aufräumplanung, Umsetzung und Review folgen als eigene
-   Läufe nach der Funktionsabnahme. Sie sind kein versteckter Teil von I01.
+| Lauf | Aktueller Status | Öffnet ausschließlich | Öffnet ausdrücklich nicht |
+| --- | --- | --- | --- |
+| P01 `ea46ba5437…` | abgeschlossenes Planartefakt | unabhängigen P01-R01 | Produkt-I01 oder E2E-01 |
+| P01-R01 | `CHANGES_REQUIRED`, genau `DUN-GEO-P01-R01-01` | getrennte dokumentierte Nacharbeit | Portimplementierung |
+| CL-P01 `e01622170d…` | abgeschlossen | CL-I01 | Fachreparatur |
+| CL-I01 | laufende Vertragsartefaktbereinigung | unabhängigen CL-R01 auf Exact-SHA | N01, Produktcode oder Self-Merge |
+| CL-R01 | offen | bei PASS den getrennten N01-Lauf | Produkt-I01 |
+| N01 / P01-R02 | offen; nur der eine Parent-/Bindingbasis-Befund | bei unabhängigem Exact-SHA-PASS Produkt-I01 | Host- oder E2E-Go |
+| Produkt-I01 | geschlossen | nach Basisprüfungen den unabhängigen Code-R01 | Stewardintegration ohne Review |
+| Code-R01 und nötige N01/R02 | offen | erst bei PASS den geprüften Owner-SHA | fremde Domainratifikation |
+| Steward-Handoff | offen | Übernahme des geprüften Owner-SHA in den einzigen PR-#13-Kandidaten | zweiten Kandidaten oder Dungeon-eigenes Execute |
+| Produkt-Cleanup-P/I/R | offen und weiterhin nach der Funktionsabnahme | ausschließlich bereinigten geprüften Produktstand | Gesamtfreigabe |
 
-Atlas-QA wird als möglicher unabhängiger P01-Reviewer angefragt. Die Anfrage
-ist keine Annahme. Campaign/Data, P02/P04, vollständiger E2E-01-Lauf,
-Originalparität, große Welt, physische Eingabe und Nutzervaultinstallation
-bleiben ausdrücklich offen.
+Der Hex-E2E-01-Steward besitzt die Mehrownerkomposition; der Dungeon-Strang
+ratifiziert keine fremden Owner. Campaign/Data, P02/P04, vollständiger
+E2E-01-Lauf, Originalparität, große Welt, physische Eingabe und
+Nutzervaultinstallation bleiben ausdrücklich offen.

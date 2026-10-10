@@ -515,27 +515,29 @@
     "verification": "Plan-/JSON-/Verweis-/Diffprüfung vor Veröffentlichung; keine Produktquelle geändert und deshalb keine Produktbasisprüfung oder GUI als Planbeleg.",
     "externalEvidence": "Ownerinput #12/6092359086 und technische Quellanalyse #8/6092363698 auf PR13 Exact-Head e5a19a93ce417b4e48fa86512d1c7f1be4d41eea. Keine neue externe Lauf- oder Hostevidenz in P01.",
     "notVerified": "Plan-PASS, Cleanup-I/R, N01-Reparatur und Exact-SHA-Re-Review, Implementierung, Code-Review, Host, physische Eingabe, vollständige Mehrownerkomposition und E2E-01-PASS bleiben offen.",
-    "next": "Getrennte Cleanup-P/I/R für das P01-Vertragsartefakt abschließen; danach genau DUN-GEO-P01-R01-01 in N01 reparieren und unabhängig re-reviewen. I01 bleibt bis PASS geschlossen."
+    "next": "CL-I01 auf Exact-SHA unabhängig in CL-R01 prüfen; bei PASS danach genau DUN-GEO-P01-R01-01 in N01 reparieren und unabhängig re-reviewen. Produkt-I01 bleibt bis PASS geschlossen."
   },
   "e2e01DungeonGeometryCleanup": {
-    "run": "E2E-01-DUNGEON-GEOMETRY-CL-P01",
-    "state": "cleanup_plan_candidate_review_open_after_publish",
+    "run": "E2E-01-DUNGEON-GEOMETRY-CL-I01",
+    "state": "cleanup_implementation_candidate_independent_review_required",
     "owner": "Dungeon-Strang (Thread Obsidian Dungeon Repo ansehen)",
     "branch": "dungeon/e2e01-geometry-cleanup-p01-20261010",
     "baseCommit": "ea46ba5437596aceaad955330e21c3ef4e739451",
+    "implementationBase": "e01622170da904bbb5da1f859a425e5e85c87a23",
     "plan": "ROADMAP-E2E01-DUNGEON-GEOMETRY-CLEANUP-PLAN.md",
     "coordination": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/8#issuecomment-6092514801",
     "gateHandoff": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6092515006",
-    "scope": "Plan-only für die Bereinigung von normativem Vertrag versus illustrativer Typform, Rollen-/Lebensdauerbegriffen, Review-/Phasentraceability und eigener Checkpointmetadaten; keine Fachreparatur oder Produktänderung.",
+    "implementationCoordination": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/8#issuecomment-6092549437",
+    "implementationGateStart": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6092549672",
+    "scope": "Bereinigung von normativem Vertrag versus illustrativer Typform, eindeutiges Glossar, zentrale Rollen-/Lebensdauer-/Wirkungsmatrix, Review-/Phasenmatrix und eigene Checkpointmetadaten; keine Fachreparatur oder Produktänderung.",
     "files": [
-      "ROADMAP-E2E01-DUNGEON-GEOMETRY-CLEANUP-PLAN.md",
       "ROADMAP-E2E01-DUNGEON-GEOMETRY-PLAN.md",
       "checkpoint.json"
     ],
     "reviewFindingPreserved": "DUN-GEO-P01-R01-01 bleibt vollständig offen und gehört erst nach Cleanup-PASS in einen getrennten N01-Plan-Repair.",
-    "verification": "JSON-/Verweis-/Diff-/Fremdwurzelschutz vor Veröffentlichung; keine Produktbasisprüfung oder GUI, weil CL-P01 ausschließlich plant.",
-    "notVerified": "Cleanup-Umsetzung, unabhängiger Cleanupreview, N01, Produkt-I01, Host, physische Eingabe und E2E-01-PASS bleiben offen.",
-    "next": "CL-P01-Kandidaten normal pushen; danach CL-I01 und unabhängigen CL-R01 als getrennte Läufe durchführen."
+    "verification": "JSON-/Verweis-/Diff-/Fremdwurzelschutz vor Veröffentlichung; Produktquellen, Acceptance, Architektur, Tests, Tools und Fixtures unverändert. Keine Produktbasisprüfung oder GUI, weil CL-I01 ausschließlich das Vertragsartefakt bereinigt.",
+    "notVerified": "Unabhängiger CL-R01, N01, Produkt-I01, Host, physische Eingabe und E2E-01-PASS bleiben offen.",
+    "next": "CL-I01-Exact-SHA unabhängig in CL-R01 prüfen lassen. Keine N01- oder Produktarbeit vor dem getrennten nächsten Auftrag."
   },
   "hexAtlasExecution": {
     "scope": "HEX-00 bis HEX-28 und sämtliche eingeordneten CITY-00 bis CITY-09 vollständig",
