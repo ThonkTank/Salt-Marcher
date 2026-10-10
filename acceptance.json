@@ -155312,6 +155312,36 @@
           "largeMap": false,
           "userVaultInstalled": false,
           "fullE2E": false
+        },
+        "dungeonAtLocationH01": {
+          "id": "E2E-01-HEX04-DUNGEON-AT-LOCATION-H01",
+          "state": "producer_native_and_fresh_process_PASS_GM_free_use_pending",
+          "owner": "Hex",
+          "issue": 80,
+          "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
+          "e2e01UserLine": 13,
+          "sourceCommit": "17339c29c8494658d0cadf4d2d1c059b056c3184",
+          "qualifiedProductMerge": "ef07a3ab6d7dbb27c3b680b9311ba65bb7e7c81e",
+          "fixtureVersion": "e2e01-spatial-v2",
+          "fixtureManifestSha256": "23735bb6c95107b7dec93ffa56ec66405a0f4fe0ec3822fc0476d90d2920188d",
+          "limits": {
+            "nativeObsidian": true,
+            "freshElectronProcess": true,
+            "producerScopeOnly": true,
+            "independentGMUse": false,
+            "newNativeCopyDiscardRecoveryFaultMatrix": false,
+            "physicalInput": false,
+            "originalParity": false,
+            "largeMap": false,
+            "userVaultInstalled": false,
+            "fullE2E": false
+          },
+          "finishedAt": "2026-10-10T23:34:50.676462+00:00",
+          "receipt": "docs/reference/atlas-detail-binding-d01/dungeon-at-location-h01.json",
+          "sha256": "b4c3aadf414476e071e10b7c8834255efa3d06e32f3d954f105aa1f0ab7f67e1",
+          "nativeEditRun": "1791675129674-atlas-spatial-edit",
+          "freshProcessRun": "1791675181265-atlas-spatial-reopen",
+          "nextConsumer": "Existing Cloud-GM: early free use through normal product GUI in own isolated host before dependent expansion. Parent #80 stays open. If host access is absent, report concrete missing input without substituting model/DOM tests."
         }
       }
     ],

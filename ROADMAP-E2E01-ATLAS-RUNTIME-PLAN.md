@@ -52,17 +52,22 @@ schließt den R01-Befund. Der geprüfte Anschluss ist durch die
 [unabhängige Stewardintegration](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/81#issuecomment-6103211834)
 in Shared konsumierbar; eine weitere Reparaturreviewrunde ist nicht offen.
 
-Jetzt ausführbar: Hex prüft diesen Anschluss im isolierten tatsächlichen
-Obsidianhost einschließlich normalem Ende und frischem Electronprozess; zuvor
-den lokalen Slot neu koordinieren. Die vorhandenen Dungeon-/Placementkennungen
-und Orts-/Raumtexte müssen beim Verorten, A → B, gemeinsamen Undo/Redo und Save
-in der nativen Wiederöffnung erhalten bleiben. Danach den startbaren Hostweg
-am Aufgabenort dem bestehenden Cloud-GM-Kollegen zur frühen freien Nutzung
-übergeben, bevor darauf aufbauender Ausbau beginnt.
+Der [H01-Beleg](docs/reference/atlas-detail-binding-d01/dungeon-at-location-h01.json)
+bestätigt den sichtbaren Anschluss im isolierten tatsächlichen Obsidianhost:
+Orts-Key, vorhandenen Dungeon bei A verorten, nach B verschieben, Raum-Key und
+Zurück, gemeinsame Undo/Redo-Folge, Save und bytegleiche Wiederöffnung in einem
+separaten frischen Electronprozess. Vorhandene Kennungen, Geometrie und
+unbeteiligte Texte/City-/Terrainbytes bleiben erhalten. Beide erfolgreichen
+Prozesse sind normal beendet; der separat bestätigte lokale Slot ist zurückgegeben.
+Die zwei korrigierten QA-Prüfannahmen und ihre normalen Prozessenden bleiben
+im Beleg sichtbar; Produktcode wurde dabei nicht geändert.
 
-Obsidian-/Frischprozess- und GM-Nutzungsbelege fehlen weiterhin. E2E-01 und
-physische/Original-/Großkarten-/Installationsabnahmen bleiben offen; R02 und
-Integration bestätigen ausschließlich ihren Repository-/History-/Speicherscope.
+Jetzt konsumierbar: [startbarer Build/Fixture/Host-Eingang](docs/reference/atlas-detail-binding-d01/dungeon-at-location-h01.md)
+für frühe freie GUI-Nutzung durch den bestehenden Cloud-GM-Kollegen im eigenen
+isolierten Host. Hex konsumiert dessen Nutzungsbefund am Aufgabenort, bevor
+darauf aufbauender Ausbau beginnt. Parent #80 bleibt offen. GM-Nutzung und das
+gemeinsame E2E-01-Gate sowie physische/Original-/Großkarten-/Installationsabnahmen
+bleiben offen; H01 ist eine synthetische native Producerprobe.
 
 ## Historische Planbasis und Lieferbelege
 
