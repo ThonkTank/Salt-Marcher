@@ -4930,19 +4930,18 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I48b",
-      "kind": "reference_implementation",
-      "startedAt": "2026-10-10T04:26:21.560Z",
-      "focus": "Fresh original Map-Reopen and own copied atmosphere template, actual normal process end",
-      "state": "completed",
-      "result": "Fresh private process opened byte-equal final map: shadow230/snow0 before sliders/Save; own template restores visibly changed5/0.6 to230/0 immediately; final map/template/source bytes preserved, normalExit0, five process identities gone, GUI returned. Demo/reduced graphics/synthetic input; R48 and product parity remain open.",
-      "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i48b-20261010-r01/manifest.json",
-      "branch": "candidate/city00-i48b-20261010"
-    },
-    "nextRun": {
       "id": "CITY-00-I48b-CLEAN-P",
       "kind": "cleanup_plan",
-      "focus": "Own private I48b runtime residue and raw evidence preservation, then separate cleanup I/R; R48 follows"
+      "startedAt": "2026-10-10T04:36:17.497651+00:00",
+      "focus": "Enumerate only own regenerable Vulkan/Godot/Mesa caches, protect all raw evidence and map/template sources",
+      "state": "completed",
+      "result": "Three exact cache directories/13431760 bytes planned, normalExit0 and five process identities absent; full cache/protected hash inventory external, nothing deleted.",
+      "plan": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i48b-20261010-r01/cleanup-plan.json"
+    },
+    "nextRun": {
+      "id": "CITY-00-I48b-CLEAN-I",
+      "kind": "cleanup_implementation",
+      "focus": "Implement exact three own cache removals with hash/path/process guards, then separate cleanup review; R48 afterwards"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
