@@ -153230,7 +153230,7 @@
       {
         "id": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
         "requirement": "Thin Context/navigation consumer with actual native target validation, same Atlas owners and guarded Campaign switching",
-        "state": "promotion_NOT_GRANTED_retained_Save_Fresh_Recovery_independent_review_pending",
+        "state": "independent_integrated_scope_PASS_Shared_promotion_authorized_with_exact_CI_guard",
         "implementationRun": "HEX-E2E01-HOST-SAVE-I02",
         "sourceCommit": "86bbbbfac44233509f084ac836e6dafa07b11a16",
         "catalog": "ROADMAP-E2E-GATES-CANDIDATE.md:13",
@@ -153256,7 +153256,7 @@
           "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-manifest-host-aba-20261010/repair/repair.json"
         ],
         "observed": "Actual AtlasView Save button calls FileTransaction and retained native owner Participant/Provider; exact Prepared/Committed journal read-back issues the real proofs.; Same Navigator queue refreshes confirmed Registry/Inventory before unblocking input; Repository, Sources, History, renderer, camera, Context token and mount generation remain.; Actual Vault first-native CAS failure rolls back before snapshot, issues a transaction-sealed receipt, releases pending Provider lease and retries in the same editable Atlas with a new transaction UUID.; Actual DOM View/services close and fresh View/services reopen retain saved Location and Room names under native Campaign fixture; this is not a fresh Electron process.; FileTransaction regressions exercise all before/after CAS reply-loss boundaries, reject copied/foreign rollback receipts, protect unchanged native guards, and preserve won canonical bytes if committed consumer acknowledgment fails.",
-        "notConfirmed": "Historical H01 remains a recorded native failure; the repaired later H02 A→B→A is independently PASS within its existing synthetic isolated-vault scope. This consumption runs no GUI. Integrated promotion, physical input, original parity, large world, user-vault installation and full E2E remain unapproved; Save/Fresh/Recovery keeps its separate actual source-bound receipt.",
+        "notConfirmed": "Historical H01 failure, repair and H02 receipts remain unchanged. Independent current integrated Save/Fresh/Recovery and R01/H02 scope inputs are consumed, without author self-approval. No new native run, physical input, original parity, large world, user-vault installation, P02/P04 or full E2E approval; actual Shared GM flow follows separately in Issue40.",
         "independentReview": {
           "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/13#issuecomment-6094804164",
           "gate": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6094804323",
@@ -154172,7 +154172,7 @@
           "currentEvidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-manifest-host-save-i02-20261010/implementation.json",
           "scope": "Component review only; no native/Host/overall approval."
         },
-        "gap": "E2E01-PROMOTION-01: original Save/Fresh/Rollback/Committed-Recovery access delivered (receipt 3ccb22c6; 46 definitive hash-bound files plus retained build/harness and actual eight-source delta, including qualified Shared PR55). Existing integrated Chronik independent scope decision remains #39 input; no promotion or new GUI. #38/R01/H02 stays closed; full E2E and Shared GM/installation/physical/original/large-world remain separate.",
+        "gap": "E2E01-PROMOTION-01 closed by actual independent Chronik review 6100666965 on e4fb956. Existing qualified sources and unchanged critical composition authorize regular Shared integration after current exact CI/remote guards. Required cleanup remains a separate run, Issue40 Shared GM and P02/P04/CompleteImport/full E2E remain open.",
         "qualifiedCampaignInputAndRollbackProbe": {
           "state": "qualified_component_contract_closed_productive_Host_implementation_now_present",
           "reviewSourceCommit": "ce2f9032dc9f72f994a307b5aac26e1ad8910065",
@@ -154477,6 +154477,22 @@
           "finding": "E2E01-PROMOTION-01",
           "independentApproval": false,
           "promotion": false
+        },
+        "nativeSaveFreshRecoveryIndependentReview": {
+          "id": "HEX-E2E01-SAVE-FRESH-RECOVERY-INDEPENDENT-01",
+          "state": "PASS_retained_native_scope_independently_qualified",
+          "checkpoint": "checkpoint.hexAtlasExecution.latestSaveFreshRecoveryIndependentReview",
+          "decision": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/13#issuecomment-6100666965",
+          "closedFinding": "E2E01-PROMOTION-01"
+        },
+        "integratedPromotionDecision": {
+          "id": "HEX-E2E01-PR13-PROMOTION-DECISION-02",
+          "decision": "APPROVED_FOR_SHARED_PROMOTION",
+          "state": "independent_inputs_consumed_execution_requires_exact_current_head_CI_and_remote_guard",
+          "auditedComposition": "8df3d9af476716646e2239cbb14cdfdcc91452a7",
+          "consumedShared": "886cc2a475d9a8f705d74728c746c986b4a1c088",
+          "checkpoint": "checkpoint.hexAtlasExecution.latestPromotionDecision",
+          "fullE2E": false
         }
       }
     ],
