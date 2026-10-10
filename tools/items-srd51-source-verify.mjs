@@ -9,6 +9,7 @@ import { validateBagsSlice, validateBagsPdfXml } from "./items-srd51-bags.mjs";
 import { validateBSectionSlice, validateBSectionPdfXml } from "./items-srd51-b-section.mjs";
 import { validateCSectionSlice, validateCSectionPdfXml } from "./items-srd51-c-section.mjs";
 import { validateDSectionSlice, validateDSectionPdfXml } from "./items-srd51-d-section.mjs";
+import { validateESectionSlice, validateESectionPdfXml } from "./items-srd51-e-section.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const dataRoot = resolve(root, "src/features/catalog/data");
@@ -1201,6 +1202,7 @@ export async function verifyItemsSourcePackage({ pdfPath, allowIncomplete = fals
   const magicItemAzBSection = validateBSectionSlice(transcript, inventory);
   const magicItemAzCSection = validateCSectionSlice(transcript, inventory);
   const magicItemAzDSection = validateDSectionSlice(transcript, inventory);
+  const magicItemAzESection = validateESectionSlice(transcript, inventory);
   let pdf;
   if (pdfPath) {
     const bytes = await readFile(resolve(pdfPath));
@@ -1218,6 +1220,9 @@ export async function verifyItemsSourcePackage({ pdfPath, allowIncomplete = fals
       magicItemAzBagsEvidence: validateBagsPdfXml(bagsXml, bagsHeadings, normalizePdfText),
       magicItemAzBSectionEvidence: validateBSectionPdfXml(execFileSync("pdftohtml",
         ["-xml", "-f", "211", "-l", "213", "-stdout", "-i", resolve(pdfPath)],
+        { encoding: "utf8", maxBuffer: 16 * 1024 * 1024 }), bagsHeadings, normalizePdfText),
+      magicItemAzESectionEvidence: validateESectionPdfXml(execFileSync("pdftohtml",
+        ["-xml", "-f", "220", "-l", "221", "-stdout", "-i", resolve(pdfPath)],
         { encoding: "utf8", maxBuffer: 16 * 1024 * 1024 }), bagsHeadings, normalizePdfText),
       magicItemAzDSectionEvidence: validateDSectionPdfXml(execFileSync("pdftohtml",
         ["-xml", "-f", "215", "-l", "220", "-stdout", "-i", resolve(pdfPath)],
@@ -1265,6 +1270,7 @@ export async function verifyItemsSourcePackage({ pdfPath, allowIncomplete = fals
     magicItemAzBSection,
     magicItemAzCSection,
     magicItemAzDSection,
+    magicItemAzESection,
     potionHealingMerge,
     pdf,
     hashes: Object.freeze({

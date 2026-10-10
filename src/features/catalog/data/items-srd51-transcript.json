@@ -3252,6 +3252,381 @@
           "srd51:magic-item:magic-items-a-z:62"
         ]
       }
+    },
+    {
+      "id": "srd51:magic-item:magic-items-a-z:63",
+      "name": "Efficient Quiver",
+      "category": "magic-item",
+      "subcategory": "wondrous-item",
+      "magic": true,
+      "rarity": {
+        "kind": "fixed",
+        "value": "uncommon"
+      },
+      "attunement": "not-required",
+      "sourceHeader": {
+        "text": "Wondrous item, uncommon",
+        "occurrenceId": "srd51:magic-item:magic-items-a-z:63"
+      },
+      "properties": [],
+      "description": [
+        {
+          "text": "Each of the quiver’s three compartments connects to an extradimensional space that allows the quiver to hold numerous items while never weighing more than 2 pounds. The shortest compartment can hold up to sixty arrows, bolts, or similar objects. The midsize compartment holds up to eighteen javelins or similar objects. The longest compartment holds up to six long objects, such as bows, quarterstaffs, or spears.",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:63"
+        },
+        {
+          "text": "You can draw any item the quiver contains as if doing so from a regular quiver or scabbard.",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:63"
+        }
+      ],
+      "source": {
+        "document": "SRD 5.1",
+        "pdfUrl": "https://media.wizards.com/2023/downloads/dnd/SRD_CC_v5.1.pdf",
+        "pdfPages": [
+          220
+        ],
+        "printedPages": [
+          220
+        ],
+        "occurrenceIds": [
+          "srd51:magic-item:magic-items-a-z:63"
+        ]
+      }
+    },
+    {
+      "id": "srd51:magic-item:magic-items-a-z:64",
+      "name": "Efreeti Bottle",
+      "category": "magic-item",
+      "subcategory": "wondrous-item",
+      "magic": true,
+      "rarity": {
+        "kind": "fixed",
+        "value": "very-rare"
+      },
+      "attunement": "not-required",
+      "sourceHeader": {
+        "text": "Wondrous item, very rare",
+        "occurrenceId": "srd51:magic-item:magic-items-a-z:64"
+      },
+      "properties": [
+        {
+          "name": "d100 Effect: 01–10",
+          "description": "The efreeti attacks you. After fighting for 5 rounds, the efreeti disappears, and the bottle loses its magic.",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:64"
+        },
+        {
+          "name": "d100 Effect: 11–90",
+          "description": "The efreeti serves you for 1 hour, doing as you command. Then the efreeti returns to the bottle, and a new stopper contains it. The stopper can’t be removed for 24 hours. The next two times the bottle is opened, the same effect occurs. If the bottle is opened a fourth time, the efreeti escapes and disappears, and the bottle loses its magic.",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:64"
+        },
+        {
+          "name": "d100 Effect: 91–00",
+          "description": "The efreeti can cast the wish spell three times for you. It disappears when it grants the final wish or after 1 hour, and the bottle loses its magic.",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:64"
+        }
+      ],
+      "description": [
+        {
+          "text": "This painted brass bottle weighs 1 pound. When you use an action to remove the stopper, a cloud of thick smoke flows out of the bottle. At the end of your turn, the smoke disappears with a flash of harmless fire, and an efreeti appears in an unoccupied space within 30 feet of you.",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:64"
+        },
+        {
+          "text": "The first time the bottle is opened, the GM rolls to determine what happens.",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:64"
+        },
+        {
+          "text": "d100 Effect",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:64"
+        },
+        {
+          "text": "01–10 The efreeti attacks you. After fighting for 5 rounds, the efreeti disappears, and the bottle loses its magic.",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:64"
+        },
+        {
+          "text": "11–90 The efreeti serves you for 1 hour, doing as you command. Then the efreeti returns to the bottle, and a new stopper contains it. The stopper can’t be removed for 24 hours. The next two times the bottle is opened, the same effect occurs. If the bottle is opened a fourth time, the efreeti escapes and disappears, and the bottle loses its magic.",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:64"
+        },
+        {
+          "text": "91–00 The efreeti can cast the wish spell three times for you. It disappears when it grants the final wish or after 1 hour, and the bottle loses its magic.",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:64"
+        }
+      ],
+      "source": {
+        "document": "SRD 5.1",
+        "pdfUrl": "https://media.wizards.com/2023/downloads/dnd/SRD_CC_v5.1.pdf",
+        "pdfPages": [
+          220
+        ],
+        "printedPages": [
+          220
+        ],
+        "occurrenceIds": [
+          "srd51:magic-item:magic-items-a-z:64"
+        ]
+      }
+    },
+    {
+      "id": "srd51:magic-item:magic-items-a-z:65",
+      "name": "Elemental Gem",
+      "category": "magic-item",
+      "subcategory": "wondrous-item",
+      "magic": true,
+      "rarity": {
+        "kind": "fixed",
+        "value": "uncommon"
+      },
+      "attunement": "not-required",
+      "sourceHeader": {
+        "text": "Wondrous item, uncommon",
+        "occurrenceId": "srd51:magic-item:magic-items-a-z:65"
+      },
+      "properties": [
+        {
+          "name": "Gem Summoned Elemental: Blue sapphire",
+          "description": "Air elemental",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:65"
+        },
+        {
+          "name": "Gem Summoned Elemental: Yellow diamond",
+          "description": "Earth elemental",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:65"
+        },
+        {
+          "name": "Gem Summoned Elemental: Red corundum",
+          "description": "Fire elemental",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:65"
+        },
+        {
+          "name": "Gem Summoned Elemental: Emerald",
+          "description": "Water elemental",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:65"
+        }
+      ],
+      "description": [
+        {
+          "text": "This gem contains a mote of elemental energy. When you use an action to break the gem, an elemental is summoned as if you had cast the conjure elemental spell, and the gem’s magic is lost. The type of gem determines the elemental summoned by the spell.",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:65"
+        },
+        {
+          "text": "Gem Summoned Elemental",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:65"
+        },
+        {
+          "text": "Blue sapphire Air elemental",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:65"
+        },
+        {
+          "text": "Yellow diamond Earth elemental",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:65"
+        },
+        {
+          "text": "Red corundum Fire elemental",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:65"
+        },
+        {
+          "text": "Emerald Water elemental",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:65"
+        }
+      ],
+      "source": {
+        "document": "SRD 5.1",
+        "pdfUrl": "https://media.wizards.com/2023/downloads/dnd/SRD_CC_v5.1.pdf",
+        "pdfPages": [
+          220
+        ],
+        "printedPages": [
+          220
+        ],
+        "occurrenceIds": [
+          "srd51:magic-item:magic-items-a-z:65"
+        ]
+      }
+    },
+    {
+      "id": "srd51:magic-item:magic-items-a-z:66",
+      "name": "Elven Chain",
+      "category": "magic-item",
+      "subcategory": "armor",
+      "magic": true,
+      "rarity": {
+        "kind": "fixed",
+        "value": "rare"
+      },
+      "attunement": "not-required",
+      "sourceHeader": {
+        "text": "Armor (chain shirt), rare",
+        "occurrenceId": "srd51:magic-item:magic-items-a-z:66"
+      },
+      "properties": [],
+      "description": [
+        {
+          "text": "You gain a +1 bonus to AC while you wear this armor. You are considered proficient with this armor even if you lack proficiency with medium armor.",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:66"
+        }
+      ],
+      "source": {
+        "document": "SRD 5.1",
+        "pdfUrl": "https://media.wizards.com/2023/downloads/dnd/SRD_CC_v5.1.pdf",
+        "pdfPages": [
+          220
+        ],
+        "printedPages": [
+          220
+        ],
+        "occurrenceIds": [
+          "srd51:magic-item:magic-items-a-z:66"
+        ]
+      }
+    },
+    {
+      "id": "srd51:magic-item:magic-items-a-z:67",
+      "name": "Eversmoking Bottle",
+      "category": "magic-item",
+      "subcategory": "wondrous-item",
+      "magic": true,
+      "rarity": {
+        "kind": "fixed",
+        "value": "uncommon"
+      },
+      "attunement": "not-required",
+      "sourceHeader": {
+        "text": "Wondrous item, uncommon",
+        "occurrenceId": "srd51:magic-item:magic-items-a-z:67"
+      },
+      "properties": [],
+      "description": [
+        {
+          "text": "Smoke leaks from the lead-stoppered mouth of this brass bottle, which weighs 1 pound. When you use an action to remove the stopper, a cloud of thick smoke pours out in a 60-foot radius from the bottle. The cloud’s area is heavily obscured. Each minute the bottle remains open and within the cloud, the radius increases by 10 feet until it reaches its maximum radius of 120 feet.",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:67"
+        },
+        {
+          "text": "The cloud persists as long as the bottle is open. Closing the bottle requires you to speak its command word as an action. Once the bottle is closed, the cloud disperses after 10 minutes. A moderate wind (11 to 20 miles per hour) can also disperse the smoke after 1 minute, and a strong wind (21 or more miles per hour) can do so after 1 round.",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:67"
+        }
+      ],
+      "source": {
+        "document": "SRD 5.1",
+        "pdfUrl": "https://media.wizards.com/2023/downloads/dnd/SRD_CC_v5.1.pdf",
+        "pdfPages": [
+          220
+        ],
+        "printedPages": [
+          220
+        ],
+        "occurrenceIds": [
+          "srd51:magic-item:magic-items-a-z:67"
+        ]
+      }
+    },
+    {
+      "id": "srd51:magic-item:magic-items-a-z:68",
+      "name": "Eyes of Charming",
+      "category": "magic-item",
+      "subcategory": "wondrous-item",
+      "magic": true,
+      "rarity": {
+        "kind": "fixed",
+        "value": "uncommon"
+      },
+      "attunement": "required",
+      "sourceHeader": {
+        "text": "Wondrous item, uncommon (requires attunement)",
+        "occurrenceId": "srd51:magic-item:magic-items-a-z:68"
+      },
+      "properties": [],
+      "description": [
+        {
+          "text": "These crystal lenses fit over the eyes. They have 3 charges. While wearing them, you can expend 1 charge as an action to cast the charm person spell (save DC 13) on a humanoid within 30 feet of you, provided that you and the target can see each other. The lenses regain all expended charges daily at dawn.",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:68"
+        }
+      ],
+      "source": {
+        "document": "SRD 5.1",
+        "pdfUrl": "https://media.wizards.com/2023/downloads/dnd/SRD_CC_v5.1.pdf",
+        "pdfPages": [
+          220,
+          221
+        ],
+        "printedPages": [
+          220,
+          221
+        ],
+        "occurrenceIds": [
+          "srd51:magic-item:magic-items-a-z:68"
+        ]
+      }
+    },
+    {
+      "id": "srd51:magic-item:magic-items-a-z:69",
+      "name": "Eyes of Minute Seeing",
+      "category": "magic-item",
+      "subcategory": "wondrous-item",
+      "magic": true,
+      "rarity": {
+        "kind": "fixed",
+        "value": "uncommon"
+      },
+      "attunement": "not-required",
+      "sourceHeader": {
+        "text": "Wondrous item, uncommon",
+        "occurrenceId": "srd51:magic-item:magic-items-a-z:69"
+      },
+      "properties": [],
+      "description": [
+        {
+          "text": "These crystal lenses fit over the eyes. While wearing them, you can see much better than normal out to a range of 1 foot. You have advantage on Intelligence (Investigation) checks that rely on sight while searching an area or studying an object within that range.",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:69"
+        }
+      ],
+      "source": {
+        "document": "SRD 5.1",
+        "pdfUrl": "https://media.wizards.com/2023/downloads/dnd/SRD_CC_v5.1.pdf",
+        "pdfPages": [
+          221
+        ],
+        "printedPages": [
+          221
+        ],
+        "occurrenceIds": [
+          "srd51:magic-item:magic-items-a-z:69"
+        ]
+      }
+    },
+    {
+      "id": "srd51:magic-item:magic-items-a-z:70",
+      "name": "Eyes of the Eagle",
+      "category": "magic-item",
+      "subcategory": "wondrous-item",
+      "magic": true,
+      "rarity": {
+        "kind": "fixed",
+        "value": "uncommon"
+      },
+      "attunement": "required",
+      "sourceHeader": {
+        "text": "Wondrous item, uncommon (requires attunement)",
+        "occurrenceId": "srd51:magic-item:magic-items-a-z:70"
+      },
+      "properties": [],
+      "description": [
+        {
+          "text": "These crystal lenses fit over the eyes. While wearing them, you have advantage on Wisdom (Perception) checks that rely on sight. In conditions of clear visibility, you can make out details of even extremely distant creatures and objects as small as 2 feet across.",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:70"
+        }
+      ],
+      "source": {
+        "document": "SRD 5.1",
+        "pdfUrl": "https://media.wizards.com/2023/downloads/dnd/SRD_CC_v5.1.pdf",
+        "pdfPages": [
+          221
+        ],
+        "printedPages": [
+          221
+        ],
+        "occurrenceIds": [
+          "srd51:magic-item:magic-items-a-z:70"
+        ]
+      }
     }
   ]
 }
