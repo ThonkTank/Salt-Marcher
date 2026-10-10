@@ -5056,11 +5056,11 @@
   },
   "gmProductTesting": {
     "date": "2026-10-09",
-    "state": "gm_ux_atlas_zoom_sequence_bounded_pass",
+    "state": "gm_ux_atlas_terrain_zoom_sequence_bounded_pass",
     "plan": "ROADMAP-GM-PRODUCT-TESTING-PLAN.md",
     "focus": "Längere GM-Endanwenderabläufe, häufige Aktionen, Bedienkosten und UI-Überladung; belegte Nacharbeiten beauftragen und nachprüfen.",
-    "currentRun": "GM-UX-ATLAS-CONTENT-READINESS-20261010-02 blocked/not started: Shared 6482dc6373132aab1b27ac66c76cee6dddeb3285 still has no integrated visible Atlas Location/Key UI; no UI session or build claimed.",
-    "executedUiRuns": 16,
+    "currentRun": "GM-UX-ATLAS-TERRAIN-ZOOM-20261010-01 completed: visible three-cell synthetic terrain paint, narrow/wide +/−/Ctrl-wheel/Fit, Save/tab-close/quick-switch reopen; exact current Shared 83bf4bbae23232e56c481318ca78ee70d7eb813e; no broader Atlas approval.",
+    "executedUiRuns": 17,
     "observedFindings": [
       {
         "id": "GM-UX-001",
@@ -5212,7 +5212,7 @@
       "state": "completed",
       "supersedes": "GM-UX-ACCESS; Slotanfrage gemäß Nutzerkorrektur aufgehoben"
     },
-    "next": "Start the populated Atlas zoom-sequence retest only after Hex-owned HEX-03-I01b-marker Location/Key UI is integrated and explicitly runnable; do not repeat empty-Atlas sequence.",
+    "next": "Test Location/Key markers only after Hex-owned HEX-03-I01b-marker is integrated and explicitly runnable; no further empty-Atlas or unchanged terrain zoom replay.",
     "automation": "Stündliche GM-Produkttests in eigener Cloud; keine Laptop-Slotfreigabe erforderlich.",
     "executionEnvironment": "Eigene Cloud-Umgebung, getrennt vom Laptop der Kollegen",
     "cloudHost": {
@@ -6264,6 +6264,54 @@
       "evidence": "Repository checkpoint and src/features/atlas/atlas-editor.ts; prior empty-atlas images remain only prior-run evidence. No new UI frames or vault writes.",
       "notProven": ["Atlas Location/Key visible UX", "populated-atlas zoom sequence", "product latency", "physical input", "fresh native process", "broad Atlas/Dungeon/E2E acceptance"],
       "next": "After Hex integrates and marks HEX-03-I01b-marker runnable, build/install that exact Shared head and perform only the planned populated-atlas zoom sequence."
+    },
+    "latestAtlasTerrainZoomSequence": {
+      "id": "GM-UX-ATLAS-TERRAIN-ZOOM-20261010-01",
+      "status": "completed_bounded_visible_pass",
+      "owner": "Cloud-GM-Produkttester",
+      "branch": "active/installed-phase1",
+      "sharedProductCommit": "83bf4bbae23232e56c481318ca78ee70d7eb813e",
+      "build": {
+        "command": "npm run build",
+        "result": "PASS; dirty:false; Node v24.19.0; exact sourceRevision 83bf4bbae23232e56c481318ca78ee70d7eb813e",
+        "mainJsSha256": "522823730ddce4d0ba83e0476f60887b60a07c517f84e8e270814b6d597efa43",
+        "stylesCssSha256": "a6d31c13219d4b9f49d2ecf6993106bedef2a33560c9bdfdb93106659d45bc2e",
+        "manifestJsonSha256": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64",
+        "installedTriplet": "All three installed QA plugin files byte-equal to exact Shared build before visible sequence."
+      },
+      "host": {
+        "containerId": "6b89f4c325373b1c28b9f15ae6b8e23493d61a85fe46cc8aa45f4f1379e81c92",
+        "obsidian": "1.14.4",
+        "electron": "43.7.7",
+        "viewport": "1024x800 CSS px, devicePixelRatio 1",
+        "vault": "/workspace/scratch/gm-cloud-qa/room-key-open-clean-20261010/vault",
+        "input": "Visible product UI via isolated cloud CDP 9232; no laptop process and no physical input."
+      },
+      "scope": "Create one new synthetic Atlas via command palette; visibly paint three adjacent level-0 hexes (sea, forest, plain land); narrow and wide +/−/Ctrl+wheel/Fit; visible Save, close tab, quick-switch reopen; hash and visible terrain persistence. No Location/Key UI or broad approval claim.",
+      "result": "All three terrain cells stayed visible through both zoom sequences; Fit returned the patch to a centered fully visible group and the scale label remained 3 Meilen pro Hex. Save/reopen kept visible terrain and exact file hash. No reproducible product defect; no repair commissioned.",
+      "dataOracles": {
+        "atlasPath": "Atlanten/GM Terrain Test 2026-10-10.overworld",
+        "atlasId": "2e86d783-f493-4f15-a83f-2211ee8623de",
+        "emptyCreatedSha256": "82256969cf18c3ce97feb64e1cc06c4218e3296ca9d03ab6b1c164da8e6ffcf1",
+        "savedAndReopenedSha256": "5e5b5795518424edb5ee40a406c5e11febef556358ade6ac53151adf87bc2558",
+        "seaChunkSha256": "47b2bdef7902df2c88e12f4f733cbd7e36a96d379e23d3e5109909256c8713ee",
+        "landForestChunkSha256": "2f587580e3061ea646f90ae0dfc8dc8f512381f8e770db5812a4fb19c3b341b3",
+        "existingDungeonCopyBeforeAfterSha256": "56c38f8ff9e4365a165af4319da37bb03db20c09925d6ee38e5327e7559353c7",
+        "previousEmptyAtlasBeforeAfterSha256": "9f8ea64229c608ee4f4d5454f5782ffbb73170f36bbf9e6a8a28c19d13c30d17"
+      },
+      "evidence": {
+        "directory": "/workspace/scratch/gm-cloud-qa/evidence-gmux-atlas-terrain-zoom-20261010-01/",
+        "files": "00-pre-run.png through 27-reopened.png; SHA256SUMS.txt; RUN-NOTES.md; BUILD-INSTALL-HASHES.txt",
+        "keyFrames": "04-new-atlas.png, 07-forest-painted.png, 09-sea-neighbor.png, 11–15 narrow zoom/fit, 17–22 wide zoom/fit, 27-reopened.png"
+      },
+      "checks": "npm run build PASS dirty:false; build/install triplet equality PASS; status Saved; visible Save/Close/Quick Switcher reopen PASS; Atlas hash exact empty→saved and unchanged after reopen; pre-existing Dungeon and empty Atlas hashes unchanged; screenshot SHA manifest created. No testsuite run.",
+      "harnessNote": "First quick-switcher automation lookup targeted hidden generic Search inputs and timed out after 30s without vault mutation; corrected to visible Find or create a note input and opened the intended file. This was not a product failure or latency.",
+      "limits": [
+        "CDP-controlled mouse/keyboard, no physical input; remote settle waits not product latency.",
+        "No Atlas Undo/Redo in this bounded run, no Location/Key marker UI, no large-map test, no fresh Electron process, no player projection/privacy or broad Atlas/Dungeon/E2E approval."
+      ],
+      "changedRepositoryFiles": ["checkpoint.json: gmProductTesting only", "ROADMAP-GM-PRODUCT-TESTING-PLAN.md"],
+      "next": "Wait for integrated runnable HEX-03-I01b-marker before testing Location/Key UI; do not replay unchanged empty or terrain zoom cases."
     }
   }
 }
