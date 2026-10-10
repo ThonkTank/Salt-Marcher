@@ -32,6 +32,19 @@ Fortschritt ist zusätzlicher GM-Nutzen oder ein gelöster Umsetzungseingang, ke
 
 Kostet weitere Organisation/Prüfung voraussichtlich mehr als die Änderung, das konkrete Risiko nennen und auf die kleinste ausreichende Prüfung reduzieren; echte Daten-/Sicherheits-/Abnahmegrenzen erhalten. Nach zwei erfolglosen Versuchen oder 45 Minuten an derselben technischen Hypothese anhand der Belege neu entscheiden.
 
+## Eigene Arbeit selbstkritisch beurteilen
+
+Vor größeren Folgeinvestitionen, bei Übergabe/Abschluss und beim ersten Wiedereinstieg eines Arbeitstags kurz auf die eigene jüngste Arbeit zurückblicken. Das gilt für Produktcode, Tests, Pläne, Regeln und Berichte gleichermaßen:
+
+- Welches bestätigte Ziel hat die Arbeit tatsächlich nähergebracht? Wer nutzt das Ergebnis bereits oder benötigt es jetzt?
+- Würde ich es mit dem heutigen Wissen wieder so machen? Welche Annahme, alte Anweisung oder lokale Bequemlichkeit hat die Entscheidung geprägt?
+- Habe ich hilfreiche Arbeit geliefert oder zusätzliche Schritte, Regeln, Dateien und Prüfungen erzeugt, deren Nutzen unklar bleibt?
+- Was sollte ich jetzt vereinfachen, zusammenführen, entfernen, anders umsetzen oder ausdrücklich stoppen?
+
+Die Antwort muss Konsequenzen haben: eine belegte Fehlentscheidung im eigenen Scope korrigieren, unnötige Folgearbeit streichen oder einen konkreten fremden Bedarf dem zuständigen Owner übergeben. Frühere Belege und geschützte Nutzerarbeit erhalten; echte Abnahmegrenzen nicht wegargumentieren. Ungewissheit verlangt den kleinsten hilfreichen Lernschritt. Ein früher grüner Test oder eigener PASS schützt die Entscheidung nicht vor erneuter sachlicher Kritik.
+
+Dieser Rückblick findet innerhalb der Produktarbeit statt. Kein separater Reflexionsauftrag, Fragenkatalogbericht, Score oder Pflichtkommentar; nur geänderte Entscheidung/Ergebnis am vorhandenen Arbeitsort belegen. Bei unverändert tragfähiger Arbeit weiterarbeiten. Die bestehende Produktwertrolle prüft auch die Wirkung ihrer früheren Entscheidungen regelmäßig; die Pflegefunktionen prüfen den Aufwand ihrer eigenen Regeln.
+
 ## Veröffentlichen und eingehende Arbeit integrieren
 
 Die bestehende Freigabe umfasst Commit/Push und GitHub-Koordination. Vor Beginn und unmittelbar vor Veröffentlichung Remote/Upstream abrufen und eingehende Arbeit integrieren. Vor neuem Branch Claims, PRs und Remote-Branches prüfen. Geprüften zusammenhängenden Stand veröffentlichen; bei längerer Arbeit spätestens zum täglichen Abschluss einen prüfbaren Zwischenstand sichern.
