@@ -10,6 +10,7 @@ Ein lokaler Arbeitsraum für Spielleitungen: Karten und Raum-Keys bearbeiten, Ka
 | --- | --- |
 | das Ziel und den Lieferumfang verstehen | [Produktziele](docs/PRODUCT.md) und [vollständiger Quellenabgleich](docs/SCOPE.md) |
 | wissen, was zuerst fertig werden muss | [Produktroadmap und aktueller Engpass](docs/ROADMAP.md) |
+| als Agent sofort mitarbeiten | [Agenteneinstieg mit Aufgaben und Voraussetzungen](CONTRIBUTING.md#agenteneinstieg) |
 | eine Aufgabe übernehmen oder reviewen | [Contributor-Leitfaden](CONTRIBUTING.md) |
 | einen Fachplan oder einen Nachweis finden | [Dokumentationsindex](docs/INDEX.md) |
 | die laufende Integration verfolgen | [Gesamtprodukt / Gates #12](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12) |
