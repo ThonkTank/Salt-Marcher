@@ -254,6 +254,110 @@ const locationTarget = {
   roomId: null,
 };
 
+test("visible Dungeon-at-Location action, Room Key, back, Undo/Redo and Save share the actual managed mount", async () => {
+  const f = await fixture(true), before = active(f), editor = f.editor()!;
+  const mill = { ...locationTarget, documentId: uuid(12), recordId: uuid(12) };
+  await f.host().navigate(mill);
+  const worldBefore = editor.terrain.spatialState(), locationBefore = before.repository.location(uuid(12)).read()!,
+    depth = before.history.undoDepth, dungeonBefore = before.repository.detail('dungeon', uuid(30)) as any,
+    entranceBefore = worldBefore.detailPlacements.find((p) => p.id === uuid(202));
+  const cityPath = seed.input.find((file: any) => file.path.endsWith('.city')).path,
+    cityBytes = f.vault.bytes.get(cityPath);
+  f.input('[aria-label="Ortsname"]', 'Mühle mit Dungeon');
+  const bind = f.content.querySelector<HTMLButtonElement>('.dn-atlas-dungeon-bindings button')!;
+  assert.ok(bind); assert.equal(bind.disabled, false);
+  f.click(bind); f.click(bind);
+  await editor.flush();
+  assert.equal(before.history.undoDepth, depth + 2);
+  const placed = editor.terrain.spatialState().detailPlacements.find((p) => p.id === uuid(202))!;
+  assert.equal(placed.kind, 'dungeon');
+  if (placed.kind === 'dungeon' && entranceBefore?.kind === 'dungeon') {
+    assert.deepEqual(placed.parent, { kind: 'location', locationId: uuid(12) });
+    assert.deepEqual(placed.entrances, entranceBefore.entrances);
+    assert.equal(placed.surfaceFloorId, entranceBefore.surfaceFloorId);
+    assert.deepEqual(placed.anchor.mapPointFields, entranceBefore.anchor.mapPointFields);
+  }
+  assert.deepEqual(before.repository.location(uuid(12)).read()!.detailMaps, [{ kind: 'dungeon', documentId: uuid(30) }]);
+  assert.equal(f.content.querySelector('.dn-atlas-dungeon-bindings button'), null);
+  const room = f.host().details(uuid(12)).entries.find((e) => e.target.kind === 'room')!;
+  const roomButton = [...f.content.querySelectorAll<HTMLButtonElement>('.dn-atlas-detail-entry > ul button')]
+    .find((button) => button.textContent === room.label)!;
+  assert.ok(roomButton); f.click(roomButton);
+  await settled(() => !!f.content.querySelector('[aria-label="Raumname"]'));
+  f.input('[aria-label="Raumname"]', 'Keller im Mühlenatlas');
+  await editor.flush();
+  const back = [...f.content.querySelectorAll<HTMLButtonElement>('.dn-atlas-detail-entry > ul button')]
+    .find((button) => button.textContent === 'Orts-Key')!;
+  f.click(back);
+  await settled(() => (editor as any).selectedRoom === undefined && !f.content.querySelector<HTMLElement>('.dn-location-key-panel')?.hidden);
+  assert.equal(active(f).repository, before.repository); assert.equal(active(f).history, before.history);
+  assert.equal(active(f).renderer, before.renderer); assert.equal(active(f).context.contextToken, before.context.contextToken);
+  const undo = f.content.querySelector<HTMLButtonElement>('[aria-label="Atlasänderung rückgängig"]')!,
+    redo = f.content.querySelector<HTMLButtonElement>('[aria-label="Atlasänderung wiederholen"]')!;
+  for (let n = 0; n < 3; n++) { f.click(undo); await editor.flush(); }
+  assert.deepEqual(editor.terrain.spatialState(), worldBefore);
+  assert.deepEqual(before.repository.location(uuid(12)).read(), locationBefore);
+  for (let n = 0; n < 3; n++) { f.click(redo); await editor.flush(); }
+  assert.equal((dungeonBefore.read().document.entities.find((r: any) => r.id === uuid(31))).name, 'Keller im Mühlenatlas');
+  f.click(f.content.querySelector<HTMLButtonElement>('[aria-label="Atlas speichern"]')!);
+  await settled(() => !before.repository.dirty && !before.repository.hasDraft, () => f.content.textContent ?? '');
+  assert.equal(f.vault.bytes.get(cityPath), cityBytes);
+  assert.equal(active(f).history, before.history);
+  const manifest = parseCampaignRuntimeManifest(f.vault.bytes.get(seed.campaign.path)!, sha),
+    atlas = manifest.registry.owners.find((o) => o.ownerId === 'atlas')!;
+  assert.deepEqual(atlas.records.find((r) => r.id === uuid(202))!.references.map((r) => r.id),
+    [uuid(12), uuid(30), uuid(31), uuid(32), uuid(33)]);
+  await f.close();
+  // A fresh JS host/model mount, explicitly not a fresh Electron process.
+  const app = { document: f.document, vault: f.vault } as any,
+    services = atlasCampaignServices(new VaultCampaignRuntimeStorage(app), sha),
+    view = new AtlasView({ app, contentEl: f.content, openFile: async () => {} } as any, services);
+  await view.onLoadFile(f.vault.files.get(aPath)!);
+  const fresh = ((view as any).campaignHost as AtlasCampaignHost).state;
+  assert.equal(fresh.kind, 'active');
+  if (fresh.kind === 'active') {
+    assert.notEqual(fresh.history, before.history);
+    assert.equal(fresh.repository.location(uuid(12)).read()!.name, 'Mühle mit Dungeon');
+    assert.deepEqual(fresh.repository.spatialGraph.world().version === 2 && fresh.repository.terrainSource.spatialState().detailPlacements
+      .find((p) => p.id === uuid(202))!.parent, { kind: 'location', locationId: uuid(12) });
+  }
+  await view.onUnloadFile(); services.close();
+});
+
+test("invalid pending Location Key prevents visible Dungeon binding and retains input", async () => {
+  const f = await fixture(true), before = active(f), editor = f.editor()!;
+  await f.host().navigate({ ...locationTarget, documentId: uuid(12), recordId: uuid(12) });
+  const world = editor.terrain.spatialState(), depth = before.history.undoDepth;
+  const input = f.input('[aria-label="Ortsname"]', 'x'.repeat(201));
+  const button = f.content.querySelector<HTMLButtonElement>('.dn-atlas-dungeon-bindings button')!;
+  assert.ok(button); f.click(button);
+  await settled(() => !!f.content.textContent?.includes('Ortsname ist zu lang'));
+  assert.deepEqual(editor.terrain.spatialState(), world); assert.equal(before.history.undoDepth, depth);
+  assert.equal(input.value.length, 201); assert.equal(button.disabled, false);
+  f.services.close(); f.click(button);
+  assert.deepEqual(editor.terrain.spatialState(), world); assert.equal(before.history.undoDepth, depth);
+  await f.view.onUnloadFile();
+});
+
+test("queued Dungeon binding is revoked by Location A-B-A selection even on the same managed mount", async () => {
+  const f = await fixture(true), before = active(f), editor = f.editor()!;
+  const mill = { ...locationTarget, documentId: uuid(12), recordId: uuid(12) };
+  await f.host().navigate(mill);
+  const world = editor.terrain.spatialState(), depth = before.history.undoDepth;
+  let release!: () => void;
+  (editor as any).work = new Promise<void>((resolve) => { release = resolve; });
+  f.click(f.content.querySelector<HTMLButtonElement>('.dn-atlas-dungeon-bindings button')!);
+  // Inject only the competing selection callback; no data/History mutation or replacement mount.
+  for (const target of [locationTarget, mill]) editor.navigate({
+    target, frame: null, localPoint: { x: 0, y: 0 },
+    key: { kind: 'location', atlasId: editor.terrain.world.id, documentId: target.documentId, sectionId: null },
+  }, before.assertCurrent);
+  release(); await editor.flush(); await tick();
+  assert.deepEqual(editor.terrain.spatialState(), world); assert.equal(before.history.undoDepth, depth);
+  assert.equal(active(f).repository, before.repository);
+  await f.close();
+});
+
 test("enabled native detail button waits for queued terrain hydration before guarded navigation", async () => {
   const f = await fixture();
   await f.host().navigate(locationTarget);

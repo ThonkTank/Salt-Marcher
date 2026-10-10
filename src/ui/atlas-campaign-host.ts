@@ -279,12 +279,38 @@ export class AtlasCampaignHost {
     return {
       locationName: location.name,
       entries,
+      dungeonBindings: world.version === 2 ? world.detailPlacements.flatMap((p) => {
+        if (p.kind !== "dungeon" || p.parent.kind === "location" && p.parent.locationId === locationId &&
+            location.detailMaps.some((d) => d.kind === "dungeon" && d.documentId === p.documentId)) return [];
+        const confirmed = state.inventory.records.some((r) => r.kind === "dungeon" && r.id === p.documentId && r.availability === "available") &&
+          state.projection.owners.some((o) => o.records.some((r) => r.id === p.id && r.recordType === "dungeon-placement"));
+        if (!confirmed) return [];
+        const source = state.repository.detail("dungeon", p.documentId);
+        if (!(source instanceof DungeonAtlasSource)) return [];
+        const entrance = source.read().document.entities.find((r) => r.id === p.entrances[0]?.roomId);
+        return [{
+          placementId: p.id,
+          label: isStructuredRoom(entrance) ? `Dungeonkarte – ${entrance.name}` : "Dungeonkarte",
+          description: p.parent.kind === "location"
+            ? `Bisher am Ort ${state.repository.location(p.parent.locationId).read()?.name ?? "ohne Namen"}.`
+            : "Bisher an einem Haus verortet.",
+        }];
+      }) : [],
       blockedReason: state.inventory.records.some(
         (r) => r.kind === "location" && r.id === locationId,
       )
         ? undefined
         : "Lokaler Ortsentwurf; noch nicht als Kampagnenbestand veröffentlicht.",
     };
+  }
+  bindDungeon(locationId: string, placementId: string): boolean {
+    const state = this.navigation.state;
+    if (this.closed || state.kind !== "active") throw new Error("Kampagnenatlas ist nicht verfügbar.");
+    state.assertCurrent();
+    const model = this.details(locationId);
+    if (model.blockedReason || !model.dungeonBindings?.some((p) => p.placementId === placementId))
+      throw new Error(model.blockedReason ?? "Dungeon ist für diese Verortung nicht verfügbar.");
+    return state.repository.bindDungeonAtLocation(locationId, placementId);
   }
   /** Discard deliberately resets Sources/History; all earlier navigation callbacks are revoked. */
   async reopenAfterDiscard(): Promise<void> {

@@ -15,19 +15,51 @@ function deferred() {
   const promise = new Promise<void>((yes, no) => { resolve = yes; reject = no; });
   return { promise, resolve, reject };
 }
-function fixture(onNavigate: (target: Readonly<AtlasNavigationTarget>) => void | Promise<void>) {
+function fixture(onNavigate: (target: Readonly<AtlasNavigationTarget>) => void | Promise<void>, onBindDungeon?: (id: string) => void | Promise<void>) {
   const { document, window } = parseHTML("<html><body><aside id='dock'><p id='key'>Offener Key</p></aside></body></html>");
   let focused: HTMLElement | undefined;
   Object.defineProperty(document, "activeElement", { configurable: true, get: () => focused });
   Object.defineProperty(window.HTMLElement.prototype, "focus", { configurable: true, value(this: HTMLElement) { focused = this; } });
   const host = document.querySelector<HTMLElement>("#dock")!;
-  const entry = new AtlasDetailEntry(host, { onNavigate });
+  const entry = new AtlasDetailEntry(host, { onNavigate, onBindDungeon });
   const click = (node: HTMLElement) => node.dispatchEvent(new window.Event("click", { bubbles: true }));
   const buttons = () => Array.from(host.querySelectorAll<HTMLButtonElement>("li button"));
   const search = () => host.querySelector<HTMLInputElement>('input[type="search"]')!;
   const status = () => host.querySelector('[role="status"]')!.textContent!;
   return { host, entry, click, buttons, search, status, document, window };
 }
+
+test("existing Dungeon binding uses its stable ID, blocks repeat clicks and revokes removed rows", async () => {
+  const calls: string[] = [], task = deferred();
+  const f = fixture(() => undefined, (id) => { calls.push(id); return task.promise; });
+  f.entry.update({ locationName: "Mühle", entries: [], dungeonBindings: [
+    { placementId: id(202), label: "<b>Keller</b>", description: "Bisher an einem Haus verortet." },
+  ] });
+  const button = f.host.querySelector<HTMLButtonElement>(".dn-atlas-dungeon-bindings button")!;
+  assert.equal(button.textContent, "Hier verorten: <b>Keller</b>");
+  assert.equal(f.host.querySelectorAll("b").length, 0);
+  f.click(button); f.click(button);
+  assert.deepEqual(calls, [id(202)]);
+  assert.equal(button.disabled, true); assert.match(f.status(), /Verorte/);
+  task.reject(new Error("Orts-Key zuerst korrigieren")); await tick();
+  assert.match(f.status(), /Orts-Key zuerst korrigieren/);
+  assert.equal(button.disabled, false);
+  f.entry.update({ locationName: "Anderer Ort", entries: [] });
+  f.click(button); assert.equal(calls.length, 1);
+  f.entry.destroy();
+});
+
+test("unconfirmed Location keeps Dungeon binding disabled and retains its reason", () => {
+  let calls = 0;
+  const f = fixture(() => undefined, () => { calls++; });
+  f.entry.update({ locationName: "Neuer Ort", entries: [], blockedReason: "Lokaler Ortsentwurf", dungeonBindings: [
+    { placementId: id(202), label: "Keller", description: "Bisher am Haus." },
+  ] });
+  const button = f.host.querySelector<HTMLButtonElement>(".dn-atlas-dungeon-bindings button")!;
+  assert.equal(button.disabled, true); f.click(button);
+  assert.equal(calls, 0); assert.match(f.status(), /Lokaler Ortsentwurf/);
+  f.entry.destroy();
+});
 
 test("detail entry forwards complete stable targets with duplicate labels and treats names as text", async () => {
   const calls: Readonly<AtlasNavigationTarget>[] = [];

@@ -144,7 +144,11 @@ export class AtlasView extends FileView {
     const root = this.contentEl.ownerDocument.createElement("div");
     const editor = new AtlasEditor(root, source.world, source, {
       assertCurrent: lease,
-      navigation: { details: (id) => this.campaignHost!.details(id), navigate: (target) => { lease(); return this.campaignHost!.navigate(target); } },
+      navigation: {
+        details: (id) => this.campaignHost!.details(id),
+        navigate: (target) => { lease(); return this.campaignHost!.navigate(target); },
+        bindDungeon: (locationId, placementId) => { lease(); return this.campaignHost!.bindDungeon(locationId, placementId); },
+      },
       save: async () => {
         lease();
         if (!campaignSave) throw new Error("Bestätigter Campaign-Speicheranschluss fehlt.");

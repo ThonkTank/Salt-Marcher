@@ -949,26 +949,8 @@ async function bindExistingDungeon(repo: AtlasRepository, reparent = true) {
     ],
   };
   const changes = [locationDocumentChange(location.id, location, after)];
-  if (reparent)
-    changes.push(
-      spatialChange(source.world.id, before, {
-        ...before,
-        detailPlacements: before.detailPlacements.map((p) =>
-          p.id === dungeon.id
-            ? {
-                ...dungeon,
-                parent: { kind: "location" as const, locationId: location.id },
-                anchor: {
-                  ...dungeon.anchor,
-                  parentPointMeters: { x: 0, y: 0 },
-                },
-              }
-            : p,
-        ),
-      }),
-    );
   assert.equal(
-    source.history.execute({
+    reparent ? repo.bindDungeonAtLocation(location.id, dungeon.id) : source.history.execute({
       label: "Bestehenden Dungeon am Ort verorten",
       changes,
     }),
