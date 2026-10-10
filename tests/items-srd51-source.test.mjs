@@ -5,6 +5,7 @@ import {
   normalizePdfText,
   validateBoundedAdventuringGearTableRows,
   validateBoundedArmorTableRows,
+  validateBoundedMountsTableRows,
   validateBoundedToolsTableRows,
   validateBoundedWeaponTableRows,
   validateJsonSchemas,
@@ -581,6 +582,45 @@ test("mounts preserve eight physical rows and reconcile the Donkey or mule helpe
   mismatchedCapacity.records.find(record => record.name === "Elephant").carryingCapacity.pounds = 132;
   assert.throws(() => validateTranscriptData(mismatchedCapacity, checkedInventory, { allowIncomplete: true }),
     /carryingCapacity\.pounds stimmt nicht/);
+});
+
+test("mounts bounded matching keeps all four cells together across split table pages", async () => {
+  const [checkedInventory, checkedTranscript] = await Promise.all([
+    readFile(new URL("items-srd51-inventory.json", dataRoot), "utf8").then(JSON.parse),
+    readFile(new URL("items-srd51-transcript.json", dataRoot), "utf8").then(JSON.parse),
+  ]);
+  const occurrences = checkedInventory.occurrences.filter(item => item.sectionId === "mounts-other-animals");
+  const records = new Map(checkedTranscript.records.map(record => [record.id, record]));
+  const segments = occurrences.map(item => {
+    const record = records.get(item.id);
+    return `${item.sourceLabel} ${record.cost.sourceText} ${record.speed.sourceText} ${record.carryingCapacity.sourceText}`;
+  });
+  const pageLines = {
+    71: segments.slice(0, 3).map((segment, index) => `Unrelated left-column prose ${index}     ${segment}`),
+    72: segments.slice(3).map((segment, index) => `${segment}     Unrelated right-column trade goods ${index}`),
+  };
+  assert.deepEqual(validateBoundedMountsTableRows(pageLines, checkedTranscript, checkedInventory), {
+    checkedRows: 8,
+    scope: "exact-normalized-pdftotext-layout-row-segment-across-split-table-pages",
+  });
+
+  const wrongCell = structuredClone(checkedTranscript);
+  wrongCell.records.find(record => record.name === "Elephant").carryingCapacity.sourceText = "1,200 lb.";
+  assert.throws(() => validateBoundedMountsTableRows(pageLines, wrongCell, checkedInventory),
+    /nicht exakt einmal als zusammenhängendes Segment derselben physischen Tabellenzeile/);
+
+  const pageWideOnly = structuredClone(pageLines);
+  const warhorse = "Warhorse 400 gp 60 ft. 540 lb.";
+  const warhorseLine = pageWideOnly[72].findIndex(line => line.includes(warhorse));
+  pageWideOnly[72][warhorseLine] = pageWideOnly[72][warhorseLine].replace(warhorse, "Warhorse");
+  pageWideOnly[72].push("400 gp", "60 ft.", "540 lb.");
+  assert.throws(() => validateBoundedMountsTableRows(pageWideOnly, checkedTranscript, checkedInventory),
+    /nicht exakt einmal als zusammenhängendes Segment derselben physischen Tabellenzeile/);
+
+  const duplicateSegment = structuredClone(pageLines);
+  duplicateSegment[71][0] += `     ${segments[0]}`;
+  assert.throws(() => validateBoundedMountsTableRows(duplicateSegment, checkedTranscript, checkedInventory),
+    /nicht exakt einmal als zusammenhängendes Segment derselben physischen Tabellenzeile/);
 });
 
 test("tack and drawn vehicles preserve formulas, missing weight and sourced Barding expansions", async () => {
