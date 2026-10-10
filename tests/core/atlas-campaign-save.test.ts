@@ -35,6 +35,8 @@ import type { AtlasFileJournal } from "../../src/features/atlas/file-transaction
 import type { AtlasSpatialOptions } from "../../src/features/atlas/detail-owners";
 import { newLocationPath } from "../../src/features/atlas/location-owners";
 import { parseLocationDocument } from "../../src/features/location/location-schema";
+import { locationDocumentChange } from "../../src/features/location/location-source";
+import { spatialChange } from "../../src/features/atlas/spatial-schema";
 import { atlasCampaignServices } from "../../src/ui/atlas-campaign-services";
 
 const root = "tests/fixtures/atlas-e2e-spatial-v2/";
@@ -715,7 +717,10 @@ test("H01 Location create then Undo saves as a no-op on the same live mount and 
   assert.deepEqual(f.store.files, before);
   assert.equal(f.store.writes.length, 0);
   const capture = await repo.captureNative({ worldId: id(10) });
-  assert.equal(capture.files.some((file) => file.path === locationPath), false);
+  assert.equal(
+    capture.files.some((file) => file.path === locationPath),
+    false,
+  );
   history.redo();
   assert.equal(repo.location(createdLocation.location.id), source);
   assert.deepEqual(source.read(), createdLocation.location);
@@ -926,6 +931,333 @@ test("Location extension recovery rejects a missing create and forged owner clos
   );
   (manifestWrite as any).after = JSON.stringify(manifest, null, 2) + "\n";
   await assert.rejects(adapter(f.store).validateRecovery(f.store, forged));
+  assert.deepEqual(f.store.files, before);
+  assert.equal(f.store.writes.length, writes);
+});
+
+async function bindExistingDungeon(repo: AtlasRepository, reparent = true) {
+  const source = repo.terrainSource,
+    before = source.spatialState(),
+    dungeon = before.detailPlacements.find((p) => p.id === id(202));
+  assert.ok(dungeon?.kind === "dungeon");
+  const location = (await repo.ensureLocation(id(12))).read()!;
+  const after = {
+    ...location,
+    detailMaps: [
+      ...location.detailMaps,
+      { kind: "dungeon" as const, documentId: id(30) },
+    ],
+  };
+  const changes = [locationDocumentChange(location.id, location, after)];
+  if (reparent)
+    changes.push(
+      spatialChange(source.world.id, before, {
+        ...before,
+        detailPlacements: before.detailPlacements.map((p) =>
+          p.id === dungeon.id
+            ? {
+                ...dungeon,
+                parent: { kind: "location" as const, locationId: location.id },
+                anchor: {
+                  ...dungeon.anchor,
+                  parentPointMeters: { x: 0, y: 0 },
+                },
+              }
+            : p,
+        ),
+      }),
+    );
+  assert.equal(
+    source.history.execute({
+      label: "Bestehenden Dungeon am Ort verorten",
+      changes,
+    }),
+    true,
+  );
+  const changedWorld = source.spatialState();
+  assert.equal(source.history.undo(), true);
+  assert.deepEqual(source.spatialState(), before);
+  assert.deepEqual(repo.location(location.id).read(), location);
+  assert.equal(source.history.redo(), true);
+  assert.deepEqual(source.spatialState(), changedWorld);
+  assert.deepEqual(repo.location(location.id).read(), after);
+}
+
+async function savedAtlasReferences(repo: AtlasRepository, store: Store) {
+  const capture = await repo.captureNative({ worldId: id(10) }),
+    manifest = parseCampaignRuntimeManifest(
+      store.files.get(campaignPath)!,
+      sha,
+    ),
+    atlas = manifest.registry.owners.find((o) => o.ownerId === "atlas")!,
+    initial = JSON.parse(inputManifest);
+  assert.deepEqual(
+    atlas.records.map((r) => r.id),
+    initial.registry.owners
+      .find((o: any) => o.ownerId === "atlas")
+      .records.map((r: any) => r.id),
+  );
+  for (const native of capture.records) {
+    const record = atlas.records.find((r) => r.id === native.id)!;
+    assert.deepEqual(
+      record.references,
+      [...new Set(native.references.map((r) => r.id))].sort().map((id) => ({
+        id,
+        scope: "campaign-local",
+        schema: "atlas.e2e01.v1",
+      })),
+      native.id,
+    );
+  }
+  // Relation changes grant no authority over native City/Dungeon owner projections.
+  assert.deepEqual(
+    manifest.registry.owners.filter((o) => o.ownerId !== "atlas"),
+    initial.registry.owners.filter((o: any) => o.ownerId !== "atlas"),
+  );
+  assert.equal(
+    store.files.get(dungeonPath),
+    readFileSync(
+      root + fixture.input.find((f: any) => f.path === dungeonPath).fixtureFile,
+      "utf8",
+    ),
+  );
+  return atlas;
+}
+
+for (const reparent of [false, true])
+  test(`D01 existing Location detail link${reparent ? " and same-ID Dungeon reparent" : ""} saves exact references and admits fresh model capture`, async () => {
+    const f = await opened(),
+      before = new Map(f.store.files);
+    const targetPath = [...before].find(
+      ([p, b]) => p.endsWith(".location") && JSON.parse(b).id === id(12),
+    )![0];
+    await bindExistingDungeon(f.repo, reparent);
+    await f.repo.save();
+    const atlas = await savedAtlasReferences(f.repo, f.store);
+    assert.deepEqual(
+      atlas.records.find((r) => r.id === id(12))!.references.map((r) => r.id),
+      [id(17), id(18), id(30)],
+    );
+    assert.deepEqual(
+      atlas.records.find((r) => r.id === id(202))!.references.map((r) => r.id),
+      reparent
+        ? [id(12), id(30), id(31), id(32), id(33)]
+        : [id(30), id(31), id(32), id(33), id(100), id(105)],
+    );
+    for (const [path, bytes] of before)
+      if (path !== campaignPath && path !== worldPath && path !== targetPath)
+        assert.equal(f.store.files.get(path), bytes, path);
+    const fresh = await opened(f.store);
+    await savedAtlasReferences(fresh.repo, f.store);
+    const writes = f.store.writes.length;
+    await fresh.repo.save();
+    assert.equal(f.store.writes.length, writes);
+    await freshNavigation(f.store);
+  });
+
+test("Existing Dungeon binding Save, Undo Save, Redo Save retain one live runtime mount/History and fresh references", async () => {
+  const f = await liveNavigation(),
+    { repository: repo, history, renderer, context } = f.state;
+  await bindExistingDungeon(repo);
+  for (const phase of ["bound", "undo", "redo"] as const) {
+    if (phase === "undo") history.undo();
+    if (phase === "redo") history.redo();
+    await f.navigation.save();
+    const atlas = await savedAtlasReferences(repo, f.store);
+    assert.equal(
+      atlas.records
+        .find((r) => r.id === id(202))!
+        .references.some((r) => r.id === id(12)),
+      phase !== "undo",
+    );
+    const state = f.navigation.state;
+    assert.equal(state.kind, "active");
+    assert.equal(state.repository, repo);
+    assert.equal(state.history, history);
+    assert.equal(state.renderer, renderer);
+    assert.deepEqual(state.context, context);
+    assert.equal(f.disposed(), 0);
+    assert.equal(f.blocked.at(-1), false);
+  }
+  f.services.close();
+  const fresh = await liveNavigation(f.store);
+  await savedAtlasReferences(fresh.state.repository, f.store);
+  fresh.services.close();
+});
+
+test("Location key targets add exact deduplicated references and removal drops obsolete links", async () => {
+  const f = await opened();
+  await bindExistingDungeon(f.repo, false);
+  const location = f.repo.location(id(12)).read()!;
+  f.source.history.execute({
+    label: "Raum-Key verknüpfen",
+    changes: [
+      locationDocumentChange(location.id, location, {
+        ...location,
+        keyLinks: [
+          {
+            kind: "room",
+            atlasId: id(10),
+            documentId: id(30),
+            roomId: id(31),
+            sectionId: id(34),
+            anchor: null,
+          },
+        ],
+      }),
+    ],
+  });
+  await f.repo.save();
+  let atlas = await savedAtlasReferences(f.repo, f.store);
+  assert.deepEqual(
+    atlas.records.find((r) => r.id === id(12))!.references.map((r) => r.id),
+    [id(10), id(17), id(18), id(30), id(31), id(34)],
+  );
+  const linked = f.repo.location(id(12)).read()!;
+  f.source.history.execute({
+    label: "Links entfernen",
+    changes: [
+      locationDocumentChange(linked.id, linked, {
+        ...linked,
+        detailMaps: [],
+        keyLinks: [],
+      }),
+    ],
+  });
+  await f.repo.save();
+  atlas = await savedAtlasReferences(f.repo, f.store);
+  assert.deepEqual(
+    atlas.records.find((r) => r.id === id(12))!.references.map((r) => r.id),
+    [id(17), id(18)],
+  );
+});
+
+test("Schema-valid forged Before references cannot authorize a native binding save", async () => {
+  const store = new Store(),
+    value = JSON.parse(inputManifest);
+  value.registry.owners
+    .find((o: any) => o.ownerId === "atlas")
+    .records.find((r: any) => r.id === id(12))
+    .references.push({
+      id: id(105),
+      scope: "campaign-local",
+      schema: "atlas.e2e01.v1",
+    });
+  const { registryContentDigest: _, ...unsigned } = value.registry;
+  value.registry.registryContentDigest = campaignOwnershipDigestValue(
+    unsigned,
+    sha,
+  );
+  store.files.set(campaignPath, JSON.stringify(value));
+  const f = await opened(store);
+  await bindExistingDungeon(f.repo);
+  await f.repo.persistDraft();
+  const before = new Map(store.files),
+    writes = store.writes.length;
+  await assert.rejects(f.repo.save(), /Before-Ownerbelege/);
+  assert.deepEqual(store.files, before);
+  assert.equal(store.writes.length, writes);
+  assert.equal(f.repo.dirty, true);
+});
+
+test("Unregistered Dungeon placement ID still rejects Save without native writes or draft loss", async () => {
+  const f = await opened(),
+    before = f.source.spatialState();
+  f.source.history.execute({
+    label: "Nicht autorisierte Placementkennung",
+    changes: [
+      spatialChange(id(10), before, {
+        ...before,
+        detailPlacements: before.detailPlacements.map((p) =>
+          p.id === id(202) ? { ...p, id: id(9001) } : p,
+        ),
+      }),
+    ],
+  });
+  await f.repo.persistDraft();
+  const files = new Map(f.store.files),
+    writes = f.store.writes.length;
+  await assert.rejects(f.repo.save(), /keinem passenden nativen Owner/);
+  assert.deepEqual(f.store.files, files);
+  assert.equal(f.store.writes.length, writes);
+  assert.equal(f.repo.dirty, true);
+  assert.equal(f.store.files.has(worldPath + ".journal"), false);
+});
+
+test("Prepared and committed binding journals recover native and Registry references together", async () => {
+  for (const state of ["prepared", "committed"] as const) {
+    const f = await opened();
+    await bindExistingDungeon(f.repo);
+    f.store.fault =
+      state === "prepared"
+        ? (p) => p === campaignPath
+        : (p, after) =>
+            p === worldPath + ".journal" &&
+            after === null &&
+            f.store.files.get(campaignPath) !== inputManifest;
+    await assert.rejects(f.repo.save(), AggregateError);
+    assert.equal(
+      JSON.parse(f.store.files.get(worldPath + ".journal")!).state,
+      state,
+    );
+    f.store.offline = false;
+    f.store.fault = undefined;
+    const fresh = await opened(f.store);
+    assert.equal(fresh.repo.dirty, state === "prepared");
+    if (state === "prepared")
+      assert.equal(f.store.files.get(campaignPath), inputManifest);
+    else await savedAtlasReferences(fresh.repo, f.store);
+    await fresh.repo.save();
+    await savedAtlasReferences(fresh.repo, f.store);
+    assert.equal(f.store.files.has(worldPath + ".journal"), false);
+    assert.equal(f.store.files.has(worldPath + ".draft"), false);
+  }
+});
+
+test("Binding native CAS failure restores runtime authority and exact draft before retry", async () => {
+  const f = await liveNavigation();
+  await bindExistingDungeon(f.state.repository);
+  await f.state.repository.persistDraft();
+  const before = new Map(f.store.files);
+  f.store.failOnce = worldPath;
+  await assert.rejects(f.navigation.save(), /first native CAS failed/);
+  assert.deepEqual(f.store.files, before);
+  assert.equal(f.navigation.state.kind, "active");
+  assert.equal(f.disposed(), 0);
+  assert.equal(f.blocked.at(-1), false);
+  await f.navigation.save();
+  await savedAtlasReferences(f.state.repository, f.store);
+  f.services.close();
+});
+
+test("Binding recovery rejects a schema-valid stale After reference proof without writes", async () => {
+  const f = await opened();
+  await bindExistingDungeon(f.repo);
+  f.store.fault = (path) => path === campaignPath;
+  await assert.rejects(f.repo.save(), AggregateError);
+  f.store.offline = false;
+  f.store.fault = undefined;
+  const journal: AtlasFileJournal = JSON.parse(
+      f.store.files.get(worldPath + ".journal")!,
+    ),
+    write = journal.writes.find((w) => w.path === campaignPath)!,
+    manifest = JSON.parse(write.after!),
+    before = new Map(f.store.files),
+    writes = f.store.writes.length;
+  const original = JSON.parse(inputManifest)
+    .registry.owners.find((o: any) => o.ownerId === "atlas")
+    .records.find((r: any) => r.id === id(202));
+  manifest.registry.owners
+    .find((o: any) => o.ownerId === "atlas")
+    .records.find((r: any) => r.id === id(202)).references =
+    original.references;
+  const { registryContentDigest: _, ...unsigned } = manifest.registry;
+  manifest.registry.registryContentDigest = campaignOwnershipDigestValue(
+    unsigned,
+    sha,
+  );
+  (write as any).after = JSON.stringify(manifest, null, 2) + "\n";
+  await assert.rejects(adapter(f.store).validateRecovery(f.store, journal));
   assert.deepEqual(f.store.files, before);
   assert.equal(f.store.writes.length, writes);
 });

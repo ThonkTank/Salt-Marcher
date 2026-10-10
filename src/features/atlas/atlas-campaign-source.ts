@@ -1,6 +1,9 @@
 import { immutable } from "../../model";
-import { parseLocationDocument } from "../location/location-schema";
-import type { SpatialWorld } from "./spatial-schema";
+import {
+  parseLocationDocument,
+  type LocationDocument,
+} from "../location/location-schema";
+import type { DetailPlacement, SpatialWorld } from "./spatial-schema";
 import { nativeId } from "./native-values";
 
 export interface AtlasCaptureRequest {
@@ -108,6 +111,63 @@ const reference = (
   scope: "unclassified",
 });
 
+/** One native reference projection for capture and the Atlas owner's Save proof. */
+export function atlasDetailPlacementReferences(
+  p: DetailPlacement,
+): AtlasNativeReference[] {
+  const refs = [reference(p.kind, p.documentId, "atlas.detail-placement.v1")];
+  if (p.parent.kind === "location")
+    refs.push(
+      reference("location", p.parent.locationId, "atlas.detail-placement.v1"),
+    );
+  else
+    refs.push(
+      reference("city", p.parent.cityId, "atlas.detail-placement.v1"),
+      reference("building", p.parent.buildingId, "atlas.detail-placement.v1"),
+    );
+  if (p.kind === "dungeon") {
+    refs.push(
+      reference("floor", p.surfaceFloorId, "atlas.detail-placement.v1"),
+    );
+    for (const e of p.entrances)
+      refs.push(
+        reference("route", e.routeId, "atlas.detail-placement.v1"),
+        reference("floor", e.floorId, "atlas.detail-placement.v1"),
+        reference("room", e.roomId, "atlas.detail-placement.v1"),
+      );
+  }
+  return refs;
+}
+
+export function atlasLocationReferences(
+  doc: LocationDocument,
+): AtlasNativeReference[] {
+  const refs = [
+    ...doc.sections.map((s) =>
+      reference("location-section", s.id, "atlas.location.v1"),
+    ),
+    ...doc.detailMaps.map((d) =>
+      reference(d.kind, d.documentId, "atlas.location.v1"),
+    ),
+  ];
+  for (const key of doc.keyLinks) {
+    if (key.atlasId !== null)
+      refs.push(reference("world", key.atlasId, "atlas.key-target.v1"));
+    refs.push(
+      reference(
+        key.kind === "room" ? "dungeon" : "location",
+        key.documentId,
+        "atlas.key-target.v1",
+      ),
+    );
+    if (key.kind === "room")
+      refs.push(reference("room", key.roomId, "atlas.key-target.v1"));
+    if (key.sectionId !== null)
+      refs.push(reference("section", key.sectionId, "atlas.key-target.v1"));
+  }
+  return refs;
+}
+
 /** Pure projection of already captured native values. No stores, History or Campaign writes. */
 export async function projectAtlasNativeCapture(
   basis: AtlasCaptureBasis,
@@ -186,62 +246,18 @@ export async function projectAtlasNativeCapture(
       reference("location", p.locationId, "atlas.location-placement.v1"),
     ]);
   for (const p of details) {
-    const refs = [reference(p.kind, p.documentId, "atlas.detail-placement.v1")];
-    if (p.parent.kind === "location")
-      refs.push(
-        reference("location", p.parent.locationId, "atlas.detail-placement.v1"),
-      );
-    else
-      refs.push(
-        reference("city", p.parent.cityId, "atlas.detail-placement.v1"),
-        reference("building", p.parent.buildingId, "atlas.detail-placement.v1"),
-      );
-    if (p.kind === "dungeon") {
-      refs.push(
-        reference("floor", p.surfaceFloorId, "atlas.detail-placement.v1"),
-      );
-      for (const e of p.entrances)
-        refs.push(
-          reference("route", e.routeId, "atlas.detail-placement.v1"),
-          reference("floor", e.floorId, "atlas.detail-placement.v1"),
-          reference("room", e.roomId, "atlas.detail-placement.v1"),
-        );
-    }
     await add(
       (p.kind + "-placement") as AtlasNativeRecord["kind"],
       p.id,
       p,
-      refs,
+      atlasDetailPlacementReferences(p),
     );
   }
   for (const file of files) {
     if (file.kind !== "location" || file.after === null) continue;
     const doc = parseLocationDocument(file.after);
     if (doc.id !== file.id) throw new Error("Fremde native Ortskennung.");
-    const refs = [
-      ...doc.sections.map((s) =>
-        reference("location-section", s.id, "atlas.location.v1"),
-      ),
-      ...doc.detailMaps.map((d) =>
-        reference(d.kind, d.documentId, "atlas.location.v1"),
-      ),
-    ];
-    for (const key of doc.keyLinks) {
-      if (key.atlasId !== null)
-        refs.push(reference("world", key.atlasId, "atlas.key-target.v1"));
-      refs.push(
-        reference(
-          key.kind === "room" ? "dungeon" : "location",
-          key.documentId,
-          "atlas.key-target.v1",
-        ),
-      );
-      if (key.kind === "room")
-        refs.push(reference("room", key.roomId, "atlas.key-target.v1"));
-      if (key.sectionId !== null)
-        refs.push(reference("section", key.sectionId, "atlas.key-target.v1"));
-    }
-    await add("location", doc.id, doc, refs);
+    await add("location", doc.id, doc, atlasLocationReferences(doc));
     for (const section of doc.sections)
       await add("location-section", section.id, section, [
         reference("location", doc.id, "atlas.location.v1"),

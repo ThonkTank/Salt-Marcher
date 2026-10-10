@@ -120,12 +120,27 @@ Folgeüberschrift. Originale sechs vollständige Poppler25.03-XML-Seiten samt
 Hash-/Lizenzreceipt liegen unter `tests/fixtures/items-srd51-d-section-poppler-25.03.*`.
 Goldens schützen Karten-/Suit-/Resistenzzuordnung trotz gleicher Wertemengen,
 Fußnote, alle Kartenregeln, Statblock, Einschränkungen und Quellinterpunktion.
-W27-Review/Integration bleiben offen; Schema, Attribution, Produktcode und
-alte Quellen-/Verifiergoldens bleiben unverändert. Der Gesamtquellenauftrag
-endet nicht an diesem Zwischenstand: nächster kohärenter Abschnitt beginnt
-bei Efficient Quiver; I01 bleibt vor unabhängigem vollständigem S01-R01 gesperrt.
-Stand: 282 Occurrences / 281 Records, 63/239 A–Z-Headings
-(62 standalone plus Potion-of-Healing-Merge); 176 A–Z-Headings plus Orb offen.
+W27 ist unabhängig geprüft
+([Review5480792943](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/70#pullrequestreview-5480792943))
+und regulär auf Shared7ba2bf4 integriert
+([Stewardbeleg](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/70#issuecomment-6102297681)).
+Schema, Attribution, Produktcode und alte Quellen-/Verifiergoldens bleiben unverändert.
+
+Der aktuelle nächste Quellenumfang ist der vollständige E-Abschnitt A–Z63–70,
+Efficient Quiver bis Eyes of the Eagle, Seiten220–221. Efreeti-d100-Effekte
+einschließlich `91–00`, alle vier Gem→Elemental-Zuordnungen und vollständige
+Sicht-/Recharge-/Windbedingungen werden headinggebunden geprüft; Eyes of
+Charming bleibt einschließlich Seitenfortsetzung erhalten. Tabellenwirkungen
+erzeugen keine zusätzlichen Itemidentitäten oder Raritätsvarianten. Die
+originalen zwei XML-Seiten/Receipt und das Quellenorakel liegen unter
+`tests/fixtures/items-srd51-e-section-poppler-25.03.*` beziehungsweise
+`tools/items-srd51-e-section.mjs`. Aktueller Ausführungs-/Prüfstand ausschließlich
+in der eigenen CE-Checkpointwurzel und [Aufgabenissue58](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/58).
+Stand: 290 Occurrences /289 Records,71/239 A–Z-Headings
+(70 standalone plus Potion-of-Healing-Merge);168 A–Z-Headings plus Orb offen.
+Der Gesamtquellenauftrag endet nicht an diesem Zwischenstand; nächster
+kohärenter Abschnitt beginnt bei Feather Token. I01 bleibt vor unabhängigem
+vollständigem S01-R01 gesperrt.
 Der erwartete vollständige Occurrence-Count ist 459 (219 Ausrüstung +
 239 A–Z + Orb), nicht der jeweilige Zwischenstand; bekannte Mergezahl bisher 1,
 weitere Merge-/Helperprüfung bleibt offen. `complete:false` bleibt gesetzt.

@@ -1,0 +1,249 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE pdf2xml SYSTEM "pdf2xml.dtd">
+
+<pdf2xml producer="poppler" version="25.03.0">
+<page number="220" position="absolute" top="0" left="0" height="1188" width="918">
+	<fontspec id="0" size="16" family="LUFRKP+Calibri" color="#000000"/>
+	<fontspec id="1" size="16" family="DXJJCX+GillSans-SemiBold" color="#000000"/>
+	<fontspec id="2" size="18" family="DXJJCX+GillSans-SemiBold" color="#943634"/>
+	<fontspec id="3" size="15" family="FNCRUV+Cambria" color="#000000"/>
+	<fontspec id="4" size="15" family="UHIGMC+Cambria" color="#000000"/>
+	<fontspec id="5" size="13" family="WWROEK+Calibri" color="#000000"/>
+	<fontspec id="6" size="13" family="LUFRKP+Calibri" color="#000000"/>
+<text top="1125" left="572" width="222" height="20" font="0">System   Reference   Document   5.1   </text>
+<text top="1125" left="842" width="26" height="19" font="1"><b>220</b></text>
+<text top="1125" left="869" width="4" height="20" font="0">   </text>
+<text top="108" left="86" width="121" height="21" font="2"><b>Dwarven Plate </b></text>
+<text top="130" left="86" width="153" height="17" font="3"><i>Armor   (plate),   very   rare   </i></text>
+<text top="156" left="86" width="342" height="17" font="4">While   wearing   this   armor,   you   gain   a   +2   bonus   to   AC.   </text>
+<text top="174" left="86" width="328" height="17" font="4">In   addition,   if   an   effect   moves   you   against   your   will   </text>
+<text top="191" left="86" width="299" height="17" font="4">along   the   ground,   you   can   use   your   reaction   to   </text>
+<text top="209" left="86" width="332" height="17" font="4">reduce   the   distance   you   are   moved   by   up   to   10   feet.   </text>
+<text top="240" left="86" width="151" height="21" font="2"><b>Dwarven Thrower </b></text>
+<text top="261" left="86" width="271" height="17" font="3"><i>Weapon   (warhammer),   very   rare   (requires   </i></text>
+<text top="279" left="86" width="152" height="17" font="3"><i>attunement   by   a   dwarf)   </i></text>
+<text top="306" left="86" width="304" height="17" font="4">You   gain   a   +3   bonus   to   attack   and   damage   rolls   </text>
+<text top="323" left="86" width="310" height="17" font="4">made   with   this   magic   weapon.   It   has   the   thrown   </text>
+<text top="341" left="86" width="325" height="17" font="4">property   with   a   normal   range   of   20   feet   and   a   long   </text>
+<text top="358" left="86" width="329" height="17" font="4">range   of   60   feet.   When   you   hit   with   a   ranged   attack   </text>
+<text top="376" left="86" width="342" height="17" font="4">using   this   weapon,   it   deals   an   extra   1d8   damage   or,   if   </text>
+<text top="393" left="86" width="332" height="17" font="4">the   target   is   a   giant,   2d8   damage.   Immediately   after   </text>
+<text top="411" left="86" width="299" height="17" font="4">the   attack,   the   weapon   flies   back   to   your   hand.   </text>
+<text top="442" left="86" width="128" height="21" font="2"><b>Efficient Quiver </b></text>
+<text top="464" left="86" width="175" height="17" font="3"><i>Wondrous   item,   uncommon   </i></text>
+<text top="490" left="86" width="340" height="17" font="4">Each   of   the   quiver’s   three   compartments   connects   to   </text>
+<text top="508" left="86" width="333" height="17" font="4">an   extradimensional   space   that   allows   the   quiver   to   </text>
+<text top="525" left="86" width="317" height="17" font="4">hold   numerous   items   while   never   weighing   more   </text>
+<text top="543" left="86" width="330" height="17" font="4">than   2   pounds.   The   shortest   compartment   can   hold   </text>
+<text top="561" left="86" width="306" height="17" font="4">up   to   sixty   arrows,   bolts,   or   similar   objects.   The   </text>
+<text top="578" left="86" width="329" height="17" font="4">midsize   compartment   holds   up   to   eighteen   javelins   </text>
+<text top="596" left="86" width="324" height="17" font="4">or   similar   objects.   The   longest   compartment   holds   </text>
+<text top="613" left="86" width="338" height="17" font="4">up   to   six   long   objects,   such   as   bows,   quarterstaffs,   or   </text>
+<text top="631" left="86" width="48" height="17" font="4">spears.   </text>
+<text top="648" left="86" width="319" height="17" font="4">    You   can   draw   any   item   the   quiver   contains   as   if   </text>
+<text top="666" left="86" width="280" height="17" font="4">doing   so   from   a   regular   quiver   or   scabbard.   </text>
+<text top="697" left="86" width="111" height="21" font="2"><b>Efreeti Bottle </b></text>
+<text top="719" left="86" width="162" height="17" font="3"><i>Wondrous   item,   very   rare   </i></text>
+<text top="745" left="86" width="338" height="17" font="4">This   painted   brass   bottle   weighs   1   pound.   When   you   </text>
+<text top="763" left="86" width="336" height="17" font="4">use   an   action   to   remove   the   stopper,   a   cloud   of   thick   </text>
+<text top="780" left="86" width="345" height="17" font="4">smoke   flows   out   of   the   bottle.   At   the   end   of   your   turn,   </text>
+<text top="798" left="86" width="326" height="17" font="4">the   smoke   disappears   with   a   flash   of   harmless   fire,   </text>
+<text top="815" left="86" width="298" height="17" font="4">and   an   efreeti   appears   in   an   unoccupied   space   </text>
+<text top="833" left="86" width="138" height="17" font="4">within   30   feet   of   you.   </text>
+<text top="851" left="86" width="334" height="17" font="4">    The   first   time   the   bottle   is   opened,   the   GM   rolls   to   </text>
+<text top="868" left="86" width="166" height="17" font="4">determine   what   happens.   </text>
+<text top="895" left="92" width="31" height="16" font="5"><b>d100   </b></text>
+<text top="895" left="142" width="35" height="16" font="5"><b>Effect   </b></text>
+<text top="911" left="89" width="290" height="16" font="6">01–10    The   efreeti   attacks   you.   After   fighting   for   5   </text>
+<text top="928" left="142" width="253" height="16" font="6">rounds,   the   efreeti   disappears,   and   the   bottle   </text>
+<text top="944" left="142" width="85" height="16" font="6">loses   its   magic.   </text>
+<text top="961" left="89" width="310" height="16" font="6">11–90    The   efreeti   serves   you   for   1   hour,   doing   as   you   </text>
+<text top="977" left="142" width="272" height="16" font="6">command.   Then   the   efreeti   returns   to   the   bottle,   </text>
+<text top="994" left="142" width="268" height="16" font="6">and   a   new   stopper   contains   it.   The   stopper   can’t   </text>
+<text top="1010" left="142" width="272" height="16" font="6">be   removed   for   24   hours.   The   next   two   times   the   </text>
+<text top="1027" left="142" width="259" height="16" font="6">bottle   is   opened,   the   same   effect   occurs.   If   the   </text>
+<text top="108" left="548" width="232" height="16" font="6">bottle   is   opened   a   fourth   time,   the   efreeti   </text>
+<text top="124" left="548" width="263" height="16" font="6">escapes   and   disappears,   and   the   bottle   loses   its   </text>
+<text top="141" left="548" width="39" height="16" font="6">magic.   </text>
+<text top="157" left="495" width="326" height="16" font="6">91–00    The   efreeti   can   cast   the   wish   spell   three   times   for   </text>
+<text top="174" left="548" width="273" height="16" font="6">you.   It   disappears   when   it   grants   the   final   wish   or   </text>
+<text top="190" left="548" width="238" height="16" font="6">after   1   hour,   and   the   bottle   loses   its   magic.   </text>
+<text top="220" left="493" width="126" height="21" font="2"><b>Elemental Gem </b></text>
+<text top="242" left="493" width="175" height="17" font="3"><i>Wondrous   item,   uncommon   </i></text>
+<text top="269" left="493" width="340" height="17" font="4">This   gem   contains   a   mote   of   elemental   energy.   When   </text>
+<text top="286" left="493" width="328" height="17" font="4">you   use   an   action   to   break   the   gem,   an   elemental   is   </text>
+<text top="303" left="493" width="211" height="17" font="4">summoned   as   if   you   had   cast   the   </text>
+<text top="303" left="704" width="112" height="17" font="3"><i>conjure   elemental</i></text>
+<text top="303" left="816" width="3" height="17" font="4">   </text>
+<text top="321" left="493" width="319" height="17" font="4">spell,   and   the   gem’s   magic   is   lost.   The   type   of   gem   </text>
+<text top="339" left="493" width="322" height="17" font="4">determines   the   elemental   summoned   by   the   spell.   </text>
+<text top="365" left="493" width="29" height="16" font="5"><b>Gem   </b></text>
+<text top="365" left="628" width="127" height="16" font="5"><b>Summoned   Elemental   </b></text>
+<text top="382" left="493" width="78" height="16" font="6">Blue   sapphire   </text>
+<text top="382" left="628" width="77" height="16" font="6">Air   elemental   </text>
+<text top="402" left="493" width="91" height="16" font="6">Yellow   diamond   </text>
+<text top="402" left="628" width="91" height="16" font="6">Earth   elemental   </text>
+<text top="423" left="493" width="84" height="16" font="6">Red   corundum   </text>
+<text top="423" left="628" width="82" height="16" font="6">Fire   elemental   </text>
+<text top="444" left="493" width="48" height="16" font="6">Emerald   </text>
+<text top="444" left="628" width="96" height="16" font="6">Water   elemental   </text>
+<text top="478" left="493" width="98" height="21" font="2"><b>Elven Chain </b></text>
+<text top="500" left="493" width="158" height="17" font="3"><i>Armor   (chain   shirt),   rare   </i></text>
+<text top="526" left="493" width="345" height="17" font="4">You   gain   a   +1   bonus   to   AC   while   you   wear   this   armor.   </text>
+<text top="544" left="493" width="342" height="17" font="4">You   are   considered   proficient   with   this   armor   even   if   </text>
+<text top="561" left="493" width="267" height="17" font="4">you   lack   proficiency   with   medium   armor.   </text>
+<text top="592" left="493" width="160" height="21" font="2"><b>Eversmoking Bottle </b></text>
+<text top="614" left="493" width="175" height="17" font="3"><i>Wondrous   item,   uncommon   </i></text>
+<text top="640" left="493" width="330" height="17" font="4">Smoke   leaks   from   the   lead-­‐‑stoppered   mouth   of   this   </text>
+<text top="658" left="493" width="325" height="17" font="4">brass   bottle,   which   weighs   1   pound.   When   you   use   </text>
+<text top="676" left="493" width="311" height="17" font="4">an   action   to   remove   the   stopper,   a   cloud   of   thick   </text>
+<text top="693" left="493" width="334" height="17" font="4">smoke   pours   out   in   a   60-­‐‑foot   radius   from   the   bottle.   </text>
+<text top="711" left="493" width="320" height="17" font="4">The   cloud’s   area   is   heavily   obscured.   Each   minute   </text>
+<text top="728" left="493" width="318" height="17" font="4">the   bottle   remains   open   and   within   the   cloud,   the   </text>
+<text top="746" left="493" width="292" height="17" font="4">radius   increases   by   10   feet   until   it   reaches   its   </text>
+<text top="764" left="493" width="186" height="17" font="4">maximum   radius   of   120   feet.   </text>
+<text top="781" left="493" width="317" height="17" font="4">    The   cloud   persists   as   long   as   the   bottle   is   open.   </text>
+<text top="799" left="493" width="276" height="17" font="4">Closing   the   bottle   requires   you   to   speak   its   </text>
+<text top="816" left="493" width="301" height="17" font="4">command   word   as   an   action.   Once   the   bottle   is   </text>
+<text top="834" left="493" width="299" height="17" font="4">closed,   the   cloud   disperses   after   10   minutes.   A   </text>
+<text top="851" left="493" width="320" height="17" font="4">moderate   wind   (11   to   20   miles   per   hour)   can   also   </text>
+<text top="869" left="493" width="307" height="17" font="4">disperse   the   smoke   after   1   minute,   and   a   strong   </text>
+<text top="887" left="493" width="327" height="17" font="4">wind   (21   or   more   miles   per   hour)   can   do   so   after   1   </text>
+<text top="904" left="493" width="45" height="17" font="4">round.   </text>
+<text top="935" left="493" width="143" height="21" font="2"><b>Eyes of Charming </b></text>
+<text top="957" left="493" width="318" height="17" font="3"><i>Wondrous   item,   uncommon   (requires   attunement)   </i></text>
+<text top="984" left="493" width="320" height="17" font="4">These   crystal   lenses   fit   over   the   eyes.   They   have   3   </text>
+<text top="1001" left="493" width="307" height="17" font="4">charges.   While   wearing   them,   you   can   expend   1   </text>
+<text top="1018" left="493" width="194" height="17" font="4">charge   as   an   action   to   cast   the   </text>
+<text top="1018" left="687" width="86" height="17" font="3"><i>charm   person</i></text>
+<text top="1018" left="773" width="37" height="17" font="4">   spell   </text>
+</page>
+<page number="221" position="absolute" top="0" left="0" height="1188" width="918">
+	<fontspec id="7" size="15" family="EMJVBH+Cambria" color="#000000"/>
+<text top="1125" left="572" width="222" height="20" font="0">System   Reference   Document   5.1   </text>
+<text top="1125" left="842" width="26" height="19" font="1"><b>221</b></text>
+<text top="1125" left="869" width="4" height="20" font="0">   </text>
+<text top="108" left="86" width="322" height="17" font="4">(save   DC   13)   on   a   humanoid   within   30   feet   of   you,   </text>
+<text top="126" left="86" width="335" height="17" font="4">provided   that   you   and   the   target   can   see   each   other.   </text>
+<text top="143" left="86" width="345" height="17" font="4">The   lenses   regain   all   expended   charges   daily   at   dawn.   </text>
+<text top="174" left="86" width="177" height="21" font="2"><b>Eyes of Minute Seeing </b></text>
+<text top="196" left="86" width="175" height="17" font="3"><i>Wondrous   item,   uncommon   </i></text>
+<text top="222" left="86" width="336" height="17" font="4">These   crystal   lenses   fit   over   the   eyes.   While   wearing   </text>
+<text top="240" left="86" width="332" height="17" font="4">them,   you   can   see   much   better   than   normal   out   to   a   </text>
+<text top="257" left="86" width="328" height="17" font="4">range   of   1   foot.   You   have   advantage   on   Intelligence   </text>
+<text top="275" left="86" width="296" height="17" font="4">(Investigation)   checks   that   rely   on   sight   while   </text>
+<text top="293" left="86" width="328" height="17" font="4">searching   an   area   or   studying   an   object   within   that   </text>
+<text top="310" left="86" width="43" height="17" font="4">range.   </text>
+<text top="341" left="86" width="138" height="21" font="2"><b>Eyes of the Eagle </b></text>
+<text top="363" left="86" width="318" height="17" font="3"><i>Wondrous   item,   uncommon   (requires   attunement)   </i></text>
+<text top="390" left="86" width="336" height="17" font="4">These   crystal   lenses   fit   over   the   eyes.   While   wearing   </text>
+<text top="407" left="86" width="330" height="17" font="4">them,   you   have   advantage   on   Wisdom   (Perception)   </text>
+<text top="424" left="86" width="299" height="17" font="4">checks   that   rely   on   sight.   In   conditions   of   clear   </text>
+<text top="442" left="86" width="341" height="17" font="4">visibility,   you   can   make   out   details   of   even   extremely   </text>
+<text top="460" left="86" width="299" height="17" font="4">distant   creatures   and   objects   as   small   as   2   feet   </text>
+<text top="477" left="86" width="47" height="17" font="4">across.   </text>
+<text top="508" left="86" width="121" height="21" font="2"><b>Feather Token </b></text>
+<text top="530" left="86" width="132" height="17" font="3"><i>Wondrous   item,   rare   </i></text>
+<text top="557" left="86" width="328" height="17" font="4">This   tiny   object   looks   like   a   feather.   Different   types   </text>
+<text top="574" left="86" width="326" height="17" font="4">of   feather   tokens   exist,   each   with   a   different   single-­‐‑</text>
+<text top="592" left="86" width="303" height="17" font="4">use   effect.   The   GM   chooses   the   kind   of   token   or   </text>
+<text top="609" left="86" width="157" height="17" font="4">determines   it   randomly.   </text>
+<text top="636" left="90" width="31" height="16" font="5"><b>d100   </b></text>
+<text top="636" left="137" width="84" height="16" font="5"><b>Feather   Token   </b></text>
+<text top="636" left="253" width="31" height="16" font="5"><b>d100   </b></text>
+<text top="636" left="301" width="84" height="16" font="5"><b>Feather   Token   </b></text>
+<text top="652" left="86" width="93" height="16" font="6">01–20    Anchor   </text>
+<text top="652" left="250" width="111" height="16" font="6">51–65    Swan   boat   </text>
+<text top="669" left="86" width="76" height="16" font="6">21–35    Bird   </text>
+<text top="669" left="250" width="78" height="16" font="6">66–90    Tree   </text>
+<text top="685" left="86" width="73" height="16" font="6">36–50    Fan   </text>
+<text top="685" left="250" width="83" height="16" font="6">91–00    Whip   </text>
+<text top="719" left="86" width="3" height="17" font="4">   </text>
+<text top="719" left="100" width="52" height="17" font="7"><i><b>Anchor.</b></i></text>
+<text top="719" left="152" width="264" height="17" font="4">   You   can   use   an   action   to   touch   the   token   </text>
+<text top="737" left="86" width="321" height="17" font="4">to   a   boat   or   ship.   For   the   next   24   hours,   the   vessel   </text>
+<text top="755" left="86" width="337" height="17" font="4">can’t   be   moved   by   any   means.   Touching   the   token   to   </text>
+<text top="772" left="86" width="345" height="17" font="4">the   vessel   again   ends   the   effect.   When   the   effect   ends,   </text>
+<text top="789" left="86" width="140" height="17" font="4">the   token   disappears.   </text>
+<text top="807" left="86" width="3" height="17" font="4">   </text>
+<text top="807" left="100" width="33" height="17" font="7"><i><b>Bird.</b></i></text>
+<text top="807" left="133" width="293" height="17" font="4">   You   can   use   an   action   to   toss   the   token   5   feet   </text>
+<text top="825" left="86" width="336" height="17" font="4">into   the   air.   The   token   disappears   and   an   enormous,   </text>
+<text top="842" left="86" width="320" height="17" font="4">multicolored   bird   takes   its   place.   The   bird   has   the   </text>
+<text top="860" left="86" width="271" height="17" font="4">statistics   of   a   roc,   but   it   obeys   your   simple   </text>
+<text top="878" left="86" width="321" height="17" font="4">commands   and   can’t   attack.   It   can   carry   up   to   500   </text>
+<text top="895" left="86" width="336" height="17" font="4">pounds   while   flying   at   its   maximum   speed   (16   miles   </text>
+<text top="913" left="86" width="333" height="17" font="4">an   hour   for   a   maximum   of   144   miles   per   day,   with   a   </text>
+<text top="930" left="86" width="325" height="17" font="4">one-­‐‑hour   rest   for   every   3   hours   of   flying),   or   1,000   </text>
+<text top="948" left="86" width="333" height="17" font="4">pounds   at   half   that   speed.   The   bird   disappears   after   </text>
+<text top="966" left="86" width="341" height="17" font="4">flying   its   maximum   distance   for   a   day   or   if   it   drops   to   </text>
+<text top="983" left="86" width="321" height="17" font="4">0   hit   points.   You   can   dismiss   the   bird   as   an   action.   </text>
+<text top="1001" left="86" width="3" height="17" font="4">   </text>
+<text top="1001" left="100" width="29" height="17" font="7"><i><b>Fan.</b></i></text>
+<text top="1001" left="129" width="278" height="17" font="4">   If   you   are   on   a   boat   or   ship,   you   can   use   an   </text>
+<text top="1018" left="86" width="328" height="17" font="4">action   to   toss   the   token   up   to   10   feet   in   the   air.   The   </text>
+<text top="108" left="493" width="326" height="17" font="4">token   disappears,   and   a   giant   flapping   fan   takes   its   </text>
+<text top="126" left="493" width="298" height="17" font="4">place.   The   fan   floats   and   creates   a   wind   strong   </text>
+<text top="143" left="493" width="308" height="17" font="4">enough   to   fill   the   sails   of   one   ship,   increasing   its   </text>
+<text top="161" left="493" width="300" height="17" font="4">speed   by   5   miles   per   hour   for   8   hours.   You   can   </text>
+<text top="178" left="493" width="181" height="17" font="4">dismiss   the   fan   as   an   action.   </text>
+<text top="196" left="493" width="3" height="17" font="4">   </text>
+<text top="196" left="507" width="75" height="17" font="7"><i><b>Swan   Boat.</b></i></text>
+<text top="196" left="581" width="224" height="17" font="4">   You   can   use   an   action   to   touch   the   </text>
+<text top="213" left="493" width="336" height="17" font="4">token   to   a   body   of   water   at   least   60   feet   in   diameter.   </text>
+<text top="231" left="493" width="321" height="17" font="4">The   token   disappears,   and   a   50-­‐‑foot-­‐‑long,   20-­‐‑foot-­‐‑</text>
+<text top="249" left="493" width="314" height="17" font="4">wide   boat   shaped   like   a   swan   takes   its   place.   The   </text>
+<text top="266" left="493" width="322" height="17" font="4">boat   is   self-­‐‑propelled   and   moves   across   water   at   a   </text>
+<text top="284" left="493" width="309" height="17" font="4">speed   of   6   miles   per   hour.   You   can   use   an   action   </text>
+<text top="301" left="493" width="330" height="17" font="4">while   on   the   boat   to   command   it   to   move   or   to   turn   </text>
+<text top="319" left="493" width="341" height="17" font="4">up   to   90   degrees.   The   boat   can   carry   up   to   thirty-­‐‑two   </text>
+<text top="337" left="493" width="302" height="17" font="4">Medium   or   smaller   creatures.   A   Large   creature   </text>
+<text top="354" left="493" width="303" height="17" font="4">counts   as   four   Medium   creatures,   while   a   Huge   </text>
+<text top="372" left="493" width="313" height="17" font="4">creature   counts   as   nine.   The   boat   remains   for   24   </text>
+<text top="390" left="493" width="338" height="17" font="4">hours   and   then   disappears.   You   can   dismiss   the   boat   </text>
+<text top="407" left="493" width="82" height="17" font="4">as   an   action.   </text>
+<text top="424" left="493" width="3" height="17" font="4">   </text>
+<text top="424" left="507" width="34" height="17" font="7"><i><b>Tree.</b></i></text>
+<text top="424" left="541" width="287" height="17" font="4">   You   must   be   outdoors   to   use   this   token.   You   </text>
+<text top="442" left="493" width="333" height="17" font="4">can   use   an   action   to   touch   it   to   an   unoccupied   space   </text>
+<text top="460" left="493" width="340" height="17" font="4">on   the   ground.   The   token   disappears,   and   in   its   place   </text>
+<text top="477" left="493" width="317" height="17" font="4">a   nonmagical   oak   tree   springs   into   existence.   The   </text>
+<text top="495" left="493" width="325" height="17" font="4">tree   is   60   feet   tall   and   has   a   5-­‐‑foot-­‐‑diameter   trunk,   </text>
+<text top="513" left="493" width="321" height="17" font="4">and   its   branches   at   the   top   spread   out   in   a   20-­‐‑foot   </text>
+<text top="530" left="493" width="47" height="17" font="4">radius.   </text>
+<text top="548" left="493" width="3" height="17" font="4">   </text>
+<text top="548" left="507" width="39" height="17" font="7"><i><b>Whip.</b></i></text>
+<text top="548" left="546" width="283" height="17" font="4">   You   can   use   an   action   to   throw   the   token   to   </text>
+<text top="565" left="493" width="331" height="17" font="4">a   point   within   10   feet   of   you.   The   token   disappears,   </text>
+<text top="583" left="493" width="334" height="17" font="4">and   a   floating   whip   takes   its   place.   You   can   then   use   </text>
+<text top="600" left="493" width="339" height="17" font="4">a   bonus   action   to   make   a   melee   spell   attack   against   a   </text>
+<text top="618" left="493" width="323" height="17" font="4">creature   within   10   feet   of   the   whip,   with   an   attack   </text>
+<text top="635" left="493" width="328" height="17" font="4">bonus   of   +9.   On   a   hit,   the   target   takes   1d6   +   5   force   </text>
+<text top="653" left="493" width="57" height="17" font="4">damage.   </text>
+<text top="671" left="493" width="334" height="17" font="4">    As   a   bonus   action   on   your   turn,   you   can   direct   the   </text>
+<text top="688" left="493" width="294" height="17" font="4">whip   to   fly   up   to   20   feet   and   repeat   the   attack   </text>
+<text top="706" left="493" width="305" height="17" font="4">against   a   creature   within   10   feet   of   it.   The   whip   </text>
+<text top="724" left="493" width="325" height="17" font="4">disappears   after   1   hour,   when   you   use   an   action   to   </text>
+<text top="741" left="493" width="308" height="17" font="4">dismiss   it,   or   when   you   are   incapacitated   or   die.   </text>
+<text top="772" left="493" width="234" height="21" font="2"><b>Figurine of Wondrous Power </b></text>
+<text top="794" left="493" width="212" height="17" font="3"><i>Wondrous   item,   rarity   by   figurine   </i></text>
+<text top="820" left="493" width="13" height="17" font="4">A   </text>
+<text top="820" left="505" width="172" height="17" font="3"><i>figurine   of   wondrous   power</i></text>
+<text top="820" left="678" width="152" height="17" font="4">   is   a   statuette   of   a   beast   </text>
+<text top="838" left="493" width="341" height="17" font="4">small   enough   to   fit   in   a   pocket.   If   you   use   an   action   to   </text>
+<text top="855" left="493" width="333" height="17" font="4">speak   the   command   word   and   throw   the   figurine   to   </text>
+<text top="873" left="493" width="304" height="17" font="4">a   point   on   the   ground   within   60   feet   of   you,   the   </text>
+<text top="891" left="493" width="300" height="17" font="4">figurine   becomes   a   living   creature.   If   the   space   </text>
+<text top="908" left="493" width="311" height="17" font="4">where   the   creature   would   appear   is   occupied   by   </text>
+<text top="926" left="493" width="320" height="17" font="4">other   creatures   or   objects,   or   if   there   isn’t   enough   </text>
+<text top="943" left="493" width="338" height="17" font="4">space   for   the   creature,   the   figurine   doesn’t   become   a   </text>
+<text top="961" left="493" width="61" height="17" font="4">creature.   </text>
+<text top="978" left="493" width="271" height="17" font="4">    The   creature   is   friendly   to   you   and   your   </text>
+<text top="996" left="493" width="309" height="17" font="4">companions.   It   understands   your   languages   and   </text>
+<text top="1014" left="493" width="295" height="17" font="4">obeys   your   spoken   commands.   If   you   issue   no   </text>
+</page>
+<outline>
+<item page="1">SRD-CC_V1.1 preamble.pdf</item>
+<item page="3">SRD-OGL_V5.1.pdf</item>
+</outline>
+</pdf2xml>

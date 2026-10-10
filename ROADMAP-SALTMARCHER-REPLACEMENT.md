@@ -1,6 +1,6 @@
 # Vollständige SaltMarcher-Ablösung im gemeinsamen Zielprodukt
 
-Stand: 9. Oktober 2026. Direkter Nutzerauftrag: SaltMarcher ist als
+Stand: 10. Oktober 2026. Direkter Nutzerauftrag: SaltMarcher ist als
 eigenständiges Produkt vollständig abgelöst. Das in diesem Repository
 fortgeführte Zielprodukt übernimmt nicht nur bereits implementierte Funktionen,
 sondern auch den bestätigten und geplanten Gesamtumfang. Das Endergebnis ist
@@ -90,6 +90,22 @@ aktuelle Aufgaben und Besitz stehen an den dort verlinkten Arbeitsorten.
 - Geschlossene Import-/Export-Einheit einschließlich Assets, Definitionen,
   Runtime, Trash und unbekannten zukünftigen Daten entwerfen.
 - Bestehende Dungeon-/Atlasdateien ohne stillen Formatwechsel erhalten.
+- Den gesamten Weg über die Campaignoberfläche liefern: anlegen → A/B/A wechseln →
+  umbenennen → aktive Campaign in Trash → dieselbe Identität restaurieren → separat
+  dauerhaft löschen. Duplikatnamen bleiben erlaubt; Trash/Restore aktiviert keine
+  andere Campaign implizit. Unsaved-Drafts und unbekannte Commandausgänge vor dem
+  Wechsel beim zuständigen Owner klären, Aktivierungsretry erzeugt keine zweite Wirkung.
+- Complete-Transfer auf einer anderen Installation bis zum tatsächlich geöffneten
+  Arbeitszustand verfolgen. Fehlende gemeinsame Definitionen übernehmen; Konflikte
+  mit sichtbaren Folgen ausdrücklich wählen, einschließlich unabhängiger Varianten.
+  Beschädigte Daten öffnen den neuesten eindeutig sicheren Recoverystand und zeigen
+  Verluste; nur bei Mehrdeutigkeit fragt der GM. Keine manuelle Backupbedienung als
+  Voraussetzung normaler Erhaltung. Quelle: Campaign Management und Program
+  Capabilities „Local Data Lifecycle“, #10/#41, SMR-AC-02/15.
+- Der Fachtext verlangt Campaignauswahl bei jedem Start, der Gesamtvertrag möglichst
+  vollständigen Runtime-Resume. Einstieg/Continue und wiederhergestellten Zustand
+  in #44/#10/#11 ausdrücklich zusammenführen; keine automatische UI-Weiterleitung
+  oder bewusst verworfene Runtime daraus als bereits entschiedene Zielregel ableiten.
 
 ### SMR-02 – Katalog, Referenzgraph und World Planner
 
@@ -106,6 +122,21 @@ aktuelle Aufgaben und Besitz stehen an den dort verlinkten Arbeitsorten.
   auswählbar, editierbare Prosa unverändert; Umbenennen/Löschen aktualisiert den
   Kampagnenindex ohne statischen Neubau. Offline-/Unavailablefälle bleiben lesbar.
   Quellen: Catalog und Reference Graph requirements; #9/#10, SMR-AC-03.
+
+#### Arbeitsstand #68
+
+Kandidat: https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/75
+
+Der Domänen-/Panel-Eingang ist kein nativer Speicher- oder GUI-Nachweis.
+Campaign/Data liefert im [besessenen Producer](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/68#issuecomment-6102432435)
+den kanonischen Einzeldatei-/Owner-/Receipt-/Recoveryanschluss; Atlas-QA montiert
+dessen bestätigten Port für Save → frisches Öffnen. Keine zweite Übernahme.
+
+Nächster Beitrag: Atlas-QA stellt den ersten startbaren isolierten GUI-Weg
+Anlegen → Finden → Bearbeiten mit Build/Fixture/Host am [Paket](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/68)
+zur GM-Nutzung bereit. Native Writes/Recovery und Fresh-Prozess bleiben offen;
+vor größerem abhängigem Ausbau frühe GM-Beobachtung konsumieren. Technische
+Reviewidentitäten stehen im PR; keine neue Fach-/Hostfreigabe aus diesem Einstieg.
 
 ### SMR-03 – Party, Scene und Live Session
 
@@ -158,6 +189,11 @@ Integrationsweg, nicht automatisch die gesamte Karten-/Stadtfunktion.
 ### SMR-05 – Encounter, Combat, Loot und Rewards
 
 - Laufende `CE-03` bis `CE-06` Arbeit gegen D&D 2014 fertigstellen.
+- [CE-03/04](ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md#ce-03--encounter-builder-und-planpersistenz)
+  liefert bearbeitbare installationseigene Generatorpresets mit ausdrücklicher
+  Campaignzuweisung bis gleicher Scene-/Sessionkomposition und gespeicherter
+  Combat-Mobpartition. Einstellungs- und Consumerpfad zusammen verfolgen; Preset ist
+  Kompositionspolitik, keine Regel-/Katalogversionsauswahl. #9/#10/#6, AC-06/07.
 - Encounter Tables, Combat-Maske, Rewards, Gruppenloot und Charakterledger
   über stabile Referenzen und atomare Kommandos verbinden.
 - Vom Gruppeneditor bis zur Nachbereitung liefern: manuelle Monster-/Lootauswahl,
@@ -174,21 +210,89 @@ Integrationsweg, nicht automatisch die gesamte Karten-/Stadtfunktion.
 
 - Zuerst einen eigenständig nutzbaren manuellen Plan mit geordneter Timeline,
   Notizen und optionalem Ort bearbeiten, speichern und frisch öffnen;
-  ohne erforderliche Party, Encounter, Loot oder Generator.
-- World-, Party-, Encounter- und Lootbedingungen in gestufte Runs binden.
-- Vorschläge einzeln regenerieren, akzeptieren und in Scene/Atlas platzieren;
-  Inputs, Profile, Rundung und Outputs prüfbar speichern.
+  ohne erforderliche Party, Encounter, Loot oder Generator (#69).
+- Danach erwartete Party (ohne Änderung der aktuellen Party), Adventure Day,
+  Encounterbudget/Restempfehlungen und bindende World-Auswahl verbinden. Unmögliche
+  Vorgaben vor Generierung erklären. Encounterpläne gezielt an einem Timelineeintrag
+  suchen/anhängen; keine Vollkatalogladung. Manuelle Lootnotizen und strukturierte
+  Generated Rewards bleiben sichtbar getrennt; fremde Rosters/Definitionen werden
+  nicht im Planner editiert.
+- Vom bestätigten Input über asynchronen Run und konkrete Encounterauflösung bis
+  zur gespeicherten bearbeitbaren Timeline liefern: Itemzeilen/Quantitäten/Packing,
+  Rewardkanäle, Warnings/Audits und konkrete Creature-Identitäten konsumieren.
+  Seed, Profil/Config-/Katalogprovenienz und Ledgerbasis erhalten; Goldenpflicht
+  `[680, 1000, 1800]` aus Session Generation belegen, keine zufälligen Item-/Roster-
+  Kandidaten als Goldenparität verlangen. Fehler liefern kein sichtbares Teilergebnis.
+- Einzelnes Ergebnis ändern/regenerieren/ablehnen/annehmen/platzieren, andere
+  manuelle Änderungen und angenommene Worldplatzierungen erhalten; Planersatz
+  löscht diese nicht. Am vorbereiteten Ort erscheinen Gruppen/Treasures in der
+  Running Scene, ohne automatischen Kampfstart oder Award. Übernahme ins Live-Spiel
+  konsumiert SMR-03; keine Planner-Rückwirkung auf laufende Scenes.
+- Revisiongebundene Aufträge, verständliche Fortschritts-/Fehlerzustände, Cancel,
+  Retry ohne Duplikate und Reopen im selben Lieferweg prüfen; späte Resultate dürfen
+  neuere Autorenschaft nicht überschreiben. Quellenkollision bleibt in #44 offen:
+  Program Capabilities fordert einen unbenannten aktuellen Plan und einzeln
+  annehmbare Vorschläge; Session Planner fordert mehrere benannte Sessions und
+  sofortige Gesamtersetzung ohne Apply. Auch Cancel-/Commitgrenze und gemeinsame
+  Receiptautorität vor abhängiger Implementierung ausdrücklich auf die Zielregel
+  beziehen. Quellen: Session Planner, Session Generation, Encounter Generation und
+  SRC-P01–03; #10/#6/#9, SMR-AC-07. Keine zweite öffentliche Generatorpipeline.
+
+#### Arbeitsstand #69
+
+Kandidat: https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/71
+Eingang: https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/68
+
+Der [compound-add-Review](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/69#issuecomment-6102411326)
+qualifiziert den In-Memory-Kern, nicht Host/Save/Recovery; kein unangefragter Zweitreview.
+Campaign/Data benötigt den [konkreten nativen Plannerconsumer](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/69#issuecomment-6102471289)
+mit Plan-/Sceneclosure, kanonischem Dateibesitz und kausaler Publish-/Receipt-/Recoverybindung.
+Der in #68 besessene Producer ist Anknüpfung, keine gelieferte Plannerautorität.
+
+Nächster Beitrag: Stadt konsumiert den bestätigten Speicherport und stellt den
+ersten isolierten GUI-Weg ortslose Timeline → Notizen/Reihenfolge → Kontextwechsel
+am [Paket](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/69) zur GM-Nutzung bereit.
+Vor größerem Partybudget-/Encounter-/Generatorausbau GM-Befunde konsumieren.
+Native Save/Fresh-Abnahme bleibt offen; Format und Speicher-PASS werden nicht angenommen.
 
 ### SMR-07 – Reise, Kalender und autoritative Zeit
 
 - Kalender-/Zeitkern und providerneutrale Reise parallel entwickeln. Kalenderregeln
   warten nicht auf die fertige Reise; autoritative Scene-Zeit konsumiert den
   bestätigten Scene-/Owner-/Publishvertrag. Bestehenden Fachbesitz in #10 erhalten.
-- Hex-, Dungeon- und Atlasprovider hinter einem hostneutralen Vertrag
-  vereinen; Preview/Confirm, Unterbrechung, Ereignisse, Tracks und kausales
-  Undo/Redo umsetzen.
-- Kampagnenkalender und unabhängige Scene-Zeiten einführen. Gemeinsame Folgen
-  werden exakt einmal angewandt; narrative Entscheidungen bleiben beim GM.
+- Den realen Sceneweg liefern: vollständige/partielle PC-Gruppe wählen → Ziel oder
+  geordnete Wegpunkte auswerten → ausdrücklich reisen → am Checkpoint pausieren/
+  inspizieren/fortsetzen oder abbrechen → frisch öffnen. Ortswechsel der kompletten
+  Gruppe erhält die Scene, Teilgruppenwechsel erstellt/betritt eine andere; Suborte
+  verfeinern nur die Position. Administrative Platzierung ist keine Reise und
+  erzeugt keine automatische Zeit-/Eventwirkung. Position und Scene-Zeit committen
+  gemeinsam; Präsentationsgeschwindigkeit ändert nicht die In-World-Dauer. Faktor-
+  und Enddaueroverride zeigen, Enddauer gewinnt. Provider validieren reale Hex-/
+  Dungeon-/Atlasfakten; kein paralleler Route-/Positionstore. Cross-map-Routing
+  bleibt optionale spätere Bequemlichkeit.
+- Event, Trap, relevante Spur oder entdeckter NPC hält vor weiterem Routefortschritt
+  zur GM-Inspektion an; keinen Encounter automatisch starten. Tracks aus bestätigter
+  Bewegung mit Quellen-/Zeit-/Richtungsfakten erzeugen, einzeln korrigieren/
+  unterdrücken und zeitabhängig verfallen lassen. Entdeckung per bestätigtem
+  Perception/Survival-/GM-Ergebnis; segmentweise Verfolgung stoppt bei verlorener
+  oder mehrdeutiger Spur. Fehlende optionale PC-Werte sperren nur die benötigte
+  Automatik, nicht manuelle Reise oder andere PC-Funktionen.
+- Gerichtete Wahrnehmung und dauerhaftes Wissen getrennt führen: D&D-2014-Sinne,
+  Licht/Sichtlinie/Distanz/Deckung/Höhe, Wetter und Schall konsumieren bestätigte
+  Raum-/Umweltfakten. Aktives GM-Ergebnis und Known/Unknown-Override bleiben bis
+  ausdrücklicher Freigabe/Neubewertung wirksam. Neue Partygefahr pausiert Route und
+  betroffene Autonomy vor Auflösung. Dieselben Fakten liefern anschließend die
+  sichere Anzeige in SMR-10; unabhängige Wissens-/Spurinspektion bleibt möglich.
+- Kampagnenkalender mit Monats-/Tageslängen, Wochentagen und Jahreszählung bearbeiten,
+  Feiertag/Event an Zeit und/oder Ort binden → Relevanz in zwei unterschiedlich
+  fortgeschrittenen Scenes sehen → speichern/frisch öffnen. Eventrelevanz ist pro
+  Scene zu bewerten, bestätigte gemeinsame Worldfolge dagegen exakt einmal bei
+  Retry/Restart/Catch-up. Frühere Zeitkonflikte warnen, bleiben erlaubt und sichtbar
+  bis ausdrücklicher Auflösung; keine narrative Entscheidung oder globale Zeit-
+  Rückabwicklung. Mehrstufiges kausales Reise-Undo/Redo erhält spätere fremde Fakten.
+  Quellen: Hex/Dungeon Travel und State, SRC-T01–04/Q05, TN-08–14/23/24;
+  #10/#6/#7/#8, SMR-AC-08/09. UI, erforderliche Persistenz und Consumeranschluss
+  gehören zum selben Ergebnis, nicht nur ein Clock-/Providerport.
 
 ### SMR-08 – Shops, Wetter und Musik
 
@@ -244,10 +348,31 @@ Fachabnahmen und rechtfertigt keinen eigenen Shop-/Wetter-/Music-Snapshotstore.
 
 ### SMR-09 – Actor Autonomy
 
-- Opt-in-Akteure, Bedürfnisse, Arbeit, Wahrnehmung und begrenzte Konflikte auf
-  den stabilen World-/Zeit-/Scene-/Encounter-Verträgen aufbauen.
-- Pausieren, Abbrechen, atomare Wirkung, erklärbares Log und einmaliges
-  Catch-up qualifizieren.
+- GM aktiviert einen bestehenden NPC/eine Gruppe, konfiguriert Bedürfnisse,
+  Prioritäten und Konsequenzgrenzen und weist einen erreichbaren Job zu. Needs,
+  World-/Raumangebote, Routen und exklusive Reservierungen führen zur erklärbaren
+  deterministischen Jobwahl; ungültige Ziele betreffen nur ihre Jobs. Keine neue
+  Actoridentität, Autoreninhalte oder autonome Partyentscheidung.
+- Bestätigte Campaignzeit konsumieren → Job/Bewegung/Owneroperation ausführen →
+  Resultat im realen Kontext inspizieren → Pause/Cancel/Override → frisch öffnen.
+  Gruppenwechsel erhalten Individuen; unterbrochene Jobs resumieren nur bei gültigen
+  Voraussetzungen. Kein wall-clock-/Downtimefortschritt. Raum, Perception, Traps,
+  Inventory und Actorfolgen bleiben bei ihren Ownern; fehlende Operation macht
+  einen Job unzulässig statt eine fremde Wahrheit zu kopieren.
+- Vor Partygefahr/GM-Entscheidung pausieren und passenden Kontext anzeigen.
+  Begrenzte Nicht-Party-Konflikte dürfen abstrakte D&D-2014-Würfe verwenden;
+  Inputs/Würfe/Folgen dauerhaft loggen und konfigurierte Schutzgrenzen respektieren.
+  Deterministische Jobwahl ist keine Behauptung deterministischer Zufallskonflikte.
+- Ein Zeitschritt publiziert alle betroffenen Folgen atomar oder keine; fehlgeschlagene
+  Ownerwirkung erhält die vorige bestätigte Zeit. Cancel vor Commit ohne Wirkung,
+  danach Korrektur durch Owneroverride mit verlinktem Log, kein Runtime-Undo.
+  Inaktive Kontexte holen bestätigte Zeit genau einmal nach und stoppen vor dem
+  ersten GM-Entscheidungspunkt. Sichtbare Jobgründe und kompakte Konfliktfolgen
+  liefern, vollständige Kandidatenauswertung nicht als permanente Historie anhängen.
+  200 Akteure, ≤2 s p95, Fortschritt ≤100 ms und passende Cancel-/Kamerafreiheit
+  nach Quellbedingungen qualifizieren. Quelle: Actor Autonomy Requirements;
+  #10, SMR-AC-13. Domäne/Jobangebote parallel entwickeln; produktive Steps benötigen
+  konkrete Scene-/Zeit-/Owner-/Publishports, nicht den Abschluss aller Reisefunktionen.
 
 ### SMR-10 – Zweites Display, Extensions und vollständige Portabilität
 
@@ -255,6 +380,16 @@ Fachabnahmen und rechtfertigt keinen eigenen Shop-/Wetter-/Music-Snapshotstore.
   fokussierte Scene zeigt freigegebene Karte/Art, GM kann blanken/ersetzen;
   Secrets/Mechanik bleiben unsichtbar, auch nach Fokuswechsel und Restart.
   Der synthetische Fensterprototyp ist ein Eingang, keine Produktanzeige-Abnahme.
+- Wissen pro Charakter, aktuelle Sicht und rein temporäre GM-Anzeigeentscheidung
+  auseinanderhalten. Travelmap zeigt bekannte Geometrie getrennt von aktuell
+  sichtbaren Details; Orte zeigen Art, NPC-Art nur ausdrücklich hervorgehoben
+  beziehungsweise im bestätigten Encounter-/Chase-Automatikscope. Split/Fokuswechsel,
+  manuelles Reveal/Hide/Blank und Reopen dürfen kein fremdes Scenewissen, Secrets
+  oder nicht wahrgenommene Live-Details offenlegen; Präsentationsoverride verändert
+  keine Discoverywahrheit. Quellkonflikt in #44/#11/#10: Dungeon Travel nennt
+  komplette Partyunion/Explorationkamera, SRC-L05/T04 fokussierte Sceneunion.
+  Nicht beide Filter zugleich als Sicherheitsvertrag freigeben; P03 liefert nur
+  den Beweiskanal, nicht diese Fachentscheidung. SMR-AC-14/TN-24 bleibt separat.
 - Interne Extension-Grenze mit Default-Deny, Einwilligung und Widerruf bauen;
   Host-Erweiterungen nicht als sichere Sandbox voraussetzen.
 - Tatsächliche Erweiterung installieren → Rechte bestätigen → Inhaltsart/Maske/

@@ -9,7 +9,8 @@ Paketowner ist die im Aufgabenissue benannte Agent-/Ownerrolle: Sie verfolgt das
 | Ziele / vollständiger Umfang | [PRODUCT](PRODUCT.md) / [SCOPE](SCOPE.md); bestätigte Zieländerung samt Quellenzuordnung |
 | Dauerhafte Lieferfolge | [ROADMAP](ROADMAP.md); Integrationsowner bei geändertem Lieferpfad |
 | Aktueller gemeinsamer Schritt / Gateentscheidung | Issue #12; Integrationsowner mit direktem Beleg |
-| Aufgabe, Besitz, Abhängigkeit | Konkretes Issue/PR; Paketowner bei Übernahme, Blockerwechsel und Abschluss |
+| Aufgabe, Besitz, Unterstützung | Konkretes Issue/PR; Paketowner bei Übernahme und geänderter Zuständigkeit |
+| Aktueller Lieferstand / nächste Beiträge | Explizit verlinkter Abschnitt im bestehenden Fachplan, sofern vorhanden; Paketowner mit Lieferung oder tatsächlichem Blockerwechsel, ohne Kopie im Issue |
 | Ausführungsstand | Eigene Wurzel in `checkpoint.json`; aktuellen Lauf ersetzen, fremde Wurzeln erhalten |
 | Abnahme | `acceptance.json`; Fachowner bindet direkte Evidenz, fehlender Nachweis bleibt offen |
 | Architektur | `ARCHITECTURE.md`; angenommene Entscheidung mit früheren Begründungen |
@@ -47,7 +48,7 @@ Bereichsfragen im Fachissue, gemeinsame Konflikte/Entscheidungen in #12. Den Nut
 
 ## Kommunikation nach Inhalt und Anlass
 
-**Der Aufgabenhaupttext ist der aktuelle Arbeitsstand:** Ergebnis, Besitz/Branch, verfügbarer Eingang, verbleibender Blocker und nächster Schritt mit direktem Beleg. Bei Übergabe diese Angaben ersetzen; erledigte Warteanweisungen und Zwischenstände entfernen. Kommentare bewahren Claims und relevante Entscheidungen, werden aber nicht zur zweiten laufenden Aufgabenbeschreibung. Ein neuer Contributor muss den aktuellen Stand ohne Rekonstruktion der Kommentarchronik verstehen können; ältere Claims/Belege nur bei Unklarheit gezielt prüfen.
+**Der Aufgabenhaupttext ist der Einstieg:** Nutzerergebnis, Besitz und Unterstützung sowie der direkte Verweis auf den aktuellen Lieferstand im vorhandenen Fachplan. Bei angeschlossenem Fachort dort Eingang, verbleibenden Blocker und nächsten Beitrag ersetzen; keine zweite Kopie im Issue. Ohne passenden vorhandenen Fachort bleibt der bisherige manuell gepflegte Haupttext der Arbeitsstand. Erledigte Warteanweisungen und Zwischenstände entfernen. Kommentare bewahren Claims und relevante Entscheidungen, werden aber nicht zur zweiten laufenden Aufgabenbeschreibung. Ein neuer Contributor muss den aktuellen Stand ohne Rekonstruktion der Kommentarchronik verstehen können; ältere Claims/Belege nur bei Unklarheit gezielt prüfen.
 
 | Meldung | Nötiger Inhalt |
 | --- | --- |
@@ -58,6 +59,54 @@ Bereichsfragen im Fachissue, gemeinsame Konflikte/Entscheidungen in #12. Den Nut
 Ein Ergebnis einmal am zuständigen Ort veröffentlichen; andernorts nur eine geänderte Konsequenz mit Link. Logs, Hashlisten, Prüftabellen und technische Detailchronik an vorhandene Evidenz-/QA-Orte verlinken. Fachpläne führen Vertrag und Lieferweg, keine fortlaufenden Build-/Test-/Wiederholungsläufe; vorhandene historische Abschnitte bleiben gezielte Belege, neue Läufe erweitern nicht den Standardlesepfad. Kommentare nur für neue Ergebnisse, echte Blocker, Besitz oder Entscheidungen; kein Hoststart-, Sync-, CI- oder Wiederholungsbericht ohne neue Konsequenz. Bereichsindex nur bei geändertem Eingang, #12 nur bei geändertem gemeinsamen Schritt/Gate.
 
 Projektgedächtnis bleibt ein aktueller Snapshot in der eigenen Checkpointwurzel: Fortsetzung, noch offene Fragen und benötigte Belege. Erledigte Zwischenstände ersetzen statt anhängen; Ziele, Regeln und fremde Dispatchzustände verlinken statt kopieren. Acceptance bewahrt Anforderungen und direkte Abnahmeidentitäten, Git/Beleglinks den Verlauf. Keine Löschung fremder Wurzeln oder gepinnter Nachweise; kein zusätzliches Tages-/Laufarchiv.
+
+## Arbeitsstand lesen und ersetzen
+
+`npm run next -- --task N` liest den Einstieg ohne Kommentarchronik. Ein expliziter
+Verweis im Issue verbindet den vorhandenen Fachplan:
+
+```text
+Arbeitsstand: https://github.com/OWNER/REPO/blob/DEFAULTBRANCH/PFAD.md#arbeitsstand-N
+```
+
+Im Plan heißt der Abschnitt `#### Arbeitsstand #N`; er enthält aktuellen Eingang,
+Blocker, Beleg, offene Grenze und nächste ausführbare Beiträge. Keine neue Datei
+oder zusätzliche Aufgabenliste dafür anlegen. `next` löst den aktuellen Defaultbranch
+auf eine konkrete Commitrevision auf und liest nur diesen Abschnitt. Fehlender
+Zugriff, doppelte/fehlende Abschnitte oder mehr als 6000 Zeichen werden ausdrücklich
+als unbrauchbarer Einstieg gemeldet; historische Kommentare ersetzen ihn nicht.
+Ziel und Besitz bleiben im Issue, persönliche Fortsetzung in der eigenen
+Checkpointwurzel, Abnahme in Acceptance. Beides nicht in den Arbeitsabschnitt kopieren.
+
+Explizite Zeilen `Kandidat: https://github.com/OWNER/REPO/pull/N` und
+`Eingang: https://github.com/OWNER/REPO/issues/N` werden live abgefragt. Head, CI
+und Reviewzustand nicht kopieren; Merge ist keine Fach-/GUI-Abnahme. `--json`
+liefert Quellenrevision und vollständigen Issue-Snapshot, `--comments` nur die
+letzten drei Kommentare. Ältere Claims/Entscheidungen bei Bedarf direkt prüfen.
+
+Arbeitsabschnitt mit der zusammengehörigen Lieferung oder tatsächlichem
+Blockerwechsel ändern. Contributors liefern Ergebnisse einmal am zuständigen
+PR/Issue; der Paketowner führt ihre Konsequenz im vorhandenen Fachort nach.
+Unterstützung überträgt keinen Parent-/Fachbesitz. Aufgabenpflege korrigiert
+veraltete Einstiege, eröffnet aber keinen konkurrierenden Lieferstand.
+
+Vor Bearbeitung Remote lesen; vor Veröffentlichung erneut fetch und eingehende
+Arbeit integrieren. Hat sich derselbe Arbeitsabschnitt gegenüber der eigenen
+Basis geändert, stoppen und inhaltlich abgleichen, auch wenn Git automatisch
+mergen könnte. Andere Abschnitte erhalten. Regulärer Push ohne Force: Eine
+zwischenzeitliche Remoteänderung wird zurückgewiesen, nicht überschrieben.
+Git schützt die Historie, bestätigt aber keine sachliche Richtigkeit eines Merge.
+Keine pauschalen JSON-Merge- oder Wiederholungsaktionen bei Konflikt/unklarem Ausgang.
+
+`npm run update-task -- --task N --file INPUT.json` bleibt ausschließlich eine
+Vorschau für bestehende manuelle Issuepflege. Eingabe: `expectedBodySha256`,
+`expectedUpdatedAt`, `content`; Snapshot über `npm run --silent next -- --task N --json`.
+`--apply` und automatische Issue-Body-Patches sind deaktiviert: GitHub bietet hierfür
+keine belastbare Compare-and-swap-Garantie. Keine Befugnis aus dem Werkzeug ableiten.
+Einmalige Änderungen fester Issueverweise müssen mit aktueller Lektüre, Erhalt fremder
+Inhalte und nachträglicher Kontrolle erfolgen; sie sind nicht atomar konfliktgeschützt.
+Pakete ohne passenden Fachort bleiben beim bisherigen manuellen Verfahren und
+werden erst bei sachlicher Bearbeitung angeschlossen. Keine Commit-/Meldepflicht je Lauf.
 
 ## Wo neue Dateien hingehören
 

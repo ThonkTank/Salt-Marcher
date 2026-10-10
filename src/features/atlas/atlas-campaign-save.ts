@@ -24,7 +24,11 @@ import {
 } from "../campaign/campaign-contracts";
 import type { FileStore } from "../../persistence";
 import { parseAtlasDraft } from "./atlas-draft";
-import type { AtlasNativeFile } from "./atlas-campaign-source";
+import {
+  atlasDetailPlacementReferences,
+  atlasLocationReferences,
+  type AtlasNativeFile,
+} from "./atlas-campaign-source";
 import type {
   AtlasFileJournal,
   AtlasFileWrite,
@@ -38,7 +42,13 @@ import {
 } from "./atlas-location-save-extension";
 
 const exact = (value: unknown) => JSON.stringify(value);
-type RecordBinding = { ownerId: string; kind: string; path: string };
+type RecordBinding = {
+  ownerId: string;
+  kind: string;
+  path: string;
+  /** Only Atlas owns this native reference projection; foreign owner proofs stay intact. */
+  references?: readonly string[];
+};
 export interface AtlasCampaignRuntimeSavePort {
   basis(): Promise<{
     context: CampaignContextProjection;
@@ -59,9 +69,15 @@ function records(
   side: "before" | "after",
 ): Map<string, RecordBinding> {
   const result = new Map<string, RecordBinding>();
-  const add = (id: string, ownerId: string, kind: string, path: string) => {
+  const add = (
+    id: string,
+    ownerId: string,
+    kind: string,
+    path: string,
+    references?: readonly string[],
+  ) => {
     if (result.has(id)) throw new Error("Mehrdeutige native Save-Kennung.");
-    result.set(id, { ownerId, kind, path });
+    result.set(id, { ownerId, kind, path, references });
   };
   for (const file of files) {
     const bytes = file[side];
@@ -73,29 +89,45 @@ function records(
     )
       continue;
     if (bytes === null)
-      throw new Error(
-        "Bestätigte Campaigndatei darf nicht gelöscht werden.",
-      );
+      throw new Error("Bestätigte Campaigndatei darf nicht gelöscht werden.");
     switch (file.kind) {
       case "world": {
         const doc = parseSpatialWorld(bytes);
         if (doc.id !== file.id)
           throw new Error("Fremde Weltkennung im Campaign-Save.");
-        add(doc.id, "atlas", "world", file.path);
+        add(doc.id, "atlas", "world", file.path, [
+          ...doc.placements.map((p) => p.id),
+          ...(doc.version === 2 ? doc.detailPlacements.map((p) => p.id) : []),
+        ]);
         for (const p of doc.placements)
-          add(p.id, "atlas", "location-placement", file.path);
+          add(p.id, "atlas", "location-placement", file.path, [
+            doc.id,
+            p.locationId,
+          ]);
         if (doc.version === 2)
           for (const p of doc.detailPlacements)
-            add(p.id, "atlas", p.kind + "-placement", file.path);
+            add(
+              p.id,
+              "atlas",
+              p.kind + "-placement",
+              file.path,
+              atlasDetailPlacementReferences(p).map((r) => r.id),
+            );
         break;
       }
       case "location": {
         const doc = parseLocationDocument(bytes);
         if (doc.id !== file.id)
           throw new Error("Fremde Ortskennung im Campaign-Save.");
-        add(doc.id, "atlas", "location", file.path);
+        add(
+          doc.id,
+          "atlas",
+          "location",
+          file.path,
+          atlasLocationReferences(doc).map((r) => r.id),
+        );
         for (const s of doc.sections)
-          add(s.id, "atlas", "location-section", file.path);
+          add(s.id, "atlas", "location-section", file.path, [doc.id]);
         break;
       }
       case "city": {
@@ -227,13 +259,11 @@ export class AtlasCampaignManifestSave {
           );
         return {
           ...r,
+          // Validate Before and derive After with the same native semantics. Never carry stale links forward.
           references:
-            r.id === manifest.atlas.worldId && extensions.length
-              ? [
-                  ...r.references,
-                  ...extensions.map((e) => reference(e.placement.id)),
-                ].sort((a, b) => a.id.localeCompare(b.id))
-              : r.references,
+            binding.references === undefined
+              ? r.references
+              : [...new Set(binding.references)].sort().map(reference),
           payloadDigest:
             binding.kind === "world" ? worldDigest : fileDigest(binding.path),
         };
@@ -363,7 +393,18 @@ export class AtlasCampaignManifestSave {
         return {
           ownerId: owner.ownerId,
           verify,
-          ...(owner.ownerId === "atlas" && extensions.length
+          // The Campaign contract requires explicit extension authority for changed references too.
+          ...(owner.ownerId === "atlas" &&
+          (extensions.length ||
+            owner.records.some(
+              (record) =>
+                exact(record.references) !==
+                exact(
+                  afterOwners[index]!.records.find(
+                    (next) => next.id === record.id,
+                  )!.references,
+                ),
+            ))
             ? { verifyExtension: verify }
             : {}),
         };
