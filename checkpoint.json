@@ -793,7 +793,7 @@
   "hexAtlasExecution": {
     "scope": "HEX-00 bis HEX-28 und sämtliche eingeordneten CITY-00 bis CITY-09 vollständig",
     "phase": "HEX-03",
-    "state": "e2e01_campaign_source_review_and_cleanup_pass_current_shared_synced_runtime_plan_next",
+    "state": "e2e01_runtime_p01_concrete_plan_published_independent_plan_review_pending",
     "plan": "ROADMAP-E2E01-SPATIAL-INTEGRATION-PLAN.md",
     "currentRun": {
       "id": "E2E-01-SPACE-I01b",
@@ -840,11 +840,12 @@
       "phaseApproval": false
     },
     "nextRun": {
-      "id": "E2E-01-SPACE-I01c-RUNTIME-P01",
-      "kind": "bounded_concrete_own_runtime_adapter_plan",
-      "focus": "Specify the next executable Worldowner/native Source identity-revision-digest projection and thin CampaignContext-to-Atlas open/navigation adapter using actual existing AtlasRepository/SpatialGraph/History and delivered Campaign ports. Pin own files, fail-closed unknown/stale/ambiguous/A-to-B-to-A/pending-Key-and-gesture oracles and first user-visible route. Keep one camera/history; no writing Session or invented registry provider.",
-      "dependency": "Qualified Campaign contract source and independent composition R01 plus separate reviewer cleanup are available and closed. Current Shared/catalog normally consumed and tested, duplicate status hold resolved. Real registry/media/P02/P04 provider responsibilities remain explicit ports and later owner deliveries; no new generic handoff request needed.",
-      "review": "Plan, implementation, independent review/repair and cleanup remain separate runs. This synchronization creates no runtime code and claims no new native/full E2E gate."
+      "id": "E2E-01-SPACE-I01c-RUNTIME-R01",
+      "kind": "existing_peer_independent_bounded_plan_review",
+      "focus": "Existing Stadt peer independently reviews the exact PR13 Runtime-P01 plan against actual native Source/Repository/History and delivered Campaign contracts. Narrow concrete findings only; no generic source/owner reratification.",
+      "dependency": "Concrete plan is delivered in the sole PR13 candidate; actual Campaign source integration R01 and its cleanup already PASS. No new ownership handoff or PR27 reference review mixed into this run.",
+      "afterPass": "Next separate implementation I01a: actual native Atlas capture and focused source-state regression. Navigation/host remain subsequent small deliveries.",
+      "review": "Plan, code, independent review/repair and cleanup remain separate; no runtime or native/full-E2E evidence from P01."
     },
     "review": {
       "run": "HEX-02-R02",
@@ -1811,6 +1812,42 @@
           "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i48b-20261010-r01"
         ],
         "scope": "Only original two-value Map/Template/fresh-session evidence and CO-COK-0004 qualification; no GUI, implementation, full parity or general review round."
+      },
+      "runtimePlanning": {
+        "id": "E2E-01-SPACE-I01c-RUNTIME-P01",
+        "state": "concrete_own_plan_independent_review_pending",
+        "plan": "ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md",
+        "gate": "E2E-01",
+        "catalog": "ROADMAP-E2E-GATES-CANDIDATE.md:13",
+        "base": "ebcbbadcef2425b843a46e69e4eb29599386dc63",
+        "consumedShared": "e09d1959e26536c9dcaff7d2d13b601cf3077e36",
+        "qualifiedCampaignSource": "d06354c37ea24c249a23310f1a186a0a5ee4e936",
+        "scope": "Plan only: I01a actual immutable native Atlas capture; I01b thin validated Campaign context/navigation consumer; I01c early real host route once actual provider instances exist. No new runtime, registry authority, foreign P02/P04 provider or source/fixture change.",
+        "ownImplementationFiles": [
+          "src/features/atlas/atlas-campaign-source.ts",
+          "src/features/atlas/atlas-campaign-navigation.ts",
+          "src/features/atlas/atlas-repository.ts",
+          "src/features/atlas/atlas-editor.ts",
+          "src/ui/atlas-view.ts"
+        ],
+        "nextCodeSlice": "I01a native Atlas capture after independent narrow plan PASS",
+        "oracles": [
+          "immutable actual native IDs/Markdown and all declared terrain chunks",
+          "spatial closure never invents complete Campaign inventory",
+          "same-Atlas Repository/History/Renderer identity with one relative camera",
+          "missing/foreign/ambiguous/retired/stale authority rejected before effects",
+          "A-to-B-to-A and late results bind full context and mount generation",
+          "valid Keys/gestures and retained draft before requested activation; failure stops switch",
+          "external context revokes old actions while preserving old work and won journal roll-forward",
+          "no Scene/LiveSession/Party/Travel/Clock effects"
+        ],
+        "realProviderLimits": "Campaign Host, authoritative Registry/native inventory and P02/P04/atomic publish/media provider instances are still absent. I01a/I01b consumer work can proceed after plan PASS; actual I01c/native/full-E2E claims require those concrete owner inputs.",
+        "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-p01-20261010/plan-validation.json",
+        "productChanged": false,
+        "fixtureVersion": "e2e01-spatial-v2",
+        "fixtureChanged": false,
+        "native": false,
+        "fullE2E": false
       }
     },
     "verification": {
@@ -3172,7 +3209,7 @@
       "platformIssue": 11,
       "checkpointIsAuthoritative": true
     },
-    "updatedAt": "2026-10-10T04:25:41Z"
+    "updatedAt": "2026-10-10T05:24:17.130210Z"
   },
   "phase": "Phase 6: zweiter Nachbesserungslauf teilweise umgesetzt; fünf Restpositionen und unabhängiger Review offen",
   "goal": "Dungeon-Pfad bis zur vollständigen beauftragten Dungeondraft-Verhaltensgleichheit verfolgen: Bedienung und Funktion angleichen, Grafik ungefähr gleichwertig. Zuerst ROADMAP-PARITY.md mit Building und Object Tool abschließen, danach übrige Dungeon-Werkzeuge. Jede Fachphase getrennt planen, umsetzen und unabhängig reviewen; Lücken mit eigenen Nachbesserungs- und Reviewläufen schließen; danach eigene Aufräumphase mit Plan, Umsetzung und Review.",

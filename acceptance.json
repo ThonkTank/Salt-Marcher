@@ -152802,6 +152802,22 @@
           "catalogChangedSpatialFixturesUnchanged": true,
           "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/shared-catalog-sync-20261010-0501/run.json"
         }
+      },
+      {
+        "id": "E2E01-HEX-SPACE-RUNTIME-PLAN-001",
+        "requirement": "Concrete actual native Atlas capture and thin CampaignContext-to-Atlas navigation with early visible host route",
+        "state": "plan_only_independent_review_pending",
+        "plan": "ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md",
+        "planRun": "E2E-01-SPACE-I01c-RUNTIME-P01",
+        "catalog": "ROADMAP-E2E-GATES-CANDIDATE.md:13",
+        "sourceBase": "ebcbbadcef2425b843a46e69e4eb29599386dc63",
+        "fixtureVersion": "e2e01-spatial-v2",
+        "fixtureUnchanged": true,
+        "evidence": [
+          "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-p01-20261010/plan-validation.json"
+        ],
+        "observed": "Plan names actual existing APIs and small own files for I01a native capture, I01b guarded context/navigation and I01c early real host/restart. Explicit native Source-vs-authority distinction, complete-vs-closure inventory, one camera/history, pending Keys/gesture/draft checks before requested activation, external switch and won-publish preservation, unknown/stale/duplicate/foreign/retired/A-to-B-to-A oracles. No product sources, fixture, user vault, native installation or runtime authority changed.",
+        "notConfirmed": "Independent plan PASS, implementation, real Registry/Host/native inventory providers, actual atomic Campaign publish/P02/P04/CompleteImport/media, native fresh-process acceptance and full E2E remain open. Last 514-test/check/build source receipt a659 is historical and not rerun for this documentation-only plan."
       }
     ],
     "cleanupFindings": [

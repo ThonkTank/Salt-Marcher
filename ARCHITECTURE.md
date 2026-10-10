@@ -610,6 +610,19 @@ Umsetzungsarbeit. Der unabhängige Kompositionsreview auf `ef6e851` und dessen
 getrenntes Reviewartefakt-Aufräumen bestehen; sie bestätigen ausschließlich
 Quell- und Vertragstreue, keinen produktiven Laufzeitadapter.
 
+**Nächster konkreter Runtimeplan, noch zur Prüfung:**
+[E2E-01-SPACE-I01c-RUNTIME-P01](ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md) teilt den
+Anschluss in native Atlas-Sourceerfassung, dünnen Context-/Navigationsconsumer
+und frühen echten Hostlauf. Lokale Source-Digests und räumliche Closures sind
+keine Registryautorität oder vollständige Campaigninventare. Der Consumer
+benötigt bestätigte Context-/Registry-/Owner-/Recordbindungen; World-, Orts-,
+Stadt- und Dungeonsources behalten ihre gemeinsame History und relative Kamera.
+Angeforderte Wechsel sichern gültige Keys/Gesten und Drafts vor Lifecycleaktivierung;
+externe Wechsel widerrufen alte Mountaktionen, erhalten alte Entwürfe und bereits
+gewonnenes Roll-forward unter der alten Identität. Tatsächliche Registry-/Host-
+und Publishprovider bleiben injizierte Fremdeingänge. Dieser Plan aktiviert
+keinen produktiven Adapter und ändert die bestehenden nativen Belege nicht.
+
 **Stand E2E-01-SPACE-I01b:** AtlasView aktiviert die tatsächlichen typisierten
 City-/DungeonSources. Der native Kennungsindex liest alle passenden Dateien im
 aktuellen Vault und liefert alle Treffer; fehlende oder doppelte Kennungen bleiben
