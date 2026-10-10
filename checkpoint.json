@@ -5059,13 +5059,13 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "HOST-RECEIPT-CLEAN-I01",
-      "kind": "cleanup_implementation",
+      "id": "HOST-RECEIPT-CLEAN-R01",
+      "kind": "cleanup_review",
       "status": "complete",
-      "focus": "Consolidate four retained logs and verify protected source hashes; no deletions",
-      "evidence": "/home/aaron/.cache/dungeon-native-qa/city-host-shutdown-cleanup/implementation.json",
-      "sha256": "a82b059380da40bd891c48619c8b77ef9048863c2e5d9b89a72c459c3be6d2d6",
-      "nextStep": "Separate cleanup review"
+      "focus": "Cleanup passed; reviewed QA sources unchanged, incoming suite composition preserved",
+      "evidence": "/home/aaron/.cache/dungeon-native-qa/city-host-shutdown-cleanup/review.json",
+      "sha256": "9884cea70599ed8c0806876fdea74cbee1c21a0bc61c83434e06d86b7e2273d9",
+      "nextStep": "Independent final candidate composition review and stewardship decision"
     },
     "nextRun": {
       "id": "E2E-01-CAMPAIGN-SAVE-ACK-INTEGRATION-R01",
