@@ -5766,6 +5766,7 @@
           "profile": "/workspace/scratch/gm-cloud-qa/fresh-process-20261010/profile",
           "vault": "/workspace/scratch/gm-cloud-qa/fresh-process-20261010/vault",
           "cdp": "http://127.0.0.1:9230 via loopback socat relay to container-local CDP; visible onboarding reports Obsidian 1.14.4.",
+          "nativeDialogInput": "xdotool 1:3.20160805.1-5.1 wurde im isolierten Container nachinstalliert, um den nativen sichtbaren Ordnerdialog auf Xvfb bedienen zu können.",
           "appLogs": "Application starts and DevTools responds; update checks fail with ERR_CERT_AUTHORITY_INVALID in isolated container and D-Bus system bus is absent. These setup diagnostics did not prevent UI startup; not product-behavior observations.",
           "firstPortProbe": "Initial container exposed loopback-only DevTools and CDP connect failed (socket hang up); rebuilt with socat relay and confirmed successful Playwright/CDP connection."
         },
@@ -5782,7 +5783,61 @@
       "checksBeforeRun": "Issue #1/6087478045 gelesen; Issue #8 und GM-Roadmap gelesen; origin/active/installed-phase1 fetch/sync PASS; offizieller Obsidian-v1.14.4-amd64 .deb-Digest exakt verifiziert; Docker image build PASS; neuer unabhängiger containerisierter Obsidian-1.14.4-Prozess gestartet; neue CDP-Verbindung und sichtbare Onboardingseite PASS. Noch keine Testkarte im neuen Host geöffnet oder editiert.",
       "startupEvidence": "/workspace/scratch/gm-cloud-qa/evidence-gmux01-fresh-process-20261010/00-new-cloud-process.png",
       "limits": "Eigener Host ist bereit, aber noch keine Testfolge ausgeführt. Native Dateiauswahl/QA-Kartenöffnung ist noch nicht gezeigt; kein Save-/Prozessende-/Reopen-Nachweis. Updater-Zertifikatwarnungen und fehlender D-Bus sind Containerdiagnosen. N-005-R03 bleibt separater, nicht übernommener Kartograph-Auftrag.",
-      "next": "Separaten nativen Dateiauswahlschritt über sichtbare UI ermöglichen; anschließend nur den geplanten Save→Prozessende→frischer Start→Key/Hash-Nachweis durchführen."
+      "status": "paused_not_started_user_handoff_to_obs04",
+      "pauseReason": "Der direkte Nutzerauftrag priorisierte das getrennte OBS-04-Shared-Retestpaket. Kein UI-Schritt aus diesem FreshProcess-Paket wurde ausgeführt; Container und Screenshot bleiben als Hostsetup-Evidenz erhalten.",
+      "next": "Dieses Paket bleibt pausiert/not started. Nur mit eigenem späteren Auftrag fortsetzen."
+    },
+    "latestObs04SharedRetest": {
+      "id": "GM-UX-OBS-04-INTEGRATED-RETEST-HANDOFF-20261010-02",
+      "status": "built_installed_ui_not_started",
+      "owner": "Cloud-GM-Produkttester",
+      "branch": "active/installed-phase1",
+      "sharedHead": "77c4f1da8675b733f4ca3a323177c2a1e819497f",
+      "productMerge": "734a7b9c5714acf2ca5aa0395d9706594a5d4ecd",
+      "integratedProductSource": "eefbe6f505f0158ec6156c2eaf359fbf19b24a0e",
+      "preRunIssueComment": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/8#issuecomment-6093867208",
+      "preUiIssueComment": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/8#issuecomment-6093881561",
+      "scope": "Ausschließlich fünf sichtbare OBS-04 Kriterien: Raum-12-Körper im Geschoss 1 -> Inspector/Text öffnen; Button -> gespeicherter unveränderter Key; Karte erneut öffnen und Raum-12-Label -> derselbe Key direkt; kein ungefragter Keytext in der Karte; isolierte QA-Kartendatei SHA-256 vor/nach unverändert. Kein Produktcode, keine Nutzerkarte, kein FreshProcess-/N-005-/N-006-Replay.",
+      "coordination": {
+        "issue1DocumentationContract": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1#issuecomment-6087478045",
+        "issue8Ownership": "#8 gelesen; integrierter OBS-04 Vorläufer 6093766868 bleibt erhalten; kein fremder aktiver OBS-04-UI-Besitzer gefunden.",
+        "issue12": "Gesamtprodukt-/E2E-Koordination gelesen; dieses Paket beansprucht kein E2E-Gate.",
+        "remote": "git fetch origin --prune; origin/active/installed-phase1 = 77c4f1da8675b733f4ca3a323177c2a1e819497f.",
+        "freshProcess": "GM-UX-01-D-FRESH-PROCESS-20261010-01 bleibt paused/not started; kein UI-Schritt daraus ausgeführt."
+      },
+      "build": {
+        "command": "npm run build",
+        "buildCommit": "77c4f1da8675b733f4ca3a323177c2a1e819497f",
+        "worktree": "/workspace/scratch/gm-cloud-qa/obs04-shared-build",
+        "result": "PASS; dirty:false; sourceRevision exakt 77c4f1da8675b733f4ca3a323177c2a1e819497f",
+        "mainJsSha256": "522823730ddce4d0ba83e0476f60887b60a07c517f84e8e270814b6d597efa43",
+        "stylesCssSha256": "a6d31c13219d4b9f49d2ecf6993106bedef2a33560c9bdfdb93106659d45bc2e",
+        "manifestJsonSha256": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64",
+        "productFilesSinceIntegratedProductSource": "Keine; git diff eefbe6f..77c4f1d für Produkt-/Builddateien leer."
+      },
+      "host": {
+        "containerId": "4047ad84db9e5e527d70c7a59f150ea430c6137f941f2d4d8a90e36f1c8134b0",
+        "profile": "/workspace/scratch/gm-cloud-qa/fresh-process-20261010/profile",
+        "vault": "/workspace/scratch/gm-cloud-qa/fresh-process-20261010/vault",
+        "cdp": "http://127.0.0.1:9230",
+        "obsidianVersion": "1.14.4",
+        "electronVersion": "43.7.7",
+        "windowBeforeOpen": "800x650 CSS px; DPR 1; sichtbares frisches Onboarding, Vault noch nicht geöffnet.",
+        "pluginTripletBeforeUi": "Im isolierten Testvault vorhanden; main.js/styles.css/manifest.json stimmen bytegenau mit dem sauberen Build auf 77c4f1d überein.",
+        "communityPlugins": "[\"dungeon-editor\"]",
+        "restrictedMode": false
+      },
+      "qaCard": {
+        "path": "/workspace/scratch/gm-cloud-qa/fresh-process-20261010/vault/_QA-GM-UX-01-C-RESTORE-20261009/Nebelwacht-Improvisation.dungeon",
+        "sha256BeforeUi": "6779ca9d4c39564a80c453dbfd9de33a09363cda43fed1176708a1273c450279",
+        "sourceAndUserVaults": "Nur bytegleiche Kopie in isoliertem QA-Vault; kein Nutzer-Vault angefasst."
+      },
+      "preUiEvidence": "/workspace/scratch/gm-cloud-qa/evidence-obs04-shared-retest-20261010/00-pre-open-vault-0.png",
+      "checksBeforeUi": "Issue #1/6087478045, #8, #12, aktuelle #8 Claims und origin/active/installed-phase1 geprüft; sauberer Shared-Worktree-Build PASS/dirty:false; installed triplet hashes PASS; QA file pre-hash PASS; neues Obsidian-Onboarding sichtbar, aber QA-Vault/Karte noch nicht geöffnet.",
+      "filesChanged": ["checkpoint.json", "ROADMAP-GM-PRODUCT-TESTING-PLAN.md"],
+      "tests": "Keine Produktsuite ausgeführt. UI-Test nicht gestartet.",
+      "limits": "Die fünf UI-Kriterien, Plugin-Ladung im geöffneten Vault, Nachhash und neue Lauf-Rohbilder sind nicht nachgewiesen. Kein FreshProcess, keine physische Eingabe, keine Produktlatenz, keine PlayerProjection, kein E2E-/Gesamtfreigabenachweis.",
+      "next": "Nur den isolierten QA-Vault sichtbar öffnen, Pluginladung und 1440x1000 Arbeitslayout dokumentieren, dann die fünf vereinbarten Schritte einmal durchführen und Datei-/Texthash vor/nach vergleichen."
     }
   }
 }
