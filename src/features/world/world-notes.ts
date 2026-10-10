@@ -95,6 +95,26 @@ export function emptyWorldNotes(context: CampaignContextProjection): WorldNotesS
   return immutable({ version: 1, campaignId: context.campaignId,
     namespace: context.namespace, revision: 1, records: [] });
 }
+/** Canonical native record validation; cross-record relation closure is checked by the snapshot. */
+export function worldNoteDocument(value: WorldNoteV1): WorldNoteV1 {
+  campaignLocalId(value.id);
+  positive(value.revision);
+  if (value.version !== 1 || typeof value.deleted !== "boolean")
+    throw new Error("Ungültiger World-Eintrag.");
+  const checkedDraft = draft(value);
+  if (value.deleted && checkedDraft.relations.length)
+    throw new Error("Gelöschter Eintrag besitzt Beziehungen.");
+  return immutable({
+    version: 1,
+    id: value.id,
+    revision: value.revision,
+    ...checkedDraft,
+    deleted: value.deleted,
+  });
+}
+export function serializeWorldNote(value: WorldNoteV1): string {
+  return JSON.stringify(worldNoteDocument(value), null, 2) + "\n";
+}
 export function worldNotesSnapshot(value: WorldNotesSnapshotV1): WorldNotesSnapshotV1 {
   validate(value);
   return immutable({ ...value, records: value.records.map((record) => ({ ...record,
