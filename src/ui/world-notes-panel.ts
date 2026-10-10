@@ -51,7 +51,7 @@ export class WorldNotesPanel {
         if (this.busy || !this.snapshot) return;
         if (this.pending) { this.message("Erst den offenen Entwurf speichern oder ausdrücklich verwerfen.", true); return; }
         this.pending = { id: options.newId(), draft: blank(kind), create: true, baseRevision: null };
-        this.renderEditor();
+        this.renderEditor(true);
       });
       actions.append(button);
     }
@@ -134,12 +134,12 @@ export class WorldNotesPanel {
           readAloud: record.readAloud, gmNotes: record.gmNotes, creatureId: record.creatureId,
           relations: record.relations.map((relation) => ({ ...relation })) }, create: false,
           baseRevision: record.revision };
-        this.renderEditor();
+        this.renderEditor(true);
       });
       row.append(button); this.list.append(row);
     }
   }
-  private renderEditor(): void {
+  private renderEditor(focusName = false): void {
     this.editor.replaceChildren();
     const pending = this.pending, snapshot = this.snapshot;
     if (!pending || !snapshot) return;
@@ -208,7 +208,7 @@ export class WorldNotesPanel {
       }
       this.pending = null;
       this.retainedDrafts.delete(this.draftKey(snapshot));
-      this.message("Entwurf verworfen"); this.renderEditor();
+      this.message("Entwurf verworfen"); this.renderEditor(); this.search.focus();
     });
     form.addEventListener("submit", (event) => {
       event.preventDefault();
@@ -235,6 +235,7 @@ export class WorldNotesPanel {
       });
     }
     this.editor.append(form);
+    if (focusName) name.focus();
   }
   private async commit(change: WorldNoteChange, before: WorldNotesSnapshotV1): Promise<void> {
     this.busy = true; this.message("Speichern läuft");
@@ -249,6 +250,8 @@ export class WorldNotesPanel {
       this.pending = null; this.message("Gespeichert");
       this.retainedDrafts.delete(this.draftKey(confirmed));
       this.renderList(); this.renderEditor();
+      (Array.from(this.list.querySelectorAll<HTMLButtonElement>("button"))
+        .find((button) => button.dataset.worldId === change.id) ?? this.search).focus();
     } catch (error) {
       if (!this.destroyed && stamp === this.generation) {
         this.message(`Speicherung nicht bestätigt: ${String(error)}`, true);

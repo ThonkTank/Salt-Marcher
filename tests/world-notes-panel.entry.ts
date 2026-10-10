@@ -16,6 +16,10 @@ const tick = () => new Promise<void>((resolve) => setImmediate(resolve));
 function fixture() {
   const { document, window } = parseHTML("<html><body><div id='host'></div></body></html>");
   const host = document.querySelector<HTMLElement>("#host")!;
+  let focused: HTMLElement | null = null;
+  Object.defineProperty(window.HTMLElement.prototype, "focus", {
+    configurable: true, value: function (this: HTMLElement) { focused = this; },
+  });
   let snapshot = emptyWorldNotes(context), nextId = 10;
   const calls: { change: WorldNoteChange; expected: number }[] = [];
   let refuse = false;
@@ -48,11 +52,24 @@ function fixture() {
     host.querySelector("form")!.dispatchEvent(new window.Event("submit", { bubbles: true, cancelable: true }));
     await tick();
   };
-  return { host, panel, click, input, save, calls, snapshot: () => snapshot,
+  return { host, panel, click, input, save, calls, focused: () => focused, snapshot: () => snapshot,
     setSnapshot: (value: typeof snapshot) => { snapshot = value; panel.update(value); },
     substitute: (value: typeof substitute) => { substitute = value; },
     refuse: (value: boolean) => { refuse = value; }, window };
 }
+
+test("keyboard focus moves into a new editor and returns after save or discard", async () => {
+  const f = fixture();
+  f.click("NPC anlegen");
+  assert.equal(f.focused(), f.host.querySelector("form input"));
+  f.input("Name", "Älva"); await f.save();
+  assert.equal(f.focused()?.textContent, "NPC: Älva");
+  f.click("NPC: Älva");
+  assert.equal(f.focused(), f.host.querySelector("form input"));
+  f.click("Entwurf verwerfen"); f.click("Verwerfen bestätigen");
+  assert.equal(f.focused(), f.host.querySelector('input[type="search"]'));
+  f.panel.destroy();
+});
 
 test("GM creates, searches, edits and reopens exact authored prose through confirmed snapshots", async () => {
   const f = fixture();
