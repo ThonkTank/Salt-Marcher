@@ -45,6 +45,7 @@ import {
   serializeWorldNote,
 } from "../../src/features/world/world-notes";
 import { worldNotePath } from "../../src/features/campaign/world-notes-commit";
+import { WorldNotesNativeSession } from "../../src/ui/world-notes-native-session";
 
 const root = "tests/fixtures/atlas-e2e-spatial-v2/";
 const fixture = JSON.parse(readFileSync(root + "manifest.json", "utf8"));
@@ -368,6 +369,33 @@ test("World Notes save acknowledgment retains the active Campaign Context throug
     .registry.owners.some((owner) => owner.ownerId === "world-notes"));
   current = false;
   f.services.close();
+});
+
+test("native World Notes session rolls back late failure, retries, and reads confirmed bytes afresh", async () => {
+  const f = await liveNavigation(), context = f.services.provider.currentContext()!,
+    storage = { list: async () => [{ path: campaignPath, bytes: f.store.files.get(campaignPath)! }] },
+    session = new WorldNotesNativeSession(f.services, storage, f.store, sha, f.store, context),
+    before = await session.open(),
+    change = { kind: "create" as const, id: campaignLocalId(id(950)),
+      draft: { kind: "npc" as const, title: "Maris", readAloud: "Eine Reisende.",
+        gmNotes: "Kennt den Hafen.", relations: [], creatureId: null } },
+    journal = campaignPath.replace(/\.campaign\.json$/, ".world-notes.journal");
+  assert.deepEqual(before, emptyWorldNotes(context));
+  f.store.failCommittedJournalOnce = journal;
+  await assert.rejects(session.commit(campaignCommandId(id(951)), change, before.revision),
+    /committed journal CAS failed/);
+  assert.deepEqual(f.services.provider.currentContext(), context);
+  assert.equal(f.store.files.get(campaignPath), inputManifest);
+  assert.equal(f.store.files.has(worldNotePath(context.namespace, "npc", change.id)), false);
+  assert.equal(f.store.files.has(journal), false);
+
+  const result = await session.commit(campaignCommandId(id(952)), change, before.revision);
+  session.validateReceipt(result.receipt);
+  assert.equal(result.snapshot.records[0]?.title, "Maris");
+  assert.deepEqual(f.services.provider.currentContext(), context);
+  const fresh = new WorldNotesNativeSession(f.services, storage, f.store, sha, f.store, context);
+  assert.deepEqual(await fresh.open(), result.snapshot);
+  fresh.close(); session.close(); f.services.close();
 });
 
 test("World Notes prepared acknowledgment cancels cleanly after FileTransaction rollback", async () => {

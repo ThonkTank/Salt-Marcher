@@ -58,6 +58,7 @@ import { ATLAS_VIEW, AtlasView, CreateAtlasModal } from "./ui/atlas-view";
 import { atlasCampaignServices } from "./ui/atlas-campaign-services";
 import { VaultCampaignRuntimeStorage } from "./vault-campaign-runtime-source";
 import { VaultMwsImportMediaFiles } from "./vault-mws-import-media";
+import { WORLD_NOTES_VIEW, WorldNotesView } from "./ui/world-notes-view";
 
 export interface OpenMap {
   session: Session;
@@ -275,6 +276,7 @@ export default class DungeonPlugin extends Plugin {
     this.registerView(ROOM_VIEW, (leaf) => new DungeonRoomView(leaf, this));
     this.registerView(CREATURE_CATALOG_VIEW, (leaf) => new CreatureCatalogView(leaf, this));
     this.registerView(ATLAS_VIEW, (leaf) => new AtlasView(leaf, this.atlasCampaigns()));
+    this.registerView(WORLD_NOTES_VIEW, (leaf) => new WorldNotesView(leaf, this.atlasCampaigns()));
     this.registerObsidianProtocolHandler("dungeon-room", (params) => {
       void this.openRoomLink(params).catch((error) => new Notice(String(error)));
     });
@@ -302,6 +304,11 @@ export default class DungeonPlugin extends Plugin {
         if (!(file instanceof TFile)) throw new Error("Gespeicherte Atlasdatei nicht gefunden.");
         await this.app.workspace.getLeaf(false).openFile(file);
       }).open(),
+    });
+    this.addCommand({
+      id: "open-world-notes",
+      name: "Kampagnenwissen öffnen",
+      callback: () => void this.openWorldNotes().catch((error) => new Notice(String(error))),
     });
     this.addCommand({
       id: "manage-dungeon-assets",
@@ -482,6 +489,12 @@ export default class DungeonPlugin extends Plugin {
     if (!this.creatureCatalogOpen)
       this.creatureCatalogOpen = createUniqueCatalogOpener(this.app.workspace, CREATURE_CATALOG_VIEW);
     await this.creatureCatalogOpen();
+  }
+  async openWorldNotes(): Promise<void> {
+    const leaf = this.app.workspace.getRightLeaf(false) ??
+      this.app.workspace.getLeaf("split", "vertical");
+    await leaf.setViewState({ type: WORLD_NOTES_VIEW, active: true });
+    this.app.workspace.revealLeaf(leaf);
   }
   async openRoomKey(path: string, roomId: string, sectionId?: string, anchor?: string): Promise<void> {
     for (const type of [VIEW, PENDING_VIEW])
