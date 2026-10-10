@@ -570,7 +570,7 @@
       "review": "R01 on exact 8c5c5680054b8dddd89900733ac7bbfe966876f1 required seven repairs (Issue #1 comment 6085178049). N01-R01 on exact 01a02ef124e3ffc02b626019f89f5e216612f7ab required S01 cycle/schema repairs (Issue #1 comment 6085248851). N02-R01 on exact 3b7e5c933a107da6f406aa44037decf316d09b77 found a variable-rarity schema gap (Issue #1 comment 6085306351). N03-R01 PASSED exact 679d432e145bd9afe766393346e4b788931886ea with no remaining mandatory plan finding (Issue #1 comment 6085341786). This approves planning only; S01 and I01 are undelivered."
     },
     "ce02I02Source": {
-      "run": "CE-02-I02-S01-W27",
+      "run": "CE-02-I02-S01-W28",
       "state": "source_checked_independent_review_pending_incomplete",
       "sourceDocument": "https://media.wizards.com/2023/downloads/dnd/SRD_CC_v5.1.pdf",
       "sourceSha256": "2504d2a0abb0a4d491a939be4f17910a2dde0312570ab8d208080225ccf0a1f0",
@@ -616,7 +616,7 @@
         "Armor, +1, +2, or +3 captured as exact A–Z ordinal 8 with occurrence-bound full header/prose, explicit not-required attunement and ordered +1/+2/+3 mappings to rare/very-rare/legendary",
         "Armor of Invulnerability captured as exact A–Z ordinal 9 with occurrence-bound full header/prose, fixed legendary rarity and required attunement",
         "explicit first-occurrence Potion-of-Healing detail merge with complete no-attunement header, variable rarity and four occurrence-bound variants",
-        "real-PDF evidence for 282 occurrence labels, 1171 structured or sourced-description facts, dedicated Apparatus, Armor +1/+2/+3 and Armor of Invulnerability gates, the Potion-of-Healing merge/header/four-row table, 13 bounded Armor rows, 37 bounded Weapons rows, 99 bounded Adventuring Gear rows, 35 bounded Tools rows, 8 bounded Mounts rows, 14 bounded Tack rows, 6 bounded Waterborne rows, 21 helper dispositions and one cross-reference with two facts",
+        "real-PDF evidence for 290 occurrence labels, 1206 structured or sourced-description facts, dedicated Apparatus, Armor +1/+2/+3 and Armor of Invulnerability gates, the Potion-of-Healing merge/header/four-row table, 13 bounded Armor rows, 37 bounded Weapons rows, 99 bounded Adventuring Gear rows, 35 bounded Tools rows, 8 bounded Mounts rows, 14 bounded Tack rows, 6 bounded Waterborne rows, 21 helper dispositions and one cross-reference with two facts",
         "Armor, Weapons, two-column Adventuring Gear, right-column Tools, split-page Mounts, left-column Tack and Waterborne same-row bounded-cell rejection, Potion merge identity/ordering/source/variant rejection, Spear, Blowgun, Sling, Net, Adventuring Gear omissions/grouping, Equipment Pack ordering/content, Tools ordering/categories/optional weights/punctuation, Mount ordering/structured facts/helper expansion, Barding formula/source expansion, missing Stabling weight, Waterborne fractional mph/Rowboat weight and no-invented-cross-reference-identity goldens",
         "Animated Shield, Apparatus, Armor +1/+2/+3 and Armor of Invulnerability identity/page/ordinal/header/rarity/attunement/prose rejection, ordered Armor variant rejection and Apparatus lever-table row/cell-order rejection",
         "fail-closed incomplete-package gate",
@@ -629,93 +629,76 @@
         "Complete D-section A–Z48–62 on physical/printed pages215–220: all fifteen headers/prose/conditional rules and page continuations;33 Illusions table rows,22 Many Things table rows with13-vs22 footnote, all22 complete card rules and embedded Avatar of Death statblock, ten Dragon resistance cells in five paired physical rows, conditional dwarf attunement. One occurrence per item, no new card/Avatar/dragon variants or merges. Whole-heading PDF/XML/schema/identity gates pass; all complete flags false, no Item product activation."
       ],
       "verification": {
-        "sourceRevision": "b02925c87f07e882919348521d380f54a8b4f6b4+working-source-changes",
+        "sourceRevision": "aa7e7dedd4a2bd479618e75c7adf9c33269eb082+working-source-changes",
         "sourceHashes": {
           "attribution": "f66d55442488e79895501fc0fcd7b2bb62deb2bd6e589e0fffb5f5932ed5b767",
-          "inventory": "c325ceabb98b9c79a0f03ceeefeb4a6c54cd072c45f9fdc77abeee839f6f1034",
-          "manifest": "96916d4976ff129c9fe07af2f3d8c9811f3b51a9c4accb61bbcfecb5488ef3e2",
+          "inventory": "0a7bf9accdb0b5643441a066421fef25e0924525bf27d7fb26575d14631af5da",
+          "manifest": "9442ab3591f59a66a620de2893bc622b88325c3bb0b839e34d4bf6f83dd2981c",
           "schema": "f34513e5c8921edecdfc270889a1948330837470fe108fcda92d2fea7d75f50f",
-          "transcript": "cd308b70eb92237a238c5a19c78c8adda38a12a8202d7a750102a29cb004ec30"
+          "transcript": "92de9b88756d0249e2ab8c0dbb5cdc25a8b365fc2a43e7cebf7f23a4818b5dc0"
         },
         "occurrences": {
-          "checked": 282
+          "checked": 290
         },
-        "records": 281,
-        "transcriptFacts": 1171,
-        "magicItemAzDSection": {
+        "records": 289,
+        "transcriptFacts": 1206,
+        "magicItemAzESection": {
           "ordinals": [
-            48,
-            49,
-            50,
-            51,
-            52,
-            53,
-            54,
-            55,
-            56,
-            57,
-            58,
-            59,
-            60,
-            61,
-            62
+            63,
+            64,
+            65,
+            66,
+            67,
+            68,
+            69,
+            70
           ],
-          "records": 15,
+          "records": 8,
           "pages": [
-            215,
-            216,
-            217,
-            218,
-            219,
-            220
+            220,
+            221
           ],
-          "illusionTableRows": 33,
-          "manyThingsTableRows": 22,
-          "manyThingsCardRules": 22,
-          "embeddedAvatarStatblocks": 1,
-          "dragonResistanceCells": 10
+          "efreetiEffectRows": 3,
+          "elementalGemRows": 4
         },
         "pdf": {
-          "records": 15,
-          "illusionTableRows": 33,
-          "manyThingsTableRows": 22,
-          "manyThingsCardRules": 22,
-          "embeddedAvatarStatblocks": 1,
-          "dragonResistanceCells": 10,
+          "records": 8,
+          "efreetiEffectRows": 3,
+          "elementalGemRows": 4,
           "derivedHeadingCount": 239,
-          "scope": "complete-heading-stream-with-owned-tables-all-card-rules-embedded-statblock-and-page-continuations"
+          "scope": "complete-heading-stream-with-owned-roll-gem-tables-conditional-rules-and-page-continuation"
         },
         "focusedTests": {
-          "command": "SRD51_SOURCE_PDF=/tmp/SRD_CC_v5.1.pdf node --test --test-concurrency=1 tests/items-srd51-source.test.mjs tests/items-srd51-bags.test.mjs tests/items-srd51-b-section.test.mjs tests/items-srd51-c-section.test.mjs tests/items-srd51-d-section.test.mjs",
-          "passed": 168,
+          "command": "SRD51_SOURCE_PDF=/tmp/SRD_CC_v5.1.pdf node --test --test-concurrency=1 tests/items-srd51-source.test.mjs tests/items-srd51-bags.test.mjs tests/items-srd51-b-section.test.mjs tests/items-srd51-c-section.test.mjs tests/items-srd51-d-section.test.mjs tests/items-srd51-e-section.test.mjs",
+          "passed": 191,
           "failed": 0,
           "skipped": 0
         },
         "repositoryStructure": "passed",
         "repositoryTests": {
-          "passed": 27,
+          "passed": 28,
           "failed": 0,
           "skipped": 0
         },
-        "basisChecks": "Offline source/tool package: source/schema/real-PDF/focused regressions/repo/diff/retention checks. Full type/test/build supplied separately by Exact-SHA CI after publication, not claimed before observation. No local unrelated fullsuite or GUI run.",
+        "basisChecks": "Offline source/tool checks: real-PDF/source/schema/hash/identity/focused regressions/repo/diff/retention. Full type/test/build only from subsequently observed Exact-SHA CI; no local unrelated fullsuite or GUI execution.",
         "toolchain": {
           "node": "official Node22.22.2",
           "poppler": "pdftohtml/pdftotext25.03.0",
           "pdfPath": "/tmp/SRD_CC_v5.1.pdf",
           "pdfSha256": "2504d2a0abb0a4d491a939be4f17910a2dde0312570ab8d208080225ccf0a1f0",
-          "xmlPath": "tests/fixtures/items-srd51-d-section-poppler-25.03.xml",
-          "xmlSha256": "e98d58f51a63730f5be255a237c4e61da4776ca3e29e3300cc767d09a8f9f924",
-          "xmlBytes": 93286
+          "xmlPath": "tests/fixtures/items-srd51-e-section-poppler-25.03.xml",
+          "xmlSha256": "a2213f5b16d9f1fd64bb96ef06ee9c0070e21fd6d400764971bc3641d4f14780",
+          "xmlBytes": 29679
         },
         "transcriptRecords": {
-          "checked": 281
+          "checked": 289
         },
         "structuredAndDescriptionFacts": {
-          "checked": 1171
+          "checked": 1206
         },
-        "incompleteGate": "default verifier rejects incomplete S01; allow-incomplete verifies captured source only"
+        "incompleteGate": "Default rejects incomplete source; allow-incomplete validates captured corpus only"
       },
-      "limits": "Partial fullS01:176 A–Z headings plus Orb, all362 magic helper dispositions, remaining goldens and independent complete S01-R01 open. Independent W27 source review/regular integration pending; Item artifact/provider/UI/I01 blocked, no installed host/GUI/physical/E2E/Encounter runtime approval. D&D2014 only.",
+      "limits": "Partial fullS01:168 A–Z headings plus Orb, all362 magic helper dispositions, remaining goldens and independent complete S01-R01 open. Independent W28 source review/regular integration pending; Item artifact/provider/UI/I01 closed. No installed-host/GUI/physical/E2E/Encounter runtime approval; D&D2014 only.",
       "magicItemAzArmorArrowsEvidence": "A–Z ordinals 10–13 on physical/printed pages 208–209 preserve complete headers and prose, vulnerability curse, slaying rules and ten ordered die-bound resistance choices. Full heading-bounded XML text and physical two-column table order are checked, not merely substring presence.",
       "repairReview": {
         "state": "PASS",
@@ -799,7 +782,27 @@
         },
         "producerReceipt": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/58#issuecomment-6101473813"
       },
-      "magicItemAzDSectionEvidence": "Complete D-section A–Z48–62 on physical/printed pages215–220: all fifteen headers/prose/conditional rules and page continuations;33 Illusions table rows,22 Many Things table rows with13-vs22 footnote, all22 complete card rules and embedded Avatar of Death statblock, ten Dragon resistance cells in five paired physical rows, conditional dwarf attunement. One occurrence per item, no new card/Avatar/dragon variants or merges. Whole-heading PDF/XML/schema/identity gates pass; all complete flags false, no Item product activation."
+      "magicItemAzDSectionEvidence": "Complete D-section A–Z48–62 on physical/printed pages215–220: all fifteen headers/prose/conditional rules and page continuations;33 Illusions table rows,22 Many Things table rows with13-vs22 footnote, all22 complete card rules and embedded Avatar of Death statblock, ten Dragon resistance cells in five paired physical rows, conditional dwarf attunement. One occurrence per item, no new card/Avatar/dragon variants or merges. Whole-heading PDF/XML/schema/identity gates pass; all complete flags false, no Item product activation.",
+      "w27Review": {
+        "state": "PASS",
+        "reviewedCommit": "dc6aedfa1bbe542d4ed887607c1963424c86cbd0",
+        "issue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/70#pullrequestreview-5480792943",
+        "scope": "Independent Cloud-Fortschritt complete15-item original PDF review;168/168 real-PDF focused tests. Existing external evidence, not this author run or fullS01/product gate."
+      },
+      "w27Integration": {
+        "state": "completed",
+        "sharedCommit": "7ba2bf499765154f8ff8cd7fcef32584b43f94c3",
+        "candidateCommit": "dc6aedfa1bbe542d4ed887607c1963424c86cbd0",
+        "receipt": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/70#issuecomment-6102297681",
+        "sourceReview": {
+          "state": "PASS",
+          "reviewedCommit": "dc6aedfa1bbe542d4ed887607c1963424c86cbd0",
+          "issue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/70#pullrequestreview-5480792943",
+          "scope": "Independent Cloud-Fortschritt complete15-item original PDF review;168/168 real-PDF focused tests. Existing external evidence, not this author run or fullS01/product gate."
+        },
+        "producerReceipt": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/58#issuecomment-6102085304"
+      },
+      "magicItemAzESectionEvidence": "Entire E-section A–Z63–70, Efficient Quiver through Eyes of the Eagle, physical/printed pages220–221: eight complete headers/prose with all capacity, wind, target/sight and recharge conditions; three full Efreeti d100 effects including91–00/fourth opening/limited wishes; four owned Gem→Elemental cells. Eyes of Charming page continuation preserved. No invented item identities, rarity variants, merges or optional numeric facts. Whole-heading PDF/schema/hash gates pass; complete:false and no Item product activation."
     }
   },
   "cityPlans": {
