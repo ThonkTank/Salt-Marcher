@@ -28,6 +28,7 @@ import "./core/atlas-repository.test";
 import "./core/atlas-copy-recovery.test";
 import "./core/location.test";
 import "./core/atlas-location-draft.test";
+import "./core/live-session-contract.test";
 import "./core/city-codec.test";
 import "./core/city-commands.test";
 import "./core/city-edit.test";
