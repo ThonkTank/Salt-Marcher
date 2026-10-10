@@ -81,22 +81,27 @@ module.exports = ({ page, fs, path, assert, crypto, root, vault, out, checks }) 
 
   const aDraft = "A – Entwurf bleibt in seinem Atlas";
   await field().fill(aDraft);
-  // Delay only the delivery of an actual native capture; never synthesize its payload/authority.
-  await page.evaluate((id) => {
+  // Keep a real guarded navigation capture for a later obsolete read. Navigation itself
+  // owns the queue until completion; a second picker operation must not overtake it.
+  await page.evaluate(() => {
     const v = app.workspace.getLeavesOfType("dungeon-native-atlas").at(-1).view;
     const p = window.__hexABA, repo = v.repository, capture = repo.captureNative;
+    repo.captureNative = async function (...args) {
+      const actual = await capture.apply(this, args);
+      repo.captureNative = capture; p.navigationCapture = actual;
+      return actual;
+    };
+  });
+  await location(aid(12));
+  await page.evaluate(() => {
+    const p = window.__hexABA, repo = p.refs[0].state.repository, actual = p.navigationCapture;
+    if (!actual) throw new Error("Actual navigation capture missing");
     let release;
     const gate = new Promise((r) => { release = r; });
     p.release = release;
-    repo.captureNative = async function (...args) {
-      const actual = await capture.apply(this, args);
-      repo.captureNative = capture; p.captureReady = true;
-      await gate; return actual;
-    };
-    p.late = v.campaignHost.navigate({ kind: "location", documentId: id, recordId: id, roomId: null })
+    p.late = (async () => { await gate; await repo.verifyNativeCapture(actual); })()
       .then(() => ({ resolved: true }), (e) => ({ rejected: String(e) }));
-  }, aid(12));
-  await page.waitForFunction(() => window.__hexABA.captureReady);
+  });
   await picker(b.initialOracle.picker.label).click();
   await switched(b.initialOracle.campaignId);
   const second = await snapshot("B fresh activation");
@@ -114,17 +119,17 @@ module.exports = ({ page, fs, path, assert, crypto, root, vault, out, checks }) 
       callback: () => old.callback({ kind: "location", documentId: id, recordId: id, roomId: null }) })) {
       try { await call(); failures[name] = null; } catch (e) { failures[name] = String(e); }
     }
-    p.release(); failures.lateReply = (await p.late).rejected ?? null;
+    p.release(); failures.lateCaptureUse = (await p.late).rejected ?? null;
     return failures;
   }, aid(12));
   for (const [name, value] of Object.entries(obsolete)) assert.ok(value, name + " must be rejected");
   fs.writeFileSync(path.join(out, "obsolete-a.json"), JSON.stringify(obsolete, null, 2));
-  const untouchedB = await snapshot("B after obsolete A callbacks and delayed native reply");
+  const untouchedB = await snapshot("B after obsolete A callbacks and delayed native capture verification");
   assert.equal(untouchedB.token, second.token);
   assert.equal(untouchedB.depth, second.depth);
   assert.deepEqual(untouchedB.camera, second.camera);
   assert.ok(untouchedB.retainedDraftCount >= 1);
-  checks.push("B has independent Context/Repository/Source/History/Renderer; old A lease, Undo/Redo, callback and late native reply are rejected without B camera/history effects");
+  checks.push("B has independent Context/Repository/Source/History/Renderer; old A lease, Undo/Redo, callback and delayed reuse of its actual navigation capture are rejected without B camera/history effects; delayed in-flight navigation/Context ABA remains separately covered by core regression");
 
   await location(b.initialOracle.locationIds[0]);
   assert.equal(await field().inputValue(), b.initialOracle.locationNames[0]);
