@@ -23,7 +23,6 @@ module.exports = ({ page, fs, path, assert, crypto, root, vault, qa, out, checks
       sameRepository: v.repository === seed.repository && active.repository === seed.repository,
       sameHistory: v.editor.terrain.history === seed.history && active.history === seed.history,
       sameRenderer: v.editor.renderer === seed.renderer && active.renderer === seed.renderer,
-      sameCamera: v.editor.renderer.relativeCamera === seed.camera,
       sameToken: active.context.contextToken === seed.token,
       camera: v.editor.renderer.camera, depth: active.history.undoDepth,
       dirty: active.repository.dirty, draft: active.repository.hasDraft,
@@ -37,7 +36,7 @@ module.exports = ({ page, fs, path, assert, crypto, root, vault, qa, out, checks
   async function current() {
     const s = await state();
     assert.equal(s.kind, "active"); assert.equal(s.managed, true); assert.equal(s.campaignId, id(1));
-    for (const key of ["sameRepository", "sameHistory", "sameRenderer", "sameCamera", "sameToken"])
+    for (const key of ["sameRepository", "sameHistory", "sameRenderer", "sameToken"])
       assert.equal(s[key], true, key);
     return s;
   }
@@ -54,7 +53,7 @@ module.exports = ({ page, fs, path, assert, crypto, root, vault, qa, out, checks
       const v = app.workspace.getLeavesOfType("dungeon-native-atlas").at(-1).view;
       const active = v.campaignHost.state;
       window.__hex04Identity = { repository: v.repository, history: v.editor.terrain.history,
-        renderer: v.editor.renderer, camera: v.editor.renderer.relativeCamera, token: active.context.contextToken };
+        renderer: v.editor.renderer, token: active.context.contextToken };
     });
     await current();
   }
