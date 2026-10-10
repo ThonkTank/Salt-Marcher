@@ -25,6 +25,79 @@ function button(host: HTMLElement, name: string) {
     (b) => b.textContent === name,
   )!;
 }
+function focusProbe(document: Document) {
+  const prototype = document.defaultView!.HTMLElement.prototype;
+  const descriptor = Object.getOwnPropertyDescriptor(prototype, "focus");
+  const calls: HTMLElement[] = [];
+  Object.defineProperty(prototype, "focus", {
+    configurable: true,
+    value: function (this: HTMLElement) {
+      calls.push(this);
+    },
+  });
+  return {
+    calls,
+    restore() {
+      if (descriptor) Object.defineProperty(prototype, "focus", descriptor);
+      else delete (prototype as { focus?: unknown }).focus;
+    },
+  };
+}
+test("manual planner UI: successful scene selection focuses the newly rendered title without payload changes", () => {
+  const f = fixture();
+  button(f.host, "Neuer Plan").click();
+  button(f.host, "Szene hinzufügen").click();
+  f.p.editDraft({
+    title: "Hafen",
+    notes: "  日本語\n\tOriginal\n",
+    locationId: null,
+  });
+  button(f.host, "Entwurf übernehmen").click();
+  const firstId = f.p.selectedSceneId;
+  button(f.host, "Szene hinzufügen").click();
+  const before = f.p.active;
+  const probe = focusProbe(f.document);
+  try {
+    button(f.host, "Hafen").click();
+    const title = f.host.querySelector('[aria-label="Szenentitel"]');
+    assert.equal(probe.calls.length, 1);
+    assert.equal(probe.calls[0], title);
+    assert.equal(f.p.selectedSceneId, firstId);
+    assert.equal(f.p.active, before);
+    assert.equal(f.p.draft, null);
+    assert.equal(
+      (f.host.querySelector('[aria-label="Notizen"]') as HTMLTextAreaElement)
+        .value,
+      "  日本語\n\tOriginal\n",
+    );
+  } finally {
+    probe.restore();
+    f.ui.destroy();
+  }
+});
+test("manual planner UI: stale scene selection cannot redirect focus or discard authored text", () => {
+  const f = fixture();
+  button(f.host, "Neuer Plan").click();
+  button(f.host, "Szene hinzufügen").click();
+  const old = button(f.host, "Unbenannte Szene");
+  f.p.editDraft({ title: "Draft", notes: "keep exact", locationId: null });
+  f.p.act(f.p.binding(), { kind: "rename", name: "external revision" });
+  const draft = f.p.draft;
+  const before = f.p.active;
+  const title = f.host.querySelector('[aria-label="Szenentitel"]');
+  const probe = focusProbe(f.document);
+  try {
+    old.click();
+    assert.equal(probe.calls.length, 0);
+    assert.equal(f.p.active, before);
+    assert.equal(f.p.draft, draft);
+    assert.equal(f.host.querySelector('[aria-label="Szenentitel"]'), title);
+    assert.match(f.host.textContent!, /Ansicht geändert/);
+  } finally {
+    probe.restore();
+    f.ui.destroy();
+  }
+});
 test("manual planner UI: no Party/Generator; input focus node retained; old button cannot add into new plan", () => {
   const f = fixture();
   button(f.host, "Neuer Plan").click();

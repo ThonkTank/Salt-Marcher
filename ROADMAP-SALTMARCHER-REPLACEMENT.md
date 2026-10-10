@@ -254,10 +254,13 @@ Ein startbarer synthetischer Browser-GUI-Weg ist im Kandidaten vorbereitet:
 Er nutzt das reale Panel mit ortsloser Blankplanung, Szenen/Notizen/Reihenfolge und Planwechsel.
 [Startanleitung und Grenzen](docs/plans/campaign/manual-session-planner.md#startbarer-flüchtiger-gui-frühtest).
 Memory-only: Neuladen/Schließen verwirft sämtliche Arbeit; keine alternative Speicherung.
-Nächster Beitrag: freier GM-Reviewer prüft Auffindbarkeit/Bedienung im bestehenden #69;
-Stadt konsumiert Befunde sowie später den bestätigten nativen Speicherport.
-Vor größerem Partybudget-/Encounter-/Generatorausbau GM-Befunde konsumieren.
-Native Save/Fresh-/Recoveryabnahme und tatsächliche Browser-/Tastatur-/200%-Prüfung bleiben offen.
+Der [Cloud-GM-Lauf](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/69#issuecomment-6102831310)
+bestätigt den manuellen Bedienweg, fand Fokusverlust bei Szenenauswahl.
+Stadt repariert die Übergabe an das Titelfeld; gezielte DOMregression11/11 PASS.
+Nächster Beitrag: enger unabhängiger Fokus-Deltareview und derselbe sichtbare GM-Retest;
+Stadt konsumiert danach den bestätigten nativen Speicherport.
+Vor größerem Partybudget-/Encounter-/Generatorausbau konkrete GM-Befunde schließen.
+Native Save/Fresh-/Recoveryabnahme, wirksamer 200%-Zoom und physische Tastatur bleiben offen.
 
 ### SMR-07 – Reise, Kalender und autoritative Zeit
 

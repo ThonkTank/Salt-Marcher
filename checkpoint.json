@@ -9882,20 +9882,20 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "MANUAL-PLANNER-GUI-PREVIEW",
+      "id": "MANUAL-PLANNER-GM-FOCUS-N01",
       "issue": 69,
-      "state": "synthetic_gui_ready_for_independent_use",
+      "state": "focus_repair_ready_for_delta_review_and_browser_retest",
       "branch": "city/manual-session-planner",
       "plan": "docs/plans/campaign/manual-session-planner.md",
-      "next": "Independent free GM use of startable browser preview; consume Campaign/Data native storage port in same package",
+      "next": "Existing independent reviewer checks focus delta; same Cloud-GM repeats scene selection/Tab; native Campaign port still missing",
       "verification": {
-        "bundleSmoke": "PASS: actual generated bundle blank/create/exact notes/second plan/memory-only notice",
-        "typecheck": "PASS",
-        "repository": "PASS",
-        "browserAndNativeHost": "not run"
+        "before": "success-focus FAIL; stale-no-focus PASS",
+        "after": "11/11 Panel DOM PASS, type/repo/diff PASS, preview rebuild PASS",
+        "nativeAndBrowserRetest": "not run"
       },
       "priorCoreReview": "Atomic Add PASS5480881955 on ca25844; existing Core/Refresh PASS retained",
-      "limits": "No Campaign writer/plugin activation; no durable persistence/Recovery/Fresh/GM acceptance"
+      "limits": "No Campaign writer/plugin activation; no durable persistence/Recovery/Fresh/GM acceptance",
+      "gmFinding": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/69#issuecomment-6102831310"
     },
     "nextRun": {
       "id": "MANUAL-PLANNER-I01-CONSUME",

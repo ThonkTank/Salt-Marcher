@@ -24,11 +24,17 @@ export class ManualPlannerPanel {
     host.append(this.root);
     this.render();
   }
-  private run(action: () => void): void {
+  private run(action: () => void, focusSceneTitle = false): void {
     if (this.destroyed) return;
     try {
       action();
       this.render();
+      // Scene buttons are replaced by render. Hand successful selection to the
+      // editor; stale/failed actions never render or redirect keyboard focus.
+      if (focusSceneTitle)
+        this.root
+          .querySelector<HTMLInputElement>('[aria-label="Szenentitel"]')
+          ?.focus();
     } catch (e) {
       this.status.textContent =
         e instanceof Error
@@ -59,6 +65,7 @@ export class ManualPlannerPanel {
     text: string,
     action: () => void,
     disabled = false,
+    focusSceneTitle = false,
   ): void {
     const b = this.root.ownerDocument.createElement("button");
     b.type = "button";
@@ -69,7 +76,7 @@ export class ManualPlannerPanel {
       this.run(() => {
         assertDisplayed();
         action();
-      }),
+      }, focusSceneTitle),
     );
     parent.append(b);
   }
@@ -154,8 +161,12 @@ export class ManualPlannerPanel {
       for (const s of plan.scenes) {
         const li = doc.createElement("li");
         li.dataset.sceneId = s.id;
-        this.button(li, s.title || "Unbenannte Szene", () =>
-          this.planner.selectScene(s.id),
+        this.button(
+          li,
+          s.title || "Unbenannte Szene",
+          () => this.planner.selectScene(s.id),
+          false,
+          true,
         );
         list.append(li);
       }
