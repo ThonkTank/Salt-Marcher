@@ -140,6 +140,18 @@
       "limits": "R02 and the p01-v3 contract passed their separate reviews. H02 remains No-Go; no native helper, complete fault matrix, executable H03 proof, Linux durability Go, platform decision or P02 authorization exists. Windows and macOS remain not-run.",
       "review": "R01 passed a9de899 but later independent rechecks found three mandatory gaps (Issue #1 comments 6084665817, 6084697489). R02 repaired those and two follow-up matrix/oracle findings. Independent read-only R02 re-review passed exact shared head 25885d543c8576a3ae1d0556e7b04a51d40209c7. The first contract candidate e95f3eba325b3aa55620d39a617074ede425405d failed review. Its replacement on exact candidate f8fcdc1b2eacbfb17c7c5603f6c15cfd89c4296d passed independent read-only contract re-review after one repair. I02 plan R01 through R03 failed and independent R04 passed exact N03 candidate c9f05806c94a1900ab276940730cae24ee94850f. Code/Security R01 on implementation candidate 1cb104f105441f78a796c2e1daea74ccbde3196c requires repair: it validates matrix composition and one durable create primitive but does not implement Parent/Child receipt generations, Create/Update/Delete state machines, conflict/rollback/fresh double recovery, live 3,393-cell execution, eleven adversaries, complete identity and errno oracles, runtime/byte/process limits or adversarial tests. Status claims remain correctly fail-closed."
     },
+    "adrP02I01": {
+      "date": "2026-10-10",
+      "state": "linux_candidate_review_passed_no_go",
+      "issue": 41,
+      "candidateBranch": "codex/adr-p02-i01",
+      "contract": "tools/adr-prototypes/contracts/p02-v1/contract.mjs",
+      "aggregate": "tools/adr-prototypes/evidence/p02-aggregate.json",
+      "aggregateDigest": "272c3a0dab5fa624d2d2edc55827dfdc69cc347eb5f5e15dc73cd3bb95c3d74f",
+      "verification": "Linux x64 Node v22.22.2: 80 fresh profiles across eight hard-process fault points; zero mixed truth, duplicate history, sentinel mutation or blind retry. Safe-write p95 119.532 ms and crash-resume p95 724.015 ms. Three two-process races, same-process backup coordination and crash-lock recovery pass; the rebased complete repository suite has 503 passing and one platform-skipped test, including adversarial verification of fixed budgets and raw-case-to-aggregate evidence binding.",
+      "review": "Two independent local reviews found and drove repairs for retry authority, receipt binding, concurrency, closure, backup publication and crash-lock recovery. Final code/safety re-review passed with no remaining mandatory code finding; exact-source evidence and status were regenerated afterward.",
+      "limits": "Synthetic single-Campaign Linux proof only. Windows and macOS matrices, platform selection, product Campaign activation, P03/P04/C01 and all product acceptance remain open; no P02 Go is claimed."
+    },
     "open": [
       "Replacement architecture hypothesis after ADR-P01 No-Go; ADR-P02 through ADR-P04 and ADR-C01 remain blocked",
       "All SMR-01 through SMR-11 implementation, review, repair and cleanup gates",
