@@ -5042,20 +5042,15 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "HOST-RECEIPT-I01",
-      "kind": "technical_implementation",
+      "id": "HOST-RECEIPT-CLEAN-P01",
+      "kind": "cleanup_plan",
       "status": "complete",
-      "focus": "Write native QA result despite shutdown failure; retain main and shutdown failures",
-      "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md#host-receipt-p01--ergebnis-bei-fehlgeschlagenem-prozessabschluss-erhalten",
-      "checks": {
-        "focused": "11/11 PASS",
-        "suite": "454/454 PASS",
-        "typecheck": "PASS",
-        "syntax": "PASS",
-        "diff": "PASS"
-      },
-      "nativeRun": false,
-      "independentReview": "pending"
+      "focus": "Inventory and retain direct owner evidence; no deletable own artifacts",
+      "plan": "/home/aaron/.cache/dungeon-native-qa/city-host-shutdown-cleanup/plan.json",
+      "planSha256": "ffa179f163ad13f554ab4c9743653c794ccbc285ebb4ed29e1c0624d58032457",
+      "reviewedSource": "d94d41bb244a218986ff28c4b38c3684336d00f5",
+      "independentReview": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/47#issuecomment-6099483690",
+      "nextStep": "Separate cleanup implementation, then cleanup review"
     },
     "nextRun": {
       "id": "E2E-01-CAMPAIGN-SAVE-ACK-INTEGRATION-R01",
