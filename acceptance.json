@@ -153183,10 +153183,10 @@
           },
           "componentContract": "City UI consumes readonly labelled AtlasNavigationTarget values and onNavigate(target) callback in current dock. Hex supplies actual native targets, validates current Source/Context/Key guards, owns camera/history/persistence and mounts the component. No City edits to existing AtlasView/Editor/Renderer/Repository, no fake Registry or new view.",
           "state": "qualified_city_component_integrated_own_reviewer_cleanup_I_R_then_visible_host",
-          "gate": "Navigation code/cleanup and City independent code/owner cleanup PASS; City source integrated with actual baseline checks. Hex reviewer cleanup planned only; visible host/native/productive provider/full E2E remain open.",
+          "gate": "Navigation code/cleanup, City component/owner cleanup, productive Campaign provider R03/cleanup and M/W/S scoped R03 PASS consumed; merged check/573 tests/clean build PASS. Own reviewer cleanup planned only; actual visible host/native/full E2E remain open.",
           "confirmedBy": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/7#issuecomment-6094937416",
           "campaignDataSeam": {
-            "state": "actual_provider_I01_R01_requires_fixes_N01_published_R02_handoff_pending",
+            "state": "actual_qualified_provider_R03_and_cleanup_PASS_integrated_visible_host_open",
             "type": "Pick<AtlasCampaignNavigationPorts, \"currentContext\" | \"registry\" | \"inventory\" | \"activate\">",
             "HexOwns": "openNative inert mount and existing AtlasView/Editor/Renderer/Repository integration",
             "requestedSwitch": "Navigator.switchCampaign prepares valid Keys/gestures/draft before calling actual activate; provider UI must not bypass this via direct Lifecycle activation.",
@@ -153194,13 +153194,28 @@
             "ownerClaim": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6095092158",
             "planPR": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/30",
             "actualPlanReviewReport": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6095138217",
-            "codeIntegrated": false,
+            "codeIntegrated": true,
             "codePR": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/31",
-            "actualCodeReviewReport": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/31#issuecomment-6095272204",
-            "actualReviewGate": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6095275766",
+            "actualCodeReviewReport": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/31#issuecomment-6095319224",
+            "actualReviewGate": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6095321012",
             "repairSource": "e0a1db97d76ed0768aaa69b8fb7d088054b2aa99",
             "repairOwnerReport": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6095288823",
-            "mountInvalidationRequirement": "On actual Atlas-only Source change pending and active mount authority must be revoked even if the earlier CampaignContext fields match. Consume only actual qualified N01/R02 owner handoff; verify synchronous invalidation and complete content/policy binding during visible host integration. City UI remains a readonly target consumer with no second authority."
+            "mountInvalidationRequirement": "Independent R03 closes all R01/R02 findings including non-overwritable full-manifest lease, file/record coverage and synchronous invalidation. Visible host must connect actual Provider currentContext=null notification to pending/active mount revocation and safe Navigator switching. City UI remains readonly target consumer; no second authority.",
+            "qualifiedSource": "6433952f3792205d79e92467e245f41ca1a0b29f",
+            "qualifiedOwnerHandoff": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/13#issuecomment-6095347066",
+            "qualifiedOwnerCleanup": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6095346776",
+            "qualifiedOwnerGate": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6095349357",
+            "integrationEvidence": {
+              "state": "PASS_actual_qualified_incoming_sources_integrated",
+              "checkedSource": "930e9667ae4deff6cf531d2a6d1317ac9c2b4947",
+              "consumedShared": "0c100613fdcbb232f07e3eeff23b32c27be4499d",
+              "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/city-ui-i01-r01-20261010/cleanup/p01/qualified-incoming-integration.json",
+              "sha256": "1126762cade52b5adea48b2aeed428df3f33ea072eaac359af6b87cdc5e47a09",
+              "testsPassed": 573,
+              "check": "PASS",
+              "build": "PASS",
+              "cleanExactHeadBuild": true
+            }
           },
           "componentReview": {
             "id": "CITY-UI-I01-R01",
@@ -153315,7 +153330,18 @@
               "sha256": "da7ca52e2510e77b35fbb75bf416d9156c4444e70ab9bf6e149be3fd3384fd94",
               "hostMounted": false,
               "normalDOMRunnerHooked": false,
-              "note": "New Shared GM documentation integrated normally; product/test blobs byte-identical. Standalone focused DOM bundle precedes planned normal runner hookup."
+              "note": "New Shared GM documentation integrated normally; product/test blobs byte-identical. Standalone focused DOM bundle precedes planned normal runner hookup.",
+              "subsequentQualifiedIncomingIntegration": {
+                "state": "PASS_actual_qualified_incoming_sources_integrated",
+                "checkedSource": "930e9667ae4deff6cf531d2a6d1317ac9c2b4947",
+                "consumedShared": "0c100613fdcbb232f07e3eeff23b32c27be4499d",
+                "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/city-ui-i01-r01-20261010/cleanup/p01/qualified-incoming-integration.json",
+                "sha256": "1126762cade52b5adea48b2aeed428df3f33ea072eaac359af6b87cdc5e47a09",
+                "testsPassed": 573,
+                "check": "PASS",
+                "build": "PASS",
+                "cleanExactHeadBuild": true
+              }
             }
           }
         },

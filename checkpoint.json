@@ -848,8 +848,8 @@
       "focus": "Apply only the exact planned old review-copy generated-file/clone-metadata unlinks and single dependency-symlink unlink after hash/protection preflight; retain frozen sources and all actual evidence.",
       "sourcePlan": "/home/aaron/.cache/dungeon-native-qa/hex-03/city-ui-i01-r01-20261010/cleanup/p01/cleanup-plan.json",
       "planSha256": "8e5f293a9528ec57445cb2fe9a7393e66fc09fa0114192e5ddaa00493f6b372a",
-      "dependency": "Own independent City component review and qualified owner cleanup/handoff consumed; new Shared GM documentation and actual City integration checks PASS. No repeated code review/ratification.",
-      "afterPass": "Separate own reviewer CLEAN-R01; then existing visible I01c Atlas host montage and normal runner hookup. Productive provider only after actual qualified N01/R02 handoff.",
+      "dependency": "Own independent City component review and qualified City owner cleanup/handoff consumed. Shared0c10061, productive Campaign provider6433952 R03/cleanup and media325d09c3 scoped R03 integrated normally; actual merged check/573 tests/clean build PASS. No additional provider or general review/ratification prerequisite.",
+      "afterPass": "Separate own reviewer CLEAN-R01; then existing visible I01c Atlas host montage, actual qualified provider/picker wiring and normal City DOM runner hookup.",
       "review": "Reverify retained/deleted hashes, borrowed dependency/Git-object targets, original dirty files and literal foreign roots. This packet does not claim native host/full E2E approval."
     },
     "review": {
@@ -2245,10 +2245,10 @@
           },
           "componentContract": "City UI consumes readonly labelled AtlasNavigationTarget values and onNavigate(target) callback in current dock. Hex supplies actual native targets, validates current Source/Context/Key guards, owns camera/history/persistence and mounts the component. No City edits to existing AtlasView/Editor/Renderer/Repository, no fake Registry or new view.",
           "state": "qualified_city_component_integrated_own_reviewer_cleanup_I_R_then_visible_host",
-          "gate": "Navigation code/cleanup and City independent code/owner cleanup PASS; City source integrated with actual baseline checks. Hex reviewer cleanup planned only; visible host/native/productive provider/full E2E remain open.",
+          "gate": "Navigation code/cleanup, City component/owner cleanup, productive Campaign provider R03/cleanup and M/W/S scoped R03 PASS consumed; merged check/573 tests/clean build PASS. Own reviewer cleanup planned only; actual visible host/native/full E2E remain open.",
           "confirmedBy": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/7#issuecomment-6094937416",
           "campaignDataSeam": {
-            "state": "actual_provider_I01_R01_requires_fixes_N01_published_R02_handoff_pending",
+            "state": "actual_qualified_provider_R03_and_cleanup_PASS_integrated_visible_host_open",
             "type": "Pick<AtlasCampaignNavigationPorts, \"currentContext\" | \"registry\" | \"inventory\" | \"activate\">",
             "HexOwns": "openNative inert mount and existing AtlasView/Editor/Renderer/Repository integration",
             "requestedSwitch": "Navigator.switchCampaign prepares valid Keys/gestures/draft before calling actual activate; provider UI must not bypass this via direct Lifecycle activation.",
@@ -2256,13 +2256,28 @@
             "ownerClaim": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6095092158",
             "planPR": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/30",
             "actualPlanReviewReport": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6095138217",
-            "codeIntegrated": false,
+            "codeIntegrated": true,
             "codePR": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/31",
-            "actualCodeReviewReport": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/31#issuecomment-6095272204",
-            "actualReviewGate": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6095275766",
+            "actualCodeReviewReport": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/31#issuecomment-6095319224",
+            "actualReviewGate": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6095321012",
             "repairSource": "e0a1db97d76ed0768aaa69b8fb7d088054b2aa99",
             "repairOwnerReport": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6095288823",
-            "mountInvalidationRequirement": "On actual Atlas-only Source change pending and active mount authority must be revoked even if the earlier CampaignContext fields match. Consume only actual qualified N01/R02 owner handoff; verify synchronous invalidation and complete content/policy binding during visible host integration. City UI remains a readonly target consumer with no second authority."
+            "mountInvalidationRequirement": "Independent R03 closes all R01/R02 findings including non-overwritable full-manifest lease, file/record coverage and synchronous invalidation. Visible host must connect actual Provider currentContext=null notification to pending/active mount revocation and safe Navigator switching. City UI remains readonly target consumer; no second authority.",
+            "qualifiedSource": "6433952f3792205d79e92467e245f41ca1a0b29f",
+            "qualifiedOwnerHandoff": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/13#issuecomment-6095347066",
+            "qualifiedOwnerCleanup": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6095346776",
+            "qualifiedOwnerGate": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6095349357",
+            "integrationEvidence": {
+              "state": "PASS_actual_qualified_incoming_sources_integrated",
+              "checkedSource": "930e9667ae4deff6cf531d2a6d1317ac9c2b4947",
+              "consumedShared": "0c100613fdcbb232f07e3eeff23b32c27be4499d",
+              "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/city-ui-i01-r01-20261010/cleanup/p01/qualified-incoming-integration.json",
+              "sha256": "1126762cade52b5adea48b2aeed428df3f33ea072eaac359af6b87cdc5e47a09",
+              "testsPassed": 573,
+              "check": "PASS",
+              "build": "PASS",
+              "cleanExactHeadBuild": true
+            }
           },
           "componentReview": {
             "id": "CITY-UI-I01-R01",
@@ -2377,7 +2392,18 @@
               "sha256": "da7ca52e2510e77b35fbb75bf416d9156c4444e70ab9bf6e149be3fd3384fd94",
               "hostMounted": false,
               "normalDOMRunnerHooked": false,
-              "note": "New Shared GM documentation integrated normally; product/test blobs byte-identical. Standalone focused DOM bundle precedes planned normal runner hookup."
+              "note": "New Shared GM documentation integrated normally; product/test blobs byte-identical. Standalone focused DOM bundle precedes planned normal runner hookup.",
+              "subsequentQualifiedIncomingIntegration": {
+                "state": "PASS_actual_qualified_incoming_sources_integrated",
+                "checkedSource": "930e9667ae4deff6cf531d2a6d1317ac9c2b4947",
+                "consumedShared": "0c100613fdcbb232f07e3eeff23b32c27be4499d",
+                "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/city-ui-i01-r01-20261010/cleanup/p01/qualified-incoming-integration.json",
+                "sha256": "1126762cade52b5adea48b2aeed428df3f33ea072eaac359af6b87cdc5e47a09",
+                "testsPassed": 573,
+                "check": "PASS",
+                "build": "PASS",
+                "cleanExactHeadBuild": true
+              }
             }
           }
         },
@@ -2623,8 +2649,30 @@
           "sha256": "da7ca52e2510e77b35fbb75bf416d9156c4444e70ab9bf6e149be3fd3384fd94",
           "hostMounted": false,
           "normalDOMRunnerHooked": false,
-          "note": "New Shared GM documentation integrated normally; product/test blobs byte-identical. Standalone focused DOM bundle precedes planned normal runner hookup."
+          "note": "New Shared GM documentation integrated normally; product/test blobs byte-identical. Standalone focused DOM bundle precedes planned normal runner hookup.",
+          "subsequentQualifiedIncomingIntegration": {
+            "state": "PASS_actual_qualified_incoming_sources_integrated",
+            "checkedSource": "930e9667ae4deff6cf531d2a6d1317ac9c2b4947",
+            "consumedShared": "0c100613fdcbb232f07e3eeff23b32c27be4499d",
+            "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/city-ui-i01-r01-20261010/cleanup/p01/qualified-incoming-integration.json",
+            "sha256": "1126762cade52b5adea48b2aeed428df3f33ea072eaac359af6b87cdc5e47a09",
+            "testsPassed": 573,
+            "check": "PASS",
+            "build": "PASS",
+            "cleanExactHeadBuild": true
+          }
         }
+      },
+      "qualifiedIncomingIntegration": {
+        "state": "PASS_actual_qualified_incoming_sources_integrated",
+        "checkedSource": "930e9667ae4deff6cf531d2a6d1317ac9c2b4947",
+        "consumedShared": "0c100613fdcbb232f07e3eeff23b32c27be4499d",
+        "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/city-ui-i01-r01-20261010/cleanup/p01/qualified-incoming-integration.json",
+        "sha256": "1126762cade52b5adea48b2aeed428df3f33ea072eaac359af6b87cdc5e47a09",
+        "testsPassed": 573,
+        "check": "PASS",
+        "build": "PASS",
+        "cleanExactHeadBuild": true
       }
     },
     "verification": {
@@ -3964,7 +4012,29 @@
         "sha256": "da7ca52e2510e77b35fbb75bf416d9156c4444e70ab9bf6e149be3fd3384fd94",
         "hostMounted": false,
         "normalDOMRunnerHooked": false,
-        "note": "New Shared GM documentation integrated normally; product/test blobs byte-identical. Standalone focused DOM bundle precedes planned normal runner hookup."
+        "note": "New Shared GM documentation integrated normally; product/test blobs byte-identical. Standalone focused DOM bundle precedes planned normal runner hookup.",
+        "subsequentQualifiedIncomingIntegration": {
+          "state": "PASS_actual_qualified_incoming_sources_integrated",
+          "checkedSource": "930e9667ae4deff6cf531d2a6d1317ac9c2b4947",
+          "consumedShared": "0c100613fdcbb232f07e3eeff23b32c27be4499d",
+          "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/city-ui-i01-r01-20261010/cleanup/p01/qualified-incoming-integration.json",
+          "sha256": "1126762cade52b5adea48b2aeed428df3f33ea072eaac359af6b87cdc5e47a09",
+          "testsPassed": 573,
+          "check": "PASS",
+          "build": "PASS",
+          "cleanExactHeadBuild": true
+        }
+      },
+      "qualifiedIncomingIntegration": {
+        "state": "PASS_actual_qualified_incoming_sources_integrated",
+        "checkedSource": "930e9667ae4deff6cf531d2a6d1317ac9c2b4947",
+        "consumedShared": "0c100613fdcbb232f07e3eeff23b32c27be4499d",
+        "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/city-ui-i01-r01-20261010/cleanup/p01/qualified-incoming-integration.json",
+        "sha256": "1126762cade52b5adea48b2aeed428df3f33ea072eaac359af6b87cdc5e47a09",
+        "testsPassed": 573,
+        "check": "PASS",
+        "build": "PASS",
+        "cleanExactHeadBuild": true
       }
     },
     "repairPlan": "ROADMAP-HEX-02-REPAIR-PLAN.md",
@@ -4008,7 +4078,7 @@
       "platformIssue": 11,
       "checkpointIsAuthoritative": true
     },
-    "updatedAt": "2026-10-10T07:55:28.148663+00:00"
+    "updatedAt": "2026-10-10T08:00:53.298870+00:00"
   },
   "phase": "Phase 6: zweiter Nachbesserungslauf teilweise umgesetzt; fünf Restpositionen und unabhängiger Review offen",
   "goal": "Dungeon-Pfad bis zur vollständigen beauftragten Dungeondraft-Verhaltensgleichheit verfolgen: Bedienung und Funktion angleichen, Grafik ungefähr gleichwertig. Zuerst ROADMAP-PARITY.md mit Building und Object Tool abschließen, danach übrige Dungeon-Werkzeuge. Jede Fachphase getrennt planen, umsetzen und unabhängig reviewen; Lücken mit eigenen Nachbesserungs- und Reviewläufen schließen; danach eigene Aufräumphase mit Plan, Umsetzung und Review.",
