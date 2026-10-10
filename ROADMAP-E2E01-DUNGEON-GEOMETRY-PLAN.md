@@ -424,3 +424,20 @@ gültiges Proposal erzeugen. `npm run check`, `npm test` mit 495/495 Fällen,
 `npm run build` und `git diff --check` bestanden. Code-R03, Cleanup-P/I/R,
 GUI-/Host-/physische Eingabe und E2E-01 bleiben offen; N02 ist kein
 Steward-Handoff oder Produkt-Go.
+
+## Code-R03 und getrennter Produkt-Cleanup
+
+Der unabhängige Code-R03 auf Exact-SHA
+`ea9ecd3f5c7e284b86c554d7e4a9cb99672d73c2` hat den verbleibenden
+Pflichtbefund bestanden
+([PR #26/6093242380](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/26#issuecomment-6093242380)).
+Damit sind die drei Codepflichtbefunde dieses Implementierungszyklus
+geschlossen. Das ist keine Host-, physische Eingabe-, Steward- oder
+E2E-01-Freigabe.
+
+Der danach beauftragte getrennte Produkt-Cleanup wird ausschließlich in
+[`E2E-01-DUNGEON-GEOMETRY-PRODUCT-CL-P01`](ROADMAP-E2E01-DUNGEON-GEOMETRY-PRODUCT-CLEANUP-PLAN.md)
+geplant. Er reduziert die technisch verbliebene zweigeteilte
+Sample-Widerrufsgrenze, ohne Geometrie-, Source-, History-, Handoff- oder
+Persistenzsemantik zu erweitern. Planung, Umsetzung und unabhängiger Review
+bleiben getrennte Läufe; vor deren Abschluss erfolgt kein Steward-Handoff.
