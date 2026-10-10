@@ -4,13 +4,13 @@
   "files": [
     {
       "path": "SAVE-PROVENANCE.md",
-      "bytes": 5756,
-      "sha256": "74926174894a5c2719e4e78ee2bad31db055fd3a5d0de3881a51e4035317bb33"
+      "bytes": 6529,
+      "sha256": "d84f8cdc2a06c325d7cbc284ace1ef54109c9f6dcc32d6b0d24f88171cea0a47"
     },
     {
       "path": "binding.json",
-      "bytes": 48366,
-      "sha256": "9840fd9ee31bd029497932bd2f4bef52cf6e18a982f799a121afbcb9f2b2862f"
+      "bytes": 50004,
+      "sha256": "d77e2ceb2919be1e78291bdcd91b63cabe8e03efe7e11b6b9c39f5c1fccc9846"
     },
     {
       "path": "provenance/git-product-inputs.json",
@@ -26,6 +26,16 @@
       "path": "provenance/native-harness-fe10f62.patch",
       "bytes": 15696,
       "sha256": "85ee893a2053cea565bd44b68e449fdf675672855c672278dcdb4b279b6bb971"
+    },
+    {
+      "path": "provenance/publication-room-key-test.log",
+      "bytes": 3003,
+      "sha256": "3a8f2a16eab60a305d6c594ea4c656dbfacf1e3a0ad6a62809cef737fbb03d8e"
+    },
+    {
+      "path": "provenance/publication-shared-delta.patch",
+      "bytes": 4479,
+      "sha256": "fc10d40898e5f1fbe027278d5dbf594494ef55675360945751b63ca2908ae948"
     },
     {
       "path": "provenance/saved-harness-to-current.patch",
@@ -329,8 +339,8 @@
     },
     {
       "path": "saved-to-current.patch",
-      "bytes": 40422,
-      "sha256": "dfca03027679a9ee091360c1846dbe1556877a324036b8c5d377989ff4b7dd79"
+      "bytes": 41064,
+      "sha256": "1aad840f1ed5d6c31a17e6d6122c9033d32a1106bf3ed0c062244c8c04d6a49e"
     }
   ]
 }

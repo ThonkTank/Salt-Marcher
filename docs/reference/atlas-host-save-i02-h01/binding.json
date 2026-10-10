@@ -6,8 +6,8 @@
   "e2eRow": 13,
   "consumerIssue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/39",
   "finding": "E2E01-PROMOTION-01",
-  "compositionBeforePublication": "5fd5463560c99e884e76dabcb5dd5fa0ebd8b91c",
-  "consumedShared": "a5288d8ae71911bab7b8ddd67967246581c507f5",
+  "compositionBeforePublication": "4d840615c4268f950aa1fd4741e30716945f16b8",
+  "consumedShared": "7098269810801f93be247423862373e912cda210",
   "historicalProductSource": "86bbbbfac44233509f084ac836e6dafa07b11a16",
   "originalReceiptSha256": "3ccb22c6dba8a3c5ae102a90e3e6b48e0ae189bce7425c69b8a62a65cb123b69",
   "rawArtifactRemapping": [
@@ -729,6 +729,14 @@
   ],
   "savedToCurrentSourceChanges": [
     {
+      "path": "src/editor.ts",
+      "oldSha256": "ef90241464e8d584c7006701c61eb332ef293a012dab84d18060787e7f56bb0d",
+      "currentSha256": "e740859ea2403d0ddfe5a0683f7192e620771f818dcfa35398e3de5d15484d53",
+      "oldGitBlob": "128aaf4448841014585eae6b488d3dc53894be89",
+      "currentGitBlob": "2352efb045f398e2334cbc36928548165a82bf91",
+      "classification": "qualified Shared PR55 standalone DungeonEditor structured-Key Undo context preservation"
+    },
+    {
       "path": "src/features/atlas/atlas-campaign-navigation.ts",
       "oldSha256": "4832b68186193e78b4549106dace69a7ac972ea7696df7753eb294617875246e",
       "currentSha256": "51510708e73fd83484000313f6d7df164422e3ede431889cb4c33a884dec1c94",
@@ -786,8 +794,8 @@
     }
   ],
   "savedToCurrentPatch": "docs/reference/atlas-host-save-i02-h01/saved-to-current.patch",
-  "currentProductMatchesH02": true,
-  "conclusion": "Access preparation only. Four original definitive runs passed and exited normally, but old Save source differs from current source in seven files. Existing Chronik integrated reviewer must decide retained Save/Fresh/Rollback/Committed-Recovery scope before #39 promotion. R01/H02 review stays closed.",
+  "currentProductMatchesH02": false,
+  "conclusion": "Access preparation only. Four original definitive runs passed and exited normally. Current source differs from old Save source in eight files, including the independently qualified incoming Shared PR55 Dungeon Key Undo fix. Existing Chronik integrated reviewer decides retained Save/Fresh/Rollback/Committed-Recovery scope before #39 promotion. R01/H02 remains closed.",
   "newNativeRun": false,
   "newBuild": false,
   "productChange": false,
@@ -802,5 +810,28 @@
       "tools/host-test.cjs"
     ],
     "currentShutdownReceiptChange": "e4261ac899dadddffab1226b23eb3c8612dfead2 adds explicit main/shutdown failure retention; old four successful probes have separate normal-exit/no-forced-termination receipts; reviewer must assess historical result semantics"
-  }
+  },
+  "initialEvidencePacketComposition": "5fd5463560c99e884e76dabcb5dd5fa0ebd8b91c",
+  "publicationSharedIntegration": {
+    "artifactPacket": "f33c344db2079b8a49acc0474d6e25a3c3b1d81d",
+    "composition": "4d840615c4268f950aa1fd4741e30716945f16b8",
+    "shared": "7098269810801f93be247423862373e912cda210",
+    "qualifiedProductSource": "b410e7d8069a879ab79adcf4861ed321f68fd612",
+    "independentReview": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/55#issuecomment-6100473239",
+    "sourceAndTestByteEqualToShared": true,
+    "focusedCheck": {
+      "sourceRevision": "4d840615c4268f950aa1fd4741e30716945f16b8",
+      "command": "node build.mjs --test && node --test .build/room-key-search-panel.cjs",
+      "testBundleBuilt": true,
+      "productBundleRebuilt": false,
+      "passed": 13,
+      "failed": 0,
+      "skipped": 0,
+      "log": "docs/reference/atlas-host-save-i02-h01/provenance/publication-room-key-test.log",
+      "logSha256": "3a8f2a16eab60a305d6c594ea4c656dbfacf1e3a0ad6a62809cef737fbb03d8e"
+    }
+  },
+  "currentProductDiffFromH02": [
+    "src/editor.ts"
+  ]
 }
