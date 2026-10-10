@@ -5581,21 +5581,27 @@
       "productUnchanged": true
     },
     "latestSharedIntegration": {
-      "id": "HEX-E2E01-SHARED-TASK-CITY-SCOPE-SYNC",
-      "state": "qualified_Shared_task_tools_and_City_scope_integrated",
-      "sourceCommit": "108f1042b08ddd281b9bf3b4837676c8790b9104",
-      "consumedShared": "7211bc0ac4ce9ef9b56ad511c87199479c3bc196",
-      "scope": "Shared live task selector/self-organization documentation and qualified PR50 City/FTG scope plus owner checkpoint. All existing Atlas/Campaign/native test suites retained; next-task regressions added. No product/src, Host helper, build source, locked dependencies or A/B fixture change.",
+      "id": "HEX-E2E01-SHARED-PRODUCT-WORKFLOW-SYNC",
+      "state": "qualified_Shared_workflow_and_task_selection_integrated",
+      "sourceCommit": "3d9067ef6148d6033edd6281f9f0b08b95df8ccf",
+      "consumedShared": "fbf34d05a8a4ef50463031e4b5caaf5320d43c01",
+      "scope": "Shared product-outcome workflow, contribution templates and task selection. Existing owned #38 remains the visible critical blocker; live queue has no free tasks. No product/src, build input, dependency, fixture or H02 evidence change. Qualified PR53 Dungeon spatial coverage plan/index also consumed; no foreign implementation scope opened.",
       "checks": {
         "repositoryAndReferences": true,
-        "repositoryTests": 21,
+        "repositoryTests": 23,
+        "liveTaskQueue": true,
+        "checkpointAndAcceptancePreservation": true,
+        "immutableEvidenceFilesByteExact": 38,
+        "protectedOriginalCheckoutUnchanged": true,
+        "productAndBuildInputsUnchanged": true
+      },
+      "retainedProductVerification": {
+        "sourceCommit": "108f1042b08ddd281b9bf3b4837676c8790b9104",
         "typeCheck": true,
         "fullTests": 682,
-        "cleanBuild": true,
-        "cleanSource": true
+        "build": true,
+        "basis": "Unchanged product/build/dependency/fixture inputs; this sync reruns only affected repository/task-selection checks."
       },
-      "repositoryEvidence": "docs/reference/atlas-host-h02/composition.json",
-      "sha256": "1e884ee5d45d8f78a4a9c26fd79a8b2298b6a2193fb15874c6f5dc5b3cea7c78",
       "newNativeRun": false,
       "fullE2E": false
     },
