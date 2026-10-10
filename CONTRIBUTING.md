@@ -4,6 +4,8 @@ Beginne mit den [Produktzielen](docs/PRODUCT.md) und der [Roadmap](docs/ROADMAP.
 
 ## Agenteneinstieg
 
+**Nächste freie Aufgabe: `npm run next`.** Der Befehl liest GitHub live, ordnet freie Aufgaben nach Priorität und zeigt den ersten Auftrag samt Voraussetzungen, konkreter Abnahme und letzten drei Kommentaren. GitHub-Zugriff über `gh` erforderlich; keine npm-Installation oder GUI nötig. `npm run next -- --list` zeigt nur die freie Liste. Einen zwischenzeitlichen Claim/PR prüfen und im Aufgabenissue übernehmen. Ohne freie Aufgabe benennt der Befehl den leeren Zustand ausdrücklich; dann die aktuelle Übergabe in #12 prüfen.
+
 **Arbeitsauftrag:** Lies [#12 und seine neuesten Kommentare](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12) und das Repository, setze den wichtigsten sinnvollen nächsten Schritt für einen nutzbaren Dungeon-Editor um und melde Ergebnis oder konkreten Blocker; beachte [AGENTS.md](AGENTS.md). Produktziele und Roadmap erklären Ziel und Reihenfolge; der aktuelle Aufgaben-/PR-Verlauf entscheidet, was noch offen und bereits besessen ist.
 
 1. `git fetch origin`; gemeinsame Basis, offene PRs und aktuelle Übernahmen prüfen. Die folgenden Befehle geben einen Überblick, ersetzen aber nicht das Lesen des gewählten Issues und seiner letzten Kommentare.
@@ -14,7 +16,7 @@ Beginne mit den [Produktzielen](docs/PRODUCT.md) und der [Roadmap](docs/ROADMAP.
 ```bash
 gh issue list --repo ThonkTank/Obsidian-Dungeon-Editor-Phase1 --state open --label 'status:ready'
 gh pr list --repo ThonkTank/Obsidian-Dungeon-Editor-Phase1 --state open
-gh issue view 12 --repo ThonkTank/Obsidian-Dungeon-Editor-Phase1 --json body,comments --jq '{body,comments:.comments[-8:]}'
+gh issue view 12 --repo ThonkTank/Obsidian-Dungeon-Editor-Phase1 --json body --jq .body
 ```
 
 | Deine Umgebung | Sinnvoller Einstieg | Grenze |
@@ -47,5 +49,7 @@ Nach der Aufgabenwahl die passenden [Arbeitsregeln](docs/WORKFLOW.md) anwenden: 
 Neue Aufgaben bekommen eine eigene kleine Beschreibung mit Abnahme und verlinken ihren Bereich. Detaillierte Laufprotokolle gehören in den bestehenden Fachort; im Gesamtindex genügt die Entscheidung oder der Blocker mit Link.
 
 ## Ordnung bei jedem Beitrag erhalten
+
+Das Team [organisiert Aufgaben, Reviewübernahmen und nächste Teilpakete selbst](docs/REPOSITORY.md#selbstorganisation-ohne-zentrale-zuweisung). Bestehende Claims erhalten; bei Übergabe einen konkreten Empfänger oder eine ausdrücklich offene Rolle nennen. Aus bestätigten unbesetzten Restbedarfen selbst ausführbare Nachfolger bilden, statt eine zentrale Zuweisung abzuwarten.
 
 Der [Repository-Pflegevertrag](docs/REPOSITORY.md) legt Ablage, kanonische Informationsorte und Zuständigkeit fest. Neue Paketpläne liegen unter `docs/plans/<bereich>/` nach der [Vorlage](docs/templates/PACKAGE-PLAN.md) und werden im Index verlinkt. Bei Übernahme, Blockerwechsel und Abschluss Haupttext, Statuslabels und Abhängigkeiten nachziehen; bei Integration einen geänderten Lieferfokus aktualisieren. Kein zusätzlicher Freigabe- oder Meldelauf. `npm run audit:backlog` prüft mit GitHub-Zugriff ausschließlich lesend auf widersprüchliche Statuslabels.
