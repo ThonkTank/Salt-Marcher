@@ -626,13 +626,13 @@
         "Bags A–Z ordinals 14–17: all twelve source d100 ranges/effects, twenty-four color/die-bound creatures, complete prose/header/physical spans and full heading-block XML oracle with real hash-bound original pages"
       ],
       "verification": {
-        "sourceRevision": "d297c6aefa8c39d08c4f81cd3835b0d61055f691",
+        "sourceRevision": "82c6f0ad1e75b0d8f0fb9ab68aed17b72b06798f",
         "check": "passed",
         "tests": {
-          "passed": 711,
+          "passed": 723,
           "failed": 0,
-          "skipped": 0,
-          "officialPdfEnabled": true
+          "skipped": 1,
+          "officialPdfEnabled": false
         },
         "build": "passed",
         "focusedTests": {
@@ -802,7 +802,8 @@
           "tricksCreatureRows": 24,
           "derivedHeadingCount": 239,
           "oracle": "complete-heading-bounded stream with exact source die ranges, color ownership and split-page continuation"
-        }
+        },
+        "pdfEvidenceCarry": "Existing true official-PDF W24 tests/review preserved by exact byte comparison of every W24 Source/Tool/Test/Fixture path to independently reviewed42a69b6. No new PDF run inferred from the skipped test."
       },
       "limits": "Intermediate source only: 221 A–Z headings plus Orb, magic-item helper reconciliation, remaining goldens and independent S01-R01 remains open; W24 is independently PASS, regular shared integration remains open. Item artifact/provider/UI and I01 blocked. No Obsidian installation, GUI, physical, full E2E or Encounter runtime approval; exclusively 2014.",
       "magicItemAzArmorArrowsEvidence": "A–Z ordinals 10–13 on physical/printed pages 208–209 preserve complete headers and prose, vulnerability curse, slaying rules and ten ordered die-bound resistance choices. Full heading-bounded XML text and physical two-column table order are checked, not merely substring presence.",
@@ -822,11 +823,22 @@
       "composition": {
         "id": "W24-COMPOSE-01",
         "state": "checked_steward_handoff_pending",
-        "sharedCommit": "6a41f1640de3e4a4311d905d95f66cd79d91b698",
-        "testedCommit": "d297c6aefa8c39d08c4f81cd3835b0d61055f691",
+        "sharedCommit": "c932bbab534c5a70a15cc4628728c0d1b92f162a",
+        "testedCommit": "82c6f0ad1e75b0d8f0fb9ab68aed17b72b06798f",
         "claim": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/56#issuecomment-6100853466",
         "resolution": "Retain entire current Shared package.json and add only Bags test once directly after Sources; all four Atlas/Campaign bundles and unique check/test keys retained. No source/product fix.",
-        "next": "Stadt consumes exact-SHA CI and narrowly closes regular integration; no new source review."
+        "next": "Stadt consumes exact-SHA CI and narrowly closes regular integration; no new source review.",
+        "roleContract": {
+          "role": "migration",
+          "defaultBranch": "active/installed-phase1",
+          "loadedCommit": "c932bbab534c5a70a15cc4628728c0d1b92f162a",
+          "documents": [
+            "AGENTS.md",
+            "docs/AGENT-ROLES.md"
+          ],
+          "authority": "Existing authorized migration/product scope, exclusively D&D2014; no expansion from repository role rules"
+        },
+        "installation": "Current Shared lockfile installed with official Node22 npm ci; initial missing better-sqlite3 local dependency failures cleared. No P02 source edit or foreign gate approval."
       }
     }
   },
