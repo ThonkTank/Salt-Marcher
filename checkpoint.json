@@ -817,8 +817,8 @@
     },
     "nextRun": {
       "id": "E2E-01-SPACE-I01c-RUNTIME-MANIFEST-I02",
-      "kind": "consume_single_exact_SHA_full_frozen_matrix_green_owner_delivery_then_one_Chronik_review",
-      "focus": "Campaign/Data existing PR35 patch must consume frozen RUNTIME-MANIFEST-I02-CONSUMER-MATRIX-V1 with actual native Repository/FileTransaction/Source/Provider and existing City/RoomKey/history/camera ownership oracles. One aggregate patch, no per-case handoff or renewed closed reviews.",
+      "kind": "consume_qualified_exact_integrated_Chronik_PASS_candidate",
+      "focus": "Consume exact ce2f903 normally into the single PR13 candidate. Owner and independent Chronik matrix runs are 18/18 on the same frozen source; no pending component review or second producer handoff. Verify composition and exact new-SHA gates before the separate productive Host hook step.",
       "sourcePlan": "ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md",
       "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
       "decision": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6097273698",
@@ -827,7 +827,7 @@
       "freezeCommit": "82ebc7f9bbc9ce79447bca3f98ce70e6cc253cd9",
       "ownerPR": 35,
       "apiReferenceCandidate": "8a25c92c89962a4b1fbf4b15a209205e5704bbc3",
-      "dependency": "PR35 public API supplied and directly inspected, not yet run/qualified against this complete unchanged matrix. Await one clean exact-SHA all-green report plus matching baseline gates; then exactly one independent Chronik review before productive integration.",
+      "dependency": "Independent Chronik PASS #12/6097491451 received on exact ce2f903. Qualified input may now be consumed; production Host Save/Fresh/Recovery/A-B-A is still separate and open.",
       "finding": "HEX-MANIFEST-I02-03",
       "closedFindings": [
         "HEX-MANIFEST-I02-02",
@@ -835,8 +835,12 @@
       ],
       "qualifiedOwnerCandidate": "a6e61b497fe522e7be959f7ce76ce5c4cfcdfa18",
       "latestConsumedShared": "5eaa945967dd806344f791c551791df915a4a539",
-      "after": "Hex wires real prepared/committed/rolled-back receipts and refreshes Registry/Inventory within same Navigator/mount/history; newly coordinated GUI slot, actual Host Save/Fresh/Recovery/A-B-A; integrated review then separate cleanup.",
-      "limits": "No PR35 self-integration or scope substitution, private flag edits, fake product authority, new fixture/history or native/full E2E claim."
+      "after": "Separate productive Host step: real prepared/committed/rolled-back receipts and Registry/Inventory refresh in the same Navigator/mount/history; then coordinated GUI slot and actual Host Save/Fresh/Recovery/A-B-A, integrated review and separate cleanup.",
+      "limits": "No PR35 self-integration or scope substitution, private flag edits, fake product authority, new fixture/history or native/full E2E claim.",
+      "reviewSourceCommit": "ce2f9032dc9f72f994a307b5aac26e1ad8910065",
+      "ownerHandoff": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6097463689",
+      "reviewSequence": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/35#issuecomment-6097357740",
+      "independentReview": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6097491451"
     },
     "review": {
       "run": "HEX-02-R02",
@@ -5339,6 +5343,63 @@
       "doesNotApprove": "Host same-Navigator registry/inventory refresh, actual Obsidian Save/Fresh/Recovery/A-B-A, City integrated review, full E2E and original parity remain open.",
       "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-manifest-consumer-matrix-v1-20261010/freeze.json",
       "sha256": "e2b970caadd33cc976f6d21bb86d362479e9ff10887d3eb7ac3002cc1c9b9c27"
+    },
+    "integratedMatrixHandoff": {
+      "id": "RUNTIME-MANIFEST-I02-MATRIX-INTEGRATED-HANDOFF",
+      "state": "exact_integrated_matrix_green_independent_Chronik_PASS_received_qualified_consumption_next",
+      "checkedAt": "2026-10-10T12:28:11.268751+00:00",
+      "reviewSourceCommit": "ce2f9032dc9f72f994a307b5aac26e1ad8910065",
+      "ownerInput": "8a25c92c89962a4b1fbf4b15a209205e5704bbc3",
+      "ownMergedInput": "9e6651350eb2d33dc4f5e950486c5e8aa693cda6",
+      "reviewBasis": "One integrated candidate ce2f903, not another standalone input or producer/consumer round. Candidate composition is not Shared/product promotion.",
+      "handoff": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6097463689",
+      "reviewSequence": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/35#issuecomment-6097357740",
+      "directlyVerified": {
+        "ancestryIncludesCurrentPR13": true,
+        "frozenFiles": 19,
+        "frozenContractSha256": "92b766263ed73fd5dc5e24b2023e55af6f5f17b006830adb45f10734dfba69d6",
+        "producerDelta": [
+          "src/features/campaign/campaign-runtime-save-participant.ts",
+          "src/features/campaign/campaign-runtime-source.ts",
+          "tests/core/campaign-runtime-save-participant.test.ts",
+          "tests/core/campaign-runtime-source.test.ts"
+        ],
+        "localSourceIntegrated": false,
+        "localMatrixRerun": false
+      },
+      "ownerReportedChecks": {
+        "sourceCommit": "ce2f9032dc9f72f994a307b5aac26e1ad8910065",
+        "matrix": 18,
+        "matrixPassed": 18,
+        "reviewReady": true,
+        "clean": true,
+        "check": "PASS",
+        "tests": 629,
+        "passed": 629,
+        "build": "PASS exact clean SHA",
+        "reportSha256": "c9c5b34eee733e9807259cbed30e5e67b293ec8cb47ae9fe76cecc999a00b8dc",
+        "localReportFileRead": false,
+        "limits": "Reported by actual published owner handoff, not a local Hex execution or independent approval."
+      },
+      "independentReview": {
+        "reviewer": "Chronik",
+        "state": "PASS",
+        "sourceCommit": "ce2f9032dc9f72f994a307b5aac26e1ad8910065",
+        "issue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6097491451",
+        "pr": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/35#issuecomment-6097491452",
+        "mandatoryFindings": 0,
+        "independentMatrixPassed": 18,
+        "testsPassed": 629,
+        "reportedReportSha256": "c9c5b34eee733e9807259cbed30e5e67b293ec8cb47ae9fe76cecc999a00b8dc",
+        "scope": "Published actual independent integrated rollback and frozen-matrix review. Read directly by Hex; no local report file or local rerun. Production Host/native/full E2E remains open."
+      },
+      "nativeRan": false,
+      "freshProcessRan": false,
+      "fullE2E": false,
+      "reviewReceivedAt": "2026-10-10T12:32:26.892391+00:00",
+      "next": "Normal qualified PR13 consumption of exact ce2f903, then productive FileTransaction/AtlasView receipts and same-Navigator registry/inventory refresh. No further producer review or matrix handoff.",
+      "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-manifest-matrix-handoff-20261010/review-consumption.json",
+      "sha256": "28f8f982bc06bf08c6bb26d7c5f85817d72df0418d33a96648a1d63d5651e917"
     }
   },
   "phase": "Phase 6: zweiter Nachbesserungslauf teilweise umgesetzt; fünf Restpositionen und unabhängiger Review offen",

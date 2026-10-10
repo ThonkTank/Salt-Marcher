@@ -376,3 +376,34 @@ Testlauf aktiviert den noch fehlenden `AtlasView`-Savehook nicht. Der echte
 Host-Save/Fresh/Recovery-Lauf mit neu koordiniertem GUI-Slot sowie Stadt- und
 Gesamtintegrationsreview bleiben separate offene Nachweise. Diese konkrete
 Prozessänderung ersetzt keine vollständige Produktparität oder E2E-01-Freigabe.
+
+**Gemeinsame Reviewbasis und eingegangener unabhängiger Review:** Campaign/Data
+hat PR13/`9e6651350eb2d33dc4f5e950486c5e8aa693cda6` regulär mit seinem
+unveränderten PR35-Input/`8a25c92c89962a4b1fbf4b15a209205e5704bbc3`
+komponiert und in
+[#12/6097463689](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6097463689)
+auf **`ce2f9032dc9f72f994a307b5aac26e1ad8910065`** einen sauberen
+18/18-Lauf (`reviewReady:true`) sowie check/629-Tests/Build gemeldet.
+Hex hat dessen Herkunft, die unveränderten 19 Freeze-Dateien und den exakten
+Vier-Dateien-Delta der Campaign-Fachgrenze direkt geprüft. Der externe Report
+`c9c5b34eee733e9807259cbed30e5e67b293ec8cb47ae9fe76cecc999a00b8dc`
+ist ein Owner-Lauf, kein lokal wiederholter Hex-Test.
+
+**Dieser komponierte integrierte SHA war die einzige Chronik-Reviewbasis.**
+Der tatsächliche unabhängige Review in
+[#12/6097491451](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6097491451)
+und [#35/6097491452](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/35#issuecomment-6097491452)
+ist **PASS**, ohne Pflichtbefunde: unveränderter Freeze, unabhängiger 18/18-Lauf
+mit demselben Reporthash, check/629-Tests/Build und saubere exakte Reviewbasis.
+Diese direkte Review-Lektüre ersetzt keinen lokal ausgeführten Hex-Test.
+Chroniks zuvor genannter integrierter Eingang ist damit tatsächlich erfüllt;
+die widersprüchliche Wartefolge ist erledigt. Kein zusätzlicher Standalone-Review
+von `8a25c92`, zweiter Producer-Matrixlauf oder weiterer Producer-Handoff.
+
+Als nächster begrenzter Schritt konsumiert Hex den qualifizierten Exact-SHA
+regulär im einzigen PR13-Kandidaten und prüft die Zusammensetzung samt Gates
+des neuen Integrationsstands. Anschließend folgt der getrennte produktive
+Anschluss echter FileTransaction-/Host-Receipts und des Registry-/Inventory-
+Refreshs im selben Navigator/Mount/History. Keine Shared-/Installations- oder
+Gesamtpromotion aus dem Komponentenreview; der tatsächliche
+Host-Save/Fresh/Recovery/A-B-A-Nachweis bleibt offen.
