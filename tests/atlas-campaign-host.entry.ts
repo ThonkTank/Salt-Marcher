@@ -623,3 +623,14 @@ test("closing the actual host services synchronously freezes retained mounts and
   await assert.rejects(old.repository.save(), /geschlossen/);
   await f.view.onUnloadFile();
 });
+
+test('native atlas remains usable before any campaign manifest exists, without claiming confirmed membership', async () => {
+  const f = await fixture();
+  for (const file of f.vault.getFiles().filter((file) => file.path.endsWith('.campaign.json'))) await f.vault.trash(file);
+  await f.view.onLoadFile(f.vault.files.get(aPath)!);
+  assert.ok(f.editor()); assert.equal(f.services.provider.currentContext(), null);
+  assert.equal(f.host().state.kind, 'unavailable');
+  assert.equal(f.content.querySelector('.dn-atlas-host-status')!.textContent, '');
+  assert.equal(f.content.querySelector('.dn-campaign-active-error'), null);
+  await f.close();
+});

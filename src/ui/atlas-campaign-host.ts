@@ -107,6 +107,13 @@ export class AtlasCampaignHost {
   get state() {
     return this.navigation.state;
   }
+  showUnregisteredAtlas(): void {
+    // An existing native atlas remains usable when no campaign manifests exist.
+    // This conveys no confirmed Campaign/Registry membership.
+    if (this.closed || this.entries.length || this.services.provider.currentContext()) return;
+    this.picker.update({ entries: [], activeCampaignId: null });
+    this.access.changed(null);
+  }
   async refresh(): Promise<void> {
     const version = ++this.refreshVersion;
     const entries = await this.services.provider.entries();

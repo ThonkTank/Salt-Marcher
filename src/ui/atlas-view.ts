@@ -303,6 +303,7 @@ export class AtlasView extends FileView {
         },
       });
       await this.editor.init();
+      this.campaignHost?.showUnregisteredAtlas();
     } catch (error) {
       if (generation !== this.generation) return;
       this.editor?.destroy();
