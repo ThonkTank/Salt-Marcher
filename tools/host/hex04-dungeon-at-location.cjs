@@ -132,7 +132,8 @@ module.exports = ({ page, fs, path, assert, crypto, root, vault, qa, out, checks
     assert.deepEqual(atB.dungeon, initial.dungeon);
     await record("Visible A to B move removes the old link; shared Undo/Redo restores both Locations and placement");
     const key = await enterRoom();
-    const roomName = "Torraum am Ort", roomText = initial.dungeon.entities[0].key.sections[0].markdown + "\nH01: Am Ort verortet.\n";
+    // This deliberately edited textarea value uses LF; binding/Undo retain the original CRLF exactly.
+    const roomName = "Torraum am Ort", roomText = "## Eingang\nDie Basalttür ist geschlossen.  \n\nH01: Am Ort verortet.\n";
     await key.getByRole("textbox", { name: "Raumname", exact: true }).fill(roomName);
     await key.getByRole("textbox", { name: "Raumtext 1", exact: true }).fill(roomText);
     await key.getByRole("button", { name: "Übernehmen", exact: true }).click();
