@@ -246,9 +246,10 @@ export class MwsImportMediaInventory implements MwsImportMediaInventoryPort {
   }
 
   async verify(expected: MwsImportMediaInventoryV1): Promise<MwsImportMediaInventoryVerifyOutcome> {
-    const snapshot = this.snapshots.get(inventoryKey(expected));
+    const key = inventoryKey(expected), snapshot = this.snapshots.get(key);
     if (!snapshot || inventoryBytes(snapshot.inventory) !== inventoryBytes(expected)) return { kind: "unknown" };
     const current = await this.load(snapshot.request);
+    if (this.snapshots.get(key) !== snapshot) return { kind: "unknown" };
     if (current.kind !== "confirmed") return { kind: current.kind };
     return inventoryBytes(current.inventory) === inventoryBytes(expected) ? { kind: "current" } : { kind: "stale" };
   }

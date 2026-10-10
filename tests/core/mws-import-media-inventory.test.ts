@@ -62,6 +62,7 @@ const manifest = (asset: MwsImportMediaManifestV1["assets"][number] = {
 class Files implements MwsImportMediaFilePort {
   readonly values = new Map<string, Uint8Array>();
   afterRead?: (path: string, count: number) => void;
+  beforeRead?: (path: string, count: number) => Promise<void>;
   private reads = new Map<string, number>();
   set(path: string, value: string | Uint8Array): void {
     this.values.set(path, typeof value === "string" ? encoder.encode(value) : value);
@@ -69,6 +70,7 @@ class Files implements MwsImportMediaFilePort {
   async read(path: string): Promise<Uint8Array | null> {
     const count = (this.reads.get(path) ?? 0) + 1;
     this.reads.set(path, count);
+    await this.beforeRead?.(path, count);
     const value = this.values.get(path), result = value ? value.slice() : null;
     this.afterRead?.(path, count);
     return result;
@@ -168,6 +170,44 @@ test("one import revision cannot authorize two Campaign bindings", async () => {
   assert.equal(third.kind, "confirmed");
   if (third.kind === "confirmed")
     assert.deepEqual(await inventory.verify(third.inventory), { kind: "unknown" });
+});
+
+test("verification cannot outlive a concurrent conflicting Campaign binding", async () => {
+  const { files, inventory, root } = setup(), first = await inventory.read(request);
+  assert.equal(first.kind, "confirmed");
+  if (first.kind !== "confirmed") return;
+  const other = campaignContext(campaignSnapshot({
+    schemaVersion: 1,
+    campaignId: campaignId("00000000-0000-4000-8000-000000000003"),
+    revision: campaignRevision(1),
+    name: "Andere Kampagne",
+    namespace: campaignNamespace("00000000-0000-4000-8000-000000000004"),
+    lifecycle: "active",
+  }), campaignContextToken("context.mws.other"));
+  let enter!: () => void, release!: () => void;
+  const entered = new Promise<void>((resolve) => { enter = resolve; }),
+    blocked = new Promise<void>((resolve) => { release = resolve; });
+  files.beforeRead = async (path, count) => {
+    if (path.endsWith("media-inventory.json") && count === 3) {
+      enter();
+      await blocked;
+    }
+  };
+  const verifying = inventory.verify(first.inventory);
+  await entered;
+  files.beforeRead = undefined;
+  files.set(`${root}/media-inventory.json`, JSON.stringify({ ...manifest(), context: {
+    campaignId: other.campaignId,
+    campaignRevision: other.revision,
+    campaignName: other.name,
+    namespace: other.namespace,
+    lifecycle: other.lifecycle,
+    contextToken: other.contextToken,
+  } }));
+  assert.equal((await inventory.read({ ...request, context: other })).kind, "confirmed");
+  files.set(`${root}/media-inventory.json`, JSON.stringify(manifest()));
+  release();
+  assert.deepEqual(await verifying, { kind: "unknown" });
 });
 
 test("a stable declared or observed missing asset stays explicit and cannot masquerade as verified", async () => {
