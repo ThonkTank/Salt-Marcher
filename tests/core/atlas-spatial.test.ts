@@ -1,7 +1,9 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
+import { parseHTML } from "linkedom";
 import { AtlasHistory } from "../../src/features/atlas/atlas-history";
+import { AtlasEditor } from "../../src/features/atlas/atlas-editor";
 import { TerrainSource } from "../../src/features/atlas/terrain-source";
 import { SpatialGraph } from "../../src/features/atlas/spatial-graph";
 import {
@@ -56,6 +58,7 @@ import {
   parseDocument,
   serializeDocument,
   type Door,
+  type MapDocument,
 } from "../../src/model";
 import { projectDocumentCommand, Session } from "../../src/session";
 
@@ -839,6 +842,110 @@ test("Rejected Dungeon geometry samples revoke the visible proposal and cannot c
   assert.notEqual(visible.change.after, first.change.after);
   assert.deepEqual(corrected.handoff(), visible.change);
   assert.equal(snapshot(f), before);
+});
+
+test("Atlas pointer callbacks revoke a Dungeon proposal when unprojection fails before update", () => {
+  const f = fixture();
+  f.attach();
+  const cityBefore = f.city.read(),
+    cityAfter = editCity(cityBefore, [{
+      kind: "set-building-pose",
+      buildingId: id(105),
+      position: { x: -18, y: 8 },
+      rotationRadians: 0,
+      scale: { x: 1, y: 1 },
+    }]);
+  f.history.execute({
+    label: "Callback-Redostand vorbereiten",
+    changes: [cityDocumentChange(cityBefore, cityAfter)],
+  });
+  f.history.undo();
+  const before = snapshot(f),
+    beforeBytes = f.dungeon.read().documentBytes,
+    beforeDepth = f.history.undoDepth;
+  assert.equal(f.history.canRedo, true);
+  let draftWrites = 0;
+  const unsubscribe = f.history.subscribe(() => {
+    draftWrites++;
+  });
+
+  const { document, window } = parseHTML(
+      "<html><body><main><div></div><span></span></main></body></html>",
+    ),
+    root = document.querySelector("main")! as unknown as HTMLElement,
+    viewport = document.querySelector("div")! as unknown as HTMLDivElement,
+    status = document.querySelector("span")! as unknown as HTMLSpanElement,
+    gesture = geometryGesture(f),
+    frame = gesture.basis.frame,
+    camera = relativeCamera(frame.anchor, { x: 0, y: 0 }, 1),
+    rendererViewport = { width: 100, height: 100 },
+    spatial: { dungeonPreview?: MapDocument } = {},
+    renderer = {
+      viewport: rendererViewport,
+      schedule: () => {},
+    };
+  Object.assign(viewport, {
+    getBoundingClientRect: () => ({ left: 0, top: 0 }),
+    hasPointerCapture: () => false,
+    releasePointerCapture: () => {},
+  });
+  const editor = Object.create(AtlasEditor.prototype) as any;
+  Object.assign(editor, {
+    abort: new AbortController(),
+    root,
+    viewport,
+    status,
+    currentTerrain: f.source,
+    storage: { status: () => ({ dirty: false, hasDraft: false }) },
+    renderer,
+    spatial,
+    pointer: {
+      id: 7,
+      action: "dungeon",
+      x: 0,
+      y: 0,
+      startX: 0,
+      startY: 0,
+      moved: true,
+    },
+    dungeonDrag: { gesture, frame, camera },
+  });
+  (editor as any).bind();
+  const pointer = (type: string, x: number, y: number) => {
+    const event = new window.Event(type, { bubbles: true, cancelable: true });
+    Object.assign(event, {
+      pointerId: 7,
+      clientX: x,
+      clientY: y,
+      altKey: false,
+      button: 0,
+    });
+    return event;
+  };
+  const valid = projectLocal(frame, camera, rendererViewport, { x: 3, y: 4 });
+  window.dispatchEvent(pointer("pointermove", valid.x, valid.y));
+  assert.ok(spatial.dungeonPreview);
+  assert.ok(gesture.preview);
+
+  window.dispatchEvent(pointer("pointermove", Number.NaN, valid.y));
+  assert.equal(spatial.dungeonPreview, undefined);
+  assert.equal(gesture.preview, undefined);
+  assert.match(status.textContent ?? "", /Ungültige räumliche Zahl/);
+  window.dispatchEvent(pointer("pointerup", Number.NaN, valid.y));
+
+  assert.equal(f.dungeon.read().documentBytes, beforeBytes);
+  assert.equal(f.history.undoDepth, beforeDepth);
+  assert.equal(f.history.canRedo, true);
+  assert.equal(draftWrites, 0);
+  assert.equal(snapshot(f), before);
+  assert.equal((editor as any).dungeonDrag, undefined);
+  assert.equal((editor as any).pointer, undefined);
+
+  const fresh = geometryGesture(f);
+  assert.ok(fresh.update({ x: 2, y: 4 }, false));
+  fresh.cancel();
+  unsubscribe();
+  (editor as any).abort.abort();
 });
 
 test("Dungeon geometry uses the immutable actual begin pointer for off-center and snapped deltas", () => {

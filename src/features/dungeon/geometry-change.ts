@@ -243,6 +243,11 @@ export class DungeonGeometryGesture {
     this.finish("cancelled");
   }
 
+  /** Revoke a sample rejected by the caller before it reached update(). */
+  rejectSample(): void {
+    if (this.state === "active") this.current = undefined;
+  }
+
   /** Return at most one owner change; the caller remains the only executor. */
   handoff(): AtlasChange | null {
     if (!this.current || !this.currentBasis()) return null;
