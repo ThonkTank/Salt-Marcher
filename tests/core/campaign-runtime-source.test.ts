@@ -104,6 +104,9 @@ test("runtime manifest requires canonical owner policy and complete Registry to 
   incomplete.registry.owners[0].records.push({ id: uuid(120), recordType: "location", references: [],
     payloadDigest: sha("location"), media: null });
   assert.throws(() => parseCampaignRuntimeManifest(resign(incomplete), digest), /nicht vollständig/);
+  const extraFile = JSON.parse(manifest(a, worldA));
+  extraFile.atlas.files.push({ kind: "location", id: uuid(121), path: "Orte/extra.location.md", savedDigest: sha("extra") });
+  assert.throws(() => parseCampaignRuntimeManifest(JSON.stringify(extraFile), digest), /zusätzliche unregistrierte Datei/);
 });
 
 test("runtime source exposes no create or rename publication path", async () => {
@@ -133,6 +136,7 @@ test("registry verify detects an Atlas-only manifest edit", async () => {
   assert.equal(read.kind, "confirmed"); if (read.kind !== "confirmed") return;
   const edited = JSON.parse(raw); edited.atlas.files[0].savedDigest = sha("changed-atlas-bytes");
   storage.set([{ path, bytes: JSON.stringify(edited) }]);
+  assert.equal((await source.registry.read(activation.context!)).kind, "confirmed");
   assert.equal((await source.registry.verify(read.projection)).kind, "stale");
 });
 

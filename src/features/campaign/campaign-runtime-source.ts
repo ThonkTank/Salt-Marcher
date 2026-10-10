@@ -201,6 +201,11 @@ export function parseCampaignRuntimeManifest(
     inventoried = atlas.records.map((record) => `${record.ownerId}:${record.kind}:${record.id}`).sort();
   if (navigable.length !== inventoried.length || navigable.some((value, index) => value !== inventoried[index]))
     throw new Error("Atlasinventar deckt die bestätigten Registryrecords nicht vollständig.");
+  for (const file of atlas.files) {
+    if (file.kind === "terrain") continue;
+    if (file.id === null || !atlas.records.some((record) => record.documentId === file.id && record.kind === file.kind))
+      throw new Error("Atlasmanifest enthält eine zusätzliche unregistrierte Datei.");
+  }
   return immutable({ version: 1, snapshot, registry, atlas });
 }
 
@@ -213,7 +218,7 @@ export class CampaignRuntimeSource {
   private loaded?: LoadedSet;
   private unsubscribe?: () => void;
   private readonly changed = new Set<() => void>();
-  private readonly projectionSources = new Map<string, string>();
+  private readonly projectionSources = new Map<string, string | null>();
   constructor(
     private readonly storage: CampaignRuntimeStorage,
     private readonly digest: CampaignOwnershipDigest,
@@ -303,7 +308,11 @@ export class CampaignRuntimeSource {
         const loaded = (await this.load(true)).manifests.get(expected.campaignId), manifest = loaded?.manifest;
         if (!loaded || !manifest || manifest.snapshot.lifecycle !== "active") return { kind: "unavailable" };
         const projection = this.projection(manifest, expected);
-        this.projectionSources.set(projection.projectionDigest, payloadDigest(this.digest(loaded.bytes)));
+        const sourceDigest = payloadDigest(this.digest(loaded.bytes)), previous = this.projectionSources.get(projection.projectionDigest);
+        if (!this.projectionSources.has(projection.projectionDigest))
+          this.projectionSources.set(projection.projectionDigest, sourceDigest);
+        else if (previous !== sourceDigest)
+          this.projectionSources.set(projection.projectionDigest, null);
         return { kind: "confirmed", projection };
       } catch { return { kind: "unavailable" }; }
     },
