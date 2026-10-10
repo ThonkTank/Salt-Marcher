@@ -152945,7 +152945,7 @@
       {
         "id": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
         "requirement": "Thin Context/navigation consumer with actual native target validation, same Atlas owners and guarded Campaign switching",
-        "state": "required_repair_checked_independent_rereview_pending",
+        "state": "independent_code_rereview_pass_own_cleanup_planned_host_open",
         "implementationRun": "E2E-01-SPACE-I01c-RUNTIME-I01b",
         "sourceCommit": "e6ad27e73066bb2394d67e555ca9556dd25a0660",
         "catalog": "ROADMAP-E2E-GATES-CANDIDATE.md:13",
@@ -152958,7 +152958,11 @@
           "tests/core/atlas-campaign-navigation.test.ts",
           "tests/core.test.ts",
           "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-navigation-i01b-20261010/run.json",
-          "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-navigation-n01b-20261010/run.json"
+          "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-navigation-n01b-20261010/run.json",
+          "ROADMAP-E2E01-ATLAS-NAVIGATION-CLEANUP-PLAN.md",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/runtime-i01b-r02-20261010/review.json",
+          "/home/aaron/.cache/dungeon-native-qa/city-plans/runtime-i01b-r02-20261010/cleanup-review.json",
+          "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-navigation-i01b-cleanup-20261010/p01/plan-validation.json"
         ],
         "observed": "actual native World/Location/section/City/building/Dungeon/structured room/section resolution in seven-file fixture; same Repository/History/renderer and relative frames, no writes for navigation; unknown/stale/foreign/duplicate/unavailable/retired/Source edit-Undo ABA and replaced Source rejection before camera/key effects; requested prepareLeave failure blocks actual Lifecycle.activate and restores old editability; retained native Key draft precedes successful activation; external Context change revokes old leases; A-to-B-to-A uses fresh Sources/History; late inert mounts and native initial reads cannot activate old UI or hydrate via guarded factory; confirmed new activation load failure/trashed/applied=false preserve actual new Context without automatic rollback; won actual native journal Save rolls forward only in old Store while its detached mount cannot touch new B",
         "notConfirmed": "Consumer core with actual native Sources in controlled injected ports; no productive Registry/native inventory/Host provider invented; Mount adapter contracts must guard each asynchronous hydration/write/UI effect; ordinary existing Editor/Repository writes have no general Campaign gate until I01c actual adapter; No new GUI run, native restart, installed-vault, original parity, physical input, large-world or full E2E receipt; P02/P04/atomic multiowner publish/CompleteImport/media remain actual owner dependencies; no cancellation or substitute CommandId/ReceiptId created",
@@ -153050,7 +153054,50 @@
               "manifest.json": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64"
             }
           },
-          "independentRereview": "pending existing Stadt peer on exact published repaired candidate; original CHANGES_REQUIRED preserved until actual R02"
+          "independentRereview": {
+            "result": "PASS",
+            "candidate": "adc4b98a3925b39abefb0a4db9a2bcd7c1a5a6ec",
+            "testedIntegratedSource": "81c6a257af95b8dd9de0cbbd1fb76b6c1380521c",
+            "reviewer": "Stadt, existing independent peer",
+            "readDirectly": true,
+            "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/13#issuecomment-6094937083",
+            "gate": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6094937270",
+            "actualEvidence": "/home/aaron/.cache/dungeon-native-qa/city-plans/runtime-i01b-r02-20261010/review.json",
+            "hashes": {
+              "review.json": "d5b23a87b22c13de2e99a5f2fc5fb47357459a2e99b85fd2adee47a820bb5ada",
+              "source-bindings.json": "b0111bc6a2fadc1d247c3b64fe6e3140f1bf91da39fd7667f9a7c4c184c55e83",
+              "counterprobes.ts": "6e51c436929f12e9cdb10a911c7ecf7916322ec20d5aa3cd908fb8d3503090b1",
+              "counterprobes.log": "549e58adc46c1a24b71b9005413c65a7914d9588252c0dbce24cf8c06078c10b"
+            },
+            "sourceBindingsVerified": 541,
+            "checks": {
+              "check": true,
+              "testsPassed": 551,
+              "testsFailed": 0,
+              "cleanBuild": true,
+              "independentCounterprobesPassed": 4,
+              "independentCounterprobesFailed": 0
+            },
+            "closedFindings": [
+              "RUNTIME-I01b-R01-01"
+            ],
+            "reviewerCleanup": {
+              "state": "PASS_separate_reviewer_cleanup_P_I_R",
+              "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6094957819",
+              "actualEvidence": "/home/aaron/.cache/dungeon-native-qa/city-plans/runtime-i01b-r02-20261010/cleanup-review.json",
+              "sha256": "4f3df0324a6b1b7a82ad399bc9ec9799617ab8467805fffc04765767928b7a3b",
+              "planSha256": "d6b01e6fab8a5bc5617567a8bfabff746ad266f460606bd464b33a5ecb6f6ee0",
+              "implementationSha256": "2d890c63e33618296f1bdb44d9e6d930acd8e8867bc76b452ac667ef0c4aa798",
+              "protectedFilesVerified": 551,
+              "deletedFilesAbsent": 41,
+              "readDirectly": true
+            },
+            "limits": [
+              "Actual controlled-port core review, no productive Host/provider receipt",
+              "I01c visible integration and native/fresh-start check remain open",
+              "P02/P04/import/full E2E/original parity remain separate"
+            ]
+          }
         },
         "visibleNextSlice": {
           "userDecision": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6094840948",
@@ -153068,8 +153115,84 @@
             ]
           },
           "componentContract": "City UI consumes readonly labelled AtlasNavigationTarget values and onNavigate(target) callback in current dock. Hex supplies actual native targets, validates current Source/Context/Key guards, owns camera/history/persistence and mounts the component. No City edits to existing AtlasView/Editor/Renderer/Repository, no fake Registry or new view.",
-          "state": "confirmed_conflict_free_boundaries_for_offered_City_UI_contribution_next_slice_not_started_in_N01b",
-          "gate": "After narrow N01b re-review and separate own cleanup; actual provider/Host/native/full E2E claims remain separate."
+          "state": "file_boundaries_confirmed_by_actual_Stadt_R02_visible_integration_next_after_own_cleanup",
+          "gate": "Code R02 PASS; own cleanup P01 planned, separate I/R outstanding; actual provider/Host/native/full E2E remain separate.",
+          "confirmedBy": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/7#issuecomment-6094937416",
+          "campaignDataSeam": {
+            "state": "concrete_provider_handoff_actual_delivery_pending",
+            "type": "Pick<AtlasCampaignNavigationPorts, \"currentContext\" | \"registry\" | \"inventory\" | \"activate\">",
+            "HexOwns": "openNative inert mount and existing AtlasView/Editor/Renderer/Repository integration",
+            "requestedSwitch": "Navigator.switchCampaign prepares valid Keys/gestures/draft before calling actual activate; provider UI must not bypass this via direct Lifecycle activation.",
+            "externalChange": "Actual Context notification synchronously invokes contextChanged; no invented Context/registry/inventory authority."
+          }
+        },
+        "independentRereview": {
+          "result": "PASS",
+          "candidate": "adc4b98a3925b39abefb0a4db9a2bcd7c1a5a6ec",
+          "testedIntegratedSource": "81c6a257af95b8dd9de0cbbd1fb76b6c1380521c",
+          "reviewer": "Stadt, existing independent peer",
+          "readDirectly": true,
+          "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/13#issuecomment-6094937083",
+          "gate": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6094937270",
+          "actualEvidence": "/home/aaron/.cache/dungeon-native-qa/city-plans/runtime-i01b-r02-20261010/review.json",
+          "hashes": {
+            "review.json": "d5b23a87b22c13de2e99a5f2fc5fb47357459a2e99b85fd2adee47a820bb5ada",
+            "source-bindings.json": "b0111bc6a2fadc1d247c3b64fe6e3140f1bf91da39fd7667f9a7c4c184c55e83",
+            "counterprobes.ts": "6e51c436929f12e9cdb10a911c7ecf7916322ec20d5aa3cd908fb8d3503090b1",
+            "counterprobes.log": "549e58adc46c1a24b71b9005413c65a7914d9588252c0dbce24cf8c06078c10b"
+          },
+          "sourceBindingsVerified": 541,
+          "checks": {
+            "check": true,
+            "testsPassed": 551,
+            "testsFailed": 0,
+            "cleanBuild": true,
+            "independentCounterprobesPassed": 4,
+            "independentCounterprobesFailed": 0
+          },
+          "closedFindings": [
+            "RUNTIME-I01b-R01-01"
+          ],
+          "reviewerCleanup": {
+            "state": "PASS_separate_reviewer_cleanup_P_I_R",
+            "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6094957819",
+            "actualEvidence": "/home/aaron/.cache/dungeon-native-qa/city-plans/runtime-i01b-r02-20261010/cleanup-review.json",
+            "sha256": "4f3df0324a6b1b7a82ad399bc9ec9799617ab8467805fffc04765767928b7a3b",
+            "planSha256": "d6b01e6fab8a5bc5617567a8bfabff746ad266f460606bd464b33a5ecb6f6ee0",
+            "implementationSha256": "2d890c63e33618296f1bdb44d9e6d930acd8e8867bc76b452ac667ef0c4aa798",
+            "protectedFilesVerified": 551,
+            "deletedFilesAbsent": 41,
+            "readDirectly": true
+          },
+          "limits": [
+            "Actual controlled-port core review, no productive Host/provider receipt",
+            "I01c visible integration and native/fresh-start check remain open",
+            "P02/P04/import/full E2E/original parity remain separate"
+          ]
+        },
+        "cleanup": {
+          "id": "E2E-01-SPACE-I01c-RUNTIME-I01b-CLEAN-P01",
+          "state": "planned_no_deletions_implementation_and_review_separate",
+          "plan": "ROADMAP-E2E01-ATLAS-NAVIGATION-CLEANUP-PLAN.md",
+          "planSha256": "22a532573810d7e397d110a24c9f357e15bb1e8d55914ef1d79174fc6b9283bf",
+          "base": "adc4b98a3925b39abefb0a4db9a2bcd7c1a5a6ec",
+          "consumedShared": "8f561783cd24defae9a31f490711fc00db0d172f",
+          "retainedEvidenceInventory": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-navigation-i01b-cleanup-20261010/p01/retained-evidence-inventory.json",
+          "inventorySha256": "f62f5b9c0684c4b4d742d4c349fe918a472c9642da66de36896019ee20b7e005",
+          "retainedFiles": 45,
+          "retainedBytes": 32451869,
+          "deleteFiles": [],
+          "removeDirectories": [],
+          "productChanged": false,
+          "frozenSourceBlobs": {
+            "src/features/atlas/atlas-campaign-navigation.ts": "243082c0c129654157fc5e64d378c888f1604dd837dee736cf4c16062dfa492e",
+            "src/features/atlas/atlas-repository.ts": "5854fb81ac51cbf7be6267d99f520ad1af4c3930b5bdc64d8f7f135c6737b868",
+            "tests/core/atlas-campaign-navigation.test.ts": "d028f28d071c0906a94dddb0d2a22f27b85a496f6cbd8e6e3edd850e97b19bba",
+            "tests/core.test.ts": "32aeb62c8fbdd6746a246d9347953825d2ce2de2eafd79c0d2265d979ee8d66a"
+          },
+          "runtimePlanSha256": "2f47c2e5994aacec47a4700326928e01f8436d1bafff6304979260501b45dda5",
+          "next": "Separate own CLEAN-I01 retention/metadata receipt; existing independent Stadt CLEAN-R01; then visible I01c integration under confirmed file boundaries.",
+          "validationEvidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-navigation-i01b-cleanup-20261010/p01/plan-validation.json"
         }
       }
     ],
@@ -153165,7 +153288,7 @@
       },
       {
         "id": "RUNTIME-I01b-R01-01",
-        "state": "implementation_checked_independent_rereview_pending",
+        "state": "resolved_by_actual_independent_rereview",
         "title": "Verspätete applied-Aktivierungsantwort darf neueren Atlas nicht ersetzen",
         "candidate": "d024b4e61b60a72937a17e4ce9a0103c8c20733d",
         "review": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/13#issuecomment-6094804164",
@@ -153176,7 +153299,57 @@
           "integratedTestedSource": "81c6a257af95b8dd9de0cbbd1fb76b6c1380521c",
           "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-navigation-n01b-20261010/run.json"
         },
-        "independentRereview": "pending existing Stadt R02"
+        "independentRereview": {
+          "result": "PASS",
+          "candidate": "adc4b98a3925b39abefb0a4db9a2bcd7c1a5a6ec",
+          "testedIntegratedSource": "81c6a257af95b8dd9de0cbbd1fb76b6c1380521c",
+          "reviewer": "Stadt, existing independent peer",
+          "readDirectly": true,
+          "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/13#issuecomment-6094937083",
+          "gate": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6094937270",
+          "actualEvidence": "/home/aaron/.cache/dungeon-native-qa/city-plans/runtime-i01b-r02-20261010/review.json",
+          "hashes": {
+            "review.json": "d5b23a87b22c13de2e99a5f2fc5fb47357459a2e99b85fd2adee47a820bb5ada",
+            "source-bindings.json": "b0111bc6a2fadc1d247c3b64fe6e3140f1bf91da39fd7667f9a7c4c184c55e83",
+            "counterprobes.ts": "6e51c436929f12e9cdb10a911c7ecf7916322ec20d5aa3cd908fb8d3503090b1",
+            "counterprobes.log": "549e58adc46c1a24b71b9005413c65a7914d9588252c0dbce24cf8c06078c10b"
+          },
+          "sourceBindingsVerified": 541,
+          "checks": {
+            "check": true,
+            "testsPassed": 551,
+            "testsFailed": 0,
+            "cleanBuild": true,
+            "independentCounterprobesPassed": 4,
+            "independentCounterprobesFailed": 0
+          },
+          "closedFindings": [
+            "RUNTIME-I01b-R01-01"
+          ],
+          "reviewerCleanup": {
+            "state": "PASS_separate_reviewer_cleanup_P_I_R",
+            "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6094957819",
+            "actualEvidence": "/home/aaron/.cache/dungeon-native-qa/city-plans/runtime-i01b-r02-20261010/cleanup-review.json",
+            "sha256": "4f3df0324a6b1b7a82ad399bc9ec9799617ab8467805fffc04765767928b7a3b",
+            "planSha256": "d6b01e6fab8a5bc5617567a8bfabff746ad266f460606bd464b33a5ecb6f6ee0",
+            "implementationSha256": "2d890c63e33618296f1bdb44d9e6d930acd8e8867bc76b452ac667ef0c4aa798",
+            "protectedFilesVerified": 551,
+            "deletedFilesAbsent": 41,
+            "readDirectly": true
+          },
+          "limits": [
+            "Actual controlled-port core review, no productive Host/provider receipt",
+            "I01c visible integration and native/fresh-start check remain open",
+            "P02/P04/import/full E2E/original parity remain separate"
+          ]
+        },
+        "resolvedBy": {
+          "source": "e982c2fa9e5f6528e409ae4ec95a6f05140334e1",
+          "testedIntegratedSource": "81c6a257af95b8dd9de0cbbd1fb76b6c1380521c",
+          "review": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/13#issuecomment-6094937083",
+          "actualEvidence": "/home/aaron/.cache/dungeon-native-qa/city-plans/runtime-i01b-r02-20261010/review.json",
+          "closedFinding": "RUNTIME-I01b-R01-01"
+        }
       }
     ]
   }
