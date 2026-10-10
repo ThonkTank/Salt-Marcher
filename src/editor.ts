@@ -1884,7 +1884,10 @@ export class DungeonEditor {
       return;
     if (direction === "undo") this.session.undo();
     else this.session.redo();
-    void this.select(undefined);
+    // Structured Key history already refreshes its room through the Session
+    // event. Keep that context visible; ordinary canvas history retains its
+    // established selection-clearing behavior.
+    if (!this.structuredPanel) void this.select(undefined);
   }
   private snap(p: Point, step = 1): Point {
     return this.snapEnabled
