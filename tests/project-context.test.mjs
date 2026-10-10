@@ -36,5 +36,9 @@ test('every area references existing shared roots and plans; portfolio areas cla
     assert.match(result.source.commit, /^[a-f0-9]{40}$/);
     assert.match(result.scope, /Not live/);
     if (['campaign', 'runtime'].includes(name)) { assert.deepEqual(result.checkpoint, {}); assert(result.note); }
+    if (name === 'gm') {
+      assert.equal(result.plan, 'docs/AGENT-ROLES.md');
+      assert.equal(result.planSection, 'gm-test');
+    }
   }
 });

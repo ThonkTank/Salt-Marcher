@@ -11,7 +11,7 @@
 | `atlas` | [Hex-Atlas](../ROADMAP-HEX-ATLAS.md) | [#7](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/7) |
 | `city` | [Stadt](../ROADMAP-CITIES.md), [Umsetzung](../ROADMAP-CITIES-IMPLEMENTATION-PLAN.md) | [#7](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/7) |
 | `dungeon` | [Parität](../ROADMAP-PARITY.md), [Werkzeugfolge](../ROADMAP-PARITY-TOOLS.md) | [#8](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/8) |
-| `gm` | [GM-Produkttest](../ROADMAP-GM-PRODUCT-TESTING-PLAN.md) | [#8](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/8) |
+| `gm` | [GUI-Testrolle](AGENT-ROLES.md#gm-test); aktueller Ablauf am Aufgabenissue | [#8: Dungeonbefunde](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/8), übrige Befunde am jeweiligen Paket |
 | `catalog` | [Katalog und Encounter](../ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md) | [#9](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/9) |
 | `campaign` | [SaltMarcher-Portfolio / SMR-01 bis SMR-09](../ROADMAP-SALTMARCHER-REPLACEMENT.md) | [#10](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/10) |
 | `runtime` | [Party / LiveSession im Portfolio](../ROADMAP-SALTMARCHER-REPLACEMENT.md) | [#6](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/6) |
@@ -29,6 +29,7 @@
 - Synthetische Fixtures ohne GUI: [Campaign B reproduzieren](CONTRIBUTOR-FIXTURE-B.md).
 - Atlas-Save-/Hostkontext: aktueller Aufgabenstand in [#40](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/40), [Fachvertrag](../ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md); frühere H01/D01/R01/H02-Läufe nur gezielt im [Belegregister](reference/PLAN-REGISTER.md#atlas-laufbelege).
 - Bestehende Detailpläne und historische Pakete: [Fachplanregister](reference/PLAN-REGISTER.md). Keine Pflichtlektüre beim Einstieg; stabile Pfade bleiben erhalten.
+- GM-Testvorlagen und frühere UI-Nachweise: [bestehender Testplan](../ROADMAP-GM-PRODUCT-TESTING-PLAN.md), nur den benötigten Szenario-/Belegabschnitt lesen. Aktueller Auftrag steht in der GUI-Testrolle und am Paket.
 - Attribution: [NOTICE](../NOTICE.md), [SRD](../src/features/catalog/SRD-5.1-ATTRIBUTION.md), [Items](../src/features/catalog/SRD-5.1-ITEMS-ATTRIBUTION.md).
 - Neue Paketpläne: [Vorlage](templates/PACKAGE-PLAN.md), unter `docs/plans/<bereich>/` ablegen und von hier oder dem Fachplanregister erreichbar machen. `npm run check:repo` prüft die Verweise.
 
