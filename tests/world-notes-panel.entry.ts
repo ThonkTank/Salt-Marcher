@@ -176,3 +176,16 @@ test("a mismatched update and an unconfirmed delete retain the editable record",
   assert.equal(f.host.querySelector("form") !== null, true);
   f.panel.destroy();
 });
+
+test("a forged NPC tombstone cannot change kind or creature identity and clear the draft", async () => {
+  const f = fixture(); f.click("NPC anlegen"); f.input("Name", "Älva");
+  f.input("Kreaturreferenz", "srd:wizard"); await f.save();
+  f.click("NPC: Älva"); f.click("Löschen");
+  f.substitute(() => ({ ...f.snapshot(), revision: f.snapshot().revision + 1,
+    records: [{ ...f.snapshot().records[0]!, revision: 2, kind: "quest" as const,
+      creatureId: null, relations: [], deleted: true }] }));
+  f.click("Löschen bestätigen"); await tick();
+  assert.match(f.host.querySelector('[role="alert"]')!.textContent!, /nicht bestätigt/);
+  assert.equal(f.host.querySelector("form") !== null, true);
+  f.panel.destroy();
+});

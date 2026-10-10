@@ -97,7 +97,10 @@ export class WorldNotesPanel {
     const old = before.records.find((item) => item.id === change.id);
     if (change.kind === "delete") return !!old && !old.deleted && old.revision === change.expectedRevision &&
       record.deleted && record.revision === change.expectedRevision + 1 &&
-      record.title === old.title && record.readAloud === old.readAloud && record.gmNotes === old.gmNotes;
+      Object.keys(record).length === 10 &&
+      record.version === old.version && record.id === old.id && record.kind === old.kind &&
+      record.title === old.title && record.readAloud === old.readAloud && record.gmNotes === old.gmNotes &&
+      record.creatureId === old.creatureId && record.relations.length === 0;
     if (record.deleted || record.kind !== change.draft.kind ||
         record.title !== change.draft.title || record.readAloud !== change.draft.readAloud ||
         record.gmNotes !== change.draft.gmNotes || record.creatureId !== change.draft.creatureId ||
