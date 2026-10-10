@@ -4,15 +4,15 @@
 
 Direkter Auftrag vom 09.10.2026: vollständige Funktionsgleichwertigkeit mit Canvas of Kings, Watabou Medieval Fantasy City Generator und Fantasy Town Generator, mit besserer Bedienung. Die ältere Beschränkung auf zwei Ergebnisvorbilder reicht dafür nicht aus. Originalgesten sind weiterhin keine Vorgabe. Alle bestehenden CTY-Kennungen und fremden Nachweise bleiben erhalten.
 
-Planungslauf CITY-P01; Ausgangspunkt bca9fbc. Repository: active/installed-phase1. Eigene Arbeitskopie, gemeinsame Veröffentlichung ohne Force-Push. Der Hex-Kollege besitzt derzeit HEX-00 und seine GUI-Testinstanz; keine parallele native Testinstanz starten. CITY-01 beginnt nach der festen CITY-00-Ergebnisgalerie und dem geprüften HEX-05-Übergabevertrag. Direkte Detailwirkungen werden spätestens vor ihrem zugehörigen Fachpaket geprüft; vollständige Originalinventur und Parität bleiben Pflicht für CITY-09. Bis zur Atlasübergabe wird Referenzarbeit vorgezogen.
+Historischer Ausgangspunkt CITY-P01: bca9fbc. Repository: active/installed-phase1; aktuelle Owner, Kandidaten und GUI-Slots in #7/#12 prüfen. Die feste CITY-00-Ergebnisgalerie und der geprüfte HEX-05-Übergabevertrag bleiben Voraussetzungen der CITY-01-Abnahme. Direkte Detailwirkungen spätestens vor ihrem Fachpaket prüfen; vollständige Originalinventur und Parität bleiben Pflicht für CITY-09. Daraus folgt keine pauschale Wartepflicht für bestätigte unabhängige Stadtarbeit.
 
-Der konkrete [CITY-01-Anschlussplan](ROADMAP-CITIES-CITY01-INTEGRATION-PLAN.md) ordnet die aktuellen Quellschnittstellen, fehlenden HEX-05-Verträge, Stadtmodule und vollständigen Abnahmesequenzen zu. Er wird nach der geprüften Atlasübergabe an den gelieferten APIs aktualisiert.
+Der [CITY-01-Anschlussplan](ROADMAP-CITIES-CITY01-INTEGRATION-PLAN.md) führt vorhandene Anschlüsse und die vollständigen Abnahmesequenzen. Seine ursprüngliche Quelltabelle und die datierten Läufe unten bewahren historische Belege; daraus keine neuen Plan-/Review-/Cleanup-Aufträge ableiten.
 
-Vor der Atlasübergabe wird ausschließlich der unabhängige [Stadtmodell-/Codec-Anteil](ROADMAP-CITIES-CITY01-MODEL-PLAN.md) vorbereitet, mit bestätigter Modulgrenze des Hex-Besitzers. Gemeinsame Atlasintegration und Hostabnahme bleiben hinter HEX-05. I41-Skalierwirkung ist zurückgestellt und weiterhin offen.
+Stadtowner verfolgt das zusammenhängende CITY-01-Ergebnis mit HEX/Campaign bis zur gemeinsamen Host-/Speicherabnahme. Bestehende Fachgrenzen erhalten, vorhandene Kerne und Anschlüsse verwenden; fehlende Beiträge innerhalb dieses Ablaufs liefern. I41-Skalierwirkung bleibt ohne neuen direkten Beleg offen.
 
 ## Iststand und offene technische Basis
 
-Alle 24 CTY-Unterfälle sind offen. Das reine native Stadtmodell mit Codec ist vorbereitet; Atlasintegration, Generierung, Darstellung und Stadtbedienung fehlen. `src/model.ts` beschreibt Dungeon-Dokumente, `src/session.ts` hält deren Befehle und Historie; `src/persistence.ts` besitzt Compare-and-write, Entwurf und Journal, erlaubt aber neben der Karte nur Markdown. Diese Besitz-/Journalgrenze darf nicht ungeprüft für .city/.location/.overworld aufgeweitet werden. HEX-05 ist noch nicht abgenommen. Eine neue separate Stadtansicht wäre keine Erfüllung des gemeinsamen Editors.
+Die CTY-Unterfälle bleiben bis zum jeweiligen direkten Nachweis offen. Citymodell, Codec, Befehle, Gesten und Renderer sind vorhanden; `atlas-editor.ts` und `spatial-canvas.ts` verwenden CityGesture/CityRenderer. Die gemeinsame AtlasHistory und räumliche Speicherstrecke ersetzen einen privaten Stadt-/Dungeon-Sessionweg. Vorhandener Code ist keine vollständige Stadt-, HEX-05- oder Generatorabnahme. Besitz-/Journalgrenzen nicht pauschal auf beliebige Dateien erweitern; keine separate Stadtansicht.
 
 ## CITY-FTG-SCOPE-P01 — Lebensdaten in der bestehenden Lieferfolge
 

@@ -2,7 +2,7 @@
   "repositoryOrientation": {
     "date": "2026-10-10",
     "state": "completed",
-    "scope": "Versioned recurring role contracts and stable bootstrap prompts; bounded re-entry, unique maintenance ownership and self-critical corrections within ordinary work. No product or acceptance approval.",
+    "scope": "Outcome delivery boundaries for #40/#41/#58, current producer consumption and removal of active specialty cleanup phase instructions. No product or acceptance approval.",
     "branch": "active/installed-phase1",
     "entrypoint": "README.md",
     "productGoals": "docs/PRODUCT.md",
@@ -15,14 +15,14 @@
     "contextTool": "npm run context",
     "nextTaskCommand": "npm run next",
     "referenceRegister": "docs/reference/PLAN-REGISTER.md",
-    "next": "Load current role contract at re-entry; correct demonstrated policy or entrypoint friction for the actual consumer. Queue maintenance and product decisions remain with their existing roles.",
+    "next": "Existing package owners continue through usable flows or complete source input; task-maintenance keeps actual free implementation/support offers current, product-value translates confirmed portfolio gaps into executable delivery. No second dispatch controller.",
     "verification": {
-      "repositoryStructure": "PASS",
-      "repositoryRuleTests": "PASS 25/25 on Node 22",
+      "repositoryStructure": "PASS (offline structure and references)",
+      "affectedSourcesAndDiff": "Read current Shared113e37f, producer integrations/claims and affected specialty instructions; documentation-only, no product tests required",
       "foreignCheckpointAndAcceptance": "Foreign checkpoint roots and acceptance bytes preserved; no product or acceptance approval"
     },
     "limits": "Semantic freshness and product/domain/host acceptance remain with their owners; role contracts do not grant additional permissions.",
-    "previousOrientation": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/blob/2983113a3249b881c59ff74d223ad935ac2b7633/checkpoint.json",
+    "previousOrientation": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/blob/d4c77d366659cfddf9d8ad2567ea2843d996c619/checkpoint.json",
     "roleContract": "docs/AGENT-ROLES.md"
   },
   "saltMarcherReplacement": {

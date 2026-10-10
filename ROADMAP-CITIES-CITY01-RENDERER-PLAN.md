@@ -2,6 +2,8 @@
 
 Planung CITY-01-PREP-P07, Start 2026-10-09T18:27:36.073378+00:00. Ausgangspunkt 70ebb44; vor Abschluss 7d2b41f integriert. Dieser Plan bereitet die sichtbare Metergeometrie vor; CITY-01 und sämtliche 24 CTY-Unterfälle bleiben offen bis zur vollständigen Atlas-/Hostabnahme.
 
+Die folgenden Ist-/Laufangaben bewahren den damaligen Modulstand. CityRenderer ist inzwischen in `spatial-canvas.ts` angeschlossen. Aktuelle Weiterarbeit folgt dem [CITY-01-Anschlussplan](ROADMAP-CITIES-CITY01-INTEGRATION-PLAN.md) und #7/#12; lokale historische R11/R12-Angaben sind keine neue Revieweinladung.
+
 ## Auftrag, Iststand und Besitz
 
 Eine Stadt muss im selben grenzenlosen Atlas Straßen, Plätze und Häuser unmittelbar bearbeiten lassen. cityScene liefert geprüfte Konturen, Straßenpolylines mit Meterbreite, Knoten, Ausdehnung und identische Treffergeometrie. CityGesture/CityDraft liefern eine transiente Vorschau; AtlasHistory besitzt den dauerhaften Stand. Die Zeichnung fehlt.
@@ -34,7 +36,7 @@ I07: npm run check, npm test, npm run build plus gezielte Regressionen. R11 lies
 
 Echte CityDraft-Vorschau/Cancel/Apply durch die Zeichnung führen und Source/AtlasHistory-/Terrainwerte auf Unverändertheit beim draw prüfen. Kontextanweisungen sind Kernnachweise, kein Pixel-/Hostbeweis. Spätere echte Pixi-/Obsidianzeichnung, Höfe über Landschaft, Zoom, Hauspose, Griffzug, Undo/Redo, Save und frischer Prozess ausschließlich in der mit Hex koordinierten einzelnen GUI-Testinstanz. RFB-Testfreigabe für das isolierte Canvas-of-Kings-Original liegt vor; sie ersetzt keinen eigenen Produktnachweis.
 
-Jeder Befund erhält gezielte Nachbesserung mit anschließendem Review, bis im Paket keine Pflichtlücke bleibt. Nach P07 getrennte Aufräum-P/I/R: Planlinks und Besitzgrenzen prüfen, veraltete pauschale Warteformulierung durch bestätigten City-Scope ersetzen, fremde JSON-Wurzeln erhalten; Ergebnis separat committen/pushen. Nach I07, R11 und jeder Nachbesserung ebenfalls eigene Aufräum-P/I/R. Keine rein lokale Rendererprüfung schließt CTY-Fälle, HEX-05, Speicherintegration, Großkartenleistung, Originalparität oder physische Bedienabnahme.
+Pflichtbefunde gezielt im bestehenden Paket beheben und betroffene Grenzen unabhängig nachprüfen. Planlinks, Besitzgrenzen und Bereinigung mit der Lieferung pflegen; fremde JSON-Wurzeln erhalten. Der lokale Renderer ist ein Beitrag zum CITY-01-Ablauf im [Anschlussplan](ROADMAP-CITIES-CITY01-INTEGRATION-PLAN.md), kein Anlass für eigene Aufräum-P/I/R nach jedem Schritt. Keine rein lokale Rendererprüfung schließt CTY-Fälle, HEX-05, Speicherintegration, Großkartenleistung, Originalparität oder physische Bedienabnahme.
 
 ## R11: numerischer Pflichtbefund
 
