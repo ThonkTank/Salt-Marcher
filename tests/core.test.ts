@@ -37,6 +37,7 @@ import "./core/campaign-runtime-source.test";
 import "./core/campaign-runtime-save-participant.test";
 import "./core/mws-complete-import-media.test";
 import "./core/mws-import-media-inventory.test";
+import "./core/complete-import-package.test";
 import "./core/city-codec.test";
 import "./core/city-commands.test";
 import "./core/city-edit.test";
