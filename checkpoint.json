@@ -5588,7 +5588,39 @@
       "commit": null,
       "issue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/8",
       "limits": "Kein frischer Electron-Prozess, keine physische Eingabeabnahme, keine Produktlatenz, keine separate Spielerprojektion oder Berechtigungs-/Datenschutzfreigabe; ein einzelner Cloud-GM-Lauf. Keine Produktimplementierung.",
-      "next": "Dungeon-Verantwortlicher implementiert den eng begrenzten GM-View-Interaktionsfix und meldet Produktcommit/Abnahmekriterien in Issue #8; Cloud-GM wiederholt genau Körper-/Label-Klick, sichtbaren Key-Pfad und Hashschutz auf integriertem Build."
+      "next": "Vorläufiger Kandidaten-Produktsmoke auf PR #21 bestand; unabhängiger Review und Merge bleiben offen. Danach denselben Körper-/Label-/Key-/Hashablauf auf dem integrierten Shared-Build als formalen Cloud-Nachtest wiederholen."
+    },
+    "latestObs04CandidateSmoke": {
+      "id": "GM-UX-OBS-04-CANDIDATE-SMOKE-20261010-01",
+      "status": "partial_candidate_ui_smoke_pass_final_integrated_retest_pending",
+      "branch": "active/installed-phase1",
+      "sharedBase": "38f333d4eda6cd2203443efd35b7140e7bf72e07",
+      "pr": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/21",
+      "candidateHead": "f4ad089d1084dbdbf98feec1d41a85a7014d1b84",
+      "productCommit": "97bf78e228073081e04e9261bac81b5c7c8c2fe5",
+      "build": "npm run build passed, dirty:false, Node v24.19.0; Obsidian 1.14.4 Electron 43.7.7, 1440x1000, existing cloud process/CDP 9228",
+      "artifactSha256": {
+        "main.js": "522823730ddce4d0ba83e0476f60887b60a07c517f84e8e270814b6d597efa43",
+        "styles.css": "a6d31c13219d4b9f49d2ecf6993106bedef2a33560c9bdfdb93106659d45bc2e",
+        "manifest.json": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64"
+      },
+      "installedBaselineSha256": {
+        "main.js": "c8eced850cad83d4d58731cfe9bc5dcb7c293646b9d9961ede37be0c8bb7c37f",
+        "styles.css": "a6d31c13219d4b9f49d2ecf6993106bedef2a33560c9bdfdb93106659d45bc2e",
+        "manifest.json": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64"
+      },
+      "qaCard": "/workspace/scratch/gm-cloud-qa/vault/_QA-GM-UX-01-C-RESTORE-20261009/Nebelwacht-Improvisation.dungeon",
+      "qaCardSha256BeforeAfter": "6779ca9d4c39564a80c453dbfd9de33a09363cda43fed1176708a1273c450279",
+      "steps": "Vollständiges PR-Kandidatentripel kopiert, Hashgleichheit geprüft und sichtbarer Reload app without saving; QA-Karte über Ctrl+O geöffnet; Menü > Spielansicht > Zurück zum Layout; sichtbares Geschossfeld Geschoss 1. Einmal Raum-12-Körper (1195,637) geklickt: Trefferziel war Canvas, Inspector zeigte 12 · Raum 12 und Text öffnen. Text öffnen geklickt: RoomView zeigte den gespeicherten Raum-12-Key vollständig. Danach Editor über Ctrl+O erneut geöffnet, dieselbe Spielansicht und Geschoss 1 gewählt; einmal Raum-12-Label (1196,616) geklickt: Trefferziel Canvas, RoomView öffnete denselben gespeicherten Key direkt. Vollständiges vorheriges Plugintripel wiederhergestellt und sichtbarer App-Reload ausgeführt.",
+      "result": "Vorläufiger Kandidaten-Smoke sichtbar bestanden: Körperklick öffnet Inspector mit Text öffnen; explizite Aktion öffnet Key; Labelklick öffnet denselben Key direkt; Keytext erschien nicht ungefragt in der Kartenansicht. QA-Kartenhash unverändert.",
+      "evidencePath": "/workspace/scratch/gm-cloud-qa/evidence-gmux01-obs04-candidate-20261010/",
+      "evidence": ["00-pre.png", "06-playview-enter.png", "08-floor-1.png", "09-room12-body.png", "10-room12-text-open.png", "12-playview-label-start.png", "13-room12-label.png", "14-restored-shared-plugin.png"],
+      "changedFiles": ["checkpoint.json", "ROADMAP-GM-PRODUCT-TESTING-PLAN.md"],
+      "commit": null,
+      "issueComment": "6093368409",
+      "latency": "Not measured; Playwright/CDP action and 150–500 ms harness waits are not product latency.",
+      "limits": "Candidate PR is still open/unmerged and had no independent review at test time; this is not integrated acceptance. Existing Electron process only, no fresh process or physical input; no player projection/privacy review, no broad Dungeon/GM approval. No map mutation; no save was required.",
+      "next": "After independent PR #21 review and normal merge, rebuild/install exact current Shared bundle and repeat only the same body/Text öffnen/label/hash protection flow."
     }
   }
 }
