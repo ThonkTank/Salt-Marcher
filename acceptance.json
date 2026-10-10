@@ -153024,7 +153024,7 @@
       {
         "id": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
         "requirement": "Thin Context/navigation consumer with actual native target validation, same Atlas owners and guarded Campaign switching",
-        "state": "native_ABA_independent_R02_PASS_integrated_promotion_pending",
+        "state": "promotion_NOT_GRANTED_retained_Save_Fresh_Recovery_binding_missing",
         "implementationRun": "HEX-E2E01-HOST-SAVE-I02",
         "sourceCommit": "86bbbbfac44233509f084ac836e6dafa07b11a16",
         "catalog": "ROADMAP-E2E-GATES-CANDIDATE.md:13",
@@ -153966,7 +153966,7 @@
           "currentEvidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-manifest-host-save-i02-20261010/implementation.json",
           "scope": "Component review only; no native/Host/overall approval."
         },
-        "gap": "Chronik R02 independently confirms R01 code and existing native H02 evidence on exact PR13 379d55c; the Fedora zlib-ng vs official Node gzip difference resolves the buildhash finding. #38 is CLOSED. #39 now owns the integrated qualified-input audit and explicit promotion/nonpromotion decision; remaining E2E/Shared-GM/product gates stay distinct.",
+        "gap": "#39 audited the actual independent scopes: Dungeon/City/Campaign component inputs and R01/H02 remain PASS, but the retained owner-native Save/Fresh/Rollback/Committed-Recovery proof has no consumed independent binding to current composition. Explicit NOT_PROMOTED; E2E01-PROMOTION-01 is a scope/evidence gap. Original four-run receipt and 46 referenced files verified locally; next own action publishes them for existing integrated review. No new product defect or automatic GUI rerun.",
         "qualifiedCampaignInputAndRollbackProbe": {
           "state": "qualified_component_contract_closed_productive_Host_implementation_now_present",
           "reviewSourceCommit": "ce2f9032dc9f72f994a307b5aac26e1ad8910065",
@@ -154249,6 +154249,17 @@
           "promotion": false,
           "fullE2E": false,
           "limits": "R01 code and existing synthetic native H02 A→B→A evidence only. Save/Fresh/Recovery input audit and independent integrated promotion decision remain #39. Physical input, original parity, large world, user-vault installation and total E2E remain distinct."
+        },
+        "integratedPromotionAudit": {
+          "id": "HEX-E2E01-PR13-PROMOTION-AUDIT-01",
+          "decision": "NOT_PROMOTED",
+          "state": "retained_Save_Fresh_Recovery_independent_binding_missing",
+          "candidateBefore": "2880a7e7ac3af2bd5f6f1f0d70181c4e0cfd7c4a",
+          "auditedComposition": "5950ef844e6c2081b7a0907cf0131754fc2a5dad",
+          "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
+          "checkpoint": "checkpoint.hexAtlasExecution.latestPromotionAudit",
+          "mandatoryFinding": "E2E01-PROMOTION-01",
+          "nextOwnAction": "Publish unchanged original Save/Fresh/Recovery artifacts for existing integrated review; no new GUI."
         }
       }
     ],

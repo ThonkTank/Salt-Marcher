@@ -795,7 +795,7 @@
   "hexAtlasExecution": {
     "scope": "HEX-00 bis HEX-28 und sämtliche eingeordneten CITY-00 bis CITY-09 vollständig",
     "phase": "HEX-03",
-    "state": "native_ABA_independent_R02_PASS_integrated_promotion_pending",
+    "state": "promotion_NOT_GRANTED_retained_Save_Fresh_Recovery_binding_missing",
     "plan": "ROADMAP-E2E01-SPATIAL-INTEGRATION-PLAN.md",
     "currentRun": {
       "id": "E2E-01-SPACE-I01b",
@@ -842,10 +842,10 @@
       "phaseApproval": false
     },
     "nextRun": {
-      "id": "E2E-01-PR13-INTEGRATED-PROMOTION-DECISION",
-      "kind": "steward_existing_integrated_gate_input_audit",
-      "state": "ready_existing_inputs_for_issue39",
-      "focus": "Issue #39: bind current candidate, frozen fixtures, actual independent City/Dungeon/Campaign reviews and retained Save/Fresh/Recovery scope, then document promotion or nonpromotion in #12. Consume existing R01/H02 R02 PASS; do not repeat closed reviews or automatically rerun GUI. Author cannot self-approve.",
+      "id": "E2E-01-PR13-SAVE-FRESH-RECOVERY-EVIDENCE-BINDING",
+      "kind": "bounded_original_evidence_publication_for_existing_integrated_review",
+      "state": "own_artifact_publication_next",
+      "focus": "Resolve only E2E01-PROMOTION-01 within #39: publish original retained four-run Save/Fresh/Rollback/Committed-Recovery receipt/raw files/build provenance, preserve hashes and map actual saved-source→current deltas. Then consume the existing integrated reviewer decision; no general review round or automatic GUI repeat.",
       "sourcePlan": "ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md",
       "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
       "evidence": {
@@ -886,8 +886,8 @@
         "inputBoundary": "One actual isolated Obsidian process with synthetic native picker/Key/button input; initial location navigation invokes the actual Host method.",
         "lateCaptureBoundary": "Old actual A capture is verified only after completed navigation and later B activation. Delayed in-flight navigation/Context ABA remains a separate core regression, not a claimed native reply test."
       },
-      "requiredInput": "Existing qualified integrated reviews and Save/Fresh/Recovery receipts for current unchanged product scope; #38 is CLOSED, Chronik R02 build binding is PASS. Steward must audit remaining PR13/#12 mandatory inputs before a distinct promotion decision.",
-      "after": "After the independent integrated decision, only required repairs/cleanup and #40/PVC-ATLAS-LOCATION-004 Shared GM gate. No E2E-02–04 or full-E2E promotion by inference.",
+      "requiredInput": "Existing own receipt 3ccb22c6 and 46 local hash-bound files are available. Hex prepares repository access for the existing integrated Chronik review; #38 is closed and must stay closed.",
+      "after": "Explicit independent scope acceptance for retained Save/Fresh/Recovery, then #39 promotion decision; required cleanup and #40 Shared GM gate remain separate. No Full-E2E inference.",
       "slotConfirmedForNextRun": false,
       "slotRequiredAgain": true,
       "slotScope": "H02 process ended normally; scoped GUI slot explicitly returned in #7/6099388973. No GUI ownership remains.",
@@ -897,7 +897,7 @@
         "claim": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/38#issuecomment-6099707771",
         "reviewSource": "379d55c0311e9455e5089c6b11bd0a33e9b833d2",
         "state": "PASS_scoped_R01_H02_build_binding",
-        "scope": "Existing integrated R01/H02/retained Save-Fresh-Recovery review; no new round.",
+        "scope": "R01/H02 R02 PASS is closed; retained Save/Fresh/Recovery independent binding is the distinct missing #39 input.",
         "finding": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/13#issuecomment-6099834538",
         "previousReviewSource": "de11ab0436cb9861d178a08bd19551f95bb47411",
         "decision": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/13#issuecomment-6100198777"
@@ -948,6 +948,17 @@
         "promotion": false,
         "fullE2E": false,
         "limits": "R01 code and existing synthetic native H02 A→B→A evidence only. Save/Fresh/Recovery input audit and independent integrated promotion decision remain #39. Physical input, original parity, large world, user-vault installation and total E2E remain distinct."
+      },
+      "promotionAudit": {
+        "id": "HEX-E2E01-PR13-PROMOTION-AUDIT-01",
+        "decision": "NOT_PROMOTED",
+        "state": "retained_Save_Fresh_Recovery_independent_binding_missing",
+        "candidateBefore": "2880a7e7ac3af2bd5f6f1f0d70181c4e0cfd7c4a",
+        "auditedComposition": "5950ef844e6c2081b7a0907cf0131754fc2a5dad",
+        "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
+        "checkpoint": "checkpoint.hexAtlasExecution.latestPromotionAudit",
+        "mandatoryFinding": "E2E01-PROMOTION-01",
+        "nextOwnAction": "Publish unchanged original Save/Fresh/Recovery artifacts for existing integrated review; no new GUI."
       }
     },
     "review": {
@@ -5492,23 +5503,14 @@
       "productUnchanged": true
     },
     "latestSharedIntegration": {
-      "id": "HEX-E2E01-SHARED-CONTRIBUTOR-CONSOLIDATION-SYNC",
-      "state": "qualified_Shared_documentation_integrated",
-      "sourceCommit": "a75aeb44790e8483256bb0d78791c7cfd0243f18",
-      "consumedShared": "abaf7c682c42fbe985c749bc12d96a0fac035c96",
-      "scope": "Shared contributor/workflow consolidation and historical coordination snapshot. Documentation only; no product, build inputs, fixtures or published H02 artifacts changed. Latest qualified repositoryOrientation maintenance consumed from its owner; historical orientation remains linked by immutable revision.",
+      "id": "HEX-E2E01-SHARED-GATE-ROUTING-SYNC",
+      "state": "qualified_Shared_documentation_and_orientation_integrated",
+      "sourceCommit": "5950ef844e6c2081b7a0907cf0131754fc2a5dad",
+      "consumedShared": "a5288d8ae71911bab7b8ddd67967246581c507f5",
+      "scope": "Qualified Shared gate routing, task/PR templates and contributor communication; owner repositoryOrientation consumed. No product/build/tool/fixture or H02 artifact change.",
       "checks": {
         "repositoryAndReferences": true,
-        "checkpointAndAcceptancePreservation": true,
-        "immutableEvidenceFilesByteExact": 38,
-        "productAndBuildInputsUnchanged": true
-      },
-      "retainedProductVerification": {
-        "sourceCommit": "108f1042b08ddd281b9bf3b4837676c8790b9104",
-        "typeCheck": true,
-        "fullTests": 682,
-        "build": true,
-        "basis": "Unchanged product/build/dependency/fixture inputs; this sync reruns only affected repository/task-selection checks."
+        "ownedMetadataAndHistoricalProofsPreserved": true
       },
       "newNativeRun": false,
       "fullE2E": false
@@ -5715,6 +5717,85 @@
       "promotion": false,
       "fullE2E": false,
       "limits": "R01 code and existing synthetic native H02 A→B→A evidence only. Save/Fresh/Recovery input audit and independent integrated promotion decision remain #39. Physical input, original parity, large world, user-vault installation and total E2E remain distinct."
+    },
+    "latestPromotionAudit": {
+      "id": "HEX-E2E01-PR13-PROMOTION-AUDIT-01",
+      "issue": 39,
+      "decision": "NOT_PROMOTED",
+      "state": "retained_Save_Fresh_Recovery_independent_binding_missing",
+      "candidateBefore": "2880a7e7ac3af2bd5f6f1f0d70181c4e0cfd7c4a",
+      "auditedComposition": "5950ef844e6c2081b7a0907cf0131754fc2a5dad",
+      "consumedShared": "a5288d8ae71911bab7b8ddd67967246581c507f5",
+      "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
+      "scope": "Steward input/scope audit for the existing integrated promotion decision; no source review repeated, no GUI or product change.",
+      "qualifiedInputs": [
+        {
+          "scope": "Dungeon source/shared-history/geometry composition only",
+          "source": "7dc8f8a864f8ada9246fa6754b43bf2f1514d448",
+          "review": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/13#issuecomment-6093515355"
+        },
+        {
+          "scope": "Campaign contract source composition only",
+          "source": "ef6e85161a0895ad5906e8c0c8d634843080aa5e",
+          "review": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/13#issuecomment-6093998767"
+        },
+        {
+          "scope": "City Host lifetime repair only; explicitly excludes Manifest Save/Recovery/fresh process",
+          "source": "2bc2d0ea13285eecf6863d4ef5802ebb66a81805",
+          "review": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/13#issuecomment-6096213544"
+        },
+        {
+          "scope": "Campaign integrated rollback and frozen consumer matrix only",
+          "source": "ce2f9032dc9f72f994a307b5aac26e1ad8910065",
+          "review": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/13#issuecomment-6097491463"
+        },
+        {
+          "scope": "R01 navigation code and native H02 A→B→A/build binding only; #38 closed",
+          "source": "379d55c0311e9455e5089c6b11bd0a33e9b833d2",
+          "review": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/13#issuecomment-6100198777"
+        }
+      ],
+      "retainedSaveFreshRecovery": {
+        "ownerResult": "PASS_four_existing_native_runs",
+        "independentBinding": "not evidenced by the consumed reviews; latest Chronik decision explicitly keeps this gate distinct",
+        "originalReceipt": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-manifest-host-save-i02-h01-20261010/native-evidence.json",
+        "sha256": "3ccb22c6dba8a3c5ae102a90e3e6b48e0ae189bce7425c69b8a62a65cb123b69",
+        "productSource": "86bbbbfac44233509f084ac836e6dafa07b11a16",
+        "nativeSources": [
+          "11ba72c540959e86a1a1c8ce80dfaba8bbf526b1",
+          "fe10f6218e235ef373757b09354840d0b8e8d7df"
+        ],
+        "referencedFilesLocallyHashVerified": 46,
+        "normalProcesses": 4,
+        "currentProductDeltaFromSavedSource": [
+          "src/features/atlas/atlas-campaign-navigation.ts",
+          "src/features/atlas/atlas-editor.ts",
+          "src/features/catalog/data/items-srd51-inventory.json",
+          "src/features/catalog/data/items-srd51-source-manifest.json",
+          "src/features/catalog/data/items-srd51-transcript.json",
+          "src/ui/atlas-campaign-host.ts",
+          "src/ui/atlas-view.ts"
+        ],
+        "repositoryArtifactAvailable": false,
+        "canonicalOwnerHandoff": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6098055560"
+      },
+      "mandatoryFinding": {
+        "id": "E2E01-PROMOTION-01",
+        "kind": "missing_independent_existing_evidence_binding",
+        "reason": "No consumed independent PASS binds the retained actual Save/Fresh/Rollback/Committed-Recovery receipts to the current integrated candidate. Current #38 R02 explicitly closes only R01/H02; #39 forbids author self-approval. This is an evidence/scope gap, not a reproduced product defect.",
+        "nextOwnAction": "Publish the original retained Save/Fresh/Recovery receipt and its referenced raw files/provenance unchanged for the existing integrated Chronik reviewer; map the actual source deltas. Do not reopen closed H02/component reviews or rerun GUI by default."
+      },
+      "checks": {
+        "repositoryAndReferences": true,
+        "productBuildFixtureInputsUnchangedSinceIndependentH02": true,
+        "frozenFiles": 19,
+        "frozenContractSha256": "92b766263ed73fd5dc5e24b2023e55af6f5f17b006830adb45f10734dfba69d6",
+        "localSaveArtifactDigests": true
+      },
+      "independentReviewApprovalGivenByHex": false,
+      "mergePerformed": false,
+      "newNativeRun": false,
+      "fullE2E": false
     }
   },
   "phase": "Phase 6: zweiter Nachbesserungslauf teilweise umgesetzt; fünf Restpositionen und unabhängiger Review offen",
