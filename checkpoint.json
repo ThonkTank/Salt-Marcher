@@ -795,7 +795,7 @@
   "hexAtlasExecution": {
     "scope": "HEX-00 bis HEX-28 und sämtliche eingeordneten CITY-00 bis CITY-09 vollständig",
     "phase": "HEX-03",
-    "state": "e2e01_runtime_navigation_cleanup_implemented_independent_cleanup_review_pending",
+    "state": "e2e01_navigation_cleanup_pass_city_component_review_pass_visible_host_next",
     "plan": "ROADMAP-E2E01-SPATIAL-INTEGRATION-PLAN.md",
     "currentRun": {
       "id": "E2E-01-SPACE-I01b",
@@ -842,13 +842,14 @@
       "phaseApproval": false
     },
     "nextRun": {
-      "id": "E2E-01-SPACE-I01c-RUNTIME-I01b-CLEAN-R01",
-      "kind": "existing_peer_independent_bounded_cleanup_review",
-      "plan": "ROADMAP-E2E01-ATLAS-NAVIGATION-CLEANUP-PLAN.md",
-      "focus": "Verify actual published retention-only CLEAN-I01, plan/inventory/evidence hash bindings, untouched product/fixtures/history/foreign roots and exact own metadata diff. No repeated code review.",
-      "dependency": "R02 code PASS and reviewer cleanup PASS already consumed; own CLEAN-I01 retains all45 proof files and deletes nothing.",
-      "afterPass": "Already planned visible I01c same-Atlas host integration and actual qualified City detail-entry contribution; no general new plan/ratification round.",
-      "review": "Pending actual independent Stadt cleanup receipt; productive Host/provider/native/full E2E claims remain open."
+      "id": "CITY-UI-I01-R01-CLEAN-P01",
+      "kind": "bounded_own_reviewer_cleanup_plan",
+      "focus": "Inventory this isolated City UI review source and QA artifacts; protect actual review/counterprobe/source/build receipts and enumerate only own temporary resources. No source mutation or code re-review.",
+      "sourcePlan": "/home/aaron/.cache/dungeon-native-qa/hex-03/city-ui-i01-r01-20261010/source/ROADMAP-CITIES-ATLAS-DETAIL-ENTRY-PLAN.md",
+      "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/city-ui-i01-r01-20261010/review.json",
+      "dependency": "Actual independent Navigation CLEAN-R01 PASS consumed; City component R01 PASS completed. No new generic plan/ratification.",
+      "afterPass": "Separate own reviewer CLEAN-I/R; qualified owner cleanup/Exact-SHA handoff; already-planned visible I01c host montage and runner hookup.",
+      "review": "No premature City code integration or productive Host/provider/native/full E2E receipt."
     },
     "review": {
       "run": "HEX-02-R02",
@@ -1840,7 +1841,7 @@
           "src/features/atlas/atlas-editor.ts",
           "src/ui/atlas-view.ts"
         ],
-        "nextCodeSlice": "I01b independent R02 PASS; own retention-only CLEAN-I01 implemented, existing independent CLEAN-R01 next; then already-planned visible I01c host adapter and confirmed City dock contribution.",
+        "nextCodeSlice": "I01b navigation and own cleanup PASS; City component independent R01 PASS. After bounded reviewer cleanup and qualified owner handoff, already-planned visible I01c host adapter/runner montage; real Campaign/Data provider delivery pending actual owner qualification.",
         "oracles": [
           "immutable actual native IDs/Markdown and all declared terrain chunks",
           "spatial closure never invents complete Campaign inventory",
@@ -2022,7 +2023,7 @@
       },
       "runtimeNavigation": {
         "run": "E2E-01-SPACE-I01c-RUNTIME-I01b",
-        "state": "code_rereview_pass_cleanup_implemented_independent_cleanup_review_pending",
+        "state": "independent_code_and_own_cleanup_pass_visible_host_open",
         "startedAt": "2026-10-10T06:22:53.804468+00:00",
         "finishedAt": "2026-10-10T06:39:36.543782+00:00",
         "base": "8770e06ebbd850b57cd9b54f4e0b966adc9769c8",
@@ -2105,7 +2106,7 @@
             "readDirectly": true
           }
         },
-        "next": "Existing independent Stadt CLEAN-R01; then already planned visible I01c host integration with confirmed City dock file boundaries.",
+        "next": "Already-planned visible I01c host integration after qualified City delivery and bounded reviewer cleanup.",
         "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-navigation-i01b-20261010/run.json",
         "postCheckSharedSynchronization": {
           "shared": "09d3d2e5bb7129dda2254cd8c7351d2942fb3dac",
@@ -2243,14 +2244,70 @@
           },
           "componentContract": "City UI consumes readonly labelled AtlasNavigationTarget values and onNavigate(target) callback in current dock. Hex supplies actual native targets, validates current Source/Context/Key guards, owns camera/history/persistence and mounts the component. No City edits to existing AtlasView/Editor/Renderer/Repository, no fake Registry or new view.",
           "state": "file_boundaries_confirmed_by_actual_Stadt_R02_visible_integration_next_after_own_cleanup",
-          "gate": "Code R02 PASS and own cleanup implemented; existing independent cleanup R01 outstanding. Actual provider/Host/native/full E2E receipts remain separate.",
+          "gate": "Navigation code and own cleanup PASS; actual City component independent review PASS, owner cleanup/handoff and Hex reviewer cleanup pending; productive provider/Host/native/full E2E evidence remains separate.",
           "confirmedBy": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/7#issuecomment-6094937416",
           "campaignDataSeam": {
-            "state": "concrete_provider_handoff_actual_delivery_pending",
+            "state": "actual_owner_claim_and_plan_received_independent_plan_required_fixes_open",
             "type": "Pick<AtlasCampaignNavigationPorts, \"currentContext\" | \"registry\" | \"inventory\" | \"activate\">",
             "HexOwns": "openNative inert mount and existing AtlasView/Editor/Renderer/Repository integration",
             "requestedSwitch": "Navigator.switchCampaign prepares valid Keys/gestures/draft before calling actual activate; provider UI must not bypass this via direct Lifecycle activation.",
-            "externalChange": "Actual Context notification synchronously invokes contextChanged; no invented Context/registry/inventory authority."
+            "externalChange": "Actual Context notification synchronously invokes contextChanged; no invented Context/registry/inventory authority.",
+            "ownerClaim": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6095092158",
+            "planPR": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/30",
+            "actualPlanReviewReport": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6095138217",
+            "codeIntegrated": false
+          },
+          "componentReview": {
+            "id": "CITY-UI-I01-R01",
+            "state": "PASS_component_review_owner_cleanup_and_real_mount_open",
+            "reviewer": "Hex, existing independent peer",
+            "candidate": "5e72857ca9f794ce0027765766365bd0982e827d",
+            "ownerTestedCode": "f5f50cf70277f442fc54140128bb6abebf06e30c",
+            "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/29#issuecomment-6095156261",
+            "gate": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6095156441",
+            "actualEvidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/city-ui-i01-r01-20261010/review.json",
+            "sha256": "ee59c7344598a74023dd1ccb6b8fd3acf6d1ab747d74d76006cc6ed7558b290f",
+            "checks": {
+              "check": "PASS",
+              "existingTests": 551,
+              "focusedOwnerDOMTests": 8,
+              "build": "PASS",
+              "cleanExactHead": true,
+              "artifacts": {
+                "main.js": "d3f2325452673bf00605d7e36489f4ee1402bc53bed24ff7e7ce25abf95ee4bc",
+                "styles.css": "cdf172e7d3c101d5917c16afe487641a19d9d5afe8ad23365b33c958ee1ac321",
+                "manifest.json": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64"
+              }
+            },
+            "independentCounterprobes": {
+              "pass": 4,
+              "fail": 0,
+              "cases": [
+                "Filtering pending work preserves locks and exact immutable target after primitive rejection/retry",
+                "Late success of obsolete location preserves newer pending action",
+                "Synchronous host update/reentrant new navigation preserves new pending UI",
+                "Two panels isolate all ten router events; destruction preserves sibling and existing Key"
+              ]
+            },
+            "findings": [],
+            "sourceBindingsUnchanged": 545,
+            "productFiles": [
+              "src/ui/atlas-detail-entry.ts",
+              "tests/atlas-detail-entry.entry.ts"
+            ],
+            "productSourceBlobs": {
+              "src/ui/atlas-detail-entry.ts": "d77efca70d3a846fb9fbbb1856124eddd3342a27104eedb5fc415cb275c299ec",
+              "tests/atlas-detail-entry.entry.ts": "3de73ddd87c1dd4406c25d5b861535942bde05a6139bcaf4879347f6ae290392"
+            },
+            "codeIntegrated": false,
+            "hostMounted": false,
+            "ownReviewerCleanup": "pending separate P/I/R",
+            "limits": [
+              "Isolated component/DOM review; no real native Atlas host mounting or physical input receipt",
+              "build.mjs/package.json hookup remains agreed Hex integration work",
+              "Host must supply confirmed actual targets and Source/Context/Key guards; productive providers/full E2E/original parity remain open"
+            ],
+            "next": "Own bounded reviewer cleanup, actual owner cleanup/Exact-SHA handoff, then already-planned visible Hex I01c integration; no general new plan/owner round."
           }
         },
         "independentRereview": {
@@ -2299,7 +2356,7 @@
         },
         "cleanup": {
           "id": "E2E-01-SPACE-I01c-RUNTIME-I01b-CLEAN-P01",
-          "state": "implemented_retention_only_independent_cleanup_review_pending",
+          "state": "PASS_own_separate_cleanup_P_I_R",
           "plan": "ROADMAP-E2E01-ATLAS-NAVIGATION-CLEANUP-PLAN.md",
           "planSha256": "22a532573810d7e397d110a24c9f357e15bb1e8d55914ef1d79174fc6b9283bf",
           "base": "adc4b98a3925b39abefb0a4db9a2bcd7c1a5a6ec",
@@ -2318,11 +2375,11 @@
             "tests/core.test.ts": "32aeb62c8fbdd6746a246d9347953825d2ce2de2eafd79c0d2265d979ee8d66a"
           },
           "runtimePlanSha256": "2f47c2e5994aacec47a4700326928e01f8436d1bafff6304979260501b45dda5",
-          "next": "Existing independent Stadt CLEAN-R01; then already planned visible I01c host integration with confirmed City dock file boundaries.",
+          "next": "Already-planned visible I01c host integration after qualified City delivery and bounded reviewer cleanup.",
           "validationEvidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-navigation-i01b-cleanup-20261010/p01/plan-validation.json",
           "implementation": {
             "id": "E2E-01-SPACE-I01c-RUNTIME-I01b-CLEAN-I01",
-            "state": "implemented_retention_only_independent_cleanup_review_pending",
+            "state": "independent_cleanup_review_pass",
             "base": "2700b857fc5373aba06859c405d68fef81f81703",
             "consumedShared": "8f561783cd24defae9a31f490711fc00db0d172f",
             "planSha256": "22a532573810d7e397d110a24c9f357e15bb1e8d55914ef1d79174fc6b9283bf",
@@ -2338,10 +2395,101 @@
             "unlinkedDependencies": 0,
             "productChanged": false,
             "carriedCoreBasis": "Actual independent R02 on adc4b98 / tested integrated81c6a257: check, 551 tests, clean build and4 independent counterprobes; unchanged source blobs, no repeated metadata-only core run.",
-            "independentReview": "pending existing Stadt peer on exact published CLEAN-I01",
+            "independentReview": {
+              "state": "PASS_actual_independent_cleanup_review",
+              "candidate": "3926fe4a7b7e352edc1462c9ead732d4b4a0f03a",
+              "reviewer": "Stadt, existing independent peer",
+              "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/13#issuecomment-6095107435",
+              "gate": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6095107668",
+              "actualEvidence": "/home/aaron/.cache/dungeon-native-qa/city-plans/runtime-i01b-clean-r01-20261010/review.json",
+              "sha256": "fa1f9b138f8d006a0f927eabef94858a914df2fd18eb0ce16daaba6ea516fa3e",
+              "sourceBindingsVerified": 540,
+              "readDirectly": true,
+              "reviewerCleanup": {
+                "state": "PASS_separate_reviewer_cleanup_P_I_R",
+                "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6095119405",
+                "actualEvidence": "/home/aaron/.cache/dungeon-native-qa/city-plans/runtime-i01b-clean-r01-20261010/cleanup-review.json",
+                "sha256": "02fd4211aa59c0b2dd6dd9dec847217cfa0f91c7b8f9af24d8297c0460f56464",
+                "planSha256": "4273c11bfb6c46f11f44fbf931b5ff94361575211dec9b0e62b1c462f0214bcf",
+                "implementationSha256": "c6e1202f661ad669b2c01261bc879d855ce55242e8b177ca808540e2bb188f56",
+                "readDirectly": true
+              }
+            },
             "next": "Existing independent Stadt CLEAN-R01; then already planned visible I01c host integration with confirmed City dock file boundaries."
+          },
+          "independentReview": {
+            "state": "PASS_actual_independent_cleanup_review",
+            "candidate": "3926fe4a7b7e352edc1462c9ead732d4b4a0f03a",
+            "reviewer": "Stadt, existing independent peer",
+            "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/13#issuecomment-6095107435",
+            "gate": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6095107668",
+            "actualEvidence": "/home/aaron/.cache/dungeon-native-qa/city-plans/runtime-i01b-clean-r01-20261010/review.json",
+            "sha256": "fa1f9b138f8d006a0f927eabef94858a914df2fd18eb0ce16daaba6ea516fa3e",
+            "sourceBindingsVerified": 540,
+            "readDirectly": true,
+            "reviewerCleanup": {
+              "state": "PASS_separate_reviewer_cleanup_P_I_R",
+              "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6095119405",
+              "actualEvidence": "/home/aaron/.cache/dungeon-native-qa/city-plans/runtime-i01b-clean-r01-20261010/cleanup-review.json",
+              "sha256": "02fd4211aa59c0b2dd6dd9dec847217cfa0f91c7b8f9af24d8297c0460f56464",
+              "planSha256": "4273c11bfb6c46f11f44fbf931b5ff94361575211dec9b0e62b1c462f0214bcf",
+              "implementationSha256": "c6e1202f661ad669b2c01261bc879d855ce55242e8b177ca808540e2bb188f56",
+              "readDirectly": true
+            }
           }
         }
+      },
+      "cityDetailEntryReview": {
+        "id": "CITY-UI-I01-R01",
+        "state": "PASS_component_review_owner_cleanup_and_real_mount_open",
+        "reviewer": "Hex, existing independent peer",
+        "candidate": "5e72857ca9f794ce0027765766365bd0982e827d",
+        "ownerTestedCode": "f5f50cf70277f442fc54140128bb6abebf06e30c",
+        "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/29#issuecomment-6095156261",
+        "gate": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6095156441",
+        "actualEvidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/city-ui-i01-r01-20261010/review.json",
+        "sha256": "ee59c7344598a74023dd1ccb6b8fd3acf6d1ab747d74d76006cc6ed7558b290f",
+        "checks": {
+          "check": "PASS",
+          "existingTests": 551,
+          "focusedOwnerDOMTests": 8,
+          "build": "PASS",
+          "cleanExactHead": true,
+          "artifacts": {
+            "main.js": "d3f2325452673bf00605d7e36489f4ee1402bc53bed24ff7e7ce25abf95ee4bc",
+            "styles.css": "cdf172e7d3c101d5917c16afe487641a19d9d5afe8ad23365b33c958ee1ac321",
+            "manifest.json": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64"
+          }
+        },
+        "independentCounterprobes": {
+          "pass": 4,
+          "fail": 0,
+          "cases": [
+            "Filtering pending work preserves locks and exact immutable target after primitive rejection/retry",
+            "Late success of obsolete location preserves newer pending action",
+            "Synchronous host update/reentrant new navigation preserves new pending UI",
+            "Two panels isolate all ten router events; destruction preserves sibling and existing Key"
+          ]
+        },
+        "findings": [],
+        "sourceBindingsUnchanged": 545,
+        "productFiles": [
+          "src/ui/atlas-detail-entry.ts",
+          "tests/atlas-detail-entry.entry.ts"
+        ],
+        "productSourceBlobs": {
+          "src/ui/atlas-detail-entry.ts": "d77efca70d3a846fb9fbbb1856124eddd3342a27104eedb5fc415cb275c299ec",
+          "tests/atlas-detail-entry.entry.ts": "3de73ddd87c1dd4406c25d5b861535942bde05a6139bcaf4879347f6ae290392"
+        },
+        "codeIntegrated": false,
+        "hostMounted": false,
+        "ownReviewerCleanup": "pending separate P/I/R",
+        "limits": [
+          "Isolated component/DOM review; no real native Atlas host mounting or physical input receipt",
+          "build.mjs/package.json hookup remains agreed Hex integration work",
+          "Host must supply confirmed actual targets and Source/Context/Key guards; productive providers/full E2E/original parity remain open"
+        ],
+        "next": "Own bounded reviewer cleanup, actual owner cleanup/Exact-SHA handoff, then already-planned visible Hex I01c integration; no general new plan/owner round."
       }
     },
     "verification": {
