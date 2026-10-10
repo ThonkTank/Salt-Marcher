@@ -61,6 +61,17 @@ test('candidate choice applies product priority across issues and PR support wit
   assert.equal(taskCandidate([], [{ ...review, state: 'closed' }, { ...review, labels: [] }]), undefined);
 });
 
+test('free product packages enable parallel implementation before equal-priority support without bypassing bottlenecks', () => {
+  const free = task(73, ['priority:next']);
+  const support = { number: 58, state: 'open', labels: ['kind:task', 'status:active', 'help wanted', 'priority:next'] };
+  const review = { number: 70, state: 'open', labels: ['help wanted', 'priority:next'] };
+  assert.equal(taskCandidate([support, free], [review]).number, 73);
+  assert.equal(taskCandidate([support, { ...free, labels: [...free.labels, 'status:active'] }], [review]).number, 58);
+  assert.equal(taskCandidate([free, { ...support, labels: [...support.labels, 'priority:now'] }], [review]).number, 58);
+  assert.equal(taskCandidate([task(1, ['priority:next', 'documentation']), support], []).number, 58);
+  assert.equal(taskCandidate([free], [{ ...review, number: 73 }]).source, undefined);
+});
+
 test('owned-package resume works without queue access and still rejects closed/non-task targets', {
   skip: process.platform === 'win32' ? 'Executable gh stub requires POSIX' : false,
 }, t => {

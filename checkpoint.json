@@ -2,16 +2,17 @@
   "repositoryOrientation": {
     "date": "2026-10-10",
     "state": "completed",
-    "scope": "Compact live entry: selected contribution instead of whole queue, concise #41 inputs and evidence-backed #40 closure in #12. No product/domain/host approval.",
-    "roleContract": "docs/AGENT-ROLES.md",
+    "roleContract": "docs/AGENT-ROLES.md#repository-maintenance",
     "repositoryContract": "docs/REPOSITORY.md",
-    "evaluatedShared": "071555a12858efaa1d36b7a10d20638f382f0faa",
-    "next": "Read the current package with npm run next -- --task <issue>; use --list only for portfolio selection and relevant comment links/--comments for detail. Current state belongs in issue main texts, not copied into this orientation.",
-    "verification": {
-      "tools": "27 repository/tool tests PASS: default selection omits unrelated owned work, --list retains overview, comment previews and full-text retrieval remain available. Selection priority/claim checks unchanged.",
-      "sources": "Fresh #40 owner closure and #12 handoff read; #41 two actual Campaign/Data inputs retained. Foreign checkpoint and acceptance bytes unchanged; no product approval."
-    },
-    "previousOrientation": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/blob/071555a12858efaa1d36b7a10d20638f382f0faa/checkpoint.json"
+    "evaluatedShared": "797e12b97dd01e143e2348776497e2e85fa54e02",
+    "scope": "Parallel delivery dependencies and compact contributor entry; no product/domain/host approval.",
+    "next": "Resume own package with npm run next -- --task <issue>. Selection preserves priority, then product work, then free packages before support. Current package state stays in issue main texts; detailed evidence is linked, not copied.",
+    "verification": [
+      "check:repo PASS",
+      "test:repo 28/28 PASS",
+      "Issue #58 source/claim/review comparison; main text shortened, evidence retained"
+    ],
+    "previousOrientation": "797e12b"
   },
   "saltMarcherReplacement": {
     "date": "2026-10-10",

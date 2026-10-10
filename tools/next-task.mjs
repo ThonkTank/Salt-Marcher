@@ -31,11 +31,15 @@ export function supportTasks(issues) {
 }
 
 export function taskCandidate(issues, prs) {
-  // A review PR is not inherently more useful than an implementation input.
-  // Apply the existing priority order to both invitations and free packages.
-  return [...readyTasks(issues), ...supportTasks(issues),
+  // Preserve explicit bottleneck priority. At equal priority, offer a free
+  // product package before support so available workers can implement in parallel.
+  const free = readyTasks(issues);
+  const freeNumbers = new Set(free.map(issue => issue.number));
+  const invitation = issue => issue.source === 'pr' || !freeNumbers.has(issue.number) ? 1 : 0;
+  return [...free, ...supportTasks(issues),
     ...prs.filter(pr => pr.state === 'open' && labels(pr).includes('help wanted'))
-      .map(pr => ({ ...pr, source: 'pr' }))].sort(workOrder)[0];
+      .map(pr => ({ ...pr, source: 'pr' }))].sort((a, b) => priority(a) - priority(b)
+        || preparation(a) - preparation(b) || invitation(a) - invitation(b) || a.number - b.number)[0];
 }
 
 export function tasksForArea(issues, area) {
@@ -96,7 +100,7 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.a
         '--limit', '1000', '--json', 'number,title,url,state,labels']))
         .map(pr => ({ ...pr, state: pr.state.toLowerCase() }));
       const supportPRs = tasksForArea(prs.filter(pr => labels(pr).includes('help wanted')), area);
-      console.log('Live task queue; no automatic claim. Priority first; within equal priority, product work before documentation, then issue number.');
+      console.log('Live task queue; no automatic claim. Priority first; then product before documentation, free package before support, then issue number.');
       console.log('\nCurrent product bottlenecks: check existing owners and requested support before opening more work.');
       const bottlenecks = criticalTasks(issues);
       for (const issue of bottlenecks) console.log(`#${issue.number} ${issue.title} [${issue.labels.map(l => l.name).filter(l => l.startsWith('status:')).join(', ') || 'ownership to check'}]\n${issue.url}`);
