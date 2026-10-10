@@ -14,11 +14,7 @@ import {
   type AtlasRecovery,
   type AtlasFileJournal,
 } from "./file-transaction";
-import {
-  parseOverworld,
-  serializeOverworld,
-  type OverworldDocument,
-} from "./overworld";
+import { parseOverworld, serializeOverworld } from "./overworld";
 import {
   parseTerrainChunk,
   serializeTerrainChunk,
@@ -26,11 +22,7 @@ import {
   type TerrainReference,
 } from "./terrain-schema";
 import { TerrainSource } from "./terrain-source";
-import {
-  LocationOwners,
-  newLocationPath,
-  type AtlasLocationOptions,
-} from "./location-owners";
+import { LocationOwners, newLocationPath } from "./location-owners";
 import {
   parseLocationDocument,
   serializeLocationDocument,
@@ -38,19 +30,36 @@ import {
 } from "../location/location-schema";
 import type { LocationPlacement } from "./location-placement";
 import { nativeId } from "./native-values";
+import { DetailOwners, type AtlasSpatialOptions } from "./detail-owners";
+import type { DetailKind, DetailRecord, DraftDetail } from "./detail-record";
+import { SpatialGraph } from "./spatial-graph";
+import {
+  parseSpatialWorld,
+  serializeSpatialWorld,
+  spatialBase,
+  spatialState,
+  type SpatialWorld,
+} from "./spatial-schema";
+import { checkSpatialSnapshot, detailReferences } from "./spatial-storage";
+import { remapSpatialCopy } from "./spatial-copy";
+import {
+  validateSpatialRecovery,
+  validateSpatialCopyJournal,
+} from "./spatial-recovery";
 
 interface Snapshot {
-  readonly world: OverworldDocument;
+  readonly world: SpatialWorld;
   readonly loaded: ReadonlyMap<string, string>;
   readonly locations: ReadonlyMap<string, string | null>;
+  readonly details: ReadonlyMap<string, DetailRecord>;
 }
 // All Atlas leaves of one backend share the queue, including draft/open operations.
 const queues = new WeakMap<object, Promise<unknown>>();
 function same(a: unknown, b: unknown): boolean {
   return sameAtlasValue(a as AtlasValue, b as AtlasValue);
 }
-function sameWorld(a: OverworldDocument, b: OverworldDocument): boolean {
-  const normalized = (w: OverworldDocument) => ({
+function sameWorld(a: SpatialWorld, b: SpatialWorld): boolean {
+  const normalized = (w: SpatialWorld) => ({
     ...w,
     chunks: [...w.chunks].sort((a, b) => a.file.localeCompare(b.file)),
   });
@@ -60,7 +69,7 @@ export class AtlasRepository {
   readonly draftPath: string;
   readonly journalPath: string;
   private baseline!: string;
-  private baselineWorld!: OverworldDocument;
+  private baselineWorld!: SpatialWorld;
   private draftRaw: string | null = null;
   private bases = new Map<string, string | null>();
   private restored = new Map<string, string | null>();
@@ -68,13 +77,18 @@ export class AtlasRepository {
   private source?: TerrainSource;
   private locations!: LocationOwners;
   private locationPaths = new Set<string>();
+  private details?: DetailOwners;
+  private graph?: SpatialGraph;
+  private generation = 0;
   constructor(
     readonly store: FileStore,
     readonly worldPath: string,
     private scope: object = store,
-    private options: AtlasLocationOptions = {},
+    private options: AtlasSpatialOptions = {},
   ) {
     safePath(worldPath);
+    if (options.details && !options.locations)
+      throw new Error("Räumliche Details benötigen Ortsowner.");
     this.draftPath = worldPath + ".draft";
     this.journalPath = worldPath + ".journal";
   }
@@ -92,10 +106,15 @@ export class AtlasRepository {
     if (!isTerrainFile(file)) throw new Error("Unzulässige Landschaftsdatei.");
     return `Atlasdaten/${this.baselineWorld.id}/${file}`;
   }
-  private parseWorld(raw: string): OverworldDocument {
-    return parseOverworld(raw, this.options.locations);
+  private parseWorld(raw: string): SpatialWorld {
+    return this.options.details
+      ? parseSpatialWorld(raw)
+      : parseOverworld(raw, this.options.locations);
   }
-  private worldText(world: OverworldDocument): string {
+  private worldText(world: SpatialWorld): string {
+    if (this.options.details) return serializeSpatialWorld(world);
+    if (world.version !== 1)
+      throw new Error("Räumliche Details sind noch nicht angeschlossen.");
     return serializeOverworld(world, this.options.locations);
   }
   private terrainPath(path: string): boolean {
@@ -104,6 +123,14 @@ export class AtlasRepository {
   }
   /** Broad parsing is confined to recovery; exact owner/manifest validation precedes repair. */
   private async validateRecovery(journal: AtlasFileJournal): Promise<void> {
+    if (this.options.details)
+      return validateSpatialRecovery(
+        this.store,
+        this.worldPath,
+        this.baselineWorld,
+        this.options,
+        journal,
+      );
     const root = journal.writes.find((w) => w.path === this.worldPath);
     const before = root
       ? this.parseWorld(root.before ?? "null")
@@ -182,7 +209,9 @@ export class AtlasRepository {
           p === this.worldPath ||
           p === this.draftPath ||
           this.terrainPath(p) ||
-          (this.options.locations === true && p.endsWith(".location")),
+          (this.options.locations === true && p.endsWith(".location")) ||
+          (this.options.details === true &&
+            (p.endsWith(".city") || p.endsWith(".dungeon"))),
         this.scope,
         (journal) => this.validateRecovery(journal),
       );
@@ -198,6 +227,7 @@ export class AtlasRepository {
       this.draftRaw = await this.store.read(this.draftPath);
       let current = this.baselineWorld;
       let locationDeltas: readonly DraftLocation[] = [];
+      let detailDeltas: readonly DraftDetail[] = [];
       if (this.draftRaw !== null) {
         const draft = parseAtlasDraft(this.draftRaw);
         if (draft.baselineWorld !== raw) throw new FileConflict(this.draftPath);
@@ -208,22 +238,18 @@ export class AtlasRepository {
           this.restored.set(c.file, c.after);
         }
         current = this.parseWorld(draft.currentWorld);
-        if (draft.version === 2) {
+        if (draft.version !== 1) {
           if (!this.options.locations)
             throw new Error("Ortsbearbeitung ist noch nicht angeschlossen.");
           locationDeltas = draft.locations;
+          if (draft.version === 3) {
+            if (!this.options.details)
+              throw new Error("Detailentwurf ist noch nicht angeschlossen.");
+            detailDeltas = draft.details;
+          }
         }
       }
-      this.source = new TerrainSource(current, new AtlasHistory(), (ref) =>
-        this.load(ref),
-      );
-      this.locations = new LocationOwners(
-        this.store,
-        this.source,
-        this.options,
-      );
-      await this.locations.initialize(this.baselineWorld, locationDeltas);
-      this.locationPaths = new Set(this.locations.pathsOwned);
+      await this.initializeSource(current, locationDeltas, detailDeltas);
       this.transaction = new FileTransaction(
         this.store,
         this.journalPath,
@@ -231,15 +257,107 @@ export class AtlasRepository {
           p === this.worldPath ||
           p === this.draftPath ||
           this.terrainPath(p) ||
-          this.locationPaths.has(p),
+          this.locationPaths.has(p) ||
+          !!this.details?.pathsOwned.includes(p),
         this.scope,
         (journal) => this.validateRecovery(journal),
       );
-      return this.source;
+      return this.source!;
     });
   }
-  private load(ref: TerrainReference): Promise<string> {
+  private live(stamp: number): void {
+    if (stamp !== this.generation)
+      throw new Error("Veralteter Atlas-Ladevorgang.");
+  }
+  private async initializeSource(
+    current: SpatialWorld,
+    locations: readonly DraftLocation[] = [],
+    details: readonly DraftDetail[] = [],
+    reload: readonly DetailRecord[] = [],
+  ): Promise<void> {
+    this.graph?.dispose();
+    this.graph = undefined;
+    this.details?.retire();
+    const stamp = ++this.generation;
+    this.source = new TerrainSource(
+      spatialBase(current),
+      new AtlasHistory(),
+      (ref) => this.load(ref, stamp),
+      this.options.details ? spatialState(current) : undefined,
+    );
+    this.locations = new LocationOwners(
+      this.store,
+      this.source,
+      this.options,
+      (owner) => this.graph?.include(owner),
+    );
+    await this.locations.initialize(this.baselineWorld, locations);
+    this.locationPaths = new Set(this.locations.pathsOwned);
+    if (!this.options.details) return;
+    this.details = new DetailOwners(this.store, this.source, this.options);
+    for (const r of details) await this.details.ensure(r.kind, r.id, r);
+    for (const r of reload) await this.details.ensure(r.kind, r.id);
+    if (current.version === 2)
+      for (const p of current.detailPlacements)
+        if (p.parent.kind === "location")
+          await this.locations.ensure(p.parent.locationId);
+    await this.loadClosure(current);
+    this.graph = new SpatialGraph(this.source, [
+      ...this.locations.loadedSources,
+      ...this.details.sources,
+    ]);
+  }
+  private async loadClosure(world: SpatialWorld): Promise<void> {
+    if (!this.details) return;
+    const seen = new Set<string>();
+    for (;;) {
+      const pending = this.locations.loadedSources.filter(
+        (s) => !seen.has(s.id),
+      );
+      if (!pending.length) break;
+      for (const s of pending) {
+        seen.add(s.id);
+        for (const ref of s.read()?.keyLinks ?? [])
+          if (ref.kind === "location" && ref.atlasId === world.id)
+            await this.locations.ensure(ref.documentId);
+      }
+    }
+    for (const [id, kind] of detailReferences(
+      world,
+      this.locations.snapshot(),
+    )) {
+      const owner = await this.details.ensure(kind, id);
+      this.graph?.include(owner);
+    }
+  }
+  get spatialGraph(): SpatialGraph {
+    if (!this.graph)
+      throw new Error("Räumliche Owner sind noch nicht angeschlossen.");
+    return this.graph;
+  }
+  ensureDetail(kind: DetailKind, id: string) {
+    const stamp = this.generation;
     return this.exclusive(async () => {
+      this.live(stamp);
+      if (!this.details)
+        throw new Error("Räumliche Details sind noch nicht angeschlossen.");
+      const owner = await this.details.ensure(kind, id);
+      this.live(stamp);
+      this.graph!.include(owner);
+      return owner;
+    });
+  }
+  detail(kind: DetailKind, id: string) {
+    if (!this.details)
+      throw new Error("Räumliche Details sind noch nicht angeschlossen.");
+    return this.details.get(kind, id);
+  }
+  private load(
+    ref: TerrainReference,
+    stamp = this.generation,
+  ): Promise<string> {
+    return this.exclusive(async () => {
+      this.live(stamp);
       if (this.restored.has(ref.file)) {
         const text = this.restored.get(ref.file);
         if (text === null)
@@ -251,6 +369,7 @@ export class AtlasRepository {
         throw new Error(
           "Ein Landschaftsbereich fehlt; Atlasdaten bleiben erhalten.",
         );
+      this.live(stamp);
       // Never adopt foreign changes as the baseline of an already-read or saved chunk.
       if (this.bases.has(ref.file) && this.bases.get(ref.file) !== raw)
         throw new FileConflict(this.dataPath(ref.file));
@@ -262,7 +381,7 @@ export class AtlasRepository {
   private snapshot(): Snapshot {
     if (!this.source) throw new Error("Atlas wurde noch nicht geöffnet.");
     return {
-      world: {
+      world: this.graph?.world() ?? {
         ...this.source.world,
         chunks: this.source.references(),
         placements: this.source.placements(),
@@ -273,6 +392,7 @@ export class AtlasRepository {
           .map((c) => [terrainChunkFile(c), serializeTerrainChunk(c)]),
       ),
       locations: this.locations.snapshot(),
+      details: this.details?.snapshot() ?? new Map(),
     };
   }
   private changes(snapshot: Snapshot): readonly DraftChunk[] {
@@ -318,14 +438,36 @@ export class AtlasRepository {
     return (
       !sameWorld(snapshot.world, this.baselineWorld) ||
       !!this.changes(snapshot).length ||
-      !!this.locations.changes(snapshot.world, snapshot.locations).length
+      !!this.locations.changes(snapshot.world, snapshot.locations).length ||
+      !!this.details?.changes(snapshot.details).length
     );
   }
   get hasDraft(): boolean {
     return this.draftRaw !== null;
   }
   ensureLocation(id: string) {
-    return this.exclusive(() => this.locations.ensure(id));
+    const stamp = this.generation;
+    return this.exclusive(async () => {
+      this.live(stamp);
+      const owner = await this.locations.ensure(id);
+      this.live(stamp);
+      if (this.graph) {
+        const state = this.source!.spatialState();
+        const world = parseSpatialWorld(
+          JSON.stringify({
+            ...this.source!.world,
+            placements: this.source!.placements(),
+            version: state.version,
+            ...(state.version === 2
+              ? { detailPlacements: state.detailPlacements }
+              : {}),
+          }),
+        );
+        await this.loadClosure(world);
+        this.graph.validate(this.source!.history);
+      }
+      return owner;
+    });
   }
   location(id: string) {
     return this.locations.get(id);
@@ -358,7 +500,9 @@ export class AtlasRepository {
         (p) =>
           p === this.worldPath ||
           p.startsWith("Atlasdaten/") ||
-          (this.options.locations === true && p.endsWith(".location")),
+          (this.options.locations === true && p.endsWith(".location")) ||
+          (this.options.details === true &&
+            (p.endsWith(".city") || p.endsWith(".dungeon"))),
         this.scope,
       );
       return transaction.recover(async (journal) => {
@@ -369,6 +513,10 @@ export class AtlasRepository {
           throw new Error(
             "Kein geschlossenes Kopierjournal; Dateien bleiben erhalten.",
           );
+        if (this.options.details) {
+          validateSpatialCopyJournal(this.worldPath, journal);
+          return;
+        }
         const world = this.parseWorld(root.after),
           children = new Map(
             world.chunks.map((r) => [`Atlasdaten/${world.id}/${r.file}`, r]),
@@ -418,6 +566,7 @@ export class AtlasRepository {
         if ((await this.store.read(target)) !== null)
           throw new FileConflict(target);
       await this.persist(this.snapshot());
+      if (this.details) return this.copySpatial(path, id, name, snapshot);
       const writes: AtlasFileWrite[] = [
         { path: this.worldPath, before: this.baseline, after: this.baseline },
         { path: path + ".draft", before: null, after: null },
@@ -521,6 +670,86 @@ export class AtlasRepository {
       ).commit(writes);
     });
   }
+  private async copySpatial(
+    path: string,
+    id: string,
+    name: string,
+    snapshot: Snapshot,
+  ): Promise<void> {
+    const locations = new Map<string, string | null>(),
+      details = new Map<string, DetailRecord>();
+    const writes: AtlasFileWrite[] = [
+      { path: this.worldPath, before: this.baseline, after: this.baseline },
+      { path: path + ".draft", before: null, after: null },
+    ];
+    for (const p of snapshot.world.placements) {
+      const captured = await this.locations.captured(
+        p.locationId,
+        snapshot.locations,
+      );
+      locations.set(p.locationId, serializeLocationDocument(captured.document));
+      writes.push({
+        path: captured.path,
+        before: captured.saved,
+        after: captured.saved,
+      });
+    }
+    for (const [doc, kind] of detailReferences(snapshot.world, locations)) {
+      const captured = await this.details!.captured(
+        kind,
+        doc,
+        snapshot.details,
+      );
+      details.set(doc, captured.record);
+      writes.push({
+        path: captured.record.path,
+        before: captured.saved,
+        after: captured.saved,
+      });
+    }
+    const next = remapSpatialCopy(
+      snapshot.world,
+      locations,
+      details,
+      id,
+      name,
+      () => this.options.makeId?.() ?? crypto.randomUUID(),
+    );
+    for (const ref of snapshot.world.chunks) {
+      const sourcePath = this.dataPath(ref.file),
+        saved = await this.store.read(sourcePath);
+      if (this.bases.has(ref.file) && this.bases.get(ref.file) !== saved)
+        throw new FileConflict(sourcePath);
+      const text =
+        snapshot.loaded.get(ref.file) ?? this.restored.get(ref.file) ?? saved;
+      if (text === null || text === undefined)
+        throw new Error(
+          "Landschaft fehlt; räumliche Kopie wurde nicht angelegt.",
+        );
+      const chunk = parseTerrainChunk(text, snapshot.world.id, ref);
+      writes.push(
+        { path: sourcePath, before: saved, after: saved },
+        {
+          path: `Atlasdaten/${id}/${ref.file}`,
+          before: null,
+          after: serializeTerrainChunk({ ...chunk, worldId: id }),
+        },
+      );
+    }
+    for (const [doc, bytes] of next.locations)
+      writes.push({ path: newLocationPath(doc), before: null, after: bytes });
+    for (const r of next.details.values())
+      writes.push({ path: r.path, before: null, after: r.bytes });
+    writes.push({ path, before: null, after: this.worldText(next.world) });
+    const allowed = new Set(writes.map((w) => w.path));
+    await new FileTransaction(
+      this.store,
+      path + ".journal",
+      (p) => allowed.has(p),
+      this.scope,
+      (j) => validateSpatialCopyJournal(path, j),
+    ).commit(writes);
+  }
   /** Retire only this draft; return a fresh saved source without changing canonical files. */
   discard(): Promise<TerrainSource> {
     const snapshot = this.snapshot();
@@ -529,12 +758,14 @@ export class AtlasRepository {
       return (
         sameWorld(current.world, snapshot.world) &&
         same([...current.loaded], [...snapshot.loaded]) &&
-        same([...current.locations], [...snapshot.locations])
+        same([...current.locations], [...snapshot.locations]) &&
+        same([...current.details], [...snapshot.details])
       );
     };
     return this.exclusive(async () => {
       if (!unchanged())
         throw new Error("Atlas wurde während des Verwerfens weiterbearbeitet.");
+      await this.details?.verify(snapshot.details);
       const writes: AtlasFileWrite[] = [
         { path: this.worldPath, before: this.baseline, after: this.baseline },
         ...[...this.bases].map(([file, before]) => ({
@@ -543,6 +774,7 @@ export class AtlasRepository {
           after: before,
         })),
         ...this.locations.guards(),
+        ...(this.details?.guards(snapshot.details) ?? []),
         { path: this.draftPath, before: this.draftRaw, after: null },
       ];
       await this.transaction.commit(writes);
@@ -556,19 +788,13 @@ export class AtlasRepository {
       }
       this.restored.clear();
       this.bases.clear();
-      this.source = new TerrainSource(
+      await this.initializeSource(
         this.baselineWorld,
-        new AtlasHistory(),
-        (ref) => this.load(ref),
+        [],
+        [],
+        [...snapshot.details.values()],
       );
-      this.locations = new LocationOwners(
-        this.store,
-        this.source,
-        this.options,
-      );
-      await this.locations.initialize(this.baselineWorld);
-      this.locationPaths = new Set(this.locations.pathsOwned);
-      return this.source;
+      return this.source!;
     });
   }
   persistDraft(): Promise<void> {
@@ -576,12 +802,20 @@ export class AtlasRepository {
     return this.exclusive(() => this.persist(snapshot));
   }
   private async persist(snapshot: Snapshot): Promise<void> {
+    if (this.details)
+      checkSpatialSnapshot(
+        snapshot.world,
+        snapshot.locations,
+        snapshot.details,
+      );
+    const detailChanges = this.details?.changes(snapshot.details) ?? [];
     const chunks = this.changes(snapshot),
       locations = this.locations.changes(snapshot.world, snapshot.locations),
       changed =
         !sameWorld(snapshot.world, this.baselineWorld) ||
         chunks.length > 0 ||
-        locations.length > 0;
+        locations.length > 0 ||
+        detailChanges.length > 0;
     const common = {
       kind: "overworld-draft" as const,
       worldId: this.baselineWorld.id,
@@ -591,11 +825,13 @@ export class AtlasRepository {
     };
     const next = changed
       ? serializeAtlasDraft(
-          this.baselineWorld.placements.length ||
-            snapshot.world.placements.length ||
-            locations.length
-            ? { ...common, version: 2, locations }
-            : { ...common, version: 1 },
+          this.details
+            ? { ...common, version: 3, locations, details: detailChanges }
+            : this.baselineWorld.placements.length ||
+                snapshot.world.placements.length ||
+                locations.length
+              ? { ...common, version: 2, locations }
+              : { ...common, version: 1 },
         )
       : null;
     // Check even the clean case: another leaf's draft must never be silently retired.
@@ -612,6 +848,8 @@ export class AtlasRepository {
     return this.exclusive(async () => {
       // Retain the complete local work even if the subsequent canonical save conflicts.
       await this.persist(snapshot);
+      await this.details?.verify(snapshot.details);
+      const detailChanges = this.details?.changes(snapshot.details) ?? [];
       const chunks = this.changes(snapshot),
         locations = this.locations.changes(snapshot.world, snapshot.locations),
         worldText = sameWorld(snapshot.world, this.baselineWorld)
@@ -630,6 +868,22 @@ export class AtlasRepository {
         })),
       );
       writes.push(
+        ...detailChanges.map((c) => ({
+          path: c.path,
+          before: c.before,
+          after: c.after,
+        })),
+      );
+      // Native files used by the captured graph stay guarded even if only the World changed.
+      if (this.details) {
+        const written = new Set(writes.map((w) => w.path));
+        for (const guard of [
+          ...this.locations.guards(),
+          ...this.details.guards(snapshot.details),
+        ])
+          if (!written.has(guard.path)) writes.push(guard);
+      }
+      writes.push(
         { path: this.worldPath, before: this.baseline, after: worldText },
         { path: this.draftPath, before: this.draftRaw, after: null },
       );
@@ -640,6 +894,7 @@ export class AtlasRepository {
       this.restored.clear();
       this.draftRaw = null;
       this.locations.saved(locations);
+      this.details?.saved(detailChanges);
       // The captured save is complete; an edit that arrived during it remains a new draft.
       if (this.dirty) await this.persist(this.snapshot());
     });

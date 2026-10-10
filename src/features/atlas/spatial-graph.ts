@@ -1,4 +1,9 @@
-import { immutable, parseDocument, isStructuredRoom } from "../../model";
+import {
+  immutable,
+  parseDocument,
+  isStructuredRoom,
+  type MapDocument,
+} from "../../model";
 import { CitySource } from "../city/commands";
 import { parseCityDocument } from "../city/codec";
 import type { CityDocument } from "../city/model";
@@ -21,6 +26,152 @@ import {
 } from "./spatial-schema";
 import { rotateMeters, rotationError, type RigidFrame } from "./relative-frame";
 import type { TerrainSource } from "./terrain-source";
+
+export interface SpatialRecords {
+  readonly locations: ReadonlyMap<string, LocationDocument | null>;
+  readonly cities: ReadonlyMap<string, CityDocument>;
+  readonly dungeons: ReadonlyMap<string, MapDocument>;
+}
+/** Check actual captured native documents without creating a second History or reading live owners. */
+export function validateSpatialRecords(
+  world: SpatialWorld,
+  records: SpatialRecords,
+): void {
+  const types = new Set<string>();
+  for (const map of [records.locations, records.cities, records.dungeons])
+    for (const [id, doc] of map) {
+      if (types.has(id) || id === world.id || (doc !== null && doc.id !== id))
+        throw new Error("Fremde oder mehrdeutige native Snapshotkennung.");
+      types.add(id);
+    }
+  const location = (id: string) => {
+    const doc = records.locations.get(id);
+    if (!doc)
+      throw new Error(
+        "Räumlicher Owner fehlt, ist ungeladen oder hat einen anderen Typ.",
+      );
+    return doc;
+  };
+  const city = (id: string) => {
+    const doc = records.cities.get(id);
+    if (!doc)
+      throw new Error(
+        "Räumlicher Owner fehlt, ist ungeladen oder hat einen anderen Typ.",
+      );
+    return doc;
+  };
+  const dungeon = (id: string) => {
+    const doc = records.dungeons.get(id);
+    if (!doc)
+      throw new Error(
+        "Räumlicher Owner fehlt, ist ungeladen oder hat einen anderen Typ.",
+      );
+    return doc;
+  };
+  const cityPlacement = (id: string): CityPlacement => {
+    const p =
+      world.version === 2
+        ? world.detailPlacements.find(
+            (p) => p.kind === "city" && p.documentId === id,
+          )
+        : undefined;
+    if (!p || p.kind !== "city")
+      throw new Error("Stadtparent ist nicht verortet.");
+    return p;
+  };
+  const placements = world.version === 2 ? world.detailPlacements : [];
+  const nativeIds = new Set<string>([
+    world.id,
+    ...world.placements.flatMap((p) => [p.id, p.locationId]),
+  ]);
+  const collectIds = (value: unknown): void => {
+    if (!value || typeof value !== "object") return;
+    for (const [key, child] of Object.entries(value)) {
+      if (key === "id" && typeof child === "string") nativeIds.add(child);
+      else collectIds(child);
+    }
+  };
+  for (const value of [
+    ...records.locations.values(),
+    ...records.cities.values(),
+    ...records.dungeons.values(),
+  ])
+    collectIds(value);
+  const parentLocation = (id: string) => {
+    if (!world.placements.some((p) => p.locationId === id))
+      throw new Error("Ortsparent ist nicht verortet.");
+    location(id);
+  };
+  for (const p of placements) {
+    if (nativeIds.has(p.id))
+      throw new Error(
+        "Platzierungskennung überschneidet eine native Owner-/Elementkennung.",
+      );
+    if (p.parent.kind === "location") parentLocation(p.parent.locationId);
+    if (p.kind === "city") {
+      city(p.documentId);
+      continue;
+    }
+    if (p.parent.kind === "city-building") {
+      const cityParent = cityPlacement(p.parent.cityId);
+      parentLocation(cityParent.parent.locationId);
+      if (
+        !city(p.parent.cityId).buildings.some(
+          (b) => b.id === (p.parent as { buildingId: string }).buildingId,
+        )
+      )
+        throw new Error("Gebundenes Haus fehlt; zuerst gemeinsam entkoppeln.");
+    }
+    const document = dungeon(p.documentId);
+    if (!document.floors.some((f) => f.id === p.surfaceFloorId))
+      throw new Error("Oberflächengeschoss fehlt.");
+    for (const e of p.entrances) {
+      const room = document.entities.find((r) => r.id === e.roomId),
+        route = document.content.routes.find((r) => r.id === e.routeId);
+      if (
+        !document.floors.some((f) => f.id === e.floorId) ||
+        !room ||
+        !isStructuredRoom(room) ||
+        room.floorId !== e.floorId ||
+        !route?.entrance ||
+        route.toRoomId !== e.roomId
+      )
+        throw new Error(
+          "Dungeoneingang passt nicht zu Geschoss/Raum/semantischer Route.",
+        );
+    }
+  }
+  // Navigation carries no second placement. Local targets need actual native owner closure.
+  for (const document of records.locations.values()) {
+    if (!document) continue;
+    for (const ref of document.detailMaps) {
+      if (ref.kind === "city") city(ref.documentId);
+      else dungeon(ref.documentId);
+    }
+    for (const ref of document.keyLinks) {
+      if (ref.atlasId !== world.id) continue;
+      if (ref.kind === "location") {
+        const target = location(ref.documentId);
+        if (
+          ref.sectionId !== null &&
+          !target.sections.some((s) => s.id === ref.sectionId)
+        )
+          throw new Error("Orts-Keyabschnitt fehlt.");
+      } else {
+        const room = dungeon(ref.documentId).entities.find(
+          (e) => e.id === ref.roomId,
+        );
+        if (
+          !room ||
+          !isStructuredRoom(room) ||
+          (ref.sectionId !== null &&
+            !room.key.sections.some((s) => s.id === ref.sectionId))
+        )
+          throw new Error("Raum-/Keyabschnitt fehlt.");
+      }
+    }
+  }
+}
 
 export type SpatialOwner = LocationSource | CitySource | DungeonAtlasSource;
 /** Only actual native adapters enter this registry; it is not an inventory-derived Campaign registry. */
@@ -117,108 +268,22 @@ export class SpatialGraph {
     return placement;
   }
   validate(view: AtlasReadView): void {
-    const world = this.worldAt(view),
-      placements = world.version === 2 ? world.detailPlacements : [];
-    const nativeIds = new Set<string>([
-      world.id,
-      ...world.placements.flatMap((p) => [p.id, p.locationId]),
-    ]);
-    const collectIds = (value: unknown): void => {
-      if (!value || typeof value !== "object") return;
-      for (const [key, child] of Object.entries(value)) {
-        if (key === "id" && typeof child === "string") nativeIds.add(child);
-        else collectIds(child);
-      }
-    };
+    const locations = new Map<string, LocationDocument | null>(),
+      cities = new Map<string, CityDocument>(),
+      dungeons = new Map<string, MapDocument>();
     for (const owner of this.owners.values()) {
-      const value = view.read(owner.id, "document");
-      collectIds(
-        owner instanceof DungeonAtlasSource
-          ? this.dungeon(owner.id, view)
-          : value,
-      );
-    }
-    const parentLocation = (id: string) => {
-      if (!world.placements.some((p) => p.locationId === id))
-        throw new Error("Ortsparent ist nicht verortet.");
-      this.location(id, view);
-    };
-    for (const p of placements) {
-      if (nativeIds.has(p.id))
-        throw new Error(
-          "Platzierungskennung überschneidet eine native Owner-/Elementkennung.",
+      if (owner instanceof LocationSource)
+        locations.set(
+          owner.id,
+          view.read(owner.id, "document") === null
+            ? null
+            : this.location(owner.id, view),
         );
-      if (p.parent.kind === "location") parentLocation(p.parent.locationId);
-      if (p.kind === "city") {
-        this.city(p.documentId, view);
-        continue;
-      }
-      if (p.parent.kind === "city-building") {
-        const cityParent = this.cityPlacement(world, p.parent.cityId);
-        parentLocation(cityParent.parent.locationId);
-        if (
-          !this.city(p.parent.cityId, view).buildings.some(
-            (b) => b.id === (p.parent as { buildingId: string }).buildingId,
-          )
-        )
-          throw new Error(
-            "Gebundenes Haus fehlt; zuerst gemeinsam entkoppeln.",
-          );
-      }
-      const document = this.dungeon(p.documentId, view);
-      if (!document.floors.some((f) => f.id === p.surfaceFloorId))
-        throw new Error("Oberflächengeschoss fehlt.");
-      for (const e of p.entrances) {
-        const room = document.entities.find((r) => r.id === e.roomId),
-          route = document.content.routes.find((r) => r.id === e.routeId);
-        if (
-          !document.floors.some((f) => f.id === e.floorId) ||
-          !room ||
-          !isStructuredRoom(room) ||
-          room.floorId !== e.floorId ||
-          !route?.entrance ||
-          route.toRoomId !== e.roomId
-        )
-          throw new Error(
-            "Dungeoneingang passt nicht zu Geschoss/Raum/semantischer Route.",
-          );
-      }
+      else if (owner instanceof CitySource)
+        cities.set(owner.id, this.city(owner.id, view));
+      else dungeons.set(owner.id, this.dungeon(owner.id, view));
     }
-    // Navigation carries no second placement. Local targets need actual native owner closure.
-    for (const owner of this.owners.values()) {
-      if (
-        !(owner instanceof LocationSource) ||
-        view.read(owner.id, "document") === null
-      )
-        continue;
-      const location = this.location(owner.id, view);
-      for (const ref of location.detailMaps) {
-        if (ref.kind === "city") this.city(ref.documentId, view);
-        else this.dungeon(ref.documentId, view);
-      }
-      for (const ref of location.keyLinks) {
-        if (ref.atlasId !== world.id) continue;
-        if (ref.kind === "location") {
-          const target = this.location(ref.documentId, view);
-          if (
-            ref.sectionId !== null &&
-            !target.sections.some((s) => s.id === ref.sectionId)
-          )
-            throw new Error("Orts-Keyabschnitt fehlt.");
-        } else {
-          const room = this.dungeon(ref.documentId, view).entities.find(
-            (e) => e.id === ref.roomId,
-          );
-          if (
-            !room ||
-            !isStructuredRoom(room) ||
-            (ref.sectionId !== null &&
-              !room.key.sections.some((s) => s.id === ref.sectionId))
-          )
-            throw new Error("Raum-/Keyabschnitt fehlt.");
-        }
-      }
-    }
+    validateSpatialRecords(this.worldAt(view), { locations, cities, dungeons });
   }
   world(): SpatialWorld {
     this.validate(this.source.history);

@@ -53,6 +53,7 @@ export class LocationOwners {
     readonly store: FileStore,
     readonly terrain: TerrainSource,
     readonly options: AtlasLocationOptions,
+    private onSource: (source: LocationSource) => void = () => {},
   ) {}
   async resolve(id: string): Promise<string> {
     return locationPath(
@@ -61,7 +62,7 @@ export class LocationOwners {
     );
   }
   async initialize(
-    world: OverworldDocument,
+    world: Pick<OverworldDocument, "id" | "placements">,
     deltas: readonly DraftLocation[] = [],
   ): Promise<void> {
     const paths = new Set<string>();
@@ -96,6 +97,9 @@ export class LocationOwners {
       );
     }
   }
+  get loadedSources(): readonly LocationSource[] {
+    return [...this.sources.values()];
+  }
   get pathsOwned(): readonly string[] {
     return [...this.paths.values()];
   }
@@ -123,6 +127,7 @@ export class LocationOwners {
     );
     this.bases.set(id, { path, before: raw });
     this.sources.set(id, source);
+    this.onSource(source);
     return source;
   }
   get(id: string): LocationSource {
@@ -155,6 +160,7 @@ export class LocationOwners {
     this.paths.set(doc.id, path);
     this.bases.set(doc.id, { path, before: null });
     this.sources.set(doc.id, source);
+    this.onSource(source);
     return this.terrain.history.execute({
       label: "Ort anlegen",
       changes: [change, locationDocumentChange(doc.id, null, doc)],
@@ -217,7 +223,7 @@ export class LocationOwners {
     );
   }
   changes(
-    world: OverworldDocument,
+    world: Pick<OverworldDocument, "id" | "placements">,
     loaded: ReadonlyMap<string, string | null>,
   ): readonly DraftLocation[] {
     const current = new Set(world.placements.map((p) => p.locationId)),
