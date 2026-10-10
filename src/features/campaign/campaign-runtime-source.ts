@@ -506,6 +506,19 @@ export class CampaignRuntimeSource {
     proof: CampaignRuntimeSaveRollbackV1,
     lease: CampaignRuntimeSaveAcknowledgmentLease,
   ): void {
+    this.validateSaveRollback(proof, lease);
+    const current = this.loaded?.manifests.get(proof.prepared.context.campaignId);
+    if (this.acknowledgedSaves.has(proof.transactionId) || this.changeEpoch !== lease.sourceEpoch ||
+        this.invalidated || !current ||
+        current.path !== proof.prepared.manifestPath || current.bytes !== proof.prepared.beforeManifestBytes)
+      throw new Error("Campaign-Save-Rollback besitzt keine unveränderte Sourcebasis.");
+    this.acknowledgmentLeases.delete(lease);
+    this.cancelledSaves.add(proof.transactionId);
+  }
+  validateSaveRollback(
+    proof: CampaignRuntimeSaveRollbackV1,
+    lease: CampaignRuntimeSaveAcknowledgmentLease,
+  ): void {
     if (this.closed) throw new Error("Campaignquelle ist geschlossen.");
     if (!this.acknowledgmentValidator)
       throw new Error("Campaignquelle besitzt keine Save-Acknowledgment-Autorität.");
@@ -516,13 +529,6 @@ export class CampaignRuntimeSource {
     if (!preparedProof || preparedProof !== normalizedSaveProof(proof.prepared) ||
         proof.transactionId !== lease.transactionId || proof.prepared.journal.state !== "prepared")
       throw new Error("Campaign-Save-Rollback passt nicht zur vorbereiteten Source-Lease.");
-    const current = this.loaded?.manifests.get(proof.prepared.context.campaignId);
-    if (this.acknowledgedSaves.has(proof.transactionId) || this.changeEpoch !== lease.sourceEpoch ||
-        this.invalidated || !current ||
-        current.path !== proof.prepared.manifestPath || current.bytes !== proof.prepared.beforeManifestBytes)
-      throw new Error("Campaign-Save-Rollback besitzt keine unveränderte Sourcebasis.");
-    this.acknowledgmentLeases.delete(lease);
-    this.cancelledSaves.add(proof.transactionId);
   }
 }
 
@@ -541,6 +547,7 @@ export class CampaignRuntimeNavigationProvider {
     inFlight?: Promise<CampaignRuntimeSaveAcknowledgmentResult> };
   private readonly completed = new Map<string, { readonly proof: string;
     readonly lease: CampaignRuntimeSaveAcknowledgmentLease; readonly result: CampaignRuntimeSaveAcknowledgmentResult }>();
+  private readonly cancelled = new Map<string, string>();
   readonly registry: CampaignOwnerRegistryPort;
   readonly inventory: AtlasInventoryPort;
   constructor(
@@ -619,9 +626,12 @@ export class CampaignRuntimeNavigationProvider {
   }
   acknowledgeCommittedSave(proof: CampaignRuntimeSaveAcknowledgmentV1): Promise<CampaignRuntimeSaveAcknowledgmentResult> {
     if (this.closed) return Promise.reject(new Error("Campaign-Navigation ist geschlossen."));
+    const normalized = normalizedSaveProof(proof);
+    if (this.cancelled.get(proof.transactionId) === normalized)
+      return Promise.reject(new Error("Campaign-Save-Acknowledgment-Transaktion wurde zurückgerollt."));
     if (JSON.stringify(this.lifecycle.context) !== JSON.stringify(proof.context))
       return Promise.reject(new Error("Campaign-Save-Acknowledgment gehört zu einem fremden aktuellen Context."));
-    const normalized = normalizedSaveProof(proof), completed = this.completed.get(proof.transactionId);
+    const completed = this.completed.get(proof.transactionId);
     if (!this.pending && this.sourceCurrent && completed?.proof === normalized) {
       return this.source.acknowledgeCommittedSave(proof, completed.lease).then(() => completed.result);
     }
@@ -641,10 +651,22 @@ export class CampaignRuntimeNavigationProvider {
   cancelSaveAcknowledgment(proof: CampaignRuntimeSaveRollbackV1): void {
     if (this.closed) throw new Error("Campaign-Navigation ist geschlossen.");
     const pending = this.pending;
-    if (!pending || pending.inFlight || pending.eventObserved || pending.storageEventId !== undefined ||
-        pending.proof !== normalizedSaveProof(proof.prepared) ||
-        JSON.stringify(this.lifecycle.context) !== JSON.stringify(proof.prepared.context))
+    const normalized = normalizedSaveProof(proof.prepared);
+    if (!pending) {
+      if (this.cancelled.get(proof.transactionId) === normalized)
+        throw new Error("Campaign-Save-Rollback wurde bereits bestätigt.");
       throw new Error("Campaign-Save-Rollback besitzt keine abbrechbare Vorbereitung.");
+    }
+    this.source.validateSaveRollback(proof, pending.lease);
+    if (pending.proof !== normalized ||
+        JSON.stringify(this.lifecycle.context) !== JSON.stringify(proof.prepared.context))
+      throw new Error("Campaign-Save-Rollback besitzt eine fremde Vorbereitung.");
+    if (pending.eventObserved || pending.storageEventId !== undefined) {
+      for (const waiter of pending.waiters.splice(0))
+        waiter.reject(new Error("Campaign-Save-Rollback verlor das Rennen gegen ein Manifestevent."));
+      this.pending = undefined; this.sourceCurrent = false; this.notify();
+      throw new Error("Campaign-Save-Rollback beobachtete bereits ein Manifestevent.");
+    }
     try {
       this.source.cancelSaveAcknowledgment(proof, pending.lease);
     } catch (error) {
@@ -656,6 +678,9 @@ export class CampaignRuntimeNavigationProvider {
     if (this.pending !== pending || !this.sourceCurrent)
       throw new Error("Campaign-Save-Rollback verlor seine vorbereitete Source-Lease.");
     this.pending = undefined;
+    this.cancelled.set(proof.transactionId, normalized);
+    for (const waiter of pending.waiters.splice(0))
+      waiter.reject(new Error("Campaign-Save-Acknowledgment-Transaktion wurde zurückgerollt."));
   }
   private async finishSaveAcknowledgment(
     proof: CampaignRuntimeSaveAcknowledgmentV1,
@@ -688,7 +713,7 @@ export class CampaignRuntimeNavigationProvider {
     for (const waiter of this.pending?.waiters.splice(0) ?? [])
       waiter.reject(new Error("Campaign-Navigation wurde während der Speicherbestätigung geschlossen."));
     this.pending = undefined; this.completed.clear(); this.sourceCurrent = false;
-    this.unsubscribe(); this.changed.clear();
+    this.cancelled.clear(); this.unsubscribe(); this.changed.clear();
   }
 }
 

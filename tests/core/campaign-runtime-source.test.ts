@@ -261,12 +261,19 @@ test("navigation provider blocks pending Vault reads unless one exact own save i
 
 test("navigation provider releases only the exact rolled-back preparation before any manifest event", async () => {
   const rolledBack = await acknowledgmentFixture(319, "transaction:rolled-back", "saved-never-written");
+  let contextChanges = 0; rolledBack.provider.subscribeContextChanged(() => contextChanges++);
   rolledBack.provider.prepareSaveAcknowledgment(rolledBack.prepared);
+  const waitingAcknowledgment = rolledBack.provider.acknowledgeCommittedSave(rolledBack.committed);
   const rollback = rolledBack.participant.createRollbackAcknowledgment({ prepared: rolledBack.prepared,
     receipt: rolledBack.issueRollback(rolledBack.prepared) });
   rolledBack.provider.cancelSaveAcknowledgment(rollback);
+  await assert.rejects(waitingAcknowledgment, /zurückgerollt/);
   assert.equal(rolledBack.provider.currentContext()?.contextToken, rolledBack.context.contextToken);
-  assert.throws(() => rolledBack.provider.cancelSaveAcknowledgment(rollback), /keine abbrechbare Vorbereitung/);
+  assert.equal(contextChanges, 0);
+  await assert.rejects(rolledBack.provider.acknowledgeCommittedSave(rolledBack.committed), /zurückgerollt/);
+  assert.equal(rolledBack.provider.currentContext()?.contextToken, rolledBack.context.contextToken);
+  assert.equal(contextChanges, 0);
+  assert.throws(() => rolledBack.provider.cancelSaveAcknowledgment(rollback), /bereits bestätigt/);
   assert.throws(() => rolledBack.provider.prepareSaveAcknowledgment(rolledBack.prepared), /bereits zurückgerollt/);
   assert.equal(rolledBack.provider.currentContext()?.contextToken, rolledBack.context.contextToken);
   const retry = saveAcknowledgments(rolledBack.participant, rolledBack.beforeBytes, rolledBack.context,
@@ -278,8 +285,17 @@ test("navigation provider releases only the exact rolled-back preparation before
   observed.storage.listener?.({ kind: "modify", phase: "pending", eventId: 1, path: observed.path });
   const observedRollback = observed.participant.createRollbackAcknowledgment({ prepared: observed.prepared,
     receipt: observed.issueRollback(observed.prepared) });
-  assert.throws(() => observed.provider.cancelSaveAcknowledgment(observedRollback), /keine abbrechbare Vorbereitung/);
-  assert.equal(observed.provider.currentContext()?.contextToken, observed.context.contextToken);
+  assert.throws(() => observed.provider.cancelSaveAcknowledgment(observedRollback), /bereits ein Manifestevent/);
+  assert.equal(observed.provider.currentContext(), null);
+
+  const forged = await acknowledgmentFixture(322, "transaction:forged-rollback", "saved-forged");
+  forged.provider.prepareSaveAcknowledgment(forged.prepared);
+  const validRollback = forged.participant.createRollbackAcknowledgment({ prepared: forged.prepared,
+    receipt: forged.issueRollback(forged.prepared) });
+  assert.throws(() => forged.provider.cancelSaveAcknowledgment({ ...validRollback }), /nicht vom zuständigen Participant/);
+  assert.equal(forged.provider.currentContext()?.contextToken, forged.context.contextToken);
+  forged.provider.cancelSaveAcknowledgment(validRollback);
+  assert.equal(forged.provider.currentContext()?.contextToken, forged.context.contextToken);
 });
 
 test("navigation provider keeps one mount only for the participant-sealed exact save event", async () => {
