@@ -12,6 +12,7 @@ import {
   validateBoundedWaterborneTableRows,
   validateBoundedWeaponTableRows,
   validateJsonSchemas,
+  validateMagicItemAzAnimatedShield,
   validateMagicItemAzOpeningSlice,
   validatePotionHealingMerge,
   validateTranscriptData,
@@ -74,9 +75,10 @@ test("items source package is explicitly incomplete and fails closed by default"
   await assert.rejects(verifyItemsSourcePackage(), /S01 ist unvollständig/);
   const result = await verifyItemsSourcePackage({ allowIncomplete: true });
   assert.equal(result.complete, false);
-  assert.equal(result.validation.occurrenceCount, 225);
-  assert.equal(result.validation.recordCount, 224);
+  assert.equal(result.validation.occurrenceCount, 226);
+  assert.equal(result.validation.recordCount, 225);
   assert.equal(result.magicItemAzOpeningSlice.capturedRecords, 5);
+  assert.equal(result.magicItemAzAnimatedShield.ordinal, 6);
   assert.equal(result.potionHealingMerge.mergedRecords, 1);
   assert.ok(result.blockers.length >= 5);
 });
@@ -195,6 +197,40 @@ test("opening Magic Items A–Z slice fails closed on identity, header facts and
     "srd51:magic-item:magic-items-a-z:1";
   assert.throws(() => validateTranscriptData(wrongHeaderOccurrence, checkedInventory, { allowIncomplete: true }),
     /Textfakt außerhalb seiner Quellenliste/);
+});
+
+test("Animated Shield preserves ordinal, full header, rarity, attunement and full prose", async () => {
+  const [checkedInventory, checkedTranscript] = await Promise.all([
+    readFile(new URL("items-srd51-inventory.json", dataRoot), "utf8").then(JSON.parse),
+    readFile(new URL("items-srd51-transcript.json", dataRoot), "utf8").then(JSON.parse),
+  ]);
+  assert.deepEqual(validateMagicItemAzAnimatedShield(checkedTranscript, checkedInventory), {
+    id: "srd51:magic-item:magic-items-a-z:6",
+    ordinal: 6,
+    physicalPdfPage: 208,
+    rarity: "very-rare",
+    attunement: "required",
+  });
+});
+
+test("Animated Shield fails closed on occurrence, header, rules and prose drift", async () => {
+  const [checkedInventory, checkedTranscript] = await Promise.all([
+    readFile(new URL("items-srd51-inventory.json", dataRoot), "utf8").then(JSON.parse),
+    readFile(new URL("items-srd51-transcript.json", dataRoot), "utf8").then(JSON.parse),
+  ]);
+  const wrongPage = structuredClone(checkedInventory);
+  wrongPage.occurrences.find(item => item.id.endsWith("a-z:6")).firstPdfPage = 207;
+  assert.throws(() => validateMagicItemAzAnimatedShield(checkedTranscript, wrongPage), /Occurrence 6/);
+  for (const mutate of [
+    record => { record.sourceHeader.text = "Armor (shield), very rare"; },
+    record => { record.rarity.value = "rare"; },
+    record => { record.attunement = "not-required"; },
+    record => { record.description[0].text = "The shield animates."; },
+  ]) {
+    const damaged = structuredClone(checkedTranscript);
+    mutate(damaged.records.find(record => record.id.endsWith("a-z:6")));
+    assert.throws(() => validateMagicItemAzAnimatedShield(damaged, checkedInventory), /Animated-Shield-Record/);
+  }
 });
 
 test("Draft 2020-12 schemas validate the checked-in equipment inventory and transcript", async () => {

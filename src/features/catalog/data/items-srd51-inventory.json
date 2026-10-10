@@ -1,8 +1,8 @@
 {
   "inventoryVersion": 1,
   "complete": false,
-  "expectedPrimaryOccurrences": 225,
-  "capturedPrimaryOccurrences": 225,
+  "expectedPrimaryOccurrences": 226,
+  "capturedPrimaryOccurrences": 226,
   "sections": [
     { "id": "armor", "feed": "equipment", "sourceKind": "table-row", "firstPdfPage": 63, "lastPdfPage": 64, "firstPrintedPage": 63, "lastPrintedPage": 64, "expectedOccurrences": 13, "capturedOccurrences": 13, "inventoryComplete": true, "transcriptComplete": false, "complete": false },
     { "id": "weapons", "feed": "equipment", "sourceKind": "table-row", "firstPdfPage": 65, "lastPdfPage": 66, "firstPrintedPage": 65, "lastPrintedPage": 66, "expectedOccurrences": 37, "capturedOccurrences": 37, "inventoryComplete": true, "transcriptComplete": true, "complete": false },
@@ -12,7 +12,7 @@
     { "id": "mounts-other-animals", "feed": "equipment", "sourceKind": "table-row", "firstPdfPage": 71, "lastPdfPage": 72, "firstPrintedPage": 71, "lastPrintedPage": 72, "expectedOccurrences": 8, "capturedOccurrences": 8, "inventoryComplete": true, "transcriptComplete": true, "complete": false },
     { "id": "tack-harness-drawn-vehicles", "feed": "equipment", "sourceKind": "table-row", "firstPdfPage": 72, "lastPdfPage": 72, "firstPrintedPage": 72, "lastPrintedPage": 72, "expectedOccurrences": 14, "capturedOccurrences": 14, "inventoryComplete": true, "transcriptComplete": true, "complete": false },
     { "id": "waterborne-vehicles", "feed": "equipment", "sourceKind": "table-row", "firstPdfPage": 72, "lastPdfPage": 72, "firstPrintedPage": 72, "lastPrintedPage": 72, "expectedOccurrences": 6, "capturedOccurrences": 6, "inventoryComplete": true, "transcriptComplete": true, "complete": false },
-    { "id": "magic-items-a-z", "feed": "magic-item", "sourceKind": "detail-heading", "firstPdfPage": 207, "lastPdfPage": 251, "firstPrintedPage": 207, "lastPrintedPage": 251, "expectedOccurrences": 239, "capturedOccurrences": 6, "inventoryComplete": false, "transcriptComplete": false, "complete": false }
+    { "id": "magic-items-a-z", "feed": "magic-item", "sourceKind": "detail-heading", "firstPdfPage": 207, "lastPdfPage": 251, "firstPrintedPage": 207, "lastPrintedPage": 251, "expectedOccurrences": 239, "capturedOccurrences": 7, "inventoryComplete": false, "transcriptComplete": false, "complete": false }
   ],
   "occurrences": [
     { "id": "srd51:equipment:armor:1", "feed": "equipment", "sectionId": "armor", "sourceKind": "table-row", "sourceTable": "Armor", "sourceLabel": "Padded", "firstPdfPage": 63, "lastPdfPage": 63, "firstPrintedPage": 63, "lastPrintedPage": 63, "ordinal": 1, "variantId": null, "mergeIntoId": null },
@@ -239,6 +239,7 @@
     { "id": "srd51:magic-item:magic-items-a-z:3", "feed": "magic-item", "sectionId": "magic-items-a-z", "sourceKind": "detail-heading", "sourceTable": "Magic Items A–Z", "sourceLabel": "Amulet of Health", "firstPdfPage": 207, "lastPdfPage": 207, "firstPrintedPage": 207, "lastPrintedPage": 207, "ordinal": 3, "variantId": null, "mergeIntoId": null },
     { "id": "srd51:magic-item:magic-items-a-z:4", "feed": "magic-item", "sectionId": "magic-items-a-z", "sourceKind": "detail-heading", "sourceTable": "Magic Items A–Z", "sourceLabel": "Amulet of Proof against Detection and Location", "firstPdfPage": 207, "lastPdfPage": 207, "firstPrintedPage": 207, "lastPrintedPage": 207, "ordinal": 4, "variantId": null, "mergeIntoId": null },
     { "id": "srd51:magic-item:magic-items-a-z:5", "feed": "magic-item", "sectionId": "magic-items-a-z", "sourceKind": "detail-heading", "sourceTable": "Magic Items A–Z", "sourceLabel": "Amulet of the Planes", "firstPdfPage": 207, "lastPdfPage": 207, "firstPrintedPage": 207, "lastPrintedPage": 207, "ordinal": 5, "variantId": null, "mergeIntoId": null },
+    { "id": "srd51:magic-item:magic-items-a-z:6", "feed": "magic-item", "sectionId": "magic-items-a-z", "sourceKind": "detail-heading", "sourceTable": "Magic Items A–Z", "sourceLabel": "Animated Shield", "firstPdfPage": 208, "lastPdfPage": 208, "firstPrintedPage": 208, "lastPrintedPage": 208, "ordinal": 6, "variantId": null, "mergeIntoId": null },
     { "id": "srd51:magic-item:magic-items-a-z:142", "feed": "magic-item", "sectionId": "magic-items-a-z", "sourceKind": "detail-heading", "sourceTable": "Magic Items A–Z", "sourceLabel": "Potion of Healing", "firstPdfPage": 234, "lastPdfPage": 234, "firstPrintedPage": 234, "lastPrintedPage": 234, "ordinal": 142, "variantId": null, "mergeIntoId": "srd51:equipment:adventuring-gear:76" }
   ],
   "helperDispositions": [
