@@ -8,6 +8,7 @@ import {
   validateBoundedMountsTableRows,
   validateBoundedTackTableRows,
   validateBoundedToolsTableRows,
+  validateBoundedWaterborneTableRows,
   validateBoundedWeaponTableRows,
   validateJsonSchemas,
   validateTranscriptData,
@@ -762,4 +763,43 @@ test("waterborne vehicles preserve physical order, fractional mph and Rowed Vess
   mismatchedWeight.records.find(record => record.name === "Rowboat").weight.pounds = "10";
   assert.throws(() => validateTranscriptData(mismatchedWeight, checkedInventory, { allowIncomplete: true }),
     /weight\.pounds stimmt nicht/);
+});
+
+test("waterborne bounded matching keeps fractional source speeds on one physical PDF row", async () => {
+  const [checkedInventory, checkedTranscript] = await Promise.all([
+    readFile(new URL("items-srd51-inventory.json", dataRoot), "utf8").then(JSON.parse),
+    readFile(new URL("items-srd51-transcript.json", dataRoot), "utf8").then(JSON.parse),
+  ]);
+  const occurrences = checkedInventory.occurrences
+    .filter(item => item.sectionId === "waterborne-vehicles");
+  const records = new Map(checkedTranscript.records.map(record => [record.id, record]));
+  const segments = occurrences.map(item => {
+    const record = records.get(item.id);
+    return `${item.sourceLabel} ${record.cost.sourceText} ${record.speed.sourceText}`;
+  });
+  const pageLines = {
+    72: segments.map((segment, index) => `${segment}     Unrelated right-column expenses ${index}`),
+  };
+  assert.deepEqual(validateBoundedWaterborneTableRows(pageLines, checkedTranscript, checkedInventory), {
+    checkedRows: 6,
+    scope: "exact-normalized-pdftotext-layout-row-segment-with-fractional-source-speeds",
+  });
+
+  const wrongCell = structuredClone(checkedTranscript);
+  wrongCell.records.find(record => record.name === "Warship").speed.sourceText = "2 mph";
+  assert.throws(() => validateBoundedWaterborneTableRows(pageLines, wrongCell, checkedInventory),
+    /nicht exakt einmal als zusammenhängendes Segment derselben physischen Tabellenzeile/);
+
+  const pageWideOnly = structuredClone(pageLines);
+  const rowboat = "Rowboat 50 gp 1½ mph";
+  const rowboatLine = pageWideOnly[72].findIndex(line => line.includes(rowboat));
+  pageWideOnly[72][rowboatLine] = pageWideOnly[72][rowboatLine].replace(rowboat, "Rowboat");
+  pageWideOnly[72].push("50 gp", "1½ mph");
+  assert.throws(() => validateBoundedWaterborneTableRows(pageWideOnly, checkedTranscript, checkedInventory),
+    /nicht exakt einmal als zusammenhängendes Segment derselben physischen Tabellenzeile/);
+
+  const duplicateSegment = structuredClone(pageLines);
+  duplicateSegment[72][0] += `     ${segments[0]}`;
+  assert.throws(() => validateBoundedWaterborneTableRows(duplicateSegment, checkedTranscript, checkedInventory),
+    /nicht exakt einmal als zusammenhängendes Segment derselben physischen Tabellenzeile/);
 });

@@ -527,6 +527,42 @@ function verifyPdfTackTableRows(pdfPath, transcript, inventory) {
   return validateBoundedTackTableRows(pageLines, transcript, inventory);
 }
 
+export function validateBoundedWaterborneTableRows(pageLines, transcript, inventory) {
+  object(pageLines, "Waterborne-Vehicles-Tabellenzeilen");
+  const occurrences = inventory.occurrences
+    .filter(occurrence => occurrence.sectionId === "waterborne-vehicles");
+  invariant(occurrences.length === 6,
+    "Bounded Waterborne-Vehicles-Prüfung benötigt exakt sechs Inventarzeilen.");
+  const records = new Map(transcript.records.map(record => [record.id, record]));
+  for (const occurrence of occurrences) {
+    const record = records.get(occurrence.id);
+    invariant(record, `${occurrence.id}: Record für bounded Waterborne-Vehicles-Prüfung fehlt.`);
+    invariant(record.cost && record.speed,
+      `${occurrence.id}: strukturierte Waterborne-Vehicles-Tabellenzellen fehlen.`);
+    const expected = normalizePdfText([
+      occurrence.sourceLabel,
+      record.cost.sourceText,
+      record.speed.sourceText,
+    ].join(" "));
+    const lines = pageLines[String(occurrence.firstPdfPage)];
+    invariant(Array.isArray(lines), `${occurrence.id}: Layoutzeilen für PDF-Seite ${occurrence.firstPdfPage} fehlen.`);
+    const matches = countExactNormalizedLineSegments(lines, expected);
+    invariant(matches === 1,
+      `${occurrence.id}: erwartete Waterborne-Vehicles-Zellen stehen nicht exakt einmal als zusammenhängendes Segment derselben physischen Tabellenzeile.`);
+  }
+  return Object.freeze({ checkedRows: occurrences.length,
+    scope: "exact-normalized-pdftotext-layout-row-segment-with-fractional-source-speeds" });
+}
+
+function verifyPdfWaterborneTableRows(pdfPath, transcript, inventory) {
+  const pages = [...new Set(inventory.occurrences
+    .filter(occurrence => occurrence.sectionId === "waterborne-vehicles")
+    .map(occurrence => occurrence.firstPdfPage))];
+  const pageLines = Object.fromEntries(pages.map(page => [String(page),
+    extractPdfPage(pdfPath, page, true).split(/\r?\n/).filter(line => line.trim().length > 0)]));
+  return validateBoundedWaterborneTableRows(pageLines, transcript, inventory);
+}
+
 function verifyPdfOccurrences(pdfPath, inventory) {
   const pageText = new Map();
   for (const occurrence of inventory.occurrences) {
@@ -663,6 +699,7 @@ export async function verifyItemsSourcePackage({ pdfPath, allowIncomplete = fals
       boundedToolsTableEvidence: verifyPdfToolsTableRows(pdfPath, transcript, inventory),
       boundedMountsTableEvidence: verifyPdfMountsTableRows(pdfPath, transcript, inventory),
       boundedTackTableEvidence: verifyPdfTackTableRows(pdfPath, transcript, inventory),
+      boundedWaterborneTableEvidence: verifyPdfWaterborneTableRows(pdfPath, transcript, inventory),
       helperDispositionEvidence: verifyPdfHelperDispositions(pdfPath, inventory),
       crossReferenceEvidence: verifyPdfCrossReferences(pdfPath, inventory) });
   }
