@@ -38,7 +38,7 @@ export class WorldNotesPanel {
     const help = doc.createElement("details");
     const helpTitle = doc.createElement("summary"); helpTitle.textContent = "Hilfe zu Kampagnenwissen";
     const helpText = doc.createElement("p");
-    helpText.textContent = "NPCs, Fraktionen, Quests und Gerüchte behalten ihre IDs. Vorlesetext und GM-Notizen sind getrennt. Beziehungen verweisen auf bestehende Einträge; Löschen benötigt eine Bestätigung.";
+    helpText.textContent = "Lege NPCs, Fraktionen, Quests und Gerüchte an. Vorlesetext und GM-Notizen bleiben getrennt. Beziehungen verweisen auf bestehende Einträge; Löschen muss bestätigt werden.";
     help.append(helpTitle, helpText);
     this.search = doc.createElement("input"); this.search.type = "search";
     this.search.setAttribute("aria-label", "Notizen durchsuchen");
