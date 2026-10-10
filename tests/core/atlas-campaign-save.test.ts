@@ -310,6 +310,52 @@ test("Campaign no-op guards the complete basis without manufacturing revisions o
   assert.deepEqual(f.store.writes, []);
 });
 
+test("Atlas save preserves an unrelated World Notes owner without claiming its authority", async () => {
+  const store = new Store(), before = parseCampaignRuntimeManifest(inputManifest, sha),
+    policyRevision = "policy:world-notes:v1",
+    foreign = {
+      ownerId: "world-notes",
+      ownerRevision: "owner:world-notes-empty",
+      schemaRevision: "schema:world-notes:v1",
+      snapshotRevision: "snapshot:world-notes-empty",
+      policyRevision,
+      policyDigest: campaignOwnershipDigestValue(
+        { ownerId: "world-notes", policyRevision, transferPolicies: [] },
+        sha,
+      ),
+      availability: "confirmed" as const,
+      emptyConfirmed: true,
+      referenceSchemas: ["catalog-entry.v1", "world-notes.v1"],
+      source: { adapterType: "native-world-notes", generation: "source:world-notes-empty" },
+      records: [],
+      transferPolicies: [],
+    },
+    owners = [...before.registry.owners, foreign].sort((a, b) => a.ownerId.localeCompare(b.ownerId)),
+    unsigned = {
+      version: before.registry.version,
+      registryId: before.registry.registryId,
+      registryRevision: "registry:world-notes-empty",
+      campaignId: before.registry.campaignId,
+      campaignRevision: before.registry.campaignRevision,
+      namespace: before.registry.namespace,
+      owners,
+    },
+    extended = JSON.stringify({ ...before, registry: {
+      ...unsigned,
+      registryContentDigest: campaignOwnershipDigestValue(unsigned, sha),
+    } }, null, 2) + "\n";
+  parseCampaignRuntimeManifest(extended, sha);
+  store.files.set(campaignPath, extended);
+  const f = await opened(store);
+  edit(f);
+  await f.repo.save();
+  const saved = parseCampaignRuntimeManifest(store.files.get(campaignPath)!, sha);
+  assert.deepEqual(
+    saved.registry.owners.find((owner) => owner.ownerId === "world-notes"),
+    foreign,
+  );
+});
+
 test("Terrain-only save changes the World owner proof and reopens through the real provider", async () => {
   const f = await opened(),
     before = parseCampaignRuntimeManifest(inputManifest, sha);
