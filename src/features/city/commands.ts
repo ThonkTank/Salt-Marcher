@@ -38,11 +38,7 @@ export class CitySource {
     history.hydrate(ownerId, [[DOCUMENT_TARGET, value]]);
   }
   read(): CityDocument {
-    return checked(this.snapshotIdentity, this.id);
-  }
-  /** Existing immutable History value; callers observe changes to reject revived bindings. */
-  get snapshotIdentity(): AtlasValue {
-    return this.history.read(this.id, DOCUMENT_TARGET);
+    return checked(this.history.read(this.id, DOCUMENT_TARGET), this.id);
   }
 }
 

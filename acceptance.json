@@ -4856,10 +4856,10 @@
       "state": "delta_review_pending",
       "trigger": "City edit A→B, Undo to byte-identical A, late Apply of pre-existing draft",
       "before": "old draft committed and erased Redo",
-      "after": "Existing History notifications invalidate same-city drafts terminally even if Redo→Undo restores the same object reference; observers detach on Apply/Cancel/failure, and invalid gesture construction subscribes to nothing",
-      "compatibility": "independent Terrain changes remain allowed; no new revision/history/persistence authority",
+      "after": "Existing History command events invalidate affected City drafts terminally through ordinary and nested Redo→Undo; no snapshot-identity accessor needed; observers detach on terminal states",
+      "compatibility": "Existing immutable commands/History authority; argumentless observers remain compatible; independent Terrain stays allowed",
       "limits": "Code delta awaiting independent review; core tests are not City host/integration or full parity approval",
-      "reviewFinding": "PR63/5480419361; first reference-only implementation was insufficient"
+      "reviewFinding": "R01/5480419361 plus own N01 reentrant observer countercase on6e39dcb; both earlier reference/state-read approaches were insufficient"
     }
   },
   "wonderdraftParity": {

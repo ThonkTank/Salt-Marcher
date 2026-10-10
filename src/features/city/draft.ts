@@ -19,13 +19,11 @@ export class CityDraft {
   readonly before: CityDocument;
   private currentState: CityDraftState = "editing";
   private candidate: CityDraftPreview | null = null;
-  private readonly baselineIdentity;
   private unsubscribe: () => void = () => {};
   constructor(private readonly source: CitySource) {
     this.before = source.read();
-    this.baselineIdentity = source.snapshotIdentity;
-    this.unsubscribe = source.history.subscribe(() => {
-      if (source.snapshotIdentity !== this.baselineIdentity) this.fail();
+    this.unsubscribe = source.history.subscribe((command) => {
+      if (command.changes.some((change) => change.ownerId === source.id)) this.fail();
     });
   }
   get state(): CityDraftState {
@@ -39,10 +37,6 @@ export class CityDraft {
       throw new Error("Stadtentwurf fehlgeschlagen oder mit dem aktuellen Stand kollidiert.");
     if (this.currentState !== "editing" && this.currentState !== "invalid")
       throw new Error("Stadtentwurf bereits abgeschlossen.");
-    if (this.source.snapshotIdentity !== this.baselineIdentity) {
-      this.fail();
-      throw new Error("Stadtentwurf kollidiert mit einem geänderten Stadtstand.");
-    }
   }
   private detach(): void {
     this.unsubscribe();

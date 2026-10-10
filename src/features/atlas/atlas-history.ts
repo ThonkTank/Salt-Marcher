@@ -72,7 +72,7 @@ export class AtlasHistory {
   private owners = new Map<string, Owner>();
   private undoStack: AtlasCommand[] = [];
   private redoStack: AtlasCommand[] = [];
-  private listeners = new Set<() => void>();
+  private listeners = new Set<(command: AtlasCommand) => void>();
   private preflights = new Set<AtlasPreflight>();
   private checking = false;
   private epochValue = 0;
@@ -213,7 +213,7 @@ export class AtlasHistory {
     if (changes.every((c) => sameAtlasValue(c.before, c.after))) return false;
     this.undoStack.push(command);
     this.redoStack = [];
-    this.notify();
+    this.notify(command);
     return true;
   }
   undo(): boolean {
@@ -223,7 +223,7 @@ export class AtlasHistory {
     this.apply(command, true);
     this.undoStack.pop();
     this.redoStack.push(command);
-    this.notify();
+    this.notify(command);
     return true;
   }
   redo(): boolean {
@@ -233,7 +233,7 @@ export class AtlasHistory {
     this.apply(command, false);
     this.redoStack.pop();
     this.undoStack.push(command);
-    this.notify();
+    this.notify(command);
     return true;
   }
   get canUndo(): boolean {
@@ -245,14 +245,15 @@ export class AtlasHistory {
   get undoDepth(): number {
     return this.undoStack.length;
   }
-  subscribe(listener: () => void): () => void {
+  /** The immutable committed command identifies affected owners even during nested notifications. */
+  subscribe(listener: (command: AtlasCommand) => void): () => void {
     this.listeners.add(listener);
     return () => this.listeners.delete(listener);
   }
-  private notify(): void {
+  private notify(command: AtlasCommand): void {
     for (const listener of this.listeners) {
       try {
-        listener();
+        listener(command);
       } catch (error) {
         // State and stacks are already committed; diagnostics must not reject them.
         try {

@@ -278,13 +278,13 @@ test(`Draft on an existing Undo state rejects ${action} after Redo-Undo restores
     const before = source.read();
     history.execute({ label: "existing city edit", changes: [cityDocumentChange(before, editCity(before, [move(20)]))] });
     assert(history.undo());
-    const identity = source.snapshotIdentity;
+    const identity = history.read(source.id, "document");
     const draft = new CityDraft(source);
     draft.setEdits([road]);
     assert(history.redo());
     const intermediateState = draft.state;
     assert(history.undo());
-    assert.equal(source.snapshotIdentity, identity);
+    assert.equal(history.read(source.id, "document"), identity);
     if (action === "apply") assert.throws(() => draft.apply("obsolete"));
     else assert.throws(() => draft.setEdits([move(40)]));
     closed(draft, "failed");
@@ -292,6 +292,38 @@ test(`Draft on an existing Undo state rejects ${action} after Redo-Undo restores
     assert(history.canRedo);
     assert.equal(history.undoDepth, 0);
     assert.deepEqual(source.read(), before);
+});
+
+for (const action of ["apply", "update"] as const)
+test(`City draft rejects ${action} when an earlier observer synchronously undoes Redo`, () => {
+  const { history, source, draft: initial } = setup();
+  initial.cancel();
+  const before = source.read();
+  history.execute({ label: "rename", changes: [cityDocumentChange(before, { ...before, name: "B" })] });
+  assert(history.undo());
+  let armed = true;
+  const removeEarlier = history.subscribe(() => {
+    if (armed) { armed = false; assert(history.undo()); }
+  });
+  const events: string[] = [];
+  const removeEvidence = history.subscribe((command) => {
+    assert(Object.isFrozen(command));
+    assert(Object.isFrozen(command.changes));
+    assert(Object.isFrozen(command.changes[0]!.after));
+    events.push(command.changes[0]!.ownerId);
+  });
+  const draft = new CityDraft(source);
+  draft.setEdits([road]);
+  assert(history.redo());
+  assert.deepEqual(source.read(), before);
+  assert.deepEqual(events, [source.id, source.id]);
+  if (action === "apply") assert.throws(() => draft.apply("obsolete"));
+  else assert.throws(() => draft.setEdits([move(40)]));
+  closed(draft, "failed");
+  assert(history.canRedo);
+  assert.equal(history.undoDepth, 0);
+  removeEvidence();
+  removeEarlier();
 });
 
 test("City draft releases its observer on Apply, Cancel, conflict and failed gesture construction", () => {
