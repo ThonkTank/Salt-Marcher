@@ -110,7 +110,11 @@ class Inventory implements MwsImportMediaInventoryPort {
     assets: [{ sourceId: ids.audio, availability: "available", metadataDigest: digest("b"), byteDigest: digest("c") }] };
   readOutcome?: MwsImportMediaInventoryReadOutcome;
   verifyOutcome: MwsImportMediaInventoryVerifyOutcome = { kind: "current" };
+  entered?: () => void;
+  wait?: Promise<void>;
   async read(): Promise<MwsImportMediaInventoryReadOutcome> {
+    this.entered?.();
+    await this.wait;
     return this.readOutcome ?? { kind: "confirmed", inventory: this.current };
   }
   async verify(): Promise<MwsImportMediaInventoryVerifyOutcome> { return this.verifyOutcome; }
@@ -159,6 +163,11 @@ test("salvage requires explicit matching confirmation and distinguishes omission
     assets: [{ sourceId: ids.audio, availability: "missing", metadataDigest: null, byteDigest: null }] };
   const omission = await missing.adapter.review(context(), salvageInput("omit"));
   assert.equal(omission.outcome, "confirmation-required"); assert.equal(omission.rows[0]!.action, "omit");
+  assert.deepEqual(omission.rows.map((row) => [row.recordType, row.action]), [
+    ["audio-source", "omit"], ["music-cue", "omit"], ["scene-audio", "omit"],
+    ["runtime-audio", "omit"], ["manual-decision", "transfer"],
+    ["ambience-override", "fresh-target"],
+  ]);
   await assert.rejects(() => missing.adapter.accept(omission, "salvage.other"), /nicht ausdrücklich bestätigt/);
   assert.equal((await missing.adapter.accept(omission, "salvage.mws.v1")).kind, "salvage-import");
 
@@ -166,6 +175,7 @@ test("salvage requires explicit matching confirmation and distinguishes omission
     assets: [{ sourceId: ids.audio, availability: "available", metadataDigest: digest("b"), byteDigest: digest("9") }] };
   const quarantine = await changed.adapter.review(context(), salvageInput("quarantine"));
   assert.equal(quarantine.rows[0]!.action, "quarantine");
+  assert.equal(quarantine.rows.filter((row) => row.action === "quarantine").length, 4);
   assert.equal((await changed.adapter.accept(quarantine, "salvage.mws.v1")).salvage!.quarantine[0]!.sourceId, ids.audio);
 });
 
@@ -216,6 +226,25 @@ test("registry, policy and inventory races fail closed at acceptance", async () 
     if (race === "policy") registry.verifyOutcome = { kind: "stale" };
     await assert.rejects(() => adapter.accept(review), /stale/);
   }
+});
+
+test("review snapshots closure and salvage decision before the first asynchronous port", async () => {
+  const { adapter, inventory } = setup();
+  inventory.current = { ...inventory.current,
+    assets: [{ sourceId: ids.audio, availability: "missing", metadataDigest: null, byteDigest: null }] };
+  let release!: () => void, entered!: () => void;
+  const enteredPromise = new Promise<void>((resolve) => { entered = resolve; });
+  inventory.entered = entered;
+  inventory.wait = new Promise<void>((resolve) => { release = resolve; });
+  const input = salvageInput("omit"), pending = adapter.review(context(), input);
+  await enteredPromise;
+  (input as { closure: CampaignMultiOwnerStageInputV1["closure"] }).closure = [];
+  (input.salvage as { decisionId: string }).decisionId = "salvage.mutated";
+  release();
+  const review = await pending, accepted = await adapter.accept(review, "salvage.mws.v1");
+  assert.equal(review.decisionId, "salvage.mws.v1");
+  assert.equal(accepted.salvage!.decisionId, "salvage.mws.v1");
+  assert.equal(accepted.closure.some((item) => item.sourceId === ids.decision), true);
 });
 
 test("foreign reviews and unavailable inventory cannot be accepted or silently degraded", async () => {

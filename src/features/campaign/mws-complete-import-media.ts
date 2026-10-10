@@ -53,8 +53,9 @@ export interface MwsImportMediaInventoryPort {
 export interface MwsCompleteImportMediaRowV1 {
   readonly sourceId: CampaignLocalId;
   readonly recordType: string;
-  readonly status: "verified" | "missing" | "hash-mismatch";
-  readonly action: "transfer" | "omit" | "quarantine";
+  readonly status: "verified" | "missing" | "hash-mismatch" | "retained" |
+    "fresh-target" | "omitted" | "quarantined";
+  readonly action: "transfer" | "fresh-target" | "omit" | "quarantine";
   readonly message: string;
 }
 
@@ -217,17 +218,19 @@ export class MwsCompleteImportMediaAdapter {
     context: CampaignContextProjection,
     input: CampaignMultiOwnerStageInputV1,
   ): Promise<MwsCompleteImportMediaReviewV1> {
-    const read = await this.registry.read(context);
+    const contextSnapshot = immutable(structuredClone(context)) as CampaignContextProjection,
+      inputSnapshot = immutable(structuredClone(input)) as CampaignMultiOwnerStageInputV1;
+    const read = await this.registry.read(contextSnapshot);
     if (read.kind !== "confirmed") throw new Error(`Owner-Registry ist ${read.kind}.`);
     const projection = campaignDomainOwnershipProjection(read.projection);
-    if (!sameContext(context, projection.context))
+    if (!sameContext(contextSnapshot, projection.context))
       throw new Error("Owner-Registry gehört zu einem anderen Campaigncontext.");
     if (campaignDomainOwnershipProjectionDigest(projection, this.digest) !== projection.projectionDigest)
       throw new Error("Ownership-Projektionsdigest ist stale.");
     for (const owner of projection.owners)
       if (campaignDomainOwnerPolicyDigest(owner, this.digest) !== owner.policyDigest)
         throw new Error("Owner-Transferpolicy-Digest ist stale.");
-    validateMwsTransfer(projection, input);
+    validateMwsTransfer(projection, inputSnapshot);
     const audio = projection.owners.flatMap((owner) => owner.records
       .filter((record) => record.recordType === "audio-source")), audioIds = audio.map((record) => record.id).sort();
     const inventoryRead = await this.inventory.read(Object.freeze({
@@ -237,9 +240,9 @@ export class MwsCompleteImportMediaAdapter {
     }));
     if (inventoryRead.kind !== "confirmed")
       throw new Error(`Medieninventar ist ${inventoryRead.kind}.`);
-    const inventory = checkedInventory(inventoryRead.inventory, audioIds), mapped = sourceSet(input),
-      omissions = new Map(input.salvage?.omissions.map((item) => [item.sourceId, item]) ?? []),
-      quarantine = new Map(input.salvage?.quarantine.map((item) => [item.sourceId, item]) ?? []);
+    const inventory = checkedInventory(inventoryRead.inventory, audioIds), mapped = sourceSet(inputSnapshot),
+      omissions = new Map(inputSnapshot.salvage?.omissions.map((item) => [item.sourceId, item]) ?? []),
+      quarantine = new Map(inputSnapshot.salvage?.quarantine.map((item) => [item.sourceId, item]) ?? []);
     let blocked = false;
     const rows = audio.map((record): MwsCompleteImportMediaRowV1 => {
       const asset = inventory.assets.find((item) => item.sourceId === record.id)!;
@@ -248,7 +251,7 @@ export class MwsCompleteImportMediaAdapter {
       else if (asset.metadataDigest !== record.media!.metadataDigest || asset.byteDigest !== record.media!.byteDigest)
         status = "hash-mismatch";
       let action: MwsCompleteImportMediaRowV1["action"] = "transfer", message = "Medium vollständig verifiziert.";
-      if (input.kind === "complete-import") {
+      if (inputSnapshot.kind === "complete-import") {
         if (status !== "verified") { blocked = true; message = status === "missing"
           ? "Medium fehlt; Complete-Import ist blockiert."
           : "Medienhash weicht ab; Complete-Import ist blockiert."; }
@@ -263,18 +266,41 @@ export class MwsCompleteImportMediaAdapter {
         action = "quarantine";
         if (!quarantine.has(record.id) || mapped.has(record.id) || omissions.has(record.id)) {
           blocked = true; message = "Hashabweichung braucht genau eine retained Quarantäne.";
-        } else message = quarantine.get(record.id)!.reason;
+        } else {
+          const item = quarantine.get(record.id)!;
+          message = `${item.reason} (${item.retention})`;
+        }
       }
       return Object.freeze({ sourceId: record.id, recordType: record.recordType, status, action, message });
-    }).sort((a, b) => a.sourceId.localeCompare(b.sourceId));
-    const mode = input.kind === "complete-import" ? "complete" as const : "salvage" as const,
+    });
+    const otherRows = projection.owners.flatMap((owner) => owner.records.filter((record) =>
+      MEDIA_TYPES.has(record.recordType) && record.recordType !== "audio-source").map((record): MwsCompleteImportMediaRowV1 => {
+      if (record.recordType === "ambience-override") return Object.freeze({
+        sourceId: record.id, recordType: record.recordType, status: "fresh-target" as const,
+        action: "fresh-target" as const,
+        message: "Quellengebundener Override wird nicht übertragen; frische Zielprojektion ist bestätigt.",
+      });
+      const omission = omissions.get(record.id), retained = quarantine.get(record.id);
+      if (omission) return Object.freeze({ sourceId: record.id, recordType: record.recordType,
+        status: "omitted" as const, action: "omit" as const, message: omission.impact });
+      if (retained) return Object.freeze({ sourceId: record.id, recordType: record.recordType,
+        status: "quarantined" as const, action: "quarantine" as const,
+        message: `${retained.reason} (${retained.retention})` });
+      return Object.freeze({ sourceId: record.id, recordType: record.recordType,
+        status: "retained" as const, action: "transfer" as const,
+        message: record.recordType === "manual-decision"
+          ? "Dauerhafte manuelle Entscheidung bleibt als Survivor erhalten."
+          : "Medienabhängigkeit wird mit vollständigem ID-Remap übertragen." });
+    }));
+    const allRows = [...rows, ...otherRows].sort((a, b) => a.sourceId.localeCompare(b.sourceId));
+    const mode = inputSnapshot.kind === "complete-import" ? "complete" as const : "salvage" as const,
       outcome = blocked ? "blocked" as const : mode === "salvage" ? "confirmation-required" as const : "ready" as const,
-      decisionId = mode === "salvage" ? input.salvage!.decisionId : null,
+      decisionId = mode === "salvage" ? inputSnapshot.salvage!.decisionId : null,
       review = immutable({ version: 1 as const, title: "Medienprüfung" as const, mode, outcome, decisionId,
-        rows: Object.freeze(rows), summary: blocked ? "Import ist wegen der Medienprüfung blockiert."
+        rows: Object.freeze(allRows), summary: blocked ? "Import ist wegen der Medienprüfung blockiert."
           : mode === "salvage" ? "Salvage-Auswirkungen müssen ausdrücklich bestätigt werden."
             : "Alle Audiodaten sind vollständig und hashverifiziert." });
-    this.reviews.set(review, { projection, inventory, input: immutable(structuredClone(input)) });
+    this.reviews.set(review, { projection, inventory, input: inputSnapshot });
     return review;
   }
 
