@@ -152690,6 +152690,18 @@
           "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/steward-source-integration.json"
         ],
         "observed": "Seven native payloads/14 file byte receipts/21 distinct local IDs/eight actual references; real terrain, placement, Location, City and Dungeon owner adapters share one History. One Undo/Redo reproduces exact input/expected bytes; stale final Dungeon rejects all preceding owner changes. City expected is unchanged. No persisted spatial binding, all-owner Save, Campaign/P02/P04/import, native integrated or total-gate proof."
+      },
+      {
+        "id": "E2E01-HEX-SPACE-PLAN-001",
+        "requirement": "Konkrete gespeicherte Raum-/Transform-/Frame-/Speichergrenze aus tatsächlichen Owner-APIs",
+        "state": "checked_plan_only_owner_confirmation_and_implementation_open",
+        "plan": "ROADMAP-E2E01-SPATIAL-INTEGRATION-PLAN.md",
+        "planRun": "E2E-01-SPACE-P01",
+        "catalog": "ROADMAP-E2E-GATES-CANDIDATE.md:13",
+        "evidence": [
+          "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/space-plan.json"
+        ],
+        "observed": "Proposed WorldV2/strict DraftV3, prospective same-History closure, relative one-camera project/unproject, rigid physical house dock, shared City/Dungeon owner byte snapshots and first native vertical flow immediately after storage slice. Delivered 4x6m house vs 15.24x12.192m Dungeon room requires explicit new aligned fixture oracle; frozen native bytes preserved. No implementation, API ratification, native or gate claim."
       }
     ],
     "cleanupFindings": [

@@ -411,6 +411,121 @@ Der vorbereitete CityRenderer (CITY-01-PREP-I07) besitzt nur einen Container mit
 
 - Geplantes CITY-02/CITY-08-Generationsrezept: versionierter vollständiger Auftrag mit Generatorversion, getrennten Seed-/Größenvorgaben, Feature-/Anschlussstrategie, Siedlungsfläche, Umgebungsankern und Einheiten. Import validiert vor einem neuen Vorschauauftrag; kein Ausführen fremder URLs oder Netzwerkzugriff erforderlich. Reproduktion wird anhand materialisierter Geometrie geprüft. Die native Stadtdatei speichert erzeugte und manuell bearbeitete Geometrie/Keys/Bindings; normales Laden führt keine Generation aus. I35 belegt Small mit gleichzeitig neuem Seed und bytegleiche From-URL-Rückstellung im Original, keine Erhaltung manueller Bearbeitung oder eigene Implementierung.
 
+## Vorgeschlagener konkreter Raumvertrag E2E-01-SPACE-P01
+
+Planstand nach Aufnahme der geprüften City-, Dungeon- und Campaign/Data-Kerne
+in PR #13. Diese konkreten Verträge sind **vorgeschlagen, noch nicht umgesetzt
+oder fachübergreifend bestätigt**. Der [begrenzte Anschlussplan](ROADMAP-E2E01-SPATIAL-INTEGRATION-PLAN.md)
+ordnet Umsetzung und echte frühe Bedienprüfung ein. Der ratifizierte
+E2E-Gatekatalog bleibt unverändert.
+
+**Native Verortung:** Overworld-Version2 behält die bisherigen Landschafts- und
+Locationplacements und ergänzt ausdrücklich `detailPlacements`. Version1 bleibt
+exakt lesbar; keine stille Umdeutung unbekannter Felder. Erst die erste
+Detailbindung erzeugt einen rücknehmbaren V1→V2-Befehl. Der Weltowner hält
+Formatversion und Detailbindings neben den vorhandenen Terrain-/Ortswerten in
+derselben AtlasHistory. Undo auf V1 mit leerer Detailmenge stellt die ursprüngliche
+Weltbytesbasis wieder her. Location-v1, City-v1 und Dungeon-v4 werden nicht
+für fremde Placementfelder umgeschrieben.
+
+Ein vorgeschlagenes Cityplacement besitzt `id`, `kind: city`, `documentId`,
+`parent: {kind: location, locationId}`, `offsetMeters` und `rotationRadians`.
+Sein starrer Metertransform setzt am vorhandenen Location-Weltpunkt an. Ein
+Citydokument erhält im ersten Schnitt höchstens eine Placementinstanz je Welt.
+Es gibt keine zweite gespeicherte City-Weltposition.
+
+Ein vorgeschlagenes Dungeonplacement besitzt `id`, `kind: dungeon`, `documentId`,
+einen Locationparent oder `parent: {kind: city-building, cityId, buildingId}`,
+`anchor: {parentPointMeters, mapPointFields}`, `rotationRadians`, einen ausdrücklich
+gewählten `surfaceFloorId` und eine Entrance-Liste aus `routeId`, `floorId`,
+`roomId`, `pointFields`. Alle Punkte werden vom Anwender/Fixture ausdrücklich
+gewählt. Route-ID und Raumreferenz sind keine physische Türkoordinate. Der
+native Faktor ist fünf Fuß × 0,3048 = **1,524 Meter pro Dungeonfeld**; gespeicherte
+Geometrie bleibt unverändert. Weitere Eingänge beziehen sich auf dieselbe
+Detailplatzierung, nicht auf verschiedene Kopien der Dungeonkarte. Geschosswahl
+ist eine Darstellungs-/Layerwahl; Reihenfolge wird nicht zu physischer Höhe.
+
+**Hauspose und Physik:** Der Dockpunkt folgt `position + R(rotation) ×
+(scale × parentPointMeters)` des native Cityhauses. Die Dungeonbasis folgt der
+Hausdrehung und der ausdrücklich gesetzten relativen Drehung, nicht dessen
+dimensionsloser X/Y-Skalierung. Dungeonräume bleiben physisch starr und behalten
+1,524 Meter pro Feld. Hausverschiebung/-drehung bewegt die abgeleitete Karte ohne
+zweiten Dungeonbefehl; Skalierung der Hauskontur ist kein Verformen vorhandener
+Raumgeometrie. Die Eingangs-/Bindungsprüfung erhält diesen Zusammenhang auch bei
+mehreren Eingängen. Keller dürfen über den Hausumriss hinausreichen.
+
+**Prospektive Graphclosure:** Alle gebundenen IDs, Typen, eindeutigen Parents,
+Häuser, Floors, Räume und Entrancerouten werden am tatsächlichen Ownerbestand
+geprüft. Die gemeinsame History erhält einen schreibfreien Prospektivvalidator:
+Nach Prüfung aller Before-/Afterwerte, aber vor Mutation, liest er für
+execute/undo/redo den gesamten geplanten Zustand einschließlich aller Changeziele.
+So kann CityGesture weiterhin genau einmal in dieselbe History schreiben, ohne
+einen zweiten Commit oder eigenen Atlas-Befehlsstapel. House-Entfernung bei
+vorhandenem Child wird abgelehnt oder ausdrücklich mit Entkopplung in einem
+gemeinsamen Befehl übernommen. Für bearbeitete relevante Parents müssen die
+benötigten Childidentitäten zuverlässig geladen/verifiziert sein; ungeladen
+bedeutet nie abwesend. Bloßes Entkoppeln löscht keine Kartendatei und verliert
+keine offene Key-/Geometriebearbeitung. Typisierte Location-Karten-/Keyverweise
+sind Navigation, keine zweite Placementautorität; ihre Closure wird gemeinsam
+mit dem Worldgraph geprüft.
+
+**Eine präzise Kamera:** Der aktuelle absolute `screenToWorld`-Roundtrip kann
+bei Anker1e16 kleine Meter verlieren. Die gemeinsame Kamera wird deshalb
+aus einem großen Anker, einem getrennten kleinen Meteroffset und Meter/Pixel
+projiziert; das ist eine Kamera, kein privater Detailviewport. Pan/Zoom verändern
+den kleinen Offset ohne vorzeitige Addition zum großen Anker. Projektionsports
+`projectLocal(frame, point)` und `unprojectLocal(frame, screenPoint)` bilden die
+Parentkette relativ zu diesem Kamerarahmen, bevor lokale Deltas addiert werden.
+Render/Hit/Preview/Fit verwenden dieselbe Abbildung; keine zwischenzeitlich
+gerundete absolute Weltposition. Nicht darstellbare oder numerisch unzuverlässige
+Ergebnisse werden sichtbar abgelehnt. Der erste Cityparent ist starr, damit
+Bildschirmtoleranz exakt in lokale Meter umgerechnet werden kann.
+
+**Szenenlebensdauer:** Ein hostneutraler Detailregistryadapter hält die tatsächlichen
+Ownerquellen mit gemeinsamer History und deren räumliche Projektionen. Renderer
+hängen einmal an `AtlasRenderer.detailLayer` und zeichnen vor dem vorhandenen
+Application-Render. Unsichtbare Graphics dürfen freigegeben werden; native
+History-/Dirtyowner bleiben für diese Historylebensdauer erhalten. Der bestehende
+MapRenderer mit eigener Application/Session wird nicht als zweite Atlasinstanz
+eingebettet. Der erste Dungeonsceneadapter liest native Floors/Roompolygone und
+Keys; vollständige bestehende Geometriegesten brauchen eine reine Domainprojektion
+ohne schreibende Session. Zoom blendet Darstellungen ein/aus, keine Dokumente,
+Werkzeuge oder Editor-Modi.
+
+**Gemeinsame Speicherung:** AtlasRepository erfasst World, Terrain, Locations
+und sämtliche betroffenen City-/Dungeonowner in einer unveränderlichen
+Byte-/Closuremomentaufnahme. Ein vorgeschlagener Draft-Version3 ergänzt streng
+typisierte City-/Dungeondeltas mit ID, tatsächlichem Pfad und exakten
+Before-/Afterbytes; v1/v2 bleiben getrennt geprüft. Native Codecs validieren die
+jeweiligen Deltas; Graph, neue/entfernte Bindungen und Kinddateien werden vor
+Schreiben gemeinsam geprüft. Geladene geänderte Owner bleiben auch nach
+Entkopplung im Repositorybesitz bis Save/Discard. Dateipfade stammen aus einer
+eindeutigen typisierten ID-Auflösung, nicht aus dauerhaft gespeicherten Bindungen.
+Extern geänderte/umbenannte/mehreindeutige Dateien blockieren Schreiben; stille
+Ersatzdateien sind ausgeschlossen.
+
+Save/Entwurf/Discard/Recovery teilen dieselbe Backendqueue und ein Journal.
+Save erfasst seinen Aufrufstand; spätere Änderungen bleiben ein neuer Entwurf.
+Copy lädt die vollständige tatsächlich referenzierte lokale Closure, erzeugt
+neue World-/Location-/Placement-/City-/Building-/Dungeon-/Floor-/Room-/Route-/
+Section-IDs und remappt native interne Verweise/Bindings typgerecht. Quelle,
+bestehende Kampagnen, shared Definitionen und globale Katalog-IDs bleiben
+erhalten. Ein solcher Atlas-Copy ist weiterhin kein kompletter Campaignimport.
+Copy-Recovery prüft genau die neue Root-/Kind-/Referenzclosure auch ohne Rootdatei.
+
+**Publishgrenze nicht vorwegnehmen:** FileTransaction-v1 ist der bestehende
+lokale Compare/Write-Baustein, kein bestätigter Campaign-Publish oder
+vollständiger CommandId/Receipt-Restartvertrag. Für den echten E2E-Publish
+werden ein unveränderlicher Writeauftrag mit ursprünglicher CommandId/ReceiptId,
+Context/Namespace/Eingangsrevision, geprüften Ownerbaselines und einer persistierten
+Outcomeabfrage benötigt. Vor Publish darf Cancel gewinnen; danach gilt nur
+Verify/Finalize/Closure mit denselben IDs, kein Rollback als Cancelerfolg und
+kein blinder neuer Befehl bei unbekanntem Outcome. Eine kurzlebige
+Sessionrevision oder aus Payloadinventories abgeleitete trusted Registry erfüllt
+diese Autorität nicht. Campaign/Data liefert die konkrete Ownership-/Revision-
+und Publishsemantik, Hex verbindet den bestätigten minimalen Vaultadapter.
+Die räumliche Zwischenprobe bleibt klar vom vollständigen P02/P04-/E2E-PASS getrennt.
+
 ## Dungeondraft-Kartenassistent beim Kartenstart
 
 Die New-Map-Auswahl für den Assistenten ist pro Pluginprozess gemerkt. Eine neue Karte entsteht zuerst als leerer, noch nicht gespeicherter V4-Entwurf; die Pending-View übergibt nur das einmalige Startsignal an den seitlichen Editor-Assistenten. DUNGEON/CAVE und die Vorschau bleiben Editorzustand. „Neu generieren“ ersetzt nur die Kennungen des vorherigen Vorschlags dieser Assistentenansicht, „Fertigstellen“ wechselt zurück zur Werkzeugansicht und lässt die erzeugten Entitäten bearbeitbar. Das gespeicherte V4-Format erhält dafür kein neues Pflichtfeld. Native Generatorparameter und Materialwirkung bleiben Gegenstand von `DD-004/005`; der Phase-1-Startpfad ist noch nicht unabhängig reviewt.

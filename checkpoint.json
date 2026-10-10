@@ -492,32 +492,32 @@
   "hexAtlasExecution": {
     "scope": "HEX-00 bis HEX-28 und sämtliche eingeordneten CITY-00 bis CITY-09 vollständig",
     "phase": "HEX-03",
-    "state": "e2e01_reviewed_sources_composed_spatial_binding_next",
-    "plan": "ROADMAP-HEX-03-PLAN.md",
+    "state": "e2e01_spatial_contract_proposed_concrete_owner_inputs_pending",
+    "plan": "ROADMAP-E2E01-SPATIAL-INTEGRATION-PLAN.md",
     "currentRun": {
-      "id": "E2E-01-STEW-I01",
-      "kind": "bounded_reviewed_source_integration",
-      "state": "source_snapshot_history_closure_checked_full_gate_open",
-      "startedAt": "2026-10-09T23:41:29.360786+00:00",
-      "startTimeSource": "actual bounded continuation after City handoff request",
-      "finishedAt": "2026-10-09T23:54:29.006252+00:00",
-      "baseline": "ffa6e90b6b164711623f80c32ddf178d848b7c8d",
-      "synchronizedShared": "eba8fdcb8c5a40f1618116bbaa3c3dd57c4d957b",
-      "mergeBasis": "68232d0be0bc039688deadf82bc68ee616cd4143",
+      "id": "E2E-01-SPACE-P01",
+      "kind": "bounded_spatial_integration_plan",
+      "state": "planned_verified_not_implemented_not_ratified",
+      "startedAt": "2026-10-09T23:59:20Z",
+      "startTimeSource": "first actual UTC clock read in this bounded heartbeat run",
+      "finishedAt": "2026-10-10T00:10:39.624718+00:00",
+      "baseline": "3bfa5110139a53dc5d8f1d2a29ae9962e977838b",
+      "synchronizedShared": "d394b8ea3d2c0cbbb42e81f49211508b329d53f2",
+      "mergeBasis": "c1d5a37bb70b90ac5832abb9e4f9e35963fd8cd9",
       "gate": "E2E-01",
       "catalog": "ROADMAP-E2E-GATES-CANDIDATE.md:13",
-      "scope": "Exactly accepted City/Dungeon/Campaign handoffs in existing PR13; seven native payloads, 21 local identities, actual same-History atomic command and exact Undo/Redo byte snapshots.",
-      "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/steward-source-integration.json",
+      "scope": "Plan only: actual World/Location/City/House/Dungeon graph, precision/camera/frame/hit and all-owner snapshot/save/draft/copy/discard/recovery; first native vertical flow scheduled immediately after storage basis.",
+      "plan": "ROADMAP-E2E01-SPATIAL-INTEGRATION-PLAN.md",
+      "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/space-plan.json",
       "nativeOnThisBuild": false,
-      "independentIntegratedReview": false,
       "phaseApproval": false
     },
     "nextRun": {
-      "id": "E2E-01-SPACE-P01",
-      "kind": "bounded_spatial_integration_concretization",
-      "focus": "Concretize the missing actual World/Location→City→House→Dungeon binding and minimal executable projection/mount/persistence slice from the now accepted real owner APIs. Pin stored IDs/transforms, parent-chain precision, one camera/hit/History and exact next product checks; no new catalog/general review round or foreign package.",
-      "requiredFinding": "The combined native payloads still contain no persisted City/House/Dungeon bindings or shared all-owner Save/Context adapter. E2E01 catalog line13 cannot execute by zoom until this Hex-owned integration input exists.",
-      "dependency": "CitySource/Renderer/Gesture and DungeonAtlasSource are accepted; full native joint gate, Campaign bridge, catalog references and P02/P04 import remain open."
+      "id": "E2E-01-SPACE-R01",
+      "kind": "bounded_concrete_contract_owner_input",
+      "focus": "Inspect actual narrow City/Dungeon replies on WorldV2/dock/relative transform/preflight and the physically mismatched seed dimensions; repair only concrete required findings. Then I01a storage/graph basis, immediately I01b native shared mount/Key/zoom. No catalog/general ratification round or parallel City package.",
+      "dependency": "Exact published proposed room contract needs real City/Dungeon confirmation; Campaign spatial revision/ownership/Publish input remains a separately required later full-gate input. No inferred approval.",
+      "cleanup": "Separate bounded CLEAN-P/I/R after scoped review/implementation closure; not performed in plan run."
     },
     "review": {
       "run": "HEX-02-R02",
@@ -679,7 +679,7 @@
           "candidateBranch": "hex/hex03-p01-20261009",
           "candidatePr": 13,
           "reuseExistingCandidate": true,
-          "integrationBase": "eba8fdcb8c5a40f1618116bbaa3c3dd57c4d957b",
+          "integrationBase": "d394b8ea3d2c0cbbb42e81f49211508b329d53f2",
           "fixturePath": "tests/fixtures/atlas-e2e-components-v1",
           "fixtureState": "Explicit component composition v1: exact seven native payloads, History/Snapshot checked; persisted spatial bindings and full Campaign/Import/native gate still open.",
           "sourceList": {
@@ -691,7 +691,7 @@
             "catalog": "ROADMAP-E2E-GATES-CANDIDATE.md",
             "gate": "E2E-01",
             "state": "not_passed_source_snapshot_history_composition_checked_spatial_binding_open",
-            "hexNextRow": "E2E01 catalog line13: actual World/Location→City→House→Dungeon persisted spatial binding, projection and same-camera edit/mount with joint persistence",
+            "hexNextRow": "E2E01 line13: accept concrete spatial contract inputs, implement all-owner binding/storage basis, immediately same-frame City/Dungeon zoom/Key host slice",
             "nativeQa": "Atlas-QA accepted separate exact-candidate fresh-host verification",
             "independentCodeReviewer": "Cloud-Architecture accepted independent integrated review in #12/6090828948; run only after full pinned source handoff, no current gate PASS.",
             "hexMarkerRow": {
@@ -705,6 +705,12 @@
               "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/steward-source-integration.json",
               "state": "checked_core_only",
               "native": false
+            },
+            "spatialPlan": {
+              "run": "E2E-01-SPACE-P01",
+              "plan": "ROADMAP-E2E01-SPATIAL-INTEGRATION-PLAN.md",
+              "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/space-plan.json",
+              "state": "proposed_concrete_owner_inputs_pending"
             }
           },
           "ownership": {
@@ -1906,6 +1912,33 @@
         "native": false,
         "selfIntegration": false,
         "gateApproval": false
+      },
+      "e2e01SpatialPlan": {
+        "run": "E2E-01-SPACE-P01",
+        "state": "checked_plan_only",
+        "plan": "ROADMAP-E2E01-SPATIAL-INTEGRATION-PLAN.md",
+        "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/space-plan.json",
+        "protectedBytes": 227,
+        "newRelativeLinksChecked": 3,
+        "newNativeFixtureFinding": {
+          "houseMeters": [
+            4,
+            6
+          ],
+          "roomFields": [
+            10,
+            8
+          ],
+          "metersPerField": 1.524,
+          "roomMeters": [
+            15.24,
+            12.192
+          ],
+          "proposedOracleAdjustment": "Same house IDs, native CityEdit to 15.24x12.192m, position(-18,8); new integrated fixture-v2 only after concrete City/Dungeon confirmation; no current payload changes"
+        },
+        "productTestsRun": false,
+        "native": false,
+        "ownerRatification": false
       }
     },
     "repairPlan": "ROADMAP-HEX-02-REPAIR-PLAN.md",
@@ -1949,7 +1982,7 @@
       "platformIssue": 11,
       "checkpointIsAuthoritative": true
     },
-    "updatedAt": "2026-10-09T23:54:29.006252+00:00"
+    "updatedAt": "2026-10-10T00:10:39.624718+00:00"
   },
   "phase": "Phase 6: zweiter Nachbesserungslauf teilweise umgesetzt; fünf Restpositionen und unabhängiger Review offen",
   "goal": "Dungeon-Pfad bis zur vollständigen beauftragten Dungeondraft-Verhaltensgleichheit verfolgen: Bedienung und Funktion angleichen, Grafik ungefähr gleichwertig. Zuerst ROADMAP-PARITY.md mit Building und Object Tool abschließen, danach übrige Dungeon-Werkzeuge. Jede Fachphase getrennt planen, umsetzen und unabhängig reviewen; Lücken mit eigenen Nachbesserungs- und Reviewläufen schließen; danach eigene Aufräumphase mit Plan, Umsetzung und Review.",
