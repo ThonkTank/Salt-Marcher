@@ -17,6 +17,11 @@ body:
     validations:
       required: true
   - type: textarea
+    id: current_work
+    attributes:
+      label: Aktueller Arbeitsstand
+      description: "Aktueller Eingang/Blocker, Beleg, offene Grenze und nächste Handlung. Kandidat und Eingang als direkte URLs mit Präfix Kandidat: / Eingang: verlinken; keine Head-/CI-/Reviewkopien. Diesen Abschnitt bei Übergaben ersetzen. Besitz/Claims bleiben im Arbeitsort."
+  - type: textarea
     id: acceptance
     attributes:
       label: Abnahme und nächster Empfänger

@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { issueSnapshot, liveFacts, recentComments } from './task-state.mjs';
 
 const labels = issue => issue.labels.map(label => typeof label === 'string' ? label : label.name);
 const priority = issue => labels(issue).includes('priority:now') ? 0 : labels(issue).includes('priority:next') ? 1 : 2;
@@ -50,44 +51,55 @@ export function tasksForArea(issues, area) {
   return issues.filter(issue => labels(issue).includes(`area:${areas[area]}`));
 }
 
-function showPackage(call, repository, chosen, requested = false, fullComments = false) {
+function showPackage(call, repository, chosen, requested = false, fullComments = false, json = false) {
   const source = chosen.source || 'issue';
-  const current = JSON.parse(call([source, 'view', String(chosen.number), '--repo', repository,
-    '--json', 'number,title,body,comments,state,labels,url']));
+  const current = source === 'issue' ? issueSnapshot(call, repository, chosen.number)
+    : JSON.parse(call(['pr', 'view', String(chosen.number), '--repo', repository,
+      '--json', 'number,title,body,state,labels,url,headRefOid,reviewDecision,isDraft,statusCheckRollup']));
   const fresh = { ...current, state: current.state.toLowerCase() };
   if (fresh.state !== 'open' || source === 'issue' && !labels(fresh).includes('kind:task'))
     throw new Error('Selected task is closed or is not a work package.');
   if (source === 'pr' && !labels(fresh).includes('help wanted')
     || source === 'issue' && !requested && !readyTasks([fresh]).length && !supportTasks([fresh]).length)
     throw new Error('Task changed while reading. Rerun npm run next.');
+  const live = source === 'issue' ? liveFacts(call, repository, current.body) : { facts: [{
+    kind: 'Kandidat', number: current.number, state: current.state, head: current.headRefOid,
+    reviewDecision: current.reviewDecision, checks: current.statusCheckRollup }], warnings: [] };
+  if (json) { console.log(JSON.stringify({ ...current, live }, null, 2)); return; }
   console.log(`\n${requested ? 'Requested package' : readyTasks([fresh]).length ? 'Free candidate' : 'Support invitation'} ${source === 'pr' ? 'PR ' : ''}#${chosen.number}: ${current.title}\n${current.url}\n${current.body}`);
-  for (const comment of current.comments.slice(-3)) {
-    const preview = comment.body.replace(/\s+/g, ' ').trim();
-    console.log(fullComments ? `\nRecent comment ${comment.url}:\n${comment.body}`
-      : `\nRecent comment preview ${comment.url}:\n${preview.slice(0, 240)}${preview.length > 240 ? '…' : ''}`);
+  for (const fact of live.facts) console.log(`\nLive ${fact.kind}: ${JSON.stringify(fact)}`);
+  for (const warning of live.warnings) console.log(`\nContext warning: ${warning}`);
+  console.log('\nLive PR/CI/review metadata is not domain, GUI or product acceptance.');
+  if (fullComments) {
+    try {
+      for (const comment of recentComments(call, repository, chosen.number, source))
+        console.log(`\nRecent comment ${comment.url}:\n${comment.body}`);
+    } catch (error) { console.log(`\nComments unavailable: ${error.message.split('\n')[0]}`); }
   }
-  if (!fullComments && current.comments.length) console.log('\nComment previews are incomplete context, not claim clearance. Open relevant links; --comments prints the latest three in full.');
+  console.log('\nComments are targeted evidence, not a second current-work description. --comments reads the latest three; older claims/decisions must be checked explicitly when needed.');
   console.log('\nResume only your own scope. Before a new claim, check unresolved claims and linked PRs, including older comments. After posting, reread claims: the first unreturned claim owns that scope. Only a free whole package changes ready to active; support never takes over its parent. See docs/REPOSITORY.md.');
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
   try {
     const args = process.argv.slice(2);
-    let list = false, fullComments = false, area, task;
+    let list = false, fullComments = false, json = false, area, task;
     for (let i = 0; i < args.length; i++) {
       if (args[i] === '--list') list = true;
       else if (args[i] === '--comments') fullComments = true;
+      else if (args[i] === '--json') json = true;
       else if (args[i] === '--area' && args[i + 1]) area = args[++i];
       else if (args[i] === '--task' && /^[1-9]\d*$/.test(args[i + 1] || '')) task = Number(args[++i]);
-      else throw new Error('Usage: npm run next -- [--list] [--area <area>] [--task <issue>] [--comments]');
+      else throw new Error('Usage: npm run next -- [--list] [--area <area>] [--task <issue>] [--comments] [--json]');
     }
+    if (json && (!task || list || fullComments)) throw new Error('--json requires --task, without --list/--comments.');
     const { repository } = JSON.parse(fs.readFileSync('docs/repository-policy.json', 'utf8'));
     const call = params => execFileSync('gh', params, { encoding: 'utf8', maxBuffer: 4 * 1024 * 1024 });
     // Resume the known package even when an unrelated queue/PR query fails.
     // --list explicitly requests the overview as well as the named package.
     if (task && !list) {
       if (area) tasksForArea([], area);
-      showPackage(call, repository, { number: task }, true, fullComments);
+      showPackage(call, repository, { number: task }, true, fullComments, json);
     } else {
       const issues = JSON.parse(call(['issue', 'list', '--repo', repository, '--state', 'open', '--label', 'kind:task',
         '--limit', '1000', '--json', 'number,title,url,state,labels'])).map(issue => ({ ...issue, state: issue.state.toLowerCase() }));

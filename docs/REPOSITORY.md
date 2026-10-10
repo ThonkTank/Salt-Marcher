@@ -59,6 +59,43 @@ Ein Ergebnis einmal am zuständigen Ort veröffentlichen; andernorts nur eine ge
 
 Projektgedächtnis bleibt ein aktueller Snapshot in der eigenen Checkpointwurzel: Fortsetzung, noch offene Fragen und benötigte Belege. Erledigte Zwischenstände ersetzen statt anhängen; Ziele, Regeln und fremde Dispatchzustände verlinken statt kopieren. Acceptance bewahrt Anforderungen und direkte Abnahmeidentitäten, Git/Beleglinks den Verlauf. Keine Löschung fremder Wurzeln oder gepinnter Nachweise; kein zusätzliches Tages-/Laufarchiv.
 
+## Arbeitsstand lesen und ersetzen
+
+`npm run next -- --task N` liest den Aufgabenhaupttext ohne Kommentare. Im bestehenden
+Issue führt `## Aktueller Arbeitsstand` nur aktuellen Eingang/Blocker, Beleg, offene
+Grenze und nächste Handlung; feste Ziele, Claims und Fachverträge bleiben außerhalb.
+Explizite Zeilen `Kandidat: https://github.com/OWNER/REPO/pull/N` und
+`Eingang: https://github.com/OWNER/REPO/issues/N` werden beim Lesen live abgefragt.
+Head, CI und Reviewzustand nicht hineinkopieren; PR-/Issuezustand ist keine Fach-
+oder GUI-Abnahme. Bei älteren Issues ohne diesen Abschnitt wird die fehlende
+Zuordnung angezeigt, nicht aus historischen Links geraten. `--comments` liest
+gezielt die neuesten drei Kommentare, ältere Claims bei Bedarf ausdrücklich prüfen.
+
+Für eine Übergabe im eigenen Scope:
+
+```sh
+npm run --silent next -- --task 68 --json > /tmp/task68.json
+# Eingabedatei mit expectedBodySha256 und expectedUpdatedAt aus diesem Snapshot,
+# plus content für den neuen Arbeitsabschnitt erstellen; keinen Verlauf anhängen.
+npm run update-task -- --task 68 --file /tmp/task68-update.json
+npm run update-task -- --task 68 --file /tmp/task68-update.json --apply
+```
+
+Die Eingabe enthält ausschließlich `expectedBodySha256`, `expectedUpdatedAt` und
+`content`. Vorschau zeigt alten/neuen Abschnitt; `--apply` ersetzt ihn nach erneutem
+Abgleich und bestätigt den gespeicherten Haupttext. Fehlt der Abschnitt, wird nur
+dieser angefügt; bei einmaliger Umstellung alte veränderliche Kopien gezielt aus
+ihren bisherigen Abschnitten entfernen. Unveränderte Inhalte erzeugen keinen Write.
+Keine Labels, Kommentare, Ownership oder Abnahmen werden automatisch geändert.
+
+Eingehende Änderungen führen zum Abbruch. GitHub bietet hier keine atomare
+Compare-and-swap-Garantie: Zwischen letzter Lektüre und Write bleibt eine Rennstrecke.
+Bei unbekanntem Publikationsausgang oder nicht bestätigtem Read-back neu lesen und
+abgleichen, niemals blind wiederholen oder zurückrollen. Der Befehl erteilt keine
+Befugnis für fremden Besitz. Ohne CLI-Zugriff gilt derselbe begrenzte Abgleich über
+die verbundenen GitHub-Werkzeuge; fehlende Livefakten bleiben ausdrücklich offen.
+Temporäre Eingabedateien sind kein Repositorygedächtnis oder zusätzlicher Tracker.
+
 ## Wo neue Dateien hingehören
 
 - `src/`: Produktcode; `tests/`: gezielte Tests/kleine synthetische Fixtures; `tools/`: wiederverwendbare Werkzeuge mit dokumentiertem Aufruf.

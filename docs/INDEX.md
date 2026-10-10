@@ -4,7 +4,7 @@
 
 ## Nur den eigenen Bereich lesen
 
-`npm run context` zeigt die Bereiche. `npm run context -- --area atlas` liefert einen begrenzten Checkpointauszug mit Checkout-SHA, Fachplan und Abnahmewurzeln. Er beschreibt diesen Checkout; ein Kandidat oder neuer Ownerbeleg kann weiter sein. `npm run context -- --case HEX01-001` sucht eine exakte Fallkennung; bei einer unbekannten Kennung werden keine ähnlich benannten Fälle als Treffer ausgegeben.
+`npm run next -- --task N` zeigt den aktuellen Pakettext mit ausdrücklich verknüpften Livefakten; [Übergaben ersetzen den Arbeitsabschnitt](REPOSITORY.md#arbeitsstand-lesen-und-ersetzen). `npm run context` zeigt die Bereiche. `npm run context -- --area atlas` liefert einen begrenzten Checkpointauszug mit Checkout-SHA, Fachplan und Abnahmewurzeln. Er beschreibt diesen Checkout; ein Kandidat oder neuer Ownerbeleg kann weiter sein. `npm run context -- --case HEX01-001` sucht eine exakte Fallkennung; bei einer unbekannten Kennung werden keine ähnlich benannten Fälle als Treffer ausgegeben.
 
 | Bereich / Kontextschlüssel | Fachvertrag | Koordination |
 | --- | --- | --- |

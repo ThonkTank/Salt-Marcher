@@ -88,11 +88,16 @@ if (fs.existsSync('queue.json') && args[1] === 'list') {
   process.stdout.write(args[0] === 'issue' ? fs.readFileSync('queue.json', 'utf8') : '[]');
   process.exit(0);
 }
-if (args[0] !== 'issue' || args[1] !== 'view' || args[2] !== '40') {
+const issue = JSON.parse(fs.readFileSync('issue.json', 'utf8'));
+if (args[0] === 'api' && args[1] === 'graphql') {
+  process.stdout.write(JSON.stringify({ data: { repository: { issue: { comments: { nodes: issue.comments.slice(-3) } } } } }));
+  process.exit(0);
+}
+if (args[0] !== 'api' || args[1] !== 'repos/test/repo/issues/40') {
   process.stderr.write('Unrelated queue queries are unavailable');
   process.exit(8);
 }
-process.stdout.write(fs.readFileSync('issue.json', 'utf8'));
+process.stdout.write(JSON.stringify({ ...issue, html_url: issue.url, state: issue.state.toLowerCase(), updated_at: '2026-10-10T12:00:00Z' }));
 `, { mode: 0o755 });
   const issue = { number: 40, title: 'Save and fresh reopen', url: 'https://example.test/40',
     body: 'Continue the owned repair.', state: 'OPEN', labels: [{ name: 'kind:task' },
@@ -110,13 +115,17 @@ process.stdout.write(fs.readFileSync('issue.json', 'utf8'));
   assert.match(result.stdout, /Requested package #40/);
   assert.match(result.stdout, /Continue the owned repair/);
   assert.doesNotMatch(result.stdout, /Live task queue|Free executable tasks|handoff 1/);
-  for (const number of [2, 3, 4]) assert.match(result.stdout, new RegExp(`handoff ${number}`));
+  assert.doesNotMatch(result.stdout, /handoff [1-4]/);
   const calls = fs.readFileSync(path.join(root, 'calls.jsonl'), 'utf8').trim().split('\n').map(JSON.parse);
   assert.equal(calls.length, 1);
-  assert.deepEqual(calls[0].slice(0, 5), ['issue', 'view', '40', '--repo', 'test/repo']);
-  assert.match(result.stdout, /previews are incomplete context, not claim clearance/);
+  assert.deepEqual(calls[0], ['api', 'repos/test/repo/issues/40']);
+  assert.match(result.stdout, /older claims\/decisions must be checked explicitly/);
   assert.doesNotMatch(result.stdout, /full-tail/);
-  assert(result.stdout.length < 1800, 'Default resume must not expand long evidence comments');
+  assert(result.stdout.length < 2000, 'Default resume must not expand long evidence comments');
+  const snapshot = run(issue, ['--json']);
+  assert.equal(snapshot.status, 0, snapshot.stderr);
+  assert.equal(JSON.parse(snapshot.stdout).body, issue.body);
+  assert.match(JSON.parse(snapshot.stdout).bodySha256, /^[a-f0-9]{64}$/);
   const expanded = run(issue, ['--comments']);
   assert.equal(expanded.status, 0, expanded.stderr);
   for (const number of [2, 3, 4]) assert.match(expanded.stdout, new RegExp(`full-tail-${number}`));

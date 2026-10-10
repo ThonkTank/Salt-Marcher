@@ -4,15 +4,15 @@
     "state": "completed",
     "roleContract": "docs/AGENT-ROLES.md#repository-maintenance",
     "repositoryContract": "docs/REPOSITORY.md",
-    "evaluatedShared": "181bec40db372b831f16e5c0b4813af236537071",
-    "scope": "Tie implementation growth to early independent GM GUI observation in existing WORKFLOW/roles; route first World/Planner UI checks within owned packages. No test execution or product approval.",
-    "next": "Existing hourly gm-test loads the current role. Package owners expose first executable GUI path; dependent major growth waits on scoped GM observation and material blocker repair, independent work continues.",
+    "evaluatedShared": "aa7e7dedd4a2bd479618e75c7adf9c33269eb082",
+    "scope": "Implement bounded live task reads and optimistic current-work updates, migrate 68/69 without changing owners or acceptance. No product/GUI qualification.",
+    "next": "Use next --task for current issue/explicit live facts; use update-task preview/apply with fresh expected hash/time. Existing owners maintain current section; historical claims remain targeted lookup. Final GitHub read/write race is explicitly unresolved by API semantics.",
     "verification": [
-      "Existing enabled hourly gm-test and task-maintenance roles inspected; stable automation entrypoints retained",
-      "Current 68/69 inputs and native/UI boundaries inspected; check:repo and affected contract/diff PASS",
-      "Only repositoryOrientation changed; foreign checkpoint and acceptance preserved"
+      "check:repo and test:repo 38/38 PASS including concurrency/unknown outcome/readback failure and GitHub form sections",
+      "Real 68/69 migrations and update-task preview/apply verified; candidate heads/CI and input state read live",
+      "Only repositoryOrientation edited; foreign checkpoint/acceptance preserved; no comment/label/claim mutation by updater"
     ],
-    "previousOrientation": "181bec4"
+    "previousOrientation": "aa7e7de"
   },
   "saltMarcherReplacement": {
     "date": "2026-10-10",
