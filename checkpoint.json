@@ -2,17 +2,16 @@
   "repositoryOrientation": {
     "date": "2026-10-10",
     "state": "completed",
-    "scope": "Compact contributor entry and project memory; no product/domain/host approval.",
+    "scope": "Source-bound full-portfolio delivery mapping, with explicit unified Atlas, climate/weather and music/ambience outcomes; no product/domain/host approval.",
     "roleContract": "docs/AGENT-ROLES.md",
     "repositoryContract": "docs/REPOSITORY.md",
-    "evaluatedShared": "2a484df43bd2146217e0efb3986fd1971d8b55e1",
-    "next": "Use npm run next -- --task <issue> for the current package; expand only relevant comment links or --comments. Orientation follows the current role contract, not copied dispatch state.",
+    "evaluatedShared": "7d45912312d50f412f7974aebd25839ed2c9c4f7",
+    "next": "Follow current task ownership and docs/ROADMAP.md delivery map; SMR-04/08 explain the concrete consumer chains. Resolve only actual dependent model/format/host inputs at existing #7/#10/#11/#44 work sites, not a second dispatch list.",
     "verification": {
-      "tools": "27 repository/tool tests PASS, including bounded default comments and explicit full-text retrieval.",
-      "structure": "Offline repository links/structure and diff checked; historic proof paths retained via the existing register.",
-      "sources": "Current role/communication contracts; #40 H02 reviews and PR72 integration; #68 existing Atlas-QA claim. No owner reassignment or acceptance change."
+      "sources": "All 36 pinned requirement hashes/phase links verified at 9de85c1; all 12 SMR areas and 18 existing acceptance cases mapped, 38 technical needs retained. Targeted Atlas/CITY, SRC-P04/L03/L04/T05, TN-14/25/26 and existing music candidate checked. Unknown original subfunctions remain outside a complete detail inventory.",
+      "structure": "Offline links/structure and affected source/diff check PASS; ratified gate catalog, product code and all acceptance bytes unchanged."
     },
-    "previousOrientation": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/blob/2a484df43bd2146217e0efb3986fd1971d8b55e1/checkpoint.json"
+    "previousOrientation": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/blob/7d45912312d50f412f7974aebd25839ed2c9c4f7/checkpoint.json"
   },
   "saltMarcherReplacement": {
     "date": "2026-10-10",
