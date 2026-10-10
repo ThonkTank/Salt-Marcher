@@ -112,6 +112,91 @@ function ordered<T>(
     );
   return new Map(entries);
 }
+
+/**
+ * Apply one already planned map command to an immutable document without a
+ * Session, history, note, draft or persistence side effect.
+ *
+ * This is the shared projection boundary for callers that must preview the
+ * exact entity/floor ordering and document validation used by native map
+ * commands before handing the result to their own transaction coordinator.
+ */
+export function projectDocumentCommand(
+  raw: MapDocument,
+  command: Command,
+): MapDocument {
+  validateDocument(raw);
+  if (command.texts?.some((patch) => patch.before !== patch.after || patch.create))
+    throw new Error("Raumtexte brauchen den bestehenden Session-Dateipfad.");
+  const equal = (a: unknown, b: unknown) =>
+      a === b || JSON.stringify(a) === JSON.stringify(b),
+    entities = new Map(raw.entities.map((entity) => [entity.id, entity])),
+    floors = new Map(raw.floors.map((floor) => [floor.id, floor]));
+  const check = <T>(
+    changes: readonly RecordChange<T>[],
+    records: ReadonlyMap<Id, T>,
+  ) => {
+    if (new Set(changes.map((change) => change.id)).size !== changes.length)
+      throw new Error("Mehrfache Änderung derselben Kennung.");
+    for (const change of changes) {
+      if (!equal(records.get(change.id) ?? null, change.before))
+        throw new Error("Veraltete Änderung: " + change.id);
+      if (
+        change.after &&
+        typeof change.after === "object" &&
+        "id" in (change.after as object) &&
+        (change.after as { id?: unknown }).id !== change.id
+      )
+        throw new Error("Abweichende Datensatzkennung: " + change.id);
+      for (const index of [change.beforeIndex, change.afterIndex])
+        if (index !== undefined && (!Number.isInteger(index) || index < 0))
+          throw new Error("Ungültige Datensatzposition: " + change.id);
+    }
+  };
+  const entityChanges = command.entities ?? [],
+    floorChanges = command.floors ?? [];
+  check(entityChanges, entities);
+  check(floorChanges, floors);
+  if (command.settings && !equal(command.settings.before, raw.settings))
+    throw new Error("Veraltete Karteneinstellungen.");
+  if (command.content && !equal(command.content.before, raw.content))
+    throw new Error("Veraltete Dungeon-Inhalte.");
+  if (command.smartTiles && !equal(command.smartTiles.before, raw.smartTiles))
+    throw new Error("Veraltete Smart-Tile-Zellen.");
+  if (
+    command.terrainMasks &&
+    !equal(command.terrainMasks.before, raw.terrainMasks)
+  )
+    throw new Error("Veraltete Terrainmasken.");
+  for (const change of entityChanges)
+    if (change.after) entities.set(change.id, change.after);
+    else entities.delete(change.id);
+  for (const change of floorChanges)
+    if (change.after) floors.set(change.id, change.after);
+    else floors.delete(change.id);
+  if (!floors.size) throw new Error("Mindestens ein Geschoss bleibt erforderlich.");
+  const document = immutable(
+    structuredClone({
+      ...raw,
+      entities: [...ordered(entities, entityChanges).values()],
+      floors: [...ordered(floors, floorChanges).values()],
+      settings: command.settings?.after ?? raw.settings,
+      content: command.content?.after ?? raw.content,
+      ...(command.smartTiles
+        ? { smartTiles: command.smartTiles.after }
+        : raw.smartTiles === undefined
+          ? {}
+          : { smartTiles: raw.smartTiles }),
+      ...(command.terrainMasks
+        ? { terrainMasks: command.terrainMasks.after }
+        : raw.terrainMasks === undefined
+          ? {}
+          : { terrainMasks: raw.terrainMasks }),
+    }),
+  );
+  validateDocument(document);
+  return document;
+}
 export function textPatch(
   path: string,
   before: string,

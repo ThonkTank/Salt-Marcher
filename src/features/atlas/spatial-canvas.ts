@@ -1,6 +1,12 @@
 import { Graphics } from "pixi.js";
 import { inside, nearestSegmentPoint } from "../../geometry";
-import { isStructuredRoom, type RoomV4 } from "../../model";
+import {
+  isStructuredRoom,
+  parseDocument,
+  serializeDocument,
+  type MapDocument,
+  type RoomV4,
+} from "../../model";
 import { CitySource } from "../city/commands";
 import { parseCityDocument, serializeCityDocument } from "../city/codec";
 import { CityRenderer } from "../city/renderer";
@@ -33,6 +39,11 @@ export interface SpatialCanvasAccess {
 export type SpatialHit =
   | { kind: "city"; hit: CityHit; frame: RigidFrame }
   | { kind: "room"; ownerId: string; roomId: string };
+export interface SpatialRoomGeometryHit {
+  readonly floorId: string;
+  readonly frame: RigidFrame;
+  readonly point: WorldPoint;
+}
 type CityDisplay = { scene: CityScene; frame: RigidFrame; nodes: boolean };
 type RoomDisplay = { ownerId: string; room: RoomV4; frame: RigidFrame };
 /** Display-only montage. All source reads, previews and hit coordinates share the host camera/history. */
@@ -45,6 +56,7 @@ export class SpatialCanvas {
   selection?: CityHit;
   selectedRoom?: { ownerId: string; roomId: string };
   preview?: CityDocument;
+  dungeonPreview?: MapDocument;
   constructor(
     private renderer: AtlasRenderer,
     private access: SpatialCanvasAccess,
@@ -59,6 +71,11 @@ export class SpatialCanvas {
       overrides.set(
         this.preview.id + "/document",
         JSON.parse(serializeCityDocument(this.preview)) as AtlasValue,
+      );
+    if (this.dungeonPreview)
+      overrides.set(
+        this.dungeonPreview.id + "/document",
+        serializeDocument(this.dungeonPreview),
       );
     if (this.renderer.locationPreview)
       overrides.set(
@@ -139,7 +156,9 @@ export class SpatialCanvas {
     for (const p of placements) {
       if (p.kind !== "dungeon") continue;
       const frame = graph.frame(p.documentId, view),
-        document = this.access.dungeon(p.documentId).read().document;
+        value = view.read(p.documentId, "document"),
+        document = typeof value === "string" ? parseDocument(value) : null;
+      if (!document) throw new Error("Dungeonbytes fehlen.");
       const rooms = document.entities
         .filter(isStructuredRoom)
         .filter((r) => r.floorId === p.surfaceFloorId)
@@ -259,6 +278,14 @@ export class SpatialCanvas {
                     camera.metersPerPixel,
                 ),
           });
+        if (selected)
+          for (const point of polygon.outer) {
+            const screen = project(point);
+            this.rooms
+              .circle(screen.x, screen.y, 4)
+              .fill({ color: 0xffd77a, alpha: 1 })
+              .stroke({ color: 0x402a00, alpha: 1, width: 1 });
+          }
       }
     }
     this.renderer.host.dataset.visibleCities = String(this.cityDisplays.length);
@@ -302,6 +329,29 @@ export class SpatialCanvas {
         });
       if (hit) return { kind: "city", hit, frame };
     }
+  }
+  roomGeometry(
+    screen: WorldPoint,
+    ownerId: string,
+    roomId: string,
+  ): SpatialRoomGeometryHit | undefined {
+    const display = [...this.roomDisplays]
+      .reverse()
+      .find((candidate) =>
+        candidate.ownerId === ownerId && candidate.room.id === roomId,
+      );
+    return display
+      ? {
+          floorId: display.room.floorId,
+          frame: display.frame,
+          point: unprojectLocal(
+            display.frame,
+            this.renderer.relativeCamera,
+            this.renderer.viewport,
+            screen,
+          ),
+        }
+      : undefined;
   }
   destroy(): void {
     for (const drawing of this.cities.values()) drawing.destroy();

@@ -2,6 +2,10 @@ import { SpatialCanvas, type SpatialCanvasAccess } from "./spatial-canvas";
 import { CityGesture } from "../city/gestures";
 import { cityDocumentChange } from "../city/commands";
 import {
+  DungeonGeometryGesture,
+} from "../dungeon/geometry-change";
+import { buildingPointGripPixels } from "../bau/building-point-gestures";
+import {
   unprojectLocal,
   type RigidFrame,
   type RelativeAtlasCamera,
@@ -25,7 +29,14 @@ import {
 } from "./terrain-source";
 
 type Tool = "select" | "hand" | TerrainTool;
-type PointerAction = "pan" | "select" | "paint" | "location" | "city" | "room";
+type PointerAction =
+  | "pan"
+  | "select"
+  | "paint"
+  | "location"
+  | "city"
+  | "room"
+  | "dungeon";
 export interface AtlasEditorStorage {
   save(): Promise<void>;
   changed(): Promise<void>;
@@ -74,6 +85,11 @@ export class AtlasEditor {
     camera: RelativeAtlasCamera;
     valid: boolean;
     error?: unknown;
+  };
+  private dungeonDrag?: {
+    gesture: DungeonGeometryGesture;
+    frame: RigidFrame;
+    camera: RelativeAtlasCamera;
   };
   private selectedRoom?: { ownerId: string; roomId: string };
   private selectedLocation?: string;
@@ -137,6 +153,7 @@ export class AtlasEditor {
         return;
       }
       this.finishStroke();
+      this.cancelDungeon();
       this.cancelDrag();
       this.tool = tool;
       for (const [id, b] of toolButtons)
@@ -304,6 +321,35 @@ export class AtlasEditor {
     if (this.spatial) this.spatial.preview = undefined;
     this.renderer?.schedule();
   }
+  private cancelDungeon(): void {
+    this.dungeonDrag?.gesture.cancel();
+    this.dungeonDrag = undefined;
+    if (this.spatial) this.spatial.dungeonPreview = undefined;
+    this.renderer?.schedule();
+  }
+  private finishDungeon(): void {
+    const drag = this.dungeonDrag,
+      moved = this.pointer?.moved;
+    if (!drag || !moved) {
+      this.cancelDungeon();
+      return;
+    }
+    const change = drag.gesture.handoff();
+    this.dungeonDrag = undefined;
+    if (this.spatial) this.spatial.dungeonPreview = undefined;
+    if (!change) {
+      this.renderer.schedule();
+      return;
+    }
+    const command = {
+      label: "Dungeon-Konturpunkt verschieben",
+      changes: [change],
+    };
+    // The same complete command is checked and then executed once.
+    this.terrain.history.check(command);
+    this.terrain.history.execute(command);
+    this.renderer.schedule();
+  }
   private finishCity(): void {
     const drag = this.cityDrag;
     if (!drag) return;
@@ -391,6 +437,7 @@ export class AtlasEditor {
       });
   }
   private save(): void {
+    this.cancelDungeon();
     try {
       this.finishCity();
     } catch (error) {
@@ -419,6 +466,7 @@ export class AtlasEditor {
       return;
     }
     this.cancelStroke();
+    this.cancelDungeon();
     this.cancelDrag();
     this.releasePointer();
     this.enqueue(async () => {
@@ -451,6 +499,7 @@ export class AtlasEditor {
   }
   /** Finish queued pointer work and retain its draft before a view is destroyed. */
   async flush(): Promise<void> {
+    this.cancelDungeon();
     this.finishCity();
     this.finishStroke();
     this.finishDrag();
@@ -671,6 +720,7 @@ export class AtlasEditor {
     });
   }
   private historyAction(action: "undo" | "redo"): void {
+    this.cancelDungeon();
     try {
       this.finishCity();
     } catch (error) {
@@ -685,7 +735,7 @@ export class AtlasEditor {
     });
   }
   private zoom(factor: number): void {
-    if (this.stroke || this.drag || this.cityDrag) return;
+    if (this.stroke || this.drag || this.cityDrag || this.dungeonDrag) return;
     this.renderer.zoom(
       { x: this.viewport.clientWidth / 2, y: this.viewport.clientHeight / 2 },
       factor,
@@ -750,6 +800,44 @@ export class AtlasEditor {
             this.renderer.selectedLocation = undefined;
             this.syncLocations();
             action = "room";
+            try {
+              const geometry = this.spatial.roomGeometry(
+                this.local(e),
+                hit.ownerId,
+                hit.roomId,
+              );
+              if (!geometry) throw new Error("Raumgeometrie ist nicht sichtbar.");
+              let gesture!: DungeonGeometryGesture;
+              gesture = new DungeonGeometryGesture(this.storage.spatial!, {
+                ownerId: hit.ownerId,
+                floorId: geometry.floorId,
+                roomId: hit.roomId,
+                pointer: geometry.point,
+                tolerance:
+                  (this.renderer.relativeCamera.metersPerPixel *
+                    buildingPointGripPixels) /
+                  geometry.frame.metersPerUnit,
+                invalidated: () => {
+                  if (this.dungeonDrag?.gesture !== gesture) return;
+                  this.dungeonDrag = undefined;
+                  if (this.spatial) this.spatial.dungeonPreview = undefined;
+                  this.renderer.schedule();
+                },
+              });
+              this.dungeonDrag = {
+                gesture,
+                frame: gesture.basis.frame,
+                camera: Object.freeze({ ...this.renderer.relativeCamera }),
+              };
+              action = "dungeon";
+              this.selection.textContent = "Raumkonturpunkt verschieben";
+            } catch (error) {
+              if (
+                !String(error).includes("äußerer Raumkonturpunkt") &&
+                !String(error).includes("Gesperrter Raum")
+              )
+                this.status.textContent = String(error);
+            }
           } else if (hit?.kind === "city") {
             this.roomKey?.clear();
             this.selectedRoom = undefined;
@@ -882,6 +970,25 @@ export class AtlasEditor {
           }
           this.renderer.schedule();
         }
+        if (p.action === "dungeon" && this.dungeonDrag && p.moved) {
+          const drag = this.dungeonDrag;
+          try {
+            const preview = drag.gesture.update(
+              unprojectLocal(
+                drag.frame,
+                drag.camera,
+                this.renderer.viewport,
+                this.local(e),
+              ),
+              !e.altKey,
+            );
+            this.spatial!.dungeonPreview = preview?.preview;
+          } catch (error) {
+            this.spatial!.dungeonPreview = undefined;
+            this.status.textContent = String(error);
+          }
+          this.renderer.schedule();
+        }
         p.x = e.clientX;
         p.y = e.clientY;
       },
@@ -903,6 +1010,14 @@ export class AtlasEditor {
           } catch (error) {
             this.status.textContent = String(error);
             return;
+          }
+        }
+        if (p.action === "dungeon") {
+          try {
+            this.finishDungeon();
+          } catch (error) {
+            this.cancelDungeon();
+            this.status.textContent = String(error);
           }
         }
         if (!p.moved && p.action === "select") {
@@ -930,6 +1045,7 @@ export class AtlasEditor {
     );
     const cancel = () => {
       this.cancelCity();
+      this.cancelDungeon();
       this.cancelStroke();
       this.cancelDrag();
       this.releasePointer();
@@ -964,10 +1080,15 @@ export class AtlasEditor {
             this.cancelDrag();
             this.pointer.action = "pan";
           }
+          if (this.pointer?.action === "dungeon") {
+            this.cancelDungeon();
+            this.pointer.action = "pan";
+          }
           e.preventDefault();
         }
         if (e.key === "Escape") {
           this.cancelCity();
+          this.cancelDungeon();
           this.cancelStroke();
           this.cancelDrag();
           this.releasePointer();
@@ -1002,7 +1123,14 @@ export class AtlasEditor {
     this.viewport.addEventListener(
       "wheel",
       (e) => {
-        if (!e.ctrlKey || this.stroke || this.drag || this.cityDrag) return;
+        if (
+          !e.ctrlKey ||
+          this.stroke ||
+          this.drag ||
+          this.cityDrag ||
+          this.dungeonDrag
+        )
+          return;
         e.preventDefault();
         this.renderer.zoom(
           this.local(e),
@@ -1018,6 +1146,7 @@ export class AtlasEditor {
     );
   }
   destroy(): void {
+    this.cancelDungeon();
     this.closed = true;
     this.abort.abort();
     this.unsubscribe();

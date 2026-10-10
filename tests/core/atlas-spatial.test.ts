@@ -37,6 +37,7 @@ import {
   DungeonAtlasSource,
   dungeonDocumentChange,
 } from "../../src/features/dungeon/atlas-source";
+import { DungeonGeometryGesture } from "../../src/features/dungeon/geometry-change";
 import {
   LocationSource,
   locationDocumentChange,
@@ -45,7 +46,12 @@ import {
   newLocation,
   parseLocationDocument,
 } from "../../src/features/location/location-schema";
-import { parseDocument } from "../../src/model";
+import {
+  isStructuredRoom,
+  parseDocument,
+  serializeDocument,
+  type Door,
+} from "../../src/model";
 
 const id = (n: number) =>
   `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
@@ -688,4 +694,211 @@ test("Prospective validation protects Undo/Redo, immutable retained snapshots an
   asyncCheck();
   h.redo();
   assert.equal(h.read("x", "a"), 1);
+});
+
+function geometryGesture(f: ReturnType<typeof fixture>) {
+  const access = {
+    graph: () => f.graph,
+    dungeon: (ownerId: string) => {
+      assert.equal(ownerId, id(30));
+      return f.dungeon;
+    },
+  };
+  return new DungeonGeometryGesture(access, {
+    ownerId: id(30),
+    floorId: id(32),
+    roomId: id(31),
+    pointer: { x: 4, y: 4 },
+    tolerance: 0.5,
+  });
+}
+
+test("Dungeon geometry proposal is pure, preserves native closure and hands off one canonical 1.524m change", () => {
+  const f = fixture();
+  f.attach();
+  const document = f.dungeon.read().document,
+    door: Door = {
+      id: id(35),
+      kind: "door",
+      floorId: id(32),
+      anchor: { boundaryId: id(31), contour: 0, at: 0.125 },
+      width: 1,
+      variant: "door",
+    },
+    withDoor = { ...document, entities: [...document.entities, door] };
+  f.history.execute({
+    label: "Abhängiges Portal vorbereiten",
+    changes: [dungeonDocumentChange(document, withDoor)],
+  });
+  const before = f.dungeon.read(),
+    depth = f.history.undoDepth,
+    redo = f.history.canRedo,
+    gesture = geometryGesture(f);
+  assert.equal(gesture.basis.frame.metersPerUnit, 1.524);
+  assert.equal(gesture.basis.graph, f.graph);
+  assert.equal(gesture.basis.terrainSource, f.source);
+  assert.equal(gesture.basis.history, f.history);
+  assert.equal(gesture.basis.dungeonSource, f.dungeon);
+  assert.equal(gesture.basis.citySource, f.city);
+  assert.equal(gesture.address.contour, 0);
+  assert.equal(gesture.address.point, 0);
+
+  const proposal = gesture.update({ x: 3, y: 4 }, true);
+  assert.ok(proposal);
+  assert.equal(f.dungeon.read().documentBytes, before.documentBytes);
+  assert.deepEqual(f.dungeon.read().keyClosure, before.keyClosure);
+  assert.equal(f.history.undoDepth, depth);
+  assert.equal(f.history.canRedo, redo);
+  assert.equal(proposal.change.ownerId, id(30));
+  assert.equal(proposal.change.before, before.documentBytes);
+  assert.equal(proposal.change.after, serializeDocument(proposal.preview));
+  assert.deepEqual(proposal.preview.floors, before.document.floors);
+  assert.deepEqual(proposal.preview.content, before.document.content);
+  assert.deepEqual(
+    proposal.preview.entities.map((entity) => entity.id),
+    before.document.entities.map((entity) => entity.id),
+  );
+  const previewDoor = proposal.preview.entities.find(
+    (entity) => entity.id === door.id,
+  );
+  assert.ok(previewDoor?.kind === "door");
+  assert.notDeepEqual(previewDoor, door);
+  const previewRoom = proposal.preview.entities.find((entity) => entity.id === id(31));
+  assert.ok(previewRoom && isStructuredRoom(previewRoom));
+  if (previewRoom && isStructuredRoom(previewRoom))
+    assert.equal(
+      previewRoom.key.sections[0]?.kind === "markdown"
+        ? previewRoom.key.sections[0].markdown
+        : null,
+      "## Eingang\r\nDie Basalttür ist geschlossen.  \r\n",
+    );
+
+  const change = gesture.handoff();
+  assert.deepEqual(change, proposal.change);
+  assert.equal(gesture.status, "handed-off");
+  const command = { label: "Gemeinsamer Konturzug", changes: [change!] };
+  f.history.check(command);
+  assert.equal(f.history.execute(command), true);
+  assert.equal(f.history.undoDepth, depth + 1);
+  assert.equal(f.dungeon.read().documentBytes, proposal.change.after);
+  assert.equal(f.history.undo(), true);
+  assert.equal(f.dungeon.read().documentBytes, before.documentBytes);
+  assert.equal(f.history.redo(), true);
+  assert.equal(f.dungeon.read().documentBytes, proposal.change.after);
+});
+
+test("Parent undo invalidates a Dungeon gesture terminally without consuming its normal Redo", () => {
+  const f = fixture();
+  f.attach();
+  const cityBefore = f.city.read(),
+    cityAfter = editCity(cityBefore, [{
+      kind: "set-building-pose",
+      buildingId: id(105),
+      position: { x: -18, y: 8 },
+      rotationRadians: 0,
+      scale: { x: 1, y: 1 },
+    }]);
+  f.history.execute({
+    label: "Haus bewegen",
+    changes: [cityDocumentChange(cityBefore, cityAfter)],
+  });
+  const bytes = f.dungeon.read().documentBytes,
+    gesture = geometryGesture(f);
+  assert.ok(gesture.update({ x: 3, y: 4 }, true));
+  const depth = f.history.undoDepth;
+  assert.equal(f.history.undo(), true);
+  assert.equal(gesture.status, "changed-basis");
+  assert.equal(gesture.preview, undefined);
+  assert.equal(gesture.update({ x: 2, y: 4 }, true), null);
+  assert.equal(gesture.handoff(), null);
+  assert.equal(f.history.undoDepth, depth - 1);
+  assert.equal(f.history.canRedo, true);
+  assert.equal(f.dungeon.read().documentBytes, bytes);
+});
+
+test("Binding changes and A-to-B-to-A history remain terminally stale; a fresh begin uses the current frame", () => {
+  const f = fixture();
+  f.attach();
+  const gesture = geometryGesture(f),
+    beforeState = f.source.spatialState(),
+    changed = JSON.parse(JSON.stringify(details));
+  changed[1].anchor.parentPointMeters = { x: 2, y: 3 };
+  f.history.execute({
+    label: "Dungeonanker ändern",
+    changes: [spatialChange(id(10), beforeState, state2(changed))],
+  });
+  f.history.undo();
+  assert.deepEqual(f.source.spatialState(), beforeState);
+  assert.equal(gesture.status, "changed-basis");
+  assert.equal(gesture.update({ x: 3, y: 4 }, true), null);
+  assert.equal(gesture.handoff(), null);
+
+  const fresh = geometryGesture(f),
+    proposal = fresh.update({ x: 3, y: 4 }, true);
+  assert.ok(proposal);
+  assert.equal(fresh.status, "active");
+  fresh.cancel();
+  assert.equal(fresh.handoff(), null);
+});
+
+test("Byte-identical Source, Graph and History replacement blocks the old gesture and permits only a fresh begin", () => {
+  const a = fixture(),
+    b = fixture();
+  a.attach();
+  b.attach();
+  assert.equal(a.dungeon.read().documentBytes, b.dungeon.read().documentBytes);
+  assert.deepEqual(a.source.spatialState(), b.source.spatialState());
+  let current = a;
+  const access = {
+      graph: () => current.graph,
+      dungeon: (_ownerId: string) => current.dungeon,
+    },
+    old = new DungeonGeometryGesture(access, {
+      ownerId: id(30),
+      floorId: id(32),
+      roomId: id(31),
+      pointer: { x: 4, y: 4 },
+      tolerance: 0.5,
+    });
+  assert.ok(old.update({ x: 3, y: 4 }, true));
+  current = b;
+  assert.equal(old.update({ x: 2, y: 4 }, true), null);
+  assert.equal(old.status, "changed-basis");
+  assert.equal(old.handoff(), null);
+  assert.equal(a.history.undoDepth, 1);
+  assert.equal(b.history.undoDepth, 1);
+  const fresh = new DungeonGeometryGesture(access, {
+    ownerId: id(30),
+    floorId: id(32),
+    roomId: id(31),
+    pointer: { x: 4, y: 4 },
+    tolerance: 0.5,
+  });
+  assert.ok(fresh.update({ x: 3, y: 4 }, true));
+  fresh.cancel();
+});
+
+test("Dungeon geometry rejects null, locked and non-outer grips without history or source effects", () => {
+  const f = fixture();
+  f.attach();
+  const before = snapshot(f),
+    gesture = geometryGesture(f);
+  assert.equal(gesture.update({ x: 4, y: 4 }, true), null);
+  assert.equal(gesture.handoff(), null);
+  assert.equal(snapshot(f), before);
+
+  assert.throws(
+    () => new DungeonGeometryGesture(
+      { graph: () => f.graph, dungeon: () => f.dungeon },
+      {
+        ownerId: id(30),
+        floorId: id(32),
+        roomId: id(31),
+        pointer: { x: 9, y: 8 },
+        tolerance: 0.1,
+      },
+    ),
+    /äußerer Raumkonturpunkt/,
+  );
+  assert.equal(snapshot(f), before);
 });
