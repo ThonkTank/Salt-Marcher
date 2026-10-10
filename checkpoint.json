@@ -5059,13 +5059,13 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-FTG-SCOPE-I01",
+      "id": "CITY-FTG-SCOPE-I01-CLEAN-R01",
       "status": "complete",
-      "kind": "documentation_implementation",
-      "focus": "FTG lifecycle mapped in existing roadmap/SCOPE; common Campaign time explicit; product acceptance remains open",
+      "kind": "cleanup_review",
+      "focus": "Implementation cleanup passed: mapped requirements, preserved foreign/product/acceptance bytes",
       "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
       "baseSha": "e157462ee1a4c2b82b0c927df664a8c06fc38cb1",
-      "nextStep": "Separate implementation cleanup P/I/R, then independent CITY-FTG-SCOPE-R01"
+      "nextStep": "Independent CITY-FTG-SCOPE-R01 on published PR50 exact SHA"
     },
     "nextRun": {
       "id": "CITY-FTG-SCOPE-R01",

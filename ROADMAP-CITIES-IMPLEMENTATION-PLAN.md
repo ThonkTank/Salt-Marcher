@@ -50,6 +50,8 @@ Planungsergebnis: die vier verlangten Themen besitzen konkrete bestehende Pakete
 
 **I01-Aufräum-I01 — Ergebnis:** Scope verweist auf die kanonische Inventarliste statt Originalbelege zu kopieren. Keine redundanten Dateien oder technische Bereinigung erforderlich; Traptext, sämtliche zehn Phasen, Produkt-/Acceptancebytes und fremde Checkpointsegmente erhalten.
 
+**I01-Aufräum-R01 — PASS:** Acht kanonische Inventarquellen mit offenen Lücken und Status vorhanden; vier Themen, künftige Produktabnahmen und offene Zeit-/Beziehungsverträge sichtbar. Traptext und fremde Checkpointsegmente bytegleich zu Shared 5b57706, Produkt/Acceptance unverändert. Repository-/Verweis-/Diffprüfung bestanden; unabhängiger Fachreview folgt auf exakter PR50-SHA.
+
 ## Technische Arbeitspakete
 
 | Phase | Umsetzung und Zuständigkeit | Nachweis vor Freigabe |
