@@ -4496,8 +4496,8 @@
     "currentUserGoal": "09.10.2026: vollständige Funktionsgleichwertigkeit mit Canvas of Kings, Watabou und Fantasy Town Generator, bessere Bedienung; bisherige Zweiprodukt-Ergebnisbegrenzung durch direkten Auftrag erweitert.",
     "atlasDetailEntry": {
       "plan": "ROADMAP-CITIES-ATLAS-DETAIL-ENTRY-PLAN.md",
-      "state": "planned_component_not_host_delivered",
-      "updatedAt": "2026-10-10T07:11:28.491061+00:00",
+      "state": "component_implemented_independent_review_and_host_pending",
+      "updatedAt": "2026-10-10T07:22:22.529714+00:00",
       "requirements": [
         "CTY-001.01",
         "CTY-009.01"
@@ -4505,14 +4505,22 @@
       "componentReview": "not_run",
       "hostCheck": "not_run",
       "evidence": [
-        "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/13#issuecomment-6094937083"
+        "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/13#issuecomment-6094937083",
+        "/home/aaron/.cache/dungeon-native-qa/city-plans/city-ui-i01-20261010/run.json"
       ],
       "open": [
-        "Implement component and meaningful DOM regressions",
-        "Independent exact-SHA review",
-        "Hex actual mount with confirmed targets/guards",
+        "Independent exact-SHA component review and any targeted repairs",
+        "Own cleanup P/I/R",
+        "Hex runner hookup and actual mount with confirmed targets/guards",
         "Native same-Atlas route, Save/fresh process and physical usability"
-      ]
+      ],
+      "testedCode": "f5f50cf70277f442fc54140128bb6abebf06e30c",
+      "checks": {
+        "check": "PASS",
+        "existingTests": 551,
+        "focusedDOMTests": 8,
+        "cleanBuild": "PASS"
+      }
     }
   },
   "wonderdraftParity": {
