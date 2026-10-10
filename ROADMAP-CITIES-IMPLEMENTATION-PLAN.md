@@ -1128,3 +1128,5 @@ Abnahme: kontrollierte Node-Proben ohne Obsidian für Erfolg, Hauptfehler, Shutd
 Aufräumplan nach Fachabschluss: eigene temporäre Node-Proben/Logs inventarisieren; notwendige Regressionsproben im Repository behalten, Rohlogs außerhalb des Vaults. Aufräumumsetzung und Review getrennt; fremde QA-Artefakte nicht entfernen.
 
 Planabschluss: nur diese Planung veröffentlicht. Umsetzung, Gegenproben, unabhängiger Review und Aufräum-P/I/R sind noch offen.
+
+HOST-RECEIPT-I01: Umsetzung abgeschlossen. PR17-Eingang regulär konsumiert; Hauptfehler und Abschlussfehler bleiben getrennt. Auch falsy Nicht-Error-Würfe bleiben fehlgeschlagen; Ausgabefehler erzwingen Exit1. Elf gezielte Proben führen den tatsächlichen Workflowabschluss in einer Node-VM aus, ohne GUI-Bootstrap. Typprüfung, vollständige Suite 454/454, Syntax und Diffprüfung bestanden. Build bestanden auf Arbeitsstand; sauberer Commitbuild folgt bei Veröffentlichung. Unabhängiger Review und getrenntes Aufräumen bleiben offen.
