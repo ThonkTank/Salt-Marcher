@@ -4930,19 +4930,17 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-R48",
-      "kind": "reference_review",
-      "startedAt": "2026-10-10T04:42:49Z",
-      "completedAt": "2026-10-10T04:46:27.117811+00:00",
-      "focus": "Separate bounded visual/file/process review of I48a/I48b against existing template/fresh-reopen plan",
-      "state": "completed",
-      "result": "PASS bounded reference: own template creation/load, visual Cancel, saved two-field environment delta and fresh process230/0 verified. Feature partial; full product/host/physical/version and remaining controls open.",
-      "receipt": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i48b-20261010-r01/reference-review-r48.json"
-    },
-    "nextRun": {
       "id": "CITY-00-R48-CLEAN-P",
       "kind": "cleanup_plan",
-      "focus": "Plan preservation of raw I48a/I48b evidence and R48 receipt; own documentation/temporary review helper boundaries only, no repeated I48b cache cleanup"
+      "startedAt": "2026-10-10T04:48:26Z",
+      "state": "completed",
+      "result": "Concrete plan: remove only own exact /tmp helper (7721 bytes); protect 135 evidence hashes, no repeated cache cleanup or GUI. Implementation and independent cleanup review remain separate.",
+      "receipt": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i48b-20261010-r01/r48-cleanup-plan.json"
+    },
+    "nextRun": {
+      "id": "CITY-00-R48-CLEAN-I",
+      "kind": "cleanup_implementation",
+      "focus": "Revalidate helper path/type/hash, remove only planned own helper, preserve protected evidence; then separate cleanup review and Campaign integration review handoff"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
