@@ -6,11 +6,13 @@
   "scripts": {
     "build": "node build.mjs",
     "check": "tsc --noEmit",
-    "test": "node build.mjs --test && node --test --test-concurrency=1 .build/tests.cjs .build/catalog-creature-view-dom.cjs .build/catalog-creature-view-adapter.cjs .build/room-key-search-panel.cjs .build/atlas-copy-modal.cjs .build/dungeon-view-lifecycle.cjs .build/campaign-entry-dom.cjs .build/atlas-detail-entry.cjs .build/world-notes-panel.cjs .build/atlas-campaign-host.cjs .build/vault-campaign-runtime-source.cjs tests/migrate-building-v2.test.mjs tests/wonderdraft-inventory.test.mjs tests/canvas-of-kings-session.test.mjs tests/catalog-build-asset.test.mjs tests/items-srd51-source.test.mjs tests/items-srd51-bags.test.mjs tests/items-srd51-b-section.test.mjs tests/items-srd51-c-section.test.mjs tests/items-srd51-d-section.test.mjs tests/renderer-boundary.test.mjs tests/wonderdraft-rfb-preflight.test.mjs tests/repository-structure.test.mjs tests/host-shutdown-receipt.test.mjs tests/project-context.test.mjs tests/next-task.test.mjs tests/adr-prototypes/p02-contract.test.mjs tests/adr-prototypes/p02-concurrency.test.mjs tests/adr-prototypes/p02-process.test.mjs",
+    "test": "node build.mjs --test && node --test --test-concurrency=1 .build/tests.cjs .build/catalog-creature-view-dom.cjs .build/catalog-creature-view-adapter.cjs .build/room-key-search-panel.cjs .build/atlas-copy-modal.cjs .build/dungeon-view-lifecycle.cjs .build/campaign-entry-dom.cjs .build/atlas-detail-entry.cjs .build/world-notes-panel.cjs .build/atlas-campaign-host.cjs .build/vault-campaign-runtime-source.cjs tests/migrate-building-v2.test.mjs tests/wonderdraft-inventory.test.mjs tests/canvas-of-kings-session.test.mjs tests/catalog-build-asset.test.mjs tests/items-srd51-source.test.mjs tests/items-srd51-bags.test.mjs tests/items-srd51-b-section.test.mjs tests/items-srd51-c-section.test.mjs tests/items-srd51-d-section.test.mjs tests/renderer-boundary.test.mjs tests/wonderdraft-rfb-preflight.test.mjs tests/repository-structure.test.mjs tests/host-shutdown-receipt.test.mjs tests/project-context.test.mjs tests/next-task.test.mjs tests/adr-prototypes/p02-contract.test.mjs tests/adr-prototypes/p02-concurrency.test.mjs tests/adr-prototypes/p02-process.test.mjs tests/adr-prototypes/p03-contract.test.mjs tests/adr-prototypes/p03-channel.test.mjs tests/adr-prototypes/p03-pixel-oracle.test.mjs tests/adr-prototypes/p03-process.test.mjs",
     "check:repo": "node tools/check-repository.mjs",
     "test:repo": "node --test --test-concurrency=1 tests/repository-structure.test.mjs tests/project-context.test.mjs tests/next-task.test.mjs",
     "test:adr-p02": "node --test --test-concurrency=1 tests/adr-prototypes/p02-contract.test.mjs tests/adr-prototypes/p02-concurrency.test.mjs tests/adr-prototypes/p02-process.test.mjs",
     "adr:p02:matrix": "node tools/adr-prototypes/p02/matrix.mjs --runs 10 --out tools/adr-prototypes/evidence/p02-aggregate.json",
+    "test:adr-p03": "node --test --test-concurrency=1 tests/adr-prototypes/p03-contract.test.mjs tests/adr-prototypes/p03-channel.test.mjs tests/adr-prototypes/p03-pixel-oracle.test.mjs tests/adr-prototypes/p03-process.test.mjs",
+    "adr:p03:probe": "electron tools/adr-prototypes/p03/probe-main.mjs --out tools/adr-prototypes/evidence/p03-aggregate.json --frames tools/adr-prototypes/evidence/p03-frames",
     "audit:backlog": "node tools/check-repository.mjs --github",
     "context": "node tools/project-context.mjs",
     "next": "node tools/next-task.mjs"
@@ -29,6 +31,7 @@
     "@types/pngjs": "^6.0.5",
     "ajv": "8.20.0",
     "better-sqlite3": "13.0.3",
+    "electron": "44.7.0",
     "esbuild": "^0.25.0",
     "linkedom": "^0.18.13",
     "obsidian": "^1.8.7",
