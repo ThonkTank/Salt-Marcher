@@ -5901,7 +5901,7 @@
       "result": "Gespeicherter Key, Türposition und zwei Kisten überlebten Tab-Reopen; Suchtreffer aktivierte Raum 12/Geschoss 1. In Spielansicht zeigte Raumklick keinen Key. Quelle blieb byteidentisch; ausschließlich isolierte Kopie geändert.",
       "evidencePath": "/workspace/scratch/gm-cloud-qa/evidence-gmux01-c-restore-20261009/",
       "changedFiles": ["checkpoint.json", "ROADMAP-GM-PRODUCT-TESTING-PLAN.md"],
-      "commit": null,
+      "commit": "6880b3b4c7a96d7ae0d8c5622e2db07646d88dfa",
       "issue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/8",
       "limits": "Kein frischer Electronprozess, keine physische Eingabeabnahme, keine Produktlatenz, keine GM-/Spieler-Sichtbarkeitsentscheidung, keine Gesamtfreigabe; volle GM-UX-01 bleibt partial. Keine Implementierungsänderung.",
       "next": "Dungeon-Verantwortlicher klärt OBS-04-Sichtbarkeitsgrenze in Issue #8; danach nächster bislang nicht belegter GM-UX-01-Teilabschnitt."
