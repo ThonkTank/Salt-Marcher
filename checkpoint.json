@@ -2,30 +2,16 @@
   "repositoryOrientation": {
     "date": "2026-10-10",
     "state": "completed",
-    "scope": "User-authorized allocation changed from routine reporting to a third product implementer; existing maintenance reduced and an executable P03 package connected to the host decision. No product/domain/host approval.",
-    "branch": "active/installed-phase1",
-    "entrypoint": "README.md",
-    "productGoals": "docs/PRODUCT.md",
-    "deliveryOrder": "docs/ROADMAP.md",
-    "contributing": "CONTRIBUTING.md",
-    "documentIndex": "docs/INDEX.md",
-    "coordinationIssue": 12,
+    "scope": "Source-bound full-portfolio delivery mapping, with explicit unified Atlas, climate/weather and music/ambience outcomes; no product/domain/host approval.",
+    "roleContract": "docs/AGENT-ROLES.md",
     "repositoryContract": "docs/REPOSITORY.md",
-    "workContract": "docs/WORKFLOW.md",
-    "contextTool": "npm run context",
-    "nextTaskCommand": "npm run next",
-    "referenceRegister": "docs/reference/PLAN-REGISTER.md",
-    "next": "Continue owned World #68, manual planner #69, corpus #58 and existing #40/#41/#60 work without competing claims. New contributors find free P03 implementation #73 through npm run next; use its existing synthetic contract until a real two-window proof. Campaign/Data payload-to-target and archive decisions in #41 remain open; PR67 review/integration no longer blocks consumption.",
+    "evaluatedShared": "7d45912312d50f412f7974aebd25839ed2c9c4f7",
+    "next": "Follow current task ownership and docs/ROADMAP.md delivery map; SMR-04/08 explain the concrete consumer chains. Resolve only actual dependent model/format/host inputs at existing #7/#10/#11/#44 work sites, not a second dispatch list.",
     "verification": {
-      "repositoryStructure": "PASS (offline structure and references)",
-      "liveTaskLookup": "npm run next -- --list shows #73 ready; #68/#69 are claimed and no longer offered as free work. #11 links P03; #41 consumes qualified integrated PR67 and retains its two actual contract blockers.",
-      "affectedSourcesAndDiff": "Current default AGENTS/AGENT-ROLES and bounded P03 contract read. Automation readback confirms three hourly implementers, one hourly GM tester, task-maintenance every two hours, product-value every six hours, repository-maintenance daily, with original timezones preserved. Report automation repurposed with explicit contributor publication authority under the user request. run_now returned 404 Action not found; no immediate worker execution claimed.",
-      "foreignCheckpointAndAcceptance": "Foreign raw checkpoint segments and acceptance bytes preserved; no product or acceptance approval"
+      "sources": "All 36 pinned requirement hashes/phase links verified at 9de85c1; all 12 SMR areas and 18 existing acceptance cases mapped, 38 technical needs retained. Targeted Atlas/CITY, SRC-P04/L03/L04/T05, TN-14/25/26 and existing music candidate checked. Unknown original subfunctions remain outside a complete detail inventory.",
+      "structure": "Offline links/structure and affected source/diff check PASS; ratified gate catalog, product code and all acceptance bytes unchanged."
     },
-    "limits": "Semantic freshness and product/domain/host acceptance remain with their owners; role contracts do not grant additional permissions.",
-    "previousOrientation": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/blob/540334f7d5582f8e773325374a2327920e6e13c0/checkpoint.json",
-    "evaluatedShared": "41f09273abd4f536f4f1098d6bf726f7567a0d1b",
-    "roleContract": "docs/AGENT-ROLES.md"
+    "previousOrientation": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/blob/7d45912312d50f412f7974aebd25839ed2c9c4f7/checkpoint.json"
   },
   "saltMarcherReplacement": {
     "date": "2026-10-10",
