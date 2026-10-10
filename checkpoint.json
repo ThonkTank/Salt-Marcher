@@ -769,7 +769,7 @@
   "hexAtlasExecution": {
     "scope": "HEX-00 bis HEX-28 und sämtliche eingeordneten CITY-00 bis CITY-09 vollständig",
     "phase": "HEX-03",
-    "state": "native_Save_Fresh_Rollback_CommitRecovery_PASS_ABA_fixture_dependency_open",
+    "state": "native_Save_Fresh_Rollback_CommitRecovery_PASS_CampaignB_integrated_native_ABA_pending",
     "plan": "ROADMAP-E2E01-SPATIAL-INTEGRATION-PLAN.md",
     "currentRun": {
       "id": "E2E-01-SPACE-I01b",
@@ -817,9 +817,9 @@
     },
     "nextRun": {
       "id": "E2E-01-SPACE-I01c-RUNTIME-MANIFEST-I02-HOST-ABA",
-      "kind": "bounded_actual_confirmed_second_Campaign_fixture_consumption_then_native_ABA",
-      "state": "native_Save_Fresh_Rollback_CommitRecovery_passed_waiting_actual_B_fixture",
-      "focus": "Consume only an actual second owner-confirmed Campaign fixture, then freshly coordinate the single local GUI slot and probe the native existing picker A-B-A with old lease/late-response and draft isolation. Keep PR13 as the only candidate, existing Spatial-V2 unchanged. Do not repeat the completed Save/Fresh/Rollback/Committed-Recovery or Codec/component packages.",
+      "kind": "bounded_native_actual_Campaign_ABA",
+      "state": "actual_Campaign_B_integrated_native_probe_pending",
+      "focus": "Use the qualified static e2e01-campaign-b-v1 input alongside unchanged Spatial-V2 A in the isolated native QA harness. Freshly coordinate the single GUI slot, then probe the existing picker A-B-A, fresh context/repository/history, revoked old lease/late response and retained draft isolation. Keep PR13 as the only candidate. Do not repeat completed Save/Fresh/Rollback/Committed-Recovery, Codec or component packages.",
       "sourcePlan": "ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md",
       "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
       "evidence": {
@@ -839,15 +839,34 @@
         "fullE2E": false,
         "independentReview": "pending existing integrated review after native ABA input; not self-approved"
       },
-      "requiredInput": "Campaign/Data: second owner-confirmed Campaign runtime manifest and non-overlapping native World/detail/terrain bytes with actual Registry/Inventory provenance, explicit fixture/version/SHA list and initial oracle, usable by the existing native picker. No copied A authority or DOM-generated substitute.",
-      "dependency": "Campaign/Data supplies exact second native Campaign/World/Registry/Inventory fixture and provenance. Current native fixtures contain only Campaign A; GUI slot is returned after this run. No clone of A authority or DOM-generated B substitute.",
+      "requiredInput": "Use exact e2e01-campaign-b-v1 manifest and seven native files alongside unchanged Spatial-V2 A. Fresh scoped GUI confirmation #7/6098768371 covers exactly the next native A-B-A run after publication; check the slot before launch.",
+      "dependency": "Campaign B is closed by current PR37/eacf6abd57523a246c4d5399ac119bd9af2a0e03 and clean integration f5aa463e0309ad8304c4af7bf8f6dbdb78c8e5e4. City grants the next scoped native A-B-A GUI slot after publication; no general or permanent slot ownership.",
       "after": "Existing independent integrated Host review, required repair, separate cleanup. No extra component/general-plan round.",
       "limits": "Small frozen fixture and synthetic native gestures only; controlled fault injection, not power-loss durability. No new Campaign authority, Source activation during Save, fixture mutation, user-vault install or full E2E approval.",
-      "slotConfirmation": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/7#issuecomment-6097870608",
-      "slotConfirmedForCompletedRun": true,
-      "slotRequiredAgain": true,
+      "slotConfirmation": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/7#issuecomment-6098768371",
+      "slotConfirmedForCompletedRun": false,
+      "slotRequiredAgain": false,
       "priorityDecision": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1#issuecomment-6098079622",
-      "inputOwnerAck": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6098185122"
+      "inputOwnerAck": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6098704236",
+      "confirmedCampaignBInput": {
+        "id": "HEX-E2E01-FIXTURE-B-I01",
+        "sourceCommit": "f5aa463e0309ad8304c4af7bf8f6dbdb78c8e5e4",
+        "consumedInput": "eacf6abd57523a246c4d5399ac119bd9af2a0e03",
+        "consumedShared": "8b8d4049a0d9ded1e20001802ef40d012e6ccd98",
+        "fixtureVersion": "e2e01-campaign-b-v1",
+        "fixtureManifest": "tests/fixtures/atlas-e2e-campaign-b-v1/manifest.json",
+        "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-manifest-host-save-i02-h01-20261010/campaign-b-final-integration.json",
+        "sha256": "fd6d9ddcc3456d44e9d4411f2f91a1d3eec92e2da46ae17cc29192601f142c9b",
+        "check": true,
+        "testsPassed": 644,
+        "build": true,
+        "frozenFilesVerified": 19,
+        "nativeInputFilesVerified": 8,
+        "nativeABA": false,
+        "fullE2E": false
+      },
+      "slotConfirmedForNextRun": true,
+      "slotScope": "Exactly one next native A-B-A on the published PR13/current Campaign-B composition in isolated cache vault, then normal exit and explicit return. No GUI launched in this integration run."
     },
     "review": {
       "run": "HEX-02-R02",
@@ -879,7 +898,7 @@
       "HEX02 scoped early island/review/CLEAN complete; HEX03..05 Location/City/Dungeon common Atlas remains open.",
       "HEX06..28/CITY product phases and 79 later Wonderdraft obligations remain.",
       "Full parity, physical input, large-map and installed-vault acceptance remain open.",
-      "Actual Campaign Host Save/Fresh/Rollback/Committed-Recovery and post-Save Undo/Redo pass on the frozen small native fixture. Native A-B-A requires an actual second Campaign fixture; existing integrated Host review, separate cleanup and full E2E remain open."
+      "Actual Campaign Host Save/Fresh/Rollback/Committed-Recovery and post-Save Undo/Redo pass on the frozen small native fixture. Qualified Campaign B is integrated; native A-B-A with a freshly confirmed GUI slot, existing integrated Host review, separate cleanup and full E2E remain open."
     ],
     "coordination": {
       "issue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1",
@@ -5297,7 +5316,7 @@
       "platformIssue": 11,
       "checkpointIsAuthoritative": true
     },
-    "updatedAt": "2026-10-10T14:02:26.218040+00:00",
+    "updatedAt": "2026-10-10T14:59:39.391672+00:00",
     "consumerMatrix": {
       "id": "RUNTIME-MANIFEST-I02-CONSUMER-MATRIX-V1",
       "state": "frozen_complete_matrix_green_on_productive_Host_source",
@@ -5391,13 +5410,32 @@
       "productUnchanged": true
     },
     "latestSharedIntegration": {
-      "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-manifest-host-save-i02-h01-20261010/shared-83bf4bb-integration.json",
-      "sha256": "5e1c270884d961474a3a15e0779e6081efc68668db3a0805d100ee38a26fd058",
-      "sourceCommit": "b93bb4a45d01228a6c900da7b0794ccc71e1f45f",
-      "consumedShared": "83bf4bbae23232e56c481318ca78ee70d7eb813e",
-      "validation": "Workflow YAML, exact-PR-SHA checkout/test guard, independently reviewed identical workflow blob and byte-exact composition PASS; workflow-only delta. No new local product/native run.",
+      "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-manifest-host-save-i02-h01-20261010/campaign-b-final-integration.json",
+      "sha256": "fd6d9ddcc3456d44e9d4411f2f91a1d3eec92e2da46ae17cc29192601f142c9b",
+      "sourceCommit": "f5aa463e0309ad8304c4af7bf8f6dbdb78c8e5e4",
+      "consumedShared": "8b8d4049a0d9ded1e20001802ef40d012e6ccd98",
+      "check": true,
+      "testsPassed": 644,
+      "build": true,
       "nativeSourcesUnchanged": true,
       "newNativeRun": false,
+      "fullE2E": false
+    },
+    "latestCampaignBIntegration": {
+      "id": "HEX-E2E01-FIXTURE-B-I01",
+      "sourceCommit": "f5aa463e0309ad8304c4af7bf8f6dbdb78c8e5e4",
+      "consumedInput": "eacf6abd57523a246c4d5399ac119bd9af2a0e03",
+      "consumedShared": "8b8d4049a0d9ded1e20001802ef40d012e6ccd98",
+      "fixtureVersion": "e2e01-campaign-b-v1",
+      "fixtureManifest": "tests/fixtures/atlas-e2e-campaign-b-v1/manifest.json",
+      "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-manifest-host-save-i02-h01-20261010/campaign-b-final-integration.json",
+      "sha256": "fd6d9ddcc3456d44e9d4411f2f91a1d3eec92e2da46ae17cc29192601f142c9b",
+      "check": true,
+      "testsPassed": 644,
+      "build": true,
+      "frozenFilesVerified": 19,
+      "nativeInputFilesVerified": 8,
+      "nativeABA": false,
       "fullE2E": false
     }
   },

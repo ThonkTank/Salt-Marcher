@@ -153965,7 +153965,7 @@
           "currentEvidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-manifest-host-save-i02-20261010/implementation.json",
           "scope": "Component review only; no native/Host/overall approval."
         },
-        "gap": "Native Save/Fresh/Rollback/Committed-Recovery and post-Save Undo/Redo now have actual Obsidian process evidence. Missing required native A-B-A input: a second actual owner-confirmed Campaign/World/Registry/Inventory fixture, with explicit byte oracle and provenance. Existing integrated Host review and separate cleanup remain open.",
+        "gap": "Current qualified Campaign B eacf6abd is integrated with eight exact native/manifest files, disjoint IDs/paths/digests and actual runtime parser/Registry/Inventory plus DOM picker-click checks. Native A-B-A remains open; the scoped fresh GUI confirmation covers exactly the next published-candidate run. Existing independent integrated Host review and separate cleanup remain open. Previous native Save/Fresh/Rollback/Committed-Recovery and post-Save Undo/Redo evidence is unchanged.",
         "qualifiedCampaignInputAndRollbackProbe": {
           "state": "qualified_component_contract_closed_productive_Host_implementation_now_present",
           "reviewSourceCommit": "ce2f9032dc9f72f994a307b5aac26e1ad8910065",
@@ -154033,6 +154033,23 @@
           "ABA": false,
           "fullE2E": false,
           "independentReview": "pending existing integrated review after native ABA input; not self-approved"
+        },
+        "confirmedCampaignBInput": {
+          "id": "HEX-E2E01-FIXTURE-B-I01",
+          "sourceCommit": "f5aa463e0309ad8304c4af7bf8f6dbdb78c8e5e4",
+          "consumedInput": "eacf6abd57523a246c4d5399ac119bd9af2a0e03",
+          "consumedShared": "8b8d4049a0d9ded1e20001802ef40d012e6ccd98",
+          "fixtureVersion": "e2e01-campaign-b-v1",
+          "fixtureManifest": "tests/fixtures/atlas-e2e-campaign-b-v1/manifest.json",
+          "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-manifest-host-save-i02-h01-20261010/campaign-b-final-integration.json",
+          "sha256": "fd6d9ddcc3456d44e9d4411f2f91a1d3eec92e2da46ae17cc29192601f142c9b",
+          "check": true,
+          "testsPassed": 644,
+          "build": true,
+          "frozenFilesVerified": 19,
+          "nativeInputFilesVerified": 8,
+          "nativeABA": false,
+          "fullE2E": false
         }
       }
     ],
