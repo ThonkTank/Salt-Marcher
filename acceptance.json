@@ -154071,7 +154071,7 @@
             "scope": "Independent existing Chronik review report, no own substitute review/approval or source integration."
           }
         },
-        "gap": "Qualified exact PR33/a6e61b4 with independent Chronik R03 is integrated and checked (628/628,check,clean build after incoming Shared1310905). Its previous proof/event findings are closed. Actual FileTransaction prepare→native-CAS failure→successful rollback→retry rejects because Provider pending preparation has no public checked release (HEX-MANIFEST-I02-03). Await that narrow owner seam before productive Host hook; same-mount Save/Fresh/Recovery/A-B-A and independent native integrated E2E remain open.",
+        "gap": "One frozen executable 18-case RUNTIME-MANIFEST-I02 consumer matrix delivered under #12/6097273698. Existing PR35/8a25c92 public rollback API read but not integrated or full-matrix-qualified; baseline current integrated a6e61b4 is intentionally red for absent release. Require one clean exact-SHA all-green Campaign patch, one Chronik review, then same-mount Registry/Inventory Host hook and actual Obsidian Save/Fresh/Recovery/A-B-A. Historical closed proof/event findings retained, no renewed per-case handoffs or full E2E approval.",
         "qualifiedCampaignInputAndRollbackProbe": {
           "id": "E2E-01-SPACE-I01c-RUNTIME-MANIFEST-I02-S03",
           "state": "qualified_Campaign_contract_integrated_new_actual_rollback_release_dependency",
@@ -154191,6 +154191,59 @@
             "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/campaign-manifest-host-i02-ack-20261010/publication-synchronization.json",
             "sha256": "fa70c9b5d30801a3c0de20edb7661d9f4e8809d722ad4a6227c453f499fc945a"
           }
+        },
+        "consumerMatrix": {
+          "id": "RUNTIME-MANIFEST-I02-CONSUMER-MATRIX-V1",
+          "state": "frozen_executable_contract_baseline_red_owner_patch_requires_full_exact_SHA_run",
+          "decision": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6097273698",
+          "finishedAt": "2026-10-10T12:19:40.572121+00:00",
+          "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
+          "sourcePlan": "ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md",
+          "freezeCommit": "82ebc7f9bbc9ce79447bca3f98ce70e6cc253cd9",
+          "contract": "tests/campaign-manifest-consumer-matrix.contract.json",
+          "contractSha256": "92b766263ed73fd5dc5e24b2023e55af6f5f17b006830adb45f10734dfba69d6",
+          "runner": "tools/verify-campaign-manifest-consumer-matrix.mjs",
+          "fixtureVersion": "e2e01-spatial-v2",
+          "fixtureBytesUnchanged": true,
+          "existingCitySnapshotRoomKeyHistoryOraclesUsed": true,
+          "cameraOwner": "controlled renderer port; no graphical evidence",
+          "cases": 18,
+          "baselinePassed": 7,
+          "baselineFailed": 11,
+          "baselineFailure": "Missing public rollback factory/consumer on current integrated a6e61b4 source; not separate new defects or candidate failures",
+          "baselineClean": true,
+          "baselineReport": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-manifest-consumer-matrix-v1-20261010/baseline-final.json",
+          "baselineReportSha256": "766c85b3eb4475066a0fad598b5b3d8ec6afbd074af7e027c14bea565e4bb959",
+          "apiReferencePR": 35,
+          "apiReferenceCandidate": "8a25c92c89962a4b1fbf4b15a209205e5704bbc3",
+          "apiReferenceDirectlyRead": true,
+          "apiReferenceIntegrated": false,
+          "candidateMatrixRun": "pending owner complete same-SHA frozen matrix run; this baseline is not an execution of PR35",
+          "publicAPIs": [
+            "Participant optional fourth rollback authority",
+            "createRollbackAcknowledgment({ prepared, receipt })",
+            "Provider.cancelSaveAcknowledgment(proof)"
+          ],
+          "reviewRule": "One Campaign/Data patch against this unchanged complete matrix; REVIEW_READY only on clean all-green exact SHA; then one independent Chronik review. Closed I02-01/-02 reviews retained.",
+          "checks": {
+            "check": "PASS includes standalone consumer entry",
+            "baselineSuite": 628,
+            "baselineSuitePassed": 628,
+            "baselineSuiteSkipped": 0,
+            "build": "PASS clean exact freeze commit",
+            "runnerSyntax": "PASS",
+            "diffCheck": "PASS",
+            "matrixBaselineAllGreen": false,
+            "reviewReady": false
+          },
+          "ownProductSourceChanged": false,
+          "hostHookActivated": false,
+          "nativeRan": false,
+          "freshProcessRan": false,
+          "fullE2E": false,
+          "doesNotApprove": "Host same-Navigator registry/inventory refresh, actual Obsidian Save/Fresh/Recovery/A-B-A, City integrated review, full E2E and original parity remain open.",
+          "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-manifest-consumer-matrix-v1-20261010/freeze.json",
+          "sha256": "e2b970caadd33cc976f6d21bb86d362479e9ff10887d3eb7ac3002cc1c9b9c27"
         }
       }
     ],
