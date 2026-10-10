@@ -188,45 +188,45 @@
     "architecture": "ARCHITECTURE.md#geplante-katalog--und-encounter-erweiterung",
     "acceptance": "acceptance.json.saltMarcherCatalogEncounter",
     "currentRun": {
-      "id": "CE-02-I02-S01-W21",
+      "id": "CE-02-I02-S01-W22",
       "kind": "source_inventory_schema_transcript_intermediate",
       "state": "in_progress_verified_incomplete",
-      "focus": "Capture Armor, +1, +2, or +3 as Magic Items A–Z ordinal 8 with ordered source-bound rarity variants",
+      "focus": "Capture Armor of Invulnerability as Magic Items A–Z ordinal 9 with exact fixed rarity and required attunement",
       "plan": "ROADMAP-SALTMARCHER-CE02-I02-PLAN.md",
-      "result": "Armor, +1, +2, or +3 is captured as exact A–Z ordinal 8 on physical/printed page 208 with its full light/medium/heavy header, explicit no-attunement state, complete prose and three ordered +1/+2/+3 variants mapped to rare/very-rare/legendary. The source package remains explicitly incomplete and Item product work remains blocked.",
+      "result": "Armor of Invulnerability is captured as exact A–Z ordinal 9 on physical/printed page 208 with its full Armor (plate) header, fixed legendary rarity, required attunement and complete prose. The source package remains explicitly incomplete and Item product work remains blocked.",
       "verification": {
-        "sourceRevision": "fcb5e4db6fa69c65423e15390cda60756c385623+dirty",
+        "sourceRevision": "dd3732510f721f20d95b7a1abeb1dd1593ceb69c+dirty",
         "check": "passed",
-        "tests": { "passed": 441, "failed": 0 },
+        "tests": { "passed": 443, "failed": 0 },
         "build": "passed",
-        "focusedTests": { "passed": 36, "failed": 0 },
+        "focusedTests": { "passed": 38, "failed": 0 },
         "pdfSha256": "2504d2a0abb0a4d491a939be4f17910a2dde0312570ab8d208080225ccf0a1f0",
         "pdfBytes": 3158713,
         "pdfPages": 403,
-        "occurrences": 228,
-        "records": 227,
-        "transcriptFacts": 707,
-        "magicItemAzArmorPlusOneTwoThree": { "ordinal": 8, "physicalPdfPage": 208, "attunement": "not-required", "variableRarityChoices": 3, "descriptionFacts": 1, "dedicatedPdfFacts": 2, "derivedHeadingCount": 239, "previousHeading": "Apparatus of the Crab", "nextHeading": "Armor of Invulnerability" },
+        "occurrences": 229,
+        "records": 228,
+        "transcriptFacts": 709,
+        "magicItemAzArmorOfInvulnerability": { "ordinal": 9, "physicalPdfPage": 208, "rarity": "legendary", "attunement": "required", "descriptionFacts": 1, "dedicatedPdfFacts": 2, "derivedHeadingCount": 239, "previousHeading": "Armor, +1, +2, or +3", "nextHeading": "Armor of Resistance" },
         "mainBytes": 1422956,
         "mainSha256": "522823730ddce4d0ba83e0476f60887b60a07c517f84e8e270814b6d597efa43",
         "manifestSha256": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64",
         "stylesSha256": "a6d31c13219d4b9f49d2ecf6993106bedef2a33560c9bdfdb93106659d45bc2e"
       },
-      "limits": "Source-package work only. No Item artifact/provider/UI, installed Obsidian or physical host acceptance, Encounter runtime or 2024 rules. The remaining 230 Magic Items A–Z headings, Orb of Dragonkind, magic-item helper reconciliation, remaining goldens, independent W21 review and S01-R01 remain open; I01 stays blocked.",
+      "limits": "Source-package work only. No Item artifact/provider/UI, installed Obsidian or physical host acceptance, Encounter runtime or 2024 rules. The remaining 229 Magic Items A–Z headings, Orb of Dragonkind, magic-item helper reconciliation, remaining goldens, independent W22 review and S01-R01 remain open; I01 stays blocked.",
       "documentation": {
         "status": "partial",
         "branch": "active/installed-phase1",
-        "baseCommit": "fcb5e4db6fa69c65423e15390cda60756c385623",
-        "issue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/9#issuecomment-6098105738",
+        "baseCommit": "dd3732510f721f20d95b7a1abeb1dd1593ceb69c",
+        "issue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/9#issuecomment-6098648755",
         "changedFiles": ["src/features/catalog/data/items-srd51-inventory.json", "src/features/catalog/data/items-srd51-transcript.json", "src/features/catalog/data/items-srd51-source-manifest.json", "tools/items-srd51-source-verify.mjs", "tests/items-srd51-source.test.mjs", "acceptance.json", "checkpoint.json"],
         "externalEvidence": {
-          "path": "/tmp/SRD_CC_v5.1.pdf, /tmp/w21-pdf-verify.json, main.js, manifest.json, styles.css",
-          "scope": "Local official-PDF verification confirms 228 occurrence labels, 707 generic transcript facts and the dedicated Armor +1/+2/+3 gate with all three ordered source-bound rarity choices. These are ephemeral cloud-host paths and local build artifacts, not installed-plugin or GUI evidence."
+          "path": "/tmp/SRD_CC_v5.1.pdf, /tmp/w22-pdf-verify.json, main.js, manifest.json, styles.css",
+          "scope": "Local official-PDF verification confirms 229 occurrence labels, 709 generic transcript facts and the dedicated Armor of Invulnerability gate with fixed legendary rarity and required attunement. These are ephemeral cloud-host paths and local build artifacts, not installed-plugin or GUI evidence."
         },
         "publication": "Pending final upstream synchronization, commit and non-force push; exact publication SHA and remote verification will be recorded in the Issue #9 close receipt.",
         "commit": "see Issue #9 close receipt",
-        "notProven": ["complete SRD 5.1 Item corpus", "remaining 230 Magic Items A–Z headings and Orb of Dragonkind", "magic-item helper reconciliation", "remaining goldens", "independent W21 review and S01-R01", "Item product artifact/provider/UI", "Obsidian host acceptance", "Encounter runtime", "any 2024 rules"],
-        "next": "Publish W21 and request independent read-only review; do not begin W22 before PASS."
+        "notProven": ["complete SRD 5.1 Item corpus", "remaining 229 Magic Items A–Z headings and Orb of Dragonkind", "magic-item helper reconciliation", "remaining goldens", "independent W22 review and S01-R01", "Item product artifact/provider/UI", "Obsidian host acceptance", "Encounter runtime", "any 2024 rules"],
+        "next": "Publish W22 and request independent read-only review; do not begin W23 before PASS."
       }
     },
     "implementationRun": {
@@ -430,7 +430,7 @@
       },
       "limits": "Build-contract repair only. No catalog data/provider/UI change and no CE, Atlas, host, physical-input or overall approval."
     },
-    "verified": "CE-00 and CE-01 implementation/review/repair cycles passed their scoped gates. CE-01-H01 passed its independently reviewed automated scope. CE-02-I01 product commit 7469e64202e730175ee138136a69d82ad4f28ea6 and metadata repair candidate 4d239004c4f000b2af6f66122a05135b0c353ffb passed independent review. CE-02-I02-S01 has a checked fail-closed source package with all 219 equipment occurrences and transcripts plus explicit reconciliation of all 237 helper equipment records. Potion of healing retains its earliest equipment identity and merges A–Z heading 142. A–Z headings 1–8 now preserve exact identities, headers, descriptions, rarity and attunement facts across physical pages 207–208; Apparatus of the Crab preserves its full ten-row Up/Down lever table and Armor +1/+2/+3 preserves all three ordered rarity variants. The remaining 230 A–Z headings, Orb of Dragonkind, helper reconciliation, goldens, W21/S01 reviews and Item product feature remain open. Physical input, screenreader and other-platform acceptance remain open.",
+    "verified": "CE-00 and CE-01 implementation/review/repair cycles passed their scoped gates. CE-01-H01 passed its independently reviewed automated scope. CE-02-I01 product commit 7469e64202e730175ee138136a69d82ad4f28ea6 and metadata repair candidate 4d239004c4f000b2af6f66122a05135b0c353ffb passed independent review. CE-02-I02-S01 has a checked fail-closed source package with all 219 equipment occurrences and transcripts plus explicit reconciliation of all 237 helper equipment records. Potion of healing retains its earliest equipment identity and merges A–Z heading 142. A–Z headings 1–9 now preserve exact identities, headers, descriptions, rarity and attunement facts across physical pages 207–208; Apparatus of the Crab preserves its full ten-row Up/Down lever table, Armor +1/+2/+3 preserves all three ordered rarity variants and Armor of Invulnerability preserves its fixed legendary rarity and required attunement. The remaining 229 A–Z headings, Orb of Dragonkind, helper reconciliation, goldens, W22/S01 reviews and Item product feature remain open. Physical input, screenreader and other-platform acceptance remain open.",
     "open": [
       "CE-01 physical keyboard/mouse, screenreader and other-platform acceptance; CE-02-I02 through CE-07 runs",
       "CE-02-I02-S01 complete official inventory, transcript, closed subcategory enum, full PDF matching, complete golden cases and independent S01-R01 review",
@@ -438,10 +438,10 @@
       "Physical catalog input acceptance cannot be replaced by Playwright automation"
     ],
     "nextRun": {
-      "id": "CE-02-I02-S01-W22",
+      "id": "CE-02-I02-S01-W23",
       "kind": "source_inventory_schema_transcript_continuation",
       "plan": "ROADMAP-SALTMARCHER-CE02-I02-PLAN.md",
-      "focus": "After independent W21 review, capture the next bounded Magic Items A–Z source slice while keeping complete false until every remaining S01 obligation is closed"
+      "focus": "After independent W22 review, capture the next bounded Magic Items A–Z source slice while keeping complete false until every remaining S01 obligation is closed"
     }
   },
   "repositoryWorkflow": {
@@ -8844,11 +8844,11 @@
   },
   "gmProductTesting": {
     "date": "2026-10-09",
-    "state": "gm_ux_atlas_zoom_sequence_bounded_pass",
+    "state": "gm_ux_atlas_terrain_zoom_sequence_bounded_pass",
     "plan": "ROADMAP-GM-PRODUCT-TESTING-PLAN.md",
     "focus": "Längere GM-Endanwenderabläufe, häufige Aktionen, Bedienkosten und UI-Überladung; belegte Nacharbeiten beauftragen und nachprüfen.",
-    "currentRun": "GM-UX-ATLAS-CONTENT-READINESS-20261010-02 blocked/not started: Shared 6482dc6373132aab1b27ac66c76cee6dddeb3285 still has no integrated visible Atlas Location/Key UI; no UI session or build claimed.",
-    "executedUiRuns": 16,
+    "currentRun": "GM-UX-ATLAS-TERRAIN-ZOOM-20261010-01 completed: visible three-cell synthetic terrain paint, narrow/wide +/−/Ctrl-wheel/Fit, Save/tab-close/quick-switch reopen; exact current Shared 83bf4bbae23232e56c481318ca78ee70d7eb813e; no broader Atlas approval.",
+    "executedUiRuns": 17,
     "observedFindings": [
       {
         "id": "GM-UX-001",
@@ -9000,7 +9000,7 @@
       "state": "completed",
       "supersedes": "GM-UX-ACCESS; Slotanfrage gemäß Nutzerkorrektur aufgehoben"
     },
-    "next": "Start the populated Atlas zoom-sequence retest only after Hex-owned HEX-03-I01b-marker Location/Key UI is integrated and explicitly runnable; do not repeat empty-Atlas sequence.",
+    "next": "Test Location/Key markers only after Hex-owned HEX-03-I01b-marker is integrated and explicitly runnable; no further empty-Atlas or unchanged terrain zoom replay.",
     "automation": "Stündliche GM-Produkttests in eigener Cloud; keine Laptop-Slotfreigabe erforderlich.",
     "executionEnvironment": "Eigene Cloud-Umgebung, getrennt vom Laptop der Kollegen",
     "cloudHost": {
@@ -10052,6 +10052,54 @@
       "evidence": "Repository checkpoint and src/features/atlas/atlas-editor.ts; prior empty-atlas images remain only prior-run evidence. No new UI frames or vault writes.",
       "notProven": ["Atlas Location/Key visible UX", "populated-atlas zoom sequence", "product latency", "physical input", "fresh native process", "broad Atlas/Dungeon/E2E acceptance"],
       "next": "After Hex integrates and marks HEX-03-I01b-marker runnable, build/install that exact Shared head and perform only the planned populated-atlas zoom sequence."
+    },
+    "latestAtlasTerrainZoomSequence": {
+      "id": "GM-UX-ATLAS-TERRAIN-ZOOM-20261010-01",
+      "status": "completed_bounded_visible_pass",
+      "owner": "Cloud-GM-Produkttester",
+      "branch": "active/installed-phase1",
+      "sharedProductCommit": "83bf4bbae23232e56c481318ca78ee70d7eb813e",
+      "build": {
+        "command": "npm run build",
+        "result": "PASS; dirty:false; Node v24.19.0; exact sourceRevision 83bf4bbae23232e56c481318ca78ee70d7eb813e",
+        "mainJsSha256": "522823730ddce4d0ba83e0476f60887b60a07c517f84e8e270814b6d597efa43",
+        "stylesCssSha256": "a6d31c13219d4b9f49d2ecf6993106bedef2a33560c9bdfdb93106659d45bc2e",
+        "manifestJsonSha256": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64",
+        "installedTriplet": "All three installed QA plugin files byte-equal to exact Shared build before visible sequence."
+      },
+      "host": {
+        "containerId": "6b89f4c325373b1c28b9f15ae6b8e23493d61a85fe46cc8aa45f4f1379e81c92",
+        "obsidian": "1.14.4",
+        "electron": "43.7.7",
+        "viewport": "1024x800 CSS px, devicePixelRatio 1",
+        "vault": "/workspace/scratch/gm-cloud-qa/room-key-open-clean-20261010/vault",
+        "input": "Visible product UI via isolated cloud CDP 9232; no laptop process and no physical input."
+      },
+      "scope": "Create one new synthetic Atlas via command palette; visibly paint three adjacent level-0 hexes (sea, forest, plain land); narrow and wide +/−/Ctrl+wheel/Fit; visible Save, close tab, quick-switch reopen; hash and visible terrain persistence. No Location/Key UI or broad approval claim.",
+      "result": "All three terrain cells stayed visible through both zoom sequences; Fit returned the patch to a centered fully visible group and the scale label remained 3 Meilen pro Hex. Save/reopen kept visible terrain and exact file hash. No reproducible product defect; no repair commissioned.",
+      "dataOracles": {
+        "atlasPath": "Atlanten/GM Terrain Test 2026-10-10.overworld",
+        "atlasId": "2e86d783-f493-4f15-a83f-2211ee8623de",
+        "emptyCreatedSha256": "82256969cf18c3ce97feb64e1cc06c4218e3296ca9d03ab6b1c164da8e6ffcf1",
+        "savedAndReopenedSha256": "5e5b5795518424edb5ee40a406c5e11febef556358ade6ac53151adf87bc2558",
+        "seaChunkSha256": "47b2bdef7902df2c88e12f4f733cbd7e36a96d379e23d3e5109909256c8713ee",
+        "landForestChunkSha256": "2f587580e3061ea646f90ae0dfc8dc8f512381f8e770db5812a4fb19c3b341b3",
+        "existingDungeonCopyBeforeAfterSha256": "56c38f8ff9e4365a165af4319da37bb03db20c09925d6ee38e5327e7559353c7",
+        "previousEmptyAtlasBeforeAfterSha256": "9f8ea64229c608ee4f4d5454f5782ffbb73170f36bbf9e6a8a28c19d13c30d17"
+      },
+      "evidence": {
+        "directory": "/workspace/scratch/gm-cloud-qa/evidence-gmux-atlas-terrain-zoom-20261010-01/",
+        "files": "00-pre-run.png through 27-reopened.png; SHA256SUMS.txt; RUN-NOTES.md; BUILD-INSTALL-HASHES.txt",
+        "keyFrames": "04-new-atlas.png, 07-forest-painted.png, 09-sea-neighbor.png, 11–15 narrow zoom/fit, 17–22 wide zoom/fit, 27-reopened.png"
+      },
+      "checks": "npm run build PASS dirty:false; build/install triplet equality PASS; status Saved; visible Save/Close/Quick Switcher reopen PASS; Atlas hash exact empty→saved and unchanged after reopen; pre-existing Dungeon and empty Atlas hashes unchanged; screenshot SHA manifest created. No testsuite run.",
+      "harnessNote": "First quick-switcher automation lookup targeted hidden generic Search inputs and timed out after 30s without vault mutation; corrected to visible Find or create a note input and opened the intended file. This was not a product failure or latency.",
+      "limits": [
+        "CDP-controlled mouse/keyboard, no physical input; remote settle waits not product latency.",
+        "No Atlas Undo/Redo in this bounded run, no Location/Key marker UI, no large-map test, no fresh Electron process, no player projection/privacy or broad Atlas/Dungeon/E2E approval."
+      ],
+      "changedRepositoryFiles": ["checkpoint.json: gmProductTesting only", "ROADMAP-GM-PRODUCT-TESTING-PLAN.md"],
+      "next": "Wait for integrated runnable HEX-03-I01b-marker before testing Location/Key UI; do not replay unchanged empty or terrain zoom cases."
     }
   }
 }

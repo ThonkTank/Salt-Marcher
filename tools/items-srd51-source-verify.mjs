@@ -599,6 +599,34 @@ export function validateMagicItemAzArmorPlusOneTwoThree(transcript, inventory) {
     variableRarityChoices: choices.length, descriptionFacts: 1 });
 }
 
+export function validateMagicItemAzArmorOfInvulnerability(transcript, inventory) {
+  const id = "srd51:magic-item:magic-items-a-z:9";
+  const occurrence = inventory.occurrences.find(item => item.id === id);
+  invariant(occurrence?.sourceLabel === "Armor of Invulnerability" && occurrence.ordinal === 9
+    && occurrence.sourceTable === "Magic Items A–Z" && occurrence.sourceKind === "detail-heading"
+    && occurrence.firstPdfPage === 208 && occurrence.lastPdfPage === 208
+    && occurrence.firstPrintedPage === 208 && occurrence.lastPrintedPage === 208
+    && occurrence.variantId === null && occurrence.mergeIntoId === null,
+  "Armor-of-Invulnerability-Occurrence 9 ist nicht exakt als Seite-208-Heading belegt.");
+  const header = "Armor (plate), legendary (requires attunement)";
+  const description = "You have resistance to nonmagical damage while you wear this armor. Additionally, you can use an action to make yourself immune to nonmagical damage for 10 minutes or until you are no longer wearing the armor. Once this special action is used, it can’t be used again until the next dawn.";
+  const record = transcript.records.find(item => item.id === id);
+  invariant(record?.name === "Armor of Invulnerability" && record.category === "magic-item"
+    && record.subcategory === "armor" && record.magic === true
+    && record.rarity?.kind === "fixed" && record.rarity.value === "legendary"
+    && record.attunement === "required"
+    && record.sourceHeader?.text === header && record.sourceHeader.occurrenceId === id
+    && record.properties.length === 0
+    && record.description.length === 1 && record.description[0].occurrenceId === id
+    && record.description[0].text === description
+    && JSON.stringify(record.source.pdfPages) === "[208]"
+    && JSON.stringify(record.source.printedPages) === "[208]"
+    && JSON.stringify(record.source.occurrenceIds) === JSON.stringify([id]),
+  "Armor-of-Invulnerability-Record ist unvollständig oder nicht quellengetreu.");
+  return Object.freeze({ id, ordinal: 9, physicalPdfPage: 208, rarity: "legendary",
+    attunement: "required", descriptionFacts: 1 });
+}
+
 function formatAjvErrors(errors) {
   return [...(errors ?? [])]
     .sort((left, right) => [left.instancePath, left.schemaPath, left.keyword, left.message]
@@ -1047,6 +1075,26 @@ function verifyPdfMagicItemAzArmorPlusOneTwoThree(pdfPath, transcript, inventory
     scope: "ordinal-eight-full-header-ordered-rarity-variants-attunement-and-description" });
 }
 
+function verifyPdfMagicItemAzArmorOfInvulnerability(pdfPath, transcript, inventory) {
+  const evidence = validateMagicItemAzArmorOfInvulnerability(transcript, inventory);
+  const headings = extractMagicItemAzHeadingsFromPdfXml(execFileSync("pdftohtml",
+    ["-xml", "-f", "207", "-l", "251", "-stdout", resolve(pdfPath)],
+    { encoding: "utf8", maxBuffer: 16 * 1024 * 1024 }));
+  invariant(headings.length === 239 && headings[7] === "Armor, +1, +2, or +3"
+    && headings[8] === "Armor of Invulnerability" && headings[9] === "Armor of Resistance",
+  "Armor of Invulnerability muss im PDF exakt Ordinal 9 zwischen Armor, +1, +2, or +3 und Armor of Resistance sein.");
+  const record = transcript.records.find(item => item.id === evidence.id);
+  const pageText = normalizePdfPageText(extractPdfPage(pdfPath, 208), 208);
+  const facts = [record.sourceHeader.text, record.description[0].text];
+  for (const fact of facts) {
+    invariant(pageText.includes(normalizePdfText(fact)),
+      `Armor-of-Invulnerability-PDF-Beleg für „${fact}“ fehlt.`);
+  }
+  return Object.freeze({ ...evidence, checkedPdfFacts: facts.length,
+    derivedHeadingCount: headings.length, previousHeading: headings[7], nextHeading: headings[9],
+    scope: "ordinal-nine-full-header-fixed-rarity-required-attunement-and-description" });
+}
+
 function verifyPdfHelperDispositions(pdfPath, inventory) {
   const occurrences = new Map(inventory.occurrences.map(occurrence => [occurrence.id, occurrence]));
   const pageText = new Map();
@@ -1127,7 +1175,7 @@ export async function verifyItemsSourcePackage({ pdfPath, allowIncomplete = fals
     "Manifest-Transkriptcount stimmt nicht.");
   const magicItemAzSection = inventory.sections.find(section => section.id === "magic-items-a-z");
   invariant(manifest.coverage.capturedMagicItemAzHeadings === magicItemAzSection?.capturedOccurrences
-    && manifest.coverage.capturedMagicItemAzStandaloneRecords === 8
+    && manifest.coverage.capturedMagicItemAzStandaloneRecords === 9
     && manifest.coverage.capturedMagicItemAzMergedDetails === 1
     && manifest.coverage.unresolvedMagicItemSourceHeadings
       === magicItemAzSection.expectedOccurrences - magicItemAzSection.capturedOccurrences,
@@ -1141,6 +1189,7 @@ export async function verifyItemsSourcePackage({ pdfPath, allowIncomplete = fals
   const magicItemAzAnimatedShield = validateMagicItemAzAnimatedShield(transcript, inventory);
   const magicItemAzApparatusOfTheCrab = validateMagicItemAzApparatusOfTheCrab(transcript, inventory);
   const magicItemAzArmorPlusOneTwoThree = validateMagicItemAzArmorPlusOneTwoThree(transcript, inventory);
+  const magicItemAzArmorOfInvulnerability = validateMagicItemAzArmorOfInvulnerability(transcript, inventory);
   let pdf;
   if (pdfPath) {
     const bytes = await readFile(resolve(pdfPath));
@@ -1157,6 +1206,8 @@ export async function verifyItemsSourcePackage({ pdfPath, allowIncomplete = fals
         verifyPdfMagicItemAzApparatusOfTheCrab(pdfPath, transcript, inventory),
       magicItemAzArmorPlusOneTwoThreeEvidence:
         verifyPdfMagicItemAzArmorPlusOneTwoThree(pdfPath, transcript, inventory),
+      magicItemAzArmorOfInvulnerabilityEvidence:
+        verifyPdfMagicItemAzArmorOfInvulnerability(pdfPath, transcript, inventory),
       potionHealingMergeEvidence: verifyPdfPotionHealingMerge(pdfPath, transcript, inventory),
       boundedArmorTableEvidence: verifyPdfArmorTableRows(pdfPath, transcript, inventory),
       boundedWeaponTableEvidence: verifyPdfWeaponTableRows(pdfPath, transcript, inventory),
@@ -1175,6 +1226,7 @@ export async function verifyItemsSourcePackage({ pdfPath, allowIncomplete = fals
     magicItemAzAnimatedShield,
     magicItemAzApparatusOfTheCrab,
     magicItemAzArmorPlusOneTwoThree,
+    magicItemAzArmorOfInvulnerability,
     potionHealingMerge,
     pdf,
     hashes: Object.freeze({
