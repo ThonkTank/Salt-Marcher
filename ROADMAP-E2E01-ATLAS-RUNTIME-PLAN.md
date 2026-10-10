@@ -13,10 +13,11 @@ Die [N01-Reparatur](docs/reference/atlas-detail-binding-d01/repair-n01.json) auf
 nativen Before-/Afterdaten ab und nutzt die vorhandene Campaign-Erweiterungsautorität.
 Neun neue Regressionen prüfen Save/Undo/Redo, frischen Modell-Mount, Recovery und
 gefälschte Referenzbelege; der gemeinsame Stand mit Shared527398c besteht Typprüfung,
-880 Tests (ein optionaler PDF-Test ausgelassen) und Build. Nächster getrennter
-Schritt ist der unabhängige Campaign/Data-Review dieses konkreten Speicherkandidaten.
-Nach Annahme/Integration folgt der noch fehlende sichtbare Verortungsanschluss. Neue Placementkennungen
-sind derzeit abgewiesen und werden nicht durch diese Diagnose freigegeben.
+880 Tests (ein optionaler PDF-Test ausgelassen) und Build. Der unabhängige
+Campaign/Data-Review und die separate [PR78-Integration](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/7#issuecomment-6102632284)
+sind konsumiert. [I01: sichtbarer Dungeon-am-Ort-Anschluss](docs/reference/atlas-detail-binding-d01/dungeon-at-location-i01.json)
+nutzt jetzt vorhandene Platzierungen und die gemeinsame History; neue Placementkennungen
+werden weiterhin nicht freigegeben. Aktuelle Fortsetzung führt #80.
 N01 liefert keinen GUI-/Electron-/physischen oder Gesamt-E2E-Nachweis und keine neue allgemeine
 Plan-/Reviewrunde. Der begrenzte abgeschlossene #40-Scope bleibt erhalten.
 
@@ -36,13 +37,35 @@ Nächster produktiver Hex-Anschluss bleibt die konkrete Detail-/verortete-Dungeo
 Raum-Key-Folge derselben E2E-01-Zeile. In diesem Bereinigungslauf werden keine
 Produktänderung, GUI, CITY oder E2E-02–04 begonnen.
 
+#### Arbeitsstand #80
+
+Kandidat: https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/81
+
+Eingang: https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/78
+
+Die native Save-/Referenz-/Recoverybasis ist konsumiert; vorhandenen Dungeon am
+Ort verorten und Raum-Key/Zurück/UndoRedo bedienen ist im gemeinsamen Editor
+angeschlossen. Atlas-QAs [R01-Befund](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/81#issuecomment-6102786765)
+zum zurückgebliebenen Link nach Ort A → B ist gezielt repariert: alter Ortslink,
+neuer Ortslink und dieselbe Platzierung ändern sich in einer History-Aktion.
+Andere Verweise/Texte bleiben erhalten; Core/DOM, Save/erneutes Modellladen,
+Copy/Discard und Prepared/Committed-Recovery binden den
+[N02-Beleg](docs/reference/atlas-detail-binding-d01/dungeon-at-location-n02.json).
+
+Nächster begrenzter Beitrag: Atlas-QAs unabhängiger R02 am korrigierten Kandidaten.
+Anschließend getrennte echte Obsidian-/Frischstartprobe nach neuer lokaler
+Slotkoordination und frühe Cloud-GM-Nutzung am erreichbaren GUI-Weg.
+Keine Selbstintegration oder weitere abhängige Featureerweiterung vor dem
+Nutzungsfeedback. E2E-01 und native/physische/Original-/Großkarten-/Installations-
+abnahmen bleiben offen.
+
 ## Historische Planbasis und Lieferbelege
 
 Die folgenden Anschlüsse, Lücken und nächsten Schritte beschreiben ihre jeweils
 genannte Quellbasis. Sie sind keine aktuelle Aufgabenfolge; auch alte Planreview-,
 I01a/b/c- oder Aufräumanweisungen starten keine neuen Pakete. Die verlinkten
 H01-/D01-/R01-/N02-Artefakte einschließlich des hashgebundenen R01-README bleiben
-unveränderte Belege ihrer damaligen Ausführung. Für die Fortsetzung #40 lesen.
+unveränderte Belege ihrer damaligen Ausführung. Für die Fortsetzung #80 lesen.
 
 ## Nutzerziel, Basis und unveränderte Abnahmelinie
 

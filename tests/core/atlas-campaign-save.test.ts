@@ -1125,26 +1125,8 @@ async function bindExistingDungeon(repo: AtlasRepository, reparent = true) {
     ],
   };
   const changes = [locationDocumentChange(location.id, location, after)];
-  if (reparent)
-    changes.push(
-      spatialChange(source.world.id, before, {
-        ...before,
-        detailPlacements: before.detailPlacements.map((p) =>
-          p.id === dungeon.id
-            ? {
-                ...dungeon,
-                parent: { kind: "location" as const, locationId: location.id },
-                anchor: {
-                  ...dungeon.anchor,
-                  parentPointMeters: { x: 0, y: 0 },
-                },
-              }
-            : p,
-        ),
-      }),
-    );
   assert.equal(
-    source.history.execute({
+    reparent ? repo.bindDungeonAtLocation(location.id, dungeon.id) : source.history.execute({
       label: "Bestehenden Dungeon am Ort verorten",
       changes,
     }),
@@ -1230,6 +1212,73 @@ for (const reparent of [false, true])
     assert.equal(f.store.writes.length, writes);
     await freshNavigation(f.store);
   });
+
+test("Dungeon Location-to-Location move, Undo Save and Redo Save reopen exact native and Registry references", async () => {
+  const f = await opened();
+  await bindExistingDungeon(f.repo);
+  await f.repo.save();
+  const before = new Map(f.store.files), old = f.repo.location(id(12)).read()!,
+    next = f.repo.location(id(11)).read()!, worldBefore = f.source.spatialState(),
+    depth = f.source.history.undoDepth;
+  f.repo.bindDungeonAtLocation(id(11), id(202));
+  const oldAfter = { ...old, detailMaps: [] },
+    nextAfter = { ...next, detailMaps: [...next.detailMaps, { kind: 'dungeon', documentId: id(30) }] },
+    worldAfter = f.source.spatialState();
+  assert.equal(f.source.history.undoDepth, depth + 1);
+  for (const phase of ['moved', 'undo', 'redo']) {
+    if (phase === 'undo') assert.equal(f.source.history.undo(), true);
+    if (phase === 'redo') assert.equal(f.source.history.redo(), true);
+    assert.deepEqual(f.source.spatialState(), phase === 'undo' ? worldBefore : worldAfter);
+    await f.repo.save();
+    const fresh = await opened(f.store);
+    await fresh.repo.ensureLocation(id(12));
+    assert.deepEqual(fresh.repo.location(id(12)).read(), phase === 'undo' ? old : oldAfter);
+    assert.deepEqual(fresh.repo.location(id(11)).read(), phase === 'undo' ? next : nextAfter);
+    assert.deepEqual(fresh.source.spatialState(), phase === 'undo' ? worldBefore : worldAfter);
+    const atlas = await savedAtlasReferences(fresh.repo, f.store);
+    for (const locationId of [id(11), id(12)])
+      assert.equal(atlas.records.find((r) => r.id === locationId)!.references.some((r) => r.id === id(30)),
+        locationId === (phase === 'undo' ? id(12) : id(11)));
+    for (const [path, bytes] of before)
+      if (![campaignPath, worldPath].includes(path) && !path.endsWith('.location'))
+        assert.equal(f.store.files.get(path), bytes, path);
+    const writes = f.store.writes.length;
+    await fresh.repo.save();
+    assert.equal(f.store.writes.length, writes);
+  }
+});
+
+test("Location-to-Location Prepared and Committed recovery preserve both native Locations and manifest authority", async () => {
+  for (const state of ['prepared', 'committed'] as const) {
+    const f = await opened();
+    await bindExistingDungeon(f.repo);
+    await f.repo.save();
+    const before = new Map(f.store.files), beforeManifest = f.store.files.get(campaignPath)!,
+      old = f.repo.location(id(12)).read()!, next = f.repo.location(id(11)).read()!;
+    f.repo.bindDungeonAtLocation(id(11), id(202));
+    const after = f.source.spatialState();
+    f.store.fault = state === 'prepared'
+      ? (p) => p === campaignPath
+      : (p, raw) => p === worldPath + '.journal' && raw === null && f.store.files.get(campaignPath) !== beforeManifest;
+    await assert.rejects(f.repo.save(), AggregateError);
+    assert.equal(JSON.parse(f.store.files.get(worldPath + '.journal')!).state, state);
+    f.store.offline = false; f.store.fault = undefined;
+    const fresh = await opened(f.store);
+    await fresh.repo.ensureLocation(id(12));
+    assert.equal(fresh.repo.dirty, state === 'prepared');
+    if (state === 'prepared')
+      for (const [path, bytes] of before) assert.equal(f.store.files.get(path), bytes, path);
+    assert.deepEqual(fresh.repo.location(id(12)).read(), { ...old, detailMaps: [] });
+    assert.deepEqual(fresh.repo.location(id(11)).read(), {
+      ...next, detailMaps: [...next.detailMaps, { kind: 'dungeon', documentId: id(30) }],
+    });
+    assert.deepEqual(fresh.source.spatialState(), after);
+    await fresh.repo.save();
+    await savedAtlasReferences(fresh.repo, f.store);
+    assert.equal(f.store.files.has(worldPath + '.journal'), false);
+    assert.equal(f.store.files.has(worldPath + '.draft'), false);
+  }
+});
 
 test("Existing Dungeon binding Save, Undo Save, Redo Save retain one live runtime mount/History and fresh references", async () => {
   const f = await liveNavigation(),

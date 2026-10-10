@@ -11,6 +11,11 @@ export interface AtlasDetailEntryModel {
   readonly locationName: string;
   readonly entries: readonly AtlasDetailEntryItem[];
   readonly blockedReason?: string;
+  readonly dungeonBindings?: readonly {
+    readonly placementId: string;
+    readonly label: string;
+    readonly description: string;
+  }[];
 }
 
 let nextPanelId = 0;
@@ -23,8 +28,10 @@ export class AtlasDetailEntry {
   private readonly reset: HTMLButtonElement;
   private readonly list: HTMLElement;
   private readonly status: HTMLElement;
+  private readonly bindingList: HTMLElement;
   private readonly panelId = `dn-atlas-detail-entry-${++nextPanelId}`;
   private readonly onNavigate: (target: Readonly<AtlasNavigationTarget>) => void | Promise<void>;
+  private readonly onBindDungeon?: (placementId: string) => void | Promise<void>;
   private readonly stop = (event: Event): void => event.stopPropagation();
   private readonly isolatedEvents = [
     "keydown", "keyup", "pointerdown", "pointermove", "pointerup",
@@ -33,16 +40,20 @@ export class AtlasDetailEntry {
   private model: AtlasDetailEntryModel = { locationName: "", entries: [] };
   private buttons: { button: HTMLButtonElement; unavailable: boolean; click: () => void }[] = [];
   private version = 0;
-  private pending?: { label: string };
+  private pending?: { label: string; verb: string };
   private error = "";
   private closed = false;
   private visibleCount = 0;
 
   constructor(
     host: HTMLElement,
-    access: { onNavigate(target: Readonly<AtlasNavigationTarget>): void | Promise<void> },
+    access: {
+      onNavigate(target: Readonly<AtlasNavigationTarget>): void | Promise<void>;
+      onBindDungeon?(placementId: string): void | Promise<void>;
+    },
   ) {
     this.onNavigate = access.onNavigate;
+    this.onBindDungeon = access.onBindDungeon;
     const doc = host.ownerDocument;
     this.root = doc.createElement("section");
     this.root.className = "dn-atlas-detail-entry";
@@ -61,10 +72,12 @@ export class AtlasDetailEntry {
     this.reset.type = "button";
     this.reset.textContent = "Suche zurücksetzen";
     this.list = doc.createElement("ul");
+    this.bindingList = doc.createElement("div");
+    this.bindingList.className = "dn-atlas-dungeon-bindings";
     this.status = doc.createElement("p");
     this.status.setAttribute("role", "status");
     this.status.setAttribute("aria-live", "polite");
-    this.root.append(this.heading, label, this.reset, this.list, this.status);
+    this.root.append(this.heading, label, this.reset, this.list, this.bindingList, this.status);
     host.append(this.root);
     this.search.addEventListener("input", this.filter);
     this.reset.addEventListener("click", this.clearFilter);
@@ -90,6 +103,7 @@ export class AtlasDetailEntry {
       locationName: model.locationName,
       entries: Object.freeze(entries),
       blockedReason: model.blockedReason,
+      dungeonBindings: Object.freeze((model.dungeonBindings ?? []).map((binding) => Object.freeze({ ...binding }))),
     });
     this.version++;
     this.pending = undefined;
@@ -141,6 +155,32 @@ export class AtlasDetailEntry {
       this.buttons.push({ button, unavailable: !!entry.unavailableReason, click });
       this.list.append(row);
     });
+    this.bindingList.replaceChildren();
+    const bindings = this.onBindDungeon ? this.model.dungeonBindings ?? [] : [];
+    if (bindings.length) {
+      const doc = this.root.ownerDocument,
+        heading = doc.createElement("h4"),
+        hint = doc.createElement("p"),
+        list = doc.createElement("ul");
+      heading.textContent = "Vorhandenen Dungeon hier verorten";
+      hint.textContent = "Verschiebt die vorhandene Karte zu diesem Ort. Rückgängig stellt ihre bisherige Position wieder her.";
+      this.bindingList.append(heading, hint, list);
+      for (const [index, binding] of bindings.entries()) {
+        const row = doc.createElement("li"), button = doc.createElement("button"), description = doc.createElement("p");
+        button.type = "button";
+        button.textContent = `Hier verorten: ${binding.label}`;
+        description.textContent = binding.description;
+        description.id = `${this.panelId}-binding-${version}-${index}`;
+        button.setAttribute("aria-describedby", description.id);
+        const click = (): void => {
+          if (this.closed || version !== this.version || !this.bindingList.contains(button) || button.disabled) return;
+          this.perform(binding.label, version, () => this.onBindDungeon!(binding.placementId), "Verorte");
+        };
+        button.addEventListener("click", click);
+        this.buttons.push({ button, unavailable: false, click });
+        row.append(button, description); list.append(row);
+      }
+    }
     this.refreshActions();
   }
 
@@ -154,7 +194,7 @@ export class AtlasDetailEntry {
     for (const { button, unavailable } of this.buttons)
       button.disabled = unavailable || !!this.model.blockedReason || !!this.pending;
     this.root.setAttribute("aria-busy", String(!!this.pending));
-    this.status.textContent = this.pending ? `Öffne ${this.pending.label} …`
+    this.status.textContent = this.pending ? `${this.pending.verb} ${this.pending.label} …`
       : this.error || this.model.blockedReason || (this.model.entries.length === 0
         ? "Für diesen Ort sind keine Ziele verfügbar."
         : this.visibleCount === 0 ? "Keine passenden Ziele. Suche zurücksetzen oder ändern."
@@ -162,7 +202,10 @@ export class AtlasDetailEntry {
   }
 
   private navigate(entry: AtlasDetailEntryItem, version: number): void {
-    const pending = { label: entry.label };
+    this.perform(entry.label, version, () => this.onNavigate(entry.target));
+  }
+  private perform(label: string, version: number, action: () => void | Promise<void>, verb = "Öffne"): void {
+    const pending = { label, verb };
     this.pending = pending;
     this.error = "";
     this.refreshActions();
@@ -170,11 +213,11 @@ export class AtlasDetailEntry {
       if (this.closed || version !== this.version || this.pending !== pending) return;
       this.pending = undefined;
       if (failed)
-        this.error = `Ziel konnte nicht geöffnet werden. ${error instanceof Error ? error.message : error == null ? "Bitte erneut versuchen." : String(error)}`;
+        this.error = `Aktion konnte nicht abgeschlossen werden. ${error instanceof Error ? error.message : error == null ? "Bitte erneut versuchen." : String(error)}`;
       this.refreshActions();
     };
     try {
-      Promise.resolve(this.onNavigate(entry.target)).then(() => finish(false), (error: unknown) => finish(true, error));
+      Promise.resolve(action()).then(() => finish(false), (error: unknown) => finish(true, error));
     } catch (error) {
       finish(true, error);
     }
