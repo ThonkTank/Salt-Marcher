@@ -172,6 +172,7 @@
         "magic": { "type": "boolean" },
         "rarity": { "$ref": "#/$defs/rarity" },
         "attunement": { "enum": ["required", "not-required", "unspecified"] },
+        "sourceHeader": { "$ref": "#/$defs/sourcedText" },
         "cost": { "$ref": "#/$defs/cost" },
         "weight": { "$ref": "#/$defs/weight" },
         "speed": { "$ref": "#/$defs/speed" },

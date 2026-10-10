@@ -157,6 +157,14 @@ test("first five Magic Items A–Z preserve order, headers, rarity, attunement a
   ]);
   assert.deepEqual(records.map(record => record.attunement),
     ["not-required", "not-required", "required", "required", "required"]);
+  assert.deepEqual(records.map(record => record.sourceHeader.text), [
+    "Armor (medium or heavy, but not hide), uncommon",
+    "Weapon (any ammunition), uncommon (+1), rare (+2), or very rare (+3)",
+    "Wondrous item, rare (requires attunement)",
+    "Wondrous item, uncommon (requires attunement)",
+    "Wondrous item, very rare (requires attunement)",
+  ]);
+  assert.deepEqual(records.map(record => record.sourceHeader.occurrenceId), ids);
   assert.deepEqual(records[1].rarity.choices.map(choice => [choice.label, choice.value]),
     [["+1", "uncommon"], ["+2", "rare"], ["+3", "very-rare"]]);
   assert.match(records[4].description[0].text, /On a 61–100.*randomly determined plane of existence\.$/);
@@ -179,6 +187,14 @@ test("opening Magic Items A–Z slice fails closed on identity, header facts and
   const truncated = structuredClone(checkedTranscript);
   truncated.records.find(record => record.id.endsWith("a-z:5")).description[0].text = "While wearing this amulet.";
   assert.throws(() => validateMagicItemAzOpeningSlice(truncated, checkedInventory), /Record 5/);
+  const reducedHeader = structuredClone(checkedTranscript);
+  reducedHeader.records.find(record => record.id.endsWith("a-z:1")).sourceHeader.text = "Armor, uncommon";
+  assert.throws(() => validateMagicItemAzOpeningSlice(reducedHeader, checkedInventory), /Record 1/);
+  const wrongHeaderOccurrence = structuredClone(checkedTranscript);
+  wrongHeaderOccurrence.records.find(record => record.id.endsWith("a-z:2")).sourceHeader.occurrenceId =
+    "srd51:magic-item:magic-items-a-z:1";
+  assert.throws(() => validateTranscriptData(wrongHeaderOccurrence, checkedInventory, { allowIncomplete: true }),
+    /Textfakt außerhalb seiner Quellenliste/);
 });
 
 test("Draft 2020-12 schemas validate the checked-in equipment inventory and transcript", async () => {
