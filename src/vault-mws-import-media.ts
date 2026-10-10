@@ -7,11 +7,18 @@ import type { CompleteImportPackageFilePort } from "./features/campaign/complete
 export class VaultMwsImportMediaFiles implements MwsImportMediaFilePort, CompleteImportPackageFilePort {
   constructor(private readonly app: App) {}
 
-  async read(path: string): Promise<Uint8Array | null> {
+  async read(path: string, maxBytes = Number.MAX_SAFE_INTEGER): Promise<Uint8Array | null> {
     const checked = safePath(path), file = this.app.vault.getAbstractFileByPath(checked);
     if (!file) return null;
     if (!(file instanceof TFile)) throw new Error(`Importpfad ist keine Datei: ${checked}`);
-    return new Uint8Array(await this.app.vault.readBinary(file));
+    if (!Number.isSafeInteger(maxBytes) || maxBytes < 0)
+      throw new Error("Ungültige Import-Lesegrenze.");
+    if (!Number.isSafeInteger(file.stat.size) || file.stat.size < 0 || file.stat.size > maxBytes)
+      throw new Error(`Importdatei überschreitet die Host-Lesegrenze: ${checked}`);
+    const bytes = new Uint8Array(await this.app.vault.readBinary(file));
+    if (bytes.length > maxBytes)
+      throw new Error(`Importdatei überschreitet die Host-Lesegrenze: ${checked}`);
+    return bytes;
   }
 
   async list(root: string): Promise<readonly string[] | null> {

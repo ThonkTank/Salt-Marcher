@@ -68,6 +68,9 @@ class MemoryFiles implements CompleteImportPackageFilePort {
   afterList?: (folder: string, count: number) => void;
   reads = 0;
   lists = 0;
+  readonly readAttempts = new Map<string, number>();
+  readonly deliveredReads = new Map<string, number>();
+  ignoreBudget = false;
 
   constructor(files = packageFiles()) { this.files = files; }
 
@@ -77,9 +80,13 @@ class MemoryFiles implements CompleteImportPackageFilePort {
     return result;
   }
 
-  async read(path: string): Promise<Uint8Array | null> {
+  async read(path: string, maxBytes: number): Promise<Uint8Array | null> {
     const value = this.files.get(path), count = ++this.reads;
+    this.readAttempts.set(path, (this.readAttempts.get(path) ?? 0) + 1);
     this.afterRead?.(path, count);
+    if (value && !this.ignoreBudget && value.length > maxBytes)
+      throw new Error(`Host-Lesegrenze überschritten: ${path}`);
+    if (value) this.deliveredReads.set(path, (this.deliveredReads.get(path) ?? 0) + 1);
     return value ? new Uint8Array(value) : null;
   }
 }
@@ -163,4 +170,27 @@ test("complete import package fails closed on binding reuse and read/verify race
   ambiguousFiles.files.set(manifestPath, encoder.encode(JSON.stringify(manifest)));
   assert.equal((await ambiguous.read(changedBinding)).kind, "confirmed");
   assert.equal((await ambiguous.verify(accepted.inventory)).kind, "unknown");
+});
+
+test("complete import package enforces host budgets and aborts before a second oversized read", async () => {
+  const files = new MemoryFiles(), manifestPath = `${root}/complete-import-package.json`,
+    payloadPath = `${root}/campaign/data.json`, manifest = JSON.parse(
+      new TextDecoder().decode(files.files.get(manifestPath)!));
+  manifest.files[0].bytes = 0;
+  files.files.set(manifestPath, encoder.encode(JSON.stringify(manifest)));
+  await assert.rejects(() => new CompleteImportPackageInventory(files, root, digest).read(binding), /Lesegrenze/);
+  assert.equal(files.readAttempts.get(payloadPath), 1);
+  assert.equal(files.deliveredReads.get(payloadPath) ?? 0, 0);
+
+  const nonCompliant = new MemoryFiles(new Map(files.files));
+  nonCompliant.ignoreBudget = true;
+  await assert.rejects(() => new CompleteImportPackageInventory(nonCompliant, root, digest).read(binding),
+    /tatsächliche Host-Größenbegrenzung/);
+  assert.equal(nonCompliant.readAttempts.get(payloadPath), 1);
+
+  const smallManifest = new MemoryFiles();
+  await assert.rejects(() => new CompleteImportPackageInventory(smallManifest, root, digest, {
+    maxFiles: 4, maxManifestBytes: 8, maxFileBytes: 1024, maxTotalBytes: 2048,
+  }).read(binding), /Lesegrenze/);
+  assert.equal(smallManifest.deliveredReads.get(manifestPath) ?? 0, 0);
 });

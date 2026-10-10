@@ -13,7 +13,8 @@ type Digest = string;
 
 export interface CompleteImportPackageFilePort {
   list(root: string): Promise<readonly string[] | null>;
-  read(path: string): Promise<Uint8Array | null>;
+  /** Must reject before allocating or returning more than maxBytes. */
+  read(path: string, maxBytes: number): Promise<Uint8Array | null>;
 }
 
 export type CompleteImportPackageByteDigest = (bytes: Uint8Array) => string;
@@ -242,33 +243,55 @@ export class CompleteImportPackageInventory {
     return Object.freeze(checked);
   }
 
+  private async readBounded(path: string, maxBytes: number, label: string): Promise<Uint8Array | null> {
+    const bytes = await this.port.read(path, maxBytes);
+    if (bytes !== null && bytes.length > maxBytes)
+      throw new Error(`${label} überschreitet die tatsächliche Host-Größenbegrenzung.`);
+    return bytes;
+  }
+
+  private async readFiles(
+    files: readonly CompleteImportPackageFileV1[],
+    validateClaims: boolean,
+  ): Promise<readonly string[] | null> {
+    const fingerprints: string[] = [];
+    let totalBytes = 0;
+    for (const file of files) {
+      const bytes = await this.readBounded(this.filePath(file.path), file.bytes, "Complete-Import-Datei");
+      if (bytes === null) return null;
+      totalBytes += bytes.length;
+      if (!Number.isSafeInteger(totalBytes) || totalBytes > this.limits.maxTotalBytes)
+        throw new Error("Complete-Import-Paket überschreitet die tatsächliche Host-Gesamtgrößenbegrenzung.");
+      const actualDigest = payloadDigest(this.digest(bytes));
+      if (validateClaims && (bytes.length !== file.bytes || actualDigest !== file.sha256))
+        throw new Error(`Complete-Import-Datei ist beschädigt: ${file.path}`);
+      fingerprints.push(`${bytes.length}:${actualDigest}`);
+    }
+    return Object.freeze(fingerprints);
+  }
+
   private async load(expectedRaw: CompleteImportPackageBindingV1): Promise<CompleteImportPackageReadOutcome> {
     const expected = checkedBinding(expectedRaw), firstListRaw = await this.port.list(this.root);
     if (firstListRaw === null) return { kind: "unavailable" };
-    const firstList = this.checkedList(firstListRaw), firstManifest = await this.port.read(this.manifestPath);
+    const firstList = this.checkedList(firstListRaw), firstManifest = await this.readBounded(
+      this.manifestPath, this.limits.maxManifestBytes, "Complete-Import-Manifest");
     if (firstManifest === null) return { kind: "unavailable" };
     const parsed = this.parse(firstManifest);
     if (!sameBinding(parsed.binding, expected))
       throw new Error("Complete-Import-Paket gehört zu einer fremden oder veralteten Bindung.");
     if (JSON.stringify(firstList) !== JSON.stringify(this.expectedPaths(parsed)))
       throw new Error("Complete-Import-Paketdateien stimmen nicht exakt mit dem Manifest überein.");
-    const first = await Promise.all(parsed.files.map((file) => this.port.read(this.filePath(file.path))));
-    if (first.some((bytes) => bytes === null)) return { kind: "unavailable" };
-    const secondListRaw = await this.port.list(this.root), secondManifest = await this.port.read(this.manifestPath),
-      second = await Promise.all(parsed.files.map((file) => this.port.read(this.filePath(file.path)))),
-      finalListRaw = await this.port.list(this.root), finalManifest = await this.port.read(this.manifestPath);
+    const first = await this.readFiles(parsed.files, true);
+    if (first === null) return { kind: "unavailable" };
+    const secondListRaw = await this.port.list(this.root), secondManifest = await this.readBounded(
+      this.manifestPath, this.limits.maxManifestBytes, "Complete-Import-Manifest"),
+      second = await this.readFiles(parsed.files, false), finalListRaw = await this.port.list(this.root),
+      finalManifest = await this.readBounded(
+        this.manifestPath, this.limits.maxManifestBytes, "Complete-Import-Manifest");
     if (!equalList(firstList, secondListRaw) || !equalList(firstList, finalListRaw) ||
         !equalBytes(firstManifest, secondManifest) || !equalBytes(firstManifest, finalManifest) ||
-        first.some((bytes, index) => !equalBytes(bytes, second[index]!)))
+        second === null || JSON.stringify(first) !== JSON.stringify(second))
       return { kind: "unknown" };
-    const files = parsed.files.map((file, index) => {
-      const bytes = second[index];
-      if (bytes === null || bytes === undefined) return null;
-      if (bytes.length !== file.bytes || payloadDigest(this.digest(bytes)) !== file.sha256)
-        throw new Error(`Complete-Import-Datei ist beschädigt: ${file.path}`);
-      return file;
-    });
-    if (files.some((file) => file === null)) return { kind: "unavailable" };
     const inventory = Object.freeze({
       version: 1 as const,
       binding: parsed.binding,
