@@ -59,6 +59,7 @@ class Vault {
   readonly folders = new Set<string>();
   readonly listeners = new Map<string, Set<(...args: any[]) => void>>();
   readHook?: (path: string) => Promise<void>;
+  writeHook?: (path: string, raw: string | null) => void | Promise<void>;
   writes: string[] = [];
   constructor() {
     for (const path of this.bytes.keys())
@@ -98,18 +99,21 @@ class Vault {
     this.bytes.set(path, raw);
     this.writes.push(path);
     this.emit("create", f);
+    await this.writeHook?.(path, raw);
     return f;
   }
   async process(f: TFile, fn: (raw: string) => string) {
     this.bytes.set(f.path, fn(await this.read(f)));
     this.writes.push(f.path);
     this.emit("modify", f);
+    await this.writeHook?.(f.path, this.bytes.get(f.path)!);
   }
   async trash(f: TFile) {
     this.bytes.delete(f.path);
     this.files.delete(f.path);
     this.writes.push(f.path);
     this.emit("delete", f);
+    await this.writeHook?.(f.path, null);
   }
   async cas(path: string, before: string | null, after: string | null) {
     if ((this.bytes.get(path) ?? null) !== before) throw new FileConflict(path);
@@ -633,4 +637,204 @@ test('native atlas remains usable before any campaign manifest exists, without c
   assert.equal(f.content.querySelector('.dn-atlas-host-status')!.textContent, '');
   assert.equal(f.content.querySelector('.dn-campaign-active-error'), null);
   await f.close();
+});
+
+async function unregisteredFixture() {
+  const f = await fixture();
+  for (const file of f.vault.getFiles().filter((file) => file.path.endsWith('.campaign.json')))
+    await f.vault.trash(file);
+  await f.view.onLoadFile(f.vault.files.get(aPath)!);
+  const repository = (f.view as any).repository as AtlasRepository;
+  assert.ok(repository);
+  assert.equal(f.services.provider.currentContext(), null);
+  return { ...f, repository };
+}
+async function showNativeLocation(f: Awaited<ReturnType<typeof unregisteredFixture>>) {
+  await f.repository.ensureLocation(locationTarget.documentId);
+  // Native editor/Key focus only; this supplies no Campaign inventory or membership.
+  f.editor()!.navigate({ target: locationTarget, frame: null, localPoint: { x: 0, y: 0 },
+    key: { kind: 'location', atlasId: f.repository.terrainSource.world.id, documentId: locationTarget.documentId, sectionId: null } },
+    () => (f.view as any).assertCurrent());
+}
+
+test('unregistered actual Atlas is synchronously revoked by service close, retaining pending Key and denying all old writers', async () => {
+  const f = await unregisteredFixture();
+  await showNativeLocation(f);
+  const editor = f.editor()!, oldStorage = (editor as any).storage,
+    history = f.repository.terrainSource.history,
+    before = new Map(f.vault.bytes), writes = f.vault.writes.length;
+  const text = f.input('[aria-label="Ortsname"]', 'Erhaltener unregistrierter Text');
+  f.services.close();
+  assert.equal(f.editor(), undefined);
+  assert.ok(f.services.retainedDrafts!.some((d) => d.element.contains(text) && d.title.includes(aPath)));
+  assert.equal(text.closest<HTMLElement>('.dn-atlas')!.inert, true);
+  assert.throws(() => f.repository.editLocation({ ...f.repository.location(uuid(11)).read()!, name: 'Verboten' }), /geschlossen/);
+  assert.throws(() => history.undo(), /geschlossen/);
+  assert.throws(() => history.redo(), /geschlossen/);
+  await assert.rejects(f.repository.save(), /geschlossen/);
+  await assert.rejects(f.repository.persistDraft(), /geschlossen/);
+  await assert.rejects(f.repository.discard(), /geschlossen/);
+  await assert.rejects(f.repository.copy('Atlanten/Verboten.overworld', uuid(850), 'Verboten'), /geschlossen/);
+  await assert.rejects(f.repository.recoverCopy(), /geschlossen/);
+  await assert.rejects(oldStorage.save(), /geschlossen/);
+  await assert.rejects(oldStorage.changed(), /geschlossen/);
+  await assert.rejects(oldStorage.discard(), /geschlossen/);
+  assert.throws(() => oldStorage.menu(new f.window.Event('contextmenu')), /geschlossen/);
+  editor.discard();
+  assert.equal(f.vault.writes.length, writes);
+  assert.deepEqual(f.vault.bytes, before);
+  await f.view.onUnloadFile();
+  assert.equal(text.value, 'Erhaltener unregistrierter Text');
+});
+
+test('normal unregistered View unload persists its valid Key once and revokes retained Repository, History and callbacks', async () => {
+  const f = await unregisteredFixture();
+  await showNativeLocation(f);
+  const storage = (f.editor() as any).storage, history = f.repository.terrainSource.history;
+  f.input('[aria-label="Ortsname"]', 'Gültiger Schließentwurf');
+  await f.view.onUnloadFile();
+  assert.match(f.vault.bytes.get(aPath + '.draft')!, /Gültiger Schließentwurf/);
+  assert.equal(f.services.provider.currentContext(), null);
+  const writes = f.vault.writes.length;
+  assert.throws(() => history.undo(), /widerrufen/);
+  await assert.rejects(f.repository.save(), /widerrufen/);
+  await assert.rejects(storage.save(), /widerrufen/);
+  await assert.rejects(storage.discard(), /widerrufen/);
+  await assert.rejects(f.repository.copy('Atlanten/Alt.overworld', uuid(851), 'Alt'), /widerrufen/);
+  assert.equal(f.vault.writes.length, writes);
+  f.services.close();
+});
+
+test('unregistered View unload with invalid pending Key retains its exact text read-only and revokes the old Source', async () => {
+  const f = await unregisteredFixture();
+  await showNativeLocation(f);
+  const text = f.input('[aria-label="Ortsname"]', ''), before = new Map(f.vault.bytes), writes = f.vault.writes.length;
+  await f.view.onUnloadFile();
+  assert.equal(text.value, '');
+  assert.ok(f.services.retainedDrafts!.some((d) => d.element.contains(text)));
+  assert.equal(text.closest<HTMLElement>('.dn-atlas')!.inert, true);
+  assert.equal(f.editor(), undefined);
+  assert.throws(() => f.repository.terrainSource.history.undo(), /widerrufen/);
+  await assert.rejects(f.repository.save(), /widerrufen/);
+  assert.equal(f.vault.writes.length, writes);
+  assert.deepEqual(f.vault.bytes, before);
+  f.services.close();
+});
+
+test('unregistered late renderer initialization after View unload cannot keep a mounted editor alive', async () => {
+  const f = await unregisteredFixture();
+  let release!: () => void, entered!: () => void;
+  const gate = new Promise<void>((resolve) => { release = resolve; }),
+    started = new Promise<void>((resolve) => { entered = resolve; });
+  AtlasRenderer.prototype.init = async () => { entered(); await gate; };
+  const opening = f.view.onLoadFile(f.vault.files.get(aPath)!);
+  await started;
+  const editor = f.editor()!, repository = (f.view as any).repository as AtlasRepository,
+    closing = f.view.onUnloadFile();
+  release(); await opening; await closing;
+  assert.equal(f.editor(), undefined);
+  assert.equal(f.content.querySelector('.dn-atlas'), null);
+  assert.throws(() => repository.terrainSource.history.undo(), /widerrufen/);
+  await assert.rejects((editor as any).storage.save(), /widerrufen/);
+  f.services.close();
+});
+
+for (const cause of ['service', 'view'] as const) {
+  test(`late unregistered initial native detail read after ${cause} closure cannot hydrate or attach`, async () => {
+    const f = await unregisteredFixture();
+    let release!: () => void, entered!: () => void;
+    const gate = new Promise<void>((resolve) => { release = resolve; }),
+      started = new Promise<void>((resolve) => { entered = resolve; });
+    f.vault.readHook = async (path) => { if (path.endsWith('.city')) { entered(); await gate; } };
+    const opening = f.view.onLoadFile(f.vault.files.get(aPath)!);
+    await started;
+    const writes = f.vault.writes.length;
+    const closing = cause === 'view' ? f.view.onUnloadFile() : (f.services.close(), Promise.resolve());
+    release();
+    await opening; await closing;
+    assert.equal(f.editor(), undefined);
+    assert.equal(f.content.querySelector('.dn-atlas-canvas-host .dn-atlas'), null);
+    assert.equal(f.vault.writes.length, writes);
+    f.vault.readHook = undefined;
+    await f.close();
+  });
+}
+
+test('unregistered pending Save before its first journal write rejects after service close without canonical changes', async () => {
+  const f = await unregisteredFixture(), source = await f.repository.ensureLocation(uuid(11));
+  f.repository.editLocation({ ...source.read()!, name: 'Nur alter Entwurf' });
+  await f.repository.persistDraft();
+  let release!: () => void, entered!: () => void;
+  const gate = new Promise<void>((resolve) => { release = resolve; }),
+    started = new Promise<void>((resolve) => { entered = resolve; });
+  f.vault.readHook = async (path) => { if (path === aPath + '.draft') { entered(); await gate; } };
+  const saving = f.repository.save(), rejected = assert.rejects(saving, /geschlossen/);
+  await started;
+  const queued = [
+    assert.rejects(f.repository.copy('Atlanten/Wartend.overworld', uuid(852), 'Wartend'), /geschlossen/),
+    assert.rejects(f.repository.discard(), /geschlossen/),
+    assert.rejects(f.repository.persistDraft(), /geschlossen/),
+  ];
+  const before = new Map(f.vault.bytes), writes = f.vault.writes.length;
+  f.services.close(); release();
+  await rejected;
+  await Promise.all(queued);
+  assert.deepEqual(f.vault.bytes, before);
+  assert.equal(f.vault.writes.length, writes);
+  assert.match(f.vault.bytes.get(aPath + '.draft')!, /Nur alter Entwurf/);
+  f.vault.readHook = undefined;
+  await f.view.onUnloadFile();
+});
+
+test('unregistered won canonical Save journal finishes its old native files after service close', async () => {
+  const f = await unregisteredFixture(), source = await f.repository.ensureLocation(uuid(11)),
+    path = `Orte/${uuid(11)}.location`;
+  f.repository.editLocation({ ...source.read()!, name: 'Gewonnenes altes Journal' });
+  await f.repository.persistDraft();
+  const before = new Map(f.vault.bytes);
+  let closedAtJournal = false;
+  f.vault.writeHook = (p, raw) => {
+    if (p === aPath + '.journal' && raw) {
+      const journal = JSON.parse(raw);
+      if (journal.state === 'prepared' && journal.writes.some((w: any) => w.path === path)) {
+        closedAtJournal = true; f.services.close();
+      }
+    }
+  };
+  await f.repository.save();
+  assert.equal(closedAtJournal, true);
+  assert.equal(parseLocationDocument(f.vault.bytes.get(path)!).name, 'Gewonnenes altes Journal');
+  assert.equal(f.vault.bytes.has(aPath + '.journal'), false);
+  assert.equal(f.vault.bytes.has(aPath + '.draft'), false);
+  for (const [p, raw] of before) if (p !== path && p !== aPath + '.draft') assert.equal(f.vault.bytes.get(p), raw, p);
+  await assert.rejects(f.repository.save(), /geschlossen/);
+  f.vault.writeHook = undefined;
+  await f.view.onUnloadFile();
+});
+
+test('unregistered lost committed reply retains its old journal for a new live View to recover forward', async () => {
+  const f = await unregisteredFixture(), source = await f.repository.ensureLocation(uuid(11)),
+    path = `Orte/${uuid(11)}.location`;
+  f.repository.editLocation({ ...source.read()!, name: 'Vorwärts erhalten' });
+  await f.repository.persistDraft();
+  f.vault.writeHook = (p, raw) => {
+    if (p === aPath + '.journal' && raw && JSON.parse(raw).state === 'committed') {
+      f.services.close(); throw new Error('lost committed reply');
+    }
+  };
+  await assert.rejects(f.repository.save(), AggregateError);
+  assert.equal(parseLocationDocument(f.vault.bytes.get(path)!).name, 'Vorwärts erhalten');
+  assert.match(f.vault.bytes.get(aPath + '.journal')!, /"committed"/);
+  await assert.rejects(f.repository.recoverCopy(), /geschlossen/);
+  f.vault.writeHook = undefined;
+  await f.view.onUnloadFile();
+  const app = { document: f.document, vault: f.vault } as any,
+    services = atlasCampaignServices(new VaultCampaignRuntimeStorage(app), sha),
+    view = new AtlasView({ app, contentEl: f.content, openFile: async () => {} } as any, services);
+  await view.onLoadFile(f.vault.files.get(aPath)!);
+  assert.ok((view as any).editor);
+  assert.equal(f.vault.bytes.has(aPath + '.journal'), false);
+  assert.equal(parseLocationDocument(f.vault.bytes.get(path)!).name, 'Vorwärts erhalten');
+  assert.equal(services.provider.currentContext(), null);
+  await view.onUnloadFile(); services.close();
 });

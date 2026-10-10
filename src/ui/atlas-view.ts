@@ -42,6 +42,7 @@ export class AtlasView extends FileView {
   private retainedHost?: HTMLElement;
   private statusHost?: HTMLElement;
   private managed = false;
+  private unregisteredMount?: { readonly revoked: boolean; revoke(retainWork: boolean): void };
   private discardedCamera?: { contextToken: string; camera: RelativeAtlasCamera };
   private assertCurrent: () => void = () => {};
   constructor(leaf: WorkspaceLeaf, private readonly campaigns?: AtlasCampaignServices) { super(leaf); }
@@ -55,6 +56,7 @@ export class AtlasView extends FileView {
     return "globe";
   }
   onLoadFile(file: TFile): Promise<void> {
+    this.editor?.setInputBlocked(true);
     const generation = ++this.generation;
     return this.sequence(async () => {
       if (generation !== this.generation) return;
@@ -70,20 +72,32 @@ export class AtlasView extends FileView {
     this.lifecycle = next.catch(() => {});
     return next;
   }
-  private async closeEditor(): Promise<void> {
+  private async closeEditor(closingView = false): Promise<void> {
+    const unregistered = this.unregisteredMount;
     if (this.editor) {
+      this.editor.setInputBlocked(true);
       try {
         await this.editor.flush();
         if (this.repository?.dirty || this.repository?.hasDraft)
           await this.repository.persistDraft();
       } catch (error) {
+        // Service closure already froze and retained this old editor synchronously.
+        if (unregistered?.revoked) return;
+        if (closingView && unregistered) {
+          unregistered.revoke(true);
+          new Notice("Atlasentwurf bleibt zur Einsicht erhalten. " + String(error));
+          return;
+        }
+        this.editor?.setInputBlocked(false);
         new Notice(
           "Atlasentwurf konnte nicht gesichert werden. " + String(error),
         );
         throw error;
       }
-      this.editor.destroy();
+      if (unregistered) unregistered.revoke(false);
+      else this.editor?.destroy();
     }
+    unregistered?.revoke(false);
     this.editor = undefined;
     this.repository = undefined;
     this.managed = false;
@@ -251,25 +265,58 @@ export class AtlasView extends FileView {
       catch (error) { this.statusHost.textContent = "Kampagne konnte nicht geöffnet werden. " + String(error); return; }
     }
     this.canvasHost.createEl("p", { text: "Atlas wird geöffnet …" });
+    // Native atlases before the first manifest have a host lifetime, without Campaign authority.
+    let alive = true, mounted = false, editor: AtlasEditor | undefined, nativeRepository: AtlasRepository | undefined;
+    let unsubscribeClosed: () => void = () => {};
+    const root = this.contentEl.ownerDocument.createElement("div");
+    const lease = () => {
+      this.campaigns?.assertOpen?.();
+      if (!alive || (!mounted && generation !== this.generation))
+        throw new Error("Die Atlasansicht dieses Entwurfs wurde widerrufen.");
+    };
+    const mount = {
+      get revoked() { return !alive; },
+      revoke: (retainWork: boolean) => {
+        if (!alive) return;
+        alive = false;
+        unsubscribeClosed();
+        if (editor) {
+          const retain = retainWork && (editor.pendingKey || nativeRepository?.dirty || nativeRepository?.hasDraft);
+          if (retain) {
+            editor.suspend();
+            const draft = { title: `Erhaltener Atlasentwurf: ${editor.terrain.world.name} – ${file.path}`, element: root };
+            this.campaigns?.retainDraft?.(draft);
+            this.showRetained(draft);
+          } else { editor.destroy(); root.remove(); }
+          if (this.editor === editor) { this.editor = undefined; this.repository = undefined; }
+        }
+        if (this.unregisteredMount === mount) this.unregisteredMount = undefined;
+      },
+    };
+    this.unregisteredMount = mount;
+    unsubscribeClosed = this.campaigns?.subscribeClosed?.(() => mount.revoke(true)) ?? (() => {});
     try {
+      lease();
       const repository = new AtlasRepository(
         new VaultStore(this.app),
         file.path,
         this.app.vault,
-        this.spatialOptions(),
+        { ...this.spatialOptions(), assertCurrent: lease },
       );
+      nativeRepository = repository;
       const source = await repository.open();
-      if (generation !== this.generation) return;
+      lease();
       this.repository = repository;
-      this.editor = new AtlasEditor(this.canvasHost, source.world, source, {
-        save: () => repository.save(),
-        changed: () => repository.persistDraft(),
+      this.editor = editor = new AtlasEditor(root, source.world, source, {
+        assertCurrent: lease,
+        save: async () => { lease(); await repository.save(); lease(); },
+        changed: async () => { lease(); await repository.persistDraft(); lease(); },
         status: () => ({
           dirty: repository.dirty,
           hasDraft: repository.hasDraft,
         }),
-        menu: (event) => this.showMenu(event, generation),
-        discard: () => repository.discard(),
+        menu: (event) => { lease(); this.showMenu(event, generation); },
+        discard: async () => { lease(); const next = await repository.discard(); lease(); return next; },
         spatial: {
           graph: () => repository.spatialGraph,
           city: (id) => {
@@ -287,11 +334,11 @@ export class AtlasView extends FileView {
         },
         locations: {
           read: (id) => repository.location(id).read(),
-          ensure: async (id) => (await repository.ensureLocation(id)).read(),
+          ensure: async (id) => { lease(); const source = await repository.ensureLocation(id); lease(); return source.read(); },
           create: (document, placement) =>
-            repository.createLocation(document, placement),
-          edit: (document) => repository.editLocation(document),
-          move: (id, position) => repository.moveLocation(id, position),
+            { lease(); return repository.createLocation(document, placement); },
+          edit: (document) => { lease(); return repository.editLocation(document); },
+          move: (id, position) => { lease(); return repository.moveLocation(id, position); },
           markdown: (host, text, id) =>
             MarkdownRenderer.render(
               this.app,
@@ -302,12 +349,17 @@ export class AtlasView extends FileView {
             ),
         },
       });
-      await this.editor.init();
+      this.assertCurrent = lease;
+      mounted = true;
+      this.canvasHost.replaceChildren(root);
+      await editor.init();
+      lease();
+      if (generation !== this.generation)
+        throw new Error("Die Atlasansicht dieses Entwurfs wurde widerrufen.");
       this.campaignHost?.showUnregisteredAtlas();
     } catch (error) {
+      mount.revoke(true);
       if (generation !== this.generation) return;
-      this.editor?.destroy();
-      this.editor = undefined;
       this.canvasHost.replaceChildren();
       this.canvasHost.createEl("p", {
         text: "Atlas konnte nicht geöffnet werden. " + String(error),
@@ -371,7 +423,9 @@ export class AtlasView extends FileView {
       .showAtMouseEvent(event);
   }
   private openCopy(path: string, generation: number, editor: AtlasEditor) {
+    const guard = this.assertCurrent;
     return async (): Promise<boolean> => {
+      guard();
       if (generation !== this.generation || this.editor !== editor)
         return false;
       const file = this.app.vault.getAbstractFileByPath(path);
@@ -382,9 +436,10 @@ export class AtlasView extends FileView {
     };
   }
   onUnloadFile(): Promise<void> {
+    this.editor?.setInputBlocked(true);
     this.generation++;
     return this.sequence(async () => {
-      await this.closeEditor();
+      await this.closeEditor(true);
       if (this.campaignHost && this.pickerHost) this.campaignHost.destroy(this.pickerHost);
       this.campaignHost = undefined;
       this.contentEl.replaceChildren();
