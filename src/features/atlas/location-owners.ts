@@ -21,6 +21,8 @@ import type { OverworldDocument } from "./overworld";
 import type { TerrainSource } from "./terrain-source";
 
 export interface AtlasLocationOptions {
+  /** Optional host lifetime. A revoked mount cannot hydrate or mutate native owners. */
+  readonly assertCurrent?: () => void;
   /** Remains opt-in until marker/Key editing is connected in the host. */
   readonly locations?: boolean;
   readonly resolveLocation?: (id: string) => Promise<string>;
@@ -53,6 +55,7 @@ export class LocationOwners {
     readonly store: FileStore,
     readonly terrain: TerrainSource,
     readonly options: AtlasLocationOptions,
+    private onSource: (source: LocationSource) => void = () => {},
   ) {}
   async resolve(id: string): Promise<string> {
     return locationPath(
@@ -61,7 +64,7 @@ export class LocationOwners {
     );
   }
   async initialize(
-    world: OverworldDocument,
+    world: Pick<OverworldDocument, "id" | "placements">,
     deltas: readonly DraftLocation[] = [],
   ): Promise<void> {
     const paths = new Set<string>();
@@ -96,6 +99,9 @@ export class LocationOwners {
       );
     }
   }
+  get loadedSources(): readonly LocationSource[] {
+    return [...this.sources.values()];
+  }
   get pathsOwned(): readonly string[] {
     return [...this.paths.values()];
   }
@@ -123,6 +129,7 @@ export class LocationOwners {
     );
     this.bases.set(id, { path, before: raw });
     this.sources.set(id, source);
+    this.onSource(source);
     return source;
   }
   get(id: string): LocationSource {
@@ -155,6 +162,7 @@ export class LocationOwners {
     this.paths.set(doc.id, path);
     this.bases.set(doc.id, { path, before: null });
     this.sources.set(doc.id, source);
+    this.onSource(source);
     return this.terrain.history.execute({
       label: "Ort anlegen",
       changes: [change, locationDocumentChange(doc.id, null, doc)],
@@ -217,7 +225,7 @@ export class LocationOwners {
     );
   }
   changes(
-    world: OverworldDocument,
+    world: Pick<OverworldDocument, "id" | "placements">,
     loaded: ReadonlyMap<string, string | null>,
   ): readonly DraftLocation[] {
     const current = new Set(world.placements.map((p) => p.locationId)),
@@ -263,5 +271,25 @@ export class LocationOwners {
     if (raw === null || raw === undefined)
       throw new Error("Ortsdatei fehlt; Kopie wurde nicht angelegt.");
     return { path, saved, document: document(raw, id) };
+  }
+  /** Read-only native evidence, including a locally removed owner's tombstone. */
+  async captureBytes(id: string, loaded: ReadonlyMap<string, string | null>) {
+    const path = this.paths.get(id);
+    if (!path || (await this.resolve(id)) !== path)
+      throw new Error("Orts-Capture besitzt eine fremde Pfadbindung.");
+    const before = await this.store.read(path),
+      base = this.bases.get(id);
+    if (base && before !== base.before) throw new FileConflict(path);
+    let after = loaded.has(id) ? loaded.get(id)! : before;
+    if (after === null && !loaded.has(id)) throw new Error("Ortsdatei fehlt.");
+    if (after !== null) {
+      document(after, id);
+      if (
+        before !== null &&
+        serializeLocationDocument(document(before, id)) === after
+      )
+        after = before;
+    }
+    return { path, before, after };
   }
 }

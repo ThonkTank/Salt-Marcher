@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   FileTransaction,
+  type AtlasFileRollbackReceipt,
   type AtlasFileWrite,
 } from "../../src/features/atlas/file-transaction";
 import { FileConflict, type FileStore } from "../../src/persistence";
@@ -172,5 +173,74 @@ test("Transactions sharing a backend scope serialize across wrappers and validat
   release();
   assert.equal(await first, true);
   await rejected;
+  await expectState(store, true);
+});
+
+test("Won journal boundaries notify once; response loss releases only a sealed, fully read-back rollback", async () => {
+  for (const afterFault of [false, true])
+    for (let failAt = 1; failAt <= 6; failAt++) {
+      const store = new Store(), tx = transaction(store), events: string[] = [];
+      store.failAt = failAt;
+      store.afterFault = afterFault;
+      let receipt: AtlasFileRollbackReceipt | undefined;
+      const saving = tx.commit(writes, {
+        prepared: async (j) => {
+          assert.equal(await store.read(journalPath), JSON.stringify(j));
+          events.push("prepared");
+        },
+        committed: async (j) => {
+          assert.equal(j.state, "committed");
+          await expectState(store, true);
+          events.push("committed");
+        },
+        rolledBack: async (r) => {
+          await expectState(store, false);
+          tx.validateRollbackReceipt(r);
+          assert.throws(() => tx.validateRollbackReceipt({ ...r }), /nicht aus/);
+          assert.throws(() => transaction(store).validateRollbackReceipt(r), /nicht aus/);
+          assert.ok(Object.isFrozen(r) && Object.isFrozen(r.writes));
+          receipt = r;
+          events.push("rolled_back");
+        },
+      });
+      const complete = failAt > 5 || (failAt === 5 && afterFault);
+      if (complete) assert.equal(await saving, true);
+      else await assert.rejects(saving, /CAS/);
+      assert.deepEqual(events, failAt === 1 && !afterFault ? [] :
+        ["prepared", complete ? "committed" : "rolled_back"]);
+      assert.equal(Boolean(receipt), !complete && (failAt > 1 || afterFault));
+    }
+});
+
+test("A foreign unchanged guard blocks rollback release even after changed files are restored", async () => {
+  const store = new Store(), guard = "QA/unchanged.location", events: string[] = [];
+  store.files.set(guard, "guard-before");
+  const tx = new FileTransaction(store, journalPath, (p) => p === guard || writes.some((w) => w.path === p));
+  const original = store.compareAndWrite.bind(store);
+  store.compareAndWrite = async (path, before, after) => {
+    if (path === writes[0]!.path) {
+      store.files.set(guard, "external-guard");
+      throw new Error("native save failed");
+    }
+    await original(path, before, after);
+  };
+  await assert.rejects(tx.commit([...writes, { path: guard, before: "guard-before", after: "guard-before" }], {
+    prepared: () => { events.push("prepared"); },
+    committed: () => { events.push("committed"); },
+    rolledBack: () => { events.push("rolled_back"); },
+  }), AggregateError);
+  assert.deepEqual(events, ["prepared"]);
+  assert.equal(await store.read(guard), "external-guard");
+  await expectState(store, false);
+});
+
+test("A failed committed consumer acknowledgment retains canonical bytes and cannot issue a rollback", async () => {
+  const store = new Store(), events: string[] = [];
+  await assert.rejects(transaction(store).commit(writes, {
+    prepared: () => { events.push("prepared"); },
+    committed: () => { events.push("committed"); throw new Error("consumer closed"); },
+    rolledBack: () => { events.push("rolled_back"); },
+  }), /consumer closed/);
+  assert.deepEqual(events, ["prepared", "committed"]);
   await expectState(store, true);
 });

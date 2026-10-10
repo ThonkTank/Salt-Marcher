@@ -1,13 +1,19 @@
-import { Application, Container, Graphics } from "pixi.js";
+import { Application, Container, Graphics, Text } from "pixi.js";
 import {
   initialAtlasCamera,
-  panAtlas,
-  screenToWorld,
-  worldToScreen,
-  zoomAtlas,
   type AtlasCamera,
   type ViewportSize,
 } from "./camera";
+import {
+  relativeCamera,
+  panRelativeAtlas,
+  zoomRelativeAtlas,
+  projectLocal,
+  unprojectLocal,
+  type RelativeAtlasCamera,
+  type RigidFrame,
+  relativeLocalMeters,
+} from "./relative-frame";
 import {
   displayHexLevel,
   fractionalHex,
@@ -20,6 +26,7 @@ import type { OverworldDocument, WorldPoint } from "./overworld";
 import type { AtlasChange } from "./atlas-history";
 import { checkedTerrainCell, terrainTarget } from "./terrain-schema";
 import type { TerrainSource } from "./terrain-source";
+import type { LocationDocument } from "../location/location-schema";
 
 export class AtlasRenderer {
   readonly application = new Application();
@@ -28,11 +35,19 @@ export class AtlasRenderer {
   private readonly grid = new Graphics();
   private readonly landscape = new Graphics();
   private readonly overlay = new Graphics();
+  private readonly markers = new Graphics();
+  private readonly names = new Container();
+  private readonly locations = new Map<string, LocationDocument>();
+  private readonly labels = new Map<string, Text>();
+  selectedLocation?: string;
+  locationPreview?: { id: string; position: WorldPoint };
   private observer?: ResizeObserver;
   private frame?: number;
   private initialized = false;
   private closed = false;
-  private currentCamera: AtlasCamera;
+  private currentCamera: RelativeAtlasCamera;
+  beforeRender?: () => void;
+  detailFitPoints?: () => readonly { frame: RigidFrame; point: WorldPoint }[];
   level = 0;
   selected?: HexAddress;
   preview: readonly AtlasChange[] = [];
@@ -45,7 +60,11 @@ export class AtlasRenderer {
     terrain?: TerrainSource,
   ) {
     this.terrainSource = terrain;
-    this.currentCamera = initialAtlasCamera(world.origin);
+    this.currentCamera = relativeCamera(
+      world.origin,
+      { x: 0, y: 0 },
+      initialAtlasCamera(world.origin).metersPerPixel,
+    );
   }
   get terrain(): TerrainSource | undefined {
     return this.terrainSource;
@@ -55,10 +74,48 @@ export class AtlasRenderer {
       throw new Error("Landschaft gehört zu einer anderen Welt.");
     this.terrainSource = source;
     this.preview = [];
+    this.locationPreview = undefined;
+    this.locations.clear();
     this.schedule();
   }
   get camera(): AtlasCamera {
+    return {
+      center: {
+        x: this.currentCamera.anchor.x + this.currentCamera.offsetMeters.x,
+        y: this.currentCamera.anchor.y + this.currentCamera.offsetMeters.y,
+      },
+      metersPerPixel: this.currentCamera.metersPerPixel,
+    };
+  }
+  get relativeCamera(): RelativeAtlasCamera {
     return this.currentCamera;
+  }
+  restoreCamera(camera: RelativeAtlasCamera): void {
+    this.currentCamera = relativeCamera(camera.anchor, camera.offsetMeters, camera.metersPerPixel);
+    this.schedule();
+  }
+  focus(frame: RigidFrame, point: WorldPoint, metersPerPixel: number): void {
+    const base = relativeCamera(frame.anchor, { x: 0, y: 0 }, metersPerPixel);
+    this.currentCamera = relativeCamera(frame.anchor, relativeLocalMeters(frame, base, point), metersPerPixel);
+    this.schedule();
+  }
+  private worldFrame(point: WorldPoint): RigidFrame {
+    return {
+      anchor: point,
+      offsetsMeters: [],
+      rotationRadians: 0,
+      metersPerUnit: 1,
+      originUnits: { x: 0, y: 0 },
+      precisionMeters: 0,
+    };
+  }
+  screenPoint(point: WorldPoint): WorldPoint {
+    return projectLocal(
+      this.worldFrame(point),
+      this.currentCamera,
+      this.viewport,
+      { x: 0, y: 0 },
+    );
   }
   get viewport(): ViewportSize {
     return {
@@ -87,8 +144,10 @@ export class AtlasRenderer {
     this.application.stage.addChild(
       this.landscape,
       this.grid,
-      this.detailLayer,
       this.overlay,
+      this.detailLayer,
+      this.markers,
+      this.names,
     );
     this.observer = new ResizeObserver(() => {
       this.application.renderer.resize(
@@ -101,48 +160,111 @@ export class AtlasRenderer {
     this.schedule();
   }
   worldPoint(p: WorldPoint): WorldPoint {
-    return screenToWorld(this.camera, this.viewport, p);
+    return unprojectLocal(
+      this.worldFrame({ x: 0, y: 0 }),
+      this.currentCamera,
+      this.viewport,
+      p,
+    );
   }
   pan(dx: number, dy: number): void {
-    this.currentCamera = panAtlas(this.camera, dx, dy);
+    this.currentCamera = panRelativeAtlas(this.currentCamera, dx, dy);
     this.schedule();
   }
   zoom(anchor: WorldPoint, factor: number): void {
-    this.currentCamera = zoomAtlas(this.camera, this.viewport, anchor, factor);
+    this.currentCamera = zoomRelativeAtlas(
+      this.currentCamera,
+      this.viewport,
+      anchor,
+      factor,
+    );
     this.schedule();
+  }
+  location(document: LocationDocument | null, id: string): void {
+    if (document) this.locations.set(id, document);
+    else this.locations.delete(id);
+  }
+  private markerPoints() {
+    return (this.terrain?.placements() ?? []).map((p) => ({
+      id: p.locationId,
+      point: this.screenPoint(
+        this.locationPreview?.id === p.locationId
+          ? this.locationPreview.position
+          : p.position,
+      ),
+    }));
+  }
+  visibleLocationIds(): string[] {
+    const size = this.viewport;
+    return this.markerPoints()
+      .filter(
+        ({ point: p }) =>
+          p.x >= -20 &&
+          p.y >= -20 &&
+          p.x <= size.width + 20 &&
+          p.y <= size.height + 20,
+      )
+      .map((p) => p.id);
+  }
+  locationAt(screen: WorldPoint): string | undefined {
+    return this.markerPoints()
+      .reverse()
+      .find(({ point: p }) => Math.hypot(screen.x - p.x, screen.y - p.y) <= 14)
+      ?.id;
   }
   fit(): void {
     const refs = this.terrain?.references() ?? [];
-    if (!refs.length)
-      this.currentCamera = initialAtlasCamera(this.world.origin);
-    else {
-      const points = refs.flatMap((ref) =>
-        [
-          [ref.extent.minQ, ref.extent.minR],
-          [ref.extent.minQ, ref.extent.maxR],
-          [ref.extent.maxQ, ref.extent.minR],
-          [ref.extent.maxQ, ref.extent.maxR],
-        ].map(([q, r]) =>
-          hexCenter(this.world, {
-            worldId: this.world.id,
-            level: 0,
-            q: q!,
-            r: r!,
-          }),
-        ),
+    const points = refs.flatMap((ref) =>
+      [
+        [ref.extent.minQ, ref.extent.minR],
+        [ref.extent.minQ, ref.extent.maxR],
+        [ref.extent.maxQ, ref.extent.minR],
+        [ref.extent.maxQ, ref.extent.maxR],
+      ].map(([q, r]) =>
+        hexCenter(this.world, {
+          worldId: this.world.id,
+          level: 0,
+          q: q!,
+          r: r!,
+        }),
+      ),
+    );
+    points.push(...(this.terrain?.placements() ?? []).map((p) => p.position));
+    const framed = [
+      ...points.map((point) => ({
+        frame: this.worldFrame(point),
+        point: { x: 0, y: 0 },
+      })),
+      ...(this.detailFitPoints?.() ?? []),
+    ];
+    if (!framed.length)
+      this.currentCamera = relativeCamera(
+        this.world.origin,
+        { x: 0, y: 0 },
+        initialAtlasCamera(this.world.origin).metersPerPixel,
       );
-      const minX = Math.min(...points.map((p) => p.x)),
-        maxX = Math.max(...points.map((p) => p.x));
-      const minY = Math.min(...points.map((p) => p.y)),
-        maxY = Math.max(...points.map((p) => p.y));
-      const padding = hexDistanceMeters(0) * 2;
-      this.currentCamera = {
-        center: { x: (minX + maxX) / 2, y: (minY + maxY) / 2 },
-        metersPerPixel: Math.max(
+    else {
+      const anchor = framed[0]!.frame.anchor,
+        probe = relativeCamera(anchor, { x: 0, y: 0 }, 1e15);
+      const relative = framed.map((p) =>
+        relativeLocalMeters(p.frame, probe, p.point),
+      );
+      const minX = Math.min(...relative.map((p) => p.x)),
+        maxX = Math.max(...relative.map((p) => p.x)),
+        minY = Math.min(...relative.map((p) => p.y)),
+        maxY = Math.max(...relative.map((p) => p.y));
+      const padding = refs.length
+        ? hexDistanceMeters(0) * 2
+        : Math.max(1, (maxX - minX) * 0.2, (maxY - minY) * 0.2);
+      this.currentCamera = relativeCamera(
+        anchor,
+        { x: minX / 2 + maxX / 2, y: minY / 2 + maxY / 2 },
+        Math.max(
+          0.005,
           (maxX - minX + padding) / Math.max(1, this.viewport.width - 64),
           (maxY - minY + padding) / Math.max(1, this.viewport.height - 64),
         ),
-      };
+      );
     }
     this.schedule();
   }
@@ -208,11 +330,7 @@ export class AtlasRenderer {
         q: cell.q,
         r: cell.r,
       };
-      const center = worldToScreen(
-        this.camera,
-        size,
-        hexCenter(this.world, address),
-      );
+      const center = this.screenPoint(hexCenter(this.world, address));
       if (
         center.x + radius < 0 ||
         center.y + radius < 0 ||
@@ -221,7 +339,7 @@ export class AtlasRenderer {
       )
         continue;
       const points = hexCorners(this.world, address)
-        .map((p) => worldToScreen(this.camera, size, p))
+        .map((p) => this.screenPoint(p))
         .flatMap((p) => [p.x, p.y]);
       this.landscape
         .poly(points, true)
@@ -253,13 +371,13 @@ export class AtlasRenderer {
           q,
           r,
         })
-          .map((p) => worldToScreen(this.camera, size, p))
+          .map((p) => this.screenPoint(p))
           .flatMap((p) => [p.x, p.y]);
         this.grid
           .poly(points, true)
           .stroke({ color: 0x809c9a, width: 1, alpha: 0.7 });
       }
-    const origin = worldToScreen(this.camera, size, this.world.origin);
+    const origin = this.screenPoint(this.world.origin);
     this.overlay
       .moveTo(origin.x - 5, origin.y)
       .lineTo(origin.x + 5, origin.y)
@@ -268,7 +386,7 @@ export class AtlasRenderer {
       .stroke({ color: 0x4c6177, width: 1.5 });
     if (this.selected) {
       const points = hexCorners(this.world, this.selected)
-        .map((p) => worldToScreen(this.camera, size, p))
+        .map((p) => this.screenPoint(p))
         .flatMap((p) => [p.x, p.y]);
       this.overlay
         .poly(points, true)
@@ -279,7 +397,7 @@ export class AtlasRenderer {
       this.overlay
         .poly(
           hexCorners(this.world, this.hover)
-            .map((p) => worldToScreen(this.camera, size, p))
+            .map((p) => this.screenPoint(p))
             .flatMap((p) => [p.x, p.y]),
           true,
         )
@@ -294,8 +412,53 @@ export class AtlasRenderer {
     this.host.dataset.terrainCells = String(this.terrain?.cells().length ?? 0);
     this.host.dataset.visibleTerrainCells = String(visibleCells);
     this.host.dataset.previewCells = String(this.preview.length);
+    this.drawLocations();
+    this.beforeRender?.();
     this.application.render();
     this.changed();
+  }
+  private drawLocations(): void {
+    this.markers.clear();
+    const placed = new Set(
+      (this.terrain?.placements() ?? []).map((p) => p.locationId),
+    );
+    for (const [id, label] of this.labels) {
+      label.visible = false;
+      if (!placed.has(id)) {
+        label.destroy();
+        this.labels.delete(id);
+      }
+    }
+    const visible = new Set(this.visibleLocationIds());
+    for (const { id, point: p } of this.markerPoints()) {
+      if (!visible.has(id)) continue;
+      const document = this.locations.get(id),
+        color = document?.type === "city" ? 0x704d29 : 0x27565c;
+      if (document?.type === "city")
+        this.markers.rect(p.x - 7, p.y - 7, 14, 14);
+      else
+        this.markers.poly(
+          [p.x, p.y - 8, p.x + 8, p.y, p.x, p.y + 8, p.x - 8, p.y],
+          true,
+        );
+      this.markers.fill(color).stroke({ color: 0xffffff, width: 2 });
+      if (id === this.selectedLocation)
+        this.markers.circle(p.x, p.y, 12).stroke({ color: 0x258a76, width: 2 });
+      let label = this.labels.get(id);
+      if (!label) {
+        label = new Text({
+          text: "",
+          style: { fontFamily: "sans-serif", fontSize: 12, fill: 0x26372e },
+        });
+        this.labels.set(id, label);
+        this.names.addChild(label);
+      }
+      label.text = document?.name ?? "Ort";
+      label.position.set(p.x + 15, p.y - 8);
+      label.visible = true;
+    }
+    this.host.dataset.visibleLocations = String(visible.size);
+    this.host.dataset.locations = String(placed.size);
   }
   destroy(): void {
     this.closed = true;

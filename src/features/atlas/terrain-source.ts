@@ -3,6 +3,11 @@ import type { OverworldDocument } from "./overworld";
 import { checkedLocationPlacements } from "./location-placement";
 import type { AtlasValue } from "./atlas-history";
 import {
+  checkedSpatialState,
+  SPATIAL_TARGET,
+  type SpatialState,
+} from "./spatial-schema";
+import {
   checkedAxial,
   checkedTerrainCell,
   chunkAddress,
@@ -35,8 +40,13 @@ export class TerrainSource {
     readonly world: OverworldDocument,
     readonly history: AtlasHistory,
     private load: (reference: TerrainReference) => Promise<string>,
+    private initialSpatial?: SpatialState,
   ) {
     history.register(world.id, (target, value) => {
+      if (target === SPATIAL_TARGET && initialSpatial !== undefined) {
+        checkedSpatialState(value);
+        return;
+      }
       if (target !== "placements") return validateTerrainChange(target, value);
       if (
         checkedLocationPlacements(value).some((p) => p.locationId === world.id)
@@ -47,6 +57,14 @@ export class TerrainSource {
     });
     history.hydrate(world.id, [
       ["placements", world.placements as unknown as AtlasValue],
+      ...(initialSpatial === undefined
+        ? []
+        : [
+            [
+              SPATIAL_TARGET,
+              checkedSpatialState(initialSpatial) as unknown as AtlasValue,
+            ] as const,
+          ]),
     ]);
     for (const ref of world.chunks) this.refs.set(terrainChunkKey(ref), ref);
   }
@@ -113,7 +131,7 @@ export class TerrainSource {
     return this.history
       .entries(this.world.id)
       .flatMap(([target, value]) =>
-        target === "placements" || value === null
+        target === "placements" || target === SPATIAL_TARGET || value === null
           ? []
           : [checkedTerrainCell(value)],
       );
@@ -121,6 +139,13 @@ export class TerrainSource {
   placements() {
     return checkedLocationPlacements(
       this.history.read(this.world.id, "placements"),
+    );
+  }
+  spatialState(): SpatialState {
+    if (this.initialSpatial === undefined)
+      throw new Error("Räumlicher Speicheranschluss ist noch nicht aktiviert.");
+    return checkedSpatialState(
+      this.history.read(this.world.id, SPATIAL_TARGET),
     );
   }
   references(): readonly TerrainReference[] {
