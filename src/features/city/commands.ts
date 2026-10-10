@@ -38,7 +38,11 @@ export class CitySource {
     history.hydrate(ownerId, [[DOCUMENT_TARGET, value]]);
   }
   read(): CityDocument {
-    return checked(this.history.read(this.id, DOCUMENT_TARGET), this.id);
+    return checked(this.snapshotIdentity, this.id);
+  }
+  /** Existing immutable History value; Undo does not revive an older draft binding. */
+  get snapshotIdentity(): AtlasValue {
+    return this.history.read(this.id, DOCUMENT_TARGET);
   }
 }
 

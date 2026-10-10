@@ -9445,18 +9445,17 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-FTG-SCOPE-I01-CLEAN-R01",
-      "status": "complete",
-      "kind": "cleanup_review",
-      "focus": "Implementation cleanup passed: mapped requirements, preserved foreign/product/acceptance bytes",
-      "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
-      "baseSha": "e157462ee1a4c2b82b0c927df664a8c06fc38cb1",
-      "nextStep": "Independent CITY-FTG-SCOPE-R01 on published PR50 exact SHA"
+      "id": "CITY-DRAFT-ABA-I01",
+      "status": "implemented_review_pending",
+      "kind": "bugfix",
+      "focus": "Reject obsolete CityDraft after same-city A-B-A without consuming Redo; retain independent Terrain composition",
+      "baseSha": "843562ac256eb293f1b8c95f10077a9a7a7c1a1b",
+      "nextStep": "Independent exact-SHA code review of snapshot binding and ABA regressions"
     },
     "nextRun": {
-      "id": "CITY-FTG-SCOPE-R01",
-      "kind": "independent_documentation_review",
-      "focus": "Review exact PR50 diff against issue44 and P01; no product approval"
+      "id": "CITY-DRAFT-ABA-R01",
+      "kind": "independent_code_review",
+      "focus": "Snapshot identity remains existing History authority; stale update/apply terminal, Redo preserved, no GUI or integration approval"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",

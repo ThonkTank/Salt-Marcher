@@ -4851,6 +4851,14 @@
         "deletedBytes": 46469066,
         "protectedFiles": 555
       }
+    },
+    "draftAbaRegression": {
+      "state": "implementation_review_pending",
+      "trigger": "City edit A→B, Undo to byte-identical A, late Apply of pre-existing draft",
+      "before": "old draft committed and erased Redo",
+      "after": "update/apply reject changed City snapshot identity, clear candidate and become terminal failed",
+      "compatibility": "independent Terrain changes remain allowed; no new revision/history/persistence authority",
+      "limits": "Core regression only; independent review, City host/integration and full parity remain open"
     }
   },
   "wonderdraftParity": {

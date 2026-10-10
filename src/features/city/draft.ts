@@ -19,8 +19,10 @@ export class CityDraft {
   readonly before: CityDocument;
   private currentState: CityDraftState = "editing";
   private candidate: CityDraftPreview | null = null;
+  private readonly baselineIdentity;
   constructor(private readonly source: CitySource) {
     this.before = source.read();
+    this.baselineIdentity = source.snapshotIdentity;
   }
   get state(): CityDraftState {
     return this.currentState;
@@ -31,6 +33,11 @@ export class CityDraft {
   private assertEditable(): void {
     if (this.currentState !== "editing" && this.currentState !== "invalid")
       throw new Error("Stadtentwurf bereits abgeschlossen.");
+    if (this.source.snapshotIdentity !== this.baselineIdentity) {
+      this.currentState = "failed";
+      this.candidate = null;
+      throw new Error("Stadtentwurf kollidiert mit einem geänderten Stadtstand.");
+    }
   }
   setEdits(edits: readonly CityEdit[]): CityDraftPreview {
     this.assertEditable();

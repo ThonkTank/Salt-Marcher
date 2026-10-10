@@ -117,13 +117,13 @@ test("City Apply creates one exact street and house undo step and closes the dra
 
 test("City Cancel and no-op Apply preserve redo without silently undoing a foreign edit", () => {
   const { history, source, draft } = setup();
+  draft.setEdits([move(50)]);
   const before = source.read();
   const after = editCity(before, [move(20)]);
   history.execute({
     label: "foreign",
     changes: [cityDocumentChange(before, after)],
   });
-  draft.setEdits([move(50)]);
   draft.cancel();
   closed(draft, "cancelled");
   assert.deepEqual(source.read(), after);
@@ -233,6 +233,42 @@ test("Real terrain commands share draft history; concurrent City edits fail with
   assert(stale.cancel());
   assert.deepEqual(source.read(), after);
   closed(stale, "cancelled");
+});
+
+test("City draft rejects A-B-A after Undo without consuming Redo; a fresh draft works", () => {
+  const { history, source, draft } = setup();
+  draft.setEdits([road]);
+  const before = source.read();
+  history.execute({ label: "other city edit", changes: [cityDocumentChange(before, editCity(before, [move(20)]))] });
+  assert(history.undo());
+  assert.deepEqual(source.read(), before);
+  const depth = history.undoDepth;
+  assert(history.canRedo);
+  assert.throws(() => draft.apply("late apply"), /kollidiert/);
+  closed(draft, "failed");
+  assert.equal(history.undoDepth, depth);
+  assert(history.canRedo);
+  assert.deepEqual(source.read(), before);
+  assert(history.redo());
+  const fresh = new CityDraft(source);
+  fresh.setEdits([road]);
+  assert(fresh.apply("fresh street"));
+  assert.equal(source.read().roadNodes[0]!.point.x, -10);
+});
+
+test("City draft rejects an update after A-B-A, including recovery from an invalid preview", () => {
+  for (const invalid of [false, true]) {
+    const { history, source, draft } = setup();
+    draft.setEdits([road]);
+    if (invalid) assert.throws(() => draft.setEdits([{ kind: "remove-node", nodeId: "a" }]));
+    const before = source.read();
+    history.execute({ label: "other city edit", changes: [cityDocumentChange(before, editCity(before, [move(20)]))] });
+    assert(history.undo());
+    assert.throws(() => draft.setEdits([move(40)]), /kollidiert/);
+    closed(draft, "failed");
+    assert(history.canRedo);
+    assert.deepEqual(source.read(), before);
+  }
 });
 
 test("History observer exceptions are diagnosed separately after execute/undo/redo and never block later observers", () => {
