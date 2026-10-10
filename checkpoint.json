@@ -4930,18 +4930,18 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-R48-CLEAN-I",
-      "kind": "cleanup_implementation",
-      "startedAt": "2026-10-10T04:49:32Z",
-      "completedAt": "2026-10-10T04:49:33.213617+00:00",
-      "state": "completed",
-      "result": "Removed only exact own temporary R48 review helper, 7721 bytes.135 protected hashes unchanged before/after; no recursive/cache/product/GUI action. Separate cleanup review pending.",
-      "receipt": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i48b-20261010-r01/r48-cleanup-implementation.json"
-    },
-    "nextRun": {
       "id": "CITY-00-R48-CLEAN-R",
       "kind": "cleanup_review",
-      "focus": "Verify exact planned deletion,135 protected hashes, receipt/plan binding and foreign/product boundaries; then hand off to concrete Campaign composition review"
+      "startedAt": "2026-10-10T04:50:39Z",
+      "completedAt": "2026-10-10T04:50:40.192468+00:00",
+      "state": "completed",
+      "result": "PASS exact planned helper absent;135 protected hashes unchanged; plan/implementation binding, product/tools/tests and foreign roots preserved. R48 cleanup closed; no recursive cleanup. PR27 independent reference review pending.",
+      "receipt": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i48b-20261010-r01/r48-cleanup-review.json"
+    },
+    "nextRun": {
+      "id": "E2E-01-SPACE-I01c-CAMPAIGN-INTEGRATION-R01",
+      "kind": "independent_integration_review",
+      "focus": "Read current exact PR13 handoff: full Campaign owner branch composition, actual Campaign Core signatures and preserved Atlas/City/Dungeon/history/fixture boundaries; no generic Campaign/MWS review or runtime acceptance"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
