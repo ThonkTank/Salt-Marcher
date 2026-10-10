@@ -92,6 +92,7 @@ test("Dungeon-at-Location Copy remaps the entire binding and Discard restores th
   await f.repo.ensureLocation(id(12));
   const canonical = new Map(f.store.files);
   f.repo.bindDungeonAtLocation(id(12), id(202));
+  f.repo.bindDungeonAtLocation(id(11), id(202));
   const dest = 'Atlanten/Ortsdungeon-Kopie.overworld';
   await f.repo.copy(dest, id(910), 'Ortsdungeon-Kopie');
   const copy = new AtlasRepository(f.store, dest, f.store, options(f.store));
@@ -99,8 +100,13 @@ test("Dungeon-at-Location Copy remaps the entire binding and Discard restores th
   const d = copy.terrainSource.spatialState().detailPlacements.find((p) => p.kind === 'dungeon')!;
   assert.ok(d.kind === 'dungeon' && d.parent.kind === 'location');
   assert.notEqual(d.id, id(202)); assert.notEqual(d.documentId, id(30));
-  assert.notEqual(d.parent.locationId, id(12));
+  assert.notEqual(d.parent.locationId, id(11));
   assert.ok(copy.location(d.parent.locationId).read()!.detailMaps.some((r) => r.kind === 'dungeon' && r.documentId === d.documentId));
+  for (const p of copy.terrainSource.placements()) await copy.ensureLocation(p.locationId);
+  const copiedOldLocation = copy.terrainSource.placements()
+    .map((p) => copy.location(p.locationId).read()!)
+    .find((l) => l.name === f.repo.location(id(12)).read()!.name)!;
+  assert.deepEqual(copiedOldLocation.detailMaps, []);
   const copiedDungeon = copy.detail('dungeon', d.documentId);
   assert.ok(copiedDungeon instanceof DungeonAtlasSource);
   assert.ok(copiedDungeon.read().document.entities.some((r) => r.id === d.entrances[0]!.roomId));
@@ -113,6 +119,35 @@ test("Dungeon-at-Location Copy remaps the entire binding and Discard restores th
   assert.equal(f.repo.dirty, false); assert.equal(f.repo.hasDraft, false);
   for (const [p, bytes] of canonical) assert.equal(f.store.files.get(p), bytes, p);
   assert.ok(f.store.files.has(dest));
+});
+
+test("Dungeon moving between Locations removes only its old detail link in one undoable command", async () => {
+  const f = await opened();
+  await f.repo.ensureLocation(id(12));
+  const cityLocation = f.repo.location(id(11)).read()!;
+  f.repo.editLocation({ ...cityLocation, detailMaps: [{ kind: 'city', documentId: id(100) }] });
+  f.repo.bindDungeonAtLocation(id(11), id(202));
+  const old = f.repo.location(id(11)).read()!, next = f.repo.location(id(12)).read()!,
+    worldBefore = f.source.spatialState(), dungeonBefore = f.dungeon.read().documentBytes,
+    depth = f.source.history.undoDepth;
+  assert.equal(f.repo.bindDungeonAtLocation(id(12), id(202)), true);
+  const expectedOld = { ...old, detailMaps: old.detailMaps.filter((r) => r.kind !== 'dungeon' || r.documentId !== id(30)) },
+    expectedNext = { ...next, detailMaps: [...next.detailMaps, { kind: 'dungeon', documentId: id(30) }] },
+    worldAfter = f.source.spatialState();
+  assert.deepEqual(f.repo.location(id(11)).read(), expectedOld);
+  assert.deepEqual(f.repo.location(id(12)).read(), expectedNext);
+  assert.deepEqual(worldAfter.detailPlacements.find((p) => p.id === id(202))!.parent,
+    { kind: 'location', locationId: id(12) });
+  assert.equal(f.source.history.undoDepth, depth + 1);
+  assert.equal(f.source.history.undo(), true);
+  assert.deepEqual(f.source.spatialState(), worldBefore);
+  assert.deepEqual(f.repo.location(id(11)).read(), old);
+  assert.deepEqual(f.repo.location(id(12)).read(), next);
+  assert.equal(f.source.history.redo(), true);
+  assert.deepEqual(f.source.spatialState(), worldAfter);
+  assert.deepEqual(f.repo.location(id(11)).read(), expectedOld);
+  assert.deepEqual(f.repo.location(id(12)).read(), expectedNext);
+  assert.equal(f.dungeon.read().documentBytes, dungeonBefore);
 });
 class Store implements FileStore {
   files = new Map<string, string>();

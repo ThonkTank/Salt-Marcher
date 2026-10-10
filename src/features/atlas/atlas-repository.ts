@@ -805,6 +805,17 @@ export class AtlasRepository {
       placed = placement.parent.kind === "location" && placement.parent.locationId === locationId;
     if (linked && placed) return false;
     const changes = [];
+    if (!placed && placement.parent.kind === "location") {
+      const previous = this.locations.get(placement.parent.locationId).read();
+      if (!previous) throw new Error("Bisheriger Dungeonort ist nicht geladen.");
+      const detailMaps = previous.detailMaps.filter((r) =>
+        r.kind !== "dungeon" || r.documentId !== placement.documentId);
+      if (detailMaps.length !== previous.detailMaps.length)
+        changes.push(locationDocumentChange(previous.id, previous, {
+          ...previous,
+          detailMaps,
+        }));
+    }
     if (!linked) changes.push(locationDocumentChange(locationId, location, {
       ...location,
       detailMaps: [...location.detailMaps, { kind: "dungeon", documentId: placement.documentId }],

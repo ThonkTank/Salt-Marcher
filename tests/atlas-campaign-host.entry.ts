@@ -325,6 +325,41 @@ test("visible Dungeon-at-Location action, Room Key, back, Undo/Redo and Save sha
   await view.onUnloadFile(); services.close();
 });
 
+test("visible Dungeon move between Locations drops the old entry and Undo/Redo restore it on the same mount", async () => {
+  const f = await fixture(true), before = active(f), editor = f.editor()!;
+  const mill = { ...locationTarget, documentId: uuid(12), recordId: uuid(12) };
+  await f.host().navigate(mill);
+  f.click(f.content.querySelector<HTMLButtonElement>('.dn-atlas-dungeon-bindings button')!);
+  await editor.flush();
+  const old = before.repository.location(uuid(12)).read()!,
+    next = before.repository.location(uuid(11)).read()!,
+    world = editor.terrain.spatialState(), depth = before.history.undoDepth;
+  await f.host().navigate(locationTarget);
+  const button = f.content.querySelector<HTMLButtonElement>('.dn-atlas-dungeon-bindings button')!;
+  assert.ok(button); f.click(button); await editor.flush();
+  assert.equal(before.history.undoDepth, depth + 1);
+  assert.deepEqual(before.repository.location(uuid(12)).read(), { ...old, detailMaps: [] });
+  assert.deepEqual(before.repository.location(uuid(11)).read(), {
+    ...next, detailMaps: [...next.detailMaps, { kind: 'dungeon', documentId: uuid(30) }],
+  });
+  assert.equal(f.host().details(uuid(12)).entries.some((e) => e.target.documentId === uuid(30)), false);
+  assert.equal(f.host().details(uuid(11)).entries.some((e) => e.target.kind === 'room'), true);
+  f.click(f.content.querySelector<HTMLButtonElement>('[aria-label="Atlasänderung rückgängig"]')!);
+  await editor.flush();
+  assert.deepEqual(editor.terrain.spatialState(), world);
+  assert.deepEqual(before.repository.location(uuid(12)).read(), old);
+  assert.deepEqual(before.repository.location(uuid(11)).read(), next);
+  assert.equal(f.host().details(uuid(12)).entries.some((e) => e.target.kind === 'room'), true);
+  f.click(f.content.querySelector<HTMLButtonElement>('[aria-label="Atlasänderung wiederholen"]')!);
+  await editor.flush();
+  assert.equal(f.host().details(uuid(12)).entries.some((e) => e.target.documentId === uuid(30)), false);
+  assert.equal(active(f).repository, before.repository);
+  assert.equal(active(f).history, before.history);
+  assert.equal(active(f).renderer, before.renderer);
+  assert.equal(active(f).context.contextToken, before.context.contextToken);
+  await f.close();
+});
+
 test("invalid pending Location Key prevents visible Dungeon binding and retains input", async () => {
   const f = await fixture(true), before = active(f), editor = f.editor()!;
   await f.host().navigate({ ...locationTarget, documentId: uuid(12), recordId: uuid(12) });
