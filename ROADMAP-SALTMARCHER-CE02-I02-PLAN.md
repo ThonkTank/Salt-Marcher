@@ -9,7 +9,7 @@ Art: Fachplan für Items; keine Item-Implementierung und keine CE-02-Freigabe
 S01 bleibt bis vollständigem Korpus und unabhängigem S01-R01 ausdrücklich
 unvollständig. Der direkte Nutzerauftrag vom 10. Oktober verlangt sinnvolle
 Produktbeiträge ohne künstliche Einzeleintrags-/Kleinstpaketbeschränkung.
-W23 liefert daher die zusammenhängende Armor-/Arrow-Gruppe (A–Z 10–13,
+W23 liefert die zusammenhängende Armor-/Arrow-Gruppe (A–Z 10–13,
 physische/gedruckte Seiten 208–209) einschließlich Resistenz-d10-Tabelle,
 Fluchtext und Slaying-Regeln. Ein kompletter Heading-zu-Heading-XML-Abgleich
 prüft Prosa und physische Tabellenreihenfolge statt nur vorhandener Substrings.
@@ -20,7 +20,33 @@ das Fehlen von Grenzleerraum aus den XML-Quellwerten; echte Leerzeichen und
 Interpunktion bleiben unangetastet. Ein hashgebundener echter Poppler-25.03-
 XML-Ausschnitt, verschobene/hohe Koordinaten, Footer-/Body-Adversarien und ein
 expliziter PDF-Integrationstest schützen diese Grenze. Der lokale echte PDF-
-Lauf ist kein behaupteter Poppler-25.07- oder fremder Host-PASS.
+Lauf ist kein behaupteter Poppler-25.07- oder fremder Host-PASS. Der unabhängige
+W23-N01-P1-Re-Review auf `8dfa06ac859acf84df1e35d481893cf289e062e3`
+bestätigt inzwischen den echten Poppler-25.07-PDF-Pfad als PASS
+([PR #48, Review 5479968350](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/48#pullrequestreview-5479968350));
+das ist keine vollständige S01-/Produktabnahme.
+
+W24 ergänzt die gesamte Bags-Gruppe (A–Z 14–17, Seiten 209–211): Beans,
+Devouring, Holding und Tricks. Alle zwölf d100-Effekte einschließlich `00`
+und der seitenübergreifenden Eierregel sowie alle drei farbgebundenen
+d8-Kreaturentabellen mit jeweils acht Zeilen bleiben vollständig erhalten.
+Tabellenlabels und Würfelergebnisse bleiben den jeweiligen Zellen zugeordnet;
+die drei Farben sind keine zusätzlichen Detailheadings oder erfundenen
+Variantenrecords/Merges. Beans-Gewichtsformel und Holding-Kapazität bleiben
+als vollständiger Quellwortlaut erhalten, nicht als erfundene numerische
+Umrechnung. Die optionalen strukturierten Kosten-/Gewichts-/Kapazitätsfelder
+werden in diesem Quellenabschnitt nicht ergänzt.
+
+Der Verifier verwendet dieselbe inhaltliche Footer-/Quellwhitespace-Policy wie
+W23-N01 und prüft jeden vollständigen Heading-Block einschließlich Tabellen,
+Seitenübergängen und der nächsten Überschrift. Eine unveränderte echte
+Poppler-25.03-XML-Ausgabe der drei kompletten Seiten mit Hash-/Lizenzreceipt
+liegt unter `tests/fixtures/items-srd51-bags-poppler-25.03.*`; sie macht die
+prüfentscheidenden Rohdaten offline zugänglich, behauptet aber keinen neuen
+PDF-/GUI-Lauf. Negative Goldens erhalten auch bei unverändertem
+Kreaturen-Multiset die Farb-/Würfelzuordnung. W24 bleibt bis unabhängigem
+Quellenreview offen. Stand: 237 Occurrences / 236 Records, 18/239 A–Z-Headings
+(17 standalone plus Potion-of-Healing-Merge); 221 A–Z-Headings plus Orb offen.
 Der vollständige PDF-Test wird mit
 `SRD51_SOURCE_PDF=/pfad/SRD_CC_v5.1.pdf node --test tests/items-srd51-source.test.mjs`
 aktiviert. Ohne diese Quelle ist er ausdrücklich skipped; Offline-XML-Fixtures

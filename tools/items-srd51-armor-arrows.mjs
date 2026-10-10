@@ -77,6 +77,33 @@ export function validateArmorArrowsPdfXml(xml, headings, normalize) {
   assert.equal(headings.length, 239, "A–Z total heading count");
   assert.deepEqual(headings.slice(8, 14), ["Armor of Invulnerability",
     ...ARMOR_ARROWS.map(item => item.name), "Bag of Beans"], "A–Z boundary sequence");
+  const nodes = extractSrdBodyNodes(xml, normalize);
+  for (const [index, item] of ARMOR_ARROWS.entries()) {
+    const start = nodes.findIndex(node => node.text === item.name);
+    const nextName = ARMOR_ARROWS[index + 1]?.name ?? "Bag of Beans";
+    const end = nodes.findIndex((node, offset) => offset > start && node.text === nextName);
+    assert.ok(start >= 0 && end > start, `${item.name}: heading bounds missing`);
+    const block = nodes.slice(start, end);
+    assert.deepEqual([...new Set(block.map(node => node.page))], item.pages,
+      `${item.name}: physical page span`);
+    let table = "";
+    if (item.damageTypes) {
+      // The source has two side-by-side d10 columns. Preserve column ownership
+      // in the PDF oracle; transcript rows are ordered by the die result.
+      table = "d10 Damage Type d10 Damage Type " + item.damageTypes.slice(0, 5)
+        .map((type, row) => `${row + 1} ${type} ${row + 6} ${item.damageTypes[row + 5]}`).join(" ");
+    }
+    assert.equal(normalize(block.map(node => node.join + node.text).join("")),
+      normalize([item.name, item.header, ...item.description, table].join(" ")),
+      `${item.name}: complete heading-bounded PDF text/table mismatch`);
+  }
+  return { records: 4, resistanceTableRows: 10, derivedHeadingCount: 239,
+    scope: "exact-complete-heading-bounded-xml-stream-and-two-column-d10-table" };
+}
+
+// Shared only by offline source verifiers. Keep the independently reviewed
+// W23-N01 stream/footer policy identical for the next complete source section.
+export function extractSrdBodyNodes(xml, normalize) {
   const nodes = [];
   for (const pageMatch of xml.matchAll(/<page\b[^>]*number="(\d+)"[^>]*>([\s\S]*?)<\/page>/g)) {
     const page = Number(pageMatch[1]);
@@ -113,25 +140,5 @@ export function validateArmorArrowsPdfXml(xml, headings, normalize) {
     }
     nodes.push(...pageNodes.filter((_, index) => !footerNodes.has(index)));
   }
-  for (const [index, item] of ARMOR_ARROWS.entries()) {
-    const start = nodes.findIndex(node => node.text === item.name);
-    const nextName = ARMOR_ARROWS[index + 1]?.name ?? "Bag of Beans";
-    const end = nodes.findIndex((node, offset) => offset > start && node.text === nextName);
-    assert.ok(start >= 0 && end > start, `${item.name}: heading bounds missing`);
-    const block = nodes.slice(start, end);
-    assert.deepEqual([...new Set(block.map(node => node.page))], item.pages,
-      `${item.name}: physical page span`);
-    let table = "";
-    if (item.damageTypes) {
-      // The source has two side-by-side d10 columns. Preserve column ownership
-      // in the PDF oracle; transcript rows are ordered by the die result.
-      table = "d10 Damage Type d10 Damage Type " + item.damageTypes.slice(0, 5)
-        .map((type, row) => `${row + 1} ${type} ${row + 6} ${item.damageTypes[row + 5]}`).join(" ");
-    }
-    assert.equal(normalize(block.map(node => node.join + node.text).join("")),
-      normalize([item.name, item.header, ...item.description, table].join(" ")),
-      `${item.name}: complete heading-bounded PDF text/table mismatch`);
-  }
-  return { records: 4, resistanceTableRows: 10, derivedHeadingCount: 239,
-    scope: "exact-complete-heading-bounded-xml-stream-and-two-column-d10-table" };
+  return nodes;
 }
