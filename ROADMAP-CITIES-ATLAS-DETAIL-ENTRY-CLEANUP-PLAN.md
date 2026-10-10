@@ -15,3 +15,5 @@ Inventarhashes vor jedem Löschen prüfen, nur gelistete Dateien entfernen; dana
 ## Unabhängige Kontrolle der Aufräumwirkung
 
 Separater Reviewlauf: alle Schutzhashes, erhaltenes Dependency-Ziel, `.git`, tatsächliche Löschliste und fremde JSON-Spannen prüfen. Keine erneute Produkttestsuite für unveränderte Quellen. Danach qualifizierte Exact-SHA-Übergabe an Hex zur vorhandenen Hostmontage und Test-Runneranbindung.
+
+Umsetzung abgeschlossen: 15 inventarisierte Dateien (46.469.066 Bytes) entfernt, eigener Symlink entknüpft; Dependency-Ziel erhalten. Quellen und Auslieferungsdateien unverändert. Hashgebundener Beleg: `/home/aaron/.cache/dungeon-native-qa/city-plans/city-ui-i01-20261010/cleanup/implementation.json`.
