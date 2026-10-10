@@ -1,9 +1,14 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { parseHTML } from "linkedom";
 import { campaignContext, campaignContextToken, campaignId, campaignLocalId,
   campaignNamespace, campaignRevision, campaignSnapshot } from "../src/features/campaign/campaign-contracts";
 import { changeWorldNotes, emptyWorldNotes, type WorldNoteChange } from "../src/features/world/world-notes";
+import { serializeWorldNote } from "../src/features/world/world-notes";
+import { payloadDigest, type CampaignCommandId } from "../src/features/campaign/campaign-contracts";
+import { campaignOwnershipDigestValue } from "../src/features/campaign/campaign-ownership";
+import { worldNotePath, type WorldNotesCommitReceiptV1 } from "../src/features/campaign/world-notes-commit";
 import { WorldNotesPanel } from "../src/ui/world-notes-panel";
 
 const id = (n: number) => campaignLocalId(`00000000-0000-4000-8000-${String(n).padStart(12, "0")}`);
@@ -12,6 +17,7 @@ const context = campaignContext(campaignSnapshot({ schemaVersion: 1,
   namespace: campaignNamespace("00000000-0000-4000-8000-000000000002"),
   revision: campaignRevision(1), name: "Welt", lifecycle: "active" }), campaignContextToken("world:one"));
 const tick = () => new Promise<void>((resolve) => setImmediate(resolve));
+const digest = (value: string) => `sha256:${createHash("sha256").update(value).digest("hex")}`;
 
 function fixture() {
   const { document, window } = parseHTML("<html><body><div id='host'></div></body></html>");
@@ -24,14 +30,38 @@ function fixture() {
   const calls: { change: WorldNoteChange; expected: number }[] = [];
   let refuse = false;
   let substitute: ((change: WorldNoteChange, expected: number) => typeof snapshot) | null = null;
+  let tamperReceipt: ((receipt: WorldNotesCommitReceiptV1) => WorldNotesCommitReceiptV1) | null = null;
+  let rejectReceipt = false;
+  const issued = new WeakSet<object>();
   const panel = new WorldNotesPanel(host, {
     newId: () => id(nextId++),
-    commit: async (change, expected) => {
+    currentContext: () => context,
+    digest,
+    validateReceipt: (receipt) => {
+      if (rejectReceipt || !issued.has(receipt)) throw new Error("Fremdes Receipt");
+    },
+    commit: async (commandId: CampaignCommandId, change, expected) => {
       calls.push({ change, expected });
       if (refuse) throw new Error("Speicher gesperrt");
-      if (substitute) return snapshot = substitute(change, expected);
-      snapshot = changeWorldNotes(snapshot, context, context, expected, change);
-      return snapshot;
+      const before = snapshot;
+      snapshot = substitute ? substitute(change, expected) :
+        changeWorldNotes(snapshot, context, context, expected, change);
+      const record = snapshot.records.find((item) => item.id === change.id) ?? before.records[0]!;
+      const old = before.records.find((item) => item.id === change.id);
+      let receipt: WorldNotesCommitReceiptV1 = {
+        version: 1, status: "committed", commandId, transactionId: crypto.randomUUID(),
+        contextToken: context.contextToken,
+        changeDigest: campaignOwnershipDigestValue(change, digest), recordId: change.id,
+        notePath: worldNotePath(snapshot.namespace, record.kind, record.id),
+        beforeSnapshotRevision: before.revision, afterSnapshotRevision: snapshot.revision,
+        beforeSnapshotDigest: campaignOwnershipDigestValue(before, digest),
+        afterSnapshotDigest: campaignOwnershipDigestValue(snapshot, digest),
+        beforeRecordRevision: old?.revision ?? null, afterRecordRevision: record.revision,
+        afterPayloadDigest: payloadDigest(digest(serializeWorldNote(record))), deleted: record.deleted,
+      };
+      if (tamperReceipt) receipt = tamperReceipt(receipt);
+      issued.add(receipt);
+      return { snapshot, receipt };
     },
   });
   panel.update(snapshot);
@@ -55,6 +85,8 @@ function fixture() {
   return { host, panel, click, input, save, calls, focused: () => focused, snapshot: () => snapshot,
     setSnapshot: (value: typeof snapshot) => { snapshot = value; panel.update(value); },
     substitute: (value: typeof substitute) => { substitute = value; },
+    tamperReceipt: (value: typeof tamperReceipt) => { tamperReceipt = value; },
+    rejectReceipt: (value: boolean) => { rejectReceipt = value; },
     refuse: (value: boolean) => { refuse = value; }, window };
 }
 
@@ -207,4 +239,19 @@ test("a forged NPC tombstone cannot change kind or creature identity and clear t
   assert.match(f.host.querySelector('[role="alert"]')!.textContent!, /nicht bestätigt/);
   assert.equal(f.host.querySelector("form") !== null, true);
   f.panel.destroy();
+});
+
+test("a foreign or causally mismatched receipt cannot clear a saved draft", async () => {
+  const f = fixture(); f.click("Quest anlegen"); f.input("Name", "Wichtige Spur");
+  f.tamperReceipt((receipt) => ({ ...receipt, changeDigest: digest("anderer Befehl") }));
+  await f.save();
+  assert.equal(f.snapshot().records[0]?.title, "Wichtige Spur");
+  assert.match(f.host.querySelector('[role="alert"]')!.textContent!, /nicht bestätigt/);
+  assert.equal(f.host.querySelector<HTMLInputElement>("form input")?.value, "Wichtige Spur");
+  f.panel.destroy();
+  const foreign = fixture(); foreign.click("Quest anlegen"); foreign.input("Name", "Anderer Entwurf");
+  foreign.rejectReceipt(true); await foreign.save();
+  assert.match(foreign.host.querySelector('[role="alert"]')!.textContent!, /Fremdes Receipt/);
+  assert.equal(foreign.host.querySelector<HTMLInputElement>("form input")?.value, "Anderer Entwurf");
+  foreign.panel.destroy();
 });

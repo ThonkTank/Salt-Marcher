@@ -25,6 +25,7 @@ import {
 import { CampaignLifecycle } from "../../src/features/campaign/campaign-lifecycle";
 import {
   campaignCommandId,
+  campaignContext,
   campaignLocalId,
   campaignContextToken,
   campaignNamespace,
@@ -44,7 +45,8 @@ import {
   emptyWorldNotes,
   serializeWorldNote,
 } from "../../src/features/world/world-notes";
-import { worldNotePath } from "../../src/features/campaign/world-notes-commit";
+import { WorldNotesCampaignCommitParticipant, worldNotePath } from "../../src/features/campaign/world-notes-commit";
+import { WorldNotesNativeSession, recoverWorldNotesBeforeActivation } from "../../src/ui/world-notes-native-session";
 
 const root = "tests/fixtures/atlas-e2e-spatial-v2/";
 const fixture = JSON.parse(readFileSync(root + "manifest.json", "utf8"));
@@ -369,6 +371,107 @@ test("World Notes save acknowledgment retains the active Campaign Context throug
   current = false;
   f.services.close();
 });
+
+test("native World Notes session rolls back late failure, retries, and reads confirmed bytes afresh", async () => {
+  const f = await liveNavigation(), context = f.services.provider.currentContext()!,
+    storage = { list: async () => [{ path: campaignPath, bytes: f.store.files.get(campaignPath)! }] },
+    session = new WorldNotesNativeSession(f.services, storage, f.store, sha, f.store, context),
+    before = await session.open(),
+    change = { kind: "create" as const, id: campaignLocalId(id(950)),
+      draft: { kind: "npc" as const, title: "Maris", readAloud: "Eine Reisende.",
+        gmNotes: "Kennt den Hafen.", relations: [], creatureId: null } },
+    journal = campaignPath.replace(/\.campaign\.json$/, ".world-notes.journal");
+  assert.deepEqual(before, emptyWorldNotes(context));
+  f.store.failCommittedJournalOnce = journal;
+  await assert.rejects(session.commit(campaignCommandId(id(951)), change, before.revision),
+    /committed journal CAS failed/);
+  assert.deepEqual(f.services.provider.currentContext(), context);
+  assert.equal(f.store.files.get(campaignPath), inputManifest);
+  assert.equal(f.store.files.has(worldNotePath(context.namespace, "npc", change.id)), false);
+  assert.equal(f.store.files.has(journal), false);
+
+  const result = await session.commit(campaignCommandId(id(952)), change, before.revision);
+  session.validateReceipt(result.receipt);
+  assert.equal(result.snapshot.records[0]?.title, "Maris");
+  assert.deepEqual(f.services.provider.currentContext(), context);
+  const fresh = new WorldNotesNativeSession(f.services, storage, f.store, sha, f.store, context);
+  assert.deepEqual(await fresh.open(), result.snapshot);
+  fresh.close(); session.close(); f.services.close();
+});
+
+test("fresh World Notes activation resolves a committed native journal before mounting", async () => {
+  const store = new Store(), manifest = parseCampaignRuntimeManifest(inputManifest, sha),
+    context = campaignContext(manifest.snapshot, campaignContextToken("world-notes:fresh-recovery")),
+    before = emptyWorldNotes(context),
+    change = { kind: "create" as const, id: campaignLocalId(id(953)),
+      draft: { kind: "quest" as const, title: "Wacht am Tor", readAloud: "Die Glocke läutet.",
+        gmNotes: "Nur nachts.", relations: [], creatureId: null } },
+    after = changeWorldNotes(before, context, context, before.revision, change),
+    participant = new WorldNotesCampaignCommitParticipant(campaignPath, inputManifest, sha),
+    notePath = worldNotePath(context.namespace, "quest", change.id),
+    prepared = participant.prepare({ commandId: campaignCommandId(id(954)), context,
+      beforeSnapshot: before, afterSnapshot: after, change,
+      nativeWrites: [{ path: notePath, before: null, after: serializeWorldNote(after.records[0]!) }] }),
+    journal = campaignPath.replace(/\.campaign\.json$/, ".world-notes.journal"),
+    transaction = new FileTransaction(store, journal,
+      (path) => prepared.writes.some((write) => write.path === path), store,
+      (entry) => participant.validateRecovery(entry));
+  store.fault = (path, bytes) => path === journal && bytes === null;
+  await assert.rejects(transaction.commit(prepared.writes), /unterbrochen/);
+  assert.equal(JSON.parse(store.files.get(journal)!).state, "committed");
+  store.offline = false; store.fault = undefined;
+  await recoverWorldNotesBeforeActivation({ campaignId: context.campaignId,
+    storage: { list: async () => [{ path: campaignPath, bytes: store.files.get(campaignPath)! }] },
+    files: store, digest: sha, serializationScope: store });
+  assert.equal(store.files.has(journal), false);
+  assert.equal(store.files.get(notePath), serializeWorldNote(after.records[0]!));
+});
+
+for (const pending of ["prepared", "committed"] as const) {
+  test(`Atlas-first World Notes mount rejects ${pending} native journal until safe recovery`, async () => {
+    const store = new Store(), manifest = parseCampaignRuntimeManifest(inputManifest, sha),
+      initial = campaignContext(manifest.snapshot, campaignContextToken(`world-notes:${pending}`)),
+      before = emptyWorldNotes(initial),
+      change = { kind: "create" as const, id: campaignLocalId(id(pending === "prepared" ? 955 : 956)),
+        draft: { kind: "quest" as const, title: "Unbestätigte Nachricht", readAloud: "",
+          gmNotes: "", relations: [], creatureId: null } },
+      after = changeWorldNotes(before, initial, initial, before.revision, change),
+      participant = new WorldNotesCampaignCommitParticipant(campaignPath, inputManifest, sha),
+      notePath = worldNotePath(initial.namespace, "quest", change.id),
+      prepared = participant.prepare({ commandId: campaignCommandId(id(pending === "prepared" ? 957 : 958)),
+        context: initial, beforeSnapshot: before, afterSnapshot: after, change,
+        nativeWrites: [{ path: notePath, before: null, after: serializeWorldNote(after.records[0]!) }] }),
+      journal = campaignPath.replace(/\.campaign\.json$/, ".world-notes.journal"),
+      transaction = new FileTransaction(store, journal,
+        (path) => prepared.writes.some((write) => write.path === path), store,
+        (entry) => participant.validateRecovery(entry));
+    store.fault = (path, bytes) => path === journal && (pending === "prepared"
+      ? bytes !== null && JSON.parse(bytes).state === "committed" : bytes === null);
+    await assert.rejects(transaction.commit(prepared.writes), /unterbrochen/);
+    assert.equal(JSON.parse(store.files.get(journal)!).state, pending);
+    assert.equal(store.files.get(notePath), serializeWorldNote(after.records[0]!));
+    store.offline = false; store.fault = undefined;
+
+    const active = await liveNavigation(store), context = active.services.provider.currentContext()!,
+      storage = { list: async () => [{ path: campaignPath, bytes: store.files.get(campaignPath)! }] },
+      session = new WorldNotesNativeSession(active.services, storage, store, sha, store, context);
+    await assert.rejects(session.open(), /World-Notes-Journal ist noch offen/);
+    assert.deepEqual(active.services.provider.currentContext(), context);
+    assert.equal(store.files.get(journal) !== undefined, true);
+    session.close(); active.services.close();
+
+    await recoverWorldNotesBeforeActivation({ campaignId: initial.campaignId,
+      storage, files: store, digest: sha, serializationScope: store });
+    assert.equal(store.files.has(journal), false);
+    assert.equal(store.files.get(campaignPath), pending === "prepared" ? inputManifest : prepared.writes.find(
+      (write) => write.path === campaignPath)!.after);
+    assert.equal(store.files.get(notePath), pending === "prepared" ? undefined : serializeWorldNote(after.records[0]!));
+    const reopened = await liveNavigation(store), reopenedContext = reopened.services.provider.currentContext()!,
+      fresh = new WorldNotesNativeSession(reopened.services, storage, store, sha, store, reopenedContext);
+    assert.equal((await fresh.open()).records.length, pending === "prepared" ? 0 : 1);
+    fresh.close(); reopened.services.close();
+  });
+}
 
 test("World Notes prepared acknowledgment cancels cleanly after FileTransaction rollback", async () => {
   const f = await liveNavigation(), context = f.services.provider.currentContext()!,
