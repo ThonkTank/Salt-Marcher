@@ -1,0 +1,190 @@
+{
+  "schemaVersion": 1,
+  "repository": "ThonkTank/Obsidian-Dungeon-Editor-Phase1",
+  "baselineCommit": "8671a1a880efc2f1316c520dd69493cdd998e379",
+  "coreRootDocs": [
+    "AGENTS.md",
+    "ARCHITECTURE.md",
+    "CONTRIBUTING.md",
+    "NOTICE.md",
+    "README.md"
+  ],
+  "legacyRootDocs": [
+    "ROADMAP-CITIES-ATLAS-INTEGRATION-PROPOSAL.md",
+    "ROADMAP-CITIES-CITY00-COK-ATMOSPHERE-PLAN.md",
+    "ROADMAP-CITIES-CITY00-COK-TEMPLATE-REOPEN-PLAN.md",
+    "ROADMAP-CITIES-CITY00-COK-VARIANTS-PLAN.md",
+    "ROADMAP-CITIES-CITY00-FTG-BUILDING-LIMITS-PLAN.md",
+    "ROADMAP-CITIES-CITY00-FTG-BULK-EDIT-PLAN.md",
+    "ROADMAP-CITIES-CITY00-FTG-MAPPING-PLAN.md",
+    "ROADMAP-CITIES-CITY01-COMMANDS-PLAN.md",
+    "ROADMAP-CITIES-CITY01-DRAFT-PLAN.md",
+    "ROADMAP-CITIES-CITY01-EDIT-PLAN.md",
+    "ROADMAP-CITIES-CITY01-GESTURES-PLAN.md",
+    "ROADMAP-CITIES-CITY01-INTEGRATION-PLAN.md",
+    "ROADMAP-CITIES-CITY01-MODEL-PLAN.md",
+    "ROADMAP-CITIES-CITY01-RENDERER-PLAN.md",
+    "ROADMAP-CITIES-CITY01-SCENE-PLAN.md",
+    "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
+    "ROADMAP-CITIES-REFERENCE-GALLERY.md",
+    "ROADMAP-CITIES-REFERENCE-GAPS.md",
+    "ROADMAP-CITIES.md",
+    "ROADMAP-E2E-GATES-CANDIDATE.md",
+    "ROADMAP-GM-PRODUCT-TESTING-PLAN.md",
+    "ROADMAP-GM-UX-N-001-PLAN.md",
+    "ROADMAP-GM-UX-N-002-PLAN.md",
+    "ROADMAP-GM-UX-N-003-PLAN.md",
+    "ROADMAP-GM-UX-N-005-PLAN.md",
+    "ROADMAP-GM-UX-N-006-PLAN.md",
+    "ROADMAP-GM-UX-N004-PLAN.md",
+    "ROADMAP-HEX-00-CLEAN-PLAN.md",
+    "ROADMAP-HEX-00-PLAN.md",
+    "ROADMAP-HEX-00-REPAIR-PLAN.md",
+    "ROADMAP-HEX-01-CLEAN-PLAN.md",
+    "ROADMAP-HEX-01-PLAN.md",
+    "ROADMAP-HEX-02-CLEAN-PLAN.md",
+    "ROADMAP-HEX-02-PLAN.md",
+    "ROADMAP-HEX-02-REPAIR-PLAN.md",
+    "ROADMAP-HEX-03-PLAN.md",
+    "ROADMAP-HEX-ATLAS.md",
+    "ROADMAP-PARITY-CLEANUP-1-PLAN.md",
+    "ROADMAP-PARITY-CLEANUP-2-PLAN.md",
+    "ROADMAP-PARITY-CLEANUP-3-PLAN.md",
+    "ROADMAP-PARITY-CLEANUP-4-MATRIX-REPAIR-PLAN.md",
+    "ROADMAP-PARITY-CLEANUP-4-PLAN.md",
+    "ROADMAP-PARITY-CLEANUP-4-REPAIR-PLAN.md",
+    "ROADMAP-PARITY-CLEANUP-5-PLAN.md",
+    "ROADMAP-PARITY-CLEANUP-5-REPAIR-PLAN.md",
+    "ROADMAP-PARITY-CLEANUP-6-PLAN.md",
+    "ROADMAP-PARITY-CLEANUP-7-PLAN.md",
+    "ROADMAP-PARITY-PHASE2-PLAN.md",
+    "ROADMAP-PARITY-PHASE3-PLAN.md",
+    "ROADMAP-PARITY-PHASE3-REPAIR-BEVEL-POINTS-PLAN.md",
+    "ROADMAP-PARITY-PHASE3-REPAIR-IMAGE-MATRIX-PLAN.md",
+    "ROADMAP-PARITY-PHASE3-REPAIR-OPTIONS-PLAN.md",
+    "ROADMAP-PARITY-PHASE3-REPAIR-REMAINING-PLAN.md",
+    "ROADMAP-PARITY-PHASE3-WEAR-BEHAVIOR-PLAN.md",
+    "ROADMAP-PARITY-PHASE4-PLAN.md",
+    "ROADMAP-PARITY-PHASE4-REPAIR-COLD-START-PLAN.md",
+    "ROADMAP-PARITY-PHASE4-REPAIR-PLAN.md",
+    "ROADMAP-PARITY-PHASE5-PLAN.md",
+    "ROADMAP-PARITY-PHASE5-REPAIR-PLAN.md",
+    "ROADMAP-PARITY-PHASE5-REPAIR2-PLAN.md",
+    "ROADMAP-PARITY-PHASE5-REPAIR3-PLAN.md",
+    "ROADMAP-PARITY-PHASE6-PLAN.md",
+    "ROADMAP-PARITY-PHASE6-REPAIR-PLAN.md",
+    "ROADMAP-PARITY-PHASE6-REPAIR2-PLAN.md",
+    "ROADMAP-PARITY-PHASE6-REPAIR3-PLAN.md",
+    "ROADMAP-PARITY-PHASE7-PLAN.md",
+    "ROADMAP-PARITY-PHASE7-REPAIR-PLAN.md",
+    "ROADMAP-PARITY-PLAN.md",
+    "ROADMAP-PARITY-TOOLS-PHASE1-DD001002-PLAN.md",
+    "ROADMAP-PARITY-TOOLS-PHASE1-DD006-SHADOW-PLAN.md",
+    "ROADMAP-PARITY-TOOLS-PHASE1-DD008-PLAN.md",
+    "ROADMAP-PARITY-TOOLS-PHASE1-DD036-ATLAS-PLAN.md",
+    "ROADMAP-PARITY-TOOLS-PHASE1-DD041-PAN-PLAN.md",
+    "ROADMAP-PARITY-TOOLS-PHASE1-PLAN.md",
+    "ROADMAP-PARITY-TOOLS-PHASE1-RESIZE-REPAIR-PLAN.md",
+    "ROADMAP-PARITY-TOOLS.md",
+    "ROADMAP-PARITY.md",
+    "ROADMAP-SALTMARCHER-ADR-P01-H02-PLAN.md",
+    "ROADMAP-SALTMARCHER-ADR-P01-H03-I02-PLAN.md",
+    "ROADMAP-SALTMARCHER-ADR-P01-H03-PLAN.md",
+    "ROADMAP-SALTMARCHER-ADR-PROTOTYPES.md",
+    "ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md",
+    "ROADMAP-SALTMARCHER-CE01-C01-PLAN.md",
+    "ROADMAP-SALTMARCHER-CE01-C01-REPAIR-PLAN.md",
+    "ROADMAP-SALTMARCHER-CE01-H01-PLAN.md",
+    "ROADMAP-SALTMARCHER-CE01-PLAN.md",
+    "ROADMAP-SALTMARCHER-CE02-I02-PLAN.md",
+    "ROADMAP-SALTMARCHER-CE02-PLAN.md",
+    "ROADMAP-SALTMARCHER-P01-RENDERER-REPAIR-PLAN.md",
+    "ROADMAP-SALTMARCHER-PLATFORM-ADR.md",
+    "ROADMAP-SALTMARCHER-REPLACEMENT.md",
+    "ROADMAP.md",
+    "TOOL-PARITY.md",
+    "WONDERDRAFT-PARITY.md"
+  ],
+  "inFlightRootDocs": [
+    {
+      "path": "ROADMAP-CITIES-ATLAS-DETAIL-ENTRY-CLEANUP-PLAN.md",
+      "source": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/blob/892e20d737c9e4868aa44b615f8da0f97d98fb39/ROADMAP-CITIES-ATLAS-DETAIL-ENTRY-CLEANUP-PLAN.md",
+      "reason": "Already present in the existing PR13 integration candidate before this structure policy; preserve its referenced path."
+    },
+    {
+      "path": "ROADMAP-CITIES-ATLAS-DETAIL-ENTRY-PLAN.md",
+      "source": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/blob/892e20d737c9e4868aa44b615f8da0f97d98fb39/ROADMAP-CITIES-ATLAS-DETAIL-ENTRY-PLAN.md",
+      "reason": "Already present in the existing PR13 integration candidate before this structure policy; preserve its referenced path."
+    },
+    {
+      "path": "ROADMAP-CITIES-E2E-INTEGRATION-PLAN.md",
+      "source": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/blob/892e20d737c9e4868aa44b615f8da0f97d98fb39/ROADMAP-CITIES-E2E-INTEGRATION-PLAN.md",
+      "reason": "Already present in the existing PR13 integration candidate before this structure policy; preserve its referenced path."
+    },
+    {
+      "path": "ROADMAP-E2E01-ATLAS-CAPTURE-CLEANUP-PLAN.md",
+      "source": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/blob/892e20d737c9e4868aa44b615f8da0f97d98fb39/ROADMAP-E2E01-ATLAS-CAPTURE-CLEANUP-PLAN.md",
+      "reason": "Already present in the existing PR13 integration candidate before this structure policy; preserve its referenced path."
+    },
+    {
+      "path": "ROADMAP-E2E01-ATLAS-HOST-CLEANUP-PLAN.md",
+      "source": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/blob/892e20d737c9e4868aa44b615f8da0f97d98fb39/ROADMAP-E2E01-ATLAS-HOST-CLEANUP-PLAN.md",
+      "reason": "Already present in the existing PR13 integration candidate before this structure policy; preserve its referenced path."
+    },
+    {
+      "path": "ROADMAP-E2E01-ATLAS-NAVIGATION-CLEANUP-PLAN.md",
+      "source": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/blob/892e20d737c9e4868aa44b615f8da0f97d98fb39/ROADMAP-E2E01-ATLAS-NAVIGATION-CLEANUP-PLAN.md",
+      "reason": "Already present in the existing PR13 integration candidate before this structure policy; preserve its referenced path."
+    },
+    {
+      "path": "ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md",
+      "source": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/blob/892e20d737c9e4868aa44b615f8da0f97d98fb39/ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md",
+      "reason": "Already present in the existing PR13 integration candidate before this structure policy; preserve its referenced path."
+    },
+    {
+      "path": "ROADMAP-E2E01-CAMPAIGN-CONTEXT-PLAN.md",
+      "source": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/blob/892e20d737c9e4868aa44b615f8da0f97d98fb39/ROADMAP-E2E01-CAMPAIGN-CONTEXT-PLAN.md",
+      "reason": "Already present in the existing PR13 integration candidate before this structure policy; preserve its referenced path."
+    },
+    {
+      "path": "ROADMAP-E2E01-CAMPAIGN-OWNERSHIP-PLAN.md",
+      "source": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/blob/892e20d737c9e4868aa44b615f8da0f97d98fb39/ROADMAP-E2E01-CAMPAIGN-OWNERSHIP-PLAN.md",
+      "reason": "Already present in the existing PR13 integration candidate before this structure policy; preserve its referenced path."
+    },
+    {
+      "path": "ROADMAP-E2E01-CAMPAIGN-RUNTIME-SOURCE-PLAN.md",
+      "source": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/blob/892e20d737c9e4868aa44b615f8da0f97d98fb39/ROADMAP-E2E01-CAMPAIGN-RUNTIME-SOURCE-PLAN.md",
+      "reason": "Already present in the existing PR13 integration candidate before this structure policy; preserve its referenced path."
+    },
+    {
+      "path": "ROADMAP-E2E01-DUNGEON-GEOMETRY-CLEANUP-PLAN.md",
+      "source": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/blob/892e20d737c9e4868aa44b615f8da0f97d98fb39/ROADMAP-E2E01-DUNGEON-GEOMETRY-CLEANUP-PLAN.md",
+      "reason": "Already present in the existing PR13 integration candidate before this structure policy; preserve its referenced path."
+    },
+    {
+      "path": "ROADMAP-E2E01-DUNGEON-GEOMETRY-PLAN.md",
+      "source": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/blob/892e20d737c9e4868aa44b615f8da0f97d98fb39/ROADMAP-E2E01-DUNGEON-GEOMETRY-PLAN.md",
+      "reason": "Already present in the existing PR13 integration candidate before this structure policy; preserve its referenced path."
+    },
+    {
+      "path": "ROADMAP-E2E01-DUNGEON-GEOMETRY-PRODUCT-CLEANUP-PLAN.md",
+      "source": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/blob/892e20d737c9e4868aa44b615f8da0f97d98fb39/ROADMAP-E2E01-DUNGEON-GEOMETRY-PRODUCT-CLEANUP-PLAN.md",
+      "reason": "Already present in the existing PR13 integration candidate before this structure policy; preserve its referenced path."
+    },
+    {
+      "path": "ROADMAP-E2E01-SPATIAL-INTEGRATION-PLAN.md",
+      "source": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/blob/892e20d737c9e4868aa44b615f8da0f97d98fb39/ROADMAP-E2E01-SPATIAL-INTEGRATION-PLAN.md",
+      "reason": "Already present in the existing PR13 integration candidate before this structure policy; preserve its referenced path."
+    },
+    {
+      "path": "ROADMAP-HEX-ATLAS-E2E-PLAN.md",
+      "source": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/blob/892e20d737c9e4868aa44b615f8da0f97d98fb39/ROADMAP-HEX-ATLAS-E2E-PLAN.md",
+      "reason": "Already present in the existing PR13 integration candidate before this structure policy; preserve its referenced path."
+    },
+    {
+      "path": "ROADMAP-SALTMARCHER-SMR-01-CAMPAIGN-DATA-PLAN.md",
+      "source": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/blob/892e20d737c9e4868aa44b615f8da0f97d98fb39/ROADMAP-SALTMARCHER-SMR-01-CAMPAIGN-DATA-PLAN.md",
+      "reason": "Already present in the existing PR13 integration candidate before this structure policy; preserve its referenced path."
+    }
+  ]
+}

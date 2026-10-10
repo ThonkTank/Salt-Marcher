@@ -13,6 +13,7 @@ Ein lokaler Arbeitsraum für Spielleitungen: Karten und Raum-Keys bearbeiten, Ka
 | als Agent sofort mitarbeiten | [Agenteneinstieg mit Aufgaben und Voraussetzungen](CONTRIBUTING.md#agenteneinstieg) |
 | eine Aufgabe übernehmen oder reviewen | [Contributor-Leitfaden](CONTRIBUTING.md) |
 | einen Fachplan oder einen Nachweis finden | [Dokumentationsindex](docs/INDEX.md) |
+| die Ordnung langfristig erhalten | [Pflegevertrag und automatische Strukturprüfung](docs/REPOSITORY.md) |
 | die laufende Integration verfolgen | [Gesamtprodukt / Gates #12](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12) |
 
 ## Aktueller Fokus
@@ -28,6 +29,7 @@ git clone https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1.git
 cd Obsidian-Dungeon-Editor-Phase1
 git switch active/installed-phase1
 npm ci
+npm run check:repo
 npm run check
 npm test
 npm run build
