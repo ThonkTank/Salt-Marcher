@@ -14,6 +14,7 @@ import {
   validateBoundedWeaponTableRows,
   validateJsonSchemas,
   validateMagicItemAzApparatusOfTheCrab,
+  validateMagicItemAzArmorOfInvulnerability,
   validateMagicItemAzArmorPlusOneTwoThree,
   validateMagicItemAzAnimatedShield,
   validateMagicItemAzOpeningSlice,
@@ -78,12 +79,13 @@ test("items source package is explicitly incomplete and fails closed by default"
   await assert.rejects(verifyItemsSourcePackage(), /S01 ist unvollständig/);
   const result = await verifyItemsSourcePackage({ allowIncomplete: true });
   assert.equal(result.complete, false);
-  assert.equal(result.validation.occurrenceCount, 228);
-  assert.equal(result.validation.recordCount, 227);
+  assert.equal(result.validation.occurrenceCount, 229);
+  assert.equal(result.validation.recordCount, 228);
   assert.equal(result.magicItemAzOpeningSlice.capturedRecords, 5);
   assert.equal(result.magicItemAzAnimatedShield.ordinal, 6);
   assert.equal(result.magicItemAzApparatusOfTheCrab.leverRows, 10);
   assert.equal(result.magicItemAzArmorPlusOneTwoThree.variableRarityChoices, 3);
+  assert.equal(result.magicItemAzArmorOfInvulnerability.attunement, "required");
   assert.equal(result.potionHealingMerge.mergedRecords, 1);
   assert.ok(result.blockers.length >= 5);
 });
@@ -347,6 +349,41 @@ test("Armor +1/+2/+3 fails closed on occurrence, header, variants, attunement an
     const damaged = structuredClone(checkedTranscript);
     mutate(damaged.records.find(record => record.id.endsWith("a-z:8")));
     assert.throws(() => validateMagicItemAzArmorPlusOneTwoThree(damaged, checkedInventory), pattern);
+  }
+});
+
+test("Armor of Invulnerability preserves ordinal, full header, fixed rarity, attunement and prose", async () => {
+  const [checkedInventory, checkedTranscript] = await Promise.all([
+    readFile(new URL("items-srd51-inventory.json", dataRoot), "utf8").then(JSON.parse),
+    readFile(new URL("items-srd51-transcript.json", dataRoot), "utf8").then(JSON.parse),
+  ]);
+  assert.deepEqual(validateMagicItemAzArmorOfInvulnerability(checkedTranscript, checkedInventory), {
+    id: "srd51:magic-item:magic-items-a-z:9",
+    ordinal: 9,
+    physicalPdfPage: 208,
+    rarity: "legendary",
+    attunement: "required",
+    descriptionFacts: 1,
+  });
+});
+
+test("Armor of Invulnerability fails closed on occurrence, header, rarity, attunement and prose drift", async () => {
+  const [checkedInventory, checkedTranscript] = await Promise.all([
+    readFile(new URL("items-srd51-inventory.json", dataRoot), "utf8").then(JSON.parse),
+    readFile(new URL("items-srd51-transcript.json", dataRoot), "utf8").then(JSON.parse),
+  ]);
+  const wrongOrdinal = structuredClone(checkedInventory);
+  wrongOrdinal.occurrences.find(item => item.id.endsWith("a-z:9")).ordinal = 10;
+  assert.throws(() => validateMagicItemAzArmorOfInvulnerability(checkedTranscript, wrongOrdinal), /Occurrence 9/);
+  for (const [mutate, pattern] of [
+    [record => { record.sourceHeader.text = "Armor (plate), legendary"; }, /Record/],
+    [record => { record.rarity.value = "very-rare"; }, /Record/],
+    [record => { record.attunement = "not-required"; }, /Record/],
+    [record => { record.description[0].text = "You have resistance to nonmagical damage."; }, /Record/],
+  ]) {
+    const damaged = structuredClone(checkedTranscript);
+    mutate(damaged.records.find(record => record.id.endsWith("a-z:9")));
+    assert.throws(() => validateMagicItemAzArmorOfInvulnerability(damaged, checkedInventory), pattern);
   }
 });
 
