@@ -88,6 +88,11 @@ if (fs.existsSync('queue.json') && args[1] === 'list') {
   process.stdout.write(args[0] === 'issue' ? fs.readFileSync('queue.json', 'utf8') : '[]');
   process.exit(0);
 }
+if (args[1] === 'repos/test/repo') { process.stdout.write(JSON.stringify({default_branch:'main'})); process.exit(0); }
+if (args[1] === 'repos/test/repo/commits/main') { process.stdout.write(JSON.stringify({sha:'a'.repeat(40)})); process.exit(0); }
+if (args[1].startsWith('repos/test/repo/contents/')) {
+  process.stdout.write(JSON.stringify({type:'file',encoding:'base64',content:Buffer.from(fs.readFileSync('plan.md','utf8')).toString('base64')})); process.exit(0);
+}
 const issue = JSON.parse(fs.readFileSync('issue.json', 'utf8'));
 if (args[0] === 'api' && args[1] === 'graphql') {
   process.stdout.write(JSON.stringify({ data: { repository: { issue: { comments: { nodes: issue.comments.slice(-3) } } } } }));
@@ -147,4 +152,18 @@ process.stdout.write(JSON.stringify({ ...issue, html_url: issue.url, state: issu
   assert.equal(overview.status, 0, overview.stderr);
   assert.match(overview.stdout, /Unrelated owned package/);
   assert.doesNotMatch(overview.stdout, /Continue the owned repair/);
+  fs.writeFileSync(path.join(root, 'plan.md'), '### Product\nUnrelated history\n#### Arbeitsstand #40\nUseful next GUI step; native unapproved.\n### Other\nMore history');
+  const connected = { ...issue, body: '## Nutzerergebnis\nSave and reopen\n## Übernommene Implementierung\nOwner A\n## Vertragsdetail\nLong optional contract\nArbeitsstand: https://github.com/test/repo/blob/main/PLAN.md#arbeitsstand-40' };
+  const live = run(connected);
+  assert.equal(live.status, 0, live.stderr);
+  assert.match(live.stdout, /Owner A|Useful next GUI step/);
+  assert.match(live.stdout, /Versioned work context @ a{40}/);
+  assert.doesNotMatch(live.stdout, /Unrelated history|More history|Long optional contract/);
+  const structured = JSON.parse(run(connected, ['--json']).stdout);
+  assert.equal(structured.live.source.revision, 'a'.repeat(40));
+  fs.writeFileSync(path.join(root, 'plan.md'), '### Missing section');
+  const failed = run(connected);
+  assert.match(failed.stdout, /section is missing.*No historical fallback/);
+  assert.doesNotMatch(failed.stdout, /Useful next GUI step|handoff/);
+
 });

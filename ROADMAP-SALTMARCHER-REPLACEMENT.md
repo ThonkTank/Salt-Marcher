@@ -123,6 +123,21 @@ aktuelle Aufgaben und Besitz stehen an den dort verlinkten Arbeitsorten.
   Kampagnenindex ohne statischen Neubau. Offline-/Unavailablefälle bleiben lesbar.
   Quellen: Catalog und Reference Graph requirements; #9/#10, SMR-AC-03.
 
+#### Arbeitsstand #68
+
+Kandidat: https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/75
+
+Der Domänen-/Panel-Eingang ist kein nativer Speicher- oder GUI-Nachweis.
+Campaign/Data liefert im [besessenen Producer](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/68#issuecomment-6102432435)
+den kanonischen Einzeldatei-/Owner-/Receipt-/Recoveryanschluss; Atlas-QA montiert
+dessen bestätigten Port für Save → frisches Öffnen. Keine zweite Übernahme.
+
+Nächster Beitrag: Atlas-QA stellt den ersten startbaren isolierten GUI-Weg
+Anlegen → Finden → Bearbeiten mit Build/Fixture/Host am [Paket](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/68)
+zur GM-Nutzung bereit. Native Writes/Recovery und Fresh-Prozess bleiben offen;
+vor größerem abhängigem Ausbau frühe GM-Beobachtung konsumieren. Technische
+Reviewidentitäten stehen im PR; keine neue Fach-/Hostfreigabe aus diesem Einstieg.
+
 ### SMR-03 – Party, Scene und Live Session
 
 - Roster/Charakterprofile und Adventuring Day integrieren.
@@ -222,6 +237,23 @@ Integrationsweg, nicht automatisch die gesamte Karten-/Stadtfunktion.
   Receiptautorität vor abhängiger Implementierung ausdrücklich auf die Zielregel
   beziehen. Quellen: Session Planner, Session Generation, Encounter Generation und
   SRC-P01–03; #10/#6/#9, SMR-AC-07. Keine zweite öffentliche Generatorpipeline.
+
+#### Arbeitsstand #69
+
+Kandidat: https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/71
+Eingang: https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/68
+
+Der [compound-add-Review](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/69#issuecomment-6102411326)
+qualifiziert den In-Memory-Kern, nicht Host/Save/Recovery; kein unangefragter Zweitreview.
+Campaign/Data benötigt den [konkreten nativen Plannerconsumer](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/69#issuecomment-6102471289)
+mit Plan-/Sceneclosure, kanonischem Dateibesitz und kausaler Publish-/Receipt-/Recoverybindung.
+Der in #68 besessene Producer ist Anknüpfung, keine gelieferte Plannerautorität.
+
+Nächster Beitrag: Stadt konsumiert den bestätigten Speicherport und stellt den
+ersten isolierten GUI-Weg ortslose Timeline → Notizen/Reihenfolge → Kontextwechsel
+am [Paket](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/69) zur GM-Nutzung bereit.
+Vor größerem Partybudget-/Encounter-/Generatorausbau GM-Befunde konsumieren.
+Native Save/Fresh-Abnahme bleibt offen; Format und Speicher-PASS werden nicht angenommen.
 
 ### SMR-07 – Reise, Kalender und autoritative Zeit
 

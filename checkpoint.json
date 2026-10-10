@@ -4,15 +4,15 @@
     "state": "completed",
     "roleContract": "docs/AGENT-ROLES.md#repository-maintenance",
     "repositoryContract": "docs/REPOSITORY.md",
-    "evaluatedShared": "aa7e7dedd4a2bd479618e75c7adf9c33269eb082",
-    "scope": "Implement bounded live task reads and optimistic current-work updates, migrate 68/69 without changing owners or acceptance. No product/GUI qualification.",
-    "next": "Use next --task for current issue/explicit live facts; use update-task preview/apply with fresh expected hash/time. Existing owners maintain current section; historical claims remain targeted lookup. Final GitHub read/write race is explicitly unresolved by API semantics.",
+    "evaluatedShared": "6c0663763311085385a5beeb370c5b51030efebd",
+    "scope": "Replace automatic issue-body writes with preview-only tooling and revision-pinned work context in the existing SaltMarcher plan for 68/69. Preserve package ownership and all product/host gates.",
+    "next": "Maintain task delivery context in its explicitly linked existing plan with substantive package work; next reads the default-branch section at an identified revision. No automatic issue-body publication. Reconcile concurrent same-section edits before normal Git push.",
     "verification": [
-      "check:repo and test:repo 38/38 PASS including concurrency/unknown outcome/readback failure and GitHub form sections",
-      "Real 68/69 migrations and update-task preview/apply verified; candidate heads/CI and input state read live",
-      "Only repositoryOrientation edited; foreign checkpoint/acceptance preserved; no comment/label/claim mutation by updater"
+      "check:repo and test:repo 40/40 PASS, including indented headings, disabled apply, unavailable/duplicate sources and an actual two-checkout stale push/merge conflict",
+      "68/69 unchanged claims and latest consumer handoffs used; GUI/native Save/Fresh qualification remains open",
+      "Only repositoryOrientation changed; foreign checkpoint and acceptance bytes preserved"
     ],
-    "previousOrientation": "aa7e7de"
+    "previousOrientation": "3f6e071"
   },
   "saltMarcherReplacement": {
     "date": "2026-10-10",

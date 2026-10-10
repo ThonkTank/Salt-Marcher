@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { issueSnapshot, liveFacts, recentComments } from './task-state.mjs';
+import { issueSnapshot, taskContext, markdownSection, recentComments } from './task-state.mjs';
 
 const labels = issue => issue.labels.map(label => typeof label === 'string' ? label : label.name);
 const priority = issue => labels(issue).includes('priority:now') ? 0 : labels(issue).includes('priority:next') ? 1 : 2;
@@ -62,11 +62,22 @@ function showPackage(call, repository, chosen, requested = false, fullComments =
   if (source === 'pr' && !labels(fresh).includes('help wanted')
     || source === 'issue' && !requested && !readyTasks([fresh]).length && !supportTasks([fresh]).length)
     throw new Error('Task changed while reading. Rerun npm run next.');
-  const live = source === 'issue' ? liveFacts(call, repository, current.body) : { facts: [{
+  const live = source === 'issue' ? taskContext(call, repository, chosen.number, current.body) : { facts: [{
     kind: 'Kandidat', number: current.number, state: current.state, head: current.headRefOid,
     reviewDecision: current.reviewDecision, checks: current.statusCheckRollup }], warnings: [] };
   if (json) { console.log(JSON.stringify({ ...current, live }, null, 2)); return; }
-  console.log(`\n${requested ? 'Requested package' : readyTasks([fresh]).length ? 'Free candidate' : 'Support invitation'} ${source === 'pr' ? 'PR ' : ''}#${chosen.number}: ${current.title}\n${current.url}\n${current.body}`);
+  console.log(`\n${requested ? 'Requested package' : readyTasks([fresh]).length ? 'Free candidate' : 'Support invitation'} ${source === 'pr' ? 'PR ' : ''}#${chosen.number}: ${current.title}\n${current.url}`);
+  if (live.source) {
+    const entry = ['Nutzerergebnis', 'Übernommene Implementierung', 'Arbeitsort, Scope und Voraussetzungen']
+      .map(title => markdownSection(current.body, title)?.text).filter(Boolean).join('\n');
+    console.log(entry.slice(0, 4000));
+    if (entry.length > 4000) console.log('Entry shortened; full fixed scope/claims at the issue link.');
+    console.log(`\nVersioned work context @ ${live.source.revision}\n${live.source.url}\n${live.source.text}`);
+  } else {
+    console.log(current.body.slice(0, 6000));
+    if (current.body.length > 6000) console.log('Issue text shortened; full text at the issue link.');
+  }
+
   for (const fact of live.facts) console.log(`\nLive ${fact.kind}: ${JSON.stringify(fact)}`);
   for (const warning of live.warnings) console.log(`\nContext warning: ${warning}`);
   console.log('\nLive PR/CI/review metadata is not domain, GUI or product acceptance.');

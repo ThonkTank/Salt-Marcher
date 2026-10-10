@@ -72,7 +72,7 @@ Dieser Rückblick findet innerhalb der Produktarbeit statt. Kein separater Refle
 
 Die bestehende Freigabe umfasst Commit/Push und GitHub-Koordination. Vor Beginn und unmittelbar vor Veröffentlichung Remote/Upstream abrufen und eingehende Arbeit integrieren. Vor neuem Branch Claims, PRs und Remote-Branches prüfen. Geprüften zusammenhängenden Stand veröffentlichen; bei längerer Arbeit spätestens zum täglichen Abschluss einen prüfbaren Zwischenstand sichern.
 
-Nur eigene Änderungen committen; lokale fremde Änderungen sichern und erhalten. Kein Force-Push; Konflikte gezielt integrieren und betroffene Prüfungen wiederholen. Shared: `active/installed-phase1`; tatsächlichen Upstream prüfen und Remote-Commit nach Push bestätigen. Build/Sync/Push installieren kein Plugin im Nutzervault. Übergabe nach dem [Kommunikationsvertrag](REPOSITORY.md#kommunikation-nach-inhalt-und-anlass), ohne Bericht je Commit.
+Nur eigene Änderungen committen; lokale fremde Änderungen sichern und erhalten. Kein Force-Push; Konflikte gezielt integrieren und betroffene Prüfungen wiederholen. Bei Änderung desselben versionierten Arbeitsabschnitts gegenüber der eigenen Basis auch einen automatisch möglichen Merge inhaltlich abgleichen (REPOSITORY, Arbeitsstand lesen und ersetzen). Shared: `active/installed-phase1`; tatsächlichen Upstream prüfen und Remote-Commit nach Push bestätigen. Build/Sync/Push installieren kein Plugin im Nutzervault. Übergabe nach dem [Kommunikationsvertrag](REPOSITORY.md#kommunikation-nach-inhalt-und-anlass), ohne Bericht je Commit.
 
 ## Hosttests und Schutz
 

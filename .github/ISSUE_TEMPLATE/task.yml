@@ -19,8 +19,8 @@ body:
   - type: textarea
     id: current_work
     attributes:
-      label: Aktueller Arbeitsstand
-      description: "Aktueller Eingang/Blocker, Beleg, offene Grenze und nächste Handlung. Kandidat und Eingang als direkte URLs mit Präfix Kandidat: / Eingang: verlinken; keine Head-/CI-/Reviewkopien. Diesen Abschnitt bei Übergaben ersetzen. Besitz/Claims bleiben im Arbeitsort."
+      label: Versionierter Arbeitsort
+      description: "Vorhandenen Fachplan mit Arbeitsstand: https://github.com/OWNER/REPO/blob/DEFAULTBRANCH/PFAD.md#arbeitsstand-N verlinken; dort Abschnitt Arbeitsstand #N pflegen (docs/REPOSITORY.md). Keine neue Statusdatei oder Kopie. Ohne vorhandenen Fachort aktuellen Eingang/Blocker und nächsten Beitrag hier manuell führen."
   - type: textarea
     id: acceptance
     attributes:
