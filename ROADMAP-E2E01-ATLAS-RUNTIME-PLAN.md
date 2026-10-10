@@ -1,17 +1,17 @@
 # E2E-01-SPACE-I01c-RUNTIME-P01: Kampagne zum bestehenden Atlas verbinden
 
-Aktueller Arbeitsort ist [#40](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/40)
-mit dem bestehenden Hex-Paket und quellgebundenem H02-Save-/Frischstartbeleg.
-Review und Stewardintegration von PR62 sind
-[belegt](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/62#issuecomment-6101774442).
-[Stadts unabhängiger H02-Belegreview](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/40#issuecomment-6101960077)
-hat keinen Befund. [Chronik-R02](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/40#issuecomment-6101982101)
-fordert ausschließlich die Korrektur der nächsten GUI-Slotpflicht. Diese ist in
-[N01](docs/reference/atlas-shared-location-h02/metadata-repair.json) auf `false`
-gesetzt; die Bestätigung dieses Metadatenheads bleibt offen. Der nächste Eingang
-benötigt keinen GUI-Slot und keinen weiteren Hostlauf. #40 und das gemeinsame
-E2E-01-Gate bleiben offen; eigene Bereinigung folgt nach der Qualifikation in
-einem getrennten Lauf gemäß aktuellem Nutzerauftrag.
+Der begrenzte Orts-/Key-/Verschiebe-/UndoRedo-/Save-/Frischstart-Meilenstein
+[#40](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/40) ist
+qualifiziert: [Stadt H02](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/40#issuecomment-6101960077),
+[Campaign/Data-Dateiorakel](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/40#issuecomment-6101957277),
+[Chronik R02-N01](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/40#issuecomment-6102084191)
+und [separate PR72-Stewardintegration](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/72#issuecomment-6102108341)
+sind konsumiert. [Qualifikationsentscheidung](docs/reference/atlas-shared-location-h02/qualification.json).
+Der tatsächliche native Source bleibt `4515088772b759cda2e19d249367699c9868c72c`;
+spätere Shared-Commits sind kein neuer nativer Hostlauf. Das gemeinsame E2E-01-Gate
+bleibt offen. Nächster eigener Schritt ist die begrenzte Bereinigung in einem
+getrennten Lauf gemäß aktuellem Nutzerauftrag; dafür ist kein GUI-Slot nötig.
+Detaillinks/CITY oder E2E-02–04 werden in diesem Qualifikationslauf nicht begonnen.
 
 ## Historische Planbasis und Lieferbelege
 
