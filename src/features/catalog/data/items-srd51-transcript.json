@@ -989,6 +989,907 @@
           "srd51:magic-item:magic-items-a-z:32"
         ]
       }
+    },
+    {
+      "id": "srd51:magic-item:magic-items-a-z:33",
+      "name": "Candle of Invocation",
+      "category": "magic-item",
+      "subcategory": "wondrous-item",
+      "magic": true,
+      "rarity": {
+        "kind": "fixed",
+        "value": "very-rare"
+      },
+      "attunement": "required",
+      "sourceHeader": {
+        "text": "Wondrous item, very rare (requires attunement)",
+        "occurrenceId": "srd51:magic-item:magic-items-a-z:33"
+      },
+      "properties": [
+        {
+          "name": "d20 Alignment: 1–2",
+          "description": "Chaotic evil",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:33"
+        },
+        {
+          "name": "d20 Alignment: 3–4",
+          "description": "Chaotic neutral",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:33"
+        },
+        {
+          "name": "d20 Alignment: 5–7",
+          "description": "Chaotic good",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:33"
+        },
+        {
+          "name": "d20 Alignment: 8–9",
+          "description": "Neutral evil",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:33"
+        },
+        {
+          "name": "d20 Alignment: 10–11",
+          "description": "Neutral",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:33"
+        },
+        {
+          "name": "d20 Alignment: 12–13",
+          "description": "Neutral good",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:33"
+        },
+        {
+          "name": "d20 Alignment: 14–15",
+          "description": "Lawful evil",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:33"
+        },
+        {
+          "name": "d20 Alignment: 16–17",
+          "description": "Lawful neutral",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:33"
+        },
+        {
+          "name": "d20 Alignment: 18–20",
+          "description": "Lawful good",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:33"
+        }
+      ],
+      "description": [
+        {
+          "text": "This slender taper is dedicated to a deity and shares that deity’s alignment. The candle’s alignment can be detected with the detect evil and good spell. The GM chooses the god and associated alignment or determines the alignment randomly.",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:33"
+        },
+        {
+          "text": "d20 Alignment",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:33"
+        },
+        {
+          "text": "1–2 Chaotic evil",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:33"
+        },
+        {
+          "text": "3–4 Chaotic neutral",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:33"
+        },
+        {
+          "text": "5–7 Chaotic good",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:33"
+        },
+        {
+          "text": "8–9 Neutral evil",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:33"
+        },
+        {
+          "text": "10–11 Neutral",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:33"
+        },
+        {
+          "text": "12–13 Neutral good",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:33"
+        },
+        {
+          "text": "14–15 Lawful evil",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:33"
+        },
+        {
+          "text": "16–17 Lawful neutral",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:33"
+        },
+        {
+          "text": "18–20 Lawful good",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:33"
+        },
+        {
+          "text": "The candle’s magic is activated when the candle is lit, which requires an action. After burning for 4 hours, the candle is destroyed. You can snuff it out early for use at a later time. Deduct the time it burned in increments of 1 minute from the candle’s total burn time.",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:33"
+        },
+        {
+          "text": "While lit, the candle sheds dim light in a 30-foot radius. Any creature within that light whose alignment matches that of the candle makes attack rolls, saving throws, and ability checks with advantage. In addition, a cleric or druid in the light whose alignment matches the candle’s can cast 1st- level spells he or she has prepared without expending spell slots, though the spell’s effect is as if cast with a 1st-level slot.",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:33"
+        },
+        {
+          "text": "Alternatively, when you light the candle for the first time, you can cast the gate spell with it. Doing so destroys the candle.",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:33"
+        }
+      ],
+      "source": {
+        "document": "SRD 5.1",
+        "pdfUrl": "https://media.wizards.com/2023/downloads/dnd/SRD_CC_v5.1.pdf",
+        "pdfPages": [
+          213
+        ],
+        "printedPages": [
+          213
+        ],
+        "occurrenceIds": [
+          "srd51:magic-item:magic-items-a-z:33"
+        ]
+      }
+    },
+    {
+      "id": "srd51:magic-item:magic-items-a-z:34",
+      "name": "Cape of the Mountebank",
+      "category": "magic-item",
+      "subcategory": "wondrous-item",
+      "magic": true,
+      "rarity": {
+        "kind": "fixed",
+        "value": "rare"
+      },
+      "attunement": "not-required",
+      "sourceHeader": {
+        "text": "Wondrous item, rare",
+        "occurrenceId": "srd51:magic-item:magic-items-a-z:34"
+      },
+      "properties": [],
+      "description": [
+        {
+          "text": "This cape smells faintly of brimstone. While wearing it, you can use it to cast the dimension door spell as an action. This property of the cape can’t be used again until the next dawn.",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:34"
+        },
+        {
+          "text": "When you disappear, you leave behind a cloud of smoke, and you appear in a similar cloud of smoke at your destination. The smoke lightly obscures the space you left and the space you appear in, and it dissipates at the end of your next turn. A light or stronger wind disperses the smoke.",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:34"
+        }
+      ],
+      "source": {
+        "document": "SRD 5.1",
+        "pdfUrl": "https://media.wizards.com/2023/downloads/dnd/SRD_CC_v5.1.pdf",
+        "pdfPages": [
+          213
+        ],
+        "printedPages": [
+          213
+        ],
+        "occurrenceIds": [
+          "srd51:magic-item:magic-items-a-z:34"
+        ]
+      }
+    },
+    {
+      "id": "srd51:magic-item:magic-items-a-z:35",
+      "name": "Carpet of Flying",
+      "category": "magic-item",
+      "subcategory": "wondrous-item",
+      "magic": true,
+      "rarity": {
+        "kind": "fixed",
+        "value": "very-rare"
+      },
+      "attunement": "not-required",
+      "sourceHeader": {
+        "text": "Wondrous item, very rare",
+        "occurrenceId": "srd51:magic-item:magic-items-a-z:35"
+      },
+      "properties": [
+        {
+          "name": "d100 Size Capacity Flying Speed: 01–20",
+          "description": "3 ft. × 5 ft. 200 lb. 80 feet",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:35"
+        },
+        {
+          "name": "d100 Size Capacity Flying Speed: 21–55",
+          "description": "4 ft. × 6 ft. 400 lb. 60 feet",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:35"
+        },
+        {
+          "name": "d100 Size Capacity Flying Speed: 56–80",
+          "description": "5 ft. × 7 ft. 600 lb. 40 feet",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:35"
+        },
+        {
+          "name": "d100 Size Capacity Flying Speed: 81–100",
+          "description": "6 ft. × 9 ft. 800 lb. 30 feet",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:35"
+        }
+      ],
+      "description": [
+        {
+          "text": "You can speak the carpet’s command word as an action to make the carpet hover and fly. It moves according to your spoken directions, provided that you are within 30 feet of it.",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:35"
+        },
+        {
+          "text": "Four sizes of carpet of flying exist. The GM chooses the size of a given carpet or determines it randomly.",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:35"
+        },
+        {
+          "text": "d100 Size Capacity Flying Speed",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:35"
+        },
+        {
+          "text": "01–20 3 ft. × 5 ft. 200 lb. 80 feet",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:35"
+        },
+        {
+          "text": "21–55 4 ft. × 6 ft. 400 lb. 60 feet",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:35"
+        },
+        {
+          "text": "56–80 5 ft. × 7 ft. 600 lb. 40 feet",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:35"
+        },
+        {
+          "text": "81–100 6 ft. × 9 ft. 800 lb. 30 feet",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:35"
+        },
+        {
+          "text": "A carpet can carry up to twice the weight shown on the table, but it flies at half speed if it carries more than its normal capacity.",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:35"
+        }
+      ],
+      "source": {
+        "document": "SRD 5.1",
+        "pdfUrl": "https://media.wizards.com/2023/downloads/dnd/SRD_CC_v5.1.pdf",
+        "pdfPages": [
+          213
+        ],
+        "printedPages": [
+          213
+        ],
+        "occurrenceIds": [
+          "srd51:magic-item:magic-items-a-z:35"
+        ]
+      }
+    },
+    {
+      "id": "srd51:magic-item:magic-items-a-z:36",
+      "name": "Censer of Controlling Air Elementals",
+      "category": "magic-item",
+      "subcategory": "wondrous-item",
+      "magic": true,
+      "rarity": {
+        "kind": "fixed",
+        "value": "rare"
+      },
+      "attunement": "not-required",
+      "sourceHeader": {
+        "text": "Wondrous item, rare",
+        "occurrenceId": "srd51:magic-item:magic-items-a-z:36"
+      },
+      "properties": [],
+      "description": [
+        {
+          "text": "While incense is burning in this censer, you can use an action to speak the censer’s command word and summon an air elemental, as if you had cast the conjure elemental spell. The censer can’t be used this way again until the next dawn.",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:36"
+        },
+        {
+          "text": "This 6-inch-wide, 1-foot-high vessel resembles a chalice with a decorated lid. It weighs 1 pound.",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:36"
+        }
+      ],
+      "source": {
+        "document": "SRD 5.1",
+        "pdfUrl": "https://media.wizards.com/2023/downloads/dnd/SRD_CC_v5.1.pdf",
+        "pdfPages": [
+          213
+        ],
+        "printedPages": [
+          213
+        ],
+        "occurrenceIds": [
+          "srd51:magic-item:magic-items-a-z:36"
+        ]
+      }
+    },
+    {
+      "id": "srd51:magic-item:magic-items-a-z:37",
+      "name": "Chime of Opening",
+      "category": "magic-item",
+      "subcategory": "wondrous-item",
+      "magic": true,
+      "rarity": {
+        "kind": "fixed",
+        "value": "rare"
+      },
+      "attunement": "not-required",
+      "sourceHeader": {
+        "text": "Wondrous item, rare",
+        "occurrenceId": "srd51:magic-item:magic-items-a-z:37"
+      },
+      "properties": [],
+      "description": [
+        {
+          "text": "This hollow metal tube measures about 1 foot long and weighs 1 pound. You can strike it as an action, pointing it at an object within 120 feet of you that can be opened, such as a door, lid, or lock. The chime issues a clear tone, and one lock or latch on the object opens unless the sound can’t reach the object. If no locks or latches remain, the object itself opens.",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:37"
+        },
+        {
+          "text": "The chime can be used ten times. After the tenth time, it cracks and becomes useless.",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:37"
+        }
+      ],
+      "source": {
+        "document": "SRD 5.1",
+        "pdfUrl": "https://media.wizards.com/2023/downloads/dnd/SRD_CC_v5.1.pdf",
+        "pdfPages": [
+          213,
+          214
+        ],
+        "printedPages": [
+          213,
+          214
+        ],
+        "occurrenceIds": [
+          "srd51:magic-item:magic-items-a-z:37"
+        ]
+      }
+    },
+    {
+      "id": "srd51:magic-item:magic-items-a-z:38",
+      "name": "Circlet of Blasting",
+      "category": "magic-item",
+      "subcategory": "wondrous-item",
+      "magic": true,
+      "rarity": {
+        "kind": "fixed",
+        "value": "uncommon"
+      },
+      "attunement": "not-required",
+      "sourceHeader": {
+        "text": "Wondrous item, uncommon",
+        "occurrenceId": "srd51:magic-item:magic-items-a-z:38"
+      },
+      "properties": [],
+      "description": [
+        {
+          "text": "While wearing this circlet, you can use an action to cast the scorching ray spell with it. When you make the spell’s attacks, you do so with an attack bonus of +5. The circlet can’t be used this way again until the next dawn.",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:38"
+        }
+      ],
+      "source": {
+        "document": "SRD 5.1",
+        "pdfUrl": "https://media.wizards.com/2023/downloads/dnd/SRD_CC_v5.1.pdf",
+        "pdfPages": [
+          214
+        ],
+        "printedPages": [
+          214
+        ],
+        "occurrenceIds": [
+          "srd51:magic-item:magic-items-a-z:38"
+        ]
+      }
+    },
+    {
+      "id": "srd51:magic-item:magic-items-a-z:39",
+      "name": "Cloak of Arachnida",
+      "category": "magic-item",
+      "subcategory": "wondrous-item",
+      "magic": true,
+      "rarity": {
+        "kind": "fixed",
+        "value": "very-rare"
+      },
+      "attunement": "required",
+      "sourceHeader": {
+        "text": "Wondrous item, very rare (requires attunement)",
+        "occurrenceId": "srd51:magic-item:magic-items-a-z:39"
+      },
+      "properties": [],
+      "description": [
+        {
+          "text": "This fine garment is made of black silk interwoven with faint silvery threads. While wearing it, you gain the following benefits:",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:39"
+        },
+        {
+          "text": "• You have resistance to poison damage.",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:39"
+        },
+        {
+          "text": "• You have a climbing speed equal to your walking speed.",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:39"
+        },
+        {
+          "text": "• You can move up, down, and across vertical surfaces and upside down along ceilings, while leaving your hands free.",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:39"
+        },
+        {
+          "text": "• You can’t be caught in webs of any sort and can move through webs as if they were difficult terrain.",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:39"
+        },
+        {
+          "text": "• You can use an action to cast the web spell (save DC 13). The web created by the spell fills twice its normal area. Once used, this property of the cloak can’t be used again until the next dawn.",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:39"
+        }
+      ],
+      "source": {
+        "document": "SRD 5.1",
+        "pdfUrl": "https://media.wizards.com/2023/downloads/dnd/SRD_CC_v5.1.pdf",
+        "pdfPages": [
+          214
+        ],
+        "printedPages": [
+          214
+        ],
+        "occurrenceIds": [
+          "srd51:magic-item:magic-items-a-z:39"
+        ]
+      }
+    },
+    {
+      "id": "srd51:magic-item:magic-items-a-z:40",
+      "name": "Cloak of Displacement",
+      "category": "magic-item",
+      "subcategory": "wondrous-item",
+      "magic": true,
+      "rarity": {
+        "kind": "fixed",
+        "value": "rare"
+      },
+      "attunement": "required",
+      "sourceHeader": {
+        "text": "Wondrous item, rare (requires attunement)",
+        "occurrenceId": "srd51:magic-item:magic-items-a-z:40"
+      },
+      "properties": [],
+      "description": [
+        {
+          "text": "While you wear this cloak, it projects an illusion that makes you appear to be standing in a place near your actual location, causing any creature to have disadvantage on attack rolls against you. If you take damage, the property ceases to function until the start of your next turn. This property is suppressed while you are incapacitated, restrained, or otherwise unable to move.",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:40"
+        }
+      ],
+      "source": {
+        "document": "SRD 5.1",
+        "pdfUrl": "https://media.wizards.com/2023/downloads/dnd/SRD_CC_v5.1.pdf",
+        "pdfPages": [
+          214
+        ],
+        "printedPages": [
+          214
+        ],
+        "occurrenceIds": [
+          "srd51:magic-item:magic-items-a-z:40"
+        ]
+      }
+    },
+    {
+      "id": "srd51:magic-item:magic-items-a-z:41",
+      "name": "Cloak of Elvenkind",
+      "category": "magic-item",
+      "subcategory": "wondrous-item",
+      "magic": true,
+      "rarity": {
+        "kind": "fixed",
+        "value": "uncommon"
+      },
+      "attunement": "required",
+      "sourceHeader": {
+        "text": "Wondrous item, uncommon (requires attunement)",
+        "occurrenceId": "srd51:magic-item:magic-items-a-z:41"
+      },
+      "properties": [],
+      "description": [
+        {
+          "text": "While you wear this cloak with its hood up, Wisdom (Perception) checks made to see you have disadvantage, and you have advantage on Dexterity (Stealth) checks made to hide, as the cloak’s color shifts to camouflage you. Pulling the hood up or down requires an action.",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:41"
+        }
+      ],
+      "source": {
+        "document": "SRD 5.1",
+        "pdfUrl": "https://media.wizards.com/2023/downloads/dnd/SRD_CC_v5.1.pdf",
+        "pdfPages": [
+          214
+        ],
+        "printedPages": [
+          214
+        ],
+        "occurrenceIds": [
+          "srd51:magic-item:magic-items-a-z:41"
+        ]
+      }
+    },
+    {
+      "id": "srd51:magic-item:magic-items-a-z:42",
+      "name": "Cloak of Protection",
+      "category": "magic-item",
+      "subcategory": "wondrous-item",
+      "magic": true,
+      "rarity": {
+        "kind": "fixed",
+        "value": "uncommon"
+      },
+      "attunement": "required",
+      "sourceHeader": {
+        "text": "Wondrous item, uncommon (requires attunement)",
+        "occurrenceId": "srd51:magic-item:magic-items-a-z:42"
+      },
+      "properties": [],
+      "description": [
+        {
+          "text": "You gain a +1 bonus to AC and saving throws while you wear this cloak.",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:42"
+        }
+      ],
+      "source": {
+        "document": "SRD 5.1",
+        "pdfUrl": "https://media.wizards.com/2023/downloads/dnd/SRD_CC_v5.1.pdf",
+        "pdfPages": [
+          214
+        ],
+        "printedPages": [
+          214
+        ],
+        "occurrenceIds": [
+          "srd51:magic-item:magic-items-a-z:42"
+        ]
+      }
+    },
+    {
+      "id": "srd51:magic-item:magic-items-a-z:43",
+      "name": "Cloak of the Bat",
+      "category": "magic-item",
+      "subcategory": "wondrous-item",
+      "magic": true,
+      "rarity": {
+        "kind": "fixed",
+        "value": "rare"
+      },
+      "attunement": "required",
+      "sourceHeader": {
+        "text": "Wondrous item, rare (requires attunement)",
+        "occurrenceId": "srd51:magic-item:magic-items-a-z:43"
+      },
+      "properties": [],
+      "description": [
+        {
+          "text": "While wearing this cloak, you have advantage on Dexterity (Stealth) checks. In an area of dim light or darkness, you can grip the edges of the cloak with both hands and use it to fly at a speed of 40 feet. If you ever fail to grip the cloak’s edges while flying in this way, or if you are no longer in dim light or darkness, you lose this flying speed.",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:43"
+        },
+        {
+          "text": "While wearing the cloak in an area of dim light or darkness, you can use your action to cast polymorph on yourself, transforming into a bat. While you are in the form of the bat, you retain your Intelligence, Wisdom, and Charisma scores. The cloak can’t be used this way again until the next dawn.",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:43"
+        }
+      ],
+      "source": {
+        "document": "SRD 5.1",
+        "pdfUrl": "https://media.wizards.com/2023/downloads/dnd/SRD_CC_v5.1.pdf",
+        "pdfPages": [
+          214
+        ],
+        "printedPages": [
+          214
+        ],
+        "occurrenceIds": [
+          "srd51:magic-item:magic-items-a-z:43"
+        ]
+      }
+    },
+    {
+      "id": "srd51:magic-item:magic-items-a-z:44",
+      "name": "Cloak of the Manta Ray",
+      "category": "magic-item",
+      "subcategory": "wondrous-item",
+      "magic": true,
+      "rarity": {
+        "kind": "fixed",
+        "value": "uncommon"
+      },
+      "attunement": "not-required",
+      "sourceHeader": {
+        "text": "Wondrous item, uncommon",
+        "occurrenceId": "srd51:magic-item:magic-items-a-z:44"
+      },
+      "properties": [],
+      "description": [
+        {
+          "text": "While wearing this cloak with its hood up, you can breathe underwater, and you have a swimming speed of 60 feet. Pulling the hood up or down requires an action.",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:44"
+        }
+      ],
+      "source": {
+        "document": "SRD 5.1",
+        "pdfUrl": "https://media.wizards.com/2023/downloads/dnd/SRD_CC_v5.1.pdf",
+        "pdfPages": [
+          214
+        ],
+        "printedPages": [
+          214
+        ],
+        "occurrenceIds": [
+          "srd51:magic-item:magic-items-a-z:44"
+        ]
+      }
+    },
+    {
+      "id": "srd51:magic-item:magic-items-a-z:45",
+      "name": "Crystal Ball",
+      "category": "magic-item",
+      "subcategory": "wondrous-item",
+      "magic": true,
+      "rarity": {
+        "kind": "varies",
+        "sourceText": "very rare or legendary",
+        "choices": [
+          {
+            "variantId": "srd51:magic-item:magic-items-a-z:45#variant:1",
+            "label": "typical crystal ball",
+            "value": "very-rare",
+            "occurrenceId": "srd51:magic-item:magic-items-a-z:45"
+          },
+          {
+            "variantId": "srd51:magic-item:magic-items-a-z:45#variant:2",
+            "label": "Crystal Ball of Mind Reading",
+            "value": "legendary",
+            "occurrenceId": "srd51:magic-item:magic-items-a-z:45"
+          },
+          {
+            "variantId": "srd51:magic-item:magic-items-a-z:45#variant:3",
+            "label": "Crystal Ball of Telepathy",
+            "value": "legendary",
+            "occurrenceId": "srd51:magic-item:magic-items-a-z:45"
+          },
+          {
+            "variantId": "srd51:magic-item:magic-items-a-z:45#variant:4",
+            "label": "Crystal Ball of True Seeing",
+            "value": "legendary",
+            "occurrenceId": "srd51:magic-item:magic-items-a-z:45"
+          }
+        ]
+      },
+      "attunement": "required",
+      "sourceHeader": {
+        "text": "Wondrous item, very rare or legendary (requires attunement)",
+        "occurrenceId": "srd51:magic-item:magic-items-a-z:45"
+      },
+      "properties": [],
+      "description": [
+        {
+          "text": "The typical crystal ball, a very rare item, is about 6 inches in diameter. While touching it, you can cast the scrying spell (save DC 17) with it.",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:45"
+        },
+        {
+          "text": "The following crystal ball variants are legendary items and have additional properties.",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:45"
+        },
+        {
+          "text": "Crystal Ball of Mind Reading. You can use an action to cast the detect thoughts spell (save DC 17) while you are scrying with the crystal ball, targeting creatures you can see within 30 feet of the spell’s sensor. You don’t need to concentrate on this detect thoughts to maintain it during its duration, but it ends if scrying ends.",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:45"
+        },
+        {
+          "text": "Crystal Ball of Telepathy. While scrying with the crystal ball, you can communicate telepathically with creatures you can see within 30 feet of the spell’s sensor. You can also use an action to cast the suggestion spell (save DC 17) through the sensor on one of those creatures. You don’t need to concentrate on this suggestion to maintain it during its duration, but it ends if scrying ends. Once used, the suggestion power of the crystal ball can’t be used again until the next dawn.",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:45"
+        },
+        {
+          "text": "Crystal Ball of True Seeing. While scrying with the crystal ball, you have truesight with a radius of 120 feet centered on the spell’s sensor.",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:45"
+        }
+      ],
+      "source": {
+        "document": "SRD 5.1",
+        "pdfUrl": "https://media.wizards.com/2023/downloads/dnd/SRD_CC_v5.1.pdf",
+        "pdfPages": [
+          214,
+          215
+        ],
+        "printedPages": [
+          214,
+          215
+        ],
+        "occurrenceIds": [
+          "srd51:magic-item:magic-items-a-z:45"
+        ]
+      }
+    },
+    {
+      "id": "srd51:magic-item:magic-items-a-z:46",
+      "name": "Cube of Force",
+      "category": "magic-item",
+      "subcategory": "wondrous-item",
+      "magic": true,
+      "rarity": {
+        "kind": "fixed",
+        "value": "rare"
+      },
+      "attunement": "required",
+      "sourceHeader": {
+        "text": "Wondrous item, rare (requires attunement)",
+        "occurrenceId": "srd51:magic-item:magic-items-a-z:46"
+      },
+      "properties": [
+        {
+          "name": "Cube of Force Faces: 1",
+          "description": "1 Gases, wind, and fog can’t pass through the barrier.",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:46"
+        },
+        {
+          "name": "Cube of Force Faces: 2",
+          "description": "2 Nonliving matter can’t pass through the barrier. Walls, floors, and ceilings can pass through at your discretion.",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:46"
+        },
+        {
+          "name": "Cube of Force Faces: 3",
+          "description": "3 Living matter can’t pass through the barrier.",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:46"
+        },
+        {
+          "name": "Cube of Force Faces: 4",
+          "description": "4 Spell effects can’t pass through the barrier.",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:46"
+        },
+        {
+          "name": "Cube of Force Faces: 5",
+          "description": "5 Nothing can pass through the barrier. Walls, floors, and ceilings can pass through at your discretion.",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:46"
+        },
+        {
+          "name": "Cube of Force Faces: 6",
+          "description": "0 The barrier deactivates.",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:46"
+        },
+        {
+          "name": "Spell or Item Charges Lost: Disintegrate",
+          "description": "1d12",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:46"
+        },
+        {
+          "name": "Spell or Item Charges Lost: Horn of blasting",
+          "description": "1d10",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:46"
+        },
+        {
+          "name": "Spell or Item Charges Lost: Passwall",
+          "description": "1d6",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:46"
+        },
+        {
+          "name": "Spell or Item Charges Lost: Prismatic spray",
+          "description": "1d20",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:46"
+        },
+        {
+          "name": "Spell or Item Charges Lost: Wall of fire",
+          "description": "1d4",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:46"
+        }
+      ],
+      "description": [
+        {
+          "text": "This cube is about an inch across. Each face has a distinct marking on it that can be pressed. The cube starts with 36 charges, and it regains 1d20 expended charges daily at dawn.",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:46"
+        },
+        {
+          "text": "You can use an action to press one of the cube’s faces, expending a number of charges based on the chosen face, as shown in the Cube of Force Faces table. Each face has a different effect. If the cube has insufficient charges remaining, nothing happens. Otherwise, a barrier of invisible force springs into existence, forming a cube 15 feet on a side. The barrier is centered on you, moves with you, and lasts for 1 minute, until you use an action to press the cube’s sixth face, or the cube runs out of charges. You can change the barrier’s effect by pressing a different face of the cube and expending the requisite number of charges, resetting the duration.",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:46"
+        },
+        {
+          "text": "If your movement causes the barrier to come into contact with a solid object that can’t pass through the cube, you can’t move any closer to that object as long as the barrier remains.",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:46"
+        },
+        {
+          "text": "Cube of Force Faces",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:46"
+        },
+        {
+          "text": "Face Charges Effect",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:46"
+        },
+        {
+          "text": "1 1 Gases, wind, and fog can’t pass through the barrier.",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:46"
+        },
+        {
+          "text": "2 2 Nonliving matter can’t pass through the barrier. Walls, floors, and ceilings can pass through at your discretion.",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:46"
+        },
+        {
+          "text": "3 3 Living matter can’t pass through the barrier.",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:46"
+        },
+        {
+          "text": "4 4 Spell effects can’t pass through the barrier.",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:46"
+        },
+        {
+          "text": "5 5 Nothing can pass through the barrier. Walls, floors, and ceilings can pass through at your discretion.",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:46"
+        },
+        {
+          "text": "6 0 The barrier deactivates.",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:46"
+        },
+        {
+          "text": "The cube loses charges when the barrier is targeted by certain spells or comes into contact with certain spell or magic item effects, as shown in the table below.",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:46"
+        },
+        {
+          "text": "Spell or Item Charges Lost",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:46"
+        },
+        {
+          "text": "Disintegrate 1d12",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:46"
+        },
+        {
+          "text": "Horn of blasting 1d10",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:46"
+        },
+        {
+          "text": "Passwall 1d6",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:46"
+        },
+        {
+          "text": "Prismatic spray 1d20",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:46"
+        },
+        {
+          "text": "Wall of fire 1d4",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:46"
+        }
+      ],
+      "source": {
+        "document": "SRD 5.1",
+        "pdfUrl": "https://media.wizards.com/2023/downloads/dnd/SRD_CC_v5.1.pdf",
+        "pdfPages": [
+          215
+        ],
+        "printedPages": [
+          215
+        ],
+        "occurrenceIds": [
+          "srd51:magic-item:magic-items-a-z:46"
+        ]
+      }
+    },
+    {
+      "id": "srd51:magic-item:magic-items-a-z:47",
+      "name": "Cubic Gate",
+      "category": "magic-item",
+      "subcategory": "wondrous-item",
+      "magic": true,
+      "rarity": {
+        "kind": "fixed",
+        "value": "legendary"
+      },
+      "attunement": "not-required",
+      "sourceHeader": {
+        "text": "Wondrous item, legendary",
+        "occurrenceId": "srd51:magic-item:magic-items-a-z:47"
+      },
+      "properties": [],
+      "description": [
+        {
+          "text": "This cube is 3 inches across and radiates palpable magical energy. The six sides of the cube are each keyed to a different plane of existence, one of which is the Material Plane. The other sides are linked to planes determined by the GM.",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:47"
+        },
+        {
+          "text": "You can use an action to press one side of the cube to cast the gate spell with it, opening a portal to the plane keyed to that side. Alternatively, if you use an action to press one side twice, you can cast the plane shift spell (save DC 17) with the cube and transport the targets to the plane keyed to that side.",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:47"
+        },
+        {
+          "text": "The cube has 3 charges. Each use of the cube expends 1 charge. The cube regains 1d3 expended charges daily at dawn.",
+          "occurrenceId": "srd51:magic-item:magic-items-a-z:47"
+        }
+      ],
+      "source": {
+        "document": "SRD 5.1",
+        "pdfUrl": "https://media.wizards.com/2023/downloads/dnd/SRD_CC_v5.1.pdf",
+        "pdfPages": [
+          215
+        ],
+        "printedPages": [
+          215
+        ],
+        "occurrenceIds": [
+          "srd51:magic-item:magic-items-a-z:47"
+        ]
+      }
     }
   ]
 }

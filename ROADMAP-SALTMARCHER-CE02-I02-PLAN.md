@@ -70,9 +70,35 @@ Originale drei vollständige Poppler-25.03-XML-Seiten samt Hash-/Lizenzreceipt
 liegen unter `tests/fixtures/items-srd51-b-section-poppler-25.03.*`.
 Negative Goldens schützen Variant-IDs/Rarität/Strength-Zellen, Fluchende,
 Aufzählungen, echte Minuszeichen, Recharge und Bedingungsgrenzen. W25 ist
-ein Quellenkandidat; unabhängiger Review und Integration bleiben offen.
-Stand: 252 Occurrences / 251 Records, 33/239 A–Z-Headings
-(32 standalone plus Potion-of-Healing-Merge); 206 A–Z-Headings plus Orb offen.
+unabhängig auf `8772d950301b899c22f8bc4588e35bd2a5fe6dde` als PASS geprüft
+([Chronik-Review 5480446444](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/64#pullrequestreview-5480446444))
+und regulär auf Shared `ebb480eaac0c11640b843b4fa4297f541951d4ad` integriert
+([Stewardabschluss](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/64#issuecomment-6101348349)).
+Das schließt weder Full-S01 noch ein Produkt-/Hostgate.
+
+W26 ergänzt den vollständigen kohärenten C-Abschnitt A–Z 33–47, Candle of
+Invocation bis Cubic Gate, physische/gedruckte Seiten 213–215: alle Header,
+Prosa, Aufzählungen, bedingten Regeln und Seitenfortsetzungen. Die neun
+Candle-Alignmentzeilen, vier Carpet-Zeilen (Größe/Kapazität/Geschwindigkeit),
+sechs Cube-Faces mit Charges/Effekt und fünf Spell-/Item-Charge-Loss-Zeilen
+behalten Reihenfolge und Zelleigentum. Der vollständige Table-Wortlaut bleibt
+auch an seiner Position zwischen den Prosaabsätzen erhalten. Crystal Ball
+bleibt eine Occurrence mit vier quellgeordneten Raritätschoices: typischer
+Ball very-rare; Mind Reading, Telepathy und True Seeing legendary. Keine
+erfundenen Unterheadings, Records oder Merges; alle variantenspezifischen
+Regeln und Scrying-/Konzentrations-/Rechargegrenzen bleiben vollständige Prosa.
+
+`tools/items-srd51-c-section.mjs` vergleicht jeden vollständigen Headingblock
+einschließlich Table-Position und Seitenwechsel bis zur Folgeüberschrift.
+Originale komplette drei Poppler-25.03-XML-Seiten und Hash-/Lizenzreceipt
+liegen unter `tests/fixtures/items-srd51-c-section-poppler-25.03.*`.
+Negative Goldens schützen Table-/Variant-IDs, Rarität, Würfelbereiche,
+Kapazität, Charge-Loss, Fließtextbedingungen und Aufzählungen. Kein Schema-
+oder Produktvertrag wurde erweitert; der W25-Korpuscount-Test prüft nun die
+Inventarlänge statt den historischen Zwischenstand 252, ohne Quellenfakten
+oder W25-Orakel abzuschwächen. W26-Review/Integration bleiben offen.
+Stand: 267 Occurrences / 266 Records, 48/239 A–Z-Headings
+(47 standalone plus Potion-of-Healing-Merge); 191 A–Z-Headings plus Orb offen.
 Der erwartete vollständige Occurrence-Count ist 459 (219 Ausrüstung +
 239 A–Z + Orb), nicht der jeweilige Zwischenstand; bekannte Mergezahl bisher 1,
 weitere Merge-/Helperprüfung bleibt offen. `complete:false` bleibt gesetzt.

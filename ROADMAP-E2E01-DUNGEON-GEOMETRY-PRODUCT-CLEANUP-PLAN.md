@@ -1,5 +1,12 @@
 # E2E-01-DUNGEON-GEOMETRY-PRODUCT-CL-P01: atomare Sample-Grenze
 
+Historischer, abgeschlossener Produktumbau. Die atomare Sample-Grenze ist
+unabhängig geprüft, übergeben und über PR13 auf Shared integriert;
+[Belege und aktueller Anschluss](ROADMAP-E2E01-DUNGEON-GEOMETRY-PLAN.md#aktueller-anschluss-statt-erneutem-phasenlauf).
+Die folgenden Phasen/Prüforakel bewahren Umfang und Herkunft. Daraus keinen
+erneuten Cleanup-/Review-/Handoffauftrag ableiten; neue Befunde mit Umsetzung,
+passender Prüfung und Bereinigung im konsumierenden Produktpaket lösen.
+
 Eigener begrenzter Produkt-Cleanup-Planlauf des Dungeon-Strangs, 10. Oktober
 2026. Grundlage ist der unabhängig bestandene Code-R03 auf Exact-SHA
 `ea9ecd3f5c7e284b86c554d7e4a9cb99672d73c2` in
@@ -175,9 +182,9 @@ und `manifest.json` SHA-256
 `2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64`.
 Fixturebytes und alle nicht genannten Produktpfade blieben unverändert.
 
-PRODUCT-CL-R01 ist noch offen und muss den Exact-SHA des veröffentlichten
-I01-Kandidaten unabhängig gegen die sieben Orakel prüfen. Es gab keinen GUI-,
-Host- oder physischen Eingabelauf; synthetische Callbacks ersetzen diese
-Abnahmen nicht. Stewardintegration, Mehrowner-E2E und E2E-01-PASS bleiben
-ebenfalls offen.
+Der damalige offene PRODUCT-CL-R01 wurde auf `c8bd27d6d223403b46748d3051409c3e1c498224`
+unabhängig bestanden; Ownerübergabe und Sharedintegration sind oben verlinkt.
+Dieser Modulnachweis enthält keinen GUI-, Host- oder physischen Eingabelauf;
+synthetische Callbacks ersetzen diese Abnahmen nicht. Mehrowner-E2E und
+vollständiger E2E-01-PASS bleiben an den tatsächlichen Produktgates.
 

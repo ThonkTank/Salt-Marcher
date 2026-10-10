@@ -9,13 +9,25 @@ die Quellanalyse in
 Dieser Plan ist nur ein I01c-Eingang für den einen E2E-01-Kandidaten. Er ist
 keine Implementierungs-, Host-, Cleanup- oder E2E-Freigabe.
 
-Der unabhängige P01-R01 auf Exact-SHA `ea46ba5437596aceaad955330e21c3ef4e739451`
-fordert mit `DUN-GEO-P01-R01-01` genau eine spätere Fachreparatur. Vor deren
-eigenem N01-Lauf folgt der getrennte
-[`E2E-01-DUNGEON-GEOMETRY-CL-P01`](ROADMAP-E2E01-DUNGEON-GEOMETRY-CLEANUP-PLAN.md),
-der ausschließlich Rollen-, Begriffs- und Phasentraceability dieses
-Vertragsartefakts aufräumt. Weder dieser Verweis noch der Cleanup reparieren
-den Befund oder öffnen I01.
+## Aktueller Anschluss statt erneutem Phasenlauf
+
+Der Dungeonbeitrag ist geliefert: [unabhängiger enger Produktreview](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/26#issuecomment-6093376162)
+auf `c8bd27d6d223403b46748d3051409c3e1c498224`, [Ownerübergabe](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/26#issuecomment-6093407357)
+auf `d02a546df50e891dcb65ec2be548c06b66090bbe`. Beide sowie Produktcommit
+`5675cbd13be6f0fa096c3651743f1eb40d93f845` sind Vorfahren des promoteten
+Sharedstands `6a41f1640de3e4a4311d905d95f66cd79d91b698` aus PR13
+([begrenzte Integrationsentscheidung](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/39#issuecomment-6100834444)).
+Der aktuelle gemeinsame Produktengpass steht in #40/#12. Vorhandene Geometrie
+im selben Atlas-/Saveablauf verwenden; keinen weiteren allgemeinen
+Plan-/Cleanup-/Owner-Handoff-Lauf aus diesem Dokument starten. Neue konkrete
+Befunde im konsumierenden Produktpaket reparieren und gezielt prüfen.
+
+Die folgenden Vertragsgrenzen bleiben maßgeblich. Datierte Phasen- und
+Reviewangaben bewahren deren Entstehung, keine offenen Folgeaufträge. Der
+damalige Planbefund `DUN-GEO-P01-R01-01` und seine Reparatur bleiben nachvollziehbar
+im [Vertrags-Cleanup](ROADMAP-E2E01-DUNGEON-GEOMETRY-CLEANUP-PLAN.md).
+Quellenintegration und lokaler Review ersetzen keine fehlende Host-, physische
+Bedien-, Originalparitäts- oder vollständige E2E-Abnahme.
 
 ## Vertragsbegriffe
 
@@ -329,6 +341,10 @@ Produktänderung keine Produktbasisprüfung als Funktionsbeleg an.
 
 ## Phasen, Gates und Übergabe
 
+Historische Entwicklung dieses Beitrags; aktueller Verbrauch steht am Anfang.
+Insbesondere erzeugen als „offen“ notierte damalige Cleanup-/Handoffstände
+keinen erneuten Arbeitsauftrag.
+
 | Lauf | Aktueller Status | Öffnet ausschließlich | Öffnet ausdrücklich nicht |
 | --- | --- | --- | --- |
 | P01 `ea46ba5437…` | abgeschlossenes Planartefakt | unabhängigen P01-R01 | Produkt-I01 oder E2E-01 |
@@ -435,9 +451,10 @@ Damit sind die drei Codepflichtbefunde dieses Implementierungszyklus
 geschlossen. Das ist keine Host-, physische Eingabe-, Steward- oder
 E2E-01-Freigabe.
 
-Der danach beauftragte getrennte Produkt-Cleanup wird ausschließlich in
+Der danach durchgeführte Produkt-Cleanup ist in
 [`E2E-01-DUNGEON-GEOMETRY-PRODUCT-CL-P01`](ROADMAP-E2E01-DUNGEON-GEOMETRY-PRODUCT-CLEANUP-PLAN.md)
-geplant. Er reduziert die technisch verbliebene zweigeteilte
+dokumentiert. Er reduzierte die technisch verbliebene zweigeteilte
 Sample-Widerrufsgrenze, ohne Geometrie-, Source-, History-, Handoff- oder
-Persistenzsemantik zu erweitern. Planung, Umsetzung und unabhängiger Review
-bleiben getrennte Läufe; vor deren Abschluss erfolgt kein Steward-Handoff.
+Persistenzsemantik zu erweitern. Review, Ownerübergabe und Integration sind
+oben gebunden; Nachbesserung und Bereinigung gehören künftig zur tatsächlichen
+Produktlieferung, ohne zusätzliche Phasengates.
