@@ -51,16 +51,16 @@ Der [Quellenabgleich](SCOPE.md) führt den gesamten erfassten Umfang. Diese Funk
 | --- | --- | --- |
 | SMR-00 / SMR-AC-01 | Quellen-/Originalinventur und belegte Hostentscheidung | #11/#44 |
 | SMR-01 / SMR-AC-02/15 | Autosave, Crash-Recovery, Backup, Trash/Restore/Löschung, Copy/Complete-Import und offengelegte Salvage | #40/#41/#10/#11 |
-| SMR-02 / SMR-AC-03 | Creature/Item/Rules, Referenzgraph, alle World-/Notizinhalte und eingefrorene historische Verwendung | #58/#68/#9/#10; Full-S01 für Itemverbraucher |
-| SMR-03 / SMR-AC-04 | Roster/aktuelle/erwartete Party, Adventuring Day/XP/Rest; dauerhafte LiveSession, Primary/Split/Rejoin, Fokus und mehrere Masken | #60/#6; keine Planner-Rückwirkung |
+| SMR-02 / SMR-AC-03 | Creature/Item/Rules und World-/Notizinhalte; Katalog→Inspector→Scene, verschachtelte Referenzvorschauen/Details-History, eingefrorene Verwendung | #58/#68/#9/#10; Full-S01 für Itemverbraucher |
+| SMR-03 / SMR-AC-04 | Roster/aktuelle/erwartete Party, Adventuring Day/XP/Rest; dauerhafte LiveSession, Primary/Split/Rejoin, Fokus/Masken und fehlertolerante Party-/Scene-Reconciliation | #60/#6; keine Planner-Rückwirkung |
 | SMR-04 / SMR-AC-05 | Vollständiger bearbeitbarer Hex→Stadt→Haus→Dungeon→Raum-Atlas; Originalparität, FTG-Lebensdaten, 3D/Graph/Vererbung/Templates, Beschreibungen/Traps/Ausgabe | #7/#8/#44; räumlicher Fachplan und Originalinventare |
-| SMR-05 / SMR-AC-06 | Kontextgewichtete Encounter Tables, Combat/Chase, atomarer Abschluss, XP/Level/Treasures, Gruppenloot/Charakterledger und Korrekturen | #9/#6; D&D-2014, CE-03–06 |
+| SMR-05 / SMR-AC-06 | Kontextgewichtete Encounter Tables, Combat/Chase, atomarer Abschluss, XP/Level/Treasures, manuelle Gruppenlootbearbeitung, Verteilung/Charakterledger, kumulative Guidance und Korrekturen | #9/#6; D&D-2014, CE-03–06 |
 | SMR-06 / SMR-AC-07 | Manuelle Timeline sowie reproduzierbare Vorschlags-/Reward-Generierung, erwartete Party, Annahme/Neugenerierung und Platzierung ohne Worldverlust | #69/#10; Generierung konsumiert Quellen/Encounter/Loot/World |
 | SMR-07 / SMR-AC-08/09 | Hex-/Dungeonreise, Tracks/Perception/Overrides, kausales Undo; konfigurierbarer Kalender, unabhängige Scene-Zeit, einmalige Folgen bei Retry/Restart | #10; Eingänge für Wetter/Restock/CITY/Autonomy |
 | SMR-08 / SMR-AC-10/11/12 | Shop-/Ledgerhandel/Restock; regionales Klima/Wetter/Effekte; portable Musik/Player/Autoplay/Ambience mit manueller Priorität | #10/#11; drei eigenständige Fachabnahmen |
 | SMR-09 / SMR-AC-13 | Opt-in-Bedürfnisse/Jobs/Reservierungen, begrenzte Nicht-Party-Konflikte, Pause/atomare Steps/Erklärung/einmaliges Catch-up | #10; World/Scene/Raum/Zeit |
 | SMR-10 / SMR-AC-14/15/16 | Sichere Spielerprojektion mit Kenntnis/Perception; Complete-/Salvage-Portabilität; widerrufbare Extensions mit Fail/Remove/Replace/Restore | #11/#73; P03 ersetzt keine Produkt-/Extensionabnahme |
-| SMR-11 / SMR-AC-17/18 | Versionierte In-game-Tutorials, OS-Auslieferung, Lokalisierung/Tastatur/200 %/Kontrast/Screenreader, Größe/Latenz/Cancel/Offline/Privacy und Originalvergleich | #11/#12; alle exponierten Features |
+| SMR-11 / SMR-AC-17/18 | Versionierte In-game-Tutorials, OS-Auslieferung, Lokalisierung/Tastatur/200 %/Kontrast/Screenreader, Größe/Latenz/Cancel/Offline/Privacy und Originalvergleich; gemeinsame Popup-/Dialog-/Meterbedienung mit ihren Features | #11/#12; alle exponierten Features |
 
 Damit sind alle SMR-00–11 und SMR-AC-01–18 in der Lieferplanung adressiert. Die detaillierte Themen-/Quellenabdeckung bleibt allein in [SCOPE](SCOPE.md) und dem Quellenregister. **Geplant ist nicht ausführbar oder abgenommen:** offene Modell-, Transfer-, Schema-, Host- und Originalinventarentscheidungen müssen vor ihrer abhängigen Wirkung geklärt werden; aktueller Besitz bleibt am Fach-/Aufgabenort. Diese Tabelle ist keine zweite Queue.
 

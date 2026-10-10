@@ -99,12 +99,27 @@ aktuelle Aufgaben und Besitz stehen an den dort verlinkten Arbeitsorten.
 - Manuelle World-Inhalte parallel zur Katalogfolge liefern; der vollständige
   Itemkorpus ist nur für seine tatsächlichen Itemverbraucher Voraussetzung.
 - Aktuelle Definition und eingefrorene historische Verwendung trennen.
+- Katalogsuche → Inspector → ausdrückliche Übergabe an Scene/Encounter liefern;
+  Bereichswechsel erhält Filter/Selektion, beendet aber unsichtbare Providerarbeit.
+  Referenzgraph im laufenden Spiel konsumieren: Begriff/Alias → verschachtelte
+  Vorschau → vollständiger Eintrag mit Scene-Details-History. Mehrdeutigkeit
+  auswählbar, editierbare Prosa unverändert; Umbenennen/Löschen aktualisiert den
+  Kampagnenindex ohne statischen Neubau. Offline-/Unavailablefälle bleiben lesbar.
+  Quellen: Catalog und Reference Graph requirements; #9/#10, SMR-AC-03.
 
 ### SMR-03 – Party, Scene und Live Session
 
 - Roster/Charakterprofile und Adventuring Day integrieren.
 - Primary Scene, Split/Rejoin, PC-Zuordnung, Fokus und generische Maskenbasis
   etablieren. Scene bleibt über Encounter, Chase, Reise und Pausen bestehen.
+- Preparation ausdrücklich übernehmen → Primary/Split/Rejoin und mehrere Masken
+  im laufenden Spiel bedienen → frischen Prozess mit gleichem Fokus/Runtime öffnen.
+  Partyänderungen sind sofort autoritativ; nur betroffene Scene-/Encounterkontexte
+  reconciliieren und bleiben bei Fehler sichtbar pending. Eine gültige Scene-
+  Speicherung wartet nicht auf Encounter-Synchronisierung; Retry konsumiert den
+  gespeicherten Stand, ohne die Party-/Sceneänderung zu wiederholen.
+  Quellen: Party Window, Scene, Live Session und Program Capabilities
+  „Confirmed Cross-Workflow Behavior“; #6/#60, SMR-AC-04. DTOs beenden den Weg nicht.
 
 ### SMR-04 – Gemeinsamer Atlas und Karten
 
@@ -145,6 +160,15 @@ Integrationsweg, nicht automatisch die gesamte Karten-/Stadtfunktion.
 - Laufende `CE-03` bis `CE-06` Arbeit gegen D&D 2014 fertigstellen.
 - Encounter Tables, Combat-Maske, Rewards, Gruppenloot und Charakterledger
   über stabile Referenzen und atomare Kommandos verbinden.
+- Vom Gruppeneditor bis zur Nachbereitung liefern: manuelle Monster-/Lootauswahl,
+  vollständigen Encounterabschluss mit ausgewählter XP-Verteilung atomar anwenden,
+  Treasure an Ort/Gruppe/unplaced führen, an aktuelle Party verteilen und im
+  persönlichen Ledger wiederfinden. Geschützte Allokationen und immutable
+  Itemreferenzen erhalten; Korrektur ersetzt durch verlinkten Eintrag statt
+  Geschichtsumschreibung. Kumulativer Lootausgleich ist eine lesende Guidance;
+  Gruppenreward und Sessionreward konsumieren dieselbe bestätigte Ledgerbasis.
+  Quellen: Loot und Program Capabilities „Follow-Up“/„Cross-Workflow Behavior“;
+  #9/#6, SMR-AC-06/07. Treasure-Editierkollision aus #44 bleibt offen.
 
 ### SMR-06 – Session Planner und reproduzierbare Generierung
 
@@ -227,9 +251,17 @@ Fachabnahmen und rechtfertigt keinen eigenen Shop-/Wetter-/Music-Snapshotstore.
 
 ### SMR-10 – Zweites Display, Extensions und vollständige Portabilität
 
-- Sichere passive Spielerprojektion für den gewählten Host beweisen.
+- P03-Beweiskanal an echte Scene-/Kenntnis-/Perceptionprojektion anschließen:
+  fokussierte Scene zeigt freigegebene Karte/Art, GM kann blanken/ersetzen;
+  Secrets/Mechanik bleiben unsichtbar, auch nach Fokuswechsel und Restart.
+  Der synthetische Fensterprototyp ist ein Eingang, keine Produktanzeige-Abnahme.
 - Interne Extension-Grenze mit Default-Deny, Einwilligung und Widerruf bauen;
   Host-Erweiterungen nicht als sichere Sandbox voraussetzen.
+- Tatsächliche Erweiterung installieren → Rechte bestätigen → Inhaltsart/Maske/
+  Generator/Importer/Präsentation konsumieren → Fehler, Remove/Replace/Restore
+  prüfen. Ausfall deaktiviert nur die betroffene Capability; opaque Daten und
+  unabhängige Kampagnenabläufe bleiben erhalten. Quellen: Program Capabilities
+  „Modular Change“, TN-27–30; #11, SMR-AC-14/15/16.
 - Kompletten Current-Format-Roundtrip, beschädigte Daten, unbekannte Felder und
   plattformübergreifende Assets prüfen.
 
@@ -237,6 +269,13 @@ Fachabnahmen und rechtfertigt keinen eigenen Shop-/Wetter-/Music-Snapshotstore.
 
 - Featurequalität mit jeder nutzbaren Lieferung umsetzen; dieser Abschluss
   bündelt die noch offenen Gesamt-/OS-/Lastbeweise.
+- Gemeinsame Popup-/Dropdown-/Dialogmechanik und passive Fortschrittsanzeige mit
+  ihren tatsächlichen World-/Planner-/Party-/Combatverbrauchern liefern, keine
+  eigene Shell-Miniphase. Escape/Auto-hide/Fokusrückgabe, feste Aktionen bei
+  scrollendem Inhalt und zugängliche Amount-Eingaben vereinheitlichen;
+  Geschäftsberechnung/Kommandos bleiben beim Featureowner. Die vier
+  `docs/project/requirements/requirements-{anchored-popup,dropdown-popup,dialog-surface,progress-meter}.md`
+  sind Produktverhalten, keine Pflicht zur Übernahme alter Hostklassen.
 - Feature-/Versions-Tutorials, Lokalisierung, Tastatur, 200 %, Kontrast und
   Nicht-Farb-Signale vollständig qualifizieren.
 - Latenz-, große Daten-, Speicher-, Abbruch-, Offline- und Privacy-Gates gegen
@@ -244,6 +283,13 @@ Fachabnahmen und rechtfertigt keinen eigenen Shop-/Wetter-/Music-Snapshotstore.
 - Gesamtqualifikation samt erforderlicher unabhängiger Prüfung,
   gezielter Nachbesserung und Bereinigung zusammenführen. Keine zusätzliche
   allgemeine Aufräumreviewrunde; fehlende Fachabnahme bleibt offen.
+
+Die erklärbare Kampagnenhistorie verbindet SMR-01/03/05/07–09: bestätigte Zeit-,
+Reise-, Encounter-, XP-, Party- und manuelle Worldfolgen im laufenden Produkt
+inspizieren; Korrekturen verlinkt anhängen und frisch öffnen. Kein Vollsnapshot-
+Replay, Rückdatierung löscht keine etablierten Fakten. Ownergrenzen und die enge
+kausale Reise-Undo-Ausnahme bleiben erhalten. Quelle: Program Capabilities
+„Explanatory Campaign History“, SRC-C04/TN-06; #6/#10, SMR-AC-04/06/09.
 
 ## Abhängigkeiten und Parallelität
 

@@ -4,15 +4,14 @@
     "state": "completed",
     "roleContract": "docs/AGENT-ROLES.md#repository-maintenance",
     "repositoryContract": "docs/REPOSITORY.md",
-    "evaluatedShared": "797e12b97dd01e143e2348776497e2e85fa54e02",
-    "scope": "Parallel delivery dependencies and compact contributor entry; no product/domain/host approval.",
-    "next": "Resume own package with npm run next -- --task <issue>. Selection preserves priority, then product work, then free packages before support. Current package state stays in issue main texts; detailed evidence is linked, not copied.",
+    "evaluatedShared": "a4d63424091c9159efdf94e522352d6da332cc36",
+    "scope": "Implemented the revised task-maintenance role in the existing remote-loaded contract. Existing automation enabled with unchanged two-hour schedule and authority; no extra role/controller.",
+    "next": "Follow docs/AGENT-ROLES.md; task-maintenance repairs evidenced coordination gaps, product-value owns priority and package/domain owners retain delivery decisions. No duplicate queue or prompt rules.",
     "verification": [
-      "check:repo PASS",
-      "test:repo 28/28 PASS",
-      "Issue #58 source/claim/review comparison; main text shortened, evidence retained"
+      "check:repo and affected diff/JSON preservation check",
+      "Enabled task-maintenance automation reads AGENTS.md and docs/AGENT-ROLES.md from default branch; prompt/schedule unchanged"
     ],
-    "previousOrientation": "797e12b"
+    "previousOrientation": "a4d6342"
   },
   "saltMarcherReplacement": {
     "date": "2026-10-10",
