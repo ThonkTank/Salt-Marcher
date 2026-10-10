@@ -4,15 +4,15 @@
     "state": "completed",
     "roleContract": "docs/AGENT-ROLES.md#repository-maintenance",
     "repositoryContract": "docs/REPOSITORY.md",
-    "evaluatedShared": "b6c57c636983328c0c169209d90772ea1d557db6",
-    "scope": "Feature-plan scope audit: missing generator preset settings, shared Scene/Session composition and Combat partition delivery added to CE03/04. Obsolete generic split review/cleanup dispatch removed; no product/domain approval.",
-    "next": "Follow existing CE package owners at 9/10/6; preset registry authority is a confirmed Campaign/Data input, not a second controller. Scope conflicts and unknown original inventory remain at 44.",
+    "evaluatedShared": "181bec40db372b831f16e5c0b4813af236537071",
+    "scope": "Tie implementation growth to early independent GM GUI observation in existing WORKFLOW/roles; route first World/Planner UI checks within owned packages. No test execution or product approval.",
+    "next": "Existing hourly gm-test loads the current role. Package owners expose first executable GUI path; dependent major growth waits on scoped GM observation and material blocker repair, independent work continues.",
     "verification": [
-      "36 source hashes and phase mappings checked; 12 phases, 18 cases, 38 TN retained",
-      "Only Encounter Generation phase mapping extended to SMR01; all other source-registry fields preserved",
-      "check:repo and affected source/diff checks PASS; foreign checkpoint/acceptance preserved"
+      "Existing enabled hourly gm-test and task-maintenance roles inspected; stable automation entrypoints retained",
+      "Current 68/69 inputs and native/UI boundaries inspected; check:repo and affected contract/diff PASS",
+      "Only repositoryOrientation changed; foreign checkpoint and acceptance preserved"
     ],
-    "previousOrientation": "b6c57c6"
+    "previousOrientation": "181bec4"
   },
   "saltMarcherReplacement": {
     "date": "2026-10-10",

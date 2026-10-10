@@ -41,7 +41,7 @@ Die folgenden Lieferketten übersetzen den bestätigten Umfang in Nutzerergebnis
 
 **Zusammenführung:** vorhandene Eingänge konsumieren, sobald ihr konkreter Port geliefert ist, nicht erst nach Abschluss des ganzen Quellbereichs. Import/Atlas verbinden sich in E2E-01, Vorbereitung/Runtime/Encounter in E2E-02, Reise/Zeit/Worldverbraucher in E2E-03 und Plattform/Recovery/Anzeige in E2E-04. Nur diese gemeinsamen Gateabnahmen bleiben nacheinander. Zusätzliche Fachfunktionen behalten ihre vollständigen eigenen Abnahmen.
 
-Tastatur, 200 %, Lokalisierbarkeit, passende Feature-Tutorials, ehrlicher pending/durable-Zustand und relevante Latenz-/Lastgrenzen werden mit dem betroffenen Nutzerablauf umgesetzt und geprüft. SMR-11/E2E-04 bündeln die verbleibende Gesamtqualifikation; sie sind kein Aufschub der Featurequalität. Für neue schreibende Funktionen genügt nicht ein In-Memory- oder DOM-Beleg: produktive Aktivierung benötigt den tatsächlich bestätigten Owner-/Publish-/Recoveryanschluss.
+Tastatur, 200 %, Lokalisierbarkeit, passende Feature-Tutorials, ehrlicher pending/durable-Zustand und relevante Latenz-/Lastgrenzen werden mit dem betroffenen Nutzerablauf umgesetzt und geprüft. SMR-11/E2E-04 bündeln die verbleibende Gesamtqualifikation; sie sind kein Aufschub der Featurequalität. Der [erste bedienbare GUI-Weg wird vor größerem abhängigem Ausbau aus GM-Sicht geprüft](WORKFLOW.md#endnutzerprüfung-vor-weiterem-ausbau), nicht erst am Gesamtgate. Für neue schreibende Funktionen genügt nicht ein In-Memory- oder DOM-Beleg: produktive Aktivierung benötigt den tatsächlich bestätigten Owner-/Publish-/Recoveryanschluss.
 
 ## Zusätzliche Lieferergebnisse außerhalb der vier Gate-Kurzfassungen
 

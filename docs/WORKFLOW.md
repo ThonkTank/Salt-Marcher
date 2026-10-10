@@ -17,6 +17,27 @@ Ein kurzer Plan im Issue/PR genügt. Eine eigene Plandatei hilft bei komplexen V
 
 Dungeon-Arbeit führt `checkpoint.parityRoadmap`, Hex-Arbeit `checkpoint.hexAtlasExecution`; fremde Wurzeln erhalten. Funktionale Ergebnisse bestimmen [Dungeon-Parität](../ROADMAP-PARITY.md), [Hex-Atlas](../ROADMAP-HEX-ATLAS.md) und die jeweiligen Fachverträge. Eine Plan-/Dokumentationsprüfung erteilt keine Produktabnahme.
 
+## Endnutzerprüfung vor weiterem Ausbau
+
+- Den ersten zusammenhängend bedienbaren GUI-Weg im Paket früh einem anderen
+  Contributor in `gm-test` zur freien GM-Nutzung anbieten, auch auf einem sicher
+  isolierten Kandidaten vor Integration. Paketowner nennt am Aufgabenort Nutzerziel,
+  startbaren Build/Fixture/Host und noch offene Grenzen; keine vorgeschriebene
+  Klickfolge. Fehlt der Produkteinstieg, zuerst den minimalen GUI-/Hostanschluss
+  herstellen statt weitere Bedienlogik nur im Backend anzuhäufen.
+- **Vor einer größeren darauf aufbauenden Funktionserweiterung muss dieser Weg
+  tatsächlich aus Nutzersicht beobachtet sein.** Bis dahin Testbarkeit herstellen,
+  notwendige Eingänge schließen und konkrete Befunde reparieren; unabhängige Pakete
+  dürfen parallel weiterlaufen. Fehlender Testhost/Tester ist ein benannter Blocker
+  am Paket, kein stillschweigender PASS. Aufgabenpflege macht den ausführbaren
+  Testbedarf dort sichtbar; kein separates Testphasenissue oder zweiter Controller.
+- `gm-test` prüft Auffindbarkeit und vollständigen Nutzerweg nach seiner Rolle und
+  liefert Ergebnis/Fehler mit Empfänger im selben Paket. Wesentliche Nutzungsblocker
+  vor abhängigem Ausbau beheben und gezielt nachtesten. Ein bewusst synthetischer
+  GUI-Frühtest kann Bedienannahmen prüfen, bestätigt aber keine native Speicherung,
+  Recovery oder Gesamtfreigabe. Vorhandene relevante GUI-Belege weiterverwenden;
+  weder jeder Commit noch eine neue SHA allein braucht einen neuen Nutzertest.
+
 ## Prüfaufwand nach Änderung und Risiko
 
 | Änderung | Passende Prüfung |
