@@ -1,9 +1,12 @@
 {
   "repositoryOrientation": {
     "date": "2026-10-10",
-    "state": "documentation_candidate_pending_independent_review",
+    "state": "integrated_with_direct_user_authorization",
     "scope": "Product navigation, contributor workflow and GitHub backlog organization only; no product or acceptance approval",
-    "branch": "docs/product-orientation-20261010",
+    "branch": "active/installed-phase1",
+    "integrationPullRequest": 43,
+    "integrationCommit": "3bfb90a20dc59642c56e4b415b1a08aa15349919",
+    "authorization": "Direct user instruction to integrate this cleanup without the independent review requirement.",
     "entrypoint": "README.md",
     "productGoals": "docs/PRODUCT.md",
     "deliveryOrder": "docs/ROADMAP.md",
@@ -17,7 +20,7 @@
       41,
       42
     ],
-    "next": "Independent documentation review and integration; product owners continue existing candidates and current #38 blocker."
+    "next": "Product owners continue existing candidates and current #38 blocker; contributor entry points and backlog are integrated."
   },
   "saltMarcherReplacement": {
     "date": "2026-10-10",
