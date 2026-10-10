@@ -849,7 +849,7 @@
       "focus": "Existing Stadt narrow independent rereview of CITY-HOST-R01-01 on actual repaired source2bc2d0e and published PR13 candidate. Do not restart general plan/provider/owner rounds.",
       "sourcePlan": "ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md",
       "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
-      "dependency": "Actual existing Stadt R02 receipt; separately, qualified Campaign/Data Manifest Save Participant and owner-confirmed native fixture after Chronik PASS and owner cleanup.",
+      "dependency": "Actual existing Stadt R02 receipt. Published Campaign/Data PR32 Exact-SHA0a62015cf82de1c179a040c65bf3d78b85cabeb4 and direct qualified Chronik Handoff #13/6096143004; exact code-review/owner-cleanup receipts must be bound on consumption, no new general owner round.",
       "after": "Any new mandatory finding gets a targeted repair; otherwise separate own host cleanup P/I/R, then consume only qualified actual Manifest Save input. Hex alone owns AtlasRepository/FileTransaction/recovery/host hooks and joint Save/Fresh integration.",
       "limits": "No native/fresh/physical/original-parity/large-map/install/full E2E claim. Last native currentRun remains exact historical I01b receipt; user vault and sources unchanged."
     },
@@ -2870,7 +2870,7 @@
         "id": "E2E-01-SPACE-I01c-RUNTIME-N01c",
         "state": "host_lifetime_repair_checked_independent_rereview_pending",
         "sourceCommit": "2bc2d0ea13285eecf6863d4ef5802ebb66a81805",
-        "consumedShared": "47fd331ba6745ff89a249bf567373d022718ef00",
+        "consumedShared": "aa4a0eeccfa9a3b41caab061b90526e12d47065d",
         "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
         "review": {
           "id": "CITY-HOST-R01",
@@ -2895,7 +2895,23 @@
           "replayResult": "PASS_actual_original_reproductions_on_repaired_product_not_independent_rereview",
           "cleanExactSHABuild": "PASS",
           "dirty": false,
-          "diff": "PASS"
+          "diff": "PASS",
+          "incomingSharedIntegration": {
+            "state": "PASS",
+            "consumedShared": "aa4a0eeccfa9a3b41caab061b90526e12d47065d",
+            "incomingChangedFiles": [
+              "ROADMAP-GM-PRODUCT-TESTING-PLAN.md",
+              "checkpoint.json"
+            ],
+            "foreignChangedRoots": [
+              "gmProductTesting"
+            ],
+            "expectedIncomingForeignRawRootsVerified": true,
+            "retainedNativeCurrentRunLiteralUnchanged": true,
+            "productAndTestBlobsUnchangedFromCheckedCleanSource": 442,
+            "source": "2bc2d0ea13285eecf6863d4ef5802ebb66a81805",
+            "testRepeat": "Not needed for documentation/foreign metadata-only incoming diff; tested 605 cases and clean exact-source build remain bound to identical product/test blobs."
+          }
         },
         "triplet": {
           "main.js": {
@@ -2916,7 +2932,7 @@
         "nativeRan": false,
         "fullE2E": false,
         "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-visible-host-n01c-20261010/implementation.json",
-        "sha256": "311af0efdf62a0cf041db6d71e2b485ea12fdc998323cfb585108fb45d9e769d"
+        "sha256": "3f85f13a74372f51eb0e93d94d3a13ab42df256b8be16f96d6d9a4826db838e4"
       }
     },
     "verification": {
@@ -4369,7 +4385,7 @@
         "id": "E2E-01-SPACE-I01c-RUNTIME-N01c",
         "state": "host_lifetime_repair_checked_independent_rereview_pending",
         "sourceCommit": "2bc2d0ea13285eecf6863d4ef5802ebb66a81805",
-        "consumedShared": "47fd331ba6745ff89a249bf567373d022718ef00",
+        "consumedShared": "aa4a0eeccfa9a3b41caab061b90526e12d47065d",
         "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
         "review": {
           "id": "CITY-HOST-R01",
@@ -4394,7 +4410,23 @@
           "replayResult": "PASS_actual_original_reproductions_on_repaired_product_not_independent_rereview",
           "cleanExactSHABuild": "PASS",
           "dirty": false,
-          "diff": "PASS"
+          "diff": "PASS",
+          "incomingSharedIntegration": {
+            "state": "PASS",
+            "consumedShared": "aa4a0eeccfa9a3b41caab061b90526e12d47065d",
+            "incomingChangedFiles": [
+              "ROADMAP-GM-PRODUCT-TESTING-PLAN.md",
+              "checkpoint.json"
+            ],
+            "foreignChangedRoots": [
+              "gmProductTesting"
+            ],
+            "expectedIncomingForeignRawRootsVerified": true,
+            "retainedNativeCurrentRunLiteralUnchanged": true,
+            "productAndTestBlobsUnchangedFromCheckedCleanSource": 442,
+            "source": "2bc2d0ea13285eecf6863d4ef5802ebb66a81805",
+            "testRepeat": "Not needed for documentation/foreign metadata-only incoming diff; tested 605 cases and clean exact-source build remain bound to identical product/test blobs."
+          }
         },
         "triplet": {
           "main.js": {
@@ -4415,7 +4447,7 @@
         "nativeRan": false,
         "fullE2E": false,
         "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-visible-host-n01c-20261010/implementation.json",
-        "sha256": "311af0efdf62a0cf041db6d71e2b485ea12fdc998323cfb585108fb45d9e769d"
+        "sha256": "3f85f13a74372f51eb0e93d94d3a13ab42df256b8be16f96d6d9a4826db838e4"
       }
     },
     "repairPlan": "ROADMAP-HEX-02-REPAIR-PLAN.md",

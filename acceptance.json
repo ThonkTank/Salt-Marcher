@@ -153033,7 +153033,7 @@
           "/home/aaron/.cache/dungeon-native-qa/hex-03/city-ui-i01-r01-20261010/review.json"
         ],
         "observed": "actual native World/Location/section/City/building/Dungeon/structured room/section resolution in seven-file fixture; same Repository/History/renderer and relative frames, no writes for navigation; unknown/stale/foreign/duplicate/unavailable/retired/Source edit-Undo ABA and replaced Source rejection before camera/key effects; requested prepareLeave failure blocks actual Lifecycle.activate and restores old editability; retained native Key draft precedes successful activation; external Context change revokes old leases; A-to-B-to-A uses fresh Sources/History; late inert mounts and native initial reads cannot activate old UI or hydrate via guarded factory; confirmed new activation load failure/trashed/applied=false preserve actual new Context without automatic rollback; won actual native journal Save rolls forward only in old Store while its detached mount cannot touch new B",
-        "notConfirmed": "Concrete unregistered Host lifetime finding repaired and checked with actual Vault/Repository/History/Editor/queue/journal DOM cases; original reviewer counterprobes replayed unchanged PASS. New independent Stadt R02 pending. Actual owner-confirmed Campaignmanifest/native fixture and qualified atomic Manifest Save Participant remain absent. No native Obsidian/fresh process/physical input/original parity/large-map/vault installation/P02/P04/CompleteImport/full E2E claim. Historical component/native receipts unchanged.",
+        "notConfirmed": "Concrete unregistered Host lifetime finding repaired and checked with actual Vault/Repository/History/Editor/queue/journal DOM cases; original reviewer counterprobes replayed unchanged PASS. New independent Stadt R02 pending. Campaign Manifest Save Participant/native fixture now published as PR32/0a62015c with actual Chronik handoff, not consumed or integrated in this repair. No native Obsidian/fresh process/physical input/original parity/large-map/vault installation/P02/P04/CompleteImport/full E2E claim. Historical component/native receipts unchanged.",
         "independentReview": {
           "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/13#issuecomment-6094804164",
           "gate": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6094804323",
@@ -153616,7 +153616,7 @@
           "id": "E2E-01-SPACE-I01c-RUNTIME-N01c",
           "state": "host_lifetime_repair_checked_independent_rereview_pending",
           "sourceCommit": "2bc2d0ea13285eecf6863d4ef5802ebb66a81805",
-          "consumedShared": "47fd331ba6745ff89a249bf567373d022718ef00",
+          "consumedShared": "aa4a0eeccfa9a3b41caab061b90526e12d47065d",
           "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
           "review": {
             "id": "CITY-HOST-R01",
@@ -153641,7 +153641,23 @@
             "replayResult": "PASS_actual_original_reproductions_on_repaired_product_not_independent_rereview",
             "cleanExactSHABuild": "PASS",
             "dirty": false,
-            "diff": "PASS"
+            "diff": "PASS",
+            "incomingSharedIntegration": {
+              "state": "PASS",
+              "consumedShared": "aa4a0eeccfa9a3b41caab061b90526e12d47065d",
+              "incomingChangedFiles": [
+                "ROADMAP-GM-PRODUCT-TESTING-PLAN.md",
+                "checkpoint.json"
+              ],
+              "foreignChangedRoots": [
+                "gmProductTesting"
+              ],
+              "expectedIncomingForeignRawRootsVerified": true,
+              "retainedNativeCurrentRunLiteralUnchanged": true,
+              "productAndTestBlobsUnchangedFromCheckedCleanSource": 442,
+              "source": "2bc2d0ea13285eecf6863d4ef5802ebb66a81805",
+              "testRepeat": "Not needed for documentation/foreign metadata-only incoming diff; tested 605 cases and clean exact-source build remain bound to identical product/test blobs."
+            }
           },
           "triplet": {
             "main.js": {
@@ -153662,7 +153678,7 @@
           "nativeRan": false,
           "fullE2E": false,
           "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-visible-host-n01c-20261010/implementation.json",
-          "sha256": "311af0efdf62a0cf041db6d71e2b485ea12fdc998323cfb585108fb45d9e769d"
+          "sha256": "3f85f13a74372f51eb0e93d94d3a13ab42df256b8be16f96d6d9a4826db838e4"
         }
       }
     ],
