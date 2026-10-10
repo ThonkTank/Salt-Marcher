@@ -89,6 +89,14 @@ export class ManualPlannerPanel {
     toolbar.style.flexWrap = "wrap";
     toolbar.style.gap = "0.5rem";
     this.root.append(toolbar);
+    // Refresh only the view: stale workspace guards must not prevent recovery,
+    // and refreshing must never commit, discard or rebind an authored draft.
+    const refresh = doc.createElement("button");
+    refresh.type = "button";
+    refresh.textContent = "Ansicht aktualisieren";
+    refresh.title = "Aktuellen Plan anzeigen; Entwürfe bleiben erhalten.";
+    refresh.addEventListener("click", () => this.run(() => {}));
+    toolbar.append(refresh);
     this.button(toolbar, "Neuer Plan", () => {
       this.planner.create();
     });

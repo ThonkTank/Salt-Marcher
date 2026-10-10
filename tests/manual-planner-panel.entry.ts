@@ -134,3 +134,51 @@ test("manual planner UI: retained scene action rejects external selection change
   assert.match(f.host.textContent!, /Ansicht geändert/);
   f.ui.destroy();
 });
+
+test("manual planner UI: refresh after external switch preserves target draft and restores editing", () => {
+  const f = fixture();
+  button(f.host, "Neuer Plan").click();
+  button(f.host, "Szene hinzufügen").click();
+  const oldDelete = button(f.host, "Szene löschen");
+  f.p.create();
+  f.p.addScene(f.p.binding());
+  f.p.editDraft({ title: "B", notes: "keep B", locationId: null });
+  const before = f.p.catalog;
+  const draft = f.p.draft;
+  button(f.host, "Ansicht aktualisieren").click();
+  assert.deepEqual(f.p.catalog, before);
+  assert.equal(f.p.draft, draft);
+  const notes = f.host.querySelector(
+    '[aria-label="Notizen"]',
+  ) as HTMLTextAreaElement;
+  assert.equal(notes.value, "keep B");
+  oldDelete.click();
+  assert.equal(f.p.draft, draft);
+  notes.value = "B continued";
+  notes.dispatchEvent(new f.document.defaultView!.Event("input"));
+  button(f.host, "Entwurf übernehmen").click();
+  assert.equal(f.p.active!.scenes[0]!.notes, "B continued");
+  f.ui.destroy();
+});
+test("manual planner UI: refresh retains stale draft until explicit discard", () => {
+  const f = fixture();
+  button(f.host, "Neuer Plan").click();
+  button(f.host, "Szene hinzufügen").click();
+  f.p.editDraft({
+    title: "draft",
+    notes: "preserve exact text",
+    locationId: null,
+  });
+  f.p.act(f.p.binding(), { kind: "rename", name: "external" });
+  const before = f.p.catalog;
+  const draft = f.p.draft;
+  button(f.host, "Ansicht aktualisieren").click();
+  assert.deepEqual(f.p.catalog, before);
+  assert.equal(f.p.draft, draft);
+  button(f.host, "Entwurf übernehmen").click();
+  assert.equal(f.p.draft, draft);
+  button(f.host, "Entwurf verwerfen").click();
+  assert.equal(f.p.draft, null);
+  assert.deepEqual(f.p.catalog, before);
+  f.ui.destroy();
+});

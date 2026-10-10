@@ -9665,24 +9665,24 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "MANUAL-PLANNER-N01",
+      "id": "MANUAL-PLANNER-I02-REFRESH",
       "issue": 69,
-      "state": "review_findings_repaired_delta_review_pending",
+      "state": "nonmutating_view_recovery_implemented_review_pending",
       "branch": "city/manual-session-planner",
-      "basis": "2a484df43bd2146217e0efb3986fd1971d8b55e1",
+      "basis": "7d45912312d50f412f7974aebd25839ed2c9c4f7",
       "claim": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/69#issuecomment-6102030111",
       "plan": "docs/plans/campaign/manual-session-planner.md",
-      "next": "Independent delta recheck R01-01/R01-02 on existing PR71; confirmed Campaign/Data native storage contract then same-package Host Save/Fresh-Reopen",
+      "next": "Independent narrow refresh DOM review; confirmed Campaign/Data native storage contract then same-package Host Save/Fresh-Reopen",
       "verification": {
         "typecheck": "PASS",
         "repository": "PASS",
         "fullSuite": {
-          "tests": 835,
-          "passed": 834,
+          "tests": 837,
+          "passed": 836,
           "failed": 0,
           "pdfEnvironmentSkip": 1
         },
-        "focusedCoreDom": "13/13 PASS",
+        "focusedCoreDom": "15/15 PASS",
         "build": "PASS",
         "nativeHost": "not activated/not run"
       },
@@ -9693,7 +9693,15 @@
           "R01-02 dense closed descriptor-only scenes array; holes/extra keys/symbols/getters rejected before reads"
         ],
         "regressionBefore": "four added external-plan DOM cases FAIL before repair; PASS afterwards",
-        "independentRecheck": "pending"
+        "independentRecheck": "PASS425afd8 https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/71#pullrequestreview-5480799736"
+      },
+      "viewRecovery": {
+        "action": "Ansicht aktualisieren: view only, preserves model selection, confirmed payload and draft; no writer or rebind",
+        "cases": [
+          "external switch refresh renders unchanged B draft then supports editing; old delete stays closed",
+          "external revision refresh preserves stale draft, commit stays closed, explicit discard works"
+        ],
+        "review": "pending"
       }
     },
     "nextRun": {
