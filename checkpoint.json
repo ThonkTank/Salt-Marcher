@@ -2,7 +2,7 @@
   "repositoryOrientation": {
     "date": "2026-10-10",
     "state": "completed",
-    "scope": "Versioned recurring role contracts and stable bootstrap prompts; bounded re-entry, unique maintenance ownership and self-critical corrections within ordinary work. No product or acceptance approval.",
+    "scope": "Outcome delivery boundaries for #40/#41/#58, current producer consumption and removal of active specialty cleanup phase instructions. No product or acceptance approval.",
     "branch": "active/installed-phase1",
     "entrypoint": "README.md",
     "productGoals": "docs/PRODUCT.md",
@@ -15,14 +15,14 @@
     "contextTool": "npm run context",
     "nextTaskCommand": "npm run next",
     "referenceRegister": "docs/reference/PLAN-REGISTER.md",
-    "next": "Load current role contract at re-entry; correct demonstrated policy or entrypoint friction for the actual consumer. Queue maintenance and product decisions remain with their existing roles.",
+    "next": "Existing package owners continue through usable flows or complete source input; task-maintenance keeps actual free implementation/support offers current, product-value translates confirmed portfolio gaps into executable delivery. No second dispatch controller.",
     "verification": {
-      "repositoryStructure": "PASS",
-      "repositoryRuleTests": "PASS 25/25 on Node 22",
+      "repositoryStructure": "PASS (offline structure and references)",
+      "affectedSourcesAndDiff": "Read current Shared113e37f, producer integrations/claims and affected specialty instructions; documentation-only, no product tests required",
       "foreignCheckpointAndAcceptance": "Foreign checkpoint roots and acceptance bytes preserved; no product or acceptance approval"
     },
     "limits": "Semantic freshness and product/domain/host acceptance remain with their owners; role contracts do not grant additional permissions.",
-    "previousOrientation": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/blob/2983113a3249b881c59ff74d223ad935ac2b7633/checkpoint.json",
+    "previousOrientation": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/blob/d4c77d366659cfddf9d8ad2567ea2843d996c619/checkpoint.json",
     "roleContract": "docs/AGENT-ROLES.md"
   },
   "saltMarcherReplacement": {
@@ -9408,18 +9408,18 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-FTG-SCOPE-I01-CLEAN-R01",
-      "status": "complete",
-      "kind": "cleanup_review",
-      "focus": "Implementation cleanup passed: mapped requirements, preserved foreign/product/acceptance bytes",
-      "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
-      "baseSha": "e157462ee1a4c2b82b0c927df664a8c06fc38cb1",
-      "nextStep": "Independent CITY-FTG-SCOPE-R01 on published PR50 exact SHA"
+      "id": "CITY-DRAFT-ABA-N02",
+      "status": "implemented_delta_review_pending",
+      "kind": "bugfix",
+      "focus": "Existing immutable History command event binds affected City owner through nested Redo/Undo; remove reference-only API and retain listener lifecycle",
+      "baseSha": "843562ac256eb293f1b8c95f10077a9a7a7c1a1b",
+      "nextStep": "Independent N02 delta review against6e39dcb on PR63",
+      "reviewFinding": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/63#pullrequestreview-5480419361"
     },
     "nextRun": {
-      "id": "CITY-FTG-SCOPE-R01",
-      "kind": "independent_documentation_review",
-      "focus": "Review exact PR50 diff against issue44 and P01; no product approval"
+      "id": "CITY-DRAFT-ABA-R03",
+      "kind": "independent_code_review",
+      "focus": "Affected-owner event payload, nested observer Redo-Undo, backward-compatible argumentless observers, Terrain and listener lifecycle"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",

@@ -53,8 +53,10 @@ I01a und I01b sind aufeinanderfolgende begrenzte Läufe desselben Kandidaten, ke
 parallelen Lieferpläne. Nach I01a wird als Nächstes I01b ausgeführt, sofern kein
 konkreter blockierender Befund zuerst zu reparieren ist. Ein langer Ausbau der
 Abstraktionen zwischen beiden ist ausdrücklich nicht der Plan. I01c wird nicht
-zu E2E-02–04 erweitert. Review, Nachbesserung und abschließendes Aufräum-P/I/R
-bleiben getrennte Läufe; eine passende Fachprüfung ersetzt kein Gesamttor.
+zu E2E-02–04 erweitert. Die Schnitte bleiben Beiträge zum vollständigen
+Nutzerablauf: Umsetzung, notwendiger unabhängiger Review, gezielte Nachbesserung
+und Bereinigung im selben Ergebnispaket bündeln. Eine passende Fachprüfung
+ersetzt kein Gesamttor; ein Phasenname erzeugt keinen zusätzlichen Auftrag.
 
 ## Sichtbarer Frame und Eingabe
 

@@ -1,6 +1,6 @@
 # Das Repository übersichtlich halten
 
-Paketowner ist die im Aufgabenissue benannte Agent-/Ownerrolle, Integrationsowner der Steward des gemeinsamen Kandidaten in #12. Ordnung und Kommunikation werden im Arbeitspaket gepflegt.
+Paketowner ist die im Aufgabenissue benannte Agent-/Ownerrolle: Sie verfolgt das vereinbarte Gesamtergebnis einschließlich benötigter fremder Eingänge und ihrer Verwendung. Das überträgt keinen Fach-, Datei- oder Abnahmebesitz. Integrationsowner ist der Steward des gemeinsamen Kandidaten in #12. Ordnung und Kommunikation werden im Arbeitspaket gepflegt.
 
 ## Ein verbindlicher Ort je Information
 
