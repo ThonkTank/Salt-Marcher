@@ -4,15 +4,15 @@
     "state": "completed",
     "roleContract": "docs/AGENT-ROLES.md#repository-maintenance",
     "repositoryContract": "docs/REPOSITORY.md",
-    "evaluatedShared": "117360b57d505ab56a3376e498e2b3d768398ff9",
-    "scope": "Information architecture upkeep: direct GM navigation to current role, preserve historical evidence as optional lookup, keep run chronicles out of active plans, correct stale task/index mains. No product approval.",
-    "next": "Use INDEX and bounded next/context tools. Issue mains own current package state; REPOSITORY owns information lifecycle. Historical evidence remains targeted lookup, not mandatory startup context.",
+    "evaluatedShared": "e559282ae2b516b0035a02645f7f8ba718ab63f6",
+    "scope": "Source-bound portfolio planning audit: concrete SMR-01/06/09 user delivery paths and explicit Preparation/Resume source boundaries. No product, host or domain approval.",
+    "next": "Continue existing package ownership. Resolve Preparation target semantics at issue 44/10 before dependent generation; use current issue/PR for candidate state, not roadmap claims.",
     "verification": [
-      "check:repo and test:repo 28/28 PASS; read-only backlog label audit PASS",
-      "Affected source/diff and foreign checkpoint/acceptance preservation checked",
-      "Issue 8/73 current claims, closure and PR/remote evidence identity inspected; updates at existing information locations"
+      "36 pinned requirement hashes and phase mappings checked; all 12 phases, 18 acceptance cases and 38 technical needs retained",
+      "Affected Campaign/Planner/Generation/Autonomy and capability sources compared; check:repo and diff checks PASS",
+      "Only repositoryOrientation edited; foreign checkpoint and all acceptance preserved"
     ],
-    "previousOrientation": "117360b"
+    "previousOrientation": "e559282"
   },
   "saltMarcherReplacement": {
     "date": "2026-10-10",

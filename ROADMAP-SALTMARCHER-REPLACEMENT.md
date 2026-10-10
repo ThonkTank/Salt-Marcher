@@ -1,6 +1,6 @@
 # Vollständige SaltMarcher-Ablösung im gemeinsamen Zielprodukt
 
-Stand: 9. Oktober 2026. Direkter Nutzerauftrag: SaltMarcher ist als
+Stand: 10. Oktober 2026. Direkter Nutzerauftrag: SaltMarcher ist als
 eigenständiges Produkt vollständig abgelöst. Das in diesem Repository
 fortgeführte Zielprodukt übernimmt nicht nur bereits implementierte Funktionen,
 sondern auch den bestätigten und geplanten Gesamtumfang. Das Endergebnis ist
@@ -90,6 +90,22 @@ aktuelle Aufgaben und Besitz stehen an den dort verlinkten Arbeitsorten.
 - Geschlossene Import-/Export-Einheit einschließlich Assets, Definitionen,
   Runtime, Trash und unbekannten zukünftigen Daten entwerfen.
 - Bestehende Dungeon-/Atlasdateien ohne stillen Formatwechsel erhalten.
+- Den gesamten Weg über die Campaignoberfläche liefern: anlegen → A/B/A wechseln →
+  umbenennen → aktive Campaign in Trash → dieselbe Identität restaurieren → separat
+  dauerhaft löschen. Duplikatnamen bleiben erlaubt; Trash/Restore aktiviert keine
+  andere Campaign implizit. Unsaved-Drafts und unbekannte Commandausgänge vor dem
+  Wechsel beim zuständigen Owner klären, Aktivierungsretry erzeugt keine zweite Wirkung.
+- Complete-Transfer auf einer anderen Installation bis zum tatsächlich geöffneten
+  Arbeitszustand verfolgen. Fehlende gemeinsame Definitionen übernehmen; Konflikte
+  mit sichtbaren Folgen ausdrücklich wählen, einschließlich unabhängiger Varianten.
+  Beschädigte Daten öffnen den neuesten eindeutig sicheren Recoverystand und zeigen
+  Verluste; nur bei Mehrdeutigkeit fragt der GM. Keine manuelle Backupbedienung als
+  Voraussetzung normaler Erhaltung. Quelle: Campaign Management und Program
+  Capabilities „Local Data Lifecycle“, #10/#41, SMR-AC-02/15.
+- Der Fachtext verlangt Campaignauswahl bei jedem Start, der Gesamtvertrag möglichst
+  vollständigen Runtime-Resume. Einstieg/Continue und wiederhergestellten Zustand
+  in #44/#10/#11 ausdrücklich zusammenführen; keine automatische UI-Weiterleitung
+  oder bewusst verworfene Runtime daraus als bereits entschiedene Zielregel ableiten.
 
 ### SMR-02 – Katalog, Referenzgraph und World Planner
 
@@ -174,10 +190,33 @@ Integrationsweg, nicht automatisch die gesamte Karten-/Stadtfunktion.
 
 - Zuerst einen eigenständig nutzbaren manuellen Plan mit geordneter Timeline,
   Notizen und optionalem Ort bearbeiten, speichern und frisch öffnen;
-  ohne erforderliche Party, Encounter, Loot oder Generator.
-- World-, Party-, Encounter- und Lootbedingungen in gestufte Runs binden.
-- Vorschläge einzeln regenerieren, akzeptieren und in Scene/Atlas platzieren;
-  Inputs, Profile, Rundung und Outputs prüfbar speichern.
+  ohne erforderliche Party, Encounter, Loot oder Generator (#69).
+- Danach erwartete Party (ohne Änderung der aktuellen Party), Adventure Day,
+  Encounterbudget/Restempfehlungen und bindende World-Auswahl verbinden. Unmögliche
+  Vorgaben vor Generierung erklären. Encounterpläne gezielt an einem Timelineeintrag
+  suchen/anhängen; keine Vollkatalogladung. Manuelle Lootnotizen und strukturierte
+  Generated Rewards bleiben sichtbar getrennt; fremde Rosters/Definitionen werden
+  nicht im Planner editiert.
+- Vom bestätigten Input über asynchronen Run und konkrete Encounterauflösung bis
+  zur gespeicherten bearbeitbaren Timeline liefern: Itemzeilen/Quantitäten/Packing,
+  Rewardkanäle, Warnings/Audits und konkrete Creature-Identitäten konsumieren.
+  Seed, Profil/Config-/Katalogprovenienz und Ledgerbasis erhalten; Goldenpflicht
+  `[680, 1000, 1800]` aus Session Generation belegen, keine zufälligen Item-/Roster-
+  Kandidaten als Goldenparität verlangen. Fehler liefern kein sichtbares Teilergebnis.
+- Einzelnes Ergebnis ändern/regenerieren/ablehnen/annehmen/platzieren, andere
+  manuelle Änderungen und angenommene Worldplatzierungen erhalten; Planersatz
+  löscht diese nicht. Am vorbereiteten Ort erscheinen Gruppen/Treasures in der
+  Running Scene, ohne automatischen Kampfstart oder Award. Übernahme ins Live-Spiel
+  konsumiert SMR-03; keine Planner-Rückwirkung auf laufende Scenes.
+- Revisiongebundene Aufträge, verständliche Fortschritts-/Fehlerzustände, Cancel,
+  Retry ohne Duplikate und Reopen im selben Lieferweg prüfen; späte Resultate dürfen
+  neuere Autorenschaft nicht überschreiben. Quellenkollision bleibt in #44 offen:
+  Program Capabilities fordert einen unbenannten aktuellen Plan und einzeln
+  annehmbare Vorschläge; Session Planner fordert mehrere benannte Sessions und
+  sofortige Gesamtersetzung ohne Apply. Auch Cancel-/Commitgrenze und gemeinsame
+  Receiptautorität vor abhängiger Implementierung ausdrücklich auf die Zielregel
+  beziehen. Quellen: Session Planner, Session Generation, Encounter Generation und
+  SRC-P01–03; #10/#6/#9, SMR-AC-07. Keine zweite öffentliche Generatorpipeline.
 
 ### SMR-07 – Reise, Kalender und autoritative Zeit
 
@@ -244,10 +283,31 @@ Fachabnahmen und rechtfertigt keinen eigenen Shop-/Wetter-/Music-Snapshotstore.
 
 ### SMR-09 – Actor Autonomy
 
-- Opt-in-Akteure, Bedürfnisse, Arbeit, Wahrnehmung und begrenzte Konflikte auf
-  den stabilen World-/Zeit-/Scene-/Encounter-Verträgen aufbauen.
-- Pausieren, Abbrechen, atomare Wirkung, erklärbares Log und einmaliges
-  Catch-up qualifizieren.
+- GM aktiviert einen bestehenden NPC/eine Gruppe, konfiguriert Bedürfnisse,
+  Prioritäten und Konsequenzgrenzen und weist einen erreichbaren Job zu. Needs,
+  World-/Raumangebote, Routen und exklusive Reservierungen führen zur erklärbaren
+  deterministischen Jobwahl; ungültige Ziele betreffen nur ihre Jobs. Keine neue
+  Actoridentität, Autoreninhalte oder autonome Partyentscheidung.
+- Bestätigte Campaignzeit konsumieren → Job/Bewegung/Owneroperation ausführen →
+  Resultat im realen Kontext inspizieren → Pause/Cancel/Override → frisch öffnen.
+  Gruppenwechsel erhalten Individuen; unterbrochene Jobs resumieren nur bei gültigen
+  Voraussetzungen. Kein wall-clock-/Downtimefortschritt. Raum, Perception, Traps,
+  Inventory und Actorfolgen bleiben bei ihren Ownern; fehlende Operation macht
+  einen Job unzulässig statt eine fremde Wahrheit zu kopieren.
+- Vor Partygefahr/GM-Entscheidung pausieren und passenden Kontext anzeigen.
+  Begrenzte Nicht-Party-Konflikte dürfen abstrakte D&D-2014-Würfe verwenden;
+  Inputs/Würfe/Folgen dauerhaft loggen und konfigurierte Schutzgrenzen respektieren.
+  Deterministische Jobwahl ist keine Behauptung deterministischer Zufallskonflikte.
+- Ein Zeitschritt publiziert alle betroffenen Folgen atomar oder keine; fehlgeschlagene
+  Ownerwirkung erhält die vorige bestätigte Zeit. Cancel vor Commit ohne Wirkung,
+  danach Korrektur durch Owneroverride mit verlinktem Log, kein Runtime-Undo.
+  Inaktive Kontexte holen bestätigte Zeit genau einmal nach und stoppen vor dem
+  ersten GM-Entscheidungspunkt. Sichtbare Jobgründe und kompakte Konfliktfolgen
+  liefern, vollständige Kandidatenauswertung nicht als permanente Historie anhängen.
+  200 Akteure, ≤2 s p95, Fortschritt ≤100 ms und passende Cancel-/Kamerafreiheit
+  nach Quellbedingungen qualifizieren. Quelle: Actor Autonomy Requirements;
+  #10, SMR-AC-13. Domäne/Jobangebote parallel entwickeln; produktive Steps benötigen
+  konkrete Scene-/Zeit-/Owner-/Publishports, nicht den Abschluss aller Reisefunktionen.
 
 ### SMR-10 – Zweites Display, Extensions und vollständige Portabilität
 
