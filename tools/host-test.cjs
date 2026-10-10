@@ -2872,9 +2872,13 @@ async function workflow() {
 }
 (async () => {
   let failure;
+  let mainFailed = false;
+  let shutdownFailure;
+  let shutdownFailed = false;
   try {
     await main();
   } catch (error) {
+    mainFailed = true;
     failure = error;
     console.error(error);
     if (page && !page.isClosed())
@@ -2906,18 +2910,36 @@ async function workflow() {
         await page.screenshot({ path: out + "/failure.png", timeout: 4000 });
       } catch {}
   } finally {
-    await shutdown();
+    try {
+      await shutdown();
+    } catch (error) {
+      shutdownFailed = true;
+      shutdownFailure = error;
+      console.error("QA shutdown failed", error);
+    }
+    const describeFailure = (error) => ({
+      name: error instanceof Error ? error.name : "NonErrorThrown",
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
     const result = {
       run,
       checks,
       errors,
       guardFailure,
+      failure: mainFailed ? describeFailure(failure) : null,
+      shutdownFailure: shutdownFailed ? describeFailure(shutdownFailure) : null,
       peakBytes: peak,
-      passed: !failure && !errors.length && !guardFailure,
+      passed: !mainFailed && !shutdownFailed && !errors.length && !guardFailure,
     };
-    fs.mkdirSync(out, { recursive: true });
-    fs.writeFileSync(out + "/result.json", JSON.stringify(result, null, 2));
-    console.log(JSON.stringify(result));
     if (!result.passed) process.exitCode = 1;
+    try {
+      fs.mkdirSync(out, { recursive: true });
+      fs.writeFileSync(out + "/result.json", JSON.stringify(result, null, 2));
+      console.log(JSON.stringify(result));
+    } catch (error) {
+      process.exitCode = 1;
+      console.error("QA result receipt could not be written", error);
+    }
   }
 })();
