@@ -4,11 +4,11 @@
 
 ## Aufgabe und Grenzen
 
-<!-- Aufgabenissue, Fachort, bestehender Kandidat, Abhängigkeiten und eigener Scope. -->
+<!-- Aufgabenissue, Fachort, bestehender Kandidat, Abhängigkeiten und eigener Scope. Bei neuen/abgelösten Dokumenten den Index im selben Paket pflegen; geänderten Status und nächsten Empfänger im Issue nachziehen. -->
 
 ## Prüfung
 
-<!-- Tatsächlich ausgeführte Befehle mit Ergebnissen; relevanter Commit/Build/Fixture und zugängliche Belege. -->
+<!-- npm run check:repo und tatsächlich ausgeführte Befehle mit Ergebnissen; relevanter Commit/Build/Fixture und zugängliche Belege. -->
 
 ## Offene Abnahmen und Review
 

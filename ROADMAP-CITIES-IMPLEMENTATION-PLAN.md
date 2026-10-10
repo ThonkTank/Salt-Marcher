@@ -1109,3 +1109,32 @@ CITY-00-I48a-CLEAN-P48 Start 2026-10-09T21:16:18.825990+00:00; Aufräumplan: Tem
 CITY-00-I48a-CLEAN-I48 Start 2026-10-09T21:16:32.775761+00:00; Gemessene2Regler vs vollständige Vorlagenfelder sowie visueller Cancel getrennt dokumentiert; genaue I48b-Quellkopien verlinkt, keine API-/Produktänderung.
 
 CITY-00-I48a-CLEAN-R48 Start 2026-10-09T21:16:51.071531+00:00; Rawhashes/Quelle/finale Bytegleichheit/Templateumfang/5 Prozessende geprüft,24CTY/65CO offen. I48b eigener nächster Prozesslauf nach erneuter Slotabsprache; R48 folgt danach.
+
+## HOST-RECEIPT-P01 – Ergebnis bei fehlgeschlagenem Prozessabschluss erhalten
+
+Eigenständiger technischer Plan von Stadt. Nutzerziel: Eine fehlgeschlagene native Stadt-/Atlasprobe bleibt diagnostizierbar, auch wenn das Beenden des QA-Prozesses fehlschlägt. Kein Produkt-, GUI- oder Paritäts-PASS aus einem geschriebenen Receipt.
+
+Befund auf Shared `321a41c`: Der abschließende Workflow in `tools/host-test.cjs` wartet ungeschützt auf `shutdown()`. Eine dort geworfene Ausnahme überspringt die gesamte `result.json`-Erzeugung. PR17/bd7f428 enthält bereits unabhängig geprüfte main()-Fehlerfelder, schützt aber diese Abschlussgrenze ausdrücklich nicht. Kein erneuter Review dieses geschlossenen Scopes.
+
+Umsetzung als nächster getrennter Lauf:
+
+1. Vor Quellenänderung den vorhandenen Atlas-QA-Owner in PR17 über die ergänzende Grenze informieren und dessen aktuellen Kandidaten konsumieren; keine konkurrierende Umgestaltung des Runners. Veränderliche Grenze ausschließlich Workflowabschluss, gezielte selbständige Node-Gegenproben; keine Produktdateien, Fixturebytes oder GUI-Ressourcen.
+2. Hauptfehler und Shutdownfehler getrennt erfassen. Shutdown weiterhin genau einmal versuchen. Unabhängig von einer geworfenen Shutdownausnahme anschließend das Receipt schreiben, sofern das Ausgabeverzeichnis beschreibbar ist. Kein automatischer Prozessneustart und keine Behauptung normalen Prozessendes.
+3. Vorhandene Receiptfelder erhalten; Hauptfehler bleibt primäre Ursache. Eigenes additives shutdownFailure-Feld enthält nur Name/Meldung/Stack, keine zyklischen Editorobjekte. Jeder Shutdownfehler erzwingt passed:false und Exitcode1; Hauptfehler+Shutdownfehler bleiben beide sichtbar.
+4. Fehler des Receipt-Schreibens separat am Terminal melden und Exitcode1 erhalten. Nicht behaupten, dass bei defektem Dateisystem ein persistiertes Receipt garantiert werden kann.
+
+Abnahme: kontrollierte Node-Proben ohne Obsidian für Erfolg, Hauptfehler, Shutdownfehler, beide Fehler, Nicht-Error-Würfe und nicht beschreibbares Ausgabeziel. Tatsächlichen Workflowabschluss aus dem Kandidaten ausführen, keine bloße Nachbildung seiner Bedingungen. Anzahl der Shutdownaufrufe und Exitcode/Dateiinhalt prüfen; keine Sleeps oder nativen Wiederholungen. Syntax-/Diffprüfung sowie Repository-Basisgates vor Produktkandidatenveröffentlichung. Anschließend unabhängiger enger Review; native E2E-Abnahme bleibt separat.
+
+Aufräumplan nach Fachabschluss: eigene temporäre Node-Proben/Logs inventarisieren; notwendige Regressionsproben im Repository behalten, Rohlogs außerhalb des Vaults. Aufräumumsetzung und Review getrennt; fremde QA-Artefakte nicht entfernen.
+
+Planabschluss: nur diese Planung veröffentlicht. Umsetzung, Gegenproben, unabhängiger Review und Aufräum-P/I/R sind noch offen.
+
+HOST-RECEIPT-I01: Umsetzung abgeschlossen. PR17-Eingang regulär konsumiert; Hauptfehler und Abschlussfehler bleiben getrennt. Auch falsy Nicht-Error-Würfe bleiben fehlgeschlagen; Ausgabefehler erzwingen Exit1. Elf gezielte Proben führen den tatsächlichen Workflowabschluss in einer Node-VM aus, ohne GUI-Bootstrap. Typprüfung, vollständige Suite 454/454, Syntax und Diffprüfung bestanden. Build bestanden auf Arbeitsstand; sauberer Commitbuild folgt bei Veröffentlichung. Unabhängiger Review und getrenntes Aufräumen bleiben offen.
+
+HOST-RECEIPT-CLEAN-P01: unabhängiger Fachreview auf d94d41b PASS ohne Pflichtbefund ([direkter Review](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/47#issuecomment-6099483690)). Aufräumplan unter `/home/aaron/.cache/dungeon-native-qa/city-host-shutdown-cleanup/plan.json`, SHA256 `ffa179f163ad13f554ab4c9743653c794ccbc285ebb4ed29e1c0624d58032457`. Vier eigene Owner-/Integrationslogs und drei Produkt-/Test-/Suiteblobs inventarisiert; Delete-Liste leer, weil beide Logs direkte Prüfevidenz sind. Nächster eigener Lauf konsolidiert die Nachweisverweise und prüft Hashgleichheit; fremde QA-/Build-/Dependencywurzeln und Vault bleiben unberührt. Danach getrennte Cleanupreview; keine neue Produktprüfung oder GUI-Probe aus dieser Planung.
+
+Der vor Veröffentlichung neu eingegangene Shared-Repositorycheck ist regulär integriert; package.json enthält sowohl Shutdownregressionen als auch die neuen Strukturtests. Fremde Checkpointwurzeln und reviewte QA-Quellen bytegleich. Repositorycheck, Typprüfung, vollständige neue Suite und Build bestanden; der Testlistenkonflikt ist gezielt auf beide Testgruppen aufgelöst. Kein neuer Host-PASS.
+
+HOST-RECEIPT-CLEAN-I01: Nachweise in `/home/aaron/.cache/dungeon-native-qa/city-host-shutdown-cleanup/implementation.json` konsolidiert, SHA256 `a82b059380da40bd891c48619c8b77ef9048863c2e5d9b89a72c459c3be6d2d6`. Alle vier Logs und drei geschützten Blobs stimmen mit dem Plan überein; keine Löschung, kein GUI-Lauf. CI auf c293d51 PASS; unabhängiger Fachreview bleibt auf d94d41b gebunden. Nächster getrennter Lauf ist Cleanupreview der unveränderten Bytes und Verweise.
+
+HOST-RECEIPT-CLEAN-R01: Planbindung, vier Original-Loghashes und bytegleiche unabhängig reviewte Runner-/Testquellen geprüft: PASS ohne Befund. Neue Shared-Testliste separat auf exakt eigene Zusatzprobe plus unveränderten Sharedbestand geprüft; aktuelle fremde Checkpointwurzeln gleich Shared. Review `/home/aaron/.cache/dungeon-native-qa/city-host-shutdown-cleanup/review.json`, SHA256 `9884cea70599ed8c0806876fdea74cbee1c21a0bc61c83434e06d86b7e2273d9`. Repositorycheck,18 Struktur-/Contexttests und11 Shutdownproben PASS. Aufräum-P/I/R fertig; unabhängige endgültige Kompositionsentscheidung bleibt offen.

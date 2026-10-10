@@ -1,20 +1,15 @@
 # Produktroadmap und nächste Schritte
 
-Planungsstand: 10. Oktober 2026; ergänzt um Diagnose D01 und veröffentlichte Reparatur R01. Diese Orientierung bündelt die bestehenden Produkt- und Ownerentscheidungen. Live-Status: Aufgaben und aktueller Kandidat in [#12](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12); ein unten genannter Commit ist ein Belegstand, nicht automatisch der neueste Branchhead.
+Diese Datei führt die dauerhafte Lieferfolge. Aktueller Lauf, Übernahme und Gateentscheidung: [#12](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12), konkretes Aufgabenissue und aktueller PR samt neuesten relevanten Kommentaren. Native Wiederholungs- und Reparaturläufe werden hier nicht als zweite Live-Statusliste geführt.
 
-## Was jetzt zuerst passiert
+## Kritischer Pfad für E2E-01
 
-| Reihenfolge | Konkretes Ergebnis | Aufgabe / bestehende Arbeit | Eingang und Zuständigkeit |
-| --- | --- | --- | --- |
-| 1 | Veröffentlichte Capture-Reparatur nativ A→B→A prüfen und das Gate schließen | [#38](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/38), bestehender [PR #13](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/13) | Hex; Campaign B aus PR #37 ist bereits geliefert und konsumiert |
-| 2 | Einen integrierten Kandidaten unabhängig prüfen und Promotion/Nichtpromotion ausdrücklich entscheiden | [#39](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/39) | Nach #38 und den übrigen PR-13-Eingängen; bestehender Steward und unabhängige Fach-/Atlas-QA-Reviewer |
-| 3 | Orte und Keys auf Shared sichtbar anlegen, auswählen, verschieben/ändern und frisch wieder öffnen | [#40](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/40), bestehendes `HEX-03-I01b-marker` | Nach integrierter Hostentscheidung; Hex; bereits beschlossen in PVC-ATLAS-LOCATION-004 |
-| Begleitender Eingang | Konkreten P02-Save/Reopen-Minimalpfad und P04-Complete-Import mit realen Implementierungsownern verbinden | [#41](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/41) | Campaign/Data und Plattformkoordination #10/#11; offene Adapterrollen ausdrücklich übernehmen |
-| Danach | Alle E2E-01-Eingänge in einem vollständigen Nutzerablauf gemeinsam abnehmen | [#12](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12), [Meilenstein E2E-01](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/milestone/1) | Gatekatalog, gemeinsame SHA, versionierte Fixtures, echter Host und unabhängiger Review |
+1. Bestehendes Atlas-/Kampagnenwechselpaket [#38](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/38) / [PR #13](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/13): direkte Code- und Hostbelege an die unabhängige integrierte Entscheidung binden. Ein einzelner erfolgreicher Wiederholungslauf schließt das Produktgate nicht.
+2. [#39](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/39): integrierten Kandidaten unabhängig prüfen und Promotion/Nichtpromotion ausdrücklich entscheiden. Bestehende Eingänge und Owner erhalten; kein Doppel-Kandidat.
+3. [#40](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/40): sichtbarer Location-/Key-Ablauf auf Shared, einschließlich Änderung und frischem Wiederöffnen; nach integrierter Hostentscheidung, gemäß PVC-ATLAS-LOCATION-004.
+4. Vollständiges E2E-01: alle Eingänge auf gemeinsamer SHA, mit versionierten Fixtures, echtem Host und unabhängigem Review abnehmen. [#41](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/41) verbindet P02-Save/Reopen und P04-Complete-Import mit realen Adapterownern.
 
-Der dokumentierte A→B→A-Lauf auf `cd4a06d620a8a454aa5a82e9bc27a040cda3a374` scheiterte bereits vor Keyeingabe und Kampagnenwechsel. [Der direkte native Befund](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6098973186) wird durch die [D01-Diagnose am sichtbaren Hausbutton](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6099063871) ergänzt: Nebenläufiges Terrain-Nachladen verändert die History während Capture wartet. Hex hat [R01 im bestehenden Kandidaten veröffentlicht](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6099309213); der nächste Lauf ist die neu koordinierte native A→B→A-Probe. Der frühere native FAILED-Beleg bleibt erhalten; Quell-/Modelltests schließen das Hostgate nicht. Es braucht keine weitere Campaign-B-Bestellung und keinen parallelen Atlas-Kandidaten.
-
-[Sichtbarer Location-/Key-Nutzen](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1#issuecomment-6098878157) ist das nächste konkrete Produktziel nach dieser Integration. Katalog-Quellarbeit bleibt notwendig, aber Quelltranskription allein ist noch kein nutzbarer Itemprovider; Quellen-, Provider- und UI-Abnahme bleiben in #9 getrennt sichtbar.
+Diese Links bezeichnen die bestehende Lieferkette, keine dauerhaft freien Aufgaben. Abgeschlossene Schritte bleiben Belege; den aktuellen offenen Schritt in #12 prüfen. Katalogarbeit bleibt ein eigener Eingang: Quellen-, Provider- und UI-Abnahme in #9 unterscheiden.
 
 ## Lieferfolge des Gesamtprodukts
 
@@ -56,4 +51,6 @@ Automatische Speicherung und vollständige Wiederaufnahme sind bereits querschni
 
 Ein Aufgabenabschluss liefert ein Ergebnis mit Beleg und einem nächsten Empfänger. Nur bei neuem Ergebnis, geändertem Blocker oder Reviewbedarf einen neuen Status veröffentlichen. Keine deltafreien Meldeschleifen. Bereits vorhandene PRs reviewen und ihre Abhängigkeiten klären; dieses Aufräumen schließt oder merged keine unbewertete fremde Arbeit.
 
-Für den Einstieg unabhängig vom GUI-Engpass: [Trap-Quell-/Paketabgleich #46](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/46). Die [Fixture-B-Anleitung #42](CONTRIBUTOR-FIXTURE-B.md) ist über PR #45 abgeschlossen; weitere Wege und ein geprüfter Modelltest stehen im [Agenteneinstieg](../CONTRIBUTING.md#agenteneinstieg).
+Für den Einstieg unabhängig vom GUI-Engpass: [aktuell frei übernehmbare Aufgaben](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues?q=is%3Aissue+is%3Aopen+label%3A%22status%3Aready%22). Die [Fixture-B-Anleitung #42](CONTRIBUTOR-FIXTURE-B.md) ist über PR #45 abgeschlossen; weitere Wege und ein geprüfter Modelltest stehen im [Agenteneinstieg](../CONTRIBUTING.md#agenteneinstieg).
+
+Bei Status-/Abhängigkeitswechsel aktualisiert der Paketowner sein Issue; bei geänderter Lieferkette zieht der Integrationsowner diese Roadmap nach. Ablage, Ablösung und automatische Prüfungen folgen dem [Repository-Pflegevertrag](REPOSITORY.md).
