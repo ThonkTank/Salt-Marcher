@@ -12,32 +12,28 @@ import { VaultCampaignRuntimeStorage } from "../src/vault-campaign-runtime-sourc
 import { parseCampaignRuntimeManifest } from "../src/features/campaign/campaign-runtime-source";
 import {
   campaignId,
-  campaignNamespace,
-  campaignSnapshot,
-  campaignContext,
-  campaignContextToken,
 } from "../src/features/campaign/campaign-contracts";
 import {
-  campaignDomainOwnerPolicyDigest,
   campaignOwnershipDigestValue,
-  campaignDomainOwnershipProjection,
-  type CampaignDomainOwnerProjectionV1,
 } from "../src/features/campaign/campaign-ownership";
 import { AtlasRepository } from "../src/features/atlas/atlas-repository";
 import { parseLocationDocument } from "../src/features/location/location-schema";
-import { parseCityDocument } from "../src/features/city/codec";
-import { isStructuredRoom, parseDocument } from "../src/model";
 import type { AtlasEditor } from "../src/features/atlas/atlas-editor";
 import { FileConflict } from "../src/persistence";
 
-const uuid = (n: number) =>
-  `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
-const a = campaignId(uuid(700)),
-  b = campaignId(uuid(701));
 const root = "tests/fixtures/atlas-e2e-spatial-v2/";
 const seed = JSON.parse(readFileSync(root + "manifest.json", "utf8"));
+const bRoot = "tests/fixtures/atlas-e2e-campaign-b-v1/";
+const bSeed = JSON.parse(readFileSync(bRoot + "manifest.json", "utf8"));
+const uuid = (n: number) =>
+  `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
+const aRuntime = JSON.parse(
+    readFileSync(root + seed.campaign.input.fixtureFile, "utf8"),
+  ),
+  bRuntime = JSON.parse(readFileSync(bRoot + bSeed.campaign.fixtureFile, "utf8")),
+  a = campaignId(aRuntime.snapshot.campaignId),
+  b = campaignId(bRuntime.snapshot.campaignId);
 const aPath = seed.input[0].path as string;
-const bPath = "Atlanten/B.overworld";
 const sha = (text: string) =>
   `sha256:${createHash("sha256").update(text).digest("hex")}`;
 const tick = () => new Promise<void>((resolve) => setImmediate(resolve));
@@ -50,10 +46,16 @@ async function settled(fn: () => boolean, detail: () => string = () => "") {
 }
 class Vault {
   readonly bytes = new Map<string, string>(
-    seed.input.map((f: { path: string; fixtureFile: string }) => [
-      f.path,
-      readFileSync(root + f.fixtureFile, "utf8"),
-    ]),
+    [
+      ...seed.input.map((f: { path: string; fixtureFile: string }) => [
+        f.path,
+        readFileSync(root + f.fixtureFile, "utf8"),
+      ]),
+      ...bSeed.input.map((f: { path: string; fixtureFile: string }) => [
+        f.path,
+        readFileSync(bRoot + f.fixtureFile, "utf8"),
+      ]),
+    ],
   );
   readonly files = new Map<string, TFile>();
   readonly folders = new Set<string>();
@@ -182,177 +184,31 @@ function setupDOM() {
     content: document.querySelector<HTMLElement>("#host")!,
   };
 }
-async function manifest(
-  vault: Vault,
-  path: string,
-  cid: typeof a,
-  namespace: string,
-) {
-  const options = {
-    locations: true as const,
-    details: true as const,
-    resolveLocation: async (id: string) =>
-      [...vault.bytes].find(
-        ([p, raw]) =>
-          p.endsWith(".location") && parseLocationDocument(raw).id === id,
-      )![0],
-    resolveDetail: async (
-      _world: string,
-      kind: "city" | "dungeon",
-      id: string,
-    ) =>
-      [...vault.bytes]
-        .filter(
-          ([p, raw]) =>
-            p.endsWith("." + kind) &&
-            (kind === "city" ? parseCityDocument(raw) : parseDocument(raw))
-              .id === id,
-        )
-        .map(([p]) => p),
-  };
-  const repo = new AtlasRepository(
-    {
-      read: async (p) => vault.bytes.get(p) ?? null,
-      compareAndWrite: (p, before, after) => vault.cas(p, before, after),
-    },
-    path,
-    vault,
-    options,
-  );
-  await repo.open();
-  const capture = await repo.captureNative({
-    worldId: repo.terrainSource.world.id,
-  });
-  const records: any[] = [],
-    payloads = new Map<string, unknown>();
-  const add = (
-    kind: string,
-    id: string,
-    documentId: string,
-    payload: unknown,
-  ) => {
-    records.push({
-      id,
-      kind,
-      documentId,
-      ownerId:
-        kind === "city" || kind === "building"
-          ? "city"
-          : ["dungeon", "room", "room-section"].includes(kind)
-            ? "dungeon"
-            : "atlas",
-      availability: "available",
-    });
-    payloads.set(id, payload);
-  };
-  for (const f of capture.files) {
-    if (f.kind === "terrain") continue;
-    const raw = JSON.parse(f.after!);
-    add(f.kind, raw.id, raw.id, raw);
-    if (f.kind === "location")
-      for (const s of parseLocationDocument(f.after!).sections)
-        add("location-section", s.id, raw.id, s);
-    if (f.kind === "city")
-      for (const h of parseCityDocument(f.after!).buildings)
-        add("building", h.id, raw.id, h);
-    if (f.kind === "dungeon")
-      for (const room of parseDocument(f.after!).entities)
-        if (isStructuredRoom(room)) {
-          add("room", room.id, raw.id, room);
-          for (const s of room.key.sections)
-            add("room-section", s.id, raw.id, s);
-        }
-  }
-  const owners = ["atlas", "city", "dungeon"].map((ownerId) => {
-    const owner: CampaignDomainOwnerProjectionV1 = {
-      ownerId,
-      ownerRevision: "test-owner:1",
-      schemaRevision: "schema:1",
-      snapshotRevision: "snapshot:1",
-      policyRevision: "policy:1",
-      policyDigest: sha("placeholder"),
-      availability: "confirmed",
-      emptyConfirmed: false,
-      referenceSchemas: ["native:1"],
-      source: {
-        adapterType: "native-test-fixture",
-        generation: "test-source:1",
-      },
-      records: records
-        .filter((r) => r.ownerId === ownerId)
-        .map((r) => ({
-          id: r.id,
-          recordType: r.kind,
-          references: [],
-          payloadDigest: sha(JSON.stringify(payloads.get(r.id))),
-          media: null,
-        })),
-      transferPolicies: [],
-    };
-    return {
-      ...owner,
-      policyDigest: campaignDomainOwnerPolicyDigest(owner, sha),
-    };
-  });
-  const snapshot = campaignSnapshot({
-    schemaVersion: 1,
-    campaignId: cid,
-    revision: 1,
-    name: cid === a ? "A" : "B",
-    namespace: campaignNamespace(namespace),
-    lifecycle: "active",
-  });
-  const normalized = campaignDomainOwnershipProjection({
-    version: 1,
-    registryId: `native-fixture:${cid}`,
-    registryRevision: "registry:1",
-    projectionDigest: sha("test"),
-    context: campaignContext(snapshot, campaignContextToken("test-fixture")),
-    owners,
-  }).owners;
-  const registry = {
-    version: 1,
-    registryId: `native-fixture:${cid}`,
-    registryRevision: "registry:1",
-    campaignId: cid,
-    campaignRevision: 1,
-    namespace: snapshot.namespace,
-    owners: normalized,
-  };
-  const value = {
-    version: 1,
-    snapshot,
-    registry: {
-      ...registry,
-      registryContentDigest: campaignOwnershipDigestValue(registry, sha),
-    },
-    atlas: {
-      worldId: capture.worldId,
-      files: capture.files.map((f) => ({
-        kind: f.kind,
-        id: f.id,
-        path: f.path,
-        savedDigest: f.beforeDigest,
-      })),
-      records,
-    },
-  };
-  parseCampaignRuntimeManifest(JSON.stringify(value), sha);
-  await vault.create(
-    `Kampagnen/SaltMarcher/${cid}.campaign.json`,
-    JSON.stringify(value),
-  );
-  return { repo, value };
-}
-async function fixture(nativeSave = false) {
+async function fixture(nativeSave = false, unsupportedOwner = false) {
   const dom = setupDOM(),
     vault = new Vault();
+  let aManifestBytes = readFileSync(
+    root + seed.campaign.input.fixtureFile,
+    "utf8",
+  );
+  if (unsupportedOwner) {
+    const value = JSON.parse(aManifestBytes);
+    value.registry.owners = value.registry.owners.map((owner: any) => ({
+      ...owner,
+      source: { ...owner.source, adapterType: "native-test-fixture" },
+    }));
+    const { registryContentDigest: _digest, ...registry } = value.registry;
+    value.registry.registryContentDigest = campaignOwnershipDigestValue(
+      registry,
+      sha,
+    );
+    aManifestBytes = JSON.stringify(value);
+  }
   if (nativeSave) {
-    await vault.create(seed.campaign.path, readFileSync(root + seed.campaign.input.fixtureFile, "utf8"));
+    await vault.create(seed.campaign.path, aManifestBytes);
   } else {
-    const first = await manifest(vault, aPath, a, uuid(710));
-    await first.repo.copy(bPath, uuid(999), "B");
-    await manifest(vault, bPath, b, uuid(711));
+    await vault.create(seed.campaign.path, aManifestBytes);
+    await vault.create(bSeed.campaign.path, readFileSync(bRoot + bSeed.campaign.fixtureFile, "utf8"));
   }
   const app = { document: dom.document, vault } as any;
   const services = atlasCampaignServices(
@@ -458,6 +314,10 @@ test("actual AtlasView mounts real Vault provider; Location dock reaches house a
 
 test("invalid Location Key stops actual campaign activation; A-B-A remounts fresh native identities and retains old drafts", async () => {
   const f = await fixture();
+  const campaignButton = (name: string) =>
+    [...f.content.querySelectorAll<HTMLLIElement>(".dn-campaign-entry li")]
+      .find((row) => row.textContent?.includes(name))
+      ?.querySelector<HTMLButtonElement>("button");
   await f.host().navigate(locationTarget);
   const old = active(f),
     renderer = f.editor()!.renderer;
@@ -470,11 +330,17 @@ test("invalid Location Key stops actual campaign activation; A-B-A remounts fres
     "",
   );
   f.input('[aria-label="Ortsname"]', "Gesicherter Wechselentwurf");
+  const openB = campaignButton(bSeed.initialOracle.picker.label);
+  assert.ok(openB);
+  assert.equal(openB.disabled, false);
   await f.host().openCampaign(b);
   const second = active(f);
   assert.equal(second.context.campaignId, b);
   assert.notEqual(second.history, old.history);
   assert.throws(() => old.history.undo(), /widerrufen/);
+  const openA = campaignButton(aRuntime.snapshot.name);
+  assert.ok(openA);
+  assert.equal(openA.disabled, false);
   await f.host().openCampaign(a);
   const third = active(f);
   assert.notEqual(third.context.contextToken, old.context.contextToken);
@@ -491,6 +357,49 @@ test("invalid Location Key stops actual campaign activation; A-B-A remounts fres
   assert.ok(f.services.retainedDrafts!.length > 0);
 });
 
+test("the actual picker switches between independent native A and B mounts", async () => {
+  const f = await fixture();
+  const campaignButton = (name: string) =>
+    [...f.content.querySelectorAll<HTMLLIElement>(".dn-campaign-entry li")]
+      .find((row) => row.textContent?.includes(name))
+      ?.querySelector<HTMLButtonElement>("button");
+  const host = f.host(),
+    openCampaign = host.openCampaign.bind(host);
+  let pickerOpen: Promise<void> | undefined;
+  host.openCampaign = (id) => (pickerOpen = openCampaign(id));
+  const first = active(f);
+  const openB = campaignButton(bSeed.initialOracle.picker.label);
+  assert.ok(openB);
+  f.click(openB);
+  assert.ok(pickerOpen);
+  await pickerOpen;
+  await tick();
+  const second = active(f);
+  assert.equal(second.context.campaignId, b);
+  assert.equal(second.inventory.worldId, bSeed.initialOracle.worldId);
+  assert.notEqual(second.context.contextToken, first.context.contextToken);
+  assert.notEqual(second.repository, first.repository);
+  assert.notEqual(second.history, first.history);
+  assert.equal(f.content.textContent?.includes(bSeed.initialOracle.worldName), true);
+
+  const openA = campaignButton(aRuntime.snapshot.name);
+  assert.ok(openA);
+  pickerOpen = undefined;
+  f.click(openA);
+  assert.ok(pickerOpen);
+  await pickerOpen;
+  await tick();
+  const third = active(f);
+  assert.equal(third.context.campaignId, a);
+  assert.notEqual(third.context.contextToken, first.context.contextToken);
+  assert.notEqual(third.context.contextToken, second.context.contextToken);
+  assert.notEqual(third.repository, first.repository);
+  assert.notEqual(third.repository, second.repository);
+  assert.notEqual(third.history, first.history);
+  assert.notEqual(third.history, second.history);
+  await f.close();
+});
+
 test("synchronous manifest invalidation detaches old UI, blocks History and preserves uncommitted Key across view lifetimes", async () => {
   const f = await fixture();
   await f.host().navigate(locationTarget);
@@ -500,7 +409,7 @@ test("synchronous manifest invalidation detaches old UI, blocks History and pres
     '[aria-label="Ortsname"]',
     "Nicht übernommener alter Text",
   );
-  const path = `Kampagnen/SaltMarcher/${a}.campaign.json`;
+  const path = seed.campaign.path as string;
   await f.vault.process(f.vault.files.get(path)!, (raw) => raw + " ");
   assert.equal(f.host().state.kind, "unavailable");
   assert.equal(f.editor(), undefined);
@@ -535,13 +444,13 @@ test("discard resets Sources through a fresh guarded mount, without retaining a 
 });
 
 test("an unsupported generic owner contract cannot publish local files through the managed Save path", async () => {
-  const f = await fixture();
+  const f = await fixture(false, true);
   await f.host().navigate(locationTarget);
   f.input('[aria-label="Ortsname"]', "Lokal gespeichert");
   await f.editor()!.flush();
   const state = active(f);
   const before = f.vault.bytes.get(`Orte/${uuid(11)}.location`)!;
-  await assert.rejects(state.repository.save(), /Native Recordclosure stimmt nicht/);
+  await assert.rejects(state.repository.save(), /Nicht unterstützter autorisierter Owner-Save-Vertrag/);
   assert.equal(state.repository.dirty, true);
   const saved = f.vault.bytes.get(`Orte/${uuid(11)}.location`)!;
   assert.equal(saved, before);
@@ -636,7 +545,7 @@ test("actual managed Save releases a real rolled-back first-native failure and r
 
 test("bad or foreign manifest membership cannot fall through into an unguarded standalone atlas", async () => {
   const f = await fixture();
-  const path = `Kampagnen/SaltMarcher/${a}.campaign.json`;
+  const path = seed.campaign.path as string;
   await f.vault.process(f.vault.files.get(path)!, () => "{damaged");
   await f.view.onLoadFile(f.vault.files.get(aPath)!);
   assert.equal(f.editor(), undefined);
@@ -661,7 +570,7 @@ test("late native detail load after actual provider invalidation cannot hydrate 
   };
   const opening = f.view.onLoadFile(f.vault.files.get(aPath)!);
   await started;
-  const path = `Kampagnen/SaltMarcher/${a}.campaign.json`;
+  const path = seed.campaign.path as string;
   await f.vault.process(f.vault.files.get(path)!, (raw) => raw + " ");
   const writes = f.vault.writes.length;
   release();
@@ -684,7 +593,7 @@ test("retained old detail callback cannot navigate or edit a newer active campai
     ".dn-atlas-detail-entry li button",
   )!;
   f.input('[aria-label="Ortsname"]', "Alter ungesicherter Text");
-  const path = `Kampagnen/SaltMarcher/${a}.campaign.json`;
+  const path = seed.campaign.path as string;
   await f.vault.process(f.vault.files.get(path)!, (raw) => raw + " ");
   await f.host().openCampaign(b);
   const current = active(f),
