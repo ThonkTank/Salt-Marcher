@@ -8,11 +8,16 @@ Save eines Detaillinks am bestehenden Ort und des geänderten Parents einer
 bestehenden Dungeonplatzierung gelingt, behält jedoch veraltete Atlas-Registryreferenzen.
 Eine frische Modell-Repositoryinstanz bestätigt die gespeicherten nativen Bindungen
 und ihre abweichende Registryclosure; Dungeonbytes und Undo/Redo bleiben exakt.
-Nächster eigener getrennter Lauf ist die gezielte Reparatur der bestehenden
-`AtlasCampaignManifestSave.owners`-Referenzprojektion samt Regression. Danach
-folgt der noch fehlende sichtbare Verortungsanschluss. Neue Placementkennungen
+Die [N01-Reparatur](docs/reference/atlas-detail-binding-d01/repair-n01.json) auf
+`9784d03ec33cccefebb6878383f6f7e80e034102` leitet die Atlasreferenzen aus exakten
+nativen Before-/Afterdaten ab und nutzt die vorhandene Campaign-Erweiterungsautorität.
+Neun neue Regressionen prüfen Save/Undo/Redo, frischen Modell-Mount, Recovery und
+gefälschte Referenzbelege; der gemeinsame Stand mit Shared527398c besteht Typprüfung,
+880 Tests (ein optionaler PDF-Test ausgelassen) und Build. Nächster getrennter
+Schritt ist der unabhängige Campaign/Data-Review dieses konkreten Speicherkandidaten.
+Nach Annahme/Integration folgt der noch fehlende sichtbare Verortungsanschluss. Neue Placementkennungen
 sind derzeit abgewiesen und werden nicht durch diese Diagnose freigegeben.
-Kein GUI-/Electron-/physischer oder Gesamt-E2E-Nachweis und keine neue allgemeine
+N01 liefert keinen GUI-/Electron-/physischen oder Gesamt-E2E-Nachweis und keine neue allgemeine
 Plan-/Reviewrunde. Der begrenzte abgeschlossene #40-Scope bleibt erhalten.
 
 Der begrenzte Orts-/Key-/Verschiebe-/UndoRedo-/Save-/Frischstart-Meilenstein

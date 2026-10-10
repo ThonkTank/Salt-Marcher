@@ -902,7 +902,7 @@
   "hexAtlasExecution": {
     "scope": "HEX-00 bis HEX-28 und sämtliche eingeordneten CITY-00 bis CITY-09 vollständig",
     "phase": "HEX-03",
-    "state": "detail_binding_registry_reference_gap_reproduced_targeted_repair_next",
+    "state": "detail_binding_reference_repair_implemented_independent_review_pending",
     "plan": "ROADMAP-E2E01-SPATIAL-INTEGRATION-PLAN.md",
     "currentRun": {
       "id": "E2E-01-SPACE-I01b",
@@ -949,21 +949,25 @@
       "phaseApproval": false
     },
     "nextRun": {
-      "id": "E2E-01-HEX04-DETAIL-REFERENCE-N01",
-      "kind": "targeted_repair_of_reproduced_native_binding_reference_gap",
+      "id": "E2E-01-HEX04-DETAIL-REFERENCE-R01",
+      "kind": "targeted_independent_review_of_repaired_storage_reference_closure",
       "owner": "Hex",
+      "reviewer": "Campaign/Data owner (existing colleague)",
       "issue": 7,
       "e2eIssue": 12,
       "e2e01UserLine": 13,
       "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
-      "sourcePlan": "ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md",
-      "input": "checkpoint.hexAtlasExecution.latestDetailBindingDiagnosticD01",
-      "focus": "Repair AtlasCampaignManifestSave existing atlas-owned references for Location detailMaps and same-ID Dungeon parent changes from exact native before/after closure, with targeted regressions, before adding Dungeon-at-Location UI. Keep schemas, source/file/Context/receipt guards, original IDs and native Dungeon bytes. New placement-record creation remains a later explicit extension.",
+      "input": "checkpoint.hexAtlasExecution.latestDetailReferenceRepairN01",
+      "focus": "Review exact candidate native Before/After reference closure, guarded Atlas verifyExtension, same-ID binding Save/Undo/Redo and prepared/committed recovery. No self-integration; visible Dungeon-at-Location UI follows acceptance in its own run.",
       "fixtureVersion": "e2e01-spatial-v2",
       "slotRequiredAgain": false,
       "slotConfirmedForNextRun": false,
-      "guiRule": "No GUI is required for this targeted repair; any later actual GUI must freshly coordinate the sole local slot.",
-      "limits": "Separate implementation/independent review/repair/native/cleanup runs per current user instruction; no new generic plan or review round, no #40 reopening, no CITY/P02/P04/E2E02-04/physical/original/large-world/installation/full-E2E advancement."
+      "guiRule": "No GUI in this repair/review. A later actual Obsidian run needs fresh sole-local-slot coordination.",
+      "limits": [
+        "No new placement IDs or new native owner/schema authority",
+        "No City/Dungeon owner edits or proxy review",
+        "No full-E2E/native/physical/original/large-map/install PASS"
+      ]
     },
     "review": {
       "run": "HEX-02-R02",
@@ -5413,7 +5417,7 @@
       "platformIssue": 11,
       "checkpointIsAuthoritative": true
     },
-    "updatedAt": "2026-10-10T21:25:33.097276+00:00",
+    "updatedAt": "2026-10-10T21:42:48.747792+00:00",
     "consumerMatrix": {
       "id": "RUNTIME-MANIFEST-I02-CONSUMER-MATRIX-V1",
       "state": "frozen_complete_matrix_green_on_productive_Host_source",
@@ -6532,6 +6536,66 @@
       "sha256": "2ff39c51e511c1d35a946db518675ec737d85b573a4fab690b3740df639e387f",
       "reproduction": "docs/reference/atlas-detail-binding-d01/diagnostic.entry.ts",
       "modelCases": 4
+    },
+    "latestDetailReferenceRepairN01": {
+      "id": "E2E-01-HEX04-DETAIL-REFERENCE-N01",
+      "state": "targeted_repair_core_checked_independent_review_pending",
+      "owner": "Hex",
+      "sourceCommit": "9784d03ec33cccefebb6878383f6f7e80e034102",
+      "productCommit": "552c6e828906f79c4bad5517fe8ad110035128ba",
+      "consumedShared": "527398c6f9e26f37d2ffdb9d305359e1daf0e708",
+      "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
+      "e2e01UserLine": 13,
+      "fixtureVersion": "e2e01-spatial-v2",
+      "checks": {
+        "typecheck": {
+          "command": "npm run check",
+          "status": "PASS",
+          "log": "/home/aaron/.cache/dungeon-native-qa/hex-04/detail-reference-n01-20261010-2130/typecheck.integrated.log",
+          "sha256": "079b4802c6da64fa1d4244b135be0c1fad7ce6c952c6dda76f3320c685743d4c"
+        },
+        "tests": {
+          "command": "npm test",
+          "status": "PASS",
+          "tests": 881,
+          "pass": 880,
+          "fail": 0,
+          "skip": 1,
+          "skipReason": "Optional hash-pinned official SRD 5.1 PDF unavailable; offline cases retained.",
+          "log": "/home/aaron/.cache/dungeon-native-qa/hex-04/detail-reference-n01-20261010-2130/tests.integrated.log",
+          "sha256": "3166f01c18b832e49f7439d0471ded564d557cd4c47c56c237da99186fcd252a"
+        },
+        "build": {
+          "command": "npm run build",
+          "status": "PASS",
+          "log": "/home/aaron/.cache/dungeon-native-qa/hex-04/detail-reference-n01-20261010-2130/build.integrated.log",
+          "sha256": "ae6a9ea961f74697a54bf5fd8ab4fc8f8528391539241180a94f8281c635a5f4"
+        },
+        "baselineSensitivity": {
+          "sourceSave": "62db558e4cbef825101a5913578ec33e91499954",
+          "tests": 9,
+          "expectedFailures": 8,
+          "unchangedNewIdGuardPass": 1,
+          "log": "/home/aaron/.cache/dungeon-native-qa/hex-04/detail-reference-n01-20261010-2130/baseline-regression.final.log",
+          "sha256": "a776140c34cee5f6d446c61bd921d3915fdd38dd82482f39662e8a560fd9f0ac",
+          "method": "Bundle the same regression source with only AtlasCampaignManifestSave loaded from the pre-repair commit; repository/native files are not mutated."
+        }
+      },
+      "scope": {
+        "gui": false,
+        "nativeObsidian": false,
+        "freshElectronProcess": false,
+        "physicalInput": false,
+        "userVaultInstalled": false,
+        "originalParity": false,
+        "largeMap": false,
+        "fullE2E": false,
+        "independentReview": "pending Campaign/Data owner exact candidate review",
+        "newPlacementIdentityAuthority": false,
+        "visibleDungeonPlacementUI": false
+      },
+      "receipt": "docs/reference/atlas-detail-binding-d01/repair-n01.json",
+      "sha256": "cb57edf035bb7acb51d276e3d75e52e3cd57657cb9aab08ed407f3667ca3f7c7"
     }
   },
   "phase": "Phase 6: zweiter Nachbesserungslauf teilweise umgesetzt; fünf Restpositionen und unabhängiger Review offen",

@@ -154985,6 +154985,66 @@
           "sha256": "2ff39c51e511c1d35a946db518675ec737d85b573a4fab690b3740df639e387f",
           "reproduction": "docs/reference/atlas-detail-binding-d01/diagnostic.entry.ts",
           "modelCases": 4
+        },
+        "detailReferenceRepairN01": {
+          "id": "E2E-01-HEX04-DETAIL-REFERENCE-N01",
+          "state": "targeted_repair_core_checked_independent_review_pending",
+          "owner": "Hex",
+          "sourceCommit": "9784d03ec33cccefebb6878383f6f7e80e034102",
+          "productCommit": "552c6e828906f79c4bad5517fe8ad110035128ba",
+          "consumedShared": "527398c6f9e26f37d2ffdb9d305359e1daf0e708",
+          "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
+          "e2e01UserLine": 13,
+          "fixtureVersion": "e2e01-spatial-v2",
+          "checks": {
+            "typecheck": {
+              "command": "npm run check",
+              "status": "PASS",
+              "log": "/home/aaron/.cache/dungeon-native-qa/hex-04/detail-reference-n01-20261010-2130/typecheck.integrated.log",
+              "sha256": "079b4802c6da64fa1d4244b135be0c1fad7ce6c952c6dda76f3320c685743d4c"
+            },
+            "tests": {
+              "command": "npm test",
+              "status": "PASS",
+              "tests": 881,
+              "pass": 880,
+              "fail": 0,
+              "skip": 1,
+              "skipReason": "Optional hash-pinned official SRD 5.1 PDF unavailable; offline cases retained.",
+              "log": "/home/aaron/.cache/dungeon-native-qa/hex-04/detail-reference-n01-20261010-2130/tests.integrated.log",
+              "sha256": "3166f01c18b832e49f7439d0471ded564d557cd4c47c56c237da99186fcd252a"
+            },
+            "build": {
+              "command": "npm run build",
+              "status": "PASS",
+              "log": "/home/aaron/.cache/dungeon-native-qa/hex-04/detail-reference-n01-20261010-2130/build.integrated.log",
+              "sha256": "ae6a9ea961f74697a54bf5fd8ab4fc8f8528391539241180a94f8281c635a5f4"
+            },
+            "baselineSensitivity": {
+              "sourceSave": "62db558e4cbef825101a5913578ec33e91499954",
+              "tests": 9,
+              "expectedFailures": 8,
+              "unchangedNewIdGuardPass": 1,
+              "log": "/home/aaron/.cache/dungeon-native-qa/hex-04/detail-reference-n01-20261010-2130/baseline-regression.final.log",
+              "sha256": "a776140c34cee5f6d446c61bd921d3915fdd38dd82482f39662e8a560fd9f0ac",
+              "method": "Bundle the same regression source with only AtlasCampaignManifestSave loaded from the pre-repair commit; repository/native files are not mutated."
+            }
+          },
+          "scope": {
+            "gui": false,
+            "nativeObsidian": false,
+            "freshElectronProcess": false,
+            "physicalInput": false,
+            "userVaultInstalled": false,
+            "originalParity": false,
+            "largeMap": false,
+            "fullE2E": false,
+            "independentReview": "pending Campaign/Data owner exact candidate review",
+            "newPlacementIdentityAuthority": false,
+            "visibleDungeonPlacementUI": false
+          },
+          "receipt": "docs/reference/atlas-detail-binding-d01/repair-n01.json",
+          "sha256": "cb57edf035bb7acb51d276e3d75e52e3cd57657cb9aab08ed407f3667ca3f7c7"
         }
       }
     ],
