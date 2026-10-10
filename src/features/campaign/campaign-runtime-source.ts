@@ -69,9 +69,47 @@ export interface CampaignRuntimeFile {
   readonly path: string;
   readonly bytes: string;
 }
+export interface CampaignRuntimeStorageChange {
+  readonly kind: "create" | "modify" | "delete" | "rename";
+  readonly path: string;
+  readonly oldPath?: string;
+  /** Vault modify is announced synchronously, then resolved in the same event order. */
+  readonly phase?: "pending" | "resolved";
+  readonly eventId?: number;
+  /** Exact post-event bytes when observable. Missing bytes always revoke. */
+  readonly bytes?: string;
+}
 export interface CampaignRuntimeStorage {
   list(): Promise<readonly CampaignRuntimeFile[]>;
-  subscribe?(changed: () => void): () => void;
+  subscribe?(changed: (change: CampaignRuntimeStorageChange) => void): () => void;
+}
+export interface CampaignRuntimeSaveJournal {
+  readonly transactionId: string;
+  readonly state: "prepared" | "committed";
+  readonly writes: readonly { readonly path: string; readonly before: string | null; readonly after: string | null }[];
+}
+export interface CampaignRuntimeSaveAcknowledgmentV1 {
+  readonly version: 1;
+  readonly transactionId: string;
+  readonly manifestPath: string;
+  readonly beforeManifestBytes: string;
+  readonly afterManifestBytes: string;
+  readonly context: CampaignContextProjection;
+  readonly beforeRegistry: CampaignDomainOwnershipProjectionV1;
+  readonly journal: CampaignRuntimeSaveJournal;
+}
+export interface CampaignRuntimeSaveAcknowledgmentLease {
+  readonly transactionId: string;
+  readonly sourceEpoch: number;
+}
+export interface CampaignRuntimeSaveAcknowledgmentResult {
+  readonly transactionId: string;
+  readonly context: CampaignContextProjection;
+  readonly registry: CampaignDomainOwnershipProjectionV1;
+  readonly inventory: AtlasConfirmedInventory;
+}
+export interface CampaignRuntimeSaveAcknowledgmentValidator {
+  validateAcknowledgment(proof: CampaignRuntimeSaveAcknowledgmentV1): void;
 }
 export interface CampaignRuntimeEntry {
   readonly key: string;
@@ -217,24 +255,50 @@ export class CampaignRuntimeSource {
   private closed = false;
   private loaded?: LoadedSet;
   private unsubscribe?: () => void;
-  private readonly changed = new Set<() => void>();
+  private readonly changed = new Set<(epoch: number, change: CampaignRuntimeStorageChange) => void>();
   private readonly projectionSources = new Map<string, string | null>();
+  private readonly modifyReservations = new Map<number, { readonly path: string; readonly epoch: number }>();
+  private readonly acknowledgmentLeases = new WeakMap<object, string>();
+  private readonly acknowledgedSaves = new Map<string, {
+    readonly proof: string;
+    readonly epoch: number;
+    readonly result: CampaignRuntimeSaveAcknowledgmentResult;
+  }>();
   constructor(
     private readonly storage: CampaignRuntimeStorage,
     private readonly digest: CampaignOwnershipDigest,
+    private readonly acknowledgmentValidator?: CampaignRuntimeSaveAcknowledgmentValidator,
   ) {
-    this.unsubscribe = storage.subscribe?.(() => {
-      this.invalidated = true; this.changeEpoch++;
-      for (const listener of this.changed) listener();
+    this.unsubscribe = storage.subscribe?.((change) => {
+      if (change.kind === "modify" && change.phase === "resolved") {
+        const reservation = change.eventId === undefined ? undefined : this.modifyReservations.get(change.eventId);
+        if (reservation && reservation.path === change.path) {
+          this.modifyReservations.delete(change.eventId!);
+          for (const listener of this.changed) listener(reservation.epoch, change);
+          return;
+        }
+        if (change.eventId !== undefined) this.modifyReservations.delete(change.eventId);
+      }
+      this.invalidated = true;
+      this.changeEpoch++;
+      if (change.kind === "modify" && change.phase === "pending" && change.eventId !== undefined) {
+        if (this.modifyReservations.has(change.eventId)) this.modifyReservations.delete(change.eventId);
+        else this.modifyReservations.set(change.eventId, { path: change.path, epoch: this.changeEpoch });
+      }
+      for (const listener of this.changed) listener(this.changeEpoch, change);
     });
   }
-  subscribe(changed: () => void): () => void {
+  subscribe(changed: (epoch: number, change: CampaignRuntimeStorageChange) => void): () => void {
     if (this.closed) throw new Error("Campaignquelle ist geschlossen.");
     this.changed.add(changed); return () => this.changed.delete(changed);
   }
   close(): void {
     this.unsubscribe?.(); this.unsubscribe = undefined; this.invalidated = true;
-    this.closed = true; this.changeEpoch++; this.loadSequence++; this.changed.clear();
+    this.closed = true; this.changeEpoch++; this.loadSequence++;
+    this.modifyReservations.clear();
+    for (const listener of this.changed)
+      listener(this.changeEpoch, { kind: "delete", path: "" });
+    this.changed.clear();
   }
   private async load(force = false): Promise<LoadedSet> {
     if (this.closed) throw new Error("Campaignquelle ist geschlossen.");
@@ -344,6 +408,81 @@ export class CampaignRuntimeSource {
       } catch { return { kind: "unavailable" }; }
     },
   };
+  prepareSaveAcknowledgment(proof: CampaignRuntimeSaveAcknowledgmentV1): CampaignRuntimeSaveAcknowledgmentLease {
+    if (this.closed) throw new Error("Campaignquelle ist geschlossen.");
+    if (!this.acknowledgmentValidator)
+      throw new Error("Campaignquelle besitzt keine Save-Acknowledgment-Autorität.");
+    this.acknowledgmentValidator.validateAcknowledgment(proof);
+    if (proof.version !== 1 || proof.journal.state !== "prepared" ||
+        proof.journal.transactionId !== proof.transactionId)
+      throw new Error("Campaign-Save-Acknowledgment besitzt kein vorbereitetes Journal.");
+    const manifestWrites = proof.journal.writes.filter((write) => write.path === proof.manifestPath);
+    if (manifestWrites.length !== 1 || manifestWrites[0]!.before !== proof.beforeManifestBytes ||
+        manifestWrites[0]!.after !== proof.afterManifestBytes)
+      throw new Error("Campaign-Save-Acknowledgment ist nicht exakt an den Manifestwrite gebunden.");
+    const before = parseCampaignRuntimeManifest(proof.beforeManifestBytes, this.digest),
+      after = parseCampaignRuntimeManifest(proof.afterManifestBytes, this.digest),
+      expectedBefore = this.projection(before, proof.context),
+      current = this.loaded?.manifests.get(proof.context.campaignId);
+    if (!sameSnapshot(before.snapshot, proof.context) || !sameSnapshot(after.snapshot, proof.context) ||
+        JSON.stringify(expectedBefore) !== JSON.stringify(proof.beforeRegistry) ||
+        this.projectionSources.get(expectedBefore.projectionDigest) !== payloadDigest(this.digest(proof.beforeManifestBytes)) ||
+        !current || current.path !== proof.manifestPath || current.bytes !== proof.beforeManifestBytes || this.invalidated)
+      throw new Error("Campaign-Save-Acknowledgment besitzt keine aktuelle bestätigte Registrybasis.");
+    const lease = immutable({ transactionId: proof.transactionId, sourceEpoch: this.changeEpoch });
+    this.acknowledgmentLeases.set(lease, normalizedSaveProof(proof));
+    return lease;
+  }
+  async acknowledgeCommittedSave(
+    proof: CampaignRuntimeSaveAcknowledgmentV1,
+    lease: CampaignRuntimeSaveAcknowledgmentLease,
+  ): Promise<CampaignRuntimeSaveAcknowledgmentResult> {
+    if (this.closed) throw new Error("Campaignquelle ist geschlossen.");
+    if (!this.acknowledgmentValidator)
+      throw new Error("Campaignquelle besitzt keine Save-Acknowledgment-Autorität.");
+    this.acknowledgmentValidator.validateAcknowledgment(proof);
+    const preparedProof = this.acknowledgmentLeases.get(lease);
+    if (!preparedProof)
+      throw new Error("Campaign-Save-Acknowledgment besitzt keine ausgestellte Source-Lease.");
+    if (preparedProof !== normalizedSaveProof(proof))
+      throw new Error("Campaign-Save-Acknowledgment passt nicht zur vorbereiteten Source-Lease.");
+    const proofBytes = JSON.stringify(proof), replay = this.acknowledgedSaves.get(proof.transactionId);
+    if (replay) {
+      if (replay.proof !== proofBytes || replay.epoch !== this.changeEpoch || this.invalidated)
+        throw new Error("Campaign-Save-Acknowledgment-Receipt ist nicht mehr aktuell.");
+      return replay.result;
+    }
+    if (proof.version !== 1 || proof.journal.state !== "committed" ||
+        proof.journal.transactionId !== proof.transactionId || lease.transactionId !== proof.transactionId ||
+        this.changeEpoch !== lease.sourceEpoch + 1)
+      throw new Error("Campaign-Save-Acknowledgment besitzt kein gewonnenes Journal oder eine fremde Eventfolge.");
+    const manifestWrites = proof.journal.writes.filter((write) => write.path === proof.manifestPath);
+    if (manifestWrites.length !== 1 || manifestWrites[0]!.before !== proof.beforeManifestBytes ||
+        manifestWrites[0]!.after !== proof.afterManifestBytes)
+      throw new Error("Campaign-Save-Acknowledgment ist nicht exakt an den Manifestwrite gebunden.");
+    const before = parseCampaignRuntimeManifest(proof.beforeManifestBytes, this.digest),
+      after = parseCampaignRuntimeManifest(proof.afterManifestBytes, this.digest),
+      expectedBefore = this.projection(before, proof.context), previous = this.loaded?.manifests.get(proof.context.campaignId);
+    if (!sameSnapshot(after.snapshot, proof.context) || JSON.stringify(expectedBefore) !== JSON.stringify(proof.beforeRegistry) ||
+        this.projectionSources.get(expectedBefore.projectionDigest) !== payloadDigest(this.digest(proof.beforeManifestBytes)) ||
+        !previous || previous.path !== proof.manifestPath || previous.bytes !== proof.beforeManifestBytes)
+      throw new Error("Campaign-Save-Acknowledgment besitzt nicht die ursprüngliche Registry- und Manifestbasis.");
+    const expectedEpoch = lease.sourceEpoch + 1,
+      current = (await this.load(true)).manifests.get(proof.context.campaignId);
+    if (this.changeEpoch !== expectedEpoch || this.invalidated)
+      throw new Error("Campaignquelle änderte sich während der Speicherbestätigung.");
+    if (!current || current.path !== proof.manifestPath || current.bytes !== proof.afterManifestBytes ||
+        current.manifest.snapshot.lifecycle !== "active")
+      throw new Error("Gespeichertes Campaignmanifest entspricht nicht dem bestätigten Journal.");
+    const registry = this.projection(current.manifest, proof.context), inventory = immutable({
+      context: proof.context, registryId: registry.registryId, registryRevision: registry.registryRevision,
+      projectionDigest: registry.projectionDigest, worldId: current.manifest.atlas.worldId,
+      files: current.manifest.atlas.files, records: current.manifest.atlas.records }),
+      result = immutable({ transactionId: proof.transactionId, context: proof.context, registry, inventory });
+    this.projectionSources.set(registry.projectionDigest, payloadDigest(this.digest(current.bytes)));
+    this.acknowledgedSaves.set(proof.transactionId, { proof: proofBytes, epoch: this.changeEpoch, result });
+    return result;
+  }
 }
 
 /** Campaign-owned Atlas navigation ports. Hex owns openNative and the mounted editor. */
@@ -351,6 +490,16 @@ export class CampaignRuntimeNavigationProvider {
   private readonly changed = new Set<() => void>();
   private readonly unsubscribe: () => void;
   private sourceCurrent = true;
+  private closed = false;
+  private latestEpoch = 0;
+  private contextEpoch = 0;
+  private pending?: { readonly proof: string; readonly manifestPath: string; readonly afterManifestBytes: string;
+    readonly lease: CampaignRuntimeSaveAcknowledgmentLease; eventObserved: boolean;
+    storageEventId?: number;
+    readonly waiters: { resolve(): void; reject(error: Error): void }[];
+    inFlight?: Promise<CampaignRuntimeSaveAcknowledgmentResult> };
+  private readonly completed = new Map<string, { readonly proof: string;
+    readonly lease: CampaignRuntimeSaveAcknowledgmentLease; readonly result: CampaignRuntimeSaveAcknowledgmentResult }>();
   readonly registry: CampaignOwnerRegistryPort;
   readonly inventory: AtlasInventoryPort;
   constructor(
@@ -359,11 +508,43 @@ export class CampaignRuntimeNavigationProvider {
   ) {
     this.registry = source.registry;
     this.inventory = source.inventory;
-    this.unsubscribe = source.subscribe(() => { this.sourceCurrent = false; this.notify(); });
+    this.unsubscribe = source.subscribe((epoch, change) => {
+      this.latestEpoch = Math.max(this.latestEpoch, epoch);
+      if (change.kind === "modify" && change.phase === "resolved") {
+        const expectedEpoch = this.pending?.lease.sourceEpoch === undefined ? undefined :
+          this.pending.lease.sourceEpoch + 1;
+        if ((expectedEpoch === undefined && epoch <= this.contextEpoch) ||
+            (expectedEpoch !== undefined && epoch < expectedEpoch)) return;
+      }
+      if (this.pending && epoch === this.pending.lease.sourceEpoch + 1 && change.kind === "modify" &&
+          change.path === this.pending.manifestPath) {
+        if (change.phase === "pending" && change.eventId !== undefined &&
+            this.pending.storageEventId === undefined) {
+          this.pending.storageEventId = change.eventId;
+          return;
+        }
+        const orderedResolution = change.phase === "resolved" && change.eventId !== undefined &&
+          change.eventId === this.pending.storageEventId;
+        const atomicObservation = change.phase === undefined && change.eventId === undefined &&
+          this.pending.storageEventId === undefined;
+        if ((orderedResolution || atomicObservation) && change.bytes === this.pending.afterManifestBytes) {
+          this.pending.eventObserved = true;
+          for (const waiter of this.pending.waiters.splice(0)) waiter.resolve();
+          return;
+        }
+      }
+      for (const waiter of this.pending?.waiters.splice(0) ?? [])
+        waiter.reject(new Error("Campaign-Save-Acknowledgment beobachtete ein fremdes Storageevent."));
+      this.sourceCurrent = false; this.pending = undefined; this.completed.clear(); this.notify();
+    });
   }
-  currentContext = (): CampaignContextProjection | null => this.sourceCurrent ? this.lifecycle.context : null;
-  entries(): Promise<readonly CampaignRuntimeEntry[]> { return this.source.entries(); }
+  currentContext = (): CampaignContextProjection | null => !this.closed && this.sourceCurrent ? this.lifecycle.context : null;
+  entries(): Promise<readonly CampaignRuntimeEntry[]> {
+    if (this.closed) throw new Error("Campaign-Navigation ist geschlossen.");
+    return this.source.entries();
+  }
   subscribeContextChanged(changed: () => void): () => void {
+    if (this.closed) throw new Error("Campaign-Navigation ist geschlossen.");
     this.changed.add(changed); return () => this.changed.delete(changed);
   }
   private notify(): void { for (const listener of this.changed) listener(); }
@@ -372,11 +553,85 @@ export class CampaignRuntimeNavigationProvider {
     targetId: CampaignId,
     kind: "open" | "switch",
   ): Promise<CampaignActivationResult> {
+    if (this.closed) throw new Error("Campaign-Navigation ist geschlossen.");
+    const interruptedSave = this.pending !== undefined;
+    for (const waiter of this.pending?.waiters.splice(0) ?? [])
+      waiter.reject(new Error("Campaignwechsel widerrief die ausstehende Speicherbestätigung."));
+    this.pending = undefined; this.completed.clear();
+    if (interruptedSave) { this.sourceCurrent = false; this.notify(); }
     const result = await this.lifecycle.activate(
       campaignCommandId(String(commandId)), campaignId(String(targetId)), kind,
     );
-    if (result.applied) { this.sourceCurrent = true; this.notify(); }
+    if (result.applied) { this.sourceCurrent = true; this.contextEpoch = this.latestEpoch; this.notify(); }
     return result;
   }
-  close(): void { this.unsubscribe(); this.changed.clear(); }
+  prepareSaveAcknowledgment(proof: CampaignRuntimeSaveAcknowledgmentV1): CampaignRuntimeSaveAcknowledgmentLease {
+    if (this.closed) throw new Error("Campaign-Navigation ist geschlossen.");
+    if (!this.sourceCurrent || this.pending)
+      throw new Error("Campaign-Navigation besitzt eine veraltete oder ausstehende Speicherbasis.");
+    if (JSON.stringify(this.lifecycle.context) !== JSON.stringify(proof.context))
+      throw new Error("CampaignContext wechselte vor der Speichervorbereitung.");
+    const lease = this.source.prepareSaveAcknowledgment(proof), normalized = normalizedSaveProof(proof);
+    this.pending = { proof: normalized, manifestPath: proof.manifestPath,
+      afterManifestBytes: proof.afterManifestBytes, lease, eventObserved: false, waiters: [] };
+    return lease;
+  }
+  acknowledgeCommittedSave(proof: CampaignRuntimeSaveAcknowledgmentV1): Promise<CampaignRuntimeSaveAcknowledgmentResult> {
+    if (this.closed) return Promise.reject(new Error("Campaign-Navigation ist geschlossen."));
+    if (JSON.stringify(this.lifecycle.context) !== JSON.stringify(proof.context))
+      return Promise.reject(new Error("Campaign-Save-Acknowledgment gehört zu einem fremden aktuellen Context."));
+    const normalized = normalizedSaveProof(proof), completed = this.completed.get(proof.transactionId);
+    if (!this.pending && this.sourceCurrent && completed?.proof === normalized) {
+      return this.source.acknowledgeCommittedSave(proof, completed.lease).then(() => completed.result);
+    }
+    if (!this.pending || this.pending.proof !== normalized ||
+        JSON.stringify(this.lifecycle.context) !== JSON.stringify(proof.context)) {
+      const notify = this.sourceCurrent || this.pending !== undefined;
+      for (const waiter of this.pending?.waiters.splice(0) ?? [])
+        waiter.reject(new Error("Ein fremdes Save-Receipt widerrief die ausstehende Speicherbestätigung."));
+      this.pending = undefined; this.sourceCurrent = false; if (notify) this.notify();
+      return Promise.reject(new Error("CampaignContext oder Save-Receipt wechselte vor der Speicherbestätigung."));
+    }
+    const pending = this.pending;
+    if (pending.inFlight) return pending.inFlight;
+    pending.inFlight = this.finishSaveAcknowledgment(proof, normalized, pending);
+    return pending.inFlight;
+  }
+  private async finishSaveAcknowledgment(
+    proof: CampaignRuntimeSaveAcknowledgmentV1,
+    normalized: string,
+    pending: NonNullable<CampaignRuntimeNavigationProvider["pending"]>,
+  ): Promise<CampaignRuntimeSaveAcknowledgmentResult> {
+    try {
+      if (!pending.eventObserved)
+        await new Promise<void>((resolve, reject) => pending.waiters.push({ resolve, reject }));
+      if (this.pending !== pending)
+        throw new Error("Campaign-Save-Acknowledgment verlor seine vorbereitete Source-Lease.");
+      const result = await this.source.acknowledgeCommittedSave(proof, pending.lease);
+      if (this.closed || this.pending !== pending || !this.sourceCurrent ||
+          JSON.stringify(this.lifecycle.context) !== JSON.stringify(proof.context))
+        throw new Error("CampaignContext wechselte während der Speicherbestätigung.");
+      this.pending = undefined; this.sourceCurrent = true;
+      this.contextEpoch = this.latestEpoch;
+      this.completed.set(proof.transactionId, { proof: normalized, lease: pending.lease, result });
+      return result;
+    } catch (error) {
+      if (this.pending === pending) {
+        const notify = this.sourceCurrent || this.pending !== undefined;
+        this.pending = undefined; this.sourceCurrent = false; if (notify) this.notify();
+      }
+      throw error;
+    }
+  }
+  close(): void {
+    this.closed = true;
+    for (const waiter of this.pending?.waiters.splice(0) ?? [])
+      waiter.reject(new Error("Campaign-Navigation wurde während der Speicherbestätigung geschlossen."));
+    this.pending = undefined; this.completed.clear(); this.sourceCurrent = false;
+    this.unsubscribe(); this.changed.clear();
+  }
+}
+
+function normalizedSaveProof(proof: CampaignRuntimeSaveAcknowledgmentV1): string {
+  return JSON.stringify({ ...proof, journal: { ...proof.journal, state: undefined } });
 }

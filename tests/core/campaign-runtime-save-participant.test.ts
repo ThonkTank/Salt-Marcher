@@ -4,11 +4,15 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import test from "node:test";
 import {
+  campaignContext,
+  campaignContextToken,
   campaignId,
   campaignNamespace,
   campaignSnapshot,
 } from "../../src/features/campaign/campaign-contracts";
 import {
+  campaignDomainOwnershipProjection,
+  campaignDomainOwnershipProjectionDigest,
   campaignDomainOwnerPolicyDigest,
   campaignOwnershipDigestValue,
   type CampaignDomainOwnerProjectionV1,
@@ -443,6 +447,22 @@ test("campaign manifest participant binds seven native guards to three owner-aut
       },
     ],
   });
+  const context = campaignContext(before.snapshot, campaignContextToken("runtime:save")),
+    unsigned = campaignDomainOwnershipProjection({ version: 1,
+      registryId: before.registry.registryId, registryRevision: before.registry.registryRevision,
+      projectionDigest: `sha256:${"0".repeat(64)}`, context, owners: before.registry.owners }),
+    beforeRegistry = campaignDomainOwnershipProjection({ ...unsigned,
+      projectionDigest: campaignDomainOwnershipProjectionDigest(unsigned, digest) }),
+    journalWrites = [...writes().filter((nativeWrite) => nativeWrite.before !== nativeWrite.after), write!,
+      { path: "Atlanten/Gemeinsamer-Testatlas.overworld.draft", before: "draft", after: null }],
+    prepared = participant.createAcknowledgment({ context, beforeRegistry,
+      journal: { transactionId: "transaction:atlas-save:1", state: "prepared", writes: journalWrites } }),
+    committed = participant.createAcknowledgment({ context, beforeRegistry,
+      journal: { transactionId: "transaction:atlas-save:1", state: "committed", writes: journalWrites } });
+  assert.equal(prepared.beforeManifestBytes, beforeBytes);
+  assert.equal(committed.afterManifestBytes, write!.after);
+  assert.doesNotThrow(() => participant.validateAcknowledgment(prepared));
+  assert.throws(() => participant.validateAcknowledgment({ ...committed }), /nicht vom zuständigen Participant/);
   assert.deepEqual(
     participant.prepare({
       beforeManifestBytes: beforeBytes,
