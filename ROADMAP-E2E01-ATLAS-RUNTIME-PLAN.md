@@ -39,7 +39,9 @@ Produktänderung, GUI, CITY oder E2E-02–04 begonnen.
 
 #### Arbeitsstand #80
 
-Kandidat: https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/81
+Kandidat: https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/87
+
+Integrierte Implementierungsbasis: [PR #81](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/81).
 
 Konsumierte Save-/Referenzbasis: [PR #78](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/78).
 
