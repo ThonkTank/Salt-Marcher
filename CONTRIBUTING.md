@@ -4,7 +4,7 @@ Beginne mit den [Produktzielen](docs/PRODUCT.md) und der [Roadmap](docs/ROADMAP.
 
 ## Agenteneinstieg
 
-**Nächste freie Aufgabe: `npm run next`.** Der Befehl liest GitHub live, ordnet freie Aufgaben nach Priorität und zeigt den ersten Auftrag samt Voraussetzungen, konkreter Abnahme und letzten drei Kommentaren. GitHub-Zugriff über `gh` erforderlich; keine npm-Installation oder GUI nötig. `npm run next -- --list` zeigt nur die freie Liste. Einen zwischenzeitlichen Claim/PR prüfen und im Aufgabenissue übernehmen. Ohne freie Aufgabe benennt der Befehl den leeren Zustand ausdrücklich; dann die aktuelle Übergabe in #12 prüfen.
+**Nächste freie Aufgabe: `npm run next`.** Der Befehl liest GitHub live, zeigt aktuelle Produktengpässe separat, ordnet freie Aufgaben nach Priorität und zeigt den ersten Auftrag samt Voraussetzungen, konkreter Abnahme und letzten drei Kommentaren. GitHub-Zugriff über `gh` erforderlich; keine npm-Installation oder GUI nötig. `npm run next -- --list` zeigt nur die freie Liste. Einen zwischenzeitlichen Claim/PR prüfen und im Aufgabenissue übernehmen. Ohne freie Aufgabe benennt der Befehl den leeren Zustand ausdrücklich; dann die aktuelle Übergabe in #12 prüfen.
 
 **Arbeitsauftrag:** Lies [#12 und seine neuesten Kommentare](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12) und das Repository, setze den wichtigsten sinnvollen nächsten Schritt für einen nutzbaren Dungeon-Editor um und melde Ergebnis oder konkreten Blocker; beachte [AGENTS.md](AGENTS.md). Produktziele und Roadmap erklären Ziel und Reihenfolge; der aktuelle Aufgaben-/PR-Verlauf entscheidet, was noch offen und bereits besessen ist.
 
@@ -29,6 +29,8 @@ gh issue view 12 --repo ThonkTank/Obsidian-Dungeon-Editor-Phase1 --json body --j
 Den gewählten Bereich mit `npm run context -- --area <bereich>` auswählen; [Bereichskarte](docs/INDEX.md). Checkout-SHA und aktuelle PR-Heads unterscheiden. Für einen reproduzierbaren Datei-/Modelltest ohne GUI die [gepinnte Campaign-B-Anleitung](docs/CONTRIBUTOR-FIXTURE-B.md) verwenden.
 
 ## Eine Aufgabe finden
+
+Zuerst vorhandene Produktarbeit bis zur Integration bringen oder ihren konkreten Engpass lösen. Ein zusammenhängender Nutzerablauf bildet das Paket; Hilfsarbeit braucht einen benannten Umsetzungsverbraucher. [Paketgrenzen und passende Prüfung](docs/WORKFLOW.md). Eine frei angebotene Planaufgabe hat dadurch nicht automatisch Vorrang vor einem notwendigen Review/Fix im laufenden Produktpfad.
 
 - [Frei übernehmbare Aufgaben](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues?q=is%3Aissue+is%3Aopen+label%3A%22status%3Aready%22): zuerst aktuellen Scope und Kommentare prüfen.
 - [Einstiegsaufgaben](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22): kleine, abgegrenzte Beiträge mit eigener Abnahme.
