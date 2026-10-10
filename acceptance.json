@@ -153247,7 +153247,7 @@
       {
         "id": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
         "requirement": "Thin Context/navigation consumer with actual native target validation, same Atlas owners and guarded Campaign switching",
-        "state": "independent_integrated_scope_PASS_Shared_promotion_authorized_with_exact_CI_guard",
+        "state": "Shared_promoted_scoped_own_cleanup_complete_Location_Key_GM_pending",
         "implementationRun": "HEX-E2E01-HOST-SAVE-I02",
         "sourceCommit": "86bbbbfac44233509f084ac836e6dafa07b11a16",
         "catalog": "ROADMAP-E2E-GATES-CANDIDATE.md:13",
@@ -153273,7 +153273,7 @@
           "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-manifest-host-aba-20261010/repair/repair.json"
         ],
         "observed": "Actual AtlasView Save button calls FileTransaction and retained native owner Participant/Provider; exact Prepared/Committed journal read-back issues the real proofs.; Same Navigator queue refreshes confirmed Registry/Inventory before unblocking input; Repository, Sources, History, renderer, camera, Context token and mount generation remain.; Actual Vault first-native CAS failure rolls back before snapshot, issues a transaction-sealed receipt, releases pending Provider lease and retries in the same editable Atlas with a new transaction UUID.; Actual DOM View/services close and fresh View/services reopen retain saved Location and Room names under native Campaign fixture; this is not a fresh Electron process.; FileTransaction regressions exercise all before/after CAS reply-loss boundaries, reject copied/foreign rollback receipts, protect unchanged native guards, and preserve won canonical bytes if committed consumer acknowledgment fails.",
-        "notConfirmed": "Historical H01 failure, repair and H02 receipts remain unchanged. Independent current integrated Save/Fresh/Recovery and R01/H02 scope inputs are consumed, without author self-approval. No new native run, physical input, original parity, large world, user-vault installation, P02/P04 or full E2E approval; actual Shared GM flow follows separately in Issue40.",
+        "notConfirmed": "Historical H01 failure and actual repaired independent H02/Save/Fresh/Recovery receipts remain unchanged. This run adds own retention/actual promotion routing only, with no native or physical input and no original parity, large-world, user-vault installation, P02/P04 or full E2E approval. #40 actual Shared GM acceptance is next.",
         "independentReview": {
           "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/13#issuecomment-6094804164",
           "gate": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6094804323",
@@ -154189,7 +154189,7 @@
           "currentEvidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-manifest-host-save-i02-20261010/implementation.json",
           "scope": "Component review only; no native/Host/overall approval."
         },
-        "gap": "E2E01-PROMOTION-01 closed by actual independent Chronik review 6100666965 on e4fb956. Existing qualified sources and unchanged critical composition authorize regular Shared integration after current exact CI/remote guards. Required cleanup remains a separate run, Issue40 Shared GM and P02/P04/CompleteImport/full E2E remain open.",
+        "gap": "Promotion #39 is executed on Shared6a41f16; required separate own cleanup is complete with empty deletion list and preserved evidence. Next required entry is #40 direct Shared Location/Key GM-host flow with fresh process and re-coordinated GUI slot. P02/P04/CompleteImport and full E2E remain open.",
         "qualifiedCampaignInputAndRollbackProbe": {
           "state": "qualified_component_contract_closed_productive_Host_implementation_now_present",
           "reviewSourceCommit": "ce2f9032dc9f72f994a307b5aac26e1ad8910065",
@@ -154510,6 +154510,21 @@
           "consumedShared": "886cc2a475d9a8f705d74728c746c986b4a1c088",
           "checkpoint": "checkpoint.hexAtlasExecution.latestPromotionDecision",
           "fullE2E": false
+        },
+        "integratedPromotionExecution": {
+          "id": "HEX-E2E01-PR13-PROMOTION-EXECUTION-02",
+          "state": "PROMOTED_TO_SHARED_SCOPED",
+          "mergeCommit": "6a41f1640de3e4a4311d905d95f66cd79d91b698",
+          "decision": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/39#issuecomment-6100834444",
+          "checkpoint": "checkpoint.hexAtlasExecution.latestPromotionExecution",
+          "fullE2E": false
+        },
+        "postPromotionOwnCleanup": {
+          "id": "HEX-E2E01-POST-PROMOTION-CLEAN-01",
+          "state": "own_cleanup_complete_retention_and_handoff_only",
+          "checkpoint": "checkpoint.hexAtlasExecution.latestPostPromotionCleanup",
+          "newNativeRun": false,
+          "nextIssue": 40
         }
       }
     ],
