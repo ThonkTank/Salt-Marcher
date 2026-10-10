@@ -27,7 +27,7 @@ Platzierungsbesitz und validierte Transformation; Zeitpunkt des Detailzeichnens 
 
 Native Stadt am Ort mit Straße, Platz und zwei Häusern anlegen; Straße/Knoten und Haus bewegen, drehen und skalieren; Cancel/No-op/Stale prüfen. Zwischen Stadt und Hex zoomen und bearbeiten, gemeinsame Undo/Redo-Folge, Save und frischer Prozess. Hausbindung und Dungeon-/Keyfolge anschließend in CITY-03. Viewportresize, große Weltposition, lokale Metergeometrie, Höfe und Breiten bleiben deckungsgleich. Unterbrochener Mehrdateisave, fremde Bytes und Sourcewechsel gehören zur Persistenzabnahme. Keine eigene zweite Editorinstanz; bestehende Testregion und native GUI-Slotkoordination nutzen. Lokale Unit-/Rendererprüfungen ersetzen diese Hostfolge nicht.
 
-Nach diesem Planlauf getrenntes Aufräum-P/I/R: Verweise/Quellenstand prüfen, offene Vertragspunkte erhalten, keine vorgeschlagene Grenze als implementierte API ausgeben. Umsetzung erst im konkreten abgestimmten Atlasanschlusslauf.
+Verweise, Quellenstand und offene Vertragspunkte mit dem Anschlussbeitrag pflegen; vorgeschlagene Grenzen nicht als implementierte APIs ausgeben. Dieser Vorschlag bewahrt den damaligen Quellstand. Vor Weiterarbeit vorhandene Anschlüsse nach dem [CITY-01-Anschlussplan](ROADMAP-CITIES-CITY01-INTEGRATION-PLAN.md) verwenden; keine erneute Plan-/Cleanup-Folge dieses historischen Vorschlags starten.
 
 R01-Aufräumen: Befundabschluss gilt ausschließlich für den Anschlussvorschlag. Quellen und Gegenprobe sind unter /home/aaron/.cache/dungeon-native-qa/city-plans/city01-integration-review-20261009/ erhalten. Keine Produktsource/API durch diesen Dokumentlauf geändert.
 

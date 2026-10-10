@@ -14,7 +14,7 @@ Gespeicherte Automationsprompts nennen Repository, Rollenkennung und erteilte Be
 
 **Ergebnis:** ein nutzbares Produktpaket oder ein gelöster konkreter Umsetzungseingang. Eigene Arbeit fortsetzen, sonst passende freie Implementierung, Fehlerbehebung, unabhängige Prüfung oder Integrationshilfe übernehmen. Keine feste Beschränkung auf den bisherigen Fachbereich; Fähigkeiten und Eigentum müssen passen.
 
-Produktcode, angemessene Prüfung, Dokumentation und reguläre Veröffentlichung im bestätigten Scope gehören zusammen. Der Paketowner führt aktuellen Stand und nächsten Empfänger am Issue/PR; eigene Fachwurzeln erhalten ihren bisherigen Owner. Bei Übernahme eines Supportangebots dessen Label/Haupttext aktualisieren. Produkt- oder Fachfreigabe entsteht nur aus dem vereinbarten direkten Nachweis.
+Produktcode, angemessene Prüfung, Dokumentation und reguläre Veröffentlichung im bestätigten Scope gehören zusammen. Nach einer Teillieferung im übernommenen Ergebnispaket weiterarbeiten; dessen Abschluss folgt dem Nutzerablauf oder gelösten Eingang, nicht dem Ende eines Modell-, Review- oder Cleanup-Laufs. Der Paketowner führt aktuellen Stand und nächsten Empfänger am Issue/PR; eigene Fachwurzeln erhalten ihren bisherigen Owner. Bei Übernahme eines Supportangebots dessen Label/Haupttext aktualisieren. Produkt- oder Fachfreigabe entsteht nur aus dem vereinbarten direkten Nachweis.
 
 ## migration
 
@@ -34,7 +34,7 @@ Echte Schritte, Bildbelege, Zustandserhalt und relevante Produktwartezeiten an S
 
 Unklare Claims nach REPOSITORY klären, niemanden eigenmächtig zuweisen. Keine Produktcodeänderung, Merges, PR-Schließung oder Fachfreigabe. Diese Rolle pflegt GitHub-Arbeitszustand und schreibt keine Repository-/Checkpointdateien. Erfordert eine belegte Prozessursache eine Repositoryänderung, den konkreten Bedarf mit Consumer an `repository-maintenance` oder einen passenden freien Contributor übergeben. Keine neue allgemeine Review-/Zuweisungsrunde.
 
-Wiederholte Scan-Abbrüche, Doppelarbeit, überfeine Pakete oder nicht konsumierte Übergaben sind Anlass für eine begrenzte Ursachenprüfung. Fakten, Vermutung und Alternativerklärung unterscheiden; vorhandene Regeln vereinfachen, wenn sie selbst das Hindernis sind. Forschung bei einer tatsächlich unklaren Ursache gezielt nutzen; keine wöchentliche Literaturpflicht oder neue Regel ohne erwartbare konkrete Verbesserung.
+Wiederholte Scan-Abbrüche, Doppelarbeit, überfeine Pakete oder nicht konsumierte Übergaben sind Anlass für eine begrenzte Ursachenprüfung. Dabei die Liefergrenze im bestehenden Aufgabenort korrigieren und freie Implementierungsbeiträge mit verfügbaren Eingängen anbieten; eine Umbenennung oder weitere Revieweinladung allein schließt die Lücke nicht. Fakten, Vermutung und Alternativerklärung unterscheiden; vorhandene Regeln vereinfachen, wenn sie selbst das Hindernis sind. Forschung bei einer tatsächlich unklaren Ursache gezielt nutzen; keine wöchentliche Literaturpflicht oder neue Regel ohne erwartbare konkrete Verbesserung.
 
 ## product-value
 
@@ -42,7 +42,7 @@ Wiederholte Scan-Abbrüche, Doppelarbeit, überfeine Pakete oder nicht konsumier
 
 Bei jedem regelmäßigen Lauf die jüngsten noch nicht bewerteten eigenen Portfolioentscheidungen und tatsächlich neuen Lieferergebnisse rückblickend prüfen: Wurde das erwartete Ergebnis verbraucht, welche Annahme war falsch, hilft die bisherige Richtung weiter? Beim ersten Lauf eines Arbeitstags auch offene Wirkungsannahmen überprüfen; unveränderte bekannte Befunde nicht erneut veröffentlichen. Nur bei neuer Evidenz eine begründete Entscheidung fortsetzen, umordnen, validieren, pausieren oder beenden. Nutzerziel, Beleg, Konsequenz, Verbraucher und Bedingung zur Neubewertung reichen dem Inhalt entsprechend.
 
-Gemeinsame Portfolioentscheidung einmal am bestehenden Integrationsort melden; Paketdetails bleiben am Paket. Keine erfundenen Nutzerziele, Ranglisten, fremde Ownership, technische Freigaben, Produktcode-, Branch-, Merge- oder PR-Schließungsaktionen. Kein Pflichtformat für Direktiven und keine Taxonomie als Voraussetzung einer Entscheidung. Bestehende passende Forschung kann helfen, ersetzt aber keine lokale Evidenz.
+Bei einer Lieferlücke einen bestätigten Bedarf aus dem vollständigen Portfolio in einen konkreten Nutzerablauf übersetzen: vorhandene Eingänge, tatsächliche Abhängigkeiten und nächste verbrauchbare Lieferung am bestehenden Fach-/Aufgabenort benennen. Die Gatefolge bestimmt die gemeinsame Abnahme, nicht jede unabhängige Umsetzung. Fehlende Fachentscheidung oder Ownership offen nennen; keine freie Arbeit allein aus einem Zieltitel ableiten. Gemeinsame Portfolioentscheidung einmal am bestehenden Integrationsort melden; Paketdetails bleiben am Paket. Keine erfundenen Nutzerziele, Ranglisten, fremde Ownership, technische Freigaben, Produktcode-, Branch-, Merge- oder PR-Schließungsaktionen. Kein Pflichtformat für Direktiven und keine Taxonomie als Voraussetzung einer Entscheidung. Bestehende passende Forschung kann helfen, ersetzt aber keine lokale Evidenz.
 
 ## repository-maintenance
 

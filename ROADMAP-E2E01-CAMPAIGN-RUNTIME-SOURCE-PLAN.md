@@ -1,7 +1,6 @@
 # E2E-01 Campaign Runtime Source and Picker – P01
 
-Status: enger Plan-Kandidat zur unabhängigen Prüfung. Kein Host-, P02-, P04-
-oder vollständiger E2E-01-PASS.
+Vertrags-/Entwurfsstand P01; die unten gepinnte Grundlage ist historisch. Runtime-Source/Picker sind inzwischen über PR #13 auf Shared integriert (begrenzte Entscheidung in [#39](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/39#issuecomment-6100834444)). Aktuelle Weiterarbeit: [#40](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/40) und [#41](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/41), nicht erneutes P01/I01. Kein P02-, P04- oder vollständiger E2E-01-PASS aus diesem Plan.
 
 ## Gepinnte Grundlage und Nutzerziel
 
@@ -161,11 +160,13 @@ Open-/Switch-Callback, `contextChanged` und die Dockmontage. Änderungen an
 
 ## Lieferfolge und verbleibende Gates
 
-P01 wird auf dem gepinnten PR-13-Stand veröffentlicht und eng auf Providergrenze,
-Stale-/Fehlerverhalten und Hex-Handoff geprüft. Nach PASS folgt I01 auf einem
-separaten Implementierungsbranch, danach unabhängiger Code-/DOM-Review,
-Pflichtreparaturen und getrenntes Cleanup. Vor Handoff wird der bestandene Code auf
-den aktuellen PR-13-Head gebracht.
+Den gelieferten Runtime-Source/Picker im bestehenden Produktpaket weiterverwenden.
+#40 verbindet neue Location-/Section-/Worldplacement-Bestände mit Navigation und
+atomarem Save bis zum frischen Wiederöffnen; #41 liefert die produktiven
+Save-/Importadapter. Campaign/Data behält Provider-/Autoritätsverträge, Hex den
+Atlasconsumer. Fehlende Anschlüsse im selben Ergebnispaket umsetzen und direkt
+prüfen; Nachbesserung und Bereinigung gehören zur Lieferung. Unabhängiger
+Daten-/Code-/Hostreview bleibt risikogerecht, ohne zusätzliche Cleanup-Phase.
 
 Auch nach diesem Paket bleiben Hex-Hostmontage und gemeinsamer Obsidian-Lauf,
 P02-Save/Recovery, P04-Complete-Import, atomarer Mehrowner-Publish, installierter

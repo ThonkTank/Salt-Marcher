@@ -4,11 +4,11 @@
 
 CITY-00-I39 erstellt den konkreten Anschlussplan aus der aktuellen Quelle. Er ersetzt keine Produktimplementierung oder HEX-05-Abnahme. Maßgeblich bleiben [Stadt-Roadmap](ROADMAP-CITIES.md), [Gesamtplan](ROADMAP-CITIES-IMPLEMENTATION-PLAN.md), `acceptance.json.cityPlans` und [Architektur](ARCHITECTURE.md). Vollständige Parität aller drei Programme bleibt CITY-09-Pflicht.
 
-Quellstand und Hashes stehen im externen Audit `/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i39-integration-20261009/source-audit.json`. Nach HEX-05 sind die Quellen erneut zu prüfen; hier benannte künftige Adapter sind vorgeschlagene Aufgaben, keine existierenden APIs.
+Quellstand und Hashes der ursprünglichen Anschlusstabelle stehen im externen Audit `/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i39-integration-20261009/source-audit.json`. Die Tabelle ist dieser historische Entwurfsvergleich. Aktuelle Anschlüsse im Checkout prüfen: `atlas-history.ts` und `spatial-storage.ts` liefern gemeinsame History/Persistenz; `atlas-editor.ts` verwendet CityGesture, `spatial-canvas.ts` CityRenderer. Diese vorhandenen Anschlüsse weiterverwenden. Laufende Reparaturen und fehlende Produktnachweise stehen in [#7](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/7) und [#12](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12); ein vorhandener Anschluss ersetzt keine CITY-01-Abnahme.
 
 CITY-01 umfasst CTY-001.01, CTY-002.01 und CTY-002.02: native Stadt am gespeicherten Ort, Straße zeichnen/ziehen/ergänzen/rücknehmen, Häuser auswählen/verschieben/skalieren/drehen/entfernen, Platz und zwei Häuser. Kamera, Auswahl, Werkzeug und History bleiben beim Zoom erhalten. Stadtfläche darf wachsen; keine feste Leinwand begrenzt die Daten.
 
-## Vorhandene Anschlüsse und fehlende Verträge
+## Ursprünglicher Anschlussvergleich (09.10.2026)
 
 | Bereich / aktuelle Quelle | Tatsächlich vorhanden | Vor Stadtintegration zu liefern / zu prüfen | Besitzer |
 |---|---|---|---|
@@ -21,7 +21,7 @@ CITY-01 umfasst CTY-001.01, CTY-002.01 und CTY-002.02: native Stadt am gespeiche
 | `src/persistence.ts` | `FileStore.compareAndWrite`; Dungeon-`MapRepository` mit Draft/Journal | `MapRepository.assertAllowed` erlaubt neben seiner Karte nur Markdown im zugehörigen Verzeichnis. Nicht pauschal auf beliebige Dateien erweitern. Explizite Dokumentbesitzer und zulässige Transaktionsmenge, Konfliktprüfung, Journal-Recovery und geordnete Schreibzugriffe nötig. | HEX Persistenz; CITY Codec |
 | `src/vault-stores.ts` | `VaultStore` vergleicht Bestand vor Modify/Delete, prüft Neuanlage auf Kollision | Einzeldateivergleich ist keine atomare Mehrdateispeicherung. Gemeinsamer Speichervertrag muss `.city` und Elternplatzierung schon bei CITY-01-Anlage konsistent retten; nicht bis CITY-03 verschieben. | HEX Speicherkoordination |
 
-## Geplanter Stadtanteil
+## Stadtanteil und ursprüngliche Modulverträge
 
 `src/features/city/model.ts` definiert ein versioniertes CityDocument mit stabiler Dokument-ID und lokalen Meterkoordinaten. Keine Pixel und keine zweite Kopie der Atlasplatzierung. Straßen besitzen Knoten und Kanten mit stabilen IDs, Endknotenreferenzen, editierbarem Verlauf und positiver Meterbreite. Plätze besitzen gültige Konturen; Gebäude besitzen lokale Kontur/Platzierung und stabile IDs. Vorgesehene Grundstücks-/Vierteldaten und optionale Orts-/Dungeonreferenzen dürfen spätere Generatorphasen erweitern; CITY-01 erzeugt keine Pflichtdatei für jedes namenlose Haus.
 
@@ -45,11 +45,10 @@ Hostintegration verwendet den gelieferten Atlas-Dokumentresolver und die registr
 
 ## Umsetzung nach geprüfter HEX-05-Übergabe
 
-1. Gelieferten Commit, tatsächliche APIs und Hostnachweise aufnehmen; die obige Tabelle aktualisieren. Die HEX-05-Folge Region → Hex → Orts-Key → Dungeonraum/Key → zurück → Undo/Redo → Save → frischer Prozess muss belegt sein. Den Cloud-Befund GM-UX-N-004 unabhängig schließen. Fehlende Verträge gezielt mit HEX-Besitzer lösen.
-2. CityDocument/Codec und Befehlsplaner implementieren; echte Fehlerfälle für Topologie, ungültige Geometrie, stale Revision und Referenzschutz prüfen. Keine Dungeon-Entity-Verkleidung für eine Stadtdatei.
-3. Szene, Auswahl und Straße/Platz/Haus-Werkzeuge in vorhandene Router/Toolbar integrieren. Vorschau und Abbruch zuerst; gemeinsamer Commit anschließend. Verschieben, Skalieren, Drehen und Entfernen gehören zur ersten Phase, nicht nur Hausplatzierung.
-4. Native Anlage/Dateiauflösung und Draft/Save/Recovery anbinden. Unterbrochene Anlage darf keine verwaiste platzierte Stadt oder verlorene Datei hinterlassen. Externe Änderung beider Besitzer verhindert den überholten Schreibauftrag; Wiederherstellung darf fremde Änderungen nicht überschreiben.
-5. Isolierten Hostlauf und Review gegen alle drei CITY-01-Fälle durchführen. Fehler als eigenen N-Lauf beheben, neu reviewen; anschließend Aufräum-P/I/R. Kein Installieren im Nutzervault ohne Sicherung und eigenen Installationsnachweis.
+1. Gelieferte gemeinsame APIs und passende Hostbelege aus der aktuellen Übergabe aufnehmen. Die HEX-05-Folge Region → Hex → Orts-Key → Dungeonraum/Key → zurück → Undo/Redo → Save → frischer Prozess und GM-UX-N-004 unabhängig belegen; fehlende Verträge gezielt mit HEX-Besitzer lösen. Vorhandene Modell-/Codec-/Befehls-, Gesten- und Rendererkerne weiterverwenden statt neu implementieren.
+2. Das zusammenhängende CITY-01-Ergebnis bis zur Abnahme verfolgen: Stadt am gespeicherten Ort anlegen → Straße/Platz/zwei Häuser bearbeiten → gemeinsame Undo/Redo-Folge → Save → frischer Prozess. Fehlende Router-/Toolbaraktionen einschließlich Verschieben, Skalieren, Drehen und Entfernen im bestehenden Kandidaten ergänzen. Vorschau/Cancel, Topologie, veraltete Änderungen und Referenzschutz gezielt prüfen.
+3. Native Anlage/Dateiauflösung und Draft/Save/Recovery vervollständigen. Unterbrochene Anlage darf keine verwaiste platzierte Stadt oder verlorene Datei hinterlassen. Externe Änderung beider Besitzer verhindert den überholten Schreibauftrag; Wiederherstellung darf fremde Änderungen nicht überschreiben. Stadtowner verfolgt den Anschluss; HEX/Campaign behalten ihre Vertrags- und Dateigrenzen.
+4. Isolierten Hostlauf und unabhängigen Review gegen die drei CITY-01-Fälle mit der Lieferung bündeln. Pflichtbefunde im selben Paket beheben und nur betroffene Grenzen nachprüfen; Belegpflege und Bereinigung mitliefern. Kein eigener Folgeauftrag allein für N-/Cleanup-Phasen. Kein Installieren im Nutzervault ohne Sicherung und eigenen Installationsnachweis.
 
 ## Konkrete Abnahmesequenzen
 
