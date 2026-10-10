@@ -9882,50 +9882,20 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "MANUAL-PLANNER-N02-ATOMIC-ADD",
+      "id": "MANUAL-PLANNER-GUI-PREVIEW",
       "issue": 69,
-      "state": "compound_scene_creation_atomic_review_pending",
+      "state": "synthetic_gui_ready_for_independent_use",
       "branch": "city/manual-session-planner",
-      "basis": "117360b57d505ab56a3376e498e2b3d768398ff9",
-      "claim": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/69#issuecomment-6102030111",
       "plan": "docs/plans/campaign/manual-session-planner.md",
-      "next": "Independent narrow atomic add review on PR71; confirmed Campaign/Data native storage contract then same-package Host Save/Fresh-Reopen",
+      "next": "Independent free GM use of startable browser preview; consume Campaign/Data native storage port in same package",
       "verification": {
+        "bundleSmoke": "PASS: actual generated bundle blank/create/exact notes/second plan/memory-only notice",
         "typecheck": "PASS",
         "repository": "PASS",
-        "fullSuite": {
-          "tests": 879,
-          "passed": 878,
-          "failed": 0,
-          "pdfEnvironmentSkip": 1
-        },
-        "focusedCoreDom": "18/18 PASS; final core includes successful dirty-draft compound add/exact prose/revision/selection proof",
-        "build": "PASS",
-        "nativeHost": "not activated/not run"
+        "browserAndNativeHost": "not run"
       },
-      "reviewRepair": {
-        "source": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/71#pullrequestreview-5480783392",
-        "findings": [
-          "R01-01 displayed identity/revision/scene guard including external model switches and retained input/commit/discard callbacks",
-          "R01-02 dense closed descriptor-only scenes array; holes/extra keys/symbols/getters rejected before reads"
-        ],
-        "regressionBefore": "four added external-plan DOM cases FAIL before repair; PASS afterwards",
-        "independentRecheck": "PASS425afd8 https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/71#pullrequestreview-5480799736"
-      },
-      "viewRecovery": {
-        "action": "Ansicht aktualisieren: view only, preserves model selection, confirmed payload and draft; no writer or rebind",
-        "cases": [
-          "external switch refresh renders unchanged B draft then supports editing; old delete stays closed",
-          "external revision refresh preserves stale draft, commit stays closed, explicit discard works"
-        ],
-        "review": "PASS4726d28 https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/71#issuecomment-6102236072"
-      },
-      "atomicSceneAdd": {
-        "cause": "commitDraft preceded allocation/add validation, allowing partial effects on later failure",
-        "repair": "stage draft edit and new scene, validate final codec/IDs/context/selection and publish together",
-        "negativeBefore": "collision/allocator/revision 3/3 failed before correction; pass after correction",
-        "independentReview": "pending"
-      }
+      "priorCoreReview": "Atomic Add PASS5480881955 on ca25844; existing Core/Refresh PASS retained",
+      "limits": "No Campaign writer/plugin activation; no durable persistence/Recovery/Fresh/GM acceptance"
     },
     "nextRun": {
       "id": "MANUAL-PLANNER-I01-CONSUME",

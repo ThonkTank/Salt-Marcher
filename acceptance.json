@@ -4833,7 +4833,6 @@
         "src/ui/manual-planner-panel.ts"
       ],
       "open": [
-        "Independent narrow atomic scene add delta review",
         "Campaign/Data record/reference/file-plan/publish confirmation",
         "Product host activation",
         "Real Save/Fresh-Reopen/Recovery",
@@ -4841,12 +4840,20 @@
       ],
       "limits": "Manual owner core/DOM only; no PreparationSnapshot clone, Party/LiveSession/Atlas mutation, runtime transfer or E2E/full-original pass",
       "reviewRepair": {
-        "findings": "Independent CORE-R02 PASS425afd8 and REFRESH-R01 PASS4726d28; subsequent atomic scene add delta awaits narrow review",
+        "findings": "CORE-R02 PASS425afd8; REFRESH-R01 PASS4726d28; ATOMIC-ADD-R01 PASS5480881955 on ca25844",
         "checks": "18 focused core/DOM PASS; full suite 878 PASS/0 FAIL/1 existing PDF environment skip; type/repository/build PASS",
         "scope": "External active plan/scene changes reject retained callbacks without payload/draft mutation; codec rejects holes/extra keys/symbols/index accessors before hydration"
       },
       "viewRecovery": "Explicit refresh displays current plan/scene without committing/discarding/rebinding drafts; stale drafts remain blocked until explicit user discard. DOM evidence only, no native Host PASS.",
-      "atomicSceneAdd": "Allocator failure, duplicate scene ID and final revision overflow preserve confirmed payload, same authored draft and selection; successful compound add commits exact source prose and selects only new scene."
+      "atomicSceneAdd": "Allocator failure, duplicate scene ID and final revision overflow preserve confirmed payload, same authored draft and selection; successful compound add commits exact source prose and selects only new scene.",
+      "syntheticGuiPreview": {
+        "entry": "tools/manual-planner-preview/build.mjs",
+        "output": ".build/manual-planner-preview/index.html",
+        "scope": "Real ManualPlannerPanel memory-only browser host; no alternate native storage",
+        "technicalSmoke": "PASS actual bundle blank/create/exact Unicode whitespace notes/second plan/visible volatile limit",
+        "independentGmUse": "open",
+        "nativeSaveFreshRecovery": "open; Campaign/Data authority missing"
+      }
     }
   },
   "wonderdraftParity": {

@@ -249,11 +249,15 @@ Campaign/Data benötigt den [konkreten nativen Plannerconsumer](https://github.c
 mit Plan-/Sceneclosure, kanonischem Dateibesitz und kausaler Publish-/Receipt-/Recoverybindung.
 Der in #68 besessene Producer ist Anknüpfung, keine gelieferte Plannerautorität.
 
-Nächster Beitrag: Stadt konsumiert den bestätigten Speicherport und stellt den
-ersten isolierten GUI-Weg ortslose Timeline → Notizen/Reihenfolge → Kontextwechsel
-am [Paket](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/69) zur GM-Nutzung bereit.
+Ein startbarer synthetischer Browser-GUI-Weg ist im Kandidaten vorbereitet:
+`node tools/manual-planner-preview/build.mjs`, danach `.build/manual-planner-preview/index.html` öffnen.
+Er nutzt das reale Panel mit ortsloser Blankplanung, Szenen/Notizen/Reihenfolge und Planwechsel.
+[Startanleitung und Grenzen](docs/plans/campaign/manual-session-planner.md#startbarer-flüchtiger-gui-frühtest).
+Memory-only: Neuladen/Schließen verwirft sämtliche Arbeit; keine alternative Speicherung.
+Nächster Beitrag: freier GM-Reviewer prüft Auffindbarkeit/Bedienung im bestehenden #69;
+Stadt konsumiert Befunde sowie später den bestätigten nativen Speicherport.
 Vor größerem Partybudget-/Encounter-/Generatorausbau GM-Befunde konsumieren.
-Native Save/Fresh-Abnahme bleibt offen; Format und Speicher-PASS werden nicht angenommen.
+Native Save/Fresh-/Recoveryabnahme und tatsächliche Browser-/Tastatur-/200%-Prüfung bleiben offen.
 
 ### SMR-07 – Reise, Kalender und autoritative Zeit
 
