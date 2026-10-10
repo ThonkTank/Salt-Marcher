@@ -186,8 +186,9 @@
       "state": "implementation_review_passed_integration_pending",
       "issue": 60,
       "branch": "codex/smr-03-i01a-contracts",
-      "integratedShared": "178ce81755a35ea59deab5bd6198c163e4da0bef",
+      "integratedShared": "3fc5518b5a5cd48d03e647e63ce474f127ddde34",
       "implementationCandidate": "4bc886433f26a56cf56ba28fc296db1c16a0de16",
+      "testedIntegratedCandidate": "ccbebc3c5940c84269b32022d467ece06aab0c59",
       "requirements": [
         "Opaque Campaign, Character, Scene, Mask and owner identities plus safe nonnegative revisions reject malformed inputs.",
         "Party, Focus, LiveScene, LiveSession and PreparationSnapshot DTOs are strict, deeply immutable and free of host capabilities.",
@@ -195,7 +196,7 @@
         "No Passive Display, mutation, persistence, host, IPC or Clock authority is exported."
       ],
       "confirmed": [
-        "Typecheck, repository structure, product build and the full serial suite pass on the current integrated composition: 985 passed, 0 failed and one intentional official-PDF integration skip; the focused core/boundary run passes 571 cases.",
+        "Typecheck, repository structure, product build and the full serial suite pass after integrating Shared 3fc5518: 991 passed, 0 failed and one intentional official-PDF integration skip; the focused core/boundary run passes 576 cases.",
         "Boundary regressions reject sparse arrays, accessors, non-native prototypes, extra keys and missing active Party members in the focused Scene.",
         "The public live-session module exports only the I01-A parser, DTO and projection surface; its AST dependency guard permits only the three declared local static dependencies and rejects Node, Electron, Obsidian, dynamic-import and require forms.",
         "Campaign/Data PREPARATION-SNAPSHOT-R01 is revalidated PASS on f941ce4; Music/Weather/Shops Consumer R02 is PASS on f941ce4; Cloud Architecture/Technical closes ARCH-01/02 on f941ce4 and ARCH-03 on 4bc8864."
