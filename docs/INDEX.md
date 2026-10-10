@@ -6,6 +6,8 @@
 
 Für automatisierte Beiträge direkt zum [Agenteneinstieg](../CONTRIBUTING.md#agenteneinstieg): Aufgabenwahl, Voraussetzungen und Übergabe.
 
+Pflege und Ablage neuer Arbeit: [Repository-Pflegevertrag](REPOSITORY.md).
+
 ## Verbindliche Fachorte
 
 | Frage | Dokument / Arbeitsort |
@@ -134,6 +136,32 @@ Die bestehenden Pfade bleiben stabil, weil Checkpoints, Acceptance, externe Hand
 - [ADR-P01: Browsergrenze der Objekttexturen reparieren](../ROADMAP-SALTMARCHER-P01-RENDERER-REPAIR-PLAN.md)
 - [SMR-00-ADR-01 – Zielplattform und Migrationspfad](../ROADMAP-SALTMARCHER-PLATFORM-ADR.md)
 
+## Bereits vorhandene Pläne im Integrationskandidaten
+
+<details>
+<summary>Kompatibilitätsbestand aus PR #13; kein zusätzlicher Auftrag</summary>
+
+Diese Pfade waren vor Einführung der Strukturprüfung bereits im Kandidaten vorhanden. Die Links pinnen dessen Dokumentstand; sie behaupten keine Integration oder Abnahme. Bei Übernahme auf Shared die Verweise durch lokale Links ersetzen und fachlich einordnen. Die Ausnahme erlaubt keine weiteren neuen Root-Pläne.
+
+- [ROADMAP-CITIES-ATLAS-DETAIL-ENTRY-CLEANUP-PLAN.md](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/blob/892e20d737c9e4868aa44b615f8da0f97d98fb39/ROADMAP-CITIES-ATLAS-DETAIL-ENTRY-CLEANUP-PLAN.md)
+- [ROADMAP-CITIES-ATLAS-DETAIL-ENTRY-PLAN.md](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/blob/892e20d737c9e4868aa44b615f8da0f97d98fb39/ROADMAP-CITIES-ATLAS-DETAIL-ENTRY-PLAN.md)
+- [ROADMAP-CITIES-E2E-INTEGRATION-PLAN.md](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/blob/892e20d737c9e4868aa44b615f8da0f97d98fb39/ROADMAP-CITIES-E2E-INTEGRATION-PLAN.md)
+- [ROADMAP-E2E01-ATLAS-CAPTURE-CLEANUP-PLAN.md](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/blob/892e20d737c9e4868aa44b615f8da0f97d98fb39/ROADMAP-E2E01-ATLAS-CAPTURE-CLEANUP-PLAN.md)
+- [ROADMAP-E2E01-ATLAS-HOST-CLEANUP-PLAN.md](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/blob/892e20d737c9e4868aa44b615f8da0f97d98fb39/ROADMAP-E2E01-ATLAS-HOST-CLEANUP-PLAN.md)
+- [ROADMAP-E2E01-ATLAS-NAVIGATION-CLEANUP-PLAN.md](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/blob/892e20d737c9e4868aa44b615f8da0f97d98fb39/ROADMAP-E2E01-ATLAS-NAVIGATION-CLEANUP-PLAN.md)
+- [ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/blob/892e20d737c9e4868aa44b615f8da0f97d98fb39/ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md)
+- [ROADMAP-E2E01-CAMPAIGN-CONTEXT-PLAN.md](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/blob/892e20d737c9e4868aa44b615f8da0f97d98fb39/ROADMAP-E2E01-CAMPAIGN-CONTEXT-PLAN.md)
+- [ROADMAP-E2E01-CAMPAIGN-OWNERSHIP-PLAN.md](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/blob/892e20d737c9e4868aa44b615f8da0f97d98fb39/ROADMAP-E2E01-CAMPAIGN-OWNERSHIP-PLAN.md)
+- [ROADMAP-E2E01-CAMPAIGN-RUNTIME-SOURCE-PLAN.md](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/blob/892e20d737c9e4868aa44b615f8da0f97d98fb39/ROADMAP-E2E01-CAMPAIGN-RUNTIME-SOURCE-PLAN.md)
+- [ROADMAP-E2E01-DUNGEON-GEOMETRY-CLEANUP-PLAN.md](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/blob/892e20d737c9e4868aa44b615f8da0f97d98fb39/ROADMAP-E2E01-DUNGEON-GEOMETRY-CLEANUP-PLAN.md)
+- [ROADMAP-E2E01-DUNGEON-GEOMETRY-PLAN.md](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/blob/892e20d737c9e4868aa44b615f8da0f97d98fb39/ROADMAP-E2E01-DUNGEON-GEOMETRY-PLAN.md)
+- [ROADMAP-E2E01-DUNGEON-GEOMETRY-PRODUCT-CLEANUP-PLAN.md](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/blob/892e20d737c9e4868aa44b615f8da0f97d98fb39/ROADMAP-E2E01-DUNGEON-GEOMETRY-PRODUCT-CLEANUP-PLAN.md)
+- [ROADMAP-E2E01-SPATIAL-INTEGRATION-PLAN.md](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/blob/892e20d737c9e4868aa44b615f8da0f97d98fb39/ROADMAP-E2E01-SPATIAL-INTEGRATION-PLAN.md)
+- [ROADMAP-HEX-ATLAS-E2E-PLAN.md](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/blob/892e20d737c9e4868aa44b615f8da0f97d98fb39/ROADMAP-HEX-ATLAS-E2E-PLAN.md)
+- [ROADMAP-SALTMARCHER-SMR-01-CAMPAIGN-DATA-PLAN.md](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/blob/892e20d737c9e4868aa44b615f8da0f97d98fb39/ROADMAP-SALTMARCHER-SMR-01-CAMPAIGN-DATA-PLAN.md)
+
+</details>
+
 ## Belegzugriff
 
 Eingecheckte synthetische Fixtures liegen unter `tests/fixtures/` und `tools/fixtures/`. Große native Rohbelege liegen oft auf dem Rechner des jeweiligen Prüfers außerhalb des Vaults. Ein historischer absoluter Dateipfad bestätigt weder Zugriff noch eine eigene Rückprüfung. Fehlenden Zugriff ausdrücklich melden; keinen historischen PASS in einen aktuellen Gesamt-PASS umdeuten.
@@ -142,4 +170,6 @@ Für einen reproduzierbaren Einstieg zeigt [Campaign-B-Fixture reproduzieren](CO
 
 ## Diesen Index pflegen
 
-Bei neuen Fachplänen im passenden Registerabschnitt einen relativen Link ergänzen; konkrete Priorität und Abhängigkeiten in Aufgabenissues und der Produktroadmap halten. Abgelöste Pläne als solche kenntlich machen, bevor sie verschoben werden; Pfadverweise und bestehende externe Handoffs berücksichtigen.
+Neue Paketpläne unter `docs/plans/<bereich>/` anlegen und im passenden Registerabschnitt einen relativen Link ergänzen; konkrete Priorität und Abhängigkeiten in Aufgabenissues und der Produktroadmap halten. Abgelöste Pläne als solche kenntlich machen, bevor sie verschoben werden; Pfadverweise und bestehende externe Handoffs berücksichtigen.
+
+Vor Veröffentlichung `npm run check:repo` ausführen. Der [Pflegevertrag](REPOSITORY.md) legt Zuständigkeit, Statuswechsel und Ablösung fest.
