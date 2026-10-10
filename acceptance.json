@@ -4905,6 +4905,15 @@
         "deletedBytes": 46469066,
         "protectedFiles": 555
       }
+    },
+    "draftAbaRegression": {
+      "state": "delta_review_pending",
+      "trigger": "City edit A→B, Undo to byte-identical A, late Apply of pre-existing draft",
+      "before": "old draft committed and erased Redo",
+      "after": "Existing History command events invalidate affected City drafts terminally through ordinary and nested Redo→Undo; no snapshot-identity accessor needed; observers detach on terminal states",
+      "compatibility": "Existing immutable commands/History authority; argumentless observers remain compatible; independent Terrain stays allowed",
+      "limits": "Code delta awaiting independent review; core tests are not City host/integration or full parity approval",
+      "reviewFinding": "R01/5480419361 plus own N01 reentrant observer countercase on6e39dcb; both earlier reference/state-read approaches were insufficient"
     }
   },
   "wonderdraftParity": {
