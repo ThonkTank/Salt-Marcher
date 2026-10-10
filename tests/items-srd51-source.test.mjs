@@ -82,8 +82,8 @@ test("items source package is explicitly incomplete and fails closed by default"
   await assert.rejects(verifyItemsSourcePackage(), /S01 ist unvollständig/);
   const result = await verifyItemsSourcePackage({ allowIncomplete: true });
   assert.equal(result.complete, false);
-  assert.equal(result.validation.occurrenceCount, 237);
-  assert.equal(result.validation.recordCount, 236);
+  assert.equal(result.validation.occurrenceCount, 252);
+  assert.equal(result.validation.recordCount, 251);
   assert.equal(result.magicItemAzOpeningSlice.capturedRecords, 5);
   assert.equal(result.magicItemAzAnimatedShield.ordinal, 6);
   assert.equal(result.magicItemAzApparatusOfTheCrab.leverRows, 10);
@@ -92,6 +92,8 @@ test("items source package is explicitly incomplete and fails closed by default"
   assert.equal(result.magicItemAzArmorArrows.resistanceTableRows, 10);
   assert.equal(result.magicItemAzBags.beansEffectRows, 12);
   assert.equal(result.magicItemAzBags.tricksCreatureRows, 24);
+  assert.equal(result.magicItemAzBSection.records, 15);
+  assert.equal(result.magicItemAzBSection.beltRarityChoices, 5);
   assert.equal(result.potionHealingMerge.mergedRecords, 1);
   assert.ok(result.blockers.length >= 5);
 });
@@ -238,6 +240,8 @@ test("official PDF integration checks the complete source package and Armor/Arro
   assert.equal(result.pdf.magicItemAzArmorArrowsEvidence.resistanceTableRows, 10);
   assert.equal(result.pdf.magicItemAzBagsEvidence.beansEffectRows, 12);
   assert.equal(result.pdf.magicItemAzBagsEvidence.tricksCreatureRows, 24);
+  assert.equal(result.pdf.magicItemAzBSectionEvidence.records, 15);
+  assert.equal(result.pdf.magicItemAzBSectionEvidence.beltTableRows, 5);
   assert.equal(result.complete, false);
 });
 

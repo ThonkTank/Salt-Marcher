@@ -1,0 +1,386 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE pdf2xml SYSTEM "pdf2xml.dtd">
+
+<pdf2xml producer="poppler" version="25.03.0">
+<page number="211" position="absolute" top="0" left="0" height="1188" width="918">
+	<fontspec id="0" size="16" family="LUFRKP+Calibri" color="#000000"/>
+	<fontspec id="1" size="16" family="DXJJCX+GillSans-SemiBold" color="#000000"/>
+	<fontspec id="2" size="13" family="LUFRKP+Calibri" color="#000000"/>
+	<fontspec id="3" size="18" family="WWROEK+Calibri" color="#000000"/>
+	<fontspec id="4" size="13" family="WWROEK+Calibri" color="#000000"/>
+	<fontspec id="5" size="18" family="DXJJCX+GillSans-SemiBold" color="#943634"/>
+	<fontspec id="6" size="15" family="FNCRUV+Cambria" color="#000000"/>
+	<fontspec id="7" size="15" family="UHIGMC+Cambria" color="#000000"/>
+	<fontspec id="8" size="15" family="ZWSWFB+Symbol" color="#000000"/>
+	<fontspec id="9" size="15" family="EMJVBH+Cambria" color="#000000"/>
+<text top="1125" left="572" width="222" height="20" font="0">System   Reference   Document   5.1   </text>
+<text top="1125" left="842" width="26" height="19" font="1"><b>211</b></text>
+<text top="1125" left="869" width="4" height="20" font="0">   </text>
+<text top="108" left="90" width="10" height="16" font="2">7   </text>
+<text top="108" left="117" width="53" height="16" font="2">Dire   wolf   </text>
+<text top="124" left="90" width="10" height="16" font="2">8   </text>
+<text top="124" left="117" width="52" height="16" font="2">Giant   elk   </text>
+<text top="167" left="86" width="135" height="22" font="3"><b>Rust   Bag   of   Tricks   </b></text>
+<text top="194" left="86" width="82" height="16" font="4"><b>d8    Creature   </b></text>
+<text top="211" left="90" width="10" height="16" font="2">1   </text>
+<text top="211" left="117" width="21" height="16" font="2">Rat   </text>
+<text top="227" left="90" width="10" height="16" font="2">2   </text>
+<text top="227" left="117" width="25" height="16" font="2">Owl   </text>
+<text top="243" left="90" width="10" height="16" font="2">3   </text>
+<text top="243" left="117" width="42" height="16" font="2">Mastiff   </text>
+<text top="260" left="90" width="10" height="16" font="2">4   </text>
+<text top="260" left="117" width="30" height="16" font="2">Goat   </text>
+<text top="276" left="90" width="10" height="16" font="2">5   </text>
+<text top="276" left="117" width="60" height="16" font="2">Giant   goat   </text>
+<text top="293" left="90" width="10" height="16" font="2">6   </text>
+<text top="293" left="117" width="61" height="16" font="2">Giant   boar   </text>
+<text top="309" left="90" width="10" height="16" font="2">7   </text>
+<text top="309" left="117" width="26" height="16" font="2">Lion   </text>
+<text top="326" left="90" width="10" height="16" font="2">8   </text>
+<text top="326" left="117" width="67" height="16" font="2">Brown   bear   </text>
+<text top="369" left="86" width="130" height="22" font="3"><b>Tan   Bag   of   Tricks   </b></text>
+<text top="395" left="86" width="82" height="16" font="4"><b>d8    Creature   </b></text>
+<text top="412" left="90" width="10" height="16" font="2">1   </text>
+<text top="412" left="117" width="35" height="16" font="2">Jackal   </text>
+<text top="428" left="90" width="10" height="16" font="2">2   </text>
+<text top="428" left="117" width="25" height="16" font="2">Ape   </text>
+<text top="445" left="90" width="10" height="16" font="2">3   </text>
+<text top="445" left="117" width="45" height="16" font="2">Baboon   </text>
+<text top="461" left="90" width="10" height="16" font="2">4   </text>
+<text top="461" left="117" width="53" height="16" font="2">Axe   beak   </text>
+<text top="478" left="90" width="10" height="16" font="2">5   </text>
+<text top="478" left="117" width="60" height="16" font="2">Black   bear   </text>
+<text top="494" left="90" width="10" height="16" font="2">6   </text>
+<text top="494" left="117" width="74" height="16" font="2">Giant   weasel   </text>
+<text top="511" left="90" width="10" height="16" font="2">7   </text>
+<text top="511" left="117" width="69" height="16" font="2">Giant   hyena   </text>
+<text top="527" left="90" width="10" height="16" font="2">8   </text>
+<text top="527" left="117" width="30" height="16" font="2">Tiger   </text>
+<text top="557" left="86" width="114" height="21" font="5"><b>Bead of Force </b></text>
+<text top="579" left="86" width="132" height="17" font="6"><i>Wondrous   item,   rare   </i></text>
+<text top="605" left="86" width="327" height="17" font="7">This   small   black   sphere   measures   3/4   of   an   inch   in   </text>
+<text top="623" left="86" width="318" height="17" font="7">diameter   and   weighs   an   ounce.   Typically,   1d4   +   4   </text>
+<text top="640" left="86" width="86" height="17" font="6"><i>beads   of   force</i></text>
+<text top="640" left="173" width="129" height="17" font="7">   are   found   together.   </text>
+<text top="658" left="86" width="328" height="17" font="7">    You   can   use   an   action   to   throw   the   bead   up   to   60   </text>
+<text top="676" left="86" width="332" height="17" font="7">feet.   The   bead   explodes   on   impact   and   is   destroyed.   </text>
+<text top="693" left="86" width="326" height="17" font="7">Each   creature   within   a   10-­‐‑foot   radius   of   where   the   </text>
+<text top="711" left="86" width="306" height="17" font="7">bead   landed   must   succeed   on   a   DC   15   Dexterity   </text>
+<text top="728" left="86" width="332" height="17" font="7">saving   throw   or   take   5d4   force   damage.   A   sphere   of   </text>
+<text top="746" left="86" width="294" height="17" font="7">transparent   force   then   encloses   the   area   for   1   </text>
+<text top="764" left="86" width="303" height="17" font="7">minute.   Any   creature   that   failed   the   save   and   is   </text>
+<text top="781" left="86" width="312" height="17" font="7">completely   within   the   area   is   trapped   inside   this   </text>
+<text top="799" left="86" width="335" height="17" font="7">sphere.   Creatures   that   succeeded   on   the   save,   or   are   </text>
+<text top="816" left="86" width="331" height="17" font="7">partially   within   the   area,   are   pushed   away   from   the   </text>
+<text top="834" left="86" width="342" height="17" font="7">center   of   the   sphere   until   they   are   no   longer   inside   it.   </text>
+<text top="851" left="86" width="320" height="17" font="7">Only   breathable   air   can   pass   through   the   sphere’s   </text>
+<text top="869" left="86" width="220" height="17" font="7">wall.   No   attack   or   other   effect   can.   </text>
+<text top="887" left="86" width="316" height="17" font="7">    An   enclosed   creature   can   use   its   action   to   push   </text>
+<text top="904" left="86" width="322" height="17" font="7">against   the   sphere’s   wall,   moving   the   sphere   up   to   </text>
+<text top="922" left="86" width="337" height="17" font="7">half   the   creature’s   walking   speed.   The   sphere   can   be   </text>
+<text top="939" left="86" width="316" height="17" font="7">picked   up,   and   its   magic   causes   it   to   weigh   only   1   </text>
+<text top="957" left="86" width="330" height="17" font="7">pound,   regardless   of   the   weight   of   creatures   inside.   </text>
+<text top="108" left="493" width="167" height="21" font="5"><b>Belt of Dwarvenkind </b></text>
+<text top="130" left="493" width="275" height="17" font="6"><i>Wondrous   item,   rare   (requires   attunement)   </i></text>
+<text top="156" left="493" width="300" height="17" font="7">While   wearing   this   belt,   you   gain   the   following   </text>
+<text top="174" left="493" width="59" height="17" font="7">benefits:   </text>
+<text top="205" left="493" width="7" height="15" font="8">•</text>
+<text top="201" left="507" width="276" height="17" font="7">Your   Constitution   score   increases   by   2,   to   a</text>
+<text top="219" left="507" width="103" height="17" font="7">maximum   of   20.</text>
+<text top="241" left="493" width="7" height="15" font="8">•</text>
+<text top="237" left="507" width="297" height="17" font="7">You   have   advantage   on   Charisma   (Persuasion)</text>
+<text top="255" left="507" width="249" height="17" font="7">checks   made   to   interact   with   dwarves.   </text>
+<text top="277" left="493" width="331" height="17" font="7">In   addition,   while   attuned   to   the   belt,   you   have   a   50   </text>
+<text top="294" left="493" width="321" height="17" font="7">percent   chance   each   day   at   dawn   of   growing   a   full   </text>
+<text top="312" left="493" width="325" height="17" font="7">beard   if   you’re   capable   of   growing   one,   or   a   visibly   </text>
+<text top="329" left="493" width="244" height="17" font="7">thicker   beard   if   you   already   have   one.   </text>
+<text top="347" left="493" width="295" height="17" font="7">    If   you   aren’t   a   dwarf,   you   gain   the   following   </text>
+<text top="365" left="493" width="273" height="17" font="7">additional   benefits   while   wearing   the   belt:   </text>
+<text top="396" left="493" width="7" height="15" font="8">•</text>
+<text top="392" left="507" width="290" height="17" font="7">You   have   advantage   on   saving   throws   against</text>
+<text top="410" left="507" width="299" height="17" font="7">poison,   and   you   have   resistance   against   poison</text>
+<text top="427" left="507" width="53" height="17" font="7">damage.</text>
+<text top="450" left="493" width="7" height="15" font="8">•</text>
+<text top="446" left="507" width="288" height="17" font="7">You   have   darkvision   out   to   a   range   of   60   feet.</text>
+<text top="468" left="493" width="7" height="15" font="8">•</text>
+<text top="464" left="507" width="262" height="17" font="7">You   can   speak,   read,   and   write   Dwarvish.</text>
+<text top="495" left="493" width="178" height="21" font="5"><b>Belt of Giant Strength </b></text>
+<text top="517" left="493" width="325" height="17" font="6"><i>Wondrous   item,   rarity   varies   (requires   attunement)   </i></text>
+<text top="543" left="493" width="340" height="17" font="7">While   wearing   this   belt,   your   Strength   score   changes   </text>
+<text top="561" left="493" width="311" height="17" font="7">to   a   score   granted   by   the   belt.   If   your   Strength   is   </text>
+<text top="579" left="493" width="333" height="17" font="7">already   equal   to   or   greater   than   the   belt’s   score,   the   </text>
+<text top="596" left="493" width="166" height="17" font="7">item   has   no   effect   on   you.   </text>
+<text top="613" left="493" width="332" height="17" font="7">    Six   varieties   of   this   belt   exist,   corresponding   with   </text>
+<text top="631" left="493" width="326" height="17" font="7">and   having   rarity   according   to   the   six   kinds   of   true   </text>
+<text top="649" left="493" width="73" height="17" font="7">giants.   The   </text>
+<text top="649" left="566" width="168" height="17" font="6"><i>belt   of   stone   giant   strength</i></text>
+<text top="649" left="734" width="55" height="17" font="7">   and   the   </text>
+<text top="649" left="789" width="42" height="17" font="6"><i>belt   of   </i></text>
+<text top="666" left="493" width="121" height="17" font="6"><i>frost   giant   strength</i></text>
+<text top="666" left="614" width="211" height="17" font="7">   look   different,   but   they   have   the   </text>
+<text top="684" left="493" width="79" height="17" font="7">same   effect.   </text>
+<text top="711" left="493" width="30" height="16" font="4"><b>Type   </b></text>
+<text top="711" left="602" width="51" height="16" font="4"><b>Strength   </b></text>
+<text top="711" left="678" width="36" height="16" font="4"><b>Rarity   </b></text>
+<text top="727" left="493" width="51" height="16" font="2">Hill   giant   </text>
+<text top="727" left="620" width="17" height="16" font="2">21   </text>
+<text top="727" left="683" width="28" height="16" font="2">Rare   </text>
+<text top="743" left="493" width="96" height="16" font="2">Stone/frost   giant   </text>
+<text top="743" left="620" width="17" height="16" font="2">23   </text>
+<text top="743" left="670" width="54" height="16" font="2">Very   rare   </text>
+<text top="760" left="493" width="54" height="16" font="2">Fire   giant   </text>
+<text top="760" left="620" width="17" height="16" font="2">25   </text>
+<text top="760" left="670" width="54" height="16" font="2">Very   rare   </text>
+<text top="776" left="493" width="65" height="16" font="2">Cloud   giant   </text>
+<text top="776" left="620" width="17" height="16" font="2">27   </text>
+<text top="776" left="667" width="60" height="16" font="2">Legendary   </text>
+<text top="793" left="493" width="67" height="16" font="2">Storm   giant   </text>
+<text top="793" left="620" width="17" height="16" font="2">29   </text>
+<text top="793" left="667" width="60" height="16" font="2">Legendary   </text>
+<text top="823" left="493" width="120" height="21" font="5"><b>Berserker Axe </b></text>
+<text top="844" left="493" width="293" height="17" font="6"><i>Weapon   (any   axe),   rare   (requires   attunement)   </i></text>
+<text top="871" left="493" width="304" height="17" font="7">You   gain   a   +1   bonus   to   attack   and   damage   rolls   </text>
+<text top="888" left="493" width="339" height="17" font="7">made   with   this   magic   weapon.   In   addition,   while   you   </text>
+<text top="906" left="493" width="337" height="17" font="7">are   attuned   to   this   weapon,   your   hit   point   maximum   </text>
+<text top="924" left="493" width="303" height="17" font="7">increases   by   1   for   each   level   you   have   attained.   </text>
+<text top="941" left="493" width="3" height="17" font="7">   </text>
+<text top="941" left="507" width="41" height="17" font="9"><i><b>Curse.</b></i></text>
+<text top="941" left="548" width="286" height="17" font="7">   This   axe   is   cursed,   and   becoming   attuned   to   </text>
+<text top="959" left="493" width="318" height="17" font="7">it   extends   the   curse   to   you.   As   long   as   you   remain   </text>
+<text top="976" left="493" width="296" height="17" font="7">cursed,   you   are   unwilling   to   part   with   the   axe,   </text>
+<text top="994" left="493" width="318" height="17" font="7">keeping   it   within   reach   at   all   times.   You   also   have   </text>
+<text top="1012" left="493" width="314" height="17" font="7">disadvantage   on   attack   rolls   with   weapons   other   </text>
+</page>
+<page number="212" position="absolute" top="0" left="0" height="1188" width="918">
+<text top="1125" left="572" width="222" height="20" font="0">System   Reference   Document   5.1   </text>
+<text top="1125" left="842" width="26" height="19" font="1"><b>212</b></text>
+<text top="1125" left="869" width="4" height="20" font="0">   </text>
+<text top="108" left="86" width="326" height="17" font="7">than   this   one,   unless   no   foe   is   within   60   feet   of   you   </text>
+<text top="126" left="86" width="159" height="17" font="7">that   you   can   see   or   hear.   </text>
+<text top="143" left="86" width="324" height="17" font="7">    Whenever   a   hostile   creature   damages   you   while   </text>
+<text top="161" left="86" width="336" height="17" font="7">the   axe   is   in   your   possession,   you   must   succeed   on   a   </text>
+<text top="178" left="86" width="318" height="17" font="7">DC   15   Wisdom   saving   throw   or   go   berserk.   While   </text>
+<text top="196" left="86" width="312" height="17" font="7">berserk,   you   must   use   your   action   each   round   to   </text>
+<text top="213" left="86" width="316" height="17" font="7">attack   the   creature   nearest   to   you   with   the   axe.   If   </text>
+<text top="231" left="86" width="308" height="17" font="7">you   can   make   extra   attacks   as   part   of   the   Attack   </text>
+<text top="249" left="86" width="335" height="17" font="7">action,   you   use   those   extra   attacks,   moving   to   attack   </text>
+<text top="266" left="86" width="333" height="17" font="7">the   next   nearest   creature   after   you   fell   your   current   </text>
+<text top="284" left="86" width="310" height="17" font="7">target.   If   you   have   multiple   possible   targets,   you   </text>
+<text top="301" left="86" width="341" height="17" font="7">attack   one   at   random.   You   are   berserk   until   you   start   </text>
+<text top="319" left="86" width="316" height="17" font="7">your   turn   with   no   creatures   within   60   feet   of   you   </text>
+<text top="337" left="86" width="159" height="17" font="7">that   you   can   see   or   hear.   </text>
+<text top="368" left="86" width="152" height="21" font="5"><b>Boots of Elvenkind </b></text>
+<text top="389" left="86" width="175" height="17" font="6"><i>Wondrous   item,   uncommon   </i></text>
+<text top="416" left="86" width="312" height="17" font="7">While   you   wear   these   boots,   your   steps   make   no   </text>
+<text top="433" left="86" width="308" height="17" font="7">sound,   regardless   of   the   surface   you   are   moving   </text>
+<text top="451" left="86" width="290" height="17" font="7">across.   You   also   have   advantage   on   Dexterity   </text>
+<text top="468" left="86" width="288" height="17" font="7">(Stealth)   checks   that   rely   on   moving   silently.   </text>
+<text top="499" left="86" width="155" height="21" font="5"><b>Boots of Levitation </b></text>
+<text top="521" left="86" width="275" height="17" font="6"><i>Wondrous   item,   rare   (requires   attunement)   </i></text>
+<text top="548" left="86" width="340" height="17" font="7">While   you   wear   these   boots,   you   can   use   an   action   to   </text>
+<text top="565" left="86" width="53" height="17" font="7">cast   the   </text>
+<text top="565" left="139" width="47" height="17" font="6"><i>levitate</i></text>
+<text top="565" left="186" width="158" height="17" font="7">   spell   on   yourself   at   will.   </text>
+<text top="596" left="86" width="124" height="21" font="5"><b>Boots of Speed </b></text>
+<text top="618" left="86" width="275" height="17" font="6"><i>Wondrous   item,   rare   (requires   attunement)   </i></text>
+<text top="644" left="86" width="315" height="17" font="7">While   you   wear   these   boots,   you   can   use   a   bonus   </text>
+<text top="662" left="86" width="329" height="17" font="7">action   and   click   the   boots’   heels   together.   If   you   do,   </text>
+<text top="680" left="86" width="296" height="17" font="7">the   boots   double   your   walking   speed,   and   any   </text>
+<text top="697" left="86" width="323" height="17" font="7">creature   that   makes   an   opportunity   attack   against   </text>
+<text top="715" left="86" width="328" height="17" font="7">you   has   disadvantage   on   the   attack   roll.   If   you   click   </text>
+<text top="732" left="86" width="289" height="17" font="7">your   heels   together   again,   you   end   the   effect.   </text>
+<text top="750" left="86" width="340" height="17" font="7">    When   the   boots’   property   has   been   used   for   a   total   </text>
+<text top="768" left="86" width="338" height="17" font="7">of   10   minutes,   the   magic   ceases   to   function   until   you   </text>
+<text top="785" left="86" width="112" height="17" font="7">finish   a   long   rest.   </text>
+<text top="816" left="86" width="249" height="21" font="5"><b>Boots of Striding and Springing </b></text>
+<text top="838" left="86" width="318" height="17" font="6"><i>Wondrous   item,   uncommon   (requires   attunement)   </i></text>
+<text top="864" left="86" width="312" height="17" font="7">While   you   wear   these   boots,   your   walking   speed   </text>
+<text top="882" left="86" width="345" height="17" font="7">becomes   30   feet,   unless   your   walking   speed   is   higher,   </text>
+<text top="899" left="86" width="335" height="17" font="7">and   your   speed   isn’t   reduced   if   you   are   encumbered   </text>
+<text top="917" left="86" width="327" height="17" font="7">or   wearing   heavy   armor.   In   addition,   you   can   jump   </text>
+<text top="935" left="86" width="320" height="17" font="7">three   times   the   normal   distance,   though   you   can’t   </text>
+<text top="952" left="86" width="335" height="17" font="7">jump   farther   than   your   remaining   movement   would   </text>
+<text top="970" left="86" width="41" height="17" font="7">allow.   </text>
+<text top="108" left="493" width="204" height="21" font="5"><b>Boots of the Winterlands </b></text>
+<text top="130" left="493" width="318" height="17" font="6"><i>Wondrous   item,   uncommon   (requires   attunement)   </i></text>
+<text top="156" left="493" width="317" height="17" font="7">These   furred   boots   are   snug   and   feel   quite   warm.   </text>
+<text top="174" left="493" width="288" height="17" font="7">While   you   wear   them,   you   gain   the   following   </text>
+<text top="191" left="493" width="59" height="17" font="7">benefits:   </text>
+<text top="223" left="493" width="7" height="15" font="8">•</text>
+<text top="219" left="507" width="230" height="17" font="7">You   have   resistance   to   cold   damage.</text>
+<text top="241" left="493" width="7" height="15" font="8">•</text>
+<text top="237" left="507" width="321" height="17" font="7">You   ignore   difficult   terrain   created   by   ice   or   snow.</text>
+<text top="259" left="493" width="7" height="15" font="8">•</text>
+<text top="256" left="507" width="284" height="17" font="7">You   can   tolerate   temperatures   as   low   as   −50</text>
+<text top="273" left="507" width="273" height="17" font="7">degrees   Fahrenheit   without   any   additional</text>
+<text top="291" left="507" width="292" height="17" font="7">protection.   If   you   wear   heavy   clothes,   you   can</text>
+<text top="308" left="507" width="292" height="17" font="7">tolerate   temperatures   as   low   as   −100   degrees</text>
+<text top="326" left="507" width="73" height="17" font="7">Fahrenheit.</text>
+<text top="356" left="493" width="322" height="21" font="5"><b>Bowl of Commanding Water Elementals </b></text>
+<text top="378" left="493" width="132" height="17" font="6"><i>Wondrous   item,   rare   </i></text>
+<text top="405" left="493" width="326" height="17" font="7">While   this   bowl   is   filled   with   water,   you   can   use   an   </text>
+<text top="423" left="493" width="300" height="17" font="7">action   to   speak   the   bowl’s   command   word   and   </text>
+<text top="440" left="493" width="317" height="17" font="7">summon   a   water   elemental,   as   if   you   had   cast   the   </text>
+<text top="458" left="493" width="112" height="17" font="6"><i>conjure   elemental</i></text>
+<text top="458" left="605" width="217" height="17" font="7">   spell.   The   bowl   can’t   be   used   this   </text>
+<text top="475" left="493" width="198" height="17" font="7">way   again   until   the   next   dawn.   </text>
+<text top="493" left="493" width="321" height="17" font="7">    The   bowl   is   about   1   foot   in   diameter   and   half   as   </text>
+<text top="510" left="493" width="332" height="17" font="7">deep.   It   weighs   3   pounds   and   holds   about   3   gallons.   </text>
+<text top="541" left="493" width="154" height="21" font="5"><b>Bracers of Archery </b></text>
+<text top="563" left="493" width="318" height="17" font="6"><i>Wondrous   item,   uncommon   (requires   attunement)   </i></text>
+<text top="590" left="493" width="325" height="17" font="7">While   wearing   these   bracers,   you   have   proficiency   </text>
+<text top="607" left="493" width="326" height="17" font="7">with   the   longbow   and   shortbow,   and   you   gain   a   +2   </text>
+<text top="625" left="493" width="333" height="17" font="7">bonus   to   damage   rolls   on   ranged   attacks   made   with   </text>
+<text top="642" left="493" width="97" height="17" font="7">such   weapons.   </text>
+<text top="673" left="493" width="154" height="21" font="5"><b>Bracers of Defense </b></text>
+<text top="695" left="493" width="275" height="17" font="6"><i>Wondrous   item,   rare   (requires   attunement)   </i></text>
+<text top="721" left="493" width="336" height="17" font="7">While   wearing   these   bracers,   you   gain   a   +2   bonus   to   </text>
+<text top="739" left="493" width="333" height="17" font="7">AC   if   you   are   wearing   no   armor   and   using   no   shield.   </text>
+<text top="770" left="493" width="319" height="21" font="5"><b>Brazier of Commanding Fire Elementals </b></text>
+<text top="792" left="493" width="132" height="17" font="6"><i>Wondrous   item,   rare   </i></text>
+<text top="818" left="493" width="330" height="17" font="7">While   a   fire   burns   in   this   brass   brazier,   you   can   use   </text>
+<text top="836" left="493" width="334" height="17" font="7">an   action   to   speak   the   brazier’s   command   word   and   </text>
+<text top="854" left="493" width="301" height="17" font="7">summon   a   fire   elemental,   as   if   you   had   cast   the   </text>
+<text top="871" left="493" width="112" height="17" font="6"><i>conjure   elemental</i></text>
+<text top="871" left="605" width="204" height="17" font="7">   spell.   The   brazier   can’t   be   used   </text>
+<text top="888" left="493" width="225" height="17" font="7">this   way   again   until   the   next   dawn.   </text>
+<text top="906" left="507" width="192" height="17" font="7">The   brazier   weighs   5   pounds.   </text>
+<text top="937" left="493" width="158" height="21" font="5"><b>Brooch of Shielding </b></text>
+<text top="959" left="493" width="318" height="17" font="6"><i>Wondrous   item,   uncommon   (requires   attunement)   </i></text>
+<text top="985" left="493" width="321" height="17" font="7">While   wearing   this   brooch,   you   have   resistance   to   </text>
+<text top="1003" left="493" width="316" height="17" font="7">force   damage,   and   you   have   immunity   to   damage   </text>
+<text top="1021" left="493" width="58" height="17" font="7">from   the   </text>
+<text top="1021" left="551" width="84" height="17" font="6"><i>magic   missile</i></text>
+<text top="1021" left="635" width="40" height="17" font="7">   spell.   </text>
+</page>
+<page number="213" position="absolute" top="0" left="0" height="1188" width="918">
+<text top="1125" left="572" width="222" height="20" font="0">System   Reference   Document   5.1   </text>
+<text top="1125" left="842" width="26" height="19" font="1"><b>213</b></text>
+<text top="1125" left="869" width="4" height="20" font="0">   </text>
+<text top="108" left="86" width="131" height="21" font="5"><b>Broom of Flying </b></text>
+<text top="130" left="86" width="175" height="17" font="6"><i>Wondrous   item,   uncommon   </i></text>
+<text top="156" left="86" width="292" height="17" font="7">This   wooden   broom,   which   weighs   3   pounds,   </text>
+<text top="174" left="86" width="310" height="17" font="7">functions   like   a   mundane   broom   until   you   stand   </text>
+<text top="191" left="86" width="301" height="17" font="7">astride   it   and   speak   its   command   word.   It   then   </text>
+<text top="209" left="86" width="324" height="17" font="7">hovers   beneath   you   and   can   be   ridden   in   the   air.   It   </text>
+<text top="226" left="86" width="323" height="17" font="7">has   a   flying   speed   of   50   feet.   It   can   carry   up   to   400   </text>
+<text top="244" left="86" width="324" height="17" font="7">pounds,   but   its   flying   speed   becomes   30   feet   while   </text>
+<text top="262" left="86" width="283" height="17" font="7">carrying   over   200   pounds.   The   broom   stops   </text>
+<text top="279" left="86" width="161" height="17" font="7">hovering   when   you   land.   </text>
+<text top="297" left="86" width="294" height="17" font="7">    You   can   send   the   broom   to   travel   alone   to   a   </text>
+<text top="314" left="86" width="310" height="17" font="7">destination   within   1   mile   of   you   if   you   speak   the   </text>
+<text top="332" left="86" width="333" height="17" font="7">command   word,   name   the   location,   and   are   familiar   </text>
+<text top="350" left="86" width="335" height="17" font="7">with   that   place.   The   broom   comes   back   to   you   when   </text>
+<text top="367" left="86" width="319" height="17" font="7">you   speak   another   command   word,   provided   that   </text>
+<text top="385" left="86" width="245" height="17" font="7">the   broom   is   still   within   1   mile   of   you.   </text>
+<text top="415" left="86" width="167" height="21" font="5"><b>Candle of Invocation </b></text>
+<text top="437" left="86" width="305" height="17" font="6"><i>Wondrous   item,   very   rare   (requires   attunement)   </i></text>
+<text top="464" left="86" width="335" height="17" font="7">This   slender   taper   is   dedicated   to   a   deity   and   shares   </text>
+<text top="481" left="86" width="341" height="17" font="7">that   deity’s   alignment.   The   candle’s   alignment   can   be   </text>
+<text top="499" left="86" width="112" height="17" font="7">detected   with   the</text>
+<text top="499" left="198" width="128" height="17" font="6"><i>   detect   evil   and   good</i></text>
+<text top="499" left="326" width="92" height="17" font="7">   spell.   The   GM   </text>
+<text top="517" left="86" width="288" height="17" font="7">chooses   the   god   and   associated   alignment   or   </text>
+<text top="534" left="86" width="237" height="17" font="7">determines   the   alignment   randomly.   </text>
+<text top="561" left="95" width="24" height="16" font="4"><b>d20   </b></text>
+<text top="561" left="141" width="61" height="16" font="4"><b>Alignment   </b></text>
+<text top="577" left="96" width="23" height="16" font="2">1–2   </text>
+<text top="577" left="141" width="66" height="16" font="2">Chaotic   evil   </text>
+<text top="594" left="96" width="23" height="16" font="2">3–4   </text>
+<text top="594" left="141" width="87" height="16" font="2">Chaotic   neutral   </text>
+<text top="612" left="96" width="23" height="16" font="2">5–7   </text>
+<text top="612" left="141" width="75" height="16" font="2">Chaotic   good   </text>
+<text top="628" left="96" width="23" height="16" font="2">8–9   </text>
+<text top="628" left="141" width="66" height="16" font="2">Neutral   evil   </text>
+<text top="644" left="89" width="97" height="16" font="2">10–11    Neutral   </text>
+<text top="661" left="89" width="128" height="16" font="2">12–13    Neutral   good   </text>
+<text top="677" left="89" width="114" height="16" font="2">14–15    Lawful   evil   </text>
+<text top="694" left="89" width="134" height="16" font="2">16–17    Lawful   neutral   </text>
+<text top="710" left="89" width="122" height="16" font="2">18–20    Lawful   good   </text>
+<text top="744" left="86" width="336" height="17" font="7">    The   candle’s   magic   is   activated   when   the   candle   is   </text>
+<text top="762" left="86" width="308" height="17" font="7">lit,   which   requires   an   action.   After   burning   for   4   </text>
+<text top="780" left="86" width="324" height="17" font="7">hours,   the   candle   is   destroyed.   You   can   snuff   it   out   </text>
+<text top="797" left="86" width="296" height="17" font="7">early   for   use   at   a   later   time.   Deduct   the   time   it   </text>
+<text top="815" left="86" width="331" height="17" font="7">burned   in   increments   of   1   minute   from   the   candle’s   </text>
+<text top="832" left="86" width="103" height="17" font="7">total   burn   time.   </text>
+<text top="850" left="86" width="321" height="17" font="7">    While   lit,   the   candle   sheds   dim   light   in   a   30-­‐‑foot   </text>
+<text top="868" left="86" width="285" height="17" font="7">radius.   Any   creature   within   that   light   whose   </text>
+<text top="885" left="86" width="326" height="17" font="7">alignment   matches   that   of   the   candle   makes   attack   </text>
+<text top="903" left="86" width="282" height="17" font="7">rolls,   saving   throws,   and   ability   checks   with   </text>
+<text top="921" left="86" width="326" height="17" font="7">advantage.   In   addition,   a   cleric   or   druid   in   the   light   </text>
+<text top="938" left="86" width="328" height="17" font="7">whose   alignment   matches   the   candle’s   can   cast   1st-­‐‑</text>
+<text top="955" left="86" width="277" height="17" font="7">level   spells   he   or   she   has   prepared   without   </text>
+<text top="973" left="86" width="338" height="17" font="7">expending   spell   slots,   though   the   spell’s   effect   is   as   if   </text>
+<text top="991" left="86" width="160" height="17" font="7">cast   with   a   1st-­‐‑level   slot.   </text>
+<text top="108" left="493" width="317" height="17" font="7">    Alternatively,   when   you   light   the   candle   for   the   </text>
+<text top="126" left="493" width="171" height="17" font="7">first   time,   you   can   cast   the   </text>
+<text top="126" left="663" width="28" height="17" font="6"><i>gate</i></text>
+<text top="126" left="691" width="144" height="17" font="7">   spell   with   it.   Doing   so   </text>
+<text top="143" left="493" width="131" height="17" font="7">destroys   the   candle.   </text>
+<text top="174" left="493" width="200" height="21" font="5"><b>Cape of the Mountebank </b></text>
+<text top="196" left="493" width="132" height="17" font="6"><i>Wondrous   item,   rare   </i></text>
+<text top="222" left="493" width="338" height="17" font="7">This   cape   smells   faintly   of   brimstone.   While   wearing   </text>
+<text top="240" left="493" width="175" height="17" font="7">it,   you   can   use   it   to   cast   the   </text>
+<text top="240" left="668" width="97" height="17" font="6"><i>dimension   door</i></text>
+<text top="240" left="765" width="54" height="17" font="7">   spell   as   </text>
+<text top="257" left="493" width="315" height="17" font="7">an   action.   This   property   of   the   cape   can’t   be   used   </text>
+<text top="275" left="493" width="168" height="17" font="7">again   until   the   next   dawn.   </text>
+<text top="293" left="493" width="329" height="17" font="7">    When   you   disappear,   you   leave   behind   a   cloud   of   </text>
+<text top="310" left="493" width="341" height="17" font="7">smoke,   and   you   appear   in   a   similar   cloud   of   smoke   at   </text>
+<text top="328" left="493" width="314" height="17" font="7">your   destination.   The   smoke   lightly   obscures   the   </text>
+<text top="345" left="493" width="315" height="17" font="7">space   you   left   and   the   space   you   appear   in,   and   it   </text>
+<text top="363" left="493" width="312" height="17" font="7">dissipates   at   the   end   of   your   next   turn.   A   light   or   </text>
+<text top="381" left="493" width="231" height="17" font="7">stronger   wind   disperses   the   smoke.   </text>
+<text top="411" left="493" width="131" height="21" font="5"><b>Carpet of Flying </b></text>
+<text top="433" left="493" width="162" height="17" font="6"><i>Wondrous   item,   very   rare   </i></text>
+<text top="460" left="493" width="313" height="17" font="7">You   can   speak   the   carpet’s   command   word   as   an   </text>
+<text top="477" left="493" width="314" height="17" font="7">action   to   make   the   carpet   hover   and   fly.   It   moves   </text>
+<text top="495" left="493" width="327" height="17" font="7">according   to   your   spoken   directions,   provided   that   </text>
+<text top="513" left="493" width="175" height="17" font="7">you   are   within   30   feet   of   it.   </text>
+<text top="530" left="493" width="98" height="17" font="7">    Four   sizes   of   </text>
+<text top="530" left="591" width="94" height="17" font="6"><i>carpet   of   flying</i></text>
+<text top="530" left="685" width="147" height="17" font="7">   exist.   The   GM   chooses   </text>
+<text top="548" left="493" width="336" height="17" font="7">the   size   of   a   given   carpet   or   determines   it   randomly.   </text>
+<text top="574" left="499" width="31" height="16" font="4"><b>d100   </b></text>
+<text top="574" left="567" width="25" height="16" font="4"><b>Size   </b></text>
+<text top="574" left="623" width="137" height="16" font="4"><b>Capacity    Flying   Speed   </b></text>
+<text top="591" left="496" width="37" height="16" font="2">01–20   </text>
+<text top="591" left="550" width="60" height="16" font="2">3   ft.   ×   5   ft.   </text>
+<text top="591" left="628" width="40" height="16" font="2">200   lb.   </text>
+<text top="591" left="703" width="42" height="16" font="2">80   feet   </text>
+<text top="607" left="496" width="37" height="16" font="2">21–55   </text>
+<text top="607" left="550" width="60" height="16" font="2">4   ft.   ×   6   ft.   </text>
+<text top="607" left="628" width="40" height="16" font="2">400   lb.   </text>
+<text top="607" left="703" width="42" height="16" font="2">60   feet   </text>
+<text top="623" left="496" width="37" height="16" font="2">56–80   </text>
+<text top="623" left="550" width="60" height="16" font="2">5   ft.   ×   7   ft.   </text>
+<text top="623" left="628" width="40" height="16" font="2">600   lb.   </text>
+<text top="623" left="703" width="42" height="16" font="2">40   feet   </text>
+<text top="640" left="493" width="117" height="16" font="2">81–100    6   ft.   ×   9   ft.   </text>
+<text top="640" left="628" width="40" height="16" font="2">800   lb.   </text>
+<text top="640" left="703" width="42" height="16" font="2">30   feet   </text>
+<text top="674" left="493" width="325" height="17" font="7">    A   carpet   can   carry   up   to   twice   the   weight   shown   </text>
+<text top="692" left="493" width="306" height="17" font="7">on   the   table,   but   it   flies   at   half   speed   if   it   carries   </text>
+<text top="710" left="493" width="198" height="17" font="7">more   than   its   normal   capacity.   </text>
+<text top="740" left="493" width="296" height="21" font="5"><b>Censer of Controlling Air Elementals </b></text>
+<text top="762" left="493" width="132" height="17" font="6"><i>Wondrous   item,   rare   </i></text>
+<text top="788" left="493" width="331" height="17" font="7">While   incense   is   burning   in   this   censer,   you   can   use   </text>
+<text top="806" left="493" width="330" height="17" font="7">an   action   to   speak   the   censer’s   command   word   and   </text>
+<text top="824" left="493" width="305" height="17" font="7">summon   an   air   elemental,   as   if   you   had   cast   the   </text>
+<text top="841" left="493" width="112" height="17" font="6"><i>conjure   elemental</i></text>
+<text top="841" left="605" width="227" height="17" font="7">   spell.   The   censer   can’t   be   used   this   </text>
+<text top="859" left="493" width="198" height="17" font="7">way   again   until   the   next   dawn.   </text>
+<text top="877" left="493" width="326" height="17" font="7">    This   6-­‐‑inch-­‐‑wide,   1-­‐‑foot-­‐‑high   vessel   resembles   a   </text>
+<text top="894" left="493" width="302" height="17" font="7">chalice   with   a   decorated   lid.   It   weighs   1   pound.   </text>
+<text top="925" left="493" width="149" height="21" font="5"><b>Chime of Opening </b></text>
+<text top="946" left="493" width="132" height="17" font="6"><i>Wondrous   item,   rare   </i></text>
+<text top="973" left="493" width="327" height="17" font="7">This   hollow   metal   tube   measures   about   1   foot   long   </text>
+<text top="991" left="493" width="324" height="17" font="7">and   weighs   1   pound.   You   can   strike   it   as   an   action,   </text>
+<text top="1008" left="493" width="320" height="17" font="7">pointing   it   at   an   object   within   120   feet   of   you   that   </text>
+<text top="1026" left="493" width="339" height="17" font="7">can   be   opened,   such   as   a   door,   lid,   or   lock.   The   chime   </text>
+</page>
+<outline>
+<item page="1">SRD-CC_V1.1 preamble.pdf</item>
+<item page="3">SRD-OGL_V5.1.pdf</item>
+</outline>
+</pdf2xml>
