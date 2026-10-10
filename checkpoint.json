@@ -542,7 +542,7 @@
       "id": "E2E-01-SPACE-I01c",
       "kind": "bounded_required_integration_after_actual_owner_contracts",
       "focus": "Use actual Campaign/Vault context, registry/ownership participant revisions and original CommandId/ReceiptId publish boundary, then pure Dungeon geometry Gestureport and one real P02/P04 CompleteImport variant. Keep one candidate/camera/history/fixture; no E2E02–04.",
-      "dependency": "Campaign generic Contract/Validator/Testport input is qualified on 7aa47beb1bad3d0b1560666fa1cb1677bdc8cd4e, not source-integrated. M/W/S transfer/retention awaits an exact repair SHA and scoped owner re-review. Actual productive Campaign/Vault context, Registryprovider, persistable Publish boundary and P02/P04 remain open. Actual pure Dungeon geometry port remains required: N01 plan repair passed independent Hex P01-R02 on 58c24b161a967017112d8bfc68471b19ad70e72b, closing DUN-GEO-P01-R01-01 in plan only. Dungeon Product-I01 code candidate 455b7e606f9b753043e8f8f94896f8ffd60924f8 failed independent Hex Code-R01 with DUN-GEO-I01-R01-01..03 (hidden invalid-preview commit, missing actual pointerstart, duplicated record-change projection). Separate owner repair, exact-SHA independent R02 and separately mandated Cleanup-P/I/R remain; no port adoption before Code-PASS. No synthetic Registry/provider or port; World projection remains actual Repository.spatialGraph.world() and placements/spatial targets.",
+      "dependency": "Campaign generic Contract/Validator/Testport input is qualified on 7aa47beb1bad3d0b1560666fa1cb1677bdc8cd4e, not source-integrated. M/W/S transfer/retention owner repair has begun but still awaits an exact new SHA and scoped owner re-review; no repeated generic review. Actual productive Campaign/Vault context, Registryprovider, persistable Publish boundary and P02/P04 remain open. Actual pure Dungeon geometry port remains required: N01 plan repair passed independent Hex P01-R02 on 58c24b161a967017112d8bfc68471b19ad70e72b in plan only. Product repair cfe6e0e4db95176c42c8b19c4096c27eae627e53 independently passed check, 494 tests and build, but Code-R02 remains CHANGES_REQUIRED: DUN-GEO-I01-R01-02/-03 closed; DUN-GEO-I01-R01-01 remains only for Atlas pointer coordinate conversion rejection before update, hidden old proposal commit and Redo consumption. Narrow owner restrepair and exact-SHA Code-R03, separately mandated product Cleanup-P/I/R and secured handoff remain before port adoption. No synthetic Registry/provider or port; World projection remains actual Repository.spatialGraph.world() and placements/spatial targets.",
       "review": "Independent integrated code/host review follows complete pinned I01c handoff per #12; repairs and Cleanup-P/I/R are separate runs. Current native I01b is a narrow implementation proof, not full gate approval."
     },
     "review": {
@@ -834,7 +834,7 @@
       },
       "dungeonGeometryPlanInput": {
         "run": "E2E-01-DUNGEON-GEOMETRY-P01-R01",
-        "state": "independent_product_code_r01_changes_required_three_repairs_before_adoption",
+        "state": "independent_product_code_r02_changes_required_one_remaining_conversion_error_path",
         "owner": "Dungeon",
         "reviewer": "Hex independent Atlas interface recipient",
         "candidate": "ea46ba5437596aceaad955330e21c3ef4e739451",
@@ -852,7 +852,7 @@
           "full E2E gate",
           "cleanup"
         ],
-        "next": "Dungeon addresses only DUN-GEO-I01-R01-01..03 in a separate repair run and supplies exact-SHA narrow independent R02. Preserve separately mandated Cleanup-P/I/R runs; no repeated general plan or Campaign review. Port adoption waits Code-PASS.",
+        "next": "Only the remaining DUN-GEO-I01-R01-01 error path: separate narrow Dungeon repair, exact-SHA independent Code-R03. Product Cleanup-P/I/R and secured steward handoff remain separate; no integration before code PASS.",
         "synchronizedShared": "89a3ffbad44ed6acec2e25566a1b017166fa9f7c",
         "synchronizationVerification": {
           "check": true,
@@ -975,6 +975,77 @@
             "build": true,
             "scope": "Normal incoming Shared catalog synchronization and own metadata verification only, not Dungeon code adoption or geometry PASS."
           }
+        },
+        "codeRepairReview": {
+          "run": "E2E-01-DUNGEON-GEOMETRY-I01-CODE-R02",
+          "state": "CHANGES_REQUIRED",
+          "reviewer": "Hex independent Atlas interface recipient",
+          "candidate": "cfe6e0e4db95176c42c8b19c4096c27eae627e53",
+          "productCommit": "7d3f0deaca89f5bb2667a1478047475d9e28bee3",
+          "productBase": "f02ffa0e85801ef0039e5ab4abfb2b90421d9a12",
+          "reviewBase": "455b7e606f9b753043e8f8f94896f8ffd60924f8",
+          "startedAt": "2026-10-10T03:01:19Z",
+          "finishedAt": "2026-10-10T03:08:18Z",
+          "start": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/26#issuecomment-6093118374",
+          "review": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/26#issuecomment-6093160433",
+          "handoff": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6093160565",
+          "checks": {
+            "check": true,
+            "testsPassed": 494,
+            "testsFailed": 0,
+            "build": true,
+            "cleanExactSha": true,
+            "bundleSha256": "e81a9ebddc559d90f2cc41f3a47616eccd6824e2c25b1dd3eb840324d7293f1b"
+          },
+          "closedFindings": [
+            "DUN-GEO-I01-R01-02",
+            "DUN-GEO-I01-R01-03"
+          ],
+          "remainingFindings": [
+            {
+              "id": "DUN-GEO-I01-R01-01",
+              "priority": 1,
+              "file": "src/features/atlas/atlas-editor.ts",
+              "line": 987,
+              "summary": "A coordinate conversion rejection occurs before gesture.update can discard its old proposal; catch hides the preview only and pointerup commits retained hidden bytes, consumes Redo.",
+              "proof": "Actual AtlasEditor.bind pointermove/pointerup with non-finite coordinate injection; visible preview undefined, gesture.preview retained, one history commit, exact old hidden bytes persisted in source, Redo true to false.",
+              "repair": "Invalidate finalizable proposal for every rejected pointer sample including conversion errors before update; release must have zero document/history/Redo effect. Include actual event-handler negative regression."
+            }
+          ],
+          "positiveScope": [
+            "Topology rejection through actual event handlers clears proposal and release preserves source/history/Redo",
+            "Direct non-finite update clears proposal without source/history/Redo effect",
+            "Subsequent valid sample commits only its newly visible bytes, exactly once; joint Undo/Redo exact",
+            "Actual Beginpointer immutable with X/Y offset, return-to-begin and snap boundary",
+            "Pure projector/native Session use actual shared record validation/application/index enrichment; same portal contour bytes/order, Undo/Redo, insert/delete/order and stale/duplicate/invalid-index/ID rejection",
+            "Existing frozen source/history/parent/binding/frame guards retained by full test suite"
+          ],
+          "reproScope": "In-memory event/source doubles invoking actual owner code; synthetic negative inputs, not GUI/physical acceptance",
+          "scopePreservation": {
+            "ownerOnlyDelta": [
+              "src/features/dungeon/geometry-change.ts",
+              "src/session.ts",
+              "tests/core/atlas-spatial.test.ts",
+              "ROADMAP-E2E01-DUNGEON-GEOMETRY-PLAN.md",
+              "checkpoint.json",
+              "acceptance.json"
+            ],
+            "foreignJsonRootsEqual": true,
+            "fixtureBytesUnchanged": true,
+            "sharedCatalogExcluded": true,
+            "trackedExportClean": true,
+            "ownProductUnchanged": true,
+            "sharedForeignFilesUntouched": true
+          },
+          "synchronizedShared": "38f333d4eda6cd2203443efd35b7140e7bf72e07",
+          "sharedAlreadyIntegrated": "f128d0357133705d0292e531cceaeec2cfc223fc",
+          "integrated": false,
+          "host": false,
+          "physicalInput": false,
+          "fullE2E": false,
+          "cleanup": false,
+          "next": "Only the remaining DUN-GEO-I01-R01-01 error path: separate narrow Dungeon repair, exact-SHA independent Code-R03. Product Cleanup-P/I/R and secured steward handoff remain separate; no integration before code PASS.",
+          "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/dungeon-geometry-code-r02/review.json"
         }
       }
     },
