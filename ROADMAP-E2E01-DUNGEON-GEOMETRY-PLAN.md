@@ -337,8 +337,8 @@ Produktänderung keine Produktbasisprüfung als Funktionsbeleg an.
 | CL-I01 `060abca843…` | abgeschlossen | unabhängigen CL-R01 auf Exact-SHA | N01, Produktcode oder Self-Merge |
 | CL-R01 `060abca843…` | enger Dokumentations-PASS | den getrennten N01-Lauf | Produkt-I01 |
 | N01 | dieser Planrepair; nur `DUN-GEO-P01-R01-01` | unabhängigen Exact-SHA-P01-R02 | Produkt-I01, Host- oder E2E-Go |
-| P01-R02 | offen; prüft nur das N01-Delta | bei PASS Produkt-I01 | Host- oder E2E-Go |
-| Produkt-I01 | geschlossen | nach Basisprüfungen den unabhängigen Code-R01 | Stewardintegration ohne Review |
+| P01-R02 `58c24b161a…` | unabhängiger enger PASS; nur Planrepair | Produkt-I01 | Host- oder E2E-Go |
+| Produkt-I01 `400fb47e2f…` | Implementierungskandidat; check, 490/490 Tests und Build bestanden | unabhängigen Code-R01 | Stewardintegration ohne Review |
 | Code-R01 und nötige N01/R02 | offen | erst bei PASS den geprüften Owner-SHA | fremde Domainratifikation |
 | Steward-Handoff | offen | Übernahme des geprüften Owner-SHA in den einzigen PR-#13-Kandidaten | zweiten Kandidaten oder Dungeon-eigenes Execute |
 | Produkt-Cleanup-P/I/R | offen und weiterhin nach der Funktionsabnahme | ausschließlich bereinigten geprüften Produktstand | Gesamtfreigabe |
@@ -347,3 +347,23 @@ Der Hex-E2E-01-Steward besitzt die Mehrownerkomposition; der Dungeon-Strang
 ratifiziert keine fremden Owner. Campaign/Data, P02/P04, vollständiger
 E2E-01-Lauf, Originalparität, große Welt, physische Eingabe und
 Nutzervaultinstallation bleiben ausdrücklich offen.
+
+## Produkt-I01-Ergebnis
+
+Der Produktcommit `400fb47e2f9acfb15321b68a09ec5947b37c4c6a` setzt ausschließlich den
+bestandenen Vertrag um. `DungeonGeometryGesture` besitzt Begin/Update/Cancel/
+Handoff ohne Executor; `SpatialGraph.dungeonBasis()` liest die vorhandene
+Ownerregistry und die vollständige Parentkette. `SpatialCanvas` überlagert
+genau ein Dungeon-Preview in derselben Lesesicht und Kamera. Der Atlas-Editor
+beendet die Geste bei History-, Tool-, Pointer-, Blur- und Kontextwechsel und
+führt nach erfolgreichem Handoff denselben Ein-Change-Befehl durch `check()`
+und einmal `execute()`.
+
+Die fokussierten Regressionen bestätigen Parent-Undo bei identischen
+Dungeonbytes, Binding-/Anchor- und A→B→A-Wechsel, bytegleiche Source-/Graph-/
+Historyersetzung, late Handoff ohne Wirkung, normalen Redostand, Fresh Begin,
+abhängigen Portal-Follow, unveränderte IDs/Markdownclosure und den vorhandenen
+Maßstab 1,524 m/Feld. `npm run check`, `npm test` mit 490/490 Fällen und
+`npm run build` bestanden. Fixturebytes wurden nicht geändert. Kein GUI- oder
+Hostlauf wurde ausgeführt; unabhängiger Code-R01 und danach getrennte
+Produkt-Cleanup-P/I/R bleiben offen.

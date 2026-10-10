@@ -490,15 +490,16 @@
     "next": "Kandidaten-SHA veröffentlichen, eng unabhängig reviewen lassen und anschließend nur als Source-Handoff an den einen PR-#13-Steward übergeben; keine eigene Integration."
   },
   "e2e01DungeonGeometryPlan": {
-    "run": "E2E-01-DUNGEON-GEOMETRY-P01",
-    "state": "n01_plan_repair_candidate_independent_r02_required",
+    "run": "E2E-01-DUNGEON-GEOMETRY-I01",
+    "state": "implementation_candidate_pending_independent_code_review",
     "owner": "Dungeon-Strang (Thread Obsidian Dungeon Repo ansehen)",
-    "branch": "dungeon/e2e01-geometry-p01-20261010",
-    "baseCommit": "e5a19a93ce417b4e48fa86512d1c7f1be4d41eea",
+    "branch": "dungeon/e2e01-geometry-i01-20261010",
+    "baseCommit": "58c24b161a967017112d8bfc68471b19ad70e72b",
+    "synchronizedShared": "89a3ffbad44ed6acec2e25566a1b017166fa9f7c",
     "plan": "ROADMAP-E2E01-DUNGEON-GEOMETRY-PLAN.md",
     "coordination": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6092383202",
     "details": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/8#issuecomment-6092383345",
-    "candidateCommit": "ea46ba5437596aceaad955330e21c3ef4e739451",
+    "planCandidateCommit": "ea46ba5437596aceaad955330e21c3ef4e739451",
     "review": {
       "run": "E2E-01-DUNGEON-GEOMETRY-P01-R01",
       "result": "CHANGES_REQUIRED",
@@ -522,18 +523,41 @@
       ],
       "implementation": false,
       "host": false,
-      "next": "Exact-SHA veröffentlichen und ausschließlich das N01-Delta unabhängig in P01-R02 prüfen lassen."
+      "next": "Exact-SHA veröffentlichen und ausschließlich das N01-Delta unabhängig in P01-R02 prüfen lassen.",
+      "review": {
+        "run": "E2E-01-DUNGEON-GEOMETRY-P01-R02",
+        "result": "PASS",
+        "commit": "58c24b161a967017112d8bfc68471b19ad70e72b",
+        "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/24#issuecomment-6092752617",
+        "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/dungeon-geometry-p01-r02/review.json",
+        "boundary": "Nur Planrepair; öffnet Produkt-I01, aber keine Produkt-, Host- oder E2E-Freigabe."
+      }
     },
-    "scope": "Plan-only: äußerer Konturpunktzug Room31/Floor32 über bestehende pure Geometrieplaner, transientes Preview/Cancel und genau ein kanonischer ownergebundener Before→After-AtlasChange für die gemeinsame check/execute-Komposition.",
+    "implementation": {
+      "run": "E2E-01-DUNGEON-GEOMETRY-I01",
+      "commit": "400fb47e2f9acfb15321b68a09ec5947b37c4c6a",
+      "start": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/8#issuecomment-6092791689",
+      "scope": "Äußerer Room31/Floor32-Konturpunktzug über vorhandene Building-Punkt-/Kontur-/Portalplaner; reine Dokumentprojektion, ownergebundener Previewoverride, eingefrorene tatsächliche Source-/Graph-/History-/Parent-/Binding-/RigidFrame-Basis, terminale Stale-Grenze und genau ein Dungeon-AtlasChange.",
+      "oracles": "Parent-Undo mit identischen Dungeonbytes, Binding-/Anchor- und A-B-A-Wechsel, bytegleicher Source-/Graph-/Historyersatz, late handoff null, Redoschutz, Fresh Begin, abhängiger Portal-Follow, stabile IDs/Markdownclosure und 1.524 m/Feld bestanden.",
+      "review": "independent_code_r01_required",
+      "host": false
+    },
+    "scope": "Implementierungskandidat: äußerer Konturpunktzug Room31/Floor32 über bestehende pure Geometrieplaner, transientes Preview/Cancel und genau ein kanonischer ownergebundener Before→After-AtlasChange für die gemeinsame check/execute-Komposition.",
     "files": [
+      "src/features/dungeon/geometry-change.ts",
+      "src/features/atlas/spatial-graph.ts",
+      "src/features/atlas/spatial-canvas.ts",
+      "src/features/atlas/atlas-editor.ts",
+      "src/session.ts",
+      "tests/core/atlas-spatial.test.ts",
       "ROADMAP-E2E01-DUNGEON-GEOMETRY-PLAN.md",
-      "ROADMAP-E2E01-SPATIAL-INTEGRATION-PLAN.md",
-      "checkpoint.json"
+      "checkpoint.json",
+      "acceptance.json"
     ],
-    "verification": "Plan-/JSON-/Verweis-/Diffprüfung vor Veröffentlichung; keine Produktquelle geändert und deshalb keine Produktbasisprüfung oder GUI als Planbeleg.",
-    "externalEvidence": "Ownerinput #12/6092359086 und technische Quellanalyse #8/6092363698 auf PR13 Exact-Head e5a19a93ce417b4e48fa86512d1c7f1be4d41eea. Keine neue externe Lauf- oder Hostevidenz in P01.",
-    "notVerified": "N01-P01-R02-PASS, Implementierung, Code-Review, Host, physische Eingabe, vollständige Mehrownerkomposition und E2E-01-PASS bleiben offen.",
-    "next": "N01-Exact-SHA ausschließlich in P01-R02 prüfen lassen. Produkt-I01 bleibt bis unabhängigem PASS geschlossen."
+    "verification": "npm run check PASS; npm test 490/490 PASS; npm run build PASS; git diff --check PASS. Fokussierte Corefälle verwenden die eingefrorene e2e01-v1-Dungeonfixture und verändern keine Fixturebytes.",
+    "externalEvidence": "Plan-R02-Beleg /home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/dungeon-geometry-p01-r02/review.json auf 58c24b1. Keine neue GUI-, Host- oder physische Eingabeevidenz in Produkt-I01.",
+    "notVerified": "Unabhängiger Code-R01, Produkt-Cleanup-P/I/R, Hex-Stewardintegration, tatsächlicher Hostlauf, physische Eingabe, vollständige Mehrownerkomposition und E2E-01-PASS bleiben offen.",
+    "next": "Kandidatenbranch und Exact-SHA veröffentlichen; unabhängigen engen Code-R01 anfragen. Erst dessen PASS erlaubt den Owner-SHA-Handoff an Hex."
   },
   "e2e01DungeonGeometryCleanup": {
     "run": "E2E-01-DUNGEON-GEOMETRY-CL-I01",
