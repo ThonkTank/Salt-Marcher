@@ -12,6 +12,7 @@ import {
   validateBoundedWaterborneTableRows,
   validateBoundedWeaponTableRows,
   validateJsonSchemas,
+  validateMagicItemAzOpeningSlice,
   validatePotionHealingMerge,
   validateTranscriptData,
   verifyItemsSourcePackage,
@@ -73,8 +74,9 @@ test("items source package is explicitly incomplete and fails closed by default"
   await assert.rejects(verifyItemsSourcePackage(), /S01 ist unvollständig/);
   const result = await verifyItemsSourcePackage({ allowIncomplete: true });
   assert.equal(result.complete, false);
-  assert.equal(result.validation.occurrenceCount, 220);
-  assert.equal(result.validation.recordCount, 219);
+  assert.equal(result.validation.occurrenceCount, 225);
+  assert.equal(result.validation.recordCount, 224);
+  assert.equal(result.magicItemAzOpeningSlice.capturedRecords, 5);
   assert.equal(result.potionHealingMerge.mergedRecords, 1);
   assert.ok(result.blockers.length >= 5);
 });
@@ -132,6 +134,51 @@ test("variant identities and occurrence references fail closed", () => {
   bad.records[0].source.occurrenceIds = ["srd51:magic-item:missing:1"];
   assert.throws(() => validateTranscriptData(bad,
     inventory(occurrence)), /unbekannte Occurrence/);
+});
+
+test("first five Magic Items A–Z preserve order, headers, rarity, attunement and full prose", async () => {
+  const [checkedInventory, checkedTranscript] = await Promise.all([
+    readFile(new URL("items-srd51-inventory.json", dataRoot), "utf8").then(JSON.parse),
+    readFile(new URL("items-srd51-transcript.json", dataRoot), "utf8").then(JSON.parse),
+  ]);
+  assert.deepEqual(validateMagicItemAzOpeningSlice(checkedTranscript, checkedInventory), {
+    capturedRecords: 5,
+    physicalPdfPage: 207,
+    fixedRarities: 4,
+    variableRarityChoices: 3,
+    attunementRequired: 3,
+    attunementNotRequired: 2,
+  });
+  const ids = Array.from({ length: 5 }, (_, index) => `srd51:magic-item:magic-items-a-z:${index + 1}`);
+  const records = ids.map(id => checkedTranscript.records.find(record => record.id === id));
+  assert.deepEqual(records.map(record => record.name), [
+    "Adamantine Armor", "Ammunition, +1, +2, or +3", "Amulet of Health",
+    "Amulet of Proof against Detection and Location", "Amulet of the Planes",
+  ]);
+  assert.deepEqual(records.map(record => record.attunement),
+    ["not-required", "not-required", "required", "required", "required"]);
+  assert.deepEqual(records[1].rarity.choices.map(choice => [choice.label, choice.value]),
+    [["+1", "uncommon"], ["+2", "rare"], ["+3", "very-rare"]]);
+  assert.match(records[4].description[0].text, /On a 61–100.*randomly determined plane of existence\.$/);
+});
+
+test("opening Magic Items A–Z slice fails closed on identity, header facts and prose drift", async () => {
+  const [checkedInventory, checkedTranscript] = await Promise.all([
+    readFile(new URL("items-srd51-inventory.json", dataRoot), "utf8").then(JSON.parse),
+    readFile(new URL("items-srd51-transcript.json", dataRoot), "utf8").then(JSON.parse),
+  ]);
+  const wrongOrdinal = structuredClone(checkedInventory);
+  wrongOrdinal.occurrences.find(item => item.id === "srd51:magic-item:magic-items-a-z:1").ordinal = 2;
+  assert.throws(() => validateMagicItemAzOpeningSlice(checkedTranscript, wrongOrdinal), /Occurrence 1/);
+  const wrongAttunement = structuredClone(checkedTranscript);
+  wrongAttunement.records.find(record => record.id.endsWith("a-z:3")).attunement = "not-required";
+  assert.throws(() => validateMagicItemAzOpeningSlice(wrongAttunement, checkedInventory), /Record 3/);
+  const wrongVariant = structuredClone(checkedTranscript);
+  wrongVariant.records.find(record => record.id.endsWith("a-z:2")).rarity.choices[1].value = "uncommon";
+  assert.throws(() => validateMagicItemAzOpeningSlice(wrongVariant, checkedInventory), /Variante 2/);
+  const truncated = structuredClone(checkedTranscript);
+  truncated.records.find(record => record.id.endsWith("a-z:5")).description[0].text = "While wearing this amulet.";
+  assert.throws(() => validateMagicItemAzOpeningSlice(truncated, checkedInventory), /Record 5/);
 });
 
 test("Draft 2020-12 schemas validate the checked-in equipment inventory and transcript", async () => {
