@@ -5176,7 +5176,7 @@
       "sharedHead": "5e380b25df36f6aeb726ab6db7ec39d57e6e6992",
       "request": "Test a bounded synthetic GM trap-content workflow via visible Dungeon UI: define trap, link it to Room 2, write trigger/reaction/location notes, apply an improvisation, inspect undo behavior, save, close and reopen.",
       "scope": "Only Dungeon content authoring in a newly created synthetic QA map; trap is descriptive GM note only. No user map, Atlas/Hex, mechanics, PlayerProjection, product implementation, or laptop host.",
-      "coordination": "Issue #1 documentation contract comment 6087478045; Issue #8 preflight comment 6099735317. Post-run report and follow-up handoff pending. Post-run documentation pending in Issue #8.",
+      "coordination": "Issue #1 documentation contract comment 6087478045; Issue #8 preflight 6099735317; post-run report 6099894041.",
       "checks": [
         "git status/HEAD verified clean at exact Shared source 5e380b25df36f6aeb726ab6db7ec39d57e6e6992 before build/UI",
         "npm run build: PASS, dirty:false, Node v24.19.0, sourceRevision equals Shared 5e380b25df36f6aeb726ab6db7ec39d57e6e6992",
@@ -5218,7 +5218,9 @@
       ],
       "next": "Dungeon product owner to review the linked GM key-text Undo/Redo semantics task and provide exact runnable build; Cloud GM then performs only the bounded same-note Undo/Redo/Save/Reopen retest. Atlas Location/Key remains separately blocked on Hex-owned runnable integration.",
       "publishedOnSharedHead": "e157462ee1a4c2b82b0c927df664a8c06fc38cb1",
-      "sourceDiffSinceTest": "After UI/build on 5e380b2, normal upstream integration advanced Shared to e157462; 13 commits were integrated and git diff 5e380b..e157462 -- src was empty, so no product source changed."
+      "sourceDiffSinceTest": "After UI/build on 5e380b2, normal upstream integration advanced Shared to e157462; 13 commits were integrated and git diff 5e380b..e157462 -- src was empty, so no product source changed.",
+      "postRunReport": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/8#issuecomment-6099894041",
+      "documentationCommit": "9c829c6db469e6fb9d2988c53245ab997aaf10bc"
     },
     "executedUiRuns": 18,
     "observedFindings": [
@@ -6508,7 +6510,7 @@
       "sharedHead": "5e380b25df36f6aeb726ab6db7ec39d57e6e6992",
       "request": "Test a bounded synthetic GM trap-content workflow via visible Dungeon UI: define trap, link it to Room 2, write trigger/reaction/location notes, apply an improvisation, inspect undo behavior, save, close and reopen.",
       "scope": "Only Dungeon content authoring in a newly created synthetic QA map; trap is descriptive GM note only. No user map, Atlas/Hex, mechanics, PlayerProjection, product implementation, or laptop host.",
-      "coordination": "Issue #1 documentation contract comment 6087478045; Issue #8 preflight comment 6099735317. Post-run report and follow-up handoff pending. Post-run documentation pending in Issue #8.",
+      "coordination": "Issue #1 documentation contract comment 6087478045; Issue #8 preflight 6099735317; post-run report 6099894041.",
       "checks": [
         "git status/HEAD verified clean at exact Shared source 5e380b25df36f6aeb726ab6db7ec39d57e6e6992 before build/UI",
         "npm run build: PASS, dirty:false, Node v24.19.0, sourceRevision equals Shared 5e380b25df36f6aeb726ab6db7ec39d57e6e6992",
@@ -6550,7 +6552,9 @@
       ],
       "next": "Dungeon product owner to review the linked GM key-text Undo/Redo semantics task and provide exact runnable build; Cloud GM then performs only the bounded same-note Undo/Redo/Save/Reopen retest. Atlas Location/Key remains separately blocked on Hex-owned runnable integration.",
       "publishedOnSharedHead": "e157462ee1a4c2b82b0c927df664a8c06fc38cb1",
-      "sourceDiffSinceTest": "After UI/build on 5e380b2, normal upstream integration advanced Shared to e157462; 13 commits were integrated and git diff 5e380b..e157462 -- src was empty, so no product source changed."
+      "sourceDiffSinceTest": "After UI/build on 5e380b2, normal upstream integration advanced Shared to e157462; 13 commits were integrated and git diff 5e380b..e157462 -- src was empty, so no product source changed.",
+      "postRunReport": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/8#issuecomment-6099894041",
+      "documentationCommit": "9c829c6db469e6fb9d2988c53245ab997aaf10bc"
     }
   }
 }
