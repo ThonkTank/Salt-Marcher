@@ -823,7 +823,7 @@
       "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
       "testedProductSource": "86bbbbfac44233509f084ac836e6dafa07b11a16",
       "fixtureVersion": "e2e01-spatial-v2",
-      "consumedShared": "a6b132d89478cf543635ccaacc31a578a7f7e8fa",
+      "consumedShared": "6482dc6373132aab1b27ac66c76cee6dddeb3285",
       "dependency": "No pending Campaign contract delivery. A newly coordinated GUI slot is required; Chronik owns the BASE-CI-01 workflow. No Host REVIEW_READY until required native evidence exists.",
       "after": "Existing integrated Host review, required repair, separate cleanup. No further component or general planning round.",
       "limits": "No Shared promotion, user-vault installation, physical input, original parity, large-world or total E2E PASS. No fresh History/remount workaround during Save, private Campaign flags, new Source activation or frozen-contract edits."
@@ -5308,12 +5308,17 @@
       "scope": "Component review only; no native/Host/overall approval."
     },
     "qualifiedRollbackPublicationComposition": {
-      "state": "incoming_catalog_Shared_normally_consumed_before_clean_source_gates",
-      "sourceCommit": "86bbbbfac44233509f084ac836e6dafa07b11a16",
-      "consumedShared": "a6b132d89478cf543635ccaacc31a578a7f7e8fa",
-      "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-manifest-host-save-i02-20261010/composition.json",
-      "sha256": "5a7014ab622c476368da8a9bf4de3a6fb8be1922c64803709f33714669e38494",
-      "foreignRootsAndHistoricalNativePreserved": true
+      "id": "HEX-E2E01-HOST-SAVE-I02-PUBLICATION",
+      "compositionCommit": "35dc1e72e05e56bde7fac3d6a9eda98de16e3446",
+      "consumedShared": "6482dc6373132aab1b27ac66c76cee6dddeb3285",
+      "actualTestedSourceCommit": "86bbbbfac44233509f084ac836e6dafa07b11a16",
+      "productSourcesTestsToolsUnchangedSinceActualGates": true,
+      "changedForeignRoot": "saltMarcherCatalogEncounter exact latest Shared",
+      "otherForeignRootsAndHistoricalNativeCurrentRunPreserved": true,
+      "nativeRan": false,
+      "fullE2E": false,
+      "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-manifest-host-save-i02-20261010/publication-composition.json",
+      "sha256": "674ba26e906867c5a281aa9008dec48f019bdba55ae52ac4869e943de07e8132"
     },
     "productiveRuntimeSave": {
       "id": "HEX-E2E01-HOST-SAVE-I02",
