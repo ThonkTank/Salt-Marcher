@@ -1677,6 +1677,25 @@
           "merge": "688afde30e07f444802b68646567099144d1eb9e",
           "scope": "Only fresh separate Cloud-GM host-setup preflight metadata. No product or fixture delta after tested5700fd2; no new native evidence."
         }
+      },
+      "incomingSharedMetadataHold": {
+        "id": "HEX-SYNC-META-01",
+        "state": "one_shared_metadata_adoption_deferred_owner_duplicate_status_correction_pending",
+        "incoming": "eac70ecc3bf2d0ebeaeacc9d11436f8316b8943b",
+        "lastConsumedShared": "77c4f1da8675b733f4ca3a323177c2a1e819497f",
+        "pointer": "/gmProductTesting/latestFreshProcessAttempt/status",
+        "lines": [
+          5742,
+          5786
+        ],
+        "values": [
+          "host_ready_ui_test_not_started",
+          "paused_not_started_user_handoff_to_obs04"
+        ],
+        "finding": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/8#issuecomment-6093952721",
+        "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/shared-json-duplicate-20261010-0451/finding.json",
+        "scope": "Incoming GM metadata only; all actual Atlas product, fixture, old Native evidence and the already requested separate Campaign integration review remain unchanged. Owner correction required; no foreign-root rewrite, product test or new general review request.",
+        "next": "Read actual owner correction and validate a unique status before normal incoming Shared adoption. Await existing independent Campaign integration review separately."
       }
     },
     "verification": {
