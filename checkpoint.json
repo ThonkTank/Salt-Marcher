@@ -939,7 +939,7 @@
   "hexAtlasExecution": {
     "scope": "HEX-00 bis HEX-28 und sämtliche eingeordneten CITY-00 bis CITY-09 vollständig",
     "phase": "HEX-03",
-    "state": "Shared_promoted_scoped_own_cleanup_complete_Location_Key_GM_pending",
+    "state": "Shared_Location_Key_H01_Save_FAIL_targeted_D01_pending",
     "plan": "ROADMAP-E2E01-SPATIAL-INTEGRATION-PLAN.md",
     "currentRun": {
       "id": "E2E-01-SPACE-I01b",
@@ -986,29 +986,21 @@
       "phaseApproval": false
     },
     "nextRun": {
-      "id": "E2E-01-SHARED-LOCATION-KEY-H01",
-      "kind": "bounded_native_Shared_Location_Key_acceptance",
-      "state": "own_cleanup_complete_GUI_slot_not_claimed",
+      "id": "E2E-01-SHARED-LOCATION-KEY-D01",
+      "kind": "bounded_Save_failure_diagnosis",
+      "state": "actual_H01_finding_ready_for_own_diagnosis",
       "issue": 40,
       "owner": "Hex",
       "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
       "sourcePlan": "ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md",
-      "focus": "Direct Shared Location/Key host flow after explicitly coordinating a new local GUI slot. Creation/selection/move/Key/shared Undo-Redo/Save/fresh process; any new mandatory finding handled within this existing task.",
-      "promotionExecution": "checkpoint.hexAtlasExecution.latestPromotionExecution",
-      "cleanup": "checkpoint.hexAtlasExecution.latestPostPromotionCleanup",
-      "independentSaveInput": "checkpoint.hexAtlasExecution.latestSaveFreshRecoveryIndependentReview",
-      "nativeABAInput": "checkpoint.hexAtlasExecution.latestNativeABAIndependentReview",
-      "requiredInput": "Fetch/integrate qualified current Shared; direct current #40 scope and claims; explicitly obtain the single local GUI slot for this bounded probe. Previous return is not ownership.",
+      "focus": "Diagnose SHARED-LOCATION-H01-SAVE-01 from the exact H01 new-Location Save failure; derive one targeted repair input without a general new plan/review cycle.",
+      "input": "checkpoint.hexAtlasExecution.latestSharedLocationKeyHostProbe",
+      "requiredInput": "Fetch/integrate qualified current Shared; preserve H01 original process/UI/draft/file evidence and the unchanged Before bytes.",
       "slotConfirmedForNextRun": false,
       "slotRequiredAgain": true,
-      "fixtureVersions": [
-        "e2e01-spatial-v2",
-        "e2e01-campaign-b-v1"
-      ],
-      "checks": "Current integrated CI plus direct actual Host/Save/fresh-process evidence and file/text/ID oracles. Distinguish synthetic native input from physical GM input. New defects get bounded diagnosis/repair in separate runs.",
-      "after": "Consume required independent #40 acceptance or repair a concrete finding; no general new plan/review round. Subsequent Detail/CITY scope only after this owned result.",
-      "limits": "No user-vault write, physical/original/large-world/installation/P02/P04/CompleteImport/full-E2E claim. E2E-02–04 remain inactive.",
-      "currentShared": "c932bbab534c5a70a15cc4628728c0d1b92f162a"
+      "checks": "Diagnosis scoped to actual Save/new-Location path; source/model probes do not replace a later real Save/fresh-process acceptance.",
+      "after": "Targeted repair as a separate bounded run, then newly coordinated native rerun and required independent #40 acceptance.",
+      "limits": "No Detail/CITY, physical/original/large-world/user-vault installation/P02/P04/full-E2E claim; no repair or second native process in H01."
     },
     "review": {
       "run": "HEX-02-R02",
@@ -5458,7 +5450,7 @@
       "platformIssue": 11,
       "checkpointIsAuthoritative": true
     },
-    "updatedAt": "2026-10-10T18:40:11.975822+00:00",
+    "updatedAt": "2026-10-10T18:53:01.570Z",
     "consumerMatrix": {
       "id": "RUNTIME-MANIFEST-I02-CONSUMER-MATRIX-V1",
       "state": "frozen_complete_matrix_green_on_productive_Host_source",
@@ -6142,6 +6134,20 @@
         "handoff": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/59#issuecomment-6100899267",
         "scope": "Isolated synthetic P02 prototype and repository role rules; critical Atlas product/evidence unchanged."
       }
+    },
+    "latestSharedLocationKeyHostProbe": {
+      "id": "E2E-01-SHARED-LOCATION-KEY-H01",
+      "state": "FAIL_actual_Save_new_Location_D01_pending",
+      "issue": 40,
+      "sourceCommit": "b87a066e38f1a0000def253bf50e45ee4a5d604f",
+      "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
+      "evidence": "docs/reference/atlas-shared-location-h01/receipt.json",
+      "sha256": "e628cacae0c0c9bf2c646dc3ec345ee743181133685962efe3cd458002bcf144",
+      "finding": "SHARED-LOCATION-H01-SAVE-01",
+      "freshProcessStarted": false,
+      "guiSlotReturned": true,
+      "productEdited": false,
+      "independentAcceptance": "pending; no PASS"
     }
   },
   "phase": "Phase 6: zweiter Nachbesserungslauf teilweise umgesetzt; fünf Restpositionen und unabhängiger Review offen",

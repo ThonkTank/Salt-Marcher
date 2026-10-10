@@ -153303,7 +153303,7 @@
       {
         "id": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
         "requirement": "Thin Context/navigation consumer with actual native target validation, same Atlas owners and guarded Campaign switching",
-        "state": "Shared_promoted_scoped_own_cleanup_complete_Location_Key_GM_pending",
+        "state": "Shared_Location_Key_H01_Save_FAIL_targeted_D01_pending",
         "implementationRun": "HEX-E2E01-HOST-SAVE-I02",
         "sourceCommit": "86bbbbfac44233509f084ac836e6dafa07b11a16",
         "catalog": "ROADMAP-E2E-GATES-CANDIDATE.md:13",
@@ -153329,7 +153329,7 @@
           "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-manifest-host-aba-20261010/repair/repair.json"
         ],
         "observed": "Actual AtlasView Save button calls FileTransaction and retained native owner Participant/Provider; exact Prepared/Committed journal read-back issues the real proofs.; Same Navigator queue refreshes confirmed Registry/Inventory before unblocking input; Repository, Sources, History, renderer, camera, Context token and mount generation remain.; Actual Vault first-native CAS failure rolls back before snapshot, issues a transaction-sealed receipt, releases pending Provider lease and retries in the same editable Atlas with a new transaction UUID.; Actual DOM View/services close and fresh View/services reopen retain saved Location and Room names under native Campaign fixture; this is not a fresh Electron process.; FileTransaction regressions exercise all before/after CAS reply-loss boundaries, reject copied/foreign rollback receipts, protect unchanged native guards, and preserve won canonical bytes if committed consumer acknowledgment fails.",
-        "notConfirmed": "Historical H01 failure and actual repaired independent H02/Save/Fresh/Recovery receipts remain unchanged. This run adds own retention/actual promotion routing only, with no native or physical input and no original parity, large-world, user-vault installation, P02/P04 or full E2E approval. #40 actual Shared GM acceptance is next.",
+        "notConfirmed": "Direct Shared H01 proves actual new Location/Key/move/common Undo-Redo only. Actual Save fails with an unconfirmed storage baseline and unmounted canvas; all eight saved Before files remain exact, new Location stays in retained draft. No fresh process started; diagnosis/targeted repair and independent #40 acceptance remain open. Historical H02 and Save/Fresh/Recovery receipts retained. No physical/original/large-world/user-vault installation/P02/P04/full-E2E approval.",
         "independentReview": {
           "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/13#issuecomment-6094804164",
           "gate": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6094804323",
@@ -154581,6 +154581,20 @@
           "checkpoint": "checkpoint.hexAtlasExecution.latestPostPromotionCleanup",
           "newNativeRun": false,
           "nextIssue": 40
+        },
+        "sharedLocationKeyHostProbe": {
+          "id": "E2E-01-SHARED-LOCATION-KEY-H01",
+          "state": "FAIL_actual_Save_new_Location_D01_pending",
+          "issue": 40,
+          "sourceCommit": "b87a066e38f1a0000def253bf50e45ee4a5d604f",
+          "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
+          "evidence": "docs/reference/atlas-shared-location-h01/receipt.json",
+          "sha256": "e628cacae0c0c9bf2c646dc3ec345ee743181133685962efe3cd458002bcf144",
+          "finding": "SHARED-LOCATION-H01-SAVE-01",
+          "freshProcessStarted": false,
+          "guiSlotReturned": true,
+          "productEdited": false,
+          "independentAcceptance": "pending; no PASS"
         }
       }
     ],
