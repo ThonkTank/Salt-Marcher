@@ -10,81 +10,81 @@
   "records": [
     {
       "id": "srd51:equipment:armor:1", "name": "Padded Armor", "category": "equipment", "subcategory": "armor-light", "magic": false, "attunement": "unspecified",
-      "cost": { "sourceText": "5 gp", "copperPieces": 500 }, "weight": { "sourceText": "8 lb.", "pounds": "8" }, "properties": [], "description": [],
+      "cost": { "sourceText": "5 gp", "copperPieces": 500 }, "weight": { "sourceText": "8 lb.", "pounds": "8" }, "properties": [], "description": [{ "text": "Padded armor consists of quilted layers of cloth and batting.", "occurrenceId": "srd51:equipment:armor:1" }],
       "armor": { "armorClassText": "11 + Dex modifier", "dexterityRuleText": "+ Dex modifier", "stealthRuleText": "Disadvantage" },
       "source": { "document": "SRD 5.1", "pdfUrl": "https://media.wizards.com/2023/downloads/dnd/SRD_CC_v5.1.pdf", "pdfPages": [63], "printedPages": [63], "occurrenceIds": ["srd51:equipment:armor:1"] }
     },
     {
       "id": "srd51:equipment:armor:2", "name": "Leather Armor", "category": "equipment", "subcategory": "armor-light", "magic": false, "attunement": "unspecified",
-      "cost": { "sourceText": "10 gp", "copperPieces": 1000 }, "weight": { "sourceText": "10 lb.", "pounds": "10" }, "properties": [], "description": [],
+      "cost": { "sourceText": "10 gp", "copperPieces": 1000 }, "weight": { "sourceText": "10 lb.", "pounds": "10" }, "properties": [], "description": [{ "text": "The breastplate and shoulder protectors of this armor are made of leather that has been stiffened by being boiled in oil. The rest of the armor is made of softer and more flexible materials.", "occurrenceId": "srd51:equipment:armor:2" }],
       "armor": { "armorClassText": "11 + Dex modifier", "dexterityRuleText": "+ Dex modifier" },
-      "source": { "document": "SRD 5.1", "pdfUrl": "https://media.wizards.com/2023/downloads/dnd/SRD_CC_v5.1.pdf", "pdfPages": [64], "printedPages": [64], "occurrenceIds": ["srd51:equipment:armor:2"] }
+      "source": { "document": "SRD 5.1", "pdfUrl": "https://media.wizards.com/2023/downloads/dnd/SRD_CC_v5.1.pdf", "pdfPages": [63, 64], "printedPages": [63, 64], "occurrenceIds": ["srd51:equipment:armor:2"] }
     },
     {
       "id": "srd51:equipment:armor:3", "name": "Studded Leather Armor", "category": "equipment", "subcategory": "armor-light", "magic": false, "attunement": "unspecified",
-      "cost": { "sourceText": "45 gp", "copperPieces": 4500 }, "weight": { "sourceText": "13 lb.", "pounds": "13" }, "properties": [], "description": [],
+      "cost": { "sourceText": "45 gp", "copperPieces": 4500 }, "weight": { "sourceText": "13 lb.", "pounds": "13" }, "properties": [], "description": [{ "text": "Made from tough but flexible leather, studded leather is reinforced with close-set rivets or spikes.", "occurrenceId": "srd51:equipment:armor:3" }],
       "armor": { "armorClassText": "12 + Dex modifier", "dexterityRuleText": "+ Dex modifier" },
-      "source": { "document": "SRD 5.1", "pdfUrl": "https://media.wizards.com/2023/downloads/dnd/SRD_CC_v5.1.pdf", "pdfPages": [64], "printedPages": [64], "occurrenceIds": ["srd51:equipment:armor:3"] }
+      "source": { "document": "SRD 5.1", "pdfUrl": "https://media.wizards.com/2023/downloads/dnd/SRD_CC_v5.1.pdf", "pdfPages": [63, 64], "printedPages": [63, 64], "occurrenceIds": ["srd51:equipment:armor:3"] }
     },
     {
       "id": "srd51:equipment:armor:4", "name": "Hide Armor", "category": "equipment", "subcategory": "armor-medium", "magic": false, "attunement": "unspecified",
-      "cost": { "sourceText": "10 gp", "copperPieces": 1000 }, "weight": { "sourceText": "12 lb.", "pounds": "12" }, "properties": [], "description": [],
+      "cost": { "sourceText": "10 gp", "copperPieces": 1000 }, "weight": { "sourceText": "12 lb.", "pounds": "12" }, "properties": [], "description": [{ "text": "This crude armor consists of thick furs and pelts. It is commonly worn by barbarian tribes, evil humanoids, and other folk who lack access to the tools and materials needed to create better armor.", "occurrenceId": "srd51:equipment:armor:4" }],
       "armor": { "armorClassText": "12 + Dex modifier (max 2)", "dexterityRuleText": "+ Dex modifier (max 2)" },
-      "source": { "document": "SRD 5.1", "pdfUrl": "https://media.wizards.com/2023/downloads/dnd/SRD_CC_v5.1.pdf", "pdfPages": [64], "printedPages": [64], "occurrenceIds": ["srd51:equipment:armor:4"] }
+      "source": { "document": "SRD 5.1", "pdfUrl": "https://media.wizards.com/2023/downloads/dnd/SRD_CC_v5.1.pdf", "pdfPages": [63, 64], "printedPages": [63, 64], "occurrenceIds": ["srd51:equipment:armor:4"] }
     },
     {
       "id": "srd51:equipment:armor:5", "name": "Chain Shirt", "category": "equipment", "subcategory": "armor-medium", "magic": false, "attunement": "unspecified",
-      "cost": { "sourceText": "50 gp", "copperPieces": 5000 }, "weight": { "sourceText": "20 lb.", "pounds": "20" }, "properties": [], "description": [],
+      "cost": { "sourceText": "50 gp", "copperPieces": 5000 }, "weight": { "sourceText": "20 lb.", "pounds": "20" }, "properties": [], "description": [{ "text": "Made of interlocking metal rings, a chain shirt is worn between layers of clothing or leather. This armor offers modest protection to the wearer’s upper body and allows the sound of the rings rubbing against one another to be muffled by outer layers.", "occurrenceId": "srd51:equipment:armor:5" }],
       "armor": { "armorClassText": "13 + Dex modifier (max 2)", "dexterityRuleText": "+ Dex modifier (max 2)" },
-      "source": { "document": "SRD 5.1", "pdfUrl": "https://media.wizards.com/2023/downloads/dnd/SRD_CC_v5.1.pdf", "pdfPages": [64], "printedPages": [64], "occurrenceIds": ["srd51:equipment:armor:5"] }
+      "source": { "document": "SRD 5.1", "pdfUrl": "https://media.wizards.com/2023/downloads/dnd/SRD_CC_v5.1.pdf", "pdfPages": [63, 64], "printedPages": [63, 64], "occurrenceIds": ["srd51:equipment:armor:5"] }
     },
     {
       "id": "srd51:equipment:armor:6", "name": "Scale Mail", "category": "equipment", "subcategory": "armor-medium", "magic": false, "attunement": "unspecified",
-      "cost": { "sourceText": "50 gp", "copperPieces": 5000 }, "weight": { "sourceText": "45 lb.", "pounds": "45" }, "properties": [], "description": [],
+      "cost": { "sourceText": "50 gp", "copperPieces": 5000 }, "weight": { "sourceText": "45 lb.", "pounds": "45" }, "properties": [], "description": [{ "text": "This armor consists of a coat and leggings (and perhaps a separate skirt) of leather covered with overlapping pieces of metal, much like the scales of a fish. The suit includes gauntlets.", "occurrenceId": "srd51:equipment:armor:6" }],
       "armor": { "armorClassText": "14 + Dex modifier (max 2)", "dexterityRuleText": "+ Dex modifier (max 2)", "stealthRuleText": "Disadvantage" },
-      "source": { "document": "SRD 5.1", "pdfUrl": "https://media.wizards.com/2023/downloads/dnd/SRD_CC_v5.1.pdf", "pdfPages": [64], "printedPages": [64], "occurrenceIds": ["srd51:equipment:armor:6"] }
+      "source": { "document": "SRD 5.1", "pdfUrl": "https://media.wizards.com/2023/downloads/dnd/SRD_CC_v5.1.pdf", "pdfPages": [63, 64], "printedPages": [63, 64], "occurrenceIds": ["srd51:equipment:armor:6"] }
     },
     {
       "id": "srd51:equipment:armor:7", "name": "Breastplate", "category": "equipment", "subcategory": "armor-medium", "magic": false, "attunement": "unspecified",
-      "cost": { "sourceText": "400 gp", "copperPieces": 40000 }, "weight": { "sourceText": "20 lb.", "pounds": "20" }, "properties": [], "description": [],
+      "cost": { "sourceText": "400 gp", "copperPieces": 40000 }, "weight": { "sourceText": "20 lb.", "pounds": "20" }, "properties": [], "description": [{ "text": "This armor consists of a fitted metal chest piece worn with supple leather. Although it leaves the legs and arms relatively unprotected, this armor provides good protection for the wearer’s vital organs while leaving the wearer relatively unencumbered.", "occurrenceId": "srd51:equipment:armor:7" }],
       "armor": { "armorClassText": "14 + Dex modifier (max 2)", "dexterityRuleText": "+ Dex modifier (max 2)" },
-      "source": { "document": "SRD 5.1", "pdfUrl": "https://media.wizards.com/2023/downloads/dnd/SRD_CC_v5.1.pdf", "pdfPages": [64], "printedPages": [64], "occurrenceIds": ["srd51:equipment:armor:7"] }
+      "source": { "document": "SRD 5.1", "pdfUrl": "https://media.wizards.com/2023/downloads/dnd/SRD_CC_v5.1.pdf", "pdfPages": [63, 64], "printedPages": [63, 64], "occurrenceIds": ["srd51:equipment:armor:7"] }
     },
     {
       "id": "srd51:equipment:armor:8", "name": "Half Plate Armor", "category": "equipment", "subcategory": "armor-medium", "magic": false, "attunement": "unspecified",
-      "cost": { "sourceText": "750 gp", "copperPieces": 75000 }, "weight": { "sourceText": "40 lb.", "pounds": "40" }, "properties": [], "description": [],
+      "cost": { "sourceText": "750 gp", "copperPieces": 75000 }, "weight": { "sourceText": "40 lb.", "pounds": "40" }, "properties": [], "description": [{ "text": "Half plate consists of shaped metal plates that cover most of the wearer’s body. It does not include leg protection beyond simple greaves that are attached with leather straps.", "occurrenceId": "srd51:equipment:armor:8" }],
       "armor": { "armorClassText": "15 + Dex modifier (max 2)", "dexterityRuleText": "+ Dex modifier (max 2)", "stealthRuleText": "Disadvantage" },
-      "source": { "document": "SRD 5.1", "pdfUrl": "https://media.wizards.com/2023/downloads/dnd/SRD_CC_v5.1.pdf", "pdfPages": [64], "printedPages": [64], "occurrenceIds": ["srd51:equipment:armor:8"] }
+      "source": { "document": "SRD 5.1", "pdfUrl": "https://media.wizards.com/2023/downloads/dnd/SRD_CC_v5.1.pdf", "pdfPages": [63, 64], "printedPages": [63, 64], "occurrenceIds": ["srd51:equipment:armor:8"] }
     },
     {
       "id": "srd51:equipment:armor:9", "name": "Ring Mail", "category": "equipment", "subcategory": "armor-heavy", "magic": false, "attunement": "unspecified",
-      "cost": { "sourceText": "30 gp", "copperPieces": 3000 }, "weight": { "sourceText": "40 lb.", "pounds": "40" }, "properties": [], "description": [],
+      "cost": { "sourceText": "30 gp", "copperPieces": 3000 }, "weight": { "sourceText": "40 lb.", "pounds": "40" }, "properties": [], "description": [{ "text": "This armor is leather armor with heavy rings sewn into it. The rings help reinforce the armor against blows from swords and axes. Ring mail is inferior to chain mail, and it's usually worn only by those who can’t afford better armor.", "occurrenceId": "srd51:equipment:armor:9" }],
       "armor": { "armorClassText": "14", "stealthRuleText": "Disadvantage" },
-      "source": { "document": "SRD 5.1", "pdfUrl": "https://media.wizards.com/2023/downloads/dnd/SRD_CC_v5.1.pdf", "pdfPages": [64], "printedPages": [64], "occurrenceIds": ["srd51:equipment:armor:9"] }
+      "source": { "document": "SRD 5.1", "pdfUrl": "https://media.wizards.com/2023/downloads/dnd/SRD_CC_v5.1.pdf", "pdfPages": [63, 64], "printedPages": [63, 64], "occurrenceIds": ["srd51:equipment:armor:9"] }
     },
     {
       "id": "srd51:equipment:armor:10", "name": "Chain Mail", "category": "equipment", "subcategory": "armor-heavy", "magic": false, "attunement": "unspecified",
-      "cost": { "sourceText": "75 gp", "copperPieces": 7500 }, "weight": { "sourceText": "55 lb.", "pounds": "55" }, "properties": [], "description": [],
+      "cost": { "sourceText": "75 gp", "copperPieces": 7500 }, "weight": { "sourceText": "55 lb.", "pounds": "55" }, "properties": [], "description": [{ "text": "Made of interlocking metal rings, chain mail includes a layer of quilted fabric worn underneath the mail to prevent chafing and to cushion the impact of blows. The suit includes gauntlets.", "occurrenceId": "srd51:equipment:armor:10" }],
       "armor": { "armorClassText": "16", "strengthRequirementText": "Str 13", "stealthRuleText": "Disadvantage" },
-      "source": { "document": "SRD 5.1", "pdfUrl": "https://media.wizards.com/2023/downloads/dnd/SRD_CC_v5.1.pdf", "pdfPages": [64], "printedPages": [64], "occurrenceIds": ["srd51:equipment:armor:10"] }
+      "source": { "document": "SRD 5.1", "pdfUrl": "https://media.wizards.com/2023/downloads/dnd/SRD_CC_v5.1.pdf", "pdfPages": [63, 64], "printedPages": [63, 64], "occurrenceIds": ["srd51:equipment:armor:10"] }
     },
     {
       "id": "srd51:equipment:armor:11", "name": "Splint Armor", "category": "equipment", "subcategory": "armor-heavy", "magic": false, "attunement": "unspecified",
-      "cost": { "sourceText": "200 gp", "copperPieces": 20000 }, "weight": { "sourceText": "60 lb.", "pounds": "60" }, "properties": [], "description": [],
+      "cost": { "sourceText": "200 gp", "copperPieces": 20000 }, "weight": { "sourceText": "60 lb.", "pounds": "60" }, "properties": [], "description": [{ "text": "This armor is made of narrow vertical strips of metal riveted to a backing of leather that is worn over cloth padding. Flexible chain mail protects the joints.", "occurrenceId": "srd51:equipment:armor:11" }],
       "armor": { "armorClassText": "17", "strengthRequirementText": "Str 15", "stealthRuleText": "Disadvantage" },
-      "source": { "document": "SRD 5.1", "pdfUrl": "https://media.wizards.com/2023/downloads/dnd/SRD_CC_v5.1.pdf", "pdfPages": [64], "printedPages": [64], "occurrenceIds": ["srd51:equipment:armor:11"] }
+      "source": { "document": "SRD 5.1", "pdfUrl": "https://media.wizards.com/2023/downloads/dnd/SRD_CC_v5.1.pdf", "pdfPages": [63, 64], "printedPages": [63, 64], "occurrenceIds": ["srd51:equipment:armor:11"] }
     },
     {
       "id": "srd51:equipment:armor:12", "name": "Plate Armor", "category": "equipment", "subcategory": "armor-heavy", "magic": false, "attunement": "unspecified",
-      "cost": { "sourceText": "1,500 gp", "copperPieces": 150000 }, "weight": { "sourceText": "65 lb.", "pounds": "65" }, "properties": [], "description": [],
+      "cost": { "sourceText": "1,500 gp", "copperPieces": 150000 }, "weight": { "sourceText": "65 lb.", "pounds": "65" }, "properties": [], "description": [{ "text": "Plate consists of shaped, interlocking metal plates to cover the entire body. A suit of plate includes gauntlets, heavy leather boots, a visored helmet, and thick layers of padding underneath the armor. Buckles and straps distribute the weight over the body.", "occurrenceId": "srd51:equipment:armor:12" }],
       "armor": { "armorClassText": "18", "strengthRequirementText": "Str 15", "stealthRuleText": "Disadvantage" },
-      "source": { "document": "SRD 5.1", "pdfUrl": "https://media.wizards.com/2023/downloads/dnd/SRD_CC_v5.1.pdf", "pdfPages": [64], "printedPages": [64], "occurrenceIds": ["srd51:equipment:armor:12"] }
+      "source": { "document": "SRD 5.1", "pdfUrl": "https://media.wizards.com/2023/downloads/dnd/SRD_CC_v5.1.pdf", "pdfPages": [63, 64], "printedPages": [63, 64], "occurrenceIds": ["srd51:equipment:armor:12"] }
     },
     {
       "id": "srd51:equipment:armor:13", "name": "Shield", "category": "equipment", "subcategory": "shield", "magic": false, "attunement": "unspecified",
-      "cost": { "sourceText": "10 gp", "copperPieces": 1000 }, "weight": { "sourceText": "6 lb.", "pounds": "6" }, "properties": [], "description": [],
+      "cost": { "sourceText": "10 gp", "copperPieces": 1000 }, "weight": { "sourceText": "6 lb.", "pounds": "6" }, "properties": [], "description": [{ "text": "A shield is made from wood or metal and is carried in one hand. Wielding a shield increases your Armor Class by 2. You can benefit from only one shield at a time.", "occurrenceId": "srd51:equipment:armor:13" }],
       "armor": { "armorClassText": "+2" },
-      "source": { "document": "SRD 5.1", "pdfUrl": "https://media.wizards.com/2023/downloads/dnd/SRD_CC_v5.1.pdf", "pdfPages": [64], "printedPages": [64], "occurrenceIds": ["srd51:equipment:armor:13"] }
+      "source": { "document": "SRD 5.1", "pdfUrl": "https://media.wizards.com/2023/downloads/dnd/SRD_CC_v5.1.pdf", "pdfPages": [63, 64], "printedPages": [63, 64], "occurrenceIds": ["srd51:equipment:armor:13"] }
     },
     {"id":"srd51:equipment:weapons:1","name":"Club","category":"equipment","subcategory":"weapon-simple-melee","magic":false,"attunement":"unspecified","cost":{"sourceText":"1 sp","copperPieces":10},"properties":[{"name":"Light","occurrenceId":"srd51:equipment:weapons:1"}],"description":[],"weight":{"sourceText":"2 lb.","pounds":"2"},"damage":{"diceText":"1d4","typeText":"bludgeoning"},"source":{"document":"SRD 5.1","pdfUrl":"https://media.wizards.com/2023/downloads/dnd/SRD_CC_v5.1.pdf","pdfPages":[66],"printedPages":[66],"occurrenceIds":["srd51:equipment:weapons:1"]}},
     {"id":"srd51:equipment:weapons:2","name":"Dagger","category":"equipment","subcategory":"weapon-simple-melee","magic":false,"attunement":"unspecified","cost":{"sourceText":"2 gp","copperPieces":200},"properties":[{"name":"Finesse","occurrenceId":"srd51:equipment:weapons:2"},{"name":"Light","occurrenceId":"srd51:equipment:weapons:2"},{"name":"Thrown","occurrenceId":"srd51:equipment:weapons:2","description":"range 20/60"}],"description":[],"weight":{"sourceText":"1 lb.","pounds":"1"},"damage":{"diceText":"1d4","typeText":"piercing"},"source":{"document":"SRD 5.1","pdfUrl":"https://media.wizards.com/2023/downloads/dnd/SRD_CC_v5.1.pdf","pdfPages":[66],"printedPages":[66],"occurrenceIds":["srd51:equipment:weapons:2"]}},
