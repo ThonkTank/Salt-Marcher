@@ -379,6 +379,62 @@ export function validatePotionHealingMerge(transcript, inventory) {
   return Object.freeze({ canonicalId, detailId, mergedRecords: 1, rarityChoices: 4, healingRows: 4 });
 }
 
+export function validateMagicItemAzOpeningSlice(transcript, inventory) {
+  const expected = [
+    { name: "Adamantine Armor", subcategory: "armor", rarity: { kind: "fixed", value: "uncommon" },
+      attunement: "not-required", description: "This suit of armor is reinforced with adamantine, one of the hardest substances in existence. While you’re wearing it, any critical hit against you becomes a normal hit." },
+    { name: "Ammunition, +1, +2, or +3", subcategory: "ammunition",
+      rarity: { kind: "varies", sourceText: "uncommon (+1), rare (+2), or very rare (+3)",
+        choices: [["+1", "uncommon"], ["+2", "rare"], ["+3", "very-rare"]] },
+      attunement: "not-required", description: "You have a bonus to attack and damage rolls made with this piece of magic ammunition. The bonus is determined by the rarity of the ammunition. Once it hits a target, the ammunition is no longer magical." },
+    { name: "Amulet of Health", subcategory: "wondrous-item", rarity: { kind: "fixed", value: "rare" },
+      attunement: "required", description: "Your Constitution score is 19 while you wear this amulet. It has no effect on you if your Constitution is already 19 or higher." },
+    { name: "Amulet of Proof against Detection and Location", subcategory: "wondrous-item",
+      rarity: { kind: "fixed", value: "uncommon" }, attunement: "required",
+      description: "While wearing this amulet, you are hidden from divination magic. You can’t be targeted by such magic or perceived through magical scrying sensors." },
+    { name: "Amulet of the Planes", subcategory: "wondrous-item", rarity: { kind: "fixed", value: "very-rare" },
+      attunement: "required", description: "While wearing this amulet, you can use an action to name a location that you are familiar with on another plane of existence. Then make a DC 15 Intelligence check. On a successful check, you cast the plane shift spell. On a failure, you and each creature and object within 15 feet of you travel to a random destination. Roll a d100. On a 1–60, you travel to a random location on the plane you named. On a 61–100, you travel to a randomly determined plane of existence." },
+  ];
+  const occurrences = new Map(inventory.occurrences.map(item => [item.id, item]));
+  const records = new Map(transcript.records.map(record => [record.id, record]));
+  for (const [index, item] of expected.entries()) {
+    const ordinal = index + 1;
+    const id = `srd51:magic-item:magic-items-a-z:${ordinal}`;
+    const occurrence = occurrences.get(id);
+    invariant(occurrence?.sourceLabel === item.name && occurrence.ordinal === ordinal
+      && occurrence.sourceTable === "Magic Items A–Z" && occurrence.sourceKind === "detail-heading"
+      && occurrence.firstPdfPage === 207 && occurrence.lastPdfPage === 207
+      && occurrence.firstPrintedPage === 207 && occurrence.lastPrintedPage === 207
+      && occurrence.mergeIntoId === null,
+    `Magic-Items-A–Z-Occurrence ${ordinal} ist nicht exakt als Seite-207-Heading belegt.`);
+    const record = records.get(id);
+    invariant(record?.name === item.name && record.category === "magic-item" && record.magic === true
+      && record.subcategory === item.subcategory && record.attunement === item.attunement
+      && JSON.stringify(record.source.pdfPages) === "[207]"
+      && JSON.stringify(record.source.printedPages) === "[207]"
+      && JSON.stringify(record.source.occurrenceIds) === JSON.stringify([id])
+      && record.description.length === 1 && record.description[0].occurrenceId === id
+      && record.description[0].text === item.description,
+    `Magic-Items-A–Z-Record ${ordinal} ist unvollständig oder nicht quellengetreu.`);
+    if (item.rarity.kind === "fixed") {
+      invariant(record.rarity?.kind === "fixed" && record.rarity.value === item.rarity.value,
+        `Magic-Items-A–Z-Record ${ordinal} hat nicht die belegte feste Rarität.`);
+    } else {
+      invariant(record.rarity?.kind === "varies" && record.rarity.sourceText === item.rarity.sourceText
+        && record.rarity.choices.length === item.rarity.choices.length,
+      `Magic-Items-A–Z-Record ${ordinal} hat nicht die belegte variable Rarität.`);
+      for (const [choiceIndex, [label, value]] of item.rarity.choices.entries()) {
+        const choice = record.rarity.choices[choiceIndex];
+        invariant(choice.variantId === `${id}#variant:${choiceIndex + 1}` && choice.label === label
+          && choice.value === value && choice.occurrenceId === id,
+        `Magic-Items-A–Z-Record ${ordinal}, Variante ${choiceIndex + 1}, widerspricht dem Header.`);
+      }
+    }
+  }
+  return Object.freeze({ capturedRecords: 5, physicalPdfPage: 207, fixedRarities: 4,
+    variableRarityChoices: 3, attunementRequired: 3, attunementNotRequired: 2 });
+}
+
 function formatAjvErrors(errors) {
   return [...(errors ?? [])]
     .sort((left, right) => [left.instancePath, left.schemaPath, left.keyword, left.message]
@@ -735,6 +791,27 @@ function verifyPdfPotionHealingMerge(pdfPath, transcript, inventory) {
     scope: "explicit-earliest-occurrence-merge-header-rarity-and-four-healing-rows" });
 }
 
+function verifyPdfMagicItemAzOpeningSlice(pdfPath, transcript, inventory) {
+  const evidence = validateMagicItemAzOpeningSlice(transcript, inventory);
+  const headings = extractMagicItemAzHeadingsFromPdfXml(execFileSync("pdftohtml",
+    ["-xml", "-f", "207", "-l", "251", "-stdout", resolve(pdfPath)],
+    { encoding: "utf8", maxBuffer: 16 * 1024 * 1024 }));
+  const expectedHeadings = ["Adamantine Armor", "Ammunition, +1, +2, or +3", "Amulet of Health",
+    "Amulet of Proof against Detection and Location", "Amulet of the Planes"];
+  invariant(headings.length === 239 && JSON.stringify(headings.slice(0, 5)) === JSON.stringify(expectedHeadings),
+    "Die ersten fünf Magic-Items-A–Z-Headings oder der Gesamtcount 239 widersprechen dem PDF.");
+  const pageText = normalizePdfPageText(extractPdfPage(pdfPath, 207), 207);
+  for (const header of [
+    "Armor (medium or heavy, but not hide), uncommon",
+    "Weapon (any ammunition), uncommon (+1), rare (+2), or very rare (+3)",
+    "Wondrous item, rare (requires attunement)",
+    "Wondrous item, uncommon (requires attunement)",
+    "Wondrous item, very rare (requires attunement)",
+  ]) invariant(pageText.includes(normalizePdfText(header)), `Magic-Item-Header-PDF-Beleg für „${header}“ fehlt.`);
+  return Object.freeze({ ...evidence, derivedHeadingCount: headings.length,
+    scope: "first-five-a-z-headings-full-headers-rarity-attunement-and-descriptions" });
+}
+
 function verifyPdfHelperDispositions(pdfPath, inventory) {
   const occurrences = new Map(inventory.occurrences.map(occurrence => [occurrence.id, occurrence]));
   const pageText = new Map();
@@ -813,11 +890,19 @@ export async function verifyItemsSourcePackage({ pdfPath, allowIncomplete = fals
     "Manifest-Inventarcount stimmt nicht.");
   invariant(manifest.coverage.transcriptRecords === transcript.records.length,
     "Manifest-Transkriptcount stimmt nicht.");
+  const magicItemAzSection = inventory.sections.find(section => section.id === "magic-items-a-z");
+  invariant(manifest.coverage.capturedMagicItemAzHeadings === magicItemAzSection?.capturedOccurrences
+    && manifest.coverage.capturedMagicItemAzStandaloneRecords === 5
+    && manifest.coverage.capturedMagicItemAzMergedDetails === 1
+    && manifest.coverage.unresolvedMagicItemSourceHeadings
+      === magicItemAzSection.expectedOccurrences - magicItemAzSection.capturedOccurrences,
+  "Manifest-Magic-Items-A–Z-Coverage stimmt nicht mit Inventar und Merge-Stand überein.");
   invariant(manifest.coverage.capturedEquipmentCrossReferenceRows === inventory.crossReferences.length,
     "Manifest-Cross-reference-Count stimmt nicht.");
   validateJsonSchemas(schema, transcript, inventory);
   const validation = validateTranscriptData(transcript, inventory, { allowIncomplete });
   const potionHealingMerge = validatePotionHealingMerge(transcript, inventory);
+  const magicItemAzOpeningSlice = validateMagicItemAzOpeningSlice(transcript, inventory);
   let pdf;
   if (pdfPath) {
     const bytes = await readFile(resolve(pdfPath));
@@ -828,6 +913,7 @@ export async function verifyItemsSourcePackage({ pdfPath, allowIncomplete = fals
     pdf = Object.freeze({ sha256: OFFICIAL_PDF_SHA256, bytes: bytes.length, pages: manifest.source.pdfPages,
       occurrenceEvidence: verifyPdfOccurrences(pdfPath, inventory),
       transcriptEvidence: verifyPdfTranscriptFacts(pdfPath, transcript),
+      magicItemAzOpeningSliceEvidence: verifyPdfMagicItemAzOpeningSlice(pdfPath, transcript, inventory),
       potionHealingMergeEvidence: verifyPdfPotionHealingMerge(pdfPath, transcript, inventory),
       boundedArmorTableEvidence: verifyPdfArmorTableRows(pdfPath, transcript, inventory),
       boundedWeaponTableEvidence: verifyPdfWeaponTableRows(pdfPath, transcript, inventory),
@@ -842,6 +928,7 @@ export async function verifyItemsSourcePackage({ pdfPath, allowIncomplete = fals
   return Object.freeze({
     complete: manifest.complete,
     validation,
+    magicItemAzOpeningSlice,
     potionHealingMerge,
     pdf,
     hashes: Object.freeze({
