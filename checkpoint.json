@@ -5734,7 +5734,7 @@
       "qaCard": "/workspace/scratch/gm-cloud-qa/vault/_QA-GM-UX-01-C-RESTORE-20261009/Nebelwacht-Improvisation.dungeon",
       "evidence": "/workspace/scratch/gm-cloud-qa/evidence-gmux01-obs04-integrated-20261010/00-pre-reload.png–12-reopened-playview.png; insbesondere 07-floor-1-no-key.png, 08-room12-body.png, 09-room12-text-open.png, 10-label-start-no-key.png, 11-room12-label.png",
       "limits": "Kein frischer Electronprozess, keine physische Eingabeabnahme, keine Produktlatenz, keine PlayerProjection-/Redactionprüfung, keine breite UX-/E2E-/Gesamtfreigabe. Die CDP-/Playwright-Wartezeiten sind Harness-Zeiten.",
-      "docsCommit": "pending",
+      "docsCommit": "e581343de2b951f4643c4f5ce0dcef8f50cfccbc",
       "next": "Kein weiterer OBS-04-Retest nötig. Getrennte FreshProcess-, physische Eingabe- und PlayerProjection-Gates bleiben offen und benötigen eigene Aufträge."
     }
   }
