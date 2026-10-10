@@ -25,9 +25,9 @@
   },
   "artifactHashes": {
     "attributionSha256": "f66d55442488e79895501fc0fcd7b2bb62deb2bd6e589e0fffb5f5932ed5b767",
-    "inventorySha256": "ed896d0f27a0c8e7d1924424de2896c84826208ac0a732ff9b46b6dfcee26aec",
+    "inventorySha256": "0c968c958523d172c13d3f55a62669fb288f1f3c092a643097c91a0ade7c7bbb",
     "schemaSha256": "5d6c7b33832bc737e6c8097aeb36a343a50fd7a87fbfb94f9bb24a7dc1e2e776",
-    "transcriptSha256": "b937fdd33193e176373f48e639ea66d3c542387d63d646bbe24691d39fd5b1fd"
+    "transcriptSha256": "0ded7a834619312127ebcf144220ecc68ac6dba8013c897cfd6f90f4ff9574a3"
   },
   "sectionBoundaries": [
     { "id": "equipment-context", "firstPdfPage": 62, "firstPrintedPage": 62, "lastPdfPage": 72, "lastPrintedPage": 72, "reviewState": "full-boundary-inventoried" },
@@ -39,12 +39,12 @@
     { "id": "mounts-other-animals", "firstPdfPage": 71, "firstPrintedPage": 71, "lastPdfPage": 72, "lastPrintedPage": 72, "expectedPrimaryOccurrences": 8, "reviewState": "inventory-transcript-helper-expansion-and-bounded-table-rows-complete-review-open" },
     { "id": "tack-harness-drawn-vehicles", "firstPdfPage": 72, "firstPrintedPage": 72, "lastPdfPage": 72, "lastPrintedPage": 72, "expectedPrimaryOccurrences": 14, "reviewState": "inventory-transcript-barding-expansion-and-bounded-table-rows-complete-review-open" },
     { "id": "waterborne-vehicles", "firstPdfPage": 72, "firstPrintedPage": 72, "lastPdfPage": 72, "lastPrintedPage": 72, "expectedPrimaryOccurrences": 6, "reviewState": "inventory-source-transcript-and-bounded-table-rows-complete-review-open" },
-    { "id": "magic-items-a-z", "firstPdfPage": 207, "firstPrintedPage": 207, "lastPdfPage": 251, "lastPrintedPage": 251, "reviewState": "boundary-first-nine-headings-and-potion-of-healing-heading-142-merge-captured-inventory-incomplete" },
+    { "id": "magic-items-a-z", "firstPdfPage": 207, "firstPrintedPage": 207, "lastPdfPage": 251, "lastPrintedPage": 251, "reviewState": "boundary-first-thirteen-headings-and-potion-of-healing-heading-142-merge-captured-inventory-incomplete" },
     { "id": "artifact-orb-of-dragonkind", "firstPdfPage": 252, "firstPrintedPage": 252, "lastPdfPage": 253, "lastPrintedPage": 253, "reviewState": "boundary-draft" }
   ],
   "coverage": {
-    "inventoryOccurrences": 229,
-    "transcriptRecords": 228,
+    "inventoryOccurrences": 233,
+    "transcriptRecords": 232,
     "expectedEquipmentPrimaryOccurrences": 219,
     "expectedEquipmentTableLeafRows": 212,
     "expectedEquipmentPackEntries": 7,
@@ -66,10 +66,10 @@
     "extractionHelperMagicItemRecords": 362,
     "unresolvedEquipmentPrimaryOccurrences": 0,
     "unresolvedEquipmentHelperRecords": 0,
-    "capturedMagicItemAzHeadings": 10,
-    "capturedMagicItemAzStandaloneRecords": 9,
+    "capturedMagicItemAzHeadings": 14,
+    "capturedMagicItemAzStandaloneRecords": 13,
     "capturedMagicItemAzMergedDetails": 1,
-    "unresolvedMagicItemSourceHeadings": 229,
+    "unresolvedMagicItemSourceHeadings": 225,
     "unresolvedMagicItemHelperRecords": 362
   },
   "blockingOpenSections": [
@@ -82,12 +82,12 @@
     "Tack, Harness, and Drawn Vehicles inventory and source transcript cover all 14 physical rows, exact prices, source weights or explicit formula/missing values and applicable narratives; all 14 rows pass bounded same-physical-row segment matching including Barding formulas and the Stabling source em dash. Twelve Barding helper identities resolve to the single Barding row plus their respective Armor occurrence. Non-authoritative helper conflicts such as Exotic Saddle weight 50 instead of the official 40 lb. and Ring Mail Barding cost 12 gp instead of the official ×4 formula are not adopted, while independent review remains open.",
     "Waterborne Vehicles inventory and source transcript cover all six physical rows, exact costs, mph speeds including fractional source values, the shared Vehicle Proficiency text and the Rowed Vessels facts for Keelboat and Rowboat; all six table rows pass bounded same-physical-row segment matching. The prose-only 100-pound Rowboat weight is retained as a structured fact but is not invented as a table cell, while independent review remains open.",
     "The Potion-of-Healing detail merge is captured but still requires independent review with this W17 slice.",
-    "The first eight Magic Items A-Z headings across physical pages 207-208 are independently reviewed; Armor of Invulnerability at ordinal 9 on physical page 208 is captured with occurrence-bound full header and prose, fixed legendary rarity and required attunement, but W22 independent review remains open.",
-    "The remaining 229 Magic Items A-Z headings and the Orb of Dragonkind artifact still require full description and page-range transcription.",
+    "The first nine Magic Items A-Z headings are independently reviewed. Ordinals 10–13 across physical pages 208–209 preserve complete Armor/Arrow headers and prose, including all ten Armor-of-Resistance damage choices and the full Armor-of-Vulnerability curse; independent W23 review remains open.",
+    "The remaining 225 Magic Items A-Z headings and the Orb of Dragonkind artifact still require full description and page-range transcription.",
     "All 362 helper magic-item records still require parent/variant reconciliation against the 240 official source headings.",
     "The controlled 25-value source subcategory enum now includes the captured Armor and Wondrous item magic-header mappings, but the enum remains a draft until the complete magic-item inventory fixes every source-header mapping.",
     "Draft-2020-12 validation plus PDF-backed occurrence-label and captured-fact checks are active; bounded Armor, Weapons, Adventuring Gear, Tools, Mounts, Tack and Waterborne table-row matching is active, while bounded matching for other structured tables and the still-uncaptured sections remain open.",
-    "Golden coverage now includes the first nine A-Z identities and full descriptions, fixed and ordered variable rarity including the Armor +1/+2/+3 mapping, required/not-required attunement including Armor of Invulnerability, the complete ten-row Apparatus lever table, plus the Potion-of-Healing earliest-occurrence merge; same-name non-merge, remaining merge shapes and byte-identical projection cases remain open.",
+    "Golden coverage now includes the first thirteen A-Z identities and full descriptions, fixed and ordered variable rarity including the Armor +1/+2/+3 mapping, required/not-required attunement including Armor of Invulnerability, the complete ten-row Apparatus lever table, plus the Potion-of-Healing earliest-occurrence merge; same-name non-merge, remaining merge shapes and byte-identical projection cases remain open.",
     "Section boundaries and final pre/post-merge counts require independent full-page review.",
     "The inventory and transcript remain incomplete and must not feed a product artifact, provider, or UI."
   ]

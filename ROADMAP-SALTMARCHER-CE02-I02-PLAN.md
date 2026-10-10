@@ -4,6 +4,24 @@ Stand: 9. Oktober 2026
 
 Art: Fachplan für Items; keine Item-Implementierung und keine CE-02-Freigabe
 
+### Aktuelle Quellenlieferung
+
+S01 bleibt bis vollständigem Korpus und unabhängigem S01-R01 ausdrücklich
+unvollständig. Der direkte Nutzerauftrag vom 10. Oktober verlangt sinnvolle
+Produktbeiträge ohne künstliche Einzeleintrags-/Kleinstpaketbeschränkung.
+W23 liefert daher die zusammenhängende Armor-/Arrow-Gruppe (A–Z 10–13,
+physische/gedruckte Seiten 208–209) einschließlich Resistenz-d10-Tabelle,
+Fluchtext und Slaying-Regeln. Ein kompletter Heading-zu-Heading-XML-Abgleich
+prüft Prosa und physische Tabellenreihenfolge statt nur vorhandener Substrings.
+Bei unmittelbar angrenzenden kursiven XML-Textläufen wird Satzzeichenabstand
+nur mit gleicher Seite/Zeile und nachgewiesener physischer Anschlussposition
+rekonstruiert; globale Interpunktionskorrekturen erfolgen nicht.
+Der Quellenstand und die direkten Review-/Veröffentlichungsbelege bleiben in
+`checkpoint.saltMarcherCatalogEncounter`, `acceptance.saltMarcherCatalogEncounter`
+und [Issue #9](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/9).
+Die nächsten Lieferungen folgen zusammenhängenden Quellabschnitten; die
+vollständigen Schema-/Provenienz-/Produkt-/Hostgates unten bleiben erhalten.
+
 ## Ziel und Grenze
 
 `Items` wird der erste echte Bereich nach `Monster` in der vorhandenen
