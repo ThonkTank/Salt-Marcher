@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 import {
   normalizePdfText,
+  validateBoundedArmorTableRows,
   validateJsonSchemas,
   validateTranscriptData,
   verifyItemsSourcePackage,
@@ -132,6 +133,55 @@ test("armor source goldens preserve cost, missing values and literal AC semantic
   assert.equal(byName.get("Chain Mail").armor.strengthRequirementText, "Str 13");
   assert.equal(byName.get("Shield").armor.armorClassText, "+2");
   assert.equal("strengthRequirementText" in byName.get("Padded Armor").armor, false);
+  assert.equal(checkedTranscript.records.filter(record => record.id.includes(":armor:"))
+    .every(record => record.description.length === 1), true);
+  assert.equal(byName.get("Padded Armor").description[0].text,
+    "Padded armor consists of quilted layers of cloth and batting.");
+  assert.match(byName.get("Studded Leather Armor").description[0].text, /close-set rivets or spikes/);
+  assert.match(byName.get("Ring Mail").description[0].text, /it's usually worn.*can’t afford/);
+  assert.match(byName.get("Plate Armor").description[0].text, /Buckles and straps distribute the weight/);
+  assert.match(byName.get("Shield").description[0].text, /benefit from only one shield at a time/);
+  assert.deepEqual(byName.get("Padded Armor").source.pdfPages, [63]);
+  assert.equal(["Leather Armor", "Studded Leather Armor", "Hide Armor", "Chain Shirt", "Scale Mail",
+    "Breastplate", "Half Plate Armor", "Ring Mail", "Chain Mail", "Splint Armor", "Plate Armor", "Shield"]
+    .every(name => byName.get(name).source.pdfPages.join() === "63,64"), true);
+});
+
+test("armor bounded matching keeps every structured cell on one physical PDF row", async () => {
+  const [checkedInventory, checkedTranscript] = await Promise.all([
+    readFile(new URL("items-srd51-inventory.json", dataRoot), "utf8").then(JSON.parse),
+    readFile(new URL("items-srd51-transcript.json", dataRoot), "utf8").then(JSON.parse),
+  ]);
+  const pageLines = {
+    63: ["Padded 5 gp 11 + Dex modifier — Disadvantage 8 lb."],
+    64: [
+      "Leather 10 gp 11 + Dex modifier — — 10 lb.",
+      "Studded leather 45 gp 12 + Dex modifier — — 13 lb.",
+      "Hide 10 gp 12 + Dex modifier (max 2) — — 12 lb.",
+      "Chain shirt 50 gp 13 + Dex modifier (max 2) — — 20 lb.",
+      "Scale mail 50 gp 14 + Dex modifier (max 2) — Disadvantage 45 lb.",
+      "Breastplate 400 gp 14 + Dex modifier (max 2) — — 20 lb.",
+      "Half plate 750 gp 15 + Dex modifier (max 2) — Disadvantage 40 lb.",
+      "Ring mail 30 gp 14 — Disadvantage 40 lb.",
+      "Chain mail 75 gp 16 Str 13 Disadvantage 55 lb.",
+      "Splint 200 gp 17 Str 15 Disadvantage 60 lb.",
+      "Plate 1,500 gp 18 Str 15 Disadvantage 65 lb.",
+      "Shield 10 gp +2 — — 6 lb.",
+    ],
+  };
+  assert.deepEqual(validateBoundedArmorTableRows(pageLines, checkedTranscript, checkedInventory), {
+    checkedRows: 13,
+    scope: "exact-normalized-pdftotext-layout-row-with-source-missing-markers",
+  });
+  const wrongCell = structuredClone(checkedTranscript);
+  wrongCell.records.find(record => record.name === "Chain Mail").armor.strengthRequirementText = "Str 15";
+  assert.throws(() => validateBoundedArmorTableRows(pageLines, wrongCell, checkedInventory),
+    /nicht exakt einmal in derselben physischen Tabellenzeile/);
+  const pageWideOnly = structuredClone(pageLines);
+  pageWideOnly[64] = pageWideOnly[64].filter(line => !line.startsWith("Leather "))
+    .concat(["Leather", "10 gp", "11 + Dex modifier", "—", "—", "10 lb."]);
+  assert.throws(() => validateBoundedArmorTableRows(pageWideOnly, checkedTranscript, checkedInventory),
+    /nicht exakt einmal in derselben physischen Tabellenzeile/);
 });
 
 test("weapon source goldens preserve ordered properties, literal damage and missing values", async () => {
