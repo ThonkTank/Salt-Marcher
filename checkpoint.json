@@ -1,4 +1,27 @@
 {
+  "repositoryOrientation": {
+    "date": "2026-10-10",
+    "state": "integrated_with_direct_user_authorization",
+    "scope": "Product navigation, contributor workflow and GitHub backlog organization only; no product or acceptance approval",
+    "branch": "active/installed-phase1",
+    "integrationPullRequest": 43,
+    "integrationCommit": "3bfb90a20dc59642c56e4b415b1a08aa15349919",
+    "authorization": "Direct user instruction to integrate this cleanup without the independent review requirement.",
+    "entrypoint": "README.md",
+    "productGoals": "docs/PRODUCT.md",
+    "deliveryOrder": "docs/ROADMAP.md",
+    "contributing": "CONTRIBUTING.md",
+    "documentIndex": "docs/INDEX.md",
+    "coordinationIssue": 12,
+    "tasks": [
+      38,
+      39,
+      40,
+      41,
+      42
+    ],
+    "next": "Product owners continue existing candidates and current #38 blocker; contributor entry points and backlog are integrated."
+  },
   "saltMarcherReplacement": {
     "date": "2026-10-10",
     "state": "smr00_adr_p01_h03_i02_implementation_review_changes_required",
@@ -9055,10 +9078,10 @@
   },
   "gmProductTesting": {
     "date": "2026-10-09",
-    "state": "gm_ux_atlas_terrain_zoom_sequence_bounded_pass",
+    "state": "gm_product_readiness_gate_blocked_hex_location_key_integration_pending",
     "plan": "ROADMAP-GM-PRODUCT-TESTING-PLAN.md",
     "focus": "Längere GM-Endanwenderabläufe, häufige Aktionen, Bedienkosten und UI-Überladung; belegte Nacharbeiten beauftragen und nachprüfen.",
-    "currentRun": "GM-UX-ATLAS-TERRAIN-ZOOM-20261010-01 completed: visible three-cell synthetic terrain paint, narrow/wide +/−/Ctrl-wheel/Fit, Save/tab-close/quick-switch reopen; exact current Shared 83bf4bbae23232e56c481318ca78ee70d7eb813e; no broader Atlas approval.",
+    "currentRun": {"id":"GM-UX-READY-GATE-20261010-01","status":"blocked","uiRun":"not started","branch":"active/installed-phase1","sharedHead":"d6cd63b52086c944b632a3225cc69a07fcda9b88","request":"Select one concrete, independently runnable end-user GM product-test scenario after synchronizing Shared.","finding":"No eligible new UI scenario on this Shared: product src delta since prior terrain test is limited to three catalog data files; visible Atlas Location/Key integration remains Hex-owned HEX-03-I01b-marker and explicitly not runnable.","coordination":"Issue #8 comments 6099164999 (preflight), 6099155361 (prior owner/claim scan); Issue #1 comments 6098878157 and 6099065387; Issue #12 comment 6099063871.","checks":["git fetch origin active/installed-phase1; HEAD equals origin head d6cd63b52086c944b632a3225cc69a07fcda9b88","git diff 83bf4bbae23232e56c481318ca78ee70d7eb813e..d6cd63b52086c944b632a3225cc69a07fcda9b88 -- src: exactly three catalog data files","jq checkpoint inspection: gmProductTesting.next requires integrated/runnable HEX-03-I01b-marker; hexAtlasExecution.nextRun remains repository_location_integration and host activation pending"],"evidence":{"ownPriorUi":"/workspace/scratch/gm-cloud-qa/evidence-gmux-atlas-terrain-zoom-20261010-01/ (bounded terrain/zoom/save/reopen PASS only; product commit 83bf4bbae23232e56c481318ca78ee70d7eb813e).","colleagueEvidence":"Issue #12/6099063871 documents Hex-owned stale-capture user failure and its scoped R01 fix; not independently rerun or visually verified by Cloud GM."},"notDemonstrated":["No UI test or product build/install on d6cd63b.","No visible Location/Key flow on Shared, stale-capture repair, native A→B→A, fresh Electron process, physical input, product latency, or broad acceptance."],"changedFiles":["checkpoint.json (gmProductTesting root only)","ROADMAP-GM-PRODUCT-TESTING-PLAN.md"],"next":"Hex completes scoped R01 and native gates, then integrates/marks HEX-03-I01b-marker runnable; Cloud GM then pins/builds/installs that exact Shared and performs the pre-scoped visible Location/Key + save/reopen test.","documentationCommit":"d06a0eb1ac7e66b5a884fc2538a070669158bd9b"},
     "executedUiRuns": 17,
     "observedFindings": [
       {
