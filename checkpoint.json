@@ -5083,8 +5083,8 @@
     "state": "gm_ux_n005_n01_h01_r02_blocked_r03_not_started",
     "plan": "ROADMAP-GM-PRODUCT-TESTING-PLAN.md",
     "focus": "Längere GM-Endanwenderabläufe, häufige Aktionen, Bedienkosten und UI-Überladung; belegte Nacharbeiten beauftragen und nachprüfen.",
-    "currentRun": "H01 erneut auf exakt gebautem Shared-/Bundle-Commit db47c8a: Raum-Key-Suche, Raum12/Geschoss1/Key, Dirty-Guard/Verwerfen, Save/Tab-Reopen und erneute Aktivierung bestanden; Filterpersistenz, 18px Suchfeld bei leerem Dock und 30px visuell gekürzte Trefferzeile reproduziert.",
-    "executedUiRuns": 14,
+    "currentRun": "GM-UX-01-D-CONTINUATION-20261010-01 completed: visible copy/paste, undo/redo, save/tab-reopen on isolated QA card; bounded PASS, overall GM-UX-01-D partial.",
+    "executedUiRuns": 15,
     "observedFindings": [
       {
         "id": "GM-UX-001",
@@ -5224,7 +5224,7 @@
       "state": "completed",
       "supersedes": "GM-UX-ACCESS; Slotanfrage gemäß Nutzerkorrektur aufgehoben"
     },
-    "next": "GM-UX-01-D-FRESH-PROCESS milestone auf isoliertem Cloud-Obsidian abgeschlossen; übergeordneter GM-UX-01-D Ablauf bleibt partial. Nächster Schritt: Issue #8 aktuellen Besitz/Abhängigkeiten lesen und nächsten explizit offenen GM-Produkttest festlegen; keine Fixfreigabe aus diesem Lauf.",
+    "next": "Continue only after Issue #8 ownership sync: choose an explicitly open GM scenario step. Treat viewport-center paste as a hypothesis requiring independent reproduction before requesting a UI change; do not claim a broad UX pass.",
     "automation": "Stündliche GM-Produkttests in eigener Cloud; keine Laptop-Slotfreigabe erforderlich.",
     "executionEnvironment": "Eigene Cloud-Umgebung, getrennt vom Laptop der Kollegen",
     "cloudHost": {
@@ -6014,6 +6014,40 @@
         "pauseReason": "Der direkte Nutzerauftrag priorisierte das getrennte OBS-04-Shared-Retestpaket. Kein UI-Schritt aus diesem FreshProcess-Paket wurde ausgeführt; Container und Screenshot bleiben als Hostsetup-Evidenz erhalten.",
         "next": "Dieses Paket bleibt pausiert/not started. Nur mit eigenem späteren Auftrag fortsetzen."
       }
-    ]
+    ],
+    "latestDContinuation": {
+      "id": "GM-UX-01-D-CONTINUATION-20261010-01",
+      "status": "completed_bounded_ui_slice_overall_GM_UX_01_D_partial",
+      "owner": "Cloud-GM-Produkttester",
+      "branch": "active/installed-phase1",
+      "sharedProductCommit": "a15bab387e4a647fbe7057ed43fcab33a53d4e12",
+      "build": "npm run build on exact Shared a15bab3 passed dirty:false; Obsidian 1.14.4 / Electron 43.7.7; 1440x1000 CSS px, DPR 1",
+      "installedTripletSha256": {
+        "main.js": "522823730ddce4d0ba83e0476f60887b60a07c517f84e8e270814b6d597efa43",
+        "styles.css": "a6d31c13219d4b9f49d2ecf6993106bedef2a33560c9bdfdb93106659d45bc2e",
+        "manifest.json": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64"
+      },
+      "host": "isolated Obsidian 1.14.4/Electron 43.7.7 container 4047ad84db9e5e527d70c7a59f150ea430c6137f941f2d4d8a90e36f1c8134b0; own profile/vault /workspace/scratch/gm-cloud-qa/fresh-process-20261010/; CDP 9230; no laptop session",
+      "coordination": {
+        "issue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/8",
+        "preRun": "6094671522",
+        "buildInstallBeforeUI": "6094672912",
+        "documentationContract": "Issue #1 comment 6087478045",
+        "claimScan": "Issue #8 comment 6094709421; no competing owner for this test slice"
+      },
+      "scope": "Continue only the predeclared GM-UX-01-D sequence after the completed fresh-process save: find saved Room-12 QA note; duplicate one existing QA object; visible Undo/Redo; move duplicate into Room 11; Save; close and reopen the same map tab; verify object count, rooms, note, source-copy integrity.",
+      "uiSteps": "Visible app reload; Ctrl+O Quick Switcher open QA map; choose Geschoss 1; select Room-12 object; click Auswahl > Kopieren > Einfügen; one duplicate appears at viewport center in empty margin, then one drag moves it into Room 11; visible Undo removes exactly duplicate and Redo restores it; click Karte speichern; Ctrl+W close active tab; Ctrl+O reopen same map; inspect map and file oracle.",
+      "result": "PASS for the bounded visible sequence. Undo returned two existing objects; Redo restored one duplicate (three total); saved map and reopened tab showed three objects, 12 rooms and the previously saved synthetic Room-12 key text. QA card SHA-256 changed from 6a64adf25fcb4cf90cad8a790ac95181a6fded37c639aed21b28c983c182c2c3 to 529fc0365031022fb8cdc77c4fca349dad9a8ed2c0f0d44a4cc7308455569e9b; JSON oracle: 12 rooms, 3 objects, key contains \"The amber lantern marks the north stair.\". Isolated source-copy SHA-256 remains 6779ca9d4c39564a80c453dbfd9de33a09363cda43fed1176708a1273c450279.",
+      "observation": "Single trial: Paste placed the duplicate at viewport center in empty map margin, requiring one additional drag into the intended room. This is an observed interaction cost, not yet a confirmed defect or delegated repair; no alternate-camera repetition. A transient blank capture after switching panels was not reproduced on the immediate repeat and is not treated as a finding. Reopen screen showed current floor UI value 1 and rooms 7–12; no N-006 conclusion from this one case.",
+      "evidencePath": "/workspace/scratch/gm-cloud-qa/evidence-gmux01-d-continuation-20261010-01/",
+      "evidenceIndex": "00-before-app-reload.png through 21-room12-select-tool-click.png; SHA-256 manifest SHA256SUMS.txt in same directory. Key images: 05-floor1.png, 09-pasted-duplicate.png, 10-undo-duplicate.png, 11-redo-duplicate.png, 12-duplicate-moved-into-room11.png, 13-saved-map.png, 14-reopened-map-default-floor.png, 19-dungeon-panel-second-toggle.png. Hash of final card documented above.",
+      "testsAndChecks": "npm run build PASS dirty:false on a15bab3; build/install triplet SHA-256 equality PASS before UI; source-copy SHA unchanged PASS; after UI JSON parse PASS, room count=12, object count=3, saved note substring PASS; tab close/reopen visibly PASS; screenshot manifest generated. No test suite run.",
+      "filesChanged": [
+        "checkpoint.json: gmProductTesting.latestDContinuation and gmProductTesting.next; ROADMAP-GM-PRODUCT-TESTING-PLAN.md: append run record"
+      ],
+      "commit": "3c3975f74a2f9e2f91f9717fe28fb405301c70f1",
+      "limits": "Own visible Cloud UI automation, not physical input or laptop verification. Remote automation timings are not product latency and none are claimed. No user vault/source data changed. Does not complete all GM-UX-01-D, test player projection, full scenario, broad UX/E2E, N-005/N-006, or establish a floor persistence defect. Product implementation unchanged.",
+      "next": "Continue only after Issue #8 ownership sync: choose an explicitly open GM scenario step. Treat viewport-center paste as a hypothesis requiring independent reproduction before requesting a UI change; do not claim a broad UX pass."
+    }
   }
 }
