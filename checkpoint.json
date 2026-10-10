@@ -542,7 +542,7 @@
       "id": "E2E-01-SPACE-I01c",
       "kind": "bounded_required_integration_after_actual_owner_contracts",
       "focus": "Use actual Campaign/Vault context, registry/ownership participant revisions and original CommandId/ReceiptId publish boundary, then pure Dungeon geometry Gestureport and one real P02/P04 CompleteImport variant. Keep one candidate/camera/history/fixture; no E2E02–04.",
-      "dependency": "Campaign generic Contract/Validator/Testport input is qualified on 7aa47beb1bad3d0b1560666fa1cb1677bdc8cd4e, not source-integrated. M/W/S transfer/retention awaits an exact repair SHA and scoped owner re-review. Actual productive Campaign/Vault context, Registryprovider, persistable Publish boundary and P02/P04 remain open. Actual pure Dungeon geometry port remains required: N01 plan repair passed independent Hex P01-R02 on 58c24b161a967017112d8bfc68471b19ad70e72b, closing DUN-GEO-P01-R01-01 in plan only. Separate Dungeon Product-I01, executable regression proof and independent code review precede Hex adoption; no unreviewed port integration. No synthetic Registry/provider or port; World projection remains actual Repository.spatialGraph.world() and placements/spatial targets.",
+      "dependency": "Campaign generic Contract/Validator/Testport input is qualified on 7aa47beb1bad3d0b1560666fa1cb1677bdc8cd4e, not source-integrated. M/W/S transfer/retention awaits an exact repair SHA and scoped owner re-review. Actual productive Campaign/Vault context, Registryprovider, persistable Publish boundary and P02/P04 remain open. Actual pure Dungeon geometry port remains required: N01 plan repair passed independent Hex P01-R02 on 58c24b161a967017112d8bfc68471b19ad70e72b, closing DUN-GEO-P01-R01-01 in plan only. Dungeon Product-I01 code candidate 455b7e606f9b753043e8f8f94896f8ffd60924f8 failed independent Hex Code-R01 with DUN-GEO-I01-R01-01..03 (hidden invalid-preview commit, missing actual pointerstart, duplicated record-change projection). Separate owner repair, exact-SHA independent R02 and separately mandated Cleanup-P/I/R remain; no port adoption before Code-PASS. No synthetic Registry/provider or port; World projection remains actual Repository.spatialGraph.world() and placements/spatial targets.",
       "review": "Independent integrated code/host review follows complete pinned I01c handoff per #12; repairs and Cleanup-P/I/R are separate runs. Current native I01b is a narrow implementation proof, not full gate approval."
     },
     "review": {
@@ -834,7 +834,7 @@
       },
       "dungeonGeometryPlanInput": {
         "run": "E2E-01-DUNGEON-GEOMETRY-P01-R01",
-        "state": "independent_plan_repair_r02_pass_owner_product_i01_next",
+        "state": "independent_product_code_r01_changes_required_three_repairs_before_adoption",
         "owner": "Dungeon",
         "reviewer": "Hex independent Atlas interface recipient",
         "candidate": "ea46ba5437596aceaad955330e21c3ef4e739451",
@@ -852,7 +852,7 @@
           "full E2E gate",
           "cleanup"
         ],
-        "next": "DUN-GEO-P01-R01-01 closed in exact-SHA N01 plan review. Separate Dungeon Product-I01 now; executable regression proof and independent code review before any Hex port adoption. No repeated general plan, cleanup or Campaign review.",
+        "next": "Dungeon addresses only DUN-GEO-I01-R01-01..03 in a separate repair run and supplies exact-SHA narrow independent R02. Preserve separately mandated Cleanup-P/I/R runs; no repeated general plan or Campaign review. Port adoption waits Code-PASS.",
         "synchronizedShared": "89a3ffbad44ed6acec2e25566a1b017166fa9f7c",
         "synchronizationVerification": {
           "check": true,
@@ -915,6 +915,66 @@
           "codeHostE2EPass": false,
           "integrated": false,
           "handoff": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6092759862"
+        },
+        "codeReview": {
+          "run": "E2E-01-DUNGEON-GEOMETRY-I01-CODE-R01",
+          "state": "CHANGES_REQUIRED",
+          "reviewer": "Hex independent Atlas interface recipient",
+          "candidate": "455b7e606f9b753043e8f8f94896f8ffd60924f8",
+          "productCommit": "400fb47e2f9acfb15321b68a09ec5947b37c4c6a",
+          "productBase": "7113f2fb02085e698cfda6a42cb9302478edc486",
+          "startedAt": "2026-10-10T02:44:55Z",
+          "finishedAt": "2026-10-10T02:52:37.391880+00:00",
+          "review": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/26#issuecomment-6092998283",
+          "handoff": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6093004755",
+          "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/dungeon-geometry-code-r01/review.json",
+          "checks": {
+            "check": true,
+            "testsPassed": 490,
+            "testsFailed": 0,
+            "build": true,
+            "cleanExactSha": true,
+            "bundleSha256": "e2529577b2e158b8d7baebec6b5ac7e81da2ff60d374195fca972a7f05f18ddd"
+          },
+          "findings": [
+            {
+              "id": "DUN-GEO-I01-R01-01",
+              "priority": 1,
+              "summary": "Invalid update clears visible preview but retains old proposal; actual pointer-up commits hidden old geometry.",
+              "file": "src/features/dungeon/geometry-change.ts",
+              "line": 187,
+              "router": "src/features/atlas/atlas-editor.ts:973"
+            },
+            {
+              "id": "DUN-GEO-I01-R01-02",
+              "priority": 2,
+              "summary": "Begin pointer offset discarded; grip vertex used as delta origin causes point/snap displacement.",
+              "file": "src/features/dungeon/geometry-change.ts",
+              "line": 196
+            },
+            {
+              "id": "DUN-GEO-I01-R01-03",
+              "priority": 2,
+              "summary": "Required shared record-change projection remains duplicated between new pure projector and unchanged Session.apply.",
+              "file": "src/session.ts",
+              "line": 124
+            }
+          ],
+          "positiveScope": "Actual source/graph/history/full parent basis and terminal A-B-A; existing portal/ordering/model primitives and identity/Markdown protections remain positive scoped observations.",
+          "reproScope": "Actual gesture and AtlasEditor bind pointermove/pointerup callbacks on in-memory event/source doubles; no GUI or physical input.",
+          "scopePreservation": "Six product files and three owner metadata files only; foreign checkpoint/acceptance roots, fixture bytes and unrelated product preserved. Shared catalog work excluded from owner review.",
+          "integrated": false,
+          "host": false,
+          "fullE2E": false,
+          "sharedSynchronization": {
+            "shared": "38f333d4eda6cd2203443efd35b7140e7bf72e07",
+            "mergeCommit": "f128d0357133705d0292e531cceaeec2cfc223fc",
+            "check": true,
+            "testsPassed": 486,
+            "testsFailed": 0,
+            "build": true,
+            "scope": "Normal incoming Shared catalog synchronization and own metadata verification only, not Dungeon code adoption or geometry PASS."
+          }
         }
       }
     },
