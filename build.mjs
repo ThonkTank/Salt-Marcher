@@ -156,6 +156,34 @@ if (test) await build({
     },
   }],
 });
+if (test) await build({
+  entryPoints: ["tests/campaign-entry-dom.entry.ts"],
+  outfile: ".build/campaign-entry-dom.cjs",
+  bundle: true,
+  format: "cjs",
+  platform: "node",
+  target: "es2022",
+  sourcemap: true,
+  logLevel: "info",
+});
+if (test) await build({
+  entryPoints: ["tests/vault-campaign-runtime-source.entry.ts"],
+  outfile: ".build/vault-campaign-runtime-source.cjs",
+  bundle: true,
+  format: "cjs",
+  platform: "node",
+  target: "es2022",
+  sourcemap: true,
+  logLevel: "info",
+  plugins: [{
+    name: "obsidian-campaign-test-stub",
+    setup(builder) {
+      builder.onResolve({ filter: /^obsidian$/ }, () => ({
+        path: new URL("./tests/fixtures/obsidian-campaign-stub.ts", import.meta.url).pathname,
+      }));
+    },
+  }],
+});
 if (!test) {
   const mainBytes = (await stat("main.js")).size;
   const mainJsGrowthBytes = catalogMainJsGrowth(mainBytes, catalogAsset.identity);

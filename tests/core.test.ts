@@ -33,6 +33,7 @@ import "./core/atlas-location-repository.test";
 import "./core/campaign-lifecycle.test";
 import "./core/campaign-remap.test";
 import "./core/campaign-ownership.test";
+import "./core/campaign-runtime-source.test";
 import "./core/city-codec.test";
 import "./core/city-commands.test";
 import "./core/city-edit.test";
