@@ -16,11 +16,14 @@
       "notConfirmed": "Keine zweimalige Nebelwacht-Tab-Neuöffnung im echten Cloud-Obsidian-Host und kein Produkttester-GM-R01. Kein frischer Prozess ohne Leaf-State, keine physische Eingabe-, UX-, Host-, Fach-, Paritäts- oder Gesamtfreigabe."
     },
     "GM-UX-OBS-04": {
-      "state": "implementation_automated_verified_cloud_retest_and_independent_review_open",
+      "state": "independent_product_review_pass_shared_merge_checked_integrated_cloud_retest_open",
       "source": "Issue #8 Kommentare 6091803168 und 6092231003; ROADMAP-GM-PRODUCT-TESTING-PLAN.md",
       "productCommit": "97bf78e228073081e04e9261bac81b5c7c8c2fe5",
       "confirmed": "DungeonPlayView aktiviert den vorhandenen interaktiven DungeonMapCard-Modus. Damit verwendet der interne GM-View unverändert die bestehenden Pfade Raumkörper zu Inspector mit „Text öffnen“ und Raumlabel zu RoomView, ohne Keytext in die Karte zu kopieren. Die fokussierte PlayView-Vertragsregression, Typprüfung, 422/422 Tests und Build bestanden; der saubere Produktbuild erzeugte main.js SHA-256 522823730ddce4d0ba83e0476f60887b60a07c517f84e8e270814b6d597efa43.",
-      "notConfirmed": "Der veröffentlichte Cloud-GM-Reproduktionsablauf mit Raum 12, sichtbarem Inspector/Key und Kartenhash wurde auf diesem Fixbuild noch nicht wiederholt. Unabhängiger Produktreview, frischer Electronprozess und physische Eingabe fehlen. PlayerProjection/Redaction sowie breite UX-, Host-, Dungeon-, E2E- und Gesamtfreigabe bleiben außerhalb dieses Pakets."
+      "notConfirmed": "Der integrierte Cloud-GM-Nachtest auf aktuellem Shared mit Raum12, sichtbarem Inspector/Key und Kartenhash ist noch offen. Frischer Electronprozess und physische Eingabe fehlen. PlayerProjection/Redaction sowie breite UX-, Host-, Dungeon-, E2E- und Gesamtfreigabe liegen außerhalb dieses Pakets.",
+      "independentReview": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/21#issuecomment-6093614585",
+      "integrationProductCommit": "734a7b9c5714acf2ca5aa0395d9706594a5d4ecd",
+      "integrationChecks": "check,425/425 tests,clean build and five actual callback probe groups PASS; GPU/Vault/Host not claimed"
     }
   },
   "saltMarcherReplacement": {
