@@ -20,11 +20,14 @@ import {
 import {
   parseCampaignRuntimeManifest,
   type CampaignRuntimeManifestV1,
+  type CampaignRuntimeSaveAcknowledgmentV1,
+  type CampaignRuntimeSaveRollbackReceipt,
 } from "../../src/features/campaign/campaign-runtime-source";
 import {
   CampaignRuntimeManifestSaveParticipant,
   type CampaignManifestNativeWrite,
   type CampaignRuntimeOwnerSaveAuthority,
+  type CampaignRuntimeSaveRollbackAuthority,
 } from "../../src/features/campaign/campaign-runtime-save-participant";
 
 const sha = (value: string) =>
@@ -49,6 +52,22 @@ const campaignPath = "Kampagnen/SaltMarcher/E2E-01-Atlas-Save.campaign.json";
 const id = (suffix: string) =>
   `00000000-0000-4000-8000-${suffix.padStart(12, "0")}`;
 const schema = "atlas.e2e01.v1";
+function rollbackAuthority() {
+  const receipts = new WeakSet<object>();
+  const seal = (receipt: CampaignRuntimeSaveRollbackReceipt) => { receipts.add(receipt); return receipt; };
+  return {
+    authority: { validateRollbackReceipt(receipt: CampaignRuntimeSaveRollbackReceipt) {
+      if (!receipts.has(receipt)) throw new Error("Rollback-Receipt ist nicht autoritativ.");
+    } } satisfies CampaignRuntimeSaveRollbackAuthority,
+    issue(prepared: CampaignRuntimeSaveAcknowledgmentV1): CampaignRuntimeSaveRollbackReceipt {
+      const receipt = Object.freeze({ transactionId: prepared.transactionId, outcome: "rolled_back" as const,
+        journalState: "absent" as const, writes: Object.freeze(prepared.journal.writes.map((write) =>
+          Object.freeze({ ...write, current: write.before }))) });
+      return seal(receipt);
+    },
+    seal,
+  };
+}
 const recordDefinitions = [
   ["010", "world", "atlas", ["013", "014", "201", "202"]],
   ["011", "location", "atlas", ["015", "016"]],
@@ -367,13 +386,15 @@ function projectedOwners(
 }
 
 test("campaign manifest participant binds seven native guards to three owner-authorized projections", () => {
-  const beforeBytes = manifest(nativeRows("input"), "input"),
+  const rollbackAuthorityFixture = rollbackAuthority(),
+    beforeBytes = manifest(nativeRows("input"), "input"),
     before = parsed(beforeBytes),
     authorizedAfter = parsed(manifest(nativeRows("expected"), "expected")),
     participant = new CampaignRuntimeManifestSaveParticipant(
       campaignPath,
       digest,
       authorities(),
+      rollbackAuthorityFixture.authority,
     );
   assert.equal(
     before.registry.owners.reduce(
@@ -463,6 +484,19 @@ test("campaign manifest participant binds seven native guards to three owner-aut
   assert.equal(committed.afterManifestBytes, write!.after);
   assert.doesNotThrow(() => participant.validateAcknowledgment(prepared));
   assert.throws(() => participant.validateAcknowledgment({ ...committed }), /nicht vom zuständigen Participant/);
+  const rollback = participant.createRollbackAcknowledgment({ prepared,
+    receipt: rollbackAuthorityFixture.issue(prepared) });
+  assert.doesNotThrow(() => participant.validateRollback(rollback));
+  assert.throws(() => participant.validateRollback({ ...rollback }), /nicht vom zuständigen Participant/);
+  const incomplete = rollbackAuthorityFixture.issue(prepared);
+  assert.throws(() => participant.createRollbackAcknowledgment({ prepared,
+    receipt: rollbackAuthorityFixture.seal(Object.freeze({ ...incomplete,
+      writes: incomplete.writes.slice(1) })) }), /nicht alle ursprünglichen Bytes/);
+  const wrongBytes = rollbackAuthorityFixture.issue(prepared), wrongWrites = wrongBytes.writes.map((restoredWrite, index) =>
+    index ? restoredWrite : Object.freeze({ ...restoredWrite, current: "fremd" }));
+  const forgedWrongBytes = Object.freeze({ ...wrongBytes, writes: Object.freeze(wrongWrites) });
+  assert.throws(() => participant.createRollbackAcknowledgment({ prepared,
+    receipt: rollbackAuthorityFixture.seal(forgedWrongBytes) }), /nicht alle ursprünglichen Bytes/);
   assert.deepEqual(
     participant.prepare({
       beforeManifestBytes: beforeBytes,

@@ -14,6 +14,8 @@ import {
   type CampaignRuntimeManifestV1,
   type CampaignRuntimeSaveAcknowledgmentV1,
   type CampaignRuntimeSaveAcknowledgmentValidator,
+  type CampaignRuntimeSaveRollbackV1,
+  type CampaignRuntimeSaveRollbackReceipt,
 } from "./campaign-runtime-source";
 
 export interface CampaignManifestNativeWrite {
@@ -35,6 +37,13 @@ export interface CampaignManifestSaveAcknowledgmentInput {
   readonly context: CampaignContextProjection;
   readonly beforeRegistry: CampaignDomainOwnershipProjectionV1;
   readonly journal: CampaignRuntimeSaveJournal;
+}
+export interface CampaignManifestSaveRollbackInput {
+  readonly prepared: CampaignRuntimeSaveAcknowledgmentV1;
+  readonly receipt: CampaignRuntimeSaveRollbackReceipt;
+}
+export interface CampaignRuntimeSaveRollbackAuthority {
+  validateRollbackReceipt(receipt: CampaignRuntimeSaveRollbackReceipt): void;
 }
 export interface CampaignRuntimeOwnerSaveAuthority {
   readonly ownerId: string;
@@ -120,10 +129,12 @@ function serialize(
 export class CampaignRuntimeManifestSaveParticipant implements CampaignRuntimeSaveAcknowledgmentValidator {
   readonly manifestPath: string;
   private readonly acknowledgments = new WeakSet<object>();
+  private readonly rollbacks = new WeakSet<object>();
   constructor(
     manifestPath: string,
     private readonly digest: CampaignOwnershipDigest,
     private readonly authorities: readonly CampaignRuntimeOwnerSaveAuthority[],
+    private readonly rollbackAuthority?: CampaignRuntimeSaveRollbackAuthority,
   ) {
     this.manifestPath = safePath(manifestPath);
     if (
@@ -373,6 +384,39 @@ export class CampaignRuntimeManifestSaveParticipant implements CampaignRuntimeSa
   validateAcknowledgment(proof: CampaignRuntimeSaveAcknowledgmentV1): void {
     if (!this.acknowledgments.has(proof))
       throw new Error("Campaign-Save-Acknowledgment wurde nicht vom zuständigen Participant ausgestellt.");
+  }
+
+  createRollbackAcknowledgment(input: CampaignManifestSaveRollbackInput): CampaignRuntimeSaveRollbackV1 {
+    if (!input || !this.rollbackAuthority)
+      throw new Error("Campaign-Save-Rollback besitzt keine autoritative Rollback-Quelle.");
+    this.rollbackAuthority.validateRollbackReceipt(input.receipt);
+    if (input.receipt.outcome !== "rolled_back" || input.receipt.journalState !== "absent")
+      throw new Error("Campaign-Save-Rollback benötigt einen terminalen Rollback mit entferntem Journal.");
+    this.validateAcknowledgment(input.prepared);
+    if (input.prepared.journal.state !== "prepared")
+      throw new Error("Campaign-Save-Rollback gehört zu keinem vorbereiteten Save.");
+    if (input.receipt.transactionId !== input.prepared.transactionId)
+      throw new Error("Campaign-Save-Rollback gehört zu einer fremden Transaktion.");
+    const restored = new Set<string>();
+    for (const write of input.receipt.writes) {
+      safePath(write.path);
+      if (restored.has(write.path)) throw new Error("Campaign-Save-Rollback enthält ein doppeltes Ziel.");
+      restored.add(write.path);
+    }
+    if (input.receipt.writes.length !== input.prepared.journal.writes.length ||
+        input.prepared.journal.writes.some((write, index) =>
+          input.receipt.writes[index]?.path !== write.path || input.receipt.writes[index]?.before !== write.before ||
+          input.receipt.writes[index]?.after !== write.after || input.receipt.writes[index]?.current !== write.before))
+      throw new Error("Campaign-Save-Rollback bestätigt nicht alle ursprünglichen Bytes.");
+    const proof = immutable({ version: 1 as const, transactionId: input.prepared.transactionId,
+      prepared: input.prepared, receipt: input.receipt });
+    this.rollbacks.add(proof);
+    return proof;
+  }
+
+  validateRollback(proof: CampaignRuntimeSaveRollbackV1): void {
+    if (!this.rollbacks.has(proof))
+      throw new Error("Campaign-Save-Rollback wurde nicht vom zuständigen Participant ausgestellt.");
   }
 
   validateRecovery(journal: CampaignManifestRecoveryJournal): void {

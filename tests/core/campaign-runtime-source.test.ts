@@ -20,10 +20,14 @@ import {
   CampaignRuntimeNavigationProvider,
   parseCampaignRuntimeManifest,
   type CampaignRuntimeFile,
+  type CampaignRuntimeSaveAcknowledgmentV1,
+  type CampaignRuntimeSaveRollbackReceipt,
   type CampaignRuntimeStorage,
   type CampaignRuntimeStorageChange,
 } from "../../src/features/campaign/campaign-runtime-source";
 import { CampaignRuntimeManifestSaveParticipant } from
+  "../../src/features/campaign/campaign-runtime-save-participant";
+import type { CampaignRuntimeSaveRollbackAuthority } from
   "../../src/features/campaign/campaign-runtime-save-participant";
 
 const uuid = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
@@ -73,6 +77,21 @@ function lifecycle(source: CampaignRuntimeSource) {
     contextToken: () => campaignContextToken(`runtime:${++token}`), receiptId: () => campaignReceiptId(uuid(200 + ++receipt)) });
 }
 
+function rollbackAuthority() {
+  const receipts = new WeakSet<object>();
+  return {
+    authority: { validateRollbackReceipt(receipt: CampaignRuntimeSaveRollbackReceipt) {
+      if (!receipts.has(receipt)) throw new Error("Rollback-Receipt ist nicht autoritativ.");
+    } } satisfies CampaignRuntimeSaveRollbackAuthority,
+    issue(prepared: CampaignRuntimeSaveAcknowledgmentV1): CampaignRuntimeSaveRollbackReceipt {
+      const receipt = Object.freeze({ transactionId: prepared.transactionId, outcome: "rolled_back" as const,
+        journalState: "absent" as const, writes: Object.freeze(prepared.journal.writes.map((write) =>
+          Object.freeze({ ...write, current: write.before }))) });
+      receipts.add(receipt); return receipt;
+    },
+  };
+}
+
 function saveAcknowledgments(
   participant: CampaignRuntimeManifestSaveParticipant,
   beforeBytes: string,
@@ -102,8 +121,9 @@ function saveAcknowledgments(
 async function acknowledgmentFixture(command: number, transactionId: string, savedBytes: string) {
   const storage = new Storage(), path = "Kampagnen/SaltMarcher/a.campaign.json",
     beforeBytes = manifest(a, worldA),
+    rollback = rollbackAuthority(),
     participant = new CampaignRuntimeManifestSaveParticipant(path, digest,
-      [{ ownerId: "atlas", verify: () => undefined }]);
+      [{ ownerId: "atlas", verify: () => undefined }], rollback.authority);
   storage.set([{ path, bytes: beforeBytes }]);
   const source = new CampaignRuntimeSource(storage, digest, participant), service = lifecycle(source),
     provider = new CampaignRuntimeNavigationProvider(source, service),
@@ -113,7 +133,8 @@ async function acknowledgmentFixture(command: number, transactionId: string, sav
   if (beforeRead.kind !== "confirmed") throw new Error("Fixture benötigt bestätigte Registry.");
   const { prepared, committed } = saveAcknowledgments(participant, beforeBytes, context, beforeRead.projection,
     transactionId, savedBytes, String(command));
-  return { storage, path, source, provider, participant, beforeBytes, context, prepared, committed };
+  return { storage, path, source, provider, participant, issueRollback: rollback.issue,
+    beforeBytes, context, prepared, committed };
 }
 
 test("runtime source opens persisted campaigns and derives a fresh context-bound registry and inventory", async () => {
@@ -236,6 +257,29 @@ test("navigation provider blocks pending Vault reads unless one exact own save i
   repeated.storage.listener?.({ kind: "modify", phase: "pending", eventId: 2, path: repeated.path });
   await assert.rejects(repeatedPromise, /fremdes Storageevent/);
   assert.equal(repeated.provider.currentContext(), null);
+});
+
+test("navigation provider releases only the exact rolled-back preparation before any manifest event", async () => {
+  const rolledBack = await acknowledgmentFixture(319, "transaction:rolled-back", "saved-never-written");
+  rolledBack.provider.prepareSaveAcknowledgment(rolledBack.prepared);
+  const rollback = rolledBack.participant.createRollbackAcknowledgment({ prepared: rolledBack.prepared,
+    receipt: rolledBack.issueRollback(rolledBack.prepared) });
+  rolledBack.provider.cancelSaveAcknowledgment(rollback);
+  assert.equal(rolledBack.provider.currentContext()?.contextToken, rolledBack.context.contextToken);
+  assert.throws(() => rolledBack.provider.cancelSaveAcknowledgment(rollback), /keine abbrechbare Vorbereitung/);
+  assert.throws(() => rolledBack.provider.prepareSaveAcknowledgment(rolledBack.prepared), /bereits zurückgerollt/);
+  assert.equal(rolledBack.provider.currentContext()?.contextToken, rolledBack.context.contextToken);
+  const retry = saveAcknowledgments(rolledBack.participant, rolledBack.beforeBytes, rolledBack.context,
+    rolledBack.prepared.beforeRegistry, "transaction:retry", "saved-retry", "320");
+  assert.doesNotThrow(() => rolledBack.provider.prepareSaveAcknowledgment(retry.prepared));
+
+  const observed = await acknowledgmentFixture(321, "transaction:event-observed", "saved-observed");
+  observed.provider.prepareSaveAcknowledgment(observed.prepared);
+  observed.storage.listener?.({ kind: "modify", phase: "pending", eventId: 1, path: observed.path });
+  const observedRollback = observed.participant.createRollbackAcknowledgment({ prepared: observed.prepared,
+    receipt: observed.issueRollback(observed.prepared) });
+  assert.throws(() => observed.provider.cancelSaveAcknowledgment(observedRollback), /keine abbrechbare Vorbereitung/);
+  assert.equal(observed.provider.currentContext()?.contextToken, observed.context.contextToken);
 });
 
 test("navigation provider keeps one mount only for the participant-sealed exact save event", async () => {

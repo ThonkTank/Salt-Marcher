@@ -108,8 +108,22 @@ export interface CampaignRuntimeSaveAcknowledgmentResult {
   readonly registry: CampaignDomainOwnershipProjectionV1;
   readonly inventory: AtlasConfirmedInventory;
 }
+export interface CampaignRuntimeSaveRollbackV1 {
+  readonly version: 1;
+  readonly transactionId: string;
+  readonly prepared: CampaignRuntimeSaveAcknowledgmentV1;
+  readonly receipt: CampaignRuntimeSaveRollbackReceipt;
+}
+export interface CampaignRuntimeSaveRollbackReceipt {
+  readonly transactionId: string;
+  readonly outcome: "rolled_back";
+  readonly journalState: "absent";
+  readonly writes: readonly { readonly path: string; readonly before: string | null;
+    readonly after: string | null; readonly current: string | null }[];
+}
 export interface CampaignRuntimeSaveAcknowledgmentValidator {
   validateAcknowledgment(proof: CampaignRuntimeSaveAcknowledgmentV1): void;
+  validateRollback(proof: CampaignRuntimeSaveRollbackV1): void;
 }
 export interface CampaignRuntimeEntry {
   readonly key: string;
@@ -264,6 +278,7 @@ export class CampaignRuntimeSource {
     readonly epoch: number;
     readonly result: CampaignRuntimeSaveAcknowledgmentResult;
   }>();
+  private readonly cancelledSaves = new Set<string>();
   constructor(
     private readonly storage: CampaignRuntimeStorage,
     private readonly digest: CampaignOwnershipDigest,
@@ -413,6 +428,8 @@ export class CampaignRuntimeSource {
     if (!this.acknowledgmentValidator)
       throw new Error("Campaignquelle besitzt keine Save-Acknowledgment-Autorität.");
     this.acknowledgmentValidator.validateAcknowledgment(proof);
+    if (this.cancelledSaves.has(proof.transactionId))
+      throw new Error("Campaign-Save-Acknowledgment-Transaktion wurde bereits zurückgerollt.");
     if (proof.version !== 1 || proof.journal.state !== "prepared" ||
         proof.journal.transactionId !== proof.transactionId)
       throw new Error("Campaign-Save-Acknowledgment besitzt kein vorbereitetes Journal.");
@@ -441,6 +458,8 @@ export class CampaignRuntimeSource {
     if (!this.acknowledgmentValidator)
       throw new Error("Campaignquelle besitzt keine Save-Acknowledgment-Autorität.");
     this.acknowledgmentValidator.validateAcknowledgment(proof);
+    if (this.cancelledSaves.has(proof.transactionId))
+      throw new Error("Campaign-Save-Acknowledgment-Transaktion wurde bereits zurückgerollt.");
     const preparedProof = this.acknowledgmentLeases.get(lease);
     if (!preparedProof)
       throw new Error("Campaign-Save-Acknowledgment besitzt keine ausgestellte Source-Lease.");
@@ -482,6 +501,28 @@ export class CampaignRuntimeSource {
     this.projectionSources.set(registry.projectionDigest, payloadDigest(this.digest(current.bytes)));
     this.acknowledgedSaves.set(proof.transactionId, { proof: proofBytes, epoch: this.changeEpoch, result });
     return result;
+  }
+  cancelSaveAcknowledgment(
+    proof: CampaignRuntimeSaveRollbackV1,
+    lease: CampaignRuntimeSaveAcknowledgmentLease,
+  ): void {
+    if (this.closed) throw new Error("Campaignquelle ist geschlossen.");
+    if (!this.acknowledgmentValidator)
+      throw new Error("Campaignquelle besitzt keine Save-Acknowledgment-Autorität.");
+    this.acknowledgmentValidator.validateRollback(proof);
+    if (this.cancelledSaves.has(proof.transactionId))
+      throw new Error("Campaign-Save-Rollback wurde bereits bestätigt.");
+    const preparedProof = this.acknowledgmentLeases.get(lease);
+    if (!preparedProof || preparedProof !== normalizedSaveProof(proof.prepared) ||
+        proof.transactionId !== lease.transactionId || proof.prepared.journal.state !== "prepared")
+      throw new Error("Campaign-Save-Rollback passt nicht zur vorbereiteten Source-Lease.");
+    const current = this.loaded?.manifests.get(proof.prepared.context.campaignId);
+    if (this.acknowledgedSaves.has(proof.transactionId) || this.changeEpoch !== lease.sourceEpoch ||
+        this.invalidated || !current ||
+        current.path !== proof.prepared.manifestPath || current.bytes !== proof.prepared.beforeManifestBytes)
+      throw new Error("Campaign-Save-Rollback besitzt keine unveränderte Sourcebasis.");
+    this.acknowledgmentLeases.delete(lease);
+    this.cancelledSaves.add(proof.transactionId);
   }
 }
 
@@ -596,6 +637,25 @@ export class CampaignRuntimeNavigationProvider {
     if (pending.inFlight) return pending.inFlight;
     pending.inFlight = this.finishSaveAcknowledgment(proof, normalized, pending);
     return pending.inFlight;
+  }
+  cancelSaveAcknowledgment(proof: CampaignRuntimeSaveRollbackV1): void {
+    if (this.closed) throw new Error("Campaign-Navigation ist geschlossen.");
+    const pending = this.pending;
+    if (!pending || pending.inFlight || pending.eventObserved || pending.storageEventId !== undefined ||
+        pending.proof !== normalizedSaveProof(proof.prepared) ||
+        JSON.stringify(this.lifecycle.context) !== JSON.stringify(proof.prepared.context))
+      throw new Error("Campaign-Save-Rollback besitzt keine abbrechbare Vorbereitung.");
+    try {
+      this.source.cancelSaveAcknowledgment(proof, pending.lease);
+    } catch (error) {
+      if (this.pending === pending) {
+        this.pending = undefined; this.sourceCurrent = false; this.notify();
+      }
+      throw error;
+    }
+    if (this.pending !== pending || !this.sourceCurrent)
+      throw new Error("Campaign-Save-Rollback verlor seine vorbereitete Source-Lease.");
+    this.pending = undefined;
   }
   private async finishSaveAcknowledgment(
     proof: CampaignRuntimeSaveAcknowledgmentV1,
