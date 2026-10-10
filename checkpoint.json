@@ -6153,7 +6153,14 @@
       "guiSlotUsed": false,
       "originalH01AndD01Preserved": true,
       "independentReview": "pending separate exact-head review",
-      "fullE2E": false
+      "fullE2E": false,
+      "latestComposition": {
+        "evidence": "docs/reference/atlas-shared-location-r01/composition.json",
+        "sha256": "8ea01a86886be2b1e7650101cb1d494d5b71e9e28a90fa8d336cbe76aa85210b",
+        "consumedShared": "315f09b610af22984652ff17a304eafbce11ed88",
+        "testsPassed": 558,
+        "repairCodeUnchanged": true
+      }
     }
   },
   "phase": "Phase 6: zweiter Nachbesserungslauf teilweise umgesetzt; fünf Restpositionen und unabhängiger Review offen",
