@@ -10894,5 +10894,30 @@
       "postRunReport": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/8#issuecomment-6100717372",
       "documentationCommit": "5e34270fd51162706f363260a92d12ec92bcc865"
     }
+  },
+  "p04MediaInventoryHost": {
+    "run": "P04-HOST-MEDIA-I01",
+    "state": "implementation_candidate_checked_review_pending",
+    "owner": "independent support contributor; parent ownership remains Campaign/Data",
+    "issue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/41",
+    "claim": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/41#issuecomment-6100900813",
+    "branch": "campaign/p04-media-inventory-host-i01",
+    "base": "6a41f1640de3e4a4311d905d95f66cd79d91b698",
+    "verifiedUpstream": "b87a066e38f1a0000def253bf50e45ee4a5d604f",
+    "scope": "Materialized import-media inventory bound to the exact CampaignContext and Registry; actual Vault metadata/media bytes are SHA-256 hashed and reverified before the existing M/W/S Complete-Import review can be accepted.",
+    "changedFiles": [
+      "src/features/campaign/mws-import-media-inventory.ts",
+      "src/vault-mws-import-media.ts",
+      "src/ui/atlas-campaign-services.ts",
+      "src/ui/atlas-campaign-host.ts",
+      "src/main.ts",
+      "tests/core/mws-import-media-inventory.test.ts",
+      "tests/core.test.ts",
+      "checkpoint.json",
+      "acceptance.json"
+    ],
+    "checks": "Six focused materialized-inventory cases PASS; repository check 25/25 PASS; TypeScript PASS; full test 716 PASS, 1 existing environment-dependent SKIP, 0 FAIL; build PASS; main.js sha256 1fe6f1f592c3568fa6fa55b6e81688317a062190fcc5cd94ec6e6aece6ec8607.",
+    "limits": "No archive/ZIP reader, import publisher, P02 transaction, GUI flow, OS matrix, P04 Go, platform decision or E2E-01 PASS.",
+    "next": "Publish an exact-SHA candidate and obtain an independent narrow code/contract review before stewardship."
   }
 }
