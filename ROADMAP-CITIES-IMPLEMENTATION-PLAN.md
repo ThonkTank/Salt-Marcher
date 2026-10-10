@@ -40,6 +40,8 @@ Planungsergebnis: die vier verlangten Themen besitzen konkrete bestehende Pakete
 
 **Aufräum-P01 — Plan:** Die JSON-Serialisierung hat fremde kompakte Checkpointformatierung aufgeweitet, obwohl deren Werte unverändert blieben. Im getrennten Aufräum-I01 ausschließlich die originale Formatierung außerhalb `cityExecution.currentRun/nextRun` wiederherstellen. Danach Bytevergleich der übrigen Checkpointsegmente, offene Inventar-IDs und Repository-/Diffprüfung; keine neue Statusdatei.
 
+**Aufräum-I01 — Ergebnis:** Fremde Checkpointformatierung aus der gepinnten Sharedbasis wiederhergestellt; ausschließlich die beiden eigenen Laufobjekte ersetzt. Plan und Inventarzuordnung unverändert, keine Testartefakte oder zusätzlichen Dateien erzeugt.
+
 ## Technische Arbeitspakete
 
 | Phase | Umsetzung und Zuständigkeit | Nachweis vor Freigabe |

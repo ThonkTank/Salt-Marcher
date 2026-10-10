@@ -252,32 +252,16 @@
       "verification": {
         "sourceRevision": "dd3732510f721f20d95b7a1abeb1dd1593ceb69c+dirty",
         "check": "passed",
-        "tests": {
-          "passed": 443,
-          "failed": 0
-        },
+        "tests": { "passed": 443, "failed": 0 },
         "build": "passed",
-        "focusedTests": {
-          "passed": 38,
-          "failed": 0
-        },
+        "focusedTests": { "passed": 38, "failed": 0 },
         "pdfSha256": "2504d2a0abb0a4d491a939be4f17910a2dde0312570ab8d208080225ccf0a1f0",
         "pdfBytes": 3158713,
         "pdfPages": 403,
         "occurrences": 229,
         "records": 228,
         "transcriptFacts": 709,
-        "magicItemAzArmorOfInvulnerability": {
-          "ordinal": 9,
-          "physicalPdfPage": 208,
-          "rarity": "legendary",
-          "attunement": "required",
-          "descriptionFacts": 1,
-          "dedicatedPdfFacts": 2,
-          "derivedHeadingCount": 239,
-          "previousHeading": "Armor, +1, +2, or +3",
-          "nextHeading": "Armor of Resistance"
-        },
+        "magicItemAzArmorOfInvulnerability": { "ordinal": 9, "physicalPdfPage": 208, "rarity": "legendary", "attunement": "required", "descriptionFacts": 1, "dedicatedPdfFacts": 2, "derivedHeadingCount": 239, "previousHeading": "Armor, +1, +2, or +3", "nextHeading": "Armor of Resistance" },
         "mainBytes": 1422956,
         "mainSha256": "522823730ddce4d0ba83e0476f60887b60a07c517f84e8e270814b6d597efa43",
         "manifestSha256": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64",
@@ -289,32 +273,14 @@
         "branch": "active/installed-phase1",
         "baseCommit": "dd3732510f721f20d95b7a1abeb1dd1593ceb69c",
         "issue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/9#issuecomment-6098648755",
-        "changedFiles": [
-          "src/features/catalog/data/items-srd51-inventory.json",
-          "src/features/catalog/data/items-srd51-transcript.json",
-          "src/features/catalog/data/items-srd51-source-manifest.json",
-          "tools/items-srd51-source-verify.mjs",
-          "tests/items-srd51-source.test.mjs",
-          "acceptance.json",
-          "checkpoint.json"
-        ],
+        "changedFiles": ["src/features/catalog/data/items-srd51-inventory.json", "src/features/catalog/data/items-srd51-transcript.json", "src/features/catalog/data/items-srd51-source-manifest.json", "tools/items-srd51-source-verify.mjs", "tests/items-srd51-source.test.mjs", "acceptance.json", "checkpoint.json"],
         "externalEvidence": {
           "path": "/tmp/SRD_CC_v5.1.pdf, /tmp/w22-pdf-verify.json, main.js, manifest.json, styles.css",
           "scope": "Local official-PDF verification confirms 229 occurrence labels, 709 generic transcript facts and the dedicated Armor of Invulnerability gate with fixed legendary rarity and required attunement. These are ephemeral cloud-host paths and local build artifacts, not installed-plugin or GUI evidence."
         },
         "publication": "Pending final upstream synchronization, commit and non-force push; exact publication SHA and remote verification will be recorded in the Issue #9 close receipt.",
         "commit": "see Issue #9 close receipt",
-        "notProven": [
-          "complete SRD 5.1 Item corpus",
-          "remaining 229 Magic Items A–Z headings and Orb of Dragonkind",
-          "magic-item helper reconciliation",
-          "remaining goldens",
-          "independent W22 review and S01-R01",
-          "Item product artifact/provider/UI",
-          "Obsidian host acceptance",
-          "Encounter runtime",
-          "any 2024 rules"
-        ],
+        "notProven": ["complete SRD 5.1 Item corpus", "remaining 229 Magic Items A–Z headings and Orb of Dragonkind", "magic-item helper reconciliation", "remaining goldens", "independent W22 review and S01-R01", "Item product artifact/provider/UI", "Obsidian host acceptance", "Encounter runtime", "any 2024 rules"],
         "next": "Publish W22 and request independent read-only review; do not begin W23 before PASS."
       }
     },
@@ -5201,35 +5167,7 @@
     "state": "gm_product_readiness_gate_blocked_hex_location_key_integration_pending",
     "plan": "ROADMAP-GM-PRODUCT-TESTING-PLAN.md",
     "focus": "Längere GM-Endanwenderabläufe, häufige Aktionen, Bedienkosten und UI-Überladung; belegte Nacharbeiten beauftragen und nachprüfen.",
-    "currentRun": {
-      "id": "GM-UX-READY-GATE-20261010-01",
-      "status": "blocked",
-      "uiRun": "not started",
-      "branch": "active/installed-phase1",
-      "sharedHead": "d6cd63b52086c944b632a3225cc69a07fcda9b88",
-      "request": "Select one concrete, independently runnable end-user GM product-test scenario after synchronizing Shared.",
-      "finding": "No eligible new UI scenario on this Shared: product src delta since prior terrain test is limited to three catalog data files; visible Atlas Location/Key integration remains Hex-owned HEX-03-I01b-marker and explicitly not runnable.",
-      "coordination": "Issue #8 comments 6099164999 (preflight), 6099155361 (prior owner/claim scan); Issue #1 comments 6098878157 and 6099065387; Issue #12 comment 6099063871.",
-      "checks": [
-        "git fetch origin active/installed-phase1; HEAD equals origin head d6cd63b52086c944b632a3225cc69a07fcda9b88",
-        "git diff 83bf4bbae23232e56c481318ca78ee70d7eb813e..d6cd63b52086c944b632a3225cc69a07fcda9b88 -- src: exactly three catalog data files",
-        "jq checkpoint inspection: gmProductTesting.next requires integrated/runnable HEX-03-I01b-marker; hexAtlasExecution.nextRun remains repository_location_integration and host activation pending"
-      ],
-      "evidence": {
-        "ownPriorUi": "/workspace/scratch/gm-cloud-qa/evidence-gmux-atlas-terrain-zoom-20261010-01/ (bounded terrain/zoom/save/reopen PASS only; product commit 83bf4bbae23232e56c481318ca78ee70d7eb813e).",
-        "colleagueEvidence": "Issue #12/6099063871 documents Hex-owned stale-capture user failure and its scoped R01 fix; not independently rerun or visually verified by Cloud GM."
-      },
-      "notDemonstrated": [
-        "No UI test or product build/install on d6cd63b.",
-        "No visible Location/Key flow on Shared, stale-capture repair, native A→B→A, fresh Electron process, physical input, product latency, or broad acceptance."
-      ],
-      "changedFiles": [
-        "checkpoint.json (gmProductTesting root only)",
-        "ROADMAP-GM-PRODUCT-TESTING-PLAN.md"
-      ],
-      "next": "Hex completes scoped R01 and native gates, then integrates/marks HEX-03-I01b-marker runnable; Cloud GM then pins/builds/installs that exact Shared and performs the pre-scoped visible Location/Key + save/reopen test.",
-      "documentationCommit": "d06a0eb1ac7e66b5a884fc2538a070669158bd9b"
-    },
+    "currentRun": {"id":"GM-UX-READY-GATE-20261010-01","status":"blocked","uiRun":"not started","branch":"active/installed-phase1","sharedHead":"d6cd63b52086c944b632a3225cc69a07fcda9b88","request":"Select one concrete, independently runnable end-user GM product-test scenario after synchronizing Shared.","finding":"No eligible new UI scenario on this Shared: product src delta since prior terrain test is limited to three catalog data files; visible Atlas Location/Key integration remains Hex-owned HEX-03-I01b-marker and explicitly not runnable.","coordination":"Issue #8 comments 6099164999 (preflight), 6099155361 (prior owner/claim scan); Issue #1 comments 6098878157 and 6099065387; Issue #12 comment 6099063871.","checks":["git fetch origin active/installed-phase1; HEAD equals origin head d6cd63b52086c944b632a3225cc69a07fcda9b88","git diff 83bf4bbae23232e56c481318ca78ee70d7eb813e..d6cd63b52086c944b632a3225cc69a07fcda9b88 -- src: exactly three catalog data files","jq checkpoint inspection: gmProductTesting.next requires integrated/runnable HEX-03-I01b-marker; hexAtlasExecution.nextRun remains repository_location_integration and host activation pending"],"evidence":{"ownPriorUi":"/workspace/scratch/gm-cloud-qa/evidence-gmux-atlas-terrain-zoom-20261010-01/ (bounded terrain/zoom/save/reopen PASS only; product commit 83bf4bbae23232e56c481318ca78ee70d7eb813e).","colleagueEvidence":"Issue #12/6099063871 documents Hex-owned stale-capture user failure and its scoped R01 fix; not independently rerun or visually verified by Cloud GM."},"notDemonstrated":["No UI test or product build/install on d6cd63b.","No visible Location/Key flow on Shared, stale-capture repair, native A→B→A, fresh Electron process, physical input, product latency, or broad acceptance."],"changedFiles":["checkpoint.json (gmProductTesting root only)","ROADMAP-GM-PRODUCT-TESTING-PLAN.md"],"next":"Hex completes scoped R01 and native gates, then integrates/marks HEX-03-I01b-marker runnable; Cloud GM then pins/builds/installs that exact Shared and performs the pre-scoped visible Location/Key + save/reopen test.","documentationCommit":"d06a0eb1ac7e66b5a884fc2538a070669158bd9b"},
     "executedUiRuns": 17,
     "observedFindings": [
       {
@@ -6432,14 +6370,7 @@
       "productUiRun": "not started; no empty-atlas replay.",
       "testSuite": "not run; not used as a visible product-test substitute.",
       "evidence": "Repository checkpoint and src/features/atlas/atlas-editor.ts; prior empty-atlas images remain only prior-run evidence. No new UI frames or vault writes.",
-      "notProven": [
-        "Atlas Location/Key visible UX",
-        "populated-atlas zoom sequence",
-        "product latency",
-        "physical input",
-        "fresh native process",
-        "broad Atlas/Dungeon/E2E acceptance"
-      ],
+      "notProven": ["Atlas Location/Key visible UX", "populated-atlas zoom sequence", "product latency", "physical input", "fresh native process", "broad Atlas/Dungeon/E2E acceptance"],
       "next": "After Hex integrates and marks HEX-03-I01b-marker runnable, build/install that exact Shared head and perform only the planned populated-atlas zoom sequence."
     },
     "latestAtlasTerrainZoomSequence": {
@@ -6487,10 +6418,7 @@
         "CDP-controlled mouse/keyboard, no physical input; remote settle waits not product latency.",
         "No Atlas Undo/Redo in this bounded run, no Location/Key marker UI, no large-map test, no fresh Electron process, no player projection/privacy or broad Atlas/Dungeon/E2E approval."
       ],
-      "changedRepositoryFiles": [
-        "checkpoint.json: gmProductTesting only",
-        "ROADMAP-GM-PRODUCT-TESTING-PLAN.md"
-      ],
+      "changedRepositoryFiles": ["checkpoint.json: gmProductTesting only", "ROADMAP-GM-PRODUCT-TESTING-PLAN.md"],
       "next": "Wait for integrated runnable HEX-03-I01b-marker before testing Location/Key UI; do not replay unchanged empty or terrain zoom cases."
     }
   }
