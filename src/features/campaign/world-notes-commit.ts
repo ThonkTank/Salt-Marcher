@@ -234,6 +234,7 @@ function validTransition(before: WorldNoteV1 | null, after: WorldNoteV1): boolea
 
 /** Campaign-owned producer contribution; the host supplies the actual FileTransaction. */
 export class WorldNotesCampaignCommitParticipant {
+  private readonly preparations = new WeakSet<object>();
   private readonly receipts = new WeakSet<object>();
   constructor(
     readonly manifestPath: string,
@@ -308,7 +309,7 @@ export class WorldNotesCampaignCommitParticipant {
         ...input.nativeWrites.map((write) => Object.freeze({ ...write })),
         Object.freeze({ path: this.manifestPath, before: this.beforeManifestBytes, after: afterManifestBytes }),
       ]);
-    return immutable({
+    const prepared = immutable({
       version: 1 as const,
       commandId,
       change: input.change,
@@ -322,6 +323,8 @@ export class WorldNotesCampaignCommitParticipant {
       manifestPath: this.manifestPath,
       writes,
     });
+    this.preparations.add(prepared);
+    return prepared;
   }
 
   validateRecovery(journal: AtlasFileJournal): void {
@@ -338,6 +341,11 @@ export class WorldNotesCampaignCommitParticipant {
       throw new Error("World-Recovery verändert eine fremde Campaignclosure.");
     const oldOwners = new Map(beforeManifest.registry.owners.map((owner) => [owner.ownerId, owner])),
       newOwners = new Map(afterManifest.registry.owners.map((owner) => [owner.ownerId, owner]));
+    const expectedOwnerIds = new Set(oldOwners.keys());
+    expectedOwnerIds.add(OWNER_ID);
+    if (newOwners.size !== expectedOwnerIds.size ||
+        [...newOwners.keys()].some((id) => !expectedOwnerIds.has(id)))
+      throw new Error("World-Recovery schleust einen fremden Owner ein.");
     for (const [id, owner] of oldOwners)
       if (id !== OWNER_ID && exact(owner) !== exact(newOwners.get(id)))
         throw new Error("World-Recovery verändert einen fremden Owner.");
@@ -369,6 +377,8 @@ export class WorldNotesCampaignCommitParticipant {
     prepared: WorldNotesPreparedCommitV1,
     journal: AtlasFileJournal,
   ): WorldNotesCommitReceiptV1 {
+    if (!this.preparations.has(prepared))
+      throw new Error("World-Commitvorbereitung stammt nicht aus diesem Producer oder wurde bereits verbraucht.");
     if (journal.state !== "committed" ||
         exact([...journal.writes].sort((a, b) => a.path.localeCompare(b.path))) !==
           exact(prepared.writes.filter((write) => write.before !== write.after)
@@ -376,6 +386,7 @@ export class WorldNotesCampaignCommitParticipant {
       throw new Error("World-Commitjournal passt nicht zur Vorbereitung.");
     const beforeRecord = prepared.beforeSnapshot.records.find((record) => record.id === prepared.change.id) ?? null,
       afterRecord = prepared.afterSnapshot.records.find((record) => record.id === prepared.change.id)!;
+    this.preparations.delete(prepared);
     const receipt = immutable({
       version: 1 as const,
       status: "committed" as const,

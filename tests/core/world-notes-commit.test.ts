@@ -8,6 +8,7 @@ import {
   campaignContextToken,
   campaignLocalId,
 } from "../../src/features/campaign/campaign-contracts";
+import { campaignOwnershipDigestValue } from "../../src/features/campaign/campaign-ownership";
 import { parseCampaignRuntimeManifest } from "../../src/features/campaign/campaign-runtime-source";
 import {
   WorldNotesCampaignCommitParticipant,
@@ -105,6 +106,10 @@ test("World Notes producer binds create/update/delete bytes, owner closure, reco
   creator.validateRecovery(createJournal);
   const receipt = creator.createReceipt(preparedCreate, createJournal);
   creator.validateReceipt(receipt);
+  assert.throws(
+    () => creator.createReceipt(preparedCreate, createJournal),
+    /bereits verbraucht/,
+  );
   assert.equal(receipt.recordId, noteId);
   assert.equal(receipt.beforeRecordRevision, null);
   assert.equal(receipt.afterRecordRevision, 1);
@@ -199,6 +204,55 @@ test("World Notes producer rejects unrelated confirmation, forged tombstone and 
     nativeWrites: nativeWrites(before, expected),
   });
   assert.throws(() => participant.validateRecovery(journal(prepared.writes.slice(1))), /unvollständig/);
+
+  const copied = {
+    ...prepared,
+    commandId: campaignCommandId("00000000-0000-4000-8000-000000000934"),
+    changeDigest: `sha256:${"0".repeat(64)}`,
+    context: { ...prepared.context, contextToken: campaignContextToken("world-notes:forged") },
+  };
+  assert.throws(
+    () => participant.createReceipt(copied, journal(prepared.writes)),
+    /nicht aus diesem Producer/,
+  );
+
+  const forgedOwnerManifest = JSON.parse(
+    prepared.writes.find((write) => write.path === manifestPath)!.after!,
+  );
+  const policyRevision = "policy:foreign:v1";
+  forgedOwnerManifest.registry.owners.push({
+    ownerId: "foreign-owner",
+    ownerRevision: "owner:foreign:v1",
+    schemaRevision: "schema:foreign:v1",
+    snapshotRevision: "snapshot:foreign:v1",
+    policyRevision,
+    policyDigest: campaignOwnershipDigestValue(
+      { ownerId: "foreign-owner", policyRevision, transferPolicies: [] },
+      sha,
+    ),
+    availability: "confirmed",
+    emptyConfirmed: true,
+    referenceSchemas: ["foreign.v1"],
+    source: { adapterType: "native-foreign", generation: "source:foreign:v1" },
+    records: [],
+    transferPolicies: [],
+  });
+  forgedOwnerManifest.registry.owners.sort((a: { ownerId: string }, b: { ownerId: string }) =>
+    a.ownerId.localeCompare(b.ownerId));
+  const { registryContentDigest: _registryContentDigest, ...unsignedRegistry } =
+    forgedOwnerManifest.registry;
+  unsignedRegistry.registryRevision = "registry:foreign:v1";
+  forgedOwnerManifest.registry = {
+    ...unsignedRegistry,
+    registryContentDigest: campaignOwnershipDigestValue(unsignedRegistry, sha),
+  };
+  const forgedOwnerBytes = JSON.stringify(forgedOwnerManifest, null, 2) + "\n";
+  parseCampaignRuntimeManifest(forgedOwnerBytes, sha);
+  assert.throws(() => participant.validateRecovery(journal(
+    prepared.writes.map((write) => write.path === manifestPath
+      ? { ...write, after: forgedOwnerBytes }
+      : write),
+  )), /fremden Owner/);
 
   const remove = { kind: "delete" as const, id: noteId, expectedRevision: 1 },
     deleted = changeWorldNotes(expected, ctx, ctx, expected.revision, remove),
