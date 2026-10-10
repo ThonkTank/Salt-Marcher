@@ -4930,17 +4930,19 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-00-I48a-CLEAN-R48",
-      "kind": "cleanup_review",
-      "startedAt": "2026-10-09T21:16:51.071531+00:00",
-      "focus": "COK-Vorlagen Originalfolge R",
-      "state": "completed",
-      "result": "Rawhashes/Quelle/finale Bytegleichheit/Templateumfang/5 Prozessende geprüft,24CTY/65CO offen. I48b eigener nächster Prozesslauf nach erneuter Slotabsprache; R48 folgt danach."
-    },
-    "nextRun": {
       "id": "CITY-00-I48b",
       "kind": "reference_implementation",
-      "focus": "I48b frischer Originalprozess mit eigenen finalen Map-/Templatekopien nach neuer GUI-Slotabsprache"
+      "startedAt": "2026-10-10T04:26:21.560Z",
+      "focus": "Fresh original Map-Reopen and own copied atmosphere template, actual normal process end",
+      "state": "completed",
+      "result": "Fresh private process opened byte-equal final map: shadow230/snow0 before sliders/Save; own template restores visibly changed5/0.6 to230/0 immediately; final map/template/source bytes preserved, normalExit0, five process identities gone, GUI returned. Demo/reduced graphics/synthetic input; R48 and product parity remain open.",
+      "manifest": "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-cok-i48b-20261010-r01/manifest.json",
+      "branch": "candidate/city00-i48b-20261010"
+    },
+    "nextRun": {
+      "id": "CITY-00-I48b-CLEAN-P",
+      "kind": "cleanup_plan",
+      "focus": "Own private I48b runtime residue and raw evidence preservation, then separate cleanup I/R; R48 follows"
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
@@ -4982,7 +4984,7 @@
       },
       "shortName": "Stadt",
       "teamHandshake": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1#issuecomment-6088131163",
-      "guiReturn": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1#issuecomment-6088178583",
+      "guiReturn": "CITY-00-I48b normalExit0 confirmed and local Hex notified after exact five PID/startTicks absence",
       "heartbeat": {
         "automationId": "stadt-atlasfortsetzung",
         "intervalMinutes": 20,
