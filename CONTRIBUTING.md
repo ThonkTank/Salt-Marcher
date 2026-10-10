@@ -19,7 +19,7 @@ gh issue view 12 --repo ThonkTank/Obsidian-Dungeon-Editor-Phase1 --json body,com
 
 | Deine Umgebung | Sinnvoller Einstieg | Grenze |
 | --- | --- | --- |
-| Git und Markdown/JSON, Repositoryzugriff; keine GUI nötig | [#46: Trap-Lifecycle auf vorhandene Fachpakete und Abnahmen abbilden](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/46); genaue Quellen, Scope und Abnahme stehen im Issue | Quellenabgleich; offene Zielentscheidungen und Produktabnahmen bleiben offen |
+| Git und Markdown/JSON, Repositoryzugriff; keine GUI nötig | [frei übernehmbare Aufgaben](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues?q=is%3Aissue+is%3Aopen+label%3A%22status%3Aready%22); genaue Quellen, Scope und Abnahme stehen im gewählten Issue | Quellenabgleich; offene Zielentscheidungen und Produktabnahmen bleiben offen |
 | Weitere Quellen-/Plananalyse ohne GUI | [#44: genau einen offenen Quellen-/Fachpaketpunkt zuordnen](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/44), zunächst den begrenzten Punkt nennen | Offene Zielentscheidungen nicht selbst als entschieden markieren |
 | Produktentwicklung oder Review | Aktuellen Owner-/PR-Scope aus #12 und dem Bereichsissue wählen; z. B. vorhandenen PR #13 unterstützen | Kein zweiter Atlas-Kandidat; integrierte/native Abnahme braucht ihren tatsächlichen Lauf |
 | Obsidian, passende Fixtures und zugängliche Belege | Bestehenden Hostfall im Fachbereich übernehmen | GUI-Slot auf demselben Gerät abstimmen; bei fehlendem Zugriff präzisen Eingang nennen |
@@ -49,7 +49,7 @@ Erwartet: ein bestandener Test. Die synthetische Paketquelle liegt unter `tests/
 1. Aktuellen Branch, offene PRs, Remote-Branches und die Paketkoordination in [#1](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1) prüfen. Einen bereits besessenen Lauf gezielt unterstützen; keinen Doppel-Kandidaten eröffnen.
 2. `git fetch origin`; einen neuen eigenen Branch von `origin/active/installed-phase1` erstellen. Aktuelle Dateien, relevante `checkpoint.json`-/`acceptance.json`-Einträge und `ARCHITECTURE.md` lesen.
 3. Ein zusammenhängendes, begrenztes Ergebnis umsetzen. Quellen nach `src/`, Tests nach `tests/`, wiederverwendbare Hilfen nach `tools/`. Nur eigene Checkpoint-/Abnahmewurzeln aktualisieren; fremde Kennungen und Nachweise erhalten.
-4. Prüfen: Dokumentation durch JSON-, Verweis- und Diffprüfung; Produktcode durch `npm run check`, `npm test`, `npm run build` und passende Regressionen. Tatsächlich ausgeführte Checks mit Ergebnis berichten. Host- und Originalabnahmen nur nach entsprechendem Lauf behaupten.
+4. Prüfen: `npm run check:repo` für Struktur und Verweise; Dokumentation außerdem durch passende JSON-/Diffprüfung; Produktcode durch `npm run check`, `npm test`, `npm run build` und passende Regressionen. Tatsächlich ausgeführte Checks mit Ergebnis berichten. Host- und Originalabnahmen nur nach entsprechendem Lauf behaupten.
 5. Unmittelbar vor Veröffentlichung erneut fetchen und eingegangene Änderungen integrieren. Nur eigene zusammengehörige Änderungen committen/pushen, veröffentlichten Verlauf erhalten. Remote-Commit mit dem lokalen Commit vergleichen.
 6. PR gegen `active/installed-phase1` öffnen: Nutzerproblem und Ergebnis, Aufgabe, Abhängigkeiten, relevante Checks und verbleibende Abnahmegrenzen. Gemäß konkretem Auftrag und geltendem Paketvertrag integrieren; bereits erteilte Nutzerfreigaben nicht erneut erfragen. Wo der Fachvertrag unabhängigen Review verlangt, bleibt dessen Ergebnis erforderlich. Der PR-CI-Workflow prüft den exakten Headcommit.
 
@@ -77,3 +77,7 @@ Ein Handoff nennt: Branch/Commit, Build, Fixtureversion und Hashes, ausgeführte
 | Plattform / Recovery / Spielerdisplay | [#11](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11) |
 
 Neue Aufgaben bekommen eine eigene kleine Beschreibung mit Abnahme und verlinken ihren Bereich. Detaillierte Laufprotokolle gehören in den bestehenden Fachort; im Gesamtindex genügt die Entscheidung oder der Blocker mit Link.
+
+## Ordnung bei jedem Beitrag erhalten
+
+Der [Repository-Pflegevertrag](docs/REPOSITORY.md) legt Ablage, kanonische Informationsorte und Zuständigkeit fest. Neue Paketpläne liegen unter `docs/plans/<bereich>/` nach der [Vorlage](docs/templates/PACKAGE-PLAN.md) und werden im Index verlinkt. Bei Übernahme, Blockerwechsel und Abschluss Haupttext, Statuslabels und Abhängigkeiten nachziehen; bei Integration einen geänderten Lieferfokus aktualisieren. Kein zusätzlicher Freigabe- oder Meldelauf. `npm run audit:backlog` prüft mit GitHub-Zugriff ausschließlich lesend auf widersprüchliche Statuslabels.

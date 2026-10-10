@@ -56,4 +56,6 @@ Automatische Speicherung und vollständige Wiederaufnahme sind bereits querschni
 
 Ein Aufgabenabschluss liefert ein Ergebnis mit Beleg und einem nächsten Empfänger. Nur bei neuem Ergebnis, geändertem Blocker oder Reviewbedarf einen neuen Status veröffentlichen. Keine deltafreien Meldeschleifen. Bereits vorhandene PRs reviewen und ihre Abhängigkeiten klären; dieses Aufräumen schließt oder merged keine unbewertete fremde Arbeit.
 
-Für den Einstieg unabhängig vom GUI-Engpass: [Trap-Quell-/Paketabgleich #46](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/46). Die [Fixture-B-Anleitung #42](CONTRIBUTOR-FIXTURE-B.md) ist über PR #45 abgeschlossen; weitere Wege und ein geprüfter Modelltest stehen im [Agenteneinstieg](../CONTRIBUTING.md#agenteneinstieg).
+Für den Einstieg unabhängig vom GUI-Engpass: [aktuell frei übernehmbare Aufgaben](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues?q=is%3Aissue+is%3Aopen+label%3A%22status%3Aready%22). Die [Fixture-B-Anleitung #42](CONTRIBUTOR-FIXTURE-B.md) ist über PR #45 abgeschlossen; weitere Wege und ein geprüfter Modelltest stehen im [Agenteneinstieg](../CONTRIBUTING.md#agenteneinstieg).
+
+Bei Status-/Abhängigkeitswechsel aktualisiert der Paketowner sein Issue; bei geändertem kritischem Pfad zieht der Integrationsowner diesen datierten Überblick nach. Ablage, Ablösung und automatische Prüfungen folgen dem [Repository-Pflegevertrag](REPOSITORY.md).

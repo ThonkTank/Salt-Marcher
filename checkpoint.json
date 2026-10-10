@@ -34,7 +34,7 @@
       "followupIssue": 44,
       "assessment": "Known source domains explicitly covered; detailed target-rule conflicts, Dungeon work-package mapping and complete original inventories remain open. No acceptance states changed."
     },
-    "next": "A new contributor can claim #46 on Shared; #42 is complete and its pinned fixture guide is available. Product owners continue PR13 integration; scope mappings remain in #44.",
+    "next": "Package owners maintain canonical task/checkpoint/evidence state at handoff and closure; integration owner updates shared focus when the critical path changes. Run the offline structure check before publishing and use the read-only backlog audit for status consistency.",
     "agentEntry": "CONTRIBUTING.md#agenteneinstieg",
     "contributorAudit": {
       "date": "2026-10-10",
@@ -73,6 +73,22 @@
         "integrationCommit": "7ef025c94fe438c31b20fdc8632b2c9d31b6bc68",
         "document": "docs/CONTRIBUTOR-FIXTURE-B.md"
       }
+    },
+    "sustainabilityAudit": {
+      "date": "2026-10-10",
+      "policy": "docs/REPOSITORY.md",
+      "compatibilityInventory": "docs/repository-policy.json",
+      "offlineCheck": "npm run check:repo",
+      "guardTests": "npm run test:repo",
+      "readOnlyGitHubAudit": "npm run audit:backlog",
+      "ci": "Structure gate in PR baseline and on push to active/installed-phase1",
+      "newPlanLocation": "docs/plans/<area>/",
+      "legacySharedPlans": 94,
+      "existingCandidatePlanPaths": 16,
+      "guardTestCount": 13,
+      "backlogLabelAudit": "PASS; read-only; no task mutation",
+      "branchProtection": "Cannot verify/configure with current access: protection endpoint 403; private-repository rulesets API reports plan restriction. CI reports violations but does not prevent direct pushes.",
+      "limits": "Semantic roadmap freshness and acceptance remain with package/integration/domain owners; no product, architecture or acceptance states changed."
     }
   },
   "saltMarcherReplacement": {

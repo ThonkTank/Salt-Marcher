@@ -5,8 +5,11 @@
   "type": "module",
   "scripts": {
     "build": "node build.mjs",
+    "check:repo": "node tools/check-repository.mjs",
+    "test:repo": "node --test --test-concurrency=1 tests/repository-structure.test.mjs",
+    "audit:backlog": "node tools/check-repository.mjs --github",
     "check": "tsc --noEmit",
-    "test": "node build.mjs --test && node --test --test-concurrency=1 .build/tests.cjs .build/catalog-creature-view-dom.cjs .build/catalog-creature-view-adapter.cjs .build/room-key-search-panel.cjs .build/atlas-copy-modal.cjs .build/dungeon-view-lifecycle.cjs tests/migrate-building-v2.test.mjs tests/wonderdraft-inventory.test.mjs tests/canvas-of-kings-session.test.mjs tests/catalog-build-asset.test.mjs tests/items-srd51-source.test.mjs tests/renderer-boundary.test.mjs tests/wonderdraft-rfb-preflight.test.mjs"
+    "test": "node build.mjs --test && node --test --test-concurrency=1 .build/tests.cjs .build/catalog-creature-view-dom.cjs .build/catalog-creature-view-adapter.cjs .build/room-key-search-panel.cjs .build/atlas-copy-modal.cjs .build/dungeon-view-lifecycle.cjs tests/migrate-building-v2.test.mjs tests/wonderdraft-inventory.test.mjs tests/canvas-of-kings-session.test.mjs tests/catalog-build-asset.test.mjs tests/items-srd51-source.test.mjs tests/renderer-boundary.test.mjs tests/wonderdraft-rfb-preflight.test.mjs tests/repository-structure.test.mjs"
   },
   "dependencies": {
     "clipper-lib": "^6.4.2",
