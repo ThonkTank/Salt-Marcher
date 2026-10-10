@@ -1,8 +1,19 @@
 # E2E-01-SPACE-I01c-RUNTIME-P01: Kampagne zum bestehenden Atlas verbinden
 
-Status: konkreter Hex-Plan zur unabhängigen Prüfung. Dieser Lauf verändert keine
-Produktquelle und aktiviert keinen Provider. Der nächste Umsetzungsschritt ist
-I01a nach bestandenem Planreview; I01b/I01c werden getrennt geliefert.
+Aktueller Arbeitsort ist [#40](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/40)
+mit dem bestehenden Hex-Paket, qualifiziertem Source, offenen Hostnachweisen und
+der neuesten GUI-Slotkoordination. Review und Stewardintegration von PR62 sind
+[belegt](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/62#issuecomment-6101774442);
+die echte Save-/Neustartabnahme bleibt offen. Bereinigung gehört ins bestehende
+Ergebnispaket nach [WORKFLOW](docs/WORKFLOW.md), nicht in einen weiteren Pflichtlauf.
+
+## Historische Planbasis und Lieferbelege
+
+Die folgenden Anschlüsse, Lücken und nächsten Schritte beschreiben ihre jeweils
+genannte Quellbasis. Sie sind keine aktuelle Aufgabenfolge; auch alte Planreview-,
+I01a/b/c- oder Aufräumanweisungen starten keine neuen Pakete. Die verlinkten
+H01-/D01-/R01-/N02-Artefakte einschließlich des hashgebundenen R01-README bleiben
+unveränderte Belege ihrer damaligen Ausführung. Für die Fortsetzung #40 lesen.
 
 ## Nutzerziel, Basis und unveränderte Abnahmelinie
 
