@@ -6086,7 +6086,8 @@
         "checkpoint.json: gmProductTesting.latestPasteAltLayout, gmProductTesting.currentRun, gmProductTesting.next; ROADMAP-GM-PRODUCT-TESTING-PLAN.md: append retest"
       ],
       "limits": "Own Cloud UI automation, not physical input or laptop. No product latency measured (remote control timings excluded). No user card/text changed. No expected paste semantics, repair, broad UX/Dungeon/E2E approval, N-006 conclusion, or physical/PlayerProjection test. Product code unchanged.",
-      "next": "Ask Dungeon product owner in Issue #8 to state intended duplicate placement semantics (without requesting implementation yet). If a target-position interaction is chosen, add explicit UI acceptance criteria and run only that bounded follow-up; otherwise record center placement as expected behavior. Continue broader GM scenario only after current ownership sync."
+      "next": "Ask Dungeon product owner in Issue #8 to state intended duplicate placement semantics (without requesting implementation yet). If a target-position interaction is chosen, add explicit UI acceptance criteria and run only that bounded follow-up; otherwise record center placement as expected behavior. Continue broader GM scenario only after current ownership sync.",
+      "documentationCommit": "b22f7f5d93881d3c2dafd40fbab471754e439589"
     }
   }
 }
