@@ -607,6 +607,9 @@ export class AtlasEditor {
     this.finishDrag();
     this.enqueue(async () => {
       this.applyKeys();
+      // Key apply starts draft persistence; finish it before pinning native Save.
+      await this.persistence;
+      this.storage.assertCurrent?.();
       const version = this.persistenceVersion;
       this.status.textContent = "Atlas wird gespeichert …";
       await this.storage.save();
