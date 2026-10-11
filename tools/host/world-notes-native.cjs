@@ -1,5 +1,5 @@
 // Isolated real Obsidian Save -> fresh-process World Notes probe on synthetic Campaign input.
-module.exports = ({ page, fs, path, assert, vault, out, checks, worldNotesZoom200 }) => {
+module.exports = ({ page, fs, path, assert, vault, out, checks, worldNotesZoom200, worldNotesFault }) => {
   const manifestPath = "Kampagnen/SaltMarcher/E2E-01-Atlas-Save.campaign.json";
   const open = async () => {
     await page.evaluate(() => app.commands.executeCommandById("dungeon-editor:open-world-notes"));
@@ -46,6 +46,37 @@ module.exports = ({ page, fs, path, assert, vault, out, checks, worldNotesZoom20
       await form.locator("label").filter({ hasText: "Name" }).locator("input").fill("Maris vom Hafen");
       await form.locator("label").filter({ hasText: "Vorlesetext" }).locator("textarea").fill("Sie hebt die Laterne.");
       await form.locator("label").filter({ hasText: "GM-Notizen" }).locator("textarea").fill("Kennt den alten Kai.");
+      if (worldNotesFault) {
+        const beforeManifest = fs.readFileSync(path.join(vault, manifestPath), "utf8");
+        const namespace = JSON.parse(beforeManifest).snapshot.namespace;
+        await page.evaluate(({ target, namespace }) => {
+          const original = app.vault.process;
+          let injected = false, nativePresentAtFailure = false;
+          app.vault.process = async function (file, callback, options) {
+            if (!injected && file.path === target) {
+              injected = true;
+              nativePresentAtFailure = app.vault.getFiles().some((item) =>
+                item.path.startsWith(`Kampagnen/SaltMarcher/${namespace}/Weltwissen/npc/`));
+              throw new Error("SMR-02 injected manifest CAS failure");
+            }
+            return original.call(this, file, callback, options);
+          };
+          window.__worldNotesFault = { restore: () => { app.vault.process = original; },
+            evidence: () => ({ injected, nativePresentAtFailure }) };
+        }, { target: manifestPath, namespace });
+        await form.getByRole("button", { name: "Speichern", exact: true }).click();
+        await panel.getByRole("alert").filter({ hasText: "Speicherung nicht bestätigt" }).waitFor();
+        const failure = await page.evaluate(() => window.__worldNotesFault.evidence());
+        assert.deepEqual(failure, { injected: true, nativePresentAtFailure: true });
+        await page.evaluate(() => window.__worldNotesFault.restore());
+        assert.equal(fs.readFileSync(path.join(vault, manifestPath), "utf8"), beforeManifest);
+        const noteFolder = path.join(vault, `Kampagnen/SaltMarcher/${namespace}/Weltwissen/npc`);
+        assert.equal(fs.existsSync(noteFolder) ? fs.readdirSync(noteFolder).length : 0, 0);
+        assert.equal(fs.existsSync(path.join(vault, manifestPath.replace(/\.campaign\.json$/, ".world-notes.journal"))), false);
+        fs.writeFileSync(path.join(out, "world-notes-rollback.json"), JSON.stringify({ ...failure,
+          beforeManifestPreserved: true, nativeNotesAfterRollback: 0, journalAfterRollback: false }, null, 2));
+        checks.push("Real Obsidian manifest CAS failure rolls note and journal back to exact Before bytes PASS");
+      }
       await form.getByRole("button", { name: "Speichern", exact: true }).click();
       await panel.getByRole("status").filter({ hasText: "Gespeichert" }).waitFor();
       const manifest = JSON.parse(fs.readFileSync(path.join(vault, manifestPath), "utf8"));

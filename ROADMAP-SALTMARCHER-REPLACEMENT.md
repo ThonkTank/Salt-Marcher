@@ -144,6 +144,17 @@ derselbe Aufruf mit `--restart` verwenden einen ausdrücklich gesetzten eigenen
 Das ist ein synthetischer GUI-/Save-/Reopen-Nachweis, keine physische
 Tastatur-, Crash- oder Gesamt-SMR-02-Freigabe.
 
+Ein weiterer isolierter echter Obsidianlauf auf demselben Produkttripel
+injiziert beim ersten World-Notes-Save einen Manifest-CAS-Fehler, nachdem die
+native Notiz bereits geschrieben wurde. Notiz und Journal kehren zu den exakten
+Before-Bytes zurück; derselbe Entwurf lässt sich danach speichern und in einem
+frischen Prozess wieder öffnen. Wiederholbar mit
+`node tools/host-test.cjs --world-notes-rollback` und anschließend `--restart`
+unter eigenem `DUNGEON_QA_ROOT`; Belege liegen unter
+`/home/aaron/.cache/dungeon-native-qa/atlasqa-smr02-rollback-fault-02/evidence/`.
+Dies ist ein eigener kontrollierter Fehler-/Rollbacknachweis, kein unabhängiger
+Review und kein echter Prozessabbruch oder Stromausfall.
+
 Offen bleiben unabhängige reale Fehler-/Recoveryqualifikation und die
 zusätzlichen Encounter-Constraint-/NPC-Combat-/World-Planner-Funktionen.
 Ortstags gegenüber Name-only-Anlage warten weiter auf die Zielregel in #44.

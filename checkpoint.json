@@ -42,6 +42,20 @@
         "reopenResultSha256": "0b21dd7a17ba0987daee5fa06b0e7e6ceed494adad1fafb8912853e03406719a",
         "result": "real Electron webFrame zoom factor 2; keyboard help and search, visible actions and edit fields inside viewport; native Save and fresh real Obsidian process passed on a synthetic vault"
       },
+      "nativeRollback": {
+        "productSource": "ca290326a35bb792c22ef8f02e215a3dd9ef121d",
+        "mainJsSha256": "f5c3b5a17e0c6765b279a164ead99453a3feb6c5b6d4b6aa1849866b06a454e9",
+        "fixtureManifestSha256": "23735bb6c95107b7dec93ffa56ec66405a0f4fe0ec3822fc0476d90d2920188d",
+        "hostRunnerSha256": "37b65ec261c73034237fbad06155b5bfee3e04fc7a4ef1e4d7da54b2e00bb360",
+        "scenarioSha256": "e4451e3d6896656627cf65f667cf3ce2fb039c6962af1d0a46daf44280147bc0",
+        "evidenceRoot": "/home/aaron/.cache/dungeon-native-qa/atlasqa-smr02-rollback-fault-02/evidence/",
+        "editResult": "1791681272763-world-notes-native-edit/result.json",
+        "editResultSha256": "bba98eec02bcfc633a2c649724cae3b6d27e326818fdf983a39fdad9f01ee7d3",
+        "rollbackEvidenceSha256": "1721bfb73950585f1dcbbef8f2f37595583cae7d4d364c7036b88a750b58eb6b",
+        "reopenResult": "1791681289782-world-notes-native-reopen/result.json",
+        "reopenResultSha256": "5ce850c69605740f55b7f444d9090a15a0d46962fdbfc5eeff1651de800ed576",
+        "result": "real Obsidian manifest CAS fault after native note write; exact Before rollback and absent journal, retry, save and fresh-process reopen passed; controlled synthetic failure, not independent crash recovery"
+      },
       "next": "Independent real failure and recovery qualification; retain broader Encounter constraint, NPC combat and World Planner requirements as open.",
       "limits": "No physical keyboard, power-loss, user-vault, full SMR-02 or overall product acceptance."
     },
