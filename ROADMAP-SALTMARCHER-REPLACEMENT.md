@@ -182,6 +182,14 @@ Die folgenden Beiträge sind ebenfalls in Shared:
   normaler Exit. Rohbeleg
   `/home/aaron/.cache/dungeon-native-qa/atlasqa-world-notes-close-r02-exact-01/evidence/1791692061930-atlas-spatial-edit/`.
 
+Ein Folgebeitrag macht eine durch die zweite Ansicht verdrängte erste Ansicht
+wieder bedienbar: Der vorhandene Button „Erneut versuchen“ holt nach frischem
+Campaignsnapshot den neuesten Entwurf ausdrücklich zurück. Die andere Ansicht
+und ihre späten Eingaben werden widerrufen; ein bloßes Providerereignis nimmt
+den Besitz nicht ungefragt zurück. Eine Zwei-View-DOM-Gegenprobe reproduzierte
+vor der Korrektur den alten Text und besteht danach. Unabhängige Prüfung und
+nativer Mehrview-Nachweis stehen aus.
+
 Offen: ungespeicherte Entwürfe über Prozessneustart, breite Crash-/Recovery-
 und physische Eingabeprüfung, Encounter-Constraints, NPC-Combat, vollständiger
 World Planner und Gesamt-SMR-02/SMR-AC-03. Ortstags gegenüber Name-only-Anlage

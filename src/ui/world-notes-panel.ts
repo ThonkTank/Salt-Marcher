@@ -116,26 +116,29 @@ export class WorldNotesPanel {
     this.root.append(title, help, this.search, actions, this.list, this.editor, this.status);
     host.append(this.root);
   }
-  update(snapshot: WorldNotesSnapshotV1): boolean {
+  update(snapshot: WorldNotesSnapshotV1, reclaimOwnership = false): boolean {
     if (this.destroyed) return false;
     const next = worldNotesSnapshot(snapshot);
-    if (!this.snapshot) this.pending = this.claimDraft(next);
-    else if (this.draftKey(next) === this.draftKey(this.snapshot) &&
-        !this.retainedDrafts.owns(this.draftKey(next), this)) {
-      this.suspend(); return false;
-    }
-    if (this.snapshot && next.campaignId === this.snapshot.campaignId &&
-        next.namespace === this.snapshot.namespace) {
-      if (next.revision < this.snapshot.revision ||
-          (next.revision === this.snapshot.revision && !this.sameSnapshot(next, this.snapshot))) {
+    const previous = this.snapshot;
+    const sameCampaign = previous && next.campaignId === previous.campaignId &&
+      next.namespace === previous.namespace;
+    if (previous && sameCampaign) {
+      if (next.revision < previous.revision ||
+          (next.revision === previous.revision && !this.sameSnapshot(next, previous))) {
         this.message("Veralteter oder widersprüchlicher World-Stand verworfen.", true);
         return false;
       }
-      if (next.revision === this.snapshot.revision && !this.suspended) return true;
     }
-    if (this.snapshot && (next.campaignId !== this.snapshot.campaignId ||
-        next.namespace !== this.snapshot.namespace)) {
-      this.retainedDrafts.release(this.draftKey(this.snapshot), this, this.pending);
+    let claimed = false;
+    if (!previous) this.pending = this.claimDraft(next);
+    else if (sameCampaign && !this.retainedDrafts.owns(this.draftKey(next), this)) {
+      if (!reclaimOwnership) { this.suspend(); return false; }
+      this.pending = this.claimDraft(next); claimed = true;
+    }
+    if (previous && sameCampaign && next.revision === previous.revision &&
+        !this.suspended && !claimed) return true;
+    if (previous && !sameCampaign) {
+      this.retainedDrafts.release(this.draftKey(previous), this, this.pending);
       this.pending = this.claimDraft(next);
       this.search.value = "";
     }
