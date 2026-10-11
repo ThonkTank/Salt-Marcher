@@ -168,7 +168,7 @@ export function searchWorldNotes(snapshot: WorldNotesSnapshotV1, query: string,
     value.normalize("NFKC").toLocaleLowerCase("de").includes(needle);
   return Object.freeze(snapshot.records.filter((record) => !record.deleted &&
     (!kinds || kinds.includes(record.kind)) &&
-    ([record.title, record.readAloud, record.gmNotes].some(matches) ||
+    ([record.title, record.readAloud, record.gmNotes, record.creatureId ?? ""].some(matches) ||
       record.relations.some((relation) => matches(relation.label) ||
         (activeTitles.has(relation.targetId) && matches(activeTitles.get(relation.targetId)!))))));
 }

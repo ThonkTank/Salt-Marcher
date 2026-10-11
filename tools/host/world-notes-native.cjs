@@ -193,6 +193,9 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out, checks, worl
         await search.fill("");
       }
       const search = panel.getByRole("searchbox", { name: "Notizen durchsuchen" });
+      await search.fill("goblin");
+      assert.equal(await panel.getByRole("button", { name: "NPC: Maris vom Hafen" }).count(), 1);
+      assert.equal(await panel.getByRole("button", { name: "Fraktion: Nebelbund" }).count(), 0);
       await search.fill("nebelbund");
       assert.equal(await panel.getByRole("button", { name: "NPC: Maris vom Hafen" }).count(), 1);
       assert.equal(await panel.getByRole("button", { name: "Fraktion: Nebelbund" }).count(), 1);

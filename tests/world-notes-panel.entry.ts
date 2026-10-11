@@ -121,6 +121,11 @@ test("NPC can choose an existing creature by name without copying catalog conten
     .find((label) => label.textContent?.startsWith("Kreaturreferenz"))?.querySelector("input")?.value, "goblin");
   await f.save();
   assert.equal(f.snapshot().records[0]?.creatureId, "goblin");
+  const search = f.host.querySelector<HTMLInputElement>('[aria-label="Notizen durchsuchen"]')!;
+  search.value = "goblin"; search.dispatchEvent(new f.window.Event("input"));
+  assert.deepEqual(Array.from(f.host.querySelectorAll<HTMLButtonElement>(".dn-world-notes-list button"))
+    .map((button) => button.textContent), ["NPC: Maris"]);
+  search.value = ""; search.dispatchEvent(new f.window.Event("input"));
   f.click("NPC: Maris"); await tick();
   assert.match(f.host.querySelector("form")!.textContent!, /Goblin \(goblin\)/);
   assert.equal(f.snapshot().records[0]?.readAloud, "");
