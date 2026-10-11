@@ -85,7 +85,7 @@
         "reopenResultSha256": "ea410754f5b04debd54c40fe405005b8e8d9170489343b9c0d0aa96172e00015",
         "result": "Isolated real Obsidian edit and separate fresh process PASS: relation-title search, unsaved draft retained, confirmed linked faction opened; both processes exited normally. Synthetic fixture and automated input only."
       },
-      "incomingReferencesCandidate": "World Notes shows active saved notes that refer to the current entry and opens them only when the current draft is unchanged. Core/DOM and isolated native edit plus fresh-process checks passed; independent review pending. No reciprocal membership or new storage authority.",
+      "incomingReferencesCandidate": "PR #104 integrated in Shared de3181be1696d7442e0100f5901172906cc03974. World Notes shows active saved notes that refer to the current entry and opens them only when the current draft is unchanged. Independent narrow Stadt R01, exact-SHA CI, and isolated native edit plus fresh-process checks passed; no reciprocal membership or new storage authority.",
       "nativeIncomingReferences": {
         "source": "1f264623af70c4e82e029807544f77bba3376e24",
         "buildSha256": "edf075a16a06936144bd8c0542eda2ffa45bfcd9f441275ca17d64df9eb8b27b",
@@ -97,7 +97,20 @@
         "reopenResultSha256": "b0057178e84988e82678c0c619daa2343328e938899f2e75c58e9ee67e996bbe",
         "result": "Isolated real Obsidian edit and fresh process PASS: saved NPC is reachable from faction through an incoming reference, while an unsaved faction draft blocks opening; both processes exited normally. Synthetic fixture and automated input only."
       },
-      "next": "Qualify the incoming-reference candidate by exact-source host evidence and independent narrow review, then decide integration. Broader crash recovery, Encounter constraint, NPC combat and World Planner requirements remain open.",
+      "creaturePickerCandidate": "NPC World Notes can search the existing bundled Creature Catalog by name and select its stable ID. Manual stored references remain editable and exact note bytes stay with the Campaign owner. Core/DOM plus isolated native save/fresh and 200-percent zoom owner checks passed; independent review and Shared integration pending.",
+      "nativeCreaturePicker": {
+        "source": "58da6377f3d5914bccbbe1b6a2ea689e72ac6e7d",
+        "buildSha256": "9b8712802bf77bdca4e49da4186550dea937633f26fd1cba323d4122aa1e8982",
+        "scenarioSha256": "0bb60c0276bc6b05fa90c8502ee81923d30fbaa2565aada3352822aa752e9aa5",
+        "evidenceRoot": "/home/aaron/.cache/dungeon-native-qa/atlasqa-creature-picker-h02/evidence/",
+        "editResult": "1791687472578-world-notes-native-edit/result.json",
+        "editResultSha256": "52d8cccec90d38f5147618e295de69031bc4e6baf822f6b581e33465c8a355f7",
+        "reopenResult": "1791687487470-world-notes-native-reopen/result.json",
+        "reopenResultSha256": "3fef614315cb769fe8d3e324505b4a955841f3aa5c865bc1e72e6d4545aaa811",
+        "zoom200EvidenceRoot": "/home/aaron/.cache/dungeon-native-qa/atlasqa-creature-picker-zoom200/evidence/",
+        "result": "Isolated real Obsidian selected Goblin from the bundled Creature Catalog, saved only creatureId goblin in the native NPC note and reopened it with the name in a fresh process. A separate 200-percent zoom edit/reopen run passed; synthetic fixtures and automated input only."
+      },
+      "next": "Qualify the NPC Creature Catalog picker by independent narrow review and integrate it. Broader crash recovery, Encounter constraint, NPC combat and World Planner requirements remain open.",
       "limits": "Controlled rollback and committed-journal raw evidence independently reviewed; original host-run checkouts were dirty. No physical keyboard, power-loss, user-vault, broad recovery, full SMR-02 or overall product acceptance."
     },
     "smr03LiveScene": {
