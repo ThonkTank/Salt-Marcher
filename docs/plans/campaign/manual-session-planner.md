@@ -74,3 +74,20 @@ Dieser integrierbare UI-Anteil enthält ausdrücklich keinen vorgeschlagenen
 Planner-Dokumentcodec und keine neue Speicherautorität. Campaign/Data-Dateiplan,
 Writer, Publish, Receipt, Recovery, Pluginmount sowie echtes Save/Fresh-Reopen
 bleiben offene Eingänge von #69.
+
+## Plannamen bei Szenenaktionen erhalten
+
+Ein noch nicht mit „Umbenennen“ übernommener Planname ging bei erfolgreicher
+Szenenanlage, Entwurfübernahme, Entwurfverwerfen, Umordnung und Szenenauswahl
+beim Render verloren. Fünf direkte Panel-Gegenproben reproduzieren den Verlust.
+Der gemeinsame guardgebundene Buttonpfad erhält jetzt den exakten Feldwert,
+wenn nach der erfolgreichen Aktion derselbe Plan aktiv bleibt. Er benennt den
+Plan nicht still um; die ausdrückliche Aktion „Umbenennen“ übernimmt den Namen.
+Ein neuer Plan übernimmt diesen Text nicht. Die bestehenden Refreshgrenzen für
+externe Auswahl und externe Revision bleiben erhalten.
+
+Vor der Reparatur: fünf Gegenproben FAIL, neue-Plan-Isolation bereits PASS.
+Nachher: alle sechs PASS; gesamte Suite 1090 PASS, 0 FAIL, ein bestehender
+optionaler PDF-Skip. Typprüfung, Build und Repositoryprüfung PASS. Unabhängiger
+Deltareview und sichtbarer Browser-Retest stehen aus. Diese Lieferung bleibt
+UI-only; der offene Campaign/Data-Speichervertrag wird nicht vorweggenommen.

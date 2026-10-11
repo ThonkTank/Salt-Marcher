@@ -11088,18 +11088,18 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY127-CENTER-PIVOT-REPAIR",
-      "issue": 127,
-      "state": "model_checked_independent_review_and_native_retest_pending",
-      "branch": "city/building-center-rotation-20261011",
-      "plan": "docs/plans/city/building-name-inspector.md#arbeitsstand-127",
-      "verification": "Two world-space corner-orbit regressions FAIL before/PASS after; linked house105 and courtyard106 retain center, every outline/hole vertex, shared UndoRedo, exact native Save/new model reopen, camera and foreign bytes. Full suite1084 PASS/0 FAIL/1 optional skip; type/build/repo/diff PASS. Existing gesture arithmetic shared unchanged.",
-      "next": "Independent narrow fix review and coordinated visible midpoint/Save/Fresh retest; preserve H01 originals in PR130. Planner UI refresh consumed via PR131/Sharedb12b3a9; native Campaign/Data contract remains in #69.",
-      "limits": "No native midpoint/physical/free GM/overall parity claim. Hex IME-H03 slot returned normally; new GUI needs fresh coordination."
+      "id": "CITY69-PLAN-NAME-SCENE-I01",
+      "issue": 69,
+      "state": "ui_repair_verified_independent_review_pending",
+      "branch": "city/planner-name-scene-retention-20261011",
+      "plan": "docs/plans/campaign/manual-session-planner.md",
+      "verification": "Five real panel regressions FAIL before/PASS after; typed name retained exactly through successful same-plan scene add/apply/discard/move/select, no implicit rename. New-plan isolation and existing external-basis refresh guards PASS. Full suite1090 PASS/0 FAIL/1 existing optional PDF skip; type/build/repository PASS.",
+      "next": "Publish narrow UI repair for independent review and regular integration; supply browser GM retest. Campaign/Data native storage contract remains open.",
+      "limits": "DOM UI proof only; no native Planner storage, plugin activation, Save/Fresh/Recovery or physical/overall acceptance. City127 product PR132 and QA PR130 consumed on Shared29e4ce6; free GM remains open."
     },
     "nextRun": {
-      "id": "CITY127-CENTER-PIVOT-REVIEW-HOST",
-      "focus": "Consume independent review; targeted visible centered turn, native Save and separate fresh-process on the corrected candidate after fresh slot agreement."
+      "id": "CITY69-PLAN-NAME-SCENE-REVIEW",
+      "focus": "Independent review and browser retest of exact same-plan name retention repair; native storage depends on Campaign/Data contract."
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",

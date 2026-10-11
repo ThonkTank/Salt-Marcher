@@ -43,14 +43,21 @@ export class ManualPlannerPanel {
     action: () => void,
     focusSceneTitle = false,
     unsubmittedPlanName?: string,
+    retainPlanName = false,
   ): void {
     if (this.destroyed) return;
     try {
+      const planId = this.planner.active?.id,
+        typedName = retainPlanName
+          ? this.root.querySelector<HTMLInputElement>('[aria-label="Planname"]')?.value
+          : undefined;
       action();
       this.render();
-      if (unsubmittedPlanName !== undefined) {
+      const retainedName = unsubmittedPlanName ??
+        (planId !== undefined && this.planner.active?.id === planId ? typedName : undefined);
+      if (retainedName !== undefined) {
         const name = this.root.querySelector<HTMLInputElement>('[aria-label="Planname"]');
-        if (name) name.value = unsubmittedPlanName;
+        if (name) name.value = retainedName;
       }
       // Scene buttons are replaced by render. Hand successful selection to the
       // editor; stale/failed actions never render or redirect keyboard focus.
@@ -99,7 +106,7 @@ export class ManualPlannerPanel {
       this.run(() => {
         assertDisplayed();
         action();
-      }, focusSceneTitle),
+      }, focusSceneTitle, undefined, true),
     );
     parent.append(b);
   }
