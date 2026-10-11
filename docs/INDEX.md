@@ -1,6 +1,6 @@
 # Dokumentationsindex
 
-**Aktueller Atlasstand:** [Atlas auf einen Blick](../ROADMAP-HEX-ATLAS.md#atlas-auf-einen-blick) zeigt integrierte Funktionen, Kandidaten und offene Lücken. [Gleichwertigkeitsmaßstab und Prioritäten P0–P4](../ROADMAP-HEX-ATLAS.md#wie-kommen-wir-zum-ziel) stehen ausschließlich dort; Fachpläne enthalten ihre technischen Details.
+**Aktueller Atlasstand:** [Atlas auf einen Blick](../ROADMAP-HEX-ATLAS.md#atlas-auf-einen-blick) zeigt integrierte Funktionen, Kandidaten und offene Lücken. [Gleichwertigkeitsmaßstab, KISS und Work → Efficient → Beautiful](../ROADMAP-HEX-ATLAS.md#wie-kommen-wir-zum-ziel) stehen ausschließlich dort; Fachpläne enthalten ihre technischen Details.
 
 **Konkrete Nutzerabläufe:** [Region → Dorf → Taverne → Dungeon und Spielabend](../ROADMAP-HEX-ATLAS.md#konkrete-nutzerabläufe). Die [Gebäudeentscheidung](../ROADMAP-CITIES.md#gebäude-und-innenräume-als-ein-objekt) legt die gemeinsame Bearbeitung von Außenform und Innenräumen fest.
 

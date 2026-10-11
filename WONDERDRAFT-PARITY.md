@@ -103,7 +103,7 @@ Grundlage sind die [Dungeondraft-Paritätsroadmap](ROADMAP-PARITY.md) und der [k
 4. **Auf einem festen Build paaren:** Gleiche Assets, Startwerte und logisch gleiche Geometrie im isolierten Obsidian verwenden. Vorschau, Grafik, Klicktreffer und gespeicherten Zustand gemeinsam prüfen. Betroffene Abbruch-, Undo/Redo-, Save- und Neuöffnungsfolge mit vollständig neuem Prozess ausführen. Anschließend den bislang verfügbaren Atlas-Kernablauf prüfen.
 5. **Funktionsvergleich prüfen:** Original- und Hostbelege unabhängig prüfen; kritische Proben auf demselben Build wiederholen. Offene Pflichtabweichung führt zu begrenzter Nachbesserung und erneutem Review. Aufräumen erhält den geprüften Benutzerablauf und bekommt eine passende Regression.
 
-Pro Phase entstehen zuerst wenige repräsentative direkte Original-/Hostpaare; Varianten folgen anhand des bereits vollständigen Inventars. Jede zentrale Priorität liefert einen benutzbaren, geprüften Zwischenstand. Ein grober Hex-Geländepinsel nach HEX-02 ist eine frühe Ausbaustufe; die vollständige organische Küstenwirkung wird erst durch HEX-11 und ihre Originalpaare belegt.
+Pro Phase entstehen zuerst wenige repräsentative direkte Original-/Hostpaare; Varianten folgen anhand des bereits vollständigen Inventars. Jede zentrale Lieferstufe liefert einen benutzbaren, geprüften Zwischenstand. Ein grober Hex-Geländepinsel nach HEX-02 ist eine frühe Ausbaustufe; die vollständige organische Küstenwirkung wird erst durch HEX-11 und ihre Originalpaare belegt.
 
 ### Fehler aus dem Dungeondraft-Vergleich gezielt vermeiden
 

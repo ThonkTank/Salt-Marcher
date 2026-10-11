@@ -67,7 +67,7 @@ Beide Wandumfänge sind mit vollständig und teilweise übereinanderliegenden Wa
 
 Die CITY-Kennungen beschreiben Fachumfang, nicht mehr eine starre Einschubfolge zwischen HEX-Phasen. Lieferung und Teilausbau richten sich ausschließlich nach [Ergebnisgleichwertigkeit und Lieferprioritäten](ROADMAP-HEX-ATLAS.md#wie-kommen-wir-zum-ziel). Gemeinsamer Quellen-/History-/Saveanschluss geht vor Gebäudeänderungen; räumliche Identität und Inhaltsschutz gehen vor Regeneration. CITY-09 qualifiziert den vollständigen Endstand gemeinsam mit HEX-28.
 
-Die vollständigen CITY-Anforderungen bleiben im bestehenden Katalog; Grundfunktion und späterer Ausbau dürfen über mehrere Prioritäten verteilt sein. Fehlende spätere Funktionen verhindern nur die vollständige Fachabnahme, nicht einen klar bezeichneten benutzbaren Zwischenstand.
+Die vollständigen CITY-Anforderungen bleiben im bestehenden Katalog; Grundfunktion und späterer Ausbau dürfen über die zentralen Lieferstufen verteilt sein. Fehlende spätere Funktionen verhindern nur die vollständige Fachabnahme, nicht einen klar bezeichneten benutzbaren Zwischenstand.
 
 | Phase | Nutzbarer Umfang | Praxisprüfung |
 |---|---|---|

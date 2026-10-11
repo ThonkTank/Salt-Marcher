@@ -1091,7 +1091,7 @@
       "interactionRule": "Ein Atlas, eine Kamera, eine Werkzeugleiste und durchgehende Undo/Redo-Folge. Zoom wechselt keinen Bearbeitungsmodus; Werkzeuge wirken auf direkt getroffene Geometrie.",
       "scopeRule": "Für Stadt, Hex und Dungeon gilt derselbe zentrale Ergebnismaßstab. Wiederverwendete Werkzeuge dürfen mehrere Vorbildfunktionen mit eigener konsistenter Bedienung erfüllen; eigenständige fachliche Wirkungen und historische Belege bleiben erhalten.",
       "evidenceRule": "Direkte Ergebnisbilder, bearbeitbare native Kartendaten, wirkliche Nutzeraufgaben, Save/Neustart und betroffene Konflikt-/Undo-Fälle auf benanntem Build belegen; eigenständiger Review.",
-      "earlyUsability": "Benutzbare Zwischenstände nach zentraler Atlaspriorisierung, nicht starrer CITY-/HEX-Nummernfolge. Jede Lieferung prüft die gemeinsame Region; ein Grundausbau schließt nicht die ganze Fachphase.",
+      "earlyUsability": "Benutzbare Zwischenstände nach ROADMAP-HEX-ATLAS.md#wie-kommen-wir-zum-ziel mit Work → Efficient → Beautiful und durchgehendem KISS. Den einfachen Stadtgrundablauf einschließlich assistierter Bebauung zunächst eigenständig prüfen, danach die gemeinsame Region. Ein Grundausbau schließt nicht die gesamte Fachphase.",
       "protectionRule": "Neugeneration erhält explizite Bearbeitung, verknüpfte Orte/Häuser, Keys und Kennungen. Kein stilles Regenerieren beim Laden.",
       "evidenceRoot": "/home/aaron/.cache/dungeon-native-qa/city-plans/"
     },
@@ -63762,7 +63762,7 @@
       "acceptanceRule": "Pflichtwirkung nach Original-/Aufgabenbeleg und benanntem Hostbuild mit eigenem erreichbaren, editierbaren und dauerhaft gespeicherten Ergebnis schließen; betroffene Abbruch-, Undo/Redo-, Save-/Neuöffnungsfälle und Review nachweisen. Identische Originalgesten sind keine Voraussetzung; vollständige Gleichwertigkeit zusätzlich am installierten Endstand.",
       "uiCoverageRule": "Das vorhandene Originalinventar bleibt mit UI-/Fallkennungen und Belegen erhalten. Eigenständige fachliche Wirkungen besitzen eine Zielzuordnung; mehrere Eingabewege/Regler derselben Wirkung dürfen denselben eigenen Zugang verwenden. Historisches HEX-00-Inventartor und numerische Phasenliste sind keine aktuelle Produktlieferfolge.",
       "growthRule": "Neue fachliche Wirkungen im vorhandenen Register ergänzen; IDs und historische Beobachtungen nicht umnummerieren oder entfernen. Gleichartige Eingabewege zusammen zu bedienen ist kein Funktionsausschluss. Unerreichbare oder ungeklärte fachliche Kandidaten bleiben mit ihrer Zugangslücke offen; keine stillen Ausschlüsse.",
-      "usabilityRule": "Frühe Teststände bleiben nach HEX-02/05 nutzbar und dürfen als teilweise umgesetzt bereitstehen. Sie ersetzen keine fehlenden Originalpaare und erhalten keine pauschale Paritätsfreigabe.",
+      "usabilityRule": "Benutzbare Zwischenstände nach ROADMAP-HEX-ATLAS.md#wie-kommen-wir-zum-ziel mit Work → Efficient → Beautiful und durchgehendem KISS. Einfache Vorbereitungsabläufe werden eigenständig nutzbar; funktionale Erweiterungen bleiben Pflicht und folgen ebenfalls diesen Stufen. Teilstände ersetzen keine fehlenden Originalpaare und erhalten keine pauschale Paritätsfreigabe.",
       "reviewRule": "Originalaufnahme, Umsetzung, unabhängiger Review und Aufräumen sind getrennte Läufe; keine parallelen Agenten oder GUI-Testinstanzen.",
       "graphicsRule": "Ergebnisgleichwertigkeit gemäß ROADMAP-HEX-ATLAS.md#wie-kommen-wir-zum-ziel: eigene Darstellung zulässig, keine Pixelidentität. Form, räumliche Beziehungen, sichtbare Zustände, Bedientreffer und dauerhaft editierbare Daten bewerten; Pixelmessungen nur zur Diagnose.",
       "physicalRule": "Synthetische Eingaben, UI-Daten und Kerntests schließen keine physische Maus-/Touchpad-/Stiftabnahme.",
@@ -92709,7 +92709,7 @@
       "source": "ROADMAP-HEX-ATLAS.md#wie-kommen-wir-zum-ziel",
       "comparisonMode": "reachable_outcome_equivalence",
       "caseInterpretation": "Nutzerentscheidung vom 11.10.2026: Für alle Atlasvorbilder zählen dieselben fachlichen Ergebnisse, gezielte Nachbearbeitung und dauerhafte Speicherung. Mehrere Originalgesten/Regler derselben Wirkung dürfen derselben eigenen Funktion entsprechen; eigenständige Wirkungen bleiben Pflicht. Historische Gestenfälle und Belege erhalten, keinen Fall durch diese Entscheidung automatisch schließen.",
-      "deliveryRule": "Die zentrale Priorisierung ersetzt starre numerische HEX-/CITY-/DD-Lieferfolgen. Kennungen bleiben Fachreferenzen; Datenabhängigkeiten bleiben verbindlich. Keine zweite Prioritäten- oder Funktionsliste im Register."
+      "deliveryRule": "Die zentrale Lieferfolge in ROADMAP-HEX-ATLAS.md#wie-kommen-wir-zum-ziel ist Make it Work → Make it Efficient → Make it Beautiful unter durchgehendem KISS. Zunächst eigenständig nutzbare Vorbereitungsabläufe; spätere Pflichtfähigkeiten erhalten ebenfalls ihren eigenen Work-Ausbau. Kennungen bleiben Fachreferenzen, Datenabhängigkeiten verbindlich. Keine zweite Stufen- oder Funktionsliste im Register."
     },
     "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
     "audit": "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit",
