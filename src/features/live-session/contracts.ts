@@ -1,28 +1,55 @@
 import {
   campaignId,
   characterId,
+  commandDigest,
   commandId,
+  generationId,
   liveSceneId,
   maskId,
   ownerId,
   preparationId,
+  receiptId,
   referenceId,
   revision,
   type CampaignId,
   type CharacterId,
+  type CommandDigest,
   type CommandId,
+  type GenerationId,
   type LiveSceneId,
   type MaskId,
   type OwnerId,
   type PreparationId,
+  type ReceiptId,
   type ReferenceId,
   type Revision,
 } from "./ids";
+import {
+  parseMaskOwnerPreparedContribution,
+  type MaskOwnerPreparedContribution,
+} from "./mask-reconciliation";
 
 export interface OwnerReference {
   readonly ownerId: OwnerId;
   readonly referenceId: ReferenceId;
   readonly ownerRevision: Revision;
+}
+
+export interface OwnerIdentity {
+  readonly ownerId: OwnerId;
+  readonly generationId: GenerationId;
+}
+
+export type ClockOwnerIdentity = OwnerIdentity;
+
+export interface ClockReference extends OwnerReference {
+  readonly generationId: GenerationId;
+}
+
+export interface ClockValueV1 {
+  readonly codecId: "smr07.elapsed-seconds";
+  readonly codecVersion: 1;
+  readonly canonicalValue: string;
 }
 
 export interface PartyCharacterProfileProjection {
@@ -49,6 +76,7 @@ export interface PartyCharacterProgressProjection {
 
 export type PartySceneAssignment =
   | { readonly status: "inactive" }
+  | { readonly status: "not-started" }
   | {
       readonly status: "assigned";
       readonly liveSceneId: LiveSceneId;
@@ -106,15 +134,42 @@ export interface MaskReference {
   readonly maskId: MaskId;
   readonly kind: string;
   readonly ownerId: OwnerId;
+  readonly generationId: GenerationId;
   readonly ownerRevision: Revision;
+  readonly lifecycle: "active" | "suspended" | "archived" | "pending";
+}
+
+export interface MaskParticipationProjection {
+  readonly kind: "mask-participation-projection";
+  readonly version: 1;
+  readonly campaignId: CampaignId;
+  readonly liveSceneId: LiveSceneId;
+  readonly maskId: MaskId;
+  readonly maskKind: string;
+  readonly ownerIdentity: OwnerIdentity;
+  readonly ownerRevision: Revision;
+  readonly participantCharacterIds: readonly CharacterId[];
   readonly lifecycle: "active" | "suspended" | "archived" | "pending";
 }
 
 export interface OwnerReconciliation {
   readonly ownerId: OwnerId;
+  readonly generationId?: GenerationId;
   readonly status: "current" | "pending" | "unavailable";
   readonly ownerRevision?: Revision;
   readonly commandId?: CommandId;
+  readonly pendingCommandIds?: readonly CommandId[];
+  readonly commandDigest?: CommandDigest;
+  readonly receiptId?: ReceiptId;
+  /**
+   * Model-local append evidence for I01-B. These fields make replay and
+   * truncation inconsistent inside one validated aggregate graph, but they
+   * are not a durable trust root for coordinated rewrites of persisted raw
+   * state. Owner-authorized history verification belongs to the external
+   * authority/recovery contract in I02.
+   */
+  readonly receiptLedgerBaseRevision?: Revision;
+  readonly appliedContributions?: readonly MaskOwnerPreparedContribution[];
 }
 
 export interface LiveSceneSourceSnapshot {
@@ -128,9 +183,10 @@ export interface LiveSceneSourceSnapshot {
   readonly characterIds: readonly CharacterId[];
   readonly pendingAssignments: readonly PendingAssignment[];
   readonly locationRef?: OwnerReference;
-  readonly sceneClockRef?: OwnerReference;
+  readonly sceneClockRef?: ClockReference;
   readonly groupRefs: readonly OwnerReference[];
   readonly maskRefs: readonly MaskReference[];
+  readonly maskParticipationProjections: readonly MaskParticipationProjection[];
   readonly reconciliations: readonly OwnerReconciliation[];
   readonly contentPins: readonly OwnerReference[];
 }
@@ -238,7 +294,8 @@ function optionalNatural(value: unknown, label: string): number | undefined {
 }
 
 function bool(value: unknown, label: string): boolean {
-  if (typeof value !== "boolean") throw new Error(`${label} muss boolesch sein.`);
+  if (typeof value !== "boolean")
+    throw new Error(`${label} muss boolesch sein.`);
   return value;
 }
 
@@ -250,13 +307,17 @@ function unique<T>(
   const seen = new Set<string>();
   for (const value of values) {
     const identity = key(value);
-    if (seen.has(identity)) throw new Error(`${label} enthält doppelte Kennungen.`);
+    if (seen.has(identity))
+      throw new Error(`${label} enthält doppelte Kennungen.`);
     seen.add(identity);
   }
   return values;
 }
 
-function ownerReference(value: unknown, label: string): OwnerReference {
+export function parseOwnerReference(
+  value: unknown,
+  label = "OwnerReference",
+): OwnerReference {
   const row = record(
     value,
     ["ownerId", "referenceId", "ownerRevision"],
@@ -270,11 +331,82 @@ function ownerReference(value: unknown, label: string): OwnerReference {
   });
 }
 
-function ownerReferences(value: unknown, label: string): readonly OwnerReference[] {
+export function parseClockReference(
+  value: unknown,
+  label = "ClockReference",
+): ClockReference {
+  const row = record(
+    value,
+    ["ownerId", "generationId", "referenceId", "ownerRevision"],
+    [],
+    label,
+  );
+  return Object.freeze({
+    ownerId: ownerId(row.ownerId, `${label}.ownerId`),
+    generationId: generationId(row.generationId, `${label}.generationId`),
+    referenceId: referenceId(row.referenceId, `${label}.referenceId`),
+    ownerRevision: revision(row.ownerRevision, `${label}.ownerRevision`),
+  });
+}
+
+export function parseClockOwnerIdentity(
+  value: unknown,
+  label = "ClockOwnerIdentity",
+): ClockOwnerIdentity {
+  return parseOwnerIdentity(value, label);
+}
+
+export function parseOwnerIdentity(
+  value: unknown,
+  label = "OwnerIdentity",
+): OwnerIdentity {
+  const row = record(value, ["ownerId", "generationId"], [], label);
+  return Object.freeze({
+    ownerId: ownerId(row.ownerId, `${label}.ownerId`),
+    generationId: generationId(row.generationId, `${label}.generationId`),
+  });
+}
+
+const MIN_CLOCK_VALUE = -(1n << 63n);
+const MAX_CLOCK_VALUE = (1n << 63n) - 1n;
+
+export function parseClockValue(
+  value: unknown,
+  label = "ClockValueV1",
+): ClockValueV1 {
+  const row = record(
+    value,
+    ["codecId", "codecVersion", "canonicalValue"],
+    [],
+    label,
+  );
+  if (row.codecId !== "smr07.elapsed-seconds" || row.codecVersion !== 1)
+    throw new Error(`${label} besitzt einen unbekannten Codec.`);
+  if (
+    typeof row.canonicalValue !== "string" ||
+    !/^(?:0|-?[1-9][0-9]*)$/u.test(row.canonicalValue)
+  )
+    throw new Error(`${label}.canonicalValue ist nicht kanonisch.`);
+  const parsed = BigInt(row.canonicalValue);
+  if (parsed < MIN_CLOCK_VALUE || parsed > MAX_CLOCK_VALUE)
+    throw new Error(
+      `${label}.canonicalValue liegt außerhalb von signed 64 Bit.`,
+    );
+  return Object.freeze({
+    codecId: "smr07.elapsed-seconds",
+    codecVersion: 1,
+    canonicalValue: row.canonicalValue,
+  });
+}
+
+function ownerReferences(
+  value: unknown,
+  label: string,
+): readonly OwnerReference[] {
   return Object.freeze(
     unique(
       array(value, label).map((entry, index) =>
-        ownerReference(entry, `${label}[${index}]`),
+        parseOwnerReference(entry, `${label}[${index}]`),
       ),
       (entry) => `${entry.ownerId}\u0000${entry.referenceId}`,
       label,
@@ -282,7 +414,10 @@ function ownerReferences(value: unknown, label: string): readonly OwnerReference
   );
 }
 
-function profile(value: unknown, label: string): PartyCharacterProfileProjection {
+export function parsePartyCharacterProfile(
+  value: unknown,
+  label = "PartyCharacterProfile",
+): PartyCharacterProfileProjection {
   const row = record(
       value,
       ["name"],
@@ -308,7 +443,11 @@ function profile(value: unknown, label: string): PartyCharacterProfileProjection
               text(entry, `${label}.languages[${index}]`),
             ),
           );
-  if (languages && new Set(languages.map((entry) => entry.toLowerCase())).size !== languages.length)
+  if (
+    languages &&
+    new Set(languages.map((entry) => entry.toLowerCase())).size !==
+      languages.length
+  )
     throw new Error(`${label}.languages enthält doppelte Werte.`);
   return Object.freeze({
     name: text(row.name, `${label}.name`),
@@ -318,32 +457,67 @@ function profile(value: unknown, label: string): PartyCharacterProfileProjection
     ...(optionalText(row.species, `${label}.species`) === undefined
       ? {}
       : { species: optionalText(row.species, `${label}.species`) }),
-    ...(optionalText(row.characterClass, `${label}.characterClass`) === undefined
+    ...(optionalText(row.characterClass, `${label}.characterClass`) ===
+    undefined
       ? {}
-      : { characterClass: optionalText(row.characterClass, `${label}.characterClass`) }),
+      : {
+          characterClass: optionalText(
+            row.characterClass,
+            `${label}.characterClass`,
+          ),
+        }),
     ...(languages === undefined ? {} : { languages }),
     ...(optionalNatural(row.level, `${label}.level`) === undefined
       ? {}
       : { level: optionalNatural(row.level, `${label}.level`) }),
-    ...(optionalNatural(row.passivePerception, `${label}.passivePerception`) === undefined
+    ...(optionalNatural(row.passivePerception, `${label}.passivePerception`) ===
+    undefined
       ? {}
-      : { passivePerception: optionalNatural(row.passivePerception, `${label}.passivePerception`) }),
-    ...(optionalNatural(row.passiveInvestigation, `${label}.passiveInvestigation`) === undefined
+      : {
+          passivePerception: optionalNatural(
+            row.passivePerception,
+            `${label}.passivePerception`,
+          ),
+        }),
+    ...(optionalNatural(
+      row.passiveInvestigation,
+      `${label}.passiveInvestigation`,
+    ) === undefined
       ? {}
-      : { passiveInvestigation: optionalNatural(row.passiveInvestigation, `${label}.passiveInvestigation`) }),
-    ...(optionalNatural(row.passiveInsight, `${label}.passiveInsight`) === undefined
+      : {
+          passiveInvestigation: optionalNatural(
+            row.passiveInvestigation,
+            `${label}.passiveInvestigation`,
+          ),
+        }),
+    ...(optionalNatural(row.passiveInsight, `${label}.passiveInsight`) ===
+    undefined
       ? {}
-      : { passiveInsight: optionalNatural(row.passiveInsight, `${label}.passiveInsight`) }),
+      : {
+          passiveInsight: optionalNatural(
+            row.passiveInsight,
+            `${label}.passiveInsight`,
+          ),
+        }),
     ...(optionalNatural(row.armorClass, `${label}.armorClass`) === undefined
       ? {}
       : { armorClass: optionalNatural(row.armorClass, `${label}.armorClass`) }),
-    ...(optionalNatural(row.movementSpeedFeet, `${label}.movementSpeedFeet`) === undefined
+    ...(optionalNatural(row.movementSpeedFeet, `${label}.movementSpeedFeet`) ===
+    undefined
       ? {}
-      : { movementSpeedFeet: optionalNatural(row.movementSpeedFeet, `${label}.movementSpeedFeet`) }),
+      : {
+          movementSpeedFeet: optionalNatural(
+            row.movementSpeedFeet,
+            `${label}.movementSpeedFeet`,
+          ),
+        }),
   });
 }
 
-function progress(value: unknown, label: string): PartyCharacterProgressProjection {
+export function parsePartyCharacterProgress(
+  value: unknown,
+  label = "PartyCharacterProgress",
+): PartyCharacterProgressProjection {
   const row = record(
       value,
       ["currentXp", "xpSinceLongRest", "xpSinceShortRest"],
@@ -352,7 +526,10 @@ function progress(value: unknown, label: string): PartyCharacterProgressProjecti
     ),
     currentXp = natural(row.currentXp, `${label}.currentXp`),
     xpSinceLongRest = natural(row.xpSinceLongRest, `${label}.xpSinceLongRest`),
-    xpSinceShortRest = natural(row.xpSinceShortRest, `${label}.xpSinceShortRest`),
+    xpSinceShortRest = natural(
+      row.xpSinceShortRest,
+      `${label}.xpSinceShortRest`,
+    ),
     currentLevelXpFloor = optionalNatural(
       row.currentLevelXpFloor,
       `${label}.currentLevelXpFloor`,
@@ -378,13 +555,27 @@ function progress(value: unknown, label: string): PartyCharacterProgressProjecti
 }
 
 function sceneAssignment(value: unknown, label: string): PartySceneAssignment {
-  const base = record(value, ["status"], ["liveSceneId", "sceneRevision", "commandId", "ownerId"], label);
+  const base = record(
+    value,
+    ["status"],
+    ["liveSceneId", "sceneRevision", "commandId", "ownerId"],
+    label,
+  );
   if (base.status === "inactive") {
     record(value, ["status"], [], label);
     return Object.freeze({ status: "inactive" });
   }
+  if (base.status === "not-started") {
+    record(value, ["status"], [], label);
+    return Object.freeze({ status: "not-started" });
+  }
   if (base.status === "assigned") {
-    const row = record(value, ["status", "liveSceneId", "sceneRevision"], [], label);
+    const row = record(
+      value,
+      ["status", "liveSceneId", "sceneRevision"],
+      [],
+      label,
+    );
     return Object.freeze({
       status: "assigned",
       liveSceneId: liveSceneId(row.liveSceneId, `${label}.liveSceneId`),
@@ -404,26 +595,42 @@ function sceneAssignment(value: unknown, label: string): PartySceneAssignment {
 
 export function parsePartyProjection(value: unknown): PartyProjection {
   const root = record(
-      value,
-      ["kind", "version", "campaignId", "partyRevision", "characters"],
-      [],
-      "PartyProjection",
-    );
+    value,
+    ["kind", "version", "campaignId", "partyRevision", "characters"],
+    [],
+    "PartyProjection",
+  );
   if (root.kind !== "party-projection" || root.version !== 1)
     throw new Error("PartyProjection besitzt einen unbekannten Vertrag.");
   const characters = unique(
     array(root.characters, "PartyProjection.characters").map((entry, index) => {
       const label = `PartyProjection.characters[${index}]`,
-        row = record(entry, ["characterId", "active", "profile", "progress", "sceneAssignment"], [], label),
+        row = record(
+          entry,
+          ["characterId", "active", "profile", "progress", "sceneAssignment"],
+          [],
+          label,
+        ),
         active = bool(row.active, `${label}.active`),
-        assignment = sceneAssignment(row.sceneAssignment, `${label}.sceneAssignment`);
-      if ((active && assignment.status === "inactive") || (!active && assignment.status !== "inactive"))
-        throw new Error(`${label} besitzt eine widersprüchliche Scene-Zuordnung.`);
+        assignment = sceneAssignment(
+          row.sceneAssignment,
+          `${label}.sceneAssignment`,
+        );
+      if (
+        (active && assignment.status === "inactive") ||
+        (!active && assignment.status !== "inactive")
+      )
+        throw new Error(
+          `${label} besitzt eine widersprüchliche Scene-Zuordnung.`,
+        );
       return Object.freeze({
         characterId: characterId(row.characterId, `${label}.characterId`),
         active,
-        profile: profile(row.profile, `${label}.profile`),
-        progress: progress(row.progress, `${label}.progress`),
+        profile: parsePartyCharacterProfile(row.profile, `${label}.profile`),
+        progress: parsePartyCharacterProgress(
+          row.progress,
+          `${label}.progress`,
+        ),
         sceneAssignment: assignment,
       });
     }),
@@ -434,7 +641,10 @@ export function parsePartyProjection(value: unknown): PartyProjection {
     kind: "party-projection",
     version: 1,
     campaignId: campaignId(root.campaignId, "PartyProjection.campaignId"),
-    partyRevision: revision(root.partyRevision, "PartyProjection.partyRevision"),
+    partyRevision: revision(
+      root.partyRevision,
+      "PartyProjection.partyRevision",
+    ),
     characters: Object.freeze(characters),
   });
 }
@@ -478,7 +688,10 @@ export function parsePreparationSnapshot(value: unknown): PreparationSnapshot {
     ),
     source: Object.freeze({
       ownerId: ownerId(source.ownerId, "PreparationSnapshot.source.ownerId"),
-      sourceId: referenceId(source.sourceId, "PreparationSnapshot.source.sourceId"),
+      sourceId: referenceId(
+        source.sourceId,
+        "PreparationSnapshot.source.sourceId",
+      ),
       sourceRevision: revision(
         source.sourceRevision,
         "PreparationSnapshot.source.sourceRevision",
@@ -488,12 +701,20 @@ export function parsePreparationSnapshot(value: unknown): PreparationSnapshot {
     notes: text(root.notes, "PreparationSnapshot.notes", true),
     ...(root.locationRef === undefined
       ? {}
-      : { locationRef: ownerReference(root.locationRef, "PreparationSnapshot.locationRef") }),
-    contentPins: ownerReferences(root.contentPins, "PreparationSnapshot.contentPins"),
+      : {
+          locationRef: parseOwnerReference(
+            root.locationRef,
+            "PreparationSnapshot.locationRef",
+          ),
+        }),
+    contentPins: ownerReferences(
+      root.contentPins,
+      "PreparationSnapshot.contentPins",
+    ),
     ...(root.encounterPlanRef === undefined
       ? {}
       : {
-          encounterPlanRef: ownerReference(
+          encounterPlanRef: parseOwnerReference(
             root.encounterPlanRef,
             "PreparationSnapshot.encounterPlanRef",
           ),
@@ -506,7 +727,12 @@ function pendingAssignments(value: unknown): readonly PendingAssignment[] {
     unique(
       array(value, "LiveSceneSource.pendingAssignments").map((entry, index) => {
         const label = `LiveSceneSource.pendingAssignments[${index}]`,
-          row = record(entry, ["characterId", "commandId", "ownerId"], [], label);
+          row = record(
+            entry,
+            ["characterId", "commandId", "ownerId"],
+            [],
+            label,
+          );
         return Object.freeze({
           characterId: characterId(row.characterId, `${label}.characterId`),
           commandId: commandId(row.commandId, `${label}.commandId`),
@@ -526,27 +752,124 @@ function maskReferences(value: unknown): readonly MaskReference[] {
         const label = `LiveSceneSource.maskRefs[${index}]`,
           row = record(
             entry,
-            ["maskId", "kind", "ownerId", "ownerRevision", "lifecycle"],
+            [
+              "maskId",
+              "kind",
+              "ownerId",
+              "generationId",
+              "ownerRevision",
+              "lifecycle",
+            ],
             [],
             label,
           );
-        if (!(["active", "suspended", "archived", "pending"] as const).includes(row.lifecycle as never))
+        if (
+          !(["active", "suspended", "archived", "pending"] as const).includes(
+            row.lifecycle as never,
+          )
+        )
           throw new Error(`${label}.lifecycle ist unbekannt.`);
         return Object.freeze({
           maskId: maskId(row.maskId, `${label}.maskId`),
           kind: text(row.kind, `${label}.kind`),
           ownerId: ownerId(row.ownerId, `${label}.ownerId`),
+          generationId: generationId(row.generationId, `${label}.generationId`),
           ownerRevision: revision(row.ownerRevision, `${label}.ownerRevision`),
           lifecycle: row.lifecycle as MaskReference["lifecycle"],
         });
       }),
-      (entry) => `${entry.ownerId}\u0000${entry.maskId}`,
+      (entry) =>
+        `${entry.ownerId}\u0000${entry.generationId}\u0000${entry.maskId}`,
       "LiveSceneSource.maskRefs",
     ),
   );
 }
 
-function reconciliations(value: unknown): readonly OwnerReconciliation[] {
+function maskParticipationProjections(
+  value: unknown,
+): readonly MaskParticipationProjection[] {
+  return Object.freeze(
+    unique(
+      array(value, "LiveSceneSource.maskParticipationProjections").map(
+        (entry, index) => {
+          const label = `LiveSceneSource.maskParticipationProjections[${index}]`,
+            row = record(
+              entry,
+              [
+                "kind",
+                "version",
+                "campaignId",
+                "liveSceneId",
+                "maskId",
+                "maskKind",
+                "ownerIdentity",
+                "ownerRevision",
+                "participantCharacterIds",
+                "lifecycle",
+              ],
+              [],
+              label,
+            );
+          if (row.kind !== "mask-participation-projection" || row.version !== 1)
+            throw new Error(`${label} besitzt einen unbekannten Vertrag.`);
+          if (
+            !(["active", "suspended", "archived", "pending"] as const).includes(
+              row.lifecycle as never,
+            )
+          )
+            throw new Error(`${label}.lifecycle ist unbekannt.`);
+          const participants = Object.freeze(
+            unique(
+              array(
+                row.participantCharacterIds,
+                `${label}.participantCharacterIds`,
+              ).map((participant, participantIndex) =>
+                characterId(
+                  participant,
+                  `${label}.participantCharacterIds[${participantIndex}]`,
+                ),
+              ),
+              (participant) => participant,
+              `${label}.participantCharacterIds`,
+            ),
+          );
+          if (row.lifecycle === "archived" && participants.length)
+            throw new Error(
+              `${label} darf im archivierten Zustand keine Live-Teilnehmer enthalten.`,
+            );
+          return Object.freeze({
+            kind: "mask-participation-projection" as const,
+            version: 1 as const,
+            campaignId: campaignId(row.campaignId, `${label}.campaignId`),
+            liveSceneId: liveSceneId(row.liveSceneId, `${label}.liveSceneId`),
+            maskId: maskId(row.maskId, `${label}.maskId`),
+            maskKind: text(row.maskKind, `${label}.maskKind`),
+            ownerIdentity: parseOwnerIdentity(
+              row.ownerIdentity,
+              `${label}.ownerIdentity`,
+            ),
+            ownerRevision: revision(
+              row.ownerRevision,
+              `${label}.ownerRevision`,
+            ),
+            participantCharacterIds: participants,
+            lifecycle:
+              row.lifecycle as MaskParticipationProjection["lifecycle"],
+          });
+        },
+      ),
+      (entry) =>
+        `${entry.ownerIdentity.ownerId}\u0000${entry.ownerIdentity.generationId}\u0000${entry.maskId}`,
+      "LiveSceneSource.maskParticipationProjections",
+    ),
+  );
+}
+
+function reconciliations(
+  value: unknown,
+  expectedCampaignId: CampaignId,
+  expectedSceneId: LiveSceneId,
+): readonly OwnerReconciliation[] {
   return Object.freeze(
     unique(
       array(value, "LiveSceneSource.reconciliations").map((entry, index) => {
@@ -554,27 +877,191 @@ function reconciliations(value: unknown): readonly OwnerReconciliation[] {
           row = record(
             entry,
             ["ownerId", "status"],
-            ["ownerRevision", "commandId"],
+            [
+              "generationId",
+              "ownerRevision",
+              "commandId",
+              "pendingCommandIds",
+              "commandDigest",
+              "receiptId",
+              "receiptLedgerBaseRevision",
+              "appliedContributions",
+            ],
             label,
           );
-        if (!(["current", "pending", "unavailable"] as const).includes(row.status as never))
+        if (
+          !(["current", "pending", "unavailable"] as const).includes(
+            row.status as never,
+          )
+        )
           throw new Error(`${label}.status ist unbekannt.`);
         if (row.status === "current" && row.ownerRevision === undefined)
           throw new Error(`${label} benötigt eine OwnerRevision.`);
+        if (
+          row.status === "current" &&
+          row.generationId !== undefined &&
+          row.receiptLedgerBaseRevision === undefined
+        )
+          throw new Error(`${label} benötigt einen Receipt-Ledger-Anker.`);
         if (row.status === "pending" && row.commandId === undefined)
           throw new Error(`${label} benötigt eine CommandId.`);
+        const pendingCommandIds =
+          row.status === "pending" && row.generationId !== undefined
+            ? Object.freeze(
+                unique(
+                  array(
+                    row.pendingCommandIds ?? [row.commandId],
+                    `${label}.pendingCommandIds`,
+                  ).map((entry, commandIndex) =>
+                    commandId(
+                      entry,
+                      `${label}.pendingCommandIds[${commandIndex}]`,
+                    ),
+                  ),
+                  (entry) => entry,
+                  `${label}.pendingCommandIds`,
+                ),
+              )
+            : undefined;
+        if (
+          pendingCommandIds !== undefined &&
+          pendingCommandIds[pendingCommandIds.length - 1] !== row.commandId
+        )
+          throw new Error(`${label} besitzt keine geordnete Pendingfolge.`);
+        const hasAnyReceiptBinding =
+            row.commandId !== undefined ||
+            row.commandDigest !== undefined ||
+            row.receiptId !== undefined,
+          hasReceiptBinding =
+            row.commandDigest !== undefined || row.receiptId !== undefined;
+        const appliedContributions =
+          row.appliedContributions === undefined
+            ? undefined
+            : Object.freeze(
+                unique(
+                  array(
+                    row.appliedContributions,
+                    `${label}.appliedContributions`,
+                  ).map((entry, receiptIndex) =>
+                    parseMaskOwnerPreparedContribution(
+                      entry,
+                      `${label}.appliedContributions[${receiptIndex}]`,
+                    ),
+                  ),
+                  (entry) => entry.receiptId,
+                  `${label}.appliedContributions`,
+                ),
+              );
+        const receiptLedgerBaseRevision =
+          row.receiptLedgerBaseRevision === undefined
+            ? undefined
+            : revision(
+                row.receiptLedgerBaseRevision,
+                `${label}.receiptLedgerBaseRevision`,
+              );
+        if (
+          row.status === "current" &&
+          hasAnyReceiptBinding &&
+          !(
+            row.commandId !== undefined &&
+            row.commandDigest !== undefined &&
+            row.receiptId !== undefined
+          )
+        )
+          throw new Error(
+            `${label} besitzt keine vollständige Receiptbindung.`,
+          );
+        if (
+          row.status !== "current" &&
+          (row.commandDigest !== undefined ||
+            row.receiptId !== undefined ||
+            receiptLedgerBaseRevision !== undefined ||
+            appliedContributions !== undefined)
+        )
+          throw new Error(
+            `${label} darf keine veröffentlichte Receipt binden.`,
+          );
+        if (
+          hasReceiptBinding !== (appliedContributions !== undefined) ||
+          (row.status === "current" &&
+            row.generationId !== undefined &&
+            receiptLedgerBaseRevision !== undefined &&
+            !hasReceiptBinding &&
+            row.ownerRevision !== receiptLedgerBaseRevision) ||
+          (appliedContributions !== undefined &&
+            (appliedContributions.length === 0 ||
+              row.status !== "current" ||
+              row.generationId === undefined ||
+              row.ownerRevision === undefined ||
+              !hasReceiptBinding ||
+              appliedContributions[0]?.ownerRevisionBefore !==
+                receiptLedgerBaseRevision ||
+              new Set(appliedContributions.map((entry) => entry.commandId))
+                .size !== appliedContributions.length ||
+              appliedContributions.some(
+                (entry, receiptIndex) =>
+                  entry.campaignId !== expectedCampaignId ||
+                  entry.sourceSceneId !== expectedSceneId ||
+                  entry.ownerIdentity.ownerId !== row.ownerId ||
+                  entry.ownerIdentity.generationId !== row.generationId ||
+                  (receiptIndex > 0 &&
+                    entry.ownerRevisionBefore !==
+                      appliedContributions[receiptIndex - 1]
+                        ?.ownerRevisionAfter),
+              ) ||
+              appliedContributions[appliedContributions.length - 1]
+                ?.receiptId !== row.receiptId ||
+              appliedContributions[appliedContributions.length - 1]
+                ?.commandId !== row.commandId ||
+              appliedContributions[appliedContributions.length - 1]
+                ?.commandDigest !== row.commandDigest ||
+              appliedContributions[appliedContributions.length - 1]
+                ?.ownerRevisionAfter !== row.ownerRevision))
+        )
+          throw new Error(`${label} besitzt kein konsistentes Receipt-Ledger.`);
         return Object.freeze({
           ownerId: ownerId(row.ownerId, `${label}.ownerId`),
+          ...(row.generationId === undefined
+            ? {}
+            : {
+                generationId: generationId(
+                  row.generationId,
+                  `${label}.generationId`,
+                ),
+              }),
           status: row.status as OwnerReconciliation["status"],
           ...(row.ownerRevision === undefined
             ? {}
-            : { ownerRevision: revision(row.ownerRevision, `${label}.ownerRevision`) }),
+            : {
+                ownerRevision: revision(
+                  row.ownerRevision,
+                  `${label}.ownerRevision`,
+                ),
+              }),
           ...(row.commandId === undefined
             ? {}
             : { commandId: commandId(row.commandId, `${label}.commandId`) }),
+          ...(pendingCommandIds === undefined ? {} : { pendingCommandIds }),
+          ...(row.commandDigest === undefined
+            ? {}
+            : {
+                commandDigest: commandDigest(
+                  row.commandDigest,
+                  `${label}.commandDigest`,
+                ),
+              }),
+          ...(row.receiptId === undefined
+            ? {}
+            : { receiptId: receiptId(row.receiptId, `${label}.receiptId`) }),
+          ...(receiptLedgerBaseRevision === undefined
+            ? {}
+            : { receiptLedgerBaseRevision }),
+          ...(appliedContributions === undefined
+            ? {}
+            : { appliedContributions }),
         });
       }),
-      (entry) => entry.ownerId,
+      (entry) => `${entry.ownerId}\u0000${entry.generationId ?? ""}`,
       "LiveSceneSource.reconciliations",
     ),
   );
@@ -595,6 +1082,7 @@ export function parseLiveSceneSource(value: unknown): LiveSceneSourceSnapshot {
       "pendingAssignments",
       "groupRefs",
       "maskRefs",
+      "maskParticipationProjections",
       "reconciliations",
       "contentPins",
     ],
@@ -603,37 +1091,191 @@ export function parseLiveSceneSource(value: unknown): LiveSceneSourceSnapshot {
   );
   if (root.kind !== "live-scene-source" || root.version !== 1)
     throw new Error("LiveSceneSource besitzt einen unbekannten Vertrag.");
-  if (!(["active", "prepared", "retired", "archived"] as const).includes(root.lifecycle as never))
+  if (
+    !(["active", "prepared", "retired", "archived"] as const).includes(
+      root.lifecycle as never,
+    )
+  )
     throw new Error("LiveSceneSource.lifecycle ist unbekannt.");
-  const characterIds = Object.freeze(
-    unique(
-      array(root.characterIds, "LiveSceneSource.characterIds").map((entry, index) =>
-        characterId(entry, `LiveSceneSource.characterIds[${index}]`),
-      ),
-      (entry) => entry,
-      "LiveSceneSource.characterIds",
+  const parsedCampaignId = campaignId(
+      root.campaignId,
+      "LiveSceneSource.campaignId",
     ),
-  );
+    parsedLiveSceneId = liveSceneId(
+      root.liveSceneId,
+      "LiveSceneSource.liveSceneId",
+    ),
+    characterIds = Object.freeze(
+      unique(
+        array(root.characterIds, "LiveSceneSource.characterIds").map(
+          (entry, index) =>
+            characterId(entry, `LiveSceneSource.characterIds[${index}]`),
+        ),
+        (entry) => entry,
+        "LiveSceneSource.characterIds",
+      ),
+    ),
+    parsedPendingAssignments = pendingAssignments(root.pendingAssignments),
+    parsedMaskRefs = maskReferences(root.maskRefs),
+    parsedReconciliations = reconciliations(
+      root.reconciliations,
+      parsedCampaignId,
+      parsedLiveSceneId,
+    ),
+    parsedMaskProjections = Object.freeze(
+      maskParticipationProjections(root.maskParticipationProjections).map(
+        (projection) => {
+          if (
+            projection.campaignId !== parsedCampaignId ||
+            projection.liveSceneId !== parsedLiveSceneId
+          )
+            throw new Error(
+              "LiveSceneSource enthält eine fremde Maskenprojektion.",
+            );
+          return projection;
+        },
+      ),
+    ),
+    characterSet = new Set(characterIds),
+    pendingSet = new Set(
+      parsedPendingAssignments.map((assignment) => assignment.characterId),
+    ),
+    ownerKey = (owner: OwnerId, generation: GenerationId) =>
+      `${owner}\u0000${generation}`,
+    projectionKey = (owner: OwnerId, generation: GenerationId, mask: MaskId) =>
+      `${ownerKey(owner, generation)}\u0000${mask}`,
+    ownerByIdentity = new Map(
+      parsedReconciliations.flatMap((owner) =>
+        owner.generationId === undefined
+          ? []
+          : [[ownerKey(owner.ownerId, owner.generationId), owner] as const],
+      ),
+    ),
+    projectionKeys = new Set<string>();
+  if (characterIds.some((character) => pendingSet.has(character)))
+    throw new Error(
+      "LiveSceneSource enthält zugleich zugewiesene und pending Teilnehmer.",
+    );
+  if (
+    parsedMaskProjections.some((projection) =>
+      projection.participantCharacterIds.some(
+        (participant) =>
+          !characterSet.has(participant) || pendingSet.has(participant),
+      ),
+    )
+  )
+    throw new Error(
+      "LiveSceneSource enthält ungebundene oder pending Maskenteilnehmer.",
+    );
+  for (const projection of parsedMaskProjections) {
+    const key = projectionKey(
+        projection.ownerIdentity.ownerId,
+        projection.ownerIdentity.generationId,
+        projection.maskId,
+      ),
+      mask = parsedMaskRefs.find(
+        (entry) =>
+          projectionKey(entry.ownerId, entry.generationId, entry.maskId) ===
+          key,
+      ),
+      owner = ownerByIdentity.get(
+        ownerKey(
+          projection.ownerIdentity.ownerId,
+          projection.ownerIdentity.generationId,
+        ),
+      );
+    if (
+      mask === undefined ||
+      mask.kind !== projection.maskKind ||
+      mask.ownerRevision !== projection.ownerRevision ||
+      mask.lifecycle !== projection.lifecycle ||
+      projection.lifecycle === "pending" ||
+      (owner !== undefined &&
+        (owner.status !== "current" ||
+          owner.ownerRevision !== projection.ownerRevision))
+    )
+      throw new Error(
+        "LiveSceneSource enthält eine ungebundene Maskenprojektion.",
+      );
+    projectionKeys.add(key);
+  }
+  for (const mask of parsedMaskRefs) {
+    const key = projectionKey(mask.ownerId, mask.generationId, mask.maskId),
+      owner = ownerByIdentity.get(ownerKey(mask.ownerId, mask.generationId)),
+      current = owner?.status ?? "current";
+    if (
+      (current === "current" &&
+        (mask.lifecycle === "pending" || !projectionKeys.has(key))) ||
+      (current !== "current" && projectionKeys.has(key))
+    )
+      throw new Error(
+        "LiveSceneSource besitzt keinen vollständigen current Maskensnapshot.",
+      );
+  }
+  const orderedOwnerKeys = Object.freeze([
+    ...new Set(
+      parsedMaskRefs.map((mask) => ownerKey(mask.ownerId, mask.generationId)),
+    ),
+  ]);
+  for (const key of orderedOwnerKeys) {
+    if ((ownerByIdentity.get(key)?.status ?? "current") !== "current") continue;
+    const refOrder = parsedMaskRefs
+        .filter((mask) => ownerKey(mask.ownerId, mask.generationId) === key)
+        .map((mask) => mask.maskId),
+      projectionOrder = parsedMaskProjections
+        .filter(
+          (projection) =>
+            ownerKey(
+              projection.ownerIdentity.ownerId,
+              projection.ownerIdentity.generationId,
+            ) === key,
+        )
+        .map((projection) => projection.maskId);
+    if (
+      refOrder.length !== projectionOrder.length ||
+      refOrder.some((mask, index) => mask !== projectionOrder[index])
+    )
+      throw new Error(
+        "LiveSceneSource besitzt keine stabile Masken-Projektionsreihenfolge.",
+      );
+  }
   return Object.freeze({
     kind: "live-scene-source",
     version: 1,
-    campaignId: campaignId(root.campaignId, "LiveSceneSource.campaignId"),
-    liveSceneId: liveSceneId(root.liveSceneId, "LiveSceneSource.liveSceneId"),
-    sceneRevision: revision(root.sceneRevision, "LiveSceneSource.sceneRevision"),
+    campaignId: parsedCampaignId,
+    liveSceneId: parsedLiveSceneId,
+    sceneRevision: revision(
+      root.sceneRevision,
+      "LiveSceneSource.sceneRevision",
+    ),
     lifecycle: root.lifecycle as LiveSceneSourceSnapshot["lifecycle"],
     primary: bool(root.primary, "LiveSceneSource.primary"),
     characterIds,
-    pendingAssignments: pendingAssignments(root.pendingAssignments),
+    pendingAssignments: parsedPendingAssignments,
     ...(root.locationRef === undefined
       ? {}
-      : { locationRef: ownerReference(root.locationRef, "LiveSceneSource.locationRef") }),
+      : {
+          locationRef: parseOwnerReference(
+            root.locationRef,
+            "LiveSceneSource.locationRef",
+          ),
+        }),
     ...(root.sceneClockRef === undefined
       ? {}
-      : { sceneClockRef: ownerReference(root.sceneClockRef, "LiveSceneSource.sceneClockRef") }),
+      : {
+          sceneClockRef: parseClockReference(
+            root.sceneClockRef,
+            "LiveSceneSource.sceneClockRef",
+          ),
+        }),
     groupRefs: ownerReferences(root.groupRefs, "LiveSceneSource.groupRefs"),
-    maskRefs: maskReferences(root.maskRefs),
-    reconciliations: reconciliations(root.reconciliations),
-    contentPins: ownerReferences(root.contentPins, "LiveSceneSource.contentPins"),
+    maskRefs: parsedMaskRefs,
+    maskParticipationProjections: parsedMaskProjections,
+    reconciliations: parsedReconciliations,
+    contentPins: ownerReferences(
+      root.contentPins,
+      "LiveSceneSource.contentPins",
+    ),
   });
 }
 
@@ -641,7 +1283,13 @@ export function parseFocusSource(value: unknown): FocusSourceSnapshot {
   const base = record(
     value,
     ["kind", "version", "status", "campaignId", "focusRevision"],
-    ["liveSceneId", "sceneRevision", "commandId", "pendingLiveSceneId", "ownerId"],
+    [
+      "liveSceneId",
+      "sceneRevision",
+      "commandId",
+      "pendingLiveSceneId",
+      "ownerId",
+    ],
     "FocusSource",
   );
   if (base.kind !== "focus-source" || base.version !== 1)
@@ -653,7 +1301,20 @@ export function parseFocusSource(value: unknown): FocusSourceSnapshot {
     focusRevision: revision(base.focusRevision, "FocusSource.focusRevision"),
   };
   if (base.status === "active") {
-    const row = record(value, ["kind", "version", "status", "campaignId", "focusRevision", "liveSceneId", "sceneRevision"], [], "FocusSource");
+    const row = record(
+      value,
+      [
+        "kind",
+        "version",
+        "status",
+        "campaignId",
+        "focusRevision",
+        "liveSceneId",
+        "sceneRevision",
+      ],
+      [],
+      "FocusSource",
+    );
     return Object.freeze({
       ...common,
       status: "active",
@@ -662,7 +1323,12 @@ export function parseFocusSource(value: unknown): FocusSourceSnapshot {
     });
   }
   if (base.status === "none") {
-    record(value, ["kind", "version", "status", "campaignId", "focusRevision"], [], "FocusSource");
+    record(
+      value,
+      ["kind", "version", "status", "campaignId", "focusRevision"],
+      [],
+      "FocusSource",
+    );
     return Object.freeze({ ...common, status: "none" });
   }
   if (base.status === "pending") {
