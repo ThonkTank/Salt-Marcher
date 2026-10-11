@@ -73,29 +73,39 @@ Cloudrohdateien/PNG wurden von Hex nicht selbst gelesen; Referenzen/Tripel und
 die direkte Producer-Checkpointquelle stehen im bestehenden eigenen Abnahmeeintrag
 `dungeonAtLocationInspectorGmN02Consumption`. Der bisherige Cloud-GM-Claim ist beendet.
 
-**Jetzt ausführbarer Reparatureingang in #80:** GM-N02-01 meldet, dass nach Scrollen
-zur Zielsuche der Wechsel zum Raum-Key die alte Dockscrollposition übernimmt.
-Das Raumfeld liegt dann oberhalb des Sichtbereichs. Aktueller Code bestätigt:
-`AtlasEditor.syncLocations` nutzt dieselbe Dockinstanz für Ort/Raum/Haus ohne
-Scrollrücksetzung bei Zielwechsel. GM-N02-02 meldet einen teilweise abgeschnittenen
-Inspector bei131% UI-Zoom, auch mit verborgenem Dateibaum. Die relevanten
-CSS-Größenregeln sind unverändert; die konkrete Ursache/aktuelle native Geometrie
-ist noch nicht unabhängig bestätigt.
+**N03-Reparatur des bestätigten GM-N02-01:** Der gemeinsame Dock zeigt einen
+neu gewählten Orts-/Raum-/Haus-Key ab seinem Anfang. Nur der tatsächliche Wechsel
+von Kind/Owner/Element setzt die Scrollposition zurück; Eingabe, Übernahme und
+Historyredraw desselben Keys behalten sie. Schließen vergisst das angezeigte Ziel,
+sodass auch der gecachte erneute Einstieg bei den Feldern beginnt. Anwendung und
+Draftguards laufen weiterhin vor dem Zielwechsel; invalides Ortsmaterial bleibt
+sichtbar samt Scrollposition. Kein neuer Store, Modus, Panel oder History.
 
-**Nächster eigener Beitrag, Hex:** Im bestehenden Inspector neu gewählten Key
-direkt sichtbar machen; Scrollposition bei Redraw desselben Ziels erhalten.
-Vergrößerten schmalen Dock an verfügbare Größe anpassen, anhand des konkreten
-GM-N02-02-Befunds. Draft-/Flushguards, IDs, History, Kamera und Context erhalten;
-gezielte Regressionen auf dem aktuellen integrierten City-/Hex-Stand. Danach
-enger unabhängiger Review und quellgebundener freier GM-Nachtest desselben Wegs.
-Kein weiterer Beleg-/Planreview vor Umsetzung, kein abhängiger Detailausbau.
+Quellgebundener Kandidat: Produktcommit `cac07c3`, integrierter Prüfstand `1e22697`
+mit aktuellem Shared `73bfe22` und unabhängig integriertem [City Save PR98](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/98).
+Dessen bestehendes Draftpersistenz-Warten und erneuter Contextguard bleiben
+unverändert. Zwei echte Managed-DOM-Regressionen scheitern auf der vorherigen
+Produktquelle und bestehen danach: Zielbutton Ort→Raum, gleiche History-/Draft-
+Redraws, gecachte Rückkehr/Schließen, ungültige Eingabe sowie City-Pointerauswahl
+mit identischem/anderem Haus. Gesamt-Suite, Typprüfung, Build, Repo und Erhalt
+fremder JSON-Wurzeln bestehen; keine GUI-/GPU-Geometrie daraus ableiten.
+`checkpoint.hexAtlasExecution.dungeonAtLocationInspectorScrollN03` und die
+bestehende Acceptanceanforderung binden Quelle, Tripel und lokale Logs.
 
-**Quellgrenze:** Seit dem getesteten ca29032 ergänzt [City PR93](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/93)
-den gemeinsamen AtlasEditor/Keydock; [PR97](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/97)
-korrigiert allein City-H01-Quellmetadaten. Die neue City-/Hex-Komposition ist durch
-diesen GM-Lauf und alte H02-Belege nicht qualifiziert. Vor eigener GUI neue lokale
-Slotkoordination. Copy/Discard/Recoverymatrix, Gesamt-E2E, physische/Original-/
-Großkarten-/Nutzervaultabnahme bleiben offen. #80 bleibt bei Hex.
+**Nächster Empfänger:** enger unabhängiger Review nur des N03-Scroll-/Guarddeltas,
+danach quellgebundener freier GM-Nachtest im isolierten Host. Eine neue SHA allein
+startet keine Wiederholung alter Fach-/Save-/H02-/Rohbelegreviews. Hex konsumiert
+Review beziehungsweise konkreten Pflichtbefund; kein Selfmerge oder abhängiger
+Detailausbau. Vor eigener GUI neue lokale Slotkoordination.
+
+**Offener GM-N02-02:** Teilweise abgeschnittener Inspector bei131% UI-Zoom und
+1024×800 ist noch nicht behoben. N03 ändert kein CSS; konkrete Ursache/aktuelle
+native Geometrie bleiben als gezielter Reproduktions-/Nachtesteingang im Paket.
+Der tatsächliche City-/Hex-N03-Build ist noch nicht durch freie GM-Nutzung oder
+native Feldausrichtung qualifiziert. Historische H02-/Cloud-GM-Belege bleiben an
+ihren damaligen Stand gebunden; Originalbelege werden nicht überschrieben.
+Copy/Discard/Recoverymatrix, Gesamt-E2E, physische/Original-/Großkarten-/
+Nutzervaultabnahme bleiben offen. #80 bleibt bei Hex.
 
 ## Historische Planbasis und Lieferbelege
 
