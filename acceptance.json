@@ -160671,6 +160671,117 @@
           "nextConsumer": "One independent review of the narrow new teardown repair at the existing #80 package. The additional reproduced membership gap needs a guarded normal Copy/fresh-entry repair in the same claim before another newly coordinated native Copy/Fresh pair. No dependent expansion or native PASS from DOM.",
           "finishedAt": "2026-10-11T09:51:53.378290+00:00",
           "pullRequest": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/157"
+        },
+        "dungeonAtLocationRoomDraftCopyMembershipN02": {
+          "id": "E2E-01-HEX04-ROOM-DRAFT-COPY-MEMBERSHIP-N02",
+          "owner": "Hex",
+          "issue": 80,
+          "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
+          "e2e01UserLine": 13,
+          "state": "independent_Copy_entry_DOM_PASS_targeted_review_and_native_pair_pending",
+          "sourceCommit": "b6ec69d4290259e60e8acab61633b3b4a3ce2b69",
+          "qualifiedSharedConsumed": "fcec359381d1a84f9d65b628ccdb0172c9cec2c7",
+          "baselineCommit": "a416dac679c181be7792561076ae339d096d995b",
+          "pullRequest": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/157",
+          "consumedInput": {
+            "kind": "independent_N01_review_PASS_and_concrete_standalone_entry_contract",
+            "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/157#issuecomment-6107831990",
+            "head": "a416dac679c181be7792561076ae339d096d995b",
+            "source": "a07c274a6f9c83ac5d472148e7f3de5b68940c49",
+            "scope": "Managed teardown/lifetime only. The comment is the independent review evidence, not formal self-approval or qualification of N02."
+          },
+          "implemented": "Normal Copy and ordinary file entry classify parsed path AND World-ID. Valid unique association still uses independently confirmed Campaign navigation. A fresh complete native closure with no confirmed World/Owner collision opens an unregistered native mount beside unrelated valid manifests, without Registry/SaveParticipant authority. Malformed/unreadable/ambiguous manifests, wrong path identity, colliding owners, incomplete native closure and changed inputs fail closed.",
+          "storageBoundary": "Read-only typed native inspection uses existing World/Location/City/Dungeon/Terrain/draft codecs, spatial closure and FileTransaction recovery validator; journal recovery is simulated in memory before any vault write. Inspected saved/draft/recovery identities exclude retained shared/catalog definitions. Inputs and manifest revision stay pinned through real Repository open. Once an old journal has won its repair, its exact old paths finish on revocation; no new editor attaches. After open, existing Repository/FileTransaction journal authority remains unchanged.",
+          "fixtureVersion": "e2e01-spatial-v2",
+          "fixtureManifestSha256": "23735bb6c95107b7dec93ffa56ec66405a0f4fe0ec3822fc0476d90d2920188d",
+          "checks": {
+            "baselineCasesFailed": 3,
+            "focusedCasesPassed": 17,
+            "fullSuite": {
+              "tests": 1157,
+              "pass": 1156,
+              "fail": 0,
+              "skip": 1,
+              "skipScope": "Existing optional external PDF fixture"
+            },
+            "typecheck": "PASS",
+            "cleanSourceBuild": "PASS",
+            "scenarios": [
+              "Actual menu/modal Copy and normal leaf callback open the independent copy; original unsaved Room Markdown and native bytes remain exact, old renderer is released once, old writers are revoked, fresh host/file entry has new History and no Campaign participant.",
+              "Prepared/Committed native journal, Undo/Redo, persisted draft, new View restore, visible Save and Repository Discard operate on the independent copy; original Campaign/native inputs stay exact.",
+              "Same World at a different path, wrong World at a confirmed path, Campaign-owned Room/section ID in saved/draft data, missing Location/Detail/Terrain, duplicate native Detail, malformed/unreadable manifest reject with no writes or canvas.",
+              "Manifest revision during closure or external native change before Recovery rejects without writes. Won Recovery and canonical Save journals finish their old paths after service closure; no revoked editor attaches."
+            ],
+            "evidenceBoundary": "Linkedom with actual View/Host/Services/Repository/native codecs; GPU initialization excluded. New View is model/DOM reentry, not a fresh Obsidian process."
+          },
+          "buildTriplet": {
+            "main.js": {
+              "bytes": 1687847,
+              "sha256": "6709c8520629c9fcd53e5cab2e968056776bbc2c27c9822cb08b4151ca7fd409"
+            },
+            "manifest.json": {
+              "bytes": 237,
+              "sha256": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64"
+            },
+            "styles.css": {
+              "bytes": 32394,
+              "sha256": "6279e70cae51acb20fcf8cf8b23c2e87fa64d35e48a5fc0deb3c7de04dba26d7"
+            }
+          },
+          "sourceFilesSha256": {
+            "src/features/atlas/atlas-standalone-entry.ts": "bd0a19fce33deffa999ccf25e68116ad78e3bd4f36a004f320962b9a928bf86e",
+            "src/ui/atlas-view.ts": "c6590226e8858ea36e8acf7dd7569c5cbd2bf990e0d3d6b838deca571c9b6a4e",
+            "src/ui/atlas-campaign-host.ts": "d64a8f43e07a294a0029706ad5c65ba6f4b669dd0edf29515fa8baca3eaf578c",
+            "src/ui/atlas-campaign-services.ts": "bb399a627edf0fa86b6f0534383bf73612dbe1356f09c0a105e145f6a4564e19",
+            "tests/atlas-campaign-host.entry.ts": "0990fe37e7056145d449f2de5697c3c0ca7511f4f3b25e959292e1d56e87f312"
+          },
+          "localEvidence": {
+            "regression-baseline.log": {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-copy-membership-n02-20261011/regression-baseline.log",
+              "sha256": "5665c01eb0924da7fe2bdb55a73ed6e903419fa60c00ea6e72887f3c1e94270f"
+            },
+            "focused-final.log": {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-copy-membership-n02-20261011/focused-final.log",
+              "sha256": "bb52088f7a573e234986cb1cec038c586e3168a9845338722f4ffd4b31427b62"
+            },
+            "typecheck.log": {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-copy-membership-n02-20261011/typecheck.log",
+              "sha256": "079b4802c6da64fa1d4244b135be0c1fad7ce6c952c6dda76f3320c685743d4c"
+            },
+            "full-tests.log": {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-copy-membership-n02-20261011/full-tests.log",
+              "sha256": "ab0052c9289cd1e8d7d15d9ac3d5afd16b99f429fde0e35dcda8e2334115ebc6"
+            },
+            "source-build.log": {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-copy-membership-n02-20261011/source-build.log",
+              "sha256": "285c93d0ccb600acd1aa5ff398b00cdaada8387798c4addec61c2eaca7e79ef8"
+            },
+            "baseline-regressions.mjs": {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-copy-membership-n02-20261011/baseline-regressions.mjs",
+              "sha256": "19e2190bb0587c300183924cf67f9cca7e5f4ae77d2108101772cab52774f487"
+            }
+          },
+          "limits": {
+            "newNativeProbe": false,
+            "nativeCopyPass": false,
+            "freshObsidianProcess": false,
+            "independentN02Review": false,
+            "physicalInput": false,
+            "originalParity": false,
+            "largeMap": false,
+            "installedInUserVault": false,
+            "fullE2E": false
+          },
+          "preservation": {
+            "failedC01HelpersUntouched": true,
+            "failedC01VaultNotReplayed": true,
+            "newGuiUsed": false,
+            "slotHeld": false,
+            "noSelfMerge": true,
+            "foreignRootsPreserved": true
+          },
+          "nextConsumer": "Existing independent Atlas/Campaign reviewer: targeted N02 classification/read-only closure/recovery guards on this candidate. Hex then owns the visible Copy/fresh Obsidian pair with newly coordinated local slot, frozen new helpers and a new isolated copy of the actual R03 draft vault. Historical failed C01 remains immutable; no native/fresh PASS inferred from DOM.",
+          "finishedAt": "2026-10-11T10:22:10.691262+00:00"
         }
       }
     ],

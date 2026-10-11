@@ -60,20 +60,15 @@ und [Steward](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/1
 integriert. [R01](docs/reference/atlas-detail-binding-d01/inspector-save-routing-r01.json)
 belegt nicht komponierendes Ctrl+S im Ortsnamen. Kein nativer IME-/Meta-PASS.
 
-**Save/Fresh/Discard/Resume:** F01 auf840f6f1f öffnet tatsächlichen R01-Orts-Save
-mit exakten acht Bytes/Keys/IDs/CRLF und neuer History0/clean. R02 aufe98f394f:
-Ort11 → Raum31 → Raumtext → Ctrl+S; Dungeon nur ein Markdownfeld, Campaign elf
-Revisionsfelder, sechs Fremddateien gleich. F02 auf019f7a7d öffnet genau diesen
-Save: kompletter Dungeon/IDs/Geometrie exakt, History0/clean/kein Draft.
-PR140/142/144 konsumiert. D02-N02 aufe1d1b73: Discard-Cancel erhält Text/Runtime/
-Draft; Bestätigung stellt saved Dungeon/IDs/R02-Key mit neuen Sources/History0
-wieder her. Kamera und acht native Dateien erhalten; PR146/Shared9527c2da konsumiert.
-R03 auff53a2667/Shared9527c2da: unsaved Raumtext/Übernehmen → reguläres Quit →
-zweiter neuer Prozess desselben Vaults. Echter v3-Draft mit einem Detaildelta,
-unsaved Markdown/voller Dungeon exakt; History0/dirty/pending=false/kein Redo.
-Acht Dateihashes/Drafthash nach beiden Enden gleich. Diese Läufe: Runner0,
-normal Quit/PIDs weg/Bilder gelesen/Slots zurück; synthetische Eingabe.
-Kein Hardcrash- oder prozessübergreifender History-/Kamera-PASS.
+**Konsumierte Save-/Fresh-/Discard-/Resume-Belege:** F01/R02/F02 belegen
+saved Orts-/Raumtext und exakte native Bytes/IDs in neuen Prozessen (PR140/142/144).
+D02-N02 belegt Discard-Cancel und tatsächliche Rückkehr zum saved Raumzustand
+mit neuen Sources/History0 (PR146/Shared9527c2da). R03 auf f53a2667/Shared9527c2da
+belegt unsaved Raumtext im echten v3-Draft nach regulärem Quit und sequenziellem
+neuem Prozess desselben Vaults: vollständiger Dungeon/Markdown/Geometrie exakt,
+History0/dirty/pending=false/kein Redo. Alle acht Dateihashes/Drafthash erhalten,
+normale Prozessenden/PIDs weg/Slots zurück. Kanonische Einzelreceipts bleiben
+in Acceptance; synthetische Eingabe, kein Hardcrash-/History-/Kamera-Fresh-PASS.
 
 **Nativer Copyfehler C01 bleibt erhalten:** Sauberer dbde783a/Shared9527c2da,
 exakte Kopie des wirklichen R03-Draftvaults. Ort11/Raum31 → Karte/Speichern unter:
@@ -86,33 +81,43 @@ normal Quit/keine Zwangstermination, PIDs weg,
 [Slot zurück](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6107594334).
 Fehler-Vault, Rohbelege und ausgeführte Helfer bleiben unverändert.
 
-**Gezielte Reparatur C01-N01 ([PR157](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/157)):** Quelle `a07c274a6f9c83ac5d472148e7f3de5b68940c49`,
-Shared `fcec3593` regulär konsumiert. Campaignmount besitzt managed Suspend/
-Retain/Dispose; View sichert Draft ohne vorherige Zerstörung. Renderer verbraucht
-Application einmal, auch nach spätem Init. Drei Regressionen scheitern auf8d8ff3ae
-und bestehen nach Fix: tatsächliches Copy-Menü/Modal/Leaf mit lesbarem Raumtext,
-widerrufenen Schreibern und Originalbytes; clean Kartenwechsel/Unload; spätes Init.
-Typprüfung,1142 Tests (1141 PASS/ein bestehender PDF-Skip), sauberer Sourcebuild
-und Repositorystruktur PASS. DOM-/Adapterbeleg, kein neuer nativer Copy/Fresh-Lauf.
+**Konsumierter Reparaturreview C01-N01:** [PR157-N01-PASS und Öffnungsvertrag](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/157#issuecomment-6107831990)
+auf a416dac6 bestätigt managed Suspend/Retain/Dispose und einmalige Rendererfreigabe
+(Quelle a07c274a). Der konkrete Folgeeingang: Pfad + World-ID bestätigen managed
+Zuordnung; frische vollständige native Closure ohne World-/Ownerkollision darf
+unregistriert neben gültigen fremden Manifesten öffnen. Beschädigter/mehrdeutiger
+Bestand, falsche Identität oder unprüfbare Closure bleiben gesperrt. Keine neue
+Campaign-/Registry-/SaveParticipantbefugnis, kein transienter Copy-Bypass.
 
-**Neuer Pflichtbefund im reparierten DOM-Weg:** Copy erzeugt eine unabhängige
-native Kopie; `AtlasCampaignServices.campaignHint` weist ihren normalen
-Leaf-Einstieg ab, sobald ein Campaignmanifest existiert. „Dieser Atlas gehört
-keinem bestätigten Kampagnenbestand“ statt aktiver Kopie. Schutz gegen beschädigte/
-fremde Manifeste erhalten; keine Ausnahme oder Campaignautorität vortäuschen.
-Hex besitzt Folgefix im selben #80; guarded Standalone-Copy/Frischeinstieg mit
-bestehendem Campaign-/Atlas-Vertragseigner klären.
+**Gelieferter Folgefix N02:** Quelle `b6ec69d4290259e60e8acab61633b3b4a3ce2b69`,
+Shared fcec3593 konsumiert. Normaler Copy-Leaf und gewöhnlicher frischer Datei-
+einstieg verwenden denselben geprüften unregistrierten Mount. Native Codecs/
+Spatial-/Draft-/Journalprüfung arbeiten vor Schreibzugriffen lesend; Recovery
+wird zuerst im Speicher geprüft. Eingänge bleiben bis Repositoryöffnung gepinnt.
+Ein bereits gewonnenes altes Journal darf bei Widerruf seine alten Pfade beenden;
+kein widerrufener Editor wird angehängt. Gültige Campaignzuordnung bleibt beim
+bestehenden unabhängig bestätigten Navigator.
+Drei positive Copy/Recovery-Einstiege scheitern auf a416dac6.17 fokussierte Fälle
+und1157 Tests (1156 PASS/ein bestehender PDF-Skip), Typprüfung und sauberer
+Sourcebuild bestehen: tatsächliches Copy-Menü/Modal/Leaf, exakter unsaved Raumtext,
+lesbarer alter Draft/widerrufene Schreiber, neuer Host/History, unabhängiges
+UndoRedo/Save/Discard/Draft/Prepared-/Committed-Recovery, kollidierende saved/
+Draft-IDs, kaputte/fehlende/doppelte Dateien und geänderte Eingänge. DOM/Adapter,
+kein neuer sichtbarer Obsidian-/frischer Prozess-PASS.
 
+Kandidat: https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/157
+Eingang: https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80
 Kanonisch `acceptance.hexAtlas.requirements[30]`:
-`.dungeonAtLocationRoomDraftCopyTeardownN01` bindet Reparatur/Build/Regressionen
-und Folgefehler; F01/R02/F02/D02/R03/C01 bleiben unverändert erhalten.
+`.dungeonAtLocationRoomDraftCopyMembershipN02` bindet Eingang/Fix/Build/Regressionen;
+N01/F01/R02/F02/D02/R03/C01 bleiben unverändert erhalten.
 
-**Nächster Empfänger:** Ein unabhängiger enger Reparaturreview; Hex setzt den
-konkreten Copy-Zuordnungsbefund im bestehenden Claim fort. Erst danach neues
-sichtbares Copy/Fresh-Paar mit neuem Build/neuem Slot. Stadt besitzt unabhängigen
-Save-/Recovery-Lauf #149; kein paralleler Lifecycleclaim.
+**Nächster Empfänger:** Bestehender unabhängiger Atlas/Campaign-Reviewer prüft
+das neue N02-Zuordnungs-/Closure-/Recoverydelta am Kandidaten. Hex besitzt danach
+das sichtbare Copy/Fresh-Paar mit neuem isoliertem wirklichem R03-Draftvault,
+neuen eingefrorenen Helfern und neu koordiniertem Slot. Stadt besitzt #149;
+keinen parallelen Lifecycleclaim eröffnen.
 
-**Offen:** Native Copy/Fresh, unterbrochene Save-/Copyjournale, Kompositionsguard/
+**Offen:** Native Copy/Fresh und unterbrochene Save-/Copyjournale, Komposition/
 Meta/physische IME, äußeres Clipping, Gesamt-E2E, Original-/Großkarten-/Nutzervault-
 abnahme. Keine Selbstintegration; fremde Wurzeln und Rohbelege erhalten.
 
