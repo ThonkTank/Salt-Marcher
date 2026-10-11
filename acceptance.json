@@ -13,21 +13,21 @@
       "reviewedCommit": "c8bd27d6d223403b46748d3051409c3e1c498224",
       "confirmed": "Der reine äußere Room31/Floor32-Konturpunktzug nutzt die vorhandenen Building-Punkt-, Kontur- und Portalplaner, projiziert ohne Session-/History-/Dateiwirkung und liefert höchstens einen kanonischen Dungeon-AtlasChange. Die tatsächliche Terrain-/Graph-/Dungeon-/Location-/City-/History-Identität sowie vollständige Placement-/House-/RigidFrame-Basis bleiben bis Preview/Handoff eingefroren; Historyereignisse einschließlich A-B-A und bytegleiche Adapterersetzung invalidieren terminal. Code-R02 schloss Beginpointer und gemeinsame RecordChange-Grenze, Code-R03 den Vor-update-Umrechnungsfehler. Der Cleanup bündelt Proposalwiderruf und verzögerte Koordinatenauflösung in einer fail-closed sample()-Grenze; tatsächliche bind()-Callbacks, later-valid/Fresh Begin, Portal-/ID-/Markdownclosure, 1,524 Meter pro Feld und genau eine Historywirkung bestanden den unabhängigen PRODUCT-CL-R01 ohne Pflichtlücke. Typprüfung, 495/495 Tests und Build bestanden.",
       "evidence": "src/features/dungeon/geometry-change.ts; src/features/atlas/atlas-editor.ts; tests/core/atlas-spatial.test.ts; ROADMAP-E2E01-DUNGEON-GEOMETRY-PRODUCT-CLEANUP-PLAN.md; PR #26 Kommentare 6093160433, 6093242380 und 6093376162; Issue #12 Kommentar 6093376283; /home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/dungeon-geometry-product-cl-r01/",
-      "notConfirmed": "Hex-Stewardintegration, persistente House-zu-Dungeon-Bindung, gemeinsamer Vault-/FileTransaction-/Publishschritt, vollständige Mehrownerkomposition, Save/Restart auf dem integrierten Kandidaten, echte GUI-/Hostbedienung, physische Eingabe und vollständiger E2E-01-Lauf bleiben offen; keine Produkt-, Host-, Fach- oder Gesamtfreigabe."
+      "notConfirmed": "Integration in den gemeinsamen Produktstand, persistente House-zu-Dungeon-Bindung, gemeinsamer Vault-/FileTransaction-/Publishschritt, vollständige Mehrownerkomposition, Save/Restart auf dem integrierten Kandidaten, echte GUI-/Hostbedienung, physische Eingabe und vollständiger E2E-01-Lauf bleiben offen; keine Produkt-, Host-, Fach- oder Gesamtfreigabe."
     }
   },
   "gmProductFollowups": {
     "date": "2026-10-10",
     "GM-UX-N-003": {
       "state": "implementation_r02_passed_cloud_host_and_gm_retest_open",
-      "source": "Issue #1 Kommentar 6084205940; ROADMAP-GM-PRODUCT-TESTING-PLAN.md; ROADMAP-GM-UX-N-003-PLAN.md",
+      "source": "Issue #1 Kommentar 6084205940; ROADMAP-GM-PRODUCT-TESTING-PLAN.md",
       "productCommit": "4f8c7fe5842605e6093c21e4effc075712554e36",
       "confirmed": "P01 bestand den unabhängigen Planreview. Der strukturierte Raum-Key-Open-Pfad prüft den echten Dirty-Guard, lässt bei sauberem Key den vorhandenen Dock weichen und nutzt danach den bestehenden Workspaceport mit roomId/sectionId/anchor. Reale Session-/StructuredKeyPanel-Regressionsfälle decken keyTarget, Feature-Occurrence, Dirty-Blockade, Dock-Wiederöffnung und unveränderte Dokument-/Dirty-/History-/Auswahl-/Kamerawerte ab; 398/398 Tests, Typprüfung, Build und unabhängiger R02 bestanden.",
       "notConfirmed": "Kein echter Obsidian-Reparaturlauf im 1440×1000-Splitlayout, kein Save/App-Reload/Reopen auf dem Fixbuild und kein Produkttester-GM-R01. Keine physische Eingabe-, UX-, Host-, Fach-, Paritäts- oder Gesamtfreigabe."
     },
     "GM-UX-N-006": {
       "state": "i02_r02_passed_cloud_host_and_gm_retest_open",
-      "source": "Issue #1 Kommentar 6085700084; ROADMAP-GM-PRODUCT-TESTING-PLAN.md; ROADMAP-GM-UX-N-006-PLAN.md",
+      "source": "Issue #1 Kommentar 6085700084; ROADMAP-GM-PRODUCT-TESTING-PLAN.md",
       "productCommit": "acc4774027d44c30295fc28b4c1e51dd2e353446",
       "confirmed": "Codec/Register und DungeonView-/DungeonEditor-Verdrahtung bestehen direkte Base-State-, Same-file-, zweimalige Reopen-, Async-Close-/Retarget-, Rename/Delete/Clear-, Dirty-Key-/Selection- und Nichtmutationsregressionen; npm run check, npm test (387/387), npm run build und unabhängiger R02 PASS.",
       "notConfirmed": "Keine zweimalige Nebelwacht-Tab-Neuöffnung im echten Cloud-Obsidian-Host und kein Produkttester-GM-R01. Kein frischer Prozess ohne Leaf-State, keine physische Eingabe-, UX-, Host-, Fach-, Paritäts- oder Gesamtfreigabe."
@@ -44,7 +44,7 @@
     },
     "GM-UX-TRAP-CONTENT-UNDO": {
       "state": "bounded_integrated_cloud_retest_passed",
-      "source": "Issue #8 preflight 6100517787 and final retest report; ROADMAP-GM-PRODUCT-TESTING-PLAN.md; checkpoint.json.gmProductTesting.latestTrapContent",
+      "source": "Issue #8 preflight 6100517787 and final retest report; ROADMAP-GM-PRODUCT-TESTING-PLAN.md",
       "productCommit": "7098269810801f93be247423862373e912cda210",
       "independentReview": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/55#issuecomment-6100485936",
       "confirmed": "On the exact installed Shared build, applied structured Room-Key note text was undone and redone through visible toolbar actions while Room 2, marker A, trap key and key panel remained selected. Dirty-draft Undo guard showed “Key-Entwurf zuerst Übernehmen oder Verwerfen.” and preserved both texts until the draft was discarded. Save, tab close, Quick Switcher reopen and reopening the same key preserved the final note; pre-run map hash 12661953ec93498bcfca15df2c1e1cf45c546201077ef47eb313cd7b7e4894db, post-save/reopen hash 741a159b249c99938df9ce6bcc1775f837eaf5b68eb50109aa531269c69192d7.",
@@ -561,7 +561,7 @@
       "run": "CE-02-P01-R01",
       "state": "passed_implementation_pending",
       "document": "ROADMAP-SALTMARCHER-CE02-PLAN.md",
-      "result": "Plans one state-retaining seven-section shell with typed read-only owner providers and separate implementation/review packages for Items, saved Encounters, NPCs, Factions, Places and Encounter Tables.",
+      "result": "Plans one state-retaining seven-section shell with typed read-only owner providers for Items, saved Encounters, NPCs, Factions, Places and Encounter Tables.",
       "review": "Independent read-only review passed exact shared commit 42808d372363cb1e9c8c8fc0ac8fca315cecd02c without a mandatory finding.",
       "limits": "Reviewed planning evidence only. Six new data providers and all CE-02 acceptance remain open; honest unavailable states do not count as delivered features."
     },
@@ -605,7 +605,7 @@
       "document": "ROADMAP-SALTMARCHER-CE02-I02-PLAN.md",
       "sourceDocument": "https://media.wizards.com/2023/downloads/dnd/SRD_CC_v5.1.pdf",
       "sourceSha256": "2504d2a0abb0a4d491a939be4f17910a2dde0312570ab8d208080225ccf0a1f0",
-      "result": "Defines a local read-only SRD 5.1 equipment and magic-item catalog, reproducible corpus, schema, source attribution, typed isolated failures, Item query/detail UI and separate review/host gates.",
+      "result": "Defines a local read-only SRD 5.1 equipment and magic-item catalog, reproducible corpus, schema, source attribution, typed isolated failures, Item query/detail UI and host acceptance criteria.",
       "limits": "Plan only; Item data/provider and five other data owners remain unavailable. All CE-AC, physical-input, screenreader and other-platform gates remain open.",
       "review": "R01 on exact 8c5c5680054b8dddd89900733ac7bbfe966876f1 required seven repairs (Issue #1 comment 6085178049). N01-R01 on exact 01a02ef124e3ffc02b626019f89f5e216612f7ab required S01 cycle/schema repairs (Issue #1 comment 6085248851). N02-R01 on exact 3b7e5c933a107da6f406aa44037decf316d09b77 found a variable-rarity schema gap (Issue #1 comment 6085306351). N03-R01 PASSED exact 679d432e145bd9afe766393346e4b788931886ea with no remaining mandatory plan finding (Issue #1 comment 6085341786). This approves planning only; S01 and I01 are undelivered."
     },
@@ -150860,7 +150860,7 @@
     },
     "phase1RepairImplementation": {
       "date": "2026-10-07",
-      "state": "candidate_ready_for_separate_review",
+      "state": "candidate_not_independently_reviewed",
       "candidateBuildSha256": "eaf6ed0f4344adfc362105aa123634cfa4582402a74abffc95bb582431057ae4",
       "originalVersion": "Dungeondraft 1.2.0.1 Opulent Kirin",
       "evidenceReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-repair-final-20261007/phase1-repair-evidence.md",
@@ -150904,7 +150904,7 @@
     },
     "phase1CaptureRepairImplementation": {
       "date": "2026-10-07",
-      "state": "candidate_ready_for_separate_review",
+      "state": "candidate_not_independently_reviewed",
       "candidateBuildSha256": "dbf47e59851e53c2497d6bdc3ab0f01dbc666e4a7f3786a157827e791f70d41b",
       "evidenceReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-capture-repair-20261007/phase1-capture-repair-evidence.md",
       "cause": "Im alten Kandidaten ging Pointer-Capture während eines aktiven Rechteckzugs vor Escape verloren. Der Lost-Capture-Handler verwarf die Geste; Escape schloss danach den Editor-Tab. Der alte breite Hostlauf belegt dieselbe Zeitfolge.",
@@ -150952,7 +150952,7 @@
     },
     "phase1CleanupImplementation": {
       "date": "2026-10-07",
-      "state": "candidate_ready_for_separate_cleanup_review",
+      "state": "candidate_not_independently_reviewed",
       "candidateBuildSha256": "d1a5a43524a597fd90ca22948067e85924678c08b3497f36f63862f99148bf49",
       "originalVersion": "Dungeondraft 1.2.0.1 Opulent Kirin",
       "evidenceReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-cleanup-implementation-20261007/cleanup-implementation.md",
@@ -151002,7 +151002,7 @@
     },
     "phase2CleanupImplementation": {
       "date": "2026-10-07",
-      "state": "candidate_ready_for_separate_cleanup_review",
+      "state": "candidate_not_independently_reviewed",
       "baseCommit": "fabdef1",
       "candidateBuildSha256": "0c597d4b6a0cd2d49d26938da7310e107bed0d962577595bbd418a480153226c",
       "originalVersion": "Dungeondraft 1.2.0.1 Opulent Kirin",
@@ -151014,7 +151014,7 @@
       "hostEdit": "/home/aaron/.cache/dungeon-native-qa/parity-phase2-cleanup-implementation-20261007/host-resource-final/evidence/1791333281974-parity-phase2-points-edit/result.json",
       "hostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase2-cleanup-implementation-20261007/host-resource-final/evidence/1791333327607-parity-phase2-points-reopen/result.json",
       "verification": "Typprüfung, 129 Kerntests und Build bestehen. Isolierter Obsidian-Edit-/Frischprozess prüft alle Phase-2-Folgen, Portal-Zwischenkarte, Mehrteil/Loch, QAWall01, Nullzug, Pointer-Cancel und Werkzeugwechsel mit Ressourcenrückgabe; Raum-Key-Bytes unverändert. Produktiver Build unverändert.",
-      "decision": "Aufräum-Umsetzungskandidat; die acht Fachfall-Abnahmen des vorherigen Builds bleiben historische Belege. Das Aufräumtor und Phase 3 warten auf einen eigenen unabhängigen Review."
+      "decision": "Aufräum-Umsetzungskandidat; die acht Fachfall-Abnahmen des vorherigen Builds bleiben historische Belege."
     },
     "phase2CleanupReview": {
       "date": "2026-10-07",
@@ -151030,65 +151030,6 @@
       "hostEdit": "/home/aaron/.cache/dungeon-native-qa/parity-phase2-cleanup-review-20261007/host-delta/evidence/1791333603538-parity-phase2-points-edit/result.json",
       "hostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase2-cleanup-review-20261007/host-delta/evidence/1791333672439-parity-phase2-points-reopen/result.json",
       "verification": "Diff gegen alle vier Aufräumpunkte, Baseline-/Kandidaten-Quellhashes, unabhängiger Benchmark samt Streuung, 130 Kerntests, Typprüfung, Build, Sprite-Differenz, Texturreferenzen, isolierter Obsidian-Edit- und Frischprozess sowie vier gespeicherte Rohdateihashes bestanden. Produktiver Build unverändert."
-    },
-    "phase3Plan": {
-      "date": "2026-10-07",
-      "state": "plan_ready_for_separate_implementation",
-      "plan": "ROADMAP-PARITY-PHASE3-PLAN.md",
-      "baseCommit": "9bb412e",
-      "baseBuildSha256": "0c597d4b6a0cd2d49d26938da7310e107bed0d962577595bbd418a480153226c",
-      "originalVersion": "Dungeondraft 1.2.0.1 Opulent Kirin",
-      "assignedCases": [
-        "DD-011.11",
-        "DD-011.12",
-        "DD-011.15",
-        "DD-011.16",
-        "DD-011.17",
-        "DD-011.18",
-        "DD-011.19",
-        "DD-011.20",
-        "DD-011.21",
-        "DD-011.22",
-        "DD-015.01",
-        "DD-015.02",
-        "DD-015.03",
-        "DD-015.04",
-        "DD-015.05",
-        "DD-015.06",
-        "DD-015.07"
-      ],
-      "openOriginalQuestions": "Boden-/Wandgalerie und Defaults; Stilwechsel vor/nach Zeichnen; Building-Farbpicker mit RGBA, Alpha, Hex, Accept/Abbruch und Pipette; QAWall01 im isolierten Original laden; Bevel, Wand-None/Schatten und vollständige Optionen-Neuöffnung.",
-      "decision": "Dieser Plan nimmt keinen Pflicht-Unterfall ab. Originalmessung, Umsetzung und Hostprüfung folgen im eigenen Umsetzungslauf; unabhängiger Review und gegebenenfalls Nachbesserung bleiben getrennt."
-    },
-    "phase2CleanupPlan": {
-      "date": "2026-10-07",
-      "state": "plan_ready_for_separate_implementation",
-      "plan": "ROADMAP-PARITY-CLEANUP-2-PLAN.md",
-      "baseCommit": "2c82e6f",
-      "baseBuildSha256": "3bc46312cba236d8166eb0c95d2b4085b558c6ecb2fa30920d9435caabb0d2dc",
-      "scope": "Gestenvorschlag/Snap, Vorschau-Portal-Scan, Paketwand-Sprite-Lebensdauer und gemeinsamer Konturbefehl-Abschluss; keine neue Werkzeugwirkung.",
-      "referenceReview": "/home/aaron/.cache/dungeon-native-qa/parity-phase2-review2-20261007/phase2-review.md",
-      "decision": "Alle acht Phase-2-Unterfälle bleiben nach dem bestandenen Fachreview abgenommen. Aufräum-Umsetzung und eigener Aufräum-Review stehen aus; Phase 3 bleibt gesperrt."
-    },
-    "phase2Plan": {
-      "date": "2026-10-07",
-      "state": "plan_ready_for_separate_implementation",
-      "plan": "ROADMAP-PARITY-PHASE2-PLAN.md",
-      "assignedCases": [
-        "DD-012.01",
-        "DD-012.02",
-        "DD-012.03",
-        "DD-013.01",
-        "DD-013.02",
-        "DD-013.03",
-        "DD-014.01",
-        "DD-014.02"
-      ],
-      "originalVersion": "Dungeondraft 1.2.0.1 Opulent Kirin",
-      "currentCandidateCommit": "93507a5",
-      "currentCandidateBuildSha256": "d1a5a43524a597fd90ca22948067e85924678c08b3497f36f63862f99148bf49",
-      "openOriginalQuestions": "Delete-Action-Zustellung, Dreipunkt-Umriss bei Einzel-/Mehrteil-/Lochkarte, Trefferzonen, Escape bei gehaltenem Punkt-/Kantenzug, Ellipsen- und einfache Einfüge-Frischöffnung sowie weitere Portalnähe.",
-      "decision": "Keine der acht Anforderungen durch diesen Plan als implementiert oder abgenommen markieren. Umsetzung, Review, mögliche Nachbesserung und Aufräumen bleiben getrennte Arbeitsläufe."
     },
     "phase1CleanupReview": {
       "date": "2026-10-07",
@@ -151231,20 +151172,6 @@
       "finding": "X/None creates a wall-less shape, but a later Alt erasure of another Building adds a wall around that shape in the current wall style. The edited shape also changes to that style. Undo removes both new walls; Redo restores them.",
       "remaining": "Matching Host sequence, exact rebuild scope on other shapes, same-card comparison and full Phase-3 review remain open."
     },
-    "phase3RepairOptionsPlan": {
-      "date": "2026-10-07",
-      "state": "plan_ready_for_separate_implementation",
-      "plan": "ROADMAP-PARITY-PHASE3-REPAIR-OPTIONS-PLAN.md",
-      "baseCommit": "d589876",
-      "baseBuildSha256": "c2480249f036eff3356c49ba7300e0882beaf184102dda2e87a93bd77fbe6214",
-      "originalVersion": "Dungeondraft 1.2.0.1 Opulent Kirin",
-      "assignedCases": [
-        "DD-011.15",
-        "DD-015.02"
-      ],
-      "openOriginalQuestions": "Reichweite der Wandneuerzeugung nach Alt-Radierung, aktive Wandfarbe/Alpha/Bevel und Verhalten mehrerer X/None-Formen.",
-      "decision": "Zuerst Originalregel eingrenzen, danach gleich aufgebaute neunfache Host-Optionsfolge und atomare Nachbesserung; unabhängiger Review aller 17 Phase-3-Unterfälle folgt in eigenem Lauf."
-    },
     "phase3RepairOptionsImplementation": {
       "date": "2026-10-07",
       "state": "implementation_verified_independent_review_open",
@@ -151304,43 +151231,6 @@
       "hostPickerReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-review-20261007/host-picker/evidence/1791369210465-parity-phase3-building-reopen/result.json",
       "remaining": "Bodenbild und unmittelbare Stile, vollständige Building-Neuöffnung, Farbfläche/Pipette unter gleichen Startbedingungen, Paketwandbilder, innere Bevel-Verbindung und Punktzugbild in eigenem Nachbesserungszyklus."
     },
-    "phase3RemainingRepairPlan": {
-      "date": "2026-10-07",
-      "state": "plan_ready_for_separate_implementation",
-      "file": "/home/aaron/Schreibtisch/Obsidian-Dungeon-Editor-Phase1/ROADMAP-PARITY-PHASE3-REPAIR-REMAINING-PLAN.md",
-      "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
-      "baselineCommit": "b45519a",
-      "baselineBuildSha256": "5cb9861713b5d4afbc786bbd2f23d4a2fbb4e3d7d6fbb37c6035beb1b9d37de3",
-      "openCases": [
-        "DD-011.11",
-        "DD-011.12",
-        "DD-011.15",
-        "DD-011.17",
-        "DD-011.22",
-        "DD-015.01",
-        "DD-015.03",
-        "DD-015.04",
-        "DD-015.05"
-      ],
-      "verifiedRegressionCases": [
-        "DD-011.16",
-        "DD-011.18",
-        "DD-011.19",
-        "DD-011.20",
-        "DD-011.21",
-        "DD-015.02",
-        "DD-015.06",
-        "DD-015.07"
-      ],
-      "order": [
-        "Original-/Hostmesskarten und Farbprofile",
-        "24 Bodenstile und Material-/Alpha-Wirkung",
-        "Farbfläche und Pipette bei gleichen Ausgangsbedingungen",
-        "10 native Paketwände plus QAWall01, Farbe und Alpha",
-        "Bevel-Verbindung und Paketwand nach Konturmutationen",
-        "vollständige Building-Optionskarte mit Phase-1-/2-Regression"
-      ]
-    },
     "phase3RemainingReview": {
       "date": "2026-10-07",
       "state": "gate_open_repair_required",
@@ -151370,45 +151260,6 @@
         "DD-015.03",
         "DD-015.04",
         "DD-015.05"
-      ]
-    },
-    "phase3ImageMatrixRepairPlan": {
-      "date": "2026-10-07",
-      "state": "plan_ready_for_separate_implementation",
-      "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
-      "baselineCommit": "e6b5622",
-      "baselineBuildSha256": "c18010185310c6a347f55b49a0c9be593d433be203c06b8968b64bf5a027ea0a",
-      "file": "/home/aaron/Schreibtisch/Obsidian-Dungeon-Editor-Phase1/ROADMAP-PARITY-PHASE3-REPAIR-IMAGE-MATRIX-PLAN.md",
-      "review": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-remaining-20261007/phase3-independent-review.md",
-      "reviewAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-remaining-20261007/review-audit.json",
-      "openCases": [
-        "DD-011.11",
-        "DD-011.12",
-        "DD-011.15",
-        "DD-011.17",
-        "DD-011.22",
-        "DD-015.01",
-        "DD-015.03",
-        "DD-015.04",
-        "DD-015.05"
-      ],
-      "verifiedRegressionCases": [
-        "DD-011.16",
-        "DD-011.18",
-        "DD-011.19",
-        "DD-011.20",
-        "DD-011.21",
-        "DD-015.02",
-        "DD-015.06",
-        "DD-015.07"
-      ],
-      "order": [
-        "gleiche Original-/Hostbildmessung und Profile",
-        "Boden-Sofort-/Ladebilder und Tint/Alpha",
-        "Building-Farbfläche und Pipette samt gemeinsamen Pickerkontexten",
-        "Wandstil- und Wandfarbmatrix",
-        "Bevel und Punktmutation",
-        "Neun-Optionen-Gesamtfall und Phase-1-/2-Regression"
       ]
     },
     "phase3ImageMatrixImplementation": {
@@ -151627,33 +151478,6 @@
       ],
       "remaining": "Original-Gebäudeabnutzung per UI/Save erheben und gleiches Host-Einstellungsmodell planen; danach Boden- und Wandbildmatrizen auf beiden Zuständen wiederholen, übrige Phase-3-Lücken und unabhängiger Review offen."
     },
-    "phase3WearBehaviorPlan": {
-      "date": "2026-10-07",
-      "state": "plan_ready_for_separate_implementation",
-      "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
-      "originalBinarySha256": "9670325214d744194511d3ce731e910594b75e373928d95ca9e97ea30a769438",
-      "originalPckSha256": "f5c34fad6ef77acffba0e38a65fcb091d079df65da178cbee021944f43040d60",
-      "file": "/home/aaron/Schreibtisch/Obsidian-Dungeon-Editor-Phase1/ROADMAP-PARITY-PHASE3-WEAR-BEHAVIOR-PLAN.md",
-      "uiSavedWearOff": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-plan-20261007/native-ui/wear-off.dungeondraft_map",
-      "uiSavedWearOn": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-plan-20261007/native-ui/wear-on.dungeondraft_map",
-      "originalFreshReopenWearOff": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-plan-20261007/native-off-reopen/runs/20261007-201704-2055204/evidence/screens/02-reopened-map.png",
-      "observedValues": {
-        "disabled": null,
-        "enabled": "res://textures/wear/grime.png"
-      },
-      "acceptanceRule": "Gleiche Bedienung und Funktion, ungefähr gleichwertige Grafik; geringe Pixel- und Farbmittelabweichungen allein sperren die Abnahme nicht.",
-      "openCases": [
-        "DD-011.11",
-        "DD-011.12",
-        "DD-011.15",
-        "DD-011.17",
-        "DD-011.22",
-        "DD-015.01",
-        "DD-015.03",
-        "DD-015.04",
-        "DD-015.05"
-      ]
-    },
     "phase3WearBehaviorImplementation": {
       "date": "2026-10-07",
       "state": "implementation_candidate_pending_independent_review",
@@ -151682,12 +151506,11 @@
         "DD-015.03",
         "DD-015.04",
         "DD-015.05"
-      ],
-      "remaining": "Übrige Phase-3-Unterfälle nach dem getrennten Verhaltensplan umsetzen; anschließend unabhängiger 17-Fälle-Review. Produktiver Vault und installierter Build bleiben unverändert."
+      ]
     },
     "phase3WearSecondImplementation": {
       "date": "2026-10-07",
-      "state": "candidate_for_separate_independent_17_case_review",
+      "state": "candidate_not_independently_reviewed",
       "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
       "candidateBuildSha256": "1d76c8cc22866ed35fba7d729add740a0bb6dc2c7152d156b03f4912b6b446cf",
       "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-followup-20261007/implementation-run2.md",
@@ -151740,19 +151563,6 @@
       "visualAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-followup-20261007/current-options-visual-audit.json",
       "coreTestsPassed": 142
     },
-    "phase3BevelPointsRepairPlan": {
-      "date": "2026-10-07",
-      "state": "plan_ready_for_separate_implementation",
-      "plan": "ROADMAP-PARITY-PHASE3-REPAIR-BEVEL-POINTS-PLAN.md",
-      "baseCommit": "9cca426",
-      "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
-      "openCases": [
-        "DD-011.15",
-        "DD-015.04",
-        "DD-015.05"
-      ],
-      "reviewBaseline": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-review-20261007/phase3-independent-review.md"
-    },
     "phase3BevelPointsImplementation": {
       "date": "2026-10-08",
       "state": "implementation_candidate_pending_independent_review",
@@ -151782,22 +151592,11 @@
         "DD-011.15",
         "DD-015.04",
         "DD-015.05"
-      ],
-      "remaining": "Unabhängigen Review aller 17 Phase-3-Unterfälle auf dem Endbuild getrennt durchführen; die drei Unterfälle und das Fachphasentor bleiben bis dahin offen."
-    },
-    "phase3CleanupPlan": {
-      "date": "2026-10-08",
-      "state": "plan_ready_for_separate_implementation",
-      "plan": "ROADMAP-PARITY-CLEANUP-3-PLAN.md",
-      "baseCommit": "2747cf9",
-      "baseBuildSha256": "aced507fe33c4d7bcb69882a8c3c1e282a377a08171b32709e887df7eed586d2",
-      "referenceReview": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-review2-20261008/phase3-independent-review.md",
-      "scope": "Ressourcen der gehaltenen Bodenvorschau, gemessene Rasterarbeit, Building-Wandstilpfade und Phase-3-Hostfixtures.",
-      "decision": "Dieser Plan ändert keine der 17 bestandenen Fachabnahmen. Umsetzung und unabhängiger Aufräum-Review folgen in eigenen Läufen; Phase 4 bleibt gesperrt."
+      ]
     },
     "phase3CleanupImplementation": {
       "date": "2026-10-08",
-      "state": "candidate_ready_for_separate_cleanup_review",
+      "state": "candidate_not_independently_reviewed",
       "candidateBuildSha256": "013c9aefaabd2fca85b673eac020516b57228385366814f60350141a6aad9fe8",
       "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-cleanup-20261008/phase3-cleanup-implementation.md",
       "audit": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-cleanup-20261008/implementation-audit.json",
@@ -151807,7 +151606,7 @@
       "coverageAfter": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-cleanup-20261008/after-coverage/native-floor-benchmark.json",
       "checks": "72 Variantenarrays und 72 Abdeckungsmasken bytegleich; 17 finale Host-Ergebnisse auf demselben Kandidatenbuild bestanden, darunter Kontur, Bevel, Punktstil, Optionen, Alpha, Wear und Phase-1-/2-Regressionen mit frischer Neuöffnung. Typprüfung, 146 Kerntests und Build bestanden.",
       "gate": "open",
-      "decision": "Umsetzungskandidat ohne neue Fachabnahme. Der unabhängige Aufräum-Review folgt getrennt; Phase 4 bleibt gesperrt."
+      "decision": "Umsetzungskandidat ohne neue Fachabnahme."
     },
     "phase3CleanupIndependentReview": {
       "date": "2026-10-08",
@@ -151825,54 +151624,9 @@
       "openCleanupFindings": [],
       "gate": "passed"
     },
-    "phase4Plan": {
-      "date": "2026-10-08",
-      "state": "plan_ready_for_separate_implementation",
-      "plan": "ROADMAP-PARITY-PHASE4-PLAN.md",
-      "baseCommit": "c1991f3",
-      "baseBuildSha256": "013c9aefaabd2fca85b673eac020516b57228385366814f60350141a6aad9fe8",
-      "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
-      "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
-      "originalProgramSha256": "9670325214d744194511d3ce731e910594b75e373928d95ca9e97ea30a769438",
-      "originalPckSha256": "f5c34fad6ef77acffba0e38a65fcb091d079df65da178cbee021944f43040d60",
-      "requiredCases": [
-        "DD-026.01",
-        "DD-026.02",
-        "DD-026.03",
-        "DD-026.04",
-        "DD-026.05",
-        "DD-026.06",
-        "DD-026.07",
-        "DD-026.08",
-        "DD-026.17",
-        "DD-026.30",
-        "DD-047.01",
-        "DD-047.02",
-        "DD-047.03",
-        "DD-047.04",
-        "DD-047.05",
-        "DD-047.06",
-        "DD-047.07",
-        "DD-047.08",
-        "DD-047.09",
-        "DD-047.10",
-        "DD-047.11",
-        "DD-047.12",
-        "DD-047.13",
-        "DD-047.14",
-        "DD-047.15",
-        "DD-047.16",
-        "DD-047.17",
-        "DD-047.18"
-      ],
-      "originalEvidence": "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-symbol-tags-retry/",
-      "decision": "Nur Plan. Alle 28 Pflicht-Unterfälle und das Phase-4-Fachphasentor bleiben offen; Original-Detailregeln werden vor der jeweiligen Umsetzung direkt gemessen.",
-      "gate": "open"
-    },
     "phase4CleanupImplementation": {
       "date": "2026-10-08",
       "state": "candidate_pending_independent_cleanup_review",
-      "plan": "ROADMAP-PARITY-CLEANUP-4-PLAN.md",
       "candidateBuildSha256": "2c9704ed68172197d9f3e3702ae154c133b230e1378013c8a2dde6a5b76ae2eb",
       "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
       "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase4-cleanup-20261008/phase4-cleanup-implementation.md",
@@ -151883,7 +151637,7 @@
       "hostResultsPassed": 8,
       "coreTestsPassed": 153,
       "gate": "open",
-      "decision": "Interner Aufräumkandidat ohne neue Fachfall-Abnahme. Die 28 Phase-4-Fachfälle bleiben auf dem vorherigen unabhängigen Review verifiziert; ein eigener unabhängiger Aufräum-Review entscheidet das Aufräumtor vor Phase 5."
+      "decision": "Interner Aufräumkandidat ohne neue Fachfall-Abnahme. Die 28 Phase-4-Fachfälle bleiben auf dem vorherigen unabhängigen Review verifiziert."
     },
     "phase4CleanupIndependentReview": {
       "date": "2026-10-08",
@@ -151900,27 +151654,11 @@
         "P4-CL-R2"
       ],
       "gate": "open",
-      "decision": "Der Fachreview mit 28 Unterfällen bleibt unverändert gültig. Der technische Aufräum-Review zeigt Kachelneubau nach Assetinvalidierung bei identischen IDs und eine unvollständige gepaarte Mess-/ID-Matrix. Eigene Nachbesserungsplanung, Umsetzung und erneuter unabhängiger Aufräum-Review vor Phase 5."
-    },
-    "phase4CleanupRepairPlan": {
-      "date": "2026-10-08",
-      "state": "plan_ready_for_separate_implementation",
-      "plan": "ROADMAP-PARITY-CLEANUP-4-REPAIR-PLAN.md",
-      "baseCommit": "8b8311e",
-      "baseBuildSha256": "2c9704ed68172197d9f3e3702ae154c133b230e1378013c8a2dde6a5b76ae2eb",
-      "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
-      "reviewBaseline": "/home/aaron/.cache/dungeon-native-qa/parity-phase4-cleanup-review-20261008/phase4-cleanup-review.md",
-      "openFindings": [
-        "P4-CL-R1",
-        "P4-CL-R2"
-      ],
-      "gate": "open",
-      "decision": "Nur Nachbesserungsplan. Die 28 unabhängig verifizierten Fachfälle bleiben unverändert; P4-CL-R1/R2 und das Aufräumtor bleiben bis zu getrennter Umsetzung und erneutem unabhängigen Review offen."
+      "decision": "Der Fachreview mit 28 Unterfällen bleibt unverändert gültig. Der technische Aufräum-Review zeigt Kachelneubau nach Assetinvalidierung bei identischen IDs und eine unvollständige gepaarte Mess-/ID-Matrix."
     },
     "phase4CleanupRepairImplementation": {
       "date": "2026-10-08",
       "state": "candidate_pending_independent_cleanup_review",
-      "plan": "ROADMAP-PARITY-CLEANUP-4-REPAIR-PLAN.md",
       "candidateBuildSha256": "40cf25ff4c44468602a366fafddece17e2cde698e2fc5a1355188599b4d76832",
       "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
       "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase4-cleanup-repair-20261008/phase4-cleanup-repair-implementation.md",
@@ -151931,7 +151669,7 @@
       "sameIdImageReloadDecoded": true,
       "coreTestsPassed": 153,
       "gate": "open",
-      "decision": "Interner Nachbesserungskandidat für P4-CL-R1/R2 ohne neue Fachfall-Abnahme. Die 28 Phase-4-Fachfälle bleiben auf dem unabhängigen Fachreview verifiziert. Ein eigener unabhängiger Aufräum-Review bewertet Rohmatrix, Bildwechsel, Knoten/Observer, Speicherpeaks und den dokumentierten fehlgeschlagenen ersten Wear-Kaltstartversuch vor Phase 5."
+      "decision": "Interner Nachbesserungskandidat für P4-CL-R1/R2 ohne neue Fachfall-Abnahme. Die 28 Phase-4-Fachfälle bleiben auf dem unabhängigen Fachreview verifiziert."
     },
     "phase4CleanupRepairIndependentReview": {
       "date": "2026-10-08",
@@ -151953,30 +151691,13 @@
       "verifiedFachCasesUnchanged": 28,
       "coreTestsPassed": 153,
       "gate": "open",
-      "decision": "P4-CL-R1 ist durch eigenen Hostlauf behoben. P4-CL-R2 bleibt wegen falscher Modal-Knotenzählung, QA-Runner-cgroup statt Obsidian-Aktionsspeicher und nicht nach Sichtbarkeit ausgewählter Bild-URLs offen. Die 28 Phase-4-Fachfälle bleiben auf dem vorherigen unabhängigen Fachreview verifiziert; ein eigener Nachbesserungsplan, Umsetzung und erneuter unabhängiger Aufräum-Review folgen vor Phase 5."
-    },
-    "phase4CleanupMatrixRepairPlan": {
-      "date": "2026-10-08",
-      "state": "plan_ready_for_separate_implementation",
-      "plan": "ROADMAP-PARITY-CLEANUP-4-MATRIX-REPAIR-PLAN.md",
-      "baseCommit": "a40ab00",
-      "baseBuildSha256": "40cf25ff4c44468602a366fafddece17e2cde698e2fc5a1355188599b4d76832",
-      "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
-      "reviewBaseline": "/home/aaron/.cache/dungeon-native-qa/parity-phase4-cleanup-review2-20261008/phase4-cleanup-independent-review.md",
-      "openFindings": [
-        "P4-CL-R2-MODAL",
-        "P4-CL-R2-MEMORY",
-        "P4-CL-R2-URLS"
-      ],
-      "gate": "open",
-      "decision": "Nur Nachbesserungsplan für korrekte Modal-, Obsidian-Prozessspeicher- und Sichtbarkeitsmessung sowie Einordnung des fehlgeschlagenen ersten Wear-Kaltstarts. Die 28 Fachfälle und P4-CL-R1 bleiben verifiziert; ein eigener Umsetzungslauf und danach ein unabhängiger Aufräum-Review entscheiden das weiterhin offene Tor vor Phase 5."
+      "decision": "P4-CL-R1 ist durch eigenen Hostlauf behoben. P4-CL-R2 bleibt wegen falscher Modal-Knotenzählung, QA-Runner-cgroup statt Obsidian-Aktionsspeicher und nicht nach Sichtbarkeit ausgewählter Bild-URLs offen. Die 28 Phase-4-Fachfälle bleiben auf dem vorherigen unabhängigen Fachreview verifiziert."
     },
     "phase4CleanupMatrixRepairImplementation": {
       "date": "2026-10-08",
       "state": "candidate_pending_independent_cleanup_review",
       "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
       "referenceReview": "/home/aaron/.cache/dungeon-native-qa/parity-phase4-review3-20261008/phase4-independent-review.md",
-      "plan": "ROADMAP-PARITY-CLEANUP-4-MATRIX-REPAIR-PLAN.md",
       "candidateBuildSha256": "40cf25ff4c44468602a366fafddece17e2cde698e2fc5a1355188599b4d76832",
       "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
       "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase4-cleanup-matrix-repair-20261008/phase4-cleanup-matrix-repair-implementation.md",
@@ -151984,9 +151705,9 @@
       "hostAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase4-cleanup-matrix-repair-20261008/host-regression-audit.json",
       "wearColdAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase4-cleanup-matrix-repair-20261008/wear-cold-audit.json",
       "verifiedInImplementation": "17 geordnete ID-Zustände über drei Builds gleich; 7 Aktionen je viermal, je Modalöffnung 1793 Modalbuttons/Bilder statt falscher Bibliothekszählung; sichtbare Bild-URLs nach Rechteckschnitt; Aktionspeak aus zurückgesetzter Obsidian-Flatpak-Scope; fünf Phase-4-Hostfolgen, Raum-/Key-Edit und Neuöffnung, Observer-Freigabe, Wear-Edit und Neuöffnung im Hauptdokument; Typprüfung, 153 Tests und Build bestanden.",
-      "sideObservation": "Frischer erster Wear-Start auf Fach- und Endbuild öffnet den angenommenen Neuanlagedialog im noch aktiven about:blank-Einstellungsdokument; Hauptseite sieht ihn nicht. Der nächste Start im Hauptdokument besteht. Getrennter Review muss die Bedeutung beurteilen.",
+      "sideObservation": "Frischer erster Wear-Start auf Fach- und Endbuild öffnet den angenommenen Neuanlagedialog im noch aktiven about:blank-Einstellungsdokument; Hauptseite sieht ihn nicht. Der nächste Start im Hauptdokument besteht. Bedeutung in diesem Lauf nicht unabhängig geprüft.",
       "gate": "open",
-      "decision": "QA-Nachbesserungskandidat für P4-CL-R2-MODAL/MEMORY/URLS ohne neue Fachfall-Abnahme und ohne Produktcodeänderung. Die 28 Phase-4-Fachfälle bleiben auf dem unabhängigen Fachreview verifiziert. Ein eigener unabhängiger Aufräum-Review entscheidet Tor und Wear-Einordnung vor Phase 5."
+      "decision": "QA-Nachbesserungskandidat für P4-CL-R2-MODAL/MEMORY/URLS ohne neue Fachfall-Abnahme und ohne Produktcodeänderung. Die 28 Phase-4-Fachfälle bleiben auf dem unabhängigen Fachreview verifiziert."
     },
     "phase4CleanupMatrixRepairIndependentReview": {
       "date": "2026-10-08",
@@ -152009,52 +151730,7 @@
       ],
       "openCleanupFindings": [],
       "gate": "passed",
-      "decision": "Der eigene unabhängige Review schließt P4-CL-R2 und das Phase-4-Aufräumtor. Die 28 Phase-4-Fachfälle behalten ihre direkte Original-/Host-Abnahme; Phase 5 folgt mit eigenem Planlauf. Physische Eingabe und gemeinsamer Abschluss bleiben späteren Roadmap-Phasen vorbehalten."
-    },
-    "phase5Plan": {
-      "date": "2026-10-08",
-      "state": "plan_ready_for_separate_implementation",
-      "plan": "ROADMAP-PARITY-PHASE5-PLAN.md",
-      "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
-      "baseBuildSha256": "40cf25ff4c44468602a366fafddece17e2cde698e2fc5a1355188599b4d76832",
-      "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
-      "requiredObjectCases": [
-        "DD-026.09",
-        "DD-026.10",
-        "DD-026.11",
-        "DD-026.12",
-        "DD-026.13",
-        "DD-026.14",
-        "DD-026.15",
-        "DD-026.16",
-        "DD-026.17",
-        "DD-026.18",
-        "DD-026.19",
-        "DD-026.20",
-        "DD-026.21",
-        "DD-026.28",
-        "DD-026.29"
-      ],
-      "requiredObjectColorCases": [
-        "DD-028.01",
-        "DD-028.02",
-        "DD-028.03",
-        "DD-028.04",
-        "DD-028.05",
-        "DD-028.06",
-        "DD-028.07",
-        "DD-028.08",
-        "DD-028.09",
-        "DD-028.10",
-        "DD-028.11",
-        "DD-028.12",
-        "DD-028.19"
-      ],
-      "previouslyVerifiedRegression": "DD-026.17 im Phase-4-Fachreview; keine neue Abnahme in diesem Planlauf",
-      "sharedCaseBoundary": "DD-028.19 bleibt als Gesamtfall bis zur separaten Scatter-/Light-Prüfung offen.",
-      "originalEvidence": "/home/aaron/.cache/dungeon-native-qa/audit-20261004/objekte-bearbeitung/native-dd026/evidence/",
-      "decision": "Nur Plan. Offene Layer-/Sorting-, Scale-, Licht-, Picker-, Escape- und Original-Neuöffnungsregeln werden vor Implementierungs- und Hostentscheidungen direkt gemessen. Phase-5-Fachphasentor offen.",
-      "gate": "open"
+      "decision": "Der eigene unabhängige Review schließt P4-CL-R2. Die 28 Phase-4-Fachfälle behalten ihre direkte Original-/Host-Abnahme. Physische Eingabe und gemeinsamer Abschluss sind hier nicht belegt."
     },
     "phase3FinalIndependentReview": {
       "date": "2026-10-08",
@@ -152103,29 +151779,10 @@
       "coreTestsPassed": 155,
       "gate": "passed"
     },
-    "phase5CleanupPlan": {
-      "date": "2026-10-08",
-      "state": "plan_ready_for_separate_implementation",
-      "plan": "ROADMAP-PARITY-CLEANUP-5-PLAN.md",
-      "baseCommit": "61e0491",
-      "baseBuildSha256": "aebdf3730e42dc598929295859f7448d14071652dcd5f5675d043bc20d0b6c68",
-      "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
-      "referenceReview": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair3-review-20261008/phase5-repair3-independent-review.md",
-      "findings": [
-        "P5-CL-1",
-        "P5-CL-2",
-        "P5-CL-3",
-        "P5-CL-4",
-        "P5-CL-5"
-      ],
-      "gate": "open",
-      "decision": "Nur Aufräumplan für die fünf belegten technischen Schwächen. Keine Produktänderung oder neue Fachabnahme; getrennter Umsetzungslauf und unabhängiger Aufräum-Review vor Phase 6."
-    },
     "phase5CleanupImplementation": {
       "date": "2026-10-08",
       "state": "candidate_ready_independent_review_pending",
       "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
-      "plan": "ROADMAP-PARITY-CLEANUP-5-PLAN.md",
       "candidateBuildSha256": "f8738f0788b18f156c45b7f421da32140c1bf146ba2724e701b1137a640069a4",
       "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
       "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-cleanup-implementation-20261008/phase5-cleanup-implementation.md",
@@ -152164,29 +151821,12 @@
       "coreTestsPassed": 155,
       "hostEditReopenPairsPassed": 8,
       "gate": "open",
-      "decision": "Der eigene Review bestätigt Kernwirkung und Regressionen ohne neuen Produktbefund. Gezählte Textur-/Gradientressourcen und Renderzeit vor/nach dem Eingriff sowie gepaarte Pfad-/Tür-Nahlichtbilder fehlen als im Plan verlangte Nachweise. Eigener Nachbesserungsplan, QA-Umsetzung und erneuter Review vor Phase 6."
-    },
-    "phase5CleanupRepairPlan": {
-      "date": "2026-10-08",
-      "state": "plan_ready_for_separate_qa_implementation",
-      "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
-      "plan": "ROADMAP-PARITY-CLEANUP-5-REPAIR-PLAN.md",
-      "referenceReview": "/home/aaron/.cache/dungeon-native-qa/parity-phase5-cleanup-review-20261008/phase5-cleanup-independent-review.md",
-      "baseBuildSha256": "aebdf3730e42dc598929295859f7448d14071652dcd5f5675d043bc20d0b6c68",
-      "candidateBuildSha256": "f8738f0788b18f156c45b7f421da32140c1bf146ba2724e701b1137a640069a4",
-      "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
-      "open": [
-        "P5-CL-R1",
-        "P5-CL-R2"
-      ],
-      "gate": "open",
-      "decision": "Nur begrenzte Nachweisplanung. Direkte Textur-/Gradient- und Renderzeitmessung sowie gepaarte Objekt-/Pfad-/Tür-Lichtbilder folgen in getrennter QA-Umsetzung und unabhängigem Review. Keine Produktänderung oder neue Fachabnahme."
+      "decision": "Der eigene Review bestätigt Kernwirkung und Regressionen ohne neuen Produktbefund. Gezählte Textur-/Gradientressourcen und Renderzeit vor/nach dem Eingriff sowie gepaarte Pfad-/Tür-Nahlichtbilder fehlen als verlangte Nachweise."
     },
     "phase5CleanupRepairImplementation": {
       "date": "2026-10-08",
       "state": "qa_candidate_pending_independent_cleanup_review",
       "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
-      "plan": "ROADMAP-PARITY-CLEANUP-5-REPAIR-PLAN.md",
       "baseBuildSha256": "aebdf3730e42dc598929295859f7448d14071652dcd5f5675d043bc20d0b6c68",
       "candidateBuildSha256": "f8738f0788b18f156c45b7f421da32140c1bf146ba2724e701b1137a640069a4",
       "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
@@ -152202,7 +151842,7 @@
         "P5-CL-R2"
       ],
       "gate": "open",
-      "decision": "QA-Nachweise für Texturpool, Gradienten, tatsächliche Renderaufrufe und gepaarte Nahlichtbilder liegen vor; Produktbuild blieb unverändert. Erst der getrennte unabhängige Aufräum-Review entscheidet P5-CL-R1/R2 und das Tor vor Phase 6."
+      "decision": "QA-Nachweise für Texturpool, Gradienten, tatsächliche Renderaufrufe und gepaarte Nahlichtbilder liegen vor; Produktbuild blieb unverändert."
     },
     "phase5CleanupRepairIndependentReview": {
       "date": "2026-10-08",
@@ -152223,47 +151863,11 @@
       "hostEditReopenPairsRechecked": 8,
       "coreTestsPassed": 155,
       "gate": "passed",
-      "decision": "Eigener Code- und Rohdatenreview bestätigt direkte Textur-/Gradient-/Renderzeitmessung, gleiche Karten- und Aktionszustände, wirksame Objekt-/Pfad-/Tür-Bildwechsel und null entfernte Lichtaufträge bei lokalen Änderungen. P5-CL-R1/R2 geschlossen und Phase-5-Aufräumtor bestanden; Phase 6 startet mit getrenntem Planlauf."
-    },
-    "phase6Plan": {
-      "date": "2026-10-08",
-      "state": "plan_ready_for_separate_implementation",
-      "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
-      "plan": "ROADMAP-PARITY-PHASE6-PLAN.md",
-      "referenceEvidence": [
-        "/home/aaron/.cache/dungeon-native-qa/audit-20261004/objekte-bearbeitung/native-dd026/evidence/05-object-tool.png",
-        "/home/aaron/.cache/dungeon-native-qa/implementation-20261005/qa/native-object-library-original/Dungeondraft-reference.dll",
-        "/home/aaron/.cache/dungeon-native-qa/audit-20261004/objekte-bearbeitung/DD-030-SELECT.md"
-      ],
-      "openOriginal": "Einzelne gespeicherte Gestenwerte, Scale-Grenzen, gefilterte Atlas-Nachbar-IDs sowie vollständige Auswahl-/Raum-/Historypaare auf definiertem Kartenstand.",
-      "baseCommit": "0b9479a5831945c6d288bcb908ae45067d7f7c35",
-      "candidateBuildSha256": "f8738f0788b18f156c45b7f421da32140c1bf146ba2724e701b1137a640069a4",
-      "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
-      "objectGestures": [
-        "DD-026.22",
-        "DD-026.23",
-        "DD-026.24",
-        "DD-026.25",
-        "DD-026.26",
-        "DD-026.27"
-      ],
-      "selection": [
-        "DD-030.19",
-        "DD-030.20",
-        "DD-030.21",
-        "DD-030.22",
-        "DD-030.23",
-        "DD-030.24",
-        "DD-030.25",
-        "DD-030.29",
-        "DD-030.34"
-      ],
-      "gate": "open",
-      "decision": "Nur Phase-6-Planung. Direkte Original-/Endbuildfolgen für sechs Objektgesten und neun objektbezogene Auswahlpositionen fehlen; erst danach belegte Unterschiede umsetzen und unabhängig reviewen. Physische Eingabe und gemeinsame Großkarte bleiben Phase 7."
+      "decision": "Eigener Code- und Rohdatenreview bestätigt direkte Textur-/Gradient-/Renderzeitmessung, gleiche Karten- und Aktionszustände, wirksame Objekt-/Pfad-/Tür-Bildwechsel und null entfernte Lichtaufträge bei lokalen Änderungen. P5-CL-R1/R2 geschlossen."
     },
     "phase6Implementation": {
       "date": "2026-10-08",
-      "state": "candidate_ready_for_separate_independent_review",
+      "state": "candidate_not_independently_reviewed",
       "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
       "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-implementation-20261008/phase6-implementation.md",
       "originalGestureRecord": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-implementation-20261008/native/runs/20261008-184847-2893389/evidence/original-gestures.json",
@@ -152290,7 +151894,7 @@
       ],
       "coreTestsPassed": 155,
       "gate": "open",
-      "decision": "Umsetzungskandidat mit direkter Original-Gestenkarte, bestandenem Host-Edit-/Neuöffnungspaar und Basisprüfungen; der unabhängige Fachreview entscheidet jede Position gesondert."
+      "decision": "Umsetzungskandidat mit direkter Original-Gestenkarte, bestandenem Host-Edit-/Neuöffnungspaar und Basisprüfungen; keine unabhängige Fachabnahme."
     },
     "phase6IndependentReview": {
       "date": "2026-10-08",
@@ -152326,45 +151930,12 @@
       "originalRecordCorrection": "DD-026.27 speicherte 95° aus 90° Ausgangswinkel; Rohakte und Umsetzungsbericht benennen den gespeicherten Wert irrtümlich als 5° aus 0.",
       "coreTestsPassed": 155,
       "gate": "open",
-      "decision": "Vier begrenzte Auswahl-Kernfolgen belegt; elf Pflichtpositionen brauchen passende Original-/Endbuildpaare. Eigener Nachbesserungsplan vor Umsetzung und erneutem unabhängigem Review; Aufräumphase und Phase 7 bleiben gesperrt."
-    },
-    "phase6RepairPlan": {
-      "date": "2026-10-08",
-      "state": "plan_ready_for_separate_implementation",
-      "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
-      "plan": "ROADMAP-PARITY-PHASE6-REPAIR-PLAN.md",
-      "referenceReview": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-review-20261008/phase6-independent-review.md",
-      "baseCommit": "dbe03773d9091a5011ee7de123eb74e65cc55c2e",
-      "candidateBuildSha256": "34fee3e980afd1f5a8e3f1d1a0f1f77198afd3315620f3441e1132079201e095",
-      "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
-      "open": [
-        "DD-026.22",
-        "DD-026.23",
-        "DD-026.24",
-        "DD-026.25",
-        "DD-026.26",
-        "DD-026.27",
-        "DD-030.19",
-        "DD-030.20",
-        "DD-030.22",
-        "DD-030.24",
-        "DD-030.25"
-      ],
-      "regression": [
-        "DD-030.21",
-        "DD-030.23",
-        "DD-030.29",
-        "DD-030.34"
-      ],
-      "projectInvariant": "Raumgrenzzug mit roomId, Key-Bezug, Undo/Redo, Save und frischer Neuöffnung im Host.",
-      "gate": "open",
-      "decision": "Nur Nachbesserungsplanung. Gleiche Original-/Hoststartkarten und Eingabespuren klären elf offene Fälle; Produktänderung erst bei direkt gemessener Funktionsdifferenz. Getrennte Umsetzung und unabhängiger Review folgen."
+      "decision": "Vier begrenzte Auswahl-Kernfolgen belegt; elf Pflichtpositionen brauchen passende Original-/Endbuildpaare."
     },
     "phase6RepairImplementation": {
       "date": "2026-10-08",
-      "state": "candidate_ready_for_separate_independent_review_with_open_input_edges",
+      "state": "candidate_not_independently_reviewed_with_open_input_edges",
       "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
-      "plan": "ROADMAP-PARITY-PHASE6-REPAIR-PLAN.md",
       "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair-implementation-20261008/phase6-repair-implementation.md",
       "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair-implementation-20261008/implementation-audit.json",
       "candidateBuildSha256": "3e85baaa5d17f133bf4b3a9edee477aa9998788ca99d4985fa286e92b1436f16",
@@ -152392,7 +151963,7 @@
       ],
       "projectInvariant": "Raumgrenzzug mit roomId, Feature, Key, Undo/Redo, Speichern und Neuöffnung im Host bestanden.",
       "gate": "open",
-      "decision": "Der Umsetzungskandidat korrigiert die direkt gemessene Cloth-Griffsensitivität und sichert Raumwechsel, Objektgesten und Regressionen im isolierten Host. Mehrere Eingaberänder bleiben ungepaart; erst der getrennte unabhängige Review entscheidet die 15 Pflichtpositionen und das Fachphasentor."
+      "decision": "Der Umsetzungskandidat korrigiert die direkt gemessene Cloth-Griffsensitivität und sichert Raumwechsel, Objektgesten und Regressionen im isolierten Host. Mehrere Eingaberänder bleiben ungepaart; keine unabhängige Abnahme der 15 Pflichtpositionen."
     },
     "phase6RepairIndependentReview": {
       "date": "2026-10-08",
@@ -152429,43 +152000,10 @@
       "projectInvariant": "V4-Raumgrenzzug mit Feature, Key, Undo/Redo, Speichern und frischer Neuöffnung bestätigt.",
       "gate": "open"
     },
-    "phase6Repair2Plan": {
-      "date": "2026-10-08",
-      "state": "plan_ready_for_separate_implementation",
-      "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
-      "plan": "ROADMAP-PARITY-PHASE6-REPAIR2-PLAN.md",
-      "referenceReview": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair-review-20261008/phase6-independent-review.md",
-      "baseCommit": "615c94daec5d8f530c5a20270d2b703cad25345f",
-      "candidateBuildSha256": "3e85baaa5d17f133bf4b3a9edee477aa9998788ca99d4985fa286e92b1436f16",
-      "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
-      "open": [
-        "DD-026.24",
-        "DD-026.25",
-        "DD-026.27",
-        "DD-030.19",
-        "DD-030.20",
-        "DD-030.24"
-      ],
-      "regression": [
-        "DD-026.22",
-        "DD-026.23",
-        "DD-026.26",
-        "DD-030.21",
-        "DD-030.22",
-        "DD-030.23",
-        "DD-030.25",
-        "DD-030.29",
-        "DD-030.34"
-      ],
-      "projectInvariant": "V4-Raumgrenzzug bleibt Regression.",
-      "gate": "open",
-      "decision": "Nur Planung für sechs ungepaarte Eingabefolgen; keine Produktänderung oder neue Fachabnahme. Eigene Umsetzung und unabhängiger Review folgen."
-    },
     "phase6Repair2Implementation": {
       "date": "2026-10-09",
       "state": "in_progress_five_reviewed_one_open",
       "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
-      "plan": "ROADMAP-PARITY-PHASE6-REPAIR2-PLAN.md",
       "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair2-implementation-20261008/implementation-progress.md",
       "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair2-implementation-20261008/native/phase6-repair2-z-audit.json",
       "candidateBuildSha256": "bdf8d7a3b484f48943979271bcf1128f02a87bfcf940e66b0bc2d3f0eab3f1c2",
@@ -152568,23 +152106,9 @@
       ],
       "gate": "open"
     },
-    "phase6Repair3Plan": {
-      "date": "2026-10-09",
-      "state": "plan_ready_for_separate_implementation",
-      "plan": "ROADMAP-PARITY-PHASE6-REPAIR3-PLAN.md",
-      "referenceReview": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-review2-20261009/phase6-review.md",
-      "baseCommit": "395b97911a2c4d2b2410102516ac6c0220ae107e",
-      "candidateBuildSha256": "bdf8d7a3b484f48943979271bcf1128f02a87bfcf940e66b0bc2d3f0eab3f1c2",
-      "open": [
-        "DD-026.25"
-      ],
-      "gate": "open",
-      "decision": "Nur der Fokusvergleich ist geplant; kein Produktcode geändert oder Fachfall freigegeben. Umsetzung und eigener Review folgen getrennt."
-    },
     "phase6Repair3Implementation": {
       "date": "2026-10-09",
       "state": "candidate_pending_independent_review",
-      "plan": "ROADMAP-PARITY-PHASE6-REPAIR3-PLAN.md",
       "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair3-20261009/implementation.md",
       "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair3-20261009/focus-audit.json",
       "candidateBuildSha256": "bdf8d7a3b484f48943979271bcf1128f02a87bfcf940e66b0bc2d3f0eab3f1c2",
@@ -152628,26 +152152,9 @@
       "limit": "Kein DOM-Blur im Host beobachtet; physische Eingabe und kombinierte Großkarte folgen in Phase 7. Cloth-Mittelpunkt grafisch ungefähr gleichwertig.",
       "gate": "passed"
     },
-    "phase6CleanupPlan": {
-      "date": "2026-10-09",
-      "state": "plan_ready_for_separate_implementation",
-      "plan": "ROADMAP-PARITY-CLEANUP-6-PLAN.md",
-      "referenceReview": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-final-review-20261009/phase6-independent-review.md",
-      "baseCommit": "8884b11cf9caa075cb3a07c575244108d3f421da",
-      "candidateBuildSha256": "bdf8d7a3b484f48943979271bcf1128f02a87bfcf940e66b0bc2d3f0eab3f1c2",
-      "items": [
-        "P6-CL-1",
-        "P6-CL-2",
-        "P6-CL-3",
-        "P6-CL-4"
-      ],
-      "gate": "open",
-      "decision": "Nur technischer Aufräumplan für Objektliste und Auswahl-Zeigerzustand. Keine Produktänderung oder neue Fachabnahme; getrennte Umsetzung und unabhängiger Aufräumreview vor Phase 7."
-    },
     "phase6CleanupImplementation": {
       "date": "2026-10-09",
       "state": "candidate_pending_independent_cleanup_review",
-      "plan": "ROADMAP-PARITY-CLEANUP-6-PLAN.md",
       "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-cleanup-implementation-20261009/cleanup-implementation.md",
       "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-cleanup-implementation-20261009/implementation-audit.json",
       "baseCommit": "94039ec08747d73f1fc8b85d35e0e7d47c5e9020",
@@ -152668,7 +152175,6 @@
     "phase6CleanupIndependentReview": {
       "date": "2026-10-09",
       "state": "cleanup_gate_passed_phase7_plan_next",
-      "plan": "ROADMAP-PARITY-CLEANUP-6-PLAN.md",
       "reviewOfCommit": "8f7fa1e692a0f5a9f7b39f04303400ccfeb56413",
       "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-cleanup-review-20261009/cleanup-independent-review.md",
       "rawAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-cleanup-review-20261009/review-audit.json",
@@ -152692,23 +152198,6 @@
       "coreTestsPassed": 167,
       "gate": "passed"
     },
-    "phase7Plan": {
-      "date": "2026-10-09",
-      "state": "plan_ready_for_separate_implementation",
-      "plan": "ROADMAP-PARITY-PHASE7-PLAN.md",
-      "reference": "Dungeondraft 1.2.0.1 Opulent Kirin for Building/Object/Select; project contract for room–feature–key",
-      "baseCommit": "cf3787ea1d5f71767e28af342827aa8f242d1c9a",
-      "candidateBuildSha256": "b321128188b944c3324594663a410acfd84863f17860f637b9ed2e6ecc33b466",
-      "installedBuildSha256": "2f2e9dbc5e2be83f769a61e86b2c7f91ba4198a20c03ceb95a3ea7dd0368f790",
-      "strands": [
-        "P7-1 small V4 room-object-feature-key",
-        "P7-2 physical mouse and touchpad",
-        "P7-3 large combined map",
-        "P7-4 protected Vault-copy play view"
-      ],
-      "gate": "open",
-      "decision": "Nur eigener Phase-7-Plan. Physische Eingabe und große Karte besitzen noch keine Abnahme; Umsetzung und unabhängiger Review folgen getrennt vor dem abschließenden Aufräumen."
-    },
     "phase7Implementation": {
       "date": "2026-10-09",
       "state": "p7_1_3_4_implementation_review_candidate",
@@ -152731,14 +152220,14 @@
         "hostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase7-large-20261009/evidence/1791504709551-parity-phase7-large-reopen/result.json",
         "metrics": "/home/aaron/.cache/dungeon-native-qa/parity-phase7-large-20261009/evidence/1791504666383-parity-phase7-large-edit/p7-large-metrics.json",
         "entities": 4295,
-        "decision": "Implementation candidate; separate independent review pending"
+        "decision": "Implementation candidate; not independently reviewed in this run"
       },
       "p7_4": {
         "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase7-vault-20261009/phase7-p7-4-implementation.md",
         "hostEdit": "/home/aaron/.cache/dungeon-native-qa/parity-phase7-vault-20261009/evidence/1791505021886-parity-phase7-vault-edit/result.json",
         "hostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase7-vault-20261009/evidence/1791505060073-parity-phase7-vault-reopen/result.json",
         "protectedFiles": 63,
-        "decision": "Implementation candidate; separate independent review pending"
+        "decision": "Implementation candidate; not independently reviewed in this run"
       },
       "open": [
         "P7-1/3/4 independent review",
@@ -152761,13 +152250,6 @@
       ],
       "gate": "open"
     },
-    "phase7RepairPlan": {
-      "date": "2026-10-09",
-      "state": "plan_ready_for_separate_diagnosis",
-      "plan": "ROADMAP-PARITY-PHASE7-REPAIR-PLAN.md",
-      "scope": "One content-modal click after P7-1 selection mirror did not open the dialog",
-      "gate": "open"
-    },
     "phase7RepairImplementation": {
       "date": "2026-10-09",
       "state": "implementation_review_candidate",
@@ -152775,7 +152257,7 @@
       "modalOwner": "/home/aaron/.cache/dungeon-native-qa/parity-phase7-modal-owner-20261009/evidence/1791506167305-parity-phase7-combined-edit/p7-content-dialog-trace.json",
       "hostEdit": "/home/aaron/.cache/dungeon-native-qa/parity-phase7-dialog-repair2-20261009/evidence/1791506350139-parity-phase7-combined-edit/result.json",
       "hostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase7-dialog-repair2-20261009/evidence/1791506383123-parity-phase7-combined-reopen/result.json",
-      "decision": "Host looked only in the main Obsidian document while the complete modal was rendered in an about:blank popout; corrected host pair passed. Separate review pending.",
+      "decision": "Host looked only in the main Obsidian document while the complete modal was rendered in an about:blank popout; corrected host pair passed. Not independently reviewed in this run.",
       "gate": "open"
     },
     "phase7RepairReview": {
@@ -152786,7 +152268,11 @@
       "hostEdit": "/home/aaron/.cache/dungeon-native-qa/parity-phase7-dialog-review-20261009/evidence/1791506625113-parity-phase7-combined-edit/result.json",
       "hostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase7-dialog-review-20261009/evidence/1791506653956-parity-phase7-combined-reopen/result.json",
       "decision": "P7-1 reviewed with a second complete popout edit/reopen pair; P7-3 and P7-4 already reviewed. Physical P7-2 deferred by user, so phase gate remains open.",
-      "open": ["P7-2 physical mouse/touchpad deferred by user", "Phase-7 gate", "Final cleanup"],
+      "open": [
+        "P7-2 physical mouse/touchpad deferred by user",
+        "Phase-7 gate",
+        "Final cleanup"
+      ],
       "gate": "open"
     },
     "phase7GateReview": {
@@ -152795,7 +152281,11 @@
       "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase7-gate-20261009/phase7-gate-review.md",
       "audit": "/home/aaron/.cache/dungeon-native-qa/parity-phase7-gate-20261009/gate-audit.json",
       "candidateBuildSha256": "b321128188b944c3324594663a410acfd84863f17860f637b9ed2e6ecc33b466",
-      "verifiedStrands": ["P7-1", "P7-3", "P7-4"],
+      "verifiedStrands": [
+        "P7-1",
+        "P7-3",
+        "P7-4"
+      ],
       "exception": {
         "strand": "P7-2",
         "basis": "Ausdrückliche Nutzeranweisung vom 09.10.2026: Überspringe das und arbeite weiter.",
@@ -152803,24 +152293,21 @@
         "physicalInputVerified": false
       },
       "gate": "passed_with_user_exception",
-      "open": ["Abschließende Aufräumphase", "Parität der übrigen Dungeondraft-Werkzeuge"]
-    },
-    "phase7CleanupPlan": {
-      "date": "2026-10-09",
-      "state": "plan_ready_for_separate_implementation",
-      "plan": "ROADMAP-PARITY-CLEANUP-7-PLAN.md",
-      "baseCommit": "4c5808e3f6709119db4a607f933c71fe76120d4e",
-      "items": ["P7-CL-1", "P7-CL-2", "P7-CL-3"],
-      "physicalInput": "skipped_at_user_request_unverified",
-      "gate": "open"
+      "open": [
+        "Abschließende Aufräumphase",
+        "Parität der übrigen Dungeondraft-Werkzeuge"
+      ]
     },
     "phase7CleanupImplementation": {
       "date": "2026-10-09",
       "state": "implementation_candidate_pending_independent_review",
-      "plan": "ROADMAP-PARITY-CLEANUP-7-PLAN.md",
       "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase7-cleanup-20261009/cleanup-implementation.md",
       "audit": "/home/aaron/.cache/dungeon-native-qa/parity-phase7-cleanup-20261009/implementation-audit.json",
-      "items": ["P7-CL-1", "P7-CL-2", "P7-CL-3"],
+      "items": [
+        "P7-CL-1",
+        "P7-CL-2",
+        "P7-CL-3"
+      ],
       "productBuildSha256": "b321128188b944c3324594663a410acfd84863f17860f637b9ed2e6ecc33b466",
       "hostPairsPassed": 3,
       "coreTestsPassed": 167,
@@ -152833,12 +152320,29 @@
       "reviewOfCommit": "b6edbbe36f20aa7a18c5bf96cfca39148bc58fe3",
       "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase7-cleanup-review-20261009/cleanup-independent-review.md",
       "audit": "/home/aaron/.cache/dungeon-native-qa/parity-phase7-cleanup-review-20261009/review-audit.json",
-      "verifiedItems": ["P7-CL-1", "P7-CL-2", "P7-CL-3"],
+      "verifiedItems": [
+        "P7-CL-1",
+        "P7-CL-2",
+        "P7-CL-3"
+      ],
       "newHostPairs": 3,
       "coreTestsPassed": 167,
       "productBuildSha256": "b321128188b944c3324594663a410acfd84863f17860f637b9ed2e6ecc33b466",
       "physicalInput": "skipped_at_user_request_unverified",
       "gate": "passed"
+    },
+    "phase3WearOriginalObservation": {
+      "date": "2026-10-07",
+      "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
+      "originalBinarySha256": "9670325214d744194511d3ce731e910594b75e373928d95ca9e97ea30a769438",
+      "originalPckSha256": "f5c34fad6ef77acffba0e38a65fcb091d079df65da178cbee021944f43040d60",
+      "uiSavedWearOff": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-plan-20261007/native-ui/wear-off.dungeondraft_map",
+      "uiSavedWearOn": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-plan-20261007/native-ui/wear-on.dungeondraft_map",
+      "originalFreshReopenWearOff": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-plan-20261007/native-off-reopen/runs/20261007-201704-2055204/evidence/screens/02-reopened-map.png",
+      "observedValues": {
+        "disabled": null,
+        "enabled": "res://textures/wear/grime.png"
+      }
     }
   },
   "hexAtlas": {
@@ -153386,38 +152890,6 @@
               "styles.css": "cdf172e7d3c101d5917c16afe487641a19d9d5afe8ad23365b33c958ee1ac321",
               "manifest.json": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64"
             }
-          },
-          "independentRereview": {
-            "result": "PASS",
-            "candidate": "adc4b98a3925b39abefb0a4db9a2bcd7c1a5a6ec",
-            "testedIntegratedSource": "81c6a257af95b8dd9de0cbbd1fb76b6c1380521c",
-            "readDirectly": true,
-            "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/13#issuecomment-6094937083",
-            "gate": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6094937270",
-            "actualEvidence": "/home/aaron/.cache/dungeon-native-qa/city-plans/runtime-i01b-r02-20261010/review.json",
-            "hashes": {
-              "review.json": "d5b23a87b22c13de2e99a5f2fc5fb47357459a2e99b85fd2adee47a820bb5ada",
-              "source-bindings.json": "b0111bc6a2fadc1d247c3b64fe6e3140f1bf91da39fd7667f9a7c4c184c55e83",
-              "counterprobes.ts": "6e51c436929f12e9cdb10a911c7ecf7916322ec20d5aa3cd908fb8d3503090b1",
-              "counterprobes.log": "549e58adc46c1a24b71b9005413c65a7914d9588252c0dbce24cf8c06078c10b"
-            },
-            "sourceBindingsVerified": 541,
-            "checks": {
-              "check": true,
-              "testsPassed": 551,
-              "testsFailed": 0,
-              "cleanBuild": true,
-              "independentCounterprobesPassed": 4,
-              "independentCounterprobesFailed": 0
-            },
-            "closedFindings": [
-              "RUNTIME-I01b-R01-01"
-            ],
-            "limits": [
-              "Actual controlled-port core review, no productive Host/provider receipt",
-              "I01c visible integration and native/fresh-start check remain open",
-              "P02/P04/import/full E2E/original parity remain separate"
-            ]
           }
         },
         "visibleNextSlice": {
@@ -153445,7 +152917,6 @@
             "HexOwns": "openNative inert mount and existing AtlasView/Editor/Renderer/Repository integration",
             "requestedSwitch": "Navigator.switchCampaign prepares valid Keys/gestures/draft before calling actual activate; provider UI must not bypass this via direct Lifecycle activation.",
             "externalChange": "Actual Context notification synchronously invokes contextChanged; no invented Context/registry/inventory authority.",
-            "ownerClaim": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6095092158",
             "planPR": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/30",
             "actualPlanReviewReport": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6095138217",
             "codeIntegrated": true,
@@ -153734,41 +153205,6 @@
               "sha256": "68e1cf101ceaadd624168b431fddc297c90e8a5bc6be25a15f0926ebb569a5ea"
             }
           },
-          "independentRereview": {
-            "id": "CITY-HOST-R02",
-            "state": "PASS",
-            "candidate": "4c35a7d6482bc5583e10bf9155ce65e55e438889",
-            "sourceCommit": "2bc2d0ea13285eecf6863d4ef5802ebb66a81805",
-            "closedFindings": [
-              "CITY-HOST-R01-01"
-            ],
-            "findings": [],
-            "checks": {
-              "check": "PASS",
-              "tests": "605/605 PASS",
-              "cleanBuild": "PASS dirty=false exact candidate",
-              "originalCounterprobes": "2/2 PASS unchanged original TypeScript",
-              "independentNewCounterprobe": "PASS invalid text retained read-only across unload and opening another native Atlas; old history/save rejected without writes",
-              "trackedSourcesHashEqual": 561,
-              "fixtureFilesHashEqual": 32,
-              "tripletOwnerHashesEqual": {
-                "main.js": true,
-                "styles.css": true,
-                "manifest.json": true
-              },
-              "foreignCheckpointRootsRetained": true,
-              "historicalNativeCurrentRunRetained": true,
-              "borrowedDependencyIdentityUnchanged": true
-            },
-            "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/13#issuecomment-6096213544",
-            "gate": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6096213797",
-            "actualEvidence": "/home/aaron/.cache/dungeon-native-qa/city-plans/city-host-r02-20261010/review.json",
-            "sha256": "362fb23235fce01fbb7f21c832013a279f9b9b56187d466f1f7027559780bf9b",
-            "evidenceHashesChecked": 16,
-            "readDirectly": true,
-            "nativeRan": false,
-            "fullE2E": false
-          },
           "nativeRan": false,
           "fullE2E": false,
           "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-visible-host-n01c-20261010/implementation.json",
@@ -153796,7 +153232,6 @@
               "styles.css": true,
               "manifest.json": true
             },
-            "foreignCheckpointRootsRetained": true,
             "historicalNativeCurrentRunRetained": true,
             "borrowedDependencyIdentityUnchanged": true
           },
@@ -154165,14 +153600,12 @@
           "candidateBefore": "2880a7e7ac3af2bd5f6f1f0d70181c4e0cfd7c4a",
           "auditedComposition": "5950ef844e6c2081b7a0907cf0131754fc2a5dad",
           "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
-          "checkpoint": "checkpoint.hexAtlasExecution.latestPromotionAudit",
           "mandatoryFinding": "E2E01-PROMOTION-01",
           "nextOwnAction": "Publish unchanged original Save/Fresh/Recovery artifacts for existing integrated review; no new GUI."
         },
         "nativeSaveFreshRecoveryEvidenceAccess": {
           "id": "HEX-E2E01-SAVE-FRESH-RECOVERY-EVIDENCE-BINDING-01",
           "state": "original_artifacts_access_delivered_independent_scope_review_pending",
-          "checkpoint": "checkpoint.hexAtlasExecution.latestSaveFreshRecoveryEvidenceBinding",
           "repositoryEvidence": "docs/reference/atlas-host-save-i02-h01/SAVE-PROVENANCE.md",
           "binding": "docs/reference/atlas-host-save-i02-h01/binding.json",
           "bindingSha256": "d77e2ceb2919be1e78291bdcd91b63cabe8e03efe7e11b6b9c39f5c1fccc9846",
@@ -154183,7 +153616,6 @@
         "nativeSaveFreshRecoveryIndependentReview": {
           "id": "HEX-E2E01-SAVE-FRESH-RECOVERY-INDEPENDENT-01",
           "state": "PASS_retained_native_scope_independently_qualified",
-          "checkpoint": "checkpoint.hexAtlasExecution.latestSaveFreshRecoveryIndependentReview",
           "decision": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/13#issuecomment-6100666965",
           "closedFinding": "E2E01-PROMOTION-01"
         },
@@ -154193,7 +153625,6 @@
           "state": "independent_inputs_consumed_execution_requires_exact_current_head_CI_and_remote_guard",
           "auditedComposition": "8df3d9af476716646e2239cbb14cdfdcc91452a7",
           "consumedShared": "886cc2a475d9a8f705d74728c746c986b4a1c088",
-          "checkpoint": "checkpoint.hexAtlasExecution.latestPromotionDecision",
           "fullE2E": false
         },
         "integratedPromotionExecution": {
@@ -154201,7 +153632,6 @@
           "state": "PROMOTED_TO_SHARED_SCOPED",
           "mergeCommit": "6a41f1640de3e4a4311d905d95f66cd79d91b698",
           "decision": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/39#issuecomment-6100834444",
-          "checkpoint": "checkpoint.hexAtlasExecution.latestPromotionExecution",
           "fullE2E": false
         },
         "sharedLocationKeyHostProbe": {
@@ -154211,7 +153641,7 @@
           "sourceCommit": "b87a066e38f1a0000def253bf50e45ee4a5d604f",
           "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
           "evidence": "docs/reference/atlas-shared-location-h01/receipt.json",
-          "sha256": "98d23f859725451a1f24c56de1d629da6c779c58b9d6013936a6a729b9c9fba3",
+          "sha256": "da3014cddb3bc886af0d188ce75989ec66d9b8d6bde8d9e3c3c7362a6fa758ad",
           "finding": "SHARED-LOCATION-H01-SAVE-01",
           "freshProcessStarted": false,
           "productEdited": false,
@@ -154238,7 +153668,7 @@
           "nativeRepeated": false,
           "freshProcessStarted": false,
           "independentAcceptance": "pending actual repair/native/independent #40 acceptance; no product PASS",
-          "sha256": "7f67a37b0cba454d9e7867a8842cd7062e330b7ebbda5a96646d97478ab39112"
+          "sha256": "135f0373c9065a3dfaa83d9dbd8c0d4ec469b79908c0d3b7aa892fd932ca55b9"
         },
         "sharedLocationKeyRepair": {
           "id": "E2E-01-SHARED-LOCATION-KEY-R01",
@@ -154248,7 +153678,7 @@
           "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
           "sourcePlan": "ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md",
           "evidence": "docs/reference/atlas-shared-location-r01/receipt.json",
-          "sha256": "a2a0545702efc7f69eaa65c8964b9a9bf49bd82914d6765682b41e6d76ef3160",
+          "sha256": "0be7b90d1a4b00582a5e107f6e6d5802fdac6d4a33ae65b648a93274c821683e",
           "consumedShared": "113e37f21670abb42c19b62f4f4480b511e65544",
           "consumedCampaign": "32dc3e8f205421dd8e7c6309b75868c7622cb79f",
           "testsPassed": 551,
@@ -154256,7 +153686,7 @@
           "nativeRepeated": false,
           "freshProcessStarted": false,
           "originalH01AndD01Preserved": true,
-          "independentReview": "pending separate exact-head review",
+          "independentReview": "not independently reviewed in this run",
           "fullE2E": false,
           "latestComposition": {
             "evidence": "docs/reference/atlas-shared-location-r01/composition.json",
@@ -154274,7 +153704,7 @@
           "sourcePlan": "ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md",
           "state": "targeted_noop_Save_repair_checks_pass_independent_review_native_pending",
           "evidence": "docs/reference/atlas-shared-location-r01/noop-repair.json",
-          "sha256": "b9167a00b214207a897b4019dbae5c1407e40603da67515d34ae23856c08378f",
+          "sha256": "112afd3b9c4e6107dcd5d20eb97776ce6870f8ddef24819a760577a3cdb69a5f",
           "sourceCommit": "bc98b720d742693025563df7f93282be9936eb62",
           "consumedShared": "11b40200bd0fa3a86de2a81c85ce62e4edb2afcd",
           "reviewInput": {
@@ -154379,7 +153809,7 @@
           "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
           "sourcePlan": "ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md",
           "evidence": "docs/reference/atlas-shared-location-h02/receipt.json",
-          "sha256": "369647b69d7f46b4848e6be1347932fe15b28299616cd29d5e6398aff5955d7b",
+          "sha256": "3a748e391edb229a4b4e6709866a17f78e35377331fadf8c80ea385e1a9c0012",
           "sourceCommit": "4515088772b759cda2e19d249367699c9868c72c",
           "buildSha256": "76bb453acca65f260e2276a385da66c5039a643fa10681b9b7a20fc5209c1322",
           "fixtureVersion": "e2e01-spatial-v2",
@@ -154466,7 +153896,7 @@
           "fullE2E": false,
           "commonGateClosed": false,
           "evidence": "docs/reference/atlas-shared-location-h02/qualification.json",
-          "sha256": "5cfeeffbfeb28a0b8575e2b60e953ada593a4055c59a1cf6442dbbc2a900c6a2",
+          "sha256": "f7a7cc783894d5c17a3b863a127d18be00d5fb389bd471f1e8b1ce5a3cb1464b",
           "originalReceiptSha256": "12856a4f351af562952cd50ce8616dae734f14b91fc8abbaabed6eab17ab94bf",
           "nativeRepeated": false
         },
@@ -154654,7 +154084,7 @@
           "reproduction": "Checkout the exact source; npm ci, npm run check, npm test, npm run build. CI exposes portable full logs; local raw logs remain at the named QA root.",
           "finishedAt": "2026-10-10T22:14:26.436662+00:00",
           "receipt": "docs/reference/atlas-detail-binding-d01/dungeon-at-location-i01.json",
-          "sha256": "121121d8f7dd7e923eec492ea4673b9df2f44fed9b2d6b10bed279005b382d9f"
+          "sha256": "a7188acee3017b3cbbc716ead23699ddf69650fc22f9beb14ee3f0846e03f3fc"
         },
         "dungeonAtLocationN02": {
           "id": "E2E-01-HEX04-DUNGEON-AT-LOCATION-N02",
@@ -154760,7 +154190,7 @@
           "reproduction": "Checkout exact sourceCommit; npm ci; npm run check; npm test; npm run build. Core/DOM fresh models are distinct from actual Obsidian/Electron.",
           "finishedAt": "2026-10-10T22:29:57.555698+00:00",
           "receipt": "docs/reference/atlas-detail-binding-d01/dungeon-at-location-n02.json",
-          "sha256": "22f68235d1ce5cf2bfc716f78e172c6189d4ba957bf1a354bc37990dd1e6c715"
+          "sha256": "7ccbcb066e0e104d36b4fc7b65bdee339ae6b28b4a49f2b7b4fbb9fedf048c81"
         },
         "dungeonAtLocationQualification": {
           "state": "independent_R02_PASS_integrated_native_and_GM_pending",
@@ -154831,9 +154261,8 @@
             "owner": "Cloud-GM-Produkttester",
             "testedHead": "a454d9a708f54c4dddc755786653cb8155cbe29e",
             "report": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80#issuecomment-6103561640",
-            "checkpointPR": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/89",
-            "checkpointCommit": "59bb5bb2771bf27ab58f867b5ae9080ab50f77b2",
-            "checkpointReference": "gmProductTesting.currentRun / latestAtlasLocationGMReuse",
+            "snapshotPullRequest": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/89",
+            "snapshotCommit": "59bb5bb2771bf27ab58f867b5ae9080ab50f77b2",
             "result": "Reported bounded visible PASS: existing dungeon to Torheim, room Key edit, Save, map return and same-process file close/reopen with exact saved text and retained IDs.",
             "host": "Isolated Cloud Obsidian 1.14.4; synthetic visible input; 1024x800 CSS px / DPR1",
             "rawEvidenceDirectory": "/workspace/scratch/gm-cloud-qa/dungeon-at-location-gm-20261011/host-logs/",
@@ -155053,8 +154482,7 @@
             "receipt": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/91#issuecomment-6103883554",
             "sharedCI": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/actions/runs/38099467773",
             "ci": "SUCCESS",
-            "treeEqualsReviewedHead": true,
-            "ownWorkingRecordDelta": "Own review/transition metadata only; retained on Hex branch for next native handoff. No new product candidate or selfintegration."
+            "treeEqualsReviewedHead": true
           }
         },
         "dungeonAtLocationInspectorNativeH02": {
@@ -155069,7 +154497,7 @@
           "productBuildSource": "dba7d559044f9e8b072a329f2efacd7452b333b4",
           "fixtureVersion": "e2e01-spatial-v2",
           "receipt": "docs/reference/atlas-detail-binding-d01/inspector-n02-native-h02.json",
-          "receiptSha256": "ceb0b240c02d828e74025154bcb15e5455c5af9e533ec9bf62d75c70b7caa1a2",
+          "receiptSha256": "3c9e425c38fbf34531ca8c70443327078bd56bd88a9e65be9262b35d7de09003",
           "checks": {
             "nativeEditPassed": 5,
             "freshReopenPassed": 1,
@@ -155187,9 +154615,9 @@
           "consumerSharedInput": "0bebb85b562f0996c74b772aad311dc3a9aac047",
           "producer": {
             "reportUrl": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80#issuecomment-6104260884",
-            "checkpointCommit": "332e8ae4d62134ad7ac830cfed51b310ac5fc9d0",
+            "snapshotCommit": "332e8ae4d62134ad7ac830cfed51b310ac5fc9d0",
             "publishedBranchHead": "3ecc64914906d90bf06ca7da0ad339d600f4dbfb",
-            "reportAndOwnCheckpointReadDirectly": true
+            "reportReadDirectly": true
           },
           "testedBuild": {
             "sourceRevision": "ca290326a35bb792c22ef8f02e215a3dd9ef121d",
@@ -155281,7 +154709,7 @@
           "sourceCommit": "1e22697638738d83388181273d40835425f04f4c",
           "implementationCommit": "cac07c30e0d80bd8b657eb844e3621c01a696dc9",
           "sharedInput": "73bfe2260d29716e7ca9811b4314fd8db67bfeb2",
-          "input": "checkpoint.hexAtlasExecution.dungeonAtLocationInspectorGmN02Consumption",
+          "input": "acceptance.json#/hexAtlas/requirements/30/dungeonAtLocationInspectorGmN02Consumption",
           "finding": {
             "id": "GM-N02-01",
             "producerResult": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80#issuecomment-6104260884",
@@ -155373,7 +154801,7 @@
           "e2e01UserLine": 13,
           "state": "independent_scroll_review_and_integration_consumed_bundled_GM_blocked_display_zoom_finding_open",
           "sourceCommit": "7ff78b9bc31869bff3ba6d2f19d9a619ac6bbccb",
-          "producerRecord": "checkpoint.hexAtlasExecution.dungeonAtLocationInspectorScrollN03",
+          "producerRecord": "acceptance.json#/hexAtlas/requirements/30/dungeonAtLocationInspectorScrollN03",
           "independentReview": {
             "id": "GM-N02-01-SCROLL-R01",
             "reviewer": "Contributor",
@@ -155398,8 +154826,7 @@
             "productDiffFromReviewedHead": "empty",
             "headCi": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/actions/runs/38103969288",
             "sharedCi": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/actions/runs/38104432859",
-            "ciLiveChecked": "both SUCCESS on their exact recorded SHAs",
-            "selfIntegratedByHex": false
+            "ciLiveChecked": "both SUCCESS on their exact recorded SHAs"
           },
           "bundledGmInput": {
             "owner": "Cloud-GM-Produkttester",
@@ -155408,7 +154835,7 @@
             "blocker": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/92#issuecomment-6104519136",
             "state": "blocked_UI_not_started",
             "missingInput": "Cloud owner must restore or prove a uniquely owned visible Obsidian window/display; prepared PR98 build predates integrated N03 and must be rebound to actual fresh Shared build.",
-            "consequence": "Reuse the existing City GM claim for one City/Hex field-discoverability observation after host resolution. No separate competing Atlas run or GUI claim."
+            "consequence": "City/Hex field discoverability remains to be observed after host resolution."
           },
           "openFindings": [
             "GM-N02-02: 131 percent UI zoom clipping; root cause and current native geometry still open"
@@ -155436,13 +154863,11 @@
           "input": {
             "producer": "Cloud-GM-Produkttester",
             "result": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/92#issuecomment-6104735161",
-            "hexHandoff": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80#issuecomment-6104737639",
             "producerStatus": "partial",
             "hostBlockerResolvedAsReported": true,
             "producerBranchAtRead": "origin/codex/gm-city-house-n03-cloud-20261011",
             "producerBranchHeadAtRead": "7c3a1e3b5cc08a9969fb2e6cb2e5d1a849c64faa",
             "structuredProducerReceiptAvailableAtRead": true,
-            "producerCheckpointPath": "checkpoint.gmProductTesting.currentRun",
             "producerSnapshotPr": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/105",
             "producerSnapshotStateAtRead": "OPEN; read as source receipt, not integrated by Hex"
           },
@@ -155499,8 +154924,7 @@
             "source": "cf8d3c1f9b1f47241bf751de997a1f86786ec83c",
             "input": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/92#issuecomment-6104735161",
             "finding": "After visible app reload and house-name Apply/Undo/Redo/restore, Atlas Save and one retry report Stadtentwurf failed/collided; City/Campaign files remain at their previously saved hashes.",
-            "ownerHandling": "Stadt confirmed investigation of live AtlasHistory listener iteration in the existing #92 scope; hypothesis not independently verified by Hex. No competing Hex fix.",
-            "ownerClaim": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/92#issuecomment-6104746044"
+            "ownerHandling": "Investigation of live AtlasHistory listener iteration reported in #92; hypothesis not independently verified in this receipt."
           },
           "openFindings": [
             "GM-N02-02: Inspector clipping at 131 percent UI zoom and 1024x800; new 1440x1000 GM result does not exercise this geometry."
@@ -155533,7 +154957,7 @@
           "sourceCommit": "bca790c22bdab5f76a28d3f1d4699f1f464c1572",
           "qualifiedShared": "a4f20a553060ec84941b97cbb71bd105d5ca5a62",
           "receipt": "docs/reference/atlas-detail-binding-d01/inspector-zoom-geometry-d01.json",
-          "receiptSha256": "d319cec07de3c74a637921d13ca628a931f66c5c716fdbfa407b94e2e71c5fbd",
+          "receiptSha256": "ce6329cecea805a5eeca50ee80ef20f06454ccd7fab08341b435bf380803a1e0",
           "fixtureVersion": "e2e01-spatial-v2",
           "fixtureManifestSha256": "23735bb6c95107b7dec93ffa56ec66405a0f4fe0ec3822fc0476d90d2920188d",
           "finding": {
@@ -155569,7 +154993,7 @@
           "fixtureVersion": "e2e01-spatial-v2",
           "fixtureManifestSha256": "23735bb6c95107b7dec93ffa56ec66405a0f4fe0ec3822fc0476d90d2920188d",
           "receipt": "docs/reference/atlas-detail-binding-d01/inspector-horizontal-fit-n04.json",
-          "receiptSha256": "18c8e783b58eabebe4bd77e02d17c590df62017be3ef1d00d7a638060feaa7f9",
+          "receiptSha256": "b873bced4c6937551b4d63395a8d5f98c4ff5a5f6d4b9292434c2ffc91c7ef90",
           "result": "existing Location/Room actions and detail/binding targets fit available dock width; native seven-sample horizontal-layout regression PASS, 131% sidebar-open153/153 versus D01 153/276 CSSpx",
           "checks": {
             "type": "PASS",
@@ -155604,13 +155028,12 @@
           "e2e01UserLine": 13,
           "state": "bounded_free_GM_same_session_and_fresh_reuse_consumed_IME_R01_S01_integrated_native_IME_open",
           "pullRequest": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/110",
-          "producerRecord": "checkpoint.hexAtlasExecution.dungeonAtLocationInspectorHorizontalFitN04",
+          "producerRecord": "acceptance.json#/hexAtlas/requirements/30/dungeonAtLocationInspectorHorizontalFitN04",
           "nativeReceipt": "docs/reference/atlas-detail-binding-d01/inspector-horizontal-fit-n04.json",
-          "nativeReceiptSha256": "eaaca71c5235b72cf120347210dfeb26fc5a55b1b94a8f942074d5459822da0c",
+          "nativeReceiptSha256": "b873bced4c6937551b4d63395a8d5f98c4ff5a5f6d4b9292434c2ffc91c7ef90",
           "nativeSourceCommit": "da3e06adefdcad20bdeaf57019c54f7b0fe08e0a",
           "independentReview": {
             "reviewer": "Stadt",
-            "reviewerThread": "01a12022-b67b-7da2-bed5-8ebde169d475",
             "head": "305680db90546207f259d246b3a6c86afcc44e68",
             "base": "2582f3f580a680765d90265a80fdcaf3f8ed3809",
             "result": "PASS",
@@ -155634,8 +155057,7 @@
               "docs/reference/atlas-detail-binding-d01/inspector-horizontal-fit-n04.json"
             ],
             "reviewedHeadCi": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/actions/runs/38108190000",
-            "reviewedHeadCiResult": "SUCCESS",
-            "qualificationDelta": "Only own checkpoint/acceptance and #80 working section; product and native receipt unchanged."
+            "reviewedHeadCiResult": "SUCCESS"
           },
           "independentIntegration": {
             "id": "HEX-N04-STEWARD-S01",
@@ -155652,13 +155074,10 @@
             "headCi": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/actions/runs/38108634137",
             "sharedStructureCi": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/actions/runs/38108709670",
             "ciLiveChecked": "Both SUCCESS at their exact recorded SHAs",
-            "nativeProductBlobsEqualReviewedHead": true,
-            "foreignRootsEqualPriorShared": true,
-            "selfIntegratedByHex": false
+            "nativeProductBlobsEqualReviewedHead": true
           },
           "freeGmFollowup": {
             "owner": "Cloud-GM-Produkttester (existing Obsidian-Dungeon-Repo ansehen chat)",
-            "reviewerThread": "01a12031-2c30-73f7-bc01-6bd3eba86046",
             "state": "bounded_same_session_and_fresh_reuse_consumed",
             "report": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80#issuecomment-6105400641",
             "producerHead": "155c01595da879c7edb34a211fff490e003f8e14",
@@ -155754,16 +155173,7 @@
               "headCi": "38111405370",
               "sharedStructureCi": "38111871129",
               "bothExactShaCiLiveChecked": "SUCCESS",
-              "foreignRootsPreserved": true,
-              "selfIntegratedByHex": false
-            },
-            "freshReuseOffer": {
-              "owner": "Existing Cloud-GM support only; Hex owns parent80",
-              "state": "completed_actual_fresh_user_reuse_consumed",
-              "result": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80#issuecomment-6105912997",
-              "record": "checkpoint.hexAtlasExecution.dungeonAtLocationInspectorHorizontalFitN04Qualification.freeGmFollowup.freshReuse",
-              "priorNativeFreshEvidence": "docs/reference/atlas-detail-binding-d01/inspector-n02-native-h02.json",
-              "scope": "Old controlled N02-H02 proof unchanged; fresh GM visible field rediscovery closes only the requested ordinary saved-room reuse gap on87ccdb2."
+              "foreignRootsPreserved": true
             },
             "freshReuse": {
               "id": "GM-E2E01-ATLAS-INSPECTOR-N04-FRESH-PROCESS-20261011-01",
@@ -155878,7 +155288,6 @@
           "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
           "e2e01UserLine": 13,
           "state": "independent_focused_R01_PASS_and_actual_S01_integrated_native_IME_open",
-          "supportClaim": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80#issuecomment-6105919029",
           "producerResult": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80#issuecomment-6105933065",
           "pullRequest": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/126",
           "sourceCommit": "1e2000beea45870a69128db1ac76a0c42142e581",
@@ -155893,8 +155302,7 @@
             "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/126#pullrequestreview-5482076614",
             "runtime": "Node v22.22.0",
             "baseline": "Four Location/Room x Ctrl/Meta cases FAIL History1 instead0 on exact10defd5 product with candidate testfile overlay only; wait editor.work, no extra flush/Apply.",
-            "candidate": "Entire affected Managed/Vaultadapter hostbundle50/50 PASS. During composition no History/native byte publication and exact pending text retained; confirmed shortcut afterward saves exact Location/Dungeon payload with one History step.",
-            "metadataScope": "Only checkpoint.cityExecution and acceptance.cityPlans differ from producer base; all foreign/Hex roots retained."
+            "candidate": "Entire affected Managed/Vaultadapter hostbundle50/50 PASS. During composition no History/native byte publication and exact pending text retained; confirmed shortcut afterward saves exact Location/Dungeon payload with one History step."
           },
           "localEvidence": {
             "baseline-tests.log": {
@@ -155948,7 +155356,7 @@
           "sourceCommit": "5f542ded6f524b9e5a7d3ead48eb61ef5b1934c1",
           "qualifiedShared": "0b6aa819ed0721520156a364d1504f39ac2b99f1",
           "productDiffFromQualifiedShared": "none; only three existing Hex metadata files differ at tested own source",
-          "integratedGuardInput": "checkpoint.hexAtlasExecution.dungeonAtLocationInspectorImeSaveR01",
+          "integratedGuardInput": "acceptance.json#/hexAtlas/requirements/30/dungeonAtLocationInspectorImeSaveR01",
           "fixtureVersion": "e2e01-spatial-v2",
           "fixtureManifestSha256": "23735bb6c95107b7dec93ffa56ec66405a0f4fe0ec3822fc0476d90d2920188d",
           "browserVersion": {
@@ -156199,8 +155607,8 @@
           "state": "H02_Window_capture_stops_composing_Save_before_Key_panels_native_guard_open",
           "sourceCommit": "64b6eb58f92faf3ae82087b48281ef7fceb83686",
           "qualifiedSharedCommit": "25e6155eb6542c99bc2e4cf8cbf218554ddfd394",
-          "priorInput": "checkpoint.hexAtlasExecution.dungeonAtLocationInspectorImeSaveH01",
-          "integratedGuardInput": "checkpoint.hexAtlasExecution.dungeonAtLocationInspectorImeSaveR01",
+          "priorInput": "acceptance.json#/hexAtlas/requirements/30/dungeonAtLocationInspectorImeSaveH01",
+          "integratedGuardInput": "acceptance.json#/hexAtlas/requirements/30/dungeonAtLocationInspectorImeSaveR01",
           "sourceBinding": {
             "guardAndEditorUnchangedFromH01": "5f542ded6f524b9e5a7d3ead48eb61ef5b1934c1",
             "sha256": {
@@ -156485,8 +155893,8 @@
           "state": "H03_Obsidian_onKeyEvent_cancels_composing_Save_before_Key_panel_native_guard_open",
           "sourceCommit": "697ff20d9e00c757f7ea24fdee8d2b2d048c2744",
           "qualifiedSharedAtHost": "dbcecc79870252a9b6dae4b9a7959bb47bf5fc96",
-          "priorInput": "checkpoint.hexAtlasExecution.dungeonAtLocationInspectorImeSaveH02",
-          "integratedGuardInput": "checkpoint.hexAtlasExecution.dungeonAtLocationInspectorImeSaveR01",
+          "priorInput": "acceptance.json#/hexAtlas/requirements/30/dungeonAtLocationInspectorImeSaveH02",
+          "integratedGuardInput": "acceptance.json#/hexAtlas/requirements/30/dungeonAtLocationInspectorImeSaveR01",
           "fixtureVersion": "e2e01-spatial-v2",
           "fixtureManifestSha256": "23735bb6c95107b7dec93ffa56ec66405a0f4fe0ec3822fc0476d90d2920188d",
           "browserVersion": {
@@ -156906,8 +156314,8 @@
           "state": "H04_confirmed_native_Location_CtrlS_Save_FAIL_visible_button_PASS_routing_fix_needed",
           "sourceCommit": "12265c2078b63bdfc3aa9bb94528bb0a4761565b",
           "qualifiedSharedAtHost": "25792fb757ec70b02f0c3c59a47e2c3104e3a174",
-          "priorInput": "checkpoint.hexAtlasExecution.dungeonAtLocationInspectorImeSaveH03",
-          "integratedGuardInput": "checkpoint.hexAtlasExecution.dungeonAtLocationInspectorImeSaveR01",
+          "priorInput": "acceptance.json#/hexAtlas/requirements/30/dungeonAtLocationInspectorImeSaveH03",
+          "integratedGuardInput": "acceptance.json#/hexAtlas/requirements/30/dungeonAtLocationInspectorImeSaveR01",
           "fixtureVersion": "e2e01-spatial-v2",
           "fixtureManifestSha256": "23735bb6c95107b7dec93ffa56ec66405a0f4fe0ec3822fc0476d90d2920188d",
           "browserVersion": {
@@ -157354,7 +156762,7 @@
           "state": "supported_View_Scope_Location_CtrlS_native_PASS_targeted_independent_review_pending",
           "sourceCommit": "e1bda0a08e985ef74ba1777d1e1588d507f838b7",
           "qualifiedSharedAtHost": "29e4ce68ff80e045b0b7fa4771d6d88aedcc9586",
-          "priorInput": "checkpoint.hexAtlasExecution.dungeonAtLocationInspectorConfirmedSaveH04",
+          "priorInput": "acceptance.json#/hexAtlas/requirements/30/dungeonAtLocationInspectorConfirmedSaveH04",
           "finding": "HEX80-H04-01",
           "implementation": {
             "supportedApi": "AtlasView.scope = new Scope(app.scope); register([Mod], s) delegates to current editor.handleSaveShortcut; false consumes owned event, undefined retains parent fallback. Obsidian View owns lifecycle; no handler patch/removal/bypass.",
@@ -157794,7 +157202,7 @@
               "scope": "GM Planner memory-only UI evidence; gmProductTesting and portable images/manifests retained. No Atlas product/GUI qualification."
             }
           ],
-          "limits": "No new GUI, build, full-suite rerun, composing-panel/RoomMeta/fresh/physical/CopyDiscardRecovery/original/large-map/install/fullE2E claim. No user-vault touch or selfintegration. Prior source-bound author raw evidence remains historical and unmodified.",
+          "limits": "No new GUI, build, full-suite rerun, composing-panel/RoomMeta/fresh/physical/CopyDiscardRecovery/original/large-map/install/fullE2E claim. No user-vault touch. Prior source-bound author raw evidence remains historical and unmodified.",
           "finishedAt": "2026-10-11T07:33:57.647673+00:00"
         },
         "dungeonAtLocationInspectorSaveRoutingFreshF01": {
@@ -158226,7 +157634,6 @@
           },
           "preservation": {
             "originalForeignLocalFiles": true,
-            "foreignCheckpointAcceptanceRoots": true,
             "historicalReceipts": true,
             "userVaultTouched": false
           },
@@ -158483,7 +157890,6 @@
           },
           "preservation": {
             "originalForeignLocalFiles": true,
-            "foreignCheckpointAcceptanceRoots": true,
             "historicalReceipts": true,
             "userVaultTouched": false
           },
@@ -159053,7 +158459,6 @@
           },
           "preservation": {
             "originalForeignLocalFiles": true,
-            "foreignCheckpointAcceptanceRoots": true,
             "historicalReceipts": true,
             "failedRawReceiptsUnchanged": true,
             "userVaultTouched": false
@@ -159425,7 +158830,6 @@
           },
           "preservation": {
             "originalForeignLocalFiles": true,
-            "foreignCheckpointAcceptanceRoots": true,
             "historicalReceipts": true,
             "executedHelpersUnchanged": true,
             "userVaultTouched": false
@@ -159713,7 +159117,6 @@
           },
           "preservation": {
             "originalForeignLocalFiles": true,
-            "foreignCheckpointAcceptanceRoots": true,
             "historicalReceipts": true,
             "executedHelpersUnchanged": true,
             "fullFailedVaultRetained": true,
@@ -160219,7 +159622,6 @@
             "historicalC01VaultAndHelpersUnchanged": true,
             "R03InputUnchanged": true,
             "originalForeignLocalFiles": true,
-            "foreignCheckpointAcceptanceRoots": true,
             "historicalReceipts": true,
             "userVaultTouched": false,
             "noSelfMerge": true
@@ -160529,7 +159931,6 @@
             "actualR03InputVaultByteExact": true,
             "foreignLocalFilesByteExact": true,
             "historicalReceiptsUnchanged": true,
-            "foreignCheckpointAndAcceptanceRootsUnchanged": true,
             "sourceFilesUnchanged": true,
             "userVaultAndSourcesUntouched": true
           },
@@ -162462,38 +161863,6 @@
           "source": "e982c2fa9e5f6528e409ae4ec95a6f05140334e1",
           "integratedTestedSource": "81c6a257af95b8dd9de0cbbd1fb76b6c1380521c",
           "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-navigation-n01b-20261010/run.json"
-        },
-        "independentRereview": {
-          "result": "PASS",
-          "candidate": "adc4b98a3925b39abefb0a4db9a2bcd7c1a5a6ec",
-          "testedIntegratedSource": "81c6a257af95b8dd9de0cbbd1fb76b6c1380521c",
-          "readDirectly": true,
-          "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/13#issuecomment-6094937083",
-          "gate": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6094937270",
-          "actualEvidence": "/home/aaron/.cache/dungeon-native-qa/city-plans/runtime-i01b-r02-20261010/review.json",
-          "hashes": {
-            "review.json": "d5b23a87b22c13de2e99a5f2fc5fb47357459a2e99b85fd2adee47a820bb5ada",
-            "source-bindings.json": "b0111bc6a2fadc1d247c3b64fe6e3140f1bf91da39fd7667f9a7c4c184c55e83",
-            "counterprobes.ts": "6e51c436929f12e9cdb10a911c7ecf7916322ec20d5aa3cd908fb8d3503090b1",
-            "counterprobes.log": "549e58adc46c1a24b71b9005413c65a7914d9588252c0dbce24cf8c06078c10b"
-          },
-          "sourceBindingsVerified": 541,
-          "checks": {
-            "check": true,
-            "testsPassed": 551,
-            "testsFailed": 0,
-            "cleanBuild": true,
-            "independentCounterprobesPassed": 4,
-            "independentCounterprobesFailed": 0
-          },
-          "closedFindings": [
-            "RUNTIME-I01b-R01-01"
-          ],
-          "limits": [
-            "Actual controlled-port core review, no productive Host/provider receipt",
-            "I01c visible integration and native/fresh-start check remain open",
-            "P02/P04/import/full E2E/original parity remain separate"
-          ]
         },
         "resolvedBy": {
           "source": "e982c2fa9e5f6528e409ae4ec95a6f05140334e1",

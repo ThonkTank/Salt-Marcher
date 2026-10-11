@@ -86,6 +86,6 @@
     "newDungeonCreation": false,
     "independentReview": "pending existing independent Dungeon/Atlas colleague"
   },
-  "reproduction": "Checkout the exact source; npm ci, npm run check, npm test, npm run build. No GUI slot is used by these tests. CI exposes portable full logs; local raw logs remain at the named QA root.",
+  "reproduction": "Checkout the exact source; npm ci, npm run check, npm test, npm run build. CI exposes portable full logs; local raw logs remain at the named QA root.",
   "finishedAt": "2026-10-10T22:14:26.436662+00:00"
 }

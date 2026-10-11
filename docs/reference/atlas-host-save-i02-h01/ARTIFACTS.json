@@ -10,7 +10,7 @@
     {
       "path": "binding.json",
       "bytes": 49970,
-      "sha256": "119875d1be46ddece09081b44db02fbc46a74f8802776fc923d73ad970cc0f47"
+      "sha256": "d3aa065425738510fb8550a038ccd6be5131606c6effc627407918f8b7979963"
     },
     {
       "path": "provenance/git-product-inputs.json",

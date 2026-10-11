@@ -23,7 +23,6 @@
       "height": 800
     },
     "zoom": "Electron webFrame 1 and1.31; renderer emulation yields782x611 CSSpx at131%; no physical window/device acceptance",
-    "slotExpresslyReturned": true,
     "sourceCleanAtBuild": true,
     "input": "synthetic rendered control input; known fixture open is controlled setup, model reads are initial coordinate/identity oracles only; no model write or injected CSS"
   },
@@ -602,8 +601,7 @@
     "helperFiles": {
       "geometry-probe.cjs": "164d6916c42c83ef06ac71e344253d76f4227635168b00ee19acdaf03d8a7e24",
       "geometry-preload.cjs": "3a2403fbf6bf310e4afd50e456da3d0ddbbdc7fd0c91373093bea0adc299e3fa",
-      "invocation.json": "4f4d744018ebf76c1e73af35cf6fb8adbb1734a0b53163df670cfdbcec369437",
-      "slot-confirmation.json": "e747fe11c016b8b654fd377690bdabd618713998f83e7bca1fb51f7b9397dd1e"
+      "invocation.json": "4f4d744018ebf76c1e73af35cf6fb8adbb1734a0b53163df670cfdbcec369437"
     },
     "suiteLog": {
       "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-n04-suite-20261011.log",
@@ -626,7 +624,7 @@
     "no physical input, Original-parity, large-map, user-vault installation or full E2E acceptance"
   ],
   "reproduce": [
-    "Fresh explicit local GUI slot; clean sourceCommit and its triplet; new isolated QA root, never reuse this evidence vault.",
+    "Clean sourceCommit and its triplet; new isolated QA root, never reuse this evidence vault.",
     "Read archived invocation/helper; preload only substitutes the existing host QA scenario. Rebind its recorded checkout path explicitly when using another checkout.",
     "Use packaged CSS unchanged: Location100%, Location131% with sidebar open/actions scrolled and closed; navigate actual room result; Room131% closed/open/name focused.",
     "Bounded assertions require dock/key scrollWidth<=clientWidth+1, zero horizontal scroll, every rendered input/textarea/button left/right within dock and dock within viewport. Normal quit, PID absence and all8 file hashes checked."

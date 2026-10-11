@@ -99,6 +99,6 @@
     "newPlacementIdentityAuthority": false,
     "independentReview": "Atlas-QA R02 pending; no self-integration"
   },
-  "reproduction": "Checkout exact sourceCommit; npm ci; npm run check; npm test; npm run build. Core/DOM fresh models are distinct from actual Obsidian/Electron and require no GUI slot.",
+  "reproduction": "Checkout exact sourceCommit; npm ci; npm run check; npm test; npm run build. Core/DOM fresh models are distinct from actual Obsidian/Electron.",
   "finishedAt": "2026-10-10T22:29:57.555698+00:00"
 }

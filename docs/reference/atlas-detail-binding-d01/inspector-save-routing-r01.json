@@ -7,7 +7,7 @@
   "state": "supported_View_Scope_Location_CtrlS_native_PASS_targeted_independent_review_pending",
   "sourceCommit": "e1bda0a08e985ef74ba1777d1e1588d507f838b7",
   "qualifiedSharedAtHost": "29e4ce68ff80e045b0b7fa4771d6d88aedcc9586",
-  "priorInput": "checkpoint.hexAtlasExecution.dungeonAtLocationInspectorConfirmedSaveH04",
+  "priorInput": "acceptance.json#/hexAtlas/requirements/30/dungeonAtLocationInspectorConfirmedSaveH04",
   "finding": "HEX80-H04-01",
   "implementation": {
     "supportedApi": "AtlasView.scope = new Scope(app.scope); register([Mod], s) delegates to current editor.handleSaveShortcut; false consumes owned event, undefined retains parent fallback. Obsidian View owns lifecycle; no handler patch/removal/bypass.",

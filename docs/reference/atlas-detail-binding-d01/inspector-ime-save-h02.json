@@ -7,8 +7,8 @@
   "state": "H02_Window_capture_stops_composing_Save_before_Key_panels_native_guard_open",
   "sourceCommit": "64b6eb58f92faf3ae82087b48281ef7fceb83686",
   "qualifiedSharedCommit": "25e6155eb6542c99bc2e4cf8cbf218554ddfd394",
-  "priorInput": "checkpoint.hexAtlasExecution.dungeonAtLocationInspectorImeSaveH01",
-  "integratedGuardInput": "checkpoint.hexAtlasExecution.dungeonAtLocationInspectorImeSaveR01",
+  "priorInput": "acceptance.json#/hexAtlas/requirements/30/dungeonAtLocationInspectorImeSaveH01",
+  "integratedGuardInput": "acceptance.json#/hexAtlas/requirements/30/dungeonAtLocationInspectorImeSaveR01",
   "sourceBinding": {
     "guardAndEditorUnchangedFromH01": "5f542ded6f524b9e5a7d3ead48eb61ef5b1934c1",
     "sha256": {

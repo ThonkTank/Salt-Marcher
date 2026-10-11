@@ -1,4 +1,8 @@
 {
+  "historicalReceipt": {
+    "originalSha256": "7f67a37b0cba454d9e7867a8842cd7062e330b7ebbda5a96646d97478ab39112",
+    "scope": "Recorded source receipt; repository metadata references below reflect the current files. Product observations are unchanged."
+  },
   "id": "E2E-01-SHARED-LOCATION-KEY-D01",
   "state": "root_cause_reproduced_product_repair_open",
   "issue": 40,
@@ -41,20 +45,20 @@
   "originalDraftSha256": "101ac69851e8dd87e742c67eb3e1f62ecdde84e43bddea1f401fd3b63474c585",
   "limits": [
     "Diagnosis-only model observations explain but do not replace original native H01",
-    "No product repair, native rerun, fresh native process, GUI slot, physical/original/large-map/installation/P02/P04/full-E2E acceptance"
+    "No product repair, native rerun, fresh native process, physical/original/large-map/installation/P02/P04/full-E2E acceptance"
   ],
   "artifacts": {
     "README.md": {
-      "bytes": 6843,
-      "sha256": "316411a8cba197d1f492c27b16cde7411cd82b132f991c34f0ed2f785fc8f0aa"
+      "bytes": 6831,
+      "sha256": "d4fa5dff62d1a051aa8fc4cd5099f3d93d7b8ab6e892bc02af53c8fd383925a7"
     },
     "h01-result.json": {
-      "bytes": 5504,
-      "sha256": "4f006459b7e6c5d5f4f57371c61eefe73e75f12d5568efc2e863c26fc33ab5a5"
+      "bytes": 5480,
+      "sha256": "5f123ddfaca3f0f1231086e9a2ce3b7a6cec516f057704bfacdf292a5c12edf1"
     },
     "preservation.json": {
-      "bytes": 2102,
-      "sha256": "aa982b0510e324282a7bee3cf0e9ddb2ca1b8100158a89c725fd735a48ad7bd1"
+      "bytes": 817,
+      "sha256": "5e2b60dbdd3e61d153275f9907ee52b136fa50e6465b8fa26891a75db17ec6dc"
     },
     "probe.ts": {
       "bytes": 13247,
@@ -65,8 +69,8 @@
       "sha256": "b44435407f26e94a10c1a797edd8c1a6d05c9b93475fa0c42d0d81f2ad0b465b"
     },
     "shared-result.json": {
-      "bytes": 5561,
-      "sha256": "9d9f6500c64257764314275af7f6ac6696aadf40a4f63db176aa8012458838a9"
+      "bytes": 5537,
+      "sha256": "10a7dd696924af9ae70b648155759cf506d975d23f1eae8d040478cbc7cee95a"
     },
     "source-bindings.json": {
       "bytes": 1636,

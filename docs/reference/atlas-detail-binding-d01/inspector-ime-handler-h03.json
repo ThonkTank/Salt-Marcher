@@ -7,8 +7,8 @@
   "state": "H03_Obsidian_onKeyEvent_cancels_composing_Save_before_Key_panel_native_guard_open",
   "sourceCommit": "697ff20d9e00c757f7ea24fdee8d2b2d048c2744",
   "qualifiedSharedAtHost": "dbcecc79870252a9b6dae4b9a7959bb47bf5fc96",
-  "priorInput": "checkpoint.hexAtlasExecution.dungeonAtLocationInspectorImeSaveH02",
-  "integratedGuardInput": "checkpoint.hexAtlasExecution.dungeonAtLocationInspectorImeSaveR01",
+  "priorInput": "acceptance.json#/hexAtlas/requirements/30/dungeonAtLocationInspectorImeSaveH02",
+  "integratedGuardInput": "acceptance.json#/hexAtlas/requirements/30/dungeonAtLocationInspectorImeSaveR01",
   "fixtureVersion": "e2e01-spatial-v2",
   "fixtureManifestSha256": "23735bb6c95107b7dec93ffa56ec66405a0f4fe0ec3822fc0476d90d2920188d",
   "browserVersion": {

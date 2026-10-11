@@ -469,22 +469,22 @@
   "priorReceipts": [
     {
       "path": "docs/reference/atlas-shared-location-h01/receipt.json",
-      "sha256": "98d23f859725451a1f24c56de1d629da6c779c58b9d6013936a6a729b9c9fba3",
+      "sha256": "da3014cddb3bc886af0d188ce75989ec66d9b8d6bde8d9e3c3c7362a6fa758ad",
       "artifactsVerified": 25
     },
     {
       "path": "docs/reference/atlas-shared-location-d01/receipt.json",
-      "sha256": "7f67a37b0cba454d9e7867a8842cd7062e330b7ebbda5a96646d97478ab39112",
+      "sha256": "135f0373c9065a3dfaa83d9dbd8c0d4ec469b79908c0d3b7aa892fd932ca55b9",
       "artifactsVerified": 7
     },
     {
       "path": "docs/reference/atlas-shared-location-r01/receipt.json",
-      "sha256": "a2a0545702efc7f69eaa65c8964b9a9bf49bd82914d6765682b41e6d76ef3160",
+      "sha256": "0be7b90d1a4b00582a5e107f6e6d5802fdac6d4a33ae65b648a93274c821683e",
       "artifactsVerified": 2
     },
     {
       "path": "docs/reference/atlas-shared-location-r01/noop-repair.json",
-      "sha256": "b9167a00b214207a897b4019dbae5c1407e40603da67515d34ae23856c08378f"
+      "sha256": "112afd3b9c4e6107dcd5d20eb97776ce6870f8ddef24819a760577a3cdb69a5f"
     }
   ],
   "originalQA": "/home/aaron/.cache/dungeon-native-qa/hex-03/shared-location-h02-20261010-2029",
@@ -501,8 +501,8 @@
   "limits": "Two native processes only; no new Copy/Discard/Recovery fault matrix, physical/original/large-world/user-vault installation/Details/CITY/P02/P04/E2E02-04/full-gate claim.",
   "artifacts": {
     "README.md": {
-      "bytes": 3325,
-      "sha256": "2a7384ef96d0496526b1e6419b5213d69afa5d2a23d68a9524e65cb84fe721bc"
+      "bytes": 2792,
+      "sha256": "5ef16f1250c740d5718441c4f027e17aaae99d8529d4afb2e7d5c2592aa36b24"
     },
     "build.log": {
       "bytes": 740,
@@ -533,8 +533,8 @@
       "sha256": "b42d420650a6b4b6bb4b50a06b3bd7bc57947c788d3b0314b8c3e62d921b7198"
     },
     "preflight.json": {
-      "bytes": 3565,
-      "sha256": "5d9ab5f26c4db8e2c4c0169814ac47c0cad52aaae5bfebfe3f8765e09c8430a3"
+      "bytes": 3502,
+      "sha256": "7b96a5d52b7ffaf603c2226917b2ee96ba7fd1111962f768bdea32a113a1266b"
     },
     "preload.cjs": {
       "bytes": 321,
@@ -542,7 +542,7 @@
     },
     "preservation.json": {
       "bytes": 1560,
-      "sha256": "b6ca23945110e627eb5ca213e42ff3bd4a74254f1c9982f3ec48499b310874d4"
+      "sha256": "08d943c9fd75e77fd3af95242658cb2914b77d075b1f9b71d11970e0caca5e33"
     },
     "raw/edit/01-initial.json": {
       "bytes": 997,

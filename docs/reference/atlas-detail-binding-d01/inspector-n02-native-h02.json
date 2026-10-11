@@ -431,8 +431,7 @@
     "helper": "tools/host/hex04-dungeon-at-location.cjs",
     "helperSha256": "95eb1213d6fa62d4ca7ce54562f799365ea51039c81d35d257068baf8a5a9a31",
     "edit": "DUNGEON_QA_ROOT=<new-own-isolated-root> bash tools/run-host.sh --hex04-dungeon-at-location --hex04-inspector-n02",
-    "reopen": "DUNGEON_QA_ROOT=<same-own-isolated-root> bash tools/run-host.sh --hex04-dungeon-at-location --hex04-inspector-n02 --restart",
-    "newLocalSlotRequired": true
+    "reopen": "DUNGEON_QA_ROOT=<same-own-isolated-root> bash tools/run-host.sh --hex04-dungeon-at-location --hex04-inspector-n02 --restart"
   },
   "limits": {
     "actualObsidianProducerProbe": true,

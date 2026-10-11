@@ -1,4 +1,8 @@
 {
+  "historicalReceipt": {
+    "originalSha256": "98d23f859725451a1f24c56de1d629da6c779c58b9d6013936a6a729b9c9fba3",
+    "scope": "Recorded source receipt; repository metadata references below reflect the current files. Product observations are unchanged."
+  },
   "id": "E2E-01-SHARED-LOCATION-KEY-H01",
   "task": 40,
   "owner": "Hex",
@@ -92,8 +96,8 @@
   ],
   "artifacts": {
     "README.md": {
-      "bytes": 3233,
-      "sha256": "64624b3c6aaf921db22930efdca1d33979d99eaec0131d60b7d56c29554d5bbf"
+      "bytes": 2668,
+      "sha256": "6013b1e1d61fa2b84eec68214a0b2248d3b9803c145f081ccb6a93cbe6e45b77"
     },
     "build.log": {
       "bytes": 692,
@@ -112,8 +116,8 @@
       "sha256": "a8718d9a9b6b2267feb9a3ca9a2824425b907269eada9437742e1448249c808b"
     },
     "preflight.json": {
-      "bytes": 1563,
-      "sha256": "1a5fc652f50fad2efcbc1c890e00f4ea1f042751f3624aa42551afe2f7613d6c"
+      "bytes": 1473,
+      "sha256": "b8a2b489ae869fb38ce2a29b4c3ec8da049dd979895c17cee4f0593512197f8e"
     },
     "preload.cjs": {
       "bytes": 353,

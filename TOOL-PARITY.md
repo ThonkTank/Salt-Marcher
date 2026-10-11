@@ -1,16 +1,12 @@
-> **Einordnung:** Dieses Werkzeugverzeichnis enthält den ursprünglichen Vergleichsumfang. Die alten Statusangaben sind historisch; aktuelle Einzelabnahmen und direkte Nachweise stehen in `acceptance.json`.
+# Historische Werkzeugbefunde: Dungeondraft
 
-# Werkzeugabgleich mit Dungeondraft
+Dieses Verzeichnis hält ursprüngliche Originalbeobachtungen und damalige Editorbefunde für Dungeondraft 1.2.0.1 „Opulent Kirin“ fest. Seine Statusangaben sind historische Zwischenstände. Aktuelle Einzelabnahmen und direkte Nachweise stehen in `acceptance.json`; der weitere Fachumfang steht im [Werkzeugplan](ROADMAP-PARITY-TOOLS.md).
 
-Referenz ist Dungeondraft 1.2.0.1 „Opulent Kirin“, nicht der frühere Vault-Editor. Der frühere Abgleich hat nur gleichwertige Ergebnisse geprüft und dabei abweichende Bedienabläufe zugelassen. Er gilt daher nicht als 1:1-Abnahme.
+Für die weitere Entwicklung gilt die vereinbarte [Ergebnisgleichwertigkeit](ROADMAP-HEX-ATLAS.md#wie-kommen-wir-zum-ziel). Historisch vermessene Eingaben und Pixelwerte dienen als Referenz für die fachliche Wirkung.
 
-Seit dem 3. Oktober 2026 läuft eine neue, strikte Prüfung. Jedes Werkzeug wird in Dungeondraft vollständig protokolliert, danach im Editor angeglichen und mit einem eigenen Hostlauf abgenommen. Offensichtlich unsaubere Implementierungen werden bei der jeweiligen Werkzeugbearbeitung bereinigt. Seit dem 4. Oktober werden unabhängige Untersuchungs- und QA-Pakete in eigenen Chats parallel vorbereitet; eine grafische Testinstanz läuft weiterhin exklusiv. Jedes Werkzeug erhält nur nach seinem bestandenen Einzeltest eine Abnahme. Darstellung und interne Datenstruktur dürfen technisch anders sein; sichtbare Bedienregeln, Eingaben, Modifikatoren, Zustandswechsel, Undo/Redo und gespeichertes Ergebnis müssen übereinstimmen.
+Das kleine Auswahlfixture `tools/fixtures/selection-small.dungeondraft_map` enthält drei Objekte und ein Licht auf 8 × 8 Feldern.
 
-Aktueller Implementierungsschritt: **Auswahlwerkzeug – in Arbeit.** Andere Werkzeuge können unabhängig vorbereitet werden, bleiben bis zu ihrer eigenen Abnahme offen.
-
-Für weitere Originaltests dient `tools/fixtures/selection-small.dungeondraft_map` mit drei Objekten und einem Licht auf 8 × 8 Feldern. Die zuvor geöffnete, stark dekorierte Referenzkarte wurde geschlossen, nachdem sie den Rechner unnötig belastet hatte. Bei geringem verfügbarem Arbeitsspeicher laufen keine zusätzlichen nativen Grafikprozesse.
-
-Letzter früherer Gleichwertigkeitslauf (nur Regression, keine 1:1-Abnahme):
+Früher Regressionstest:
 
 - Bearbeitung: `/home/aaron/.cache/dungeon-native-qa/evidence/1791046549332-edit/result.json`
 - Frischer Prozess: `/home/aaron/.cache/dungeon-native-qa/evidence/1791046584516-reopen/result.json`

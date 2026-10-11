@@ -7,8 +7,8 @@
   "state": "H04_confirmed_native_Location_CtrlS_Save_FAIL_visible_button_PASS_routing_fix_needed",
   "sourceCommit": "12265c2078b63bdfc3aa9bb94528bb0a4761565b",
   "qualifiedSharedAtHost": "25792fb757ec70b02f0c3c59a47e2c3104e3a174",
-  "priorInput": "checkpoint.hexAtlasExecution.dungeonAtLocationInspectorImeSaveH03",
-  "integratedGuardInput": "checkpoint.hexAtlasExecution.dungeonAtLocationInspectorImeSaveR01",
+  "priorInput": "acceptance.json#/hexAtlas/requirements/30/dungeonAtLocationInspectorImeSaveH03",
+  "integratedGuardInput": "acceptance.json#/hexAtlas/requirements/30/dungeonAtLocationInspectorImeSaveR01",
   "fixtureVersion": "e2e01-spatial-v2",
   "fixtureManifestSha256": "23735bb6c95107b7dec93ffa56ec66405a0f4fe0ec3822fc0476d90d2920188d",
   "browserVersion": {
@@ -270,7 +270,7 @@
     "runnerExit": 1,
     "all8NativeBytesUnchanged": true,
     "executedHelperPreserved": true,
-    "correction": "New helper removes only unsupported renderer require(obsidian) API-version diagnostic. Same source/build; no native action attempted in first launch. Fresh explicit slot before second launch."
+    "correction": "New helper removes only unsupported renderer require(obsidian) API-version diagnostic. Same source/build; no native action attempted in first launch."
   },
   "processLifecycle": {
     "unit": "dungeon-native-4044720.service",

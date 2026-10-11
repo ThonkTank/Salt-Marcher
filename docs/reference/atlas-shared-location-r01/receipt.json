@@ -1,4 +1,8 @@
 {
+  "historicalReceipt": {
+    "originalSha256": "a2a0545702efc7f69eaa65c8964b9a9bf49bd82914d6765682b41e6d76ef3160",
+    "scope": "Recorded source receipt; repository metadata references below reflect the current files. Product observations are unchanged."
+  },
   "id": "E2E-01-SHARED-LOCATION-KEY-R01",
   "owner": "Hex",
   "issue": 40,
@@ -81,17 +85,17 @@
   "independentReview": "pending separate exact-head review",
   "fullE2E": false,
   "limits": [
-    "Original native H01 FAIL is preserved; no GUI slot or native rerun",
+    "Original native H01 FAIL is preserved; no native rerun",
     "No Detail/CITY, old-file deletion authorization, E2E-02-04, physical/original/large-world/user-vault installation/P02/P04 acceptance"
   ],
   "artifacts": {
     "README.md": {
-      "bytes": 3431,
-      "sha256": "55435194b593638f50f4b476eee00c9bf1ecc9c18b320cdf5c43b64fe1a8ce14"
+      "bytes": 3424,
+      "sha256": "d9778a791f81db61ef5793963f63cf1f392db125fb9ba75c7cf9ed63d2a4f3dd"
     },
     "preservation.json": {
-      "bytes": 1348,
-      "sha256": "6db1c820ec4766d10db4921d946413846e26ec455caab4870b2666a3fd7086e6"
+      "bytes": 949,
+      "sha256": "3d3b086b660061d1bfbced76578345ec81a58309be5c0062a0bd86ec31fb12cb"
     }
   }
 }

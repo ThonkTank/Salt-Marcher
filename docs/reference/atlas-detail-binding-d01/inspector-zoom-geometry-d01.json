@@ -21,7 +21,6 @@
     },
     "zoomSetup": "Electron webFrame.setZoomFactor(1.31), diagnostic host condition only; no CSS injection. Resulting inner viewport782x611 CSSpx, DPR~1.31. Playwright renderer emulation; no physical window/device acceptance.",
     "input": "ordinary rendered controls and synthetic mouse/keyboard; known fixture open is controlled setup; model reads are identity/coordinate oracles only",
-    "slotExpresslyReturnedAfterEachHost": true,
     "userVaultTouched": false,
     "sourcesTouched": false
   },
@@ -811,7 +810,6 @@
     "preload": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-zoom-geometry-d01-20261011/attempt2/geometry-preload.cjs",
     "invocation": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-zoom-geometry-d01-20261011/attempt2/invocation.json",
     "newQaRootRequired": true,
-    "newExplicitLocalSlotRequired": true,
     "mapping": "archived preload maps the recorded source checkout absolute test-helper path. Rebind that test-only path explicitly if reproducing in another checkout; require pinned clean source/build and isolated synthetic vault. Original failed helper/first native artifacts remain immutable."
   }
 }

@@ -1,10 +1,4 @@
 {
-  "foreignCheckpointRootsPreserved": 43,
-  "protectedRawPointers": {
-    "currentRun": "d89489e195e1c87cf1ccd5e69222cec3908d385d6ace86bc04fc784275f64df8",
-    "latestSharedLocationKeyHostProbe": "d10bed05f2ed3d116391bfd02743be718e943c421355e44e17989618d39a4586",
-    "latestSharedLocationKeyDiagnosis": "f491f94593bdbd3d5bfbe47c728d9b57537e90b40d484f0c6d6717e2a732e1d1"
-  },
   "historicalReceipts": {
     "atlas-shared-location-h01": {
       "receiptSha256": "e628cacae0c0c9bf2c646dc3ec345ee743181133685962efe3cd458002bcf144",

@@ -8,7 +8,7 @@
   "sourceCommit": "5f542ded6f524b9e5a7d3ead48eb61ef5b1934c1",
   "qualifiedShared": "0b6aa819ed0721520156a364d1504f39ac2b99f1",
   "productDiffFromQualifiedShared": "none; only three existing Hex metadata files differ at tested own source",
-  "integratedGuardInput": "checkpoint.hexAtlasExecution.dungeonAtLocationInspectorImeSaveR01",
+  "integratedGuardInput": "acceptance.json#/hexAtlas/requirements/30/dungeonAtLocationInspectorImeSaveR01",
   "fixtureVersion": "e2e01-spatial-v2",
   "fixtureManifestSha256": "23735bb6c95107b7dec93ffa56ec66405a0f4fe0ec3822fc0476d90d2920188d",
   "browserVersion": {

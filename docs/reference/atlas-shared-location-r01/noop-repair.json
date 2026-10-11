@@ -53,7 +53,6 @@
     "Undo of an already saved Location remains a before/non-null after/null native deletion, retained in capture and rejected without file mutation; no new deletion authority."
   ],
   "preservation": {
-    "foreignCheckpointRoots": 43,
     "historicalCurrentRunAndH01D01R01RawPreserved": true,
     "receiptHashes": {
       "docs/reference/atlas-shared-location-h01/receipt.json": "e628cacae0c0c9bf2c646dc3ec345ee743181133685962efe3cd458002bcf144",
@@ -102,9 +101,6 @@
   "latestComposition": {
     "source": "f147794947ea49961df1bca8042593ce2dd87941",
     "consumedShared": "9e3a6c1bbd6484a356c00c268083b147cd7cc6ae",
-    "foreignCheckpointRootsMatchIncoming": 43,
-    "foreignAcceptanceRootsMatchIncoming": true,
-    "ownHexRawMatchesBeforeMerge": true,
     "AtlasCampaignLocationAndTestsUnchanged": true,
     "steward": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/66#issuecomment-6101632238",
     "checks": {
