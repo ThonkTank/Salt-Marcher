@@ -11310,7 +11310,8 @@
         "docs/reference/gm-city-postsave-reopen-20261011/DATA-ORACLE.txt",
         "docs/reference/gm-city-postsave-reopen-20261011/screenshots/*.png and SHA256SUMS.txt"
       ],
-      "next": "Report once to City in #92. Existing separate #80 N04 fresh-process-only support request remains open with Hex retaining parent ownership; no City replay absent relevant source change."
+      "next": "City hat den abgeschlossenen Fresh-Process-/PR-117-Befund in #92 konsumierbar erhalten. Der separate #80-N04-Fresh-Process-Support bleibt bei Hex; vor Wiederaufnahme Claims/Eingang am bestehenden #80 prüfen, kein City-Replay ohne Produktpfadänderung.",
+      "reportedToIssue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/92#issuecomment-6105664357"
     },
     "executedUiRuns": 24,
     "observedFindings": [
@@ -11480,7 +11481,7 @@
       "state": "completed",
       "supersedes": "GM-UX-ACCESS; Slotanfrage gemäß Nutzerkorrektur aufgehoben"
     },
-    "next": "The City #92 post-save fresh-process continuation and the separate PR-117 Apply/Discard keyboard-focus check are recorded once at #92 with durable screenshots. The already-owned #80 N04 request remains a separate fresh-process-only support follow-up with Hex retaining parent ownership; no further City replay without a relevant product-source change.",
+    "next": "Bei nächster passender Ausführung ausschließlich den bestehenden #80-N04-Fresh-Process-Support mit Hex als Parentowner fortsetzen, falls Claim/Eingang weiterhin frei und gültig sind; keine City-Wiederholung ohne relevanten Produktpfadwechsel.",
     "automation": "Stündliche GM-Produkttests in eigener Cloud; keine Laptop-Slotfreigabe erforderlich.",
     "executionEnvironment": "Eigene Cloud-Umgebung, getrennt vom Laptop der Kollegen",
     "cloudHost": {
