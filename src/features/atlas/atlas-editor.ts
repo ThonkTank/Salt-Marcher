@@ -385,6 +385,7 @@ export class AtlasEditor {
   suspend(): void {
     this.setInputBlocked(true);
     this.closed = true;
+    this.status.textContent = "Entwurf erhalten; Bearbeitung angehalten.";
     this.abort.abort();
     this.unsubscribe();
     this.renderer.destroy();
@@ -624,6 +625,7 @@ export class AtlasEditor {
       const version = this.persistenceVersion;
       this.status.textContent = "Atlas wird gespeichert …";
       await this.storage.save();
+      if (this.closed) return;
       if (version === this.persistenceVersion)
         this.persistence = Promise.resolve();
       this.refreshHistory();
