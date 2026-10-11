@@ -484,7 +484,22 @@ unverändert; die Vollsuite steht bei 1010 PASS, null FAIL und einem
 beabsichtigten Skip. Campaign/Data sowie Cloud Architektur/Technik bestätigen
 den Exact-SHA in ihren engen Zwischenreviews mit `PASS`.
 
-Noch offen und nicht durch den Checkpoint behauptet sind Party-Aktivierung und
-Deactivate/Delete, Split/Rejoin samt opaque
-Clock-Beitrag, die vollständige Masken-Reconciliation, Invariant-Fuzzer und
-Scaleorakel sowie unabhängiger Exact-SHA-Review und Shared-Integration.
+Membership-Repair `490ed32` ergänzt Aktivierung und Deaktivierung vor und nach
+Sessionstart. Aktivierung bindet die aktuelle Focus-Scene samt Revision;
+Deaktivierung akzeptiert assigned und exakt gebundene pending Membership,
+erzeugt source-only Consumerpflichten und wählt einen Primary-Nachfolger zuerst
+über die andere bevölkerte Focus-Scene, sonst über die erste verbleibende
+aktive Partyfigur. Der Command pinnt Nachfolger und Revision; das Decision
+bindet Source-/Nachfolgerrevisionen vor und nach Cleanup. Der erste Membership-
+Checkpoint `8458409` erhielt drei P1-Befunde zu pending Deactivate,
+Successor-Präzedenz und Revisionsbindung. Cloud Architektur/Technik bestätigt
+diese drei Reparaturen auf Exact-SHA `490ed3277c94b166a97acca8ec796f1cd4ee7544`
+im engen Re-review mit `PASS`. Der exakte vollständige Lauf steht bei 1020 PASS,
+null FAIL und einem beabsichtigten Skip; Typecheck, Build und Repo-Check sind
+grün. Die eigenständigen Campaign/Data-/Party- und Music/Weather/Shops-Reviews
+dieses Membership-Deltas stehen noch aus.
+
+Noch offen und nicht durch den Checkpoint behauptet sind permanente Löschung,
+Split/Rejoin samt opaque Clock-Beitrag, die vollständige Masken-Reconciliation,
+Invariant-Fuzzer und Scaleorakel sowie die übrigen unabhängigen Exact-SHA-
+Reviews und Shared-Integration.
