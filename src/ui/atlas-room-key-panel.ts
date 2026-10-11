@@ -146,6 +146,7 @@ export class AtlasRoomKeyPanel {
       }
     }
     const actions = doc.createElement("div");
+    actions.className = "dn-location-key-actions";
     for (const [title, action] of [
       ["Übernehmen", () => this.apply()],
       [
