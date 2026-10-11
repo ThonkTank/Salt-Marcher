@@ -67,36 +67,16 @@ belegt HEX80-H04-01 auf12265c20/Shared25792fb: bestätigtes Ctrl+S lässt Ortsna
 pending/History0/alle8 Bytes gleich; sichtbarer Save speichert exakt. Dieser
 historische RunnerExit1 wird durch die Nachbesserung nicht umgedeutet.
 
-**Aktueller Routingfix und direkte Nachprobe:**
-[R01-Quittung](docs/reference/atlas-detail-binding-d01/inspector-save-routing-r01.json)
-bindet saubere Sourcee1bda0a08e985ef74ba1777d1e1588d507f838b7, qualifizierten
-Shared29e4ce68, Spatial-V2 und Obsidian1.14.4. AtlasView registriert supported
-View.scope/Mod+S mit Parentfallback; aktueller fokussierter Atlaseditor nutzt
-bestehenden seriellen Save mit Bindungs-/Kompositions-/Pending-Keyguards.
-Bereits konsumiertes Mod+S löst am nachfolgenden Windowlistener keinen zweiten
-Save aus. Keine Handlerersetzung/-umgehung, bestehenden Orts-/Raumguards erhalten.
-
-Fünf Routingregressionen, Basissuite, Typprüfung und sauberer Build PASS.
-Direkte synthetische trusted **nicht komponierende** Ctrl+S-Eingabe im sichtbaren
-Ortsnamen speichert exakt „R01 Gespeicherter Ortsname“ mit einer gemeinsamen
-History, pending=false/clean/kein Draft, Kamera/Owners/Dungeon erhalten.
-Sechs fremde Spatialdateien bytegleich. Vollständige Campaign nur in neun
-Location-/Owner-/Registrydigest-Revisionsfeldern geändert; Locationdigests an
-nativem Bytehash geprüft, übrige Ableitungen formgeprüft, nicht recomputiert.
-Beleg auch nach normalem app.quit bytegleich; RunnerExit0, alle4 PIDs weg,
-keine Zwangstermination, frisch koordinierter Slot ausdrücklich zurückgegeben.
-Nutzervault/fremde lokale Dateien und alle früheren Hex-/Fremdwurzeln erhalten.
-
-**Review und Integration konsumiert:**
-[Unabhängiger enger Review](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/135#issuecomment-6106627133)
-und [reguläre Stewardintegration](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/135#issuecomment-6106631127)
-von PR135 sind abgeschlossen. Geprüft wurden Routing/Scope-Lifecycle, Fokus-/
-Flush-/Kompositions-/Bindungs-/Duplicateguards und Aussagegrenzen; fünf gezielte
-Regressionen PASS. Lokale Rohpfade waren beim Cloudreview nicht zugänglich,
-daher kein unabhängiger Host-/GUI-PASS. Die Autorenprobe bleibt ane1bda0a gebunden.
-Qualifizierter Shared6ee40d83 inklusive PR134/136/138/137 ist konsumiert; relevante
-Atlas-/Panel-/Runner-/Manifestblobs sind zur Hostquelle bytegleich. Historische
-R01/H01–H04 und fremde Wurzeln bleiben erhalten. Keine neue Produktänderung.
+**Qualifizierter Routingfix:** PR135 ist durch [unabhängigen engen Review](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/135#issuecomment-6106627133)
+und [Stewardintegration](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/135#issuecomment-6106631127)
+integriert. Supported View.scope/Mod+S mit Parentfallback, bestehender serieller
+Save und Fokus-/Bindungs-/Kompositionsguards; konsumiertes Mod+S löst keinen
+zweiten Window-Save aus. Fünf Routingregressionen/Basissuite/Build bestehen.
+[R01](docs/reference/atlas-detail-binding-d01/inspector-save-routing-r01.json)
+belegt tatsächlich nicht komponierendes Ctrl+S im Ortsnamen auf sauberere1bda0a/
+Shared29e4ce68 mit einer History, exakten Texten und nativen Erhaltungsorakeln.
+Keine unabhängige Cloud-Hostprüfung unzugänglicher Rohpfade. Shared6ee40d83 ist
+konsumiert; historische R01/H01–H04 und fremde Wurzeln bleiben erhalten.
 
 **Neustart des gespeicherten Orts-Keys:** F01 auf sauberer Source840f6f1f/
 Shared6ee40d83 öffnet die byteidentische Kopie des nach R01 normal beendeten
@@ -109,19 +89,33 @@ Runner0/PASS/keine Zwangstermination; frischer Slot zurückgegeben.
 Beleg: `acceptance.hexAtlas.requirements[30].dungeonAtLocationInspectorSaveRoutingFreshF01`.
 Bild/Rohdaten lokal zugänglich; keine angenommene unabhängige Cloudprüfung.
 
-**Nächster ausführbarer Hex-Beitrag:** Eine tatsächliche nicht komponierende
-Ctrl+S-Eingabe im fokussierten Raum-Key mit gültigem pending Text prüfen:
-ein gemeinsamer Historyeintrag/serieller Save, exakte native Raumtexte und
-fremde Payload erhalten. Vor GUI neuen Slot koordinieren, normal beenden/PIDs
-und ausdrücklich zurückgeben. Kein konkurrierender Cityfix/Detailausbau oder
-unveränderter allgemeiner Reviewauftrag.
+**Raum-Key-Ctrl+S nativ belegt:** R02 auf sauberer Sourcee98f394f/Shared6ee40d83
+öffnet den früher nativ gespeicherten N02-Vault mit bereits verortetem Dungeon.
+Sichtbar Ort11 → Raum31 → Raumtext1 → gültiger Text → einmal nicht komponierendes
+Ctrl+S speichert exakt. Gemeinsame History0→1, pending=false/clean/kein Draft;
+Repository/History/Renderer/Token/Kamera, Welt und beide Orts-Keys erhalten.
+Dungeon geändert ausschließlich in einem Markdownfeld; sechs fremde Dateien
+bytegleich, vollständige Campaign nur elf Dungeon-/Digest-Revisionsfelder.
+Nach normal app.quit alle After-Save-Hashes gleich, PIDs weg/Runner0, Slot zurück.
+Beleg: `acceptance.hexAtlas.requirements[30].dungeonAtLocationRoomScopeSaveR02`.
+Native Digests an Bytehash geprüft; weitere Ableitungen nur formgeprüft.
+PR140 ist qualifiziert als Shared1580c39a konsumiert (Plannerfokus); relevante
+Atlas-/Panel-/Host-/Fixturepfade unverändert, tatsächliche R02-Quelle bleibt e98f394f.
 
-**Offen:** nativer Kompositionsguard, Room/Meta, physische IME,
-Copy/Discard/Recovery, äußeres Clipping, Gesamt-E2E sowie
+**Nächster ausführbarer Hex-Beitrag:** Den tatsächlich R02-gespeicherten
+isolierten Raum-Key in einem neuen Obsidian-Prozess über denselben sichtbaren
+Ort-/Raumweg wiederöffnen. Byteidentische gespeicherte Kopie, kein Neu-Seeden/
+Save-Replay; exakter sichtbarer Raumtext und alle acht nativen After-Save-Hashes.
+Vor GUI neuen Slot koordinieren, normal beenden/PIDs und zurückgeben.
+
+**Offen:** frischer Prozess nach R02-Raumsave, nativer Kompositionsguard/Meta,
+physische IME, Copy/Discard/Recovery, äußeres Clipping, Gesamt-E2E sowie
 Original-/Großkarten-/Nutzervaultabnahme bleiben getrennte Nachweise.
-F01 belegt nur den frischen Prozess des R01-gespeicherten Orts-Keys, keinen
-Kameraerhalt über Neustart. Frühere Belege/Fehlquittungen bleiben erhalten.
-Jeder weitere lokale GUI-Start braucht eine neue ausdrückliche Slotabstimmung.
+F01 belegt den frischen R01-Orts-Key. R02 benutzt vorab gespeicherte N02-Daten;
+sein `--restart` ist kein frischer Prozess nach dem neuen Raumsave.
+Frühere Belege/Fehlquittungen bleiben erhalten. Kein konkurrierender Cityfix,
+Detailausbau oder allgemeiner Reviewauftrag. Jeder weitere lokale GUI-Start
+braucht eine neue ausdrückliche Slotabstimmung.
 
 ## Historische Planbasis und Lieferbelege
 
