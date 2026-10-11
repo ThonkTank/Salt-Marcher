@@ -162103,6 +162103,353 @@
           },
           "nextConsumer": "Existing Steward consumes this committed-Copy native input for #80. Hex retains same parent/branch and next native Room-Savejournal input; existing independent reviews retained, no general review or dependent expansion.",
           "finishedAt": "2026-10-11T11:48:00.140274+00:00"
+        },
+        "dungeonAtLocationRoomSaveCommittedJournalJ01": {
+          "id": "E2E-01-HEX04-ROOM-SAVE-COMMITTED-JOURNAL-J01",
+          "owner": "Hex",
+          "issue": 80,
+          "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
+          "e2e01UserLine": 13,
+          "state": "native_committed_Room_Save_fresh_same_After_and_IDs_PASS_retained_status_bug_open_full_E2E_open",
+          "sourceCommit": "b6ec69d4290259e60e8acab61633b3b4a3ce2b69",
+          "cleanCheckoutHead": "593f8cca5358cca715ad5cca36f9f759af52a027",
+          "qualifiedShared": "593f8cca5358cca715ad5cca36f9f759af52a027",
+          "productEdited": false,
+          "productBuildPathUnchanged": true,
+          "consumedCommittedCopyIntegration": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/164#issuecomment-6108755035",
+          "fixtureVersion": "e2e01-spatial-v2",
+          "fixtureManifestSha256": "23735bb6c95107b7dec93ffa56ec66405a0f4fe0ec3822fc0476d90d2920188d",
+          "inputLineage": {
+            "input": "actual_R03_Draft_vault_after_both_normal_quits",
+            "sourceVault": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-recovery-r03-20261011/vault",
+            "record": "acceptance.hexAtlas.requirements[30].dungeonAtLocationRoomDraftRecoveryR03",
+            "receiptHead": "dbde783add9df635ba6184c16ac11254bb0ad7d8",
+            "resultComment": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80#issuecomment-6107412267",
+            "inputSource": "f53a2667c3d471ea47e16bd1e3c4ff7eadf4758c",
+            "actualDraftSha256": "7ec52f2a25b8530857362095b2855381ade3f013d2d798dfed40c75bda201b97",
+            "priorNormalQuit": true,
+            "reseeded": false,
+            "saveReplayed": false,
+            "preparedAt": "2026-10-11T12:00:45.479307+00:00",
+            "freshQaRoot": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-save-committed-journal-j01-20261011",
+            "failedC01C02NotReplayed": true,
+            "purpose": "actual_Room_Save_committed_journal_cleanup_interruption_then_fresh_normal_entry",
+            "historicalInputsNotReplayed": true
+          },
+          "buildTriplet": {
+            "main.js": "6709c8520629c9fcd53e5cab2e968056776bbc2c27c9822cb08b4151ca7fd409",
+            "manifest.json": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64",
+            "styles.css": "6279e70cae51acb20fcf8cf8b23c2e87fa64d35e48a5fc0deb3c7de04dba26d7"
+          },
+          "host": {
+            "protocolVersion": "1.3",
+            "product": "Chrome/150.0.7871.250",
+            "revision": "@07ee2042224499f634596843f209356586214e26",
+            "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) obsidian/1.14.4 Chrome/150.0.7871.250 Electron/43.7.7 Safari/537.36",
+            "jsVersion": "15.0.245.31"
+          },
+          "qaHelpers": {
+            "room-save-committed-j01-probe.cjs": "7404458230f52858b6238ab1169730aa0fd519bff4138b03a66ace516e93122e",
+            "room-save-committed-j01-preload.cjs": "711f50a92efbddf926c8a0ef04ca76fe724123fd1c866f99d44246d79223ea56"
+          },
+          "actualAction": "Visible Atlas Save creates its actual committed journal after Dungeon, Draft-null and authorized Campaignmanifest After states. Exact committed journal-trash cleanup fails twice. Old full state remains retained without current authority. Normal quit/PIDs gone, actual fresh process normal startup consumes journal before QA scenario; ordinary file entry/Fit/marker/Room route shows exact Room fields. Same eight saved After hashes and IDs. No handmade journal, new Copy, Save replay or direct handler/model write.",
+          "nativeFault": {
+            "journalHandcrafted": false,
+            "state": "committed",
+            "transactionId": "b5d680d4-9708-4dc8-99f0-1ebb66897f21",
+            "journalSha256": "272607f05206751e5584d1ddba0d9f85a058ec2cd827536e4a02372a1d0bf588",
+            "journalWriteCount": 3,
+            "cleanupFailures": 2,
+            "events": [
+              {
+                "kind": "controlled_committed_Room_Save_journal_cleanup_failure",
+                "path": "Atlanten/Gemeinsamer-Testatlas.overworld.journal",
+                "state": "committed",
+                "transactionId": "b5d680d4-9708-4dc8-99f0-1ebb66897f21",
+                "writes": [
+                  "Dungeons/E2E-01-Testdungeon/Karte.dungeon",
+                  "Atlanten/Gemeinsamer-Testatlas.overworld.draft",
+                  "Kampagnen/SaltMarcher/E2E-01-Atlas-Save.campaign.json"
+                ]
+              },
+              {
+                "kind": "controlled_committed_Room_Save_journal_cleanup_failure",
+                "path": "Atlanten/Gemeinsamer-Testatlas.overworld.journal",
+                "state": "committed",
+                "transactionId": "b5d680d4-9708-4dc8-99f0-1ebb66897f21",
+                "writes": [
+                  "Dungeons/E2E-01-Testdungeon/Karte.dungeon",
+                  "Atlanten/Gemeinsamer-Testatlas.overworld.draft",
+                  "Kampagnen/SaltMarcher/E2E-01-Atlas-Save.campaign.json"
+                ]
+              }
+            ],
+            "allNativeTargetsEqualAfter": true,
+            "faultRemainedUntilNormalExit": true
+          },
+          "observed": {
+            "oldManagedMountUnavailable": true,
+            "oldCurrentAuthority": false,
+            "oneRetainedRepository": true,
+            "oneRetainedHistory": true,
+            "retainedFullStateAndCameraExact": true,
+            "freshRecoveryBeforeScenario": true,
+            "freshScenarioJournalSha256": null,
+            "preFreshActualJournalBoundByNormalQuitReceipt": true,
+            "visibleRecoveryButtonUsed": false,
+            "saveReplayed": false,
+            "sameEightSavedAfterFilesAndIds": true,
+            "canonicalChangedPaths": [
+              "Dungeons/E2E-01-Testdungeon/Karte.dungeon",
+              "Kampagnen/SaltMarcher/E2E-01-Atlas-Save.campaign.json"
+            ],
+            "sixOtherNativeFilesUnchanged": true,
+            "journalAbsentAfterRecovery": true,
+            "draftAbsentAfterCommittedSave": true,
+            "savedNativeHashes": {
+              "Atlanten/Gemeinsamer-Testatlas.overworld": "8d7c5f570bb31d57566a08e9589f28df95302a9fc46028571c992b55f084b839",
+              "Städte/00000000-0000-4000-8000-000000000100.city": "d7ac830f0b1a1b2e20a396a8515cf6afa0b777e46ee39f0a5b39a75bd8a6184c",
+              "Dungeons/E2E-01-Testdungeon/Karte.dungeon": "f3b39dd611bb77d324989f00749e2f9451e701611a7bb90e9e6fc3353a5166e4",
+              "Orte/00000000-0000-4000-8000-000000000011.location": "5997ea0f8ab52c6a12e9b2fc8e18dd87bb8491d9e75b8f3edfeca867cd5af262",
+              "Orte/00000000-0000-4000-8000-000000000012.location": "8c629d146a0cf72855e0178d11fa3c8fcd25af7340e4f7db02a7c0fb7ca8eb5e",
+              "Atlasdaten/00000000-0000-4000-8000-000000000010/terrain/0_-1_0.json": "4e09dbcf59e5f81a35f0c72c44511b35073696cf079613f5d001baceeb59e358",
+              "Atlasdaten/00000000-0000-4000-8000-000000000010/terrain/0_0_0.json": "c32ba3548aa7236e573e145ec0e3c6e75326cc6cd47134a19c2230d2d790f2f2",
+              "Kampagnen/SaltMarcher/E2E-01-Atlas-Save.campaign.json": "93c960e2815c0044afb1511a345b747005423ebaca738dfb73542021f77d99bc"
+            },
+            "roomName": "N02 Torraum — exakt",
+            "roomNumber": "1",
+            "literalMarkdown": "## Eingang\nR03: Ungespeicherter Raumtext lebt nach regulärem Neustart.  \n\n",
+            "freshCurrentManagedRepositoryHistoryRenderer": true,
+            "historyDepth": 0,
+            "canRedo": false,
+            "dirty": false,
+            "hasDraft": false,
+            "pendingKey": false,
+            "fullWorldAndTypedSpatialAndDungeonExact": true
+          },
+          "openFinding": {
+            "id": "E2E-01-HEX04-RETAINED-SAVE-STATUS",
+            "expected": "Retained old editor must show that Save ended without confirmed live authority, rather than an ongoing Save.",
+            "actualSaveStatus": "Atlas wird gespeichert …",
+            "actualCampaignMessage": "Speicherbasis ist unbestätigt; Atlas unter seiner alten Identität erhalten.",
+            "impact": "misleading ongoing Save status in retained read-only editor; persisted committed After data and fresh recovery remain intact",
+            "owner": "Hex",
+            "issue": 80,
+            "nextFixWithinExistingBranch": true,
+            "probe": "docs/reference/atlas-detail-binding-d01/room-save-committed-journal-j01/fault/room-save-committed-fault-probe.json",
+            "fullSaveUxPassed": false
+          },
+          "lifecycle": {
+            "fault": {
+              "run": "1791720181219-atlas-spatial-reopen",
+              "runnerExit": 0,
+              "resultPassed": true,
+              "errors": [],
+              "failure": null,
+              "shutdownFailure": null,
+              "normalQuit": true,
+              "pids": [
+                332893,
+                332968,
+                332976,
+                332986
+              ],
+              "pidsGone": true,
+              "forcedTerminationPids": [],
+              "unit": "dungeon-native-332865.service",
+              "systemdAfterCleanup": {
+                "Id": "dungeon-native-332865.service",
+                "ActiveState": "inactive",
+                "SubState": "dead",
+                "InvocationID": "",
+                "MainPID": "0",
+                "ControlPID": "0",
+                "Result": "success",
+                "ExecMainCode": "0",
+                "ExecMainStatus": "0"
+              }
+            },
+            "fresh": {
+              "run": "1791720224833-atlas-spatial-reopen",
+              "runnerExit": 0,
+              "resultPassed": true,
+              "errors": [],
+              "failure": null,
+              "shutdownFailure": null,
+              "normalQuit": true,
+              "pids": [
+                334763,
+                334839,
+                334846,
+                334859
+              ],
+              "pidsGone": true,
+              "forcedTerminationPids": [],
+              "unit": "dungeon-native-334735.service",
+              "systemdAfterCleanup": {
+                "Id": "dungeon-native-334735.service",
+                "ActiveState": "inactive",
+                "SubState": "dead",
+                "InvocationID": "",
+                "MainPID": "0",
+                "ControlPID": "0",
+                "Result": "success",
+                "ExecMainCode": "0",
+                "ExecMainStatus": "0"
+              }
+            }
+          },
+          "slot": {
+            "claim": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6108813768",
+            "returned": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6108827817",
+            "held": false,
+            "futureGUIRequiresNewExplicitCoordination": true
+          },
+          "portableEvidence": {
+            "entry": "docs/reference/atlas-detail-binding-d01/room-save-committed-journal-j01/README.md",
+            "files": [
+              {
+                "path": "docs/reference/atlas-detail-binding-d01/room-save-committed-journal-j01/README.md",
+                "sha256": "b6cccd9d6ee02c2f074154917db44f6495b3f9d87be344fba1b80da6e6dd1d1b",
+                "bytes": 5846
+              },
+              {
+                "path": "docs/reference/atlas-detail-binding-d01/room-save-committed-journal-j01/fault-after-normal-quit.json",
+                "sha256": "af10597fbc6b08efa48f91f16b2281c65724bb938f270ed6f3e4f58421c2fd24",
+                "bytes": 77013
+              },
+              {
+                "path": "docs/reference/atlas-detail-binding-d01/room-save-committed-journal-j01/fault/actual-committed-room-save-journal.json",
+                "sha256": "272607f05206751e5584d1ddba0d9f85a058ec2cd827536e4a02372a1d0bf588",
+                "bytes": 67424
+              },
+              {
+                "path": "docs/reference/atlas-detail-binding-d01/room-save-committed-journal-j01/fault/build.json",
+                "sha256": "f4f2f8c8b24c95454eed6f8282684518729b2b058378729b5cb26a969e8c86ce",
+                "bytes": 582
+              },
+              {
+                "path": "docs/reference/atlas-detail-binding-d01/room-save-committed-journal-j01/fault/process-lifecycle.json",
+                "sha256": "4288d37c00e04839042f40415a56fabf1462e0d7a944dd7f2870a1c1b01d8316",
+                "bytes": 7147
+              },
+              {
+                "path": "docs/reference/atlas-detail-binding-d01/room-save-committed-journal-j01/fault/result.json",
+                "sha256": "b00ce5ffdd4279e37b98c5fcd4f963a40a8d71e18ddbfe9cb11d840cdbac987e",
+                "bytes": 545
+              },
+              {
+                "path": "docs/reference/atlas-detail-binding-d01/room-save-committed-journal-j01/fault/room-save-committed-fault-probe.json",
+                "sha256": "83a986c69628a828c306ed63c3cf36eff1e7fd2807dd4d00d0a918e4c9e9c259",
+                "bytes": 92444
+              },
+              {
+                "path": "docs/reference/atlas-detail-binding-d01/room-save-committed-journal-j01/fault/visible-room-save-cleanup-failure-retained-key.png",
+                "sha256": "49ca73fecdcf08b037622b8bdc18610902a773c046b65b494d735cfbdb695195",
+                "bytes": 52521
+              },
+              {
+                "path": "docs/reference/atlas-detail-binding-d01/room-save-committed-journal-j01/fresh-after-normal-quit.json",
+                "sha256": "3e4983db61c13766079f2f4e0a6cef1d6c374e4f3540d4dddeb37f98e2b90b09",
+                "bytes": 9229
+              },
+              {
+                "path": "docs/reference/atlas-detail-binding-d01/room-save-committed-journal-j01/fresh/build.json",
+                "sha256": "f4f2f8c8b24c95454eed6f8282684518729b2b058378729b5cb26a969e8c86ce",
+                "bytes": 582
+              },
+              {
+                "path": "docs/reference/atlas-detail-binding-d01/room-save-committed-journal-j01/fresh/fresh-recovered-committed-room-save-key.png",
+                "sha256": "42b6d6bdb764dd4d8f2f41abe95f5c38cb398ea7cda11ae94cc20bed2a068151",
+                "bytes": 72631
+              },
+              {
+                "path": "docs/reference/atlas-detail-binding-d01/room-save-committed-journal-j01/fresh/process-lifecycle.json",
+                "sha256": "7112e91ea6b0563bbc9f858a9e87e738bb1e85be773c98d34f3ece353c8213dd",
+                "bytes": 7144
+              },
+              {
+                "path": "docs/reference/atlas-detail-binding-d01/room-save-committed-journal-j01/fresh/result.json",
+                "sha256": "fb5217c0c052617d9356eac59b5444b03985288ca32cccba5cfa54cd8798060d",
+                "bytes": 593
+              },
+              {
+                "path": "docs/reference/atlas-detail-binding-d01/room-save-committed-journal-j01/fresh/room-save-committed-fresh-probe.json",
+                "sha256": "d804821f3ba8252e3d08cfa54ab88645c282c641c5192d960f2700ca00a2f083",
+                "bytes": 93887
+              },
+              {
+                "path": "docs/reference/atlas-detail-binding-d01/room-save-committed-journal-j01/input-lineage.json",
+                "sha256": "37ca644947658107c5a50de98aafa1670e6c1df0c8863d53956972710b18ffc2",
+                "bytes": 986
+              },
+              {
+                "path": "docs/reference/atlas-detail-binding-d01/room-save-committed-journal-j01/input-native-hashes.json",
+                "sha256": "e20fd0dcb3bcace7327075035bd7210fe7248431cdea4dd0291ee5ef9d96b008",
+                "bytes": 1011
+              },
+              {
+                "path": "docs/reference/atlas-detail-binding-d01/room-save-committed-journal-j01/invocation.json",
+                "sha256": "7e7cd6068edb1934a1f6ee2f3b3259bb55763045a2dcdc3ea476387b0ba76b22",
+                "bytes": 1280
+              },
+              {
+                "path": "docs/reference/atlas-detail-binding-d01/room-save-committed-journal-j01/post-quit-verifier.py",
+                "sha256": "19ffb5a5bc2ec51324b5d86327d4083367a3ffb4a693911e5db073b552a6c2f8",
+                "bytes": 4953
+              },
+              {
+                "path": "docs/reference/atlas-detail-binding-d01/room-save-committed-journal-j01/product-lineage.json",
+                "sha256": "90641139077697f695116d37f556a29a5714bfdccdf1300d226d4881d225e6a4",
+                "bytes": 516
+              },
+              {
+                "path": "docs/reference/atlas-detail-binding-d01/room-save-committed-journal-j01/protected-inputs-before.json",
+                "sha256": "3a244af41dba0448b56bfa4ea73b637635796d698b8e392c3dc86ce89c3e2be2",
+                "bytes": 196095
+              },
+              {
+                "path": "docs/reference/atlas-detail-binding-d01/room-save-committed-journal-j01/room-save-committed-j01-preload.cjs",
+                "sha256": "711f50a92efbddf926c8a0ef04ca76fe724123fd1c866f99d44246d79223ea56",
+                "bytes": 367
+              },
+              {
+                "path": "docs/reference/atlas-detail-binding-d01/room-save-committed-journal-j01/room-save-committed-j01-probe.cjs",
+                "sha256": "7404458230f52858b6238ab1169730aa0fd519bff4138b03a66ace516e93122e",
+                "bytes": 13150
+              }
+            ]
+          },
+          "localEvidence": {
+            "root": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-save-committed-journal-j01-20261011",
+            "raw": {
+              "fault": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-save-committed-journal-j01-20261011/evidence/1791720181219-atlas-spatial-reopen",
+              "fresh": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-save-committed-journal-j01-20261011/evidence/1791720224833-atlas-spatial-reopen"
+            }
+          },
+          "preserved": {
+            "historicalExecutedQAInputsAndRaw": true,
+            "actualR03SourceVaultAndDraft": true,
+            "foreignLocalFiles": true,
+            "protectedFileCount": 1013,
+            "newIsolatedVaultOnlyDungeonAndAuthorizedManifestChangedAndDraftRemoved": true
+          },
+          "limits": {
+            "preparedRoomSaveJournal": false,
+            "fullSaveUx": false,
+            "hardCrash": false,
+            "physicalInput": false,
+            "IME": false,
+            "Meta": false,
+            "freeGmProbe": false,
+            "freshCameraAndHistoryRestored": false,
+            "originalParity": false,
+            "largeMap": false,
+            "userVaultInstalled": false,
+            "fullE2E": false
+          },
+          "nextConsumer": "Existing Steward consumes this committed Room-Save native input for #80. Hex retains parent/branch and fixes actual retained Save status next, then remaining prepared Room-Save input; no general review or dependent expansion.",
+          "finishedAt": "2026-10-11T12:11:10.423162+00:00"
         }
       }
     ],
