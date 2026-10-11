@@ -9,6 +9,7 @@ Ein lokaler Arbeitsraum für Spielleitungen: Karten und Raum-Keys bearbeiten, Ka
 | Ich möchte … | Einstieg |
 | --- | --- |
 | das Ziel und den Lieferumfang verstehen | [Produktziele](docs/PRODUCT.md) und [vollständiger Quellenabgleich](docs/SCOPE.md) |
+| sehen, was der Atlas bereits kann und was noch fehlt | [Atlas auf einen Blick: Stand und Weg zum Ziel](ROADMAP-HEX-ATLAS.md#atlas-auf-einen-blick) |
 | wissen, was zuerst fertig werden muss | [Produktroadmap und aktueller Engpass](docs/ROADMAP.md) |
 | als Agent sofort mitarbeiten | [Agenteneinstieg mit Aufgaben und Voraussetzungen](CONTRIBUTING.md#agenteneinstieg) |
 | die nächste freie Aufgabe lesen | `npm run next` (GitHub live, Voraussetzungen und Abnahme im gewählten Issue) |

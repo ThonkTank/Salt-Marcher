@@ -4,7 +4,7 @@ Diese Erweiterung gehört zur [Hex-Atlas-Roadmap](ROADMAP-HEX-ATLAS.md). **Ein A
 
 Der gemeinsame Atlas ist grenzenlos und wächst mit seinen Inhalten. Stadtanlage, Straßen und Haus-Dungeons erweitern bei Bedarf seine belegte Ausdehnung, ohne Kartenrand-, Resize- oder Betretenaktion. Siedlungsflächen besitzen reale Maße; Meilen und Hex-Kacheln beschreiben den gewählten Bereich, Pixel nur die Darstellung beziehungsweise Bildausgabe. Orts-, Stadt- und Dungeondokumente teilen denselben räumlichen Atlas und dieselbe Bearbeitung.
 
-Alle folgenden Phasen sind geplant. Der Abnahmekatalog liegt unter `acceptance.json.cityPlans`; die geplanten Daten- und Raumentscheidungen stehen in der [Architektur](ARCHITECTURE.md#stadtpläne-und-durchgehende-atlas-bearbeitung).
+Die folgenden Phasen beschreiben den vollständigen Zielumfang. Vorhandene Stadtgeometrie ist bereits teilweise im gemeinsamen Atlas bearbeitbar; die assistierte Bebauung liegt als Kandidat vor. Den datierten integrierten Stand, Kandidaten und offenen Rest führt zentral [Atlas auf einen Blick](ROADMAP-HEX-ATLAS.md#atlas-auf-einen-blick). Der Abnahmekatalog liegt unter `acceptance.json.cityPlans`; die Daten- und Raumentscheidungen stehen in der [Architektur](ARCHITECTURE.md#stadtpläne-und-durchgehende-atlas-bearbeitung).
 
 ## Ergebnisvorbilder und Vergleich
 

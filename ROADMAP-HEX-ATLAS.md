@@ -1,8 +1,46 @@
 # Roadmap: Hex-Atlas mit Wonderdraft-Parität und verbundenen Orts- und Dungeon-Keys
 
+## Atlas auf einen Blick
+
+**Ziel:** Welt → Region → Stadt → Haus → Dungeonraum durch Zoom erreichen und direkt bearbeiten; eine Kamera, eine Undo/Redo-Folge und gemeinsame haltbare Daten.
+
+**Geprüfter Stand: 11.10.2026**, gemeinsamer Branch `active/installed-phase1`, Commit [dd7311e0](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/commit/dd7311e0ca310cee747cc8368fe87165ff2cfad9). Der Atlas besitzt bereits einen benutzbaren Hex-/Ortskern und integrierte Stadt-/Dungeon-Teilabläufe. Der vollständige Zielablauf und E2E-01 bleiben offen.
+
+### Was funktioniert, was fehlt?
+
+**Integriert** bedeutet im gemeinsamen Branch vorhanden, **Kandidat** bedeutet nur im genannten offenen PR. Die Belege bestätigen jeweils begrenzte Abläufe; vollständige Fachabnahme und lokal installierte Pluginversion sind daraus nicht ableitbar.
+
+| Fähigkeit | Bereits umgesetzt / Beleg | Fehlt zum Ziel |
+| --- | --- | --- |
+| Hexgelände | **Integriert:** grenzenloser Atlas; 3-Meilen-Hexes mit Land, Meer, Wald und Farbe; Pinsel, Zurücksetzen, Undo/Redo, Speichern und Entwurf. [HEX-01/02](acceptance.json) | Vollständige Landschaftswerkzeuge und Gleichwertigkeit mit dem Original. |
+| Mehrere Maßstäbe | **Teilweise:** größere Raster beim Herauszoomen; Gelände wird auf der kleinsten Stufe gespeichert. [Terrainformat](src/features/atlas/terrain-schema.ts) | Alle Hexstufen bearbeiten; grobe Vorgaben und geschützte feine Überschreibungen, HEX-06. |
+| Orte und Orts-Keys | **Integriert:** Stadt-/POI-Marker anlegen, verschieben, Markdown bearbeiten; gemeinsame Rücknahme, Speichern und Neustart belegt. [Abschluss #40](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/40#issuecomment-6102165161) | Links nach Umbenennung und vollständigen Ablauf abnehmen. |
+| Vorhandene Stadt bearbeiten | **Integriert:** Häuser und Straßenknoten verschieben, Hausnamen ändern und Häuser drehen. Begrenzte Obsidian-Speicher-/Neustartbelege. [Stadtabnahmen](acceptance.json) | Vollständiges Zeichnen/Neuanlegen und sämtliche Stadtfunktionen. |
+| Assistierte Bebauung | **Kandidat [PR154](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/154):** Fläche/Straßen/Platz, Häuser erzeugen, Dichte/Größe/Variante, Vorschau/Abbruch und präzise Hauskorrektur; kleine Speicher-/Neustartfälle in Obsidian. | Übernahme; neue Stadt mit Dateien und Kampagnenverweisen anlegen; große Bedienprobe. [Restarbeit #149](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/149) |
+| Haus und Innenraum | **Teilweise:** metrische Stadt-/Haus-/Dungeonbindungen und Dach-/Raumdarstellung im gemeinsamen Zoom. [Atlasdarstellung](src/features/atlas/spatial-canvas.ts) | Vollständiger Hausgrundriss-/Key-Ablauf und Schutz bei Bewegung/Regeneration, CITY-03/04. |
+| Dungeon im Atlas | **Integriert:** vorhandenen Dungeon am Ort verorten; Raumkontur/Key bearbeiten und zurückkehren, gemeinsames Undo/Speichern. [Obsidian-Teilbelege #80](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80) | Restliche Bedien-/Wiederherstellungsfälle und vollständige HEX-04/05-Abnahme; mehrere Detailkarten, HEX-22. |
+| Räumlicher Dungeon | **Integriert [PR158](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/158):** 3D-Volumes, Höhen, Schnitte, Flächenbearbeitung und Undo/Speichern/Neustart im Dungeon-Editor. | Vollständiger Atlasanschluss; Raumzuordnung bei Bewegung/Teilung/Vereinigung, räumliche Wege/Durchgänge, Graphentwurf, Attributvererbung, Inhaltsvorlagen und weitere [Dungeon-Fachziele](docs/SCOPE.md). |
+| Speicherung und Wiederaufnahme | **Teilweise:** gemeinsame Mehrdateispeicherung, Entwurf, Kopie und direkte Wiederherstellungsfälle in Obsidian. **Kandidat [PR167](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/167):** korrigierte Anzeige nach entzogener Speicherberechtigung. | Wiederherstellung vor Abschluss unterbrochener Raumspeicherung; Autosave; vollständiger [Importanschluss #41](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/41); breite Fehler-/Konfliktabnahme. |
+| Landschaft, Gestaltung, Ausgabe | **Offen:** die vollständigen Atlasfunktionen aus HEX-09–27. Dungeonwerkzeuge sind dafür keine Atlasabnahme. | Ooke-Vorlagen, freie Küsten, Gewässer, Flüsse/Straßen, Symbole/Assets, Labels/Stile, Maße, Ausschnitte und PNG/JPEG. |
+| Größe und Gesamtqualität | **Offen:** vollständige Endqualifikation. Kandidat PR154 besteht einen 5.000-Häuser-Datenlauf; die entsprechende Bedienprobe fehlt. | Großwelt/bedarfsgerechtes Laden, große Städte/Dungeons, Reaktionszeiten, Originalvergleiche, Tastatur/200 %, physische Bedienung und installierter Endbuild. |
+
+### Wie kommen wir zum Ziel?
+
+| Etappe | Nächstes sichtbares Ergebnis | Worauf aufbauen / wann abgeschlossen? |
+| --- | --- | --- |
+| **1. Atlas-Kern zuverlässig abschließen** | Ort → Dungeon → Raum/Key ändern → speichern → frisch wiederfinden. | Ortskern #40 abgeschlossen; #80 und #41 fortführen. Abschluss: vollständiger E2E-01-Ablauf mit geprüfter Speicherung/Wiederherstellung und Import. |
+| **2. Städte vollständig aufbauen** | Fläche/Straßen vorgeben → Häuser erzeugen → korrigieren → Innenraum/Key bearbeiten. | Vorhandene Stadtbasis und PR154 verwenden; Kampagnenanschluss für Neuanlage schließen. Abschluss: CITY-01–04 einschließlich geschützter Neuerzeugung und Neustart. |
+| **3. Weltgestaltung vervollständigen** | Grobe Welt formen, lokal verfeinern und lesbar ausarbeiten. | HEX-06–21 sowie HEX-23–26; erste Vorlage/Ausgabe HEX-09/10. Abschluss: zusammenhängende Stufen, Landschafts-/Gestaltungsfunktionen und zugehörige Originalbelege. |
+| **4. Stadt und Dungeon ausbauen** | Befestigungen/Viertel, Bewohner/Beziehungen/Fraktionen/Tagesabläufe; räumlich verbundene Dungeons mit vollständigen Autorenfunktionen. | CITY-05–07, HEX-22 und [SMR-04-Fachbedarf](docs/SCOPE.md); vorhandene Volumes und gemeinsame Weltzeit verwenden. Abschluss: jeweilige Fachabläufe erhalten Texte und Kennungen. |
+| **5. Gesamten Atlas qualifizieren** | Große Welt bis Innenraum flüssig bearbeiten, ausgeben und zuverlässig wiederaufnehmen. | HEX-08/22/27/28, CITY-08/09 und Querschnittsanforderungen. Abschluss: gemeinsamer Endbuild mit Größen-/Performance-, Original-, Bedien-, Export- und Installationsnachweisen. |
+
+Die Etappen bündeln Nutzerergebnisse; die detaillierten Fachphasen und Abhängigkeiten unten bleiben verbindlich. Unabhängige Umsetzung läuft parallel, sobald ihre Eingänge vorhanden sind; die gemeinsamen [E2E-Gates](docs/ROADMAP.md#lieferfolge-des-gesamtprodukts) behalten ihre Reihenfolge. Aktuelle Aufgaben/Owner/Blocker stehen am jeweiligen Issue/PR, die gemeinsame Gateentscheidung in [#12](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12).
+
+Diese Übersicht ist ein datierter Einstieg. Bei relevanter Integration oder geänderter Lücke wird sie am bestehenden Ort aktualisiert; Laufchroniken und Abnahmedetails bleiben in ihren Fachquellen. Die folgenden Abschnitte führen Zielarchitektur, vollständige Anforderungen und Phasenzuordnung.
+
 ## 1. Ausgangspunkt und Zielbild
 
-Der bestehende Dungeon-Editor liefert eine brauchbare Grundlage: native Kartendateien, stabile Kennungen, strukturierte Raum-Keys, Undo/Redo, konfliktgeschütztes Speichern, Zeichenwerkzeuge, Assets und eine Spielansicht. Hex-Geometrie, mehrere räumliche Maßstäbe und eine gemeinsame Verortung verschiedener Karten fehlen bislang. Die laufende Dungeondraft-Abnahme enthält außerdem noch offene Abschlussarbeiten. Grundlage sind die vorhandene [Architektur](ARCHITECTURE.md) und der [Abnahmekatalog](acceptance.json).
+Der bestehende Dungeon-Editor liefert native Kartendateien, stabile Kennungen, strukturierte Raum-Keys, Undo/Redo, konfliktgeschütztes Speichern, Zeichenwerkzeuge, Assets und eine Spielansicht. Hex-Geometrie und gemeinsame Stadt-/Dungeonverortung sind inzwischen teilweise umgesetzt; vollständige mehrstufige Landschaftsbearbeitung und durchgehende Atlasqualifikation bleiben offen. Den geprüften Funktionsstand zeigt [Atlas auf einen Blick](#atlas-auf-einen-blick). Grundlage des vollständigen Ziels sind die vorhandene [Architektur](ARCHITECTURE.md) und der [Abnahmekatalog](acceptance.json).
 
 Die lokal installierte Wonderdraft-Version ist **1.1.8.2**. Installationsdateien und offizielle Dokumentation wurden geprüft; eine vollständige direkte Bedienabnahme steht noch aus. Die dokumentierten Kernbereiche umfassen unter anderem Landmassen, Küsten, Flüsse, Straßen, Symbolpinsel, Gestaltungsvorlagen und Beschriftungen. [Wonderdraft](https://wonderdraft.net/), [offizieller Quick Guide](https://github.com/Megasploot/Wonderdraft/wiki/Quick-Guide).
 
@@ -69,7 +107,7 @@ Neue gemeinsame Schnittstellen umfassen:
 
 ## 3. Kleine Phasen mit früh nutzbaren Ergebnissen
 
-Die zehn bisherigen Etappen werden durch die folgenden **29 HEX-Phasen, HEX-00 bis HEX-28**, ersetzt und um **zehn Stadtphasen CITY-00 bis CITY-09** aus der [Stadtplan-Roadmap](ROADMAP-CITIES.md) ergänzt. Alle Phasen sind zunächst geplant. Die relative HEX-Reihenfolge bleibt verbindlich; die Stadtphasen werden an den unten genannten Stellen eingeordnet. Jede Phase erweitert den zuvor geprüften Benutzerablauf. Die Architektur aus Abschnitt 2 bleibt das Ziel, ihre notwendigen Teile entstehen zusammen mit der jeweiligen Funktion.
+Die zehn bisherigen Etappen werden durch die folgenden **29 HEX-Phasen, HEX-00 bis HEX-28**, ersetzt und um **zehn Stadtphasen CITY-00 bis CITY-09** aus der [Stadtplan-Roadmap](ROADMAP-CITIES.md) ergänzt. Die Phasen beschreiben den vollständigen Zielumfang; sie sind keine Aussage, dass sämtliche Funktionen noch unimplementiert wären. Den integrierten Stand, Kandidaten und offenen Rest zeigt [die Übersicht](#atlas-auf-einen-blick). Die relative HEX-Reihenfolge bleibt verbindlich; die Stadtphasen werden an den unten genannten Stellen eingeordnet. Jede Phase erweitert den zuvor geprüften Benutzerablauf. Die Architektur aus Abschnitt 2 bleibt das Ziel, ihre notwendigen Teile entstehen zusammen mit der jeweiligen Funktion.
 
 ### Arbeitsregel gegen verlorene Funktionsfähigkeit
 

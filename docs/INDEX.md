@@ -2,6 +2,8 @@
 
 [Produktziele](PRODUCT.md) → [Lieferfolge](ROADMAP.md) → [Aufgabe übernehmen](../CONTRIBUTING.md#agenteneinstieg). Aktuelle Übernahmen und Gateentscheidungen stehen in [#12](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12) und dem gewählten Aufgabenissue, einschließlich der neuesten relevanten Kommentare.
 
+**Atlas-Stand verstehen:** [Atlas auf einen Blick](../ROADMAP-HEX-ATLAS.md#atlas-auf-einen-blick) zeigt bereits integrierte Funktionen, Kandidaten, verbleibende Lücken und fünf Etappen zum Ziel.
+
 ## Nur den eigenen Bereich lesen
 
 `npm run next -- --task N` zeigt den Paketeinstieg, verlinkten Arbeitsabschnitt vom Remote samt Revision und Livefakten; [Übergaben ersetzen den Arbeitsabschnitt](REPOSITORY.md#arbeitsstand-lesen-und-ersetzen). `npm run context` zeigt die Bereiche. `npm run context -- --area atlas` liefert einen begrenzten Checkpointauszug mit Checkout-SHA, Fachplan und Abnahmewurzeln. Er beschreibt diesen Checkout; ein Kandidat oder neuer Ownerbeleg kann weiter sein. `npm run context -- --case HEX01-001` sucht eine exakte Fallkennung; bei einer unbekannten Kennung werden keine ähnlich benannten Fälle als Treffer ausgegeben.
