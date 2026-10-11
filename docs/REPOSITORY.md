@@ -36,7 +36,7 @@ Eigene Arbeit fortsetzen. Bei echtem Blocker fehlenden Eingang einmal am Paket n
 
 Labelnamen tragen `status:`: `ready` ist frei/ausführbar und weder aktiv noch blockiert. `kind:task` meint ein Ergebnispaket, `kind:coordination` einen Bereichsindex, `kind:process` Arbeitsabläufe. `priority:now` meint den Produktengpass, `priority:next` die Folgearbeit; Priorität vergibt keinen Besitz.
 
-[WORKFLOW](WORKFLOW.md#sinnvolle-arbeit-wählen-und-begrenzen) bestimmt Liefergrenzen und Prüfung. Contributors können bestätigte unbesetzte Restbedarfe im Parent als Ergebnispaket anbieten: Nutzen/Verbraucher, Quellen, Voraussetzungen, Abnahme. Keine Zielzahl freier Karten oder Pakete je Quellrecord.
+[WORKFLOW](WORKFLOW.md#sinnvolle-arbeit-wählen-und-begrenzen) bestimmt Liefergrenzen und Prüfung. Bei freier Umsetzungskapazität einen bestätigten unbesetzten Restbedarf im bestehenden Parent selbst zu einem Ergebnispaket konkretisieren: Nutzen/Verbraucher, Quellen, verfügbare Eingänge, Besitzgrenze und Abnahme. Bestehende Priorität, Claims und PRs prüfen; nach dem normalen Claim unmittelbar umsetzen, ohne auf eine vorbereitete Queuekarte oder Pflegefreigabe zu warten. Nur ein eigenständiges Ergebnispaket braucht ein neues Aufgabenissue; es verlinkt den bestehenden Parent. Fehlt eine notwendige Fachentscheidung, sie nach dem folgenden Verfahren klären statt einen Ersatzvertrag zu implementieren. Das gilt innerhalb der vorhandenen Rollen-/Nutzerbefugnis; keine Zielzahl freier Karten oder Pakete je Quellrecord.
 
 Paketowner pflegen Besitz und nächste Handlung selbst. Fehlt ein Eingang, benennt
 der Consumer dem zuständigen Producer einmal das jetzt benötigte Ergebnis und
@@ -55,6 +55,37 @@ Die [Arbeitsrollen](AGENT-ROLES.md) bestimmen Pflegezuständigkeiten; `repositor
 Ausführungshindernisse unterscheiden: fehlender Produktinput, besessener Scope, unpassende Fähigkeiten/Zugriffe oder nicht wiederhergestellte Laufumgebung. Nur den tatsächlich beobachteten Grund nennen. Routing kann einen kaputten Host oder fehlende Runtime-Wiederherstellung nicht reparieren.
 
 Bereichsfragen im Fachissue, gemeinsame Konflikte/Entscheidungen in #12. Den Nutzer bei offenen Produktzielen/Nutzerentscheidungen einbeziehen; Routineverteilung organisiert das Team selbst.
+
+## Entscheidungen innerhalb der Produktarbeit
+
+Wer einen fehlenden Vertrag oder Quellenkonflikt findet, macht ihn am bestehenden
+Aufgaben-/Fachort entscheidbar: benötigter Nutzerablauf und Consumer, konkrete
+Frage, gebundene Quellen, relevante Optionen mit Folgen und begründete Empfehlung.
+Vorhandene Vorschläge verwenden statt dieselbe Anfrage erneut zu erzeugen.
+
+| Entscheidung | Zuständigkeit |
+| --- | --- |
+| Technische Umsetzung innerhalb bestätigter Anforderungen und eigenen Scopes | Implementierer entscheidet und setzt um. |
+| Gemeinsamer Daten-/Schnittstellenvertrag | Betroffene Fachowner entscheiden direkt; Consumer liefert den benötigten Anschluss. |
+| Produktpriorität innerhalb bestätigter Ziele | Produktwertrolle entscheidet am bestehenden Portfolio-/Aufgabenort. |
+| Widersprüchliche Nutzeranforderungen oder Änderung des beauftragten Umfangs | Konkrete Wahl mit Empfehlung und Folgen dem Nutzer vorlegen. |
+
+Der zuständige Fachowner behandelt neue entscheidbare Verbraucheranfragen als
+Teil seines laufenden Pakets: beim Wiedereinstieg relevante Eingänge lesen und vor
+freiwilliger Pflege oder unangefragten Reviews entscheiden. Empfehlung bestätigen
+oder begründet korrigieren; fehlt Evidenz, die konkrete fehlende Tatsache und den
+kleinsten klärenden Schritt benennen und im eigenen Scope ausführen. Eine bereits
+entscheidbare Frage nicht als unveränderten Blocker weiterreichen. Angenommene
+Entscheidung einmal im bestehenden Vertrag im erlaubten Schreibscope festhalten,
+Consumer setzt damit im selben Paket weiter um; keine allgemeine Zusatzreviewphase.
+Notwendige unabhängige Fach-/Daten-/Hostabnahmen bleiben erhalten.
+
+Fehlt eine entscheidungsbefugte Zuständigkeit oder kollidieren Ownergrenzen, den
+konkreten Zuständigkeitskonflikt an den bestehenden Integrationsowner geben; dieser
+klärt die Zuständigkeit, erteilt dadurch keine Fachfreigabe. Fehlt die erforderliche
+Nutzerbefugnis, dem Nutzer die konkrete Entscheidung vorlegen. Schweigen erteilt
+weder Zustimmung noch fremden Besitz. Unabhängige Umsetzung fortführen; keine
+Erinnerungszyklen, neue Entscheidungsqueue oder zentrale Ownerkontrolle.
 
 ## Kommunikation nach Inhalt und Anlass
 
