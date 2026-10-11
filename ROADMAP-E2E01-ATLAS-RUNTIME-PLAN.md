@@ -39,48 +39,71 @@ Produktänderung, GUI, CITY oder E2E-02–04 begonnen.
 
 #### Arbeitsstand #80
 
-Kandidat: https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/91
+Kandidat: https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/94
 
-Integrierte Implementierungs-/Nachweisbasis: [PR81](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/81),
-[PR87](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/87) mit
-[separater tatsächlicher Stewardintegration](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/87#issuecomment-6103624843).
-Konsumierte Save-/Referenzbasis: [PR78](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/78).
+Integrierter Reparatureingang: [PR91](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/91).
+Implementierungs-/Savebasis: [PR81](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/81),
+[PR87](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/87) und
+[PR78](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/78).
 
-Vorhandenen Dungeon am Ort verorten, nach A→B ohne alten Link verschieben,
-Raum-Key/Zurück und gemeinsame History/Save bedienen ist integriert.
-[I01/N02/H01](docs/reference/atlas-detail-binding-d01/dungeon-at-location-h01.md),
-[unabhängiger H01-Werkzeugreview](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/87#pullrequestreview-5481256953)
-und [freie Cloud-GM-Nutzung](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80#issuecomment-6103561640)
-bleiben sourcegebundene Vorbelege. Der GM bestätigte Verorten/Raum-Key/Save und
-Dateiwiederöffnung im selben Prozess auf dem damaligen Tripel. Seine Rohbilder
-sind Cloud-lokal; kein aktuelles exaktes GM-Sharedtripel wegen ENOSPC und kein
-frischer GM-Prozess. Der frühere H01-Producer belegte seinen eigenen getrennten
-frischen Prozess; das ist kein Native-PASS des jetzt geänderten Editors.
+Dungeon am vorhandenen Ort verorten, ohne alten Link verschieben, Raum-Key/Zurück
+und gemeinsame History/Save sind integriert. [H01](docs/reference/atlas-detail-binding-d01/dungeon-at-location-h01.md)
+und [frühere freie Cloud-GM-Nutzung](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80#issuecomment-6103561640)
+bleiben an ihre alten Produkttripel gebunden. Deren Frischprozess-/Hostgrenzen
+werden nicht auf den geänderten Inspector übertragen.
 
-**Inspector-Kandidat:** Orts-/Raum-Key teilen eine Seitenleiste mit sichtbarem
-„Zur Karte“. Gecachte Rückkehr und geprüfte Textübernahme laufen über dieselbe
-Kamera, Repository und History. Der [enge unabhängige Atlas-QA-Review](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/91#issuecomment-6103791794)
-fand eine Lücke im Escape-Eingabefeldnachweis. Die alte Quelle registrierte zwar
-Window-Capture; Linkedom bildet diese Phase nicht ab, und der alte Test direkt
-am Fenster umging die Panelgrenze. Daraus folgt kein belegter nativer Capturefehler.
+**N02 ist unabhängig geprüft und integriert:** Orts-/Raum-Key teilen eine Leiste
+mit „Zur Karte“. Die Panels führen Escape vom tatsächlichen Eingabefeld zum selben
+geprüften Schließguard. Invalide oder widerrufene Entwürfe bleiben erhalten;
+gemeinsame Kamera/Repository/History und Savegrenzen bleiben maßgeblich.
+[Atlas-QA-PASS](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/91#issuecomment-6103862700)
+und [separate Stewardintegration](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/91#issuecomment-6103883554)
+sind konsumiert. Die frühere Window-Capture-Registrierung und Linkedoms fehlende
+Capturephase begrenzen den alten Testbefund; kein nativer Capturefehler behauptet.
+Quell-/Reviewbeleg: `checkpoint.hexAtlasExecution.dungeonAtLocationInspectorEscapeN02`.
 
-**Gezielte Nachbesserung:** Beide Key-Panels geben Escape vor ihrem eigenen
-Propagation-Stop an denselben lokalen Atlas-Schließguard weiter; Inspectorcontrols
-verwenden ihn ebenfalls, der globale Handler bleibt beim fokussierten Viewport.
-Die Regression dispatcht jetzt direkt auf fokussiertem Orts-/Raum-Eingabefeld.
-Drei Inputfälle scheitern auf der alten DOM-Basis; die vier gezielten Fälle
-bestehen nach der Änderung: gültige Texte/UndoRedo/Save, invalider Draft,
-Komposition/Inputsperre und widerrufene wartende Schließaktion. Typprüfung,
-Produktbuild, vollständige Basissuite und Fremdwurzelerhalt bestehen.
-Quellgebundener Beleg: `checkpoint.hexAtlasExecution.dungeonAtLocationInspectorEscapeN02`
-und dieselbe bestehende Acceptanceanforderung; N01-Belege bleiben historisch erhalten.
+**Gezielte native Producerprobe H02 bestanden:** [Quellgebundener Beleg](docs/reference/atlas-detail-binding-d01/inspector-n02-native-h02.json).
+Auf unverändertem integriertem N02-Produkt bei 1024×800: eine sichtbare Keyleiste,
+rund394px Kartenbreite daneben; Escape direkt aus Orts-/Raumtextarea übernimmt
+exakte Texte und gibt Kartenfokus zurück. Ein leerer Ortsname hält Entwurf/Auswahl
+sichtbar und verändert weder native Daten noch Kamera. „Zur Karte“, gecachte
+Location-Rückkehr, gemeinsames Undo/Redo, tatsächliches Save und exakte Text-/
+Dateiwiederöffnung in einem separaten frischen Obsidian-Prozess bestehen. Beide
+Prozesse normal beendet; frisch koordinierter lokaler Slot ausdrücklich zurückgegeben.
+Das ist kontrollierte synthetische Producerbedienung, keine freie GM-Abnahme.
 
-Nächster Empfänger ist der bestehende Atlas-QA-Reviewer für den begrenzten
-Nachreview dieses Eingabefeld-/Paneldeltas im PR. Danach folgt der gezielte schmale
-Obsidian-/GM-Nachtest mit sicher isoliertem Host und vor lokalem GUI-Lauf neu
-koordiniertem Slot. Kein Selfmerge, Detailausbau oder allgemeine Reviewrunde.
-Parent #80, Gesamt-E2E und physische/Original-/Großkarten-/Installationsabnahmen
-bleiben offen; die Nachbesserung verwendet keinen GUI-Slot.
+Native Quelle/Werkzeugstand `bd2a0ada903b414eb46577ec5451f79ca885770d`,
+Produktbuildquelle `dba7d559044f9e8b072a329f2efacd7452b333b4`,
+integriertes Shared `ca290326a35bb792c22ef8f02e215a3dd9ef121d`.
+Relevanter Produkt-/Build-/Fixturepfad unverändert, aktuelles Plugintripel direkt
+im H02-Beleg. Rohbilder/Layout-/Zustands-/Prozessbelege liegen am benannten eigenen
+QA-Ort, sind gehasht und lokal zugänglich; ein Cloudpfadzugriff ist damit nicht bewiesen.
+Versionierte Fixture: `tests/fixtures/atlas-e2e-spatial-v2/manifest.json`.
+[Vorbereitung/Isolation](docs/reference/atlas-detail-binding-d01/dungeon-at-location-h01.md#startbarer-eingang)
+bleibt verwendbar; alte H01-Buildhashes sind historisch. Aufruf des neuen engen
+Consumers mit zusätzlichem `--hex04-inspector-n02`, Wiederöffnung mit `--restart`.
+
+**Enger unabhängiger H02-Review konsumiert:** [Contributor-PASS](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/94#issuecomment-6104068019)
+qualifiziert ausschließlich Helper, Nachorakel, versionierte Receipt-/Hashbindungen
+und die ausgewiesenen Grenzen. Keine Pflichtkorrektur. Lokale Rohdateien und Screens
+waren aus seiner Cloud nicht erreichbar und wurden dort nicht gelesen; dieser
+Review ist kein unabhängiger Rohbeleg-/GUI-/GM-PASS. Originalreceipt, Helper,
+Produkt-/Build-/Fixturepfade bleiben unverändert. Der Reviewanschluss ist beendet.
+
+**Nächste konkrete Empfänger:** unabhängiger Steward für PR94 mit diesem engen
+qualifizierten Eingang und der eigenen Metadatenübernahme; vor Integration neue
+relevante Deltas prüfen. Keine neue Produkt-/Codec-/allgemeine Reviewrunde.
+Cloud-GM hat den [freien N02-Nachtest selbst übernommen](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80#issuecomment-6103956562)
+und nutzt seinen eigenen isolierten Cloudhost; sein Ergebnis bleibt ausstehend.
+Nutzerziel: vom normalen Dateibaumeinstieg `Atlanten/Gemeinsamer-Testatlas.overworld`
+im schmalen Fenster Orts-/Raum-Key bearbeiten, mit erhaltenem Text zur Karte
+zurückkehren und dauerhaft wiederverwenden; Tastatur/Vergrößerung frei beobachten.
+Keine vorgeschriebene GM-Klickfolge oder erneute Claim-/Statusanfrage.
+
+Hex konsumiert die gelieferten engen Belege am bestehenden #80, ohne Parentübernahme,
+Selfmerge oder abhängigen Detailausbau. Gesamt-E2E, physische/Original-/Großkarten-/
+Nutzervaultinstallation und neue native Copy/Discard/Recoverymatrix bleiben offen;
+deren frühere Core-/DOM-/Fachbelege behalten ihren eigenen Scope.
 
 ## Historische Planbasis und Lieferbelege
 
