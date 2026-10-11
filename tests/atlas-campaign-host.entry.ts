@@ -1439,3 +1439,60 @@ test('City house draft rejects external History ABA and preserves revoked queued
   assert.equal(editor.pendingKey, true); assert.deepEqual(source.read(), original); assert.equal(state.history.undoDepth, depth);
   await f.view.onUnloadFile();
 });
+
+test('City house Save rolls back a won City write on manifest failure and retries exact bytes without another History step', async () => {
+  const f = await fixture(true), state = active(f), editor = f.editor()!, source = await clickHouse(f),
+    originalCity = source.read(), originalBytes = new Map(f.vault.bytes),
+    depth = state.history.undoDepth, camera = structuredClone(editor.renderer.camera),
+    path = `Städte/${uuid(100)}.city`, name = '  Hafen\n日本語\t  ',
+    process = f.vault.process.bind(f.vault);
+  const expectedCity = { ...originalCity, buildings: originalCity.buildings.map(b => b.id === uuid(105) ? { ...b, name } : b) },
+    expectedBytes = serializeCityDocument(expectedCity);
+  let failed = false, cityWrittenBeforeFailure = false;
+  f.vault.process = async (file, change) => {
+    if (!failed && file.path === seed.campaign.path) {
+      failed = true;
+      cityWrittenBeforeFailure = f.vault.bytes.get(path) === expectedBytes;
+      throw new Error('City regression: manifest CAS failed after City write');
+    }
+    return process(file, change);
+  };
+  await editor.flush();
+  f.input('[aria-label="Gebäudename"]', name);
+  f.click(f.content.querySelector<HTMLElement>('[aria-label="Atlas speichern"]')!);
+  await (editor as any).work;
+  await settled(() => failed, () => f.content.textContent ?? "");
+  assert.equal(cityWrittenBeforeFailure, true);
+  assert.match(f.content.textContent!, /manifest CAS failed after City write/);
+  assert.equal(f.vault.bytes.has(aPath + '.journal'), false);
+  for (const [key, bytes] of originalBytes) assert.equal(f.vault.bytes.get(key), bytes, key);
+  assert.deepEqual(source.read(), expectedCity);
+  assert.equal(state.repository.dirty, true); assert.equal(state.repository.hasDraft, true);
+  assert.equal(state.history.undoDepth, depth + 1);
+  assert.equal(active(f).repository, state.repository); assert.equal(active(f).history, state.history);
+  assert.equal(active(f).context.contextToken, state.context.contextToken);
+  assert.deepEqual(editor.renderer.camera, camera);
+  assert.equal((f.content.querySelector('[aria-label="Gebäudename"]') as HTMLTextAreaElement).value, name);
+  f.vault.process = process;
+  f.click(f.content.querySelector<HTMLElement>('[aria-label="Atlas speichern"]')!);
+  await settled(() => !state.repository.dirty && !state.repository.hasDraft);
+  assert.equal(state.history.undoDepth, depth + 1);
+  assert.equal(f.vault.bytes.get(path), expectedBytes);
+  for (const [key, bytes] of originalBytes)
+    if (key !== path && key !== seed.campaign.path) assert.equal(f.vault.bytes.get(key), bytes, key);
+  assert.equal(f.vault.bytes.has(aPath + '.journal'), false);
+  assert.equal(f.vault.bytes.has(aPath + '.draft'), false);
+  await f.close();
+  const app = { document: f.document, vault: f.vault } as any,
+    services = atlasCampaignServices(new VaultCampaignRuntimeStorage(app), sha),
+    view = new AtlasView({ app, contentEl: f.content, openFile: async () => {} } as any, services);
+  await view.onLoadFile(f.vault.files.get(aPath)!);
+  const fresh = ((view as any).campaignHost as AtlasCampaignHost).state;
+  assert.equal(fresh.kind, 'active');
+  if (fresh.kind === 'active') {
+    await fresh.repository.ensureDetail('city', uuid(100));
+    assert.deepEqual((fresh.repository.detail('city', uuid(100)) as CitySource).read(), expectedCity);
+    assert.equal(fresh.history.undoDepth, 0); assert.equal(fresh.repository.dirty, false);
+  }
+  await view.onUnloadFile(); services.close();
+});
