@@ -21,5 +21,7 @@ node tools/host-test.cjs --world-notes-recovery --restart
 ```
 
 Die beiden Fälle belegen kontrollierte Fehler und Restjournalbehandlung im
-echten Host. Ein physischer Absturz, Stromausfall und die unabhängige
-Recovery- oder Gesamt-SMR-02-Abnahme sind damit nicht belegt.
+echten Host. [Stadts unabhängiger R02](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/95#pullrequestreview-5481505362)
+bestätigt die portablen Rohbelege und diese beiden Fälle auf PR #95/`575ca65`.
+Die ursprünglichen Prüfcheckouts waren dirty; ein physischer Absturz,
+Stromausfall, breitere Recovery und Gesamt-SMR-02 sind damit nicht belegt.

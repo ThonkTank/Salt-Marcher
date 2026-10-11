@@ -152,8 +152,8 @@ frischen Prozess wieder öffnen. Wiederholbar mit
 `node tools/host-test.cjs --world-notes-rollback` und anschließend `--restart`
 unter eigenem `DUNGEON_QA_ROOT`; Belege liegen unter
 `/home/aaron/.cache/dungeon-native-qa/atlasqa-smr02-rollback-fault-02/evidence/`.
-Dies ist ein eigener kontrollierter Fehler-/Rollbacknachweis, kein unabhängiger
-Review und kein echter Prozessabbruch oder Stromausfall.
+Dies ist ein kontrollierter Fehler-/Rollbacknachweis, kein echter
+Prozessabbruch oder Stromausfall.
 
 Ein zweiter eigener Hostfall leitet aus den tatsächlichen Before-/After-Bytes
 einer Gerücht-Tombstone-Speicherung ein gültiges liegen gebliebenes
@@ -167,8 +167,13 @@ Das ist eine kontrolliert eingesetzte Restjournalprobe, kein physischer Crash.
 Die kleinen JSON-Rohbelege beider Fälle sind für unabhängige Prüfung
 [versioniert zugänglich](docs/reference/smr02-world-notes-recovery/README.md);
 `manifest.json` dort bindet jede Kopie an Originalpfad, Bytezahl und SHA-256.
+Der unabhängige [R02-Rohbelegreview](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/95#pullrequestreview-5481505362)
+hat alle 24 Kopien, vier Hostresultate und die kontrollierten Rollback- und
+Committed-Recovery-Orakel auf PR #95/`575ca65` begrenzt bestätigt. Die
+damaligen Prüfcheckouts waren dirty; daraus folgt kein sauberer
+Exact-SHA-Hostlauf und keine visuelle Abnahme durch den Reviewer.
 
-Offen bleiben unabhängige reale Fehler-/Recoveryqualifikation und die
+Offen bleiben breitere Crash-/Recoveryqualifikation, physische Tastatur und die
 zusätzlichen Encounter-Constraint-/NPC-Combat-/World-Planner-Funktionen.
 Ortstags gegenüber Name-only-Anlage warten weiter auf die Zielregel in #44.
 

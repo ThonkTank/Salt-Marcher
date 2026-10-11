@@ -25,7 +25,7 @@
     "objective": "This repository delivers the sole successor product for all implemented and planned SaltMarcher capabilities. UX and functional requirements are binding; the final host may be an Obsidian plugin, desktop application or evidence-backed hybrid.",
     "smr02WorldNotes": {
       "package": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/68",
-      "state": "world_notes_host_integrated_early_gm_and_zoom200_pass_remaining_scope_open",
+      "state": "world_notes_host_integrated_controlled_recovery_review_pass_remaining_scope_open",
       "integratedProduct": "3fc5518b5a5cd48d03e647e63ce474f127ddde34",
       "independentHostRepair": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/68#issuecomment-6103180580",
       "independentEarlyGm": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/68#issuecomment-6103954556",
@@ -71,8 +71,9 @@
       },
       "portableRecoveryEvidence": "docs/reference/smr02-world-notes-recovery/manifest.json",
       "portableRecoveryEvidenceSha256": "a28136f9cc8b6b596462e6f1cf9d868a457ee9b3ac8e653aeb859246845ba353",
-      "next": "Independent real failure and recovery qualification; retain broader Encounter constraint, NPC combat and World Planner requirements as open.",
-      "limits": "No physical keyboard, power-loss, user-vault, full SMR-02 or overall product acceptance."
+      "independentControlledRecoveryReview": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/95#pullrequestreview-5481505362",
+      "next": "Steward integration of PR #95; retain broader crash recovery, Encounter constraint, NPC combat and World Planner requirements as open.",
+      "limits": "Controlled rollback and committed-journal raw evidence independently reviewed; original host-run checkouts were dirty. No physical keyboard, power-loss, user-vault, broad recovery, full SMR-02 or overall product acceptance."
     },
     "smr03LiveScene": {
       "state": "i01a_implementation_review_passed_integration_pending",
