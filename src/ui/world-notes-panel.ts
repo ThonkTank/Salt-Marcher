@@ -18,6 +18,9 @@ export interface WorldNotesCreatureChoice {
   readonly id: string;
   readonly name: string;
 }
+export type WorldNotesDraftBuffer = Map<string, {
+  id: CampaignLocalId; draft: WorldNoteDraft; create: boolean; baseRevision: number | null;
+}>;
 export interface WorldNotesPanelOptions {
   readonly newId: () => CampaignLocalId;
   readonly currentContext: () => CampaignContextProjection | null;
@@ -30,6 +33,8 @@ export interface WorldNotesPanelOptions {
   /** Catalog suggestions never create creature truth or replace a stored ID. */
   readonly searchCreatures?: (query: string) => Promise<readonly WorldNotesCreatureChoice[]>;
   readonly creatureDetail?: (id: string) => Promise<WorldNotesCreatureChoice | null>;
+  /** Plugin-lifetime drafts survive closing and reopening the view, never a process restart. */
+  readonly draftBuffer?: WorldNotesDraftBuffer;
 }
 const kinds: readonly WorldNoteKind[] = ["npc", "faction", "quest", "rumor"];
 const labels: Record<WorldNoteKind, string> = {
@@ -48,12 +53,13 @@ export class WorldNotesPanel {
   private snapshot: WorldNotesSnapshotV1 | null = null;
   private pending: { id: CampaignLocalId; draft: WorldNoteDraft; create: boolean;
     baseRevision: number | null } | null = null;
-  private readonly retainedDrafts = new Map<string, NonNullable<WorldNotesPanel["pending"]>>();
+  private readonly retainedDrafts: WorldNotesDraftBuffer;
   private busy = false;
   private suspended = false;
   private destroyed = false;
   private generation = 0;
   constructor(host: HTMLElement, private readonly options: WorldNotesPanelOptions) {
+    this.retainedDrafts = options.draftBuffer ?? new Map();
     const doc = host.ownerDocument;
     this.root = doc.createElement("div"); this.root.className = "dn-world-notes";
     this.root.setAttribute("role", "region");
@@ -88,6 +94,7 @@ export class WorldNotesPanel {
   update(snapshot: WorldNotesSnapshotV1): boolean {
     if (this.destroyed) return false;
     const next = worldNotesSnapshot(snapshot);
+    if (!this.snapshot) this.pending = this.retainedDrafts.get(this.draftKey(next)) ?? null;
     if (this.snapshot && next.campaignId === this.snapshot.campaignId &&
         next.namespace === this.snapshot.namespace) {
       if (next.revision < this.snapshot.revision ||
@@ -433,6 +440,8 @@ export class WorldNotesPanel {
   }
   destroy(): void {
     if (this.destroyed) return;
+    if (this.snapshot && this.pending)
+      this.retainedDrafts.set(this.draftKey(this.snapshot), this.pending);
     this.destroyed = true; this.generation++; this.root.remove();
   }
 }

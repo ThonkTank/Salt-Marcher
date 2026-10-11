@@ -50,6 +50,14 @@ module.exports = ({ page, fs, path, assert, crypto, root, vault, out, checks }) 
   const bSecond = await active(bFirst.campaignId);
   assert.equal(await formName().inputValue(), "B – ungespeicherter Weltwissenentwurf");
   assert.notEqual(bSecond.atlasToken, bFirst.atlasToken);
+  await page.evaluate(() => app.workspace.getLeavesOfType("dungeon-world-notes").at(-1).detach());
+  await page.waitForFunction(() => app.workspace.getLeavesOfType("dungeon-world-notes").length === 0);
+  await page.evaluate(() => app.commands.executeCommandById("dungeon-editor:open-world-notes"));
+  const bReopened = await active(bFirst.campaignId);
+  assert.equal(await formName().inputValue(), "B – ungespeicherter Weltwissenentwurf");
+  await picker(aName).click();
+  const aReopened = await active(aFirst.campaignId);
+  assert.equal(await formName().inputValue(), "A – ungespeicherter Weltwissenentwurf");
   const bytes = [];
   for (const [fixture, rows] of [[aRoot, [...a.input, { path: a.campaign.path, ...a.campaign.input }]],
     [bRoot, [...b.input, b.campaign]]]) {
@@ -59,7 +67,8 @@ module.exports = ({ page, fs, path, assert, crypto, root, vault, out, checks }) 
       bytes.push({ path: row.path, sha256: crypto.createHash("sha256").update(actual).digest("hex") });
     }
   }
-  fs.writeFileSync(path.join(out, "world-notes-drafts.json"), JSON.stringify({ aFirst, bFirst, aSecond, bSecond, bytes }, null, 2));
+  fs.writeFileSync(path.join(out, "world-notes-drafts.json"), JSON.stringify({
+    aFirst, bFirst, aSecond, bSecond, bReopened, aReopened, bytes }, null, 2));
   await page.screenshot({ path: path.join(out, "world-notes-drafts.png") });
-  checks.push("Real Obsidian A→B→A→B retains two separate unsaved World Notes forms; all native inputs remain byte exact");
+  checks.push("Real Obsidian A→B→A→B, close/reopen and A restore retain separate unsaved World Notes forms; all native inputs remain byte exact");
 };

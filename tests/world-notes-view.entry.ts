@@ -32,6 +32,7 @@ test("actual World Notes view keeps authored A and B drafts across provider moun
     entries: async () => [],
   };
   const services = { provider } as unknown as AtlasCampaignServices;
+  const draftBuffer = new Map();
   class TestView extends WorldNotesView {
     protected override createSession(mounted: CampaignContextProjection): WorldNotesNativeSession {
       let closed = false;
@@ -47,7 +48,8 @@ test("actual World Notes view keeps authored A and B drafts across provider moun
     }
   }
   const view = new TestView({ contentEl: host } as never, services,
-    { load: async () => { throw new Error("catalog unused"); } } as unknown as CreatureCatalogLoader);
+    { load: async () => { throw new Error("catalog unused"); } } as unknown as CreatureCatalogLoader,
+    draftBuffer);
   const click = (label: string) => {
     const button = Array.from(host.querySelectorAll<HTMLButtonElement>(".dn-world-notes button"))
       .find((item) => item.textContent === label);
@@ -81,4 +83,24 @@ test("actual World Notes view keeps authored A and B drafts across provider moun
   active = context(2, "world:two-renewed"); listeners.forEach((listener) => listener()); await settle();
   assert.equal(name().value, "B-Entwurf");
   await view.onClose();
+  const reopened = new TestView({ contentEl: host } as never, services,
+    { load: async () => { throw new Error("catalog unused"); } } as unknown as CreatureCatalogLoader,
+    draftBuffer);
+  await reopened.onOpen();
+  assert.equal(name().value, "B-Entwurf");
+  active = context(1, "world:after-reopen"); listeners.forEach((listener) => listener()); await settle();
+  assert.equal(name().value, "A-Entwurf");
+  oldInput.value = "late after close";
+  oldInput.dispatchEvent(new window.Event("input", { bubbles: true }));
+  oldForm.dispatchEvent(new window.Event("submit", { bubbles: true, cancelable: true }));
+  assert.equal(name().value, "A-Entwurf");
+  assert.equal(commitCalls, 0);
+  click("Entwurf verwerfen"); click("Verwerfen bestätigen");
+  await reopened.onClose();
+  const afterDiscard = new TestView({ contentEl: host } as never, services,
+    { load: async () => { throw new Error("catalog unused"); } } as unknown as CreatureCatalogLoader,
+    draftBuffer);
+  await afterDiscard.onOpen();
+  assert.equal(host.querySelector(".dn-world-notes form"), null);
+  await afterDiscard.onClose();
 });
