@@ -302,8 +302,7 @@ Produktjournalcode nicht.
 **Öffentlicher Producervertrag der tatsächlichen Lieferung:** Der während dieses
 Matrixlaufs direkt gelesene PR35-Kandidat
 `8a25c92c89962a4b1fbf4b15a209205e5704bbc3` liefert diese API bereits. Seine
-bisherigen Ownerchecks/-reviews bleiben Vorbelege; er ist vor dem vollständigen
-Matrixlauf und dem hier vereinbarten Chronikreview nicht in PR13 integriert.
+damaligen Ownerchecks/-reviews waren Vorbelege vor vollständigem Matrixlauf und unabhängigem Review. Der aktuelle Anschluss und seine begrenzten Belege stehen in [Arbeitsstand #80](#arbeitsstand-80).
 
 - Der Participant konsumiert als optionalen vierten Constructorparameter
   `CampaignRuntimeSaveRollbackAuthority.validateRollbackReceipt(receipt)`.
@@ -345,24 +344,18 @@ kein Include in der grünen Basissuite.
 
 ## Gemeinsame räumliche Darstellung
 
-## Gemeinsame räumliche Darstellung — Zuerst benutzbar werden
+## Gemeinsame räumliche Darstellung — Nutzerablauf und historische Ausgangsbasis
 
-Das nächste sichtbare Ergebnis ist: Vorhandenen nativen Stadtplan am Ort und
+Der gemeinsame sichtbare Nutzerablauf ist: Vorhandenen nativen Stadtplan am Ort und
 Dungeon am Haus verankern → allein hineinzoomen → Straße/Haus verschieben und
 Raum-Key bearbeiten → herauszoomen → gemeinsame Undo/Redo-Folge → Save → neuer
 Obsidianprozess. Ein Editor, eine Kamera, ein Werkzeugzug und eine History.
 Bestehende Karten werden dafür nicht neu erzeugt. Der erste Durchlauf benutzt
 den gelieferten Stadtplan, nicht einen vorgezogenen Stadtgenerator.
 
-Der Quellenanschluss ist bereits geprüft: tatsächlicher AtlasRepository,
-CitySource und DungeonAtlasSource teilen eine History; sieben native Snapshots
-werden durch Undo/Redo bytegenau wiederhergestellt. Stadt ist dort noch ein
-ausdrücklicher No-op. Der fehlende neue Pflichtgegenstand ist **persistierte
-Verortung plus ausgeführte gemeinsame Zeichnung/Bearbeitung/Speicherung**.
-Weitere allgemeine Framework-, Komfort- oder Paritätsarbeiten kommen nicht vor
-dem ersten nativen verbundenen Ablauf.
+Der damalige Quellenanschluss prüfte AtlasRepository, CitySource und DungeonAtlasSource in derselben History und sieben bytegenau wiederhergestellte native Snapshots. Stadt war in diesem Ausgangslauf ein ausdrücklicher No-op. Die folgenden Anschlussanforderungen und Schnittkennungen dokumentieren diese historische Basis; der aktuelle Integrationsstand und verbleibende Host-/Recovery-/Importlücken stehen in [Arbeitsstand #80](#arbeitsstand-80).
 
-## Gemeinsame räumliche Darstellung — Tatsächliche Eingänge und Grenzen
+## Gemeinsame räumliche Darstellung — Gepinnte Eingänge und Anschlussgrenzen
 
 | Vorhanden                                        | Folgerung für den Anschluss                                                                                                                                                                       |
 | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -370,30 +363,23 @@ dem ersten nativen verbundenen Ablauf.
 | `CitySource`, `cityDocumentChange`, CityGesture  | City-v1-Metergeometrie und fachliche Kennungen bleiben erhalten. Apply führt bereits genau einen Historycommit aus.                                                                               |
 | `cityScene`, `hitCity`, CityRenderer             | Der Atlas liefert präzise Projektions-/Inversefunktionen und Bildschirmtoleranz, montiert einmal und zeichnet vor seinem Render.                                                                  |
 | DungeonAtlasSource, `dungeonDocumentChange`      | Native V4-Bytes sind die Dungeon-/Key-Wahrheit. Keine Session-History und keine dauerhafte `Session.revision` daneben.                                                                            |
-| AtlasRepository, Draft v1/v2, FileTransaction v1 | Aktuell nur World/Terrain/Locations in Snapshot und Datei-/Entwurfsstrecke. City-/Dungeonbytes müssen wirklich aufgenommen werden.                                                                |
-| `MapRenderer` und DungeonEditor                  | Besitzen heute Application/Kamera beziehungsweise schreibende Session. Sie sind nicht als zweite Editorinstanz einhängbar; reine Zeichnung und Fachbefehle müssen ausdrücklich abgetrennt werden. |
-| CampaignLifecyclePort                            | Unterstützt heute `create`/`rename`, nicht einen bestätigten Mehrowner-Atlas-Publish. Der angenommene Kern liefert noch keinen Vault-/Campaign- oder Complete-Importbeleg.                        |
+| AtlasRepository, Draft v1/v2, FileTransaction v1 | Die Ausgangsbasis führte nur World/Terrain/Locations in Snapshot und Datei-/Entwurfsstrecke. Der Anschluss verlangt ebenso echte City-/Dungeonbytes.                                                                |
+| `MapRenderer` und DungeonEditor                  | Besitzen im Ausgangsstand Application/Kamera beziehungsweise schreibende Session. Sie sind nicht als zweite Editorinstanz einhängbar; reine Zeichnung und Fachbefehle müssen ausdrücklich abgetrennt werden. |
+| CampaignLifecyclePort                            | Unterstützt im Ausgangsstand `create`/`rename`, nicht einen bestätigten Mehrowner-Atlas-Publish. Der angenommene Kern liefert noch keinen Vault-/Campaign- oder Complete-Importbeleg.                        |
 
 Die neue vorgeschlagene Format-, Transform- und Speichergrenze steht ausschließlich
 in [ARCHITECTURE.md](ARCHITECTURE.md#räumliche-atlasverträge).
-Namen dort sind vorgeschlagene Schnittstellen, keine heute vorhandenen APIs.
+Die damaligen Schnittstellenvorschläge sind vom heutigen Quellstand zu unterscheiden; vorhandene APIs und Quellenanschlüsse werden weiterverwendet.
 
-## Gemeinsame räumliche Darstellung — Kleine Umsetzungsschnitte mit unmittelbaren Toren
+## Gemeinsame räumliche Darstellung — Technische Anschlussanforderungen
 
 | Schnitt                                     | Konkretes Ergebnis                                                                                                                                                                                                         | Direkt erforderlicher Nachweis                                                                                                                                                                                                          |
 | ------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **I01a – räumliche Speicherbasis**          | V2-Worldbindings, relative Transformkette, prospektive Graphprüfung und wirkliche City-/Dungeon-Owneraufnahme in Snapshot/Draft/Save/Copy/Discard/Recovery. Ein unveränderter Altatlas bleibt unverändert.                 | Native codecs und echte Repositorydateien: Ankoppeln, Ort/Haus bewegen, Undo/Redo, unterbrochenes Save, externer Konflikt, Copy-Closure und frisches Repository; Präzisionsgegenprobe unten. Noch kein sichtbarer Atlas-PASS.           |
 | **I01b – unmittelbar sichtbarer Anschluss** | Citycontainer und erste native Dungeon-Raumzeichnung im vorhandenen Frame, Zoomdarstellung, Hitrouter, bestehende Stadtgesten und Source-basierter Raum-Key. Verankern nutzt denselben Atlas; keine Betreten-/Modusaktion. | Vor der nächsten Fachgruppe echte isolierte Obsidianprobe: vollständige sichtbare Folge aus dem ersten Absatz einschließlich Hausbewegung, Escape, gemeinsamen Undo/Redo, Save und einem neuen Prozess. Aktive Hosts schützen. |
-| **I01c – verbleibende Pflichtintegration**  | Dungeon-Geometrieaktionen über reine fachliche Changes, bestätigter Campaign/Vault-Context, persistierte Command-/Receiptgrenze und echte P02/P04-Importvariante; Katalogreferenzen aus tatsächlichen Ownerlieferungen.    | Exakte Reviewinputs und festes erweitertes Fixture; erst danach unabhängiger integrierter Code- und Hostreview nach #12. Fehlende Ownerlieferung bleibt offen, nicht durch Platzhalter verdeckt.                                        |
+| **I01c – verbleibende Pflichtintegration**  | Dungeon-Geometrieaktionen über reine fachliche Changes, bestätigter Campaign/Vault-Context, persistierte Command-/Receiptgrenze und echte P02/P04-Importvariante; Katalogreferenzen aus tatsächlichen Ownerlieferungen.    | Exakte Reviewinputs und festes erweitertes Fixture; erst danach unabhängiger integrierter Code- und Hostreview anhand der [E2E-Kriterien](ROADMAP-E2E-GATES-CANDIDATE.md). Fehlende Ownerlieferung bleibt offen, nicht durch Platzhalter verdeckt.                                        |
 
-I01a und I01b sind aufeinanderfolgende begrenzte Läufe desselben Kandidaten, keine
-parallelen Lieferpläne. Nach I01a wird als Nächstes I01b ausgeführt, sofern kein
-konkreter blockierender Befund zuerst zu reparieren ist. Ein langer Ausbau der
-Abstraktionen zwischen beiden ist ausdrücklich nicht der Plan. I01c wird nicht
-zu E2E-02–04 erweitert. Die Schnitte bleiben Beiträge zum vollständigen
-Nutzerablauf: Umsetzung, notwendiger unabhängiger Review, gezielte Nachbesserung
-und Bereinigung im selben Ergebnispaket bündeln. Eine passende Fachprüfung
-ersetzt kein Gesamttor; ein Phasenname erzeugt keinen zusätzlichen Auftrag.
+Die historischen Kennungen I01a/I01b/I01c ordnen Speicherbasis, sichtbaren Anschluss und vollständige E2E-Eingänge zu. Sie erzeugen keine erneuten Phasenläufe. Ein vorhandener räumlicher Anschluss ersetzt keinen vollständigen E2E-01- oder E2E-02–04-Nachweis.
 
 ## Gemeinsame räumliche Darstellung — Sichtbarer Frame und Eingabe
 
@@ -403,7 +389,7 @@ ersetzt kein Gesamttor; ein Phasenname erzeugt keinen zusätzlichen Auftrag.
   Discard gemeinsam an die neue History binden, alte Responses per Generation
   zurückweisen. Frühere Kamera/gewähltes Werkzeug bleiben erhalten.
 - City- und Dungeonzeichnung erfolgen im `detailLayer` vor `Application.render()`.
-  Der heutige nachgeschaltete `changed()`-Callback ist kein Zeichenhook. Eine
+  Ein nachgeschalteter `changed()`-Callback ist kein Zeichenhook. Eine
   Application, ein Resizepfad und ein Frame-Scheduler reichen aus.
 - Gemeinsame sichtbare Reihenfolge: Landschaft → Stadtaussenflächen/Häuser →
   eingeblendete Dungeonräume → Auswahl/Griffe/Ortsmarkierung. Der tatsächliche
@@ -418,8 +404,7 @@ ersetzt kein Gesamttor; ein Phasenname erzeugt keinen zusätzlichen Auftrag.
   Ein begonnener Zug behält Ziel und Beforewerte über einen Detailwechsel.
 - Pointerup übernimmt eine gültige Vorschau einmal; Escape/pointercancel/blur
   verwerfen den laufenden unbestätigten Zug bei allen neuen räumlichen Gesten.
-  Die heutige Terrain-Abschlussregel muss beim Anschluss ausdrücklich angepasst
-  und regressionsgeprüft werden. Save/Flush beenden einen gültigen Zug einmal
+  Die Terrain-Abschlussregel muss dieselbe Cancel-/Apply-Grenze einhalten; entsprechende Regressionen bleiben erforderlich. Save/Flush beenden einen gültigen Zug einmal
   und sichern ihn; invalide oder stale Vorschau bzw. Keytexte bleiben sichtbar
   erhalten und blockieren Wechsel/Discard. Nach gewonnenem Publish ist ein
   Interrupt kein rückwirkendes Cancel.

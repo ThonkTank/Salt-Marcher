@@ -51,6 +51,21 @@ export function checkRepository(root, suppliedFiles) {
     catch (e) { errors.push(`${file}: ${e.message}`); return null; }
   }
   json('acceptance.json');
+  // ADR matrices may refer to a live local plan or an immutable historical plan.
+  for (const file of files) {
+    if (!/^ROADMAP-.*-MATRIX\.json$/.test(file)) continue;
+    const matrix = json(file);
+    if (!matrix) continue;
+    const target = matrix.normativeFor;
+    if (typeof target !== 'string' || !target) {
+      errors.push(`${file}: missing normativeFor reference`);
+    } else if (/^https:\/\/github\.com\/[^/]+\/[^/]+\/blob\/[a-f0-9]{40}\/[^?#]+\.md(?:#[^\s]+)?$/.test(target)) {
+      // Offline validation checks the immutable binding, not remote availability.
+    } else if (/^[a-z][a-z\d+.-]*:/i.test(target) || path.posix.isAbsolute(target)
+      || !isMarkdown(target) || !files.has(target) || !exists(target)) {
+      errors.push(`${file}: invalid or missing normativeFor target ${target}`);
+    }
+  }
   const scope = json('docs/scope-sources.json');
   if (!scope) return errors;
   const managed = [...files].filter(f => isMarkdown(f) && (f.startsWith('docs/') || !f.includes('/')));

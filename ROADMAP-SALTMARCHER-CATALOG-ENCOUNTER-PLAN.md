@@ -118,7 +118,7 @@ Offizielle Produktreferenzen für die Mindestabnahme:
   Dirty-Wechsel, 200 %, stale Save mit erhaltenem Draft/Load-or-Copy und unbekannter
   Commandausgang über Receipt im selben Ergebnis prüfen. Installation besitzt
   Registry, Campaign nur Zuweisung; produktive Schreib-/Recoveryautorität mit
-  Campaign/Data (#10) bestätigen, keine zweite Campaignregistry.
+  Campaign/Data ([Campaign-Datenvertrag](ROADMAP-SALTMARCHER-SMR-01-CAMPAIGN-DATA-PLAN.md)) bestätigen, keine zweite Campaignregistry.
 - Scene und Session konsumieren einen gemeinsamen Compositionselector und dieselbe
   kanonische Presetrevision/Confighash-Provenienz. Kandidaten vor Ranking gegen
   Rollen/Mengen/Kombinationen/Stock/Statblockkapazität prüfen; Domainranking geht vor
@@ -143,7 +143,7 @@ Offizielle Produktreferenzen für die Mindestabnahme:
   vorhandene Individuals bleiben individuell. Erst ohne überlebende Source neu
   partitionieren. Schwellenwechsel, Verstärkung, Entfernen und Neustart erhalten
   Initiative-/HP-/Partitionwahrheit; keine Ableitung aus Namen oder Row-ID-Parsing.
-  Quelle: Encounter Generation „Combat Consumption“, #9/#6, SMR-AC-06.
+  Quelle: Encounter Generation „Combat Consumption“, [Katalog-/Encountervertrag](ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md); [LiveScene-Vertrag](docs/plans/runtime/smr03-live-scene-contract.md), SMR-AC-06.
 
 ### CE-05 – Statblock-Aktionen und Live-Anpassung
 
@@ -193,8 +193,8 @@ Offizielle Produktreferenzen für die Mindestabnahme:
 
 ## Bestehende Implementierung und Abnahmegrenzen
 
-CE-01 folgt dem technischen Fachplan
-[`ROADMAP-SALTMARCHER-CE01-PLAN.md`](ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md#monsterkatalog).
+Die technischen CE-01-Anforderungen stehen im Abschnitt
+[Monsterkatalog](#monsterkatalog).
 `CE-01-I01` (komprimiertes Buildasset, Lazy Loader und Inventar) ist geprüft
 und nach Reparaturreview bestanden. `CE-01-I02` stellt den eigenen
 Katalog-`ItemView`, eindeutigen Command-Fokus und den Kernfluss aus Suche,
@@ -961,7 +961,7 @@ aktiviert. Ohne diese Quelle ist er ausdrücklich skipped; Offline-XML-Fixtures
 ersetzen keinen erneuten echten PDF-Lauf bei Quellenänderungen.
 Der Quellenstand und die direkten Review-/Veröffentlichungsbelege bleiben in
 `acceptance.saltMarcherCatalogEncounter`
-und [Issue #9](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/9).
+und im [historischen Fachissue #9](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/9); das geschlossene Issue vergibt keine aktuellen Aufgaben.
 Die nächsten Lieferungen folgen zusammenhängenden Quellabschnitten; die
 vollständigen Schema-/Provenienz-/Produkt-/Hostgates unten bleiben erhalten.
 
@@ -970,7 +970,7 @@ vollständigen Schema-/Provenienz-/Produkt-/Hostgates unten bleiben erhalten.
 `Items` wird der erste echte Bereich nach `Monster` in der vorhandenen
 siebenfachen Katalog-Shell. Er liefert einen lokalen, nur lesbaren
 2014-Referenzkatalog für Ausrüstung und magische Gegenstände. Maßgeblich sind
-`ROADMAP-SALTMARCHER-CE02-PLAN.md` und SaltMarchers
+die [gemeinsamen Providerverträge](#gemeinsame-providerverträge) und SaltMarchers
 `docs/items/requirements/requirements-items-catalog.md` sowie
 `docs/items/domain/domain-items.md` am gepinnten SaltMarcher-Commit
 `9de85c1a26f526acbc1af332ac5962e185c0aab2`. SaltMarchers

@@ -31,3 +31,12 @@ Die bestehenden GM-Befunde, Korrekturen und begrenzten Abnahmen stehen in `accep
 Ein Teilablauf bestätigt weder vollständige Originalparität noch physische Eingabe, Großkarten, 200-Prozent-Skalierung oder die gesamte E2E-Kette. Fehlende und widersprüchliche Nachweise bleiben offen.
 
 Frühere einzelne Beobachtungen und Laufbelege bleiben im [Checkpoint vor der Bereinigung](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/blob/6a90f3ee2f50f0be45f0e256784576f13722c319/checkpoint.json) zugänglich; sie sind keine aktuellen Aufgaben oder Gesamtfreigaben.
+
+## Historische Checkpoint-Belege
+
+Diese beiden abgeschlossenen Berichte werden als direkte Belegverweise erhalten; sie liefern keine aktuellen Agentenaufträge oder zusätzlichen Produktfreigaben.
+
+| Bericht | Gebundener Befund und Grenze |
+| --- | --- |
+| [Dungeon-am-Ort #89](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/89), [Checkpoint `59bb5bb`](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/blob/59bb5bb2771bf27ab58f867b5ae9080ab50f77b2/checkpoint.json), [Verbrauchsbericht](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80#issuecomment-6103561640) | Begrenzter sichtbarer Cloud-GM-PASS auf Produkt-SHA `a454d9a708f54c4dddc755786653cb8155cbe29e`: Dungeon nach Torheim verorten, Raum-Key ändern, speichern und dieselbe Datei im selben Prozess wieder öffnen. Kein Frischprozessnachweis; späterer Shared `d9eda92` wurde wegen ENOSPC nicht neu gebaut. Rohbilder lagen nur im Cloud-Workspace und wurden lokal nicht unabhängig geprüft. |
+| [City-Rotation #129](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/129), [Checkpoint `7be3fa5`](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/blob/7be3fa5dc3d806d1d1fe305ad31353fc26976c8e/checkpoint.json) | Kandidat `31afa4cec498446509f1a796b69eed4f0e84f148` gebaut; isolierter Host durch volles Cloud-Root blockiert. Keine Plugininstallation, keine sichtbare City-Bedienung und keine Nutzungsabnahme. Spätere [Rotation-H02-Belege](docs/reference/city-building-rotation-h02/receipt.json) sind ein eigener Nachweis und erweitern diesen abgebrochenen Lauf nicht rückwirkend. |

@@ -59,3 +59,17 @@ test('a malformed source collection gives a specific diagnostic without crashing
   const f = fixture(t); f.scope.source_requirements = {}; f.write('docs/scope-sources.json', f.scope);
   assert(f.check().some(e => e.includes('invalid collection source_requirements')));
 });
+test('ADR matrix references a local plan and detects its later removal', t => {
+  const f = fixture(t);
+  f.write('ROADMAP-ADR-MATRIX.json', { normativeFor: 'ROADMAP-OLD.md' });
+  assert.deepEqual(f.check(), []);
+  fs.unlinkSync(path.join(f.root, 'ROADMAP-OLD.md'));
+  assert(f.check().some(e => e.includes('missing normativeFor target ROADMAP-OLD.md')));
+});
+test('ADR matrix accepts a commit-bound historical plan, but rejects moving URLs', t => {
+  const f = fixture(t);
+  f.write('ROADMAP-ADR-MATRIX.json', { normativeFor: `https://github.com/example/repo/blob/${'a'.repeat(40)}/ROADMAP-OLD.md` });
+  assert.deepEqual(f.check(), []);
+  f.write('ROADMAP-ADR-MATRIX.json', { normativeFor: 'https://github.com/example/repo/blob/main/ROADMAP-OLD.md' });
+  assert(f.check().some(e => e.includes('invalid or missing normativeFor target')));
+});

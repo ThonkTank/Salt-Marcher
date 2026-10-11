@@ -282,4 +282,4 @@ Kernprüfungen, Build, Obsidian-Bedienung, Großkartenlauf und physische Maus-/T
 
 ## Einordnung in das Gesamtprodukt
 
-Der [Hex-Beitrag zum gemeinsamen End-to-End-Fertigstellungsplan](ROADMAP-E2E-GATES-CANDIDATE.md#räumliche-end-to-end-kriterien) verbindet die nächsten sichtbaren Phasen mit Campaign, Dungeon/City, Live-Spiel und Fehler-/Displaygates aus Issue #12. Die vier gemeinsamen Abläufe ersetzen keine der hier verpflichtenden Fachphasen oder Wonderdraft-Vergleiche. Neue Integration erfolgt über geprüfte Kandidaten-SHAs mit unabhängigem Review.
+Der [Hex-Beitrag zum gemeinsamen End-to-End-Fertigstellungsplan](ROADMAP-E2E-GATES-CANDIDATE.md#räumliche-end-to-end-kriterien) verbindet die nächsten sichtbaren Phasen mit Campaign, Dungeon/City, Live-Spiel und Fehler-/Displaygates aus den [E2E-Kriterien](ROADMAP-E2E-GATES-CANDIDATE.md). Die vier gemeinsamen Abläufe ersetzen keine der hier verpflichtenden Fachphasen oder Wonderdraft-Vergleiche. Neue Integration erfolgt über geprüfte Kandidaten-SHAs mit unabhängigem Review.

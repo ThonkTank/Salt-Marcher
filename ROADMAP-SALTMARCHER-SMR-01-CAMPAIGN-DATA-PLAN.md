@@ -378,8 +378,7 @@ Vertrags-/Entwurfsstand P01; die unten gepinnte Grundlage ist historisch. Runtim
 - Campaign-Lifecycle, Context und Ownership-Verträge sind bereits implementiert
   und geprüft. Sie werden nicht neu entworfen.
 - Hex besitzt `openNative`, AtlasView/Editor/Renderer/Repository, Kamera, History,
-  Save und die tatsächliche Hostmontage. Campaign/Data liefert den von Hex in
-  Issue #12 benannten Pick aus `AtlasCampaignNavigationPorts`:
+  Save und die tatsächliche Hostmontage. Campaign/Data liefert den im Atlasvertrag benannten Pick aus `AtlasCampaignNavigationPorts`:
   `currentContext`, `registry`, `inventory` und `activate`.
 
 Der sichtbare Ablauf lautet: Der GM öffnet die Kampagnenauswahl, sieht gespeicherte
@@ -524,8 +523,7 @@ Open-/Switch-Callback, `contextChanged` und die Dockmontage. Änderungen an
 8. CampaignEntry zeigt Laden, aktiv, unavailable, Fehler und Retry; Doppelklick,
    stale Antwort, Update und Destroy sind isoliert geprüft.
 9. Typecheck, gesamte Testsuite und sauberer Build bestehen. Anschließend prüft
-   Chronik den Exact-SHA unabhängig; Hex montiert nur einen bestandenen SHA und
-   führt den gemeinsamen echten Hostlauf aus.
+   ein unabhängiger Review den Exact-SHA; der Atlasanschluss verwendet den geprüften Stand für den gemeinsamen echten Hostlauf.
 
 ## Persistierte Quelle und Kampagneneinstieg — Lieferfolge und verbleibende Gates
 
