@@ -45,7 +45,20 @@ module.exports = ({ page, fs, path, assert, crypto, root, vault, qa, out, checks
   }
   async function selectHouse() {
     await toolbar('Hex auswählen').click(); await settle();
+    // At city entry's 1m/px the existing Location marker overlaps the small house.
+    // Zoom using the same visible input as a user, then pick outside its pixel grip.
+    for (let n = 0; n < 20; n++) {
+      const camera = (await current()).camera;
+      if (Math.abs(Math.log(camera.metersPerPixel / 0.1)) < 1e-8) break;
+      const bounds = await viewport().boundingBox();
+      await viewport().dispatchEvent('wheel', { clientX: bounds.x + bounds.width / 2,
+        clientY: bounds.y + bounds.height / 2, ctrlKey: true,
+        deltaY: Math.max(-500, Math.min(500, Math.log(0.1 / camera.metersPerPixel) / 0.002)),
+        bubbles: true, cancelable: true });
+      await settle();
+    }
     const s = await current(), b = await viewport().boundingBox();
+    assert(Math.abs(s.camera.metersPerPixel - 0.1) < 1e-8, 'visible zoom reached house scale');
     // Fixture house B: unrotated 8m square, (7,9) lies in its outer rim, outside its courtyard.
     // Do not pin or replace SpatialCanvas.hit: actual GPU scene/picking and pointer router run.
     await page.mouse.click(b.x + b.width / 2 + (7 - s.camera.center.x) / s.camera.metersPerPixel,

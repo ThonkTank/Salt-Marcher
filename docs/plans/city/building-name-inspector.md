@@ -83,4 +83,9 @@ Screenshots und normales Quit; physische und unabhängige GM-Abnahme bleiben off
 Enger unabhängiger Inspector-R02 auf0315b13 ist PASS; Exact-SHA-CI38100640175
 SUCCESS. Kein Pflichtbefund im UI-Diff. Atlas-QA hat seinen gleichzeitigen Scope
 zugunsten des bestehenden Reviewers zurückgegeben, keine doppelte Abschlussrunde.
-Native Prüfung ist vorbereitet, noch nicht gestartet/qualifiziert.
+Erster tatsächlicher Versuch scheiterte vor Mutation: Bei Cityentry1m/px lag
+der Hauspunkt(7,9) im Ortsmarkergriff; Orts-Key statt Haus-Key. FehlerPNG und
+Lifecycle unter eigenem QA-Root erhalten, Prozess normal beendet/Exit0, keine
+Zwangs-PIDs. Prüfer ergänzt sichtbaren Ctrl+Wheel-Zoom0.1m/px vor Picking.
+Korrigierter Edit-/Freshlauf braucht die neue konkret angefragte Slotfreigabe;
+noch kein nativer PASS. Produktcode bleibt bytegleich0315b13.
