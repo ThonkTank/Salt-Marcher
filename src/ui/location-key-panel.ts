@@ -27,6 +27,7 @@ export class LocationKeyPanel {
         if (event.key === "Escape") this.access.escape?.(event);
         event.stopPropagation();
         if (
+          !event.isComposing &&
           (event.ctrlKey || event.metaKey) &&
           event.key.toLowerCase() === "s"
         ) {
