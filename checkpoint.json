@@ -10934,18 +10934,18 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-BUILDING-NAME-NATIVE-ROLLBACK-I01",
+      "id": "CITY-BUILDING-NAME-GM-SAVE-FIX",
       "issue": 92,
-      "state": "delivery_integrated_independent_host_review_pass_free_gm_blocked_on_cloud_display",
-      "branch": "city/building-name-handoff-20261011",
+      "state": "reproduced_and_fixed_pending_independent_review",
+      "branch": "city/building-name-reload-save-20261011",
       "plan": "docs/plans/city/building-name-inspector.md",
-      "verification": "H02 Edit2/Fresh1 PASS on clean source1afac1d/product Shared73bfe22; canonical rollback, exact visible Retry, one History and real fresh process. Both normalExit0, no forced PIDs, slot returned; docs/reference/city-building-name-h02/receipt.json.",
-      "next": "H02 R01 PASS6104511968 and PR101 integration1d8c7ffc consumed. Cloud-GM is repairing own ambiguous display/CDP binding before one combined #92/#80 user flow. No duplicate GUI or receipt reviews; consume actual City findings, otherwise compatible independent work.",
+      "verification": "GM6104735161 consumed. Managed native-adapter model-reopen/UndoRedo/directSave regression FAIL before Notify fix; five City inspector regressions PASS after. Typecheck/build/repo/diff PASS; suite1005 PASS/0 FAIL/1 existing skip before independent World-Notes upstream merge; affected City/History bytes unchanged. Final Exact-SHA CI pending; no GUI claim.",
+      "next": "Independent narrow History/City regression review, then targeted Cloud-GM retry of the failed City step; no duplicate N03/H01/H02 run.",
       "limits": "DOM pins hit/excludes GPU; separate H01 qualifies actual GPU picking/Edit/Save and fresh Obsidian process with synthetic input only. GM/physical/Recovery/overall parity open; #69/#41 inputs remain pending"
     },
     "nextRun": {
-      "id": "CITY-BUILDING-NAME-GM-CONSUMPTION",
-      "focus": "Consume actual free Cloud-GM City result after its own host repair; implement concrete City findings in #92. Hex owns #80 scroll scope; no duplicate test. Physical/broad Recovery/overall parity remain open."
+      "id": "CITY-BUILDING-NAME-GM-SAVE-RETEST",
+      "focus": "Consume independent Notify fix review and actual Cloud-GM retest; physical/broad Recovery/parity remain open."
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",

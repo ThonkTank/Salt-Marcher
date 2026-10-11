@@ -251,7 +251,10 @@ export class AtlasHistory {
     return () => this.listeners.delete(listener);
   }
   private notify(command: AtlasCommand): void {
-    for (const listener of this.listeners) {
+    // A listener created while rendering the committed state starts with that
+    // state as its baseline; it must not receive the already completed change.
+    for (const listener of [...this.listeners]) {
+      if (!this.listeners.has(listener)) continue;
       try {
         listener(command);
       } catch (error) {
