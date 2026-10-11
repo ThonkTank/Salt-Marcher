@@ -44,6 +44,7 @@ export class ManualPlannerPanel {
     focusSceneTitle = false,
     unsubmittedPlanName?: string,
     retainPlanName = false,
+    focusAfter?: () => void,
   ): void {
     if (this.destroyed) return;
     try {
@@ -65,6 +66,7 @@ export class ManualPlannerPanel {
         this.root
           .querySelector<HTMLInputElement>('[aria-label="Szenentitel"]')
           ?.focus();
+      else focusAfter?.();
     } catch (e) {
       this.status.textContent =
         e instanceof Error
@@ -97,17 +99,31 @@ export class ManualPlannerPanel {
     disabled = false,
     focusSceneTitle = false,
   ): void {
-    const b = this.root.ownerDocument.createElement("button");
+    const doc = this.root.ownerDocument;
+    const b = doc.createElement("button");
     b.type = "button";
     const assertDisplayed = this.displayedGuard();
     b.textContent = text;
     b.disabled = disabled;
-    b.addEventListener("click", () =>
+    if (!focusSceneTitle) b.dataset.plannerAction = text;
+    b.addEventListener("click", () => {
+      const wasFocused = doc.activeElement === b;
       this.run(() => {
         assertDisplayed();
         action();
-      }, focusSceneTitle, undefined, true),
-    );
+      }, focusSceneTitle, undefined, true, () => {
+        if (!wasFocused) return;
+        // Rendering removes the invoking control. Continue keyboard navigation
+        // on its replacement; a move at the boundary may disable that action.
+        const replacement = [...this.root.querySelectorAll("button")].find(
+          (button) => button.dataset.plannerAction === text && !button.disabled,
+        );
+        const target = replacement ??
+          this.root.querySelector<HTMLElement>('[aria-label="Szenentitel"]') ??
+          this.root.querySelector<HTMLElement>('[aria-label="Planname"]');
+        target?.focus();
+      });
+    });
     parent.append(b);
   }
   private label(parent: HTMLElement, name: string, input: HTMLElement): void {

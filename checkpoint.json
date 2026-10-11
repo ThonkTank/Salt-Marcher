@@ -13259,18 +13259,16 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY69-ALLOCATION-CONTEXT-I01",
+      "id": "CITY69-KEYBOARD-FOCUS-I01",
       "issue": 69,
-      "state": "core_repair_verified_review_pending",
-      "branch": "city/planner-allocation-context-20261011",
-      "plan": "docs/plans/campaign/manual-session-planner.md",
-      "verification": "Four core countercases FAIL before repair: create/delete reject context revocation or newer workspace after allocation; valid retry and protected text/selection tested. Full suite1094 PASS/0 FAIL/1 existing optional PDF skip; type/build/repo PASS. PR133 independent R01/ExactCI PASS and Shared6df23a7 integration consumed; browser retest running.",
-      "next": "Publish verified core repair for independent narrow review and regular integration. Campaign/Data native storage contract remains open.",
-      "limits": "DOM UI proof only; no native Planner storage, plugin activation, Save/Fresh/Recovery or physical/overall acceptance. City127 product PR132 and QA PR130 consumed on Shared29e4ce6; free GM remains open."
+      "state": "panel_repair_verified_review_pending",
+      "branch": "city/planner-keyboard-focus-20261011",
+      "verification": "Four focus countercases FAIL before/PASS after repair; 28 panel tests PASS including an action-named scene. Full suite1107 PASS/0 FAIL/1 existing optional PDF skip on initial fix; final selector delta focused PASS. Successful focused actions restore connected enabled controls; boundary move falls back to scene title; stale failures preserve focus/draft.",
+      "limits": "DOM-only; no native storage, physical keyboard or overall acceptance. PR86 Campaign/Data producer decision remains open."
     },
     "nextRun": {
-      "id": "CITY69-ALLOCATION-CONTEXT-REVIEW",
-      "focus": "Independent core review of post-allocation context/workspace protection; native storage depends on Campaign/Data contract."
+      "id": "CITY69-KEYBOARD-FOCUS-REVIEW",
+      "focus": "Narrow independent review and real browser keyboard retest of repaired action focus; continue native consumer after Campaign/Data decision."
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",

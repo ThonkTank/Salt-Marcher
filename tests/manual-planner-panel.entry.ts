@@ -385,3 +385,81 @@ test('manual planner UI: typed plan name never leaks into a newly created plan',
     assert.equal(f.p.catalog.find(p => p.id === original.id), original);
   } finally { f.ui.destroy(); }
 });
+
+for (const action of ["Entwurf übernehmen", "Entwurf verwerfen", "Szene nach oben"]) {
+  test(`manual planner UI: focused ${action} continues on a connected enabled control after render`, () => {
+    const f = fixture();
+    button(f.host, "Neuer Plan").click();
+    for (let i = 0; i < 3; i++) button(f.host, "Szene hinzufügen").click();
+    f.p.editDraft({ title: "Edited", notes: "  exact\n日本語", locationId: null });
+    const old = button(f.host, action);
+    Object.defineProperty(f.document, "activeElement", { configurable: true, value: old });
+    const probe = focusProbe(f.document);
+    try {
+      old.click();
+      const next = button(f.host, action);
+      assert.notEqual(next, old);
+      assert.equal(next.isConnected, true);
+      assert.equal(next.disabled, false);
+      assert.equal(probe.calls.length, 1);
+      assert.ok(probe.calls[0] === next);
+      assert.equal(f.p.active!.scenes.length, 3);
+    } finally { probe.restore(); f.ui.destroy(); }
+  });
+}
+test("manual planner UI: moving to the first position focuses title when the move button becomes disabled", () => {
+  const f = fixture();
+  button(f.host, "Neuer Plan").click();
+  button(f.host, "Szene hinzufügen").click();
+  button(f.host, "Szene hinzufügen").click();
+  const sceneId = f.p.selectedSceneId;
+  const old = button(f.host, "Szene nach oben");
+  Object.defineProperty(f.document, "activeElement", { configurable: true, value: old });
+  const probe = focusProbe(f.document);
+  try {
+    old.click();
+    assert.equal(button(f.host, "Szene nach oben").disabled, true);
+    assert.equal(probe.calls.length, 1);
+    assert.ok(probe.calls[0] === f.host.querySelector('[aria-label="Szenentitel"]'));
+    assert.equal(f.p.selectedSceneId, sceneId);
+    assert.equal(f.p.active!.scenes[0]!.id, sceneId);
+  } finally { probe.restore(); f.ui.destroy(); }
+});
+test("manual planner UI: failed focused commit preserves the original focus node and authored draft", () => {
+  const f = fixture();
+  button(f.host, "Neuer Plan").click();
+  button(f.host, "Szene hinzufügen").click();
+  const old = button(f.host, "Entwurf übernehmen");
+  Object.defineProperty(f.document, "activeElement", { configurable: true, value: old });
+  f.p.editDraft({ title: "Exact", notes: "Keep", locationId: null });
+  f.p.act(f.p.binding(), { kind: "rename", name: "external" });
+  const before = f.p.active, draft = f.p.draft;
+  const probe = focusProbe(f.document);
+  try {
+    old.click();
+    assert.deepEqual(probe.calls, []);
+    assert.equal(old.isConnected, true);
+    assert.equal(f.p.active, before);
+    assert.equal(f.p.draft, draft);
+  } finally { probe.restore(); f.ui.destroy(); }
+});
+
+test("manual planner UI: a scene title matching an action cannot capture restored action focus", () => {
+  const f = fixture();
+  button(f.host, "Neuer Plan").click();
+  button(f.host, "Szene hinzufügen").click();
+  f.p.editDraft({ title: "Entwurf übernehmen", notes: "Exact", locationId: null });
+  button(f.host, "Entwurf übernehmen").click();
+  const old = [...f.host.querySelectorAll("button")].find(b =>
+    b.textContent === "Entwurf übernehmen" && !b.closest("li"))!;
+  Object.defineProperty(f.document, "activeElement", { configurable: true, value: old });
+  const probe = focusProbe(f.document);
+  try {
+    old.click();
+    const next = [...f.host.querySelectorAll("button")].find(b =>
+      b.textContent === "Entwurf übernehmen" && !b.closest("li"))!;
+    assert.equal(probe.calls.length, 1);
+    assert.ok(probe.calls[0] === next);
+    assert.equal(f.p.active!.scenes[0]!.title, "Entwurf übernehmen");
+  } finally { probe.restore(); f.ui.destroy(); }
+});
