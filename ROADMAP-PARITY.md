@@ -6,7 +6,7 @@ Für alle Phasen gilt: Bedienung und Funktion müssen mit dem Vorbild übereinst
 
 Der verbindliche Unterfallkatalog steht in `acceptance.json`. Die Phasen decken `DD-011` bis `DD-015`, `DD-026` und die für dessen Bibliothek nötigen Tags und Sets aus `DD-047` ab. Farbwahl, Assetpakete und Auswahl werden nur für Abläufe dieser beiden Werkzeuge einbezogen. Die vollständige Parität anderer Werkzeuge bleibt offen. Raum-Key und Feature-Verknüpfung haben kein Dungeondraft-Vorbild; sie werden als Projektablauf gegen die bestehenden Anforderungen geprüft.
 
-Die [Folge-Roadmap für die übrigen Dungeondraft-Abläufe](ROADMAP-PARITY-TOOLS.md) ist geplant enthält die weiteren Werkzeuganforderungen.
+Die [Folge-Roadmap für die übrigen Dungeondraft-Abläufe](ROADMAP-PARITY-TOOLS.md) enthält die weiteren Werkzeuganforderungen.
 
 ## Funktionsprüfung
 
@@ -30,7 +30,7 @@ Punktbearbeitung aktivieren, Eck- und Ellipsenpunkte ziehen, Punkte an Kanten ei
 
 ## Phase 3 – Boden und Gebäudewand gestalten
 
-Aktueller getrennter Nachbesserungsplan: [Bevel und QAWall01-Konturen (historisch)](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/blob/6a90f3ee2f50f0be45f0e256784576f13722c319/ROADMAP-PARITY-PHASE3-REPAIR-BEVEL-POINTS-PLAN.md). Der vorherige [Wear-/Building-Plan (historisch)](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/blob/6a90f3ee2f50f0be45f0e256784576f13722c319/ROADMAP-PARITY-PHASE3-WEAR-BEHAVIOR-PLAN.md) ist umgesetzt und reviewt. Bedienung und Funktion müssen dem Original entsprechen; die Grafik genügt ungefähr gleichwertig. Pixelmessungen dienen der Diagnose sichtbarer Fehler.
+Historische Nachbesserungspläne: [Bevel und QAWall01-Konturen (historisch)](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/blob/6a90f3ee2f50f0be45f0e256784576f13722c319/ROADMAP-PARITY-PHASE3-REPAIR-BEVEL-POINTS-PLAN.md). Auch der [Wear-/Building-Plan (historisch)](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/blob/6a90f3ee2f50f0be45f0e256784576f13722c319/ROADMAP-PARITY-PHASE3-WEAR-BEHAVIOR-PLAN.md) ist umgesetzt und reviewt. Der unten dokumentierte Abschluss vom 08.10.2026 bestätigt das Phase-3-Tor; die Pläne sind keine offenen Nachbesserungsaufträge. Bedienung und Funktion müssen dem Original entsprechen; die Grafik genügt ungefähr gleichwertig. Pixelmessungen dienen der Diagnose sichtbarer Fehler.
 
 **Unterfälle:** `DD-011.11`, `.12`, `.15`, `.16` bis `.22` sowie `DD-015`.
 
