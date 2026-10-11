@@ -132,9 +132,8 @@ export class WorldNotesView extends ItemView {
       this.panel.update(snapshot);
       this.message("");
     } catch (error) {
-      if (this.session === session) {
-        this.suspendPanel(); this.message(String(error), true);
-      }
+      if (this.session !== session || stamp !== this.generation) return;
+      this.suspendPanel(); this.message(String(error), true);
       throw error;
     }
   }
