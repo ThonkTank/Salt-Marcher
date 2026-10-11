@@ -43,10 +43,25 @@ abgemeldete Listener werden ausgelassen. Bestehender ABA-/Stale-/Contextschutz b
 Fünf City-Inspectorfälle PASS; exakte Citybytes, fremde Dateien, Kamera, zwei
 Historyschritte und entfernte Draft-/Journaldateien geprüft.
 
-**Nächster Consumer:** enger unabhängiger History-/Regressionreview des Kandidaten
-city/building-name-reload-save-20261011, dann gezielter Cloud-GM-Nachtest des
-fehlgeschlagenen City-Schritts. Kein wiederholter N03-/H01-/H02-Lauf. Der neue
-Modellreopen-Test ist kein App-Reload oder frischer Obsidian-Prozess.
+**Korrektur konsumiert:** [PR106-Review](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/106#issuecomment-6104780165)
+ist unabhängig PASS; Integration auf Shared `a4f20a553060ec84941b97cbb71bd105d5ca5a62`
+[bestätigt](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/106#issuecomment-6104784418).
+Der [gezielte Cloud-GM-Nachtest](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/92#issuecomment-6105037427)
+besteht auf diesem installierten Build: zweimal Hausname übernehmen → Undo/Redo
+bei offenem Inspector → direkter Inspector-Save → Zur Karte → Torheim öffnen
+und gespeicherten Namen in der Suche wiederfinden. Nur Haus106-Name verändert;
+Geometrie, Atlas, Terrain, Dungeon und Orte erhalten. Campaign-Digests aktualisiert.
+Dies schließt den konkret reproduzierten Save-Kollisionsbefund im getesteten Weg.
+
+**Nächster Consumer:** Die City-Nutzung braucht keinen weiteren unveränderten
+Apply/UndoRedo/Save-Nachtest. Offen bleibt im selben #92 der bisher fehlende
+Post-Save-App-Reload beziehungsweise frische Prozess des korrigierten Notifywegs.
+Der Bericht bestätigt Wiederverwendung durch Navigation, keinen Reload/Reopen;
+ältere H01/H02-Frischprozessbelege behalten ihre Quellen. Rohbilder liegen nur
+im Cloud-Runtime-/dev/shm und waren hier nicht selbst lesbar; GM-PASS ist der
+unabhängige Testerbericht, keine zusätzliche Stadt-Rohbildabnahme. Der Toolbar-
+Status „Entwurf gesichert“ wird nicht als dauerhafter Save gezählt; dessen Beleg
+ist der Inspector-Status „Gespeichert“ samt City-/Campaign-Dateiorakel.
 Physische Bedienung, breite Recovery und volle Stadtparität bleiben offen.
 
 ## Inspector- und Fachaktionsbelege
@@ -93,8 +108,8 @@ ersetzt; Picking und echter Prozess-Neustart sind damit nicht qualifiziert.
 
 ## Verbleibende Umsetzung und Abnahme
 
-1. Unabhängigen Review der Notify-/City-Regression konsumieren.
-2. Cloud-GM prüft den konkreten City-Savebefund nach dem Fix gezielt nach.
+1. Notify-/City-Review und gezielter Cloud-GM-Save-Nachtest konsumiert.
+2. Post-Save-Reload/Fresh-Nachweis des korrigierten Notifywegs bleibt offen.
 3. Physische und breite Recoveryabnahme nach dem Fachvertrag bleiben eigenständige offene Grenzen.
 
 DOM-/Repository-/Modellreopen-Belege sind keine GPU-, native GUI-/Prozess-,

@@ -11086,16 +11086,16 @@
     "currentRun": {
       "id": "CITY-BUILDING-NAME-GM-SAVE-FIX",
       "issue": 92,
-      "state": "reproduced_and_fixed_pending_independent_review",
+      "state": "independent_review_integrated_and_targeted_gm_save_pass",
       "branch": "city/building-name-reload-save-20261011",
       "plan": "docs/plans/city/building-name-inspector.md",
-      "verification": "GM6104735161 consumed. Managed native-adapter model-reopen/UndoRedo/directSave regression FAIL before Notify fix; five City inspector regressions PASS after. Typecheck/build/repo/diff PASS; suite1005 PASS/0 FAIL/1 existing skip before independent World-Notes upstream merge; affected City/History bytes unchanged. Final Exact-SHA CI pending; no GUI claim.",
-      "next": "Independent narrow History/City regression review, then targeted Cloud-GM retry of the failed City step; no duplicate N03/H01/H02 run.",
+      "verification": "GM6104735161 consumed. Managed native-adapter model-reopen/UndoRedo/directSave regression FAIL before Notify fix; five City inspector regressions PASS after. Typecheck/build/repo/diff PASS; suite1005 PASS/0 FAIL/1 existing skip before independent World-Notes upstream merge; affected City/History bytes unchanged. Final Exact-SHA CI pending; no GUI claim. Independent PR106 review6104780165 PASS, integrated a4f20a553060ec84941b97cbb71bd105d5ca5a62; GM6105037427 PASS twice Apply/UndoRedo/direct inspector Save/navigation reuse on that installed Build. Tester-reported hashes preserve geometry/foreign files; runtime PNGs unavailable locally. No Post-Save-App-Reload/fresh-process claim.",
+      "next": "Within #92 qualify Post-Save reload/fresh reopen of corrected Notify path; do not repeat unchanged Apply/UndoRedo/Save or N03/H01/H02 checks.",
       "limits": "DOM pins hit/excludes GPU; separate H01 qualifies actual GPU picking/Edit/Save and fresh Obsidian process with synthetic input only. GM/physical/Recovery/overall parity open; #69/#41 inputs remain pending"
     },
     "nextRun": {
-      "id": "CITY-BUILDING-NAME-GM-SAVE-RETEST",
-      "focus": "Consume independent Notify fix review and actual Cloud-GM retest; physical/broad Recovery/parity remain open."
+      "id": "CITY-BUILDING-NAME-POSTSAVE-REOPEN",
+      "focus": "Targeted corrected-path Post-Save reload/fresh reopen remains open; independent review, integration and GM save/navigation-reuse PASS already consumed."
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
