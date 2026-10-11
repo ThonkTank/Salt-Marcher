@@ -286,7 +286,10 @@ function ownerReferences(value: unknown, label: string): readonly OwnerReference
   );
 }
 
-function profile(value: unknown, label: string): PartyCharacterProfileProjection {
+export function parsePartyCharacterProfile(
+  value: unknown,
+  label = "PartyCharacterProfile",
+): PartyCharacterProfileProjection {
   const row = record(
       value,
       ["name"],
@@ -347,7 +350,10 @@ function profile(value: unknown, label: string): PartyCharacterProfileProjection
   });
 }
 
-function progress(value: unknown, label: string): PartyCharacterProgressProjection {
+export function parsePartyCharacterProgress(
+  value: unknown,
+  label = "PartyCharacterProgress",
+): PartyCharacterProgressProjection {
   const row = record(
       value,
       ["currentXp", "xpSinceLongRest", "xpSinceShortRest"],
@@ -433,8 +439,8 @@ export function parsePartyProjection(value: unknown): PartyProjection {
       return Object.freeze({
         characterId: characterId(row.characterId, `${label}.characterId`),
         active,
-        profile: profile(row.profile, `${label}.profile`),
-        progress: progress(row.progress, `${label}.progress`),
+        profile: parsePartyCharacterProfile(row.profile, `${label}.profile`),
+        progress: parsePartyCharacterProgress(row.progress, `${label}.progress`),
         sceneAssignment: assignment,
       });
     }),

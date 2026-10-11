@@ -1,7 +1,11 @@
 import {
+  parsePartyCharacterProfile,
+  parsePartyCharacterProgress,
   parseOwnerReference,
   parsePreparationSnapshot,
   type OwnerReference,
+  type PartyCharacterProfileProjection,
+  type PartyCharacterProgressProjection,
   type PreparationSnapshot,
 } from "./contracts";
 import {
@@ -69,6 +73,42 @@ export interface SetFocusCommand extends AggregateCommandBinding {
   readonly expectedTargetRevision?: Revision;
 }
 
+export interface PartyCommandBinding {
+  readonly campaignId: CampaignId;
+  readonly commandId: CommandId;
+  readonly commandDigest: CommandDigest;
+  readonly expectedPartyRevision: Revision;
+  readonly cancelled: boolean;
+}
+
+export interface CreatePartyCharacterCommand extends PartyCommandBinding {
+  readonly kind: "create-party-character";
+  readonly version: 1;
+  readonly characterId: CharacterId;
+  readonly profile: PartyCharacterProfileProjection;
+}
+
+export interface UpdatePartyCharacterProfileCommand extends PartyCommandBinding {
+  readonly kind: "update-party-character-profile";
+  readonly version: 1;
+  readonly characterId: CharacterId;
+  readonly profile: PartyCharacterProfileProjection;
+}
+
+export interface SetPartyCharacterProgressCommand extends PartyCommandBinding {
+  readonly kind: "set-party-character-progress";
+  readonly version: 1;
+  readonly characterId: CharacterId;
+  readonly progress: PartyCharacterProgressProjection;
+}
+
+export interface RestPartyCharactersCommand extends PartyCommandBinding {
+  readonly kind: "rest-party-characters";
+  readonly version: 1;
+  readonly rest: "short" | "long";
+  readonly characterIds: readonly CharacterId[];
+}
+
 function binding(
   row: Record<string, unknown>,
   label: string,
@@ -99,6 +139,129 @@ const COMMON = [
   "expectedFocusRevision",
   "cancelled",
 ] as const;
+
+const PARTY_COMMON = [
+  "kind",
+  "version",
+  "campaignId",
+  "commandId",
+  "commandDigest",
+  "expectedPartyRevision",
+  "cancelled",
+] as const;
+
+function partyBinding(
+  row: Record<string, unknown>,
+  label: string,
+): PartyCommandBinding {
+  return Object.freeze({
+    campaignId: campaignId(row.campaignId, `${label}.campaignId`),
+    commandId: commandId(row.commandId, `${label}.commandId`),
+    commandDigest: commandDigest(row.commandDigest, `${label}.commandDigest`),
+    expectedPartyRevision: revision(
+      row.expectedPartyRevision,
+      `${label}.expectedPartyRevision`,
+    ),
+    cancelled: exactBoolean(row.cancelled, `${label}.cancelled`),
+  });
+}
+
+export function parseCreatePartyCharacterCommand(
+  value: unknown,
+): CreatePartyCharacterCommand {
+  const label = "CreatePartyCharacterCommand",
+    row = exactRecord(
+      value,
+      [...PARTY_COMMON, "characterId", "profile"],
+      [],
+      label,
+    );
+  if (row.kind !== "create-party-character" || row.version !== 1)
+    throw new Error(`${label} besitzt einen unbekannten Vertrag.`);
+  return Object.freeze({
+    kind: "create-party-character",
+    version: 1,
+    ...partyBinding(row, label),
+    characterId: characterId(row.characterId, `${label}.characterId`),
+    profile: parsePartyCharacterProfile(row.profile, `${label}.profile`),
+  });
+}
+
+export function parseUpdatePartyCharacterProfileCommand(
+  value: unknown,
+): UpdatePartyCharacterProfileCommand {
+  const label = "UpdatePartyCharacterProfileCommand",
+    row = exactRecord(
+      value,
+      [...PARTY_COMMON, "characterId", "profile"],
+      [],
+      label,
+    );
+  if (row.kind !== "update-party-character-profile" || row.version !== 1)
+    throw new Error(`${label} besitzt einen unbekannten Vertrag.`);
+  return Object.freeze({
+    kind: "update-party-character-profile",
+    version: 1,
+    ...partyBinding(row, label),
+    characterId: characterId(row.characterId, `${label}.characterId`),
+    profile: parsePartyCharacterProfile(row.profile, `${label}.profile`),
+  });
+}
+
+export function parseSetPartyCharacterProgressCommand(
+  value: unknown,
+): SetPartyCharacterProgressCommand {
+  const label = "SetPartyCharacterProgressCommand",
+    row = exactRecord(
+      value,
+      [...PARTY_COMMON, "characterId", "progress"],
+      [],
+      label,
+    );
+  if (row.kind !== "set-party-character-progress" || row.version !== 1)
+    throw new Error(`${label} besitzt einen unbekannten Vertrag.`);
+  return Object.freeze({
+    kind: "set-party-character-progress",
+    version: 1,
+    ...partyBinding(row, label),
+    characterId: characterId(row.characterId, `${label}.characterId`),
+    progress: parsePartyCharacterProgress(row.progress, `${label}.progress`),
+  });
+}
+
+export function parseRestPartyCharactersCommand(
+  value: unknown,
+): RestPartyCharactersCommand {
+  const label = "RestPartyCharactersCommand",
+    row = exactRecord(
+      value,
+      [...PARTY_COMMON, "rest", "characterIds"],
+      [],
+      label,
+    );
+  if (row.kind !== "rest-party-characters" || row.version !== 1)
+    throw new Error(`${label} besitzt einen unbekannten Vertrag.`);
+  if (!(row.rest === "short" || row.rest === "long"))
+    throw new Error(`${label}.rest ist unbekannt.`);
+  const characterIds = Object.freeze(
+    uniqueBy(
+      exactArray(row.characterIds, `${label}.characterIds`).map((entry, index) =>
+        characterId(entry, `${label}.characterIds[${index}]`),
+      ),
+      (entry) => entry,
+      `${label}.characterIds`,
+    ),
+  );
+  if (!characterIds.length)
+    throw new Error(`${label}.characterIds darf nicht leer sein.`);
+  return Object.freeze({
+    kind: "rest-party-characters",
+    version: 1,
+    ...partyBinding(row, label),
+    rest: row.rest,
+    characterIds,
+  });
+}
 
 export function parseInitializeLiveSessionCommand(
   value: unknown,
