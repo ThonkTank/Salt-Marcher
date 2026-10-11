@@ -803,6 +803,25 @@ test("direct source and projection boundaries reject foreign or pending mask par
     status: "unavailable",
     reason: "invalid-scene",
   });
+
+  const reorderedProjection = structuredClone(
+    state.scenes[0]!.source,
+  ) as Record<string, any>;
+  [
+    reorderedProjection.maskParticipationProjections[0],
+    reorderedProjection.maskParticipationProjections[1],
+  ] = [
+    reorderedProjection.maskParticipationProjections[1],
+    reorderedProjection.maskParticipationProjections[0],
+  ];
+  assert.throws(
+    () => parseLiveSceneSource(reorderedProjection),
+    /Projektionsreihenfolge/,
+  );
+  assert.deepEqual(projectLiveScene(reorderedProjection, focus), {
+    status: "unavailable",
+    reason: "invalid-scene",
+  });
 });
 
 test("prepared owner contribution binds receipt, full matrix, ordering and retry", () => {

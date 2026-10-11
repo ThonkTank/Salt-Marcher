@@ -1205,6 +1205,33 @@ export function parseLiveSceneSource(value: unknown): LiveSceneSourceSnapshot {
         "LiveSceneSource besitzt keinen vollständigen current Maskensnapshot.",
       );
   }
+  const orderedOwnerKeys = Object.freeze([
+    ...new Set(
+      parsedMaskRefs.map((mask) => ownerKey(mask.ownerId, mask.generationId)),
+    ),
+  ]);
+  for (const key of orderedOwnerKeys) {
+    if ((ownerByIdentity.get(key)?.status ?? "current") !== "current") continue;
+    const refOrder = parsedMaskRefs
+        .filter((mask) => ownerKey(mask.ownerId, mask.generationId) === key)
+        .map((mask) => mask.maskId),
+      projectionOrder = parsedMaskProjections
+        .filter(
+          (projection) =>
+            ownerKey(
+              projection.ownerIdentity.ownerId,
+              projection.ownerIdentity.generationId,
+            ) === key,
+        )
+        .map((projection) => projection.maskId);
+    if (
+      refOrder.length !== projectionOrder.length ||
+      refOrder.some((mask, index) => mask !== projectionOrder[index])
+    )
+      throw new Error(
+        "LiveSceneSource besitzt keine stabile Masken-Projektionsreihenfolge.",
+      );
+  }
   return Object.freeze({
     kind: "live-scene-source",
     version: 1,
