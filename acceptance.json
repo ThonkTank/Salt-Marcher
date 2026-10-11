@@ -156276,7 +156276,7 @@
               "07-target-reused.png",
               "08-room-key-reopened-in-session.png"
             ],
-            "sourceDiffChecked": "87ccdb2..52ab66e changes only World Notes, its main.ts draft-buffer wiring/tests/host helper and City/SaltMarcher metadata; Atlas feature/UI sources, styles.css and Spatial-V2 fixture unchanged. The GM run stays bound to 87ccdb2, not a new build/GUI on later Shared.",
+            "sourceDiffChecked": "87ccdb2..b6c831e changes only World Notes, its main.ts draft-buffer wiring/tests/host helper and City/SaltMarcher/GM evidence metadata; Atlas feature/UI sources, styles.css and Spatial-V2 fixture unchanged. The GM run stays bound to 87ccdb2, not a new build/GUI on later Shared.",
             "reportedBuild": {
               "command": "npm run build",
               "result": "PASS; Node v24.19.0; dirty:false; sourceRevision exactly 87ccdb2626c26622f15799f3af7faf05d9feee89",
@@ -156331,7 +156331,26 @@
               "Search/result activation at 131% not exercised; vertical scrolling retained, no new repair request.",
               "No physical, latency, external-window-clipping, Original, large-map, recovery, projection, user-vault or full E2E acceptance."
             ],
-            "guiUsedByHex": false
+            "guiUsedByHex": false,
+            "independentEvidenceIntegration": {
+              "steward": "Contributor",
+              "head": "155c01595da879c7edb34a211fff490e003f8e14",
+              "sharedMerge": "b6c831ee007b7b6f8c2adb8e9fee48e8772e59c2",
+              "tree": "7ef82981a7d862055005232b7f3e23e36778a85a",
+              "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/115#issuecomment-6105460646",
+              "headCi": "38111405370",
+              "sharedStructureCi": "38111871129",
+              "bothExactShaCiLiveChecked": "SUCCESS",
+              "foreignRootsPreserved": true,
+              "selfIntegratedByHex": false
+            },
+            "freshReuseOffer": {
+              "owner": "Existing Cloud-GM chat, support only; Hex owns parent80",
+              "state": "offered_missing_post_save_fresh_user_reuse_only",
+              "input": "Own saved N04 synthetic vault and actually tested87ccdb2 build; preserve current bytes. No rebuild/repeated complete Save solely because Shared advanced. If saved host/vault cannot be resumed safely, report the exact missing input before another run.",
+              "priorNativeFreshEvidence": "docs/reference/atlas-detail-binding-d01/inspector-n02-native-h02.json",
+              "priorNativeFreshLimit": "Controlled native byte/model/DOM proof; prior raw review notes fresh Room prose/name fields outside screenshot scroll viewport. New GM same-session proof does not show ordinary user rediscovery after a fresh process."
+            }
           },
           "nextConsumer": "Existing Cloud-GM is offered only the missing free post-save reuse after a normal quit and fresh Obsidian process on its owned saved N04 synthetic vault. Preserve the current saved state; bind exact source/build/host, visible Room-Key rediscovery/text, process lifecycle and before/after native bytes. Existing same-session Save and N02-H02 controlled fresh proof are retained; no repeated full Save/UndoRedo/131% run or product expansion. Hex consumes the actual result or precise missing host input at #80.",
           "limits": [
@@ -156342,7 +156361,7 @@
           "guiUsedByHex": false,
           "productEdited": false,
           "phaseApproval": false,
-          "sourceCommit": "52ab66e2403a78905be482dd539b842cee713c89"
+          "sourceCommit": "b6c831ee007b7b6f8c2adb8e9fee48e8772e59c2"
         }
       }
     ],

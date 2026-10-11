@@ -95,7 +95,8 @@ kleinere Kartenfläche. Suche/Aktivierung bei131% wurde nicht ausgeführt.
 von Hex selbst gelesen; acht PNG- und acht Fixturehashes geprüft. Installations-
 Tripel und Post-Save-Dungeon-/Campaignhashes bleiben Testerbericht, ohne volle
 Post-Save-Payloads zum eigenen semantischen Vergleich. Stadt prüfte diesen engen
-Beleg unabhängig mit PASS. Keine neue Reparatur aus dem nötigen vertikalen Scrollen.
+Beleg unabhängig mit PASS; Contributor integrierte PR115 in Sharedb6c831e.
+Exact-CI38111405370 / Struktur38111871129 SUCCESS. Kein neuer Scroll-Reparaturauftrag.
 
 **Nächster ausführbarer Eingang / Empfänger:** Bestehender Cloud-GM-Chat erhält
 den gezielten fehlenden Anschluss: gespeicherten Raum im eigenen N04-Testvault
