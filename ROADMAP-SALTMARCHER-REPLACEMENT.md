@@ -215,8 +215,12 @@ Kampagnenwechsel A→B→A innerhalb derselben geöffneten Spielansicht. Er häl
 das World-Notes-Panel, widerruft alte Sessions und Eingaben und zeigt einen
 Entwurf erst nach bestätigter neuer Kampagnenbindung wieder an. Typecheck,
 Repositoryprüfung, 1011/1012 Tests (ein Skip) und Build bestanden. Eine neue
-native Probe erreichte den Wechsel wegen Fehlern im neuen Testskript nicht;
-native und unabhängige Abnahme dieses Beitrags stehen aus.
+native Probe erreichte den Wechsel zunächst wegen Fehlern im neuen Testskript
+nicht. Der danach korrigierte Lauf `--world-notes-drafts` wechselte in einem
+isolierten echten Obsidianprozess A→B→A→B. Die zwei ungespeicherten Entwürfe
+blieben getrennt und alle A/B-Eingabedateien bytegleich; der Prozess endete
+normal. Rohbeleg: `/home/aaron/.cache/dungeon-native-qa/atlasqa-world-notes-drafts-host-03/evidence/1791690123926-atlas-spatial-edit/`.
+Unabhängige Abnahme und vollständige SMR-02-Abnahme stehen aus.
 
 ### SMR-03 – Party, Scene und Live Session
 
