@@ -25,7 +25,8 @@ const restart = process.argv.includes("--restart"),
   dd036S01HardCrash = process.argv.includes("--dd036-s01-hard-crash"),
   hex02Save = process.argv.includes("--hex02-save"),
   hex04DungeonAtLocation = process.argv.includes("--hex04-dungeon-at-location"),
-  cityBuildingName = process.argv.includes("--city-building-name"),
+  cityBuildingNameRollback = process.argv.includes("--city-building-name-rollback"),
+  cityBuildingName = process.argv.includes("--city-building-name") || cityBuildingNameRollback,
   atlasCampaignABA = process.argv.includes("--atlas-campaign-aba"),
   worldNotesZoom200 = process.argv.includes("--world-notes-zoom200"),
   worldNotesFault = process.argv.includes("--world-notes-rollback"),
@@ -949,7 +950,7 @@ async function workflow() {
       : atlasCampaignRuntime
       ? "./host/atlas-campaign-runtime.cjs"
       : "./host/atlas-spatial.cjs")({ ...scenarioContext,
-        recoveryAfterCommit: process.argv.includes("--atlas-campaign-commit-recovery") });
+        recoveryAfterCommit: process.argv.includes("--atlas-campaign-commit-recovery"), cityBuildingNameRollback });
     if(restart)await scenario.reopen();else await scenario.edit();
     return;
   }
