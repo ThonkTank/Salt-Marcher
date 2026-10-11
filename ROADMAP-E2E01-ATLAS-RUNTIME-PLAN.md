@@ -39,80 +39,73 @@ Produktänderung, GUI, CITY oder E2E-02–04 begonnen.
 
 #### Arbeitsstand #80
 
-Kandidat: https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/96
-
-Integrierter H02-Eingang: [PR94](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/94).
-
-Integrierter Reparatureingang: [PR91](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/91).
+Integrierte Aussagekorrektur: [PR96](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/96).
+Native H02-/Reparatureingänge: [PR94](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/94),
+[PR91](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/91);
 Implementierungs-/Savebasis: [PR81](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/81),
-[PR87](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/87) und
+[PR87](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/87),
 [PR78](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/78).
 
-Dungeon am vorhandenen Ort verorten, ohne alten Link verschieben, Raum-Key/Zurück
-und gemeinsame History/Save sind integriert. [H01](docs/reference/atlas-detail-binding-d01/dungeon-at-location-h01.md)
-und [frühere freie Cloud-GM-Nutzung](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80#issuecomment-6103561640)
-bleiben an ihre alten Produkttripel gebunden. Deren Frischprozess-/Hostgrenzen
-werden nicht auf den geänderten Inspector übertragen.
+Dungeon am bestehenden Ort verorten, Raum-Key/Zurück und gemeinsame History/Save
+sind integriert. N02 bündelt Orts-/Raum-Key in einer Leiste mit „Zur Karte“ und
+geprüftem Escape direkt aus den Feldern. Bestehende Drafts, Kamera, Repository,
+History, Context und Kennungen bleiben erhalten. [Unabhängiger Produktnachreview](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/91#issuecomment-6103862700)
+und [Stewardintegration](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/91#issuecomment-6103883554)
+bleiben an ihren geprüften Quellstand gebunden.
 
-**N02 ist unabhängig geprüft und integriert:** Orts-/Raum-Key teilen eine Leiste
-mit „Zur Karte“ und geprüftem Escape aus den Feldern. Drafts, gemeinsame Kamera,
-Repository/History und Savegrenzen bleiben erhalten.
-[Atlas-QA-PASS](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/91#issuecomment-6103862700)
-und [separate Stewardintegration](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/91#issuecomment-6103883554)
-sind konsumiert; Diagnose und Quellgrenzen bleiben im bestehenden N02-Abnahmeeintrag.
+**H02-Producer- und Rohbeleg:** [Originalreceipt](docs/reference/atlas-detail-binding-d01/inspector-n02-native-h02.json)
+bindet kontrollierte native Eingabe bei1024×800, gemeinsames Undo/Redo/Save und
+exakten Texterhalt in einem separaten frischen Obsidian-Prozess. Quelle/Helper
+bd2a0ad, Produktbuild dba7d55, Shared ca29032; Tripel im Receipt. [Helperreview](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/94#issuecomment-6104068019)
+und [Stadt RAW-R01](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80#issuecomment-6104135982)
+qualifizieren ihre jeweiligen Scopes. RAW-R01-01 bleibt: Room-PNGs zeigen die untere
+Navigation; Name/Prosa liegen außerhalb des sichtbaren Scrollbereichs. Exakter
+Text ist separat durch Bytes, Fresh-Modell und DOM belegt. Originalbelege erhalten.
 
-**Gezielte native Producerprobe H02 bestanden:** [Quellgebundener Beleg](docs/reference/atlas-detail-binding-d01/inspector-n02-native-h02.json).
-Auf unverändertem integriertem N02-Produkt bei 1024×800: eine sichtbare Keyleiste,
-rund394px Kartenbreite daneben; Escape direkt aus Orts-/Raumtextarea übernimmt
-exakte Texte und gibt Kartenfokus zurück. Ein leerer Ortsname hält Entwurf/Auswahl
-sichtbar und verändert weder native Daten noch Kamera. „Zur Karte“, gecachte
-Location-Rückkehr, gemeinsames Undo/Redo, tatsächliches Save und exakte Text-/
-Dateiwiederöffnung in einem separaten frischen Obsidian-Prozess bestehen. Beide
-Prozesse normal beendet; frisch koordinierter lokaler Slot ausdrücklich zurückgegeben.
-Das ist kontrollierte synthetische Producerbedienung, keine freie GM-Abnahme.
+**Freier Cloud-GM-Nachtest geliefert und konsumiert:** [Originalergebnis](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80#issuecomment-6104260884)
+auf tatsächlich gebautem/isoliert installiertem ca29032, Obsidian1.14.4,
+1024×800/DPR1, Fixture e2e01-spatial-v2. Vom normalen Dateibaum Torheim und Torraum
+gefunden; „Zur Karte“, Escape aus Raumtext, Übernehmen, Undo/Redo, Save und
+Atlas-Tab schließen/wiederöffnen erhalten den Text. Fremde Atlas-/City-/Ortsbytes
+und berichtete IDs bleiben erhalten. Das ist automatisierte freie GM-Nutzung;
+Tab-Reopen im selben Prozess, kein neuer Prozess- oder physischer Nachweis.
+Cloudrohdateien/PNG wurden von Hex nicht selbst gelesen; Referenzen/Tripel und
+die direkte Producer-Checkpointquelle stehen im bestehenden eigenen Abnahmeeintrag
+`dungeonAtLocationInspectorGmN02Consumption`. Der bisherige Cloud-GM-Claim ist beendet.
 
-Native Quelle/Werkzeugstand `bd2a0ada903b414eb46577ec5451f79ca885770d`,
-Produktbuildquelle `dba7d559044f9e8b072a329f2efacd7452b333b4`,
-integriertes Shared `ca290326a35bb792c22ef8f02e215a3dd9ef121d`.
-Relevanter Produkt-/Build-/Fixturepfad unverändert, aktuelles Plugintripel direkt
-im H02-Beleg. Rohbilder/Layout-/Zustands-/Prozessbelege liegen am benannten eigenen
-QA-Ort, sind gehasht und lokal zugänglich; ein Cloudpfadzugriff ist damit nicht bewiesen.
-Versionierte Fixture: `tests/fixtures/atlas-e2e-spatial-v2/manifest.json`.
-[Vorbereitung/Isolation](docs/reference/atlas-detail-binding-d01/dungeon-at-location-h01.md#startbarer-eingang)
-bleibt verwendbar; alte H01-Buildhashes sind historisch. Aufruf des neuen engen
-Consumers mit zusätzlichem `--hex04-inspector-n02`, Wiederöffnung mit `--restart`.
+**N03-Reparatur des bestätigten GM-N02-01:** Der gemeinsame Dock zeigt einen
+neu gewählten Orts-/Raum-/Haus-Key ab seinem Anfang. Nur der tatsächliche Wechsel
+von Kind/Owner/Element setzt die Scrollposition zurück; Eingabe, Übernahme und
+Historyredraw desselben Keys behalten sie. Schließen vergisst das angezeigte Ziel,
+sodass auch der gecachte erneute Einstieg bei den Feldern beginnt. Anwendung und
+Draftguards laufen weiterhin vor dem Zielwechsel; invalides Ortsmaterial bleibt
+sichtbar samt Scrollposition. Kein neuer Store, Modus, Panel oder History.
 
-**Enger unabhängiger H02-Review konsumiert:** [Contributor-PASS](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/94#issuecomment-6104068019)
-qualifiziert Helper, Nachorakel und versionierte Receipt-/Hashbindungen ohne
-Pflichtkorrektur. Lokale Rohdateien wurden aus seiner Cloud nicht gelesen;
-dieser Scope erteilt keinen Rohbeleg-/GUI-/GM-PASS. Originalreceipt/Helper unverändert.
+Quellgebundener Kandidat: Produktcommit `cac07c3`, integrierter Prüfstand `1e22697`
+mit aktuellem Shared `73bfe22` und unabhängig integriertem [City Save PR98](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/98).
+Dessen bestehendes Draftpersistenz-Warten und erneuter Contextguard bleiben
+unverändert. Zwei echte Managed-DOM-Regressionen scheitern auf der vorherigen
+Produktquelle und bestehen danach: Zielbutton Ort→Raum, gleiche History-/Draft-
+Redraws, gecachte Rückkehr/Schließen, ungültige Eingabe sowie City-Pointerauswahl
+mit identischem/anderem Haus. Gesamt-Suite, Typprüfung, Build, Repo und Erhalt
+fremder JSON-Wurzeln bestehen; keine GUI-/GPU-Geometrie daraus ableiten.
+`checkpoint.hexAtlasExecution.dungeonAtLocationInspectorScrollN03` und die
+bestehende Acceptanceanforderung binden Quelle, Tripel und lokale Logs.
 
-**Integration und lokaler Rohbeleganschluss konsumiert:** [Separate PR94-Integration](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/94#issuecomment-6104127611)
-ist übernommen. [Stadt RAW-R01](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80#issuecomment-6104135982)
-hat Originaldateien, Baseline, native Hashes, normale getrennte Prozesse und PNGs
-read-only geprüft. Die lokale Raw-Access-Lücke ist geschlossen; Integrität und
-Save/Fresh-Texterhalt sind unabhängig bestätigt, keine eigene GUI-Ausführung.
+**Nächster Empfänger:** enger unabhängiger Review nur des N03-Scroll-/Guarddeltas,
+danach quellgebundener freier GM-Nachtest im isolierten Host. Eine neue SHA allein
+startet keine Wiederholung alter Fach-/Save-/H02-/Rohbelegreviews. Hex konsumiert
+Review beziehungsweise konkreten Pflichtbefund; kein Selfmerge oder abhängiger
+Detailausbau. Vor eigener GUI neue lokale Slotkoordination.
 
-**Aussagegrenze RAW-R01-01:** Room-/Fresh-Room-PNG zeigen die untere Navigation;
-Raumname und Prosa liegen außerhalb des sichtbaren Scrollbereichs. Exakter Text
-ist durch native Bytes, Fresh-Modellvergleich und DOM-Orakel belegt. Bilder allein
-belegen keine vollständige Raumprosa-/Feldsichtbarkeit oder frische Auffindbarkeit.
-Kein daraus bewiesener Produktfehler. Originalreceipt/Helper bleiben unverändert;
-keine neue Producer-GUI oder allgemeine Reviewrunde nur für diese Präzisierung.
-
-**Nächster fachlicher Empfänger:** bestehender Cloud-GM-Nachtest für freie Nutzung,
-einschließlich Scroll-/Feldauffindbarkeit im normalen eigenen Ablauf.
-Cloud-GM hat den [freien N02-Nachtest selbst übernommen](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80#issuecomment-6103956562)
-und nutzt seinen eigenen isolierten Cloudhost; sein Ergebnis bleibt ausstehend.
-Nutzerziel: vom normalen Dateibaumeinstieg `Atlanten/Gemeinsamer-Testatlas.overworld`
-im schmalen Fenster Orts-/Raum-Key bearbeiten, mit erhaltenem Text zur Karte
-zurückkehren und dauerhaft wiederverwenden; Tastatur/Vergrößerung frei beobachten.
-Keine vorgeschriebene GM-Klickfolge oder erneute Claim-/Statusanfrage.
-
-Hex konsumiert die gelieferten engen Belege am bestehenden #80, ohne Parentübernahme,
-Selfmerge oder abhängigen Detailausbau. Gesamt-E2E, physische/Original-/Großkarten-/
-Nutzervaultinstallation und neue native Copy/Discard/Recoverymatrix bleiben offen;
-deren frühere Core-/DOM-/Fachbelege behalten ihren eigenen Scope.
+**Offener GM-N02-02:** Teilweise abgeschnittener Inspector bei131% UI-Zoom und
+1024×800 ist noch nicht behoben. N03 ändert kein CSS; konkrete Ursache/aktuelle
+native Geometrie bleiben als gezielter Reproduktions-/Nachtesteingang im Paket.
+Der tatsächliche City-/Hex-N03-Build ist noch nicht durch freie GM-Nutzung oder
+native Feldausrichtung qualifiziert. Historische H02-/Cloud-GM-Belege bleiben an
+ihren damaligen Stand gebunden; Originalbelege werden nicht überschrieben.
+Copy/Discard/Recoverymatrix, Gesamt-E2E, physische/Original-/Großkarten-/
+Nutzervaultabnahme bleiben offen. #80 bleibt bei Hex.
 
 ## Historische Planbasis und Lieferbelege
 
