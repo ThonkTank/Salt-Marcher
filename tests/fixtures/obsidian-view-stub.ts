@@ -12,6 +12,9 @@ export interface WorkspaceLeaf {
 
 export function setIcon(): void {}
 
+export class TFile { path = ""; }
+export class FileSystemAdapter {}
+
 export interface App {
   readonly vault: { getName(): string };
 }

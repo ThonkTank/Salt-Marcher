@@ -46,12 +46,13 @@ export class WorldNotesView extends ItemView {
     });
     this.unsubscribe = this.services.provider.subscribeContextChanged(() => {
       const current = this.services.provider.currentContext();
-      if (this.mountedContext && (!current ||
-          current.contextToken !== this.mountedContext.contextToken)) this.clearPanel();
+      if (!current) this.suspendPanel();
+      else if (current.contextToken !== this.mountedContext?.contextToken)
+        void this.mount(current).catch((error) => this.message(String(error), true));
       void this.refresh().catch((error) => this.message(String(error), true));
     });
     this.unsubscribeClosed = this.services.subscribeClosed?.(() => {
-      this.clearPanel(); this.message("Kampagnenanschluss ist geschlossen.", true);
+      this.suspendPanel(); this.message("Kampagnenanschluss ist geschlossen.", true);
     });
     await this.refresh();
     const active = this.services.provider.currentContext();
@@ -62,11 +63,15 @@ export class WorldNotesView extends ItemView {
     this.status.textContent = value;
     this.status.setAttribute("role", error ? "alert" : "status");
   }
-  private clearPanel(): void {
+  private suspendPanel(): void {
     this.generation++;
-    this.panel?.destroy(); this.panel = undefined;
+    this.panel?.suspend();
     this.session?.close(); this.session = undefined;
     this.mountedContext = undefined;
+  }
+  private clearPanel(): void {
+    this.suspendPanel();
+    this.panel?.destroy(); this.panel = undefined;
     this.notesHost?.replaceChildren();
   }
   private async refresh(): Promise<void> {
@@ -90,25 +95,33 @@ export class WorldNotesView extends ItemView {
     await this.mount(context);
     await this.refresh();
   }
+  protected createSession(context: CampaignContextProjection): WorldNotesNativeSession {
+    return new WorldNotesNativeSession(this.services,
+      new VaultCampaignRuntimeStorage(this.app), new VaultStore(this.app), digest,
+      this.app.vault, context);
+  }
   private async mount(context: CampaignContextProjection): Promise<void> {
     if (!this.notesHost) return;
     if (this.mountedContext?.contextToken === context.contextToken && this.panel) return;
-    this.clearPanel();
-    const stamp = this.generation,
-      session = new WorldNotesNativeSession(this.services,
-        new VaultCampaignRuntimeStorage(this.app), new VaultStore(this.app), digest,
-        this.app.vault, context);
+    this.suspendPanel();
+    const stamp = this.generation, session = this.createSession(context);
     this.session = session;
     try {
       const snapshot = await session.open();
       if (stamp !== this.generation || this.session !== session) return;
       this.mountedContext = context;
-      this.panel = new WorldNotesPanel(this.notesHost, {
+      this.panel ??= new WorldNotesPanel(this.notesHost, {
         newId: () => campaignLocalId(crypto.randomUUID()),
         currentContext: () => this.services.provider.currentContext(),
         digest,
-        validateReceipt: session.validateReceipt,
-        commit: (command, change, revision) => session.commit(command, change, revision),
+        validateReceipt: (receipt) => {
+          if (!this.session) throw new Error("World-Notes-Kampagnenbindung wurde widerrufen.");
+          this.session.validateReceipt(receipt);
+        },
+        commit: (command, change, revision) => {
+          if (!this.session) throw new Error("World-Notes-Kampagnenbindung wurde widerrufen.");
+          return this.session.commit(command, change, revision);
+        },
         searchCreatures: async (query) => (await this.creatures.load()).search({ text: query, limit: 8 })
           .rows.map(({ id, name }) => ({ id, name })),
         creatureDetail: async (id) => {
@@ -120,7 +133,7 @@ export class WorldNotesView extends ItemView {
       this.message("");
     } catch (error) {
       if (this.session === session) {
-        this.clearPanel(); this.message(String(error), true);
+        this.suspendPanel(); this.message(String(error), true);
       }
       throw error;
     }

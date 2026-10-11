@@ -50,6 +50,7 @@ export class WorldNotesPanel {
     baseRevision: number | null } | null = null;
   private readonly retainedDrafts = new Map<string, NonNullable<WorldNotesPanel["pending"]>>();
   private busy = false;
+  private suspended = false;
   private destroyed = false;
   private generation = 0;
   constructor(host: HTMLElement, private readonly options: WorldNotesPanelOptions) {
@@ -94,7 +95,7 @@ export class WorldNotesPanel {
         this.message("Veralteter oder widersprüchlicher World-Stand verworfen.", true);
         return;
       }
-      if (next.revision === this.snapshot.revision) return;
+      if (next.revision === this.snapshot.revision && !this.suspended) return;
     }
     if (this.snapshot && (next.campaignId !== this.snapshot.campaignId ||
         next.namespace !== this.snapshot.namespace)) {
@@ -104,9 +105,16 @@ export class WorldNotesPanel {
     }
     const changedDuringEdit = this.pending && this.snapshot &&
       next.revision !== this.snapshot.revision;
-    this.generation++; this.snapshot = next; this.busy = false;
+    this.generation++; this.snapshot = next; this.busy = false; this.suspended = false;
+    this.root.hidden = false;
     this.renderList(); this.renderEditor();
     if (changedDuringEdit) this.message("Bestand geändert; Entwurf behalten. Speichern prüft den alten Eintragsstand.", true);
+  }
+  /** Revoke controls and late answers while a new Campaign mount is being confirmed. */
+  suspend(): void {
+    if (this.destroyed) return;
+    this.generation++; this.busy = true; this.suspended = true;
+    this.root.hidden = true;
   }
   private draftKey(snapshot: WorldNotesSnapshotV1): string {
     return `${snapshot.campaignId}/${snapshot.namespace}`;
@@ -210,6 +218,8 @@ export class WorldNotesPanel {
     const pending = this.pending, snapshot = this.snapshot;
     if (!pending || !snapshot) return;
     const doc = this.root.ownerDocument, form = doc.createElement("form");
+    const activeForm = () => !this.destroyed && !this.busy && this.pending === pending &&
+      this.snapshot === snapshot && this.editor.firstChild === form;
     const heading = doc.createElement("h3");
     heading.textContent = `${labels[pending.draft.kind]} ${pending.create ? "anlegen" : "bearbeiten"}`;
     form.append(heading);
@@ -229,8 +239,7 @@ export class WorldNotesPanel {
       const choices = doc.createElement("ul"), selected = doc.createElement("p");
       form.append(choices, selected);
       let searchGeneration = 0;
-      const active = () => !this.destroyed && !this.busy && this.pending === pending &&
-        this.snapshot === snapshot && this.editor.firstChild === form;
+      const active = activeForm;
       creature.addEventListener("input", () => {
         searchGeneration++;
         choices.replaceChildren();
@@ -275,11 +284,16 @@ export class WorldNotesPanel {
         });
       }
     }
-    name.addEventListener("input", () => { pending.draft = { ...pending.draft, title: name.value }; });
-    readAloud.addEventListener("input", () => { pending.draft = { ...pending.draft, readAloud: readAloud.value }; });
-    gmNotes.addEventListener("input", () => { pending.draft = { ...pending.draft, gmNotes: gmNotes.value }; });
-    creature?.addEventListener("input", () => { pending.draft = { ...pending.draft,
-      creatureId: creature.value || null }; });
+    name.addEventListener("input", () => { if (activeForm()) pending.draft = { ...pending.draft, title: name.value }; });
+    readAloud.addEventListener("input", () => {
+      if (activeForm()) pending.draft = { ...pending.draft, readAloud: readAloud.value };
+    });
+    gmNotes.addEventListener("input", () => {
+      if (activeForm()) pending.draft = { ...pending.draft, gmNotes: gmNotes.value };
+    });
+    creature?.addEventListener("input", () => {
+      if (activeForm()) pending.draft = { ...pending.draft, creatureId: creature.value || null };
+    });
     const relationTitle = doc.createElement("h4"); relationTitle.textContent = "Beziehungen";
     const relationList = doc.createElement("ul");
     const relationTarget = doc.createElement("select"); relationTarget.setAttribute("aria-label", "Beziehungsziel");
@@ -304,7 +318,7 @@ export class WorldNotesPanel {
         const remove = doc.createElement("button"); remove.type = "button";
         remove.textContent = "Beziehung entfernen";
         remove.addEventListener("click", () => {
-          if (this.pending !== pending) return;
+          if (!activeForm()) return;
           pending.draft = { ...pending.draft, relations: pending.draft.relations.filter((item) => item !== relation) };
           renderRelations();
         });
@@ -315,7 +329,7 @@ export class WorldNotesPanel {
     const addRelation = doc.createElement("button"); addRelation.type = "button";
     addRelation.textContent = "Beziehung hinzufügen";
     addRelation.addEventListener("click", () => {
-      if (this.pending !== pending || !relationTarget.value || !relationLabel.value.trim()) return;
+      if (!activeForm() || !relationTarget.value || !relationLabel.value.trim()) return;
       const relation: WorldNoteRelation = { targetId: relationTarget.value as CampaignLocalId,
         label: relationLabel.value };
       pending.draft = { ...pending.draft, relations: [...pending.draft.relations, relation] };
@@ -347,7 +361,7 @@ export class WorldNotesPanel {
     const discard = doc.createElement("button"); discard.type = "button";
     discard.textContent = "Entwurf verwerfen"; form.append(discard);
     discard.addEventListener("click", () => {
-      if (this.busy || this.pending !== pending) return;
+      if (!activeForm()) return;
       if (discard.textContent !== "Verwerfen bestätigen") {
         discard.textContent = "Verwerfen bestätigen"; return;
       }
@@ -357,10 +371,10 @@ export class WorldNotesPanel {
     });
     form.addEventListener("submit", (event) => {
       event.preventDefault();
-      if (this.busy || !this.snapshot || this.pending !== pending) return;
+      if (!activeForm()) return;
       pending.draft = { ...pending.draft, title: name.value, readAloud: readAloud.value,
         gmNotes: gmNotes.value, creatureId: creature?.value || null };
-      const before = this.snapshot;
+      const before = snapshot;
       const change: WorldNoteChange = pending.create
         ? { kind: "create", id: pending.id, draft: pending.draft }
         : { kind: "update", id: pending.id, expectedRevision: pending.baseRevision!, draft: pending.draft };
@@ -370,7 +384,7 @@ export class WorldNotesPanel {
       const remove = doc.createElement("button"); remove.type = "button";
       remove.textContent = "Löschen"; form.append(remove);
       remove.addEventListener("click", () => {
-        if (this.busy || this.pending !== pending) return;
+        if (!activeForm()) return;
         if (remove.textContent !== "Löschen bestätigen") {
           remove.textContent = "Löschen bestätigen"; return;
         }
