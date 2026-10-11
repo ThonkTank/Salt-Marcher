@@ -103,6 +103,7 @@ Hex korrigiert diese Anzeige im bestehenden #80/Branch; danach prepared Room-Sav
 Recovery. Steward kann den committed Room-Save-Eingang konsumieren. Kein neuer
 allgemeiner Review/abhängiger Ausbau; vor neuer GUI Slot ausdrücklich koordinieren.
 
+Kandidat: https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/165
 Eingang: https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80
 Kanonisch `acceptance.hexAtlas.requirements[30]`: alte Records erhalten;
 `.dungeonAtLocationRoomSaveCommittedJournalJ01` bindet Recovery und UI-Befund.
