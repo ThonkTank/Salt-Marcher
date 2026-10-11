@@ -8,6 +8,7 @@ die native synthetische Producerprobe; freie GM-Nutzung und gemeinsames E2E blei
 Weiterer quellgebundener Copy-Nachweis: [C02 mit unveränderten Rohbelegen und QA-Orakelfehler](room-draft-copy-c02/README.md). Der aktuelle Folgeauftrag bleibt am verlinkten Arbeitsstand von #80.
 [C03](room-draft-copy-c03/README.md) belegt nun sichtbares Copy/Abbrechen und den normalen Frischeinstieg derselben Kopie; C02 bleibt unverändert.
 [P01](room-copy-journal-p01/README.md) belegt tatsächliche prepared-Copy-Unterbrechung, sichtbare Rücknahme im frischen Prozess und erfolgreichen Copyretry.
+[Committed-Copy-C01](room-copy-committed-journal-c01/README.md) belegt tatsächlichen Journal-Cleanupfehler und sichtbare Wiederherstellung derselben sieben After-Dateien/23IDs im frischen Obsidian.
 
 ## Startbarer Eingang
 
