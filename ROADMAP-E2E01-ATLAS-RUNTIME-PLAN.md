@@ -60,29 +60,19 @@ bleibt nötig, äußerer Fenster-Clippingbefund wurde nicht reproduziert.
 qualifizierten und integrierten PR110 in0b6e435. Genaue native Quellen,
 History/Save/Frischprozess-Grenzen und alle Rohbelege stehen in den Hex-Einträgen.
 
-**Freie GM-Nutzung einschließlich Neustart konsumiert:** Der
+**Freie GM-Nutzung samt Neustart konsumiert:**
 [Same-session-Weg](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80#issuecomment-6105400641)
-auf gebautem/installiertem87ccdb2: Torraum suchen → Raumtext ändern →
-Übernehmen/Speichern → Karte → Raum mit Text wiederverwenden, bei100%.
-Separat131%: horizontal passende/umbrechende Aktion, nötiges vertikales Scrollen;
-Suche/Aktivierung bei131% wurde nicht ausgeführt. PR115 ist qualifiziert in b6c831e.
-
-Der [angefragte Neustartanschluss](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80#issuecomment-6105912997)
-ist geliefert: laut Tester alter Prozess2159 normal beendet, frischer3964 im selben
-isolierten Cloudprofil/Vault. Sichtbarer Torheim-Marker → Suche „Torraum“ →
-Raum-Key mit Torraum/1 und vollständigem gespeicherten Eingangstext einschließlich
-„Nur das dritte Klopfen antwortet.“
-[Vier neue Bilder09–12 und Bericht](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/blob/6d03e5aa6708faa2a3c24206b4b025b23d234353/docs/reference/gm-cloud-n04-20261011/README.md#n04-continuation-fresh-obsidian-process-and-saved-room-reuse)
-von Hex selbst gelesen; alle12 Bildhashes geprüft, alte Bilder/Sourcefixture
-unverändert. Hex- und Stadt-Belegprüfung PASS;
-[Contributor-S01](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/125#issuecomment-6105999844)
-integrierte PR125/6d03e5a in3af22a1. Exact-CI38115556778 und
-Shared-Struktur38116159574 SUCCESS direkt geprüft.
-Produktbindung bleibt87ccdb2, kein aktueller-Shared-GUI-PASS. PIDs/Browser.close,
-Installtripel und acht unveränderte Post-Save-Payloadhashes bleiben Testerberichte
-ohne volle Lifecycle-/Install-/Vaultrohquittungen; kein selbst verifizierter
-LauncherExit0. Kein neuer Edit/Save oder zweiter Neustartzyklus. Die konkrete freie
-Wiederverwendungslücke ist geschlossen; kein weiterer unveränderter GM-Auftrag.
+und [frische Wiederverwendung](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80#issuecomment-6105912997)
+zeigen Torheim → Suche Torraum → vollständiger gespeicherter Eingangstext.
+Die tatsächliche Produktbindung bleibt87ccdb2, kein aktueller-Shared-GUI-PASS.
+[Vier neue Bilder09–12](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/blob/6d03e5aa6708faa2a3c24206b4b025b23d234353/docs/reference/gm-cloud-n04-20261011/README.md#n04-continuation-fresh-obsidian-process-and-saved-room-reuse)
+selbst gelesen, alle12 Bildhashes geprüft; alte Bilder/Fixture erhalten.
+Hex-/Stadt-Belegprüfung PASS, [Contributor-S01](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/125#issuecomment-6105999844)
+integrierte PR125 in3af22a1; Head-/Shared-CI SUCCESS direkt geprüft.
+PIDs/Browser.close, Installtripel und Payloadorakel bleiben Testerberichte ohne
+volle Rohquittungen, kein selbst verifizierter LauncherExit0. Nur PR115 belegt131%
+horizontalen Fit; Suche/Aktivierung erfolgte100%. Neustartanschluss abgeschlossen,
+kein weiterer unveränderter GM-Auftrag. Genaue Grenzen stehen in FreshReuse.
 
 **Neuer Pflichtbefund repariert und integriert:** Stadt reproduzierte auf10defd5
 Location/Room × Ctrl/Meta+S bei aktiver IME: viermal vorzeitiger Historyschritt.
@@ -99,22 +89,31 @@ Atlas-/Save-/Historyvertragsdelta.
 integrierte unveränderten Kandidaten in0b6aa819; CI38115663534 und
 Shared-Struktur38116230853 SUCCESS. Eltern/Baum, Guard-/Testblobs, GM- und fremde
 Wurzeln direkt geprüft und regulär im eigenen Checkout konsumiert.
-Kein eigener GUI-/nativer IME-/physischer Claim.
+Dieser R01-Lauf war DOM-/Modellprüfung; nativer IME-Schutz bleibt offen.
 
-**Nächster eigener Schritt:** Den betroffenen composing Save-Nutzerweg im echten
-Obsidianhost prüfen, mit geeigneter Kompositionseingabe und Source-/Build-/Fixture-
-Bindung: unbestätigten Text/History/native Bytes erhalten, danach bestätigten
-Shortcut speichern. Lokalen Slot dafür ausdrücklich neu koordinieren oder den
-eigenen isolierten Cloudhost nutzen; fehlenden Host-/Eingabeeingang konkret nennen.
-Keine vollständige unveränderte N04-/Save-/UndoRedo-Wiederholung oder allgemeine
-Reviewrunde allein wegen neuer SHA. Hex hält Parent; Stadt bleibt Supportproducer.
+**Aktueller enger Hosteingang H01:** [Quellgebundene Rohquittung](docs/reference/atlas-detail-binding-d01/inspector-ime-save-h01.json)
+auf eigenem5f542ded/qualifiziertem Shared0b6aa819: echter isolierter Obsidian1.14.4/
+Electron43.7.7-Host, neu gebautes/installiertes Tripel und Spatial-V2-Fixture.
+CDP-Komposition erreichte das Ortsnamenfeld (`isTrusted`, komponierendes Input).
+„H01 location Ctrl 東京“ blieb exakt pending, History0 und alle acht Dateibytes
+vor/nach normalem Appende unverändert. Das dokumentbasierte Feldprotokoll sah
+komponierendes Ctrl+S-`keyup`, aber keinen KeyS-`keydown`; die Probeassertion
+scheiterte deshalb (RunnerExit1 erhalten). Herkunft/Abfangstelle ist ungeklärt;
+kein nativer Guard-PASS und kein Produkt-FAIL. Die übrigen drei Fälle sowie
+Kompositionsabschluss/bestätigter Save wurden nicht ausgeführt.
+App.quit normal, vier PIDs verschwunden, keine Zwangstermination; der frisch mit
+Stadt koordinierte Slot ist ausdrücklich zurückgegeben, Nutzervault unberührt.
+
+**Nächster eigener Schritt:** Genau diese Keydown-Beobachtung am fokussierten
+Panel während Komposition herstellen: geeigneter Host-/IME-Eingang oder gezielt
+vollständigeres Ereignisprotokoll. Erst dann Guard/anschließenden Save beurteilen.
+Keine unveränderte H01-/N04-/Save-/UndoRedo-Wiederholung oder allgemeine Reviewrunde.
+Vor einem neuen lokalen GUI-Lauf den Slot ausdrücklich neu koordinieren.
 
 **Offen:** Native IME, Copy/Discard/Recovery, äußeres Clipping, Gesamt-E2E sowie
 physische/Original-/Großkarten-/Nutzervaultabnahme behalten ihre direkten Nachweise.
-Kein abhängiger Detailausbau; Parent #80 bleibt offen. `dungeonAtLocationInspectorImeSaveR01`
-und N04-Qualification/FreshReuse spiegeln genaue Quellen und aktuelle Grenzen.
-
-
+Kein abhängiger Detailausbau; Parent #80 bleibt offen. R01, H01 und
+N04-Qualification/FreshReuse spiegeln genaue Quellen und Grenzen.
 
 ## Historische Planbasis und Lieferbelege
 
