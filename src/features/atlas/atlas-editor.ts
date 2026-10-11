@@ -89,6 +89,7 @@ export class AtlasEditor {
   private detailEntry?: AtlasDetailEntry;
   private detailHost?: HTMLElement;
   private inspector?: HTMLElement;
+  private inspectorKey?: string;
   private loadingVisible = false;
   private visibleLoad: Promise<void> = Promise.resolve();
   private visibleLoadFailed = false;
@@ -725,9 +726,17 @@ export class AtlasEditor {
     const hit = this.spatial?.selection;
     return hit?.kind === "building" ? hit : undefined;
   }
+  private revealInspectorKey(target: readonly string[]): void {
+    // Reset for a different Key, not for draft commits or History redraws of the same one.
+    const key = JSON.stringify(target);
+    if (this.inspector && this.inspectorKey !== key) this.inspector.scrollTop = 0;
+    this.inspectorKey = key;
+  }
   private syncLocations(): void {
-    if (this.inspector)
+    if (this.inspector) {
       this.inspector.hidden = !this.selectedLocation && !this.selectedRoom && !this.selectedBuilding && !this.pendingKey;
+      if (this.inspector.hidden) this.inspectorKey = undefined;
+    }
     if (this.detailEntry && this.detailHost) {
       this.detailHost.hidden = !this.selectedLocation || !!this.selectedBuilding;
       if (this.selectedLocation) this.detailEntry.update(this.storage.navigation!.details(this.selectedLocation));
@@ -736,6 +745,7 @@ export class AtlasEditor {
       if (this.key) this.key.host.hidden = true;
       if (this.roomKey) this.roomKey.host.hidden = true;
       this.cityKey.show(this.selectedBuilding.ownerId, this.selectedBuilding.elementId);
+      this.revealInspectorKey(["building", this.selectedBuilding.ownerId, this.selectedBuilding.elementId]);
       this.selection.textContent = "Haus bearbeiten";
       return;
     }
@@ -743,6 +753,7 @@ export class AtlasEditor {
     if (this.selectedRoom && this.roomKey) {
       if (this.key) this.key.host.hidden = true;
       this.roomKey.show(this.selectedRoom.ownerId, this.selectedRoom.roomId);
+      this.revealInspectorKey(["room", this.selectedRoom.ownerId, this.selectedRoom.roomId]);
       this.selection.textContent = "Raum-Key";
       return;
     }
@@ -758,6 +769,7 @@ export class AtlasEditor {
     ) {
       this.key?.show(document);
       if (this.key) this.key.host.hidden = false;
+      this.revealInspectorKey(["location", document.id]);
       this.selection.textContent = `${document.type === "city" ? "Stadt" : "POI"}: ${document.name}`;
     } else if (!this.pendingKey) this.key?.clear();
     this.renderer.selectedLocation = id;

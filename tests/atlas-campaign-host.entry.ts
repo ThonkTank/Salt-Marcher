@@ -377,6 +377,74 @@ test("shared Key inspector closes with valid room input on the same camera and H
   await f.close();
 });
 
+test("shared inspector reveals a new Location or Room Key and retains same-target scroll through input and History", async () => {
+  const f = await fixture(true), state = active(f), editor = f.editor()!;
+  try {
+    await f.host().navigate(locationTarget);
+    const dock = f.content.querySelector<HTMLElement>('.dn-atlas-location-dock')!,
+      room = f.host().details(uuid(11)).entries.find(entry => entry.target.kind === 'room')!,
+      button = [...f.content.querySelectorAll<HTMLButtonElement>('.dn-atlas-detail-entry > ul button')]
+        .find(button => button.textContent === room.label)!;
+    // Model the reported scroll to the lower target search; Linkedom has no layout engine.
+    dock.scrollTop = 460;
+    f.click(button);
+    await settled(() => !f.content.querySelector<HTMLElement>('.dn-atlas-room-key')!.hidden);
+    assert.equal(dock.scrollTop, 0, 'a newly selected Room Key starts at its fields');
+    const camera = structuredClone(editor.renderer.camera), depth = state.history.undoDepth;
+    dock.scrollTop = 180;
+    f.input('[aria-label="Raumname"]', 'Raum ohne Scrollsprung');
+    assert.equal(dock.scrollTop, 180);
+    await editor.flush();
+    assert.equal(state.history.undoDepth, depth + 1);
+    assert.equal(dock.scrollTop, 180, 'the same Key keeps scroll when its draft is committed');
+    for (const label of ['Atlasänderung rückgängig', 'Atlasänderung wiederholen']) {
+      f.click(f.content.querySelector<HTMLElement>(`[aria-label="${label}"]`)!);
+      await editor.flush();
+      assert.equal(dock.scrollTop, 180, 'same-target History redraw keeps scroll');
+    }
+    assert.deepEqual(editor.renderer.camera, camera);
+    assert.equal(active(f).repository, state.repository); assert.equal(active(f).history, state.history);
+    assert.equal(active(f).context.contextToken, state.context.contextToken);
+    await f.host().navigate(locationTarget);
+    assert.equal(dock.scrollTop, 0, 'returning to the cached Location Key reveals its fields');
+    dock.scrollTop = 240;
+    await f.host().navigate(locationTarget);
+    assert.equal(dock.scrollTop, 240, 'navigating to the same Location keeps scroll');
+    const invalid = f.input('[aria-label="Ortsname"]', 'x'.repeat(201));
+    await assert.rejects(f.host().navigate(room.target));
+    assert.equal(dock.scrollTop, 240); assert.equal(invalid.value.length, 201);
+    assert.equal(editor.pendingKey, true);
+    f.input('[aria-label="Ortsname"]', 'Ort mit erhaltenem Draft');
+    f.click(f.content.querySelector<HTMLElement>('[aria-label="Key-Inspector schließen"]')!);
+    await settled(() => dock.hidden);
+    await f.host().navigate(locationTarget);
+    assert.equal(dock.scrollTop, 0, 'reopening a closed Key reveals its fields');
+    assert.equal(state.repository.location(uuid(11)).read()!.name, 'Ort mit erhaltenem Draft');
+  } finally { await f.close(); }
+});
+
+test('shared inspector scroll follows building identity through the actual City pointer router', async () => {
+  const f = await fixture(true), editor = f.editor()!;
+  try {
+    await f.host().navigate(locationTarget);
+    const dock = f.content.querySelector<HTMLElement>('.dn-atlas-location-dock')!;
+    dock.scrollTop = 380;
+    await clickHouse(f);
+    assert.equal(dock.scrollTop, 0, 'Location scroll does not hide a newly selected house name');
+    dock.scrollTop = 120;
+    await clickHouse(f);
+    assert.equal(dock.scrollTop, 120, 'selecting the same house keeps scroll');
+    await clickHouse(f, uuid(106));
+    assert.equal(dock.scrollTop, 0, 'a different house reveals its name');
+    dock.scrollTop = 90;
+    f.input('[aria-label="Gebäudename"]', 'Haus ohne Scrollsprung');
+    await editor.flush();
+    assert.equal(dock.scrollTop, 90, 'same-house commit keeps scroll');
+    await f.host().navigate(locationTarget);
+    assert.equal(dock.scrollTop, 0);
+  } finally { await f.close(); }
+});
+
 test("Escape in the shared Key inspector retains invalid text and closes only after a valid correction", async () => {
   const f = await fixture(true), before = active(f), editor = f.editor()!;
   await f.host().navigate(locationTarget);
