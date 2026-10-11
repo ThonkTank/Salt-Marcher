@@ -471,7 +471,8 @@ export function moveCharacters(
     targetCharacters = state.party.characters
       .filter((character) => targetMembership.has(character.characterId))
       .map((character) => character.characterId),
-    retired = sourceCharacters.length === 0,
+    retired =
+      sourceCharacters.length === 0 && source.pendingAssignments.length === 0,
     focusBefore = focusId(state.focus),
     focusChanges =
       retired &&

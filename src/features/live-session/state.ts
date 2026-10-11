@@ -318,8 +318,13 @@ export function parseLiveSessionAggregateState(
         "LiveSessionAggregateState enthält eine Reconciliation ohne Scene-Bindung.",
       );
     const masks = duty.maskIds.map((id) =>
-      source.maskRefs.find((mask) => mask.maskId === id),
-    );
+      source.maskRefs.find(
+        (mask) => mask.maskId === id && mask.ownerId === duty.ownerId,
+      ),
+    ),
+      owner = source.reconciliations.find(
+        (entry) => entry.ownerId === duty.ownerId,
+      );
     if (
       masks.some(
         (mask) =>
@@ -330,6 +335,15 @@ export function parseLiveSessionAggregateState(
     )
       throw new Error(
         "LiveSessionAggregateState enthält eine ungebundene Masken-Reconciliation.",
+      );
+    if (
+      (owner?.ownerRevision !== undefined &&
+        owner.ownerRevision !== duty.expectedOwnerRevision) ||
+      (duty.maskIds.length === 0 &&
+        owner?.ownerRevision !== duty.expectedOwnerRevision)
+    )
+      throw new Error(
+        "LiveSessionAggregateState enthält eine ungebundene Owner-Reconciliation.",
       );
   }
 
@@ -368,7 +382,7 @@ export function parseLiveSessionAggregateState(
     >();
   for (const scene of activeScenes) {
     for (const characterId of scene.source.characterIds) {
-      if (characterScene.has(characterId))
+      if (characterScene.has(characterId) || pendingScene.has(characterId))
         throw new Error("Eine CharacterId liegt in mehreren aktiven Scenes.");
       characterScene.set(characterId, scene.source.liveSceneId);
     }

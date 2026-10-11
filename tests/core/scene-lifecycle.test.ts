@@ -553,6 +553,150 @@ test("generic unavailable consumer needs and retains an exact OwnerRevision", ()
       commandId: "command-weather-pending",
     },
   ]);
+  const forged = structuredClone(result.state) as Record<string, any>;
+  forged.pendingReconciliations[0].expectedOwnerRevision = 8;
+  assert.throws(
+    () => parseLiveSessionAggregateState(forged),
+    /ungebundene Owner-Reconciliation/,
+  );
+});
+
+test("assigned and pending membership cannot overlap in either Scene order", () => {
+  const raw = structuredClone(prepare()) as Record<string, any>,
+    source = raw.scenes[0].source,
+    target = raw.scenes[1].source;
+  source.characterIds = ["character-a"];
+  source.pendingAssignments = [
+    {
+      characterId: "character-b",
+      commandId: "command-pending-b",
+      ownerId: "scene-owner",
+    },
+  ];
+  target.lifecycle = "active";
+  target.characterIds = ["character-b"];
+  raw.party.characters[1].sceneAssignment = {
+    status: "assigned",
+    liveSceneId: "scene-prepared",
+    sceneRevision: 0,
+  };
+  assert.throws(
+    () => parseLiveSessionAggregateState(raw),
+    /mehreren aktiven Scenes|mehrere aktuelle Scene-Zuordnungen/,
+  );
+  raw.scenes.reverse();
+  assert.throws(
+    () => parseLiveSessionAggregateState(raw),
+    /mehreren aktiven Scenes|mehrere aktuelle Scene-Zuordnungen/,
+  );
+});
+
+test("cleanup retains a Source that still has a pending participant", () => {
+  const raw = structuredClone(prepare()) as Record<string, any>;
+  raw.scenes[0].source.characterIds = ["character-a"];
+  raw.scenes[0].source.pendingAssignments = [
+    {
+      characterId: "character-b",
+      commandId: "command-pending-b",
+      ownerId: "scene-owner",
+    },
+  ];
+  raw.party.characters[1].sceneAssignment = {
+    status: "pending",
+    commandId: "command-pending-b",
+    ownerId: "scene-owner",
+  };
+  const state = parseLiveSessionAggregateState(raw),
+    result = moveCharacters(
+      state,
+      commandBase("move-characters", {
+        commandId: "command-move-a-with-pending-b",
+        commandDigest: "digest-move-a-with-pending-b",
+        expectedPartyRevision: 1,
+        expectedFocusRevision: 1,
+        sourceSceneId: "scene-primary",
+        targetSceneId: "scene-prepared",
+        expectedSourceRevision: 0,
+        expectedTargetRevision: 0,
+        characterIds: ["character-a"],
+      }),
+    );
+  assert.equal(result.status, "applied");
+  if (result.status !== "applied") return;
+  const source = result.state.scenes.find(
+    (scene) => scene.source.liveSceneId === "scene-primary",
+  )!.source;
+  assert.equal(source.lifecycle, "active");
+  assert.equal(source.primary, true);
+  assert.deepEqual(source.characterIds, []);
+  assert.deepEqual(source.pendingAssignments, [
+    {
+      characterId: "character-b",
+      commandId: "command-pending-b",
+      ownerId: "scene-owner",
+    },
+  ]);
+  assert.equal(result.decision.sceneCleanup?.sourceLifecycleAfter, "active");
+});
+
+test("same MaskId from different owners remains owner-qualified", () => {
+  const raw = structuredClone(prepare()) as Record<string, any>;
+  raw.scenes[0].source.maskRefs = [
+    {
+      maskId: "shared-mask-id",
+      kind: "encounter",
+      ownerId: "owner-a",
+      ownerRevision: 2,
+      lifecycle: "active",
+    },
+    {
+      maskId: "shared-mask-id",
+      kind: "chase",
+      ownerId: "owner-b",
+      ownerRevision: 3,
+      lifecycle: "active",
+    },
+  ];
+  raw.scenes[0].source.reconciliations = [
+    { ownerId: "owner-a", status: "unavailable", ownerRevision: 2 },
+    { ownerId: "owner-b", status: "unavailable", ownerRevision: 3 },
+  ];
+  const state = parseLiveSessionAggregateState(raw),
+    result = moveCharacters(
+      state,
+      commandBase("move-characters", {
+        commandId: "command-qualified-masks",
+        commandDigest: "digest-qualified-masks",
+        expectedPartyRevision: 1,
+        expectedFocusRevision: 1,
+        sourceSceneId: "scene-primary",
+        targetSceneId: "scene-prepared",
+        expectedSourceRevision: 0,
+        expectedTargetRevision: 0,
+        characterIds: ["character-b"],
+      }),
+    );
+  assert.equal(result.status, "applied");
+  if (result.status !== "applied") return;
+  assert.deepEqual(
+    result.state.pendingReconciliations.map((duty) => ({
+      ownerId: duty.ownerId,
+      expectedOwnerRevision: duty.expectedOwnerRevision,
+      maskIds: duty.maskIds,
+    })),
+    [
+      {
+        ownerId: "owner-a",
+        expectedOwnerRevision: 2,
+        maskIds: ["shared-mask-id"],
+      },
+      {
+        ownerId: "owner-b",
+        expectedOwnerRevision: 3,
+        maskIds: ["shared-mask-id"],
+      },
+    ],
+  );
 });
 
 test("state parser rejects active session membership gaps and mutable aliases", () => {
