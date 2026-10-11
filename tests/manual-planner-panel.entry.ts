@@ -305,3 +305,47 @@ for (const action of ["Umbenennen", "Szene nach oben"] as const) {
     ui.destroy();
   });
 }
+
+test('manual planner UI: view-only refresh preserves the unsubmitted plan name without publishing it', () => {
+  const f = fixture();
+  try {
+    button(f.host, 'Neuer Plan').click();
+    button(f.host, 'Szene hinzufügen').click();
+    const name = f.host.querySelector<HTMLInputElement>('[aria-label="Planname"]')!;
+    name.value = '  Hafen 日本語\t';
+    const before = f.p.active, selection = f.p.selectedSceneId;
+    button(f.host, 'Ansicht aktualisieren').click();
+    assert.equal(f.host.querySelector<HTMLInputElement>('[aria-label="Planname"]')!.value, name.value);
+    assert.equal(f.p.active, before);
+    assert.equal(f.p.selectedSceneId, selection);
+    button(f.host, 'Umbenennen').click();
+    assert.equal(f.p.active!.name, name.value);
+  } finally { f.ui.destroy(); }
+});
+
+test('manual planner UI: refresh never carries the displayed name into an externally selected other plan', () => {
+  const f = fixture();
+  try {
+    button(f.host, 'Neuer Plan').click();
+    const old = f.p.active!;
+    f.host.querySelector<HTMLInputElement>('[aria-label="Planname"]')!.value = 'Pending A';
+    const other = f.p.create();
+    button(f.host, 'Ansicht aktualisieren').click();
+    assert.equal(f.p.active, other);
+    assert.equal(f.host.querySelector<HTMLInputElement>('[aria-label="Planname"]')!.value, other.name);
+    assert.equal(f.p.catalog.find(p => p.id === old.id), old);
+  } finally { f.ui.destroy(); }
+});
+
+test('manual planner UI: refresh cannot rebase a typed name onto an external revision of the same plan', () => {
+  const f = fixture();
+  try {
+    button(f.host, 'Neuer Plan').click();
+    f.host.querySelector<HTMLInputElement>('[aria-label="Planname"]')!.value = 'Pending old revision';
+    f.p.act(f.p.binding(), { kind: 'rename', name: 'External confirmed name' });
+    const confirmed = f.p.active;
+    button(f.host, 'Ansicht aktualisieren').click();
+    assert.equal(f.p.active, confirmed);
+    assert.equal(f.host.querySelector<HTMLInputElement>('[aria-label="Planname"]')!.value, confirmed!.name);
+  } finally { f.ui.destroy(); }
+});

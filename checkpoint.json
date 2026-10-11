@@ -11088,18 +11088,18 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-BUILDING-ROTATION-INSPECTOR",
-      "issue": 127,
-      "state": "candidate_review_and_gm_pending",
-      "branch": "city/building-rotation-inspector-20261011",
-      "plan": "docs/plans/city/building-name-inspector.md#arbeitsstand-127",
-      "verification": "Two missing-control counterprobes FAIL before; three Managed/Vaultadapter cases PASS after. Both dungeon-bound and courtyard houses retain position/scale/geometry/IDs and all foreign native bytes. Quarter-turn uses existing CityDraft/CityEdit/shared History; exact UndoRedo/Save/new model state, pending name and detached callback protection. Full suite 1026PASS/0FAIL/1existingSkip; type/build/repo/diff PASS.",
-      "next": "Independent narrow City consumer review and early free GM-use on isolated candidate; no own GUI while Hex holds newly coordinated IME slot.",
-      "limits": "Quarter-turn controls only; no arbitrary angle, actual GUI/fresh Obsidian process, physical, broad Recovery or overall parity claim."
+      "id": "MANUAL-PLANNER-UI-REFRESH-S01",
+      "issue": 69,
+      "state": "scoped_shared_candidate_storage_contract_open",
+      "branch": "contrib/manual-planner-ui-refresh-20261011",
+      "plan": "docs/plans/campaign/manual-session-planner.md#sichtbare-hilfe-und-plannamen-refresh",
+      "verification": "Independent R03 PASS on ec9d7a4: view-only refresh retains an unsubmitted plan name only for the identical immutable plan basis; other plan/revision receives no stale name. Inline help had a bounded synthetic Cloud-GM use result. 16 panel tests and exact-source comparison PASS; full candidate checks run before publication.",
+      "next": "Publish and integrate the scoped panel/test/docs candidate after Exact-SHA CI. Continue Campaign/Data path, writer, publish, receipt, recovery, plugin and native Save/Fresh work separately in parent #69.",
+      "limits": "Memory-only UI contribution only; proposed manual-plan document codec excluded. No storage authority, native host, physical input, native 200 percent zoom, Save/Fresh/Recovery or overall product approval."
     },
     "nextRun": {
-      "id": "CITY-BUILDING-ROTATION-REVIEW-GM",
-      "focus": "Review existing pose-command consumer and obtain early visible usability result; no duplicate shared contracts."
+      "id": "MANUAL-PLANNER-NATIVE-CONTRACT",
+      "focus": "Parent #69 obtains the existing Campaign/Data storage and publish contract without creating a second persistence path."
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
