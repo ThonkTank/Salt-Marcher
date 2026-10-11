@@ -10,6 +10,7 @@ Weiterer quellgebundener Copy-Nachweis: [C02 mit unveränderten Rohbelegen und Q
 [P01](room-copy-journal-p01/README.md) belegt tatsächliche prepared-Copy-Unterbrechung, sichtbare Rücknahme im frischen Prozess und erfolgreichen Copyretry.
 [Committed-Copy-C01](room-copy-committed-journal-c01/README.md) belegt tatsächlichen Journal-Cleanupfehler und sichtbare Wiederherstellung derselben sieben After-Dateien/23IDs im frischen Obsidian.
 [Room-Save-J01](room-save-committed-journal-j01/README.md) belegt das native committed Savejournal, unveränderte After-Daten/IDs beim frischen normalen Einstieg und den offenen Save-Anzeigefehler im erhaltenen Editor.
+[Retained-Save-J02](room-save-retained-status-j02/README.md) repariert diesen Status samt spätem Saveabschluss und bindet den sichtbaren nativen Fehler-/Freshnachtest an seine tatsächliche Quelle.
 
 ## Startbarer Eingang
 
