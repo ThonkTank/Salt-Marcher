@@ -494,10 +494,12 @@ bindet Source-/Nachfolgerrevisionen vor und nach Cleanup. Der erste Membership-
 Checkpoint `8458409` erhielt drei P1-Befunde zu pending Deactivate,
 Successor-Präzedenz und Revisionsbindung. Cloud Architektur/Technik bestätigt
 diese drei Reparaturen auf Exact-SHA `490ed3277c94b166a97acca8ec796f1cd4ee7544`
-im engen Re-review mit `PASS`. Der exakte vollständige Lauf steht bei 1020 PASS,
-null FAIL und einem beabsichtigten Skip; Typecheck, Build und Repo-Check sind
-grün. Die eigenständigen Campaign/Data-/Party- und Music/Weather/Shops-Reviews
-dieses Membership-Deltas stehen noch aus.
+im engen Re-review mit `PASS`. Campaign/Data bestätigt auf demselben Source-SHA
+die Campaign-, Roster-, Membership-, Focus-/Primary- und Assignment-Grenzen
+ebenfalls mit `PASS`. Der exakte vollständige Lauf steht bei 1020 PASS, null
+FAIL und einem beabsichtigten Skip; Typecheck, Build und Repo-Check sind grün.
+Der eigenständige Music/Weather/Shops-Review dieses Membership-Deltas steht
+noch aus.
 
 Noch offen und nicht durch den Checkpoint behauptet sind permanente Löschung,
 Split/Rejoin samt opaque Clock-Beitrag, die vollständige Masken-Reconciliation,
