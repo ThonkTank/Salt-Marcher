@@ -1150,6 +1150,13 @@
 .dn-atlas-location-dock[hidden] { display: none; }
 .dn-atlas-inspector-actions { position: sticky; top: 0; z-index: 1; padding: 8px 12px; background: var(--background-primary); border-bottom: 1px solid var(--background-modifier-border); }
 .dn-atlas-location-dock .dn-location-key { width: 100%; max-width: none; border-left: 0; }
+.dn-atlas-location-dock .dn-location-key, .dn-atlas-location-dock .dn-atlas-detail-entry { min-width: 0; overflow-wrap: anywhere; }
+.dn-atlas-location-dock input, .dn-atlas-location-dock select, .dn-atlas-location-dock textarea, .dn-atlas-location-dock button { box-sizing: border-box; min-width: 0; max-width: 100%; }
+.dn-atlas-location-dock button { height: auto; min-height: var(--input-height); white-space: normal; overflow-wrap: anywhere; }
+.dn-atlas-location-dock .dn-location-key-actions, .dn-atlas-location-dock .dn-location-section-heading { flex-wrap: wrap; }
+.dn-atlas-location-dock .dn-location-key-actions button { flex: 1 1 8rem; }
+.dn-atlas-location-dock .dn-location-section-heading input { flex-basis: 8rem; }
+.dn-atlas-location-dock .dn-atlas-detail-entry button { width: 100%; text-align: left; }
 .dn-atlas-detail-entry { padding: 10px; }
 .dn-atlas-detail-entry input { width: 100%; }
 .dn-atlas-detail-entry ul { list-style: none; padding: 0; }

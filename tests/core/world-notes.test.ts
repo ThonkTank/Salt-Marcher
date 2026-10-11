@@ -33,6 +33,8 @@ test("authored prose, stable identities, relationship and search survive immutab
   assert.equal(searchWorldNotes(npc, "geheim", ["npc"])[0]?.id, npcId);
   assert.deepEqual(searchWorldNotes(npc, "nebelbund", ["npc"]).map((record) => record.id), [npcId]);
   assert.deepEqual(searchWorldNotes(npc, "mitglied", ["npc"]).map((record) => record.id), [npcId]);
+  assert.deepEqual(searchWorldNotes(npc, "WIZARD", ["npc"]).map((record) => record.id), [npcId]);
+  assert.deepEqual(searchWorldNotes(npc, "srd-2014:wizard", ["faction"]), []);
   assert.deepEqual(searchWorldNotes(npc, "mitglied", ["quest"]), []);
   const reopened = worldNotesSnapshot(JSON.parse(JSON.stringify(npc)));
   assert.deepEqual(reopened, npc);
