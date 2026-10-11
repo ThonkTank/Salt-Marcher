@@ -17,7 +17,7 @@
 | Orte und Orts-Keys | **Integriert:** Stadt-/POI-Marker anlegen, verschieben, Markdown bearbeiten; gemeinsame Rücknahme, Speichern und Neustart belegt. [Abschluss #40](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/40#issuecomment-6102165161) | Links nach Umbenennung und vollständigen Ablauf abnehmen. |
 | Vorhandene Stadt bearbeiten | **Integriert:** Häuser und Straßenknoten verschieben, Hausnamen ändern und Häuser drehen. Begrenzte Obsidian-Speicher-/Neustartbelege. [Stadtabnahmen](acceptance.json) | Vollständiges Zeichnen/Neuanlegen und sämtliche Stadtfunktionen. |
 | Assistierte Bebauung | **Kandidat [PR154](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/154):** Fläche/Straßen/Platz, Häuser erzeugen, Dichte/Größe/Variante, Vorschau/Abbruch und präzise Hauskorrektur; kleine Speicher-/Neustartfälle in Obsidian. | Übernahme; neue Stadt mit Dateien und Kampagnenverweisen anlegen; große Bedienprobe. [Restarbeit #149](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/149) |
-| Haus und Innenraum | **Teilweise:** metrische Stadt-/Haus-/Dungeonbindungen und Dach-/Raumdarstellung im gemeinsamen Zoom. [Atlasdarstellung](src/features/atlas/spatial-canvas.ts) | Vollständiger Hausgrundriss-/Key-Ablauf und Schutz bei Bewegung/Regeneration, CITY-03/04. |
+| Haus und Innenraum | **Teilweise:** metrische Stadt-/Haus-/Dungeonbindungen und Dach-/Raumdarstellung im gemeinsamen Zoom. [Atlasdarstellung](src/features/atlas/spatial-canvas.ts) | Gemeinsam bearbeitetes Gebäude mit Außenform und Innenräumen; Wandänderung und Gesamtskalierung; vollständiger Key-/Regenerationsablauf, CITY-03/04. |
 | Dungeon im Atlas | **Integriert:** vorhandenen Dungeon am Ort verorten; Raumkontur/Key bearbeiten und zurückkehren, gemeinsames Undo/Speichern. [Obsidian-Teilbelege #80](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80) | Restliche Bedien-/Wiederherstellungsfälle und vollständige HEX-04/05-Abnahme; mehrere Detailkarten, HEX-22. |
 | Räumlicher Dungeon | **Integriert [PR158](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/158):** 3D-Volumes, Höhen, Schnitte, Flächenbearbeitung und Undo/Speichern/Neustart im Dungeon-Editor. | Vollständiger Atlasanschluss; Raumzuordnung bei Bewegung/Teilung/Vereinigung, räumliche Wege/Durchgänge, Graphentwurf, Attributvererbung, Inhaltsvorlagen und weitere [Dungeon-Fachziele](docs/SCOPE.md). |
 | Speicherung und Wiederaufnahme | **Teilweise:** gemeinsame Mehrdateispeicherung, Entwurf, Kopie und direkte Wiederherstellungsfälle in Obsidian. **Integriert [PR167](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/167):** korrigierte Anzeige nach entzogener Speicherberechtigung. | Vollständige Wiederherstellungsabnahme (begrenzte Prepared-/Committed-Raumspeicherung bereits belegt); Autosave; vollständiger [Importanschluss #41](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/41); breite Fehler-/Konfliktabnahme. |
@@ -37,6 +37,114 @@
 Die Etappen bündeln Nutzerergebnisse; die detaillierten Fachphasen und Abhängigkeiten unten bleiben verbindlich. Die [E2E-Abnahmen](docs/ROADMAP.md#lieferfolge-des-gesamtprodukts) behalten ihre fachliche Reihenfolge. Offene Produktissues und PRs enthalten konkrete Befunde und Kandidaten.
 
 Diese Übersicht ist ein datierter Einstieg. Bei relevanter Integration oder geänderter Lücke wird sie am bestehenden Ort aktualisiert; Laufchroniken und Abnahmedetails bleiben in ihren Fachquellen. Die folgenden Abschnitte führen Zielarchitektur, vollständige Anforderungen und Phasenzuordnung.
+
+## Konkrete Nutzerabläufe
+
+**Planungsstand: 11.10.2026.** Die folgenden Abläufe beschreiben das vereinbarte Zielverhalten, keine bereits vollständige Implementierung. Der [aktuelle Stand](#atlas-auf-einen-blick) bleibt davon getrennt. Leitbeispiel ist eine Region mit dem Dorf **Eichenfurt**, der Taverne **Zum Silbernen Ast** und dem Ruinendungeon **Alte Wacht**. Das Beispiel macht die Bedienung prüfbar; der vollständige Fachumfang der HEX-/CITY-Phasen und [Dungeonanforderungen](docs/SCOPE.md) bleibt erhalten.
+
+### Vorbereitung: Region bis Dungeon
+
+#### 1. Einen Atlas beginnen und erweitern
+
+Ich öffne den Atlas meiner Kampagne und gebe ihm einen Namen. Eine leere Welt verlangt keine Breite oder Höhe. Ich verschiebe die Ansicht, zoome und beginne an der gewünschten Stelle zu zeichnen. Später kann ich jenseits des bisherigen Ausschnitts weiterarbeiten.
+
+**Sichtbares Ergebnis:** Der bearbeitete Bereich wächst mit meinen Inhalten. Pan und Zoom erzeugen keine Landschaftsdaten; ein Übersichts- oder Exportausschnitt begrenzt die Welt nicht.
+
+#### 2. Die Region formen
+
+Auf der 27-Meilen-Stufe zeichne ich Land und Meer. Beim Hineinzoomen verfeinere ich auf der 3-Meilen-Stufe Küste, Wald, Hügel und Berge. Ich zeichne einen zusammenhängenden Fluss und einen regionalen Weg frei über mehrere Hexes, verschiebe Verlaufspunkte und entferne Teilstücke.
+
+**Sichtbares Ergebnis:** Die Landschaft bleibt über Hex- und Zoomgrenzen verbunden. Eine spätere grobe Änderung erhält meine ausdrücklich verfeinerten Eigenschaften. Mit „Zur Vorgabe zurücksetzen“ entferne ich eine lokale Überschreibung gezielt und rücknehmbar.
+
+#### 3. Eichenfurt anlegen und beschreiben
+
+Am Fluss platziere ich einen Ort, wähle den Typ Dorf und nenne ihn Eichenfurt. Im Key-Panel ergänze ich frei benannte, geordnete Markdown-Abschnitte, etwa „Ankunft“, „Gerüchte“ und „Wichtige Personen“. Ich verlinke einen bestimmten Abschnitt aus meinen Spielnotizen.
+
+**Sichtbares Ergebnis:** Marker und Orts-Key gehören zusammen. Nach Umbenennen oder Verschieben führen die bestehenden Links weiterhin zum richtigen Ort und Abschnitt; meine Texte bleiben erhalten.
+
+#### 4. Straßen vorgeben und Häuser erzeugen
+
+Ich zeichne die Siedlungsfläche, die Hauptstraße und den Marktplatz. Für die verbleibenden bebaubaren Flächen lasse ich Häuser vorschlagen. Dichte, Gebäudegrößen und Struktur ändere ich in der Vorschau und probiere eine andere Variante. Abbrechen verwirft den Vorschlag; erst Übernehmen fügt den Plan als bearbeitbare Geometrie ein. Danach korrigiere ich Straßen, Grundstücke und einzelne Häuser direkt.
+
+**Sichtbares Ergebnis:** Meine Vorgaben und die Umgebung bestimmen die Bebauung. Übernehmen ist eine gemeinsame rücknehmbare Änderung; Abbrechen hinterlässt keine Häuser, Dateien oder neue Historieneinträge. Ein erneut geöffneter Atlas zeigt die gespeicherte Geometrie und erzeugt sie nicht neu.
+
+#### 5. Die Taverne ausarbeiten
+
+Ich wähle ein Haus, korrigiere seine Lage, Drehung und Außenform, benenne es „Zum Silbernen Ast“ und ergänze im Orts-Key Wirt, Angebot und Besonderheiten. Mit einer ausdrücklichen Aktion lege ich zunächst eine leere Innenraumhülle an. Hineinzoomen allein legt keine Räume oder Dokumente an.
+
+**Sichtbares Ergebnis:** Außenform, Außenwände, Innenräume, Geschosse und Dach sind Teile **eines gemeinsam bearbeiteten Gebäudes**. Außen- und Innenansicht zeigen dasselbe Objekt in unterschiedlicher Detailtiefe. Das heutige Modell eines Hauses mit separat gebundener Dungeonkarte ist ein vorhandener technischer Teilstand; es erfüllt diese Zielentscheidung noch nicht vollständig.
+
+#### 6. Räume, Geschosse und Gebäude ändern
+
+Im selben Editor zeichne ich Trennwände und Türen für Schankraum, Küche und Gästezimmer, benenne die Räume und beschreibe sie. Eine Treppe verbindet Erd- und Obergeschoss; darunter ergänze ich einen Keller. Ich wähle die Höhe beziehungsweise den Schnitt, den ich bearbeiten möchte. Das Dach verdeckt keine ausgewählte oder bearbeitete Geometrie.
+
+Bei einer späteren Änderung unterscheide ich zwei Aktionen: **Eine Wand verschieben** ändert die angrenzenden Raumgrenzen gemeinsam mit der Gebäudeform. **„Gebäude skalieren“** ändert Außenform und Innengeometrie proportional als Ganzes. Verschieben und Drehen erhalten hingegen die physischen Abmessungen. Keller dürfen bewusst über den oberirdischen Umriss hinausreichen.
+
+**Sichtbares Ergebnis:** Ich muss keinen unabhängigen Grundriss nachträglich in ein verändertes Haus einpassen. Kennungen, Texte und Links bleiben erhalten. Ein ungültiger Änderungsvorschlag wird sichtbar markiert und nicht übernommen; ich korrigiere oder verwerfe ihn. Jede bestätigte Änderung lässt sich gemeinsam zurücknehmen.
+
+#### 7. Die Alte Wacht mit einem Dungeon versehen
+
+Ich platziere die Ruine als POI und beschreibe sie. Ausdrücklich lege ich einen Dungeon mit einem Eingang an. Ich zeichne zuerst Räume direkt, dann Gänge, Türen und Verbindungen und ergänze Treppen, Höhen und Öffnungen. Ein weiterer Eingang führt gezielt zu einem bestimmten Raum oder Geschoss. Alternativ verorte ich einen bereits vorhandenen Dungeon über seinen Eingang.
+
+**Sichtbares Ergebnis:** Der eigenständige Ruinendungeon liegt metrisch am richtigen Ort und bleibt unabhängig von Stadtgebäuden. Er kann mehrere Eingänge besitzen. Räume direkt zeichnen ist der normale Einstieg; Graphentwurf und vorbereitete Vorlagen bleiben weitere Einstiege in dieselben Raumdaten.
+
+#### 8. Raum-Keys ausarbeiten und Geometrie überarbeiten
+
+Ich benenne beziehungsweise nummeriere Räume und ergänze Geheimdurchgang, Falle, Schatz oder einen Encounterverweis. Aus einer Notiz springe ich über einen Raumlink zur passenden Geometrie und zum Key. Später verschiebe, teile oder vereinige ich Räume.
+
+**Sichtbares Ergebnis:** Raumidentität und Autoreninhalt werden durch eine Geometrieänderung nicht stillschweigend ersetzt. Nach einer Teilung oder Vereinigung bleibt jeder geschriebene Inhalt erhalten. Inhalte ohne eindeutiges Ziel erscheinen sichtbar als „Nicht zugeordnet“, bis ich sie ausdrücklich einem Raum zuweise. Verschieben erhält die Raumkennung und den vorhandenen Key.
+
+#### 9. Die Planung nachträglich ändern
+
+Ich verlege den regionalen Weg, korrigiere eine Dorfstraße und lasse einen ausgewählten Teil Eichenfurts neu bebauen. In der Vorschau sehe ich, welche Häuser betroffen sind. Manuell bearbeitete Häuser sowie Häuser mit Innenräumen, Keys oder Bindungen sind automatisch geschützt. Bei Bedarf gebe ich ein einzelnes Element ausdrücklich für den Ersatz frei.
+
+**Sichtbares Ergebnis:** Die Taverne, ihre Räume und meine Texte bleiben erhalten. Regeneration ersetzt nur freigegebene Inhalte; eine Freigabe allein löscht nichts. Abbrechen verwirft die Vorschau. Vor einem Ersatz mit Inhaltsverlust muss die Zuordnung beziehungsweise Erhaltung der betroffenen Texte, Räume und Verweise geklärt sein. Undo stellt den gesamten vorherigen Stand wieder her.
+
+#### 10. Speichern und später weiterarbeiten
+
+Bestätigte Änderungen werden automatisch dauerhaft gespeichert. Ich sehe, ob Änderungen noch ausstehen, gespeichert sind oder ein Speicherfehler vorliegt. Ich schließe Obsidian vollständig, starte neu und finde Eichenfurt, die Taverne und die Alte Wacht samt Geometrie, Keys und Links wieder. Kamera und Auswahl werden wiederhergestellt, soweit das gespeicherte Ziel noch existiert.
+
+**Sichtbares Ergebnis:** „Gespeichert“ wird erst nach erfolgreicher dauerhafter Speicherung angezeigt. Ein Fehler oder eine externe Änderung bleibt sichtbar und erhält meine offene Arbeit zur Auflösung. Gelände-, Straßen-, Gebäude-, Raum- und Key-Änderungen haben während einer Atlas-Lebensdauer eine gemeinsame Undo/Redo-Reihenfolge. Eine über vollständige Neustarts fortgesetzte Undo-Historie ist damit nicht vereinbart.
+
+### Am Spielabend
+
+| Meine Handlung | Erwartetes Verhalten |
+| --- | --- |
+| Nach „Zum Silbernen Ast“, einem Raum oder einem Key-Text suchen. | Ein Treffer fokussiert den richtigen Ort beziehungsweise Raum und zeigt seinen Key. Zurück führt zur vorherigen Ansicht. |
+| Zwischen Dorf, Taverne und Ruine navigieren. | Zoom, Suche und stabile Links führen zu denselben Weltpositionen. Werkzeug und Auswahl bleiben beim Zoomen erhalten; ein Link darf sein Ziel gezielt auswählen. |
+| Key neben der Karte lesen oder aktualisieren. | Textbearbeitung bleibt im gemeinsamen Editor; Tippen löst keine Zeichenwerkzeuge aus. Personen-, Gegenstands- und Encounterverweise öffnen die vorhandenen Detailansichten. |
+| Eine geöffnete Tür, einen neuen Durchgang oder eine beschädigte Stelle eintragen. | Die Änderung erscheint an der betroffenen Geometrie, bleibt speicherbar und lässt sich in der gemeinsamen Reihenfolge zurücknehmen. |
+| Einen Ort für Reise, Encounter oder eine Spielansicht verwenden. | Der Atlas liefert den stabilen Orts-/Raumbezug. Reisefortschritt, Weltzeit, Encounterausführung und Spielersicht verwenden ihre eigenen bestehenden Fachverträge; sie werden durch diese Planung nicht neu definiert. |
+
+### Weitere benötigte Abläufe
+
+| Aufgabe | Konkreter Ablauf und Ergebnis |
+| --- | --- |
+| Eine vorhandene Welt erweitern | Außerhalb der bisherigen Ausdehnung weiterzeichnen und Orte platzieren; bestehende Inhalte, Kennungen und Links bleiben erhalten. |
+| Eine Bildvorlage nachzeichnen | Ooke oder ein anderes Referenzbild hinzufügen, anhand einer bekannten Strecke kalibrieren, ausrichten und nativ nachzeichnen. Die Vorlage lässt sich ausblenden; das Bild wird dadurch nicht zu editierbarer Landschaft. |
+| Eine Stadt weiter ausarbeiten | Viertel und Nutzung festlegen, Dichte beeinflussen, Mauern/Tore/Brücken/Plätze ergänzen und Dächer, Pflanzen sowie Dekoration einzeln korrigieren. |
+| Bewohner und Tagesabläufe pflegen | Bewohner ausdrücklich anlegen oder optional erzeugen; Haushalte, Gebäude, Berufe, Beziehungen, Familien und Fraktionen bearbeiten und wiederfinden. Aktivitäten folgen der gemeinsamen Weltzeit. |
+| Die Karte lesbar gestalten | Freie Beschriftungen, geografische/politische Gebiete, Symbole, eigene Assets und Stile ergänzen; Geometrie, Keys und Kennungen bleiben erhalten. |
+| Einen Dungeon anders beginnen | Einen abstrakten Raumgraphen entwerfen oder eine vorbereitete Vorlage wählen und räumlich ausarbeiten. Dieselben Raumidentitäten bleiben über den Übergang erhalten. |
+| Mehrere Räume gemeinsam bearbeiten | Räume auswählen, gemeinsame Attribute oder Inhaltsvorlagen anwenden und individuelle Abweichungen erhalten. Ergebnis und Keys prüfen; eine gemeinsame Rücknahme stellt alle betroffenen Räume wieder her. |
+| Messen und Ansichten vormerken | Entfernung zwischen Orten messen, einen Ausschnitt benennen und als Navigationsziel speichern. Messung und Lesezeichen begrenzen die Welt nicht. |
+| Eine Karte ausgeben | Ausschnitt, Detailtiefe, Raster, Labels und PNG/JPEG-Auflösung unabhängig von der Editorkamera wählen; Ergebnis öffnen und prüfen. Die Quelldaten bleiben unverändert. Weitere vereinbarte Exportformate bleiben in den Fachkatalogen. |
+| Inhalte kopieren oder übertragen | Eine Region oder den ganzen Atlas als unabhängige, vollständige Kopie beziehungsweise Transferpaket übernehmen. Benötigte Detaildaten und interne Verweise werden konsistent mitgeführt; der Ausgangsstand bleibt erhalten. |
+
+### Vom Teilstand zum vollständigen Ablauf
+
+Die bestehende [Lieferfolge](#wie-kommen-wir-zum-ziel) bleibt erhalten. Das Leitbeispiel beschreibt den vollständigen Nutzerweg; seine erzählte Reihenfolge ist keine Umordnung der HEX-/CITY-Phasen.
+
+| Nächstes konkretes Ergebnis | Vorhandene Basis und noch zu schließen |
+| --- | --- |
+| Ort → vorhandener Dungeon → Raum/Key → vollständig neuer Prozess | Integrierte Orts-/Detailquellen, gemeinsame History und begrenzte Speicherbelege verwenden; vollständige E2E-01-/Import-/Fehlerfälle abschließen. |
+| Eichenfurt neu anlegen → Bebauung vorschlagen → übernehmen → korrigieren | Stadtbasis und PR154-Kandidat verwenden; Kandidat integrieren und Neuanlage mit nativen Dateien und Kampagnenverweisen anschließen. CITY-01/02. |
+| Taverne → leere Innenraumhülle → Räume → Wand ändern oder Gebäude skalieren | Gemeinsames Gebäudeobjekt und passende gemeinsame Befehle erfordern noch Produktarbeit. Bestehende Daten übernehmen, Kennungen, Texte, Maße und Links erhalten. Konkretes Speicherformat und Übergang werden vor Produktumsetzung festgelegt; diese Planung erfindet kein neues Dateischema. CITY-03, CTY-002.02 und CTY-005.01–04. |
+| Viertel ändern → geschützte Taverne behalten | Schutz, Vorschau und ausdrückliche Freigabe in CITY-04 vollständig anschließen und mit Innenräumen/Keys prüfen. |
+| Region grob formen → lokal verfeinern → Ruine vollständig ausarbeiten | Weitere Hex-Stufen und Landschaftswerkzeuge sowie räumliche Dungeon-/Autorenfunktionen entsprechend HEX-06–26 und den Dungeonfachzielen ergänzen. |
+| Vorbereiten → spielen → ausgeben → zuverlässig wiederaufnehmen | Suche/Navigation, große Datenbestände, Export und Endabnahme entsprechend HEX-08/22/27/28 und CITY-08/09 vervollständigen. |
+
+Für die spätere Produktabnahme wird das Leitbeispiel in einem isolierten Obsidian-Testvault durchgespielt. Dabei sind Vorschauabbruch ohne Restdaten, Wandänderung gegenüber Gesamtskalierung, metrisch erhaltendes Verschieben/Drehen, geschützte Regeneration, Raumteilung/-vereinigung ohne Textverlust, gemischte Undo/Redo-Reihenfolge, vollständiger Neustart, sichtbare Speicherfehler/externe Konflikte sowie Suche, stabile Links und Ausgabe ausdrücklich zu prüfen. Bestehende Teilbelege bestätigen nur ihren bisherigen Umfang. Diese Dokumentationsänderung vergibt keinen neuen PASS im Abnahmeregister.
 
 ## 1. Ausgangspunkt und Zielbild
 
@@ -69,7 +177,7 @@ Der vollständige Nutzerablauf lautet: Welt gestalten → Region verfeinern → 
 - **`.overworld`** enthält Weltmaßstab, Hex-Stufen, Landschaft, räumliche Platzierungen und Verweise auf Orte und Detailkarten. Große Datenbestände liegen in zugehörigen, bei Bedarf geladenen Dateien.
 - **`.location`** enthält stabile Ortskennung, Name, Typ, geordnete Markdown-Abschnitte und Verknüpfungen zu Detailkarten. Lage und Ausrichtung werden im Atlas gespeichert.
 - **`.city`** enthält native Stadtgeometrie mit Straßen, Vierteln, Grundstücken und Gebäuden sowie Generatorvorgaben und manuell bearbeiteten Elementen. Orts-Keys bleiben in `.location`; die Stadt verwendet die gemeinsame Zeichen- und Speicherbasis.
-- **`.dungeon` bleibt das Dungeonformat.** Raum-Keys und vorhandene Links behalten ihre Kennungen. Hausgrundrisse werden räumlich an Stadtgebäude gebunden.
+- **`.dungeon` bleibt das Dungeonformat.** Eigenständige Dungeons behalten ihre räumliche Platzierung. Ein Gebäude mit Innenräumen ist fachlich ein gemeinsam bearbeitetes Objekt; Außenform und Räume werden aus demselben konsistenten Gebäudezustand dargestellt. Raum-Keys und vorhandene Links behalten ihre Kennungen. Das konkrete Speicherformat für diesen Gebäudezustand ist vor Umsetzung festzulegen; die vorhandene getrennte Haus-/Dungeonbindung ist nicht bereits die vollständige Zielarchitektur.
 - Weltpositionen werden intern in Metern geführt. Bestehende Dungeonfelder entsprechen weiterhin fünf Fuß. Verschiebung, Drehung und Maßstabsumrechnung verbinden die lokalen Kartenkoordinaten mit dem Atlas.
 - Eingänge verknüpfen einen räumlichen Anker mit Dungeonkarte, Geschoss und gegebenenfalls Raum oder Durchgang. Ein Dungeon kann mehrere Eingänge besitzen.
 - Geschosse bleiben getrennte Ebenen. Ihre bisherige Reihenfolge wird nicht automatisch als physische Höhe interpretiert.
@@ -148,7 +256,7 @@ Dieses Tor fordert früh ein vollständiges Mapping und direkt belegte Startfolg
 
 ### Frühe Stadtphasen im selben Atlas
 
-Nach HEX-05 folgen **CITY-01 bis CITY-04**: Stadt zeichnen, einen nutzbaren Plan erzeugen, Haus-Dungeon samt Keys unmittelbar bearbeiten und anschließend lokal verfeinern, ohne eigene Änderungen zu verlieren. CITY-00 gehört zum frühen Referenzpaket von HEX-00. Die konkreten Ergebnisse und Tests stehen in der [Stadtplan-Roadmap](ROADMAP-CITIES.md).
+Nach HEX-05 folgen **CITY-01 bis CITY-04**: Stadt zeichnen, einen nutzbaren Plan erzeugen, Gebäude samt Innenräumen und Keys gemeinsam bearbeiten und anschließend lokal verfeinern, ohne eigene Änderungen zu verlieren. CITY-00 gehört zum frühen Referenzpaket von HEX-00. Die konkreten Ergebnisse und Tests stehen in der [Stadtplan-Roadmap](ROADMAP-CITIES.md).
 
 Danach folgen CITY-05/06 nach HEX-14, CITY-07 nach HEX-20 und CITY-08 nach HEX-22. CITY-09 wird nach HEX-27 zusammen mit HEX-28 abgenommen. Die erste Stadt und der erste Hausgrundriss werden dadurch vor vollständiger Wonderdraft-Parität nutzbar geprüft.
 
@@ -191,7 +299,7 @@ Nach jeder neuen Landschaftsfunktion wird derselbe Insel-Ort-Dungeon-Ablauf erne
 
 | Phase | Nutzbarer Ablauf und begrenzter Umfang | Praxistest im echten Obsidian |
 |---|---|---|
-| **HEX-22 – Stadt und mehrere Dungeons im Atlas** | Mehrere Detailkarten abhängig von sichtbarer Größe mit Vorschau und vollständiger Geometrie darstellen. Stadt aus CITY-03, zwei Haus-/Orts-Dungeons und mehrere Eingänge räumlich verbinden; alle sichtbaren Geometrien im selben Editor direkt bearbeitbar halten. | Ausschließlich von Welt zu Stadt und zwei Hausgrundrissen hinein-/herauszoomen; Straßen, Räume und Keys ohne Kontextwechsel bearbeiten. Nach Save/Neustart stimmen Lage, Auswahl, durchgehende Historie und Eingangszielpunkte; außer Sicht liegende Ressourcen werden freigegeben. |
+| **HEX-22 – Stadt und mehrere Dungeons im Atlas** | Mehrere Detailkarten abhängig von sichtbarer Größe mit Vorschau und vollständiger Geometrie darstellen. Stadt aus CITY-03, zwei Gebäudeinnenräume sowie eigenständige Orts-Dungeons und mehrere Eingänge räumlich verbinden; alle sichtbaren Geometrien im selben Editor direkt bearbeitbar halten. | Ausschließlich von Welt zu Stadt und zwei Hausgrundrissen hinein-/herauszoomen; Straßen, Räume und Keys ohne Kontextwechsel mit gemeinsamer Undo-Folge bearbeiten. Nach Save/Neustart stimmen Lage, gültige Auswahl und Eingangszielpunkte; eine über Neustarts fortgesetzte Undo-Historie ist nicht vorausgesetzt. Außer Sicht liegende Ressourcen werden freigegeben. |
 
 Diese Phase erweitert den seit HEX-05 funktionierenden Übergang. Ihr Review prüft zusätzlich mehrere benachbarte und überlappende Karten sowie den Erhalt der ersten Ein-Karten-Folge.
 
@@ -254,7 +362,7 @@ Die jeweiligen Werkzeuge behalten ihre belegten Gesten; sie wirken in der gemein
 - Fluss und Straße über Hex-, Stufen- und Ladegrenzen bearbeiten; sämtliche Anschlüsse nach Neuöffnung kontrollieren.
 - Stadt mit Orts-Key, POI und Dungeon anlegen. Verschiebung, Drehung und mehrere Eingänge einschließlich Rücknahme prüfen.
 - Oberste Hex-Stufe → Region → Stadt → Haus → Raum ausschließlich zoomen; auf jeder Detailstufe direkt bearbeiten. Werkzeugleiste, Werkzeug, Auswahl und durchgehende Undo-Folge dürfen nicht durch einen Modus-/Kontextwechsel ersetzt werden.
-- Jenseits der bisherigen belegten Ausdehnung Gelände zeichnen, eine Stadt platzieren und einen Haus-Dungeon bearbeiten. Ohne Resize-/Betreten-/Kartenwechselaktion hinein- und herauszoomen; Undo/Redo und Neuöffnung erhalten alle Weltpositionen. Eine Änderung des Exportausschnitts beschneidet keinen Atlasinhalt.
+- Jenseits der bisherigen belegten Ausdehnung Gelände zeichnen, eine Stadt platzieren und ein Gebäude mit Innenräumen bearbeiten. Ohne Resize-/Betreten-/Kartenwechselaktion hinein- und herauszoomen; Undo/Redo und Neuöffnung erhalten alle Weltpositionen. Eine Änderung des Exportausschnitts beschneidet keinen Atlasinhalt.
 - Direktlinks zu Orts-, Raum- und Key-Abschnitten nach Dateiumbenennung und Neustart öffnen.
 - Externe Dateiänderung und unterbrochenes Speichern provozieren. Konflikte müssen sichtbar bleiben und Entwürfe wiederherstellbar sein.
 - Bildvorlage, Editoransicht und Export auf denselben Ausschnitt ausrichten und ihre räumliche Übereinstimmung kontrollieren.
@@ -274,8 +382,8 @@ Kernprüfungen, Build, Obsidian-Bedienung, Großkartenlauf und physische Maus-/T
 - Hex-Ausrichtung ist beim Anlegen wählbar und bleibt danach fest.
 - Automatischer Stufenwechsel besitzt einen Übergangsbereich gegen Hin-und-her-Springen; eine manuelle Stufenwahl bleibt möglich.
 - Unterhalb der 3-Meilen-Stufe entstehen keine weiteren Overworld-Hex-Stufen. Stadt- und Dungeonraster übernehmen die Detailbearbeitung.
-- Orts-Keys bleiben in `.location`, Raum-Keys in `.dungeon`. Der Atlas verweist auf diese Inhalte.
-- Stadtgeometrie wird in `.city` geführt. Gebäude und verankerte Haus-Dungeons erhalten stabile räumliche Bindungen; Generation schützt manuelle Änderungen und Keys.
+- Orts-Keys bleiben in `.location`, Raum-Keys eigenständiger Dungeons in `.dungeon`. Bestehende Gebäude-Raumkeys und ihre Links bleiben erhalten; ihr Speicherformat im gemeinsamen Gebäudezustand ist vor Umsetzung festzulegen. Der Atlas verweist auf diese Inhalte.
+- Stadtgeometrie wird in `.city` geführt. Außenform und Innenräume eines Gebäudes werden gemeinsam bearbeitet; eigenständige Dungeons bleiben stabil verortet. Generation schützt manuelle Änderungen, Innenräume und Keys.
 - Der Atlas bleibt ein durchgehend bearbeitbarer Raum ohne separate Modi. Zoom allein erschließt räumliche Größenstufen; Detaildarstellung ist kein Wechsel des Editors.
 - Bestehende Wonderdraft-Karten werden als Bildvorlagen verwendet; ihre Originaldateien bleiben erhalten.
 - Bestehende Dungeonkarten werden durch ihre Atlasplatzierung nicht umgerechnet oder neu gezeichnet.

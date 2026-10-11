@@ -2,6 +2,8 @@
 
 **Aktueller Atlasstand:** [Atlas auf einen Blick](../ROADMAP-HEX-ATLAS.md#atlas-auf-einen-blick) zeigt integrierte Funktionen, Kandidaten, offene Lücken und den Weg zum Ziel.
 
+**Konkrete Nutzerabläufe:** [Region → Dorf → Taverne → Dungeon und Spielabend](../ROADMAP-HEX-ATLAS.md#konkrete-nutzerabläufe). Die [Gebäudeentscheidung](../ROADMAP-CITIES.md#gebäude-und-innenräume-als-ein-objekt) legt die gemeinsame Bearbeitung von Außenform und Innenräumen fest.
+
 | Thema | Fachliche Quellen |
 | --- | --- |
 | Gesamtprodukt | [Produktziele](PRODUCT.md), [Lieferfolge](ROADMAP.md), [vollständiger Umfang](SCOPE.md), [Quellenregister](scope-sources.json) |
