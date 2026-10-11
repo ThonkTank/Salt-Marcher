@@ -161,6 +161,13 @@ export interface OwnerReconciliation {
   readonly pendingCommandIds?: readonly CommandId[];
   readonly commandDigest?: CommandDigest;
   readonly receiptId?: ReceiptId;
+  /**
+   * Model-local append evidence for I01-B. These fields make replay and
+   * truncation inconsistent inside one validated aggregate graph, but they
+   * are not a durable trust root for coordinated rewrites of persisted raw
+   * state. Owner-authorized history verification belongs to the external
+   * authority/recovery contract in I02.
+   */
   readonly receiptLedgerBaseRevision?: Revision;
   readonly appliedContributions?: readonly MaskOwnerPreparedContribution[];
 }

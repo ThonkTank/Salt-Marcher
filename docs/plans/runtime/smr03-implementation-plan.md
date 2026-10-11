@@ -479,6 +479,16 @@ Innerhalb I01-B bleiben nur zwei getrennt reviewbare Pakete offen:
 2. deterministischer Invariant-Fuzzer und nichtnormative Scale-/DTO-Orakel für
    20 Rosterfiguren, vier Scenes, acht Masken und 50 Teilnehmer.
 
+Der Masken-Slice bewahrt vollständige owner-/scenegebundene Prepared-Beiträge
+als modelllokale Append-/Replay-Evidenz und validiert Projektionen direkt gegen
+MaskRef, Ownerstatus und ownerlokale Reihenfolge. Diese Evidenz ist ausdrücklich
+kein selbstauthentifizierender Persistenzanker: Ein frei ersetzbares
+`LiveSceneSource` kann keine koordinierte Umschreibung seiner eigenen
+Historien-, Basis- und Head-Felder beweisen. Die Architekturentscheidung
+`6106174355` hält deshalb die I01-B-Grenze aufrecht; ein späterer
+manipulationssicherer Verlauf benötigt zuerst eine separat bezogene
+Owner-/Generations-Authority samt verifizierbarem Receipt-Head in I02.
+
 Vor Masken-Produktcode ist die offene Encounter-/Chase-Ownergrenze für
 konkrete Maskenidentität, Teilnahmeprojektion und Pending-Reconciliation zu
 schließen. Permanente Löschung, History und Coordinator gehören vollständig
