@@ -36,3 +36,5 @@
 Große native Rohbelege liegen häufig auf dem Rechner des Prüfers. Ein historischer absoluter Pfad bestätigt keinen eigenen Zugriff; fehlenden Zugriff und offene Abnahme ausdrücklich nennen.
 
 - Manuelle GM-Sessionplanung: [Implementierung und Campaign-Speicheranschluss](plans/campaign/manual-session-planner.md) zu #69.
+
+- Stadt-Hauskorrektur: [Gebäudenamen im gemeinsamen Atlas](plans/city/building-name-inspector.md) zu #92.

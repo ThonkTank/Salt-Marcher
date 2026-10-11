@@ -4849,6 +4849,13 @@
       "limits": "Code delta awaiting independent review; core tests are not City host/integration or full parity approval",
       "reviewFinding": "R01/5480419361 plus own N01 reentrant observer countercase on6e39dcb; both earlier reference/state-read approaches were insufficient"
     },
+    "buildingNameContribution": {
+      "issue": 92,
+      "source": "src/features/city/edit.ts",
+      "plan": "docs/plans/city/building-name-inspector.md",
+      "checks": "2 before-FAIL/after-PASS cases; 576 core PASS; exact name and geometry/ID preservation, shared UndoRedo and invalid/getter/stale rejection",
+      "remaining": "Independent review; visible existing key-dock consumer, native Save/Fresh/Recovery and GM/physical acceptance open"
+    },
     "manualPlannerContribution": {
       "issue": 69,
       "state": "core_dom_candidate_no_persisted_host_acceptance",
