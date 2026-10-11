@@ -150,6 +150,16 @@ test("GM finds a related NPC by faction name or relation label", async () => {
   f.input("GM-Notizen", "");
   f.click("Fraktion öffnen");
   assert.equal(f.host.querySelector<HTMLInputElement>("form input")?.value, "Nebelbund");
+  assert.match(f.host.querySelector("form")!.textContent!, /Verweise auf diesen Eintrag/);
+  assert.match(f.host.querySelector("form")!.textContent!, /Mitglied: NPC Älva/);
+  f.input("GM-Notizen", "Ungespeicherter Fraktionsentwurf");
+  f.click("NPC öffnen");
+  assert.equal(f.host.querySelector<HTMLInputElement>("form input")?.value, "Nebelbund");
+  assert.equal(f.host.querySelectorAll<HTMLTextAreaElement>("textarea")[1]?.value,
+    "Ungespeicherter Fraktionsentwurf");
+  f.input("GM-Notizen", "");
+  f.click("NPC öffnen");
+  assert.equal(f.host.querySelector<HTMLInputElement>("form input")?.value, "Älva");
   f.panel.destroy();
 });
 
