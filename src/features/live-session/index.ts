@@ -4,6 +4,7 @@ export {
   parseClockReference,
   parseClockValue,
   parseLiveSceneSource,
+  parseOwnerIdentity,
   parseOwnerReference,
   parsePartyCharacterProfile,
   parsePartyCharacterProgress,
@@ -15,7 +16,9 @@ export {
   type FocusSourceSnapshot,
   type LiveSceneSourceSnapshot,
   type MaskReference,
+  type MaskParticipationProjection,
   type OwnerReconciliation,
+  type OwnerIdentity,
   type OwnerReference,
   type PartyCharacterProfileProjection,
   type PartyCharacterProgressProjection,
@@ -25,6 +28,16 @@ export {
   type PendingAssignment,
   type PreparationSnapshot,
 } from "./contracts";
+export {
+  parseReconciliationDuty,
+  type GenericSceneConsumerDuty,
+  type MaskDelta,
+  type MaskOwnerDuty,
+  type MaskOwnerIdentity,
+  type MaskOwnerScope,
+  type MaskPin,
+  type ReconciliationDuty,
+} from "./mask-reconciliation";
 export {
   campaignId,
   characterId,

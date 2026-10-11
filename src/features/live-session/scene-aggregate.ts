@@ -2,7 +2,6 @@ import type {
   ClockReference,
   FocusSourceSnapshot,
   LiveSceneSourceSnapshot,
-  OwnerReconciliation,
   PartyProjection,
 } from "./contracts";
 import {
@@ -24,17 +23,23 @@ import {
   type CommandDigest,
   type CommandId,
   type LiveSceneId,
-  type MaskId,
   type OwnerId,
   type Revision,
 } from "./ids";
 import {
   parseLiveSessionAggregateState,
   type LiveSessionAggregateState,
-  type PendingConsumerReconciliation,
-  type ReconciliationTargetEndpoint,
   type RuntimeSceneState,
 } from "./state";
+import {
+  buildReconciliationDuties,
+  pendingCopy,
+  reconciliationOwnerKey,
+  type MaskOwnerDuty,
+  type PendingConsumerReconciliation,
+  type ReconciliationDuty,
+  type ReconciliationTargetEndpoint,
+} from "./mask-reconciliation";
 
 export type AggregateRejectionReason =
   | "cancelled"
@@ -56,11 +61,7 @@ export type AggregateRejectionReason =
   | "already-inactive"
   | "focus-mismatch";
 
-export type ConsumerReconciliationDuty = Readonly<
-  Omit<PendingConsumerReconciliation, "status"> & {
-    readonly status: "required" | "pending";
-  }
->;
+export type ConsumerReconciliationDuty = ReconciliationDuty;
 
 export interface SceneCleanupDecision {
   readonly sourceSceneId: LiveSceneId;
@@ -337,6 +338,7 @@ export function initializeLiveSession(
       sceneClockRef: command.sceneClockRef,
       groupRefs: [],
       maskRefs: [],
+      maskParticipationProjections: [],
       reconciliations: [],
       contentPins: [],
     },
@@ -417,6 +419,7 @@ export function createPreparedRuntime(
       sceneClockRef: command.sceneClockRef,
       groupRefs: [],
       maskRefs: [],
+      maskParticipationProjections: [],
       reconciliations: [],
       contentPins: command.snapshot.contentPins,
     },
@@ -462,67 +465,28 @@ function reconciliationDuties(
   source: LiveSceneSourceSnapshot,
   retired: boolean,
 ): readonly ConsumerReconciliationDuty[] {
-  const ownerStates = new Map<
-    OwnerId,
-    {
-      status: OwnerReconciliation["status"];
-      ownerRevision?: Revision;
-      maskIds: MaskId[];
-    }
-  >();
-  for (const entry of source.reconciliations) {
-    ownerStates.set(entry.ownerId, {
-      status: entry.status,
-      ...(entry.ownerRevision === undefined
-        ? {}
-        : { ownerRevision: entry.ownerRevision }),
-      maskIds: [],
-    });
-  }
-  for (const mask of source.maskRefs) {
-    const owner = ownerStates.get(mask.ownerId);
-    if (owner) {
-      owner.ownerRevision ??= mask.ownerRevision;
-      owner.maskIds.push(mask.maskId);
-    } else {
-      ownerStates.set(mask.ownerId, {
-        status: "current",
-        ownerRevision: mask.ownerRevision,
-        maskIds: [mask.maskId],
-      });
-    }
-  }
-  return Object.freeze(
-    [...ownerStates.entries()].map(([ownerId, owner]) => {
-      if (owner.ownerRevision === undefined)
-        throw new Error(
-          "Consumer-Pflicht besitzt keine gebundene OwnerRevision.",
-        );
-      return Object.freeze({
-        ownerId,
-        campaignId: state.campaignId,
-        commandId: binding.commandId,
-        commandDigest: binding.commandDigest,
-        sourceSceneId: source.liveSceneId,
-        target: binding.target,
-        expectedSourceRevision: binding.expectedSourceRevision,
-        expectedOwnerRevision: owner.ownerRevision,
-        sourceLifecycleBefore: "active" as const,
-        sourceLifecycleAfter: retired
-          ? ("retired" as const)
-          : ("active" as const),
-        action: retired
-          ? ("archive-source" as const)
-          : ("remove-participants" as const),
-        characterIds: Object.freeze([...binding.characterIds]),
-        maskIds: Object.freeze([...owner.maskIds]),
-        status:
-          owner.status === "current"
-            ? ("required" as const)
-            : ("pending" as const),
-      });
-    }),
-  );
+  const selected = new Set(binding.characterIds),
+    affectedCharacterIds = state.party.characters
+      .filter((character) => selected.has(character.characterId))
+      .map((character) => character.characterId);
+  return buildReconciliationDuties(source, {
+    campaignId: state.campaignId,
+    commandId: binding.commandId,
+    commandDigest: binding.commandDigest,
+    partyRevisionBefore: state.party.partyRevision,
+    partyRevisionAfter: revision(
+      state.party.partyRevision + 1,
+      "Reconciliation.partyRevisionAfter",
+    ),
+    sourceRevisionBefore: binding.expectedSourceRevision,
+    sourceRevisionAfter: revision(
+      binding.expectedSourceRevision + 1,
+      "Reconciliation.sourceRevisionAfter",
+    ),
+    sourceLifecycleAfter: retired ? "retired" : "active",
+    target: binding.target,
+    affectedCharacterIds,
+  });
 }
 
 export function moveCharacters(
@@ -617,11 +581,8 @@ export function moveCharacters(
         entry.status === "current"
           ? entry
           : {
-              ownerId: entry.ownerId,
+              ...entry,
               status: "pending" as const,
-              ...(entry.ownerRevision === undefined
-                ? {}
-                : { ownerRevision: entry.ownerRevision }),
               commandId: command.commandId,
             },
       ),
@@ -688,6 +649,11 @@ export function moveCharacters(
       source,
       retired,
     ),
+    reconciledSource = sourceWithPendingMaskOwners(
+      nextSource,
+      duties,
+      command.commandId,
+    ),
     cleanup = Object.freeze({
       sourceSceneId: source.liveSceneId,
       targetSceneId: target.liveSceneId,
@@ -710,7 +676,7 @@ export function moveCharacters(
     }),
     scenes = state.scenes.map((scene, index) =>
       index === sourceIndex
-        ? sceneRaw(sourceScene, nextSource)
+        ? sceneRaw(sourceScene, reconciledSource)
         : index === targetIndex
           ? sceneRaw(targetScene, nextTarget)
           : scene,
@@ -723,10 +689,7 @@ export function moveCharacters(
       scenes,
       pendingReconciliations: [
         ...state.pendingReconciliations,
-        ...duties.filter(
-          (duty): duty is PendingConsumerReconciliation =>
-            duty.status === "pending",
-        ),
+        ...pendingDuties(duties),
       ],
     });
   return applied(
@@ -781,9 +744,69 @@ function sameClockIdentity(
 function pendingDuties(
   duties: readonly ConsumerReconciliationDuty[],
 ): readonly PendingConsumerReconciliation[] {
-  return duties.filter(
-    (duty): duty is PendingConsumerReconciliation => duty.status === "pending",
+  return Object.freeze(
+    duties.flatMap((duty) =>
+      duty.delivery === "pending" || duty.kind === "mask-owner-reconciliation"
+        ? [pendingCopy(duty)]
+        : [],
+    ),
   );
+}
+
+function sourceWithPendingMaskOwners(
+  source: LiveSceneSourceSnapshot,
+  duties: readonly ConsumerReconciliationDuty[],
+  commandId: CommandId,
+): LiveSceneSourceSnapshot {
+  const maskDuties = duties.filter(
+    (duty): duty is MaskOwnerDuty => duty.kind === "mask-owner-reconciliation",
+  );
+  if (maskDuties.length === 0) return source;
+  const ownerKeys = new Set(maskDuties.map(reconciliationOwnerKey)),
+    reconciliations = source.reconciliations.map((entry) => {
+      if (entry.generationId === undefined) return entry;
+      const key = `${entry.ownerId}\u0000${entry.generationId}`;
+      return ownerKeys.has(key)
+        ? Object.freeze({
+            ownerId: entry.ownerId,
+            generationId: entry.generationId,
+            status: "pending" as const,
+            ownerRevision: entry.ownerRevision!,
+            commandId,
+          })
+        : entry;
+    });
+  for (const duty of maskDuties) {
+    const key = reconciliationOwnerKey(duty);
+    if (
+      !reconciliations.some(
+        (entry) =>
+          entry.generationId !== undefined &&
+          `${entry.ownerId}\u0000${entry.generationId}` === key,
+      )
+    )
+      reconciliations.push(
+        Object.freeze({
+          ownerId: duty.ownerIdentity.ownerId,
+          generationId: duty.ownerIdentity.generationId,
+          status: "pending" as const,
+          ownerRevision: duty.expectedOwnerRevision,
+          commandId,
+        }),
+      );
+  }
+  return Object.freeze({
+    ...source,
+    maskParticipationProjections: Object.freeze(
+      source.maskParticipationProjections.filter(
+        (projection) =>
+          !ownerKeys.has(
+            `${projection.ownerIdentity.ownerId}\u0000${projection.ownerIdentity.generationId}`,
+          ),
+      ),
+    ),
+    reconciliations: Object.freeze(reconciliations),
+  });
 }
 
 export function splitScene(
@@ -893,11 +916,8 @@ export function splitScene(
         entry.status === "current"
           ? entry
           : {
-              ownerId: entry.ownerId,
+              ...entry,
               status: "pending" as const,
-              ...(entry.ownerRevision === undefined
-                ? {}
-                : { ownerRevision: entry.ownerRevision }),
               commandId: command.commandId,
             },
       ),
@@ -918,6 +938,7 @@ export function splitScene(
       sceneClockRef: command.targetClockRef,
       groupRefs: [],
       maskRefs: [],
+      maskParticipationProjections: [],
       reconciliations: [],
       contentPins: [],
     },
@@ -974,9 +995,14 @@ export function splitScene(
       source,
       retired,
     ),
+    reconciledSource = sourceWithPendingMaskOwners(
+      nextSource,
+      duties,
+      command.commandId,
+    ),
     scenes = [
       ...state.scenes.map((scene, index) =>
-        index === sourceIndex ? sceneRaw(sourceScene, nextSource) : scene,
+        index === sourceIndex ? sceneRaw(sourceScene, reconciledSource) : scene,
       ),
       {
         kind: "runtime-scene-state" as const,
@@ -1141,11 +1167,8 @@ export function rejoinScenes(
         entry.status === "current"
           ? entry
           : {
-              ownerId: entry.ownerId,
+              ...entry,
               status: "pending" as const,
-              ...(entry.ownerRevision === undefined
-                ? {}
-                : { ownerRevision: entry.ownerRevision }),
               commandId: command.commandId,
             },
       ),
@@ -1205,9 +1228,14 @@ export function rejoinScenes(
       source,
       true,
     ),
+    reconciledSource = sourceWithPendingMaskOwners(
+      nextSource,
+      duties,
+      command.commandId,
+    ),
     scenes = state.scenes.map((scene, index) =>
       index === sourceIndex
-        ? sceneRaw(sourceScene, nextSource)
+        ? sceneRaw(sourceScene, reconciledSource)
         : index === targetIndex
           ? sceneRaw(targetScene, nextTarget)
           : scene,
@@ -1603,11 +1631,8 @@ export function deactivatePartyCharacter(
         entry.status === "current"
           ? entry
           : {
-              ownerId: entry.ownerId,
+              ...entry,
               status: "pending" as const,
-              ...(entry.ownerRevision === undefined
-                ? {}
-                : { ownerRevision: entry.ownerRevision }),
               commandId: command.commandId,
             },
       ),
@@ -1690,9 +1715,14 @@ export function deactivatePartyCharacter(
       source,
       retired,
     ),
+    reconciledSource = sourceWithPendingMaskOwners(
+      nextSource,
+      duties,
+      command.commandId,
+    ),
     scenes = state.scenes.map((scene, index) =>
       index === sourceIndex
-        ? sceneRaw(sourceScene, nextSource)
+        ? sceneRaw(sourceScene, reconciledSource)
         : successor && index === successor.index && nextSuccessor
           ? sceneRaw(successor.scene, nextSuccessor)
           : scene,
@@ -1705,10 +1735,7 @@ export function deactivatePartyCharacter(
       scenes,
       pendingReconciliations: [
         ...state.pendingReconciliations,
-        ...duties.filter(
-          (duty): duty is PendingConsumerReconciliation =>
-            duty.status === "pending",
-        ),
+        ...pendingDuties(duties),
       ],
     }),
     membership = Object.freeze({

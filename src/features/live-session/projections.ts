@@ -5,6 +5,7 @@ import {
   type ClockReference,
   type FocusSourceSnapshot,
   type LiveSceneSourceSnapshot,
+  type MaskParticipationProjection,
   type MaskReference,
   type OwnerReconciliation,
   type OwnerReference,
@@ -83,6 +84,7 @@ export interface LiveSceneProjection {
   readonly sceneClockRef?: ClockReference;
   readonly groupRefs: readonly OwnerReference[];
   readonly maskRefs: readonly MaskReference[];
+  readonly maskParticipationProjections: readonly MaskParticipationProjection[];
   readonly reconciliations: readonly OwnerReconciliation[];
   readonly contentPins: readonly OwnerReference[];
 }
@@ -281,6 +283,7 @@ function parseLiveSceneProjection(value: unknown): LiveSceneProjection {
         "pendingAssignments",
         "groupRefs",
         "maskRefs",
+        "maskParticipationProjections",
         "reconciliations",
         "contentPins",
       ],
@@ -340,6 +343,7 @@ function parseLiveSceneProjection(value: unknown): LiveSceneProjection {
         : { sceneClockRef: row.sceneClockRef }),
       groupRefs: row.groupRefs,
       maskRefs: row.maskRefs,
+      maskParticipationProjections: row.maskParticipationProjections,
       reconciliations: row.reconciliations,
       contentPins: row.contentPins,
     });
@@ -361,6 +365,7 @@ function parseLiveSceneProjection(value: unknown): LiveSceneProjection {
       : { sceneClockRef: source.sceneClockRef }),
     groupRefs: source.groupRefs,
     maskRefs: source.maskRefs,
+    maskParticipationProjections: source.maskParticipationProjections,
     reconciliations: source.reconciliations,
     contentPins: source.contentPins,
   });
@@ -523,6 +528,7 @@ export function projectLiveScene(
       : { sceneClockRef: scene.sceneClockRef }),
     groupRefs: scene.groupRefs,
     maskRefs: scene.maskRefs,
+    maskParticipationProjections: scene.maskParticipationProjections,
     reconciliations: scene.reconciliations,
     contentPins: scene.contentPins,
   });

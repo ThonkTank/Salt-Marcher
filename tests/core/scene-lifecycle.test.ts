@@ -633,12 +633,19 @@ test("unavailable mask owner cannot roll back a move and receives one bound pend
       maskId: "mask-a",
       kind: "encounter",
       ownerId: "encounter-owner",
+      generationId: "encounter-generation",
       ownerRevision: 3,
       lifecycle: "active",
     },
   ];
+  raw.scenes[0].source.maskParticipationProjections = [];
   raw.scenes[0].source.reconciliations = [
-    { ownerId: "encounter-owner", status: "unavailable" },
+    {
+      ownerId: "encounter-owner",
+      generationId: "encounter-generation",
+      status: "unavailable",
+      ownerRevision: 3,
+    },
   ];
   const state = parseLiveSessionAggregateState(raw),
     result = moveCharacters(
@@ -659,30 +666,50 @@ test("unavailable mask owner cannot roll back a move and receives one bound pend
   if (result.status !== "applied") return;
   assert.equal(result.decision.sceneCleanup?.reconciliations.length, 1);
   assert.deepEqual(result.decision.sceneCleanup?.reconciliations[0], {
-    ownerId: "encounter-owner",
+    kind: "mask-owner-reconciliation",
+    version: 1,
     campaignId: "campaign-a",
     commandId: "command-move-unavailable",
     commandDigest: "digest-move-unavailable",
+    partyRevisionBefore: 1,
+    partyRevisionAfter: 2,
     sourceSceneId: "scene-primary",
+    sourceRevisionBefore: 0,
+    sourceRevisionAfter: 1,
     target: {
       kind: "existing",
       liveSceneId: "scene-prepared",
       revisionBefore: 0,
       revisionAfter: 1,
     },
-    expectedSourceRevision: 0,
+    affectedCharacterIds: ["character-b"],
+    delivery: "pending",
+    ownerIdentity: {
+      ownerId: "encounter-owner",
+      generationId: "encounter-generation",
+    },
     expectedOwnerRevision: 3,
     sourceLifecycleBefore: "active",
     sourceLifecycleAfter: "active",
-    action: "remove-participants",
-    characterIds: ["character-b"],
-    maskIds: ["mask-a"],
-    status: "pending",
+    scope: {
+      kind: "owner-scope-unresolved",
+      cause: "unavailable",
+      knownMaskRefs: [
+        {
+          maskId: "mask-a",
+          maskKind: "encounter",
+          expectedOwnerRevision: 3,
+          lifecycleBefore: "active",
+        },
+      ],
+    },
   });
   assert.deepEqual(result.state.scenes[0]?.source.reconciliations, [
     {
       ownerId: "encounter-owner",
+      generationId: "encounter-generation",
       status: "pending",
+      ownerRevision: 3,
       commandId: "command-move-unavailable",
     },
   ]);
@@ -714,22 +741,34 @@ test("unavailable mask owner cannot roll back a move and receives one bound pend
     second.state.pendingReconciliations.map((duty) => ({
       commandId: duty.commandId,
       expectedOwnerRevision: duty.expectedOwnerRevision,
-      action: duty.action,
-      characterIds: duty.characterIds,
-      maskIds: duty.maskIds,
+      operation:
+        duty.kind === "mask-owner-reconciliation" &&
+        duty.scope.kind === "complete-mask-delta"
+          ? duty.scope.operation
+          : duty.kind === "mask-owner-reconciliation"
+            ? duty.scope.kind
+            : duty.operation,
+      characterIds: duty.affectedCharacterIds,
+      maskIds:
+        duty.kind === "mask-owner-reconciliation"
+          ? (duty.scope.kind === "complete-mask-delta"
+              ? duty.scope.masks
+              : duty.scope.knownMaskRefs
+            ).map((mask) => mask.maskId)
+          : [],
     })),
     [
       {
         commandId: "command-move-unavailable",
         expectedOwnerRevision: 3,
-        action: "remove-participants",
+        operation: "owner-scope-unresolved",
         characterIds: ["character-b"],
         maskIds: ["mask-a"],
       },
       {
         commandId: "command-move-unavailable-2",
         expectedOwnerRevision: 3,
-        action: "archive-source",
+        operation: "owner-scope-unresolved",
         characterIds: ["character-a"],
         maskIds: ["mask-a"],
       },
@@ -774,25 +813,29 @@ test("generic unavailable consumer needs and retains an exact OwnerRevision", ()
   assert.equal(result.status, "applied");
   if (result.status !== "applied") return;
   assert.deepEqual(result.state.pendingReconciliations[0], {
+    kind: "generic-scene-consumer-reconciliation",
+    version: 1,
     ownerId: "weather-owner",
     campaignId: "campaign-a",
     commandId: "command-weather-pending",
     commandDigest: "digest-weather-pending",
+    partyRevisionBefore: 1,
+    partyRevisionAfter: 2,
     sourceSceneId: "scene-primary",
+    sourceRevisionBefore: 0,
+    sourceRevisionAfter: 1,
     target: {
       kind: "existing",
       liveSceneId: "scene-prepared",
       revisionBefore: 0,
       revisionAfter: 1,
     },
-    expectedSourceRevision: 0,
     expectedOwnerRevision: 7,
     sourceLifecycleBefore: "active",
     sourceLifecycleAfter: "active",
-    action: "remove-participants",
-    characterIds: ["character-b"],
-    maskIds: [],
-    status: "pending",
+    operation: "remove-participants",
+    affectedCharacterIds: ["character-b"],
+    delivery: "pending",
   });
   assert.deepEqual(result.state.scenes[0]?.source.reconciliations, [
     {
@@ -895,6 +938,7 @@ test("same MaskId from different owners remains owner-qualified", () => {
       maskId: "shared-mask-id",
       kind: "encounter",
       ownerId: "owner-a",
+      generationId: "generation-a",
       ownerRevision: 2,
       lifecycle: "active",
     },
@@ -902,13 +946,25 @@ test("same MaskId from different owners remains owner-qualified", () => {
       maskId: "shared-mask-id",
       kind: "chase",
       ownerId: "owner-b",
+      generationId: "generation-b",
       ownerRevision: 3,
       lifecycle: "active",
     },
   ];
+  raw.scenes[0].source.maskParticipationProjections = [];
   raw.scenes[0].source.reconciliations = [
-    { ownerId: "owner-a", status: "unavailable", ownerRevision: 2 },
-    { ownerId: "owner-b", status: "unavailable", ownerRevision: 3 },
+    {
+      ownerId: "owner-a",
+      generationId: "generation-a",
+      status: "unavailable",
+      ownerRevision: 2,
+    },
+    {
+      ownerId: "owner-b",
+      generationId: "generation-b",
+      status: "unavailable",
+      ownerRevision: 3,
+    },
   ];
   const state = parseLiveSessionAggregateState(raw),
     result = moveCharacters(
@@ -929,9 +985,18 @@ test("same MaskId from different owners remains owner-qualified", () => {
   if (result.status !== "applied") return;
   assert.deepEqual(
     result.state.pendingReconciliations.map((duty) => ({
-      ownerId: duty.ownerId,
+      ownerId:
+        duty.kind === "mask-owner-reconciliation"
+          ? duty.ownerIdentity.ownerId
+          : duty.ownerId,
       expectedOwnerRevision: duty.expectedOwnerRevision,
-      maskIds: duty.maskIds,
+      maskIds:
+        duty.kind === "mask-owner-reconciliation"
+          ? (duty.scope.kind === "complete-mask-delta"
+              ? duty.scope.masks
+              : duty.scope.knownMaskRefs
+            ).map((mask) => mask.maskId)
+          : [],
     })),
     [
       {
@@ -1264,20 +1329,24 @@ test("unavailable consumers receive a durable source-only deactivation duty", ()
   assert.equal(result.status, "applied");
   if (result.status !== "applied") return;
   assert.deepEqual(result.state.pendingReconciliations[0], {
+    kind: "generic-scene-consumer-reconciliation",
+    version: 1,
     ownerId: "music-owner",
     campaignId: "campaign-a",
     commandId: "command-deactivate-with-music",
     commandDigest: "digest-deactivate-with-music",
+    partyRevisionBefore: 1,
+    partyRevisionAfter: 2,
     sourceSceneId: "scene-primary",
+    sourceRevisionBefore: 0,
+    sourceRevisionAfter: 1,
     target: { kind: "none" },
-    expectedSourceRevision: 0,
     expectedOwnerRevision: 6,
     sourceLifecycleBefore: "active",
     sourceLifecycleAfter: "active",
-    action: "remove-participants",
-    characterIds: ["character-a"],
-    maskIds: [],
-    status: "pending",
+    operation: "remove-participants",
+    affectedCharacterIds: ["character-a"],
+    delivery: "pending",
   });
   assert.deepEqual(
     result.decision.membership?.reconciliations,
@@ -1328,20 +1397,24 @@ test("a bound pending party member can be deactivated without losing cleanup dut
   ]);
   assert.equal(result.state.scenes[0]?.source.lifecycle, "active");
   assert.deepEqual(result.state.pendingReconciliations[0], {
+    kind: "generic-scene-consumer-reconciliation",
+    version: 1,
     ownerId: "music-owner",
     campaignId: "campaign-a",
     commandId: "command-deactivate-pending-a",
     commandDigest: "digest-deactivate-pending-a",
+    partyRevisionBefore: 1,
+    partyRevisionAfter: 2,
     sourceSceneId: "scene-primary",
+    sourceRevisionBefore: 0,
+    sourceRevisionAfter: 1,
     target: { kind: "none" },
-    expectedSourceRevision: 0,
     expectedOwnerRevision: 4,
     sourceLifecycleBefore: "active",
     sourceLifecycleAfter: "active",
-    action: "remove-participants",
-    characterIds: ["character-a"],
-    maskIds: [],
-    status: "pending",
+    operation: "remove-participants",
+    affectedCharacterIds: ["character-a"],
+    delivery: "pending",
   });
 });
 
@@ -1568,7 +1641,9 @@ test("partial Split creates an independent active Scene in Party order and keeps
     revisionAfter: 0,
   });
   assert.equal(
-    result.state.pendingReconciliations[0]?.action,
+    result.state.pendingReconciliations[0]?.kind ===
+      "generic-scene-consumer-reconciliation" &&
+      result.state.pendingReconciliations[0].operation,
     "remove-participants",
   );
   assert.equal(result.decision.kind, "scene-split");
@@ -1606,11 +1681,13 @@ test("full Split retires Source, promotes Target and archives source-only consum
     "character-b",
   ]);
   assert.equal(
-    result.decision.transition?.reconciliations[0]?.action,
-    "archive-source",
+    result.decision.transition?.reconciliations[0]?.kind ===
+      "generic-scene-consumer-reconciliation" &&
+      result.decision.transition.reconciliations[0].operation,
+    "source-retired",
   );
   assert.equal(
-    result.decision.transition?.reconciliations[0]?.status,
+    result.decision.transition?.reconciliations[0]?.delivery,
     "required",
   );
 });
@@ -1811,12 +1888,35 @@ test("Rejoin preserves existing Target consumers and Source-owned content", () =
       maskId: "target-mask",
       kind: "weather",
       ownerId: "weather",
+      generationId: "weather-generation",
       ownerRevision: 4,
       lifecycle: "active",
     },
   ];
+  raw.scenes[1].source.maskParticipationProjections = [
+    {
+      kind: "mask-participation-projection",
+      version: 1,
+      campaignId: "campaign-a",
+      liveSceneId: "scene-split",
+      maskId: "target-mask",
+      maskKind: "weather",
+      ownerIdentity: {
+        ownerId: "weather",
+        generationId: "weather-generation",
+      },
+      ownerRevision: 4,
+      participantCharacterIds: ["character-b"],
+      lifecycle: "active",
+    },
+  ];
   raw.scenes[1].source.reconciliations = [
-    { ownerId: "weather", status: "current", ownerRevision: 4 },
+    {
+      ownerId: "weather",
+      generationId: "weather-generation",
+      status: "current",
+      ownerRevision: 4,
+    },
   ];
   const state = parseLiveSessionAggregateState(raw),
     targetBefore = state.scenes[1]!.source,
@@ -1846,25 +1946,29 @@ test("Rejoin preserves existing Target consumers and Source-owned content", () =
   );
   assert.deepEqual(result.decision.transition?.reconciliations, [
     {
+      kind: "generic-scene-consumer-reconciliation",
+      version: 1,
       ownerId: "music",
       campaignId: "campaign-a",
       commandId: "command-rejoin-scenes",
       commandDigest: "digest-rejoin-scenes",
+      partyRevisionBefore: 2,
+      partyRevisionAfter: 3,
       sourceSceneId: "scene-primary",
+      sourceRevisionBefore: 1,
+      sourceRevisionAfter: 2,
       target: {
         kind: "existing",
         liveSceneId: "scene-split",
         revisionBefore: 0,
         revisionAfter: 1,
       },
-      expectedSourceRevision: 1,
       expectedOwnerRevision: 5,
       sourceLifecycleBefore: "active",
       sourceLifecycleAfter: "retired",
-      action: "archive-source",
-      characterIds: ["character-a"],
-      maskIds: [],
-      status: "required",
+      operation: "source-retired",
+      affectedCharacterIds: ["character-a"],
+      delivery: "required",
     },
   ]);
 });

@@ -11,24 +11,26 @@ import {
   type PreparationSnapshot,
 } from "./contracts";
 import {
-  campaignId,
-  characterId,
-  commandDigest,
-  commandId,
   liveSceneId,
-  maskId,
-  ownerId,
-  revision,
   type CampaignId,
   type CharacterId,
-  type CommandDigest,
   type CommandId,
+  type GenerationId,
   type LiveSceneId,
-  type MaskId,
   type OwnerId,
   type Revision,
 } from "./ids";
 import { exactArray, exactRecord, exactText, uniqueBy } from "./validation";
+import {
+  parseReconciliationDuty,
+  reconciliationOwnerKey,
+  type PendingConsumerReconciliation,
+} from "./mask-reconciliation";
+
+export type {
+  PendingConsumerReconciliation,
+  ReconciliationTargetEndpoint,
+} from "./mask-reconciliation";
 
 export interface RuntimeSceneState {
   readonly kind: "runtime-scene-state";
@@ -38,91 +40,6 @@ export interface RuntimeSceneState {
   readonly notes: string;
   readonly preparedFrom?: PreparationSnapshot;
   readonly encounterPlanRef?: OwnerReference;
-}
-
-export interface PendingConsumerReconciliation {
-  readonly ownerId: OwnerId;
-  readonly campaignId: CampaignId;
-  readonly commandId: CommandId;
-  readonly commandDigest: CommandDigest;
-  readonly sourceSceneId: LiveSceneId;
-  readonly target: ReconciliationTargetEndpoint;
-  readonly expectedSourceRevision: Revision;
-  readonly expectedOwnerRevision: Revision;
-  readonly sourceLifecycleBefore: "active";
-  readonly sourceLifecycleAfter: "active" | "retired";
-  readonly action: "remove-participants" | "archive-source";
-  readonly characterIds: readonly CharacterId[];
-  readonly maskIds: readonly MaskId[];
-  readonly status: "pending";
-}
-
-export type ReconciliationTargetEndpoint =
-  | { readonly kind: "none" }
-  | {
-      readonly kind: "created";
-      readonly liveSceneId: LiveSceneId;
-      readonly revisionAfter: Revision;
-    }
-  | {
-      readonly kind: "existing";
-      readonly liveSceneId: LiveSceneId;
-      readonly revisionBefore: Revision;
-      readonly revisionAfter: Revision;
-    };
-
-function parseReconciliationTarget(
-  value: unknown,
-  label: string,
-): ReconciliationTargetEndpoint {
-  const base = exactRecord(
-    value,
-    ["kind"],
-    ["liveSceneId", "revisionBefore", "revisionAfter"],
-    label,
-  );
-  if (base.kind === "none") {
-    exactRecord(value, ["kind"], [], label);
-    return Object.freeze({ kind: "none" });
-  }
-  if (base.kind === "created") {
-    const row = exactRecord(
-        value,
-        ["kind", "liveSceneId", "revisionAfter"],
-        [],
-        label,
-      ),
-      revisionAfter = revision(row.revisionAfter, `${label}.revisionAfter`);
-    if (revisionAfter !== 0)
-      throw new Error(`${label} besitzt keine Created-Initialrevision 0.`);
-    return Object.freeze({
-      kind: "created",
-      liveSceneId: liveSceneId(row.liveSceneId, `${label}.liveSceneId`),
-      revisionAfter,
-    });
-  }
-  if (base.kind === "existing") {
-    const row = exactRecord(
-      value,
-      ["kind", "liveSceneId", "revisionBefore", "revisionAfter"],
-      [],
-      label,
-    );
-    const revisionBefore = revision(
-        row.revisionBefore,
-        `${label}.revisionBefore`,
-      ),
-      revisionAfter = revision(row.revisionAfter, `${label}.revisionAfter`);
-    if (revisionAfter !== revisionBefore + 1)
-      throw new Error(`${label} besitzt keinen einzelnen Revisionsschritt.`);
-    return Object.freeze({
-      kind: "existing",
-      liveSceneId: liveSceneId(row.liveSceneId, `${label}.liveSceneId`),
-      revisionBefore,
-      revisionAfter,
-    });
-  }
-  throw new Error(`${label}.kind ist unbekannt.`);
 }
 
 export interface LiveSessionAggregateState {
@@ -141,84 +58,10 @@ function parsePendingReconciliation(
   index: number,
 ): PendingConsumerReconciliation {
   const label = `LiveSessionAggregateState.pendingReconciliations[${index}]`,
-    row = exactRecord(
-      value,
-      [
-        "ownerId",
-        "campaignId",
-        "commandId",
-        "commandDigest",
-        "sourceSceneId",
-        "target",
-        "expectedSourceRevision",
-        "expectedOwnerRevision",
-        "sourceLifecycleBefore",
-        "sourceLifecycleAfter",
-        "action",
-        "characterIds",
-        "maskIds",
-        "status",
-      ],
-      [],
-      label,
-    );
-  if (
-    row.sourceLifecycleBefore !== "active" ||
-    !(
-      row.sourceLifecycleAfter === "active" ||
-      row.sourceLifecycleAfter === "retired"
-    ) ||
-    !(
-      row.action === "remove-participants" || row.action === "archive-source"
-    ) ||
-    row.status !== "pending" ||
-    (row.sourceLifecycleAfter === "active") !==
-      (row.action === "remove-participants")
-  )
-    throw new Error(`${label} besitzt eine widersprüchliche Pflicht.`);
-  const characterIds = Object.freeze(
-      uniqueBy(
-        exactArray(row.characterIds, `${label}.characterIds`).map(
-          (entry, characterIndex) =>
-            characterId(entry, `${label}.characterIds[${characterIndex}]`),
-        ),
-        (entry) => entry,
-        `${label}.characterIds`,
-      ),
-    ),
-    maskIds = Object.freeze(
-      uniqueBy(
-        exactArray(row.maskIds, `${label}.maskIds`).map((entry, maskIndex) =>
-          maskId(entry, `${label}.maskIds[${maskIndex}]`),
-        ),
-        (entry) => entry,
-        `${label}.maskIds`,
-      ),
-    );
-  if (!characterIds.length)
-    throw new Error(`${label}.characterIds darf nicht leer sein.`);
-  return Object.freeze({
-    ownerId: ownerId(row.ownerId, `${label}.ownerId`),
-    campaignId: campaignId(row.campaignId, `${label}.campaignId`),
-    commandId: commandId(row.commandId, `${label}.commandId`),
-    commandDigest: commandDigest(row.commandDigest, `${label}.commandDigest`),
-    sourceSceneId: liveSceneId(row.sourceSceneId, `${label}.sourceSceneId`),
-    target: parseReconciliationTarget(row.target, `${label}.target`),
-    expectedSourceRevision: revision(
-      row.expectedSourceRevision,
-      `${label}.expectedSourceRevision`,
-    ),
-    expectedOwnerRevision: revision(
-      row.expectedOwnerRevision,
-      `${label}.expectedOwnerRevision`,
-    ),
-    sourceLifecycleBefore: "active",
-    sourceLifecycleAfter: row.sourceLifecycleAfter,
-    action: row.action,
-    characterIds,
-    maskIds,
-    status: "pending",
-  });
+    parsed = parseReconciliationDuty(value, label);
+  if (parsed.delivery !== "pending")
+    throw new Error(`${label} ist keine Pending-Reconciliation.`);
+  return parsed as PendingConsumerReconciliation;
 }
 
 function parseRuntimeScene(value: unknown, index: number): RuntimeSceneState {
@@ -290,7 +133,8 @@ function parseRuntimeScene(value: unknown, index: number): RuntimeSceneState {
     (source.primary ||
       source.characterIds.length ||
       source.pendingAssignments.length ||
-      source.maskRefs.length)
+      source.maskRefs.length ||
+      source.maskParticipationProjections.length)
   )
     throw new Error(`${label} enthält eine aktive Prepared Runtime.`);
   if (source.lifecycle === "prepared" && !preparedFrom)
@@ -301,25 +145,97 @@ function parseRuntimeScene(value: unknown, index: number): RuntimeSceneState {
     preparedFrom.campaignId !== source.campaignId
   )
     throw new Error(`${label} besitzt fremde Preparation-Provenienz.`);
-  const ownerRevisionById = new Map<OwnerId, Revision>();
+  const ownerRevisionById = new Map<string, Revision>(),
+    maskById = new Map<string, (typeof source.maskRefs)[number]>(),
+    ownerStatus = new Map<string, (typeof source.reconciliations)[number]>(),
+    ownerKey = (owner: OwnerId, generation: GenerationId) =>
+      `${owner}\u0000${generation}`,
+    maskKey = (owner: OwnerId, generation: GenerationId, mask: string) =>
+      `${ownerKey(owner, generation)}\u0000${mask}`;
   for (const mask of source.maskRefs) {
-    const existing = ownerRevisionById.get(mask.ownerId);
+    const key = ownerKey(mask.ownerId, mask.generationId),
+      existing = ownerRevisionById.get(key);
     if (existing !== undefined && existing !== mask.ownerRevision)
       throw new Error(
         `${label} enthält widersprüchliche Masken-OwnerRevisionen.`,
       );
-    ownerRevisionById.set(mask.ownerId, mask.ownerRevision);
+    ownerRevisionById.set(key, mask.ownerRevision);
+    maskById.set(maskKey(mask.ownerId, mask.generationId, mask.maskId), mask);
   }
   for (const owner of source.reconciliations) {
-    const maskRevision = ownerRevisionById.get(owner.ownerId);
+    if (owner.generationId === undefined) {
+      if (source.maskRefs.some((mask) => mask.ownerId === owner.ownerId))
+        throw new Error(
+          `${label} benötigt für Maskenowner eine vollständige Generation.`,
+        );
+      if (owner.ownerRevision === undefined)
+        throw new Error(`${label} benötigt eine gebundene OwnerRevision.`);
+      continue;
+    }
+    const key = ownerKey(owner.ownerId, owner.generationId),
+      maskRevision = ownerRevisionById.get(key);
+    if (maskRevision === undefined)
+      throw new Error(
+        `${label} enthält eine ungebundene Maskenowner-Generation.`,
+      );
+    ownerStatus.set(key, owner);
     if (
-      maskRevision !== undefined &&
-      owner.ownerRevision !== undefined &&
+      owner.ownerRevision === undefined ||
       owner.ownerRevision !== maskRevision
     )
       throw new Error(`${label} enthält eine widersprüchliche OwnerRevision.`);
-    if (maskRevision === undefined && owner.ownerRevision === undefined)
-      throw new Error(`${label} benötigt eine gebundene OwnerRevision.`);
+  }
+  const projectionKeys = new Set<string>();
+  for (const projection of source.maskParticipationProjections) {
+    const key = ownerKey(
+        projection.ownerIdentity.ownerId,
+        projection.ownerIdentity.generationId,
+      ),
+      fullKey = maskKey(
+        projection.ownerIdentity.ownerId,
+        projection.ownerIdentity.generationId,
+        projection.maskId,
+      ),
+      mask = maskById.get(fullKey),
+      status = ownerStatus.get(key)?.status ?? "current";
+    if (
+      !mask ||
+      mask.kind !== projection.maskKind ||
+      mask.ownerRevision !== projection.ownerRevision ||
+      mask.lifecycle !== projection.lifecycle
+    )
+      throw new Error(`${label} enthält eine ungebundene Maskenprojektion.`);
+    if (status !== "current" || projection.lifecycle === "pending")
+      throw new Error(
+        `${label} behandelt keine aktuelle Maskenprojektion als current.`,
+      );
+    if (
+      projection.participantCharacterIds.some(
+        (character) =>
+          !source.characterIds.includes(character) ||
+          source.pendingAssignments.some(
+            (pending) => pending.characterId === character,
+          ),
+      )
+    )
+      throw new Error(`${label} enthält eine scene-fremde Maskenteilnahme.`);
+    projectionKeys.add(fullKey);
+  }
+  for (const mask of source.maskRefs) {
+    const key = ownerKey(mask.ownerId, mask.generationId),
+      status = ownerStatus.get(key)?.status ?? "current",
+      fullKey = maskKey(mask.ownerId, mask.generationId, mask.maskId);
+    if (
+      status === "current" &&
+      (mask.lifecycle === "pending" || !projectionKeys.has(fullKey))
+    )
+      throw new Error(
+        `${label} besitzt keinen vollständigen Current-Maskensnapshot.`,
+      );
+    if (status !== "current" && projectionKeys.has(fullKey))
+      throw new Error(
+        `${label} projiziert einen pending Maskenowner als current.`,
+      );
   }
   return Object.freeze({
     kind: "runtime-scene-state",
@@ -372,7 +288,11 @@ export function parseLiveSessionAggregateState(
           "LiveSessionAggregateState.pendingReconciliations",
         ).map(parsePendingReconciliation),
         (entry) =>
-          `${entry.ownerId}\u0000${entry.commandId}\u0000${entry.action}`,
+          `${reconciliationOwnerKey(entry)}\u0000${entry.commandId}\u0000${
+            entry.kind === "mask-owner-reconciliation"
+              ? entry.scope.kind
+              : entry.operation
+          }`,
         "LiveSessionAggregateState.pendingReconciliations",
       ),
     ),
@@ -410,34 +330,74 @@ export function parseLiveSessionAggregateState(
       throw new Error(
         "LiveSessionAggregateState enthält eine stale Reconciliation-Zielbindung.",
       );
-    const masks = duty.maskIds.map((id) =>
-        source.maskRefs.find(
-          (mask) => mask.maskId === id && mask.ownerId === duty.ownerId,
-        ),
-      ),
-      owner = source.reconciliations.find(
-        (entry) => entry.ownerId === duty.ownerId,
+    if (duty.sourceRevisionAfter > source.sceneRevision)
+      throw new Error(
+        "LiveSessionAggregateState enthält eine zukünftige Reconciliation-Sourcebindung.",
       );
+    const affected = new Set(duty.affectedCharacterIds),
+      partyOrdered = party.characters
+        .filter((character) => affected.has(character.characterId))
+        .map((character) => character.characterId);
     if (
-      masks.some(
-        (mask) =>
-          mask === undefined ||
-          mask.ownerId !== duty.ownerId ||
-          mask.ownerRevision !== duty.expectedOwnerRevision,
+      duty.partyRevisionAfter > party.partyRevision ||
+      partyOrdered.length !== duty.affectedCharacterIds.length ||
+      partyOrdered.some(
+        (character, index) => character !== duty.affectedCharacterIds[index],
       )
     )
       throw new Error(
-        "LiveSessionAggregateState enthält eine ungebundene Masken-Reconciliation.",
+        "LiveSessionAggregateState enthält eine ungebundene Party-Reconciliation.",
       );
-    if (
-      (owner?.ownerRevision !== undefined &&
-        owner.ownerRevision !== duty.expectedOwnerRevision) ||
-      (duty.maskIds.length === 0 &&
-        owner?.ownerRevision !== duty.expectedOwnerRevision)
-    )
-      throw new Error(
-        "LiveSessionAggregateState enthält eine ungebundene Owner-Reconciliation.",
+    if (duty.kind === "mask-owner-reconciliation") {
+      const masks =
+          duty.scope.kind === "complete-mask-delta"
+            ? duty.scope.masks
+            : duty.scope.knownMaskRefs,
+        owner = source.reconciliations.find(
+          (entry) =>
+            entry.ownerId === duty.ownerIdentity.ownerId &&
+            entry.generationId === duty.ownerIdentity.generationId,
+        ),
+        ownerMasks = source.maskRefs.filter(
+          (entry) =>
+            entry.ownerId === duty.ownerIdentity.ownerId &&
+            entry.generationId === duty.ownerIdentity.generationId,
+        ),
+        requiresFullCoverage =
+          duty.scope.kind === "owner-scope-unresolved" ||
+          (duty.scope.kind === "complete-mask-delta" &&
+            duty.scope.operation === "source-retired");
+      if (
+        masks.some((pin) => {
+          const mask = source.maskRefs.find(
+            (entry) =>
+              entry.maskId === pin.maskId &&
+              entry.ownerId === duty.ownerIdentity.ownerId &&
+              entry.generationId === duty.ownerIdentity.generationId,
+          );
+          return (
+            !mask ||
+            mask.kind !== pin.maskKind ||
+            mask.ownerRevision !== pin.expectedOwnerRevision ||
+            mask.lifecycle !== pin.lifecycleBefore
+          );
+        }) ||
+        owner?.ownerRevision !== duty.expectedOwnerRevision ||
+        (requiresFullCoverage && masks.length !== ownerMasks.length)
+      )
+        throw new Error(
+          "LiveSessionAggregateState enthält eine ungebundene Masken-Reconciliation.",
+        );
+    } else {
+      const owner = source.reconciliations.find(
+        (entry) =>
+          entry.ownerId === duty.ownerId && entry.generationId === undefined,
       );
+      if (owner?.ownerRevision !== duty.expectedOwnerRevision)
+        throw new Error(
+          "LiveSessionAggregateState enthält eine ungebundene Owner-Reconciliation.",
+        );
+    }
   }
 
   const activeScenes = scenes.filter(

@@ -95,12 +95,35 @@ function sceneRaw(
         maskId: "mask-a",
         kind: "encounter",
         ownerId: "encounters",
+        generationId: "encounters-generation",
         ownerRevision: 2,
         lifecycle: "active",
       },
     ],
+    maskParticipationProjections: [
+      {
+        kind: "mask-participation-projection",
+        version: 1,
+        campaignId: "campaign-a",
+        liveSceneId: "scene-a",
+        maskId: "mask-a",
+        maskKind: "encounter",
+        ownerIdentity: {
+          ownerId: "encounters",
+          generationId: "encounters-generation",
+        },
+        ownerRevision: 2,
+        participantCharacterIds: ["character-a"],
+        lifecycle: "active",
+      },
+    ],
     reconciliations: [
-      { ownerId: "encounters", status: "current", ownerRevision: 2 },
+      {
+        ownerId: "encounters",
+        generationId: "encounters-generation",
+        status: "current",
+        ownerRevision: 2,
+      },
     ],
     contentPins: [
       { ownerId: "notes", referenceId: "note-a", ownerRevision: 5 },
@@ -309,7 +332,12 @@ test("focus projection exposes scene data only for an exact active source", () =
 
   const foreign = projectFocus(
     activeFocus(),
-    sceneRaw({ campaignId: "campaign-b" }),
+    sceneRaw({
+      campaignId: "campaign-b",
+      maskRefs: [],
+      maskParticipationProjections: [],
+      reconciliations: [],
+    }),
   );
   assert.equal(foreign.status, "unavailable");
   assert.equal(

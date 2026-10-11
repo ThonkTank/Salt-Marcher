@@ -27,10 +27,12 @@ export interface OwnerReference {
   readonly ownerRevision: Revision;
 }
 
-export interface ClockOwnerIdentity {
+export interface OwnerIdentity {
   readonly ownerId: OwnerId;
   readonly generationId: GenerationId;
 }
+
+export type ClockOwnerIdentity = OwnerIdentity;
 
 export interface ClockReference extends OwnerReference {
   readonly generationId: GenerationId;
@@ -124,12 +126,27 @@ export interface MaskReference {
   readonly maskId: MaskId;
   readonly kind: string;
   readonly ownerId: OwnerId;
+  readonly generationId: GenerationId;
   readonly ownerRevision: Revision;
+  readonly lifecycle: "active" | "suspended" | "archived" | "pending";
+}
+
+export interface MaskParticipationProjection {
+  readonly kind: "mask-participation-projection";
+  readonly version: 1;
+  readonly campaignId: CampaignId;
+  readonly liveSceneId: LiveSceneId;
+  readonly maskId: MaskId;
+  readonly maskKind: string;
+  readonly ownerIdentity: OwnerIdentity;
+  readonly ownerRevision: Revision;
+  readonly participantCharacterIds: readonly CharacterId[];
   readonly lifecycle: "active" | "suspended" | "archived" | "pending";
 }
 
 export interface OwnerReconciliation {
   readonly ownerId: OwnerId;
+  readonly generationId?: GenerationId;
   readonly status: "current" | "pending" | "unavailable";
   readonly ownerRevision?: Revision;
   readonly commandId?: CommandId;
@@ -149,6 +166,7 @@ export interface LiveSceneSourceSnapshot {
   readonly sceneClockRef?: ClockReference;
   readonly groupRefs: readonly OwnerReference[];
   readonly maskRefs: readonly MaskReference[];
+  readonly maskParticipationProjections: readonly MaskParticipationProjection[];
   readonly reconciliations: readonly OwnerReconciliation[];
   readonly contentPins: readonly OwnerReference[];
 }
@@ -315,6 +333,13 @@ export function parseClockOwnerIdentity(
   value: unknown,
   label = "ClockOwnerIdentity",
 ): ClockOwnerIdentity {
+  return parseOwnerIdentity(value, label);
+}
+
+export function parseOwnerIdentity(
+  value: unknown,
+  label = "OwnerIdentity",
+): OwnerIdentity {
   const row = record(value, ["ownerId", "generationId"], [], label);
   return Object.freeze({
     ownerId: ownerId(row.ownerId, `${label}.ownerId`),
@@ -707,7 +732,14 @@ function maskReferences(value: unknown): readonly MaskReference[] {
         const label = `LiveSceneSource.maskRefs[${index}]`,
           row = record(
             entry,
-            ["maskId", "kind", "ownerId", "ownerRevision", "lifecycle"],
+            [
+              "maskId",
+              "kind",
+              "ownerId",
+              "generationId",
+              "ownerRevision",
+              "lifecycle",
+            ],
             [],
             label,
           );
@@ -721,12 +753,94 @@ function maskReferences(value: unknown): readonly MaskReference[] {
           maskId: maskId(row.maskId, `${label}.maskId`),
           kind: text(row.kind, `${label}.kind`),
           ownerId: ownerId(row.ownerId, `${label}.ownerId`),
+          generationId: generationId(row.generationId, `${label}.generationId`),
           ownerRevision: revision(row.ownerRevision, `${label}.ownerRevision`),
           lifecycle: row.lifecycle as MaskReference["lifecycle"],
         });
       }),
-      (entry) => `${entry.ownerId}\u0000${entry.maskId}`,
+      (entry) =>
+        `${entry.ownerId}\u0000${entry.generationId}\u0000${entry.maskId}`,
       "LiveSceneSource.maskRefs",
+    ),
+  );
+}
+
+function maskParticipationProjections(
+  value: unknown,
+): readonly MaskParticipationProjection[] {
+  return Object.freeze(
+    unique(
+      array(value, "LiveSceneSource.maskParticipationProjections").map(
+        (entry, index) => {
+          const label = `LiveSceneSource.maskParticipationProjections[${index}]`,
+            row = record(
+              entry,
+              [
+                "kind",
+                "version",
+                "campaignId",
+                "liveSceneId",
+                "maskId",
+                "maskKind",
+                "ownerIdentity",
+                "ownerRevision",
+                "participantCharacterIds",
+                "lifecycle",
+              ],
+              [],
+              label,
+            );
+          if (row.kind !== "mask-participation-projection" || row.version !== 1)
+            throw new Error(`${label} besitzt einen unbekannten Vertrag.`);
+          if (
+            !(["active", "suspended", "archived", "pending"] as const).includes(
+              row.lifecycle as never,
+            )
+          )
+            throw new Error(`${label}.lifecycle ist unbekannt.`);
+          const participants = Object.freeze(
+            unique(
+              array(
+                row.participantCharacterIds,
+                `${label}.participantCharacterIds`,
+              ).map((participant, participantIndex) =>
+                characterId(
+                  participant,
+                  `${label}.participantCharacterIds[${participantIndex}]`,
+                ),
+              ),
+              (participant) => participant,
+              `${label}.participantCharacterIds`,
+            ),
+          );
+          if (row.lifecycle === "archived" && participants.length)
+            throw new Error(
+              `${label} darf im archivierten Zustand keine Live-Teilnehmer enthalten.`,
+            );
+          return Object.freeze({
+            kind: "mask-participation-projection" as const,
+            version: 1 as const,
+            campaignId: campaignId(row.campaignId, `${label}.campaignId`),
+            liveSceneId: liveSceneId(row.liveSceneId, `${label}.liveSceneId`),
+            maskId: maskId(row.maskId, `${label}.maskId`),
+            maskKind: text(row.maskKind, `${label}.maskKind`),
+            ownerIdentity: parseOwnerIdentity(
+              row.ownerIdentity,
+              `${label}.ownerIdentity`,
+            ),
+            ownerRevision: revision(
+              row.ownerRevision,
+              `${label}.ownerRevision`,
+            ),
+            participantCharacterIds: participants,
+            lifecycle:
+              row.lifecycle as MaskParticipationProjection["lifecycle"],
+          });
+        },
+      ),
+      (entry) =>
+        `${entry.ownerIdentity.ownerId}\u0000${entry.ownerIdentity.generationId}\u0000${entry.maskId}`,
+      "LiveSceneSource.maskParticipationProjections",
     ),
   );
 }
@@ -739,7 +853,7 @@ function reconciliations(value: unknown): readonly OwnerReconciliation[] {
           row = record(
             entry,
             ["ownerId", "status"],
-            ["ownerRevision", "commandId"],
+            ["generationId", "ownerRevision", "commandId"],
             label,
           );
         if (
@@ -754,6 +868,14 @@ function reconciliations(value: unknown): readonly OwnerReconciliation[] {
           throw new Error(`${label} benötigt eine CommandId.`);
         return Object.freeze({
           ownerId: ownerId(row.ownerId, `${label}.ownerId`),
+          ...(row.generationId === undefined
+            ? {}
+            : {
+                generationId: generationId(
+                  row.generationId,
+                  `${label}.generationId`,
+                ),
+              }),
           status: row.status as OwnerReconciliation["status"],
           ...(row.ownerRevision === undefined
             ? {}
@@ -768,7 +890,7 @@ function reconciliations(value: unknown): readonly OwnerReconciliation[] {
             : { commandId: commandId(row.commandId, `${label}.commandId`) }),
         });
       }),
-      (entry) => entry.ownerId,
+      (entry) => `${entry.ownerId}\u0000${entry.generationId ?? ""}`,
       "LiveSceneSource.reconciliations",
     ),
   );
@@ -789,6 +911,7 @@ export function parseLiveSceneSource(value: unknown): LiveSceneSourceSnapshot {
       "pendingAssignments",
       "groupRefs",
       "maskRefs",
+      "maskParticipationProjections",
       "reconciliations",
       "contentPins",
     ],
@@ -803,21 +926,29 @@ export function parseLiveSceneSource(value: unknown): LiveSceneSourceSnapshot {
     )
   )
     throw new Error("LiveSceneSource.lifecycle ist unbekannt.");
-  const characterIds = Object.freeze(
-    unique(
-      array(root.characterIds, "LiveSceneSource.characterIds").map(
-        (entry, index) =>
-          characterId(entry, `LiveSceneSource.characterIds[${index}]`),
-      ),
-      (entry) => entry,
-      "LiveSceneSource.characterIds",
+  const parsedCampaignId = campaignId(
+      root.campaignId,
+      "LiveSceneSource.campaignId",
     ),
-  );
+    parsedLiveSceneId = liveSceneId(
+      root.liveSceneId,
+      "LiveSceneSource.liveSceneId",
+    ),
+    characterIds = Object.freeze(
+      unique(
+        array(root.characterIds, "LiveSceneSource.characterIds").map(
+          (entry, index) =>
+            characterId(entry, `LiveSceneSource.characterIds[${index}]`),
+        ),
+        (entry) => entry,
+        "LiveSceneSource.characterIds",
+      ),
+    );
   return Object.freeze({
     kind: "live-scene-source",
     version: 1,
-    campaignId: campaignId(root.campaignId, "LiveSceneSource.campaignId"),
-    liveSceneId: liveSceneId(root.liveSceneId, "LiveSceneSource.liveSceneId"),
+    campaignId: parsedCampaignId,
+    liveSceneId: parsedLiveSceneId,
     sceneRevision: revision(
       root.sceneRevision,
       "LiveSceneSource.sceneRevision",
@@ -844,6 +975,20 @@ export function parseLiveSceneSource(value: unknown): LiveSceneSourceSnapshot {
         }),
     groupRefs: ownerReferences(root.groupRefs, "LiveSceneSource.groupRefs"),
     maskRefs: maskReferences(root.maskRefs),
+    maskParticipationProjections: Object.freeze(
+      maskParticipationProjections(root.maskParticipationProjections).map(
+        (projection) => {
+          if (
+            projection.campaignId !== parsedCampaignId ||
+            projection.liveSceneId !== parsedLiveSceneId
+          )
+            throw new Error(
+              "LiveSceneSource enthält eine fremde Maskenprojektion.",
+            );
+          return projection;
+        },
+      ),
+    ),
     reconciliations: reconciliations(root.reconciliations),
     contentPins: ownerReferences(
       root.contentPins,
