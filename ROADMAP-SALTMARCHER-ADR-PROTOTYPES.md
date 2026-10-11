@@ -33,11 +33,11 @@ Vor Ratifikation gilt:
   erreichbar.
 - Bestehende Produktmodule dürfen als unveränderte Eingabe importiert werden.
   Eine erforderliche Änderung an `src/`, `styles.css`, `build.mjs` oder einer
-  vorhandenen Roadmap beendet das jeweilige Paket mit `No-Go: boundary` und
-  benötigt erst einen eigenen, reviewten Nachbesserungsplan.
-- Abhängigkeiten und reproduzierbare Befehle dürfen in einem späteren
-  Umsetzungslauf ausschließlich über `package.json` und `package-lock.json`
-  ergänzt werden. Kein Paket besitzt gleichzeitig Produkt- oder Hostdateien.
+  vorhandenen Roadmap liegt außerhalb dieses isolierten Prototyps und ist
+  `No-Go: boundary`; sie zählt nicht als bestandener Prototypbeleg.
+- Prototypabhängigkeiten und reproduzierbare Befehle stehen in `package.json`
+  und `package-lock.json`. Prototypcode bleibt von Produkt- und Hostdateien
+  getrennt.
 - Es gibt keine Dual Writes. Jeder Lauf benennt genau eine Testdatenwahrheit.
   Bestehende Vault-, Karten- und Nutzerdateien werden nur gehasht oder aus
   einer ausdrücklich erzeugten Kopie gelesen.
@@ -96,9 +96,9 @@ Renderer- und einer Speichergrenze. Ohne Stub- oder Direktzugriff führt er in
 einem Profil nacheinander P01-Karte öffnen/ändern/speichern, P02-Campaign-Write,
 P03-sichere Projektion und P04-Export/Import aus. Correlation-ID, Revision,
 Schema-Version und semantischer Digest werden an jeder Grenze durchgängig
-geprüft. Der Lauf besitzt eigenen Plan, Review, Faultmatrix, Aggregatbeleg und
-Aufräumcommit; eine zweite Utility-/Speicherautorität oder paketlokale
-Sonderbrücke ist `No-Go`. Sein exklusiver Besitz ist
+geprüft. Faultmatrix, unabhängige Prüfung und gehashter Aggregatbeleg weisen
+das Zusammenspiel nach; eine zweite Utility-/Speicherautorität oder paketlokale
+Sonderbrücke ist `No-Go`. Technische Modul- und Belegpfade sind
 `tools/adr-prototypes/composition/**`,
 `tools/adr-prototypes/evidence/c01-aggregate.json`,
 `tests/adr-prototypes/c01-*.test.*` und nur vorübergehend die exakt gepinnten
@@ -263,7 +263,7 @@ Datenbankzugriff im Renderer. Ein React-Neubau, die Migration von
 `src/editor.ts`, ein neues Kartenformat und eine Installation sind ausdrücklich
 keine P01-Ziele.
 
-### Besitzdateien des späteren Umsetzungslaufs
+### Technische Modul- und Belegpfade
 
 - `tools/adr-prototypes/p01/**`
 - `tools/adr-prototypes/contracts/p01-v1/**`
@@ -275,8 +275,8 @@ keine P01-Ziele.
 P01 liest unverändert `src/model.ts`, `src/session.ts`, `src/commands.ts`,
 `src/persistence.ts`, `src/renderer.ts`, `src/rendering.ts`,
 `src/render-drawing.ts`, `src/selection.ts` und deren aktuelle Abhängigkeiten.
-Diese Dateien sind nicht in P01-Besitz. Ein notwendiger Edit an ihnen ist das
-oben definierte Boundary-No-Go.
+Diese Produktdateien sind unveränderte Eingaben. Ein notwendiger Edit an
+ihnen ist das oben definierte Boundary-No-Go.
 
 ### Ports und Prozessgrenzen
 
@@ -451,7 +451,7 @@ Campaign-Datensatz und schreibt die dazugehörige erklärende History in genau
 einer Transaktion. Er ist synthetisch und wird nicht als vollständiges
 Campaign-, Scene- oder Ledger-Modell ausgegeben.
 
-### Besitzdateien des späteren Umsetzungslaufs
+### Technische Modul- und Belegpfade
 
 - `tools/adr-prototypes/p02/**`
 - `tools/adr-prototypes/contracts/p02-v1/**`
@@ -553,7 +553,7 @@ allgemeine GM-, Datei-, Datenbank-, Audio- oder Mutationsfähigkeit. P03 baut
 weder vollständige Scene- noch Knowledge-/Perception-Fachlogik; sein Oracle
 ist eine explizite synthetische Projektion.
 
-### Besitzdateien des späteren Umsetzungslaufs
+### Technische Modul- und Belegpfade
 
 - `tools/adr-prototypes/p03/**`
 - `tools/adr-prototypes/contracts/p03-v1/**`
@@ -657,7 +657,7 @@ Campaign importiert werden können. Das Prototypformat friert noch kein
 First-Real-Use-Dauerformat ein und verspricht keine Kompatibilität für
 Entwicklungsdaten.
 
-### Besitzdateien des späteren Umsetzungslaufs
+### Technische Modul- und Belegpfade
 
 - `tools/adr-prototypes/p04/**`
 - `tools/adr-prototypes/contracts/p04-v1/**`
@@ -812,7 +812,7 @@ Ressourcennutzung ist `No-Go`.
 
 ## Gesamtfolge und ADR-Entscheid
 
-Die Reihenfolge ist verbindlich:
+Die Beweise bauen fachlich aufeinander auf:
 
 1. `ADR-P01` beweist Kartenwiederverwendung und die Renderergrenze.
 2. `ADR-P02` ergänzt die einzige lokale Mutationsautorität und Crashsicherheit.
@@ -823,16 +823,16 @@ Die Reihenfolge ist verbindlich:
    Main-/Utility-/Preload-/Renderer-/Speichergrenze.
 
 P02 benötigt die belegten P01-Eingangsorakel; P02 bleibt eine eigene atomare Write-/Recoveryprüfung.
-P04 beginnt erst, wenn P01- und P02-Digests als feste Eingangsorakel vorliegen.
-C01 beginnt erst nach dem P04-Review und verwendet die erhaltenen
-Vertragsartefakte; sein Aufräumen entfernt den Composition-Harness, nicht die
-Verträge. Ein späterer Prototyp darf kein früheres No-Go verdecken.
+P04 benötigt P01- und P02-Digests als feste Eingangsorakel. C01 verwendet die
+geprüften P04-Ergebnisse und erhaltenen Vertragsartefakte. Der temporäre
+Composition-Harness kann entfernt werden; die Verträge bleiben erhalten. Ein
+späterer Prototyp darf kein früheres No-Go verdecken.
 
 ### Außerhalb P01-P04 verbleibende Ratifikationsblocker
 
 Auch vier bestandene Prototypen plus Composition-Lauf reichen nicht für den
 Plattformentscheid. Vor Ratifikation benötigen folgende Dimensionen eigene
-ausführbare, reviewte Risikobelege und Besitzpläne; sie dürfen nicht still in
+ausführbare, unabhängig geprüfte Risikobelege; sie dürfen nicht still in
 P01-P04/C01 wachsen:
 
 - **Distribution:** signierter oder nachvollziehbar identifizierter

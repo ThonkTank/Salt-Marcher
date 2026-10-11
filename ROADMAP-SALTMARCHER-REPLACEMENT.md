@@ -63,8 +63,8 @@ verbleibende Abweichungen in `acceptance.json` fest.
 
 SMR-00–11 sind Fachfolgen mit eigenen Abnahmen, keine globale serielle
 Implementierungsfolge. Die [gemeinsame Lieferroadmap](docs/ROADMAP.md#parallele-umsetzung-und-zusammenführung)
-führt ihre parallel umsetzbaren Nutzerergebnisse und Zusammenführungen;
-aktuelle Aufgaben und Besitz stehen an den dort verlinkten Arbeitsorten.
+führt die Nutzerergebnisse und ihre fachlichen Abhängigkeiten. Die dort
+verlinkten Fachquellen beschreiben Anforderungen und technische Anschlüsse.
 
 ### SMR-00 – Portfolivertrag und Quelleninventar
 
@@ -244,7 +244,7 @@ Marker, ein isolierter CityRenderer oder ein Dungeoneditor allein genügt nicht.
    und Autonomy konsumieren bestätigte Raum-/Passage-/Runtimefakten; fehlende
    Schema-/Transferentscheidungen aus #44 bleiben offen.
 
-Arbeitsorte: [HEX-Meilenstein B](ROADMAP-HEX-ATLAS.md#meilenstein-b--hex--ort--dungeon--raum-key--zurück),
+Fachquellen: [HEX-Meilenstein B](ROADMAP-HEX-ATLAS.md#meilenstein-b--hex--ort--dungeon--raum-key--zurück),
 [CITY-01–09](ROADMAP-CITIES-IMPLEMENTATION-PLAN.md#technische-arbeitspakete),
 [Atlasstand](ROADMAP-HEX-ATLAS.md); [Dungeonanforderungen](docs/plans/dungeon/smr04-spatial-coverage.md); #44. Direkte Endabnahme SMR-AC-05; E2E-01 prüft den gemeinsamen
 Integrationsweg, nicht automatisch die gesamte Karten-/Stadtfunktion.

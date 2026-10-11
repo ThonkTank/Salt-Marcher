@@ -782,16 +782,16 @@ Persistenz, Recovery und GM-Anwendung des Party-/LiveSession-Kerns sind Kandidat
 
 ## Kernverträge und Umsetzung
 
-## Kernverträge und Umsetzung — Ziel des ersten Implementierungsstrangs
+## Kernverträge und Umsetzung — Hostneutraler Kern
 
-Der erste Strang baut einen reinen, deterministischen TypeScript-Kern für
+Der reine, deterministische TypeScript-Kern ist zuständig für
 Party, LiveScene und LiveSession. Der Kern besitzt keine Hostimporte, keine
 Datei-, Datenbank-, Fenster-, Audio- oder Prozessrechte und keine direkte
 Obsidian-/Electron-Kopplung. Er verarbeitet validierte immutable Eingaben,
 liefert immutable Ergebnisse und erzeugt explizite, noch nicht persistierte
 Command-/Reconciliation-Entscheidungen.
 
-Der Strang beweist zunächst die Fachinvarianten. Er behauptet noch keine
+Der reine Kern belegt Fachinvarianten, aber noch keine
 durable Mehrbesitzertransaktion, keinen Campaign-Write, keine Migration, keine
 Hostoberfläche und keine Passive-Display-Ausgabe. Diese Grenzen benötigen die jeweiligen produktiven Adapter und direkten Belege.
 
@@ -1007,7 +1007,7 @@ Im Zielrepository existiert noch kein kanonischer Campaign-/Party-/LiveScene-
 Produktstore. Deshalb enthält I01 keine automatische Migration und liest weder
 Obsidian-Vaults noch SaltMarcher-Datenbanken.
 
-Die spätere Migration muss als getrenntes Paket mindestens beweisen:
+Die Migration benötigt mindestens folgende technische Nachweise:
 
 1. eine Campaign ohne LiveSession bleibt gültig und erzeugt nichts beim Start;
 2. erst ausdrückliches `InitializeLiveSession` erzeugt Primary, ClockRef und

@@ -780,9 +780,9 @@ Zähler-, Byte- und Dateivergleichen:
 
 ## Dungeon-Geometrie und Vorschau — I01-Dateigrenze und Prüfplan
 
-Voraussichtlicher I01-Besitz:
+Technische Modulgrenzen:
 
-- neues `src/features/dungeon/geometry-change.ts`;
+- `src/features/dungeon/geometry-change.ts`;
 - eine eng extrahierte pure Command→Document-Projektion im vorhandenen
   Dungeon-/Session-Pfad statt einer zweiten Applikationslogik;
 - `src/features/atlas/spatial-canvas.ts` nur für einen ownergebundenen
@@ -801,9 +801,9 @@ Begin/Update/Cancel. Die aktive v2-Fixture und ihre nicht betroffenen SHA-/
 Markdownwerte werden vor und nach dem komponierten Corefall verglichen.
 
 I01 erhält `npm run check`, fokussierte Regressionen, vollständiges `npm test`
-und `npm run build`. Ein später erforderlicher Hostlauf gehört erst nach
-unabhängigem Code-Review in ein getrenntes Paket; er benutzt den vereinbarten
-isolierten Host. Die reine Vertragsprüfung führt mangels
+und `npm run build`. Produktwirkung benötigt zusätzlich unabhängige
+Codeprüfung und direkte Belege auf dem vereinbarten isolierten Host. Die reine
+Vertragsprüfung führt mangels
 Produktänderung keine Produktbasisprüfung als Funktionsbeleg an.
 
 ## Integrierte Gesture-Gegenfälle

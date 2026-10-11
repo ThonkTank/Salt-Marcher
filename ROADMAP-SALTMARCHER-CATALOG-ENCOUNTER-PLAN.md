@@ -473,11 +473,10 @@ werden nicht überschrieben.
 ## Monster-Hostprüfung — Review und verbleibende Grenzen
 
 Nach den Läufen prüft ein unabhängiger Read-only-Review den exakten SHA,
-Szenariocode und sämtliche Receipts. Pflichtbefunde werden in einem getrennten
-Nachbesserungslauf repariert und erneut geprüft. Physische Eingabe und jede
-nicht ausgeführte Plattform-/Screenreaderprüfung bleiben offen. Erst nach
-bestandenem H01-Review darf `CE-01-C01` mit eigenem Plan, Umsetzung und Review
-beginnen.
+Szenariocode und sämtliche Receipts. Pflichtbefunde benötigen Korrektur und
+erneute Prüfung. Physische Eingabe und jede nicht ausgeführte Plattform-/
+Screenreaderprüfung bleiben offen. Anschließende `CE-01-C01`-Änderungen müssen
+den geprüften H01-Scope erhalten.
 
 ## Monster-Hostprüfung — Ergebnis vom 9. Oktober 2026
 
@@ -742,9 +741,9 @@ Generierung oder globale Poolmutation.
 
 Der gemeinsame echte Hostlauf muss alle sieben realen Provider prüfen. Die Providerbelege allein ersetzen keine Encounter-Builder- oder Combatabnahme. Offene Providerbefunde bleiben sichtbar und werden nicht durch spätere Funktionsbelege geschlossen.
 
-## Gemeinsame Providerverträge — Besitzdateien
+## Gemeinsame Providerverträge — Technische Modulgrenzen
 
-CE-02-I01 darf ausschließlich besitzen:
+CE-02-I01 umfasst folgende Modul-, UI- und Prüfgrenzen:
 
 - neue enge Section-/Workspace-State-/Providerdateien unter
   `src/features/catalog/`;
@@ -755,12 +754,12 @@ CE-02-I01 darf ausschließlich besitzen:
   Hostbedarf `src/ui/view-types.ts`/`src/main.ts`;
 - passende Core-, DOM- und Adaptertests;
 - `tools/host/ce02-catalog.cjs` erst für den späteren Hostlauf;
-- CE-02-Plan-, Checkpoint- und Acceptance-Metadaten.
+- technische Belege und zugehörige Acceptance-Zuordnungen.
 
-I01 besitzt keine Itemdaten, Encounter-/World-Planner-Persistenz, SQLite,
-Combat-, Scene- oder Atlasdateien. I02 bis I05 erhalten vor Umsetzung jeweils
-einen engeren, separat reviewten Besitzsatz. Fremde Hex-, Stadt-, Dungeon- und
-ADR-Dateien bleiben unberührt.
+I01 enthält keine Itemdaten, Encounter-/World-Planner-Persistenz, SQLite,
+Combat-, Scene- oder Atlasmutation. I02 bis I05 benötigen die jeweiligen
+Provider-, Schema- und Persistenzverträge. Hex-, Stadt-, Dungeon- und
+ADR-Implementierungen bleiben außerhalb der Providershell.
 
 ## Gemeinsame Providerverträge — Automatisierte Gates
 

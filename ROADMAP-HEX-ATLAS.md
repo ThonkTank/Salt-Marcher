@@ -125,7 +125,7 @@ Jede Erweiterung erhält den vorhandenen bearbeitbaren Atlas, gemeinsame Kamera/
 
 Dieses Tor fordert früh ein vollständiges Mapping und direkt belegte Startfolgen. Die vollständige Paarabnahme sämtlicher späterer Varianten bleibt bei der jeweiligen Werkzeugphase, damit der nutzbare Hex-Editor nach HEX-02 und der zusammenhängende Atlasablauf nach HEX-05 früh verfügbar werden.
 
-**Praxistest:** Dungeon öffnen → Raum-Key lesen und bearbeiten → Undo/Redo → speichern → frischer Obsidian-Start. Bestehende offene Dungeondraft-Abnahmen, insbesondere das Phase-5-Aufräumtor, bleiben in ihrer eigenen Roadmap erhalten. Ein konkreter Fehler in einer benötigten gemeinsamen Funktion wird vor deren Wiederverwendung behoben; die gesamte übrige Dungeondraft-Parität muss nicht vor dem ersten Hex-Editor fertig sein.
+**Praxistest:** Dungeon öffnen → Raum-Key lesen und bearbeiten → Undo/Redo → speichern → frischer Obsidian-Start. Bestehende offene Dungeondraft-Abnahmen bleiben in ihrer eigenen Roadmap erhalten. Das Phase-5-Aufräumtor ist nach `phase5CleanupRepairIndependentReview` in [acceptance.json](acceptance.json) am 8. Oktober 2026 auf `f53c78164fcfd6e74c6410161272914aa8597a25` abgeschlossen; dieser datierte Nachweis ist keine aktuelle Gesamt-Paritätsabnahme. Ein konkreter Fehler in einer benötigten gemeinsamen Funktion wird vor deren Wiederverwendung behoben; die gesamte übrige Dungeondraft-Parität muss nicht vor dem ersten Hex-Editor fertig sein.
 
 ### Meilenstein A – Eine Hexkarte tatsächlich bearbeiten
 
