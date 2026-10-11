@@ -187,8 +187,13 @@ wieder bedienbar: Der vorhandene Button „Erneut versuchen“ holt nach frische
 Campaignsnapshot den neuesten Entwurf ausdrücklich zurück. Die andere Ansicht
 und ihre späten Eingaben werden widerrufen; ein bloßes Providerereignis nimmt
 den Besitz nicht ungefragt zurück. Eine Zwei-View-DOM-Gegenprobe reproduzierte
-vor der Korrektur den alten Text und besteht danach. Unabhängige Prüfung und
-nativer Mehrview-Nachweis stehen aus.
+vor der Korrektur den alten Text und besteht danach. Eine isolierte echte
+Obsidianprobe mit zwei Ansichten auf sauberer Quelle `489bc13d` bestand:
+neuester Entwurf zurückgeholt, alte Eingabe wirkungslos, alle acht nativen
+Eingaben bytegleich, normaler Exit. Rohbeleg
+`/home/aaron/.cache/dungeon-native-qa/atlasqa-world-notes-reclaim-host-03/evidence/1791694205278-atlas-spatial-edit/`,
+Result-SHA256 `3216d4ca0fd0506404505d4dbb80476a0017591b8b419d959b18ad2f5d124f30`.
+Unabhängige Prüfung steht aus.
 
 Offen: ungespeicherte Entwürfe über Prozessneustart, breite Crash-/Recovery-
 und physische Eingabeprüfung, Encounter-Constraints, NPC-Combat, vollständiger
