@@ -1,22 +1,26 @@
 import {
   campaignId,
   characterId,
+  commandDigest,
   commandId,
   generationId,
   liveSceneId,
   maskId,
   ownerId,
   preparationId,
+  receiptId,
   referenceId,
   revision,
   type CampaignId,
   type CharacterId,
+  type CommandDigest,
   type CommandId,
   type GenerationId,
   type LiveSceneId,
   type MaskId,
   type OwnerId,
   type PreparationId,
+  type ReceiptId,
   type ReferenceId,
   type Revision,
 } from "./ids";
@@ -150,6 +154,9 @@ export interface OwnerReconciliation {
   readonly status: "current" | "pending" | "unavailable";
   readonly ownerRevision?: Revision;
   readonly commandId?: CommandId;
+  readonly pendingCommandIds?: readonly CommandId[];
+  readonly commandDigest?: CommandDigest;
+  readonly receiptId?: ReceiptId;
 }
 
 export interface LiveSceneSourceSnapshot {
@@ -853,7 +860,14 @@ function reconciliations(value: unknown): readonly OwnerReconciliation[] {
           row = record(
             entry,
             ["ownerId", "status"],
-            ["generationId", "ownerRevision", "commandId"],
+            [
+              "generationId",
+              "ownerRevision",
+              "commandId",
+              "pendingCommandIds",
+              "commandDigest",
+              "receiptId",
+            ],
             label,
           );
         if (
@@ -866,6 +880,52 @@ function reconciliations(value: unknown): readonly OwnerReconciliation[] {
           throw new Error(`${label} benötigt eine OwnerRevision.`);
         if (row.status === "pending" && row.commandId === undefined)
           throw new Error(`${label} benötigt eine CommandId.`);
+        const pendingCommandIds =
+          row.status === "pending" && row.generationId !== undefined
+            ? Object.freeze(
+                unique(
+                  array(
+                    row.pendingCommandIds ?? [row.commandId],
+                    `${label}.pendingCommandIds`,
+                  ).map((entry, commandIndex) =>
+                    commandId(
+                      entry,
+                      `${label}.pendingCommandIds[${commandIndex}]`,
+                    ),
+                  ),
+                  (entry) => entry,
+                  `${label}.pendingCommandIds`,
+                ),
+              )
+            : undefined;
+        if (
+          pendingCommandIds !== undefined &&
+          pendingCommandIds[pendingCommandIds.length - 1] !== row.commandId
+        )
+          throw new Error(`${label} besitzt keine geordnete Pendingfolge.`);
+        const hasReceiptBinding =
+          row.commandId !== undefined ||
+          row.commandDigest !== undefined ||
+          row.receiptId !== undefined;
+        if (
+          row.status === "current" &&
+          hasReceiptBinding &&
+          !(
+            row.commandId !== undefined &&
+            row.commandDigest !== undefined &&
+            row.receiptId !== undefined
+          )
+        )
+          throw new Error(
+            `${label} besitzt keine vollständige Receiptbindung.`,
+          );
+        if (
+          row.status !== "current" &&
+          (row.commandDigest !== undefined || row.receiptId !== undefined)
+        )
+          throw new Error(
+            `${label} darf keine veröffentlichte Receipt binden.`,
+          );
         return Object.freeze({
           ownerId: ownerId(row.ownerId, `${label}.ownerId`),
           ...(row.generationId === undefined
@@ -888,6 +948,18 @@ function reconciliations(value: unknown): readonly OwnerReconciliation[] {
           ...(row.commandId === undefined
             ? {}
             : { commandId: commandId(row.commandId, `${label}.commandId`) }),
+          ...(pendingCommandIds === undefined ? {} : { pendingCommandIds }),
+          ...(row.commandDigest === undefined
+            ? {}
+            : {
+                commandDigest: commandDigest(
+                  row.commandDigest,
+                  `${label}.commandDigest`,
+                ),
+              }),
+          ...(row.receiptId === undefined
+            ? {}
+            : { receiptId: receiptId(row.receiptId, `${label}.receiptId`) }),
         });
       }),
       (entry) => `${entry.ownerId}\u0000${entry.generationId ?? ""}`,
@@ -943,6 +1015,36 @@ export function parseLiveSceneSource(value: unknown): LiveSceneSourceSnapshot {
         (entry) => entry,
         "LiveSceneSource.characterIds",
       ),
+    ),
+    parsedPendingAssignments = pendingAssignments(root.pendingAssignments),
+    parsedMaskProjections = Object.freeze(
+      maskParticipationProjections(root.maskParticipationProjections).map(
+        (projection) => {
+          if (
+            projection.campaignId !== parsedCampaignId ||
+            projection.liveSceneId !== parsedLiveSceneId
+          )
+            throw new Error(
+              "LiveSceneSource enthält eine fremde Maskenprojektion.",
+            );
+          return projection;
+        },
+      ),
+    ),
+    characterSet = new Set(characterIds),
+    pendingSet = new Set(
+      parsedPendingAssignments.map((assignment) => assignment.characterId),
+    );
+  if (
+    parsedMaskProjections.some((projection) =>
+      projection.participantCharacterIds.some(
+        (participant) =>
+          !characterSet.has(participant) || pendingSet.has(participant),
+      ),
+    )
+  )
+    throw new Error(
+      "LiveSceneSource enthält ungebundene oder pending Maskenteilnehmer.",
     );
   return Object.freeze({
     kind: "live-scene-source",
@@ -956,7 +1058,7 @@ export function parseLiveSceneSource(value: unknown): LiveSceneSourceSnapshot {
     lifecycle: root.lifecycle as LiveSceneSourceSnapshot["lifecycle"],
     primary: bool(root.primary, "LiveSceneSource.primary"),
     characterIds,
-    pendingAssignments: pendingAssignments(root.pendingAssignments),
+    pendingAssignments: parsedPendingAssignments,
     ...(root.locationRef === undefined
       ? {}
       : {
@@ -975,20 +1077,7 @@ export function parseLiveSceneSource(value: unknown): LiveSceneSourceSnapshot {
         }),
     groupRefs: ownerReferences(root.groupRefs, "LiveSceneSource.groupRefs"),
     maskRefs: maskReferences(root.maskRefs),
-    maskParticipationProjections: Object.freeze(
-      maskParticipationProjections(root.maskParticipationProjections).map(
-        (projection) => {
-          if (
-            projection.campaignId !== parsedCampaignId ||
-            projection.liveSceneId !== parsedLiveSceneId
-          )
-            throw new Error(
-              "LiveSceneSource enthält eine fremde Maskenprojektion.",
-            );
-          return projection;
-        },
-      ),
-    ),
+    maskParticipationProjections: parsedMaskProjections,
     reconciliations: reconciliations(root.reconciliations),
     contentPins: ownerReferences(
       root.contentPins,

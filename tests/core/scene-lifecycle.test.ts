@@ -69,6 +69,12 @@ function partyBeforeSession() {
 }
 
 function commandBase(kind: string, overrides: Record<string, unknown> = {}) {
+  const usesMaskContributions = [
+    "move-characters",
+    "split-scene",
+    "rejoin-scenes",
+    "deactivate-party-character",
+  ].includes(kind);
   return {
     kind,
     version: 1,
@@ -78,6 +84,7 @@ function commandBase(kind: string, overrides: Record<string, unknown> = {}) {
     expectedPartyRevision: 0,
     expectedFocusRevision: 0,
     cancelled: false,
+    ...(usesMaskContributions ? { maskOwnerContributions: [] } : {}),
     ...overrides,
   };
 }
@@ -711,6 +718,7 @@ test("unavailable mask owner cannot roll back a move and receives one bound pend
       status: "pending",
       ownerRevision: 3,
       commandId: "command-move-unavailable",
+      pendingCommandIds: ["command-move-unavailable"],
     },
   ]);
   assert.equal(result.state.pendingReconciliations.length, 1);

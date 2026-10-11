@@ -12,6 +12,7 @@ import {
   liveSceneId,
   maskId,
   ownerId,
+  receiptId,
   revision,
   type CampaignId,
   type CharacterId,
@@ -20,6 +21,7 @@ import {
   type LiveSceneId,
   type MaskId,
   type OwnerId,
+  type ReceiptId,
   type Revision,
 } from "./ids";
 import { exactArray, exactRecord, exactText, uniqueBy } from "./validation";
@@ -76,6 +78,36 @@ export interface MaskDelta extends MaskPin {
   readonly lifecycleAfter: "active" | "suspended" | "archived";
 }
 
+export interface MaskOwnerSnapshotMask {
+  readonly maskId: MaskId;
+  readonly maskKind: string;
+  readonly lifecycle: "active" | "suspended" | "archived";
+  readonly participantCharacterIds: readonly CharacterId[];
+}
+
+export interface MaskOwnerPreparedContribution {
+  readonly kind: "mask-owner-prepared-contribution";
+  readonly version: 1;
+  readonly status: "prepared-unpublished";
+  readonly receiptId: ReceiptId;
+  readonly campaignId: CampaignId;
+  readonly commandId: CommandId;
+  readonly commandDigest: CommandDigest;
+  readonly sourceSceneId: LiveSceneId;
+  readonly sourceSceneRevisionBefore: Revision;
+  readonly sourceSceneRevisionAfter: Revision;
+  readonly ownerIdentity: MaskOwnerIdentity;
+  readonly ownerRevisionBefore: Revision;
+  readonly ownerRevisionAfter: Revision;
+  readonly affectedCharacterIds: readonly CharacterId[];
+  readonly scope: Extract<
+    MaskOwnerScope,
+    { readonly kind: "complete-mask-delta" }
+  >;
+  readonly beforeMasks: readonly MaskOwnerSnapshotMask[];
+  readonly afterMasks: readonly MaskOwnerSnapshotMask[];
+}
+
 export type MaskOwnerScope =
   | {
       readonly kind: "complete-mask-delta";
@@ -93,6 +125,7 @@ export interface MaskOwnerDuty extends ReconciliationEnvelope {
   readonly ownerIdentity: MaskOwnerIdentity;
   readonly expectedOwnerRevision: Revision;
   readonly scope: MaskOwnerScope;
+  readonly preparedContribution?: MaskOwnerPreparedContribution;
 }
 
 export type ReconciliationDuty = GenericSceneConsumerDuty | MaskOwnerDuty;
@@ -303,6 +336,257 @@ function parseScope(value: unknown, label: string): MaskOwnerScope {
   throw new Error(`${label}.kind ist unbekannt.`);
 }
 
+function parseSnapshotMasks(
+  value: unknown,
+  label: string,
+): readonly MaskOwnerSnapshotMask[] {
+  return Object.freeze(
+    uniqueBy(
+      exactArray(value, label).map((entry, index) => {
+        const maskLabel = `${label}[${index}]`,
+          row = exactRecord(
+            entry,
+            ["maskId", "maskKind", "lifecycle", "participantCharacterIds"],
+            [],
+            maskLabel,
+          ),
+          lifecycle = row.lifecycle as MaskOwnerSnapshotMask["lifecycle"],
+          participantCharacterIds = characters(
+            row.participantCharacterIds,
+            `${maskLabel}.participantCharacterIds`,
+          );
+        if (
+          !(
+            lifecycle === "active" ||
+            lifecycle === "suspended" ||
+            lifecycle === "archived"
+          )
+        )
+          throw new Error(`${maskLabel}.lifecycle ist unbekannt.`);
+        if (lifecycle === "archived" && participantCharacterIds.length > 0)
+          throw new Error(
+            `${maskLabel} darf archiviert keine Live-Teilnehmer enthalten.`,
+          );
+        return Object.freeze({
+          maskId: maskId(row.maskId, `${maskLabel}.maskId`),
+          maskKind: exactText(row.maskKind, `${maskLabel}.maskKind`),
+          lifecycle,
+          participantCharacterIds,
+        });
+      }),
+      (entry) => entry.maskId,
+      label,
+    ),
+  );
+}
+
+export function parseMaskOwnerPreparedContribution(
+  value: unknown,
+  label = "MaskOwnerPreparedContribution",
+): MaskOwnerPreparedContribution {
+  const row = exactRecord(
+      value,
+      [
+        "kind",
+        "version",
+        "status",
+        "receiptId",
+        "campaignId",
+        "commandId",
+        "commandDigest",
+        "sourceSceneId",
+        "sourceSceneRevisionBefore",
+        "sourceSceneRevisionAfter",
+        "ownerIdentity",
+        "ownerRevisionBefore",
+        "ownerRevisionAfter",
+        "affectedCharacterIds",
+        "scope",
+        "beforeMasks",
+        "afterMasks",
+      ],
+      [],
+      label,
+    ),
+    identity = exactRecord(
+      row.ownerIdentity,
+      ["ownerId", "generationId"],
+      [],
+      `${label}.ownerIdentity`,
+    ),
+    sourceSceneRevisionBefore = revision(
+      row.sourceSceneRevisionBefore,
+      `${label}.sourceSceneRevisionBefore`,
+    ),
+    sourceSceneRevisionAfter = revision(
+      row.sourceSceneRevisionAfter,
+      `${label}.sourceSceneRevisionAfter`,
+    ),
+    ownerRevisionBefore = revision(
+      row.ownerRevisionBefore,
+      `${label}.ownerRevisionBefore`,
+    ),
+    ownerRevisionAfter = revision(
+      row.ownerRevisionAfter,
+      `${label}.ownerRevisionAfter`,
+    ),
+    scope = parseScope(row.scope, `${label}.scope`),
+    affectedCharacterIds = characters(
+      row.affectedCharacterIds,
+      `${label}.affectedCharacterIds`,
+    ),
+    beforeMasks = parseSnapshotMasks(row.beforeMasks, `${label}.beforeMasks`),
+    afterMasks = parseSnapshotMasks(row.afterMasks, `${label}.afterMasks`),
+    affected = new Set(affectedCharacterIds),
+    operation =
+      scope.kind === "complete-mask-delta" ? scope.operation : undefined,
+    expectedScope = Object.freeze({
+      kind: "complete-mask-delta" as const,
+      operation:
+        operation === "source-retired"
+          ? ("source-retired" as const)
+          : ("remove-participants" as const),
+      masks: Object.freeze(
+        beforeMasks.flatMap((mask) => {
+          const participants = mask.participantCharacterIds.filter((entry) =>
+            affected.has(entry),
+          );
+          if (operation !== "source-retired" && participants.length === 0)
+            return [];
+          return [
+            Object.freeze({
+              maskId: mask.maskId,
+              maskKind: mask.maskKind,
+              expectedOwnerRevision: ownerRevisionBefore,
+              lifecycleBefore: mask.lifecycle,
+              participantCharacterIds: Object.freeze(participants),
+              lifecycleAfter:
+                operation === "source-retired"
+                  ? ("archived" as const)
+                  : mask.lifecycle,
+            }),
+          ];
+        }),
+      ),
+    }),
+    expectedAfterMasks = Object.freeze(
+      beforeMasks.map((mask) =>
+        Object.freeze({
+          ...mask,
+          lifecycle:
+            operation === "source-retired"
+              ? ("archived" as const)
+              : mask.lifecycle,
+          participantCharacterIds:
+            operation === "source-retired"
+              ? Object.freeze([] as CharacterId[])
+              : Object.freeze(
+                  mask.participantCharacterIds.filter(
+                    (entry) => !affected.has(entry),
+                  ),
+                ),
+        }),
+      ),
+    );
+  if (
+    row.kind !== "mask-owner-prepared-contribution" ||
+    row.version !== 1 ||
+    row.status !== "prepared-unpublished" ||
+    scope.kind !== "complete-mask-delta" ||
+    affectedCharacterIds.length === 0 ||
+    beforeMasks.length === 0 ||
+    beforeMasks.length !== afterMasks.length ||
+    sourceSceneRevisionAfter !== sourceSceneRevisionBefore + 1 ||
+    ownerRevisionAfter !== ownerRevisionBefore + 1 ||
+    scope.kind !== "complete-mask-delta" ||
+    !sameCompleteScope(scope, expectedScope) ||
+    !sameSnapshotMasks(afterMasks, expectedAfterMasks)
+  )
+    throw new Error(`${label} besitzt keinen vollständigen Prepared-Vertrag.`);
+  return Object.freeze({
+    kind: "mask-owner-prepared-contribution",
+    version: 1,
+    status: "prepared-unpublished",
+    receiptId: receiptId(row.receiptId, `${label}.receiptId`),
+    campaignId: campaignId(row.campaignId, `${label}.campaignId`),
+    commandId: commandId(row.commandId, `${label}.commandId`),
+    commandDigest: commandDigest(row.commandDigest, `${label}.commandDigest`),
+    sourceSceneId: liveSceneId(row.sourceSceneId, `${label}.sourceSceneId`),
+    sourceSceneRevisionBefore,
+    sourceSceneRevisionAfter,
+    ownerIdentity: Object.freeze({
+      ownerId: ownerId(identity.ownerId, `${label}.ownerIdentity.ownerId`),
+      generationId: generationId(
+        identity.generationId,
+        `${label}.ownerIdentity.generationId`,
+      ),
+    }),
+    ownerRevisionBefore,
+    ownerRevisionAfter,
+    affectedCharacterIds,
+    scope,
+    beforeMasks,
+    afterMasks,
+  });
+}
+
+function sameCharacters(
+  left: readonly CharacterId[],
+  right: readonly CharacterId[],
+): boolean {
+  return (
+    left.length === right.length &&
+    left.every((entry, index) => entry === right[index])
+  );
+}
+
+function sameSnapshotMasks(
+  left: readonly MaskOwnerSnapshotMask[],
+  right: readonly MaskOwnerSnapshotMask[],
+): boolean {
+  return (
+    left.length === right.length &&
+    left.every((entry, index) => {
+      const other = right[index];
+      return (
+        other !== undefined &&
+        entry.maskId === other.maskId &&
+        entry.maskKind === other.maskKind &&
+        entry.lifecycle === other.lifecycle &&
+        sameCharacters(
+          entry.participantCharacterIds,
+          other.participantCharacterIds,
+        )
+      );
+    })
+  );
+}
+
+function sameCompleteScope(
+  left: Extract<MaskOwnerScope, { readonly kind: "complete-mask-delta" }>,
+  right: Extract<MaskOwnerScope, { readonly kind: "complete-mask-delta" }>,
+): boolean {
+  return (
+    left.operation === right.operation &&
+    left.masks.length === right.masks.length &&
+    left.masks.every((entry, index) => {
+      const other = right.masks[index];
+      return (
+        other !== undefined &&
+        entry.maskId === other.maskId &&
+        entry.maskKind === other.maskKind &&
+        entry.expectedOwnerRevision === other.expectedOwnerRevision &&
+        entry.lifecycleBefore === other.lifecycleBefore &&
+        entry.lifecycleAfter === other.lifecycleAfter &&
+        sameCharacters(
+          entry.participantCharacterIds,
+          other.participantCharacterIds,
+        )
+      );
+    })
+  );
+}
+
 export function parseReconciliationDuty(
   value: unknown,
   label = "ReconciliationDuty",
@@ -330,6 +614,7 @@ export function parseReconciliationDuty(
       "operation",
       "ownerIdentity",
       "scope",
+      "preparedContribution",
     ],
     label,
   );
@@ -354,7 +639,12 @@ export function parseReconciliationDuty(
         ? ["ownerIdentity", "expectedOwnerRevision", "scope"]
         : ["ownerId", "expectedOwnerRevision", "operation"]),
     ],
-    row = exactRecord(value, required, [], label);
+    row = exactRecord(
+      value,
+      required,
+      maskOwner ? ["preparedContribution"] : [],
+      label,
+    );
   if (
     (!maskOwner && row.kind !== "generic-scene-consumer-reconciliation") ||
     row.version !== 1 ||
@@ -422,6 +712,13 @@ export function parseReconciliationDuty(
         `${label}.expectedOwnerRevision`,
       ),
       scope = parseScope(row.scope, `${label}.scope`),
+      preparedContribution =
+        row.preparedContribution === undefined
+          ? undefined
+          : parseMaskOwnerPreparedContribution(
+              row.preparedContribution,
+              `${label}.preparedContribution`,
+            ),
       pins =
         scope.kind === "complete-mask-delta"
           ? scope.masks
@@ -429,15 +726,35 @@ export function parseReconciliationDuty(
       affected = new Set(affectedCharacterIds);
     if (
       pins.some((pin) => pin.expectedOwnerRevision !== expectedOwnerRevision) ||
-      (scope.kind === "owner-scope-unresolved" && row.delivery !== "pending") ||
+      (scope.kind === "owner-scope-unresolved" &&
+        (row.delivery !== "pending" || preparedContribution !== undefined)) ||
       (scope.kind === "complete-mask-delta" &&
-        ((scope.operation === "remove-participants") !==
-          (row.sourceLifecycleAfter === "active") ||
+        (row.delivery !== "required" ||
+          preparedContribution === undefined ||
+          (scope.operation === "remove-participants") !==
+            (row.sourceLifecycleAfter === "active") ||
           scope.masks.some((mask) =>
             mask.participantCharacterIds.some(
               (participant) => !affected.has(participant),
             ),
-          )))
+          ) ||
+          preparedContribution.campaignId !== common.campaignId ||
+          preparedContribution.commandId !== common.commandId ||
+          preparedContribution.commandDigest !== common.commandDigest ||
+          preparedContribution.sourceSceneId !== common.sourceSceneId ||
+          preparedContribution.sourceSceneRevisionBefore !==
+            common.sourceRevisionBefore ||
+          preparedContribution.sourceSceneRevisionAfter !==
+            common.sourceRevisionAfter ||
+          preparedContribution.ownerIdentity.ownerId !== identity.ownerId ||
+          preparedContribution.ownerIdentity.generationId !==
+            identity.generationId ||
+          preparedContribution.ownerRevisionBefore !== expectedOwnerRevision ||
+          !sameCharacters(
+            preparedContribution.affectedCharacterIds,
+            affectedCharacterIds,
+          ) ||
+          !sameCompleteScope(preparedContribution.scope, scope)))
     )
       throw new Error(`${label} besitzt ungebundene Masken-Cross-Bindings.`);
     return Object.freeze({
@@ -452,6 +769,7 @@ export function parseReconciliationDuty(
       }),
       expectedOwnerRevision,
       scope,
+      ...(preparedContribution === undefined ? {} : { preparedContribution }),
     });
   }
   if (
@@ -502,6 +820,7 @@ export interface ReconciliationBinding {
 export function buildReconciliationDuties(
   source: LiveSceneSourceSnapshot,
   binding: ReconciliationBinding,
+  preparedContributions: readonly MaskOwnerPreparedContribution[],
 ): readonly ReconciliationDuty[] {
   const affected = new Set(binding.affectedCharacterIds),
     common = {
@@ -519,7 +838,19 @@ export function buildReconciliationDuties(
       target: binding.target,
       affectedCharacterIds: Object.freeze([...binding.affectedCharacterIds]),
     },
-    maskGroups = new Map<string, MaskReference[]>();
+    maskGroups = new Map<string, MaskReference[]>(),
+    contributionByOwner = new Map<string, MaskOwnerPreparedContribution>(),
+    receiptIds = new Set<ReceiptId>(),
+    consumedContributions = new Set<MaskOwnerPreparedContribution>();
+  for (const contribution of preparedContributions) {
+    const key = `${contribution.ownerIdentity.ownerId}\u0000${contribution.ownerIdentity.generationId}`;
+    if (contributionByOwner.has(key) || receiptIds.has(contribution.receiptId))
+      throw new Error(
+        "Maskenbeiträge enthalten doppelte Owner- oder Receipt-Identitäten.",
+      );
+    contributionByOwner.set(key, contribution);
+    receiptIds.add(contribution.receiptId);
+  }
   for (const mask of source.maskRefs) {
     const key = `${mask.ownerId}\u0000${mask.generationId}`,
       group = maskGroups.get(key);
@@ -560,7 +891,8 @@ export function buildReconciliationDuties(
       ownerIdentity = Object.freeze({
         ownerId: first.ownerId,
         generationId: first.generationId,
-      });
+      }),
+      ownerKey = `${first.ownerId}\u0000${first.generationId}`;
     if (status !== "current") {
       duties.push(
         Object.freeze({
@@ -586,6 +918,21 @@ export function buildReconciliationDuties(
             projection.maskId === mask.maskId,
         ),
       ),
+      beforeMasks = projections.map((projection, index) => {
+        if (!projection)
+          throw new Error(
+            "Current Maskenowner besitzt keine vollständige Projektion.",
+          );
+        const mask = masks[index]!;
+        return Object.freeze({
+          maskId: mask.maskId,
+          maskKind: mask.kind,
+          lifecycle: projection.lifecycle as MaskOwnerSnapshotMask["lifecycle"],
+          participantCharacterIds: Object.freeze([
+            ...projection.participantCharacterIds,
+          ]),
+        });
+      }),
       deltas = projections.flatMap((projection, index) => {
         if (!projection)
           throw new Error(
@@ -612,6 +959,59 @@ export function buildReconciliationDuties(
         ];
       });
     if (deltas.length === 0) continue;
+    const scope = Object.freeze({
+        kind: "complete-mask-delta" as const,
+        operation:
+          binding.sourceLifecycleAfter === "retired"
+            ? ("source-retired" as const)
+            : ("remove-participants" as const),
+        masks: Object.freeze(deltas),
+      }),
+      afterMasks = Object.freeze(
+        beforeMasks.map((mask) =>
+          Object.freeze({
+            ...mask,
+            lifecycle:
+              binding.sourceLifecycleAfter === "retired"
+                ? ("archived" as const)
+                : mask.lifecycle,
+            participantCharacterIds:
+              binding.sourceLifecycleAfter === "retired"
+                ? Object.freeze([] as CharacterId[])
+                : Object.freeze(
+                    mask.participantCharacterIds.filter(
+                      (participant) => !affected.has(participant),
+                    ),
+                  ),
+          }),
+        ),
+      ),
+      contribution = contributionByOwner.get(ownerKey);
+    if (
+      contribution === undefined ||
+      contribution.campaignId !== binding.campaignId ||
+      contribution.commandId !== binding.commandId ||
+      contribution.commandDigest !== binding.commandDigest ||
+      contribution.sourceSceneId !== source.liveSceneId ||
+      contribution.sourceSceneRevisionBefore !== binding.sourceRevisionBefore ||
+      contribution.sourceSceneRevisionAfter !== binding.sourceRevisionAfter ||
+      contribution.ownerRevisionBefore !== expectedOwnerRevision ||
+      contribution.ownerRevisionAfter !== expectedOwnerRevision + 1 ||
+      !sameCharacters(
+        contribution.affectedCharacterIds,
+        binding.affectedCharacterIds,
+      ) ||
+      !sameCompleteScope(contribution.scope, scope) ||
+      !sameSnapshotMasks(contribution.beforeMasks, beforeMasks) ||
+      !sameSnapshotMasks(contribution.afterMasks, afterMasks) ||
+      source.reconciliations.some(
+        (entry) => entry.receiptId === contribution.receiptId,
+      )
+    )
+      throw new Error(
+        "Maskenbeitrag bindet Receipt, Revision oder Matrix nicht exakt.",
+      );
+    consumedContributions.add(contribution);
     duties.push(
       Object.freeze({
         kind: "mask-owner-reconciliation" as const,
@@ -619,26 +1019,24 @@ export function buildReconciliationDuties(
         ownerIdentity,
         expectedOwnerRevision,
         delivery: "required" as const,
-        scope: Object.freeze({
-          kind: "complete-mask-delta" as const,
-          operation:
-            binding.sourceLifecycleAfter === "retired"
-              ? ("source-retired" as const)
-              : ("remove-participants" as const),
-          masks: Object.freeze(deltas),
-        }),
+        scope,
+        preparedContribution: contribution,
       }),
     );
   }
+  if (consumedContributions.size !== preparedContributions.length)
+    throw new Error("Maskenbeiträge enthalten keinen erforderlichen Owner.");
   return Object.freeze(duties);
 }
 
 export function pendingCopy(
   duty: ReconciliationDuty,
 ): PendingConsumerReconciliation {
+  if (duty.delivery !== "pending")
+    throw new Error("Eine required Reconciliation darf nicht pending werden.");
   return Object.freeze({
     ...duty,
-    delivery: "pending",
+    delivery: "pending" as const,
   }) as PendingConsumerReconciliation;
 }
 

@@ -461,6 +461,9 @@ function reconciliationDuties(
     readonly target: ReconciliationTargetEndpoint;
     readonly expectedSourceRevision: Revision;
     readonly characterIds: readonly CharacterId[];
+    readonly maskOwnerContributions: Parameters<
+      typeof buildReconciliationDuties
+    >[2];
   },
   source: LiveSceneSourceSnapshot,
   retired: boolean,
@@ -469,24 +472,28 @@ function reconciliationDuties(
     affectedCharacterIds = state.party.characters
       .filter((character) => selected.has(character.characterId))
       .map((character) => character.characterId);
-  return buildReconciliationDuties(source, {
-    campaignId: state.campaignId,
-    commandId: binding.commandId,
-    commandDigest: binding.commandDigest,
-    partyRevisionBefore: state.party.partyRevision,
-    partyRevisionAfter: revision(
-      state.party.partyRevision + 1,
-      "Reconciliation.partyRevisionAfter",
-    ),
-    sourceRevisionBefore: binding.expectedSourceRevision,
-    sourceRevisionAfter: revision(
-      binding.expectedSourceRevision + 1,
-      "Reconciliation.sourceRevisionAfter",
-    ),
-    sourceLifecycleAfter: retired ? "retired" : "active",
-    target: binding.target,
-    affectedCharacterIds,
-  });
+  return buildReconciliationDuties(
+    source,
+    {
+      campaignId: state.campaignId,
+      commandId: binding.commandId,
+      commandDigest: binding.commandDigest,
+      partyRevisionBefore: state.party.partyRevision,
+      partyRevisionAfter: revision(
+        state.party.partyRevision + 1,
+        "Reconciliation.partyRevisionAfter",
+      ),
+      sourceRevisionBefore: binding.expectedSourceRevision,
+      sourceRevisionAfter: revision(
+        binding.expectedSourceRevision + 1,
+        "Reconciliation.sourceRevisionAfter",
+      ),
+      sourceLifecycleAfter: retired ? "retired" : "active",
+      target: binding.target,
+      affectedCharacterIds,
+    },
+    binding.maskOwnerContributions,
+  );
 }
 
 export function moveCharacters(
@@ -645,12 +652,14 @@ export function moveCharacters(
         }),
         expectedSourceRevision: command.expectedSourceRevision,
         characterIds: command.characterIds,
+        maskOwnerContributions: command.maskOwnerContributions,
       },
       source,
       retired,
     ),
+    confirmedSource = sourceWithAppliedMaskContributions(nextSource, duties),
     reconciledSource = sourceWithPendingMaskOwners(
-      nextSource,
+      confirmedSource,
       duties,
       command.commandId,
     ),
@@ -746,11 +755,87 @@ function pendingDuties(
 ): readonly PendingConsumerReconciliation[] {
   return Object.freeze(
     duties.flatMap((duty) =>
-      duty.delivery === "pending" || duty.kind === "mask-owner-reconciliation"
-        ? [pendingCopy(duty)]
-        : [],
+      duty.delivery === "pending" ? [pendingCopy(duty)] : [],
     ),
   );
+}
+
+function sourceWithAppliedMaskContributions(
+  source: LiveSceneSourceSnapshot,
+  duties: readonly ConsumerReconciliationDuty[],
+): LiveSceneSourceSnapshot {
+  const contributions = duties.flatMap((duty) =>
+    duty.kind === "mask-owner-reconciliation" &&
+    duty.preparedContribution !== undefined
+      ? [duty.preparedContribution]
+      : [],
+  );
+  if (contributions.length === 0) return source;
+  const byOwner = new Map(
+    contributions.map((contribution) => [
+      `${contribution.ownerIdentity.ownerId}\u0000${contribution.ownerIdentity.generationId}`,
+      contribution,
+    ]),
+  );
+  return Object.freeze({
+    ...source,
+    maskRefs: Object.freeze(
+      source.maskRefs.map((mask) => {
+        const contribution = byOwner.get(
+            `${mask.ownerId}\u0000${mask.generationId}`,
+          ),
+          after = contribution?.afterMasks.find(
+            (entry) => entry.maskId === mask.maskId,
+          );
+        return contribution === undefined || after === undefined
+          ? mask
+          : Object.freeze({
+              ...mask,
+              ownerRevision: contribution.ownerRevisionAfter,
+              lifecycle: after.lifecycle,
+            });
+      }),
+    ),
+    maskParticipationProjections: Object.freeze(
+      source.maskParticipationProjections.map((projection) => {
+        const contribution = byOwner.get(
+            `${projection.ownerIdentity.ownerId}\u0000${projection.ownerIdentity.generationId}`,
+          ),
+          after = contribution?.afterMasks.find(
+            (entry) => entry.maskId === projection.maskId,
+          );
+        return contribution === undefined || after === undefined
+          ? projection
+          : Object.freeze({
+              ...projection,
+              ownerRevision: contribution.ownerRevisionAfter,
+              participantCharacterIds: Object.freeze([
+                ...after.participantCharacterIds,
+              ]),
+              lifecycle: after.lifecycle,
+            });
+      }),
+    ),
+    reconciliations: Object.freeze(
+      source.reconciliations.map((entry) => {
+        if (entry.generationId === undefined) return entry;
+        const contribution = byOwner.get(
+          `${entry.ownerId}\u0000${entry.generationId}`,
+        );
+        return contribution === undefined
+          ? entry
+          : Object.freeze({
+              ownerId: entry.ownerId,
+              generationId: entry.generationId,
+              status: "current" as const,
+              ownerRevision: contribution.ownerRevisionAfter,
+              commandId: contribution.commandId,
+              commandDigest: contribution.commandDigest,
+              receiptId: contribution.receiptId,
+            });
+      }),
+    ),
+  });
 }
 
 function sourceWithPendingMaskOwners(
@@ -759,7 +844,8 @@ function sourceWithPendingMaskOwners(
   commandId: CommandId,
 ): LiveSceneSourceSnapshot {
   const maskDuties = duties.filter(
-    (duty): duty is MaskOwnerDuty => duty.kind === "mask-owner-reconciliation",
+    (duty): duty is MaskOwnerDuty =>
+      duty.kind === "mask-owner-reconciliation" && duty.delivery === "pending",
   );
   if (maskDuties.length === 0) return source;
   const ownerKeys = new Set(maskDuties.map(reconciliationOwnerKey)),
@@ -773,6 +859,14 @@ function sourceWithPendingMaskOwners(
             status: "pending" as const,
             ownerRevision: entry.ownerRevision!,
             commandId,
+            pendingCommandIds: Object.freeze([
+              ...(entry.status === "pending"
+                ? (entry.pendingCommandIds ?? [entry.commandId!]).filter(
+                    (pendingCommandId) => pendingCommandId !== commandId,
+                  )
+                : []),
+              commandId,
+            ]),
           })
         : entry;
     });
@@ -792,6 +886,7 @@ function sourceWithPendingMaskOwners(
           status: "pending" as const,
           ownerRevision: duty.expectedOwnerRevision,
           commandId,
+          pendingCommandIds: Object.freeze([commandId]),
         }),
       );
   }
@@ -991,12 +1086,14 @@ export function splitScene(
         target: targetEndpoint,
         expectedSourceRevision: command.expectedSourceRevision,
         characterIds: targetCharacters,
+        maskOwnerContributions: command.maskOwnerContributions,
       },
       source,
       retired,
     ),
+    confirmedSource = sourceWithAppliedMaskContributions(nextSource, duties),
     reconciledSource = sourceWithPendingMaskOwners(
-      nextSource,
+      confirmedSource,
       duties,
       command.commandId,
     ),
@@ -1224,12 +1321,14 @@ export function rejoinScenes(
         target: targetEndpoint,
         expectedSourceRevision: command.expectedSourceRevision,
         characterIds: movedCharacterIds,
+        maskOwnerContributions: command.maskOwnerContributions,
       },
       source,
       true,
     ),
+    confirmedSource = sourceWithAppliedMaskContributions(nextSource, duties),
     reconciledSource = sourceWithPendingMaskOwners(
-      nextSource,
+      confirmedSource,
       duties,
       command.commandId,
     ),
@@ -1711,12 +1810,14 @@ export function deactivatePartyCharacter(
         target: Object.freeze({ kind: "none" as const }),
         expectedSourceRevision: command.expectedSourceRevision,
         characterIds: [command.characterId],
+        maskOwnerContributions: command.maskOwnerContributions,
       },
       source,
       retired,
     ),
+    confirmedSource = sourceWithAppliedMaskContributions(nextSource, duties),
     reconciledSource = sourceWithPendingMaskOwners(
-      nextSource,
+      confirmedSource,
       duties,
       command.commandId,
     ),

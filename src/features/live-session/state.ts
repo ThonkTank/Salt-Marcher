@@ -237,6 +237,28 @@ function parseRuntimeScene(value: unknown, index: number): RuntimeSceneState {
         `${label} projiziert einen pending Maskenowner als current.`,
       );
   }
+  for (const [key, owner] of ownerStatus) {
+    if (owner.status !== "current") continue;
+    const refOrder = source.maskRefs
+        .filter((mask) => ownerKey(mask.ownerId, mask.generationId) === key)
+        .map((mask) => mask.maskId),
+      projectionOrder = source.maskParticipationProjections
+        .filter(
+          (projection) =>
+            ownerKey(
+              projection.ownerIdentity.ownerId,
+              projection.ownerIdentity.generationId,
+            ) === key,
+        )
+        .map((projection) => projection.maskId);
+    if (
+      refOrder.length !== projectionOrder.length ||
+      refOrder.some((mask, index) => mask !== projectionOrder[index])
+    )
+      throw new Error(
+        `${label} besitzt keine stabile Masken-Projektionsreihenfolge.`,
+      );
+  }
   return Object.freeze({
     kind: "runtime-scene-state",
     version: 1,
@@ -287,12 +309,7 @@ export function parseLiveSessionAggregateState(
           root.pendingReconciliations,
           "LiveSessionAggregateState.pendingReconciliations",
         ).map(parsePendingReconciliation),
-        (entry) =>
-          `${reconciliationOwnerKey(entry)}\u0000${entry.commandId}\u0000${
-            entry.kind === "mask-owner-reconciliation"
-              ? entry.scope.kind
-              : entry.operation
-          }`,
+        (entry) => `${reconciliationOwnerKey(entry)}\u0000${entry.commandId}`,
         "LiveSessionAggregateState.pendingReconciliations",
       ),
     ),
@@ -306,9 +323,32 @@ export function parseLiveSessionAggregateState(
       "LiveSessionAggregateState enthält eine fremde Reconciliation.",
     );
   const sceneById = new Map(
-    scenes.map((scene) => [scene.source.liveSceneId, scene.source]),
-  );
+      scenes.map((scene) => [scene.source.liveSceneId, scene.source]),
+    ),
+    envelopeByCommand = new Map<string, PendingConsumerReconciliation>();
   for (const duty of pendingReconciliations) {
+    const envelopeKey = duty.commandId,
+      priorEnvelope = envelopeByCommand.get(envelopeKey);
+    if (
+      priorEnvelope !== undefined &&
+      (priorEnvelope.commandDigest !== duty.commandDigest ||
+        priorEnvelope.sourceSceneId !== duty.sourceSceneId ||
+        priorEnvelope.partyRevisionBefore !== duty.partyRevisionBefore ||
+        priorEnvelope.partyRevisionAfter !== duty.partyRevisionAfter ||
+        priorEnvelope.sourceRevisionBefore !== duty.sourceRevisionBefore ||
+        priorEnvelope.sourceRevisionAfter !== duty.sourceRevisionAfter ||
+        priorEnvelope.sourceLifecycleAfter !== duty.sourceLifecycleAfter ||
+        JSON.stringify(priorEnvelope.target) !== JSON.stringify(duty.target) ||
+        priorEnvelope.affectedCharacterIds.length !==
+          duty.affectedCharacterIds.length ||
+        priorEnvelope.affectedCharacterIds.some(
+          (entry, index) => entry !== duty.affectedCharacterIds[index],
+        ))
+    )
+      throw new Error(
+        "LiveSessionAggregateState enthält widersprüchliche Command-Envelopes.",
+      );
+    envelopeByCommand.set(envelopeKey, duty);
     const source = sceneById.get(duty.sourceSceneId),
       target =
         duty.target.kind === "none"
@@ -333,6 +373,15 @@ export function parseLiveSessionAggregateState(
     if (duty.sourceRevisionAfter > source.sceneRevision)
       throw new Error(
         "LiveSessionAggregateState enthält eine zukünftige Reconciliation-Sourcebindung.",
+      );
+    if (
+      (source.lifecycle === "active" &&
+        duty.sourceLifecycleAfter === "retired") ||
+      (duty.sourceRevisionAfter === source.sceneRevision &&
+        duty.sourceLifecycleAfter !== source.lifecycle)
+    )
+      throw new Error(
+        "LiveSessionAggregateState enthält eine falsche Reconciliation-Lifecyclebindung.",
       );
     const affected = new Set(duty.affectedCharacterIds),
       partyOrdered = party.characters
@@ -382,7 +431,9 @@ export function parseLiveSessionAggregateState(
             mask.lifecycle !== pin.lifecycleBefore
           );
         }) ||
-        owner?.ownerRevision !== duty.expectedOwnerRevision ||
+        owner?.status !== "pending" ||
+        owner.ownerRevision !== duty.expectedOwnerRevision ||
+        !owner.pendingCommandIds?.includes(duty.commandId) ||
         (requiresFullCoverage && masks.length !== ownerMasks.length)
       )
         throw new Error(
@@ -397,6 +448,26 @@ export function parseLiveSessionAggregateState(
         throw new Error(
           "LiveSessionAggregateState enthält eine ungebundene Owner-Reconciliation.",
         );
+    }
+  }
+  for (const source of sceneById.values()) {
+    for (const owner of source.reconciliations) {
+      if (owner.generationId === undefined || owner.status !== "pending")
+        continue;
+      for (const pendingCommandId of owner.pendingCommandIds ?? []) {
+        const matching = pendingReconciliations.filter(
+          (duty) =>
+            duty.kind === "mask-owner-reconciliation" &&
+            duty.sourceSceneId === source.liveSceneId &&
+            duty.commandId === pendingCommandId &&
+            duty.ownerIdentity.ownerId === owner.ownerId &&
+            duty.ownerIdentity.generationId === owner.generationId,
+        );
+        if (matching.length !== 1)
+          throw new Error(
+            "LiveSessionAggregateState enthält einen pending Maskenowner ohne eindeutige Duty.",
+          );
+      }
     }
   }
 

@@ -31,6 +31,10 @@ import {
   type Revision,
 } from "./ids";
 import {
+  parseMaskOwnerPreparedContribution,
+  type MaskOwnerPreparedContribution,
+} from "./mask-reconciliation";
+import {
   exactArray,
   exactBoolean,
   exactRecord,
@@ -72,6 +76,7 @@ export interface MoveCharactersCommand extends AggregateCommandBinding {
   readonly expectedSourceRevision: Revision;
   readonly expectedTargetRevision: Revision;
   readonly characterIds: readonly CharacterId[];
+  readonly maskOwnerContributions: readonly MaskOwnerPreparedContribution[];
 }
 
 interface ClockContributionBase {
@@ -124,6 +129,7 @@ export interface SplitSceneCommand extends AggregateCommandBinding {
   readonly characterIds: readonly CharacterId[];
   readonly title: string;
   readonly clockContribution: ClockForkCreateContribution;
+  readonly maskOwnerContributions: readonly MaskOwnerPreparedContribution[];
 }
 
 export interface RejoinScenesCommand extends AggregateCommandBinding {
@@ -134,6 +140,7 @@ export interface RejoinScenesCommand extends AggregateCommandBinding {
   readonly targetSceneId: LiveSceneId;
   readonly expectedTargetRevision: Revision;
   readonly clockContribution: ClockMergeContribution;
+  readonly maskOwnerContributions: readonly MaskOwnerPreparedContribution[];
 }
 
 export interface SetFocusCommand extends AggregateCommandBinding {
@@ -159,6 +166,7 @@ export interface DeactivatePartyCharacterCommand
   readonly expectedSourceRevision?: Revision;
   readonly primarySuccessorSceneId?: LiveSceneId;
   readonly expectedSuccessorRevision?: Revision;
+  readonly maskOwnerContributions: readonly MaskOwnerPreparedContribution[];
 }
 
 export interface PartyCommandBinding {
@@ -416,6 +424,7 @@ export function parseMoveCharactersCommand(
         "expectedSourceRevision",
         "expectedTargetRevision",
         "characterIds",
+        "maskOwnerContributions",
       ],
       [],
       label,
@@ -448,7 +457,28 @@ export function parseMoveCharactersCommand(
       `${label}.expectedTargetRevision`,
     ),
     characterIds,
+    maskOwnerContributions: parseMaskOwnerContributions(
+      row.maskOwnerContributions,
+      `${label}.maskOwnerContributions`,
+    ),
   });
+}
+
+function parseMaskOwnerContributions(
+  value: unknown,
+  label: string,
+): readonly MaskOwnerPreparedContribution[] {
+  const contributions = exactArray(value, label).map((entry, index) =>
+    parseMaskOwnerPreparedContribution(entry, `${label}[${index}]`),
+  );
+  uniqueBy(
+    contributions,
+    (entry) =>
+      `${entry.ownerIdentity.ownerId}\u0000${entry.ownerIdentity.generationId}`,
+    label,
+  );
+  uniqueBy(contributions, (entry) => entry.receiptId, `${label}.receiptIds`);
+  return Object.freeze(contributions);
 }
 
 const CLOCK_CONTRIBUTION_COMMON = [
@@ -690,6 +720,7 @@ export function parseSplitSceneCommand(value: unknown): SplitSceneCommand {
         "characterIds",
         "title",
         "clockContribution",
+        "maskOwnerContributions",
       ],
       [],
       label,
@@ -713,6 +744,10 @@ export function parseSplitSceneCommand(value: unknown): SplitSceneCommand {
     characterIds: parsedCharacterIds(row.characterIds, `${label}.characterIds`),
     title: exactText(row.title, `${label}.title`, true),
     clockContribution: parseClockForkCreateContribution(row.clockContribution),
+    maskOwnerContributions: parseMaskOwnerContributions(
+      row.maskOwnerContributions,
+      `${label}.maskOwnerContributions`,
+    ),
   });
 }
 
@@ -727,6 +762,7 @@ export function parseRejoinScenesCommand(value: unknown): RejoinScenesCommand {
         "targetSceneId",
         "expectedTargetRevision",
         "clockContribution",
+        "maskOwnerContributions",
       ],
       [],
       label,
@@ -748,6 +784,10 @@ export function parseRejoinScenesCommand(value: unknown): RejoinScenesCommand {
       `${label}.expectedTargetRevision`,
     ),
     clockContribution: parseClockMergeContribution(row.clockContribution),
+    maskOwnerContributions: parseMaskOwnerContributions(
+      row.maskOwnerContributions,
+      `${label}.maskOwnerContributions`,
+    ),
   });
 }
 
@@ -828,7 +868,7 @@ export function parseDeactivatePartyCharacterCommand(
   const label = "DeactivatePartyCharacterCommand",
     row = exactRecord(
       value,
-      [...COMMON, "characterId"],
+      [...COMMON, "characterId", "maskOwnerContributions"],
       [
         "expectedSourceRevision",
         "primarySuccessorSceneId",
@@ -848,6 +888,10 @@ export function parseDeactivatePartyCharacterCommand(
     version: 1,
     ...binding(row, label),
     characterId: characterId(row.characterId, `${label}.characterId`),
+    maskOwnerContributions: parseMaskOwnerContributions(
+      row.maskOwnerContributions,
+      `${label}.maskOwnerContributions`,
+    ),
     ...(row.expectedSourceRevision === undefined
       ? {}
       : {

@@ -29,12 +29,15 @@ export {
   type PreparationSnapshot,
 } from "./contracts";
 export {
+  parseMaskOwnerPreparedContribution,
   parseReconciliationDuty,
   type GenericSceneConsumerDuty,
   type MaskDelta,
   type MaskOwnerDuty,
   type MaskOwnerIdentity,
+  type MaskOwnerPreparedContribution,
   type MaskOwnerScope,
+  type MaskOwnerSnapshotMask,
   type MaskPin,
   type ReconciliationDuty,
 } from "./mask-reconciliation";
