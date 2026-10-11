@@ -155367,7 +155367,59 @@
           "nativeEditRun": "1791675129674-atlas-spatial-edit",
           "freshProcessRun": "1791675181265-atlas-spatial-reopen",
           "nextConsumer": "Existing Cloud-GM: early free use through normal product GUI in own isolated host before dependent expansion. Parent #80 stays open. If host access is absent, report concrete missing input without substituting model/DOM tests."
-        }
+        },
+          "dungeonAtLocationH01Consumption": {
+            "id": "E2E-01-HEX04-DUNGEON-AT-LOCATION-H01-CONSUMPTION",
+            "owner": "Hex",
+            "issue": 80,
+            "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
+            "e2e01UserLine": 13,
+            "state": "H01_evidence_review_PASS_and_reported_free_GM_bounded_PASS_consumed; inspector_followup_open",
+            "h01EvidenceReview": {
+              "reviewer": "Stadt",
+              "reviewedHead": "a454d9a708f54c4dddc755786653cb8155cbe29e",
+              "result": "PASS scoped helper/evidence; no required findings",
+              "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/87#pullrequestreview-5481256953",
+              "exactHeadCI": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/actions/runs/38095666287",
+              "scopeRetained": "Review binds a454d9a; later Shared composition and consumption metadata are not represented as reviewed on that exact head."
+            },
+            "freeGMInput": {
+              "owner": "Cloud-GM-Produkttester",
+              "testedHead": "a454d9a708f54c4dddc755786653cb8155cbe29e",
+              "report": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80#issuecomment-6103561640",
+              "checkpointPR": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/89",
+              "checkpointCommit": "59bb5bb2771bf27ab58f867b5ae9080ab50f77b2",
+              "checkpointReference": "gmProductTesting.currentRun / latestAtlasLocationGMReuse",
+              "result": "Reported bounded visible PASS: existing dungeon to Torheim, room Key edit, Save, map return and same-process file close/reopen with exact saved text and retained IDs.",
+              "host": "Isolated Cloud Obsidian 1.14.4; synthetic visible input; 1024x800 CSS px / DPR1",
+              "rawEvidenceDirectory": "/workspace/scratch/gm-cloud-qa/dungeon-at-location-gm-20261011/host-logs/",
+              "rawEvidenceAccess": "Cloud-local; not available in Hex local host. Producer report and versioned checkpoint read directly; screenshots not independently viewed by Hex.",
+              "usabilityFollowup": "At 1024x800, about 118px map width with target and room Key inspectors; Escape/repeated room-row click did not close the inspector, map click did. Reopen returns to world view.",
+              "freshProcessDemonstratedByGM": false,
+              "currentSharedExactTripletDemonstratedByGM": false,
+              "currentSharedBuildBlocker": "Cloud /workspace 32G/32G full; node22 container start ENOSPC. No foreign data deleted."
+            },
+            "consumptionDecision": {
+              "earlyFreeGMInputSatisfiedScoped": true,
+              "sourceComparisonShared": "d9eda92f8270b364322e3c9a4cb2af5c2c69c8f7",
+              "unchangedAtlasPathBlobs": {
+                "src/ui/atlas-view.ts": "6333f3b29ab488c8549400ffb6d587880165ffa3",
+                "src/features/atlas/atlas-editor.ts": "e1ae3e5e8954a116cf5a0b331efbf5425a92a85c",
+                "styles.css": "95122574d8b8a610fe7d4dc6b80e40098be19751"
+              },
+              "otherSharedChanges": "World-Notes registration/readers and separate LiveSession contracts remain incoming Shared work; this does not make the GM-tested old triplet an exact-Shared installation.",
+              "reuseEvidence": "Retain bounded free-GM result for unchanged Atlas view/editor/styles. No full GUI repetition solely for a new Shared SHA.",
+              "nextOwnContribution": "Evaluate inspector width, discoverable dismissal and return behavior in existing #80 before dependent detail expansion; implement only a concrete resulting repair in a later bounded step.",
+              "integrationConsumer": "Separate contributor/steward for PR87 final Shared composition and consumption delta; no Hex selfmerge.",
+              "dependentExpansionAllowed": false,
+              "parentClosed": false,
+              "fullE2E": false,
+              "physicalInput": false,
+              "originalParity": false,
+              "largeMap": false,
+              "userVaultInstalled": false
+            }
+          }
       }
     ],
     "cleanupFindings": [

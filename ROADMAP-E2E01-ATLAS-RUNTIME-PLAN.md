@@ -64,12 +64,29 @@ Prozesse sind normal beendet; der separat bestätigte lokale Slot ist zurückgeg
 Die zwei korrigierten QA-Prüfannahmen und ihre normalen Prozessenden bleiben
 im Beleg sichtbar; Produktcode wurde dabei nicht geändert.
 
-Jetzt konsumierbar: [startbarer Build/Fixture/Host-Eingang](docs/reference/atlas-detail-binding-d01/dungeon-at-location-h01.md)
-für frühe freie GUI-Nutzung durch den bestehenden Cloud-GM-Kollegen im eigenen
-isolierten Host. Hex konsumiert dessen Nutzungsbefund am Aufgabenort, bevor
-darauf aufbauender Ausbau beginnt. Parent #80 bleibt offen. GM-Nutzung und das
-gemeinsame E2E-01-Gate sowie physische/Original-/Großkarten-/Installationsabnahmen
-bleiben offen; H01 ist eine synthetische native Producerprobe.
+[Stadts unabhängiger Werkzeug-/Belegreview](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/87#pullrequestreview-5481256953)
+qualifiziert den H01-Eingang ohne Pflichtbefund. Die spätere Shared-Komposition
+und dieser Verbrauchsstand sind damit nicht als erneut exakt reviewt ausgewiesen;
+PR87 geht mit unveränderten H01-Quellen/Belegen an einen getrennten Integrator.
+
+Der [freie Cloud-GM-Ablauf](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80#issuecomment-6103561640)
+ist auf dem H01-Produkttripel begrenzt bestanden: vorhandenen Dungeon nach
+Torheim verorten, Raum-Key ändern, speichern, zur Karte zurückkehren und nach
+Dateischließen/-wiederöffnung denselben Text nutzen. Das ist ein fremder direkter
+GM-Beleg, kein von Hex wiederholter Lauf und kein frischer GM-Prozess. Seine
+Rohbilder bleiben Cloud-lokal; [versionierter GM-Checkpoint](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/89).
+
+Nächster eigener Beitrag: Hex beurteilt im bestehenden #80 die gemeldeten etwa
+118px Kartenbreite bei 1024×800 und den wenig auffindbaren Inspector-Abschluss
+(Escape/erneutes Raumklicken ohne Wirkung, Kartenklick schließt) vor weiterem
+Detailausbau. Noch keine Produktfehlerbehebung oder abhängige Erweiterung geliefert.
+Atlas-View/-Editor und Styles sind gegenüber dem konsumierten Shared bytegleich;
+der begrenzte GM-Beleg wird weitergenutzt, kein Voll-GUIlauf allein wegen neuer SHA.
+Ein exaktes neues Shared-Tripel ist beim GM wegen Cloud-ENOSPC ungeprüft und wird
+nicht als installiert behauptet. Parent #80 und das gemeinsame E2E-01-Gate sowie
+physische/Original-/Großkarten-/Installationsabnahmen bleiben offen.
+Der [startbare Build/Fixture/Host-Eingang](docs/reference/atlas-detail-binding-d01/dungeon-at-location-h01.md)
+und alle historischen Producer-/Save-/Recoverybelege bleiben erhalten.
 
 ## Historische Planbasis und Lieferbelege
 
