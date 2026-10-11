@@ -126,6 +126,33 @@ test("GM creates, searches, edits and reopens exact authored prose through confi
   reopened.panel.destroy();
 });
 
+test("GM finds a related NPC by faction name or relation label", async () => {
+  const f = fixture();
+  f.click("Fraktion anlegen"); f.input("Name", "Nebelbund"); await f.save();
+  f.click("NPC anlegen"); f.input("Name", "Älva");
+  f.host.querySelector('[aria-label="Beziehungsziel"] option')!.setAttribute("selected", "");
+  const relationLabel = f.host.querySelector<HTMLInputElement>('[aria-label="Beziehungsname"]')!;
+  relationLabel.value = "Mitglied";
+  f.click("Beziehung hinzufügen"); await f.save();
+  const search = f.host.querySelector<HTMLInputElement>('input[type="search"]')!;
+  const results = () => Array.from(f.host.querySelectorAll<HTMLButtonElement>(".dn-world-notes-list button"))
+    .map((button) => button.textContent);
+  search.value = "nebelbund"; search.dispatchEvent(new f.window.Event("input"));
+  assert.deepEqual(results(), ["Fraktion: Nebelbund", "NPC: Älva"]);
+  search.value = "mitglied"; search.dispatchEvent(new f.window.Event("input"));
+  assert.deepEqual(results(), ["NPC: Älva"]);
+  f.click("NPC: Älva");
+  f.input("GM-Notizen", "Nicht gespeichert");
+  f.click("Fraktion öffnen");
+  assert.equal(f.host.querySelector<HTMLInputElement>("form input")?.value, "Älva");
+  assert.equal(f.host.querySelectorAll<HTMLTextAreaElement>("textarea")[1]?.value, "Nicht gespeichert");
+  assert.match(f.host.querySelector('[role="alert"]')!.textContent!, /offenen Entwurf/);
+  f.input("GM-Notizen", "");
+  f.click("Fraktion öffnen");
+  assert.equal(f.host.querySelector<HTMLInputElement>("form input")?.value, "Nebelbund");
+  f.panel.destroy();
+});
+
 test("failed save retains the draft and never turns a local proposal into confirmed data", async () => {
   const f = fixture(); f.click("Quest anlegen"); f.input("Name", "Geheime Reise");
   f.refuse(true); await f.save();

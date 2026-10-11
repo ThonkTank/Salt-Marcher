@@ -7,7 +7,7 @@ import { worldNotePath,
   type WorldNotesCommitReceiptV1 } from "../features/campaign/world-notes-commit";
 import { searchWorldNotes, worldNotesSnapshot,
   serializeWorldNote,
-  type WorldNoteChange, type WorldNoteDraft, type WorldNoteKind,
+  type WorldNoteChange, type WorldNoteDraft, type WorldNoteKind, type WorldNoteV1,
   type WorldNoteRelation, type WorldNotesSnapshotV1 } from "../features/world/world-notes";
 
 export interface WorldNotesCommitResult {
@@ -159,6 +159,16 @@ export class WorldNotesPanel {
       receipt.afterPayloadDigest === payloadDigest(this.options.digest(serializeWorldNote(record))) &&
       receipt.deleted === record.deleted;
   }
+  private recordDraft(record: WorldNoteV1): WorldNoteDraft {
+    return { kind: record.kind, title: record.title, readAloud: record.readAloud,
+      gmNotes: record.gmNotes, creatureId: record.creatureId,
+      relations: record.relations.map((relation) => ({ ...relation })) };
+  }
+  private openRecord(record: WorldNoteV1): void {
+    this.pending = { id: record.id, draft: this.recordDraft(record), create: false,
+      baseRevision: record.revision };
+    this.renderEditor(true);
+  }
   private renderList(): void {
     this.list.replaceChildren();
     if (!this.snapshot) return;
@@ -171,11 +181,7 @@ export class WorldNotesPanel {
       button.addEventListener("click", () => {
         if (this.busy || this.snapshot !== boundSnapshot) return;
         if (this.pending) { this.message("Erst den offenen Entwurf speichern oder ausdrücklich verwerfen.", true); return; }
-        this.pending = { id: record.id, draft: { kind: record.kind, title: record.title,
-          readAloud: record.readAloud, gmNotes: record.gmNotes, creatureId: record.creatureId,
-          relations: record.relations.map((relation) => ({ ...relation })) }, create: false,
-          baseRevision: record.revision };
-        this.renderEditor(true);
+        this.openRecord(record);
       });
       row.append(button); this.list.append(row);
     }
@@ -217,6 +223,22 @@ export class WorldNotesPanel {
         const row = doc.createElement("li");
         const target = snapshot.records.find((record) => record.id === relation.targetId);
         row.append(doc.createTextNode(`${relation.label}: ${target?.title ?? relation.targetId} `));
+        if (target && !target.deleted) {
+          const open = doc.createElement("button"); open.type = "button";
+          open.textContent = `${labels[target.kind]} öffnen`;
+          open.setAttribute("aria-label", `${labels[target.kind]} ${target.title} öffnen`);
+          open.addEventListener("click", () => {
+            if (this.destroyed || this.busy || this.pending !== pending || this.snapshot !== snapshot) return;
+            const source = snapshot.records.find((record) => record.id === pending.id);
+            if (pending.create || !source || source.deleted || source.revision !== pending.baseRevision ||
+                JSON.stringify(pending.draft) !== JSON.stringify(this.recordDraft(source))) {
+              this.message("Erst den offenen Entwurf speichern oder ausdrücklich verwerfen.", true);
+              return;
+            }
+            this.openRecord(target);
+          });
+          row.append(open);
+        }
         const remove = doc.createElement("button"); remove.type = "button";
         remove.textContent = "Beziehung entfernen";
         remove.addEventListener("click", () => {

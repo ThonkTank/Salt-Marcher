@@ -72,7 +72,20 @@
       "portableRecoveryEvidence": "docs/reference/smr02-world-notes-recovery/manifest.json",
       "portableRecoveryEvidenceSha256": "a28136f9cc8b6b596462e6f1cf9d868a457ee9b3ac8e653aeb859246845ba353",
       "independentControlledRecoveryReview": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/95#pullrequestreview-5481505362",
-      "next": "Steward integration of PR #95; retain broader crash recovery, Encounter constraint, NPC combat and World Planner requirements as open.",
+      "relationSearchCandidate": "PR #99: active relation labels and related target titles are searchable within the requested note kind; deleted targets are excluded. An unchanged note can open its related target; an edited draft stays in place. Core and panel behavior 587/587 PASS; independent review of the updated navigation delta and integration remain open.",
+      "nativeRelationNavigation": {
+        "source": "a7cc6991e078806bcb80f7983c82baa11cfe4e00",
+        "buildSha256": "b1c2a548768b8fc6013ab7fbbb56838e92522fd9448495d97056eec6b0d419fe",
+        "fixtureManifestSha256": "23735bb6c95107b7dec93ffa56ec66405a0f4fe0ec3822fc0476d90d2920188d",
+        "scenarioSha256": "c6f298b84b19a4b5c1f09cd9f6f96f3c0cd41e85eab2c734da2b7ef86c68a03b",
+        "evidenceRoot": "/home/aaron/.cache/dungeon-native-qa/atlasqa-relation-search-h02/evidence/",
+        "editResult": "1791684821031-world-notes-native-edit/result.json",
+        "editResultSha256": "bdabd257b434b4f341c3bd308f264136001babe657ef4f280da363e600ec8fef",
+        "reopenResult": "1791684834313-world-notes-native-reopen/result.json",
+        "reopenResultSha256": "ea410754f5b04debd54c40fe405005b8e8d9170489343b9c0d0aa96172e00015",
+        "result": "Isolated real Obsidian edit and separate fresh process PASS: relation-title search, unsaved draft retained, confirmed linked faction opened; both processes exited normally. Synthetic fixture and automated input only."
+      },
+      "next": "PR #95 integrated at 78f4c098; obtain narrow independent review of PR #99 navigation delta, then integrate if qualified. Broader crash recovery, Encounter constraint, NPC combat and World Planner requirements remain open.",
       "limits": "Controlled rollback and committed-journal raw evidence independently reviewed; original host-run checkouts were dirty. No physical keyboard, power-loss, user-vault, broad recovery, full SMR-02 or overall product acceptance."
     },
     "smr03LiveScene": {
