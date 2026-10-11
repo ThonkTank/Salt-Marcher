@@ -10559,18 +10559,18 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-BUILDING-NAME-SAVE-N01",
+      "id": "CITY-BUILDING-NAME-NATIVE-ROLLBACK-I01",
       "issue": 92,
-      "state": "direct_pending_name_save_race_fixed_city_rollback_retry_model_reopen_review_pending",
-      "branch": "city/building-name-save-rollback",
+      "state": "native_fault_probe_implemented_pending_new_gui_slot_and_execution",
+      "branch": "city/building-name-native-rollback",
       "plan": "docs/plans/city/building-name-inspector.md",
-      "verification": "Existing core/DOM/native H01 evidence retains original source. New direct pending-name Save countercase beforeFAIL/afterPASS, full native-file rollback then visible Retry with exact model FreshReopen and one History step; 1001 full-suite PASS, 0 FAIL, 1 existing skip; type/build/repo/diff PASS",
-      "next": "R02 PASS5481432379 consumed; H01 actual native Edit3/Fresh1 PASS, normalExit0 both, slot returned. Independent PR93 integration consumed at Shared5c09e96; S01-01 actual H01 buildsourcea12b609 corrected from original build artifacts. PR97 integrated at Shared0bebb85 closes S01-01. Direct pending-name Save stale capture reproduced and fixed by awaiting existing draft persistence then checking context. Next narrow Save review and native direct Save/failure qualification; first picking countercase preserved",
+      "verification": "Save R03 independently PASS and PR98 integrated on Shared73bfe22. Existing native helper extended for direct pending-name Save, won City write then manifest fault, canonical rollback, exact visible Retry and separate fresh process; execution pending new concrete GUI slot.",
+      "next": "Run controlled native City rollback and separate fresh process only after new concrete Hex Laptop2 slot response; Cloud-GM already owns free #92 usage, no duplicate test. Original H01 stays bound to old source.",
       "limits": "DOM pins hit/excludes GPU; separate H01 qualifies actual GPU picking/Edit/Save and fresh Obsidian process with synthetic input only. GM/physical/Recovery/overall parity open; #69/#41 inputs remain pending"
     },
     "nextRun": {
-      "id": "CITY-BUILDING-NAME-SAVE-R01",
-      "focus": "Review only shared Save sequencing fix and new City manifest-fault regression; original H01 retains its old product scope. Native direct Save/failure, GM/Recovery acceptance remain open. #69/#41 retain pending inputs."
+      "id": "CITY-BUILDING-NAME-NATIVE-ROLLBACK-H02",
+      "focus": "Actual isolated native direct Save/failure/Retry and fresh process after new explicit GUI slot; otherwise compatible independent work. GM and physical/broad Recovery remain open."
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
