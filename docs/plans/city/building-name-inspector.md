@@ -87,7 +87,9 @@ Lifecycle unter eigenem QA-Root erhalten, Prozess normal beendet/Exit0, keine
 Zwangs-PIDs. Prüfer ergänzt sichtbaren Ctrl+Wheel-Zoom0.1m/px vor Picking.
 Neue konkrete Hex-Slotfreigabe konsumiert: korrigierte tatsächliche Editprobe
 3/3 PASS, separater frischer Obsidianprozess1/1 PASS. Produktcode bytegleich0315b13;
-Build-/Prüfersource8d1d804. Exakter Unicode-/LF-/Tabname, InvalidEscape, tatsächliches
+Tatsächliche saubere Buildsource laut beiden Original-build.json:
+`a12b609d688a51c5139cfbe1b8073829a3254f02`. `8d1d804` bleibt die frühere äquivalente
+Prüferimplementierung; zwischen beiden Quellen nur eigene Checkpoint-/Acceptanceänderungen. Exakter Unicode-/LF-/Tabname, InvalidEscape, tatsächliches
 Picking, cached Hausrückkehr/Zur Karte, gleiche History/Repository/Kamera/Context,
 Undo/Redo und native Savebytes mit erhaltenen fremden Fixturebytes geprüft.
 Frischer Prozess erhält sichtbaren Namen und vollständige Citydaten bei History0.
@@ -99,3 +101,8 @@ Buildtripel, Lifecycle, gespeicherte Baseline und Screenshots mit SHA-256. Auch
 FehlerPNG/Resultat/Lifecycle des ersten Versuchs bleiben versioniert. Das ist eine
 enge native Producerqualifikation mit synthetischer Eingabe; unabhängige GM-,
 physische-, Recovery- und Gesamtparitätsfreigabe bleiben offen.
+
+S01-01 korrigiert die Buildquellenangabe anhand der unveränderten Originale.
+PR93 ist separat auf Shared `5c09e96` integriert; dies schließt keine offene
+GM-/Recovery-/physische Abnahme. Rohdateien, ihre Hashbindungen und Produktcode
+bleiben unverändert.
