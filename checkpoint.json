@@ -11217,18 +11217,17 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-BUILDING-NAME-IME-SAVE",
-      "issue": 92,
-      "state": "candidate_independent_review_pending",
-      "branch": "city/building-name-ime-save-20261011",
-      "plan": "docs/plans/city/building-name-inspector.md",
-      "verification": "Ctrl/Cmd+S during unfinished IME composition: two actual Managed/Vaultadapter regressions FAIL before/PASS after. No City publication, History step, native write or focus replacement during composition; confirmed shortcut saves with one History step. Typecheck/build/repository/diff PASS; full suite1019 PASS/0 FAIL/1 existing skip. Prior GM Fresh/Search/Reedit/Save and Apply/Discard results remain source-bound in plan/acceptance.",
-      "next": "Independent narrow review of City keyboard shortcut guard; native IME and direct-Save focus remain separate unqualified paths. Continue independent useful work while review runs.",
-      "limits": "Managed DOM uses synthetic isComposing; no native IME, physical or broad Recovery/parity claim."
+      "id": "ATLAS-INSPECTOR-IME-SAVE-SUPPORT",
+      "issue": 80,
+      "state": "candidate_hex_delta_review_pending",
+      "branch": "city/atlas-inspector-ime-counterproof-20261011",
+      "verification": "Hex explicitly delegated narrow Location/Room shortcut support. Shared10defd5: four actual Managed/Vaultadapter countercases FAIL before/PASS after isComposing guards (Location/Room x Ctrl/Meta). During composition no History/native publication and exact pending text retained; after composition shortcut saves once. Parent and hexAtlasExecution/hexAtlas remain with Hex. Prior City IME PR124 independently reviewed and integrated10defd5; native IME/physical acceptance remains open.",
+      "next": "Hex focused independent delta review of two Save guards and four regressions, then regular steward integration; no GUI or broad review round.",
+      "limits": "Synthetic Managed isComposing events; no native IME, physical or overall product claim. No format, focus, navigation or Apply changes."
     },
     "nextRun": {
-      "id": "CITY-BUILDING-NAME-IME-REVIEW",
-      "focus": "Review narrow isComposing guard and before/after regressions; no unchanged overall Save/History/GUI repetition."
+      "id": "ATLAS-INSPECTOR-IME-SAVE-REVIEW",
+      "focus": "Hex reviews delegated Location/Room Save guard delta; existing GM fresh-room reuse remains a separate input."
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
@@ -11358,31 +11357,37 @@
   },
   "gmProductTesting": {
     "date": "2026-10-11",
-    "state": "gm_product_testing_partial; city_92_postsave_fresh_process_pass_and_pr117_apply_discard_keyboard_focus_pass; N04_fresh_process_open; physical_input_200_percent_zoom_recovery_and_broad_gates_open",
+    "state": "gm_product_testing_partial; N04_fresh_process_saved_room_reuse_bounded_pass; physical_input_200_percent_recovery_and_broad_gates_open",
     "plan": "ROADMAP-GM-PRODUCT-TESTING-PLAN.md",
     "focus": "Längere GM-Endanwenderabläufe, häufige Aktionen, Bedienkosten und UI-Überladung; belegte Nacharbeiten beauftragen und nachprüfen.",
     "currentRun": {
-      "id": "GM-CITY-HOUSE-NAME-POSTSAVE-FRESH-PROCESS-20261011-01 + GM-CITY-HOUSE-NAME-PR117-KEYBOARD-FOCUS-20261011-01",
-      "status": "completed_city_fresh_process_reuse_save_pass_and_pr117_apply_discard_keyboard_focus_pass",
-      "owner": "Cloud-GM-Produkttester; existing #92 support claim; City retains package/product ownership",
-      "branch": "codex/gm-city-postsave-focus-20261011 (documentation/evidence only)",
-      "issue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/92",
-      "claim": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/92#issuecomment-6104423993",
-      "scope": "Finish the existing #92 post-save fresh-process City name path once, then the explicitly handed-off narrow PR-117 keyboard Apply/Discard focus check. No repeated Undo/Redo sequence, no second general City path, no product edit.",
-      "cityProductCommit": "eaf6bd95564ab398eabe9b2c0ac046feec079f0f",
-      "cityBuild": {
-        "command": "npm run build",
-        "result": "PASS; Node v24.19.0; dirty:false; exact sourceRevision eaf6bd95564ab398eabe9b2c0ac046feec079f0f; rebuilt after UI run to confirm triplet",
+      "id": "GM-E2E01-ATLAS-INSPECTOR-N04-FRESH-PROCESS-20261011-01",
+      "status": "completed_bounded_visible_fresh_process_saved_room_reuse_pass",
+      "owner": "Cloud-GM-Produkttester; existing #80 support claim; Hex retains parent and product ownership",
+      "branch": "codex/gm-n04-fresh-process-20261011 (documentation/evidence only)",
+      "issue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80",
+      "claim": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80#issuecomment-6105151600",
+      "preRunInstruction": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80#issuecomment-6105482002",
+      "previousSameSessionResult": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80#issuecomment-6105400641",
+      "scope": "One bounded follow-up only: find and reuse the already saved Torraum and exact Room-Key text through visible UI after a new own Obsidian process. No edit/save, Undo/Redo replay, zoom, other issue, user vault, product source change or broad gate.",
+      "documentationBase": "10defd5aca37a5090918f96c04254e4326840f86",
+      "productSource": "87ccdb2626c26622f15799f3af7faf05d9feee89",
+      "latestSharedAtEvidencePreparation": "10defd5aca37a5090918f96c04254e4326840f86",
+      "productDiffSinceTest": [
+        "src/main.ts",
+        "src/ui/atlas-city-building-panel.ts",
+        "src/ui/world-notes-panel.ts",
+        "src/ui/world-notes-view.ts"
+      ],
+      "relevantTargetFilesUnchanged": [
+        "src/ui/atlas-room-key-panel.ts",
+        "src/features/atlas/atlas-editor.ts"
+      ],
+      "build": {
+        "command": "npm run build (previous exact N04 run; no rebuild in this continuation)",
+        "result": "PASS; Node v24.19.0; dirty:false; exact sourceRevision 87ccdb2626c26622f15799f3af7faf05d9feee89",
         "installedTripletByteEqual": true,
-        "mainJsSha256": "46736ec62a71db260ddf3a78b66ddd15417e60cb8d3f796539b2d5b9b1693038",
-        "stylesCssSha256": "df11f8352b61e45d3984d29e0136fc0225aaabe85c7b004a3b55eb0c6cc52934",
-        "manifestJsonSha256": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64"
-      },
-      "pr117": {
-        "request": "PR #117 / product commit 14729dc429d9699998284b1ee7a3bb8ee3ebc8a3; current Shared a4c2cb39aafdfb7abf5469e575a82e630ef41313",
-        "build": "npm run build PASS; Node v24.19.0; dirty:false; exact sourceRevision a4c2cb39aafdfb7abf5469e575a82e630ef41313",
-        "installedTripletByteEqual": true,
-        "mainJsSha256": "f3332ceac377a77fcdc359316bcba94217a6ca9d1e6bddbb2c932fed3373a953",
+        "mainJsSha256": "2164be282b49bda3b56a9050d0d26888f7945271d51576e2a8de5109b4f9b0a0",
         "stylesCssSha256": "df11f8352b61e45d3984d29e0136fc0225aaabe85c7b004a3b55eb0c6cc52934",
         "manifestJsonSha256": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64"
       },
@@ -11390,58 +11395,63 @@
         "containerId": "e49e330d328c1e2d97e6f46a677e34f5f288c4dab7b41db242d3584e4ab66b33",
         "containerName": "gm-city-cloud-isolated-20261011",
         "app": "Obsidian 1.14.4 / Electron 43.7.7",
-        "display": "own Xvfb :100, 1440x1000; visible app inner viewport 1024x800 CSS px; devicePixelRatio 1",
-        "cdp": "127.0.0.1:9236, forwarded to own container port 9240",
-        "cityProfile": "/qa/gm-city-postsave-reopen-profile-6105457026",
-        "cityVault": "/dev/shm/gm-city-postsave-reopen-vault-6105457026",
-        "initialCityProcessPid": 2654,
-        "freshCityProcessPid": 3313,
-        "focusProfile": "/dev/shm/gm-city-pr117-profile-6105507657",
-        "focusVault": "/dev/shm/gm-city-pr117-vault-6105507657",
-        "focusProcessPid": 3715,
-        "input": "Visible product UI actions via own Cloud Playwright/CDP; keyboard events synthesized, not physical device input"
+        "profile": "/qa/gm-n04-profile",
+        "vault": "/dev/shm/gm-n04-vault",
+        "priorProcessPid": 2159,
+        "freshProcessPid": 3964,
+        "display": "own Xvfb :101, 1440x1000; app content area 1024x800 CSS px; devicePixelRatio 1",
+        "input": "Visible UI through own isolated Cloud CDP; not physical input"
       },
       "fixture": {
-        "source": "tests/fixtures/atlas-e2e-spatial-v2/input at eaf6bd95564ab398eabe9b2c0ac046feec079f0f",
-        "sourceManifestSha256": "23735bb6c95107b7dec93ffa56ec66405a0f4fe0ec3822fc0476d90d2920188d",
-        "focusVault": "separate copy of this own synthetic City test state"
+        "source": "tests/fixtures/atlas-e2e-spatial-v2/input at 87ccdb2626c26622f15799f3af7faf05d9feee89",
+        "vault": "same previously saved synthetic test vault; source fixture untouched"
       },
-      "cityVisibleResults": [
-        "Closed the initial own Obsidian process via CDP Browser.close; its PID disappeared without force-kill. A fresh app PID opened the same profile/vault. The detached launcher did not provide a recorded exit code.",
-        "After fresh process, clicked visible Torheim marker; filtered the visible target list with “Roter Anker”; the exact saved House B row appeared. Opening it and clicking the house footprint showed the previously saved exact name in the visible House inspector.",
-        "Changed the name once to “Haus B — Roter Anker (Post-Save-Reopen 2026-10-11; erneut verwendet)”, clicked visible Hausname übernehmen, then visible Atlas speichern. The UI showed Gespeichert.",
-        "City semantic oracle against the source fixture found only buildings[1].name changed; IDs 105/106 and all building geometry including House B courtyard remained unchanged. Atlas, both terrain files, Dungeon and both Locations match source hashes; Campaign digests/revisions updated with the City payload."
+      "visibleResults": [
+        "Closed prior N04 app via its own CDP Browser.close; prior PID disappeared without forced termination.",
+        "Started a fresh Obsidian process on the same isolated profile and synthetic vault; visible Atlas opened with Gespeichert and Torheim marker.",
+        "Clicked the visible Torheim marker, scrolled the visible inspector, typed Torraum in search, and activated the visible Raum 1: Torraum result.",
+        "Fresh process visibly showed Room-Key, Torraum, room number 1 and exact previously saved text: ## Eingang / Die Basalttür ist verschlossen. / Nur das dritte Klopfen antwortet.",
+        "No edit, Apply, Save, Undo or Redo occurred in this continuation; this is the requested read-only fresh-process reuse follow-up."
       ],
-      "focusVisibleResults": [
-        "On the separate copy with the exact PR-117 triplet installed, focused the visible Gebäudename field, replaced text by keyboard, pressed Tab to Hausname übernehmen and Enter. After rerender, visible focus ring remained on the corresponding replacement Apply button.",
-        "Typed a second draft, used Tab/Tab to Namenseingabe verwerfen and Enter. The replacement Discard button retained visible focus; field reverted to the prior applied value. The next Tab focused the visible Atlas speichern inspector button.",
-        "City, Atlas and Campaign file hashes in the focus-only test copy were unchanged before/after; no persistence action occurred."
-      ],
-      "dataOracle": "docs/reference/gm-city-postsave-reopen-20261011/DATA-ORACLE.txt",
-      "evidence": "docs/reference/gm-city-postsave-reopen-20261011/README.md and screenshots/; screenshot SHA manifest included",
+      "payloadSha256AfterAndUnchanged": {
+        "atlas": "76e0a82a939f5c2b16c08f153cca827e4efd8d5920915c997ae2a3fc6d16de07",
+        "terrainMinus1": "4e09dbcf59e5f81a35f0c72c44511b35073696cf079613f5d001baceeb59e358",
+        "terrain0": "c32ba3548aa7236e573e145ec0e3c6e75326cc6cd47134a19c2230d2d790f2f2",
+        "dungeon": "39b6896fef75f73fa6725d4792b07aca3de682d94c678353165fcf5e10286c9e",
+        "campaign": "a2fd470149a9d9f546d6382dd67e4f881764c86351122345f0700aa680146366",
+        "location11": "ac888059f997b3c0f697e2152c9d59375543d6d2004356f1eef482fd4ec27ab7",
+        "location12": "57b455592dc30e0ab9e3286a56f27a408453b7a2a3b617eee03ea089ed963b5b",
+        "city": "d7ac830f0b1a1b2e20a396a8515cf6afa0b777e46ee39f0a5b39a75bd8a6184c"
+      },
       "checks": [
-        "npm run build at exact City source eaf6bd95564ab398eabe9b2c0ac046feec079f0f: PASS, dirty:false; installed triplet equality PASS",
-        "npm run build at exact PR-117 Shared source a4c2cb39aafdfb7abf5469e575a82e630ef41313: PASS, dirty:false; installed triplet equality PASS",
-        "Visible fresh-process City reuse/edit/save path PASS for this bounded scope",
-        "Visible PR-117 Apply/Discard keyboard focus continuity PASS for this bounded scope",
-        "npm run check:repo and git diff --check: run before publication",
-        "No automated product test suite run; tests were not substituted for UI use"
+        "Bounded visible fresh-process find/reuse PASS; exact prior built/installed product triplet reused without rebuilding.",
+        "Own synthetic vault payload hashes remained unchanged in the read-only continuation; source fixture untouched.",
+        "npm run check:repo: PASS; git diff --check: PASS.",
+        "sha256sum -c docs/reference/gm-cloud-n04-20261011/SHA256SUMS.txt: PASS for all 12 screenshots.",
+        "sha256sum -c docs/reference/gm-cloud-n04-20261011/FIXTURE-SHA256SUMS.txt from tests/fixtures/atlas-e2e-spatial-v2/input: PASS for all 8 fixture payloads.",
+        "No automated product test suite run or substituted for visible UI."
       ],
       "notDemonstrated": [
-        "Direct Save field-focus case from PR #117",
-        "Physical keyboard/mouse, 200% zoom, product latency, broad UX, external clipping, recovery, PlayerProjection, original-map parity or broad Atlas/Dungeon/E2E acceptance",
-        "PR-117 focus behavior after a separate fresh process; the separate City persistence fresh-process check is bound to eaf6bd9"
+        "New edit/save after fresh-process reopen; another fresh-process cycle; save/Undo/Redo retest.",
+        "Physical keyboard/mouse, product latency, 200% zoom, external clipping, original-map parity, large-map behavior, recovery, player projection or broad Atlas/Dungeon/E2E acceptance.",
+        "UI test on latest Shared 10defd5; evidence remains pinned to installed source/build 87ccdb2."
       ],
+      "evidence": "docs/reference/gm-cloud-n04-20261011/README.md continuation and screenshots/09-12; SHA256SUMS.txt; prior fixture manifest retained.",
       "changedFiles": [
-        "checkpoint.json: gmProductTesting root only",
-        "docs/INDEX.md: link to durable #92 QA evidence",
-        "docs/reference/gm-city-postsave-reopen-20261011/README.md",
-        "docs/reference/gm-city-postsave-reopen-20261011/BUILD-MANIFEST.md",
-        "docs/reference/gm-city-postsave-reopen-20261011/DATA-ORACLE.txt",
-        "docs/reference/gm-city-postsave-reopen-20261011/screenshots/*.png and SHA256SUMS.txt"
+        "checkpoint.json (gmProductTesting root only)",
+        "docs/reference/gm-cloud-n04-20261011/README.md",
+        "docs/reference/gm-cloud-n04-20261011/SHA256SUMS.txt",
+        "docs/reference/gm-cloud-n04-20261011/screenshots/09-fresh-process-atlas-open.png",
+        "docs/reference/gm-cloud-n04-20261011/screenshots/10-fresh-process-torheim-selected.png",
+        "docs/reference/gm-cloud-n04-20261011/screenshots/11-fresh-process-room-search.png",
+        "docs/reference/gm-cloud-n04-20261011/screenshots/12-fresh-process-room-key-text.png"
       ],
-      "next": "City hat den abgeschlossenen Fresh-Process-/PR-117-Befund in #92 konsumierbar erhalten. Der separate #80-N04-Fresh-Process-Support bleibt bei Hex; vor Wiederaufnahme Claims/Eingang am bestehenden #80 prüfen, kein City-Replay ohne Produktpfadänderung.",
-      "reportedToIssue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/92#issuecomment-6105664357"
+      "next": "Deliver this single source-bound fresh-process result to Hex at #80. Do not repeat the already observed save/UndoRedo/131% path; Hex retains the parent and decides its consequence. Keep physical, recovery, player-projection and broad E2E gates open.",
+      "publishedEvidencePr": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/125",
+      "resultComment": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80#issuecomment-6105912997",
+      "reportedStatus": "completed; report delivered to Hex at the existing #80 task",
+      "publishedEvidenceCommit": "6fc9019a60e4c9e8706fa2755b13c1288fdfcaae",
+      "followupCheckpointCommit": "2aa2976fde7834607f6c91f3c38205411d5747c3"
     },
     "executedUiRuns": 24,
     "observedFindings": [

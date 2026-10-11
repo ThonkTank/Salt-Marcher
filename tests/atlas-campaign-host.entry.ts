@@ -1675,3 +1675,41 @@ for (const modifier of ['ctrlKey', 'metaKey'] as const) {
     } finally { await f.close(); }
   });
 }
+
+for (const kind of ['location', 'room'] as const) for (const modifier of ['ctrlKey', 'metaKey'] as const) {
+  test(`${kind} inspector ${modifier}+S must retain unfinished IME text without native publication`, async () => {
+    const f = await fixture(true);
+    try {
+      await f.host().navigate(locationTarget);
+      if (kind === 'room') {
+        const room = f.host().details(uuid(11)).entries.find(entry => entry.target.kind === 'room')!;
+        await f.host().navigate(room.target);
+      }
+      const depth = active(f).history.undoDepth, bytes = new Map(f.vault.bytes),
+        field = f.input(kind === 'location' ? '[aria-label="Ortsname"]' : '[aria-label="Raumname"]', '未確定の名前');
+      const event = new f.window.Event('keydown', { bubbles: true, cancelable: true });
+      Object.assign(event, { key: 's', [modifier]: true, isComposing: true });
+      field.dispatchEvent(event);
+      await (f.editor() as any).work;
+      assert.equal(active(f).history.undoDepth, depth, 'IME composition must not publish a History step');
+      assert.deepEqual(f.vault.bytes, bytes, 'IME composition must not save native bytes');
+      assert.equal(f.editor()!.pendingKey, true);
+      assert.equal(field.value, '未確定の名前');
+      assert.equal(event.defaultPrevented, false);
+      const confirmed = new f.window.Event('keydown', { bubbles: true, cancelable: true });
+      Object.assign(confirmed, { key: 's', [modifier]: true, isComposing: false });
+      field.dispatchEvent(confirmed);
+      await (f.editor() as any).work;
+      assert.equal(confirmed.defaultPrevented, true);
+      assert.equal(active(f).history.undoDepth, depth + 1);
+      assert.equal(f.editor()!.pendingKey, false);
+      if (kind === 'location') {
+        assert.equal(parseLocationDocument(f.vault.bytes.get(`Orte/${uuid(11)}.location`)!).name, '未確定の名前');
+      } else {
+        const source = active(f).repository.detail('dungeon', uuid(30)) as any;
+        assert.equal(source.read().document.entities.find((entity: any) => entity.id === uuid(31)).name, '未確定の名前');
+        assert.equal(f.vault.bytes.get('Dungeons/E2E-01-Testdungeon/Karte.dungeon'), source.read().documentBytes);
+      }
+    } finally { await f.close(); }
+  });
+}
