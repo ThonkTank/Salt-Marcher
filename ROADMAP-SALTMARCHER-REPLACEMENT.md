@@ -303,42 +303,34 @@ Integrationsweg, nicht automatisch die gesamte Karten-/Stadtfunktion.
 
 #### Arbeitsstand #69
 
-Kandidat: https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/tree/city/planner-allocation-context-20261011
+Kandidat: https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/tree/city/planner-keyboard-focus-20261011
 Eingang: https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/68
 
-Stadt führt das bestehende Paket fort. Kern/Panel/Preview, atomare Compoundaktionen
-und Fokusreparatur sind integriert und eng qualifiziert. Der synthetische GM-Weg
-hat ortslose Planung, Notizen, Reihenfolge und Planwechsel bestätigt; native
-Speicherung bleibt offen. UI-Hilfe und basisgebundener Plannamen-Refresh wurden
-über PR131 selektiv auf Shared integriert. Der geprüfte Dokumentvorschlag in
+Stadt führt den manuellen Planner fort. Kern/Panel/Preview und die bisherigen
+Texterhalt-/Atomizitätsreparaturen sind integriert. PR133/R01 und sichtbarer
+GM-Retest6106619673 bestätigen den ausstehenden Plannamen im memory-only Browser;
+PR136/R01 und Sharedab41f04 bestätigen den Schutz nach ID-Vergabe.
+Native Speicherabnahme bleibt offen.
+
+Aktuelle enge Reparatur: Erfolgreiche Panelaktionen entfernen durch Neurendern
+auch die fokussierte Schaltfläche. Bei tatsächlich fokussierter Aktion wird
+jetzt deren neuer, aktiver Button fokussiert. Wird eine Verschiebeaktion am
+Listenrand deaktiviert, geht der Fokus zum Szenentitel. Auswahl behält ihren
+bestehenden Titel-Fokus; Fehler/stale Aktionen rendern nicht und behalten den
+ursprünglichen Fokus sowie Draft. Vier Fokusgegenproben FAIL vor/PASS nach Fix,
+28 Paneltests PASS einschließlich gleichnamigem Szenentitel. Echter Browser-Tastaturnachtest und unabhängiger Review
+stehen für dieses Delta aus; kein physischer Eingabebeleg.
+
 [PR86](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/86)
-ist weiterhin ein unratifizierter Campaign/Data-Eingang, keine Speicherautorität.
+führt den geprüften Dokumentcodec und konkreten Produceranschlussvorschlag.
+Campaign/Data entscheidet dort nicht räumliches Dokumentinventar,
+Domainwrite/Bytebindung, kanonischen Pfad und Delete-/Retirement-/Recoveryvertrag.
+Danach implementiert Stadt den Consumer; keine konkurrierende Speicherautorität.
 
-Neuer konkreter UI-Befund: Noch nicht übernommener Planname verschwand bei
-Szenenanlage, Übernehmen, Verwerfen, Umordnen und Auswahl. Fünf direkte
-Panel-Gegenproben FAIL vor Reparatur. Der guarded Buttonpfad erhält jetzt den
-exakten Feldwert bei erfolgreicher Aktion innerhalb desselben Plans; der
-Modellname ändert sich erst mit ausdrücklichem Umbenennen. Neue Pläne und
-externe Refreshbasis erhalten keinen alten Text. Alle sechs neuen Gegenproben
-PASS, Vollsuite1090 PASS/0 FAIL/1 bestehender optionaler PDF-Skip, Typ/Build/Repo PASS.
-Unabhängiger Deltareview6106571586 und PR133-Integration auf Shared6df23a7
-sind konsumiert; der sichtbare Browser-Retest läuft.
-
-Aktuelle Reparatur: Plananlage und letzter Planersatz prüfen nach ID-Vergabe
-Contextautorität und vollständige Workspacebasis vor Veröffentlichung. Vier
-Kerngegenproben zu Widerruf/neuerer bestätigter Änderung FAIL vor Fix.
-Originalpayload/Draft/Auswahl beziehungsweise neuere Fremdänderung bleiben
-erhalten; gültiger Retry funktioniert. Vier neue Fälle PASS, Vollsuite1094 PASS/
-0 FAIL/1 bestehender optionaler PDF-Skip; Typ/Build/Repo PASS.
-Enger unabhängiger Review steht aus.
-
-Startbarer synthetischer Verbraucher: `node tools/manual-planner-preview/build.mjs`,
-danach `.build/manual-planner-preview/index.html` öffnen.
+Startbarer synthetischer Verbraucher: `node tools/manual-planner-preview/build.mjs`.
 [Startanleitung und Grenzen](docs/plans/campaign/manual-session-planner.md#startbarer-flüchtiger-gui-frühtest).
-Memory-only: Neuladen/Schließen verwirft sämtliche Arbeit. Campaign/Data-Dateiplan,
-Lösch-/Tombstone- und Publish-/Receipt-/Recoveryvertrag sowie Pluginmount und
-native Save/Fresh-Abnahme bleiben offen. #68 liefert World Notes, keine
-Plannerdatei-/Ownerautorität. Kein Party-/Generatorausbau vor bestätigten Eingängen.
+Neuladen/Schließen verwirft sämtliche Arbeit. Native Save/Fresh/Recovery,
+Pluginmount, physische Eingabe und 200%-Zoom bleiben offen.
 
 ### SMR-07 – Reise, Kalender und autoritative Zeit
 
