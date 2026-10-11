@@ -186,6 +186,14 @@ Synthetische Fixture und automatisierte Eingabe. Unabhängige enge Such-R01-
 und Navigations-R02-Reviews bestanden; Shared-Merge `88f455cb`. Keine neue
 Datenhaltung oder Gesamt-SMR-02-Freigabe.
 
+Der nächste #68-Kandidat zeigt an einer gespeicherten World Note die aktiven
+Einträge, die auf sie verweisen. Der GM kann die Quellnotiz öffnen, wenn der
+aktuelle Entwurf unverändert ist; ein bearbeiteter Entwurf bleibt erhalten.
+Die Liste wird aus dem bestätigten Snapshot berechnet und erzeugt keine
+gegenseitige Mitgliedschaft oder neue Speicherautorität. Core-/DOM- und
+isolierte native Edit-/Frischprozessproben bestanden; unabhängiger enger
+Review und Shared-Integration stehen aus.
+
 ### SMR-03 – Party, Scene und Live Session
 
 - Roster/Charakterprofile und Adventuring Day integrieren.
