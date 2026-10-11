@@ -75,12 +75,29 @@ Produktbuild, vollständige Basissuite und Fremdwurzelerhalt bestehen.
 Quellgebundener Beleg: `checkpoint.hexAtlasExecution.dungeonAtLocationInspectorEscapeN02`
 und dieselbe bestehende Acceptanceanforderung; N01-Belege bleiben historisch erhalten.
 
-Nächster Empfänger ist der bestehende Atlas-QA-Reviewer für den begrenzten
-Nachreview dieses Eingabefeld-/Paneldeltas im PR. Danach folgt der gezielte schmale
-Obsidian-/GM-Nachtest mit sicher isoliertem Host und vor lokalem GUI-Lauf neu
-koordiniertem Slot. Kein Selfmerge, Detailausbau oder allgemeine Reviewrunde.
+[Atlas-QA hat den engen Nachreview unabhängig bestanden](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/91#issuecomment-6103862700):
+Input-/Panel-/History-/Save-Scope, isolierter Exact-SHA-Testbuild und vier fokussierte
+Fälle, kein weiterer Pflichtbefund. Der frühere Capture-Befund wurde ausdrücklich
+auf die belegte Test-/Eventgrenze eingegrenzt. Produkt/Build/Fixture sind seit dem
+reviewten Stand unverändert; der neue eigene Beleg konsumiert diesen PASS.
+
+**Startbarer Nachtest:** N02-Produktquelle `dba7d559044f9e8b072a329f2efacd7452b333b4`,
+Node22, `npm ci` und `npm run build`; aktuelles Plugintripel in demselben N02-Beleg.
+Versionierte Fixture `tests/fixtures/atlas-e2e-spatial-v2/manifest.json` unverändert.
+Die Fixture-/Isolationsanleitung im [H01-Eingang](docs/reference/atlas-detail-binding-d01/dungeon-at-location-h01.md#startbarer-eingang)
+bleibt verwendbar; dessen alte Produkt-/Buildidentität bleibt historisch.
+Dateibaumeinstieg: `Atlanten/Gemeinsamer-Testatlas.overworld` im eigenen Testvault.
+Nutzerziel ist den Orts-/Raum-Key im schmalen Fenster bearbeiten und mit erhaltenem
+Text zur Karte zurückkehren, anschließend dauerhaft wiederverwenden; Tastatur und
+passende Vergrößerung frei mitbeobachten. Keine vorgegebene GM-Klickfolge.
+
+Nächster eigener Beitrag ist die gezielte tatsächliche schmale Obsidian-/Save-/
+Wiederöffnungsprobe mit neu koordiniertem lokalem Slot. Cloud-GM erhält den
+reparierten Eingang für den freien Nachtest auf seinem eigenen isolierten Host;
+laufende fremde Testclaims bleiben erhalten. Keine allgemeine Reviewrunde oder
+Wiederholung unveränderter Codec-/H01-Belege. Kein Selfmerge oder Detailausbau.
 Parent #80, Gesamt-E2E und physische/Original-/Großkarten-/Installationsabnahmen
-bleiben offen; die Nachbesserung verwendet keinen GUI-Slot.
+bleiben offen; die Reviewkonsumierung verwendet keinen GUI-Slot.
 
 ## Historische Planbasis und Lieferbelege
 

@@ -917,33 +917,36 @@
   "hexAtlasExecution": {
     "scope": "HEX-00 bis HEX-28 und sämtliche eingeordneten CITY-00 bis CITY-09 vollständig",
     "phase": "HEX-04",
-    "state": "input_panel_escape_DOM_PASS_independent_targeted_rereview_and_native_pending",
+    "state": "input_panel_escape_independent_review_PASS_native_pending",
     "plan": "ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md",
     "currentRun": {
-      "id": "E2E-01-HEX04-INSPECTOR-ESCAPE-N02",
+      "id": "E2E-01-HEX04-INSPECTOR-N02-REREVIEW-CONSUMPTION",
+      "kind": "consume_independent_narrow_review_and_make_native_input_available",
       "owner": "Hex",
       "issue": 80,
       "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
       "e2e01UserLine": 13,
-      "state": "input_panel_escape_DOM_PASS_independent_targeted_rereview_and_native_pending",
+      "state": "input_panel_escape_independent_review_PASS_native_pending",
       "sourceCommit": "dba7d559044f9e8b072a329f2efacd7452b333b4",
-      "kind": "bounded_independent_review_finding_repair",
+      "reviewedHead": "6b6f3624f8e2d7facaafedbeb7adb8d6d03a9bf0",
       "record": "checkpoint.hexAtlasExecution.dungeonAtLocationInspectorEscapeN02",
       "guiUsed": false,
-      "productEdited": true,
+      "productEdited": false,
       "phaseApproval": false,
-      "finishedAt": "2026-10-11T00:38:41.257921+00:00"
+      "finishedAt": "2026-10-11T00:46:10.347313+00:00"
     },
     "nextRun": {
-      "id": "E2E-01-HEX04-INSPECTOR-ESCAPE-N02-QUALIFICATION",
-      "kind": "consume_targeted_independent_rereview_or_required_finding",
+      "id": "E2E-01-HEX04-INSPECTOR-TARGETED-NATIVE",
+      "kind": "bounded_narrow_native_probe_or_consume_delivered_GM_repair_retest",
       "owner": "Hex",
       "issue": 80,
       "e2eIssue": 12,
       "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
       "e2e01UserLine": 13,
       "input": "checkpoint.hexAtlasExecution.dungeonAtLocationInspectorEscapeN02",
-      "focus": "Atlas-QA: targeted Exact-Head rereview of the direct input/panel Escape delta. Then separate narrow Obsidian/GM retest with fresh slot coordination or independent isolated Cloud host; no selfmerge or dependent expansion.",
+      "sourceCommit": "dba7d559044f9e8b072a329f2efacd7452b333b4",
+      "fixtureVersion": "e2e01-spatial-v2",
+      "focus": "Hex: targeted actual narrow Obsidian save/reopen probe on unchanged N02 source, after new local slot coordination. Cloud-GM: free repair retest on own isolated host when existing test claims permit; #80 remains at Hex, no selfmerge or dependent expansion.",
       "dependentExpansionAllowed": false,
       "guiUsedByHex": false,
       "slotRequiredBeforeAnyNewLocalGui": true
@@ -6970,7 +6973,7 @@
       "issue": 80,
       "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
       "e2e01UserLine": 13,
-      "state": "input_panel_escape_DOM_PASS_independent_targeted_rereview_and_native_pending",
+      "state": "input_panel_escape_independent_review_PASS_native_pending",
       "sourceCommit": "dba7d559044f9e8b072a329f2efacd7452b333b4",
       "pullRequest": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/91",
       "consumedIndependentFinding": {
@@ -7041,14 +7044,25 @@
         "actualNewObsidianProbe": false,
         "narrowViewportVerifiedNatively": false,
         "freshProcess": false,
-        "independentRepairRereview": false,
+        "independentRepairRereview": true,
         "physicalInput": false,
         "originalParity": false,
         "largeMap": false,
         "userVaultInstalled": false,
         "fullE2E": false
       },
-      "nextConsumer": "Atlas-QA: targeted Exact-Head rereview of the direct input/panel Escape delta. Then separate narrow Obsidian/GM retest with fresh slot coordination or independent isolated Cloud host; no selfmerge or dependent expansion."
+      "nextConsumer": "Hex: targeted actual narrow Obsidian save/reopen probe on unchanged N02 source, after new local slot coordination. Cloud-GM: free repair retest on own isolated host when existing test claims permit; #80 remains at Hex, no selfmerge or dependent expansion.",
+      "independentRereview": {
+        "reviewer": "Atlas-QA",
+        "result": "PASS",
+        "head": "6b6f3624f8e2d7facaafedbeb7adb8d6d03a9bf0",
+        "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/91#issuecomment-6103862700",
+        "scope": "Independent narrow Input/panel/History/Save rereview; isolated Exact-SHA testbuild and4/4 focused PASS, no further required finding. Prior native-Capture inference explicitly corrected; no GUI/native/full-E2E acceptance.",
+        "exactHeadCI": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/actions/runs/38099152678",
+        "ci": "SUCCESS",
+        "consumedAt": "2026-10-11T00:46:10.347313+00:00",
+        "relevantProductBuildFixtureDeltaAfterReview": "none"
+      }
     }
   },
   "phase": "Phase 6: zweiter Nachbesserungslauf teilweise umgesetzt; fünf Restpositionen und unabhängiger Review offen",
