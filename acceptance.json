@@ -156105,6 +156105,42 @@
             "productEditedByHex": false
           },
           "nextConsumer": "Hex reproduces the existing GM-N02-02 geometry finding in an isolated current-build Obsidian host at 1024x800 and 131 percent UI zoom after fresh explicit local-slot coordination; no duplicate City GM run or dependent detail expansion."
+        },
+        "dungeonAtLocationInspectorZoomGeometryD01": {
+          "id": "E2E-01-HEX04-INSPECTOR-GM-N02-02-D01",
+          "owner": "Hex",
+          "issue": 80,
+          "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
+          "e2e01UserLine": 13,
+          "state": "native_zoom_geometry_diagnosed_horizontal_controls_overflow_repair_next",
+          "sourceCommit": "bca790c22bdab5f76a28d3f1d4699f1f464c1572",
+          "qualifiedShared": "a4f20a553060ec84941b97cbb71bd105d5ca5a62",
+          "receipt": "docs/reference/atlas-detail-binding-d01/inspector-zoom-geometry-d01.json",
+          "receiptSha256": "37104af6095d4ac043d4e95e0eaee18c346cc49be93f2b8846cac6fe2ce72bd3",
+          "fixtureVersion": "e2e01-spatial-v2",
+          "fixtureManifestSha256": "23735bb6c95107b7dec93ffa56ec66405a0f4fe0ec3822fc0476d90d2920188d",
+          "finding": {
+            "id": "GM-N02-02-HORIZONTAL-CONTENT-D01",
+            "result": "confirmed required horizontal-content fit repair; original external dock clipping not reproduced in these conditions",
+            "observations": [
+              "Location baseline100%: dock client249/scroll276 CSSpx; original full dock remains inside renderer viewport.",
+              "Location and focused Room at131% with open sidebar: dock client153/scroll276 CSSpx; buttons exceed dock right edge, including Raumabschnitt: Torraum (~20px) and Hier verorten: Dungeonkarte – Torraum (~111px). Location Text verwerfen also exceeds dock right (~71px).",
+              "At131% with closed sidebar: client273/scroll276 CSSpx, dock inside viewport.",
+              "No measured dock rectangle exceeds CSS viewport; vertical scrolling is separate from external clipping. Existing GM-N02-02 external-window observation is not dismissed or qualified as fixed."
+            ],
+            "scope": "existing common Inspector child controls/layout; no camera/store/history/format change.",
+            "nextOwnStep": "fit existing Key actions and detail/binding target controls to available dock width and preserve same-target scrolling/navigation; then targeted layout/guard regression and qualified native followup. No blind external-dock CSS remedy."
+          },
+          "nativeOutcome": "first helper partial/selector FAIL retained; second Room probe completed; two normal exits/all8 native files unchanged. Geometry finding confirmed, not a GUI product PASS.",
+          "slotReturned": true,
+          "guiUsed": true,
+          "productEdited": false,
+          "phaseApproval": false,
+          "limits": [
+            "external viewport clipping not reproduced, remains open",
+            "no native Save/History acceptance or saved fresh restart",
+            "no physical/Original/large-map/user-vault/full-E2E acceptance"
+          ]
         }
       }
     ],
