@@ -1,15 +1,14 @@
 ---
 area: runtime
 owner: Chronik
-issue: 60
+issue: 90
 status: active
 checkpoint: saltMarcherReplacement
 ---
 # SMR-03-I01 – Hostneutraler Party-/Scene-/Live-Session-Kern
 
-Status: **Planrepair und unabhängige I01-A-Reviews auf Exact-SHA `PASS`;
-Integration des Kandidaten steht aus; kein Persistenz-, Host- oder
-Gesamtprodukt-Go.**
+Status: **I01-A ist in Shared integriert; I01-B läuft als getrenntes Paket in
+Issue #90. Kein Persistenz-, Host- oder Gesamtprodukt-Go.**
 
 ## Gebundener Stand
 
@@ -20,8 +19,8 @@ Gesamtprodukt-Go.**
 - Source-Owner-Ratifikation: Issue #6, Kommentar `6088996383`.
 - Music/Weather/Shops-Consumer-Ratifikation: direkt erzeugter und unverändert
   integrierter Commit `ed755aedd1dd3d2a85556ce51ed576b25527595d`.
-- Aktueller integrierter Shared-Ausgangspunkt:
-  `bf98471bca2264732a363bd81e5a6325da6ddbd8`.
+- Aktueller integrierter Shared-Ausgangspunkt für I01-B:
+  `d9eda92f8270b364322e3c9a4cb2af5c2c69c8f7`.
 - I01-Planreview: Issue #6, Kommentar `6089122945`,
   `CHANGES_REQUIRED` für gemeinsame Rejoin-/Clock-Publikation,
   Prepared-Runtime-Kopie und vollständige Acceptance-/Slice-Zuordnung.
@@ -434,25 +433,28 @@ Vor I01-A sind für diesen Plan erforderlich:
 Ein Plan-PASS ist keine Produkt-, Host-, Persistenz-, Acceptance- oder
 Gesamtfreigabe.
 
-#### Arbeitsstand #60
+#### Arbeitsstand #90
 
-I01-A liefert die hostneutralen ID-/Revisionsparser, strikt validierte und tief
-eingefrorene Party-/Focus-/LiveScene-/LiveSession-DTOs sowie fail-closed
-Projektionen. Sparse oder berechnete Eingaben, fremde Prototypen, unbekannte
-Felder, falsche Campaign-/Revisionbindungen und asymmetrische aktive
-Party-/Scene-Mitgliedschaft werden vor einer Projektion abgewiesen.
+I01-A ist nach unabhängigem Review über PR #88 als Shared-SHA
+`d9eda92f8270b364322e3c9a4cb2af5c2c69c8f7` integriert. I01-B ist davon
+getrennt auf `codex/smr-03-i01b-aggregates` beansprucht. Campaign/Data,
+Music/Weather/Shops und Cloud Architektur/Technik haben vor dem ersten
+Quellcheckpoint bestätigt, dass keine neue Planvorbedingung besteht, solange
+PreparationSnapshot-Provenienz, current Focus, ownergebundene Cleanup-Pflichten
+und die Host-/Persistenzgrenze unverändert bleiben.
 
-Kandidat und exakte Prüfrevision stehen im Aufgabenissue #60. Der Kandidat ist
-gegen den dort genannten Shared-Stand integriert; Typecheck,
-vollständige Core-/Boundarytests, Produktbuild und Repositorystruktur sind am
-veröffentlichten SHA grün. Campaign/Data hat die unveränderte
-PreparationSnapshot-Grenze bestätigt, Music/Weather/Shops die reparierte
-immutable Consumerprojektion und Cloud Architektur/Technik alle drei
-Pflichtbefunde einschließlich der AST-basierten Importgrenze geschlossen.
-Offen bleibt die Integration von PR #88 in Shared.
+Der erste Quellcheckpoint `21f89b0` implementiert strikte immutable
+Aggregatezustände und revisionierte Commands für ausdrückliches Initialize,
+Prepared-Runtime-Kopie, Focus und Teilnehmer-Move. Teil-Moves erhalten die
+nichtleere Source; der letzte Move retired die leere Source und bindet
+Primary/Focus deterministisch an das befüllte Ziel. Prepared Scenes können
+weder implizit initialisieren noch vor einem bestätigten Move Primary oder
+Focus werden. Unavailable Maskenowner rollen die Party-/Scene-Mutation nicht
+zurück, sondern erhalten eine an Campaign, Command/Digest, Source/Target,
+Revisionen und exakte Pflicht gebundene Pending-Reconciliation.
 
-Mutationen, History, Coordinator, Persistenz, Host, Clockmutation und Passive
-Display sind ausdrücklich nicht implementiert. `PreparationSnapshot` ist in
-I01-A nur ein immutable Eingabevertrag; seine Erzeugung, Speicherung und
-Übernahme bleiben getrennte Pakete. Nach Review-PASS ist I01-B der nächste
-Runtime-Slice.
+Typecheck, vollständige serielle Tests, Produktbuild und Repositorystruktur
+sind für diesen Checkpoint grün. Noch offen und nicht durch den Checkpoint
+behauptet sind das Party-Aggregat, Deactivate/Delete, Split/Rejoin samt opaque
+Clock-Beitrag, die vollständige Masken-Reconciliation, Invariant-Fuzzer und
+Scaleorakel sowie unabhängiger Exact-SHA-Review und Shared-Integration.

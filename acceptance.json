@@ -183,10 +183,10 @@
       "limits": "No P02 Go, platform selection, P03 authorization or product acceptance. This is Linux-only synthetic evidence; Windows, macOS, production Campaign integration and the remaining ADR prototypes stay open."
     },
     "smr03I01A": {
-      "state": "implementation_review_passed_integration_pending",
+      "state": "integrated_shared_d9eda92",
       "issue": 60,
       "branch": "codex/smr-03-i01a-contracts",
-      "integratedShared": "3fc5518b5a5cd48d03e647e63ce474f127ddde34",
+      "integratedShared": "d9eda92f8270b364322e3c9a4cb2af5c2c69c8f7",
       "implementationCandidate": "4bc886433f26a56cf56ba28fc296db1c16a0de16",
       "testedIntegratedCandidate": "ccbebc3c5940c84269b32022d467ece06aab0c59",
       "requirements": [
@@ -202,9 +202,32 @@
         "Campaign/Data PREPARATION-SNAPSHOT-R01 is revalidated PASS on f941ce4; Music/Weather/Shops Consumer R02 is PASS on f941ce4; Cloud Architecture/Technical closes ARCH-01/02 on f941ce4 and ARCH-03 on 4bc8864."
       ],
       "notConfirmed": [
-        "PR #88 integration into Shared remains open; review PASS is not a product or host acceptance.",
-        "I01-B/I01-C mutations, History and coordination are not implemented.",
+        "Review PASS and Shared integration are not a product or host acceptance.",
+        "I01-B is active in issue #90; I01-C History and coordination are not implemented.",
         "Persistence, host, UI, restart, OS, performance, accessibility, Passive Display and complete product acceptance are not claimed."
+      ]
+    },
+    "smr03I01B": {
+      "state": "scene_lifecycle_checkpoint_active",
+      "issue": 90,
+      "branch": "codex/smr-03-i01b-aggregates",
+      "baseline": "d9eda92f8270b364322e3c9a4cb2af5c2c69c8f7",
+      "implementationCandidate": "21f89b0f1b2ec74d50d4453bf548d7945a062b9e",
+      "requirements": [
+        "Initialize a Live Session explicitly and atomically with one Primary Scene, Focus and ordered active Party membership.",
+        "Create an independent empty Prepared Runtime copy with exact PreparationSnapshot provenance and explicit fresh IDs.",
+        "Move a revision-bound participant subset atomically, preserve a nonempty Source and retire an empty Source with deterministic Primary/Focus cleanup.",
+        "Keep Clock, mask and consumer truth opaque and emit bound reconciliation duties without rolling back authoritative Party/Scene mutation."
+      ],
+      "confirmed": [
+        "Pure strict parsers and aggregate handlers cover Initialize, Prepared Runtime, Focus and participant Move/cleanup without host, persistence or consumer imports.",
+        "Focused lifecycle tests cover cancel/stale rejection, independent Prepared copy, partial move, last-member retirement, Primary/Focus succession, membership invariants and unavailable-owner pending duty.",
+        "Typecheck, full serial tests, product build and repository structure pass on implementation checkpoint 21f89b0."
+      ],
+      "notConfirmed": [
+        "Party create/update/activate/deactivate, XP/rest, Split/Rejoin and Clock merge are not implemented.",
+        "The complete mask-reconciliation, invariant-fuzzer and scale/model acceptance suites are not implemented.",
+        "Independent exact-SHA review, Shared integration, persistence, host, UI, restart and product acceptance remain open."
       ]
     },
     "coordination": {
