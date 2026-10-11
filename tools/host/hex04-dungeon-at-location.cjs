@@ -4,6 +4,8 @@ module.exports = ({ page, fs, path, assert, crypto, root, vault, qa, out, checks
   const manifest = JSON.parse(fs.readFileSync(path.join(fixture, "manifest.json"), "utf8"));
   const rows = [...manifest.input, { path: manifest.campaign.path, ...manifest.campaign.input }];
   const baselinePath = path.join(qa, "dungeon-at-location-baseline.json");
+  const inspectorN02 = process.argv.includes("--hex04-inspector-n02");
+  const inspectorBaselinePath = path.join(qa, "inspector-n02-baseline.json");
   const id = (n) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
   const panel = () => page.locator(".dn-atlas:visible").last();
   const viewport = () => panel().locator(".dn-atlas-viewport");
@@ -104,7 +106,145 @@ module.exports = ({ page, fs, path, assert, crypto, root, vault, qa, out, checks
     assert.equal(await locationKey().getAttribute("data-location-id"), id(11));
     assert.equal(await panel().locator(".dn-atlas-room-key:visible").count(), 0);
   }
+  async function inspectorLayout(name) {
+    const layout = await panel().evaluate((host) => {
+      const rect = (element) => {
+        const r = element.getBoundingClientRect();
+        return { x: r.x, y: r.y, width: r.width, height: r.height };
+      };
+      const visible = (selector) => [...host.querySelectorAll(selector)]
+        .filter((element) => !element.hidden && element.getClientRects().length > 0).length;
+      return {
+        innerWidth, innerHeight,
+        viewport: rect(host.querySelector(".dn-atlas-viewport")),
+        inspector: rect(host.querySelector(".dn-atlas-location-dock")),
+        docks: visible(".dn-atlas-location-dock"),
+        locationKeys: visible(".dn-location-key:not(.dn-atlas-room-key)"),
+        roomKeys: visible(".dn-atlas-room-key"),
+      };
+    });
+    assert.equal(layout.innerWidth, 1024);
+    assert.equal(layout.innerHeight, 800);
+    assert.equal(layout.docks, 1, "one visible common Inspector");
+    assert.ok(layout.viewport.width >= 200, "usable narrow map beside the Inspector");
+    assert.equal(layout.locationKeys + layout.roomKeys, 1, "one active Key panel");
+    fs.writeFileSync(path.join(out, `inspector-n02-${name}-layout.json`), JSON.stringify(layout, null, 2));
+    await page.screenshot({ path: path.join(out, `inspector-n02-${name}.png`) });
+  }
+  async function closedInspector() {
+    await page.waitForFunction(() => {
+      const host = document.querySelector(".dn-atlas");
+      return host?.querySelector(".dn-atlas-location-dock")?.hidden &&
+        document.activeElement === host.querySelector(".dn-atlas-viewport");
+    });
+    assert.equal(await panel().locator(".dn-atlas-location-dock:visible").count(), 0);
+    assert.equal((await current()).pending, false);
+  }
+  async function narrowEdit() {
+    await page.setViewportSize({ width: 1024, height: 800 });
+    await open();
+    for (const row of rows) assert.equal(hashes()[row.path], row.sha256, row.path);
+    await select(id(12));
+    const initial = await current();
+    assert.equal(initial.depth, 0);
+    await inspectorLayout("location");
+    const name = locationKey().getByRole("textbox", { name: "Ortsname", exact: true });
+    const text = locationKey().getByRole("textbox", { name: "Abschnitt 1: Markdown", exact: true });
+    await name.fill("");
+    await name.press("Escape");
+    await settle();
+    assert.equal(await name.inputValue(), "");
+    assert.equal(await panel().locator(".dn-atlas-location-dock:visible").count(), 1);
+    const rejected = await current();
+    assert.equal(rejected.pending, true); assert.equal(rejected.depth, 0);
+    sameData(rejected, initial); assert.deepEqual(rejected.camera, initial.camera);
+    await page.screenshot({ path: path.join(out, "inspector-n02-invalid-location.png") });
+    await record("N02 native Escape from invalid Location input retains visible draft, native data and camera");
+    const locationName = "N02 Mühle — exakt", locationText = "## Ort\nN02: Escape erhält diesen Text.  \n\n";
+    await name.fill(locationName); await text.fill(locationText);
+    const beforeEscape = await current();
+    assert.equal(beforeEscape.pending, true);
+    // Actual native input event path: no direct handler or model invocation.
+    await text.press("Escape");
+    await closedInspector();
+    const atLocation = await current();
+    assert.equal(atLocation.depth, 1);
+    assert.equal(atLocation.a.name, locationName);
+    assert.equal(atLocation.a.sections[0].markdown, locationText);
+    assert.deepEqual(atLocation.camera, beforeEscape.camera);
+    const expectedA = structuredClone(initial.a);
+    expectedA.name = locationName; expectedA.sections[0].markdown = locationText;
+    assert.deepEqual(atLocation.a, expectedA); assert.deepEqual(atLocation.dungeon, initial.dungeon);
+    await record("N02 native Escape from focused Location textarea commits exact text in one shared undo step and returns map focus");
+    await select(id(11)); await bind();
+    const bound = await current(); assert.equal(bound.depth, 2);
+    const key = await enterRoom();
+    await inspectorLayout("room");
+    const roomName = "N02 Torraum — exakt", roomText = "## Eingang\nN02: Raumtext mit Leerzeichen.  \n\n";
+    await key.getByRole("textbox", { name: "Raumname", exact: true }).fill(roomName);
+    const roomField = key.getByRole("textbox", { name: "Raumtext 1", exact: true });
+    await roomField.fill(roomText);
+    const roomCamera = (await current()).camera;
+    await roomField.press("Escape"); await closedInspector();
+    const edited = await current(); assert.equal(edited.depth, 3);
+    const expectedDungeon = structuredClone(initial.dungeon);
+    expectedDungeon.entities[0].name = roomName;
+    expectedDungeon.entities[0].key.sections[0].markdown = roomText;
+    assert.deepEqual(edited.dungeon, expectedDungeon);
+    assert.deepEqual(edited.camera, roomCamera);
+    await history("undo", 2); sameData(await current(), bound);
+    await history("redo", 3); sameData(await current(), edited);
+    assert.deepEqual((await current()).camera, roomCamera);
+    await record("N02 native Escape from Room textarea preserves exact text, shared Undo/Redo and one camera");
+    await select(id(11)); await enterRoom(); await back();
+    await inspectorLayout("cached-location-return");
+    const viaButtonName = "N02 Torheim — Zur Karte";
+    await locationKey().getByRole("textbox", { name: "Ortsname", exact: true }).fill(viaButtonName);
+    await panel().getByRole("button", { name: "Key-Inspector schließen", exact: true }).click();
+    await closedInspector();
+    const final = await current(); assert.equal(final.depth, 4);
+    assert.equal(final.b.name, viaButtonName);
+    const expectedB = structuredClone(edited.b); expectedB.name = viaButtonName;
+    assert.deepEqual(final.b, expectedB);
+    await history("undo", 3); sameData(await current(), edited);
+    await history("redo", 4); sameData(await current(), final);
+    await record("N02 visible Zur Karte closes the cached Location panel after exact checked text apply with shared Undo/Redo");
+    await button("Atlas speichern").click();
+    await page.waitForFunction(() => {
+      const v = app.workspace.getLeavesOfType("dungeon-native-atlas").at(-1).view;
+      return !v.repository.dirty && !v.repository.hasDraft && !v.editor.pendingKey;
+    });
+    const saved = await current(); sameData(saved, final); assert.equal(saved.depth, 4);
+    const bytes = hashes();
+    for (const row of manifest.input.filter((r) => r.path.endsWith(".city") || r.path.includes("/terrain/")))
+      assert.equal(bytes[row.path], row.sha256, "unrelated native bytes: " + row.path);
+    assert.equal(fs.existsSync(path.join(vault, manifest.input[0].path + ".journal")), false);
+    fs.writeFileSync(inspectorBaselinePath, JSON.stringify({ state: saved, hashes: bytes,
+      locationName, locationText, viaButtonName, roomName, roomText }, null, 2));
+    await page.screenshot({ path: path.join(out, "inspector-n02-saved.png") });
+    await record("N02 actual native Save retains exact key texts and unrelated City/terrain bytes and removes the journal");
+  }
+  async function narrowReopen() {
+    await page.setViewportSize({ width: 1024, height: 800 });
+    const baseline = JSON.parse(fs.readFileSync(inspectorBaselinePath, "utf8"));
+    assert.deepEqual(hashes(), baseline.hashes);
+    await open();
+    const fresh = await current(); sameData(fresh, baseline.state);
+    assert.equal(fresh.depth, 0); assert.equal(fresh.dirty, false); assert.equal(fresh.draft, false);
+    await select(id(12));
+    assert.equal(await locationKey().getByRole("textbox", { name: "Ortsname", exact: true }).inputValue(), baseline.locationName);
+    assert.equal(await locationKey().getByRole("textbox", { name: "Abschnitt 1: Markdown", exact: true }).inputValue(), baseline.locationText);
+    await select(id(11));
+    assert.equal(await locationKey().getByRole("textbox", { name: "Ortsname", exact: true }).inputValue(), baseline.viaButtonName);
+    const key = await enterRoom(); await inspectorLayout("fresh-room");
+    assert.equal(await key.getByRole("textbox", { name: "Raumname", exact: true }).inputValue(), baseline.roomName);
+    assert.equal(await key.getByRole("textbox", { name: "Raumtext 1", exact: true }).inputValue(), baseline.roomText);
+    await back(); await inspectorLayout("fresh-cached-location");
+    assert.deepEqual(hashes(), baseline.hashes);
+    await record("N02 separate fresh Obsidian process visibly reopens exact saved Location/Room texts and native bytes at 1024 by800");
+  }
   async function edit() {
+    if (inspectorN02) return narrowEdit();
     await open();
     for (const row of rows) assert.equal(hashes()[row.path], row.sha256, row.path);
     await select(id(12));
@@ -168,6 +308,7 @@ module.exports = ({ page, fs, path, assert, crypto, root, vault, qa, out, checks
     await record("Actual native Save preserves unrelated City/terrain bytes, IDs and geometry and removes its journal");
   }
   async function reopen() {
+    if (inspectorN02) return narrowReopen();
     const baseline = JSON.parse(fs.readFileSync(baselinePath, "utf8"));
     assert.deepEqual(hashes(), baseline.hashes);
     await open();
