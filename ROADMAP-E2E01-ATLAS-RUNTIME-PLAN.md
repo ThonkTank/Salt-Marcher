@@ -78,16 +78,12 @@ Shared29e4ce68 mit einer History, exakten Texten und nativen Erhaltungsorakeln.
 Keine unabhängige Cloud-Hostprüfung unzugänglicher Rohpfade. Shared6ee40d83 ist
 konsumiert; historische R01/H01–H04 und fremde Wurzeln bleiben erhalten.
 
-**Neustart des gespeicherten Orts-Keys:** F01 auf sauberer Source840f6f1f/
-Shared6ee40d83 öffnet die byteidentische Kopie des nach R01 normal beendeten
-Vaults im neuen Obsidian1.14.4-Prozess (`--restart`), ohne Neu-Seeden/Save-Replay.
-Markerwahl zeigt exakt „R01 Gespeicherter Ortsname“; Abschnitte/IDs und native
-CRLF bleiben erhalten. Gemeinsames Repository/History, History0/clean/kein
-Draft/pending=false. Alle acht nativen Dateien inklusive Campaign bleiben
-vor/nach Auswahl und normalem app.quit bytegleich. Vier neue App-PIDs weg,
-Runner0/PASS/keine Zwangstermination; frischer Slot zurückgegeben.
-Beleg: `acceptance.hexAtlas.requirements[30].dungeonAtLocationInspectorSaveRoutingFreshF01`.
-Bild/Rohdaten lokal zugänglich; keine angenommene unabhängige Cloudprüfung.
+**Gespeicherter Orts-Key nach Neustart:** F01 auf Source840f6f1f/Shared6ee40d83
+öffnet den tatsächlich R01-gespeicherten Vault im neuen Obsidian1.14.4-Prozess,
+ohne Neu-Seeden/Save-Replay. Exakter Ortsname/Abschnitte/IDs/CRLF, gemeinsame
+Besitzer, History0/clean/kein Draft; acht native Dateien auch nach normalem Quit
+bytegleich, neue PIDs weg/Runner0/Slot zurück. Direkter Beleg:
+`acceptance.hexAtlas.requirements[30].dungeonAtLocationInspectorSaveRoutingFreshF01`.
 
 **Raum-Key-Ctrl+S nativ belegt:** R02 auf sauberer Sourcee98f394f/Shared6ee40d83
 öffnet den früher nativ gespeicherten N02-Vault mit bereits verortetem Dungeon.
@@ -102,20 +98,26 @@ Native Digests an Bytehash geprüft; weitere Ableitungen nur formgeprüft.
 PR140 ist qualifiziert als Shared1580c39a konsumiert (Plannerfokus); relevante
 Atlas-/Panel-/Host-/Fixturepfade unverändert, tatsächliche R02-Quelle bleibt e98f394f.
 
-**Nächster ausführbarer Hex-Beitrag:** Den tatsächlich R02-gespeicherten
-isolierten Raum-Key in einem neuen Obsidian-Prozess über denselben sichtbaren
-Ort-/Raumweg wiederöffnen. Byteidentische gespeicherte Kopie, kein Neu-Seeden/
-Save-Replay; exakter sichtbarer Raumtext und alle acht nativen After-Save-Hashes.
-Vor GUI neuen Slot koordinieren, normal beenden/PIDs und zurückgeben.
+**Neustart des tatsächlich gespeicherten Raum-Keys:** F02 auf sauberer
+Source019f7a7d/Shared632c5803 öffnet die byteidentische Kopie des nach R02 normal
+beendeten Vaults im neuen Obsidian1.14.4-Prozess, ohne Neu-Seeden/Save-Replay.
+Sichtbar Ort11 → Raum31 zeigt exakten gespeicherten Namen/Nummer/Markdown;
+IDs/Geometrie und gemeinsame Besitzer erhalten, History0/clean/kein Draft/pending=false.
+Alle acht nativen Dateien bleiben vor/nach Navigation und normalem app.quit
+bytegleich; vier neue PIDs weg, Runner0/PASS/keine Zwangstermination, Slot zurück.
+Beleg: `acceptance.hexAtlas.requirements[30].dungeonAtLocationRoomScopeSaveFreshF02`.
+PR142 vor Start qualifiziert konsumiert; Atlaspfade unverändert, Bild direkt gelesen.
 
-**Offen:** frischer Prozess nach R02-Raumsave, nativer Kompositionsguard/Meta,
-physische IME, Copy/Discard/Recovery, äußeres Clipping, Gesamt-E2E sowie
-Original-/Großkarten-/Nutzervaultabnahme bleiben getrennte Nachweise.
-F01 belegt den frischen R01-Orts-Key. R02 benutzt vorab gespeicherte N02-Daten;
-sein `--restart` ist kein frischer Prozess nach dem neuen Raumsave.
-Frühere Belege/Fehlquittungen bleiben erhalten. Kein konkurrierender Cityfix,
-Detailausbau oder allgemeiner Reviewauftrag. Jeder weitere lokale GUI-Start
-braucht eine neue ausdrückliche Slotabstimmung.
+**Nächster ausführbarer Hex-Beitrag:** Auf isolierter Kopie des gespeicherten
+Raum-Keys sichtbare Room31-Bearbeitung → Karte/Entwurf verwerfen/Bestätigung;
+exakten Speicherstand/IDs/Geometrie und acht native Bytes erhalten. Auch blockiertes
+Verwerfen bei invalidem Pending-Key darf Text nicht verlieren. Kein Save-Replay;
+neuen Slot koordinieren, normal beenden/PIDs und zurückgeben.
+
+**Offen:** nativer Kompositionsguard/Meta, physische IME, Copy/Discard/Recovery,
+äußeres Clipping, Gesamt-E2E, Original-/Großkarten-/Nutzervaultabnahme bleiben getrennt.
+F01 bestätigt den R01-Orts-Key, F02 den tatsächlichen R02-Raumsave-Neustart.
+Historische Belege bleiben erhalten; jeder neue GUI-Start braucht Abstimmung.
 
 ## Historische Planbasis und Lieferbelege
 
