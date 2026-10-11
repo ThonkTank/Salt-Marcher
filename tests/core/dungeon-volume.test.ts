@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { parseHTML } from "linkedom";
 import { AtlasHistory } from "../../src/features/atlas/atlas-history";
 import { DungeonAtlasSource, dungeonDocumentChange } from "../../src/features/dungeon/atlas-source";
 import {
@@ -22,6 +23,7 @@ import {
 } from "../../src/features/dungeon/volume";
 import { newDocument, parseDocument, serializeDocument } from "../../src/model";
 import { Session } from "../../src/session";
+import { Properties, toolSettings } from "../../src/properties";
 import { MapRepository } from "../../src/persistence";
 import { MemoryStore } from "./fixtures";
 
@@ -41,6 +43,64 @@ test("ordinary floor paint creates a persistent ten-foot Volume shell", () => {
   ]);
   assert.ok(volume?.cells.every((cell) => cell.walls.length === 4));
   assert.equal(new Session(reopened).document().volumes?.[0]?.id, "volume-a");
+});
+
+test("Volume inspector follows selected height and direct slice input immediately", () => {
+  const nativeDocument = globalThis.document,
+    { document, window } = parseHTML("<html><body><aside id='properties'></aside></body></html>");
+  Object.assign(globalThis, { document });
+  try {
+    const session = new Session(paintWalkableColumn(
+        newDocument("Volume inspector", 4, 4), "selected", {
+          x: 1, y: 1, bottomStep: 0, heightSteps: 2,
+        },
+      )),
+      defaults = toolSettings(),
+      root = document.querySelector("#properties") as HTMLElement;
+    let properties: Properties;
+    const render = () => properties.render("volume", undefined,
+      session.document().floors[0]!.id);
+    properties = new Properties(root, session, defaults, () => {},
+      undefined, undefined, undefined, undefined, undefined, undefined,
+      undefined, undefined, undefined,
+      () => ({ volumeId: "selected", x: 1, y: 1 }), render);
+    render();
+
+    const setSelectedHeight = (value: number) => {
+      const height = root.querySelector(
+        'input[aria-label="Ausgewählte Höhe in 5-Fuß-Schritten"]',
+      ) as HTMLInputElement;
+      Object.defineProperty(height, "valueAsNumber", { value });
+      height.dispatchEvent(new window.Event("change"));
+    };
+    setSelectedHeight(1);
+    setSelectedHeight(3);
+    const slice = root.querySelector(
+      'input[aria-label="Schnitt-Unterkante in 5-Fuß-Schritten"]',
+    ) as HTMLInputElement;
+    Object.defineProperty(slice, "valueAsNumber", { value: 2 });
+    slice.dispatchEvent(new window.Event("change"));
+
+    assert.match(root.textContent, /Nordwand bei 10–15 Fuß/);
+    assert.doesNotMatch(root.textContent, /Nordwand bei 0–5 Fuß/);
+    assert.equal((root.querySelector(
+      'input[aria-label="Ausgewählte Höhe in 5-Fuß-Schritten"]',
+    ) as HTMLInputElement).value, "3");
+    assert.equal((root.querySelector(
+      'input[aria-label="Schnitt-Unterkante in 5-Fuß-Schritten"]',
+    ) as HTMLInputElement).value, "2");
+    assert.equal((root.querySelector(
+      'input[aria-label="Bodenfläche im aktiven Schnitt"]',
+    ) as HTMLInputElement).checked, false);
+    assert.deepEqual(session.volumes?.[0]?.cells.map(({ z, floor, ceiling }) =>
+      ({ z, floor, ceiling })), [
+      { z: 0, floor: true, ceiling: false },
+      { z: 1, floor: false, ceiling: false },
+      { z: 2, floor: false, ceiling: true },
+    ]);
+  } finally {
+    Object.assign(globalThis, { document: nativeDocument });
+  }
 });
 
 test("visible Volume paint command supports Undo, Redo and exact Save/Reopen", async () => {

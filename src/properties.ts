@@ -2172,6 +2172,7 @@ export class Properties {
           if (!Number.isInteger(input.valueAsNumber))
             throw new Error("Volume-Schnitt muss auf dem 5-Fuß-Raster liegen.");
           this.defaults.volumeSliceBottomStep = input.valueAsNumber;
+          this.render(tool, selected, floorId);
         },
         undefined, undefined, "1",
       );
