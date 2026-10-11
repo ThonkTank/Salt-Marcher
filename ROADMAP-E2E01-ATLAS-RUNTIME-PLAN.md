@@ -40,86 +40,66 @@ Produktänderung, GUI, CITY oder E2E-02–04 begonnen.
 #### Arbeitsstand #80
 
 Hex besitzt Dungeon-am-Ort und Orts-/Raum-Inspector im gemeinsamen Canvas,
-Repository und History (E2E-01 Nutzerzeile13); Stadt besitzt City/#92.
-Verorten, Raum/Key und Rückkehr sind aus
-[PR81](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/81),
-[PR87](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/87) und
-[PR78](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/78) integriert.
-Parent #80 bleibt offen. Historische Belege erzeugen keine weiteren Aufträge.
+Repository und History (E2E-01 Nutzerzeile13, E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001).
+Stadt besitzt City/#92. Parent #80 bleibt offen. Arbeitsbranch:
+`hex/dungeon-at-location-inspector-n01-20261011`; historische Belege sind keine Aufträge.
 
-**Erhaltene Vorbelege:** [N02/Escape](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/91),
-[H02-Originalreceipt](docs/reference/atlas-detail-binding-d01/inspector-n02-native-h02.json),
-[Helperreview/Aussagekorrektur](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/96),
-[N03-Scrollanschluss](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/100#issuecomment-6104516785),
-[D01-Geometrie](docs/reference/atlas-detail-binding-d01/inspector-zoom-geometry-d01.json)
-und [N04-Originalreceipt](docs/reference/atlas-detail-binding-d01/inspector-horizontal-fit-n04.json)
-bleiben quellgebunden. N04 belegt horizontalen Dock-Fit bei100/131%; vertikales
-Scrollen bleibt nötig, äußerer Clippingbefund nicht reproduziert.
-[Stadt-R01/Contributor-S01](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/110#issuecomment-6105052692)
-integrierten PR110 in0b6e435. Alte Selektorfehler/Bilder werden nicht umgedeutet;
-genaue Quellen, Grenzen und Rohbelege bleiben in den unveränderten Hex-Einträgen.
-
-**GM-Weg und Neustart konsumiert:**
-[Same-session](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80#issuecomment-6105400641)
+**Konsumierter Nutzerweg:** Verorten, Raum/Key und Rückkehr aus PR81/87/78 sind
+integriert. Escape/Scroll/Fit aus PR91/100/110 bleiben quellgebunden;
+[N04](docs/reference/atlas-detail-binding-d01/inspector-horizontal-fit-n04.json)
+belegt horizontalen Dock-Fit100/131%, vertikales Scrollen bleibt nötig.
+[GM-Same-session](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80#issuecomment-6105400641)
 und [FreshReuse](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80#issuecomment-6105912997)
-zeigen Torheim → Suche Torraum → vollständigen gespeicherten Eingangstext auf
-Produkt87ccdb2. Vier neue Bilder09–12 selbst gelesen, alle12 Hashes geprüft;
-[S01](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/125#issuecomment-6105999844)
-integrierte Beleghead6d03e5a in3af22a1; Head-/Shared-CI direkt SUCCESS geprüft.
-PIDs/Browser.close, Installtripel und Payloadorakel bleiben Testerberichte ohne
-volle Rohquittungen, kein eigener LauncherExit0 oder aktueller-Shared-GUI-PASS.
-Nur PR115 belegt131%-Fit; Suche/Aktivierung100%. Kein unveränderter GM-Folgeauftrag.
+belegen Torheim → Suche Torraum → vollständigen Eingangstext auf Produkt87ccdb2.
+S01 integrierte Beleghead6d03e5a in3af22a1. Bilder/Hashes gelesen; Testerberichte
+zu PIDs/Install-/Payloadorakeln sind kein eigener aktueller-Shared-Host-PASS.
+Nur PR115 belegt131%-Fit; Suche/Aktivierung100%.
 
-**IME-Pflichtbefund integriert:** Stadt reproduzierte auf10defd5 vier vorzeitige
-Historyschritte bei Location/Room × Ctrl/Meta+S während Komposition.
-[PR126](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/126),
-Head1e2000b, schützt beide Saveprädikate mit `isComposing`.
-[Hex-R01](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/126#pullrequestreview-5482076614)
-belegt vier Baseline-FAIL und50/50 betroffene Managed/Vaultadapter-Hosttests PASS.
-[S01](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/126#issuecomment-6106002909)
-integrierte in0b6aa819; CI38115663534/38116230853 SUCCESS, Eltern/Baum/Blobs und
-fremde Wurzeln geprüft. DOM-/Modellschutz ist belegt; nativer IME-Guard bleibt offen.
-
-**IME-Hostbelege bleiben quellgebunden:**
-[H01](docs/reference/atlas-detail-binding-d01/inspector-ime-save-h01.json)
-und [H02](docs/reference/atlas-detail-binding-d01/inspector-ime-save-h02.json)
-bleiben mit ihren fehlenden Document-/Panelkeydowns und Roh-FAIL erhalten.
+**Erhaltene IME-/Fehlerbelege:** Qualifizierter PR126 schützt Location/Room ×
+Ctrl/Meta+S mit `isComposing`; vier Baseline-FAIL/50 Adapterfälle PASS sind
+DOM-/Modellschutz, kein nativer IME-PASS. [H01](docs/reference/atlas-detail-binding-d01/inspector-ime-save-h01.json),
+[H02](docs/reference/atlas-detail-binding-d01/inspector-ime-save-h02.json) und
 [H03](docs/reference/atlas-detail-binding-d01/inspector-ime-handler-h03.json)
-identifiziert auf697ff20d/Shareddbcecc79 direkt Obsidian `e.onKeyEvent` als
-Callbackbracket der komponierenden Ctrl+S-Unterbrechung; die innere Scope-
-Rückgabe wurde nicht gemessen. Text/History0/alle8 Bytes erhalten, normales
-Appende, keine Handlerersetzung oder Guard-/Save-/Gesamtqualifikation.
+bleiben samt fehlenden Downstreamkeydowns/Rohfehlern erhalten. H03 identifiziert
+Obsidian e.onKeyEvent als Abfangcallback; innere Scope-Rückgabe nicht gemessen.
+[H04](docs/reference/atlas-detail-binding-d01/inspector-confirmed-save-h04.json)
+belegt HEX80-H04-01 auf12265c20/Shared25792fb: bestätigtes Ctrl+S lässt Ortsnamen
+pending/History0/alle8 Bytes gleich; sichtbarer Save speichert exakt. Dieser
+historische RunnerExit1 wird durch die Nachbesserung nicht umgedeutet.
 
-**Aktueller konkreter Savebefund HEX80-H04-01:**
-[H04-Rohbindung](docs/reference/atlas-detail-binding-d01/inspector-confirmed-save-h04.json)
-auf sauberer Source12265c20/qualifiziertem Shared25792fb, Spatial-V2 und
-Obsidian1.14.4. Ein trusted **nicht komponierendes** Ctrl+S am fokussierten
-Ortsnamen ist bereits am Window prevented/stopped; Document/Panel/Field sehen
-keinen keydown. „H04 Bestätigter Ortsname“ bleibt nach1,2s exakt pending,
-History0, Repository clean/kein Draft und alle8 nativen Dateien unverändert.
-Der getrennte sichtbare Speichern-Kontrollschritt speichert exakt diesen Namen
-mit einer History; Kamera, Repository, Historyowner, Token, Dungeon und sechs
-fremde Spatialdateien erhalten. Vollständige Campaign nur in neun erlaubten
-Location-/Owner-/Registrydigest-Revisionsfeldern geändert; Locationdigests
-entsprechen nativem Bytehash. Übrige Ableitungen nur formgeprüft, nicht unabhängig
-recomputiert. Payload auch nach normalem app.quit erhalten; alle vier PIDs weg,
-keine Zwangstermination und Slot ausdrücklich zurückgegeben. RunnerExit1 und
-Shortcut-FAIL bleiben wahr. Erster Start stoppte vor Eingabe an meinem unnötigen
-QA-API-Aufruf; Originalhelfer/Rohfehler erhalten, korrigierter Helfer und zweiter
-Start frisch abgestimmt. Keine Produktänderung. PR132 vor Host und qualifizierter
-PR130 nach Host konsumiert; native Belege bleiben an12265c20 gebunden.
+**Aktueller Routingfix und direkte Nachprobe:**
+[R01-Quittung](docs/reference/atlas-detail-binding-d01/inspector-save-routing-r01.json)
+bindet saubere Sourcee1bda0a08e985ef74ba1777d1e1588d507f838b7, qualifizierten
+Shared29e4ce68, Spatial-V2 und Obsidian1.14.4. AtlasView registriert supported
+View.scope/Mod+S mit Parentfallback; aktueller fokussierter Atlaseditor nutzt
+bestehenden seriellen Save mit Bindungs-/Kompositions-/Pending-Keyguards.
+Bereits konsumiertes Mod+S löst am nachfolgenden Windowlistener keinen zweiten
+Save aus. Keine Handlerersetzung/-umgehung, bestehenden Orts-/Raumguards erhalten.
 
-**Nächster eigener Schritt:** Bestätigten Ctrl+S-Save im bestehenden #80 über
-unterstützten Obsidian `View.scope`/`Scope`-Anschluss reparieren: bestehender
-serieller Atlas-Save mit aktueller Bindung/Pending-Key-/Kompositionsguards.
-R01-Orts-/Raumprädikate erhalten, keine Hosthandlerumgehung/-ersetzung oder
-weitere unveränderte IME-Varianten. Gezielte Regression und native Bestätigung
-benötigen einen frisch koordinierten Slot. Keine allgemeine Plan-/Reviewrunde,
-kein konkurrierender City-Savefix oder abhängiger Detailausbau.
+Vier Scopeadapterfälle scheitern auf alter Basis; zusätzlicher Duplicatefall
+belegt zwei Saves ohne Windowguard. Alle fünf Regressionen und volle Suite
+1090/1089PASS/1bestehenderSkip, Typprüfung und sauberer Produktbuild PASS.
+Direkte synthetische trusted **nicht komponierende** Ctrl+S-Eingabe im sichtbaren
+Ortsnamen speichert exakt „R01 Gespeicherter Ortsname“ mit einer gemeinsamen
+History, pending=false/clean/kein Draft, Kamera/Owners/Dungeon erhalten.
+Sechs fremde Spatialdateien bytegleich. Vollständige Campaign nur in neun
+Location-/Owner-/Registrydigest-Revisionsfeldern geändert; Locationdigests an
+nativem Bytehash geprüft, übrige Ableitungen formgeprüft, nicht recomputiert.
+Beleg auch nach normalem app.quit bytegleich; RunnerExit0, alle4 PIDs weg,
+keine Zwangstermination, frisch koordinierter Slot ausdrücklich zurückgegeben.
+Nutzervault/fremde lokale Dateien und alle früheren Hex-/Fremdwurzeln erhalten.
 
-**Offen:** Room/Meta, physische IME, Copy/Discard/Recovery, äußeres Clipping,
-Freshprozess des Routingfixes, Gesamt-E2E sowie Original-/Großkarten-/Nutzervault-
-abnahme bleiben getrennt. Historische R01/H01–H03/N04/FreshReuse nicht umdeuten.
+**Nächster Empfänger:** Contributor prüft unabhängig genau diesen konkreten
+Routingfix, Guards/Lifecycle und quellgebundenen Nachweis am veröffentlichten
+Kandidaten im bestehenden #80. Hex konsumiert den qualifizierten Review oder
+konkrete Pflichtbefunde; Integration bleibt beim Steward. Kein Selfmerge,
+allgemeine Reviewrunde, konkurrierender City-Savefix oder abhängiger Detailausbau.
+
+**Offen:** nativer Kompositionsguard, Room/Meta, physische IME, frischer Prozess
+des Routingfixes, Copy/Discard/Recovery, äußeres Clipping, Gesamt-E2E sowie
+Original-/Großkarten-/Nutzervaultabnahme bleiben getrennte Nachweise. Alte
+N04/FreshReuse/R01-Belege ersetzen diese nicht. Jeder weitere lokale GUI-Start
+braucht eine neue ausdrückliche Slotabstimmung.
 
 ## Historische Planbasis und Lieferbelege
 
