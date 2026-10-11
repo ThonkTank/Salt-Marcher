@@ -169,6 +169,18 @@ export class WorldNotesPanel {
       baseRevision: record.revision };
     this.renderEditor(true);
   }
+  private openRelated(record: WorldNoteV1, pending: NonNullable<WorldNotesPanel["pending"]>,
+    snapshot: WorldNotesSnapshotV1): void {
+    if (this.destroyed || this.busy || this.pending !== pending || this.snapshot !== snapshot ||
+        record.deleted) return;
+    const source = snapshot.records.find((item) => item.id === pending.id);
+    if (pending.create || !source || source.deleted || source.revision !== pending.baseRevision ||
+        JSON.stringify(pending.draft) !== JSON.stringify(this.recordDraft(source))) {
+      this.message("Erst den offenen Entwurf speichern oder ausdrücklich verwerfen.", true);
+      return;
+    }
+    this.openRecord(record);
+  }
   private renderList(): void {
     this.list.replaceChildren();
     if (!this.snapshot) return;
@@ -227,16 +239,7 @@ export class WorldNotesPanel {
           const open = doc.createElement("button"); open.type = "button";
           open.textContent = `${labels[target.kind]} öffnen`;
           open.setAttribute("aria-label", `${labels[target.kind]} ${target.title} öffnen`);
-          open.addEventListener("click", () => {
-            if (this.destroyed || this.busy || this.pending !== pending || this.snapshot !== snapshot) return;
-            const source = snapshot.records.find((record) => record.id === pending.id);
-            if (pending.create || !source || source.deleted || source.revision !== pending.baseRevision ||
-                JSON.stringify(pending.draft) !== JSON.stringify(this.recordDraft(source))) {
-              this.message("Erst den offenen Entwurf speichern oder ausdrücklich verwerfen.", true);
-              return;
-            }
-            this.openRecord(target);
-          });
+          open.addEventListener("click", () => this.openRelated(target, pending, snapshot));
           row.append(open);
         }
         const remove = doc.createElement("button"); remove.type = "button";
@@ -260,6 +263,26 @@ export class WorldNotesPanel {
       relationLabel.value = ""; renderRelations();
     });
     form.append(relationTitle, relationList, relationTarget, relationLabel, addRelation);
+    if (!pending.create) {
+      const incoming = snapshot.records.filter((record) => !record.deleted && record.id !== pending.id)
+        .flatMap((record) => record.relations.filter((relation) => relation.targetId === pending.id)
+          .map((relation) => ({ record, label: relation.label })));
+      if (incoming.length) {
+        const incomingTitle = doc.createElement("h4");
+        incomingTitle.textContent = "Verweise auf diesen Eintrag";
+        const incomingList = doc.createElement("ul");
+        for (const { record, label } of incoming) {
+          const row = doc.createElement("li");
+          row.append(doc.createTextNode(`${label}: ${labels[record.kind]} ${record.title} `));
+          const open = doc.createElement("button"); open.type = "button";
+          open.textContent = `${labels[record.kind]} öffnen`;
+          open.setAttribute("aria-label", `${labels[record.kind]} ${record.title} öffnen`);
+          open.addEventListener("click", () => this.openRelated(record, pending, snapshot));
+          row.append(open); incomingList.append(row);
+        }
+        form.append(incomingTitle, incomingList);
+      }
+    }
     const save = doc.createElement("button"); save.type = "submit"; save.textContent = "Speichern";
     form.append(save);
     const discard = doc.createElement("button"); discard.type = "button";

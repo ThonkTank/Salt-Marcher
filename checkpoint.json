@@ -85,7 +85,19 @@
         "reopenResultSha256": "ea410754f5b04debd54c40fe405005b8e8d9170489343b9c0d0aa96172e00015",
         "result": "Isolated real Obsidian edit and separate fresh process PASS: relation-title search, unsaved draft retained, confirmed linked faction opened; both processes exited normally. Synthetic fixture and automated input only."
       },
-      "next": "PR #99 integrated at 88f455cb after narrow independent search and navigation reviews. Broader crash recovery, Encounter constraint, NPC combat and World Planner requirements remain open; select the next concrete user-facing slice from #68.",
+      "incomingReferencesCandidate": "World Notes shows active saved notes that refer to the current entry and opens them only when the current draft is unchanged. Core/DOM and isolated native edit plus fresh-process checks passed; independent review pending. No reciprocal membership or new storage authority.",
+      "nativeIncomingReferences": {
+        "source": "1f264623af70c4e82e029807544f77bba3376e24",
+        "buildSha256": "edf075a16a06936144bd8c0542eda2ffa45bfcd9f441275ca17d64df9eb8b27b",
+        "scenarioSha256": "21dd00c0752347a059e519840cdba9dae5379b73429db725fb03c7dfe771c182",
+        "evidenceRoot": "/home/aaron/.cache/dungeon-native-qa/atlasqa-incoming-links-h02/evidence/",
+        "editResult": "1791686169123-world-notes-native-edit/result.json",
+        "editResultSha256": "84ae61b2ae065372248658ff2ccfb2356ab4577f0f1d46278c25ade6964f4872",
+        "reopenResult": "1791686187073-world-notes-native-reopen/result.json",
+        "reopenResultSha256": "b0057178e84988e82678c0c619daa2343328e938899f2e75c58e9ee67e996bbe",
+        "result": "Isolated real Obsidian edit and fresh process PASS: saved NPC is reachable from faction through an incoming reference, while an unsaved faction draft blocks opening; both processes exited normally. Synthetic fixture and automated input only."
+      },
+      "next": "Qualify the incoming-reference candidate by exact-source host evidence and independent narrow review, then decide integration. Broader crash recovery, Encounter constraint, NPC combat and World Planner requirements remain open.",
       "limits": "Controlled rollback and committed-journal raw evidence independently reviewed; original host-run checkouts were dirty. No physical keyboard, power-loss, user-vault, broad recovery, full SMR-02 or overall product acceptance."
     },
     "smr03LiveScene": {

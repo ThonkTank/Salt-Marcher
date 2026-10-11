@@ -223,6 +223,17 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out, checks, worl
       await form.getByRole("button", { name: "Fraktion Nebelbund öffnen" }).click();
       assert.equal(await panel.locator("form label").filter({ hasText: "Name" }).locator("input").inputValue(),
         "Nebelbund");
+      const factionForm = panel.locator("form");
+      assert.match(await factionForm.innerText(), /Verweise auf diesen Eintrag/);
+      assert.match(await factionForm.innerText(), /kennt: NPC Maris vom Hafen/);
+      const factionNotes = factionForm.locator("label").filter({ hasText: "GM-Notizen" }).locator("textarea");
+      await factionNotes.fill("Ungespeicherter Fraktionsentwurf");
+      await factionForm.getByRole("button", { name: "NPC Maris vom Hafen öffnen" }).click();
+      assert.equal(await factionNotes.inputValue(), "Ungespeicherter Fraktionsentwurf");
+      await factionNotes.fill("Treffen am Kai.");
+      await factionForm.getByRole("button", { name: "NPC Maris vom Hafen öffnen" }).click();
+      assert.equal(await panel.locator("form label").filter({ hasText: "Name" }).locator("input").inputValue(),
+        "Maris vom Hafen");
       await panel.getByRole("button", { name: "Entwurf verwerfen" }).click();
       await panel.getByRole("button", { name: "Verwerfen bestätigen" }).click();
       await panel.getByRole("button", { name: "Fraktion: Nebelbund" }).click();
@@ -234,7 +245,7 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out, checks, worl
       assert.equal(await panel.locator("form label").filter({ hasText: "GM-Notizen" }).locator("textarea").inputValue(),
         "Die Glocke fehlt.");
       assert.equal(await panel.getByRole("button", { name: "Gerücht: Nebelzeichen" }).count(), 0);
-      checks.push("Fresh real Obsidian searches relations, preserves unsaved draft, opens linked faction and hides rumor tombstone PASS");
+      checks.push("Fresh real Obsidian searches relations, preserves unsaved drafts, opens outgoing and incoming links, and hides rumor tombstone PASS");
     },
   };
 };
