@@ -155615,6 +155615,41 @@
             "treeEqualsReviewedHead": true,
             "ownWorkingRecordDelta": "Own review/transition metadata only; retained on Hex branch for next native handoff. No new product candidate or selfintegration."
           }
+        },
+        "dungeonAtLocationInspectorNativeH02": {
+          "id": "E2E-01-HEX04-INSPECTOR-N02-H02",
+          "owner": "Hex",
+          "issue": 80,
+          "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
+          "e2e01UserLine": 13,
+          "state": "producer_native_and_fresh_process_PASS_evidence_review_and_GM_pending",
+          "sourceCommit": "bd2a0ada903b414eb46577ec5451f79ca885770d",
+          "productBase": "ca290326a35bb792c22ef8f02e215a3dd9ef121d",
+          "productBuildSource": "dba7d559044f9e8b072a329f2efacd7452b333b4",
+          "fixtureVersion": "e2e01-spatial-v2",
+          "receipt": "docs/reference/atlas-detail-binding-d01/inspector-n02-native-h02.json",
+          "receiptSha256": "44e53e87b6f11c147dce30ab4cf92e878bc4db5ee99dc77155e7a927a23a8bcf",
+          "checks": {
+            "nativeEditPassed": 5,
+            "freshReopenPassed": 1,
+            "normalProcessExit": 2,
+            "forcedProcessExit": 0
+          },
+          "limits": {
+            "actualObsidianProducerProbe": true,
+            "freshProcess": true,
+            "narrowViewport": true,
+            "syntheticInput": true,
+            "independentNativeEvidenceReview": false,
+            "freeGMRepairRetest": false,
+            "newNativeCopyDiscardRecoveryMatrix": false,
+            "physicalInput": false,
+            "originalParity": false,
+            "largeMap": false,
+            "userVaultInstallation": false,
+            "fullE2E": false
+          },
+          "nextConsumer": "Independent Atlas-QA: only the new N02 native helper/oracle/evidence qualification. Cloud-GM already owns its separate free N02 repair retest on its isolated Cloud host; parent80 remains Hex and dependent expansion waits for delivered findings."
         }
       }
     ],
