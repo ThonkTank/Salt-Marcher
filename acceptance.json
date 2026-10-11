@@ -155419,6 +155419,92 @@
               "largeMap": false,
               "userVaultInstalled": false
             }
+          },
+          "dungeonAtLocationInspectorN01": {
+            "id": "E2E-01-HEX04-DUNGEON-AT-LOCATION-INSPECTOR-N01",
+            "owner": "Hex",
+            "issue": 80,
+            "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
+            "e2e01UserLine": 13,
+            "state": "implemented_DOM_Save_History_context_preservation_PASS_independent_review_and_native_pending",
+            "sourceCommit": "056c65ecf4069303ea7432b075b2941b61b2b454",
+            "pullRequest": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/91",
+            "consumedH01Integration": {
+              "merge": "0077bdf04d56a7b7d251717cd236b7a6fa716e46",
+              "parents": [
+                "d9eda92f8270b364322e3c9a4cb2af5c2c69c8f7",
+                "0ad8d5c18e32d5fdad488be49237b3fbc154da99"
+              ],
+              "tree": "a591703d98e1d12b4d6d10585ed9c53fd799409c",
+              "receipt": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/87#issuecomment-6103624843"
+            },
+            "finding": "Cloud-GM reported about118px remaining map width at1024x800 with two Key sidebars; source confirms independent40%/42% widths, Escape was viewport-only.",
+            "findingSource": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80#issuecomment-6103561640",
+            "implemented": "Location/Room Keys share one sidebar; cached Location panel is restored on return. Visible Zur Karte and focus-scoped Escape apply valid Keys through existing checked History before clearing selection, retain invalid input and refuse blocked/revoked/active-pointer closure. Camera, mount/repository/history/context identities retained; no new IDs.",
+            "fixtureVersion": "e2e01-spatial-v2",
+            "fixtureManifestSha256": "23735bb6c95107b7dec93ffa56ec66405a0f4fe0ec3822fc0476d90d2920188d",
+            "checks": {
+              "runtime": "Node v22.22.0",
+              "newRegressionCases": 3,
+              "baselineCasesFailed": 3,
+              "repairedCasesPassed": 3,
+              "fullSuite": {
+                "total": 995,
+                "pass": 994,
+                "fail": 0,
+                "skip": 1,
+                "skipScope": "Existing optional external PDF fixture"
+              },
+              "typecheck": "PASS",
+              "cleanSourceBuild": "PASS",
+              "repository": "PASS",
+              "diff": "PASS",
+              "sourceFilesSha256": {
+                "src/features/atlas/atlas-editor.ts": "85e8b5d6c3089eaf7644227d5cd168ef8963d09407caac6da9c7b61f454e135e",
+                "styles.css": "93b65fe1a695acd58aea7360a18b9e9b16d1df7f14a3e3e4dea5a3300cbbed7e",
+                "tests/atlas-campaign-host.entry.ts": "86cf45e574677d2b27f29daf1720e0bc08ede024491ffacfda2a5c34b080327c"
+              }
+            },
+            "buildTriplet": {
+              "main.js": {
+                "sha256": "ed15380d2e7e47ff608fcc1161ea96a0b94524eea3c0e4aeeb0704f520b53355",
+                "bytes": 1671049
+              },
+              "manifest.json": {
+                "sha256": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64",
+                "bytes": 237
+              },
+              "styles.css": {
+                "sha256": "93b65fe1a695acd58aea7360a18b9e9b16d1df7f14a3e3e4dea5a3300cbbed7e",
+                "bytes": 31227
+              }
+            },
+            "localEvidence": {
+              "baseline-regressions.log": {
+                "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/dungeon-at-location-inspector-n01-20261011/baseline-regressions.log",
+                "sha256": "0c9075a9e5d57f2f4dd43b95acc4ef223a1082369b25ef9b6bc7f55c32fa7fe9"
+              },
+              "product-tests.log": {
+                "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/dungeon-at-location-inspector-n01-20261011/product-tests.log",
+                "sha256": "3402fc2f5746a48951954ee40366c033f26b1415d5457db346a810726b4a9132"
+              },
+              "source-build.log": {
+                "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/dungeon-at-location-inspector-n01-20261011/source-build.log",
+                "sha256": "a80bf4bf64d32f8780f4f01eaee5b7107ce816c823791c68f2f013afd02044fc"
+              }
+            },
+            "limits": {
+              "actualNewObsidianProbe": false,
+              "narrowViewportVerifiedNatively": false,
+              "freshProcess": false,
+              "independentRepairReview": false,
+              "physicalInput": false,
+              "originalParity": false,
+              "largeMap": false,
+              "userVaultInstalled": false,
+              "fullE2E": false
+            },
+            "nextConsumer": "Existing independent contributor: exact PR91 editor/Key retention/keyboard/History review. Then separate targeted narrow Obsidian/GM followup with fresh local slot coordination or own isolated Cloud host; no dependent expansion or Selfmerge."
           }
       }
     ],
