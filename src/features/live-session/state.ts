@@ -46,9 +46,9 @@ export interface PendingConsumerReconciliation {
   readonly commandId: CommandId;
   readonly commandDigest: CommandDigest;
   readonly sourceSceneId: LiveSceneId;
-  readonly targetSceneId: LiveSceneId;
+  readonly targetSceneId: LiveSceneId | null;
   readonly expectedSourceRevision: Revision;
-  readonly expectedTargetRevision: Revision;
+  readonly expectedTargetRevision: Revision | null;
   readonly expectedOwnerRevision: Revision;
   readonly sourceLifecycleBefore: "active";
   readonly sourceLifecycleAfter: "active" | "retired";
@@ -98,8 +98,13 @@ function parsePendingReconciliation(
     );
   if (
     row.sourceLifecycleBefore !== "active" ||
-    !(row.sourceLifecycleAfter === "active" || row.sourceLifecycleAfter === "retired") ||
-    !(row.action === "remove-participants" || row.action === "archive-source") ||
+    !(
+      row.sourceLifecycleAfter === "active" ||
+      row.sourceLifecycleAfter === "retired"
+    ) ||
+    !(
+      row.action === "remove-participants" || row.action === "archive-source"
+    ) ||
     row.status !== "pending" ||
     (row.sourceLifecycleAfter === "active") !==
       (row.action === "remove-participants")
@@ -132,15 +137,21 @@ function parsePendingReconciliation(
     commandId: commandId(row.commandId, `${label}.commandId`),
     commandDigest: commandDigest(row.commandDigest, `${label}.commandDigest`),
     sourceSceneId: liveSceneId(row.sourceSceneId, `${label}.sourceSceneId`),
-    targetSceneId: liveSceneId(row.targetSceneId, `${label}.targetSceneId`),
+    targetSceneId:
+      row.targetSceneId === null
+        ? null
+        : liveSceneId(row.targetSceneId, `${label}.targetSceneId`),
     expectedSourceRevision: revision(
       row.expectedSourceRevision,
       `${label}.expectedSourceRevision`,
     ),
-    expectedTargetRevision: revision(
-      row.expectedTargetRevision,
-      `${label}.expectedTargetRevision`,
-    ),
+    expectedTargetRevision:
+      row.expectedTargetRevision === null
+        ? null
+        : revision(
+            row.expectedTargetRevision,
+            `${label}.expectedTargetRevision`,
+          ),
     expectedOwnerRevision: revision(
       row.expectedOwnerRevision,
       `${label}.expectedOwnerRevision`,
@@ -178,7 +189,7 @@ function parseRuntimeScene(value: unknown, index: number): RuntimeSceneState {
           );
   if (
     (preparedFrom?.encounterPlanRef === undefined) !==
-      (encounterPlanRef === undefined)
+    (encounterPlanRef === undefined)
   )
     throw new Error(
       `${label}.encounterPlanRef widerspricht der Preparation-Provenienz.`,
@@ -189,8 +200,10 @@ function parseRuntimeScene(value: unknown, index: number): RuntimeSceneState {
       preparedFrom.title !== row.title ||
       preparedFrom.notes !== row.notes ||
       preparedFrom.locationRef?.ownerId !== source.locationRef?.ownerId ||
-      preparedFrom.locationRef?.referenceId !== source.locationRef?.referenceId ||
-      preparedFrom.locationRef?.ownerRevision !== source.locationRef?.ownerRevision)
+      preparedFrom.locationRef?.referenceId !==
+        source.locationRef?.referenceId ||
+      preparedFrom.locationRef?.ownerRevision !==
+        source.locationRef?.ownerRevision)
   )
     throw new Error(`${label} widerspricht seiner Preparation-Provenienz.`);
   if (
@@ -210,8 +223,10 @@ function parseRuntimeScene(value: unknown, index: number): RuntimeSceneState {
   if (
     encounterPlanRef !== undefined &&
     (preparedFrom?.encounterPlanRef?.ownerId !== encounterPlanRef.ownerId ||
-      preparedFrom.encounterPlanRef.referenceId !== encounterPlanRef.referenceId ||
-      preparedFrom.encounterPlanRef.ownerRevision !== encounterPlanRef.ownerRevision)
+      preparedFrom.encounterPlanRef.referenceId !==
+        encounterPlanRef.referenceId ||
+      preparedFrom.encounterPlanRef.ownerRevision !==
+        encounterPlanRef.ownerRevision)
   )
     throw new Error(`${label}.encounterPlanRef widerspricht der Preparation.`);
   if (
@@ -234,7 +249,9 @@ function parseRuntimeScene(value: unknown, index: number): RuntimeSceneState {
   for (const mask of source.maskRefs) {
     const existing = ownerRevisionById.get(mask.ownerId);
     if (existing !== undefined && existing !== mask.ownerRevision)
-      throw new Error(`${label} enthält widersprüchliche Masken-OwnerRevisionen.`);
+      throw new Error(
+        `${label} enthält widersprüchliche Masken-OwnerRevisionen.`,
+      );
     ownerRevisionById.set(mask.ownerId, mask.ownerRevision);
   }
   for (const owner of source.reconciliations) {
@@ -278,7 +295,9 @@ export function parseLiveSessionAggregateState(
     "LiveSessionAggregateState",
   );
   if (root.kind !== "live-session-aggregate-state" || root.version !== 1)
-    throw new Error("LiveSessionAggregateState besitzt einen unbekannten Vertrag.");
+    throw new Error(
+      "LiveSessionAggregateState besitzt einen unbekannten Vertrag.",
+    );
   const party = parsePartyProjection(root.party),
     focus = parseFocusSource(root.focus),
     scenes = Object.freeze(
@@ -296,7 +315,8 @@ export function parseLiveSessionAggregateState(
           root.pendingReconciliations,
           "LiveSessionAggregateState.pendingReconciliations",
         ).map(parsePendingReconciliation),
-        (entry) => `${entry.ownerId}\u0000${entry.commandId}\u0000${entry.action}`,
+        (entry) =>
+          `${entry.ownerId}\u0000${entry.commandId}\u0000${entry.action}`,
         "LiveSessionAggregateState.pendingReconciliations",
       ),
     ),
@@ -306,22 +326,38 @@ export function parseLiveSessionAggregateState(
   if (scenes.some((scene) => scene.source.campaignId !== campaignId))
     throw new Error("LiveSessionAggregateState enthält eine fremde Scene.");
   if (pendingReconciliations.some((entry) => entry.campaignId !== campaignId))
-    throw new Error("LiveSessionAggregateState enthält eine fremde Reconciliation.");
+    throw new Error(
+      "LiveSessionAggregateState enthält eine fremde Reconciliation.",
+    );
   const sceneById = new Map(
     scenes.map((scene) => [scene.source.liveSceneId, scene.source]),
   );
   for (const duty of pendingReconciliations) {
+    if (
+      (duty.targetSceneId === null) !==
+      (duty.expectedTargetRevision === null)
+    )
+      throw new Error(
+        "LiveSessionAggregateState enthält eine widersprüchliche Zielbindung.",
+      );
     const source = sceneById.get(duty.sourceSceneId),
-      target = sceneById.get(duty.targetSceneId);
-    if (!source || !target || source.liveSceneId === target.liveSceneId)
+      target =
+        duty.targetSceneId === null
+          ? undefined
+          : sceneById.get(duty.targetSceneId);
+    if (
+      !source ||
+      (duty.targetSceneId !== null && !target) ||
+      source.liveSceneId === target?.liveSceneId
+    )
       throw new Error(
         "LiveSessionAggregateState enthält eine Reconciliation ohne Scene-Bindung.",
       );
     const masks = duty.maskIds.map((id) =>
-      source.maskRefs.find(
-        (mask) => mask.maskId === id && mask.ownerId === duty.ownerId,
+        source.maskRefs.find(
+          (mask) => mask.maskId === id && mask.ownerId === duty.ownerId,
+        ),
       ),
-    ),
       owner = source.reconciliations.find(
         (entry) => entry.ownerId === duty.ownerId,
       );
@@ -347,20 +383,28 @@ export function parseLiveSessionAggregateState(
       );
   }
 
-  const activeScenes = scenes.filter((scene) => scene.source.lifecycle === "active"),
+  const activeScenes = scenes.filter(
+      (scene) => scene.source.lifecycle === "active",
+    ),
     primaries = activeScenes.filter((scene) => scene.source.primary),
     primarySceneId =
       root.primarySceneId === null
         ? null
-        : liveSceneId(root.primarySceneId, "LiveSessionAggregateState.primarySceneId");
+        : liveSceneId(
+            root.primarySceneId,
+            "LiveSessionAggregateState.primarySceneId",
+          );
   if (
-    (activeScenes.length === 0 && (primarySceneId !== null || primaries.length !== 0)) ||
+    (activeScenes.length === 0 &&
+      (primarySceneId !== null || primaries.length !== 0)) ||
     (activeScenes.length > 0 &&
       (primarySceneId === null ||
         primaries.length !== 1 ||
         primaries[0]?.source.liveSceneId !== primarySceneId))
   )
-    throw new Error("LiveSessionAggregateState besitzt keine eindeutige Primary Scene.");
+    throw new Error(
+      "LiveSessionAggregateState besitzt keine eindeutige Primary Scene.",
+    );
   if (
     scenes.some(
       (scene) => scene.source.lifecycle !== "active" && scene.source.primary,
@@ -387,8 +431,13 @@ export function parseLiveSessionAggregateState(
       characterScene.set(characterId, scene.source.liveSceneId);
     }
     for (const pending of scene.source.pendingAssignments) {
-      if (pendingScene.has(pending.characterId) || characterScene.has(pending.characterId))
-        throw new Error("Eine CharacterId besitzt mehrere aktuelle Scene-Zuordnungen.");
+      if (
+        pendingScene.has(pending.characterId) ||
+        characterScene.has(pending.characterId)
+      )
+        throw new Error(
+          "Eine CharacterId besitzt mehrere aktuelle Scene-Zuordnungen.",
+        );
       pendingScene.set(pending.characterId, {
         liveSceneId: scene.source.liveSceneId,
         commandId: pending.commandId,
@@ -402,13 +451,18 @@ export function parseLiveSessionAggregateState(
   for (const character of party.characters) {
     const assignment = character.sceneAssignment;
     if (!character.active) {
-      if (characterScene.has(character.characterId) || pendingScene.has(character.characterId))
+      if (
+        characterScene.has(character.characterId) ||
+        pendingScene.has(character.characterId)
+      )
         throw new Error("Eine inaktive CharacterId liegt in einer Scene.");
       continue;
     }
     if (assignment.status === "not-started") {
       if (activeScenes.length)
-        throw new Error("Nach Initialisierung darf keine aktive Figur not-started sein.");
+        throw new Error(
+          "Nach Initialisierung darf keine aktive Figur not-started sein.",
+        );
       continue;
     }
     if (assignment.status === "assigned") {
@@ -428,9 +482,14 @@ export function parseLiveSessionAggregateState(
       pending.commandId !== assignment.commandId ||
       pending.ownerId !== assignment.ownerId
     )
-      throw new Error("Aktive Partyfigur besitzt keine aktuelle Scene-Zuordnung.");
+      throw new Error(
+        "Aktive Partyfigur besitzt keine aktuelle Scene-Zuordnung.",
+      );
   }
-  for (const characterId of [...characterScene.keys(), ...pendingScene.keys()]) {
+  for (const characterId of [
+    ...characterScene.keys(),
+    ...pendingScene.keys(),
+  ]) {
     if (!partyById.get(characterId)?.active)
       throw new Error("Eine Scene referenziert keine aktive Partyfigur.");
   }
@@ -462,7 +521,9 @@ export function createUninitializedLiveSessionState(
         character.active && character.sceneAssignment.status !== "not-started",
     )
   )
-    throw new Error("Eine nicht initialisierte Party darf keine Scene-Zuordnung besitzen.");
+    throw new Error(
+      "Eine nicht initialisierte Party darf keine Scene-Zuordnung besitzen.",
+    );
   return parseLiveSessionAggregateState({
     kind: "live-session-aggregate-state",
     version: 1,

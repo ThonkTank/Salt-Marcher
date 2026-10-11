@@ -1,8 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  activatePartyCharacter,
   createPreparedRuntime,
   createUninitializedLiveSessionState,
+  deactivatePartyCharacter,
   initializeLiveSession,
   moveCharacters,
   parseLiveSessionAggregateState,
@@ -62,10 +64,7 @@ function partyBeforeSession() {
   };
 }
 
-function commandBase(
-  kind: string,
-  overrides: Record<string, unknown> = {},
-) {
+function commandBase(kind: string, overrides: Record<string, unknown> = {}) {
   return {
     kind,
     version: 1,
@@ -180,11 +179,10 @@ test("explicit initialization creates one Primary, Focus and ordered membership 
   ]);
   assert.equal(result.state.party.partyRevision, 1);
   assert.equal(result.state.focus.focusRevision, 1);
-  assert.deepEqual(before.party.characters.map((entry) => entry.sceneAssignment.status), [
-    "not-started",
-    "not-started",
-    "inactive",
-  ]);
+  assert.deepEqual(
+    before.party.characters.map((entry) => entry.sceneAssignment.status),
+    ["not-started", "not-started", "inactive"],
+  );
 });
 
 test("cancelled or stale initialization returns unchanged semantic state", () => {
@@ -238,7 +236,10 @@ test("Prepared Runtime cannot create an implicit Live Session", () => {
       }),
     );
   assert.equal(result.status, "rejected");
-  assert.equal(result.status === "rejected" && result.reason, "not-initialized");
+  assert.equal(
+    result.status === "rejected" && result.reason,
+    "not-initialized",
+  );
   assert.deepEqual(result.state, state);
 });
 
@@ -445,16 +446,13 @@ test("unavailable mask owner cannot roll back a move and receives one bound pend
     maskIds: ["mask-a"],
     status: "pending",
   });
-  assert.deepEqual(
-    result.state.scenes[0]?.source.reconciliations,
-    [
-      {
-        ownerId: "encounter-owner",
-        status: "pending",
-        commandId: "command-move-unavailable",
-      },
-    ],
-  );
+  assert.deepEqual(result.state.scenes[0]?.source.reconciliations, [
+    {
+      ownerId: "encounter-owner",
+      status: "pending",
+      commandId: "command-move-unavailable",
+    },
+  ]);
   assert.equal(result.state.pendingReconciliations.length, 1);
 
   const second = moveCharacters(
@@ -760,4 +758,261 @@ test("state parser binds Prepared provenance and pending membership exactly", ()
     () => parseLiveSessionAggregateState(pending),
     /keine aktuelle Scene-Zuordnung/,
   );
+});
+
+test("membership can be activated and deactivated before a session without scene effects", () => {
+  const initial = createUninitializedLiveSessionState(partyBeforeSession()),
+    activated = activatePartyCharacter(
+      initial,
+      commandBase("activate-party-character", {
+        characterId: "character-c",
+      }),
+    );
+  assert.equal(activated.status, "applied");
+  if (activated.status !== "applied") return;
+  assert.equal(activated.state.party.partyRevision, 1);
+  assert.deepEqual(activated.state.scenes, []);
+  assert.deepEqual(activated.state.party.characters[2]?.sceneAssignment, {
+    status: "not-started",
+  });
+
+  const deactivated = deactivatePartyCharacter(
+    activated.state,
+    commandBase("deactivate-party-character", {
+      commandId: "command-deactivate-before-session",
+      commandDigest: "digest-deactivate-before-session",
+      expectedPartyRevision: 1,
+      characterId: "character-a",
+    }),
+  );
+  assert.equal(deactivated.status, "applied");
+  if (deactivated.status !== "applied") return;
+  assert.equal(deactivated.state.party.partyRevision, 2);
+  assert.equal(deactivated.state.party.characters[0]?.active, false);
+  assert.deepEqual(deactivated.state.party.characters[0]?.sceneAssignment, {
+    status: "inactive",
+  });
+  assert.deepEqual(deactivated.state.scenes, []);
+  assert(frozenGraph(deactivated));
+});
+
+test("session activation binds exactly to current Focus and preserves FocusRevision", () => {
+  const state = initialize(),
+    stale = activatePartyCharacter(
+      state,
+      commandBase("activate-party-character", {
+        expectedPartyRevision: 1,
+        expectedFocusRevision: 1,
+        characterId: "character-c",
+        targetSceneId: "scene-primary",
+        expectedTargetRevision: 9,
+      }),
+    );
+  assert.equal(stale.status, "rejected");
+  assert.equal(stale.status === "rejected" && stale.reason, "focus-mismatch");
+  assert.deepEqual(stale.state, state);
+
+  const activated = activatePartyCharacter(
+    state,
+    commandBase("activate-party-character", {
+      commandId: "command-activate-c",
+      commandDigest: "digest-activate-c",
+      expectedPartyRevision: 1,
+      expectedFocusRevision: 1,
+      characterId: "character-c",
+      targetSceneId: "scene-primary",
+      expectedTargetRevision: 0,
+    }),
+  );
+  assert.equal(activated.status, "applied");
+  if (activated.status !== "applied") return;
+  assert.deepEqual(activated.state.scenes[0]?.source.characterIds, [
+    "character-a",
+    "character-b",
+    "character-c",
+  ]);
+  assert.equal(activated.state.scenes[0]?.source.sceneRevision, 1);
+  assert.equal(activated.state.focus.focusRevision, 1);
+  assert.equal(
+    activated.state.focus.status === "active" &&
+      activated.state.focus.sceneRevision,
+    1,
+  );
+  assert.deepEqual(
+    activated.state.party.characters.map((entry) => entry.sceneAssignment),
+    [
+      { status: "assigned", liveSceneId: "scene-primary", sceneRevision: 1 },
+      { status: "assigned", liveSceneId: "scene-primary", sceneRevision: 1 },
+      { status: "assigned", liveSceneId: "scene-primary", sceneRevision: 1 },
+    ],
+  );
+});
+
+test("deactivation updates remaining membership but keeps a populated Primary", () => {
+  const state = initialize(),
+    result = deactivatePartyCharacter(
+      state,
+      commandBase("deactivate-party-character", {
+        expectedPartyRevision: 1,
+        expectedFocusRevision: 1,
+        characterId: "character-a",
+        expectedSourceRevision: 0,
+      }),
+    );
+  assert.equal(result.status, "applied");
+  if (result.status !== "applied") return;
+  assert.equal(result.state.primarySceneId, "scene-primary");
+  assert.equal(result.state.scenes[0]?.source.lifecycle, "active");
+  assert.deepEqual(result.state.scenes[0]?.source.characterIds, [
+    "character-b",
+  ]);
+  assert.deepEqual(result.state.party.characters[0]?.sceneAssignment, {
+    status: "inactive",
+  });
+  assert.deepEqual(result.state.party.characters[1]?.sceneAssignment, {
+    status: "assigned",
+    liveSceneId: "scene-primary",
+    sceneRevision: 1,
+  });
+  assert.equal(result.state.focus.focusRevision, 1);
+  assert.equal(
+    result.state.focus.status === "active" && result.state.focus.sceneRevision,
+    1,
+  );
+});
+
+test("deactivating the last Primary member promotes the first populated active scene", () => {
+  const prepared = prepare(),
+    moved = moveCharacters(
+      prepared,
+      commandBase("move-characters", {
+        commandId: "command-move-b-for-deactivation",
+        commandDigest: "digest-move-b-for-deactivation",
+        expectedPartyRevision: 1,
+        expectedFocusRevision: 1,
+        sourceSceneId: "scene-primary",
+        targetSceneId: "scene-prepared",
+        expectedSourceRevision: 0,
+        expectedTargetRevision: 0,
+        characterIds: ["character-b"],
+      }),
+    );
+  assert.equal(moved.status, "applied");
+  if (moved.status !== "applied") return;
+  const result = deactivatePartyCharacter(
+    moved.state,
+    commandBase("deactivate-party-character", {
+      commandId: "command-deactivate-last-primary",
+      commandDigest: "digest-deactivate-last-primary",
+      expectedPartyRevision: 2,
+      expectedFocusRevision: 1,
+      characterId: "character-a",
+      expectedSourceRevision: 1,
+    }),
+  );
+  assert.equal(result.status, "applied");
+  if (result.status !== "applied") return;
+  const source = result.state.scenes[0]!.source,
+    successor = result.state.scenes[1]!.source;
+  assert.equal(source.lifecycle, "retired");
+  assert.equal(source.primary, false);
+  assert.equal(successor.primary, true);
+  assert.equal(successor.sceneRevision, 2);
+  assert.equal(result.state.primarySceneId, "scene-prepared");
+  assert.equal(result.state.focus.focusRevision, 2);
+  assert.equal(
+    result.state.focus.status === "active" && result.state.focus.liveSceneId,
+    "scene-prepared",
+  );
+  assert.deepEqual(result.state.party.characters[1]?.sceneAssignment, {
+    status: "assigned",
+    liveSceneId: "scene-prepared",
+    sceneRevision: 2,
+  });
+  assert.equal(result.decision.membership?.sourceLifecycleAfter, "retired");
+});
+
+test("the sole empty Primary remains active after its last character is deactivated", () => {
+  const party = structuredClone(partyBeforeSession()) as Record<string, any>;
+  party.characters[1].active = false;
+  party.characters[1].sceneAssignment = { status: "inactive" };
+  const uninitialized = createUninitializedLiveSessionState(party),
+    initialized = initializeLiveSession(
+      uninitialized,
+      commandBase("initialize-live-session", {
+        primarySceneId: "scene-primary",
+        sceneClockRef: {
+          ownerId: "clock",
+          referenceId: "clock-primary",
+          ownerRevision: 0,
+        },
+        title: "Primary",
+        notes: "",
+      }),
+    );
+  assert.equal(initialized.status, "applied");
+  if (initialized.status !== "applied") return;
+  const result = deactivatePartyCharacter(
+    initialized.state,
+    commandBase("deactivate-party-character", {
+      expectedPartyRevision: 1,
+      expectedFocusRevision: 1,
+      characterId: "character-a",
+      expectedSourceRevision: 0,
+    }),
+  );
+  assert.equal(result.status, "applied");
+  if (result.status !== "applied") return;
+  assert.equal(result.state.primarySceneId, "scene-primary");
+  assert.equal(result.state.scenes[0]?.source.lifecycle, "active");
+  assert.equal(result.state.scenes[0]?.source.primary, true);
+  assert.deepEqual(result.state.scenes[0]?.source.characterIds, []);
+  assert.equal(result.state.focus.focusRevision, 1);
+  assert.equal(
+    result.state.focus.status === "active" && result.state.focus.liveSceneId,
+    "scene-primary",
+  );
+});
+
+test("unavailable consumers receive a durable source-only deactivation duty", () => {
+  const raw = structuredClone(initialize()) as Record<string, any>;
+  raw.scenes[0].source.reconciliations = [
+    { ownerId: "music-owner", status: "unavailable", ownerRevision: 6 },
+  ];
+  const state = parseLiveSessionAggregateState(raw),
+    result = deactivatePartyCharacter(
+      state,
+      commandBase("deactivate-party-character", {
+        commandId: "command-deactivate-with-music",
+        commandDigest: "digest-deactivate-with-music",
+        expectedPartyRevision: 1,
+        expectedFocusRevision: 1,
+        characterId: "character-a",
+        expectedSourceRevision: 0,
+      }),
+    );
+  assert.equal(result.status, "applied");
+  if (result.status !== "applied") return;
+  assert.deepEqual(result.state.pendingReconciliations[0], {
+    ownerId: "music-owner",
+    campaignId: "campaign-a",
+    commandId: "command-deactivate-with-music",
+    commandDigest: "digest-deactivate-with-music",
+    sourceSceneId: "scene-primary",
+    targetSceneId: null,
+    expectedSourceRevision: 0,
+    expectedTargetRevision: null,
+    expectedOwnerRevision: 6,
+    sourceLifecycleBefore: "active",
+    sourceLifecycleAfter: "active",
+    action: "remove-participants",
+    characterIds: ["character-a"],
+    maskIds: [],
+    status: "pending",
+  });
+  assert.deepEqual(
+    result.decision.membership?.reconciliations,
+    result.state.pendingReconciliations,
+  );
+  assert(frozenGraph(result));
 });

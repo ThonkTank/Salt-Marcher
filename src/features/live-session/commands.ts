@@ -73,6 +73,22 @@ export interface SetFocusCommand extends AggregateCommandBinding {
   readonly expectedTargetRevision?: Revision;
 }
 
+export interface ActivatePartyCharacterCommand extends AggregateCommandBinding {
+  readonly kind: "activate-party-character";
+  readonly version: 1;
+  readonly characterId: CharacterId;
+  readonly targetSceneId?: LiveSceneId;
+  readonly expectedTargetRevision?: Revision;
+}
+
+export interface DeactivatePartyCharacterCommand
+  extends AggregateCommandBinding {
+  readonly kind: "deactivate-party-character";
+  readonly version: 1;
+  readonly characterId: CharacterId;
+  readonly expectedSourceRevision?: Revision;
+}
+
 export interface PartyCommandBinding {
   readonly campaignId: CampaignId;
   readonly commandId: CommandId;
@@ -88,7 +104,8 @@ export interface CreatePartyCharacterCommand extends PartyCommandBinding {
   readonly profile: PartyCharacterProfileProjection;
 }
 
-export interface UpdatePartyCharacterProfileCommand extends PartyCommandBinding {
+export interface UpdatePartyCharacterProfileCommand
+  extends PartyCommandBinding {
   readonly kind: "update-party-character-profile";
   readonly version: 1;
   readonly characterId: CharacterId;
@@ -245,8 +262,8 @@ export function parseRestPartyCharactersCommand(
     throw new Error(`${label}.rest ist unbekannt.`);
   const characterIds = Object.freeze(
     uniqueBy(
-      exactArray(row.characterIds, `${label}.characterIds`).map((entry, index) =>
-        characterId(entry, `${label}.characterIds[${index}]`),
+      exactArray(row.characterIds, `${label}.characterIds`).map(
+        (entry, index) => characterId(entry, `${label}.characterIds[${index}]`),
       ),
       (entry) => entry,
       `${label}.characterIds`,
@@ -269,13 +286,7 @@ export function parseInitializeLiveSessionCommand(
   const label = "InitializeLiveSessionCommand",
     row = exactRecord(
       value,
-      [
-        ...COMMON,
-        "primarySceneId",
-        "sceneClockRef",
-        "title",
-        "notes",
-      ],
+      [...COMMON, "primarySceneId", "sceneClockRef", "title", "notes"],
       [],
       label,
     );
@@ -295,7 +306,9 @@ export function parseInitializeLiveSessionCommand(
   });
 }
 
-export function parsePrepareRuntimeCommand(value: unknown): PrepareRuntimeCommand {
+export function parsePrepareRuntimeCommand(
+  value: unknown,
+): PrepareRuntimeCommand {
   const label = "PrepareRuntimeCommand",
     row = exactRecord(
       value,
@@ -318,7 +331,9 @@ export function parsePrepareRuntimeCommand(value: unknown): PrepareRuntimeComman
   });
 }
 
-export function parseMoveCharactersCommand(value: unknown): MoveCharactersCommand {
+export function parseMoveCharactersCommand(
+  value: unknown,
+): MoveCharactersCommand {
   const label = "MoveCharactersCommand",
     row = exactRecord(
       value,
@@ -337,8 +352,8 @@ export function parseMoveCharactersCommand(value: unknown): MoveCharactersComman
     throw new Error(`${label} besitzt einen unbekannten Vertrag.`);
   const characterIds = Object.freeze(
     uniqueBy(
-      exactArray(row.characterIds, `${label}.characterIds`).map((entry, index) =>
-        characterId(entry, `${label}.characterIds[${index}]`),
+      exactArray(row.characterIds, `${label}.characterIds`).map(
+        (entry, index) => characterId(entry, `${label}.characterIds[${index}]`),
       ),
       (entry) => entry,
       `${label}.characterIds`,
@@ -375,7 +390,8 @@ export function parseSetFocusCommand(value: unknown): SetFocusCommand {
   if (row.kind !== "set-focus" || row.version !== 1)
     throw new Error(`${label} besitzt einen unbekannten Vertrag.`);
   if (
-    (row.targetSceneId === null) !== (row.expectedTargetRevision === undefined)
+    (row.targetSceneId === null) !==
+    (row.expectedTargetRevision === undefined)
   )
     throw new Error(`${label} bindet Ziel und Revision widersprüchlich.`);
   return Object.freeze({
@@ -392,6 +408,71 @@ export function parseSetFocusCommand(value: unknown): SetFocusCommand {
           expectedTargetRevision: revision(
             row.expectedTargetRevision,
             `${label}.expectedTargetRevision`,
+          ),
+        }),
+  });
+}
+
+export function parseActivatePartyCharacterCommand(
+  value: unknown,
+): ActivatePartyCharacterCommand {
+  const label = "ActivatePartyCharacterCommand",
+    row = exactRecord(
+      value,
+      [...COMMON, "characterId"],
+      ["targetSceneId", "expectedTargetRevision"],
+      label,
+    );
+  if (row.kind !== "activate-party-character" || row.version !== 1)
+    throw new Error(`${label} besitzt einen unbekannten Vertrag.`);
+  if (
+    (row.targetSceneId === undefined) !==
+    (row.expectedTargetRevision === undefined)
+  )
+    throw new Error(`${label} bindet Ziel und Revision widersprüchlich.`);
+  return Object.freeze({
+    kind: "activate-party-character",
+    version: 1,
+    ...binding(row, label),
+    characterId: characterId(row.characterId, `${label}.characterId`),
+    ...(row.targetSceneId === undefined
+      ? {}
+      : {
+          targetSceneId: liveSceneId(
+            row.targetSceneId,
+            `${label}.targetSceneId`,
+          ),
+          expectedTargetRevision: revision(
+            row.expectedTargetRevision,
+            `${label}.expectedTargetRevision`,
+          ),
+        }),
+  });
+}
+
+export function parseDeactivatePartyCharacterCommand(
+  value: unknown,
+): DeactivatePartyCharacterCommand {
+  const label = "DeactivatePartyCharacterCommand",
+    row = exactRecord(
+      value,
+      [...COMMON, "characterId"],
+      ["expectedSourceRevision"],
+      label,
+    );
+  if (row.kind !== "deactivate-party-character" || row.version !== 1)
+    throw new Error(`${label} besitzt einen unbekannten Vertrag.`);
+  return Object.freeze({
+    kind: "deactivate-party-character",
+    version: 1,
+    ...binding(row, label),
+    characterId: characterId(row.characterId, `${label}.characterId`),
+    ...(row.expectedSourceRevision === undefined
+      ? {}
+      : {
+          expectedSourceRevision: revision(
+            row.expectedSourceRevision,
+            `${label}.expectedSourceRevision`,
           ),
         }),
   });

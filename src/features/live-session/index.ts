@@ -59,6 +59,8 @@ export {
   type RuntimeSceneState,
 } from "./state";
 export {
+  parseActivatePartyCharacterCommand,
+  parseDeactivatePartyCharacterCommand,
   parseInitializeLiveSessionCommand,
   parseCreatePartyCharacterCommand,
   parseMoveCharactersCommand,
@@ -68,7 +70,9 @@ export {
   parseSetFocusCommand,
   parseUpdatePartyCharacterProfileCommand,
   type AggregateCommandBinding,
+  type ActivatePartyCharacterCommand,
   type CreatePartyCharacterCommand,
+  type DeactivatePartyCharacterCommand,
   type InitializeLiveSessionCommand,
   type MoveCharactersCommand,
   type PartyCommandBinding,
@@ -88,13 +92,16 @@ export {
   type PartyCommandResult,
 } from "./party-aggregate";
 export {
+  activatePartyCharacter,
   createPreparedRuntime,
+  deactivatePartyCharacter,
   initializeLiveSession,
   moveCharacters,
   setFocus,
   type AggregateAppliedDecision,
   type AggregateCommandResult,
   type AggregateRejectionReason,
+  type CharacterMembershipDecision,
   type ConsumerReconciliationDuty,
   type SceneCleanupDecision,
 } from "./scene-aggregate";
