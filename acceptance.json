@@ -4931,6 +4931,13 @@
         "scope": "Stage draft edit and rename/move before any publication; retain exact original payload/draft/selection on failure",
         "independentDeltaReview": "pending"
       }
+    },
+    "buildingRotationContribution": {
+      "issue": 127,
+      "source": "src/ui/atlas-city-building-panel.ts; existing CityEdit set-building-pose",
+      "plan": "docs/plans/city/building-name-inspector.md#arbeitsstand-127",
+      "checks": "Three Managed/Vaultadapter regressions PASS; exact pose with preserved linked-house/courtyard geometry, IDs, foreign bytes; shared UndoRedo and native Save/new model reopen. Pending name rejects rotation without mutation; detached old buttons fail closed.",
+      "remaining": "Independent review, early GM-use, real Obsidian/fresh-process, physical and broad Recovery/parity remain open; quarter-turn controls only."
     }
   },
   "wonderdraftParity": {

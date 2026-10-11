@@ -11088,17 +11088,18 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "ATLAS-INSPECTOR-IME-SAVE-SUPPORT",
-      "issue": 80,
-      "state": "candidate_hex_delta_review_pending",
-      "branch": "city/atlas-inspector-ime-counterproof-20261011",
-      "verification": "Hex explicitly delegated narrow Location/Room shortcut support. Shared10defd5: four actual Managed/Vaultadapter countercases FAIL before/PASS after isComposing guards (Location/Room x Ctrl/Meta). During composition no History/native publication and exact pending text retained; after composition shortcut saves once. Parent and hexAtlasExecution/hexAtlas remain with Hex. Prior City IME PR124 independently reviewed and integrated10defd5; native IME/physical acceptance remains open.",
-      "next": "Hex focused independent delta review of two Save guards and four regressions, then regular steward integration; no GUI or broad review round.",
-      "limits": "Synthetic Managed isComposing events; no native IME, physical or overall product claim. No format, focus, navigation or Apply changes."
+      "id": "CITY-BUILDING-ROTATION-INSPECTOR",
+      "issue": 127,
+      "state": "candidate_review_and_gm_pending",
+      "branch": "city/building-rotation-inspector-20261011",
+      "plan": "docs/plans/city/building-name-inspector.md#arbeitsstand-127",
+      "verification": "Two missing-control counterprobes FAIL before; three Managed/Vaultadapter cases PASS after. Both dungeon-bound and courtyard houses retain position/scale/geometry/IDs and all foreign native bytes. Quarter-turn uses existing CityDraft/CityEdit/shared History; exact UndoRedo/Save/new model state, pending name and detached callback protection. Full suite 1026PASS/0FAIL/1existingSkip; type/build/repo/diff PASS.",
+      "next": "Independent narrow City consumer review and early free GM-use on isolated candidate; no own GUI while Hex holds newly coordinated IME slot.",
+      "limits": "Quarter-turn controls only; no arbitrary angle, actual GUI/fresh Obsidian process, physical, broad Recovery or overall parity claim."
     },
     "nextRun": {
-      "id": "ATLAS-INSPECTOR-IME-SAVE-REVIEW",
-      "focus": "Hex reviews delegated Location/Room Save guard delta; existing GM fresh-room reuse remains a separate input."
+      "id": "CITY-BUILDING-ROTATION-REVIEW-GM",
+      "focus": "Review existing pose-command consumer and obtain early visible usability result; no duplicate shared contracts."
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
