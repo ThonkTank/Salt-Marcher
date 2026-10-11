@@ -1563,6 +1563,21 @@ function coordinatorTransition(
   return transitionMultiOwnerCommand(model, coordinatorEvent(model, event));
 }
 
+function expectRejectedUnchanged(
+  before: ReturnType<typeof stageMultiOwnerCommand>,
+  transition: ReturnType<typeof transitionMultiOwnerCommand>,
+  reason: Extract<
+    ReturnType<typeof transitionMultiOwnerCommand>,
+    { status: "rejected" }
+  >["reason"],
+  label: string,
+) {
+  assert.equal(transition.status, "rejected", label);
+  if (transition.status !== "rejected") return;
+  assert.equal(transition.reason, reason, label);
+  assert.deepEqual(transition.model, before, `${label}: model unchanged`);
+}
+
 function coordinator(
   kind: CoordinatedCommandKind,
   overrides: Raw = {},
@@ -1761,38 +1776,11 @@ test("coordinator: complete command matrix is cancel-safe and stale workers neve
   ];
   for (const kind of kinds) {
     const early = coordinator(kind),
-      foreign = coordinator(kind, {
-        commandId: `foreign-coordinator-${kind}`,
-        commandDigest: `foreign-digest-${kind}`,
-        receiptId: `foreign-receipt-${kind}`,
-      }),
-      foreignCallback = coordinatorEvent(foreign, {
+      prepareEvent = coordinatorEvent(early, {
         kind: "prepare-participant",
         participantId: "participant-party",
         ownerRevision: 1,
-        contributionHash: evidence(`${kind}-foreign-callback`),
-      }),
-      crossed = transitionMultiOwnerCommand(early, foreignCallback),
-      foreignCampaign = coordinatorTransition(early, {
-        kind: "prepare-participant",
-        participantId: "participant-party",
-        ownerRevision: 1,
-        contributionHash: evidence(`${kind}-foreign-campaign`),
-        campaignId: CAMPAIGN_B,
-      }),
-      wrongTarget = coordinatorTransition(early, {
-        kind: "prepare-participant",
-        participantId: "participant-party",
-        ownerRevision: 1,
-        targetId: "target-other",
-        contributionHash: evidence(`${kind}-wrong-target`),
-      }),
-      stalePrepare = coordinatorTransition(early, {
-        kind: "prepare-participant",
-        expectedGeneration: 999,
-        participantId: "participant-party",
-        ownerRevision: 1,
-        contributionHash: evidence(`${kind}-stale-prepare`),
+        contributionHash: evidence(`${kind}-binding-probe`),
       }),
       incompleteValidate = coordinatorTransition(early, {
         kind: "validate",
@@ -1812,30 +1800,78 @@ test("coordinator: complete command matrix is cancel-safe and stale workers neve
         kind: "finalize",
       }),
       earlyCancel = coordinatorTransition(early, { kind: "cancel" });
-    assert.equal(crossed.status, "rejected", `${kind}: foreign command`);
-    if (crossed.status === "rejected")
-      assert.equal(crossed.reason, "command-mismatch", kind);
-    assert.equal(
-      foreignCampaign.status,
-      "rejected",
-      `${kind}: foreign campaign`,
-    );
-    assert.equal(wrongTarget.status, "rejected", `${kind}: wrong target`);
-    if (wrongTarget.status === "rejected")
-      assert.equal(wrongTarget.reason, "participant-mismatch", kind);
-    assert.equal(stalePrepare.status, "rejected", `${kind}: stale prepare`);
-    if (stalePrepare.status === "rejected")
-      assert.equal(stalePrepare.reason, "stale-generation", kind);
+
+    for (const [label, patch, reason] of [
+      ["campaign", { campaignId: CAMPAIGN_B }, "command-mismatch"],
+      [
+        "command",
+        { commandId: `foreign-coordinator-${kind}` },
+        "command-mismatch",
+      ],
+      [
+        "digest",
+        { commandDigest: `foreign-digest-${kind}` },
+        "command-mismatch",
+      ],
+      [
+        "receipt",
+        { receiptId: `foreign-receipt-${kind}` },
+        "receipt-mismatch",
+      ],
+      [
+        "participant",
+        { participantId: "participant-other" },
+        "unknown-participant",
+      ],
+      ["owner", { ownerId: "owner-other" }, "participant-mismatch"],
+      ["target", { targetId: "target-other" }, "participant-mismatch"],
+      ["generation", { expectedGeneration: 999 }, "stale-generation"],
+    ] as const) {
+      expectRejectedUnchanged(
+        early,
+        transitionMultiOwnerCommand(early, { ...prepareEvent, ...patch }),
+        reason,
+        `${kind}: isolated ${label} binding`,
+      );
+    }
     for (const [label, transition, expectedReason] of [
       ["incomplete validate", incompleteValidate, "participants-incomplete"],
       ["premature publish", prematurePublish, "phase-conflict"],
       ["premature verify", prematureVerify, "phase-conflict"],
       ["premature finalize", prematureFinalize, "phase-conflict"],
     ] as const) {
-      assert.equal(transition.status, "rejected", `${kind}: ${label}`);
-      if (transition.status === "rejected")
-        assert.equal(transition.reason, expectedReason, `${kind}: ${label}`);
+      expectRejectedUnchanged(
+        early,
+        transition,
+        expectedReason,
+        `${kind}: ${label}`,
+      );
     }
+
+    const originalPrepare = transitionMultiOwnerCommand(early, prepareEvent);
+    assert.equal(originalPrepare.status, "applied", `${kind}: first prepare`);
+    const originalReceiptRetry = coordinatorTransition(originalPrepare.model, {
+      kind: "prepare-participant",
+      participantId: "participant-party",
+      ownerRevision: 1,
+      contributionHash: evidence(`${kind}-binding-probe`),
+    });
+    assert.equal(
+      originalReceiptRetry.status,
+      "applied",
+      `${kind}: original receipt retry`,
+    );
+    assert.deepEqual(
+      originalReceiptRetry.model,
+      originalPrepare.model,
+      `${kind}: retry is idempotent`,
+    );
+    assert.equal(
+      originalReceiptRetry.model.receiptId,
+      early.receiptId,
+      `${kind}: retry retains receipt`,
+    );
+
     assert.equal(earlyCancel.status, "applied", `${kind}: early cancel`);
     const cancelledCallback = transitionMultiOwnerCommand(
       earlyCancel.model,
@@ -1846,13 +1882,12 @@ test("coordinator: complete command matrix is cancel-safe and stale workers neve
         contributionHash: evidence(`${kind}-cancelled-callback`),
       }),
     );
-    assert.equal(
-      cancelledCallback.status,
-      "rejected",
+    expectRejectedUnchanged(
+      earlyCancel.model,
+      cancelledCallback,
+      "stale-generation",
       `${kind}: cancelled callback`,
     );
-    if (cancelledCallback.status === "rejected")
-      assert.equal(cancelledCallback.reason, "stale-generation", kind);
 
     for (const outcome of ["conflict", "unavailable"] as const) {
       const fullyPrepared = preparedParticipants(kind),
@@ -1885,9 +1920,12 @@ test("coordinator: complete command matrix is cancel-safe and stale workers neve
         effectHash: evidence(`${kind}-staged-bypass-effect`),
         survivorRootHash: stagedForUnknown.expectedSurvivorRootHash,
       });
-    assert.equal(stagedBypass.status, "rejected", `${kind}: staged unknown`);
-    if (stagedBypass.status === "rejected")
-      assert.equal(stagedBypass.reason, "phase-conflict", kind);
+    expectRejectedUnchanged(
+      stagedUnknown.model,
+      stagedBypass,
+      "phase-conflict",
+      `${kind}: staged unknown`,
+    );
 
     const model = prepared(kind),
       before = model.beforeTruthHash,
@@ -1905,13 +1943,12 @@ test("coordinator: complete command matrix is cancel-safe and stale workers neve
         version: 1,
         expectedGeneration: model.generation,
       });
-    assert.equal(
-      unchangedEffect.status,
-      "rejected",
+    expectRejectedUnchanged(
+      validatedUnknown.model,
+      unchangedEffect,
+      "effect-mismatch",
       `${kind}: unchanged effect`,
     );
-    if (unchangedEffect.status === "rejected")
-      assert.equal(unchangedEffect.reason, "effect-mismatch", kind);
     assert.equal(cancelled.status, "applied", kind);
     assert.equal(cancelled.model.status, "cancelled-before-publish", kind);
     assert.equal(cancelled.model.beforeTruthHash, before, kind);
@@ -1929,7 +1966,12 @@ test("coordinator: complete command matrix is cancel-safe and stale workers neve
       effectHash: evidence(`${kind}-late-effect`),
       survivorRootHash: model.expectedSurvivorRootHash,
     });
-    assert.equal(stalePublish.status, "rejected", kind);
+    expectRejectedUnchanged(
+      cancelled.model,
+      stalePublish,
+      "stale-generation",
+      `${kind}: stale publish`,
+    );
 
     const publishModel = prepared(kind),
       effectHash = evidence(`${kind}-matrix-effect`),
@@ -1938,39 +1980,51 @@ test("coordinator: complete command matrix is cancel-safe and stale workers neve
         effectHash,
         survivorRootHash: evidence(`${kind}-wrong-survivors`),
       });
-    assert.equal(survivorMismatch.status, "rejected", `${kind}: survivors`);
+    expectRejectedUnchanged(
+      publishModel,
+      survivorMismatch,
+      "survivor-mismatch",
+      `${kind}: survivors`,
+    );
     const published = coordinatorTransition(publishModel, {
       kind: "publish",
       effectHash,
       survivorRootHash: publishModel.expectedSurvivorRootHash,
     });
     assert.equal(published.status, "applied", `${kind}: publish`);
-    const changedPostPublish = coordinatorTransition(
-      coordinatorTransition(published.model, {
+    const postPublishUnknown = coordinatorTransition(published.model, {
         kind: "mark-outcome-unknown",
-      }).model,
-      {
+      }),
+      changedPostPublish = coordinatorTransition(postPublishUnknown.model, {
         kind: "resolve-outcome",
         outcome: "published",
         effectHash: evidence(`${kind}-replacement-effect`),
         survivorRootHash: publishModel.expectedSurvivorRootHash,
-      },
-    );
-    assert.equal(
-      changedPostPublish.status,
-      "rejected",
+      });
+    expectRejectedUnchanged(
+      postPublishUnknown.model,
+      changedPostPublish,
+      "effect-mismatch",
       `${kind}: replace published truth`,
     );
-    if (changedPostPublish.status === "rejected")
-      assert.equal(changedPostPublish.reason, "effect-mismatch", kind);
     const late = coordinatorTransition(published.model, { kind: "cancel" });
-    assert.equal(late.status, "rejected", `${kind}: late cancel`);
+    expectRejectedUnchanged(
+      published.model,
+      late,
+      "already-published",
+      `${kind}: late cancel`,
+    );
     const wrongVerify = coordinatorTransition(published.model, {
       kind: "verify",
       effectHash: evidence(`${kind}-wrong-effect`),
       survivorRootHash: publishModel.expectedSurvivorRootHash,
     });
-    assert.equal(wrongVerify.status, "rejected", `${kind}: verify effect`);
+    expectRejectedUnchanged(
+      published.model,
+      wrongVerify,
+      "effect-mismatch",
+      `${kind}: verify effect`,
+    );
     const unknown = coordinatorTransition(published.model, {
         kind: "mark-outcome-unknown",
       }),
@@ -1988,6 +2042,18 @@ test("coordinator: complete command matrix is cancel-safe and stale workers neve
       finalized = coordinatorTransition(verified.model, { kind: "finalize" });
     assert.equal(finalized.status, "applied", `${kind}: finalize`);
     assert.equal(finalized.model.status, "finalized", `${kind}: finalized`);
+    const postFinalizeReply = coordinatorTransition(finalized.model, {
+      kind: "prepare-participant",
+      participantId: "participant-party",
+      ownerRevision: 1,
+      contributionHash: evidence(`${kind}-post-finalize-reply`),
+    });
+    expectRejectedUnchanged(
+      finalized.model,
+      postFinalizeReply,
+      "already-terminal",
+      `${kind}: post-finalize reply`,
+    );
 
     const preUnknownModel = prepared(kind),
       preUnknown = coordinatorTransition(preUnknownModel, {
