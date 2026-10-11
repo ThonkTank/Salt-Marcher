@@ -6,7 +6,7 @@ import { VaultStore } from "../vault-stores";
 import { VaultCampaignRuntimeStorage } from "../vault-campaign-runtime-source";
 import type { AtlasCampaignServices } from "./atlas-campaign-host";
 import { CampaignEntry } from "./campaign-entry";
-import { WorldNotesPanel } from "./world-notes-panel";
+import { WorldNotesDraftBuffer, WorldNotesPanel } from "./world-notes-panel";
 import { WorldNotesNativeSession, recoverWorldNotesBeforeActivation } from "./world-notes-native-session";
 import type { CreatureCatalogLoader } from "../features/catalog/creature-catalog-loader";
 
@@ -25,7 +25,8 @@ export class WorldNotesView extends ItemView {
   private notesHost?: HTMLDivElement;
   private generation = 0;
   constructor(leaf: WorkspaceLeaf, private readonly services: AtlasCampaignServices,
-    private readonly creatures: CreatureCatalogLoader) { super(leaf); }
+    private readonly creatures: CreatureCatalogLoader,
+    private readonly draftBuffer: WorldNotesDraftBuffer = new WorldNotesDraftBuffer()) { super(leaf); }
   getViewType(): string { return WORLD_NOTES_VIEW; }
   getDisplayText(): string { return "Kampagnenwissen"; }
   getIcon(): string { return "book-open"; }
@@ -110,6 +111,8 @@ export class WorldNotesView extends ItemView {
       const snapshot = await session.open();
       if (stamp !== this.generation || this.session !== session) return;
       this.panel ??= new WorldNotesPanel(this.notesHost, {
+        draftBuffer: this.draftBuffer,
+        onDraftOwnershipRevoked: () => this.suspendPanel(),
         newId: () => campaignLocalId(crypto.randomUUID()),
         currentContext: () => this.services.provider.currentContext(),
         digest,

@@ -18,6 +18,34 @@ export interface WorldNotesCreatureChoice {
   readonly id: string;
   readonly name: string;
 }
+type BufferedDraft = {
+  id: CampaignLocalId; draft: WorldNoteDraft; create: boolean; baseRevision: number | null;
+};
+/** One active editor per Campaign/namespace; stale views cannot rewrite or revive a draft. */
+export class WorldNotesDraftBuffer {
+  private readonly entries = new Map<string, { draft: BufferedDraft | null;
+    owner: object | null; revoke: (() => void) | null }>();
+  claim(key: string, owner: object, revoke: () => void): BufferedDraft | null {
+    let entry = this.entries.get(key);
+    if (!entry) {
+      entry = { draft: null, owner: null, revoke: null };
+      this.entries.set(key, entry);
+    }
+    if (entry.owner !== owner) entry.revoke?.();
+    entry.owner = owner; entry.revoke = revoke;
+    return entry.draft;
+  }
+  owns(key: string, owner: object): boolean { return this.entries.get(key)?.owner === owner; }
+  keep(key: string, owner: object, draft: BufferedDraft | null): void {
+    const entry = this.entries.get(key);
+    if (entry?.owner === owner) entry.draft = draft;
+  }
+  release(key: string, owner: object, draft: BufferedDraft | null): void {
+    const entry = this.entries.get(key);
+    if (entry?.owner !== owner) return;
+    entry.draft = draft; entry.owner = null; entry.revoke = null;
+  }
+}
 export interface WorldNotesPanelOptions {
   readonly newId: () => CampaignLocalId;
   readonly currentContext: () => CampaignContextProjection | null;
@@ -30,6 +58,9 @@ export interface WorldNotesPanelOptions {
   /** Catalog suggestions never create creature truth or replace a stored ID. */
   readonly searchCreatures?: (query: string) => Promise<readonly WorldNotesCreatureChoice[]>;
   readonly creatureDetail?: (id: string) => Promise<WorldNotesCreatureChoice | null>;
+  /** Plugin-lifetime drafts survive closing and reopening the view, never a process restart. */
+  readonly draftBuffer?: WorldNotesDraftBuffer;
+  readonly onDraftOwnershipRevoked?: () => void;
 }
 const kinds: readonly WorldNoteKind[] = ["npc", "faction", "quest", "rumor"];
 const labels: Record<WorldNoteKind, string> = {
@@ -46,14 +77,14 @@ export class WorldNotesPanel {
   private readonly search: HTMLInputElement;
   private readonly status: HTMLParagraphElement;
   private snapshot: WorldNotesSnapshotV1 | null = null;
-  private pending: { id: CampaignLocalId; draft: WorldNoteDraft; create: boolean;
-    baseRevision: number | null } | null = null;
-  private readonly retainedDrafts = new Map<string, NonNullable<WorldNotesPanel["pending"]>>();
+  private pending: BufferedDraft | null = null;
+  private readonly retainedDrafts: WorldNotesDraftBuffer;
   private busy = false;
   private suspended = false;
   private destroyed = false;
   private generation = 0;
   constructor(host: HTMLElement, private readonly options: WorldNotesPanelOptions) {
+    this.retainedDrafts = options.draftBuffer ?? new WorldNotesDraftBuffer();
     const doc = host.ownerDocument;
     this.root = doc.createElement("div"); this.root.className = "dn-world-notes";
     this.root.setAttribute("role", "region");
@@ -88,6 +119,11 @@ export class WorldNotesPanel {
   update(snapshot: WorldNotesSnapshotV1): boolean {
     if (this.destroyed) return false;
     const next = worldNotesSnapshot(snapshot);
+    if (!this.snapshot) this.pending = this.claimDraft(next);
+    else if (this.draftKey(next) === this.draftKey(this.snapshot) &&
+        !this.retainedDrafts.owns(this.draftKey(next), this)) {
+      this.suspend(); return false;
+    }
     if (this.snapshot && next.campaignId === this.snapshot.campaignId &&
         next.namespace === this.snapshot.namespace) {
       if (next.revision < this.snapshot.revision ||
@@ -99,8 +135,8 @@ export class WorldNotesPanel {
     }
     if (this.snapshot && (next.campaignId !== this.snapshot.campaignId ||
         next.namespace !== this.snapshot.namespace)) {
-      if (this.pending) this.retainedDrafts.set(this.draftKey(this.snapshot), this.pending);
-      this.pending = this.retainedDrafts.get(this.draftKey(next)) ?? null;
+      this.retainedDrafts.release(this.draftKey(this.snapshot), this, this.pending);
+      this.pending = this.claimDraft(next);
       this.search.value = "";
     }
     const changedDuringEdit = this.pending && this.snapshot &&
@@ -119,6 +155,13 @@ export class WorldNotesPanel {
   }
   private draftKey(snapshot: WorldNotesSnapshotV1): string {
     return `${snapshot.campaignId}/${snapshot.namespace}`;
+  }
+  private claimDraft(snapshot: WorldNotesSnapshotV1): BufferedDraft | null {
+    const key = this.draftKey(snapshot);
+    return this.retainedDrafts.claim(key, this, () => {
+      if (this.snapshot) this.retainedDrafts.keep(key, this, this.pending);
+      this.suspend(); this.options.onDraftOwnershipRevoked?.();
+    });
   }
   private sameSnapshot(a: WorldNotesSnapshotV1, b: WorldNotesSnapshotV1): boolean {
     return JSON.stringify(a.records) === JSON.stringify(b.records);
@@ -219,7 +262,8 @@ export class WorldNotesPanel {
     const pending = this.pending, snapshot = this.snapshot;
     if (!pending || !snapshot) return;
     const doc = this.root.ownerDocument, form = doc.createElement("form");
-    const activeForm = () => !this.destroyed && !this.busy && this.pending === pending &&
+    const activeForm = () => !this.destroyed && !this.busy &&
+      this.retainedDrafts.owns(this.draftKey(snapshot), this) && this.pending === pending &&
       this.snapshot === snapshot && this.editor.firstChild === form;
     const heading = doc.createElement("h3");
     heading.textContent = `${labels[pending.draft.kind]} ${pending.create ? "anlegen" : "bearbeiten"}`;
@@ -367,7 +411,7 @@ export class WorldNotesPanel {
         discard.textContent = "Verwerfen bestätigen"; return;
       }
       this.pending = null;
-      this.retainedDrafts.delete(this.draftKey(snapshot));
+      this.retainedDrafts.keep(this.draftKey(snapshot), this, null);
       this.message("Entwurf verworfen"); this.renderEditor(); this.search.focus();
     });
     form.addEventListener("submit", (event) => {
@@ -415,7 +459,7 @@ export class WorldNotesPanel {
         throw new Error("Angeforderte World-Änderung wurde nicht bestätigt.");
       this.snapshot = confirmed;
       this.pending = null; this.message("Gespeichert");
-      this.retainedDrafts.delete(this.draftKey(confirmed));
+      this.retainedDrafts.keep(this.draftKey(confirmed), this, null);
       this.renderList(); this.renderEditor();
       (Array.from(this.list.querySelectorAll<HTMLButtonElement>("button"))
         .find((button) => button.dataset.worldId === change.id) ?? this.search).focus();
@@ -433,6 +477,7 @@ export class WorldNotesPanel {
   }
   destroy(): void {
     if (this.destroyed) return;
+    if (this.snapshot) this.retainedDrafts.release(this.draftKey(this.snapshot), this, this.pending);
     this.destroyed = true; this.generation++; this.root.remove();
   }
 }

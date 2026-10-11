@@ -210,7 +210,7 @@ ausgeblendeter fremder Fraktion; beide Prozesse endeten normal. Rohbelege:
 Der unabhängige enge Stadt-R01 und Exact-SHA-CI bestanden; Shared-Merge
 `af5ddcbb`. Die vollständige World-Planner-/SMR-02-Abnahme bleibt offen.
 
-Der Entwurf PR #112 adressiert ungespeicherte Notizentwürfe beim
+PR #112 adressiert ungespeicherte Notizentwürfe beim
 Kampagnenwechsel A→B→A innerhalb derselben geöffneten Spielansicht. Er hält
 das World-Notes-Panel, widerruft alte Sessions und Eingaben und zeigt einen
 Entwurf erst nach bestätigter neuer Kampagnenbindung wieder an. Typecheck,
@@ -220,7 +220,23 @@ nicht. Der danach korrigierte Lauf `--world-notes-drafts` wechselte in einem
 isolierten echten Obsidianprozess A→B→A→B. Die zwei ungespeicherten Entwürfe
 blieben getrennt und alle A/B-Eingabedateien bytegleich; der Prozess endete
 normal. Rohbeleg: `/home/aaron/.cache/dungeon-native-qa/atlasqa-world-notes-drafts-host-03/evidence/1791690123926-atlas-spatial-edit/`.
-Unabhängige Abnahme und vollständige SMR-02-Abnahme stehen aus.
+Der unabhängige enge Stadt-R01 und Exact-SHA-CI bestanden; Shared-Merge
+`87ccdb26`. Die vollständige SMR-02-Abnahme steht aus.
+
+Der folgende #68-Beitrag erhält diese Entwürfe auch beim Schließen und erneuten
+Öffnen der Weltwissen-Ansicht innerhalb derselben Pluginlaufzeit. Pro
+Kampagne/Namespace besitzt nur eine Ansicht den editierbaren Entwurf; eine
+überholte Ansicht kann weder einen neueren Text überschreiben noch nach Save
+oder ausdrücklichem Verwerfen einen alten Entwurf wiederbeleben. Der
+Kampagnen-Snapshot wird weiterhin frisch bestätigt; der Puffer trägt keine
+Speicherautorität. Fokussierte DOM-Gegenproben prüfen A/B-Entwürfe, alte
+Eingaben, Close-Reihenfolgen sowie Save/Discard mit einer zweiten Ansicht.
+Ein isolierter echter
+Obsidianlauf A→B→A→B, Ansicht schließen/öffnen, B- und A-Entwurf erneut
+anzeigen, 16 native Eingabedateien bytegleich und normaler Exit bestand;
+Rohbeleg auf sauberem repariertem Produktstand `c631eb5f` unter
+`/home/aaron/.cache/dungeon-native-qa/atlasqa-world-notes-close-r02-exact-01/evidence/1791692061930-atlas-spatial-edit/`.
+Ein Prozessneustart erhält ungespeicherte Entwürfe weiterhin nicht.
 
 ### SMR-03 – Party, Scene und Live Session
 
