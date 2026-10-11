@@ -122,6 +122,25 @@ exakter Name/Geometrie/IDs und eine Historywirkung im selben Repository/Context
 für Retry erhalten. Zweiter sichtbarer Save speichert ohne zusätzliche History;
 frisches Hostmodell öffnet die exakten Citybytes mit History0. Vor Fix FAIL,
 danach PASS. Das erweitert den früheren H01-Beleg nicht auf diesen neuen Saveweg.
-Enger unabhängiger Savereview und tatsächliche native direkte Save-/Fehlerprobe
-bleiben offen; freie GM-, physische und breite Recoveryabnahme bleiben erhalten.
+Unabhängiger Save-R03 ist PASS (PR98/6104396047); der unveränderte
+Kandidat ist auf Shared73bfe22 unabhängig integriert. Die folgende H02-Probe qualifiziert den
+kontrollierten nativen direkten Save-/Fehlerweg; freie GM-, physische und breite Recoveryabnahme bleiben erhalten.
 S01-01 ist auf Shared0bebb85 unabhängig integriert und geschlossen.
+
+Der vorhandene isolierte Hostprüfer bietet dafür `--city-building-name-rollback`
+und separat denselben Schalter mit `--restart`. Er tippt den exakten Namen
+ins sichtbare Feld und klickt direkt Save; erst nach dem tatsächlichen Citywrite
+wird einmal der Campaignmanifest-CAS im Testvault abgewiesen. Alle ursprünglichen
+Nativebytes und Journalbereinigung, genau eine erhaltene Historywirkung, Kamera,
+Context und sichtbarer Text werden geprüft. Der sichtbare Retry speichert die
+exakten Citydaten, der zweite Prozess verwendet deren Hashbaseline. Die
+Faultinjektion wird auch bei Prüferfehler zurückgenommen. H01 bleibt unverändert.
+Neue konkrete Hex-Slotantwort konsumiert: Edit2/Fresh1 PASS auf sauberer
+Prüfer-/Buildquelle1afac1d, Produktcode bytegleich Shared73bfe22. Beide Prozesse
+normal beendet (Exit0), keine erzwungenen PIDs; Slot ausdrücklich zurückgegeben.
+[H02-Rohquittung](../../reference/city-building-name-h02/receipt.json) bindet
+Originalresultate, Builds, Lifecycle, Fehlzustand/Retry/Freshbilder und ganze
+Citybaseline. Sichtbarer Fehltext und exakter Name sind in den Bildern erkennbar.
+Enger unabhängiger Prüfer-/Rohbelegreview bleibt offen; kein physischer oder
+breiter Recoverypass. Cloud-GM arbeitet separat
+am bereits gestarteten freien #92-Ablauf, Hex am #80-Scrollfix.
