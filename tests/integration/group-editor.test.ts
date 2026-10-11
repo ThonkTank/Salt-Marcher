@@ -92,6 +92,88 @@ describe('atomic group editor', () => {
       c.context.treasures.require(saved.treasures[0]!.treasure.id)
     ).toEqual(saved.treasures[0]!.treasure)
   })
+  it('binds generated item and container provenance to the selected treasure', () => {
+    const c = setup(),
+      members = c.party.read().members.slice(0, 2),
+      generated = c.generation.generate({
+        party: [{ level: 3, count: 2 }],
+        ledgerParty: members.map((member) => ({
+          characterId: member.id,
+          level: 3,
+          currentXp: member.xp,
+          ledgerRevision: 0,
+          currentNonMagicCp: 0,
+          currentMagic: {
+            Common: 0,
+            Uncommon: 0,
+            Rare: 0,
+            'Very Rare': 0,
+            Legendary: 0
+          }
+        })),
+        adventureDayFraction: '0.6',
+        encounterCount: 2,
+        seed: 1_000
+      })
+    if (generated.status !== 'success')
+      throw new Error('Expected generated session')
+    const [selected, foreign] = generated.run.treasures
+    if (!selected || !foreign?.items[0] || !foreign.containers[0])
+      throw new Error('Expected two populated generated treasures')
+    const base = c.request(),
+      generation = {
+        runId: generated.run.id,
+        treasureId: selected.id
+      }
+    base.treasures = [
+      {
+        key: 'foreign-item',
+        treasureId: null,
+        expectedRevision: null,
+        label: 'Forged item lineage',
+        generation,
+        containers: [],
+        items: [
+          {
+            itemReference: foreign.items[0].itemReference,
+            sourceLineId: foreign.items[0].id,
+            quantity: foreign.items[0].quantity,
+            containerId: null
+          }
+        ]
+      }
+    ]
+    expect(() => c.editor.commit(base)).toThrow()
+    expect(c.scenes.groups(c.sceneId)).toHaveLength(0)
+
+    const foreignContainer = foreign.containers[0]
+    expect(() =>
+      c.editor.commit({
+        ...base,
+        commandId: randomUUID(),
+        treasures: [
+          {
+            key: 'foreign-container',
+            treasureId: null,
+            expectedRevision: null,
+            label: 'Forged container lineage',
+            generation,
+            containers: [
+              {
+                id: randomUUID(),
+                sourceContainerId: foreignContainer.id,
+                catalogContainerId: foreignContainer.catalogContainerId,
+                name: foreignContainer.name,
+                capacity: foreignContainer.capacity
+              }
+            ],
+            items: []
+          }
+        ]
+      })
+    ).toThrow()
+    expect(c.scenes.groups(c.sceneId)).toHaveLength(0)
+  })
   it('supports empty groups and reserves the next free optional name', () => {
     const c = setup(),
       a = c.editor.commit({ ...c.request(), entries: [], treasures: [] }),

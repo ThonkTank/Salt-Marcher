@@ -78,13 +78,14 @@ export function validateEditorTreasure(
       const run = draft.generation
         ? context.generatedRuns.read(draft.generation.runId)
         : null
+      const generated = run?.treasures.find(
+        (treasure) => treasure.id === draft.generation?.treasureId
+      )
       if (
-        !run?.treasures.some((t) =>
-          t.containers.some(
-            (c) =>
-              c.id === container.sourceContainerId &&
-              c.catalogContainerId === container.catalogContainerId
-          )
+        !generated?.containers.some(
+          (c) =>
+            c.id === container.sourceContainerId &&
+            c.catalogContainerId === container.catalogContainerId
         )
       )
         throw new CapabilityError('validation_failed', false)
@@ -117,16 +118,23 @@ export function validateEditorTreasure(
     )
       throw new CapabilityError('validation_failed', false)
     if (item.sourceLineId && !existing) {
-      const ref = item.itemReference
-      const run =
-        ref.kind === 'generated' ? context.generatedRuns.read(ref.runId) : null
+      const ref = item.itemReference,
+        generation = draft.generation
       if (
-        !run?.treasures.some((t) =>
-          t.items.some(
-            (i) =>
-              i.id === item.sourceLineId &&
-              itemReferenceKey(i.itemReference) === itemReferenceKey(ref)
-          )
+        ref.kind !== 'generated' ||
+        !generation ||
+        generation.runId !== ref.runId
+      )
+        throw new CapabilityError('validation_failed', false)
+      const run = context.generatedRuns.read(ref.runId)
+      const generated = run?.treasures.find(
+        (treasure) => treasure.id === generation.treasureId
+      )
+      if (
+        !generated?.items.some(
+          (i) =>
+            i.id === item.sourceLineId &&
+            itemReferenceKey(i.itemReference) === itemReferenceKey(ref)
         )
       )
         throw new CapabilityError('validation_failed', false)
