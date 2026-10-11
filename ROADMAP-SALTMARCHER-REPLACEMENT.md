@@ -164,6 +164,9 @@ erwartet. Wiederholbar mit `--world-notes-recovery` und anschließend `--restart
 im eigenen QA-Root; Belege unter
 `/home/aaron/.cache/dungeon-native-qa/atlasqa-smr02-committed-recovery-01/evidence/`.
 Das ist eine kontrolliert eingesetzte Restjournalprobe, kein physischer Crash.
+Die kleinen JSON-Rohbelege beider Fälle sind für unabhängige Prüfung
+[versioniert zugänglich](docs/reference/smr02-world-notes-recovery/README.md);
+`manifest.json` dort bindet jede Kopie an Originalpfad, Bytezahl und SHA-256.
 
 Offen bleiben unabhängige reale Fehler-/Recoveryqualifikation und die
 zusätzlichen Encounter-Constraint-/NPC-Combat-/World-Planner-Funktionen.

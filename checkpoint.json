@@ -69,6 +69,8 @@
         "reopenResultSha256": "733bf725841bef4e713f180718beca9ba5e602de7005d5907c000d9602f28cc1",
         "result": "committed journal from native tombstone before/after bytes deliberately left for fresh real Obsidian; owner validation and cleanup before World Notes mount, exact prose and tombstone preserved"
       },
+      "portableRecoveryEvidence": "docs/reference/smr02-world-notes-recovery/manifest.json",
+      "portableRecoveryEvidenceSha256": "a28136f9cc8b6b596462e6f1cf9d868a457ee9b3ac8e653aeb859246845ba353",
       "next": "Independent real failure and recovery qualification; retain broader Encounter constraint, NPC combat and World Planner requirements as open.",
       "limits": "No physical keyboard, power-loss, user-vault, full SMR-02 or overall product acceptance."
     },
