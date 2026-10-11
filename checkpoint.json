@@ -10560,18 +10560,18 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-BUILDING-NAME-I01",
+      "id": "CITY-BUILDING-NAME-SAVE-N01",
       "issue": 92,
-      "state": "inspector_independent_review_pass_native_edit_and_fresh_producer_pass_gm_recovery_pending",
-      "branch": "city/building-name-inspector",
+      "state": "direct_pending_name_save_race_fixed_city_rollback_retry_model_reopen_review_pending",
+      "branch": "city/building-name-save-rollback",
       "plan": "docs/plans/city/building-name-inspector.md",
-      "verification": "2 core countercases and 3 managed DOM cases PASS; exact name/geometry/IDs, one dock/camera/context/history; native Save and fresh host-model mount; invalid/stale/ABA/revoked context retain input",
-      "next": "R02 PASS5481432379 consumed; H01 actual native Edit3/Fresh1 PASS, normalExit0 both, slot returned. Independent PR93 integration consumed at Shared5c09e96; S01-01 actual H01 buildsourcea12b609 corrected from original build artifacts. Next GM/Recovery/physical acceptance; first picking countercase preserved",
+      "verification": "Existing core/DOM/native H01 evidence retains original source. New direct pending-name Save countercase beforeFAIL/afterPASS, full native-file rollback then visible Retry with exact model FreshReopen and one History step; 1001 full-suite PASS, 0 FAIL, 1 existing skip; type/build/repo/diff PASS",
+      "next": "R02 PASS5481432379 consumed; H01 actual native Edit3/Fresh1 PASS, normalExit0 both, slot returned. Independent PR93 integration consumed at Shared5c09e96; S01-01 actual H01 buildsourcea12b609 corrected from original build artifacts. PR97 integrated at Shared0bebb85 closes S01-01. Direct pending-name Save stale capture reproduced and fixed by awaiting existing draft persistence then checking context. Next narrow Save review and native direct Save/failure qualification; first picking countercase preserved",
       "limits": "DOM pins hit/excludes GPU; separate H01 qualifies actual GPU picking/Edit/Save and fresh Obsidian process with synthetic input only. GM/physical/Recovery/overall parity open; #69/#41 inputs remain pending"
     },
     "nextRun": {
-      "id": "CITY-BUILDING-NAME-H01-CONSUME",
-      "focus": "Consume corrected actual H01 build identity through narrow S01-01 metadata review; PR93 integrated on Shared5c09e96. GM/Recovery acceptance remains open; no repeated native run on unchanged scope. #69/#41 retain pending inputs."
+      "id": "CITY-BUILDING-NAME-SAVE-R01",
+      "focus": "Review only shared Save sequencing fix and new City manifest-fault regression; original H01 retains its old product scope. Native direct Save/failure, GM/Recovery acceptance remain open. #69/#41 retain pending inputs."
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",

@@ -106,3 +106,22 @@ S01-01 korrigiert die Buildquellenangabe anhand der unveränderten Originale.
 PR93 ist separat auf Shared `5c09e96` integriert; dies schließt keine offene
 GM-/Recovery-/physische Abnahme. Rohdateien, ihre Hashbindungen und Produktcode
 bleiben unverändert.
+
+## Direkter Save und City-Rollback (#92)
+
+Ein noch offener Hausname plus direkter sichtbarer Save scheiterte bereits vor
+Publish mit „Native Atlas-Erfassung ist veraltet“. Die Namensübernahme startet
+asynchron die bestehende Entwurfssicherung; Save erfasste parallel deren sich
+ändernden Repositoryepoch. Der gemeinsame Saveconsumer wartet jetzt nach
+Keyübernahme auf diese Sicherung und prüft anschließend den Context erneut.
+Keine neue Queue, History oder Persistenz und kein automatischer Retry.
+
+Neue gezielte DOM-/Vaultadapterregression: nach gelungenem Citywrite injizierter
+Campaignmanifest-CAS-Fehler; ursprüngliche native Bytes vollständig zurückgerollt,
+exakter Name/Geometrie/IDs und eine Historywirkung im selben Repository/Context
+für Retry erhalten. Zweiter sichtbarer Save speichert ohne zusätzliche History;
+frisches Hostmodell öffnet die exakten Citybytes mit History0. Vor Fix FAIL,
+danach PASS. Das erweitert den früheren H01-Beleg nicht auf diesen neuen Saveweg.
+Enger unabhängiger Savereview und tatsächliche native direkte Save-/Fehlerprobe
+bleiben offen; freie GM-, physische und breite Recoveryabnahme bleiben erhalten.
+S01-01 ist auf Shared0bebb85 unabhängig integriert und geschlossen.
