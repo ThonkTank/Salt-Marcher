@@ -176,6 +176,8 @@ Exact-SHA-Hostlauf und keine visuelle Abnahme durch den Reviewer.
 Offen bleiben breitere Crash-/Recoveryqualifikation, physische Tastatur und die
 zusätzlichen Encounter-Constraint-/NPC-Combat-/World-Planner-Funktionen.
 Ortstags gegenüber Name-only-Anlage warten weiter auf die Zielregel in #44.
+Ein getrennter #68-Kandidat erweitert die Notizsuche um aktive Beziehungsnamen
+und Namen ihrer Ziele, ohne neue Datenhaltung; Codeprüfung und Integration stehen aus.
 
 ### SMR-03 – Party, Scene und Live Session
 
