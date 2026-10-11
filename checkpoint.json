@@ -13405,97 +13405,73 @@
     "plan": "ROADMAP-GM-PRODUCT-TESTING-PLAN.md",
     "focus": "Längere GM-Endanwenderabläufe, häufige Aktionen, Bedienkosten und UI-Überladung; belegte Nacharbeiten beauftragen und nachprüfen.",
     "currentRun": {
-      "id": "GM-E2E01-ATLAS-INSPECTOR-N04-FRESH-PROCESS-20261011-01",
-      "status": "completed_bounded_visible_fresh_process_saved_room_reuse_pass",
-      "owner": "Cloud-GM-Produkttester; existing #80 support claim; Hex retains parent and product ownership",
-      "branch": "codex/gm-n04-fresh-process-20261011 (documentation/evidence only)",
-      "issue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80",
-      "claim": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80#issuecomment-6105151600",
-      "preRunInstruction": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80#issuecomment-6105482002",
-      "previousSameSessionResult": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80#issuecomment-6105400641",
-      "scope": "One bounded follow-up only: find and reuse the already saved Torraum and exact Room-Key text through visible UI after a new own Obsidian process. No edit/save, Undo/Redo replay, zoom, other issue, user vault, product source change or broad gate.",
-      "documentationBase": "10defd5aca37a5090918f96c04254e4326840f86",
-      "productSource": "87ccdb2626c26622f15799f3af7faf05d9feee89",
-      "latestSharedAtEvidencePreparation": "10defd5aca37a5090918f96c04254e4326840f86",
-      "productDiffSinceTest": [
-        "src/main.ts",
-        "src/ui/atlas-city-building-panel.ts",
-        "src/ui/world-notes-panel.ts",
-        "src/ui/world-notes-view.ts"
-      ],
-      "relevantTargetFilesUnchanged": [
-        "src/ui/atlas-room-key-panel.ts",
-        "src/features/atlas/atlas-editor.ts"
-      ],
+      "id": "GM-UX-MANUAL-PLANNER-NAME-RETEST-20261011-01",
+      "status": "completed_bounded_visible_ui_pass",
+      "owner": "Cloud-GM-Produkttester; support only; City retains #69 and PR133 ownership",
+      "issue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/69",
+      "claim": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/69#issuecomment-6106563712",
+      "preRunInstruction": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/69#issuecomment-6106557641",
+      "previousCurrentRun": {
+        "id": "GM-E2E01-ATLAS-INSPECTOR-N04-FRESH-PROCESS-20261011-01",
+        "issue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80#issuecomment-6105482002"
+      },
+      "branch": "codex/gm-manual-planner-name-retest-20261011 (checkpoint and evidence only)",
+      "candidate": {
+        "pr": 133,
+        "source": "0e6a4164fdfcc85b5f57f3bc9766959002b166c8",
+        "mergedShared": "6df23a7d30c415b026682473ed154d890ed8cb65"
+      },
+      "scope": "Independent visible browser retest of the unsubmitted plan-name retention repair only: same-plan scene add/apply/discard/move/select; explicit rename; new-plan isolation. No full planner review or persistent storage claim.",
+      "sourceCheck": "PR133 is merged. `git diff 0e6a4164fdfcc85b5f57f3bc9766959002b166c8..6df23a7d30c415b026682473ed154d890ed8cb65 -- src tools/manual-planner-preview build.mjs package.json package-lock.json` returned no paths; tested product, preview, and build inputs match merged Shared.",
       "build": {
-        "command": "npm run build (previous exact N04 run; no rebuild in this continuation)",
-        "result": "PASS; Node v24.19.0; dirty:false; exact sourceRevision 87ccdb2626c26622f15799f3af7faf05d9feee89",
-        "installedTripletByteEqual": true,
-        "mainJsSha256": "2164be282b49bda3b56a9050d0d26888f7945271d51576e2a8de5109b4f9b0a0",
-        "stylesCssSha256": "df11f8352b61e45d3984d29e0136fc0225aaabe85c7b004a3b55eb0c6cc52934",
-        "manifestJsonSha256": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64"
+        "command": "node tools/manual-planner-preview/build.mjs",
+        "result": "PASS; Node v24.19.0; generated the preview bundle from exact source 0e6a4164fdfcc85b5f57f3bc9766959002b166c8",
+        "indexHtmlSha256": "70adfc9890574f687cf1821fd3cbd5f83e0cb63e290c98a4b70e9e20910b7098",
+        "previewJsSha256": "62677830b1934162a4e0e6d1df85de869274e08eaf62cb221eb5e55434aedff9"
       },
       "host": {
-        "containerId": "e49e330d328c1e2d97e6f46a677e34f5f288c4dab7b41db242d3584e4ab66b33",
-        "containerName": "gm-city-cloud-isolated-20261011",
-        "app": "Obsidian 1.14.4 / Electron 43.7.7",
-        "profile": "/qa/gm-n04-profile",
-        "vault": "/dev/shm/gm-n04-vault",
-        "priorProcessPid": 2159,
-        "freshProcessPid": 3964,
-        "display": "own Xvfb :101, 1440x1000; app content area 1024x800 CSS px; devicePixelRatio 1",
-        "input": "Visible UI through own isolated Cloud CDP; not physical input"
+        "browser": "Chromium 151.0.7922.173, headless visual browser",
+        "input": "Playwright clicking/filling visible labelled controls; not physical input",
+        "viewport": "1440x1000 CSS px; DPR 1",
+        "origin": "local-only HTTP at 127.0.0.1:8779; stopped after run",
+        "pageErrors": []
       },
       "fixture": {
-        "source": "tests/fixtures/atlas-e2e-spatial-v2/input at 87ccdb2626c26622f15799f3af7faf05d9feee89",
-        "vault": "same previously saved synthetic test vault; source fixture untouched"
+        "kind": "fresh synthetic memory-only blank plan; no Obsidian vault or user data",
+        "reloadBoundary": "preview visibly states that reload/close discards all plans"
       },
       "visibleResults": [
-        "Closed prior N04 app via its own CDP Browser.close; prior PID disappeared without forced termination.",
-        "Started a fresh Obsidian process on the same isolated profile and synthetic vault; visible Atlas opened with Gespeichert and Torheim marker.",
-        "Clicked the visible Torheim marker, scrolled the visible inspector, typed Torraum in search, and activated the visible Raum 1: Torraum result.",
-        "Fresh process visibly showed Room-Key, Torraum, room number 1 and exact previously saved text: ## Eingang / Die Basalttür ist verschlossen. / Nur das dritte Klopfen antwortet.",
-        "No edit, Apply, Save, Undo or Redo occurred in this continuation; this is the requested read-only fresh-process reuse follow-up."
+        "Entered exact unsubmitted plan name `  Hafen 日本語 ` in the visible Planname field.",
+        "Scene add retained exact input; selected model plan remained Unbenannter Plan.",
+        "Applied a scene titled Ankunft am Salztor with exact note; pending plan name remained exact and was not implicitly committed.",
+        "Discarded a dirty second-scene draft; draft fields cleared and pending plan name remained exact.",
+        "Applied a second scene titled Archiv; moved it above Ankunft am Salztor; visible order changed correctly and the pending name remained.",
+        "Selected Ankunft am Salztor; title/note context changed to that scene and the pending plan name remained exact.",
+        "Explicit Umbenennen committed the exact pending string, including leading/trailing spaces and Japanese characters, in the selected plan label.",
+        "Typing a different unsubmitted name then creating a new plan left the new plan blank/Unbenannter Plan; the prior explicitly named plan remained selectable. No text leaked into the new plan."
       ],
-      "payloadSha256AfterAndUnchanged": {
-        "atlas": "76e0a82a939f5c2b16c08f153cca827e4efd8d5920915c997ae2a3fc6d16de07",
-        "terrainMinus1": "4e09dbcf59e5f81a35f0c72c44511b35073696cf079613f5d001baceeb59e358",
-        "terrain0": "c32ba3548aa7236e573e145ec0e3c6e75326cc6cd47134a19c2230d2d790f2f2",
-        "dungeon": "39b6896fef75f73fa6725d4792b07aca3de682d94c678353165fcf5e10286c9e",
-        "campaign": "a2fd470149a9d9f546d6382dd67e4f881764c86351122345f0700aa680146366",
-        "location11": "ac888059f997b3c0f697e2152c9d59375543d6d2004356f1eef482fd4ec27ab7",
-        "location12": "57b455592dc30e0ab9e3286a56f27a408453b7a2a3b617eee03ea089ed963b5b",
-        "city": "d7ac830f0b1a1b2e20a396a8515cf6afa0b777e46ee39f0a5b39a75bd8a6184c"
-      },
       "checks": [
-        "Bounded visible fresh-process find/reuse PASS; exact prior built/installed product triplet reused without rebuilding.",
-        "Own synthetic vault payload hashes remained unchanged in the read-only continuation; source fixture untouched.",
-        "npm run check:repo: PASS; git diff --check: PASS.",
-        "sha256sum -c docs/reference/gm-cloud-n04-20261011/SHA256SUMS.txt: PASS for all 12 screenshots.",
-        "sha256sum -c docs/reference/gm-cloud-n04-20261011/FIXTURE-SHA256SUMS.txt from tests/fixtures/atlas-e2e-spatial-v2/input: PASS for all 8 fixture payloads.",
-        "No automated product test suite run or substituted for visible UI."
+        "Visible UI sequence PASS for the scoped actions above; all expected field values/order/context matched.",
+        "No page errors.",
+        "Screenshot and preview hashes verified against their manifests."
       ],
+      "evidence": {
+        "repositoryPath": "docs/reference/gm-cloud-manual-planner-name-retest-20261011/",
+        "runNotes": "RUN-NOTES.txt",
+        "screenshots": "00-start.png through 10-create-new-plan.png",
+        "screenshotHashes": "SHA256SUMS.txt",
+        "previewHashes": "PREVIEW-SHA256SUMS.txt"
+      },
       "notDemonstrated": [
-        "New edit/save after fresh-process reopen; another fresh-process cycle; save/Undo/Redo retest.",
-        "Physical keyboard/mouse, product latency, 200% zoom, external clipping, original-map parity, large-map behavior, recovery, player projection or broad Atlas/Dungeon/E2E acceptance.",
-        "UI test on latest Shared 10defd5; evidence remains pinned to installed source/build 87ccdb2."
+        "Obsidian plugin installation or native host path.",
+        "Reload/close, Save, durable state, Fresh/Reopen or Recovery; preview is memory-only.",
+        "Campaign/Data storage authority or PR86.",
+        "Physical keyboard/mouse, 200% native zoom, product latency, user cards, broad planner review or overall acceptance."
       ],
-      "evidence": "docs/reference/gm-cloud-n04-20261011/README.md continuation and screenshots/09-12; SHA256SUMS.txt; prior fixture manifest retained.",
       "changedFiles": [
-        "checkpoint.json (gmProductTesting root only)",
-        "docs/reference/gm-cloud-n04-20261011/README.md",
-        "docs/reference/gm-cloud-n04-20261011/SHA256SUMS.txt",
-        "docs/reference/gm-cloud-n04-20261011/screenshots/09-fresh-process-atlas-open.png",
-        "docs/reference/gm-cloud-n04-20261011/screenshots/10-fresh-process-torheim-selected.png",
-        "docs/reference/gm-cloud-n04-20261011/screenshots/11-fresh-process-room-search.png",
-        "docs/reference/gm-cloud-n04-20261011/screenshots/12-fresh-process-room-key-text.png"
-      ],
-      "next": "Deliver this single source-bound fresh-process result to Hex at #80. Do not repeat the already observed save/UndoRedo/131% path; Hex retains the parent and decides its consequence. Keep physical, recovery, player-projection and broad E2E gates open.",
-      "publishedEvidencePr": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/125",
-      "resultComment": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80#issuecomment-6105912997",
-      "reportedStatus": "completed; report delivered to Hex at the existing #80 task",
-      "publishedEvidenceCommit": "6fc9019a60e4c9e8706fa2755b13c1288fdfcaae",
-      "followupCheckpointCommit": "2aa2976fde7834607f6c91f3c38205411d5747c3"
+        "checkpoint.json: gmProductTesting.currentRun and gmProductTesting.next only",
+        "docs/reference/gm-cloud-manual-planner-name-retest-20261011/*: raw screenshots and hash/run manifests"
+      ]
     },
     "executedUiRuns": 24,
     "observedFindings": [
@@ -13665,7 +13641,7 @@
       "state": "completed",
       "supersedes": "GM-UX-ACCESS; Slotanfrage gemäß Nutzerkorrektur aufgehoben"
     },
-    "next": "Bei nächster passender Ausführung ausschließlich den bestehenden #80-N04-Fresh-Process-Support mit Hex als Parentowner fortsetzen, falls Claim/Eingang weiterhin frei und gültig sind; keine City-Wiederholung ohne relevanten Produktpfadwechsel.",
+    "next": "After this bounded #69 preview retest, no further planner replay without another relevant product delta. Resume the already-owned #127 midpoint rotation retest when the isolated Cloud Docker host is usable; durable Planner storage remains a separate City/Campaign input.",
     "automation": "Stündliche GM-Produkttests in eigener Cloud; keine Laptop-Slotfreigabe erforderlich.",
     "executionEnvironment": "Eigene Cloud-Umgebung, getrennt vom Laptop der Kollegen",
     "cloudHost": {
