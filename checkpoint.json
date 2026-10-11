@@ -11088,18 +11088,18 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY127-CENTER-H02",
-      "issue": 127,
-      "state": "native_midpoint_save_fresh_pass_qa_review_pending",
-      "branch": "city/building-rotation-host-20261011",
-      "plan": "docs/plans/city/building-name-inspector.md#arbeitsstand-127",
-      "verification": "PR132 independent R01/Exact-CI PASS; regular Shared25792fb integration consumed. H02 on clean QA92e4b82/build08537145: visible centered house106 rotation/UndoRedo/native Save plus separate fresh process PASS; normal app.quit/Exit0/no forced termination. Six foreign spatial files unchanged; full Campaign semantic oracle except expected City/registry digest and revision fields. Portable receipt/images/JSON in docs/reference/city-building-rotation-h02.",
-      "next": "Independent narrow H02/helper review and regular PR130 QA integration. Original H01 Campaign claim corrected without rewriting raw evidence. #69 native storage contract and free GM/full City parity remain open.",
-      "limits": "Automated input and prepared navigation; no physical/free GM/house105 native/overall pass. Local slot returned. Registry revision/digest derivation not independently recomputed."
+      "id": "CITY69-PLAN-NAME-SCENE-I01",
+      "issue": 69,
+      "state": "ui_repair_verified_independent_review_pending",
+      "branch": "city/planner-name-scene-retention-20261011",
+      "plan": "docs/plans/campaign/manual-session-planner.md",
+      "verification": "Five real panel regressions FAIL before/PASS after; typed name retained exactly through successful same-plan scene add/apply/discard/move/select, no implicit rename. New-plan isolation and existing external-basis refresh guards PASS. Full suite1090 PASS/0 FAIL/1 existing optional PDF skip; type/build/repository PASS.",
+      "next": "Publish narrow UI repair for independent review and regular integration; supply browser GM retest. Campaign/Data native storage contract remains open.",
+      "limits": "DOM UI proof only; no native Planner storage, plugin activation, Save/Fresh/Recovery or physical/overall acceptance. City127 product PR132 and QA PR130 consumed on Shared29e4ce6; free GM remains open."
     },
     "nextRun": {
-      "id": "CITY127-H02-REVIEW",
-      "focus": "Consume narrow QA oracle/evidence review; native midpoint path supplied. Free GM contribution remains available after own cloud host repair."
+      "id": "CITY69-PLAN-NAME-SCENE-REVIEW",
+      "focus": "Independent review and browser retest of exact same-plan name retention repair; native storage depends on Campaign/Data contract."
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
