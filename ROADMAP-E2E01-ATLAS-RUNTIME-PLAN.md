@@ -106,7 +106,9 @@ IDs/Geometrie und gemeinsame Besitzer erhalten, History0/clean/kein Draft/pendin
 Alle acht nativen Dateien bleiben vor/nach Navigation und normalem app.quit
 bytegleich; vier neue PIDs weg, Runner0/PASS/keine Zwangstermination, Slot zurück.
 Beleg: `acceptance.hexAtlas.requirements[30].dungeonAtLocationRoomScopeSaveFreshF02`.
-PR142 vor Start qualifiziert konsumiert; Atlaspfade unverändert, Bild direkt gelesen.
+PR142 vor Start konsumiert; PR144/Entscheidungsweg als Shared88a14b59 vor
+Veröffentlichung konsumiert. Atlaspfade unverändert, Bild direkt gelesen;
+tatsächliche native Quelle bleibt019f7a7d.
 
 **Nächster ausführbarer Hex-Beitrag:** Auf isolierter Kopie des gespeicherten
 Raum-Keys sichtbare Room31-Bearbeitung → Karte/Entwurf verwerfen/Bestätigung;

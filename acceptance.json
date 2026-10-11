@@ -159242,7 +159242,28 @@
             "historicalReceipts": true,
             "userVaultTouched": false
           },
-          "finishedAt": "2026-10-11T08:12:27.566285+00:00"
+          "finishedAt": "2026-10-11T08:12:27.566285+00:00",
+          "publicationIncoming": {
+            "shared": "88a14b59bff3175e413895e97931b1e63693612f",
+            "plannerFocusStyle": {
+              "pullRequest": 144,
+              "exactHead": "9d50a8f138c3bc0ac53abefb45e5625435cf110d",
+              "merge": "a5a91028c64d85efeb54538f174ac752e1ee500e",
+              "independentPass": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/144#issuecomment-6106994762",
+              "steward": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/144#issuecomment-6106998349",
+              "exactCI": 38123733455,
+              "mergeCI": 38123869257,
+              "styleScope": "Only .dn-manual-planner interactive controls:focus; no Atlas style change"
+            },
+            "decisionContract": {
+              "commit": "9a1c7f61ee67c39dda8907f779890eb57768bd03",
+              "currentSharedCI": 38123882656,
+              "ciConclusion": "SUCCESS",
+              "consumed": "Updated common/contributor and Repository decision paths read; own #80 scope and next action retained"
+            },
+            "nativeEvidenceSourceUnchanged": "019f7a7dd2844edc615977a21c90673aad477db5",
+            "qualification": "Relevant Atlas/View/Room/Location/Host/fixture paths unchanged; no new native GUI/build/full-suite run solely for later SHA."
+          }
         }
       }
     ],

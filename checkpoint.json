@@ -1040,7 +1040,8 @@
       "guiUsed": true,
       "productEdited": false,
       "phaseApproval": false,
-      "slotHeld": false
+      "slotHeld": false,
+      "currentSharedConsumed": "88a14b59bff3175e413895e97931b1e63693612f"
     },
     "nextRun": {
       "id": "E2E-01-HEX04-ROOM-DISCARD-D02",
