@@ -87,6 +87,7 @@ export class AtlasEditor {
   private initialization?: Promise<void>;
   private detailEntry?: AtlasDetailEntry;
   private detailHost?: HTMLElement;
+  private inspector?: HTMLElement;
   private loadingVisible = false;
   private visibleLoad: Promise<void> = Promise.resolve();
   private visibleLoadFailed = false;
@@ -287,10 +288,22 @@ export class AtlasEditor {
       },
       terrain,
     );
-    if (storage.locations) {
+    if (storage.locations || storage.spatial) {
       const host = doc.createElement("aside");
       host.className = "dn-atlas-location-dock";
+      host.hidden = true;
+      this.inspector = host;
       body.append(host);
+      const actions = doc.createElement("div"), close = doc.createElement("button");
+      actions.className = "dn-atlas-inspector-actions";
+      close.type = "button";
+      close.textContent = "Zur Karte";
+      close.setAttribute("aria-label", "Key-Inspector schließen");
+      close.addEventListener("click", () => this.closeInspector(), { signal: this.abort.signal });
+      actions.append(close); host.append(actions);
+    }
+    if (storage.locations) {
+      const host = this.inspector!;
       const keyHost = doc.createElement("div");
       host.append(keyHost);
       this.key = new LocationKeyPanel(keyHost, {
@@ -325,8 +338,8 @@ export class AtlasEditor {
           this.renderer.host.dataset.spatialError = String(error);
         }
       };
-      const host = doc.createElement("aside");
-      body.append(host);
+      const host = doc.createElement("div");
+      this.inspector!.insertBefore(host, this.detailHost ?? null);
       this.roomKey = new AtlasRoomKeyPanel(host, {
         read: (id) => storage.spatial!.dungeon(id),
         changed: () => this.refreshHistory(),
@@ -382,6 +395,28 @@ export class AtlasEditor {
   private applyKeys(): void {
     this.key?.apply();
     this.roomKey?.apply();
+  }
+  private closeInspector(): void {
+    if (this.closed || this.inputBlocked || this.flushing || this.pointer) return;
+    this.enqueue(() => {
+      // Use the same checked commit as leaving a Key through navigation or the map.
+      // Invalid text must keep its visible draft and selection; no clear happens first.
+      this.applyKeys();
+      ++this.selectionVersion;
+      this.selectedLocation = undefined;
+      this.selectedRoom = undefined;
+      this.key?.clear();
+      this.roomKey?.clear();
+      if (this.spatial) {
+        this.spatial.selection = undefined;
+        this.spatial.selectedRoom = undefined;
+      }
+      this.renderer.selectedLocation = undefined;
+      this.syncLocations();
+      this.selection.textContent = "Karte";
+      this.renderer.schedule();
+      this.viewport.focus();
+    });
   }
   private cancelCity(): void {
     this.cityDrag?.gesture.cancel();
@@ -651,11 +686,14 @@ export class AtlasEditor {
     }
   }
   private syncLocations(): void {
+    if (this.inspector)
+      this.inspector.hidden = !this.selectedLocation && !this.selectedRoom && !this.pendingKey;
     if (this.detailEntry && this.detailHost) {
       this.detailHost.hidden = !this.selectedLocation;
       if (this.selectedLocation) this.detailEntry.update(this.storage.navigation!.details(this.selectedLocation));
     }
     if (this.selectedRoom && this.roomKey) {
+      if (this.key) this.key.host.hidden = true;
       this.roomKey.show(this.selectedRoom.ownerId, this.selectedRoom.roomId);
       this.selection.textContent = "Raum-Key";
       return;
@@ -671,6 +709,7 @@ export class AtlasEditor {
       this.terrain.placements().some((p) => p.locationId === id)
     ) {
       this.key?.show(document);
+      if (this.key) this.key.host.hidden = false;
       this.selection.textContent = `${document.type === "city" ? "Stadt" : "POI"}: ${document.name}`;
     } else if (!this.pendingKey) this.key?.clear();
     this.renderer.selectedLocation = id;
@@ -1184,7 +1223,16 @@ export class AtlasEditor {
     win.addEventListener(
       "keydown",
       (e) => {
-        if (this.inputBlocked || this.closed || this.root.ownerDocument.activeElement !== this.viewport) return;
+        if (this.inputBlocked || this.closed) return;
+        const focused = this.root.ownerDocument.activeElement;
+        if (e.key === "Escape" && !e.isComposing && focused && this.root.contains(focused) &&
+          !this.pointer && (this.selectedLocation || this.selectedRoom || this.pendingKey)) {
+          e.preventDefault();
+          e.stopImmediatePropagation();
+          this.closeInspector();
+          return;
+        }
+        if (focused !== this.viewport) return;
         if (
           (e.ctrlKey || e.metaKey) &&
           ["s", "z", "y"].includes(e.key.toLowerCase())

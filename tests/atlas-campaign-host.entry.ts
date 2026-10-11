@@ -325,6 +325,89 @@ test("visible Dungeon-at-Location action, Room Key, back, Undo/Redo and Save sha
   await view.onUnloadFile(); services.close();
 });
 
+test("shared Key inspector closes with valid room input on the same camera and History, then saves exactly", async () => {
+  const f = await fixture(true), before = active(f), editor = f.editor()!;
+  await f.host().navigate(locationTarget);
+  const room = f.host().details(uuid(11)).entries.find((entry) => entry.target.kind === 'room')!;
+  await f.host().navigate(room.target);
+  const dock = f.content.querySelector<HTMLElement>('.dn-atlas-location-dock')!,
+    key = f.content.querySelector<HTMLElement>('.dn-atlas-room-key')!,
+    camera = structuredClone(editor.renderer.camera), depth = before.history.undoDepth,
+    source = before.repository.detail('dungeon', uuid(30)) as any,
+    original = source.read().documentBytes,
+    dungeonPath = [...f.vault.bytes].find(([, raw]) => raw === original)![0];
+  assert.equal(f.content.querySelectorAll('.dn-atlas-body > aside').length, 1);
+  assert.equal(key.parentElement, dock);
+  assert.equal(f.content.querySelector<HTMLElement>('[aria-label="Orts-Key"]')!.hidden, true);
+  assert.equal(key.hidden, false); assert.equal(dock.hidden, false);
+  f.input('[aria-label="Raumname"]', 'Raum mit direktem Kartenrückweg');
+  f.click(f.content.querySelector<HTMLButtonElement>('[aria-label="Key-Inspector schließen"]')!);
+  await settled(() => dock.hidden);
+  assert.equal(editor.pendingKey, false); assert.equal(key.hidden, true);
+  assert.equal(before.history.undoDepth, depth + 1);
+  assert.equal(source.read().document.entities.find((entity: any) => entity.id === uuid(31)).name, 'Raum mit direktem Kartenrückweg');
+  assert.deepEqual(editor.renderer.camera, camera);
+  assert.equal(active(f).repository, before.repository); assert.equal(active(f).history, before.history);
+  assert.equal(active(f).renderer, before.renderer); assert.equal(active(f).context.contextToken, before.context.contextToken);
+  assert.equal(f.document.activeElement, editor.viewport);
+  // Reopen the cached Location/Room panels; hidden state must not survive their cached show().
+  await f.host().navigate(locationTarget);
+  assert.equal(f.content.querySelector<HTMLElement>('[aria-label="Orts-Key"]')!.hidden, false);
+  await f.host().navigate(room.target); assert.equal(key.hidden, false);
+  f.click(f.content.querySelector<HTMLButtonElement>('[aria-label="Key-Inspector schließen"]')!);
+  await settled(() => dock.hidden);
+  assert.equal(before.history.undoDepth, depth + 1);
+  f.click(f.content.querySelector<HTMLButtonElement>('[aria-label="Atlasänderung rückgängig"]')!);
+  await editor.flush(); assert.equal(source.read().documentBytes, original);
+  f.click(f.content.querySelector<HTMLButtonElement>('[aria-label="Atlasänderung wiederholen"]')!);
+  await editor.flush();
+  f.click(f.content.querySelector<HTMLButtonElement>('[aria-label="Atlas speichern"]')!);
+  await settled(() => !before.repository.dirty && !before.repository.hasDraft);
+  assert.equal(f.vault.bytes.get(dungeonPath), source.read().documentBytes);
+  await f.close();
+});
+
+test("Escape in the shared Key inspector retains invalid text and closes only after a valid correction", async () => {
+  const f = await fixture(true), before = active(f), editor = f.editor()!;
+  await f.host().navigate(locationTarget);
+  const dock = f.content.querySelector<HTMLElement>('.dn-atlas-location-dock')!,
+    camera = structuredClone(editor.renderer.camera), depth = before.history.undoDepth,
+    original = before.repository.location(uuid(11)).read()!;
+  const input = f.input('[aria-label="Ortsname"]', 'x'.repeat(201)); input.focus();
+  const escape = () => {
+    const event = new f.window.Event('keydown', { bubbles: true, cancelable: true });
+    Object.assign(event, { key: 'Escape', isComposing: false });
+    f.window.dispatchEvent(event); return event;
+  };
+  assert.equal(escape().defaultPrevented, true);
+  await settled(() => !!f.content.textContent?.includes('Ortsname ist zu lang'));
+  assert.equal(dock.hidden, false); assert.equal(input.value, 'x'.repeat(201));
+  assert.equal(editor.pendingKey, true); assert.equal(before.history.undoDepth, depth);
+  assert.deepEqual(before.repository.location(uuid(11)).read(), original);
+  f.input('[aria-label="Ortsname"]', 'Torheim nach Korrektur');
+  assert.equal(escape().defaultPrevented, true); await settled(() => dock.hidden);
+  assert.equal(before.repository.location(uuid(11)).read()!.name, 'Torheim nach Korrektur');
+  assert.equal(before.history.undoDepth, depth + 1);
+  assert.deepEqual(editor.renderer.camera, camera); assert.equal(f.document.activeElement, editor.viewport);
+  await f.close();
+});
+
+test("queued Key inspector close is revoked with the managed context and retains its pending text", async () => {
+  const f = await fixture(true), before = active(f), editor = f.editor()!;
+  await f.host().navigate(locationTarget);
+  const dock = f.content.querySelector<HTMLElement>('.dn-atlas-location-dock')!,
+    depth = before.history.undoDepth, original = before.repository.location(uuid(11)).read()!;
+  const input = f.input('[aria-label="Ortsname"]', 'Noch nicht übernommener Text');
+  let release!: () => void;
+  (editor as any).work = new Promise<void>((resolve) => { release = resolve; });
+  f.click(f.content.querySelector<HTMLButtonElement>('[aria-label="Key-Inspector schließen"]')!);
+  f.services.close(); release(); await tick();
+  assert.equal(dock.hidden, false); assert.equal(input.value, 'Noch nicht übernommener Text');
+  assert.equal(editor.pendingKey, true); assert.equal(before.history.undoDepth, depth);
+  assert.deepEqual(before.repository.location(uuid(11)).read(), original);
+  await f.view.onUnloadFile();
+});
+
 test("visible Dungeon move between Locations drops the old entry and Undo/Redo restore it on the same mount", async () => {
   const f = await fixture(true), before = active(f), editor = f.editor()!;
   const mill = { ...locationTarget, documentId: uuid(12), recordId: uuid(12) };

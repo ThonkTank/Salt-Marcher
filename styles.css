@@ -1146,6 +1146,8 @@
 .dn-atlas-retained-drafts { max-height: 25%; overflow: auto; }
 .dn-atlas-retained-drafts .dn-atlas { height: 300px; }
 .dn-atlas-location-dock { width: 320px; max-width: 40%; flex: 0 0 auto; overflow: auto; border-left: 1px solid var(--background-modifier-border); }
+.dn-atlas-location-dock[hidden] { display: none; }
+.dn-atlas-inspector-actions { position: sticky; top: 0; z-index: 1; padding: 8px 12px; background: var(--background-primary); border-bottom: 1px solid var(--background-modifier-border); }
 .dn-atlas-location-dock .dn-location-key { width: 100%; max-width: none; border-left: 0; }
 .dn-atlas-detail-entry { padding: 10px; }
 .dn-atlas-detail-entry input { width: 100%; }
