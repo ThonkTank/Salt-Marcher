@@ -14,7 +14,7 @@
 | `gm` | [GUI-Testrolle](AGENT-ROLES.md#gm-test); aktueller Ablauf am Aufgabenissue | [#8: Dungeonbefunde](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/8), übrige Befunde am jeweiligen Paket |
 | `catalog` | [Katalog und Encounter](../ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md) | [#9](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/9) |
 | `campaign` | [SaltMarcher-Portfolio / SMR-01 bis SMR-09](../ROADMAP-SALTMARCHER-REPLACEMENT.md) | [#10](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/10) |
-| `runtime` | [Party / LiveSession im Portfolio](../ROADMAP-SALTMARCHER-REPLACEMENT.md) | [#6](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/6) |
+| `runtime` | [Party / LiveSession im Portfolio](../ROADMAP-SALTMARCHER-REPLACEMENT.md), [Fachvertrag](plans/runtime/smr03-live-scene-contract.md), [Umsetzung](plans/runtime/smr03-implementation-plan.md) | [#6](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/6) |
 | `platform` | [Plattform-ADR](../ROADMAP-SALTMARCHER-PLATFORM-ADR.md) | [#11](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11) |
 | `repository` | [Pflegevertrag](REPOSITORY.md) | [#1](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1) |
 

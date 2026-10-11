@@ -27,14 +27,16 @@ test("authored prose, stable identities, relationship and search survive immutab
   const npc = changeWorldNotes(faction, context, context, faction.revision,
     { kind: "create", id: npcId, draft: npcDraft });
   npcDraft.relations[0]!.label = "verändert";
-  assert.equal(npc.records[1]!.relations[0]!.label, "Mitglied");
-  assert.equal(searchWorldNotes(npc, "mond")[0]?.id, factionId);
+  assert.equal(npc.records.find((record) => record.id === npcId)!.relations[0]!.label, "Mitglied");
+  assert.deepEqual(new Set(searchWorldNotes(npc, "mond").map((record) => record.id)),
+    new Set([factionId, npcId]));
   assert.equal(searchWorldNotes(npc, "geheim", ["npc"])[0]?.id, npcId);
   const reopened = worldNotesSnapshot(JSON.parse(JSON.stringify(npc)));
   assert.deepEqual(reopened, npc);
-  assert.equal(reopened.records[1]!.readAloud, "  Vorlesen:\nDer Mond steigt.  \n");
-  assert.equal(reopened.records[1]!.gmNotes, "# Geheim\n\n[[Alte Mühle]]\n");
-  assert(Object.isFrozen(reopened.records[1]!.relations[0]));
+  const reopenedNpc = reopened.records.find((record) => record.id === npcId)!;
+  assert.equal(reopenedNpc.readAloud, "  Vorlesen:\nDer Mond steigt.  \n");
+  assert.equal(reopenedNpc.gmNotes, "# Geheim\n\n[[Alte Mühle]]\n");
+  assert(Object.isFrozen(reopenedNpc.relations[0]));
 });
 
 test("stale context, revision, broken relation and deletion fail before changing the input", () => {
@@ -69,7 +71,8 @@ test("explicit unlink then tombstone keeps original prose and prevents identity 
   snapshot = changeWorldNotes(snapshot, context, context, snapshot.revision,
     { kind: "delete", id: factionId, expectedRevision: 1 });
   assert.deepEqual(searchWorldNotes(snapshot, "Nebelbund"), []);
-  assert.equal(snapshot.records[0]!.gmNotes, "# Geheim\n\n[[Alte Mühle]]\n");
+  assert.equal(snapshot.records.find((record) => record.id === factionId)!.gmNotes,
+    "# Geheim\n\n[[Alte Mühle]]\n");
   assert.throws(() => changeWorldNotes(snapshot, context, context, snapshot.revision,
     { kind: "create", id: factionId, draft: draft("faction", "Ersatz") }), /vergeben/);
 });
