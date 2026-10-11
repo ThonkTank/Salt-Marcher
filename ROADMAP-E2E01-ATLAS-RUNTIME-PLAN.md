@@ -39,80 +39,77 @@ Produktänderung, GUI, CITY oder E2E-02–04 begonnen.
 
 #### Arbeitsstand #80
 
-Hex besitzt Dungeon-am-Ort und den gemeinsamen Orts-/Raum-Inspector in einem
-Canvas, Repository und History (E2E-01 Nutzerzeile13). Verorten, Raum/Key und zurück
-sind integriert aus [PR81](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/81),
+Hex besitzt Dungeon-am-Ort und Orts-/Raum-Inspector im gemeinsamen Canvas,
+Repository und History (E2E-01 Nutzerzeile13); Stadt besitzt City/#92.
+Verorten, Raum/Key und Rückkehr sind aus
+[PR81](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/81),
 [PR87](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/87) und
-[PR78](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/78).
-Parent #80 und Hex-Fachwurzeln bleiben bei Hex; Stadt besitzt City/#92.
+[PR78](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/78) integriert.
+Parent #80 bleibt offen. Historische Belege erzeugen keine weiteren Aufträge.
 
 **Erhaltene Vorbelege:** [N02/Escape](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/91),
 [H02-Originalreceipt](docs/reference/atlas-detail-binding-d01/inspector-n02-native-h02.json),
 [Helperreview/Aussagekorrektur](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/96),
-[N03-Scrollanschluss](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/100#issuecomment-6104516785)
-und [D01-Geometrie](docs/reference/atlas-detail-binding-d01/inspector-zoom-geometry-d01.json)
-bleiben quellgebunden. Alter Selektor-FAIL und unzugängliche alte Cloudbilder
-werden nicht nachträglich als selbst geprüft erklärt.
-[N04-Originalreceipt](docs/reference/atlas-detail-binding-d01/inspector-horizontal-fit-n04.json)
-belegt kontrollierten horizontalen Dock-Fit bei100/131%; vertikales Scrollen
-bleibt nötig, äußerer Fenster-Clippingbefund wurde nicht reproduziert.
+[N03-Scrollanschluss](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/100#issuecomment-6104516785),
+[D01-Geometrie](docs/reference/atlas-detail-binding-d01/inspector-zoom-geometry-d01.json)
+und [N04-Originalreceipt](docs/reference/atlas-detail-binding-d01/inspector-horizontal-fit-n04.json)
+bleiben quellgebunden. N04 belegt horizontalen Dock-Fit bei100/131%; vertikales
+Scrollen bleibt nötig, äußerer Clippingbefund nicht reproduziert.
 [Stadt-R01/Contributor-S01](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/110#issuecomment-6105052692)
-qualifizierten und integrierten PR110 in0b6e435. Genaue native Quellen,
-History/Save/Frischprozess-Grenzen und alle Rohbelege stehen in den Hex-Einträgen.
+integrierten PR110 in0b6e435. Alte Selektorfehler/Bilder werden nicht umgedeutet;
+genaue Quellen, Grenzen und Rohbelege bleiben in den unveränderten Hex-Einträgen.
 
-**Freie GM-Nutzung samt Neustart konsumiert:**
-[Same-session-Weg](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80#issuecomment-6105400641)
-und [frische Wiederverwendung](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80#issuecomment-6105912997)
-zeigen Torheim → Suche Torraum → vollständiger gespeicherter Eingangstext.
-Die tatsächliche Produktbindung bleibt87ccdb2, kein aktueller-Shared-GUI-PASS.
-[Vier neue Bilder09–12](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/blob/6d03e5aa6708faa2a3c24206b4b025b23d234353/docs/reference/gm-cloud-n04-20261011/README.md#n04-continuation-fresh-obsidian-process-and-saved-room-reuse)
-selbst gelesen, alle12 Bildhashes geprüft; alte Bilder/Fixture erhalten.
-Hex-/Stadt-Belegprüfung PASS, [Contributor-S01](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/125#issuecomment-6105999844)
-integrierte PR125 in3af22a1; Head-/Shared-CI SUCCESS direkt geprüft.
+**GM-Weg und Neustart konsumiert:**
+[Same-session](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80#issuecomment-6105400641)
+und [FreshReuse](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80#issuecomment-6105912997)
+zeigen Torheim → Suche Torraum → vollständigen gespeicherten Eingangstext auf
+Produkt87ccdb2. Vier neue Bilder09–12 selbst gelesen, alle12 Hashes geprüft;
+[S01](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/125#issuecomment-6105999844)
+integrierte Beleghead6d03e5a in3af22a1; Head-/Shared-CI direkt SUCCESS geprüft.
 PIDs/Browser.close, Installtripel und Payloadorakel bleiben Testerberichte ohne
-volle Rohquittungen, kein selbst verifizierter LauncherExit0. Nur PR115 belegt131%
-horizontalen Fit; Suche/Aktivierung erfolgte100%. Neustartanschluss abgeschlossen,
-kein weiterer unveränderter GM-Auftrag. Genaue Grenzen stehen in FreshReuse.
+volle Rohquittungen, kein eigener LauncherExit0 oder aktueller-Shared-GUI-PASS.
+Nur PR115 belegt131%-Fit; Suche/Aktivierung100%. Kein unveränderter GM-Folgeauftrag.
 
-**Neuer Pflichtbefund repariert und integriert:** Stadt reproduzierte auf10defd5
-Location/Room × Ctrl/Meta+S bei aktiver IME: viermal vorzeitiger Historyschritt.
-Hex autorisierte ausschließlich Saveprädikat/Regression; Stadt lieferte
+**IME-Pflichtbefund integriert:** Stadt reproduzierte auf10defd5 vier vorzeitige
+Historyschritte bei Location/Room × Ctrl/Meta+S während Komposition.
 [PR126](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/126),
-Head1e2000b: beide Saveprädikate beachten `isComposing`.
+Head1e2000b, schützt beide Saveprädikate mit `isComposing`.
 [Hex-R01](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/126#pullrequestreview-5482076614)
-PASS: unabhängig vier Baselinegegenfälle FAIL, exakter Kandidat50/50 betroffene
-Managed/Vaultadapter-Hosttests PASS. Während Komposition bleiben Entwurf/History/
-Vaultbytes erhalten; danach speichert derselbe bestätigte Shortcut mit einem
-Historyschritt den exakten Payload. Kein Fokus-/Apply-/Escape-/Navigations-/
-Atlas-/Save-/Historyvertragsdelta.
-[Contributor-S01](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/126#issuecomment-6106002909)
-integrierte unveränderten Kandidaten in0b6aa819; CI38115663534 und
-Shared-Struktur38116230853 SUCCESS. Eltern/Baum, Guard-/Testblobs, GM- und fremde
-Wurzeln direkt geprüft und regulär im eigenen Checkout konsumiert.
-Dieser R01-Lauf war DOM-/Modellprüfung; nativer IME-Schutz bleibt offen.
+belegt vier Baseline-FAIL und50/50 betroffene Managed/Vaultadapter-Hosttests PASS.
+[S01](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/126#issuecomment-6106002909)
+integrierte in0b6aa819; CI38115663534/38116230853 SUCCESS, Eltern/Baum/Blobs und
+fremde Wurzeln geprüft. DOM-/Modellschutz ist belegt; nativer IME-Guard bleibt offen.
 
-**Aktueller enger Hosteingang H01:** [Quellgebundene Rohquittung](docs/reference/atlas-detail-binding-d01/inspector-ime-save-h01.json)
-auf eigenem5f542ded/qualifiziertem Shared0b6aa819: echter isolierter Obsidian1.14.4/
-Electron43.7.7-Host, neu gebautes/installiertes Tripel und Spatial-V2-Fixture.
-CDP-Komposition erreichte das Ortsnamenfeld (`isTrusted`, komponierendes Input).
-„H01 location Ctrl 東京“ blieb exakt pending, History0 und alle acht Dateibytes
-vor/nach normalem Appende unverändert. Das dokumentbasierte Feldprotokoll sah
-komponierendes Ctrl+S-`keyup`, aber keinen KeyS-`keydown`; die Probeassertion
-scheiterte deshalb (RunnerExit1 erhalten). Herkunft/Abfangstelle ist ungeklärt;
-kein nativer Guard-PASS und kein Produkt-FAIL. Die übrigen drei Fälle sowie
-Kompositionsabschluss/bestätigter Save wurden nicht ausgeführt.
-App.quit normal, vier PIDs verschwunden, keine Zwangstermination; der frisch mit
-Stadt koordinierte Slot ist ausdrücklich zurückgegeben, Nutzervault unberührt.
+**H01 erhalten, Zustellung durch H02 eingegrenzt:**
+[H01-Rohquittung](docs/reference/atlas-detail-binding-d01/inspector-ime-save-h01.json)
+auf5f542ded/Shared0b6aa819 sah Komposition und Ctrl+S-keyup, keinen KeyS-keydown
+im Dokument. [Neue H02-Rohquittung](docs/reference/atlas-detail-binding-d01/inspector-ime-save-h02.json)
+auf64b6eb58/qualifiziertem Shared25e6155 nutzt denselben unveränderten
+Location-/Room-/AtlasEditor-Code, neu gebautes/installiertes Tripel und Spatial-V2
+im isolierten Obsidian1.14.4/Electron43.7.7.
+`keyDown` und `rawKeyDown` liefern beide einen vertrauenswürdigen komponierenden
+Ctrl+S-keydown mit TargetOrtsname am Window-Capture. Dort sind bereits
+`defaultPrevented=true` und `cancelBubble=true`; Document/Panel/Field sehen nur
+keyup. Ein früherer Window-Capture-Handler stoppt die Weiterleitung; seine
+Identität bleibt offen. Registrierter Electron-before-input-Observer erhielt
+keinen Callback, daraus folgt kein nativer Interceptorbefund.
+„H02 Ortsname 東京“ bleibt exakt pending, History0, Modelle/Kamera und alle acht
+Dateibytes vor/nach normalem Appende unverändert. Probeassertion/RunnerExit1
+bleiben erhalten; kein nativer Panelguard-PASS und kein Produkt-FAIL. Kein
+Kompositionsabschluss/bestätigter Save oder Room/Meta-Folgefall ausgeführt.
+App.quit normal, vier PIDs weg, keine Zwangstermination; frisch koordinierter
+Slot ausdrücklich zurückgegeben. Keine Handlerumgehung/Produktänderung.
 
-**Nächster eigener Schritt:** Genau diese Keydown-Beobachtung am fokussierten
-Panel während Komposition herstellen: geeigneter Host-/IME-Eingang oder gezielt
-vollständigeres Ereignisprotokoll. Erst dann Guard/anschließenden Save beurteilen.
-Keine unveränderte H01-/N04-/Save-/UndoRedo-Wiederholung oder allgemeine Reviewrunde.
-Vor einem neuen lokalen GUI-Lauf den Slot ausdrücklich neu koordinieren.
+**Nächster eigener Schritt:** Tatsächlich stoppenden Window-Handler passiv
+identifizieren oder geeigneten nativen IME-Eingang herstellen. Erst mit belegtem
+komponierenden Save-keydown am Panel dessen Guard und bestätigten Save beurteilen.
+Keine Handlerersetzung/-umgehung, gefälschten KeyboardEvents, unveränderte
+H01/H02-Wiederholung oder Produktfix ohne Pflichtbefund. Neuer lokaler GUI-Lauf
+benötigt neue ausdrückliche Slotabstimmung; keine allgemeine Reviewrunde.
 
-**Offen:** Native IME, Copy/Discard/Recovery, äußeres Clipping, Gesamt-E2E sowie
-physische/Original-/Großkarten-/Nutzervaultabnahme behalten ihre direkten Nachweise.
-Kein abhängiger Detailausbau; Parent #80 bleibt offen. R01, H01 und
+**Offen:** Room/Meta, physische IME, Copy/Discard/Recovery, äußeres Clipping,
+Gesamt-E2E sowie Original-/Großkarten-/Nutzervaultabnahme behalten getrennte
+Nachweise. Kein abhängiger Detailausbau. R01/H01/H02 und
 N04-Qualification/FreshReuse spiegeln genaue Quellen und Grenzen.
 
 ## Historische Planbasis und Lieferbelege
