@@ -1007,34 +1007,33 @@
   "hexAtlasExecution": {
     "scope": "HEX-00 bis HEX-28 und sämtliche eingeordneten CITY-00 bis CITY-09 vollständig",
     "phase": "HEX-04",
-    "state": "native_zoom_geometry_diagnosed_horizontal_controls_overflow_repair_next",
+    "state": "horizontal_inspector_fit_native_owner_PASS_independent_review_pending",
     "plan": "ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md",
     "currentRun": {
-      "id": "E2E-01-HEX04-INSPECTOR-GM-N02-02-D01",
+      "id": "E2E-01-HEX04-INSPECTOR-GEOMETRY-REPAIR-N04",
       "owner": "Hex",
       "issue": 80,
       "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
       "e2e01UserLine": 13,
-      "state": "native_zoom_geometry_diagnosed_horizontal_controls_overflow_repair_next",
-      "sourceCommit": "bca790c22bdab5f76a28d3f1d4699f1f464c1572",
-      "kind": "bounded_actual_native_zoom_geometry_diagnosis",
-      "record": "checkpoint.hexAtlasExecution.dungeonAtLocationInspectorZoomGeometryD01",
+      "state": "horizontal_inspector_fit_native_owner_PASS_independent_review_pending",
+      "sourceCommit": "da3e06adefdcad20bdeaf57019c54f7b0fe08e0a",
+      "kind": "bounded_existing_common_Inspector_horizontal_fit_repair",
+      "record": "checkpoint.hexAtlasExecution.dungeonAtLocationInspectorHorizontalFitN04",
       "guiUsed": true,
-      "productEdited": false,
+      "productEdited": true,
       "phaseApproval": false,
-      "finishedAt": "2026-10-11T03:08:09.258360+00:00"
+      "finishedAt": "2026-10-11T03:19:59.921223+00:00"
     },
     "nextRun": {
-      "id": "E2E-01-HEX04-INSPECTOR-GEOMETRY-REPAIR-N04",
-      "kind": "bounded_existing_common_Inspector_horizontal_fit_repair",
+      "id": "E2E-01-HEX04-INSPECTOR-GEOMETRY-REPAIR-N04-QUALIFICATION",
+      "kind": "consume_scoped_independent_review_or_required_finding",
       "owner": "Hex",
       "issue": 80,
       "e2eIssue": 12,
       "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
       "e2e01UserLine": 13,
-      "input": "checkpoint.hexAtlasExecution.dungeonAtLocationInspectorZoomGeometryD01",
-      "focus": "fit existing Key actions and detail/binding target controls to available dock width and preserve same-target scrolling/navigation; then targeted layout/guard regression and qualified native followup. No blind external-dock CSS remedy.",
-      "fixtureVersion": "e2e01-spatial-v2",
+      "input": "checkpoint.hexAtlasExecution.dungeonAtLocationInspectorHorizontalFitN04",
+      "focus": "Stadt: scoped independent review of two product files and source-bound horizontal-fit evidence; then steward integration and qualified free GM followup. No dependent expansion or selfmerge.",
       "dependentExpansionAllowed": false,
       "newLocalGuiSlotRequired": true,
       "noCompetingCitySaveFix": true
@@ -5487,7 +5486,7 @@
       "platformIssue": 11,
       "checkpointIsAuthoritative": true
     },
-    "updatedAt": "2026-10-11T00:18:50.966384+00:00",
+    "updatedAt": "2026-10-11T03:19:59.921223+00:00",
     "consumerMatrix": {
       "id": "RUNTIME-MANIFEST-I02-CONSUMER-MATRIX-V1",
       "state": "frozen_complete_matrix_green_on_productive_Host_source",
@@ -7677,6 +7676,45 @@
         "external viewport clipping not reproduced, remains open",
         "no native Save/History acceptance or saved fresh restart",
         "no physical/Original/large-map/user-vault/full-E2E acceptance"
+      ]
+    },
+    "dungeonAtLocationInspectorHorizontalFitN04": {
+      "id": "E2E-01-HEX04-INSPECTOR-GEOMETRY-REPAIR-N04",
+      "owner": "Hex",
+      "issue": 80,
+      "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
+      "e2e01UserLine": 13,
+      "state": "horizontal_inspector_fit_native_owner_PASS_independent_review_pending",
+      "sourceCommit": "da3e06adefdcad20bdeaf57019c54f7b0fe08e0a",
+      "fixtureVersion": "e2e01-spatial-v2",
+      "fixtureManifestSha256": "23735bb6c95107b7dec93ffa56ec66405a0f4fe0ec3822fc0476d90d2920188d",
+      "receipt": "docs/reference/atlas-detail-binding-d01/inspector-horizontal-fit-n04.json",
+      "receiptSha256": "eaaca71c5235b72cf120347210dfeb26fc5a55b1b94a8f942074d5459822da0c",
+      "result": "existing Location/Room actions and detail/binding targets fit available dock width; native seven-sample horizontal-layout regression PASS, 131% sidebar-open153/153 versus D01 153/276 CSSpx",
+      "checks": {
+        "type": "PASS",
+        "fullSuite": {
+          "total": 1010,
+          "pass": 1009,
+          "fail": 0,
+          "skip": 1,
+          "skipScope": "existing optional external PDF fixture"
+        },
+        "build": "PASS",
+        "native": "seven layout samples PASS; all dock and rendered field/button boxes fit horizontally without scrolling",
+        "guardRegressions": "existing actual managed Host scroll, same-Key History, invalid draft/Escape/queued revocation and City inspector cases PASS in full suite; not native Save/History acceptance"
+      },
+      "independentReview": "pending",
+      "nextConsumer": "Stadt: scoped independent review of two product files and source-bound horizontal-fit evidence; then steward integration and qualified free GM followup. No dependent expansion or selfmerge.",
+      "guiUsed": true,
+      "productEdited": true,
+      "phaseApproval": false,
+      "limits": [
+        "owner native geometry only; independent targeted review/integration and free GM retest pending",
+        "original GM-N02-02 external-window clipping was not reproduced by D01 and is not dismissed or qualified as fixed",
+        "controls below the vertical scroll viewport still require normal scrolling; bounding-box evidence is horizontal fit, not simultaneous visibility of all fields",
+        "no native edit/Save/History/recovery acceptance or saved fresh-process proof in this geometry run",
+        "no physical input, Original-parity, large-map, user-vault installation or full E2E acceptance"
       ]
     }
   },

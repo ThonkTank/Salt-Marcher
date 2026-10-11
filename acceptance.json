@@ -156141,6 +156141,45 @@
             "no native Save/History acceptance or saved fresh restart",
             "no physical/Original/large-map/user-vault/full-E2E acceptance"
           ]
+        },
+        "dungeonAtLocationInspectorHorizontalFitN04": {
+          "id": "E2E-01-HEX04-INSPECTOR-GEOMETRY-REPAIR-N04",
+          "owner": "Hex",
+          "issue": 80,
+          "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
+          "e2e01UserLine": 13,
+          "state": "horizontal_inspector_fit_native_owner_PASS_independent_review_pending",
+          "sourceCommit": "da3e06adefdcad20bdeaf57019c54f7b0fe08e0a",
+          "fixtureVersion": "e2e01-spatial-v2",
+          "fixtureManifestSha256": "23735bb6c95107b7dec93ffa56ec66405a0f4fe0ec3822fc0476d90d2920188d",
+          "receipt": "docs/reference/atlas-detail-binding-d01/inspector-horizontal-fit-n04.json",
+          "receiptSha256": "eaaca71c5235b72cf120347210dfeb26fc5a55b1b94a8f942074d5459822da0c",
+          "result": "existing Location/Room actions and detail/binding targets fit available dock width; native seven-sample horizontal-layout regression PASS, 131% sidebar-open153/153 versus D01 153/276 CSSpx",
+          "checks": {
+            "type": "PASS",
+            "fullSuite": {
+              "total": 1010,
+              "pass": 1009,
+              "fail": 0,
+              "skip": 1,
+              "skipScope": "existing optional external PDF fixture"
+            },
+            "build": "PASS",
+            "native": "seven layout samples PASS; all dock and rendered field/button boxes fit horizontally without scrolling",
+            "guardRegressions": "existing actual managed Host scroll, same-Key History, invalid draft/Escape/queued revocation and City inspector cases PASS in full suite; not native Save/History acceptance"
+          },
+          "independentReview": "pending",
+          "nextConsumer": "Stadt: scoped independent review of two product files and source-bound horizontal-fit evidence; then steward integration and qualified free GM followup. No dependent expansion or selfmerge.",
+          "guiUsed": true,
+          "productEdited": true,
+          "phaseApproval": false,
+          "limits": [
+            "owner native geometry only; independent targeted review/integration and free GM retest pending",
+            "original GM-N02-02 external-window clipping was not reproduced by D01 and is not dismissed or qualified as fixed",
+            "controls below the vertical scroll viewport still require normal scrolling; bounding-box evidence is horizontal fit, not simultaneous visibility of all fields",
+            "no native edit/Save/History/recovery acceptance or saved fresh-process proof in this geometry run",
+            "no physical input, Original-parity, large-map, user-vault installation or full E2E acceptance"
+          ]
         }
       }
     ],

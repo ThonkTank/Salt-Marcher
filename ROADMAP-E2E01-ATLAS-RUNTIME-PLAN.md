@@ -90,31 +90,33 @@ integriert Notify-Snapshotkorrektur in a4f20a5, vor Hex-Geometrieprobe konsumier
 Cloud-GM-Save-Nachtest ist dessen separater Consumer; keine City-Abnahme oder
 konkurrierende Savekorrektur aus Hex-Geometrie.
 
-**Aktueller Reparatureingang GM-N02-02-D01:** [Native-Diagnosebeleg](docs/reference/atlas-detail-binding-d01/inspector-zoom-geometry-d01.json)
-auf sauber gebautem bca790c, Produktquellen gleich Shared a4f20a5, Fixture
- e2e01-spatial-v2. Isolierter tatsächlicher Obsidian1.14.4, Renderer1024×800,
-webFrame131% →782×611 CSSpx/DPR~1.31. Orts-/Raum-Dock liegt in allen gemessenen
-Snapshots innerhalb dieses Fensters. Äußeres Clipping hier nicht reproduziert,
-keine Aussage „behoben“ für den früheren GM-Befund.
+**D01-Eingang / N04-Reparatur:** [D01](docs/reference/atlas-detail-binding-d01/inspector-zoom-geometry-d01.json)
+auf bca790c zeigte153px Dockbreite/276px Inhalt bei131% mit Sidebar.
+Keyaktionen und Detail-/Bindungsziele liefen über; Dock innerhalb des Fensters.
+Früheres äußeres Clipping nicht reproduziert oder als behoben erklärt;
+erster Helper-Selektor-FAIL bleibt erhalten.
 
-Pflichtbefund: Mit geöffneter Sidebar153px nutzbare Dockbreite/276px Inhalt;
-Detail-/Bindungsbuttons ragen rechts heraus, „Hier verorten“ etwa111px,
-„Raumabschnitt“20px, Ortsaktion „Text verwerfen“71px. Geschlossene Sidebar:
-273/276px. Erster Helper hielt nach drei Ortsmessungen wegen Mehrfachtreffer;
-Selektor-FAIL/Rohdateien erhalten. Zweiter frisch koordinierter Host mit exakt
-beobachtetem Raumziel beendet die Raumprobe. Zwei normale Prozessenden, keine
-erzwungenen PIDs; acht native Dateien unverändert, gleiches Repository/History/
-Renderer/Context; keine Save-/Historyaktionen oder Produkt-/CSSänderung.
-Hex sah zwei PNGs direkt; Rohhashes/Helper/Lifecycle im Beleg, Cloudzugriff nicht
-unterstellt. Slot jeweils ausdrücklich zurückgegeben. Punktmessungen können
-Sidebar-Übergänge zeigen; kein Stabilitäts-/Latenz-PASS.
+[N04-Kandidat / Native-Beleg](docs/reference/atlas-detail-binding-d01/inspector-horizontal-fit-n04.json)
+auf da3e06a nach Shared76d8ded: Felder/Buttons an Dockbreite begrenzt, Aktionen und
+Zielnamen umbrechend, Buttonhöhe mitwachsend. Raumaktionen nutzen vorhandene
+Actionklasse. Zwei Produktdateien/acht Zeilen; Dockposition/-breite, Navigation,
+IDs, Stores, Kamera und History bleiben. Typ/Build/Repo und1010Tests
+(1009PASS/1bestehenderSkip); Scroll-/Draft-/Escape-/Revokations-/Cityfälle bestehen.
 
-**Nächster eigener Schritt:** Bestehende Keyaktionen und Detail-/Bindungsziele
-an verfügbare gemeinsame Dockbreite anpassen, Scroll-/Draft-/Navigationsguards
-erhalten; gezielte Layout-/Guardregression und qualifizierter Native-Nachtest.
-Kein blindes äußeres Dock-CSS, neuer Store oder Detailausbau. Vor jeder GUI Slot
-neu koordinieren. Copy/Discard/Recoverymatrix, Gesamt-E2E, physische/Original-/
-Großkarten-/Nutzervaultabnahme bleiben offen. #80 bleibt Hex.
+Tatsächlicher isolierter Obsidian1.14.4 mit gepackter CSS, sieben Layoutproben:
+Renderer1024×800/100% und131% (782×611CSSpx), Sidebar offen/geschlossen,
+Ortsaktionen/neues Raumfeld. Horizontal249/249,153/153 bzw273/273px;
+Dock/Kontrollboxen innerhalb, kein horizontaler Scroll. Vertikales Scrollen bleibt.
+Keine CSSinjektion oder native Save-/History-/Gesamtabnahme. Gleiche Repository/
+History/Renderer/Context, acht Dateien erhalten, normal beendet/keine erzwungenen
+PIDs; Slot frisch abgestimmt/zurückgegeben. Hex sah zwei PNGs direkt.
+Build/Fixture/Helper/Rohhashes im Beleg.
+
+**Nächster Empfänger:** Stadt: enger unabhängiger N04-Review; danach Stewardintegration
+und qualifizierter freier GM-Nachtest in #80. Keine neue allgemeine Atlas-/Planrunde
+oder Selbstintegration. Vor lokaler GUI Slot neu koordinieren. Copy/Discard/Recovery,
+früheres äußeres Clipping, Gesamt-E2E und physische/Original-/Großkarten-/Nutzervault-
+abnahme bleiben offen. Kein Detailausbau. #80 bleibt Hex.
 
 ## Historische Planbasis und Lieferbelege
 
