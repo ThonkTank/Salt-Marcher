@@ -391,8 +391,10 @@ function reconciliationDuties(
     }
   }
   return Object.freeze(
-    [...ownerStates.entries()].map(([ownerId, owner]) =>
-      Object.freeze({
+    [...ownerStates.entries()].map(([ownerId, owner]) => {
+      if (owner.ownerRevision === undefined)
+        throw new Error("Consumer-Pflicht besitzt keine gebundene OwnerRevision.");
+      return Object.freeze({
         ownerId,
         campaignId: state.campaignId,
         commandId: command.commandId,
@@ -401,9 +403,7 @@ function reconciliationDuties(
         targetSceneId: target.liveSceneId,
         expectedSourceRevision: command.expectedSourceRevision,
         expectedTargetRevision: command.expectedTargetRevision,
-        ...(owner.ownerRevision === undefined
-          ? {}
-          : { expectedOwnerRevision: owner.ownerRevision }),
+        expectedOwnerRevision: owner.ownerRevision,
         sourceLifecycleBefore: "active" as const,
         sourceLifecycleAfter: retired ? ("retired" as const) : ("active" as const),
         action: retired ? ("archive-source" as const) : ("remove-participants" as const),
@@ -411,8 +411,8 @@ function reconciliationDuties(
         maskIds: Object.freeze([...owner.maskIds]),
         status:
           owner.status === "current" ? ("required" as const) : ("pending" as const),
-      }),
-    ),
+      });
+    }),
   );
 }
 
@@ -494,6 +494,9 @@ export function moveCharacters(
           : {
               ownerId: entry.ownerId,
               status: "pending" as const,
+              ...(entry.ownerRevision === undefined
+                ? {}
+                : { ownerRevision: entry.ownerRevision }),
               commandId: command.commandId,
             },
       ),

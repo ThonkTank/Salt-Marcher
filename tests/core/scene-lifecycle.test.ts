@@ -500,6 +500,61 @@ test("unavailable mask owner cannot roll back a move and receives one bound pend
   );
 });
 
+test("generic unavailable consumer needs and retains an exact OwnerRevision", () => {
+  const unbound = structuredClone(prepare()) as Record<string, any>;
+  unbound.scenes[0].source.reconciliations = [
+    { ownerId: "weather-owner", status: "unavailable" },
+  ];
+  assert.throws(
+    () => parseLiveSessionAggregateState(unbound),
+    /gebundene OwnerRevision/,
+  );
+
+  unbound.scenes[0].source.reconciliations[0].ownerRevision = 7;
+  const state = parseLiveSessionAggregateState(unbound),
+    result = moveCharacters(
+      state,
+      commandBase("move-characters", {
+        commandId: "command-weather-pending",
+        commandDigest: "digest-weather-pending",
+        expectedPartyRevision: 1,
+        expectedFocusRevision: 1,
+        sourceSceneId: "scene-primary",
+        targetSceneId: "scene-prepared",
+        expectedSourceRevision: 0,
+        expectedTargetRevision: 0,
+        characterIds: ["character-b"],
+      }),
+    );
+  assert.equal(result.status, "applied");
+  if (result.status !== "applied") return;
+  assert.deepEqual(result.state.pendingReconciliations[0], {
+    ownerId: "weather-owner",
+    campaignId: "campaign-a",
+    commandId: "command-weather-pending",
+    commandDigest: "digest-weather-pending",
+    sourceSceneId: "scene-primary",
+    targetSceneId: "scene-prepared",
+    expectedSourceRevision: 0,
+    expectedTargetRevision: 0,
+    expectedOwnerRevision: 7,
+    sourceLifecycleBefore: "active",
+    sourceLifecycleAfter: "active",
+    action: "remove-participants",
+    characterIds: ["character-b"],
+    maskIds: [],
+    status: "pending",
+  });
+  assert.deepEqual(result.state.scenes[0]?.source.reconciliations, [
+    {
+      ownerId: "weather-owner",
+      status: "pending",
+      ownerRevision: 7,
+      commandId: "command-weather-pending",
+    },
+  ]);
+});
+
 test("state parser rejects active session membership gaps and mutable aliases", () => {
   const state = initialize(),
     raw = structuredClone(state) as Record<string, any>;

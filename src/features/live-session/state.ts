@@ -49,7 +49,7 @@ export interface PendingConsumerReconciliation {
   readonly targetSceneId: LiveSceneId;
   readonly expectedSourceRevision: Revision;
   readonly expectedTargetRevision: Revision;
-  readonly expectedOwnerRevision?: Revision;
+  readonly expectedOwnerRevision: Revision;
   readonly sourceLifecycleBefore: "active";
   readonly sourceLifecycleAfter: "active" | "retired";
   readonly action: "remove-participants" | "archive-source";
@@ -85,6 +85,7 @@ function parsePendingReconciliation(
         "targetSceneId",
         "expectedSourceRevision",
         "expectedTargetRevision",
+        "expectedOwnerRevision",
         "sourceLifecycleBefore",
         "sourceLifecycleAfter",
         "action",
@@ -92,7 +93,7 @@ function parsePendingReconciliation(
         "maskIds",
         "status",
       ],
-      ["expectedOwnerRevision"],
+      [],
       label,
     );
   if (
@@ -140,14 +141,10 @@ function parsePendingReconciliation(
       row.expectedTargetRevision,
       `${label}.expectedTargetRevision`,
     ),
-    ...(row.expectedOwnerRevision === undefined
-      ? {}
-      : {
-          expectedOwnerRevision: revision(
-            row.expectedOwnerRevision,
-            `${label}.expectedOwnerRevision`,
-          ),
-        }),
+    expectedOwnerRevision: revision(
+      row.expectedOwnerRevision,
+      `${label}.expectedOwnerRevision`,
+    ),
     sourceLifecycleBefore: "active",
     sourceLifecycleAfter: row.sourceLifecycleAfter,
     action: row.action,
@@ -248,6 +245,8 @@ function parseRuntimeScene(value: unknown, index: number): RuntimeSceneState {
       owner.ownerRevision !== maskRevision
     )
       throw new Error(`${label} enthält eine widersprüchliche OwnerRevision.`);
+    if (maskRevision === undefined && owner.ownerRevision === undefined)
+      throw new Error(`${label} benötigt eine gebundene OwnerRevision.`);
   }
   return Object.freeze({
     kind: "runtime-scene-state",
@@ -326,7 +325,6 @@ export function parseLiveSessionAggregateState(
         (mask) =>
           mask === undefined ||
           mask.ownerId !== duty.ownerId ||
-          duty.expectedOwnerRevision === undefined ||
           mask.ownerRevision !== duty.expectedOwnerRevision,
       )
     )
