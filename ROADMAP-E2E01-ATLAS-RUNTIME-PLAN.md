@@ -39,7 +39,9 @@ Produktänderung, GUI, CITY oder E2E-02–04 begonnen.
 
 #### Arbeitsstand #80
 
-Kandidat: https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/81
+Kandidat: https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/87
+
+Integrierte Implementierungsbasis: [PR #81](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/81).
 
 Konsumierte Save-/Referenzbasis: [PR #78](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/78).
 
@@ -52,17 +54,39 @@ schließt den R01-Befund. Der geprüfte Anschluss ist durch die
 [unabhängige Stewardintegration](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/81#issuecomment-6103211834)
 in Shared konsumierbar; eine weitere Reparaturreviewrunde ist nicht offen.
 
-Jetzt ausführbar: Hex prüft diesen Anschluss im isolierten tatsächlichen
-Obsidianhost einschließlich normalem Ende und frischem Electronprozess; zuvor
-den lokalen Slot neu koordinieren. Die vorhandenen Dungeon-/Placementkennungen
-und Orts-/Raumtexte müssen beim Verorten, A → B, gemeinsamen Undo/Redo und Save
-in der nativen Wiederöffnung erhalten bleiben. Danach den startbaren Hostweg
-am Aufgabenort dem bestehenden Cloud-GM-Kollegen zur frühen freien Nutzung
-übergeben, bevor darauf aufbauender Ausbau beginnt.
+Der [H01-Beleg](docs/reference/atlas-detail-binding-d01/dungeon-at-location-h01.json)
+bestätigt den sichtbaren Anschluss im isolierten tatsächlichen Obsidianhost:
+Orts-Key, vorhandenen Dungeon bei A verorten, nach B verschieben, Raum-Key und
+Zurück, gemeinsame Undo/Redo-Folge, Save und bytegleiche Wiederöffnung in einem
+separaten frischen Electronprozess. Vorhandene Kennungen, Geometrie und
+unbeteiligte Texte/City-/Terrainbytes bleiben erhalten. Beide erfolgreichen
+Prozesse sind normal beendet; der separat bestätigte lokale Slot ist zurückgegeben.
+Die zwei korrigierten QA-Prüfannahmen und ihre normalen Prozessenden bleiben
+im Beleg sichtbar; Produktcode wurde dabei nicht geändert.
 
-Obsidian-/Frischprozess- und GM-Nutzungsbelege fehlen weiterhin. E2E-01 und
-physische/Original-/Großkarten-/Installationsabnahmen bleiben offen; R02 und
-Integration bestätigen ausschließlich ihren Repository-/History-/Speicherscope.
+[Stadts unabhängiger Werkzeug-/Belegreview](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/87#pullrequestreview-5481256953)
+qualifiziert den H01-Eingang ohne Pflichtbefund. Die spätere Shared-Komposition
+und dieser Verbrauchsstand sind damit nicht als erneut exakt reviewt ausgewiesen;
+PR87 geht mit unveränderten H01-Quellen/Belegen an einen getrennten Integrator.
+
+Der [freie Cloud-GM-Ablauf](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80#issuecomment-6103561640)
+ist auf dem H01-Produkttripel begrenzt bestanden: vorhandenen Dungeon nach
+Torheim verorten, Raum-Key ändern, speichern, zur Karte zurückkehren und nach
+Dateischließen/-wiederöffnung denselben Text nutzen. Das ist ein fremder direkter
+GM-Beleg, kein von Hex wiederholter Lauf und kein frischer GM-Prozess. Seine
+Rohbilder bleiben Cloud-lokal; [versionierter GM-Checkpoint](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/89).
+
+Nächster eigener Beitrag: Hex beurteilt im bestehenden #80 die gemeldeten etwa
+118px Kartenbreite bei 1024×800 und den wenig auffindbaren Inspector-Abschluss
+(Escape/erneutes Raumklicken ohne Wirkung, Kartenklick schließt) vor weiterem
+Detailausbau. Noch keine Produktfehlerbehebung oder abhängige Erweiterung geliefert.
+Atlas-View/-Editor und Styles sind gegenüber dem konsumierten Shared bytegleich;
+der begrenzte GM-Beleg wird weitergenutzt, kein Voll-GUIlauf allein wegen neuer SHA.
+Ein exaktes neues Shared-Tripel ist beim GM wegen Cloud-ENOSPC ungeprüft und wird
+nicht als installiert behauptet. Parent #80 und das gemeinsame E2E-01-Gate sowie
+physische/Original-/Großkarten-/Installationsabnahmen bleiben offen.
+Der [startbare Build/Fixture/Host-Eingang](docs/reference/atlas-detail-binding-d01/dungeon-at-location-h01.md)
+und alle historischen Producer-/Save-/Recoverybelege bleiben erhalten.
 
 ## Historische Planbasis und Lieferbelege
 
