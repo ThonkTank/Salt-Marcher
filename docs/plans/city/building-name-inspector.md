@@ -53,16 +53,31 @@ und gespeicherten Namen in der Suche wiederfinden. Nur Haus106-Name verändert;
 Geometrie, Atlas, Terrain, Dungeon und Orte erhalten. Campaign-Digests aktualisiert.
 Dies schließt den konkret reproduzierten Save-Kollisionsbefund im getesteten Weg.
 
-**Nächster Consumer:** Die City-Nutzung braucht keinen weiteren unveränderten
-Apply/UndoRedo/Save-Nachtest. Offen bleibt im selben #92 der bisher fehlende
-Post-Save-App-Reload beziehungsweise frische Prozess des korrigierten Notifywegs.
-Der Bericht bestätigt Wiederverwendung durch Navigation, keinen Reload/Reopen;
-ältere H01/H02-Frischprozessbelege behalten ihre Quellen. Rohbilder liegen nur
-im Cloud-Runtime-/dev/shm und waren hier nicht selbst lesbar; GM-PASS ist der
-unabhängige Testerbericht, keine zusätzliche Stadt-Rohbildabnahme. Der Toolbar-
-Status „Entwurf gesichert“ wird nicht als dauerhafter Save gezählt; dessen Beleg
-ist der Inspector-Status „Gespeichert“ samt City-/Campaign-Dateiorakel.
-Physische Bedienung, breite Recovery und volle Stadtparität bleiben offen.
+**Post-Save-Fresh und Tastatur konsumiert:** Der [neue Cloud-GM-Bericht](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/92#issuecomment-6105664357)
+belegt auf sauberem installierten `eaf6bd95564ab398eabe9b2c0ac046feec079f0f`
+einen neuen Obsidianprozess nach Schließen des alten Prozesses: gespeicherten
+Hausnamen in der Suche wiederfinden, Haus öffnen, Namen erneut bearbeiten und
+über die Toolbar dauerhaft speichern. Das schließt die bisher fehlende
+Fresh-Process-Grenze des korrigierten Notifywegs im getesteten Ablauf.
+Der Tester meldet allein `buildings[1].name` als Cityänderung; IDs/Geometrie samt
+Hof und fremde räumliche Dateien erhalten, Campaignrevision/Digests aktualisiert.
+
+[PR120](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/120)
+archiviert den Bericht, Build-/Dateimanifeste und acht Bilder auf
+`1262cbf7f4994626fc6ccc459550ea6e7aceb209`. Stadt hat alle acht SHA-256-Bindungen
+und Bilder selbst geprüft: Suche/Inspector enthalten den gespeicherten Namen,
+der zweite Save zeigt „Gespeichert“. Vollständige After-Save-Dateien fehlen im
+Paket; der semantische Vergleich bleibt Testerbeleg. Prozesswechsel ist gemeldet,
+kein Launcher-Exitcode belegt. Ältere H01/H02-Originale bleiben unverändert.
+
+Der getrennte Tastaturlauf auf installiertem Shared
+`a4c2cb39aafdfb7abf5469e575a82e630ef41313` zeigt Übernehmen/Verwerfen per Enter,
+Fokus auf dem jeweils neu gerenderten Button und nächstes Tab zum Inspector-Save.
+Verwerfen erhält den zuvor übernommenen Namen. Hier wurde nicht gespeichert;
+die drei unveränderten City-/Atlas-/Campaignhashes sind Testerbeleg.
+Synthetische Cloud-Eingabe bleibt von physischer Bedienung getrennt.
+Direkter Save mit fokussiertem Namenfeld ist weiterhin nur Managed-DOM-geprüft;
+dessen sichtbarer Fokusnachtest, breite Recovery und volle Stadtparität bleiben offen.
 
 **Aktueller Tastaturanschluss:** Beim Übernehmen/Verwerfen ersetzte der
 Inspector den fokussierten Button; direkter Save konnte das fokussierte
@@ -77,10 +92,9 @@ bestehen nach Fix; vorhandene Guards, Fachaktion und Persistenz bleiben erhalten
 ist auf `14729dc` PASS; [reguläre Stewardintegration](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/117#issuecomment-6105543027)
 auf Shared `a4c2cb39aafdfb7abf5469e575a82e630ef41313` bestätigt.
 Exact-CI `38112395045` und Shared-Struktur `38112524672` sind SUCCESS.
-Offen bleibt die sichtbare Tastaturprüfung. Der laufende Cloud-Reopen-Nachtest
-bleibt an seinen tatsächlich installierten Build gebunden; anschließend kann
-der Tester den integrierten Fokusfix gezielt prüfen. Kein neuer DOM-, History-
-oder allgemeiner Save-Reviewauftrag.
+Die sichtbaren Apply-/Discard-Tastaturwege sind durch den oben gebundenen
+Cloud-Bericht geprüft. Nur der direkte-Save-Fokusfall hat noch keinen nativen
+Nachtest. Kein neuer DOM-, History- oder allgemeiner Save-Reviewauftrag.
 
 ## Inspector- und Fachaktionsbelege
 
@@ -127,7 +141,7 @@ ersetzt; Picking und echter Prozess-Neustart sind damit nicht qualifiziert.
 ## Verbleibende Umsetzung und Abnahme
 
 1. Notify-/City-Review und gezielter Cloud-GM-Save-Nachtest konsumiert.
-2. Post-Save-Reload/Fresh-Nachweis des korrigierten Notifywegs bleibt offen.
+2. Post-Save-Fresh und sichtbares Apply/Discard konsumiert; direkter-Save-Fokusfall nativ offen.
 3. Physische und breite Recoveryabnahme nach dem Fachvertrag bleiben eigenständige offene Grenzen.
 
 DOM-/Repository-/Modellreopen-Belege sind keine GPU-, native GUI-/Prozess-,
