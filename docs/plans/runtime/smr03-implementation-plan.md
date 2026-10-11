@@ -481,7 +481,8 @@ Duplikatnamen, vollständige Profilersetzung mit echter optionaler Abwesenheit,
 validierte XP-/Fortschrittskorrektur und ausgewählte Short-/Long-Rests. Alle
 Party-Befehle sind revisioniert, immutable und erhalten Scene-Zuordnungen
 unverändert; die Vollsuite steht bei 1010 PASS, null FAIL und einem
-beabsichtigten Skip. Die engen Zwischenreviews laufen.
+beabsichtigten Skip. Campaign/Data sowie Cloud Architektur/Technik bestätigen
+den Exact-SHA in ihren engen Zwischenreviews mit `PASS`.
 
 Noch offen und nicht durch den Checkpoint behauptet sind Party-Aktivierung und
 Deactivate/Delete, Split/Rejoin samt opaque
