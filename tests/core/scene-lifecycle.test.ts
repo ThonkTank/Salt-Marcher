@@ -7,8 +7,12 @@ import {
   deactivatePartyCharacter,
   initializeLiveSession,
   moveCharacters,
+  parseClockForkCreateContribution,
+  parseClockMergeContribution,
   parseLiveSessionAggregateState,
+  rejoinScenes,
   setFocus,
+  splitScene,
 } from "../../src/features/live-session";
 
 function frozenGraph(value: unknown, seen = new Set<object>()): boolean {
@@ -86,6 +90,7 @@ function initialize() {
         primarySceneId: "scene-primary",
         sceneClockRef: {
           ownerId: "clock",
+          generationId: "clock-generation",
           referenceId: "clock-primary",
           ownerRevision: 0,
         },
@@ -140,6 +145,7 @@ function prepare(state = initialize()) {
         liveSceneId: "scene-prepared",
         sceneClockRef: {
           ownerId: "clock",
+          generationId: "clock-generation",
           referenceId: "clock-prepared",
           ownerRevision: 0,
         },
@@ -153,6 +159,121 @@ function prepare(state = initialize()) {
   return result.state;
 }
 
+function clockValue(canonicalValue = "3600") {
+  return {
+    codecId: "smr07.elapsed-seconds",
+    codecVersion: 1,
+    canonicalValue,
+  };
+}
+
+function calendarDefinitionRef() {
+  return {
+    ownerId: "clock",
+    referenceId: "calendar-a",
+    ownerRevision: 3,
+  };
+}
+
+function clockRef(referenceId: string, ownerRevision = 0) {
+  return {
+    ownerId: "clock",
+    generationId: "clock-generation",
+    referenceId,
+    ownerRevision,
+  };
+}
+
+function forkContribution(overrides: Record<string, unknown> = {}) {
+  return {
+    kind: "clock-fork-create-contribution",
+    version: 1,
+    status: "prepared-unpublished",
+    receiptId: "receipt-clock-fork",
+    campaignId: "campaign-a",
+    commandId: "command-split-scene",
+    commandDigest: "digest-split-scene",
+    ownerIdentity: {
+      ownerId: "clock",
+      generationId: "clock-generation",
+    },
+    calendarDefinitionRef: calendarDefinitionRef(),
+    sourceSceneId: "scene-primary",
+    sourceSceneRevisionBefore: 0,
+    sourceSceneRevisionAfter: 1,
+    sourceClockRef: clockRef("clock-primary"),
+    sourceClockValue: clockValue(),
+    sourceClockRevisionAfter: 0,
+    targetSceneId: "scene-split",
+    targetSceneRevisionAfter: 0,
+    targetClockRefAfter: clockRef("clock-split"),
+    targetClockRevisionAfter: 0,
+    targetClockValueAfter: clockValue(),
+    sourceDisposition: "retain",
+    targetKind: "created",
+    choice: "source-confirmed",
+    ...overrides,
+  };
+}
+
+function splitPrimary(overrides: Record<string, unknown> = {}) {
+  const state = initialize(),
+    result = splitScene(
+      state,
+      commandBase("split-scene", {
+        expectedPartyRevision: 1,
+        expectedFocusRevision: 1,
+        sourceSceneId: "scene-primary",
+        expectedSourceRevision: 0,
+        targetSceneId: "scene-split",
+        targetClockRef: clockRef("clock-split"),
+        characterIds: ["character-b"],
+        title: "Scout group",
+        clockContribution: forkContribution(),
+        ...overrides,
+      }),
+    );
+  assert.equal(result.status, "applied");
+  if (result.status !== "applied") throw new Error("split failed");
+  return result.state;
+}
+
+function mergeContribution(overrides: Record<string, unknown> = {}) {
+  return {
+    kind: "clock-merge-contribution",
+    version: 1,
+    status: "prepared-unpublished",
+    receiptId: "receipt-clock-merge",
+    campaignId: "campaign-a",
+    commandId: "command-rejoin-scenes",
+    commandDigest: "digest-rejoin-scenes",
+    ownerIdentity: {
+      ownerId: "clock",
+      generationId: "clock-generation",
+    },
+    calendarDefinitionRef: calendarDefinitionRef(),
+    sourceSceneId: "scene-primary",
+    sourceSceneRevisionBefore: 1,
+    sourceSceneRevisionAfter: 2,
+    sourceClockRef: clockRef("clock-primary"),
+    sourceClockValue: clockValue(),
+    sourceClockRevisionAfter: 0,
+    targetSceneId: "scene-split",
+    targetSceneRevisionBefore: 0,
+    targetSceneRevisionAfter: 1,
+    targetClockRefBefore: clockRef("clock-split"),
+    targetClockRevisionBefore: 0,
+    targetClockValueBefore: clockValue(),
+    targetClockRefAfter: clockRef("clock-split", 1),
+    targetClockRevisionAfter: 1,
+    targetClockValueAfter: clockValue("-6"),
+    sourceDisposition: "archive",
+    targetKind: "existing",
+    choice: "manual-confirmed",
+    ...overrides,
+  };
+}
+
 function threePopulatedScenes() {
   const party = structuredClone(partyBeforeSession()) as Record<string, any>;
   party.characters[2].active = true;
@@ -164,6 +285,7 @@ function threePopulatedScenes() {
         primarySceneId: "scene-primary",
         sceneClockRef: {
           ownerId: "clock",
+          generationId: "clock-generation",
           referenceId: "clock-primary",
           ownerRevision: 0,
         },
@@ -205,6 +327,7 @@ function threePopulatedScenes() {
       liveSceneId: "scene-third",
       sceneClockRef: {
         ownerId: "clock",
+        generationId: "clock-generation",
         referenceId: "clock-third",
         ownerRevision: 0,
       },
@@ -241,6 +364,7 @@ test("explicit initialization creates one Primary, Focus and ordered membership 
         primarySceneId: "scene-primary",
         sceneClockRef: {
           ownerId: "clock",
+          generationId: "clock-generation",
           referenceId: "clock-primary",
           ownerRevision: 0,
         },
@@ -274,6 +398,7 @@ test("cancelled or stale initialization returns unchanged semantic state", () =>
         primarySceneId: "scene-primary",
         sceneClockRef: {
           ownerId: "clock",
+          generationId: "clock-generation",
           referenceId: "clock-primary",
           ownerRevision: 0,
         },
@@ -288,6 +413,7 @@ test("cancelled or stale initialization returns unchanged semantic state", () =>
         primarySceneId: "scene-primary",
         sceneClockRef: {
           ownerId: "clock",
+          generationId: "clock-generation",
           referenceId: "clock-primary",
           ownerRevision: 0,
         },
@@ -309,6 +435,7 @@ test("Prepared Runtime cannot create an implicit Live Session", () => {
         liveSceneId: "scene-prepared",
         sceneClockRef: {
           ownerId: "clock",
+          generationId: "clock-generation",
           referenceId: "clock-prepared",
           ownerRevision: 0,
         },
@@ -515,9 +642,13 @@ test("unavailable mask owner cannot roll back a move and receives one bound pend
     commandId: "command-move-unavailable",
     commandDigest: "digest-move-unavailable",
     sourceSceneId: "scene-primary",
-    targetSceneId: "scene-prepared",
+    target: {
+      kind: "existing",
+      liveSceneId: "scene-prepared",
+      revisionBefore: 0,
+      revisionAfter: 1,
+    },
     expectedSourceRevision: 0,
-    expectedTargetRevision: 0,
     expectedOwnerRevision: 3,
     sourceLifecycleBefore: "active",
     sourceLifecycleAfter: "active",
@@ -551,6 +682,12 @@ test("unavailable mask owner cannot roll back a move and receives one bound pend
   );
   assert.equal(second.status, "applied");
   if (second.status !== "applied") return;
+  assert.equal(second.state.scenes[1]?.source.sceneRevision, 2);
+  assert.equal(
+    second.state.pendingReconciliations[0]?.target.kind !== "none" &&
+      second.state.pendingReconciliations[0]?.target.revisionAfter,
+    1,
+  );
   assert.deepEqual(
     second.state.pendingReconciliations.map((duty) => ({
       commandId: duty.commandId,
@@ -575,6 +712,14 @@ test("unavailable mask owner cannot roll back a move and receives one bound pend
         maskIds: ["mask-a"],
       },
     ],
+  );
+
+  const futureBound = structuredClone(second.state) as Record<string, any>;
+  futureBound.pendingReconciliations[0].target.revisionBefore = 2;
+  futureBound.pendingReconciliations[0].target.revisionAfter = 3;
+  assert.throws(
+    () => parseLiveSessionAggregateState(futureBound),
+    /stale Reconciliation-Zielbindung/,
   );
 });
 
@@ -612,9 +757,13 @@ test("generic unavailable consumer needs and retains an exact OwnerRevision", ()
     commandId: "command-weather-pending",
     commandDigest: "digest-weather-pending",
     sourceSceneId: "scene-primary",
-    targetSceneId: "scene-prepared",
+    target: {
+      kind: "existing",
+      liveSceneId: "scene-prepared",
+      revisionBefore: 0,
+      revisionAfter: 1,
+    },
     expectedSourceRevision: 0,
-    expectedTargetRevision: 0,
     expectedOwnerRevision: 7,
     sourceLifecycleBefore: "active",
     sourceLifecycleAfter: "active",
@@ -1041,6 +1190,7 @@ test("the sole empty Primary remains active after its last character is deactiva
         primarySceneId: "scene-primary",
         sceneClockRef: {
           ownerId: "clock",
+          generationId: "clock-generation",
           referenceId: "clock-primary",
           ownerRevision: 0,
         },
@@ -1097,9 +1247,8 @@ test("unavailable consumers receive a durable source-only deactivation duty", ()
     commandId: "command-deactivate-with-music",
     commandDigest: "digest-deactivate-with-music",
     sourceSceneId: "scene-primary",
-    targetSceneId: null,
+    target: { kind: "none" },
     expectedSourceRevision: 0,
-    expectedTargetRevision: null,
     expectedOwnerRevision: 6,
     sourceLifecycleBefore: "active",
     sourceLifecycleAfter: "active",
@@ -1162,9 +1311,8 @@ test("a bound pending party member can be deactivated without losing cleanup dut
     commandId: "command-deactivate-pending-a",
     commandDigest: "digest-deactivate-pending-a",
     sourceSceneId: "scene-primary",
-    targetSceneId: null,
+    target: { kind: "none" },
     expectedSourceRevision: 0,
-    expectedTargetRevision: null,
     expectedOwnerRevision: 4,
     sourceLifecycleBefore: "active",
     sourceLifecycleAfter: "active",
@@ -1335,4 +1483,678 @@ test("Party-order successor can be populated by an exact pending assignment", ()
       ownerId: "scene-owner",
     },
   ]);
+});
+
+test("partial Split creates an independent active Scene in Party order and keeps Source focus", () => {
+  const raw = structuredClone(initialize()) as Record<string, any>;
+  raw.scenes[0].source.locationRef = {
+    ownerId: "locations",
+    referenceId: "harbour",
+    ownerRevision: 4,
+  };
+  raw.scenes[0].source.contentPins = [
+    { ownerId: "notes", referenceId: "secret", ownerRevision: 2 },
+  ];
+  raw.scenes[0].source.reconciliations = [
+    { ownerId: "weather", status: "unavailable", ownerRevision: 7 },
+  ];
+  const state = parseLiveSessionAggregateState(raw),
+    result = splitScene(
+      state,
+      commandBase("split-scene", {
+        expectedPartyRevision: 1,
+        expectedFocusRevision: 1,
+        sourceSceneId: "scene-primary",
+        expectedSourceRevision: 0,
+        targetSceneId: "scene-split",
+        targetClockRef: clockRef("clock-split"),
+        characterIds: ["character-b"],
+        title: "Scout group",
+        clockContribution: forkContribution(),
+      }),
+    );
+  assert.equal(result.status, "applied");
+  if (result.status !== "applied") return;
+  const source = result.state.scenes.find(
+      (scene) => scene.source.liveSceneId === "scene-primary",
+    )!,
+    target = result.state.scenes.find(
+      (scene) => scene.source.liveSceneId === "scene-split",
+    )!;
+  assert.deepEqual(source.source.characterIds, ["character-a"]);
+  assert.equal(source.source.lifecycle, "active");
+  assert.equal(source.source.sceneRevision, 1);
+  assert.deepEqual(target.source.characterIds, ["character-b"]);
+  assert.equal(target.source.sceneRevision, 0);
+  assert.deepEqual(target.source.locationRef, source.source.locationRef);
+  assert.deepEqual(target.source.contentPins, []);
+  assert.deepEqual(target.source.maskRefs, []);
+  assert.deepEqual(target.source.reconciliations, []);
+  assert.equal(result.state.primarySceneId, "scene-primary");
+  assert.equal(result.state.focus.focusRevision, 1);
+  assert.equal(
+    result.state.focus.status === "active" && result.state.focus.liveSceneId,
+    "scene-primary",
+  );
+  assert.equal(
+    result.state.focus.status === "active" && result.state.focus.sceneRevision,
+    1,
+  );
+  assert.deepEqual(result.state.pendingReconciliations[0]?.target, {
+    kind: "created",
+    liveSceneId: "scene-split",
+    revisionAfter: 0,
+  });
+  assert.equal(
+    result.state.pendingReconciliations[0]?.action,
+    "remove-participants",
+  );
+  assert.equal(result.decision.kind, "scene-split");
+  assert.equal(result.decision.transition?.target.kind, "created");
+  assert(frozenGraph(result));
+});
+
+test("full Split retires Source, promotes Target and archives source-only consumers", () => {
+  const raw = structuredClone(initialize()) as Record<string, any>;
+  raw.scenes[0].source.reconciliations = [
+    { ownerId: "music", status: "current", ownerRevision: 5 },
+  ];
+  const state = parseLiveSessionAggregateState(raw),
+    result = splitScene(
+      state,
+      commandBase("split-scene", {
+        expectedPartyRevision: 1,
+        expectedFocusRevision: 1,
+        sourceSceneId: "scene-primary",
+        expectedSourceRevision: 0,
+        targetSceneId: "scene-split",
+        targetClockRef: clockRef("clock-split"),
+        characterIds: ["character-b", "character-a"],
+        title: "Everyone",
+        clockContribution: forkContribution({ sourceDisposition: "archive" }),
+      }),
+    );
+  assert.equal(result.status, "applied");
+  if (result.status !== "applied") return;
+  assert.equal(result.state.scenes[0]?.source.lifecycle, "retired");
+  assert.equal(result.state.primarySceneId, "scene-split");
+  assert.equal(result.state.focus.focusRevision, 2);
+  assert.deepEqual(result.state.scenes[1]?.source.characterIds, [
+    "character-a",
+    "character-b",
+  ]);
+  assert.equal(
+    result.decision.transition?.reconciliations[0]?.action,
+    "archive-source",
+  );
+  assert.equal(
+    result.decision.transition?.reconciliations[0]?.status,
+    "required",
+  );
+});
+
+test("Rejoin derives all Source members, updates target Clock and moves Source focus once", () => {
+  const state = splitPrimary(),
+    result = rejoinScenes(
+      state,
+      commandBase("rejoin-scenes", {
+        expectedPartyRevision: 2,
+        expectedFocusRevision: 1,
+        sourceSceneId: "scene-primary",
+        expectedSourceRevision: 1,
+        targetSceneId: "scene-split",
+        expectedTargetRevision: 0,
+        clockContribution: mergeContribution(),
+      }),
+    );
+  assert.equal(result.status, "applied");
+  if (result.status !== "applied") return;
+  assert.equal(result.state.scenes[0]?.source.lifecycle, "retired");
+  assert.equal(result.state.primarySceneId, "scene-split");
+  assert.deepEqual(result.state.scenes[1]?.source.characterIds, [
+    "character-a",
+    "character-b",
+  ]);
+  assert.deepEqual(result.state.scenes[1]?.source.sceneClockRef, {
+    ownerId: "clock",
+    generationId: "clock-generation",
+    referenceId: "clock-split",
+    ownerRevision: 1,
+  });
+  assert.equal(result.state.focus.focusRevision, 2);
+  assert.equal(
+    result.state.focus.status === "active" && result.state.focus.liveSceneId,
+    "scene-split",
+  );
+  assert.equal(result.decision.transition?.operation, "rejoin");
+  assert.deepEqual(result.decision.transition?.movedCharacterIds, [
+    "character-a",
+  ]);
+  assert.equal(
+    result.decision.transition?.clockContribution.targetClockValueAfter
+      .canonicalValue,
+    "-6",
+  );
+});
+
+test("Rejoin keeps FocusRevision when Target was already focused", () => {
+  const state = splitPrimary(),
+    focused = setFocus(
+      state,
+      commandBase("set-focus", {
+        expectedPartyRevision: 2,
+        expectedFocusRevision: 1,
+        targetSceneId: "scene-split",
+        expectedTargetRevision: 0,
+      }),
+    );
+  assert.equal(focused.status, "applied");
+  if (focused.status !== "applied") return;
+  const result = rejoinScenes(
+    focused.state,
+    commandBase("rejoin-scenes", {
+      expectedPartyRevision: 2,
+      expectedFocusRevision: 2,
+      sourceSceneId: "scene-primary",
+      expectedSourceRevision: 1,
+      targetSceneId: "scene-split",
+      expectedTargetRevision: 0,
+      clockContribution: mergeContribution(),
+    }),
+  );
+  assert.equal(result.status, "applied");
+  if (result.status !== "applied") return;
+  assert.equal(result.state.focus.focusRevision, 2);
+  assert.equal(
+    result.state.focus.status === "active" && result.state.focus.sceneRevision,
+    1,
+  );
+});
+
+test("Rejoin leaves an unrelated third-scene Focus and Primary unchanged", () => {
+  const state = threePopulatedScenes(),
+    focused = setFocus(
+      state,
+      commandBase("set-focus", {
+        expectedPartyRevision: 3,
+        expectedFocusRevision: 1,
+        targetSceneId: "scene-third",
+        expectedTargetRevision: 1,
+      }),
+    );
+  assert.equal(focused.status, "applied");
+  if (focused.status !== "applied") return;
+  const result = rejoinScenes(
+    focused.state,
+    commandBase("rejoin-scenes", {
+      expectedPartyRevision: 3,
+      expectedFocusRevision: 2,
+      sourceSceneId: "scene-prepared",
+      expectedSourceRevision: 1,
+      targetSceneId: "scene-primary",
+      expectedTargetRevision: 2,
+      clockContribution: mergeContribution({
+        sourceSceneId: "scene-prepared",
+        sourceSceneRevisionBefore: 1,
+        sourceSceneRevisionAfter: 2,
+        sourceClockRef: clockRef("clock-prepared"),
+        targetSceneId: "scene-primary",
+        targetSceneRevisionBefore: 2,
+        targetSceneRevisionAfter: 3,
+        targetClockRefBefore: clockRef("clock-primary"),
+        targetClockRefAfter: clockRef("clock-primary", 1),
+      }),
+    }),
+  );
+  assert.equal(result.status, "applied");
+  if (result.status !== "applied") return;
+  assert.equal(result.state.primarySceneId, "scene-primary");
+  assert.deepEqual(result.state.focus, focused.state.focus);
+});
+
+test("Rejoin preserves existing Target consumers and Source-owned content", () => {
+  const raw = structuredClone(splitPrimary()) as Record<string, any>;
+  raw.scenes[0].source.contentPins = [
+    { ownerId: "notes", referenceId: "source-only", ownerRevision: 8 },
+  ];
+  raw.scenes[0].source.reconciliations = [
+    { ownerId: "music", status: "current", ownerRevision: 5 },
+  ];
+  raw.scenes[1].source.locationRef = {
+    ownerId: "locations",
+    referenceId: "target-location",
+    ownerRevision: 6,
+  };
+  raw.scenes[1].source.contentPins = [
+    { ownerId: "notes", referenceId: "target-only", ownerRevision: 9 },
+  ];
+  raw.scenes[1].source.groupRefs = [
+    { ownerId: "groups", referenceId: "target-group", ownerRevision: 2 },
+  ];
+  raw.scenes[1].source.maskRefs = [
+    {
+      maskId: "target-mask",
+      kind: "weather",
+      ownerId: "weather",
+      ownerRevision: 4,
+      lifecycle: "active",
+    },
+  ];
+  raw.scenes[1].source.reconciliations = [
+    { ownerId: "weather", status: "current", ownerRevision: 4 },
+  ];
+  const state = parseLiveSessionAggregateState(raw),
+    targetBefore = state.scenes[1]!.source,
+    result = rejoinScenes(
+      state,
+      commandBase("rejoin-scenes", {
+        expectedPartyRevision: 2,
+        expectedFocusRevision: 1,
+        sourceSceneId: "scene-primary",
+        expectedSourceRevision: 1,
+        targetSceneId: "scene-split",
+        expectedTargetRevision: 0,
+        clockContribution: mergeContribution(),
+      }),
+    );
+  assert.equal(result.status, "applied");
+  if (result.status !== "applied") return;
+  const targetAfter = result.state.scenes[1]!.source;
+  assert.deepEqual(targetAfter.locationRef, targetBefore.locationRef);
+  assert.deepEqual(targetAfter.contentPins, targetBefore.contentPins);
+  assert.deepEqual(targetAfter.groupRefs, targetBefore.groupRefs);
+  assert.deepEqual(targetAfter.maskRefs, targetBefore.maskRefs);
+  assert.deepEqual(targetAfter.reconciliations, targetBefore.reconciliations);
+  assert.equal(
+    targetAfter.contentPins.some((pin) => pin.referenceId === "source-only"),
+    false,
+  );
+  assert.deepEqual(result.decision.transition?.reconciliations, [
+    {
+      ownerId: "music",
+      campaignId: "campaign-a",
+      commandId: "command-rejoin-scenes",
+      commandDigest: "digest-rejoin-scenes",
+      sourceSceneId: "scene-primary",
+      target: {
+        kind: "existing",
+        liveSceneId: "scene-split",
+        revisionBefore: 0,
+        revisionAfter: 1,
+      },
+      expectedSourceRevision: 1,
+      expectedOwnerRevision: 5,
+      sourceLifecycleBefore: "active",
+      sourceLifecycleAfter: "retired",
+      action: "archive-source",
+      characterIds: ["character-a"],
+      maskIds: [],
+      status: "required",
+    },
+  ]);
+});
+
+test("Clock contribution schemas reject missing, forbidden and exchanged pins", () => {
+  assert.throws(
+    () =>
+      parseClockForkCreateContribution({
+        ...forkContribution(),
+        targetSceneRevisionBefore: 0,
+      }),
+    /unbekannte, berechnete oder unvollständige Daten/,
+  );
+  const withoutBefore = mergeContribution() as Record<string, unknown>;
+  delete withoutBefore.targetClockRevisionBefore;
+  assert.throws(
+    () => parseClockMergeContribution(withoutBefore),
+    /unbekannte, berechnete oder unvollständige Daten/,
+  );
+  assert.throws(
+    () =>
+      parseClockForkCreateContribution(
+        forkContribution({ targetClockValueAfter: clockValue("3599") }),
+      ),
+    /Fresh-Fork/,
+  );
+  assert.throws(
+    () =>
+      parseClockMergeContribution(
+        mergeContribution({
+          choice: "source-confirmed",
+          targetClockValueAfter: clockValue("3599"),
+        }),
+      ),
+    /Merge-Wahl/,
+  );
+  assert.throws(
+    () =>
+      parseClockMergeContribution(
+        mergeContribution({
+          targetClockValueAfter: {
+            codecId: "unknown",
+            codecVersion: 1,
+            canonicalValue: "0",
+          },
+        }),
+      ),
+    /unbekannten Codec/,
+  );
+  assert.throws(
+    () =>
+      parseClockMergeContribution(
+        mergeContribution({
+          targetClockRefBefore: clockRef(
+            "clock-split",
+            Number.MAX_SAFE_INTEGER,
+          ),
+          targetClockRevisionBefore: Number.MAX_SAFE_INTEGER,
+          targetClockRefAfter: clockRef(
+            "clock-split",
+            Number.MAX_SAFE_INTEGER + 1,
+          ),
+          targetClockRevisionAfter: Number.MAX_SAFE_INTEGER + 1,
+        }),
+      ),
+    /Revision/,
+  );
+});
+
+test("Split and Rejoin bind campaign, command, digest, generation and pin direction", () => {
+  const before = initialize(),
+    foreign = splitScene(
+      before,
+      commandBase("split-scene", {
+        campaignId: "campaign-other",
+        expectedPartyRevision: 1,
+        expectedFocusRevision: 1,
+        sourceSceneId: "scene-primary",
+        expectedSourceRevision: 0,
+        targetSceneId: "scene-split",
+        targetClockRef: clockRef("clock-split"),
+        characterIds: ["character-b"],
+        title: "Foreign",
+        clockContribution: forkContribution({ campaignId: "campaign-other" }),
+      }),
+    );
+  assert.equal(foreign.status, "rejected");
+  assert.equal(
+    foreign.status === "rejected" && foreign.reason,
+    "foreign-campaign",
+  );
+  assert.deepEqual(foreign.state, before);
+
+  const wrongDigest = splitScene(
+    before,
+    commandBase("split-scene", {
+      expectedPartyRevision: 1,
+      expectedFocusRevision: 1,
+      sourceSceneId: "scene-primary",
+      expectedSourceRevision: 0,
+      targetSceneId: "scene-split",
+      targetClockRef: clockRef("clock-split"),
+      characterIds: ["character-b"],
+      title: "Wrong digest",
+      clockContribution: forkContribution({ commandDigest: "digest-other" }),
+    }),
+  );
+  assert.equal(wrongDigest.status, "rejected");
+  assert.deepEqual(wrongDigest.state, before);
+
+  const wrongCommand = splitScene(
+    before,
+    commandBase("split-scene", {
+      expectedPartyRevision: 1,
+      expectedFocusRevision: 1,
+      sourceSceneId: "scene-primary",
+      expectedSourceRevision: 0,
+      targetSceneId: "scene-split",
+      targetClockRef: clockRef("clock-split"),
+      characterIds: ["character-b"],
+      title: "Wrong command",
+      clockContribution: forkContribution({ commandId: "command-other" }),
+    }),
+  );
+  assert.equal(wrongCommand.status, "rejected");
+  assert.deepEqual(wrongCommand.state, before);
+
+  const otherGenerationRef = {
+      ...clockRef("clock-split"),
+      generationId: "clock-generation-other",
+    },
+    wrongGeneration = splitScene(
+      before,
+      commandBase("split-scene", {
+        expectedPartyRevision: 1,
+        expectedFocusRevision: 1,
+        sourceSceneId: "scene-primary",
+        expectedSourceRevision: 0,
+        targetSceneId: "scene-split",
+        targetClockRef: clockRef("clock-split"),
+        characterIds: ["character-b"],
+        title: "Wrong generation",
+        clockContribution: forkContribution({
+          ownerIdentity: {
+            ownerId: "clock",
+            generationId: "clock-generation-other",
+          },
+          sourceClockRef: {
+            ...clockRef("clock-primary"),
+            generationId: "clock-generation-other",
+          },
+          targetClockRefAfter: otherGenerationRef,
+        }),
+      }),
+    );
+  assert.equal(wrongGeneration.status, "rejected");
+  assert.deepEqual(wrongGeneration.state, before);
+
+  const split = splitPrimary(),
+    swapped = rejoinScenes(
+      split,
+      commandBase("rejoin-scenes", {
+        expectedPartyRevision: 2,
+        expectedFocusRevision: 1,
+        sourceSceneId: "scene-primary",
+        expectedSourceRevision: 1,
+        targetSceneId: "scene-split",
+        expectedTargetRevision: 0,
+        clockContribution: mergeContribution({
+          sourceClockRef: clockRef("clock-split"),
+          targetClockRefBefore: clockRef("clock-primary"),
+          targetClockRefAfter: clockRef("clock-primary", 1),
+        }),
+      }),
+    );
+  assert.equal(swapped.status, "rejected");
+  assert.deepEqual(swapped.state, split);
+});
+
+test("all three backward Clock choices advance only the Target Clock once", () => {
+  const choices = [
+    {
+      choice: "source-confirmed",
+      sourceClockValue: clockValue("-6"),
+      targetClockValueBefore: clockValue("3600"),
+      targetClockValueAfter: clockValue("-6"),
+    },
+    {
+      choice: "target-confirmed",
+      sourceClockValue: clockValue("3600"),
+      targetClockValueBefore: clockValue("-6"),
+      targetClockValueAfter: clockValue("-6"),
+    },
+    {
+      choice: "manual-confirmed",
+      sourceClockValue: clockValue("3600"),
+      targetClockValueBefore: clockValue("3600"),
+      targetClockValueAfter: clockValue("-6"),
+    },
+  ] as const;
+  for (const choice of choices) {
+    const state = splitPrimary(),
+      command = commandBase("rejoin-scenes", {
+        expectedPartyRevision: 2,
+        expectedFocusRevision: 1,
+        sourceSceneId: "scene-primary",
+        expectedSourceRevision: 1,
+        targetSceneId: "scene-split",
+        expectedTargetRevision: 0,
+        clockContribution: mergeContribution(choice),
+      }),
+      first = rejoinScenes(state, command),
+      second = rejoinScenes(state, command);
+    assert.equal(first.status, "applied");
+    assert.deepEqual(second, first);
+    if (first.status !== "applied") continue;
+    assert.equal(first.state.scenes[0]?.source.sceneClockRef?.ownerRevision, 0);
+    assert.equal(first.state.scenes[1]?.source.sceneClockRef?.ownerRevision, 1);
+    assert.equal(
+      first.decision.transition?.clockContribution.targetClockValueAfter
+        .canonicalValue,
+      "-6",
+    );
+  }
+});
+
+test("Split and Rejoin overflow or cancel before any semantic state change", () => {
+  const before = initialize(),
+    cancelled = splitScene(
+      before,
+      commandBase("split-scene", {
+        cancelled: true,
+        expectedPartyRevision: 1,
+        expectedFocusRevision: 1,
+        sourceSceneId: "scene-primary",
+        expectedSourceRevision: 0,
+        targetSceneId: "scene-split",
+        targetClockRef: clockRef("clock-split"),
+        characterIds: ["character-b"],
+        title: "Cancelled",
+        clockContribution: forkContribution(),
+      }),
+    );
+  assert.equal(cancelled.status, "cancelled");
+  assert.deepEqual(cancelled.state, before);
+
+  const overflowRaw = structuredClone(splitPrimary()) as Record<string, any>;
+  overflowRaw.scenes[0].source.sceneRevision = Number.MAX_SAFE_INTEGER;
+  overflowRaw.party.characters[0].sceneAssignment.sceneRevision =
+    Number.MAX_SAFE_INTEGER;
+  overflowRaw.focus.sceneRevision = Number.MAX_SAFE_INTEGER;
+  const overflow = parseLiveSessionAggregateState(overflowRaw);
+  assert.throws(
+    () =>
+      rejoinScenes(
+        overflow,
+        commandBase("rejoin-scenes", {
+          expectedPartyRevision: 2,
+          expectedFocusRevision: 1,
+          sourceSceneId: "scene-primary",
+          expectedSourceRevision: Number.MAX_SAFE_INTEGER,
+          targetSceneId: "scene-split",
+          expectedTargetRevision: 0,
+          clockContribution: mergeContribution({
+            sourceSceneRevisionBefore: Number.MAX_SAFE_INTEGER,
+            sourceSceneRevisionAfter: Number.MAX_SAFE_INTEGER,
+          }),
+        }),
+      ),
+    /Revision/,
+  );
+  assert.equal(overflow.scenes[0]?.source.lifecycle, "active");
+});
+
+test("Split and Rejoin reject stale Clock receipts, aliases and Source pending membership unchanged", () => {
+  const before = initialize(),
+    alias = splitScene(
+      before,
+      commandBase("split-scene", {
+        expectedPartyRevision: 1,
+        expectedFocusRevision: 1,
+        sourceSceneId: "scene-primary",
+        expectedSourceRevision: 0,
+        targetSceneId: "scene-split",
+        targetClockRef: clockRef("clock-primary"),
+        characterIds: ["character-b"],
+        title: "Alias",
+        clockContribution: forkContribution({
+          targetClockRefAfter: clockRef("clock-primary"),
+        }),
+      }),
+    );
+  assert.equal(alias.status, "rejected");
+  assert.equal(alias.status === "rejected" && alias.reason, "id-collision");
+  assert.deepEqual(alias.state, before);
+
+  const split = splitPrimary(),
+    stale = rejoinScenes(
+      split,
+      commandBase("rejoin-scenes", {
+        expectedPartyRevision: 2,
+        expectedFocusRevision: 1,
+        sourceSceneId: "scene-primary",
+        expectedSourceRevision: 1,
+        targetSceneId: "scene-split",
+        expectedTargetRevision: 0,
+        clockContribution: mergeContribution({
+          sourceSceneRevisionAfter: 9,
+        }),
+      }),
+    );
+  assert.equal(stale.status, "rejected");
+  assert.equal(stale.status === "rejected" && stale.reason, "stale-scene");
+  assert.deepEqual(stale.state, split);
+
+  const pendingRaw = structuredClone(split) as Record<string, any>;
+  pendingRaw.party.characters[0].sceneAssignment = {
+    status: "pending",
+    commandId: "command-pending-a",
+    ownerId: "scene-owner",
+  };
+  pendingRaw.scenes[0].source.characterIds = [];
+  pendingRaw.scenes[0].source.pendingAssignments = [
+    {
+      characterId: "character-a",
+      commandId: "command-pending-a",
+      ownerId: "scene-owner",
+    },
+  ];
+  const pending = parseLiveSessionAggregateState(pendingRaw),
+    rejected = rejoinScenes(
+      pending,
+      commandBase("rejoin-scenes", {
+        expectedPartyRevision: 2,
+        expectedFocusRevision: 1,
+        sourceSceneId: "scene-primary",
+        expectedSourceRevision: 1,
+        targetSceneId: "scene-split",
+        expectedTargetRevision: 0,
+        clockContribution: mergeContribution(),
+      }),
+    );
+  assert.equal(rejected.status, "rejected");
+  assert.equal(
+    rejected.status === "rejected" && rejected.reason,
+    "invalid-membership",
+  );
+  assert.deepEqual(rejected.state, pending);
+});
+
+test("aggregate state requires one unique Clock identity per active Scene", () => {
+  const split = structuredClone(splitPrimary()) as Record<string, any>;
+  delete split.scenes[0].source.sceneClockRef;
+  assert.throws(
+    () => parseLiveSessionAggregateState(split),
+    /benötigt genau eine SceneClock/,
+  );
+
+  const duplicate = structuredClone(splitPrimary()) as Record<string, any>;
+  duplicate.scenes[1].source.sceneClockRef = {
+    ...duplicate.scenes[0].source.sceneClockRef,
+    ownerRevision: 99,
+  };
+  assert.throws(
+    () => parseLiveSessionAggregateState(duplicate),
+    /doppelte Kennungen/,
+  );
 });

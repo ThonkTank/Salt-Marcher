@@ -2,6 +2,7 @@ import {
   parseFocusSource,
   parseLiveSceneSource,
   parsePartyProjection,
+  type ClockReference,
   type FocusSourceSnapshot,
   type LiveSceneSourceSnapshot,
   type MaskReference,
@@ -18,13 +19,7 @@ import type {
   OwnerId,
   Revision,
 } from "./ids";
-import {
-  campaignId,
-  commandId,
-  liveSceneId,
-  ownerId,
-  revision,
-} from "./ids";
+import { campaignId, commandId, liveSceneId, ownerId, revision } from "./ids";
 
 export type FocusUnavailableReason =
   | "owner-unavailable"
@@ -85,7 +80,7 @@ export interface LiveSceneProjection {
   readonly characterIds: readonly CharacterId[];
   readonly pendingAssignments: readonly PendingAssignment[];
   readonly locationRef?: OwnerReference;
-  readonly sceneClockRef?: OwnerReference;
+  readonly sceneClockRef?: ClockReference;
   readonly groupRefs: readonly OwnerReference[];
   readonly maskRefs: readonly MaskReference[];
   readonly reconciliations: readonly OwnerReconciliation[];
@@ -96,10 +91,7 @@ export type LiveSceneProjectionResult =
   | { readonly status: "active"; readonly projection: LiveSceneProjection }
   | {
       readonly status: "unavailable";
-      readonly reason:
-        | "invalid-scene"
-        | "foreign-scene"
-        | "inactive-scene";
+      readonly reason: "invalid-scene" | "foreign-scene" | "inactive-scene";
     };
 
 export type LiveSessionProjection =
@@ -160,7 +152,10 @@ function parseFocusProjection(value: unknown): FocusProjection {
     kind: "focus-projection" as const,
     version: 1 as const,
     campaignId: campaignId(base.campaignId, "FocusProjection.campaignId"),
-    focusRevision: revision(base.focusRevision, "FocusProjection.focusRevision"),
+    focusRevision: revision(
+      base.focusRevision,
+      "FocusProjection.focusRevision",
+    ),
   };
   if (base.status === "active") {
     const row = record(
@@ -181,13 +176,23 @@ function parseFocusProjection(value: unknown): FocusProjection {
       ...common,
       status: "active",
       liveSceneId: liveSceneId(row.liveSceneId, "FocusProjection.liveSceneId"),
-      sceneRevision: revision(row.sceneRevision, "FocusProjection.sceneRevision"),
+      sceneRevision: revision(
+        row.sceneRevision,
+        "FocusProjection.sceneRevision",
+      ),
     });
   }
   if (base.status === "none") {
     record(
       value,
-      ["kind", "version", "status", "campaignId", "focusRevision", "liveSceneId"],
+      [
+        "kind",
+        "version",
+        "status",
+        "campaignId",
+        "focusRevision",
+        "liveSceneId",
+      ],
       [],
       "FocusProjection",
     );
@@ -291,30 +296,32 @@ function parseLiveSceneProjection(value: unknown): LiveSceneProjection {
   if (row.kind !== "live-scene-projection" || row.version !== 1)
     throw new Error("LiveSceneProjection besitzt einen unbekannten Vertrag.");
   const focus =
-    focusBase.status === "focused"
-      ? (() => {
-          const focused = record(
-            row.focus,
-            ["status", "focusRevision"],
-            [],
-            "LiveSceneProjection.focus",
-          );
-          return Object.freeze({
-            status: "focused" as const,
-            focusRevision: revision(
-              focused.focusRevision,
-              "LiveSceneProjection.focus.focusRevision",
-            ),
-          });
-        })()
-      : focusBase.status === "not-focused"
+      focusBase.status === "focused"
         ? (() => {
-            record(row.focus, ["status"], [], "LiveSceneProjection.focus");
-            return Object.freeze({ status: "not-focused" as const });
+            const focused = record(
+              row.focus,
+              ["status", "focusRevision"],
+              [],
+              "LiveSceneProjection.focus",
+            );
+            return Object.freeze({
+              status: "focused" as const,
+              focusRevision: revision(
+                focused.focusRevision,
+                "LiveSceneProjection.focus.focusRevision",
+              ),
+            });
           })()
-        : (() => {
-            throw new Error("LiveSceneProjection.focus.status ist unbekannt.");
-          })(),
+        : focusBase.status === "not-focused"
+          ? (() => {
+              record(row.focus, ["status"], [], "LiveSceneProjection.focus");
+              return Object.freeze({ status: "not-focused" as const });
+            })()
+          : (() => {
+              throw new Error(
+                "LiveSceneProjection.focus.status ist unbekannt.",
+              );
+            })(),
     source = parseLiveSceneSource({
       kind: "live-scene-source",
       version: 1,
@@ -325,7 +332,9 @@ function parseLiveSceneProjection(value: unknown): LiveSceneProjection {
       primary: row.primary,
       characterIds: row.characterIds,
       pendingAssignments: row.pendingAssignments,
-      ...(row.locationRef === undefined ? {} : { locationRef: row.locationRef }),
+      ...(row.locationRef === undefined
+        ? {}
+        : { locationRef: row.locationRef }),
       ...(row.sceneClockRef === undefined
         ? {}
         : { sceneClockRef: row.sceneClockRef }),
@@ -393,7 +402,10 @@ function parseLiveSceneProjectionResult(
       throw new Error("LiveSceneProjectionResult.reason ist unbekannt.");
     return Object.freeze({
       status: "unavailable",
-      reason: row.reason as "invalid-scene" | "foreign-scene" | "inactive-scene",
+      reason: row.reason as
+        | "invalid-scene"
+        | "foreign-scene"
+        | "inactive-scene",
     });
   }
   throw new Error("LiveSceneProjectionResult.status ist unbekannt.");
@@ -522,8 +534,9 @@ function activeSceneMatchesParty(
   scene: LiveSceneProjection,
 ): boolean {
   const characters = new Map(
-    party.characters.map((entry) => [entry.characterId, entry]),
-  ), sceneCharacterIds = new Set(scene.characterIds);
+      party.characters.map((entry) => [entry.characterId, entry]),
+    ),
+    sceneCharacterIds = new Set(scene.characterIds);
   for (const id of scene.characterIds) {
     const character = characters.get(id);
     if (

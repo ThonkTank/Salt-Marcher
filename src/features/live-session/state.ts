@@ -46,9 +46,8 @@ export interface PendingConsumerReconciliation {
   readonly commandId: CommandId;
   readonly commandDigest: CommandDigest;
   readonly sourceSceneId: LiveSceneId;
-  readonly targetSceneId: LiveSceneId | null;
+  readonly target: ReconciliationTargetEndpoint;
   readonly expectedSourceRevision: Revision;
-  readonly expectedTargetRevision: Revision | null;
   readonly expectedOwnerRevision: Revision;
   readonly sourceLifecycleBefore: "active";
   readonly sourceLifecycleAfter: "active" | "retired";
@@ -56,6 +55,71 @@ export interface PendingConsumerReconciliation {
   readonly characterIds: readonly CharacterId[];
   readonly maskIds: readonly MaskId[];
   readonly status: "pending";
+}
+
+export type ReconciliationTargetEndpoint =
+  | { readonly kind: "none" }
+  | {
+      readonly kind: "created";
+      readonly liveSceneId: LiveSceneId;
+      readonly revisionAfter: Revision;
+    }
+  | {
+      readonly kind: "existing";
+      readonly liveSceneId: LiveSceneId;
+      readonly revisionBefore: Revision;
+      readonly revisionAfter: Revision;
+    };
+
+function parseReconciliationTarget(
+  value: unknown,
+  label: string,
+): ReconciliationTargetEndpoint {
+  const base = exactRecord(
+    value,
+    ["kind"],
+    ["liveSceneId", "revisionBefore", "revisionAfter"],
+    label,
+  );
+  if (base.kind === "none") {
+    exactRecord(value, ["kind"], [], label);
+    return Object.freeze({ kind: "none" });
+  }
+  if (base.kind === "created") {
+    const row = exactRecord(
+      value,
+      ["kind", "liveSceneId", "revisionAfter"],
+      [],
+      label,
+    );
+    return Object.freeze({
+      kind: "created",
+      liveSceneId: liveSceneId(row.liveSceneId, `${label}.liveSceneId`),
+      revisionAfter: revision(row.revisionAfter, `${label}.revisionAfter`),
+    });
+  }
+  if (base.kind === "existing") {
+    const row = exactRecord(
+      value,
+      ["kind", "liveSceneId", "revisionBefore", "revisionAfter"],
+      [],
+      label,
+    );
+    const revisionBefore = revision(
+        row.revisionBefore,
+        `${label}.revisionBefore`,
+      ),
+      revisionAfter = revision(row.revisionAfter, `${label}.revisionAfter`);
+    if (revisionAfter !== revisionBefore + 1)
+      throw new Error(`${label} besitzt keinen einzelnen Revisionsschritt.`);
+    return Object.freeze({
+      kind: "existing",
+      liveSceneId: liveSceneId(row.liveSceneId, `${label}.liveSceneId`),
+      revisionBefore,
+      revisionAfter,
+    });
+  }
+  throw new Error(`${label}.kind ist unbekannt.`);
 }
 
 export interface LiveSessionAggregateState {
@@ -82,9 +146,8 @@ function parsePendingReconciliation(
         "commandId",
         "commandDigest",
         "sourceSceneId",
-        "targetSceneId",
+        "target",
         "expectedSourceRevision",
-        "expectedTargetRevision",
         "expectedOwnerRevision",
         "sourceLifecycleBefore",
         "sourceLifecycleAfter",
@@ -137,21 +200,11 @@ function parsePendingReconciliation(
     commandId: commandId(row.commandId, `${label}.commandId`),
     commandDigest: commandDigest(row.commandDigest, `${label}.commandDigest`),
     sourceSceneId: liveSceneId(row.sourceSceneId, `${label}.sourceSceneId`),
-    targetSceneId:
-      row.targetSceneId === null
-        ? null
-        : liveSceneId(row.targetSceneId, `${label}.targetSceneId`),
+    target: parseReconciliationTarget(row.target, `${label}.target`),
     expectedSourceRevision: revision(
       row.expectedSourceRevision,
       `${label}.expectedSourceRevision`,
     ),
-    expectedTargetRevision:
-      row.expectedTargetRevision === null
-        ? null
-        : revision(
-            row.expectedTargetRevision,
-            `${label}.expectedTargetRevision`,
-          ),
     expectedOwnerRevision: revision(
       row.expectedOwnerRevision,
       `${label}.expectedOwnerRevision`,
@@ -333,25 +386,26 @@ export function parseLiveSessionAggregateState(
     scenes.map((scene) => [scene.source.liveSceneId, scene.source]),
   );
   for (const duty of pendingReconciliations) {
-    if (
-      (duty.targetSceneId === null) !==
-      (duty.expectedTargetRevision === null)
-    )
-      throw new Error(
-        "LiveSessionAggregateState enthält eine widersprüchliche Zielbindung.",
-      );
     const source = sceneById.get(duty.sourceSceneId),
       target =
-        duty.targetSceneId === null
+        duty.target.kind === "none"
           ? undefined
-          : sceneById.get(duty.targetSceneId);
+          : sceneById.get(duty.target.liveSceneId);
     if (
       !source ||
-      (duty.targetSceneId !== null && !target) ||
+      (duty.target.kind !== "none" && !target) ||
       source.liveSceneId === target?.liveSceneId
     )
       throw new Error(
         "LiveSessionAggregateState enthält eine Reconciliation ohne Scene-Bindung.",
+      );
+    if (
+      duty.target.kind !== "none" &&
+      target !== undefined &&
+      target.sceneRevision < duty.target.revisionAfter
+    )
+      throw new Error(
+        "LiveSessionAggregateState enthält eine stale Reconciliation-Zielbindung.",
       );
     const masks = duty.maskIds.map((id) =>
         source.maskRefs.find(
@@ -411,6 +465,14 @@ export function parseLiveSessionAggregateState(
     )
   )
     throw new Error("Nur eine aktive Scene darf Primary sein.");
+  if (activeScenes.some((scene) => scene.source.sceneClockRef === undefined))
+    throw new Error("Jede aktive Scene benötigt genau eine SceneClock.");
+  uniqueBy(
+    activeScenes.map((scene) => scene.source.sceneClockRef!),
+    (clock) =>
+      `${clock.ownerId}\u0000${clock.generationId}\u0000${clock.referenceId}`,
+    "LiveSessionAggregateState.activeSceneClocks",
+  );
 
   const activeById = new Map(
       activeScenes.map((scene) => [scene.source.liveSceneId, scene.source]),

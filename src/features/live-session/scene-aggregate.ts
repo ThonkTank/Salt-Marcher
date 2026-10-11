@@ -1,4 +1,5 @@
 import type {
+  ClockReference,
   FocusSourceSnapshot,
   LiveSceneSourceSnapshot,
   OwnerReconciliation,
@@ -8,10 +9,14 @@ import {
   parseActivatePartyCharacterCommand,
   parseDeactivatePartyCharacterCommand,
   parseInitializeLiveSessionCommand,
+  parseRejoinScenesCommand,
   parseMoveCharactersCommand,
   parsePrepareRuntimeCommand,
   parseSetFocusCommand,
+  parseSplitSceneCommand,
   type AggregateCommandBinding,
+  type ClockForkCreateContribution,
+  type ClockMergeContribution,
 } from "./commands";
 import {
   revision,
@@ -27,6 +32,7 @@ import {
   parseLiveSessionAggregateState,
   type LiveSessionAggregateState,
   type PendingConsumerReconciliation,
+  type ReconciliationTargetEndpoint,
   type RuntimeSceneState,
 } from "./state";
 
@@ -74,6 +80,42 @@ export interface SceneCleanupDecision {
   readonly reconciliations: readonly ConsumerReconciliationDuty[];
 }
 
+export type SceneTransitionTarget =
+  | {
+      readonly kind: "created";
+      readonly liveSceneId: LiveSceneId;
+      readonly revisionAfter: Revision;
+    }
+  | {
+      readonly kind: "existing";
+      readonly liveSceneId: LiveSceneId;
+      readonly revisionBefore: Revision;
+      readonly revisionAfter: Revision;
+    };
+
+export interface SceneTransitionDecision {
+  readonly operation: "split" | "rejoin";
+  readonly sourceSceneId: LiveSceneId;
+  readonly sourceRevisionBefore: Revision;
+  readonly sourceRevisionAfter: Revision;
+  readonly sourceLifecycleBefore: "active";
+  readonly sourceLifecycleAfter: "active" | "retired";
+  readonly target: SceneTransitionTarget;
+  readonly partyRevisionBefore: Revision;
+  readonly partyRevisionAfter: Revision;
+  readonly primaryBefore: LiveSceneId;
+  readonly primaryAfter: LiveSceneId;
+  readonly focusBefore: LiveSceneId | null;
+  readonly focusAfter: LiveSceneId | null;
+  readonly focusRevisionBefore: Revision;
+  readonly focusRevisionAfter: Revision;
+  readonly movedCharacterIds: readonly CharacterId[];
+  readonly clockContribution:
+    | ClockForkCreateContribution
+    | ClockMergeContribution;
+  readonly reconciliations: readonly ConsumerReconciliationDuty[];
+}
+
 export interface AggregateAppliedDecision {
   readonly campaignId: LiveSessionAggregateState["campaignId"];
   readonly commandId: CommandId;
@@ -84,13 +126,16 @@ export interface AggregateAppliedDecision {
     | "characters-moved"
     | "focus-changed"
     | "character-activated"
-    | "character-deactivated";
+    | "character-deactivated"
+    | "scene-split"
+    | "scenes-rejoined";
   readonly partyRevisionBefore: Revision;
   readonly partyRevisionAfter: Revision;
   readonly focusRevisionBefore: Revision;
   readonly focusRevisionAfter: Revision;
   readonly sceneCleanup?: SceneCleanupDecision;
   readonly membership?: CharacterMembershipDecision;
+  readonly transition?: SceneTransitionDecision;
 }
 
 export interface CharacterMembershipDecision {
@@ -168,6 +213,7 @@ function applied(
   focusBefore: Revision,
   sceneCleanup?: SceneCleanupDecision,
   membership?: CharacterMembershipDecision,
+  transition?: SceneTransitionDecision,
 ): AggregateCommandResult {
   return Object.freeze({
     status: "applied",
@@ -183,6 +229,7 @@ function applied(
       focusRevisionAfter: state.focus.focusRevision,
       ...(sceneCleanup === undefined ? {} : { sceneCleanup }),
       ...(membership === undefined ? {} : { membership }),
+      ...(transition === undefined ? {} : { transition }),
     }),
   });
 }
@@ -346,6 +393,8 @@ export function createPreparedRuntime(
     state.scenes.some(
       (scene) =>
         scene.source.sceneClockRef?.ownerId === command.sceneClockRef.ownerId &&
+        scene.source.sceneClockRef.generationId ===
+          command.sceneClockRef.generationId &&
         scene.source.sceneClockRef.referenceId ===
           command.sceneClockRef.referenceId,
     )
@@ -405,9 +454,8 @@ function reconciliationDuties(
   binding: {
     readonly commandId: CommandId;
     readonly commandDigest: CommandDigest;
-    readonly targetSceneId: LiveSceneId | null;
+    readonly target: ReconciliationTargetEndpoint;
     readonly expectedSourceRevision: Revision;
-    readonly expectedTargetRevision: Revision | null;
     readonly characterIds: readonly CharacterId[];
   },
   source: LiveSceneSourceSnapshot,
@@ -455,9 +503,8 @@ function reconciliationDuties(
         commandId: binding.commandId,
         commandDigest: binding.commandDigest,
         sourceSceneId: source.liveSceneId,
-        targetSceneId: binding.targetSceneId,
+        target: binding.target,
         expectedSourceRevision: binding.expectedSourceRevision,
-        expectedTargetRevision: binding.expectedTargetRevision,
         expectedOwnerRevision: owner.ownerRevision,
         sourceLifecycleBefore: "active" as const,
         sourceLifecycleAfter: retired
@@ -626,9 +673,13 @@ export function moveCharacters(
       {
         commandId: command.commandId,
         commandDigest: command.commandDigest,
-        targetSceneId: target.liveSceneId,
+        target: Object.freeze({
+          kind: "existing" as const,
+          liveSceneId: target.liveSceneId,
+          revisionBefore: target.sceneRevision,
+          revisionAfter: targetRevision,
+        }),
         expectedSourceRevision: command.expectedSourceRevision,
-        expectedTargetRevision: command.expectedTargetRevision,
         characterIds: command.characterIds,
       },
       source,
@@ -682,6 +733,522 @@ export function moveCharacters(
     state.party.partyRevision,
     state.focus.focusRevision,
     cleanup,
+  );
+}
+
+function sameOwnerReference(
+  left: {
+    readonly ownerId: OwnerId;
+    readonly referenceId: string;
+    readonly ownerRevision: Revision;
+  },
+  right: {
+    readonly ownerId: OwnerId;
+    readonly referenceId: string;
+    readonly ownerRevision: Revision;
+  },
+): boolean {
+  return (
+    left.ownerId === right.ownerId &&
+    left.referenceId === right.referenceId &&
+    left.ownerRevision === right.ownerRevision
+  );
+}
+
+function sameClockReference(
+  left: ClockReference,
+  right: ClockReference,
+): boolean {
+  return (
+    sameOwnerReference(left, right) && left.generationId === right.generationId
+  );
+}
+
+function sameClockIdentity(
+  left: ClockReference,
+  right: ClockReference,
+): boolean {
+  return (
+    left.ownerId === right.ownerId &&
+    left.generationId === right.generationId &&
+    left.referenceId === right.referenceId
+  );
+}
+
+function pendingDuties(
+  duties: readonly ConsumerReconciliationDuty[],
+): readonly PendingConsumerReconciliation[] {
+  return duties.filter(
+    (duty): duty is PendingConsumerReconciliation => duty.status === "pending",
+  );
+}
+
+export function splitScene(
+  stateValue: unknown,
+  commandValue: unknown,
+): AggregateCommandResult {
+  const state = parseLiveSessionAggregateState(stateValue),
+    command = parseSplitSceneCommand(commandValue),
+    blocked = commonRejection(state, command);
+  if (blocked) return blocked;
+  if (!state.primarySceneId) return reject(state, command, "not-initialized");
+  if (command.sourceSceneId === command.targetSceneId)
+    return reject(state, command, "same-scene");
+  const sourceIndex = state.scenes.findIndex(
+    (scene) => scene.source.liveSceneId === command.sourceSceneId,
+  );
+  if (sourceIndex < 0) return reject(state, command, "unknown-scene");
+  if (
+    state.scenes.some(
+      (scene) => scene.source.liveSceneId === command.targetSceneId,
+    )
+  )
+    return reject(state, command, "id-collision");
+  const sourceScene = state.scenes[sourceIndex]!,
+    source = sourceScene.source;
+  if (source.lifecycle !== "active" || source.sceneClockRef === undefined)
+    return reject(state, command, "inactive-scene");
+  if (source.sceneRevision !== command.expectedSourceRevision)
+    return reject(state, command, "stale-scene");
+  if (
+    state.scenes.some(
+      (scene) =>
+        scene.source.sceneClockRef !== undefined &&
+        sameClockIdentity(scene.source.sceneClockRef, command.targetClockRef),
+    )
+  )
+    return reject(state, command, "id-collision");
+  const selected = new Set(command.characterIds),
+    partyById = new Map(
+      state.party.characters.map((character) => [
+        character.characterId,
+        character,
+      ]),
+    );
+  if (
+    command.characterIds.some((id) => {
+      const character = partyById.get(id);
+      return (
+        !character?.active ||
+        character.sceneAssignment.status !== "assigned" ||
+        character.sceneAssignment.liveSceneId !== source.liveSceneId ||
+        character.sceneAssignment.sceneRevision !== source.sceneRevision ||
+        !source.characterIds.includes(id)
+      );
+    })
+  )
+    return reject(state, command, "invalid-membership");
+
+  const sourceRevision = nextRevision(
+      source.sceneRevision,
+      "Source.sceneRevision",
+    ),
+    targetRevision = revision(0),
+    sourceCharacters = state.party.characters
+      .filter(
+        (character) =>
+          source.characterIds.includes(character.characterId) &&
+          !selected.has(character.characterId),
+      )
+      .map((character) => character.characterId),
+    targetCharacters = state.party.characters
+      .filter((character) => selected.has(character.characterId))
+      .map((character) => character.characterId),
+    retired =
+      sourceCharacters.length === 0 && source.pendingAssignments.length === 0,
+    contribution = command.clockContribution;
+  if (
+    contribution.campaignId !== state.campaignId ||
+    contribution.commandId !== command.commandId ||
+    contribution.commandDigest !== command.commandDigest ||
+    contribution.sourceSceneId !== source.liveSceneId ||
+    contribution.sourceSceneRevisionBefore !== source.sceneRevision ||
+    contribution.sourceSceneRevisionAfter !== sourceRevision ||
+    !sameClockReference(contribution.sourceClockRef, source.sceneClockRef) ||
+    contribution.sourceClockRevisionAfter !==
+      source.sceneClockRef.ownerRevision ||
+    contribution.targetSceneId !== command.targetSceneId ||
+    contribution.targetSceneRevisionAfter !== targetRevision ||
+    !sameClockReference(
+      contribution.targetClockRefAfter,
+      command.targetClockRef,
+    ) ||
+    contribution.targetClockRevisionAfter !== 0 ||
+    contribution.sourceDisposition !== (retired ? "archive" : "retain")
+  )
+    return reject(state, command, "stale-scene");
+
+  const primaryAfter =
+      source.primary && retired ? command.targetSceneId : state.primarySceneId,
+    nextSource: LiveSceneSourceSnapshot = {
+      ...source,
+      sceneRevision: sourceRevision,
+      lifecycle: retired ? "retired" : "active",
+      primary: retired ? false : source.primary,
+      characterIds: sourceCharacters,
+      reconciliations: source.reconciliations.map((entry) =>
+        entry.status === "current"
+          ? entry
+          : {
+              ownerId: entry.ownerId,
+              status: "pending" as const,
+              ...(entry.ownerRevision === undefined
+                ? {}
+                : { ownerRevision: entry.ownerRevision }),
+              commandId: command.commandId,
+            },
+      ),
+    },
+    targetSource: LiveSceneSourceSnapshot = {
+      kind: "live-scene-source",
+      version: 1,
+      campaignId: state.campaignId,
+      liveSceneId: command.targetSceneId,
+      sceneRevision: targetRevision,
+      lifecycle: "active",
+      primary: source.primary && retired,
+      characterIds: targetCharacters,
+      pendingAssignments: [],
+      ...(source.locationRef === undefined
+        ? {}
+        : { locationRef: source.locationRef }),
+      sceneClockRef: command.targetClockRef,
+      groupRefs: [],
+      maskRefs: [],
+      reconciliations: [],
+      contentPins: [],
+    },
+    assignments = new Map<
+      CharacterId,
+      { sceneId: LiveSceneId; revision: Revision }
+    >();
+  for (const id of sourceCharacters)
+    assignments.set(id, {
+      sceneId: source.liveSceneId,
+      revision: sourceRevision,
+    });
+  for (const id of targetCharacters)
+    assignments.set(id, {
+      sceneId: command.targetSceneId,
+      revision: targetRevision,
+    });
+  const party = partyWithAssignments(state.party, assignments),
+    focusMoves =
+      retired &&
+      state.focus.status === "active" &&
+      state.focus.liveSceneId === source.liveSceneId,
+    focus: FocusSourceSnapshot = focusMoves
+      ? {
+          kind: "focus-source",
+          version: 1,
+          status: "active",
+          campaignId: state.campaignId,
+          focusRevision: nextRevision(
+            state.focus.focusRevision,
+            "FocusSource.focusRevision",
+          ),
+          liveSceneId: command.targetSceneId,
+          sceneRevision: targetRevision,
+        }
+      : state.focus.status === "active" &&
+          state.focus.liveSceneId === source.liveSceneId
+        ? { ...state.focus, sceneRevision: sourceRevision }
+        : state.focus,
+    targetEndpoint = Object.freeze({
+      kind: "created" as const,
+      liveSceneId: command.targetSceneId,
+      revisionAfter: targetRevision,
+    }),
+    duties = reconciliationDuties(
+      state,
+      {
+        commandId: command.commandId,
+        commandDigest: command.commandDigest,
+        target: targetEndpoint,
+        expectedSourceRevision: command.expectedSourceRevision,
+        characterIds: targetCharacters,
+      },
+      source,
+      retired,
+    ),
+    scenes = [
+      ...state.scenes.map((scene, index) =>
+        index === sourceIndex ? sceneRaw(sourceScene, nextSource) : scene,
+      ),
+      {
+        kind: "runtime-scene-state" as const,
+        version: 1 as const,
+        source: targetSource,
+        title: command.title,
+        notes: "",
+      },
+    ],
+    next = parseLiveSessionAggregateState({
+      ...state,
+      party,
+      focus,
+      primarySceneId: primaryAfter,
+      scenes,
+      pendingReconciliations: [
+        ...state.pendingReconciliations,
+        ...pendingDuties(duties),
+      ],
+    }),
+    transition = Object.freeze({
+      operation: "split" as const,
+      sourceSceneId: source.liveSceneId,
+      sourceRevisionBefore: source.sceneRevision,
+      sourceRevisionAfter: sourceRevision,
+      sourceLifecycleBefore: "active" as const,
+      sourceLifecycleAfter: retired
+        ? ("retired" as const)
+        : ("active" as const),
+      target: targetEndpoint,
+      partyRevisionBefore: state.party.partyRevision,
+      partyRevisionAfter: next.party.partyRevision,
+      primaryBefore: state.primarySceneId,
+      primaryAfter: next.primarySceneId!,
+      focusBefore: focusId(state.focus),
+      focusAfter: focusId(next.focus),
+      focusRevisionBefore: state.focus.focusRevision,
+      focusRevisionAfter: next.focus.focusRevision,
+      movedCharacterIds: Object.freeze([...targetCharacters]),
+      clockContribution: contribution,
+      reconciliations: duties,
+    });
+  return applied(
+    next,
+    command,
+    "scene-split",
+    state.party.partyRevision,
+    state.focus.focusRevision,
+    undefined,
+    undefined,
+    transition,
+  );
+}
+
+export function rejoinScenes(
+  stateValue: unknown,
+  commandValue: unknown,
+): AggregateCommandResult {
+  const state = parseLiveSessionAggregateState(stateValue),
+    command = parseRejoinScenesCommand(commandValue),
+    blocked = commonRejection(state, command);
+  if (blocked) return blocked;
+  if (!state.primarySceneId) return reject(state, command, "not-initialized");
+  if (command.sourceSceneId === command.targetSceneId)
+    return reject(state, command, "same-scene");
+  const sourceIndex = state.scenes.findIndex(
+      (scene) => scene.source.liveSceneId === command.sourceSceneId,
+    ),
+    targetIndex = state.scenes.findIndex(
+      (scene) => scene.source.liveSceneId === command.targetSceneId,
+    );
+  if (sourceIndex < 0 || targetIndex < 0)
+    return reject(state, command, "unknown-scene");
+  const sourceScene = state.scenes[sourceIndex]!,
+    targetScene = state.scenes[targetIndex]!,
+    source = sourceScene.source,
+    target = targetScene.source;
+  if (
+    source.lifecycle !== "active" ||
+    target.lifecycle !== "active" ||
+    source.sceneClockRef === undefined ||
+    target.sceneClockRef === undefined
+  )
+    return reject(state, command, "inactive-scene");
+  if (
+    source.sceneRevision !== command.expectedSourceRevision ||
+    target.sceneRevision !== command.expectedTargetRevision
+  )
+    return reject(state, command, "stale-scene");
+  if (source.pendingAssignments.length > 0 || source.characterIds.length === 0)
+    return reject(state, command, "invalid-membership");
+  const sourceMembership = new Set(source.characterIds),
+    movedCharacterIds = state.party.characters
+      .filter((character) => sourceMembership.has(character.characterId))
+      .map((character) => character.characterId);
+  if (
+    movedCharacterIds.length !== source.characterIds.length ||
+    movedCharacterIds.some((id) => {
+      const character = state.party.characters.find(
+        (entry) => entry.characterId === id,
+      );
+      return (
+        !character?.active ||
+        character.sceneAssignment.status !== "assigned" ||
+        character.sceneAssignment.liveSceneId !== source.liveSceneId ||
+        character.sceneAssignment.sceneRevision !== source.sceneRevision
+      );
+    })
+  )
+    return reject(state, command, "invalid-membership");
+  const sourceRevision = nextRevision(
+      source.sceneRevision,
+      "Source.sceneRevision",
+    ),
+    targetRevision = nextRevision(target.sceneRevision, "Target.sceneRevision"),
+    contribution = command.clockContribution;
+  if (
+    contribution.campaignId !== state.campaignId ||
+    contribution.commandId !== command.commandId ||
+    contribution.commandDigest !== command.commandDigest ||
+    contribution.sourceSceneId !== source.liveSceneId ||
+    contribution.sourceSceneRevisionBefore !== source.sceneRevision ||
+    contribution.sourceSceneRevisionAfter !== sourceRevision ||
+    !sameClockReference(contribution.sourceClockRef, source.sceneClockRef) ||
+    contribution.sourceClockRevisionAfter !==
+      source.sceneClockRef.ownerRevision ||
+    contribution.targetSceneId !== target.liveSceneId ||
+    contribution.targetSceneRevisionBefore !== target.sceneRevision ||
+    contribution.targetSceneRevisionAfter !== targetRevision ||
+    !sameClockReference(
+      contribution.targetClockRefBefore,
+      target.sceneClockRef,
+    ) ||
+    contribution.targetClockRevisionBefore !==
+      target.sceneClockRef.ownerRevision ||
+    contribution.targetClockRefAfter.referenceId !==
+      target.sceneClockRef.referenceId ||
+    contribution.targetClockRefAfter.ownerId !== target.sceneClockRef.ownerId ||
+    contribution.targetClockRefAfter.generationId !==
+      target.sceneClockRef.generationId ||
+    contribution.targetClockRevisionAfter !==
+      target.sceneClockRef.ownerRevision + 1 ||
+    contribution.sourceDisposition !== "archive"
+  )
+    return reject(state, command, "stale-scene");
+
+  const targetMembership = new Set([
+      ...target.characterIds,
+      ...movedCharacterIds,
+    ]),
+    targetCharacters = state.party.characters
+      .filter((character) => targetMembership.has(character.characterId))
+      .map((character) => character.characterId),
+    primaryAfter = source.primary ? target.liveSceneId : state.primarySceneId,
+    nextSource: LiveSceneSourceSnapshot = {
+      ...source,
+      sceneRevision: sourceRevision,
+      lifecycle: "retired",
+      primary: false,
+      characterIds: [],
+      reconciliations: source.reconciliations.map((entry) =>
+        entry.status === "current"
+          ? entry
+          : {
+              ownerId: entry.ownerId,
+              status: "pending" as const,
+              ...(entry.ownerRevision === undefined
+                ? {}
+                : { ownerRevision: entry.ownerRevision }),
+              commandId: command.commandId,
+            },
+      ),
+    },
+    nextTarget: LiveSceneSourceSnapshot = {
+      ...target,
+      sceneRevision: targetRevision,
+      primary: target.primary || source.primary,
+      characterIds: targetCharacters,
+      sceneClockRef: contribution.targetClockRefAfter,
+    },
+    assignments = new Map<
+      CharacterId,
+      { sceneId: LiveSceneId; revision: Revision }
+    >(
+      targetCharacters.map((id) => [
+        id,
+        { sceneId: target.liveSceneId, revision: targetRevision },
+      ]),
+    );
+  const party = partyWithAssignments(state.party, assignments),
+    focusMoves =
+      state.focus.status === "active" &&
+      state.focus.liveSceneId === source.liveSceneId,
+    focus: FocusSourceSnapshot = focusMoves
+      ? {
+          kind: "focus-source",
+          version: 1,
+          status: "active",
+          campaignId: state.campaignId,
+          focusRevision: nextRevision(
+            state.focus.focusRevision,
+            "FocusSource.focusRevision",
+          ),
+          liveSceneId: target.liveSceneId,
+          sceneRevision: targetRevision,
+        }
+      : state.focus.status === "active" &&
+          state.focus.liveSceneId === target.liveSceneId
+        ? { ...state.focus, sceneRevision: targetRevision }
+        : state.focus,
+    targetEndpoint = Object.freeze({
+      kind: "existing" as const,
+      liveSceneId: target.liveSceneId,
+      revisionBefore: target.sceneRevision,
+      revisionAfter: targetRevision,
+    }),
+    duties = reconciliationDuties(
+      state,
+      {
+        commandId: command.commandId,
+        commandDigest: command.commandDigest,
+        target: targetEndpoint,
+        expectedSourceRevision: command.expectedSourceRevision,
+        characterIds: movedCharacterIds,
+      },
+      source,
+      true,
+    ),
+    scenes = state.scenes.map((scene, index) =>
+      index === sourceIndex
+        ? sceneRaw(sourceScene, nextSource)
+        : index === targetIndex
+          ? sceneRaw(targetScene, nextTarget)
+          : scene,
+    ),
+    next = parseLiveSessionAggregateState({
+      ...state,
+      party,
+      focus,
+      primarySceneId: primaryAfter,
+      scenes,
+      pendingReconciliations: [
+        ...state.pendingReconciliations,
+        ...pendingDuties(duties),
+      ],
+    }),
+    transition = Object.freeze({
+      operation: "rejoin" as const,
+      sourceSceneId: source.liveSceneId,
+      sourceRevisionBefore: source.sceneRevision,
+      sourceRevisionAfter: sourceRevision,
+      sourceLifecycleBefore: "active" as const,
+      sourceLifecycleAfter: "retired" as const,
+      target: targetEndpoint,
+      partyRevisionBefore: state.party.partyRevision,
+      partyRevisionAfter: next.party.partyRevision,
+      primaryBefore: state.primarySceneId,
+      primaryAfter: next.primarySceneId!,
+      focusBefore: focusId(state.focus),
+      focusAfter: focusId(next.focus),
+      focusRevisionBefore: state.focus.focusRevision,
+      focusRevisionAfter: next.focus.focusRevision,
+      movedCharacterIds: Object.freeze([...movedCharacterIds]),
+      clockContribution: contribution,
+      reconciliations: duties,
+    });
+  return applied(
+    next,
+    command,
+    "scenes-rejoined",
+    state.party.partyRevision,
+    state.focus.focusRevision,
+    undefined,
+    undefined,
+    transition,
   );
 }
 
@@ -1113,9 +1680,8 @@ export function deactivatePartyCharacter(
       {
         commandId: command.commandId,
         commandDigest: command.commandDigest,
-        targetSceneId: null,
+        target: Object.freeze({ kind: "none" as const }),
         expectedSourceRevision: command.expectedSourceRevision,
-        expectedTargetRevision: null,
         characterIds: [command.characterId],
       },
       source,

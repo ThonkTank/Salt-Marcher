@@ -2,6 +2,7 @@ import {
   campaignId,
   characterId,
   commandId,
+  generationId,
   liveSceneId,
   maskId,
   ownerId,
@@ -11,6 +12,7 @@ import {
   type CampaignId,
   type CharacterId,
   type CommandId,
+  type GenerationId,
   type LiveSceneId,
   type MaskId,
   type OwnerId,
@@ -23,6 +25,21 @@ export interface OwnerReference {
   readonly ownerId: OwnerId;
   readonly referenceId: ReferenceId;
   readonly ownerRevision: Revision;
+}
+
+export interface ClockOwnerIdentity {
+  readonly ownerId: OwnerId;
+  readonly generationId: GenerationId;
+}
+
+export interface ClockReference extends OwnerReference {
+  readonly generationId: GenerationId;
+}
+
+export interface ClockValueV1 {
+  readonly codecId: "smr07.elapsed-seconds";
+  readonly codecVersion: 1;
+  readonly canonicalValue: string;
 }
 
 export interface PartyCharacterProfileProjection {
@@ -129,7 +146,7 @@ export interface LiveSceneSourceSnapshot {
   readonly characterIds: readonly CharacterId[];
   readonly pendingAssignments: readonly PendingAssignment[];
   readonly locationRef?: OwnerReference;
-  readonly sceneClockRef?: OwnerReference;
+  readonly sceneClockRef?: ClockReference;
   readonly groupRefs: readonly OwnerReference[];
   readonly maskRefs: readonly MaskReference[];
   readonly reconciliations: readonly OwnerReconciliation[];
@@ -239,7 +256,8 @@ function optionalNatural(value: unknown, label: string): number | undefined {
 }
 
 function bool(value: unknown, label: string): boolean {
-  if (typeof value !== "boolean") throw new Error(`${label} muss boolesch sein.`);
+  if (typeof value !== "boolean")
+    throw new Error(`${label} muss boolesch sein.`);
   return value;
 }
 
@@ -251,7 +269,8 @@ function unique<T>(
   const seen = new Set<string>();
   for (const value of values) {
     const identity = key(value);
-    if (seen.has(identity)) throw new Error(`${label} enthält doppelte Kennungen.`);
+    if (seen.has(identity))
+      throw new Error(`${label} enthält doppelte Kennungen.`);
     seen.add(identity);
   }
   return values;
@@ -274,7 +293,71 @@ export function parseOwnerReference(
   });
 }
 
-function ownerReferences(value: unknown, label: string): readonly OwnerReference[] {
+export function parseClockReference(
+  value: unknown,
+  label = "ClockReference",
+): ClockReference {
+  const row = record(
+    value,
+    ["ownerId", "generationId", "referenceId", "ownerRevision"],
+    [],
+    label,
+  );
+  return Object.freeze({
+    ownerId: ownerId(row.ownerId, `${label}.ownerId`),
+    generationId: generationId(row.generationId, `${label}.generationId`),
+    referenceId: referenceId(row.referenceId, `${label}.referenceId`),
+    ownerRevision: revision(row.ownerRevision, `${label}.ownerRevision`),
+  });
+}
+
+export function parseClockOwnerIdentity(
+  value: unknown,
+  label = "ClockOwnerIdentity",
+): ClockOwnerIdentity {
+  const row = record(value, ["ownerId", "generationId"], [], label);
+  return Object.freeze({
+    ownerId: ownerId(row.ownerId, `${label}.ownerId`),
+    generationId: generationId(row.generationId, `${label}.generationId`),
+  });
+}
+
+const MIN_CLOCK_VALUE = -(1n << 63n);
+const MAX_CLOCK_VALUE = (1n << 63n) - 1n;
+
+export function parseClockValue(
+  value: unknown,
+  label = "ClockValueV1",
+): ClockValueV1 {
+  const row = record(
+    value,
+    ["codecId", "codecVersion", "canonicalValue"],
+    [],
+    label,
+  );
+  if (row.codecId !== "smr07.elapsed-seconds" || row.codecVersion !== 1)
+    throw new Error(`${label} besitzt einen unbekannten Codec.`);
+  if (
+    typeof row.canonicalValue !== "string" ||
+    !/^(?:0|-?[1-9][0-9]*)$/u.test(row.canonicalValue)
+  )
+    throw new Error(`${label}.canonicalValue ist nicht kanonisch.`);
+  const parsed = BigInt(row.canonicalValue);
+  if (parsed < MIN_CLOCK_VALUE || parsed > MAX_CLOCK_VALUE)
+    throw new Error(
+      `${label}.canonicalValue liegt außerhalb von signed 64 Bit.`,
+    );
+  return Object.freeze({
+    codecId: "smr07.elapsed-seconds",
+    codecVersion: 1,
+    canonicalValue: row.canonicalValue,
+  });
+}
+
+function ownerReferences(
+  value: unknown,
+  label: string,
+): readonly OwnerReference[] {
   return Object.freeze(
     unique(
       array(value, label).map((entry, index) =>
@@ -315,7 +398,11 @@ export function parsePartyCharacterProfile(
               text(entry, `${label}.languages[${index}]`),
             ),
           );
-  if (languages && new Set(languages.map((entry) => entry.toLowerCase())).size !== languages.length)
+  if (
+    languages &&
+    new Set(languages.map((entry) => entry.toLowerCase())).size !==
+      languages.length
+  )
     throw new Error(`${label}.languages enthält doppelte Werte.`);
   return Object.freeze({
     name: text(row.name, `${label}.name`),
@@ -325,28 +412,60 @@ export function parsePartyCharacterProfile(
     ...(optionalText(row.species, `${label}.species`) === undefined
       ? {}
       : { species: optionalText(row.species, `${label}.species`) }),
-    ...(optionalText(row.characterClass, `${label}.characterClass`) === undefined
+    ...(optionalText(row.characterClass, `${label}.characterClass`) ===
+    undefined
       ? {}
-      : { characterClass: optionalText(row.characterClass, `${label}.characterClass`) }),
+      : {
+          characterClass: optionalText(
+            row.characterClass,
+            `${label}.characterClass`,
+          ),
+        }),
     ...(languages === undefined ? {} : { languages }),
     ...(optionalNatural(row.level, `${label}.level`) === undefined
       ? {}
       : { level: optionalNatural(row.level, `${label}.level`) }),
-    ...(optionalNatural(row.passivePerception, `${label}.passivePerception`) === undefined
+    ...(optionalNatural(row.passivePerception, `${label}.passivePerception`) ===
+    undefined
       ? {}
-      : { passivePerception: optionalNatural(row.passivePerception, `${label}.passivePerception`) }),
-    ...(optionalNatural(row.passiveInvestigation, `${label}.passiveInvestigation`) === undefined
+      : {
+          passivePerception: optionalNatural(
+            row.passivePerception,
+            `${label}.passivePerception`,
+          ),
+        }),
+    ...(optionalNatural(
+      row.passiveInvestigation,
+      `${label}.passiveInvestigation`,
+    ) === undefined
       ? {}
-      : { passiveInvestigation: optionalNatural(row.passiveInvestigation, `${label}.passiveInvestigation`) }),
-    ...(optionalNatural(row.passiveInsight, `${label}.passiveInsight`) === undefined
+      : {
+          passiveInvestigation: optionalNatural(
+            row.passiveInvestigation,
+            `${label}.passiveInvestigation`,
+          ),
+        }),
+    ...(optionalNatural(row.passiveInsight, `${label}.passiveInsight`) ===
+    undefined
       ? {}
-      : { passiveInsight: optionalNatural(row.passiveInsight, `${label}.passiveInsight`) }),
+      : {
+          passiveInsight: optionalNatural(
+            row.passiveInsight,
+            `${label}.passiveInsight`,
+          ),
+        }),
     ...(optionalNatural(row.armorClass, `${label}.armorClass`) === undefined
       ? {}
       : { armorClass: optionalNatural(row.armorClass, `${label}.armorClass`) }),
-    ...(optionalNatural(row.movementSpeedFeet, `${label}.movementSpeedFeet`) === undefined
+    ...(optionalNatural(row.movementSpeedFeet, `${label}.movementSpeedFeet`) ===
+    undefined
       ? {}
-      : { movementSpeedFeet: optionalNatural(row.movementSpeedFeet, `${label}.movementSpeedFeet`) }),
+      : {
+          movementSpeedFeet: optionalNatural(
+            row.movementSpeedFeet,
+            `${label}.movementSpeedFeet`,
+          ),
+        }),
   });
 }
 
@@ -362,7 +481,10 @@ export function parsePartyCharacterProgress(
     ),
     currentXp = natural(row.currentXp, `${label}.currentXp`),
     xpSinceLongRest = natural(row.xpSinceLongRest, `${label}.xpSinceLongRest`),
-    xpSinceShortRest = natural(row.xpSinceShortRest, `${label}.xpSinceShortRest`),
+    xpSinceShortRest = natural(
+      row.xpSinceShortRest,
+      `${label}.xpSinceShortRest`,
+    ),
     currentLevelXpFloor = optionalNatural(
       row.currentLevelXpFloor,
       `${label}.currentLevelXpFloor`,
@@ -388,7 +510,12 @@ export function parsePartyCharacterProgress(
 }
 
 function sceneAssignment(value: unknown, label: string): PartySceneAssignment {
-  const base = record(value, ["status"], ["liveSceneId", "sceneRevision", "commandId", "ownerId"], label);
+  const base = record(
+    value,
+    ["status"],
+    ["liveSceneId", "sceneRevision", "commandId", "ownerId"],
+    label,
+  );
   if (base.status === "inactive") {
     record(value, ["status"], [], label);
     return Object.freeze({ status: "inactive" });
@@ -398,7 +525,12 @@ function sceneAssignment(value: unknown, label: string): PartySceneAssignment {
     return Object.freeze({ status: "not-started" });
   }
   if (base.status === "assigned") {
-    const row = record(value, ["status", "liveSceneId", "sceneRevision"], [], label);
+    const row = record(
+      value,
+      ["status", "liveSceneId", "sceneRevision"],
+      [],
+      label,
+    );
     return Object.freeze({
       status: "assigned",
       liveSceneId: liveSceneId(row.liveSceneId, `${label}.liveSceneId`),
@@ -418,29 +550,42 @@ function sceneAssignment(value: unknown, label: string): PartySceneAssignment {
 
 export function parsePartyProjection(value: unknown): PartyProjection {
   const root = record(
-      value,
-      ["kind", "version", "campaignId", "partyRevision", "characters"],
-      [],
-      "PartyProjection",
-    );
+    value,
+    ["kind", "version", "campaignId", "partyRevision", "characters"],
+    [],
+    "PartyProjection",
+  );
   if (root.kind !== "party-projection" || root.version !== 1)
     throw new Error("PartyProjection besitzt einen unbekannten Vertrag.");
   const characters = unique(
     array(root.characters, "PartyProjection.characters").map((entry, index) => {
       const label = `PartyProjection.characters[${index}]`,
-        row = record(entry, ["characterId", "active", "profile", "progress", "sceneAssignment"], [], label),
+        row = record(
+          entry,
+          ["characterId", "active", "profile", "progress", "sceneAssignment"],
+          [],
+          label,
+        ),
         active = bool(row.active, `${label}.active`),
-        assignment = sceneAssignment(row.sceneAssignment, `${label}.sceneAssignment`);
+        assignment = sceneAssignment(
+          row.sceneAssignment,
+          `${label}.sceneAssignment`,
+        );
       if (
         (active && assignment.status === "inactive") ||
         (!active && assignment.status !== "inactive")
       )
-        throw new Error(`${label} besitzt eine widersprüchliche Scene-Zuordnung.`);
+        throw new Error(
+          `${label} besitzt eine widersprüchliche Scene-Zuordnung.`,
+        );
       return Object.freeze({
         characterId: characterId(row.characterId, `${label}.characterId`),
         active,
         profile: parsePartyCharacterProfile(row.profile, `${label}.profile`),
-        progress: parsePartyCharacterProgress(row.progress, `${label}.progress`),
+        progress: parsePartyCharacterProgress(
+          row.progress,
+          `${label}.progress`,
+        ),
         sceneAssignment: assignment,
       });
     }),
@@ -451,7 +596,10 @@ export function parsePartyProjection(value: unknown): PartyProjection {
     kind: "party-projection",
     version: 1,
     campaignId: campaignId(root.campaignId, "PartyProjection.campaignId"),
-    partyRevision: revision(root.partyRevision, "PartyProjection.partyRevision"),
+    partyRevision: revision(
+      root.partyRevision,
+      "PartyProjection.partyRevision",
+    ),
     characters: Object.freeze(characters),
   });
 }
@@ -495,7 +643,10 @@ export function parsePreparationSnapshot(value: unknown): PreparationSnapshot {
     ),
     source: Object.freeze({
       ownerId: ownerId(source.ownerId, "PreparationSnapshot.source.ownerId"),
-      sourceId: referenceId(source.sourceId, "PreparationSnapshot.source.sourceId"),
+      sourceId: referenceId(
+        source.sourceId,
+        "PreparationSnapshot.source.sourceId",
+      ),
       sourceRevision: revision(
         source.sourceRevision,
         "PreparationSnapshot.source.sourceRevision",
@@ -505,8 +656,16 @@ export function parsePreparationSnapshot(value: unknown): PreparationSnapshot {
     notes: text(root.notes, "PreparationSnapshot.notes", true),
     ...(root.locationRef === undefined
       ? {}
-      : { locationRef: parseOwnerReference(root.locationRef, "PreparationSnapshot.locationRef") }),
-    contentPins: ownerReferences(root.contentPins, "PreparationSnapshot.contentPins"),
+      : {
+          locationRef: parseOwnerReference(
+            root.locationRef,
+            "PreparationSnapshot.locationRef",
+          ),
+        }),
+    contentPins: ownerReferences(
+      root.contentPins,
+      "PreparationSnapshot.contentPins",
+    ),
     ...(root.encounterPlanRef === undefined
       ? {}
       : {
@@ -523,7 +682,12 @@ function pendingAssignments(value: unknown): readonly PendingAssignment[] {
     unique(
       array(value, "LiveSceneSource.pendingAssignments").map((entry, index) => {
         const label = `LiveSceneSource.pendingAssignments[${index}]`,
-          row = record(entry, ["characterId", "commandId", "ownerId"], [], label);
+          row = record(
+            entry,
+            ["characterId", "commandId", "ownerId"],
+            [],
+            label,
+          );
         return Object.freeze({
           characterId: characterId(row.characterId, `${label}.characterId`),
           commandId: commandId(row.commandId, `${label}.commandId`),
@@ -547,7 +711,11 @@ function maskReferences(value: unknown): readonly MaskReference[] {
             [],
             label,
           );
-        if (!(["active", "suspended", "archived", "pending"] as const).includes(row.lifecycle as never))
+        if (
+          !(["active", "suspended", "archived", "pending"] as const).includes(
+            row.lifecycle as never,
+          )
+        )
           throw new Error(`${label}.lifecycle ist unbekannt.`);
         return Object.freeze({
           maskId: maskId(row.maskId, `${label}.maskId`),
@@ -574,7 +742,11 @@ function reconciliations(value: unknown): readonly OwnerReconciliation[] {
             ["ownerRevision", "commandId"],
             label,
           );
-        if (!(["current", "pending", "unavailable"] as const).includes(row.status as never))
+        if (
+          !(["current", "pending", "unavailable"] as const).includes(
+            row.status as never,
+          )
+        )
           throw new Error(`${label}.status ist unbekannt.`);
         if (row.status === "current" && row.ownerRevision === undefined)
           throw new Error(`${label} benötigt eine OwnerRevision.`);
@@ -585,7 +757,12 @@ function reconciliations(value: unknown): readonly OwnerReconciliation[] {
           status: row.status as OwnerReconciliation["status"],
           ...(row.ownerRevision === undefined
             ? {}
-            : { ownerRevision: revision(row.ownerRevision, `${label}.ownerRevision`) }),
+            : {
+                ownerRevision: revision(
+                  row.ownerRevision,
+                  `${label}.ownerRevision`,
+                ),
+              }),
           ...(row.commandId === undefined
             ? {}
             : { commandId: commandId(row.commandId, `${label}.commandId`) }),
@@ -620,12 +797,17 @@ export function parseLiveSceneSource(value: unknown): LiveSceneSourceSnapshot {
   );
   if (root.kind !== "live-scene-source" || root.version !== 1)
     throw new Error("LiveSceneSource besitzt einen unbekannten Vertrag.");
-  if (!(["active", "prepared", "retired", "archived"] as const).includes(root.lifecycle as never))
+  if (
+    !(["active", "prepared", "retired", "archived"] as const).includes(
+      root.lifecycle as never,
+    )
+  )
     throw new Error("LiveSceneSource.lifecycle ist unbekannt.");
   const characterIds = Object.freeze(
     unique(
-      array(root.characterIds, "LiveSceneSource.characterIds").map((entry, index) =>
-        characterId(entry, `LiveSceneSource.characterIds[${index}]`),
+      array(root.characterIds, "LiveSceneSource.characterIds").map(
+        (entry, index) =>
+          characterId(entry, `LiveSceneSource.characterIds[${index}]`),
       ),
       (entry) => entry,
       "LiveSceneSource.characterIds",
@@ -636,21 +818,37 @@ export function parseLiveSceneSource(value: unknown): LiveSceneSourceSnapshot {
     version: 1,
     campaignId: campaignId(root.campaignId, "LiveSceneSource.campaignId"),
     liveSceneId: liveSceneId(root.liveSceneId, "LiveSceneSource.liveSceneId"),
-    sceneRevision: revision(root.sceneRevision, "LiveSceneSource.sceneRevision"),
+    sceneRevision: revision(
+      root.sceneRevision,
+      "LiveSceneSource.sceneRevision",
+    ),
     lifecycle: root.lifecycle as LiveSceneSourceSnapshot["lifecycle"],
     primary: bool(root.primary, "LiveSceneSource.primary"),
     characterIds,
     pendingAssignments: pendingAssignments(root.pendingAssignments),
     ...(root.locationRef === undefined
       ? {}
-      : { locationRef: parseOwnerReference(root.locationRef, "LiveSceneSource.locationRef") }),
+      : {
+          locationRef: parseOwnerReference(
+            root.locationRef,
+            "LiveSceneSource.locationRef",
+          ),
+        }),
     ...(root.sceneClockRef === undefined
       ? {}
-      : { sceneClockRef: parseOwnerReference(root.sceneClockRef, "LiveSceneSource.sceneClockRef") }),
+      : {
+          sceneClockRef: parseClockReference(
+            root.sceneClockRef,
+            "LiveSceneSource.sceneClockRef",
+          ),
+        }),
     groupRefs: ownerReferences(root.groupRefs, "LiveSceneSource.groupRefs"),
     maskRefs: maskReferences(root.maskRefs),
     reconciliations: reconciliations(root.reconciliations),
-    contentPins: ownerReferences(root.contentPins, "LiveSceneSource.contentPins"),
+    contentPins: ownerReferences(
+      root.contentPins,
+      "LiveSceneSource.contentPins",
+    ),
   });
 }
 
@@ -658,7 +856,13 @@ export function parseFocusSource(value: unknown): FocusSourceSnapshot {
   const base = record(
     value,
     ["kind", "version", "status", "campaignId", "focusRevision"],
-    ["liveSceneId", "sceneRevision", "commandId", "pendingLiveSceneId", "ownerId"],
+    [
+      "liveSceneId",
+      "sceneRevision",
+      "commandId",
+      "pendingLiveSceneId",
+      "ownerId",
+    ],
     "FocusSource",
   );
   if (base.kind !== "focus-source" || base.version !== 1)
@@ -670,7 +874,20 @@ export function parseFocusSource(value: unknown): FocusSourceSnapshot {
     focusRevision: revision(base.focusRevision, "FocusSource.focusRevision"),
   };
   if (base.status === "active") {
-    const row = record(value, ["kind", "version", "status", "campaignId", "focusRevision", "liveSceneId", "sceneRevision"], [], "FocusSource");
+    const row = record(
+      value,
+      [
+        "kind",
+        "version",
+        "status",
+        "campaignId",
+        "focusRevision",
+        "liveSceneId",
+        "sceneRevision",
+      ],
+      [],
+      "FocusSource",
+    );
     return Object.freeze({
       ...common,
       status: "active",
@@ -679,7 +896,12 @@ export function parseFocusSource(value: unknown): FocusSourceSnapshot {
     });
   }
   if (base.status === "none") {
-    record(value, ["kind", "version", "status", "campaignId", "focusRevision"], [], "FocusSource");
+    record(
+      value,
+      ["kind", "version", "status", "campaignId", "focusRevision"],
+      [],
+      "FocusSource",
+    );
     return Object.freeze({ ...common, status: "none" });
   }
   if (base.status === "pending") {

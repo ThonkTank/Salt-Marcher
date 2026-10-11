@@ -1,8 +1,14 @@
 import {
+  parseClockOwnerIdentity,
+  parseClockReference,
+  parseClockValue,
   parsePartyCharacterProfile,
   parsePartyCharacterProgress,
   parseOwnerReference,
   parsePreparationSnapshot,
+  type ClockOwnerIdentity,
+  type ClockReference,
+  type ClockValueV1,
   type OwnerReference,
   type PartyCharacterProfileProjection,
   type PartyCharacterProgressProjection,
@@ -14,12 +20,14 @@ import {
   commandDigest,
   commandId,
   liveSceneId,
+  receiptId,
   revision,
   type CampaignId,
   type CharacterId,
   type CommandDigest,
   type CommandId,
   type LiveSceneId,
+  type ReceiptId,
   type Revision,
 } from "./ids";
 import {
@@ -43,7 +51,7 @@ export interface InitializeLiveSessionCommand extends AggregateCommandBinding {
   readonly kind: "initialize-live-session";
   readonly version: 1;
   readonly primarySceneId: LiveSceneId;
-  readonly sceneClockRef: OwnerReference;
+  readonly sceneClockRef: ClockReference;
   readonly title: string;
   readonly notes: string;
 }
@@ -52,7 +60,7 @@ export interface PrepareRuntimeCommand extends AggregateCommandBinding {
   readonly kind: "prepare-runtime";
   readonly version: 1;
   readonly liveSceneId: LiveSceneId;
-  readonly sceneClockRef: OwnerReference;
+  readonly sceneClockRef: ClockReference;
   readonly snapshot: PreparationSnapshot;
 }
 
@@ -64,6 +72,68 @@ export interface MoveCharactersCommand extends AggregateCommandBinding {
   readonly expectedSourceRevision: Revision;
   readonly expectedTargetRevision: Revision;
   readonly characterIds: readonly CharacterId[];
+}
+
+interface ClockContributionBase {
+  readonly status: "prepared-unpublished";
+  readonly receiptId: ReceiptId;
+  readonly campaignId: CampaignId;
+  readonly commandId: CommandId;
+  readonly commandDigest: CommandDigest;
+  readonly ownerIdentity: ClockOwnerIdentity;
+  readonly calendarDefinitionRef: OwnerReference;
+  readonly sourceSceneId: LiveSceneId;
+  readonly sourceSceneRevisionBefore: Revision;
+  readonly sourceSceneRevisionAfter: Revision;
+  readonly sourceClockRef: ClockReference;
+  readonly sourceClockValue: ClockValueV1;
+  readonly sourceClockRevisionAfter: Revision;
+  readonly targetSceneId: LiveSceneId;
+  readonly targetSceneRevisionAfter: Revision;
+  readonly targetClockRefAfter: ClockReference;
+  readonly targetClockRevisionAfter: Revision;
+  readonly targetClockValueAfter: ClockValueV1;
+  readonly sourceDisposition: "retain" | "archive";
+}
+
+export interface ClockForkCreateContribution extends ClockContributionBase {
+  readonly kind: "clock-fork-create-contribution";
+  readonly version: 1;
+  readonly targetKind: "created";
+  readonly choice: "source-confirmed";
+}
+
+export interface ClockMergeContribution extends ClockContributionBase {
+  readonly kind: "clock-merge-contribution";
+  readonly version: 1;
+  readonly targetKind: "existing";
+  readonly targetSceneRevisionBefore: Revision;
+  readonly targetClockRefBefore: ClockReference;
+  readonly targetClockRevisionBefore: Revision;
+  readonly targetClockValueBefore: ClockValueV1;
+  readonly choice: "source-confirmed" | "target-confirmed" | "manual-confirmed";
+}
+
+export interface SplitSceneCommand extends AggregateCommandBinding {
+  readonly kind: "split-scene";
+  readonly version: 1;
+  readonly sourceSceneId: LiveSceneId;
+  readonly expectedSourceRevision: Revision;
+  readonly targetSceneId: LiveSceneId;
+  readonly targetClockRef: ClockReference;
+  readonly characterIds: readonly CharacterId[];
+  readonly title: string;
+  readonly clockContribution: ClockForkCreateContribution;
+}
+
+export interface RejoinScenesCommand extends AggregateCommandBinding {
+  readonly kind: "rejoin-scenes";
+  readonly version: 1;
+  readonly sourceSceneId: LiveSceneId;
+  readonly expectedSourceRevision: Revision;
+  readonly targetSceneId: LiveSceneId;
+  readonly expectedTargetRevision: Revision;
+  readonly clockContribution: ClockMergeContribution;
 }
 
 export interface SetFocusCommand extends AggregateCommandBinding {
@@ -299,7 +369,7 @@ export function parseInitializeLiveSessionCommand(
     version: 1,
     ...binding(row, label),
     primarySceneId: liveSceneId(row.primarySceneId, `${label}.primarySceneId`),
-    sceneClockRef: parseOwnerReference(
+    sceneClockRef: parseClockReference(
       row.sceneClockRef,
       `${label}.sceneClockRef`,
     ),
@@ -325,7 +395,7 @@ export function parsePrepareRuntimeCommand(
     version: 1,
     ...binding(row, label),
     liveSceneId: liveSceneId(row.liveSceneId, `${label}.liveSceneId`),
-    sceneClockRef: parseOwnerReference(
+    sceneClockRef: parseClockReference(
       row.sceneClockRef,
       `${label}.sceneClockRef`,
     ),
@@ -378,6 +448,306 @@ export function parseMoveCharactersCommand(
       `${label}.expectedTargetRevision`,
     ),
     characterIds,
+  });
+}
+
+const CLOCK_CONTRIBUTION_COMMON = [
+  "kind",
+  "version",
+  "status",
+  "receiptId",
+  "campaignId",
+  "commandId",
+  "commandDigest",
+  "ownerIdentity",
+  "calendarDefinitionRef",
+  "sourceSceneId",
+  "sourceSceneRevisionBefore",
+  "sourceSceneRevisionAfter",
+  "sourceClockRef",
+  "sourceClockValue",
+  "sourceClockRevisionAfter",
+  "targetSceneId",
+  "targetSceneRevisionAfter",
+  "targetClockRefAfter",
+  "targetClockRevisionAfter",
+  "targetClockValueAfter",
+  "sourceDisposition",
+  "targetKind",
+  "choice",
+] as const;
+
+function clockContributionBase(
+  row: Record<string, unknown>,
+  label: string,
+): ClockContributionBase {
+  if (row.status !== "prepared-unpublished")
+    throw new Error(`${label}.status ist nicht vorbereitet.`);
+  if (
+    !(row.sourceDisposition === "retain" || row.sourceDisposition === "archive")
+  )
+    throw new Error(`${label}.sourceDisposition ist unbekannt.`);
+  const ownerIdentity = parseClockOwnerIdentity(
+      row.ownerIdentity,
+      `${label}.ownerIdentity`,
+    ),
+    sourceClockRef = parseClockReference(
+      row.sourceClockRef,
+      `${label}.sourceClockRef`,
+    ),
+    targetClockRefAfter = parseClockReference(
+      row.targetClockRefAfter,
+      `${label}.targetClockRefAfter`,
+    ),
+    sourceClockRevisionAfter = revision(
+      row.sourceClockRevisionAfter,
+      `${label}.sourceClockRevisionAfter`,
+    ),
+    targetClockRevisionAfter = revision(
+      row.targetClockRevisionAfter,
+      `${label}.targetClockRevisionAfter`,
+    );
+  if (
+    ownerIdentity.ownerId !== sourceClockRef.ownerId ||
+    ownerIdentity.generationId !== sourceClockRef.generationId ||
+    ownerIdentity.ownerId !== targetClockRefAfter.ownerId ||
+    ownerIdentity.generationId !== targetClockRefAfter.generationId ||
+    sourceClockRevisionAfter !== sourceClockRef.ownerRevision ||
+    targetClockRevisionAfter !== targetClockRefAfter.ownerRevision
+  )
+    throw new Error(
+      `${label} bindet Clock-Identität oder Revision widersprüchlich.`,
+    );
+  return Object.freeze({
+    status: "prepared-unpublished",
+    receiptId: receiptId(row.receiptId, `${label}.receiptId`),
+    campaignId: campaignId(row.campaignId, `${label}.campaignId`),
+    commandId: commandId(row.commandId, `${label}.commandId`),
+    commandDigest: commandDigest(row.commandDigest, `${label}.commandDigest`),
+    ownerIdentity,
+    calendarDefinitionRef: parseOwnerReference(
+      row.calendarDefinitionRef,
+      `${label}.calendarDefinitionRef`,
+    ),
+    sourceSceneId: liveSceneId(row.sourceSceneId, `${label}.sourceSceneId`),
+    sourceSceneRevisionBefore: revision(
+      row.sourceSceneRevisionBefore,
+      `${label}.sourceSceneRevisionBefore`,
+    ),
+    sourceSceneRevisionAfter: revision(
+      row.sourceSceneRevisionAfter,
+      `${label}.sourceSceneRevisionAfter`,
+    ),
+    sourceClockRef,
+    sourceClockValue: parseClockValue(
+      row.sourceClockValue,
+      `${label}.sourceClockValue`,
+    ),
+    sourceClockRevisionAfter,
+    targetSceneId: liveSceneId(row.targetSceneId, `${label}.targetSceneId`),
+    targetSceneRevisionAfter: revision(
+      row.targetSceneRevisionAfter,
+      `${label}.targetSceneRevisionAfter`,
+    ),
+    targetClockRefAfter,
+    targetClockRevisionAfter,
+    targetClockValueAfter: parseClockValue(
+      row.targetClockValueAfter,
+      `${label}.targetClockValueAfter`,
+    ),
+    sourceDisposition: row.sourceDisposition,
+  });
+}
+
+export function parseClockForkCreateContribution(
+  value: unknown,
+): ClockForkCreateContribution {
+  const label = "ClockForkCreateContribution",
+    row = exactRecord(value, CLOCK_CONTRIBUTION_COMMON, [], label);
+  if (
+    row.kind !== "clock-fork-create-contribution" ||
+    row.version !== 1 ||
+    row.targetKind !== "created" ||
+    row.choice !== "source-confirmed"
+  )
+    throw new Error(`${label} besitzt einen unbekannten Vertrag.`);
+  const base = clockContributionBase(row, label);
+  if (
+    base.targetSceneRevisionAfter !== 0 ||
+    base.targetClockRevisionAfter !== 0 ||
+    base.sourceClockValue.canonicalValue !==
+      base.targetClockValueAfter.canonicalValue
+  )
+    throw new Error(`${label} besitzt keinen kanonischen Fresh-Fork.`);
+  return Object.freeze({
+    kind: "clock-fork-create-contribution",
+    version: 1,
+    ...base,
+    targetKind: "created",
+    choice: "source-confirmed",
+  });
+}
+
+export function parseClockMergeContribution(
+  value: unknown,
+): ClockMergeContribution {
+  const label = "ClockMergeContribution",
+    row = exactRecord(
+      value,
+      [
+        ...CLOCK_CONTRIBUTION_COMMON,
+        "targetSceneRevisionBefore",
+        "targetClockRefBefore",
+        "targetClockRevisionBefore",
+        "targetClockValueBefore",
+      ],
+      [],
+      label,
+    );
+  if (
+    row.kind !== "clock-merge-contribution" ||
+    row.version !== 1 ||
+    row.targetKind !== "existing" ||
+    !(
+      row.choice === "source-confirmed" ||
+      row.choice === "target-confirmed" ||
+      row.choice === "manual-confirmed"
+    )
+  )
+    throw new Error(`${label} besitzt einen unbekannten Vertrag.`);
+  const base = clockContributionBase(row, label),
+    targetClockRefBefore = parseClockReference(
+      row.targetClockRefBefore,
+      `${label}.targetClockRefBefore`,
+    ),
+    targetClockRevisionBefore = revision(
+      row.targetClockRevisionBefore,
+      `${label}.targetClockRevisionBefore`,
+    ),
+    targetClockValueBefore = parseClockValue(
+      row.targetClockValueBefore,
+      `${label}.targetClockValueBefore`,
+    );
+  if (
+    targetClockRefBefore.ownerId !== base.ownerIdentity.ownerId ||
+    targetClockRefBefore.generationId !== base.ownerIdentity.generationId ||
+    targetClockRefBefore.referenceId !== base.targetClockRefAfter.referenceId ||
+    targetClockRefBefore.ownerRevision !== targetClockRevisionBefore ||
+    base.targetClockRevisionAfter !== targetClockRevisionBefore + 1 ||
+    (row.choice === "source-confirmed" &&
+      base.targetClockValueAfter.canonicalValue !==
+        base.sourceClockValue.canonicalValue) ||
+    (row.choice === "target-confirmed" &&
+      base.targetClockValueAfter.canonicalValue !==
+        targetClockValueBefore.canonicalValue)
+  )
+    throw new Error(
+      `${label} bindet Merge-Wahl oder Revision widersprüchlich.`,
+    );
+  return Object.freeze({
+    kind: "clock-merge-contribution",
+    version: 1,
+    ...base,
+    targetKind: "existing",
+    targetSceneRevisionBefore: revision(
+      row.targetSceneRevisionBefore,
+      `${label}.targetSceneRevisionBefore`,
+    ),
+    targetClockRefBefore,
+    targetClockRevisionBefore,
+    targetClockValueBefore,
+    choice: row.choice,
+  });
+}
+
+function parsedCharacterIds(
+  value: unknown,
+  label: string,
+): readonly CharacterId[] {
+  const values = Object.freeze(
+    uniqueBy(
+      exactArray(value, label).map((entry, index) =>
+        characterId(entry, `${label}[${index}]`),
+      ),
+      (entry) => entry,
+      label,
+    ),
+  );
+  if (!values.length) throw new Error(`${label} darf nicht leer sein.`);
+  return values;
+}
+
+export function parseSplitSceneCommand(value: unknown): SplitSceneCommand {
+  const label = "SplitSceneCommand",
+    row = exactRecord(
+      value,
+      [
+        ...COMMON,
+        "sourceSceneId",
+        "expectedSourceRevision",
+        "targetSceneId",
+        "targetClockRef",
+        "characterIds",
+        "title",
+        "clockContribution",
+      ],
+      [],
+      label,
+    );
+  if (row.kind !== "split-scene" || row.version !== 1)
+    throw new Error(`${label} besitzt einen unbekannten Vertrag.`);
+  return Object.freeze({
+    kind: "split-scene",
+    version: 1,
+    ...binding(row, label),
+    sourceSceneId: liveSceneId(row.sourceSceneId, `${label}.sourceSceneId`),
+    expectedSourceRevision: revision(
+      row.expectedSourceRevision,
+      `${label}.expectedSourceRevision`,
+    ),
+    targetSceneId: liveSceneId(row.targetSceneId, `${label}.targetSceneId`),
+    targetClockRef: parseClockReference(
+      row.targetClockRef,
+      `${label}.targetClockRef`,
+    ),
+    characterIds: parsedCharacterIds(row.characterIds, `${label}.characterIds`),
+    title: exactText(row.title, `${label}.title`, true),
+    clockContribution: parseClockForkCreateContribution(row.clockContribution),
+  });
+}
+
+export function parseRejoinScenesCommand(value: unknown): RejoinScenesCommand {
+  const label = "RejoinScenesCommand",
+    row = exactRecord(
+      value,
+      [
+        ...COMMON,
+        "sourceSceneId",
+        "expectedSourceRevision",
+        "targetSceneId",
+        "expectedTargetRevision",
+        "clockContribution",
+      ],
+      [],
+      label,
+    );
+  if (row.kind !== "rejoin-scenes" || row.version !== 1)
+    throw new Error(`${label} besitzt einen unbekannten Vertrag.`);
+  return Object.freeze({
+    kind: "rejoin-scenes",
+    version: 1,
+    ...binding(row, label),
+    sourceSceneId: liveSceneId(row.sourceSceneId, `${label}.sourceSceneId`),
+    expectedSourceRevision: revision(
+      row.expectedSourceRevision,
+      `${label}.expectedSourceRevision`,
+    ),
+    targetSceneId: liveSceneId(row.targetSceneId, `${label}.targetSceneId`),
+    expectedTargetRevision: revision(
+      row.expectedTargetRevision,
+      `${label}.expectedTargetRevision`,
+    ),
+    clockContribution: parseClockMergeContribution(row.clockContribution),
   });
 }
 

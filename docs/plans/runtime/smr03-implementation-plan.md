@@ -5,6 +5,7 @@ issue: 90
 status: active
 checkpoint: saltMarcherReplacement
 ---
+
 # SMR-03-I01 – Hostneutraler Party-/Scene-/Live-Session-Kern
 
 Status: **I01-A ist in Shared integriert; I01-B läuft als getrenntes Paket in
@@ -52,14 +53,14 @@ späteren, separat freigegebenen Paketen angeschlossen.
 
 ## Abhängigkeiten und harte Gates
 
-| Gate | Aktueller Zustand | Wirkung auf SMR-03 |
-| --- | --- | --- |
-| SMR-03-Semantik und aktuelle Owner | für den gebundenen SHA reviewt/ratifiziert | I01 darf geplant und nach Plan-PASS als reiner Kern umgesetzt werden |
-| SMR-01 Campaign-/Transaktionsvertrag | Kandidat, nicht als Produktadapter freigegeben | keine persistente Mutation, kein Import/Export und kein Recovery-Adapter in I01 |
-| SMR-07 Clock-/Travel-Vertrag | reviewte Semantik, getrennt ratifikationspflichtig | I01 speichert nur opaque `SceneClockRef` und erwartet revisionierte Entscheidungen; keine eigene Uhr |
-| SMR-00-ADR-01 | vorgeschlagen, P01–P04/C01 nicht vollständig entschieden | keine neue Obsidian- oder Desktopkopplung und keine IPC-/SQLite-/Fensterwahl |
-| Encounter/Chase-Fachowner | Runtime-Mask-Lifecycle nur eng ratifiziert | nur Maskenidentität, Teilnehmer-Reconciliation und Lifecycle-Status; keine Regeln, HP, Initiative, Completion oder Effects |
-| Passive Display | Consumer-Owner offen | kein Export, Kanal, DTO, Subscription oder Rendering aus der internen Source |
+| Gate                                 | Aktueller Zustand                                        | Wirkung auf SMR-03                                                                                                         |
+| ------------------------------------ | -------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| SMR-03-Semantik und aktuelle Owner   | für den gebundenen SHA reviewt/ratifiziert               | I01 darf geplant und nach Plan-PASS als reiner Kern umgesetzt werden                                                       |
+| SMR-01 Campaign-/Transaktionsvertrag | Kandidat, nicht als Produktadapter freigegeben           | keine persistente Mutation, kein Import/Export und kein Recovery-Adapter in I01                                            |
+| SMR-07 Clock-/Travel-Vertrag         | reviewte Semantik, getrennt ratifikationspflichtig       | I01 speichert nur opaque `SceneClockRef` und erwartet revisionierte Entscheidungen; keine eigene Uhr                       |
+| SMR-00-ADR-01                        | vorgeschlagen, P01–P04/C01 nicht vollständig entschieden | keine neue Obsidian- oder Desktopkopplung und keine IPC-/SQLite-/Fensterwahl                                               |
+| Encounter/Chase-Fachowner            | Runtime-Mask-Lifecycle nur eng ratifiziert               | nur Maskenidentität, Teilnehmer-Reconciliation und Lifecycle-Status; keine Regeln, HP, Initiative, Completion oder Effects |
+| Passive Display                      | Consumer-Owner offen                                     | kein Export, Kanal, DTO, Subscription oder Rendering aus der internen Source                                               |
 
 Fehlt ein erforderlicher Owner oder liefert ein Port `unavailable`, bleibt der
 reine Kern lesbar und erzeugt ausschließlich den normierten Pending-/Fail-
@@ -72,20 +73,20 @@ Der bestehende Dungeon-Typ `src/session.ts::Session`, Atlas-/City-Scenes,
 MapRepository und aktuelle Obsidian-Views werden weder umbenannt noch als
 Fachzustand wiederverwendet.
 
-| Datei | Verantwortung | Darf nicht enthalten |
-| --- | --- | --- |
-| `ids.ts` | gebrandete Campaign-, Character-, Party-, LiveScene-, Mask-, Command- und Owner-IDs; zentrale Parser | Pfade, Hosthandles oder generierte Zufallswerte |
-| `contracts.ts` | readonly DTOs, Revisionen, Lifecycle-Enums und parse-/assert-Funktionen | Repository-, UI- oder Fachowner-Implementierung |
-| `state.ts` | immutable `PartyState`, `SceneState`, `LiveSessionState`, Tombstone-/Pending-Referenzen | Consumerzustände fremder Fachbereiche |
-| `commands.ts` | diskriminierte, revisionierte Command-Requests und fachliche Ergebnis-/Konflikttypen | direkte Writes, globale Singletons oder UI-Callbacks |
-| `party-aggregate.ts` | Roster, Membership, Profile, XP/Rest, PartyRevision und History-Entscheidungen | SceneClock, Encounter-, Shop-, Weather- oder Music-Wahrheit |
-| `scene-aggregate.ts` | Primary, Focus, Scene-Zuordnung, Split/Rejoin, Empty-Scene-Cleanup und SceneRevision | Partyprofil, Karteninhalt, Clockwert oder Maskenpayload |
-| `mask-reconciliation.ts` | owner-neutrale Teilnehmer-/Retirement-Pflichten mit erwarteten Revisionen | Encounter-/Chase-Regeln, Completion oder Effects |
-| `projections.ts` | tief eingefrorene Party-, Focus-, LiveScene- und LiveSession-Projektionen | Playerprojektion oder private Daten fremder Owner |
-| `coordinator-contract.ts` | Stage/Validate/Publish/Verify/Finalize-, Cancel-, Receipt- und Pending-Verträge | konkrete Transaktion, Dateisystem, SQL oder IPC |
-| `reference-owners.ts` | Registry-/Manifest-/Erasure-Slot- und Quarantäne-Vertragstypen | frei interpretierbare Pfade, SQL-Schlüssel oder fremde Payloads |
-| `history.ts` | bounded 100-step PartyCommandHistory, kausale Undo-/Redo-Pläne und irreversible Tombstonegrenzen | SMR-07-Campaign-History oder rekonstruierbare gelöschte Personendaten |
-| `index.ts` | ausdrücklich freigegebene öffentliche Kernoberfläche | Hostadapter oder Convenience-Reexport fremder Interna |
+| Datei                     | Verantwortung                                                                                        | Darf nicht enthalten                                                  |
+| ------------------------- | ---------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| `ids.ts`                  | gebrandete Campaign-, Character-, Party-, LiveScene-, Mask-, Command- und Owner-IDs; zentrale Parser | Pfade, Hosthandles oder generierte Zufallswerte                       |
+| `contracts.ts`            | readonly DTOs, Revisionen, Lifecycle-Enums und parse-/assert-Funktionen                              | Repository-, UI- oder Fachowner-Implementierung                       |
+| `state.ts`                | immutable `PartyState`, `SceneState`, `LiveSessionState`, Tombstone-/Pending-Referenzen              | Consumerzustände fremder Fachbereiche                                 |
+| `commands.ts`             | diskriminierte, revisionierte Command-Requests und fachliche Ergebnis-/Konflikttypen                 | direkte Writes, globale Singletons oder UI-Callbacks                  |
+| `party-aggregate.ts`      | Roster, Membership, Profile, XP/Rest, PartyRevision und History-Entscheidungen                       | SceneClock, Encounter-, Shop-, Weather- oder Music-Wahrheit           |
+| `scene-aggregate.ts`      | Primary, Focus, Scene-Zuordnung, Split/Rejoin, Empty-Scene-Cleanup und SceneRevision                 | Partyprofil, Karteninhalt, Clockwert oder Maskenpayload               |
+| `mask-reconciliation.ts`  | owner-neutrale Teilnehmer-/Retirement-Pflichten mit erwarteten Revisionen                            | Encounter-/Chase-Regeln, Completion oder Effects                      |
+| `projections.ts`          | tief eingefrorene Party-, Focus-, LiveScene- und LiveSession-Projektionen                            | Playerprojektion oder private Daten fremder Owner                     |
+| `coordinator-contract.ts` | Stage/Validate/Publish/Verify/Finalize-, Cancel-, Receipt- und Pending-Verträge                      | konkrete Transaktion, Dateisystem, SQL oder IPC                       |
+| `reference-owners.ts`     | Registry-/Manifest-/Erasure-Slot- und Quarantäne-Vertragstypen                                       | frei interpretierbare Pfade, SQL-Schlüssel oder fremde Payloads       |
+| `history.ts`              | bounded 100-step PartyCommandHistory, kausale Undo-/Redo-Pläne und irreversible Tombstonegrenzen     | SMR-07-Campaign-History oder rekonstruierbare gelöschte Personendaten |
+| `index.ts`                | ausdrücklich freigegebene öffentliche Kernoberfläche                                                 | Hostadapter oder Convenience-Reexport fremder Interna                 |
 
 Die Dateiteilung ist eine Implementierungsgrenze, keine Aufforderung, alles in
 einem Commit zu bauen. Jeder unten benannte Slice bleibt getrennt reviewbar.
@@ -282,49 +283,49 @@ Whole-Branch-Merge und kein Legacy-Parser nur wegen historischer Existenz.
 I01 legt noch keine Hostabnahme ab. Es schafft den reproduzierbaren Kern für
 die 22 Fach-Acceptance-Fälle:
 
-| Suite | Verbindlicher Nachweis |
-| --- | --- |
-| `live-session-contract.test.ts` | Parser, deep freeze, IDs/Revisionen, fremde Campaign, unbekannte Felder, keine mutable Aliase |
-| `party-aggregate.test.ts` | Name-only, Duplikatnamen, Membership, Profile leeren, XP/Rest, keine Scene-Nebenwirkung |
-| `scene-lifecycle.test.ts` | Initialize, Primary/Focus, A/B/A, Split, Teil-Move, Rejoin, prepared Runtime Scene und deterministic Cleanup |
-| `scene-clock-boundary.test.ts` | frühere/spätere/manuelle Clockentscheidung, stale Revision, keine eigene Zeit-/WorldEffect-Wirkung |
-| `mask-reconciliation.test.ts` | mehrere Masken, geteilte Teilnehmer, remove/retain/retire, unavailable/stale, keine Completion/Effects |
-| `live-session-projection.test.ts` | active/none/pending/unavailable, stale/fremd/beschädigt fail-closed, immutable Consumergrenze |
-| `party-history.test.ts` | 100 Schritte, neuer Command für Undo/Redo, Redozweig, Konflikte, irreversible/anonymisierte Löschung |
-| `reference-owner-contract.test.ts` | Registryvollständigkeit, Slot-/Target-/Survivor-Bindung, opaque Token, Tombstone und unknown Owner fail-closed |
-| `multi-owner-model.test.ts` | reine Stage-/Validate-/Publish-/Verify-/Finalize-Modellmatrix, Retry, unknown outcome und Cancel-Race |
-| `live-session-scale.test.ts` | 20 Rosterfiguren, vier Scenes, acht Masken, 50 Teilnehmer ohne Truncation/Vermischung; Zeitmessung nur als lokaler Vorbeleg |
-| `live-session-boundary.test.mjs` | kein Import von Obsidian, Electron, Node, `fs`, Vault, MapRepository oder Host-UI; kein Passive-Display-Export |
+| Suite                              | Verbindlicher Nachweis                                                                                                      |
+| ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `live-session-contract.test.ts`    | Parser, deep freeze, IDs/Revisionen, fremde Campaign, unbekannte Felder, keine mutable Aliase                               |
+| `party-aggregate.test.ts`          | Name-only, Duplikatnamen, Membership, Profile leeren, XP/Rest, keine Scene-Nebenwirkung                                     |
+| `scene-lifecycle.test.ts`          | Initialize, Primary/Focus, A/B/A, Split, Teil-Move, Rejoin, prepared Runtime Scene und deterministic Cleanup                |
+| `scene-clock-boundary.test.ts`     | frühere/spätere/manuelle Clockentscheidung, stale Revision, keine eigene Zeit-/WorldEffect-Wirkung                          |
+| `mask-reconciliation.test.ts`      | mehrere Masken, geteilte Teilnehmer, remove/retain/retire, unavailable/stale, keine Completion/Effects                      |
+| `live-session-projection.test.ts`  | active/none/pending/unavailable, stale/fremd/beschädigt fail-closed, immutable Consumergrenze                               |
+| `party-history.test.ts`            | 100 Schritte, neuer Command für Undo/Redo, Redozweig, Konflikte, irreversible/anonymisierte Löschung                        |
+| `reference-owner-contract.test.ts` | Registryvollständigkeit, Slot-/Target-/Survivor-Bindung, opaque Token, Tombstone und unknown Owner fail-closed              |
+| `multi-owner-model.test.ts`        | reine Stage-/Validate-/Publish-/Verify-/Finalize-Modellmatrix, Retry, unknown outcome und Cancel-Race                       |
+| `live-session-scale.test.ts`       | 20 Rosterfiguren, vier Scenes, acht Masken, 50 Teilnehmer ohne Truncation/Vermischung; Zeitmessung nur als lokaler Vorbeleg |
+| `live-session-boundary.test.mjs`   | kein Import von Obsidian, Electron, Node, `fs`, Vault, MapRepository oder Host-UI; kein Passive-Display-Export              |
 
 ### Vollständige Zuordnung der 22 Fach-Acceptance-Fälle
 
 Die folgende Matrix trennt das in I01 zulässige Modelloracle vom späteren
 Realnachweis. Ein I01-PASS schließt niemals eine Spalte rechts davon.
 
-| Acceptance | I01-Modelloracle und zuständiger Slice | Verbleibender Realnachweis |
-| --- | --- | --- |
-| 1 | I01-B: Campaign ohne Session, ausdrückliches Init, Partyreihenfolge, stale/unavailable und idempotentes Receiptmodell | I02: gemeinsamer durable Publish von Scene/Focus/Clock, Continue/Import/Restart |
-| 2 | I01-B: Empty-Scene-Cleanup, genau eine Primary, Prepared getrennt, direkte Primary-Löschung unmöglich | I02: persistierter/recoverter Cleanup-Ausgang |
-| 3 | I01-B: Aktivierung an erwarteten Focus gebunden, Focus-Race stale, kein reguläres `unassigned` | I02/I03: durable Pending und sichtbare GM-Rückmeldung |
-| 4 | I01-B: A/B/A-, Campaign- und Membership-Invarianten im Modell/Fuzzer | I02: gespeicherter Campaignwechsel/Restart |
-| 5 | I01-B: Split/Teil-Move/Rejoin, Source-Erhalt, Cleanupplan und ortsgebundene opaque Referenzen | I02 plus spätere Karten-/Consumeradapter: durable gemeinsame Wirkung |
-| 6 | I01-B: unveröffentlichter Clock-Participant-Beitrag am selben Rejoin, alle Focus-/Primary-/Maskenausgänge | I02 + ratifizierter SMR-07-Port: atomarer Publish, Crash/Restart, tatsächliche ClockRevision/WorldEffect-Isolation |
-| 7 | I01-B: Deactivate, unavailable Consumer, Pending, Retry und Cleanup im reinen Modell | I02: exactly-once Publish/Reconciliation/Restart |
-| 8 | I01-C: Tombstone, Registry/Manifest, Slot-/Target-/Before-/After-/Survivor-Verträge, unknown Owner fail-closed | I02 + echte Capability-Owner: byteweise Erasure, Quarantäne, Audit, Reconnect, Purge und Restart |
-| 9 | I01-B: mehrere Masken, geteilte Teilnehmer und begrenzte remove/retain-Pflichten | spätere Maskenprovider: reale Teilnehmerreconciliation ohne Fachnebenwirkung |
-| 10 | I01-A/B: Focus-only-Diff und frische Consumerprojektion | I03: echte Music/Weather/Shops/Karten-Consumerreaktion |
-| 11 | I01-A: none/stale/damaged/foreign fail-closed und nachweislich kein Passive-Display-Export | I03: reale interne Consumer; SMR-10: Player-Null-Leak/Focus-/Displayqualifikation |
-| 12 | I01-A/B: serialisierbares Modelloracle für Focus/Scenes/MaskRefs/Pending ohne Auto-Resume | I02/I03: Continue, Restart und unbestätigte Drafts im echten Store/Host |
-| 13 | I01-C: ID-/Referenz-Remap-Verträge und Konfliktoracle | I02: vollständiger Current-Format Restore/Import mit unabhängiger Campaign |
-| 14 | I01-C: Complete/Salvage-/RetainedQuarantine-/Rebind-/OpaqueDiscard-Vertragsfälle | I02: reale Bytes, Medien, Export/Import, beschädigte Daten, Providerwechsel und exactly-once Receipt |
-| 15 | I01-B: Name-only, Duplikatnamen, optionale Profilabwesenheit, stabile ID, inaktiv ohne Scene-Wirkung | I02/I03: gespeicherte Formulare und Reopen |
-| 16 | I01-B: XP/Rest/Adventuring-Day ohne Scene-Diff; Expected Party bleibt fremder Input | I02/I03: persistierte Aktion und sichtbarer Planning-Adapter |
-| 17 | I01-A/B: immutable PreparationSnapshot, neue Runtime-IDs, unabhängige Kopien, Provenienz und getrennter Move | I02 + SMR-06-Adapter: gespeicherter Import, Planneränderung, Reopen und Movefehler |
-| 18 | I01-B: Completion/Transfer fehlen bewusst; Maskenpflicht kann keine Scene/Folge beenden | spätere Encounter-/Chase-Owner: echte bestätigte Completion-/Transfer-Receipts |
-| 19 | I01-C: Modellmatrix für **alle** genannten Commands und Phasen, ursprüngliche CommandId/Receipt, Cancel-vs-Publish, stale Participant/Worker/Callback und Survivor-Invariante | I02/Host: harte Crashs, echte späte Tasks, TN-22 ≤1 s/10 s, Handle-/Queue-/Temp-/Byte-/Prozessmessung |
-| 20 | I01-C: 100 History-Schritte, neue Undo-/Redo-Commands, Redozweig, Konflikte, irreversible/anonymisierte Löschung | I02: Prozessneustart und durable History/Receipts |
-| 21 | I01-B/C: 20/4/8/50 ohne Truncation/Vermischung; lokale Zeit nur diagnostisch | I02/I03/Host: normative TN-21-Livebudgets auf Zielplattformen |
-| 22 | I01-A/B/C: vollständige Namen/Zustände in DTOs ohne farbabhängige Semantik | I03/SMR-11: echte Tastatur-, 200-%-, Lokalisierungs-, Screenreader-/axe- und Kontrastabläufe |
+| Acceptance | I01-Modelloracle und zuständiger Slice                                                                                                                                        | Verbleibender Realnachweis                                                                                         |
+| ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| 1          | I01-B: Campaign ohne Session, ausdrückliches Init, Partyreihenfolge, stale/unavailable und idempotentes Receiptmodell                                                         | I02: gemeinsamer durable Publish von Scene/Focus/Clock, Continue/Import/Restart                                    |
+| 2          | I01-B: Empty-Scene-Cleanup, genau eine Primary, Prepared getrennt, direkte Primary-Löschung unmöglich                                                                         | I02: persistierter/recoverter Cleanup-Ausgang                                                                      |
+| 3          | I01-B: Aktivierung an erwarteten Focus gebunden, Focus-Race stale, kein reguläres `unassigned`                                                                                | I02/I03: durable Pending und sichtbare GM-Rückmeldung                                                              |
+| 4          | I01-B: A/B/A-, Campaign- und Membership-Invarianten im Modell/Fuzzer                                                                                                          | I02: gespeicherter Campaignwechsel/Restart                                                                         |
+| 5          | I01-B: Split/Teil-Move/Rejoin, Source-Erhalt, Cleanupplan und ortsgebundene opaque Referenzen                                                                                 | I02 plus spätere Karten-/Consumeradapter: durable gemeinsame Wirkung                                               |
+| 6          | I01-B: unveröffentlichter Clock-Participant-Beitrag am selben Rejoin, alle Focus-/Primary-/Maskenausgänge                                                                     | I02 + ratifizierter SMR-07-Port: atomarer Publish, Crash/Restart, tatsächliche ClockRevision/WorldEffect-Isolation |
+| 7          | I01-B: Deactivate, unavailable Consumer, Pending, Retry und Cleanup im reinen Modell                                                                                          | I02: exactly-once Publish/Reconciliation/Restart                                                                   |
+| 8          | I01-C: Tombstone, Registry/Manifest, Slot-/Target-/Before-/After-/Survivor-Verträge, unknown Owner fail-closed                                                                | I02 + echte Capability-Owner: byteweise Erasure, Quarantäne, Audit, Reconnect, Purge und Restart                   |
+| 9          | I01-B: mehrere Masken, geteilte Teilnehmer und begrenzte remove/retain-Pflichten                                                                                              | spätere Maskenprovider: reale Teilnehmerreconciliation ohne Fachnebenwirkung                                       |
+| 10         | I01-A/B: Focus-only-Diff und frische Consumerprojektion                                                                                                                       | I03: echte Music/Weather/Shops/Karten-Consumerreaktion                                                             |
+| 11         | I01-A: none/stale/damaged/foreign fail-closed und nachweislich kein Passive-Display-Export                                                                                    | I03: reale interne Consumer; SMR-10: Player-Null-Leak/Focus-/Displayqualifikation                                  |
+| 12         | I01-A/B: serialisierbares Modelloracle für Focus/Scenes/MaskRefs/Pending ohne Auto-Resume                                                                                     | I02/I03: Continue, Restart und unbestätigte Drafts im echten Store/Host                                            |
+| 13         | I01-C: ID-/Referenz-Remap-Verträge und Konfliktoracle                                                                                                                         | I02: vollständiger Current-Format Restore/Import mit unabhängiger Campaign                                         |
+| 14         | I01-C: Complete/Salvage-/RetainedQuarantine-/Rebind-/OpaqueDiscard-Vertragsfälle                                                                                              | I02: reale Bytes, Medien, Export/Import, beschädigte Daten, Providerwechsel und exactly-once Receipt               |
+| 15         | I01-B: Name-only, Duplikatnamen, optionale Profilabwesenheit, stabile ID, inaktiv ohne Scene-Wirkung                                                                          | I02/I03: gespeicherte Formulare und Reopen                                                                         |
+| 16         | I01-B: XP/Rest/Adventuring-Day ohne Scene-Diff; Expected Party bleibt fremder Input                                                                                           | I02/I03: persistierte Aktion und sichtbarer Planning-Adapter                                                       |
+| 17         | I01-A/B: immutable PreparationSnapshot, neue Runtime-IDs, unabhängige Kopien, Provenienz und getrennter Move                                                                  | I02 + SMR-06-Adapter: gespeicherter Import, Planneränderung, Reopen und Movefehler                                 |
+| 18         | I01-B: Completion/Transfer fehlen bewusst; Maskenpflicht kann keine Scene/Folge beenden                                                                                       | spätere Encounter-/Chase-Owner: echte bestätigte Completion-/Transfer-Receipts                                     |
+| 19         | I01-C: Modellmatrix für **alle** genannten Commands und Phasen, ursprüngliche CommandId/Receipt, Cancel-vs-Publish, stale Participant/Worker/Callback und Survivor-Invariante | I02/Host: harte Crashs, echte späte Tasks, TN-22 ≤1 s/10 s, Handle-/Queue-/Temp-/Byte-/Prozessmessung              |
+| 20         | I01-C: 100 History-Schritte, neue Undo-/Redo-Commands, Redozweig, Konflikte, irreversible/anonymisierte Löschung                                                              | I02: Prozessneustart und durable History/Receipts                                                                  |
+| 21         | I01-B/C: 20/4/8/50 ohne Truncation/Vermischung; lokale Zeit nur diagnostisch                                                                                                  | I02/I03/Host: normative TN-21-Livebudgets auf Zielplattformen                                                      |
+| 22         | I01-A/B/C: vollständige Namen/Zustände in DTOs ohne farbabhängige Semantik                                                                                                    | I03/SMR-11: echte Tastatur-, 200-%-, Lokalisierungs-, Screenreader-/axe- und Kontrastabläufe                       |
 
 Für Acceptance 19 parametrisiert `multi-owner-model.test.ts` mindestens
 Initialize, Split/Rejoin, Teil-Move, Deactivate/Cleanup, permanente Löschung,
@@ -503,7 +504,33 @@ Pending-Akkumulation und exakte OwnerIdentity-/OwnerRevision-Bindung ebenfalls
 mit `PASS`. Damit ist der Membership-Checkpoint in allen drei getrennten
 Reviewgrenzen bestätigt, ohne einen I01-B- oder Produkt-Gesamtpass abzuleiten.
 
-Noch offen und nicht durch den Checkpoint behauptet sind permanente Löschung,
-Split/Rejoin samt opaque Clock-Beitrag, die vollständige Masken-Reconciliation,
-Invariant-Fuzzer und Scaleorakel, deren jeweilige unabhängige Exact-SHA-Reviews
-und Shared-Integration.
+Für Split/Rejoin bestätigen Campaign/Data/Party in Kommentar `6104445781` und
+Music/Weather/Shops in Kommentar `6104600781` die created-/existing-
+Endpunkte, Partyreihenfolge, source-only Consumerpflichten sowie die
+Location-/Content-/Preparation-Grenze. Die Architektur-/Technikentscheidung
+`6104762364` und die direkte Scene/Time/Travel-Owner-Ratifikation
+`6104896713` schließen den Clockvertrag: `smr07.elapsed-seconds` als
+kanonischer signed-64-Bit-Codec, explizite OwnerGeneration, eindeutige aktive
+Clockidentitäten, Revision 0 für Fork/Create und exakt einen Clock-
+Revisionsschritt für Merge/existing. Durable Publish, Recovery und
+Ownerautorisation bleiben ausdrücklich außerhalb von I01-B.
+
+Der darauf basierende Split/Rejoin-Kandidat ergänzt strikt geparste immutable
+Fork-/Merge-Beiträge mit `prepared-unpublished` Receipt, diskriminierte
+Reconciliation-Ziele, partiellen und vollständigen Split sowie vollständigen
+Rejoin. Split kopiert ausschließlich die exakte LocationRef, startet das
+created Target consumerleer und ordnet Membership nach Partyreihenfolge.
+Rejoin lässt unresolved Source-Membership fail-closed, erhält vorhandene
+Target-Consumer und ortsgebundene Referenzen unverändert und archiviert nur
+die Source. Die Regressionen decken created/existing-Schemafehler, fremde
+Campaign-/Command-/Digest-/Generation-Pins, vertauschte ClockRefs, Alias und
+abweichenden Forkwert, unbekannte Clock-Codecs, alle drei auch rückwärts
+gerichteten Merge-Wahlen, Revisionsüberlauf, Cancel/stale, Focus-/Primary-
+Ausgänge, Pending-Akkumulation und unveränderte Target-Consumer ab. Ein
+vollständiger Exact-SHA-Review aller drei Grenzen bleibt vor Integration
+Pflicht.
+
+Noch offen und nicht durch diesen Kandidaten behauptet sind permanente
+Löschung, die über Split/Rejoin hinausgehende vollständige Masken-
+Reconciliation, Invariant-Fuzzer und Scaleorakel, deren jeweilige unabhängige
+Exact-SHA-Reviews und Shared-Integration.
