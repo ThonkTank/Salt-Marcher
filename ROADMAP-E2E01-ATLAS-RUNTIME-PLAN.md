@@ -112,11 +112,14 @@ History/Renderer/Context, acht Dateien erhalten, normal beendet/keine erzwungene
 PIDs; Slot frisch abgestimmt/zurückgegeben. Hex sah zwei PNGs direkt.
 Build/Fixture/Helper/Rohhashes im Beleg.
 
-**Nächster Empfänger:** Stadt: enger unabhängiger N04-Review; danach Stewardintegration
-und qualifizierter freier GM-Nachtest in #80. Keine neue allgemeine Atlas-/Planrunde
-oder Selbstintegration. Vor lokaler GUI Slot neu koordinieren. Copy/Discard/Recovery,
-früheres äußeres Clipping, Gesamt-E2E und physische/Original-/Großkarten-/Nutzervault-
-abnahme bleiben offen. Kein Detailausbau. #80 bleibt Hex.
+**N04 unabhängig geprüft:** [Stadt-R01](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/110#pullrequestreview-5481730796)
+auf305680d PASS: 11/11 Tests, Quellen/Rohdateien und zwei Bilder geprüft.
+
+**Nächster Empfänger:** Contributor zur unabhängigen Integration von PR110 nach
+Exact-CI/Kompositionsprüfung; danach freier GM-Nachtest in #80. Kein Selfmerge oder
+Detailausbau; vor GUI Slot neu koordinieren. Copy/Discard/Recovery, äußeres Clipping,
+Gesamt-E2E, physische/Original-/Großkarten-/Nutzervaultabnahme bleiben offen.
+
 
 ## Historische Planbasis und Lieferbelege
 

@@ -1007,33 +1007,33 @@
   "hexAtlasExecution": {
     "scope": "HEX-00 bis HEX-28 und sämtliche eingeordneten CITY-00 bis CITY-09 vollständig",
     "phase": "HEX-04",
-    "state": "horizontal_inspector_fit_native_owner_PASS_independent_review_pending",
+    "state": "horizontal_inspector_fit_independent_review_PASS_steward_integration_pending",
     "plan": "ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md",
     "currentRun": {
-      "id": "E2E-01-HEX04-INSPECTOR-GEOMETRY-REPAIR-N04",
+      "id": "E2E-01-HEX04-INSPECTOR-N04-R01-CONSUMED",
       "owner": "Hex",
       "issue": 80,
       "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
       "e2e01UserLine": 13,
-      "state": "horizontal_inspector_fit_native_owner_PASS_independent_review_pending",
-      "sourceCommit": "da3e06adefdcad20bdeaf57019c54f7b0fe08e0a",
-      "kind": "bounded_existing_common_Inspector_horizontal_fit_repair",
-      "record": "checkpoint.hexAtlasExecution.dungeonAtLocationInspectorHorizontalFitN04",
-      "guiUsed": true,
-      "productEdited": true,
+      "state": "horizontal_inspector_fit_independent_review_PASS_steward_integration_pending",
+      "kind": "consume_scoped_independent_review_and_hand_off_steward_input",
+      "sourceCommit": "305680db90546207f259d246b3a6c86afcc44e68",
+      "record": "checkpoint.hexAtlasExecution.dungeonAtLocationInspectorHorizontalFitN04Qualification",
+      "guiUsed": false,
+      "productEdited": false,
       "phaseApproval": false,
-      "finishedAt": "2026-10-11T03:19:59.921223+00:00"
+      "finishedAt": "2026-10-11T03:29:58.140266+00:00"
     },
     "nextRun": {
-      "id": "E2E-01-HEX04-INSPECTOR-GEOMETRY-REPAIR-N04-QUALIFICATION",
-      "kind": "consume_scoped_independent_review_or_required_finding",
+      "id": "E2E-01-HEX04-INSPECTOR-N04-S01-CONSUMPTION",
+      "kind": "consume_independent_steward_integration_or_required_finding",
       "owner": "Hex",
       "issue": 80,
       "e2eIssue": 12,
       "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
       "e2e01UserLine": 13,
-      "input": "checkpoint.hexAtlasExecution.dungeonAtLocationInspectorHorizontalFitN04",
-      "focus": "Stadt: scoped independent review of two product files and source-bound horizontal-fit evidence; then steward integration and qualified free GM followup. No dependent expansion or selfmerge.",
+      "input": "checkpoint.hexAtlasExecution.dungeonAtLocationInspectorHorizontalFitN04Qualification",
+      "focus": "Contributor (existing Obsidian Dungeon Repo ansehen chat): independent steward integration of PR110 after exact new-head CI and composition/source checks. Then qualified free GM followup in #80; no dependent detail expansion or selfintegration by Hex.",
       "dependentExpansionAllowed": false,
       "newLocalGuiSlotRequired": true,
       "noCompetingCitySaveFix": true
@@ -5486,7 +5486,7 @@
       "platformIssue": 11,
       "checkpointIsAuthoritative": true
     },
-    "updatedAt": "2026-10-11T03:19:59.921223+00:00",
+    "updatedAt": "2026-10-11T03:29:58.140266+00:00",
     "consumerMatrix": {
       "id": "RUNTIME-MANIFEST-I02-CONSUMER-MATRIX-V1",
       "state": "frozen_complete_matrix_green_on_productive_Host_source",
@@ -7716,6 +7716,59 @@
         "no native edit/Save/History/recovery acceptance or saved fresh-process proof in this geometry run",
         "no physical input, Original-parity, large-map, user-vault installation or full E2E acceptance"
       ]
+    },
+    "dungeonAtLocationInspectorHorizontalFitN04Qualification": {
+      "id": "E2E-01-HEX04-INSPECTOR-N04-R01-CONSUMED",
+      "owner": "Hex",
+      "issue": 80,
+      "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
+      "e2e01UserLine": 13,
+      "state": "horizontal_inspector_fit_independent_review_PASS_steward_integration_pending",
+      "pullRequest": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/110",
+      "producerRecord": "checkpoint.hexAtlasExecution.dungeonAtLocationInspectorHorizontalFitN04",
+      "nativeReceipt": "docs/reference/atlas-detail-binding-d01/inspector-horizontal-fit-n04.json",
+      "nativeReceiptSha256": "eaaca71c5235b72cf120347210dfeb26fc5a55b1b94a8f942074d5459822da0c",
+      "nativeSourceCommit": "da3e06adefdcad20bdeaf57019c54f7b0fe08e0a",
+      "independentReview": {
+        "reviewer": "Stadt",
+        "reviewerThread": "01a12022-b67b-7da2-bed5-8ebde169d475",
+        "head": "305680db90546207f259d246b3a6c86afcc44e68",
+        "base": "2582f3f580a680765d90265a80fdcaf3f8ed3809",
+        "result": "PASS",
+        "requiredFindings": 0,
+        "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/110#pullrequestreview-5481730796",
+        "submittedAt": "2026-10-11T03:26:50Z",
+        "focusedCasesReportedPassed": 11,
+        "rawFilesReportedVerified": 22,
+        "imagesDirectlyViewedByReviewer": [
+          "location-131-actions.png",
+          "room-131-field-focused.png"
+        ],
+        "scope": "Two existing product files: dock-scoped wrapping/control width and Room action class; unchanged scroll/Draft/navigation, source-bound seven-sample horizontal native geometry. Reviewer did not start another GUI."
+      },
+      "checkedSourceBinding": {
+        "nativeProductPathsEqualReviewedHead": true,
+        "diffPathsFromNativeSource": [
+          "ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md",
+          "acceptance.json",
+          "checkpoint.json",
+          "docs/reference/atlas-detail-binding-d01/inspector-horizontal-fit-n04.json"
+        ],
+        "reviewedHeadCi": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/actions/runs/38108190000",
+        "reviewedHeadCiResult": "SUCCESS",
+        "qualificationDelta": "Only own checkpoint/acceptance and #80 working section; product and native receipt unchanged."
+      },
+      "independentIntegration": "pending",
+      "freeGmFollowup": "pending",
+      "nextConsumer": "Contributor (existing Obsidian Dungeon Repo ansehen chat): independent steward integration of PR110 after exact new-head CI and composition/source checks. Then qualified free GM followup in #80; no dependent detail expansion or selfintegration by Hex.",
+      "limits": [
+        "Independent scoped review consumes existing native evidence; no new native GUI or local slot claim.",
+        "Original external-window clipping was not reproduced in D01 and is not qualified as fixed.",
+        "Vertical scrolling, native edit/Save/History/Recovery, fresh-process, physical, Original-parity, large-map, user-vault and overall E2E claims retain their separate evidence and open boundaries."
+      ],
+      "guiUsedByHex": false,
+      "productEdited": false,
+      "phaseApproval": false
     }
   },
   "phase": "Phase 6: zweiter Nachbesserungslauf teilweise umgesetzt; fünf Restpositionen und unabhängiger Review offen",
