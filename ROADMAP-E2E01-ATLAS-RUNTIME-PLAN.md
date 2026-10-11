@@ -92,11 +92,19 @@ fremder JSON-Wurzeln bestehen; keine GUI-/GPU-Geometrie daraus ableiten.
 `checkpoint.hexAtlasExecution.dungeonAtLocationInspectorScrollN03` und die
 bestehende Acceptanceanforderung binden Quelle, Tripel und lokale Logs.
 
-**Nächster Empfänger:** enger unabhängiger Review nur des N03-Scroll-/Guarddeltas,
-danach quellgebundener freier GM-Nachtest im isolierten Host. Eine neue SHA allein
-startet keine Wiederholung alter Fach-/Save-/H02-/Rohbelegreviews. Hex konsumiert
-Review beziehungsweise konkreten Pflichtbefund; kein Selfmerge oder abhängiger
-Detailausbau. Vor eigener GUI neue lokale Slotkoordination.
+**R01/S01 konsumiert:** [Review](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/100#issuecomment-6104475506)
+PASS auf `c7e6873`, kein Pflichtbefund. [Stewardintegration](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/100#issuecomment-6104516785)
+in Shared `7ff78b9`: Eltern/Baum und Exact-CI geprüft, Produktdiff zum Reviewhead
+leer. `dungeonAtLocationInspectorScrollN03Qualification` bindet den Verbrauch.
+Kein weiterer Fachreview, Selfmerge oder GUI-PASS.
+
+**Nächster Consumer:** [Cloud-GM](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80#issuecomment-6104526367)
+bündelt City-Namensweg und N03-Feldauffindbarkeit einmal im bestehenden #92-Claim.
+Fehlender Eingang ist dessen eindeutig eigenes sichtbares Cloud-Fenster/Display;
+UI-Nachtest noch nicht begonnen. Nach Hostklärung tatsächlichen aktuellen
+Shared-Build/Tripel/Fixture binden; PR98-Build predatiert N03. Hex konsumiert
+Ergebnis oder Geometriebefund, fordert keinen zweiten Atlaslauf und startet
+keinen abhängigen Detailausbau. Vor eigener GUI erneut Slot abstimmen.
 
 **Offener GM-N02-02:** Teilweise abgeschnittener Inspector bei131% UI-Zoom und
 1024×800 ist noch nicht behoben. N03 ändert kein CSS; konkrete Ursache/aktuelle

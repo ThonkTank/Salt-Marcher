@@ -155942,6 +155942,68 @@
             "fullE2E": false
           },
           "nextConsumer": "Independent targeted scroll/guard review of this product delta, then free GM observation on its isolated source-bound build. GM-N02-02 remains an explicit open geometry/reproduction input in the same package; no broad review or dependent detail expansion."
+        },
+        "dungeonAtLocationInspectorScrollN03Qualification": {
+          "id": "E2E-01-HEX04-INSPECTOR-N03-R01-S01-CONSUMED",
+          "owner": "Hex",
+          "issue": 80,
+          "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
+          "e2e01UserLine": 13,
+          "state": "independent_scroll_review_and_integration_consumed_bundled_GM_blocked_display_zoom_finding_open",
+          "sourceCommit": "7ff78b9bc31869bff3ba6d2f19d9a619ac6bbccb",
+          "producerRecord": "checkpoint.hexAtlasExecution.dungeonAtLocationInspectorScrollN03",
+          "independentReview": {
+            "id": "GM-N02-01-SCROLL-R01",
+            "reviewer": "Contributor",
+            "head": "c7e6873283f77f7334f924e07063c19499594db9",
+            "result": "PASS",
+            "requiredFindings": 0,
+            "focusedCasesReportedPassed": 6,
+            "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/100#issuecomment-6104475506",
+            "scope": "Semantic Key scroll reset after successful show; same-target draft/History preservation and guarded invalid/stale/revoked navigation. No CSS, GUI or repeated City Save review."
+          },
+          "independentIntegration": {
+            "id": "GM-N02-01-SCROLL-S01",
+            "pullRequest": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/100",
+            "head": "c7e6873283f77f7334f924e07063c19499594db9",
+            "sharedMerge": "7ff78b9bc31869bff3ba6d2f19d9a619ac6bbccb",
+            "parents": [
+              "73bfe2260d29716e7ca9811b4314fd8db67bfeb2",
+              "c7e6873283f77f7334f924e07063c19499594db9"
+            ],
+            "tree": "7641a27392fdf66729863f65a5ea04c77bfa337c",
+            "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/100#issuecomment-6104516785",
+            "productDiffFromReviewedHead": "empty",
+            "headCi": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/actions/runs/38103969288",
+            "sharedCi": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/actions/runs/38104432859",
+            "ciLiveChecked": "both SUCCESS on their exact recorded SHAs",
+            "selfIntegratedByHex": false
+          },
+          "bundledGmInput": {
+            "owner": "Cloud-GM-Produkttester",
+            "claim": "GM-CITY-HOUSE-NAME-CLOUD-UI-RETEST-20261011-01",
+            "cityIssue": 92,
+            "proposal": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80#issuecomment-6104526367",
+            "blocker": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/92#issuecomment-6104519136",
+            "state": "blocked_UI_not_started",
+            "missingInput": "Cloud owner must restore or prove a uniquely owned visible Obsidian window/display; prepared PR98 build predates integrated N03 and must be rebound to actual fresh Shared build.",
+            "consequence": "Reuse the existing City GM claim for one City/Hex field-discoverability observation after host resolution. No separate competing Atlas run or GUI claim."
+          },
+          "openFindings": [
+            "GM-N02-02: 131 percent UI zoom clipping; root cause and current native geometry still open"
+          ],
+          "limits": {
+            "actualNewObsidianRetest": false,
+            "nativeFieldVisibility": false,
+            "zoomLayoutFixed": false,
+            "freshProcess": false,
+            "physicalInput": false,
+            "originalParity": false,
+            "largeMap": false,
+            "userVaultInstalled": false,
+            "fullE2E": false
+          },
+          "nextConsumer": "Cloud-GM restores its own isolated visible host, then observes City name and integrated N03 Key discoverability in one existing claim on actual source/build/fixture. Hex consumes the result or concrete geometry finding; no dependent detail expansion."
         }
       }
     ],
