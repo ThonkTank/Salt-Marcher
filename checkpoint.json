@@ -11088,18 +11088,18 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "MANUAL-PLANNER-UI-REFRESH-S01",
-      "issue": 69,
-      "state": "scoped_shared_candidate_storage_contract_open",
-      "branch": "contrib/manual-planner-ui-refresh-20261011",
-      "plan": "docs/plans/campaign/manual-session-planner.md#sichtbare-hilfe-und-plannamen-refresh",
-      "verification": "Independent R03 PASS on ec9d7a4: view-only refresh retains an unsubmitted plan name only for the identical immutable plan basis; other plan/revision receives no stale name. Inline help had a bounded synthetic Cloud-GM use result. 16 panel tests and exact-source comparison PASS; full candidate checks run before publication.",
-      "next": "Publish and integrate the scoped panel/test/docs candidate after Exact-SHA CI. Continue Campaign/Data path, writer, publish, receipt, recovery, plugin and native Save/Fresh work separately in parent #69.",
-      "limits": "Memory-only UI contribution only; proposed manual-plan document codec excluded. No storage authority, native host, physical input, native 200 percent zoom, Save/Fresh/Recovery or overall product approval."
+      "id": "CITY127-CENTER-PIVOT-REPAIR",
+      "issue": 127,
+      "state": "model_checked_independent_review_and_native_retest_pending",
+      "branch": "city/building-center-rotation-20261011",
+      "plan": "docs/plans/city/building-name-inspector.md#arbeitsstand-127",
+      "verification": "Two world-space corner-orbit regressions FAIL before/PASS after; linked house105 and courtyard106 retain center, every outline/hole vertex, shared UndoRedo, exact native Save/new model reopen, camera and foreign bytes. Full suite1084 PASS/0 FAIL/1 optional skip; type/build/repo/diff PASS. Existing gesture arithmetic shared unchanged.",
+      "next": "Independent narrow fix review and coordinated visible midpoint/Save/Fresh retest; preserve H01 originals in PR130. Planner UI refresh consumed via PR131/Sharedb12b3a9; native Campaign/Data contract remains in #69.",
+      "limits": "No native midpoint/physical/free GM/overall parity claim. Hex IME-H03 slot returned normally; new GUI needs fresh coordination."
     },
     "nextRun": {
-      "id": "MANUAL-PLANNER-NATIVE-CONTRACT",
-      "focus": "Parent #69 obtains the existing Campaign/Data storage and publish contract without creating a second persistence path."
+      "id": "CITY127-CENTER-PIVOT-REVIEW-HOST",
+      "focus": "Consume independent review; targeted visible centered turn, native Save and separate fresh-process on the corrected candidate after fresh slot agreement."
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",

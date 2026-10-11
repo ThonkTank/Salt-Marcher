@@ -4941,8 +4941,8 @@
       "issue": 127,
       "source": "src/ui/atlas-city-building-panel.ts; existing CityEdit set-building-pose",
       "plan": "docs/plans/city/building-name-inspector.md#arbeitsstand-127",
-      "checks": "Three Managed/Vaultadapter regressions PASS; exact pose with preserved linked-house/courtyard geometry, IDs, foreign bytes; shared UndoRedo and native Save/new model reopen. Pending name rejects rotation without mutation; detached old buttons fail closed.",
-      "remaining": "Independent review, early GM-use, real Obsidian/fresh-process, physical and broad Recovery/parity remain open; quarter-turn controls only."
+      "checks": "Centered-pivot fix: two independent world-space regressions FAIL before/PASS after, complete linked-house/courtyard preservation, shared UndoRedo, exact native Save and new model reopen. Existing pending-name/stale/gesture precision tests PASS. Full suite1084 PASS/0 FAIL/1 optional skip; type/build/repo/diff PASS.",
+      "remaining": "Independent fix review and visible centered rotation/Save/Fresh retest remain open. H01 in PR130 only qualifies original corner-pivot sourceee9c70d/build94461124. Cloud GM blocked before UI; no physical/broad Recovery/full parity approval."
     }
   },
   "wonderdraftParity": {
