@@ -1,6 +1,6 @@
 # Roadmap: Dungeondraft-Verhalten für Grundrisse und Objekte angleichen
 
-Diese Roadmap folgt auf [Räume und Objekte mit Raum-Keys verbinden](ROADMAP.md). Deren Phasen sicherten zunächst den funktionierenden Ablauf. Hier werden das **Building Tool** und das **Object Tool** des installierten Dungeondraft 1.2.0.1 „Opulent Kirin“ in ihren vollständigen Werkzeugabläufen nacheinander abgeglichen. Bedienwirkung und Kartenwirkung sollen gleichwertig sein; eine andere Oberfläche und einzelne andere Pixel sind zulässig.
+Diese Roadmap folgt auf [Räume und Objekte mit Raum-Keys verbinden](ARCHITECTURE.md#raum-key--und-featurevertrag). Deren Phasen sicherten zunächst den funktionierenden Ablauf. Hier werden das **Building Tool** und das **Object Tool** des installierten Dungeondraft 1.2.0.1 „Opulent Kirin“ in ihren vollständigen Werkzeugabläufen nacheinander abgeglichen. Bedienwirkung und Kartenwirkung sollen gleichwertig sein; eine andere Oberfläche und einzelne andere Pixel sind zulässig.
 
 Für alle Phasen gilt: Bedienung und Funktion müssen mit dem Vorbild übereinstimmen; eine ungefähr gleichwertige grafische Darstellung genügt. Pixelwerte sind nur Diagnosemittel für sichtbare oder funktionale Abweichungen.
 
@@ -38,7 +38,7 @@ Boden- und Wandgalerie, Stil ohne Wand, Färbung und Farbwähler, Bevel Corners 
 
 **Phasentor:** Stil, Farbe, Kontur und Wandverbindung zeigen die belegte Wirkung und bleiben nach Bearbeitung, Undo/Redo, Speichern und Neuöffnung erhalten. `DD-011.15` umfasst danach alle Building-Optionen einschließlich der bereits in Phase 1 geprüften Formen.
 
-**Wear und Building, getrennt umgesetzt und reviewt:** Der Originalschalter „Disable Building Wear“ wurde an zwei gleich gezeichneten, gespeicherten und frisch geöffneten Karten mit Wood Vertical, Battlements, QAWall01 und einer verankerten Tür gepaart. Der isolierte Host bietet und speichert denselben binären Modus; Boden, eingebaute und Paketwände sowie Vorschau verwenden ihn. Beide Hostmodi bestehen Zeichnen, Undo/Redo, Save und frische Neuöffnung; eine bestehende V2-Karte öffnet mit unverändertem Zahlenwert. [Umsetzungslauf 1](/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-implementation-20261007/wear-implementation.md) und [Umsetzungslauf 2](/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-followup-20261007/implementation-run2.md) sind abgeschlossen. Der [unabhängige 17-Fälle-Review](/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-review-20261007/phase3-independent-review.md) verifiziert 14 Unterfälle. Der [Bevel-/QAWall01-Nachbesserungsplan (historisch)](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/blob/6a90f3ee2f50f0be45f0e256784576f13722c319/ROADMAP-PARITY-PHASE3-REPAIR-BEVEL-POINTS-PLAN.md) ist [teilweise umgesetzt](/home/aaron/.cache/dungeon-native-qa/parity-phase3-bevel-points-20261007/phase3-bevel-points-implementation.md): Die direkte Originalmatrix, die abweichende Punkt-Stilregel sowie sechs Host-Bevel-Karten mit frischer Neuöffnung sind belegt; der Hostpatch und die Endbuild-Regressionen bestanden. Der Schalterwechsel an einer bestehenden Originalform sowie Innen-/Mehrteil-Punkt-, Alt- und Portalentfernungsfolgen fehlen. `DD-011.15`, `DD-015.04`, `DD-015.05` und das Phase-3-Tor bleiben bis zum vollständigen Paar und getrennten Review offen. Installierter Build und produktiver Vault bleiben unverändert.
+**Wear und Building:** Der Originalschalter „Disable Building Wear“ ist als binärer gespeicherter Modus mit Boden, eingebauten/Paketwänden und Vorschau geprüft. Zeichnen, Undo/Redo, Save/Frischöffnung und unveränderte V2-Zahlenwerte behalten ihre direkten Belege. Der [abschließende 17-Fälle-Nachweis](/home/aaron/.cache/dungeon-native-qa/parity-phase3-review2-20261008/phase3-independent-review.md) vom 08.10.2026 auf `7afb942` / Build `aced507f…` schließt `DD-011.15`, `DD-015.04`, `DD-015.05` und die übrigen 14 Phase-3-Unterfälle. Die datierten Zwischenbefunde bleiben in `acceptance.json.strictParity`; daraus folgt keine weitergehende physische oder Gesamtparitätsabnahme.
 
 ## Phase 4 – Objektbibliothek, Suche, Tags und Sets
 
@@ -50,7 +50,7 @@ All, Used, Tags, Suche einschließlich Fuzzy/Exact und ihrer Löschaktionen, Bil
 
 ## Phase 5 – Objektvorschau, Platzierung und Eigenschaften
 
-Der [eigene Phase-5-Umsetzungsplan (historisch)](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/blob/6a90f3ee2f50f0be45f0e256784576f13722c319/ROADMAP-PARITY-PHASE5-PLAN.md) legt Originalproben, Werkzeug- und Pickerausbau, Hostpaare und das getrennte Fachreview fest. `DD-026.17` bleibt als bestandener Phase-4-Fall Regression; von `DD-028.19` wird zunächst nur der Objektkontext geprüft. Dieser Planlauf ändert keinen Produktcode und nimmt keine neuen Fachfälle ab.
+`DD-026.17` bleibt Objektbibliothek-Regression; die getrennten Kontextabnahmen von `DD-028.19` stehen im Abnahmeregister.
 
 **Unterfälle:** `DD-026.09` bis `.21` sowie `.28` und `.29`; objektbezogene Farbwahl aus `DD-028`.
 

@@ -232,13 +232,7 @@
         "The complete mask-reconciliation, invariant-fuzzer and scale/model acceptance suites are not implemented.",
         "Independent exact-SHA review, Shared integration, persistence, host, UI, restart and product acceptance remain open."
       ]
-    },
-    "coordination": {
-      "local": "Three new local goal threads coordinate integration. Existing Hex/Atlas, City and Dungeon colleagues on three other devices retain their workstreams, evidence and non-overlapping ownership and contribute requirements to the platform decision.",
-      "cloud": "Prior GM-UX-CLOUD worker is reassigned through GitHub Issue #1 to independent architecture and technical review only. Other cloud colleagues retain their established specialist review/test responsibilities.",
-      "gui": "At most one graphical host/original instance per device; static and non-graphical checks may run separately."
-    },
-    "next": "Complete the reviewed receipt state machines, rollback and fresh recovery, live matrix/adversary execution, safety limits and negative tests on the existing I02 candidate, then repeat independent code/security review. Do not claim Evidence, H03 Go, platform selection or P02 authorization."
+    }
   },
   "saltMarcherCatalogEncounter": {
     "schemaVersion": 1,
@@ -275,10 +269,6 @@
       "dndBeyond": "official_sources_mapped_in_plan",
       "catalogFinding": "Normative seven sections are authoritative; current SaltMarcher selector omits Items and saved Encounters and adds Characters.",
       "encounterFinding": "Current SaltMarcher runtime is Scene-group based and DMG-2014-only; it is not by itself D&D Beyond parity."
-    },
-    "coordination": {
-      "testSlot": "one graphical host or original instance per device; separate devices may test in parallel",
-      "sharedBranch": "fetch and integrate before every package and publication; preserve foreign IDs/evidence; no force-push"
     },
     "cases": [
       {"id": "CE-AC-01", "title": "Combined catalog filters and reset", "state": "open", "automatedRealHost": "passed"},
@@ -609,7 +599,6 @@
       },
       "limits": "This verifies only the build-budget contract. It does not close CE-AC-01/02/14, host, physical-input, Atlas or overall acceptance."
     },
-    "next": "Plan and independently review CE-02-I02 for the first real non-Monster owner, including exact item provenance, schema, unavailable/error boundaries and isolated section state. Keep the other five unavailable providers explicitly undelivered; CE-01 physical-input, screenreader and other-platform gates remain open.",
     "ce02I02Plan": {
       "run": "CE-02-I02-P01",
       "state": "n03_r01_passed_s01_next",
@@ -771,7 +760,6 @@
         "testedCommit": "82c6f0ad1e75b0d8f0fb9ab68aed17b72b06798f",
         "claim": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/56#issuecomment-6100853466",
         "resolution": "Retain entire current Shared package.json and add only Bags test once directly after Sources; all four Atlas/Campaign bundles and unique check/test keys retained. No source/product fix.",
-        "next": "closed W24 composition; W25 source continuation",
         "roleContract": {
           "role": "migration",
           "defaultBranch": "active/installed-phase1",
@@ -1105,8 +1093,7 @@
       "evidenceRule": "Direkte Ergebnisbilder, bearbeitbare native Kartendaten, wirkliche Nutzeraufgaben, Save/Neustart und betroffene Konflikt-/Undo-Fälle auf benanntem Build belegen; eigenständiger Review.",
       "earlyUsability": "Manuell bearbeitbare Stadt nach CITY-01; erzeugter Stadtplan nach CITY-02; vollständige direkte Haus-Dungeon-Bearbeitung nach CITY-03. Je Phase gemeinsame Region weiterprüfen.",
       "protectionRule": "Neugeneration erhält explizite Bearbeitung, verknüpfte Orte/Häuser, Keys und Kennungen. Kein stilles Regenerieren beim Laden.",
-      "evidenceRoot": "/home/aaron/.cache/dungeon-native-qa/city-plans/",
-      "parallelism": "Ein Arbeitslauf und eine GUI-Testinstanz; bestehender früher Hex-Atlas wird weiter regressiert."
+      "evidenceRoot": "/home/aaron/.cache/dungeon-native-qa/city-plans/"
     },
     "cases": [
       {
@@ -150900,8 +150887,7 @@
       "hostEditEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-repair-final-20261007/evidence/1791326532132-parity-phase1-repair-edit/result.json",
       "hostReopenEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-repair-final-20261007/evidence/1791326548126-parity-phase1-repair-reopen/result.json",
       "crossCaseGate": "Nummerierter Raum behält ID, Key-Pfad und Key-Bytes bei Überlappung, Alt-Innenloch und Undo/Redo. Das neue Portal ergänzt erwartbar einen Abschnitt; dessen gespeicherte Bytes bleiben bei zwei Randschnitten, Undo/Redo und frischem Prozess erhalten. Erster Schnitt erhält, zweiter entfernt das Portal.",
-      "verification": "npm run check, 119 Kerntests, npm run build und beide isoliert installierten Hostläufe bestanden.",
-      "next": "Eigener Phase-1-Reviewlauf: endgültigen Kandidaten und zwölf zugeordnete Unterfälle samt Raum-/Portal-Tor prüfen; DD-011.15 vollständig erst Phase 3."
+      "verification": "npm run check, 119 Kerntests, npm run build und beide isoliert installierten Hostläufe bestanden."
     },
     "phase1SecondReview": {
       "date": "2026-10-07",
@@ -150929,8 +150915,7 @@
       ],
       "passedOnCurrentBuild": "Fokussierte Shift-/Snap-/Raum-/Portalfolge samt Frischstart; acht Prüfpunkte des Hauptlaufs; Typprüfung, 119 Kerntests und Build.",
       "open": "Breite Shapes-Folge zeigte fehlende erste Vorschau beziehungsweise nach wirksamem Pointer-Down und Vorschau fehlenden Rechteckabschluss. Hauptfolge schloss den Editor bei Escape im gehaltenen Rechteckzug. Vollständiger aktueller Edit-/Frischöffnungsnachweis aller Phase-1-Formen fehlt.",
-      "crossCaseGate": "Nummerierter Raum, Key-Bytes, Alt-Innenloch, Portal-Erhalt/Entfernen, Undo/Redo und Frischstart im fokussierten aktuellen Host bestanden.",
-      "next": "Eigener Nachbesserungslauf: Pointer-/Capture-/Fokus-/Escape-Zeitspur, Ursache zwischen Hoststeuerung und Editor trennen, nur bestätigte Produktabweichung korrigieren; danach breite Edit- und Frischöffnungsfolgen erneut prüfen."
+      "crossCaseGate": "Nummerierter Raum, Key-Bytes, Alt-Innenloch, Portal-Erhalt/Entfernen, Undo/Redo und Frischstart im fokussierten aktuellen Host bestanden."
     },
     "phase1CaptureRepairImplementation": {
       "date": "2026-10-07",
@@ -150946,8 +150931,7 @@
       "hostMainReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-capture-final-main-20261007/evidence/1791327545355-parity-phase1-reopen/result.json",
       "hostFocusedEdit": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-capture-final-repair-20261007/evidence/1791327550818-parity-phase1-repair-edit/result.json",
       "hostFocusedReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase1-capture-final-repair-20261007/evidence/1791327562115-parity-phase1-repair-reopen/result.json",
-      "verification": "Alle sechs Edit-/Neuöffnungsläufe und die erzwungene Capture-Verlustprobe bestanden ohne Hostfehler; npm run check, 119 Kerntests und npm run build bestanden. Produktive Installation unverändert.",
-      "next": "Getrennter Review des Kandidaten über zwölf Phase-1-Unterfälle und das Raum-/Portal-Quertor. DD-011.15 vollständig Phase 3; physische Eingabe Phase 7."
+      "verification": "Alle sechs Edit-/Neuöffnungsläufe und die erzwungene Capture-Verlustprobe bestanden ohne Hostfehler; npm run check, 119 Kerntests und npm run build bestanden. Produktive Installation unverändert."
     },
     "phase1ThirdReview": {
       "date": "2026-10-07",
@@ -150979,8 +150963,7 @@
       ],
       "crossCaseGate": "Nummerierter Raum 1 und Key-Bytes bleiben über Überlappung, Alt-Innenloch, Portal-Erhalt/Entfernen, Undo/Redo, Speichern und Frischstart konsistent. Der tatsächliche Key-Datei-Hash wurde zusätzlich mit dem gespeicherten Reviewhash verglichen.",
       "verification": "Originalbelege aller zwölf Unterfälle, unabhängige Hostläufe auf einem Kandidaten-Hash, npm run check, 119/119 Kerntests und npm run build geprüft. Keine Phase-1-Nachbesserung offen; produktive Installation unverändert.",
-      "deferred": "DD-011.15 vollständig Phase 3; physische Maus-/Touchpad-Eingabe Phase 7.",
-      "next": "Eigener Phase-1-Aufräumplanlauf; danach getrennter Umsetzungs- und Reviewlauf der Aufräumphase."
+      "deferred": "DD-011.15 vollständig Phase 3; physische Maus-/Touchpad-Eingabe Phase 7."
     },
     "phase1CleanupImplementation": {
       "date": "2026-10-07",
@@ -151010,8 +150993,7 @@
         "/home/aaron/.cache/dungeon-native-qa/parity-phase1-cleanup-implementation-20261007/host/evidence/1791328887087-parity-phase1-repair-reopen/result.json"
       ],
       "verification": "npm run check, 119/119 Kerntests und npm run build bestanden. Sechs vollständige Host-/Frischstartläufe und die zusätzliche Off-Canvas-Capture-Probe bestanden; Raum-ID, Key-Bytes, Portal, Konturen und Undo/Redo enthalten. Produktiver Build unverändert.",
-      "scope": "Interne Aufräumänderung; die Phase-1-Originalbelege und der bestandene dritte Fachreview bleiben die fachliche Referenz. Physische Eingabe Phase 7, DD-011.15 vollständig Phase 3.",
-      "next": "Eigener Aufräum-Reviewlauf: Diff, Performance, vollständige Hostbelege und Listener-Lebensdauer prüfen und erst dort das Aufräumtor entscheiden."
+      "scope": "Interne Aufräumänderung; die Phase-1-Originalbelege und der bestandene dritte Fachreview bleiben die fachliche Referenz. Physische Eingabe Phase 7, DD-011.15 vollständig Phase 3."
     },
     "phase2SecondReview": {
       "date": "2026-10-07",
@@ -151031,8 +151013,7 @@
       "evidenceReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase2-review2-20261007/phase2-review.md",
       "nativeAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase2-review2-20261007/evidence-audit.json",
       "hostEdit": "/home/aaron/.cache/dungeon-native-qa/parity-phase2-review2-20261007/host-extended/evidence/1791332571222-parity-phase2-points-edit/result.json",
-      "hostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase2-review2-20261007/host-extended/evidence/1791332621321-parity-phase2-points-reopen/result.json",
-      "next": "Eigener Phase-2-Aufräumplanlauf; Umsetzung und Review getrennt."
+      "hostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase2-review2-20261007/host-extended/evidence/1791332621321-parity-phase2-points-reopen/result.json"
     },
     "phase2CleanupImplementation": {
       "date": "2026-10-07",
@@ -151063,8 +151044,7 @@
       "wallDelta": "/home/aaron/.cache/dungeon-native-qa/parity-phase2-cleanup-review-20261007/host-delta/evidence/1791333603538-parity-phase2-points-edit/portal-wall-delta.json",
       "hostEdit": "/home/aaron/.cache/dungeon-native-qa/parity-phase2-cleanup-review-20261007/host-delta/evidence/1791333603538-parity-phase2-points-edit/result.json",
       "hostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase2-cleanup-review-20261007/host-delta/evidence/1791333672439-parity-phase2-points-reopen/result.json",
-      "verification": "Diff gegen alle vier Aufräumpunkte, Baseline-/Kandidaten-Quellhashes, unabhängiger Benchmark samt Streuung, 130 Kerntests, Typprüfung, Build, Sprite-Differenz, Texturreferenzen, isolierter Obsidian-Edit- und Frischprozess sowie vier gespeicherte Rohdateihashes bestanden. Produktiver Build unverändert.",
-      "next": "Eigener Phase-3-Planlauf; erst danach Umsetzung, Review und Aufräumen in getrennten Läufen."
+      "verification": "Diff gegen alle vier Aufräumpunkte, Baseline-/Kandidaten-Quellhashes, unabhängiger Benchmark samt Streuung, 130 Kerntests, Typprüfung, Build, Sprite-Differenz, Texturreferenzen, isolierter Obsidian-Edit- und Frischprozess sowie vier gespeicherte Rohdateihashes bestanden. Produktiver Build unverändert."
     },
     "phase3Plan": {
       "date": "2026-10-07",
@@ -151144,8 +151124,7 @@
         "/home/aaron/.cache/dungeon-native-qa/parity-phase1-cleanup-implementation-20261007/host/evidence/1791328887087-parity-phase1-repair-reopen/result.json"
       ],
       "verification": "Diff beseitigt den doppelten PathDraft-Abschluss und die drei Fallback-Guards; Diagnose-Listener werden begrenzt und abgebrochen. Erneut 119/119 Kerntests, Typprüfung und identischer Build-Hash. 406 alte/neue Ringresultate identisch; erneuter Benchmark 0,644/1,170 ms und damit mindestens halbiert. Alle sieben Hostbelege besitzen denselben Build-Hash und keinen Fehler; Enter zusätzlich gezielt geprüft. Raum-Key-Bytes unabhängig nachgehasht.",
-      "deferred": "DD-011.15 vollständig Phase 3; physische Maus-/Touchpad-Eingabe Phase 7.",
-      "next": "Eigener Phase-2-Planlauf: offene Originalregeln für Konturpunkt-Ziehen, Einfügen und Entfernen festlegen und einen konkreten Plan neben der Roadmap ablegen."
+      "deferred": "DD-011.15 vollständig Phase 3; physische Maus-/Touchpad-Eingabe Phase 7."
     },
     "phase3Implementation": {
       "state": "candidate_needs_review_and_repair",
@@ -151163,8 +151142,7 @@
       "catalogAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-review-20261007/catalog-audit.json",
       "reviewHostEdit": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-review-20261007/host/evidence/1791337051338-parity-phase3-building-edit/result.json",
       "reviewHostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-review-20261007/host/evidence/1791337109785-parity-phase3-building-reopen/result.json",
-      "candidateBuildSha256": "b6dcee5b542831b30f4f370c1ffc3291c9519720dfcbb952db6af832c5515a1b",
-      "next": "Gesonderter Phase-3-Nachbesserungslauf und danach erneuter unabhängiger Review."
+      "candidateBuildSha256": "b6dcee5b542831b30f4f370c1ffc3291c9519720dfcbb952db6af832c5515a1b"
     },
     "phase3Repair2": {
       "state": "partial_repair_gate_open",
@@ -151200,7 +151178,6 @@
         "DD-015.04",
         "DD-015.05"
       ],
-      "next": "Ecktextur, Bodenvarianten, Helligkeit, Portalbild und Original-Optionsrohkarte in gesondertem Nachbesserungslauf; danach unabhängiger Review.",
       "fixtureVisualHostEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair2-20261007/host/evidence/1791344522199-parity-phase3-building-reopen/result.json"
     },
     "phase3Repair4": {
@@ -151216,8 +151193,7 @@
         "DD-015.01",
         "DD-015.04",
         "DD-015.05"
-      ],
-      "next": "Bevel-UV, Bodenvarianten/Farbhelligkeit, Portal- und Tint/Alpha-Bildpaare sowie vollständige Original-Optionsrohkarte in gesondertem Lauf; danach unabhängiger Review."
+      ]
     },
     "phase3PickerPair": {
       "date": "2026-10-07",
@@ -151378,8 +151354,7 @@
         "10 native Paketwände plus QAWall01, Farbe und Alpha",
         "Bevel-Verbindung und Paketwand nach Konturmutationen",
         "vollständige Building-Optionskarte mit Phase-1-/2-Regression"
-      ],
-      "next": "Eigener Umsetzungslauf; danach unabhängiger 17-Fälle-Review. Phase-3-Aufräumen erst nach bestandenem Tor."
+      ]
     },
     "phase3RemainingReview": {
       "date": "2026-10-07",
@@ -151410,8 +151385,7 @@
         "DD-015.03",
         "DD-015.04",
         "DD-015.05"
-      ],
-      "next": "Eigener Nachbesserungsplan für die neun offenen Unterfälle; danach getrennter Umsetzungslauf und erneuter unabhängiger Review. Phase-3-Aufräumen noch gesperrt."
+      ]
     },
     "phase3ImageMatrixRepairPlan": {
       "date": "2026-10-07",
@@ -151450,8 +151424,7 @@
         "Wandstil- und Wandfarbmatrix",
         "Bevel und Punktmutation",
         "Neun-Optionen-Gesamtfall und Phase-1-/2-Regression"
-      ],
-      "next": "Eigener Umsetzungslauf; danach getrennter unabhängiger Review aller 17 Unterfälle. Phase-3-Aufräumen bleibt bis zum bestandenen Fachphasentor gesperrt."
+      ]
     },
     "phase3ImageMatrixImplementation": {
       "date": "2026-10-07",
@@ -151481,8 +151454,7 @@
         "DD-015.05"
       ],
       "productChange": "Native Building-Bodenunterlage #252525 vor Alpha-Komposition.",
-      "remaining": "Sofort-/Atlasbilder, Custom-Color-Matrizen, gemeinsame Picker/Pipette, QAWall01, Wandbild-/Bevel-/Punktmutationsmatrizen und finale Optionskarte; unabhängiger Review ausstehend.",
-      "next": "Verbliebene Bildpaare und Pickerkontexte in einem weiteren Umsetzungslauf; danach getrennter Review aller 17 Phase-3-Unterfälle."
+      "remaining": "Sofort-/Atlasbilder, Custom-Color-Matrizen, gemeinsame Picker/Pipette, QAWall01, Wandbild-/Bevel-/Punktmutationsmatrizen und finale Optionskarte; unabhängiger Review ausstehend."
     },
     "phase3CustomColorImplementation": {
       "date": "2026-10-07",
@@ -151695,8 +151667,7 @@
         "DD-015.03",
         "DD-015.04",
         "DD-015.05"
-      ],
-      "next": "Original an/aus auf gleich gezeichneten Karten mit Save/Neustart paaren; Host-Modus und Bestandskarten festlegen, separat umsetzen und unabhängig reviewen."
+      ]
     },
     "phase3WearBehaviorImplementation": {
       "date": "2026-10-07",
@@ -151782,8 +151753,7 @@
       "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-review-20261007/phase3-independent-review.md",
       "reviewAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-review-20261007/review-audit.json",
       "visualAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-followup-20261007/current-options-visual-audit.json",
-      "coreTestsPassed": 142,
-      "next": "Getrennter Nachbesserungsplan für DD-015.04/.05 und DD-011.15; danach eigene Umsetzung und unabhängiger Review."
+      "coreTestsPassed": 142
     },
     "phase3BevelPointsRepairPlan": {
       "date": "2026-10-07",
@@ -151796,8 +151766,7 @@
         "DD-015.04",
         "DD-015.05"
       ],
-      "reviewBaseline": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-review-20261007/phase3-independent-review.md",
-      "next": "Getrennter Umsetzungslauf: direkte Original-/Host-Paare, nur bestätigte Abweichungen patchen, finalen Build regressieren; danach eigener unabhängiger Review."
+      "reviewBaseline": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-review-20261007/phase3-independent-review.md"
     },
     "phase3BevelPointsImplementation": {
       "date": "2026-10-08",
@@ -151869,8 +151838,7 @@
       "phase1Phase2RegressionsAudited": 4,
       "verifiedFachCasesUnchanged": 17,
       "openCleanupFindings": [],
-      "gate": "passed",
-      "next": "Phase 4 in einem eigenen Arbeitslauf konkret planen; die bereits verifizierten Phase-3-Fachfälle werden durch das Aufräumen nicht erweitert."
+      "gate": "passed"
     },
     "phase4Plan": {
       "date": "2026-10-08",
@@ -151914,8 +151882,7 @@
       ],
       "originalEvidence": "/home/aaron/.cache/dungeon-native-qa/audit-20261004-vollstaendigkeit/objekte/native-gui-symbol-tags-retry/",
       "decision": "Nur Plan. Alle 28 Pflicht-Unterfälle und das Phase-4-Fachphasentor bleiben offen; Original-Detailregeln werden vor der jeweiligen Umsetzung direkt gemessen.",
-      "gate": "open",
-      "next": "Getrennter Phase-4-Umsetzungslauf nach ROADMAP-PARITY-PHASE4-PLAN.md; danach eigener unabhängiger 28-Fälle-Review."
+      "gate": "open"
     },
     "phase4CleanupImplementation": {
       "date": "2026-10-08",
@@ -152132,8 +152099,7 @@
         "DD-015.07"
       ],
       "openCases": [],
-      "gate": "passed",
-      "next": "Getrennter Planlauf für Phase-3-Aufräumen; danach eigene Umsetzung und eigener Review vor Phase 4."
+      "gate": "passed"
     },
     "phase5Repair3IndependentReview": {
       "date": "2026-10-08",
@@ -152150,8 +152116,7 @@
       "verifiedObjectContextSharedCase": "DD-028.19",
       "openOverallSharedCase": "DD-028.19: Scatter und Light folgen später",
       "coreTestsPassed": 155,
-      "gate": "passed",
-      "next": "Getrennter Planlauf für Phase-5-Aufräumen; danach eigene Umsetzung und unabhängiger Aufräum-Review vor Phase 6."
+      "gate": "passed"
     },
     "phase5CleanupPlan": {
       "date": "2026-10-08",
@@ -152189,8 +152154,7 @@
       ],
       "hostEditReopenPairsPassed": 8,
       "coreTestsPassed": 155,
-      "gate": "open",
-      "next": "Eigener unabhängiger Aufräum-Review prüft die fünf Änderungen und alle direkten Belege; Phase 6 bleibt bis zum Tor gesperrt."
+      "gate": "open"
     },
     "phase5CleanupReview": {
       "date": "2026-10-08",
@@ -152478,8 +152442,7 @@
         "DD-030.24"
       ],
       "projectInvariant": "V4-Raumgrenzzug mit Feature, Key, Undo/Redo, Speichern und frischer Neuöffnung bestätigt.",
-      "gate": "open",
-      "next": "Eigener Planlauf für sechs offene Positionen, danach getrennte Umsetzung und unabhängiger Review."
+      "gate": "open"
     },
     "phase6Repair2Plan": {
       "date": "2026-10-08",
@@ -152535,7 +152498,6 @@
       "reviewPending": [],
       "productChange": "src/features/objekte/object-library.ts; src/editor.ts",
       "gate": "open",
-      "next": "DD-026.25 braucht einen echten Renderer-Fokusverlust im Hostvergleich. Danach erneuter unabhängiger Review des verbleibenden Falls und Fachphasentor.",
       "partialEvidence": [
         "DD-026.25"
       ],
@@ -152619,8 +152581,7 @@
       "open": [
         "DD-026.25"
       ],
-      "gate": "open",
-      "next": "Eigener Nachbesserungsplan für das Host-Renderer-Fokuspaar, danach Umsetzung und erneuter Review; Aufräumen bleibt gesperrt."
+      "gate": "open"
     },
     "phase6Repair3Plan": {
       "date": "2026-10-09",
@@ -152647,8 +152608,7 @@
       "hostEdit": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair3-20261009/final-host/evidence/1791499303280-parity-phase6-repair2-focus-edit/result.json",
       "hostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair3-20261009/final-host/evidence/1791499327049-parity-phase6-repair2-focus-reopen/result.json",
       "productChange": "none",
-      "gate": "open",
-      "next": "Eigener unabhängiger Review des Fokuspaars und aller 15 Phase-6-Pflichtpositionen; erst danach Fachphasentor."
+      "gate": "open"
     },
     "phase6Repair3IndependentReview": {
       "date": "2026-10-09",
@@ -152681,8 +152641,7 @@
       "coreTestsPassed": 167,
       "projectInvariant": "V4-Raumgrenzzug im vorigen Review auf demselben Build bestanden.",
       "limit": "Kein DOM-Blur im Host beobachtet; physische Eingabe und kombinierte Großkarte folgen in Phase 7. Cloth-Mittelpunkt grafisch ungefähr gleichwertig.",
-      "gate": "passed",
-      "next": "Eigener technischer Phase-6-Aufräumplan; getrennte Umsetzung und unabhängiger Aufräumreview vor Phase 7."
+      "gate": "passed"
     },
     "phase6CleanupPlan": {
       "date": "2026-10-09",
@@ -152719,8 +152678,7 @@
       "measured": "1.792er All-Reihenfolge hashgleich; fünf Sortierungen 178.400→17.920 Pfadzerlegungen. Fünf Host-Edit-/Neuöffnungspaare bestanden, darunter acht Rahmen- und acht Cloth-Schritte, Phase-6-Raumgrenze und Phase-4-Paket-/Filterregression.",
       "coreTestsPassed": 167,
       "intermediateTimeout": "Erste Rahmen-Neuöffnung nach 240 Sekunden beendet; neuer 480-Sekunden-Lauf bestand alle acht Fälle.",
-      "gate": "open_pending_independent_review",
-      "next": "Eigener unabhängiger Phase-6-Aufräumreview vor Phase 7."
+      "gate": "open_pending_independent_review"
     },
     "phase6CleanupIndependentReview": {
       "date": "2026-10-09",
@@ -152747,8 +152705,7 @@
         "phase4"
       ],
       "coreTestsPassed": 167,
-      "gate": "passed",
-      "next": "Eigener Phase-7-Planlauf; physische Eingabe und kombinierte Großkarte bleiben offen."
+      "gate": "passed"
     },
     "phase7Plan": {
       "date": "2026-10-09",
@@ -152870,8 +152827,7 @@
       "baseCommit": "4c5808e3f6709119db4a607f933c71fe76120d4e",
       "items": ["P7-CL-1", "P7-CL-2", "P7-CL-3"],
       "physicalInput": "skipped_at_user_request_unverified",
-      "gate": "open",
-      "next": "Getrennter Aufräum-Umsetzungslauf und danach unabhängiger Review vor der Folge-Roadmap."
+      "gate": "open"
     },
     "phase7CleanupImplementation": {
       "date": "2026-10-09",
@@ -152884,8 +152840,7 @@
       "hostPairsPassed": 3,
       "coreTestsPassed": 167,
       "physicalInput": "skipped_at_user_request_unverified",
-      "gate": "open",
-      "next": "Eigener unabhängiger Aufräumreview vor Abschluss dieser Roadmap."
+      "gate": "open"
     },
     "phase7CleanupReview": {
       "date": "2026-10-09",
@@ -152898,13 +152853,11 @@
       "coreTestsPassed": 167,
       "productBuildSha256": "b321128188b944c3324594663a410acfd84863f17860f637b9ed2e6ecc33b466",
       "physicalInput": "skipped_at_user_request_unverified",
-      "gate": "passed",
-      "next": "Eigener Phase-1-Planlauf der ROADMAP-PARITY-TOOLS.md; vollständige Parität anderer Werkzeuge bleibt offen."
+      "gate": "passed"
     }
   },
   "hexAtlas": {
     "scope": "HEX-00..28, shared native Atlas; phase-specific functional approvals only.",
-    "currentPhase": "HEX-03",
     "state": "native_spatial_slice_checked_full_e2e_gate_open",
     "referenceGate": "wonderdraftParity.coverageReview HEX-00-R02",
     "requirements": [
@@ -153684,7 +153637,6 @@
               "validationEvidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/city-ui-i01-r01-20261010/cleanup/p01/plan-validation.json",
               "validationSha256": "db7db29f4682d9c6bcafc12281cfc1aad07a1f533e0daafb2d116acdb92bb998",
               "mutationsApplied": true,
-              "next": "Already-planned visible I01c Atlas host/provider/picker montage and normal City DOM runner hookup; no new general plan or component code review.",
               "implementation": {
                 "id": "CITY-UI-I01-R01-CLEAN-I01",
                 "state": "PASS_separate_cleanup_R01_consumed",
@@ -153755,7 +153707,6 @@
               "build.mjs/package.json hookup remains agreed Hex integration work",
               "Host must supply confirmed actual targets and Source/Context/Key guards; productive providers/full E2E/original parity remain open"
             ],
-            "next": "Already-planned visible I01c Atlas host/provider/picker montage and normal City DOM runner hookup; no new general plan or component code review.",
             "qualifiedOwnerHandoff": {
               "state": "PASS_actual_qualified_owner_P_I_R_handoff_consumed",
               "candidate": "b6d38c587a402e0fba7a398379fb04e40b171c5e",
@@ -153887,7 +153838,6 @@
             "tests/core.test.ts": "32aeb62c8fbdd6746a246d9347953825d2ce2de2eafd79c0d2265d979ee8d66a"
           },
           "runtimePlanSha256": "2f47c2e5994aacec47a4700326928e01f8436d1bafff6304979260501b45dda5",
-          "next": "Already-planned visible I01c host integration after qualified City delivery and bounded reviewer cleanup.",
           "validationEvidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-navigation-i01b-cleanup-20261010/p01/plan-validation.json",
           "implementation": {
             "id": "E2E-01-SPACE-I01c-RUNTIME-I01b-CLEAN-I01",
@@ -153926,8 +153876,7 @@
                 "implementationSha256": "c6e1202f661ad669b2c01261bc879d855ce55242e8b177ca808540e2bb188f56",
                 "readDirectly": true
               }
-            },
-            "next": "Existing independent Stadt CLEAN-R01; then already planned visible I01c host integration with confirmed City dock file boundaries."
+            }
           },
           "independentReview": {
             "state": "PASS_actual_independent_cleanup_review",
@@ -154222,7 +154171,6 @@
           "qualifiedReview": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-visible-host-cleanup-20261010/p01/qualified-review-and-cleanup-receipt.json",
           "qualifiedReviewSha256": "de527b98f1ad939b55a68630c0259e559c0efa434f06a4eb3db25527170610e2",
           "validationEvidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-visible-host-cleanup-20261010/p01/plan-validation.json",
-          "next": "E2E-01-SPACE-I01c-RUNTIME-MANIFEST-I02",
           "implementation": {
             "id": "E2E-01-SPACE-I01c-RUNTIME-CLEAN-I01",
             "state": "PASS_retention_implemented_and_independently_reviewed",
@@ -154258,7 +154206,6 @@
             "nativeRan": false,
             "freshProcessRan": false,
             "fullE2E": false,
-            "next": "E2E-01-SPACE-I01c-RUNTIME-MANIFEST-I02",
             "retentionEvidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-visible-host-cleanup-20261010/i01/retention.json",
             "retentionSha256": "4e607eae6ce92a96048070c24129e8d890ab9fc52fa9ea817ae081ba77931803",
             "metadataValidation": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-visible-host-cleanup-20261010/i01/metadata-validation.json"
@@ -154326,7 +154273,6 @@
           "nativeRan": false,
           "freshProcessRan": false,
           "fullE2E": false,
-          "next": "E2E-01-SPACE-I01c-RUNTIME-MANIFEST-I02: wire this checked Repository participant in actual AtlasView and acknowledge exact won manifest through existing runtime/lifecycle lease, preserve camera/History; focused actual host Save/Fresh/A-B-A tests, then newly coordinated Obsidian slot and separate independent integrated review.",
           "limits": "Explicit confirmed native-atlas/city/dungeon PR32 fixed closure only; creation/retirement/record inventory changes remain unavailable. Core provider/repository rebuild proves data/navigation, not Obsidian/process/UI. Copy/P02/P04/CompleteImport/media/multiowner publisher remain separate gates. No installed-vault,physical,large-map or Wonderdraft parity approval.",
           "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/campaign-manifest-save-i01-20261010/implementation.json",
           "sha256": "891ba0c17a6a47f65c13eb8e0df54c7d65e42d2b928b0d841057c575b4ff8909",
@@ -154721,7 +154667,6 @@
           "freshProcessStarted": false,
           "guiSlotUsed": false,
           "independentAcceptance": "pending actual repair/native/independent #40 acceptance; no product PASS",
-          "next": "Targeted Hex navigation/native adapter repair; concrete Campaign-owned authorized native Location closure extension is required as input.",
           "sha256": "7bde44397cd9e3b3a586a5e8fdf88d6c757145fb9cc0e0afdcfe357af27b4e01"
         },
         "sharedLocationKeyRepair": {
@@ -154855,7 +154800,6 @@
           "freshProcessStarted": false,
           "guiSlotUsed": false,
           "fullE2E": false,
-          "next": "Newly coordinate the sole local GUI slot before the separate real Obsidian marker/Key/move/UndoRedo/Save/fresh-process probe on the qualified Shared source.",
           "limits": "Review and integration establish only qualified source. H01 remains historical native FAIL. No native/physical/parity/large-map/installation/CITY/P02/P04/E2E02-04/full-gate PASS."
         },
         "sharedLocationKeyNativeH02": {
@@ -154943,7 +154887,6 @@
             "reason": "Next run consumes existing gate qualification without GUI; require a fresh slot only for a separately justified actual future GUI run.",
             "repeatedGUI": false
           },
-          "next": "Existing Chronik R02 reads only the new metadata head for the one reported slot flag. No new general review/plan round. #40 remains open until that result is consumed; separate own cleanup follows. Details/CITY/E2E02-04 are not started here.",
           "limits": "Historical native source4515088 and H02 build remain exact. Incoming Sharedb02925c is not a new native run. No physical GM/Copy-Discard-Recovery fault matrix/original parity/large-world/installation/P02/P04/full-E2E acceptance.",
           "fullE2E": false,
           "issue40Closed": false,
@@ -155013,7 +154956,6 @@
             "readDirectly": true,
             "scope": "repository structure only"
           },
-          "next": "Separate bounded own cleanup of no-longer-needed owned transient resources only; preserve all canonical and historical evidence and unrelated files. No further general review or GUI run without a concrete new finding.",
           "limits": "Only #40 scoped Location Save/fresh-process acceptance. Synthetic native input, no physical GM acceptance. No new Copy/Discard/Recovery fault matrix, Detail/CITY/P02/P04/E2E02-04/original parity/large-world/installation/full-E2E acceptance. Later Shared docs and unrelated package changes are not a new native run.",
           "fullE2E": false,
           "commonGateClosed": false,
@@ -155078,7 +155020,6 @@
             "userVaultUsed": false,
             "sourcesEdited": false
           },
-          "next": "Location milestone stays complete; next productive Hex scope is the concrete existing E2E-01 detail/located-Dungeon/Room-Key route. No new product implementation in this cleanup run and no new general plan/review cycle.",
           "fullE2E": false,
           "commonGateClosed": false,
           "evidence": "docs/reference/atlas-shared-location-h02/cleanup.json",
@@ -155427,8 +155368,7 @@
           "receipt": "docs/reference/atlas-detail-binding-d01/dungeon-at-location-h01.json",
           "sha256": "b4c3aadf414476e071e10b7c8834255efa3d06e32f3d954f105aa1f0ab7f67e1",
           "nativeEditRun": "1791675129674-atlas-spatial-edit",
-          "freshProcessRun": "1791675181265-atlas-spatial-reopen",
-          "nextConsumer": "Existing Cloud-GM: early free use through normal product GUI in own isolated host before dependent expansion. Parent #80 stays open. If host access is absent, report concrete missing input without substituting model/DOM tests."
+          "freshProcessRun": "1791675181265-atlas-spatial-reopen"
         },
         "dungeonAtLocationH01Consumption": {
           "id": "E2E-01-HEX04-DUNGEON-AT-LOCATION-H01-CONSUMPTION",
@@ -155472,7 +155412,6 @@
             "otherSharedChanges": "World-Notes registration/readers and separate LiveSession contracts remain incoming Shared work; this does not make the GM-tested old triplet an exact-Shared installation.",
             "reuseEvidence": "Retain bounded free-GM result for unchanged Atlas view/editor/styles. No full GUI repetition solely for a new Shared SHA.",
             "nextOwnContribution": "Evaluate inspector width, discoverable dismissal and return behavior in existing #80 before dependent detail expansion; implement only a concrete resulting repair in a later bounded step.",
-            "integrationConsumer": "Separate contributor/steward for PR87 final Shared composition and consumption delta; no Hex selfmerge.",
             "dependentExpansionAllowed": false,
             "parentClosed": false,
             "fullE2E": false,
@@ -155565,8 +155504,7 @@
             "largeMap": false,
             "userVaultInstalled": false,
             "fullE2E": false
-          },
-          "nextConsumer": "Existing independent contributor: exact PR91 editor/Key retention/keyboard/History review. Then separate targeted narrow Obsidian/GM followup with fresh local slot coordination or own isolated Cloud host; no dependent expansion or Selfmerge."
+          }
         },
         "dungeonAtLocationInspectorEscapeN02": {
           "id": "E2E-01-HEX04-INSPECTOR-ESCAPE-N02",
@@ -155652,7 +155590,6 @@
             "userVaultInstalled": false,
             "fullE2E": false
           },
-          "nextConsumer": "Hex: targeted actual narrow Obsidian save/reopen probe on integrated Shared ca29032 with unchanged N02 source, after new local slot coordination. Cloud-GM: free repair retest on own isolated host when existing test claims permit; #80 remains at Hex, no dependent expansion.",
           "independentRereview": {
             "reviewer": "Atlas-QA",
             "result": "PASS",
@@ -155715,7 +155652,6 @@
             "fullRoomNameAndProseVisibilityImageEvidence": false,
             "freshRoomFieldDiscoverabilityVerified": false
           },
-          "nextConsumer": "Cloud-GM retains the claimed isolated N02 repair retest and may observe scrolling and Room field discoverability through its ordinary free user flow. Hex consumes delivered GM findings at issue80. The local raw access gap is closed by Stadt RAW-R01; raw integrity and saved/fresh text are qualified, full Room name/prose visibility is not image-proven. No new producer GUI or general review solely for this metadata correction.",
           "pullRequest": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/94",
           "independentReview": {
             "reviewer": "Contributor",
@@ -155991,8 +155927,7 @@
             "largeMap": false,
             "userVaultInstalled": false,
             "fullE2E": false
-          },
-          "nextConsumer": "Independent targeted scroll/guard review of this product delta, then free GM observation on its isolated source-bound build. GM-N02-02 remains an explicit open geometry/reproduction input in the same package; no broad review or dependent detail expansion."
+          }
         },
         "dungeonAtLocationInspectorScrollN03Qualification": {
           "id": "E2E-01-HEX04-INSPECTOR-N03-R01-S01-CONSUMED",
@@ -156053,8 +155988,7 @@
             "largeMap": false,
             "userVaultInstalled": false,
             "fullE2E": false
-          },
-          "nextConsumer": "Cloud-GM restores its own isolated visible host, then observes City name and integrated N03 Key discoverability in one existing claim on actual source/build/fixture. Hex consumes the result or concrete geometry finding; no dependent detail expansion."
+          }
         },
         "dungeonAtLocationInspectorScrollN03GmConsumption": {
           "id": "E2E-01-HEX04-INSPECTOR-N03-BUNDLED-GM-CONSUMED",
@@ -156153,8 +156087,7 @@
             "fullE2E": false,
             "guiUsedByHex": false,
             "productEditedByHex": false
-          },
-          "nextConsumer": "Hex reproduces the existing GM-N02-02 geometry finding in an isolated current-build Obsidian host at 1024x800 and 131 percent UI zoom after fresh explicit local-slot coordination; no duplicate City GM run or dependent detail expansion."
+          }
         },
         "dungeonAtLocationInspectorZoomGeometryD01": {
           "id": "E2E-01-HEX04-INSPECTOR-GM-N02-02-D01",
@@ -156219,7 +156152,6 @@
             "guardRegressions": "existing actual managed Host scroll, same-Key History, invalid draft/Escape/queued revocation and City inspector cases PASS in full suite; not native Save/History acceptance"
           },
           "independentReview": "pending",
-          "nextConsumer": "Stadt: scoped independent review of two product files and source-bound horizontal-fit evidence; then steward integration and qualified free GM followup. No dependent expansion or selfmerge.",
           "guiUsed": true,
           "productEdited": true,
           "phaseApproval": false,
@@ -156375,7 +156307,6 @@
               "submittedAt": "2026-10-11T04:30:40Z",
               "scope": "8 published images and fixture/screenshot hashes; no new GUI/build/host PASS"
             },
-            "next": "Hex: the concrete IME Save defect is independently qualified and regularly integrated0b6aa819; the offered Cloud-GM fresh-room reuse input is complete. Next bounded own step is the affected composing Save user path in a real Obsidian host, with appropriate composition input/source/build/fixture attribution and newly coordinated local slot or owned isolated Cloud host. Preserve exact pending text/native bytes during composition, then confirmed Save; no repeat of the whole unchanged N04/Save/UndoRedo run. Physical input and broad E2E remain separate.",
             "limits": [
               "Original PR115 demonstrated same-session Save/reuse only; the separate PR125 fresh continuation is consumed in freshReuse, without a new edit/save.",
               "Search/result activation at 131% not exercised; vertical scrolling retained, no new repair request.",
@@ -156497,7 +156428,6 @@
               "consumedAt": "2026-10-11T05:57:27.264244+00:00"
             }
           },
-          "nextConsumer": "Hex: the concrete IME Save defect is independently qualified and regularly integrated0b6aa819; the offered Cloud-GM fresh-room reuse input is complete. Next bounded own step is the affected composing Save user path in a real Obsidian host, with appropriate composition input/source/build/fixture attribution and newly coordinated local slot or owned isolated Cloud host. Preserve exact pending text/native bytes during composition, then confirmed Save; no repeat of the whole unchanged N04/Save/UndoRedo run. Physical input and broad E2E remain separate.",
           "limits": [
             "Original controlled N04 geometry and N02-H02 native proofs retain exact sources; same-session and fresh-reuse GM proofs remain separate on87ccdb2.",
             "Fresh visible saved-room reuse is consumed; lifecycle/install/post-save payload oracles remain producer reports. No new edit/save/current-Shared GUI or native IME claim.",
@@ -156564,7 +156494,6 @@
               "1e2000beea45870a69128db1ac76a0c42142e581"
             ]
           },
-          "nextConsumer": "Hex: the concrete IME Save defect is independently qualified and regularly integrated0b6aa819; the offered Cloud-GM fresh-room reuse input is complete. Next bounded own step is the affected composing Save user path in a real Obsidian host, with appropriate composition input/source/build/fixture attribution and newly coordinated local slot or owned isolated Cloud host. Preserve exact pending text/native bytes during composition, then confirmed Save; no repeat of the whole unchanged N04/Save/UndoRedo run. Physical input and broad E2E remain separate.",
           "limits": {
             "syntheticDomInput": true,
             "newObsidianGui": false,
@@ -156835,7 +156764,6 @@
             "userVaultTouched": false,
             "fullE2E": false
           },
-          "nextConsumer": "Hex: first resolve the bounded host-input/probe-observation gap: demonstrate a KeyS keydown at the focused Location/Room panel during composition, with complete event provenance before judging the composing Save guard. The current document-capture field logger saw only composing keyup; interception versus non-delivery is not established. Use an appropriate isolated IME host/input or improve this specific observation; do not repeat unchanged H01/whole N04/Save/UndoRedo or expand the product. Any new local GUI requires fresh explicit slot coordination.",
           "finishedAt": "2026-10-11T06:09:33.702876+00:00"
         },
         "dungeonAtLocationInspectorImeSaveH02": {
@@ -157140,7 +157068,6 @@
             "largeMap": false,
             "userVaultInstalled": false
           },
-          "nextConsumer": "Hex: the H01 missing document keydown is localized to an earlier Window-capture stop. Identify the actual cancelling Window handler through passive source/handler provenance at the owned isolated host, or obtain an appropriate native IME input path; only then judge the affected panel guard and confirmed Save. Do not bypass/remove/replace application handlers, fabricate KeyboardEvent.isComposing, repeat unchanged H01/H02 or change product guards without a concrete required finding. A further local GUI needs a new explicit slot. Room/Meta, physical OS IME and full E2E remain separate.",
           "startedAt": "2026-10-11T06:23:05.101629+00:00",
           "finishedAt": "2026-10-11T06:23:15.124863+00:00"
         },
@@ -157580,7 +157507,6 @@
             "largeMap": false,
             "userVaultInstalled": false
           },
-          "nextConsumer": "Hex: consume the concrete Obsidian onKeyEvent/active Scope cancellation. Read the supported View.scope/Scope registration contract and verify whether confirmed noncomposing Ctrl+S actually saves a focused Location Key through the existing host. Do not try more unchanged CDP input variants. A composing panel guard is still unverified because the host stops delivery; a product routing change needs a concrete confirmed-Save finding and must use supported host integration without replacing/removing/bypassing handlers. Reuse the qualified R01 guards and prior proofs. Any new local GUI requires fresh explicit slot coordination. Room/Meta, physical IME and full E2E remain separate.",
           "startedAt": "2026-10-11T06:39:49.482657+00:00",
           "finishedAt": "2026-10-11T06:40:00.339352+00:00"
         },
@@ -158057,7 +157983,6 @@
             "originalParity": false,
             "largeMap": false
           },
-          "nextConsumer": "Hex: implement the confirmed Location Ctrl+S host-routing repair in existing #80. Use supported View.scope = new Scope(app.scope) / Mod+S registration and the existing serial Atlas Save path with current binding, pending-key and composition guards. Preserve qualified R01 Location/Room predicates; no handler replacement/removal/bypass or new unchanged IME variants. Add targeted actual focused-field regression and native confirmation through a freshly coordinated slot. Room/Meta, physical IME and fullE2E remain separate; no dependent detail expansion or competing City Save fix.",
           "startedAt": "2026-10-11T06:55:56.470082+00:00",
           "finishedAt": "2026-10-11T06:56:42.377855+00:00"
         },
@@ -158436,7 +158361,6 @@
             "originalParity": false,
             "largeMap": false
           },
-          "nextConsumer": "Contributor: independently review the concrete H04 Save-routing repair on the published exact candidate in existing #80: supported View Scope parent/lifecycle, current focus and binding, composition/pending-key guards, same-window duplicate Save suppression, five regressions and source-bound native proof. No selfintegration. After qualified review/integration, Hex consumes concrete findings or the applicable fresh-process/remaining input evidence; Room/Meta, physical IME, Copy/Discard/Recovery and fullE2E remain separate. No general review round or dependent detail expansion.",
           "startedAt": "2026-10-11T07:12:28.208181+00:00",
           "finishedAt": "2026-10-11T07:12:40.079426+00:00",
           "incomingConsumedAfterHost": {
@@ -158530,7 +158454,6 @@
             }
           ],
           "limits": "No new GUI, build, full-suite rerun, composing-panel/RoomMeta/fresh/physical/CopyDiscardRecovery/original/large-map/install/fullE2E claim. No user-vault touch or selfintegration. Prior source-bound author raw evidence remains historical and unmodified.",
-          "next": "Hex: reopen the actually R01-saved isolated Spatial-V2 payload in a fresh Obsidian process on a clean build of the current qualified source. Verify visible exact Location key and retained native hashes/foreign payload; no fixture reseeding or Save replay as substitute for restart. Coordinate a fresh local GUI slot before launching, normal app.quit/PIDs and explicit return; remaining cases stay separate.",
           "finishedAt": "2026-10-11T07:33:57.647673+00:00"
         },
         "dungeonAtLocationInspectorSaveRoutingFreshF01": {
@@ -160552,7 +160475,6 @@
             "fullFailedVaultRetained": true,
             "userVaultTouched": false
           },
-          "nextConsumer": "Hex in the existing #80/branch: repair managed Atlas leaf-change teardown without weakening retained draft/revocation guards. Add meaningful double-close/suspend regression and requalify visible Copy/Fresh with a newly coordinated slot; no parallel repair claim or new plan/review round. City owner informed of potential same-leaf Create-City overlap.",
           "finishedAt": "2026-10-11T09:32:31.117225+00:00"
         },
         "dungeonAtLocationRoomDraftCopyTeardownN01": {
@@ -160668,7 +160590,6 @@
             "noSelfMerge": true,
             "foreignRootsPreserved": true
           },
-          "nextConsumer": "One independent review of the narrow new teardown repair at the existing #80 package. The additional reproduced membership gap needs a guarded normal Copy/fresh-entry repair in the same claim before another newly coordinated native Copy/Fresh pair. No dependent expansion or native PASS from DOM.",
           "finishedAt": "2026-10-11T09:51:53.378290+00:00",
           "pullRequest": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/157"
         },
@@ -160780,7 +160701,6 @@
             "noSelfMerge": true,
             "foreignRootsPreserved": true
           },
-          "nextConsumer": "Existing independent Atlas/Campaign reviewer: targeted N02 classification/read-only closure/recovery guards on this candidate. Hex then owns the visible Copy/fresh Obsidian pair with newly coordinated local slot, frozen new helpers and a new isolated copy of the actual R03 draft vault. Historical failed C01 remains immutable; no native/fresh PASS inferred from DOM.",
           "finishedAt": "2026-10-11T10:22:10.691262+00:00"
         },
         "dungeonAtLocationRoomDraftCopyC02": {
@@ -161079,7 +160999,6 @@
             "userVaultTouched": false,
             "noSelfMerge": true
           },
-          "nextConsumer": "Hex in existing #80/branch: correct only the QA full-world read in a newly named helper, preserve C01/C02 executed helpers/vaults/raw, then a newly coordinated Copy/Fresh pair on new actual R03 input. N02 code review consumed; no repeated general review or product repair from this QA mismatch. City owns new #151 local pair; Hex waits explicit return before any new GUI.",
           "finishedAt": "2026-10-11T10:43:07.115633+00:00"
         },
         "dungeonAtLocationRoomDraftCopyC03": {
@@ -161415,7 +161334,6 @@
             "selfIntegrated": false,
             "fullE2E": false
           },
-          "nextConsumer": "Existing Steward: consume direct C03 normal Copy/Fresh evidence for N01/N02 candidate PR157, source unchanged b6ec69d4. Hex retains #80/branch and remaining direct native journal interruption qualification; no new general review or dependent expansion from this scoped PASS. Any local GUI requires new coordination.",
           "finishedAt": "2026-10-11T11:04:19.925412+00:00"
         },
         "dungeonAtLocationRoomCopyJournalP01": {
@@ -161749,7 +161667,6 @@
             "userVaultInstalled": false,
             "fullE2E": false
           },
-          "nextConsumer": "Existing Steward consumes prepared-Copy native input for #80; Hex retains same parent/branch and next committed-Copy cleanup/Fresh input. Existing targeted N01/N02 reviews retained; no general review/new dependent expansion.",
           "finishedAt": "2026-10-11T11:29:09.508080+00:00"
         },
         "dungeonAtLocationRoomCopyCommittedJournalC01": {
@@ -162101,7 +162018,6 @@
             "userVaultInstalled": false,
             "fullE2E": false
           },
-          "nextConsumer": "Existing Steward consumes this committed-Copy native input for #80. Hex retains same parent/branch and next native Room-Savejournal input; existing independent reviews retained, no general review or dependent expansion.",
           "finishedAt": "2026-10-11T11:48:00.140274+00:00"
         },
         "dungeonAtLocationRoomSaveCommittedJournalJ01": {
@@ -162235,7 +162151,6 @@
             "impact": "misleading ongoing Save status in retained read-only editor; persisted committed After data and fresh recovery remain intact",
             "owner": "Hex",
             "issue": 80,
-            "nextFixWithinExistingBranch": true,
             "probe": "docs/reference/atlas-detail-binding-d01/room-save-committed-journal-j01/fault/room-save-committed-fault-probe.json",
             "fullSaveUxPassed": false
           },
@@ -162448,7 +162363,6 @@
             "userVaultInstalled": false,
             "fullE2E": false
           },
-          "nextConsumer": "Existing Steward consumes this committed Room-Save native input for #80. Hex retains parent/branch and fixes actual retained Save status next, then remaining prepared Room-Save input; no general review or dependent expansion.",
           "finishedAt": "2026-10-11T12:11:10.423162+00:00"
         },
         "dungeonAtLocationRetainedSaveStatusJ02": {
@@ -162825,7 +162739,6 @@
             "fullE2E": false,
             "independentProductUse": false
           },
-          "nextConsumer": "Steward independently uses concrete retained Save status product fix and direct regressions/native J02 at #80. Hex retains parent/branch and prepared Room-Save recovery follow-up.",
           "finishedAt": "2026-10-11T12:37:55.520710+00:00",
           "qualifiedSharedBaseline": "50b74fb4046eb1df3ef61470e9252d451ab1e627",
           "compositionHead": "4be86954199076976c704a3667ba35799e4321a4",
@@ -163257,7 +163170,6 @@
             "fullE2E": false,
             "independentJ03Use": false
           },
-          "nextConsumer": "Steward consumes the concrete missing prepared Room-Save input in existing PR167/#80 alongside qualified J02 product fix; Hex retains parent/branch and consumes actual findings or qualified integration. No extra general review round or native repeat.",
           "finishedAt": "2026-10-11T13:02:51.113889+00:00"
         }
       }

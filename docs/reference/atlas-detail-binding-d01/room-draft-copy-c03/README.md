@@ -53,7 +53,3 @@ Orakel sind getrennt. Dies ist eine gezielte Producerprobe; freie GM-Belege blei
 bei ihren echten Reviewern. Physische/IME/Meta-Eingabe, unterbrochene Save-/Copyjournale,
 Hardcrash, Kamera-/Historyrestauration nach Fresh, Originalparität, Großkarten,
 Nutzervaultinstallation und gemeinsames Gesamt-E2E sind hier nicht qualifiziert.
-Parent #80 bleibt offen, keine Selbstintegration. Nächster Empfänger ist der bestehende
-Steward zur Verwendung dieses direkten Copy/Fresh-Eingangs am bestehenden PR157;
-Hex hält verbleibende konkrete Nutzungs-/Recoverybeiträge im selben Parent/Branch.
-Kanonisch `acceptance.hexAtlas.requirements[30].dungeonAtLocationRoomDraftCopyC03`.

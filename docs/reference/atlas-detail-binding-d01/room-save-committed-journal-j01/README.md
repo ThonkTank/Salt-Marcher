@@ -3,7 +3,7 @@
 [#80](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80), Hex,
 E2E-01 Nutzerzeile13 / `E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001`.
 [Committed-Copy-C01](../room-copy-committed-journal-c01/README.md) ist durch
-[Steward separat konsumiert und integriert](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/164#issuecomment-6108755035).
+[separat integriert](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/164#issuecomment-6108755035).
 Dieser Eingang ergänzt ausschließlich committed Room-Save. Beide tatsächlichen
 Obsidianprozesse laufen auf sauberem Shared `593f8cca5358cca715ad5cca36f9f759af52a027`;
 Produktquelle `b6ec69d4290259e60e8acab61633b3b4a3ce2b69` und Buildpfad sind
@@ -66,7 +66,3 @@ Native synthetische Producerprobe mit kontrolliertem Storagefehler und lesendem
 Datei-/Modellorakel. Kein handgeschriebenes Journal, Hardcrash, physischer-/IME-/Meta-/
 freier GM-, prepared-Room-Savejournal-, Original-/Großkarten-/Nutzervault- oder Gesamt-E2E-PASS.
 Kanonisch `acceptance.hexAtlas.requirements[30].dungeonAtLocationRoomSaveCommittedJournalJ01`.
-Steward kann den committed Room-Save-Hosteingang an #80 konsumieren. Hex hält
-#80/Branch und korrigiert als nächsten eigenen Beitrag die stehengebliebene
-Saveanzeige im erhaltenen Editor; prepared Room-Save-Recovery bleibt danach offen.
-Keine zusätzliche allgemeine Reviewrunde; vor neuer GUI erneut Slot koordinieren.

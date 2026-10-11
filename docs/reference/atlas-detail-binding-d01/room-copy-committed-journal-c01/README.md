@@ -3,7 +3,7 @@
 [#80](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80), Hex,
 E2E-01 Nutzerzeile13 / `E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001`.
 [P01 prepared-Copy](../room-copy-journal-p01/README.md) ist durch
-[Steward separat konsumiert und integriert](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/163#issuecomment-6108600398).
+[separat integriert](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/163#issuecomment-6108600398).
 Dieser Eingang ergänzt ausschließlich committed Copy: dieselbe bereits vollständig
 geschriebene Kopie wiederherstellen, ohne neue Dateien oder Identitäten zu erzeugen.
 Beide tatsächlichen Obsidianprozesse laufen auf sauberem Shared `a3b311f2d652739aec9b1d833f9ed8382984da83`;
@@ -59,6 +59,3 @@ Room-Savejournal-, Original-/Großkarten-/Nutzervault- oder Gesamt-E2E-PASS.
 Zwei Bilder belegen Fehlerdialog und anschließend sichtbare Raumfelder; die
 Recoveryaktion ist in Helper/Probe gebunden, ohne separates Bild vor dem Klick.
 Kanonisch `acceptance.hexAtlas.requirements[30].dungeonAtLocationRoomCopyCommittedJournalC01`.
-Steward kann diesen fehlenden committed-Copy-Hosteingang an #80 konsumieren.
-Hex hält #80/Branch; nächste eigene Lücke ist die native Room-Savejournal-Recovery,
-vor GUI erneut ausdrücklich koordinieren. Kein zusätzlicher allgemeiner Review.

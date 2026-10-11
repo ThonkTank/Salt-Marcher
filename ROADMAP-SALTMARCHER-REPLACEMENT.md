@@ -491,7 +491,7 @@ Fachabnahmen und rechtfertigt keinen eigenen Shop-/Wetter-/Music-Snapshotstore.
   Program Technical Needs prüfen.
 - Gesamtqualifikation samt erforderlicher unabhängiger Prüfung,
   gezielter Nachbesserung und Bereinigung zusammenführen. Keine zusätzliche
-  allgemeine Aufräumreviewrunde; fehlende Fachabnahme bleibt offen.
+  betroffenen Fach-/Hostprüfungen; fehlende Abnahmen bleiben offen.
 
 Die erklärbare Kampagnenhistorie verbindet SMR-01/03/05/07–09: bestätigte Zeit-,
 Reise-, Encounter-, XP-, Party- und manuelle Worldfolgen im laufenden Produkt

@@ -4,7 +4,7 @@ Stand: 9. Oktober 2026
 
 Basis: `d09513e103ed6e40a8973d6941961cde37f376a8`
 
-Art: Planlauf; keine Produkt-, Host- oder Fachabnahme
+Art: technische Prototypanforderungen; keine Produkt-, Host- oder Fachabnahme
 
 ## Zweck und Entscheidungsgrenze
 
@@ -75,40 +75,9 @@ aber niemals allein die endgültige ADR-Ratifikation liefern.
 
 ## Gemeinsamer Ausführungsvertrag
 
-### Lauflebenszyklus
+### Daten- und Ausführungsgrenzen
 
-Jeder Prototyp ist ein eigener, sequentieller Kandidatenbranch mit der Folge
-`Planreview -> Umsetzung -> unabhängiger Review -> gegebenenfalls
-Nachbesserung -> erneuter Review -> Prototyp-Aufräumen`. Ein Prototyp beginnt
-erst auf einer sauberen, mit dem aktuellen gemeinsamen Branch integrierten
-Basis. Änderungen anderer Geräte oder Stränge werden vor jedem Lauf erneut
-abgerufen; veröffentlichter Verlauf wird nicht umgeschrieben. Jeder geprüfte
-Zwischenstand wird ohne Force-Push auf seinem Kandidatenbranch veröffentlicht.
-Nur der Koordinator integriert nach bestandenem Review die kleine Roadmap-,
-Contracts- und Evidence-Änderung in den gemeinsamen Branch. Ein No-Go
-verbleibt mit seinen Belegen auf dem Kandidatenbranch; ein eigener
-Aufräumcommit entfernt den
-paketlokalen ausführbaren Prototypcode und seine temporären Abhängigkeiten,
-bevor etwas zur Integration vorgeschlagen wird. Die reviewten, versionierten
-Port-, DTO- und Schema-Verträge unter `tools/adr-prototypes/contracts/**` sowie
-der Aggregatbeleg bleiben erhalten. Ein Folgepaket setzt keinen gelöschten
-Harness voraus; es bindet die erhaltenen Verträge und den reviewten
-Aggregatbeleg als Eingangsoracle.
-
-P01 bis P04 bleiben wegen ihrer fachlichen Eingangsorakel in dieser Reihenfolge
-sequenziell; kein Folgepaket beginnt vor dem Aufräumreview des Vorgängers. Jedes
-Paket hat genau einen Besitzer und ausschließlich die unten genannten Dateien.
-Diese Paketexklusivität sperrt keine andere, nicht überlappende Produktarbeit:
-statische und nichtgrafische Läufe dürfen in getrennten Worktrees parallel
-arbeiten. Pro physischem Gerät läuft jedoch gleichzeitig höchstens eine
-grafische Host-, Original- oder Prototypinstanz und nur ein GUI-, Fault- oder
-Lastlauf. Getrennte Geräte dürfen für denselben freigegebenen Paketkandidaten
-ihre plattformspezifischen Receipts parallel erzeugen; kein Lauf teilt dabei
-einen Evidence-Root oder schreibt dieselben Dateien. Kontrollierte Samples
-eines funktionierenden Kandidaten dürfen die unten geforderte Anzahl haben;
-nach höchstens zwei erfolglosen Versuchen oder 45 Minuten an derselben
-Hypothese wird anhand der vorhandenen Belege Go, No-Go oder eine neue
-Hypothese entschieden.
+Prototypen bleiben von Produktcode und Nutzervault getrennt. Jede Messung nennt Eingangsdaten, Quell-/Buildhashes, Ergebnis und Grenzen. Versionierte Port-/DTO-/Schemaverträge sowie Aggregatbelege bleiben reproduzierbare Eingangsorakel. Fehlende oder negative Beweise qualifizieren keine Zielplattform. Abhängigkeiten zwischen P01–P04 ergeben sich aus ihren fachlichen Eingangsorakeln. Grafische Prüfungen verwenden isolierte Testdaten und schützen aktive Hosts.
 
 ### Versionierte Verträge und abschließende Composition
 
@@ -853,8 +822,7 @@ Die Reihenfolge ist verbindlich:
 5. `ADR-C01` beweist alle vier Vertragsversionen gemeinsam auf genau einer
    Main-/Utility-/Preload-/Renderer-/Speichergrenze.
 
-P02 wird erst nach abgeschlossenem P01-Aufräumreview spezifiziert und
-umgesetzt. P03 baut erst auf dem reviewten Prozess-/Receiptmodell aus P02 auf.
+P02 benötigt die belegten P01-Eingangsorakel; P02 bleibt eine eigene atomare Write-/Recoveryprüfung.
 P04 beginnt erst, wenn P01- und P02-Digests als feste Eingangsorakel vorliegen.
 C01 beginnt erst nach dem P04-Review und verwendet die erhaltenen
 Vertragsartefakte; sein Aufräumen entfernt den Composition-Harness, nicht die
@@ -899,19 +867,17 @@ ADR-Entscheids`, wenn:
   gehashten Produktquellen-/Fixture-Eingabestand. Paketlokale
   Dev-Abhängigkeitsunterschiede sind explizit, eine Änderung dieses gemeinsamen
   Eingabestands erzwingt die Wiederholung aller betroffenen früheren Pakete;
-- Hex/Atlas-, Stadt- und Dungeon-Gerätekollegen ihre Formate, Belege,
-  Performancegrenzen und offenen Gates bestätigt haben;
-- die drei lokalen Integrationsstränge die Scope-/Migrationsgrenzen bestätigt
-  und die Cloud-Reviewer Architektur, Sicherheit, Daten und Accessibility
-  unabhängig geprüft haben;
+- Atlas-, Stadt- und Dungeonformate, Performance- und Migrationsgrenzen anhand echter Belege geprüft sind;
+- Architektur, Sicherheit, Daten und Accessibility die jeweiligen technischen Gegenprüfungen bestehen;
 - kein ausführbarer Prototyp im Produktbundle, installierten Plugin oder
   Nutzervault liegt, die versionierten Verträge weiter prüfbar sind und der
-  Aufräumreview alle temporären Fähigkeiten inventarisiert hat.
+  Nachweis alle temporären Fähigkeiten inventarisiert.
 
-Danach dokumentiert ein eigener ADR-Ratifikationslauf die tatsächlichen
-Receipts, die Dreioptionenmatrix, alle zusätzlichen Blocker, Abweichungen und
-den gewählten Host in den bestehenden Architektur-, Checkpoint- und
-Acceptance-Eigentümern. Dieses Plandokument ändert deren Stand nicht. Bei
+Die Plattformentscheidung benötigt die tatsächlichen Receipts, Dreioptionenmatrix, Blocker, Abweichungen und einen belegten Zielhost. Bei
 `No-Go` bleibt Obsidian der laufende Adapter, die vorhandene Facharbeit läuft
-weiter und das Team plant eine neue Zielplattformhypothese; es entstehen weder
+weiter und die Zielplattformfrage bleibt offen; es entstehen weder
 ein halb migriertes Produkt noch zwei Datenwahrheiten.
+
+## Verbleibende technische Nachweise
+
+Receipt-State-Machines, Rollback und Fresh-Recovery benötigen ausgeführte Matrix-/Adversarienfälle, Sicherheitslimits und negative Tests. Diese Anforderungen verleihen weder H03-Go noch eine Plattformwahl oder P02-Produktfreigabe. Fachliche Eingangsorakel bleiben unabhängig von alten Arbeitslaufbezeichnungen erforderlich.

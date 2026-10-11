@@ -231,11 +231,11 @@ Der Polygonentwurf hält rohe Eckpunkte und optionale Shift-Handles getrennt in 
 
 Bei booleschen Building-Schnitten bindet `reanchorPortal` ein Portal anhand seines Mittelpunktes an ein erhaltenes, gleich gerichtetes Wandstück. Dungeondraft erhält in der gemessenen Folge ein Portal, dessen eine Hälfte nach dem ersten Randschnitt über die neue Kerbe ragt; erst der zweite Schnitt entfernt auch den tragenden Mittelpunkt. Kontur und Portaländerung bleiben ein gemeinsamer History-Befehl.
 
-## Aufräum-Umsetzung nach Fachphase 1
+## Selbstschnitt-Vorprüfung
 
 Der Editor entscheidet am Pointer- beziehungsweise Tastatureingang, wann ein `PathDraft` fertig ist. `completePathDraft` übernimmt danach als einziger Weg Vorschau-Freigabe, Building-Komposition und Erzeugung der übrigen Pfad-Entitäten. `refreshFloorPathPreview` bündelt nur die Vorschauaktualisierung für Polygon und Gang; `buildingPolygonPoints` bleibt die gemeinsame Kurvengeometrie. Der Fenster-Fallback verwendet einen gemeinsamen Guard für aktive Zeiger ohne Canvas-Capture; Move, Up und Cancel behalten getrennte Aktionen.
 
-Die Building-Selbstschnitt-Vorprüfung sortiert einmal erfasste Kantenboxen nach X und hält nur räumlich mögliche Paare aktiv. Für diese Paare gilt weiterhin der bisherige strenge Kreuzungstest. Bei einem Treffer laufen unverändert Clipper 6, EvenOdd und Pixelrundung. `tools/bench-building.mjs` misst die Vorprüfung über `composeBuilding` reproduzierbar auf großen nicht schneidenden Ringen; die Hostdiagnose-Listener werden nach ihrer Zeitspur freigegeben. Der Aufräum-Review dieser Umsetzung steht noch aus.
+Die Building-Selbstschnitt-Vorprüfung sortiert einmal erfasste Kantenboxen nach X und hält nur räumlich mögliche Paare aktiv. Für diese Paare gilt weiterhin der bisherige strenge Kreuzungstest. Bei einem Treffer laufen unverändert Clipper 6, EvenOdd und Pixelrundung. `tools/bench-building.mjs` misst die Vorprüfung über `composeBuilding` reproduzierbar auf großen nicht schneidenden Ringen; die Hostdiagnose-Listener werden nach ihrer Zeitspur freigegeben.
 
 ## Punktbearbeitung der Fachphase 2
 
@@ -245,7 +245,7 @@ Die direkte Originalmessung der Phase-2-Nachbesserung bestätigt die gemeinsame 
 
 Die direkte Innenlochprobe bestätigt dieselbe Dreipunktregel für den inneren Ring, ohne den Außenring zu verändern. Bei Kantenmitteneinfügung behält Dungeondraft ein Portal auf einem unveränderten Wandstück an seinem Ort, entfernt aber ein Portal auf dem durch die neue Ecke ersetzten Stück. `followPortalAfterContourEdit` verwendet für die Einfügung deshalb den über Mittelpunkt und Richtung prüfenden Überlebensanker; Vorschau und Commit teilen diese Berechnung. Eine abgeleitete Zweiportal-Testkarte belegt das Entfernen des nahen und das Erhalten des fernen Portals mit Undo/Redo und frischer Öffnung.
 
-Der Phase-2-Aufräumkandidat bildet den Zielpunkt aus Griff, Zeiger und Snap einmal und gibt aus `proposeBuildingPointDrag` eine reine Kontur-/Edit-Paarung an Vorschau und Commit. Die Vorschau liest gebundene Türen aus `Session.dependents`, während der validierte Commit den aktuellen Sessionstand prüft; `followPortalAfterContourEdit` bleibt die gemeinsame Portalregel. Der Vorschau-Renderer verwendet vorhandene Paketwand-Sprites erneut und zerstört nur Stücke oberhalb der aktuellen Wandstückzahl. Beide Konturbefehle teilen die Current-/Lock-Prüfung, Topologievalidierung und den Aufbau der Portal-RecordChanges, behalten aber ihre verschiedenen Struktur- und Raum-Key-Regeln. Ein reproduzierbarer Vergleich misst 32/512 Punkte mit 0/4.000 fremden Entitäten und zählt Sprite-Neuanlagen im isolierten Host; der getrennte Aufräum-Review steht noch aus.
+Der Phase-2-Aufräumkandidat bildet den Zielpunkt aus Griff, Zeiger und Snap einmal und gibt aus `proposeBuildingPointDrag` eine reine Kontur-/Edit-Paarung an Vorschau und Commit. Die Vorschau liest gebundene Türen aus `Session.dependents`, während der validierte Commit den aktuellen Sessionstand prüft; `followPortalAfterContourEdit` bleibt die gemeinsame Portalregel. Der Vorschau-Renderer verwendet vorhandene Paketwand-Sprites erneut und zerstört nur Stücke oberhalb der aktuellen Wandstückzahl. Beide Konturbefehle teilen die Current-/Lock-Prüfung, Topologievalidierung und den Aufbau der Portal-RecordChanges, behalten aber ihre verschiedenen Struktur- und Raum-Key-Regeln. Ein reproduzierbarer Vergleich misst 32/512 Punkte mit 0/4.000 fremden Entitäten und zählt Sprite-Neuanlagen im isolierten Host.
 
 ## Kandidat für Boden- und Wandstile der Fachphase 3
 
@@ -289,13 +289,13 @@ Der Boden- und Wandshader verwendet bei `false` einen neutralen Faktor statt der
 
 Die direkte Phase-1-Probe erweitert den Kartenmodus um `settings.buildingWearMode` mit `none`, `dust`, `grime`, `noise` und `scratched`. Das Feld hat Vorrang vor dem älteren `nativeBuildingWear`; fehlt es in Bestandskarten, bleibt dessen bisherige `false`/Grime-Bedeutung erhalten. Neue Karten speichern die Startwahl als `none` oder `grime`, und die seitliche Karteneinstellung speichert jede der fünf Wahlen unmittelbar. Boden und eingebaute Building-Wände lesen die entsprechende Textur aus demselben geprüften Dungeondraft-PCK; `none` verwendet den neutralen Shaderfaktor. Der ältere Zahlenwert `buildingWear` bleibt getrennt. Die Moduswahl erzeugt keinen eigenen Undo-Schritt und wird in bestehenden History-Befehlen nachgeführt, damit Undo/Redo anderer Einstellungen sie nicht zurücksetzt. Der gemessene Original-Undo-Knopf war nach der Wahl deaktiviert; komplexere kombinierte Original-History bleibt vor dem Fachreview offen. Belege: `/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-wear-original-20261009/original-probe.md` und `/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-wear-host-implementation-20261009/implementation.md`.
 
-## Phase-3-Aufräumkandidat
+## Gemeinsamer Wandstil
 
 Die gehaltene Building-Vorschau verwendet Bodenmesh, Geometrie, Shader, Maske und dunkle Unterlage bei weiteren Konturpunkten wieder; geänderte Puffer und Konturen werden in diesen Objekten aktualisiert. Erst ein anderer Shaderstil, ein anderes Asset oder das Ende der Vorschau zerstört sie. Die gespeicherte Building-Grafik behält ihren bisherigen Aufbau. `floorPolygonTouchesCell` prüft nach dem Mittelpunkt nur noch Eckpunkte und räumlich mögliche Ringkanten: Liegt ein Zellwinkel bei außen liegendem Mittelpunkt innerhalb des Polygons, muss die Ringgrenze die Zelle schneiden. Vier zusätzliche Polygon-Innentests pro Zelle sind daher entbehrlich. Die vollständige Variantenfolge und Abdeckungsmasken der 32-/512-Punkt-Vergleichskarten bleiben bytegleich. Die PCG- und Überlappungsreihenfolge von `nativeFloorCells`/`nativeFloorVariants` bleibt unverändert.
 
-`buildingWallStyle` leitet die fünf Felder der aktiven Building-Wandvorgabe einmal aus den Werkzeugeinstellungen ab; `applyBuildingWallStyle` wendet sie bei Vorschau, Einfügen/Entfernen und Alt-Radieren an. Eine Punktverschiebung behält ihren bisherigen Stil. Neue Buildings lassen eine nicht gewählte optionale Wandkennung weiter weg. Die Phase-3-Hostfixtures prüfen PCK und QAWall01-Paket an einer Stelle per Inhaltshash; alternative lokale Dateipfade werden nur mit denselben Hashes angenommen. Der getrennte Aufräum-Review des Kandidaten steht noch aus.
+`buildingWallStyle` leitet die fünf Felder der aktiven Building-Wandvorgabe einmal aus den Werkzeugeinstellungen ab; `applyBuildingWallStyle` wendet sie bei Vorschau, Einfügen/Entfernen und Alt-Radieren an. Eine Punktverschiebung behält ihren bisherigen Stil. Neue Buildings lassen eine nicht gewählte optionale Wandkennung weiter weg. Die Phase-3-Hostfixtures prüfen PCK und QAWall01-Paket an einer Stelle per Inhaltshash; alternative lokale Dateipfade werden nur mit denselben Hashes angenommen.
 
-Der [unabhängige Phase-3-Aufräum-Review](/home/aaron/.cache/dungeon-native-qa/parity-phase3-cleanup-review-20261008/phase3-cleanup-review.md) bestätigte diese Architekturänderungen auf Build `013c9aef…`: Die gespeicherte Building-Grafik behält ihren Aufbau, die gehaltene Vorschau ihre Ressourcen über neun Punktziele und gibt sie beim Abbruch frei. Vollständige Varianten- und Abdeckungsarrays blieben bytegleich; die vier fachlich betroffenen Hostfolgen bestanden Bearbeitung und frische Neuöffnung. Das Aufräumtor ist bestanden; Phase 4 wird getrennt geplant.
+Der [Phase-3-Nachweis](/home/aaron/.cache/dungeon-native-qa/parity-phase3-cleanup-review-20261008/phase3-cleanup-review.md) bestätigte diese Architekturänderungen auf Build `013c9aef…`: Die gespeicherte Building-Grafik behält ihren Aufbau, die gehaltene Vorschau ihre Ressourcen über neun Punktziele und gibt sie beim Abbruch frei. Vollständige Varianten- und Abdeckungsarrays blieben bytegleich; die vier fachlich betroffenen Hostfolgen bestanden Bearbeitung und frische Neuöffnung.
 
 ## Objektbibliothek und Tagbestand
 
@@ -309,13 +309,13 @@ Die Phase-4-Nachbesserung führt Tag- und Setwahl als explizite Zustandsübergä
 
 Bei einem erstmals vertrauten isolierten Vault kann Obsidian `activeDocument` noch auf `about:blank` halten, obwohl der Karteneditor bereits fokussiert ist. `Modal` konstruiert und öffnet dann im falschen Dokument. Beide sichtbaren Tagbrowser-Zugänge geben deshalb das `ownerDocument` der angeklickten Editoransicht an den Plugin-Aufruf. Wenn dieses Dokument fokussiert ist, synchronisiert der Aufruf `activeWindow` und `activeDocument` unmittelbar vor der Modal-Konstruktion. Die [Kaltstart-Nachbesserung](/home/aaron/.cache/dungeon-native-qa/parity-phase4-coldstart-20261008/phase4-coldstart-implementation.md) belegt das falsche Original-Hostfenster und den sichtbaren ersten Klick auf dem neuen Kandidatenbuild; der unabhängige Review bleibt ein eigener Lauf.
 
-## Phase-4-Aufräumkandidat
+## Asset-Snapshot und Bildlebensdauer
 
-Die Objektbibliothek hält einen vorbereiteten Asset-Snapshot aus sortierten IDs, vollständigen Pfaden und Suchwörtern. Assetbenachrichtigungen und Karten-Einstellungsänderungen invalidieren ihn; ein Tag-Save erneuert nur Tagdaten. Das Kachelgitter bleibt bei gleicher geordneter sichtbarer ID-Folge stehen, während Auswahlmarkierung und Bedienzustand gezielt aktualisiert werden. Der Tagbrowser ändert bei einem Mitgliedschaftsklick nur seinen Entwurf und die betreffende Kachelmarkierung. Wechselnde Ergebnisfolgen werden vollständig neu aufgebaut. `LazyObjectImages` bündelt das Nachladen sichtbarer Bilder für Bibliothek und Browser; beide trennen ihre Beobachter beim Schließen oder Ersetzen, die Bibliothek zusätzlich beim Editorabbau. Der Phase-4-Host prüft PCK und QA-Paket auch bei alternativen Pfaden gegen feste Inhaltshashes. [Messung und Hostbelege](/home/aaron/.cache/dungeon-native-qa/parity-phase4-cleanup-20261008/phase4-cleanup-implementation.md) liegen vor; der unabhängige Aufräum-Review steht aus.
+Die Objektbibliothek hält einen vorbereiteten Asset-Snapshot aus sortierten IDs, vollständigen Pfaden und Suchwörtern. Assetbenachrichtigungen und Karten-Einstellungsänderungen invalidieren ihn; ein Tag-Save erneuert nur Tagdaten. Das Kachelgitter bleibt bei gleicher geordneter sichtbarer ID-Folge stehen, während Auswahlmarkierung und Bedienzustand gezielt aktualisiert werden. Der Tagbrowser ändert bei einem Mitgliedschaftsklick nur seinen Entwurf und die betreffende Kachelmarkierung. Wechselnde Ergebnisfolgen werden vollständig neu aufgebaut. `LazyObjectImages` bündelt das Nachladen sichtbarer Bilder für Bibliothek und Browser; beide trennen ihre Beobachter beim Schließen oder Ersetzen, die Bibliothek zusätzlich beim Editorabbau. Der Phase-4-Host prüft PCK und QA-Paket auch bei alternativen Pfaden gegen feste Inhaltshashes. [Messung und Hostbelege](/home/aaron/.cache/dungeon-native-qa/parity-phase4-cleanup-20261008/phase4-cleanup-implementation.md) liegen vor.
 
 Die Phase-4-Aufräum-Nachbesserung unterscheidet eine neue Assetbibliothek von einer reinen Karten-Einstellungsänderung. Beide erneuern den sortierten Snapshot, ohne die alte sichtbare ID-Folge vor dem Vergleich zu löschen. Bei gleicher Folge bleiben Kacheln, Bilder, Bedienelemente, Fokus, Auswahl und Scrollposition bestehen; geänderte Namen werden am Knoten aktualisiert. Nur nach wirklichem Asset-Reload werden geladene Bilder mit der aktuellen Blob-URL verglichen und bei Bedarf neu gebunden. Noch unbeobachtete Bilder fragen ihre URL erst beim Sichtbarwerden ab. Bei geänderter Folge wird das Gitter einmal neu aufgebaut und sein Bildbeobachter getrennt. [Dreifache ID- und Aktionsmatrix](/home/aaron/.cache/dungeon-native-qa/parity-phase4-cleanup-repair-20261008/implementation-audit.json) sowie Paketwechsel unter gleicher ID belegen den Umsetzungskandidaten; das unabhängige Aufräumtor bleibt offen.
 
-Der [getrennte unabhängige Aufräum-Review](/home/aaron/.cache/dungeon-native-qa/parity-phase4-cleanup-review3-20261008/phase4-cleanup-independent-review.md) bestätigt die erhaltenen Kacheln und Bildknoten bei gleichen IDs, den gezielten Blob-URL-Wechsel nach echtem Reload sowie vollständig freigegebene Bildbeobachter. Die nachgebesserte QA-Matrix misst Modal, sichtbare Bilder und Obsidian-Scope getrennt; Produktcode und Bundle blieben gleich. Das Phase-4-Aufräumtor ist bestanden.
+Der [Ressourcennachweis](/home/aaron/.cache/dungeon-native-qa/parity-phase4-cleanup-review3-20261008/phase4-cleanup-independent-review.md) bestätigt die erhaltenen Kacheln und Bildknoten bei gleichen IDs, den gezielten Blob-URL-Wechsel nach echtem Reload sowie vollständig freigegebene Bildbeobachter. Die nachgebesserte QA-Matrix misst Modal, sichtbare Bilder und Obsidian-Scope getrennt; Produktcode und Bundle blieben gleich.
 
 ## Objektplatzierung als Phase-5-Kandidat
 
@@ -331,11 +331,11 @@ Die zweite Phase-5-Nachbesserung lässt bei aktivem Snap nur das Object Tool auf
 
 Die dritte Phase-5-Nachbesserung trennt die gespeicherte `objectPalette` einer Karte von der aktuellen Object-Tool-Farbe. Beim Aufbau einer neu geöffneten Kartenansicht beginnt die Werkzeugfarbe wie im direkt gemessenen Original bei der ersten roten Vorgabe mit Alpha 255; die karteneigene Zusatzpalette und bereits gefärbte Objekte bleiben erhalten. Ein bloßer Werkzeugwechsel auf derselben Karte erhält die gewählte Farbe. Die [direkte Originalfolge und der Hostvergleich](/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair3-implementation-20261008/phase5-repair3-implementation.md) sind Umsetzungsevidenz; ein unabhängiger Fachreview steht noch aus.
 
-## Phase-5-Aufräumkandidat
+## Lichtinvalidierung und Picker-Lebensdauer
 
 `toolDefaults()` ist ein reiner Lesezugriff; `resetObjectColorForMap()` gehört zum Aufbau der Kartenansicht. Die Session kennzeichnet eine reine `objectPalette`-Änderung mit `paletteOnly`, damit der Renderer die neue Settings-Referenz ohne Szenenneubau übernimmt. Die History-Umbasierung der Palette bleibt in der Session.
 
-Für Lichtinvalidierung hält der Renderer pro blockierender Entität den letzten Bereich auch dann, wenn ihre Übersichtsgrafik ausgeblendet ist. Alte und neue Bereiche einschließlich Geschoss und gebundener Tür-Eltern bestimmen pro Sessionereignis die betroffenen Lichter; Änderungen der Karten-Settings behalten den vollständigen Neuaufbau. Die Object-Picker-Einstiege teilen Preview und Commit. Der Editor beendet ausstehendes Farbsampling beim View-Abbau, bevor Renderer und DOM verschwinden. Phase-5-Hostszenarien beziehen die proprietären PCK-/QA-Fixtures über einen gemeinsamen SHA-256-gebundenen Helfer. [Vorher/Nachher-Rohdaten und Hostpaare](/home/aaron/.cache/dungeon-native-qa/parity-phase5-cleanup-implementation-20261008/phase5-cleanup-implementation.md) sind Umsetzungsevidenz; der unabhängige Aufräum-Review folgt getrennt.
+Für Lichtinvalidierung hält der Renderer pro blockierender Entität den letzten Bereich auch dann, wenn ihre Übersichtsgrafik ausgeblendet ist. Alte und neue Bereiche einschließlich Geschoss und gebundener Tür-Eltern bestimmen pro Sessionereignis die betroffenen Lichter; Änderungen der Karten-Settings behalten den vollständigen Neuaufbau. Die Object-Picker-Einstiege teilen Preview und Commit. Der Editor beendet ausstehendes Farbsampling beim View-Abbau, bevor Renderer und DOM verschwinden. Phase-5-Hostszenarien beziehen die proprietären PCK-/QA-Fixtures über einen gemeinsamen SHA-256-gebundenen Helfer. [Vorher/Nachher-Rohdaten und Hostpaare](/home/aaron/.cache/dungeon-native-qa/parity-phase5-cleanup-implementation-20261008/phase5-cleanup-implementation.md) sind Umsetzungsevidenz.
 
 ## Phase-6-Objektgesten als Umsetzungskandidat
 
@@ -411,24 +411,7 @@ Der vorbereitete CityRenderer (CITY-01-PREP-I07) besitzt nur einen Container mit
 
 - Geplantes CITY-02/CITY-08-Generationsrezept: versionierter vollständiger Auftrag mit Generatorversion, getrennten Seed-/Größenvorgaben, Feature-/Anschlussstrategie, Siedlungsfläche, Umgebungsankern und Einheiten. Import validiert vor einem neuen Vorschauauftrag; kein Ausführen fremder URLs oder Netzwerkzugriff erforderlich. Reproduktion wird anhand materialisierter Geometrie geprüft. Die native Stadtdatei speichert erzeugte und manuell bearbeitete Geometrie/Keys/Bindings; normales Laden führt keine Generation aus. I35 belegt Small mit gleichzeitig neuem Seed und bytegleiche From-URL-Rückstellung im Original, keine Erhaltung manueller Bearbeitung oder eigene Implementierung.
 
-## Vorgeschlagener konkreter Raumvertrag E2E-01-SPACE-P01
-
-Planstand nach Aufnahme der geprüften City-, Dungeon- und Campaign/Data-Kerne
-in PR #13. Diese konkreten Verträge sind **vorgeschlagen, noch nicht umgesetzt
-oder fachübergreifend bestätigt**. Der [begrenzte Anschlussplan](ROADMAP-E2E01-SPATIAL-INTEGRATION-PLAN.md)
-ordnet Umsetzung und echte frühe Bedienprüfung ein. Der ratifizierte
-E2E-Gatekatalog bleibt unverändert.
-
-Enger Fachinput aus [Stadt, #7/6091472576](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/7#issuecomment-6091472576)
-bestätigt am Exact-Planstand `a86a3a4d59ad62b5dc6d69697a996821ca1aa046`
-die starre Cityplatzierung, den skalierten Hausdockpunkt mit physisch starrem
-Dungeon und die vorgeschlagene neue Hausgeometrie/Pose des gemeinsamen v2-Orakels.
-Die [Dungeon-Fachantwort #12/6091516581](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6091516581)
-bestätigt auf demselben Exact-Planstand Dock `(4,4)` ↔ Hausursprung, 1,524 m/Feld,
-Floor32/Room31/Entrance-Route33/Key34, starre Physik und direkte Source-Keyänderung.
-Beide Antworten bestätigen ausschließlich ihre engen Domainteile. Umsetzung,
-gemeinsame Speicherung, spätere schreibfreie Dungeon-Geometrieaktionen,
-Campaign-Publish und Gesamtfreigabe bleiben offen.
+## Räumliche Atlasverträge
 
 **Native Verortung:** Overworld-Version2 behält die bisherigen Landschafts- und
 Locationplacements und ergänzt ausdrücklich `detailPlacements`. Version1 bleibt
@@ -606,24 +589,8 @@ Ausgänge nur mit ursprünglicher CommandId/ReceiptId auf. Der vollständige
 Quellimport aktiviert keinen Registryprovider oder Vault-/P02-/P04-Adapter;
 der bestehende Atlas-Speicherweg bleibt die bisherige lokale Grenze.
 Der echte Campaign→Atlas-Kontext-/Registry-/Publishanschluss ist weiterhin
-Umsetzungsarbeit. Der unabhängige Kompositionsreview auf `ef6e851` und dessen
-getrenntes Reviewartefakt-Aufräumen bestehen; sie bestätigen ausschließlich
+Umsetzungsarbeit. Der unabhängige Kompositionsreview auf `ef6e851` bestätigt ausschließlich
 Quell- und Vertragstreue, keinen produktiven Laufzeitadapter.
-
-**Konkreter Runtimeplan, unabhängig begrenzt geprüft:**
-[E2E-01-SPACE-I01c-RUNTIME-P01](ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md) teilt den
-Anschluss in native Atlas-Sourceerfassung, dünnen Context-/Navigationsconsumer
-und frühen echten Hostlauf. Lokale Source-Digests und räumliche Closures sind
-keine Registryautorität oder vollständige Campaigninventare. Der Consumer
-benötigt bestätigte Context-/Registry-/Owner-/Recordbindungen; World-, Orts-,
-Stadt- und Dungeonsources behalten ihre gemeinsame History und relative Kamera.
-Angeforderte Wechsel sichern gültige Keys/Gesten und Drafts vor Lifecycleaktivierung;
-externe Wechsel widerrufen alte Mountaktionen, erhalten alte Entwürfe und bereits
-gewonnenes Roll-forward unter der alten Identität. Tatsächliche Registry-/Host-
-und Publishprovider bleiben injizierte Fremdeingänge. Dieser Plan aktiviert
-keinen produktiven Adapter und ändert die bestehenden nativen Belege nicht.
-Plan-R01 auf `3c80d89` und das getrennte Aufräumen des unabhängigen Reviewers
-bestehen; der folgende Code benötigt seinen eigenen unabhängigen Review.
 
 **Runtime-I01a, native Capturequelle:** `AtlasRepository.captureNative` erfasst
 tatsächliche World-/Orts-/Placement-/Terrainbytes sowie City-/Dungeonabhängigkeiten
@@ -750,3 +717,9 @@ Beim [gemessenen Eckpunkt-Delete](/home/aaron/.cache/dungeon-native-qa/parity-to
 Der Entwurfcodec in HEX-03-I01b akzeptiert jetzt eine getrennte Version2 mit vollständig validierten Location-Vorher-/Nachherbytes und Weltplacements neben Terrain. Nur Placement- und Chunkdaten dürfen sich gegenüber der Weltbasis ändern; Dokumentkennungen, Eigentümerschaft, Anlage/Entfernung und sichere Ortsdateipfade werden geschlossen geprüft. Bestehende Version1 bleibt ein Terrainentwurf. Native Serialisierung prüft vor JSON, sodass unbekannte Daten/Getters nicht verschwinden oder ausgeführt werden. Der reservierte World-Placementparser und die laufende Repository-/UI-Strecke bleiben bis zum vollständigen gemeinsamen Save/Copy/Discard/Recovery-Anschluss unverändert geschlossen. Der FileTransaction-Rollbackfall ist ein Kernbeleg, keine native Ortsabnahme.
 
 HEX-03-I01b-repository verbindet nun die Ortsdateien mit dem gemeinsamen Speicherweg. TerrainSource validiert Terrain und das benannte Placementziel unter einem Worldowner; LocationOwners verwaltet genau eine LocationSource pro geladenem Owner/Historylebensdauer, Pfadauflösung und exakte Baselinebytes. Ungeladene Ortsinhalte werden nicht als null behandelt. V2 erfasst gemeinsam die bearbeiteten Ortsdokumente, Worldplacements und Terrain; Save/Discard prüfen gemeinsame Baselines. Der erfasste Save-Stand wird übernommen, während spätere Keys als neuer Entwurf erhalten bleiben. Copy lädt auch ungeladene zugehörige Locations, vergibt neue Orts-/Placement-IDs und passt eigene Atlas-/Location-Keyziele an; externe Detailkarten bleiben Verweise. Recovery prüft die geschlossene Ortszugehörigkeit vor Reparaturen, auch bei internem Wiederanlauf einer FileTransaction. Explizite Copy-Recovery akzeptiert nur die vollständige neue Zielwelt samt eigenen Terrain- und Ortsdateien. World/Repository-Ortsunterstützung ist noch ausdrücklich opt-in; der bestehende Host öffnet gefüllte Placements erst nach dem Marker-/Key-Anschluss. Die elf Kernfälle sind kein nativer Orts-, Rename- oder Phasenbeleg.
+
+## Raum-Key- und Featurevertrag
+
+V4 hält geordnete Markdown- und Durchgangsabschnitte im Kartendokument. Stabile Karten-/Raum-/Abschnittskennungen adressieren Links und Vorschau; neue Räume brauchen keine eigene Markdowndatei. Featuretexte werden wortgleich in den richtigen Abschnitt übernommen. Buchstaben folgen dem höchsten bestehenden Buchstaben, erhalten Lücken und werden nicht wiederverwendet. Ein Objekt bindet genau ein Feature-Vorkommen und Abschnittsziel.
+
+Beim Raumwechsel wechseln Geometrie, Raumzugehörigkeit, Keytext, Kennzeichnung und Vorkommen in einem rücknehmbaren Befehl. Ohne Zielraum wird der Zug angehalten. Ein alleiniger Abschnitt wandert mit; aus einem Sammelabschnitt wird nur der betroffene Featuretext übertragen. Übersicht, Kreaturen, Items und Handouts bleiben separate Markdowndateien. Import/Migration erhält Wortlaut, sichtbare Linktexte, Geometrie und Auswertung; Originale werden vor einem ausdrücklich beauftragten Eingriff gesichert. Physische Maus-/Touchpad-Abnahme bleibt dort offen, wo sie nicht ausgeführt wurde. Die ursprünglichen Migrations-/Installationsnachweise bleiben im [festen Git-Stand](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/blob/8f215b77358ddc402f75215c7fdf6c110a8e0c79/ROADMAP.md).

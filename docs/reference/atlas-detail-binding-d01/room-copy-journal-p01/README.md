@@ -65,6 +65,3 @@ Meta-/freier GM-/committed-Copy-/Savejournal-/Original-/Großkarten-/Nutzervault
 Gesamt-E2E-PASS. Ein dritter Fresh des Copyretry wurde nicht durchgeführt; den normalen
 unveränderten Copy-Frischeinstieg belegt [C03](../room-draft-copy-c03/README.md).
 Kanonisch `acceptance.hexAtlas.requirements[30].dungeonAtLocationRoomCopyJournalP01`.
-Bestehender Steward kann den offenen prepared-Copy-Hosteingang an #80 verwenden.
-Hex hält #80 und schließt als nächsten nativen Copyfall den committed Cleanup-/
-Fresh-Eingang; vor GUI erneut koordinieren, kein neues allgemeines Review.

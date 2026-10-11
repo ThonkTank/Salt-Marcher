@@ -70,8 +70,3 @@ Portable Originale:
 - Normale Enden: [Fehler](fault-after-normal-quit.json), [Fresh](fresh-after-normal-quit.json); [Herkunft](input-lineage.json), [Originalhashes](input-native-hashes.json), [Schutzbindung](protected-inputs-before.json), [Preload](room-save-prepared-j03-preload.cjs)
 
 Kanonisch acceptance.hexAtlas.requirements[30].dungeonAtLocationRoomSavePreparedJournalJ03.
-Steward kann diesen konkreten fehlenden prepared-Eingang mit dem bereits eng
-geprüften J02-Fix in PR167 verwenden. Hex behält #80/Branch; keine Selbstintegration
-oder allgemeine Reviewrunde. Kontrollierter Storagefault und synthetischer Pointer
-liefern keinen physischen/IME-/Meta-/freien-GM-/Hardcrash-/Original-/Großkarten-/
-Nutzervault- oder Gesamt-E2E-PASS. Vollständige Save-UX bleibt getrennt.
