@@ -194,12 +194,17 @@ gegenseitige Mitgliedschaft oder neue Speicherautorität. Core-/DOM- und
 isolierte native Edit-/Frischprozessproben sowie ein unabhängiger enger
 Stadt-R01 bestanden; Shared-Merge `de3181be`.
 
-Der folgende #68-Kandidat ergänzt im NPC-Editor eine Namenssuche im vorhandenen
-Monsterkatalog. Der GM übernimmt dessen stabile ID als Kreaturreferenz;
-gespeicherte manuelle IDs bleiben erhalten. Eigene isolierte Obsidianläufe
-belegen Auswahl, native Speicherung und frisches Öffnen, auch mit 200 % Zoom.
-Unabhängiger Review und Integration stehen aus; die vollständige
-World-Planner-/SMR-02-Abnahme bleibt offen.
+PR #107 ergänzt im NPC-Editor eine Namenssuche im vorhandenen Monsterkatalog.
+Der GM übernimmt dessen stabile ID als Kreaturreferenz; gespeicherte manuelle
+IDs bleiben erhalten. Eigene isolierte Obsidianläufe belegen Auswahl, native
+Speicherung und frisches Öffnen, auch mit 200 % Zoom. Unabhängiger enger R01,
+Delta-Review und CI bestanden; Shared-Merge `76d8ded1`. Die letzte
+manuelle-ID-Korrektur wurde im DOM geprüft, nicht im früheren nativen Lauf.
+
+Der nächste #68-Kandidat macht aktive NPC-Notizen über ihre gespeicherte
+Kreatur-ID in der vorhandenen Notizsuche auffindbar, ohne neuen Index oder
+Speichervertrag. Native Frischprozessprobe und unabhängiger Review stehen aus;
+die vollständige World-Planner-/SMR-02-Abnahme bleibt offen.
 
 ### SMR-03 – Party, Scene und Live Session
 

@@ -97,7 +97,8 @@
         "reopenResultSha256": "b0057178e84988e82678c0c619daa2343328e938899f2e75c58e9ee67e996bbe",
         "result": "Isolated real Obsidian edit and fresh process PASS: saved NPC is reachable from faction through an incoming reference, while an unsaved faction draft blocks opening; both processes exited normally. Synthetic fixture and automated input only."
       },
-      "creaturePickerCandidate": "NPC World Notes can search the existing bundled Creature Catalog by name and select its stable ID. Manual stored references remain editable and exact note bytes stay with the Campaign owner. Core/DOM plus isolated native save/fresh and 200-percent zoom owner checks passed; independent review and Shared integration pending.",
+      "creaturePickerCandidate": "PR #107 integrated in Shared at 76d8ded1: NPC World Notes can select a stable Creature Catalog ID by name. Manual references and drafts stay editable; independent narrow R01 and exact-head delta review plus CI passed. Isolated native save/fresh and 200-percent zoom owner checks cover the primary picker path; the final manual-ID UI correction is DOM-checked only.",
+      "creatureReferenceSearchCandidate": "Active NPC World Notes are discoverable by their saved creature ID in the existing note search and kind filter; native fresh-process check and independent review pending.",
       "nativeCreaturePicker": {
         "source": "58da6377f3d5914bccbbe1b6a2ea689e72ac6e7d",
         "buildSha256": "9b8712802bf77bdca4e49da4186550dea937633f26fd1cba323d4122aa1e8982",
@@ -110,7 +111,7 @@
         "zoom200EvidenceRoot": "/home/aaron/.cache/dungeon-native-qa/atlasqa-creature-picker-zoom200/evidence/",
         "result": "Isolated real Obsidian selected Goblin from the bundled Creature Catalog, saved only creatureId goblin in the native NPC note and reopened it with the name in a fresh process. A separate 200-percent zoom edit/reopen run passed; synthetic fixtures and automated input only."
       },
-      "next": "Qualify the NPC Creature Catalog picker by independent narrow review and integrate it. Broader crash recovery, Encounter constraint, NPC combat and World Planner requirements remain open.",
+      "next": "Qualify the creature-ID note search with a clean-source native fresh process and independent narrow review, then integrate it. Broader crash recovery, Encounter constraints, NPC combat and World Planner requirements remain open.",
       "limits": "Controlled rollback and committed-journal raw evidence independently reviewed; original host-run checkouts were dirty. No physical keyboard, power-loss, user-vault, broad recovery, full SMR-02 or overall product acceptance."
     },
     "smr03LiveScene": {
