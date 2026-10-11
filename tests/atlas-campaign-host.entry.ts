@@ -1601,3 +1601,45 @@ test('City house stays editable after saved model reopen and visible Undo/Redo w
   assert.equal(f.vault.bytes.has(aPath + '.journal'), false);
   await f.close();
 });
+
+for (const action of ['Hausname übernehmen', 'Namenseingabe verwerfen']) {
+  test(`City house focus remains on current ${action} control after render`, async () => {
+    const f = await fixture(true), source = await clickHouse(f, uuid(106)),
+      before = source.read(), depth = active(f).history.undoDepth;
+    f.input('[aria-label="Gebäudename"]', 'Tastaturname');
+    const button = [...f.content.querySelectorAll<HTMLElement>('.dn-atlas-city-building button')]
+      .find(b => b.textContent === action)!;
+    button.focus(); f.click(button);
+    const current = [...f.content.querySelectorAll<HTMLElement>('.dn-atlas-city-building button')]
+      .find(b => b.textContent === action)!;
+    assert.notEqual(current, button);
+    assert.equal(f.document.activeElement === current, true, 'focus must follow the replacement control');
+    assert.equal(current.isConnected, true);
+    assert.equal(active(f).history.undoDepth, depth + (action === 'Hausname übernehmen' ? 1 : 0));
+    if (action === 'Namenseingabe verwerfen') assert.deepEqual(source.read(), before);
+    // A detached old action may neither move focus nor publish another edit.
+    f.input('[aria-label="Gebäudename"]', 'Noch nicht übernommen');
+    const snapshot = source.read(), afterDepth = active(f).history.undoDepth;
+    f.click(button);
+    assert.equal(f.document.activeElement === current, true);
+    assert.deepEqual(source.read(), snapshot);
+    assert.equal(active(f).history.undoDepth, afterDepth);
+    await f.close();
+  });
+}
+
+test('City house direct save preserves textarea focus without taking toolbar focus', async () => {
+  const f = await fixture(true); await clickHouse(f, uuid(106));
+  const field = f.input('[aria-label="Gebäudename"]', 'Direkter Tastatursave'); field.focus();
+  f.click([...f.content.querySelectorAll<HTMLElement>('.dn-atlas-city-building button')]
+    .find(b => b.textContent === 'Atlas speichern')!);
+  await f.editor()!.flush();
+  const current = f.content.querySelector<HTMLTextAreaElement>('[aria-label="Gebäudename"]')!;
+  assert.equal(f.document.activeElement === current, true, 'focus must stay on the current textarea');
+  assert.equal(current.value, 'Direkter Tastatursave');
+  const toolbar = f.content.querySelector<HTMLElement>('[aria-label="Atlas speichern"]')!;
+  toolbar.focus(); f.input('[aria-label="Gebäudename"]', 'Toolbarname'); f.click(toolbar);
+  await f.editor()!.flush();
+  assert.equal(f.document.activeElement === toolbar, true, 'inspector must not take external focus');
+  await f.close();
+});

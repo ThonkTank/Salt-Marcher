@@ -95,12 +95,13 @@ export class AtlasCityBuildingPanel {
       next.cancel();
       throw new Error("Ausgewähltes Haus fehlt.");
     }
+    const preserveFocus = this.source === source && this.buildingId === buildingId;
     this.draft?.cancel();
     this.draft = next;
     this.source = source;
     this.buildingId = buildingId;
     this.name = this.originalName = building.name;
-    this.render();
+    this.render(preserveFocus);
   }
   apply(): boolean {
     if (this.closed) throw new Error("Haus-Inspector ist geschlossen.");
@@ -144,10 +145,13 @@ export class AtlasCityBuildingPanel {
         : "Hausname übernommen";
     this.access.changed();
   }
-  private render(): void {
+  private render(preserveFocus = false): void {
     const draft = this.draft!,
       buildingId = this.buildingId!,
       doc = this.host.ownerDocument;
+    const focused = preserveFocus ? doc.activeElement : null,
+      focusName = focused !== null && focused === this.host.querySelector("textarea"),
+      focusAction = Array.from(this.host.querySelectorAll("button")).indexOf(focused as HTMLButtonElement);
     this.host.replaceChildren();
     this.host.hidden = false;
     this.host.dataset.ownerId = draft.before.id;
@@ -200,6 +204,10 @@ export class AtlasCityBuildingPanel {
     this.message.setAttribute("role", "status");
     this.host.append(actions, this.message);
     this.pending();
+    // Retain keyboard position only within the same house; never take map/toolbar focus.
+    if (focusName) input.focus({ preventScroll: true });
+    else if (focusAction >= 0)
+      actions.querySelectorAll<HTMLButtonElement>("button")[focusAction]?.focus({ preventScroll: true });
   }
   destroy(): void {
     this.closed = true;
