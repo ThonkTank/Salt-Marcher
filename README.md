@@ -1,14 +1,13 @@
-# Dungeon-Editor und gemeinsamer GM-Atlas
+# Dungeon-Editor und Kampagnenwerkzeuge
 
-Ein lokaler Arbeitsraum für Spielleitungen: Karten und Raum-Keys bearbeiten, Kampagnen vorbereiten und zusammenhängend live spielen. Dieses Repository entwickelt den SaltMarcher-Nachfolger. Obsidian Desktop ist der aktuelle Entwicklungs- und Testhost; die endgültige Plattformentscheidung bleibt offen.
+Ein lokaler Arbeitsraum für Spielleitungen: Karten und Raum-Keys bearbeiten, Kampagnen vorbereiten und zusammenhängend live spielen. Dieses Repository entwickelt den SaltMarcher-Nachfolger. Obsidian Desktop ist der aktuelle Entwicklungs- und Testhost. Die [technische Zielarchitektur](ARCHITECTURE.md) beschreibt den geplanten Übergang zum Gesamtprodukt.
 
 **Entwicklungsstand:** Dungeon-Editor und Raum-Keys sind vorhanden; Atlas-, Stadt- und Kampagnenintegration ist teilweise umgesetzt. Das Gesamtprodukt ist noch nicht abgenommen.
 
 ## Hier anfangen
 
-- [Atlas auf einen Blick](ROADMAP-HEX-ATLAS.md#atlas-auf-einen-blick): umgesetzt, fehlend und Weg zum Ziel.
-- [Atlas umsetzen](ROADMAP-HEX-ATLAS.md#umsetzungsplan): Oberfläche, Codepakete und Abschlussproben.
-- [Produktziele](docs/PRODUCT.md) und [Lieferfolge](docs/ROADMAP.md): vollständiger Funktionsumfang.
+- [Produktziele](docs/PRODUCT.md), [vollständiger Umfang](docs/SCOPE.md) und [Lieferfolge](docs/ROADMAP.md): Gesamtprodukt und Weg zum Ziel.
+- [Atlasstand](ROADMAP-HEX-ATLAS.md#atlas-auf-einen-blick) und [Umsetzung](ROADMAP-HEX-ATLAS.md#umsetzungsplan): Kartenoberfläche, Werkzeuge und Codepakete.
 - [Dokumentationsindex](docs/INDEX.md): Fachanforderungen und Nachweise.
 
 ## Lokal entwickeln

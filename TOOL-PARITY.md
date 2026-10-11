@@ -1,6 +1,6 @@
 # Historische Werkzeugbefunde: Dungeondraft
 
-Dieses Verzeichnis hält ursprüngliche Originalbeobachtungen und damalige Editorbefunde für Dungeondraft 1.2.0.1 „Opulent Kirin“ fest. Seine Statusangaben sind historische Zwischenstände. Aktuelle Einzelabnahmen und direkte Nachweise stehen in `acceptance.json`; der weitere Fachumfang steht im [Werkzeugplan](ROADMAP-PARITY-TOOLS.md).
+Dieses Dokument hält ursprüngliche Originalbeobachtungen und damalige Editorbefunde für Dungeondraft 1.2.0.1 „Opulent Kirin“ fest. Seine Statusangaben sind historische Zwischenstände. Aktuelle Einzelabnahmen und direkte Nachweise stehen in `acceptance.json`; der weitere Fachumfang steht im [Werkzeugplan](ROADMAP-PARITY-TOOLS.md).
 
 Für die weitere Entwicklung gilt die vereinbarte [Ergebnisgleichwertigkeit](ROADMAP-HEX-ATLAS.md#wie-kommen-wir-zum-ziel). Historisch vermessene Eingaben und Pixelwerte dienen als Referenz für die fachliche Wirkung.
 
@@ -10,7 +10,6 @@ Früher Regressionstest:
 
 - Bearbeitung: `/home/aaron/.cache/dungeon-native-qa/evidence/1791046549332-edit/result.json`
 - Frischer Prozess: `/home/aaron/.cache/dungeon-native-qa/evidence/1791046584516-reopen/result.json`
-- Kernmodell: 47 bestandene Prüfungen über `npm test`
 
 ## Zeichen- und Bearbeitungswerkzeuge
 
@@ -90,47 +89,3 @@ Früher Regressionstest:
 - DD-041 Hand/Pan wurde mit sieben kontrollierten nativen Gesten geprüft: Ein Bildschirmzug von 96×64 Pixeln verschob die Dungeondraft-Kamera bei Zoom `(4,4)` per Leertaste+Links oder Mitteltaste jeweils um `(−384,−256)` Weltkoordinaten; Rechtsziehen verschob nicht. Leertaste+Links leerte eine bestehende Möbelauswahl, Mitte erhielt eine Lichtauswahl. Beide Gesten ließen den begonnenen Building-Polygonmodus aktiv. Der Editor verwendet dafür jetzt nur die beiden belegten temporären Wege; sein rechter Mausklick startet keinen Pan mehr. Der isolierte Obsidian-Host bestand elf Prüfgruppen mit denselben Bildschirmdeltas und Auswahl-/Drei-Punkte-Entwurfszuständen; Dokument, Verlauf, Dirty-Status und Kartendatei blieben unverändert, Speichern und frische Neuöffnung bestanden. Der dauerhafte eigene Hand-Knopf und P1/P2-Eingabefälle sind noch nicht nativ abgenommen. Belege: `/home/aaron/.cache/dungeon-native-qa/workpackages/hand-pan-native-p0/handoff.md` und `/home/aaron/.cache/dungeon-native-qa/workpackages/hand-pan-host/handoff.md`.
 - DD-041 P1 wurde zweimal direkt im Original bestätigt: Leertaste loslassen stoppt einen begonnenen linken Pan sofort; Leertaste nach bereits gedrückter linker Taste aktiviert Pan vor der ersten Bewegung; Escape beendet einen aktiven Leertaste+Links-Pan nicht und rollt die Kamera nicht zurück. Bei Zoom `(4,4)` ergaben 48×32 Bildschirmpixel jeweils `(−192,−128)` Weltkoordinaten. Der installierte V2-Editor besteht alle drei Folgen im Obsidian-Host; nach Escape tritt dort `lostpointercapture` auf, die Geste und die zweite Teilstrecke bleiben erhalten. Der globale Fallback für eine anschließende Bewegung außerhalb der Karte wurde wegen eines fehlerhaften QA-Ereignisablaufs nicht abschließend hostgeprüft. Fokusverlust wurde wegen zweier abgebrochener Testumgebungsversuche nicht tatsächlich ausgelöst und bleibt unbeurteilt. Belege: `/home/aaron/.cache/dungeon-native-qa/workpackages/hand-pan-next/HANDOFF-P1.md`, `/home/aaron/.cache/dungeon-native-qa/workpackages/dd-011-v2-integration/evidence/DD041-P1-RECAPTURE-HOST-HANDOFF.md` und `/home/aaron/.cache/dungeon-native-qa/workpackages/dd-011-v2-integration/evidence/DD041-P1-GLOBAL-FALLBACK-HOST-HANDOFF.md`.
 - DD-011 V2 ist produktiv installiert: Ein Building trägt Boden- und Wandkontur samt optionaler Raumidentität. Rechteck, Ellipse, Polygon und der zusätzliche Gang bearbeiten diese Geometrie; Radieren kann Loch und Mehrteilform erzeugen. Ein Portal kann bereits vor „Raum anlegen“ an der Building-Kontur hängen und erhält danach Raum-Key und Durchgangsabsatz im selben Befehl. Punktbearbeitung hält Portalanker, Key und Undo zusammen. Beide produktiven Karten wurden offline nach V2 migriert; die Drachenhöhle behielt 15 Räume und 42 Portalposen, alle 49 Dungeon-Markdown-Dateien blieben bytegleich. Der finale installierte Build bestand Typprüfung, 104 Kernprüfungen, echten Obsidian-Hostlauf mit beiden Kartenkopien, Speichern und frische Neuöffnung. Snap-off, Portalbreite an stark verkürzter Kante, große komplexe Konturen und physische Eingabe bleiben offen; DD-011 ist keine strikte Vollabnahme. Belege: `/home/aaron/.cache/dungeon-native-qa/workpackages/dd-011-v2-migration-reaudit/HANDOFF.md`, `/home/aaron/.cache/dungeon-native-qa/workpackages/dd-011-v2-min-area-fix/HANDOFF.md` und `/home/aaron/.cache/dungeon-native-qa/workpackages/installed-v2-host-audit-20261004/FINAL-INSTALLED-V2-HOST-HANDOFF.md`.
-
-| Werkzeug | Verhalten im Original | Verhalten und Komfort im neuen Editor | Abnahme |
-| --- | --- | --- | --- |
-| Auswahl | Typfilter, Mehrfachauswahl, Verschieben, Sperren, Gruppieren, Kopieren und Löschen | Strikter Originalablauf wird derzeit neu vermessen und angeglichen. | **In Arbeit** |
-| Hand | Leertaste+linke Taste oder Mitteltaste verschiebt den Kartenausschnitt; Rechtsziehen nicht. Leertaste+Links leert eine Auswahl, Mitte erhält sie; begonnene Polygone bleiben aktiv. Loslassen der Leertaste stoppt sofort, späteres Drücken aktiviert Pan, Escape lässt ihn weiterlaufen. | P0 und P1 im installierten Editor und Host geprüft. Der eigene dauerhafte Hand-Knopf bleibt eine zusätzliche Bedienung. Kamera und Zoom bleiben bei Werkzeugwechseln erhalten. | P0/P1 direkt im Original und isolierten Obsidian-Host bestanden; Canvasrand-Fallback, Fokusverlust, physische Eingabe und P2 offen. `DD-041` |
-| Rechteckraum | Rechteckiges Gebäude mit Boden und Wand; Alt radiert | Zieht ein Building mit gemeinsamer Boden-/Wandkontur, verschmilzt echte Überlappungen; Alt/E radiert boolesch. „Raum anlegen“ ergänzt Nummer und Key. | V2 im Host mit Portal/Key/Undo/Save/Reopen geprüft; Snap-off und weitere native Fälle offen. `DD-011` |
-| Ellipsenraum | Ellipse mit editierbarer Kontur | Ellipse wird als Building-Kontur gespeichert und lässt sich nachträglich bearbeiten. | V2-Kern geprüft; eigenständiger Originalabgleich offen. `DD-011` |
-| Polygonraum | Freie Kontur, Rücktaste nimmt Punkte zurück, Doppelklick schließt; Alt radiert. | Klick setzt Punkte, Rücktaste entfernt den letzten Punkt, Doppelklick schließt; Enter und dauerhafter E-Radiermodus bleiben zusätzliche Bedienungen. | P0-Eingaben und gemeinsames Building-Modell im Host geprüft; weitere native Fälle offen. `DD-011` |
-| Gang | Kein eigener Building-Untermodus; schmaler Grundriss entsteht als Polygon. | Zusätzlicher Mittelpunkt-Gang mit einstellbarer Breite; Enter/Doppelklick beendet, Rücktaste korrigiert, Alt/E radiert dieselbe Building-Geometrie. | Funktional geprüft, aber keine native Geste. `DD-011` |
-| Wand | Gerade/kurvige Punktfolge, Rücktaste, Strg-Fortsetzen, Ebene, Schatten, Paketwand | Gerade oder kurvig, Rücktaste, Strg-Klick am Endpunkt setzt dieselbe Wand fort. Ebene und Schatten sind pro Wand einstellbar; Paketwand, Breite und nachträgliche Punktbearbeitung bleiben erhalten. | Ausstehend; frühere Nachweise gelten nur als Regression |
-| Durchgang | An Wand verankern, Licht blockieren, Varianten, spiegeln/drehen | Tür, Fenster, Gitter und offene Öffnung; gebunden oder freistehend, Lichtblockade, Spiegelung, Paketgrafik und strukturierter Key. Nahe einem gleich breiten Gangende rastet der Mittelpunkt exakt ein. | Ausstehend; frühere Nachweise gelten nur als Regression |
-| Höhle | Pinselgröße, Boden-/Wanddarstellung, Alt-Radieren, Stil | Kontinuierlicher Pinsel mit Radius, Alt-Radieren, Boden- und Wandfarbe, Konturbreite sowie Höhlenpaket. | Ausstehend; frühere Nachweise gelten nur als Regression |
-| Musterfläche | Rechteck, Ellipse und Polygon mit Muster | Alle drei Formen, Paketmuster, Skalierung, Färbung und Drehung; Kontur bleibt editierbar. | Ausstehend; frühere Nachweise gelten nur als Regression |
-| Dach | Schnellrechteck oder freie Kontur, Giebel/Walm/Gaube, Material | Schnellrechteck und freie Kontur; Sattel-, Walm-, Gauben- und Flachdach, Paketmaterial, Farbe, Ebene sowie editierbarer First. Die Schattierung ist bewusst lesbar vereinfacht und folgt keiner Dungeondraft-Sonnenlichtsimulation. | Ausstehend; frühere Nachweise gelten nur als Regression |
-| Terrain | Pinsel mit eigener Darstellungsart und Undo | Kontinuierlicher Terrainpinsel, Alt-Radieren, Pakettextur, Farbe, Deckkraft und Ebene; ein Strich ist ein Undo-Schritt. | Ausstehend; frühere Nachweise gelten nur als Regression |
-| Wasser | Pinsel sowie Rechteck/Ellipse/Polygon, tiefe/flache Farbe, Ufer, Alt-Radieren | Alle vier Zeichenformen, tiefe und flache Wasserfarbe, Uferbreite, ruhige/Wellen-Darstellung, Alt-Radieren und Undo. Der Uferübergang ist eine klare Kontur statt Dungeondrafts weichem Shader. | Ausstehend; frühere Nachweise gelten nur als Regression |
-| Materialpinsel | Material wählen, Radius, Ebene, glatte Striche, nach vorn sortieren | Paketmaterial, Radius, numerische Zeichenebene, kontinuierlich geglätteter Strich, Alt-Radieren und Undo. Eine eigene „nach vorn“-Schaltfläche entfällt, weil die Ebene direkt gesetzt wird. | Ausstehend; frühere Nachweise gelten nur als Regression |
-| Pfad | Punkte, Kurven, Breite, Ebene, Kontur, Start/Ende, Lichtblockade | Dieselben Parameter; Enter/Doppelklick beendet, Rücktaste korrigiert und Auswahl bearbeitet Punkte. Begehbare Wege liegen als Boden unter Räumen, Symbolpfade darüber. | Ausstehend; frühere Nachweise gelten nur als Regression |
-| Objekt | Assetbibliothek, Ebene, Drehung, Größe, Schatten, Lichtblockade, Farbe, Spiegelung | Suchbare Assetliste mit Vorschau, Ebene, Drehung, Breite/Höhe, Schatten, Lichtblockade, Farbe und Spiegelung. A spiegelt, `[`/`]` dreht, `−`/`+` skaliert; Auswahl verschiebt und bearbeitet. | Ausstehend; frühere Nachweise gelten nur als Regression |
-| Streuen | Assetset, Abstand/Verteilung, Drehungs- und Größenvariation | Möbelset oder Paketasset, Abstand, Streuradius, Zufallsdrehung und Größenabweichung; der ganze Strich ist ein deterministischer Undo-Schritt. | Ausstehend; frühere Nachweise gelten nur als Regression |
-| Licht | Reichweite, Stärke, Farbe, Schatten und Lichtstil | Reichweite, Stärke, Farbe, Schatten, Paketlicht; Wände, Türen, Pfade und dafür markierte Objekte blockieren Licht. | Ausstehend; frühere Nachweise gelten nur als Regression |
-
-## Karten- und Verwaltungswerkzeuge
-
-| Werkzeug | Gleichwertiger Ablauf | Abnahme |
-| --- | --- | --- |
-| Neue Karte und Größenvorlagen | Feldbreite/-höhe, benannte Vorlage, unmittelbarer maximierter Editor | Ausstehend; frühere Nachweise gelten nur als Regression |
-| Dungeon-/Höhlenassistent | Vorschlag generieren, neu generieren, fertigstellen, Undo/Redo | Ausstehend; frühere Nachweise gelten nur als Regression |
-| Geschosse | Anlegen, kopieren, vergleichen, archivieren und wiederherstellen | Ausstehend; frühere Nachweise gelten nur als Regression |
-| Kartenoptionen | Größe an vier Rändern, Wand-/Objektschatten, Abnutzung, Dateipfad und Pakete | Ausstehend; frühere Nachweise gelten nur als Regression |
-| Assetbibliothek | Freigegebene Dungeondraft-Pakete laden, aktivieren, suchen, Vorschau und dauerhaft wiederverwenden | Ausstehend; frühere Nachweise gelten nur als Regression |
-| Nachzeichenvorlage | Bild laden, Deckkraft, Sichtbarkeit, Position, Größe und Drehung | Ausstehend; frühere Nachweise gelten nur als Regression |
-| Inhalte/Key | Raum-Key, Durchgänge, Definitionen, Vorkommen, Routen, Auswertung und Archiv in gemeinsamer Historie | Ausstehend; frühere Nachweise gelten nur als Regression |
-
-## Frühere Abweichungen
-
-Die folgenden Vereinfachungen waren im Gleichwertigkeitslauf ausdrücklich zugelassen. Sie sind für die strikte Prüfung **nicht freigegeben** und werden beim jeweiligen Werkzeug erneut entschieden und getestet.
-
-- Ausführbare Dungeondraft-Mods werden nicht geladen. Erweiterung erfolgt über freigegebene Assetpakete und das native Datenmodell.
-- Smart-/Double-Tileset-Autotiling wird nicht nachgebaut. Die importierten Texturen werden ohne Abhängigkeit von Dungeondrafts internem Autotiler als normale Materialien gezeichnet.
-- Der Grundriss wird zuerst als zusammenhängende Fläche gezeichnet und danach ausdrücklich zum Raum mit Nummer und Key gemacht. Das verhindert ungewollte Artikel während des Zeichnens und erhält dieselbe fertige Nutzerfunktion.
-- Dachlicht und Wasserufer verwenden einfache, stabile Darstellung statt Dungeondrafts Shadern. Form, Bedeutung und Editierbarkeit bleiben erhalten.
-
-Ob diese Abweichungen beim strikten Abgleich bestehen können, ist offen.

@@ -33,8 +33,7 @@
       "At131% with closed sidebar: client273/scroll276 CSSpx, dock inside viewport.",
       "No measured dock rectangle exceeds CSS viewport; vertical scrolling is separate from external clipping. Existing GM-N02-02 external-window observation is not dismissed or qualified as fixed."
     ],
-    "scope": "existing common Inspector child controls/layout; no camera/store/history/format change.",
-    "remainingWork": "fit existing Key actions and detail/binding target controls to available dock width and preserve same-target scrolling/navigation; then targeted layout/guard regression and qualified native followup. No blind external-dock CSS remedy."
+    "scope": "existing common Inspector child controls/layout; no camera/store/history/format change."
   },
   "layoutSamples": [
     {

@@ -68,7 +68,7 @@ export function checkRepository(root, suppliedFiles) {
   }
   const scope = json('docs/scope-sources.json');
   if (!scope) return errors;
-  const managed = [...files].filter(f => isMarkdown(f) && (f.startsWith('docs/') || !f.includes('/')));
+  const managed = [...files].filter(isMarkdown);
   for (const file of managed) {
     if (!exists(file)) { errors.push(`${file}: missing documentation file`); continue; }
     for (const link of markdownLinks(read(file))) {

@@ -42,7 +42,6 @@
     "Static production-callsite inspection finds a target navigator, not an action that creates an existing Dungeon placement at the selected Location."
   ],
   "rootCause": "AtlasCampaignManifestSave.owners updates payloadDigest but preserves r.references except the additive new-Location world references. Native Location detailMaps and Dungeon parent changes therefore do not update their declared registry reference closure.",
-  "remainingWork": "Targeted repair of existing atlas-owned reference projection and regressions before exposing Dungeon-at-Location placement UI. Preserve original IDs, Dungeon bytes, owner schemas, Context/receipt/history guards and independent Campaign/Data/Dungeon ownership. New placement-record creation remains a later concrete extension, not approved by this diagnosis.",
   "productEdited": false,
   "testsEdited": false,
   "guiRun": false,

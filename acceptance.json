@@ -137,7 +137,7 @@
     "adrP01H02": {
       "run": "ADR-P01-H02-C01-R01",
       "state": "no_go_checked_reviewed_cleaned",
-      "document": "ROADMAP-SALTMARCHER-ADR-P01-H02-PLAN.md",
+      "document": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/blob/689e158d381c394a1af1eab58e06680dacf33413/ROADMAP-SALTMARCHER-ADR-P01-H02-PLAN.md",
       "result": "No-Go. A clean Linux receipt proves the real sandboxed Electron renderer/preload/main/utility/native-helper process chain, bounded contract, stream, Undo/Redo/Save and fresh small/large V4 reopen. The mandatory durable receipt state machine and complete fault matrix were not run.",
       "evidence": {
         "receiptSourceCommit": "689e158d381c394a1af1eab58e06680dacf33413",
@@ -153,7 +153,7 @@
     "adrP01H03": {
       "run": "ADR-P01-H03-I02-I01-R01",
       "state": "i02_i01_implementation_review_changes_required",
-      "document": "ROADMAP-SALTMARCHER-ADR-P01-H03-PLAN.md",
+      "document": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/blob/e051028aa581fd4d77b57b22b128658d2b5a20cc/ROADMAP-SALTMARCHER-ADR-P01-H03-PLAN.md",
       "result": "Proposes a Linux-only native snapshot/capture/publish and parent/child recovery hypothesis using a durable Before snapshot from the immutable compare-and-write payload, independent target verification, exclusive current-name capture and no-replace publication, with a complete uncooperative-writer and fault matrix.",
       "contractCandidate": "f8fcdc1b2eacbfb17c7c5603f6c15cfd89c4296d",
       "integrationCommit": "0aecf2b4ce046c69a84cecb0890c949fd7962286",
@@ -342,40 +342,6 @@
       "build": "passed",
       "scope": "Merged current shared branch after the reviewed repair; all incoming City, Hex, resize, Canvas of Kings and GM testing work preserved."
     },
-    "ce01Plan": {
-      "run": "CE-01-P01",
-      "state": "completed_static_validation_reviewed",
-      "document": "ROADMAP-SALTMARCHER-CE01-PLAN.md",
-      "surface": "Dedicated Obsidian ItemView with retained query, selection, paging and scroll state",
-      "assetDecision": "Build and product read one shared identity source; build hash-checks and gzips the pinned JSON into a virtual Base64 module in main.js. Runtime uses capability-checked atob, DecompressionStream, TextDecoder and JSON.parse; object graph materializes only on first catalog open, with an explicit error state and no eager fallback. Visible embedded notice is distribution-safe; NOTICE.md is currently repository-only.",
-      "reproducibleBaseline": {
-        "commit": "86ce73179ede452ee6a9f5d3197ee325544a58b8",
-        "node": "v24.19.0",
-        "command": "npm run build && wc -c main.js && gzip -9 -c main.js | wc -c",
-        "currentMainBytes": 1189370,
-        "currentMainGzipBytes": 344194
-      },
-      "unverifiedPlanningObservations": {
-        "isolatedCatalogBundleBytes": 606237,
-        "isolatedCatalogBundleGzipBytes": 96282,
-        "rawCatalogGzipBytes": 106150,
-        "rawCatalogGzipBase64Characters": 141536,
-        "nodeMaterializationMs": 28.84,
-        "nodeHeapDeltaBytes": 3154264,
-        "limitation": "One-off probes without a checked-in script, warmup/sample definition or receipt; not acceptance evidence or an Obsidian performance acceptance."
-      },
-      "i01PayloadLimits": {
-        "gzipBytes": 122880,
-        "base64Characters": 164000,
-        "mainJsGrowthBytes": 180000
-      },
-      "review": {
-        "state": "passed_after_repair",
-        "findings": "Independent static re-review confirms measurement provenance, numeric payload gates, runtime decompression/capability behavior, shared identity source and repository-only NOTICE wording are consistent and complete."
-      },
-      "openCases": ["CE-AC-01", "CE-AC-02", "CE-AC-14"],
-      "encounterCases": "CE-AC-03 through CE-AC-13 remain fully open"
-    },
     "ce01I01": {
       "run": "CE-01-I01",
       "state": "completed_checked_reviewed",
@@ -480,14 +446,6 @@
       "review": "Independent read-only review approved the automated scope after lifecycle receipts bound unique systemd and Obsidian process identities and normal non-forced exit for all three runs.",
       "limits": "CE-AC-01, CE-AC-02 and CE-AC-14 remain open until the remaining product lifecycle and physical acceptance gates are completed. Playwright input is not physical keyboard/mouse evidence; screenreader and other-platform checks were not run."
     },
-    "ce01C01Plan": {
-      "run": "CE-01-C01-P01",
-      "state": "completed_static_validation_reviewed",
-      "document": "ROADMAP-SALTMARCHER-CE01-C01-PLAN.md",
-      "scope": "One host-neutral restore/default helper plus reset-key derivation backed by the existing draft mapping, focused state and DOM regressions, removal of one unused host-scenario dependency, and exact-candidate repetition of all three automated H01 scenarios.",
-      "review": "The first independent review required the reset path to consume DRAFT_FILTERS instead of retaining a second seven-key list. Independent re-review on 9016ced passed the repaired plan without a remaining mandatory finding.",
-      "limits": "Plan only. No cleanup implementation or approval; physical keyboard/mouse, screenreader and other-platform acceptance remain open."
-    },
     "ce01C01PlanReview": {
       "run": "CE-01-C01-P01-R01",
       "state": "passed_after_repair",
@@ -525,16 +483,7 @@
       "reviewedCommit": "5759cc9b3b2f016849f3e8325e0f7effe59edc2b",
       "finding": "CreatureCatalogViewContent still names six text-filter draft keys manually and implements the name draft through a separate search path, so CREATURE_CATALOG_DRAFT_FILTERS is not yet the only pair source.",
       "retained": "Restore/reset/default behavior, 246 tests, bundle identity, all three real-host receipts and honest open physical/screenreader/platform gates passed review.",
-      "repairPlan": "ROADMAP-SALTMARCHER-CE01-C01-REPAIR-PLAN.md",
       "reReview": "CE-01-C01-R02 passed on c9dfde7 after confirming the sole pair source, shared content path, retained name UX, 247 tests, exact build and all three normal-exit host receipts."
-    },
-    "ce01C01RepairPlan": {
-      "run": "CE-01-C01-N01-P01",
-      "state": "completed_static_validation_reviewed",
-      "document": "ROADMAP-SALTMARCHER-CE01-C01-REPAIR-PLAN.md",
-      "result": "The plan makes CREATURE_CATALOG_DRAFT_FILTERS the sole seven-pair source and routes the name search through the same content path while retaining its UX.",
-      "review": "Independent read-only review on 9bbacb5 passed without a mandatory finding.",
-      "limits": "Planning only; no repair implementation or cleanup approval."
     },
     "ce01C01Repair": {
       "run": "CE-01-C01-N01",
@@ -556,14 +505,6 @@
       },
       "review": "CE-01-C01-R02 passed without a remaining mandatory finding.",
       "limits": "Cleanup is reviewed; physical keyboard/mouse, screenreader and other-platform acceptance remain open."
-    },
-    "ce02Plan": {
-      "run": "CE-02-P01-R01",
-      "state": "passed_implementation_pending",
-      "document": "ROADMAP-SALTMARCHER-CE02-PLAN.md",
-      "result": "Plans one state-retaining seven-section shell with typed read-only owner providers for Items, saved Encounters, NPCs, Factions, Places and Encounter Tables.",
-      "review": "Independent read-only review passed exact shared commit 42808d372363cb1e9c8c8fc0ac8fca315cecd02c without a mandatory finding.",
-      "limits": "Reviewed planning evidence only. Six new data providers and all CE-02 acceptance remain open; honest unavailable states do not count as delivered features."
     },
     "ce02I01": {
       "run": "CE-02-I01",
@@ -598,16 +539,6 @@
         "build": "passed"
       },
       "limits": "This verifies only the build-budget contract. It does not close CE-AC-01/02/14, host, physical-input, Atlas or overall acceptance."
-    },
-    "ce02I02Plan": {
-      "run": "CE-02-I02-P01",
-      "state": "n03_r01_passed_s01_next",
-      "document": "ROADMAP-SALTMARCHER-CE02-I02-PLAN.md",
-      "sourceDocument": "https://media.wizards.com/2023/downloads/dnd/SRD_CC_v5.1.pdf",
-      "sourceSha256": "2504d2a0abb0a4d491a939be4f17910a2dde0312570ab8d208080225ccf0a1f0",
-      "result": "Defines a local read-only SRD 5.1 equipment and magic-item catalog, reproducible corpus, schema, source attribution, typed isolated failures, Item query/detail UI and host acceptance criteria.",
-      "limits": "Plan only; Item data/provider and five other data owners remain unavailable. All CE-AC, physical-input, screenreader and other-platform gates remain open.",
-      "review": "R01 on exact 8c5c5680054b8dddd89900733ac7bbfe966876f1 required seven repairs (Issue #1 comment 6085178049). N01-R01 on exact 01a02ef124e3ffc02b626019f89f5e216612f7ab required S01 cycle/schema repairs (Issue #1 comment 6085248851). N02-R01 on exact 3b7e5c933a107da6f406aa44037decf316d09b77 found a variable-rarity schema gap (Issue #1 comment 6085306351). N03-R01 PASSED exact 679d432e145bd9afe766393346e4b788931886ea with no remaining mandatory plan finding (Issue #1 comment 6085341786). This approves planning only; S01 and I01 are undelivered."
     },
     "ce02I02Source": {
       "run": "CE-02-I02-S01-W28",
@@ -4782,7 +4713,6 @@
     },
     "currentUserGoal": "11.10.2026: vollständige erreichbare Ergebnisgleichwertigkeit mit Canvas of Kings, Watabou und Fantasy Town Generator bei guter eigener Bedienung, als Teil der zentral priorisierten Atlasumsetzung. Identische Gesten/Algorithmen sind auch für wiederverwendete Hex-/Dungeonwerkzeuge keine Pflicht; fachlicher Umfang bleibt erhalten.",
     "atlasDetailEntry": {
-      "plan": "ROADMAP-CITIES-ATLAS-DETAIL-ENTRY-PLAN.md",
       "state": "component_review_and_cleanup_pass_host_pending",
       "updatedAt": "2026-10-10T07:39:03.368374+00:00",
       "requirements": [
@@ -4845,7 +4775,6 @@
     "buildingNameContribution": {
       "issue": 92,
       "source": "src/ui/atlas-city-building-panel.ts + src/features/atlas/atlas-editor.ts + src/features/city/edit.ts",
-      "plan": "docs/plans/city/building-name-inspector.md",
       "checks": "2 core countercases and 3 managed DOM cases PASS; exact name/geometry/IDs; shared UndoRedo, native Save/model reopen; invalid/stale/ABA/revoked context and detached old callbacks fail closed",
       "remaining": "PR106 review/integration and GM6105037427 Save/navigation reuse consumed. GM6105664357 adds fresh-process/search/name reuse/second Save on eaf6bd9 and Apply/Discard Enter focus/next Tab on a4c2cb3. PR120 head1262cbf7 has eight durable pictures checked visually and by SHA-256 by City. Semantic after-save file comparison remains tester report, no raw after payloads; no launcher exitcode. Direct-Save focus native check, physical/broad Recovery/full parity remain open.",
       "inspectorReview": "R02 PASS5481432379 on0315b13, Exact-SHA CI38100640175 SUCCESS; no required finding; helper changes do not alter product source",
@@ -4918,7 +4847,6 @@
     "buildingRotationContribution": {
       "issue": 127,
       "source": "src/ui/atlas-city-building-panel.ts; existing CityEdit set-building-pose",
-      "plan": "docs/plans/city/building-name-inspector.md#arbeitsstand-127",
       "checks": "Centered-pivot fix: two independent world-space regressions FAIL before/PASS after, complete linked-house/courtyard preservation, shared UndoRedo, exact native Save and new model reopen. Existing pending-name/stale/gesture precision tests PASS. Full suite1084 PASS/0 FAIL/1 optional skip; type/build/repo/diff PASS.",
       "remaining": "Product R01 and Shared25792fb integration consumed. H02 native centered house106 turn/Save/separate Fresh PASS on QA92e4b82/build08537145; portable receipt docs/reference/city-building-rotation-h02/receipt.json. Six foreign spatial bytes retained and full Campaign semantically checked except expected City/registry digest/revision fields. H01 Campaign preservation claim withdrawn; originals unchanged. Narrow H02 QA review, free GM/physical/House105 native/broad Recovery/full parity remain open."
     }
@@ -63717,12 +63645,6 @@
       ],
       "initialOriginalScope": "All13 early scopes passed direct separate R02; full cases and paired coverage remain open.",
       "limits": "Reference inventory only;79 later obligations,113 historical sources and C01 retained.",
-      "repairPlan": {
-        "path": "ROADMAP-HEX-00-REPAIR-PLAN.md",
-        "run": "HEX-00-N-P01",
-        "state": "planned",
-        "focus": "Sechs begrenzte Pflichtbefunde; explizite frühe Abnahme und später fällige Varianten, keine automatische Torfreigabe."
-      },
       "repairImplementation": {
         "run": "HEX-00-N-I01",
         "state": "implemented_review_pending",
@@ -84536,9 +84458,7 @@
         "HEX-27",
         "HEX-28"
       ],
-      "questionSourcePolicy": "Unveränderte observationLimits mit vollständiger expliziter Teilfragenzuordnung; unbekannte Oberfläche/Validierung bleibt HEX-00.",
-      "initialSource": "ROADMAP-HEX-00-REPAIR-PLAN.md",
-      "reviewApproval": "Pending independent HEX-00-R02; no phase approved by migration."
+      "questionSourcePolicy": "Unveränderte observationLimits mit vollständiger expliziter Teilfragenzuordnung; unbekannte Oberfläche/Validierung bleibt HEX-00."
     },
     "pickerContexts": {
       "run": "HEX-00-N-I02",
@@ -84766,7 +84686,6 @@
     },
     "inventoryOptionsAudit": {
       "run": "HEX-00-N-I02",
-      "plan": "ROADMAP-HEX-00-REPAIR-PLAN.md",
       "referenceVersion": "1.1.8.2",
       "scope": "Exactly the 33 R01-03 candidates; new native list captures only where old receipts were insufficient.",
       "state": "bounded_scoped_options_review_passed",
@@ -89889,12 +89808,6 @@
         ],
         "initialOriginalScope": "13 frühe Umfänge nach Plan ausreichend belegt; Fall-Gesamtproben und spätere Pflichten bleiben offen. Prüflogik/Datenvertrag muss diese Grenze ausdrücklich abbilden.",
         "limits": "Keine vollständige Oberflächenfreigabe; Kandidatenliste für fehlende/unklare Choices ist begrenzt. Neue Reviewkritik ersetzt keine ungeprüften Oberflächenbelege.",
-        "repairPlan": {
-          "path": "ROADMAP-HEX-00-REPAIR-PLAN.md",
-          "run": "HEX-00-N-P01",
-          "state": "planned",
-          "focus": "Sechs begrenzte Pflichtbefunde; explizite frühe Abnahme und später fällige Varianten, keine automatische Torfreigabe."
-        },
         "repairImplementation": {
           "run": "HEX-00-N-I01",
           "state": "implemented_review_pending",
@@ -93954,15 +93867,6 @@
           "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-review-20261007/phase3-review.md",
           "strictAcceptance": "open"
         },
-        "phase3RemainingRepairPlan": {
-          "date": "2026-10-07",
-          "state": "planned_for_separate_implementation",
-          "plan": "/home/aaron/Schreibtisch/Obsidian-Dungeon-Editor-Phase1/ROADMAP-PARITY-PHASE3-REPAIR-REMAINING-PLAN.md",
-          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
-          "baselineBuildSha256": "5cb9861713b5d4afbc786bbd2f23d4a2fbb4e3d7d6fbb37c6035beb1b9d37de3",
-          "reviewFinding": "24 gespeicherte Stile teilweise bildlich gepaart; unmittelbare Zeichenfolge, Varianten und vollständige Galeriebedienung offen.",
-          "strictAcceptance": "open"
-        },
         "phase3RemainingImplementation": {
           "date": "2026-10-07",
           "state": "implementation_candidate",
@@ -93999,17 +93903,6 @@
             "/home/aaron/.cache/dungeon-native-qa/parity-phase3-remaining-20261007/native-24-gallery-diamond/runs/20261007-132938-1778866/evidence/maps/diamond-slot6-correct.dungeondraft_map"
           ],
           "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-remaining-20261007/phase3-independent-review.md",
-          "strictAcceptance": "open"
-        },
-        "phase3ImageMatrixRepairPlan": {
-          "date": "2026-10-07",
-          "state": "planned_for_separate_implementation",
-          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
-          "baselineBuildSha256": "c18010185310c6a347f55b49a0c9be593d433be203c06b8968b64bf5a027ea0a",
-          "plan": "/home/aaron/Schreibtisch/Obsidian-Dungeon-Editor-Phase1/ROADMAP-PARITY-PHASE3-REPAIR-IMAGE-MATRIX-PLAN.md",
-          "review": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-remaining-20261007/phase3-independent-review.md",
-          "reviewFinding": "24 UI-Wahlen, Pfade, Standardfarben und Innenpixel im Ladebild gepaart (MAE 0,929; max. 2,393). Direkter Vergleich der Sofortbilder, Randzellen und aller Atlasvarianten fehlt.",
-          "requiredProof": "24 Stilpfade: Sofort-/Ladebilder samt Rändern, Ecken und Concrete-Atlasvarianten auf gleichem Kartenstand.",
           "strictAcceptance": "open"
         },
         "phase3ImageMatrixImplementation": {
@@ -94388,15 +94281,6 @@
           "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-review-20261007/phase3-review.md",
           "strictAcceptance": "open"
         },
-        "phase3RemainingRepairPlan": {
-          "date": "2026-10-07",
-          "state": "planned_for_separate_implementation",
-          "plan": "/home/aaron/Schreibtisch/Obsidian-Dungeon-Editor-Phase1/ROADMAP-PARITY-PHASE3-REPAIR-REMAINING-PLAN.md",
-          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
-          "baselineBuildSha256": "5cb9861713b5d4afbc786bbd2f23d4a2fbb4e3d7d6fbb37c6035beb1b9d37de3",
-          "reviewFinding": "Gespeicherte ARGB/Alpha-Werte stimmen; flächige Bildabweichung und nicht getrennte Atlas-/Hintergrundanteile bleiben.",
-          "strictAcceptance": "open"
-        },
         "phase3RemainingImplementation": {
           "date": "2026-10-07",
           "state": "partial",
@@ -94424,17 +94308,6 @@
             "/home/aaron/.cache/dungeon-native-qa/parity-phase3-remaining-20261007/host-same-card-final/evidence/1791374678760-parity-phase3-building-reopen/result.json"
           ],
           "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-remaining-20261007/phase3-independent-review.md",
-          "strictAcceptance": "open"
-        },
-        "phase3ImageMatrixRepairPlan": {
-          "date": "2026-10-07",
-          "state": "planned_for_separate_implementation",
-          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
-          "baselineBuildSha256": "c18010185310c6a347f55b49a0c9be593d433be203c06b8968b64bf5a027ea0a",
-          "plan": "/home/aaron/Schreibtisch/Obsidian-Dungeon-Editor-Phase1/ROADMAP-PARITY-PHASE3-REPAIR-IMAGE-MATRIX-PLAN.md",
-          "review": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-remaining-20261007/phase3-independent-review.md",
-          "reviewFinding": "Standardfarben gepaart; Tint-/Alpha-Matrix mit Weiß, abweichender Farbe und 0/128/255 einschließlich Custom Color und isoliertem Hintergrund fehlt.",
-          "requiredProof": "Gleiche Weiß-/Standard-/Abweichungsfarbe und Alpha 0/128/255 für Materialfamilien; Hintergrund getrennt.",
           "strictAcceptance": "open"
         },
         "phase3ImageMatrixImplementation": {
@@ -95020,12 +94893,6 @@
           "finding": "X/None creates a wall-less shape, but a later Alt erasure of another Building adds a wall around that shape in the current wall style. The edited shape also changes to that style. Undo removes both new walls; Redo restores them.",
           "remaining": "Matching Host sequence, exact rebuild scope on other shapes, same-card comparison and full Phase-3 review remain open."
         },
-        "phase3RepairOptionsPlan": {
-          "date": "2026-10-07",
-          "state": "plan_ready_for_separate_implementation",
-          "plan": "ROADMAP-PARITY-PHASE3-REPAIR-OPTIONS-PLAN.md",
-          "remaining": "Original-Geltungsbereich messen; gleich aufgebaute Hostfolge, Umsetzung und unabhängiger Review ausstehend."
-        },
         "phase3RepairOptionsImplementation": {
           "date": "2026-10-07",
           "state": "candidate_semantic_match_independent_review_open",
@@ -95060,15 +94927,6 @@
           "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-review-20261007/phase3-review.md",
           "strictAcceptance": "open"
         },
-        "phase3RemainingRepairPlan": {
-          "date": "2026-10-07",
-          "state": "planned_for_separate_implementation",
-          "plan": "/home/aaron/Schreibtisch/Obsidian-Dungeon-Editor-Phase1/ROADMAP-PARITY-PHASE3-REPAIR-REMAINING-PLAN.md",
-          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
-          "baselineBuildSha256": "5cb9861713b5d4afbc786bbd2f23d4a2fbb4e3d7d6fbb37c6035beb1b9d37de3",
-          "reviewFinding": "Neunfache Rohkarte, Undo/Redo und Neuöffnung bestehen; offene Boden-/Wand-/Pickerbildwirkung verhindert Gesamtfreigabe.",
-          "strictAcceptance": "open"
-        },
         "phase3RemainingImplementation": {
           "date": "2026-10-07",
           "state": "partial",
@@ -95098,17 +94956,6 @@
             "/home/aaron/.cache/dungeon-native-qa/parity-phase3-remaining-20261007/host-phase2-final/evidence/1791374994350-parity-phase2-points-reopen/result.json"
           ],
           "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-remaining-20261007/phase3-independent-review.md",
-          "strictAcceptance": "open"
-        },
-        "phase3ImageMatrixRepairPlan": {
-          "date": "2026-10-07",
-          "state": "planned_for_separate_implementation",
-          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
-          "baselineBuildSha256": "c18010185310c6a347f55b49a0c9be593d433be203c06b8968b64bf5a027ea0a",
-          "plan": "/home/aaron/Schreibtisch/Obsidian-Dungeon-Editor-Phase1/ROADMAP-PARITY-PHASE3-REPAIR-IMAGE-MATRIX-PLAN.md",
-          "review": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-remaining-20261007/phase3-independent-review.md",
-          "reviewFinding": "Neun Optionen als Rohkarte und nach Neustart vorhanden; vollständige Bildwirkung von Boden, Wand, Bevel und Punktmutation nicht belegt.",
-          "requiredProof": "Neun Optionen und Grundformen samt Punktmutation sichtbar und roh nach Undo/Redo, Save und Frischstart.",
           "strictAcceptance": "open"
         },
         "phase3ImageMatrixImplementation": {
@@ -95155,18 +95002,6 @@
           "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-review-20261007/phase3-independent-review.md",
           "reviewAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-review-20261007/review-audit.json",
           "remaining": "Im getrennten Nachbesserungsplan direkte Original-/Host-Paare für Bevel und QAWall01-Konturmutationen festlegen; danach umsetzen und unabhängig reviewen."
-        },
-        "phase3BevelPointsRepairPlan": {
-          "date": "2026-10-07",
-          "state": "plan_ready_for_separate_implementation",
-          "plan": "ROADMAP-PARITY-PHASE3-REPAIR-BEVEL-POINTS-PLAN.md",
-          "baseCommit": "9cca426",
-          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
-          "focus": "Nach den Wandfällen alle Building-Optionen auf demselben finalen Build gemeinsam prüfen.",
-          "originalToCollect": "Neunfache Optionskarte und ergänzende Formen, Bevel- und QAWall01-Gesten, Save und Original-Neuöffnung.",
-          "hostToCollect": "Vollständige Optionskarte, Phase-1-/2-Regressionen, Save, frische Hostöffnung und geschützte Key-Bytes.",
-          "reviewBaseline": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-review-20261007/phase3-independent-review.md",
-          "strictAcceptance": "open"
         },
         "phase3BevelPointsImplementation": {
           "date": "2026-10-08",
@@ -95583,15 +95418,6 @@
           "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-review-20261007/phase3-review.md",
           "strictAcceptance": "open"
         },
-        "phase3RemainingRepairPlan": {
-          "date": "2026-10-07",
-          "state": "planned_for_separate_implementation",
-          "plan": "/home/aaron/Schreibtisch/Obsidian-Dungeon-Editor-Phase1/ROADMAP-PARITY-PHASE3-REPAIR-REMAINING-PLAN.md",
-          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
-          "baselineBuildSha256": "5cb9861713b5d4afbc786bbd2f23d4a2fbb4e3d7d6fbb37c6035beb1b9d37de3",
-          "reviewFinding": "Farbflächenwerte weichen je höchstens einen Kanalwert ab; nativer initialer Floor-Wert ist ungemessen.",
-          "strictAcceptance": "open"
-        },
         "phase3RemainingImplementation": {
           "date": "2026-10-07",
           "state": "implementation_candidate",
@@ -95624,17 +95450,6 @@
             "/home/aaron/.cache/dungeon-native-qa/parity-phase3-remaining-20261007/host-picker-final/evidence/1791374100331-parity-phase3-building-reopen/result.json"
           ],
           "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-remaining-20261007/phase3-independent-review.md",
-          "strictAcceptance": "open"
-        },
-        "phase3ImageMatrixRepairPlan": {
-          "date": "2026-10-07",
-          "state": "planned_for_separate_implementation",
-          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
-          "baselineBuildSha256": "c18010185310c6a347f55b49a0c9be593d433be203c06b8968b64bf5a027ea0a",
-          "plan": "/home/aaron/Schreibtisch/Obsidian-Dungeon-Editor-Phase1/ROADMAP-PARITY-PHASE3-REPAIR-IMAGE-MATRIX-PLAN.md",
-          "review": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-remaining-20261007/phase3-independent-review.md",
-          "reviewFinding": "Ein identischer Startwert und ein Feldklick liefern Floor ff73461d und Wall ff74591d nach Neustart; weitere Feldpositionen und Wall-/Cave-Kontexte fehlen.",
-          "requiredProof": "Mehrere normierte Feldpunkte aus gleichem ARGB mit HSV/Rundung und Building-Neuöffnung; genannte gemeinsame Pickerkontexte gegengeprüft.",
           "strictAcceptance": "open"
         },
         "phase3ImageMatrixImplementation": {
@@ -96854,15 +96669,6 @@
           "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-review-20261007/phase3-review.md",
           "strictAcceptance": "open"
         },
-        "phase3RemainingRepairPlan": {
-          "date": "2026-10-07",
-          "state": "planned_for_separate_implementation",
-          "plan": "/home/aaron/Schreibtisch/Obsidian-Dungeon-Editor-Phase1/ROADMAP-PARITY-PHASE3-REPAIR-REMAINING-PLAN.md",
-          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
-          "baselineBuildSha256": "5cb9861713b5d4afbc786bbd2f23d4a2fbb4e3d7d6fbb37c6035beb1b9d37de3",
-          "reviewFinding": "Original- und Hostpipette speichern den jeweiligen dargestellten Pixel; identischer gerenderter Bildpunkt fehlt.",
-          "strictAcceptance": "open"
-        },
         "phase3RemainingImplementation": {
           "date": "2026-10-07",
           "state": "partial",
@@ -96898,17 +96704,6 @@
             "/home/aaron/.cache/dungeon-native-qa/parity-phase3-remaining-20261007/host-gallery24-fixed/evidence/1791373598402-parity-phase3-building-reopen/result.json"
           ],
           "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-remaining-20261007/phase3-independent-review.md",
-          "strictAcceptance": "open"
-        },
-        "phase3ImageMatrixRepairPlan": {
-          "date": "2026-10-07",
-          "state": "planned_for_separate_implementation",
-          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
-          "baselineBuildSha256": "c18010185310c6a347f55b49a0c9be593d433be203c06b8968b64bf5a027ea0a",
-          "plan": "/home/aaron/Schreibtisch/Obsidian-Dungeon-Editor-Phase1/ROADMAP-PARITY-PHASE3-REPAIR-IMAGE-MATRIX-PLAN.md",
-          "review": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-remaining-20261007/phase3-independent-review.md",
-          "reviewFinding": "Eine Bildschirmzeile oberhalb wird korrekt aufgenommen; Beton und ruhiges Holz paaren sich. Holz-Kantenprobe bleibt Original 433528 gegen Host 503f30; weitere gemeinsame Pickerkontexte fehlen.",
-          "requiredProof": "Einfarbiger und strukturierter gleicher Bildpixel, Framebuffer/Pickwert/ARGB; Holz-Kantenabweichung erklärt oder behoben.",
           "strictAcceptance": "open"
         },
         "phase3ImageMatrixImplementation": {
@@ -98288,15 +98083,6 @@
           "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-review-20261007/phase3-review.md",
           "strictAcceptance": "open"
         },
-        "phase3RemainingRepairPlan": {
-          "date": "2026-10-07",
-          "state": "planned_for_separate_implementation",
-          "plan": "/home/aaron/Schreibtisch/Obsidian-Dungeon-Editor-Phase1/ROADMAP-PARITY-PHASE3-REPAIR-REMAINING-PLAN.md",
-          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
-          "baselineBuildSha256": "5cb9861713b5d4afbc786bbd2f23d4a2fbb4e3d7d6fbb37c6035beb1b9d37de3",
-          "reviewFinding": "QAWall01-Geradstücke und Türkappen eng gepaart; übrige Wandassets und Verbindungen nicht vollständig verglichen.",
-          "strictAcceptance": "open"
-        },
         "phase3RemainingReview": {
           "date": "2026-10-07",
           "state": "open",
@@ -98313,17 +98099,6 @@
             "/home/aaron/.cache/dungeon-native-qa/parity-phase3-remaining-20261007/host-same-card-final/evidence/1791374678760-parity-phase3-building-reopen/result.json"
           ],
           "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-remaining-20261007/phase3-independent-review.md",
-          "strictAcceptance": "open"
-        },
-        "phase3ImageMatrixRepairPlan": {
-          "date": "2026-10-07",
-          "state": "planned_for_separate_implementation",
-          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
-          "baselineBuildSha256": "c18010185310c6a347f55b49a0c9be593d433be203c06b8968b64bf5a027ea0a",
-          "plan": "/home/aaron/Schreibtisch/Obsidian-Dungeon-Editor-Phase1/ROADMAP-PARITY-PHASE3-REPAIR-IMAGE-MATRIX-PLAN.md",
-          "review": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-remaining-20261007/phase3-independent-review.md",
-          "reviewFinding": "QAWall01-Geradstrecken/Endkappen belegt; zehn native Stile samt Ecken, Schatten, Enden und Kurven nicht paarweise bildlich abgenommen.",
-          "requiredProof": "Zehn native Wandstile plus QAWall01, Geometrie-, Anschluss-, Schatten- und Neuöffnungsbilder.",
           "strictAcceptance": "open"
         },
         "phase3ImageMatrixImplementation": {
@@ -98596,12 +98371,6 @@
           ],
           "finding": "X/None creates a wall-less shape, but a later Alt erasure of another Building adds a wall around that shape in the current wall style. The edited shape also changes to that style. Undo removes both new walls; Redo restores them.",
           "remaining": "Matching Host sequence, exact rebuild scope on other shapes, same-card comparison and full Phase-3 review remain open."
-        },
-        "phase3RepairOptionsPlan": {
-          "date": "2026-10-07",
-          "state": "plan_ready_for_separate_implementation",
-          "plan": "ROADMAP-PARITY-PHASE3-REPAIR-OPTIONS-PLAN.md",
-          "remaining": "Original-Geltungsbereich messen; gleich aufgebaute Hostfolge, Umsetzung und unabhängiger Review ausstehend."
         },
         "phase3RepairOptionsImplementation": {
           "date": "2026-10-07",
@@ -98930,15 +98699,6 @@
           "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-review-20261007/phase3-review.md",
           "strictAcceptance": "open"
         },
-        "phase3RemainingRepairPlan": {
-          "date": "2026-10-07",
-          "state": "planned_for_separate_implementation",
-          "plan": "/home/aaron/Schreibtisch/Obsidian-Dungeon-Editor-Phase1/ROADMAP-PARITY-PHASE3-REPAIR-REMAINING-PLAN.md",
-          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
-          "baselineBuildSha256": "5cb9861713b5d4afbc786bbd2f23d4a2fbb4e3d7d6fbb37c6035beb1b9d37de3",
-          "reviewFinding": "ARGB/Alpha und deckendes QAWall01-Geradstück gepaart; weitere Farben, Alpha-Stufen und Fugenbilder offen.",
-          "strictAcceptance": "open"
-        },
         "phase3RemainingReview": {
           "date": "2026-10-07",
           "state": "open",
@@ -98954,17 +98714,6 @@
             "/home/aaron/.cache/dungeon-native-qa/parity-phase3-remaining-20261007/host-same-card-final/evidence/1791374678760-parity-phase3-building-reopen/result.json"
           ],
           "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-remaining-20261007/phase3-independent-review.md",
-          "strictAcceptance": "open"
-        },
-        "phase3ImageMatrixRepairPlan": {
-          "date": "2026-10-07",
-          "state": "planned_for_separate_implementation",
-          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
-          "baselineBuildSha256": "c18010185310c6a347f55b49a0c9be593d433be203c06b8968b64bf5a027ea0a",
-          "plan": "/home/aaron/Schreibtisch/Obsidian-Dungeon-Editor-Phase1/ROADMAP-PARITY-PHASE3-REPAIR-IMAGE-MATRIX-PLAN.md",
-          "review": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-remaining-20261007/phase3-independent-review.md",
-          "reviewFinding": "ARGB und weißes/rotes QAWall01-Geradstück belegt; weitere Farben und Alpha 0/128/255 an Fugen/Ecken und anderen Assets fehlen.",
-          "requiredProof": "Wandfarb-/Alpha-Matrix an Strecke, Fuge, Endkappe, Ecke und Schatten auf QAWall01 und nativer Wand.",
           "strictAcceptance": "open"
         },
         "phase3ImageMatrixImplementation": {
@@ -99391,15 +99140,6 @@
           "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-review-20261007/phase3-review.md",
           "strictAcceptance": "open"
         },
-        "phase3RemainingRepairPlan": {
-          "date": "2026-10-07",
-          "state": "planned_for_separate_implementation",
-          "plan": "/home/aaron/Schreibtisch/Obsidian-Dungeon-Editor-Phase1/ROADMAP-PARITY-PHASE3-REPAIR-REMAINING-PLAN.md",
-          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
-          "baselineBuildSha256": "5cb9861713b5d4afbc786bbd2f23d4a2fbb4e3d7d6fbb37c6035beb1b9d37de3",
-          "reviewFinding": "Bevel an/aus speichert richtige Joint-Werte; innere Eckverbindung und andere Winkel/Assets offen.",
-          "strictAcceptance": "open"
-        },
         "phase3RemainingReview": {
           "date": "2026-10-07",
           "state": "open",
@@ -99415,17 +99155,6 @@
             "/home/aaron/.cache/dungeon-native-qa/parity-phase3-remaining-20261007/host-same-card-final/evidence/1791374678760-parity-phase3-building-reopen/result.json"
           ],
           "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-remaining-20261007/phase3-independent-review.md",
-          "strictAcceptance": "open"
-        },
-        "phase3ImageMatrixRepairPlan": {
-          "date": "2026-10-07",
-          "state": "planned_for_separate_implementation",
-          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
-          "baselineBuildSha256": "c18010185310c6a347f55b49a0c9be593d433be203c06b8968b64bf5a027ea0a",
-          "plan": "/home/aaron/Schreibtisch/Obsidian-Dungeon-Editor-Phase1/ROADMAP-PARITY-PHASE3-REPAIR-IMAGE-MATRIX-PLAN.md",
-          "review": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-remaining-20261007/phase3-independent-review.md",
-          "reviewFinding": "Joint-Werte und Bevel-aus-Bild belegt; innere Bevel-Ecke weicht noch ab, weitere Winkel/Assets/Ring/Portal/Kurve fehlen.",
-          "requiredProof": "Bevel an/aus für vier Ausrichtungen, Innen-/Außenecke, Ring, Portal und Kurve ohne sichtbaren Anschlussfehler.",
           "strictAcceptance": "open"
         },
         "phase3ImageMatrixImplementation": {
@@ -99470,18 +99199,6 @@
           "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-review-20261007/phase3-independent-review.md",
           "reviewAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-review-20261007/review-audit.json",
           "remaining": "Bevel an/aus für vier Richtungen, Innen-/Außenecke, Ring, Portalspalt und Kurve direkt paaren."
-        },
-        "phase3BevelPointsRepairPlan": {
-          "date": "2026-10-07",
-          "state": "plan_ready_for_separate_implementation",
-          "plan": "ROADMAP-PARITY-PHASE3-REPAIR-BEVEL-POINTS-PLAN.md",
-          "baseCommit": "9cca426",
-          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
-          "focus": "Bevel an/aus mit Battlements und QAWall01 an vier Außenrichtungen, konkaver Ecke, Innenring, Portalspalt und Kurve direkt paaren.",
-          "originalToCollect": "Bild, gespeichertes joint, Boden-/Wandkontur, Portal und Schatten je Geste, Undo/Redo und Original-Neuöffnung.",
-          "hostToCollect": "Gleiche UI-Folge, Vorschau und Bild auf dem finalen isolierten Build mit frischer Hostöffnung.",
-          "reviewBaseline": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-review-20261007/phase3-independent-review.md",
-          "strictAcceptance": "open"
         },
         "phase3BevelPointsImplementation": {
           "date": "2026-10-08",
@@ -99707,15 +99424,6 @@
           "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-review-20261007/phase3-review.md",
           "strictAcceptance": "open"
         },
-        "phase3RemainingRepairPlan": {
-          "date": "2026-10-07",
-          "state": "planned_for_separate_implementation",
-          "plan": "/home/aaron/Schreibtisch/Obsidian-Dungeon-Editor-Phase1/ROADMAP-PARITY-PHASE3-REPAIR-REMAINING-PLAN.md",
-          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
-          "baselineBuildSha256": "5cb9861713b5d4afbc786bbd2f23d4a2fbb4e3d7d6fbb37c6035beb1b9d37de3",
-          "reviewFinding": "Konturdaten folgen Punktzug und Radierung; gleich ausgerichtetes Bildpaar nach identischem Punktzug fehlt.",
-          "strictAcceptance": "open"
-        },
         "phase3RemainingReview": {
           "date": "2026-10-07",
           "state": "open",
@@ -99730,17 +99438,6 @@
             "/home/aaron/.cache/dungeon-native-qa/parity-phase3-remaining-20261007/host-phase2-final/evidence/1791374994350-parity-phase2-points-reopen/result.json"
           ],
           "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-remaining-20261007/phase3-independent-review.md",
-          "strictAcceptance": "open"
-        },
-        "phase3ImageMatrixRepairPlan": {
-          "date": "2026-10-07",
-          "state": "planned_for_separate_implementation",
-          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
-          "baselineBuildSha256": "c18010185310c6a347f55b49a0c9be593d433be203c06b8968b64bf5a027ea0a",
-          "plan": "/home/aaron/Schreibtisch/Obsidian-Dungeon-Editor-Phase1/ROADMAP-PARITY-PHASE3-REPAIR-IMAGE-MATRIX-PLAN.md",
-          "review": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-remaining-20261007/phase3-independent-review.md",
-          "reviewFinding": "Paketwand folgt gespeicherter Kontur im Host; ausgerichtetes Original-/Host-Bildpaar nach denselben Punktmutationen fehlt.",
-          "requiredProof": "Ausgerichtete Original-/Host-Bildpaare nach identischem Punktzug, Einfügen, Entfernen, Ellipse und Radierung samt Portal/Key.",
           "strictAcceptance": "open"
         },
         "phase3ImageMatrixImplementation": {
@@ -99791,18 +99488,6 @@
           "reviewReport": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-review-20261007/phase3-independent-review.md",
           "reviewAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-review-20261007/review-audit.json",
           "remaining": "QAWall01 nach Ziehen, Einfügen, Entfernen, Ellipsenpunkt und Alt-Radierung direkt paaren; Portal und Key prüfen."
-        },
-        "phase3BevelPointsRepairPlan": {
-          "date": "2026-10-07",
-          "state": "plan_ready_for_separate_implementation",
-          "plan": "ROADMAP-PARITY-PHASE3-REPAIR-BEVEL-POINTS-PLAN.md",
-          "baseCommit": "9cca426",
-          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
-          "focus": "QAWall01 nach Eckzug, Kantenpunkt-Einfügen, Entfernen, Ellipsenzug, Alt-Radierung, Innenring- und Mehrteiländerung direkt paaren.",
-          "originalToCollect": "Paketpfad, Geometrie, Vorschau, erhaltenes/entferntes Portal, Undo/Redo und Original-Neuöffnung.",
-          "hostToCollect": "Paketpfad, Wandfolge, atomare History, Portalbindung, Raum-ID und exakte Key-Bytes mit Host-Neuöffnung.",
-          "reviewBaseline": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-review-20261007/phase3-independent-review.md",
-          "strictAcceptance": "open"
         },
         "phase3BevelPointsImplementation": {
           "date": "2026-10-08",
@@ -117683,20 +117368,6 @@
           "hostDialogProbe": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair2-focus-dialog-20261008/audit.json",
           "hostX11Probe": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair2-focus-dialog-20261008/x11-audit.json",
           "hostPopoutProbe": "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair2-focus-dialog-20261008/popout-audit.json"
-        },
-        "repair3Plan": {
-          "date": "2026-10-09",
-          "state": "plan_only_gate_open",
-          "plan": "ROADMAP-PARITY-PHASE6-REPAIR3-PLAN.md",
-          "reference": "Dungeondraft 1.2.0.1 Opulent Kirin",
-          "focus": "X11-Zielfenster unter KWin mit direkt protokolliertem A-Release, tatsächlichem Renderer-Fokusstatus und nächster gespeicherter Platzierung.",
-          "priorEvidence": [
-            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair2-implementation-20261008/native/phase6-repair2-a-audit.json",
-            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair2-focus-dialog-20261008/audit.json",
-            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair2-focus-dialog-20261008/x11-audit.json",
-            "/home/aaron/.cache/dungeon-native-qa/parity-phase6-repair2-focus-dialog-20261008/popout-audit.json"
-          ],
-          "gate": "open"
         },
         "repair3Implementation": {
           "date": "2026-10-09",
@@ -151052,14 +150723,6 @@
       "verification": "Diff beseitigt den doppelten PathDraft-Abschluss und die drei Fallback-Guards; Diagnose-Listener werden begrenzt und abgebrochen. Erneut 119/119 Kerntests, Typprüfung und identischer Build-Hash. 406 alte/neue Ringresultate identisch; erneuter Benchmark 0,644/1,170 ms und damit mindestens halbiert. Alle sieben Hostbelege besitzen denselben Build-Hash und keinen Fehler; Enter zusätzlich gezielt geprüft. Raum-Key-Bytes unabhängig nachgehasht.",
       "deferred": "DD-011.15 vollständig Phase 3; physische Maus-/Touchpad-Eingabe Phase 7."
     },
-    "phase3Implementation": {
-      "state": "candidate_needs_review_and_repair",
-      "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-implementation-20261007/phase3-implementation.md",
-      "buildSha256": "b6dcee5b542831b30f4f370c1ffc3291c9519720dfcbb952db6af832c5515a1b",
-      "hostEdit": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-implementation-20261007/host-options/evidence/1791336309979-parity-phase3-building-edit/result.json",
-      "hostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-implementation-20261007/host-options/evidence/1791336360439-parity-phase3-building-reopen/result.json",
-      "open": "17 Pflicht-Unterfälle bleiben bis zum unabhängigen Review offen; Bild-/Bevel-/Picker-/Optionsmatrix-Lücken im Bericht."
-    },
     "phase3Review": {
       "date": "2026-10-07",
       "state": "gate_open",
@@ -151069,23 +150732,6 @@
       "reviewHostEdit": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-review-20261007/host/evidence/1791337051338-parity-phase3-building-edit/result.json",
       "reviewHostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-review-20261007/host/evidence/1791337109785-parity-phase3-building-reopen/result.json",
       "candidateBuildSha256": "b6dcee5b542831b30f4f370c1ffc3291c9519720dfcbb952db6af832c5515a1b"
-    },
-    "phase3Repair2": {
-      "state": "partial_repair_gate_open",
-      "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair2-20261007/phase3-repair2.md",
-      "candidateBuildSha256": "8ce7ded759114566ab05c4c8fa6dc9a93dfba1195394c65894e1d989aa5611d5",
-      "updatedCases": [
-        "DD-011.12",
-        "DD-011.15",
-        "DD-011.17",
-        "DD-011.18",
-        "DD-011.19",
-        "DD-011.20",
-        "DD-011.21",
-        "DD-015.01",
-        "DD-015.03",
-        "DD-015.05"
-      ]
     },
     "phase3Repair3": {
       "state": "partial_repair_gate_open",
@@ -151105,57 +150751,6 @@
         "DD-015.05"
       ],
       "fixtureVisualHostEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair2-20261007/host/evidence/1791344522199-parity-phase3-building-reopen/result.json"
-    },
-    "phase3Repair4": {
-      "state": "partial_repair_gate_open",
-      "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-visual4-20261007/phase3-wall-band-repair.md",
-      "candidateBuildSha256": "c43549ad03f2747377f00f284d29f259abac8f2a43ea8f859718eae40566f12d",
-      "pixelAudit": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-visual4-20261007/corner-pixel-audit.json",
-      "visualHostEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-repair2-20261007/host/evidence/1791345351915-parity-phase3-building-reopen/result.json",
-      "combinedHostEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-visual4-20261007/host-combined/evidence/1791345527393-parity-phase3-building-reopen/result.json",
-      "combinedReopenEvidence": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-visual4-20261007/host-combined/evidence/1791345651170-parity-phase3-building-reopen/result.json",
-      "updatedCases": [
-        "DD-011.15",
-        "DD-015.01",
-        "DD-015.04",
-        "DD-015.05"
-      ]
-    },
-    "phase3PickerPair": {
-      "date": "2026-10-07",
-      "state": "host_hue_repaired_partial_field_and_wall_pipette_gate_open",
-      "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-picker-pair-20261007/picker-pair-review.md",
-      "updatedCases": [
-        "DD-011.17",
-        "DD-011.18",
-        "DD-011.19",
-        "DD-011.20",
-        "DD-011.21",
-        "DD-011.22"
-      ],
-      "remaining": "Field one-channel-step difference, same-scene pipette pair, full Building options Host comparison, intrinsic Bevel texture, and independent 17-case review.",
-      "hostEdit": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-picker-pair-20261007/host-hue-fixed/evidence/1791363092071-parity-phase3-building-edit/result.json",
-      "hostReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-picker-pair-20261007/host-hue-fixed/evidence/1791363204462-parity-phase3-building-reopen/result.json",
-      "candidateBuildSha256": "c2480249f036eff3356c49ba7300e0882beaf184102dda2e87a93bd77fbe6214"
-    },
-    "phase3OptionsCard": {
-      "date": "2026-10-07",
-      "state": "original_and_independent_host_cards_verified_same_card_review_open",
-      "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-card-20261007/options-card-review.md",
-      "case": "DD-011.15",
-      "originalMap": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-card-20261007/native/runs/20261007-105643-1652352/evidence/maps/15-redo-point.dungeondraft_map",
-      "freshMap": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-card-20261007/native-reopen/runs/20261007-110700-1664024/evidence/maps/01-reopen-resaved.dungeondraft_map",
-      "remaining": "Matching Host card must include X/None wall revival on Alt erasure, style changes, Undo/Redo, fresh reopen; intrinsic Bevel texture and 17-case review remain open.",
-      "candidateBuildSha256": "c2480249f036eff3356c49ba7300e0882beaf184102dda2e87a93bd77fbe6214",
-      "hostEdit": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-card-20261007/host/evidence/1791364719429-parity-phase3-building-edit/result.json",
-      "hostCombined": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-card-20261007/host/evidence/1791364847272-parity-phase3-building-reopen/result.json",
-      "hostCombinedReopen": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-options-card-20261007/host/evidence/1791364974243-parity-phase3-building-reopen/result.json"
-    },
-    "phase3WallPipette": {
-      "date": "2026-10-07",
-      "state": "direct_original_saved_wall_verified_host_same_scene_review_open",
-      "report": "/home/aaron/.cache/dungeon-native-qa/parity-phase3-wall-pipette-20261007/wall-pipette-review.md",
-      "case": "DD-011.22"
     },
     "phase3NoneRevivalReview": {
       "date": "2026-10-07",
@@ -152528,7 +152123,6 @@
         "id": "HEX03-001",
         "requirement": "Geschlossener Orts-/Platzierungs-/Key-Codec mit unverändertem Markdown",
         "state": "checked_core",
-        "plan": "ROADMAP-HEX-03-PLAN.md",
         "implementationRun": "HEX-03-I01a",
         "evidence": [
           "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/core-implementation.json"
@@ -152539,7 +152133,6 @@
         "id": "HEX03-002",
         "requirement": "Ort und Weltplatzierung gemeinsam anlegen/rücknehmen",
         "state": "checked_native_component_review_pending",
-        "plan": "ROADMAP-HEX-03-PLAN.md",
         "implementationRun": "HEX-03-I01b-marker",
         "observed": "Native city/POI creation and creation Undo/Redo restore placement, marker and Key together; shared History backend validated. Independent review remains open.",
         "evidence": [
@@ -152552,7 +152145,6 @@
         "id": "HEX03-003",
         "requirement": "Orts-Key rechts lesen/bearbeiten/ordnen ohne Kartenkontextwechsel",
         "state": "checked_native_component_review_pending",
-        "plan": "ROADMAP-HEX-03-PLAN.md",
         "implementationRun": "HEX-03-I01b-marker",
         "observed": "Native same-canvas Key name/two Markdown sections/reorder/Unicode/Save/fresh open checked; untouched CRLF preservation, stale/invalid draft retention and text shortcut isolation covered by focused tests. No detail/section-link or rename-index acceptance.",
         "evidence": [
@@ -152565,7 +152157,6 @@
         "id": "HEX03-004",
         "requirement": "Ort verschieben, Hex bearbeiten und gemeinsam einpassen",
         "state": "checked_native_component_review_pending",
-        "plan": "ROADMAP-HEX-03-PLAN.md",
         "implementationRun": "HEX-03-I01b-marker",
         "observed": "Native marker preview/drag/Escape/Undo/Redo, terrain drawing in the same History, empty/location-only/mixed Fit and delayed selection-read guard checked. No large-world or physical-input acceptance.",
         "evidence": [
@@ -152578,7 +152169,6 @@
         "id": "HEX03-005",
         "requirement": "Gemeinsames Save/Draft/Discard/Copy/Recovery samt frischem Prozess",
         "state": "checked_native_component_review_pending",
-        "plan": "ROADMAP-HEX-03-PLAN.md",
         "implementationRun": "HEX-03-I01b-marker",
         "evidence": [
           "/home/aaron/.cache/dungeon-native-qa/hex-03/i01-20261009/draft2-implementation.json",
@@ -152592,14 +152182,12 @@
       {
         "id": "HEX03-006",
         "requirement": "ID-/Abschnittslink nach Dateiumbenennung und frischem Prozess",
-        "state": "open",
-        "plan": "ROADMAP-HEX-03-PLAN.md"
+        "state": "open"
       },
       {
         "id": "HEX03-007",
         "requirement": "Unabhängiger Fachreview und getrenntes Aufräumen",
-        "state": "open",
-        "plan": "ROADMAP-HEX-03-PLAN.md"
+        "state": "open"
       },
       {
         "id": "E2E01-HEX-SOURCE-001",
@@ -152618,7 +152206,6 @@
         "id": "E2E01-HEX-SPACE-PLAN-001",
         "requirement": "Konkrete gespeicherte Raum-/Transform-/Frame-/Speichergrenze aus tatsächlichen Owner-APIs",
         "state": "checked_plan_narrow_city_dungeon_inputs_confirmed_implementation_open",
-        "plan": "ROADMAP-E2E01-SPATIAL-INTEGRATION-PLAN.md",
         "planRun": "E2E-01-SPACE-P01",
         "catalog": "ROADMAP-E2E-GATES-CANDIDATE.md:13",
         "evidence": [
@@ -152746,17 +152333,7 @@
         "plan": "ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md",
         "fixtureVersion": "e2e01-spatial-v2",
         "fixtureUnchanged": true,
-        "evidence": [
-          "src/features/atlas/atlas-campaign-source.ts",
-          "tests/core/atlas-campaign-source.test.ts",
-          "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-capture-i01a-20261010/run.json",
-          "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/13#issuecomment-6094452280",
-          "/home/aaron/.cache/dungeon-native-qa/city-plans/runtime-i01a-r01-20261010/review.json",
-          "ROADMAP-E2E01-ATLAS-CAPTURE-CLEANUP-PLAN.md",
-          "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-capture-i01a-cleanup-20261010/p01/plan-validation.json",
-          "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-capture-i01a-cleanup-20261010/i01/implementation.json",
-          "/home/aaron/.cache/dungeon-native-qa/city-plans/runtime-i01a-clean-r01-20261010/review.json"
-        ],
+        "evidence": ["src/features/atlas/atlas-campaign-source.ts", "tests/core/atlas-campaign-source.test.ts", "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-capture-i01a-20261010/run.json", "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/13#issuecomment-6094452280", "/home/aaron/.cache/dungeon-native-qa/city-plans/runtime-i01a-r01-20261010/review.json", "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-capture-i01a-cleanup-20261010/p01/plan-validation.json", "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-capture-i01a-cleanup-20261010/i01/implementation.json", "/home/aaron/.cache/dungeon-native-qa/city-plans/runtime-i01a-clean-r01-20261010/review.json"],
         "observed": "16 new actual native-source regressions within530/530 tests, check and clean build onad265b2. Seven spatial-v2 native files captured read-only; all referenced invisible terrain plus explicit unplaced Location input, exact native IDs/Markdown, World-terrain aggregate digest, owned Location/Section/Placement records versus foreign City/Dungeon dependencies, immutable Before/After and local tombstones. Source edits/Undo ABA, Hydration, saved/discarded Repository lifetime, original consumer guard and late reads invalidate capture/verification; external observed bytes/locator/duplicate/missing/unknown/forged capture and pending sidecar reject without overwrite. Actual file read checks are not global revision/CAS authority; coverage remains spatial-closure and references unclassified. Original fixture/source IDs and user vault preserved; fresh Shared GM root exactd08 consumed.",
         "notConfirmed": "Ordinary write-side Campaign gating, actual confirmed Registry/inventory/Host and P02/P04/atomic publish/CompleteImport/media remain open. Context/navigation implemented in own I01b but independent review pending; no new native/full E2E receipt.",
         "independentReview": {
@@ -152792,24 +152369,7 @@
         "plan": "ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md",
         "fixtureVersion": "e2e01-spatial-v2",
         "fixtureUnchanged": true,
-        "evidence": [
-          "src/features/atlas/atlas-campaign-navigation.ts",
-          "src/features/atlas/atlas-repository.ts",
-          "tests/core/atlas-campaign-navigation.test.ts",
-          "tests/core.test.ts",
-          "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-navigation-i01b-20261010/run.json",
-          "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-navigation-n01b-20261010/run.json",
-          "ROADMAP-E2E01-ATLAS-NAVIGATION-CLEANUP-PLAN.md",
-          "/home/aaron/.cache/dungeon-native-qa/city-plans/runtime-i01b-r02-20261010/review.json",
-          "/home/aaron/.cache/dungeon-native-qa/city-plans/runtime-i01b-r02-20261010/cleanup-review.json",
-          "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-navigation-i01b-cleanup-20261010/p01/plan-validation.json",
-          "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-navigation-i01b-cleanup-20261010/i01/retention.json",
-          "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-navigation-i01b-cleanup-20261010/i01/metadata-validation.json",
-          "/home/aaron/.cache/dungeon-native-qa/city-plans/runtime-i01b-clean-r01-20261010/review.json",
-          "/home/aaron/.cache/dungeon-native-qa/city-plans/runtime-i01b-clean-r01-20261010/cleanup-review.json",
-          "/home/aaron/.cache/dungeon-native-qa/hex-03/city-ui-i01-r01-20261010/review.json",
-          "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-manifest-host-aba-20261010/repair/repair.json"
-        ],
+        "evidence": ["src/features/atlas/atlas-campaign-navigation.ts", "src/features/atlas/atlas-repository.ts", "tests/core/atlas-campaign-navigation.test.ts", "tests/core.test.ts", "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-navigation-i01b-20261010/run.json", "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-navigation-n01b-20261010/run.json", "/home/aaron/.cache/dungeon-native-qa/city-plans/runtime-i01b-r02-20261010/review.json", "/home/aaron/.cache/dungeon-native-qa/city-plans/runtime-i01b-r02-20261010/cleanup-review.json", "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-navigation-i01b-cleanup-20261010/p01/plan-validation.json", "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-navigation-i01b-cleanup-20261010/i01/retention.json", "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-navigation-i01b-cleanup-20261010/i01/metadata-validation.json", "/home/aaron/.cache/dungeon-native-qa/city-plans/runtime-i01b-clean-r01-20261010/review.json", "/home/aaron/.cache/dungeon-native-qa/city-plans/runtime-i01b-clean-r01-20261010/cleanup-review.json", "/home/aaron/.cache/dungeon-native-qa/hex-03/city-ui-i01-r01-20261010/review.json", "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-manifest-host-aba-20261010/repair/repair.json"],
         "observed": "Actual AtlasView Save button calls FileTransaction and retained native owner Participant/Provider; exact Prepared/Committed journal read-back issues the real proofs.; Same Navigator queue refreshes confirmed Registry/Inventory before unblocking input; Repository, Sources, History, renderer, camera, Context token and mount generation remain.; Actual Vault first-native CAS failure rolls back before snapshot, issues a transaction-sealed receipt, releases pending Provider lease and retries in the same editable Atlas with a new transaction UUID.; Actual DOM View/services close and fresh View/services reopen retain saved Location and Room names under native Campaign fixture; this is not a fresh Electron process.; FileTransaction regressions exercise all before/after CAS reply-loss boundaries, reject copied/foreign rollback receipts, protect unchanged native guards, and preserve won canonical bytes if committed consumer acknowledgment fails.",
         "notConfirmed": "The qualified #40 Location/Key/Move/shared UndoRedo/new and no-op Save/fresh-process milestone is complete; its owned temporary source checkout is archived, entry hashes verified, then normally removed without force. Canonical H01/D01/R01/N02/R02/H02/N01/qualification receipts and raw images, synthetic saved QA vault/plugin, other worktrees and foreign files remain. Common E2E-01 row13 and its Detail/located-Dungeon/Room-Key route stay open. No new native/build/model tests, physical/original/large-world/installation/Detail/CITY/P02/P04/E2E02-04 acceptance or Copy/Discard/Recovery fault matrix. Historical currentRun stays unchanged.",
         "independentReview": {
@@ -153600,8 +153160,7 @@
           "candidateBefore": "2880a7e7ac3af2bd5f6f1f0d70181c4e0cfd7c4a",
           "auditedComposition": "5950ef844e6c2081b7a0907cf0131754fc2a5dad",
           "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
-          "mandatoryFinding": "E2E01-PROMOTION-01",
-          "nextOwnAction": "Publish unchanged original Save/Fresh/Recovery artifacts for existing integrated review; no new GUI."
+          "mandatoryFinding": "E2E01-PROMOTION-01"
         },
         "nativeSaveFreshRecoveryEvidenceAccess": {
           "id": "HEX-E2E01-SAVE-FRESH-RECOVERY-EVIDENCE-BINDING-01",
@@ -153921,7 +153480,6 @@
             "Static production-callsite inspection finds a target navigator, not an action that creates an existing Dungeon placement at the selected Location."
           ],
           "rootCause": "AtlasCampaignManifestSave.owners updates payloadDigest but preserves r.references except the additive new-Location world references. Native Location detailMaps and Dungeon parent changes therefore do not update their declared registry reference closure.",
-          "remainingWork": "Targeted repair of existing atlas-owned reference projection and regressions before exposing Dungeon-at-Location placement UI. Preserve original IDs, Dungeon bytes, owner schemas, Context/receipt/history guards and independent Campaign/Data/Dungeon ownership. New placement-record creation remains a later concrete extension, not approved by this diagnosis.",
           "productEdited": false,
           "testsEdited": false,
           "guiRun": false,
@@ -153929,7 +153487,7 @@
           "fullE2E": false,
           "qualifiedLocationScopeReopened": false,
           "evidence": "docs/reference/atlas-detail-binding-d01/receipt.json",
-          "sha256": "28f60f0f4b1821a380023f10ccf4a24c8f2c12e6f36fbd01dbc94e5bda214c5d",
+          "sha256": "d813ce69b295b1f10310da4ac647027c24b992e0468b44f68eea00e7dab6cc6a",
           "reproduction": "docs/reference/atlas-detail-binding-d01/diagnostic.entry.ts",
           "modelCases": 4
         },
@@ -154282,7 +153840,6 @@
             },
             "otherSharedChanges": "World-Notes registration/readers and separate LiveSession contracts remain incoming Shared work; this does not make the GM-tested old triplet an exact-Shared installation.",
             "reuseEvidence": "Retain bounded free-GM result for unchanged Atlas view/editor/styles. No full GUI repetition solely for a new Shared SHA.",
-            "nextOwnContribution": "Evaluate inspector width, discoverable dismissal and return behavior in existing #80 before dependent detail expansion; implement only a concrete resulting repair in a later bounded step.",
             "dependentExpansionAllowed": false,
             "parentClosed": false,
             "fullE2E": false,
@@ -154696,8 +154253,7 @@
             "userVaultInstallation": false,
             "recoveryMatrix": false,
             "fullE2E": false
-          },
-          "nextOwnContribution": "Repair the existing shared inspector in #80: expose the newly selected Key without carrying unrelated dock scroll; preserve scroll during same-target redraws and preserve pending drafts, camera/context/history/IDs. Investigate and constrain narrow enlarged layout based on GM-N02-02. Use current integrated City/Hex source, focused regressions and source-bound independent review; targeted free GM retest after delivery. No dependent detail expansion."
+          }
         },
         "dungeonAtLocationInspectorScrollN03": {
           "id": "E2E-01-HEX04-INSPECTOR-SCROLL-N03",
@@ -154957,7 +154513,7 @@
           "sourceCommit": "bca790c22bdab5f76a28d3f1d4699f1f464c1572",
           "qualifiedShared": "a4f20a553060ec84941b97cbb71bd105d5ca5a62",
           "receipt": "docs/reference/atlas-detail-binding-d01/inspector-zoom-geometry-d01.json",
-          "receiptSha256": "ce6329cecea805a5eeca50ee80ef20f06454ccd7fab08341b435bf380803a1e0",
+          "receiptSha256": "42268ad16d73858c11bbef555e53240f7382c32a56cf0886f96bd90f8d9e9a17",
           "fixtureVersion": "e2e01-spatial-v2",
           "fixtureManifestSha256": "23735bb6c95107b7dec93ffa56ec66405a0f4fe0ec3822fc0476d90d2920188d",
           "finding": {
@@ -154969,8 +154525,7 @@
               "At131% with closed sidebar: client273/scroll276 CSSpx, dock inside viewport.",
               "No measured dock rectangle exceeds CSS viewport; vertical scrolling is separate from external clipping. Existing GM-N02-02 external-window observation is not dismissed or qualified as fixed."
             ],
-            "scope": "existing common Inspector child controls/layout; no camera/store/history/format change.",
-            "remainingWork": "fit existing Key actions and detail/binding target controls to available dock width and preserve same-target scrolling/navigation; then targeted layout/guard regression and qualified native followup. No blind external-dock CSS remedy."
+            "scope": "existing common Inspector child controls/layout; no camera/store/history/format change."
           },
           "nativeOutcome": "first helper partial/selector FAIL retained; second Room probe completed; two normal exits/all8 native files unchanged. Geometry finding confirmed, not a GUI product PASS.",
           "guiUsed": true,
