@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   campaignId,
+  parseClockValue,
   projectFocus,
   projectLiveScene,
   projectLiveSession,
@@ -84,6 +85,7 @@ function sceneRaw(
     },
     sceneClockRef: {
       ownerId: "clock",
+      generationId: "clock-generation",
       referenceId: "clock-a",
       ownerRevision: 8,
     },
@@ -93,12 +95,36 @@ function sceneRaw(
         maskId: "mask-a",
         kind: "encounter",
         ownerId: "encounters",
+        generationId: "encounters-generation",
         ownerRevision: 2,
         lifecycle: "active",
       },
     ],
+    maskParticipationProjections: [
+      {
+        kind: "mask-participation-projection",
+        version: 1,
+        campaignId: "campaign-a",
+        liveSceneId: "scene-a",
+        maskId: "mask-a",
+        maskKind: "encounter",
+        ownerIdentity: {
+          ownerId: "encounters",
+          generationId: "encounters-generation",
+        },
+        ownerRevision: 2,
+        participantCharacterIds: ["character-a"],
+        lifecycle: "active",
+      },
+    ],
     reconciliations: [
-      { ownerId: "encounters", status: "current", ownerRevision: 2 },
+      {
+        ownerId: "encounters",
+        generationId: "encounters-generation",
+        status: "current",
+        ownerRevision: 2,
+        receiptLedgerBaseRevision: 2,
+      },
     ],
     contentPins: [
       { ownerId: "notes", referenceId: "note-a", ownerRevision: 5 },
@@ -131,8 +157,54 @@ test("opaque ids and revisions reject whitespace, control bytes and unsafe value
     assert.throws(() => revision(value), /Revision/);
 });
 
+test("ClockValue v1 accepts only canonical signed 64-bit elapsed seconds", () => {
+  for (const canonicalValue of [
+    "0",
+    "6",
+    "-6",
+    "9223372036854775807",
+    "-9223372036854775808",
+  ]) {
+    const parsed = parseClockValue({
+      codecId: "smr07.elapsed-seconds",
+      codecVersion: 1,
+      canonicalValue,
+    });
+    assert.equal(parsed.canonicalValue, canonicalValue);
+    assert(frozenGraph(parsed));
+  }
+  for (const canonicalValue of [
+    "+6",
+    "06",
+    "-0",
+    "1.0",
+    "1e3",
+    "9223372036854775808",
+    "-9223372036854775809",
+  ])
+    assert.throws(
+      () =>
+        parseClockValue({
+          codecId: "smr07.elapsed-seconds",
+          codecVersion: 1,
+          canonicalValue,
+        }),
+      /kanonisch|signed 64 Bit/,
+    );
+  assert.throws(
+    () =>
+      parseClockValue({
+        codecId: "iso-date",
+        codecVersion: 1,
+        canonicalValue: "0",
+      }),
+    /unbekannten Codec/,
+  );
+});
+
 test("party parsing copies, validates and deeply freezes ordered namesake entries", () => {
-  const raw = partyRaw(), parsed = parsePartyProjection(raw);
+  const raw = partyRaw(),
+    parsed = parsePartyProjection(raw);
   assert.equal(parsed.characters.length, 2);
   assert.equal(parsed.characters[0]?.profile.name, "Alex");
   assert.equal(parsed.characters[1]?.profile.name, "Alex");
@@ -142,13 +214,19 @@ test("party parsing copies, validates and deeply freezes ordered namesake entrie
   raw.characters[0]!.profile.name = "mutated";
   raw.characters[0]!.profile.languages!.push("Elvish");
   assert.equal(parsed.characters[0]?.profile.name, "Alex");
-  assert.deepEqual(parsed.characters[0]?.profile.languages, ["Common", "Dwarvish"]);
+  assert.deepEqual(parsed.characters[0]?.profile.languages, [
+    "Common",
+    "Dwarvish",
+  ]);
 });
 
 test("party contracts reject unknown fields, duplicate ids and contradictory membership", () => {
   const unknown = partyRaw();
   Object.assign(unknown.characters[0]!.profile, { sentinel: 10 });
-  assert.throws(() => parsePartyProjection(unknown), /unbekannte|unvollständige/);
+  assert.throws(
+    () => parsePartyProjection(unknown),
+    /unbekannte|unvollständige/,
+  );
   const duplicate = partyRaw();
   duplicate.characters[1]!.characterId = "character-a";
   assert.throws(() => parsePartyProjection(duplicate), /doppelte/i);
@@ -168,7 +246,10 @@ test("party contracts reject unknown fields, duplicate ids and contradictory mem
 
   const sparse = partyRaw();
   delete sparse.characters[0];
-  assert.throws(() => parsePartyProjection(sparse), /vollständige native Liste/);
+  assert.throws(
+    () => parsePartyProjection(sparse),
+    /vollständige native Liste/,
+  );
 
   const accessor = partyRaw();
   Object.defineProperty(accessor.characters[0]!.profile, "name", {
@@ -180,6 +261,19 @@ test("party contracts reject unknown fields, duplicate ids and contradictory mem
   const inherited = partyRaw();
   Object.setPrototypeOf(inherited.characters[0]!.profile, { hidden: true });
   assert.throws(() => parsePartyProjection(inherited), /berechnete/);
+});
+
+test("active Party members may be explicitly not-started before initialization", () => {
+  const raw = partyRaw();
+  raw.characters[0]!.sceneAssignment = { status: "not-started" };
+  const parsed = parsePartyProjection(raw);
+  assert.equal(parsed.characters[0]?.sceneAssignment.status, "not-started");
+
+  raw.characters[1]!.sceneAssignment = { status: "not-started" };
+  assert.throws(
+    () => parsePartyProjection(raw),
+    /widersprüchliche Scene-Zuordnung/,
+  );
 });
 
 test("PreparationSnapshot is an independent immutable copy with exact provenance", () => {
@@ -237,17 +331,37 @@ test("focus projection exposes scene data only for an exact active source", () =
   assert(!("sceneRevision" in stale));
   assert.equal(stale.status === "unavailable" && stale.reason, "stale-scene");
 
-  const foreign = projectFocus(activeFocus(), sceneRaw({ campaignId: "campaign-b" }));
+  const foreign = projectFocus(
+    activeFocus(),
+    sceneRaw({
+      campaignId: "campaign-b",
+      maskRefs: [],
+      maskParticipationProjections: [],
+      reconciliations: [],
+    }),
+  );
   assert.equal(foreign.status, "unavailable");
-  assert.equal(foreign.status === "unavailable" && foreign.reason, "foreign-scene");
+  assert.equal(
+    foreign.status === "unavailable" && foreign.reason,
+    "foreign-scene",
+  );
 
-  const retired = projectFocus(activeFocus(), sceneRaw({ lifecycle: "retired" }));
+  const retired = projectFocus(
+    activeFocus(),
+    sceneRaw({ lifecycle: "retired" }),
+  );
   assert.equal(retired.status, "unavailable");
-  assert.equal(retired.status === "unavailable" && retired.reason, "inactive-scene");
+  assert.equal(
+    retired.status === "unavailable" && retired.reason,
+    "inactive-scene",
+  );
 
   const damaged = projectFocus(activeFocus(), { ...sceneRaw(), unknown: true });
   assert.equal(damaged.status, "unavailable");
-  assert.equal(damaged.status === "unavailable" && damaged.reason, "invalid-scene");
+  assert.equal(
+    damaged.status === "unavailable" && damaged.reason,
+    "invalid-scene",
+  );
 });
 
 test("none, pending and unavailable focus never carry current scene truth", () => {
@@ -275,7 +389,8 @@ test("none, pending and unavailable focus never carry current scene truth", () =
 });
 
 test("LiveScene projection contains references only and is deeply immutable", () => {
-  const raw = sceneRaw(), focus = projectFocus(activeFocus(), raw),
+  const raw = sceneRaw(),
+    focus = projectFocus(activeFocus(), raw),
     result = projectLiveScene(raw, focus);
   assert.equal(result.status, "active");
   assert(frozenGraph(result));
@@ -301,7 +416,10 @@ test("LiveSession composition fails closed for mismatched Party or Scene evidenc
 
   const wrongParty = partyRaw();
   wrongParty.characters[0]!.sceneAssignment.sceneRevision = 3;
-  assert.equal(projectLiveSession(wrongParty, focus, scene).status, "unavailable");
+  assert.equal(
+    projectLiveSession(wrongParty, focus, scene).status,
+    "unavailable",
+  );
 
   const foreignParty = partyRaw();
   foreignParty.campaignId = "campaign-b";
@@ -316,7 +434,8 @@ test("LiveSession composition fails closed for mismatched Party or Scene evidenc
     missingMemberFocus,
   );
   assert.equal(
-    projectLiveSession(partyRaw(), missingMemberFocus, missingMemberScene).status,
+    projectLiveSession(partyRaw(), missingMemberFocus, missingMemberScene)
+      .status,
     "unavailable",
   );
 });
