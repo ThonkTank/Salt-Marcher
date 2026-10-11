@@ -294,6 +294,7 @@ export class AtlasEditor {
       host.hidden = true;
       this.inspector = host;
       body.append(host);
+      host.addEventListener("keydown", (event) => this.escapeInspector(event), { signal: this.abort.signal });
       const actions = doc.createElement("div"), close = doc.createElement("button");
       actions.className = "dn-atlas-inspector-actions";
       close.type = "button";
@@ -311,6 +312,7 @@ export class AtlasEditor {
         edit: (document) => storage.locations!.edit(document),
         changed: () => this.refreshHistory(),
         save: () => this.save(),
+        escape: (event) => this.escapeInspector(event),
         markdown: storage.locations.markdown,
       });
       if (storage.navigation) {
@@ -344,6 +346,7 @@ export class AtlasEditor {
         read: (id) => storage.spatial!.dungeon(id),
         changed: () => this.refreshHistory(),
         save: () => this.save(),
+        escape: (event) => this.escapeInspector(event),
       });
     }
     this.subscribeTerrain();
@@ -395,6 +398,16 @@ export class AtlasEditor {
   private applyKeys(): void {
     this.key?.apply();
     this.roomKey?.apply();
+  }
+  private escapeInspector(event: KeyboardEvent): boolean {
+    const focused = this.root.ownerDocument.activeElement;
+    if (event.key !== "Escape" || event.isComposing || this.closed || this.inputBlocked ||
+      this.flushing || this.pointer || !focused || !this.root.contains(focused) ||
+      !(this.selectedLocation || this.selectedRoom || this.pendingKey)) return false;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    this.closeInspector();
+    return true;
   }
   private closeInspector(): void {
     if (this.closed || this.inputBlocked || this.flushing || this.pointer) return;
@@ -1225,14 +1238,8 @@ export class AtlasEditor {
       (e) => {
         if (this.inputBlocked || this.closed) return;
         const focused = this.root.ownerDocument.activeElement;
-        if (e.key === "Escape" && !e.isComposing && focused && this.root.contains(focused) &&
-          !this.pointer && (this.selectedLocation || this.selectedRoom || this.pendingKey)) {
-          e.preventDefault();
-          e.stopImmediatePropagation();
-          this.closeInspector();
-          return;
-        }
         if (focused !== this.viewport) return;
+        if (this.escapeInspector(e)) return;
         if (
           (e.ctrlKey || e.metaKey) &&
           ["s", "z", "y"].includes(e.key.toLowerCase())

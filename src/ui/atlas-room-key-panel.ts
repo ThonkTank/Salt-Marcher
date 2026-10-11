@@ -12,6 +12,7 @@ export class AtlasRoomKeyPanel {
       read(id: string): DungeonAtlasSource;
       changed(): void;
       save(): void;
+      escape?(event: KeyboardEvent): void;
     },
   ) {
     host.className = "dn-location-key dn-atlas-room-key";
@@ -20,6 +21,7 @@ export class AtlasRoomKeyPanel {
     host.addEventListener(
       "keydown",
       (e) => {
+        if (e.key === "Escape") access.escape?.(e);
         e.stopPropagation();
         if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") {
           e.preventDefault();

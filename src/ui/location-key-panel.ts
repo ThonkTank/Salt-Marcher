@@ -6,6 +6,7 @@ export interface LocationKeyPanelAccess {
   edit(document: LocationDocument): boolean;
   changed(): void;
   save(): void;
+  escape?(event: KeyboardEvent): void;
   markdown?(host: HTMLElement, text: string, id: string): Promise<void>;
 }
 export class LocationKeyPanel {
@@ -23,6 +24,7 @@ export class LocationKeyPanel {
     host.addEventListener(
       "keydown",
       (event) => {
+        if (event.key === "Escape") this.access.escape?.(event);
         event.stopPropagation();
         if (
           (event.ctrlKey || event.metaKey) &&
