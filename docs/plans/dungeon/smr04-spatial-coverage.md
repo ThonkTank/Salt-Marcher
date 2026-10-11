@@ -1,10 +1,3 @@
----
-area: dungeon
-owner: Chronik
-issue: 51
-status: active
-checkpoint: parityRoadmap
----
 # SMR-04: räumlicher Dungeon, Paths und Passages
 
 ## Scope und Eingänge

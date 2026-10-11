@@ -1,26 +1,15 @@
 # Dungeon-Editor und gemeinsamer GM-Atlas
 
-Ein lokaler Arbeitsraum für Spielleitungen: Karten und Raum-Keys bearbeiten, Kampagnen vorbereiten und später zusammenhängend live spielen. Dieses Repository entwickelt den vollständigen SaltMarcher-Nachfolger. Obsidian Desktop ist der aktuelle Entwicklungs- und Testhost; der endgültige Host wird anhand der Plattformbeweise entschieden.
+Ein lokaler Arbeitsraum für Spielleitungen: Karten und Raum-Keys bearbeiten, Kampagnen vorbereiten und zusammenhängend live spielen. Dieses Repository entwickelt den SaltMarcher-Nachfolger. Obsidian Desktop ist der aktuelle Entwicklungs- und Testhost; die endgültige Plattformentscheidung bleibt offen.
 
-**Entwicklungsstand:** Dungeon-Editor und Raum-Keys sind vorhanden; Atlas-, Stadt- und Kampagnenintegration wird entwickelt. Das Gesamtprodukt ist noch nicht abgenommen. Ein grüner Testlauf bedeutet keine vollständige Host-, Paritäts- oder Produktfreigabe. Das Repository ist derzeit privat; Beiträge benötigen Repositoryzugang.
+**Entwicklungsstand:** Dungeon-Editor und Raum-Keys sind vorhanden; Atlas-, Stadt- und Kampagnenintegration ist teilweise umgesetzt. Das Gesamtprodukt ist noch nicht abgenommen.
 
 ## Hier anfangen
 
-| Ich möchte … | Einstieg |
-| --- | --- |
-| das Ziel und den Lieferumfang verstehen | [Produktziele](docs/PRODUCT.md) und [vollständiger Quellenabgleich](docs/SCOPE.md) |
-| sehen, was der Atlas bereits kann und was noch fehlt | [Atlas auf einen Blick: Stand und Weg zum Ziel](ROADMAP-HEX-ATLAS.md#atlas-auf-einen-blick) |
-| wissen, was zuerst fertig werden muss | [Produktroadmap und aktueller Engpass](docs/ROADMAP.md) |
-| als Agent sofort mitarbeiten | [Agenteneinstieg mit Aufgaben und Voraussetzungen](CONTRIBUTING.md#agenteneinstieg) |
-| die nächste freie Aufgabe lesen | `npm run next` (GitHub live, Voraussetzungen und Abnahme im gewählten Issue) |
-| eine Aufgabe übernehmen oder reviewen | [Contributor-Leitfaden](CONTRIBUTING.md) |
-| einen Fachplan oder einen Nachweis finden | [Dokumentationsindex](docs/INDEX.md) |
-| die Ordnung langfristig erhalten | [Pflegevertrag und automatische Strukturprüfung](docs/REPOSITORY.md) |
-| die laufende Integration verfolgen | [Gesamtprodukt / Gates #12](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12) |
-
-## Aktueller Fokus
-
-Der erste vollständige Nutzerablauf ist **Kampagne → Atlas → Ort/Stadt/Dungeon/Raum-Key → gemeinsames Speichern → frischer Start** (E2E-01). Die [Roadmap](docs/ROADMAP.md) führt seine Lieferkette; [#12](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12) nennt den aktuellen offenen Schritt und dessen Belege. Mit `npm run context -- --area atlas` nur den passenden Checkoutkontext lesen.
+- [Atlas auf einen Blick](ROADMAP-HEX-ATLAS.md#atlas-auf-einen-blick): umgesetzt, fehlend und Weg zum Ziel.
+- [Produktziele](docs/PRODUCT.md) und [Lieferfolge](docs/ROADMAP.md): vollständiger Funktionsumfang.
+- [Dokumentationsindex](docs/INDEX.md): Fachanforderungen und Nachweise.
+- [Beitragen](CONTRIBUTING.md) und [AGENTS.md](AGENTS.md): Entwicklung und Arbeitsgrenzen.
 
 ## Lokal entwickeln
 
@@ -41,11 +30,10 @@ Der Build erzeugt `main.js` und `main.js.map`. Für einen manuellen Smoke aussch
 
 ## Repositorykarte
 
-- `src/`: Produktcode; `src/main.ts` bindet Obsidian an, `src/features/atlas`, `city`, `catalog` enthalten Fachbereiche.
-- `tests/`: automatisierte Prüfungen und eingecheckte synthetische Fixtures.
+- `src/`: Produktcode und Obsidian-Anschluss.
+- `tests/`: automatisierte Prüfungen und synthetische Fixtures.
 - `tools/`: Build-, Referenz-, Fixture- und Hostprüfwerkzeuge.
-- `docs/`: lesbarer Produkteinstieg und Orientierung.
-- `ARCHITECTURE.md`: Architekturentscheidungen; `acceptance.json`: Anforderungen und direkte Abnahmen; `checkpoint.json`: bereichseigene Ausführungsstände.
-- `ROADMAP-*.md`: bestehende Fach- und Paketpläne, bei Bedarf im [Fachplanregister](docs/reference/PLAN-REGISTER.md) auffindbar. Die alte Root-[ROADMAP.md](ROADMAP.md) dokumentiert den früheren Raum-Key-Lieferweg.
+- `docs/` und `ROADMAP-*.md`: Produktziele, Fachanforderungen und direkte Nachweise.
+- `ARCHITECTURE.md`: Architekturentscheidungen; `acceptance.json`: Anforderungen und Abnahmen.
 
-Quellen- und Datenattribution: [NOTICE.md](NOTICE.md), [SRD 5.1](src/features/catalog/SRD-5.1-ATTRIBUTION.md) und [Itemquellen](src/features/catalog/SRD-5.1-ITEMS-ATTRIBUTION.md).
+Historische Laufstände und Einzelpläne bleiben im Git-Verlauf zugänglich. Quellen- und Datenattribution: [NOTICE.md](NOTICE.md), [SRD 5.1](src/features/catalog/SRD-5.1-ATTRIBUTION.md) und [Itemquellen](src/features/catalog/SRD-5.1-ITEMS-ATTRIBUTION.md).

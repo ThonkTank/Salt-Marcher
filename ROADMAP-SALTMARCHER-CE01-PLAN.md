@@ -202,11 +202,11 @@ Obsidian- und 900×650-/1150×700-Abnahme bleiben offen.
 sauberen Produktstand `aa6d92d6cb1d8c8e06a0a61233ad837d25e40c05`
 unabhängig reviewt bestanden. Physische Tastatur/Maus, Screenreader und weitere
 Plattformen bleiben offen. Als Nächstes folgt der getrennte
-[`CE-01-C01`-Aufräumlauf](ROADMAP-SALTMARCHER-CE01-C01-PLAN.md); keine
+[`CE-01-C01`-Aufräumlauf (historisch)](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/blob/6a90f3ee2f50f0be45f0e256784576f13722c319/ROADMAP-SALTMARCHER-CE01-C01-PLAN.md); keine
 vollständige Fachfreigabe aus dem automatisierten Hostumfang ableiten.
 
 `CE-01-C01` ist nach der getrennten Nachbesserung
-[`CE-01-C01-N01`](ROADMAP-SALTMARCHER-CE01-C01-REPAIR-PLAN.md) unabhängig
+[`CE-01-C01-N01` (historisch)](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/blob/6a90f3ee2f50f0be45f0e256784576f13722c319/ROADMAP-SALTMARCHER-CE01-C01-REPAIR-PLAN.md) unabhängig
 reviewt abgeschlossen. CE-02 darf mit einem eigenen Planlauf beginnen.
 Physische Tastatur/Maus, Screenreader und weitere Plattformen bleiben für
 CE-01 offen; das Aufräumtor schließt diese Abnahmen nicht.

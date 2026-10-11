@@ -1,11 +1,11 @@
 ## Nutzerproblem und Ergebnis
 
-<!-- Was funktioniert danach? Hilfsarbeit nennt ihren konkreten Verbraucher. -->
+<!-- Welches Nutzerproblem wird gelöst? -->
 
 ## Aufgabe und Grenzen
 
-<!-- Aufgabenissue verlinken; nur Abweichungen vom dort beschriebenen Scope oder neue Abhängigkeiten ergänzen. -->
+<!-- Umfang und betroffene Funktionen nennen. -->
 
 ## Prüfung und offene Grenzen
 
-<!-- Tatsächliche Belege mit Commit/Herkunft verlinken, passende Prüfung nach docs/WORKFLOW.md. Fehlende Evidenz und offene Risiken nennen; vorhandene Prüfprotokolle nicht kopieren. -->
+<!-- Prüfergebnisse und Belege nennen; fehlende Nachweise offen lassen. -->

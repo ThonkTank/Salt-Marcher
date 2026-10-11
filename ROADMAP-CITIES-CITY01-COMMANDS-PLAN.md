@@ -34,6 +34,6 @@ Die JSON-Konversion ist die eindeutige Brücke zwischen den typisierten Cityinte
 
 ## Review und Aufräumen
 
-Umsetzung I02, unabhängiger Review R03, erforderliche Nachbesserungen N02/R04 und Aufräum-P/I/R sind eigene Arbeitsläufe mit Start, Fokus und Ergebnis. Review prüft reale Owner-/Target-/Historyverwendung, strikte Konversionsgrenze, stale Gesten, Mehrbesitzer-Atomarität und keine zweite Stadtquelle. Gegenprobe am tatsächlichen Modul ergänzend zu den Regressionen. Gefundene Pflichtlücken vor Freigabe reparieren und neu reviewen.
+Die Prüfung umfasst reale Owner-/Target-/Historyverwendung, strikte Konversionsgrenze, stale Gesten, Mehrbesitzer-Atomarität und keine zweite Stadtquelle. Gegenprobe am tatsächlichen Modul ergänzend zu den Regressionen. Gefundene Pflichtlücken vor Freigabe reparieren und neu reviewen.
 
 Aufräumen prüft doppelte Validierung und notwendige Kopien, öffentliche APIfläche, Besitzerlebensdauer und Verweise. Keine Optimierung ohne belegten Bedarf, keine zweite Statusdatei. Verifizierte Entscheidungen in `ARCHITECTURE.md`, Nachweise bei den bestehenden CTY-Kennungen; aktueller/nächster Lauf ausschließlich in `checkpoint.cityExecution`. Alle 24 CTY-/65 CO-Fachabnahmen bleiben offen: Codebefehle allein belegen weder bedienbare Werkzeuge noch Atlasposition, Speicherung, frisches Öffnen oder bessere Bedienung.

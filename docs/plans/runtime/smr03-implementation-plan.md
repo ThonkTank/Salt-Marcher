@@ -1,11 +1,3 @@
----
-area: runtime
-owner: Chronik
-issue: 147
-status: active
-checkpoint: saltMarcherReplacement
----
-
 # SMR-03-I01 – Hostneutraler Party-/Scene-/Live-Session-Kern
 
 Status: **I01-A, I01-B und I01-C01 sind in Shared integriert; I01-C02 bis C05

@@ -59,7 +59,6 @@ Quelle, bestehende Kampagnen und shared definitions bleiben unverändert. Copy u
 - `src/features/campaign/campaign-remap.ts`: Ownerabdeckung, deterministische vollständige Old→New-Closure und Campaign/Data-Participant-Stage; keine fremde Payloadumschreibung.
 - `tests/core/campaign-lifecycle.test.ts`: Create/Open/Rename/Switch/Reopen, Command-/Cancel-/Retry-Semantik, Revisionen, Immutabilität und negative Sessiongrenze.
 - `tests/core/campaign-remap.test.ts`: Ownerinventare, Copy/Import-Closure, Participant-Stage, globale Identitäten, Atomizität und beschädigte Lieferungen.
-- `checkpoint.json`: nur belegter Plan-/Review-/Implementierungsstand und nächste Übergabe.
 
 ## Pflicht-Testmatrix für I01
 
@@ -76,14 +75,6 @@ Quelle, bestehende Kampagnen und shared definitions bleiben unverändert. Copy u
 11. Fehlender ganzer Owner/Record, ausgelassener unreferenzierter Record, Inventar-/Graph-/Payloadabweichung, stale Ownerrevision, unknown/unavailable Owner, nicht unterstütztes Referenzschema, fehlender Payload-/Rebindbeleg, Missing Target, dangling local reference, duplicate ID, shared/local-Kollision, Fabrikduplikat oder ungültiges Schema bricht vor der ersten Portmutation ab.
 12. Ein ablehnender Participant, fehlende Medienbytes oder fehlender gemeinsamer Transaction-/P04-Publish bewirkt null sichtbare Ziel-Campaign; Ownerprojektionen bleiben bytegleich.
 13. Typecheck, gesamte Git-Testsuite und Build bestehen. Das ist nur Codebeleg; realer P02-Reopen, P04-Import, gemeinsamer Mehrbesitzer-Publish und Obsidian-/Zielhostlauf bleiben offen.
-
-## Laufreihenfolge und Übergaben
-
-1. P01: diesen konkreten Plan veröffentlichen und unabhängig auf Gatekatalog, Hex-Adaptergrenze, P02/P04-Ehrlichkeit und vollständige Remap-Closure prüfen lassen.
-2. I01: nur nach Plan-PASS die genannten Produktquellen und fokussierten Tests implementieren; Basisprüfungen ausführen, committen und pushen.
-3. R01: unabhängiger Code-/Contract-Review auf exaktem Kandidaten-SHA. Pflichtbefunde werden in N01 repariert und erneut geprüft.
-4. C01: nach bestandenem Review ausschließlich Scope-/Metadatenbereinigung; keine Selbstintegration. Exakten Kandidaten-SHA, Testreceipt und Contractübersicht an Hex als E2E-01-Steward übergeben.
-5. Hex integriert erst zusammen mit eigenem Adapter und den separat belegten History/Transaction-, P02- und P04-Eingängen in genau einen E2E-01-Kandidaten. Atlas-QA führt anschließend die unabhängige echte Hostprüfung aus.
 
 ## Offene Gates nach diesem Paket
 

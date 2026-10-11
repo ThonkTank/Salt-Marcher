@@ -30,9 +30,9 @@ Polygonringe sind implizit geschlossen, haben mindestens drei endliche Punkte un
 4. Grundstück-/Viertel-/Straßenreferenzen in einem zweiten Durchlauf nach ID-Erfassung prüfen. Gebäudepose auf numerisch gültige Ergebnisse prüfen; keine implizite Winkelnormalisierung oder Neugeneration.
 5. Gezielte Regressionen in den vorhandenen Testlauf einbinden. `npm run check`, `npm test`, `npm run build` nacheinander ausführen; keine parallele grafische Testinstanz. Produktbuild wird nicht im Nutzervault installiert.
 
-## Review und Aufräumen
+## Prüfanforderungen
 
-P, I, R und mögliche N/R sind getrennte Arbeitsläufe mit Start/Fokus/Ergebnis. Anschließend Aufräum-P/I/R. Im Review nachweisen:
+Nachweisen:
 
 - Eine kleine Stadt mit Straße, Platz und zwei Häusern samt Grundstücks-/Viertelbezügen rundet wertgleich durch den Codec; keine Pixelgrenzen oder neu erzeugten IDs.
 - Negative und große lokale Positionen, gedrehte/asymmetrisch skalierte Grundrisse und Innenhöfe behalten Meterwerte und Reihenfolge.
@@ -40,4 +40,4 @@ P, I, R und mögliche N/R sind getrennte Arbeitsläufe mit Start/Fokus/Ergebnis.
 - Parser/Konstruktor liefern eigene tief gefrorene Daten; der Serializer verändert das Eingabeobjekt nicht und verliert keine unbekannten Felder durch JSON-Konversion.
 - Drei Basisprüfungen und gezielte Fälle tatsächlich grün; Quell- und Testergebnisse extern dokumentieren. Daraus keine funktionierende Stadtoberfläche, gemeinsame History, Mehrdateispeicherung oder Parität ableiten.
 
-Aufräumen prüft konkrete Abhängigkeiten, doppelte Typ-/Geometrielogik, wiederholte Validierung, nicht benötigte öffentliche Schnittstellen und die Einheitenannahmen. Tatsächliche Entscheidungen werden in `ARCHITECTURE.md` ergänzt, der aktuelle Lauf bleibt nur in `checkpoint.cityExecution`.
+Aufräumen prüft konkrete Abhängigkeiten, doppelte Typ-/Geometrielogik, wiederholte Validierung, nicht benötigte öffentliche Schnittstellen und die Einheitenannahmen. Tatsächliche Entscheidungen werden in `ARCHITECTURE.md` ergänzt.

@@ -1,10 +1,3 @@
----
-area: runtime
-owner: Chronik
-issue: 60
-status: active
-checkpoint: saltMarcherReplacement
----
 # SMR-03-P01: Party-, LiveScene- und Live-Session-Vertrag
 
 Status: **Lifecycle-/Zeit-, Ownership- und Host/Security/Platform-Re-reviews

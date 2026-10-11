@@ -135,7 +135,7 @@ erzeugen keine zusätzlichen Itemidentitäten oder Raritätsvarianten. Die
 originalen zwei XML-Seiten/Receipt und das Quellenorakel liegen unter
 `tests/fixtures/items-srd51-e-section-poppler-25.03.*` beziehungsweise
 `tools/items-srd51-e-section.mjs`. Aktueller Ausführungs-/Prüfstand ausschließlich
-in der eigenen CE-Checkpointwurzel und [Aufgabenissue58](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/58).
+in den fachlichen Abnahmen und [Aufgabenissue58](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/58).
 Stand: 290 Occurrences /289 Records,71/239 A–Z-Headings
 (70 standalone plus Potion-of-Healing-Merge);168 A–Z-Headings plus Orb offen.
 Der Gesamtquellenauftrag endet nicht an diesem Zwischenstand; nächster
@@ -149,7 +149,7 @@ Der vollständige PDF-Test wird mit
 aktiviert. Ohne diese Quelle ist er ausdrücklich skipped; Offline-XML-Fixtures
 ersetzen keinen erneuten echten PDF-Lauf bei Quellenänderungen.
 Der Quellenstand und die direkten Review-/Veröffentlichungsbelege bleiben in
-`checkpoint.saltMarcherCatalogEncounter`, `acceptance.saltMarcherCatalogEncounter`
+`acceptance.saltMarcherCatalogEncounter`
 und [Issue #9](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/9).
 Die nächsten Lieferungen folgen zusammenhängenden Quellabschnitten; die
 vollständigen Schema-/Provenienz-/Produkt-/Hostgates unten bleiben erhalten.

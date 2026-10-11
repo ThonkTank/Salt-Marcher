@@ -33,7 +33,7 @@ Zielarchitektur und kein Merge-Vertrag.
 
 Jeder Lauf hält die verwendete SaltMarcher-Revision, konkrete Quelldokumente,
 übernommene Daten/Fixtures, bewusst nicht übernommene Hostarchitektur und
-verbleibende Abweichungen in `checkpoint.json` und `acceptance.json` fest.
+verbleibende Abweichungen in `acceptance.json` fest.
 
 ## Gesamtumfang
 
@@ -517,10 +517,7 @@ kausale Reise-Undo-Ausnahme bleiben erhalten. Quelle: Program Capabilities
   benötigen keinen abgeschlossenen Reiseablauf. Autoritative Scene-Zeit braucht
   ihren konkreten Scene-/Owner-/Publishvertrag. Restock, zeitabhängiges Wetter und
   Autonomie konsumieren diesen Port, nicht den Abschluss sämtlicher Reisearbeit.
-- Aktuellen Rollenvertrag und Claim verwenden; historische Teamaufteilungen
-  sind keine Beschränkung neuer Beiträge. Geprüfte Pfade, Belege und
-  Dateibesitze bleiben erhalten. Kein zweiter Besitzer ändert gleichzeitig
-  dieselbe Datei oder Aggregategrenze.
+
 - Pro Gerät läuft höchstens eine grafische Host-/Originalinstanz. Statische
   Analyse und nichtgrafische Basisprüfungen dürfen getrennt laufen.
 
@@ -535,13 +532,6 @@ kausale Reise-Undo-Ausnahme bleiben erhalten. Quelle: Program Capabilities
   Existenz. Jede Übernahme braucht aktuellen Vertrag, gezielte Migration und
   belegte Abnahme.
 
-## Aktueller nächster Schritt
+## Offener Produktstand
 
-Der gemeinsame nächste Schritt steht ausschließlich in
-[#12](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12),
-ausführbare eigene oder freie Arbeit in `npm run next`. Die
-[Lieferroadmap](docs/ROADMAP.md#parallele-umsetzung-und-zusammenführung)
-verbindet parallel umsetzbare Produktpakete mit dem vollständigen Umfang.
-`SMR-00-ADR-01` bleibt die offene Plattformentscheidung in #11; sie hält
-hostneutrale Produktarbeit und den bestehenden befristeten Obsidianadapter
-nicht pauschal an. Neue dauerhafte Hostkopplung braucht ihre bestätigte Grundlage.
+Die [Atlasübersicht](ROADMAP-HEX-ATLAS.md#atlas-auf-einen-blick) und [Produktroadmap](docs/ROADMAP.md) zeigen den fachlichen Stand und die Abhängigkeiten. Konkrete Restbedarfe und Kandidaten bleiben in den Produktissues und PRs; dieses Portfolio erteilt keine weiteren Arbeitsaufträge.

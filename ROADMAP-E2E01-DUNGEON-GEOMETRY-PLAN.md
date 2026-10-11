@@ -25,7 +25,7 @@ Befunde im konsumierenden Produktpaket reparieren und gezielt prüfen.
 Die folgenden Vertragsgrenzen bleiben maßgeblich. Datierte Phasen- und
 Reviewangaben bewahren deren Entstehung, keine offenen Folgeaufträge. Der
 damalige Planbefund `DUN-GEO-P01-R01-01` und seine Reparatur bleiben nachvollziehbar
-im [Vertrags-Cleanup](ROADMAP-E2E01-DUNGEON-GEOMETRY-CLEANUP-PLAN.md).
+im [Vertrags-Cleanup (historisch)](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/blob/6a90f3ee2f50f0be45f0e256784576f13722c319/ROADMAP-E2E01-DUNGEON-GEOMETRY-CLEANUP-PLAN.md).
 Quellenintegration und lokaler Review ersetzen keine fehlende Host-, physische
 Bedien-, Originalparitäts- oder vollständige E2E-Abnahme.
 
@@ -452,7 +452,7 @@ geschlossen. Das ist keine Host-, physische Eingabe-, Steward- oder
 E2E-01-Freigabe.
 
 Der danach durchgeführte Produkt-Cleanup ist in
-[`E2E-01-DUNGEON-GEOMETRY-PRODUCT-CL-P01`](ROADMAP-E2E01-DUNGEON-GEOMETRY-PRODUCT-CLEANUP-PLAN.md)
+[`E2E-01-DUNGEON-GEOMETRY-PRODUCT-CL-P01` (historisch)](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/blob/6a90f3ee2f50f0be45f0e256784576f13722c319/ROADMAP-E2E01-DUNGEON-GEOMETRY-PRODUCT-CLEANUP-PLAN.md)
 dokumentiert. Er reduzierte die technisch verbliebene zweigeteilte
 Sample-Widerrufsgrenze, ohne Geometrie-, Source-, History-, Handoff- oder
 Persistenzsemantik zu erweitern. Review, Ownerübergabe und Integration sind

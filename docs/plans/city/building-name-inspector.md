@@ -1,10 +1,3 @@
----
-area: city
-owner: Stadt
-issue: 92
-status: active
-checkpoint: cityExecution
----
 # Gebäudenamen im gemeinsamen Atlas bearbeiten
 
 Nutzerweg: vorhandenes Haus auswählen → Namen exakt bearbeiten → gemeinsames
@@ -257,7 +250,6 @@ breiter Recoverypass. Cloud-GM repariert seinen Host vor dem freien gemeinsamen
 
 Die folgende Chronologie bewahrt Quellen und frühere Befunde; für die nächste
 Arbeit gilt der kompakte Arbeitsstand oben.
-
 
 Inspector und Fachaktion sind über [PR93](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/93)
 integriert; [PR98](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/98)

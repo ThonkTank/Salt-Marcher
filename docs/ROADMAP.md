@@ -1,6 +1,6 @@
 # Produktroadmap und nächste Schritte
 
-Diese Datei führt die dauerhafte Lieferfolge. Aktueller Lauf, Übernahme und Gateentscheidung: [#12](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12), konkretes Aufgabenissue und aktueller PR samt neuesten relevanten Kommentaren. Native Wiederholungs- und Reparaturläufe werden hier nicht als zweite Live-Statusliste geführt.
+Diese Datei führt die fachliche Lieferfolge. Der [Atlasstand](../ROADMAP-HEX-ATLAS.md#atlas-auf-einen-blick) unterscheidet integrierte Funktionen, Kandidaten und offene Lücken.
 
 ## Kritischer Pfad für E2E-01
 
@@ -25,7 +25,7 @@ Die **nummerierten Integrationsgates beginnen nacheinander**, jeweils nach integ
 
 ## Parallele Umsetzung und Zusammenführung
 
-Die folgenden Lieferketten übersetzen den bestätigten Umfang in Nutzerergebnisse. Sie bestimmen Abhängigkeiten, keine zusätzlichen Phasenissues oder dauerhaften Claims. Aktueller Besitz, freie Beiträge und genaue Blocker stehen ausschließlich am verlinkten Aufgaben-/Fachort; die bestehende Aufgabenpflege hält `npm run next` daran angeschlossen.
+Die folgenden Lieferketten übersetzen den bestätigten Umfang in Nutzerergebnisse. Sie bestimmen Abhängigkeiten, keine zusätzlichen Phasenissues oder dauerhaften Claims. Konkrete Produktbefunde und Kandidaten stehen im jeweiligen Produktissue/PR.
 
 | Parallel bearbeitbare Lieferkette | Zusammenhängendes Ergebnis und nächste Verwendung | Tatsächliche Voraussetzungen / Arbeitsort |
 | --- | --- | --- |
@@ -39,11 +39,11 @@ Die folgenden Lieferketten übersetzen den bestätigten Umfang in Nutzerergebnis
 | Shops und Weltreaktion | NPC-/Ortshop bis Stock-/Charakterledger-Handel liefern → gemeinsamen Kalender für Restock konsumieren; Opt-in-Autonomy anschließend bis atomaren erklärbaren Steps verfolgen | Item-/Ledger-/Owner- und Publishgrenze für Handel; bestätigte Zeit für Restock. Autonomy braucht World/Actors, Raum und Scene-/Zeitfakten; keine autonome Party-/Erzählentscheidung. #9/#10, SMR-08/09, AC-10/13. |
 | Zielhost, sichere Anzeige und Erweiterung | P01–P04-Beweise zu einer Hostentscheidung führen; danach Distribution/OS, PlayerProjection und widerrufbare Extensions vollständig qualifizieren | Vorhandene Produkt-/Risikonachweise wiederverwenden (#11). Neue dauerhafte Hostkopplung braucht die Plattformentscheidung; bestehender befristeter Adapter und hostneutrale Arbeit bleiben möglich. Playerausgabe bleibt bis zur separaten sicheren Projektion deaktiviert; gemeinsame Abnahme E2E-04 plus eigene Extensionabnahme. |
 
-**Umsetzungsreihenfolge:** zuerst im eigenen Paket weiterarbeiten und gemeinsam benötigte Eingänge schließen. Der produktive Publish-/Formatanschluss verbindet Import, World und manuelle Planung; ein fehlender Anschluss beendet deren bereits mögliche Implementierung nicht. Quellenkorpus, Party/Scene und Kartenwerkzeuge laufen währenddessen in ihren bestehenden Paketen parallel. Freie Contributors finden bestätigte unbesetzte Beiträge im aktuellen Aufgabenbestand; vor Übernahme Claims prüfen. Der [P03-Fensterprototyp #73](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/73) hat seinen bestehenden Owner und ist kein dauerhaft freies Einstiegsangebot. P03 verwendet ausdrücklich synthetische Inputs und braucht keinen fertigen Live-Spielabend. Kalenderkern, Musikbibliothek/manueller Player und Klima-Bearbeitung werden nach Klärung ihres konkreten Scopes/Besitzes umgesetzt; produktive Zeit-, Audio-, Speicher- und Wetterwirkung wartet jeweils auf ihren Fachvertrag. Diese Bedarfskarte vergibt keinen Claim.
+**Abhängigkeiten:** Der produktive Publish-/Formatanschluss verbindet Import, World und manuelle Planung. Quellenkorpus, Party/Scene und Kartenwerkzeuge behalten ihre fachlichen Schnittstellen. Kalender, Musik und Klima benötigen für produktive Wirkung ihre bestätigten Zeit-, Audio- und Speicheranschlüsse.
 
 **Zusammenführung:** vorhandene Eingänge konsumieren, sobald ihr konkreter Port geliefert ist, nicht erst nach Abschluss des ganzen Quellbereichs. Import/Atlas verbinden sich in E2E-01, Vorbereitung/Runtime/Encounter in E2E-02, Reise/Zeit/Worldverbraucher in E2E-03 und Plattform/Recovery/Anzeige in E2E-04. Nur diese gemeinsamen Gateabnahmen bleiben nacheinander. Zusätzliche Fachfunktionen behalten ihre vollständigen eigenen Abnahmen.
 
-Tastatur, 200 %, Lokalisierbarkeit, passende Feature-Tutorials, ehrlicher pending/durable-Zustand und relevante Latenz-/Lastgrenzen werden mit dem betroffenen Nutzerablauf umgesetzt und geprüft. SMR-11/E2E-04 bündeln die verbleibende Gesamtqualifikation; sie sind kein Aufschub der Featurequalität. Der [erste bedienbare GUI-Weg wird vor größerem abhängigem Ausbau aus GM-Sicht geprüft](WORKFLOW.md#endnutzerprüfung-vor-weiterem-ausbau), nicht erst am Gesamtgate. Für neue schreibende Funktionen genügt nicht ein In-Memory- oder DOM-Beleg: produktive Aktivierung benötigt den tatsächlich bestätigten Owner-/Publish-/Recoveryanschluss.
+Tastatur, 200 %, Lokalisierbarkeit, passende Feature-Tutorials, ehrlicher pending/durable-Zustand und relevante Latenz-/Lastgrenzen werden mit dem betroffenen Nutzerablauf umgesetzt und geprüft. SMR-11/E2E-04 bündeln die verbleibende Gesamtqualifikation; sie sind kein Aufschub der Featurequalität. Der [Arbeitsgrenzen](../AGENTS.md), nicht erst am Gesamtgate. Für neue schreibende Funktionen genügt nicht ein In-Memory- oder DOM-Beleg: produktive Aktivierung benötigt den tatsächlich bestätigten Owner-/Publish-/Recoveryanschluss.
 
 ## Zusätzliche Lieferergebnisse außerhalb der vier Gate-Kurzfassungen
 
@@ -64,7 +64,7 @@ Der [Quellenabgleich](SCOPE.md) führt den gesamten erfassten Umfang. Diese Funk
 | SMR-10 / SMR-AC-14/15/16 | Sichere Spielerprojektion mit Kenntnis/Perception; Complete-/Salvage-Portabilität; widerrufbare Extensions mit Fail/Remove/Replace/Restore | #11/#73; P03 ersetzt keine Produkt-/Extensionabnahme |
 | SMR-11 / SMR-AC-17/18 | Versionierte In-game-Tutorials, OS-Auslieferung, Lokalisierung/Tastatur/200 %/Kontrast/Screenreader, Größe/Latenz/Cancel/Offline/Privacy und Originalvergleich; gemeinsame Popup-/Dialog-/Meterbedienung mit ihren Features | #11/#12; alle exponierten Features |
 
-Damit sind alle SMR-00–11 und SMR-AC-01–18 in der Lieferplanung adressiert. Die detaillierte Themen-/Quellenabdeckung bleibt allein in [SCOPE](SCOPE.md) und dem Quellenregister. **Geplant ist nicht ausführbar oder abgenommen:** offene Modell-, Transfer-, Schema-, Host- und Originalinventarentscheidungen müssen vor ihrer abhängigen Wirkung geklärt werden; aktueller Besitz bleibt am Fach-/Aufgabenort. Diese Tabelle ist keine zweite Queue.
+Damit sind alle SMR-00–11 und SMR-AC-01–18 in der Lieferplanung adressiert. Die detaillierte Themen-/Quellenabdeckung bleibt allein in [SCOPE](SCOPE.md) und dem Quellenregister. **Geplant ist nicht ausführbar oder abgenommen:** offene Modell-, Transfer-, Schema-, Host- und Originalinventarentscheidungen müssen vor ihrer abhängigen Wirkung geklärt werden; aktueller Besitz bleibt am Fach-/Aufgabenort.
 
 Automatische Speicherung und vollständige Wiederaufnahme sind bereits querschnittliche SMR-01-Bedarfe. Ein manueller Save/Reopen-Beleg ersetzt diese Normalbetriebsanforderung nicht. Die zusätzlichen Ergebnisse ändern die bereits ratifizierte Gate-Reihenfolge nicht; Gesamtfreigabe verlangt sämtliche Fach- und Querschnittsabnahmen.
 
@@ -72,9 +72,5 @@ Automatische Speicherung und vollständige Wiederaufnahme sind bereits querschni
 
 1. Der vollständige Lieferumfang folgt [SaltMarcher-Ablösung](../ROADMAP-SALTMARCHER-REPLACEMENT.md) und den dort gebundenen fachlichen Quellen. Architekturentscheidungen bleiben in [ARCHITECTURE.md](../ARCHITECTURE.md).
 2. Die vier Gatebedeutungen folgen dem [ratifizierten Katalog](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/blob/6bfb1f393722cd469dc4fd5f15d8dea12a154f6b/ROADMAP-E2E-GATES-CANDIDATE.md), Blob `435daf96695664e2c54e09d2e583c120dbfd9d24`, übernommen mit Merge `6bfb1f393722cd469dc4fd5f15d8dea12a154f6b`; [Ratifikation](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6090732894). Der erhaltene Dateiname und die Einleitung nennen noch „Kandidat“; daraus folgt kein erneuter Ratifikationsbedarf. Eine geänderte Gatefassung benötigt eine neue ausdrückliche Bindung.
-3. Aktueller Aufgabenstatus steht im konkreten Aufgabenissue/PR; bereichsübergreifende Annahmen und Entscheidungen in #12. Ältere Issue-Haupttexte und Planstände können überholt sein. Bei Widerspruch den genauen Commit und direkten Beleg prüfen, nicht die günstigste Statusmeldung wählen.
-4. `checkpoint.json` führt bereichseigene Ausführungsstände; `acceptance.json` führt direkte Anforderungen/Nachweise. Ihre älteren Top-Level-Felder beschreiben teils den Dungeon-Lieferweg und sind kein Gesamtproduktstatus. Fremde Wurzeln werden nicht pauschal überschrieben.
-
-## Arbeit aufnehmen und nachführen
-
-`npm run next` zeigt den aktuellen Produktengpass und freie Aufgaben. [CONTRIBUTING](../CONTRIBUTING.md#agenteneinstieg) führt zur Übernahme; [WORKFLOW](WORKFLOW.md) bestimmt Paketgrenzen und Prüfung, [REPOSITORY](REPOSITORY.md#selbstorganisation-ohne-zentrale-zuweisung) Besitz, Labels und Übergabe. Bei geändertem Lieferpfad zieht der Integrationsowner diese Roadmap nach; konkrete Laufstände bleiben im Aufgabenissue.
+3. Aktueller Produktstatus steht in der Atlasübersicht und den konkreten Produktissues/PRs. Historische Entscheidungen behalten ihren direkten Beleg und Commit.
+4. `acceptance.json` führt die fachlichen Anforderungen und direkten Nachweise. Ältere Einträge sind kein Gesamtproduktstatus.

@@ -21,7 +21,7 @@ Der Umsetzungslauf besitzt ausschließlich:
 - `tools/host-test.cjs` für die neuen CE-01-Schalter und das Routing;
 - `tools/host/ce01-catalog.cjs` für den Hostablauf;
 - diese Plan-Datei sowie nach Abschluss die CE-01-Abschnitte in
-  `checkpoint.json` und `acceptance.json`.
+  `acceptance.json`.
 
 `src/**`, `main.js`, `styles.css`, bestehende Host-Szenarien und fremde
 Acceptance-Eigentümer bleiben unverändert. Der Lauf baut das Plugin vor der

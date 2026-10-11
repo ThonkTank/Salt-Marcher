@@ -33,7 +33,7 @@ jobs:
           node-version: 22
           cache: npm
 
-      - name: Check repository structure
+      - name: Check documentation and source references
         run: npm run check:repo
 
       - name: Install dependencies

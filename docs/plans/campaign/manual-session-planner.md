@@ -1,10 +1,3 @@
----
-area: campaign
-owner: Stadt
-issue: 69
-status: active
-checkpoint: cityExecution
----
 # Manuelle Sessionplanung ohne Party und Generator
 
 Consumer ist die GM-Vorbereitung in [#69](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/69). Grundlage: SRC-P01/P03 und AC-F03/AC-P01/P02 im [Quellenregister](../../scope-sources.json), gepinnte Session-Planner-Requirements auf Salt-Marcher9de85c1. Das vollständige Paket endet beim nutzbaren persistenten Plan und frischem Reopen, nicht bei diesem ersten Kern-/DOM-Eingang.

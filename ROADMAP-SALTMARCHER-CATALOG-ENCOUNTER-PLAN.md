@@ -191,27 +191,7 @@ Offizielle Produktreferenzen für die Mindestabnahme:
 14. Maus und Tastatur erreichen alle Pflichtfunktionen; leerer Katalog,
     optionale Felder und beschädigte Einträge erzeugen keine ungefangenen Fehler.
 
-## Koordination und Veröffentlichung
-
-- Der gemeinsame Branch bleibt `active/installed-phase1`; tatsächlichen
-  Upstream vor jedem Paket und direkt vor jedem Push erneut bestimmen.
-- Paketowner verfolgt den Nutzerweg einschließlich benötigter Schema-/Daten-/UI-/
-  Hostbeiträge; Fachbesitz und nötige Risikogrenzen bleiben erhalten. Technische
-  Schichten sind keine automatische Paketteilung. Keine zwei Kollegen ändern
-  gleichzeitig dieselbe Besitzdatei.
-- Nutzerpräzisierung vom 9. Oktober 2026: Die Testinstanzbegrenzung gilt pro
-  Gerät. Kollegen auf unterschiedlichen Geräten dürfen parallel testen. Auf
-  jedem einzelnen Gerät läuft höchstens eine grafische Host-/Originalinstanz.
-- Fremde Änderungen, Kennungen und Belege bleiben erhalten. Konflikte werden
-  regulär integriert; kein Force-Push und keine veröffentlichte Historie
-  umschreiben.
-- Umsetzung, passende Prüfung, Nachbesserung und Pflege zusammengehörig
-  veröffentlichen; [WORKFLOW](docs/WORKFLOW.md) bestimmt den Prüfaufwand. Ein grüner
-  Basistest ersetzt keine Fach-, Host- oder Bedienabnahme.
-
-## Nächster Lauf
-
-Aktuelles eigenes Paket und Besitz in [#9](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/9) beziehungsweise [#58](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/58) prüfen; `npm run next` verwenden. Der folgende CE-01-Verlauf ist gezielter historischer Kontext, keine aktuelle Dispatchanweisung.
+## Bestehende Implementierung und Abnahmegrenzen
 
 CE-01 folgt dem technischen Fachplan
 [`ROADMAP-SALTMARCHER-CE01-PLAN.md`](ROADMAP-SALTMARCHER-CE01-PLAN.md).

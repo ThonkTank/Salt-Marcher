@@ -1,6 +1,6 @@
 # Direkte Wonderdraft-Referenzmessung
 
-Diese Helfer bedienen das installierte Original in einem eigenen XDG-Profil. Sie enthalten keinen Kartenrenderer oder Nachbau. Bilder, Rohkarten, Profile und Laufprotokolle bleiben außerhalb des Repos unter `/home/aaron/.cache/dungeon-native-qa/`. Der aktuelle Fortschritt steht ausschließlich im Checkpoint; die verbindlichen Zuordnungen in `acceptance.json.wonderdraftParity`.
+Diese Helfer bedienen das installierte Original in einem eigenen XDG-Profil. Sie enthalten keinen Kartenrenderer oder Nachbau. Bilder, Rohkarten, Profile und Laufprotokolle bleiben außerhalb des Repos unter `/home/aaron/.cache/dungeon-native-qa/`. Die verbindlichen Zuordnungen und Nachweise stehen in `acceptance.json.wonderdraftParity`.
 
 Voraussetzungen: Node mit den Repo-Abhängigkeiten, `flock`, `/usr/bin/dbus-daemon`, ein ausführbares Xvnc und Openbox mit seinen Bibliotheken. Die für diesen Rechner privat entpackten Programme liegen unter `/home/aaron/.cache/dungeon-native-qa/dependencies/`; keine Paketinstallation oder Änderung am Wonderdraft-Programm ist nötig.
 

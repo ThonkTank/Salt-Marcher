@@ -1,47 +1,19 @@
-# Den passenden Arbeitskontext finden
+# Dokumentationsindex
 
-[Produktziele](PRODUCT.md) → [Lieferfolge](ROADMAP.md) → [Aufgabe übernehmen](../CONTRIBUTING.md#agenteneinstieg). Aktuelle Übernahmen und Gateentscheidungen stehen in [#12](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12) und dem gewählten Aufgabenissue, einschließlich der neuesten relevanten Kommentare.
+**Aktueller Atlasstand:** [Atlas auf einen Blick](../ROADMAP-HEX-ATLAS.md#atlas-auf-einen-blick) zeigt integrierte Funktionen, Kandidaten, offene Lücken und den Weg zum Ziel.
 
-**Atlas-Stand verstehen:** [Atlas auf einen Blick](../ROADMAP-HEX-ATLAS.md#atlas-auf-einen-blick) zeigt bereits integrierte Funktionen, Kandidaten, verbleibende Lücken und fünf Etappen zum Ziel.
+| Thema | Fachliche Quellen |
+| --- | --- |
+| Gesamtprodukt | [Produktziele](PRODUCT.md), [Lieferfolge](ROADMAP.md), [vollständiger Umfang](SCOPE.md), [Quellenregister](scope-sources.json) |
+| Hex-Atlas und gemeinsame Karte | [Hex-Atlas](../ROADMAP-HEX-ATLAS.md), [Wonderdraft-Vergleich](../WONDERDRAFT-PARITY.md), [gemeinsamer Speicher-/Hostanschluss](../ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md) |
+| Stadt | [Stadtziele](../ROADMAP-CITIES.md), [technische Anforderungen](../ROADMAP-CITIES-IMPLEMENTATION-PLAN.md), [Referenzgalerie](../ROADMAP-CITIES-REFERENCE-GALLERY.md), [Referenzlücken](../ROADMAP-CITIES-REFERENCE-GAPS.md), [Hausnamen](plans/city/building-name-inspector.md) |
+| Dungeon | [Grundrisse und Objekte](../ROADMAP-PARITY.md), [weitere Werkzeuge](../ROADMAP-PARITY-TOOLS.md), [3D/Rooms/Paths/Passages](plans/dungeon/smr04-spatial-coverage.md), [Geometrieanschluss](../ROADMAP-E2E01-DUNGEON-GEOMETRY-PLAN.md) |
+| Campaign und Planung | [Gesamtumfang](../ROADMAP-SALTMARCHER-REPLACEMENT.md), [Campaign/Data](../ROADMAP-SALTMARCHER-SMR-01-CAMPAIGN-DATA-PLAN.md), [manuelle Sessionplanung](plans/campaign/manual-session-planner.md) |
+| Party und LiveSession | [Fachvertrag](plans/runtime/smr03-live-scene-contract.md), [Implementierung](plans/runtime/smr03-implementation-plan.md) |
+| Katalog und Encounter | [Fachanforderungen](../ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md), [Item-Quellenkorpus](../ROADMAP-SALTMARCHER-CE02-I02-PLAN.md) |
+| Plattform und Architektur | [Plattform-ADR](../ROADMAP-SALTMARCHER-PLATFORM-ADR.md), [Prototypen](../ROADMAP-SALTMARCHER-ADR-PROTOTYPES.md), [Architektur](../ARCHITECTURE.md) |
+| Prüfung | [GM-Szenarien](../ROADMAP-GM-PRODUCT-TESTING-PLAN.md), [Campaign-B-Fixture](CONTRIBUTOR-FIXTURE-B.md), [Abnahmeregister](../acceptance.json), [portable Hostbelege](reference/) |
 
-## Nur den eigenen Bereich lesen
+Historische Einzelpläne und Laufstände sind im [Git-Verlauf vor der Bereinigung](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/tree/6a90f3ee2f50f0be45f0e256784576f13722c319) zugänglich. Direkte Nachweise behalten ihren jeweiligen Commit, Build und Prüfumfang; ein alter Beleg ist kein aktueller Auftrag oder Gesamt-PASS.
 
-`npm run next -- --task N` zeigt den Paketeinstieg, verlinkten Arbeitsabschnitt vom Remote samt Revision und Livefakten; [Übergaben ersetzen den Arbeitsabschnitt](REPOSITORY.md#arbeitsstand-lesen-und-ersetzen). `npm run context` zeigt die Bereiche. `npm run context -- --area atlas` liefert einen begrenzten Checkpointauszug mit Checkout-SHA, Fachplan und Abnahmewurzeln. Er beschreibt diesen Checkout; ein Kandidat oder neuer Ownerbeleg kann weiter sein. `npm run context -- --case HEX01-001` sucht eine exakte Fallkennung; bei einer unbekannten Kennung werden keine ähnlich benannten Fälle als Treffer ausgegeben.
-
-| Bereich / Kontextschlüssel | Fachvertrag | Koordination |
-| --- | --- | --- |
-| `atlas` | [Hex-Atlas](../ROADMAP-HEX-ATLAS.md) | [#7](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/7) |
-| `city` | [Stadt](../ROADMAP-CITIES.md), [Umsetzung](../ROADMAP-CITIES-IMPLEMENTATION-PLAN.md) | [#7](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/7) |
-| `dungeon` | [Parität](../ROADMAP-PARITY.md), [Werkzeugfolge](../ROADMAP-PARITY-TOOLS.md) | [#8](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/8) |
-| `gm` | [GUI-Testrolle](AGENT-ROLES.md#gm-test); aktueller Ablauf am Aufgabenissue | [#8: Dungeonbefunde](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/8), übrige Befunde am jeweiligen Paket |
-| `catalog` | [Katalog und Encounter](../ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md) | [#9](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/9) |
-| `campaign` | [SaltMarcher-Portfolio / SMR-01 bis SMR-09](../ROADMAP-SALTMARCHER-REPLACEMENT.md) | [#10](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/10) |
-| `runtime` | [Party / LiveSession im Portfolio](../ROADMAP-SALTMARCHER-REPLACEMENT.md), [Fachvertrag](plans/runtime/smr03-live-scene-contract.md), [Umsetzung](plans/runtime/smr03-implementation-plan.md) | [#6](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/6) |
-| `platform` | [Plattform-ADR](../ROADMAP-SALTMARCHER-PLATFORM-ADR.md) | [#11](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11) |
-| `repository` | [Pflegevertrag](REPOSITORY.md) | [#1](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/1) |
-
-## Vertiefung bei konkretem Bedarf
-
-- Vollständiger Zielumfang: [SCOPE](SCOPE.md), [gepinnte Quellen](scope-sources.json), [Gatekatalog](../ROADMAP-E2E-GATES-CANDIDATE.md).
-- Erweiterter räumlicher Dungeon: [3D-/Room-/Path-/Passage-Coverage](plans/dungeon/smr04-spatial-coverage.md) für die Abgrenzung heutiger 2D-Grundlagen und fehlender SMR-04-Folgepakete.
-- Architektur: [ARCHITECTURE](../ARCHITECTURE.md); anhand der betroffenen Entscheidung lesen.
-- Ausführung und Abnahme: [checkpoint.json](../checkpoint.json) und [acceptance.json](../acceptance.json). Mit `context` gezielt auswählen; alte Top-Level-Felder sind kein Gesamtproduktstatus. `--full` gibt den gewählten Eintrag vollständig aus.
-- Veröffentlichung, Fachphasen und Hostschutz: [Arbeitsregeln](WORKFLOW.md).
-- Wiederkehrende Contributor-/Pflege-/Berichtsaufträge: [Arbeitsrollen](AGENT-ROLES.md); gemeinsame Regeln bleiben im Einstieg und Pflege-/Arbeitsvertrag.
-- Synthetische Fixtures ohne GUI: [Campaign B reproduzieren](CONTRIBUTOR-FIXTURE-B.md).
-- Atlas-Save-/Hostkontext: aktueller Aufgabenstand in [#80](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80), [Fachvertrag](../ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md), [Dungeon-am-Ort-H01 und freier GM-Eingang](reference/atlas-detail-binding-d01/dungeon-at-location-h01.md); frühere H01/D01/R01/H02-Läufe nur gezielt im [Belegregister](reference/PLAN-REGISTER.md#atlas-laufbelege).
-- Begrenzter Cloud-GM-N04-Such-/Bearbeiten-/Speichern-/Wiederverwenden-Nachtest für #80: [Runbericht, Buildidentität und Roh-Screenshots](reference/gm-cloud-n04-20261011/README.md).
-- Bestehende Detailpläne und historische Pakete: [Fachplanregister](reference/PLAN-REGISTER.md). Keine Pflichtlektüre beim Einstieg; stabile Pfade bleiben erhalten.
-- GM-Testvorlagen und frühere UI-Nachweise: [bestehender Testplan](../ROADMAP-GM-PRODUCT-TESTING-PLAN.md), nur den benötigten Szenario-/Belegabschnitt lesen. Aktueller Auftrag steht in der GUI-Testrolle und am Paket.
-- Attribution: [NOTICE](../NOTICE.md), [SRD](../src/features/catalog/SRD-5.1-ATTRIBUTION.md), [Items](../src/features/catalog/SRD-5.1-ITEMS-ATTRIBUTION.md).
-- Neue Paketpläne: [Vorlage](templates/PACKAGE-PLAN.md), unter `docs/plans/<bereich>/` ablegen und von hier oder dem Fachplanregister erreichbar machen. `npm run check:repo` prüft die Verweise.
-
-Große native Rohbelege liegen häufig auf dem Rechner des Prüfers. Ein historischer absoluter Pfad bestätigt keinen eigenen Zugriff; fehlenden Zugriff und offene Abnahme ausdrücklich nennen.
-
-- World Notes #68: [kleine portable Rollback-/Restjournal-Hostbelege](reference/smr02-world-notes-recovery/README.md) für unabhängige Prüfung; die Gesamt-Abnahme bleibt am Issue.
-
-- Manuelle GM-Sessionplanung: [Implementierung und Campaign-Speicheranschluss](plans/campaign/manual-session-planner.md) zu #69.
-- Begrenzter unabhängiger Cloud-Nachtest von PR144: [sichtbarer Fokus nach „Entwurf übernehmen“ und folgendem Tab](reference/gm-cloud-manual-planner-pr144-focus-retest-20261011-01/README.md); keine Speicher- oder native Obsidian-Abnahme.
-
-- Stadt-Hauskorrektur: [Gebäudenamen im gemeinsamen Atlas](plans/city/building-name-inspector.md) zu #92; [H02 native Rollback-/Retrybelege](reference/city-building-name-h02/receipt.json).
-- Eigener Cloud-GM-Nachtest #92: [City-Hausname nach frischem Obsidian-Prozess wiederfinden/erneut speichern und enger PR-117-Tastaturfokus](reference/gm-city-postsave-reopen-20261011/README.md), mit exakten Buildtripeln, Datenoracle und Screenshots.
+Attribution: [NOTICE](../NOTICE.md), [SRD](../src/features/catalog/SRD-5.1-ATTRIBUTION.md), [Items](../src/features/catalog/SRD-5.1-ITEMS-ATTRIBUTION.md).

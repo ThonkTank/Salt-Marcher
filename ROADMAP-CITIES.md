@@ -33,7 +33,7 @@ Bei sehr weitem Zoom erscheinen Stadtstruktur und wichtige Orte; beim Näherkomm
 
 CITY-00 wird im Referenzpaket von HEX-00 eingeordnet. **CITY-01 bis CITY-04 folgen nach HEX-05**, bevor die Hex-Roadmap mit HEX-06 weitergeht. Dadurch werden Stadt, Generierung und direkt bearbeitbarer Hausgrundriss früh geprüft. Die relative Reihenfolge der HEX-Phasen bleibt erhalten.
 
-Danach folgen CITY-05/06 nach HEX-14, CITY-07 nach HEX-20 und CITY-08 nach HEX-22. CITY-09 und HEX-28 bilden die gemeinsame Endabnahme nach HEX-27. Es läuft jeweils ein Arbeitslauf und eine grafische Testinstanz; diese Zuordnung verlangt keine parallele Entwicklung. Die Voraussetzungen stehen zusätzlich im Katalog.
+Danach folgen CITY-05/06 nach HEX-14, CITY-07 nach HEX-20 und CITY-08 nach HEX-22. CITY-09 und HEX-28 bilden die gemeinsame Endabnahme nach HEX-27. Die Voraussetzungen stehen zusätzlich im Katalog.
 
 | Phase | Nutzbarer Umfang | Praxisprüfung |
 |---|---|---|
@@ -86,4 +86,4 @@ Zusätzliche Pflichtproben:
 - Stadt mit 5.000 Gebäuden und mehreren Haus-Dungeons prüfen. Die bestehenden Atlas-Ziele von höchstens 33 ms pro Navigationsbild im 95. Perzentil und 100 ms bis zur Werkzeugvorschau nach dem Laden werden gemessen; sie sind noch nicht verifiziert.
 - Physische Maus-/Touchpad-Bedienung, Großkartenlauf, Ergebnisvergleich, Ausgabe und tatsächlich installierten Endstand getrennt belegen.
 
-Nachweise stehen bei stabilen CTY-Unterfällen in `acceptance.json`, aktueller Stand und nächster Schritt in `checkpoint.json`. Große Ergebnisbilder und Kontrollkarten liegen unter `/home/aaron/.cache/dungeon-native-qa/city-plans/`. Dieser Plan enthält keine fortlaufenden Laufprotokolle.
+Nachweise stehen bei stabilen CTY-Unterfällen in `acceptance.json`, der aktuelle Atlasstand in der Atlasübersicht. Große Ergebnisbilder und Kontrollkarten liegen unter `/home/aaron/.cache/dungeon-native-qa/city-plans/`. Dieser Plan enthält keine fortlaufenden Laufprotokolle.

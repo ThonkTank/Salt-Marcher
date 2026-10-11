@@ -3,8 +3,6 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
-const states = ['draft', 'active', 'complete', 'superseded'];
-const workLabels = ['status:ready', 'status:active', 'status:blocked'];
 const isMarkdown = file => /\.(md|markdown)$/i.test(file);
 
 // Validate Markdown links, not text examples inside fenced code or HTML comments.
@@ -43,91 +41,31 @@ function anchors(text) {
   return result;
 }
 
-export function validateIssueStates(issues) {
-  return issues.flatMap(issue => {
-    const labels = issue.labels.map(l => typeof l === 'string' ? l : l.name);
-    const errors = [];
-    if (labels.includes('status:ready') && labels.some(l => ['status:active', 'status:blocked'].includes(l)))
-      errors.push(`#${issue.number}: status:ready conflicts with active/blocked work`);
-    if (issue.state === 'closed' && labels.some(l => workLabels.includes(l)))
-      errors.push(`#${issue.number}: closed issue retains an open work-status label`);
-    return errors;
-  });
-}
-
 export function checkRepository(root, suppliedFiles) {
   const errors = [];
-  const files = new Set(suppliedFiles ?? execFileSync('git', ['ls-files', '--cached', '--others', '--exclude-standard', '-z'], { cwd: root, encoding: 'utf8' }).split('\0').filter(Boolean));
+  const files = new Set(suppliedFiles ?? execFileSync('git', ['ls-files', '--cached', '--others', '--exclude-standard', '-z'], { cwd: root, encoding: 'utf8' }).split('\0').filter(f => f && fs.existsSync(path.join(root, f))));
   const read = file => fs.readFileSync(path.join(root, file), 'utf8');
   const exists = file => typeof file === 'string' && (files.has(file) || [...files].some(f => f.startsWith(`${file.replace(/\/$/, '')}/`))) && fs.existsSync(path.join(root, file));
   function json(file) {
     try { if (!exists(file)) throw new Error('missing file'); return JSON.parse(read(file)); }
     catch (e) { errors.push(`${file}: ${e.message}`); return null; }
   }
-  const policy = json('docs/repository-policy.json');
-  const checkpoint = json('checkpoint.json');
   json('acceptance.json');
   const scope = json('docs/scope-sources.json');
-  if (!policy || !checkpoint || !scope) return errors;
-  if (policy.schemaVersion !== 1 || !Array.isArray(policy.coreRootDocs) || !Array.isArray(policy.legacyRootDocs) || !Array.isArray(policy.inFlightRootDocs))
-    return [...errors, 'docs/repository-policy.json: invalid compatibility inventory'];
-  const allowed = new Set([...policy.coreRootDocs, ...policy.legacyRootDocs, ...policy.inFlightRootDocs.map(p => p.path)]);
-  for (const file of files) {
-    if (!file.includes('/') && isMarkdown(file) && !allowed.has(file))
-      errors.push(`${file}: new root document; use docs/plans/<area>/ or docs/ and link it in docs/INDEX.md`);
-  }
-  for (const entry of policy.inFlightRootDocs) {
-    if (!entry.reason || !new RegExp(`/blob/[a-f0-9]{40}/${entry.path.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`).test(entry.source))
-      errors.push(`${entry.path}: in-flight compatibility entry needs reason and pinned source`);
-  }
-  const managed = [...files].filter(f => f.startsWith('docs/') && isMarkdown(f) || ['README.md', 'AGENTS.md', 'CONTRIBUTING.md'].includes(f));
-  const graph = new Map();
+  if (!scope) return errors;
+  const managed = [...files].filter(f => isMarkdown(f) && (f.startsWith('docs/') || !f.includes('/')));
   for (const file of managed) {
     if (!exists(file)) { errors.push(`${file}: missing documentation file`); continue; }
-    const linked = new Set();
     for (const link of markdownLinks(read(file))) {
-      if (/^[a-z][a-z\d+.-]*:/i.test(link) || link.startsWith('//')) continue;
+      if (/^[a-z][a-z\d+.-]*:/i.test(link) || link.startsWith('/')) continue;
       let decoded;
       try { decoded = decodeURIComponent(link); } catch { errors.push(`${file}: malformed link ${link}`); continue; }
       const [name, anchor] = decoded.split('#');
       const target = name ? path.posix.normalize(path.posix.join(path.posix.dirname(file), name)) : file;
       if (!exists(target)) { errors.push(`${file}: missing local link target ${link}`); continue; }
-      linked.add(target);
-      if (fs.statSync(path.join(root, target)).isDirectory()) {
-        const readme = path.posix.join(target, 'README.md');
-        if (exists(readme)) linked.add(readme);
-      }
       if (anchor && isMarkdown(target) && !anchors(read(target)).has(anchor))
         errors.push(`${file}: missing Markdown anchor ${link}`);
     }
-    graph.set(file, linked);
-  }
-  const reachable = new Set(), pending = ['docs/INDEX.md'];
-  while (pending.length) {
-    const file = pending.pop(); if (reachable.has(file)) continue;
-    reachable.add(file); pending.push(...(graph.get(file) ?? []));
-  }
-  for (const file of managed.filter(f => f.startsWith('docs/')))
-    if (!reachable.has(file)) errors.push(`${file}: not reachable from docs/INDEX.md`);
-  const reachableSources = new Set([...reachable].filter(f => graph.has(f)).flatMap(f => markdownLinks(read(f))));
-  for (const file of files) {
-    if (file.includes('/') || !isMarkdown(file) || policy.coreRootDocs.includes(file)) continue;
-    const flight = policy.inFlightRootDocs.find(p => p.path === file);
-    if (!reachable.has(file) && !(flight && reachableSources.has(flight.source)))
-      errors.push(`${file}: root Fachplan missing from docs/INDEX.md navigation`);
-  }
-  for (const file of managed.filter(f => f.startsWith('docs/plans/'))) {
-    if (!/^docs\/plans\/[^/]+\/[^/]+\.md$/.test(file)) errors.push(`${file}: use docs/plans/<area>/<package>.md`);
-    const header = read(file).match(/^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/);
-    if (!header) { errors.push(`${file}: missing package-plan metadata`); continue; }
-    const fields = Object.fromEntries(header[1].split(/\r?\n/).map(line => line.match(/^([a-z_]+):\s*(.*?)\s*$/)).filter(Boolean).map(m => [m[1], m[2]]));
-    for (const key of ['area', 'owner', 'issue', 'status', 'checkpoint']) if (!fields[key]) errors.push(`${file}: missing ${key}`);
-    if (fields.area !== file.split('/')[2]) errors.push(`${file}: area differs from plan directory`);
-    if (!/^[1-9]\d*$/.test(fields.issue ?? '')) errors.push(`${file}: issue must be a concrete issue number`);
-    if (!states.includes(fields.status)) errors.push(`${file}: invalid document status`);
-    if (!Object.hasOwn(checkpoint, fields.checkpoint ?? '')) errors.push(`${file}: unknown checkpoint owner root`);
-    if (fields.status === 'superseded' && (!exists(fields.superseded_by) || !isMarkdown(fields.superseded_by) || fields.superseded_by === file))
-      errors.push(`${file}: superseded plan needs an existing successor`);
   }
   // The register is a pinned audit, so historic hashes must not be compared to today's product bytes.
   if (scope.schema_version !== 1 || !/^[a-f0-9]{40}$/.test(scope.source_revision)) errors.push('docs/scope-sources.json: invalid pinned source revision/schema');
@@ -159,15 +97,10 @@ export function checkRepository(root, suppliedFiles) {
 if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
   try {
     const args = process.argv.slice(2);
-    if (args.some(a => a !== '--github')) throw new Error('Usage: node tools/check-repository.mjs [--github]');
+    if (args.length) throw new Error('Usage: node tools/check-repository.mjs');
     const errors = checkRepository(process.cwd());
-    if (args.includes('--github')) {
-      const policy = JSON.parse(fs.readFileSync('docs/repository-policy.json', 'utf8'));
-      const output = execFileSync('gh', ['api', '--paginate', `repos/${policy.repository}/issues?state=all&per_page=100`, '--jq', '.[] | select(.pull_request == null) | {number,state,labels:[.labels[].name]}'], { encoding: 'utf8' });
-      errors.push(...validateIssueStates(output.trim().split('\n').filter(Boolean).map(line => JSON.parse(line))));
-    }
     for (const error of errors) console.error(error);
     if (errors.length) { console.error(`Repository check FAILED: ${errors.length} problem(s)`); process.exitCode = 1; }
-    else console.log(`Repository check PASS${args.includes('--github') ? ' (including read-only GitHub label audit)' : ' (offline structure and references)'}`);
+    else console.log('Repository check PASS (offline links, JSON and source references)');
   } catch (error) { console.error(`Repository check FAILED: ${error.message}`); process.exitCode = 1; }
 }

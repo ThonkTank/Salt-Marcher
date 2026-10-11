@@ -102,11 +102,3 @@ im echten Host Ort → Stadt/Haus/Raum → Key → Undo/Redo → Save → frisch
 prüfen; neuen lokalen GUI-Slot vorher ausdrücklich abstimmen. Produktive
 Campaign-/Registry-/P02/P04-/Importeingänge bleiben bei ihren tatsächlichen
 Implementierern. Keine Testregistry als produktiven Provider darstellen.
-
-## Arbeitsläufe
-
-P01 Plan → eigenes getrenntes Aufräum-P/I/R → I01 Komponente/DOM-Test → R01
-unabhängiger Komponentenreview → nur konkrete N-Befunde reparieren/reviewen →
-Aufräum-P/I/R → Exact-SHA-Handoff an Hex → tatsächliche Montage und Hostabnahme.
-Starts/Ergebnisse in Issue7, konkrete gemeinsame Übergabe in Issue12. Die
-Produktfolge HEX-03 → HEX-04 → HEX-05 → CITY-01–04 bleibt bestehen.

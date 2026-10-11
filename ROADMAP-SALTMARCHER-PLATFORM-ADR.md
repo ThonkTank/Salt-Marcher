@@ -1,6 +1,6 @@
 # SMR-00-ADR-01 – Zielplattform und Migrationspfad
 
-Status: vorgeschlagen; Team- und Cloud-Review ausstehend
+Status: vorgeschlagen; Plattformentscheidung und erforderliche Beweise offen
 Stand: 9. Oktober 2026
 
 ## Entscheidungskontext
@@ -55,9 +55,7 @@ genau einem finalen Produkt:
 Diese Richtung ist noch nicht ratifiziert. Sie wird erst verbindlich, wenn die
 unten genannten Beweise vorliegen und die drei neuen lokalen
 Integrationsstränge sowie die Gerätekollegen für Hex/Atlas, Stadt und Dungeon
-und die zuständigen Cloud-Reviewer ihre Bereichsrisiken geprüft haben. Die
-aktuellen Threadkennungen stehen in `checkpoint.json` unter
-`saltMarcherReplacement.coordination`.
+und die zuständigen Cloud-Reviewer ihre Bereichsrisiken geprüft haben.
 
 Eine erste statische Zielrepo-Inventur auf `b7e06f0` stützt die Richtung:
 68 von 78 ausgewerteten TypeScript-Dateien importieren Obsidian nicht direkt.
