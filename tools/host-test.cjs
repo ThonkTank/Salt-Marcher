@@ -25,8 +25,9 @@ const restart = process.argv.includes("--restart"),
   dd036S01HardCrash = process.argv.includes("--dd036-s01-hard-crash"),
   hex02Save = process.argv.includes("--hex02-save"),
   hex04DungeonAtLocation = process.argv.includes("--hex04-dungeon-at-location"),
+  cityBuildingRotation = process.argv.includes("--city-building-rotation"),
   cityBuildingNameRollback = process.argv.includes("--city-building-name-rollback"),
-  cityBuildingName = process.argv.includes("--city-building-name") || cityBuildingNameRollback,
+  cityBuildingName = process.argv.includes("--city-building-name") || cityBuildingNameRollback || cityBuildingRotation,
   atlasCampaignABA = process.argv.includes("--atlas-campaign-aba"),
   worldNotesDrafts = process.argv.includes("--world-notes-drafts"),
   worldNotesReclaim = process.argv.includes("--world-notes-reclaim"),
@@ -955,7 +956,9 @@ async function workflow() {
     return;
   }
   if (atlasSpatial) {
-    const scenario = require(cityBuildingName
+    const scenario = require(cityBuildingRotation
+      ? "./host/city-building-rotation.cjs"
+      : cityBuildingName
       ? "./host/city-building-name.cjs"
       : hex04DungeonAtLocation
       ? "./host/hex04-dungeon-at-location.cjs"
