@@ -11306,7 +11306,9 @@
         "docs/reference/gm-cloud-n04-20261011/SHA256SUMS.txt",
         "docs/reference/gm-cloud-n04-20261011/screenshots/*.png"
       ],
-      "next": "Send this bounded result and durable screenshot path to Hex at Issue #80; no additional GM run without a new relevant input."
+      "next": "Send this bounded result and durable screenshot path to Hex at Issue #80; no additional GM run without a new relevant input.",
+      "sharedHeadAtReport": "a93fd4f7d4e61a327744cece448a0fbc30e94773",
+      "sourceDiffAfterTest": "PR113 moved Shared from tested 87ccdb2 to a93fd4f; only City acceptance.json, checkpoint.json and docs/plans/city/building-name-inspector.md changed. Atlas feature/editor/style files are unchanged."
     },
     "executedUiRuns": 22,
     "observedFindings": [
