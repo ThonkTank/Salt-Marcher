@@ -56,6 +56,19 @@
         "reopenResultSha256": "5ce850c69605740f55b7f444d9090a15a0d46962fdbfc5eeff1651de800ed576",
         "result": "real Obsidian manifest CAS fault after native note write; exact Before rollback and absent journal, retry, save and fresh-process reopen passed; controlled synthetic failure, not independent crash recovery"
       },
+      "nativeCommittedRecovery": {
+        "productSource": "ca290326a35bb792c22ef8f02e215a3dd9ef121d",
+        "mainJsSha256": "f5c3b5a17e0c6765b279a164ead99453a3feb6c5b6d4b6aa1849866b06a454e9",
+        "hostRunnerSha256": "5787615106c323508c29b4aab2a1dcd6c74f72b957ae529a3dd2ee49d50a291a",
+        "scenarioSha256": "b7eb861379d9dcbfa836c9b98b3918044647171c5bbd23ef8f5da3719c204a35",
+        "caseSha256": "e41696411311c8e6cf2588764c58814fd6f5eb7e0ac76a76f60b47b3317fd9c5",
+        "evidenceRoot": "/home/aaron/.cache/dungeon-native-qa/atlasqa-smr02-committed-recovery-01/evidence/",
+        "editResult": "1791681781622-world-notes-native-edit/result.json",
+        "editResultSha256": "5307ebb225e5e535e7c69a393102ed40c44c4d8972fb78a8406a34da710b012b",
+        "reopenResult": "1791681794753-world-notes-native-reopen/result.json",
+        "reopenResultSha256": "733bf725841bef4e713f180718beca9ba5e602de7005d5907c000d9602f28cc1",
+        "result": "committed journal from native tombstone before/after bytes deliberately left for fresh real Obsidian; owner validation and cleanup before World Notes mount, exact prose and tombstone preserved"
+      },
       "next": "Independent real failure and recovery qualification; retain broader Encounter constraint, NPC combat and World Planner requirements as open.",
       "limits": "No physical keyboard, power-loss, user-vault, full SMR-02 or overall product acceptance."
     },

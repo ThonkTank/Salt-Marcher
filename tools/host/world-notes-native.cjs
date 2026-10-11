@@ -1,6 +1,7 @@
 // Isolated real Obsidian Save -> fresh-process World Notes probe on synthetic Campaign input.
-module.exports = ({ page, fs, path, assert, vault, out, checks, worldNotesZoom200, worldNotesFault }) => {
+module.exports = ({ page, fs, path, assert, crypto, qa, vault, out, checks, worldNotesZoom200, worldNotesFault, worldNotesRecovery }) => {
   const manifestPath = "Kampagnen/SaltMarcher/E2E-01-Atlas-Save.campaign.json";
+  const journalPath = manifestPath.replace(/\.campaign\.json$/, ".world-notes.journal");
   const open = async () => {
     await page.evaluate(() => app.commands.executeCommandById("dungeon-editor:open-world-notes"));
     const picker = page.locator(".dn-campaign-entry:visible").last();
@@ -114,6 +115,16 @@ module.exports = ({ page, fs, path, assert, vault, out, checks, worldNotesZoom20
         await panel.getByRole("status").filter({ hasText: "Gespeichert" }).waitFor();
       }
       await panel.getByRole("button", { name: "Gerücht: Nebelzeichen" }).click();
+      let beforeRumorDelete = null;
+      if (worldNotesRecovery) {
+        const bytes = fs.readFileSync(path.join(vault, manifestPath), "utf8");
+        const current = JSON.parse(bytes);
+        const rumorRecord = current.registry.owners.find((owner) => owner.ownerId === "world-notes")
+          ?.records.find((record) => record.recordType === "world-rumor");
+        assert(rumorRecord);
+        const notePath = `Kampagnen/SaltMarcher/${current.snapshot.namespace}/Weltwissen/rumor/${rumorRecord.id}.world-note.json`;
+        beforeRumorDelete = { path: notePath, note: fs.readFileSync(path.join(vault, notePath), "utf8"), manifest: bytes };
+      }
       await panel.getByRole("button", { name: "Löschen", exact: true }).click();
       await panel.getByRole("button", { name: "Löschen bestätigen" }).click();
       await panel.getByRole("status").filter({ hasText: "Gespeichert" }).waitFor();
@@ -135,12 +146,32 @@ module.exports = ({ page, fs, path, assert, vault, out, checks, worldNotesZoom20
       assert.equal(updated.gmNotes, "Kennt den alten Kai und den Nebelbund.");
       assert.deepEqual(updated.relations, [{ targetId: faction.id, label: "kennt" }]);
       assert.equal(fs.existsSync(path.join(vault, manifestPath.replace(/\.campaign\.json$/, ".world-notes.journal"))), false);
+      if (beforeRumorDelete) {
+        const journal = { kind: "atlas-file-transaction", version: 1, journalPath,
+          transactionId: crypto.randomUUID(), state: "committed",
+          writes: [
+            { path: beforeRumorDelete.path, before: beforeRumorDelete.note,
+              after: fs.readFileSync(path.join(vault, beforeRumorDelete.path), "utf8") },
+            { path: manifestPath, before: beforeRumorDelete.manifest,
+              after: fs.readFileSync(path.join(vault, manifestPath), "utf8") },
+          ] };
+        fs.writeFileSync(path.join(qa, "world-notes-recovery-case.json"), JSON.stringify({ journal }, null, 2));
+        checks.push("Committed World Notes journal case sealed from actual native before/after bytes PASS");
+      }
       fs.writeFileSync(path.join(out, "saved-note.json"), JSON.stringify({ notePath, factionPath, questPath, rumorPath,
         updated, faction, quest, rumor }, null, 2));
       checks.push("Real Obsidian creates all four kinds, updates a relationship and saves a native rumor tombstone PASS");
     },
     reopen: async () => {
+      if (worldNotesRecovery)
+        assert.equal(fs.existsSync(path.join(vault, journalPath)), true,
+          "Committed World Notes journal must be present before fresh mount");
       const panel = await open();
+      if (worldNotesRecovery) {
+        assert.equal(fs.existsSync(path.join(vault, journalPath)), false,
+          "Fresh World Notes activation removes the validated committed journal");
+        checks.push("Fresh real Obsidian resolves the committed native journal before World Notes mount PASS");
+      }
       if (worldNotesZoom200) {
         const zoom = await page.evaluate(() => {
           const webFrame = window.require?.("electron")?.webFrame;

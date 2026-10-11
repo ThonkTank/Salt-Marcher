@@ -28,7 +28,8 @@ const restart = process.argv.includes("--restart"),
   atlasCampaignABA = process.argv.includes("--atlas-campaign-aba"),
   worldNotesZoom200 = process.argv.includes("--world-notes-zoom200"),
   worldNotesFault = process.argv.includes("--world-notes-rollback"),
-  worldNotesNative = process.argv.includes("--world-notes-native") || worldNotesZoom200 || worldNotesFault,
+  worldNotesRecovery = process.argv.includes("--world-notes-recovery"),
+  worldNotesNative = process.argv.includes("--world-notes-native") || worldNotesZoom200 || worldNotesFault || worldNotesRecovery,
   atlasCampaignRuntime = process.argv.includes("--atlas-campaign-runtime") || atlasCampaignABA || worldNotesNative || hex04DungeonAtLocation,
   atlasSpatial = process.argv.includes("--atlas-spatial") || atlasCampaignRuntime,
   hex03Location = process.argv.includes("--hex03-location"),
@@ -384,6 +385,14 @@ function prepare() {
         fs.writeFileSync(destination, bytes);
       }
     }
+  }
+  if (worldNotesRecovery && restart) {
+    const recoveryCase = JSON.parse(fs.readFileSync(path.join(qa, "world-notes-recovery-case.json"), "utf8"));
+    for (const write of recoveryCase.journal.writes)
+      assert.equal(fs.readFileSync(path.join(vault, write.path), "utf8"), write.after, write.path);
+    const journalFile = path.join(vault, recoveryCase.journal.journalPath);
+    assert.equal(fs.existsSync(journalFile), false);
+    fs.writeFileSync(journalFile, JSON.stringify(recoveryCase.journal));
   }
   for (const f of ["main.js", "manifest.json", "styles.css"])
     fs.copyFileSync(
@@ -920,7 +929,7 @@ async function workflow() {
         renderCount: e.renderer.renderCount,
       };
     });
-  const scenarioContext = { page, browser, fs, path, assert, crypto, PNG, root, pluginRoot, qa, vault, sourceVault, restart, out, checks, worldNotesZoom200, worldNotesFault, chooseTool, editorAction, selectOnlyObjects, waitForFileAbsent, sleep, resolveQaAppCgroup };
+  const scenarioContext = { page, browser, fs, path, assert, crypto, PNG, root, pluginRoot, qa, vault, sourceVault, restart, out, checks, worldNotesZoom200, worldNotesFault, worldNotesRecovery, chooseTool, editorAction, selectOnlyObjects, waitForFileAbsent, sleep, resolveQaAppCgroup };
   if (worldNotesNative) {
     const scenario = require("./host/world-notes-native.cjs")(scenarioContext);
     if (restart) await scenario.reopen(); else await scenario.edit();

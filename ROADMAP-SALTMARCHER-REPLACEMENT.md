@@ -155,6 +155,16 @@ unter eigenem `DUNGEON_QA_ROOT`; Belege liegen unter
 Dies ist ein eigener kontrollierter Fehler-/Rollbacknachweis, kein unabhängiger
 Review und kein echter Prozessabbruch oder Stromausfall.
 
+Ein zweiter eigener Hostfall leitet aus den tatsächlichen Before-/After-Bytes
+einer Gerücht-Tombstone-Speicherung ein gültiges liegen gebliebenes
+Committed-Journal ab. Beim Neustart eines separaten echten Obsidianprozesses
+wird es vor dem World-Notes-Mount geprüft und entfernt; die gespeicherte Prosa,
+Beziehung und das Tombstone bleiben sichtbar beziehungsweise ausgeblendet wie
+erwartet. Wiederholbar mit `--world-notes-recovery` und anschließend `--restart`
+im eigenen QA-Root; Belege unter
+`/home/aaron/.cache/dungeon-native-qa/atlasqa-smr02-committed-recovery-01/evidence/`.
+Das ist eine kontrolliert eingesetzte Restjournalprobe, kein physischer Crash.
+
 Offen bleiben unabhängige reale Fehler-/Recoveryqualifikation und die
 zusätzlichen Encounter-Constraint-/NPC-Combat-/World-Planner-Funktionen.
 Ortstags gegenüber Name-only-Anlage warten weiter auf die Zielregel in #44.
