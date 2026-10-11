@@ -86,7 +86,7 @@ normal Quit/keine Zwangstermination, PIDs weg,
 [Slot zurück](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6107594334).
 Fehler-Vault, Rohbelege und ausgeführte Helfer bleiben unverändert.
 
-**Gezielte Reparatur C01-N01:** Quelle `a07c274a6f9c83ac5d472148e7f3de5b68940c49`,
+**Gezielte Reparatur C01-N01 ([PR157](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/157)):** Quelle `a07c274a6f9c83ac5d472148e7f3de5b68940c49`,
 Shared `fcec3593` regulär konsumiert. Campaignmount besitzt managed Suspend/
 Retain/Dispose; View sichert Draft ohne vorherige Zerstörung. Renderer verbraucht
 Application einmal, auch nach spätem Init. Drei Regressionen scheitern auf8d8ff3ae
