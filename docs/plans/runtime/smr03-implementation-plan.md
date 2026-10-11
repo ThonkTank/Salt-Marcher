@@ -1,15 +1,16 @@
 ---
 area: runtime
 owner: Chronik
-issue: 143
+issue: 147
 status: active
 checkpoint: saltMarcherReplacement
 ---
 
 # SMR-03-I01 – Hostneutraler Party-/Scene-/Live-Session-Kern
 
-Status: **I01-A und I01-B sind in Shared integriert; I01-C beginnt in getrennten
-Paketen mit C01 in Issue #143. Kein Persistenz-, Host- oder Gesamtprodukt-Go.**
+Status: **I01-A, I01-B und I01-C01 sind in Shared integriert; I01-C02 bis C05
+werden in Issue #147 als ein zusammenhängendes Lifecycle-Paket umgesetzt. Kein
+Persistenz-, Host- oder Gesamtprodukt-Go.**
 
 ## Gebundener Stand
 
@@ -20,8 +21,8 @@ Paketen mit C01 in Issue #143. Kein Persistenz-, Host- oder Gesamtprodukt-Go.**
 - Source-Owner-Ratifikation: Issue #6, Kommentar `6088996383`.
 - Music/Weather/Shops-Consumer-Ratifikation: direkt erzeugter und unverändert
   integrierter Commit `ed755aedd1dd3d2a85556ce51ed576b25527595d`.
-- Aktueller integrierter Shared-Ausgangspunkt für I01-C01:
-  `632c580377366af66ab05efcefa3910564f8af48`.
+- Aktueller integrierter Shared-Ausgangspunkt für I01-C02 bis C05:
+  `9527c2da76b674934827bb3bf3773eebc453b45f` (C01 über PR #146).
 - I01-Planreview: Issue #6, Kommentar `6089122945`,
   `CHANGES_REQUIRED` für gemeinsame Rejoin-/Clock-Publikation,
   Prepared-Runtime-Kopie und vollständige Acceptance-/Slice-Zuordnung.
@@ -79,13 +80,16 @@ Fachzustand wiederverwendet.
 | `contracts.ts`            | readonly DTOs, Revisionen, Lifecycle-Enums und parse-/assert-Funktionen                              | Repository-, UI- oder Fachowner-Implementierung                       |
 | `state.ts`                | immutable `PartyState`, `SceneState`, `LiveSessionState`, Tombstone-/Pending-Referenzen              | Consumerzustände fremder Fachbereiche                                 |
 | `commands.ts`             | diskriminierte, revisionierte Command-Requests und fachliche Ergebnis-/Konflikttypen                 | direkte Writes, globale Singletons oder UI-Callbacks                  |
+| `evidence.ts`             | einziger schmaler Bridge-Parser für kanonische Campaign-IDs und SHA-256-Belege                       | Aggregate-, Owner-, Persistenz- oder Hostlogik                        |
 | `party-aggregate.ts`      | Roster, Membership, Profile, XP/Rest, PartyRevision und History-Entscheidungen                       | SceneClock, Encounter-, Shop-, Weather- oder Music-Wahrheit           |
 | `scene-aggregate.ts`      | Primary, Focus, Scene-Zuordnung, Split/Rejoin, Empty-Scene-Cleanup und SceneRevision                 | Partyprofil, Karteninhalt, Clockwert oder Maskenpayload               |
 | `mask-reconciliation.ts`  | owner-neutrale Teilnehmer-/Retirement-Pflichten mit erwarteten Revisionen                            | Encounter-/Chase-Regeln, Completion oder Effects                      |
 | `projections.ts`          | tief eingefrorene Party-, Focus-, LiveScene- und LiveSession-Projektionen                            | Playerprojektion oder private Daten fremder Owner                     |
-| `coordinator-contract.ts` | Stage/Validate/Publish/Verify/Finalize-, Cancel-, Receipt- und Pending-Verträge                      | konkrete Transaktion, Dateisystem, SQL oder IPC                       |
-| `reference-owners.ts`     | Registry-/Manifest-/Erasure-Slot- und Quarantäne-Vertragstypen                                       | frei interpretierbare Pfade, SQL-Schlüssel oder fremde Payloads       |
+| `multi-owner-model.ts`    | Stage/Validate/Publish/Verify/Finalize-, Cancel-, Receipt- und Pending-Modell                         | konkrete Transaktion, Dateisystem, SQL oder IPC                       |
+| `reference-owners.ts`     | Registry-/Manifest-/Erasure-Slot-, Tombstone- und Closure-Verträge                                   | frei interpretierbare Pfade, SQL-Schlüssel oder fremde Payloads       |
+| `portability.ts`          | Complete-/Salvage-/Evidentiary-Entscheidungen sowie gebundene RetainedQuarantine-Rebinds             | reale Bytes, Providersemantik oder stiller Downgrade                  |
 | `history.ts`              | bounded 100-step PartyCommandHistory, kausale Undo-/Redo-Pläne und irreversible Tombstonegrenzen     | SMR-07-Campaign-History oder rekonstruierbare gelöschte Personendaten |
+| `deletion.ts`             | permanente Character-Löschung, Aggregate-Cleanup und Closure-/Purge-Entscheidung                     | physische Erasure, durable Receipts oder Hostzugriff                  |
 | `index.ts`                | ausdrücklich freigegebene öffentliche Kernoberfläche                                                 | Hostadapter oder Convenience-Reexport fremder Interna                 |
 
 Die Dateiteilung ist eine Implementierungsgrenze, keine Aufforderung, alles in
@@ -438,13 +442,16 @@ Vor I01-A sind für diesen Plan erforderlich:
 Ein Plan-PASS ist keine Produkt-, Host-, Persistenz-, Acceptance- oder
 Gesamtfreigabe.
 
-#### Arbeitsstand #90 / #143
+#### Arbeitsstand #90 / #143 / #147
 
 I01-A ist über PR #88 als Shared-SHA
 `d9eda92f8270b364322e3c9a4cb2af5c2c69c8f7` integriert. I01-B ist über seine
 getrennten Kandidaten vollständig in Shared integriert und in Issue #90 im
-reinen Modellscope abgeschlossen. I01-C01 ist in Issue #143 auf
-`codex/smr-03-i01c-reference-owners` beansprucht.
+reinen Modellscope abgeschlossen. I01-C01 ist über PR #146 als Shared-SHA
+`9527c2da76b674934827bb3bf3773eebc453b45f` integriert. C02 bis C05 sind in
+Issue #147 als ein Lifecycle-Paket auf `codex/smr-03-i01c-lifecycle`
+beansprucht; die Teilschritte sind interne Reviewgrenzen, keine getrennten
+Kleinstpakete.
 
 Bereits unabhängig bestätigt sind strikte immutable Aggregatezustände,
 Initialize, Prepared Runtime, Focus und Move samt Cleanup sowie ownergebundene
@@ -496,9 +503,13 @@ DTO-Größe werden nur diagnostisch ausgegeben und bilden keine Host-,
 Plattform- oder Produktgrenze.
 
 Damit sind alle für I01-B geplanten reinen Aggregate-, Masken-, Fuzzer- und
-Scale-Pakete in Shared integriert. Dieser Arbeitsstand schließt nur den
-I01-B-Modellscope; er ist kein Host-, Persistenz-, Durable-, UI-, Acceptance-
-oder Gesamtprodukt-PASS.
+Scale-Pakete sowie I01-C01 in Shared integriert. Das laufende Paket #147
+ergänzt bounded PartyHistory mit kausalem Undo/Redo, importgebundene
+RetainedQuarantine-/Portability-Entscheidungen, irreversible
+Delete-/Closure-Entscheidungen und das vollständige In-Memory-Fünfphasenmodell.
+Ein integrierter Golden-Master verbindet Preparation, Move, Rejoin, History
+und permanente Closure. Dieser Arbeitsstand ist kein Host-, Persistenz-,
+Durable-, UI-, Acceptance- oder Gesamtprodukt-PASS.
 
 Der Masken-Slice bewahrt vollständige owner-/scenegebundene Prepared-Beiträge
 als modelllokale Append-/Replay-Evidenz und validiert Projektionen direkt gegen
@@ -510,8 +521,8 @@ Historien-, Basis- und Head-Felder beweisen. Die Architekturentscheidung
 manipulationssicherer Verlauf benötigt zuerst eine separat bezogene
 Owner-/Generations-Authority samt verifizierbarem Receipt-Head in I02.
 
-Vor Masken-Produktcode ist die offene Encounter-/Chase-Ownergrenze für
-konkrete Maskenidentität, Teilnahmeprojektion und Pending-Reconciliation zu
-schließen. Permanente Löschung, History und Coordinator gehören vollständig
-zu I01-C; Host, Persistenz, Durability und UI bleiben I02/I03. Kein bisheriger
-Checkpoint behauptet einen Produkt-Gesamtpass.
+Konkrete Encounter-/Chase-Fachlogik bleibt außerhalb des generischen
+Masken-Lifecycles. Permanente Löschung, History, Portability-Verträge und
+Coordinator gehören vollständig zu I01-C; Host, Persistenz, Durability und UI
+bleiben I02/I03. Kein bisheriger Checkpoint behauptet einen
+Produkt-Gesamtpass.

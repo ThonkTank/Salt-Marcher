@@ -7,9 +7,14 @@ const ROOT = new URL("../src/features/live-session/", import.meta.url);
 const ALLOWED_STATIC_IMPORTS = new Set([
   "./commands",
   "./contracts",
+  "./deletion",
+  "./evidence",
+  "./history",
   "./ids",
   "./mask-reconciliation",
+  "./multi-owner-model",
   "./party-aggregate",
+  "./portability",
   "./projections",
   "./reference-owners",
   "./scene-aggregate",
@@ -84,7 +89,7 @@ function assertLocalStaticImports(source, file = "module.ts") {
     if (dependency.specifier === "../campaign/campaign-contracts")
       assert.equal(
         file,
-        "reference-owners.ts",
+        "evidence.ts",
         `${file} uses the narrowly allowed Campaign contract bridge`,
       );
   }
@@ -95,10 +100,15 @@ test("live-session core has no host, persistence or player-display surface", asy
   assert.deepEqual(files.sort(), [
     "commands.ts",
     "contracts.ts",
+    "deletion.ts",
+    "evidence.ts",
+    "history.ts",
     "ids.ts",
     "index.ts",
     "mask-reconciliation.ts",
+    "multi-owner-model.ts",
     "party-aggregate.ts",
+    "portability.ts",
     "projections.ts",
     "reference-owners.ts",
     "scene-aggregate.ts",
