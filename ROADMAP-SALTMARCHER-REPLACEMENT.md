@@ -203,8 +203,12 @@ manuelle-ID-Korrektur wurde im DOM geprüft, nicht im früheren nativen Lauf.
 
 Der nächste #68-Kandidat macht aktive NPC-Notizen über ihre gespeicherte
 Kreatur-ID in der vorhandenen Notizsuche auffindbar, ohne neuen Index oder
-Speichervertrag. Native Frischprozessprobe und unabhängiger Review stehen aus;
-die vollständige World-Planner-/SMR-02-Abnahme bleibt offen.
+Speichervertrag. Auf sauberem Source `8621d202` bestand eine isolierte echte
+Obsidian-Edit-/Frischprozessprobe mit gespeicherter NPC-ID `goblin` und
+ausgeblendeter fremder Fraktion; beide Prozesse endeten normal. Rohbelege:
+`/home/aaron/.cache/dungeon-native-qa/atlasqa-creature-ref-search-20261011/evidence/`.
+Unabhängiger Review und Shared-Integration stehen aus; die vollständige
+World-Planner-/SMR-02-Abnahme bleibt offen.
 
 ### SMR-03 – Party, Scene und Live Session
 
