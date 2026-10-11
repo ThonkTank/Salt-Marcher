@@ -934,7 +934,8 @@
       "guiUsed": false,
       "productEdited": false,
       "phaseApproval": false,
-      "finishedAt": "2026-10-11T01:22:18.595642+00:00"
+      "finishedAt": "2026-10-11T01:22:18.595642+00:00",
+      "publicationPullRequest": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/96"
     },
     "nextRun": {
       "id": "E2E-01-HEX04-INSPECTOR-N02-GM-CONSUMPTION",

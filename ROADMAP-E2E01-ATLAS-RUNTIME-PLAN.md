@@ -39,6 +39,8 @@ Produktänderung, GUI, CITY oder E2E-02–04 begonnen.
 
 #### Arbeitsstand #80
 
+Kandidat: https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/96
+
 Integrierter H02-Eingang: [PR94](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/94).
 
 Integrierter Reparatureingang: [PR91](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/91).
