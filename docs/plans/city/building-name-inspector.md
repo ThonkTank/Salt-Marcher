@@ -15,6 +15,37 @@ bessere Bedienung bleiben der Gesamtumfang; dieser Weg ist keine Gesamtfreigabe.
 
 ## Arbeitsstand #92
 
+Inspector und Fachaktion sind über [PR93](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/93)
+integriert; [PR98](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/98)
+behebt den direkten Save eines noch offenen Namens. [PR101](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/101)
+enthält den unabhängig geprüften H02-Hostprüfer und portable Rohbelege. Kein
+weiterer Inspector-, Save- oder H02-Reviewauftrag steht aus.
+
+Der aktuelle gemeinsame Produktstand ist über den Sharedbranch erreichbar.
+H01 bleibt an Produkt0315b13/Builda12b609 gebunden; H02 an Produkt73bfe22/Build1afac1d.
+Beide Receipts und sämtliche Originale bleiben unverändert. H02 belegt den
+kontrollierten nativen Citywrite-/Manifestfehler, vollständigen Rollback,
+sichtbaren Retry ohne weitere Historywirkung und echten frischen Prozess.
+Es ist kein Nachweis für Hex' später integrierte N03-Scrollkorrektur.
+
+**Jetzt fehlender Anschluss:** [freier Cloud-GM-Test](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/92#issuecomment-6104519136)
+unter bestehendem Claim GM-CITY-HOUSE-NAME-CLOUD-UI-RETEST-20261011-01. Eine
+uneindeutige Zuordnung von CDP-Ziel und sichtbarem Display blockierte den
+Nutzerlauf vor Cityeingabe. Cloud-GM klärt/repariert seinen eigenen isolierten
+Host; keine fremden Fenster schließen oder den Nutzervault verwenden.
+Danach einmal auf tatsächlich gebautem aktuellem Shared: Haus auffinden,
+Namen ändern, gemeinsames Undo/Redo, direkt speichern und wiederverwenden;
+[City und N03-Feldauffindbarkeit gemeinsam prüfen](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/92#issuecomment-6104526231).
+Stadt konsumiert den konkreten Citybefund, Hex erhält dessen #80-Konsequenz.
+Keine zweite parallel laufende Atlas-/GM-Probe.
+
+**Offen:** freie GM-Abnahme, physische Bedienung und breite Recovery-/Gesamtparität.
+Der Markerüberlappungsbefund beim Einstiegszoom bleibt ein konkreter
+Auffindbarkeitseingang; Producerzoom ist keine freie GM-Abnahme. Bei unverändertem
+Hostblock nur kompatible unabhängige Arbeit, keine erneuten Receipt-/Reviewpakete.
+
+## Inspector- und Fachaktionsbelege
+
 Branch city/building-name-inspector auf Shared ca29032. Erste Fachaktion
 `set-building-name` in CityEdit ist umgesetzt. Bestehender Citycodec prüft den
 vollständigen Endzustand; Namensbytes werden weder getrimmt noch normalisiert.
@@ -57,9 +88,9 @@ ersetzt; Picking und echter Prozess-Neustart sind damit nicht qualifiziert.
 
 ## Verbleibende Umsetzung und Abnahme
 
-1. Unabhängige Stewardintegration des geprüften Kandidaten nach grünem Gate.
-2. Freie unabhängige GM-Bedienprobe, einschließlich Hausauswahl beim Einstiegszoom.
-3. Reale Fehler-/Recovery- und physische Abnahme nach dem Fachvertrag.
+1. Cloud-GM schließt den konkreten Hostblock und prüft den oben beschriebenen gemeinsamen Nutzerweg.
+2. Stadt behebt neue tatsächliche Citybefunde im bestehenden Paket.
+3. Physische und breite Recoveryabnahme nach dem Fachvertrag bleiben eigenständige offene Grenzen.
 
 DOM-/Repository-/Modellreopen-Belege sind keine GPU-, native GUI-/Prozess-,
 Gesamt-E2E- oder Paritätsfreigabe. Kein Eingriff in #80-H01-Belege.
@@ -141,6 +172,6 @@ normal beendet (Exit0), keine erzwungenen PIDs; Slot ausdrücklich zurückgegebe
 [H02-Rohquittung](../../reference/city-building-name-h02/receipt.json) bindet
 Originalresultate, Builds, Lifecycle, Fehlzustand/Retry/Freshbilder und ganze
 Citybaseline. Sichtbarer Fehltext und exakter Name sind in den Bildern erkennbar.
-Enger unabhängiger Prüfer-/Rohbelegreview bleibt offen; kein physischer oder
-breiter Recoverypass. Cloud-GM arbeitet separat
-am bereits gestarteten freien #92-Ablauf, Hex am #80-Scrollfix.
+Enger unabhängiger [H02-R01](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/101#issuecomment-6104511968) ist PASS und [Stewardintegration](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/101#issuecomment-6104557821) abgeschlossen; kein physischer oder
+breiter Recoverypass. Cloud-GM repariert seinen Host vor dem freien gemeinsamen
+#92-/N03-Ablauf; Hex bleibt Owner der #80-Konsequenzen.

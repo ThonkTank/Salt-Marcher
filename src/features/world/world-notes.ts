@@ -162,8 +162,13 @@ export function changeWorldNotes(snapshot: WorldNotesSnapshotV1, expected: Campa
 export function searchWorldNotes(snapshot: WorldNotesSnapshotV1, query: string,
   kinds?: readonly WorldNoteKind[]): readonly WorldNoteV1[] {
   const needle = query.trim().normalize("NFKC").toLocaleLowerCase("de");
+  const activeTitles = new Map(snapshot.records.filter((record) => !record.deleted)
+    .map((record) => [record.id, record.title]));
+  const matches = (value: string): boolean =>
+    value.normalize("NFKC").toLocaleLowerCase("de").includes(needle);
   return Object.freeze(snapshot.records.filter((record) => !record.deleted &&
     (!kinds || kinds.includes(record.kind)) &&
-    [record.title, record.readAloud, record.gmNotes].some((value) =>
-      value.normalize("NFKC").toLocaleLowerCase("de").includes(needle))));
+    ([record.title, record.readAloud, record.gmNotes].some(matches) ||
+      record.relations.some((relation) => matches(relation.label) ||
+        (activeTitles.has(relation.targetId) && matches(activeTitles.get(relation.targetId)!))))));
 }

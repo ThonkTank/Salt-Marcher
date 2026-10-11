@@ -176,6 +176,15 @@ Exact-SHA-Hostlauf und keine visuelle Abnahme durch den Reviewer.
 Offen bleiben breitere Crash-/Recoveryqualifikation, physische Tastatur und die
 zusätzlichen Encounter-Constraint-/NPC-Combat-/World-Planner-Funktionen.
 Ortstags gegenüber Name-only-Anlage warten weiter auf die Zielregel in #44.
+PR #99 erweitert die Notizsuche um aktive Beziehungsnamen
+und Namen ihrer Ziele. Aus einer unveränderten Notiz lässt sich das Ziel öffnen;
+ein bearbeiteter Entwurf bleibt erhalten. Ein isolierter echter Obsidianlauf auf
+sauberem Source `a7cc6991` hat Suche, Entwurfschutz und Zielöffnung in einem
+frischen Prozess bestätigt; beide Prozesse endeten normal. Rohbelege:
+`/home/aaron/.cache/dungeon-native-qa/atlasqa-relation-search-h02/evidence/`.
+Synthetische Fixture und automatisierte Eingabe. Unabhängige enge Such-R01-
+und Navigations-R02-Reviews bestanden; Shared-Merge `88f455cb`. Keine neue
+Datenhaltung oder Gesamt-SMR-02-Freigabe.
 
 ### SMR-03 – Party, Scene und Live Session
 
