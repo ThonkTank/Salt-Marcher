@@ -80,46 +80,46 @@ belegt vier Baseline-FAIL und50/50 betroffene Managed/Vaultadapter-Hosttests PAS
 integrierte in0b6aa819; CI38115663534/38116230853 SUCCESS, Eltern/Baum/Blobs und
 fremde Wurzeln geprüft. DOM-/Modellschutz ist belegt; nativer IME-Guard bleibt offen.
 
-**H01/H02 unverändert erhalten:**
+**IME-Hostbelege bleiben quellgebunden:**
 [H01](docs/reference/atlas-detail-binding-d01/inspector-ime-save-h01.json)
-auf5f542ded/Shared0b6aa819 sah Komposition/keyup, keinen KeyS-keydown im Dokument.
-[H02](docs/reference/atlas-detail-binding-d01/inspector-ime-save-h02.json)
-auf64b6eb58/Shared25e6155 beobachtete beide CDP-Modi am Window-Capture bereits
-defaultPrevented/cancelBubble=true; Document/Panel/Field sahen nur keyup.
-Pflichtassertion/RunnerExit1 bleiben erhalten, kein nativer Guard-PASS oder
-Produkt-FAIL. Text/History0/alle8 Bytes und normales Appende bleiben belegt.
+und [H02](docs/reference/atlas-detail-binding-d01/inspector-ime-save-h02.json)
+bleiben mit ihren fehlenden Document-/Panelkeydowns und Roh-FAIL erhalten.
+[H03](docs/reference/atlas-detail-binding-d01/inspector-ime-handler-h03.json)
+identifiziert auf697ff20d/Shareddbcecc79 direkt Obsidian `e.onKeyEvent` als
+Callbackbracket der komponierenden Ctrl+S-Unterbrechung; die innere Scope-
+Rückgabe wurde nicht gemessen. Text/History0/alle8 Bytes erhalten, normales
+Appende, keine Handlerersetzung oder Guard-/Save-/Gesamtqualifikation.
 
-**H03 identifiziert den Hostcallback:**
-[Quellgebundener passiver Trace](docs/reference/atlas-detail-binding-d01/inspector-ime-handler-h03.json)
-auf697ff20d/qualifiziertem Shareddbcecc79, isoliertem Obsidian1.14.4/Electron43.7.7
-und Spatial-V2. Neuer sauberer Build/installiertes Tripel ist bytegleich zu H02.
-Drei vorhandene Window-Capture-Callbacks direkt enumeriert; Funktionsbreakpoints
-beobachten genau einen trusted komponierenden Ctrl+S mit TargetOrtsname.
-Vor Obsidian `e.onKeyEvent` aus `app://obsidian.md/app.js` sind beide Flags false;
-beim folgenden Atlas-Capture sind defaultPrevented/cancelBubble=true. Hostquelle
-delegiert an aktiven Window-Scope/handleKey und enthält den preventDefault-/
-stopPropagation-Zweig bei false-Rückgabe; diese innere Rückgabe wurde nicht
-separat gemessen. Tatsächlicher Callback/Quellhash und Eintrittsfolge sind belegt.
-Document/Panel/Field sehen weiterhin keinen keydown. Keine Handlerersetzung/
--umgehung oder Produktänderung. „H03 Ortsname 東京“ exakt pending, History0,
-Modelle/Kamera und alle8 Bytes auch nach normalem app.quit unverändert.
-RunnerExit0 gilt nur Trace/Erhalt; nativer Panelguard/bestätigter Save bleiben
-offen. Vier App-PIDs weg, keine Zwangstermination, frisch koordinierter Slot
-ausdrücklich zurückgegeben. PR123 vor Host und qualifizierter PR131 vor
-Belegsicherung konsumiert; native Quelle bleibt697ff20d.
+**Aktueller konkreter Savebefund HEX80-H04-01:**
+[H04-Rohbindung](docs/reference/atlas-detail-binding-d01/inspector-confirmed-save-h04.json)
+auf sauberer Source12265c20/qualifiziertem Shared25792fb, Spatial-V2 und
+Obsidian1.14.4. Ein trusted **nicht komponierendes** Ctrl+S am fokussierten
+Ortsnamen ist bereits am Window prevented/stopped; Document/Panel/Field sehen
+keinen keydown. „H04 Bestätigter Ortsname“ bleibt nach1,2s exakt pending,
+History0, Repository clean/kein Draft und alle8 nativen Dateien unverändert.
+Der getrennte sichtbare Speichern-Kontrollschritt speichert exakt diesen Namen
+mit einer History; Kamera, Repository, Historyowner, Token, Dungeon und sechs
+fremde Spatialdateien erhalten. Vollständige Campaign nur in neun erlaubten
+Location-/Owner-/Registrydigest-Revisionsfeldern geändert; Locationdigests
+entsprechen nativem Bytehash. Übrige Ableitungen nur formgeprüft, nicht unabhängig
+recomputiert. Payload auch nach normalem app.quit erhalten; alle vier PIDs weg,
+keine Zwangstermination und Slot ausdrücklich zurückgegeben. RunnerExit1 und
+Shortcut-FAIL bleiben wahr. Erster Start stoppte vor Eingabe an meinem unnötigen
+QA-API-Aufruf; Originalhelfer/Rohfehler erhalten, korrigierter Helfer und zweiter
+Start frisch abgestimmt. Keine Produktänderung. PR132 vor Host und qualifizierter
+PR130 nach Host konsumiert; native Belege bleiben an12265c20 gebunden.
 
-**Nächster eigener Schritt:** Unterstützten Obsidian-View.scope-/Scope-Vertrag
-lesen und tatsächlichen bestätigten, nicht komponierenden Ctrl+S-Save am
-fokussierten Orts-Key prüfen. Erst ein konkreter Savebefund begründet einen
-Routingfix über diesen Hostvertrag. Keine weiteren unveränderten CDP-Varianten,
-Handlerumgehung/-ersetzung oder Produktfix allein aus dem verhinderten
-komponierenden Ereignis. R01-Guards/Vorbelege erhalten; jede weitere lokale GUI
-benötigt neue ausdrückliche Slotabstimmung. Keine allgemeine Reviewrunde.
+**Nächster eigener Schritt:** Bestätigten Ctrl+S-Save im bestehenden #80 über
+unterstützten Obsidian `View.scope`/`Scope`-Anschluss reparieren: bestehender
+serieller Atlas-Save mit aktueller Bindung/Pending-Key-/Kompositionsguards.
+R01-Orts-/Raumprädikate erhalten, keine Hosthandlerumgehung/-ersetzung oder
+weitere unveränderte IME-Varianten. Gezielte Regression und native Bestätigung
+benötigen einen frisch koordinierten Slot. Keine allgemeine Plan-/Reviewrunde,
+kein konkurrierender City-Savefix oder abhängiger Detailausbau.
 
 **Offen:** Room/Meta, physische IME, Copy/Discard/Recovery, äußeres Clipping,
-Gesamt-E2E sowie Original-/Großkarten-/Nutzervaultabnahme behalten getrennte
-Nachweise. Kein abhängiger Detailausbau. R01/H01/H02/H03 und
-N04-Qualification/FreshReuse spiegeln genaue Quellen und Grenzen.
+Freshprozess des Routingfixes, Gesamt-E2E sowie Original-/Großkarten-/Nutzervault-
+abnahme bleiben getrennt. Historische R01/H01–H03/N04/FreshReuse nicht umdeuten.
 
 ## Historische Planbasis und Lieferbelege
 
