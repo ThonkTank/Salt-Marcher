@@ -28,6 +28,7 @@
 - Wiederkehrende Contributor-/Pflege-/Berichtsaufträge: [Arbeitsrollen](AGENT-ROLES.md); gemeinsame Regeln bleiben im Einstieg und Pflege-/Arbeitsvertrag.
 - Synthetische Fixtures ohne GUI: [Campaign B reproduzieren](CONTRIBUTOR-FIXTURE-B.md).
 - Atlas-Save-/Hostkontext: aktueller Aufgabenstand in [#80](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80), [Fachvertrag](../ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md), [Dungeon-am-Ort-H01 und freier GM-Eingang](reference/atlas-detail-binding-d01/dungeon-at-location-h01.md); frühere H01/D01/R01/H02-Läufe nur gezielt im [Belegregister](reference/PLAN-REGISTER.md#atlas-laufbelege).
+- Begrenzter Cloud-GM-N04-Such-/Bearbeiten-/Speichern-/Wiederverwenden-Nachtest für #80: [Runbericht, Buildidentität und Roh-Screenshots](reference/gm-cloud-n04-20261011/README.md).
 - Bestehende Detailpläne und historische Pakete: [Fachplanregister](reference/PLAN-REGISTER.md). Keine Pflichtlektüre beim Einstieg; stabile Pfade bleiben erhalten.
 - GM-Testvorlagen und frühere UI-Nachweise: [bestehender Testplan](../ROADMAP-GM-PRODUCT-TESTING-PLAN.md), nur den benötigten Szenario-/Belegabschnitt lesen. Aktueller Auftrag steht in der GUI-Testrolle und am Paket.
 - Attribution: [NOTICE](../NOTICE.md), [SRD](../src/features/catalog/SRD-5.1-ATTRIBUTION.md), [Items](../src/features/catalog/SRD-5.1-ITEMS-ATTRIBUTION.md).
