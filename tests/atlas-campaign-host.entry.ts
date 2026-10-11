@@ -1643,3 +1643,35 @@ test('City house direct save preserves textarea focus without taking toolbar foc
   assert.equal(f.document.activeElement === toolbar, true, 'inspector must not take external focus');
   await f.close();
 });
+
+for (const modifier of ['ctrlKey', 'metaKey'] as const) {
+  test(`City house ${modifier}+S does not save an unfinished IME composition`, async () => {
+    const f = await fixture(true);
+    try {
+      const source = await clickHouse(f, uuid(106)), before = source.read(),
+        bytes = new Map(f.vault.bytes), depth = active(f).history.undoDepth,
+        field = f.input('[aria-label="Gebäudename"]', '未確定の名前');
+      field.focus();
+      const composing = new f.window.Event('keydown', { bubbles: true, cancelable: true });
+      Object.assign(composing, { key: 's', [modifier]: true, isComposing: true });
+      field.dispatchEvent(composing);
+      await (f.editor() as any).work;
+      assert.deepEqual(source.read(), before, 'unfinished composition must not publish a City edit');
+      assert.equal(active(f).history.undoDepth, depth);
+      assert.deepEqual(f.vault.bytes, bytes, 'unfinished composition must not save native files');
+      assert.equal(f.editor()!.pendingKey, true);
+      assert.equal(field.value, '未確定の名前');
+      assert.equal(field.isConnected, true);
+      assert.equal(f.document.activeElement === field, true);
+      assert.equal(composing.defaultPrevented, false);
+      const confirmed = new f.window.Event('keydown', { bubbles: true, cancelable: true });
+      Object.assign(confirmed, { key: 's', [modifier]: true, isComposing: false });
+      field.dispatchEvent(confirmed);
+      await (f.editor() as any).work;
+      assert.equal(confirmed.defaultPrevented, true);
+      assert.equal(source.read().buildings.find(b => b.id === uuid(106))!.name, '未確定の名前');
+      assert.equal(active(f).history.undoDepth, depth + 1);
+      assert.equal(f.vault.bytes.get(`Städte/${uuid(100)}.city`), serializeCityDocument(source.read()));
+    } finally { await f.close(); }
+  });
+}
