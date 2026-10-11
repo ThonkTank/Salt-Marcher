@@ -45,4 +45,4 @@ Zum Schluss muss `git status --short` leer bleiben. Das zeigt, dass der Generato
 
 ## Grenze des Nachweises
 
-Das ist ein deterministischer Modell- und Dateinachweis. Er startet weder Obsidian noch Electron, bedient keinen nativen Picker und belegt keinen echten A→B→A-Hostlauf, keine Installation und keine physische Eingabe. Solche Behauptungen benötigen weiterhin einen separat koordinierten Hostlauf mit eigenem Prozess-, Datei- und Bedienbeleg.
+Das ist ein deterministischer Modell- und Dateinachweis. Er startet weder Obsidian noch Electron, bedient keinen nativen Picker und belegt keinen echten A→B→A-Hostlauf, keine Installation und keine physische Eingabe. Solche Behauptungen benötigen weiterhin einen tatsächlichen Hostlauf mit eigenem Prozess-, Datei- und Bedienbeleg.

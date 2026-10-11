@@ -53,7 +53,6 @@ Fresh1791720224833, PIDs334763/334839/334846/334859.
 Beide Dienste inactive/dead/MainPID0/Exit0, forcedTerminationPids[], normale Enden
 und PIDs weg unabhängig nachgeprüft. Alle1013 geschützten historischen QA-/fremden
 Dateien einschließlich des ursprünglichen R03-Vaults unverändert; Nutzervault unberührt.
-[Neuer ausdrücklich koordinierter Slot](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6108813768), [zurückgegeben](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6108827817).
 
 Portable Originale:
 

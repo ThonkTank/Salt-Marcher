@@ -213,13 +213,7 @@ Urteil ableiten.
 
 ### Paketgates und Bundle-Isolation
 
-Jeder P01-P04- und C01-Umsetzungs-, Nachbesserungs- und Aufräumkandidat muss
-`npm run check`, `npm test` und `npm run build` bestehen. Prototypabhängigkeiten
-sind exakt gepinnte Dev-Abhängigkeiten. Vor und nach dem Lauf werden
-Obsidian-`main.js`, `manifest.json` und `styles.css` gehasht; der Prototyp darf
-keinen Importpfad in das Produktbundle und keine zusätzliche installierte Datei
-erzeugen. Der Build-Importgraph belegt diese Isolation. Änderungen des
-Produktbundlehashs ohne eine zuvor reviewte Produktänderung sind `No-Go`.
+Prototypabhängigkeiten sind exakt gepinnte Dev-Abhängigkeiten. Der Build-Importgraph und Hashvergleich von `main.js`, `manifest.json` und `styles.css` prüfen die Isolation: kein Prototypimport im Produktbundle, keine zusätzliche installierte Datei und keine unbeabsichtigte Produktänderung.
 
 ## Plattform- und Darstellungs-Matrix
 

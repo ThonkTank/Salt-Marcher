@@ -20,9 +20,7 @@
     "input": "synthetic Playwright mouse/keyboard on visible controls; fixture file open is controlled setup",
     "toolchain": "Node v22.22.0",
     "userVaultTouched": false,
-    "sourcesTouched": false,
-    "slot": "Stadt explicitly confirmed each bounded edit/reopen launch; slot returned after normal exit",
-    "slotPeerThread": "01a12022-b67b-7da2-bed5-8ebde169d475"
+    "sourcesTouched": false
   },
   "runs": [
     {
@@ -290,7 +288,6 @@
     "userVaultInstalled": false,
     "fullE2E": false
   },
-  "nextConsumer": "Existing Cloud-GM: early free use through normal product GUI in own isolated host before dependent expansion. Parent #80 stays open. If host access is absent, report concrete missing input without substituting model/DOM tests.",
   "selfReview": "Two QA-oracle assumptions were corrected, not suppressed. Successful runs retain strict native before/after, IDs, geometry, text and process-exit checks. No further full suite repeated: product tree is unchanged and exact merged CI already passed.",
   "finishedAt": "2026-10-10T23:34:50.676462+00:00"
 }

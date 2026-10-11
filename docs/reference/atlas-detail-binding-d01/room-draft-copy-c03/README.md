@@ -38,7 +38,6 @@ Beide Dienste inactive/dead/MainPID0/ExecMainStatus0, forcedTerminationPids[],
 alle gebundenen App-PIDs weg. Original8/Campaignmanifest und tatsächlicher R03-Draft
 `7ec52f2a25b8530857362095b2855381ade3f013d2d798dfed40c75bda201b97`
 bleiben bytegenau, ebenso ausgeführte C01/C02-Eingänge und fremde lokale Änderungen.
-[Neu koordinierter Slot](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6108302663), [konkret zurückgegeben](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6108319297); keine GUI verbleibt.
 
 Portable Originale und Erhaltungsorakel:
 

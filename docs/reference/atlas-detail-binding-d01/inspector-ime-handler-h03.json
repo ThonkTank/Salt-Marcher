@@ -288,16 +288,6 @@
       "tests/object-colorable-tags.test.mjs": "4b5ec9893f70ce047f901316beb1216f0f469a219e6efc24ec236aaf1f648a95"
     }
   },
-  "slot": {
-    "freshConfirmation": {
-      "thread": "01a12022-b67b-7da2-bed5-8ebde169d475",
-      "text": "Stadt bestätigt lokalen GUI-Slot jetzt frisch frei ausschließlich für beschriebenen #80 IME-H03 auf697ff20d/Shareddbcecc79, eigene Spatial-V2-Fixture. Keine eigene GUI währenddessen. Normal beenden und ausdrücklich zurückgeben; kein City/physischer/Gesamtclaim."
-    },
-    "claim": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6106322735",
-    "returned": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6106335310",
-    "held": false,
-    "newExplicitCoordinationRequired": true
-  },
   "processLifecycle": {
     "unit": "dungeon-native-4013005.service",
     "appPids": [
@@ -393,14 +383,6 @@
       "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-ime-handler-h03-20261011/protected-original.json",
       "sha256": "b30feea6f89f88d7d5484bcfe0277ddb05d5fbd03d1d45e4be538a8a7e8a81c2"
     },
-    "slotClaim": {
-      "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-ime-handler-h03-20261011/slot-claim.md",
-      "sha256": "fb8040b5c794d8ad84206a890f30630a0e68576269cbeafba710a23cc8a26ce8"
-    },
-    "slotReturn": {
-      "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-ime-handler-h03-20261011/slot-return.md",
-      "sha256": "3a395864968551472161687aaecd15dfebd26c702d759a0fcfd0ce2239c3751c"
-    },
     "executedScript0": {
       "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-ime-handler-h03-20261011/evidence/1791700789894-atlas-spatial-edit/script-143.js",
       "sha256": "958ce57fe22f87fdf121546e46dfccd9c8ee971ce3fd8f801d60d4ece39a2df9"
@@ -434,7 +416,6 @@
     "largeMap": false,
     "userVaultInstalled": false
   },
-  "nextConsumer": "Hex: consume the concrete Obsidian onKeyEvent/active Scope cancellation. Read the supported View.scope/Scope registration contract and verify whether confirmed noncomposing Ctrl+S actually saves a focused Location Key through the existing host. Do not try more unchanged CDP input variants. A composing panel guard is still unverified because the host stops delivery; a product routing change needs a concrete confirmed-Save finding and must use supported host integration without replacing/removing/bypassing handlers. Reuse the qualified R01 guards and prior proofs. Any new local GUI requires fresh explicit slot coordination. Room/Meta, physical IME and full E2E remain separate.",
   "startedAt": "2026-10-11T06:39:49.482657+00:00",
   "finishedAt": "2026-10-11T06:40:00.339352+00:00"
 }

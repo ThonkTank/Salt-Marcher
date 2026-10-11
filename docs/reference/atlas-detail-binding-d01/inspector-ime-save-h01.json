@@ -183,14 +183,6 @@
     "Atlasdaten/00000000-0000-4000-8000-000000000010/terrain/0_0_0.json": "c32ba3548aa7236e573e145ec0e3c6e75326cc6cd47134a19c2230d2d790f2f2",
     "Kampagnen/SaltMarcher/E2E-01-Atlas-Save.campaign.json": "e66a9c557016357d3dea7491fa7110f9db0eeccf6fed5d1f9510885f6990a6df"
   },
-  "slot": {
-    "peerThread": "01a12022-b67b-7da2-bed5-8ebde169d475",
-    "freshExplicitPeerGrant": true,
-    "claim": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6106110899",
-    "returned": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6106122720",
-    "held": false,
-    "nextLocalGuiRequiresFreshExplicitGrant": true
-  },
   "lifecycle": {
     "unit": "dungeon-native-3969202.service",
     "runnerPid": 3969202,
@@ -256,6 +248,5 @@
     "userVaultTouched": false,
     "fullE2E": false
   },
-  "nextConsumer": "Hex: first resolve the bounded host-input/probe-observation gap: demonstrate a KeyS keydown at the focused Location/Room panel during composition, with complete event provenance before judging the composing Save guard. The current document-capture field logger saw only composing keyup; interception versus non-delivery is not established. Use an appropriate isolated IME host/input or improve this specific observation; do not repeat unchanged H01/whole N04/Save/UndoRedo or expand the product. Any new local GUI requires fresh explicit slot coordination.",
   "finishedAt": "2026-10-11T06:09:33.702876+00:00"
 }

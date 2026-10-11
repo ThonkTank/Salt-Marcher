@@ -395,13 +395,6 @@
     "forcedTermination": false,
     "physicalInput": false
   },
-  "slot": {
-    "request": 6101870675,
-    "confirmation": 6101884556,
-    "claim": 6101897159,
-    "return": 6101912782,
-    "returned": true
-  },
   "fileOutcome": {
     "newLocationId": "0cd27335-111d-45cc-9792-7fef17ee2bfa",
     "markerId": "fe5a8db6-0db5-4683-9d49-f91da7d78073",
@@ -476,7 +469,7 @@
   "priorReceipts": [
     {
       "path": "docs/reference/atlas-shared-location-h01/receipt.json",
-      "sha256": "e628cacae0c0c9bf2c646dc3ec345ee743181133685962efe3cd458002bcf144",
+      "sha256": "0465f5a87d83b97ea91977fb1b7342b66ec1dafd5ee6741835c59e300a51df62",
       "artifactsVerified": 25
     },
     {

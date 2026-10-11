@@ -211,16 +211,6 @@
     "downstreamKeydownExpected": false,
     "nativeInput": "Actual synthetic trusted noncomposing Control+s in real isolated Obsidian at visible focused Ortsname; no direct product Save/model mutation to replace test action."
   },
-  "slot": {
-    "freshConfirmation": {
-      "thread": "01a12022-b67b-7da2-bed5-8ebde169d475",
-      "text": "Stadt hält keine GUI. Frische ausdrückliche Slotbestätigung für genau deinen beschriebenen isolierten H04-Ctrl+S-Fixlauf #80 auf e1bda0a08e985ef74ba1777d1e1588d507f838b7 / Shared29e4ce68 / Spatial-V2, QAroot /home/aaron/.cache/dungeon-native-qa/hex-04/inspector-save-routing-r01-20261011. Pending Ortsname, trusted nicht komponierendes Ctrl+S und benannte Native/History/Kamera/Foreign-Orakel; kein Freshzweiterstart oder weitere IME-Variante. Nutzervault schützen, normal app.quit/PIDs prüfen und Slot anschließend ausdrücklich zurückgeben. Stadt startet daneben keine GUI."
-    },
-    "claim": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6106556206",
-    "returned": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6106563752",
-    "held": false,
-    "futureNewExplicitCoordinationRequired": true
-  },
   "processLifecycle": {
     "unit": "dungeon-native-4069831.service",
     "appPids": [
@@ -333,14 +323,6 @@
     "protectedOriginal": {
       "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-save-routing-r01-20261011/protected-original.json",
       "sha256": "1e710a1a33ba9e6bae00cf35b28501a9e54e745da0e5d6a7f5d0b40906f3b1fc"
-    },
-    "slotClaim": {
-      "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-save-routing-r01-20261011/slot-claim.md",
-      "sha256": "0b3d99fe195c0cf9cde2bd692e7d85d8d775f1e9fe0dde74523be6e3d36b362f"
-    },
-    "slotReturn": {
-      "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-save-routing-r01-20261011/slot-return.md",
-      "sha256": "d47e927f8d0ee3c1e59730d53311915daf0233f3e3648524313a42e79b388315"
     }
   },
   "screenshotsReadByHex": "Directly viewed after-shortcut image: saved exact name in field and marker, Gespeichert, no pending text indicator. Trusted keyboard/History/native hashes established by separate raw oracles.",
@@ -373,7 +355,6 @@
     "originalParity": false,
     "largeMap": false
   },
-  "nextConsumer": "Contributor: independently review the concrete H04 Save-routing repair on the published exact candidate in existing #80: supported View Scope parent/lifecycle, current focus and binding, composition/pending-key guards, same-window duplicate Save suppression, five regressions and source-bound native proof. No selfintegration. After qualified review/integration, Hex consumes concrete findings or the applicable fresh-process/remaining input evidence; Room/Meta, physical IME, Copy/Discard/Recovery and fullE2E remain separate. No general review round or dependent detail expansion.",
   "startedAt": "2026-10-11T07:12:28.208181+00:00",
   "finishedAt": "2026-10-11T07:12:40.079426+00:00",
   "incomingConsumedAfterHost": {

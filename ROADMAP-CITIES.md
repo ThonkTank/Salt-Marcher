@@ -84,7 +84,7 @@ Die vollständigen CITY-Anforderungen bleiben im bestehenden Katalog; Grundfunkt
 
 **Nach CITY-01:** Eine kleine Stadt lässt sich unmittelbar im Atlas zeichnen und speichern. **Nach CITY-02:** Ein erzeugter Plan lässt sich sofort weiterbearbeiten. **Nach CITY-03:** Hex, Straße, Haus, Dungeonraum und Keys sind in einer Sitzung ohne Kontextwechsel bearbeitbar.
 
-CITY-05 ergänzt die zusammenhängenden Stadtstraßen auf der bereits geprüften Linienbasis; CITY-07 nutzt die gemeinsame Asset-/Beschriftungsbasis. Erste Phasen benötigen keine vollständige Dekorationsbibliothek. Aufräumen und zusätzliche Stiloptionen dürfen den geprüften Kernweg nicht verdrängen.
+CITY-05 ergänzt die zusammenhängenden Stadtstraßen auf der bereits geprüften Linienbasis; CITY-07 nutzt die gemeinsame Asset-/Beschriftungsbasis. Erste Phasen benötigen keine vollständige Dekorationsbibliothek. Zusätzliche Stiloptionen bauen auf dem funktionierenden Kernweg auf.
 
 ## Ergebnis- und Funktionskriterien
 

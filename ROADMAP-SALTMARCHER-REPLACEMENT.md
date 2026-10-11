@@ -327,7 +327,7 @@ und Retirement/Recovery im Campaign-Datenvertrag. Der vorhandene Publisher
 wird wiederverwendet.
 
 Startbarer synthetischer Verbraucher: `node tools/manual-planner-preview/build.mjs`.
-[Startanleitung und Grenzen](docs/plans/campaign/manual-session-planner.md#startbarer-flüchtiger-gui-frühtest).
+[Startanleitung und Grenzen](docs/plans/campaign/manual-session-planner.md#ausprobieren-und-nachweise).
 Neuladen/Schließen verwirft Arbeit. Native Save/Fresh/Recovery, Pluginmount,
 physische Eingabe und 200%-Zoom bleiben offen.
 

@@ -14,7 +14,7 @@ Stadtmodell, gemeinsame History, Geometrie, Trefferprüfung und Renderer sind in
 
 Planungsgrundlage: Shared `e157462ee1a4c2b82b0c927df664a8c06fc38cb1`, [Issue #44](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/44), direkter Drei-Produkte-Auftrag vom 09.10.2026 und vorhandenes `acceptance.json.cityPlans.functionalInventory`. Die folgenden Lebensdatenzuordnungen dokumentieren den bisherigen Fachumfang; ihre Lieferung folgt der zentralen Atlaspriorisierung. Die Inventareinträge enthalten historische Originalbeobachtungen mit jeweils offenen Lücken; sie sind kein aktueller vollständiger Originalvergleich.
 
-### Offene Punkte und konkrete Umsetzung für die Umsetzung
+### Offene Funktionen
 
 | Teilziel / vorhandene Quellkennung | Bestehendes Paket und Zielregel | Geplante Dokumentationsänderung und zukünftige Produktabnahme |
 | --- | --- | --- |
@@ -27,7 +27,7 @@ Die jeweiligen exakten `sourceUrl`, beobachteten Zeiten, Originalbelege und `gap
 
 ## Technische Arbeitspakete
 
-| Phase | Umsetzung und Zuständigkeit | Nachweis vor Freigabe |
+| Phase | Umsetzung | Funktionsnachweis |
 |---|---|---|
 | CITY-00 | Drei Originalprodukte funktional inventarisieren; stabile CO-Kennungen pro Fähigkeit, Quellen/Version/Datum und direkte Ergebnisproben. Galerie: Dorf, ummauerte Stadt, Hafen und Detailfläche. FTG zusätzlich Bewohner-, Fraktions- und Zeitabläufe. Katalog und Roadmap auf den aktuellen Auftrag erweitern. | Jedes Inventarelement hat Quelle, eigene Zielaufgabe, technische Zuordnung und offenen/belegten Vergleich; direkte Proben getrennt von Dokumentation. |
 | CITY-01 | `src/features/city/model.ts`: versionierte Metergeometrie, IDs, Straßenknoten/-kanten, Platzkonturen, Gebäude, Grundstücke und Districts. Parser validiert endliche Werte, eindeutige IDs und Referenzen. `city/commands.ts` nutzt den gemeinsamen Atlasbefehl aus HEX-05; keine zweite Undo-Historie. Renderer und Trefferprüfung verwenden denselben Transform. Native Registrierung .city im vorhandenen Host. | Straße/Platz/zwei Häuser im Atlas zeichnen, außerhalb belegter Ausdehnung wachsen, verschieben, Undo/Redo, Save, frischer Prozess. |
@@ -113,7 +113,7 @@ Polygonringe sind implizit geschlossen, haben mindestens drei endliche Punkte un
 2. `codec.ts` liefert `newCityDocument`, `parseCityDocument` und `serializeCityDocument`. Eingaben vollständig prüfen und als eigene tief unveränderliche Daten zurückgeben. Keine fremde Eingabe mutieren/einfrieren; keine Generator-, Datei- oder Hostaktion.
 3. Fehlende/unbekannte Versionen, Einheiten, Felder, doppelte IDs, fehlende Referenzen und ungültige Geometrie vor Übernahme ablehnen. Auch Serialisieren validiert vor JSON-Konversion, damit unbekannte Inhalte nicht still verschwinden. Namen, IDs, Reihenfolge und materialisierte Koordinaten bleiben wertgleich erhalten.
 4. Grundstück-/Viertel-/Straßenreferenzen in einem zweiten Durchlauf nach ID-Erfassung prüfen. Gebäudepose auf numerisch gültige Ergebnisse prüfen; keine implizite Winkelnormalisierung oder Neugeneration.
-5. Gezielte Regressionen in den vorhandenen Testlauf einbinden. `npm run check`, `npm test`, `npm run build` nacheinander ausführen; keine parallele grafische Testinstanz. Produktbuild wird nicht im Nutzervault installiert.
+5. Codec-, Referenz- und Geometrieregressionen im bestehenden Testlauf prüfen.
 
 ## Stadtmodell und Codec — Prüfanforderungen
 
@@ -124,8 +124,6 @@ Nachweisen:
 - Unbekannte Daten, endliche Grenzfälle, Nullbreite/Nullskalierung, doppelte IDs, fehlende Referenzen, Nullsegmente, Selbstschnitt, ungültige Löcher und nicht prüfbare Pose werden abgelehnt.
 - Parser/Konstruktor liefern eigene tief gefrorene Daten; der Serializer verändert das Eingabeobjekt nicht und verliert keine unbekannten Felder durch JSON-Konversion.
 - Drei Basisprüfungen und gezielte Fälle tatsächlich grün; Quell- und Testergebnisse extern dokumentieren. Daraus keine funktionierende Stadtoberfläche, gemeinsame History, Mehrdateispeicherung oder Parität ableiten.
-
-Aufräumen prüft konkrete Abhängigkeiten, doppelte Typ-/Geometrielogik, wiederholte Validierung, nicht benötigte öffentliche Schnittstellen und die Einheitenannahmen. Tatsächliche Entscheidungen werden in `ARCHITECTURE.md` ergänzt.
 
 ## Stadtgeometrie und Treffer
 
@@ -146,7 +144,7 @@ Polygoninnere trifft nur im Außenring außerhalb der Löcher. Randtreffer auf A
 
 CityHit enthält ausschließlich stabile Adresse plus bei Knotentreffer node-Kind. Keine mutable Entity, Kamera oder Kopie der aktuellen CitySource. Die Szene wird aus dem tatsächlichen History-/Vorschau-Snapshot neu abgeleitet; kein zweiter Stadtstand und keine eigene Revision. Unterdrücken, LOD und Sichtbarkeit werden erst mit dem Renderer festgelegt; Zoom löscht keine Auswahl oder Werkzeuge.
 
-## Stadtgeometrie und Treffer — Regressionen und eigenständiger Review
+## Stadtgeometrie und Treffer — Regressionen
 
 1. Reale Straße, Platz und zwei Häuser mit referenzierten Knoten: Shapes behalten IDs/Reihenfolge, Straßenendpunkte und Breite. Gemeinsamer Knotenedit verschiebt alle angeschlossenen Endpunkte, Hauspose transformiert Außenring und Löcher deckungsgleich mit Codecprüfung. Posewerte und Dokument bleiben unverändert.
 2. Gedrehtes/asymmetrisch skaliertes Haus: Innenpunkt, Außenpunkt, Außen-/Innenrand, Ecke und Innenhofmitte. Sehr kleine Kontur und große/negative Position. Ungültige oder kollabierte Pose wird wie im Codec abgelehnt; keine scheinbar gültige Szene aus unbekannten Feldern.
@@ -156,8 +154,6 @@ CityHit enthält ausschließlich stabile Adresse plus bei Knotentreffer node-Kin
 6. Gemeinsame segmentbasierte Dungeonhelfer: degenerierte Strecke, Projektionspunkt außerhalb beider Enden, reguläre schiefe Strecke, geschlossener Ring, Gleichstände und richtige at/edge/index/contour. Vorhandene Gebäude-/Portal-/Pathregressionen bleiben grün; keine fachliche Dungeonänderung aus Cityeinheiten ableiten.
    Vor dem Umbau das aktuelle Geometriemodul separat für eine externe Baselinegegenprobe sichern. Bei regulären Strecken bleiben Adressen und Gleichstandsfolge exakt; numerische Ergebnisse mit ausdrücklich dokumentierter Toleranz vergleichen, keine unbelegte bitweise Gleichheit durch geänderte Rechenreihenfolge behaupten. Lange Strecken haben eigene analytisch bekannte Erwartungswerte, die den bisherigen Nennerüberlauf aufdecken.
 7. Vorläufige Anschlussgegenprobe nutzt **vorhandene** worldToScreen/screenToWorld nur auf einer ausdrücklich hypothetischen Testplatzierung, keine gespeicherte API: Bildschirmtoleranz bleibt nach Pan/Zoom proportional; die lokale Szene erzeugt keinen Kamera-/Historyeintrag. Gedrehte reale Atlasplatzierung und Haus-/Dungeonbindung bleiben bis HEX-05 unbewiesen.
-
-`npm run check`, `npm test`, `npm run build` sequenziell. Externe Quellhashes, Testlogs und separate Geometriegegenproben unter `/home/aaron/.cache/dungeon-native-qa/city-plans/city01-scene-20261009/`.
 
 ## Stadtbefehle
 
@@ -187,9 +183,7 @@ Die JSON-Konversion ist die eindeutige Brücke zwischen den typisierten Cityinte
 - Gültiger City-No-op nach Undo erhält Redo; stale No-op wird abgelehnt. Falsches Target, fremde Dokument-ID oder `null` in einem direkt eingereichten normalen JSON-Change werden vom Owner abgelehnt.
 - Zwei CityOwner an derselben History bleiben unabhängig; Change/Undo der einen Stadt verändert die andere nicht. Owner-ID-Kollision mit dem echten TerrainSource wird kontrolliert abgelehnt.
 
-`npm run check`, `npm test`, `npm run build` nacheinander; gezielte Fälle im vorhandenen Testlauf, keine weitere GUIinstanz und keine Vaultinstallation. Quellhashes und tatsächliche Prüfergebnisse extern unter `/home/aaron/.cache/dungeon-native-qa/city-plans/city01-commands-20261009/` sichern.
-
-## Stadtbefehle — Review und Aufräumen
+## Stadtbefehle — Modulgrenzen
 
 ## Werkzeugentwurf
 
@@ -228,8 +222,6 @@ Die Prüfung, ob ein Draft noch bearbeitbar ist, erfolgt vor dem Update-try/catc
 4. Reale CitySource plus TerrainSource an derselben History: fremde Cityänderung nach Beginn verhindert das ganze City-Apply, andere Besitzer bleiben erhalten. Fremder Terrainbefehl allein macht City nicht stale; Apply folgt in derselben gemeinsamen Undo-Reihenfolge. Cancel nach Fremdänderung stellt before nicht wieder her.
 5. failed/applied/cancelled sind für weitere Updates geschlossen; falsches oder leeres Label wird vor Historyaufruf abgelehnt, gültige Labels werden unverändert übernommen. Kein neu erzeugtes Source-/Dokument-/Element-ID.
 6. Reproduzierte Subscriberlücke als Regression: erster Listener wirft, zweiter zählt. execute, undo und redo liefern trotzdem korrekte Ergebnisse/Werte/Stacks, alle verbleibenden Subscriber werden informiert, Fehler wird separat diagnostiziert. No-op und echte Precommit-Ablehnung benachrichtigen weiterhin nicht. Ein fehlerhafter Diagnosesink darf keine falsche Apply-Ablehnung erzeugen. Zusätzlich echter TerrainStroke.finish und CityDraft.apply mit werfendem Listener, kein nachträglicher zweiter Commit.
-
-`npm run check`, `npm test`, `npm run build` nacheinander. Externe Quellenhashes/Logs und separate Zustandsgegenprobe unter `/home/aaron/.cache/dungeon-native-qa/city-plans/city01-gestures-20261009/`.
 
 ## Stadtgesten
 
@@ -330,8 +322,6 @@ Erweiterte Bindungen und deren Schutzregeln werden nach ihrem tatsächlichen HEX
 - Doppeltes Schreibziel, add/remove und remove/add derselben Kennung werden abgelehnt; eine neue Straße darf die ID eines im Paket entfernten Hauses nicht übernehmen. Neue ungültige Payload darf nicht durch spätere Ersetzung/Entfernung aus der Prüfung verschwinden. Kantenänderung und Knotenentfernung mit unterschiedlichen IDs bleiben im selben Paket möglich.
 - Mit realer CitySource/AtlasHistory prüfen: ein Paket aus Straßen- und Hausänderung ist ein Undo; konkurrierende Änderung nach Gestenbeginn verhindert die gesamte Übernahme, ohne anderen Besitzer zu verändern.
 
-`npm run check`, `npm test`, `npm run build` nacheinander. Externe Quellenhashes/Prüflogs unter `/home/aaron/.cache/dungeon-native-qa/city-plans/city01-edit-20261009/`.
-
 ## Stadtzeichnung
 
 ## Stadtzeichnung — Renderer-Vertrag
@@ -358,7 +348,7 @@ Layout ist die bestehende Atlasfläche: Landschaft → Citybasis → Auswahl/Gri
 
 I07: npm run check, npm test, npm run build plus gezielte Regressionen. R11 liest die Umsetzung gegen diesen Plan und prüft Gegenfälle unabhängig von der Produktionsberechnung. Pflichtfälle: echte GraphicsContext-Anweisungen in Scene-Reihenfolge; projizierte Konturen; mindestens zwei Löcher ohne Änderung vorheriger Füllung; Straßenbreite/-kappen unter affine Rotation und Achsenskalierung; feste Pixelgriffe; fremde/fehlende Auswahl; leere Scene und verwaiste Knoten; ungültige Projektion/werfernder Callback ohne stale Frame; wiederholtes draw/clear/destroy ohne eigene Ressourcenreste.
 
-Echte CityDraft-Vorschau/Cancel/Apply durch die Zeichnung führen und Source/AtlasHistory-/Terrainwerte auf Unverändertheit beim draw prüfen. Kontextanweisungen sind Kernnachweise, kein Pixel-/Hostbeweis. Spätere echte Pixi-/Obsidianzeichnung, Höfe über Landschaft, Zoom, Hauspose, Griffzug, Undo/Redo, Save und frischer Prozess ausschließlich im isolierten Testvault. RFB-Testfreigabe für das isolierte Canvas-of-Kings-Original liegt vor; sie ersetzt keinen eigenen Produktnachweis.
+Echte CityDraft-Vorschau/Cancel/Apply durch die Zeichnung führen und Source/AtlasHistory-/Terrainwerte auf Unverändertheit beim draw prüfen. Kontextanweisungen sind Kernnachweise, kein Pixel-/Hostbeweis. Spätere echte Pixi-/Obsidianzeichnung, Höfe über Landschaft, Zoom, Hauspose, Griffzug, Undo/Redo, Save und frischer Prozess ausschließlich im isolierten Testvault.
 
 ## Stadtzeichnung — R11: numerischer Pflichtbefund
 
@@ -404,10 +394,10 @@ Hostintegration verwendet den gelieferten Atlas-Dokumentresolver und die registr
 
 ## Atlasanschluss — Vollständiger Nutzerablauf
 
-1. Gelieferte gemeinsame APIs und passende Hostbelege aus der aktuellen Übergabe aufnehmen. Die HEX-05-Folge Region → Hex → Orts-Key → Dungeonraum/Key → zurück → Undo/Redo → Save → frischer Prozess und GM-UX-N-004 unabhängig belegen; fehlende Verträge gezielt mit HEX-Besitzer lösen. Vorhandene Modell-/Codec-/Befehls-, Gesten- und Rendererkerne weiterverwenden statt neu implementieren.
-2. Das zusammenhängende CITY-01-Ergebnis bis zur Abnahme verfolgen: Stadt am gespeicherten Ort anlegen → Straße/Platz/zwei Häuser bearbeiten → gemeinsame Undo/Redo-Folge → Save → frischer Prozess. Fehlende Router-/Toolbaraktionen einschließlich Verschieben, Skalieren, Drehen und Entfernen im bestehenden Kandidaten ergänzen. Vorschau/Cancel, Topologie, veraltete Änderungen und Referenzschutz gezielt prüfen.
-3. Native Anlage/Dateiauflösung und Draft/Save/Recovery vervollständigen. Unterbrochene Anlage darf keine verwaiste platzierte Stadt oder verlorene Datei hinterlassen. Externe Änderung beider Besitzer verhindert den überholten Schreibauftrag; Wiederherstellung darf fremde Änderungen nicht überschreiben. Stadtowner verfolgt den Anschluss; HEX/Campaign behalten ihre Vertrags- und Dateigrenzen.
-4. Isolierten Hostlauf und unabhängigen Review gegen die drei CITY-01-Fälle mit der Lieferung bündeln. Pflichtbefunde im selben Paket beheben und nur betroffene Grenzen nachprüfen; Belegpflege und Bereinigung mitliefern. Kein eigener Folgeauftrag allein für N-/Cleanup-Phasen. Kein Installieren im Nutzervault ohne Sicherung und eigenen Installationsnachweis.
+1. Vorhandene gemeinsame APIs und Modell-/Codec-/Befehls-, Gesten- und Rendererkerne verwenden. Region → Hex → Orts-Key → Dungeonraum/Key → zurück → Undo/Redo → Save → frischer Prozess und GM-UX-N-004 am realen Host prüfen.
+2. Stadt am gespeicherten Ort anlegen → Straße/Platz/zwei Häuser bearbeiten → gemeinsames Undo/Redo → Save → frischer Prozess. Fehlende Router-/Toolbaraktionen einschließlich Verschieben, Skalieren, Drehen und Entfernen ergänzen. Vorschau/Cancel, Topologie, stale Änderungen und Referenzschutz prüfen.
+3. Native Anlage/Dateiauflösung und Draft/Save/Recovery vervollständigen. Unterbrochene Anlage hinterlässt weder verwaiste Platzierung noch verlorene Datei. Externe Änderungen an World oder City sperren überholte Writes; Recovery überschreibt keine fremden Änderungen.
+4. Die drei CITY-01-Fälle und Datenhaltung im isolierten Host prüfen; Installation separat mit Sicherung und installiertem Build nachweisen.
 
 ## Atlasanschluss — Konkrete Abnahmesequenzen
 
@@ -440,21 +430,13 @@ Platzierungsbesitz und validierte Transformation; Zeitpunkt des Detailzeichnens 
 
 Native Stadt am Ort mit Straße, Platz und zwei Häusern anlegen; Straße/Knoten und Haus bewegen, drehen und skalieren; Cancel/No-op/Stale prüfen. Zwischen Stadt und Hex zoomen und bearbeiten, gemeinsame Undo/Redo-Folge, Save und frischer Prozess. Hausbindung und Dungeon-/Keyfolge anschließend in CITY-03. Viewportresize, große Weltposition, lokale Metergeometrie, Höfe und Breiten bleiben deckungsgleich. Unterbrochener Mehrdateisave, fremde Bytes und Sourcewechsel gehören zur Persistenzabnahme. Keine eigene zweite Editorinstanz; isolierte Testregion verwenden und aktive Hosts schützen. Lokale Unit-/Rendererprüfungen ersetzen diese Hostfolge nicht.
 
-Verweise, Quellenstand und offene Vertragspunkte mit dem Anschlussbeitrag pflegen; vorgeschlagene Grenzen nicht als implementierte APIs ausgeben. Dieser Vorschlag bewahrt den damaligen Quellstand. Vor Weiterarbeit vorhandene Anschlüsse nach dem [CITY-01-Anschlussplan](ROADMAP-CITIES-IMPLEMENTATION-PLAN.md#atlasanschluss) verwenden; keine erneute Plan-/Cleanup-Folge dieses historischen Vorschlags starten.
-
-R01-Aufräumen: Befundabschluss gilt ausschließlich für den Anschlussvorschlag. Quellen und Gegenprobe sind unter /home/aaron/.cache/dungeon-native-qa/city-plans/city01-integration-review-20261009/ erhalten. Keine Produktsource/API durch diesen Dokumentlauf geändert.
-
 ## Integrationsanforderungen — Nachbesserung N01 aus R01
 
 - **R01-01, relative Koordinatenkomposition:** Vorwärtszeichnung muss lokale Stadtmeter erst nach Bildung des kamera-/platzierungsrelativen großen Offsets addieren. Beim Pointerweg darf keine kleine Bildschirmverschiebung erst zu einer großen absoluten Weltkoordinate addiert und anschließend der Platzierungsanker abgezogen werden. Die konkrete gemeinsame Transformfunktion bleibt HEX-04/05-Besitz. Keine zweite Kamera, kein getrennt gespeichertes City-Weltkoordinatenmodell. Gegenprobe: Weltanker/Kameramitte1e16, .01m/Pixel, lokaler Punkt(.01,.01) muss1px Verschiebung ergeben und wieder in denselben lokalen Punkt umkehrbar sein. Rotation, Größenwechsel, große entfernte Platzierungen und unauflösbare Eingaben zusätzlich prüfen. Eine generische absolute worldToScreen-Komposition reicht dafür nicht.
 - **R01-02, gültige Placement-/Entwurfsstrecke:** `OverworldDocument.placements: never[]` und `parseOverworld` lehnen derzeit belegte Platzierungen ab. `AtlasDraft.sameWorld` lässt gegenüber der Basis nur Chunkänderungen zu. HEX-03/04 muss ein explizit validiertes neues natives Placement-/Entwurfsschema einschließlich Versionsentscheidung bereitstellen. Unbekannte Formate erhalten und sichtbar abweisen; keine stillen Felder anhängen. CITY speichert Stadt- und Placementänderungen erst über die gemeinsam erweiterte Snapshot-/Journalstrecke. Tests müssen Platzierungsanlage/-verschiebung, unterbrochenes Journal, Discard und frisches Laden tatsächlich abdecken.
 - **R01-03, gemeinsames Einpassen:** Die belegte Ausdehnung für Fit kommt aus Terrain sowie sichtbaren geladenen Stadt-/Dungeoninhalten und ihren tatsächlichen Weltbindungen. Stadt-only, weit entfernte Stadt und leere Szene sind explizite Fälle. `CityScene.extent === null` trägt keine falschen Ursprungspunkte bei; vorhandene Szenengrenzen werden über die vereinbarte Platzierung abgebildet. Kein privater City-Fit und keine Kameraverlagerung beim bloßen Zoom-/Detailwechsel. Große Grenzen müssen in der gleichen präzisen relativen Abbildung verarbeitet werden.
 
-Diese Punkte sind verbindliche Umsetzung-/Abnahmepflichten des Anschlusses, keine bereits existierenden Shared-APIs. R02 kann die Vollständigkeit dieses Vorschlags prüfen; formale gemeinsame Vertragsfreigabe und sichtbare Produktabnahme bleiben separat offen.
-
-N01-Aufräumen: Befundabschluss gilt ausschließlich für den Anschlussvorschlag. Quellen und Gegenprobe sind unter /home/aaron/.cache/dungeon-native-qa/city-plans/city01-integration-review-20261009/ erhalten. Keine Produktsource/API durch diesen Dokumentlauf geändert.
-
-R02-Aufräumen: Befundabschluss gilt ausschließlich für den Anschlussvorschlag. Quellen und Gegenprobe sind unter /home/aaron/.cache/dungeon-native-qa/city-plans/city01-integration-review-20261009/ erhalten. Keine Produktsource/API durch diesen Dokumentlauf geändert.
+Diese Anschlussanforderungen beschreiben Zielverträge; sie belegen noch keine implementierten Shared-APIs oder sichtbare Produktfunktion.
 
 ## Ziele im Atlas-Dock
 

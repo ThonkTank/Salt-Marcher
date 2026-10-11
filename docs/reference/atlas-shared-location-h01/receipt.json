@@ -82,13 +82,6 @@
     "obsidianPid": 3100703,
     "startTicks": "18901617"
   },
-  "slot": {
-    "request": 6100984129,
-    "confirmation": 6100988282,
-    "claim": 6100993213,
-    "returned": 6101017508,
-    "held": false
-  },
   "originalQA": "/home/aaron/.cache/dungeon-native-qa/hex-03/shared-location-h01-20261010-1846",
   "protectedOriginalUnchanged": true,
   "productEdited": false,

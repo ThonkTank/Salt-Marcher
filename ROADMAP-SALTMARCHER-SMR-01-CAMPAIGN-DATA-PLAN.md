@@ -55,7 +55,7 @@ Zu prüfen sind Lifecycle-Stufen/Receipts, Datenbesitzgrenzen, vollständiges Re
 
 Der folgende Fachvertrag allein belegt keinen Produkt-, Host-, P02-, P04- oder E2E-01-PASS; vorhandene Umsetzungen und Nachweise stehen im Abnahmeregister.
 
-Basis ist `active/installed-phase1` auf `6bfb1f393722cd469dc4fd5f15d8dea12a154f6b` mit dem ratifizierten Gatekatalog aus PR #16. Die fachliche Ausgangsgrenze ist `ROADMAP-SALTMARCHER-SMR-01-CAMPAIGN-DATA-PLAN.md`, deren semantischer Stand `11e256309d43bcd1c14db66ffc41945c9360aec8` unabhängig geprüft wurde.
+Planbasis: Campaign-Kern `6bfb1f393722cd469dc4fd5f15d8dea12a154f6b`, Gatekatalog PR16 und Vertragsstand `11e256309d43bcd1c14db66ffc41945c9360aec8`.
 
 ## Campaign-Kontext — Ziel und sichtbarer E2E-01-Beitrag
 
@@ -134,9 +134,6 @@ Quelle, bestehende Kampagnen und shared definitions bleiben unverändert. Copy u
 Auch ein bestandener I01-Lauf schließt E2E-01 nicht. Offen bleiben mindestens der Campaign→Atlas-Adapter, gemeinsame Atlas/City/Dungeon-History und Transaction, echter P02-Save/Reopen-Prozess, echter P04-Complete-Import mit Manifest/Checksums, House→Dungeon-Bindung, integriertes Fixture, installierter Hostlauf und unabhängige Atlas-QA-Abnahme. E2E-02 bis E2E-04 bleiben gesperrt.
 
 ## Ownership und gemeinsame Commands
-
-Status: Plan-Kandidat; unabhängiger Exact-SHA-Review erforderlich. Kein Produkt-,
-Host-, P02-, P04-, Complete-Import- oder E2E-01-PASS.
 
 ## Ownership und gemeinsame Commands — Gepinnte Grundlage
 
@@ -522,8 +519,7 @@ Open-/Switch-Callback, `contextChanged` und die Dockmontage. Änderungen an
    und ruft keine Party-/Scene-/Travel-/Clock-/Music-Funktion auf.
 8. CampaignEntry zeigt Laden, aktiv, unavailable, Fehler und Retry; Doppelklick,
    stale Antwort, Update und Destroy sind isoliert geprüft.
-9. Typecheck, gesamte Testsuite und sauberer Build bestehen. Anschließend prüft
-   ein unabhängiger Review den Exact-SHA; der Atlasanschluss verwendet den geprüften Stand für den gemeinsamen echten Hostlauf.
+9. Campaignwechsel und Speicheranschluss am realen Atlas-Host prüfen; Kern-/DOM-Tests ersetzen diesen Ablauf nicht.
 
 ## Persistierte Quelle und Kampagneneinstieg — Lieferfolge und verbleibende Gates
 

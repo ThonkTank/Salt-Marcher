@@ -24,12 +24,6 @@ Produktverlust. Ein nachträglicher readonly Vergleich des tatsächlich aufgezei
 Teilzustands und Dungeonrecords besteht; er überschreibt den FAIL nicht.
 Fresh wurde nicht gestartet, Helfer/Fehlervault/Rohbelege bleiben unverändert.
 
-Nächster eigener Eingang: in einem **neuen** QA-Helper den vollständigen aktuellen
-Worldzustand über den vorhandenen readonly `repository.spatialGraph.world()` lesen
-und den typisierten Teilzustand separat benennen. Danach neu eingefrorenes Copy-/Fresh-
-Paar auf einem neuen R03-Abbild mit neuem Slot; keine Reparatur des Produktcodes aus
-diesem QA-Fehler, kein Wiederholen des ausgeführten C02-Helfers/Vaults.
-
 Portable Originale, unveränderte Bytes:
 
 - [Copyprobe samt Closure-/Text-/Runtimebeobachtung](copy-room-copy-probe.json)

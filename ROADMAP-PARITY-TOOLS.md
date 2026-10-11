@@ -1,6 +1,6 @@
 # Folge-Roadmap: übrige Dungeondraft-Abläufe angleichen
 
-Diese Roadmap setzt [Grundrisse und Objekte](ROADMAP-PARITY.md) fort. Deren Fach- und Aufräumtore sind mit der ausdrücklichen Nutzerausnahme für die nicht durchgeführte Hardwareprobe P7-2 bestanden. Der [getrennte Phase-1-Plan (historisch)](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/blob/6a90f3ee2f50f0be45f0e256784576f13722c319/ROADMAP-PARITY-TOOLS-PHASE1-PLAN.md) liegt vor; für diese Folge-Roadmap liegt noch keine Fachabnahme vor.
+Diese Roadmap setzt [Grundrisse und Objekte](ROADMAP-PARITY.md) fort. Deren Fachfälle sind mit ausdrücklicher Nutzerausnahme für die nicht ausgeführte Hardwareprobe P7-2 belegt; physische Eingabe bleibt offen. Die übrigen Werkzeuge benötigen ihre eigenen Funktionsnachweise.
 
 Maßstab ist der Pflichtkatalog `acceptance.json` für Dungeondraft 1.2.0.1 „Opulent Kirin“: derzeit 677 `required`-Unterfälle. 42 `excluded`-Fälle und fünf `editor_addition`-Fälle sind keine Paritätstore. Bereits belegte Teilabläufe werden als Regression übernommen, aber nicht pauschal auf ganze Werkzeuge ausgeweitet. Für die weitere Umsetzung gelten die gemeinsamen [Ergebnisgleichwertigkeit und Lieferprioritäten](ROADMAP-HEX-ATLAS.md#wie-kommen-wir-zum-ziel). Eingaben und Werkzeugaufteilung dürfen anders sein; selbständig erreichbare Bearbeitungswirkungen, Zustände und gespeicherte Ergebnisse bleiben Pflicht. Die Fallzahl ist keine Anzahl benötigter Werkzeuge oder Lieferreihenfolge.
 
@@ -34,4 +34,4 @@ Die Nummern ordnen den Fachumfang; geliefert wird nach der zentralen Atlaspriori
 
 ## Gesamtabschluss
 
-Die gemeinsame Endabnahme prüft die erreichbaren Pflichtwirkungen des aktuellen Katalogs auf demselben Endbuild; ein zusätzlicher Endplan wird nicht angelegt. Er prüft verknüpfte Werkzeugfolgen, große Karten, Spielansicht, Raum–Objekt–Key-Verbindungen und geschützte Dateien erneut. Nur direkt belegte Fälle erhalten eine Gesamtfreigabe; ungeklärte Originalwirkung oder Hostabweichung bleibt mit nächstem konkreten Schritt offen.
+Die gemeinsame Endabnahme prüft die erreichbaren Pflichtwirkungen des aktuellen Katalogs auf demselben Endbuild. Er prüft verknüpfte Werkzeugfolgen, große Karten, Spielansicht, Raum–Objekt–Key-Verbindungen und geschützte Dateien erneut. Nur direkt belegte Fälle erhalten eine Gesamtfreigabe; ungeklärte Originalwirkung oder Hostabweichung bleibt mit nächstem konkreten Schritt offen.

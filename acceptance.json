@@ -758,18 +758,7 @@
         "state": "completed_by_independent_steward",
         "sharedCommit": "c932bbab534c5a70a15cc4628728c0d1b92f162a",
         "testedCommit": "82c6f0ad1e75b0d8f0fb9ab68aed17b72b06798f",
-        "claim": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/56#issuecomment-6100853466",
         "resolution": "Retain entire current Shared package.json and add only Bags test once directly after Sources; all four Atlas/Campaign bundles and unique check/test keys retained. No source/product fix.",
-        "roleContract": {
-          "role": "migration",
-          "defaultBranch": "active/installed-phase1",
-          "loadedCommit": "c932bbab534c5a70a15cc4628728c0d1b92f162a",
-          "documents": [
-            "AGENTS.md",
-            "docs/AGENT-ROLES.md"
-          ],
-          "authority": "Existing authorized migration/product scope, exclusively D&D2014; no expansion from repository role rules"
-        },
         "installation": "Current Shared lockfile installed with official Node22 npm ci; initial missing better-sqlite3 local dependency failures cleared. No P02 source edit or foreign gate approval.",
         "receipt": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/56#issuecomment-6101011261"
       },
@@ -4842,15 +4831,6 @@
         "existingTests": 551,
         "focusedDOMTests": 8,
         "cleanBuild": "PASS"
-      },
-      "cleanup": {
-        "result": "PASS",
-        "plan": "ROADMAP-CITIES-ATLAS-DETAIL-ENTRY-CLEANUP-PLAN.md",
-        "receipt": "/home/aaron/.cache/dungeon-native-qa/city-plans/city-ui-i01-20261010/cleanup/review.json",
-        "sha256": "0eeb1c65e757b8b149b6f452932d5cef4fa38aaf729b5a9d4b3581b97ced1de9",
-        "deletedFiles": 15,
-        "deletedBytes": 46469066,
-        "protectedFiles": 555
       }
     },
     "draftAbaRegression": {
@@ -153211,8 +153191,7 @@
           "reviewedCandidate": "ef6e85161a0895ad5906e8c0c8d634843080aa5e",
           "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/13#issuecomment-6093998767",
           "result": "PASS_bounded_source_composition",
-          "provenance": "Actual independent City source-composition review with its own check/513 tests/clean build; not full runtime or original parity.",
-          "cleanup": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6094023183"
+          "provenance": "Actual independent City source-composition review with its own check/513 tests/clean build; not full runtime or original parity."
         },
         "currentSharedSynchronization": {
           "source": "a659d873eb39c7bf7379313bee797d14d94fdb6b",
@@ -153241,17 +153220,10 @@
         "independentReview": {
           "state": "PASS_bounded_plan",
           "candidate": "3c80d89bc49239de2bb241820bb6937e58030e61",
-          "reviewer": "Stadt, existing independent peer",
           "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/13#issuecomment-6094207144",
           "gate": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6094207235",
           "readDirectly": true,
           "actualEvidence": "/home/aaron/.cache/dungeon-native-qa/city-plans/runtime-p01-r01-20261010/review.json",
-          "cleanup": {
-            "state": "PASS_separate_reviewer_cleanup_P_I_R",
-            "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6094224023",
-            "actualEvidence": "/home/aaron/.cache/dungeon-native-qa/city-plans/runtime-p01-r01-20261010/cleanup-review.json",
-            "readDirectly": true
-          },
           "obligations": [
             "Actual change/lifetime binding rejects Source ABA; byte equality alone insufficient",
             "Historypreflight does not guard Hydration/async Repositoryoperation alone",
@@ -153287,7 +153259,6 @@
           "state": "PASS_bounded_native_capture_code",
           "candidate": "80580c1fbdb45d818d758018201b35f8e4080a06",
           "ownerTestedSource": "ad265b257a626ea23c35ab8b0074da255a6144a6",
-          "reviewer": "Stadt, existing independent peer",
           "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/13#issuecomment-6094452280",
           "gate": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6094452376",
           "actualEvidence": "/home/aaron/.cache/dungeon-native-qa/city-plans/runtime-i01a-r01-20261010/review.json",
@@ -153312,53 +153283,6 @@
             "readDirectly": true,
             "hashBindingEvidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-capture-i01a-cleanup-20261010/i01/consumed-reviewer-cleanup.json"
           }
-        },
-        "cleanup": {
-          "run": "E2E-01-SPACE-I01c-RUNTIME-I01a-CLEAN-P01",
-          "state": "PASS_separate_own_cleanup_P_I_R",
-          "plan": "ROADMAP-E2E01-ATLAS-CAPTURE-CLEANUP-PLAN.md",
-          "planSha256": "d1a0f2ea957f95cc99d5a6e5504e54372ae6c78806c04174e0ec373bfe6fd0ed",
-          "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-capture-i01a-cleanup-20261010/p01/plan-validation.json",
-          "retainedEvidenceInventory": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-capture-i01a-cleanup-20261010/p01/retained-evidence-inventory.json",
-          "retainedFiles": 21,
-          "retainedBytes": 22691336,
-          "deletionAllowlist": [],
-          "productChangesPlanned": false,
-          "implementation": {
-            "run": "E2E-01-SPACE-I01c-RUNTIME-I01a-CLEAN-I01",
-            "state": "retention_verified_metadata_closed_independent_cleanup_review_pending",
-            "base": "c0fb8b009e58f07f8b4b901ed91e3e31ad4e4630",
-            "consumedShared": "a15bab387e4a647fbe7057ed43fcab33a53d4e12",
-            "planSha256": "d1a0f2ea957f95cc99d5a6e5504e54372ae6c78806c04174e0ec373bfe6fd0ed",
-            "planValidationSha256": "af0b341e589df9b706153f8a41adecc0e7d4eb34afad76520fa16148c1deeeb1",
-            "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-capture-i01a-cleanup-20261010/i01/implementation.json",
-            "retainedInventory": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-capture-i01a-cleanup-20261010/i01/retained-evidence-inventory.json",
-            "retainedInventorySha256": "4997378c8e34fc70fa8ecf8547264f0f36385bd5bb37a25d4c1feba6ed5e9258",
-            "retainedEvidenceFiles": 21,
-            "retainedEvidenceBytes": 22691336,
-            "deletionAllowlist": [],
-            "deletedFiles": 0,
-            "sourceFilesChanged": false,
-            "sixCaptureSourceBlobsUnchanged": true,
-            "frozenPlanAndFixturesUnchanged": true,
-            "foreignRootsPreserved": true,
-            "originalSharedDirtyFilesPreserved": true,
-            "coreChecks": "No rerun for metadata-only cleanup. Actual clean-source5d78f28 check/531 tests/build receipts remain bound in P01.",
-            "nativeOnThisSource": false,
-            "fullE2E": false
-          },
-          "independentReview": {
-            "head": "8770e06ebbd850b57cd9b54f4e0b966adc9769c8",
-            "result": "PASS_BOUNDED_CLEANUP",
-            "actualEvidence": "/home/aaron/.cache/dungeon-native-qa/city-plans/runtime-i01a-clean-r01-20261010/review.json",
-            "sha256": "f842495ddafe0c7509f8beec594d3f484ede00a1e057787cc50b3b92e4a8397d",
-            "sourceBindingsSha256": "7518cab97147e7622c6d84d9996571a7a051dbeb2e05e0d575d31a1f2ee72972",
-            "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/13#issuecomment-6094564981",
-            "gate": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6094565063",
-            "readDirectly": true
-          },
-          "nativeOnThisSource": false,
-          "fullE2E": false
         }
       },
       {
@@ -153483,7 +153407,6 @@
             "result": "PASS",
             "candidate": "adc4b98a3925b39abefb0a4db9a2bcd7c1a5a6ec",
             "testedIntegratedSource": "81c6a257af95b8dd9de0cbbd1fb76b6c1380521c",
-            "reviewer": "Stadt, existing independent peer",
             "readDirectly": true,
             "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/13#issuecomment-6094937083",
             "gate": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6094937270",
@@ -153560,7 +153483,6 @@
             "repairOwnerReport": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6095288823",
             "mountInvalidationRequirement": "Independent R03 closes all R01/R02 findings including non-overwritable full-manifest lease, file/record coverage and synchronous invalidation. Visible host must connect actual Provider currentContext=null notification to pending/active mount revocation and safe Navigator switching. City UI remains readonly target consumer; no second authority.",
             "qualifiedSource": "6433952f3792205d79e92467e245f41ca1a0b29f",
-            "qualifiedOwnerHandoff": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/13#issuecomment-6095347066",
             "qualifiedOwnerCleanup": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6095346776",
             "qualifiedOwnerGate": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6095349357",
             "integrationEvidence": {
@@ -153578,7 +153500,6 @@
           "componentReview": {
             "id": "CITY-UI-I01-R01",
             "state": "PASS_component_review_qualified_owner_handoff_and_own_reviewer_cleanup_visible_host_open",
-            "reviewer": "Hex, existing independent peer",
             "candidate": "5e72857ca9f794ce0027765766365bd0982e827d",
             "ownerTestedCode": "f5f50cf70277f442fc54140128bb6abebf06e30c",
             "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/29#issuecomment-6095156261",
@@ -153712,7 +153633,7 @@
               "build.mjs/package.json hookup remains agreed Hex integration work",
               "Host must supply confirmed actual targets and Source/Context/Key guards; productive providers/full E2E/original parity remain open"
             ],
-            "qualifiedOwnerHandoff": {
+            "integratedComponentEvidence": {
               "state": "PASS_actual_qualified_owner_P_I_R_handoff_consumed",
               "candidate": "b6d38c587a402e0fba7a398379fb04e40b171c5e",
               "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/29#issuecomment-6095206274",
@@ -153721,12 +153642,6 @@
               "productBlobsByteEqualReviewed": true,
               "protectedOwnerFilesVerified": 555,
               "deletedOwnerFilesAbsent": 15,
-              "ownerDependencyTargetVerified": true,
-              "ownerCleanupHashes": {
-                "plan.json": "acdea8c33b7b174ef2f4df71c9ae861d2518e5d831ee689cfc11b0b31f3c7908",
-                "implementation.json": "72af90b3750a4f8fc5e83b611e96f479d228e9bf82ed9140da32db616d172ed6",
-                "review.json": "0eeb1c65e757b8b149b6f452932d5cef4fa38aaf729b5a9d4b3581b97ced1de9"
-              },
               "receipt": "/home/aaron/.cache/dungeon-native-qa/hex-03/city-ui-i01-r01-20261010/cleanup/p01/qualified-city-receipt.json",
               "receiptSha256": "0ea31b3266f9610a2ae4f6e234d185a281798c282dd2c1f7ea0b6cd170967814"
             },
@@ -153782,7 +153697,6 @@
           "result": "PASS",
           "candidate": "adc4b98a3925b39abefb0a4db9a2bcd7c1a5a6ec",
           "testedIntegratedSource": "81c6a257af95b8dd9de0cbbd1fb76b6c1380521c",
-          "reviewer": "Stadt, existing independent peer",
           "readDirectly": true,
           "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/13#issuecomment-6094937083",
           "gate": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6094937270",
@@ -153821,88 +153735,6 @@
             "I01c visible integration and native/fresh-start check remain open",
             "P02/P04/import/full E2E/original parity remain separate"
           ]
-        },
-        "cleanup": {
-          "id": "E2E-01-SPACE-I01c-RUNTIME-I01b-CLEAN-P01",
-          "state": "PASS_own_separate_cleanup_P_I_R",
-          "plan": "ROADMAP-E2E01-ATLAS-NAVIGATION-CLEANUP-PLAN.md",
-          "planSha256": "22a532573810d7e397d110a24c9f357e15bb1e8d55914ef1d79174fc6b9283bf",
-          "base": "adc4b98a3925b39abefb0a4db9a2bcd7c1a5a6ec",
-          "consumedShared": "8f561783cd24defae9a31f490711fc00db0d172f",
-          "retainedEvidenceInventory": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-navigation-i01b-cleanup-20261010/p01/retained-evidence-inventory.json",
-          "inventorySha256": "f62f5b9c0684c4b4d742d4c349fe918a472c9642da66de36896019ee20b7e005",
-          "retainedFiles": 45,
-          "retainedBytes": 32451869,
-          "deleteFiles": [],
-          "removeDirectories": [],
-          "productChanged": false,
-          "frozenSourceBlobs": {
-            "src/features/atlas/atlas-campaign-navigation.ts": "243082c0c129654157fc5e64d378c888f1604dd837dee736cf4c16062dfa492e",
-            "src/features/atlas/atlas-repository.ts": "5854fb81ac51cbf7be6267d99f520ad1af4c3930b5bdc64d8f7f135c6737b868",
-            "tests/core/atlas-campaign-navigation.test.ts": "d028f28d071c0906a94dddb0d2a22f27b85a496f6cbd8e6e3edd850e97b19bba",
-            "tests/core.test.ts": "32aeb62c8fbdd6746a246d9347953825d2ce2de2eafd79c0d2265d979ee8d66a"
-          },
-          "runtimePlanSha256": "2f47c2e5994aacec47a4700326928e01f8436d1bafff6304979260501b45dda5",
-          "validationEvidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-navigation-i01b-cleanup-20261010/p01/plan-validation.json",
-          "implementation": {
-            "id": "E2E-01-SPACE-I01c-RUNTIME-I01b-CLEAN-I01",
-            "state": "independent_cleanup_review_pass",
-            "base": "2700b857fc5373aba06859c405d68fef81f81703",
-            "consumedShared": "8f561783cd24defae9a31f490711fc00db0d172f",
-            "planSha256": "22a532573810d7e397d110a24c9f357e15bb1e8d55914ef1d79174fc6b9283bf",
-            "inventorySha256": "f62f5b9c0684c4b4d742d4c349fe918a472c9642da66de36896019ee20b7e005",
-            "retentionEvidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-navigation-i01b-cleanup-20261010/i01/retention.json",
-            "retentionSha256": "fc42d6ad2645ccdde5cca27ccb169a1da609c74a40ac3eedc105a2c66468a853",
-            "validationEvidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-navigation-i01b-cleanup-20261010/i01/metadata-validation.json",
-            "retainedEvidenceFiles": 45,
-            "retainedEvidenceBytes": 32451869,
-            "allRetainedHashesUnchanged": true,
-            "deletedFiles": 0,
-            "removedDirectories": 0,
-            "unlinkedDependencies": 0,
-            "productChanged": false,
-            "carriedCoreBasis": "Actual independent R02 on adc4b98 / tested integrated81c6a257: check, 551 tests, clean build and4 independent counterprobes; unchanged source blobs, no repeated metadata-only core run.",
-            "independentReview": {
-              "state": "PASS_actual_independent_cleanup_review",
-              "candidate": "3926fe4a7b7e352edc1462c9ead732d4b4a0f03a",
-              "reviewer": "Stadt, existing independent peer",
-              "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/13#issuecomment-6095107435",
-              "gate": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6095107668",
-              "actualEvidence": "/home/aaron/.cache/dungeon-native-qa/city-plans/runtime-i01b-clean-r01-20261010/review.json",
-              "sha256": "fa1f9b138f8d006a0f927eabef94858a914df2fd18eb0ce16daaba6ea516fa3e",
-              "sourceBindingsVerified": 540,
-              "readDirectly": true,
-              "reviewerCleanup": {
-                "state": "PASS_separate_reviewer_cleanup_P_I_R",
-                "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6095119405",
-                "actualEvidence": "/home/aaron/.cache/dungeon-native-qa/city-plans/runtime-i01b-clean-r01-20261010/cleanup-review.json",
-                "sha256": "02fd4211aa59c0b2dd6dd9dec847217cfa0f91c7b8f9af24d8297c0460f56464",
-                "planSha256": "4273c11bfb6c46f11f44fbf931b5ff94361575211dec9b0e62b1c462f0214bcf",
-                "implementationSha256": "c6e1202f661ad669b2c01261bc879d855ce55242e8b177ca808540e2bb188f56",
-                "readDirectly": true
-              }
-            }
-          },
-          "independentReview": {
-            "state": "PASS_actual_independent_cleanup_review",
-            "candidate": "3926fe4a7b7e352edc1462c9ead732d4b4a0f03a",
-            "reviewer": "Stadt, existing independent peer",
-            "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/13#issuecomment-6095107435",
-            "gate": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6095107668",
-            "actualEvidence": "/home/aaron/.cache/dungeon-native-qa/city-plans/runtime-i01b-clean-r01-20261010/review.json",
-            "sha256": "fa1f9b138f8d006a0f927eabef94858a914df2fd18eb0ce16daaba6ea516fa3e",
-            "sourceBindingsVerified": 540,
-            "readDirectly": true,
-            "reviewerCleanup": {
-              "state": "PASS_separate_reviewer_cleanup_P_I_R",
-              "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6095119405",
-              "actualEvidence": "/home/aaron/.cache/dungeon-native-qa/city-plans/runtime-i01b-clean-r01-20261010/cleanup-review.json",
-              "sha256": "02fd4211aa59c0b2dd6dd9dec847217cfa0f91c7b8f9af24d8297c0460f56464",
-              "planSha256": "4273c11bfb6c46f11f44fbf931b5ff94361575211dec9b0e62b1c462f0214bcf",
-              "implementationSha256": "c6e1202f661ad669b2c01261bc879d855ce55242e8b177ca808540e2bb188f56",
-              "readDirectly": true
-            }
-          }
         },
         "hostImplementation": {
           "id": "E2E-01-SPACE-I01c-RUNTIME-I01c",
@@ -154088,7 +153920,6 @@
               "scope": "Reviewer cleanup only; no Hex cleanup or new product/native/full E2E approval"
             }
           },
-          "cleanup": "Actual CITY-HOST-OWNER-CLEAN-R01 PASS; cleanup P/I/R closed.",
           "nativeRan": false,
           "fullE2E": false,
           "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-visible-host-n01c-20261010/implementation.json",
@@ -154320,7 +154151,7 @@
           "sha256": "004635f4248de4434e96636e0ab63f12e2fbec62a75dae2d1449862feed8a055",
           "limits": "Frozen consumer-port matrix, distinct from productive Host DOM and native process evidence."
         },
-        "integratedMatrixHandoff": {
+        "integrationEvidence": {
           "state": "qualified_component_contract_closed_productive_Host_implementation_now_present",
           "reviewSourceCommit": "ce2f9032dc9f72f994a307b5aac26e1ad8910065",
           "independentReview": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6097491451",
@@ -155042,7 +154873,7 @@
             "Static production-callsite inspection finds a target navigator, not an action that creates an existing Dungeon placement at the selected Location."
           ],
           "rootCause": "AtlasCampaignManifestSave.owners updates payloadDigest but preserves r.references except the additive new-Location world references. Native Location detailMaps and Dungeon parent changes therefore do not update their declared registry reference closure.",
-          "nextOwnStep": "Targeted repair of existing atlas-owned reference projection and regressions before exposing Dungeon-at-Location placement UI. Preserve original IDs, Dungeon bytes, owner schemas, Context/receipt/history guards and independent Campaign/Data/Dungeon ownership. New placement-record creation remains a later concrete extension, not approved by this diagnosis.",
+          "remainingWork": "Targeted repair of existing atlas-owned reference projection and regressions before exposing Dungeon-at-Location placement UI. Preserve original IDs, Dungeon bytes, owner schemas, Context/receipt/history guards and independent Campaign/Data/Dungeon ownership. New placement-record creation remains a later concrete extension, not approved by this diagnosis.",
           "productEdited": false,
           "testsEdited": false,
           "guiRun": false,
@@ -155648,12 +155479,10 @@
           "pullRequest": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/94",
           "independentReview": {
             "reviewer": "Contributor",
-            "claim": "HEX04-INSPECTOR-N02-H02-R01",
             "result": "PASS",
             "reviewedHead": "7f64b6c3db9796fe367936ddfe94f461f15ccd53",
             "sharedInput": "ca290326a35bb792c22ef8f02e215a3dd9ef121d",
             "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/94#issuecomment-6104068019",
-            "handoffUrl": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80#issuecomment-6104069333",
             "scope": "Versioned H02 helper, after-action oracles, receipt inventory/hash bindings and stated evidence limits only; no required correction.",
             "exactHeadCi": {
               "runId": 38100760260,
@@ -155670,7 +155499,6 @@
           },
           "independentIntegration": {
             "steward": "Contributor",
-            "claim": "HEX04-INSPECTOR-N02-H02-S01",
             "candidateHead": "cfdafa200a6cae0f55bdfae05f192675c3bf4fbd",
             "sharedMerge": "efe573ac1ec86eb905dc6197d7c063269fdf1398",
             "parents": [
@@ -155686,7 +155514,6 @@
           },
           "independentRawReview": {
             "reviewer": "Stadt",
-            "claim": "HEX04-N02-H02-RAW-R01",
             "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80#issuecomment-6104135982",
             "reviewedCandidate": "cfdafa200a6cae0f55bdfae05f192675c3bf4fbd",
             "sharedInput": "efe573ac1ec86eb905dc6197d7c063269fdf1398",
@@ -155741,8 +155568,6 @@
           "state": "source_bound_GM_N02_consumed_scroll_and_zoom_findings_current_Shared_composition_open",
           "consumerSharedInput": "0bebb85b562f0996c74b772aad311dc3a9aac047",
           "producer": {
-            "role": "Cloud-GM-Produkttester",
-            "claim": "GM-E2E01-ATLAS-DETAIL-INSPECTOR-N02-GM-CLOUD-RETEST-20261011-01",
             "reportUrl": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80#issuecomment-6104260884",
             "checkpointCommit": "332e8ae4d62134ad7ac830cfed51b310ac5fc9d0",
             "publishedBranchHead": "3ecc64914906d90bf06ca7da0ad339d600f4dbfb",
@@ -155960,7 +155785,6 @@
           },
           "bundledGmInput": {
             "owner": "Cloud-GM-Produkttester",
-            "claim": "GM-CITY-HOUSE-NAME-CLOUD-UI-RETEST-20261011-01",
             "cityIssue": 92,
             "proposal": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80#issuecomment-6104526367",
             "blocker": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/92#issuecomment-6104519136",
@@ -155993,7 +155817,6 @@
           "sourceCommit": "cf8d3c1f9b1f47241bf751de997a1f86786ec83c",
           "input": {
             "producer": "Cloud-GM-Produkttester",
-            "claim": "GM-CITY-HOUSE-NAME-CLOUD-UI-RETEST-20261011-01",
             "result": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/92#issuecomment-6104735161",
             "hexHandoff": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80#issuecomment-6104737639",
             "producerStatus": "partial",
@@ -156105,7 +155928,7 @@
               "No measured dock rectangle exceeds CSS viewport; vertical scrolling is separate from external clipping. Existing GM-N02-02 external-window observation is not dismissed or qualified as fixed."
             ],
             "scope": "existing common Inspector child controls/layout; no camera/store/history/format change.",
-            "nextOwnStep": "fit existing Key actions and detail/binding target controls to available dock width and preserve same-target scrolling/navigation; then targeted layout/guard regression and qualified native followup. No blind external-dock CSS remedy."
+            "remainingWork": "fit existing Key actions and detail/binding target controls to available dock width and preserve same-target scrolling/navigation; then targeted layout/guard regression and qualified native followup. No blind external-dock CSS remedy."
           },
           "nativeOutcome": "first helper partial/selector FAIL retained; second Room probe completed; two normal exits/all8 native files unchanged. Geometry finding confirmed, not a GUI product PASS.",
           "guiUsed": true,
@@ -156219,7 +156042,6 @@
             "owner": "Cloud-GM-Produkttester (existing Obsidian-Dungeon-Repo ansehen chat)",
             "reviewerThread": "01a12031-2c30-73f7-bc01-6bd3eba86046",
             "state": "bounded_same_session_and_fresh_reuse_consumed",
-            "claim": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80#issuecomment-6105151600",
             "report": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80#issuecomment-6105400641",
             "producerHead": "155c01595da879c7edb34a211fff490e003f8e14",
             "producerPullRequest": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/115",
@@ -157011,14 +156833,6 @@
             "protectedOriginal": {
               "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-ime-save-h02-20261011/protected-original.json",
               "sha256": "b30feea6f89f88d7d5484bcfe0277ddb05d5fbd03d1d45e4be538a8a7e8a81c2"
-            },
-            "slotClaim": {
-              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-ime-save-h02-20261011/slot-claim.md",
-              "sha256": "cac933400bcb3eb5c1bd80b7afe16c53b286cb273959992bb1cebf4a3ee7a260"
-            },
-            "slotReturn": {
-              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-ime-save-h02-20261011/slot-return.md",
-              "sha256": "6e7127e5d04d294b30b2de41ec6e6b5715de22304acd01d1244559296c6c2d79"
             }
           },
           "screenshotReadByHex": "Actual screenshot directly viewed: exact composing Ortsname candidate visible and Text noch nicht übernommen status. This image alone is not the keyboard delivery oracle.",
@@ -157428,14 +157242,6 @@
             "protectedOriginal": {
               "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-ime-handler-h03-20261011/protected-original.json",
               "sha256": "b30feea6f89f88d7d5484bcfe0277ddb05d5fbd03d1d45e4be538a8a7e8a81c2"
-            },
-            "slotClaim": {
-              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-ime-handler-h03-20261011/slot-claim.md",
-              "sha256": "fb8040b5c794d8ad84206a890f30630a0e68576269cbeafba710a23cc8a26ce8"
-            },
-            "slotReturn": {
-              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-ime-handler-h03-20261011/slot-return.md",
-              "sha256": "3a395864968551472161687aaecd15dfebd26c702d759a0fcfd0ce2239c3751c"
             },
             "executedScript0": {
               "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-ime-handler-h03-20261011/evidence/1791700789894-atlas-spatial-edit/script-143.js",
@@ -157888,22 +157694,6 @@
             "protectedOriginal": {
               "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-confirmed-save-h04-20261011/protected-original.json",
               "sha256": "1e710a1a33ba9e6bae00cf35b28501a9e54e745da0e5d6a7f5d0b40906f3b1fc"
-            },
-            "firstSlotClaim": {
-              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-confirmed-save-h04-20261011/slot-claim.md",
-              "sha256": "f2a145d1bb80aa47d0d5a976d9449e354fb62e6b7c50fd5bae3427ddf5827633"
-            },
-            "firstSlotReturn": {
-              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-confirmed-save-h04-20261011/slot-return-first.md",
-              "sha256": "e350990d6a56460eb3baf6589571ccc9a54a53c473c30f0980cd99c21e20a4f0"
-            },
-            "slotClaim": {
-              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-confirmed-save-h04-20261011/slot-claim-v2.md",
-              "sha256": "af961aa1b4fae4efb13c696c45745ad079ad919e3ca17260b1cb5665126087ca"
-            },
-            "slotReturn": {
-              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-confirmed-save-h04-20261011/slot-return.md",
-              "sha256": "5f9c85967175b4c4c7bb0a250cd9ae6fffdf6608b9c7c0b28c3e4dc319aaf1a8"
             }
           },
           "screenshotsReadByHex": "Directly viewed after-shortcut name with Text noch nicht übernommen and unchanged Torheim marker, then visible-button saved name/marker and Gespeichert. Trusted input/History/native hashes come from separate raw oracles.",
@@ -158262,14 +158052,6 @@
             "protectedOriginal": {
               "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-save-routing-r01-20261011/protected-original.json",
               "sha256": "1e710a1a33ba9e6bae00cf35b28501a9e54e745da0e5d6a7f5d0b40906f3b1fc"
-            },
-            "slotClaim": {
-              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-save-routing-r01-20261011/slot-claim.md",
-              "sha256": "0b3d99fe195c0cf9cde2bd692e7d85d8d775f1e9fe0dde74523be6e3d36b362f"
-            },
-            "slotReturn": {
-              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-save-routing-r01-20261011/slot-return.md",
-              "sha256": "d47e927f8d0ee3c1e59730d53311915daf0233f3e3648524313a42e79b388315"
             }
           },
           "screenshotsReadByHex": "Directly viewed after-shortcut image: saved exact name in field and marker, Gespeichert, no pending text indicator. Trusted keyboard/History/native hashes established by separate raw oracles.",
@@ -160490,7 +160272,6 @@
             "failedC01HelpersUntouched": true,
             "failedC01VaultNotReplayed": true,
             "newGuiUsed": false,
-            "slotHeld": false,
             "noSelfMerge": true,
             "foreignRootsPreserved": true
           },
@@ -160601,7 +160382,6 @@
             "failedC01HelpersUntouched": true,
             "failedC01VaultNotReplayed": true,
             "newGuiUsed": false,
-            "slotHeld": false,
             "noSelfMerge": true,
             "foreignRootsPreserved": true
           },
@@ -160771,8 +160551,8 @@
             "files": [
               {
                 "path": "docs/reference/atlas-detail-binding-d01/room-draft-copy-c02/README.md",
-                "sha256": "5d430d7fc72e6ef92a24ed85bad4445dee4689e9c3aeeb3db4d75ca7b17b1d10",
-                "bytes": 3269
+                "sha256": "4524a121937fcb1a89766074a0028f214e215b368f2a4e08230131ac8d9bbc1b",
+                "bytes": 2853
               },
               {
                 "path": "docs/reference/atlas-detail-binding-d01/room-draft-copy-c02/build.json",
@@ -160816,8 +160596,8 @@
               },
               {
                 "path": "docs/reference/atlas-detail-binding-d01/room-draft-copy-c02/invocation.json",
-                "sha256": "97be9829368d080f2e151d3dfbcd2843c7b9ecc1ad1a33c687bfd14b239bb97f",
-                "bytes": 3029
+                "sha256": "ffa95521ddcd144cc7cde7d92ca680be41792d60152d2999d7dbb156b7e37afb",
+                "bytes": 2858
               },
               {
                 "path": "docs/reference/atlas-detail-binding-d01/room-draft-copy-c02/process-lifecycle.json",
@@ -161089,8 +160869,8 @@
             "files": [
               {
                 "path": "docs/reference/atlas-detail-binding-d01/room-draft-copy-c03/README.md",
-                "sha256": "dbd17e65b5cc823f3be7d84ac50ae3d25357583e960c230f5e1d4c74b29858fa",
-                "bytes": 4926
+                "sha256": "71b1a8b1953ad80f93140377beafa8731192609980157cfbf0deee63f9f5bcf2",
+                "bytes": 4323
               },
               {
                 "path": "docs/reference/atlas-detail-binding-d01/room-draft-copy-c03/copy-after-normal-quit.json",
@@ -161179,8 +160959,8 @@
               },
               {
                 "path": "docs/reference/atlas-detail-binding-d01/room-draft-copy-c03/invocation.json",
-                "sha256": "71cf3bc059a4819b950ce8cbdbb679a292208092ab01149be08abf7af577f072",
-                "bytes": 3321
+                "sha256": "f87267df71b0aa68a03f82e180381f18dac3d64792e9577b586d9ee5000258f9",
+                "bytes": 3138
               },
               {
                 "path": "docs/reference/atlas-detail-binding-d01/room-draft-copy-c03/protected-inputs-before.json",
@@ -161408,8 +161188,8 @@
             "files": [
               {
                 "path": "docs/reference/atlas-detail-binding-d01/room-copy-journal-p01/README.md",
-                "sha256": "c4106c44dc77c802fe911eb96d96691e81e3b6129fc5193395be1cd03600a613",
-                "bytes": 5868
+                "sha256": "9a23637894616b0ccaf031f66b123b032271dc42f172b15e76617dbc3d8e7078",
+                "bytes": 5379
               },
               {
                 "path": "docs/reference/atlas-detail-binding-d01/room-copy-journal-p01/copy-journal-p01-preload.cjs",
@@ -161760,8 +161540,8 @@
             "files": [
               {
                 "path": "docs/reference/atlas-detail-binding-d01/room-copy-committed-journal-c01/README.md",
-                "sha256": "ade86bf4d6cf3a0214cad4b742e391f8cfc5126d8ddd6605aff0ae2d6db5f0e7",
-                "bytes": 5280
+                "sha256": "9bfd4c38fb332b13f37e2c848d7f205b2a0a1622fafc537b17802f8d5794a79d",
+                "bytes": 4761
               },
               {
                 "path": "docs/reference/atlas-detail-binding-d01/room-copy-committed-journal-c01/copy-committed-journal-c01-preload.cjs",
@@ -162098,8 +161878,8 @@
             "files": [
               {
                 "path": "docs/reference/atlas-detail-binding-d01/room-save-committed-journal-j01/README.md",
-                "sha256": "b6cccd9d6ee02c2f074154917db44f6495b3f9d87be344fba1b80da6e6dd1d1b",
-                "bytes": 5846
+                "sha256": "3ddca8e2d60e671ce2c3a167e44b5f00ec4b1aa210b2388675b15bb48aacd838",
+                "bytes": 5251
               },
               {
                 "path": "docs/reference/atlas-detail-binding-d01/room-save-committed-journal-j01/fault-after-normal-quit.json",
@@ -162427,8 +162207,8 @@
             "files": [
               {
                 "path": "docs/reference/atlas-detail-binding-d01/room-save-retained-status-j02/README.md",
-                "sha256": "8244589d05ce0c8f0ff9974c019e6fbf99bb6a72b25c125bfd993d5c94b1e58f",
-                "bytes": 6278
+                "sha256": "883aea9444f9ad2a7f59a9d87ece0cabf907b2da4185bdff10a48a202b7cfb02",
+                "bytes": 5642
               },
               {
                 "path": "docs/reference/atlas-detail-binding-d01/room-save-retained-status-j02/checks/composed-atlas-host-tests.log",
@@ -162831,8 +162611,8 @@
             "files": [
               {
                 "path": "docs/reference/atlas-detail-binding-d01/room-save-prepared-journal-j03/README.md",
-                "sha256": "4c9883b32674030dd6deddb4648b2362d8882ec35aa237be6c78cb5ad458eb97",
-                "bytes": 6138
+                "sha256": "7a3db4442a74f34056bafcf324129e439012019d2cbff7fe29d12d5025a58584",
+                "bytes": 5495
               },
               {
                 "path": "docs/reference/atlas-detail-binding-d01/room-save-prepared-journal-j03/fault/actual-prepared-room-save-journal.json",
@@ -162985,9 +162765,9 @@
                 "bytes": 375
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-save-prepared-journal-j03/slot-return.json",
-                "sha256": "74657edc35f04e56336485dfbaa4ce054df27c288c4b65cace074f5423093a69",
-                "bytes": 486
+                "path": "docs/reference/atlas-detail-binding-d01/room-save-prepared-journal-j03/process-end.json",
+                "sha256": "1209e491c7df3bad409d7ba8dfda7fac251fdfc02f1a52dba22ec4f534252fef",
+                "bytes": 198
               },
               {
                 "path": "docs/reference/atlas-detail-binding-d01/room-save-prepared-journal-j03/source-build.log",
@@ -163144,7 +162924,6 @@
           "result": "PASS",
           "candidate": "adc4b98a3925b39abefb0a4db9a2bcd7c1a5a6ec",
           "testedIntegratedSource": "81c6a257af95b8dd9de0cbbd1fb76b6c1380521c",
-          "reviewer": "Stadt, existing independent peer",
           "readDirectly": true,
           "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/13#issuecomment-6094937083",
           "gate": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6094937270",

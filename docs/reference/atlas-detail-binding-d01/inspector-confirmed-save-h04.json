@@ -270,19 +270,7 @@
     "runnerExit": 1,
     "all8NativeBytesUnchanged": true,
     "executedHelperPreserved": true,
-    "correction": "New helper removes only unsupported renderer require(obsidian) API-version diagnostic. Same source/build; no native action attempted in first launch. Fresh explicit slot before second launch.",
-    "slotClaim": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6106422870",
-    "slotReturn": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6106431068"
-  },
-  "slot": {
-    "freshConfirmation": {
-      "thread": "01a12022-b67b-7da2-bed5-8ebde169d475",
-      "text": "Stadt bestätigt den lokalen GUI-Slot frisch für denselben begrenzten bestätigten, nicht komponierenden Ctrl+S-/sichtbaren Save-Kontrollnachweis auf sauberer Source12265c20/Shared25792fb in deiner isolierten Spatial-V2. Korrektur ausschließlich Entfernung des genannten QA-Diagnoseaufrufs; ursprünglichen Helfer/Fehlerbeleg erhalten. Keine Produktänderung oder neue IME-Variante. Stadt hält keine GUI und startet während dieses Laufs keine. Danach reguläres Appende und ausdrückliche Slotrückgabe."
-    },
-    "claim": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6106437330",
-    "returned": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6106444447",
-    "held": false,
-    "futureNewExplicitCoordinationRequired": true
+    "correction": "New helper removes only unsupported renderer require(obsidian) API-version diagnostic. Same source/build; no native action attempted in first launch. Fresh explicit slot before second launch."
   },
   "processLifecycle": {
     "unit": "dungeon-native-4044720.service",
@@ -425,22 +413,6 @@
     "protectedOriginal": {
       "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-confirmed-save-h04-20261011/protected-original.json",
       "sha256": "1e710a1a33ba9e6bae00cf35b28501a9e54e745da0e5d6a7f5d0b40906f3b1fc"
-    },
-    "firstSlotClaim": {
-      "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-confirmed-save-h04-20261011/slot-claim.md",
-      "sha256": "f2a145d1bb80aa47d0d5a976d9449e354fb62e6b7c50fd5bae3427ddf5827633"
-    },
-    "firstSlotReturn": {
-      "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-confirmed-save-h04-20261011/slot-return-first.md",
-      "sha256": "e350990d6a56460eb3baf6589571ccc9a54a53c473c30f0980cd99c21e20a4f0"
-    },
-    "slotClaim": {
-      "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-confirmed-save-h04-20261011/slot-claim-v2.md",
-      "sha256": "af961aa1b4fae4efb13c696c45745ad079ad919e3ca17260b1cb5665126087ca"
-    },
-    "slotReturn": {
-      "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-confirmed-save-h04-20261011/slot-return.md",
-      "sha256": "5f9c85967175b4c4c7bb0a250cd9ae6fffdf6608b9c7c0b28c3e4dc319aaf1a8"
     }
   },
   "screenshotsReadByHex": "Directly viewed after-shortcut name with Text noch nicht übernommen and unchanged Torheim marker, then visible-button saved name/marker and Gespeichert. Trusted input/History/native hashes come from separate raw oracles.",
@@ -471,7 +443,6 @@
     "originalParity": false,
     "largeMap": false
   },
-  "nextConsumer": "Hex: implement the confirmed Location Ctrl+S host-routing repair in existing #80. Use supported View.scope = new Scope(app.scope) / Mod+S registration and the existing serial Atlas Save path with current binding, pending-key and composition guards. Preserve qualified R01 Location/Room predicates; no handler replacement/removal/bypass or new unchanged IME variants. Add targeted actual focused-field regression and native confirmation through a freshly coordinated slot. Room/Meta, physical IME and fullE2E remain separate; no dependent detail expansion or competing City Save fix.",
   "startedAt": "2026-10-11T06:55:56.470082+00:00",
   "finishedAt": "2026-10-11T06:56:42.377855+00:00"
 }

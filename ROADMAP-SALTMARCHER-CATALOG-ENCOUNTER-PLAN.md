@@ -161,7 +161,7 @@ Offizielle Produktreferenzen für die Mindestabnahme:
 - Encounter- und Kreaturenlinks fokussieren den zugehörigen Raum/Ort im
   gemeinsamen Atlas, ohne zweiten Editor- oder Kartenmodus.
 
-### CE-07 – Fachreview, Nachbesserung und Aufräumen
+### CE-07 – Gesamtqualifikation
 
 - Alle Abnahmefälle auf frischem Obsidian-Prozess, Reload und beschädigten
   Fixtures prüfen; 900×650 und 1150×700 ohne horizontales Hauptscrollen.
@@ -193,25 +193,7 @@ Offizielle Produktreferenzen für die Mindestabnahme:
 
 ## Bestehende Implementierung und Abnahmegrenzen
 
-Die technischen CE-01-Anforderungen stehen im Abschnitt
-[Monsterkatalog](#monsterkatalog).
-`CE-01-I01` (komprimiertes Buildasset, Lazy Loader und Inventar) ist geprüft
-und nach Reparaturreview bestanden. `CE-01-I02` stellt den eigenen
-Katalog-`ItemView`, eindeutigen Command-Fokus und den Kernfluss aus Suche,
-Filtern, Sortierung, Paging, Auswahl und Statblock als geprüften
-Umsetzungskandidaten bereit. `CE-01-I03` ergänzt die übrigen 2014-Filter,
-Mehrfachwerte, Chips/Reset, Debounce/Stale-Schutz, responsive Barrierefreiheit,
-einen fokussierten DOM-Harness und atomare Draft-Übernahme beim Host-Lifecycle.
-`CE-01-R01` fand einen Unique-View-Concurrency-Race und selectorunsicheren
-Tastaturfokus. `CE-01-N01` reparierte beide Pfade; `CE-01-R02` bestand nach
-expliziten Regressionen. `CE-01-H01` bestand seinen automatisierten echten
-Obsidian-Umfang. `CE-01-C01` zentralisierte Restore-, Default- und Draftregeln;
-sein erster Review fand eine verbleibende Content-Duplizierung, die
-`CE-01-C01-N01` beseitigte. Der unabhängige Re-Review schloss das Aufräumtor.
-Historischer Nachfolger war `CE-02-P01`, der eigene technische Fachplan für den
-vollständigen SaltMarcher-Katalog. Physische CE-01-Eingabe, Screenreader und
-weitere Plattformen bleiben offen; noch keine vollständige CE-01- oder
-Encounter-Fachfreigabe behaupten.
+CE-01 besitzt komprimiertes Buildasset/Lazy Loader, Katalogview und Command-Fokus, Suche, 2014-Filter mit Chips/Reset, Sortierung/Paging, Auswahl/Statblock, Debounce/Stale-Schutz, responsive Controls und atomare Draftübernahme bei Hostwechsel. Concurrency- und Tastaturfokusfehler sind repariert; automatisierte echte Obsidianfälle sind belegt. Physische Eingabe, Screenreader, weitere Plattformen und vollständige Encounterfunktion fehlen. Exakte Quellen, Ergebnisse und Grenzen stehen in `acceptance.json.saltMarcherCatalogEncounter`.
 
 ## Monsterkatalog
 
@@ -373,7 +355,6 @@ Obsidian- und 900×650-/1150×700-Abnahme bleiben offen.
 
 ## Monsterkatalog — Fokussierte Prüfungen
 
-- `npm run check`, `npm test`, `npm run build` auf jedem Produktpaket.
 - Reiner Loader-Test: keine Dekompression vor `load()`, gültige und beschädigte
   Payload, Retry nach behobenem Fehler und genau eine Instanz bei parallelem
   Öffnen.
@@ -385,8 +366,7 @@ Obsidian- und 900×650-/1150×700-Abnahme bleiben offen.
   Auswahlbeibehalt, Enter/Escape, `aria-sort`, Status und Notice.
 - Echte Obsidian-Abnahme auf einem Gerät: Öffnen aus der Command Palette,
   Suche/Filter/Detail, Fokuswechsel, View schließen/neu öffnen und frischer
-  Prozess. Andere Geräte dürfen parallel ihre eigene einzelne Hostinstanz
-  prüfen.
+  Prozess.
 
 ## Monsterkatalog — Offene Abnahme
 
@@ -472,11 +452,7 @@ werden nicht überschrieben.
 
 ## Monster-Hostprüfung — Review und verbleibende Grenzen
 
-Nach den Läufen prüft ein unabhängiger Read-only-Review den exakten SHA,
-Szenariocode und sämtliche Receipts. Pflichtbefunde benötigen Korrektur und
-erneute Prüfung. Physische Eingabe und jede nicht ausgeführte Plattform-/
-Screenreaderprüfung bleiben offen. Anschließende `CE-01-C01`-Änderungen müssen
-den geprüften H01-Scope erhalten.
+Physische Eingabe sowie nicht ausgeführte Plattform-/Screenreaderfälle bleiben offen; automatisierte Hostfälle belegen nur ihren tatsächlichen Umfang.
 
 ## Monster-Hostprüfung — Ergebnis vom 9. Oktober 2026
 
@@ -817,24 +793,9 @@ Pflichtzeilen. Automatisierte DOM- oder Playwrightfolgen ersetzen sie nicht.
 
 ### Itemquellen und Provider — Aktuelle Quellenlieferung
 
-Der vollständige S01-Quellenkorpus mit unabhängigem Review liegt als Kandidat in [PR85](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/85); seine Integration und Itemproduktabnahme sind getrennte offene Schritte. Die folgenden Quellenregeln erhalten die beobachteten Tabellen-, Whitespace- und Provenienzgrenzen. Der direkte Nutzerauftrag vom 10. Oktober verlangt sinnvolle
-Produktbeiträge ohne künstliche Einzeleintrags-/Kleinstpaketbeschränkung.
-W23 liefert die zusammenhängende Armor-/Arrow-Gruppe (A–Z 10–13,
-physische/gedruckte Seiten 208–209) einschließlich Resistenz-d10-Tabelle,
-Fluchtext und Slaying-Regeln. Ein kompletter Heading-zu-Heading-XML-Abgleich
-prüft Prosa und physische Tabellenreihenfolge statt nur vorhandener Substrings.
-W23-N01 ersetzt nach dem unabhängigen P1-Befund die feste Footer-Y-Grenze:
-Nur der exakte SRD-Footer mit belegter Seitennummer wird entfernt, nie eine
-Bodyregion nach Koordinaten. Getrennte kursive Wort-/Satzzeichenläufe erhalten
-das Fehlen von Grenzleerraum aus den XML-Quellwerten; echte Leerzeichen und
-Interpunktion bleiben unangetastet. Ein hashgebundener echter Poppler-25.03-
-XML-Ausschnitt, verschobene/hohe Koordinaten, Footer-/Body-Adversarien und ein
-expliziter PDF-Integrationstest schützen diese Grenze. Der lokale echte PDF-
-Lauf ist kein behaupteter Poppler-25.07- oder fremder Host-PASS. Der unabhängige
-W23-N01-P1-Re-Review auf `8dfa06ac859acf84df1e35d481893cf289e062e3`
-bestätigt inzwischen den echten Poppler-25.07-PDF-Pfad als PASS
-([PR #48, Review 5479968350](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/48#pullrequestreview-5479968350));
-das ist keine vollständige S01-/Produktabnahme.
+Der vollständige S01-Quellenkandidat steht in [PR85](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/85); aktuelle Integration und Itemproduktabnahme stehen im Abnahmeregister. Quellenprüfung vergleicht vollständige Heading-zu-Heading-XML-Blöcke samt Prosa, Tabellenreihenfolge und Seitenfortsetzung.
+
+Armor/Arrow (A–Z 10–13, Seiten 208–209) umfasst Resistenz-d10, Fluchtext und Slaying-Regeln. Entfernt wird ausschließlich der exakte SRD-Footer mit belegter Seitennummer, niemals eine Bodyregion nach Y-Koordinate. Getrennte kursive Wort-/Interpunktionsläufe erhalten fehlenden Grenzleerraum; echte Leerzeichen bleiben erhalten. Poppler-XML-Fixtures, verschobene/hohe Koordinaten, Footer-/Body-Adversarien und der echte PDF-Integrationstest prüfen diese Grenzen; 25.03-/25.07-Belege bleiben getrennt.
 
 W24 ergänzt die gesamte Bags-Gruppe (A–Z 14–17, Seiten 209–211): Beans,
 Devouring, Holding und Tricks. Alle zwölf d100-Effekte einschließlich `00`
@@ -898,19 +859,7 @@ Ball very-rare; Mind Reading, Telepathy und True Seeing legendary. Keine
 erfundenen Unterheadings, Records oder Merges; alle variantenspezifischen
 Regeln und Scrying-/Konzentrations-/Rechargegrenzen bleiben vollständige Prosa.
 
-`tools/items-srd51-c-section.mjs` vergleicht jeden vollständigen Headingblock
-einschließlich Table-Position und Seitenwechsel bis zur Folgeüberschrift.
-Originale komplette drei Poppler-25.03-XML-Seiten und Hash-/Lizenzreceipt
-liegen unter `tests/fixtures/items-srd51-c-section-poppler-25.03.*`.
-Negative Goldens schützen Table-/Variant-IDs, Rarität, Würfelbereiche,
-Kapazität, Charge-Loss, Fließtextbedingungen und Aufzählungen. Kein Schema-
-oder Produktvertrag wurde erweitert; der W25-Korpuscount-Test prüft nun die
-Inventarlänge statt den historischen Zwischenstand 252, ohne Quellenfakten
-oder W25-Orakel abzuschwächen. W26 ist unabhängig auf
-`67daede8eb4c5debafa98115f12b6e516c54e3be` geprüft
-([Stadt-Review 5480616259](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/66#pullrequestreview-5480616259))
-und regulär auf Shared `9e3a6c1bbd6484a356c00c268083b147cd7cc6ae` integriert
-([Integrationsbeleg](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/66#issuecomment-6101632238)).
+`tools/items-srd51-c-section.mjs` vergleicht komplette Headingblöcke einschließlich Tabellenposition und Seitenwechsel. Die drei ursprünglichen Poppler-25.03-XML-Seiten mit Hash-/Lizenzreceipt liegen unter `tests/fixtures/items-srd51-c-section-poppler-25.03.*`. Negative Goldens prüfen Table-/Variant-IDs, Rarität, Würfelbereiche, Kapazität, Charge-Loss, Textbedingungen und Aufzählungen. Korpuscount-Tests folgen der tatsächlichen Inventarlänge; ihre Quellenorakel bleiben unverändert.
 
 W27 ergänzt den vollständigen D-Abschnitt A–Z48–62, Dagger of Venom bis
 Dwarven Thrower, physische/gedruckte Seiten215–220. Alle Header und Prosa,
@@ -936,33 +885,11 @@ und regulär auf Shared7ba2bf4 integriert
 ([Integrationsbeleg](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/70#issuecomment-6102297681)).
 Schema, Attribution, Produktcode und alte Quellen-/Verifiergoldens bleiben unverändert.
 
-Der aktuelle nächste Quellenumfang ist der vollständige E-Abschnitt A–Z63–70,
-Efficient Quiver bis Eyes of the Eagle, Seiten220–221. Efreeti-d100-Effekte
-einschließlich `91–00`, alle vier Gem→Elemental-Zuordnungen und vollständige
-Sicht-/Recharge-/Windbedingungen werden headinggebunden geprüft; Eyes of
-Charming bleibt einschließlich Seitenfortsetzung erhalten. Tabellenwirkungen
-erzeugen keine zusätzlichen Itemidentitäten oder Raritätsvarianten. Die
-originalen zwei XML-Seiten/Receipt und das Quellenorakel liegen unter
-`tests/fixtures/items-srd51-e-section-poppler-25.03.*` beziehungsweise
-`tools/items-srd51-e-section.mjs`. Aktueller Ausführungs-/Prüfstand ausschließlich
-in den fachlichen Abnahmen und [Aufgabenissue58](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/58).
-Stand: 290 Occurrences /289 Records,71/239 A–Z-Headings
-(70 standalone plus Potion-of-Healing-Merge);168 A–Z-Headings plus Orb offen.
-Der Gesamtquellenauftrag endet nicht an diesem Zwischenstand; nächster
-kohärenter Abschnitt beginnt bei Feather Token. I01 bleibt vor unabhängigem
-vollständigem S01-R01 gesperrt.
-Der erwartete vollständige Occurrence-Count ist 459 (219 Ausrüstung +
-239 A–Z + Orb), nicht der jeweilige Zwischenstand; bekannte Mergezahl bisher 1,
-weitere Merge-/Helperprüfung bleibt offen. `complete:false` bleibt gesetzt.
-Der vollständige PDF-Test wird mit
-`SRD51_SOURCE_PDF=/pfad/SRD_CC_v5.1.pdf node --test tests/items-srd51-source.test.mjs`
-aktiviert. Ohne diese Quelle ist er ausdrücklich skipped; Offline-XML-Fixtures
-ersetzen keinen erneuten echten PDF-Lauf bei Quellenänderungen.
-Der Quellenstand und die direkten Review-/Veröffentlichungsbelege bleiben in
-`acceptance.saltMarcherCatalogEncounter`
-und im [historischen Fachissue #9](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/9); das geschlossene Issue vergibt keine aktuellen Aufgaben.
-Die nächsten Lieferungen folgen zusammenhängenden Quellabschnitten; die
-vollständigen Schema-/Provenienz-/Produkt-/Hostgates unten bleiben erhalten.
+Der E-Abschnitt A–Z 63–70 (Efficient Quiver bis Eyes of the Eagle, Seiten 220–221) prüft Efreeti-d100 einschließlich `91–00`, vier Gem→Elemental-Zuordnungen und vollständige Sicht-/Recharge-/Windbedingungen; Eyes of Charming behält seine Seitenfortsetzung. Tabellen erzeugen keine zusätzlichen Itemidentitäten oder Raritätsvarianten. Quellen: `tests/fixtures/items-srd51-e-section-poppler-25.03.*` und `tools/items-srd51-e-section.mjs`.
+
+Vollständigkeitsziel: 459 Occurrences (219 Ausrüstung + 239 A–Z + Orb), mit ausdrücklich belegten Merges statt Namensgleichheit; der Potion-of-Healing-Merge ist bereits bekannt. Der tatsächlich gelieferte Korpus und offene Abschnitte stehen ausschließlich im Quellenartefakt und `acceptance.json.saltMarcherCatalogEncounter`. Das vollständige Quellen-/Schema-/Provenienzpaket benötigt Prüfung vor Produktartefakt, Provider und UI.
+
+`SRD51_SOURCE_PDF=/pfad/SRD_CC_v5.1.pdf node --test tests/items-srd51-source.test.mjs` aktiviert den vollständigen PDF-Test. Ohne PDF ist er skipped; Offline-XML ersetzt bei Quellenänderung keinen erneuten echten PDF-Lauf.
 
 ## Itemquellen und Provider — Ziel und Grenze
 

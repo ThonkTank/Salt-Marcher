@@ -2,7 +2,6 @@
   "sourceCommit": "4515088772b759cda2e19d249367699c9868c72c",
   "sourceStatus": "",
   "slotRequest": 6101870675,
-  "slotConfirmation": 6101884556,
   "fixtureVersion": "e2e01-spatial-v2",
   "fixtureManifestSha256": "23735bb6c95107b7dec93ffa56ec66405a0f4fe0ec3822fc0476d90d2920188d",
   "fixtureInputs": [

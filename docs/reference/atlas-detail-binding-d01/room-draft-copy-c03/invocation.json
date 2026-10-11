@@ -50,7 +50,6 @@
     "onlyReadonlyOracleDelta": true,
     "C02FailedReceiptRetained": true
   },
-  "slotConfirmedBy": "Stadt existing chat 01a12022-b67b-7da2-bed5-8ebde169d475: new explicit C03 Copy/Fresh pair after actual #11/6108220293; no own GUI/claim, waits for Hex return",
   "hostBefore": {
     "testProcesses": [],
     "portsFree": [

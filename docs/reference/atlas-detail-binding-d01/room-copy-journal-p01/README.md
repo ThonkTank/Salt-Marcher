@@ -49,7 +49,6 @@ Beide Dienste inactive/dead/MainPID0/Exit0, forcedTerminationPids[], gebundene
 App-PIDs268733/268806/268813/268827 und271523/271595/271602/271607 geprüft weg.
 Original8/Campaignmanifest und actual R03-Draft sowie frühere C01/C02/C03/R03-
 Vaults/Helfer/Rohbelege und drei fremde lokale Dateien unverändert.
-[Neuer ausdrücklich koordinierter Slot](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6108497514), [zurückgegeben](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6108520121).
 
 Portable Originale:
 

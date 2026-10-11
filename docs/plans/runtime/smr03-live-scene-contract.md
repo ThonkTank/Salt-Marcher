@@ -605,7 +605,7 @@ Knowledge-/Perception-Union nur die Characters der fokussierten Scene; eine
 offenlegen. Focuswechsel, `none`, stale/unavailable, Displayverlust, A→B→A,
 Restart und Import dürfen nie zuletzt bekannte unsafe Ausgabe reaktivieren.
 
-## Acceptance vor jeder Implementierungsfreigabe
+## Fachliche Abnahmekriterien
 
 1. Eine neue, kopierte und importierte Campaign bleibt ohne LiveScene gültig.
    Ausdrückliches Continue mit einer bereits aktiven, geordneten Party erzeugt
@@ -1112,8 +1112,7 @@ Fälle.
 - negative Boundary-Tests einschließlich fehlender Passive-Display-Oberfläche;
 - keine Zustandsmutation und keine Ports.
 
-Abschluss: eigener Implementation-Commit, `npm run check`, gezielte Tests,
-vollständiges `npm test`, unabhängiger Review. Ein PASS öffnet nur I01-B.
+I01-A liefert die validierten Vertrags- und Projektionsinputs für I01-B.
 
 ### Kernverträge und Umsetzung — I01-B – Pure Party-/Scene-Aggregate
 

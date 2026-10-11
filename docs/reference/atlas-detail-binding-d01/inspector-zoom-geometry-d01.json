@@ -21,9 +21,6 @@
     },
     "zoomSetup": "Electron webFrame.setZoomFactor(1.31), diagnostic host condition only; no CSS injection. Resulting inner viewport782x611 CSSpx, DPR~1.31. Playwright renderer emulation; no physical window/device acceptance.",
     "input": "ordinary rendered controls and synthetic mouse/keyboard; known fixture open is controlled setup; model reads are identity/coordinate oracles only",
-    "slotClaim": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6104824681",
-    "slotPeerThread": "01a12022-b67b-7da2-bed5-8ebde169d475",
-    "freshSlotConfirmedBeforeEachHost": true,
     "slotExpresslyReturnedAfterEachHost": true,
     "userVaultTouched": false,
     "sourcesTouched": false
@@ -38,7 +35,7 @@
       "No measured dock rectangle exceeds CSS viewport; vertical scrolling is separate from external clipping. Existing GM-N02-02 external-window observation is not dismissed or qualified as fixed."
     ],
     "scope": "existing common Inspector child controls/layout; no camera/store/history/format change.",
-    "nextOwnStep": "fit existing Key actions and detail/binding target controls to available dock width and preserve same-target scrolling/navigation; then targeted layout/guard regression and qualified native followup. No blind external-dock CSS remedy."
+    "remainingWork": "fit existing Key actions and detail/binding target controls to available dock width and preserve same-target scrolling/navigation; then targeted layout/guard regression and qualified native followup. No blind external-dock CSS remedy."
   },
   "layoutSamples": [
     {

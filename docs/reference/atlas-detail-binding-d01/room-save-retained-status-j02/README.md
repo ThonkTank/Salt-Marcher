@@ -56,8 +56,7 @@ Fresh1791721600066, PIDs371967/372041/372048/372064.
 Beide Runner0/PASS/errors[]/failure null/shutdownFailure null, normale Enden,
 inactive/dead/MainPID0/Exit0, forcedTerminationPids[], PIDs weg unabhängig geprüft.
 1175 geschützte historische/fremde Dateien einschließlich J01 unverändert;
-Nutzervault unberührt. [Neu koordinierter Slot](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6108995776), [zurückgegeben](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6109012729).
-
+Nutzervault unberührt.
 Danach integrierter Shared dd7311e0ca310cee747cc8368fe87165ff2cfad9 regulär in 4be86954199076976c704a3667ba35799e4321a4 übernommen.
 [Kompositionsbeleg](shared-composition.json): AtlasEditor/Panels/Services/Host/Fixture
 unverändert; src/model.ts verändert für optionale V4-Volumes, die dieser Dungeon

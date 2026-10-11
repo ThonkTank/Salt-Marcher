@@ -10,7 +10,7 @@ Campaign→Atlas, native Orts-/Stadt-/Dungeonquellen, gemeinsame History, Raum-K
 
 Der letzte integrierte Save-Stand ist [PR167](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/167) auf Shared `6a90f3ee2f50f0be45f0e256784576f13722c319`. [J02](docs/reference/atlas-detail-binding-d01/room-save-retained-status-j02/README.md) belegt erhaltenen Save-Status nach Veröffentlichung; [J03](docs/reference/atlas-detail-binding-d01/room-save-prepared-journal-j03/README.md) den wirklichen Prepared-Journal-/Fresh-Recoveryfall. [Copy C03](docs/reference/atlas-detail-binding-d01/room-draft-copy-c03/README.md), [Prepared Copy](docs/reference/atlas-detail-binding-d01/room-copy-journal-p01/README.md), [Committed Copy](docs/reference/atlas-detail-binding-d01/room-copy-committed-journal-c01/README.md) und [Committed Save](docs/reference/atlas-detail-binding-d01/room-save-committed-journal-j01/README.md) behalten ihre jeweilige SHA, Fixtures und Grenzen.
 
-Weitere offene Fähigkeiten und Kandidaten stehen in der [Atlasübersicht](ROADMAP-HEX-ATLAS.md#atlas-auf-einen-blick). [Ergebnisgleichwertigkeit und Lieferprioritäten](ROADMAP-HEX-ATLAS.md#wie-kommen-wir-zum-ziel) steuern neue Lieferungen. Bestehende Quellen-, Speicher- und Identitätsverträge bleiben technische Voraussetzungen; E2E-01-Teilbelege ersetzen keinen vollständigen Endablauf. Vollständiger Complete-Import, breite Recovery/OS-Abnahme und durchgehende Originalparität bleiben offen. Die folgenden Fachverträge und Gegenfälle bestimmen den Anschluss; historische Prozessentscheidungen vergeben keine Arbeit.
+Weitere offene Fähigkeiten und Kandidaten stehen in der [Atlasübersicht](ROADMAP-HEX-ATLAS.md#atlas-auf-einen-blick). [Ergebnisgleichwertigkeit und Lieferprioritäten](ROADMAP-HEX-ATLAS.md#wie-kommen-wir-zum-ziel) steuern neue Lieferungen. Bestehende Quellen-, Speicher- und Identitätsverträge bleiben technische Voraussetzungen; E2E-01-Teilbelege ersetzen keinen vollständigen Endablauf. Vollständiger Complete-Import, breite Recovery/OS-Abnahme und durchgehende Originalparität bleiben offen. Die folgenden Fachverträge und Gegenfälle bestimmen den Anschluss.
 
 ## Nutzerziel, Basis und unveränderte Abnahmelinie
 
@@ -21,19 +21,7 @@ Undo/Redo und lokale Speicherung bleiben in einer Atlas-Lebensdauer verbunden.
 Ein Kampagnenwechsel darf offene Arbeit nicht verlieren und keine Auswahl,
 Kamera, History oder verspätete Antwort in eine andere Aktivierung übertragen.
 
-Planbasis: alleiniger PR-13-Kandidat
-`ebcbbadcef2425b843a46e69e4eb29599386dc63`, mit vollständig konsumiertem Shared
-`e09d1959e26536c9dcaff7d2d13b601cf3077e36`. Das integrierte Campaign-Vertragspaket
-`d06354c37ea24c249a23310f1a186a0a5ee4e936`, sein unabhängiger
-[Kompositionsreview](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/13#issuecomment-6093998767)
-und dessen getrenntes
-[Aufräumen](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6094023183)
-sind Vorbelege. Sie werden nicht neu abgenommen. Der
-[räumliche Integrationsplan](ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md#gemeinsame-räumliche-darstellung), die
-[Campaign-Kontextgrenze](ROADMAP-SALTMARCHER-SMR-01-CAMPAIGN-DATA-PLAN.md#campaign-kontext) und der
-[Ownership-Vertrag](ROADMAP-SALTMARCHER-SMR-01-CAMPAIGN-DATA-PLAN.md#ownership-und-gemeinsame-commands) bleiben maßgeblich.
-Der dort historische offene Stand wird durch tatsächliche Quellnachweise ergänzt,
-nicht als zweiter Lieferplan erneut gestartet.
+Planbasis: PR13 `ebcbbadcef2425b843a46e69e4eb29599386dc63`, Shared `e09d1959e26536c9dcaff7d2d13b601cf3077e36` und Campaignvertrag `d06354c37ea24c249a23310f1a186a0a5ee4e936`. Maßgeblich sind die [räumliche Darstellung](#gemeinsame-räumliche-darstellung), [Campaign-Kontextgrenze](ROADMAP-SALTMARCHER-SMR-01-CAMPAIGN-DATA-PLAN.md#campaign-kontext) und [Ownership-Vertrag](ROADMAP-SALTMARCHER-SMR-01-CAMPAIGN-DATA-PLAN.md#ownership-und-gemeinsame-commands); der aktuelle Funktionsstand steht unter [#80](#arbeitsstand-80).
 
 Das aktive Fixture bleibt **e2e01-spatial-v2**; sein
 [Manifest](tests/fixtures/atlas-e2e-spatial-v2/manifest.json), alle sieben nativen
@@ -301,10 +289,7 @@ History oder City-Persistenz wird angelegt. Die Speicherfehler passieren über d
 tatsächlichen `AtlasRepository.save` → `FileTransaction`; der Runner ersetzt den
 Produktjournalcode nicht.
 
-**Öffentlicher Producervertrag der tatsächlichen Lieferung:** Der während dieses
-Matrixlaufs direkt gelesene PR35-Kandidat
-`8a25c92c89962a4b1fbf4b15a209205e5704bbc3` liefert diese API bereits. Seine
-damaligen Ownerchecks/-reviews waren Vorbelege vor vollständigem Matrixlauf und unabhängigem Review. Der aktuelle Anschluss und seine begrenzten Belege stehen in [Arbeitsstand #80](#arbeitsstand-80).
+**Producervertrag:** PR35 `8a25c92c89962a4b1fbf4b15a209205e5704bbc3` liefert die folgende API. Anschlussstand und Nachweisgrenzen: [Arbeitsstand #80](#arbeitsstand-80).
 
 - Der Participant konsumiert als optionalen vierten Constructorparameter
   `CampaignRuntimeSaveRollbackAuthority.validateRollbackReceipt(receipt)`.
@@ -380,8 +365,6 @@ Die damaligen Schnittstellenvorschläge sind vom heutigen Quellstand zu untersch
 | **I01a – räumliche Speicherbasis**          | V2-Worldbindings, relative Transformkette, prospektive Graphprüfung und wirkliche City-/Dungeon-Owneraufnahme in Snapshot/Draft/Save/Copy/Discard/Recovery. Ein unveränderter Altatlas bleibt unverändert.                 | Native codecs und echte Repositorydateien: Ankoppeln, Ort/Haus bewegen, Undo/Redo, unterbrochenes Save, externer Konflikt, Copy-Closure und frisches Repository; Präzisionsgegenprobe unten. Noch kein sichtbarer Atlas-PASS.           |
 | **I01b – unmittelbar sichtbarer Anschluss** | Citycontainer und erste native Dungeon-Raumzeichnung im vorhandenen Frame, Zoomdarstellung, Hitrouter, bestehende Stadtgesten und Source-basierter Raum-Key. Verankern nutzt denselben Atlas; keine Betreten-/Modusaktion. | Vor der nächsten Fachgruppe echte isolierte Obsidianprobe: vollständige sichtbare Folge aus dem ersten Absatz einschließlich Hausbewegung, Escape, gemeinsamen Undo/Redo, Save und einem neuen Prozess. Aktive Hosts schützen. |
 | **I01c – verbleibende Pflichtintegration**  | Dungeon-Geometrieaktionen über reine fachliche Changes, bestätigter Campaign/Vault-Context, persistierte Command-/Receiptgrenze und echte P02/P04-Importvariante; Katalogreferenzen aus tatsächlichen Ownerlieferungen.    | Exakte Reviewinputs und festes erweitertes Fixture; erst danach unabhängiger integrierter Code- und Hostreview anhand der [E2E-Kriterien](ROADMAP-E2E-GATES-CANDIDATE.md). Fehlende Ownerlieferung bleibt offen, nicht durch Platzhalter verdeckt.                                        |
-
-Die historischen Kennungen I01a/I01b/I01c ordnen Speicherbasis, sichtbaren Anschluss und vollständige E2E-Eingänge zu. Sie erzeugen keine erneuten Phasenläufe. Ein vorhandener räumlicher Anschluss ersetzt keinen vollständigen E2E-01- oder E2E-02–04-Nachweis.
 
 ## Gemeinsame räumliche Darstellung — Sichtbarer Frame und Eingabe
 
@@ -490,20 +473,7 @@ Campaign-/Katalog-/P02/P04-Eingänge, keine positive LiveSession-Abhängigkeit.
 
 ## Dungeon-Geometrie und Vorschau — Aktueller Anschluss statt erneutem Phasenlauf
 
-Der Dungeonbeitrag ist geliefert: [unabhängiger enger Produktreview](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/26#issuecomment-6093376162)
-auf `c8bd27d6d223403b46748d3051409c3e1c498224`, [Ownerübergabe](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/26#issuecomment-6093407357)
-auf `d02a546df50e891dcb65ec2be548c06b66090bbe`. Beide sowie Produktcommit
-`5675cbd13be6f0fa096c3651743f1eb40d93f845` sind Vorfahren des promoteten
-Sharedstands `6a41f1640de3e4a4311d905d95f66cd79d91b698` aus PR13
-([begrenzte Integrationsentscheidung](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/39#issuecomment-6100834444)).
-Der verbleibende Dungeon-am-Ort-/Recovery-Ablauf steht in [#80](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80). Vorhandene Geometrie gehört zum selben Atlas-/Saveablauf; die folgenden Verträge beschreiben dessen technische Grenzen.
-
-Die folgenden Vertragsgrenzen bleiben maßgeblich. Datierte Phasen- und
-Reviewangaben bewahren deren Entstehung, keine offenen Folgeaufträge. Der
-damalige Planbefund `DUN-GEO-P01-R01-01` und seine Reparatur bleiben nachvollziehbar
-im [Vertrags-Cleanup (historisch)](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/blob/6a90f3ee2f50f0be45f0e256784576f13722c319/ROADMAP-E2E01-DUNGEON-GEOMETRY-CLEANUP-PLAN.md).
-Quellenintegration und lokaler Review ersetzen keine fehlende Host-, physische
-Bedien-, Originalparitäts- oder vollständige E2E-Abnahme.
+Der Dungeon-Geometriebeitrag ist über PR13 auf `6a41f1640de3e4a4311d905d95f66cd79d91b698` integriert ([Integrationsbeleg](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/39#issuecomment-6100834444)). Der verbleibende Dungeon-am-Ort-/Recovery-Ablauf steht in [#80](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80). Geometrie verwendet denselben Atlas-/Saveweg; die folgenden Verträge beschreiben seine Grenzen.
 
 ## Dungeon-Geometrie und Vorschau — Vertragsbegriffe
 

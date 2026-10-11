@@ -15,13 +15,13 @@
   "consumedShared": "2a484df43bd2146217e0efb3986fd1971d8b55e1",
   "originalReceipt": {
     "path": "docs/reference/atlas-shared-location-h02/receipt.json",
-    "sha256": "12856a4f351af562952cd50ce8616dae734f14b91fc8abbaabed6eab17ab94bf",
+    "sha256": "c2d51b96541366f891bac661a09c5198e97151e7a5086ac953d3ab440e2e7dc2",
     "artifactsVerified": 40,
     "unchanged": true
   },
   "metadataRepair": {
     "path": "docs/reference/atlas-shared-location-h02/metadata-repair.json",
-    "sha256": "4776407068ec6654a7ff143874bc62ef6af97577c6c83fb65b6da809efb3fb32",
+    "sha256": "0ccff32070660c1e697b4d48320bb1b13069cb0406290f83fbe982432057bd72",
     "slotRequiredAgain": false,
     "onlyFindingClosedBy": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/40#issuecomment-6102084191"
   },
@@ -77,7 +77,7 @@
   "priorReceipts": [
     {
       "path": "docs/reference/atlas-shared-location-h01/receipt.json",
-      "sha256": "e628cacae0c0c9bf2c646dc3ec345ee743181133685962efe3cd458002bcf144"
+      "sha256": "0465f5a87d83b97ea91977fb1b7342b66ec1dafd5ee6741835c59e300a51df62"
     },
     {
       "path": "docs/reference/atlas-shared-location-d01/receipt.json",
@@ -93,7 +93,6 @@
     }
   ],
   "originalH01Status": "historical_FAIL_unchanged",
-  "guiSlotReturn": 6101912782,
   "checks": {
     "existing40ArtifactsAndReceiptsVerified": true,
     "N01ReceiptVerified": true,

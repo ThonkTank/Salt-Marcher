@@ -15,7 +15,7 @@
   "incomingShared": "b02925c87f07e882919348521d380f54a8b4f6b4",
   "originalReceipt": {
     "path": "docs/reference/atlas-shared-location-h02/receipt.json",
-    "sha256": "12856a4f351af562952cd50ce8616dae734f14b91fc8abbaabed6eab17ab94bf",
+    "sha256": "c2d51b96541366f891bac661a09c5198e97151e7a5086ac953d3ab440e2e7dc2",
     "artifactsVerified": 40,
     "unchanged": true
   },

@@ -1,10 +1,10 @@
 # City-Hausname: Post-Save-Fresh-Process und PR-117-Fokus
 
-Dieser Beleg schließt den im bestehenden Cloud-GM-Claim #92 offen gelassenen dauerhaften Wiederöffnungsanschluss und bindet die danach ausdrücklich übergebene enge PR-117-Tastaturprüfung. City bleibt Paket- und Produktowner; dies ist keine Produktänderung oder Gesamtfreigabe.
+Dieser Beleg schließt den in #92 offen gelassenen dauerhaften Wiederöffnungsanschluss und bindet die danach ausdrücklich übergebene enge PR-117-Tastaturprüfung.
 
 ## Quellen und Host
 
-- Issue/Claim: [#92](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/92), `GM-CITY-HOUSE-NAME-CLOUD-UI-RETEST-20261011-01`.
+- Nachweis: [#92](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/92), `GM-CITY-HOUSE-NAME-CLOUD-UI-RETEST-20261011-01`.
 - Post-Save-Fresh-Process-Lauf: Shared/Product `eaf6bd95564ab398eabe9b2c0ac046feec079f0f`, nach integriertem City-Save-Fix PR #106. `npm run build` am exakten Commit PASS, Node v24.19.0, `dirty:false`; der Build wurde auf diesem Commit erneut erzeugt und gegen das damals im Vault installierte Tripel bestätigt.
 - PR-117-Fokuslauf: aktueller Shared/Product `a4c2cb39aafdfb7abf5469e575a82e630ef41313`, Merge von PR #117 / Produktcommit `14729dc429d9699998284b1ee7a3bb8ee3ebc8a3`. `npm run build` PASS, Node v24.19.0, `dirty:false`.
 - Die beiden Produktläufe sind getrennt an ihre Quellen gebunden. Zwischen `eaf6bd9` und `a4c2cb3` liegt beim City-Inspector nur die PR-117-Fokusänderung in `src/ui/atlas-city-building-panel.ts`; City-Save-/Datenpfad blieb derselbe. Die Tastaturprüfung lief danach mit dem exakt gebauten und installierten PR-117-Tripel.

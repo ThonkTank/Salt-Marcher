@@ -59,8 +59,8 @@
     },
     {
       "path": "raw/native-evidence.json",
-      "bytes": 28519,
-      "sha256": "3ccb22c6dba8a3c5ae102a90e3e6b48e0ae189bce7425c69b8a62a65cb123b69"
+      "bytes": 28300,
+      "sha256": "6a1955612ef485ead81538dc657340a42b041cfd03620b7f079a0b7c3a101f04"
     },
     {
       "path": "raw/native-final/evidence/1791638975397-atlas-spatial-edit/actual-rollback.json",
@@ -184,8 +184,8 @@
     },
     {
       "path": "raw/native-preparation.json",
-      "bytes": 3808,
-      "sha256": "ea323883885039f45b635b06ebac672e92bad3eaa20aee9af47f523c0ca9f467"
+      "bytes": 3690,
+      "sha256": "0f0e030ea74e04e93b9aac451d34e89e770d958ffe60ec78d3cedb991bf48fbc"
     },
     {
       "path": "raw/native-recovery/evidence/1791638795760-atlas-spatial-edit/process-lifecycle.json",

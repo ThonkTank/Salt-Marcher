@@ -1,10 +1,10 @@
 # GM-E2E01-ATLAS-INSPECTOR-N04 Cloud-GM-Test
 
-**Status:** completed, bounded visible product run. **Claim:** `GM-E2E01-ATLAS-INSPECTOR-N04-GM-CLOUD-RETEST-20261011-01` in [Issue #80](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80#issuecomment-6105151600). Hex retains parent/product ownership; this branch contains only GM checkpoint and evidence.
+**Status:** completed, bounded visible product run. **Evidence:** `GM-E2E01-ATLAS-INSPECTOR-N04-GM-CLOUD-RETEST-20261011-01` in [Issue #80](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80#issuecomment-6105151600).
 
 ## Source and installed build
 
-The product was built from the exact current default head `active/installed-phase1` / `87ccdb2626c26622f15799f3af7faf05d9feee89` after the branch advanced from the claim's `d12d2ee` base during the run. `git diff d12d2ee..87ccdb2` changes World Notes, build metadata, and tests; Atlas feature/editor sources and the `e2e01-spatial-v2` fixture are unchanged. `npm run build` passed with Node `v24.19.0`, `dirty:false`, and exact `sourceRevision=87ccdb2626c26622f15799f3af7faf05d9feee89`.
+The product was built from the exact current default head `active/installed-phase1` / `87ccdb2626c26622f15799f3af7faf05d9feee89` after the branch advanced from `d12d2ee` during the run. `git diff d12d2ee..87ccdb2` changes World Notes, build metadata, and tests; Atlas feature/editor sources and the `e2e01-spatial-v2` fixture are unchanged. `npm run build` passed with Node `v24.19.0`, `dirty:false`, and exact `sourceRevision=87ccdb2626c26622f15799f3af7faf05d9feee89`.
 
 At report time Shared advanced to `a93fd4f7d4e61a327744cece448a0fbc30e94773` via PR #113. Its delta from the tested `87ccdb2` changes only City acceptance/checkpoint/plan metadata; Atlas source and this UI result are unchanged. The test remains bound to the exact `87ccdb2` build below.
 
@@ -57,7 +57,7 @@ Repository documentation check `npm run check:repo` passed; source-fixture and s
 
 ## N04 continuation: fresh Obsidian process and saved-room reuse
 
-**Work ID:** `GM-E2E01-ATLAS-INSPECTOR-N04-FRESH-PROCESS-20261011-01` — the one bounded follow-up requested by Hex in [#80 comment 6105482002](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80#issuecomment-6105482002). The pre-run claim is [#80 comment 6105151600](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80#issuecomment-6105151600). Hex retains parent/product ownership. Documentation branch: `codex/gm-n04-fresh-process-20261011`, based on default `10defd5aca37a5090918f96c04254e4326840f86`; product/UI test remains bound to the exact earlier source/build below.
+**Evidence ID:** `GM-E2E01-ATLAS-INSPECTOR-N04-FRESH-PROCESS-20261011-01`
 
 ### Product source, build and host
 

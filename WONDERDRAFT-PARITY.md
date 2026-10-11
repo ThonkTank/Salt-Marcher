@@ -95,13 +95,13 @@ HEX-03/04/05/06/07/08/22 enthalten zusätzlich eigene Projektanforderungen: Orts
 
 ## Vorgehen je Werkzeugphase: wie beim Dungeondraft-Abgleich
 
-Grundlage sind die [Dungeondraft-Paritätsroadmap](ROADMAP-PARITY.md) und der [konkrete Phase-5-Paarplan (historisch)](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/blob/6a90f3ee2f50f0be45f0e256784576f13722c319/ROADMAP-PARITY-PHASE5-PLAN.md). Ihr entscheidender Ablauf wird übernommen:
+Der Vergleich prüft gleiche fachliche Aufgaben und gespeicherte Ergebnisse gemäß [Ergebnisgleichwertigkeit](ROADMAP-HEX-ATLAS.md#wie-kommen-wir-zum-ziel):
 
 1. **Original messen:** Zugeordnete Unterfälle und Inventarkontrollen lesen. Kontrollkarte, Programm/Paket, Profil und Assets festhalten. Die für die Aufgabe relevante Wirkung mit Vorschau, Abschluss, Abbruch und gespeicherten Daten beobachten. Unklare fachliche Optionen/Abhängigkeiten gezielt prüfen; keine Pflicht zur Wiederholung jeder Originalreglerkombination.
 2. **Original→Editor festlegen:** Für jeden Unterfall das erreichbare fachliche Ergebnis und seinen eigenen Werkzeug-/Options-/Aktionszugang benennen. Mehrere Originalaktionen dürfen dieselbe Hostfunktion belegen. Einheiten-/Hex-Anpassung mit Begründung dokumentieren. Unbekanntes Verhalten vor dem betroffenen Produktcode nachmessen. Eine ähnlich aussehende Eigenlösung ohne geforderte editierbare Wirkung schließt keinen Originalfall.
-3. **Einen kleinen Ablauf umsetzen:** Den begrenzten Phasenablauf benutzbar machen; notwendige Kernregeln prüfen. Erweiterte Optionsfälle bekommen stabile Unterfälle und einen benannten Nachbesserungslauf. Ein funktionierender früher Teststand darf mit offenen Paritätsfällen bereitstehen.
+3. **Einen kleinen Ablauf umsetzen:** Den begrenzten Phasenablauf benutzbar machen; notwendige Kernregeln prüfen. Erweiterte Optionen behalten ihre eigenen Unterfälle. Ein funktionierender früher Teststand darf mit offenen Paritätsfällen bereitstehen.
 4. **Auf einem festen Build paaren:** Gleiche Assets, Startwerte und logisch gleiche Geometrie im isolierten Obsidian verwenden. Vorschau, Grafik, Klicktreffer und gespeicherten Zustand gemeinsam prüfen. Betroffene Abbruch-, Undo/Redo-, Save- und Neuöffnungsfolge mit vollständig neuem Prozess ausführen. Anschließend den bislang verfügbaren Atlas-Kernablauf prüfen.
-5. **Funktionsvergleich prüfen:** Original- und Hostbelege unabhängig prüfen; kritische Proben auf demselben Build wiederholen. Offene Pflichtabweichung führt zu begrenzter Nachbesserung und erneutem Review. Aufräumen erhält den geprüften Benutzerablauf und bekommt eine passende Regression.
+5. **Funktionsvergleich prüfen:** Original- und Hostbelege unabhängig prüfen; kritische Proben auf demselben Build wiederholen. Offene Pflichtabweichungen benötigen Korrektur und eine passende Regression.
 
 Pro Phase entstehen zuerst wenige repräsentative direkte Original-/Hostpaare; Varianten folgen anhand des bereits vollständigen Inventars. Jede zentrale Lieferstufe liefert einen benutzbaren, geprüften Zwischenstand. Ein grober Hex-Geländepinsel nach HEX-02 ist eine frühe Ausbaustufe; die vollständige organische Küstenwirkung wird erst durch HEX-11 und ihre Originalpaare belegt.
 
@@ -144,7 +144,7 @@ Pro Unterfall werden Originalversion und exakter Ablauf, Optionsmatrix, Vorschau
 | Fachfall reviewt | Unabhängige Prüfung, keine offene Pflichtabweichung im geprüften Umfang. |
 | Gesamte Parität | Alle Pflichtfälle einschließlich Endstand und tatsächlicher Installation; physische Eingabe separat. |
 
-Große Karten, Bilder, Rohdateien und Laufberichte liegen außerhalb des Nutzervaults unter `/home/aaron/.cache/dungeon-native-qa/wonderdraft-parity/`. Ergebnisse werden bei den Fällen in `acceptance.json`, der aktuelle Atlasstand in der Atlasübersicht geführt. Dieses Dokument bleibt der Vergleichsplan. Es läuft eine grafische Testinstanz; Originalaufnahme, Hostpaar und Review folgen nacheinander.
+Große Karten, Bilder, Rohdateien und Laufberichte liegen außerhalb des Nutzervaults unter `/home/aaron/.cache/dungeon-native-qa/wonderdraft-parity/`. Ergebnisse werden bei den Fällen in `acceptance.json`, der aktuelle Atlasstand in der Atlasübersicht geführt. Dieses Dokument bleibt der Vergleichsplan.
 
 ## Vereinbarte Anpassungen
 

@@ -23,9 +23,6 @@
       "height": 800
     },
     "zoom": "Electron webFrame 1 and1.31; renderer emulation yields782x611 CSSpx at131%; no physical window/device acceptance",
-    "slotClaim": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6104945364",
-    "slotPeerThread": "01a12022-b67b-7da2-bed5-8ebde169d475",
-    "freshExplicitSlotConfirmed": true,
     "slotExpresslyReturned": true,
     "sourceCleanAtBuild": true,
     "input": "synthetic rendered control input; known fixture open is controlled setup, model reads are initial coordinate/identity oracles only; no model write or injected CSS"

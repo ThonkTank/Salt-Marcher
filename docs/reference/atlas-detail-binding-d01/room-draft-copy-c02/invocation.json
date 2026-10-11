@@ -43,7 +43,6 @@
     "failedC01NotReplayed": true
   },
   "command": "DUNGEON_ROOM_COPY_STAGE=copy|fresh DUNGEON_QA_ROOT=/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-copy-c02-20261011 DUNGEON_QA_PORT=9371|9372 DUNGEON_PLUGIN_ROOT=/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/save-clean DUNGEON_SOURCE_VAULT=/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-copy-c02-20261011/vault flock -n /run/user/1000/dungeon-editor-test.lock timeout --signal=TERM --kill-after=12s 120s node --require /home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-copy-c02-20261011/copy-room-c02-preload.cjs tools/host-test.cjs --hex04-dungeon-at-location --restart",
-  "slotConfirmedBy": "Stadt existing chat 01a12022-b67b-7da2-bed5-8ebde169d475: explicit new C02 Copy/Fresh pair after return #11/6108111483; Stadt waits for Hex return",
   "hostBefore": {
     "testProcesses": [],
     "portsFree": [

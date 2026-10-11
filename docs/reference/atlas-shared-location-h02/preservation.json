@@ -13,7 +13,7 @@
   "priorReceipts": [
     {
       "path": "docs/reference/atlas-shared-location-h01/receipt.json",
-      "sha256": "e628cacae0c0c9bf2c646dc3ec345ee743181133685962efe3cd458002bcf144",
+      "sha256": "0465f5a87d83b97ea91977fb1b7342b66ec1dafd5ee6741835c59e300a51df62",
       "artifactsVerified": 25
     },
     {

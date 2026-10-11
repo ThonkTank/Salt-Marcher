@@ -59,8 +59,6 @@ native Bytes, ursprünglichen Draft und 1342 geschützte historische/fremde Date
 Vor dem ersten Appstart scheiterte allein der direkte Aufruf der nicht ausführbaren
 Shell-Datei mit126; der unveränderte Runner wurde über Bash gestartet. Kein zusätzlicher
 Appprozess, kein nativer Wiederholungslauf. Das [Aufruffehlerlog](fault-unlaunched-runner-permission.log) bleibt erhalten.
-[Neuer Slot](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6109288746)
-ist [ausdrücklich zurückgegeben](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6109309874).
 Nutzervault und alte FAIL-/PASS-Rohbelege sind unberührt.
 
 Portable Originale:

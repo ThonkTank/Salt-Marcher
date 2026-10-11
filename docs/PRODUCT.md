@@ -6,10 +6,6 @@ Eine Spielleitung soll eine Kampagne als zusammenhängenden lokalen Arbeitsraum 
 
 Die vollständige [SaltMarcher-Ablösung](../ROADMAP-SALTMARCHER-REPLACEMENT.md) ist der verbindliche Gesamtumfang. Diese Seite fasst die vorhandenen Ziele zusammen; sie ersetzt weder die Fachanforderungen noch deren Abnahme. Der [vollständige Quellenabgleich](SCOPE.md) macht alle erfassten Zielbereiche, zusätzliche Fachabnahmen und noch offene Quellenkollisionen sichtbar. Die Integrationsgates allein beschreiben nicht den gesamten Funktionsumfang.
 
-## Vier Lieferergebnisse
-
-Die [Roadmap](ROADMAP.md#lieferfolge-des-gesamtprodukts) führt E2E-01 bis E2E-04 mit Ablauf, Reihenfolge und Eingängen. Das folgende Portfolio beschreibt den gesamten Zielumfang, einschließlich der zusätzlichen Fachabnahmen.
-
 ## Vollständiges Funktionsportfolio
 
 | Zielbereich | Was zusätzlich zum Integrationsablauf fertig werden muss |

@@ -1,6 +1,6 @@
 # Roadmap: Dungeondraft-Verhalten für Grundrisse und Objekte angleichen
 
-Diese Roadmap folgt auf [Räume und Objekte mit Raum-Keys verbinden](ARCHITECTURE.md#raum-key--und-featurevertrag). Deren Phasen sicherten zunächst den funktionierenden Ablauf. Dieser Fachplan hält den Vergleichsumfang von **Building Tool** und **Object Tool** des installierten Dungeondraft 1.2.0.1 „Opulent Kirin“ fest. Die folgenden datierten Abschlüsse bleiben historische Nachweise, keine zusätzlichen Umsetzungsaufträge. Bedienwirkung und Kartenwirkung sollen gleichwertig sein; eine andere Oberfläche und einzelne andere Pixel sind zulässig.
+Diese Roadmap folgt auf [Räume und Objekte mit Raum-Keys verbinden](ARCHITECTURE.md#raum-key--und-featurevertrag). Deren Phasen sicherten zunächst den funktionierenden Ablauf. Dieser Fachplan hält den Vergleichsumfang von **Building Tool** und **Object Tool** des installierten Dungeondraft 1.2.0.1 „Opulent Kirin“ fest. Bedienwirkung und Kartenwirkung sollen gleichwertig sein; eine andere Oberfläche und einzelne andere Pixel sind zulässig.
 
 Für die weitere Umsetzung gelten die gemeinsamen [Ergebnisgleichwertigkeit und Lieferprioritäten](ROADMAP-HEX-ATLAS.md#wie-kommen-wir-zum-ziel). Eigene Gesten, Werkzeuge und Darstellung dürfen dieselben fachlichen Ergebnisse erreichen. Pixelwerte und Originaleingaben sind Diagnose- und Referenzdaten, keine Identitätsvorgabe.
 
@@ -29,8 +29,6 @@ Punktbearbeitung aktivieren, Eck- und Ellipsenpunkte ziehen, Punkte an Kanten ei
 **Phasentor:** Einfügen, Ziehen und Entfernen liefern die belegte Konturwirkung; Undo/Redo und Neuöffnung erhalten Geometrie, Portalbindung und Raumzuordnung.
 
 ## Phase 3 – Boden und Gebäudewand gestalten
-
-Historische Nachbesserungspläne: [Bevel und QAWall01-Konturen (historisch)](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/blob/6a90f3ee2f50f0be45f0e256784576f13722c319/ROADMAP-PARITY-PHASE3-REPAIR-BEVEL-POINTS-PLAN.md). Auch der [Wear-/Building-Plan (historisch)](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/blob/6a90f3ee2f50f0be45f0e256784576f13722c319/ROADMAP-PARITY-PHASE3-WEAR-BEHAVIOR-PLAN.md) ist umgesetzt und reviewt. Der unten dokumentierte Abschluss vom 08.10.2026 bestätigt das Phase-3-Tor; die Pläne sind keine offenen Nachbesserungsaufträge. Für neue Arbeit zählt die gemeinsame Ergebnisgleichwertigkeit; die folgenden Abschlüsse behalten ihren damaligen Prüfumfang. Pixelmessungen dienen der Diagnose sichtbarer Fehler.
 
 **Unterfälle:** `DD-011.11`, `.12`, `.15`, `.16` bis `.22` sowie `DD-015`.
 

@@ -10,7 +10,6 @@ Ein lokaler Arbeitsraum für Spielleitungen: Karten und Raum-Keys bearbeiten, Ka
 - [Atlas umsetzen](ROADMAP-HEX-ATLAS.md#umsetzungsplan): Oberfläche, Codepakete und Abschlussproben.
 - [Produktziele](docs/PRODUCT.md) und [Lieferfolge](docs/ROADMAP.md): vollständiger Funktionsumfang.
 - [Dokumentationsindex](docs/INDEX.md): Fachanforderungen und Nachweise.
-- [Beitragen](CONTRIBUTING.md) und [AGENTS.md](AGENTS.md): Entwicklung und Arbeitsgrenzen.
 
 ## Lokal entwickeln
 

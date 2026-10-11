@@ -10,7 +10,6 @@
   "shared": "6482dc6373132aab1b27ac66c76cee6dddeb3285",
   "fixtureVersion": "e2e01-spatial-v2",
   "frozenFilesUnchanged": 19,
-  "slotConfirmation": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/7#issuecomment-6097870608",
   "runs": [
     {
       "run": "1791638975397-atlas-spatial-edit",
@@ -506,6 +505,5 @@
     "largeWorld": false
   },
   "processesAfter": [],
-  "slotReturn": "ready: all owned QA processes ended; explicit Issue #7 return follows publication",
   "limits": "Small frozen fixture and synthetic native gestures only; controlled fault injection, not power-loss durability. No new Campaign authority, Source activation during Save, fixture mutation, user-vault install or full E2E approval."
 }
