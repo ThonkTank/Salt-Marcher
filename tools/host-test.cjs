@@ -28,11 +28,12 @@ const restart = process.argv.includes("--restart"),
   cityBuildingNameRollback = process.argv.includes("--city-building-name-rollback"),
   cityBuildingName = process.argv.includes("--city-building-name") || cityBuildingNameRollback,
   atlasCampaignABA = process.argv.includes("--atlas-campaign-aba"),
+  worldNotesDrafts = process.argv.includes("--world-notes-drafts"),
   worldNotesZoom200 = process.argv.includes("--world-notes-zoom200"),
   worldNotesFault = process.argv.includes("--world-notes-rollback"),
   worldNotesRecovery = process.argv.includes("--world-notes-recovery"),
   worldNotesNative = process.argv.includes("--world-notes-native") || worldNotesZoom200 || worldNotesFault || worldNotesRecovery,
-  atlasCampaignRuntime = process.argv.includes("--atlas-campaign-runtime") || atlasCampaignABA || worldNotesNative || hex04DungeonAtLocation || cityBuildingName,
+  atlasCampaignRuntime = process.argv.includes("--atlas-campaign-runtime") || atlasCampaignABA || worldNotesDrafts || worldNotesNative || hex04DungeonAtLocation || cityBuildingName,
   atlasSpatial = process.argv.includes("--atlas-spatial") || atlasCampaignRuntime,
   hex03Location = process.argv.includes("--hex03-location"),
   hex02Terrain = process.argv.includes("--hex02-terrain") || hex02Save,
@@ -374,7 +375,7 @@ function prepare() {
       fs.mkdirSync(path.dirname(destination), { recursive: true });
       fs.writeFileSync(destination, bytes);
     }
-    if (atlasCampaignABA) {
+    if (atlasCampaignABA || worldNotesDrafts) {
       const bFixture = path.join(root, "tests/fixtures/atlas-e2e-campaign-b-v1");
       const bManifest = JSON.parse(fs.readFileSync(path.join(bFixture, "manifest.json"), "utf8"));
       for (const row of [...bManifest.input, bManifest.campaign]) {
@@ -932,6 +933,11 @@ async function workflow() {
       };
     });
   const scenarioContext = { page, browser, fs, path, assert, crypto, PNG, root, pluginRoot, qa, vault, sourceVault, restart, out, checks, worldNotesZoom200, worldNotesFault, worldNotesRecovery, chooseTool, editorAction, selectOnlyObjects, waitForFileAbsent, sleep, resolveQaAppCgroup };
+  if (worldNotesDrafts) {
+    assert.equal(restart, false, "World Notes drafts use one real process");
+    await require("./host/world-notes-drafts.cjs")(scenarioContext)();
+    return;
+  }
   if (worldNotesNative) {
     const scenario = require("./host/world-notes-native.cjs")(scenarioContext);
     if (restart) await scenario.reopen(); else await scenario.edit();
