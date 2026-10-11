@@ -25,9 +25,14 @@ import {
   type Light,
   type MapObject,
   type ReferenceImage,
+  type DungeonVolumeWall,
   isRoom,
   decodeTerrainMask,
 } from "./model";
+import {
+  composeVolumeSlice,
+  dungeonViewportBounds,
+} from "./features/dungeon/volume-projection";
 import { Session } from "./session";
 import { objectSelectionFrame, selectionFrame, type SelectionFrame, type TransformSelection } from "./selection";
 import {
@@ -142,6 +147,8 @@ export class MapRenderer {
   private mapBackground = new Graphics();
   private terrainMaskLayer = new Graphics();
   private smartTileLayer = new Graphics();
+  private volumeLayer = new Graphics();
+  private volumeSliceBottomStep = 0;
   private grid = new Graphics();
   private referenceLayer = new Container();
   private areaShadowLayer = new Container();
@@ -344,6 +351,7 @@ export class MapRenderer {
       this.groundPathLayer,
       this.roomLayer,
       this.grid,
+      this.volumeLayer,
       this.detailLayer,
       this.lightLayer,
       this.selection,
@@ -401,9 +409,10 @@ export class MapRenderer {
         const e = this.session.entities.get(id) ?? this.visuals.get(id)?.entity;
         return e?.kind === "building";
       });
-      if (event.floors || rebuildForSettings || event.smartTiles || event.terrainMasks) {
+      if (event.floors || rebuildForSettings || event.smartTiles ||
+          event.terrainMasks || event.volumes) {
         this.rebuild();
-        if (rebuildForSettings) this.drawMapMask();
+        if (rebuildForSettings || event.volumes) this.drawMapMask();
       }
       else {
         let rebuiltVisual = false;
@@ -716,6 +725,7 @@ export class MapRenderer {
     this.syncVisualOrder();
     this.drawTerrainMasks();
     this.drawSmartTiles();
+    this.drawVolumes();
     this.drawGrid();
     this.drawSelection();
     this.invalidate();
@@ -765,9 +775,10 @@ export class MapRenderer {
     }
   }
   private drawMapMask(): void {
+    const bounds = dungeonViewportBounds(this.session.document());
     this.mapMask
       .clear()
-      .rect(0, 0, this.settings.width, this.settings.height)
+      .rect(bounds.x, bounds.y, bounds.width, bounds.height)
       .fill(0xffffff);
   }
   setFloor(id: Id): void {
@@ -1719,6 +1730,47 @@ export class MapRenderer {
       graphics.rect(cell.x, cell.y, 1, 1).fill(cell.color);
     }
   }
+  private drawVolumes(): void {
+    const graphics = this.volumeLayer.clear();
+    if (!this.session.volumes?.length) return;
+    for (const projection of composeVolumeSlice(
+      this.session.document(), this.volumeSliceBottomStep,
+    )) {
+      const { x, y } = projection;
+      const style = projection.relation === "active"
+        ? { color: 0x2f8f68, alpha: 0.24 }
+        : projection.relation === "below"
+          ? { color: 0x3974b8, alpha: 0.12 }
+          : { color: 0xb87931, alpha: 0.12 };
+      graphics.rect(x + 0.06, y + 0.06, 0.88, 0.88).fill(style);
+      projection.faces.forEach(({ cell }, index) => {
+        const inset = Math.min(0.12 + index * 0.07, 0.36),
+          left = x + inset, top = y + inset,
+          right = x + 1 - inset, bottom = y + 1 - inset,
+          wall = (face: DungeonVolumeWall) => cell.walls.includes(face);
+        if (wall("north")) graphics.moveTo(left, top).lineTo(right, top);
+        if (wall("east")) graphics.moveTo(right, top).lineTo(right, bottom);
+        if (wall("south")) graphics.moveTo(right, bottom).lineTo(left, bottom);
+        if (wall("west")) graphics.moveTo(left, bottom).lineTo(left, top);
+        graphics.stroke({ color: style.color, alpha: 0.9,
+          width: 0.045 / Math.max(1, projection.faces.length) });
+        const markerOffset = (index - (projection.faces.length - 1) / 2) * 0.14;
+        if (cell.floor)
+          graphics.circle(x + 0.5 + markerOffset, y + 0.5, 0.055)
+            .fill({ color: style.color, alpha: 0.95 });
+        if (cell.ceiling)
+          graphics.rect(x + 0.44 + markerOffset, y + 0.44, 0.12, 0.12)
+            .stroke({ color: style.color, alpha: 0.95, width: 0.035 });
+      });
+    }
+  }
+  setVolumeSlice(bottomStep: number): void {
+    if (!Number.isInteger(bottomStep))
+      throw new Error("Volume-Schnitt muss auf dem 5-Fuß-Raster liegen.");
+    this.volumeSliceBottomStep = bottomStep;
+    this.drawVolumes();
+    this.invalidate();
+  }
   private drawTerrainMasks(): void {
     const graphics = this.terrainMaskLayer.clear();
     const mask = this.session.terrainMasks?.find((item) => item.floorId === this.floorId);
@@ -1773,7 +1825,8 @@ export class MapRenderer {
     this.invalidate();
   }
   private setFitCamera(screenPadding: number): void {
-    const { width, height } = this.session.settings;
+    const bounds = dungeonViewportBounds(this.session.document()),
+      { width, height } = bounds;
     this.camera.scale = Math.max(
       0.25,
       Math.min(
@@ -1782,8 +1835,10 @@ export class MapRenderer {
         64,
       ),
     );
-    this.camera.x = (this.host.clientWidth - width * this.camera.scale) / 2;
-    this.camera.y = (this.host.clientHeight - height * this.camera.scale) / 2;
+    this.camera.x = (this.host.clientWidth - width * this.camera.scale) / 2 -
+      bounds.x * this.camera.scale;
+    this.camera.y = (this.host.clientHeight - height * this.camera.scale) / 2 -
+      bounds.y * this.camera.scale;
   }
   fit(screenPadding = 32): void {
     this.focusedRoom = undefined;
@@ -1850,7 +1905,7 @@ export class MapRenderer {
   zoomView(factor: number): void {
     const currentWidth = this.host.clientWidth / this.camera.scale,
       targetWidth = Math.min(
-        this.session.settings.width * 3,
+        dungeonViewportBounds(this.session.document()).width * 3,
         Math.max(8, currentWidth * factor),
       );
     this.zoom(currentWidth / targetWidth);

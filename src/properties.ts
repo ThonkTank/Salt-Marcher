@@ -49,6 +49,17 @@ import {
   type ObjectLibraryTilePreview,
 } from "./features/objekte/library-tile-preview";
 import type { ColorableObjectSource } from "./renderer";
+import {
+  setHorizontalFaceCommand,
+  setVolumeHeightCommand,
+  setWallFaceCommand,
+} from "./features/dungeon/volume";
+
+export interface VolumeEditorSelection {
+  readonly volumeId: string;
+  readonly x: number;
+  readonly y: number;
+}
 
 export type Tool =
   | "select"
@@ -70,6 +81,7 @@ export type Tool =
   | "water"
   | "terrain"
   | "light"
+  | "volume"
   | "pan";
 export interface ToolSettings {
   brushRadius: number;
@@ -77,6 +89,8 @@ export interface ToolSettings {
   floorMode: "draw" | "erase";
   material?: Material;
   layer: number;
+  volumeHeightSteps: number;
+  volumeSliceBottomStep: number;
   light: Pick<Light, "radius" | "intensity" | "color" | "shadows" | "assetId">;
   room: {
     autoCreateOnRectangle?: boolean;
@@ -151,6 +165,8 @@ export const toolSettings = (): ToolSettings => ({
   corridorRadius: 0.5,
   floorMode: "draw",
   layer: 100,
+  volumeHeightSteps: 2,
+  volumeSliceBottomStep: 0,
   light: { radius: 8, intensity: 1, color: 0xffc979, shadows: true },
   room: { wallBevel: true },
   wall: { smooth: false, width: 0.22, layer: 700, shadow: true,
@@ -283,6 +299,8 @@ export class Properties {
     private colorableObjectSource: (id: string) => ColorableObjectSource | undefined = () => undefined,
     private sampleMapColor: (onPreview?: (sample: BuildingColorSample) => void) => Promise<BuildingColorSample | null> = async () => null,
     private previewToolObject: () => void = () => {},
+    private volumeSelection: () => VolumeEditorSelection | undefined = () => undefined,
+    private volumeChanged: () => void = () => {},
   ) {}
   private field(
     label: string,
@@ -2126,6 +2144,116 @@ export class Properties {
       help.className = "dn-help";
       help.textContent = "Gebäude wählen · Eckpunkt oder Kantenmitte ziehen · Delete/Rücktaste entfernt Punkt oder Dreipunktumriss";
       this.root.append(help);
+    }
+    if (tool === "volume") {
+      if (this.session.version !== 4) {
+        const help = document.createElement("p");
+        help.className = "dn-help";
+        help.textContent = "3D-Volumes sind für Kartenformat V3 nicht verfügbar. Die Karte muss zuerst ausdrücklich nach V4 migriert werden.";
+        this.root.append(help);
+        return;
+      }
+      this.field(
+        "Volume-Höhe in 5-Fuß-Schritten",
+        "number",
+        String(this.defaults.volumeHeightSteps),
+        (input) => {
+          if (!Number.isInteger(input.valueAsNumber) || input.valueAsNumber < 1)
+            throw new Error("Volume-Höhe muss ein positiver 5-Fuß-Schritt sein.");
+          this.defaults.volumeHeightSteps = input.valueAsNumber;
+        },
+        "1", undefined, "1",
+      );
+      this.field(
+        "Schnitt-Unterkante in 5-Fuß-Schritten",
+        "number",
+        String(this.defaults.volumeSliceBottomStep),
+        (input) => {
+          if (!Number.isInteger(input.valueAsNumber))
+            throw new Error("Volume-Schnitt muss auf dem 5-Fuß-Raster liegen.");
+          this.defaults.volumeSliceBottomStep = input.valueAsNumber;
+          this.render(tool, selected, floorId);
+        },
+        undefined, undefined, "1",
+      );
+      const selection = this.volumeSelection(),
+        volume = selection && this.session.volumes?.find(({ id }) =>
+          id === selection.volumeId);
+      if (selection && volume) {
+        const column = volume.cells.filter((cell) =>
+            cell.x === selection.x && cell.y === selection.y),
+          bottom = Math.min(...column.map(({ z }) => z)),
+          top = Math.max(...column.map(({ z }) => z)),
+          title = document.createElement("p");
+        title.className = "dn-help";
+        title.textContent = `Ausgewähltes Volume · Zelle ${selection.x}/${selection.y}`;
+        this.root.append(title);
+        this.field(
+          "Ausgewählte Höhe in 5-Fuß-Schritten",
+          "number",
+          String(top - bottom + 1),
+          (input) => {
+            if (!Number.isInteger(input.valueAsNumber) || input.valueAsNumber < 1)
+              throw new Error("Volume-Höhe muss ein positiver 5-Fuß-Schritt sein.");
+            this.session.execute(setVolumeHeightCommand(
+              this.session.document(), selection.volumeId, input.valueAsNumber,
+            ));
+            this.volumeChanged();
+          },
+          "1", undefined, "1",
+        );
+        for (const face of ["floor", "ceiling"] as const) {
+          const z = face === "floor" ? this.defaults.volumeSliceBottomStep
+              : this.defaults.volumeSliceBottomStep + 1,
+            cell = volume.cells.find((candidate) => candidate.x === selection.x &&
+              candidate.y === selection.y && candidate.z === z);
+          if (!cell) continue;
+          this.field(
+            face === "floor" ? "Bodenfläche im aktiven Schnitt"
+              : "Deckenfläche im aktiven Schnitt",
+            "checkbox",
+            String(cell[face]),
+            (input) => {
+              this.session.execute(setHorizontalFaceCommand(this.session.document(), {
+                volumeId: selection.volumeId,
+                x: selection.x,
+                y: selection.y,
+                z,
+                face,
+                present: input.checked,
+              }));
+              this.volumeChanged();
+            },
+          );
+        }
+        const wallLabels = {
+          north: "Nord", east: "Ost", south: "Süd", west: "West",
+        } as const;
+        for (const z of [this.defaults.volumeSliceBottomStep,
+          this.defaults.volumeSliceBottomStep + 1]) {
+          const cell = volume.cells.find((candidate) =>
+            candidate.x === selection.x && candidate.y === selection.y &&
+            candidate.z === z);
+          if (!cell) continue;
+          for (const wall of ["north", "east", "south", "west"] as const)
+            this.field(
+              `${wallLabels[wall]}wand bei ${z * 5}–${(z + 1) * 5} Fuß`,
+              "checkbox",
+              String(cell.walls.includes(wall)),
+              (input) => {
+                this.session.execute(setWallFaceCommand(this.session.document(), {
+                  volumeId: selection.volumeId,
+                  x: selection.x,
+                  y: selection.y,
+                  z,
+                  wall,
+                  present: input.checked,
+                }));
+                this.volumeChanged();
+              },
+            );
+        }
+      }
     }
     const floorTool =
       tool === "room" ||

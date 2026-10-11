@@ -54,6 +54,8 @@ import "./core/city-gestures.test";
 import "./core/city-renderer.test";
 import "./core/city-e2e-fixture.test";
 import "./core/dungeon-atlas-source.test";
+import "./core/dungeon-volume.test";
+import "./core/dungeon-volume-rendering.test";
 import "./core/atlas-e2e-composition.test";
 import "./core/atlas-spatial.test";
 import "./core/atlas-spatial-repository.test";
