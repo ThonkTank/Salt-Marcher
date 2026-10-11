@@ -20,6 +20,9 @@ import { AtlasRepository } from "../src/features/atlas/atlas-repository";
 import { parseLocationDocument } from "../src/features/location/location-schema";
 import type { AtlasEditor } from "../src/features/atlas/atlas-editor";
 import { FileConflict } from "../src/persistence";
+import { CitySource } from "../src/features/city/commands";
+import { CityDraft } from "../src/features/city/draft";
+import { serializeCityDocument } from "../src/features/city/codec";
 
 const root = "tests/fixtures/atlas-e2e-spatial-v2/";
 const seed = JSON.parse(readFileSync(root + "manifest.json", "utf8"));
@@ -1323,4 +1326,116 @@ test('unregistered lost committed reply retains its old journal for a new live V
   assert.equal(parseLocationDocument(f.vault.bytes.get(path)!).name, 'Vorwärts erhalten');
   assert.equal(services.provider.currentContext(), null);
   await view.onUnloadFile(); services.close();
+});
+
+// Pin a known CityHit at the renderer boundary; exercise the actual pointer router,
+// shared panels, model/history and native vault adapters without claiming GPU picking.
+async function clickHouse(f: Awaited<ReturnType<typeof fixture>>, buildingId = uuid(105)) {
+  const state = active(f), editor = f.editor()!;
+  await state.repository.ensureDetail('city', uuid(100));
+  const spatial = (editor as any).spatial, viewport = editor.viewport as any;
+  viewport.getBoundingClientRect = () => ({ left: 0, top: 0, width: 800, height: 600 });
+  viewport.setPointerCapture = () => {}; viewport.releasePointerCapture = () => {};
+  viewport.hasPointerCapture = () => false;
+  const hit = spatial.hit, locationAt = editor.renderer.locationAt;
+  spatial.hit = () => ({ kind: 'city', hit: { ownerId: uuid(100), kind: 'building', elementId: buildingId },
+    frame: state.repository.spatialGraph.frame(uuid(100)) });
+  editor.renderer.locationAt = () => undefined;
+  try {
+    for (const type of ['pointerdown', 'pointerup']) {
+      const event = new f.window.Event(type, { bubbles: true, cancelable: true });
+      Object.assign(event, { button: 0, pointerId: 1, clientX: 400, clientY: 300 });
+      (type === 'pointerdown' ? viewport : f.window).dispatchEvent(event);
+    }
+  } finally { spatial.hit = hit; editor.renderer.locationAt = locationAt; }
+  return state.repository.detail('city', uuid(100)) as CitySource;
+}
+
+test('City house inspector uses one dock, exact text, shared Undo/Redo and native Save/model reopen', async () => {
+  const f = await fixture(true), state = active(f), editor = f.editor()!, source = await clickHouse(f),
+    original = source.read(), depth = state.history.undoDepth, camera = structuredClone(editor.renderer.camera),
+    dock = f.content.querySelector<HTMLElement>('.dn-atlas-location-dock')!,
+    panel = f.content.querySelector<HTMLElement>('.dn-atlas-city-building')!,
+    name = '  日本語\n[[Hafen]]\t  ';
+  assert.equal(panel.parentElement, dock); assert.equal(panel.hidden, false);
+  assert.equal(f.content.querySelectorAll('.dn-atlas-body > aside').length, 1);
+  const input = f.input('[aria-label="Gebäudename"]', name);
+  assert.equal(escapeFrom(f, input).defaultPrevented, true); await settled(() => dock.hidden);
+  const expected = { ...original, buildings: original.buildings.map(b => b.id === uuid(105) ? { ...b, name } : b) };
+  assert.deepEqual(source.read(), expected); assert.equal(state.history.undoDepth, depth + 1);
+  assert.equal(active(f).history, state.history); assert.equal(active(f).repository, state.repository);
+  assert.equal(active(f).context.contextToken, state.context.contextToken);
+  assert.deepEqual(editor.renderer.camera, camera); assert.equal(f.document.activeElement, editor.viewport);
+  f.click(f.content.querySelector<HTMLElement>('[aria-label="Atlasänderung rückgängig"]')!);
+  await editor.flush(); assert.deepEqual(source.read(), original);
+  f.click(f.content.querySelector<HTMLElement>('[aria-label="Atlasänderung wiederholen"]')!);
+  await editor.flush(); assert.deepEqual(source.read(), expected);
+  await f.host().navigate(locationTarget);
+  assert.equal(f.content.querySelector<HTMLElement>('[aria-label="Orts-Key"]')!.hidden, false);
+  await clickHouse(f); assert.equal(panel.hidden, false);
+  assert.equal((f.content.querySelector('[aria-label="Gebäudename"]') as HTMLTextAreaElement).value, name);
+  f.click(f.content.querySelector<HTMLElement>('[aria-label="Key-Inspector schließen"]')!);
+  await settled(() => dock.hidden);
+  const bytes = new Map(f.vault.bytes);
+  f.click(f.content.querySelector<HTMLElement>('[aria-label="Atlas speichern"]')!);
+  await settled(() => !state.repository.dirty && !state.repository.hasDraft, () => f.content.textContent ?? '');
+  const path = `Städte/${uuid(100)}.city`;
+  assert.equal(f.vault.bytes.get(path), serializeCityDocument(expected));
+  for (const [key, raw] of bytes) if (key !== path && key !== seed.campaign.path && key !== aPath + '.draft') assert.equal(f.vault.bytes.get(key), raw, key);
+  assert.equal(f.vault.bytes.has(aPath + '.draft'), false);
+  await f.close();
+  const app = { document: f.document, vault: f.vault } as any,
+    services = atlasCampaignServices(new VaultCampaignRuntimeStorage(app), sha),
+    view = new AtlasView({ app, contentEl: f.content, openFile: async () => {} } as any, services);
+  await view.onLoadFile(f.vault.files.get(aPath)!);
+  const fresh = ((view as any).campaignHost as AtlasCampaignHost).state;
+  assert.equal(fresh.kind, 'active');
+  if (fresh.kind === 'active') {
+    await fresh.repository.ensureDetail('city', uuid(100));
+    assert.notEqual(fresh.history, state.history);
+    assert.deepEqual((fresh.repository.detail('city', uuid(100)) as CitySource).read(), expected);
+  }
+  await view.onUnloadFile(); services.close();
+});
+
+test('City house invalid text blocks Escape and navigation; corrected text and detached old fields are safe', async () => {
+  const f = await fixture(true), state = active(f), editor = f.editor()!, source = await clickHouse(f),
+    original = source.read(), depth = state.history.undoDepth,
+    dock = f.content.querySelector<HTMLElement>('.dn-atlas-location-dock')!,
+    input = f.input('[aria-label="Gebäudename"]', 'x'.repeat(201));
+  assert.equal(escapeFrom(f, input, true).defaultPrevented, false);
+  editor.setInputBlocked(true); assert.equal(escapeFrom(f, input).defaultPrevented, false); editor.setInputBlocked(false);
+  assert.equal(escapeFrom(f, input).defaultPrevented, true); await (editor as any).work;
+  assert.equal(dock.hidden, false); assert.equal(editor.pendingKey, true); assert.equal(input.value.length, 201);
+  await assert.rejects(f.host().navigate(locationTarget));
+  assert.deepEqual(source.read(), original); assert.equal(state.history.undoDepth, depth);
+  f.input('[aria-label="Gebäudename"]', 'Korrigierter Hausname');
+  escapeFrom(f, input); await settled(() => dock.hidden);
+  await clickHouse(f, uuid(106));
+  input.value = 'Alter Callback'; input.dispatchEvent(new f.window.Event('input', { bubbles: true }));
+  assert.equal(editor.pendingKey, false);
+  assert.equal(source.read().buildings.find(b => b.id === uuid(106))!.name, original.buildings.find(b => b.id === uuid(106))!.name);
+  await f.close();
+});
+
+test('City house draft rejects external History ABA and preserves revoked queued Escape input', async () => {
+  const f = await fixture(true), state = active(f), editor = f.editor()!, source = await clickHouse(f),
+    original = source.read(), input = f.input('[aria-label="Gebäudename"]', 'Unveröffentlichter Name'),
+    dock = f.content.querySelector<HTMLElement>('.dn-atlas-location-dock')!;
+  const external = new CityDraft(source);
+  external.setEdits([{ kind: 'set-building-name', buildingId: uuid(106), name: 'Extern' }]); external.apply('Andere Hauskorrektur');
+  state.history.undo(); assert.deepEqual(source.read(), original);
+  const depth = state.history.undoDepth;
+  escapeFrom(f, input); await (editor as any).work;
+  assert.equal(dock.hidden, false); assert.equal(input.value, 'Unveröffentlichter Name');
+  assert.equal(editor.pendingKey, true); assert.deepEqual(source.read(), original); assert.equal(state.history.undoDepth, depth);
+  const discard = [...f.content.querySelectorAll<HTMLElement>('.dn-atlas-city-building button')].find(b => b.textContent === 'Namenseingabe verwerfen')!;
+  f.click(discard); assert.equal(editor.pendingKey, false);
+  const freshInput = f.input('[aria-label="Gebäudename"]', 'Context ausstehend');
+  let release!: () => void;
+  (editor as any).work = new Promise<void>(resolve => { release = resolve; });
+  escapeFrom(f, freshInput); f.services.close(); release(); await tick();
+  assert.equal(dock.hidden, false); assert.equal(freshInput.value, 'Context ausstehend');
+  assert.equal(editor.pendingKey, true); assert.deepEqual(source.read(), original); assert.equal(state.history.undoDepth, depth);
+  await f.view.onUnloadFile();
 });

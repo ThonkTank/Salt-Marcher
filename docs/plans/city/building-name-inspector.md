@@ -25,23 +25,43 @@ kein zusätzlicher Store, Snapshot-, Kamera- oder Publishvertrag.
 Zwei direkte Gegenproben FAIL vor/PASS nach Implementierung: exakte Namensänderung
 mit unveränderten übrigen Daten und Undo/Redo; ungültiger Name, fehlendes/fremdes
 Element, doppeltes Schreibziel, Getter ohne Aufruf und stale Beforebasis ohne
-Teilpublikation. 576 gebaute Kerntests PASS. Typprüfung/Build/Repositoryprüfung PASS; unabhängiger Review bleibt offen.
+Teilpublikation. 576 gebaute Kerntests PASS. Typprüfung/Build/Repositoryprüfung PASS. Unabhängiger Fachbefehlreview
+[CITY-BUILDING-NAME-R01](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/93#pullrequestreview-5481404923) PASS auf 793a68e; dieser Befund betrifft noch nicht den neuen Inspector.
 
-Nächster Consumer ist der sichtbare Haus-Inspector im bestehenden AtlasEditor.
-Vor dessen gemeinsamer Mount-/Seitenleistenänderung wird der konkrete Anschluss
-mit Hex abgeglichen: ausgewählter CityHit liefert Owner/Building-ID; vorhandene
-Keyseitenleiste und applyKeys/Undo/Save/Close/Contextguards werden konsumiert.
-Gültiger Name wird als ein gemeinsamer Historybefehl übernommen. Ungültige oder
-stale Aktionen erhalten sichtbaren Entwurf. Kein Eingriff in #80-H01-Belege.
+Der sichtbare Consumer ist im vorhandenen AtlasEditor umgesetzt und mit Hex
+abgeglichen (#92/6103962651): CityHit liefert Owner/Building-ID; ein Hausklick
+öffnet ein Namenstextfeld in derselben Keyseitenleiste. Der bestehende CityDraft
+bindet die Eingabe an ihre Basis und dieselbe AtlasHistory. Apply, Escape,
+Zur Karte, Auswahlwechsel, Undo/Redo und Save nutzen applyKeys; ungültige und
+stale Eingaben bleiben sichtbar. Zurück zur Karte übernimmt zuerst und gibt
+anschließend den Fokus zurück. Alte Feldcallbacks nach Hauswechsel sowie
+History-ABA und widerrufener Context können keine neue Eingabe veröffentlichen.
+
+Ein Textarea erhält auch vorhandene Zeilenumbrüche, Tabs und Leerzeichen ohne
+Normalisierung. Interne Navigation darf unter ihrer vorübergehenden UI-Sperre
+geprüft flushen; direkte Feldaktionen bleiben während der Sperre blockiert.
+Die Cacheidentität berücksichtigt den tatsächlichen CitySource. Explizites
+Verwerfen validiert die neue Basis, bevor der alte Entwurf abgelöst wird.
+
+Schlussprüfung: vollständige Suite 1000 PASS / 0 FAIL / ein bestehender Skip;
+Typprüfung, Produktbuild, Repositoryprüfung und Diffprüfung PASS.
+Drei neue Managed-DOM-/Repositoryfälle PASS: synthetisch gepinnter CityHit am
+Rendereranschluss durch den tatsächlichen Pointerrouter; exakter Hausname,
+eine Leiste und unveränderte Kamera/Context/History; Undo/Redo, nativer Save und
+neuer Hostmodellmount mit vollständiger Citygeometrie; ungültiger Name blockiert
+Escape/Navigation, IME und Eingabesperre erhalten den Entwurf; alte Feldcallbacks,
+History-ABA und queued Escape nach Contextwiderruf schreiben nicht. Fremde
+Native-Dateien bleiben bytegleich; der eigene temporäre Atlasdraft wird gemäß
+bestehendem Savevertrag entfernt. GPU-Initialisierung ist im DOM-Harness
+ersetzt; Picking und echter Prozess-Neustart sind damit nicht qualifiziert.
 
 ## Verbleibende Umsetzung und Abnahme
 
-1. Bestehende Auswahl und Keyseitenleiste um Hausnamenfeld ergänzen; alte
-   Callbacks dürfen nach Haus-/Contextwechsel keinen anderen Entwurf mutieren.
-2. Vorhandenen Repositorysave konsumieren; native Namensänderung erhält
-   Fremdbytes/Geometrie und Undo-/Redo-Save, Fehler und Recovery bleiben atomar.
-3. Direkte DOM-/Repository-Erhaltungsfälle und unabhängiger Exact-SHA-Review.
-4. Frühe freie GM-Bedienprobe sowie separate isolierte native Save-/Frischstartprobe
-   nach konkret abgestimmtem GUI-Slot; Nutzervault bleibt unberührt.
+1. Unabhängiger Review des sichtbaren Inspector-/Editor-Diffs auf exakter SHA;
+   der vorher angefragte Fachbefehlreview bleibt getrennt im Umfang.
+2. Frühe freie GM-Bedienprobe sowie isolierte native Save-/Frischstartprobe nach
+   konkret abgestimmtem GUI-Slot; Nutzervault bleibt unberührt.
+3. Reale Fehler-/Recovery- und physische Abnahme nach dem Fachvertrag.
 
-Kein sichtbarer Inspector, Save/Fresh-/Host- oder Paritäts-PASS aus dem Fachbefehl.
+DOM-/Repository-/Modellreopen-Belege sind keine GPU-, native GUI-/Prozess-,
+Gesamt-E2E- oder Paritätsfreigabe. Kein Eingriff in #80-H01-Belege.

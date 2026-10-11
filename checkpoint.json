@@ -10354,16 +10354,16 @@
     "currentRun": {
       "id": "CITY-BUILDING-NAME-I01",
       "issue": 92,
-      "state": "name_edit_input_ready_for_independent_review_visible_consumer_pending",
+      "state": "visible_name_inspector_dom_native_save_model_reopen_checked_independent_native_review_pending",
       "branch": "city/building-name-inspector",
       "plan": "docs/plans/city/building-name-inspector.md",
-      "verification": "2 direct cases FAIL before/PASS after; 576 core PASS; exact name/geometry/IDs and shared UndoRedo preserved; invalid/getter/stale input rejected without partial writes",
-      "next": "Independent focused review; agree concrete existing AtlasEditor key-dock interface with Hex, then mount building-name inspector and qualify native Save/Fresh",
-      "limits": "No visible inspector, native storage/Host/GUI or overall parity acceptance; #69 Planner and #41 Host inputs remain owned and pending"
+      "verification": "2 core countercases and 3 managed DOM cases PASS; exact name/geometry/IDs, one dock/camera/context/history; native Save and fresh host-model mount; invalid/stale/ABA/revoked context retain input",
+      "next": "Independent review of visible Inspector/editor diff; separate GM and native fresh-process acceptance with a newly agreed GUI slot",
+      "limits": "Renderer hit pinned and GPU initialization excluded in DOM tests; no native GUI/process/physical or total parity acceptance; #69 Planner and #41 Host inputs remain pending"
     },
     "nextRun": {
-      "id": "MANUAL-PLANNER-I01-CONSUME",
-      "focus": "Finish current manual Planner package; bind confirmed Campaign persistence and review inputs. P04-HOST-I01 remains separately owned awaiting its declared payload/archive inputs."
+      "id": "CITY-BUILDING-NAME-R02",
+      "focus": "Independent review of the completed visible building inspector on PR93; native/GM acceptance after new GUI coordination. #69 Planner and #41 Host retain their own pending inputs."
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",

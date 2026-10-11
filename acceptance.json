@@ -4851,10 +4851,11 @@
     },
     "buildingNameContribution": {
       "issue": 92,
-      "source": "src/features/city/edit.ts",
+      "source": "src/ui/atlas-city-building-panel.ts + src/features/atlas/atlas-editor.ts + src/features/city/edit.ts",
       "plan": "docs/plans/city/building-name-inspector.md",
-      "checks": "2 before-FAIL/after-PASS cases; 576 core PASS; exact name and geometry/ID preservation, shared UndoRedo and invalid/getter/stale rejection",
-      "remaining": "Independent review; visible existing key-dock consumer, native Save/Fresh/Recovery and GM/physical acceptance open"
+      "checks": "2 core countercases and 3 managed DOM cases PASS; exact name/geometry/IDs; shared UndoRedo, native Save/model reopen; invalid/stale/ABA/revoked context and detached old callbacks fail closed",
+      "remaining": "Inspector independent exact-SHA review; GM/native GUI/fresh process/Recovery and physical acceptance open; DOM excludes GPU picking/initialization",
+      "coreReview": "CITY-BUILDING-NAME-R01 PASS on793a68e; PR93 review5481404923; existing pure CityEdit/core delta only"
     },
     "manualPlannerContribution": {
       "issue": 69,
