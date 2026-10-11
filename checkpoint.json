@@ -13457,7 +13457,7 @@
         "id": "GM-UX-MANUAL-PLANNER-NAME-RETEST-20261011-01",
         "status": "completed_bounded_visible_ui_pass",
         "claim": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/69#issuecomment-6106563712",
-        "evidence": "docs/reference/gm-cloud-manual-planner-name-retest-20261011/README.md"
+        "evidence": "docs/reference/gm-cloud-manual-planner-name-retest-20261011/RUN-NOTES.txt"
       }
     },
     "executedUiRuns": 24,
