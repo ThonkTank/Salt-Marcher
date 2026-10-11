@@ -99,6 +99,7 @@ unabhängig verwenden. Hex behält #80/Branch; nächster eigener Speichereingang
 prepared Room-Savejournal-Recovery. Vor neuer lokaler GUI erneut Slot koordinieren.
 Keine zusätzliche allgemeine Reviewrunde/Selbstintegration.
 
+Kandidat: https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/167
 Eingang: https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80
 Kanonisch acceptance.hexAtlas.requirements[30].dungeonAtLocationRetainedSaveStatusJ02;
 historische Records bleiben erhalten.
