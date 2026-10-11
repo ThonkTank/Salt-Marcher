@@ -57,10 +57,8 @@ ersetzt; Picking und echter Prozess-Neustart sind damit nicht qualifiziert.
 
 ## Verbleibende Umsetzung und Abnahme
 
-1. Unabhängiger Review des sichtbaren Inspector-/Editor-Diffs auf exakter SHA;
-   der vorher angefragte Fachbefehlreview bleibt getrennt im Umfang.
-2. Frühe freie GM-Bedienprobe sowie isolierte native Save-/Frischstartprobe nach
-   konkret abgestimmtem GUI-Slot; Nutzervault bleibt unberührt.
+1. Unabhängige Stewardintegration des geprüften Kandidaten nach grünem Gate.
+2. Freie unabhängige GM-Bedienprobe, einschließlich Hausauswahl beim Einstiegszoom.
 3. Reale Fehler-/Recovery- und physische Abnahme nach dem Fachvertrag.
 
 DOM-/Repository-/Modellreopen-Belege sind keine GPU-, native GUI-/Prozess-,
@@ -87,5 +85,17 @@ Erster tatsächlicher Versuch scheiterte vor Mutation: Bei Cityentry1m/px lag
 der Hauspunkt(7,9) im Ortsmarkergriff; Orts-Key statt Haus-Key. FehlerPNG und
 Lifecycle unter eigenem QA-Root erhalten, Prozess normal beendet/Exit0, keine
 Zwangs-PIDs. Prüfer ergänzt sichtbaren Ctrl+Wheel-Zoom0.1m/px vor Picking.
-Korrigierter Edit-/Freshlauf braucht die neue konkret angefragte Slotfreigabe;
-noch kein nativer PASS. Produktcode bleibt bytegleich0315b13.
+Neue konkrete Hex-Slotfreigabe konsumiert: korrigierte tatsächliche Editprobe
+3/3 PASS, separater frischer Obsidianprozess1/1 PASS. Produktcode bytegleich0315b13;
+Build-/Prüfersource8d1d804. Exakter Unicode-/LF-/Tabname, InvalidEscape, tatsächliches
+Picking, cached Hausrückkehr/Zur Karte, gleiche History/Repository/Kamera/Context,
+Undo/Redo und native Savebytes mit erhaltenen fremden Fixturebytes geprüft.
+Frischer Prozess erhält sichtbaren Namen und vollständige Citydaten bei History0.
+Beide requestedNormalQuit/normalExitObserved=true, forcedTerminationPids=[] und
+AppdiensteExit0. Slot ausdrücklich anHex zurückgegeben, keine GUI mehr aktiv.
+
+[H01-Receipt](../../reference/city-building-name-h01/receipt.json) bindet Rohresultate,
+Buildtripel, Lifecycle, gespeicherte Baseline und Screenshots mit SHA-256. Auch
+FehlerPNG/Resultat/Lifecycle des ersten Versuchs bleiben versioniert. Das ist eine
+enge native Producerqualifikation mit synthetischer Eingabe; unabhängige GM-,
+physische-, Recovery- und Gesamtparitätsfreigabe bleiben offen.
