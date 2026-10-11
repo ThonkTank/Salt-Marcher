@@ -375,5 +375,18 @@
   },
   "nextConsumer": "Contributor: independently review the concrete H04 Save-routing repair on the published exact candidate in existing #80: supported View Scope parent/lifecycle, current focus and binding, composition/pending-key guards, same-window duplicate Save suppression, five regressions and source-bound native proof. No selfintegration. After qualified review/integration, Hex consumes concrete findings or the applicable fresh-process/remaining input evidence; Room/Meta, physical IME, Copy/Discard/Recovery and fullE2E remain separate. No general review round or dependent detail expansion.",
   "startedAt": "2026-10-11T07:12:28.208181+00:00",
-  "finishedAt": "2026-10-11T07:12:40.079426+00:00"
+  "finishedAt": "2026-10-11T07:12:40.079426+00:00",
+  "incomingConsumedAfterHost": {
+    "pullRequest": 133,
+    "head": "0e6a4164fdfcc85b5f57f3bc9766959002b166c8",
+    "shared": "6df23a7d30c415b026682473ed154d890ed8cb65",
+    "independentReview": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/133#issuecomment-6106571586",
+    "stewardReceipt": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/133#issuecomment-6106575746",
+    "headCi": 38120529580,
+    "sharedCi": 38120692880,
+    "bothCiSuccessDirectlyVerified": true,
+    "actualHostSourceAndBuildNotRebound": true,
+    "HexRuntimePanelsRunnerAndFixtureManifestBlobsUnchanged": true,
+    "scope": "ManualPlanner same-plan pending name retention only; City roots and working sections retained."
+  }
 }
