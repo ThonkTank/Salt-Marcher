@@ -1,0 +1,8 @@
+10ccbadd23260037e2136df95ec268bec3a8f17753f38192d64fb2683c868291  docs/reference/gm-cloud-n04-20261011/screenshots/01-torheim-inspector-100.png
+a53ec055f31effb87208c5c0bbbf02c458c5b4af348f8de7f7e1c552b8468ea6  docs/reference/gm-cloud-n04-20261011/screenshots/02-torheim-inspector-131.png
+d787171ff3ddbc7015ccae97ac6ed744f74b06ae3db7197ca25f97f4695b65c5  docs/reference/gm-cloud-n04-20261011/screenshots/03-dungeon-action-131.png
+05c6ca251a532a0991c619b9836ad504d963f5d77fe38981981e18371102bbb3  docs/reference/gm-cloud-n04-20261011/screenshots/04-room-search-torraum.png
+89da3fef833507a7b9a398f8f4e8de942576d12ffb8d2ee7d916f0fb49ddf6ca  docs/reference/gm-cloud-n04-20261011/screenshots/05-room-key-saved.png
+cbfef83b1ba2c3ab7b3fc15f3b933af6e1c63d687db42c116a11316f75e85408  docs/reference/gm-cloud-n04-20261011/screenshots/06-returned-to-map.png
+884f7b28ed6be0b6296fb03c408a91d9426e14ce4048ec82d727c9ad3d6d7041  docs/reference/gm-cloud-n04-20261011/screenshots/07-target-reused.png
+8e15a9c76c99db6833888e472f8b5d035a88a7afdd0e4a2f2213ba96c92a94b3  docs/reference/gm-cloud-n04-20261011/screenshots/08-room-key-reopened-in-session.png
