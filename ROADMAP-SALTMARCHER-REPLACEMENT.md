@@ -234,8 +234,8 @@ Eingaben, Close-Reihenfolgen sowie Save/Discard mit einer zweiten Ansicht.
 Ein isolierter echter
 Obsidianlauf A→B→A→B, Ansicht schließen/öffnen, B- und A-Entwurf erneut
 anzeigen, 16 native Eingabedateien bytegleich und normaler Exit bestand;
-Rohbeleg auf sauberem Produktstand `a3b2576c` unter
-`/home/aaron/.cache/dungeon-native-qa/atlasqa-world-notes-close-exact-01/evidence/1791691486850-atlas-spatial-edit/`.
+Rohbeleg auf sauberem repariertem Produktstand `c631eb5f` unter
+`/home/aaron/.cache/dungeon-native-qa/atlasqa-world-notes-close-r02-exact-01/evidence/1791692061930-atlas-spatial-edit/`.
 Ein Prozessneustart erhält ungespeicherte Entwürfe weiterhin nicht.
 
 ### SMR-03 – Party, Scene und Live Session
