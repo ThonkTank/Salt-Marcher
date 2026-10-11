@@ -95,6 +95,53 @@ test("height changes retain independently edited faces", () => {
     taller = setVolumeHeight(parseDocument(serializeDocument(custom)), "one", 3);
   assert.equal(taller.volumes?.[0]?.cells[0]?.floor, false);
   assert.deepEqual(taller.volumes?.[0]?.cells[0]?.walls, []);
+  assert.equal(taller.volumes?.[0]?.cells[1]?.ceiling, false);
+  assert.equal(taller.volumes?.[0]?.cells[2]?.ceiling, true);
+  const shorter = setVolumeHeight(taller, "one", 2);
+  assert.equal(shorter.volumes?.[0]?.cells[1]?.ceiling, true);
+});
+
+test("closing an opened intermediate floor splits geometric identity again", () => {
+  const lower = setVolumeHeight(paintWalkableColumn(
+      newDocument("Split", 2, 2), "lower", { x: 0, y: 0, bottomStep: 0 },
+    ), "lower", 3),
+    stacked = paintWalkableColumn(lower, "upper", { x: 0, y: 0, bottomStep: 3 }),
+    merged = setHorizontalFace(stacked, {
+      volumeId: "lower", x: 0, y: 0, z: 2, face: "ceiling", present: false,
+    }),
+    split = setHorizontalFace(merged, {
+      volumeId: "lower", x: 0, y: 0, z: 2, face: "ceiling", present: true,
+    });
+  assert.equal(merged.volumes?.length, 1);
+  assert.equal(split.volumes?.length, 2);
+  assert.equal(split.volumes?.[0]?.id, "lower");
+  assert.notEqual(split.volumes?.[1]?.id, "upper");
+  assert.doesNotThrow(() => parseDocument(serializeDocument(split)));
+});
+
+test("split identity skips every reserved document ID deterministically", () => {
+  const initial = newDocument("Split collision", 2, 2),
+    lower = setVolumeHeight(paintWalkableColumn(initial, "lower", {
+      x: 0, y: 0, bottomStep: 0,
+    }), "lower", 3),
+    stacked = paintWalkableColumn(lower, "upper", {
+      x: 0, y: 0, bottomStep: 3,
+    }),
+    merged = setHorizontalFace(stacked, {
+      volumeId: "lower", x: 0, y: 0, z: 2, face: "ceiling", present: false,
+    }),
+    colliding = {
+      ...merged,
+      floors: merged.floors.map((floor, index) => index === 0
+        ? { ...floor, id: "lower:split:3:0:0" } : floor),
+    },
+    split = setHorizontalFace(colliding, {
+      volumeId: "lower", x: 0, y: 0, z: 2, face: "ceiling", present: true,
+    });
+  assert.deepEqual(split.volumes?.map(({ id }) => id), [
+    "lower", "lower:split:3:0:0:2",
+  ]);
+  assert.doesNotThrow(() => parseDocument(serializeDocument(split)));
 });
 
 test("overlapping and disconnected persisted Volumes fail closed", () => {

@@ -1,4 +1,5 @@
 import {
+  collectReservedDocumentIds,
   immutable,
   validateDocument,
   type DungeonVolume,
@@ -58,6 +59,64 @@ function verticallyOpen(a: DungeonVolumeCell, b: DungeonVolumeCell): boolean {
     (a.z < b.z ? !a.ceiling && !b.floor : !b.ceiling && !a.floor);
 }
 
+function connected(a: DungeonVolumeCell, b: DungeonVolumeCell): boolean {
+  if (verticallyOpen(a, b)) return true;
+  if (a.z !== b.z) return false;
+  if (b.x === a.x + 1 && b.y === a.y)
+    return !a.walls.includes("east") && !b.walls.includes("west");
+  if (b.x === a.x - 1 && b.y === a.y)
+    return !a.walls.includes("west") && !b.walls.includes("east");
+  if (b.y === a.y + 1 && b.x === a.x)
+    return !a.walls.includes("south") && !b.walls.includes("north");
+  if (b.y === a.y - 1 && b.x === a.x)
+    return !a.walls.includes("north") && !b.walls.includes("south");
+  return false;
+}
+
+function compareCells(left: DungeonVolumeCell, right: DungeonVolumeCell): number {
+  return left.z - right.z || left.y - right.y || left.x - right.x;
+}
+
+function splitVolumes(input: readonly DungeonVolume[],
+  reservedIds: ReadonlySet<string>): readonly DungeonVolume[] {
+  const occupiedIds = new Set([...reservedIds, ...input.map(({ id }) => id)]),
+    result: DungeonVolume[] = [];
+  for (const volume of input) {
+    const remaining = new Set(volume.cells), components: DungeonVolumeCell[][] = [];
+    while (remaining.size) {
+      const first = remaining.values().next().value as DungeonVolumeCell,
+        component = [first], pending = [first];
+      remaining.delete(first);
+      while (pending.length) {
+        const cell = pending.pop()!;
+        for (const candidate of [...remaining]) if (connected(cell, candidate)) {
+          remaining.delete(candidate);
+          component.push(candidate);
+          pending.push(candidate);
+        }
+      }
+      components.push(component.sort(compareCells));
+    }
+    components.sort((left, right) => right.length - left.length ||
+      compareCells(left[0]!, right[0]!));
+    components.forEach((cells, index) => {
+      let id = volume.id;
+      if (index > 0) {
+        const stem = `${volume.id}:split:${coordinateKey(cells[0]!)}`;
+        id = stem;
+        for (let suffix = 2; occupiedIds.has(id); suffix++) id = `${stem}:${suffix}`;
+        occupiedIds.add(id);
+      }
+      result.push(immutable({ id, cells }));
+    });
+  }
+  return result;
+}
+
+function coordinateKey(cell: DungeonVolumeCell): string {
+  return `${cell.z}:${cell.y}:${cell.x}`;
+}
+
 /** Deterministically keep the first identity when two geometric interiors connect. */
 function mergeVolumes(input: readonly DungeonVolume[]): readonly DungeonVolume[] {
   const volumes = input.map((volume) => ({ ...volume, cells: [...volume.cells] }));
@@ -109,8 +168,15 @@ export function setVolumeHeight(
     );
     return Array.from({ length: targetHeight }, (_, offset) => {
       const z = bottom + offset, retained = byStep.get(z);
-      return retained ?? immutable({ x: column[0]!.x, y: column[0]!.y, z,
-        floor: false, ceiling: offset === targetHeight - 1, walls: ALL_WALLS });
+      if (!retained) return immutable({ x: column[0]!.x, y: column[0]!.y, z,
+        floor: offset === 0, ceiling: offset === targetHeight - 1, walls: ALL_WALLS });
+      const authored = new Set(retained.authoredFaces ?? []);
+      return immutable({
+        ...retained,
+        floor: authored.has("floor") ? retained.floor : offset === 0,
+        ceiling: authored.has("ceiling")
+          ? retained.ceiling : offset === targetHeight - 1,
+      });
     });
   });
   return replaceVolume(document, immutable({ id, cells }));
@@ -127,22 +193,32 @@ export function setHorizontalFace(
   let found = false;
   const adjacentZ = request.face === "ceiling" ? request.z + 1 : request.z - 1,
     counterpart = request.face === "ceiling" ? "floor" : "ceiling",
+    edited = (cell: DungeonVolumeCell, face: "floor" | "ceiling",
+      present: boolean): DungeonVolumeCell => immutable({
+        ...cell,
+        [face]: present,
+        authoredFaces: [...new Set([...(cell.authoredFaces ?? []), face])],
+      }),
     volumes = document.volumes!.map((candidate) => immutable({
       ...candidate,
       cells: candidate.cells.map((cell) => {
         if (candidate.id === request.volumeId && cell.x === request.x &&
             cell.y === request.y && cell.z === request.z) {
           found = true;
-          return immutable({ ...cell, [request.face]: request.present });
+          return edited(cell, request.face, request.present);
         }
         if (cell.x === request.x && cell.y === request.y && cell.z === adjacentZ)
-          return immutable({ ...cell, [counterpart]: request.present });
+          return edited(cell, counterpart, request.present);
         return cell;
       }),
     }));
   if (!found) throw new Error("Dungeon-Volume-Zelle fehlt.");
-  const changed = volumes.find(({ id }) => id === request.volumeId)!;
-  return replaceVolume({ ...document, volumes }, changed, !request.present);
+  const normalized = request.present
+      ? splitVolumes(volumes, collectReservedDocumentIds(document))
+      : mergeVolumes(volumes),
+    result = { ...document, volumes: normalized };
+  validateDocument(result);
+  return immutable(result);
 }
 
 export type VolumeSliceRelation = "active" | "below" | "above";
