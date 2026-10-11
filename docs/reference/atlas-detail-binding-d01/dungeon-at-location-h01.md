@@ -64,3 +64,22 @@ Die Oracle bleibt unter dem eigenen QA-Root; die Quellfixture wird nicht geände
 Copy/Discard/Recovery behalten ihre vorherigen Core-/DOM-/Fachbelege; H01 führt
 keine neue native Fehlermatrix dafür aus. Physische Bedienung, Originalparität,
 Großkarten, Nutzervaultinstallation und gemeinsame Gesamtfreigabe bleiben offen.
+
+## N02: schmale native Nachprobe
+
+[H02](inspector-n02-native-h02.json) bindet den separat integrierten N02-Inspector
+an zwei tatsächlich normale Obsidian-Prozesse, Save-/Byteoracle und1024×800-Layout.
+Seine Produkt-/Buildidentität ersetzt die historischen H01-Hashes ausschließlich
+für diesen neuen Nachtest. Der sichtbare Ablauf und die Rohartefakte sind im Beleg
+gebunden. Der [enge unabhängige H02-Review](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/94#issuecomment-6104068019)
+qualifiziert Helper, Nachorakel und versionierte Receipt-/Hashbindungen. Lokale
+Rohdateien und Screens waren für den Cloudreview nicht erreichbar; unabhängiger
+Rohbeleg-/GUI-Nachweis und freie Cloud-GM-Nutzung bleiben offen.
+
+Nach frischer Slotkoordination dieselben isolierten Aufrufe wie oben mit zusätzlichem
+`--hex04-inspector-n02`; `--restart` verwendet denselben eigenen Testvault.
+Der neue Consumer prüft direkt Escape aus Orts-/Raumfeldern, invaliden Ortsdraft,
+„Zur Karte“, gecachte Rückkehr, gemeinsames Undo/Redo, Save und frischen Reopen.
+Er ruft keine Produkthandler zur Ersetzung einer UI-Aktion auf; Modellreads und
+Dateihashes sind Diagnose-/Nachorakel. Keine neue Copy/Discard/Recoverymatrix,
+physische Bedienung, Original-/Großkarten-/Nutzervault- oder Gesamt-E2E-Abnahme.
