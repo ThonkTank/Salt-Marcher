@@ -78,23 +78,32 @@ Haus im gemeinsamen Atlas auswählen → 90° links/rechts drehen → Undo/Redo 
 nativer Save → neue Modellinstanz erhält Pose. CITY01/03-Hauskorrektur;
 kein neuer Kamera-, History-, City- oder Persistenzvertrag.
 [Issue127](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/127).
-Hex bestätigt keinen kollidierenden City-Claim; seine Orts-/Raum- und GUIarbeit
-bleibt eigenständig. Branch `city/building-rotation-inspector-20261011`.
+Hex bestätigt keinen kollidierenden City-Claim; seine Orts-/Raumarbeit bleibt
+eigenständig. PR128 ist unabhängig geprüft und auf Shared25e6155 integriert.
+Der automatisierte native H01 auf Sourceee9c70d/Build94461124 zeigt Auswahl,
+Dirty-Name-Grenze, Links/Rechts/UndoRedo/Save und separaten frischen Prozess;
+beide Prozesse normal beendet. [PR130](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/130)
+bindet die Originalbelege. Dieser Lauf fand zugleich den UX-Fehler: Der Zahlenanker
+blieb gleich, aber das Hofhaus wanderte beim Vierteldrehen um 8m/80px. Kein freier
+GM-PASS; dessen Cloud-Start scheiterte vor UI an vollem Docker-Speicher.
 
-Zwei fehlende-Control-Gegenproben FAIL vor Implementierung. Drei gezielte
-Managed-/Vaultadapterfälle PASS; Vollsuite1026PASS/0FAIL/1bestehenderSkip,
-Typ/Build/Repo/Diff PASS. Haus105 mit Dungeonbindung und Haus106 mit Hof
-behalten vollständige Grundrisse, Position, Skalierung, Kennungen und alle
-fremden Dateien. Nur die Rotation und notwendige Campaign-Digests ändern sich.
-Je Drehung genau eine gemeinsame Historywirkung; Undo/Redo und native Speicherung,
-neue Repository-/Modellinstanz mit exakt gespeichertem Citydocument.
-Alte Buttons nach Render/Discard sind wirkungslos. Offene Namenseingabe blockiert
-Drehung mit sichtbarer Aufforderung, ohne Namen teilweise zu übernehmen.
+**Aktuelle Reparatur:** Branch `city/building-center-rotation-20261011` auf
+Sharedb12b3a9 erhält die Grundrissmitte in Stadtmetern. Inspector und bestehendes
+Dreh-/Skalierwerkzeug verwenden dieselbe bisherige Mittelpunktberechnung.
+Der Eckanker `position` wird passend versetzt; Rotation, Grundriss samt Hof,
+Skalierung, Kennungen und Plot-/Dungeonbindung bleiben fachlich erhalten.
+Zwei Weltgeometrie-Gegenproben für Haus105 und106 FAIL vor/PASS nach Fix:
+jeder Außen-/Hofpunkt dreht um die ursprüngliche Mitte. Derselbe Managed-/Vaultweg
+prüft genau eine Historywirkung, Undo/Redo, exakte Savebytes, fremde Dateien,
+Kamera und neue Repository-/Modellinstanz. Bestehende Dirty-Name-/Stale- und
+CityGesture-Präzisions-/Skalierfälle bestehen. Vollsuite1084PASS/0FAIL/1Skip,
+Typ/Build/Repo/Diff PASS. Planner-Refresh ist separat über PR131 integriert;
+dessen native Speicherentscheidung bleibt in #69 offen.
 
-Minimaler aktueller Umfang sind Vierteldrehungen, keine beliebigen Winkel oder
-volle Haus-/Stadtparität. Enger unabhängiger Review und freie GM-Nutzung stehen aus.
-Die Modellwiederöffnung ist kein neuer Obsidianprozess oder GPU-/physischer Beleg.
-Keine eigene GUI; Laptopslot ist separat an Hex für dessen #80-IME-Lauf freigegeben.
+Enger unabhängiger Fixreview und gezielter sichtbarer Mittelpunkt-/Fresh-Nachtest
+bleiben offen. H01 qualifiziert den alten Eckanker und wird nicht auf den Fix
+umgedeutet. Vierteldrehungen sind keine volle Haus-/Stadtparität; Modellwiederöffnung
+ist kein neuer Obsidianprozess. Jede neue GUI benötigt frische Slotabstimmung.
 
 ## Inspector- und Fachaktionsbelege
 

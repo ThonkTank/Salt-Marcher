@@ -23,6 +23,7 @@ import { FileConflict } from "../src/persistence";
 import { CitySource } from "../src/features/city/commands";
 import { CityDraft } from "../src/features/city/draft";
 import { serializeCityDocument } from "../src/features/city/codec";
+import { cityBuildingOutline } from "../src/features/city/geometry";
 
 const root = "tests/fixtures/atlas-e2e-spatial-v2/";
 const seed = JSON.parse(readFileSync(root + "manifest.json", "utf8"));
@@ -1725,8 +1726,24 @@ for (const id of [uuid(105), uuid(106)]) {
           .find(b => b.textContent === '90° rechts drehen');
       assert.ok(right, 'selected house needs a visible rotation control');
       f.click(right);
+      const house = before.buildings.find(b => b.id === id)!,
+        turned = source.read().buildings.find(b => b.id === id)!,
+        outline = cityBuildingOutline(house), rotated = cityBuildingOutline(turned),
+        xs = outline.outer.map(p => p.x), ys = outline.outer.map(p => p.y),
+        center = { x: (Math.min(...xs) + Math.max(...xs)) / 2,
+          y: (Math.min(...ys) + Math.max(...ys)) / 2 };
+      // Independent world-space oracle: every courtyard/outline vertex makes a
+      // quarter-turn around the original center, rather than orbiting the corner.
+      for (const [ring, oldRing] of [rotated.outer, ...rotated.holes]
+        .map((ring, i) => [ring, [outline.outer, ...outline.holes][i]!] as const)) {
+        ring.forEach((p, i) => {
+          const old = oldRing[i]!;
+          assert.ok(Math.abs(p.x - (center.x - (old.y - center.y))) < 1e-10, 'centered x');
+          assert.ok(Math.abs(p.y - (center.y + (old.x - center.x))) < 1e-10, 'centered y');
+        });
+      }
       const expected = { ...before, buildings: before.buildings.map(b => b.id === id
-        ? { ...b, rotationRadians: b.rotationRadians + Math.PI / 2 } : b) };
+        ? { ...b, position: turned.position, rotationRadians: b.rotationRadians + Math.PI / 2 } : b) };
       assert.deepEqual(source.read(), expected);
       assert.equal(state.history.undoDepth, depth + 1);
       assert.deepEqual(f.editor()!.renderer.camera, camera);
