@@ -76,9 +76,7 @@ bestehenden seriellen Save mit Bindungs-/Kompositions-/Pending-Keyguards.
 Bereits konsumiertes Mod+S löst am nachfolgenden Windowlistener keinen zweiten
 Save aus. Keine Handlerersetzung/-umgehung, bestehenden Orts-/Raumguards erhalten.
 
-Vier Scopeadapterfälle scheitern auf alter Basis; zusätzlicher Duplicatefall
-belegt zwei Saves ohne Windowguard. Alle fünf Regressionen und volle Suite
-1090/1089PASS/1bestehenderSkip, Typprüfung und sauberer Produktbuild PASS.
+Fünf Routingregressionen, Basissuite, Typprüfung und sauberer Build PASS.
 Direkte synthetische trusted **nicht komponierende** Ctrl+S-Eingabe im sichtbaren
 Ortsnamen speichert exakt „R01 Gespeicherter Ortsname“ mit einer gemeinsamen
 History, pending=false/clean/kein Draft, Kamera/Owners/Dungeon erhalten.
@@ -100,19 +98,30 @@ Qualifizierter Shared6ee40d83 inklusive PR134/136/138/137 ist konsumiert; releva
 Atlas-/Panel-/Runner-/Manifestblobs sind zur Hostquelle bytegleich. Historische
 R01/H01–H04 und fremde Wurzeln bleiben erhalten. Keine neue Produktänderung.
 
-**Nächster ausführbarer Hex-Beitrag:** Tatsächlich R01-gespeicherte isolierte
-Spatial-V2-Payload in einem frischen Obsidian-Prozess wiederöffnen. Aktuellen
-qualifizierten Source sauber bauen, exakten sichtbaren Orts-Key und native
-Hashes/fremde Payload erhalten; kein Neu-Seeden oder erneutes Save als
-Neustartnachweis. Vor Start frischen lokalen Slot ausdrücklich koordinieren,
-reguläres app.quit/PIDs und Rückgabe. Integration erzeugt keinen neuen GUI-PASS;
-kein weiterer unveränderter Reviewauftrag, konkurrierender Cityfix oder Detailausbau.
+**Neustart des gespeicherten Orts-Keys:** F01 auf sauberer Source840f6f1f/
+Shared6ee40d83 öffnet die byteidentische Kopie des nach R01 normal beendeten
+Vaults im neuen Obsidian1.14.4-Prozess (`--restart`), ohne Neu-Seeden/Save-Replay.
+Markerwahl zeigt exakt „R01 Gespeicherter Ortsname“; Abschnitte/IDs und native
+CRLF bleiben erhalten. Gemeinsames Repository/History, History0/clean/kein
+Draft/pending=false. Alle acht nativen Dateien inklusive Campaign bleiben
+vor/nach Auswahl und normalem app.quit bytegleich. Vier neue App-PIDs weg,
+Runner0/PASS/keine Zwangstermination; frischer Slot zurückgegeben.
+Beleg: `acceptance.hexAtlas.requirements[30].dungeonAtLocationInspectorSaveRoutingFreshF01`.
+Bild/Rohdaten lokal zugänglich; keine angenommene unabhängige Cloudprüfung.
 
-**Offen:** nativer Kompositionsguard, Room/Meta, physische IME, frischer Prozess
-des Routingfixes, Copy/Discard/Recovery, äußeres Clipping, Gesamt-E2E sowie
-Original-/Großkarten-/Nutzervaultabnahme bleiben getrennte Nachweise. Alte
-N04/FreshReuse/R01-Belege ersetzen diese nicht. Jeder weitere lokale GUI-Start
-braucht eine neue ausdrückliche Slotabstimmung.
+**Nächster ausführbarer Hex-Beitrag:** Eine tatsächliche nicht komponierende
+Ctrl+S-Eingabe im fokussierten Raum-Key mit gültigem pending Text prüfen:
+ein gemeinsamer Historyeintrag/serieller Save, exakte native Raumtexte und
+fremde Payload erhalten. Vor GUI neuen Slot koordinieren, normal beenden/PIDs
+und ausdrücklich zurückgeben. Kein konkurrierender Cityfix/Detailausbau oder
+unveränderter allgemeiner Reviewauftrag.
+
+**Offen:** nativer Kompositionsguard, Room/Meta, physische IME,
+Copy/Discard/Recovery, äußeres Clipping, Gesamt-E2E sowie
+Original-/Großkarten-/Nutzervaultabnahme bleiben getrennte Nachweise.
+F01 belegt nur den frischen Prozess des R01-gespeicherten Orts-Keys, keinen
+Kameraerhalt über Neustart. Frühere Belege/Fehlquittungen bleiben erhalten.
+Jeder weitere lokale GUI-Start braucht eine neue ausdrückliche Slotabstimmung.
 
 ## Historische Planbasis und Lieferbelege
 
