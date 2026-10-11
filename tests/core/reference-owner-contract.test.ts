@@ -637,3 +637,41 @@ test("reference owner contract: exact receipt slot identity disambiguates siblin
     ),
   );
 });
+
+test("reference owner contract: survivor proofs use locale-independent Unicode order", () => {
+  const canonicalInputs: string[] = [],
+    recordingDigest = (canonical: string): string => {
+      canonicalInputs.push(canonical);
+      return digest(canonical);
+    };
+
+  referenceOwnerSurvivorProof(
+    [
+      {
+        ownerId: "owner-party" as never,
+        payloadClass: "party-roster",
+        survivorId: "ä" as never,
+        targetScopeId: "scope-party" as never,
+        beforeHash: evidence("unicode-a-umlaut"),
+      },
+      {
+        ownerId: "owner-party" as never,
+        payloadClass: "party-roster",
+        survivorId: "z" as never,
+        targetScopeId: "scope-party" as never,
+        beforeHash: evidence("unicode-z"),
+      },
+    ],
+    recordingDigest,
+  );
+
+  const setProjection = JSON.parse(canonicalInputs[0]!) as unknown[];
+  assert.deepEqual(setProjection, [
+    "reference-owner-survivor-set",
+    1,
+    [
+      ["owner-party", "party-roster", "z", "scope-party"],
+      ["owner-party", "party-roster", "ä", "scope-party"],
+    ],
+  ]);
+});

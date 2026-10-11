@@ -83,6 +83,10 @@ export interface ReferenceOwnerSurvivorProof {
   readonly survivorRootHash: string;
 }
 
+function ordinal(left: string, right: string): number {
+  return left < right ? -1 : left > right ? 1 : 0;
+}
+
 export interface ReferenceOwnerManifestEntry {
   readonly kind: "reference-owner-manifest-entry";
   readonly version: 1;
@@ -194,12 +198,13 @@ export function referenceOwnerSurvivorProof(
         "survivorId",
         "targetScopeId",
       ] as const) {
-        const comparison = String(left[field]).localeCompare(
+        const comparison = ordinal(
+          String(left[field]),
           String(right[field]),
         );
         if (comparison !== 0) return comparison;
       }
-      return String(left.beforeHash).localeCompare(String(right.beforeHash));
+      return ordinal(String(left.beforeHash), String(right.beforeHash));
     }),
     setProjection = ordered.map((survivor) => [
       survivor.ownerId,
