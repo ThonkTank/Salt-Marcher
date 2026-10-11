@@ -160554,6 +160554,122 @@
           },
           "nextConsumer": "Hex in the existing #80/branch: repair managed Atlas leaf-change teardown without weakening retained draft/revocation guards. Add meaningful double-close/suspend regression and requalify visible Copy/Fresh with a newly coordinated slot; no parallel repair claim or new plan/review round. City owner informed of potential same-leaf Create-City overlap.",
           "finishedAt": "2026-10-11T09:32:31.117225+00:00"
+        },
+        "dungeonAtLocationRoomDraftCopyTeardownN01": {
+          "id": "E2E-01-HEX04-ROOM-DRAFT-COPY-C01-N01",
+          "owner": "Hex",
+          "issue": 80,
+          "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
+          "e2e01UserLine": 13,
+          "state": "managed_leaf_teardown_DOM_PASS_independent_review_and_Copy_membership_followup_pending",
+          "sourceCommit": "a07c274a6f9c83ac5d472148e7f3de5b68940c49",
+          "qualifiedSharedConsumed": "fcec359381d1a84f9d65b628ccdb0172c9cec2c7",
+          "baselineCommit": "8d8ff3aefc94e594cc74c94b138ccb2f38457471",
+          "nativeInput": "acceptance.hexAtlas.requirements[30].dungeonAtLocationRoomDraftCopyC01",
+          "diagnosis": "AtlasView.closeEditor destroyed the managed editor before AtlasCampaignNavigation.retire suspended/disposed the same instance. Actual C01 Pixi ResizePlugin._cancelResize failure and three baseline regressions demonstrate double release; late renderer initialization could also release Application twice.",
+          "implemented": "Campaign mounts exclusively own managed editor suspension, readonly draft retention and disposal after the View flushes/persists. AtlasRenderer consumes the initialized Application once, including initialization resolving after closure. Unregistered mount revocation, old write leases, pending/invalid drafts and Campaign membership guards remain.",
+          "fixtureVersion": "e2e01-spatial-v2",
+          "fixtureManifestSha256": "23735bb6c95107b7dec93ffa56ec66405a0f4fe0ec3822fc0476d90d2920188d",
+          "checks": {
+            "baselineCasesFailed": 3,
+            "focusedCasesPassed": 3,
+            "fullSuite": {
+              "tests": 1142,
+              "pass": 1141,
+              "fail": 0,
+              "skip": 1,
+              "skipScope": "Existing optional external PDF fixture"
+            },
+            "typecheck": "PASS",
+            "cleanSourceBuild": "PASS",
+            "scenarios": [
+              "Actual Copy menu/modal and normal leaf callback retain unsaved Room Key/native original/draft, release renderer once and revoke stale writers even when membership rejects the copy.",
+              "Clean managed leaf replacement/unload/repeated unload release each renderer once and preserve native bytes.",
+              "Actual renderer async init resolving after leaf unload releases its Application once."
+            ],
+            "evidenceBoundary": "Linkedom Obsidian host adapter; GPU initialization excluded. Not a native Obsidian retest or fresh process.",
+            "repository": "PASS",
+            "diff": "PASS"
+          },
+          "newRequiredFinding": {
+            "kind": "reproduced_DOM_Copy_open_membership_gap",
+            "trigger": "Existing Campaignmanifest + normal Karte/Speichern unter/Kopie speichern creates standalone Atlas with fresh closure IDs, then actual leaf.openFile invokes AtlasView.onLoadFile.",
+            "expected": "Saved independent copy opens and can be reused after fresh process, without pretending to be a Campaign member.",
+            "observed": "Renderer teardown now completes; AtlasCampaignServices.campaignHint rejects the legitimate copied world because any Campaignmanifest exists. View shows: Dieser Atlas gehört keinem bestätigten Kampagnenbestand. Bestand ergänzen oder reparieren. No new active editor.",
+            "source": "src/ui/atlas-campaign-services.ts:95-109",
+            "negativeGuardPreserved": "Existing damaged/foreign manifest must not fall through to an unguarded standalone Atlas. No whitelist, hidden mount or Campaign authority invented.",
+            "consumer": "Hex continues at #80; coordinate standalone Copy/fresh-entry contract with existing Campaign/Atlas authority owner. No new parallel claim."
+          },
+          "buildTriplet": {
+            "main.js": {
+              "bytes": 1683340,
+              "sha256": "e85e9dfb211a19b3ae022ed56d3d34d048f1ac4349e020ebc9abf3c71c32ac1f"
+            },
+            "manifest.json": {
+              "bytes": 237,
+              "sha256": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64"
+            },
+            "styles.css": {
+              "bytes": 32394,
+              "sha256": "6279e70cae51acb20fcf8cf8b23c2e87fa64d35e48a5fc0deb3c7de04dba26d7"
+            }
+          },
+          "sourceFilesSha256": {
+            "src/ui/atlas-view.ts": "0314fedcaf66b5f6639d90e4181af1c4c3ac715fcbe6bd0480ccb0829c1abcf4",
+            "src/features/atlas/atlas-renderer.ts": "5fbf6d3e7b15ac838a33fe8e69e97eea13a9f46d1f00d388bc16118d758dc520",
+            "tests/atlas-campaign-host.entry.ts": "90b8f00a2b760432d77f6a69678f551c8d5ee179d24fdd87b0427d54d71fe015"
+          },
+          "localEvidence": {
+            "regression-final-baseline.log": {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-copy-repair-c01-n01-20261011/regression-final-baseline.log",
+              "sha256": "5ee0d6301205c1f63c5cb8a98ccfd3dd496f4a20adcb7de0f54e731c39e3d7b7"
+            },
+            "regression-after.log": {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-copy-repair-c01-n01-20261011/regression-after.log",
+              "sha256": "ea76d21a4e30ff21127192260a5378717d1134bb3ec4d0ed5f228a8dcbf800b5"
+            },
+            "typecheck.log": {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-copy-repair-c01-n01-20261011/typecheck.log",
+              "sha256": "079b4802c6da64fa1d4244b135be0c1fad7ce6c952c6dda76f3320c685743d4c"
+            },
+            "full-tests.log": {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-copy-repair-c01-n01-20261011/full-tests.log",
+              "sha256": "f04992119d41061f2bf2e2744d0c2c5b065a2a669fc6df2190281690eb2bfea8"
+            },
+            "source-build.log": {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-copy-repair-c01-n01-20261011/source-build.log",
+              "sha256": "6413d8dfbd66e495c17369063c2c475a567baa6689928467d75057425b2ff759"
+            },
+            "baseline-regressions.mjs": {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-copy-repair-c01-n01-20261011/baseline-regressions.mjs",
+              "sha256": "8003d3babfe31ecda59fe63b80d43362bdc40d0e7bc937aa6837b113a5fb336d"
+            },
+            "repository.log": {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-copy-repair-c01-n01-20261011/repository.log",
+              "sha256": "4d8c433d73d5f7f911409a9b03cea890771147c26dd3a823374d5858c1f6877e"
+            }
+          },
+          "limits": {
+            "newNativeProbe": false,
+            "nativeCopyPass": false,
+            "freshProcess": false,
+            "independentReview": false,
+            "physicalInput": false,
+            "originalParity": false,
+            "largeMap": false,
+            "installedInUserVault": false,
+            "fullE2E": false
+          },
+          "preservation": {
+            "failedC01HelpersUntouched": true,
+            "failedC01VaultNotReplayed": true,
+            "newGuiUsed": false,
+            "slotHeld": false,
+            "noSelfMerge": true,
+            "foreignRootsPreserved": true
+          },
+          "nextConsumer": "One independent review of the narrow new teardown repair at the existing #80 package. The additional reproduced membership gap needs a guarded normal Copy/fresh-entry repair in the same claim before another newly coordinated native Copy/Fresh pair. No dependent expansion or native PASS from DOM.",
+          "finishedAt": "2026-10-11T09:51:53.378290+00:00"
         }
       }
     ],
