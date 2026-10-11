@@ -1034,7 +1034,7 @@
       "state": "independent_technical_review_and_regular_Shared_integration_consumed_native_fresh_pending",
       "candidate": "5ba947a968b4947e2331c0d6c2029746f0706d95",
       "mergeCommit": "af945671d6a2b1d68ecdd301a0b1e24b08950f80",
-      "currentSharedConsumed": "5a7d352241719710d552777bf8c43d17e378f9c2",
+      "currentSharedConsumed": "6ee40d834d23bc24412f0ecf78e80869a734f749",
       "finishedAt": "2026-10-11T07:33:57.647673+00:00",
       "kind": "consume_exact_independent_routing_review_and_regular_integration",
       "record": "acceptance.hexAtlas.requirements[30].dungeonAtLocationInspectorSaveRoutingQualification",

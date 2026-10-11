@@ -96,7 +96,7 @@ von PR135 sind abgeschlossen. Geprüft wurden Routing/Scope-Lifecycle, Fokus-/
 Flush-/Kompositions-/Bindungs-/Duplicateguards und Aussagegrenzen; fünf gezielte
 Regressionen PASS. Lokale Rohpfade waren beim Cloudreview nicht zugänglich,
 daher kein unabhängiger Host-/GUI-PASS. Die Autorenprobe bleibt ane1bda0a gebunden.
-Qualifizierter Shared5a7d352 inklusive PR134/136/138 ist konsumiert; relevante
+Qualifizierter Shared6ee40d83 inklusive PR134/136/138/137 ist konsumiert; relevante
 Atlas-/Panel-/Runner-/Manifestblobs sind zur Hostquelle bytegleich. Historische
 R01/H01–H04 und fremde Wurzeln bleiben erhalten. Keine neue Produktänderung.
 

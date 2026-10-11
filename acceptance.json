@@ -158463,13 +158463,13 @@
           "pullRequest": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/135",
           "candidate": "5ba947a968b4947e2331c0d6c2029746f0706d95",
           "mergeCommit": "af945671d6a2b1d68ecdd301a0b1e24b08950f80",
-          "currentSharedConsumed": "5a7d352241719710d552777bf8c43d17e378f9c2",
+          "currentSharedConsumed": "6ee40d834d23bc24412f0ecf78e80869a734f749",
           "independentReview": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/135#issuecomment-6106627133",
           "stewardReceipt": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/135#issuecomment-6106631127",
           "independentScope": "Technical routing/Scope lifecycle/focus/flush/composition/binding/duplicate guards and receipt claim boundaries; 5/5 focused regressions plus type/repository/build/JSON/hash/diff checks. No independent native GUI/raw/physical proof.",
           "headCi": 38120905132,
           "mergeCi": 38121101517,
-          "currentSharedCi": 38121404973,
+          "currentSharedCi": 38121790069,
           "directlyVerifiedCi": "All three SUCCESS on their exact stated SHAs.",
           "authorNativeSource": "e1bda0a08e985ef74ba1777d1e1588d507f838b7",
           "authorNativeReceipt": "docs/reference/atlas-detail-binding-d01/inspector-save-routing-r01.json",
@@ -158517,6 +158517,16 @@
               "headCi": 38121324001,
               "mergeCi": 38121404973,
               "scope": "SMR03 plan reconciliation only."
+            },
+            {
+              "pullRequest": 137,
+              "head": "106130afa6a240659f10d9c90dd6bf83f27fc7db",
+              "merge": "6ee40d834d23bc24412f0ecf78e80869a734f749",
+              "independentReview": 6106717975,
+              "stewardReceipt": 6106722917,
+              "headCi": 38121024778,
+              "mergeCi": 38121790069,
+              "scope": "GM Planner memory-only UI evidence; gmProductTesting and portable images/manifests retained. No Atlas product/GUI qualification."
             }
           ],
           "limits": "No new GUI, build, full-suite rerun, composing-panel/RoomMeta/fresh/physical/CopyDiscardRecovery/original/large-map/install/fullE2E claim. No user-vault touch or selfintegration. Prior source-bound author raw evidence remains historical and unmodified.",
