@@ -53,7 +53,7 @@ Diese Übersicht ist ein datierter Einstieg. Bei relevanter Integration oder ge�
 
 ## Umsetzungsplan
 
-**Einstieg:** [Prioritäten](#wie-kommen-wir-zum-ziel) → [Lieferpakete](#lieferpakete-und-codeanschlüsse) → [Goal-Prompt für die vollständige Atlasumsetzung](#goal-prompt-für-die-vollständige-atlasumsetzung). Die Nutzerabläufe und der Werkzeugkatalog definieren weiterhin die Wirkung. Dieser Abschnitt übersetzt sie in Codearbeit; er eröffnet keine zweite Prioritäts- oder Statusliste.
+**Einstieg:** [Prioritäten](#wie-kommen-wir-zum-ziel) → [Lieferpakete](#lieferpakete-und-codeanschlüsse). Die Nutzerabläufe und der Werkzeugkatalog definieren weiterhin die Wirkung. Dieser Abschnitt übersetzt sie in Codearbeit; er eröffnet keine zweite Prioritäts- oder Statusliste.
 
 ### Informationsarchitektur der Oberfläche
 
@@ -91,110 +91,6 @@ Die Pakete sind konkrete Anschlüsse an die zentrale Lieferfolge. Innerhalb eine
 **Prüfung pro Codeabschluss:** passende Regressionen für die geänderte Wirkung sowie `npm run check`, `npm test`, `npm run build` und bei Dokumentationsänderungen `npm run check:repo`. Für Work 1 vorhandene Atlas-/Campaign-Save-/Filetransaction-/Mount-/Room-Key-Tests erweitern, nicht die Implementierung nachzeichnen. Den tatsächlich geänderten Nutzerweg früh im isolierten Obsidian-Testvault prüfen; Ein-/Ausgangsdateien und frischen Prozess benennen. Physische Eingabe und Originalvergleich benötigen eigene direkte Belege. Ein nicht verfügbarer erforderlicher Anschluss bleibt eine konkrete Lücke, kein synthetischer PASS.
 
 **Abhängigkeiten klein halten:** Work 1 darf vorhandene bestätigte native Speicherwege nutzen, ohne auf vollständigen Import, Zielhostwechsel, Generator oder Graph zu warten. Fehlt dem konkreten Schreibweg der autoritative Save-/Contextanschluss, ist genau dieser Weg zuerst zu vervollständigen; keine Dummyautorisierung und keine Ersatzkampagne. Laufzeitfunktionen für Reise/Traps/Weltzeit bleiben bei ihren bestehenden Produktpaketen. Entscheidungen in den betroffenen Fachplan schreiben, Nachweise in `acceptance.json`, aktuellen Lieferbefund in die Atlasübersicht. Keine neue Koordinationsdatei, Agentenverwaltung oder zweite Statusmatrix.
-
-### Goal-Prompt für die vollständige Atlasumsetzung
-
-Dieser Goal umfasst die gesamte Atlaslieferung einschließlich aller verpflichtenden Erweiterungen und der Endqualifikation. Work 1 ist der erste überprüfbare Fortschritt, kein Endpunkt. Der Prompt verweist auf die bestehenden Anforderungen und führt keine zweite Funktionsliste.
-
-```text
-Setze den vollständigen vereinbarten Atlas im Repository
-Obsidian-Dungeon-Editor-Phase1 um, bis sämtliche Atlaspflichtfähigkeiten
-und ihre Endabnahmen abgeschlossen sind. Maßgeblich ist
-ROADMAP-HEX-ATLAS.md einschließlich Nutzerabläufen, Informationsarchitektur,
-Werkzeugkatalog, Objektaktionen, Lieferpaketen und Fachabnahmen.
-
-Umfang: der durchgehend bearbeitbare Hex-/Welt-/Stadt-/Haus-/Dungeon-Atlas,
-HEX-00–28, CITY-00–09, die beauftragten Dungeonwerkzeugfähigkeiten sowie
-die erweiterten räumlichen, Key-, Feature-, Graph-, Inhalts-, Lebensdaten-,
-Bibliotheks-, Ausgabe- und Datenlebenszyklusfunktionen gemäß den bestehenden
-Fachquellen. Erhalte alle zugesagten Ergebniswirkungen der Vorbilder.
-Gleichwertig heißt dasselbe erreichen, gezielt nachbearbeiten und dauerhaft
-speichern; Oberfläche und Gesten dürfen einfacher sein. Der vollständige
-Umfang steht in docs/SCOPE.md und den dort gebundenen Atlasfachplänen;
-acceptance.json bleibt das einzige Anforderungs- und Nachweisregister.
-Das ist der Atlasauftrag, kein zusätzlicher Auftrag für sämtliche anderen
-SaltMarcher-Systeme. Tatsächlich benötigte Campaign-/Zeit-/Runtime-/Host-
-und Speicheranschlüsse gehören jedoch zum integrierten Atlasablauf.
-
-Lese zuerst AGENTS.md, docs/INDEX.md und im Atlasplan Stand, Prioritäten,
-Umsetzungsplan und Zielabläufe. Prüfe Arbeitsbaum, gemeinsamen Branch,
-vorhandenen Code und tatsächlichen Integrationsstand der Kandidaten.
-Datierte Dokumente ersetzen diesen Befund nicht. Bewahre fremde Arbeit,
-Karten, IDs, Verweise und Autorenprosa. Lies anschließend pro bearbeitetem
-Paket nur seine Fachverträge, relevanten Acceptancefälle und Codepfade.
-
-Arbeite nach Make it Work → Make it Efficient → Make it Beautiful,
-unter durchgehendem KISS. Beginne mit Work 1a/1b: vorhandene Karte öffnen,
-Ort/Raum suchen, Geometrie und Key bearbeiten, gemeinsam Undo/Redo,
-automatisch dauerhaft speichern und nach vollständigem Hostneustart
-wiederfinden. Liefere danach die eigenständig nutzbaren Dungeon-, Regions-
-und Siedlungsabläufe samt gemeinsamem Haus/Innenraum und Ausgabe.
-Führe sie im verbundenen Leitbeispiel zusammen. Verbessere häufige
-Wiederholungen anhand derselben GM-Aufgaben. Ergänze alle verpflichtenden
-Fachfähigkeiten mit ihrem eigenen Work-, Efficient- und Beautiful-Ausbau
-nach den Abhängigkeiten der zentralen Lieferpakete. Funktionale Lücken
-haben Vorrang vor Komfort/Politur des betroffenen Ablaufs. Nicht sämtliche
-Originalfähigkeiten müssen fertig sein, bevor Kernaufgaben effizienter
-werden; sämtliche Pflichtfähigkeiten müssen vor Goalabschluss fertig sein.
-
-Verwende eine Atlasfläche, Kamera, History und Savegrenze. Setze die
-vereinbarte Informationsarchitektur um: Orientierung/Suche oben,
-Fachwerkzeuge neben der Karte, Werkzeugvorgaben klar getrennt von
-Auswahl/Key im Seitenpanel; Zusatzoptionen erst bei Bedarf. Zoom wechselt
-keinen Editor und erzeugt keine Inhalte. Vorhandene Bausteine weiterverwenden,
-kleine vollständige Nutzerwege liefern, keine zweite Speicherengine,
-Frameworkinventur, Koordinationsstruktur oder neue Statusdokumentation.
-
-Sichere jeden neuen Weg durch Command, native Speicherung und frische
-Wiederaufnahme. Autosave bedeutet bestätigte native Daten, nicht bloß
-Entwurfsablage. Vorschau/Graphentwurf/offene Texte nicht versehentlich
-bestätigen. Abbruch, Undo/Redo, neue Änderungen während Save, externe
-Konflikte, Contextwiderruf, Schließen und Neustart erhalten Arbeit und
-ehrliche Speicherzustände. Geschützte Geometrie, Texte und Bindungen bei
-Erzeugung/Regeneration bewahren. GM-/Spielerinhalt und Runtime/Autoreninhalt
-nach den jeweiligen bestehenden Sichtbarkeits- und Transferverträgen trennen.
-
-Klär notwendige lokale Entscheidungen im betroffenen Fachplan und setze
-sie um. Echte fachliche Quellenkollisionen oder erforderliche externe
-Freigaben konkret benennen und die notwendige Entscheidung anfordern;
-unabhängig mögliche Arbeit währenddessen weiterführen. Eine offene
-Spezialfrage blockiert nur ihre abhängige Wirkung. Autorität nicht mit
-Stubs umgehen, Originalwirkungen nicht erraten oder still streichen.
-Originalzugangslücken und benötigte manuelle Prüfungen früh sichtbar machen.
-
-Prüfe pro Codeabschluss passende Regressionen sowie npm run check,
-npm test und npm run build; bei Docänderungen npm run check:repo.
-Prüfe geänderte Nutzerwege früh im isolierten Testvault mit tatsächlichem
-Build, nativen Ein-/Ausgangsdateien und vollständigem frischem Hoststart.
-Vergleiche dieselben Aufgaben im jeweiligen Original und eigenen Produkt.
-Domänen-, DOM-, Host-, Original-, physische Eingabe- und installierte
-Buildbelege bleiben getrennt. Wiederhole oder erweitere Prüfungen, wenn
-Änderungen oder Befunde dies erfordern. Prüfe am Endbuild die vollständige
-Pflichtabdeckung und die vorgesehenen Größen-/Latenz-/Recovery-/OS-/
-Tastatur-/200%-/Ausgabe- und Installationsanforderungen. Testzahlen,
-Screenshots oder ein einzelnes E2E-Gate ersetzen diese Abnahmen nicht.
-
-Arbeite nach jedem Teilabschluss am nächsten noch offenen Lieferpaket
-weiter. Beende den Goal nicht nach Planung, einem Work-Paket, grünen
-Kerntests oder einem Kandidatenbranch. Aktualisiere nur vorhandene
-Atlasübersicht, Fachentscheidungen und direkte Abnahmeeinträge. Berichte
-knapp erreichte Nutzerwirkung, Prüfungen und nächste konkrete Lücke.
-Lokale Änderungen/Commits sind Teil der Umsetzung. Push, PR, Merge und
-Installation in produktive Vaults benötigen ausdrückliche Autorisierung;
-vor solchen Schritten den vollständigen reviewbaren Stand vorbereiten.
-
-Abschluss: Alle erfassten und im Originalabgleich ergänzten Atlaspflichten
-sind konkret implementiert, dauerhaft bearbeitbar und direkt abgenommen;
-das vollständige Leitbeispiel und die Endqualifikation bestehen. Sämtliche
-zugehörigen notwendigen Schnittstellen sind tatsächlich integriert.
-Keine Pflichtfunktion, Quelle-/Transferkollision oder notwendige Abnahme
-bleibt offen. Nicht verfügbare externe/manuelle Nachweise als Grenze
-festhalten und benötigte Mitwirkung anfordern, niemals als PASS ausgeben.
-Ein vollständiger lokaler Codeabschluss ohne diese Nachweise ist Fortschritt,
-keine vollständige Goalerfüllung. Den endgültigen gemeinsamen/ausgelieferten
-Stand und seine Belege eindeutig benennen; falls Publikation oder
-Installation noch nötig, deren Autorisierung vor Goalabschluss einholen.
-```
 
 ## Konkrete Nutzerabläufe
 

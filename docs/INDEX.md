@@ -6,7 +6,6 @@ Der Leseweg folgt der Aufgabe. Erst die passende Einstiegsstelle öffnen, danach
 | --- | --- | --- |
 | den aktuellen Stand verstehen | [Atlasübersicht](../ROADMAP-HEX-ATLAS.md#atlas-auf-einen-blick) | Datierte direkte Belege in `acceptance.json` |
 | den nächsten Lieferabschluss umsetzen | [Umsetzungsplan und Codeanschlüsse](../ROADMAP-HEX-ATLAS.md#umsetzungsplan) | Fachquelle des gewählten Pakets, tatsächlicher Code und passende Tests |
-| einen Implementierungs-Goal starten | [Goal-Prompt für die vollständige Atlasumsetzung](../ROADMAP-HEX-ATLAS.md#goal-prompt-für-die-vollständige-atlasumsetzung) | [AGENTS.md](../AGENTS.md), anschließend die im Prompt benannten Quellen |
 | die Oberfläche bauen | [Informationsarchitektur](../ROADMAP-HEX-ATLAS.md#informationsarchitektur-der-oberfläche) und [Bedienregeln](../ROADMAP-HEX-ATLAS.md#gemeinsame-bedienung) | [Werkzeugkatalog](../ROADMAP-HEX-ATLAS.md#konkreter-werkzeugkatalog) und [Objektaktionen](../ROADMAP-HEX-ATLAS.md#aktionen-am-ausgewählten-objekt) |
 | den Nutzerzweck oder die Priorität klären | [Konkrete Nutzerabläufe](../ROADMAP-HEX-ATLAS.md#konkrete-nutzerabläufe) und [Work → Efficient → Beautiful / KISS](../ROADMAP-HEX-ATLAS.md#wie-kommen-wir-zum-ziel) | [Vollständiger Umfang](SCOPE.md), [Gebäudeentscheidung](../ROADMAP-CITIES.md#gebäude-und-innenräume-als-ein-objekt) |
 | eine Lieferung prüfen | [Atlas-Bedienproben](../ROADMAP-HEX-ATLAS.md#spätere-bedienabnahme) | [GM-Aufgaben](../ROADMAP-GM-PRODUCT-TESTING-PLAN.md), betroffene Fachabnahme und `acceptance.json` |
