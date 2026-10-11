@@ -65,3 +65,22 @@ ersetzt; Picking und echter Prozess-Neustart sind damit nicht qualifiziert.
 
 DOM-/Repository-/Modellreopen-Belege sind keine GPU-, native GUI-/Prozess-,
 Gesamt-E2E- oder Paritätsfreigabe. Kein Eingriff in #80-H01-Belege.
+
+## Tatsächliche Hostprobe
+
+`tools/host/city-building-name.cjs` ergänzt den bestehenden isolierten Harness
+über `node tools/host-test.cjs --city-building-name` und separat `--restart`.
+Eigenes `DUNGEON_QA_ROOT`, eigener Debugport und synthetischer Source-Vault;
+Produktstand 0315b13, kein Nutzervault. Fixture-Entry/Citynavigation sind Bootstrap,
+Hausklick läuft anschließend ohne gepinnten Hit durch tatsächliche Szene/Picking.
+Haus B wird außerhalb seines Hofs selektiert. Invalider Name + Escape bleibt
+sichtbar, korrigierter Unicode-/LF-/Tabtext + Escape wird genau übernommen;
+Undo/Redo, cached Rückkehr/Zur Karte, Save mit vollständiger City-/Fremdbyteprüfung.
+Zweiter Prozess prüft gespeicherte Hashes, echte Hausauswahl, Namensfeld, alle
+Citydaten und leere frische History. Der bestehende Harness protokolliert Build,
+Screenshots und normales Quit; physische und unabhängige GM-Abnahme bleiben offen.
+
+Enger unabhängiger Inspector-R02 auf0315b13 ist PASS; Exact-SHA-CI38100640175
+SUCCESS. Kein Pflichtbefund im UI-Diff. Atlas-QA hat seinen gleichzeitigen Scope
+zugunsten des bestehenden Reviewers zurückgegeben, keine doppelte Abschlussrunde.
+Native Prüfung ist vorbereitet, noch nicht gestartet/qualifiziert.
