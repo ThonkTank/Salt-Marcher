@@ -4915,7 +4915,7 @@
         "output": ".build/manual-planner-preview/index.html",
         "scope": "Real ManualPlannerPanel memory-only browser host; no alternate native storage",
         "technicalSmoke": "PASS actual bundle blank/create/exact Unicode whitespace notes/second plan/visible volatile limit",
-        "independentGmUse": "6102831310 manual path and focus P2; 6102960484 focused successful repair retest PASS on59f04fe; no native/200 percent acceptance",
+        "independentGmUse": "6102831310 manual path and focus P2; 6102960484 focused successful repair retest PASS on59f04fe; 6103955574 found inline help and keyboard path in a synthetic browser with simulated document zoom; no native/physical/200 percent acceptance",
         "nativeSaveFreshRecovery": "open; Campaign/Data authority missing"
       },
       "gmFocusRepair": {
@@ -4930,6 +4930,11 @@
         "after": "24 focused core/panel PASS, including missing target/final context rejection and successful retry",
         "scope": "Stage draft edit and rename/move before any publication; retain exact original payload/draft/selection on failure",
         "independentDeltaReview": "pending"
+      },
+      "nameRefreshRepair": {
+        "scope": "Retain an unsubmitted plan name only on view refresh of the identical immutable plan basis; no implicit publication or cross-plan/revision rebase.",
+        "checks": "Independent R03 PASS on ec9d7a4; 16/16 panel tests including direct name retention, other-plan and external-revision cases.",
+        "notAuthorized": "No manual-plan document codec, registered storage schema/path, writer, publish, receipt, Recovery, plugin mount, native Save/Fresh or overall product approval."
       }
     },
     "buildingRotationContribution": {

@@ -52,3 +52,25 @@ Fokus wird erst nach bestehender Displayguard-/Modellprüfung und erfolgreichem 
 Die konkrete Fehlerprobe am tatsächlichen Panel startet einen Plan auf Revision MAX_SAFE_INTEGER−1 mit Dirty Draft. Umbenennen und Verschieben übernahmen bislang dessen Prosa, danach scheiterte die zweite Revision: zwei Gegenproben vor Fix FAIL, bestätigter Payload verändert und Draft gelöscht. Der gemeinsame Modellpfad `actWithDraft` bereitet Edit und Rename/Move jetzt ohne Veröffentlichung vor und prüft abschließend Context, Planrevision, Auswahl, Draftidentität und gesamten Workspace. Erst danach wird der vollständige Zustand übernommen. Dieselbe reine Payloadfunktion dient weiterhin Einzelaktionen; vorhandene Revisionsschritte und Move-No-op-Verhalten bleiben erhalten.
 
 Zwei echte Panel-Fehlerregressionen bewahren den gleichen bestätigten Payload und das ursprüngliche Draftobjekt. Zwei Modellgegenproben prüfen fehlendes Moveziel und finalen Contextwiderruf sowie erfolgreichen Retry mit exakter Prosa, Reihenfolge, Namen und Revisionen. 24 fokussierte Core-/Panel-Fälle PASS. Das neue Atomizitätsdelta benötigt den bestehenden unabhängigen Reviewer; Fokus-/Browserbelege auf59f04fe werden nicht wiederholt oder als Beleg des neuen Deltas ausgegeben. Native Speicherautorität bleibt offen.
+
+## Sichtbare Hilfe und Plannamen-Refresh
+
+Das bestehende Memory-only-Panel enthält jetzt eine aufklappbare Hilfe für
+Arbeitsbeginn, Entwurfsübernahme/-verwerfen, Plan-/Szenenwechsel,
+Fehlererholung und Tastaturbedienung. Der begrenzte Cloud-GM-Lauf
+[6103955574](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/69#issuecomment-6103955574)
+bestätigt Auffindbarkeit und den sichtbaren Ablauf im synthetischen Browser;
+200 Prozent waren dabei simulierter Dokumentzoom, kein nativer Zoomnachweis.
+
+`Ansicht aktualisieren` erhält einen noch nicht übernommenen Plannamen nur,
+wenn weiterhin exakt dieselbe immutable Planbasis angezeigt wird. Der Refresh
+publiziert nichts; `Umbenennen` bleibt der einzige Aktionspfad. Externer
+Planwechsel oder eine neue Revision übernimmt den alten DOM-Wert nicht. Der
+unabhängige Deltareview
+[MANUAL-PLANNER-REFRESH-NAME-R03](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/86#pullrequestreview-5482290972)
+bestand auf `ec9d7a4` mit 16 Panelregressionen.
+
+Dieser integrierbare UI-Anteil enthält ausdrücklich keinen vorgeschlagenen
+Planner-Dokumentcodec und keine neue Speicherautorität. Campaign/Data-Dateiplan,
+Writer, Publish, Receipt, Recovery, Pluginmount sowie echtes Save/Fresh-Reopen
+bleiben offene Eingänge von #69.
