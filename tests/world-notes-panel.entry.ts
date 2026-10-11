@@ -341,6 +341,11 @@ test("older and same-revision divergent host projections cannot roll back visibl
   assert.match(f.host.querySelector("ul")!.textContent!, /Newest/);
   assert.doesNotMatch(f.host.querySelector("ul")!.textContent!, /Divergent/);
   assert.equal(f.host.querySelectorAll<HTMLTextAreaElement>("textarea")[1]?.value, "Entwurf bleibt");
+  f.panel.suspend();
+  assert.equal(f.panel.update(old), false);
+  assert.equal(f.host.querySelector<HTMLElement>(".dn-world-notes")?.hidden, true);
+  assert.equal(f.panel.update(f.snapshot()), true);
+  assert.equal(f.host.querySelectorAll<HTMLTextAreaElement>("textarea")[1]?.value, "Entwurf bleibt");
   f.panel.destroy();
 });
 

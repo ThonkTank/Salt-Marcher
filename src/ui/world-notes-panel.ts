@@ -85,17 +85,17 @@ export class WorldNotesPanel {
     this.root.append(title, help, this.search, actions, this.list, this.editor, this.status);
     host.append(this.root);
   }
-  update(snapshot: WorldNotesSnapshotV1): void {
-    if (this.destroyed) return;
+  update(snapshot: WorldNotesSnapshotV1): boolean {
+    if (this.destroyed) return false;
     const next = worldNotesSnapshot(snapshot);
     if (this.snapshot && next.campaignId === this.snapshot.campaignId &&
         next.namespace === this.snapshot.namespace) {
       if (next.revision < this.snapshot.revision ||
           (next.revision === this.snapshot.revision && !this.sameSnapshot(next, this.snapshot))) {
         this.message("Veralteter oder widersprüchlicher World-Stand verworfen.", true);
-        return;
+        return false;
       }
-      if (next.revision === this.snapshot.revision && !this.suspended) return;
+      if (next.revision === this.snapshot.revision && !this.suspended) return true;
     }
     if (this.snapshot && (next.campaignId !== this.snapshot.campaignId ||
         next.namespace !== this.snapshot.namespace)) {
@@ -109,6 +109,7 @@ export class WorldNotesPanel {
     this.root.hidden = false;
     this.renderList(); this.renderEditor();
     if (changedDuringEdit) this.message("Bestand geändert; Entwurf behalten. Speichern prüft den alten Eintragsstand.", true);
+    return true;
   }
   /** Revoke controls and late answers while a new Campaign mount is being confirmed. */
   suspend(): void {

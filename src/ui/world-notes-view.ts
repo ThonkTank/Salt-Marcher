@@ -109,7 +109,6 @@ export class WorldNotesView extends ItemView {
     try {
       const snapshot = await session.open();
       if (stamp !== this.generation || this.session !== session) return;
-      this.mountedContext = context;
       this.panel ??= new WorldNotesPanel(this.notesHost, {
         newId: () => campaignLocalId(crypto.randomUUID()),
         currentContext: () => this.services.provider.currentContext(),
@@ -129,7 +128,8 @@ export class WorldNotesView extends ItemView {
           return creature ? { id: creature.id, name: creature.name } : null;
         },
       });
-      this.panel.update(snapshot);
+      if (!this.panel.update(snapshot)) throw new Error("Veralteter World-Stand kann nicht montiert werden.");
+      this.mountedContext = context;
       this.message("");
     } catch (error) {
       if (this.session !== session || stamp !== this.generation) return;

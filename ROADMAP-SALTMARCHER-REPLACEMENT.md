@@ -201,14 +201,22 @@ Speicherung und frisches Öffnen, auch mit 200 % Zoom. Unabhängiger enger R01,
 Delta-Review und CI bestanden; Shared-Merge `76d8ded1`. Die letzte
 manuelle-ID-Korrektur wurde im DOM geprüft, nicht im früheren nativen Lauf.
 
-Der nächste #68-Kandidat macht aktive NPC-Notizen über ihre gespeicherte
+PR #108 macht aktive NPC-Notizen über ihre gespeicherte
 Kreatur-ID in der vorhandenen Notizsuche auffindbar, ohne neuen Index oder
 Speichervertrag. Auf sauberem Source `8621d202` bestand eine isolierte echte
 Obsidian-Edit-/Frischprozessprobe mit gespeicherter NPC-ID `goblin` und
 ausgeblendeter fremder Fraktion; beide Prozesse endeten normal. Rohbelege:
 `/home/aaron/.cache/dungeon-native-qa/atlasqa-creature-ref-search-20261011/evidence/`.
-Unabhängiger Review und Shared-Integration stehen aus; die vollständige
-World-Planner-/SMR-02-Abnahme bleibt offen.
+Der unabhängige enge Stadt-R01 und Exact-SHA-CI bestanden; Shared-Merge
+`af5ddcbb`. Die vollständige World-Planner-/SMR-02-Abnahme bleibt offen.
+
+Ein weiterer #68-Kandidat erhält ungespeicherte Notizentwürfe beim tatsächlichen
+Kampagnenwechsel A→B→A innerhalb derselben geöffneten Spielansicht. Er hält
+das World-Notes-Panel, widerruft alte Sessions und Eingaben und zeigt einen
+Entwurf erst nach bestätigter neuer Kampagnenbindung wieder an. Typecheck,
+Repositoryprüfung, 1011/1012 Tests (ein Skip) und Build bestanden. Eine neue
+native Probe erreichte den Wechsel wegen eines Testskript-Selektors nicht;
+native und unabhängige Abnahme dieses Beitrags stehen aus.
 
 ### SMR-03 – Party, Scene und Live Session
 
