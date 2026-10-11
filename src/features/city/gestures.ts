@@ -6,10 +6,11 @@ import {
   cityBuildingLocalPoint,
   cityBuildingLocalPrecision,
   cityBuildingPoint,
+  cityBuildingLocalCenter,
+  cityBuildingCenteredPose,
   type CityBuildingPose,
 } from "./geometry";
 import { cityInputPoint, cityInputRecord } from "./input";
-import type { CityBuilding } from "./model";
 
 export type CityGestureTarget =
   | {
@@ -77,19 +78,6 @@ function target(raw: CityGestureTarget, owner: string): CityGestureTarget {
     invalid();
   return Object.freeze({ ...d }) as CityGestureTarget;
 }
-function center(building: CityBuilding): Point {
-  let minX = Infinity,
-    maxX = -Infinity,
-    minY = Infinity,
-    maxY = -Infinity;
-  for (const p of building.footprint.outer) {
-    minX = Math.min(minX, p.x);
-    maxX = Math.max(maxX, p.x);
-    minY = Math.min(minY, p.y);
-    maxY = Math.max(maxY, p.y);
-  }
-  return cityInputPoint({ x: minX / 2 + maxX / 2, y: minY / 2 + maxY / 2 });
-}
 function vector(point: Point, origin: Point): Point {
   return cityInputPoint({ x: point.x - origin.x, y: point.y - origin.y });
 }
@@ -149,28 +137,13 @@ export class CityGesture {
         this.edit = (point) =>
           poseEdit({ ...building, position: moved(building.position, point) });
       } else {
-        const pivotLocal = center(building),
+        const pivotLocal = cityBuildingLocalCenter(building),
           pivot = cityBuildingPoint(building, pivotLocal);
         const anchorPose = (
           rotationRadians: number,
           scale: Point,
-        ): CityEdit => {
-          if (
-            rotationRadians === building.rotationRadians &&
-            scale.x === building.scale.x &&
-            scale.y === building.scale.y
-          )
-            return poseEdit(building);
-          const offset = cityBuildingPoint(
-            { position: { x: 0, y: 0 }, rotationRadians, scale },
-            pivotLocal,
-          );
-          return poseEdit({
-            position: vector(pivot, offset),
-            rotationRadians,
-            scale,
-          });
-        };
+        ): CityEdit =>
+          poseEdit(cityBuildingCenteredPose(building, rotationRadians, scale));
         if (t.kind === "rotate-building") {
           const initial = vector(this.start, pivot);
           if (initial.x === 0 && initial.y === 0) invalid();
