@@ -13259,16 +13259,17 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY69-DRAFT-VIEW-GUARD-I01",
+      "id": "CITY69-VISIBLE-FOCUS-I01",
       "issue": 69,
-      "state": "draft_preservation_verified_review_pending",
-      "branch": "city/planner-draft-view-guard-20261011",
-      "verification": "Three same-plan external draft replacement cases FAIL before/PASS after: old input/commit/discard cannot replace/publish/discard newer draft. Explicit refresh permits continued typing and commit;31 panel tests PASS; full suite1111 PASS/0 FAIL/1 existing optional PDF skip; type/build/repo/preview PASS.",
-      "limits": "No native storage/physical/overall acceptance. PR140 R01/Shared1580c39 consumed; independent browser keyboard retest running. PR86 Campaign/Data producer decision open."
+      "state": "style_fix_browser_retest_pending",
+      "branch": "city/planner-visible-focus-20261011",
+      "basis": "PR142 R01/Shared632c580 consumed. CloudGM6106915673 partial: keyboard path usable but Apply immediate focus ring missing.",
+      "change": "Scoped :focus outline in product CSS and memory-only preview; no TypeScript, payload, guard or test changes.",
+      "limits": "Browser Apply/focus/Tab retest and narrow style review pending. No native storage/physical/overall acceptance; PR86 producer decision open."
     },
     "nextRun": {
-      "id": "CITY69-DRAFT-VIEW-GUARD-REVIEW",
-      "focus": "Independent draft-preservation review and regular integration; native consumer after Campaign/Data producer decision."
+      "id": "CITY69-VISIBLE-FOCUS-RETEST",
+      "focus": "Narrow CloudGM Apply/focus/Tab observation and style review; native consumer after Campaign/Data decision."
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
