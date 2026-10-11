@@ -498,10 +498,12 @@ im engen Re-review mit `PASS`. Campaign/Data bestätigt auf demselben Source-SHA
 die Campaign-, Roster-, Membership-, Focus-/Primary- und Assignment-Grenzen
 ebenfalls mit `PASS`. Der exakte vollständige Lauf steht bei 1020 PASS, null
 FAIL und einem beabsichtigten Skip; Typecheck, Build und Repo-Check sind grün.
-Der eigenständige Music/Weather/Shops-Review dieses Membership-Deltas steht
-noch aus.
+Music/Weather/Shops bestätigt source-only null-Target-Pflichten, unverlierbare
+Pending-Akkumulation und exakte OwnerIdentity-/OwnerRevision-Bindung ebenfalls
+mit `PASS`. Damit ist der Membership-Checkpoint in allen drei getrennten
+Reviewgrenzen bestätigt, ohne einen I01-B- oder Produkt-Gesamtpass abzuleiten.
 
 Noch offen und nicht durch den Checkpoint behauptet sind permanente Löschung,
 Split/Rejoin samt opaque Clock-Beitrag, die vollständige Masken-Reconciliation,
-Invariant-Fuzzer und Scaleorakel sowie die übrigen unabhängigen Exact-SHA-
-Reviews und Shared-Integration.
+Invariant-Fuzzer und Scaleorakel, deren jeweilige unabhängige Exact-SHA-Reviews
+und Shared-Integration.
