@@ -1,8 +1,9 @@
 {
   "scope": "CITY-BUILDING-NAME-H01: isolated actual Obsidian/GPU synthetic input and separate fresh process; not physical/GM/Recovery/full parity",
   "productCommit": "0315b1330b484dd8e8db523d5f62b74e499ef609",
-  "probeBuildCommit": "8d1d804",
-  "sourceEquivalence": "git diff0315b13..8d1d804 -- src styles.css manifest.json: empty",
+  "probeBuildCommit": "a12b609d688a51c5139cfbe1b8073829a3254f02",
+  "earlierEquivalentProbeImplementation": "8d1d80412db5a2889ae40f0b18ae6fdf209661ea",
+  "sourceEquivalence": "git diff0315b13..a12b609 -- src styles.css manifest.json: empty; git diff8d1d804..a12b609 -- tools/host/city-building-name.cjs tools/host-test.cjs src styles.css manifest.json package.json package-lock.json tests: empty",
   "fixture": "tests/fixtures/atlas-e2e-spatial-v2/manifest.json",
   "editChecks": 3,
   "freshChecks": 1,
