@@ -4849,6 +4849,16 @@
       "limits": "Code delta awaiting independent review; core tests are not City host/integration or full parity approval",
       "reviewFinding": "R01/5480419361 plus own N01 reentrant observer countercase on6e39dcb; both earlier reference/state-read approaches were insufficient"
     },
+    "buildingNameContribution": {
+      "issue": 92,
+      "source": "src/ui/atlas-city-building-panel.ts + src/features/atlas/atlas-editor.ts + src/features/city/edit.ts",
+      "plan": "docs/plans/city/building-name-inspector.md",
+      "checks": "2 core countercases and 3 managed DOM cases PASS; exact name/geometry/IDs; shared UndoRedo, native Save/model reopen; invalid/stale/ABA/revoked context and detached old callbacks fail closed",
+      "remaining": "Independent integration and GM/Recovery/physical acceptance open; first marker-overlap countercase retained; native H01 synthetic Producer Edit/Fresh qualified",
+      "inspectorReview": "R02 PASS5481432379 on0315b13, Exact-SHA CI38100640175 SUCCESS; no required finding; helper changes do not alter product source",
+      "nativeProof": "docs/reference/city-building-name-h01/receipt.json: actual GPU picking/Edit3/Fresh1 PASS on product0315b13, build/probe8d1d804; synthetic input; both normalExit0 and slot returned",
+      "coreReview": "CITY-BUILDING-NAME-R01 PASS on793a68e; PR93 review5481404923; existing pure CityEdit/core delta only"
+    },
     "manualPlannerContribution": {
       "issue": 69,
       "state": "core_dom_candidate_no_persisted_host_acceptance",

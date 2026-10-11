@@ -10507,20 +10507,18 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "MANUAL-PLANNER-COMPOUND-N02",
-      "issue": 69,
-      "state": "atomic_rename_move_ready_for_independent_delta_review",
-      "branch": "city/manual-session-planner",
-      "plan": "docs/plans/campaign/manual-session-planner.md",
-      "finding": "Dirty draft published before failed rename/move second revision; 2 actual panel probes FAIL before repair",
-      "verification": "24 focused core/panel PASS; final-context and missing-target failures retain draft and allow exact successful retry",
-      "next": "Existing reviewer checks compound action delta; native Planner ownership/file/publish contract still open",
-      "qualifiedPriorInput": "Focus review5481049475 and visible Cloud-GM6102960484 PASS on59f04fe",
-      "limits": "No native storage/plugin/Save/Fresh/Recovery or overall product acceptance"
+      "id": "CITY-BUILDING-NAME-I01",
+      "issue": 92,
+      "state": "inspector_independent_review_pass_native_edit_and_fresh_producer_pass_gm_recovery_pending",
+      "branch": "city/building-name-inspector",
+      "plan": "docs/plans/city/building-name-inspector.md",
+      "verification": "2 core countercases and 3 managed DOM cases PASS; exact name/geometry/IDs, one dock/camera/context/history; native Save and fresh host-model mount; invalid/stale/ABA/revoked context retain input",
+      "next": "R02 PASS5481432379 consumed; H01 actual native Edit3/Fresh1 PASS, normalExit0 both, slot returned. Next independent stewardship and GM/Recovery/physical acceptance; first picking countercase preserved",
+      "limits": "DOM pins hit/excludes GPU; separate H01 qualifies actual GPU picking/Edit/Save and fresh Obsidian process with synthetic input only. GM/physical/Recovery/overall parity open; #69/#41 inputs remain pending"
     },
     "nextRun": {
-      "id": "MANUAL-PLANNER-I01-CONSUME",
-      "focus": "Finish current manual Planner package; bind confirmed Campaign persistence and review inputs. P04-HOST-I01 remains separately owned awaiting its declared payload/archive inputs."
+      "id": "CITY-BUILDING-NAME-H01-CONSUME",
+      "focus": "Consume versioned H01 evidence through independent stewardship and GM/Recovery acceptance; no repeated native run on unchanged scope. #69/#41 retain pending inputs."
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
