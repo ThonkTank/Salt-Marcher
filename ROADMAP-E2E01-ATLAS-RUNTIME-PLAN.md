@@ -89,6 +89,7 @@ Beide Runner0/PASS/errors[]/normal beendet/keine forced PIDs;
 Handler-/Modellwrite, Neuseed oder Hardcrash; korrigierte nachträgliche Rootnameprüfung
 verlangt nach erfolgreichem Retry eine neue World-ID statt denselben Namen abwesend.
 
+Kandidat: https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/163
 Eingang: https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80
 Kanonisch `acceptance.hexAtlas.requirements[30]`: N02/C03 bleiben gepinnt,
 `.dungeonAtLocationRoomCopyJournalP01` bindet den neuen prepared-Copy-Hosteingang.
