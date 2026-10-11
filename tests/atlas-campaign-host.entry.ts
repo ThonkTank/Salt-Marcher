@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { parseHTML } from "linkedom";
-import { TFile } from "obsidian";
+import { Scope, TFile } from "obsidian";
 import { AtlasView } from "../src/ui/atlas-view";
 import { AtlasRenderer } from "../src/features/atlas/atlas-renderer";
 import { AtlasCampaignHost } from "../src/ui/atlas-campaign-host";
@@ -215,7 +215,7 @@ async function fixture(nativeSave = false, unsupportedOwner = false, initialRead
     await vault.create(seed.campaign.path, aManifestBytes);
     await vault.create(bSeed.campaign.path, readFileSync(bRoot + bSeed.campaign.fixtureFile, "utf8"));
   }
-  const app = { document: dom.document, vault } as any;
+  const app = { document: dom.document, vault, scope: new Scope() } as any;
   const services = atlasCampaignServices(
     new VaultCampaignRuntimeStorage(app),
     sha,
@@ -1676,6 +1676,119 @@ for (const modifier of ['ctrlKey', 'metaKey'] as const) {
     } finally { await f.close(); }
   });
 }
+
+// Scope adapter dispatch: the registered host callback runs before DOM bubbling.
+// Native Window routing is a separate Obsidian proof; linkedom has no capture traversal.
+function scopeSaveKey(f: Awaited<ReturnType<typeof fixture>>, field: HTMLElement, isComposing = false) {
+  const scope = f.view.scope as any;
+  assert.ok(scope, 'Atlas View must register a supported Obsidian Scope');
+  assert.equal(scope.parent, f.view.app.scope);
+  const handlers = scope.handlers.filter((h: any) => h.key === 's' && h.modifiers?.join(',') === 'Mod');
+  assert.equal(handlers.length, 1, 'one Mod+S registration per View');
+  const event = new f.window.Event('keydown', { bubbles: true, cancelable: true });
+  Object.assign(event, { key: 's', ctrlKey: true, isComposing });
+  let result: unknown;
+  field.addEventListener('keydown', (e) => {
+    result = handlers[0].func(e, { modifiers: 'Ctrl', key: 's', vkey: 'KeyS' });
+    if (result === false) { e.preventDefault(); e.stopPropagation(); }
+  }, { once: true });
+  field.focus(); field.dispatchEvent(event);
+  return { event, result };
+}
+
+test('Obsidian View Scope Save commits focused Location text once through native Campaign save', async () => {
+  const f = await fixture(true);
+  try {
+    await f.host().navigate(locationTarget);
+    const state = active(f), editor = f.editor()!, depth = state.history.undoDepth,
+      original = new Map(f.vault.bytes), camera = structuredClone(editor.renderer.camera),
+      source = state.repository.location(uuid(11)).read()!, text = 'Scope: bestätigter Ortsname';
+    const { event, result } = scopeSaveKey(f, f.input('[aria-label="Ortsname"]', text));
+    assert.equal(result, false); assert.equal(event.defaultPrevented, true);
+    await (editor as any).work;
+    assert.equal(editor.pendingKey, false); assert.equal(state.repository.dirty, false); assert.equal(state.repository.hasDraft, false);
+    assert.equal(state.history.undoDepth, depth + 1);
+    assert.deepEqual(parseLocationDocument(f.vault.bytes.get(`Orte/${uuid(11)}.location`)!), { ...source, name: text });
+    for (const [path, bytes] of original)
+      if (path !== `Orte/${uuid(11)}.location` && path !== seed.campaign.path) assert.equal(f.vault.bytes.get(path), bytes, path);
+    assert.equal(active(f).repository, state.repository); assert.equal(active(f).history, state.history);
+    assert.equal(active(f).context.contextToken, state.context.contextToken); assert.deepEqual(editor.renderer.camera, camera);
+    scopeSaveKey(f, f.content.querySelector('[aria-label="Ortsname"]')!);
+    await (editor as any).work;
+    assert.equal(state.history.undoDepth, depth + 1, 'repeat Save must not publish another key edit');
+  } finally { await f.close(); }
+});
+
+test('Obsidian Scope Save plus existing Window shortcut saves focused viewport only once', async () => {
+  const f = await fixture(true);
+  try {
+    await f.host().navigate(locationTarget);
+    const editor = f.editor()!, storage = (editor as any).storage, save = storage.save;
+    let saves = 0;
+    storage.save = async () => { saves++; await save(); };
+    f.input('[aria-label="Ortsname"]', 'Ein Tastendruck, ein Save');
+    const { event } = scopeSaveKey(f, editor.viewport);
+    // The actual Obsidian dispatcher stops propagation, not other Window listeners.
+    // Explicitly exercise that second boundary because this DOM adapter lacks capture.
+    f.window.dispatchEvent(event);
+    await (editor as any).work;
+    assert.equal(saves, 1);
+    assert.equal(active(f).history.undoDepth, 1);
+  } finally { await f.close(); }
+});
+
+test('Obsidian Scope Save retains composing, blocked and invalid pending Location text', async () => {
+  const f = await fixture(true);
+  try {
+    await f.host().navigate(locationTarget);
+    const state = active(f), editor = f.editor()!, bytes = new Map(f.vault.bytes), depth = state.history.undoDepth,
+      field = f.input('[aria-label="Ortsname"]', '未確定の名前');
+    const composing = scopeSaveKey(f, field, true);
+    assert.equal(composing.result, false); await (editor as any).work;
+    assert.equal(editor.pendingKey, true); assert.equal(field.value, '未確定の名前');
+    assert.equal(state.history.undoDepth, depth); assert.deepEqual(f.vault.bytes, bytes);
+    editor.setInputBlocked(true); scopeSaveKey(f, field); await (editor as any).work;
+    assert.equal(editor.pendingKey, true); assert.deepEqual(f.vault.bytes, bytes); assert.equal(state.history.undoDepth, depth);
+    editor.setInputBlocked(false);
+    const invalid = f.input('[aria-label="Ortsname"]', ''); scopeSaveKey(f, invalid); await (editor as any).work;
+    assert.equal(editor.pendingKey, true); assert.equal(invalid.value, '');
+    assert.deepEqual(f.vault.bytes, bytes); assert.equal(state.history.undoDepth, depth);
+    f.input('[aria-label="Ortsname"]', state.repository.location(uuid(11)).read()!.name);
+  } finally { await f.close(); }
+});
+
+test('Obsidian Scope Save ignores foreign focus and detached old inspector inputs', async () => {
+  const f = await fixture(true);
+  try {
+    await f.host().navigate(locationTarget);
+    const state = active(f), editor = f.editor()!, bytes = new Map(f.vault.bytes), depth = state.history.undoDepth,
+      field = f.input('[aria-label="Ortsname"]', 'Eingabe bleibt lokal'), outside = f.document.createElement('input');
+    f.document.body.append(outside);
+    assert.equal(scopeSaveKey(f, outside).result, undefined);
+    await (editor as any).work; assert.equal(editor.pendingKey, true); assert.deepEqual(f.vault.bytes, bytes);
+    field.remove(); assert.equal(scopeSaveKey(f, field).result, undefined);
+    await (editor as any).work; assert.equal(state.history.undoDepth, depth); assert.deepEqual(f.vault.bytes, bytes);
+    outside.remove();
+  } finally { await f.close(); }
+});
+
+test('queued Obsidian Scope Save cannot publish Location text after Campaign revocation', async () => {
+  const f = await fixture(true);
+  await f.host().navigate(locationTarget);
+  const state = active(f), editor = f.editor()!, bytes = new Map(f.vault.bytes), depth = state.history.undoDepth,
+    before = state.repository.location(uuid(11)).read()!, field = f.input('[aria-label="Ortsname"]', 'Alter Kontext');
+  let release!: () => void;
+  (editor as any).work = new Promise<void>(resolve => { release = resolve; });
+  try {
+    scopeSaveKey(f, field); const queued = (editor as any).work;
+    f.services.close(); release(); await queued;
+    assert.equal(editor.pendingKey, true); assert.equal(field.value, 'Alter Kontext');
+    assert.equal(state.history.undoDepth, depth); assert.deepEqual(state.repository.location(uuid(11)).read(), before);
+    assert.deepEqual(f.vault.bytes, bytes);
+    assert.equal(scopeSaveKey(f, field).result, undefined, 'revoked mount is no longer this View editor');
+    assert.deepEqual(f.vault.bytes, bytes);
+  } finally { release(); await f.view.onUnloadFile(); }
+});
 
 for (const kind of ['location', 'room'] as const) for (const modifier of ['ctrlKey', 'metaKey'] as const) {
   test(`${kind} inspector ${modifier}+S must retain unfinished IME text without native publication`, async () => {
