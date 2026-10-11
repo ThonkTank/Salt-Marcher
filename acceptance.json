@@ -156004,6 +156004,106 @@
             "fullE2E": false
           },
           "nextConsumer": "Cloud-GM restores its own isolated visible host, then observes City name and integrated N03 Key discoverability in one existing claim on actual source/build/fixture. Hex consumes the result or concrete geometry finding; no dependent detail expansion."
+        },
+        "dungeonAtLocationInspectorScrollN03GmConsumption": {
+          "id": "E2E-01-HEX04-INSPECTOR-N03-BUNDLED-GM-CONSUMED",
+          "owner": "Hex",
+          "issue": 80,
+          "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
+          "e2e01UserLine": 13,
+          "state": "bundled_GM_N03_scroll_consumed_zoom_geometry_open_City_Save_owned_by_Stadt",
+          "sourceCommit": "cf8d3c1f9b1f47241bf751de997a1f86786ec83c",
+          "input": {
+            "producer": "Cloud-GM-Produkttester",
+            "claim": "GM-CITY-HOUSE-NAME-CLOUD-UI-RETEST-20261011-01",
+            "result": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/92#issuecomment-6104735161",
+            "hexHandoff": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80#issuecomment-6104737639",
+            "producerStatus": "partial",
+            "hostBlockerResolvedAsReported": true,
+            "producerBranchAtRead": "origin/codex/gm-city-house-n03-cloud-20261011",
+            "producerBranchHeadAtRead": "7c3a1e3b5cc08a9969fb2e6cb2e5d1a849c64faa",
+            "structuredProducerReceiptAvailableAtRead": true,
+            "producerCheckpointPath": "checkpoint.gmProductTesting.currentRun",
+            "producerSnapshotPr": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/105",
+            "producerSnapshotStateAtRead": "OPEN; read as source receipt, not integrated by Hex"
+          },
+          "sourceBinding": {
+            "firstVisibleBuild": "1d8c7ffc94f1ee062b8a42df5ca78ec9cb6beaef",
+            "currentVisibleBuild": "cf8d3c1f9b1f47241bf751de997a1f86786ec83c",
+            "buildsReportedClean": true,
+            "nodeReported": "v24.19.0",
+            "atlasEditorSha256VerifiedByHex": "29e33e1ee088986c7d56bab9ddac07e1818524716e35153620bf5a3f7a27833e",
+            "atlasEditorAndFocusedTestsDiffFirstToCurrent": "empty",
+            "currentSharedIntegratedBeforeConsumption": true,
+            "installedTripletsReported": [
+              {
+                "source": "1d8c7ffc94f1ee062b8a42df5ca78ec9cb6beaef",
+                "main.js": "940f73b317eebdfbe9ae0419cb4540786a6bb7d4daea0fee04bd6c1224383e28",
+                "styles.css": "93b65fe1a695acd58aea7360a18b9e9b16d1df7f14a3e3e4dea5a3300cbbed7e",
+                "manifest.json": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64"
+              },
+              {
+                "source": "cf8d3c1f9b1f47241bf751de997a1f86786ec83c",
+                "main.js": "75d23cd93cfb2accb1d9fc371cffc1d5da4b6b9c4a1bcc25a36e095f47e2d58e",
+                "styles.css": "93b65fe1a695acd58aea7360a18b9e9b16d1df7f14a3e3e4dea5a3300cbbed7e",
+                "manifest.json": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64"
+              }
+            ],
+            "postTestSharedAtConsumption": "de3181be1696d7442e0100f5901172906cc03974",
+            "postTestRelevantSourceDiff": "AtlasEditor, AtlasHistory, focused tests and CSS unchanged; World-Notes package PR104 advanced Shared. No UI replay or proof extension."
+          },
+          "reportedHost": {
+            "obsidian": "1.14.4",
+            "container": "e49e330d328c1e2d97e6f46a677e34f5f288c4dab7b41db242d3584e4ab66b33",
+            "display": ":99",
+            "viewport": "1440x1000",
+            "profile": "/qa/profile",
+            "syntheticVault": "/dev/shm/gm-city-vault",
+            "independentHostOwnershipVerifiedByHex": false
+          },
+          "fixtureBinding": {
+            "versionFromExistingClaim": "e2e01-spatial-v2",
+            "fullManifestHashRevalidatedInNewResult": false,
+            "reportedUnchangedDungeonSha256": "c6fe58d1b5de5c707000a39b0b8da2883d31867b7d8bf347f63830021e2df742",
+            "reportedUnchangedOverworldSha256": "76e0a82a939f5c2b16c08f153cca827e4efd8d5920915c997ae2a3fc6d16de07"
+          },
+          "n03Consequence": {
+            "GM_N02_01": "Resolved in the reported bounded visible room-Key flow. New-room opening starts with Name/Number/Text visible; same-room Apply/Undo/Redo retains dock scroll. No new broad GM round.",
+            "firstBuildReported": "normal Atlas entry, previously lower-scrolled Location dock, Torraum search, visible new room fields, temporary text Apply and Undo/Redo/Undo preserve scroll and restore exact original text",
+            "currentBuildReported": "after visible in-app reload, Torraum search again opens room fields at the top",
+            "currentBuildFullHistoryRetest": false,
+            "dungeonFileRemainedUnchangedAsReported": true
+          },
+          "cityFinding": {
+            "owner": "Stadt",
+            "issue": 92,
+            "source": "cf8d3c1f9b1f47241bf751de997a1f86786ec83c",
+            "input": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/92#issuecomment-6104735161",
+            "finding": "After visible app reload and house-name Apply/Undo/Redo/restore, Atlas Save and one retry report Stadtentwurf failed/collided; City/Campaign files remain at their previously saved hashes.",
+            "ownerHandling": "Stadt confirmed investigation of live AtlasHistory listener iteration in the existing #92 scope; hypothesis not independently verified by Hex. No competing Hex fix.",
+            "ownerClaim": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/92#issuecomment-6104746044"
+          },
+          "openFindings": [
+            "GM-N02-02: Inspector clipping at 131 percent UI zoom and 1024x800; new 1440x1000 GM result does not exercise this geometry."
+          ],
+          "evidenceLimits": {
+            "sourceComparisonPerformedByHex": true,
+            "visibleObsidianRetestReportedByProducer": true,
+            "cloudRawFilesReadByHex": false,
+            "rawImagesTemporaryUnpublished": true,
+            "currentRoomTopPngReportedSha256": "e4b743302475738434a5218892598e89b0f55b1e0b56ecd12ccf73ff4ef2226d",
+            "nativeGeometryFixed": false,
+            "freshProcess": false,
+            "physicalInput": false,
+            "originalParity": false,
+            "largeMap": false,
+            "userVaultInstalled": false,
+            "fullRecoveryMatrix": false,
+            "fullE2E": false,
+            "guiUsedByHex": false,
+            "productEditedByHex": false
+          },
+          "nextConsumer": "Hex reproduces the existing GM-N02-02 geometry finding in an isolated current-build Obsidian host at 1024x800 and 131 percent UI zoom after fresh explicit local-slot coordination; no duplicate City GM run or dependent detail expansion."
         }
       }
     ],
