@@ -471,8 +471,8 @@ Ownerstand binden. Cloud Architektur/Technik reproduzierte außerdem eine
 reihenfolgeabhängige Assigned-/Pending-Doppelzuordnung, Retirement trotz
 verbleibender Pending-Figur und einen nur nach MaskId statt nach OwnerId plus
 MaskId aufgelösten Lookup. Repair `a83a74f` schließt diese fünf Grenzen mit
-negativen beziehungsweise positiven Regressionen. Consumer R04 ist auf diesem
-Exact-SHA `PASS`; der enge Architektur-/Technik-Re-review läuft.
+negativen beziehungsweise positiven Regressionen. Consumer R04 und der enge
+Architektur-/Technik-Re-review sind auf diesem Exact-SHA `PASS`.
 
 Typecheck, vollständige serielle Tests, Produktbuild und Repositorystruktur
 sind für Repair `a83a74f` grün (1006 PASS, null FAIL, ein beabsichtigter Skip).
