@@ -123,6 +123,7 @@ function sceneRaw(
         generationId: "encounters-generation",
         status: "current",
         ownerRevision: 2,
+        receiptLedgerBaseRevision: 2,
       },
     ],
     contentPins: [

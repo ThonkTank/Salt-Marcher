@@ -204,12 +204,14 @@ function maskState() {
       generationId: "generation-a",
       status: "current",
       ownerRevision: 5,
+      receiptLedgerBaseRevision: 5,
     },
     {
       ownerId: "owner-b",
       generationId: "generation-b",
       status: "current",
       ownerRevision: 7,
+      receiptLedgerBaseRevision: 7,
     },
   ];
   return raw;
@@ -639,7 +641,7 @@ test("mask source parser fails closed for missing generation, split revisions an
   splitRevision.scenes[0].source.maskRefs[1].ownerRevision = 6;
   assert.throws(
     () => parseLiveSessionAggregateState(splitRevision),
-    /widersprüchliche Masken-OwnerRevisionen/,
+    /widersprüchliche Masken-OwnerRevisionen|ungebundene Maskenprojektion/,
   );
 
   const foreignParticipant = maskState();
@@ -770,6 +772,34 @@ test("direct source and projection boundaries reject foreign or pending mask par
     /zugleich zugewiesene und pending/,
   );
   assert.deepEqual(projectLiveScene(assignedAndPending, focus), {
+    status: "unavailable",
+    reason: "invalid-scene",
+  });
+
+  const missingMaskRef = structuredClone(state.scenes[0]!.source) as Record<
+    string,
+    any
+  >;
+  missingMaskRef.maskRefs.shift();
+  assert.throws(
+    () => parseLiveSceneSource(missingMaskRef),
+    /ungebundene Maskenprojektion/,
+  );
+  assert.deepEqual(projectLiveScene(missingMaskRef, focus), {
+    status: "unavailable",
+    reason: "invalid-scene",
+  });
+
+  const unavailableProjection = structuredClone(
+    state.scenes[0]!.source,
+  ) as Record<string, any>;
+  unavailableProjection.reconciliations[0].status = "unavailable";
+  delete unavailableProjection.reconciliations[0].receiptLedgerBaseRevision;
+  assert.throws(
+    () => parseLiveSceneSource(unavailableProjection),
+    /ungebundene Maskenprojektion|current Maskensnapshot/,
+  );
+  assert.deepEqual(projectLiveScene(unavailableProjection, focus), {
     status: "unavailable",
     reason: "invalid-scene",
   });
@@ -1053,6 +1083,9 @@ test("owner receipt history rejects reuse after later successful transitions", (
   duplicateAcrossScenes.scenes[1].source.reconciliations = [
     structuredClone(duplicateAcrossScenes.scenes[0].source.reconciliations[0]),
   ];
+  for (const contribution of duplicateAcrossScenes.scenes[1].source
+    .reconciliations[0].appliedContributions)
+    contribution.sourceSceneId = "scene-target";
   duplicateAcrossScenes.scenes[1].source.maskRefs =
     duplicateAcrossScenes.scenes[0].source.maskRefs
       .filter((mask: any) => mask.ownerId === "owner-a")
@@ -1075,6 +1108,39 @@ test("owner receipt history rejects reuse after later successful transitions", (
   const second = move(first.state, ["character-a"], "mask-second");
   assert.equal(second.status, "applied");
   if (second.status !== "applied") return;
+  const ownerA = second.state.scenes[0]!.source.reconciliations.find(
+    (entry) => entry.ownerId === "owner-a",
+  );
+  assert.equal(ownerA?.receiptLedgerBaseRevision, 5);
+  assert.equal(ownerA?.appliedContributions?.length, 2);
+  assert.deepEqual(
+    ownerA?.appliedContributions?.[0]?.target,
+    first.decision.sceneCleanup?.reconciliations.find(
+      (duty) =>
+        duty.kind === "mask-owner-reconciliation" &&
+        duty.ownerIdentity.ownerId === "owner-a",
+    )?.target,
+  );
+
+  const deletedLedger = structuredClone(second.state) as Record<string, any>,
+    deletedOwner = deletedLedger.scenes[0].source.reconciliations.find(
+      (entry: any) => entry.ownerId === "owner-a",
+    );
+  delete deletedOwner.appliedContributions;
+  assert.throws(
+    () => parseLiveSessionAggregateState(deletedLedger),
+    /Receipt-Ledger/,
+  );
+
+  const truncatedLedger = structuredClone(second.state) as Record<string, any>,
+    truncatedOwner = truncatedLedger.scenes[0].source.reconciliations.find(
+      (entry: any) => entry.ownerId === "owner-a",
+    );
+  truncatedOwner.appliedContributions.shift();
+  assert.throws(
+    () => parseLiveSessionAggregateState(truncatedLedger),
+    /Receipt-Ledger/,
+  );
   const firstReceipts = new Map(
       first.state.scenes[0]!.source.reconciliations.map((entry) => [
         `${entry.ownerId}\u0000${entry.generationId}`,

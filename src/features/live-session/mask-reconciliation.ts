@@ -1069,8 +1069,8 @@ export function buildReconciliationDuties(
       source.reconciliations.some(
         (entry) =>
           entry.receiptId === contribution.receiptId ||
-          entry.appliedReceipts?.some(
-            (receipt) => receipt.receiptId === contribution.receiptId,
+          entry.appliedContributions?.some(
+            (published) => published.receiptId === contribution.receiptId,
           ),
       )
     )

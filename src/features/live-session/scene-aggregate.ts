@@ -478,8 +478,8 @@ function reconciliationDuties(
         scene.source.reconciliations.some(
           (owner) =>
             owner.receiptId === contribution.receiptId ||
-            owner.appliedReceipts?.some(
-              (receipt) => receipt.receiptId === contribution.receiptId,
+            owner.appliedContributions?.some(
+              (published) => published.receiptId === contribution.receiptId,
             ),
         ),
       ),
@@ -808,31 +808,12 @@ function sourceWithAppliedMaskContributions(
             commandId: contribution.commandId,
             commandDigest: contribution.commandDigest,
             receiptId: contribution.receiptId,
-            appliedReceipts: Object.freeze([
-              ...(entry.appliedReceipts ??
-                (entry.receiptId !== undefined &&
-                entry.commandId !== undefined &&
-                entry.commandDigest !== undefined
-                  ? [
-                      Object.freeze({
-                        receiptId: entry.receiptId,
-                        commandId: entry.commandId,
-                        commandDigest: entry.commandDigest,
-                        ownerRevisionBefore: revision(
-                          entry.ownerRevision! - 1,
-                          "OwnerReconciliation.ownerRevisionBefore",
-                        ),
-                        ownerRevisionAfter: entry.ownerRevision!,
-                      }),
-                    ]
-                  : [])),
-              Object.freeze({
-                receiptId: contribution.receiptId,
-                commandId: contribution.commandId,
-                commandDigest: contribution.commandDigest,
-                ownerRevisionBefore: contribution.ownerRevisionBefore,
-                ownerRevisionAfter: contribution.ownerRevisionAfter,
-              }),
+            receiptLedgerBaseRevision:
+              entry.receiptLedgerBaseRevision ??
+              contribution.ownerRevisionBefore,
+            appliedContributions: Object.freeze([
+              ...(entry.appliedContributions ?? []),
+              contribution,
             ]),
           });
     });
@@ -853,15 +834,8 @@ function sourceWithAppliedMaskContributions(
           commandId: contribution.commandId,
           commandDigest: contribution.commandDigest,
           receiptId: contribution.receiptId,
-          appliedReceipts: Object.freeze([
-            Object.freeze({
-              receiptId: contribution.receiptId,
-              commandId: contribution.commandId,
-              commandDigest: contribution.commandDigest,
-              ownerRevisionBefore: contribution.ownerRevisionBefore,
-              ownerRevisionAfter: contribution.ownerRevisionAfter,
-            }),
-          ]),
+          receiptLedgerBaseRevision: contribution.ownerRevisionBefore,
+          appliedContributions: Object.freeze([contribution]),
         }),
       );
   }

@@ -1924,6 +1924,7 @@ test("Rejoin preserves existing Target consumers and Source-owned content", () =
       generationId: "weather-generation",
       status: "current",
       ownerRevision: 4,
+      receiptLedgerBaseRevision: 4,
     },
   ];
   const state = parseLiveSessionAggregateState(raw),

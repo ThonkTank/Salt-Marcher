@@ -24,6 +24,10 @@ import {
   type ReferenceId,
   type Revision,
 } from "./ids";
+import {
+  parseMaskOwnerPreparedContribution,
+  type MaskOwnerPreparedContribution,
+} from "./mask-reconciliation";
 
 export interface OwnerReference {
   readonly ownerId: OwnerId;
@@ -157,15 +161,8 @@ export interface OwnerReconciliation {
   readonly pendingCommandIds?: readonly CommandId[];
   readonly commandDigest?: CommandDigest;
   readonly receiptId?: ReceiptId;
-  readonly appliedReceipts?: readonly OwnerAppliedReceipt[];
-}
-
-export interface OwnerAppliedReceipt {
-  readonly receiptId: ReceiptId;
-  readonly commandId: CommandId;
-  readonly commandDigest: CommandDigest;
-  readonly ownerRevisionBefore: Revision;
-  readonly ownerRevisionAfter: Revision;
+  readonly receiptLedgerBaseRevision?: Revision;
+  readonly appliedContributions?: readonly MaskOwnerPreparedContribution[];
 }
 
 export interface LiveSceneSourceSnapshot {
@@ -861,7 +858,11 @@ function maskParticipationProjections(
   );
 }
 
-function reconciliations(value: unknown): readonly OwnerReconciliation[] {
+function reconciliations(
+  value: unknown,
+  expectedCampaignId: CampaignId,
+  expectedSceneId: LiveSceneId,
+): readonly OwnerReconciliation[] {
   return Object.freeze(
     unique(
       array(value, "LiveSceneSource.reconciliations").map((entry, index) => {
@@ -876,7 +877,8 @@ function reconciliations(value: unknown): readonly OwnerReconciliation[] {
               "pendingCommandIds",
               "commandDigest",
               "receiptId",
-              "appliedReceipts",
+              "receiptLedgerBaseRevision",
+              "appliedContributions",
             ],
             label,
           );
@@ -888,6 +890,12 @@ function reconciliations(value: unknown): readonly OwnerReconciliation[] {
           throw new Error(`${label}.status ist unbekannt.`);
         if (row.status === "current" && row.ownerRevision === undefined)
           throw new Error(`${label} benötigt eine OwnerRevision.`);
+        if (
+          row.status === "current" &&
+          row.generationId !== undefined &&
+          row.receiptLedgerBaseRevision === undefined
+        )
+          throw new Error(`${label} benötigt einen Receipt-Ledger-Anker.`);
         if (row.status === "pending" && row.commandId === undefined)
           throw new Error(`${label} benötigt eine CommandId.`);
         const pendingCommandIds =
@@ -913,67 +921,40 @@ function reconciliations(value: unknown): readonly OwnerReconciliation[] {
           pendingCommandIds[pendingCommandIds.length - 1] !== row.commandId
         )
           throw new Error(`${label} besitzt keine geordnete Pendingfolge.`);
-        const hasReceiptBinding =
-          row.commandId !== undefined ||
-          row.commandDigest !== undefined ||
-          row.receiptId !== undefined;
-        const appliedReceipts =
-          row.appliedReceipts === undefined
+        const hasAnyReceiptBinding =
+            row.commandId !== undefined ||
+            row.commandDigest !== undefined ||
+            row.receiptId !== undefined,
+          hasReceiptBinding =
+            row.commandDigest !== undefined || row.receiptId !== undefined;
+        const appliedContributions =
+          row.appliedContributions === undefined
             ? undefined
             : Object.freeze(
                 unique(
-                  array(row.appliedReceipts, `${label}.appliedReceipts`).map(
-                    (entry, receiptIndex) => {
-                      const receiptLabel = `${label}.appliedReceipts[${receiptIndex}]`,
-                        receiptRow = record(
-                          entry,
-                          [
-                            "receiptId",
-                            "commandId",
-                            "commandDigest",
-                            "ownerRevisionBefore",
-                            "ownerRevisionAfter",
-                          ],
-                          [],
-                          receiptLabel,
-                        ),
-                        ownerRevisionBefore = revision(
-                          receiptRow.ownerRevisionBefore,
-                          `${receiptLabel}.ownerRevisionBefore`,
-                        ),
-                        ownerRevisionAfter = revision(
-                          receiptRow.ownerRevisionAfter,
-                          `${receiptLabel}.ownerRevisionAfter`,
-                        );
-                      if (ownerRevisionAfter !== ownerRevisionBefore + 1)
-                        throw new Error(
-                          `${receiptLabel} besitzt keinen einzelnen Owner-Revisionsschritt.`,
-                        );
-                      return Object.freeze({
-                        receiptId: receiptId(
-                          receiptRow.receiptId,
-                          `${receiptLabel}.receiptId`,
-                        ),
-                        commandId: commandId(
-                          receiptRow.commandId,
-                          `${receiptLabel}.commandId`,
-                        ),
-                        commandDigest: commandDigest(
-                          receiptRow.commandDigest,
-                          `${receiptLabel}.commandDigest`,
-                        ),
-                        ownerRevisionBefore,
-                        ownerRevisionAfter,
-                      });
-                    },
+                  array(
+                    row.appliedContributions,
+                    `${label}.appliedContributions`,
+                  ).map((entry, receiptIndex) =>
+                    parseMaskOwnerPreparedContribution(
+                      entry,
+                      `${label}.appliedContributions[${receiptIndex}]`,
+                    ),
                   ),
                   (entry) => entry.receiptId,
-                  `${label}.appliedReceipts`,
+                  `${label}.appliedContributions`,
                 ),
+              );
+        const receiptLedgerBaseRevision =
+          row.receiptLedgerBaseRevision === undefined
+            ? undefined
+            : revision(
+                row.receiptLedgerBaseRevision,
+                `${label}.receiptLedgerBaseRevision`,
               );
         if (
           row.status === "current" &&
-          hasReceiptBinding &&
+          hasAnyReceiptBinding &&
           !(
             row.commandId !== undefined &&
             row.commandDigest !== undefined &&
@@ -987,34 +968,48 @@ function reconciliations(value: unknown): readonly OwnerReconciliation[] {
           row.status !== "current" &&
           (row.commandDigest !== undefined ||
             row.receiptId !== undefined ||
-            appliedReceipts !== undefined)
+            receiptLedgerBaseRevision !== undefined ||
+            appliedContributions !== undefined)
         )
           throw new Error(
             `${label} darf keine veröffentlichte Receipt binden.`,
           );
         if (
-          appliedReceipts !== undefined &&
-          (appliedReceipts.length === 0 ||
-            row.status !== "current" ||
-            row.generationId === undefined ||
-            row.ownerRevision === undefined ||
-            !hasReceiptBinding ||
-            new Set(appliedReceipts.map((entry) => entry.commandId)).size !==
-              appliedReceipts.length ||
-            appliedReceipts.some(
-              (entry, receiptIndex) =>
-                receiptIndex > 0 &&
-                entry.ownerRevisionBefore !==
-                  appliedReceipts[receiptIndex - 1]?.ownerRevisionAfter,
-            ) ||
-            appliedReceipts[appliedReceipts.length - 1]?.receiptId !==
-              row.receiptId ||
-            appliedReceipts[appliedReceipts.length - 1]?.commandId !==
-              row.commandId ||
-            appliedReceipts[appliedReceipts.length - 1]?.commandDigest !==
-              row.commandDigest ||
-            appliedReceipts[appliedReceipts.length - 1]?.ownerRevisionAfter !==
-              row.ownerRevision)
+          hasReceiptBinding !== (appliedContributions !== undefined) ||
+          (row.status === "current" &&
+            row.generationId !== undefined &&
+            receiptLedgerBaseRevision !== undefined &&
+            !hasReceiptBinding &&
+            row.ownerRevision !== receiptLedgerBaseRevision) ||
+          (appliedContributions !== undefined &&
+            (appliedContributions.length === 0 ||
+              row.status !== "current" ||
+              row.generationId === undefined ||
+              row.ownerRevision === undefined ||
+              !hasReceiptBinding ||
+              appliedContributions[0]?.ownerRevisionBefore !==
+                receiptLedgerBaseRevision ||
+              new Set(appliedContributions.map((entry) => entry.commandId))
+                .size !== appliedContributions.length ||
+              appliedContributions.some(
+                (entry, receiptIndex) =>
+                  entry.campaignId !== expectedCampaignId ||
+                  entry.sourceSceneId !== expectedSceneId ||
+                  entry.ownerIdentity.ownerId !== row.ownerId ||
+                  entry.ownerIdentity.generationId !== row.generationId ||
+                  (receiptIndex > 0 &&
+                    entry.ownerRevisionBefore !==
+                      appliedContributions[receiptIndex - 1]
+                        ?.ownerRevisionAfter),
+              ) ||
+              appliedContributions[appliedContributions.length - 1]
+                ?.receiptId !== row.receiptId ||
+              appliedContributions[appliedContributions.length - 1]
+                ?.commandId !== row.commandId ||
+              appliedContributions[appliedContributions.length - 1]
+                ?.commandDigest !== row.commandDigest ||
+              appliedContributions[appliedContributions.length - 1]
+                ?.ownerRevisionAfter !== row.ownerRevision))
         )
           throw new Error(`${label} besitzt kein konsistentes Receipt-Ledger.`);
         return Object.freeze({
@@ -1051,7 +1046,12 @@ function reconciliations(value: unknown): readonly OwnerReconciliation[] {
           ...(row.receiptId === undefined
             ? {}
             : { receiptId: receiptId(row.receiptId, `${label}.receiptId`) }),
-          ...(appliedReceipts === undefined ? {} : { appliedReceipts }),
+          ...(receiptLedgerBaseRevision === undefined
+            ? {}
+            : { receiptLedgerBaseRevision }),
+          ...(appliedContributions === undefined
+            ? {}
+            : { appliedContributions }),
         });
       }),
       (entry) => `${entry.ownerId}\u0000${entry.generationId ?? ""}`,
@@ -1109,6 +1109,12 @@ export function parseLiveSceneSource(value: unknown): LiveSceneSourceSnapshot {
       ),
     ),
     parsedPendingAssignments = pendingAssignments(root.pendingAssignments),
+    parsedMaskRefs = maskReferences(root.maskRefs),
+    parsedReconciliations = reconciliations(
+      root.reconciliations,
+      parsedCampaignId,
+      parsedLiveSceneId,
+    ),
     parsedMaskProjections = Object.freeze(
       maskParticipationProjections(root.maskParticipationProjections).map(
         (projection) => {
@@ -1126,7 +1132,19 @@ export function parseLiveSceneSource(value: unknown): LiveSceneSourceSnapshot {
     characterSet = new Set(characterIds),
     pendingSet = new Set(
       parsedPendingAssignments.map((assignment) => assignment.characterId),
-    );
+    ),
+    ownerKey = (owner: OwnerId, generation: GenerationId) =>
+      `${owner}\u0000${generation}`,
+    projectionKey = (owner: OwnerId, generation: GenerationId, mask: MaskId) =>
+      `${ownerKey(owner, generation)}\u0000${mask}`,
+    ownerByIdentity = new Map(
+      parsedReconciliations.flatMap((owner) =>
+        owner.generationId === undefined
+          ? []
+          : [[ownerKey(owner.ownerId, owner.generationId), owner] as const],
+      ),
+    ),
+    projectionKeys = new Set<string>();
   if (characterIds.some((character) => pendingSet.has(character)))
     throw new Error(
       "LiveSceneSource enthält zugleich zugewiesene und pending Teilnehmer.",
@@ -1142,6 +1160,51 @@ export function parseLiveSceneSource(value: unknown): LiveSceneSourceSnapshot {
     throw new Error(
       "LiveSceneSource enthält ungebundene oder pending Maskenteilnehmer.",
     );
+  for (const projection of parsedMaskProjections) {
+    const key = projectionKey(
+        projection.ownerIdentity.ownerId,
+        projection.ownerIdentity.generationId,
+        projection.maskId,
+      ),
+      mask = parsedMaskRefs.find(
+        (entry) =>
+          projectionKey(entry.ownerId, entry.generationId, entry.maskId) ===
+          key,
+      ),
+      owner = ownerByIdentity.get(
+        ownerKey(
+          projection.ownerIdentity.ownerId,
+          projection.ownerIdentity.generationId,
+        ),
+      );
+    if (
+      mask === undefined ||
+      mask.kind !== projection.maskKind ||
+      mask.ownerRevision !== projection.ownerRevision ||
+      mask.lifecycle !== projection.lifecycle ||
+      projection.lifecycle === "pending" ||
+      (owner !== undefined &&
+        (owner.status !== "current" ||
+          owner.ownerRevision !== projection.ownerRevision))
+    )
+      throw new Error(
+        "LiveSceneSource enthält eine ungebundene Maskenprojektion.",
+      );
+    projectionKeys.add(key);
+  }
+  for (const mask of parsedMaskRefs) {
+    const key = projectionKey(mask.ownerId, mask.generationId, mask.maskId),
+      owner = ownerByIdentity.get(ownerKey(mask.ownerId, mask.generationId)),
+      current = owner?.status ?? "current";
+    if (
+      (current === "current" &&
+        (mask.lifecycle === "pending" || !projectionKeys.has(key))) ||
+      (current !== "current" && projectionKeys.has(key))
+    )
+      throw new Error(
+        "LiveSceneSource besitzt keinen vollständigen current Maskensnapshot.",
+      );
+  }
   return Object.freeze({
     kind: "live-scene-source",
     version: 1,
@@ -1172,9 +1235,9 @@ export function parseLiveSceneSource(value: unknown): LiveSceneSourceSnapshot {
           ),
         }),
     groupRefs: ownerReferences(root.groupRefs, "LiveSceneSource.groupRefs"),
-    maskRefs: maskReferences(root.maskRefs),
+    maskRefs: parsedMaskRefs,
     maskParticipationProjections: parsedMaskProjections,
-    reconciliations: reconciliations(root.reconciliations),
+    reconciliations: parsedReconciliations,
     contentPins: ownerReferences(
       root.contentPins,
       "LiveSceneSource.contentPins",

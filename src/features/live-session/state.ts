@@ -326,7 +326,7 @@ export function parseLiveSessionAggregateState(
   for (const scene of scenes)
     for (const owner of scene.source.reconciliations) {
       const receipts =
-        owner.appliedReceipts ??
+        owner.appliedContributions ??
         (owner.receiptId === undefined ? [] : [{ receiptId: owner.receiptId }]);
       for (const receipt of receipts) {
         if (publishedMaskReceipts.has(receipt.receiptId))
