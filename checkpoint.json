@@ -10354,16 +10354,16 @@
     "currentRun": {
       "id": "CITY-BUILDING-NAME-I01",
       "issue": 92,
-      "state": "visible_name_inspector_dom_native_save_model_reopen_checked_independent_native_review_pending",
+      "state": "inspector_independent_review_pass_native_probe_marker_overlap_corrected_new_slot_pending",
       "branch": "city/building-name-inspector",
       "plan": "docs/plans/city/building-name-inspector.md",
       "verification": "2 core countercases and 3 managed DOM cases PASS; exact name/geometry/IDs, one dock/camera/context/history; native Save and fresh host-model mount; invalid/stale/ABA/revoked context retain input",
-      "next": "Independent review of visible Inspector/editor diff; separate GM and native fresh-process acceptance with a newly agreed GUI slot",
+      "next": "R02 PASS5481432379 consumed. Native probe first attempt normalExit0 but marker overlap before mutation; corrected visible zoom helper ready, await newly requested two-process GUI slot then actual Edit/Fresh; GM/Recovery remain open",
       "limits": "Renderer hit pinned and GPU initialization excluded in DOM tests; no native GUI/process/physical or total parity acceptance; #69 Planner and #41 Host inputs remain pending"
     },
     "nextRun": {
       "id": "CITY-BUILDING-NAME-R02",
-      "focus": "Independent review of the completed visible building inspector on PR93; native/GM acceptance after new GUI coordination. #69 Planner and #41 Host retain their own pending inputs."
+      "focus": "Execute corrected City native Edit/Fresh probe after new concrete slot confirmation; preserve failed first evidence and independently qualified product0315b13. #69/#41 retain their pending inputs."
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
