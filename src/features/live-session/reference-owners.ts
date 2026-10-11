@@ -12,10 +12,10 @@ import {
 } from "./ids";
 import { exactArray, exactRecord, uniqueBy } from "./validation";
 import {
-  campaignId,
-  payloadDigest,
+  canonicalCampaignId,
+  evidenceDigest,
   type CampaignId,
-} from "../campaign/campaign-contracts";
+} from "./evidence";
 
 export interface ErasureSlotDefinition {
   readonly kind: "erasure-slot-definition";
@@ -162,22 +162,8 @@ function opaqueText(value: unknown, label: string): string {
   return value;
 }
 
-function canonicalCampaignId(value: unknown, label: string): CampaignId {
-  if (typeof value !== "string")
-    throw new Error(`${label} ist keine Campaign-ID.`);
-  try {
-    return campaignId(value);
-  } catch {
-    throw new Error(`${label} ist keine kanonische Campaign-ID.`);
-  }
-}
-
 function digestEvidence(value: unknown, label: string): string {
-  try {
-    return payloadDigest(opaqueText(value, label));
-  } catch {
-    throw new Error(`${label} ist kein kanonischer SHA-256-Beleg.`);
-  }
+  return evidenceDigest(opaqueText(value, label), label);
 }
 
 type SurvivorProofInput = Pick<
@@ -212,10 +198,11 @@ export function referenceOwnerSurvivorProof(
       survivor.survivorId,
       survivor.targetScopeId,
     ]),
-    survivorSetHash = payloadDigest(
+    survivorSetHash = evidenceDigest(
       digest(
         JSON.stringify(["reference-owner-survivor-set", 1, setProjection]),
       ),
+      "ReferenceOwnerSurvivorProof.survivorSetHash",
     ),
     rootProjection = ordered.map((survivor) => [
       survivor.ownerId,
@@ -224,7 +211,7 @@ export function referenceOwnerSurvivorProof(
       survivor.targetScopeId,
       survivor.beforeHash,
     ]),
-    survivorRootHash = payloadDigest(
+    survivorRootHash = evidenceDigest(
       digest(
         JSON.stringify([
           "reference-owner-survivor-root",
@@ -233,6 +220,7 @@ export function referenceOwnerSurvivorProof(
           rootProjection,
         ]),
       ),
+      "ReferenceOwnerSurvivorProof.survivorRootHash",
     );
   return Object.freeze({ survivorSetHash, survivorRootHash });
 }
