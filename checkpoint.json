@@ -7112,7 +7112,8 @@
         "userVaultInstallation": false,
         "fullE2E": false
       },
-      "nextConsumer": "Independent Atlas-QA: only the new N02 native helper/oracle/evidence qualification. Cloud-GM already owns its separate free N02 repair retest on its isolated Cloud host; parent80 remains Hex and dependent expansion waits for delivered findings."
+      "nextConsumer": "Independent Atlas-QA: only the new N02 native helper/oracle/evidence qualification. Cloud-GM already owns its separate free N02 repair retest on its isolated Cloud host; parent80 remains Hex and dependent expansion waits for delivered findings.",
+      "pullRequest": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/94"
     }
   },
   "phase": "Phase 6: zweiter Nachbesserungslauf teilweise umgesetzt; fünf Restpositionen und unabhängiger Review offen",
