@@ -44,80 +44,81 @@ Stadt besitzt City. Parent #80 bleibt offen; Arbeitsbranch
 `hex/dungeon-at-location-inspector-n01-20261011`. Historische Belege sind keine Aufträge.
 
 **Konsumierter Nutzerweg:** PR81/87/78 liefern Verorten/Raum-Key/Rückkehr;
-PR91/100/110 liefern Escape/Scroll/Fit. Quellgebundener [N04](docs/reference/atlas-detail-binding-d01/inspector-horizontal-fit-n04.json)
-belegt horizontalen Dock-Fit100/131%, vertikales Scrollen bleibt nötig.
+PR91/100/110 Escape/Scroll/Fit. [N04](docs/reference/atlas-detail-binding-d01/inspector-horizontal-fit-n04.json)
+belegt horizontalen Dock-Fit100/131%; vertikales Scrollen bleibt nötig.
 [GM-Same-session](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80#issuecomment-6105400641)
 und [FreshReuse](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80#issuecomment-6105912997)
 belegen Torheim → Suche Torraum → Eingangstext auf87ccdb2;131%-Fit nur PR115.
-S01 konsumierte6d03e5a in3af22a1. Tester-PIDs/Payloadorakel sind kein eigener Host-PASS.
+S01 konsumierte6d03e5a in3af22a1; fremde Tester-PIDs sind kein Hex-Host-PASS.
 
-**Erhaltene IME-/Fehlerbelege:** PR126 Location/Room × Ctrl/Meta+S mit isComposing:
-vier Baseline-FAIL/50 Adapterfälle bleiben DOM-/Modellschutz. H01–H04 im bestehenden
-`docs/reference/atlas-detail-binding-d01/` und canonical Acceptance bleiben samt
-fehlenden Downstreamkeydowns/Rohfehlern erhalten. H03 identifiziert e.onKeyEvent,
-innere Scope-Rückgabe nicht gemessen. H04: Ctrl+S pending, sichtbarer Save erfolgreich
-auf12265c20/Shared25792fb. Kein nativer IME-PASS, keine Umdeutung von RunnerExit1.
-
-**Qualifizierter Routingfix:** PR135 durch [engen unabhängigen Review](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/135#issuecomment-6106627133)
-und [Stewardintegration](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/135#issuecomment-6106631127)
-integriert: View.scope/Mod+S, Parentfallback, serieller Save/bestehende Guards;
-kein zweiter Window-Save. Fünf Regressionen/Basissuite/Build bestehen.
+**Erhaltene IME-/Savebelege:** PR126 Location/Room × Ctrl/Meta+S mit isComposing:
+vier Baseline-FAIL/50 Adapterfälle bleiben DOM-/Modellschutz. H01–H04 samt
+fehlenden Downstreamkeydowns/Rohfehlern bleiben erhalten; H03 identifiziert
+e.onKeyEvent, innere Scope-Rückgabe nicht gemessen. H04 Ctrl+S pending, sichtbarer
+Save erfolgreich auf12265c20/Shared25792fb; RunnerExit1 bleibt Fehler.
+PR135 durch [Review](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/135#issuecomment-6106627133)
+und [Steward](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/135#issuecomment-6106631127)
+integriert: View.scope/Mod+S, Parentfallback/serieller Save/bestehende Guards.
 [R01](docs/reference/atlas-detail-binding-d01/inspector-save-routing-r01.json)
-belegt nicht komponierendes Ctrl+S im Ortsnamen auf e1bda0a/Shared29e4ce68 mit
-einer History, exaktem Text/native Erhaltungsorakeln. Unzugängliche lokale Rohpfade
-sind kein unabhängiger Cloudreview; R01/H01–H04 bleiben historisch erhalten.
+belegt nicht komponierendes Ctrl+S im Ortsnamen aufe1bda0a/Shared29e4ce68.
+Kein nativer IME-/Meta-PASS aus DOM, R01 oder unzugänglichen lokalen Rohpfaden.
 
-**Save und frischer Prozess:** F01 Source840f6f1f/Shared6ee40d83 öffnet echten
-R01-Orts-Save ohne Neu-Seeden/Save-Replay: exakter Key/IDs/CRLF/acht Bytes,
-gemeinsame Besitzer, clean/History0/Runner0. R02 Sourcee98f394f/Shared6ee40d83:
-Ort11 → Raum31 → Raumtext1 → Ctrl+S, History0→1/pending=false/clean;
+**Save/frischer Prozess:** F01 Source840f6f1f/Shared6ee40d83 öffnet echten R01-Orts-Save:
+exakter Key/IDs/CRLF/acht Bytes, eine History0/clean/Runner0. R02 Sourcee98f394f/
+Shared6ee40d83: Ort11 → Raum31 → Raumtext → Ctrl+S, History0→1/pending=false/clean;
 Besitzer/Kamera/Welt/Orts-Keys erhalten. Dungeon nur ein Markdownfeld, Campaign
-elf gebundene Revisionsfelder, sechs fremde Dateien gleich; native Digests
-bytegeprüft, andere Ableitungen nur formgeprüft. F02 Source019f7a7d/Shared632c5803
-öffnet echten R02-Save im frischen Prozess: exakter Name/Nummer/Markdown/IDs/
-Geometrie, History0/clean/kein Draft, acht Bytes auch nach Quit gleich.
+elf Revisionsfelder, sechs Fremddateien gleich; native Digests bytegeprüft,
+andere Ableitungen nur formgeprüft. F02 Source019f7a7d/Shared632c5803 öffnet echten
+R02-Save: Name/Nummer/Markdown/IDs/Geometrie exakt, History0/clean/kein Draft.
+Acht native Dateien auch nach Quit gleich; keine Reseed-/Save-Wiederholung.
 Normale Enden/Runner0/PIDs weg/Bilder gelesen/Slots zurück; synthetische Eingabe.
-Kanonisch `acceptance.hexAtlas.requirements[30]` mit `.dungeonAtLocationInspectorSaveRoutingFreshF01`,
-`.dungeonAtLocationRoomScopeSaveR02`, `.dungeonAtLocationRoomScopeSaveFreshF02`.
-PR140/142/144 konsumiert; tatsächliche GUI-Quellen bleiben gebunden.
+PR140/142/144 konsumiert.
 
-**Raum-Discard:** D02-N02 Sourcee1d1b73/Sharedeb3652d3 auf isoliertem F02/R02-Save:
-Ort11/Raum31 → Raumtext → Karte/Entwurf verwerfen. Abbrechen erhält exakten
-Text/Runtime/Drafthash; Bestätigung stellt vollen gespeicherten Dungeon/IDs/
-Geometrie und sichtbar den R02-Key wieder her. Neue Sources/History0/clean/kein Draft, Kamera erhalten; Location12 lazy,
-acht native Dateien auch nach Quit gleich. Runner0, PIDs weg, Bilder gelesen,
-Slot zurück. Kanonisch `.dungeonAtLocationRoomDiscardD02` derselben Anforderung.
-D02 Runner1 (readonly Lazy-Annahme) und D02-N01 Runner1 (erfundenes redoDepth)
-bleiben unverändert; D02-N02 vor Start gegen echte APIs/Rohdaten geprüft.
-Roomtextfelder akzeptieren beliebige Strings, leeres Namefeld ist gültig;
-kein erfundener GUI-Invalidfall. PR146/Shared9527c2da konsumiert; Live-session-
-Kernvertrag ändert keine betroffenen Atlas-/Host-/Fixturepfade, kein GUI-Replay.
+**Discard/Draftresume:** D02-N02 Sourcee1d1b73/Sharedeb3652d3 auf F02/R02-Save:
+Raumtext → Karte/Entwurf verwerfen. Cancel erhält Text/Runtime/Drafthash;
+Bestätigung stellt vollen saved Dungeon/IDs/Geometrie/R02-Key sichtbar wieder her.
+Neue Sources/History0/clean/kein Draft, Kamera erhalten; Location12 lazy,
+acht Dateien bytegenau erhalten. D02/D02-N01 Fehler bleiben unverändert.
+PR146/Shared9527c2da konsumiert, kein GUI-Replay allein
+für unveränderten Vertragsedit.
+R03 Sourcef53a2667/Shared9527c2da: Raumtext/Übernehmen ohne Save, History0→1.
+Reguläres Quit erhält echten v3-Draft mit einem Detaildelta; Welt/Orte/Terrain
+unverändert. Zweiter neuer Prozess desselben Vaults zeigt Name/Nummer/unsaved
+Markdown und vollständigen Dungeon/IDs/Geometrie exakt; History0/dirty/Draft,
+pending=false/canRedo=false. Acht Dateihashes/Drafthash nach beiden Enden gleich.
+Beide Runner0/normal Quit/PIDs weg/Bilder gelesen/Slot zurück. Kein Hardcrash- oder prozessübergreifender History-/Kamera-PASS.
 
-**Raumdraft im frischen Prozess wiederhergestellt:** R03 sauberer neu gebauter
-Sourcef53a2667/Shared9527c2da, echte Kopie des F02/R02-Savevaults. Sichtbar Ort11 →
-Raum31 → Raumtext/Übernehmen ohne Save erstellt exakt einen Historyeintrag.
-Reguläres app.quit erhält den echten v3-Draft mit einem Detaildelta; Welt, Orte
-und Terrain unverändert. Zweiter neuer Prozess desselben Vaults/Profile öffnet
-normal Atlas → Ort11 → Raum31 und zeigt Namen/Nummer sowie den unsaved Raumtext
-exakt. Voller Dungeon/IDs/Geometrie stimmen; acht saved native Dateien und
-Drafthash bleiben vor/nach beiden normalen Enden gleich. Neue History0/dirty/
-Draft, pending=false/canRedo=false; gemeinsame aktuelle Besitzer innerhalb jedes
-Prozesses. Kein prozessübergreifender History-/Kamerapersistenznachweis.
-Beide Runner0/keine Fehler/Zwangstermination, getrennte PIDs weg, Units inactive/
-dead/MainPID0; Bilder direkt gelesen, Slot #11 ausdrücklich zurück.
-Kanonisch `.dungeonAtLocationRoomDraftRecoveryR03` derselben Anforderung.
-Kein Save-Replay, Neu-Seeden, versteckter Modell-/Handlerwrite oder Nutzervaultzugriff.
+**Neuer Copyfehler C01:** Sauberer Source dbde783a/Shared9527c2da, neuer Build,
+exakte Kopie des tatsächlichen R03-Draftvaults. Sichtbar Ort11/Raum31 →
+Karte/Speichern unter → Abbrechen erhält Runtime, Original8 und echten Draft.
+Kopie speichern erstellt sieben native Dateien; readonly Datei-Orakel belegt
+23 frische geschlossene IDs und alle nicht identitätsbezogenen Werte einschließlich
+unsaved Raumtext/Geometrie exakt. Campaignmanifest bleibt Original, Kopie ist
+unregistrierter Atlas. Danach scheitert normale Leaf-Umschaltung mit
+`TypeError: this._cancelResize is not a function`; Originaltitel bleibt,
+Leinwand leer. Kein sichtbarer Copy-/Fresh-PASS. Source/Stack stützen doppelte Rendererfreigabe: closeEditor/editor.destroy vor Hostnavigation.dispose/retire,
+welches dieselbe dirty Instanz suspendiert. Reparaturhypothese, noch kein Fix.
+Runner1/Probe-Timeout; normales Quit, keine Zwangstermination/shutdownFailure,
+Unit72922 inactive/dead/MainPID0/Status0, PIDs72950/73029/73036/73050 weg.
+Fresh nicht gestartet. [Slot zurück](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6107594334).
+Raw/Bilder/voller Fehler-Vault und ausgeführte Helfer unverändert erhalten;
+Bilder direkt gelesen, Original8/Draft/Fremddateien/Nutzervault erhalten.
 
-**Nächster Hex-Beitrag:** Im selben #80 native Kopie des tatsächlichen R03-Drafts
-über Karte/Speichern unter. Copy-/Modal-/Manifestpfad zuerst prüfen; isolierte
-Vaultkopie, exakten Raumtext/neue IDs/Bindings und unverändertes Original prüfen.
-Sichtbare Wiederöffnung quellbinden; vor jeder GUI Slot neu koordinieren,
-normales Quit/PIDs/Rückgabe. Keine weitere Ausführung.
+Kanonisch `acceptance.hexAtlas.requirements[30]`: `.dungeonAtLocationInspectorSaveRoutingFreshF01`,
+`.dungeonAtLocationRoomScopeSaveR02`, `.dungeonAtLocationRoomScopeSaveFreshF02`,
+`.dungeonAtLocationRoomDiscardD02`, `.dungeonAtLocationRoomDraftRecoveryR03` und
+`.dungeonAtLocationRoomDraftCopyC01`; Rohbelege erhalten.
 
-**Offen:** Native Copy, unterbrochene Save-/Copyjournale, Kompositionsguard/Meta,
-physische IME, äußeres Clipping, Gesamt-E2E, Original-/Großkarten-/Nutzervaultabnahme
-bleiben getrennt. R03 belegt regulären Draftresume, keinen Hardcrash. D02 belegt
-Discard im selben Prozess. Fremde Wurzeln und alle historischen Rohbelege erhalten.
+**Nächster Hex-Beitrag:** Im selben #80/Branch Lifecyclefehler der managed
+Atlas-Leaf-Umschaltung beheben, Erhaltungs-/Revokationsguards bewahren,
+doppelte Freigabe gezielt regressieren. Anschließend sichtbares Copy/Fresh-Paar
+auf neuem geprüften Build mit erneut ausdrücklich koordiniertem Slot nachtesten.
+Stadt über möglichen gleichen Create-City-Leafpfad informiert, kein paralleler
+Reparaturclaim.
+
+**Offen:** Native Copy/Fresh, unterbrochene Save-/Copyjournale, Kompositionsguard/
+Meta/physische IME, äußeres Clipping, Gesamt-E2E, Original-/Großkarten-/Nutzervault-
+abnahme bleiben getrennt. Fremde Wurzeln und historische Rohbelege erhalten.
 
 ## Historische Planbasis und Lieferbelege
 
