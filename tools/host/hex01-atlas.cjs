@@ -10,13 +10,29 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out, checks }) =>
   const hash = (text) => crypto.createHash("sha256").update(text).digest("hex");
   const near = (a, b, label, tolerance = 1e-6) => assert(Math.abs(a - b) <= tolerance, `${label}: ${a} != ${b}`);
   const settle = () => page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+  async function ready(file) {
+    const deadline = Date.now() + 12000;
+    let id;
+    while (Date.now() < deadline) {
+      if (fs.existsSync(path.join(vault, file))) id = JSON.parse(bytes(file)).id;
+      if (id && await page.evaluate(id => [...document.querySelectorAll(".dn-atlas-viewport")]
+        .some(el => el.getBoundingClientRect().width > 0 && el.parentElement?.dataset.worldId === id), id))
+        break;
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+    assert(id, `Atlas file was not created: ${file}`);
+    assert.equal(await viewport().evaluate(el => el.parentElement.dataset.worldId), id,
+      "Visible atlas matches the requested document, not the previous canvas");
+    await viewport().locator("canvas").waitFor({ state: "visible" });
+    await settle();
+  }
   async function open(file) {
     await page.evaluate(async file => {
       const target = app.vault.getAbstractFileByPath(file);
       if (!target) throw new Error("Missing owned test file: " + file);
       await app.workspace.getLeaf(false).openFile(target);
     }, file);
-    await viewport().locator("canvas").waitFor({ state: "visible" }); await settle();
+    await ready(file);
   }
   async function state() {
     return viewport().evaluate(el => {
@@ -79,7 +95,7 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out, checks }) =>
   }
   async function edit() {
     await create("Hex01 Welt", "pointy");
-    await viewport().locator("canvas").waitFor({ state: "visible" }); await settle();
+    await ready(WORLD);
     const original = bytes(WORLD), world = JSON.parse(original);
     assert.equal(world.orientation, "pointy"); assert.equal(world.minHexMiles, 3);
     assert.equal(world.metersPerMile, 1609.344); assert.equal(world.levelFactor, 3);
@@ -122,7 +138,7 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out, checks }) =>
     assert.equal(bytes(WORLD), original); assert(await collision.isVisible()); await page.keyboard.press("Escape");
     checks.push("Duplicate atlas creation retains existing file and entered modal");
     await create("Hex01 Flach", "flat");
-    await viewport().locator("canvas").waitFor({ state: "visible" }); await settle();
+    await ready(FLAT);
     assert.equal(JSON.parse(bytes(FLAT)).orientation, "flat");
     const flatNegative = await choose(-2, -1, "flat");
     await page.screenshot({ path: path.join(out, "05-flat.png") });

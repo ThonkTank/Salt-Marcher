@@ -11088,18 +11088,18 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-BUILDING-NAME-KEYBOARD-FOCUS",
+      "id": "CITY-BUILDING-NAME-IME-SAVE",
       "issue": 92,
-      "state": "integrated_gm_fresh_and_apply_discard_keyboard_verified",
-      "branch": "city/building-name-focus-20261011",
+      "state": "candidate_independent_review_pending",
+      "branch": "city/building-name-ime-save-20261011",
       "plan": "docs/plans/city/building-name-inspector.md",
-      "verification": "Three Managed DOM focus regressions FAIL before/PASS after: Apply and Discard preserve replacement action focus, direct Save retains current textarea focus; toolbar focus stays external, detached old actions cannot publish or move focus. Typecheck/build/repo/diff PASS; suite1016 PASS/0 FAIL/1 existing skip. No physical GUI proof. Existing PR106 integration and bounded GM Save/reuse evidence remain in the plan and acceptance. Independent focus R01 PASS6105537557 on14729dc429d9699998284b1ee7a3bb8ee3ebc8a3; regular Shared integration a4c2cb39aafdfb7abf5469e575a82e630ef41313 confirmed in6105543027. Exact-CI38112395045 and Shared-structure38112524672 SUCCESS.  Cloud GM6105664357: fresh process/search/name reuse/second Save on eaf6bd95564ab398eabe9b2c0ac046feec079f0f; Apply/Discard Enter focus and next Tab on a4c2cb39aafdfb7abf5469e575a82e630ef41313. Durable PR120 evidence1262cbf7f4994626fc6ccc459550ea6e7aceb209: City checked eight image hashes and visible results. Full after-save payloads absent; semantic file oracle is tester report.",
-      "next": "Only direct-Save textarea focus lacks visible native verification. Fresh-process and Apply/Discard paths complete in bound sources; do not repeat unchanged checks. Continue useful City work or independent project contribution.",
-      "limits": "Synthetic Cloud keyboard/pointer input, no physical acceptance. Fresh-process source eaf6bd9 differs from focus source a4c2cb3; no launcher exitcode or independent full after-save payload comparison. Broad Recovery and overall City parity remain open."
+      "verification": "Ctrl/Cmd+S during unfinished IME composition: two actual Managed/Vaultadapter regressions FAIL before/PASS after. No City publication, History step, native write or focus replacement during composition; confirmed shortcut saves with one History step. Typecheck/build/repository/diff PASS; full suite1019 PASS/0 FAIL/1 existing skip. Prior GM Fresh/Search/Reedit/Save and Apply/Discard results remain source-bound in plan/acceptance.",
+      "next": "Independent narrow review of City keyboard shortcut guard; native IME and direct-Save focus remain separate unqualified paths. Continue independent useful work while review runs.",
+      "limits": "Managed DOM uses synthetic isComposing; no native IME, physical or broad Recovery/parity claim."
     },
     "nextRun": {
-      "id": "CITY-BUILDING-NAME-DIRECT-SAVE-FOCUS",
-      "focus": "Optional targeted native direct-Save textarea focus verification; no repeat of completed fresh-process or Apply/Discard paths."
+      "id": "CITY-BUILDING-NAME-IME-REVIEW",
+      "focus": "Review narrow isComposing guard and before/after regressions; no unchanged overall Save/History/GUI repetition."
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
