@@ -11297,7 +11297,9 @@
       "checks": [
         "Bounded visible fresh-process find/reuse PASS; exact prior built/installed product triplet reused without rebuilding.",
         "Own synthetic vault payload hashes remained unchanged in the read-only continuation; source fixture untouched.",
-        "npm run check:repo and git diff --check run before publication.",
+        "npm run check:repo: PASS; git diff --check: PASS.",
+        "sha256sum -c docs/reference/gm-cloud-n04-20261011/SHA256SUMS.txt: PASS for all 12 screenshots.",
+        "sha256sum -c docs/reference/gm-cloud-n04-20261011/FIXTURE-SHA256SUMS.txt from tests/fixtures/atlas-e2e-spatial-v2/input: PASS for all 8 fixture payloads.",
         "No automated product test suite run or substituted for visible UI."
       ],
       "notDemonstrated": [
@@ -11317,9 +11319,10 @@
       ],
       "next": "Deliver this single source-bound fresh-process result to Hex at #80. Do not repeat the already observed save/UndoRedo/131% path; Hex retains the parent and decides its consequence. Keep physical, recovery, player-projection and broad E2E gates open.",
       "publishedEvidencePr": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/125",
-      "publishedEvidenceHead": "6fc9019a60e4c9e8706fa2755b13c1288fdfcaae",
       "resultComment": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80#issuecomment-6105912997",
-      "reportedStatus": "completed; report delivered to Hex at the existing #80 task"
+      "reportedStatus": "completed; report delivered to Hex at the existing #80 task",
+      "publishedEvidenceCommit": "6fc9019a60e4c9e8706fa2755b13c1288fdfcaae",
+      "followupCheckpointCommit": "2aa2976fde7834607f6c91f3c38205411d5747c3"
     },
     "executedUiRuns": 24,
     "observedFindings": [
