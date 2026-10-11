@@ -13403,73 +13403,62 @@
     "plan": "ROADMAP-GM-PRODUCT-TESTING-PLAN.md",
     "focus": "Längere GM-Endanwenderabläufe, häufige Aktionen, Bedienkosten und UI-Überladung; belegte Nacharbeiten beauftragen und nachprüfen.",
     "currentRun": {
-      "id": "GM-UX-MANUAL-PLANNER-NAME-RETEST-20261011-01",
+      "id": "GM-UX-PLANNER-FOCUS-PR144-RETEST-20261011-01",
       "status": "completed_bounded_visible_ui_pass",
-      "owner": "Cloud-GM-Produkttester; support only; City retains #69 and PR133 ownership",
+      "owner": "Cloud-GM-Produkttester; support only; City retains #69 and PR144 ownership",
       "issue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/69",
-      "claim": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/69#issuecomment-6106563712",
-      "preRunInstruction": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/69#issuecomment-6106557641",
-      "previousCurrentRun": {
-        "id": "GM-E2E01-ATLAS-INSPECTOR-N04-FRESH-PROCESS-20261011-01",
-        "issue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80#issuecomment-6105482002"
-      },
-      "branch": "codex/gm-manual-planner-name-retest-20261011 (checkpoint and evidence only)",
+      "claim": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/69#issuecomment-6106997065",
+      "previousFinding": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/69#issuecomment-6106915673",
+      "branch": "codex/gm-planner-focus-retest-20261011-01 (evidence/checkpoint only)",
       "candidate": {
-        "pr": 133,
-        "source": "0e6a4164fdfcc85b5f57f3bc9766959002b166c8",
-        "mergedShared": "6df23a7d30c415b026682473ed154d890ed8cb65"
+        "pr": 144,
+        "source": "9d50a8f138c3bc0ac53abefb45e5625435cf110d",
+        "base": "632c580377366af66ab05efcefa3910564f8af48",
+        "sharedObserved": "88a14b59bff3175e413895e97931b1e63693612f"
       },
-      "scope": "Independent visible browser retest of the unsubmitted plan-name retention repair only: same-plan scene add/apply/discard/move/select; explicit rename; new-plan isolation. No full planner review or persistent storage claim.",
-      "sourceCheck": "PR133 is merged. `git diff 0e6a4164fdfcc85b5f57f3bc9766959002b166c8..6df23a7d30c415b026682473ed154d890ed8cb65 -- src tools/manual-planner-preview build.mjs package.json package-lock.json` returned no paths; tested product, preview, and build inputs match merged Shared.",
+      "scope": "Independent visible cloud-browser check of exactly Apply → immediate visible focus outline → Tab after planner scene apply. No broad planner replay or storage claim.",
       "build": {
         "command": "node tools/manual-planner-preview/build.mjs",
-        "result": "PASS; Node v24.19.0; generated the preview bundle from exact source 0e6a4164fdfcc85b5f57f3bc9766959002b166c8",
-        "indexHtmlSha256": "70adfc9890574f687cf1821fd3cbd5f83e0cb63e290c98a4b70e9e20910b7098",
-        "previewJsSha256": "62677830b1934162a4e0e6d1df85de869274e08eaf62cb221eb5e55434aedff9"
+        "result": "PASS; Node v24.19.0; exact PR144 checkout",
+        "indexHtmlSha256": "ffe6b0e88f4a16575949d55436d724f8aefa931fafa036e7bf01fa0212b5b97b",
+        "previewJsSha256": "91d73b51b23ec8319377acb1e3fd9ba8fd31ff272c861ac8c20cbf9b4fbe6781"
       },
       "host": {
-        "browser": "Chromium 151.0.7922.173, headless visual browser",
-        "input": "Playwright clicking/filling visible labelled controls; not physical input",
+        "browser": "Chromium 151.0.7922.173 headless visual browser in managed cloud workspace",
+        "origin": "http://127.0.0.1:8779; local-only preview server",
         "viewport": "1440x1000 CSS px; DPR 1",
-        "origin": "local-only HTTP at 127.0.0.1:8779; stopped after run",
-        "pageErrors": []
+        "fixture": "Memory-only planner preview; no Obsidian vault"
       },
-      "fixture": {
-        "kind": "fresh synthetic memory-only blank plan; no Obsidian vault or user data",
-        "reloadBoundary": "preview visibly states that reload/close discards all plans"
-      },
-      "visibleResults": [
-        "Entered exact unsubmitted plan name `  Hafen 日本語 ` in the visible Planname field.",
-        "Scene add retained exact input; selected model plan remained Unbenannter Plan.",
-        "Applied a scene titled Ankunft am Salztor with exact note; pending plan name remained exact and was not implicitly committed.",
-        "Discarded a dirty second-scene draft; draft fields cleared and pending plan name remained exact.",
-        "Applied a second scene titled Archiv; moved it above Ankunft am Salztor; visible order changed correctly and the pending name remained.",
-        "Selected Ankunft am Salztor; title/note context changed to that scene and the pending plan name remained exact.",
-        "Explicit Umbenennen committed the exact pending string, including leading/trailing spaces and Japanese characters, in the selected plan label.",
-        "Typing a different unsubmitted name then creating a new plan left the new plan blank/Unbenannter Plan; the prior explicitly named plan remained selectable. No text leaked into the new plan."
-      ],
+      "visibleResult": "After Enter on Entwurf übernehmen, the focused Apply button showed a visible blue outline immediately; one Tab moved the visible outline to Entwurf verwerfen.",
+      "evidence": "docs/reference/gm-cloud-manual-planner-pr144-focus-retest-20261011-01/README.md and evidence/*.png",
       "checks": [
-        "Visible UI sequence PASS for the scoped actions above; all expected field values/order/context matched.",
-        "No page errors.",
-        "Screenshot and preview hashes verified against their manifests."
+        "npm run next -- --task 69 --comments: PASS; candidate and recent issue inputs read",
+        "npm run context -- --area gm: PASS; existing gmProductTesting root inspected",
+        "node tools/manual-planner-preview/build.mjs: PASS",
+        "Visible Apply → focus → Tab: PASS"
       ],
-      "evidence": {
-        "repositoryPath": "docs/reference/gm-cloud-manual-planner-name-retest-20261011/",
-        "runNotes": "RUN-NOTES.txt",
-        "screenshots": "00-start.png through 10-create-new-plan.png",
-        "screenshotHashes": "SHA256SUMS.txt",
-        "previewHashes": "PREVIEW-SHA256SUMS.txt"
-      },
       "notDemonstrated": [
-        "Obsidian plugin installation or native host path.",
-        "Reload/close, Save, durable state, Fresh/Reopen or Recovery; preview is memory-only.",
-        "Campaign/Data storage authority or PR86.",
-        "Physical keyboard/mouse, 200% native zoom, product latency, user cards, broad planner review or overall acceptance."
+        "native Obsidian/vault",
+        "save/reload/reopen/recovery",
+        "physical input",
+        "200% zoom",
+        "full planner or accessibility approval",
+        "product latency"
       ],
       "changedFiles": [
         "checkpoint.json: gmProductTesting.currentRun and gmProductTesting.next only",
-        "docs/reference/gm-cloud-manual-planner-name-retest-20261011/*: raw screenshots and hash/run manifests"
-      ]
+        "docs/INDEX.md: evidence link",
+        "docs/reference/gm-cloud-manual-planner-pr144-focus-retest-20261011-01/README.md",
+        "docs/reference/gm-cloud-manual-planner-pr144-focus-retest-20261011-01/evidence/01-before-apply.png",
+        "docs/reference/gm-cloud-manual-planner-pr144-focus-retest-20261011-01/evidence/02-after-apply-focus.png",
+        "docs/reference/gm-cloud-manual-planner-pr144-focus-retest-20261011-01/evidence/03-after-tab.png"
+      ],
+      "previousCurrentRun": {
+        "id": "GM-UX-MANUAL-PLANNER-NAME-RETEST-20261011-01",
+        "status": "completed_bounded_visible_ui_pass",
+        "claim": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/69#issuecomment-6106563712",
+        "evidence": "docs/reference/gm-cloud-manual-planner-name-retest-20261011/README.md"
+      }
     },
     "executedUiRuns": 24,
     "observedFindings": [
@@ -13639,7 +13628,7 @@
       "state": "completed",
       "supersedes": "GM-UX-ACCESS; Slotanfrage gemäß Nutzerkorrektur aufgehoben"
     },
-    "next": "After this bounded #69 preview retest, no further planner replay without another relevant product delta. Resume the already-owned #127 midpoint rotation retest when the isolated Cloud Docker host is usable; durable Planner storage remains a separate City/Campaign input.",
+    "next": "City may consume the PR144 focus-indicator result; no further Planner replay without a relevant product delta. Resume the existing #127 midpoint rotation consumer test only when the separate isolated Cloud Obsidian host is usable; do not infer persistent Planner storage.",
     "automation": "Stündliche GM-Produkttests in eigener Cloud; keine Laptop-Slotfreigabe erforderlich.",
     "executionEnvironment": "Eigene Cloud-Umgebung, getrennt vom Laptop der Kollegen",
     "cloudHost": {
