@@ -80,36 +80,45 @@ belegt vier Baseline-FAIL und50/50 betroffene Managed/Vaultadapter-Hosttests PAS
 integrierte in0b6aa819; CI38115663534/38116230853 SUCCESS, Eltern/Baum/Blobs und
 fremde Wurzeln geprüft. DOM-/Modellschutz ist belegt; nativer IME-Guard bleibt offen.
 
-**H01 erhalten, Zustellung durch H02 eingegrenzt:**
-[H01-Rohquittung](docs/reference/atlas-detail-binding-d01/inspector-ime-save-h01.json)
-auf5f542ded/Shared0b6aa819 sah Komposition und Ctrl+S-keyup, keinen KeyS-keydown
-im Dokument. [Neue H02-Rohquittung](docs/reference/atlas-detail-binding-d01/inspector-ime-save-h02.json)
-auf64b6eb58/qualifiziertem Shared25e6155 nutzt denselben unveränderten
-Location-/Room-/AtlasEditor-Code, neu gebautes/installiertes Tripel und Spatial-V2
-im isolierten Obsidian1.14.4/Electron43.7.7.
-`keyDown` und `rawKeyDown` liefern beide einen vertrauenswürdigen komponierenden
-Ctrl+S-keydown mit TargetOrtsname am Window-Capture. Dort sind bereits
-`defaultPrevented=true` und `cancelBubble=true`; Document/Panel/Field sehen nur
-keyup. Ein früherer Window-Capture-Handler stoppt die Weiterleitung; seine
-Identität bleibt offen. Registrierter Electron-before-input-Observer erhielt
-keinen Callback, daraus folgt kein nativer Interceptorbefund.
-„H02 Ortsname 東京“ bleibt exakt pending, History0, Modelle/Kamera und alle acht
-Dateibytes vor/nach normalem Appende unverändert. Probeassertion/RunnerExit1
-bleiben erhalten; kein nativer Panelguard-PASS und kein Produkt-FAIL. Kein
-Kompositionsabschluss/bestätigter Save oder Room/Meta-Folgefall ausgeführt.
-App.quit normal, vier PIDs weg, keine Zwangstermination; frisch koordinierter
-Slot ausdrücklich zurückgegeben. Keine Handlerumgehung/Produktänderung.
+**H01/H02 unverändert erhalten:**
+[H01](docs/reference/atlas-detail-binding-d01/inspector-ime-save-h01.json)
+auf5f542ded/Shared0b6aa819 sah Komposition/keyup, keinen KeyS-keydown im Dokument.
+[H02](docs/reference/atlas-detail-binding-d01/inspector-ime-save-h02.json)
+auf64b6eb58/Shared25e6155 beobachtete beide CDP-Modi am Window-Capture bereits
+defaultPrevented/cancelBubble=true; Document/Panel/Field sahen nur keyup.
+Pflichtassertion/RunnerExit1 bleiben erhalten, kein nativer Guard-PASS oder
+Produkt-FAIL. Text/History0/alle8 Bytes und normales Appende bleiben belegt.
 
-**Nächster eigener Schritt:** Tatsächlich stoppenden Window-Handler passiv
-identifizieren oder geeigneten nativen IME-Eingang herstellen. Erst mit belegtem
-komponierenden Save-keydown am Panel dessen Guard und bestätigten Save beurteilen.
-Keine Handlerersetzung/-umgehung, gefälschten KeyboardEvents, unveränderte
-H01/H02-Wiederholung oder Produktfix ohne Pflichtbefund. Neuer lokaler GUI-Lauf
-benötigt neue ausdrückliche Slotabstimmung; keine allgemeine Reviewrunde.
+**H03 identifiziert den Hostcallback:**
+[Quellgebundener passiver Trace](docs/reference/atlas-detail-binding-d01/inspector-ime-handler-h03.json)
+auf697ff20d/qualifiziertem Shareddbcecc79, isoliertem Obsidian1.14.4/Electron43.7.7
+und Spatial-V2. Neuer sauberer Build/installiertes Tripel ist bytegleich zu H02.
+Drei vorhandene Window-Capture-Callbacks direkt enumeriert; Funktionsbreakpoints
+beobachten genau einen trusted komponierenden Ctrl+S mit TargetOrtsname.
+Vor Obsidian `e.onKeyEvent` aus `app://obsidian.md/app.js` sind beide Flags false;
+beim folgenden Atlas-Capture sind defaultPrevented/cancelBubble=true. Hostquelle
+delegiert an aktiven Window-Scope/handleKey und enthält den preventDefault-/
+stopPropagation-Zweig bei false-Rückgabe; diese innere Rückgabe wurde nicht
+separat gemessen. Tatsächlicher Callback/Quellhash und Eintrittsfolge sind belegt.
+Document/Panel/Field sehen weiterhin keinen keydown. Keine Handlerersetzung/
+-umgehung oder Produktänderung. „H03 Ortsname 東京“ exakt pending, History0,
+Modelle/Kamera und alle8 Bytes auch nach normalem app.quit unverändert.
+RunnerExit0 gilt nur Trace/Erhalt; nativer Panelguard/bestätigter Save bleiben
+offen. Vier App-PIDs weg, keine Zwangstermination, frisch koordinierter Slot
+ausdrücklich zurückgegeben. PR123 vor Host und qualifizierter PR131 vor
+Belegsicherung konsumiert; native Quelle bleibt697ff20d.
+
+**Nächster eigener Schritt:** Unterstützten Obsidian-View.scope-/Scope-Vertrag
+lesen und tatsächlichen bestätigten, nicht komponierenden Ctrl+S-Save am
+fokussierten Orts-Key prüfen. Erst ein konkreter Savebefund begründet einen
+Routingfix über diesen Hostvertrag. Keine weiteren unveränderten CDP-Varianten,
+Handlerumgehung/-ersetzung oder Produktfix allein aus dem verhinderten
+komponierenden Ereignis. R01-Guards/Vorbelege erhalten; jede weitere lokale GUI
+benötigt neue ausdrückliche Slotabstimmung. Keine allgemeine Reviewrunde.
 
 **Offen:** Room/Meta, physische IME, Copy/Discard/Recovery, äußeres Clipping,
 Gesamt-E2E sowie Original-/Großkarten-/Nutzervaultabnahme behalten getrennte
-Nachweise. Kein abhängiger Detailausbau. R01/H01/H02 und
+Nachweise. Kein abhängiger Detailausbau. R01/H01/H02/H03 und
 N04-Qualification/FreshReuse spiegeln genaue Quellen und Grenzen.
 
 ## Historische Planbasis und Lieferbelege
