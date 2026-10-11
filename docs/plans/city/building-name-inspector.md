@@ -61,7 +61,7 @@ Managed-/Vaultadaptergegenfälle FAIL vor/PASS nach Fix: Nameingabe bleibt am se
 Feld, keine History-/Dateiänderung; derselbe Shortcut nach Kompositionsende speichert
 den Namen mit genau einer Historywirkung. Nur City-Inspector geändert, kein neuer
 Save-/Historyvertrag. Typ/Build/Repo/Diff PASS; Vollsuite1019PASS/0FAIL/1bestehenderSkip.
-Enger unabhängiger Review des Kandidaten steht aus.
+PR124 ist nach engem unabhängigen Review integriert (Shared `10defd5`).
 Ein nativer IME-Nachtest ist damit noch nicht belegt.
 
 **Nächste Arbeit und Grenzen:** Nur direkter Save mit fokussiertem Namenfeld
@@ -70,6 +70,31 @@ Fresh-Process und Apply/Discard brauchen keine unveränderte Wiederholung.
 Weitere konkrete Citybedarfe oder unabhängige Projektarbeit können fortgesetzt
 werden. Physische Bedienung, breite Recovery und volle Stadtparität bleiben offen;
 dieser Weg ersetzt keine Gesamt-E2E-/Originalabnahme.
+
+## Arbeitsstand #127
+
+Stadt liefert den sichtbaren Consumer zum vorhandenen `set-building-pose`:
+Haus im gemeinsamen Atlas auswählen → 90° links/rechts drehen → Undo/Redo →
+nativer Save → neue Modellinstanz erhält Pose. CITY01/03-Hauskorrektur;
+kein neuer Kamera-, History-, City- oder Persistenzvertrag.
+[Issue127](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/127).
+Hex bestätigt keinen kollidierenden City-Claim; seine Orts-/Raum- und GUIarbeit
+bleibt eigenständig. Branch `city/building-rotation-inspector-20261011`.
+
+Zwei fehlende-Control-Gegenproben FAIL vor Implementierung. Drei gezielte
+Managed-/Vaultadapterfälle PASS; Vollsuite1026PASS/0FAIL/1bestehenderSkip,
+Typ/Build/Repo/Diff PASS. Haus105 mit Dungeonbindung und Haus106 mit Hof
+behalten vollständige Grundrisse, Position, Skalierung, Kennungen und alle
+fremden Dateien. Nur die Rotation und notwendige Campaign-Digests ändern sich.
+Je Drehung genau eine gemeinsame Historywirkung; Undo/Redo und native Speicherung,
+neue Repository-/Modellinstanz mit exakt gespeichertem Citydocument.
+Alte Buttons nach Render/Discard sind wirkungslos. Offene Namenseingabe blockiert
+Drehung mit sichtbarer Aufforderung, ohne Namen teilweise zu übernehmen.
+
+Minimaler aktueller Umfang sind Vierteldrehungen, keine beliebigen Winkel oder
+volle Haus-/Stadtparität. Enger unabhängiger Review und freie GM-Nutzung stehen aus.
+Die Modellwiederöffnung ist kein neuer Obsidianprozess oder GPU-/physischer Beleg.
+Keine eigene GUI; Laptopslot ist separat an Hex für dessen #80-IME-Lauf freigegeben.
 
 ## Inspector- und Fachaktionsbelege
 
