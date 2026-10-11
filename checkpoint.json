@@ -11326,7 +11326,26 @@
         "checkpoint.json (gmProductTesting root only; documentation branch)"
       ],
       "next": "Stadt consumes PASS at Issue #92 comment 6105037427. No more UI replay without a new City-relevant source/fix need.",
-      "postRunReport": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/92#issuecomment-6105037427"
+      "postRunReport": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/92#issuecomment-6105037427",
+      "sharedHeadAfterReport": "0b6e4355e478a2ad277e03dc2a3f2318e3189e34",
+      "sourceDiffAfterReport": {
+        "changedFiles": [
+          "ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md",
+          "ROADMAP-SALTMARCHER-REPLACEMENT.md",
+          "acceptance.json",
+          "checkpoint.json",
+          "docs/reference/atlas-detail-binding-d01/inspector-horizontal-fit-n04.json",
+          "docs/reference/atlas-detail-binding-d01/inspector-zoom-geometry-d01.json",
+          "src/features/world/world-notes.ts",
+          "src/ui/atlas-room-key-panel.ts",
+          "styles.css",
+          "tests/core/world-notes.test.ts",
+          "tests/world-notes-panel.entry.ts",
+          "tools/host/world-notes-native.cjs"
+        ],
+        "cityHouseEditorFilesChanged": false,
+        "note": "Die Bestätigung dieser neuen Shared-Änderungen war nicht Teil des bereits abgeschlossenen UI-Laufs. Resultat bleibt auf a4f20a5 gebunden; kein Replay."
+      }
     },
     "executedUiRuns": 21,
     "observedFindings": [
