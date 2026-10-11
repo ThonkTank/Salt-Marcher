@@ -11228,91 +11228,92 @@
   },
   "gmProductTesting": {
     "date": "2026-10-11",
-    "state": "gm_product_testing_partial; N04_bounded_visible_search_edit_save_reuse_pass; physical_fresh_process_external_clip_and_broad_gates_open",
+    "state": "gm_product_testing_partial; city_92_postsave_fresh_process_pass_and_pr117_apply_discard_keyboard_focus_pass; N04_fresh_process_open; physical_input_200_percent_zoom_recovery_and_broad_gates_open",
     "plan": "ROADMAP-GM-PRODUCT-TESTING-PLAN.md",
     "focus": "Längere GM-Endanwenderabläufe, häufige Aktionen, Bedienkosten und UI-Überladung; belegte Nacharbeiten beauftragen und nachprüfen.",
     "currentRun": {
-      "id": "GM-E2E01-ATLAS-INSPECTOR-N04-GM-CLOUD-RETEST-20261011-01",
-      "status": "completed_bounded_visible_search_edit_save_same_session_reuse_pass",
-      "owner": "Cloud-GM-Produkttester; support claim in Issue #80; Hex retains parent/product ownership",
-      "branch": "codex/gm-n04-retest-20261011 (documentation/evidence only)",
-      "issue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80",
-      "claim": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80#issuecomment-6105151600",
-      "scope": "Visible user path through the common location/room inspector in an isolated Cloud Obsidian vault: search, edit, save, return to the map, and reuse at 100% / 1024x800; separate layout check at 131% app zoom. No product edit or user data.",
-      "sharedProductCommit": "87ccdb2626c26622f15799f3af7faf05d9feee89",
-      "claimBase": "d12d2ee2874795be29d55b33fd4687a26ed16dcb",
-      "sourceAdvance": "Shared advanced after claim via PR112 World Notes delivery. Rebuilt exact 87ccdb2; Atlas feature/editor sources and e2e01-spatial-v2 fixture have no diff from d12d2ee. No stale d12d2ee bundle used for final UI sequence.",
-      "build": {
+      "id": "GM-CITY-HOUSE-NAME-POSTSAVE-FRESH-PROCESS-20261011-01 + GM-CITY-HOUSE-NAME-PR117-KEYBOARD-FOCUS-20261011-01",
+      "status": "completed_city_fresh_process_reuse_save_pass_and_pr117_apply_discard_keyboard_focus_pass",
+      "owner": "Cloud-GM-Produkttester; existing #92 support claim; City retains package/product ownership",
+      "branch": "codex/gm-city-postsave-focus-20261011 (documentation/evidence only)",
+      "issue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/92",
+      "claim": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/92#issuecomment-6104423993",
+      "scope": "Finish the existing #92 post-save fresh-process City name path once, then the explicitly handed-off narrow PR-117 keyboard Apply/Discard focus check. No repeated Undo/Redo sequence, no second general City path, no product edit.",
+      "cityProductCommit": "eaf6bd95564ab398eabe9b2c0ac046feec079f0f",
+      "cityBuild": {
         "command": "npm run build",
-        "result": "PASS; Node v24.19.0; dirty:false; sourceRevision exactly 87ccdb2626c26622f15799f3af7faf05d9feee89",
-        "installedTripletByteEqualBeforeVisibleReload": true,
-        "mainJsSha256": "2164be282b49bda3b56a9050d0d26888f7945271d51576e2a8de5109b4f9b0a0",
+        "result": "PASS; Node v24.19.0; dirty:false; exact sourceRevision eaf6bd95564ab398eabe9b2c0ac046feec079f0f; rebuilt after UI run to confirm triplet",
+        "installedTripletByteEqual": true,
+        "mainJsSha256": "46736ec62a71db260ddf3a78b66ddd15417e60cb8d3f796539b2d5b9b1693038",
         "stylesCssSha256": "df11f8352b61e45d3984d29e0136fc0225aaabe85c7b004a3b55eb0c6cc52934",
-        "manifestJsonSha256": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64",
-        "testSuite": "not run; no suite substituted for visible product interaction"
+        "manifestJsonSha256": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64"
+      },
+      "pr117": {
+        "request": "PR #117 / product commit 14729dc429d9699998284b1ee7a3bb8ee3ebc8a3; current Shared a4c2cb39aafdfb7abf5469e575a82e630ef41313",
+        "build": "npm run build PASS; Node v24.19.0; dirty:false; exact sourceRevision a4c2cb39aafdfb7abf5469e575a82e630ef41313",
+        "installedTripletByteEqual": true,
+        "mainJsSha256": "f3332ceac377a77fcdc359316bcba94217a6ca9d1e6bddbb2c932fed3373a953",
+        "stylesCssSha256": "df11f8352b61e45d3984d29e0136fc0225aaabe85c7b004a3b55eb0c6cc52934",
+        "manifestJsonSha256": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64"
       },
       "host": {
         "containerId": "e49e330d328c1e2d97e6f46a677e34f5f288c4dab7b41db242d3584e4ab66b33",
         "containerName": "gm-city-cloud-isolated-20261011",
         "app": "Obsidian 1.14.4 / Electron 43.7.7",
-        "processPid": 2159,
-        "profile": "/qa/gm-n04-profile",
-        "vault": "/dev/shm/gm-n04-vault",
-        "cdp": "http://127.0.0.1:9236",
-        "display": "own Xvfb :99, 1440x1000; app window and screenshots 1024x800",
-        "zoom131Viewport": "779x608 CSS px; devicePixelRatio 1.3145341873",
-        "input": "Visible mouse/keyboard via own Cloud CDP, not physical input"
+        "display": "own Xvfb :100, 1440x1000; visible app inner viewport 1024x800 CSS px; devicePixelRatio 1",
+        "cdp": "127.0.0.1:9236, forwarded to own container port 9240",
+        "cityProfile": "/qa/gm-city-postsave-reopen-profile-6105457026",
+        "cityVault": "/dev/shm/gm-city-postsave-reopen-vault-6105457026",
+        "initialCityProcessPid": 2654,
+        "freshCityProcessPid": 3313,
+        "focusProfile": "/dev/shm/gm-city-pr117-profile-6105507657",
+        "focusVault": "/dev/shm/gm-city-pr117-vault-6105507657",
+        "focusProcessPid": 3715,
+        "input": "Visible product UI actions via own Cloud Playwright/CDP; keyboard events synthesized, not physical device input"
       },
       "fixture": {
-        "source": "tests/fixtures/atlas-e2e-spatial-v2/input at shared 87ccdb2",
-        "sourceManifest": "docs/reference/gm-cloud-n04-20261011/FIXTURE-SHA256SUMS.txt",
-        "sourceManifestSha256": "7f376b2524b10df07b01a0087a42dea49865fa096d82e223c3c75a06349aa625",
-        "sourceFixtureDiffFromClaimBase": "none"
+        "source": "tests/fixtures/atlas-e2e-spatial-v2/input at eaf6bd95564ab398eabe9b2c0ac046feec079f0f",
+        "sourceManifestSha256": "23735bb6c95107b7dec93ffa56ec66405a0f4fe0ec3822fc0476d90d2920188d",
+        "focusVault": "separate copy of this own synthetic City test state"
       },
-      "visibleResults": [
-        "Opened the loaded shared Atlas and visibly selected Torheim; at 100% the location name, type and description fields fit the narrow inspector without horizontal clipping.",
-        "At 131% the inspector remained in the viewport; the existing Dungeon action wrapped onto two lines. Vertical scroll was still needed and the map viewing area was reduced. Search at 131% was not separately exercised.",
-        "At 100%, scrolled to Ziele in Torheim, typed Torraum, saw Raum 1: Torraum and Raumabschnitt: Torraum, and clicked the room row to open Room-Key in the same Atlas tab.",
-        "Edited the synthetic Raumtext 1, clicked Übernehmen, then Atlas speichern; returned using Zur Karte, selected Torheim again, and reused the still-filtered Torraum result. The Room-Key reopened in the same session with the edited text visible."
+      "cityVisibleResults": [
+        "Closed the initial own Obsidian process via CDP Browser.close; its PID disappeared without force-kill. A fresh app PID opened the same profile/vault. The detached launcher did not provide a recorded exit code.",
+        "After fresh process, clicked visible Torheim marker; filtered the visible target list with “Roter Anker”; the exact saved House B row appeared. Opening it and clicking the house footprint showed the previously saved exact name in the visible House inspector.",
+        "Changed the name once to “Haus B — Roter Anker (Post-Save-Reopen 2026-10-11; erneut verwendet)”, clicked visible Hausname übernehmen, then visible Atlas speichern. The UI showed Gespeichert.",
+        "City semantic oracle against the source fixture found only buildings[1].name changed; IDs 105/106 and all building geometry including House B courtyard remained unchanged. Atlas, both terrain files, Dungeon and both Locations match source hashes; Campaign digests/revisions updated with the City payload."
       ],
-      "observedFriction": "The Ziel suchen field and result rows require vertical scrolling through the long inspector. At 131% the map is compressed and the inspector content extends below the viewport; action text wraps horizontally. Vertical scrolling remains an observation, not a new repair request, because it is an explicit N04 limit.",
-      "dataOracle": {
-        "dungeonPath": "Dungeons/E2E-01-Testdungeon/Karte.dungeon",
-        "dungeonSha256Before": "c6fe58d1b5de5c707000a39b0b8da2883d31867b7d8bf347f63830021e2df742",
-        "dungeonSha256After": "39b6896fef75f73fa6725d4792b07aca3de682d94c678353165fcf5e10286c9e",
-        "campaignPath": "Kampagnen/SaltMarcher/E2E-01-Atlas-Save.campaign.json",
-        "campaignSha256Before": "e66a9c557016357d3dea7491fa7110f9db0eeccf6fed5d1f9510885f6990a6df",
-        "campaignSha256After": "a2fd470149a9d9f546d6382dd67e4f881764c86351122345f0700aa680146366",
-        "unchangedFixturePayloads": {
-          "overworld": "76e0a82a939f5c2b16c08f153cca827e4efd8d5920915c997ae2a3fc6d16de07",
-          "terrainMinus1": "4e09dbcf59e5f81a35f0c72c44511b35073696cf079613f5d001baceeb59e358",
-          "terrain0": "c32ba3548aa7236e573e145ec0e3c6e75326cc6cd47134a19c2230d2d790f2f2",
-          "location11": "ac888059f997b3c0f697e2152c9d59375543d6d2004356f1eef482fd4ec27ab7",
-          "location12": "57b455592dc30e0ab9e3286a56f27a408453b7a2a3b617eee03ea089ed963b5b",
-          "city100": "d7ac830f0b1a1b2e20a396a8515cf6afa0b777e46ee39f0a5b39a75bd8a6184c"
-        },
-        "oracle": "Fixture SHA check found only the expected Dungeon and Campaign payload hashes changed in the isolated vault; Atlas, both terrain files, both Locations, City, and source fixture remained byte-identical."
-      },
-      "evidence": "docs/reference/gm-cloud-n04-20261011/ (original visible-host screenshots plus SHA manifests and this result)",
-      "checks": "Exact Shared npm run build PASS; installed triplet hash equality PASS before visible reload; visible Reload app without saving, search, edit, Apply, Atlas speichern, Zur Karte, location reselection and same-session Room-Key reuse observed. npm run check:repo PASS; source-fixture and screenshot SHA manifests PASS; git diff --check PASS. No test suite run.",
-      "notProven": [
-        "Search field and result activation at 131% zoom.",
-        "File close/reopen after the edit or a fresh Obsidian process; reuse was in the same app session after explicit save.",
-        "Physical input, product latency, external window clipping, original-map fidelity, large maps, recovery, player projection, or broad Atlas/Dungeon/E2E approval."
+      "focusVisibleResults": [
+        "On the separate copy with the exact PR-117 triplet installed, focused the visible Gebäudename field, replaced text by keyboard, pressed Tab to Hausname übernehmen and Enter. After rerender, visible focus ring remained on the corresponding replacement Apply button.",
+        "Typed a second draft, used Tab/Tab to Namenseingabe verwerfen and Enter. The replacement Discard button retained visible focus; field reverted to the prior applied value. The next Tab focused the visible Atlas speichern inspector button.",
+        "City, Atlas and Campaign file hashes in the focus-only test copy were unchanged before/after; no persistence action occurred."
+      ],
+      "dataOracle": "docs/reference/gm-city-postsave-reopen-20261011/DATA-ORACLE.txt",
+      "evidence": "docs/reference/gm-city-postsave-reopen-20261011/README.md and screenshots/; screenshot SHA manifest included",
+      "checks": [
+        "npm run build at exact City source eaf6bd95564ab398eabe9b2c0ac046feec079f0f: PASS, dirty:false; installed triplet equality PASS",
+        "npm run build at exact PR-117 Shared source a4c2cb39aafdfb7abf5469e575a82e630ef41313: PASS, dirty:false; installed triplet equality PASS",
+        "Visible fresh-process City reuse/edit/save path PASS for this bounded scope",
+        "Visible PR-117 Apply/Discard keyboard focus continuity PASS for this bounded scope",
+        "npm run check:repo and git diff --check: run before publication",
+        "No automated product test suite run; tests were not substituted for UI use"
+      ],
+      "notDemonstrated": [
+        "Direct Save field-focus case from PR #117",
+        "Physical keyboard/mouse, 200% zoom, product latency, broad UX, external clipping, recovery, PlayerProjection, original-map parity or broad Atlas/Dungeon/E2E acceptance",
+        "PR-117 focus behavior after a separate fresh process; the separate City persistence fresh-process check is bound to eaf6bd9"
       ],
       "changedFiles": [
         "checkpoint.json: gmProductTesting root only",
-        "docs/INDEX.md: link to durable N04 evidence",
-        "docs/reference/gm-cloud-n04-20261011/README.md",
-        "docs/reference/gm-cloud-n04-20261011/FIXTURE-SHA256SUMS.txt",
-        "docs/reference/gm-cloud-n04-20261011/SHA256SUMS.txt",
-        "docs/reference/gm-cloud-n04-20261011/screenshots/*.png"
+        "docs/INDEX.md: link to durable #92 QA evidence",
+        "docs/reference/gm-city-postsave-reopen-20261011/README.md",
+        "docs/reference/gm-city-postsave-reopen-20261011/BUILD-MANIFEST.md",
+        "docs/reference/gm-city-postsave-reopen-20261011/DATA-ORACLE.txt",
+        "docs/reference/gm-city-postsave-reopen-20261011/screenshots/*.png and SHA256SUMS.txt"
       ],
-      "next": "Send this bounded result and durable screenshot path to Hex at Issue #80; no additional GM run without a new relevant input.",
-      "sharedHeadAtReport": "a93fd4f7d4e61a327744cece448a0fbc30e94773",
-      "sourceDiffAfterTest": "PR113 moved Shared from tested 87ccdb2 to a93fd4f; only City acceptance.json, checkpoint.json and docs/plans/city/building-name-inspector.md changed. Atlas feature/editor/style files are unchanged."
+      "next": "City hat den abgeschlossenen Fresh-Process-/PR-117-Befund in #92 konsumierbar erhalten. Der separate #80-N04-Fresh-Process-Support bleibt bei Hex; vor Wiederaufnahme Claims/Eingang am bestehenden #80 prüfen, kein City-Replay ohne Produktpfadänderung.",
+      "reportedToIssue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/92#issuecomment-6105664357"
     },
-    "executedUiRuns": 22,
+    "executedUiRuns": 24,
     "observedFindings": [
       {
         "id": "GM-UX-001",
@@ -11480,7 +11481,7 @@
       "state": "completed",
       "supersedes": "GM-UX-ACCESS; Slotanfrage gemäß Nutzerkorrektur aufgehoben"
     },
-    "next": "Hex consumes the bounded N04 GM result at Issue #80. Same-session save/reuse is demonstrated; post-edit close/reopen, fresh process, physical input, external clipping and broad gates remain separate.",
+    "next": "Bei nächster passender Ausführung ausschließlich den bestehenden #80-N04-Fresh-Process-Support mit Hex als Parentowner fortsetzen, falls Claim/Eingang weiterhin frei und gültig sind; keine City-Wiederholung ohne relevanten Produktpfadwechsel.",
     "automation": "Stündliche GM-Produkttests in eigener Cloud; keine Laptop-Slotfreigabe erforderlich.",
     "executionEnvironment": "Eigene Cloud-Umgebung, getrennt vom Laptop der Kollegen",
     "cloudHost": {

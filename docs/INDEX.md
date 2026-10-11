@@ -41,3 +41,4 @@ Große native Rohbelege liegen häufig auf dem Rechner des Prüfers. Ein histori
 - Manuelle GM-Sessionplanung: [Implementierung und Campaign-Speicheranschluss](plans/campaign/manual-session-planner.md) zu #69.
 
 - Stadt-Hauskorrektur: [Gebäudenamen im gemeinsamen Atlas](plans/city/building-name-inspector.md) zu #92; [H02 native Rollback-/Retrybelege](reference/city-building-name-h02/receipt.json).
+- Eigener Cloud-GM-Nachtest #92: [City-Hausname nach frischem Obsidian-Prozess wiederfinden/erneut speichern und enger PR-117-Tastaturfokus](reference/gm-city-postsave-reopen-20261011/README.md), mit exakten Buildtripeln, Datenoracle und Screenshots.
