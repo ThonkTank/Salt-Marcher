@@ -28,21 +28,26 @@ kontrollierten nativen Citywrite-/Manifestfehler, vollständigen Rollback,
 sichtbaren Retry ohne weitere Historywirkung und echten frischen Prozess.
 Es ist kein Nachweis für Hex' später integrierte N03-Scrollkorrektur.
 
-**Jetzt fehlender Anschluss:** [freier Cloud-GM-Test](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/92#issuecomment-6104519136)
-unter bestehendem Claim GM-CITY-HOUSE-NAME-CLOUD-UI-RETEST-20261011-01. Eine
-uneindeutige Zuordnung von CDP-Ziel und sichtbarem Display blockierte den
-Nutzerlauf vor Cityeingabe. Cloud-GM klärt/repariert seinen eigenen isolierten
-Host; keine fremden Fenster schließen oder den Nutzervault verwenden.
-Danach einmal auf tatsächlich gebautem aktuellem Shared: Haus auffinden,
-Namen ändern, gemeinsames Undo/Redo, direkt speichern und wiederverwenden;
-[City und N03-Feldauffindbarkeit gemeinsam prüfen](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/92#issuecomment-6104526231).
-Stadt konsumiert den konkreten Citybefund, Hex erhält dessen #80-Konsequenz.
-Keine zweite parallel laufende Atlas-/GM-Probe.
+**Aktueller Befund und Korrektur:** Der [freie Cloud-GM-Lauf](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/92#issuecomment-6104735161)
+ist nach eigener Hostreparatur partial: Cityname/Undo/Redo/Save/Wiederverwendung
+auf 1d8c7ffc bestanden, nach In-App-Reload auf cf8d3c1 Save-Kollision reproduziert.
+N03-Beobachtungen bleiben an ihre jeweilige Quelle gebunden und bei Hex.
 
-**Offen:** freie GM-Abnahme, physische Bedienung und breite Recovery-/Gesamtparität.
-Der Markerüberlappungsbefund beim Einstiegszoom bleibt ein konkreter
-Auffindbarkeitseingang; Producerzoom ist keine freie GM-Abnahme. Bei unverändertem
-Hostblock nur kompatible unabhängige Arbeit, keine erneuten Receipt-/Reviewpakete.
+Stadt reproduziert die Kollision ohne GPU über den echten Managed-Mount und
+native Vaultadapter: Name speichern → Modell neu öffnen → Hausname übernehmen →
+Undo/Redo bei offenem Inspector → neuen Namen direkt speichern. Vor Fix dieselbe
+CityDraft-Fehlermeldung; nach Fix erfolgreich. AtlasHistory.notify pinnt seine
+Empfänger zu Beginn. Ein beim Rendern des bereits übernommenen Zustands erzeugter
+Draft erhält nicht mehr rückwirkend das gerade abgeschlossene Ereignis; inzwischen
+abgemeldete Listener werden ausgelassen. Bestehender ABA-/Stale-/Contextschutz bleibt.
+Fünf City-Inspectorfälle PASS; exakte Citybytes, fremde Dateien, Kamera, zwei
+Historyschritte und entfernte Draft-/Journaldateien geprüft.
+
+**Nächster Consumer:** enger unabhängiger History-/Regressionreview des Kandidaten
+city/building-name-reload-save-20261011, dann gezielter Cloud-GM-Nachtest des
+fehlgeschlagenen City-Schritts. Kein wiederholter N03-/H01-/H02-Lauf. Der neue
+Modellreopen-Test ist kein App-Reload oder frischer Obsidian-Prozess.
+Physische Bedienung, breite Recovery und volle Stadtparität bleiben offen.
 
 ## Inspector- und Fachaktionsbelege
 
@@ -88,8 +93,8 @@ ersetzt; Picking und echter Prozess-Neustart sind damit nicht qualifiziert.
 
 ## Verbleibende Umsetzung und Abnahme
 
-1. Cloud-GM schließt den konkreten Hostblock und prüft den oben beschriebenen gemeinsamen Nutzerweg.
-2. Stadt behebt neue tatsächliche Citybefunde im bestehenden Paket.
+1. Unabhängigen Review der Notify-/City-Regression konsumieren.
+2. Cloud-GM prüft den konkreten City-Savebefund nach dem Fix gezielt nach.
 3. Physische und breite Recoveryabnahme nach dem Fachvertrag bleiben eigenständige offene Grenzen.
 
 DOM-/Repository-/Modellreopen-Belege sind keine GPU-, native GUI-/Prozess-,

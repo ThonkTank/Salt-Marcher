@@ -1564,3 +1564,40 @@ test('City house Save rolls back a won City write on manifest failure and retrie
   }
   await view.onUnloadFile(); services.close();
 });
+
+
+test('City house stays editable after saved model reopen and visible Undo/Redo with inspector open', async () => {
+  const f = await fixture(true), path = `Städte/${uuid(100)}.city`, name = 'Haus B — Roter Anker';
+  await clickHouse(f, uuid(106));
+  f.input('[aria-label="Gebäudename"]', name);
+  f.click(f.content.querySelector<HTMLElement>('[aria-label="Atlas speichern"]')!);
+  await f.editor()!.flush();
+  assert.equal(active(f).repository.dirty, false);
+  await f.view.onUnloadFile();
+  await f.view.onLoadFile(f.vault.files.get(aPath)!);
+  const source = await clickHouse(f, uuid(106)), state = active(f), editor = f.editor()!,
+    original = source.read(), before = new Map(f.vault.bytes), camera = structuredClone(editor.renderer.camera);
+  assert.equal(f.content.querySelector<HTMLTextAreaElement>('[aria-label="Gebäudename"]')!.value, name);
+  assert.equal(state.history.undoDepth, 0);
+  f.input('[aria-label="Gebäudename"]', 'Probe nach Reload');
+  f.click([...f.content.querySelectorAll<HTMLElement>('.dn-atlas-city-building button')]
+    .find(b => b.textContent === 'Hausname übernehmen')!);
+  f.click(f.content.querySelector<HTMLElement>('[aria-label="Atlasänderung rückgängig"]')!);
+  await editor.flush();
+  f.click(f.content.querySelector<HTMLElement>('[aria-label="Atlasänderung wiederholen"]')!);
+  await editor.flush();
+  const finalName = '  Neuer Hafen\n日本語\t  ';
+  f.input('[aria-label="Gebäudename"]', finalName);
+  f.click(f.content.querySelector<HTMLElement>('[aria-label="Atlas speichern"]')!);
+  await editor.flush();
+  const expected = { ...original, buildings: original.buildings.map(b => b.id === uuid(106) ? { ...b, name: finalName } : b) };
+  assert.equal(state.repository.dirty, false, f.content.textContent ?? '');
+  assert.equal(state.history.undoDepth, 2);
+  assert.equal(f.vault.bytes.get(path), serializeCityDocument(expected));
+  assert.deepEqual(editor.renderer.camera, camera);
+  for (const [key, raw] of before) if (key !== path && key !== seed.campaign.path)
+    assert.equal(f.vault.bytes.get(key), raw, key);
+  assert.equal(f.vault.bytes.has(aPath + '.draft'), false);
+  assert.equal(f.vault.bytes.has(aPath + '.journal'), false);
+  await f.close();
+});
