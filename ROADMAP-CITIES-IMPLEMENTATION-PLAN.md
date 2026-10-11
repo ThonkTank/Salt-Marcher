@@ -42,6 +42,8 @@ Die jeweiligen exakten `sourceUrl`, beobachteten Zeiten, Originalbelege und `gap
 
 Die vorhandenen Modell-, Codec-, History-, Draft-, Gesture- und Rendererbausteine sind im Atlas integriert; das gemeinsame Gebäudeobjekt und die vollständigen Arbeitspakete oben sind damit nicht abgeschlossen. Die technischen Verträge der vorhandenen Bausteine stehen in den folgenden Abschnitten. Sichtbare Gebäudenamen und Hausrotation sowie die begrenzten Save-/Frischprozessbelege sind unter [Gebäudename und Hausrotation](#gebäudename-und-hausrotation) aufgeführt. Die [Atlasübersicht](ROADMAP-HEX-ATLAS.md#atlas-auf-einen-blick) führt aktuelle Kandidaten und Lücken; vorhandene Anschlüsse sind keine vollständige CITY- oder Originalabnahme.
 
+Die bestehenden Fähigkeiten `CO-COK-0010` (CITY-07) und `CO-WAT-0011` (CITY-02/08) erhalten ihren konkreten Bibliotheks-/Vorgabenablauf ausschließlich bei den [zentralen Atlasaktionen](ROADMAP-HEX-ATLAS.md#aktionen-am-ausgewählten-objekt). Ihre offenen Originalwirkungen und Versionsfragen bleiben im vorhandenen Inventar; diese Planergänzung vergibt keine CTY-/CO-Freigabe.
+
 ## Drei Referenzen und bisher zusätzlich fehlende Fähigkeiten
 
 Stand 09.10.2026, offizielle Dokumentation gelesen, aktuelle Laufversionen noch nicht direkt beobachtet:

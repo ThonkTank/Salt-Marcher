@@ -239,8 +239,9 @@ Marker, ein isolierter CityRenderer oder ein Dungeoneditor allein genügt nicht.
    bleibt verpflichtend, auch wenn der erste gemeinsame Weg funktioniert.
 4. Zusätzlichen Dungeonumfang im selben Raum anschließen: [3D-Volumes →
    Room-Lifecycle → Paths/Passages](docs/plans/dungeon/smr04-spatial-coverage.md),
-   Graph-Entwurf/geschützte Vorschau, Attributvererbung/Templates/Beschreibungen,
-   Trap-Trigger/Charges/Reset und Dokument-/Paketausgabe. Reise, Playeranzeige
+   [konkrete Graph-, Key-, Feature-, Vorlagen- und Verwaltungsaktionen](ROADMAP-HEX-ATLAS.md#aktionen-am-ausgewählten-objekt),
+   Attributvererbung/Beschreibungen, Trap-Trigger/Charges/Reset und
+   Dokument-/Paketausgabe. Reise, Playeranzeige
    und Autonomy konsumieren bestätigte Raum-/Passage-/Runtimefakten; fehlende
    Schema-/Transferentscheidungen aus #44 bleiben offen.
 
