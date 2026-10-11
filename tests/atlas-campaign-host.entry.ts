@@ -1713,3 +1713,75 @@ for (const kind of ['location', 'room'] as const) for (const modifier of ['ctrlK
     } finally { await f.close(); }
   });
 }
+
+for (const id of [uuid(105), uuid(106)]) {
+  test(`City inspector rotates house ${id} with shared History and native model reopen`, async () => {
+    const f = await fixture(true);
+    try {
+      const source = await clickHouse(f, id), before = source.read(), state = active(f),
+        depth = state.history.undoDepth, bytes = new Map(f.vault.bytes),
+        camera = structuredClone(f.editor()!.renderer.camera),
+        right = [...f.content.querySelectorAll<HTMLElement>('.dn-atlas-city-building button')]
+          .find(b => b.textContent === '90° rechts drehen');
+      assert.ok(right, 'selected house needs a visible rotation control');
+      f.click(right);
+      const expected = { ...before, buildings: before.buildings.map(b => b.id === id
+        ? { ...b, rotationRadians: b.rotationRadians + Math.PI / 2 } : b) };
+      assert.deepEqual(source.read(), expected);
+      assert.equal(state.history.undoDepth, depth + 1);
+      assert.deepEqual(f.editor()!.renderer.camera, camera);
+      f.click(right); // detached callback cannot rotate the new draft again
+      assert.deepEqual(source.read(), expected);
+      assert.equal(state.history.undoDepth, depth + 1);
+      f.click(f.content.querySelector<HTMLElement>('[aria-label="Atlasänderung rückgängig"]')!);
+      await (f.editor() as any).work;
+      assert.deepEqual(source.read(), before);
+      f.click(f.content.querySelector<HTMLElement>('[aria-label="Atlasänderung wiederholen"]')!);
+      await (f.editor() as any).work;
+      assert.deepEqual(source.read(), expected);
+      f.click(f.content.querySelector<HTMLElement>('[aria-label="Atlas speichern"]')!);
+      await (f.editor() as any).work;
+      const path = `Städte/${uuid(100)}.city`;
+      assert.equal(f.vault.bytes.get(path), serializeCityDocument(expected));
+      for (const [p, raw] of bytes) if (p !== path && p !== seed.campaign.path) assert.equal(f.vault.bytes.get(p), raw, p);
+      await f.close();
+      const app = { document: f.document, vault: f.vault } as any,
+        services = atlasCampaignServices(new VaultCampaignRuntimeStorage(app), sha),
+        view = new AtlasView({ app, contentEl: f.content, openFile: async () => {} } as any, services);
+      try {
+        await view.onLoadFile(f.vault.files.get(aPath)!);
+        const fresh = ((view as any).campaignHost as AtlasCampaignHost).state;
+        assert.equal(fresh.kind, 'active');
+        if (fresh.kind === 'active') {
+          await fresh.repository.ensureDetail('city', uuid(100));
+          assert.notEqual(fresh.repository, state.repository);
+          assert.deepEqual((fresh.repository.detail('city', uuid(100)) as CitySource).read(), expected);
+        }
+      } finally { await view.onUnloadFile(); services.close(); }
+    } finally { await f.close(); }
+  });
+}
+
+test('City rotation retains a pending name, rejects detached actions and turns left after explicit discard', async () => {
+  const f = await fixture(true);
+  try {
+    const source = await clickHouse(f, uuid(106)), before = source.read(), depth = active(f).history.undoDepth,
+      bytes = new Map(f.vault.bytes), input = f.input('[aria-label="Gebäudename"]', 'Ungesicherter Name');
+    const button = (name: string) => [...f.content.querySelectorAll<HTMLElement>('.dn-atlas-city-building button')]
+      .find(b => b.textContent === name)!;
+    const oldLeft = button('90° links drehen');
+    f.click(oldLeft);
+    assert.deepEqual(source.read(), before);
+    assert.deepEqual(f.vault.bytes, bytes);
+    assert.equal(active(f).history.undoDepth, depth);
+    assert.equal(input.value, 'Ungesicherter Name');
+    assert.equal(f.editor()!.pendingKey, true);
+    assert.match(f.content.textContent!, /Hausname zuerst übernehmen oder verwerfen/);
+    f.click(button('Namenseingabe verwerfen'));
+    f.click(oldLeft);
+    assert.deepEqual(source.read(), before);
+    f.click(button('90° links drehen'));
+    assert.equal(source.read().buildings.find(b => b.id === uuid(106))!.rotationRadians, -Math.PI / 2);
+    assert.equal(active(f).history.undoDepth, depth + 1);
+  } finally { await f.close(); }
+});
