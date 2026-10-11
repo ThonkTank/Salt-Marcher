@@ -917,39 +917,37 @@
   "hexAtlasExecution": {
     "scope": "HEX-00 bis HEX-28 und sämtliche eingeordneten CITY-00 bis CITY-09 vollständig",
     "phase": "HEX-04",
-    "state": "independent_H02_raw_integrity_save_fresh_and_process_PASS_room_image_visibility_limited_GM_pending",
+    "state": "source_bound_GM_N02_consumed_scroll_and_zoom_findings_current_Shared_composition_open",
     "plan": "ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md",
     "currentRun": {
-      "id": "E2E-01-HEX04-H02-RAW-R01-CONSUMED",
-      "kind": "bounded_independent_raw_review_consumption_and_statement_correction",
+      "id": "E2E-01-HEX04-INSPECTOR-N02-GM-CONSUMED",
+      "kind": "bounded_delivered_GM_result_consumption_and_source_diagnosis",
       "owner": "Hex",
       "issue": 80,
       "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
       "e2e01UserLine": 13,
-      "state": "independent_H02_raw_integrity_save_fresh_and_process_PASS_room_image_visibility_limited_GM_pending",
-      "sourceCommit": "efe573ac1ec86eb905dc6197d7c063269fdf1398",
-      "sharedInput": "efe573ac1ec86eb905dc6197d7c063269fdf1398",
-      "record": "checkpoint.hexAtlasExecution.dungeonAtLocationInspectorNativeH02",
-      "reviewUrl": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80#issuecomment-6104135982",
+      "state": "source_bound_GM_N02_consumed_scroll_and_zoom_findings_current_Shared_composition_open",
+      "sourceCommit": "0bebb85b562f0996c74b772aad311dc3a9aac047",
+      "sharedInput": "0bebb85b562f0996c74b772aad311dc3a9aac047",
+      "record": "checkpoint.hexAtlasExecution.dungeonAtLocationInspectorGmN02Consumption",
+      "reportUrl": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80#issuecomment-6104260884",
       "guiUsed": false,
       "productEdited": false,
       "phaseApproval": false,
-      "finishedAt": "2026-10-11T01:22:18.595642+00:00",
-      "publicationPullRequest": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/96"
+      "finishedAt": "2026-10-11T01:49:52.254551+00:00"
     },
     "nextRun": {
-      "id": "E2E-01-HEX04-INSPECTOR-N02-GM-CONSUMPTION",
-      "kind": "consume_delivered_GM_repair_retest_or_required_finding",
+      "id": "E2E-01-HEX04-INSPECTOR-DISCOVERABILITY-N03",
+      "kind": "repair_delivered_GM_scroll_and_narrow_layout_findings_in_existing_package",
       "owner": "Hex",
       "issue": 80,
       "e2eIssue": 12,
       "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
       "e2e01UserLine": 13,
-      "input": "checkpoint.hexAtlasExecution.dungeonAtLocationInspectorNativeH02",
-      "sourceCommit": "bd2a0ada903b414eb46577ec5451f79ca885770d",
-      "sharedInput": "efe573ac1ec86eb905dc6197d7c063269fdf1398",
+      "input": "checkpoint.hexAtlasExecution.dungeonAtLocationInspectorGmN02Consumption",
+      "sharedInput": "0bebb85b562f0996c74b772aad311dc3a9aac047",
       "fixtureVersion": "e2e01-spatial-v2",
-      "focus": "Cloud-GM retains the claimed isolated N02 repair retest and may observe scrolling and Room field discoverability through its ordinary free user flow. Hex consumes delivered GM findings at issue80. The local raw access gap is closed by Stadt RAW-R01; raw integrity and saved/fresh text are qualified, full Room name/prose visibility is not image-proven. No new producer GUI or general review solely for this metadata correction.",
+      "focus": "Repair the existing shared inspector in #80: expose the newly selected Key without carrying unrelated dock scroll; preserve scroll during same-target redraws and preserve pending drafts, camera/context/history/IDs. Investigate and constrain narrow enlarged layout based on GM-N02-02. Use current integrated City/Hex source, focused regressions and source-bound independent review; targeted free GM retest after delivery. No dependent detail expansion.",
       "dependentExpansionAllowed": false,
       "guiUsedByHex": false,
       "slotRequiredBeforeAnyNewLocalGui": true
@@ -7204,6 +7202,102 @@
         "productOrCodecQualification": false,
         "fullE2E": false
       }
+    },
+    "dungeonAtLocationInspectorGmN02Consumption": {
+      "id": "E2E-01-HEX04-INSPECTOR-N02-GM-CONSUMED",
+      "owner": "Hex",
+      "issue": 80,
+      "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
+      "e2e01UserLine": 13,
+      "state": "source_bound_GM_N02_consumed_scroll_and_zoom_findings_current_Shared_composition_open",
+      "consumerSharedInput": "0bebb85b562f0996c74b772aad311dc3a9aac047",
+      "producer": {
+        "role": "Cloud-GM-Produkttester",
+        "claim": "GM-E2E01-ATLAS-DETAIL-INSPECTOR-N02-GM-CLOUD-RETEST-20261011-01",
+        "reportUrl": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80#issuecomment-6104260884",
+        "checkpointCommit": "332e8ae4d62134ad7ac830cfed51b310ac5fc9d0",
+        "publishedBranchHead": "3ecc64914906d90bf06ca7da0ad339d600f4dbfb",
+        "reportAndOwnCheckpointReadDirectly": true
+      },
+      "testedBuild": {
+        "sourceRevision": "ca290326a35bb792c22ef8f02e215a3dd9ef121d",
+        "host": "Own isolated Cloud Obsidian1.14.4; separate profile/test vault",
+        "node": "v22.23.3",
+        "viewport": "1024x800 CSS px / DPR1; baseline UI zoom100%",
+        "fixtureVersion": "e2e01-spatial-v2",
+        "fixture": "tests/fixtures/atlas-e2e-spatial-v2/manifest.json",
+        "fixtureManifestSha256": "23735bb6c95107b7dec93ffa56ec66405a0f4fe0ec3822fc0476d90d2920188d",
+        "installedTripletSha256": {
+          "main.js": "f5c3b5a17e0c6765b279a164ead99453a3feb6c5b6d4b6aa1849866b06a454e9",
+          "styles.css": "93b65fe1a695acd58aea7360a18b9e9b16d1df7f14a3e3e4dea5a3300cbbed7e",
+          "manifest.json": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64"
+        }
+      },
+      "reportedResult": "Bounded free Cloud-GM flow PASS on ca290: ordinary file-tree Atlas entry, existing Location/Room Key; visible Zur Karte, Escape from focused Room text and Apply; exact Undo/Redo; Save and same-process editor-tab close/reopen retained text. Atlas, City, Location bytes and all reported IDs retained. Automated CDP/Playwright input, not physical.",
+      "findings": [
+        {
+          "id": "GM-N02-01",
+          "scope": "Location-to-Room target switch and field discoverability",
+          "observed": "Searching and choosing a detail target requires scrolling. The shared dock retains that scroll position after switching to Room, leaving its editor above the visible area until scrolling up.",
+          "currentSourceCorroboration": "AtlasEditor.syncLocations reuses one dn-atlas-location-dock across Location/Room/City. It changes visible panels without resetting scroll on semantic target change; no scroll reset exists in this editor. City PR93 preserves and extends this shared dock.",
+          "sourceFiles": [
+            "src/features/atlas/atlas-editor.ts:294",
+            "src/features/atlas/atlas-editor.ts:725"
+          ],
+          "consumer": "Hex #80",
+          "currentSharedGuiReproduced": false
+        },
+        {
+          "id": "GM-N02-02",
+          "scope": "Narrow window with UI enlargement",
+          "observed": "At131% UI zoom in the1024x800 Cloud window the inspector partly exceeded the viewport, even after hiding the left file pane; restored100%.",
+          "currentSourceCorroboration": "Atlas dock/body/viewport CSS is byte-identical to tested ca290. Root cause and current native geometry have not been independently established; inspect min-size/flex constraints with the targeted repair.",
+          "sourceFiles": [
+            "styles.css:1122",
+            "styles.css:1148",
+            "styles.css:1167"
+          ],
+          "consumer": "Hex #80",
+          "currentSharedGuiReproduced": false
+        }
+      ],
+      "currentSharedBoundary": {
+        "source": "0bebb85b562f0996c74b772aad311dc3a9aac047",
+        "priorCityMerge": "5c09e96ab050e72dd9ca0791939d0216e090a8ee",
+        "changedRelevantPathsSinceTest": [
+          "src/features/atlas/atlas-editor.ts",
+          "tests/atlas-campaign-host.entry.ts"
+        ],
+        "stylesUnchanged": true,
+        "locationAndRoomPanelsUnchanged": true,
+        "currentCityHexCompositionQualifiedByThisGmRun": false,
+        "earlierH02NotTransferred": true
+      },
+      "rawEvidence": {
+        "directory": "/workspace/scratch/gm-cloud-qa/E2E01-ATLAS-DETAIL-INSPECTOR-N02-GM-CLOUD-RETEST-20261011-01",
+        "producerReferences": [
+          "RUN-NOTES.md",
+          "evidence/baseline.json",
+          "evidence/after-state.json",
+          "evidence/installed-triplet.json",
+          "evidence/reportable/SHA256SUMS.txt"
+        ],
+        "consumerHasReadCloudRawFiles": false,
+        "consumerHasViewedCloudScreenshots": false
+      },
+      "limits": {
+        "freeGmObservationDeliveredForTestedSource": true,
+        "sameProcessTabReopenOnly": true,
+        "freshObsidianProcessInThisGmRun": false,
+        "consumerGuiExecution": false,
+        "physicalInput": false,
+        "originalParity": false,
+        "largeMap": false,
+        "userVaultInstallation": false,
+        "recoveryMatrix": false,
+        "fullE2E": false
+      },
+      "nextOwnContribution": "Repair the existing shared inspector in #80: expose the newly selected Key without carrying unrelated dock scroll; preserve scroll during same-target redraws and preserve pending drafts, camera/context/history/IDs. Investigate and constrain narrow enlarged layout based on GM-N02-02. Use current integrated City/Hex source, focused regressions and source-bound independent review; targeted free GM retest after delivery. No dependent detail expansion."
     }
   },
   "phase": "Phase 6: zweiter Nachbesserungslauf teilweise umgesetzt; fünf Restpositionen und unabhängiger Review offen",
