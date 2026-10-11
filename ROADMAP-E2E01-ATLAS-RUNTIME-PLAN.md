@@ -107,8 +107,8 @@ QA-FAIL/Erhaltungsnachweis. Historische Einzelreceipts bleiben unverändert.
 **Nächster Empfänger:** Hex korrigiert QA-Vollworld-Read im neu benannten Helper
 mit vorhandenem readonly `repository.spatialGraph.world()`/separatem SpatialState.
 Danach neu eingefrorenes Copy/Fresh-Paar auf neuem tatsächlichem R03-Abbild/neu
-koordiniertem Slot. Stadt besitzt den konkret bestätigten #151 GM-/Fresh-Slot;
-Hex wartet vor GUI auf ausdrückliche Rückgabe. Kein zusätzlicher Lifecycleclaim
+koordiniertem Slot. [Stadt hat #151 normal zurückgegeben](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6108220293);
+der nächste Hex-GUI-Lauf braucht neue Abstimmung. Kein zusätzlicher Lifecycleclaim
 oder erneuter allgemeiner Review; Parent #80 bleibt offen.
 
 **Offen:** Vollständiges natives Copy/Fresh, unterbrochene Save-/Copyjournale,

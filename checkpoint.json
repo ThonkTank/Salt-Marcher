@@ -1056,11 +1056,12 @@
       "e2e01UserLine": 13,
       "input": "acceptance.hexAtlas.requirements[30].dungeonAtLocationRoomDraftCopyC02",
       "pullRequest": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/157",
-      "focus": "Hex in existing #80/branch: correct only the QA full-world read in a newly named helper, preserve C01/C02 executed helpers/vaults/raw, then a newly coordinated Copy/Fresh pair on new actual R03 input. N02 code review consumed; no repeated general review or product repair from this QA mismatch. City owns new #151 local pair; Hex waits explicit return before any new GUI.",
+      "focus": "Hex in existing #80/branch: correct only the QA full-world read in a newly named helper, preserve C01/C02 executed helpers/vaults/raw, then a newly coordinated Copy/Fresh pair on new actual R03 input. N02 code review consumed; no repeated general review or product repair from this QA mismatch. City #151 local pair explicitly returned at #11/6108220293; any next Hex GUI still requires fresh explicit slot coordination.",
       "dependentExpansionAllowed": false,
       "futureLocalGuiRequiresNewExplicitSlot": true,
-      "mustWaitCity151ExplicitReturn": true,
-      "executedFailedC01C02HelpersAndVaultsRemainUnchanged": true
+      "mustWaitCity151ExplicitReturn": false,
+      "executedFailedC01C02HelpersAndVaultsRemainUnchanged": true,
+      "city151SlotReturnConsumed": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6108220293"
     },
     "review": {
       "run": "HEX-02-R02",
