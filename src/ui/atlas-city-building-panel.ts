@@ -33,6 +33,7 @@ export class AtlasCityBuildingPanel {
         if (event.key === "Escape") access.escape(event);
         event.stopPropagation();
         if (
+          !event.isComposing &&
           (event.ctrlKey || event.metaKey) &&
           event.key.toLowerCase() === "s"
         ) {

@@ -54,6 +54,16 @@ Drei Managed-DOM-Fokusgegenproben FAIL vor/PASS nach Fix, 1016PASS/0FAIL/1Skip;
 Typ/Build/Repo/Diff PASS. H01 bleibt an Produkt0315b13/Builda12b609 gebunden,
 H02 an Produkt73bfe22/Build1afac1d. Originalreceipts bleiben unverändert.
 
+**Aktueller IME-Save-Befund:** Strg/Cmd+S während laufender Textkomposition
+veröffentlichte den noch unbestätigten Gebäudenamen. Der City-Shortcut prüft jetzt
+wie Escape `isComposing`, ohne die IME-Taste umzulenken. Zwei tatsächliche
+Managed-/Vaultadaptergegenfälle FAIL vor/PASS nach Fix: Nameingabe bleibt am selben
+Feld, keine History-/Dateiänderung; derselbe Shortcut nach Kompositionsende speichert
+den Namen mit genau einer Historywirkung. Nur City-Inspector geändert, kein neuer
+Save-/Historyvertrag. Typ/Build/Repo/Diff PASS; Vollsuite1019PASS/0FAIL/1bestehenderSkip.
+Enger unabhängiger Review des Kandidaten steht aus.
+Ein nativer IME-Nachtest ist damit noch nicht belegt.
+
 **Nächste Arbeit und Grenzen:** Nur direkter Save mit fokussiertem Namenfeld
 hat noch keinen sichtbaren nativen Fokusnachtest; Managed-DOM ist geprüft.
 Fresh-Process und Apply/Discard brauchen keine unveränderte Wiederholung.
