@@ -1041,7 +1041,8 @@
       "guiUsed": true,
       "productEdited": false,
       "slotHeld": false,
-      "finishedAt": "2026-10-11T11:48:00.140274+00:00"
+      "finishedAt": "2026-10-11T11:48:00.140274+00:00",
+      "pullRequest": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/164"
     },
     "nextRun": {
       "id": "E2E-01-HEX04-ROOM-SAVE-JOURNAL",
@@ -1056,7 +1057,8 @@
       "dependentExpansionAllowed": false,
       "futureLocalGUIRequiresNewExplicitSlot": true,
       "historicalInputsRemainUnchanged": true,
-      "slotReturn": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6108672539"
+      "slotReturn": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6108672539",
+      "pullRequest": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/164"
     },
     "review": {
       "run": "HEX-02-R02",

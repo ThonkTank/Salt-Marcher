@@ -98,6 +98,7 @@ Original8/Campaign/R03draft und841 geschützte historische/fremde Dateien bytegl
 [Portable Originale/Bilder](docs/reference/atlas-detail-binding-d01/room-copy-committed-journal-c01/README.md),
 [Slot zurück](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6108672539). Clean Shared a3b311f2, unveränderte Quelle/Build b6ec69d4.
 
+Kandidat: https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/164
 Eingang: https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80
 Kanonisch `acceptance.hexAtlas.requirements[30]`: N02/C03/P01 erhalten,
 `.dungeonAtLocationRoomCopyCommittedJournalC01` bindet den neuen Hosteingang.
