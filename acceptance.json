@@ -4854,11 +4854,11 @@
       "source": "src/ui/atlas-city-building-panel.ts + src/features/atlas/atlas-editor.ts + src/features/city/edit.ts",
       "plan": "docs/plans/city/building-name-inspector.md",
       "checks": "2 core countercases and 3 managed DOM cases PASS; exact name/geometry/IDs; shared UndoRedo, native Save/model reopen; invalid/stale/ABA/revoked context and detached old callbacks fail closed",
-      "remaining": "Independent integration and GM/Recovery/physical acceptance open; first marker-overlap countercase retained; native H01 synthetic Producer Edit/Fresh qualified",
+      "remaining": "Independent integration completed; Cloud-GM usage active. H02 native direct Save/fault delivered, independent evidence review pending; broad Recovery/physical acceptance open. H01 retains original source/scope.",
       "inspectorReview": "R02 PASS5481432379 on0315b13, Exact-SHA CI38100640175 SUCCESS; no required finding; helper changes do not alter product source",
       "nativeProof": "docs/reference/city-building-name-h01/receipt.json: actual GPU picking/Edit3/Fresh1 PASS on product0315b13, actual clean build/probea12b609d688a51c5139cfbe1b8073829a3254f02 (8d1d804 earlier equivalent helper); synthetic input; both normalExit0 and slot returned",
       "coreReview": "CITY-BUILDING-NAME-R01 PASS on793a68e; PR93 review5481404923; existing pure CityEdit/core delta only",
-      "saveRollback": "Direct pending-name Save stale capture reproduced before fault injection; existing persistence awaited before capture with fresh context check. Citywrite then manifest failure rolls native bytes back, preserves exact name/shared History for visible Retry and model FreshReopen; before-fix FAIL/after-fix PASS; independent review and native new-path qualification pending"
+      "saveRollback": "Save R03 independently PASS6104396047 and PR98 integrated Shared73bfe22. H02 native controlled manifest fault after won Citywrite restores canonical bytes, retains exact name/one History/context/camera; visible Retry and fresh Obsidian process Edit2/Fresh1 PASS on clean source1afac1d. docs/reference/city-building-name-h02/receipt.json; both normalExit0, slot returned. Independent H02 evidence review pending; no broad Recovery/physical pass."
     },
     "manualPlannerContribution": {
       "issue": 69,

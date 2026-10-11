@@ -1,5 +1,5 @@
 // Isolated actual Obsidian/GPU proof with synthetic visible input, not physical GM acceptance.
-module.exports = ({ page, fs, path, assert, crypto, root, vault, qa, out, checks }) => {
+module.exports = ({ page, fs, path, assert, crypto, root, vault, qa, out, checks, cityBuildingNameRollback }) => {
   const manifest = JSON.parse(fs.readFileSync(path.join(root, 'tests/fixtures/atlas-e2e-spatial-v2/manifest.json')));
   const rows = [...manifest.input, { path: manifest.campaign.path, ...manifest.campaign.input }];
   const id = n => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
@@ -120,5 +120,67 @@ module.exports = ({ page, fs, path, assert, crypto, root, vault, qa, out, checks
     await page.screenshot({ path: path.join(out, 'city-name-fresh.png') });
     await record('Separate fresh Obsidian process retains saved exact name and all native City geometry through visible picking');
   }
-  return { edit, reopen };
+  async function rollback() {
+    const before = hashes(), cityPath = `Städte/${id(100)}.city`;
+    for (const row of rows) assert.equal(before[row.path], row.sha256, row.path);
+    await open(); await selectHouse();
+    const initial = await current(), name = '  Hafen\n日本語\t  ';
+    const expected = structuredClone(initial.city);
+    expected.buildings.find(b => b.id === id(106)).name = name;
+    assert.equal(initial.depth, 0);
+    // Only the test vault's manifest CAS is faulted. Mutation still uses visible Save.
+    await page.evaluate(({ target, cityPath }) => {
+      const original = app.vault.process;
+      let injected = false, cityAtFailure;
+      app.vault.process = async function (file, callback, options) {
+        if (!injected && file.path === target) {
+          injected = true;
+          cityAtFailure = JSON.parse(await app.vault.read(app.vault.getAbstractFileByPath(cityPath)));
+          throw new Error('CITY injected manifest CAS failure');
+        }
+        return original.call(this, file, callback, options);
+      };
+      window.__citySaveFault = { restore: () => { app.vault.process = original; },
+        evidence: () => ({ injected, cityAtFailure }) };
+    }, { target: manifest.campaign.path, cityPath });
+    let evidence;
+    try {
+      await input().fill(name);
+      assert.equal((await current()).pending, true);
+      await toolbar('Atlas speichern').click();
+      await panel().locator('.dn-atlas-save-status').filter({ hasText: 'CITY injected manifest CAS failure' }).waitFor();
+      evidence = await page.evaluate(() => window.__citySaveFault.evidence());
+      assert.equal(evidence.injected, true);
+      assert.deepEqual(evidence.cityAtFailure, expected, 'City write won before manifest failure');
+    } finally {
+      await page.evaluate(() => window.__citySaveFault.restore());
+    }
+    assert.deepEqual(hashes(), before, 'Rollback restores every canonical fixture byte');
+    assert.equal(fs.existsSync(path.join(vault, manifest.input[0].path + '.journal')), false);
+    const failed = await current();
+    assert.deepEqual(failed.city, expected); assert.equal(failed.depth, 1);
+    assert.equal(failed.dirty, true); assert.equal(failed.draft, true);
+    assert.deepEqual(failed.camera, initial.camera);
+    assert.equal(await input().inputValue(), name);
+    fs.writeFileSync(path.join(out, 'city-name-rollback.json'), JSON.stringify({ ...evidence,
+      beforeHashes: before, afterRollbackHashes: hashes(), state: failed }, null, 2));
+    await page.screenshot({ path: path.join(out, 'city-name-rollback.png') });
+    await record('Direct visible Save faults after City write, restores canonical bytes and retains one History step/name/context');
+    await toolbar('Atlas speichern').click();
+    await page.waitForFunction(() => {
+      const v = app.workspace.getLeavesOfType('dungeon-native-atlas').at(-1).view;
+      return !v.repository.dirty && !v.repository.hasDraft && !v.editor.pendingKey;
+    });
+    const saved = await current(), bytes = hashes();
+    assert.deepEqual(saved.city, expected); assert.equal(saved.depth, 1);
+    assert.deepEqual(saved.camera, initial.camera);
+    assert.deepEqual(JSON.parse(fs.readFileSync(path.join(vault, cityPath))), expected);
+    for (const row of manifest.input) if (row.path !== cityPath) assert.equal(bytes[row.path], before[row.path], row.path);
+    for (const suffix of ['.journal', '.draft'])
+      assert.equal(fs.existsSync(path.join(vault, manifest.input[0].path + suffix)), false);
+    fs.writeFileSync(baseline, JSON.stringify({ city: expected, name, hashes: bytes }, null, 2));
+    await page.screenshot({ path: path.join(out, 'city-name-retry.png') });
+    await record('Visible retry saves exact City bytes without a second History step and preserves foreign native files');
+  }
+  return { edit: cityBuildingNameRollback ? rollback : edit, reopen };
 };

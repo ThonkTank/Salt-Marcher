@@ -39,4 +39,4 @@ Große native Rohbelege liegen häufig auf dem Rechner des Prüfers. Ein histori
 
 - Manuelle GM-Sessionplanung: [Implementierung und Campaign-Speicheranschluss](plans/campaign/manual-session-planner.md) zu #69.
 
-- Stadt-Hauskorrektur: [Gebäudenamen im gemeinsamen Atlas](plans/city/building-name-inspector.md) zu #92.
+- Stadt-Hauskorrektur: [Gebäudenamen im gemeinsamen Atlas](plans/city/building-name-inspector.md) zu #92; [H02 native Rollback-/Retrybelege](reference/city-building-name-h02/receipt.json).
