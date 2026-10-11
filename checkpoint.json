@@ -72,7 +72,7 @@
       "portableRecoveryEvidence": "docs/reference/smr02-world-notes-recovery/manifest.json",
       "portableRecoveryEvidenceSha256": "a28136f9cc8b6b596462e6f1cf9d868a457ee9b3ac8e653aeb859246845ba353",
       "independentControlledRecoveryReview": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/95#pullrequestreview-5481505362",
-      "relationSearchCandidate": "PR #99: active relation labels and related target titles are searchable within the requested note kind; deleted targets are excluded. An unchanged note can open its related target; an edited draft stays in place. Core and panel behavior 587/587 PASS; independent review of the updated navigation delta and integration remain open.",
+      "relationSearchCandidate": "PR #99 integrated in Shared 88f455cb86219a92dfd1c310ed99336ce62ea8b0: active relation labels and related target titles are searchable within the requested note kind; deleted targets are excluded. An unchanged note can open its related target; an edited draft stays in place. Search R01 and navigation R02 independently passed on their exact product heads; clean native edit and fresh-process run passed within their stated scope.",
       "nativeRelationNavigation": {
         "source": "a7cc6991e078806bcb80f7983c82baa11cfe4e00",
         "buildSha256": "b1c2a548768b8fc6013ab7fbbb56838e92522fd9448495d97056eec6b0d419fe",
@@ -85,7 +85,7 @@
         "reopenResultSha256": "ea410754f5b04debd54c40fe405005b8e8d9170489343b9c0d0aa96172e00015",
         "result": "Isolated real Obsidian edit and separate fresh process PASS: relation-title search, unsaved draft retained, confirmed linked faction opened; both processes exited normally. Synthetic fixture and automated input only."
       },
-      "next": "PR #95 integrated at 78f4c098; obtain narrow independent review of PR #99 navigation delta, then integrate if qualified. Broader crash recovery, Encounter constraint, NPC combat and World Planner requirements remain open.",
+      "next": "PR #99 integrated at 88f455cb after narrow independent search and navigation reviews. Broader crash recovery, Encounter constraint, NPC combat and World Planner requirements remain open; select the next concrete user-facing slice from #68.",
       "limits": "Controlled rollback and committed-journal raw evidence independently reviewed; original host-run checkouts were dirty. No physical keyboard, power-loss, user-vault, broad recovery, full SMR-02 or overall product acceptance."
     },
     "smr03LiveScene": {
