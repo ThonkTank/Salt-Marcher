@@ -303,33 +303,31 @@ Integrationsweg, nicht automatisch die gesamte Karten-/Stadtfunktion.
 
 #### Arbeitsstand #69
 
-Kandidat: https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/tree/city/planner-draft-view-guard-20261011
+Kandidat: https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/tree/city/planner-visible-focus-20261011
 Eingang: https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/68
 
-Stadt führt den manuellen Planner fort. Kern/Panel/Preview, Plannamenerhalt
-(PR133 samt sichtbarem GM-Retest), Post-Allocation-Schutz (PR136) und
-Tastatur-Aktionsfokus (PR140/R01, Shared1580c39) sind integriert. Der echte
-Browser-Tastaturnachtest von PR140 läuft bei CloudGM; native Speicherung offen.
+Stadt führt den manuellen Planner fort. Kern/Panel/Preview, Plannamenerhalt,
+Post-Allocation-Schutz, Tastatur-Aktionsfokus und Draftidentitätsschutz sind
+integriert. PR142/R01 und Shared632c580 sind konsumiert; keine native Speicherung.
 
-Aktuelle Erhaltungsreparatur: Ein extern ersetzter Draft bei gleicher
-Planrevision und Szenenauswahl wurde bislang durch alte sichtbare Controls
-überschrieben, veröffentlicht oder verworfen. Drei Gegenproben FAIL vor/PASS
-nach Fix. Controls prüfen nun die dargestellte Draftidentität zusätzlich.
-Erfolgreiche eigene Eingabe aktualisiert diese Basis, ohne Fokus/Caret-Neurendern;
-extern ersetzte Arbeit erfordert ausdrücklich Ansicht aktualisieren.
-31 Paneltests PASS einschließlich mehrfachem Weitertippen nach Refresh und
-exaktem CRLF-/Unicodeerhalt. Unabhängiger Review steht aus.
+CloudGM-Nachtest6106915673 bestätigt sichtbare Tastaturfortsetzung bei Verwerfen,
+Verschieben und Rand-Fallback zum Szenentitel. Nach Enter→Übernehmen fehlte
+unmittelbar die sichtbare Fokusumrandung; folgendes Tab war korrekt bedienbar.
+Die aktuelle enge Stilreparatur zeigt im Planner Fokus ausdrücklich mit :focus,
+auch wenn der Browser beim Ersatzcontrol :focus-visible nicht beibehält.
+Produktstylesheet und flüchtiger Preview nutzen dieselbe scoped Regelabsicht.
+Payload, Controls, Guards und Tests unverändert; kein neuer Gesamt-Plannerreview.
+Enger unabhängiger Apply→sichtbarer Fokus→Tab-Nachtest und Stilreview stehen aus.
 
 [PR86](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/86)
-führt den geprüften Dokumentcodec und konkreten Produceranschlussvorschlag.
-Campaign/Data entscheidet dort Dokumentinventar, Domainwrite/Bytebindung,
-kanonischen Pfad und Delete-/Retirement-/Recoveryvertrag; danach implementiert
-Stadt den Consumer. Keine konkurrierende Speicherautorität.
+führt Dokumentcodec und konkreten Produceranschlussvorschlag. Campaign/Data
+entscheidet Dokumentinventar, Domainwrite/Bytebindung, Pfad und Retirement/
+Recovery; danach implementiert Stadt den Consumer. Kein zweiter Publisher.
 
 Startbarer synthetischer Verbraucher: `node tools/manual-planner-preview/build.mjs`.
 [Startanleitung und Grenzen](docs/plans/campaign/manual-session-planner.md#startbarer-flüchtiger-gui-frühtest).
-Neuladen/Schließen verwirft sämtliche Arbeit. Native Save/Fresh/Recovery,
-Pluginmount, physische Eingabe und 200%-Zoom bleiben offen.
+Neuladen/Schließen verwirft Arbeit. Native Save/Fresh/Recovery, Pluginmount,
+physische Eingabe und 200%-Zoom bleiben offen.
 
 ### SMR-07 – Reise, Kalender und autoritative Zeit
 
