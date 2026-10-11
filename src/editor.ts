@@ -24,7 +24,7 @@ import {
   type RoomKeySearchActivation,
 } from "./room-key-search-panel";
 import { wheelNavigation } from "./navigation";
-import { type RecordChange, Session } from "./session";
+import { type Command, type RecordChange, Session } from "./session";
 import { MapRepository } from "./persistence";
 import {
   adoptFloorAsRoom,
@@ -97,6 +97,16 @@ import {
   buildingWallStyle,
   type BuildingWallStyle,
 } from "./features/bau/building-wall-style";
+import {
+  eraseWalkableColumns,
+  eraseVolumeGestureCommand,
+  paintWalkableColumns,
+  paintVolumeGestureCommand,
+  rasterizeWalkableArea,
+  volumeColumnAt,
+  volumeColumnsAt,
+  type VolumeStrokeSample,
+} from "./features/dungeon/volume";
 
 import { archiveEntities, archiveFloor, executeLinkedObjectChanges } from "./content";
 import { setIcon } from "obsidian";
@@ -183,6 +193,7 @@ interface Gesture {
   curve?: boolean;
   points: Point[];
   erase: boolean;
+  volumeSamples?: VolumeStrokeSample[];
 }
 interface PathDraft {
   tool: "polygon" | "corridor" | "wall" | "pattern" | "path" | "roof" | "water";
@@ -384,6 +395,7 @@ export class DungeonEditor {
   private prefabPanel: HTMLDetailsElement;
   private space = false;
   private selected?: string;
+  private selectedVolume?: { volumeId: string; x: number; y: number };
   private selection = new Set<string>();
   private hoveredBuildingVertex?: BuildingVertexGrip;
   private clipboard?: SelectionClipboard;
@@ -538,6 +550,10 @@ export class DungeonEditor {
       host.assetUrl,
       () => {
         host.persistToolDefaults?.();
+        this.renderer?.setVolumeSlice(this.settings.volumeSliceBottomStep);
+        if (this.gesture?.tool === "volume")
+          this.captureVolumeSample(this.gesture,
+            this.renderer.toWorld(this.gesture.last));
         this.refreshObjectPreview();
         this.objectLibrary?.syncSelection();
       },
@@ -547,6 +563,12 @@ export class DungeonEditor {
       host.colorableObjectSource,
       (onPreview) => this.sampleMapColor(onPreview),
       () => this.refreshObjectPreview(),
+      () => this.selectedVolume,
+      () => {
+        const selected = this.selectedVolume;
+        if (selected) this.selectedVolume = this.rebindVolumeSelection(selected);
+        this.refreshProperties();
+      },
     );
 
     this.selectionPanel = element(
@@ -786,6 +808,7 @@ export class DungeonEditor {
       { compactDetails: true, preserveViewOnResize: true, preserveZoomOnResize: true },
       host.colorableObjectSource,
     );
+    this.renderer.setVolumeSlice(this.settings.volumeSliceBottomStep);
     this.assetUnsub = host.subscribeAssets?.(() => {
       this.renderer.reloadAssets();
       this.objectLibrary.refreshAssets(true);
@@ -851,9 +874,12 @@ export class DungeonEditor {
         this.selected = [...this.selection].at(-1);
         this.renderer.select(this.selection);
       }
+      if (e.volumes && this.selectedVolume)
+        this.selectedVolume = this.rebindVolumeSelection(this.selectedVolume);
       if (
         e.floors ||
         e.settings ||
+        e.volumes ||
         missingSelection ||
         [...this.selection].some((id) => e.ids.has(id))
       )
@@ -988,6 +1014,7 @@ export class DungeonEditor {
         ["building", "edit-points", "Punkte bearbeiten", "mouse-pointer-2"],
         ["building", "wall", "Wände", "brick-wall"],
         ["building", "door", "Durchgänge", "door-open"],
+        ["dungeon", "volume", "3D-Volume", "box"],
         ["building", "cave", "Höhle", "mountain"],
         ["building", "pattern", "Musterflächen", "layers-2"],
         ["building", "roof", "Dächer", "house"],
@@ -1028,6 +1055,11 @@ export class DungeonEditor {
       this.toolButtons.set(tool, button);
       this.toolGroups.set(tool, group);
       this.toolLabels.set(tool, label);
+      if (tool === "volume" && this.session.version !== 4) {
+        button.disabled = true;
+        button.title = "3D-Volumes sind erst nach ausdrücklicher Migration auf Kartenformat V4 verfügbar.";
+        button.setAttribute("aria-description", button.title);
+      }
     }
     const panelButton = (
       group: string,
@@ -1790,6 +1822,7 @@ export class DungeonEditor {
     this.objectSlowRotateHeld = false;
     if (tool !== this.tool) this.previousTool = this.tool;
     this.tool = tool;
+    if (tool !== "volume") this.selectedVolume = undefined;
     this.hoveredBuildingVertex = undefined;
     this.renderer.setBuildingPointEditing(tool === "edit-points");
     this.previousToolButton.disabled =
@@ -1859,6 +1892,7 @@ export class DungeonEditor {
       prefab: "Vorlage wählen · Klick auf die Karte: am Rasterpunkt platzieren",
       light:
         "Klick: Lichtquelle platzieren · Auswahl: verschieben und bearbeiten",
+      volume: "Ziehen: begehbares Volume malen · Alt: ausradieren · Klick auf Volume: Spalte auswählen · Bild↑/Bild↓: Schnitt wechseln (auch während des Zugs)",
     };
     this.status.textContent =
       (this.paintWorker ? "Fläche wird berechnet · Escape: abbrechen · " : "") +
@@ -1947,6 +1981,53 @@ export class DungeonEditor {
     return best.reverse
       ? { ...best.wall, points: [...best.wall.points].reverse() }
       : best.wall;
+  }
+  private volumeSample(point: Point): VolumeStrokeSample {
+    return {
+      x: Math.floor(point.x),
+      y: Math.floor(point.y),
+      bottomStep: this.settings.volumeSliceBottomStep,
+      heightSteps: this.settings.volumeHeightSteps,
+    };
+  }
+  private rebindVolumeSelection(
+    selected: { volumeId: string; x: number; y: number },
+  ): { volumeId: string; x: number; y: number } | undefined {
+    const candidates = volumeColumnsAt(this.session.document(),
+      selected.x, selected.y, this.settings.volumeSliceBottomStep);
+    return candidates.find(({ volumeId }) => volumeId === selected.volumeId) ??
+      candidates[0];
+  }
+  private withFloorVolume(command: Command | undefined,
+    shape: readonly Polygon[] | undefined,
+    stroke: readonly Point[] | undefined, erase: boolean,
+    bottomStep: number, heightSteps: number,
+    corridorRadius: number): Command | undefined {
+    if (this.session.version !== 4) return command;
+    const columns = rasterizeWalkableArea({
+      ...(shape ? { polygons: shape } : {}),
+      ...(stroke ? { stroke: { points: stroke,
+        radius: corridorRadius } } : {}),
+      bottomStep,
+      heightSteps,
+    });
+    if (!columns.length) return command;
+    const before = this.session.document(),
+      after = erase
+        ? eraseWalkableColumns(before, columns)
+        : paintWalkableColumns(before, uid(), columns);
+    if (JSON.stringify(after.volumes) === JSON.stringify(before.volumes)) return command;
+    return { ...(command ?? {
+      label: erase ? "Grundriss und Volume ausradieren"
+        : "Grundriss und Volume zeichnen",
+    }), volumes: { before: before.volumes, after: after.volumes } };
+  }
+  private captureVolumeSample(g: Gesture, point: Point): void {
+    const sample = this.volumeSample(point), previous = g.volumeSamples?.at(-1);
+    if (previous && previous.x === sample.x && previous.y === sample.y &&
+        previous.bottomStep === sample.bottomStep &&
+        previous.heightSteps === sample.heightSteps) return;
+    (g.volumeSamples ??= []).push(sample);
   }
   private begin(e: PointerEvent): void {
     if (!this.gesture && e.button === 2 && this.tool === "object" &&
@@ -2181,6 +2262,7 @@ export class DungeonEditor {
       moved: false,
       curve: tool === "polygon" && e.shiftKey,
       points: [point],
+      volumeSamples: tool === "volume" ? [this.volumeSample(point)] : undefined,
       erase: isFloorTool(tool)
         ? floorEraseActive(this.settings.floorMode, e.altKey)
         : e.altKey,
@@ -2359,6 +2441,7 @@ export class DungeonEditor {
       g.erase = floorEraseActive(this.settings.floorMode, e.altKey);
     else if (g.tool === "water" && this.settings.waterShape !== "brush")
       g.erase = e.altKey;
+    else if (g.tool === "volume") g.erase = e.altKey;
     if (g.tool === "pan") {
       if (!g.temporaryPan || this.space)
         this.renderer.pan(local.x - g.last.x, local.y - g.last.y);
@@ -2445,6 +2528,18 @@ export class DungeonEditor {
         g.tool === "ellipse"
           ? { width: Math.abs(a.x - b.x), height: Math.abs(a.y - b.y), at: b }
           : undefined,
+      );
+    }
+    else if (g.tool === "volume") {
+      for (const sample of e.getCoalescedEvents?.().length
+        ? e.getCoalescedEvents()
+        : [e])
+        this.captureVolumeSample(g,
+          this.renderer.toWorld(this.renderer.local(sample)));
+      this.renderer.previewBrush(
+        (g.volumeSamples ?? []).map(({ x, y }) => ({ x: x + 0.5, y: y + 0.5 })),
+        0.48,
+        g.erase,
       );
     }
     else if (this.isBrushTool(g.tool)) {
@@ -2833,6 +2928,41 @@ export class DungeonEditor {
         this.settings.light,
       );
       void this.select(light.id);
+    } else if (g.tool === "volume") {
+      this.captureVolumeSample(g, point);
+      const end = this.volumeSample(point), samples = g.volumeSamples ?? [end],
+        candidates = samples.length === 1
+          ? volumeColumnsAt(this.session.document(), end.x, end.y, end.bottomStep)
+          : [],
+        selectedIndex = this.selectedVolume &&
+            this.selectedVolume.x === end.x && this.selectedVolume.y === end.y
+          ? candidates.findIndex(({ volumeId }) =>
+              volumeId === this.selectedVolume!.volumeId)
+          : -1,
+        existing = !g.erase && candidates.length
+          ? candidates[(selectedIndex + 1) % candidates.length]
+          : undefined;
+      if (g.erase) {
+        const command = eraseVolumeGestureCommand(
+          this.session.document(), samples,
+        );
+        if (command) this.session.execute(command);
+        this.selectedVolume = undefined;
+        this.refreshProperties();
+      } else if (existing) {
+        this.selectedVolume = existing;
+        this.refreshProperties();
+      } else {
+        const id = uid();
+        const command = paintVolumeGestureCommand(
+          this.session.document(), id, samples,
+        );
+        if (command) this.session.execute(command);
+        this.selectedVolume = volumeColumnAt(this.session.document(),
+          samples.at(-1)!.x, samples.at(-1)!.y,
+          samples.at(-1)!.bottomStep);
+        this.refreshProperties();
+      }
     } else if (g.tool === "object") {
       const o = createObject(
         this.session,
@@ -3176,7 +3306,10 @@ export class DungeonEditor {
       revision = this.session.revision,
       token = ++this.paintGeneration,
       worker = new ComputeClient(),
-      started = performance.now();
+      started = performance.now(),
+      volumeBottomStep = this.settings.volumeSliceBottomStep,
+      volumeHeightSteps = this.settings.volumeHeightSteps,
+      volumeCorridorRadius = this.settings.corridorRadius;
     this.paintWorker = worker;
     this.refresh();
     try {
@@ -3191,7 +3324,7 @@ export class DungeonEditor {
         })),
         ...(shape ? { shape } : {}),
         ...(stroke
-          ? { stroke: { points: stroke, radius: this.settings.corridorRadius } }
+          ? { stroke: { points: stroke, radius: volumeCorridorRadius } }
           : {}),
         erase,
       });
@@ -3249,8 +3382,7 @@ export class DungeonEditor {
         const trackedDraw = result.mode === "draw" &&
           this.session.version === 4 && isNativeFloorAssetId(material?.assetId) &&
           !newBuilding && !!plan.selectedId;
-        if (!plan.command && !(trackedDraw && shape?.length)) return;
-        let command = plan.command;
+        let command: Command | undefined = plan.command ?? undefined;
         if (quickRoom && newBuilding && command) {
           const room = roomFromNewBuilding(this.session, newBuilding);
           command = {
@@ -3261,6 +3393,9 @@ export class DungeonEditor {
             affectsRules: true,
           };
         }
+        command = this.withFloorVolume(command, shape, stroke, erase,
+          volumeBottomStep, volumeHeightSteps, volumeCorridorRadius);
+        if (!command && !(trackedDraw && shape?.length)) return;
         if (newBuilding?.floorTileRaster) {
           if (!command) return;
           const added = buildingFloorCells(newBuilding,
@@ -3976,6 +4111,21 @@ export class DungeonEditor {
         );
         if (this.selection.size) void this.select(undefined);
       }
+    }
+    if (this.tool === "volume" && this.session.version === 4 &&
+        (e.key === "PageUp" || e.key === "PageDown")) {
+      e.preventDefault();
+      if (this.gesture?.tool === "volume")
+        this.captureVolumeSample(this.gesture,
+          this.renderer.toWorld(this.gesture.last));
+      this.settings.volumeSliceBottomStep += e.key === "PageUp" ? 1 : -1;
+      this.renderer.setVolumeSlice(this.settings.volumeSliceBottomStep);
+      if (this.gesture?.tool === "volume")
+        this.captureVolumeSample(this.gesture,
+          this.renderer.toWorld(this.gesture.last));
+      this.host.persistToolDefaults?.();
+      this.refreshProperties();
+      return;
     }
     if (e.key === "Escape") {
       e.preventDefault();
