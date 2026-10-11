@@ -89,11 +89,24 @@ Beleg auch nach normalem app.quit bytegleich; RunnerExit0, alle4 PIDs weg,
 keine Zwangstermination, frisch koordinierter Slot ausdrücklich zurückgegeben.
 Nutzervault/fremde lokale Dateien und alle früheren Hex-/Fremdwurzeln erhalten.
 
-**Nächster Empfänger:** Contributor prüft unabhängig genau diesen konkreten
-Routingfix, Guards/Lifecycle und quellgebundenen Nachweis am veröffentlichten
-Kandidaten im bestehenden #80. Hex konsumiert den qualifizierten Review oder
-konkrete Pflichtbefunde; Integration bleibt beim Steward. Kein Selfmerge,
-allgemeine Reviewrunde, konkurrierender City-Savefix oder abhängiger Detailausbau.
+**Review und Integration konsumiert:**
+[Unabhängiger enger Review](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/135#issuecomment-6106627133)
+und [reguläre Stewardintegration](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/135#issuecomment-6106631127)
+von PR135 sind abgeschlossen. Geprüft wurden Routing/Scope-Lifecycle, Fokus-/
+Flush-/Kompositions-/Bindungs-/Duplicateguards und Aussagegrenzen; fünf gezielte
+Regressionen PASS. Lokale Rohpfade waren beim Cloudreview nicht zugänglich,
+daher kein unabhängiger Host-/GUI-PASS. Die Autorenprobe bleibt ane1bda0a gebunden.
+Qualifizierter Shared5a7d352 inklusive PR134/136/138 ist konsumiert; relevante
+Atlas-/Panel-/Runner-/Manifestblobs sind zur Hostquelle bytegleich. Historische
+R01/H01–H04 und fremde Wurzeln bleiben erhalten. Keine neue Produktänderung.
+
+**Nächster ausführbarer Hex-Beitrag:** Tatsächlich R01-gespeicherte isolierte
+Spatial-V2-Payload in einem frischen Obsidian-Prozess wiederöffnen. Aktuellen
+qualifizierten Source sauber bauen, exakten sichtbaren Orts-Key und native
+Hashes/fremde Payload erhalten; kein Neu-Seeden oder erneutes Save als
+Neustartnachweis. Vor Start frischen lokalen Slot ausdrücklich koordinieren,
+reguläres app.quit/PIDs und Rückgabe. Integration erzeugt keinen neuen GUI-PASS;
+kein weiterer unveränderter Reviewauftrag, konkurrierender Cityfix oder Detailausbau.
 
 **Offen:** nativer Kompositionsguard, Room/Meta, physische IME, frischer Prozess
 des Routingfixes, Copy/Discard/Recovery, äußeres Clipping, Gesamt-E2E sowie

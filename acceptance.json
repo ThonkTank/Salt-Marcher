@@ -158452,6 +158452,76 @@
             "HexRuntimePanelsRunnerAndFixtureManifestBlobsUnchanged": true,
             "scope": "ManualPlanner same-plan pending name retention only; City roots and working sections retained."
           }
+        },
+        "dungeonAtLocationInspectorSaveRoutingQualification": {
+          "id": "E2E-01-HEX04-SAVE-ROUTING-R01-QUALIFICATION",
+          "owner": "Hex",
+          "issue": 80,
+          "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
+          "e2e01UserLine": 13,
+          "state": "independent_technical_review_and_regular_Shared_integration_consumed_native_fresh_pending",
+          "pullRequest": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/135",
+          "candidate": "5ba947a968b4947e2331c0d6c2029746f0706d95",
+          "mergeCommit": "af945671d6a2b1d68ecdd301a0b1e24b08950f80",
+          "currentSharedConsumed": "5a7d352241719710d552777bf8c43d17e378f9c2",
+          "independentReview": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/135#issuecomment-6106627133",
+          "stewardReceipt": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/135#issuecomment-6106631127",
+          "independentScope": "Technical routing/Scope lifecycle/focus/flush/composition/binding/duplicate guards and receipt claim boundaries; 5/5 focused regressions plus type/repository/build/JSON/hash/diff checks. No independent native GUI/raw/physical proof.",
+          "headCi": 38120905132,
+          "mergeCi": 38121101517,
+          "currentSharedCi": 38121404973,
+          "directlyVerifiedCi": "All three SUCCESS on their exact stated SHAs.",
+          "authorNativeSource": "e1bda0a08e985ef74ba1777d1e1588d507f838b7",
+          "authorNativeReceipt": "docs/reference/atlas-detail-binding-d01/inspector-save-routing-r01.json",
+          "nativeReceiptUnchanged": true,
+          "relevantNativeSourceBlobsUnchanged": {
+            "src/ui/atlas-view.ts": "add61220c8cc3d1a16004f99aae6255e8658244e",
+            "src/features/atlas/atlas-editor.ts": "6260d61ade859c43b46746c94bdeb3db5a86617c",
+            "src/ui/location-key-panel.ts": "ec9509329480a1920a3d76e2bf36a022f5025cbf",
+            "src/ui/atlas-room-key-panel.ts": "a35052449c69d2b20ebc90d919250f4cdbc924f7",
+            "tools/host-test.cjs": "9f09e48a564e2b272aee61cf7b64dd7d66fbb4c9",
+            "tools/host/hex04-dungeon-at-location.cjs": "07ab80f147c092010e761133c8df0be63ecf3cdb",
+            "tests/fixtures/atlas-e2e-spatial-v2/manifest.json": "7bec9054218b4c957ae0e9f3cd3d3497f3b63559"
+          },
+          "incomingConsumed": [
+            {
+              "pullRequest": 134,
+              "head": "12ecb93c13ca025f58c4aa287e48b6130787648e",
+              "merge": "7953019cd2121c3d56bc7350ed6256d54c2f5029",
+              "independentReviews": [
+                6106614472,
+                6106620377,
+                6106634660
+              ],
+              "integrationReceipt": 6106646681,
+              "headCi": 38120895037,
+              "mergeCi": 38121194470,
+              "scope": "Live-session tests only; no Atlas product change."
+            },
+            {
+              "pullRequest": 136,
+              "head": "af8a847f4975e70d36a9da097e16b93fbfb3907b",
+              "merge": "ab41f047936f41f024bcb334bd9a3100664b7322",
+              "independentReview": 6106641611,
+              "stewardReceipt": 6106645746,
+              "headCi": 38120979046,
+              "mergeCi": 38121216850,
+              "scope": "ManualPlanner allocation context guard; City roots preserved. PR137 typo in S01 parent prose does not change directly verified merge/parent identity."
+            },
+            {
+              "pullRequest": 138,
+              "head": "d0ab6e68594f7050dcca7d0e05f6ea5c44b13fb1",
+              "merge": "5a7d352241719710d552777bf8c43d17e378f9c2",
+              "independentReview": 6106666772,
+              "integrationReceipt": 6106672060,
+              "headCi": 38121324001,
+              "mergeCi": 38121404973,
+              "scope": "SMR03 plan reconciliation only."
+            }
+          ],
+          "limits": "No new GUI, build, full-suite rerun, composing-panel/RoomMeta/fresh/physical/CopyDiscardRecovery/original/large-map/install/fullE2E claim. No user-vault touch or selfintegration. Prior source-bound author raw evidence remains historical and unmodified.",
+          "next": "Hex: reopen the actually R01-saved isolated Spatial-V2 payload in a fresh Obsidian process on a clean build of the current qualified source. Verify visible exact Location key and retained native hashes/foreign payload; no fixture reseeding or Save replay as substitute for restart. Coordinate a fresh local GUI slot before launching, normal app.quit/PIDs and explicit return; remaining cases stay separate.",
+          "finishedAt": "2026-10-11T07:33:57.647673+00:00"
         }
       }
     ],
