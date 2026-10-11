@@ -11,9 +11,11 @@ const ALLOWED_STATIC_IMPORTS = new Set([
   "./mask-reconciliation",
   "./party-aggregate",
   "./projections",
+  "./reference-owners",
   "./scene-aggregate",
   "./state",
   "./validation",
+  "../campaign/campaign-contracts",
 ]);
 
 function importsIn(source, file = "module.ts") {
@@ -79,6 +81,12 @@ function assertLocalStaticImports(source, file = "module.ts") {
       ALLOWED_STATIC_IMPORTS.has(dependency.specifier),
       `${file} imports forbidden dependency ${dependency.specifier}`,
     );
+    if (dependency.specifier === "../campaign/campaign-contracts")
+      assert.equal(
+        file,
+        "reference-owners.ts",
+        `${file} uses the narrowly allowed Campaign contract bridge`,
+      );
   }
 }
 
@@ -92,6 +100,7 @@ test("live-session core has no host, persistence or player-display surface", asy
     "mask-reconciliation.ts",
     "party-aggregate.ts",
     "projections.ts",
+    "reference-owners.ts",
     "scene-aggregate.ts",
     "state.ts",
     "validation.ts",
