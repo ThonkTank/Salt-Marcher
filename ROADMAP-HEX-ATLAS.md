@@ -39,7 +39,7 @@ Die folgende Tabelle ist die **einzige Gesamtpriorisierung: Make it Work → Mak
 | **Make it Efficient** | Dieselben Aufgaben mit weniger Wiederholung erledigen: Raum/Haus duplizieren → mehrfach Assets platzieren → gemeinsam ändern → Vorlage nutzen → gezielt erneuern. Präzise korrigieren, Auswahl schnell wiederfinden und größere Karten ohne störende Wartezeiten bearbeiten. | Zuerst schnelle Auswahl, Duplizieren/wiederholte Platzierung und zuletzt verwendete Assets; danach Mehrfachbearbeitung einschließlich Text-Sammeländerungen, Gruppen und Vorlagen/Prefabs. Teilbare Generierungsvorgaben und Inhaltsvorschläge erweitern diese Wiederverwendung. Präzise Tastaturbewegung, Fanghilfen und schnelle Zugänge. Erweiterte Erzeugung/Layouts, Pfad-/Flächenverteilung und geschützte lokale Neuerzeugung. Wandumfang über übereinanderliegende Abschnitte und horizontale Gesamtskalierung aller Geschosse folgen hier. Bestehendes Bedarfsladen verwenden; gemessene Engpässe bei großen Karten, Suche und Export verbessern. **Abschluss:** dieselbe Vorbereitungsaufgabe mit weniger Aktionen, Suchaufwand, Fehlern oder Wartezeit, bei unveränderter Daten- und Abbruchsicherheit. |
 | **Make it Beautiful** | Den bereits brauchbaren Plan übersichtlich gestalten und als lesbare, stimmige Karte präsentieren. | Werkzeugleiste, Panel, Icons, Typografie und Rückmeldungen vereinheitlichen; Stile, Texturen, Dachdetails, grafische Lichtwirkung und Effekte ausarbeiten. Beschriftungsformat, Rahmen, Kompass und Ausgabepräsentation verfeinern. **Abschluss:** Karten und Bedienung sind bei typischen Zoomstufen und 200 % klar lesbar; dieselben Aufgaben bleiben erreichbar, Daten und Ausgabeinhalte korrekt. |
 
-**Gemeinsamer Abschluss der vier Work-Abläufe:** jeweils vorbereiten, korrigieren, ausgeben und nach Neustart weiterarbeiten; erst danach das verbundene Leitbeispiel prüfen. Kamera, sichtbare Suche, Auswahl, Textfokus, Vorschau/Abbruch, gemeinsame Undo/Redo-Folge und ehrliche automatische Speicherung gehören von Anfang an dazu. Kennungen, Links und geschützte Texte bleiben erhalten; Fehler erhalten offene Arbeit. Einfacher PNG-Export unterscheidet GM- und Spielerinhalt gemäß bestehendem Sichtbarkeitsvertrag. Bereits integrierte Funktionen bleiben verfügbar; die Staffelung bestimmt die nächste Ergänzung, nicht das Abschalten vorhandener Werkzeuge.
+**Abschluss der Work-Abläufe:** Work 1 bestätigt Bearbeitung, Undo/Redo, automatische Speicherung und frische Wiederaufnahme einer bestehenden Karte. Work 2–4 bestätigen jeweils eigenständiges Vorbereiten, Korrigieren, Ausgeben und Weiterarbeiten nach Neustart; erst danach das verbundene Leitbeispiel prüfen. Kamera, sichtbare Suche, Auswahl, Textfokus, Vorschau/Abbruch, gemeinsame Undo/Redo-Folge und ehrliche automatische Speicherung gehören von Anfang an dazu. Kennungen, Links und geschützte Texte bleiben erhalten; Fehler erhalten offene Arbeit. Einfacher PNG-Export unterscheidet GM- und Spielerinhalt gemäß bestehendem Sichtbarkeitsvertrag. Bereits integrierte Funktionen bleiben verfügbar; die Staffelung bestimmt die nächste Ergänzung, nicht das Abschalten vorhandener Werkzeuge.
 
 **KISS ist eine Regel für jede Stufe:** vorhandene Kamera, Auswahl, History, Speicherung und Werkzeugfamilien wiederverwenden. Zunächst ein klarer Standardweg und wenige verständliche Optionen; weitere Optionen nur für einen konkreten Bedarf. Eine neue Abstraktion braucht einen belegten gemeinsamen Bedarf. Sichere Abbrüche, Textfokus, Lesbarkeit und ausreichende Reaktion sind bereits Work, keine spätere Schönheitsarbeit.
 
@@ -50,6 +50,151 @@ Die Reihenfolge ist eine Vorbereitungshypothese, kein gemessener Nutzungsbefund.
 Das zentrale [Werkzeugverzeichnis](#konkreter-werkzeugkatalog) ordnet den Zugang und die Stufen zu; `acceptance.json` bleibt das einzige Funktions- und Nachweisregister. Fachpläne verweisen auf diese Lieferfolge und behalten ihre Details. Die [E2E-Abnahmen](docs/ROADMAP.md#lieferfolge-des-gesamtprodukts) behalten ihre fachlichen Voraussetzungen. Diese Planung vergibt keine neuen Nachweise oder PASS-Zustände.
 
 Diese Übersicht ist ein datierter Einstieg. Bei relevanter Integration oder geänderter Lücke wird sie am bestehenden Ort aktualisiert; Laufchroniken und Abnahmedetails bleiben in ihren Fachquellen. Die folgenden Abschnitte führen Zielarchitektur, vollständige Anforderungen und Phasenzuordnung.
+
+## Umsetzungsplan
+
+**Einstieg:** [Prioritäten](#wie-kommen-wir-zum-ziel) → [Lieferpakete](#lieferpakete-und-codeanschlüsse) → [Goal-Prompt für die vollständige Atlasumsetzung](#goal-prompt-für-die-vollständige-atlasumsetzung). Die Nutzerabläufe und der Werkzeugkatalog definieren weiterhin die Wirkung. Dieser Abschnitt übersetzt sie in Codearbeit; er eröffnet keine zweite Prioritäts- oder Statusliste.
+
+### Informationsarchitektur der Oberfläche
+
+Die Oberfläche beantwortet in dieser Reihenfolge: **Wo bin ich? Was will ich tun? Was ist ausgewählt? Ist meine Arbeit gesichert?** Der Atlas bleibt die gemeinsame Arbeitsfläche. Zoom verändert den Ausschnitt und die Detaildarstellung, nicht Werkzeug, Auswahlbesitz oder Schreibautorität.
+
+| Fester Bereich | Inhalt und Verhalten |
+| --- | --- |
+| Obere Leiste | Atlasname, sichtbarer Orts-/Gebäudepfad und Suche; Undo/Redo, Speicherzustand und Ausgabe. Der Pfad navigiert die vorhandene Kamera, ohne Daten anzulegen oder einen anderen Editor zu öffnen. „Zum Atlasort“ bleibt erreichbar. |
+| Werkzeugleiste neben der Karte | Die bereits vereinbarten Gruppen Navigation, Landschaft, Stadt, Innenräume und Ausstattung. Aktives Werkzeug mit Name und Wirkung; vorhandene Fachwerkzeuge direkt wählen. Benötigtes Ziel/Geschoss sichtbar angeben, bei fehlendem Ziel konkret „Dungeon wählen/anlegen“ anbieten. Zoom wählt kein anderes Werkzeug. |
+| Karte | Vorschau, Zielmarkierung, Griffe und Maßstab; Änderungen bleiben hier sichtbar. Mehrdeutige Treffer an der angeklickten Stelle auswählen. Keine zusätzliche Vorschauwelt oder zweite Kamera. |
+| Seitenpanel | **Werkzeug**: Vorgaben für die nächste Aktion. **Auswahl**: Name, Maße und Eigenschaften des vorhandenen Ziels, darunter dessen Key mit Vorlese-/GM-Text. Die beiden Bereiche bleiben eindeutig getrennt; unterschiedliche Auswahlwerte erscheinen als „gemischt“. Nur zusätzliche Einstellungen hinter „Mehr Optionen“. |
+| Ansicht im selben Panel | Geschoss/Schnitt, sichtbare Ebenen, Dach und Referenzbild schalten. Darstellung ändern löscht keine Inhalte und wechselt keinen Bearbeitungsmodus. |
+| Aufgabenbezogene Erweiterungen | Bibliothek bei Assetwahl, Erzeugungsoptionen bei Bebauung, Raumliste/Graph bei Dungeonanalyse, Ausgabeeinstellungen beim Export. Als Panelabschnitt oder vorübergehende Ansicht öffnen; Rückkehr erhält Karte, Auswahl und offene Arbeit. Diese Zugänge ersetzen keinen Standardweg durch Pflichtassistenten. |
+
+Work liefert diese Ordnung zuerst mit den bereits nutzbaren Aktionen; ungebaute Funktionen werden nicht als scheinbar fertige Schaltflächen angeboten. Eine konkret fehlende Voraussetzung wird am betroffenen Zugang erklärt. In Efficient kommen die benötigten Optionen hinzu; Beautiful vereinheitlicht Gestaltung und Rückmeldungen. Die Regeln für Entwurf, Textfokus, Werkzeugwechsel und Speicherung stehen ausschließlich bei der [gemeinsamen Bedienung](#gemeinsame-bedienung).
+
+### Lieferpakete und Codeanschlüsse
+
+**Arbeitsbasis vom 11.10.2026:** vorhandene Dateien im lokalen Branch `docs/atlas-user-workflows`, zuletzt `5f4d9701`; integrierte und Kandidatenstände vor Codearbeit erneut prüfen. `AtlasEditor.subscribeTerrain()` ruft bei Änderungen derzeit `storage.changed()` auf; der Campaignadapter sichert damit einen Entwurf. Die native Speicherung läuft separat über `storage.save()`. Entwurfsablage ist deshalb noch kein Autosave-Abschluss. Ein veralteter Fachplanabsatz darf vorhandenen Code nicht als fehlend erklären.
+
+Die Pakete sind konkrete Anschlüsse an die zentrale Lieferfolge. Innerhalb eines Pakets jeweils den kleinsten sichtbaren Weg durch Oberfläche, Command, Speicherung und Wiederaufnahme fertigstellen, bevor weitere Optionen folgen. Bestehenden funktionierenden Code weiterverwenden; Kandidaten erst nach Prüfung ihres tatsächlichen Inhalts und einer autorisierten Integration einbeziehen.
+
+| Lieferpaket | Konkrete Codearbeit und vorhandener Einstieg | Abschluss / Fachquelle |
+| --- | --- | --- |
+| **Work 1a – Finden und sicher bearbeiten** | `src/features/atlas/atlas-editor.ts` und `src/ui/atlas-view.ts`: sichtbare Such-/Auswahlzugänge, die festen UI-Bereiche und den Speicherstatus anschließen. `src/room-key-search.ts` und die vorhandenen Orts-/Raum-/Gebäudepanels verwenden; Suchtreffer direkt auf dasselbe Atlasziel führen, ohne schreibenden Dungeon-Sessionwrapper. Textabschluss, Entwurf und verzögerte Navigation an ihre ursprüngliche Zielidentität binden. | Bestehenden Ort/Raum finden, Kontur und Key ändern, gemeinsam Undo/Redo. Überlagerung, Textfokus und Wechsel mit offener Eingabe prüfen. [Bedienabnahme](#spätere-bedienabnahme), [räumlicher Anschluss](ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md#gemeinsame-räumliche-darstellung). |
+| **Work 1b – Automatisch dauerhaft sichern** | Bestehende Historybenachrichtigung, `AtlasRepository`, `file-transaction.ts`, `atlas-campaign-save.ts` und den tatsächlichen Saveadapter in `src/ui/atlas-view.ts` verbinden. Bestätigte Änderungen gesammelt/serialisiert speichern; unbestätigte Eingaben und Vorschauen nicht übernehmen. Ein während Save veränderter Stand bleibt ausstehend und wird danach gespeichert. Beim Schließen/Wechsel ausstehende Arbeit über vorhandenen Lebensdauer-/Recoveryvertrag sichern. | Native Dateien nach vollständigem Hostneustart ohne manuelles Save korrekt; pending/durable/Fehler ehrlich anzeigen. Schreibfehler, externe Konflikte, neue Änderung während Save und widerrufenen Context prüfen. Keine neue Speicherengine. [Save-/Recoveryvertrag](ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md), [Campaignvertrag](ROADMAP-SALTMARCHER-SMR-01-CAMPAIGN-DATA-PLAN.md). |
+| **Work 2 – Dungeon einschließlich erster Ausgabe** | Vorhandene `src/features/dungeon/atlas-source.ts`, `geometry-change.ts`, Zeichen-/Portal-/Geschossbausteine und Keypanel im Atlas anschließen. Erst Raum/Rechteck und Gang/Tür/einfache Treppe, dann zweites Geschoss und Grundverwaltung vervollständigen. `src/render-drawing.ts` und `src/features/verwaltung/export-options.ts` für den gemeinsamen Ausschnitt verwenden; PNG aus demselben bestätigten Stand ausgeben. | Sechs Räume samt Keys vorbereiten, korrigieren, ausgeben und frisch öffnen. Spieler-PNG nur mit nachgewiesener Filterung gemäß Sichtbarkeitsvertrag; dieser Export ersetzt keine passive Live-Spielerprojektion. [Dungeonwerkzeuge](ROADMAP-PARITY-TOOLS.md), [GM-Aufgabe](ROADMAP-GM-PRODUCT-TESTING-PLAN.md). |
+| **Work 3 – Region einschließlich Referenz und Maß** | Terrainquelle/-schema und `atlas-renderer.ts` für freie Küste und native Verläufe erweitern; bestehende Ortsbindung behalten. Fluss/Straße mit Punktkorrektur anschließen, vorhandene Referenz-/Kalibrierungs- und Messbausteine in denselben Maßstab bringen. Ausgabe aus Work 2 wiederverwenden. | Kleine 3-Meilen-Region mit Küste, Fluss, Straße, drei Orten, kalibrierter Vorlage und korrekter Distanz ausgeben/frisch öffnen. [HEX-Fachumfang](#3-kleine-phasen-mit-früh-nutzbaren-ergebnissen), [Wonderdraft](WONDERDRAFT-PARITY.md). |
+| **Work 4a – Editierbare assistierte Siedlung** | Bestehende Citymodell/-commands/-draft/-gestures/-renderer und tatsächlichen Generatorstand prüfen/anschließen. Neue Siedlung mit nativen Dateien und Ortsverweisen anlegen; Fläche, Straßen und Platz → Dichte/Größe/Struktur → abbrechbarer Vorschlag → ein Commit. Auswahl/Griffe aus Work 1 zum Korrigieren einzelner Häuser verwenden. | Eichenfurt erzeugen, Variante abbrechen, übernehmen, Taverne ändern und nach Neustart wiederfinden. Bereits bearbeitete Häuser/Keys/Bindungen schützen, keine Erzeugung beim Laden. [CITY-01/02/04](ROADMAP-CITIES-IMPLEMENTATION-PLAN.md#technische-arbeitspakete). |
+| **Work 4b – Haus und Innenraum gemeinsam ändern** | Vor Produktänderung Gebäudezustand und Datenübernahme im bestehenden Cityfachplan konkretisieren. Citygebäude, räumliche Dungeonquelle und `atlas-city-building-panel.ts` zu einem gemeinsamen Gebäudeobjekt verbinden. Hülle ausdrücklich anlegen, Räume/Geschosse bearbeiten, Wand zunächst im gewählten Geschoss ändern; gemeinsame Mehrdateispeicherung aus Work 1 erhalten. | Außenform und Innenräume stimmen nach Korrektur, Undo/Redo und frischem Öffnen überein; Nutzertexte/IDs/Links erhalten. Danach das verbundene Leitbeispiel prüfen, soweit dessen Fähigkeiten geliefert sind. [Gebäudevertrag](ROADMAP-CITIES.md#gebäude-und-innenräume-als-ein-objekt), CITY-03. |
+| **Efficient – Häufige Wiederholung zuerst** | Zuerst Duplizieren, wiederholte Assetplatzierung, zuletzt verwendet und schnelle Auswahl; danach gemischte Mehrfachwerte, Text-Sammeländerung, Gruppen/Prefabs und geschützte lokale Neuerzeugung. Weitere Wandreichweite/Gesamtskalierung am gemeinsamen Gebäudezustand ergänzen. Gemessene Engpässe im bestehenden Laden/Renderer/Suchen/Export gezielt verbessern. | Dieselbe GM-Aufgabe mit gleichem Ergebnis und weniger Aktionen/Suche/Fehlern/Produktwartezeit; keine zusätzliche Engine oder zweite History. [Zentraler Katalog](#konkreter-werkzeugkatalog), [GM-Vergleich](ROADMAP-GM-PRODUCT-TESTING-PLAN.md). |
+| **Weitere Fachfähigkeiten – Jeweils eigener Work-Abschluss** | Verbleibende Katalogaktionen in ihren bestehenden HEX-/CITY-/Dungeonpaketen liefern. Räumlich: vorhandene Volumes → Room-Lifecycle → Paths/Passages → strukturierte Features/Beschreibungen → Graphdiagnostik; verknüpfte Inhalte/Templates bauen auf stabilen Autorenidentitäten auf. Lebensdaten zunächst manuell bearbeiten, Tagesabläufe erst mit autoritativer Weltzeit. Formate/Pakete benötigen ihre jeweiligen Transferregeln. | Jede neue Wirkung zuerst sichtbar bearbeiten, sicher abbrechen, speichern/frisch öffnen und direkt fachlich prüfen; danach Efficient/Beautiful. Pflichtumfang bleibt im [Katalog](#aktionen-am-ausgewählten-objekt), [Scope](docs/SCOPE.md) und bestehenden Fachplänen, ohne kopiertes Restinventar. Offene Originalwirkungen nur für den betroffenen Ausbau klären. |
+| **Beautiful und Gesamtqualifikation** | Nach funktionalem Abschluss die vorhandenen UI-Bereiche, Kartenstile und Ausgabe verfeinern. Bestehende Größen-/OS-/Recovery-/Original-/Installationsabnahmen am vorgesehenen Endbuild vervollständigen. Bereits frühe Anforderungen an Lesbarkeit/Tastatur/200 % bleiben bei jedem Paket. | Gestaltung erhält alle Wirkungen. Endfreigabe verlangt sämtliche Pflichtfähigkeiten und direkte Belege; Work-Abschluss, Fachabnahme und vollständiges E2E-01 bleiben getrennte Aussagen. [Endabnahme](#4-abnahme-fehlerfälle-und-feste-vorgaben). |
+
+**Prüfung pro Codeabschluss:** passende Regressionen für die geänderte Wirkung sowie `npm run check`, `npm test`, `npm run build` und bei Dokumentationsänderungen `npm run check:repo`. Für Work 1 vorhandene Atlas-/Campaign-Save-/Filetransaction-/Mount-/Room-Key-Tests erweitern, nicht die Implementierung nachzeichnen. Den tatsächlich geänderten Nutzerweg früh im isolierten Obsidian-Testvault prüfen; Ein-/Ausgangsdateien und frischen Prozess benennen. Physische Eingabe und Originalvergleich benötigen eigene direkte Belege. Ein nicht verfügbarer erforderlicher Anschluss bleibt eine konkrete Lücke, kein synthetischer PASS.
+
+**Abhängigkeiten klein halten:** Work 1 darf vorhandene bestätigte native Speicherwege nutzen, ohne auf vollständigen Import, Zielhostwechsel, Generator oder Graph zu warten. Fehlt dem konkreten Schreibweg der autoritative Save-/Contextanschluss, ist genau dieser Weg zuerst zu vervollständigen; keine Dummyautorisierung und keine Ersatzkampagne. Laufzeitfunktionen für Reise/Traps/Weltzeit bleiben bei ihren bestehenden Produktpaketen. Entscheidungen in den betroffenen Fachplan schreiben, Nachweise in `acceptance.json`, aktuellen Lieferbefund in die Atlasübersicht. Keine neue Koordinationsdatei, Agentenverwaltung oder zweite Statusmatrix.
+
+### Goal-Prompt für die vollständige Atlasumsetzung
+
+Dieser Goal umfasst die gesamte Atlaslieferung einschließlich aller verpflichtenden Erweiterungen und der Endqualifikation. Work 1 ist der erste überprüfbare Fortschritt, kein Endpunkt. Der Prompt verweist auf die bestehenden Anforderungen und führt keine zweite Funktionsliste.
+
+```text
+Setze den vollständigen vereinbarten Atlas im Repository
+Obsidian-Dungeon-Editor-Phase1 um, bis sämtliche Atlaspflichtfähigkeiten
+und ihre Endabnahmen abgeschlossen sind. Maßgeblich ist
+ROADMAP-HEX-ATLAS.md einschließlich Nutzerabläufen, Informationsarchitektur,
+Werkzeugkatalog, Objektaktionen, Lieferpaketen und Fachabnahmen.
+
+Umfang: der durchgehend bearbeitbare Hex-/Welt-/Stadt-/Haus-/Dungeon-Atlas,
+HEX-00–28, CITY-00–09, die beauftragten Dungeonwerkzeugfähigkeiten sowie
+die erweiterten räumlichen, Key-, Feature-, Graph-, Inhalts-, Lebensdaten-,
+Bibliotheks-, Ausgabe- und Datenlebenszyklusfunktionen gemäß den bestehenden
+Fachquellen. Erhalte alle zugesagten Ergebniswirkungen der Vorbilder.
+Gleichwertig heißt dasselbe erreichen, gezielt nachbearbeiten und dauerhaft
+speichern; Oberfläche und Gesten dürfen einfacher sein. Der vollständige
+Umfang steht in docs/SCOPE.md und den dort gebundenen Atlasfachplänen;
+acceptance.json bleibt das einzige Anforderungs- und Nachweisregister.
+Das ist der Atlasauftrag, kein zusätzlicher Auftrag für sämtliche anderen
+SaltMarcher-Systeme. Tatsächlich benötigte Campaign-/Zeit-/Runtime-/Host-
+und Speicheranschlüsse gehören jedoch zum integrierten Atlasablauf.
+
+Lese zuerst AGENTS.md, docs/INDEX.md und im Atlasplan Stand, Prioritäten,
+Umsetzungsplan und Zielabläufe. Prüfe Arbeitsbaum, gemeinsamen Branch,
+vorhandenen Code und tatsächlichen Integrationsstand der Kandidaten.
+Datierte Dokumente ersetzen diesen Befund nicht. Bewahre fremde Arbeit,
+Karten, IDs, Verweise und Autorenprosa. Lies anschließend pro bearbeitetem
+Paket nur seine Fachverträge, relevanten Acceptancefälle und Codepfade.
+
+Arbeite nach Make it Work → Make it Efficient → Make it Beautiful,
+unter durchgehendem KISS. Beginne mit Work 1a/1b: vorhandene Karte öffnen,
+Ort/Raum suchen, Geometrie und Key bearbeiten, gemeinsam Undo/Redo,
+automatisch dauerhaft speichern und nach vollständigem Hostneustart
+wiederfinden. Liefere danach die eigenständig nutzbaren Dungeon-, Regions-
+und Siedlungsabläufe samt gemeinsamem Haus/Innenraum und Ausgabe.
+Führe sie im verbundenen Leitbeispiel zusammen. Verbessere häufige
+Wiederholungen anhand derselben GM-Aufgaben. Ergänze alle verpflichtenden
+Fachfähigkeiten mit ihrem eigenen Work-, Efficient- und Beautiful-Ausbau
+nach den Abhängigkeiten der zentralen Lieferpakete. Funktionale Lücken
+haben Vorrang vor Komfort/Politur des betroffenen Ablaufs. Nicht sämtliche
+Originalfähigkeiten müssen fertig sein, bevor Kernaufgaben effizienter
+werden; sämtliche Pflichtfähigkeiten müssen vor Goalabschluss fertig sein.
+
+Verwende eine Atlasfläche, Kamera, History und Savegrenze. Setze die
+vereinbarte Informationsarchitektur um: Orientierung/Suche oben,
+Fachwerkzeuge neben der Karte, Werkzeugvorgaben klar getrennt von
+Auswahl/Key im Seitenpanel; Zusatzoptionen erst bei Bedarf. Zoom wechselt
+keinen Editor und erzeugt keine Inhalte. Vorhandene Bausteine weiterverwenden,
+kleine vollständige Nutzerwege liefern, keine zweite Speicherengine,
+Frameworkinventur, Koordinationsstruktur oder neue Statusdokumentation.
+
+Sichere jeden neuen Weg durch Command, native Speicherung und frische
+Wiederaufnahme. Autosave bedeutet bestätigte native Daten, nicht bloß
+Entwurfsablage. Vorschau/Graphentwurf/offene Texte nicht versehentlich
+bestätigen. Abbruch, Undo/Redo, neue Änderungen während Save, externe
+Konflikte, Contextwiderruf, Schließen und Neustart erhalten Arbeit und
+ehrliche Speicherzustände. Geschützte Geometrie, Texte und Bindungen bei
+Erzeugung/Regeneration bewahren. GM-/Spielerinhalt und Runtime/Autoreninhalt
+nach den jeweiligen bestehenden Sichtbarkeits- und Transferverträgen trennen.
+
+Klär notwendige lokale Entscheidungen im betroffenen Fachplan und setze
+sie um. Echte fachliche Quellenkollisionen oder erforderliche externe
+Freigaben konkret benennen und die notwendige Entscheidung anfordern;
+unabhängig mögliche Arbeit währenddessen weiterführen. Eine offene
+Spezialfrage blockiert nur ihre abhängige Wirkung. Autorität nicht mit
+Stubs umgehen, Originalwirkungen nicht erraten oder still streichen.
+Originalzugangslücken und benötigte manuelle Prüfungen früh sichtbar machen.
+
+Prüfe pro Codeabschluss passende Regressionen sowie npm run check,
+npm test und npm run build; bei Docänderungen npm run check:repo.
+Prüfe geänderte Nutzerwege früh im isolierten Testvault mit tatsächlichem
+Build, nativen Ein-/Ausgangsdateien und vollständigem frischem Hoststart.
+Vergleiche dieselben Aufgaben im jeweiligen Original und eigenen Produkt.
+Domänen-, DOM-, Host-, Original-, physische Eingabe- und installierte
+Buildbelege bleiben getrennt. Wiederhole oder erweitere Prüfungen, wenn
+Änderungen oder Befunde dies erfordern. Prüfe am Endbuild die vollständige
+Pflichtabdeckung und die vorgesehenen Größen-/Latenz-/Recovery-/OS-/
+Tastatur-/200%-/Ausgabe- und Installationsanforderungen. Testzahlen,
+Screenshots oder ein einzelnes E2E-Gate ersetzen diese Abnahmen nicht.
+
+Arbeite nach jedem Teilabschluss am nächsten noch offenen Lieferpaket
+weiter. Beende den Goal nicht nach Planung, einem Work-Paket, grünen
+Kerntests oder einem Kandidatenbranch. Aktualisiere nur vorhandene
+Atlasübersicht, Fachentscheidungen und direkte Abnahmeeinträge. Berichte
+knapp erreichte Nutzerwirkung, Prüfungen und nächste konkrete Lücke.
+Lokale Änderungen/Commits sind Teil der Umsetzung. Push, PR, Merge und
+Installation in produktive Vaults benötigen ausdrückliche Autorisierung;
+vor solchen Schritten den vollständigen reviewbaren Stand vorbereiten.
+
+Abschluss: Alle erfassten und im Originalabgleich ergänzten Atlaspflichten
+sind konkret implementiert, dauerhaft bearbeitbar und direkt abgenommen;
+das vollständige Leitbeispiel und die Endqualifikation bestehen. Sämtliche
+zugehörigen notwendigen Schnittstellen sind tatsächlich integriert.
+Keine Pflichtfunktion, Quelle-/Transferkollision oder notwendige Abnahme
+bleibt offen. Nicht verfügbare externe/manuelle Nachweise als Grenze
+festhalten und benötigte Mitwirkung anfordern, niemals als PASS ausgeben.
+Ein vollständiger lokaler Codeabschluss ohne diese Nachweise ist Fortschritt,
+keine vollständige Goalerfüllung. Den endgültigen gemeinsamen/ausgelieferten
+Stand und seine Belege eindeutig benennen; falls Publikation oder
+Installation noch nötig, deren Autorisierung vor Goalabschluss einholen.
+```
 
 ## Konkrete Nutzerabläufe
 

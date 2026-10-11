@@ -7,6 +7,7 @@ Ein lokaler Arbeitsraum für Spielleitungen: Karten und Raum-Keys bearbeiten, Ka
 ## Hier anfangen
 
 - [Atlas auf einen Blick](ROADMAP-HEX-ATLAS.md#atlas-auf-einen-blick): umgesetzt, fehlend und Weg zum Ziel.
+- [Atlas umsetzen](ROADMAP-HEX-ATLAS.md#umsetzungsplan): Oberfläche, Codepakete und Goal-Prompt bis zur vollständigen Atlasabnahme.
 - [Produktziele](docs/PRODUCT.md) und [Lieferfolge](docs/ROADMAP.md): vollständiger Funktionsumfang.
 - [Dokumentationsindex](docs/INDEX.md): Fachanforderungen und Nachweise.
 - [Beitragen](CONTRIBUTING.md) und [AGENTS.md](AGENTS.md): Entwicklung und Arbeitsgrenzen.

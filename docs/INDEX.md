@@ -1,10 +1,17 @@
 # Dokumentationsindex
 
-**Aktueller Atlasstand:** [Atlas auf einen Blick](../ROADMAP-HEX-ATLAS.md#atlas-auf-einen-blick) zeigt integrierte Funktionen, Kandidaten und offene Lücken. [Gleichwertigkeitsmaßstab, KISS und Work → Efficient → Beautiful](../ROADMAP-HEX-ATLAS.md#wie-kommen-wir-zum-ziel) stehen ausschließlich dort; Fachpläne enthalten ihre technischen Details.
+Der Leseweg folgt der Aufgabe. Erst die passende Einstiegsstelle öffnen, danach nur die betroffenen Fachdetails; nicht sämtliche Roadmaps vor jedem Codeabschluss lesen.
 
-**Konkrete Nutzerabläufe:** [Region → Dorf → Taverne → Dungeon und Spielabend](../ROADMAP-HEX-ATLAS.md#konkrete-nutzerabläufe). Die [Gebäudeentscheidung](../ROADMAP-CITIES.md#gebäude-und-innenräume-als-ein-objekt) legt die gemeinsame Bearbeitung von Außenform und Innenräumen fest.
+| Ich möchte … | Hier beginnen | Danach nur bei Bedarf |
+| --- | --- | --- |
+| den aktuellen Stand verstehen | [Atlasübersicht](../ROADMAP-HEX-ATLAS.md#atlas-auf-einen-blick) | Datierte direkte Belege in `acceptance.json` |
+| den nächsten Lieferabschluss umsetzen | [Umsetzungsplan und Codeanschlüsse](../ROADMAP-HEX-ATLAS.md#umsetzungsplan) | Fachquelle des gewählten Pakets, tatsächlicher Code und passende Tests |
+| einen Implementierungs-Goal starten | [Goal-Prompt für die vollständige Atlasumsetzung](../ROADMAP-HEX-ATLAS.md#goal-prompt-für-die-vollständige-atlasumsetzung) | [AGENTS.md](../AGENTS.md), anschließend die im Prompt benannten Quellen |
+| die Oberfläche bauen | [Informationsarchitektur](../ROADMAP-HEX-ATLAS.md#informationsarchitektur-der-oberfläche) und [Bedienregeln](../ROADMAP-HEX-ATLAS.md#gemeinsame-bedienung) | [Werkzeugkatalog](../ROADMAP-HEX-ATLAS.md#konkreter-werkzeugkatalog) und [Objektaktionen](../ROADMAP-HEX-ATLAS.md#aktionen-am-ausgewählten-objekt) |
+| den Nutzerzweck oder die Priorität klären | [Konkrete Nutzerabläufe](../ROADMAP-HEX-ATLAS.md#konkrete-nutzerabläufe) und [Work → Efficient → Beautiful / KISS](../ROADMAP-HEX-ATLAS.md#wie-kommen-wir-zum-ziel) | [Vollständiger Umfang](SCOPE.md), [Gebäudeentscheidung](../ROADMAP-CITIES.md#gebäude-und-innenräume-als-ein-objekt) |
+| eine Lieferung prüfen | [Atlas-Bedienproben](../ROADMAP-HEX-ATLAS.md#spätere-bedienabnahme) | [GM-Aufgaben](../ROADMAP-GM-PRODUCT-TESTING-PLAN.md), betroffene Fachabnahme und `acceptance.json` |
 
-**Werkzeuge und Bediengefühl:** [Werkzeugkatalog, Gesten, Vorschau und Korrektur](../ROADMAP-HEX-ATLAS.md#werkzeuge-und-bediengefühl), einschließlich [Wandumfang und horizontaler Gebäudeskalierung](../ROADMAP-CITIES.md#wandumfang-und-horizontale-gesamtskalierung).
+Die Zuständigkeit der Informationen bleibt eindeutig: Atlasplan für Nutzerabläufe, Oberfläche und Umsetzungspakete; Fachpläne für technische Verträge; `acceptance.json` für Anforderungen und Nachweise; [Produktroadmap](ROADMAP.md) für die Integration ins Gesamtprodukt. Links verbinden diese Ebenen, statt Inhalte oder Statuslisten zu kopieren.
 
 | Thema | Fachliche Quellen |
 | --- | --- |
