@@ -11,6 +11,26 @@ module.exports = ({ page, fs, path, assert, crypto, root, vault, qa, out, checks
   const toolbar = name => panel().locator('.dn-atlas-toolbar').getByRole('button', { name, exact: true });
   const settle = () => page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
   const hashes = () => Object.fromEntries(rows.map(r => [r.path, crypto.createHash('sha256').update(fs.readFileSync(path.join(vault, r.path))).digest('hex')]));
+  function campaignAfterSave(cityDigest) {
+    const original = JSON.parse(fs.readFileSync(path.join(root, 'tests/fixtures/atlas-e2e-spatial-v2', manifest.campaign.input.fixtureFile))),
+      actual = JSON.parse(fs.readFileSync(path.join(vault, manifest.campaign.path)));
+    const expected = structuredClone(original), owner = expected.registry.owners.find(o => o.ownerId === 'city'),
+      savedOwner = actual.registry.owners.find(o => o.ownerId === 'city');
+    for (const key of ['ownerRevision', 'snapshotRevision']) {
+      assert.match(savedOwner[key], /^(owner|snapshot):[a-f0-9]{64}$/);
+      owner[key] = savedOwner[key];
+    }
+    assert.match(savedOwner.source.generation, /^source:[a-f0-9]{64}$/);
+    owner.source.generation = savedOwner.source.generation;
+    for (const record of owner.records) record.payloadDigest = `sha256:${cityDigest}`;
+    expected.atlas.files.find(f => f.kind === 'city' && f.id === id(100)).savedDigest = `sha256:${cityDigest}`;
+    for (const key of ['registryRevision', 'registryContentDigest']) {
+      assert.match(actual.registry[key], /^(registry|sha256):[a-f0-9]{64}$/);
+      expected.registry[key] = actual.registry[key];
+    }
+    // No other campaign fields, owners, references or file digests may change.
+    assert.deepEqual(actual, expected, 'Campaign retains all data except expected City/registry revision and digest fields');
+  }
   const state = () => page.evaluate(() => {
     const v = app.workspace.getLeavesOfType('dungeon-native-atlas').at(-1).view, a = v.campaignHost.state;
     if (a.kind !== 'active') throw new Error('Managed campaign inactive');
@@ -119,9 +139,10 @@ module.exports = ({ page, fs, path, assert, crypto, root, vault, qa, out, checks
     assert.deepEqual(saved.city, expected); assert.equal(saved.depth, 3);
     assert.deepEqual(JSON.parse(fs.readFileSync(path.join(vault, cityPath))), expected);
     for (const row of manifest.input) if (row.path !== cityPath) assert.equal(bytes[row.path], row.sha256, row.path);
+    campaignAfterSave(bytes[cityPath]);
     fs.writeFileSync(baseline, JSON.stringify({ city: expected, hashes: bytes }, null, 2));
     await page.screenshot({ path: path.join(out, 'city-rotation-saved.png') });
-    await record('Native Save retains full rotated house/courtyard document and every foreign fixture byte');
+    await record('Native Save retains full centered house/courtyard, six foreign spatial files, and Campaign data except expected City/registry revision and digest fields');
   }
   async function reopen() {
     const saved = JSON.parse(fs.readFileSync(baseline)); assert.deepEqual(hashes(), saved.hashes);
