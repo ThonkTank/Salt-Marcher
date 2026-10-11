@@ -181,6 +181,7 @@ export function groupEditorContext() {
     scenes,
     sceneId,
     catalog,
+    generation,
     item,
     rules,
     transaction,
