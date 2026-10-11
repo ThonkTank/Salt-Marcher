@@ -201,14 +201,42 @@ Speicherung und frisches Öffnen, auch mit 200 % Zoom. Unabhängiger enger R01,
 Delta-Review und CI bestanden; Shared-Merge `76d8ded1`. Die letzte
 manuelle-ID-Korrektur wurde im DOM geprüft, nicht im früheren nativen Lauf.
 
-Der nächste #68-Kandidat macht aktive NPC-Notizen über ihre gespeicherte
+PR #108 macht aktive NPC-Notizen über ihre gespeicherte
 Kreatur-ID in der vorhandenen Notizsuche auffindbar, ohne neuen Index oder
 Speichervertrag. Auf sauberem Source `8621d202` bestand eine isolierte echte
 Obsidian-Edit-/Frischprozessprobe mit gespeicherter NPC-ID `goblin` und
 ausgeblendeter fremder Fraktion; beide Prozesse endeten normal. Rohbelege:
 `/home/aaron/.cache/dungeon-native-qa/atlasqa-creature-ref-search-20261011/evidence/`.
-Unabhängiger Review und Shared-Integration stehen aus; die vollständige
-World-Planner-/SMR-02-Abnahme bleibt offen.
+Der unabhängige enge Stadt-R01 und Exact-SHA-CI bestanden; Shared-Merge
+`af5ddcbb`. Die vollständige World-Planner-/SMR-02-Abnahme bleibt offen.
+
+PR #112 adressiert ungespeicherte Notizentwürfe beim
+Kampagnenwechsel A→B→A innerhalb derselben geöffneten Spielansicht. Er hält
+das World-Notes-Panel, widerruft alte Sessions und Eingaben und zeigt einen
+Entwurf erst nach bestätigter neuer Kampagnenbindung wieder an. Typecheck,
+Repositoryprüfung, 1011/1012 Tests (ein Skip) und Build bestanden. Eine neue
+native Probe erreichte den Wechsel zunächst wegen Fehlern im neuen Testskript
+nicht. Der danach korrigierte Lauf `--world-notes-drafts` wechselte in einem
+isolierten echten Obsidianprozess A→B→A→B. Die zwei ungespeicherten Entwürfe
+blieben getrennt und alle A/B-Eingabedateien bytegleich; der Prozess endete
+normal. Rohbeleg: `/home/aaron/.cache/dungeon-native-qa/atlasqa-world-notes-drafts-host-03/evidence/1791690123926-atlas-spatial-edit/`.
+Der unabhängige enge Stadt-R01 und Exact-SHA-CI bestanden; Shared-Merge
+`87ccdb26`. Die vollständige SMR-02-Abnahme steht aus.
+
+Der folgende #68-Beitrag erhält diese Entwürfe auch beim Schließen und erneuten
+Öffnen der Weltwissen-Ansicht innerhalb derselben Pluginlaufzeit. Pro
+Kampagne/Namespace besitzt nur eine Ansicht den editierbaren Entwurf; eine
+überholte Ansicht kann weder einen neueren Text überschreiben noch nach Save
+oder ausdrücklichem Verwerfen einen alten Entwurf wiederbeleben. Der
+Kampagnen-Snapshot wird weiterhin frisch bestätigt; der Puffer trägt keine
+Speicherautorität. Fokussierte DOM-Gegenproben prüfen A/B-Entwürfe, alte
+Eingaben, Close-Reihenfolgen sowie Save/Discard mit einer zweiten Ansicht.
+Ein isolierter echter
+Obsidianlauf A→B→A→B, Ansicht schließen/öffnen, B- und A-Entwurf erneut
+anzeigen, 16 native Eingabedateien bytegleich und normaler Exit bestand;
+Rohbeleg auf sauberem repariertem Produktstand `c631eb5f` unter
+`/home/aaron/.cache/dungeon-native-qa/atlasqa-world-notes-close-r02-exact-01/evidence/1791692061930-atlas-spatial-edit/`.
+Ein Prozessneustart erhält ungespeicherte Entwürfe weiterhin nicht.
 
 ### SMR-03 – Party, Scene und Live Session
 
