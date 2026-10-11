@@ -91,10 +91,24 @@ neue Repository-/Modellinstanz mit exakt gespeichertem Citydocument.
 Alte Buttons nach Render/Discard sind wirkungslos. Offene Namenseingabe blockiert
 Drehung mit sichtbarer Aufforderung, ohne Namen teilweise zu übernehmen.
 
-Minimaler aktueller Umfang sind Vierteldrehungen, keine beliebigen Winkel oder
-volle Haus-/Stadtparität. Enger unabhängiger Review und freie GM-Nutzung stehen aus.
-Die Modellwiederöffnung ist kein neuer Obsidianprozess oder GPU-/physischer Beleg.
-Keine eigene GUI; Laptopslot ist separat an Hex für dessen #80-IME-Lauf freigegeben.
+PR128 ist nach unabhängigem R01/5482132249 und Exact-SHA-CI38117059411
+auf Shared25e6155 integriert. Cloud-GM-UIstart wurde durch vollen Docker-Speicher
+blockiert; kein freier GM-PASS daraus. Stadt führte den frisch koordinierten
+lokalen H01 auf Sourceee9c70d/Build94461124 aus: tatsächliche sichtbare Auswahl
+von Haus106, Dirty-Name-Grenze, Links/Rechts/UndoRedo/Save und separater frischer
+Obsidianprozess PASS; alle fremden Fixturebytes gleich. Beide normal beendet,
+RunnerExit0, keine erzwungene Termination; Slot ausdrücklich zurückgegeben.
+[Gebundener Rohbeleg](../../reference/city-building-rotation-h01/receipt.json).
+Automatisierte Eingabe und vorbereitete Citynavigation, keine freie GM-/physische
+Abnahme; Haus105 ist hier nur durch bestehende Modelltests qualifiziert.
+
+**Neuer Bedienbefund:** Der Zahlenanker bleibt fest, die Kontur dreht um die lokale
+Ecke. Haus106 wandert sichtbar 8m/80px nach links. Der bestehende CityGesture dreht
+um die Grundrissmitte. Nächste Reparatur im selben #127: Inspector entsprechend
+zentrieren und tatsächlichen betroffenem Weg nachtesten; kein größerer Ausbau.
+Vierteldrehungen, beliebige Winkel, breite Recovery und volle Stadtparität bleiben
+separate offene Anforderungen. H01 auf25e6155 ist kein Gesamtclaim für den danach
+integrierten Live-Session-Kern.
 
 ## Inspector- und Fachaktionsbelege
 

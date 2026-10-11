@@ -11088,18 +11088,18 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY-BUILDING-ROTATION-INSPECTOR",
+      "id": "CITY127-ROTATION-H01",
       "issue": 127,
-      "state": "candidate_review_and_gm_pending",
-      "branch": "city/building-rotation-inspector-20261011",
+      "state": "native_path_checked_center_pivot_ux_repair_needed",
+      "branch": "city/building-rotation-host-20261011",
       "plan": "docs/plans/city/building-name-inspector.md#arbeitsstand-127",
-      "verification": "Two missing-control counterprobes FAIL before; three Managed/Vaultadapter cases PASS after. Both dungeon-bound and courtyard houses retain position/scale/geometry/IDs and all foreign native bytes. Quarter-turn uses existing CityDraft/CityEdit/shared History; exact UndoRedo/Save/new model state, pending name and detached callback protection. Full suite 1026PASS/0FAIL/1existingSkip; type/build/repo/diff PASS.",
-      "next": "Independent narrow City consumer review and early free GM-use on isolated candidate; no own GUI while Hex holds newly coordinated IME slot.",
-      "limits": "Quarter-turn controls only; no arbitrary angle, actual GUI/fresh Obsidian process, physical, broad Recovery or overall parity claim."
+      "verification": "Visible automated courtyard-house selection, name-pending rejection, quarter-turn left/right, shared UndoRedo/native Save and separate fresh Obsidian process PASS on ee9c70d/Shared25e6155/build94461124. Both RunnerExit0/app.quit/no forced termination; foreign fixture bytes preserved. Independent PR128R01/CI consumed; Cloud-GM UI blocked before start by full Docker root.",
+      "next": "Correct inspector rotation pivot to retained footprint center, consistent with existing CityGesture; focused model/native retest in same127. Planner refresh delta ec9d7a4 independently passed; requested selective steward promotion pending.",
+      "limits": "No free GM/physical/House105 native/broad recovery/parity/overall pass; local GUI slot returned. Native proof bound before newly integrated live-session kernel."
     },
     "nextRun": {
-      "id": "CITY-BUILDING-ROTATION-REVIEW-GM",
-      "focus": "Review existing pose-command consumer and obtain early visible usability result; no duplicate shared contracts."
+      "id": "CITY127-CENTER-PIVOT-REPAIR",
+      "focus": "Observed 8m/80px house contour shift under quarter-turn; retain visual center rather than numeric corner anchor. New GUI requires fresh slot coordination."
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",

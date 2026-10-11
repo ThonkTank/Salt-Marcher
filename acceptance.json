@@ -4937,7 +4937,13 @@
       "source": "src/ui/atlas-city-building-panel.ts; existing CityEdit set-building-pose",
       "plan": "docs/plans/city/building-name-inspector.md#arbeitsstand-127",
       "checks": "Three Managed/Vaultadapter regressions PASS; exact pose with preserved linked-house/courtyard geometry, IDs, foreign bytes; shared UndoRedo and native Save/new model reopen. Pending name rejects rotation without mutation; detached old buttons fail closed.",
-      "remaining": "Independent review, early GM-use, real Obsidian/fresh-process, physical and broad Recovery/parity remain open; quarter-turn controls only."
+      "remaining": "Center-pivot UX repair and focused retest; free GM blocked by full Cloud Docker root. Physical, native house105, arbitrary angles, broad Recovery and full parity open.",
+      "h01": {
+        "source": "ee9c70d16cafb9a52c12efe96492dc45b3b1580f",
+        "receipt": "docs/reference/city-building-rotation-h01/receipt.json",
+        "scope": "Automated actual native/GPU courtyard-house controls, shared UndoRedo/Save/separate fresh process; all foreign fixture bytes unchanged; both normal exit0.",
+        "uxFinding": "Numeric position preserved but contour shifts8m left; center-preserving inspector repair needed. Existing CityGesture uses center pivot."
+      }
     }
   },
   "wonderdraftParity": {
