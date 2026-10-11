@@ -1,6 +1,6 @@
 # Folge-Roadmap: übrige Dungeondraft-Abläufe angleichen
 
-Diese Roadmap setzt [Grundrisse und Objekte](ROADMAP-PARITY.md) fort. Deren Fach- und Aufräumtore sind mit der ausdrücklichen Nutzerausnahme für die nicht durchgeführte Hardwareprobe P7-2 bestanden. Der [getrennte Phase-1-Plan](ROADMAP-PARITY-TOOLS-PHASE1-PLAN.md) liegt vor; für diese Folge-Roadmap liegt noch keine Fachabnahme vor.
+Diese Roadmap setzt [Grundrisse und Objekte](ROADMAP-PARITY.md) fort. Deren Fach- und Aufräumtore sind mit der ausdrücklichen Nutzerausnahme für die nicht durchgeführte Hardwareprobe P7-2 bestanden. Der [getrennte Phase-1-Plan (historisch)](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/blob/6a90f3ee2f50f0be45f0e256784576f13722c319/ROADMAP-PARITY-TOOLS-PHASE1-PLAN.md) liegt vor; für diese Folge-Roadmap liegt noch keine Fachabnahme vor.
 
 Maßstab ist der Pflichtkatalog `acceptance.json` für Dungeondraft 1.2.0.1 „Opulent Kirin“: derzeit 677 `required`-Unterfälle. 42 `excluded`-Fälle und fünf `editor_addition`-Fälle sind keine Paritätstore. Bereits belegte Teilabläufe werden als Regression übernommen, aber nicht pauschal auf ganze Werkzeuge ausgeweitet. Bedienfolge, Optionen, Zustandswechsel und gespeicherte Funktion müssen dem Original entsprechen; die Dungeon-Grafik darf ungefähr gleichwertig sein.
 
@@ -8,11 +8,9 @@ Nutzerentscheidung vom 09.10.2026: Vergrößern und Verkleinern einer Karte sind
 
 Nutzerpräzisierung vom 09.10.2026: Es gibt eine einzige grenzenlose Atlaskarte für Overworld-Hexterrain, Städte und Dungeons. Dungeondrafts `New Map`, lokale Startmaße, Größenvorlagen, Assistentenstart und daran gebundene Startschalter (`DD-001.01–.06`, `DD-002.01–.09`, `DD-003.01–.02`, `DD-006.01/.02`, `DD-007.01/.02`) sind keine direkten Bedienvorbilder mehr und verlassen das Paritätstor. Bestehende Belege bleiben historisch. Atlasanlage ohne Breiten-/Höhenabfrage gehört zu HEX-01; Schattenwirkung `DD-006.03/.04`, Gebäudeabnutzung `DD-008` und die übrigen übertragbaren Werkzeuge bleiben offen beziehungsweise im gemessenen Scope reviewt. Datei- und Karteninformationsfälle werden für den gemeinsamen Atlas nach Nutzerzweck geprüft.
 
-## Ablauf und Phasentor
+## Funktionsprüfung
 
-Für jede Fachphase folgt ein eigener konkreter Plan neben dieser Roadmap: offene Unterfälle und Originalbelege lesen, fehlende Originalwirkung auf isolierten Daten messen, den aktuellen installierten Host vergleichen, nur belegte Abweichungen umsetzen und alle zugeordneten Pflichtfälle in einem getrennten Review entscheiden. Der Hostlauf umfasst die jeweils wirksamen Eingaben, Undo/Redo, Speichern und frische Neuöffnung. Ein Befund führt zu eigenem Nachbesserungsplan, Umsetzung und erneutem Review. Danach folgen vor der nächsten Fachphase getrennte Plan-, Umsetzungs- und Reviewläufe für das technische Aufräumen.
-
-`acceptance.json` hält je Unterfall Originalversion, genaue Folge, Rohbeleg, Host-Build, Vergleich und Restlücke; `TOOL-PARITY.md` hält den lesbaren Befund und `checkpoint.json` nur den aktuellen Lauf. Ein grüner Test oder eine vorhandene Implementierung schließt keinen Fall. Es läuft höchstens eine grafische Testinstanz. Produktive Vault-Texte, Karten, Links und Bildbreiten bleiben geschützt; physische Eingaben werden nur durch eine wirkliche Hardwareprobe abgenommen. Vor jedem Paket und Push wird der gemeinsame GitHub-Branch abgerufen und integriert.
+Originalversion, Eingabefolge, Rohbeleg, Host-Build, Vergleich und Restlücke stehen je Unterfall in `acceptance.json`; `TOOL-PARITY.md` hält den lesbaren Befund. Undo/Redo, Speicherung und frische Neuöffnung prüfen, soweit betroffen. Eine Implementierung oder ein grüner Test ersetzt keine Original-/Hostabnahme. Produktive Karten und Texte schützen; physische Eingaben benötigen einen tatsächlichen Hardwaretest.
 
 ## Fachphasen in Reihenfolge
 

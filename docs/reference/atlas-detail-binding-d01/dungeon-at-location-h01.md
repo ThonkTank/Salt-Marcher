@@ -54,7 +54,7 @@ Kein neuer Dungeon oder neue Placementidentität wird von diesem Anschluss erzeu
 
 ## Native Producerprobe reproduzieren
 
-Nach neuer ausdrücklicher Koordination des lokalen Slots, aus dem Repositoryroot:
+Reproduktionsbefehl im isolierten Testvault aus dem Repositoryroot:
 
 ```sh
 DUNGEON_QA_ROOT=/home/aaron/.cache/dungeon-native-qa/hex-04/eigener-h01-test \

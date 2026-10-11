@@ -4,7 +4,7 @@ Stand: 9. Oktober 2026
 
 Basis: `d09513e103ed6e40a8973d6941961cde37f376a8`
 
-Art: Planlauf; keine Produkt-, Host- oder Fachabnahme
+Art: technische Prototypanforderungen; keine Produkt-, Host- oder Fachabnahme
 
 ## Zweck und Entscheidungsgrenze
 
@@ -33,11 +33,11 @@ Vor Ratifikation gilt:
   erreichbar.
 - Bestehende Produktmodule dürfen als unveränderte Eingabe importiert werden.
   Eine erforderliche Änderung an `src/`, `styles.css`, `build.mjs` oder einer
-  vorhandenen Roadmap beendet das jeweilige Paket mit `No-Go: boundary` und
-  benötigt erst einen eigenen, reviewten Nachbesserungsplan.
-- Abhängigkeiten und reproduzierbare Befehle dürfen in einem späteren
-  Umsetzungslauf ausschließlich über `package.json` und `package-lock.json`
-  ergänzt werden. Kein Paket besitzt gleichzeitig Produkt- oder Hostdateien.
+  vorhandenen Roadmap liegt außerhalb dieses isolierten Prototyps und ist
+  `No-Go: boundary`; sie zählt nicht als bestandener Prototypbeleg.
+- Prototypabhängigkeiten und reproduzierbare Befehle stehen in `package.json`
+  und `package-lock.json`. Prototypcode bleibt von Produkt- und Hostdateien
+  getrennt.
 - Es gibt keine Dual Writes. Jeder Lauf benennt genau eine Testdatenwahrheit.
   Bestehende Vault-, Karten- und Nutzerdateien werden nur gehasht oder aus
   einer ausdrücklich erzeugten Kopie gelesen.
@@ -75,40 +75,9 @@ aber niemals allein die endgültige ADR-Ratifikation liefern.
 
 ## Gemeinsamer Ausführungsvertrag
 
-### Lauflebenszyklus
+### Daten- und Ausführungsgrenzen
 
-Jeder Prototyp ist ein eigener, sequentieller Kandidatenbranch mit der Folge
-`Planreview -> Umsetzung -> unabhängiger Review -> gegebenenfalls
-Nachbesserung -> erneuter Review -> Prototyp-Aufräumen`. Ein Prototyp beginnt
-erst auf einer sauberen, mit dem aktuellen gemeinsamen Branch integrierten
-Basis. Änderungen anderer Geräte oder Stränge werden vor jedem Lauf erneut
-abgerufen; veröffentlichter Verlauf wird nicht umgeschrieben. Jeder geprüfte
-Zwischenstand wird ohne Force-Push auf seinem Kandidatenbranch veröffentlicht.
-Nur der Koordinator integriert nach bestandenem Review die kleine Roadmap-,
-Contracts- und Evidence-Änderung in den gemeinsamen Branch. Ein No-Go
-verbleibt mit seinen Belegen auf dem Kandidatenbranch; ein eigener
-Aufräumcommit entfernt den
-paketlokalen ausführbaren Prototypcode und seine temporären Abhängigkeiten,
-bevor etwas zur Integration vorgeschlagen wird. Die reviewten, versionierten
-Port-, DTO- und Schema-Verträge unter `tools/adr-prototypes/contracts/**` sowie
-der Aggregatbeleg bleiben erhalten. Ein Folgepaket setzt keinen gelöschten
-Harness voraus; es bindet die erhaltenen Verträge und den reviewten
-Aggregatbeleg als Eingangsoracle.
-
-P01 bis P04 bleiben wegen ihrer fachlichen Eingangsorakel in dieser Reihenfolge
-sequenziell; kein Folgepaket beginnt vor dem Aufräumreview des Vorgängers. Jedes
-Paket hat genau einen Besitzer und ausschließlich die unten genannten Dateien.
-Diese Paketexklusivität sperrt keine andere, nicht überlappende Produktarbeit:
-statische und nichtgrafische Läufe dürfen in getrennten Worktrees parallel
-arbeiten. Pro physischem Gerät läuft jedoch gleichzeitig höchstens eine
-grafische Host-, Original- oder Prototypinstanz und nur ein GUI-, Fault- oder
-Lastlauf. Getrennte Geräte dürfen für denselben freigegebenen Paketkandidaten
-ihre plattformspezifischen Receipts parallel erzeugen; kein Lauf teilt dabei
-einen Evidence-Root oder schreibt dieselben Dateien. Kontrollierte Samples
-eines funktionierenden Kandidaten dürfen die unten geforderte Anzahl haben;
-nach höchstens zwei erfolglosen Versuchen oder 45 Minuten an derselben
-Hypothese wird anhand der vorhandenen Belege Go, No-Go oder eine neue
-Hypothese entschieden.
+Prototypen bleiben von Produktcode und Nutzervault getrennt. Jede Messung nennt Eingangsdaten, Quell-/Buildhashes, Ergebnis und Grenzen. Versionierte Port-/DTO-/Schemaverträge sowie Aggregatbelege bleiben reproduzierbare Eingangsorakel. Fehlende oder negative Beweise qualifizieren keine Zielplattform. Abhängigkeiten zwischen P01–P04 ergeben sich aus ihren fachlichen Eingangsorakeln. Grafische Prüfungen verwenden isolierte Testdaten und schützen aktive Hosts.
 
 ### Versionierte Verträge und abschließende Composition
 
@@ -127,9 +96,9 @@ Renderer- und einer Speichergrenze. Ohne Stub- oder Direktzugriff führt er in
 einem Profil nacheinander P01-Karte öffnen/ändern/speichern, P02-Campaign-Write,
 P03-sichere Projektion und P04-Export/Import aus. Correlation-ID, Revision,
 Schema-Version und semantischer Digest werden an jeder Grenze durchgängig
-geprüft. Der Lauf besitzt eigenen Plan, Review, Faultmatrix, Aggregatbeleg und
-Aufräumcommit; eine zweite Utility-/Speicherautorität oder paketlokale
-Sonderbrücke ist `No-Go`. Sein exklusiver Besitz ist
+geprüft. Faultmatrix, unabhängige Prüfung und gehashter Aggregatbeleg weisen
+das Zusammenspiel nach; eine zweite Utility-/Speicherautorität oder paketlokale
+Sonderbrücke ist `No-Go`. Technische Modul- und Belegpfade sind
 `tools/adr-prototypes/composition/**`,
 `tools/adr-prototypes/evidence/c01-aggregate.json`,
 `tests/adr-prototypes/c01-*.test.*` und nur vorübergehend die exakt gepinnten
@@ -294,7 +263,7 @@ Datenbankzugriff im Renderer. Ein React-Neubau, die Migration von
 `src/editor.ts`, ein neues Kartenformat und eine Installation sind ausdrücklich
 keine P01-Ziele.
 
-### Besitzdateien des späteren Umsetzungslaufs
+### Technische Modul- und Belegpfade
 
 - `tools/adr-prototypes/p01/**`
 - `tools/adr-prototypes/contracts/p01-v1/**`
@@ -306,8 +275,8 @@ keine P01-Ziele.
 P01 liest unverändert `src/model.ts`, `src/session.ts`, `src/commands.ts`,
 `src/persistence.ts`, `src/renderer.ts`, `src/rendering.ts`,
 `src/render-drawing.ts`, `src/selection.ts` und deren aktuelle Abhängigkeiten.
-Diese Dateien sind nicht in P01-Besitz. Ein notwendiger Edit an ihnen ist das
-oben definierte Boundary-No-Go.
+Diese Produktdateien sind unveränderte Eingaben. Ein notwendiger Edit an
+ihnen ist das oben definierte Boundary-No-Go.
 
 ### Ports und Prozessgrenzen
 
@@ -482,7 +451,7 @@ Campaign-Datensatz und schreibt die dazugehörige erklärende History in genau
 einer Transaktion. Er ist synthetisch und wird nicht als vollständiges
 Campaign-, Scene- oder Ledger-Modell ausgegeben.
 
-### Besitzdateien des späteren Umsetzungslaufs
+### Technische Modul- und Belegpfade
 
 - `tools/adr-prototypes/p02/**`
 - `tools/adr-prototypes/contracts/p02-v1/**`
@@ -584,7 +553,7 @@ allgemeine GM-, Datei-, Datenbank-, Audio- oder Mutationsfähigkeit. P03 baut
 weder vollständige Scene- noch Knowledge-/Perception-Fachlogik; sein Oracle
 ist eine explizite synthetische Projektion.
 
-### Besitzdateien des späteren Umsetzungslaufs
+### Technische Modul- und Belegpfade
 
 - `tools/adr-prototypes/p03/**`
 - `tools/adr-prototypes/contracts/p03-v1/**`
@@ -688,7 +657,7 @@ Campaign importiert werden können. Das Prototypformat friert noch kein
 First-Real-Use-Dauerformat ein und verspricht keine Kompatibilität für
 Entwicklungsdaten.
 
-### Besitzdateien des späteren Umsetzungslaufs
+### Technische Modul- und Belegpfade
 
 - `tools/adr-prototypes/p04/**`
 - `tools/adr-prototypes/contracts/p04-v1/**`
@@ -843,7 +812,7 @@ Ressourcennutzung ist `No-Go`.
 
 ## Gesamtfolge und ADR-Entscheid
 
-Die Reihenfolge ist verbindlich:
+Die Beweise bauen fachlich aufeinander auf:
 
 1. `ADR-P01` beweist Kartenwiederverwendung und die Renderergrenze.
 2. `ADR-P02` ergänzt die einzige lokale Mutationsautorität und Crashsicherheit.
@@ -853,18 +822,17 @@ Die Reihenfolge ist verbindlich:
 5. `ADR-C01` beweist alle vier Vertragsversionen gemeinsam auf genau einer
    Main-/Utility-/Preload-/Renderer-/Speichergrenze.
 
-P02 wird erst nach abgeschlossenem P01-Aufräumreview spezifiziert und
-umgesetzt. P03 baut erst auf dem reviewten Prozess-/Receiptmodell aus P02 auf.
-P04 beginnt erst, wenn P01- und P02-Digests als feste Eingangsorakel vorliegen.
-C01 beginnt erst nach dem P04-Review und verwendet die erhaltenen
-Vertragsartefakte; sein Aufräumen entfernt den Composition-Harness, nicht die
-Verträge. Ein späterer Prototyp darf kein früheres No-Go verdecken.
+P02 benötigt die belegten P01-Eingangsorakel; P02 bleibt eine eigene atomare Write-/Recoveryprüfung.
+P04 benötigt P01- und P02-Digests als feste Eingangsorakel. C01 verwendet die
+geprüften P04-Ergebnisse und erhaltenen Vertragsartefakte. Der temporäre
+Composition-Harness kann entfernt werden; die Verträge bleiben erhalten. Ein
+späterer Prototyp darf kein früheres No-Go verdecken.
 
 ### Außerhalb P01-P04 verbleibende Ratifikationsblocker
 
 Auch vier bestandene Prototypen plus Composition-Lauf reichen nicht für den
 Plattformentscheid. Vor Ratifikation benötigen folgende Dimensionen eigene
-ausführbare, reviewte Risikobelege und Besitzpläne; sie dürfen nicht still in
+ausführbare, unabhängig geprüfte Risikobelege; sie dürfen nicht still in
 P01-P04/C01 wachsen:
 
 - **Distribution:** signierter oder nachvollziehbar identifizierter
@@ -899,19 +867,17 @@ ADR-Entscheids`, wenn:
   gehashten Produktquellen-/Fixture-Eingabestand. Paketlokale
   Dev-Abhängigkeitsunterschiede sind explizit, eine Änderung dieses gemeinsamen
   Eingabestands erzwingt die Wiederholung aller betroffenen früheren Pakete;
-- Hex/Atlas-, Stadt- und Dungeon-Gerätekollegen ihre Formate, Belege,
-  Performancegrenzen und offenen Gates bestätigt haben;
-- die drei lokalen Integrationsstränge die Scope-/Migrationsgrenzen bestätigt
-  und die Cloud-Reviewer Architektur, Sicherheit, Daten und Accessibility
-  unabhängig geprüft haben;
+- Atlas-, Stadt- und Dungeonformate, Performance- und Migrationsgrenzen anhand echter Belege geprüft sind;
+- Architektur, Sicherheit, Daten und Accessibility die jeweiligen technischen Gegenprüfungen bestehen;
 - kein ausführbarer Prototyp im Produktbundle, installierten Plugin oder
   Nutzervault liegt, die versionierten Verträge weiter prüfbar sind und der
-  Aufräumreview alle temporären Fähigkeiten inventarisiert hat.
+  Nachweis alle temporären Fähigkeiten inventarisiert.
 
-Danach dokumentiert ein eigener ADR-Ratifikationslauf die tatsächlichen
-Receipts, die Dreioptionenmatrix, alle zusätzlichen Blocker, Abweichungen und
-den gewählten Host in den bestehenden Architektur-, Checkpoint- und
-Acceptance-Eigentümern. Dieses Plandokument ändert deren Stand nicht. Bei
+Die Plattformentscheidung benötigt die tatsächlichen Receipts, Dreioptionenmatrix, Blocker, Abweichungen und einen belegten Zielhost. Bei
 `No-Go` bleibt Obsidian der laufende Adapter, die vorhandene Facharbeit läuft
-weiter und das Team plant eine neue Zielplattformhypothese; es entstehen weder
+weiter und die Zielplattformfrage bleibt offen; es entstehen weder
 ein halb migriertes Produkt noch zwei Datenwahrheiten.
+
+## Verbleibende technische Nachweise
+
+Receipt-State-Machines, Rollback und Fresh-Recovery benötigen ausgeführte Matrix-/Adversarienfälle, Sicherheitslimits und negative Tests. Diese Anforderungen verleihen weder H03-Go noch eine Plattformwahl oder P02-Produktfreigabe. Fachliche Eingangsorakel bleiben unabhängig von alten Arbeitslaufbezeichnungen erforderlich.

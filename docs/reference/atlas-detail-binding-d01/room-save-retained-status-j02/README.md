@@ -2,7 +2,7 @@
 
 [#80](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80), Hex,
 E2E-01 Nutzerzeile13 / E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001.
-[J01](../room-save-committed-journal-j01/README.md) wurde [durch Steward konsumiert
+[J01](../room-save-committed-journal-j01/README.md) wurde [integriert
 und integriert](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/165#issuecomment-6108940024). Sein tatsächlicher
 Anzeigefehler wird hier im bestehenden Paket repariert.
 
@@ -73,8 +73,3 @@ Portable Originale:
 - [Herkunft](input-lineage.json), [Originalhashes](input-native-hashes.json), [Schutzbindung](protected-inputs-before.json), [Preload](room-save-committed-j02-preload.cjs)
 
 Kanonisch acceptance.hexAtlas.requirements[30].dungeonAtLocationRetainedSaveStatusJ02.
-Steward kann die konkrete Produktkorrektur samt Regressionen/nativer Nachprobe
-unabhängig verwenden; keine allgemeine Reviewrunde. Hex behält #80/Branch;
-prepared Room-Savejournal-Recovery bleibt nächster eigener Speichereingang.
-Kein Hardcrash, physischer-/IME-/Meta-/freier-GM-, Original-/Großkarten-/
-Nutzervault- oder Gesamt-E2E-PASS. Neue lokale GUI benötigt einen neuen Slot.

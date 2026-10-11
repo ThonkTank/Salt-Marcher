@@ -1,8 +1,46 @@
 # Roadmap: Hex-Atlas mit Wonderdraft-Parität und verbundenen Orts- und Dungeon-Keys
 
+## Atlas auf einen Blick
+
+**Ziel:** Welt → Region → Stadt → Haus → Dungeonraum durch Zoom erreichen und direkt bearbeiten; eine Kamera, eine Undo/Redo-Folge und gemeinsame haltbare Daten.
+
+**Geprüfter Stand: 11.10.2026**, gemeinsamer Branch `active/installed-phase1`, Commit [6a90f3ee](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/commit/6a90f3ee2f50f0be45f0e256784576f13722c319). Der Atlas besitzt bereits einen benutzbaren Hex-/Ortskern und integrierte Stadt-/Dungeon-Teilabläufe. Der vollständige Zielablauf und E2E-01 bleiben offen.
+
+### Was funktioniert, was fehlt?
+
+**Integriert** bedeutet im gemeinsamen Branch vorhanden, **Kandidat** bedeutet nur im genannten offenen PR. Die Belege bestätigen jeweils begrenzte Abläufe; vollständige Fachabnahme und lokal installierte Pluginversion sind daraus nicht ableitbar.
+
+| Fähigkeit | Bereits umgesetzt / Beleg | Fehlt zum Ziel |
+| --- | --- | --- |
+| Hexgelände | **Integriert:** grenzenloser Atlas; 3-Meilen-Hexes mit Land, Meer, Wald und Farbe; Pinsel, Zurücksetzen, Undo/Redo, Speichern und Entwurf. [HEX-01/02](acceptance.json) | Vollständige Landschaftswerkzeuge und Gleichwertigkeit mit dem Original. |
+| Mehrere Maßstäbe | **Teilweise:** größere Raster beim Herauszoomen; Gelände wird auf der kleinsten Stufe gespeichert. [Terrainformat](src/features/atlas/terrain-schema.ts) | Alle Hexstufen bearbeiten; grobe Vorgaben und geschützte feine Überschreibungen, HEX-06. |
+| Orte und Orts-Keys | **Integriert:** Stadt-/POI-Marker anlegen, verschieben, Markdown bearbeiten; gemeinsame Rücknahme, Speichern und Neustart belegt. [Abschluss #40](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/40#issuecomment-6102165161) | Links nach Umbenennung und vollständigen Ablauf abnehmen. |
+| Vorhandene Stadt bearbeiten | **Integriert:** Häuser und Straßenknoten verschieben, Hausnamen ändern und Häuser drehen. Begrenzte Obsidian-Speicher-/Neustartbelege. [Stadtabnahmen](acceptance.json) | Vollständiges Zeichnen/Neuanlegen und sämtliche Stadtfunktionen. |
+| Assistierte Bebauung | **Kandidat [PR154](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/154):** Fläche/Straßen/Platz, Häuser erzeugen, Dichte/Größe/Variante, Vorschau/Abbruch und präzise Hauskorrektur; kleine Speicher-/Neustartfälle in Obsidian. | Übernahme; neue Stadt mit Dateien und Kampagnenverweisen anlegen; große Bedienprobe. [Restarbeit #149](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/149) |
+| Haus und Innenraum | **Teilweise:** metrische Stadt-/Haus-/Dungeonbindungen und Dach-/Raumdarstellung im gemeinsamen Zoom. [Atlasdarstellung](src/features/atlas/spatial-canvas.ts) | Vollständiger Hausgrundriss-/Key-Ablauf und Schutz bei Bewegung/Regeneration, CITY-03/04. |
+| Dungeon im Atlas | **Integriert:** vorhandenen Dungeon am Ort verorten; Raumkontur/Key bearbeiten und zurückkehren, gemeinsames Undo/Speichern. [Obsidian-Teilbelege #80](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80) | Restliche Bedien-/Wiederherstellungsfälle und vollständige HEX-04/05-Abnahme; mehrere Detailkarten, HEX-22. |
+| Räumlicher Dungeon | **Integriert [PR158](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/158):** 3D-Volumes, Höhen, Schnitte, Flächenbearbeitung und Undo/Speichern/Neustart im Dungeon-Editor. | Vollständiger Atlasanschluss; Raumzuordnung bei Bewegung/Teilung/Vereinigung, räumliche Wege/Durchgänge, Graphentwurf, Attributvererbung, Inhaltsvorlagen und weitere [Dungeon-Fachziele](docs/SCOPE.md). |
+| Speicherung und Wiederaufnahme | **Teilweise:** gemeinsame Mehrdateispeicherung, Entwurf, Kopie und direkte Wiederherstellungsfälle in Obsidian. **Integriert [PR167](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/167):** korrigierte Anzeige nach entzogener Speicherberechtigung. | Vollständige Wiederherstellungsabnahme (begrenzte Prepared-/Committed-Raumspeicherung bereits belegt); Autosave; vollständiger [Importanschluss #41](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/41); breite Fehler-/Konfliktabnahme. |
+| Landschaft, Gestaltung, Ausgabe | **Offen:** die vollständigen Atlasfunktionen aus HEX-09–27. Dungeonwerkzeuge sind dafür keine Atlasabnahme. | Ooke-Vorlagen, freie Küsten, Gewässer, Flüsse/Straßen, Symbole/Assets, Labels/Stile, Maße, Ausschnitte und PNG/JPEG. |
+| Größe und Gesamtqualität | **Offen:** vollständige Endqualifikation. Kandidat PR154 besteht einen 5.000-Häuser-Datenlauf; die entsprechende Bedienprobe fehlt. | Großwelt/bedarfsgerechtes Laden, große Städte/Dungeons, Reaktionszeiten, Originalvergleiche, Tastatur/200 %, physische Bedienung und installierter Endbuild. |
+
+### Wie kommen wir zum Ziel?
+
+| Etappe | Nächstes sichtbares Ergebnis | Worauf aufbauen / wann abgeschlossen? |
+| --- | --- | --- |
+| **1. Atlas-Kern zuverlässig abschließen** | Ort → Dungeon → Raum/Key ändern → speichern → frisch wiederfinden. | Ortskern #40 abgeschlossen; #80 und #41 fortführen. Abschluss: vollständiger E2E-01-Ablauf mit geprüfter Speicherung/Wiederherstellung und Import. |
+| **2. Städte vollständig aufbauen** | Fläche/Straßen vorgeben → Häuser erzeugen → korrigieren → Innenraum/Key bearbeiten. | Vorhandene Stadtbasis und PR154 verwenden; Kampagnenanschluss für Neuanlage schließen. Abschluss: CITY-01–04 einschließlich geschützter Neuerzeugung und Neustart. |
+| **3. Weltgestaltung vervollständigen** | Grobe Welt formen, lokal verfeinern und lesbar ausarbeiten. | HEX-06–21 sowie HEX-23–26; erste Vorlage/Ausgabe HEX-09/10. Abschluss: zusammenhängende Stufen, Landschafts-/Gestaltungsfunktionen und zugehörige Originalbelege. |
+| **4. Stadt und Dungeon ausbauen** | Befestigungen/Viertel, Bewohner/Beziehungen/Fraktionen/Tagesabläufe; räumlich verbundene Dungeons mit vollständigen Autorenfunktionen. | CITY-05–07, HEX-22 und [SMR-04-Fachbedarf](docs/SCOPE.md); vorhandene Volumes und gemeinsame Weltzeit verwenden. Abschluss: jeweilige Fachabläufe erhalten Texte und Kennungen. |
+| **5. Gesamten Atlas qualifizieren** | Große Welt bis Innenraum flüssig bearbeiten, ausgeben und zuverlässig wiederaufnehmen. | HEX-08/22/27/28, CITY-08/09 und Querschnittsanforderungen. Abschluss: gemeinsamer Endbuild mit Größen-/Performance-, Original-, Bedien-, Export- und Installationsnachweisen. |
+
+Die Etappen bündeln Nutzerergebnisse; die detaillierten Fachphasen und Abhängigkeiten unten bleiben verbindlich. Die [E2E-Abnahmen](docs/ROADMAP.md#lieferfolge-des-gesamtprodukts) behalten ihre fachliche Reihenfolge. Offene Produktissues und PRs enthalten konkrete Befunde und Kandidaten.
+
+Diese Übersicht ist ein datierter Einstieg. Bei relevanter Integration oder geänderter Lücke wird sie am bestehenden Ort aktualisiert; Laufchroniken und Abnahmedetails bleiben in ihren Fachquellen. Die folgenden Abschnitte führen Zielarchitektur, vollständige Anforderungen und Phasenzuordnung.
+
 ## 1. Ausgangspunkt und Zielbild
 
-Der bestehende Dungeon-Editor liefert eine brauchbare Grundlage: native Kartendateien, stabile Kennungen, strukturierte Raum-Keys, Undo/Redo, konfliktgeschütztes Speichern, Zeichenwerkzeuge, Assets und eine Spielansicht. Hex-Geometrie, mehrere räumliche Maßstäbe und eine gemeinsame Verortung verschiedener Karten fehlen bislang. Die laufende Dungeondraft-Abnahme enthält außerdem noch offene Abschlussarbeiten. Grundlage sind die vorhandene [Architektur](ARCHITECTURE.md) und der [Abnahmekatalog](acceptance.json).
+Der bestehende Dungeon-Editor liefert native Kartendateien, stabile Kennungen, strukturierte Raum-Keys, Undo/Redo, konfliktgeschütztes Speichern, Zeichenwerkzeuge, Assets und eine Spielansicht. Hex-Geometrie und gemeinsame Stadt-/Dungeonverortung sind inzwischen teilweise umgesetzt; vollständige mehrstufige Landschaftsbearbeitung und durchgehende Atlasqualifikation bleiben offen. Den geprüften Funktionsstand zeigt [Atlas auf einen Blick](#atlas-auf-einen-blick). Grundlage des vollständigen Ziels sind die vorhandene [Architektur](ARCHITECTURE.md) und der [Abnahmekatalog](acceptance.json).
 
 Die lokal installierte Wonderdraft-Version ist **1.1.8.2**. Installationsdateien und offizielle Dokumentation wurden geprüft; eine vollständige direkte Bedienabnahme steht noch aus. Die dokumentierten Kernbereiche umfassen unter anderem Landmassen, Küsten, Flüsse, Straßen, Symbolpinsel, Gestaltungsvorlagen und Beschriftungen. [Wonderdraft](https://wonderdraft.net/), [offizieller Quick Guide](https://github.com/Megasploot/Wonderdraft/wiki/Quick-Guide).
 
@@ -69,29 +107,11 @@ Neue gemeinsame Schnittstellen umfassen:
 
 ## 3. Kleine Phasen mit früh nutzbaren Ergebnissen
 
-Die zehn bisherigen Etappen werden durch die folgenden **29 HEX-Phasen, HEX-00 bis HEX-28**, ersetzt und um **zehn Stadtphasen CITY-00 bis CITY-09** aus der [Stadtplan-Roadmap](ROADMAP-CITIES.md) ergänzt. Alle Phasen sind zunächst geplant. Die relative HEX-Reihenfolge bleibt verbindlich; die Stadtphasen werden an den unten genannten Stellen eingeordnet. Jede Phase erweitert den zuvor geprüften Benutzerablauf. Die Architektur aus Abschnitt 2 bleibt das Ziel, ihre notwendigen Teile entstehen zusammen mit der jeweiligen Funktion.
+Die zehn bisherigen Etappen werden durch die folgenden **29 HEX-Phasen, HEX-00 bis HEX-28**, ersetzt und um **zehn Stadtphasen CITY-00 bis CITY-09** aus der [Stadtplan-Roadmap](ROADMAP-CITIES.md) ergänzt. Die Phasen beschreiben den vollständigen Zielumfang; sie sind keine Aussage, dass sämtliche Funktionen noch unimplementiert wären. Den integrierten Stand, Kandidaten und offenen Rest zeigt [die Übersicht](#atlas-auf-einen-blick). Die relative HEX-Reihenfolge bleibt verbindlich; die Stadtphasen werden an den unten genannten Stellen eingeordnet. Jede Phase erweitert den zuvor geprüften Benutzerablauf. Die Architektur aus Abschnitt 2 bleibt das Ziel, ihre notwendigen Teile entstehen zusammen mit der jeweiligen Funktion.
 
-### Arbeitsregel gegen verlorene Funktionsfähigkeit
+### Funktions- und Datenerhalt
 
-- Jede Phase liefert einen konkret bedienbaren Ablauf im echten Obsidian und erweitert die bestehende Testkarte. Sie beginnt mit offenen Punkten und einem konkreten technischen Plan in einer Datei neben der Roadmap. Planung, Umsetzung, Review und Nachbesserung werden als eigene Arbeitsläufe mit Start, Fokus und Ergebnis geführt. Review und Nachbesserung wiederholen sich bis zur belegten Freigabe ohne offene Pflichtlücke. HEX-00 liefert die Ausgangsbasis; der erste Detailplan steht in [ROADMAP-HEX-00-PLAN.md](ROADMAP-HEX-00-PLAN.md).
-- Technische Vorarbeit wird auf die unmittelbar folgende Benutzeraktion begrenzt. Beispielsweise entstehen gemeinsame Key- und Renderer-Anbindungen beim Orts-Key beziehungsweise beim ersten Dungeonübergang.
-- Schon die erste Atlasansicht verwendet einen gemeinsamen Bearbeitungsablauf. Keine spätere Phase darf separate Stadt-/Dungeonmodi voraussetzen. Vor dem Stadtproduktcode wird eine kleine Ergebnisgalerie der beiden Stadtvorbilder festgelegt; deren Gesten sind keine Paritätsvorgabe.
-- HEX-00 erfasst vor HEX-01 die vollständig erreichbare Wonderdraft-Oberfläche: Werkzeuge, Menüs, Optionen, Dialoge und Gesten werden direkt inventarisiert und stabilen Unterfällen sowie Produktphasen zugeordnet. Die ersten Zeichen-, Abbruch-, Speicher- und Neustartfolgen werden ebenfalls bereits direkt im Original belegt. Vor dem Produktcode jeder weiteren Werkzeugfamilie werden ihre konkreten Wirkungsvarianten gemessen. Der [Wonderdraft-Vergleichsplan](WONDERDRAFT-PARITY.md) und `acceptance.json.wonderdraftParity` sind dafür verbindlich; Paketnamen und Dokumentation ersetzen keine Originalprobe.
-- Fortschritt wird in `acceptance.json` getrennt als **Nutzbarkeit des Atlasablaufs** und **Wonderdraft-Parität** ausgewiesen. Fehlende Paritätsbelege werden nicht durch einen bestandenen Praxistest geschlossen.
-- Datenverlust, falsche Speicherung, Abstürze, verlorene Entwürfe, falsche Verortung und ein unterbrochener Kernablauf werden vor der nächsten Erweiterung behoben. Weitere Options-, Gesten- oder Darstellungsabweichungen erhalten einen konkreten Unterfall und einen zuständigen Nachbesserungslauf; das funktionierende Ergebnis bleibt als noch nicht vollständig gleichwertiger Teststand verfügbar.
-- Ein Nachbesserungslauf bearbeitet jeweils einen benannten Befund. Nach spätestens zwei erfolglosen Versuchen oder 45 Minuten an derselben Hypothese wird anhand der Belege eine andere Vorgehensweise gewählt. Die laufende Phase wächst dabei nicht um andere Werkzeugfamilien.
-- Nach jeder Fachfreigabe folgt eine eigene Aufräumphase für die eingeführten Teile und deren technische/architektonische Schwächen. Auch sie erhält getrennte Plan-, Umsetzungs- und Reviewläufe sowie erforderliche Nachbesserung mit erneutem Review. Erst ihr bestandenes Tor öffnet die nächste Fachphase. Neue Funktionen und Änderungen am vereinbarten Ziel gehören in die nächste dafür zuständige Phase. Aktueller Lauf und nächster Schritt stehen in `checkpoint.hexAtlasExecution`.
-
-### Fortschritt veröffentlichen und eingehende Änderungen integrieren
-
-Die Nutzeranweisung autorisiert regelmäßige Pushes und lokale Integration für die beauftragten Arbeitspakete:
-
-1. **Vor jedem Arbeitspaket:** Remote und tatsächlichen Upstream abrufen. Eingehende Änderungen vor neuer Umsetzung lokal integrieren; vorhandene lokale Änderungen vorher sichern und erhalten. Ein abweichender veröffentlichter Verlauf wird zusammengeführt, ohne ihn umzuschreiben. Konflikte werden anhand des aktuellen Plans und der betroffenen Anforderungen gelöst.
-2. **Nach jedem abgeschlossenen Paket:** Plan, Umsetzung, Review, Nachbesserung und Aufräumen jeweils in einem zusammengehörigen Commit veröffentlichen. Bei längeren Phasen zusätzlich spätestens am täglichen Arbeitsabschluss einen prüfbaren Zwischenstand pushen. Die Veröffentlichung wartet nicht auf die vollständige Roadmap.
-3. **Vor jedem Push:** Remote erneut prüfen und bei neuer Integration die betroffenen Prüfungen wiederholen. Dokumentation erhält JSON-/Kennungs-/Verweis-/Diffprüfungen; Produktcode die Basisprüfungen und passenden Benutzerabläufe. Ein Zwischenstand benennt offene Original-, Host-, Bedien- und Paritätsabnahmen.
-4. **Nach dem Push:** Exakten Remote-Commit mit dem lokalen Commit vergleichen. Checkpoint und Abnahmeeinträge bleiben beim tatsächlichen Stand; umfangreiche Synchronisationsbelege liegen bei den QA-Daten außerhalb des Vaults.
-
-Nur zum Paket gehörende Änderungen werden veröffentlicht. Fremde lokale Arbeit bleibt erhalten; Force-Push und stilles Verwerfen von Änderungen sind ausgeschlossen. Repository-Synchronisation und Installation im Obsidian-Vault werden weiterhin getrennt geprüft. Der Rhythmus gilt ebenso für CITY- und Wonderdraft-Vergleichspakete.
+Jede Erweiterung erhält den vorhandenen bearbeitbaren Atlas, gemeinsame Kamera/History und stabile Kennungen. Originalwirkung und Hostablauf werden mit isolierten Daten geprüft; fehlende Paritätsbelege bleiben offen. Datenverlust, falsche Speicherung, verlorene Entwürfe und unterbrochene Kernabläufe müssen vor abhängigem Ausbau behoben sein.
 
 ### HEX-00 – Ausgangsbasis und gemeinsame Testregion
 
@@ -105,7 +125,7 @@ Nur zum Paket gehörende Änderungen werden veröffentlicht. Fremde lokale Arbei
 
 Dieses Tor fordert früh ein vollständiges Mapping und direkt belegte Startfolgen. Die vollständige Paarabnahme sämtlicher späterer Varianten bleibt bei der jeweiligen Werkzeugphase, damit der nutzbare Hex-Editor nach HEX-02 und der zusammenhängende Atlasablauf nach HEX-05 früh verfügbar werden.
 
-**Praxistest:** Dungeon öffnen → Raum-Key lesen und bearbeiten → Undo/Redo → speichern → frischer Obsidian-Start. Bestehende offene Dungeondraft-Abnahmen, insbesondere das Phase-5-Aufräumtor, bleiben in ihrer eigenen Roadmap erhalten. Ein konkreter Fehler in einer benötigten gemeinsamen Funktion wird vor deren Wiederverwendung behoben; die gesamte übrige Dungeondraft-Parität muss nicht vor dem ersten Hex-Editor fertig sein.
+**Praxistest:** Dungeon öffnen → Raum-Key lesen und bearbeiten → Undo/Redo → speichern → frischer Obsidian-Start. Bestehende offene Dungeondraft-Abnahmen bleiben in ihrer eigenen Roadmap erhalten. Das Phase-5-Aufräumtor ist nach `phase5CleanupRepairIndependentReview` in [acceptance.json](acceptance.json) am 8. Oktober 2026 auf `f53c78164fcfd6e74c6410161272914aa8597a25` abgeschlossen; dieser datierte Nachweis ist keine aktuelle Gesamt-Paritätsabnahme. Ein konkreter Fehler in einer benötigten gemeinsamen Funktion wird vor deren Wiederverwendung behoben; die gesamte übrige Dungeondraft-Parität muss nicht vor dem ersten Hex-Editor fertig sein.
 
 ### Meilenstein A – Eine Hexkarte tatsächlich bearbeiten
 
@@ -214,13 +234,13 @@ Nach bestandenem HEX-00-Tor muss die vollständige Zuordnung der Originaloberfl�
 
 1. **Während der Änderung:** Gezielte Kernprüfungen für tatsächlich gefährdete Regeln wie Koordinatenumrechnung, Vererbung, Undo und Mehrdatei-Wiederherstellung ausführen. Eine neue sichtbare Aktion früh im echten Obsidian bedienen.
 2. **Am Ende jeder Phase:** `npm run check`, `npm test` und `npm run build` ausführen; den neuen Ablauf und die bisher verfügbare Folge auf der gemeinsamen Testregion prüfen. Änderung, Abbruch, Undo/Redo, Save und frische Öffnung gehören bei betroffenen persistenten Daten dazu. Der kurze unabhängige Review kontrolliert auch den Build der Nachweise.
-3. **Nach je zwei Produktphasen:** Einen überprüften Testbuild mit dem isolierten Testvault zum Ausprobieren bereitstellen; die tatsächlich getesteten Funktionen und offenen Fälle im bestehenden Checkpoint festhalten. Zusätzliche Teststände folgen an Meilensteinen A, B und C, wenn sie nicht bereits mit diesem Rhythmus zusammenfallen. Der bisher installierte Produktstand bleibt bis zur gesicherten Installation verfügbar.
+3. Einen überprüften Testbuild auf isolierten Daten ausprobieren; getestete Funktionen und offene Fälle mit direktem Beleg unterscheiden.
 4. **Nach Änderungen an Kamera, Laden, Assets oder Renderer:** Eine größere Karte und mehrfaches Hin- und Zurückzoomen prüfen. Die Testgröße wächst von der kleinen Region über 10.000 zu 100.000 bearbeiteten Hexes. Zeit, Speicher und Ressourcenfreigabe werden ab HEX-08 tatsächlich gemessen.
 5. **An jedem Meilenstein:** Den bisherigen Kernablauf zusammenhängend durchspielen und gespeicherte Texte, Links, Positionen und einen bisherigen Referenzausschnitt vergleichen. Physische Bedienung beginnt mit dem ersten nutzbaren Stand; fehlende Hardware-/Nutzerprüfungen bleiben offen und werden nicht aus synthetischen Eingaben abgeleitet.
 
 Ab HEX-05 lautet die feste Folge: **Region anzeigen → Hex ändern → Orts-Key bearbeiten → in den Dungeon zoomen → Raum und Key bearbeiten → herauszoomen → rücknehmen/wiederholen → speichern → frischer Start → denselben Ort wiederfinden.** Ab CITY-03 wird zusätzlich in Stadt und Haus gezoomt und dort Straße, Gebäude und Hausgrundriss direkt bearbeitet. Keine dieser Aktionen verlangt einen Karten-, Kontext- oder Moduswechsel. Spätere Landschafts-, Symbol- und Exportfunktionen werden in diese Testregion eingebaut. Ein reiner Editor-Neustart oder eine Sammlung isolierter Dialogtests ersetzt diese Folge nicht.
 
-Funktionsbeleg und Paritätsbeleg werden je Unterfall getrennt festgehalten; Nachweise nennen den geprüften Build und den tatsächlichen Stand. Die Roadmap enthält keine laufenden Ergebnisprotokolle. `checkpoint.json` hält nur aktuellen Stand, offenen Befund und nächsten Schritt; `acceptance.json` hält Anforderungen und Belege. Große Testkarten, Bildpaare und Laufdaten liegen außerhalb des Nutzervaults unter `/home/aaron/.cache/dungeon-native-qa/`. Es läuft jeweils eine grafische Testinstanz.
+Funktionsbeleg und Paritätsbeleg werden je Unterfall getrennt festgehalten; Nachweise nennen den geprüften Build und den tatsächlichen Stand. Die Roadmap enthält keine laufenden Ergebnisprotokolle.
 
 ### Funktions- und Bedienabnahme
 
@@ -262,4 +282,4 @@ Kernprüfungen, Build, Obsidian-Bedienung, Großkartenlauf und physische Maus-/T
 
 ## Einordnung in das Gesamtprodukt
 
-Der [Hex-Beitrag zum gemeinsamen End-to-End-Fertigstellungsplan](ROADMAP-HEX-ATLAS-E2E-PLAN.md) verbindet die nächsten sichtbaren Phasen mit Campaign, Dungeon/City, Live-Spiel und Fehler-/Displaygates aus Issue #12. Die vier gemeinsamen Abläufe ersetzen keine der hier verpflichtenden Fachphasen oder Wonderdraft-Vergleiche. Neue Integration erfolgt über geprüfte Kandidaten-SHAs mit unabhängigem Review.
+Der [Hex-Beitrag zum gemeinsamen End-to-End-Fertigstellungsplan](ROADMAP-E2E-GATES-CANDIDATE.md#räumliche-end-to-end-kriterien) verbindet die nächsten sichtbaren Phasen mit Campaign, Dungeon/City, Live-Spiel und Fehler-/Displaygates aus den [E2E-Kriterien](ROADMAP-E2E-GATES-CANDIDATE.md). Die vier gemeinsamen Abläufe ersetzen keine der hier verpflichtenden Fachphasen oder Wonderdraft-Vergleiche. Neue Integration erfolgt über geprüfte Kandidaten-SHAs mit unabhängigem Review.

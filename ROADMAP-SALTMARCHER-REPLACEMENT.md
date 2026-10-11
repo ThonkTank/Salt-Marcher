@@ -33,7 +33,7 @@ Zielarchitektur und kein Merge-Vertrag.
 
 Jeder Lauf hält die verwendete SaltMarcher-Revision, konkrete Quelldokumente,
 übernommene Daten/Fixtures, bewusst nicht übernommene Hostarchitektur und
-verbleibende Abweichungen in `checkpoint.json` und `acceptance.json` fest.
+verbleibende Abweichungen in `acceptance.json` fest.
 
 ## Gesamtumfang
 
@@ -63,8 +63,8 @@ verbleibende Abweichungen in `checkpoint.json` und `acceptance.json` fest.
 
 SMR-00–11 sind Fachfolgen mit eigenen Abnahmen, keine globale serielle
 Implementierungsfolge. Die [gemeinsame Lieferroadmap](docs/ROADMAP.md#parallele-umsetzung-und-zusammenführung)
-führt ihre parallel umsetzbaren Nutzerergebnisse und Zusammenführungen;
-aktuelle Aufgaben und Besitz stehen an den dort verlinkten Arbeitsorten.
+führt die Nutzerergebnisse und ihre fachlichen Abhängigkeiten. Die dort
+verlinkten Fachquellen beschreiben Anforderungen und technische Anschlüsse.
 
 ### SMR-00 – Portfolivertrag und Quelleninventar
 
@@ -101,10 +101,10 @@ aktuelle Aufgaben und Besitz stehen an den dort verlinkten Arbeitsorten.
   Beschädigte Daten öffnen den neuesten eindeutig sicheren Recoverystand und zeigen
   Verluste; nur bei Mehrdeutigkeit fragt der GM. Keine manuelle Backupbedienung als
   Voraussetzung normaler Erhaltung. Quelle: Campaign Management und Program
-  Capabilities „Local Data Lifecycle“, #10/#41, SMR-AC-02/15.
+  Capabilities „Local Data Lifecycle“, [Campaign-Datenvertrag](ROADMAP-SALTMARCHER-SMR-01-CAMPAIGN-DATA-PLAN.md); #41, SMR-AC-02/15.
 - Der Fachtext verlangt Campaignauswahl bei jedem Start, der Gesamtvertrag möglichst
   vollständigen Runtime-Resume. Einstieg/Continue und wiederhergestellten Zustand
-  in #44/#10/#11 ausdrücklich zusammenführen; keine automatische UI-Weiterleitung
+  in #44; [Campaign-Datenvertrag](ROADMAP-SALTMARCHER-SMR-01-CAMPAIGN-DATA-PLAN.md); [Plattform-ADR](ROADMAP-SALTMARCHER-PLATFORM-ADR.md) ausdrücklich zusammenführen; keine automatische UI-Weiterleitung
   oder bewusst verworfene Runtime daraus als bereits entschiedene Zielregel ableiten.
 
 ### SMR-02 – Katalog, Referenzgraph und World Planner
@@ -121,7 +121,7 @@ aktuelle Aufgaben und Besitz stehen an den dort verlinkten Arbeitsorten.
   Vorschau → vollständiger Eintrag mit Scene-Details-History. Mehrdeutigkeit
   auswählbar, editierbare Prosa unverändert; Umbenennen/Löschen aktualisiert den
   Kampagnenindex ohne statischen Neubau. Offline-/Unavailablefälle bleiben lesbar.
-  Quellen: Catalog und Reference Graph requirements; #9/#10, SMR-AC-03.
+  Quellen: Catalog und Reference Graph requirements; [Katalog-/Encountervertrag](ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md); [Campaign-Datenvertrag](ROADMAP-SALTMARCHER-SMR-01-CAMPAIGN-DATA-PLAN.md), SMR-AC-03.
 
 #### Arbeitsstand #68
 
@@ -213,7 +213,7 @@ Gesamtfreigabe.
   Speicherung wartet nicht auf Encounter-Synchronisierung; Retry konsumiert den
   gespeicherten Stand, ohne die Party-/Sceneänderung zu wiederholen.
   Quellen: Party Window, Scene, Live Session und Program Capabilities
-  „Confirmed Cross-Workflow Behavior“; #6/#60, SMR-AC-04. DTOs beenden den Weg nicht.
+  „Confirmed Cross-Workflow Behavior“; [LiveScene-Vertrag](docs/plans/runtime/smr03-live-scene-contract.md); #60, SMR-AC-04. DTOs beenden den Weg nicht.
 
 ### SMR-04 – Gemeinsamer Atlas und Karten
 
@@ -244,9 +244,9 @@ Marker, ein isolierter CityRenderer oder ein Dungeoneditor allein genügt nicht.
    und Autonomy konsumieren bestätigte Raum-/Passage-/Runtimefakten; fehlende
    Schema-/Transferentscheidungen aus #44 bleiben offen.
 
-Arbeitsorte: [HEX-Meilenstein B](ROADMAP-HEX-ATLAS.md#meilenstein-b--hex--ort--dungeon--raum-key--zurück),
+Fachquellen: [HEX-Meilenstein B](ROADMAP-HEX-ATLAS.md#meilenstein-b--hex--ort--dungeon--raum-key--zurück),
 [CITY-01–09](ROADMAP-CITIES-IMPLEMENTATION-PLAN.md#technische-arbeitspakete),
-#7/#8/#44. Direkte Endabnahme SMR-AC-05; E2E-01 prüft den gemeinsamen
+[Atlasstand](ROADMAP-HEX-ATLAS.md); [Dungeonanforderungen](docs/plans/dungeon/smr04-spatial-coverage.md); #44. Direkte Endabnahme SMR-AC-05; E2E-01 prüft den gemeinsamen
 Integrationsweg, nicht automatisch die gesamte Karten-/Stadtfunktion.
 
 ### SMR-05 – Encounter, Combat, Loot und Rewards
@@ -256,7 +256,7 @@ Integrationsweg, nicht automatisch die gesamte Karten-/Stadtfunktion.
   liefert bearbeitbare installationseigene Generatorpresets mit ausdrücklicher
   Campaignzuweisung bis gleicher Scene-/Sessionkomposition und gespeicherter
   Combat-Mobpartition. Einstellungs- und Consumerpfad zusammen verfolgen; Preset ist
-  Kompositionspolitik, keine Regel-/Katalogversionsauswahl. #9/#10/#6, AC-06/07.
+  Kompositionspolitik, keine Regel-/Katalogversionsauswahl. [Katalog-/Encountervertrag](ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md); [Campaign-Datenvertrag](ROADMAP-SALTMARCHER-SMR-01-CAMPAIGN-DATA-PLAN.md); [LiveScene-Vertrag](docs/plans/runtime/smr03-live-scene-contract.md), AC-06/07.
 - Encounter Tables, Combat-Maske, Rewards, Gruppenloot und Charakterledger
   über stabile Referenzen und atomare Kommandos verbinden.
 - Vom Gruppeneditor bis zur Nachbereitung liefern: manuelle Monster-/Lootauswahl,
@@ -267,7 +267,7 @@ Integrationsweg, nicht automatisch die gesamte Karten-/Stadtfunktion.
   Geschichtsumschreibung. Kumulativer Lootausgleich ist eine lesende Guidance;
   Gruppenreward und Sessionreward konsumieren dieselbe bestätigte Ledgerbasis.
   Quellen: Loot und Program Capabilities „Follow-Up“/„Cross-Workflow Behavior“;
-  #9/#6, SMR-AC-06/07. Treasure-Editierkollision aus #44 bleibt offen.
+  [Katalog-/Encountervertrag](ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md); [LiveScene-Vertrag](docs/plans/runtime/smr03-live-scene-contract.md), SMR-AC-06/07. Treasure-Editierkollision aus #44 bleibt offen.
 
 ### SMR-06 – Session Planner und reproduzierbare Generierung
 
@@ -299,7 +299,7 @@ Integrationsweg, nicht automatisch die gesamte Karten-/Stadtfunktion.
   sofortige Gesamtersetzung ohne Apply. Auch Cancel-/Commitgrenze und gemeinsame
   Receiptautorität vor abhängiger Implementierung ausdrücklich auf die Zielregel
   beziehen. Quellen: Session Planner, Session Generation, Encounter Generation und
-  SRC-P01–03; #10/#6/#9, SMR-AC-07. Keine zweite öffentliche Generatorpipeline.
+  SRC-P01–03; [Campaign-Datenvertrag](ROADMAP-SALTMARCHER-SMR-01-CAMPAIGN-DATA-PLAN.md); [LiveScene-Vertrag](docs/plans/runtime/smr03-live-scene-contract.md); [Katalog-/Encountervertrag](ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md), SMR-AC-07. Keine zweite öffentliche Generatorpipeline.
 
 #### Arbeitsstand #69
 
@@ -333,7 +333,7 @@ physische Eingabe und 200%-Zoom bleiben offen.
 
 - Kalender-/Zeitkern und providerneutrale Reise parallel entwickeln. Kalenderregeln
   warten nicht auf die fertige Reise; autoritative Scene-Zeit konsumiert den
-  bestätigten Scene-/Owner-/Publishvertrag. Bestehenden Fachbesitz in #10 erhalten.
+  bestätigten Scene-/Owner-/Publishvertrag. Bestehenden Fachbesitz in [Campaign-Datenvertrag](ROADMAP-SALTMARCHER-SMR-01-CAMPAIGN-DATA-PLAN.md) erhalten.
 - Den realen Sceneweg liefern: vollständige/partielle PC-Gruppe wählen → Ziel oder
   geordnete Wegpunkte auswerten → ausdrücklich reisen → am Checkpoint pausieren/
   inspizieren/fortsetzen oder abbrechen → frisch öffnen. Ortswechsel der kompletten
@@ -365,7 +365,7 @@ physische Eingabe und 200%-Zoom bleiben offen.
   bis ausdrücklicher Auflösung; keine narrative Entscheidung oder globale Zeit-
   Rückabwicklung. Mehrstufiges kausales Reise-Undo/Redo erhält spätere fremde Fakten.
   Quellen: Hex/Dungeon Travel und State, SRC-T01–04/Q05, TN-08–14/23/24;
-  #10/#6/#7/#8, SMR-AC-08/09. UI, erforderliche Persistenz und Consumeranschluss
+  [Campaign-Datenvertrag](ROADMAP-SALTMARCHER-SMR-01-CAMPAIGN-DATA-PLAN.md); [LiveScene-Vertrag](docs/plans/runtime/smr03-live-scene-contract.md); [Atlasstand](ROADMAP-HEX-ATLAS.md); [Dungeonanforderungen](docs/plans/dungeon/smr04-spatial-coverage.md), SMR-AC-08/09. UI, erforderliche Persistenz und Consumeranschluss
   gehören zum selben Ergebnis, nicht nur ein Clock-/Providerport.
 
 ### SMR-08 – Shops, Wetter und Musik
@@ -373,7 +373,7 @@ physische Eingabe und 200%-Zoom bleiben offen.
 Drei eigenständige Produktlieferungen verbinden sich über bestätigte
 World-/Scene-/Zeitprojektionen. Die Quellen sind [SRC-P04/L03/L04/T05/S01–03](docs/scope-sources.json)
 auf SaltMarcher `9de85c1a26f526acbc1af332ac5962e185c0aab2`, TN-14/25/26.
-Aktueller Besitz und konkrete Fachentscheidungen in #10, Hostgrenzen in #11.
+Konkrete Datenverträge stehen im [Campaign-Datenvertrag](ROADMAP-SALTMARCHER-SMR-01-CAMPAIGN-DATA-PLAN.md), Hostgrenzen in [Plattform-ADR](ROADMAP-SALTMARCHER-PLATFORM-ADR.md).
 
 - **Shops / SMR-AC-10:** genau einen NPC-/Ortowner und Stock/Preise bearbeiten,
   Scenezugriff herstellen, Kauf/Verkauf atomar mit Charakterledger verbinden;
@@ -445,7 +445,7 @@ Fachabnahmen und rechtfertigt keinen eigenen Shop-/Wetter-/Music-Snapshotstore.
   liefern, vollständige Kandidatenauswertung nicht als permanente Historie anhängen.
   200 Akteure, ≤2 s p95, Fortschritt ≤100 ms und passende Cancel-/Kamerafreiheit
   nach Quellbedingungen qualifizieren. Quelle: Actor Autonomy Requirements;
-  #10, SMR-AC-13. Domäne/Jobangebote parallel entwickeln; produktive Steps benötigen
+  [Campaign-Datenvertrag](ROADMAP-SALTMARCHER-SMR-01-CAMPAIGN-DATA-PLAN.md), SMR-AC-13. Domäne/Jobangebote parallel entwickeln; produktive Steps benötigen
   konkrete Scene-/Zeit-/Owner-/Publishports, nicht den Abschluss aller Reisefunktionen.
 
 ### SMR-10 – Zweites Display, Extensions und vollständige Portabilität
@@ -460,7 +460,7 @@ Fachabnahmen und rechtfertigt keinen eigenen Shop-/Wetter-/Music-Snapshotstore.
   beziehungsweise im bestätigten Encounter-/Chase-Automatikscope. Split/Fokuswechsel,
   manuelles Reveal/Hide/Blank und Reopen dürfen kein fremdes Scenewissen, Secrets
   oder nicht wahrgenommene Live-Details offenlegen; Präsentationsoverride verändert
-  keine Discoverywahrheit. Quellkonflikt in #44/#11/#10: Dungeon Travel nennt
+  keine Discoverywahrheit. Quellkonflikt in #44; [Plattform-ADR](ROADMAP-SALTMARCHER-PLATFORM-ADR.md); [Campaign-Datenvertrag](ROADMAP-SALTMARCHER-SMR-01-CAMPAIGN-DATA-PLAN.md): Dungeon Travel nennt
   komplette Partyunion/Explorationkamera, SRC-L05/T04 fokussierte Sceneunion.
   Nicht beide Filter zugleich als Sicherheitsvertrag freigeben; P03 liefert nur
   den Beweiskanal, nicht diese Fachentscheidung. SMR-AC-14/TN-24 bleibt separat.
@@ -470,7 +470,7 @@ Fachabnahmen und rechtfertigt keinen eigenen Shop-/Wetter-/Music-Snapshotstore.
   Generator/Importer/Präsentation konsumieren → Fehler, Remove/Replace/Restore
   prüfen. Ausfall deaktiviert nur die betroffene Capability; opaque Daten und
   unabhängige Kampagnenabläufe bleiben erhalten. Quellen: Program Capabilities
-  „Modular Change“, TN-27–30; #11, SMR-AC-14/15/16.
+  „Modular Change“, TN-27–30; [Plattform-ADR](ROADMAP-SALTMARCHER-PLATFORM-ADR.md), SMR-AC-14/15/16.
 - Kompletten Current-Format-Roundtrip, beschädigte Daten, unbekannte Felder und
   plattformübergreifende Assets prüfen.
 
@@ -491,14 +491,14 @@ Fachabnahmen und rechtfertigt keinen eigenen Shop-/Wetter-/Music-Snapshotstore.
   Program Technical Needs prüfen.
 - Gesamtqualifikation samt erforderlicher unabhängiger Prüfung,
   gezielter Nachbesserung und Bereinigung zusammenführen. Keine zusätzliche
-  allgemeine Aufräumreviewrunde; fehlende Fachabnahme bleibt offen.
+  betroffenen Fach-/Hostprüfungen; fehlende Abnahmen bleiben offen.
 
 Die erklärbare Kampagnenhistorie verbindet SMR-01/03/05/07–09: bestätigte Zeit-,
 Reise-, Encounter-, XP-, Party- und manuelle Worldfolgen im laufenden Produkt
 inspizieren; Korrekturen verlinkt anhängen und frisch öffnen. Kein Vollsnapshot-
 Replay, Rückdatierung löscht keine etablierten Fakten. Ownergrenzen und die enge
 kausale Reise-Undo-Ausnahme bleiben erhalten. Quelle: Program Capabilities
-„Explanatory Campaign History“, SRC-C04/TN-06; #6/#10, SMR-AC-04/06/09.
+„Explanatory Campaign History“, SRC-C04/TN-06; [LiveScene-Vertrag](docs/plans/runtime/smr03-live-scene-contract.md); [Campaign-Datenvertrag](ROADMAP-SALTMARCHER-SMR-01-CAMPAIGN-DATA-PLAN.md), SMR-AC-04/06/09.
 
 ## Abhängigkeiten und Parallelität
 
@@ -517,10 +517,7 @@ kausale Reise-Undo-Ausnahme bleiben erhalten. Quelle: Program Capabilities
   benötigen keinen abgeschlossenen Reiseablauf. Autoritative Scene-Zeit braucht
   ihren konkreten Scene-/Owner-/Publishvertrag. Restock, zeitabhängiges Wetter und
   Autonomie konsumieren diesen Port, nicht den Abschluss sämtlicher Reisearbeit.
-- Aktuellen Rollenvertrag und Claim verwenden; historische Teamaufteilungen
-  sind keine Beschränkung neuer Beiträge. Geprüfte Pfade, Belege und
-  Dateibesitze bleiben erhalten. Kein zweiter Besitzer ändert gleichzeitig
-  dieselbe Datei oder Aggregategrenze.
+
 - Pro Gerät läuft höchstens eine grafische Host-/Originalinstanz. Statische
   Analyse und nichtgrafische Basisprüfungen dürfen getrennt laufen.
 
@@ -535,13 +532,6 @@ kausale Reise-Undo-Ausnahme bleiben erhalten. Quelle: Program Capabilities
   Existenz. Jede Übernahme braucht aktuellen Vertrag, gezielte Migration und
   belegte Abnahme.
 
-## Aktueller nächster Schritt
+## Offener Produktstand
 
-Der gemeinsame nächste Schritt steht ausschließlich in
-[#12](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12),
-ausführbare eigene oder freie Arbeit in `npm run next`. Die
-[Lieferroadmap](docs/ROADMAP.md#parallele-umsetzung-und-zusammenführung)
-verbindet parallel umsetzbare Produktpakete mit dem vollständigen Umfang.
-`SMR-00-ADR-01` bleibt die offene Plattformentscheidung in #11; sie hält
-hostneutrale Produktarbeit und den bestehenden befristeten Obsidianadapter
-nicht pauschal an. Neue dauerhafte Hostkopplung braucht ihre bestätigte Grundlage.
+Die [Atlasübersicht](ROADMAP-HEX-ATLAS.md#atlas-auf-einen-blick) und [Produktroadmap](docs/ROADMAP.md) zeigen den fachlichen Stand und die Abhängigkeiten. Konkrete Restbedarfe und Kandidaten bleiben in den Produktissues und PRs; dieses Portfolio erteilt keine weiteren Arbeitsaufträge.

@@ -12,4 +12,4 @@ Der echte Toolbarweg legt einen POI an; Auswahl, Keytexte samt Abschnitts-IDs, P
 
 Vor Veröffentlichung wurde der unabhängig qualifizierte eingehende Shared `843562ac256eb293f1b8c95f10077a9a7a7c1a1b` regulär übernommen. [265 Pfadbindungen](shared-consumption.json) weisen ausschließlich drei Katalogdatenänderungen gegenüber dem Hostsource nach; Atlas-/Host-/Build-/Lock-/Fixturepfade sind unverändert. Das ist keine zusätzliche Hostprobe auf dieser neuen SHA.
 
-Nächster eigener Schritt bleibt in #40: begrenzte Ursachenprüfung dieses Save-Ausfalls und gezielter Reparatureingang. Keine Reparatur, Wiederholungsprobe oder neue allgemeine Reviewrunde in H01. Originalparität, Großkarten, Nutzervaultinstallation, P02/P04 und vollständiges E2E-01 bleiben gesonderte offene Nachweise.
+H01 belegt den damaligen Save-Ausfall; Originalparität, Großkarten, Installation, P02/P04 und Gesamt-E2E bleiben außerhalb seines Nachweisumfangs.
