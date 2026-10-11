@@ -89,5 +89,25 @@ externe Auswahl und externe Revision bleiben erhalten.
 Vor der Reparatur: fünf Gegenproben FAIL, neue-Plan-Isolation bereits PASS.
 Nachher: alle sechs PASS; gesamte Suite 1090 PASS, 0 FAIL, ein bestehender
 optionaler PDF-Skip. Typprüfung, Build und Repositoryprüfung PASS. Unabhängiger
-Deltareview und sichtbarer Browser-Retest stehen aus. Diese Lieferung bleibt
+Deltareview6106571586 und reguläre PR133-Integration auf Shared6df23a7 sind konsumiert;
+der sichtbare Browser-Retest läuft. Diese Lieferung bleibt
 UI-only; der offene Campaign/Data-Speichervertrag wird nicht vorweggenommen.
+
+## Kontextschutz nach Plan-ID-Vergabe
+
+Plananlage und Ersatzanlage beim Löschen des letzten Plans rufen die ID-Vergabe
+als Hostcallback auf. Ein dort widerrufener Campaigncontext wurde ohne offenen
+Draft nicht erneut geprüft; beim Löschen konnte eine neuere bestätigte
+Workspaceänderung durch den vorab vorbereiteten Katalog überschrieben werden.
+Vier Kerngegenproben reproduzieren beide Fehler bei beiden Aktionen.
+
+Beide Pfade halten jetzt vor der ID-Vergabe eine Vergleichsbasis für Katalog,
+aktive Auswahl und Draft fest. Nach Validierung des neuen Plans prüfen sie die
+bestehende Contextautorität und diese Basis erneut, bevor sie veröffentlichen.
+Ein Widerruf erhält den unveränderten ursprünglichen Payload, Draft und Auswahl;
+eine zwischenzeitliche gültige Fremdänderung bleibt bestehen. Gültige Retrypfade
+und die bestehende Draftübernahme bei erfolgreicher Plananlage bleiben erhalten.
+Diese Grenze betrifft den In-Memory-Kern, keinen neuen Writer oder Speichervertrag.
+Vier Gegenproben FAIL vor Reparatur, PASS nachher. Vollsuite1094 PASS/0 FAIL/
+1 bestehender optionaler PDF-Skip; Typ/Build/Repo PASS. Unabhängiger enger Review
+vor Integration.
