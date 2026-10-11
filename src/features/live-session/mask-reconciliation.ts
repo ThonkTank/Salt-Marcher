@@ -93,9 +93,14 @@ export interface MaskOwnerPreparedContribution {
   readonly campaignId: CampaignId;
   readonly commandId: CommandId;
   readonly commandDigest: CommandDigest;
+  readonly partyRevisionBefore: Revision;
+  readonly partyRevisionAfter: Revision;
   readonly sourceSceneId: LiveSceneId;
   readonly sourceSceneRevisionBefore: Revision;
   readonly sourceSceneRevisionAfter: Revision;
+  readonly sourceLifecycleBefore: "active";
+  readonly sourceLifecycleAfter: "active" | "retired";
+  readonly target: ReconciliationTargetEndpoint;
   readonly ownerIdentity: MaskOwnerIdentity;
   readonly ownerRevisionBefore: Revision;
   readonly ownerRevisionAfter: Revision;
@@ -394,9 +399,14 @@ export function parseMaskOwnerPreparedContribution(
         "campaignId",
         "commandId",
         "commandDigest",
+        "partyRevisionBefore",
+        "partyRevisionAfter",
         "sourceSceneId",
         "sourceSceneRevisionBefore",
         "sourceSceneRevisionAfter",
+        "sourceLifecycleBefore",
+        "sourceLifecycleAfter",
+        "target",
         "ownerIdentity",
         "ownerRevisionBefore",
         "ownerRevisionAfter",
@@ -422,6 +432,14 @@ export function parseMaskOwnerPreparedContribution(
       row.sourceSceneRevisionAfter,
       `${label}.sourceSceneRevisionAfter`,
     ),
+    partyRevisionBefore = revision(
+      row.partyRevisionBefore,
+      `${label}.partyRevisionBefore`,
+    ),
+    partyRevisionAfter = revision(
+      row.partyRevisionAfter,
+      `${label}.partyRevisionAfter`,
+    ),
     ownerRevisionBefore = revision(
       row.ownerRevisionBefore,
       `${label}.ownerRevisionBefore`,
@@ -437,6 +455,7 @@ export function parseMaskOwnerPreparedContribution(
     ),
     beforeMasks = parseSnapshotMasks(row.beforeMasks, `${label}.beforeMasks`),
     afterMasks = parseSnapshotMasks(row.afterMasks, `${label}.afterMasks`),
+    target = parseTarget(row.target, `${label}.target`),
     affected = new Set(affectedCharacterIds),
     operation =
       scope.kind === "complete-mask-delta" ? scope.operation : undefined,
@@ -496,8 +515,16 @@ export function parseMaskOwnerPreparedContribution(
     affectedCharacterIds.length === 0 ||
     beforeMasks.length === 0 ||
     beforeMasks.length !== afterMasks.length ||
+    partyRevisionAfter !== partyRevisionBefore + 1 ||
     sourceSceneRevisionAfter !== sourceSceneRevisionBefore + 1 ||
     ownerRevisionAfter !== ownerRevisionBefore + 1 ||
+    row.sourceLifecycleBefore !== "active" ||
+    !(
+      row.sourceLifecycleAfter === "active" ||
+      row.sourceLifecycleAfter === "retired"
+    ) ||
+    (operation === "remove-participants") !==
+      (row.sourceLifecycleAfter === "active") ||
     scope.kind !== "complete-mask-delta" ||
     !sameCompleteScope(scope, expectedScope) ||
     !sameSnapshotMasks(afterMasks, expectedAfterMasks)
@@ -511,9 +538,14 @@ export function parseMaskOwnerPreparedContribution(
     campaignId: campaignId(row.campaignId, `${label}.campaignId`),
     commandId: commandId(row.commandId, `${label}.commandId`),
     commandDigest: commandDigest(row.commandDigest, `${label}.commandDigest`),
+    partyRevisionBefore,
+    partyRevisionAfter,
     sourceSceneId: liveSceneId(row.sourceSceneId, `${label}.sourceSceneId`),
     sourceSceneRevisionBefore,
     sourceSceneRevisionAfter,
+    sourceLifecycleBefore: "active",
+    sourceLifecycleAfter: row.sourceLifecycleAfter as "active" | "retired",
+    target,
     ownerIdentity: Object.freeze({
       ownerId: ownerId(identity.ownerId, `${label}.ownerIdentity.ownerId`),
       generationId: generationId(
@@ -537,6 +569,22 @@ function sameCharacters(
   return (
     left.length === right.length &&
     left.every((entry, index) => entry === right[index])
+  );
+}
+
+function sameTarget(
+  left: ReconciliationTargetEndpoint,
+  right: ReconciliationTargetEndpoint,
+): boolean {
+  return (
+    left.kind === right.kind &&
+    (left.kind === "none" ||
+      (right.kind !== "none" &&
+        left.liveSceneId === right.liveSceneId &&
+        left.revisionAfter === right.revisionAfter &&
+        (left.kind === "created" ||
+          (right.kind === "existing" &&
+            left.revisionBefore === right.revisionBefore))))
   );
 }
 
@@ -741,11 +789,20 @@ export function parseReconciliationDuty(
           preparedContribution.campaignId !== common.campaignId ||
           preparedContribution.commandId !== common.commandId ||
           preparedContribution.commandDigest !== common.commandDigest ||
+          preparedContribution.partyRevisionBefore !==
+            common.partyRevisionBefore ||
+          preparedContribution.partyRevisionAfter !==
+            common.partyRevisionAfter ||
           preparedContribution.sourceSceneId !== common.sourceSceneId ||
           preparedContribution.sourceSceneRevisionBefore !==
             common.sourceRevisionBefore ||
           preparedContribution.sourceSceneRevisionAfter !==
             common.sourceRevisionAfter ||
+          preparedContribution.sourceLifecycleBefore !==
+            common.sourceLifecycleBefore ||
+          preparedContribution.sourceLifecycleAfter !==
+            common.sourceLifecycleAfter ||
+          !sameTarget(preparedContribution.target, common.target) ||
           preparedContribution.ownerIdentity.ownerId !== identity.ownerId ||
           preparedContribution.ownerIdentity.generationId !==
             identity.generationId ||
@@ -992,9 +1049,14 @@ export function buildReconciliationDuties(
       contribution.campaignId !== binding.campaignId ||
       contribution.commandId !== binding.commandId ||
       contribution.commandDigest !== binding.commandDigest ||
+      contribution.partyRevisionBefore !== binding.partyRevisionBefore ||
+      contribution.partyRevisionAfter !== binding.partyRevisionAfter ||
       contribution.sourceSceneId !== source.liveSceneId ||
       contribution.sourceSceneRevisionBefore !== binding.sourceRevisionBefore ||
       contribution.sourceSceneRevisionAfter !== binding.sourceRevisionAfter ||
+      contribution.sourceLifecycleBefore !== "active" ||
+      contribution.sourceLifecycleAfter !== binding.sourceLifecycleAfter ||
+      !sameTarget(contribution.target, binding.target) ||
       contribution.ownerRevisionBefore !== expectedOwnerRevision ||
       contribution.ownerRevisionAfter !== expectedOwnerRevision + 1 ||
       !sameCharacters(
@@ -1005,7 +1067,11 @@ export function buildReconciliationDuties(
       !sameSnapshotMasks(contribution.beforeMasks, beforeMasks) ||
       !sameSnapshotMasks(contribution.afterMasks, afterMasks) ||
       source.reconciliations.some(
-        (entry) => entry.receiptId === contribution.receiptId,
+        (entry) =>
+          entry.receiptId === contribution.receiptId ||
+          entry.appliedReceipts?.some(
+            (receipt) => receipt.receiptId === contribution.receiptId,
+          ),
       )
     )
       throw new Error(

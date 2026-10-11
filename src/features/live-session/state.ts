@@ -322,6 +322,20 @@ export function parseLiveSessionAggregateState(
     throw new Error(
       "LiveSessionAggregateState enthält eine fremde Reconciliation.",
     );
+  const publishedMaskReceipts = new Set<string>();
+  for (const scene of scenes)
+    for (const owner of scene.source.reconciliations) {
+      const receipts =
+        owner.appliedReceipts ??
+        (owner.receiptId === undefined ? [] : [{ receiptId: owner.receiptId }]);
+      for (const receipt of receipts) {
+        if (publishedMaskReceipts.has(receipt.receiptId))
+          throw new Error(
+            "LiveSessionAggregateState enthält eine mehrfach veröffentlichte Masken-ReceiptId.",
+          );
+        publishedMaskReceipts.add(receipt.receiptId);
+      }
+    }
   const sceneById = new Map(
       scenes.map((scene) => [scene.source.liveSceneId, scene.source]),
     ),

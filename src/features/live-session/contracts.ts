@@ -157,6 +157,15 @@ export interface OwnerReconciliation {
   readonly pendingCommandIds?: readonly CommandId[];
   readonly commandDigest?: CommandDigest;
   readonly receiptId?: ReceiptId;
+  readonly appliedReceipts?: readonly OwnerAppliedReceipt[];
+}
+
+export interface OwnerAppliedReceipt {
+  readonly receiptId: ReceiptId;
+  readonly commandId: CommandId;
+  readonly commandDigest: CommandDigest;
+  readonly ownerRevisionBefore: Revision;
+  readonly ownerRevisionAfter: Revision;
 }
 
 export interface LiveSceneSourceSnapshot {
@@ -867,6 +876,7 @@ function reconciliations(value: unknown): readonly OwnerReconciliation[] {
               "pendingCommandIds",
               "commandDigest",
               "receiptId",
+              "appliedReceipts",
             ],
             label,
           );
@@ -907,6 +917,60 @@ function reconciliations(value: unknown): readonly OwnerReconciliation[] {
           row.commandId !== undefined ||
           row.commandDigest !== undefined ||
           row.receiptId !== undefined;
+        const appliedReceipts =
+          row.appliedReceipts === undefined
+            ? undefined
+            : Object.freeze(
+                unique(
+                  array(row.appliedReceipts, `${label}.appliedReceipts`).map(
+                    (entry, receiptIndex) => {
+                      const receiptLabel = `${label}.appliedReceipts[${receiptIndex}]`,
+                        receiptRow = record(
+                          entry,
+                          [
+                            "receiptId",
+                            "commandId",
+                            "commandDigest",
+                            "ownerRevisionBefore",
+                            "ownerRevisionAfter",
+                          ],
+                          [],
+                          receiptLabel,
+                        ),
+                        ownerRevisionBefore = revision(
+                          receiptRow.ownerRevisionBefore,
+                          `${receiptLabel}.ownerRevisionBefore`,
+                        ),
+                        ownerRevisionAfter = revision(
+                          receiptRow.ownerRevisionAfter,
+                          `${receiptLabel}.ownerRevisionAfter`,
+                        );
+                      if (ownerRevisionAfter !== ownerRevisionBefore + 1)
+                        throw new Error(
+                          `${receiptLabel} besitzt keinen einzelnen Owner-Revisionsschritt.`,
+                        );
+                      return Object.freeze({
+                        receiptId: receiptId(
+                          receiptRow.receiptId,
+                          `${receiptLabel}.receiptId`,
+                        ),
+                        commandId: commandId(
+                          receiptRow.commandId,
+                          `${receiptLabel}.commandId`,
+                        ),
+                        commandDigest: commandDigest(
+                          receiptRow.commandDigest,
+                          `${receiptLabel}.commandDigest`,
+                        ),
+                        ownerRevisionBefore,
+                        ownerRevisionAfter,
+                      });
+                    },
+                  ),
+                  (entry) => entry.receiptId,
+                  `${label}.appliedReceipts`,
+                ),
+              );
         if (
           row.status === "current" &&
           hasReceiptBinding &&
@@ -921,11 +985,38 @@ function reconciliations(value: unknown): readonly OwnerReconciliation[] {
           );
         if (
           row.status !== "current" &&
-          (row.commandDigest !== undefined || row.receiptId !== undefined)
+          (row.commandDigest !== undefined ||
+            row.receiptId !== undefined ||
+            appliedReceipts !== undefined)
         )
           throw new Error(
             `${label} darf keine veröffentlichte Receipt binden.`,
           );
+        if (
+          appliedReceipts !== undefined &&
+          (appliedReceipts.length === 0 ||
+            row.status !== "current" ||
+            row.generationId === undefined ||
+            row.ownerRevision === undefined ||
+            !hasReceiptBinding ||
+            new Set(appliedReceipts.map((entry) => entry.commandId)).size !==
+              appliedReceipts.length ||
+            appliedReceipts.some(
+              (entry, receiptIndex) =>
+                receiptIndex > 0 &&
+                entry.ownerRevisionBefore !==
+                  appliedReceipts[receiptIndex - 1]?.ownerRevisionAfter,
+            ) ||
+            appliedReceipts[appliedReceipts.length - 1]?.receiptId !==
+              row.receiptId ||
+            appliedReceipts[appliedReceipts.length - 1]?.commandId !==
+              row.commandId ||
+            appliedReceipts[appliedReceipts.length - 1]?.commandDigest !==
+              row.commandDigest ||
+            appliedReceipts[appliedReceipts.length - 1]?.ownerRevisionAfter !==
+              row.ownerRevision)
+        )
+          throw new Error(`${label} besitzt kein konsistentes Receipt-Ledger.`);
         return Object.freeze({
           ownerId: ownerId(row.ownerId, `${label}.ownerId`),
           ...(row.generationId === undefined
@@ -960,6 +1051,7 @@ function reconciliations(value: unknown): readonly OwnerReconciliation[] {
           ...(row.receiptId === undefined
             ? {}
             : { receiptId: receiptId(row.receiptId, `${label}.receiptId`) }),
+          ...(appliedReceipts === undefined ? {} : { appliedReceipts }),
         });
       }),
       (entry) => `${entry.ownerId}\u0000${entry.generationId ?? ""}`,
@@ -1034,6 +1126,10 @@ export function parseLiveSceneSource(value: unknown): LiveSceneSourceSnapshot {
     characterSet = new Set(characterIds),
     pendingSet = new Set(
       parsedPendingAssignments.map((assignment) => assignment.characterId),
+    );
+  if (characterIds.some((character) => pendingSet.has(character)))
+    throw new Error(
+      "LiveSceneSource enthält zugleich zugewiesene und pending Teilnehmer.",
     );
   if (
     parsedMaskProjections.some((projection) =>

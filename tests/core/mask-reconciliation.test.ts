@@ -215,6 +215,22 @@ function maskState() {
   return raw;
 }
 
+function threeCharacterMaskState() {
+  const raw = maskState(),
+    character = structuredClone(raw.party.characters[0]);
+  character.characterId = "character-c";
+  character.profile.name = "C";
+  raw.party.characters.push(character);
+  raw.scenes[0].source.characterIds.push("character-c");
+  raw.scenes[0].source.maskParticipationProjections[0].participantCharacterIds.push(
+    "character-c",
+  );
+  raw.scenes[0].source.maskParticipationProjections[2].participantCharacterIds.push(
+    "character-c",
+  );
+  return raw;
+}
+
 function preparedMaskContributions(
   stateValue: unknown,
   ids: readonly string[],
@@ -239,11 +255,19 @@ function preparedMaskContributions(
   }
   return [...byOwner.values()].flatMap((projections) => {
     const first = projections[0],
-      owner = source.reconciliations.find(
+      recordedOwner = source.reconciliations.find(
         (entry: any) =>
           entry.ownerId === first.ownerIdentity.ownerId &&
           entry.generationId === first.ownerIdentity.generationId,
-      );
+      ),
+      owner =
+        recordedOwner ??
+        ({
+          ownerId: first.ownerIdentity.ownerId,
+          generationId: first.ownerIdentity.generationId,
+          status: "current",
+          ownerRevision: first.ownerRevision,
+        } as const);
     if (owner?.status !== "current") return [];
     const beforeMasks = projections.map((projection) => ({
         maskId: projection.maskId,
@@ -268,6 +292,25 @@ function preparedMaskContributions(
         ];
       });
     if (masks.length === 0) return [];
+    const targetScene = state.scenes.find((scene: any) =>
+        commandId.includes("rejoin")
+          ? scene.source.liveSceneId === "scene-split"
+          : scene.source.liveSceneId === "scene-target",
+      ),
+      target = commandId.includes("deactivate")
+        ? { kind: "none" as const }
+        : commandId.includes("split")
+          ? {
+              kind: "created" as const,
+              liveSceneId: "scene-split",
+              revisionAfter: 0,
+            }
+          : {
+              kind: "existing" as const,
+              liveSceneId: targetScene.source.liveSceneId,
+              revisionBefore: targetScene.source.sceneRevision,
+              revisionAfter: targetScene.source.sceneRevision + 1,
+            };
     return [
       {
         kind: "mask-owner-prepared-contribution",
@@ -277,9 +320,14 @@ function preparedMaskContributions(
         campaignId: state.campaignId,
         commandId,
         commandDigest,
+        partyRevisionBefore: state.party.partyRevision,
+        partyRevisionAfter: state.party.partyRevision + 1,
         sourceSceneId: source.liveSceneId,
         sourceSceneRevisionBefore: source.sceneRevision,
         sourceSceneRevisionAfter: source.sceneRevision + 1,
+        sourceLifecycleBefore: "active",
+        sourceLifecycleAfter: retired ? "retired" : "active",
+        target,
         ownerIdentity: {
           ownerId: owner.ownerId,
           generationId: owner.generationId,
@@ -697,11 +745,31 @@ test("direct source and projection boundaries reject foreign or pending mask par
       ownerId: "party-owner",
     },
   ];
-  assert.throws(
-    () => parseLiveSceneSource(pending),
-    /pending Maskenteilnehmer/,
-  );
+  assert.throws(() => parseLiveSceneSource(pending), /pending/);
   assert.deepEqual(projectLiveScene(pending, focus), {
+    status: "unavailable",
+    reason: "invalid-scene",
+  });
+
+  const assignedAndPending = structuredClone(state.scenes[0]!.source) as Record<
+    string,
+    any
+  >;
+  assignedAndPending.maskRefs = [];
+  assignedAndPending.maskParticipationProjections = [];
+  assignedAndPending.reconciliations = [];
+  assignedAndPending.pendingAssignments = [
+    {
+      characterId: "character-a",
+      commandId: "command-pending-a",
+      ownerId: "party-owner",
+    },
+  ];
+  assert.throws(
+    () => parseLiveSceneSource(assignedAndPending),
+    /zugleich zugewiesene und pending/,
+  );
+  assert.deepEqual(projectLiveScene(assignedAndPending, focus), {
     status: "unavailable",
     reason: "invalid-scene",
   });
@@ -723,6 +791,51 @@ test("prepared owner contribution binds receipt, full matrix, ordering and retry
   assert.throws(
     () => parseMaskOwnerPreparedContribution(changedAfter),
     /Prepared-Vertrag/,
+  );
+
+  const changedParty = structuredClone(contributions) as Record<string, any>[];
+  changedParty[0]!.partyRevisionBefore = 2;
+  changedParty[0]!.partyRevisionAfter = 3;
+  assert.throws(
+    () =>
+      moveCharacters(
+        state,
+        command("move-characters", {
+          commandId: "command-mask",
+          commandDigest: "digest-mask",
+          expectedPartyRevision: 1,
+          expectedFocusRevision: 1,
+          sourceSceneId: "scene-primary",
+          targetSceneId: "scene-target",
+          expectedSourceRevision: 0,
+          expectedTargetRevision: 0,
+          characterIds: ["character-b"],
+          maskOwnerContributions: changedParty,
+        }),
+      ),
+    /Maskenbeitrag/,
+  );
+
+  const changedTarget = structuredClone(contributions) as Record<string, any>[];
+  changedTarget[0]!.target.liveSceneId = "scene-other";
+  assert.throws(
+    () =>
+      moveCharacters(
+        state,
+        command("move-characters", {
+          commandId: "command-mask",
+          commandDigest: "digest-mask",
+          expectedPartyRevision: 1,
+          expectedFocusRevision: 1,
+          sourceSceneId: "scene-primary",
+          targetSceneId: "scene-target",
+          expectedSourceRevision: 0,
+          expectedTargetRevision: 0,
+          characterIds: ["character-b"],
+          maskOwnerContributions: changedTarget,
+        }),
+      ),
+    /Maskenbeitrag/,
   );
 
   assert.throws(
@@ -834,6 +947,172 @@ test("prepared owner contribution binds receipt, full matrix, ordering and retry
   const retryA = move(state, ["character-b"]),
     retryB = move(state, ["character-b"]);
   assert.deepEqual(retryA, retryB);
+});
+
+test("an implicit current owner is materialized before its receipt can be reused", () => {
+  const raw = maskState();
+  raw.scenes[0].source.reconciliations = [];
+  const state = parseLiveSessionAggregateState(raw),
+    first = move(state, ["character-b"]);
+  assert.equal(first.status, "applied");
+  if (first.status !== "applied") return;
+
+  const recordedOwners = first.state.scenes[0]!.source.reconciliations;
+  assert.deepEqual(
+    recordedOwners.map((entry) => ({
+      ownerId: entry.ownerId,
+      status: entry.status,
+      ownerRevision: entry.ownerRevision,
+      hasReceipt: entry.receiptId !== undefined,
+    })),
+    [
+      {
+        ownerId: "owner-a",
+        status: "current",
+        ownerRevision: 6,
+        hasReceipt: true,
+      },
+      {
+        ownerId: "owner-b",
+        status: "current",
+        ownerRevision: 8,
+        hasReceipt: true,
+      },
+    ],
+  );
+
+  const secondContributions = preparedMaskContributions(
+    first.state,
+    ["character-a"],
+    "command-mask-second",
+    "digest-mask-second",
+  );
+  for (const contribution of secondContributions) {
+    const recorded = recordedOwners.find(
+      (entry) =>
+        entry.ownerId === contribution.ownerIdentity.ownerId &&
+        entry.generationId === contribution.ownerIdentity.generationId,
+    );
+    assert(recorded?.receiptId);
+    contribution.receiptId = recorded.receiptId;
+  }
+  assert.throws(
+    () =>
+      moveCharacters(
+        first.state,
+        command("move-characters", {
+          commandId: "command-mask-second",
+          commandDigest: "digest-mask-second",
+          expectedPartyRevision: 2,
+          expectedFocusRevision: 1,
+          sourceSceneId: "scene-primary",
+          targetSceneId: "scene-target",
+          expectedSourceRevision: 1,
+          expectedTargetRevision: 1,
+          characterIds: ["character-a"],
+          maskOwnerContributions: secondContributions,
+        }),
+      ),
+    /Receipt/,
+  );
+});
+
+test("owner receipt history rejects reuse after later successful transitions", () => {
+  const initial = parseLiveSessionAggregateState(threeCharacterMaskState()),
+    first = move(initial, ["character-b"]);
+  assert.equal(first.status, "applied");
+  if (first.status !== "applied") return;
+
+  const exactRetry = moveCharacters(
+    first.state,
+    command("move-characters", {
+      commandId: "command-mask",
+      commandDigest: "digest-mask",
+      expectedPartyRevision: 1,
+      expectedFocusRevision: 1,
+      sourceSceneId: "scene-primary",
+      targetSceneId: "scene-target",
+      expectedSourceRevision: 0,
+      expectedTargetRevision: 0,
+      characterIds: ["character-b"],
+      maskOwnerContributions: preparedMaskContributions(
+        initial,
+        ["character-b"],
+        "command-mask",
+        "digest-mask",
+      ),
+    }),
+  );
+  assert.equal(exactRetry.status, "rejected");
+  assert.deepEqual(exactRetry.state, first.state);
+
+  const duplicateAcrossScenes = structuredClone(first.state) as Record<
+    string,
+    any
+  >;
+  duplicateAcrossScenes.scenes[1].source.reconciliations = [
+    structuredClone(duplicateAcrossScenes.scenes[0].source.reconciliations[0]),
+  ];
+  duplicateAcrossScenes.scenes[1].source.maskRefs =
+    duplicateAcrossScenes.scenes[0].source.maskRefs
+      .filter((mask: any) => mask.ownerId === "owner-a")
+      .map((mask: any) => structuredClone(mask));
+  duplicateAcrossScenes.scenes[1].source.maskParticipationProjections =
+    duplicateAcrossScenes.scenes[0].source.maskParticipationProjections
+      .filter(
+        (projection: any) => projection.ownerIdentity.ownerId === "owner-a",
+      )
+      .map((projection: any) => ({
+        ...structuredClone(projection),
+        liveSceneId: "scene-target",
+        participantCharacterIds: [],
+      }));
+  assert.throws(
+    () => parseLiveSessionAggregateState(duplicateAcrossScenes),
+    /mehrfach veröffentlichte Masken-ReceiptId/,
+  );
+
+  const second = move(first.state, ["character-a"], "mask-second");
+  assert.equal(second.status, "applied");
+  if (second.status !== "applied") return;
+  const firstReceipts = new Map(
+      first.state.scenes[0]!.source.reconciliations.map((entry) => [
+        `${entry.ownerId}\u0000${entry.generationId}`,
+        entry.receiptId,
+      ]),
+    ),
+    thirdContributions = preparedMaskContributions(
+      second.state,
+      ["character-c"],
+      "command-mask-third",
+      "digest-mask-third",
+    );
+  for (const contribution of thirdContributions) {
+    const priorReceipt = firstReceipts.get(
+      `${contribution.ownerIdentity.ownerId}\u0000${contribution.ownerIdentity.generationId}`,
+    );
+    assert(priorReceipt);
+    contribution.receiptId = priorReceipt;
+  }
+  assert.throws(
+    () =>
+      moveCharacters(
+        second.state,
+        command("move-characters", {
+          commandId: "command-mask-third",
+          commandDigest: "digest-mask-third",
+          expectedPartyRevision: 3,
+          expectedFocusRevision: 1,
+          sourceSceneId: "scene-primary",
+          targetSceneId: "scene-target",
+          expectedSourceRevision: 2,
+          expectedTargetRevision: 2,
+          characterIds: ["character-c"],
+          maskOwnerContributions: thirdContributions,
+        }),
+      ),
+    /Receipt/,
+  );
 });
 
 test("pending duties bind lifecycle, pending owner command and unique scope", () => {

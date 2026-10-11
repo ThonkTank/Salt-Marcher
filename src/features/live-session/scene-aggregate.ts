@@ -472,6 +472,22 @@ function reconciliationDuties(
     affectedCharacterIds = state.party.characters
       .filter((character) => selected.has(character.characterId))
       .map((character) => character.characterId);
+  if (
+    binding.maskOwnerContributions.some((contribution) =>
+      state.scenes.some((scene) =>
+        scene.source.reconciliations.some(
+          (owner) =>
+            owner.receiptId === contribution.receiptId ||
+            owner.appliedReceipts?.some(
+              (receipt) => receipt.receiptId === contribution.receiptId,
+            ),
+        ),
+      ),
+    )
+  )
+    throw new Error(
+      "Maskenbeitrag verwendet eine bereits veröffentlichte ReceiptId.",
+    );
   return buildReconciliationDuties(
     source,
     {
@@ -772,11 +788,83 @@ function sourceWithAppliedMaskContributions(
   );
   if (contributions.length === 0) return source;
   const byOwner = new Map(
-    contributions.map((contribution) => [
-      `${contribution.ownerIdentity.ownerId}\u0000${contribution.ownerIdentity.generationId}`,
-      contribution,
-    ]),
-  );
+      contributions.map((contribution) => [
+        `${contribution.ownerIdentity.ownerId}\u0000${contribution.ownerIdentity.generationId}`,
+        contribution,
+      ]),
+    ),
+    reconciliations = source.reconciliations.map((entry) => {
+      if (entry.generationId === undefined) return entry;
+      const contribution = byOwner.get(
+        `${entry.ownerId}\u0000${entry.generationId}`,
+      );
+      return contribution === undefined
+        ? entry
+        : Object.freeze({
+            ownerId: entry.ownerId,
+            generationId: entry.generationId,
+            status: "current" as const,
+            ownerRevision: contribution.ownerRevisionAfter,
+            commandId: contribution.commandId,
+            commandDigest: contribution.commandDigest,
+            receiptId: contribution.receiptId,
+            appliedReceipts: Object.freeze([
+              ...(entry.appliedReceipts ??
+                (entry.receiptId !== undefined &&
+                entry.commandId !== undefined &&
+                entry.commandDigest !== undefined
+                  ? [
+                      Object.freeze({
+                        receiptId: entry.receiptId,
+                        commandId: entry.commandId,
+                        commandDigest: entry.commandDigest,
+                        ownerRevisionBefore: revision(
+                          entry.ownerRevision! - 1,
+                          "OwnerReconciliation.ownerRevisionBefore",
+                        ),
+                        ownerRevisionAfter: entry.ownerRevision!,
+                      }),
+                    ]
+                  : [])),
+              Object.freeze({
+                receiptId: contribution.receiptId,
+                commandId: contribution.commandId,
+                commandDigest: contribution.commandDigest,
+                ownerRevisionBefore: contribution.ownerRevisionBefore,
+                ownerRevisionAfter: contribution.ownerRevisionAfter,
+              }),
+            ]),
+          });
+    });
+  for (const contribution of contributions) {
+    if (
+      !reconciliations.some(
+        (entry) =>
+          entry.ownerId === contribution.ownerIdentity.ownerId &&
+          entry.generationId === contribution.ownerIdentity.generationId,
+      )
+    )
+      reconciliations.push(
+        Object.freeze({
+          ownerId: contribution.ownerIdentity.ownerId,
+          generationId: contribution.ownerIdentity.generationId,
+          status: "current" as const,
+          ownerRevision: contribution.ownerRevisionAfter,
+          commandId: contribution.commandId,
+          commandDigest: contribution.commandDigest,
+          receiptId: contribution.receiptId,
+          appliedReceipts: Object.freeze([
+            Object.freeze({
+              receiptId: contribution.receiptId,
+              commandId: contribution.commandId,
+              commandDigest: contribution.commandDigest,
+              ownerRevisionBefore: contribution.ownerRevisionBefore,
+              ownerRevisionAfter: contribution.ownerRevisionAfter,
+            }),
+          ]),
+        }),
+      );
+  }
   return Object.freeze({
     ...source,
     maskRefs: Object.freeze(
@@ -816,25 +904,7 @@ function sourceWithAppliedMaskContributions(
             });
       }),
     ),
-    reconciliations: Object.freeze(
-      source.reconciliations.map((entry) => {
-        if (entry.generationId === undefined) return entry;
-        const contribution = byOwner.get(
-          `${entry.ownerId}\u0000${entry.generationId}`,
-        );
-        return contribution === undefined
-          ? entry
-          : Object.freeze({
-              ownerId: entry.ownerId,
-              generationId: entry.generationId,
-              status: "current" as const,
-              ownerRevision: contribution.ownerRevisionAfter,
-              commandId: contribution.commandId,
-              commandDigest: contribution.commandDigest,
-              receiptId: contribution.receiptId,
-            });
-      }),
-    ),
+    reconciliations: Object.freeze(reconciliations),
   });
 }
 
