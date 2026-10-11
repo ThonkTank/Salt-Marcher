@@ -1,0 +1,8 @@
+{
+  "case": "#80 J03 prepared Room Save fault/Fresh",
+  "issue11": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6109288746",
+  "acknowledgingPeer": "Stadt 01a12022-b67b-7da2-bed5-8ebde169d475",
+  "scope": "max two native processes; first unexpected fault stops",
+  "claimedAt": "2026-10-11T13:01:13.234790+00:00",
+  "released": false
+}

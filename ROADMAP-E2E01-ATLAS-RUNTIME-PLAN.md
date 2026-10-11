@@ -44,70 +44,65 @@ History: E2E-01 Nutzerzeile13, E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001.
 Stadt besitzt City. Parent #80 bleibt offen; Branch
 `hex/dungeon-at-location-inspector-n01-20261011`. Historische Belege sind keine Aufträge.
 
-**Integrierter Produkteingang:** [PR157](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/157)
-ist separat im Shared b9ce2385 angekommen, Produktquelle b6ec69d4.
-N01 managed Suspend/Retain/Dispose und N02 eindeutige Pfad+World-ID-Zuordnung sind
-[gezielt unabhängig geprüft](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/157#issuecomment-6108108606).
-Unregistrierte geschlossene Copy darf neben fremden gültigen Manifesten öffnen;
-keine Campaign-/Registryautorität. Closure/Codecs/Draft/Journal lesend vor Writes,
-gepinnt, gewonnene alte Journale enden unter alten Pfaden; kein widerrufener Editor.
-Der Merge erweitert keine Produkt-/Fachfreigabe und verlangt keinen neuen allgemeinen Review.
-
-**Konsumierter Nutzerweg:** PR81/87/78 liefern Verorten/Raum-Key/Rückkehr;
+**Produkteingang:** PR81/87/78 liefern Verorten/Raum-Key/Rückkehr;
 PR91/100/110 Escape/Scroll/Fit. [N04](docs/reference/atlas-detail-binding-d01/inspector-horizontal-fit-n04.json)
 belegt horizontalen Dock-Fit100/131%; vertikales Scrollen bleibt nötig.
 [GM-Same-session](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80#issuecomment-6105400641)
 und [FreshReuse](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80#issuecomment-6105912997)
 belegen Torheim/Suche Torraum/Eingangstext auf87ccdb2;131%-Fit nur PR115.
-S01 konsumierte6d03e5a in3af22a1; fremde Tester-PIDs sind kein Hex-Host-PASS.
+PR157 N01/Suspend/Retain/Dispose und N02 eindeutige Pfad+World-ID-Zuordnung sind
+[unabhängig geprüft](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/157#issuecomment-6108108606)
+und separat in b9ce2385 integriert. Unregistrierte geschlossene Copy darf neben
+fremden gültigen Manifesten öffnen; keine Campaign-/Registryautorität.
 
-**Erhaltene Speicher-/Copybelege:** Ctrl/Meta+S-Kompositionsschutz im DOM ist kein
-nativer IME-/Meta-PASS. [R01](docs/reference/atlas-detail-binding-d01/inspector-save-routing-r01.json),
-F01/R02/F02 belegen Orts-/Raum-Save und exakte Bytes/IDs im frischen Prozess;
-D02-N02 tatsächlichen Discard mit neuen Sources/History0. R03 belegt unsaved Raumtext
-im echten v3-Draft nach normalem Quit/Fresh, voller Dungeon/Markdown/Geometrie exakt,
-History0/dirty/kein Redo, Original8/Draft bytegleich; kein Hardcrash/Kamera-History-Fresh.
-C01 Leafwechsel `_cancelResize` und [C02 QA-Orakelfehler](docs/reference/atlas-detail-binding-d01/room-draft-copy-c02/README.md)
-bleiben unverändert als FAIL. [C03](docs/reference/atlas-detail-binding-d01/room-draft-copy-c03/README.md)
-belegt sichtbares Copy/Abbrechen und normalen Frischeinstieg derselben unabhängigen
-Kopie:7 native Dateien/23 frische geschlossene IDs, exakter unsaved Raumtext,
-Vollworld/SpatialState/Dungeon, eine Repository/History clean0; Original8/Draft exakt.
-N01/N02-Reparaturen und C03 sind konsumiert; Quelle/Buildpfad bleiben in P01 und committed-Copy-C01 identisch.
+**Erhaltene Nutzungsnachweise:** R01/F01/R02/F02 belegen Orts-/Raum-Save und
+exakte Bytes/IDs im frischen Prozess; D02 tatsächlichen Discard mit neuen Sources/History0.
+R03 belegt unsaved Raumtext im echten v3-Draft nach normalem Quit/Fresh,
+Vollworld/Spatial/Dungeon/Markdown exakt, History0/dirty/kein Redo, Original8/Draft bytegleich.
+C01 Leafwechsel und C02 QA-Orakelfehler bleiben unveränderte FAILs.
+[C03](docs/reference/atlas-detail-binding-d01/room-draft-copy-c03/README.md)
+belegt sichtbares Copy/Abbrechen und Fresh derselben unabhängigen Kopie:
+7 native Dateien/23 geschlossene neueIDs, voller unsaved Raum-Key, Original8/Draft exakt.
+P01 prepared Copy nimmt7 Ziele zurück; committed Copy übernimmt dieselben7 After-Dateien/23IDs.
+[J01 committed Room-Save](docs/reference/atlas-detail-binding-d01/room-save-committed-journal-j01/README.md)
+ist durch [Steward in50b74fb4 konsumiert](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/165#issuecomment-6108940024).
+Damals beobachteter Anzeigefehler und Rohbelege bleiben erhalten.
 
-**Konsumierte Speicher-Recovery:** [P01 prepared Copy](docs/reference/atlas-detail-binding-d01/room-copy-journal-p01/README.md)
-nimmt7 Ziele zurück; Retry erzeugt23 neue geschlosseneIDs. [Committed Copy](docs/reference/atlas-detail-binding-d01/room-copy-committed-journal-c01/README.md)
-öffnet dieselben7 After-Dateien/23IDs ohne Replay. [J01 committed Room-Save](docs/reference/atlas-detail-binding-d01/room-save-committed-journal-j01/README.md)
-bewahrt alle3 After-Zustände trotz Cleanupfehler und übernimmt dieselben8 Dateien/IDs
-beim normalen Freshstart. Steward hat [J01 in50b74fb4 konsumiert](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/165#issuecomment-6108940024).
-Historische Rohbelege/FAILs und damaliger Anzeigefehler bleiben erhalten.
+**Qualifizierter Fix, jetzt konsumierbarer prepared-Eingang:**
+[J02](docs/reference/atlas-detail-binding-d01/room-save-retained-status-j02/README.md)
+zeigt „Entwurf erhalten; Bearbeitung angehalten.“ und verhindert das Überschreiben
+durch eine späte Saveantwort. Zwei Produktzeilen/zwei direkte vorher rote Regressionen;
+[enger unabhängiger PASS auf54c3ddd](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/167#pullrequestreview-5483352608),
+keine Integrationsentscheidung. Native J02 bleibt Quelle61684630/main e348a114;
+separate Komposition mit dd7311e0, historische Belege nicht umbenannt.
+[J03 prepared Room-Save](docs/reference/atlas-detail-binding-d01/room-save-prepared-journal-j03/README.md)
+liefert den fehlenden nativen Fehler-/Fresh-Eingang auf54c3ddd/main6c43fcfe.
+Sichtbarer Save erzeugt eigenes prepared-Dreierjournal; gezielte Draft-Löschung
+und Dungeon-Rollback scheitern. Nur Dungeon teilweise After, übrige7 Before-Dateien
+und ursprünglicher R03-Draft bytegleich; alter Vollstate/Kamera/History erhalten
+ohne aktuelle Autorität, angehaltener Status sichtbar. Normaler Freshstart rollt
+alle8 ursprünglichen Before-Dateien/IDs zurück und stellt aus dem selben Draft
+vollständigen ungespeicherten Raum-Key wieder her: aktuell managed, History0/kein Redo,
+dirty/hasDraft=true; Journal fort. Gespeicherter R02-Dungeon und sichtbarer R03-Draft
+bleiben getrennte Zustände. Beide tatsächlichen Prozesse regulär/PIDs weg,
+1342 historische/fremde Dateien erhalten; [Slot zurück](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6109309874).
 
-**Jetzt konsumierbare Produktkorrektur J02:** Der entzogene alte Editor zeigt
-„Entwurf erhalten; Bearbeitung angehalten.“; eine späte erfolgreiche Saveantwort
-überschreibt dies nicht. Zwei Produktzeilen, zwei direkte vorher rote Regressionen;
-Storage-/Journal-/Identitätssemantik bleibt gleich. [Native Fehler-/Freshnachprobe](docs/reference/atlas-detail-binding-d01/room-save-retained-status-j02/README.md)
-zeigt den korrigierten Status tatsächlich im Bild, bewahrt Vollstate/Kamera/History
-und übernimmt beim normalen Freshstart gleiche8 After-Dateien/IDs und Raumtext,
-eine aktuelle Repository/History clean0, kein Draft/Journal. Beide neue Prozesse
-regulär beendet/PIDs weg;1175 historische/fremde Dateien/Nutzervault erhalten,
-[Slot zurück](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6109012729). Native Quelle61684630, Sharedbasis50b74fb4;
-danach integrierte dd7311e0 regulär übernommen. Atlaspfade gleich, optionale
-Dungeon-Volumes geändert; separater Kompositionsbeleg,78 Hosttests bestehen.
-Native Quelle bleibt gebunden, finale Kandidaten-CI getrennt.
-
-**Anschluss:** Steward kann konkrete Produktkorrektur, Regressionen und J02-Nachprobe
-unabhängig verwenden. Hex behält #80/Branch; nächster eigener Speichereingang ist
-prepared Room-Savejournal-Recovery. Vor neuer lokaler GUI erneut Slot koordinieren.
-Keine zusätzliche allgemeine Reviewrunde/Selbstintegration.
+**Anschluss:** Steward kann den konkreten fehlenden J03-prepared-Eingang mit dem
+bereits eng geprüften J02-Fix in bestehendem PR167 qualifiziert verwenden und
+über Integration entscheiden. Hex behält Parent/Branch und konsumiert diese
+Entscheidung bzw. konkrete Pflichtbefunde; kein wiederholter Storagefall oder
+neuer allgemeiner Review. Vor weiterer lokaler GUI neuer ausdrücklich koordinierter Slot.
+Produktcode/Tests/Fixturepfade gegenüber der J03-Quelle bleiben in dieser Lieferung gleich.
 
 Kandidat: https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/167
 Eingang: https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80
-Kanonisch acceptance.hexAtlas.requirements[30].dungeonAtLocationRetainedSaveStatusJ02;
+Kanonisch acceptance.hexAtlas.requirements[30].dungeonAtLocationRoomSavePreparedJournalJ03;
 historische Records bleiben erhalten.
 
-**Offen:** prepared Room-Savejournal, unabhängige Verwendung des Fixes, vollständige
-Save-UX, Komposition/Meta/physische IME, äußeres Clipping, Gesamt-E2E sowie
-Original-/Großkarten-/Nutzervaultabnahme. Kontrollierter Storagefehler/synthetische
-UI ist kein Hardcrash/physischer PASS.
+**Offen:** unabhängige J03-Verwendung/Integration, vollständige Save-UX,
+Komposition/Meta/physische IME, äußeres Clipping, Gesamt-E2E sowie Original-/Großkarten-/
+Nutzervaultabnahme. Kontrollierter Storagefault/synthetischer Pointer ist kein
+Hardcrash-/physischer PASS. Frische Kamera und Undo-History werden nicht behauptet.
 
 ## Historische Planbasis und Lieferbelege
 
