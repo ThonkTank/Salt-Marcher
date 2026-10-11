@@ -87,6 +87,8 @@ export interface DeactivatePartyCharacterCommand
   readonly version: 1;
   readonly characterId: CharacterId;
   readonly expectedSourceRevision?: Revision;
+  readonly primarySuccessorSceneId?: LiveSceneId;
+  readonly expectedSuccessorRevision?: Revision;
 }
 
 export interface PartyCommandBinding {
@@ -457,11 +459,20 @@ export function parseDeactivatePartyCharacterCommand(
     row = exactRecord(
       value,
       [...COMMON, "characterId"],
-      ["expectedSourceRevision"],
+      [
+        "expectedSourceRevision",
+        "primarySuccessorSceneId",
+        "expectedSuccessorRevision",
+      ],
       label,
     );
   if (row.kind !== "deactivate-party-character" || row.version !== 1)
     throw new Error(`${label} besitzt einen unbekannten Vertrag.`);
+  if (
+    (row.primarySuccessorSceneId === undefined) !==
+    (row.expectedSuccessorRevision === undefined)
+  )
+    throw new Error(`${label} bindet Nachfolger und Revision widersprüchlich.`);
   return Object.freeze({
     kind: "deactivate-party-character",
     version: 1,
@@ -473,6 +484,18 @@ export function parseDeactivatePartyCharacterCommand(
           expectedSourceRevision: revision(
             row.expectedSourceRevision,
             `${label}.expectedSourceRevision`,
+          ),
+        }),
+    ...(row.primarySuccessorSceneId === undefined
+      ? {}
+      : {
+          primarySuccessorSceneId: liveSceneId(
+            row.primarySuccessorSceneId,
+            `${label}.primarySuccessorSceneId`,
+          ),
+          expectedSuccessorRevision: revision(
+            row.expectedSuccessorRevision,
+            `${label}.expectedSuccessorRevision`,
           ),
         }),
   });

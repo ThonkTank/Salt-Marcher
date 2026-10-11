@@ -98,7 +98,12 @@ export interface CharacterMembershipDecision {
   readonly activeBefore: boolean;
   readonly activeAfter: boolean;
   readonly sourceSceneId: LiveSceneId | null;
+  readonly sourceRevisionBefore: Revision | null;
+  readonly sourceRevisionAfter: Revision | null;
   readonly targetSceneId: LiveSceneId | null;
+  readonly primarySuccessorSceneId: LiveSceneId | null;
+  readonly successorRevisionBefore: Revision | null;
+  readonly successorRevisionAfter: Revision | null;
   readonly primaryBefore: LiveSceneId | null;
   readonly primaryAfter: LiveSceneId | null;
   readonly focusBefore: LiveSceneId | null;
@@ -719,7 +724,12 @@ export function activatePartyCharacter(
         activeBefore: false,
         activeAfter: true,
         sourceSceneId: null,
+        sourceRevisionBefore: null,
+        sourceRevisionAfter: null,
         targetSceneId: null,
+        primarySuccessorSceneId: null,
+        successorRevisionBefore: null,
+        successorRevisionAfter: null,
         primaryBefore: null,
         primaryAfter: null,
         focusBefore: focusId(state.focus),
@@ -801,7 +811,12 @@ export function activatePartyCharacter(
       activeBefore: false,
       activeAfter: true,
       sourceSceneId: null,
+      sourceRevisionBefore: null,
+      sourceRevisionAfter: null,
       targetSceneId: target.liveSceneId,
+      primarySuccessorSceneId: null,
+      successorRevisionBefore: null,
+      successorRevisionAfter: null,
       primaryBefore: state.primarySceneId,
       primaryAfter: next.primarySceneId,
       focusBefore: focusId(state.focus),
@@ -838,7 +853,9 @@ export function deactivatePartyCharacter(
   if (state.primarySceneId === null) {
     if (
       character.sceneAssignment.status !== "not-started" ||
-      command.expectedSourceRevision !== undefined
+      command.expectedSourceRevision !== undefined ||
+      command.primarySuccessorSceneId !== undefined ||
+      command.expectedSuccessorRevision !== undefined
     )
       return reject(state, command, "invalid-membership");
     const party = {
@@ -863,7 +880,12 @@ export function deactivatePartyCharacter(
         activeBefore: true,
         activeAfter: false,
         sourceSceneId: null,
+        sourceRevisionBefore: null,
+        sourceRevisionAfter: null,
         targetSceneId: null,
+        primarySuccessorSceneId: null,
+        successorRevisionBefore: null,
+        successorRevisionAfter: null,
         primaryBefore: null,
         primaryAfter: null,
         focusBefore: focusId(state.focus),
@@ -883,34 +905,53 @@ export function deactivatePartyCharacter(
     );
   }
 
-  if (
-    character.sceneAssignment.status !== "assigned" ||
-    command.expectedSourceRevision === undefined
-  )
+  if (command.expectedSourceRevision === undefined)
     return reject(state, command, "invalid-membership");
-  const assignment = character.sceneAssignment;
-  const sourceIndex = state.scenes.findIndex(
-    (scene) => scene.source.liveSceneId === assignment.liveSceneId,
-  );
+  const assignment = character.sceneAssignment,
+    sourceIndex =
+      assignment.status === "assigned"
+        ? state.scenes.findIndex(
+            (scene) => scene.source.liveSceneId === assignment.liveSceneId,
+          )
+        : assignment.status === "pending"
+          ? state.scenes.findIndex(
+              (scene) =>
+                scene.source.lifecycle === "active" &&
+                scene.source.pendingAssignments.some(
+                  (pending) =>
+                    pending.characterId === command.characterId &&
+                    pending.commandId === assignment.commandId &&
+                    pending.ownerId === assignment.ownerId,
+                ),
+            )
+          : -1;
   if (sourceIndex < 0) return reject(state, command, "unknown-scene");
   const sourceScene = state.scenes[sourceIndex]!,
     source = sourceScene.source;
   if (source.lifecycle !== "active")
     return reject(state, command, "inactive-scene");
-  if (
-    source.sceneRevision !== command.expectedSourceRevision ||
-    assignment.sceneRevision !== source.sceneRevision
-  )
+  if (source.sceneRevision !== command.expectedSourceRevision)
     return reject(state, command, "stale-scene");
-  if (!source.characterIds.includes(command.characterId))
+  if (
+    (assignment.status === "assigned" &&
+      (assignment.sceneRevision !== source.sceneRevision ||
+        !source.characterIds.includes(command.characterId))) ||
+    (assignment.status === "pending" &&
+      !source.pendingAssignments.some(
+        (pending) =>
+          pending.characterId === command.characterId &&
+          pending.commandId === assignment.commandId &&
+          pending.ownerId === assignment.ownerId,
+      )) ||
+    (assignment.status !== "assigned" && assignment.status !== "pending")
+  )
     return reject(state, command, "invalid-membership");
 
-  const sourceRevision = nextRevision(
-      source.sceneRevision,
-      "Source.sceneRevision",
-    ),
-    sourceCharacters = source.characterIds.filter(
+  const sourceCharacters = source.characterIds.filter(
       (id) => id !== command.characterId,
+    ),
+    sourcePendingAssignments = source.pendingAssignments.filter(
+      (pending) => pending.characterId !== command.characterId,
     ),
     populatedCandidates = state.scenes
       .map((scene, index) => ({ scene, index }))
@@ -922,9 +963,56 @@ export function deactivatePartyCharacter(
             scene.source.pendingAssignments.length > 0),
       ),
     empty =
-      sourceCharacters.length === 0 && source.pendingAssignments.length === 0,
+      sourceCharacters.length === 0 && sourcePendingAssignments.length === 0,
     retired = empty && (!source.primary || populatedCandidates.length > 0),
-    successor = source.primary && retired ? populatedCandidates[0] : undefined,
+    focusedSceneId = focusId(state.focus),
+    focusedCandidate =
+      focusedSceneId !== null && focusedSceneId !== source.liveSceneId
+        ? populatedCandidates.find(
+            ({ scene }) => scene.source.liveSceneId === focusedSceneId,
+          )
+        : undefined,
+    firstPartyCandidate = state.party.characters
+      .filter(
+        (entry) => entry.active && entry.characterId !== command.characterId,
+      )
+      .map((entry) => {
+        const candidateAssignment = entry.sceneAssignment;
+        if (candidateAssignment.status === "assigned")
+          return populatedCandidates.find(
+            ({ scene }) =>
+              scene.source.liveSceneId === candidateAssignment.liveSceneId,
+          );
+        if (candidateAssignment.status === "pending")
+          return populatedCandidates.find(({ scene }) =>
+            scene.source.pendingAssignments.some(
+              (pending) =>
+                pending.characterId === entry.characterId &&
+                pending.commandId === candidateAssignment.commandId &&
+                pending.ownerId === candidateAssignment.ownerId,
+            ),
+          );
+        return undefined;
+      })
+      .find((candidate) => candidate !== undefined),
+    successor =
+      source.primary && retired
+        ? (focusedCandidate ?? firstPartyCandidate)
+        : undefined;
+  if (
+    successor === undefined
+      ? command.primarySuccessorSceneId !== undefined ||
+        command.expectedSuccessorRevision !== undefined
+      : command.primarySuccessorSceneId !==
+          successor.scene.source.liveSceneId ||
+        command.expectedSuccessorRevision !==
+          successor.scene.source.sceneRevision
+  )
+    return reject(state, command, "stale-scene");
+  const sourceRevision = nextRevision(
+      source.sceneRevision,
+      "Source.sceneRevision",
+    ),
     successorRevision = successor
       ? nextRevision(
           successor.scene.source.sceneRevision,
@@ -940,6 +1028,7 @@ export function deactivatePartyCharacter(
       lifecycle: retired ? "retired" : "active",
       primary: retired ? false : source.primary,
       characterIds: sourceCharacters,
+      pendingAssignments: sourcePendingAssignments,
       reconciliations: source.reconciliations.map((entry) =>
         entry.status === "current"
           ? entry
@@ -1058,7 +1147,12 @@ export function deactivatePartyCharacter(
       activeBefore: true,
       activeAfter: false,
       sourceSceneId: source.liveSceneId,
+      sourceRevisionBefore: source.sceneRevision,
+      sourceRevisionAfter: nextSource.sceneRevision,
       targetSceneId: null,
+      primarySuccessorSceneId: nextSuccessor?.liveSceneId ?? null,
+      successorRevisionBefore: successor?.scene.source.sceneRevision ?? null,
+      successorRevisionAfter: nextSuccessor?.sceneRevision ?? null,
       primaryBefore: state.primarySceneId,
       primaryAfter: next.primarySceneId,
       focusBefore: focusId(state.focus),

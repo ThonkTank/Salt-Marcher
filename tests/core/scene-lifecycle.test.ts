@@ -153,6 +153,86 @@ function prepare(state = initialize()) {
   return result.state;
 }
 
+function threePopulatedScenes() {
+  const party = structuredClone(partyBeforeSession()) as Record<string, any>;
+  party.characters[2].active = true;
+  party.characters[2].sceneAssignment = { status: "not-started" };
+  const uninitialized = createUninitializedLiveSessionState(party),
+    initialized = initializeLiveSession(
+      uninitialized,
+      commandBase("initialize-live-session", {
+        primarySceneId: "scene-primary",
+        sceneClockRef: {
+          ownerId: "clock",
+          referenceId: "clock-primary",
+          ownerRevision: 0,
+        },
+        title: "Primary",
+        notes: "",
+      }),
+    );
+  assert.equal(initialized.status, "applied");
+  if (initialized.status !== "applied")
+    throw new Error("initialization failed");
+  const withSecond = prepare(initialized.state),
+    movedSecond = moveCharacters(
+      withSecond,
+      commandBase("move-characters", {
+        commandId: "command-move-b-to-second",
+        commandDigest: "digest-move-b-to-second",
+        expectedPartyRevision: 1,
+        expectedFocusRevision: 1,
+        sourceSceneId: "scene-primary",
+        targetSceneId: "scene-prepared",
+        expectedSourceRevision: 0,
+        expectedTargetRevision: 0,
+        characterIds: ["character-b"],
+      }),
+    );
+  assert.equal(movedSecond.status, "applied");
+  if (movedSecond.status !== "applied") throw new Error("second move failed");
+  const thirdSnapshot = structuredClone(preparationSnapshot());
+  thirdSnapshot.preparationId = "preparation-third";
+  thirdSnapshot.source.sourceId = "plan-third";
+  thirdSnapshot.title = "Third";
+  const preparedThird = createPreparedRuntime(
+    movedSecond.state,
+    commandBase("prepare-runtime", {
+      commandId: "command-prepare-third",
+      commandDigest: "digest-prepare-third",
+      expectedPartyRevision: 2,
+      expectedFocusRevision: 1,
+      liveSceneId: "scene-third",
+      sceneClockRef: {
+        ownerId: "clock",
+        referenceId: "clock-third",
+        ownerRevision: 0,
+      },
+      snapshot: thirdSnapshot,
+    }),
+  );
+  assert.equal(preparedThird.status, "applied");
+  if (preparedThird.status !== "applied")
+    throw new Error("third prepare failed");
+  const movedThird = moveCharacters(
+    preparedThird.state,
+    commandBase("move-characters", {
+      commandId: "command-move-c-to-third",
+      commandDigest: "digest-move-c-to-third",
+      expectedPartyRevision: 2,
+      expectedFocusRevision: 1,
+      sourceSceneId: "scene-primary",
+      targetSceneId: "scene-third",
+      expectedSourceRevision: 1,
+      expectedTargetRevision: 0,
+      characterIds: ["character-c"],
+    }),
+  );
+  assert.equal(movedThird.status, "applied");
+  if (movedThird.status !== "applied") throw new Error("third move failed");
+  return movedThird.state;
+}
+
 test("explicit initialization creates one Primary, Focus and ordered membership atomically", () => {
   const before = createUninitializedLiveSessionState(partyBeforeSession()),
     result = initializeLiveSession(
@@ -908,6 +988,8 @@ test("deactivating the last Primary member promotes the first populated active s
       expectedFocusRevision: 1,
       characterId: "character-a",
       expectedSourceRevision: 1,
+      primarySuccessorSceneId: "scene-prepared",
+      expectedSuccessorRevision: 1,
     }),
   );
   assert.equal(result.status, "applied");
@@ -930,6 +1012,22 @@ test("deactivating the last Primary member promotes the first populated active s
     sceneRevision: 2,
   });
   assert.equal(result.decision.membership?.sourceLifecycleAfter, "retired");
+  assert.deepEqual(
+    {
+      sourceBefore: result.decision.membership?.sourceRevisionBefore,
+      sourceAfter: result.decision.membership?.sourceRevisionAfter,
+      successor: result.decision.membership?.primarySuccessorSceneId,
+      successorBefore: result.decision.membership?.successorRevisionBefore,
+      successorAfter: result.decision.membership?.successorRevisionAfter,
+    },
+    {
+      sourceBefore: 1,
+      sourceAfter: 2,
+      successor: "scene-prepared",
+      successorBefore: 1,
+      successorAfter: 2,
+    },
+  );
 });
 
 test("the sole empty Primary remains active after its last character is deactivated", () => {
@@ -1015,4 +1113,226 @@ test("unavailable consumers receive a durable source-only deactivation duty", ()
     result.state.pendingReconciliations,
   );
   assert(frozenGraph(result));
+});
+
+test("a bound pending party member can be deactivated without losing cleanup duties", () => {
+  const raw = structuredClone(initialize()) as Record<string, any>;
+  raw.party.characters[0].sceneAssignment = {
+    status: "pending",
+    commandId: "command-pending-a",
+    ownerId: "scene-owner",
+  };
+  raw.scenes[0].source.characterIds = ["character-b"];
+  raw.scenes[0].source.pendingAssignments = [
+    {
+      characterId: "character-a",
+      commandId: "command-pending-a",
+      ownerId: "scene-owner",
+    },
+  ];
+  raw.scenes[0].source.reconciliations = [
+    { ownerId: "music-owner", status: "unavailable", ownerRevision: 4 },
+  ];
+  const state = parseLiveSessionAggregateState(raw),
+    result = deactivatePartyCharacter(
+      state,
+      commandBase("deactivate-party-character", {
+        commandId: "command-deactivate-pending-a",
+        commandDigest: "digest-deactivate-pending-a",
+        expectedPartyRevision: 1,
+        expectedFocusRevision: 1,
+        characterId: "character-a",
+        expectedSourceRevision: 0,
+      }),
+    );
+  assert.equal(result.status, "applied");
+  if (result.status !== "applied") return;
+  assert.equal(result.state.party.characters[0]?.active, false);
+  assert.deepEqual(result.state.party.characters[0]?.sceneAssignment, {
+    status: "inactive",
+  });
+  assert.deepEqual(result.state.scenes[0]?.source.pendingAssignments, []);
+  assert.deepEqual(result.state.scenes[0]?.source.characterIds, [
+    "character-b",
+  ]);
+  assert.equal(result.state.scenes[0]?.source.lifecycle, "active");
+  assert.deepEqual(result.state.pendingReconciliations[0], {
+    ownerId: "music-owner",
+    campaignId: "campaign-a",
+    commandId: "command-deactivate-pending-a",
+    commandDigest: "digest-deactivate-pending-a",
+    sourceSceneId: "scene-primary",
+    targetSceneId: null,
+    expectedSourceRevision: 0,
+    expectedTargetRevision: null,
+    expectedOwnerRevision: 4,
+    sourceLifecycleBefore: "active",
+    sourceLifecycleAfter: "active",
+    action: "remove-participants",
+    characterIds: ["character-a"],
+    maskIds: [],
+    status: "pending",
+  });
+});
+
+test("Primary successor prefers populated Focus and ignores scene array order", () => {
+  const state = threePopulatedScenes(),
+    focused = setFocus(
+      state,
+      commandBase("set-focus", {
+        expectedPartyRevision: 3,
+        expectedFocusRevision: 1,
+        targetSceneId: "scene-third",
+        expectedTargetRevision: 1,
+      }),
+    );
+  assert.equal(focused.status, "applied");
+  if (focused.status !== "applied") return;
+  const permuted = parseLiveSessionAggregateState({
+      ...focused.state,
+      scenes: [
+        focused.state.scenes[0],
+        focused.state.scenes[2],
+        focused.state.scenes[1],
+      ],
+    }),
+    deactivate = (input: unknown) =>
+      deactivatePartyCharacter(
+        input,
+        commandBase("deactivate-party-character", {
+          commandId: "command-deactivate-primary-with-focused-successor",
+          commandDigest: "digest-deactivate-primary-with-focused-successor",
+          expectedPartyRevision: 3,
+          expectedFocusRevision: 2,
+          characterId: "character-a",
+          expectedSourceRevision: 2,
+          primarySuccessorSceneId: "scene-third",
+          expectedSuccessorRevision: 1,
+        }),
+      ),
+    normalResult = deactivate(focused.state),
+    permutedResult = deactivate(permuted);
+  assert.equal(normalResult.status, "applied");
+  assert.equal(permutedResult.status, "applied");
+  if (normalResult.status !== "applied" || permutedResult.status !== "applied")
+    return;
+  for (const result of [normalResult, permutedResult]) {
+    assert.equal(result.state.primarySceneId, "scene-third");
+    assert.equal(result.state.focus.status, "active");
+    assert.equal(
+      result.state.focus.status === "active" && result.state.focus.liveSceneId,
+      "scene-third",
+    );
+    assert.equal(result.state.focus.focusRevision, 2);
+    assert.equal(
+      result.decision.membership?.primarySuccessorSceneId,
+      "scene-third",
+    );
+    assert.equal(result.decision.membership?.successorRevisionBefore, 1);
+    assert.equal(result.decision.membership?.successorRevisionAfter, 2);
+  }
+});
+
+test("Primary successor falls back to Party order and rejects a stale successor pin", () => {
+  const state = threePopulatedScenes(),
+    noFocus = setFocus(
+      state,
+      commandBase("set-focus", {
+        expectedPartyRevision: 3,
+        expectedFocusRevision: 1,
+        targetSceneId: null,
+      }),
+    );
+  assert.equal(noFocus.status, "applied");
+  if (noFocus.status !== "applied") return;
+  const stale = deactivatePartyCharacter(
+    noFocus.state,
+    commandBase("deactivate-party-character", {
+      expectedPartyRevision: 3,
+      expectedFocusRevision: 2,
+      characterId: "character-a",
+      expectedSourceRevision: 2,
+      primarySuccessorSceneId: "scene-prepared",
+      expectedSuccessorRevision: 9,
+    }),
+  );
+  assert.equal(stale.status, "rejected");
+  assert.equal(stale.status === "rejected" && stale.reason, "stale-scene");
+  assert.deepEqual(stale.state, noFocus.state);
+
+  const result = deactivatePartyCharacter(
+    noFocus.state,
+    commandBase("deactivate-party-character", {
+      commandId: "command-deactivate-primary-by-party-order",
+      commandDigest: "digest-deactivate-primary-by-party-order",
+      expectedPartyRevision: 3,
+      expectedFocusRevision: 2,
+      characterId: "character-a",
+      expectedSourceRevision: 2,
+      primarySuccessorSceneId: "scene-prepared",
+      expectedSuccessorRevision: 1,
+    }),
+  );
+  assert.equal(result.status, "applied");
+  if (result.status !== "applied") return;
+  assert.equal(result.state.primarySceneId, "scene-prepared");
+  assert.equal(result.state.focus.status, "none");
+  assert.equal(result.state.focus.focusRevision, 2);
+});
+
+test("Party-order successor can be populated by an exact pending assignment", () => {
+  const state = threePopulatedScenes(),
+    noFocus = setFocus(
+      state,
+      commandBase("set-focus", {
+        expectedPartyRevision: 3,
+        expectedFocusRevision: 1,
+        targetSceneId: null,
+      }),
+    );
+  assert.equal(noFocus.status, "applied");
+  if (noFocus.status !== "applied") return;
+  const raw = structuredClone(noFocus.state) as Record<string, any>,
+    second = raw.scenes.find(
+      (scene: Record<string, any>) =>
+        scene.source.liveSceneId === "scene-prepared",
+    );
+  raw.party.characters[1].sceneAssignment = {
+    status: "pending",
+    commandId: "command-pending-b",
+    ownerId: "scene-owner",
+  };
+  second.source.characterIds = [];
+  second.source.pendingAssignments = [
+    {
+      characterId: "character-b",
+      commandId: "command-pending-b",
+      ownerId: "scene-owner",
+    },
+  ];
+  const pendingState = parseLiveSessionAggregateState(raw),
+    result = deactivatePartyCharacter(
+      pendingState,
+      commandBase("deactivate-party-character", {
+        commandId: "command-deactivate-primary-with-pending-successor",
+        commandDigest: "digest-deactivate-primary-with-pending-successor",
+        expectedPartyRevision: 3,
+        expectedFocusRevision: 2,
+        characterId: "character-a",
+        expectedSourceRevision: 2,
+        primarySuccessorSceneId: "scene-prepared",
+        expectedSuccessorRevision: 1,
+      }),
+    );
+  assert.equal(result.status, "applied");
+  if (result.status !== "applied") return;
+  assert.equal(result.state.primarySceneId, "scene-prepared");
+  assert.equal(result.state.scenes[1]?.source.primary, true);
+  assert.deepEqual(result.state.scenes[1]?.source.pendingAssignments, [
+    {
+      characterId: "character-b",
+      commandId: "command-pending-b",
+      ownerId: "scene-owner",
+    },
+  ]);
 });
