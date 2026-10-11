@@ -156187,7 +156187,7 @@
           "issue": 80,
           "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
           "e2e01UserLine": 13,
-          "state": "horizontal_inspector_fit_independent_review_PASS_steward_integration_pending",
+          "state": "horizontal_inspector_fit_independent_review_and_integration_consumed_free_GM_pending",
           "pullRequest": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/110",
           "producerRecord": "checkpoint.hexAtlasExecution.dungeonAtLocationInspectorHorizontalFitN04",
           "nativeReceipt": "docs/reference/atlas-detail-binding-d01/inspector-horizontal-fit-n04.json",
@@ -156222,9 +156222,39 @@
             "reviewedHeadCiResult": "SUCCESS",
             "qualificationDelta": "Only own checkpoint/acceptance and #80 working section; product and native receipt unchanged."
           },
-          "independentIntegration": "pending",
-          "freeGmFollowup": "pending",
-          "nextConsumer": "Contributor (existing Obsidian Dungeon Repo ansehen chat): independent steward integration of PR110 after exact new-head CI and composition/source checks. Then qualified free GM followup in #80; no dependent detail expansion or selfintegration by Hex.",
+          "independentIntegration": {
+            "id": "HEX-N04-STEWARD-S01",
+            "steward": "Contributor (Obsidian Dungeon Repo ansehen)",
+            "head": "3123a806eb4c3ff3229e551c24dfe0bc7ca95a46",
+            "reviewedHead": "305680db90546207f259d246b3a6c86afcc44e68",
+            "sharedMerge": "0b6e4355e478a2ad277e03dc2a3f2318e3189e34",
+            "parents": [
+              "af5ddcbbf3bd449ff672f7fa83c116ba0ca602db",
+              "3123a806eb4c3ff3229e551c24dfe0bc7ca95a46"
+            ],
+            "tree": "f9006278b782cbc6605e801d3a405f65d3e7e7f3",
+            "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/110#issuecomment-6105052692",
+            "headCi": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/actions/runs/38108634137",
+            "sharedStructureCi": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/actions/runs/38108709670",
+            "ciLiveChecked": "Both SUCCESS at their exact recorded SHAs",
+            "nativeProductBlobsEqualReviewedHead": true,
+            "foreignRootsEqualPriorShared": true,
+            "selfIntegratedByHex": false
+          },
+          "freeGmFollowup": {
+            "owner": "Cloud-GM-Produkttester (existing Obsidian-Dungeon-Repo ansehen chat)",
+            "reviewerThread": "01a12031-2c30-73f7-bc01-6bd3eba86046",
+            "state": "product_available_offer_requires_own_persistent_evidence_location",
+            "productInput": "0b6e4355e478a2ad277e03dc2a3f2318e3189e34",
+            "fixtureVersion": "e2e01-spatial-v2",
+            "fixtureManifest": "tests/fixtures/atlas-e2e-spatial-v2/manifest.json",
+            "focus": "Free user-facing Location/Room Inspector discoverability, complete readable controls in narrow/zoomed dock, editing and reuse through shared Dungeon-at-Location path; bind actual source/build/fixture/host and persistence only to directly observed actions. No dependent detail expansion.",
+            "hostPrerequisite": "GM reported full workspace scratch in completed City run; prepare adequate own persistent QA evidence location before new GUI, or report exact host blocker in #80. No local laptop slot or foreign files.",
+            "priorCityReport": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/92#issuecomment-6105037427",
+            "priorCitySource": "a4f20a553060ec84941b97cbb71bd105d5ca5a62",
+            "priorCityReportNotN04Pass": true
+          },
+          "nextConsumer": "Existing Cloud-GM: prepare persistent evidence on owned isolated Cloud host, then free bounded N04/Inspector user flow on actual current Shared build with e2e01-spatial-v2; report result or specific missing host input once at #80. Hex consumes it; no local GUI, City Save re-review or dependent expansion.",
           "limits": [
             "Independent scoped review consumes existing native evidence; no new native GUI or local slot claim.",
             "Original external-window clipping was not reproduced in D01 and is not qualified as fixed.",
@@ -156232,7 +156262,8 @@
           ],
           "guiUsedByHex": false,
           "productEdited": false,
-          "phaseApproval": false
+          "phaseApproval": false,
+          "sourceCommit": "0b6e4355e478a2ad277e03dc2a3f2318e3189e34"
         }
       }
     ],
