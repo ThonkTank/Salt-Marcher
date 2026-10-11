@@ -13259,16 +13259,16 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY69-KEYBOARD-FOCUS-I01",
+      "id": "CITY69-DRAFT-VIEW-GUARD-I01",
       "issue": 69,
-      "state": "panel_repair_verified_review_pending",
-      "branch": "city/planner-keyboard-focus-20261011",
-      "verification": "Four focus countercases FAIL before/PASS after repair; 28 panel tests PASS including an action-named scene. Full suite1107 PASS/0 FAIL/1 existing optional PDF skip on initial fix; final selector delta focused PASS. Successful focused actions restore connected enabled controls; boundary move falls back to scene title; stale failures preserve focus/draft.",
-      "limits": "DOM-only; no native storage, physical keyboard or overall acceptance. PR86 Campaign/Data producer decision remains open."
+      "state": "draft_preservation_verified_review_pending",
+      "branch": "city/planner-draft-view-guard-20261011",
+      "verification": "Three same-plan external draft replacement cases FAIL before/PASS after: old input/commit/discard cannot replace/publish/discard newer draft. Explicit refresh permits continued typing and commit;31 panel tests PASS; full suite1111 PASS/0 FAIL/1 existing optional PDF skip; type/build/repo/preview PASS.",
+      "limits": "No native storage/physical/overall acceptance. PR140 R01/Shared1580c39 consumed; independent browser keyboard retest running. PR86 Campaign/Data producer decision open."
     },
     "nextRun": {
-      "id": "CITY69-KEYBOARD-FOCUS-REVIEW",
-      "focus": "Narrow independent review and real browser keyboard retest of repaired action focus; continue native consumer after Campaign/Data decision."
+      "id": "CITY69-DRAFT-VIEW-GUARD-REVIEW",
+      "focus": "Independent draft-preservation review and regular integration; native consumer after Campaign/Data producer decision."
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",

@@ -11,6 +11,7 @@ export class ManualPlannerPanel {
   private readonly help: HTMLDetailsElement;
   private destroyed = false;
   private renderEpoch = 0;
+  private displayedDraft: ManualPlanner["draft"] = null;
   constructor(
     host: HTMLElement,
     private readonly planner: ManualPlanner,
@@ -83,6 +84,7 @@ export class ManualPlannerPanel {
       const current = this.planner.active;
       if (
         epoch !== this.renderEpoch ||
+        this.planner.draft !== this.displayedDraft ||
         current?.id !== plan?.id ||
         current?.revision !== plan?.revision ||
         this.planner.selectedSceneId !== sceneId
@@ -135,6 +137,7 @@ export class ManualPlannerPanel {
   }
   private render(): void {
     this.renderEpoch++;
+    this.displayedDraft = this.planner.draft;
     this.root.replaceChildren();
     const doc = this.root.ownerDocument;
     const toolbar = doc.createElement("div");
@@ -310,6 +313,9 @@ export class ManualPlannerPanel {
     // Preserve inspector focus/caret while typing and while a stale draft is displayed.
     try {
       action();
+      // Advance only after this displayed input successfully authored the draft.
+      // An external replacement requires an explicit refresh before editing.
+      this.displayedDraft = this.planner.draft;
       this.status.textContent = "Entwurf geändert.";
     } catch (e) {
       this.status.textContent =

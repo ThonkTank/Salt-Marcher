@@ -25,6 +25,12 @@ function button(host: HTMLElement, name: string) {
     (b) => b.textContent === name,
   )!;
 }
+function editDisplayed(f: ReturnType<typeof fixture>, fields: {title: string; notes: string; locationId: null}) {
+  f.host.querySelector<HTMLInputElement>('[aria-label="Szenentitel"]')!.value = fields.title;
+  const notes = f.host.querySelector<HTMLTextAreaElement>('[aria-label="Notizen"]')!;
+  notes.value = fields.notes;
+  notes.dispatchEvent(new f.document.defaultView!.Event("input"));
+}
 function focusProbe(document: Document) {
   const prototype = document.defaultView!.HTMLElement.prototype;
   const descriptor = Object.getOwnPropertyDescriptor(prototype, "focus");
@@ -47,7 +53,7 @@ test("manual planner UI: successful scene selection focuses the newly rendered t
   const f = fixture();
   button(f.host, "Neuer Plan").click();
   button(f.host, "Szene hinzufügen").click();
-  f.p.editDraft({
+  editDisplayed(f, {
     title: "Hafen",
     notes: "  日本語\n\tOriginal\n",
     locationId: null,
@@ -361,7 +367,7 @@ for (const action of ['Szene hinzufügen', 'Entwurf übernehmen', 'Entwurf verwe
       const field = f.host.querySelector<HTMLInputElement>('[aria-label="Planname"]')!;
       field.value = '  Hafen 日本語\t';
       const planId = f.p.active!.id;
-      f.p.editDraft({title: 'Edited', notes: '  Exact\n\ttext', locationId: null});
+      editDisplayed(f, {title: 'Edited', notes: '  Exact\n\ttext', locationId: null});
       button(f.host, action).click();
       assert.equal(f.p.active!.id, planId);
       assert.equal(f.p.active!.name, '', 'scene action must not silently rename');
@@ -391,7 +397,7 @@ for (const action of ["Entwurf übernehmen", "Entwurf verwerfen", "Szene nach ob
     const f = fixture();
     button(f.host, "Neuer Plan").click();
     for (let i = 0; i < 3; i++) button(f.host, "Szene hinzufügen").click();
-    f.p.editDraft({ title: "Edited", notes: "  exact\n日本語", locationId: null });
+    editDisplayed(f, { title: "Edited", notes: "  exact\n日本語", locationId: null });
     const old = button(f.host, action);
     Object.defineProperty(f.document, "activeElement", { configurable: true, value: old });
     const probe = focusProbe(f.document);
@@ -448,7 +454,7 @@ test("manual planner UI: a scene title matching an action cannot capture restore
   const f = fixture();
   button(f.host, "Neuer Plan").click();
   button(f.host, "Szene hinzufügen").click();
-  f.p.editDraft({ title: "Entwurf übernehmen", notes: "Exact", locationId: null });
+  editDisplayed(f, { title: "Entwurf übernehmen", notes: "Exact", locationId: null });
   button(f.host, "Entwurf übernehmen").click();
   const old = [...f.host.querySelectorAll("button")].find(b =>
     b.textContent === "Entwurf übernehmen" && !b.closest("li"))!;
@@ -463,3 +469,35 @@ test("manual planner UI: a scene title matching an action cannot capture restore
     assert.equal(f.p.active!.scenes[0]!.title, "Entwurf übernehmen");
   } finally { probe.restore(); f.ui.destroy(); }
 });
+
+for (const action of ["input", "Entwurf übernehmen", "Entwurf verwerfen"]) {
+  test(`manual planner UI: external replacement draft rejects old ${action} in the same plan and scene`, () => {
+    const f = fixture();
+    button(f.host, "Neuer Plan").click();
+    button(f.host, "Szene hinzufügen").click();
+    const notes = f.host.querySelector<HTMLTextAreaElement>('[aria-label="Notizen"]')!;
+    notes.value = "local original";
+    notes.dispatchEvent(new f.document.defaultView!.Event("input"));
+    const before = f.p.active;
+    f.p.editDraft({ title: "External", notes: "  newer 日本語\r\n", locationId: null });
+    const newer = f.p.draft;
+    try {
+      if (action === "input") {
+        notes.value = "old UI response";
+        notes.dispatchEvent(new f.document.defaultView!.Event("input"));
+      } else button(f.host, action).click();
+      assert.ok(f.p.draft === newer, "newer authored draft must survive");
+      assert.ok(f.p.active === before, "no unreviewed draft publication");
+      assert.match(f.host.textContent!, /Ansicht geändert/);
+      button(f.host, "Ansicht aktualisieren").click();
+      const refreshed = f.host.querySelector<HTMLTextAreaElement>('[aria-label="Notizen"]')!;
+      assert.equal(refreshed.value, newer!.fields.notes);
+      refreshed.value += "continued";
+      refreshed.dispatchEvent(new f.document.defaultView!.Event("input"));
+      refreshed.value += " twice";
+      refreshed.dispatchEvent(new f.document.defaultView!.Event("input"));
+      button(f.host, "Entwurf übernehmen").click();
+      assert.equal(f.p.active!.scenes[0]!.notes, newer!.fields.notes + "continued twice");
+    } finally { f.ui.destroy(); }
+  });
+}
