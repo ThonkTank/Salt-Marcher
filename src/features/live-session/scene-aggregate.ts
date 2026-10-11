@@ -17,12 +17,14 @@ import {
   type CommandDigest,
   type CommandId,
   type LiveSceneId,
+  type MaskId,
   type OwnerId,
   type Revision,
 } from "./ids";
 import {
   parseLiveSessionAggregateState,
   type LiveSessionAggregateState,
+  type PendingConsumerReconciliation,
   type RuntimeSceneState,
 } from "./state";
 
@@ -41,21 +43,11 @@ export type AggregateRejectionReason =
   | "invalid-membership"
   | "prepared-scene";
 
-export interface ConsumerReconciliationDuty {
-  readonly ownerId: OwnerId;
-  readonly campaignId: LiveSessionAggregateState["campaignId"];
-  readonly commandId: CommandId;
-  readonly commandDigest: CommandDigest;
-  readonly sourceSceneId: LiveSceneId;
-  readonly targetSceneId: LiveSceneId;
-  readonly expectedSourceRevision: Revision;
-  readonly expectedTargetRevision: Revision;
-  readonly sourceLifecycleBefore: "active";
-  readonly sourceLifecycleAfter: "active" | "retired";
-  readonly action: "remove-participants" | "archive-source";
-  readonly characterIds: readonly CharacterId[];
-  readonly status: "required" | "pending";
-}
+export type ConsumerReconciliationDuty = Readonly<
+  Omit<PendingConsumerReconciliation, "status"> & {
+    readonly status: "required" | "pending";
+  }
+>;
 
 export interface SceneCleanupDecision {
   readonly sourceSceneId: LiveSceneId;
@@ -368,13 +360,38 @@ function reconciliationDuties(
   target: LiveSceneSourceSnapshot,
   retired: boolean,
 ): readonly ConsumerReconciliationDuty[] {
-  const ownerStates = new Map<OwnerId, OwnerReconciliation["status"]>();
-  for (const entry of source.reconciliations)
-    ownerStates.set(entry.ownerId, entry.status);
-  for (const mask of source.maskRefs)
-    if (!ownerStates.has(mask.ownerId)) ownerStates.set(mask.ownerId, "current");
+  const ownerStates = new Map<
+    OwnerId,
+    {
+      status: OwnerReconciliation["status"];
+      ownerRevision?: Revision;
+      maskIds: MaskId[];
+    }
+  >();
+  for (const entry of source.reconciliations) {
+    ownerStates.set(entry.ownerId, {
+      status: entry.status,
+      ...(entry.ownerRevision === undefined
+        ? {}
+        : { ownerRevision: entry.ownerRevision }),
+      maskIds: [],
+    });
+  }
+  for (const mask of source.maskRefs) {
+    const owner = ownerStates.get(mask.ownerId);
+    if (owner) {
+      owner.ownerRevision ??= mask.ownerRevision;
+      owner.maskIds.push(mask.maskId);
+    } else {
+      ownerStates.set(mask.ownerId, {
+        status: "current",
+        ownerRevision: mask.ownerRevision,
+        maskIds: [mask.maskId],
+      });
+    }
+  }
   return Object.freeze(
-    [...ownerStates.entries()].map(([ownerId, status]) =>
+    [...ownerStates.entries()].map(([ownerId, owner]) =>
       Object.freeze({
         ownerId,
         campaignId: state.campaignId,
@@ -384,11 +401,16 @@ function reconciliationDuties(
         targetSceneId: target.liveSceneId,
         expectedSourceRevision: command.expectedSourceRevision,
         expectedTargetRevision: command.expectedTargetRevision,
+        ...(owner.ownerRevision === undefined
+          ? {}
+          : { expectedOwnerRevision: owner.ownerRevision }),
         sourceLifecycleBefore: "active" as const,
         sourceLifecycleAfter: retired ? ("retired" as const) : ("active" as const),
         action: retired ? ("archive-source" as const) : ("remove-participants" as const),
         characterIds: Object.freeze([...command.characterIds]),
-        status: status === "current" ? ("required" as const) : ("pending" as const),
+        maskIds: Object.freeze([...owner.maskIds]),
+        status:
+          owner.status === "current" ? ("required" as const) : ("pending" as const),
       }),
     ),
   );
@@ -547,6 +569,13 @@ export function moveCharacters(
       focus,
       primarySceneId: primaryAfter,
       scenes,
+      pendingReconciliations: [
+        ...state.pendingReconciliations,
+        ...duties.filter(
+          (duty): duty is PendingConsumerReconciliation =>
+            duty.status === "pending",
+        ),
+      ],
     });
   return applied(
     next,

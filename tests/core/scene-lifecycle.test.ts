@@ -437,10 +437,12 @@ test("unavailable mask owner cannot roll back a move and receives one bound pend
     targetSceneId: "scene-prepared",
     expectedSourceRevision: 0,
     expectedTargetRevision: 0,
+    expectedOwnerRevision: 3,
     sourceLifecycleBefore: "active",
     sourceLifecycleAfter: "active",
     action: "remove-participants",
     characterIds: ["character-b"],
+    maskIds: ["mask-a"],
     status: "pending",
   });
   assert.deepEqual(
@@ -450,6 +452,49 @@ test("unavailable mask owner cannot roll back a move and receives one bound pend
         ownerId: "encounter-owner",
         status: "pending",
         commandId: "command-move-unavailable",
+      },
+    ],
+  );
+  assert.equal(result.state.pendingReconciliations.length, 1);
+
+  const second = moveCharacters(
+    result.state,
+    commandBase("move-characters", {
+      commandId: "command-move-unavailable-2",
+      commandDigest: "digest-move-unavailable-2",
+      expectedPartyRevision: 2,
+      expectedFocusRevision: 1,
+      sourceSceneId: "scene-primary",
+      targetSceneId: "scene-prepared",
+      expectedSourceRevision: 1,
+      expectedTargetRevision: 1,
+      characterIds: ["character-a"],
+    }),
+  );
+  assert.equal(second.status, "applied");
+  if (second.status !== "applied") return;
+  assert.deepEqual(
+    second.state.pendingReconciliations.map((duty) => ({
+      commandId: duty.commandId,
+      expectedOwnerRevision: duty.expectedOwnerRevision,
+      action: duty.action,
+      characterIds: duty.characterIds,
+      maskIds: duty.maskIds,
+    })),
+    [
+      {
+        commandId: "command-move-unavailable",
+        expectedOwnerRevision: 3,
+        action: "remove-participants",
+        characterIds: ["character-b"],
+        maskIds: ["mask-a"],
+      },
+      {
+        commandId: "command-move-unavailable-2",
+        expectedOwnerRevision: 3,
+        action: "archive-source",
+        characterIds: ["character-a"],
+        maskIds: ["mask-a"],
       },
     ],
   );
@@ -467,4 +512,53 @@ test("state parser rejects active session membership gaps and mutable aliases", 
   raw.scenes[0].title = "mutated";
   assert.equal(parsed.scenes[0]?.title, "Primary");
   assert(frozenGraph(parsed));
+});
+
+test("state parser binds Prepared provenance and pending membership exactly", () => {
+  const prepared = structuredClone(prepare()) as Record<string, any>,
+    withoutEncounter = structuredClone(prepared) as Record<string, any>,
+    changedPins = structuredClone(prepared) as Record<string, any>,
+    pendingPrepared = structuredClone(prepared) as Record<string, any>;
+  delete withoutEncounter.scenes[1].encounterPlanRef;
+  changedPins.scenes[1].source.contentPins = [];
+  assert.throws(
+    () => parseLiveSessionAggregateState(withoutEncounter),
+    /encounterPlanRef widerspricht/,
+  );
+  assert.throws(
+    () => parseLiveSessionAggregateState(changedPins),
+    /contentPins widersprechen/,
+  );
+  pendingPrepared.scenes[1].source.pendingAssignments = [
+    {
+      characterId: "character-a",
+      commandId: "command-hidden",
+      ownerId: "scene-owner",
+    },
+  ];
+  assert.throws(
+    () => parseLiveSessionAggregateState(pendingPrepared),
+    /aktive Prepared Runtime/,
+  );
+
+  const pending = structuredClone(initialize()) as Record<string, any>;
+  pending.party.characters[0].sceneAssignment = {
+    status: "pending",
+    commandId: "command-pending",
+    ownerId: "scene-owner",
+  };
+  pending.scenes[0].source.characterIds = ["character-b"];
+  pending.scenes[0].source.pendingAssignments = [
+    {
+      characterId: "character-a",
+      commandId: "command-pending",
+      ownerId: "scene-owner",
+    },
+  ];
+  assert.doesNotThrow(() => parseLiveSessionAggregateState(pending));
+  pending.party.characters[0].sceneAssignment.commandId = "command-other";
+  assert.throws(
+    () => parseLiveSessionAggregateState(pending),
+    /keine aktuelle Scene-Zuordnung/,
+  );
 });

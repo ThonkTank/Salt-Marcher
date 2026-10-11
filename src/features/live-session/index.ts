@@ -53,6 +53,7 @@ export {
   createUninitializedLiveSessionState,
   parseLiveSessionAggregateState,
   type LiveSessionAggregateState,
+  type PendingConsumerReconciliation,
   type RuntimeSceneState,
 } from "./state";
 export {

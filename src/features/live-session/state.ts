@@ -11,10 +11,22 @@ import {
   type PreparationSnapshot,
 } from "./contracts";
 import {
+  campaignId,
+  characterId,
+  commandDigest,
+  commandId,
   liveSceneId,
+  maskId,
+  ownerId,
+  revision,
   type CampaignId,
   type CharacterId,
+  type CommandDigest,
+  type CommandId,
   type LiveSceneId,
+  type MaskId,
+  type OwnerId,
+  type Revision,
 } from "./ids";
 import { exactArray, exactRecord, exactText, uniqueBy } from "./validation";
 
@@ -28,6 +40,24 @@ export interface RuntimeSceneState {
   readonly encounterPlanRef?: OwnerReference;
 }
 
+export interface PendingConsumerReconciliation {
+  readonly ownerId: OwnerId;
+  readonly campaignId: CampaignId;
+  readonly commandId: CommandId;
+  readonly commandDigest: CommandDigest;
+  readonly sourceSceneId: LiveSceneId;
+  readonly targetSceneId: LiveSceneId;
+  readonly expectedSourceRevision: Revision;
+  readonly expectedTargetRevision: Revision;
+  readonly expectedOwnerRevision?: Revision;
+  readonly sourceLifecycleBefore: "active";
+  readonly sourceLifecycleAfter: "active" | "retired";
+  readonly action: "remove-participants" | "archive-source";
+  readonly characterIds: readonly CharacterId[];
+  readonly maskIds: readonly MaskId[];
+  readonly status: "pending";
+}
+
 export interface LiveSessionAggregateState {
   readonly kind: "live-session-aggregate-state";
   readonly version: 1;
@@ -36,6 +66,95 @@ export interface LiveSessionAggregateState {
   readonly focus: FocusSourceSnapshot;
   readonly primarySceneId: LiveSceneId | null;
   readonly scenes: readonly RuntimeSceneState[];
+  readonly pendingReconciliations: readonly PendingConsumerReconciliation[];
+}
+
+function parsePendingReconciliation(
+  value: unknown,
+  index: number,
+): PendingConsumerReconciliation {
+  const label = `LiveSessionAggregateState.pendingReconciliations[${index}]`,
+    row = exactRecord(
+      value,
+      [
+        "ownerId",
+        "campaignId",
+        "commandId",
+        "commandDigest",
+        "sourceSceneId",
+        "targetSceneId",
+        "expectedSourceRevision",
+        "expectedTargetRevision",
+        "sourceLifecycleBefore",
+        "sourceLifecycleAfter",
+        "action",
+        "characterIds",
+        "maskIds",
+        "status",
+      ],
+      ["expectedOwnerRevision"],
+      label,
+    );
+  if (
+    row.sourceLifecycleBefore !== "active" ||
+    !(row.sourceLifecycleAfter === "active" || row.sourceLifecycleAfter === "retired") ||
+    !(row.action === "remove-participants" || row.action === "archive-source") ||
+    row.status !== "pending" ||
+    (row.sourceLifecycleAfter === "active") !==
+      (row.action === "remove-participants")
+  )
+    throw new Error(`${label} besitzt eine widersprüchliche Pflicht.`);
+  const characterIds = Object.freeze(
+      uniqueBy(
+        exactArray(row.characterIds, `${label}.characterIds`).map(
+          (entry, characterIndex) =>
+            characterId(entry, `${label}.characterIds[${characterIndex}]`),
+        ),
+        (entry) => entry,
+        `${label}.characterIds`,
+      ),
+    ),
+    maskIds = Object.freeze(
+      uniqueBy(
+        exactArray(row.maskIds, `${label}.maskIds`).map((entry, maskIndex) =>
+          maskId(entry, `${label}.maskIds[${maskIndex}]`),
+        ),
+        (entry) => entry,
+        `${label}.maskIds`,
+      ),
+    );
+  if (!characterIds.length)
+    throw new Error(`${label}.characterIds darf nicht leer sein.`);
+  return Object.freeze({
+    ownerId: ownerId(row.ownerId, `${label}.ownerId`),
+    campaignId: campaignId(row.campaignId, `${label}.campaignId`),
+    commandId: commandId(row.commandId, `${label}.commandId`),
+    commandDigest: commandDigest(row.commandDigest, `${label}.commandDigest`),
+    sourceSceneId: liveSceneId(row.sourceSceneId, `${label}.sourceSceneId`),
+    targetSceneId: liveSceneId(row.targetSceneId, `${label}.targetSceneId`),
+    expectedSourceRevision: revision(
+      row.expectedSourceRevision,
+      `${label}.expectedSourceRevision`,
+    ),
+    expectedTargetRevision: revision(
+      row.expectedTargetRevision,
+      `${label}.expectedTargetRevision`,
+    ),
+    ...(row.expectedOwnerRevision === undefined
+      ? {}
+      : {
+          expectedOwnerRevision: revision(
+            row.expectedOwnerRevision,
+            `${label}.expectedOwnerRevision`,
+          ),
+        }),
+    sourceLifecycleBefore: "active",
+    sourceLifecycleAfter: row.sourceLifecycleAfter,
+    action: row.action,
+    characterIds,
+    maskIds,
+    status: "pending",
+  });
 }
 
 function parseRuntimeScene(value: unknown, index: number): RuntimeSceneState {
@@ -61,9 +180,12 @@ function parseRuntimeScene(value: unknown, index: number): RuntimeSceneState {
             `${label}.encounterPlanRef`,
           );
   if (
-    encounterPlanRef !== undefined && preparedFrom === undefined
+    (preparedFrom?.encounterPlanRef === undefined) !==
+      (encounterPlanRef === undefined)
   )
-    throw new Error(`${label}.encounterPlanRef benötigt Preparation-Provenienz.`);
+    throw new Error(
+      `${label}.encounterPlanRef widerspricht der Preparation-Provenienz.`,
+    );
   if (
     preparedFrom &&
     (preparedFrom.campaignId !== source.campaignId ||
@@ -75,6 +197,20 @@ function parseRuntimeScene(value: unknown, index: number): RuntimeSceneState {
   )
     throw new Error(`${label} widerspricht seiner Preparation-Provenienz.`);
   if (
+    preparedFrom &&
+    (preparedFrom.contentPins.length !== source.contentPins.length ||
+      preparedFrom.contentPins.some((pin, pinIndex) => {
+        const sourcePin = source.contentPins[pinIndex];
+        return (
+          sourcePin === undefined ||
+          pin.ownerId !== sourcePin.ownerId ||
+          pin.referenceId !== sourcePin.referenceId ||
+          pin.ownerRevision !== sourcePin.ownerRevision
+        );
+      }))
+  )
+    throw new Error(`${label}.contentPins widersprechen der Preparation.`);
+  if (
     encounterPlanRef !== undefined &&
     (preparedFrom?.encounterPlanRef?.ownerId !== encounterPlanRef.ownerId ||
       preparedFrom.encounterPlanRef.referenceId !== encounterPlanRef.referenceId ||
@@ -83,7 +219,10 @@ function parseRuntimeScene(value: unknown, index: number): RuntimeSceneState {
     throw new Error(`${label}.encounterPlanRef widerspricht der Preparation.`);
   if (
     source.lifecycle === "prepared" &&
-    (source.primary || source.characterIds.length || source.maskRefs.length)
+    (source.primary ||
+      source.characterIds.length ||
+      source.pendingAssignments.length ||
+      source.maskRefs.length)
   )
     throw new Error(`${label} enthält eine aktive Prepared Runtime.`);
   if (source.lifecycle === "prepared" && !preparedFrom)
@@ -94,6 +233,22 @@ function parseRuntimeScene(value: unknown, index: number): RuntimeSceneState {
     preparedFrom.campaignId !== source.campaignId
   )
     throw new Error(`${label} besitzt fremde Preparation-Provenienz.`);
+  const ownerRevisionById = new Map<OwnerId, Revision>();
+  for (const mask of source.maskRefs) {
+    const existing = ownerRevisionById.get(mask.ownerId);
+    if (existing !== undefined && existing !== mask.ownerRevision)
+      throw new Error(`${label} enthält widersprüchliche Masken-OwnerRevisionen.`);
+    ownerRevisionById.set(mask.ownerId, mask.ownerRevision);
+  }
+  for (const owner of source.reconciliations) {
+    const maskRevision = ownerRevisionById.get(owner.ownerId);
+    if (
+      maskRevision !== undefined &&
+      owner.ownerRevision !== undefined &&
+      owner.ownerRevision !== maskRevision
+    )
+      throw new Error(`${label} enthält eine widersprüchliche OwnerRevision.`);
+  }
   return Object.freeze({
     kind: "runtime-scene-state",
     version: 1,
@@ -118,6 +273,7 @@ export function parseLiveSessionAggregateState(
       "focus",
       "primarySceneId",
       "scenes",
+      "pendingReconciliations",
     ],
     [],
     "LiveSessionAggregateState",
@@ -135,11 +291,49 @@ export function parseLiveSessionAggregateState(
         "LiveSessionAggregateState.scenes",
       ),
     ),
+    pendingReconciliations = Object.freeze(
+      uniqueBy(
+        exactArray(
+          root.pendingReconciliations,
+          "LiveSessionAggregateState.pendingReconciliations",
+        ).map(parsePendingReconciliation),
+        (entry) => `${entry.ownerId}\u0000${entry.commandId}\u0000${entry.action}`,
+        "LiveSessionAggregateState.pendingReconciliations",
+      ),
+    ),
     campaignId = party.campaignId;
   if (root.campaignId !== campaignId || focus.campaignId !== campaignId)
     throw new Error("LiveSessionAggregateState enthält eine fremde Campaign.");
   if (scenes.some((scene) => scene.source.campaignId !== campaignId))
     throw new Error("LiveSessionAggregateState enthält eine fremde Scene.");
+  if (pendingReconciliations.some((entry) => entry.campaignId !== campaignId))
+    throw new Error("LiveSessionAggregateState enthält eine fremde Reconciliation.");
+  const sceneById = new Map(
+    scenes.map((scene) => [scene.source.liveSceneId, scene.source]),
+  );
+  for (const duty of pendingReconciliations) {
+    const source = sceneById.get(duty.sourceSceneId),
+      target = sceneById.get(duty.targetSceneId);
+    if (!source || !target || source.liveSceneId === target.liveSceneId)
+      throw new Error(
+        "LiveSessionAggregateState enthält eine Reconciliation ohne Scene-Bindung.",
+      );
+    const masks = duty.maskIds.map((id) =>
+      source.maskRefs.find((mask) => mask.maskId === id),
+    );
+    if (
+      masks.some(
+        (mask) =>
+          mask === undefined ||
+          mask.ownerId !== duty.ownerId ||
+          duty.expectedOwnerRevision === undefined ||
+          mask.ownerRevision !== duty.expectedOwnerRevision,
+      )
+    )
+      throw new Error(
+        "LiveSessionAggregateState enthält eine ungebundene Masken-Reconciliation.",
+      );
+  }
 
   const activeScenes = scenes.filter((scene) => scene.source.lifecycle === "active"),
     primaries = activeScenes.filter((scene) => scene.source.primary),
@@ -166,7 +360,14 @@ export function parseLiveSessionAggregateState(
       activeScenes.map((scene) => [scene.source.liveSceneId, scene.source]),
     ),
     characterScene = new Map<CharacterId, LiveSceneId>(),
-    pendingScene = new Map<CharacterId, LiveSceneId>();
+    pendingScene = new Map<
+      CharacterId,
+      {
+        readonly liveSceneId: LiveSceneId;
+        readonly commandId: CommandId;
+        readonly ownerId: OwnerId;
+      }
+    >();
   for (const scene of activeScenes) {
     for (const characterId of scene.source.characterIds) {
       if (characterScene.has(characterId))
@@ -176,7 +377,11 @@ export function parseLiveSessionAggregateState(
     for (const pending of scene.source.pendingAssignments) {
       if (pendingScene.has(pending.characterId) || characterScene.has(pending.characterId))
         throw new Error("Eine CharacterId besitzt mehrere aktuelle Scene-Zuordnungen.");
-      pendingScene.set(pending.characterId, scene.source.liveSceneId);
+      pendingScene.set(pending.characterId, {
+        liveSceneId: scene.source.liveSceneId,
+        commandId: pending.commandId,
+        ownerId: pending.ownerId,
+      });
     }
   }
   const partyById = new Map(
@@ -204,9 +409,12 @@ export function parseLiveSessionAggregateState(
         throw new Error("Party- und Scene-Zuordnung widersprechen sich.");
       continue;
     }
+    const pending = pendingScene.get(character.characterId);
     if (
       assignment.status !== "pending" ||
-      !pendingScene.has(character.characterId)
+      pending === undefined ||
+      pending.commandId !== assignment.commandId ||
+      pending.ownerId !== assignment.ownerId
     )
       throw new Error("Aktive Partyfigur besitzt keine aktuelle Scene-Zuordnung.");
   }
@@ -228,6 +436,7 @@ export function parseLiveSessionAggregateState(
     focus,
     primarySceneId,
     scenes,
+    pendingReconciliations,
   });
 }
 
@@ -256,5 +465,6 @@ export function createUninitializedLiveSessionState(
     },
     primarySceneId: null,
     scenes: [],
+    pendingReconciliations: [],
   });
 }
