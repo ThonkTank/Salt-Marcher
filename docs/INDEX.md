@@ -35,6 +35,8 @@
 
 Große native Rohbelege liegen häufig auf dem Rechner des Prüfers. Ein historischer absoluter Pfad bestätigt keinen eigenen Zugriff; fehlenden Zugriff und offene Abnahme ausdrücklich nennen.
 
+- World Notes #68: [kleine portable Rollback-/Restjournal-Hostbelege](reference/smr02-world-notes-recovery/README.md) für unabhängige Prüfung; die Gesamt-Abnahme bleibt am Issue.
+
 - Manuelle GM-Sessionplanung: [Implementierung und Campaign-Speicheranschluss](plans/campaign/manual-session-planner.md) zu #69.
 
 - Stadt-Hauskorrektur: [Gebäudenamen im gemeinsamen Atlas](plans/city/building-name-inspector.md) zu #92.
