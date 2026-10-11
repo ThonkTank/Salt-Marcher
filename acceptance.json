@@ -212,7 +212,7 @@
       "issue": 90,
       "branch": "codex/smr-03-i01b-aggregates",
       "baseline": "d9eda92f8270b364322e3c9a4cb2af5c2c69c8f7",
-      "implementationCandidate": "21f89b0f1b2ec74d50d4453bf548d7945a062b9e",
+      "implementationCandidate": "fdf62710a23c465baf5f3fbc6c6b132cb963851a",
       "requirements": [
         "Initialize a Live Session explicitly and atomically with one Primary Scene, Focus and ordered active Party membership.",
         "Create an independent empty Prepared Runtime copy with exact PreparationSnapshot provenance and explicit fresh IDs.",
@@ -221,8 +221,9 @@
       ],
       "confirmed": [
         "Pure strict parsers and aggregate handlers cover Initialize, Prepared Runtime, Focus and participant Move/cleanup without host, persistence or consumer imports.",
-        "Focused lifecycle tests cover cancel/stale rejection, independent Prepared copy, partial move, last-member retirement, Primary/Focus succession, membership invariants and unavailable-owner pending duty.",
-        "Typecheck, full serial tests, product build and repository structure pass on implementation checkpoint 21f89b0."
+        "Focused lifecycle tests cover cancel/stale rejection, independent Prepared copy, partial move, last-member retirement, Primary/Focus succession, exact Prepared/membership invariants and repeated unavailable-owner pending duties without overwrite.",
+        "Campaign/Data and Music/Weather/Shops reproduced four bounded findings on 21f89b0; repair fdf6271 closes Prepared content-pin/pending-assignment gaps and binds accumulated duties to exact mask IDs and expected OwnerRevision. Narrow re-reviews are pending.",
+        "Typecheck, 1002 passing full serial tests with one intentional skip, product build and repository structure pass on repair fdf6271."
       ],
       "notConfirmed": [
         "Party create/update/activate/deactivate, XP/rest, Split/Rejoin and Clock merge are not implemented.",

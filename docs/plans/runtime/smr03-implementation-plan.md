@@ -453,8 +453,20 @@ Focus werden. Unavailable Maskenowner rollen die Party-/Scene-Mutation nicht
 zurück, sondern erhalten eine an Campaign, Command/Digest, Source/Target,
 Revisionen und exakte Pflicht gebundene Pending-Reconciliation.
 
+Die gleichrangigen Campaign/Data- und Music/Weather/Shops-Zwischenreviews
+reproduzierten vier begrenzte Lücken dieses Checkpoints: Prepared ContentPins
+und PendingAssignments waren nicht vollständig an die Snapshot-/Leerheits-
+Invariante gebunden; zwei Moves bei unavailable Owner überschrieben die erste
+Pflicht und Maskenpflichten pinnten die vorhandene OwnerRevision nicht. Repair
+`fdf6271` schließt diese Grenzen mit exakter Prepared-Provenienz, einem
+immutable Aggregate-Backlog je Command/Digest sowie Character-, Masken- und
+OwnerRevision-Bindung. Zwei aufeinanderfolgende unavailable Moves und die
+negativen Prepared-Zustände sind Regressionen; die engen Exact-SHA-Re-reviews
+laufen.
+
 Typecheck, vollständige serielle Tests, Produktbuild und Repositorystruktur
-sind für diesen Checkpoint grün. Noch offen und nicht durch den Checkpoint
+sind für Repair `fdf6271` grün (1002 PASS, null FAIL, ein beabsichtigter Skip).
+Noch offen und nicht durch den Checkpoint
 behauptet sind das Party-Aggregat, Deactivate/Delete, Split/Rejoin samt opaque
 Clock-Beitrag, die vollständige Masken-Reconciliation, Invariant-Fuzzer und
 Scaleorakel sowie unabhängiger Exact-SHA-Review und Shared-Integration.
