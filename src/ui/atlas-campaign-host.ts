@@ -33,7 +33,8 @@ export interface AtlasCampaignServices {
   }): void;
   /** A requested target only. The Navigator independently confirms Registry and inventory. */
   worldHint(id: CampaignId): Promise<string>;
-  campaignHint(path: string): Promise<CampaignId | null>;
+  campaignHint(path: string, worldId: string,
+    standalone: (assertCurrent: () => void) => Promise<readonly string[]>): Promise<CampaignId | null>;
   createSave?(input: AtlasMountInput): Promise<AtlasCampaignManifestSave>;
   /** Campaign-authorized World Notes producer bound to the current manifest and Context. */
   createWorldNotesSave?(input: {
@@ -52,6 +53,7 @@ export class AtlasCampaignHost {
   private refreshVersion = 0;
   private operationVersion = 0;
   private closed = false;
+  private unregistered = false;
   private unsubscribe: () => void;
   private unsubscribeClosed: () => void = () => {};
   constructor(
@@ -126,11 +128,9 @@ export class AtlasCampaignHost {
     finally { if (!this.closed && navigation === this.navigation) this.update(); }
   }
   showUnregisteredAtlas(): void {
-    // An existing native atlas remains usable when no campaign manifests exist.
-    // This conveys no confirmed Campaign/Registry membership.
-    if (this.closed || this.entries.length || this.services.provider.currentContext()) return;
-    this.picker.update({ entries: [], activeCampaignId: null });
-    this.access.changed(null);
+    if (this.closed) return;
+    this.unregistered = true;
+    this.update(); // Keep available campaigns visible, without claiming membership for this leaf.
   }
   async refresh(): Promise<void> {
     const version = ++this.refreshVersion;
@@ -143,17 +143,18 @@ export class AtlasCampaignHost {
     if (this.closed) return;
     const state = this.navigation.state;
     const reason =
-      error ?? (state.kind === "unavailable" ? state.reason : null);
+      error ?? (!this.unregistered && state.kind === "unavailable" ? state.reason : null);
     this.picker.update({
       entries: this.entries,
       activeCampaignId:
-        this.services.provider.currentContext()?.campaignId ?? null,
+        this.unregistered ? null : this.services.provider.currentContext()?.campaignId ?? null,
       activeUnavailableReason: reason ?? undefined,
     });
     this.access.changed(reason);
   }
-  async openFile(path: string): Promise<boolean> {
-    const id = await this.services.campaignHint(path);
+  async openFile(path: string, worldId: string,
+    standalone: (assertCurrent: () => void) => Promise<readonly string[]>): Promise<boolean> {
+    const id = await this.services.campaignHint(path, worldId, standalone);
     if (this.closed) return true;
     if (!id) return false;
     await this.openCampaign(id);
@@ -161,6 +162,7 @@ export class AtlasCampaignHost {
   }
   async openCampaign(id: CampaignId): Promise<void> {
     if (this.closed) throw new Error("Atlasansicht ist geschlossen.");
+    this.unregistered = false;
     const version = ++this.operationVersion;
     const navigation = this.navigation,
       expected = this.services.provider.currentContext();
