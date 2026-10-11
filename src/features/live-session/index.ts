@@ -189,11 +189,13 @@ export {
   decidePortability,
   decideQuarantineDiscard,
   mintReboundErasureToken,
+  parseProviderDispositionEvidence,
   parseQuarantineDiscardReceipt,
   parseRetainedQuarantineSlot,
   type PortabilityDecision,
   type PortabilityInventoryEntry,
   type ProviderDisposition,
+  type ProviderDispositionEvidence,
   type QuarantineDiscardReceipt,
   type RetainedQuarantineSlot,
 } from "./portability";

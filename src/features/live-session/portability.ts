@@ -32,6 +32,16 @@ export type ProviderDisposition =
   | "absent"
   | "replaced";
 
+export interface ProviderDispositionEvidence {
+  readonly kind: "provider-disposition-evidence";
+  readonly version: 1;
+  readonly disposition: ProviderDisposition;
+  readonly targetCampaignId: CampaignId;
+  readonly targetOwnerId: OwnerId;
+  readonly targetRegistryRevision: Revision;
+  readonly targetOwnerRevision: Revision;
+}
+
 export interface RetainedQuarantineSlot {
   readonly kind: "retained-quarantine-slot";
   readonly version: 1;
@@ -103,7 +113,7 @@ export interface PortabilityDecision {
     | "complete"
     | "salvage-disclosed"
     | "evidentiary-only"
-    | "required-input-unverified"
+    | "inventory-unverified"
     | "pending-quarantine-unverified"
     | "purged-payload-present"
     | "salvage-undisclosed"
@@ -239,9 +249,10 @@ export function parseRetainedQuarantineSlot(
     result.targetSlotId === sourceToken.slotId ||
     result.targetErasureUnitId === sourceToken.erasureUnitId ||
     result.targetScopeId === sourceToken.targetScopeId ||
-    result.expectedBeforeHash !== sourceToken.expectedBeforeHash ||
-    result.expectedSurvivorSetHash !== sourceToken.expectedSurvivorSetHash ||
-    result.expectedSurvivorRootHash !== sourceToken.expectedSurvivorRootHash
+    result.expectedSurvivorSetHash ===
+      sourceToken.expectedSurvivorSetHash ||
+    result.expectedSurvivorRootHash ===
+      sourceToken.expectedSurvivorRootHash
   )
     throw new Error(
       `${label} besitzt keine unabhängige vollständige Remap-Closure.`,
@@ -425,19 +436,82 @@ export function parseQuarantineDiscardReceipt(
 
 export function decideQuarantineDiscard(
   slotValue: unknown,
-  providerDisposition: ProviderDisposition,
+  registryValue: unknown,
+  providerEvidenceValue: unknown,
   receiptValue: unknown,
   existingReceiptValue?: unknown,
 ): QuarantineDiscardReceipt {
-  if (providerDisposition !== "absent")
-    throw new Error("QuarantineDiscard ist nur bei dauerhaft absentem Owner zulässig.");
   const slot = parseRetainedQuarantineSlot(slotValue),
+    registry = assertTargetRegistryForQuarantine(slot, registryValue),
+    evidence = parseProviderDispositionEvidence(providerEvidenceValue),
     receipt = parseQuarantineDiscardReceipt(receiptValue, slot);
+  const owner = registry.owners.find(
+    (candidate) => candidate.ownerId === slot.targetOwnerId,
+  );
+  if (
+    evidence.disposition !== "absent" ||
+    evidence.targetCampaignId !== slot.targetCampaignId ||
+    evidence.targetOwnerId !== slot.targetOwnerId ||
+    evidence.targetRegistryRevision !== registry.registryRevision ||
+    evidence.targetOwnerRevision !== slot.targetOwnerRevision ||
+    !owner ||
+    owner.ownerRevision !== evidence.targetOwnerRevision ||
+    owner.availability !== "unavailable"
+  )
+    throw new Error(
+      "QuarantineDiscard benötigt einen aktuellen revisionsgebundenen Absent-Beleg.",
+    );
   if (existingReceiptValue === undefined) return receipt;
   const existing = parseQuarantineDiscardReceipt(existingReceiptValue, slot);
   if (JSON.stringify(existing) !== JSON.stringify(receipt))
     throw new Error("QuarantineDiscard-Retry widerspricht dem Originalreceipt.");
   return existing;
+}
+
+export function parseProviderDispositionEvidence(
+  value: unknown,
+): ProviderDispositionEvidence {
+  const label = "ProviderDispositionEvidence",
+    row = exactRecord(
+      value,
+      [
+        "kind",
+        "version",
+        "disposition",
+        "targetCampaignId",
+        "targetOwnerId",
+        "targetRegistryRevision",
+        "targetOwnerRevision",
+      ],
+      [],
+      label,
+    );
+  if (
+    row.kind !== "provider-disposition-evidence" ||
+    row.version !== 1 ||
+    !(["present", "disabled", "absent", "replaced"] as const).includes(
+      row.disposition as ProviderDisposition,
+    )
+  )
+    throw new Error(`${label} besitzt einen unbekannten Vertrag.`);
+  return Object.freeze({
+    kind: "provider-disposition-evidence",
+    version: 1,
+    disposition: row.disposition as ProviderDisposition,
+    targetCampaignId: canonicalCampaignId(
+      row.targetCampaignId,
+      `${label}.targetCampaignId`,
+    ),
+    targetOwnerId: ownerId(row.targetOwnerId, `${label}.targetOwnerId`),
+    targetRegistryRevision: revision(
+      row.targetRegistryRevision,
+      `${label}.targetRegistryRevision`,
+    ),
+    targetOwnerRevision: revision(
+      row.targetOwnerRevision,
+      `${label}.targetOwnerRevision`,
+    ),
+  });
 }
 
 function parseInventoryEntry(
@@ -517,9 +591,7 @@ export function decidePortability(
       (entry) => entry.identity,
       "PortabilityInventory",
     ),
-    invalid = inventory.filter(
-      (entry) => entry.required && entry.status !== "verified",
-    ),
+    unverified = inventory.filter((entry) => entry.status !== "verified"),
     quarantine = inventory.filter(
       (entry) => entry.payloadKind === "retained-quarantine",
     ),
@@ -559,12 +631,12 @@ export function decidePortability(
       quarantine.some((entry) => entry.status === "verified")
     )
       return result(false, "purged-payload-present");
-    if (invalid.length) return result(false, "required-input-unverified");
+    if (unverified.length) return result(false, "inventory-unverified");
     return result(true, "complete");
   }
   if (mode === "salvage") {
     if (
-      invalid.some(
+      unverified.some(
         (entry) => !entry.impact || !entry.retainedMetadata,
       )
     )

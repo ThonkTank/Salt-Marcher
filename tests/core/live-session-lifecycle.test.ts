@@ -970,9 +970,9 @@ test("portability: imported quarantine stays offline, source token never execute
       targetSlotRevision: 2,
       targetErasureUnitId: "target-deleted-scenes",
       targetScopeId: "target-scope-scenes",
-      expectedBeforeHash: sourceEntry.beforeHash,
-      expectedSurvivorSetHash: sourceEntry.survivorSetHash,
-      expectedSurvivorRootHash: sourceEntry.survivorRootHash,
+      expectedBeforeHash: evidence("target-before-scenes"),
+      expectedSurvivorSetHash: evidence("target-survivor-set-scenes"),
+      expectedSurvivorRootHash: evidence("target-survivor-root-scenes"),
       opaqueEnvelopeHash: evidence("opaque-envelope-scenes"),
     },
     slot = bindRetainedQuarantineSlot(
@@ -1025,9 +1025,9 @@ test("portability: imported quarantine stays offline, source token never execute
       slotRevision: 2,
       erasureUnitId: "target-deleted-scenes",
       targetScopeId: "target-scope-scenes",
-      expectedBeforeHash: sourceEntry.beforeHash,
-      expectedSurvivorSetHash: sourceEntry.survivorSetHash,
-      expectedSurvivorRootHash: sourceEntry.survivorRootHash,
+      expectedBeforeHash: slot.expectedBeforeHash,
+      expectedSurvivorSetHash: slot.expectedSurvivorSetHash,
+      expectedSurvivorRootHash: slot.expectedSurvivorRootHash,
     };
   assert.equal(
     mintReboundErasureToken(slot, targetRegistry, "present", targetToken)
@@ -1056,6 +1056,19 @@ test("portability: imported quarantine stays offline, source token never execute
     bindRetainedQuarantineSlot(
       {
         ...slotInput,
+        expectedSurvivorSetHash: sourceEntry.survivorSetHash,
+        expectedSurvivorRootHash: sourceEntry.survivorRootHash,
+      },
+      sourceRegistry,
+      sourceManifest,
+      sourceTombstone,
+      digest,
+    ),
+  );
+  assert.throws(() =>
+    bindRetainedQuarantineSlot(
+      {
+        ...slotInput,
         sourceToken: sourceManifest.entries[0].erasureToken,
         expectedBeforeHash: sourceManifest.entries[0].beforeHash,
         expectedSurvivorSetHash: sourceManifest.entries[0].survivorSetHash,
@@ -1068,7 +1081,18 @@ test("portability: imported quarantine stays offline, source token never execute
     ),
   );
 
-  const discard = {
+  const absentRegistry = structuredClone(targetRegistry) as Raw;
+  absentRegistry.owners[0].availability = "unavailable";
+  const absentEvidence = {
+      kind: "provider-disposition-evidence",
+      version: 1,
+      disposition: "absent",
+      targetCampaignId: CAMPAIGN_B,
+      targetOwnerId: "owner-scenes",
+      targetRegistryRevision: 1,
+      targetOwnerRevision: 11,
+    },
+    discard = {
     kind: "quarantine-discard-receipt",
     version: 1,
     outcome: "local-opaque-envelope-discard",
@@ -1085,11 +1109,40 @@ test("portability: imported quarantine stays offline, source token never execute
     survivorSetHash: slot.expectedSurvivorSetHash,
     survivorRootHash: slot.expectedSurvivorRootHash,
   };
-  const first = decideQuarantineDiscard(slot, "absent", discard),
-    retry = decideQuarantineDiscard(slot, "absent", discard, first);
+  const first = decideQuarantineDiscard(
+      slot,
+      absentRegistry,
+      absentEvidence,
+      discard,
+    ),
+    retry = decideQuarantineDiscard(
+      slot,
+      absentRegistry,
+      absentEvidence,
+      discard,
+      first,
+    );
   assert.deepEqual(retry, first);
   assert.equal(first.providerSemanticClosureClaimed, false);
-  assert.throws(() => decideQuarantineDiscard(slot, "replaced", discard));
+  assert.throws(() =>
+    decideQuarantineDiscard(slot, targetRegistry, absentEvidence, discard),
+  );
+  assert.throws(() =>
+    decideQuarantineDiscard(
+      slot,
+      absentRegistry,
+      { ...absentEvidence, targetRegistryRevision: 0 },
+      discard,
+    ),
+  );
+  assert.throws(() =>
+    decideQuarantineDiscard(
+      slot,
+      absentRegistry,
+      { ...absentEvidence, disposition: "replaced" },
+      discard,
+    ),
+  );
 });
 
 test("portability: Complete never silently downgrades and Salvage discloses every omission", () => {
@@ -1118,6 +1171,18 @@ test("portability: Complete never silently downgrades and Salvage discloses ever
   ]);
   assert.equal(blocked.allowed, false);
   assert.equal(blocked.reason, "pending-quarantine-unverified");
+  const optionalCorrupt = decidePortability("complete", "closure-clean", [
+    verified("campaign", "campaign-content"),
+    {
+      ...verified("optional-media", "media"),
+      status: "corrupt",
+      required: false,
+      impact: "Optional media bytes are corrupt",
+    },
+  ]);
+  assert.equal(optionalCorrupt.allowed, false);
+  assert.equal(optionalCorrupt.reason, "inventory-unverified");
+  assert.deepEqual(optionalCorrupt.omittedIdentities, ["optional-media"]);
   const salvage = decidePortability("salvage", "closure-pending", [
     verified("campaign", "campaign-content"),
     {
