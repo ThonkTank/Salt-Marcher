@@ -1,4 +1,5 @@
 import { CityDraft } from "../features/city/draft";
+import type { CityEdit } from "../features/city/edit";
 import type { CitySource } from "../features/city/commands";
 import { serializeCityDocument } from "../features/city/codec";
 
@@ -108,14 +109,27 @@ export class AtlasCityBuildingPanel {
     if (this.closed) throw new Error("Haus-Inspector ist geschlossen.");
     this.access.assertCurrent();
     if (!this.dirty) return false;
-    const draft = this.draft!,
-      buildingId = this.buildingId!;
+    return this.commit([
+      { kind: "set-building-name", buildingId: this.buildingId!, name: this.name },
+    ], "Gebäudename ändern");
+  }
+  private rotate(radians: number): void {
+    if (this.dirty)
+      throw new Error("Hausname zuerst übernehmen oder verwerfen, dann drehen.");
+    const building = this.draft!.before.buildings.find(b => b.id === this.buildingId)!;
+    this.commit([{
+      kind: "set-building-pose", buildingId: building.id,
+      position: building.position, scale: building.scale,
+      rotationRadians: building.rotationRadians + radians,
+    }], "Haus drehen");
+    if (this.message) this.message.textContent = "Haus gedreht";
+  }
+  private commit(edits: readonly CityEdit[], label: string): boolean {
+    const draft = this.draft!, buildingId = this.buildingId!;
     this.applying = true;
     try {
-      draft.setEdits([
-        { kind: "set-building-name", buildingId, name: this.name },
-      ]);
-      const changed = draft.apply("Gebäudename ändern");
+      draft.setEdits(edits);
+      const changed = draft.apply(label);
       // Keep History notifications from rebuilding input during our own commit.
       this.reset(this.access.read(draft.before.id), buildingId);
       return changed;
@@ -189,6 +203,8 @@ export class AtlasCityBuildingPanel {
         },
       ],
       ["Atlas speichern", () => this.access.save()],
+      ["90° links drehen", () => this.rotate(-Math.PI / 2)],
+      ["90° rechts drehen", () => this.rotate(Math.PI / 2)],
     ] as const) {
       const button = doc.createElement("button");
       button.type = "button";
