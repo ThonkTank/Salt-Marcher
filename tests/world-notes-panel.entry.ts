@@ -127,6 +127,26 @@ test("NPC can choose an existing creature by name without copying catalog conten
   f.panel.destroy();
 });
 
+test("manual creature edits clear the prior catalog name and late suggestions", async () => {
+  let answer!: (choices: readonly WorldNotesCreatureChoice[]) => void;
+  const f = fixture({
+    search: (query) => query === "dra" ? new Promise((resolve) => { answer = resolve; }) :
+      Promise.resolve([{ id: "goblin", name: "Goblin" }]),
+    detail: async () => null,
+  });
+  f.click("NPC anlegen"); f.input("Name", "Maris");
+  f.input("Kreatur suchen", "gob"); await tick();
+  f.click("Goblin auswählen");
+  f.input("Kreatur suchen", "dra");
+  f.input("Kreaturreferenz", "srd:wizard");
+  answer([{ id: "dragon", name: "Drache" }]); await tick();
+  assert.match(f.host.querySelector("form")!.textContent!, /Kreaturreferenz: srd:wizard/);
+  assert.doesNotMatch(f.host.querySelector("form")!.textContent!, /Goblin|Drache auswählen/);
+  await f.save();
+  assert.equal(f.snapshot().records[0]?.creatureId, "srd:wizard");
+  f.panel.destroy();
+});
+
 test("late creature search cannot populate a discarded NPC editor", async () => {
   let answer!: (choices: readonly WorldNotesCreatureChoice[]) => void;
   const f = fixture({

@@ -231,6 +231,11 @@ export class WorldNotesPanel {
       let searchGeneration = 0;
       const active = () => !this.destroyed && !this.busy && this.pending === pending &&
         this.snapshot === snapshot && this.editor.firstChild === form;
+      creature.addEventListener("input", () => {
+        searchGeneration++;
+        choices.replaceChildren();
+        selected.textContent = creature.value ? `Kreaturreferenz: ${creature.value}` : "";
+      });
       creatureSearch.addEventListener("input", () => {
         const query = creatureSearch.value.trim(), stamp = ++searchGeneration;
         choices.replaceChildren();
