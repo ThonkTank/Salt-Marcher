@@ -230,7 +230,8 @@ Speicherautorität. Der fokussierte DOM-Test prüft A/B-Entwürfe, alte Eingaben
 und ausdrückliches Verwerfen nach dem Wiederöffnen. Ein isolierter echter
 Obsidianlauf A→B→A→B, Ansicht schließen/öffnen, B- und A-Entwurf erneut
 anzeigen, 16 native Eingabedateien bytegleich und normaler Exit bestand;
-Rohbeleg unter `/home/aaron/.cache/dungeon-native-qa/atlasqa-world-notes-close-host-01/evidence/1791691361881-atlas-spatial-edit/`.
+Rohbeleg auf sauberem Produktstand `a3b2576c` unter
+`/home/aaron/.cache/dungeon-native-qa/atlasqa-world-notes-close-exact-01/evidence/1791691486850-atlas-spatial-edit/`.
 Ein Prozessneustart erhält ungespeicherte Entwürfe weiterhin nicht.
 
 ### SMR-03 – Party, Scene und Live Session
