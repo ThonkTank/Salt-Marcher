@@ -87,15 +87,18 @@ function parseReconciliationTarget(
   }
   if (base.kind === "created") {
     const row = exactRecord(
-      value,
-      ["kind", "liveSceneId", "revisionAfter"],
-      [],
-      label,
-    );
+        value,
+        ["kind", "liveSceneId", "revisionAfter"],
+        [],
+        label,
+      ),
+      revisionAfter = revision(row.revisionAfter, `${label}.revisionAfter`);
+    if (revisionAfter !== 0)
+      throw new Error(`${label} besitzt keine Created-Initialrevision 0.`);
     return Object.freeze({
       kind: "created",
       liveSceneId: liveSceneId(row.liveSceneId, `${label}.liveSceneId`),
-      revisionAfter: revision(row.revisionAfter, `${label}.revisionAfter`),
+      revisionAfter,
     });
   }
   if (base.kind === "existing") {

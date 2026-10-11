@@ -47,6 +47,7 @@ export type AggregateRejectionReason =
   | "unknown-scene"
   | "stale-scene"
   | "inactive-scene"
+  | "missing-clock"
   | "same-scene"
   | "invalid-membership"
   | "prepared-scene"
@@ -557,6 +558,8 @@ export function moveCharacters(
     target.sceneRevision !== command.expectedTargetRevision
   )
     return reject(state, command, "stale-scene");
+  if (target.sceneClockRef === undefined)
+    return reject(state, command, "missing-clock");
   const selected = new Set(command.characterIds),
     partyById = new Map(
       state.party.characters.map((character) => [

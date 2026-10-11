@@ -530,6 +530,14 @@ Ausgänge, Pending-Akkumulation und unveränderte Target-Consumer ab. Ein
 vollständiger Exact-SHA-Review aller drei Grenzen bleibt vor Integration
 Pflicht.
 
+Der erste Architektur-/Technik-/Clock-Review des Kandidaten in Kommentar
+`6105032432` fordert zwei enge Reparaturen: Prepared→Active ohne ClockRef muss
+normiert mit unverändertem Zustand statt erst im Folgezustandsparser scheitern,
+und ein persistierter `created`-Reconciliation-Endpunkt muss seine
+Initialrevision dauerhaft exakt auf 0 binden. Beide Gegenfälle sind als
+Regressionen ergänzt; ihr neuer Exact-SHA benötigt einen unabhängigen
+Re-review.
+
 Noch offen und nicht durch diesen Kandidaten behauptet sind permanente
 Löschung, die über Split/Rejoin hinausgehende vollständige Masken-
 Reconciliation, Invariant-Fuzzer und Scaleorakel, deren jeweilige unabhängige

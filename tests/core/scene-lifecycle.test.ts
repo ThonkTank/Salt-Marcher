@@ -514,6 +514,28 @@ test("partial move activates Prepared target without moving Primary, Focus or so
   assert.equal(result.decision.sceneCleanup?.sourceLifecycleAfter, "active");
 });
 
+test("Prepared to active without a Clock fails closed with unchanged state", () => {
+  const raw = structuredClone(prepare()) as Record<string, any>;
+  delete raw.scenes[1].source.sceneClockRef;
+  const state = parseLiveSessionAggregateState(raw),
+    result = moveCharacters(
+      state,
+      commandBase("move-characters", {
+        expectedPartyRevision: 1,
+        expectedFocusRevision: 1,
+        sourceSceneId: "scene-primary",
+        targetSceneId: "scene-prepared",
+        expectedSourceRevision: 0,
+        expectedTargetRevision: 0,
+        characterIds: ["character-b"],
+      }),
+    );
+  assert.equal(result.status, "rejected");
+  assert.equal(result.status === "rejected" && result.reason, "missing-clock");
+  assert.deepEqual(result.state, state);
+  assert.equal("decision" in result, false);
+});
+
 test("last-member move retires Source and binds Primary and Focus to populated target", () => {
   const prepared = prepare(),
     first = moveCharacters(
@@ -1590,6 +1612,59 @@ test("full Split retires Source, promotes Target and archives source-only consum
   assert.equal(
     result.decision.transition?.reconciliations[0]?.status,
     "required",
+  );
+});
+
+test("created reconciliation keeps revision zero after legitimate Target progress", () => {
+  const raw = structuredClone(initialize()) as Record<string, any>;
+  raw.scenes[0].source.reconciliations = [
+    { ownerId: "weather", status: "unavailable", ownerRevision: 7 },
+  ];
+  const state = parseLiveSessionAggregateState(raw),
+    split = splitScene(
+      state,
+      commandBase("split-scene", {
+        expectedPartyRevision: 1,
+        expectedFocusRevision: 1,
+        sourceSceneId: "scene-primary",
+        expectedSourceRevision: 0,
+        targetSceneId: "scene-split",
+        targetClockRef: clockRef("clock-split"),
+        characterIds: ["character-b"],
+        title: "Scout group",
+        clockContribution: forkContribution(),
+      }),
+    );
+  assert.equal(split.status, "applied");
+  if (split.status !== "applied") return;
+  const progressed = moveCharacters(
+    split.state,
+    commandBase("move-characters", {
+      commandId: "command-progress-created-target",
+      commandDigest: "digest-progress-created-target",
+      expectedPartyRevision: 2,
+      expectedFocusRevision: 1,
+      sourceSceneId: "scene-primary",
+      targetSceneId: "scene-split",
+      expectedSourceRevision: 1,
+      expectedTargetRevision: 0,
+      characterIds: ["character-a"],
+    }),
+  );
+  assert.equal(progressed.status, "applied");
+  if (progressed.status !== "applied") return;
+  assert.equal(progressed.state.scenes[1]?.source.sceneRevision, 1);
+  assert.deepEqual(progressed.state.pendingReconciliations[0]?.target, {
+    kind: "created",
+    liveSceneId: "scene-split",
+    revisionAfter: 0,
+  });
+
+  const forged = structuredClone(progressed.state) as Record<string, any>;
+  forged.pendingReconciliations[0].target.revisionAfter = 1;
+  assert.throws(
+    () => parseLiveSessionAggregateState(forged),
+    /Created-Initialrevision 0/,
   );
 });
 
