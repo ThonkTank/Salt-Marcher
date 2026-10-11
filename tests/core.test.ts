@@ -33,6 +33,7 @@ import "./core/live-session-contract.test";
 import "./core/scene-lifecycle.test";
 import "./core/mask-reconciliation.test";
 import "./core/live-session-scale.test";
+import "./core/reference-owner-contract.test";
 import "./core/party-aggregate.test";
 import "./core/atlas-location-repository.test";
 import "./core/campaign-lifecycle.test";

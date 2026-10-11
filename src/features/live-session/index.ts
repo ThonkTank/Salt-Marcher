@@ -144,3 +144,23 @@ export {
   type SceneTransitionDecision,
   type SceneTransitionTarget,
 } from "./scene-aggregate";
+export {
+  parseCharacterDeletionTombstone,
+  parseErasureSlotDefinition,
+  parseErasureToken,
+  parseReferenceOwnerClosureReceipt,
+  parseReferenceOwnerManifest,
+  parseReferenceOwnerRegistryProjection,
+  referenceOwnerSurvivorProof,
+  type CharacterDeletionTombstone,
+  type ErasureSlotDefinition,
+  type ErasureToken,
+  type ExpectedSurvivorBinding,
+  type ReferenceOwnerClosureReceipt,
+  type ReferenceOwnerManifest,
+  type ReferenceOwnerManifestEntry,
+  type ReferenceOwnerDigest,
+  type ReferenceOwnerRegistryEntry,
+  type ReferenceOwnerRegistryProjection,
+  type ReferenceOwnerSurvivorProof,
+} from "./reference-owners";
