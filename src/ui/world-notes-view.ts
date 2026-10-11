@@ -85,7 +85,7 @@ export class WorldNotesView extends ItemView {
     const current = this.services.provider.currentContext();
     if (current && current.campaignId !== id)
       throw new Error("Kampagne zuerst im Atlas wechseln, damit offene Atlasentwürfe gesichert werden.");
-    if (current?.campaignId === id) { await this.mount(current); return; }
+    if (current?.campaignId === id) { await this.mount(current, true); return; }
     await recoverWorldNotesBeforeActivation({ campaignId: id,
       storage: new VaultCampaignRuntimeStorage(this.app), files: new VaultStore(this.app),
       digest, serializationScope: this.app.vault });
@@ -101,7 +101,7 @@ export class WorldNotesView extends ItemView {
       new VaultCampaignRuntimeStorage(this.app), new VaultStore(this.app), digest,
       this.app.vault, context);
   }
-  private async mount(context: CampaignContextProjection): Promise<void> {
+  private async mount(context: CampaignContextProjection, reclaimOwnership = false): Promise<void> {
     if (!this.notesHost) return;
     if (this.mountedContext?.contextToken === context.contextToken && this.panel) return;
     this.suspendPanel();
@@ -112,7 +112,10 @@ export class WorldNotesView extends ItemView {
       if (stamp !== this.generation || this.session !== session) return;
       this.panel ??= new WorldNotesPanel(this.notesHost, {
         draftBuffer: this.draftBuffer,
-        onDraftOwnershipRevoked: () => this.suspendPanel(),
+        onDraftOwnershipRevoked: () => {
+          this.suspendPanel();
+          this.message("Entwurf in einer anderen Ansicht geöffnet. Hier mit „Erneut versuchen“ übernehmen.");
+        },
         newId: () => campaignLocalId(crypto.randomUUID()),
         currentContext: () => this.services.provider.currentContext(),
         digest,
@@ -131,7 +134,8 @@ export class WorldNotesView extends ItemView {
           return creature ? { id: creature.id, name: creature.name } : null;
         },
       });
-      if (!this.panel.update(snapshot)) throw new Error("Veralteter World-Stand kann nicht montiert werden.");
+      if (!this.panel.update(snapshot, reclaimOwnership))
+        throw new Error("Veralteter World-Stand kann nicht montiert werden.");
       this.mountedContext = context;
       this.message("");
     } catch (error) {
