@@ -553,6 +553,109 @@ test("party history: coordinated Move undo requires exact owner revisions and an
   assert.equal(undoneAgain.operation.participantPlans[0]?.revisionAfter, 4);
 });
 
+test("party history: owner revisions stay monotonic across different entries", () => {
+  const firstBefore = party(0, "Alex"),
+    firstAfter = party(1, "Alyx"),
+    secondAfter = structuredClone(firstAfter) as Raw;
+  secondAfter.partyRevision = 2;
+  secondAfter.characters[0].progress.currentXp = 42;
+  let history = recordPartyHistory(createPartyCommandHistory(CAMPAIGN_A), {
+    entryId: "history-shared-owner-profile",
+    actionKind: "profile-updated",
+    characterIds: ["character-a"],
+    commandId: "command-shared-owner-profile",
+    commandDigest: "digest-shared-owner-profile",
+    receiptId: "receipt-shared-owner-profile",
+    before: firstBefore,
+    after: firstAfter,
+    dependencies: [
+      {
+        kind: "party-history-dependency",
+        version: 1,
+        ownerId: "owner-characters",
+        targetId: "character-a",
+        revisionBefore: 4,
+        revisionAfter: 5,
+        undoDisposition: "restore",
+        redoDisposition: "restore",
+      },
+    ],
+  });
+  history = recordPartyHistory(history, {
+    entryId: "history-shared-owner-progress",
+    actionKind: "progress-updated",
+    characterIds: ["character-a"],
+    commandId: "command-shared-owner-progress",
+    commandDigest: "digest-shared-owner-progress",
+    receiptId: "receipt-shared-owner-progress",
+    before: firstAfter,
+    after: secondAfter,
+    dependencies: [
+      {
+        kind: "party-history-dependency",
+        version: 1,
+        ownerId: "owner-characters",
+        targetId: "character-a",
+        revisionBefore: 5,
+        revisionAfter: 6,
+        undoDisposition: "restore",
+        redoDisposition: "restore",
+      },
+    ],
+  });
+  const undoSecond = applyPartyHistoryCommand(history, secondAfter, {
+    ...historyCommand(
+      "undo-party-history",
+      2,
+      2,
+      "undo-shared-owner-progress",
+    ),
+    participantInputs: [
+      {
+        kind: "party-history-participant-input",
+        version: 1,
+        ownerId: "owner-characters",
+        targetId: "character-a",
+        currentRevision: 6,
+        targetUnused: true,
+      },
+    ],
+  });
+  assert.equal(undoSecond.status, "applied");
+  if (undoSecond.status !== "applied")
+    throw new Error("second entry undo failed");
+  assert.equal(undoSecond.operation.participantPlans[0]?.revisionBefore, 6);
+  assert.equal(undoSecond.operation.participantPlans[0]?.revisionAfter, 7);
+
+  const undoFirst = applyPartyHistoryCommand(
+    undoSecond.history,
+    undoSecond.party,
+    {
+      ...historyCommand(
+        "undo-party-history",
+        undoSecond.party.partyRevision,
+        undoSecond.history.historyRevision,
+        "undo-shared-owner-profile",
+      ),
+      participantInputs: [
+        {
+          kind: "party-history-participant-input",
+          version: 1,
+          ownerId: "owner-characters",
+          targetId: "character-a",
+          currentRevision: 7,
+          targetUnused: true,
+        },
+      ],
+    },
+  );
+  assert.equal(undoFirst.status, "applied");
+  if (undoFirst.status !== "applied")
+    throw new Error("first entry undo failed");
+  assert.equal(undoFirst.operation.participantPlans[0]?.revisionBefore, 7);
+  assert.equal(undoFirst.operation.participantPlans[0]?.revisionAfter, 8);
+});
+
 test("runtime lifecycle: active deletion cleans Scene, seals History and finalizes only after every owner receipt", () => {
   const beforeProfile = party(0, "Alex", true),
     afterProfile = party(1, "Alyx", true),
@@ -1490,7 +1593,7 @@ function coordinator(
   });
 }
 
-function prepared(kind: CoordinatedCommandKind) {
+function preparedParticipants(kind: CoordinatedCommandKind) {
   let model = coordinator(kind);
   for (const [participantId, ownerRevision, suffix] of [
     ["participant-party", 1, "party"],
@@ -1507,6 +1610,11 @@ function prepared(kind: CoordinatedCommandKind) {
     assert.equal(transition.status, "applied");
     model = transition.model;
   }
+  return model;
+}
+
+function prepared(kind: CoordinatedCommandKind) {
+  const model = preparedParticipants(kind);
   const validated = coordinatorTransition(model, {
     kind: "validate",
     version: 1,
@@ -1653,15 +1761,157 @@ test("coordinator: complete command matrix is cancel-safe and stale workers neve
   ];
   for (const kind of kinds) {
     const early = coordinator(kind),
+      foreign = coordinator(kind, {
+        commandId: `foreign-coordinator-${kind}`,
+        commandDigest: `foreign-digest-${kind}`,
+        receiptId: `foreign-receipt-${kind}`,
+      }),
+      foreignCallback = coordinatorEvent(foreign, {
+        kind: "prepare-participant",
+        participantId: "participant-party",
+        ownerRevision: 1,
+        contributionHash: evidence(`${kind}-foreign-callback`),
+      }),
+      crossed = transitionMultiOwnerCommand(early, foreignCallback),
+      foreignCampaign = coordinatorTransition(early, {
+        kind: "prepare-participant",
+        participantId: "participant-party",
+        ownerRevision: 1,
+        contributionHash: evidence(`${kind}-foreign-campaign`),
+        campaignId: CAMPAIGN_B,
+      }),
+      wrongTarget = coordinatorTransition(early, {
+        kind: "prepare-participant",
+        participantId: "participant-party",
+        ownerRevision: 1,
+        targetId: "target-other",
+        contributionHash: evidence(`${kind}-wrong-target`),
+      }),
+      stalePrepare = coordinatorTransition(early, {
+        kind: "prepare-participant",
+        expectedGeneration: 999,
+        participantId: "participant-party",
+        ownerRevision: 1,
+        contributionHash: evidence(`${kind}-stale-prepare`),
+      }),
+      incompleteValidate = coordinatorTransition(early, {
+        kind: "validate",
+        outcome: "valid",
+      }),
+      prematurePublish = coordinatorTransition(early, {
+        kind: "publish",
+        effectHash: evidence(`${kind}-premature-effect`),
+        survivorRootHash: early.expectedSurvivorRootHash,
+      }),
+      prematureVerify = coordinatorTransition(early, {
+        kind: "verify",
+        effectHash: evidence(`${kind}-premature-effect`),
+        survivorRootHash: early.expectedSurvivorRootHash,
+      }),
+      prematureFinalize = coordinatorTransition(early, {
+        kind: "finalize",
+      }),
       earlyCancel = coordinatorTransition(early, { kind: "cancel" });
+    assert.equal(crossed.status, "rejected", `${kind}: foreign command`);
+    if (crossed.status === "rejected")
+      assert.equal(crossed.reason, "command-mismatch", kind);
+    assert.equal(
+      foreignCampaign.status,
+      "rejected",
+      `${kind}: foreign campaign`,
+    );
+    assert.equal(wrongTarget.status, "rejected", `${kind}: wrong target`);
+    if (wrongTarget.status === "rejected")
+      assert.equal(wrongTarget.reason, "participant-mismatch", kind);
+    assert.equal(stalePrepare.status, "rejected", `${kind}: stale prepare`);
+    if (stalePrepare.status === "rejected")
+      assert.equal(stalePrepare.reason, "stale-generation", kind);
+    for (const [label, transition, expectedReason] of [
+      ["incomplete validate", incompleteValidate, "participants-incomplete"],
+      ["premature publish", prematurePublish, "phase-conflict"],
+      ["premature verify", prematureVerify, "phase-conflict"],
+      ["premature finalize", prematureFinalize, "phase-conflict"],
+    ] as const) {
+      assert.equal(transition.status, "rejected", `${kind}: ${label}`);
+      if (transition.status === "rejected")
+        assert.equal(transition.reason, expectedReason, `${kind}: ${label}`);
+    }
     assert.equal(earlyCancel.status, "applied", `${kind}: early cancel`);
+    const cancelledCallback = transitionMultiOwnerCommand(
+      earlyCancel.model,
+      coordinatorEvent(early, {
+        kind: "prepare-participant",
+        participantId: "participant-party",
+        ownerRevision: 1,
+        contributionHash: evidence(`${kind}-cancelled-callback`),
+      }),
+    );
+    assert.equal(
+      cancelledCallback.status,
+      "rejected",
+      `${kind}: cancelled callback`,
+    );
+    if (cancelledCallback.status === "rejected")
+      assert.equal(cancelledCallback.reason, "stale-generation", kind);
+
+    for (const outcome of ["conflict", "unavailable"] as const) {
+      const fullyPrepared = preparedParticipants(kind),
+        failedValidation = coordinatorTransition(fullyPrepared, {
+          kind: "validate",
+          outcome,
+        });
+      assert.equal(
+        failedValidation.status,
+        "applied",
+        `${kind}: ${outcome}`,
+      );
+      assert.equal(failedValidation.model.status, outcome, kind);
+      assert.equal(
+        failedValidation.model.participants.every(
+          (participant) => participant.contributionHash === undefined,
+        ),
+        true,
+        `${kind}: ${outcome} clears contributions`,
+      );
+    }
+
+    const stagedForUnknown = preparedParticipants(kind),
+      stagedUnknown = coordinatorTransition(stagedForUnknown, {
+        kind: "mark-outcome-unknown",
+      }),
+      stagedBypass = coordinatorTransition(stagedUnknown.model, {
+        kind: "resolve-outcome",
+        outcome: "published",
+        effectHash: evidence(`${kind}-staged-bypass-effect`),
+        survivorRootHash: stagedForUnknown.expectedSurvivorRootHash,
+      });
+    assert.equal(stagedBypass.status, "rejected", `${kind}: staged unknown`);
+    if (stagedBypass.status === "rejected")
+      assert.equal(stagedBypass.reason, "phase-conflict", kind);
+
     const model = prepared(kind),
       before = model.beforeTruthHash,
+      validatedUnknown = coordinatorTransition(model, {
+        kind: "mark-outcome-unknown",
+      }),
+      unchangedEffect = coordinatorTransition(validatedUnknown.model, {
+        kind: "resolve-outcome",
+        outcome: "published",
+        effectHash: model.beforeTruthHash,
+        survivorRootHash: model.expectedSurvivorRootHash,
+      }),
       cancelled = coordinatorTransition(model, {
         kind: "cancel",
         version: 1,
         expectedGeneration: model.generation,
       });
+    assert.equal(
+      unchangedEffect.status,
+      "rejected",
+      `${kind}: unchanged effect`,
+    );
+    if (unchangedEffect.status === "rejected")
+      assert.equal(unchangedEffect.reason, "effect-mismatch", kind);
     assert.equal(cancelled.status, "applied", kind);
     assert.equal(cancelled.model.status, "cancelled-before-publish", kind);
     assert.equal(cancelled.model.beforeTruthHash, before, kind);
@@ -1695,6 +1945,24 @@ test("coordinator: complete command matrix is cancel-safe and stale workers neve
       survivorRootHash: publishModel.expectedSurvivorRootHash,
     });
     assert.equal(published.status, "applied", `${kind}: publish`);
+    const changedPostPublish = coordinatorTransition(
+      coordinatorTransition(published.model, {
+        kind: "mark-outcome-unknown",
+      }).model,
+      {
+        kind: "resolve-outcome",
+        outcome: "published",
+        effectHash: evidence(`${kind}-replacement-effect`),
+        survivorRootHash: publishModel.expectedSurvivorRootHash,
+      },
+    );
+    assert.equal(
+      changedPostPublish.status,
+      "rejected",
+      `${kind}: replace published truth`,
+    );
+    if (changedPostPublish.status === "rejected")
+      assert.equal(changedPostPublish.reason, "effect-mismatch", kind);
     const late = coordinatorTransition(published.model, { kind: "cancel" });
     assert.equal(late.status, "rejected", `${kind}: late cancel`);
     const wrongVerify = coordinatorTransition(published.model, {

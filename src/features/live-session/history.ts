@@ -752,10 +752,12 @@ export function applyPartyHistoryCommand(
     ),
       previousPlan = [...history.operations]
         .reverse()
-        .find((operation) => operation.entryId === entry.entryId)
-        ?.participantPlans.find(
-          (plan) => dependencyKey(plan) === dependencyKey(dependency),
-        ),
+        .map((operation) =>
+          operation.participantPlans.find(
+            (plan) => dependencyKey(plan) === dependencyKey(dependency),
+          ),
+        )
+        .find((plan) => plan !== undefined),
       expectedCurrentRevision =
         previousPlan?.revisionAfter ?? dependency.revisionAfter;
     if (
