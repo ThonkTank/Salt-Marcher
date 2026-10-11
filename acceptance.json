@@ -155505,7 +155505,93 @@
               "fullE2E": false
             },
             "nextConsumer": "Existing independent contributor: exact PR91 editor/Key retention/keyboard/History review. Then separate targeted narrow Obsidian/GM followup with fresh local slot coordination or own isolated Cloud host; no dependent expansion or Selfmerge."
-          }
+          },
+        "dungeonAtLocationInspectorEscapeN02": {
+          "id": "E2E-01-HEX04-INSPECTOR-ESCAPE-N02",
+          "owner": "Hex",
+          "issue": 80,
+          "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
+          "e2e01UserLine": 13,
+          "state": "input_panel_escape_DOM_PASS_independent_targeted_rereview_and_native_pending",
+          "sourceCommit": "dba7d559044f9e8b072a329f2efacd7452b333b4",
+          "pullRequest": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/91",
+          "consumedIndependentFinding": {
+            "reviewer": "Atlas-QA",
+            "head": "9624eee84c657247a8ff8242f1bf107ddb99df4a",
+            "result": "CHANGES_REQUIRED",
+            "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/91#issuecomment-6103791794"
+          },
+          "diagnosis": "Prior exact source already registered window Capture. Linkedom0.18.13 does not implement capture traversal; the prior window-dispatched test bypassed the actual input/panel propagation boundary. Input-dispatched baseline cases fail in this DOM adapter; this does not establish a native browser Capture failure.",
+          "implemented": "Location and Room panels forward Escape to one Atlas guard/checked close before their propagation stop. Inspector controls use the same local handler; global listener handles only the focused viewport. Composing/blocked/flushing/pointer guards, checked queue revocation, invalid drafts, exact texts/IDs and shared camera/repository/history remain.",
+          "fixtureVersion": "e2e01-spatial-v2",
+          "fixtureManifestSha256": "23735bb6c95107b7dec93ffa56ec66405a0f4fe0ec3822fc0476d90d2920188d",
+          "checks": {
+            "runtime": "Node v22.22.0",
+            "baselineInputCasesFailed": 3,
+            "focusedCasesPassed": 4,
+            "fullSuite": {
+              "total": 996,
+              "pass": 995,
+              "fail": 0,
+              "skip": 1,
+              "skipScope": "Existing optional external PDF fixture"
+            },
+            "typecheck": "PASS",
+            "cleanSourceBuild": "PASS",
+            "repository": "PASS",
+            "diff": "PASS",
+            "sourceFilesSha256": {
+              "src/features/atlas/atlas-editor.ts": "d1da240817863b28286386ad19dd0a61c6ba37908cc8d7d9d86e8325bdd22ef3",
+              "src/ui/location-key-panel.ts": "d0b1bbf922a8bea1acd337436ee2f7eec34beead08f8b615b28a5f68654799b5",
+              "src/ui/atlas-room-key-panel.ts": "d3a7035e47db8fa4d8187b456664eb93a81eb0a6b15f20e0d7c2f58229d73475",
+              "tests/atlas-campaign-host.entry.ts": "afa913413023cf85f5cfbbf3783636f0ee75a8952f2b10571c92b12877f3f31e"
+            }
+          },
+          "buildTriplet": {
+            "main.js": {
+              "sha256": "f5c3b5a17e0c6765b279a164ead99453a3feb6c5b6d4b6aa1849866b06a454e9",
+              "bytes": 1671398
+            },
+            "manifest.json": {
+              "sha256": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64",
+              "bytes": 237
+            },
+            "styles.css": {
+              "sha256": "93b65fe1a695acd58aea7360a18b9e9b16d1df7f14a3e3e4dea5a3300cbbed7e",
+              "bytes": 31227
+            }
+          },
+          "localEvidence": {
+            "baseline-regressions.log": {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/dungeon-at-location-inspector-escape-n02-20261011/baseline-regressions.log",
+              "sha256": "8837f112425d7ea9f48dcd16a27147a86505884f66a311ea05b860a326435f18"
+            },
+            "focused-regressions.log": {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/dungeon-at-location-inspector-escape-n02-20261011/focused-regressions.log",
+              "sha256": "ff6cb0dbac837cb0a778bc19149cca491796669f3ae1970045fd2b1c08fb0b26"
+            },
+            "product-tests.log": {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/dungeon-at-location-inspector-escape-n02-20261011/product-tests.log",
+              "sha256": "1fa7d2bc4025004d01fa2ae73645b9a5baa6d489c265d66e922e2e158eab34d8"
+            },
+            "source-build.log": {
+              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/dungeon-at-location-inspector-escape-n02-20261011/source-build.log",
+              "sha256": "6eb26471920f036643878fd9d21ac25551355b8e41ae169db93fd2ddce4fd1be"
+            }
+          },
+          "limits": {
+            "actualNewObsidianProbe": false,
+            "narrowViewportVerifiedNatively": false,
+            "freshProcess": false,
+            "independentRepairRereview": false,
+            "physicalInput": false,
+            "originalParity": false,
+            "largeMap": false,
+            "userVaultInstalled": false,
+            "fullE2E": false
+          },
+          "nextConsumer": "Atlas-QA: targeted Exact-Head rereview of the direct input/panel Escape delta. Then separate narrow Obsidian/GM retest with fresh slot coordination or independent isolated Cloud host; no selfmerge or dependent expansion."
+        }
       }
     ],
     "cleanupFindings": [

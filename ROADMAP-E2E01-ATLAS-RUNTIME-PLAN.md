@@ -57,28 +57,30 @@ sind Cloud-lokal; kein aktuelles exaktes GM-Sharedtripel wegen ENOSPC und kein
 frischer GM-Prozess. Der frühere H01-Producer belegte seinen eigenen getrennten
 frischen Prozess; das ist kein Native-PASS des jetzt geänderten Editors.
 
-**Konkreter GM-Folgebefund jetzt im bestehenden Paket repariert:** Die zwei
-nebeneinander reservierten Keybreiten (40%/42%) nutzen eine gemeinsame
-Seitenleiste. Orts-Key wird bei Raum-Key verborgen und auch aus dem Cache beim
-Rückweg wieder sichtbar. „Zur Karte“ und Escape bei Inspectorfokus übernehmen
-gültige Eingaben mit derselben geprüften History, schließen die Leiste und
-geben den Fokus der unveränderten Kamera zurück. Invalides bleibt sichtbar;
-widerrufener/gesperrter Context und laufende Gesten bekommen keine Schließwirkung.
+**Inspector-Kandidat:** Orts-/Raum-Key teilen eine Seitenleiste mit sichtbarem
+„Zur Karte“. Gecachte Rückkehr und geprüfte Textübernahme laufen über dieselbe
+Kamera, Repository und History. Der [enge unabhängige Atlas-QA-Review](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/91#issuecomment-6103791794)
+fand eine Lücke im Escape-Eingabefeldnachweis. Die alte Quelle registrierte zwar
+Window-Capture; Linkedom bildet diese Phase nicht ab, und der alte Test direkt
+am Fenster umging die Panelgrenze. Daraus folgt kein belegter nativer Capturefehler.
 
-Drei neue Regressionen im tatsächlichen verwalteten DOM-Mount reproduzierten
-die Defizite und prüfen gemeinsame Leiste, gültigen Text/identische Kamera,
-History/UndoRedo/Save und gecachte Rückkehr, invalides Escape sowie widerrufene
-wartende Schließaktion. Typprüfung, Produktbuild, vollständige Basissuite und
-Fremdwurzelerhalt bestehen; gebundene Prüfdaten in
-`checkpoint.hexAtlasExecution.dungeonAtLocationInspectorN01` und der bestehenden
-Anforderung `E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001` in Acceptance.
+**Gezielte Nachbesserung:** Beide Key-Panels geben Escape vor ihrem eigenen
+Propagation-Stop an denselben lokalen Atlas-Schließguard weiter; Inspectorcontrols
+verwenden ihn ebenfalls, der globale Handler bleibt beim fokussierten Viewport.
+Die Regression dispatcht jetzt direkt auf fokussiertem Orts-/Raum-Eingabefeld.
+Drei Inputfälle scheitern auf der alten DOM-Basis; die vier gezielten Fälle
+bestehen nach der Änderung: gültige Texte/UndoRedo/Save, invalider Draft,
+Komposition/Inputsperre und widerrufene wartende Schließaktion. Typprüfung,
+Produktbuild, vollständige Basissuite und Fremdwurzelerhalt bestehen.
+Quellgebundener Beleg: `checkpoint.hexAtlasExecution.dungeonAtLocationInspectorEscapeN02`
+und dieselbe bestehende Acceptanceanforderung; N01-Belege bleiben historisch erhalten.
 
-Nächster Empfänger: bestehender unabhängiger Contributor für engen Exact-Head-
-Review dieser Reparatur, danach zielgerichteter schmaler Obsidian-/GM-Nachtest
-mit sicher isoliertem Host und vor lokalem GUI-Lauf neu koordiniertem Slot.
-Kein weiterer Detailausbau, Selfmerge oder neue allgemeine Reviewrunde.
-Parent #80 und Gesamt-E2E sowie physische/Original-/Großkarten-/Installations-
-abnahmen bleiben offen; dieser Umsetzungslauf verwendet keinen GUI-Slot.
+Nächster Empfänger ist der bestehende Atlas-QA-Reviewer für den begrenzten
+Nachreview dieses Eingabefeld-/Paneldeltas im PR. Danach folgt der gezielte schmale
+Obsidian-/GM-Nachtest mit sicher isoliertem Host und vor lokalem GUI-Lauf neu
+koordiniertem Slot. Kein Selfmerge, Detailausbau oder allgemeine Reviewrunde.
+Parent #80, Gesamt-E2E und physische/Original-/Großkarten-/Installationsabnahmen
+bleiben offen; die Nachbesserung verwendet keinen GUI-Slot.
 
 ## Historische Planbasis und Lieferbelege
 
