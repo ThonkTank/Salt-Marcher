@@ -156187,7 +156187,7 @@
           "issue": 80,
           "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
           "e2e01UserLine": 13,
-          "state": "horizontal_inspector_fit_independent_review_and_integration_consumed_free_GM_pending",
+          "state": "horizontal_inspector_fit_free_GM_same_session_pass_consumed_fresh_user_reuse_open",
           "pullRequest": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/110",
           "producerRecord": "checkpoint.hexAtlasExecution.dungeonAtLocationInspectorHorizontalFitN04",
           "nativeReceipt": "docs/reference/atlas-detail-binding-d01/inspector-horizontal-fit-n04.json",
@@ -156244,26 +156244,105 @@
           "freeGmFollowup": {
             "owner": "Cloud-GM-Produkttester (existing Obsidian-Dungeon-Repo ansehen chat)",
             "reviewerThread": "01a12031-2c30-73f7-bc01-6bd3eba86046",
-            "state": "product_available_offer_requires_own_persistent_evidence_location",
-            "productInput": "0b6e4355e478a2ad277e03dc2a3f2318e3189e34",
+            "state": "completed_bounded_same_session_pass_consumed",
+            "claim": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80#issuecomment-6105151600",
+            "report": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80#issuecomment-6105400641",
+            "producerHead": "155c01595da879c7edb34a211fff490e003f8e14",
+            "producerPullRequest": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/115",
+            "actualProductSource": "87ccdb2626c26622f15799f3af7faf05d9feee89",
             "fixtureVersion": "e2e01-spatial-v2",
-            "fixtureManifest": "tests/fixtures/atlas-e2e-spatial-v2/manifest.json",
-            "focus": "Free user-facing Location/Room Inspector discoverability, complete readable controls in narrow/zoomed dock, editing and reuse through shared Dungeon-at-Location path; bind actual source/build/fixture/host and persistence only to directly observed actions. No dependent detail expansion.",
-            "hostPrerequisite": "GM reported full workspace scratch in completed City run; prepare adequate own persistent QA evidence location before new GUI, or report exact host blocker in #80. No local laptop slot or foreign files.",
-            "priorCityReport": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/92#issuecomment-6105037427",
-            "priorCitySource": "a4f20a553060ec84941b97cbb71bd105d5ca5a62",
-            "priorCityReportNotN04Pass": true
+            "fixtureManifest": "docs/reference/gm-cloud-n04-20261011/FIXTURE-SHA256SUMS.txt",
+            "fixtureManifestSha256": "7f376b2524b10df07b01a0087a42dea49865fa096d82e223c3c75a06349aa625",
+            "evidenceReadme": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/blob/155c01595da879c7edb34a211fff490e003f8e14/docs/reference/gm-cloud-n04-20261011/README.md",
+            "screenshotManifestSha256": "20ce5cd1ee005168f5833a9c97bd26fd5d61327ec00c69888fcaca97cb0d89ad",
+            "screenshotSha256": {
+              "01-torheim-inspector-100.png": "10ccbadd23260037e2136df95ec268bec3a8f17753f38192d64fb2683c868291",
+              "02-torheim-inspector-131.png": "a53ec055f31effb87208c5c0bbbf02c458c5b4af348f8de7f7e1c552b8468ea6",
+              "03-dungeon-action-131.png": "d787171ff3ddbc7015ccae97ac6ed744f74b06ae3db7197ca25f97f4695b65c5",
+              "04-room-search-torraum.png": "05c6ca251a532a0991c619b9836ad504d963f5d77fe38981981e18371102bbb3",
+              "05-room-key-saved.png": "89da3fef833507a7b9a398f8f4e8de942576d12ffb8d2ee7d916f0fb49ddf6ca",
+              "06-returned-to-map.png": "cbfef83b1ba2c3ab7b3fc15f3b933af6e1c63d687db42c116a11316f75e85408",
+              "07-target-reused.png": "884f7b28ed6be0b6296fb03c408a91d9426e14ce4048ec82d727c9ad3d6d7041",
+              "08-room-key-reopened-in-session.png": "8e15a9c76c99db6833888e472f8b5d035a88a7afdd0e4a2f2213ba96c92a94b3"
+            },
+            "sourceFixtureFilesDirectlyVerifiedByHex": 8,
+            "screenshotsDirectlyViewedByHex": [
+              "01-torheim-inspector-100.png",
+              "02-torheim-inspector-131.png",
+              "03-dungeon-action-131.png",
+              "04-room-search-torraum.png",
+              "05-room-key-saved.png",
+              "06-returned-to-map.png",
+              "07-target-reused.png",
+              "08-room-key-reopened-in-session.png"
+            ],
+            "sourceDiffChecked": "87ccdb2..52ab66e changes only World Notes, its main.ts draft-buffer wiring/tests/host helper and City/SaltMarcher metadata; Atlas feature/UI sources, styles.css and Spatial-V2 fixture unchanged. The GM run stays bound to 87ccdb2, not a new build/GUI on later Shared.",
+            "reportedBuild": {
+              "command": "npm run build",
+              "result": "PASS; Node v24.19.0; dirty:false; sourceRevision exactly 87ccdb2626c26622f15799f3af7faf05d9feee89",
+              "installedTripletByteEqualBeforeVisibleReload": true,
+              "mainJsSha256": "2164be282b49bda3b56a9050d0d26888f7945271d51576e2a8de5109b4f9b0a0",
+              "stylesCssSha256": "df11f8352b61e45d3984d29e0136fc0225aaabe85c7b004a3b55eb0c6cc52934",
+              "manifestJsonSha256": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64",
+              "testSuite": "not run; no suite substituted for visible product interaction"
+            },
+            "reportedHost": {
+              "containerId": "e49e330d328c1e2d97e6f46a677e34f5f288c4dab7b41db242d3584e4ab66b33",
+              "containerName": "gm-city-cloud-isolated-20261011",
+              "app": "Obsidian 1.14.4 / Electron 43.7.7",
+              "processPid": 2159,
+              "profile": "/qa/gm-n04-profile",
+              "vault": "/dev/shm/gm-n04-vault",
+              "cdp": "http://127.0.0.1:9236",
+              "display": "own Xvfb :99, 1440x1000; app window and screenshots 1024x800",
+              "zoom131Viewport": "779x608 CSS px; devicePixelRatio 1.3145341873",
+              "input": "Visible mouse/keyboard via own Cloud CDP, not physical input"
+            },
+            "observedInPublishedImages": "At 100% Torraum results, edited Room text with Saved status, return to map, filtered target reuse and same text visible again. Separate 131% images show horizontal fit/wrapping with vertical scroll and reduced map area. Image03 shows Hier verorten: Dungeonkarte – Torraum, not the README action-name wording.",
+            "reportedNativeDataOracle": {
+              "dungeonPath": "Dungeons/E2E-01-Testdungeon/Karte.dungeon",
+              "dungeonSha256Before": "c6fe58d1b5de5c707000a39b0b8da2883d31867b7d8bf347f63830021e2df742",
+              "dungeonSha256After": "39b6896fef75f73fa6725d4792b07aca3de682d94c678353165fcf5e10286c9e",
+              "campaignPath": "Kampagnen/SaltMarcher/E2E-01-Atlas-Save.campaign.json",
+              "campaignSha256Before": "e66a9c557016357d3dea7491fa7110f9db0eeccf6fed5d1f9510885f6990a6df",
+              "campaignSha256After": "a2fd470149a9d9f546d6382dd67e4f881764c86351122345f0700aa680146366",
+              "unchangedFixturePayloads": {
+                "overworld": "76e0a82a939f5c2b16c08f153cca827e4efd8d5920915c997ae2a3fc6d16de07",
+                "terrainMinus1": "4e09dbcf59e5f81a35f0c72c44511b35073696cf079613f5d001baceeb59e358",
+                "terrain0": "c32ba3548aa7236e573e145ec0e3c6e75326cc6cd47134a19c2230d2d790f2f2",
+                "location11": "ac888059f997b3c0f697e2152c9d59375543d6d2004356f1eef482fd4ec27ab7",
+                "location12": "57b455592dc30e0ab9e3286a56f27a408453b7a2a3b617eee03ea089ed963b5b",
+                "city100": "d7ac830f0b1a1b2e20a396a8515cf6afa0b777e46ee39f0a5b39a75bd8a6184c"
+              },
+              "oracle": "Fixture SHA check found only the expected Dungeon and Campaign payload hashes changed in the isolated vault; Atlas, both terrain files, both Locations, City, and source fixture remained byte-identical."
+            },
+            "dataOracleLimit": "Installed triplet equality and changed post-save Dungeon/Campaign hashes are producer reports; full post-save payloads/build-install logs are not included for independent semantic verification.",
+            "independentEvidenceReview": {
+              "reviewer": "Stadt",
+              "head": "155c01595da879c7edb34a211fff490e003f8e14",
+              "result": "PASS",
+              "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/115#pullrequestreview-5481899333",
+              "submittedAt": "2026-10-11T04:30:40Z",
+              "scope": "8 published images and fixture/screenshot hashes; no new GUI/build/host PASS"
+            },
+            "next": "Existing Cloud-GM is offered only the missing free post-save reuse after a normal quit and fresh Obsidian process on its owned saved N04 synthetic vault. Preserve the current saved state; bind exact source/build/host, visible Room-Key rediscovery/text, process lifecycle and before/after native bytes. Existing same-session Save and N02-H02 controlled fresh proof are retained; no repeated full Save/UndoRedo/131% run or product expansion. Hex consumes the actual result or precise missing host input at #80.",
+            "limits": [
+              "Same-session Save/reuse only; no file close/reopen or fresh process after this edit.",
+              "Search/result activation at 131% not exercised; vertical scrolling retained, no new repair request.",
+              "No physical, latency, external-window-clipping, Original, large-map, recovery, projection, user-vault or full E2E acceptance."
+            ],
+            "guiUsedByHex": false
           },
-          "nextConsumer": "Existing Cloud-GM: prepare persistent evidence on owned isolated Cloud host, then free bounded N04/Inspector user flow on actual current Shared build with e2e01-spatial-v2; report result or specific missing host input once at #80. Hex consumes it; no local GUI, City Save re-review or dependent expansion.",
+          "nextConsumer": "Existing Cloud-GM is offered only the missing free post-save reuse after a normal quit and fresh Obsidian process on its owned saved N04 synthetic vault. Preserve the current saved state; bind exact source/build/host, visible Room-Key rediscovery/text, process lifecycle and before/after native bytes. Existing same-session Save and N02-H02 controlled fresh proof are retained; no repeated full Save/UndoRedo/131% run or product expansion. Hex consumes the actual result or precise missing host input at #80.",
           "limits": [
-            "Independent scoped review consumes existing native evidence; no new native GUI or local slot claim.",
-            "Original external-window clipping was not reproduced in D01 and is not qualified as fixed.",
-            "Vertical scrolling, native edit/Save/History/Recovery, fresh-process, physical, Original-parity, large-map, user-vault and overall E2E claims retain their separate evidence and open boundaries."
+            "N04 code review/integration and original controlled native geometry retain their exact sources; free GM source87ccdb2 is a separate bounded user run.",
+            "N02-H02 controlled fresh-process/byte/text proof remains historical and unchanged; N04 GM same-session reuse adds no fresh-process claim.",
+            "Search at131%, external-window clipping, physical input, Copy/Discard/Recovery, Original/large-map/user-vault and full E2E retain their open boundaries."
           ],
           "guiUsedByHex": false,
           "productEdited": false,
           "phaseApproval": false,
-          "sourceCommit": "0b6e4355e478a2ad277e03dc2a3f2318e3189e34"
+          "sourceCommit": "52ab66e2403a78905be482dd539b842cee713c89"
         }
       }
     ],

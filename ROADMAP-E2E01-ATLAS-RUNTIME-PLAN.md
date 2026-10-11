@@ -83,17 +83,28 @@ integriert Head3123a80 regulär in Shared0b6e435. Exact-CI38108634137 und
 Shared-Struktur38108709670 SUCCESS; Eltern/Baum, unveränderte N04-Produkt-/Receipt-
 Blobs und Erhalt aller fremden Wurzeln einschließlich PR108 direkt geprüft.
 `dungeonAtLocationInspectorHorizontalFitN04Qualification` bindet R01/S01;
-Integration erfüllt noch keine freie GM-/physische/Fresh-Process-/Gesamtabnahme.
+Integration selbst erteilt keine GM-/physische/Fresh-Process-/Gesamtabnahme.
 
-**Jetzt ausführbarer Eingang / nächster Empfänger:** Bestehender Cloud-GM-Chat
-„Obsidian-Dungeon-Repo ansehen“ erhält Shared0b6e435 und synthetische Fixture
-`e2e01-spatial-v2` für freie GM-Nutzung des Dungeon-am-Ort-/Orts-/Raum-Inspectors:
-Felder/Aktionen bei schmaler Dockbreite finden, bearbeiten und Ergebnis wiederverwenden.
-Tatsächlichen Quellstand/Build/Fixture/Host und nur wirklich beobachtete Speicher-/
-Wiederöffnungsaktionen binden; keine vorgeschriebene Klickfolge oder alte Buildprobe
-als N04-PASS. Vor neuer GUI braucht sein gemeldeter voller Scratch einen eigenen
-persistenten QA-Belegort. Falls der fehlt, konkreter Hostblocker einmal in #80;
-keine fremden Dateien oder Laptopinstanz verwenden. Hex konsumiert Ergebnis/Befund.
+**Freie GM-Nutzung konsumiert:** [Cloud-GM-Ergebnis](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80#issuecomment-6105400641)
+auf exakt gebautem Shared87ccdb2 / Obsidian1.14.4, isolierte Fixture
+`e2e01-spatial-v2`: Torraum suchen → Raumtext ändern → Übernehmen/Speichern →
+zur Karte → denselben Raum mit erhaltenem Text wiederverwenden, bei100%.
+Separat131%: horizontal passende/umbrechende Aktion, vertikales Scrollen und
+kleinere Kartenfläche. Suche/Aktivierung bei131% wurde nicht ausgeführt.
+[Dauerhafte acht Bilder und Hashmanifeste](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/blob/155c01595da879c7edb34a211fff490e003f8e14/docs/reference/gm-cloud-n04-20261011/README.md)
+von Hex selbst gelesen; acht PNG- und acht Fixturehashes geprüft. Installations-
+Tripel und Post-Save-Dungeon-/Campaignhashes bleiben Testerbericht, ohne volle
+Post-Save-Payloads zum eigenen semantischen Vergleich. Stadt prüfte diesen engen
+Beleg unabhängig mit PASS. Keine neue Reparatur aus dem nötigen vertikalen Scrollen.
+
+**Nächster ausführbarer Eingang / Empfänger:** Bestehender Cloud-GM-Chat erhält
+den gezielten fehlenden Anschluss: gespeicherten Raum im eigenen N04-Testvault
+nach normalem Ende und frischem Obsidianprozess über sichtbare GUI wiederfinden.
+Quellstand/Build/Host, sichtbaren Texterhalt, Prozessgrenzen und native Vorher-/
+Nachherbytes binden; nur diesen fehlenden Nutzerweg oder konkreten Hostblocker
+einmal in #80 übergeben. Den bestandenen Same-session-Weg und alten kontrollierten
+N02-H02-Frischprozessbeleg erhalten, keine vollständige Save-/UndoRedo-/131%-
+Wiederholung. Hex konsumiert den Anschluss; dieser Lauf startete keine GUI.
 
 **Abgrenzung:** [City-Save-Nachtest](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/92#issuecomment-6105037427)
 auf a4f20a5 ist separater Stadt/#92-Eingang und enthält keine N04-/131%-Probe.
