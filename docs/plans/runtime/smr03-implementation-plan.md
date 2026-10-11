@@ -476,7 +476,14 @@ Architektur-/Technik-Re-review sind auf diesem Exact-SHA `PASS`.
 
 Typecheck, vollständige serielle Tests, Produktbuild und Repositorystruktur
 sind für Repair `a83a74f` grün (1006 PASS, null FAIL, ein beabsichtigter Skip).
-Noch offen und nicht durch den Checkpoint
-behauptet sind das Party-Aggregat, Deactivate/Delete, Split/Rejoin samt opaque
+Party-Checkpoint `2d563fc` ergänzt explizite CharacterId-/Name-only-Erstellung,
+Duplikatnamen, vollständige Profilersetzung mit echter optionaler Abwesenheit,
+validierte XP-/Fortschrittskorrektur und ausgewählte Short-/Long-Rests. Alle
+Party-Befehle sind revisioniert, immutable und erhalten Scene-Zuordnungen
+unverändert; die Vollsuite steht bei 1010 PASS, null FAIL und einem
+beabsichtigten Skip. Die engen Zwischenreviews laufen.
+
+Noch offen und nicht durch den Checkpoint behauptet sind Party-Aktivierung und
+Deactivate/Delete, Split/Rejoin samt opaque
 Clock-Beitrag, die vollständige Masken-Reconciliation, Invariant-Fuzzer und
 Scaleorakel sowie unabhängiger Exact-SHA-Review und Shared-Integration.
