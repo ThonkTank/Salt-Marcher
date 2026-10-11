@@ -8,6 +8,7 @@ export interface PlannerLocation {
 export class ManualPlannerPanel {
   private readonly root: HTMLElement;
   private readonly status: HTMLElement;
+  private readonly help: HTMLDetailsElement;
   private destroyed = false;
   private renderEpoch = 0;
   constructor(
@@ -21,14 +22,36 @@ export class ManualPlannerPanel {
     this.root.className = "dn-manual-planner";
     this.status = doc.createElement("p");
     this.status.setAttribute("role", "status");
+    this.help = doc.createElement("details");
+    const summary = doc.createElement("summary");
+    summary.textContent = "Hilfe zur Sessionplanung";
+    this.help.append(summary);
+    for (const text of [
+      "Mit „Neuer Plan“ beginnst du ohne Namen, Datum oder Party. Füge Szenen hinzu und wähle sie in der Liste, um Titel und Notizen zu bearbeiten. Ein Ort ist freiwillig; der ausgewählte Ort selbst wird nicht verändert.",
+      "„Entwurf übernehmen“ übernimmt deine Eingaben. Beim Plan- oder Szenenwechsel, Umbenennen und Verschieben werden offene Eingaben ebenfalls übernommen. „Entwurf verwerfen“ verwirft nur die offenen Eingaben; „Szene löschen“ oder „Plan löschen“ entfernt dagegen die Szene beziehungsweise den ganzen Plan.",
+      "Bei einer Fehlermeldung bleiben deine Eingaben erhalten. „Ansicht aktualisieren“ zeigt den aktuellen Plan, ohne einen Entwurf zu übernehmen oder zu verwerfen.",
+      "Mit Tab erreichst du Felder und Aktionen, mit Umschalt+Tab gehst du zurück. Enter oder Leertaste aktiviert Schaltflächen; nach der Szenenauswahl geht der Fokus zum Titel, danach mit Tab zu den Notizen.",
+    ]) {
+      const paragraph = doc.createElement("p");
+      paragraph.textContent = text;
+      this.help.append(paragraph);
+    }
     host.append(this.root);
     this.render();
   }
-  private run(action: () => void, focusSceneTitle = false): void {
+  private run(
+    action: () => void,
+    focusSceneTitle = false,
+    unsubmittedPlanName?: string,
+  ): void {
     if (this.destroyed) return;
     try {
       action();
       this.render();
+      if (unsubmittedPlanName !== undefined) {
+        const name = this.root.querySelector<HTMLInputElement>('[aria-label="Planname"]');
+        if (name) name.value = unsubmittedPlanName;
+      }
       // Scene buttons are replaced by render. Hand successful selection to the
       // editor; stale/failed actions never render or redirect keyboard focus.
       if (focusSceneTitle)
@@ -102,7 +125,15 @@ export class ManualPlannerPanel {
     refresh.type = "button";
     refresh.textContent = "Ansicht aktualisieren";
     refresh.title = "Aktuellen Plan anzeigen; Entwürfe bleiben erhalten.";
-    refresh.addEventListener("click", () => this.run(() => {}));
+    const displayedPlan = this.planner.active;
+    refresh.addEventListener("click", () => {
+      // Refresh is view-only: retain typed name only against the same immutable
+      // displayed plan, never rebase an old name onto an external revision/selection.
+      const name = this.planner.active === displayedPlan
+        ? this.root.querySelector<HTMLInputElement>('[aria-label="Planname"]')?.value
+        : undefined;
+      this.run(() => {}, false, name);
+    });
     toolbar.append(refresh);
     this.button(toolbar, "Neuer Plan", () => {
       this.planner.create();
@@ -247,7 +278,7 @@ export class ManualPlannerPanel {
     const help = doc.createElement("p");
     help.textContent =
       "Plan und Szenen sind auch ohne Party oder Ort bearbeitbar. Notizen gehören nur zu diesem Plan. Dieser Entwurf ist noch nicht dauerhaft gespeichert.";
-    this.root.append(help);
+    this.root.append(help, this.help);
     this.status.textContent = "";
     this.root.append(this.status);
   }
