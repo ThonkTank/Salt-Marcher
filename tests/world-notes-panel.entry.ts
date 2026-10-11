@@ -141,6 +141,15 @@ test("GM finds a related NPC by faction name or relation label", async () => {
   assert.deepEqual(results(), ["Fraktion: Nebelbund", "NPC: Älva"]);
   search.value = "mitglied"; search.dispatchEvent(new f.window.Event("input"));
   assert.deepEqual(results(), ["NPC: Älva"]);
+  f.click("NPC: Älva");
+  f.input("GM-Notizen", "Nicht gespeichert");
+  f.click("Fraktion öffnen");
+  assert.equal(f.host.querySelector<HTMLInputElement>("form input")?.value, "Älva");
+  assert.equal(f.host.querySelectorAll<HTMLTextAreaElement>("textarea")[1]?.value, "Nicht gespeichert");
+  assert.match(f.host.querySelector('[role="alert"]')!.textContent!, /offenen Entwurf/);
+  f.input("GM-Notizen", "");
+  f.click("Fraktion öffnen");
+  assert.equal(f.host.querySelector<HTMLInputElement>("form input")?.value, "Nebelbund");
   f.panel.destroy();
 });
 

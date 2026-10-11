@@ -72,7 +72,7 @@
       "portableRecoveryEvidence": "docs/reference/smr02-world-notes-recovery/manifest.json",
       "portableRecoveryEvidenceSha256": "a28136f9cc8b6b596462e6f1cf9d868a457ee9b3ac8e653aeb859246845ba353",
       "independentControlledRecoveryReview": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/95#pullrequestreview-5481505362",
-      "relationSearchCandidate": "Active relation labels and related target titles are searchable within the requested note kind; deleted targets are excluded. Core behavior 576/576 PASS; separate product candidate, integration and host use open.",
+      "relationSearchCandidate": "Active relation labels and related target titles are searchable within the requested note kind; deleted targets are excluded. An unchanged note can open its related target; an edited draft stays in place. Core and panel behavior 587/587 PASS; integration and host use open.",
       "next": "PR #95 integrated at 78f4c098; review and integrate the bounded relation-search candidate. Broader crash recovery, Encounter constraint, NPC combat and World Planner requirements remain open.",
       "limits": "Controlled rollback and committed-journal raw evidence independently reviewed; original host-run checkouts were dirty. No physical keyboard, power-loss, user-vault, broad recovery, full SMR-02 or overall product acceptance."
     },
