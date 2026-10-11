@@ -11159,61 +11159,124 @@
     "limitation": "Nur Offline-Adaptertests; keine zusätzliche COK-Laufzeit- oder GUI-Abnahme."
   },
   "gmProductTesting": {
-    "date": "2026-10-10",
-    "state": "gm_product_testing_partial_other_scenarios_open; trap_content_undo_cloud_retest_passed; atlas_location_key_readiness_gate_still_hex_owned",
+    "date": "2026-10-11",
+    "state": "gm_product_testing_partial_city_name_and_n03_cloud_ui_checked; latest_shared_save_collision_after_renderer_reload; fresh_process_and_physical_limits_open",
     "plan": "ROADMAP-GM-PRODUCT-TESTING-PLAN.md",
     "focus": "Längere GM-Endanwenderabläufe, häufige Aktionen, Bedienkosten und UI-Überladung; belegte Nacharbeiten beauftragen und nachprüfen.",
     "currentRun": {
-      "id": "GM-UX-TRAP-CONTENT-UNDO-CLOUD-RETEST-20261010-01",
-      "status": "completed",
-      "owner": "Cloud-GM-Produkttester",
+      "id": "GM-CITY-HOUSE-NAME-CLOUD-UI-RETEST-20261011-01",
+      "status": "partial_current_shared_save_collision_after_renderer_reload",
+      "owner": "Cloud-GM-Produkttester; support in #92, N03 observation consumed by Hex at #80",
       "branch": "active/installed-phase1",
-      "sharedHead": "7098269810801f93be247423862373e912cda210",
-      "productCommit": "7098269810801f93be247423862373e912cda210",
-      "candidateCommit": "b410e7d8069a879ab79adcf4861ed321f68fd612",
-      "request": "Exklusiver Cloud-GM-Nachtest des synthetischen Trap-Key-Note-Ablaufs nach PR55: Dirty-Guard, Apply, Undo/Redo, Save, Close/Reopen.",
-      "scope": "Nur derselbe synthetische Room-2/Marker-A/Trap-Key im isolierten QA-Vault. Keine Nutzerkarte, Trapmechanik, Atlas/Hex, Produktänderung oder breite Freigabe.",
-      "coordination": "Issue #1 contract 6087478045; Issue #8 preflight 6100517787; final report to be added after doc commit.",
-      "checks": [
-        "git fetch und normaler --ff-only-Integrationsschritt PASS; clean exact Shared HEAD 7098269810801f93be247423862373e912cda210.",
-        "git diff b410e7d8069a879ab79adcf4861ed321f68fd612..7098269810801f93be247423862373e912cda210 -- src/editor.ts tests/room-key-search-panel.entry.ts: leer; reviewed candidate product/test files unchanged.",
-        "npm run build: PASS; dirty:false; sourceRevision 7098269810801f93be247423862373e912cda210; Node v24.19.0.",
-        "Complete installed main.js/styles.css/manifest.json triplet byte-equal to Shared build after visible Reload app without saving. SHA-256 main=0e26628c2e58a0cc10e64641305cc74a2d77ad027a18d41396e0968207deef37; styles=a6d31c13219d4b9f49d2ecf6993106bedef2a33560c9bdfdb93106659d45bc2e; manifest=2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64. Previous installed main.js was 522823730ddce4d0ba83e0476f60887b60a07c517f84e8e270814b6d597efa43.",
-        "Visible room/key history: after fresh app reload, Undo had no available history and was disabled. One textual Apply established a session-history entry; subsequent Undo restored previous text without losing Room 2/Marker A/Key context, Redo restored exact text and kept context.",
-        "Visible dirty guard: with Undo enabled and second draft uncommitted, toolbar Undo showed “Key-Entwurf zuerst Übernehmen oder Verwerfen.” and preserved draft and applied text. Verwerfen removed only probe draft.",
-        "Visible save/close/reopen: Save status Gespeichert; Ctrl+W, Ctrl+O Quick Switcher, same QA Karte.dungeon, Room 2/Marker A/Key reopened. Final text/trap context visible. QA-file SHA before=12661953ec93498bcfca15df2c1e1cf45c546201077ef47eb313cd7b7e4894db; after Save and after Reopen=741a159b249c99938df9ce6bcc1775f837eaf5b68eb50109aa531269c69192d7.",
-        "No full test suite was run; bounded visible product retest only."
-      ],
-      "uiRun": "completed_visible_apply_undo_redo_dirty_guard_save_close_reopen_pass",
-      "finding": "PASS for the bounded applied key-text history contract, dirty-draft guard and persisted final state. Undo/Redo retained Room 2, marker A, Nadelwerferfalle and the Key panel.",
-      "historySetup": "After reload/reopen, toolbar Undo was disabled because the app session had no history. One Apply of the target control-note line seeded one history action; Undo and Redo then reverted/restored that line. Guard was separately checked with a second draft and active Undo.",
-      "changedFiles": [
-        "checkpoint.json (gmProductTesting root only)",
-        "acceptance.json (gmProductFollowups only)",
-        "ROADMAP-GM-PRODUCT-TESTING-PLAN.md",
-        "No product or test source files."
-      ],
-      "evidence": "/workspace/scratch/gm-cloud-qa/evidence-gmux-trap-content-undo-cloud-retest-20261010-01/ (RUN-NOTES.md; BUILD.txt; INSTALL.txt; triplet-hashes.json; QA-FILE-HASHES.txt; SCREENSHOT-SHA256SUMS.txt; screenshots/01..20)",
-      "notDemonstrated": [
-        "Physical keyboard/mouse or local laptop UI.",
-        "Fresh Electron process; only in-app Reload app without saving and normal tab close/reopen.",
-        "Trap mechanics, rules resolution, PlayerProjection, original-map parity, product latency, broad Dungeon/E2E/Atlas acceptance."
-      ],
-      "next": "No additional GM-UX-TRAP-CONTENT-UNDO product change or retest requested after this bounded PASS. Overall GM scenario and separate Hex-owned Atlas/Location gates remain outside this result.",
-      "priorAttempt": {
-        "id": "GM-UX-TRAP-CONTENT-20261010-01",
-        "status": "partial",
-        "issue8": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/8#issuecomment-6099894041"
+      "documentationBranch": "codex/gm-city-house-n03-cloud-20261011",
+      "sharedHeadAtRunStart": "1d8c7ffc94f1ee062b8a42df5ca78ec9cb6beaef",
+      "sharedHeadAtReport": "cf8d3c1f9b1f47241bf751de997a1f86786ec83c",
+      "productCommitForCitySaveUndoRedo": "1d8c7ffc94f1ee062b8a42df5ca78ec9cb6beaef",
+      "productCommitForCurrentReopenAndRoomTop": "cf8d3c1f9b1f47241bf751de997a1f86786ec83c",
+      "request": "Sichtbar im eigenen Cloud-Obsidian: vorhandenes Haus finden, exakten Namen editieren, Undo/Redo, direkt speichern/wiederverwenden; denselben Durchlauf um den konkreten N03-Key-Dock-Nachweis ergänzen.",
+      "scope": "Nur synthetischer E2E-01-Testvault. Keine Produktänderung, kein Parentbesitz, keine breite Atlas-/Recovery-/E2E-Freigabe; Hex erhält ausschließlich den N03-Befund.",
+      "sourceComparison": {
+        "currentDefault": "cf8d3c1f9b1f47241bf751de997a1f86786ec83c",
+        "filesChangedSinceStart": [
+          "ROADMAP-SALTMARCHER-REPLACEMENT.md",
+          "acceptance.json",
+          "checkpoint.json",
+          "docs/plans/city/building-name-inspector.md",
+          "src/features/world/world-notes.ts",
+          "src/ui/world-notes-panel.ts",
+          "tests/core/world-notes.test.ts",
+          "tests/world-notes-panel.entry.ts",
+          "tools/host/world-notes-native.cjs"
+        ],
+        "atlasFilesUnchanged": [
+          "src/features/atlas/atlas-editor.ts",
+          "tests/atlas-campaign-host.entry.ts"
+        ]
       },
-      "publishedOnSharedHead": "5e34270fd51162706f363260a92d12ec92bcc865; final post-run receipt Issue #8 comment 6100717372",
-      "sourceDiffSinceTest": "Shared advanced after the UI run from tested commit 7098269810801f93be247423862373e912cda210 to 6ce52f1c8915c006dfdefe2261f0c0c6d77b8483. Target src/editor.ts and tests/room-key-search-panel.entry.ts did not change. Later source diff is limited to catalog inventory/source-manifest/transcript JSON files. A fresh build from current Shared plus documentation commit 1c8d31ac004cb58e5053888a4088405d66163e7b was dirty:false; built main.js/styles.css/manifest.json equal the installed and visibly tested triplet, so no second UI sequence was needed.",
-      "postRunSharedHead": "6ce52f1c8915c006dfdefe2261f0c0c6d77b8483",
-      "postRunCurrentBuildSource": "1c8d31ac004cb58e5053888a4088405d66163e7b (documentation commit atop Shared 6ce52f1; npm run build PASS, dirty:false)",
-      "currentBuildTriplet": "main.js 0e26628c2e58a0cc10e64641305cc74a2d77ad027a18d41396e0968207deef37; styles.css a6d31c13219d4b9f49d2ecf6993106bedef2a33560c9bdfdb93106659d45bc2e; manifest.json 2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64; all match installed and visible test artifacts byte-for-byte.",
-      "postRunReport": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/8#issuecomment-6100717372",
-      "documentationCommit": "5e34270fd51162706f363260a92d12ec92bcc865"
+      "builds": [
+        {
+          "source": "1d8c7ffc94f1ee062b8a42df5ca78ec9cb6beaef",
+          "command": "npm run build",
+          "result": "PASS; dirty:false; Node v24.19.0",
+          "installedTriplet": {
+            "mainJs": "940f73b317eebdfbe9ae0419cb4540786a6bb7d4daea0fee04bd6c1224383e28",
+            "stylesCss": "93b65fe1a695acd58aea7360a18b9e9b16d1df7f14a3e3e4dea5a3300cbbed7e",
+            "manifestJson": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64"
+          }
+        },
+        {
+          "source": "cf8d3c1f9b1f47241bf751de997a1f86786ec83c",
+          "command": "npm run build",
+          "result": "PASS; dirty:false; sourceRevision exact; Node v24.19.0",
+          "installedTriplet": {
+            "mainJs": "75d23cd93cfb2accb1d9fc371cffc1d5da4b6b9c4a1bcc25a36e095f47e2d58e",
+            "stylesCss": "93b65fe1a695acd58aea7360a18b9e9b16d1df7f14a3e3e4dea5a3300cbbed7e",
+            "manifestJson": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64"
+          },
+          "activatedWithVisibleCommand": "Ctrl+P → Reload app without saving"
+        }
+      ],
+      "host": {
+        "container": "e49e330d328c1e2d97e6f46a677e34f5f288c4dab7b41db242d3584e4ab66b33",
+        "app": "Obsidian 1.14.4",
+        "display": "own Xvfb :99, 1440x1000",
+        "profile": "/qa/profile",
+        "cdp": "loopback forwarded 127.0.0.1:9236",
+        "vault": "/dev/shm/gm-city-vault",
+        "input": "Visible UI mouse/keyboard actions through CDP/Playwright; not physical input."
+      },
+      "visibleResults": [
+        "On 1d8c7ffc: open atlas at 3-mile entry; select Torheim; search House B; activate result and click visible house outline. Edit exact name, Apply, Undo to original, Redo to exact name; direct Atlas Save showed Gespeichert. Reopen showed Haus B — Roter Anker.",
+        "City file hash baseline d7ac830f0b1a1b2e20a396a8515cf6afa0b777e46ee39f0a5b39a75bd8a6184c → saved 21e82e7bac213531a6f31586840402f0c1fec317d9343a8a4737a631e50d59ed; campaign snapshot hash e66a9c557016357d3dea7491fa7110f9db0eeccf6fed5d1f9510885f6990a6df → 1d5a52406d10561498064d1ffedd48cf35d823a1fc3e42c0c9fc05bb8d6d71d2. Overworld 76e0a82a939f5c2b16c08f153cca827e4efd8d5920915c997ae2a3fc6d16de07 and dungeon c6fe58d1b5de5c707000a39b0b8da2883d31867b7d8bf347f63830021e2df742 remained baseline.",
+        "N03 on 1d8c7ffc: from a previously scrolled Ort-Key, search Torraum and activate Raum 1: Torraum; new Room-Key fields appeared at top. Within same Room-Key, scroll down, Apply temporary text, Undo/Redo/Undo; dock remained at scroll position and exact original text returned; dungeon bytes unchanged.",
+        "On cf8d3c1: after visible app reload, House B reopen showed exact saved name; selecting Raum 1: Torraum showed Raumname/Raumnummer/Raumtext at top. A controlled City name probe followed by Undo/Redo and restoration of the exact saved name then hit Save collision twice."
+      ],
+      "currentSharedSaveObservation": "After the visible current-build Save action the UI displayed “Bearbeitung angehalten. Error: Stadtentwurf fehlgeschlagen oder mit dem aktuellen Stand kollidiert.” A single visible retry showed the same message. City and campaign hashes stayed at the prior successfully saved state; no file was overwritten.",
+      "resultIssue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/92#issuecomment-6104735161",
+      "n03Handoff": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80#issuecomment-6104737639",
+      "changedFiles": [
+        "checkpoint.json (gmProductTesting root only; no product/test sources)"
+      ],
+      "rawEvidence": {
+        "directory": "/dev/shm/",
+        "durability": "Temporary host-local screenshots, not uploaded; SHA list and limits are in #92 result.",
+        "examples": [
+          "gm-city-house-b-border-click.png sha256 000ffebedcb4c3642fe4a2885aa5fed4ba9e4d7297c54ee6387818ad587fd619",
+          "gm-city-room-result-selected.png sha256 66dcf9d0d15bea3ea0a0bb97410b092ad2c343412c2f62bb623ba628cf6a6672",
+          "gm-city-room-text-applied-scrolled.png sha256 02f1583e9ff7069417598aebdb4c3adf6e2f5fe964900c8b8aaacf5424544c0f",
+          "gm-city-current-room-key-top.png sha256 e4b743302475738434a5218892598e89b0f55b1e0b56ecd12ccf73ff4ef2226d",
+          "gm-city-current-house-reuse.png sha256 a4d34435a1b58f749250b21abef7171bf5edbe6f61c2f091fb973641cbdeb9c6",
+          "gm-city-current-house-save-retry.png sha256 3fee783143ef0de1fa21ec21c8d008d7002a5244ffa22287cceaf3343c1ddf7e"
+        ]
+      },
+      "checks": [
+        "Exact branch head read live with git ls-remote; product diff from tested start inspected.",
+        "npm run build PASS on both exact sources; latest installed triplet matched latest build SHA hashes.",
+        "Own container/Profile/Display/CDP/Vault mapping verified; no foreign process or vault interaction.",
+        "Fixture comparison: only intended private synthetic City edit and campaign snapshot changed; source fixture, Overworld and Dungeon unchanged.",
+        "No full test suite run; it was not a substitute for the visible GM flow."
+      ],
+      "notDemonstrated": [
+        "Fresh separate Obsidian/Electron process; only visible in-app Reload app without saving was used.",
+        "Physical mouse/keyboard, 131-percent geometry, screen reader, product-latency study, broad Atlas/E2E/recovery acceptance.",
+        "Cause of the current-build Save collision."
+      ],
+      "next": "City/Stadt to diagnose the visible current-build Save collision in #92. Hex consumes the bounded N03 result at #80. No further GM replay until a relevant source/fix input or new concrete need.",
+      "sharedHeadAtCheckpoint": "de3181be1696d7442e0100f5901172906cc03974",
+      "sourceChangesAfterUiRun": [
+        "src/ui/world-notes-panel.ts",
+        "tests/world-notes-panel.entry.ts",
+        "tools/host/world-notes-native.cjs",
+        "checkpoint.json",
+        "acceptance.json",
+        "ROADMAP-SALTMARCHER-REPLACEMENT.md"
+      ],
+      "atlasRelevantFilesStillUnchanged": [
+        "src/features/atlas/atlas-editor.ts",
+        "tests/atlas-campaign-host.entry.ts"
+      ]
     },
-    "executedUiRuns": 19,
+    "executedUiRuns": 20,
     "observedFindings": [
       {
         "id": "GM-UX-001",
@@ -11381,7 +11444,7 @@
       "state": "completed",
       "supersedes": "GM-UX-ACCESS; Slotanfrage gemäß Nutzerkorrektur aufgehoben"
     },
-    "next": "No additional GM-UX-TRAP-CONTENT-UNDO product change or retest requested after this bounded PASS. Overall GM scenario and separate Hex-owned Atlas/Location gates remain outside this result.",
+    "next": "City/Stadt investigates the current-build visible Save collision linked in #92; Hex consumes the bounded N03 room-key result at #80. Fresh-process, physical-input and broad Atlas/E2E gates remain unproven; no more UI loops without a relevant source/fix input.",
     "automation": "Stündliche GM-Produkttests in eigener Cloud; keine Laptop-Slotfreigabe erforderlich.",
     "executionEnvironment": "Eigene Cloud-Umgebung, getrennt vom Laptop der Kollegen",
     "cloudHost": {
