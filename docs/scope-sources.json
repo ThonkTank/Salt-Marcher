@@ -2107,5 +2107,15 @@
     "wonderdraft_inventory_complete": true,
     "city_function_inventory_entries": 65,
     "city_complete_original_inventory_approval": "Not established by this audit. Consult CITY-00/CITY-09 original coverage gates."
+  },
+  "technical_foundation_audit": {
+    "date": "2026-10-11",
+    "target_revision": "116c16af48b6a073216685c8d8e2cc74fada82c3",
+    "source_revision": "9de85c1a26f526acbc1af332ac5962e185c0aab2",
+    "verified_primary_files": 38,
+    "decision_source": "ARCHITECTURE.md",
+    "qualification_source": "ROADMAP-SALTMARCHER-ADR-PROTOTYPES.md",
+    "storage_probe_sha256": "0676cd3602b600a2814eedddbe219b4a44927d4bd892775076d149bef52c64da",
+    "meaning": "Technical planning decisions; no new product acceptance. Historical audit hashes remain unchanged."
   }
 }

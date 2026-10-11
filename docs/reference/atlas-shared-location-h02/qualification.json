@@ -15,7 +15,7 @@
   "consumedShared": "2a484df43bd2146217e0efb3986fd1971d8b55e1",
   "originalReceipt": {
     "path": "docs/reference/atlas-shared-location-h02/receipt.json",
-    "sha256": "3a748e391edb229a4b4e6709866a17f78e35377331fadf8c80ea385e1a9c0012",
+    "sha256": "1cd55f83db169ec7e6a48955d369dd6ff3044b770ede7008f0ccb1bb22f181cc",
     "artifactsVerified": 40,
     "unchanged": true
   },
@@ -66,7 +66,7 @@
     },
     {
       "path": "docs/reference/atlas-shared-location-d01/receipt.json",
-      "sha256": "135f0373c9065a3dfaa83d9dbd8c0d4ec469b79908c0d3b7aa892fd932ca55b9"
+      "sha256": "469161de31c885b67735c6c7d0acd685cf531a841df4d34a458a0fd89c7f0206"
     },
     {
       "path": "docs/reference/atlas-shared-location-r01/receipt.json",

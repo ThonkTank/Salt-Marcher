@@ -4,7 +4,7 @@
 
 Eine Spielleitung soll eine Kampagne als zusammenhängenden lokalen Arbeitsraum benutzen: Welt und Orte erkunden, Städte und Dungeons bearbeiten, Texte und Encounter vorbereiten und daraus einen Spielabend führen. Gespeicherte Daten müssen nach Neustart und Fehlern zuverlässig wieder auffindbar sein. Ein weiterer isolierter Editor oder ein nur theoretisch beschriebener Fachvertrag erfüllt dieses Ziel noch nicht.
 
-Die vollständige [SaltMarcher-Ablösung](../ROADMAP-SALTMARCHER-REPLACEMENT.md) ist der verbindliche Gesamtumfang. Diese Seite fasst die vorhandenen Ziele zusammen; sie ersetzt weder die Fachanforderungen noch deren Abnahme. Der [vollständige Quellenabgleich](SCOPE.md) macht alle erfassten Zielbereiche, zusätzliche Fachabnahmen und noch offene Quellenkollisionen sichtbar. Die Integrationsgates allein beschreiben nicht den gesamten Funktionsumfang.
+Die vollständige [SaltMarcher-Ablösung](../ROADMAP-SALTMARCHER-REPLACEMENT.md) ist der verbindliche Gesamtumfang. Diese Seite fasst die vorhandenen Ziele zusammen; sie ersetzt weder die Fachanforderungen noch deren Abnahme. Der [vollständige Quellenabgleich](SCOPE.md) macht alle erfassten Zielbereiche, zusätzliche Fachabnahmen und begründete Quellenkonfliktentscheidungen sichtbar. Die Integrationsgates allein beschreiben nicht den gesamten Funktionsumfang.
 
 ## Vollständiges Funktionsportfolio
 
@@ -14,7 +14,7 @@ Die vollständige [SaltMarcher-Ablösung](../ROADMAP-SALTMARCHER-REPLACEMENT.md)
 | Party, Planung und Live-Spiel | Vorbereitung ausdrücklich in eine unabhängige LiveSession überführen, ohne Planner-Rückwirkung; Roster/aktuelle/erwartete Party getrennt; Adventuring Day; manuelle Timeline; reproduzierbare Session-/Reward-Generierung; ständig verfügbare Primary/Split Scenes und mehrere Encounter-/Chase-Masken |
 | Kampf und Nachbereitung | Encounter Tables, Initiative/HP/Zustände/Undo, Abschluss, XP/Level, Treasures und Charakterlootledger, Handel, kumulativer Lootausgleich und erklärbare Korrekturhistorie |
 | Atlas und Kartenwerkzeuge | Vollständige beauftragte Dungeon-/Wonderdraft-Werkzeugfunktion, Welt-/Hexgestaltung, Assets, Ebenen, Licht, Labels, Detailkarten und Ausgabe; ein durchgehend bearbeitbarer Atlas |
-| Erweiterter Dungeon | Kontinuierliche 3D-Räume/Höhen, Paths/Passages, Graph-Entwurf, Key-Batchbearbeitung, Attributvererbung, Inhaltsvorlagen, dynamische Beschreibungen, Geheim-/Trap-Features und Dokument-/Paketausgabe; [konkrete Atlasaktionen](../ROADMAP-HEX-ATLAS.md#aktionen-am-ausgewählten-objekt), technische Spezialverträge noch offen |
+| Erweiterter Dungeon | Kontinuierliche 3D-Räume/Höhen, Paths/Passages, Graph-Entwurf, Key-Batchbearbeitung, Attributvererbung, Inhaltsvorlagen, dynamische Beschreibungen, Geheim-/Trap-Features und Dokument-/Paketausgabe; [konkrete Atlasaktionen](../ROADMAP-HEX-ATLAS.md#aktionen-am-ausgewählten-objekt), technische Wertsemantik im [Runtimeplan](../ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md), Implementation und Fachnachweise offen |
 | Städte | Volle Funktionsergebnisse von Canvas of Kings, Watabou und Fantasy Town Generator, einschließlich Erzeugung, Bewohnern/Beziehungen/Fraktionen/Tagesabläufen; geschützte Regeneration, Innenräume und Ausgabe |
 | Reise und Weltzeit | Hex-/Dungeonreise, Unterbrechungen/Tracks/Perception, eigene Scene-Zeiten, Fantasykalender, einmalige gemeinsame Worldfolgen auch bei Retry/Restart und kausales Undo |
 | Unterstützende Systeme | Shops/Restock, regionales Wetter/Klima, lokale Musik/Autoplay und geschichtete Ambience mit Vorrang manueller GM-Entscheidungen |
@@ -37,6 +37,6 @@ Quellen, Lieferphasen und verbleibende Zuordnungslücken stehen in [SCOPE.md](SC
 
 Dungeonzeichnung, strukturierte Raum-Keys und zahlreiche Speicher-/Hostfälle sind bereits belegt, jeweils innerhalb ihres dokumentierten Scopes. Atlas-/City-/Campaign-Integration liegt teilweise auf Kandidatenbranches. Vollständige E2E-Freigaben, sämtliche Item-/Encounter-/Live-/Reise-/Displayfunktionen sind daraus nicht ableitbar.
 
-Obsidian ist aktuell Arbeits- und Testhost. Obsidian, Desktop oder Hybrid als endgültige Produktlinie bleibt in [Plattform-ADR](../ROADMAP-SALTMARCHER-PLATFORM-ADR.md) offen und hängt an P01–P04 und den notwendigen OS-/Recovery-/Capability-Beweisen. Offen sind die Zielplattform und die technischen Daten-/Schnittstellenverträge für Encounter/Combat/Loot, Travel/Clock/Calendar und PlayerProjection.
+Obsidian ist der bisherige Arbeits-/Testhost. Die [Gesamtgrundlage](../ARCHITECTURE.md) und das [Plattform-ADR](../ROADMAP-SALTMARCHER-PLATFORM-ADR.md) vom 11.10.2026 entscheiden einen kleinen TypeScript-Kern, SQLite und eine eigenständige Electron-Shell. Aktueller Code besitzt keinen Bestandsschutz. Produktimplementation, OS-/Recovery-/Capability-/Cutovernachweise und konkrete Featurecodecs bleiben zu liefern.
 
 Der erste Lieferfokus ist E2E-01; der vollständige Umfang einschließlich Planner, World Planner, Actor Autonomy, Erweiterungen und Tutorials bleibt in der SaltMarcher-Roadmap erhalten. Lieferreihenfolge und offene Eingänge: [Roadmap](ROADMAP.md).

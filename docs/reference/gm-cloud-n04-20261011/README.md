@@ -6,7 +6,7 @@
 
 The product was built from the exact current default head `active/installed-phase1` / `87ccdb2626c26622f15799f3af7faf05d9feee89` after the branch advanced from `d12d2ee` during the run. `git diff d12d2ee..87ccdb2` changes World Notes, build metadata, and tests; Atlas feature/editor sources and the `e2e01-spatial-v2` fixture are unchanged. `npm run build` passed with Node `v24.19.0`, `dirty:false`, and exact `sourceRevision=87ccdb2626c26622f15799f3af7faf05d9feee89`.
 
-At report time Shared advanced to `a93fd4f7d4e61a327744cece448a0fbc30e94773` via PR #113. Its delta from the tested `87ccdb2` changes only City acceptance/checkpoint/plan metadata; Atlas source and this UI result are unchanged. The test remains bound to the exact `87ccdb2` build below.
+At report time Shared advanced to `a93fd4f7d4e61a327744cece448a0fbc30e94773` via PR #113. Its delta from the tested `87ccdb2` changes only City reference metadata; Atlas source and this UI result are unchanged. The test remains bound to the exact `87ccdb2` build below.
 
 The built and installed plugin triplets matched before the visible app reload:
 
@@ -33,7 +33,7 @@ The built and installed plugin triplets matched before the visible app reload:
 
 ## Data oracle and evidence
 
-The source fixture manifest is `FIXTURE-SHA256SUMS.txt`; its SHA-256 is recorded in the checkpoint and is bound to `tests/fixtures/atlas-e2e-spatial-v2/input` on `87ccdb2`. Screenshot SHA-256 values are in `SHA256SUMS.txt`. In the isolated vault, the intended save changed only these two of the eight fixture payloads:
+The source fixture manifest is `FIXTURE-SHA256SUMS.txt`; it records the hashes bound to `tests/fixtures/atlas-e2e-spatial-v2/input` on `87ccdb2`. Screenshot SHA-256 values are in `SHA256SUMS.txt`. In the isolated vault, the intended save changed only these two of the eight fixture payloads:
 
 - Dungeon `Dungeons/E2E-01-Testdungeon/Karte.dungeon`: `c6fe58d1b5de5c707000a39b0b8da2883d31867b7d8bf347f63830021e2df742` → `39b6896fef75f73fa6725d4792b07aca3de682d94c678353165fcf5e10286c9e`.
 - Campaign snapshot `Kampagnen/SaltMarcher/E2E-01-Atlas-Save.campaign.json`: `e66a9c557016357d3dea7491fa7110f9db0eeccf6fed5d1f9510885f6990a6df` → `a2fd470149a9d9f546d6382dd67e4f881764c86351122345f0700aa680146366`.

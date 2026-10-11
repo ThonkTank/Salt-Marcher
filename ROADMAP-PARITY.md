@@ -1,6 +1,6 @@
 # Roadmap: Dungeondraft-Verhalten für Grundrisse und Objekte angleichen
 
-Diese Roadmap folgt auf [Räume und Objekte mit Raum-Keys verbinden](ARCHITECTURE.md#raum-key--und-featurevertrag). Deren Phasen sicherten zunächst den funktionierenden Ablauf. Dieser Fachplan hält den Vergleichsumfang von **Building Tool** und **Object Tool** des installierten Dungeondraft 1.2.0.1 „Opulent Kirin“ fest. Bedienwirkung und Kartenwirkung sollen gleichwertig sein; eine andere Oberfläche und einzelne andere Pixel sind zulässig.
+Diese Roadmap folgt auf [Räume und Objekte mit Raum-Keys verbinden](ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md#keys-features-templates-und-geschützter-graphentwurf). Deren Phasen sicherten zunächst den funktionierenden Ablauf. Dieser Fachplan hält den Vergleichsumfang von **Building Tool** und **Object Tool** des installierten Dungeondraft 1.2.0.1 „Opulent Kirin“ fest. Bedienwirkung und Kartenwirkung sollen gleichwertig sein; eine andere Oberfläche und einzelne andere Pixel sind zulässig.
 
 Für die weitere Umsetzung gelten die gemeinsamen [Ergebnisgleichwertigkeit und Lieferprioritäten](ROADMAP-HEX-ATLAS.md#wie-kommen-wir-zum-ziel). Eigene Gesten, Werkzeuge und Darstellung dürfen dieselben fachlichen Ergebnisse erreichen. Pixelwerte und Originaleingaben sind Diagnose- und Referenzdaten, keine Identitätsvorgabe.
 

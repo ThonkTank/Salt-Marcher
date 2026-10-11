@@ -64,12 +64,23 @@ Die Matrix bewahrt die quellengebundene Lückenanalyse gegenüber der oben gepin
 | Verbindungen innerhalb/außerhalb des Dungeons | [Dungeon L169–174](https://github.com/ThonkTank/Salt-Marcher/blob/9de85c1a26f526acbc1af332ac5962e185c0aab2/docs/dungeon/requirements/requirements-dungeon.md#L169-L174), [Editor L165–170](https://github.com/ThonkTank/Salt-Marcher/blob/9de85c1a26f526acbc1af332ac5962e185c0aab2/docs/dungeon/requirements/requirements-dungeon-editor.md#L165-L170) und [Editor L551–574](https://github.com/ThonkTank/Salt-Marcher/blob/9de85c1a26f526acbc1af332ac5962e185c0aab2/docs/dungeon/requirements/requirements-dungeon-editor.md#L551-L574): jede Seite besitzt Richtung, Rücklink, Fakten und Reisezeit; Dungeongrenzen sind kein Sondertyp, Mehr-Dungeon-Aktionen sind atomar, fehlende Ziele bleiben sichtbar kaputt. | Atlasplatzierungen und `DungeonRoute` liefern IDs/Entrance-Links, aber keinen beidseitigen Passagevertrag. Erfordert im Path-/Passagepaket außerdem eine ownerübergreifende Command-/Persistenzgrenze; P02/P04 und Reise bleiben harte Eingänge. | Passage A mit Passage B in einem zweiten Dungeon verbinden, nur eine Rückrichtung setzen, unterschiedliche Seiteninhalte behalten, gemeinsam rückgängig machen und neu öffnen. Danach Ziel B entfernen: A bleibt mit derselben ID sichtbar und ausdrücklich nicht verfügbar, ohne lokalen Inhalt zu verlieren. |
 | Größen-, Reaktions- und Verbraucherqualifikation | [Dungeon L302–321](https://github.com/ThonkTank/Salt-Marcher/blob/9de85c1a26f526acbc1af332ac5962e185c0aab2/docs/dungeon/requirements/requirements-dungeon.md#L302-L321), [Editor L576–584](https://github.com/ThonkTank/Salt-Marcher/blob/9de85c1a26f526acbc1af332ac5962e185c0aab2/docs/dungeon/requirements/requirements-dungeon-editor.md#L576-L584): mindestens 100.000 authored cells; lokale Arbeit skaliert mit sichtbaren/berührten Regionen; erstes nutzbares Viewport/Context p95 2 s, Kamera/hover p95 16 ms, lokale Vorschau p95 50 ms, Fortschritt schwerer Vorschauen binnen 100 ms, Abbruch ab 2 s ohne blockierte Kamera/Selection/Reads, normaler Commit p95 500 ms und passive Sichtaktualisierung p95 100 ms. | HEX-08 besitzt ein getrenntes Großwelt-/Streamingtor; heutige Dungeon-Parität belegt diese Volume-/Routinggröße nicht. Nach den drei Fachpaketen fehlt ein gemeinsamer `SMR04-DUNGEON-SPATIAL-QUALIFICATION`-Lauf für Laden, Authoring und Commit. Die passive Sichtaktualisierung bleibt beim PlayerView-Owner `SMR-10` / `SMR-AC-14` / E2E-04 und konsumiert später die bestätigte sensorische Passageprojektion; sie wird nicht durch ein Dungeon-Renderermaß freigegeben. | 100.000 sparse 3D-Zellen mit gestapelten Volumes, Paths und Passages öffnen und bis zum ersten nutzbaren Viewport/Context messen; Schnittwahl, Hover und lokale Preview gegen 16/50 ms p95 prüfen. Eine schwere Path-/Volumevorschau zeigt binnen 100 ms Fortschritt, lässt sich oberhalb 2 s abbrechen und blockiert weder Kamera, Auswahl noch unabhängige Reads; ein gewöhnlicher Commit bleibt unter 500 ms p95. Offscreen-Inhalt darf keine globale Neuberechnung erzwingen. Getrennt aktualisiert die passive PlayerView nach Bewegung oder Sichtänderung binnen 100 ms p95 ausschließlich aus bestätigten Sicht-/Licht-/Passagefakten. Jede Überschreitung bleibt mit Rohmessung und zuständigem Folgeowner offen. |
 
+## Technische Entscheidung vom 11.10.2026
+
+Die räumliche Wertsemantik, Roomidentität, Paths/Passages, Features/Templates/
+Graph und Laufzeitgeometriekorrektur stehen nun im [Runtimeplan](../../../ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md).
+Persistenz folgt dem einen SQLite-Writer, nicht dem bestehenden Volume-/
+Whole-Document-Dateiformat. Aktueller Volumecode ist ein geprüfter möglicher
+Algorithmuslieferant, keine vorgeschriebene Architektur. Room-Key bleibt
+geometrieunabhängig, Split/Merge erhält Prosa und stabile Identitäten.
+Die folgenden alten Istbefunde bleiben datiert; Implementations-/Codecdetails
+und direkte Fachqualifikation sind weiterhin zu liefern.
+
 ## Abhängigkeiten und Abnahmefolge
 
 Die zentrale [Atlaspriorisierung](../../../ROADMAP-HEX-ATLAS.md#wie-kommen-wir-zum-ziel) bestimmt die Lieferung. Die folgenden Schritte sind Datenabhängigkeiten innerhalb der räumlichen Facharbeit, keine zusätzliche Gesamtlieferfolge. Originalgesten werden nach dem gemeinsamen Ergebnismaßstab bewertet.
 
-1. `SMR04-DUNGEON-VOLUME` entscheidet zuerst nur den räumlichen
-   Domänen-/Persistenzvertrag und seine 2D-Schnittprojektion. Eine bestehende
+1. `SMR04-DUNGEON-VOLUME` implementiert den entschiedenen räumlichen
+   Vertrag und seine 2D-Schnittprojektion im gewählten Store. Eine bestehende
    `Floor`- oder Building-ID darf nicht stillschweigend zur neuen Volume- oder
    Room-Wahrheit erklärt werden.
 2. `SMR04-ROOM-VOLUME-LIFECYCLE` bindet stabile Autorenidentitäten an diese
@@ -83,7 +94,7 @@ Die zentrale [Atlaspriorisierung](../../../ROADMAP-HEX-ATLAS.md#wie-kommen-wir-z
    Ersatzabnahme.
 
 Persistente Änderungen benötigen Save/Reopen, Recovery und den gemeinsamen
-Atlas-History-Pfad. Originalvergleich gilt weiter für übernommene
+Atlas-Command-/History-Pfad mit der gewählten Transaktionsgrenze. Originalvergleich gilt weiter für übernommene
 Dungeondraft-Werkzeuge; die zusätzlichen SaltMarcher-Fachziele werden gegen die
 hier gepinnten Anforderungen geprüft.
 

@@ -4,6 +4,16 @@ Abschnitte: [Normativer Lebenszyklus](#normativer-lebenszyklus) · [Mehrbesitzer
 
 Lifecycle-/Zeit-, Datenbesitz- und Host-/Security-/Plattformverträge sowie die Trennung der passiven Anzeige besitzen begrenzte PASS-Nachweise. Diese Vertragsnachweise belegen allein weder Produktanschluss noch Hostpersistenz; der genaue Umfang steht in `acceptance.json`.
 
+## Technische Anschlussentscheidung vom 11.10.2026
+
+Fachliche Party-/Scene-/Masken-/Zeit-/Erasurewirkungen bleiben verbindlich.
+[ARCHITECTURE](../../../ARCHITECTURE.md) ersetzt die früher vorgeschlagene
+interne Mehrbesitzercommitmechanik: ein lokaler Writer, eine SQLite-Transaktion
+für Records/Folgen/Receipt, geprüfte Revision/Context/Rechte an dieser Grenze.
+Fachlicher Owner bedeutet Invariantenverantwortung, keinen separaten Writer.
+Vorhandene Kern-APIs sind Istbefund ohne Bestandsschutz; Nutzerinhalte und
+extern gebundene Formate bleiben geschützt.
+
 ## Fachliche Quellen
 
 Maßgeblich ist SaltMarcher-Revision
@@ -376,184 +386,34 @@ und quarantined sein und später genau ein ClosureReceipt liefern.
 
 ## Mehrbesitzer-Commit und Recovery
 
-Mehrbesitzerbefehle verwenden die mit SMR-01 und SMR-07 gemeinsame öffentliche
-Folge `Stage → Validate → Publish → Verify → Finalize`. Owner-lokales `Prepare`
-bleibt eine unsichtbare Unterphase im Participant-Slot des Stage-Receipts und
-ist keine sechste Phase.
+Party-, Scene-, Zeit-, Masken- und abhängige Records werden gemeinsam geplant,
+validiert und in **einer DBtransaktion** geschrieben. Receipt, Revisionen,
+kausale Deltas und Erklärungsfakten gehören zu derselben Grenze. Kein internes
+Prepare-/Publish-/Finalizeprotokoll zwischen unabhängigen Stores. Die alten
+Stage/Validate/Publish/Verify/Finalizebegriffe beschreiben Planung/Prüfung/Commit/
+Status/Projektion; ihre ehemaligen Implementationsdetails sind historisch.
 
-Jeder Befehl führt stabile CommandId, CampaignId, ausdrücklich beteiligte
-Owner, beabsichtigte Zielidentitäten und erwartete Owner-Revisionen. Vor dem
-durablen Publish-Entscheid bleibt die alte bestätigte Wahrheit sichtbar und
-Recovery rollt vorbereitete Beiträge zurück. Nach Publish wird ausschließlich
-vorwärts verifiziert/finalisiert. Ein unbekannter Ausgang wird über dieselbe
-CommandId und das Receipt aufgelöst, niemals als neuer Befehl wiederholt.
+Command-ID/Fingerprint/erwartete Revisionen/Aktivierung binden den Versuch.
+Cancel gewinnt vor dem Commit und publiziert nichts; nach Commit bleibt nur
+Status/Reconciliation vorwärts. Unknown outcome wird mit derselben ID geprüft,
+niemals durch neuen Command oder neue Runtime-ID ersetzt. Fremde Records oder
+Registry-/Rechteänderung an der Commitgrenze scheitern ohne Teilwirkung.
+Nur tatsächlich betroffene abhängige Masken dürfen pending/unavailable sein;
+Party und andere gültige Scenes bleiben benutzbar.
 
-Cancellation ist ein commandgebundener Intent, kein zweiter Fachbefehl. Ein
-Command ist nur bis zu seinem durablen Publish-Entscheid cancellable. Cancel und
-Publish linearisieren genau einmal an derselben durablen Grenze; ein bereits
-begonnener nicht cancellable irreversibler Abschnitt wird als solcher sichtbar
-gemeldet und niemals als erfolgreich wirkungslos abgebrochen dargestellt.
+Löschclosure umfasst alle beteiligten Inhalte, References, Runtime, retained
+Providerunits und app-managed Recoverydaten. Unavailable Provider wird nicht
+ausgeführt; Core nutzt dessen vollständiges versioniertes Besitz-/Remapenvelope.
+Nichtrekonstruktive Historie bleibt, rekonstruierbare gelöschte Payloads nicht.
+Permanente Löschung meldet erst nach tatsächlich abgeschlossener Bereinigung
+Erfolg; Crash setzt die persistierte Closure fort. Restore/Import verwendet
+keine importierten Source-Erasure-/Rechtetokens als lokale Autorität.
 
-Gewinnt Cancel vor Publish, schreibt dasselbe CommandReceipt den Ausgang
-`cancelled-before-publish`. Die alte bestätigte Fachwahrheit bleibt vollständig
-unverändert. Stage- und owner-lokale Prepare-Beiträge werden verworfen oder
-recoverbar zurückgerollt; jede Participant-, Worker- und Callback-Generation
-wird für diesen Command geschlossen. Eine verspätete Antwort, ein alter Handle
-oder ein reconnectender Participant darf danach weder Publish noch eine
-abhängige Wirkung erzeugen. Bei Import bleiben Source, bestehende Campaigns und
-shared Definitions byte- und semantisch unverändert.
-
-Gewinnt Publish, ist ausschließlich Roll-forward zulässig. Ein nachfolgender
-Interrupt darf das lokale Warten beenden, aber weder bestätigte Wirkung
-zurückrollen noch einen Cancellation-Erfolg melden. Verify-, Finalize- und
-Closure-Pflichten bleiben mit ursprünglicher CommandId und ursprünglichem
-Receipt sichtbar pending und werden nur darüber aufgelöst; temporäre
-Nichtverfügbarkeit oder erneutes Cancel erzeugt keinen Ersatzbefehl.
-
-Für anwendbare Hintergrundarbeit gilt TN-22: Vor Publish wird Cancel innerhalb
-von einer Sekunde p95 bestätigt. Spätestens zehn Sekunden danach existieren
-keine lebenden Tasks, Handles oder Queueeinträge und keine unmarkierten
-temporären Artefakte des abgebrochenen Versuchs. Ein zulässiges resumable
-Artefakt ist ausdrücklich markiert, liegt außerhalb bestätigter Campaign-
-Wahrheit und innerhalb des Temp-Budgets. Tombstone, Manifest, Publish-/Closure-
-Receipt und andere bestätigte Recovery-Evidenz sind keine temporären Artefakte
-und werden durch Cleanup niemals entsorgt.
-
-Wo Party gemäß bestätigtem Cross-Workflow-Vertrag die primäre autoritative
-Änderung vor abhängigen Contexts veröffentlicht, enthält derselbe Publish-
-Entscheid die genaue Scene-/Masken-Reconciliation-Pflicht. Die UI zeigt weder
-eine alte Zuordnung als aktuell noch eine unbestätigte neue Zuordnung als
-fertig. Retry wendet die primäre Mutation nicht erneut an.
-
-Bei permanenter Charakterlöschung schreibt derselbe Publish-Entscheid die
-autoritative Party-Löschung, einen Tombstone und ein geschlossenes
-`ReferenceOwnerManifest`. Das Manifest enthält ausschließlich CommandId,
-CampaignId, CharacterId, OwnerId, Referenz-/Revisionsbeleg und Closure-Status,
-niemals Profil, Werte, Medien oder anderen rekonstruierbaren Payload. Erfasst
-werden alle registrierten Besitzer lebender Character-Referenzen, insbesondere
-Party, Scene, Masken/Combat, SMR-06 Preparation, SMR-07/Travel sowie jeder
-retained Capability-Owner; zusätzlich sind Registry, Tombstone,
-PartyCommandHistory, Staging, Temp, Recovery und app-kontrollierte Exportkopien
-eigene Closure-Teilnehmer. Ein möglicher unbekannter Owner blockiert Publish.
-
-Stage pinnt eine immutable `ReferenceOwnerRegistryProjection` mit CampaignId,
-RegistryRevision, jedem Owner, seinen vollständigen Character-referenzierenden
-Payloadklassen und je Klasse einer capability-gebundenen unveränderlichen
-Erasure-Slotdefinition samt eigener SlotRevision. Der daraus lokal gemintete
-immutable `ErasureToken` bindet DeletionCommandId, CampaignId, CharacterId,
-OwnerId, owner-definierte exakte ErasureUnitId/TargetScope, Payloadklasse,
-SlotRevision, erwarteten Before-Hash sowie den erwarteten Survivor-Set-/Root-
-Hash. Er ist kein durch SMR-03 interpretierbarer Pfad, SQL-Schlüssel oder frei
-nutzbarer Locator. Der Lifecycle darf ausschließlich die idempotente Host-
-Erasure-Capability mit genau diesem Token aufrufen und öffnet oder verändert
-niemals fremden Owner-Speicher selbst. Ein Owner darf erst nach bestätigter
-Closure aus der Registry verschwinden.
-
-Die globale RegistryRevision beweist ausschließlich die vollständige
-Pre-Publish-Enumeration und wird unmittelbar vor Publish stale-validiert. Nach
-dem durablen Publish bleibt der gepinnte Manifest-Snapshot autoritativ. Erasure
-revalidiert Tombstone, TargetScope, Hashbelege und die per-Owner/per-Slot-
-Revision; eine unabhängige globale Registry-Fortschreibung invalidiert einen
-unveränderten Slot nicht. Ändert sich ein betroffener Slot, führt ein
-ausdrücklicher idempotenter Rebind-/Closure-Pfad die alten und neuen Scope-/
-Hashbelege zusammen und rollt die Party-Löschung nie zurück. Neu registrierte
-Owner müssen Tombstone-IDs ablehnen und dürfen keine neue Referenz erwerben.
-
-Jeder Manifesteintrag ist vor Publish entweder `removed` oder
-`unavailable-quarantined`. Danach erzwingt jeder Lese-, Undo-, Import- und
-Recovery-Rand den Tombstone: quarantined Bytes sind nicht live auflösbar und
-können keinen neuen Effekt erzeugen. Beim Reconnect entfernt der Owner seine
-Alt-Referenz mit ursprünglicher CommandId genau einmal und schreibt ein
-`ClosureReceipt`. Kehrt ein registrierter Owner dauerhaft nicht zurück, löscht
-die gebundene Erasure-Capability ausschließlich seine manifestierten
-Payloadklassen byteweise, ohne sie fachlich zu interpretieren, und schreibt
-dasselbe nichtrekonstruktive ClosureReceipt. Dieses enthält nur Command-,
-Character-, Owner-, TargetScope-, Slot-/OwnerRevision-, Before-, After- und
-Survivor-Hash- sowie Outcome-Belege. After-/Survivor-Belege müssen zeigen, dass
-genau die Target-Unit fehlt und alle übrigen Records derselben Payloadklasse
-byte- und semantisch unverändert blieben.
-
-PartyCommandHistory und immutable Receipts projizieren ab logischer Löschung
-nur nichtrekonstruktive Belege. Verfügbare rekonstruierbare Vorher-/Nachher-
-Fakten, Profile, XP, Quick Fields, Loot- oder Medienpayloads werden in History,
-Recovery, Staging, Temp, retained storage und app-kontrollierten Exportkopien
-entfernt oder anonymisiert, ohne den erklärenden `[UNKNOWN]`-Fakt umzuschreiben.
-Noch unavailable Bytes bleiben bis Closure ausschließlich offline quarantined
-und dürfen nur im unten definierten `closure-pending` Complete mitgeführt
-werden. Erst die vollständige semantische und Byte-Closure erlaubt physischen
-Payload- und Tombstone-Purge sowie den Status `permanent-purge-finalized`.
-Recovery rollt vor Publish alles zurück und finalisiert danach nur vorwärts;
-Retry wiederholt weder Party-Löschung noch abhängige Effekte.
-
-Der veröffentlichte Receipt-/UI-Status unterscheidet drei Zustände:
-
-1. `logical-delete/closure-pending`: Party-/Live-Identität ist tombstoned;
-   verbliebene Bytes existieren ausschließlich opaque, offline und quarantined.
-   Campaign Complete bleibt nach TN-27 nur zulässig, wenn es alle diese Bytes
-   zusammen mit Tombstone, Manifest, Scope-/Hashbelegen und nicht ausführbarer
-   Erasure-Evidenz vollständig und verifiziert einschließt. Es behauptet keinen
-   finalisierten Purge.
-2. `permanent-purge-finalized`: semantische und Byte-Closure sind bewiesen;
-   kein app-kontrollierter Live-, Trash-, Recovery-, Staging-, Temp-, retained-
-   oder Export-Payload kann den Character rekonstruieren. Campaign Complete ist
-   für den dann aktuellen kanonischen Campaign-Zustand zulässig und enthält nur
-   nichtrekonstruktive `[UNKNOWN]`-/Receipt-Evidenz. Ein separat angeforderter
-   Character-/Closure-/History-Export heißt ausschließlich `evidentiary`, nie
-   Complete, und suggeriert keine Wiederherstellbarkeit.
-3. `prior-external-gm-export`: die vor der Löschung erzeugte externe Kopie ist
-   nicht widerrufbar, aber nur Evidenz/Importquelle und verleiht weder Restore-
-   noch Purge-Berechtigung für die Quell-Campaign.
-
-Kann die geschlossene pending Quarantäne nicht vollständig bewiesen werden,
-ist Complete blockiert; nur ein ausdrücklich gewählter Salvage-Export darf
-genau manifestierte quarantined Bytes auslassen und nennt jede Identität und
-Auswirkung.
-
-Ein exportierter ErasureToken ist ausschließlich nicht ausführbare Provenienz-
-und Closure-Evidenz. Import legt opaque Bytes und portable, nicht ausführbare
-Slotbeschreibung zunächst in einen Core-eigenen providerunabhängigen
-`RetainedQuarantineSlot`. Dieser ist kein Capability-Owner, besitzt keine
-Fachprojektion und darf weder Erasure ausführen noch einen Owner simulieren; er
-hält nur immutable validierte Quarantäne-Evidenz und Remap-Closure.
-
-Nach vollständigem Campaign-/Character-/Command-ID-Remap und erfolgreicher
-lokaler Installation des Target-Owners validiert dieser die Bytes gegen das
-neue Registry-Snapshot und mintet lokal einen neuen, eng an Target-Campaign,
-Target-Character, Target-Owner und Target-Slot gebundenen Token. Der Source-
-Token wird niemals ausgeführt oder umgebogen; Source-Slots, externe Pakete,
-gleichnamige/sibling Campaigns und fremde Slots bleiben unerreichbar. Bei
-absent, disabled oder ersetztem Provider bleiben Campaign und unabhängige
-Workflows nutzbar, während Capability-Aktivierung und Tombstone-Auflösung
-fail-closed bleiben. Installation, Reaktivierung oder Providerwechsel löst
-weder Aktivierung, Löschung, Restore noch Token-Minting ohne ausdrücklichen
-validierten Rebind aus. Beschädigte oder unverifizierbare Quarantäne führt nur
-zu atomarer Ablehnung beziehungsweise getrennt offengelegtem Salvage, niemals
-stillem Complete.
-
-Bleibt der Target-Owner dauerhaft absent, darf der GM die bereits manifestierte
-Closure ausdrücklich mit `FinalizeImportedTombstone/QuarantineDiscard`
-fortsetzen. Diese irreversible target-lokale Lifecycle-Aktion ist weder Owner-
-Rebind noch ErasureToken-Ausführung und entfernt ausschließlich den vollständig
-remappten, isolierten Core-Envelope als opaque Ganzes, ohne fremden Payload zu
-interpretieren. Vor Publish validiert sie TargetCampaignId, TargetCharacterId,
-remappte DeletionCommandId, CoreEnvelopeId, Tombstone/Manifest sowie Before-/
-Survivor-Hashes; falsche, überlappende oder unvollständige Envelope-Closure
-bricht fail-closed ab.
-
-Das idempotente Receipt bezeichnet exakt `local opaque envelope discard; no
-provider semantic closure claimed`. Crash, Restart, Retry und unbekannter
-Ausgang werden über dieselbe CommandId aufgelöst. Absent/Disable/Remove/Replace
-löst nie automatisch Discard aus. Ein späterer Owner-Rebind konvergiert auf das
-bestehende Receipt und darf weder Reaktivierung, Rekonstruktion noch zweite
-Closure erzeugen. Danach beschreibt Campaign Complete nur den aktuellen
-kanonischen Zustand plus nichtrekonstruktive Evidenz, niemals verworfenen
-Character-Payload oder eine vorgetäuschte provider-semantische Löschung.
-
-Restore behält Campaign-, Character-, LiveScene-, Masken- und
-Referenzidentitäten. Import erzeugt eine neue Campaign und remappt jede
-campaignlokale Identität und interne Referenz atomar bei erhaltener Topologie.
-Copy folgt der SMR-01-Closure-Regel. Trashing oder Löschen einer Campaign darf
-keine Ersatz-Campaign, Scene oder Party implizit aktivieren.
+Die vollständigen Transfer-/Trash-/Erase-/Backupregeln stehen ausschließlich
+im [Campaignvertrag](../../../ROADMAP-SALTMARCHER-SMR-01-CAMPAIGN-DATA-PLAN.md).
+TN-22 verlangt Cancel p95 ≤1 s und Cleanup ≤10 s; markierte resumable Artefakte
+bleiben außerhalb bestätigter Fachwahrheit. P02/P04 prüfen Faultfälle und
+Survivor-/Omissionclosure; ein reines Scene-Modell belegt keinen durablen Commit.
 
 ## Party-Command-History und kausales Undo/Redo
 
@@ -776,197 +636,28 @@ Persistenz, Recovery und GM-Anwendung des Party-/LiveSession-Kerns sind Kandidat
 
 ## Kernverträge und Umsetzung
 
-### Hostneutraler Kern
-
-Der reine, deterministische TypeScript-Kern ist zuständig für
-Party, LiveScene und LiveSession. Der Kern besitzt keine Hostimporte, keine
-Datei-, Datenbank-, Fenster-, Audio- oder Prozessrechte und keine direkte
-Obsidian-/Electron-Kopplung. Er verarbeitet validierte immutable Eingaben,
-liefert immutable Ergebnisse und erzeugt explizite, noch nicht persistierte
-Command-/Reconciliation-Entscheidungen.
-
-Der reine Kern belegt Fachinvarianten, aber noch keine
-durable Mehrbesitzertransaktion, keinen Campaign-Write, keine Migration, keine
-Hostoberfläche und keine Passive-Display-Ausgabe. Diese Grenzen benötigen die jeweiligen produktiven Adapter und direkten Belege.
-
-### Anschlussgrenzen
-
-Campaign-/Transaktion, Clock, Maskenprovider, Host und passive Anzeige bleiben bei ihren [fachlichen Eigentümern](#begriffe-und-eigentümer). Ohne erforderlichen Owner oder bei `unavailable` bleibt der Kern lesbar und liefert Pending/Fail-Closed; kein Dummy ersetzt einen Adapter. Der aktuelle Anschlussstand steht ausschließlich unter [Offene Produktanschlüsse](#offene-produktanschlüsse).
-
-### Modulgrenzen
-
-Der Kern liegt unter `src/features/live-session/`.
-Der bestehende Dungeon-Typ `src/session.ts::Session`, Atlas-/City-Scenes,
-MapRepository und aktuelle Obsidian-Views werden weder umbenannt noch als
-Fachzustand wiederverwendet.
-
-| Datei                     | Verantwortung                                                                                        | Darf nicht enthalten                                                  |
-| ------------------------- | ---------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
-| `ids.ts`                  | gebrandete Campaign-, Character-, Party-, LiveScene-, Mask-, Command- und Owner-IDs; zentrale Parser | Pfade, Hosthandles oder generierte Zufallswerte                       |
-| `contracts.ts`            | readonly DTOs, Revisionen, Lifecycle-Enums und parse-/assert-Funktionen                              | Repository-, UI- oder Fachowner-Implementierung                       |
-| `state.ts`                | immutable `PartyState`, `SceneState`, `LiveSessionState`, Tombstone-/Pending-Referenzen              | Consumerzustände fremder Fachbereiche                                 |
-| `commands.ts`             | diskriminierte, revisionierte Command-Requests und fachliche Ergebnis-/Konflikttypen                 | direkte Writes, globale Singletons oder UI-Callbacks                  |
-| `evidence.ts`             | einziger schmaler Bridge-Parser für kanonische Campaign-IDs und SHA-256-Belege                       | Aggregate-, Owner-, Persistenz- oder Hostlogik                        |
-| `party-aggregate.ts`      | Roster, Membership, Profile, XP/Rest, PartyRevision und History-Entscheidungen                       | SceneClock, Encounter-, Shop-, Weather- oder Music-Wahrheit           |
-| `scene-aggregate.ts`      | Primary, Focus, Scene-Zuordnung, Split/Rejoin, Empty-Scene-Cleanup und SceneRevision                 | Partyprofil, Karteninhalt, Clockwert oder Maskenpayload               |
-| `mask-reconciliation.ts`  | owner-neutrale Teilnehmer-/Retirement-Pflichten mit erwarteten Revisionen                            | Encounter-/Chase-Regeln, Completion oder Effects                      |
-| `projections.ts`          | tief eingefrorene Party-, Focus-, LiveScene- und LiveSession-Projektionen                            | Playerprojektion oder private Daten fremder Owner                     |
-| `multi-owner-model.ts`    | Stage/Validate/Publish/Verify/Finalize-, Cancel-, Receipt- und Pending-Modell                         | konkrete Transaktion, Dateisystem, SQL oder IPC                       |
-| `reference-owners.ts`     | Registry-/Manifest-/Erasure-Slot-, Tombstone- und Closure-Verträge                                   | frei interpretierbare Pfade, SQL-Schlüssel oder fremde Payloads       |
-| `portability.ts`          | Complete-/Salvage-/Evidentiary-Entscheidungen sowie gebundene RetainedQuarantine-Rebinds             | reale Bytes, Providersemantik oder stiller Downgrade                  |
-| `history.ts`              | bounded 100-step PartyCommandHistory, kausale Undo-/Redo-Pläne und irreversible Tombstonegrenzen     | SMR-07-Campaign-History oder rekonstruierbare gelöschte Personendaten |
-| `deletion.ts`             | permanente Character-Löschung, Aggregate-Cleanup und Closure-/Purge-Entscheidung                     | physische Erasure, durable Receipts oder Hostzugriff                  |
-| `index.ts`                | ausdrücklich freigegebene öffentliche Kernoberfläche                                                 | Hostadapter oder Convenience-Reexport fremder Interna                 |
-
-### Identität und Revision
-
-- Jede ID ist nach Parsing eine nichtleere opaque Zeichenfolge und wird nie aus
-  Namen, Arraypositionen oder Pfaden abgeleitet.
-- Jede Revision ist eine nichtnegative sichere Ganzzahl. Der Kern vergleicht
-  Gleichheit und Monotonie, erzeugt aber keine fremde OwnerRevision selbst.
-- Jeder schreibende Request trägt `commandId`, `campaignId`, erwartete eigene
-  Revisionen und die explizit beteiligten Owner-/Zielidentitäten.
-- Parser kopieren und frieren den vollständigen akzeptierten Objektgraphen tief
-  ein. Unbekannte Kernfelder, doppelte IDs, fremde Campaign-IDs, unsichere
-  Zahlen, unvollständige discriminated unions und mutable Aliasstrukturen
-  scheitern vor jeder Aggregateausführung.
-
-### Party
-
-`PartyState` hält CampaignId, PartyRevision, geordnetes Roster, aktive Membership, Profile/Quick-Fields, XP-/Rest-/Adventuring-Day-Fakten, Tombstones und History-Cursor nach dem [Partyvertrag](#party--roster--und-adventuring-day-projektion). Scene-Zuordnung wird nur revisioniert projiziert oder als Reconciliation-Pflicht ausgegeben; Party schreibt keine Scene.
-
-### Scene
-
-`SceneState` enthält CampaignId, SceneRevision, mindestens eine Primary Scene
-nach Initialisierung, den getrennten Focus sowie je LiveScene stabile ID,
-Primary-Rolle, geordnete CharacterIds, opaque SceneClockRef, LocationRef,
-ContentPins, MaskRefs und Lifecycle-/Pending-Status.
-
-Der Scene-Kern liest Party-/Clock-/Maskenprojektionen ausschließlich über
-revisionierte Eingaben. Er übernimmt weder Party-Mitgliedschaft noch Clockwert
-oder Maskenpayload als eigene Wahrheit.
-
-Eine Prepared Runtime Scene entsteht ausschließlich aus einem validierten,
-immutable `PreparationSnapshot`. Dieser bindet CampaignId, PreparationId,
-PreparationRevision, Quellenprovenienz, Titel, Notes, LocationRef, ContentPins
-und höchstens eine opaque verlinkte EncounterPlanRef. Der Request liefert
-explizit eine frische Runtime-LiveSceneId und alle weiteren neuen Runtime-IDs;
-der Kern erzeugt keine Identität und öffnet oder kopiert keinen Encounter-
-Payload. `leer` bedeutet ausschließlich: null Runtime-Teilnehmer und keine
-laufende Maske. Wiederholter Import desselben Snapshots erzeugt mit neuen IDs
-unabhängige Runtime-Kopien. Spätere Planneränderungen wirken nicht auf bereits
-erzeugte Kopien zurück. Teilnehmer wechseln erst durch einen getrennten,
-revisionierten Move; dessen Konflikt oder Cancel lässt die Prepared Runtime
-Scene weiterhin leer.
-
-### Projektionen
-
-Die [Party-](#party--roster--und-adventuring-day-projektion), [Focus-](#primary-scene-und-focus), [LiveScene-](#livescene-projektion) und [LiveSession-Projektionen](#live-session--und-präsentationsgrenze) liefern jeweils einen neuen tief gefrorenen Wert. Keine interne Map-/Set-/Array-/Objektreferenz entweicht. Der Kern exportiert weder `PlayerProjection`, `PassiveDisplay`, `SecondWindow` noch eine sinngleiche Bridge; die sichere Ausgabe gehört SMR-10.
-
-### Command- und Zustandsmodell
-
-Command-Menge des Kerns:
-
-1. `InitializeLiveSession`;
-2. Rosterfigur anlegen/ändern, aktivieren/deaktivieren;
-3. XP-Korrektur und Short-/Long-Rest;
-4. Focus wechseln oder explizit `none` setzen;
-5. Scene splitten beziehungsweise aus einem validierten
-   `PreparationSnapshot` eine unabhängige teilnehmerleere Runtime-Kopie mit
-   frischen explizit gelieferten IDs und Source-Provenienz erzeugen;
-6. Teilmenge von Characters revisioniert bewegen;
-7. Scenes mit ausdrücklicher Clockentscheidung rejoinen;
-8. Character logisch und permanent löschen;
-9. Undo/Redo als neue Commands;
-10. imported retained Tombstone-Envelope ausdrücklich opaque verwerfen.
-
-Jeder Handler ist rein: `state + validated request + validated owner inputs`
-ergibt entweder einen unveränderten Konflikt/Unavailable-Ausgang oder
-`nextState + decision + reconciliationPlan`. Kein Handler ruft Ports, erzeugt
-Zeit, IDs oder Zufall und kein Fehler hinterlässt einen Teilzustand.
-
-### Rejoin und Zeit
-
-Rejoin akzeptiert ausschließlich einen validierten, unveröffentlichten `ClockMergeParticipantContribution`: CampaignId, dieselbe CommandId und kanonischer CommandDigest, Source-/Target-Scene und ClockRef, erwartete Scene-/ClockRevisionen, ausdrückliche GM-Wahl und gewählter Zeitwert einschließlich früherer Zeit, Clock-OwnerIdentity und dessen owner-lokales PrepareReceipt. Prepare bestätigt nur Validierung, keinen Clock-Commit oder Durabilitybeweis.
-
-Scene und Clock werden durch denselben Publish sichtbar. Konflikt, stale Revision oder vor Publish gewonnener Cancel veröffentlichen nichts. Danach gilt Roll-forward mit ursprünglicher CommandId und exakt gewählter Zeit; nur der Clock-Owner erhöht die Target-ClockRevision. Der Kern interpretiert weder Kalender noch WorldEffects. Tatsächliche Atomarität und Crash-/Restart-/Durability folgen dem [Mehrbesitzervertrag](#mehrbesitzer-commit-und-recovery).
-
-### Masken, Coordinator und Löschung
-
-`MaskParticipationProjection` folgt dem [Maskenvertrag](#runtime-masken); der Kern berechnet nur remove/retain/suspend/retire-Pflichten. RegistryProjection, Manifest, ErasureSlotDefinition, opaque ErasureToken, Tombstone, ClosureReceipt und RetainedQuarantineSlot werden validiert, niemals als fremder Payload geöffnet oder ErasureToken ausgeführt.
-
-Der Coordinator modelliert den [Mehrbesitzer- und Löschvertrag](#mehrbesitzer-commit-und-recovery) mit `cancelled-before-publish`, `published-pending-finalize`, `finalized`, `conflict`, `unavailable` und `unknown-outcome`. Pure Participants und ein In-Memory-Testcoordinator belegen keine durable Transaktion. Byte-Erasure, Quarantäne, Import-Rebind und Audit/Purge benötigen SMR-01 und echte Capability-Owner.
+Der heutige reine Party-/Scene-Kern und seine Code-/DOMbelege bleiben
+Istbefund. Ein tatsächlich nutzbarer Lauf braucht Storeaktivierung, Commands,
+Reopen, Zeit/Travel-, Masken-/Ledger- und sichere Playeranschlüsse. Readmodels
+sind unveränderliche revisionierte Werte; Preparation aliasiert keine Runtime.
+Rejoin schreibt ausdrücklich gewählte Zeit und Scenezuordnung atomar.
+Neue Module müssen die Fachorakel oben erfüllen, nicht alte interne Class- oder
+Envelopeformen nachbilden.
 
 ### Migration und Bestandsschutz
 
-Der reine Kern migriert oder liest keine Obsidian-Vaults oder SaltMarcher-Datenbanken. Produktmigration erfolgt am tatsächlichen Storeadapter.
-
-Die Migration benötigt mindestens folgende technische Nachweise:
-
-1. eine Campaign ohne LiveSession bleibt gültig und erzeugt nichts beim Start;
-2. erst ausdrückliches `InitializeLiveSession` erzeugt Primary, ClockRef und
-   Focus atomar;
-3. Current-Format-Import remappt jede campaignlokale ID und opaque Referenz;
-4. Restore bewahrt Identitäten, Copy folgt dem SMR-01-Closure-Vertrag;
-5. vorhandene Dungeon-/Atlas-/Stadtdateien und `src/session.ts::Session`
-   bleiben unverändert;
-6. unbekannte oder beschädigte Daten führen zu atomarer Ablehnung oder
-   ausdrücklich bezeichnetem Salvage, nie zu stiller Initialisierung;
-7. ein importierter Source-ErasureToken bleibt nicht ausführbar und wird nur
-   nach validiertem lokalem Rebind ersetzt.
-
-Fixtures dürfen aus SaltMarcher nur nach gepinnter Revision, Quellenangabe,
-Lizenz-/Datenschutzprüfung und explizitem Mapping übernommen werden. Kein
-Whole-Branch-Merge und kein Legacy-Parser nur wegen historischer Existenz.
-
-### Acceptance-Harness
-
-Kernprüfungen für die 22 Fachfälle, getrennt von tatsächlicher Hostabnahme:
-
-| Suite                              | Verbindlicher Nachweis                                                                                                                             |
-| ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `live-session-contract.test.ts`    | Parser, deep freeze, IDs/Revisionen, fremde Campaign, unbekannte Felder, keine mutable Aliase                                                      |
-| `party-aggregate.test.ts`          | Name-only, Duplikatnamen, Membership, Profile leeren, XP/Rest, keine Scene-Nebenwirkung                                                            |
-| `scene-lifecycle.test.ts`          | Initialize, Primary/Focus, A/B/A, Split, Teil-Move, Rejoin, prepared Runtime Scene und deterministic Cleanup                                       |
-| `scene-clock-boundary.test.ts`     | frühere/spätere/manuelle Clockentscheidung, stale Revision, keine eigene Zeit-/WorldEffect-Wirkung                                                 |
-| `mask-reconciliation.test.ts`      | mehrere Masken, geteilte Teilnehmer, remove/retain/retire, unavailable/stale, keine Completion/Effects                                             |
-| `live-session-projection.test.ts`  | active/none/pending/unavailable, stale/fremd/beschädigt fail-closed, immutable Consumergrenze                                                      |
-| `party-history.test.ts`            | 100 Schritte, neuer Command für Undo/Redo, Redozweig, Konflikte, irreversible/anonymisierte Löschung                                               |
-| `reference-owner-contract.test.ts` | Registryvollständigkeit, Slot-/Target-/Survivor-Bindung, opaque Token, Tombstone und unknown Owner fail-closed                                     |
-| `multi-owner-model.test.ts`        | reine Stage-/Validate-/Publish-/Verify-/Finalize-Modellmatrix, Retry, unknown outcome und Cancel-Race                                              |
-| `live-session-scale.test.ts`       | 20 Rosterfiguren, vier Scenes, acht ownerqualifizierte Masken, 50 Teilnahmeinzidenzen ohne Truncation/Vermischung; Zeit/DTO-Größe nur diagnostisch |
-| `live-session-boundary.test.mjs`   | kein Import von Obsidian, Electron, Node, `fs`, Vault, MapRepository oder Host-UI; kein Passive-Display-Export                                     |
+Code hat keinen Bestandsschutz. Migration erhält Originalinhalte/IDs/Links
+und zeigt geprüften Importvergleich. Campaign ohne LiveSession bleibt gültig;
+Initialize legt Primary/Clock/Focus ausdrücklich gemeinsam an. Copy remappt,
+Restore erhält Identitäten; unknown/beschädigte Daten werden nicht still als
+leerer Stand initialisiert. Kein Whole-Branch-Merge und keine allgemeine
+Legacyarchitektur nur wegen historischer Existenz.
 
 ### Modell- und Realnachweis
 
-Die [22 Fachfälle](#fachliche-abnahmekriterien) bleiben vollständig bindend. Kern-/Modelltests ersetzen keinen dort geforderten Store-, Crash-/Restart-, TN-21/TN-22-, Medien-, Provider-, UI-/A11y- oder Null-Leak-Nachweis. `multi-owner-model.test.ts` parametrisiert alle Commands und Phasen aus Fall 19 einschließlich Cancel-Race, stale Antworten, originaler CommandId/Receipt und Survivor-Invarianten.
-
-Zusätzlich erzeugt ein deterministischer Invariant-Fuzzer mit explizitem Seed
-gültige Commandfolgen und prüft nach jedem Schritt:
-
-- nach `InitializeLiveSession` liegt jede aktive CharacterId genau in einer
-  scenegebundenen Zuordnung (`assigned XOR pending`); vor der ersten Live
-  Session liegt sie in keiner;
-- keine inaktive/gelöschte CharacterId liegt in einer aktiven Scene/Mask-
-  Projektion;
-- genau eine Primary Scene nach Initialisierung;
-- Focus ist `none` oder referenziert genau eine aktive Scene derselben Campaign;
-- keine retired Scene ist Focus-/Primary-/LiveSession-Quelle;
-- Revisionen sinken nie und stale Requests ändern nichts;
-- Retry desselben Commands dupliziert weder State noch Reconciliation;
-- ein fehlgeschlagener Command lässt den gesamten Eingabegraphen semantisch
-  identisch.
-
-Der Seed und die minimale reproduzierende Folge werden bei einem Fehler
-ausgegeben. Zufällige Testzahlen ersetzen keinen der benannten Golden-/Fault-
-Fälle.
-
-### Verbleibende Umsetzung
-
-Die Reihenfolge folgt technischen Abhängigkeiten: validierte immutable DTOs und Projektionen → reine Party-/Scene-Aggregate → History/Lösch-/Portability-/Coordinator-Verträge → persistenter Adapter → GM-Anwendung.
-
-Der persistente Campaign-/Recovery-Adapter benötigt den bestätigten SMR-01-Port und eine passende Plattformgrenze: durable Transaction, Receipts, Restart/Reconciliation, Backup, Import/Export, Quarantäne und Migration; echte Host-/Crash-/Denied-write-/Low-space-Proben bleiben erforderlich.
-
-Die GM-Anwendung verbindet Roster-, Party-, Scene-, Focus- und Pending-UX,
-Tastatur/200 Prozent/Lokalisierung sowie Music/Weather/Shops/Karten-
-Consumeradapter. Kein Passive Display; dessen sichere Projektion bleibt SMR-10.
+Vergangene Testdateien und Receipts stehen unverändert in `acceptance.json`
+und `116c16af48b6a073216685c8d8e2cc74fada82c3:docs/plans/runtime/smr03-live-scene-contract.md`.
+Sie belegen ihren jeweiligen Kern-/Hostumfang. [P02/P03/P04/C01](../../../ROADMAP-SALTMARCHER-ADR-PROTOTYPES.md)
+prüfen den neuen gemeinsamen Anschluss; Modell-PASS ist kein Store-/OS-/
+Runtime-/Player-PASS. Tatsächliche Tastatur/200 %, physischer Input und
+independent review bleiben direkte Produktbelege.

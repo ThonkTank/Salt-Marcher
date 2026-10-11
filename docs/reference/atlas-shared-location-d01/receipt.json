@@ -49,8 +49,8 @@
   ],
   "artifacts": {
     "README.md": {
-      "bytes": 6831,
-      "sha256": "d4fa5dff62d1a051aa8fc4cd5099f3d93d7b8ab6e892bc02af53c8fd383925a7"
+      "bytes": 4411,
+      "sha256": "68ed47fc7a6c3121a728ebd16daf4894191bfb1142e6796ee760bf01b746b0b3"
     },
     "h01-result.json": {
       "bytes": 5480,

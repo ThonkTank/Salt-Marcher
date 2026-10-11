@@ -35,7 +35,7 @@ sha256sum main.js
 
 Die Tabelle hält die hier tatsächlich beobachteten Ergebnisse fest; sie verspricht kein unverifiziertes Ergebnis auf einem anderen Host.
 
-## Enger nächster Vergleich
+## Quellvergleich
 
 Der Vergleichshash `a7f2db0b104804be4a14a10888ef34248a0310f2daedee6aa64009cd5143bae7` wurde auf diesem Host nicht reproduziert. Für eine Erklärung fehlen dessen tatsächliches `.build/catalog-build-inventory.json`, Quelleingangs-/Payloaddigests oder gebautes Artefakt. Dieser Nachweis klärt die Abweichung und vollständiges E2E nicht.
 

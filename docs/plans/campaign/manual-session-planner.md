@@ -22,7 +22,7 @@ Ziel: Einen Plan mit Szenen, exakten Notizen und optionalen Ortsverweisen bearbe
 
 Die Oberfläche ist Memory-only: kein aktivierter Pluginview, kein bestätigtes natives Speicherformat und kein dauerhafter Plan. Die in-memory Workspace-Klasse ist keine Campaignpersistenz.
 
-Der Campaignanschluss muss Plan-/Scene-Records, optionale Location-Referenzclosure, Namespace-/Revisionbindung und Ownerpayload→native Dateiplan/atomaren Publish festlegen. `assertCurrent` bindet den eingefrorenen tatsächlichen Campaigncontext. Den bestehenden #41-Publisher und validierten Payloadcodec verwenden; dauerhafte Receipts, Recovery und Fehler nach Publish benötigen dessen Vertrag. Der `PreparationSnapshot` aus #60 bleibt der einzige spätere Runtime-Transfer; manuelle Planung benötigt ihn nicht.
+Der Zielanschluss speichert Plan-/Besuchsrecords und optionale Ortsreferenzen im gemeinsamen SQLite-Store. Aktueller Context, Planrevision und vollständige Änderung werden in einem Command an der Commitgrenze geprüft. Die bestehenden Memory-Klassen/#41-Dateipläne sind Übernahmekandidaten, keine vorgegebene API; geeignete reine Codecs/Controls nach Prüfung verwenden. Dauerhafte Receipts, Undo und Recovery folgen [ARCHITECTURE](../../../ARCHITECTURE.md#bearbeitung-und-history). Der `PreparationSnapshot` aus #60 bleibt der einzige spätere Runtime-Transfer; manuelle Planung benötigt ihn nicht.
 
 Abschluss: Save → normal schließen → frischer Prozess erhält IDs, Prosa und Reihenfolge. Schreibfehler, Contextwiderruf, Konflikte und Recovery erhalten offene Arbeit. Ortlose Planung funktioniert ohne Locationport; positive Ortsprojektion braucht eine bestätigte Quelle. Generator, Partybudget, Encounter/Rewards und vollständige Originalparität bleiben offen.
 

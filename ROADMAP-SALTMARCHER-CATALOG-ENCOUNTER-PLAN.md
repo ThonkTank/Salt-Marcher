@@ -8,6 +8,17 @@ die Implementierungs- und Verhaltensquelle; die vergleichbaren aktuellen
 D&D-Beyond-Abläufe bilden die Mindestabnahme. Der bestehende Dungeon-, Hex- und
 Stadtstand bleibt erhalten.
 
+## Technischer Anschluss vom 11.10.2026
+
+[ARCHITECTURE](ARCHITECTURE.md) ersetzt alte Host-/Persistenzvorschriften:
+Installationcatalog, World/Plan/Runtime und Ledger im gewählten SQLite-Store;
+readonly Provider liefern revisionierte DTOs, UI besitzt keine SQLrechte.
+Quellen/2014-Regeln/Attribution, Full-S01 und fachliche Goldens bleiben bindend.
+Die unten beschriebenen gzip-/main.js-/Vault-/Obsidianimplementationen sind
+datierte Ist-/Übergangsbelege, kein Bestandsschutz oder Zielpackaginglimit.
+Readonly Provider enthalten keine Persistenz; das verbietet nicht den gemeinsamen
+produktiven SQLite-Anschluss. Zustands-/Adaptercode darf ersetzt werden.
+
 ## Ziel und Grenzen
 
 - Eine gemeinsame GM-Arbeitsfläche zeigt Monsterkatalog, Encounter-Aufbau und
@@ -96,8 +107,8 @@ Offizielle Produktreferenzen für die Mindestabnahme:
   tastaturbedienbare Auswahl und read-only Inspector.
 - Items erhalten einen echten Referenzkatalog; SaltMarchers Loot-Index ist kein
   Ersatz für Itemdetails, Quelle, Einstimmung, Gewicht und Beschreibung.
-- NPCs, Fraktionen, Orte und Encounter-Tabellen verwenden vault-native,
-  revisionierte Dokumente. Zeilenauswahl bleibt nebenwirkungsfrei; nur
+- NPCs, Fraktionen, Orte und Encounter-Tabellen verwenden revisionierte
+  Records des gemeinsamen Stores. Zeilenauswahl bleibt nebenwirkungsfrei; nur
   ausdrückliche Aktionen übergeben Daten an Encounter, Szene oder Atlas.
 
 ### CE-03 – Encounter Builder und Planpersistenz
@@ -222,40 +233,25 @@ CE-01 besitzt komprimiertes Buildasset/Lazy Loader, Katalogview und Command-Foku
 
 ### Verbindliche Entscheidungen
 
-1. Der Katalog wird ein eigener `ItemView` mit dem View-Type
-   `dungeon-creature-catalog`. Ein Befehl `Monsterkatalog öffnen` öffnet oder
-   fokussiert genau eine Ansicht. Ein Modal ist ungeeignet, weil Query,
-   Auswahl, Paging, Scrollposition und später die parallele Encounter-Spalte
-   über Fokuswechsel erhalten bleiben müssen.
-2. Das SRD-Artefakt wird beim Build gegen `SRD_5_1_ARTIFACT_SHA256` geprüft,
-   gzip-komprimiert und durch ein virtuelles Modul als Base64-String in
-   `main.js` eingebettet. Es entsteht kein viertes zwingendes Pluginasset.
-   Die Identität liegt in einem kleinen, von Produkt und Build lesbaren
-   Manifestmodul beziehungsweise JSON; ein zweites manuell gepflegtes
-   SHA-Literal im Build ist unzulässig.
-3. `creature-catalog.ts` enthält nur Typen, Parser, Query und Katalogklasse. Es
-   importiert kein JSON. Ein kleiner Loader dekodiert und dekomprimiert das
-   virtuelle Modul erst beim ersten Öffnen, parst es und cached genau eine
-   unveränderliche Kataloginstanz. Fehler leeren den Cache für einen bewussten
-   Wiederholversuch.
-   Der Runtimepfad ist verbindlich `atob` → `Uint8Array` →
-   `DecompressionStream("gzip")` → `TextDecoder` → `JSON.parse`. Vor dem
-   Dekodieren prüft der Loader `atob`, `DecompressionStream`, `TextDecoder`
-   und `Response`; fehlt eine Fähigkeit, zeigt die Ansicht einen expliziten
-   nicht-verfügbar-/Fehlerzustand. Es gibt keinen stillen eager Fallback und
-   keinen Node-`zlib`-Import im Browserbundle.
-4. Der Produktstart materialisiert nur den komprimierten String. Der 334
-   Statblocks umfassende Objektgraph entsteht erst bei tatsächlicher
-   Katalognutzung. Das vermeidet zusätzliche Installationsdateien und den
-   bisherigen eager JSON-Objektliteral-Import.
-5. Der vollständige Notice ist in der Ansicht über `Quelle & Lizenz` direkt
-   erreichbar. Er nennt WotC/SRD 5.1, CC-BY-4.0 mit Link, 5e-bits, SaltMarcher,
-   Normalisierung/Anreicherung und Kopie. Der sichtbare, in `main.js`
-   eingebettete Notice ist die distributionsfeste Produktquelle;
-   `NOTICE.md` bleibt derzeit nur zusätzlicher Repositoryhinweis. Erst ein
-   künftig belegter erweiterter Paketweg darf ihn als Releaseasset behandeln.
-6. CE-01 besitzt nur D&D-2014-Daten. Es gibt keine Regelversionsauswahl und
-   keinen 2024-/Legacy-Filter.
+1. Katalog ist eine persistente GM-Arbeitsfläche: Query, Auswahl, Paging und
+   Scrollposition bleiben bei Fokuswechsel erhalten. Ein Modal allein genügt
+   diesem Nutzerweg nicht. Der alte Obsidian-ItemView/View-Type ist keine Ziel-API.
+2. Quelle/Manifest/Inhaltshash/Lizenz und stabile Definition-IDs bleiben
+   verbindlich. Geprüfte gebündelte Daten werden im Installationcatalog des
+   gewählten Stores indexiert; readonly Provider liefern paginierte immutable
+   DTOs. Keine komplette Statblockmaterialisierung bei Produktstart.
+3. Renderer/Controls lesen weder Dateien noch SQLite. Parser/Queryalgorithmen
+   dürfen nach Prüfung übernommen werden. Fehler sind identifiziert und
+   wiederholbar; kein stiller Source- oder Regelversionswechsel.
+4. Notice/Attribution ist im Produkt und Export direkt erreichbar und benennt
+   alle gebundenen Quellen/Lizenzen, Normalisierung und Kopie. Das neue
+   eigenständige Paket liefert diese Inhalte distributionssicher mit.
+5. D&D 2014 bleibt einziges Coreprofil; keine 2024-/Multisystemarchitektur.
+
+Die frühere main.js-/Base64-/DecompressionStream-/Drei-Plugin-Dateien-
+Entscheidung wird ersetzt. Ihre folgenden Lauf-/Buildbelege sind historische
+Obsidianbefunde, kein Zielpackaginglimit. Neue Bundleartefakte erhalten
+Manifest-/Hash-/Offline-/Installationsprüfung an der neuen Zielshell.
 
 ### Oberfläche und Zustandsbesitz
 
@@ -299,7 +295,9 @@ Nameklick, Doppelklick oder Enter auf einer ausgewählten Zeile öffnet Details.
 - Fokus wird bei einer Aktualisierung nicht versetzt. Eine weiterhin vorhandene
   Auswahl bleibt nach Query-/Sortieränderung über ihre stabile ID erhalten.
 
-### Umsetzungspakete
+### Historische Obsidian-Umsetzungspakete
+
+Die folgenden CE-01-I01–I03-Schritte beschreiben den damaligen Adapter. Für den Zielkern gilt die neue Entscheidung oben; keine Pflicht zu gzip-in-main.js, festen Payloadbytes oder Obsidian-Views. Historische Hostbelege behalten ihren Scope.
 
 #### CE-01-I01 – Komprimiertes Buildasset und Lazy Loader
 
@@ -642,15 +640,15 @@ die ausgewählte ID über einen getrennten begrenzten Detailread hydratisiert.
 Statblocks, Initiative, HP, Runde, Zug und Combat-State werden weder kopiert
 noch hier gespeichert.
 
-Der Zieladapter verwendet revisionierte, vault-native Encounter-Dokumente und
-einen Encounter-eigenen Index. Dokumentformat, Revision, atomarer Write,
-Rebuild des Index und Konfliktverhalten benötigen vor der ersten Persistenz ein
-eigenes reviewtes Schema-/Owner-Paket; CE-02 implementiert nur read-only Ports.
+Encounter besitzt revisionierte Store-Records und einen abgeleiteten Suchindex.
+Sein Codec und Referenzvertrag müssen vor der ersten Persistenz konkret geprüft
+sein; atomare Writes und Konfliktbehandlung folgen dem gemeinsamen Storevertrag.
+CE-02 konsumiert ausschließlich read-only Projektionen.
 
 #### NPCs, Fraktionen und Orte
 
-World Planner besitzt die revisionierten vault-nativen Dokumente und ihre
-Indizes:
+World Planner verantwortet die revisionierten Store-Records und ihre
+abgeleiteten Suchindizes:
 
 - NPC: stabile Identität, Name, Creature-ID-Referenz, Lebenszyklus, Notizen und
   optionale Fraktions-/Ortsreferenzen; keine kopierten Statblockfelder;
@@ -665,15 +663,14 @@ mutiert keine Beziehung und keine globale Scene.
 
 #### Encounter-Tabellen
 
-Encounter Tables besitzt stabile Tabellen-IDs, revisionierte vault-native
-Dokumente und einen eigenen read-only Provider. Auswahl kopiert weder
+Encounter Tables verantwortet stabile Tabellen-IDs, revisionierte Store-Records
+und einen eigenen read-only Provider. Auswahl kopiert weder
 Tabellenmitgliedschaften noch Creature-Wahrheit. Spätere Pool-/Encounter-
 Aktionen referenzieren IDs über eigene Commands.
 
-Auch für World Planner und Encounter Tables müssen Format, Revision,
-atomarer Write, Indexrebuild und Konfliktverhalten in eigenen Owner-Paketen
-reviewt werden, bevor ihre Persistenz als geliefert gilt. Die Viewer-Shell
-erfindet diese Verträge nicht.
+World Planner und Encounter Tables benötigen konkrete Codecs und gültige
+Referenzprojektionen vor ihrer ersten gespeicherten Wirkung. Der gemeinsame
+Store besitzt Writes, Revisionen und Recovery; die Viewer-Shell liest nur.
 
 ### Umsetzungspakete
 
@@ -683,7 +680,7 @@ erfindet diese Verträge nicht.
 - versionierter Workspace-State mit verlustfreier CE-01-Einordnung;
 - gemeinsamer Rail-/Shell-/Status-/Paging-/Inspector-Rahmen;
 - read-only Providerverträge und Stale-/Abort-Schutz;
-- echter Monsterprovider über die vorhandene API;
+- echter Monsterprovider über die gemeinsame read-only Querygrenze;
 - für die sechs noch nicht gelieferten Provider ausschließlich ehrliche
   `unavailable`-Capabilities mit erklärendem Status.
 
@@ -719,23 +716,9 @@ Der gemeinsame echte Hostlauf muss alle sieben realen Provider prüfen. Die Prov
 
 ### Technische Modulgrenzen
 
-CE-02-I01 umfasst folgende Modul-, UI- und Prüfgrenzen:
+CE-02-I01 liefert Bereichsdefinitionen, Workspace-State, Providerprojektionen und die gemeinsame read-only Oberfläche. Codecs, Queryadapter und deren DOM-/Fokusgrenzen folgen der [Gesamtgrundlage](ARCHITECTURE.md). I02 bis I05 ergänzen die tatsächlichen Datenprovider; Encounter-/Combat-/Scene-/Atlasmutationen gehören zu ihren Fachabläufen.
 
-- neue enge Section-/Workspace-State-/Providerdateien unter
-  `src/features/catalog/`;
-- gezielte Anpassungen an
-  `src/features/catalog/creature-catalog-view-content.ts`,
-  `src/features/catalog/creature-catalog-view.ts`, die eng begrenzten
-  Katalog-Selektoren in `styles.css` für sichtbare Tabwahl/Fokus und nur bei tatsächlichem
-  Hostbedarf `src/ui/view-types.ts`/`src/main.ts`;
-- passende Core-, DOM- und Adaptertests;
-- `tools/host/ce02-catalog.cjs` erst für den späteren Hostlauf;
-- technische Belege und zugehörige Acceptance-Zuordnungen.
-
-I01 enthält keine Itemdaten, Encounter-/World-Planner-Persistenz, SQLite,
-Combat-, Scene- oder Atlasmutation. I02 bis I05 benötigen die jeweiligen
-Provider-, Schema- und Persistenzverträge. Hex-, Stadt-, Dungeon- und
-ADR-Implementierungen bleiben außerhalb der Providershell.
+Die heutigen Anschlüsse unter `src/features/catalog/`, `src/ui/view-types.ts`, `src/main.ts` und `tools/host/ce02-catalog.cjs` sind Istcode. Seine Verhaltenstests und Quellenartefakte können nach Prüfung verwendet werden; interne APIs und Hostkopplung müssen nicht erhalten bleiben.
 
 ### Automatisierte Gates
 

@@ -47,40 +47,6 @@ stammt aus dieser Modellgegenprobe; H01 selbst wurde nicht nachträglich instrum
 Sie erklärt dessen erhaltene Dateien und sichtbaren Mountentzug. Die später gemeldete
 widerrufene Kampagnenbindung ist eine Folge dieses Entzugs, nicht der erste Savefehler.
 
-## Konkreter Reparatureingang, nächster separater Lauf
-
-Hex behält #40 und den Atlas-Navigations-/Adapterteil auf PR62. Eine bloße
-Ausnahme in `checkFiles()` reicht nicht. Der benötigte Campaign-Save-Vertrag liegt
-bei Campaign/Data; dieses Paket übernimmt oder startet dessen fremden Scope nicht.
-Der bestehende Owner erhält diesen konkreten Eingang über #40/#12.
-
-1. Die Navigation muss bestätigte Beforedateien weiterhin vollständig prüfen und
-   einen geschlossenen lokalen neuen Ortsentwurf gesondert validieren: kanonischer
-   Pfad, tatsächlich fehlende Datei, eindeutige Location-/Placement-/Section-IDs,
-   zugehörige Worldposition und unveränderter Context. Unbekannte fremde Dateien
-   dürfen dadurch keine Saveberechtigung erhalten. Ein Abbruch vor der Transaktion
-   darf einen weiterhin belegbar gültigen Mount/Entwurf nicht wegen derselben
-   unpassenden Inventarprüfung entziehen.
-2. Der native Atlasadapter muss vollständige Before-/After-Ownerbelege für die neue
-   Location, ihre Sections und ihr Worldplacement liefern. Der Campaign-Participant
-   benötigt einen engen, ausdrücklich vom vorhandenen Atlasowner autorisierten
-   Bestandserweiterungseingang. World-/Locationdatei, Atlas-Recordinventar und
-   Registry müssen gemeinsam gebunden werden; City-/Dungeonowner, Campaignidentität,
-   fremde Nutzbytes und Policies bleiben erhalten. Keine zweite Registryautorität.
-3. Derselbe zulässige Delta muss Prepare, Acknowledgment, Rollback und Recovery
-   passieren. Ein Journal muss die vollständige neue Datei mit `before: null`, die
-   exakten World-/Manifestbytes und den ursprünglichen Draft belegen. Vorherige
-   und neue Dateimengen dürfen nicht als unveränderlich gleiche Liste geprüft werden.
-4. Regressionen müssen erfolgreiches Create/Key/Move/UndoRedo/Save, fremde Pfad-/ID-
-   Kollision, Abbruch vor Commit, unterbrochenes Journal, Rollback/Retry und Fresh-
-   Open prüfen. Eine tatsächliche Hostprüfung benötigt die echte
-   Save-/frischer-Prozess-Probe und die unabhängige #40-Abnahme.
-
-Der nächste eigene Lauf ist gezielte Reparatur bzw. Konsum des konkreten qualifizierten
-Campaign-Vertragseingangs. Detaillinks/CITY und E2E-02–04 bleiben danach.
-Tests, tatsächliche Hostbedienung, Originalparität, Großkarten und Installation
-bleiben getrennte Nachweise; D01 schließt keines dieser Produktgates.
-
 ## Wiederholen
 
 Vom Repository aus mit Node 22 und dessen installierten Entwicklungsabhängigkeiten:
@@ -92,4 +58,4 @@ node docs/reference/atlas-shared-location-d01/run.mjs /absoluter/quellstand /qa/
 [Runner](run.mjs) bündelt nur den angegebenen Quellstand. Ausgabe und Testbundle
 liegen am angegebenen QA-Ort. Fixtures, H01-Belege und Nutzervault bleiben read-only.
 [Erhaltungsprüfung](preservation.json) bestätigt die historischen H01-Artefakte,
-den geschützten Originalcheckout und die fremden Checkpoint-/Acceptancebereiche.
+den geschützten Originalcheckout.

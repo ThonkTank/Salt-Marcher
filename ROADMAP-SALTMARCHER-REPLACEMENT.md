@@ -11,6 +11,16 @@ SaltMarcher bleibt Produktwahrheits-, Daten- und Verhaltensquelle; seine
 Electron-, Java-, JavaFX-, JDBC- und frühere Obsidian-Architektur sind keine
 Zielarchitektur und kein Merge-Vertrag.
 
+## Technische Richtung vom 11.10.2026
+
+[ARCHITECTURE](ARCHITECTURE.md) trägt den gesamten beauftragten Umfang;
+[Plattform-ADR](ROADMAP-SALTMARCHER-PLATFORM-ADR.md) entscheidet kleinen
+TypeScript-Neukern/Electron/SQLite statt Bestandsschutz. Fachliche Anforderungen
+und datierte Belege dieser Roadmap bleiben erhalten. Frühere technische
+Ports/Dateijournale/Hostvorgaben sind kein Zwang für die Implementation.
+Die bestehende Lieferfolge und [Atlas-Workpakete](ROADMAP-HEX-ATLAS.md#umsetzungsplan)
+führen den Übergang, keine zusätzliche unabhängige Produktlinie.
+
 ## Quellenhierarchie
 
 1. `docs/project/vision.md`,

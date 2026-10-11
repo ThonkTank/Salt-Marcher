@@ -4,7 +4,7 @@ Diese Erweiterung gehört zur [Hex-Atlas-Roadmap](ROADMAP-HEX-ATLAS.md). **Ein A
 
 Der gemeinsame Atlas ist grenzenlos und wächst mit seinen Inhalten. Stadtanlage, Straßen und Gebäude mit Innenräumen erweitern bei Bedarf seine belegte Ausdehnung, ohne Kartenrand-, Resize- oder Betretenaktion. Siedlungsflächen besitzen reale Maße; Meilen und Hex-Kacheln beschreiben den gewählten Bereich, Pixel nur die Darstellung beziehungsweise Bildausgabe. Orts-, Stadt- und Dungeondokumente teilen denselben räumlichen Atlas und dieselbe Bearbeitung.
 
-Die folgenden Phasen beschreiben den vollständigen Zielumfang. Vorhandene Stadtgeometrie ist bereits teilweise im gemeinsamen Atlas bearbeitbar; die assistierte Bebauung liegt als Kandidat vor. Den datierten integrierten Stand, Kandidaten und offenen Rest führt zentral [Atlas auf einen Blick](ROADMAP-HEX-ATLAS.md#atlas-auf-einen-blick). Der Abnahmekatalog liegt unter `acceptance.json.cityPlans`; die Daten- und Raumentscheidungen stehen in der [Architektur](ARCHITECTURE.md#stadtpläne-und-durchgehende-atlas-bearbeitung).
+Die folgenden Phasen beschreiben den vollständigen Zielumfang. Vorhandene Stadtgeometrie ist bereits teilweise im gemeinsamen Atlas bearbeitbar; die assistierte Bebauung liegt als Kandidat vor. Den datierten integrierten Stand, Kandidaten und offenen Rest führt zentral [Atlas auf einen Blick](ROADMAP-HEX-ATLAS.md#atlas-auf-einen-blick). Der Abnahmekatalog liegt unter `acceptance.json.cityPlans`; die Daten- und Raumentscheidungen stehen in der [Architektur](ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md#ein-raumvertrag-passende-geometrieformen).
 
 ## Ergebnisvorbilder und Vergleich
 
@@ -100,7 +100,7 @@ CITY-05 ergänzt die zusammenhängenden Stadtstraßen auf der bereits geprüften
 | Eigene Eingriffe | Generatorbereiche können lokal erneuert werden; manuelle Änderungen, Gebäude mit Innenräumen und Keys bleiben erhalten. |
 | Durchgehende Bearbeitung | Dasselbe Werkzeug-/Kameralayout, stabile Auswahl, gemeinsames Undo/Redo und sofortige Aktionen an sichtbarer Geometrie. |
 | Räumliche Übereinstimmung | Außenansicht, Außenwände, Eingänge und angrenzende Räume verwenden denselben Gebäudezustand. Wandänderung wirkt im gewählten Umfang; Gesamtskalierung verändert alle Grundrisse horizontal und erhält Höhen. Verschieben/Drehen erhält Maße. Keller dürfen bewusst über den oberirdischen Umriss hinausreichen. |
-| Haltbare Daten | Speichern, Neuöffnung, externe Änderungen und unterbrochenes Mehrdatei-Speichern erhalten Geometrie, Texte und Kennungen. |
+| Haltbare Daten | Speichern, Neuöffnung, externe Änderungen und unterbrochene gekoppelte Speicherung erhalten Geometrie, Texte und Kennungen. |
 | Ausgabe | Übersicht, Detail und PNG/JPEG verwenden denselben Datenstand; Ausschnitt und Auflösung sind von der Editorkamera unabhängig. Lebensdaten-Ausgabe und weitere Formate werden anhand der offenen FTG-Exportinventur in CITY-08 geprüft. |
 
 Die Ergebnisbilder werden bei vergleichbarer Größe und Detailtiefe beurteilt. Straßennetz, Dichte, Formen, Lesbarkeit und Gestaltung zählen; Pixelgleichheit ist kein Ziel. Bedienqualität ist eine eigene Abnahme: Erzeugen, Straße umlenken, POI beschreiben, Hausgrundriss bearbeiten. Beobachtete Aktionszahl, Zeit, Fehlversuche und nötige Hilfestellung dokumentieren. Bewohner ändern, Beziehung wiederfinden, Fraktionszugehörigkeit wechseln und Tagesablauf kontrollieren gehören ebenfalls zu den gepaarten Original-/Endbuildaufgaben. Eine bessere Bedienung wird erst nach diesen Aufgaben behauptet.

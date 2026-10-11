@@ -90,7 +90,7 @@ Keine neue unabhängige GUI-Ausführung; freie Cloud-GM-Nutzung bleibt offen.
 
 Dieselben isolierten Aufrufe wie oben mit zusätzlichem
 `--hex04-inspector-n02`; `--restart` verwendet denselben eigenen Testvault.
-Der neue Consumer prüft direkt Escape aus Orts-/Raumfeldern, invaliden Ortsdraft,
+Die Probe prüft direkt Escape aus Orts-/Raumfeldern, invaliden Ortsdraft,
 „Zur Karte“, gecachte Rückkehr, gemeinsames Undo/Redo, Save und frischen Reopen.
 Er ruft keine Produkthandler zur Ersetzung einer UI-Aktion auf; Modellreads und
 Dateihashes sind Diagnose-/Nachorakel. Keine neue Copy/Discard/Recoverymatrix,

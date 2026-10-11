@@ -1,693 +1,348 @@
-# Neuer Dungeon-Editor
-
-Bisheriger Kartenauftrag und aktueller Übergangsadapter: große Karten im echten
-Obsidian flüssig bearbeiten, alle bestehenden und zugesagten Arbeitsabläufe
-erhalten. Diese Hostbindung gilt für die bestehenden Kartenbelege, nicht als
-Vorentscheidung über das Endprodukt. Neue native Karten; kein SVG-Import und
-keine Legacy-Unterstützung im Produkt. Originaldateien bleiben geschützt;
-ausdrücklich beauftragte Einbindungsänderungen bleiben eng begrenzt.
-Pixelgleichheit ist kein Ziel; Lesbarkeit und Spielbedeutung sind verbindlich.
-
-## Plattformoffene SaltMarcher-Ablösung
-
-Direkter Nutzerauftrag vom 9. Oktober 2026: Dieses Repository ist der einzige
-fortzuführende Produktpfad. Es übernimmt sowohl die bereits in SaltMarcher
-umgesetzten als auch die dort bestätigten und geplanten Funktionen,
-einschließlich Reise, Kalender/Weltzeit, Musikbibliothek/-player, Wetter,
-Shops, Autonomie und der querliegenden Daten-/Erweiterungs-/Qualitätsverträge.
-Das Endprodukt muss kein Obsidian-Plugin sein. Verbindlich sind UX und
-Funktion; Host, Distribution und technische Ausprägung werden in
-`SMR-00-ADR-01` gemeinsam entschieden.
-Die versionierte Gesamtfolge steht in
-[`ROADMAP-SALTMARCHER-REPLACEMENT.md`](ROADMAP-SALTMARCHER-REPLACEMENT.md).
-
-SaltMarchers Produktanforderungen, bestätigte Acceptance-Fälle, statische
-Daten und Golden Master bleiben fachliche Wahrheit. Aktueller Electron-Code,
-die letzte JavaFX-Dungeon-Linie und historische Obsidian-Plugins sind nur
-Verhaltens-, Fixture- oder UX-Referenzen. Keine dieser Hostarchitekturen wird
-vor dem ADR als Zielgrenze übernommen. Bestehender Vaultzugriff und
-Hostintegration gehören an explizite Adapter; Domänenzustände, Kommandos und
-Projektionen bleiben davon getrennt und werden an ihren aktuellen
-Produktverträgen geprüft. Dadurch bleiben die bereits gebauten Pluginteile
-nutzbar, ohne die Plattformentscheidung vorwegzunehmen.
-
-## Geplante Katalog- und Encounter-Erweiterung
-
-Die [SaltMarcher-Migrationsroadmap](ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md)
-ordnet den am 9. Oktober 2026 beauftragten Ausbau. Die folgenden Entscheidungen
-sind Zielarchitektur und noch keine Funktions- oder Fachfreigabe:
-
-- Der Monsterkatalog ist vaultweite, versionierte Referenzwahrheit mit
-  Quellenkennzeichnung. SRD-5.1-Daten behalten Manifest,
-  Inhaltshash und CC-BY-4.0-Attribution; Homebrew bleibt eine getrennte Quelle.
-- Gespeicherte Encounter-Pläne enthalten stabile Kreaturen-IDs, Mengen,
-  Gruppierungsbedeutung und redaktionelle Felder, aber keine duplizierten
-  Statblocks. Ein laufender Kampf besitzt davon getrennt Initiative, Runde,
-  Zug, HP, Zustände, Würfelprotokoll und begrenztes Undo.
-- Encounter verwenden ausschließlich die gepinnten DMG-2014-Schwellen,
-  Monsterzahlmultiplikatoren und Ergebnisbegriffe. Es gibt keinen zweiten
-  Rechner, keinen auswählbaren Regelmodus und keine 2024-Daten.
-- Dungeon-Featuredefinitionen und Raum-Key-Texte bleiben bestehen. Spätere
-  stabile Encounter-/Kreaturenverweise ergänzen sie optional und verändern
-  vorhandenen Markdown-Wortlaut nicht stillschweigend.
-- Katalog und Encounter werden als gemeinsame GM-Arbeitsfläche angebunden.
-  Auswahl und Details bleiben lesend; nur ausdrücklich bezeichnete Aktionen
-  verändern Plan, Kampf, Szene oder Raum-Key.
-- Die Begrenzung grafischer Testinstanzen gilt pro Gerät. Getrennte Kollegen
-  dürfen auf getrennten Geräten parallel prüfen; auf einem Gerät läuft nur eine
-  grafische Host-/Originalinstanz.
-
-Der erste portable Katalogkern liest inzwischen das unveränderte, hashgleich
-aus SaltMarcher übernommene SRD-5.1-Artefakt ohne SQLite. Er validiert Manifest,
-Lizenz, eindeutige IDs und vollständige Statblockfelder und bietet reine,
-kombinierbare Suche, Filter, Sortierung, Paging und Detailzugriff. Diese
-Domänenbasis ist noch nicht an eine Obsidian-Oberfläche oder Vaultpersistenz
-angebunden und erfüllt deshalb keinen der offenen Gesamt-Abnahmefälle allein.
-Manifestidentität und JSON-Bytehash werden unabhängig gepinnt; verschachtelte
-Referenzwerte sind tief eingefroren und Laufzeitqueries validiert. Der Notice
-liegt im Repository und zusätzlich als exportierter Text für die spätere
-Credits-Ansicht vor.
-
-Der Katalogkern bleibt bis CE-01 absichtlich vom Produktionseinstieg getrennt.
-CE-01 bettet das beim Build hashgeprüfte, gzip-komprimierte JSON als virtuellen
-Base64-String in das bestehende `main.js` ein. Der unveränderliche Statblock-
-Objektgraph wird erst beim ersten Öffnen des Katalogs dekodiert, dekomprimiert
-und geparst. So bleiben die bestehenden drei distributionssicheren Plugin-
-Dateien ausreichend und ein eager JSON-Objektliteral beim Pluginstart entfällt.
-Der exportierte Notice muss im Katalog sichtbar sein; `NOTICE.md` ist derzeit
-nur Repositoryhinweis, weil die belegten Installationswege ausschließlich
-`main.js`, `manifest.json` und `styles.css` kopieren. Die Runtime nutzt
-`atob`, `Uint8Array`, `DecompressionStream("gzip")`, `TextDecoder` und
-`JSON.parse`; ein Capabilitycheck führt bei fehlender Browserunterstützung in
-einen sichtbaren Fehlerzustand, nie in einen eager Fallback. Produkt und Build
-lesen Hash und Payloadgrenzen aus einer gemeinsamen Identitätsquelle. Für
-CE-01-I01 gelten maximal 122.880 Gzip-Bytes, 164.000 Base64-Zeichen und
-180.000 tatsächlich in `main.js` emittierte Bytes des virtuellen
-Katalogpayloads. Das gesamte `main.js`-Wachstum gegenüber der auf Commit
-`86ce73179ede452ee6a9f5d3197ee325544a58b8` belegten Baseline von 1.189.370
-Bytes bleibt im Buildinventar sichtbar, begrenzt aber keine späteren Atlas-,
-City- oder anderen Produktfunktionen. Echte Obsidian-Start-/Ladezeitmessung
-bleibt ein CE-01-Abnahmetor.
-
-## Entscheidungen
-
-- TypeScript-Domänenmodell: versioniertes JSON, stabile Kennungen, Geometrie in Feldern (1 Feld = 5 Fuß). Für bestehende Karten-/Obsidian-Dokumente bleibt Markdown während der ADR-Beweisphase maßgeblich für Prosa und Regeln; die kanonische Gesamtproduktgrenze zwischen nutzerlesbarem Dokument und transaktionalem Zustand entscheidet `SMR-00-ADR-01`. Assets sind separate Dateien.
-- Änderungen als explizite Befehle mit betroffenen Datensätzen und Textstellen. Gemeinsame Historie enthält keine Grafiken. Werkzeuge haben begin/update/commit/cancel; die Vorschau gehört nicht in den gespeicherten Entwurf.
-- PixiJS/WebGL zeichnet eine abgeleitete, erhaltene Szene. Kamerabewegung ändert keine Geometrie. Änderungen aktualisieren gezielt Objekte und direkte Abhängigkeiten. Kein dauerhaft laufender Zeichentakt im Stillstand.
-- Temporäres Pan folgt den direkt gemessenen Dungeondraft-Gesten Leertaste+linke Maustaste und Mitteltaste. Beide verschieben nur die Kamera und erhalten einen begonnenen Polygonentwurf; bei bestehender Auswahl leert Leertaste+Links sie, während Mitte sie erhält. Rechtsziehen startet im Editor keinen Pan. Der eigene dauerhafte Hand-Knopf bleibt als zusätzlicher Werkzeugzugang, ohne als native Geste zu gelten. Ein isolierter Obsidian-Lauf bestätigte P0-Kameradelta, unveränderten Karten-/Verlaufszustand und frische Neuöffnung. P1-Originalproben ergänzen die zeitliche Regel: Leertaste loslassen stoppt einen laufenden linken Pan sofort, späteres Drücken aktiviert ihn auch nach Left-Down, Escape beendet ihn nicht. Alle drei P1-Folgen sind im Obsidian-Host geprüft. Nach Escape kann Pointer-Capture verloren gehen; ein globaler Zeiger-Fallback hält die Geste dann bis Pointer-Up. Dessen Lauf außerhalb der Kartenfläche bleibt gesondert abzunehmen, ebenso Fokusverlust und physische Eingabe.
-- Für alle Zeichengesten beendet verlorenes Pointer-Capture allein den Entwurf nicht. Die Zeitspur des Phase-1-Reviews zeigte, dass Capture während eines gehaltenen Rechteckzugs vor Escape verloren gehen kann; ein sofortiger Abbruch ließ Escape anschließend den Editor schließen. Pointer-Up, Pointer-Cancel, Escape und Fenster-Fokusverlust entscheiden jetzt über Abschluss oder Abbruch. Fensterereignisse führen einen aktiven Zeiger außerhalb des Canvas weiter, wenn Capture fehlt. Eine erzwungene Capture-Freigabe und die vollständigen Phase-1-Hostfolgen mit Neuöffnung bestätigen diesen Stand; physische Eingabe bleibt Phase 7 vorbehalten.
-- Das Kartenraster ist eine eigene Überlagerung zwischen Raumgrundflächen und Kartendetails. Dadurch bleibt es auf leeren Flächen, Wegen und in Räumen sichtbar, während Wände, Portale, Einrichtung, Licht, Auswahl und Beschriftungen darüber lesbar bleiben. Bei niedriger Vergrößerung wird jedes fünfte Feld, im Detail jedes Feld gezeichnet. Editor und kompakte Spielkarte verwenden dieselbe Rasterdarstellung.
-- Ein aktiver Raumfokus zeigt die maximale Außenbreite und -tiefe der Raumkontur in Feldern. Die horizontale Maßlinie liegt oberhalb, die vertikale links außerhalb des Raums; beide besitzen Endstriche. Linienabstand, Strichlänge und Schriftgröße bleiben beim Zoomen in Bildschirmkoordinaten lesbar. Der Fokusrahmen wird aus der tatsächlichen Raumkontur, 0,35 Feld Abstand für Wand und Schatten sowie dem festen Platz der Maßlinien berechnet; der allgemeine Entitätenrand gehört nicht dazu. Links und oben bleibt so der nötige Platz, während der Raum den übrigen Ausschnitt eng ausnutzt. Die Gesamtansicht blendet die Maßebene aus.
-- Editor und kompakte Karte teilen Renderer und Kameramodell, besitzen aber bewusst ihre vertrauten Eingabeverträge. Im Editor zoomen vertikale Touchpad- oder Mausradbewegung und Pinch begrenzt um den Zeiger; horizontale Bewegung und Umschalt+Scrollen verschieben. Die kompakte Spielkarte übernimmt das bisherige Verhalten: Nur Pinch beziehungsweise Strg+Scrollen zoomt in festen Schritten um die Mitte, gewöhnliches Scrollen bleibt der Notiz vorbehalten, und Ziehen verschiebt erst nach vier Pixeln Bewegung. Plus, Minus, Alles und Tastaturzoomen benutzen dieselben mittigen Schritte. Werkzeug- und Werkzeuggruppenwechsel verändern die Editorkamera nicht. Das Editorlayout begrenzt seine Rasterspalte auf die tatsächliche Fensterbreite; vorher konnte die Zeichenfläche durch ihren Eigeninhalt zwischen 642 und 1217 Pixeln springen, obwohl das Fenster 1120 Pixel breit blieb. Bei echten Größenänderungen hält der Editor Zoom und Kartenmittelpunkt, die kompakte Karte ihren sichtbaren Weltausschnitt. Ein vollständiges Einpassen geschieht nur über die ausdrückliche Ansichtsaktion oder beim erstmaligen Öffnen des maximierten Editors.
-- Die kompakte Karte ist eine reine Lese- und Navigationsansicht. Ihre fünf Aktionen Minus, Plus, Alles, Aktuell und Maximieren teilen sich eine einzige gleich breite Werkzeugzeile. „Aktuell“ verfolgt den zuletzt geöffneten Raum beziehungsweise den Raum des ausgewählten Features oder Durchgangs und skaliert diesen mit dem bestehenden Raumrand ein; „Alles“ bleibt die Gesamtansicht. „Maximieren“ öffnet unmittelbar den vollflächigen Editor; es gibt keine editierbare Zwischenansicht und keinen bleibenden Editor-Tab im kleinen Kartenbereich. „Zurück zum Layout“ und Escape schließen den Editor-Tab und aktivieren wieder die kompakte Karte. Deren Ausschnitt bleibt erhalten, weil ihr Renderer währenddessen bestehen bleibt.
-- Der linke untere Spielbereich besitzt vier feste Register: Übersicht zeigt weiterhin den bestehenden Dungeonartikel, Key listet die Raumartikel, Charaktere die einzelnen Charakterartikel und Items die einzelnen Gegenstandsartikel. Die drei Indizes werden aus den vorhandenen Ordnern abgeleitet und als schlichte Obsidian-Dokumentabschnitte dargestellt: eine verlinkte Überschrift, gegebenenfalls eine unauffällige Metazeile und normal gesetzter Markdown-Text. Kartenflächen, Nummernplaketten, Pfeile, Rahmen, Schatten, Auswahlhintergründe und Bewegungsanimationen entfallen. Räume zeigen den vollständigen ersten Vorleseabsatz, Charaktere Profil und vorhandene XP, Items Fundorte oder Kerndaten. Nur Charakter- und Itembeschreibungen bleiben auf zwei Zeilen begrenzt. Vorhandene Featurelinks bleiben sichtbar und springen direkt zum verlinkten Abschnitt rechts; der Überschriftenlink öffnet den vollständigen Artikel. Dadurch bleiben Markdown und Ordnerstruktur die einzige Inhaltsquelle; zusätzliche Indexdateien oder duplizierte Kurztexte entfallen.
-- HTML/Obsidian für Werkzeugleisten, linkes Optionsfeld und rechten Key-Dock. Derselbe Kartenbaustein für Editor und Spielansicht.
-- Im maximierten Editor bleibt die vertraute Struktur sichtbar: sieben vertikale Werkzeuggruppen, eine zweite Werkzeugleiste, ein kontextabhängiges Optionsfeld, die große Kartenfläche und ein rechter Key-Dock. Werkzeuge bleiben gewöhnliche Zustände mit denselben Tastenkürzeln und keinem eigenen UI-Framework.
-- Auswertung und teure Geometrie werden separat im Hintergrund berechnet; Ergebnisse tragen Revisionen. Möbelbewegung löst keine Routenberechnung aus.
-- Speicherweg prüft konkurrierende Änderungen, schreibt ein Wiederanlaufjournal und nur geänderte Dateien. Mehrere Dateien sind keine atomare Dateisystemtransaktion. Fremde Änderungen werden bei Wiederherstellung nicht überschrieben.
-- Eindeutiger Besitz und Freigabe von Grafikressourcen. Die Historie wird nicht willkürlich abgeschnitten; ungenutzte Bilddaten besitzen nur einen großzügigen, verlustfreien Zwischenspeicher und können erneut geladen werden. Es gibt keine feste Prozess- oder Kartenspeichergrenze. Kein allgemeines Engine-Framework, keine Datenbank, keine Mehrbenutzersynchronisation, kein zusätzliches Exportprodukt.
-- Assetpakete liegen als unveränderliche, nach SHA-256 benannte Kopien außerhalb der Kartendatei. Der Katalog enthält nur Metadaten und Aktivierung. Der PCK-Leser erschließt zuerst das Verzeichnis; PNG-Nutzdaten bleiben Slices und werden erst beim Zeichnen dekodiert. Karten speichern stabile Paket-/Assetkennungen, keine eingebetteten Bilder. Ein fehlendes Paket lässt eine lesbare Grundform stehen.
-- Definitions-, Vorkommens- und Routendaten sind Teil desselben validierten Kartenentwurfs. XP, Beute, Encounter und geordnete Bossziele werden daraus berechnet. Raum-Key-Überschriften bleiben geschützter Markdown-Wortlaut; die Karte hält nur stabile Links und Anker.
-- Räume besitzen weiterhin ihre numerische Kennzeichnung. Ortsgebundene Features verwenden je Raum die Buchstaben A, B, C und so weiter; gemeinsam markierte Fundstücke teilen ihren Buchstaben und bestehende Lücken bleiben erhalten. Kreaturen verwenden stattdessen ihre dungeonweit stabilen namensbasierten Kürzel. Der Editor vergibt neue Feature-Buchstaben und Kreaturenkürzel automatisch. Bei Detailzoom weicht die Raumnummer in Bildschirmkoordinaten nach oben aus, damit sie einen Featuremarker am Raumzentrum nicht verdeckt; gespeicherte Positionen bleiben unverändert.
-- Durchgänge speichern Himmelsrichtung, Beschreibung, Zustand, Versteck-SG, HP, RK und Schlüsselverweis als validierte Fachdaten. Die Richtung wird bei einer neuen Raumöffnung aus ihrer Lage am Raumrand bestimmt und kann danach überschrieben werden. Feature-Definitionen speichern Beschreibung, XP, Beutewert, Regelverweis und Encounter-Verknüpfung; Vorkommen ergänzen Raum, Menge, aktuelle Situation und Reaktion. Der Raum-Key erhält daraus jeweils einen normalen Absatz zwischen unsichtbaren, stabilen Bereichsmarken. Beim Bearbeiten wird ausschließlich dieser vom Editor angelegte Bereich ersetzt; übriger Wortlaut bleibt bytegenau erhalten. Karten-, Inhalts- und Textänderung bilden einen gemeinsamen Undo-/Save-Befehl.
-- Archivieren ersetzt destruktives Löschen. Zusammengehörige Geschosse, Räume, abhängige Portale, Kartenobjekte und Fachinhalte werden gemeinsam abgelegt. Ursprüngliche Listen- und Zeichenpositionen gehören zum Archiv, damit Undo und spätere Wiederherstellung exakt dieselbe Schichtung erzeugen. Markdown wird dabei nicht gelöscht.
-- Wand- und Objektschatten bestehen aus einfacher versetzter Geometrie; Gebäudeabnutzung aus wenigen deterministischen Markierungen. Dadurch entstehen keine großen Filter- oder Maskenbäume. Alle drei Werte sind Kartenoptionen und teilen sich mit der Größenänderung einen atomaren Verlaufsschritt.
-- Größenvorlagen und Werkzeugvorgaben sind vaultweite Plugin-Daten. Assetpakete besitzen zusätzlich einen globalen Aktivierungszustand; jede Karte speichert danach ihren eigenen undo-fähigen Paketsatz. Ein getrenntes ausführbares Mod-System entfällt. Freigegebene Dungeondraft-Pakete liefern die austauschbaren Ressourcen.
-
-## Gemeinsame Zeichenprimitive
-
-Grundrissgeometrie und Raum-Key sind getrennte Schritte. Rechteck, Ellipse, Polygon und Gang bearbeiten in Kartenformat V2 ein Building mit gemeinsamer Boden- und Wandkontur; eine Raumidentität ist optional. Formen mit echter Flächenüberschneidung werden im Worker vereinigt; Alt schaltet während einer Geste vorübergehend auf Radieren, E wechselt den dauerhaften Modus. Radieren verwendet eine boolesche Differenz und kann Innenlöcher oder getrennte Teile erzeugen. Jeder abgeschlossene Zeichenschritt ist genau ein Undo-Befehl; Vorschauen verändern das Modell nicht. „Raum anlegen“ ergänzt derselben Building-Kennung eine Raumnummer und einen Markdown-Key, auch wenn die Kontur Löcher oder getrennte Teile besitzt. Bereits gebundene Portale übernehmen die Raumzuordnung im selben Befehl. Punktmutationen prüfen die vollständige Kontur vor Portal-Follow und Commit; der Parser weist historische Karten nicht wegen dieses lokalen Guards zurück.
-
-Bei mehrpunktigen Polygon- und Gangentwürfen wird der effektive Radierzustand aus dauerhaftem Modus und momentan gehaltenem Alt bei jeder Eingabe erneut ermittelt. Vorschau und Abschluss verwenden damit denselben Zustand; der erste gesetzte Punkt legt den späteren Zeichen- oder Radiermodus nicht fest. Der eigene Mittelpunkt-Gang bleibt ein zusätzlicher Bedienweg: Dungeondrafts Building Tool 1.2.0.1 bietet dafür keinen separaten Knopf, sondern zeichnet schmale Grundrisse als Polygon. Der gemeinsame V2-Building-Kern ist im Obsidian-Host einschließlich Raumzuweisung, Portal-Follow, Undo und frischer Neuöffnung geprüft; Snap-off, Sonderfälle breiter Portale, Großkartenleistung und physische Eingabe bleiben für DD-011 offen.
-
-Räume, freie Wände, Flächen, Pfade und Dächer verwenden dieselben Punkt-, Kontur-, Treffer- und Transformationsfunktionen. Ellipsen werden beim Anlegen in normale Konturpunkte überführt. Glatte Wände und Pfade speichern wenige Kontrollpunkte; nur die abgeleitete Darstellung wird abgetastet. Portale binden sich über normalisierte Positionen an Raum- oder Wandgrenzen und können alternativ eine freie Position besitzen. Damit bleiben Einfügen, Entfernen, Verschieben, Gruppieren und Kopieren gewöhnliche Modellbefehle statt einzelner Sondereditoren.
-
-Bei Möbeln bestimmt der Mittelpunkt in der Raumkontur auf demselben Geschoss die `roomId`; Innenlöcher zählen nicht zum Raum. Bei Überschneidungen bleibt eine noch passende bisherige Zuordnung erhalten, sonst gilt die vorhandene Raumreihenfolge. Platzierung und Positionsänderung verwenden dieselbe Prüfung; außerhalb aller Räume ist `roomId` leer. Position und Raumkennung teilen sich einen Historienbefehl, und die ausgewählte Key-Anzeige folgt dem Wechsel.
-
-Begehbare Straßenpfade werden wie Grundflächen zusammengesetzt: Sie liegen unter den Raumkörpern, sodass ihre Füllung bis an eine Öffnung reicht und Abschlusskante sowie Kontur vollständig unter dem angrenzenden Raum verschwinden. Raumschatten besitzen eine eigene, darunterliegende Ebene und können deshalb ebenfalls nicht in Wege oder Öffnungen ragen. Linienartige Pfade wie Seile, Schienen, Steine und Hecken bleiben auf der Detailebene über Räumen. Diese Einteilung folgt der Kartenbedeutung und benötigt weder besondere Anschlussdaten noch eine geometrische Vereinigung der gespeicherten Pfade mit den Räumen.
-
-Die Auswahl ist eine Menge stabiler Kennungen mit einem primären Element für den Eigenschaftenbereich. Räume, Flächen, Pfade, Dächer, Möbel, Lichter und Vorlagen lassen sich unabhängig kombinieren und je nach ursprünglicher Kollisionsregel per Auswahlrahmen erfassen. Freie Portale lassen sich ebenfalls per Rahmen erfassen; gebundene Portale und freie Wände bleiben direkt anklickbar, werden aber vom Rahmen nicht aufgenommen. Ein Zeigerstart auf einem bereits gewählten Element erhält die Mehrfachauswahl für das gemeinsame Ziehen; zuvor wurde sie vor der Bewegung auf dieses eine Element reduziert. Gruppen sind nur gemeinsame Kennungen an Elementen. Mehrfachbewegung, Gruppierung, Sperren, Einfügen und Archivieren erzeugen jeweils einen validierten Historienbefehl. Geschosskopien vergeben neue Kennungen und kopieren sämtliche zugehörigen Markdown-Keys im selben Befehl. Die gemeinsame Objekt-Licht-Bewegung ist nun auch in Dungeondraft ohne geladene Mods direkt belegt: Beide Positionen ändern sich zusammen, ein Undo stellt beide wieder her. Bei Undo/Redo leert der Editor wie Dungeondraft die Auswahl, aber nur wenn tatsächlich ein Historienbefehl ausgeführt wurde; dieser flüchtige UI-Zustand gehört nicht zur Kartenhistorie. Der eigene Host reproduziert Bewegung und Auswahlrücksetzung. Ein lesender Original-SelectTool-Probezug bestätigte die getrennten Zustände Move, Scale und Rotate sowie `isDrawing` erst ohne bestehende Auswahl. Möbel und Nachzeichenvorlagen verwenden nun ein gedrehtes Auswahlrechteck mit Eckgriffen; ein reiner Geometriehelfer prüft den rund 33 Bildschirmpixel großen Eckgriffbereich vor dem Rahmeninneren und erst danach den Drehbereich; Skalieren oder Drehen wird als einzelner Historienbefehl ausgeführt. Diese Trefferreihenfolge und der bildschirmfeste Radius wurden an allen vier ungedrehten Möbelgriffen in Dungeondraft 1.2.0.1 bei 100 und 200 Prozent gemessen; die zuvor verwendeten 30 Pixel mit Vorrang für das Innere waren falsch. Ein gespeicherter Originalzug an der rechten unteren Möbelecke vergrößerte beide Maßstabsachsen gleich von 4 auf 4,74303 und hielt die gegenüberliegende obere linke Ecke sichtbar fest; ein reiner horizontaler Zug änderte nichts. Die eigene Skalierung hält deshalb das Seitenverhältnis und die gegenüberliegende Ecke fest. Für Lichtquellen belegt eine weitere gespeicherte Originalprobe eine Drehung um den festen Mittelpunkt von 0 auf 1,460139 Radiant und genau ein Undo zurück auf 0. Das Modell speichert nun einen optionalen Drehwinkel; die ausgewählte Lichtquelle zeigt einen Richtungszeiger, und vorhandene Texturlichter drehen ihre Grafik. Eine direkte gemischte Originalprobe belegt einen gemeinsamen Rahmen für Möbel und Licht: Drehen ändert beide Winkel und dreht beide Positionen um den gemeinsamen Mittelpunkt. Eckskalierung vergrößert Möbel und Abstand proportional um die feste Gegenecke, lässt aber Lichtwinkel und Lichtreichweite unverändert. Der Editor berechnet diesen Rahmen aus den Elementgrafiken statt der beleuchteten Fläche und speichert jede gemeinsame Transformation als einen Historienbefehl. Genaue Originalempfindlichkeit, gedrehte und gemeinsame Griffzonen, Einrastwirkung, einzelne Lichtskalierung und Rahmenauswahl weiterer Elementarten bleiben für die strikte Abnahme offen.
-
-Die Typfilter zeigen Dungeondrafts sieben auswählbare Arten und ergänzen separate Filter für eigene bearbeitbare Flächen. Insbesondere bezeichnet „Muster“ nur Musterformen. Materialflächen werden unter „Materialflächen“ gefiltert, damit sie weiterhin direkt bearbeitbar bleiben, ohne als native `PatternShape` ausgegeben zu werden. Wasser, Terrain und Grundflächen bleiben ebenfalls ausdrücklich eigene Arten. Der Dungeondraft-SelectTool-Typenkatalog enthält für diese Malflächen keinen entsprechenden Auswahltyp. Ein direkter Originalklick auf einen gemalten Materialfleck blieb bei aktivierten Typ- und Ebenenfiltern ebenfalls ohne Auswahl. Deshalb sind beim Öffnen nur die sieben nativen Auswahlarten eingeschaltet; zusätzliche Flächenarten können für ihre direkte Bearbeitung gezielt aktiviert werden. Auch Dungeondrafts getrenntes Trace-Image-Werkzeug blieb bei Direktklick und vollständig umfassendem SelectTool-Rahmen ungewählt; die eigene „Nachzeichenvorlagen“-Auswahl ist ebenfalls eine anfänglich ausgeschaltete Zusatzfunktion.
-
-Die Rahmenauswahl entscheidet in einem reinen Geometriehelfer, ob der Anker eines Möbels, einer Nachzeichenvorlage, eines Lichts oder eines freien Portals innerhalb des gezogenen Rechtecks liegt. Die native Probe belegt diese Regel direkt für Möbel, Lichter und freie Portale: Ein angeschnittenes Symbol wird nur mit innenliegendem Mittelpunkt gewählt; Größe, Drehung und Lichtreichweite ändern diese Prüfung bei Möbeln und Lichtern nicht. Ein wandgebundenes Portal blieb trotz vollständig umfassendem Rahmen ungewählt, aber per Klick erreichbar; der Geometriehelfer schließt gebundene Portale deshalb von der Rahmenauswahl aus. Auch eine sauber gespeicherte freie Wand blieb bei drei vollständig umfassenden, während des Zugs verifizierten Rahmen ungewählt, obwohl ein Endpunktklick sie wählte. Der Rahmenhelfer schließt daher freie Wände aus; die Klicktrefferzone bleibt unabhängig davon. Für Pfade belegt ein zweiter nativer Test die andere Regel: Der Rahmen muss den ganzen Pfad umfassen; Teilstück und einzelner Endpunkt genügen nicht. Eine direkte Dachprobe bestätigt die vollständige Konturregel für ein rechteckiges Dach: Vollrahmen wählt, Teilrahmen nicht. Die Dachauswahl prüft dafür die gespeicherten Konturpunkte und nicht die für Darstellung und Treffer erweiterte allgemeine Bounding Box. Ein gespeichertes rechteckiges Muster bestätigt die Trennung von Rahmen- und Rendergrenze. Erneute Originalmessungen bei 100, 150, 200 und 300 Prozent widerlegen den zuvor angenommenen festen Randabstand: Linke und obere Polygonkante sind exakt inklusiv; rechts und unten hängt die beobachtete Lücke von der Schrittweite der Mausbewegung ab. Während des Zugs liegt Dungeondrafts ausgewertetes `box_end` etwa ein Bewegungsereignis hinter dem Cursor. Beim Loslassen erreicht `box_end` den Cursor, ohne die Auswahl erneut zu berechnen. Der Muster-Geometriehelfer prüft deshalb die echten Polygonpunkte; der Editor verwendet für Musterrahmen den vorangehenden Bewegungsstand statt eines festen oder zoomabhängigen Abstands. Diese Ereignisregel ist für andere Elementarten noch nicht am Rand vermessen. Der Transformationsrahmen ist davon unabhängig und umfasst weiterhin die Elementgrafiken.
-
-Die Zwischenablage speichert eine eigenständige Momentaufnahme der ausgewählten Elemente samt gemeinsamem Begrenzungsmittelpunkt. Gemischte Möbel-Licht-Kopien behalten ihren Abstand; Einfügen setzt den Mittelpunkt in die sichtbare Kartenmitte, wählt beide neuen Elemente und erzeugt pro Einfügung einen Historienbefehl. Wiederholtes Einfügen landet am selben Ort. Der Ablauf ist für ein solches Paar sowohl in Dungeondraft ohne Mods als auch im Obsidian-Host direkt geprüft.
-
-Die Zeichenreihenfolge gleichartiger Elemente eines Geschosses ist ihre Reihenfolge im Kartendokument. „Ganz nach vorn/hinten“ verschiebt den gewählten Datensatz über die vorhandenen Positionsindizes der Historie, ohne seine Geometrie oder einen weiteren Rangwert zu verändern. Eine reine Umordnung zählt als ungespeicherte Änderung und wird durch Undo/Redo exakt zurückgestellt. Der Renderer stellt nach neu aufgebauten Grafiken die Dokumentreihenfolge innerhalb seiner Grafikcontainer wieder her; numerische Ebenen bestimmen weiterhin die übergeordnete Zeichen- und Klickhöhe. Der direkte Dungeondraft-Objektversuch belegt die Umordnung über numerische Ebenen hinweg, und der isolierte Obsidian-Lauf belegt Grafikstapelung, Klicktreffer, Undo und Speicherung für überlappende Möbel. Welche anderen Elementarten Dungeondraft tatsächlich mit diesen Aktionen umordnet, bleibt im Original zu messen.
-
-Benannte Zeichenvorlagen leben vaultweit in den Plugin-Daten als Sammlung, Name, Geometrie und Mittelpunkt. Die Karte speichert an ihren Elementen nur die Vorlagenkennung; „Vorlage lösen“ entfernt diese Zuordnung mit einem Historienbefehl, ohne die Zeichnung zu ändern. Neue Exemplare erhalten frische Elementkennungen und behalten Licht-, Objekt- und Geometrieparameter. Raum-Keys, Textlinks und Raumzuordnungen gelangen bewusst nicht in die wiederverwendbare Zeichnung, damit Einsetzen keine vorhandenen Vault-Texte vervielfältigt. Direkt belegte Dungeondraft-Fälle umfassen eine einzelne Lichtquelle mit Make Prefab und Separate sowie eine gemischte Objekt-Licht-Vorlage: Umschalt-Klick ergänzt das Licht, und Platzierung erhält den gemeinsamen Versatz. Die eigene Speicherung, gemeinsame Einsetzung und das Wiederöffnen im frischen Obsidian-Prozess sind für diese Fälle geprüft.
-
-Die wiedergeöffnete globale Lichtvorlage wurde zusätzlich in eine zweite, zuvor leere Dungeonkarte eingesetzt und dort gespeichert. Damit ist die Sammlung im eigenen Produkt tatsächlich kartenübergreifend geprüft.
-
-Eine anschließende direkte Dungeondraft-Probe ersetzte die vorläufige Einsetzung in die Ausschnittsmitte: Das Original wählt die Vorlage im Prefabs-Werkzeug und erzeugt sie mit einem Klick am gerasterten Mausort. Der Editor besitzt dafür nun ein eigenes Zeichenvorlagen-Werkzeug mit Auswahl und Platzierung per Kartenklick; seine normale Kopierfunktion behält getrennt die belegte Einsetzung in die Ausschnittsmitte. Die neue Geste bestand im Obsidian-Host sowie nach Neustart in einer zweiten Karte.
-
-Das Vorlagenwerkzeug bleibt nach einer Platzierung aktiv. Weitere Kartenklicks erzeugen weitere Instanzen und jeweils einen eigenen Undo-Schritt; dies wurde im Original mit zwei gespeicherten Lichtquellen und danach im Obsidian-Host mit zweimaligem Undo/Redo belegt. Die global gespeicherte Vorlagenkennung bezeichnet im Editor die wiederverwendbare Definition; Dungeondrafts `prefab_id` kennzeichnet dagegen einzelne platzierte Instanzen. Beide Modelle erhalten für Nutzer dasselbe Platzierungs- und Rückgängig-Verhalten.
-
-Die Sammlungen im Erstellungsdialog werden aus vorhandenen Vorlagen abgeleitet. „+“ legt zunächst nur eine lokale Auswahl an; erst eine tatsächlich erstellte Vorlage speichert sie vaultweit. Eine vor dem Speichern noch leere Auswahl lässt sich lokal wieder entfernen und stellt die zuvor gewählte Sammlung wieder her. So entstehen keine zweiten Sammlungsdaten neben den Vorlagen selbst. Der Originaldialog bestätigt diesen Ablauf für „−“ an einer gerade angelegten leeren Sammlung. Eine eigene gefüllte Testsammlung ließ sich dort weder mit doppeltem noch mit leerem Vorlagennamen entfernen; der gespeicherte Inhalt blieb erhalten. Der Editor deaktiviert dieselbe Aktion für bereits gespeicherte Sammlungen.
-
-Neue Raum-Keys betten die `.dungeon`-Datei direkt ein. Editor, eingebettete Vorschau und Spielansicht benutzen dieselbe Session und denselben Pixi-Renderer; die beiden Leseansichten besitzen nur Kamera-, Geschoss- und Raumfokus-Steuerung. Es gibt kein zweites Kartenformat und keinen SVG-Zwischenexport.
-
-## Abnahmereihenfolge
-
-1. Neuer Dungeon → Raum und Key → Tür und Möbel → Text → gemeinsames Undo/Redo → Speichern → regulär schließen → frischer Prozess. Konflikte und unterbrochene Speicherung ebenfalls prüfen.
-2. Früh eine große native Karte mit mehreren Geschossen, komplexen Höhlenkonturen, Materialien, Licht und vielen Objekten. Gesamtansicht und Detailzoom, Eingaben, Spitzenbedarf und wiederholte Bearbeitung prüfen, bevor sämtliche Werkzeugvarianten ergänzt werden.
-3. Sämtliche Werkzeug- und Fachabläufe in `acceptance.json` vervollständigen. Katalog ist Ausgangsinventar, kein vollständiger oder gewichteter Fortschrittsmaßstab. Übernommene Dungeondraft-/Dungeon-Scrawl-Funktionen am jeweiligen Original prüfen: direkte Bedienung und Originaldateien, ergänzt durch Herstellerdokumentation. Originalversion, Ablauf und Abweichungen am Eintrag festhalten. Unser alter Nachbau ist kein Referenzersatz. Zusatzanforderungen weiter nachführen.
-4. Regulären Obsidian-Einstieg und Spielansicht integrieren, alten Editor erst nach vollständiger Abnahme ablösen. Ursprüngliche Karten bleiben unverändert; Notizen erhalten nur ausdrücklich beauftragte strukturelle Änderungen.
-
-Ziele: ungefähr 60 Bilder/s bei Gesten, sichtbare Rückmeldung normalerweise unter 100 ms, gewöhnliche Änderungen/Undo unter 500 ms. Längere Arbeiten zeigen Fortschritt und Abbruch. Eingabeübermittlung, Verarbeitung und tatsächliche Präsentation getrennt messen. Physische Maus-/Touchpadabnahme nicht durch synthetische Ereignisse ersetzen. Langzeitsitzung mit Geschosswechseln, Undo und Speichern ohne fortgesetztes Speicherwachstum prüfen.
-
-Eine Testinstanz, normale CPU/GPU für Leistungsabnahme. Nutzerfreigabe vom 02.10.: feste Speicherobergrenzen und hohe Startreserve entfallen; normale Speicherverwaltung. Nur akuter systemweiter Speichermangel stoppt den Test (unter 256 MiB verfügbar oder über 50 Prozent Vollspeicherblockade während zwei Sekunden). Nutzerprogramme nicht schließen. Schutzstopp ist kein bestandener Test.
-
-## Frühe Großkarte
-
-Die erste repräsentative native Szene umfasst nach der bearbeiteten Abnahme 4.293 Entitäten auf zwei Geschossen: 192 Räume, 64 gebundene Portale, 4.000 Möbel, vier komplexe Rasterflächen mit Innenlöchern und 33 Schattenlichter. Unveränderte Objekte behalten ihre Pixi-Grafik; Räume und Flächen verwenden zusammenhängende Konturen statt vieler Masken. Material-Union und Sichtkonturen laufen in Web Workern. Ein abgebrochener Pinselworker überträgt keinen Teilstand.
-
-Im echten Obsidian wurden Öffnen, Kamera, Geschosswechsel und Überlagerung, Möbelbewegung, Materialpinsel, Lichteigenschaften, Undo/Redo, Speichern und ein frischer Prozess geprüft. Die jüngste große Abnahme maß 522 ms Öffnen, 246 ms Geschosswechsel, 88,6 ms Pinselberechnung plus 3,8 ms Übernahme und null weitere Bilder im Leerlauf. Die einzelne letzte Renderprobe lag bei 10,6 ms; daraus wird keine dauerhafte Bildrate abgeleitet. Die schrittweise Fernsteuerung des Testzeigers dauerte in dieser Messung rund 16 Sekunden und ist keine Verarbeitungszeit. Der Obsidian-Prozess erreichte 619 MB, der vollständige kleine Funktions- und Layoutlauf 622 MB; beide liefen ohne feste Speicherobergrenze oder Speichernot. Physische Eingabe bleibt eine eigene manuelle Abnahme.
-
-Aktuelle Detailreduktion: Verlinkte Marker erscheinen ab zwölf, unverlinkte Möbel und Dekoration ab neun Bildschirmpixeln. Außerhalb des Ausschnitts oder unterhalb dieser Schwelle entstehen für Objekte keine Pixi-Grafiken und keine Textbeschriftungen. Die Ansicht baut sie bei Kamerabewegung wieder auf; Auswahl bleibt auch für kleine Objekte sichtbar. Die Drachenhöhle benötigt bei 1,84 Pixel/Feld rechnerisch 14 statt zuvor 113 sichtbare Objekte. Im isolierten Obsidian-Großkartenlauf wurden bei 4.000 gespeicherten Möbeln null Objektgrafiken in der Gesamtansicht und zwölf im Detailausschnitt gemessen. Bearbeitung, Speichern und frischer Prozess bestanden; die letzte einzelne Renderprobe lag bei 1,9 ms, bei null Leerlaufbildern. Der gemessene Prozesshöchstwert von 667 MB belegt keine generelle RAM-Ersparnis. Die kompakte produktive Spielansicht und physische Eingabe sind gesondert zu prüfen.
-
-Die produktive kompakte Karte wurde anschließend isoliert im Obsidian-Host geprüft: Bei 260 Pixel Kartenhöhe und 2,15 Pixel/Feld entstanden 16 statt 479 Objektgrafiken, alle 15 Raumnummern blieben sichtbar und kein Featuremarker überlud den Überblick. Raumfokus stellte drei Marker und die Raumausstattung wieder her. Im Leerlauf gab es keine weiteren Renderbilder. Unter vier Pixel/Feld zeigt das Raster jede zehnte statt jede fünfte Feldlinie; ab acht Pixel/Feld bleibt jede Feldlinie sichtbar. Die vollständige Spielansicht mit ihrem Layout und physische Eingabe bleiben eigenständige Prüfungen.
-
-## Vollständige Angleichung ab 5. Oktober 2026
-
-Die neuere Nutzerentscheidung ersetzt ältere Umfangsgrenzen dieses Dokuments: Export und sämtliche Asset-/Tileset-Funktionen von Dungeondraft 1.2.0.1 sind Pflicht. Die zwölf ausführbaren Mod-Fälle `DD-037` entfallen ausdrücklich für das private Projekt. Das eigene `.dungeon`-Format bleibt; Dungeondraft-Dateiaustausch ist nicht verlangt. Die aktuell 707 geforderten Unterfälle in `acceptance.json` sind die verbindliche Abnahmeliste; alte Wurzelstatus sind historische Nachweise. Die Vollständigkeit einzelner Bildmotive sowie strukturierte Keys und Dungeon-Auswertung werden separat geprüft.
-
-Kartendokument V3 behält alle V2-Felder und Kennungen bei. Beim Öffnen wird eine gültige V2-Karte ausschließlich im Speicher auf V3 gehoben; der erste normale Speichervorgang schreibt V3 über den konfliktgeschützten Repository-Weg. Ein noch offener V2-Entwurf wird ebenso im Speicher migriert. Für die beiden produktiven Karten ist die vollständige Feldgleichheit nach Versionswechsel einschließlich Session-Aufbau und frischer Serialisierung außerhalb des Vaults nachgewiesen. Die produktiven Originaldateien werden durch diese Entwicklungsschritte nicht verändert.
-
-Neu angelegte Karten verwenden V4. V2/V3 werden nicht automatisch zu V4 migriert. Ein V4-Raum speichert geordnete Markdown-Abschnitte mit stabilen IDs und Durchgangsabschnitte mit Verweis auf die strukturierten Durchgangsdaten; er besitzt keinen Raum-`.md`-Pfad. Der Raumtitel wird aus Nummer und Namen, die Karte aus der zugehörigen `.dungeon`-Datei angezeigt. V4-Vorkommen können auf eine Abschnitts-ID desselben Raums zeigen; mehrere Vorkommen dürfen einen Abschnitt teilen. Die Session erhält die Dokumentversion bei Entwurf, Undo/Redo und Speichern.
-
-Die rechte Raumansicht und der Editor-Dock bearbeiten V4-Markdown abschnittweise über denselben Session-Befehl. Die Vorschau nutzt Obsidian-Markdown; Übernehmen bewahrt den eingegebenen Wortlaut, Verwerfen ändert die Karte nicht. Raumlinks verwenden `obsidian://dungeon-room` mit Karten-, Raum- und optionaler Abschnitts-ID; die Karten-ID wird beim Öffnen gegen gespeicherte `.dungeon`-Dateien aufgelöst. Mehrdeutige IDs werden abgewiesen. Die bisherigen Markdown-Key-Wege bleiben für V3 aktiv.
-
-Jedes neue V4-Feature-Vorkommen ist mit genau einem Kartenobjekt und einem stabilen Markdown-Abschnitt im selben Raum verknüpft. Der Feature-Dialog und die rechte Key-Bearbeitung verändern denselben Raumtext; die Definition enthält gemeinsame Werte und Verweise. Unsichtbare Kommentargrenzen markieren den exakten Text eines Vorkommens innerhalb eines Abschnitts. Der Raum speichert den nächsten Feature-Buchstaben als Ordinal, damit entfernte Kennzeichnungen nicht erneut vergeben werden. Ein Objektzug über die Raumgrenze ändert Objekt, Vorkommen und Key in einem Session-Befehl. Ein alleiniger Abschnitt behält seine ID; bei gemeinsamem Abschnitt wird nur der betreffende Text in einen neuen Zielabschnitt kopiert. Außerhalb eines Raums wird der Zug abgewiesen. V3 bleibt auf seinem bisherigen Markdown-Dateiweg. Der installierte Build wurde mit isolierten V4-Testdaten und einer V3-Drachenhöhlenkopie geprüft; die produktiven Dungeondateien blieben bytegleich.
-
-Die einmalige Drachenhöhlen-Umstellung übertrug die bestehenden Keys offline in V4. Jeder vorhandene Überschriftenabschnitt behält seinen Wortlaut im Kartenmodell; unsichtbare Grenzen kennzeichnen den von mehreren Vorkommen gemeinsam genutzten Text über eine eigene `textId`. `sourcePath` dient nur als virtuelle Dokumentkennung für die bisherige Auswertung und Spielansicht. Kartenobjekte ohne Feature-Vorkommen erhalten ein direktes `keyTarget`. Stabile Raum-URLs enthalten bei Bedarf Abschnitt und Überschrift oder Blockanker. Die Auswertung erhält aus den V4-Abschnitten eine lesbare Projektion im Speicher und kann dadurch denselben Bericht samt Quellnavigation erzeugen. Die Spielansicht liest die V4-Räume aus dem Editor, zeigt sie in Key-Liste, Detailansicht und Gliederung und hält die gespeicherten Karten- und Bild-Einbettungen im Key. Die Migration schrieb zuerst eine externe Ablage; Hash-Abgleich, isolierter Obsidian-Lauf, Sicherung und erneuter Quellabgleich gingen dem produktiven Austausch und dem Entfernen der Raumdateien voraus. `NATIVE-21` in [acceptance.json](acceptance.json) dokumentiert den gesicherten produktiven Transfer vom 6. Oktober 2026 einschließlich 15 Räumen und 532 stabilen Links. Physische Maus-/Touchpad-Prüfung wurde auf Nutzerwunsch zurückgestellt; das vorher deaktivierte Auswertungs-Plugin blieb deaktiviert und war auf der isolierten Kopie geprüft. Die dort genannten Rohbelege sind hier nicht verfügbar; dies bestätigt keinen heutigen Vault-Zustand. Die drei einmaligen Migrationsskripte bleiben im [Git-Stand vor ihrer Entfernung](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/tree/c27f4095cffcbcc68fafdd0119ea20565df61bc6/tools) zugänglich.
-
-Eine neu angelegte Karte öffnet zunächst als dateilose Pending-Ansicht. Ihr V3-Dokument liegt bis zum ersten Save in einem wiederanlauffähigen `.dungeon.draft`-Entwurf; die eigentliche `.dungeon`-Datei entsteht erst beim Save. Danach übernimmt die Datei-Ansicht dieselbe Session einschließlich Undo/Redo-Verlauf. Änderungen während dieser Übergabe sind gesperrt; bestehende V2-/V3-Dateiansichten behalten ihren bisherigen Speicherweg.
-
-Ein isolierter Helfer ersetzt keine integrierte Produktabnahme mit direktem Originalvergleich, isoliertem Hostlauf und Endstandsprüfung.
-
-Der Originalabgleich verwendet Dungeondraft 1.2.0.1, dessen Originaldateien und direkte Screenshots sowie die offiziellen Seiten zu Custom Assets, Level, MaterialBrush, CaveBrush und LightTool. Materialebene, Lichtparameter, Geschossvergleich, Paketaktivierung und Grundassets bleiben getrennte Begriffe im eigenen Modell. Smart-/Double-Tileset-Autotiling gehört nach der neueren Nutzerentscheidung zum Pflichtumfang; seine Zellwirkung wird getrennt von erhaltenen Shape-Polygonen gespeichert und geprüft. Ausführbare Dungeondraft-Mods bleiben die ausdrückliche Ausnahme, SVG-A-Bögen und Dateiaustausch im Dungeondraft-Format sind nicht verlangt. Rechteck, Ellipse, Polygon, Gang und boolesches Radieren teilen die Bodenflächenlogik; Pakettexturen, Konturbearbeitung und verlustfreies Archiv bleiben gewöhnliche Modellfunktionen.
-
-## Werkzeugparität
-
-Der verbindliche Einzelabgleich steht in `TOOL-PARITY.md`. Referenz ist Dungeondraft 1.2.0.1; jedes native Werkzeug besitzt dort einen direkten Originalbeleg, seinen gleichwertigen Ablauf und die echte Obsidian-Abnahme. Die UI zeigt die Bedienung des aktiven Werkzeugs dauerhaft in der Statuszeile. Lange Assetlisten erhalten Suche und die gewählte Paketressource eine Vorschau.
-
-Obsidian verarbeitet Strg+S im Fenster-Capture vor dem Karteneditor. Für den direkt gemessenen Building-Snap-Zustandswechsel nimmt der Editor diese Kombination deshalb nur bei Fokus innerhalb seiner eigenen Oberfläche im Fenster-Capture an; derselbe Speicherweg folgt danach wie beim Editor-Tastaturhandler. Der Speichern-Knopf ändert Snap nicht.
-
-Der Abgleich führte zu vier Modellergänzungen: gebundene Durchgänge rasten an der Mitte gleich breiter Gangenden ein; Wände besitzen eigene Zeichenebene und Schatten und können per Strg-Klick am Endpunkt fortgesetzt werden; Wasser unterstützt Pinsel, Rechteck, Ellipse und Polygon; Dächer unterstützen Schnellrechteck und freie Kontur einschließlich Gaubenform. Objekte speichern Ebene, Schatten, Lichtblockade und Spiegelung und bieten direkte Tastenkürzel für Spiegeln, Drehen und Skalieren. Diese Eigenschaften bleiben optional. Das spätere gemeinsame Building-Modell benötigt dagegen Kartenformat V2; die beiden produktiven V1-Karten wurden offline migriert. Der Editor liest seit der V3-Migration V2 und V3.
-
-Die Auswahl trennt die gedrehte Objektkontur vom geraden, achsenparallelen Griffrahmen. Für ein einzelnes Möbel entsteht der Rahmen aus den vier gedrehten Konturecken in Weltkoordinaten; seine Ecken bestimmen Trefferzone und proportionalen Skalierungszug. Die gegenüberliegende Rahmenecke bleibt dabei fest, während Winkel und Seitenverhältnis des Möbels erhalten bleiben. Das entspricht der direkt gemessenen SelectTool-Geste in Dungeondraft 1.2.0.1. Der gemeinsame Rahmen mehrerer Elemente darf sich mit der Gruppe drehen; seine vier Griffe folgen dieser Drehung.
-
-Für einen Griffzug berechnet der Geometriehelfer die proportionale Änderung auf beiden Rahmenachsen und verwendet die kleinere gleichgerichtete Änderung. Eine kontrollierte native Probe an einem ungedrehten Einzelmöbel mit wirksamer Rahmenhöhe von 161,5 Bildschirmpixeln ergab für gleich große positive Diagonalzüge `s' = 4 + 4 × d / (161,5 × Zoomfaktor)`; bei 100 Prozent sind das für 20/40/80 Pixel die Skalen 4,495356/4,990712/5,981424. Bei 200 Prozent halbiert sich der Effekt in Bildschirmpixeln. Vier direkte Snap-an/aus-Paare waren gleich. Die native Auswahl verarbeitet eine Zeigerbewegung erst beim folgenden Bewegungsereignis; deshalb gelten nur die nach einem kontrollierten Auslöseereignis gemessenen Werte als Endstände. Die bestehende Produktformel stimmt in diesen symmetrischen Fällen. Ein späterer asymmetrischer Zug `(+40,+20)` ergab nativ getrennte X/Y-Skalen von 4,493342/4,493827, begann aber in einem anderen Auswahlrahmenzustand. Die folgende frische Marquee-Kontrolle stellte alle vier ursprünglichen Griffzentren exakt wieder her; derselbe `(+40,+20)`-Zug endete dann wie vom Produkt vorhergesagt bei uniformer Skala 4,495356. Dieser U1-Fall stützt die limitierende-Achse-Regel. Andere Griffe, Größen, Richtungen und gemeinsame Rahmen bleiben offen.
-
-Ein einzelnes Licht besitzt ebenfalls vier Griffpunkte um sein Symbol. Sein Skalierzug ändert in Dungeondraft die aktive Rahmengröße und verschiebt die Lichtquelle um ungefähr die halbe Zeigerstrecke; die gespeicherte Lichtreichweite und die übrigen Beleuchtungswerte bleiben gleich. Der Editor hält die vergrößerte Rahmengröße deshalb nur im Auswahlzustand und speichert ausschließlich die neue Lichtposition. Native Druckproben bei 50, 75 und 100 Prozent zeigen einen bildschirmfesten Eck-Trefferradius von nominell 32 Pixeln. Bei 50 Prozent überlappen die vier Zonen und die Symbolmitte skaliert über Ecke 0; ab 75 Prozent verschiebt die Mitte. An Überlappungen gewinnt nach direkter Originalmessung der erste Griff in der Reihenfolge 0 bis 3, auch wenn ein anderer näher liegt. Ein Punkt genau 32 Pixel von der früheren Ecke entfernt gehört nicht mehr zu ihr. Der Editor prüft diese Griffzonen vor dem Rahmeninneren. Der vergrößerte Rahmen bleibt nach Loslassen mindestens vier Sekunden sichtbar; die Auswahl eines anderen Elements und anschließende Wiederwahl desselben Lichts setzt ihn am neuen Lichtzentrum auf die normale Symbolgröße zurück. Undo verwirft ebenfalls den temporären Rahmen.
-
-## Produktive Drachenhöhle
-
-Die Drachenhöhle verwendet `Dungeons/Drachenhöhle/Karte.dungeon` als produktive gemeinsame Karte. Ihre bestehende SVG wurde dafür einmalig und außerhalb der Laufzeit als geometrische sowie semantische Vorlage ausgewertet. Daraus entstanden 15 native Räume, 23 Pfade, 42 an Raumgrenzen gebundene Portale, 380 vereinfachte Einrichtungsobjekte, 99 verlinkte Feature- und Kreaturenmarker, 80 strukturierte Definitionen und 80 Vorkommen sowie 22 auswertbare Routen. Es gibt keinen SVG-Importer, keine zweite Kartenquelle und keinen Kompatibilitätszweig im Editor. Die SVG und alten Einzelkarten bleiben unveränderte Rückfallkopien.
-
-Übersicht und Raum-Keys binden dieselbe `.dungeon`-Datei ein. Die Spielansicht ermittelt den Dungeon aus der aktiv geöffneten Übersicht oder dem aktiven Raum und tauscht die Karte im bestehenden oberen linken Bereich aus. Falls gerade die Karte oder der maximierte Editor aktiv ist, bleibt der sichtbare Raum im rechten Detailbereich die Quelle des Dungeon-Kontexts; dadurch kann ein zuvor geöffneter anderer Dungeon die Kartenleiste nicht zurückschalten. Historische numerische `room_id`-Werte werden beim Anzeigen auf die stabile native Raumkennung aufgelöst; die Kartendatei selbst arbeitet weiterhin ausschließlich mit stabilen IDs. Beim Überblick erscheinen Raster, Raumzahlen, Geometrie und Einrichtung. Die konstant groß gezeichnete Raumnummer besitzt einen eigenen Trefferbereich in Bildschirmkoordinaten: Überfahren zeigt einen Zeiger, Anklicken öffnet unmittelbar den verknüpften Raumartikel rechts. Die übrige Raumfläche öffnet weiterhin die Karten-Infobox. Feature- und Kreaturenmarker werden erst bei ausreichendem Zoom eingeblendet, damit große Karten in kleinen Layoutbereichen lesbar bleiben. Ein Klick auf einen Feature- oder Kreaturenmarker öffnet unmittelbar den verknüpften Abschnitt rechts und leert eine gegebenenfalls offene Karten-Infobox; dadurch bleibt die Kartenhöhe unverändert. Der zuletzt ausgewählte Marker behält seinen Raumkontext für „Aktuell“. Räume und strukturierte Durchgänge öffnen weiterhin ihre begrenzte Infobox mit Raumfokus, Textsprung und lesbaren Fachdaten. „Aktuell“ skaliert den rechts sichtbaren Raum oder den Raum des zuletzt ausgewählten Karteninhalts ein; der rechte Raum bleibt dabei auch maßgeblich, wenn unten „Übersicht“ aktiv ist. „Maximieren“ öffnet einen vorübergehenden Editor-Tab in derselben Kartengruppe und zeigt ihn sofort vollflächig; die rechte Raumansicht bleibt im Layout bestehen. Beim Zurückkehren wird der Editor-Tab geschlossen, die kompakte Karte wieder aktiviert und ihr Ausschnitt beibehalten.
-
-Bei der ursprünglichen Kartenmigration wurden im Markdown nur die ausdrücklich benötigten Einbindungsziele von der gemeinsamen SVG auf `Karte.dungeon` geändert. Die später ausdrücklich beauftragte Buchstabenkennzeichnung ersetzte zusätzlich ausschließlich Featuremarker, zugehörige Überschriftenanker, Linkziele und drei unmittelbare Markertextverweise; der übrige Wortlaut blieb bytegenau erhalten. Strukturierte Durchgangsdaten und vorhandene Encounter-Anker leben zusätzlich in der Kartendatei. Wenn ein bestehender Anker noch keinen vom Editor verwalteten Absatz besitzt, fügt eine spätere ausdrückliche Bearbeitung den verwalteten Absatz hinter dem Anker ein und überschreibt nicht dessen bestehende Zeile.
-
-Die aus der SVG-Vorlage übernommenen absoluten Koordinaten der produktiven Drachenhöhle wurden einmalig auf den Ursprung des nativen Feldrasters normalisiert. Der konstante Importversatz von 0,23077 Feldern horizontal und 0,07692 Feldern vertikal wurde aus sämtlicher Geometrie entfernt. Alle 15 Raumkonturen liegen dadurch auf ganzen Feldgrenzen; Raum 8 samt Inhalt und drei Anschlüssen wurde als zusammengehörige Geometrie auf ganze Feldgrenzen gesetzt. Die 21 vollfeldbreiten Straßenpfade belegen vollständige Rasterzellen, und ihre gebundenen Gegenöffnungen folgen den verschobenen Anschlüssen. Schmale Sonderpfade behalten ihre bewusst unterfeldbreite Form. Kennungen, Größen, relative Einrichtung, Fachinhalte, Markdown und alte Karten blieben unverändert. Dies ist eine Datenbereinigung der einzigen produktiven Karte und kein Laufzeit-Offset oder Kompatibilitätszweig.
-
-## Projektablage
-
-Der Git-Hauptstand liegt unter `/home/aaron/Schreibtisch/Obsidian-Dungeon-Editor`. Der aktuell installierte Phase-1-Quellstand liegt als Worktree des Zweigs `active/installed-phase1` unter `/home/aaron/Schreibtisch/Obsidian-Dungeon-Editor-Phase1`; der Tag `installed-phase1-before-cleanup-20261006` hält dessen Ausgangsstand fest. Im Vault bleiben die installierten Laufzeitdateien als echte Dateien, während Entwicklungsdateien auf diesen Worktree verweisen. Die früheren Cache-Pfade bleiben als Kompatibilitätslinks erreichbar; Belegtexte und Karten bleiben unverändert.
-
-## Modulgrenzen nach der Bereinigung
-
-`src/main.ts` enthält den Plugin-Lebenszyklus und die gemeinsame Session-Verwaltung. Vault-Speicheradapter liegen in `src/vault-stores.ts`, Ansichten und Dialoge unter `src/ui/`. Die bisherigen Einstiegspunkte `src/commands.ts` und `src/content.ts` bleiben als Exporte erhalten; Objektbefehle und reine Auswertung liegen in eigenen Modulen. Pfad- und Dachzeichnung liegen in `src/render-drawing.ts`. Die Eigenschaftenansicht und der Zeigerabschluss rufen kleinere Methoden in derselben Reihenfolge auf. Diese Aufteilung ändert weder Kartenformat noch gespeicherte Einstellungen oder öffentliche Plugin-IDs.
-
-Die Kernprüfungen werden über `tests/core.test.ts` in fester Reihenfolge geladen. `tools/host-test.cjs` behält seine CLI und Ergebnisdateien; die Host-Szenarien liegen unter `tools/host/`. Die Phase-6-Auswertung wird mit `tools/build-auswertung-adapter.mjs` aus einer temporären Kopie gebaut. Der installierte Plugin-Quellordner im Vault dient dabei ausschließlich als Eingabe; das Buildziel liegt außerhalb des Vaults.
-
-## Building-Kurvenentwurf der Folge-Roadmap
-
-Der Polygonentwurf hält rohe Eckpunkte und optionale Shift-Handles getrennt in `PathDraft`. `buildingPolygonPoints` in `src/geometry.ts` erzeugt für Vorschau und Commit dieselbe aus Dungeondraft-Originalkarten abgeleitete 16-fach gesampelte Kontur je Kurvensegment. Für die gemessenen fertigen Segmente liegt der zweite Bézier-Kontrollpunkt bei `Ende + 0,553 × (Folgepunkt − Ende)`, der erste um `0,45 × (Ende − Start)` davor. Der erste Klick nach einem Shift-Anker steuert die Krümmung; sobald ein weiterer Punkt folgt, wird dieser Steuerklick nicht als Konturecke übernommen. Ein bereits gesetzter Kurvenanker bleibt beim Ziehen des Handles am Maus-Down-Ort. Drei variierte Handles erzeugten im Original dieselbe fertige Kontur, aber unterschiedliche gehaltene Vorschauen. Rücktaste entfernt Punkt und zugehöriges Handle zusammen. Die gespeicherte Building-Kontur enthält nur die fertigen Samples und benötigt kein neues Kartenformat. Andere geglättete Wand- und Pfadwerkzeuge verwenden diesen Helfer nicht. Die gemessenen Kurvensamples einschließlich Diagonale und getrennter Mehrkurvenfolge stimmen bis auf wenige Originalpixel. Auch ein unmittelbar folgender Shift-Zug bleibt Steuerpunkt der ersten Kurve und wird als eigener Anker ausgelassen. Selbstschneidende Building-Ringe werden im Worker mit Clipper 6, EvenOdd-Füllung und auf Originalpixel gerundeten Koordinaten bereinigt; die direkt gemessenen Fälle P18, P19 und P30 ergeben damit dieselben Konturzahlen und Beispielpunkte wie Dungeondraft. Diese Bereinigung gilt nur für Building-Flächen; Wasser behält den bisherigen Rechenweg.
-
-`buildingEllipse` tastet nur Building-Ellipsen größenabhängig ab. Fünf ganzzahlige und drei freie Originalgrößen passen zu `4 × max(7, floor(Breite + Höhe))` Konturpunkten; Muster- und Wasserellipsen behalten ihren eigenen bisherigen Abtastweg. Rechteck und Ellipse nutzen beim Ziehen eine gelbe, ungefüllte Außenlinie mit Feldmaß am Endpunkt; der Building-Polygonentwurf zeigt dieselbe gelbe, ungefüllte Kontur. Vorschau und gespeicherte Building-Ellipse verwenden dieselbe Kontur. Der globale Building-Snap rundet positive Koordinaten auf die nächstgelegene Feldgrenze und bei einem halben Feld nach oben, wie auf acht direkten Originalzügen gemessen.
-
-Bei booleschen Building-Schnitten bindet `reanchorPortal` ein Portal anhand seines Mittelpunktes an ein erhaltenes, gleich gerichtetes Wandstück. Dungeondraft erhält in der gemessenen Folge ein Portal, dessen eine Hälfte nach dem ersten Randschnitt über die neue Kerbe ragt; erst der zweite Schnitt entfernt auch den tragenden Mittelpunkt. Kontur und Portaländerung bleiben ein gemeinsamer History-Befehl.
-
-## Selbstschnitt-Vorprüfung
-
-Der Editor entscheidet am Pointer- beziehungsweise Tastatureingang, wann ein `PathDraft` fertig ist. `completePathDraft` übernimmt danach als einziger Weg Vorschau-Freigabe, Building-Komposition und Erzeugung der übrigen Pfad-Entitäten. `refreshFloorPathPreview` bündelt nur die Vorschauaktualisierung für Polygon und Gang; `buildingPolygonPoints` bleibt die gemeinsame Kurvengeometrie. Der Fenster-Fallback verwendet einen gemeinsamen Guard für aktive Zeiger ohne Canvas-Capture; Move, Up und Cancel behalten getrennte Aktionen.
-
-Die Building-Selbstschnitt-Vorprüfung sortiert einmal erfasste Kantenboxen nach X und hält nur räumlich mögliche Paare aktiv. Für diese Paare gilt weiterhin der bisherige strenge Kreuzungstest. Bei einem Treffer laufen unverändert Clipper 6, EvenOdd und Pixelrundung. `tools/bench-building.mjs` misst die Vorprüfung über `composeBuilding` reproduzierbar auf großen nicht schneidenden Ringen; die Hostdiagnose-Listener werden nach ihrer Zeitspur freigegeben.
-
-## Punktbearbeitung der Fachphase 2
-
-„Punkte bearbeiten“ ist flüchtiger Building-Werkzeugzustand und ändert das Kartenformat nicht. `src/features/bau/building-point-gestures.ts` liefert bildschirmbezogene Eck- und Kantenmittelgriffe sowie reine Konturvorschläge. Während des Zugs hält der Renderer eine eigene Building-Vorschau für Boden, Wand, Schatten und abhängige Portale; die Session bleibt bis Pointer-Up unverändert. Der Commit verwendet `planBuildingContourMutation`, sodass Building und Portalanker genau einen History-Schritt teilen. Der Punktmodus greift nur auf dem aktiven Geschoss und bei nicht gesperrten Buildings. Die Dreipunkt-Umrissentfernung benötigt bei bestätigter Original-Tastenwirkung einen eigenen validierten Befehl, weil der bestehende Konturbefehl absichtlich gleiche Polygon- und Konturzahl voraussetzt.
-
-Die direkte Originalmessung der Phase-2-Nachbesserung bestätigt die gemeinsame Delete-/Rücktaste-Action: Am Viereck entfällt ein Punkt, am Dreieck der gewählte Umriss; bei mehreren Teilen bleibt der andere erhalten. `planBuildingOutlineRemoval` validiert diese Strukturänderung und führt Portale im selben History-Schritt nach. Die letzte Kontur eines nummerierten Raums bleibt wegen Raum-ID und Markdown-Key geschützt. Ein gehaltener Punkt- oder Kantenmittelzug wird im Original durch Escape übernommen und das Werkzeug verlassen; Pointer-Cancel verwirft im Editor die Vorschau. Die Griff-Trefferzone beträgt im Punktmodus 16 Bildschirmpixel bei 100 und 75 Prozent Originalzoom.
-
-Die direkte Innenlochprobe bestätigt dieselbe Dreipunktregel für den inneren Ring, ohne den Außenring zu verändern. Bei Kantenmitteneinfügung behält Dungeondraft ein Portal auf einem unveränderten Wandstück an seinem Ort, entfernt aber ein Portal auf dem durch die neue Ecke ersetzten Stück. `followPortalAfterContourEdit` verwendet für die Einfügung deshalb den über Mittelpunkt und Richtung prüfenden Überlebensanker; Vorschau und Commit teilen diese Berechnung. Eine abgeleitete Zweiportal-Testkarte belegt das Entfernen des nahen und das Erhalten des fernen Portals mit Undo/Redo und frischer Öffnung.
-
-Die Konturprojektion bildet den Zielpunkt aus Griff, Zeiger und Snap einmal und gibt aus `proposeBuildingPointDrag` eine reine Kontur-/Edit-Paarung an Vorschau und Commit. Die Vorschau liest gebundene Türen aus `Session.dependents`, während der validierte Commit den aktuellen Sessionstand prüft; `followPortalAfterContourEdit` bleibt die gemeinsame Portalregel. Der Vorschau-Renderer verwendet vorhandene Paketwand-Sprites erneut und zerstört nur Stücke oberhalb der aktuellen Wandstückzahl. Beide Konturbefehle teilen die Current-/Lock-Prüfung, Topologievalidierung und den Aufbau der Portal-RecordChanges, behalten aber ihre verschiedenen Struktur- und Raum-Key-Regeln. Ein reproduzierbarer Vergleich misst 32/512 Punkte mit 0/4.000 fremden Entitäten und zählt Sprite-Neuanlagen im isolierten Host.
-
-## Kandidat für Boden- und Wandstile der Fachphase 3
-
-Der bereits hashgeprüfte Leser für das lokale Dungeondraft-PCK erschließt zusätzlich 24 eingebaute Boden- und zehn Wandstile mit stabilen Ressourcenkennungen, Defaultfarben und Bild-Slices. Das gewählte PCK bleibt lokale Eingabe; seine proprietären Bildbytes liegen nicht im Repository. Paketwände folgen weiter dem gesonderten Assetkatalog. Die Building-Galerien ändern Werkzeugvorgaben für spätere Züge. Ein gespeichertes Building hält seine Stilkennungen, RGB-Werte und optionale Alpha-Bytes für Boden und Wand sowie Bevel. Fehlen die neuen Felder in alten Karten, zeichnet der Renderer beide Farben deckend und die bisherige Verbindung ohne Bevel.
-
-Der Building-Farbpicker übernimmt sechsstellige RGB- und achtstellige ARGB-Eingabe. Sechsstellige Eingaben zeigen zunächst die bisherige Transparenz in der Vorschau und setzen sie beim Abschluss auf 255; dies ist für Boden und Wand direkt im Originaldialog gemessen. Escape und Außenklick schließen ihn mit der live gewählten Werkzeugfarbe; die Pipette liest einen dargestellten Kartenpixel. X/None lässt den Boden stehen und entfernt Wandring und Wandschatten. Eingebaute Bodenatlanten erhalten für gespeicherte Karten je belegtem Feld eine Variante aus Godots Default-Maske: Ein lokaler PCG-Strom folgt beim Laden den zeilenweise gesetzten Zellen und deren 3×3-Bitmaskenaktualisierungen. Der Renderer berechnet die Varianten aus der aktuellen Belegung und zeichnet die ausgewählten 256-Pixel-Atlaszellen unter der Building-Kontur. Die direkte Zeichenfolge, Bodenhelligkeit und Bevel-Verbindung sind noch nicht als gleichwertig belegt.
-
-Die Originalprobe mit zwei getrennten X/None-Flächen zeigt eine zusätzliche Radierwirkung: Wird mit aktuell gewählter Wand eine andere Building-Kontur tatsächlich gekürzt, erhält die bearbeitete Restkontur diese Wand, und beide vorher wandlosen Flächen bekommen sie ebenfalls. Der gemeinsame Modellbefehl übernimmt Wandkennung, RGB, Alpha, Breite und Bevel für die bearbeitete Kontur und alle ungesperrten wandlosen Buildings desselben Geschosses. Andere bestehende Wände, Bodenfelder, Raumidentität und Key bleiben erhalten; Undo/Redo setzt Geometrie und Wandstile zusammen zurück. Für Radieren mit aktuell gewähltem X/None und Gesten ohne Konturänderung liegt keine entsprechende Originalregel vor.
-
-Die direkte QAWall01-Bildmessung bei 64 Bildschirmpixeln je Feld ergibt eine 0,25 Feld breite Wand aus einer 64 Pixel hohen Textur und eine Wiederholung der 256 Pixel langen Textur nach einem Feld. Der gespeicherte Original-Wandwert bleibt 0,2; der Renderer leitet die gemalte Breite aus Texturhöhe und gespeichertem Wert ab. Eine um 0,25 Feld breitere schwarze Linie mit 14 Prozent Deckkraft zeichnet den Wandschatten mittig unter dem Wandstreifen. Vorschau und gespeicherte Darstellung teilen diese Maße. Die native Eckverbindung, Bodenvarianten und Farbhelligkeit sind im ausgerichteten Bildvergleich weiterhin verschieden; diese Messung ist keine Phase-3-Abnahme.
-
-Die nächste Eckmessung ersetzt überlagerte Wand-Sprites durch ein zusammenhängendes Mesh je Wandlauf. `buildingWallBands` hält die Texturkoordinate über Ecken fort, setzt bei Portalöffnungen ab und hält Innenringe getrennt. Stützpunkte nach einer halben Wandbreite verhindern schräg gezogene Texturwechsel entlang gerader Wände; die Bevel-Außenkante besitzt eigene Vertices. Ein halber Quellpixel Versatz entfernt Mischfarben an der UV-Wiederholungsnaht. Für QAWall01 sinkt die klassifizierte Abweichung am 90°-Eck von 96/256 auf 0/256 Pixel und am Bevel-Eck von 119/228 auf 25/228 Pixel. Das prüft Texturklassen bei örtlich normalisierter Originalhelligkeit; genaue Farbwerte, verbleibende Bevel-Pixel und andere Wandstile sind weiter offen.
-
-Die PCK-Datei bindet für eingebaute Bodenstile `res://materials/Tileset.material` mit `grime.png` und `Tileset.shader`. Der Shader multipliziert Atlas, weltkoordinatenbasierte Grime-Textur und den gespeicherten Tint; die Grime-Periode beträgt 16 Felder. Der Katalog liefert die Textur als internes PCK-Slice ohne Galerieeintrag. Der WebGL-Bodenmesh wendet Atlas, Grime, Tint und Alpha in einem Fragmentdurchgang an, sodass Alpha nicht durch eine zusätzliche Multiply-Ebene anders komponiert wird. Vorschau und fertige Grafik halten eigene Referenzen und zerstören ihre Shader beim Ersetzen. Die Materialquelle, der UV-Maßstab und der ausgerichtete Hostvergleich sind unter `/home/aaron/.cache/dungeon-native-qa/parity-phase3-brightness-20261007/phase3-floor-brightness-repair.md` belegt; weitere Farb- und Stilpaare bleiben offen.
-
-Die Original-Building-Probe mit zwei Bodenstilen, drei Farben und Alpha 0/128/255 zeigt bei Alpha 0 innerhalb jeder Bodenkontur konstant `#252525`, unabhängig vom Kartenhintergrund. `drawNativeFloor` legt deshalb vor dem Texturmesh eine ebenso maskierte Grafik mit dieser Farbe in dieselbe Bodenansicht. Bei Alpha 255 wird sie überdeckt, bei Alpha 128 mit der Textur gemischt; Konturlöcher werden auch aus der Unterlage ausgeschnitten. Ansicht und Unterlage teilen Lebensdauer und Maske, ohne das Kartenformat zu ändern. Der ausgerichtete Vergleich mit erzwungenem Host-sRGB ergibt sechs exakt passende Alpha-0-Flächen und höchstens 0,0108 Differenz beim effektiven Alpha-128-Anteil. Weitere Stilfamilien bleiben offen; Belege: `/home/aaron/.cache/dungeon-native-qa/parity-phase3-image-matrix-20261007/phase3-image-matrix-implementation.md`.
-
-Vier der 24 PCK-Bodenstile tragen `type: custom_color` und verwenden `TilesetCustomColor.material` mit demselben Grime-Atlas. Ihr Shader nimmt die Rotintensität des Quellpixels als Farbmaske; außerhalb roter Maskenpixel bleibt die Quellfarbe erhalten. Der Katalog prüft den Typ dieser vier Stile, und der Bodenrenderer wählt für sie die native Maskenformel. Die Kartenkennung bleibt dieselbe Stilkennung; im Kartenformat ist kein zusätzlicher Shaderzustand nötig. Die ausgerichteten weißen und standardfarbenen 24er-Original-/Hostbilder stehen unter `/home/aaron/.cache/dungeon-native-qa/parity-phase3-style-mosaic-20261007/phase3-floor-styles-repair.md`.
-
-`Wall.material` bindet im selben Original-PCK `grime.png` an `Wall.shader`. Dessen UV-Periode beträgt acht statt der 16 Bodenfelder. Der Building-Wandmesh verwendet deshalb die Albedo-Textur mit eigener Wandperiode; dasselbe gilt für die gehaltene Konturvorschau. Shader und Texturreferenzen gehören der jeweiligen Wandansicht und werden bei deren Entfernung freigegeben. Ein zuerst eingesetzter Wandkanalfaktor 0,9091 beruhte auf unbereinigten RGB-Zahlen unterschiedlich profilierter Screenshots und wurde entfernt. Originalbilder tragen sRGB-Chromatizität, Hostbilder ein Skia-ICC-Profil. Nach dessen Umrechnung nach sRGB stimmen Rotstreifen und die gemessene Alpha-128-Komposition der QAWall01-Wand weitgehend überein. Der korrigierte Vergleich steht unter `/home/aaron/.cache/dungeon-native-qa/parity-phase3-wall-icc-repair-20261007/wall-icc-repair.md`; weitere Farben und Alpha-Werte bleiben offen.
-
-Der PCK-Katalog bietet die in der gültigen Original-Ankertür gespeicherte `door_00.png` als erst bei Bedarf gelesenes Portalasset an. Gewählte Portalassets ersetzen das einfache Grundsymbol; die Kartenreferenz bleibt eine stabile Assetkennung. Die direkte Vergleichskarte verwendet die Original-Türmitte an einer 5×3-QAWall01-Kontur. Das Wandsegment wird in beiden Ansichten für ein Feld unterbrochen, die Portalabschlüsse unterscheiden sich noch sichtbar. Die originale 256×64-Bilddatei wird nur aus dem lokal gewählten, hashgeprüften PCK geladen; der Bildinhalt liegt nicht im Repository.
-
-Eine folgende Original-UI-Probe setzt eine zweite Tür an die untere Kante derselben QAWall01-Kontur. Damit sind die ein Feld breiten Unterbrechungen an zwei entgegengesetzten Seiten samt Undo/Redo und frischer Originalöffnung direkt belegt. Der Host speichert und öffnet dieselbe Zwei-Türen-Geometrie frisch; die Endkappen bleiben eine offene Darstellungsabweichung.
-
-Die anschließende Nachbesserung lädt für gebundene Türen an Paketwänden zusätzlich die bereits im Paket deklarierte `_end.png`-Textur und zeichnet an beiden Öffnungsenden je eine mit Wandfarbe und Wand-Alpha versehene Kappe. Die Kappen gehören zur Portalansicht und folgen ihrer Position, Spiegelung und Freigabe. An der direkt verglichenen weißen QAWall01-Zwei-Türen-Karte stimmen die geraden Wandstreifen nach sRGB-Umrechnung pixelgenau; die vier Kappenbereiche enthalten jeweils 257–261 von 272 identischen Pixeln. Die übrigen Kantenpixel und die Bevel-Ecke sind nicht abgenommen. Die Originalprobe mit gleicher weißer Wand und geändertem `joint` zeigt identische gerade Streifen bei Bevel an/aus; ihre Ecken unterscheiden sich. Der damalige Schluss, Weiß benötige keinen Wand-Grime, beruhte auf Karten mit ungeglichenem Wear-Zustand und ist durch das spätere UI-Paar widerlegt. Weitere Farben, Materialien und Alpha-Werte erfordern eigene Vergleiche.
-
-Für die Rotprobe erzwingt ein gesonderter Hostlauf Chromium-sRGB statt des standardmäßigen Skia-Ausgabeprofils. Dadurch passen beide geraden roten Wandstreifen über alle drei Kanäle nahezu vollständig zum Original. Die Ausgabeprofilwahl ist nur ein Messparameter des isolierten Hosttests und kein Karten- oder Rendererzustand.
-
-An einer durch Portale geteilten geschlossenen Wand können das letzte und erste Segment derselben Stückfolge zusammenhängen. `buildingWallBands` fasst diesen Umlauf bereits zusammen; die Zeichenmaske begann vor der Nachbesserung am ersten Segment und endete am letzten mit getrennten Butt-Abschlüssen. `drawTexturedWallMask` rotiert die Segmentfolge bei dieser Verbindung zum ersten tatsächlichen Spalt. Damit verbindet der Strich die Ecke, ohne gespeicherte Segmente oder UVs zu ändern. Die obere linke Zwei-Türen-Bevel-Ecke steigt im ausgerichteten 16×16-Bild von 175 auf 203 exakte Pixel und erreicht die anderen drei Ecken. Bevel aus trifft oben 256/256 Pixel; die geraden Wandstreifen und Portal-Endkappen bleiben unverändert. Die innere Bevel-UV-/Kantenabweichung bleibt offen. Eine isolierte Nearest-Filterprobe verschlechterte die Ecke und wurde nicht übernommen.
-
-Der Building-Farbpicker rundet RGB nur beim Klick in die Sättigungs-/Helligkeitsfläche auf die nächste Kanalstufe; bestehende Pattern-Farbrechnung, Hex-, Hue- und RGBA-Pfade behalten ihre Umrechnung. Die Building-Pipette verschiebt die lokale Bildschirmabtastung um eine Zeile nach oben, wie in zwei Original-Kantenproben gemessen; `Renderer.sampleRenderedPixel` selbst bleibt koordinatengenau. Die 24 Bodenstilpfade und Standardfarben sind über einzelne Original-/Host-Galeriegesten samt frischer Neuöffnung belegt. Der ausgerichtete Vergleich und die offenen Bild-/Tintfälle stehen unter `/home/aaron/.cache/dungeon-native-qa/parity-phase3-remaining-20261007/phase3-remaining-implementation.md`.
-
-Wall Tool und Cave Wall Override verwenden denselben ARGB-Dialog wie Building. Wall-Entitäten speichern ihren Farbwert und optional ein Alpha-Byte; Cave-Flächen speichern `wallColor` und optional `wallAlpha`. Fehlt das Alpha-Feld in älteren Kartendaten, zeichnet der Renderer deckend. Die Wall-Werkzeugvorgabe gilt für neue Wände und die Farbauswahl kann eine ausgewählte Wand ändern. Die Cave-Farbauswahl aktualisiert die Vorgabe und vorhandene Cave-Flächen auf dem aktiven Geschoss gemeinsam in einem History-Schritt, ohne deren Konturen zu ändern. Beide Originalkontexte bestätigten die Feldwerte und den Einzeilenversatz der Pipette; der direkte Pixelwertvergleich bleibt wegen verschiedener dargestellter Kartenhintergründe offen. Belege: `/home/aaron/.cache/dungeon-native-qa/parity-phase3-shared-picker-20261007/shared-picker-implementation.md`.
-
-## Gebäudeabnutzung als Kartenmodus
-
-Der Neuanlagedialog von Dungeondraft 1.2.0.1 bietet „Disable Building Wear“. Nicht angehakt speichert `world.building_wear` mit `grime.png`, angehakt speichert `null`; der Kartenhintergrund bleibt gleich, native Böden und eingebaute wie Paketwände ändern ihre Wirkung. Nach Neustart ist der Schalter wieder nicht angehakt. Der Editor speichert dafür `settings.nativeBuildingWear: true | false` getrennt vom bisherigen numerischen `buildingWear`. Neue Karten setzen `true` und den Zahlenwert `0`; fehlender binärer Wert in bestehenden Karten bedeutet aktive native Abnutzung. So bleiben vorhandene native Bodenmaterialien aktiv; bei weißen Paketwänden korrigiert der direkte Originalvergleich die zuvor ausgelassene Grime-Wirkung. Der numerische Wert bleibt eine zusätzliche, nur im Kartenoptionsdialog erreichbare Hostwirkung. Die binäre Wahl wird innerhalb des laufenden Plugins für weitere Neuanlagen gemerkt und nicht in den Plugin-Einstellungen persistiert.
-
-Der Boden- und Wandshader verwendet bei `false` einen neutralen Faktor statt der Grime-Textur; Vorschau und fertige Grafik lesen denselben Kartenwert. Alle Building-Wandstile verwenden diesen Pfad, sofern die PCK-Grime-Textur verfügbar ist. Fehlt sie, zeichnet eine Paketwand weiter ihre Albedo. Freie Wall-Entitäten und der unbebaute Hintergrund hängen nicht von diesem Building-Modus ab. Direkte Originalkarten, Hostkarten und Neuöffnungen stehen unter `/home/aaron/.cache/dungeon-native-qa/parity-phase3-wear-implementation-20261007/wear-implementation.md`.
-
-Die direkte Phase-1-Probe erweitert den Kartenmodus um `settings.buildingWearMode` mit `none`, `dust`, `grime`, `noise` und `scratched`. Das Feld hat Vorrang vor dem älteren `nativeBuildingWear`; fehlt es in Bestandskarten, bleibt dessen bisherige `false`/Grime-Bedeutung erhalten. Neue Karten speichern die Startwahl als `none` oder `grime`, und die seitliche Karteneinstellung speichert jede der fünf Wahlen unmittelbar. Boden und eingebaute Building-Wände lesen die entsprechende Textur aus demselben geprüften Dungeondraft-PCK; `none` verwendet den neutralen Shaderfaktor. Der ältere Zahlenwert `buildingWear` bleibt getrennt. Die Moduswahl erzeugt keinen eigenen Undo-Schritt und wird in bestehenden History-Befehlen nachgeführt, damit Undo/Redo anderer Einstellungen sie nicht zurücksetzt. Der gemessene Original-Undo-Knopf war nach der Wahl deaktiviert; komplexere kombinierte Original-History bleibt vor dem Fachreview offen. Belege: `/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-wear-original-20261009/original-probe.md` und `/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-wear-host-implementation-20261009/implementation.md`.
-
-## Gemeinsamer Wandstil
-
-Die gehaltene Building-Vorschau verwendet Bodenmesh, Geometrie, Shader, Maske und dunkle Unterlage bei weiteren Konturpunkten wieder; geänderte Puffer und Konturen werden in diesen Objekten aktualisiert. Erst ein anderer Shaderstil, ein anderes Asset oder das Ende der Vorschau zerstört sie. Die gespeicherte Building-Grafik behält ihren bisherigen Aufbau. `floorPolygonTouchesCell` prüft nach dem Mittelpunkt nur noch Eckpunkte und räumlich mögliche Ringkanten: Liegt ein Zellwinkel bei außen liegendem Mittelpunkt innerhalb des Polygons, muss die Ringgrenze die Zelle schneiden. Vier zusätzliche Polygon-Innentests pro Zelle sind daher entbehrlich. Die vollständige Variantenfolge und Abdeckungsmasken der 32-/512-Punkt-Vergleichskarten bleiben bytegleich. Die PCG- und Überlappungsreihenfolge von `nativeFloorCells`/`nativeFloorVariants` bleibt unverändert.
-
-`buildingWallStyle` leitet die fünf Felder der aktiven Building-Wandvorgabe einmal aus den Werkzeugeinstellungen ab; `applyBuildingWallStyle` wendet sie bei Vorschau, Einfügen/Entfernen und Alt-Radieren an. Eine Punktverschiebung behält ihren bisherigen Stil. Neue Buildings lassen eine nicht gewählte optionale Wandkennung weiter weg. Die Phase-3-Hostfixtures prüfen PCK und QAWall01-Paket an einer Stelle per Inhaltshash; alternative lokale Dateipfade werden nur mit denselben Hashes angenommen.
-
-Der [Phase-3-Nachweis](/home/aaron/.cache/dungeon-native-qa/parity-phase3-cleanup-review-20261008/phase3-cleanup-review.md) bestätigte diese Architekturänderungen auf Build `013c9aef…`: Die gespeicherte Building-Grafik behält ihren Aufbau, die gehaltene Vorschau ihre Ressourcen über neun Punktziele und gibt sie beim Abbruch frei. Vollständige Varianten- und Abdeckungsarrays blieben bytegleich; die vier fachlich betroffenen Hostfolgen bestanden Bearbeitung und frische Neuöffnung.
-
-## Objektbibliothek und Tagbestand
-
-Die eingebaute Objektbasis stammt wie die nativen Boden- und Wandstile aus dem hashgeprüften Dungeondraft-1.2.0.1-PCK. Der Katalog liest Metadaten und Bildpositionen, hält die 1.792 Objektbilder aber als Slices der Quelldatei; Galerie und Tagbrowser fordern Bild-URLs erst für sichtbare Kacheln an. Paketobjekte behalten ihre bisherigen Asset-IDs. Native und Paketobjekte werden über den vollständigen `res://`-Pfad verbunden, damit gleiche Dateinamen aus verschiedenen Paketen keine falsche Tag- oder Kachelwahl erzeugen.
-
-Der Objektbibliothekszustand liegt in `src/features/objekte/object-library.ts`: sichtbarer und angewandter Suchtext sind getrennt, ebenso Reglerstellung und zuletzt angewandte Genauigkeit. Das Suchfeld-X leert nur den sichtbaren Text, der Papierkorb hebt Trefferfilter und Kachelmarkierung auf. Used erfasst beim Eintritt in den Tab einen Snapshot der Kartenobjekte; ein erneuter Eintritt aktualisiert ihn. Tag-/Setdaten kommen aus dem nativen Default-Dokument, dem optional gespeicherten Override und aktiven Paketen. Ein Override ersetzt den Defaultbestand; Paket-Tags werden zusätzlich nach vollem Assetpfad zusammengeführt. Die Originalpriorität überlappender Zuordnungen gehört zum direkten Tag-/Setvergleich in `acceptance.json`.
-
-Tag- und Setbearbeitung benutzt einen vom gespeicherten Stand getrennten Entwurf. Save validiert das gesamte Dokument und schreibt eine eigene globale Plugin-Datei unter `.obsidian/dungeon-editor-assets/object-tags.json`; Close und Fenster-X verwerfen ungespeicherte Änderungen. Diese Datei gehört nicht zur Kartenhistorie. Auf einem lokalen Vault-Adapter prüft der Speicher den zuletzt gelesenen Text und ersetzt die Datei über einen temporären Pfad. Die 28 Phase-4-Unterfälle und weitere Originalgrenzen stehen im [Umsetzungsbericht](/home/aaron/.cache/dungeon-native-qa/parity-phase4-object-host-20261008/phase4-implementation.md). Die 28 Fachfälle sind nach den späteren unabhängigen Fachreviews vom 8. Oktober 2026 in `acceptance.json` verifiziert; das ist eine datierte Abnahme und kein aktueller Gesamt-PASS.
-
-Tag- und Setwahl haben explizite Zustandsübergänge: ein normaler Tagklick ersetzt die Wahl, Strg+Klick ergänzt oder entfernt, eine Setwahl ersetzt sie durch die Setmitglieder. Die vollständige Tagliste bleibt sichtbar. `---` bedeutet leere Wahl; nach manueller Wahl zeigt der Wähler `Custom Set`. Der Browser-Modus ist eine prozesslokale Ansicht und startet bei jedem Programmstart in Default, auch wenn ein gespeicherter Override die Bibliothek bereits steuert. Override wird erst nach bewusster Wahl angezeigt. Das X der Kopierabfrage lässt einen vorläufig markierten, aber gesperrten Override-Zustand ohne Entwurf; Cancel setzt Default. Der [Nachbesserungsbericht](/home/aaron/.cache/dungeon-native-qa/parity-phase4-repair-20261008/phase4-repair-implementation.md) enthält die direkten Original- und Hostbelege; spätere Fachreviews im Abnahmeregister dokumentieren den Abschluss auf ihrem damaligen Build.
-
-Bei einem erstmals vertrauten isolierten Vault kann Obsidian `activeDocument` noch auf `about:blank` halten, obwohl der Karteneditor bereits fokussiert ist. `Modal` konstruiert und öffnet dann im falschen Dokument. Beide sichtbaren Tagbrowser-Zugänge geben deshalb das `ownerDocument` der angeklickten Editoransicht an den Plugin-Aufruf. Wenn dieses Dokument fokussiert ist, synchronisiert der Aufruf `activeWindow` und `activeDocument` unmittelbar vor der Modal-Konstruktion. Die [Kaltstart-Nachbesserung](/home/aaron/.cache/dungeon-native-qa/parity-phase4-coldstart-20261008/phase4-coldstart-implementation.md) belegt das falsche Original-Hostfenster und den sichtbaren ersten Klick auf dem neuen Kandidatenbuild; die damaligen Fachreviews sind in `acceptance.json` getrennt erfasst.
-
-## Asset-Snapshot und Bildlebensdauer
-
-Die Objektbibliothek hält einen vorbereiteten Asset-Snapshot aus sortierten IDs, vollständigen Pfaden und Suchwörtern. Assetbenachrichtigungen und Karten-Einstellungsänderungen invalidieren ihn; ein Tag-Save erneuert nur Tagdaten. Das Kachelgitter bleibt bei gleicher geordneter sichtbarer ID-Folge stehen, während Auswahlmarkierung und Bedienzustand gezielt aktualisiert werden. Der Tagbrowser ändert bei einem Mitgliedschaftsklick nur seinen Entwurf und die betreffende Kachelmarkierung. Wechselnde Ergebnisfolgen werden vollständig neu aufgebaut. `LazyObjectImages` bündelt das Nachladen sichtbarer Bilder für Bibliothek und Browser; beide trennen ihre Beobachter beim Schließen oder Ersetzen, die Bibliothek zusätzlich beim Editorabbau. Der Phase-4-Host prüft PCK und QA-Paket auch bei alternativen Pfaden gegen feste Inhaltshashes. [Messung und Hostbelege](/home/aaron/.cache/dungeon-native-qa/parity-phase4-cleanup-20261008/phase4-cleanup-implementation.md) liegen vor.
-
-Die Assetinvalidierung unterscheidet eine neue Assetbibliothek von einer reinen Karten-Einstellungsänderung. Beide erneuern den sortierten Snapshot, ohne die alte sichtbare ID-Folge vor dem Vergleich zu löschen. Bei gleicher Folge bleiben Kacheln, Bilder, Bedienelemente, Fokus, Auswahl und Scrollposition bestehen; geänderte Namen werden am Knoten aktualisiert. Nur nach wirklichem Asset-Reload werden geladene Bilder mit der aktuellen Blob-URL verglichen und bei Bedarf neu gebunden. Noch unbeobachtete Bilder fragen ihre URL erst beim Sichtbarwerden ab. Bei geänderter Folge wird das Gitter einmal neu aufgebaut und sein Bildbeobachter getrennt. [Dreifache ID- und Aktionsmatrix](/home/aaron/.cache/dungeon-native-qa/parity-phase4-cleanup-repair-20261008/implementation-audit.json) sowie Paketwechsel unter gleicher ID dokumentieren die Nachbesserung. Der nachfolgende Ressourcennachweis und `phase4CleanupMatrixRepairIndependentReview` im Abnahmeregister dokumentieren das geschlossene historische Aufräumtor.
-
-Der [Ressourcennachweis](/home/aaron/.cache/dungeon-native-qa/parity-phase4-cleanup-review3-20261008/phase4-cleanup-independent-review.md) bestätigt die erhaltenen Kacheln und Bildknoten bei gleichen IDs, den gezielten Blob-URL-Wechsel nach echtem Reload sowie vollständig freigegebene Bildbeobachter. Die nachgebesserte QA-Matrix misst Modal, sichtbare Bilder und Obsidian-Scope getrennt; Produktcode und Bundle blieben gleich.
-
-## Objektplatzierung und Farbe
-
-Der native Assetkatalog liest die STEX-Breite/-Höhe, Paketobjekte nur ihren PNG-Header. Bei 256 Pixeln pro Feld ergibt das die natürliche Vorschau- und Instanzgröße; Scale multipliziert beide Achsen gleich. Alte Karteninstanzen mit individueller Breite/Höhe bleiben unverändert. Die Object-Tool-Werkzeugvorgabe wird beim Anzeigen für das gewählte Asset normalisiert; die Auswahlbearbeitung schreibt diese Vorgabe nicht rückwirkend um.
-
-Over hängt eine neu platzierte Instanz an die gespeicherte Entitätenfolge, Under fügt sie vorn ein. Der Renderer kombiniert diese Folge mit dem Layerwert. Das Original protokollierte bei einem Sorting-Klick einen Methodenfehler und einmal eine unbeabsichtigte Off-Map-Platzierung; diese Nebenwirkung wird nicht nachgebildet. Ruhendes Escape hält das Object Tool samt Cursorvorschau, während Picker-Escape den geänderten Live-Farbwert übernimmt.
-
-Der Objektpicker zeigt die 30 gemessenen Standardfarben und berechnet Farbfläche/Hue in HSV. Numerische RGBA-Eingaben wirken live; das Hexfeld übernimmt sechs beziehungsweise acht Stellen beim Verlassen, wobei sechs Stellen A=255 setzen und acht Stellen ARGB sind. Die innere Pipette tastet auf Karten-Hover und beim bestätigenden Klick ab; der Klick erzeugt keine Instanz. Nur der Abschluss persistiert die Werkzeugvorgabe. Nicht färbbare Assettexturen behalten ihre Originalfarben, Colorable-Texturen nutzen die bestehende Pixelmaske. Der [ursprüngliche Umsetzungsbericht](/home/aaron/.cache/dungeon-native-qa/parity-phase5-final-20261008/phase5-implementation.md) dokumentiert den damaligen Host-Grundlauf vor den folgenden Ergänzungen.
-
-Die Karte speichert eine optionale geordnete `objectPalette` mit achtstelligen ARGB-Werten in den Karteneinstellungen; ältere Karten verwenden unverändert die 30 Standardfarben. Plus übernimmt bei Accept und Escape genau eine Farbe, auch als Duplikat. Diese Änderung markiert die Karte als geändert, erzeugt aber nach Originalmessung keinen Undo-Schritt; vorhandene Settings-History wird auf die aktuelle Palette umgebogen, damit anderes Undo/Redo sie nicht zurücksetzt. Der Renderer berechnet Licht nach Änderungen an Objekt- und Pfadblockern neu und färbt den Kartenhintergrund mit dem Ambientwert. Entitätenfolge, Layer und Hit-Test teilen weiter die vorhandene Sortierregel. [Original- und Hostbelege](/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair-implementation-20261008/phase5-repair-implementation.md) liegen vor; der spätere datierte Fachabschluss steht in `phase5Repair3IndependentReview` des Abnahmeregisters.
-
-Bei aktivem Snap rastet nur das Object Tool auf halbe Felder ein; andere Werkzeuge behalten die bisherige Feldrundung. Ein direkter Originalklick bei Kartenkoordinate 4,5/4 speicherte `Vector2( 1152, 1024 )`, während der frühere Host auf 5/4 rundete. Cursorvorschau und Platzierung verwenden nun denselben Halbfeldschritt. Rotation- und Scale-Regler ändern die Werkzeugvorgabe bereits während des Zeigerzugs, ohne einen Karten-History-Schritt zu erzeugen; numerische Felder behalten ihren bisherigen Abschlussweg. Die fünf direkt gemessenen RGBA-Folgeobjekte und die vierstufige Atlas-Undo-/Redo-Folge benötigten keine Änderung des Farbcodecs oder Renderers. Der ausgerichtete Vierobjektvergleich für Colorable-Tint und Alpha verwendet gültige Originalrohobjekte; er ersetzt keine Bedienprobe. Der [damalige Umsetzungsbericht](/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair2-implementation-20261008/phase5-repair2-implementation.md) hielt die zu diesem Zeitpunkt noch offene native A→B→A-Palettenprobe fest.
-
-Die Kartenansicht trennt die gespeicherte `objectPalette` einer Karte von der aktuellen Object-Tool-Farbe. Beim Aufbau einer neu geöffneten Kartenansicht beginnt die Werkzeugfarbe wie im direkt gemessenen Original bei der ersten roten Vorgabe mit Alpha 255; die karteneigene Zusatzpalette und bereits gefärbte Objekte bleiben erhalten. Ein bloßer Werkzeugwechsel auf derselben Karte erhält die gewählte Farbe. Die [direkte Originalfolge und der Hostvergleich](/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair3-implementation-20261008/phase5-repair3-implementation.md) sind Umsetzungsevidenz. Der [Fachreview vom 8. Oktober 2026](/home/aaron/.cache/dungeon-native-qa/parity-phase5-repair3-review-20261008/phase5-repair3-independent-review.md) dokumentiert 27 verifizierte Fälle und den Objektkontext von `DD-028.19` auf Build `aebdf3730e42dc598929295859f7448d14071652dcd5f5675d043bc20d0b6c68`; Scatter und Light desselben gemeinsamen Falls sind davon nicht abgenommen.
-
-## Lichtinvalidierung und Picker-Lebensdauer
-
-`toolDefaults()` ist ein reiner Lesezugriff; `resetObjectColorForMap()` gehört zum Aufbau der Kartenansicht. Die Session kennzeichnet eine reine `objectPalette`-Änderung mit `paletteOnly`, damit der Renderer die neue Settings-Referenz ohne Szenenneubau übernimmt. Die History-Umbasierung der Palette bleibt in der Session.
-
-Für Lichtinvalidierung hält der Renderer pro blockierender Entität den letzten Bereich auch dann, wenn ihre Übersichtsgrafik ausgeblendet ist. Alte und neue Bereiche einschließlich Geschoss und gebundener Tür-Eltern bestimmen pro Sessionereignis die betroffenen Lichter; Änderungen der Karten-Settings behalten den vollständigen Neuaufbau. Die Object-Picker-Einstiege teilen Preview und Commit. Der Editor beendet ausstehendes Farbsampling beim View-Abbau, bevor Renderer und DOM verschwinden. Phase-5-Hostszenarien beziehen die proprietären PCK-/QA-Fixtures über einen gemeinsamen SHA-256-gebundenen Helfer. [Vorher/Nachher-Rohdaten und Hostpaare](/home/aaron/.cache/dungeon-native-qa/parity-phase5-cleanup-implementation-20261008/phase5-cleanup-implementation.md) sind Umsetzungsevidenz.
-
-## Objektgesten und Werkzeugzustand
-
-Der Canvas-Wheel-Pfad behandelt bei aktivem Object Tool mit Asset-ID jede native Radstufe vor der Kameranavigation. Alt ändert den einheitlichen Scale-Faktor additiv um 0,1 innerhalb der direkt gemessenen Reglergrenzen 0,1–4 und leitet beide Abmessungen aus der natürlichen Assetgröße ab. Sonst verschiebt Shift die Auswahl zyklisch in der gegenwärtig sichtbaren Bibliotheksfolge; ohne Shift dreht das Rad um 15° oder mit gehaltenem Z um 5°, jeweils mit Winkel-Wrap. Rechts-Press dreht um +90° beziehungsweise mit Alt um −90°. Diese Werkzeugzustände erzeugen vor der Platzierung keinen Karten-Historienbefehl und verändern die Kamera nicht.
-
-Der gehaltene A-Zustand ist vom persistierten Werkzeugdefault getrennt. Vorschau und folgende Platzierung lesen ihn zur selben Zeit; Key-Up, Fokusverlust, Werkzeugwechsel und Abbau löschen ihn. Die Object-Bibliothek gibt nur echte sichtbare Asset-IDs zum Zyklisieren frei und lässt eine leere Kachelwahl unverändert. Die bestehende Auswahlarchitektur behält stabile IDs, gemeinsame Objekt-Licht-Befehle und die Auswahlrücksetzung nach tatsächlichem Undo/Redo. [Original- und Host-Umsetzungsbelege](/home/aaron/.cache/dungeon-native-qa/parity-phase6-implementation-20261008/phase6-implementation.md) sind damalige Umsetzungsevidenz. Der [Fachreview vom 9. Oktober 2026](/home/aaron/.cache/dungeon-native-qa/parity-phase6-final-review-20261009/phase6-independent-review.md) dokumentiert 15 verifizierte Pflichtpositionen auf `e616d29c5221828516846d30d288b0738c428eed`; der [technische Aufräumreview](/home/aaron/.cache/dungeon-native-qa/parity-phase6-cleanup-review-20261009/cleanup-independent-review.md) schließt die vier Aufräumpunkte auf `8f7fa1e692a0f5a9f7b39f04303400ccfeb56413`. Physische Eingabe und kombinierte Großkarte sind davon nicht abgenommen; im Host wurde kein DOM-Blur beobachtet und der Cloth-Mittelpunkt nur grafisch ungefähr gleichwertig bewertet.
-
-## Vereinbarte Hex-Atlas-Erweiterung
-
-Die [Hex-Atlas-Roadmap](ROADMAP-HEX-ATLAS.md) hält den am 8. Oktober 2026 vereinbarten Plan fest. Die folgenden Entscheidungen beschreiben das Zielbild. Hex-/Ortskern und Stadt-/Dungeon-Teilabläufe sind bereits integriert; der [Atlasstand](ROADMAP-HEX-ATLAS.md#atlas-auf-einen-blick) trennt vorhandene Funktionen, PR-Kandidaten und offene Anforderungen. Das vollständige Zielbild ist noch nicht abgenommen:
-
-- Ein ebener Atlas verwendet gemeinsame Weltkoordinaten in Metern. Kartenplatzierungen verbinden lokale Dungeonfelder, Orientierung und Eingangsanker mit diesem Raum; die bestehende Dungeon-Geometrie bleibt erhalten.
-- Nutzerpräzisierung vom 9. Oktober 2026: Der gemeinsame Atlas hat keine feste Breite, Höhe oder Bearbeitungsgrenze. Seine belegte Ausdehnung wird aus ausdrücklich bearbeiteten Bereichen, Vorlagen und Stadt-/Dungeonplatzierungen abgeleitet und begrenzt keine neuen Inhalte. Pan/Zoom allokieren keine Landschaftsdaten. Inhaltsänderungen und Undo/Redo aktualisieren die abgeleitete Ausdehnung, ohne Kamera, Hex-Adressen oder bestehende Geometrie zu verschieben. Lokale Dokumentgrenzen und Exportausschnitte sind keine Atlasgrenzen.
-- Nutzerentscheidung vom 9. Oktober 2026: Kartenvergrößerung und -verkleinerung als eigener Dungeon-Befehl sind kein Zielverhalten des gemeinsamen Atlas. Die DD-038-Resize-Parität entfällt; vorhandene lokale Befehle und historische Messungen werden bis zur Atlasintegration weder als Atlasgrenze noch als Freigabe gewertet. Building-Boden-Bedienung bleibt davon unabhängig.
-- Nutzerpräzisierung vom 9. Oktober 2026: Dungeondrafts `New Map`, lokale Startgrößen, Größenvorlagen und New-Map-Startschalter sind keine direkten Vorbilder der einzigen Atlaskarte. HEX-01 legt sie ohne Kartenmaße an; Dungeon-, Stadt- und Overworld-Inhalte werden im gemeinsamen Raum bearbeitet. Frühere lokale Dialog- und Hostbelege bleiben historisch, setzen jedoch keine Atlasgrenze oder neue Paritätspflicht.
-- Räumliche Bereichsgrößen werden in Meilen oder Hex-Kacheln der benannten Stufe eingegeben und auf Weltmeter bezogen. Pixelauflösung betrifft Renderer und Bildausgabe. Es gibt keine Pixelgröße des Atlas und keine Atlas-Resize-Aktion. Übersichtsstufen oberhalb der Standardreihe wachsen bei Bedarf mit Ausschnitt beziehungsweise Inhalt.
-- `.overworld` hält Landschaft, Hex-Stufen und räumliche Platzierungen; `.location` hält Orts-Keys mit stabilen Abschnitten. `.dungeon` bleibt die Quelle für Dungeon-Geometrie und Raum-Keys.
-- Hex-Stufen beginnen bei drei Meilen Mittelpunktabstand und wachsen jeweils um Faktor drei. Alle Stufen sind bearbeitbar; Flächenüberschneidungen verbinden die Stufen. Feinere ausdrückliche Änderungen bleiben gegenüber groben Vorgaben erhalten.
-- Landschaft und Details werden bedarfsweise geladen. Eine gemeinsame Kamera und wiederverwendbare Kartenszenen ermöglichen den Atlas-Zoom; Hex-Regeln bleiben von quadratischen Dungeonregeln getrennt.
-- Stabile Dokument- und Key-Kennungen sowie dokumentübergreifende Befehle und Speicherjournale verbinden Atlas, Orts-Keys und Dungeon-Keys.
-
-Die Umsetzung dieser Architektur folgt den kleinen Benutzerabläufen HEX-00 bis HEX-28 der Roadmap. Gemeinsame Key- und Renderer-Anbindungen für Orts-Keys und räumliche Dungeonübergänge sind integriert; der bestehende Dungeon-Arbeitsablauf wird dabei fortlaufend geprüft. HEX-02 beschreibt den ersten bearbeitbaren Hex-Editor; HEX-05 verlangt den vollständigen verbundenen Ort-Dungeon-Raum-Key-Ablauf. Vorhandene Teilbelege ersetzen dessen Abschluss nicht. Vollständige Wonderdraft-Parität bleibt eine eigene, belegpflichtige Abnahme.
-
-HEX-02-I01a/b implementiert den ersten begrenzten Landschaftskern: ausdrücklich bearbeitete 3-Meilen-Zellen mit Land/Meer, Gelände und Farbe liegen in vorzeichenrichtig adressierten 32×32-Bereichen. Unbekannte Bereichsinhalte müssen vor einem Zug vollständig geprüft geladen werden. Die Overworld hält Bereichsverweise mit tatsächlicher Zellzahl und belegter Ausdehnung; Navigation erzeugt keine Zellbestände. Der hostneutrale `AtlasHistory`-Stapel besitzt JSON-Werte nach stabiler Dokumentkennung und Befehlsziel, prüft sämtliche Vorherwerte und neuen Werte vor gemeinsamer Mutation und behält rücknehmbare Momentaufnahmen. Terrain-, Stadt-, Orts- und Dungeonbeiträge verwenden den gemeinsamen Stapel; die jeweils belegten Anschlüsse und offenen Produktlücken stehen im [Atlasstand](ROADMAP-HEX-ATLAS.md#atlas-auf-einen-blick). Der erste native Inselablauf verwendet dieselbe Atlasfläche, Kamera und Werkzeugleiste.
-
-HEX-02-I01c verbindet die Landschaft mit `AtlasRepository`: native Bereichsdateien liegen unter `Atlasdaten/<world.id>/terrain/`; ein streng versionsgeprüfter `.overworld.draft` hält die exakte gespeicherte Basis und geprüfte Vorher-/Nachheränderungen. `FileTransaction` übernimmt Bereiche, Weltverweise und den eigenen Entwurf mit Compare/Write und vorbereitetem/abgeschlossenem Journal. Wiederherstellung erhält externe Änderungen als Konflikt; der Vertrag verspricht keine POSIX-fsync- oder TOCTOU-Garantien. Sämtliche Atlasblätter teilen die Warteschlange ihres tatsächlichen Vault-Backends, auch bei verschiedenen Store-Adaptern. Ungeladene Verweise bleiben erhalten. Inhalt statt Undo-Tiefe bestimmt den Speicherstatus; gültige Formatierung oder Listenreihenfolge erzeugt keine Scheinänderung. Speichern erfasst seinen Aufrufstand, danach eintreffende Bearbeitung bleibt als neuer dauerhafter Entwurf erhalten. Der dünne FileView-Adapter beendet laufende Züge und wartet auf ihre Entwurfssicherung vor dem Zerstören. Ein frischer Prozess stellt Inhalt und Kennungen mit einer neuen flüchtigen History wieder her. Der native Insel-, Zwei-Blatt-, Unterbruch- und Konfliktablauf ist geprüft. HEX-02-I01d kopiert den erfassten Landschaftsstand unter neuer Weltkennung in eigene Bereichsdateien und erhält gespeicherte Quelle samt Entwurf. Explizites Verwerfen setzt allein den eigenen Entwurf auf die gespeicherte Terrainquelle mit frischer History zurück; Kamera, Auswahl, Werkzeug und Farbe bleiben in derselben Kartenfläche erhalten. Kopie-Abbruch, A↔B, Verwerfen-Abbruch/Bestätigung und der frische unabhängige Kopieentwurf sind nativ geprüft. R01 fand zwei Pflichtlücken in Kopier-Recovery und Dialogschluss; N01 und unabhängiger R02 schließen sie im geprüften Umfang. Orts-/Stadt-/Dungeon-Speicherung und gemeinsamer Zoom werden dadurch noch nicht abgenommen.
-
-HEX-02-N01 ergänzt nach zwei R01-Pflichtbefunden eine ausdrückliche, zielgebundene Kopierwiederherstellung. Sie benötigt keine vorhandene Ziel-Overworld, akzeptiert aber ausschließlich ein streng geprüftes geschlossenes Neuanlagejournal: Zielwelt plus genau ihre referenzierten neuen Terrain-Dateien und kein Zielentwurf. Der Eigentümer validiert das unveränderliche Journal innerhalb der bestehenden Speicherwarteschlange vor jeglicher Reparatur; ein ausgetauschtes Journal oder externe Zielbytes bleiben als Konflikt erhalten. Vorbereitete Kopien werden zurückgenommen, abgeschlossene erhalten. Normales Kopieren repariert kein belegtes Ziel automatisch. Der angenommene Kopiervorgang sperrt alle nativen Schließwege bis zum sichtbaren Ergebnis; ein Quellwechsel erhält die benannte Kopie ohne verspätete Navigation. Gezielte Core-/DOM-Fälle und ein isolierter nativer Ablauf samt frischem Prozess bestehen. Der unabhängige R02 schließt beide Pflichtbefunde.
-
-Der native Ortskern aus HEX-03-I01a ist integriert: `LocationDocument` Version1 hält stabile Orts-/Abschnittskennungen, Name/Typ, geordnetes unverändertes Markdown sowie explizite Karten-/Keyverweise. Geschlossene native Record-/Listenprüfungen weisen unbekannte Felder, Metadaten, Lücken, Accessors und fremde Prototypen vor JSON-Konversion ab. `LocationSource` registriert genau einen Owner pro Historylebensdauer; Dokument oder ausdrückliche Abwesenheit liegen ausschließlich in AtlasHistory. Immutable Before/After-Befehle lassen sich atomar mit echten Terrainbefehlen zusammensetzen; Undo/Redo und stale Ablehnung sind geprüft. Der erste Ortsplatzierungscodec und das gemeinsame Key-Ziel kennen Weltmeter und stabile Owner/Abschnitte, keine Dateipfade oder Kamera. Overworld, Repository und UI verwenden diese Werte inzwischen im gemeinsamen Ortsablauf. Der unten beschriebene HEX-03-I01b-Anschluss ergänzt Speicher-/Kopier-/Entwurfsregeln; begrenzte native Ortsbelege und offene Abnahmen stehen im [Atlasstand](ROADMAP-HEX-ATLAS.md#atlas-auf-einen-blick).
-
-## Stadtpläne und durchgehende Atlas-Bearbeitung
-
-Die [Stadtziele](ROADMAP-CITIES.md) definieren CITY-00 bis CITY-09 einschließlich des gemeinsam bearbeitbaren [Gebäudeobjekts mit Innenräumen](ROADMAP-CITIES.md#gebäude-und-innenräume-als-ein-objekt). Aktueller Stand und fehlende Funktionen stehen in der [Atlasübersicht](ROADMAP-HEX-ATLAS.md#atlas-auf-einen-blick).
-
-Modell/Codec, CitySource/AtlasHistory, editCity, CityScene/hitCity, CityDraft, CityGesture und CityRenderer verwenden dieselben lokalen Meterdaten und räumlichen Bindungen. Ihre APIs, Validierung, Lebensdauer und Nachweisgrenzen stehen ausschließlich im [technischen Stadtplan](ROADMAP-CITIES-IMPLEMENTATION-PLAN.md); dort folgen auch [Generation, Gestaltung und Ausgabe](ROADMAP-CITIES-IMPLEMENTATION-PLAN.md#generation-gestaltung-und-ausgabe).
-
-Die folgenden räumlichen Verträge beschreiben die gemeinsame Atlasbasis. Bestehende City-v1-/Dungeon-v4-Bausteine belegen noch nicht den vollständigen gemeinsamen Gebäudezustand.
-
-## Räumliche Atlasverträge
-
-**Native Verortung:** Overworld-Version2 behält die bisherigen Landschafts- und
-Locationplacements und ergänzt ausdrücklich `detailPlacements`. Version1 bleibt
-exakt lesbar; keine stille Umdeutung unbekannter Felder. Erst die erste
-Detailbindung erzeugt einen rücknehmbaren V1→V2-Befehl. Der Weltowner hält
-Formatversion und Detailbindings neben den vorhandenen Terrain-/Ortswerten in
-derselben AtlasHistory. Undo auf V1 mit leerer Detailmenge stellt die ursprüngliche
-Weltbytesbasis wieder her. Location-v1, City-v1 und Dungeon-v4 werden nicht
-für fremde Placementfelder umgeschrieben.
-
-Ein vorgeschlagenes Cityplacement besitzt `id`, `kind: city`, `documentId`,
-`parent: {kind: location, locationId}`, `offsetMeters` und `rotationRadians`.
-Sein starrer Metertransform setzt am vorhandenen Location-Weltpunkt an. Ein
-Citydokument erhält im ersten Schnitt höchstens eine Placementinstanz je Welt.
-Es gibt keine zweite gespeicherte City-Weltposition.
-
-Ein vorgeschlagenes Dungeonplacement besitzt `id`, `kind: dungeon`, `documentId`,
-einen Locationparent oder `parent: {kind: city-building, cityId, buildingId}`,
-`anchor: {parentPointMeters, mapPointFields}`, `rotationRadians`, einen ausdrücklich
-gewählten `surfaceFloorId` und eine Entrance-Liste aus `routeId`, `floorId`,
-`roomId`, `pointFields`. Alle Punkte werden vom Anwender/Fixture ausdrücklich
-gewählt. Route-ID und Raumreferenz sind keine physische Türkoordinate. Der
-native Faktor ist fünf Fuß × 0,3048 = **1,524 Meter pro Dungeonfeld**; gespeicherte
-Geometrie bleibt unverändert. Weitere Eingänge beziehen sich auf dieselbe
-Detailplatzierung, nicht auf verschiedene Kopien der Dungeonkarte. Geschosswahl
-ist eine Darstellungs-/Layerwahl; Reihenfolge wird nicht zu physischer Höhe.
-
-**Hauspose und Physik:** Der Dockpunkt folgt `position + R(rotation) ×
-(scale × parentPointMeters)` des native Cityhauses. Die Dungeonbasis folgt der
-Hausdrehung und der ausdrücklich gesetzten relativen Drehung, nicht dessen
-dimensionsloser X/Y-Skalierung. Dungeonräume bleiben physisch starr und behalten
-1,524 Meter pro Feld. Hausverschiebung/-drehung bewegt die abgeleitete Karte ohne
-zweiten Dungeonbefehl; Skalierung der Hauskontur ist kein Verformen vorhandener
-Raumgeometrie. Die Eingangs-/Bindungsprüfung erhält diesen Zusammenhang auch bei
-mehreren Eingängen. Keller dürfen über den Hausumriss hinausreichen.
-
-**Prospektive Graphclosure:** Alle gebundenen IDs, Typen, eindeutigen Parents,
-Häuser, Floors, Räume und Entrancerouten werden am tatsächlichen Ownerbestand
-geprüft. Die gemeinsame History erhält einen schreibfreien Prospektivvalidator:
-Nach Prüfung aller Before-/Afterwerte, aber vor Mutation, liest er für
-execute/undo/redo den gesamten geplanten Zustand einschließlich aller Changeziele.
-So kann CityGesture weiterhin genau einmal in dieselbe History schreiben, ohne
-einen zweiten Commit oder eigenen Atlas-Befehlsstapel. House-Entfernung bei
-vorhandenem Child wird abgelehnt oder ausdrücklich mit Entkopplung in einem
-gemeinsamen Befehl übernommen. Für bearbeitete relevante Parents müssen die
-benötigten Childidentitäten zuverlässig geladen/verifiziert sein; ungeladen
-bedeutet nie abwesend. Bloßes Entkoppeln löscht keine Kartendatei und verliert
-keine offene Key-/Geometriebearbeitung. Typisierte Location-Karten-/Keyverweise
-sind Navigation, keine zweite Placementautorität; ihre Closure wird gemeinsam
-mit dem Worldgraph geprüft.
-
-**Eine präzise Kamera:** Der aktuelle absolute `screenToWorld`-Roundtrip kann
-bei Anker1e16 kleine Meter verlieren. Die gemeinsame Kamera wird deshalb
-aus einem großen Anker, einem getrennten kleinen Meteroffset und Meter/Pixel
-projiziert; das ist eine Kamera, kein privater Detailviewport. Pan/Zoom verändern
-den kleinen Offset ohne vorzeitige Addition zum großen Anker. Projektionsports
-`projectLocal(frame, point)` und `unprojectLocal(frame, screenPoint)` bilden die
-Parentkette relativ zu diesem Kamerarahmen, bevor lokale Deltas addiert werden.
-Render/Hit/Preview/Fit verwenden dieselbe Abbildung; keine zwischenzeitlich
-gerundete absolute Weltposition. Nicht darstellbare oder numerisch unzuverlässige
-Ergebnisse werden sichtbar abgelehnt. Der erste Cityparent ist starr, damit
-Bildschirmtoleranz exakt in lokale Meter umgerechnet werden kann.
-
-**Szenenlebensdauer:** Ein hostneutraler Detailregistryadapter hält die tatsächlichen
-Ownerquellen mit gemeinsamer History und deren räumliche Projektionen. Renderer
-hängen einmal an `AtlasRenderer.detailLayer` und zeichnen vor dem vorhandenen
-Application-Render. Unsichtbare Graphics dürfen freigegeben werden; native
-History-/Dirtyowner bleiben für diese Historylebensdauer erhalten. Der bestehende
-MapRenderer mit eigener Application/Session wird nicht als zweite Atlasinstanz
-eingebettet. Der erste Dungeonsceneadapter liest native Floors/Roompolygone und
-Keys; vollständige bestehende Geometriegesten brauchen eine reine Domainprojektion
-ohne schreibende Session. Zoom blendet Darstellungen ein/aus, keine Dokumente,
-Werkzeuge oder Editor-Modi.
-
-**Gemeinsame Speicherung:** AtlasRepository erfasst World, Terrain, Locations
-und sämtliche betroffenen City-/Dungeonowner in einer unveränderlichen
-Byte-/Closuremomentaufnahme. Ein vorgeschlagener Draft-Version3 ergänzt streng
-typisierte City-/Dungeondeltas mit ID, tatsächlichem Pfad und exakten
-Before-/Afterbytes; v1/v2 bleiben getrennt geprüft. Native Codecs validieren die
-jeweiligen Deltas; Graph, neue/entfernte Bindungen und Kinddateien werden vor
-Schreiben gemeinsam geprüft. Geladene geänderte Owner bleiben auch nach
-Entkopplung im Repositorybesitz bis Save/Discard. Dateipfade stammen aus einer
-eindeutigen typisierten ID-Auflösung, nicht aus dauerhaft gespeicherten Bindungen.
-Extern geänderte/umbenannte/mehreindeutige Dateien blockieren Schreiben; stille
-Ersatzdateien sind ausgeschlossen.
-
-Save/Entwurf/Discard/Recovery teilen dieselbe Backendqueue und ein Journal.
-Save erfasst seinen Aufrufstand; spätere Änderungen bleiben ein neuer Entwurf.
-Copy lädt die vollständige tatsächlich referenzierte lokale Closure, erzeugt
-neue World-/Location-/Placement-/City-/Building-/Dungeon-/Floor-/Room-/Route-/
-Section-IDs und remappt native interne Verweise/Bindings typgerecht. Quelle,
-bestehende Kampagnen, shared Definitionen und globale Katalog-IDs bleiben
-erhalten. Ein solcher Atlas-Copy ist weiterhin kein kompletter Campaignimport.
-Copy-Recovery prüft genau die neue Root-/Kind-/Referenzclosure auch ohne Rootdatei.
-
-**Publishgrenze nicht vorwegnehmen:** FileTransaction-v1 ist der bestehende
-lokale Compare/Write-Baustein, kein bestätigter Campaign-Publish oder
-vollständiger CommandId/Receipt-Restartvertrag. Für den echten E2E-Publish
-werden ein unveränderlicher Writeauftrag mit ursprünglicher CommandId/ReceiptId,
-Context/Namespace/Eingangsrevision, geprüften Ownerbaselines und einer persistierten
-Outcomeabfrage benötigt. Vor Publish darf Cancel gewinnen; danach gilt nur
-Verify/Finalize/Closure mit denselben IDs, kein Rollback als Cancelerfolg und
-kein blinder neuer Befehl bei unbekanntem Outcome. Eine kurzlebige
-Sessionrevision oder aus Payloadinventories abgeleitete trusted Registry erfüllt
-diese Autorität nicht. Campaign/Data liefert die konkrete Ownership-/Revision-
-und Publishsemantik, Hex verbindet den bestätigten minimalen Vaultadapter.
-Die räumliche Zwischenprobe bleibt klar vom vollständigen P02/P04-/E2E-PASS getrennt.
-
-Der ursprüngliche Teilnachweis E2E-01-SPACE-I01a-1 umfasst ausschließlich das Raumfundament; Speicher- und Hostanschlüsse sind in den nachfolgenden Abschnitten beschrieben:
-`spatial-schema.ts` bietet einen geschlossenen separaten WorldV2-Codec und einen
-Version-/Bindingzustand unter dem bestehenden Worldowner. TerrainSource aktiviert
-dieses Ziel nur ausdrücklich; im damaligen Teilstand blieb der Host-/Repositoryparser bis zur
-Speicheranbindung bei V1. `SpatialGraph` hält tatsächliche Location-/City-/Dungeon-
-Sources derselben History, prüft Parent-/Haus-/Geschoss-/Raum-/Routen- und lokale
-Keyclosure und erzeugt starre relative Rahmen. `AtlasHistory.addPreflight` prüft
-den vollständigen geplanten Zustand vor execute/undo/redo; `check` verwendet
-dieselbe Prüfung ohne Mutation. Die Prüfansicht ist unveränderlich, synchron und
-gegen schreibenden Wiedereintritt geschützt. Relative Kamera-/Projektionsports
-halten Anker, Offset und Parenttranslationen getrennt, erhalten Detailpräzision bei
-Pan/Pointerzoom und lehnen numerisch unzuverlässige Treffer ab. Im damaligen Teilstand
-waren diese Ports noch nicht im Host montiert. Dreizehn neue Kernfälle und die Basisprüfungen
-sind bestanden; sie umfassen keine native Darstellung oder vollständige E2E-Abnahme.
-I01a-2 beschreibt die Speicheranbindung, I01b die spätere Hostmontage.
-
-E2E-01-SPACE-I01a-2 verbindet die tatsächlichen City-/DungeonSources mit derselben
-AtlasRepository-Warteschlange, TerrainSource, AtlasHistory und FileTransaction.
-Das Kern-Opt-in `details: true` benötigt Ortsowner und eine injizierte typisierte
-Auflösung, die alle Treffer einer Kennung im geprüften Atlasbereich liefert.
-Fehlende, fremde, falsche oder mehrdeutige native Dokumente erzeugen keine Ersatzdaten.
-Im ursprünglichen I01a-2-Teilstand blieb der Host V1-geschlossen; der Kern kann V1 durch genau einen
-Worldowner-Befehl zu V2 verorten und über DraftV3 wieder öffnen. V1/V2-Drafts
-bleiben getrennt kompatibel.
-
-Repositorymomentaufnahmen enthalten den tatsächlichen World-/Location-/City-/
-Dungeonstand. DraftV3 hält native Before-/Afterbytes und geschlossene Typ-/Pfad-/
-ID-Deltas; vor kanonischem Save und Journalreparatur wird die vollständige
-betroffene native Referenzclosure geprüft. Save schützt auch unveränderte geladene
-native Dateien durch Baselineguards. Spätere Raum-Keyänderungen bleiben ein neuer
-Entwurf; externe Änderungen, Umbenennungen oder mehrere Dateitreffer blockieren
-kanonisches Save, Copy und Discard. Discard ersetzt die gesamte History und
-Ladegeneration; entkoppelte bearbeitete Detailowner bleiben bis Save/Discard geladen.
-
-Copy erfasst den Aufrufstand, lädt die vollständige tatsächlich referenzierte
-lokale Closure und remappt dokumentbezogene World-/Ort-/Stadt-/Haus-/Dungeon-/
-Geschoss-/Raum-/Routen-/Abschnittskennungen, native Verweise und lokale Keyziele.
-Markdown, externe Atlaslinks, Assetkennungen und shared Definitionen bleiben
-unverändert. Die Kopie schreibt neue native Dateien im bestehenden gemeinsamen
-Journal; die Quelle behält auch spätere Änderungen als eigenen Entwurf.
-Prepared-/Committed-Journale werden vor jeder Reparatur anhand tatsächlicher
-nativer Before-/Afterzustände geprüft. Geschlossene neue Kopierjournale können
-auch ohne neue Rootdatei zurückgenommen oder fertiggestellt werden.
-
-**Konkreter Campaign/Data-Anschlusspunkt:** `AtlasRepository.spatialGraph.world()`
-liefert die geschlossene echte WorldV1-/V2-Projektion mit World-ID, Ortsplatzierungen
-und typisierten Detailbindings; der bestehende Worldowner besitzt dafür die Ziele
-`placements` und `spatial`. `spatialState()` liefert Version und Detailplacements.
-`detail(kind, id)`/`ensureDetail(kind, id)` liefern dieselben tatsächlichen nativen
-Sources derselben History. Dies ist keine Campaign-Ownershipautorität und enthält
-keine erfundenen Registry-/Owner-/Snapshotrevisionen. Die bestätigte Campaign/Data-
-Lücke aus Issue12/6091818151 bleibt für den getrennten OWNERSHIP-P01-Vertrag:
-CampaignId/Revision/Namespace/ContextToken, Registry-/Owner-/Schema-/Snapshotrevisionen
-und ursprüngliche CommandId/ReceiptId müssen von deren autoritativem Port kommen.
-Der unten beschriebene I01b-Anschluss montiert diese Speichergrenze und die relative
-Kamera im Host. Die lokale FileTransaction bleibt vom Campaign-Publish-Vertrag
-getrennt; das Kernergebnis ist keine vollständige E2E-Freigabe.
-
-**Ownership-Quellintegration E2E-01-SPACE-I01c:** Der qualifiziert übergebene
-hostneutrale Campaign-Ownership-Vertrag ist als vollständiger Ownerbranch
-`d06354c` normal auf der aktuellen Atlasbasis in `5700fd2` übernommen.
-`CampaignOwnerRegistryPort.read/verify` und
-`CampaignMultiOwnerPublishPort.publish/status` bleiben injizierte Grenzen.
-Der Coordinator trägt Context-, Registry-, Owner-, Participant-Before- und
-Medienpolicy-Bindungen bis an dieselbe atomare Publishgrenze und löst verlorene
-Ausgänge nur mit ursprünglicher CommandId/ReceiptId auf. Der vollständige
-Quellimport aktiviert keinen Registryprovider oder Vault-/P02-/P04-Adapter;
-der bestehende Atlas-Speicherweg bleibt die bisherige lokale Grenze.
-Im damaligen I01c-Quellimport war der echte Campaign→Atlas-Kontext-/Registry-/
-Publishanschluss noch offen. Den aktuellen Laufzeitstand beschreibt der
-[Runtime-Arbeitsstand](ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md#arbeitsstand-80). Der unabhängige Kompositionsreview auf `ef6e851` bestätigt ausschließlich
-Quell- und Vertragstreue, keinen produktiven Laufzeitadapter.
-
-**Runtime-I01a, native Capturequelle:** `AtlasRepository.captureNative` erfasst
-tatsächliche World-/Orts-/Placement-/Terrainbytes sowie City-/Dungeonabhängigkeiten
-schreibfrei in derselben Backendwarteschlange. `verifyNativeCapture` akzeptiert
-nur die Originalprojektion derselben Repository-Lebensdauer mit ursprünglichem
-Consumer-Guard. Die immutable DTO trägt native Before-/Afterbytes und SHA-256,
-lokale Generation/History-/Repositoryepochs, eigene Records und ausdrücklich
-unclassified Referenzen. Terrain bleibt World-Unterdaten; der Worldrecord-Digest
-bindet auch Geländeänderungen bei unveränderten Zählwerten und Grenzen.
-Unsichtbare referenzierte Chunks und ausdrücklich gelieferte unverortete Orte
-werden gelesen, niemals als leere Ersatzdaten erzeugt. Entfernte lokale Orte
-bleiben als Before-/null-After-Tombstone enthalten. Die Coverage bleibt
-`spatial-closure`; weder Zusatzbestände noch Digests sind Registryautorität.
-
-Der monotone `AtlasHistory.epoch` beobachtet Register, neue Hydration und
-execute/undo/redo einschließlich Source-A→B→A. Bestehende Repository-Speicher-
-und Baselineoperationen widerrufen Captures über eine getrennte lokale Epoch.
-Capture/Verify prüfen deren Bindung und den ursprünglichen synchronen Consumer-
-Guard nach asynchronem Lesen erneut; native IDs/Locatoren, Dateibaselines und
-Draft-/Journalgrenzen werden vor Rückgabe nachgeprüft. Dieser Capture-Kern allein bindet keine
-gewöhnliche Editor-/Saveaktion an einen CampaignContext. Beobachtete Dateibytes
-sind keine atomare Dateisnapshot-/CASautorität; unbeobachtete externe Datei-ABA
-benötigt zusätzlich eine tatsächliche Providerrevision. Source `ad265b2` besteht
-Typecheck, 530 Tests mit 16 neuen Fällen und sauberen Build. Dieser ursprüngliche Kernnachweis
-umfasst keine Navigation, echten Provider, Host-/Neustartprobe oder Full-E2E.
-Spätere integrierte Anschlüsse und begrenzte Hostbelege stehen im
-[Runtime-Arbeitsstand](ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md#arbeitsstand-80); Full-E2E bleibt offen.
-
-**Stand E2E-01-SPACE-I01b:** AtlasView aktiviert die tatsächlichen typisierten
-City-/DungeonSources. Der native Kennungsindex liest alle passenden Dateien im
-aktuellen Vault und liefert alle Treffer; fehlende oder doppelte Kennungen bleiben
-Fehler. Dieser Dateilookup behauptet keine Campaign-Registry- oder Ownershipautorität.
-`AtlasRenderer` speichert genau eine relative Kamera; der bisherige absolute
-Kameralesewert ist ausschließlich eine abgeleitete Kompatibilitätsansicht.
-Terrain und Ortsmarker verwenden dieselbe Projektion. City-/Dungeonrahmen bleiben
-relativ bis zur Pixelprojektion; Einpassen berücksichtigt native Detailgrenzen,
-und weit entfernte Details werden vor einer unzuverlässigen Pixelprojektion ausgelassen.
-
-`SpatialCanvas` montiert CityRenderer und die erste native Raumzeichnung in derselben
-Pixi-Application vor deren Renderaufruf. Dach-/Raumsichtbarkeit richtet sich mit
-Hysterese nach projizierter Größe. Geometrie, Innenhöfe und sichtbare Griffe bestimmen
-die Trefferfolge; der aktive Werkzeugkontext wechselt beim Zoomen nicht. Vorläufige
-Citygesten projizieren abhängige Dungeons gegen dieselbe prospektive Historyansicht.
-Erst der gültige Abschluss schreibt einen nativen Citybefehl. Pointerup/Save/Flush
-übernehmen den gültigen Zug einmal; Escape, pointercancel und blur verwerfen die
-unbestätigte Vorschau, jetzt ausdrücklich auch beim Terrainpinsel. Ungültige/stale
-Stadtvorschauen blockieren den Abschluss und bleiben bis zum expliziten Abbruch erhalten.
-
-Der neue Raum-Key-Entwurf liest unmittelbar DungeonAtlasSource und schreibt über
-dungeonDocumentChange in dieselbe History. Raumname, Nummer und bestehende Markdown-
-Abschnitte sind bearbeitbar; unveränderte Texte, Passagen, Geometrie und Kennungen
-bleiben erhalten. Erneute Eingabe nach Übernehmen bezieht sich auf den aktuellen
-nativen Stand. Orts- und Raum-Keyadapter sowie Detailquellen lesen nach Discard die
-neue Repository-/Historygeneration statt alte Sources weiterzuverwenden.
-
-Die aktive räumliche Fixture `e2e01-spatial-v2` enthält sieben vollständige native
-Input-/Expecteddateien. Haus105 entsteht durch zwei reine CityEdit-Aufrufe für
-15,24 × 12,192 Meter und Pose(-18,8), mit den ursprünglichen Kennungen und einem
-starren 1,524-Meter-Dungeonmaßstab. Haus106/Hof und die eingefrorenen v1-Bytes bleiben
-unverändert. Der native Ablauf prüft Straße/Orts-Key/Haus, Gestenabbruch, Zoom/Raum-Key,
-Hex, gemeinsames Undo/Redo, exaktes Save und einen wirklich neu gestarteten Obsidian-
-Prozess. Er verwendet synthetische Eingaben in einem isolierten Vault. Der damalige I01b-Teilstand
-umfasste noch nicht den autoritativen Campaigncontext/Ownership-/Command-/Receiptport, den
-reinen Dungeon-Geometrieport und CompleteImport. Spätere Anschlüsse und Belege stehen im
-[Runtime-Arbeitsstand](ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md#arbeitsstand-80); vollständiger
-CompleteImport und das vollständige E2E-Gate bleiben offen. Installation, Originalparität,
-physische Eingabe und Großkarten sind durch diesen Teilnachweis nicht abgenommen.
-
-## Dungeondraft-Kartenassistent beim Kartenstart
-
-Die New-Map-Auswahl für den Assistenten ist pro Pluginprozess gemerkt. Eine neue Karte entsteht zuerst als leerer, noch nicht gespeicherter V4-Entwurf; die Pending-View übergibt nur das einmalige Startsignal an den seitlichen Editor-Assistenten. DUNGEON/CAVE und die Vorschau bleiben Editorzustand. „Neu generieren“ ersetzt nur die Kennungen des vorherigen Vorschlags dieser Assistentenansicht, „Fertigstellen“ wechselt zurück zur Werkzeugansicht und lässt die erzeugten Entitäten bearbeitbar. Das gespeicherte V4-Format erhält dafür kein neues Pflichtfeld. Native Generatorparameter und Materialwirkung bleiben Gegenstand von `DD-004/005`; der Phase-1-Startpfad ist noch nicht unabhängig reviewt.
-
-## Prozesslokale Größenvorlagen
-
-Die direkt verglichene Dungeondraft-Version hält selbst angelegte New-Map-Größenvorlagen nur im laufenden Prozess. Der Host verwaltet neue Vorlagen daher in einer geordneten Plugininstanz-Liste und speichert sie nicht mit `saveData`. Vorhandene ältere `sizePresets`-Daten bleiben beim Lesen und bei anderen Datenänderungen erhalten, erscheinen aber nicht in dieser Liste. Gleichnamige Einträge bleiben getrennt; erneute Auswahl eines Namens landet beim ersten Eintrag. Der Vorlagendialog normalisiert auf ganze 8–128 Felder. Die genaue Rundung mittlerer Bruchwerte, die obere Höhengrenze und native Entfernung bei doppelten Namen bleiben für den unabhängigen Phase-1-Review offen.
-
-## Kartengröße und Historiengrenze
-
-Nach einer bestätigten Änderung mindestens eines Kartenrandes verschiebt `resizeMap` die vorhandene Geometrie und setzt anschließend die verfügbare Undo-/Redo-Historie zurück. Die neue Karte bleibt bis zum Speichern dirty; reine Änderungen der Darstellungsoptionen ohne Randwert bleiben normal rückgängig machbar. Dies bildet die direkt gemessene History-Grenze von Dungeondraft nach `Change Map Size` für den Host nach. Die Originalmessung unterscheidet internes Löschen und Sperren älterer Schritte nicht; der Host löscht sie. Smart-Tile-Zellen des Originals benötigen weiterhin eine getrennte gespeicherte Rasterrepräsentation, damit Beschnitt Zellen dauerhaft entfernt und Shape-Polygone erhalten bleiben. Rechte/untere Beschnittfolgen und allgemeine Eingabegrenzen bleiben offen.
-
-Der Größen-Dialog bindet vor dem Öffnen `activeWindow` und `activeDocument` an das Quelldokument der angeklickten Kartenansicht. Obsidian erstellt Modals sonst gegebenenfalls im zuvor aktiven Fenster; die Zuordnung folgt dem bereits vorhandenen Objekt-Tag-Dialog.
-
-Der lesende Karteninformationsdialog verwendet dieselbe Fensterbindung und ist zusätzlich über das Kartenmenü erreichbar. Er liest Größe, Dateipfad und Paketauswahl beim Öffnen aus dem aktuellen Kartenstand; Close und X führen keinen Kartenbefehl aus.
-
-Die Randfelder normalisieren beim Verlassen den eingegebenen Wert anhand des gegenüberliegenden Randes. Der aus der gemessenen 12×8-Originalmatrix abgeleitete Dialogkandidat begrenzt jeden Rand auf ±64 und die resultierende Seite auf 8–128 Felder; halbe Werte werden vom Nullpunkt weg gerundet. Für außerhalb dieses Originalbereichs liegende Hostkarten bleibt die bisherige breitere Kartenfunktion erhalten. Die Verallgemeinerung der gemessenen Eingaberegel auf weitere Ausgangsgrößen ist noch nicht unabhängig reviewt.
-
-Die [rechte Originalprobe](/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-right-crop-20261009/original-probe.md) korrigiert die oben formulierte pauschale Dauerlöschung: Nach rechts −3 enthält die gespeicherte 9×8-Karte vier statt zehn Smart-Tile-Zellen; rechts +3 stellt im selben Prozess zehn wieder her, aus frisch geladener Beschnittkarte aber nur vier. Für rechte Randzellen braucht der Host daher neben dem serialisierten sichtbaren Raster einen flüchtigen Zustand oder eine gleichwertige Prozessregel. Die Shape-Polygone blieben erhalten. Unterer Rand, Terrain und weitere Entitäten sind noch nicht direkt gepaart.
-
-Die [untere Originalprobe](/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-bottom-crop-20261009/original-probe.md) zeigt dieselbe Prozess-/Dateigrenze für Smart-Tile-Zellen: unten −2 speichert fünf von zehn Zellen, unten +2 zeigt im selben Prozess zehn, aus genau dieser frisch geöffneten Beschnittkarte nur fünf. Die vier Polygone bleiben gleich. Die getrennte Zellschicht muss beide unverschobenen Ränder rechts/unten zunächst nach dieser Regel behandeln; links/oben werden vor einer gemeinsamen Transformationsregel nochmals direkt kontrolliert. Für andere Entitäten und Terrain ist die Zellregel nicht belegt.
-
-Die [obere Originalprobe](/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-top-crop-20261009/original-probe.md) misst beim oberen Beschnitt 10→5→5 Smart-Tile-Zellen; auch der frische Prozess bleibt bei fünf. Die vier Shape-Polygone werden beim Beschnitt um zwei Felder nach oben und bei der Wiedererweiterung exakt zurück verschoben, ohne Punkteverlust. Die Zellschicht braucht daher für oben eine unmittelbare Entfernung außerhalb liegender Zellen, während rechts/unten ihre flüchtige Prozessregel behalten. Links und kombinierte Randänderungen werden gesondert kontrolliert.
-
-Die [linke Originalnachmessung](/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-left-crop-20261009/original-probe.md) bestätigt die sofortige Entfernung von vier aus zehn Smart-Tile-Zellen beim linken Beschnitt und sechs Zellen nach Wiedererweiterung im selben wie im frischen Prozess. Die vier Shape-Polygone behalten ihre Punkte, verschieben sich zunächst um drei Felder nach links und kehren exakt zurück. Für die optionale V4-Zellschicht folgt daraus eine randabhängige Transformation: links/oben verwerfen außerhalb liegende Zellen sofort; rechts/unten behalten sie im laufenden Editorzustand flüchtig, während die gespeicherte verkleinerte Karte nur sichtbare Zellen enthält. Frischladen erzeugt keinen flüchtigen Außenzustand. Kombinierte Ränder, Terrain und andere Entitäten bleiben gesondert zu vermessen.
-
-Der [Hostkandidat](/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-smarttiles-host-20261009/implementation.md) speichert Smart-Tile-Zellen optional pro Geschoss mit Feldkoordinate, Assetkennung und Farbe in V4. Die Session hält auch rechts/unten außerhalb der aktuellen Kartengröße liegende Zellen; `document()` und Draft/Save filtern diese Zellen, während links/oben negative Koordinaten beim Resize entfernt werden. Ein neuer Hostprozess lädt nur den serialisierten sichtbaren Teil. Änderungen an der Zellfolge lösen einen Renderer-Neuaufbau aus; sichtbare Zellen erscheinen geschossbezogen als einfache Farbfelder unter den übrigen Kartenebenen. Karten ohne Zellfolge serialisieren weiterhin kein solches Feld. Die vier einzelnen Crop-/Reexpand-Folgen stimmen in zwölf Rohkoordinatenständen mit dem Original überein; dies belegt keine Smart-Tile-Werkzeugbedienung, Pakettexturwirkung oder kombinierte Rand-/Terrainregel.
-
-Die [direkte Building-Floor-Resize-Probe](/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-floor-resize-20261009/original-probe.md) zeigt, dass ein gezeichneter Originalboden zugleich eine editierbare Shape-Kontur und gespeicherte Tile-Zellen erzeugt. Nach linkem Beschnitt bleiben die Konturen erhalten, die abgeschnittenen Zellen gehen verloren. Für den vollständigen Hostablauf muss die Building-Bearbeitung deshalb die Zellbelegung als Teil ihres atomaren Befehls führen; eine reine Ableitung des sichtbaren Bodens aus der erhaltenen Kontur beim Rendern würde ihn nach Wiedererweiterung fälschlich zurückbringen. Diese Anbindung ist noch geplant. Die bisherige Zellschicht ist nur für vorbereitete V4-Karten geprüft; Konturänderung, Überlagerung und Radieren brauchen vor ihrer Implementierung direkte Originalfolgen.
-
-Für das Terrain-Resize existiert bereits ein [gespeichertes Acht-Slot-Originalpaar mit Neuöffnung](/home/aaron/.cache/dungeon-native-qa/implementation-20261005/parallel-preflight/qa/DD-024-DD-038-SMOOTH-RESIZE-NATIVE-RESULT.md). Der [erneute Maskenaudit](/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-terrain-resize-review-20261009/raw-mask-audit.json) bestätigt für `splat` und `splat2` je vier RGBA-Samples pro Kartenfeldachse: links/oben ergänzte Samples sind `[255,0,0,0]`, rechts/unten abgeschnittene Samples fehlen in der gespeicherten Karte. Beide Masken überstehen die gemessene Folge ohne Sampleabweichung. Eine optionale per-Geschoss-V4-Maskenschicht und ihre Resize-/Save-/Renderanbindung sind damit für DD-038 geplant, aber noch nicht umgesetzt. Terrain-Pinselgewichte und weitere Maskenabläufe werden in der Terrain-Fachphase gemessen.
-
-Die [direkte rechte/untere Wiedererweiterung](/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-terrain-reexpand-20261009/original-probe.md) klärt den Prozesszustand: Beide Masken verlieren abgeschnittene Samples sofort und initialisieren nach Erweiterung auch im selben Prozess mit `[255,0,0,0]`; die frische Wiedererweiterung ist maskenbytegleich. Die geplante Maskenschicht darf für Terrain keine flüchtigen rechten/unteren Außensamples aus der Smart-Tile-Sessionregel übernehmen.
-
-Der [V4-Hostkandidat](/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-terrain-host-20261009-checked/implementation.md) hält optional pro Geschoss `splat` und `splat2` als Base64-RGBA-Folge mit vier Samples pro Feldachse. `resizeMap` erstellt für jede Maske unmittelbar eine neue Größe, kopiert nur überlappende Samples mit linkem/oberem Versatz und füllt neue Samples mit `[255,0,0,0]`; auch rechts/unten entsteht kein flüchtiger Außenzustand. Laden, Session, Dirty, Save und frische Öffnung erhalten beide Masken. Der Renderer mittelt die Gewichte je Kartenfeld zu einer sichtbaren Farbfläche; Originaltexturen und Terrain-Pinsel sind nicht angebunden. Acht gespeicherte Hostkarten stimmen für beide Masken bytegleich mit den direkten Originalkarten überein; ein eigener Rohdatenaudit bestätigt 16 Maskenvergleiche. Dies ist ein begrenzter DD-038-Umsetzungskandidat, keine vollständige Bedien- oder Grafikabnahme.
-
-Der [gezeichnete Building-Floor-Hostkandidat](/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-floor-host-20261009/implementation.md) koppelt bei einem neuen, separaten V4-Boden seine Kontur und gespeicherte Zellbelegung im selben Zeichenbefehl. Eine optionale Building-Kennung je Smart-Tile-Zelle bindet Stil und Farbe an den Boden; `floorTileRaster` wählt beim Rendern die persistierten Zellen statt einer erneuten Bodenableitung aus der Kontur. Die Kontur bleibt für Wände und Punktbearbeitung erhalten. Nach linkem Beschnitt und Wiedererweiterung fehlen die verlorenen Boden-Zellen weiterhin sichtbar. Beim Löschen entfernt die Session zugehörige Zellen im Undo-Befehl; die V4-Geschosskopie vergibt neue Building-/Geschosskennungen. Drei gespeicherte Host-/Originalzustände stimmen für Zellkoordinaten, Stilpfad und ARGB-Farbe überein. Überlagerung, Radieren, Konturänderungen und andere Formen brauchen noch direkte Original-/Hostpaare; die neue Zellregel ist für diese Pfade keine Fachfreigabe.
-
-Für [direkt gemessenes Alt-Radieren](/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-erase-host-20261009-final/implementation.md) eines getrackten V4-Buildings filtert derselbe Konturbefehl die zugehörigen gespeicherten Zellen auf die neue belegte Fläche. Der Filter fügt keine durch früheren Kartenbeschnitt verlorenen Zellen hinzu und erhält flüchtige rechte/untere Außenzellen außerhalb der aktuellen Kartengrenze. Der Befehl speichert Kontur und Zellfolge gemeinsam für Undo/Redo; vollständig gelöschte Buildings entfernen ihre Zellen. Die gemessene 2×2-Rechteckhälfte stimmt nach Save in allen sechs Zellen und beiden Konturen mit dem Original überein. Andere Radierformen und der direkt beobachtete Wiederaufbau durch Nachzeichnen bleiben offen.
-
-Beim [gemessenen Wiederaufbau](/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-redraw-host-20261009/implementation.md) verbindet die V4-Native-Bodenkomposition gleichartige Konturen auch über eine gemeinsame Kante; eine reine Eckberührung bleibt getrennt. Der Zeichenschritt schreibt nur die Zellen der neuen Geste und ordnet Zellen vereinigter Buildings dem verbleibenden Building zu. So bleiben frühere Crop-Lücken außerhalb der Geste leer. Kontur und Zelländerung bilden einen Undo-Befehl; der V3-Standard ohne Kantenvereinigung bleibt bestehen. Das gepaarte 18×12-Rechteck erhält im Host nach Radieren und Nachzeichnen dieselben acht Zellen und zwei Shapes wie das Original. Gemischte Stile auf einer Shape-Kontur, weitere Formen und Übermalung ohne Konturänderung sind noch nicht gepaart.
-
-Der [gemischte Boden-Hostkandidat](/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-mixed-host-20261009/implementation.md) lässt für V4-Native-Floors mit gleicher Wand- und Layervorgabe die Konturen auch bei verschiedenen Bodenstilen vereinigen. Die Building-Kennung und gemeinsame Kontur bleiben erhalten, während `smartTiles` pro Feld die Assetkennung und Farbe der neuen Geste speichert. Zusätzliche Texturmeshes zeichnen abweichende Zellstile unter derselben Konturmaske; Geometrie und Shader werden beim Neuaufbau freigegeben. Die gespeicherte 8×8-Holz-/Stein-Karte stimmt in 18 Zellen und einer Kontur vollständig mit dem direkt gezeichneten Original überein. Andere Wandstile, spätere Übermalung und Konturpunktänderung erfordern eigene Paare; der V3-Zeichenpfad bleibt unverändert.
-
-Die [einzellige Stein-Übermalung](/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-overpaint-host-20261009-checked/implementation.md) nutzt denselben V4-Zeichenbefehl auch ohne Konturänderung. Nur die Zelle `(1,1)` erhält den neuen Stil und Farbwert, während die Building-Kontur und die übrigen 17 Zellen bestehen bleiben. Diese Zelländerung bildet genau einen Undo-Schritt. Original und Host stimmen vor und nach dem Übermalen in allen gespeicherten Zellwerten und der Konturgeometrie überein; frische Prozesse zeigen das Stein-Feld erneut. Weitere Übermalungs- und Radierformen bleiben gesondert zu messen.
-
-Das [gemessene Alt-Radieren an der Stilgrenze](/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-mixed-erase-host-20261009/implementation.md) verwendet den bestehenden booleschen Konturbefehl und filtert gleichzeitig die zugehörigen Zellen beider Stile. Auf der 8×8-Karte entfernt ein 2×1-Rechteck am oberen Rand genau eine Wood- und eine Stone-Zelle; eine eingekerbte gemeinsame Kontur mit acht Eckpunkten bleibt. Original und Host stimmen in der zyklisch verglichenen Kontur und allen 16 gespeicherten Zellwerten überein. Der Befehl ist einzeln rückgängig; andere Radierformen und Innenlöcher bleiben offen.
-
-Die [größere Stein-Übermalung](/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-overpaint-large-host-20261009/implementation.md) verwendet denselben V4-Zeichenbefehl für einen Rechteckzug über Wood und bereits vorhandenes Stone. Vier Wood-Zellen wechseln Stilpfad und Farbe; die übrigen 14 Zellen und die gemeinsame Kontur bleiben. Der Rohdatenaudit findet vor und nach der Geste keine Abweichung zum gespeicherten Original. Save, ein Undo/Redo-Schritt und frische Öffnungen bestehen; andere Übermalformen und Konturpunktänderungen bleiben offen.
-
-Beim [Innenloch im Building-Boden](/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-hole-host-20261009/implementation.md) bewahrt Dungeondraft die Tile-Zelle unter dem ausgesparten Feld; nur ein zusätzlicher Shape-Ring maskiert sie visuell. Der V4-Radierfilter prüft daher die verbleibenden äußeren Konturen ohne deren Löcher: Zellen außerhalb verschwinden weiter, Zellen innerhalb eines Lochs bleiben mit Stil und Farbe gespeichert. Der Renderer schneidet den Lochring aus der Texturmaske. Original und Host stimmen in beiden Konturringen und allen 18 Zellen überein; andere Lochformen und spätere Bearbeitung sind offen.
-
-Beim [gemessenen Konturpunktzug](/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-point-host-20261009/implementation.md) ersetzt ein getrackter V4-Building-Boden mit genau einer äußeren Kontur ohne Loch seine gespeicherten Zellen durch das volle, auf die Karte begrenzte umschließende Raster der neuen Kontur. Alle Zellen erhalten den gerade gewählten Bodenstil und dessen Farbe; auch die aktuell gewählte Wandvorlage wird auf die veränderte Kontur angewandt. Entity- und Zelländerung bilden denselben History-Befehl. Original und Host stimmen für den Punktzug `(1,1)→(1,0)` auf der gemischten 8×8-Karte in vier gespeicherten Zuständen einschließlich Wandfall überein. Mehrkonturen, Innenlöcher und weitere Punktoperationen bleiben offen.
-
-Der [gemessene Kantenmittelzug](/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-insert-host-20261009/implementation.md) nutzt denselben Raster-Neuaufbau auch für `edit.kind="insert"` auf einer verfolgten nativen V4-Einfachkontur ohne Loch. Kontur und 24 im gewählten Stone-Stil neu belegte Zellen bilden einen Befehl; Undo stellt die 18 gemischten Ausgangszellen wieder her. Fünf Original-/Hostkarten stimmen einschließlich fraktionalem Punkt `(4,0.125)` und Wandzustand überein. Weitere Einfügepunkte und komplexere Konturen bleiben offen.
-
-Beim [gemessenen Eckpunkt-Delete](/home/aaron/.cache/dungeon-native-qa/parity-tools-phase1-building-remove-host-20261009/implementation.md) nutzt der griffbezogene Konturbefehl für einen getrackten nativen V4-Einfachumriss ohne Loch eine andere Zellregel als Verschieben und Einfügen: Nur Zellen mit positiver Flächenüberschneidung zum neuen Umriss werden im gewählten Stil gespeichert. Der gemessene Dreieckszug ergibt zwölf Stone-Zellen; ein Mittelpunktfilter hätte drei Zellen ausgelassen. Kontur, Zellen, Wandvorlage und Portal-Follow bleiben ein History-Befehl. Sechs Original-/Hostkarten stimmen in belegten Zellen und Konturen überein; weitere Löschpunkte, Löcher und Crop-Folgen bleiben offen.
-
-Der Entwurfcodec in HEX-03-I01b akzeptiert jetzt eine getrennte Version2 mit vollständig validierten Location-Vorher-/Nachherbytes und Weltplacements neben Terrain. Nur Placement- und Chunkdaten dürfen sich gegenüber der Weltbasis ändern; Dokumentkennungen, Eigentümerschaft, Anlage/Entfernung und sichere Ortsdateipfade werden geschlossen geprüft. Bestehende Version1 bleibt ein Terrainentwurf. Native Serialisierung prüft vor JSON, sodass unbekannte Daten/Getters nicht verschwinden oder ausgeführt werden. Im ursprünglichen Codec-Teilstand blieben der reservierte World-Placementparser und die Repository-/UI-Strecke bis zum gemeinsamen Save/Copy/Discard/Recovery-Anschluss geschlossen. Dessen spätere Integration und begrenzte Wiederherstellungsbelege beschreibt der [Runtime-Arbeitsstand](ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md#arbeitsstand-80). Der FileTransaction-Rollbackfall ist ein Kernbeleg, keine native Ortsabnahme.
-
-HEX-03-I01b-repository verbindet nun die Ortsdateien mit dem gemeinsamen Speicherweg. TerrainSource validiert Terrain und das benannte Placementziel unter einem Worldowner; LocationOwners verwaltet genau eine LocationSource pro geladenem Owner/Historylebensdauer, Pfadauflösung und exakte Baselinebytes. Ungeladene Ortsinhalte werden nicht als null behandelt. V2 erfasst gemeinsam die bearbeiteten Ortsdokumente, Worldplacements und Terrain; Save/Discard prüfen gemeinsame Baselines. Der erfasste Save-Stand wird übernommen, während spätere Keys als neuer Entwurf erhalten bleiben. Copy lädt auch ungeladene zugehörige Locations, vergibt neue Orts-/Placement-IDs und passt eigene Atlas-/Location-Keyziele an; externe Detailkarten bleiben Verweise. Recovery prüft die geschlossene Ortszugehörigkeit vor Reparaturen, auch bei internem Wiederanlauf einer FileTransaction. Explizite Copy-Recovery akzeptiert nur die vollständige neue Zielwelt samt eigenen Terrain- und Ortsdateien. World/Repository-Ortsunterstützung benötigt das ausdrückliche Opt-in; im ursprünglichen Repository-Teilstand öffnete der Host gefüllte Placements noch nicht. Der Marker-/Key-Anschluss ist inzwischen integriert, wie im [Atlasstand](ROADMAP-HEX-ATLAS.md#atlas-auf-einen-blick) beschrieben. Die elf Kernfälle sind kein nativer Orts-, Rename- oder Phasenbeleg.
-
-## Raum-Key- und Featurevertrag
-
-V4 hält geordnete Markdown- und Durchgangsabschnitte im Kartendokument. Stabile Karten-/Raum-/Abschnittskennungen adressieren Links und Vorschau; neue Räume brauchen keine eigene Markdowndatei. Featuretexte werden wortgleich in den richtigen Abschnitt übernommen. Buchstaben folgen dem höchsten bestehenden Buchstaben, erhalten Lücken und werden nicht wiederverwendet. Ein Objekt bindet genau ein Feature-Vorkommen und Abschnittsziel.
-
-Beim Raumwechsel wechseln Geometrie, Raumzugehörigkeit, Keytext, Kennzeichnung und Vorkommen in einem rücknehmbaren Befehl. Ohne Zielraum wird der Zug angehalten. Ein alleiniger Abschnitt wandert mit; aus einem Sammelabschnitt wird nur der betroffene Featuretext übertragen. Übersicht, Kreaturen, Items und Handouts bleiben separate Markdowndateien. Import/Migration erhält Wortlaut, sichtbare Linktexte, Geometrie und Auswertung; Originale werden vor einem ausdrücklich beauftragten Eingriff gesichert. Physische Maus-/Touchpad-Abnahme bleibt dort offen, wo sie nicht ausgeführt wurde. Die ursprünglichen Migrations-/Installationsnachweise bleiben im [festen Git-Stand](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/blob/8f215b77358ddc402f75215c7fdf6c110a8e0c79/ROADMAP.md).
+# Technische Grundlage des Gesamtprodukts
+
+Entscheidungsstand: **11. Oktober 2026**. Untersucht wurde das Zielrepository auf
+`116c16af48b6a073216685c8d8e2cc74fada82c3`. Alle 36 Anforderungsdateien und die
+beiden ergänzenden Primärquellen aus [scope-sources.json](docs/scope-sources.json)
+wurden gegen die dort gebundenen SHA-256-Werte geprüft. Der historische
+Umfangsabgleich bleibt erhalten. Diese Seite entscheidet die technische
+Richtung; sie behauptet weder Implementation noch Produktabnahme.
+
+## Zweck und Entscheidungsmaßstab
+
+Der vollständige Auftrag steht in [SCOPE](docs/SCOPE.md), die Nutzerabläufe und
+Atlasoberfläche im [Atlasplan](ROADMAP-HEX-ATLAS.md). Das Produkt verbindet
+Vorbereitung, Kartenzeichnung und Spielabend offline für einen lokalen GM.
+Es umfasst auch Katalog, World Planner, Party/Scenes, Encounter/Loot, Reise,
+Zeit, Shops, Wetter, Musik, Autonomie, Spieleranzeige, Datenlebenszyklus und
+Extensions. Vier E2E-Gates ersetzen keine dieser Fachabnahmen.
+
+**Der aktuelle Code besitzt keinen Bestandsschutz.** Auch frühere technische
+Pläne sind Vorschläge. Übernommen wird nur, was die gewählte Lösung vereinfacht
+und ihre Anforderungen erfüllt. Geschützt sind Nutzerinhalte, Identitäten,
+bekannte externe Formatbindungen, Quellen/Lizenzen und bestätigtes Verhalten.
+Importzahlen, bereits investierte Arbeit und grüne Tests begründen allein
+keine Übernahme einer Architektur.
+
+Entschieden wird nach Gesamtaufwand, Verständlichkeit, Bedienbarkeit,
+Datenintegrität, Leistung und Änderbarkeit. KISS heißt ein lokaler Prozessverbund,
+eine kanonische Schreibgrenze und wenige explizite Fachmodelle. YAGNI verschiebt
+unbenötigte Detailoptionen; es verschiebt keine schwer umkehrbaren Entscheidungen
+über Identität, Besitz, Geometrie, dauerhafte Speicherung oder Rechte.
+
+## Gewählte Grundstruktur
+
+**Ein modularer TypeScript-Kern in einer eigenständigen Electron-Anwendung,
+ein lokaler SQLite-Schreibdienst, eine Atlasoberfläche.** Die
+[Plattformentscheidung](ROADMAP-SALTMARCHER-PLATFORM-ADR.md) begründet Alternativen
+und Übergang; der [Prototypplan](ROADMAP-SALTMARCHER-ADR-PROTOTYPES.md) führt
+die noch erforderlichen Implementationsbeweise.
+
+| Teil | Zuständigkeit | Prüfbare Grenze |
+| --- | --- | --- |
+| Fachmodule | Werttypen, Invarianten, reine Berechnungen, Commandplanung | Kein Electron/Obsidian, SQL, Dateisystem, DOM oder Netz; reproduzierbare Resultate auf identischen Inputs |
+| Anwendung | Aktivierung, Zugriffsprüfung, Command, betroffene Records, Konflikt/Cancel, Projektionen | Eine Änderung kann mehrere Fachmodule betreffen, besitzt aber eine gemeinsame Commitentscheidung |
+| Lokaler Schreibdienst | SQLite, Validierung an der Schreibgrenze, Revisionen, Receipts, Assets, Recovery und Migration | Ausschließlich dieser Dienst schreibt Produktdaten; UI und Extensions erhalten keine DB-Verbindung |
+| GM-Oberfläche | Native DOM-Controls, Auswahl/Inspector/Text, gemeinsame Kamera/Werkzeuge, Pixi-Kartenszene | Eingabe und Vorschau ohne Autorenmutation; keine Geschäftslogik in Popup/Dialog/Meter |
+| Hintergrundjobs | Abbrechbare Geometrie, Generatoren, Suche/Export, Medienprüfung | Unveränderlicher Input, gebundene Basisrevision und Aktivierung; Resultate erhalten keine eigene Schreibberechtigung |
+| Passive Anzeige / Extensions | Redigierte Anzeige bzw. ausdrücklich erlaubte Fähigkeiten | Getrennte Prozesse und enge DTOs; keine versteckten GM-Daten oder ungeprüften privilegierten Aufrufe |
+
+Das sind Zuständigkeiten, keine sechs Frameworks oder ein Zwang zu sechs
+Packages. Kleine Module im selben Repository reichen. Kein ORM, universeller
+Eventbus, ECS, CRDT, Event Sourcing, Microserviceverbund oder allgemeiner
+Mehrspielermodus. Ein neuer Port entsteht an einer tatsächlichen Host- oder
+Schutzgrenze, nicht für jede Hilfsfunktion. Ein Hintergrundworker wird erst
+für nachweislich blockierende Arbeit eingerichtet.
+
+**Warum diese Lösung:** Der gesamte Pflichtumfang verlangt kontrollierte
+Fenster, portable lokale Medien, native Persistenz, Prozessisolation und
+widerrufbare Erweiterungsrechte. Electron und TypeScript halten Renderer,
+Domäne und Werkzeuge in einer Sprache. Die Shell ist klein; bestehende
+Obsidian-Editoren werden nicht in eine neue Shell hineingezwungen. Pixi und
+geeignete reine Geometriefunktionen sind Übernahmekandidaten, kein unveränderlicher
+Renderkern. Ein alternatives Renderbackend benötigt erst einen gemessenen Grund.
+
+## Fachliche Grenzen und Identitäten
+
+| Wahrheit | Besitzer und Verbindung | Grund / Orakel |
+| --- | --- | --- |
+| Installation | Quellen-/Regeldefinitionen, Biome, Symbole, Generatorpresets, Rechte und Medienbibliothek | Shared bedeutet ausdrücklich geteilt. Definitionänderung erreicht aktuelle Verbraucher, berechnet abgeschlossene Fakten niemals neu. |
+| Campaign | Mitgliedschaft, ein Atlas, Autoreninhalte, Planung, Runtime, Historie und Trash | Eine Campaign ohne LiveSession ist gültig. Unverortete Inhalte gehören ebenfalls zur Copy-/Transferclosure. |
+| World | PCs/NPCs, Orte, Fraktionen, Quests, Gerüchte, Besitz/Beziehungen | Kartenmarker, Stadtbewohner, Shops und Planung referenzieren dieselben Identitäten; keine zweite NPC-/Ortstabelle pro Oberfläche. |
+| Atlas | Ursprung/Ausrichtung, sparsame Landschaftseigenschaften, freie Wege/Flächen, räumliche Instanzen und Referenzbilder | Kamera/Zoom legt keine Daten an. Eine räumliche Instanz hat einen Ort im Atlas; zusätzliche unabhängige Instanzen entstehen durch ausdrücklich bezeichnete Kopie. |
+| Räumliches Objekt | Dungeon, Stadt, Gebäude, Raum, Passage/Path; jeweilige authored Geometrie und Inhalt | Ein Haus besitzt Außen-/Innengeometrie gemeinsam. Room-ID ist unabhängig von der aktuell zugeordneten Geometrie. Fachvertrag: [räumlicher Anschluss](ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md). |
+| Preparation | Manuelle Timeline und angenommene Planinhalte; unveröffentlichte Vorschläge separat | Ersetzen eines Plans entfernt keine bereits akzeptierte World-Platzierung. Initialize kopiert einen unveränderlichen Preparationstand in neue Runtime-IDs. |
+| Party/LiveSession | Roster, aktuelle Party, Primary/Split-Scenes, Fokus, Teilnehmer und Masken | Ein aktiver PC ist genau einer Running Scene zugeordnet. Planungsparty bleibt getrennt. Scene beenden ist keine Charakterlöschung. |
+| Encounter/Loot | Planreferenzen vs. Kampfzustand, Ergebnisse, XP und Charakterledger | Combatabschluss und gekoppelte Rewards einmal atomar; keine automatische Münzabbuchung beim Shophandel. |
+| Zeit/Weltfolgen | Scenezeiten und Kalender; idempotente zeit-/ortsbezogene Folgen | Kein unabhängiger Shop-, Stadt-, Trap- oder Autonomieuhrstand. Rejoin und Rückdatierung löschen keine etablierte Worldwahrheit. |
+| Knowledge/Perception | Dauerhaftes Wissen pro Charakter, aktuelle Wahrnehmung, explizite Freigabe | Historische bekannte Erscheinung und aktuell verborgene Änderung unterscheiden; passive Anzeige konsumiert nur zulässige Projektion. |
+
+Stabile typisierte IDs und fachlicher Scope adressieren Records. Namen, Pfade,
+Roomnummern, Kamerakoordinaten und Listenpositionen sind keine Identität.
+Import erhält bestehende IDs, soweit der Importfall Identitätserhalt verlangt;
+unabhängige Campaignkopie/-import remappt alle lokalen IDs und internen Verweise.
+Bestehende lokal eindeutige Altkennungen bleiben über ihren dokumentierten Scope
+adressierbar; ein neues UUIDformat erzwingt keine Textlinkänderung. Neue
+Identitäten verwenden UUIDs; abgeleitete Tiles, Bounds, Navflächen und Suchtreffer
+erhalten keine Autoren-UUID.
+
+Jeder persistierte Record besitzt Typ/Version, Scope, ID und monotone Revision.
+Referenzen sind typisiert und unterscheiden auflösbar, trash, unavailable und
+endgültig unbekannt. Eine kaputte Referenz verschwindet nicht still. Aktuelle
+Definitionreferenz und eingefrorener Ergebnis-/Erklärungsstand sind verschiedene
+Felder mit verschiedenen Lebenszyklen. Modelle bleiben fachlich typisiert;
+kein beliebig tiefes JSONobjekt als universelle Geschäftsdatenbank.
+
+## Speicherung und Wiederherstellung
+
+**Eine lokale SQLite-Datenbank pro Installation** umfasst Shareddefinitionen und
+Campaignrecords. Damit bleiben unter anderem biom-/symbolweite Ersetzung in
+aktiven und getrashten Campaigns, Definitionkonflikte sowie gekoppelte
+Scene-/Geometrie-/Ledgeränderungen in einer Transaktion. Pro Campaign eigene
+Datenbanken würden bekannte installationsweite Änderungen wieder zu
+Mehrdateitransaktionen machen. Der Nutzer exportiert einzelne Campaigns und
+kann den Datenordner sichern; eine Datenbank pro Installation bedeutet keine
+Pflicht zu einem einzigen unteilbaren Export.
+
+SQLite speichert kleinere fachliche Records und Geometriechunks. Beziehungen,
+Scopes, Versionen, IDs und benötigte Such-/Raumindizes sind explizit; typisierte
+Payloads dürfen versioniertes JSON sein. Keine vollständige Dungeonserialisierung
+für Hover, einen Keytastendruck oder eine lokale Wandänderung. SQLindizes werden
+aus tatsächlichen Querypfaden abgeleitet. Pro Datenordner gibt es genau einen aktiven App-Schreibprozess; zweiter Appstart aktiviert die bestehende Instanz oder bleibt lesend. Die OSübergreifende Lebensdauer-/Lockprüfung wird in P02 direkt geprüft, nicht aus einem Linux-/proc-Prototyp übernommen. Ein einzelner Writer verwendet WAL,
+Foreign Keys und `synchronous=FULL`; kurze Leser, gebundene Limits/Paging und
+kontrollierte Checkpoints verhindern lange Lesetransaktionen und unbegrenztes
+WALwachstum. Daten liegen auf lokalem Dateisystem, nicht in einem gleichzeitig
+beschriebenen Netzwerk-/Cloudsyncordner.
+
+Die [SQLite-WAL-Dokumentation](https://www.sqlite.org/wal.html) beschreibt die
+Ein-Writer-Grenze und das notwendige Synchronisieren für Power-Loss-Dauerhaftigkeit.
+Die gebündelte SQLite-Version muss einen aktuellen geprüften Wartungsstand
+einschließlich WAL-Reset-Fix besitzen; die isolierte Probe verwendete 3.53.4.
+Die Versionsprüfung gehört zum Buildnachweis, nicht zu einem optionalen Hinweis.
+
+**Assets sind unveränderliche, hashadressierte Dateien.** Austausch erzeugt neue
+Bytes und ändert die Referenz im DBcommit. Vor Veröffentlichung werden Bytes,
+Hash und Dateisystemhaltbarkeit geprüft; die DBtransaktion referenziert nur
+fertige lokale Medien. Abbruch hinterlässt höchstens unreferenzierte, markierte
+Stagingdateien. Wiederverwendung identischer Bytes ist keine geteilte
+Autorenidentität. GC betrachtet Live, Trash, retained Payloads, Staging und
+app-managed Backups; sie entfernt nie eine fremde Datei auf Verdacht.
+
+Backup nutzt einen konsistenten DBsnapshot über die
+[SQLite-Backup-API](https://www.sqlite.org/backup.html) sowie ein hashgebundenes
+Medienmanifest. Einfaches Kopieren einer offenen `.sqlite` ohne WAL ist kein
+Backup. Versionierte Backups und record-/payloadbezogene Prüfsummen ermöglichen
+gezielte Erkennung und sichere Wiederherstellung. Beschädigte Nutzpayloads
+werden isoliert; unbetroffene Records bleiben bearbeitbar. Bei beschädigter
+DBstruktur wird zuerst in eine neue lokale DB aus dem neuesten eindeutig sicheren
+Snapshot wiederhergestellt, dann werden verifizierbar intakte neuere Einheiten
+mit vollständiger Commandclosure übernommen. Niemals einzelne Teile eines
+gekoppelten Outcomes aus unterschiedlichen Revisionen zusammensetzen.
+Nicht beweisbare neuere Arbeit wird als Verlust/Quarantäne offengelegt; die
+Originalbytes bleiben erhalten. Mehrere gleich plausible Recoverystände
+erfordern eine GM-Auswahl. Diese breitere Fehlermatrix bleibt P02-Produktnachweis;
+die Einzeländerungsprobe behauptet keine allgemeine Medienfehlerbehebung.
+
+Trash pausiert abhängige Runtime, bewahrt den vollständigen Zustand und erlaubt
+kohärentes Restore. Dungeon-Trash hält mindestens die geforderten 30 Tage und
+hat eine getrennte ausdrückliche Sofortlöschung. Permanente Löschung besitzt
+eine persistierte, wiederaufnehmbare Erasureclosure: Live/Trash, Undo, Cache,
+Receipts mit rekonstruktiven Payloads, opaque Capabilitydaten, Temp, Assets,
+SQLitefreie Seiten/WAL und app-managed Backups werden bereinigt bzw. mit
+geprüften Survivorständen ersetzt. SQLite Secure Delete/Checkpoint/Vacuum allein
+ist kein Beleg für diese gesamte Closure. Bis zur belegten Bereinigung heißt
+der Ausgang pending, nicht endgültig gelöscht. Nur nichtrekonstruktive
+Erklärungsfakten dürfen bleiben. Selbst exportierte GM-Pakete sind externe
+Kopien und nicht widerrufbar. Deaktivierte Extensions dürfen Erasure nicht
+blockieren oder Daten aus der Closure verstecken.
+
+**Abgewogen:** Dateien mit eigenem Mehrdateijournal sind für kleine einzelne
+Zeichnungen verständlich, verlangen im Gesamtprodukt aber eigene Recovery-,
+Revisions-, Index- und installationsweite Commitmechanik. Ein einziges
+Campaign-JSON ersetzt diese Komplexität durch Vollkopien, große Historywerte
+und schlechte lokale Fehlerisolierung. SQLite bringt geprüfte Transaktionen,
+Indizes und Backupwerkzeuge; Schema-/Recoveryarbeit bleibt erforderlich. Die
+isolierte Probe mit 100.000 Records bestätigt diese lokale Änderungsgrenze,
+nicht RP-L, Rendererleistung oder Stromausfallsicherheit.
+
+## Bearbeitung und History
+
+Ein Command trägt Command-ID, aktuellen Aktivierungstoken, betroffene
+Identitäten, erwartete Recordrevisionen und seinen typisierten Effekt.
+Die Anwendung plant und validiert die vollständige Änderung; der Schreibdienst
+prüft Berechtigung, Revisionen und Invarianten erneut **in derselben
+DBtransaktion**, die Records, revisionsgebundene Undo-Deltas, fachliche Folgen
+und das Receipt schreibt. Bei gleichem Command und Fingerprint wird nur dessen
+Status gelesen; anderer Inhalt unter gleicher ID wird abgelehnt. Unbekannter
+Ausgang sperrt einen Ersatzversuch, bis derselbe Command aufgeklärt ist.
+
+Keine verteilten Prepare-/Publish-/Finalizeprotokolle für interne Fachmodule.
+Die alte fünfstufige Folge bezeichnet nur noch Planung, Prüfung, atomaren
+DBcommit und nachlaufende Projektion. Nach Commit dürfen Render-/Such-/Audiofehler
+keine halbe fachliche Wahrheit oder zweite Mutation erzeugen. Große Imports werden in kurzen Transaktionen unter einem unsichtbaren Operationsscope gestaged. Erst der kurze finale Commit validiert Closure/Basis/Rechte und aktiviert den vollständigen Campaign-/Definitionstand samt Receipt; Leser sehen keine halbe Zielcampaign. Sharedkonflikte werden vorab geplant und gebundene Definitionsrevisionen erst an dieser Grenze aktiviert. Es gibt keinen zweiten kanonischen Store und keine minutenlange offene Importtransaktion, die Livewrites sperrt. Import und irreversible Assetbereinigung brauchen eigenes Staging/Finalize, weil dort
+tatsächlich Dateien beteiligt sind. Ihr Commitstatus bleibt im selben Store.
+
+Text/Geste/Vorschlag sind Entwürfe an ihrer ursprünglichen Ziel-ID/Basis.
+Sie verändern bis zur Annahme keine bestätigte Wahrheit. Ein Textabschluss
+oder Pointer-Up übernimmt den gültigen Edit automatisch dauerhaft; normales
+Save ist kein erforderlicher Zwischenschritt. `pending`, `gespeichert`,
+`Konflikt` und `Fehler` unterscheiden den tatsächlichen Stand. Eine ausstehende
+Änderung darf schnell sichtbar sein, bleibt aber als unsicher bezeichnet.
+Wechsel/Schließen schließt gültige Eingaben ab oder erhält sie ausdrücklich als
+Entwurf; es übernimmt keinen Generator-/Graphvorschlag nebenbei. A→B→A verwendet
+eine neue Aktivierung. Späte Callbacks/Worker verlieren ihren alten Schreibzugang.
+
+Gemeinsame Atlas-Undo/Redo umfasst mindestens 200 gewöhnliche Änderungen in
+der laufenden Bearbeitungssitzung. Gespeicherte Deltas enthalten nur betroffene
+Records/Chunks, keine Grafiken oder ganzen Campaigns. Große Operationen zeigen
+ein gemessenes Historybudget vorher; kein künstliches Inhaltslimit.
+Undo ist ein neuer atomarer inverser Command mit geprüfter Basis; es setzt
+keine globalen alten Snapshots ein. Runtimegeometriekorrektur und erforderliche
+Actorrelocation gehören zum selben Command. Reiseundo hat eigene kausale
+Checkpoints und darf später etablierte fremde Folgen nicht zurückrollen.
+Campaignhistorie sind dauerhafte erklärende Fakten, kein Undoersatz.
+
+## Runtime und gemeinsame Weltfolgen
+
+Der [Scene-Fachvertrag](docs/plans/runtime/smr03-live-scene-contract.md) besitzt
+Party, Focus, Masken und Reconciliation. Die Quellenanforderung einer verfügbaren
+Primary gilt **innerhalb initialisierter LiveSession**; sie erzeugt beim
+Campaignöffnen keine heimliche Session. Partyänderung wird sofort autoritativ,
+nur tatsächlich betroffene Masken dürfen pending sein. Alle unverwandten
+Workflows bleiben verwendbar.
+
+Scenezeit ist autoritativ für Reise/Encounter. Kalender definiert die Umrechnung;
+Ein WorldInstant ist eine epochgebundene ganzzahlige Millisekundenzeit; Kalenderregeln sind versionierte Interpretation, keine zweite Uhr. Exakte Dauer-/Rundungsregeln werden mit ihren goldengebundenen Reise-/Regelcommands geprüft. Bestätigter Zeitfortschritt plant Worldfolgen nach Ort/Zeit und schreibt genau
+einmal pro Event-/Owner-/Zeitcheckpoint. Scene-Rejoin zeigt Zeitkonflikte und
+benötigt die ausdrückliche gewählte Lösung. Wetter, Restock, Trapreset,
+Bewohnertagespläne und Autonomie konsumieren denselben Zeitport; Catch-up
+arbeitet in begrenzten, checkpointgebundenen Schritten. Kein Ticker kann heimlich
+Partygefahr oder Worldzeit vorantreiben. Autonomie bleibt Opt-in und pausiert
+vor Partywirkung. Wetter ist ein reproduzierbares zeit-/ortsabhängiges Modell
+mit versionierten Regeln, Seed, Klimaregionen und GM-Overrides; keine globale
+Simulation sämtlicher unbeobachteter Hexes. Modellparameter werden mit SMR-08
+gegen dessen Kontinuitäts-/Effektanforderungen festgelegt.
+
+Regeln bleiben D&D 2014. Reproduzierbare Generatoren binden Input, Quellhashes,
+Presetrevision, Algorithmusversion, Seed und Rundung. Ein unmögliches Ergebnis
+wird erklärt, keine Vorgabe still gelockert. Kein generischer Multisystemkern.
+Combat-, XP- und Lootgoldens sowie Full-S01-Itemquellen bleiben Fachnachweise.
+Manuelle Planung und manuelle Musik brauchen weder vollständige Generierung
+noch Reise. Musik liest fokussierte Scene/Umwelt als Vorschlag; manuelle
+Stop-/Queue-/Loopwahl hat Vorrang. Physische Audiohandles sind nicht portabel;
+Quell-IDs, Queue/Cues und sichere Positionen sind portable Runtimewerte.
+
+## Darstellung, Suche und Spieleranzeige
+
+Ein Kamera-/Auswahl-/Werkzeugzustand führt alle Atlasdetails. Zoom ändert
+Darstellung und Abfragetiefe, keine Autorenwerte und keinen Pflichtmodus.
+Räumliche Abfragen liefern nur sichtbare/betroffene Records und abgeleitete
+Geometrie; Render/Hit/Export konsumieren denselben bestätigten Stand und
+dieselben Transformationen. Ein DrawPlan ist Cache, kein zweites Dokument.
+Keine JSONvollparses oder Traversierung aller Dungeons je Kamerabild.
+
+Native DOM-Controls tragen Text, Suche, Menüs/Dialoge und Inspector. Der Canvas
+hat eine passende zugängliche Objektliste mit denselben Aktionen; Tastatur,
+Fokusrückgabe, 200 %, Kontrast und nicht allein farbliche Signale werden mit
+jedem Feature gebaut. Lokalisierbare UIlabels und Autorenwortlaut sind getrennt.
+Tutorials sind versionierte Capabilityinhalte mit Skip/Dismiss, keine gekoppelte
+Geschäftslogik. Such-/Referenzgraphindizes sind rebuildbare Projektionen aller notizfähigen Records. Gewöhnliche Textänderungen aktualisieren den Volltextindex in derselben DBtransaktion; die nächste Suche sieht den neuen Text. Abgeleitete Reference-/Viewcaches werden revisioniert invalidiert. Ein ausgefallener Index darf rebuildbar sein, aber keine stale Ergebnisse als aktuell ausgeben. Volltextindex/SQLpaging zuerst;
+keine eigene Suchserverplattform. Mehrdeutige Begriffstreffer bleiben wählbar. Nützlicher Campaignview-/Masken-/Kamerazustand wird gesondert checkpointed und wieder aufgenommen; Hover, Pointercapture und offene Popups sind flüchtig und gehören nicht in Autorenhistory.
+
+Passive Anzeige erhält im privilegierten Prozess erzeugte Allowlist-DTOs und
+ausschließlich freigegebene Assetbytes. Kein CSSverstecken von GMtexten im
+gleichen Datenmodell. Liveanzeige folgt fokussierter Scene und Knowledgeunion
+der dortigen Charaktere, trennt Wissen von aktueller Perception und enthält
+keine Mechanik/GMprosa. Statischer Spielerexport verwendet ein ausdrücklich
+gewähltes Veröffentlichungsprofil und ist kein Live-Knowledgesnapshot.
+Leakprüfung umfasst DTO, IPC, Assets, DOM, Fehler, Protokolle und Neustart.
+
+## Erweiterungen, externe Anbindungen und Auslieferung
+
+Interne Fachmodule sind normale versionierte Komponenten. Neue Content-/Masken-
+oder Generatorarten registrieren explizite Typen und Applicationactions; kein
+universeller Metaeditor. Drittanbieter laufen in einem eigenen sandboxed Electron-Renderer mit deaktiviertem NodeIntegration, isolierter Session, ohne GMassets und ohne direkten Datei-/Netz-/IPCzugang. Navigation, neue Fenster und direkte Resource-/Netzanfragen werden gesperrt; Zugriff erfolgt ausschließlich über den geprüften Broker. Ein gewöhnlicher Nodeworker/Subprozess ist **keine** Schutzgrenze für untrusted Erweiterungscode. Kein `eval` im GM- oder privilegierten Prozess. Ein versioniertes Manifest deklariert angeforderte
+Campaign-, Datei-, Netz- und Präsentationsrechte. Default-Deny; Zustimmung und
+Widerruf werden an **jedem privilegierten Sink** geprüft, auch bei bereits
+laufendem Job. Prozesslimits/Timeout und Disable isolieren Fehler.
+Install/Remove/Update kann Campaigns nicht unlesbar machen.
+
+Unbekannte Capabilitypayloads bleiben opaque und hashgebunden. Core versteht
+ihr versioniertes Besitz-/Identitäts-/Referenzenvelope, nicht ihre Semantik.
+Alle campaignlokalen Identitäten und Verweise gehören in die vom Core verstandenen Slots; der opaque semantische Body referenziert diese Slots und darf keine versteckten kanonischen Campaign-IDs besitzen. Damit sind Copy, Transfer, Restore, Trash und Erasure ohne laufenden Provider möglich. Fehlt eine vollständige Remapclosure, wird unabhängiger Complete-Import
+blockiert; disclosed Salvage ist eine andere ausdrückliche Aktion. Unbekannte
+**Core**schemafelder werden nicht durch einen losen JSONparser weggeschrieben.
+Rechte/Context-/Erasuretokens sind lokale Autorität und werden beim Import
+nicht als ausführbare Sourceberechtigung übernommen.
+
+Core funktioniert offline; keine versteckte Telemetrie und kein implizites
+Nachladen. Bestehende Markdownlinks behalten Wortlaut und einen expliziten Source-Namespace-/IDresolver; externe Dateibearbeitung wird als geprüfter Importvergleich übernommen, nicht als stiller Dualwrite. Explizite Netzwerkimporte/Downloads laufen über den privilegierten
+Dienst mit Quell-/Lizenzbeleg, begrenztem Staging, Cancellation und Validierung.
+Untrusted SVG, Pakete und Medien werden mit begrenzten isolierten Parsern
+verarbeitet. Customsymbols erfüllen den bestätigten Ein-Pfad-Vertrag; das
+frühere pauschale „kein SVGimport“ gilt nicht für diesen expliziten Featureumfang.
+
+Electron verwendet getrennte GM-/Spielerrenderer mit Sandbox,
+ContextIsolation, ausgeschaltetem NodeIntegration, enger Preload-API,
+Sender-/Payloadprüfung und einer CSP ohne beliebige Remoteausführung.
+[Offizielle Sicherheitsgrundlage](https://www.electronjs.org/docs/latest/tutorial/security).
+Kein ungefilterter Shell-, Datei-, DB- oder beliebiger IPCport.
+Linux/Windows/macOS erhalten reproduzierbare selbständige Pakete und Smoke-
+Nachweise. Updates prüfen Herkunft, sichern/migrieren eine Kopie der Daten und
+aktivieren die neue Version erst nach Prüfung; Rollback verwendet einen
+kompatiblen gesicherten Store, keinen rückwärts beschriebenen neuen Schemafund.
+Packagingbibliothek und OSspezifische Signierung werden beim ersten lieferbaren
+Shellpaket konkret festgelegt; OSnachweise dürfen nicht ans Ende verschoben werden.
+
+## Übergang und Lieferung
+
+1. **Work – Daten und erster Nutzerweg:** Bekannte aktuelle Nutzerformate und
+   Verlinkungen inventarisieren; Originale sichern und rein lesende Adapter
+   bauen. Neuer kleiner Kern/Store/Shell im selben Produktrepository. Ein
+   expliziter Import erzeugt einen geprüften unabhängigen Zielstand; kein
+   Dualwrite und keine automatische Überschreibung von Vaultdateien.
+   Ort/Raum finden → Geometrie/Key ändern → Undo → automatische Speicherung →
+   frischer Prozess ist der erste vollständige Pfad.
+2. **Work – Fähigkeitsweise anschließen:** Atlas Work 2/3/4, manuelle World-
+   und Planung, Katalog/Party/Scenes, dann die tatsächlich abhängigen Runtime-
+   consumer. Reine geeignete Algorithmen/Artefakte selektiv übernehmen; zustands-
+   und dateigebundene Editor-/History-/Repositoryteile ersetzen. Die
+   [Gesamtroadmap](docs/ROADMAP.md) führt alle SMR-Folgen, keine neue Parallelroadmap.
+3. **Efficient:** Gemessene Engpässe in lokalem Commit, Query, Render, Worker-
+   Scheduling und wiederholter Bedienung gezielt verbessern. Unbelegte
+   Spezialindizes, GPUeffekte und allgemeine Frameworks kommen nicht vorher.
+4. **Beautiful / Cutover:** Lesbarkeit und Karten-/Ausgabegestaltung verfeinern;
+   frühere Nutzbarkeit/A11y bleibt Pflicht. Den alten Host erst ablösen, wenn
+   seine tatsächlich benötigten Nutzerabläufe, Daten und Formatbindungen im
+   Zielprodukt qualifiziert sind. Keine Pflicht, seine internen APIs oder
+   Testarchitektur mitzunehmen. Übergangsdauer richtet sich nach belegter
+   Fähigkeit; es entstehen keine zwei fortzuführenden Produkte.
+
+## Vollständigkeitsprüfung und spätere Details
+
+| Bedarf | Technische Entscheidung / zuständige Detailquelle |
+| --- | --- |
+| TN-01–06 | Typisierte IDs, Ownership/Lifecycle, Definition vs. historische Fakten, geschlossene Erasure/Transfer; Campaignfachplan |
+| TN-07–14 | Atomare Commands, getrennte Scenezeiten, kausale Checkpoints und GM-Overrides; Scene/Campaign-/CE-Fachpläne |
+| TN-15–19 | Ein Writer, SQLitecommit/Receipt, Backup, Payloadisolation, vollständiger Transfer; P02/P04 |
+| TN-20–23 | Records/Chunks, sichtbare Abfragen, Priorität/Cancel und getrennte Lastprofile; Runtimeplan/P01/C01 |
+| TN-24–26 | Gemeinsame räumliche Fakten, Allowlistanzeige, versioniertes Wetter und portable Medien; SMR-04/08/10 |
+| TN-27–30 | Versionierte interne Module, isolierte Extensions, retained Envelopes, Sinkrechte und OSbuilds; P03/P04/SMR-10/11 |
+| TN-31–32 | Lokalisierbare native Controls, Objektliste, Fokus und A11y je vertikalem Pfad; Feature-/GM-Abnahmen |
+| TN-33–38 | D&D-2014-Goldens, explizite Initialize/XP-Hinweise, umfassende Notizsuche, genaue Tabellengewichte und Tutorialversionen; CE/Scene/SMR-11 |
+
+Konkrete SQLspalten, Payloadcodecversionen, Chunkkanten, Navheuristik, Wetter-
+parameter, Rendereroptimierung und Signierungswerkzeuge werden beim jeweiligen
+ersten Nutzerweg entschieden und gemessen. Besitz, Einheit, atomare Wirkung,
+Identität, Rechte und Remapsemantik sind bereits hier entschieden; diese
+Details sind keine Ausrede für einen offenen Grundvertrag.
+
+Am 11.10.2026 erfolgten nach dem Entwurf eine erneute vollständige Quellen-/
+Fachplanprüfung und Gegenproben über Atlasbearbeitung, House-/Room-Lifecycle,
+Split-Reise-Weltfolgen, Party-/Combat-/Shopabschluss, Definitionlöschung,
+Transfer/Erasure, unavailable Extensions und Anzeigeprivacy. Konkrete Orakel und
+Grenzen stehen im [Prototypplan](ROADMAP-SALTMARCHER-ADR-PROTOTYPES.md).
+Unbekannte Original-Unteroptionen und reale OS-/Power-Loss-/RP-L-Produktbeweise
+bleiben dort benannte Liefernachweise, keine behaupteten Ergebnisse dieser
+Planungsarbeit. Frühere Architektur-/Codemessungen sind im Gitstand
+`116c16af48b6a073216685c8d8e2cc74fada82c3:ARCHITECTURE.md` historisch verfügbar;
+sie besitzen keinen eigenständigen normativen Vorrang.
