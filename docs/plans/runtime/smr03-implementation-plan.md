@@ -535,8 +535,16 @@ Der erste Architektur-/Technik-/Clock-Review des Kandidaten in Kommentar
 normiert mit unverändertem Zustand statt erst im Folgezustandsparser scheitern,
 und ein persistierter `created`-Reconciliation-Endpunkt muss seine
 Initialrevision dauerhaft exakt auf 0 binden. Beide Gegenfälle sind als
-Regressionen ergänzt; ihr neuer Exact-SHA benötigt einen unabhängigen
-Re-review.
+Regressionen ergänzt. Der reparierte Exact-SHA
+`f9f07f90ac558ead4b7f4ba130fea3e37241ebba` ist in Kommentar `6105053957`
+für beide Architektur-/Clock-Befunde und die unmittelbare Nichtregression
+`PASS`. Campaign/Data/Party bestätigt nach R01 auf dem Parent das Repairdelta
+in Kommentar `6105186943`; Music/Weather/Shops bestätigt den vollständigen
+Consumer-Scope in Kommentar `6105196543`. Beide sind auf demselben Repair-SHA
+`PASS`. Der exakte vollständige Lauf steht bei 1035 PASS, null FAIL und einem
+beabsichtigten Skip; Typecheck, Build, Repo- und Diff-Check sind grün. Damit
+ist ausschließlich der Split/Rejoin-Checkpoint in allen drei getrennten
+Reviewgrenzen bestätigt, nicht I01-B oder das Produkt insgesamt.
 
 Noch offen und nicht durch diesen Kandidaten behauptet sind permanente
 Löschung, die über Split/Rejoin hinausgehende vollständige Masken-
