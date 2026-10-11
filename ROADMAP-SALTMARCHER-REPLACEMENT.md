@@ -303,31 +303,33 @@ Integrationsweg, nicht automatisch die gesamte Karten-/Stadtfunktion.
 
 #### Arbeitsstand #69
 
-Kandidat: https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/71
+Kandidat: https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/tree/city/planner-name-scene-retention-20261011
 Eingang: https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/68
 
-Der [compound-add-Review](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/69#issuecomment-6102411326)
-qualifiziert den In-Memory-Kern, nicht Host/Save/Recovery; kein unangefragter Zweitreview.
-Campaign/Data benötigt den [konkreten nativen Plannerconsumer](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/69#issuecomment-6102471289)
-mit Plan-/Sceneclosure, kanonischem Dateibesitz und kausaler Publish-/Receipt-/Recoverybindung.
-Der in #68 besessene Producer ist Anknüpfung, keine gelieferte Plannerautorität.
+Stadt führt das bestehende Paket fort. Kern/Panel/Preview, atomare Compoundaktionen
+und Fokusreparatur sind integriert und eng qualifiziert. Der synthetische GM-Weg
+hat ortslose Planung, Notizen, Reihenfolge und Planwechsel bestätigt; native
+Speicherung bleibt offen. UI-Hilfe und basisgebundener Plannamen-Refresh wurden
+über PR131 selektiv auf Shared integriert. Der geprüfte Dokumentvorschlag in
+[PR86](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/86)
+ist weiterhin ein unratifizierter Campaign/Data-Eingang, keine Speicherautorität.
 
-Ein startbarer synthetischer Browser-GUI-Weg ist im Kandidaten vorbereitet:
-`node tools/manual-planner-preview/build.mjs`, danach `.build/manual-planner-preview/index.html` öffnen.
-Er nutzt das reale Panel mit ortsloser Blankplanung, Szenen/Notizen/Reihenfolge und Planwechsel.
+Neuer konkreter UI-Befund: Noch nicht übernommener Planname verschwand bei
+Szenenanlage, Übernehmen, Verwerfen, Umordnen und Auswahl. Fünf direkte
+Panel-Gegenproben FAIL vor Reparatur. Der guarded Buttonpfad erhält jetzt den
+exakten Feldwert bei erfolgreicher Aktion innerhalb desselben Plans; der
+Modellname ändert sich erst mit ausdrücklichem Umbenennen. Neue Pläne und
+externe Refreshbasis erhalten keinen alten Text. Alle sechs neuen Gegenproben
+PASS, Vollsuite1090 PASS/0 FAIL/1 bestehender optionaler PDF-Skip, Typ/Build/Repo PASS.
+Unabhängiger Deltareview und sichtbarer Browser-Retest stehen aus.
+
+Startbarer synthetischer Verbraucher: `node tools/manual-planner-preview/build.mjs`,
+danach `.build/manual-planner-preview/index.html` öffnen.
 [Startanleitung und Grenzen](docs/plans/campaign/manual-session-planner.md#startbarer-flüchtiger-gui-frühtest).
-Memory-only: Neuladen/Schließen verwirft sämtliche Arbeit; keine alternative Speicherung.
-Der [Cloud-GM-Lauf](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/69#issuecomment-6102831310)
-bestätigt den manuellen Bedienweg, fand Fokusverlust bei Szenenauswahl.
-Fokusreparatur auf59f04fe durch unabhängigen Review5481049475 und
-[sichtbaren GM-Retest](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/69#issuecomment-6102960484)
-bestätigt: Klick/Enter führt zu Szenentitel, nächster Tab zu Notizen; Plan-/Text-/Order-Erhalt.
-Neuer eigener Fehlerfall: Rename/Move nach Dirty-Draft-Übernahme konnte bei zweitem
-Revisionsfehler teilwirken. Gemeinsamer atomarer Modellpfad geliefert, 24 fokussierte
-Core-/Panel-Fälle PASS; neuer enger unabhängiger Deltareview vor Integration.
-Stadt konsumiert anschließend den bestätigten nativen Speicherport; #68 liefert
-World-Notes-Acknowledgment, weiterhin keine Plannerdatei-/Ownerautorität.
-Native Save/Fresh-/Recoveryabnahme, wirksamer 200%-Zoom und physische Tastatur bleiben offen.
+Memory-only: Neuladen/Schließen verwirft sämtliche Arbeit. Campaign/Data-Dateiplan,
+Lösch-/Tombstone- und Publish-/Receipt-/Recoveryvertrag sowie Pluginmount und
+native Save/Fresh-Abnahme bleiben offen. #68 liefert World Notes, keine
+Plannerdatei-/Ownerautorität. Kein Party-/Generatorausbau vor bestätigten Eingängen.
 
 ### SMR-07 – Reise, Kalender und autoritative Zeit
 

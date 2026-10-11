@@ -349,3 +349,39 @@ test('manual planner UI: refresh cannot rebase a typed name onto an external rev
     assert.equal(f.host.querySelector<HTMLInputElement>('[aria-label="Planname"]')!.value, confirmed!.name);
   } finally { f.ui.destroy(); }
 });
+
+for (const action of ['Szene hinzufügen', 'Entwurf übernehmen', 'Entwurf verwerfen', 'Szene nach oben', 'Unbenannte Szene']) {
+  test(`manual planner UI: ${action} retains a typed plan name without renaming the plan`, () => {
+    const f = fixture();
+    try {
+      button(f.host, 'Neuer Plan').click();
+      button(f.host, 'Szene hinzufügen').click();
+      const first = f.p.selectedSceneId;
+      button(f.host, 'Szene hinzufügen').click();
+      const field = f.host.querySelector<HTMLInputElement>('[aria-label="Planname"]')!;
+      field.value = '  Hafen 日本語\t';
+      const planId = f.p.active!.id;
+      f.p.editDraft({title: 'Edited', notes: '  Exact\n\ttext', locationId: null});
+      button(f.host, action).click();
+      assert.equal(f.p.active!.id, planId);
+      assert.equal(f.p.active!.name, '', 'scene action must not silently rename');
+      assert.equal(f.host.querySelector<HTMLInputElement>('[aria-label="Planname"]')!.value, field.value);
+      if (action === 'Unbenannte Szene') assert.equal(f.p.selectedSceneId, first);
+      button(f.host, 'Umbenennen').click();
+      assert.equal(f.p.active!.name, field.value, 'explicit rename remains available');
+    } finally { f.ui.destroy(); }
+  });
+}
+
+test('manual planner UI: typed plan name never leaks into a newly created plan', () => {
+  const f = fixture();
+  try {
+    button(f.host, 'Neuer Plan').click();
+    const original = f.p.active!;
+    f.host.querySelector<HTMLInputElement>('[aria-label="Planname"]')!.value = 'Pending old plan';
+    button(f.host, 'Neuer Plan').click();
+    assert.notEqual(f.p.active!.id, original.id);
+    assert.equal(f.host.querySelector<HTMLInputElement>('[aria-label="Planname"]')!.value, '');
+    assert.equal(f.p.catalog.find(p => p.id === original.id), original);
+  } finally { f.ui.destroy(); }
+});
