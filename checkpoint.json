@@ -1023,35 +1023,37 @@
   "hexAtlasExecution": {
     "scope": "HEX-00 bis HEX-28 und sämtliche eingeordneten CITY-00 bis CITY-09 vollständig",
     "phase": "HEX-04",
-    "state": "horizontal_inspector_fit_independent_review_PASS_steward_integration_pending",
+    "state": "supported_View_Scope_Location_CtrlS_native_PASS_targeted_independent_review_pending",
     "plan": "ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md",
     "currentRun": {
-      "id": "E2E-01-HEX04-INSPECTOR-N04-R01-CONSUMED",
+      "id": "E2E-01-HEX04-INSPECTOR-SAVE-ROUTING-R01",
       "owner": "Hex",
       "issue": 80,
       "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
       "e2e01UserLine": 13,
-      "state": "horizontal_inspector_fit_independent_review_PASS_steward_integration_pending",
-      "kind": "consume_scoped_independent_review_and_hand_off_steward_input",
-      "sourceCommit": "305680db90546207f259d246b3a6c86afcc44e68",
-      "record": "checkpoint.hexAtlasExecution.dungeonAtLocationInspectorHorizontalFitN04Qualification",
-      "guiUsed": false,
-      "productEdited": false,
+      "state": "supported_View_Scope_Location_CtrlS_native_PASS_targeted_independent_review_pending",
+      "sourceCommit": "e1bda0a08e985ef74ba1777d1e1588d507f838b7",
+      "finishedAt": "2026-10-11T07:12:40.079426+00:00",
+      "kind": "bounded_confirmed_Save_routing_repair_and_native_regression",
+      "record": "checkpoint.hexAtlasExecution.dungeonAtLocationInspectorSaveRoutingR01",
+      "receipt": "docs/reference/atlas-detail-binding-d01/inspector-save-routing-r01.json",
+      "guiUsed": true,
+      "productEdited": true,
       "phaseApproval": false,
-      "finishedAt": "2026-10-11T03:29:58.140266+00:00"
+      "slotHeld": false
     },
     "nextRun": {
-      "id": "E2E-01-HEX04-INSPECTOR-N04-S01-CONSUMPTION",
-      "kind": "consume_independent_steward_integration_or_required_finding",
+      "id": "E2E-01-HEX04-SAVE-ROUTING-R01-QUALIFICATION",
+      "kind": "consume_targeted_independent_review_or_required_finding",
       "owner": "Hex",
       "issue": 80,
       "e2eIssue": 12,
       "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
       "e2e01UserLine": 13,
-      "input": "checkpoint.hexAtlasExecution.dungeonAtLocationInspectorHorizontalFitN04Qualification",
-      "focus": "Contributor (existing Obsidian Dungeon Repo ansehen chat): independent steward integration of PR110 after exact new-head CI and composition/source checks. Then qualified free GM followup in #80; no dependent detail expansion or selfintegration by Hex.",
+      "input": "checkpoint.hexAtlasExecution.dungeonAtLocationInspectorSaveRoutingR01",
+      "focus": "Contributor: independently review the concrete H04 Save-routing repair on the published exact candidate in existing #80: supported View Scope parent/lifecycle, current focus and binding, composition/pending-key guards, same-window duplicate Save suppression, five regressions and source-bound native proof. No selfintegration. After qualified review/integration, Hex consumes concrete findings or the applicable fresh-process/remaining input evidence; Room/Meta, physical IME, Copy/Discard/Recovery and fullE2E remain separate. No general review round or dependent detail expansion.",
       "dependentExpansionAllowed": false,
-      "newLocalGuiSlotRequired": true,
+      "futureLocalGuiRequiresNewExplicitSlot": true,
       "noCompetingCitySaveFix": true
     },
     "review": {
@@ -5502,7 +5504,7 @@
       "platformIssue": 11,
       "checkpointIsAuthoritative": true
     },
-    "updatedAt": "2026-10-11T03:29:58.140266+00:00",
+    "updatedAt": "2026-10-11T05:57:27.264244+00:00",
     "consumerMatrix": {
       "id": "RUNTIME-MANIFEST-I02-CONSUMER-MATRIX-V1",
       "state": "frozen_complete_matrix_green_on_productive_Host_source",
@@ -7739,7 +7741,7 @@
       "issue": 80,
       "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
       "e2e01UserLine": 13,
-      "state": "horizontal_inspector_fit_independent_review_PASS_steward_integration_pending",
+      "state": "bounded_free_GM_same_session_and_fresh_reuse_consumed_IME_R01_S01_integrated_native_IME_open",
       "pullRequest": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/110",
       "producerRecord": "checkpoint.hexAtlasExecution.dungeonAtLocationInspectorHorizontalFitN04",
       "nativeReceipt": "docs/reference/atlas-detail-binding-d01/inspector-horizontal-fit-n04.json",
@@ -7774,17 +7776,2186 @@
         "reviewedHeadCiResult": "SUCCESS",
         "qualificationDelta": "Only own checkpoint/acceptance and #80 working section; product and native receipt unchanged."
       },
-      "independentIntegration": "pending",
-      "freeGmFollowup": "pending",
-      "nextConsumer": "Contributor (existing Obsidian Dungeon Repo ansehen chat): independent steward integration of PR110 after exact new-head CI and composition/source checks. Then qualified free GM followup in #80; no dependent detail expansion or selfintegration by Hex.",
+      "independentIntegration": {
+        "id": "HEX-N04-STEWARD-S01",
+        "steward": "Contributor (Obsidian Dungeon Repo ansehen)",
+        "head": "3123a806eb4c3ff3229e551c24dfe0bc7ca95a46",
+        "reviewedHead": "305680db90546207f259d246b3a6c86afcc44e68",
+        "sharedMerge": "0b6e4355e478a2ad277e03dc2a3f2318e3189e34",
+        "parents": [
+          "af5ddcbbf3bd449ff672f7fa83c116ba0ca602db",
+          "3123a806eb4c3ff3229e551c24dfe0bc7ca95a46"
+        ],
+        "tree": "f9006278b782cbc6605e801d3a405f65d3e7e7f3",
+        "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/110#issuecomment-6105052692",
+        "headCi": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/actions/runs/38108634137",
+        "sharedStructureCi": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/actions/runs/38108709670",
+        "ciLiveChecked": "Both SUCCESS at their exact recorded SHAs",
+        "nativeProductBlobsEqualReviewedHead": true,
+        "foreignRootsEqualPriorShared": true,
+        "selfIntegratedByHex": false
+      },
+      "freeGmFollowup": {
+        "owner": "Cloud-GM-Produkttester (existing Obsidian-Dungeon-Repo ansehen chat)",
+        "reviewerThread": "01a12031-2c30-73f7-bc01-6bd3eba86046",
+        "state": "bounded_same_session_and_fresh_reuse_consumed",
+        "claim": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80#issuecomment-6105151600",
+        "report": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80#issuecomment-6105400641",
+        "producerHead": "155c01595da879c7edb34a211fff490e003f8e14",
+        "producerPullRequest": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/115",
+        "actualProductSource": "87ccdb2626c26622f15799f3af7faf05d9feee89",
+        "fixtureVersion": "e2e01-spatial-v2",
+        "fixtureManifest": "docs/reference/gm-cloud-n04-20261011/FIXTURE-SHA256SUMS.txt",
+        "fixtureManifestSha256": "7f376b2524b10df07b01a0087a42dea49865fa096d82e223c3c75a06349aa625",
+        "evidenceReadme": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/blob/155c01595da879c7edb34a211fff490e003f8e14/docs/reference/gm-cloud-n04-20261011/README.md",
+        "screenshotManifestSha256": "20ce5cd1ee005168f5833a9c97bd26fd5d61327ec00c69888fcaca97cb0d89ad",
+        "screenshotSha256": {
+          "01-torheim-inspector-100.png": "10ccbadd23260037e2136df95ec268bec3a8f17753f38192d64fb2683c868291",
+          "02-torheim-inspector-131.png": "a53ec055f31effb87208c5c0bbbf02c458c5b4af348f8de7f7e1c552b8468ea6",
+          "03-dungeon-action-131.png": "d787171ff3ddbc7015ccae97ac6ed744f74b06ae3db7197ca25f97f4695b65c5",
+          "04-room-search-torraum.png": "05c6ca251a532a0991c619b9836ad504d963f5d77fe38981981e18371102bbb3",
+          "05-room-key-saved.png": "89da3fef833507a7b9a398f8f4e8de942576d12ffb8d2ee7d916f0fb49ddf6ca",
+          "06-returned-to-map.png": "cbfef83b1ba2c3ab7b3fc15f3b933af6e1c63d687db42c116a11316f75e85408",
+          "07-target-reused.png": "884f7b28ed6be0b6296fb03c408a91d9426e14ce4048ec82d727c9ad3d6d7041",
+          "08-room-key-reopened-in-session.png": "8e15a9c76c99db6833888e472f8b5d035a88a7afdd0e4a2f2213ba96c92a94b3"
+        },
+        "sourceFixtureFilesDirectlyVerifiedByHex": 8,
+        "screenshotsDirectlyViewedByHex": [
+          "01-torheim-inspector-100.png",
+          "02-torheim-inspector-131.png",
+          "03-dungeon-action-131.png",
+          "04-room-search-torraum.png",
+          "05-room-key-saved.png",
+          "06-returned-to-map.png",
+          "07-target-reused.png",
+          "08-room-key-reopened-in-session.png"
+        ],
+        "sourceDiffChecked": "87ccdb2..b6c831e changes only World Notes, its main.ts draft-buffer wiring/tests/host helper and City/SaltMarcher/GM evidence metadata; Atlas feature/UI sources, styles.css and Spatial-V2 fixture unchanged. The GM run stays bound to 87ccdb2, not a new build/GUI on later Shared.",
+        "reportedBuild": {
+          "command": "npm run build",
+          "result": "PASS; Node v24.19.0; dirty:false; sourceRevision exactly 87ccdb2626c26622f15799f3af7faf05d9feee89",
+          "installedTripletByteEqualBeforeVisibleReload": true,
+          "mainJsSha256": "2164be282b49bda3b56a9050d0d26888f7945271d51576e2a8de5109b4f9b0a0",
+          "stylesCssSha256": "df11f8352b61e45d3984d29e0136fc0225aaabe85c7b004a3b55eb0c6cc52934",
+          "manifestJsonSha256": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64",
+          "testSuite": "not run; no suite substituted for visible product interaction"
+        },
+        "reportedHost": {
+          "containerId": "e49e330d328c1e2d97e6f46a677e34f5f288c4dab7b41db242d3584e4ab66b33",
+          "containerName": "gm-city-cloud-isolated-20261011",
+          "app": "Obsidian 1.14.4 / Electron 43.7.7",
+          "processPid": 2159,
+          "profile": "/qa/gm-n04-profile",
+          "vault": "/dev/shm/gm-n04-vault",
+          "cdp": "http://127.0.0.1:9236",
+          "display": "own Xvfb :99, 1440x1000; app window and screenshots 1024x800",
+          "zoom131Viewport": "779x608 CSS px; devicePixelRatio 1.3145341873",
+          "input": "Visible mouse/keyboard via own Cloud CDP, not physical input"
+        },
+        "observedInPublishedImages": "At 100% Torraum results, edited Room text with Saved status, return to map, filtered target reuse and same text visible again. Separate 131% images show horizontal fit/wrapping with vertical scroll and reduced map area. Image03 shows Hier verorten: Dungeonkarte – Torraum, not the README action-name wording.",
+        "reportedNativeDataOracle": {
+          "dungeonPath": "Dungeons/E2E-01-Testdungeon/Karte.dungeon",
+          "dungeonSha256Before": "c6fe58d1b5de5c707000a39b0b8da2883d31867b7d8bf347f63830021e2df742",
+          "dungeonSha256After": "39b6896fef75f73fa6725d4792b07aca3de682d94c678353165fcf5e10286c9e",
+          "campaignPath": "Kampagnen/SaltMarcher/E2E-01-Atlas-Save.campaign.json",
+          "campaignSha256Before": "e66a9c557016357d3dea7491fa7110f9db0eeccf6fed5d1f9510885f6990a6df",
+          "campaignSha256After": "a2fd470149a9d9f546d6382dd67e4f881764c86351122345f0700aa680146366",
+          "unchangedFixturePayloads": {
+            "overworld": "76e0a82a939f5c2b16c08f153cca827e4efd8d5920915c997ae2a3fc6d16de07",
+            "terrainMinus1": "4e09dbcf59e5f81a35f0c72c44511b35073696cf079613f5d001baceeb59e358",
+            "terrain0": "c32ba3548aa7236e573e145ec0e3c6e75326cc6cd47134a19c2230d2d790f2f2",
+            "location11": "ac888059f997b3c0f697e2152c9d59375543d6d2004356f1eef482fd4ec27ab7",
+            "location12": "57b455592dc30e0ab9e3286a56f27a408453b7a2a3b617eee03ea089ed963b5b",
+            "city100": "d7ac830f0b1a1b2e20a396a8515cf6afa0b777e46ee39f0a5b39a75bd8a6184c"
+          },
+          "oracle": "Fixture SHA check found only the expected Dungeon and Campaign payload hashes changed in the isolated vault; Atlas, both terrain files, both Locations, City, and source fixture remained byte-identical."
+        },
+        "dataOracleLimit": "Installed triplet equality and changed post-save Dungeon/Campaign hashes are producer reports; full post-save payloads/build-install logs are not included for independent semantic verification.",
+        "independentEvidenceReview": {
+          "reviewer": "Stadt",
+          "head": "155c01595da879c7edb34a211fff490e003f8e14",
+          "result": "PASS",
+          "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/115#pullrequestreview-5481899333",
+          "submittedAt": "2026-10-11T04:30:40Z",
+          "scope": "8 published images and fixture/screenshot hashes; no new GUI/build/host PASS"
+        },
+        "next": "Hex: the concrete IME Save defect is independently qualified and regularly integrated0b6aa819; the offered Cloud-GM fresh-room reuse input is complete. Next bounded own step is the affected composing Save user path in a real Obsidian host, with appropriate composition input/source/build/fixture attribution and newly coordinated local slot or owned isolated Cloud host. Preserve exact pending text/native bytes during composition, then confirmed Save; no repeat of the whole unchanged N04/Save/UndoRedo run. Physical input and broad E2E remain separate.",
+        "limits": [
+          "Original PR115 demonstrated same-session Save/reuse only; the separate PR125 fresh continuation is consumed in freshReuse, without a new edit/save.",
+          "Search/result activation at 131% not exercised; vertical scrolling retained, no new repair request.",
+          "No physical, latency, external-window-clipping, Original, large-map, recovery, projection, user-vault or full E2E acceptance."
+        ],
+        "guiUsedByHex": false,
+        "independentEvidenceIntegration": {
+          "steward": "Contributor",
+          "head": "155c01595da879c7edb34a211fff490e003f8e14",
+          "sharedMerge": "b6c831ee007b7b6f8c2adb8e9fee48e8772e59c2",
+          "tree": "7ef82981a7d862055005232b7f3e23e36778a85a",
+          "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/115#issuecomment-6105460646",
+          "headCi": "38111405370",
+          "sharedStructureCi": "38111871129",
+          "bothExactShaCiLiveChecked": "SUCCESS",
+          "foreignRootsPreserved": true,
+          "selfIntegratedByHex": false
+        },
+        "freshReuseOffer": {
+          "owner": "Existing Cloud-GM support only; Hex owns parent80",
+          "state": "completed_actual_fresh_user_reuse_consumed",
+          "result": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80#issuecomment-6105912997",
+          "record": "checkpoint.hexAtlasExecution.dungeonAtLocationInspectorHorizontalFitN04Qualification.freeGmFollowup.freshReuse",
+          "priorNativeFreshEvidence": "docs/reference/atlas-detail-binding-d01/inspector-n02-native-h02.json",
+          "scope": "Old controlled N02-H02 proof unchanged; fresh GM visible field rediscovery closes only the requested ordinary saved-room reuse gap on87ccdb2."
+        },
+        "freshReuse": {
+          "id": "GM-E2E01-ATLAS-INSPECTOR-N04-FRESH-PROCESS-20261011-01",
+          "state": "bounded_visible_saved_room_fresh_reuse_PASS_consumed_and_evidence_integrated",
+          "owner": "Existing Cloud-GM; Hex consumer and parent80 owner",
+          "report": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80#issuecomment-6105912997",
+          "producerHead": "6d03e5aa6708faa2a3c24206b4b025b23d234353",
+          "pullRequest": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/125",
+          "actualProductSource": "87ccdb2626c26622f15799f3af7faf05d9feee89",
+          "documentationBase": "10defd5aca37a5090918f96c04254e4326840f86",
+          "fixtureVersion": "e2e01-spatial-v2",
+          "fixtureManifestSha256": "23735bb6c95107b7dec93ffa56ec66405a0f4fe0ec3822fc0476d90d2920188d",
+          "evidenceReadme": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/blob/6d03e5aa6708faa2a3c24206b4b025b23d234353/docs/reference/gm-cloud-n04-20261011/README.md#n04-continuation-fresh-obsidian-process-and-saved-room-reuse",
+          "screenshotManifestSha256": "5dbaec577dec581d223e8e23c8dfab1bbe368db2354b9229dd27db877866e5e2",
+          "newScreenshotSha256": {
+            "docs/reference/gm-cloud-n04-20261011/screenshots/09-fresh-process-atlas-open.png": "ea477c1ab9632dea632a315c3293c9f731396253b1c0c2ac28d6a48e2291dca6",
+            "docs/reference/gm-cloud-n04-20261011/screenshots/10-fresh-process-torheim-selected.png": "020bbea68f7ec9818f2f155fb31b7a37c4456bb605fc3ea0540e186f8b4f5dae",
+            "docs/reference/gm-cloud-n04-20261011/screenshots/11-fresh-process-room-search.png": "4f396c6cc9d6926321d02a5528e57151c253a8bf3811e69ace242de64de7ca08",
+            "docs/reference/gm-cloud-n04-20261011/screenshots/12-fresh-process-room-key-text.png": "50adf423029532989fe88e04c6040709242cce7d3a6a0edff85ef1cb1179d3a6"
+          },
+          "allScreenshotHashesCheckedByHex": 12,
+          "newScreenshotsDirectlyViewedByHex": [
+            "docs/reference/gm-cloud-n04-20261011/screenshots/09-fresh-process-atlas-open.png",
+            "docs/reference/gm-cloud-n04-20261011/screenshots/10-fresh-process-torheim-selected.png",
+            "docs/reference/gm-cloud-n04-20261011/screenshots/11-fresh-process-room-search.png",
+            "docs/reference/gm-cloud-n04-20261011/screenshots/12-fresh-process-room-key-text.png"
+          ],
+          "observedInPublishedImages": "Saved Torheim in fresh Atlas, visible Torraum search/result and Room-Key with Torraum/1 and full saved text: ## Eingang / Die Basalttür ist verschlossen. / Nur das dritte Klopfen antwortet.",
+          "reportedHost": {
+            "containerId": "e49e330d328c1e2d97e6f46a677e34f5f288c4dab7b41db242d3584e4ab66b33",
+            "containerName": "gm-city-cloud-isolated-20261011",
+            "app": "Obsidian 1.14.4 / Electron 43.7.7",
+            "profile": "/qa/gm-n04-profile",
+            "vault": "/dev/shm/gm-n04-vault",
+            "priorProcessPid": 2159,
+            "freshProcessPid": 3964,
+            "display": "own Xvfb :101, 1440x1000; app content area 1024x800 CSS px; devicePixelRatio 1",
+            "input": "Visible UI through own isolated Cloud CDP; not physical input"
+          },
+          "reportedBuild": {
+            "command": "npm run build (previous exact N04 run; no rebuild in this continuation)",
+            "result": "PASS; Node v24.19.0; dirty:false; exact sourceRevision 87ccdb2626c26622f15799f3af7faf05d9feee89",
+            "installedTripletByteEqual": true,
+            "mainJsSha256": "2164be282b49bda3b56a9050d0d26888f7945271d51576e2a8de5109b4f9b0a0",
+            "stylesCssSha256": "df11f8352b61e45d3984d29e0136fc0225aaabe85c7b004a3b55eb0c6cc52934",
+            "manifestJsonSha256": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64"
+          },
+          "reportedNativeDataOracle": {
+            "atlas": "76e0a82a939f5c2b16c08f153cca827e4efd8d5920915c997ae2a3fc6d16de07",
+            "terrainMinus1": "4e09dbcf59e5f81a35f0c72c44511b35073696cf079613f5d001baceeb59e358",
+            "terrain0": "c32ba3548aa7236e573e145ec0e3c6e75326cc6cd47134a19c2230d2d790f2f2",
+            "dungeon": "39b6896fef75f73fa6725d4792b07aca3de682d94c678353165fcf5e10286c9e",
+            "campaign": "a2fd470149a9d9f546d6382dd67e4f881764c86351122345f0700aa680146366",
+            "location11": "ac888059f997b3c0f697e2152c9d59375543d6d2004356f1eef482fd4ec27ab7",
+            "location12": "57b455592dc30e0ab9e3286a56f27a408453b7a2a3b617eee03ea089ed963b5b",
+            "city": "d7ac830f0b1a1b2e20a396a8515cf6afa0b777e46ee39f0a5b39a75bd8a6184c"
+          },
+          "reportedProcessLifecycle": "PriorPID2159 ended through own Browser.close; freshPID3964 on same profile/synthetic saved vault, then own Browser.close; PIDs disappeared, no forcekill reported.",
+          "dataOracleLimit": "Lifecycle, installed-triplet equality and unchanged post-save payload hashes are producer reports; raw lifecycle/install receipts and full saved payloads absent. Hex checked published images/manifests/source deltas, not a new native host or launcher Exit0.",
+          "independentEvidenceReviews": [
+            {
+              "reviewer": "Hex",
+              "head": "6d03e5aa6708faa2a3c24206b4b025b23d234353",
+              "result": "PASS bounded evidence",
+              "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/125#pullrequestreview-5482076660"
+            },
+            {
+              "reviewer": "Stadt",
+              "head": "6d03e5aa6708faa2a3c24206b4b025b23d234353",
+              "result": "PASS bounded evidence",
+              "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/125#pullrequestreview-5482077595"
+            }
+          ],
+          "independentIntegration": {
+            "steward": "Contributor",
+            "head": "6d03e5aa6708faa2a3c24206b4b025b23d234353",
+            "sharedMerge": "3af22a1a7a2501d34ecbdf55587400b455f7d42a",
+            "tree": "87a987e91a618e23382295fe9dae6b3a33e24ef8",
+            "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/125#issuecomment-6105999844",
+            "headCi": "38115556778",
+            "sharedStructureCi": "38116159574",
+            "headCiResult": "SUCCESS",
+            "sharedStructureCiResult": "SUCCESS",
+            "parents": [
+              "10defd5aca37a5090918f96c04254e4326840f86",
+              "6d03e5aa6708faa2a3c24206b4b025b23d234353"
+            ]
+          },
+          "limits": [
+            "Saved-text find/reuse after fresh process on87ccdb2 only; no new edit/save or second fresh cycle.",
+            "No current-Shared GUI, native IME, physical, latency, search at131%, outer clipping, Recovery, Player, Original, large-map, user-vault or full E2E PASS."
+          ],
+          "guiUsedByHex": false,
+          "consumedAt": "2026-10-11T05:57:27.264244+00:00"
+        }
+      },
+      "nextConsumer": "Hex: the concrete IME Save defect is independently qualified and regularly integrated0b6aa819; the offered Cloud-GM fresh-room reuse input is complete. Next bounded own step is the affected composing Save user path in a real Obsidian host, with appropriate composition input/source/build/fixture attribution and newly coordinated local slot or owned isolated Cloud host. Preserve exact pending text/native bytes during composition, then confirmed Save; no repeat of the whole unchanged N04/Save/UndoRedo run. Physical input and broad E2E remain separate.",
       "limits": [
-        "Independent scoped review consumes existing native evidence; no new native GUI or local slot claim.",
-        "Original external-window clipping was not reproduced in D01 and is not qualified as fixed.",
-        "Vertical scrolling, native edit/Save/History/Recovery, fresh-process, physical, Original-parity, large-map, user-vault and overall E2E claims retain their separate evidence and open boundaries."
+        "Original controlled N04 geometry and N02-H02 native proofs retain exact sources; same-session and fresh-reuse GM proofs remain separate on87ccdb2.",
+        "Fresh visible saved-room reuse is consumed; lifecycle/install/post-save payload oracles remain producer reports. No new edit/save/current-Shared GUI or native IME claim.",
+        "Search at131%, outer clipping, physical input, native Copy/Discard/Recovery, Original/large-map/user-vault and full E2E retain open boundaries."
       ],
       "guiUsedByHex": false,
       "productEdited": false,
-      "phaseApproval": false
+      "phaseApproval": false,
+      "sourceCommit": "0b6aa819ed0721520156a364d1504f39ac2b99f1"
+    },
+    "dungeonAtLocationInspectorImeSaveR01": {
+      "id": "E2E-01-HEX04-INSPECTOR-IME-SAVE-R01",
+      "owner": "Hex",
+      "supportProducer": "Stadt",
+      "issue": 80,
+      "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
+      "e2e01UserLine": 13,
+      "state": "independent_focused_R01_PASS_and_actual_S01_integrated_native_IME_open",
+      "supportClaim": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80#issuecomment-6105919029",
+      "producerResult": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80#issuecomment-6105933065",
+      "pullRequest": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/126",
+      "sourceCommit": "1e2000beea45870a69128db1ac76a0c42142e581",
+      "baselineProduct": "10defd5aca37a5090918f96c04254e4326840f86",
+      "implemented": "Only !isComposing in Location/Room keyboard Save predicates; propagation, Escape, focus, Apply, navigation and Atlas/Save/History contracts unchanged.",
+      "fixtureVersion": "e2e01-spatial-v2",
+      "fixtureManifestSha256": "23735bb6c95107b7dec93ffa56ec66405a0f4fe0ec3822fc0476d90d2920188d",
+      "independentReview": {
+        "reviewer": "Hex",
+        "head": "1e2000beea45870a69128db1ac76a0c42142e581",
+        "result": "PASS no required findings",
+        "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/126#pullrequestreview-5482076614",
+        "runtime": "Node v22.22.0",
+        "baseline": "Four Location/Room x Ctrl/Meta cases FAIL History1 instead0 on exact10defd5 product with candidate testfile overlay only; wait editor.work, no extra flush/Apply.",
+        "candidate": "Entire affected Managed/Vaultadapter hostbundle50/50 PASS. During composition no History/native byte publication and exact pending text retained; confirmed shortcut afterward saves exact Location/Dungeon payload with one History step.",
+        "metadataScope": "Only checkpoint.cityExecution and acceptance.cityPlans differ from producer base; all foreign/Hex roots retained."
+      },
+      "localEvidence": {
+        "baseline-tests.log": {
+          "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-ime-r01-20261011/baseline-tests.log",
+          "sha256": "eb9e691508c2c897e23d498b83bd143aebd0b953f525af69656620129574734f"
+        },
+        "candidate-tests.log": {
+          "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-ime-r01-20261011/candidate-tests.log",
+          "sha256": "b131ffeae27a92569e59a1765e734ebbb4fe7d0497f3cad3cd1345962a223f88"
+        }
+      },
+      "sourceFilesSha256": {
+        "src/ui/location-key-panel.ts": "91b68930a9d244fb625c39d8687fe4474f219d931aad25d685c33cd793182ae3",
+        "src/ui/atlas-room-key-panel.ts": "d39fd8720ed4faaa44185934f14759141ba919a2a4734f64acba766a480f90a9",
+        "tests/atlas-campaign-host.entry.ts": "55ed0fc75058cbc8c0f97ef19f25995ca24f379304abe3332cac9110abf1324b"
+      },
+      "independentIntegration": {
+        "steward": "Contributor",
+        "head": "1e2000beea45870a69128db1ac76a0c42142e581",
+        "sharedMerge": "0b6aa819ed0721520156a364d1504f39ac2b99f1",
+        "tree": "f54940dea13632d75f95d2f28823a9de678b713e",
+        "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/126#issuecomment-6106002909",
+        "headCi": "38115663534",
+        "sharedStructureCi": "38116230853",
+        "headCiResult": "SUCCESS",
+        "sharedStructureCiResult": "SUCCESS",
+        "parents": [
+          "3af22a1a7a2501d34ecbdf55587400b455f7d42a",
+          "1e2000beea45870a69128db1ac76a0c42142e581"
+        ]
+      },
+      "nextConsumer": "Hex: the concrete IME Save defect is independently qualified and regularly integrated0b6aa819; the offered Cloud-GM fresh-room reuse input is complete. Next bounded own step is the affected composing Save user path in a real Obsidian host, with appropriate composition input/source/build/fixture attribution and newly coordinated local slot or owned isolated Cloud host. Preserve exact pending text/native bytes during composition, then confirmed Save; no repeat of the whole unchanged N04/Save/UndoRedo run. Physical input and broad E2E remain separate.",
+      "limits": {
+        "syntheticDomInput": true,
+        "newObsidianGui": false,
+        "nativeIme": false,
+        "freshProcessIme": false,
+        "physicalInput": false,
+        "fullE2E": false,
+        "userVaultInstalled": false,
+        "selfIntegration": false
+      },
+      "finishedAt": "2026-10-11T05:57:27.264244+00:00"
+    },
+    "dungeonAtLocationInspectorImeSaveH01": {
+      "id": "E2E-01-HEX04-INSPECTOR-IME-SAVE-H01",
+      "owner": "Hex",
+      "issue": 80,
+      "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
+      "e2e01UserLine": 13,
+      "state": "H01_Obsidian_composition_observed_Save_keydown_observation_gap_native_IME_open",
+      "sourceCommit": "5f542ded6f524b9e5a7d3ead48eb61ef5b1934c1",
+      "qualifiedShared": "0b6aa819ed0721520156a364d1504f39ac2b99f1",
+      "productDiffFromQualifiedShared": "none; only three existing Hex metadata files differ at tested own source",
+      "integratedGuardInput": "checkpoint.hexAtlasExecution.dungeonAtLocationInspectorImeSaveR01",
+      "fixtureVersion": "e2e01-spatial-v2",
+      "fixtureManifestSha256": "23735bb6c95107b7dec93ffa56ec66405a0f4fe0ec3822fc0476d90d2920188d",
+      "browserVersion": {
+        "protocolVersion": "1.3",
+        "product": "Chrome/150.0.7871.250",
+        "revision": "@07ee2042224499f634596843f209356586214e26",
+        "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) obsidian/1.14.4 Chrome/150.0.7871.250 Electron/43.7.7 Safari/537.36",
+        "jsVersion": "15.0.245.31"
+      },
+      "runtime": "Node v22.22.0",
+      "buildTriplet": {
+        "main.js": {
+          "sourceSha256": "bb55129102aedaf81c6d26c2e3de77a46e2b8f5e1406830d0d1aabee8c8eaf25",
+          "installedSha256": "bb55129102aedaf81c6d26c2e3de77a46e2b8f5e1406830d0d1aabee8c8eaf25"
+        },
+        "styles.css": {
+          "sourceSha256": "df11f8352b61e45d3984d29e0136fc0225aaabe85c7b004a3b55eb0c6cc52934",
+          "installedSha256": "df11f8352b61e45d3984d29e0136fc0225aaabe85c7b004a3b55eb0c6cc52934"
+        },
+        "manifest.json": {
+          "sourceSha256": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64",
+          "installedSha256": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64"
+        }
+      },
+      "inputSource": "CDP Input.imeSetComposition and Input.dispatchKeyEvent",
+      "scope": "one isolated actual Flatpak Obsidian process, first Location Ctrl+S composition attempt; no remaining three cases, composition commit or confirmed Save",
+      "result": {
+        "runnerPassed": false,
+        "runnerExitCode": 1,
+        "rawOutcome": "probe_failed",
+        "rawAssertion": "actual delivered Save keydown",
+        "qualification": "inconclusive bounded field-event observation; no composing Save guard PASS or product FAIL",
+        "observedText": "H01 location Ctrl 東京",
+        "trustedCompositionInput": true,
+        "fieldObservedSaveKeydown": false,
+        "fieldObservedSaveKeyup": {
+          "type": "keyup",
+          "key": "s",
+          "code": "KeyS",
+          "isComposing": true,
+          "isTrusted": true,
+          "ctrlKey": true,
+          "metaKey": false,
+          "label": "Ortsname",
+          "value": "H01 location Ctrl 東京",
+          "defaultPrevented": false
+        },
+        "pendingBeforeShortcut": true,
+        "pendingAfterShortcut": true,
+        "historyDepthBeforeComposition": 0,
+        "historyDepthAfterShortcut": 0,
+        "sameRepositoryHistoryRendererContext": true,
+        "locationAndDungeonModelUnchanged": true,
+        "allEightFixturePayloadsUnchangedBeforeAndAfterNormalExit": true,
+        "originOfMissingKeydown": "not established; document-capture logger filtered events targeting Ortsname/Raumname; no window capture or application preprocessor observation"
+      },
+      "events": [
+        {
+          "type": "keydown",
+          "key": "Control",
+          "code": "ControlLeft",
+          "isComposing": false,
+          "isTrusted": true,
+          "ctrlKey": true,
+          "metaKey": false,
+          "label": "Ortsname",
+          "value": "Torheim",
+          "defaultPrevented": false
+        },
+        {
+          "type": "keydown",
+          "key": "a",
+          "code": "KeyA",
+          "isComposing": false,
+          "isTrusted": true,
+          "ctrlKey": true,
+          "metaKey": false,
+          "label": "Ortsname",
+          "value": "Torheim",
+          "defaultPrevented": false
+        },
+        {
+          "type": "keyup",
+          "key": "a",
+          "code": "KeyA",
+          "isComposing": false,
+          "isTrusted": true,
+          "ctrlKey": true,
+          "metaKey": false,
+          "label": "Ortsname",
+          "value": "Torheim",
+          "defaultPrevented": false
+        },
+        {
+          "type": "keyup",
+          "key": "Control",
+          "code": "ControlLeft",
+          "isComposing": false,
+          "isTrusted": true,
+          "ctrlKey": false,
+          "metaKey": false,
+          "label": "Ortsname",
+          "value": "Torheim",
+          "defaultPrevented": false
+        },
+        {
+          "type": "compositionstart",
+          "isTrusted": true,
+          "data": "Torheim",
+          "label": "Ortsname",
+          "value": "Torheim",
+          "defaultPrevented": false
+        },
+        {
+          "type": "compositionupdate",
+          "isTrusted": true,
+          "data": "H01 location Ctrl 東京",
+          "label": "Ortsname",
+          "value": "Torheim",
+          "defaultPrevented": false
+        },
+        {
+          "type": "beforeinput",
+          "isComposing": true,
+          "isTrusted": true,
+          "data": "H01 location Ctrl 東京",
+          "inputType": "insertCompositionText",
+          "label": "Ortsname",
+          "value": "Torheim",
+          "defaultPrevented": false
+        },
+        {
+          "type": "input",
+          "isComposing": true,
+          "isTrusted": true,
+          "data": "H01 location Ctrl 東京",
+          "inputType": "insertCompositionText",
+          "label": "Ortsname",
+          "value": "H01 location Ctrl 東京",
+          "defaultPrevented": false
+        },
+        {
+          "type": "keyup",
+          "key": "s",
+          "code": "KeyS",
+          "isComposing": true,
+          "isTrusted": true,
+          "ctrlKey": true,
+          "metaKey": false,
+          "label": "Ortsname",
+          "value": "H01 location Ctrl 東京",
+          "defaultPrevented": false
+        }
+      ],
+      "fixtureHashesBefore": {
+        "Atlanten/Gemeinsamer-Testatlas.overworld": "76e0a82a939f5c2b16c08f153cca827e4efd8d5920915c997ae2a3fc6d16de07",
+        "Städte/00000000-0000-4000-8000-000000000100.city": "d7ac830f0b1a1b2e20a396a8515cf6afa0b777e46ee39f0a5b39a75bd8a6184c",
+        "Dungeons/E2E-01-Testdungeon/Karte.dungeon": "c6fe58d1b5de5c707000a39b0b8da2883d31867b7d8bf347f63830021e2df742",
+        "Orte/00000000-0000-4000-8000-000000000011.location": "ac888059f997b3c0f697e2152c9d59375543d6d2004356f1eef482fd4ec27ab7",
+        "Orte/00000000-0000-4000-8000-000000000012.location": "57b455592dc30e0ab9e3286a56f27a408453b7a2a3b617eee03ea089ed963b5b",
+        "Atlasdaten/00000000-0000-4000-8000-000000000010/terrain/0_-1_0.json": "4e09dbcf59e5f81a35f0c72c44511b35073696cf079613f5d001baceeb59e358",
+        "Atlasdaten/00000000-0000-4000-8000-000000000010/terrain/0_0_0.json": "c32ba3548aa7236e573e145ec0e3c6e75326cc6cd47134a19c2230d2d790f2f2",
+        "Kampagnen/SaltMarcher/E2E-01-Atlas-Save.campaign.json": "e66a9c557016357d3dea7491fa7110f9db0eeccf6fed5d1f9510885f6990a6df"
+      },
+      "fixtureHashesAfterAppQuit": {
+        "Atlanten/Gemeinsamer-Testatlas.overworld": "76e0a82a939f5c2b16c08f153cca827e4efd8d5920915c997ae2a3fc6d16de07",
+        "Städte/00000000-0000-4000-8000-000000000100.city": "d7ac830f0b1a1b2e20a396a8515cf6afa0b777e46ee39f0a5b39a75bd8a6184c",
+        "Dungeons/E2E-01-Testdungeon/Karte.dungeon": "c6fe58d1b5de5c707000a39b0b8da2883d31867b7d8bf347f63830021e2df742",
+        "Orte/00000000-0000-4000-8000-000000000011.location": "ac888059f997b3c0f697e2152c9d59375543d6d2004356f1eef482fd4ec27ab7",
+        "Orte/00000000-0000-4000-8000-000000000012.location": "57b455592dc30e0ab9e3286a56f27a408453b7a2a3b617eee03ea089ed963b5b",
+        "Atlasdaten/00000000-0000-4000-8000-000000000010/terrain/0_-1_0.json": "4e09dbcf59e5f81a35f0c72c44511b35073696cf079613f5d001baceeb59e358",
+        "Atlasdaten/00000000-0000-4000-8000-000000000010/terrain/0_0_0.json": "c32ba3548aa7236e573e145ec0e3c6e75326cc6cd47134a19c2230d2d790f2f2",
+        "Kampagnen/SaltMarcher/E2E-01-Atlas-Save.campaign.json": "e66a9c557016357d3dea7491fa7110f9db0eeccf6fed5d1f9510885f6990a6df"
+      },
+      "slot": {
+        "peerThread": "01a12022-b67b-7da2-bed5-8ebde169d475",
+        "freshExplicitPeerGrant": true,
+        "claim": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6106110899",
+        "returned": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6106122720",
+        "held": false,
+        "nextLocalGuiRequiresFreshExplicitGrant": true
+      },
+      "lifecycle": {
+        "unit": "dungeon-native-3969202.service",
+        "runnerPid": 3969202,
+        "appPids": [
+          3969365,
+          3969447,
+          3969456,
+          3969471
+        ],
+        "requestedNormalQuit": true,
+        "normalExitObserved": true,
+        "forcedTerminationPids": [],
+        "systemdExitStatus": "0",
+        "allObservedAppPidsGone": true,
+        "runnerFailureDistinctFromAppNormalExit": true
+      },
+      "evidence": {
+        "invocation.json": {
+          "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-ime-save-h01-20261011/invocation.json",
+          "sha256": "be140c48e33bbae87b9b427de8638a796253f74d245c6fe378dc4fa76e0950bb"
+        },
+        "composition-probe.cjs": {
+          "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-ime-save-h01-20261011/composition-probe.cjs",
+          "sha256": "4473f696a4e8368cb90d27989a73ff3dbf7fafedcf5bd159dd33705d41230ac0"
+        },
+        "composition-preload.cjs": {
+          "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-ime-save-h01-20261011/composition-preload.cjs",
+          "sha256": "d404437a2e35955786c2a11c3f6bbe47dfc3d3ca13c9cd2147bdd6a58ef34795"
+        },
+        "host.log": {
+          "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-ime-save-h01-20261011/host.log",
+          "sha256": "5a1f3b2377388cad589e10f45461a42d04103934be6a2305caf4fb477b4605c6"
+        },
+        "runner-result.json": {
+          "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-ime-save-h01-20261011/runner-result.json",
+          "sha256": "2be68dcdabfd095d16971d95d1e3883fc9b71b6cab53c696d02c324991f384b8"
+        },
+        "evidence/1791698963819-atlas-spatial-edit/composition-probe.json": {
+          "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-ime-save-h01-20261011/evidence/1791698963819-atlas-spatial-edit/composition-probe.json",
+          "sha256": "9f498b037483130ba4851a5e59cfb17221414a8823ec2df7c471adc03341bff7"
+        },
+        "evidence/1791698963819-atlas-spatial-edit/process-lifecycle.json": {
+          "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-ime-save-h01-20261011/evidence/1791698963819-atlas-spatial-edit/process-lifecycle.json",
+          "sha256": "0cbb9ef78be254ab99b17e54ffee442b53698bd84ba7d43dac8a547716c4b49a"
+        },
+        "evidence/1791698963819-atlas-spatial-edit/location-Ctrl-composing.png": {
+          "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-ime-save-h01-20261011/evidence/1791698963819-atlas-spatial-edit/location-Ctrl-composing.png",
+          "sha256": "7c7cbe551443d35e04ba37c4039ee7e355a757d344f1d4593c1f4ff3df8b4957"
+        }
+      },
+      "imageReadByHex": "location-Ctrl-composing.png directly viewed; actual visible Ortsname contains composing candidate and status Text noch nicht übernommen",
+      "limits": {
+        "syntheticCDPInput": true,
+        "actualObsidianProcess": true,
+        "physicalOsIme": false,
+        "nativeComposingSaveGuardQualified": false,
+        "confirmedSaveAfterComposition": false,
+        "roomOrMetaCase": false,
+        "freshSavedReuse": false,
+        "copyDiscardRecovery": false,
+        "productEdited": false,
+        "helperAlteredAfterRun": false,
+        "userVaultTouched": false,
+        "fullE2E": false
+      },
+      "nextConsumer": "Hex: first resolve the bounded host-input/probe-observation gap: demonstrate a KeyS keydown at the focused Location/Room panel during composition, with complete event provenance before judging the composing Save guard. The current document-capture field logger saw only composing keyup; interception versus non-delivery is not established. Use an appropriate isolated IME host/input or improve this specific observation; do not repeat unchanged H01/whole N04/Save/UndoRedo or expand the product. Any new local GUI requires fresh explicit slot coordination.",
+      "finishedAt": "2026-10-11T06:09:33.702876+00:00"
+    },
+    "dungeonAtLocationInspectorImeSaveH02": {
+      "id": "E2E-01-HEX04-INSPECTOR-IME-SAVE-H02",
+      "owner": "Hex",
+      "issue": 80,
+      "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
+      "e2e01UserLine": 13,
+      "state": "H02_Window_capture_stops_composing_Save_before_Key_panels_native_guard_open",
+      "sourceCommit": "64b6eb58f92faf3ae82087b48281ef7fceb83686",
+      "qualifiedSharedCommit": "25e6155eb6542c99bc2e4cf8cbf218554ddfd394",
+      "priorInput": "checkpoint.hexAtlasExecution.dungeonAtLocationInspectorImeSaveH01",
+      "integratedGuardInput": "checkpoint.hexAtlasExecution.dungeonAtLocationInspectorImeSaveR01",
+      "sourceBinding": {
+        "guardAndEditorUnchangedFromH01": "5f542ded6f524b9e5a7d3ead48eb61ef5b1934c1",
+        "sha256": {
+          "src/features/atlas/atlas-editor.ts": "29e33e1ee088986c7d56bab9ddac07e1818524716e35153620bf5a3f7a27833e",
+          "src/ui/location-key-panel.ts": "91b68930a9d244fb625c39d8687fe4474f219d931aad25d685c33cd793182ae3",
+          "src/ui/atlas-room-key-panel.ts": "d39fd8720ed4faaa44185934f14759141ba919a2a4734f64acba766a480f90a9"
+        },
+        "cleanSourceBuild": "PASS",
+        "runtime": "Node v22.22.0",
+        "productEdited": false
+      },
+      "fixtureVersion": "e2e01-spatial-v2",
+      "fixtureManifestSha256": "23735bb6c95107b7dec93ffa56ec66405a0f4fe0ec3822fc0476d90d2920188d",
+      "browserVersion": {
+        "protocolVersion": "1.3",
+        "product": "Chrome/150.0.7871.250",
+        "revision": "@07ee2042224499f634596843f209356586214e26",
+        "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) obsidian/1.14.4 Chrome/150.0.7871.250 Electron/43.7.7 Safari/537.36",
+        "jsVersion": "15.0.245.31"
+      },
+      "triplet": {
+        "main.js": {
+          "source": "94461124a658f8a044fbd1dd1db0d9e59beba13c776ec02e0e227ed693950073",
+          "installed": "94461124a658f8a044fbd1dd1db0d9e59beba13c776ec02e0e227ed693950073"
+        },
+        "styles.css": {
+          "source": "df11f8352b61e45d3984d29e0136fc0225aaabe85c7b004a3b55eb0c6cc52934",
+          "installed": "df11f8352b61e45d3984d29e0136fc0225aaabe85c7b004a3b55eb0c6cc52934"
+        },
+        "manifest.json": {
+          "source": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64",
+          "installed": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64"
+        }
+      },
+      "input": "CDP composition plus legacy keyDown / rawKeyDown comparison; passive Window/Document/field/panel and Electron before-input observers",
+      "observers": {
+        "window": true,
+        "document": true,
+        "field": true,
+        "panel": true,
+        "beforeInputEvent": true
+      },
+      "observations": [
+        {
+          "command": {
+            "type": "keyDown",
+            "key": "s",
+            "code": "KeyS",
+            "windowsVirtualKeyCode": 83,
+            "modifiers": 2
+          },
+          "windowCaptureKeydown": {
+            "source": "window",
+            "type": "keydown",
+            "key": "s",
+            "code": "KeyS",
+            "keyCode": 83,
+            "isComposing": true,
+            "isTrusted": true,
+            "ctrlKey": true,
+            "metaKey": false,
+            "eventPhase": 1,
+            "targetTag": "INPUT",
+            "label": "Ortsname",
+            "value": "H02 Ortsname 東京",
+            "activeLabel": "Ortsname",
+            "defaultPrevented": true,
+            "cancelBubble": true,
+            "defaultPreventedAfter": true,
+            "cancelBubbleAfter": true
+          },
+          "downstreamKeydownCount": 0,
+          "keyupSources": [
+            "window",
+            "document",
+            "panel",
+            "field"
+          ],
+          "electronBeforeInputCallbacks": 0,
+          "exactPendingText": "H02 Ortsname 東京",
+          "historyDepth": 0,
+          "repositoryDirty": false,
+          "repositoryDraft": false,
+          "sameOwnersCameraAndNativeModels": true,
+          "allEightFixtureBytesUnchanged": true
+        },
+        {
+          "command": {
+            "type": "rawKeyDown",
+            "key": "s",
+            "code": "KeyS",
+            "windowsVirtualKeyCode": 83,
+            "modifiers": 2
+          },
+          "windowCaptureKeydown": {
+            "source": "window",
+            "type": "keydown",
+            "key": "s",
+            "code": "KeyS",
+            "keyCode": 83,
+            "isComposing": true,
+            "isTrusted": true,
+            "ctrlKey": true,
+            "metaKey": false,
+            "eventPhase": 1,
+            "targetTag": "INPUT",
+            "label": "Ortsname",
+            "value": "H02 Ortsname 東京",
+            "activeLabel": "Ortsname",
+            "defaultPrevented": true,
+            "cancelBubble": true,
+            "defaultPreventedAfter": true,
+            "cancelBubbleAfter": true
+          },
+          "downstreamKeydownCount": 0,
+          "keyupSources": [
+            "window",
+            "document",
+            "panel",
+            "field"
+          ],
+          "electronBeforeInputCallbacks": 0,
+          "exactPendingText": "H02 Ortsname 東京",
+          "historyDepth": 0,
+          "repositoryDirty": false,
+          "repositoryDraft": false,
+          "sameOwnersCameraAndNativeModels": true,
+          "allEightFixtureBytesUnchanged": true
+        }
+      ],
+      "diagnosis": {
+        "conclusion": "Both dispatched modes deliver a trusted composing Ctrl+S keydown targeting Ortsname at Window capture. It is already default-prevented and propagation-stopped there; Document, panel and field see only keyup. H01 is therefore localized to an earlier Window-capture cancellation, not absence of CDP DOM delivery.",
+        "actualCancellingHandlerIdentified": false,
+        "electronObserver": "Registered successfully; no before-input-event callbacks for either attempt. This does not identify a native interceptor.",
+        "nativePanelSaveGuardVerdict": "OPEN",
+        "productFailureEstablished": false
+      },
+      "rawResult": {
+        "passed": false,
+        "runnerExit": 1,
+        "outcome": "raw_keydown_still_missing_at_field",
+        "error": "H02 no actual raw Save keydown at focused field",
+        "stoppedBefore": "Composition commit, confirmed Save, Room/Meta and any expanded scenario"
+      },
+      "preservation": {
+        "beforeHashes": {
+          "Atlanten/Gemeinsamer-Testatlas.overworld": "76e0a82a939f5c2b16c08f153cca827e4efd8d5920915c997ae2a3fc6d16de07",
+          "Städte/00000000-0000-4000-8000-000000000100.city": "d7ac830f0b1a1b2e20a396a8515cf6afa0b777e46ee39f0a5b39a75bd8a6184c",
+          "Dungeons/E2E-01-Testdungeon/Karte.dungeon": "c6fe58d1b5de5c707000a39b0b8da2883d31867b7d8bf347f63830021e2df742",
+          "Orte/00000000-0000-4000-8000-000000000011.location": "ac888059f997b3c0f697e2152c9d59375543d6d2004356f1eef482fd4ec27ab7",
+          "Orte/00000000-0000-4000-8000-000000000012.location": "57b455592dc30e0ab9e3286a56f27a408453b7a2a3b617eee03ea089ed963b5b",
+          "Atlasdaten/00000000-0000-4000-8000-000000000010/terrain/0_-1_0.json": "4e09dbcf59e5f81a35f0c72c44511b35073696cf079613f5d001baceeb59e358",
+          "Atlasdaten/00000000-0000-4000-8000-000000000010/terrain/0_0_0.json": "c32ba3548aa7236e573e145ec0e3c6e75326cc6cd47134a19c2230d2d790f2f2",
+          "Kampagnen/SaltMarcher/E2E-01-Atlas-Save.campaign.json": "e66a9c557016357d3dea7491fa7110f9db0eeccf6fed5d1f9510885f6990a6df"
+        },
+        "afterBothCommands": {
+          "Atlanten/Gemeinsamer-Testatlas.overworld": "76e0a82a939f5c2b16c08f153cca827e4efd8d5920915c997ae2a3fc6d16de07",
+          "Städte/00000000-0000-4000-8000-000000000100.city": "d7ac830f0b1a1b2e20a396a8515cf6afa0b777e46ee39f0a5b39a75bd8a6184c",
+          "Dungeons/E2E-01-Testdungeon/Karte.dungeon": "c6fe58d1b5de5c707000a39b0b8da2883d31867b7d8bf347f63830021e2df742",
+          "Orte/00000000-0000-4000-8000-000000000011.location": "ac888059f997b3c0f697e2152c9d59375543d6d2004356f1eef482fd4ec27ab7",
+          "Orte/00000000-0000-4000-8000-000000000012.location": "57b455592dc30e0ab9e3286a56f27a408453b7a2a3b617eee03ea089ed963b5b",
+          "Atlasdaten/00000000-0000-4000-8000-000000000010/terrain/0_-1_0.json": "4e09dbcf59e5f81a35f0c72c44511b35073696cf079613f5d001baceeb59e358",
+          "Atlasdaten/00000000-0000-4000-8000-000000000010/terrain/0_0_0.json": "c32ba3548aa7236e573e145ec0e3c6e75326cc6cd47134a19c2230d2d790f2f2",
+          "Kampagnen/SaltMarcher/E2E-01-Atlas-Save.campaign.json": "e66a9c557016357d3dea7491fa7110f9db0eeccf6fed5d1f9510885f6990a6df"
+        },
+        "afterNormalAppQuit": {
+          "Atlanten/Gemeinsamer-Testatlas.overworld": "76e0a82a939f5c2b16c08f153cca827e4efd8d5920915c997ae2a3fc6d16de07",
+          "Städte/00000000-0000-4000-8000-000000000100.city": "d7ac830f0b1a1b2e20a396a8515cf6afa0b777e46ee39f0a5b39a75bd8a6184c",
+          "Dungeons/E2E-01-Testdungeon/Karte.dungeon": "c6fe58d1b5de5c707000a39b0b8da2883d31867b7d8bf347f63830021e2df742",
+          "Orte/00000000-0000-4000-8000-000000000011.location": "ac888059f997b3c0f697e2152c9d59375543d6d2004356f1eef482fd4ec27ab7",
+          "Orte/00000000-0000-4000-8000-000000000012.location": "57b455592dc30e0ab9e3286a56f27a408453b7a2a3b617eee03ea089ed963b5b",
+          "Atlasdaten/00000000-0000-4000-8000-000000000010/terrain/0_-1_0.json": "4e09dbcf59e5f81a35f0c72c44511b35073696cf079613f5d001baceeb59e358",
+          "Atlasdaten/00000000-0000-4000-8000-000000000010/terrain/0_0_0.json": "c32ba3548aa7236e573e145ec0e3c6e75326cc6cd47134a19c2230d2d790f2f2",
+          "Kampagnen/SaltMarcher/E2E-01-Atlas-Save.campaign.json": "e66a9c557016357d3dea7491fa7110f9db0eeccf6fed5d1f9510885f6990a6df"
+        },
+        "sameRepositoryHistoryRendererAndActivation": true,
+        "cameraAndNativeLocationDungeonModelsUnchanged": true,
+        "exactCandidateStillPending": "H02 Ortsname 東京",
+        "historyDepth": 0,
+        "protectedOriginalSha256": {
+          "checkpoint.json": "296f4db1da1c1dfb0642400fa9e594706756bfaedea020146fbad8d5606f9891",
+          "tests/core/assets.test.ts": "f255c4fad0f5766c533c4da9209420677ef058ed28d83248fbc947cba8c5f2ff",
+          "tests/object-colorable-tags.test.mjs": "4b5ec9893f70ce047f901316beb1216f0f469a219e6efc24ec236aaf1f648a95"
+        }
+      },
+      "slot": {
+        "freshConfirmation": {
+          "thread": "01a12022-b67b-7da2-bed5-8ebde169d475",
+          "receivedAt": "2026-10-11T06:22:28.136905+00:00",
+          "text": "Stadt bestätigt frisch den freien lokalen GUI-Slot ausschließlich für beschriebenen #80 IME-Save-H02 auf64b6eb58/Shared25e6155e, isolierter Spatial-V2-Fixture. Keine eigene GUI währenddessen. Guardbewertung nur bei belegtem komponierenden Save-keydown, normal beenden und ausdrücklich zurückgeben."
+        },
+        "claim": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6106207052",
+        "returned": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6106219813",
+        "held": false,
+        "newExplicitCoordinationRequired": true
+      },
+      "processLifecycle": {
+        "unit": "dungeon-native-3985776.service",
+        "appPids": [
+          3985805,
+          3985882,
+          3985889,
+          3985895
+        ],
+        "allAppPidsGoneVerified": true,
+        "requestedNormalQuit": true,
+        "normalExitObserved": true,
+        "forcedTerminationPids": [],
+        "finishedAt": "2026-10-11T06:23:13.039Z",
+        "afterCleanup": {
+          "Id": "dungeon-native-3985776.service",
+          "ActiveState": "inactive",
+          "SubState": "dead",
+          "InvocationID": "",
+          "MainPID": "0",
+          "ControlPID": "0",
+          "Result": "success",
+          "ExecMainCode": "0",
+          "ExecMainStatus": "0"
+        }
+      },
+      "localEvidence": {
+        "executedHelper": {
+          "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-ime-save-h02-20261011/keydown-probe.cjs",
+          "sha256": "3afc7a78c4d5684f49e65935e66109237037e85ef474bb338b23ed0a2dca42cd"
+        },
+        "preload": {
+          "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-ime-save-h02-20261011/keydown-preload.cjs",
+          "sha256": "cd056948b46ef1f27bde2ebf04defc5a914d3e00ac27d04de0cc2884ec650e54"
+        },
+        "invocation": {
+          "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-ime-save-h02-20261011/invocation.json",
+          "sha256": "ac4b306e022e636c2629a068bee228157146fdcffd418dd6b6db22d5612e004e"
+        },
+        "sourceBuild": {
+          "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-ime-save-h02-20261011/source-build.log",
+          "sha256": "b1b2732024bca9aaeaa0b9830afa1b91940aeac291464ad71ef4f834a2bc60fa"
+        },
+        "hostLog": {
+          "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-ime-save-h02-20261011/host.log",
+          "sha256": "636dc14bd40bc8d39f686e152c3cca96bc7da30b069dc8188a0169d498b29cd3"
+        },
+        "runnerResult": {
+          "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-ime-save-h02-20261011/runner-result.json",
+          "sha256": "ad5784710efd5737f782d2b1d7dff7b0ee03e2b68889955bcab2501503e1a0b5"
+        },
+        "rawProbe": {
+          "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-ime-save-h02-20261011/evidence/1791699785615-atlas-spatial-edit/keydown-probe.json",
+          "sha256": "6f03ddcb74d8eeb3498a7437ff4c3a7db857d209804598f0f25e97c07e0b7e72"
+        },
+        "processLifecycle": {
+          "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-ime-save-h02-20261011/evidence/1791699785615-atlas-spatial-edit/process-lifecycle.json",
+          "sha256": "66d3ebbe7cd34f15403a7742623755c3a3caffc6576a6b99c4da6db9c138cf81"
+        },
+        "screenshot": {
+          "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-ime-save-h02-20261011/evidence/1791699785615-atlas-spatial-edit/location-composing.png",
+          "sha256": "a762b946dde503008d5d854ac4a3d1cf5792b36b88db0a22d5c118af997145bb"
+        },
+        "protectedOriginal": {
+          "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-ime-save-h02-20261011/protected-original.json",
+          "sha256": "b30feea6f89f88d7d5484bcfe0277ddb05d5fbd03d1d45e4be538a8a7e8a81c2"
+        },
+        "slotClaim": {
+          "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-ime-save-h02-20261011/slot-claim.md",
+          "sha256": "cac933400bcb3eb5c1bd80b7afe16c53b286cb273959992bb1cebf4a3ee7a260"
+        },
+        "slotReturn": {
+          "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-ime-save-h02-20261011/slot-return.md",
+          "sha256": "6e7127e5d04d294b30b2de41ec6e6b5715de22304acd01d1244559296c6c2d79"
+        }
+      },
+      "screenshotReadByHex": "Actual screenshot directly viewed: exact composing Ortsname candidate visible and Text noch nicht übernommen status. This image alone is not the keyboard delivery oracle.",
+      "limits": {
+        "actualIsolatedObsidian": true,
+        "syntheticInput": true,
+        "physicalOsIme": false,
+        "nativePanelGuardPass": false,
+        "confirmedSave": false,
+        "roomMetaCases": false,
+        "freshReuse": false,
+        "copyDiscardRecovery": false,
+        "fullE2E": false,
+        "productEdited": false,
+        "handlersBypassed": false,
+        "fakeKeyboardEvents": false,
+        "executedHelperEditedAfterRun": false,
+        "userVaultTouched": false,
+        "originalParity": false,
+        "largeMap": false,
+        "userVaultInstalled": false
+      },
+      "nextConsumer": "Hex: the H01 missing document keydown is localized to an earlier Window-capture stop. Identify the actual cancelling Window handler through passive source/handler provenance at the owned isolated host, or obtain an appropriate native IME input path; only then judge the affected panel guard and confirmed Save. Do not bypass/remove/replace application handlers, fabricate KeyboardEvent.isComposing, repeat unchanged H01/H02 or change product guards without a concrete required finding. A further local GUI needs a new explicit slot. Room/Meta, physical OS IME and full E2E remain separate.",
+      "startedAt": "2026-10-11T06:23:05.101629+00:00",
+      "finishedAt": "2026-10-11T06:23:15.124863+00:00"
+    },
+    "dungeonAtLocationInspectorImeSaveH03": {
+      "id": "E2E-01-HEX04-INSPECTOR-IME-HANDLER-H03",
+      "owner": "Hex",
+      "issue": 80,
+      "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
+      "e2e01UserLine": 13,
+      "state": "H03_Obsidian_onKeyEvent_cancels_composing_Save_before_Key_panel_native_guard_open",
+      "sourceCommit": "697ff20d9e00c757f7ea24fdee8d2b2d048c2744",
+      "qualifiedSharedAtHost": "dbcecc79870252a9b6dae4b9a7959bb47bf5fc96",
+      "priorInput": "checkpoint.hexAtlasExecution.dungeonAtLocationInspectorImeSaveH02",
+      "integratedGuardInput": "checkpoint.hexAtlasExecution.dungeonAtLocationInspectorImeSaveR01",
+      "fixtureVersion": "e2e01-spatial-v2",
+      "fixtureManifestSha256": "23735bb6c95107b7dec93ffa56ec66405a0f4fe0ec3822fc0476d90d2920188d",
+      "browserVersion": {
+        "protocolVersion": "1.3",
+        "product": "Chrome/150.0.7871.250",
+        "revision": "@07ee2042224499f634596843f209356586214e26",
+        "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) obsidian/1.14.4 Chrome/150.0.7871.250 Electron/43.7.7 Safari/537.36",
+        "jsVersion": "15.0.245.31"
+      },
+      "triplet": {
+        "main.js": {
+          "source": "94461124a658f8a044fbd1dd1db0d9e59beba13c776ec02e0e227ed693950073",
+          "installed": "94461124a658f8a044fbd1dd1db0d9e59beba13c776ec02e0e227ed693950073"
+        },
+        "styles.css": {
+          "source": "df11f8352b61e45d3984d29e0136fc0225aaabe85c7b004a3b55eb0c6cc52934",
+          "installed": "df11f8352b61e45d3984d29e0136fc0225aaabe85c7b004a3b55eb0c6cc52934"
+        },
+        "manifest.json": {
+          "source": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64",
+          "installed": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64"
+        }
+      },
+      "input": "One CDP composition/rawKeyDown; passive Window capture function breakpoints and read-only event/source inspection",
+      "command": {
+        "type": "rawKeyDown",
+        "key": "s",
+        "code": "KeyS",
+        "windowsVirtualKeyCode": 83,
+        "modifiers": 2
+      },
+      "observers": {
+        "window": true,
+        "document": true,
+        "field": true,
+        "panel": true
+      },
+      "sourceBuild": "PASS on clean actual host source; product triplet byte-identical to H02 despite qualified incoming SMR123",
+      "captureListeners": [
+        {
+          "index": 0,
+          "type": "keydown",
+          "useCapture": true,
+          "passive": false,
+          "once": false,
+          "scriptId": "143",
+          "lineNumber": 0,
+          "columnNumber": 1216598,
+          "script": {
+            "url": "app://obsidian.md/app.js",
+            "hash": "958ce57fe22f87fdf121546e46dfccd9c8ee971ce3fd8f801d60d4ece39a2df9",
+            "startLine": 0,
+            "startColumn": 0
+          },
+          "functionSource": "function(t){this.updateModifiers(t);var n=activeWindow,i=this.getWindowStack(n).scope;if(i){var r=hS(t);if(!e.isModifierKey(r)){var o=pS(t);54===t.which&&\"^\"==t.key&&\"KeyI\"===t.code&&(o=\"KeyI\");var a={modifiers:this.modifiers,key:r,vkey:o};return!1===i.handleKey(t,a)?(t.preventDefault(),t.stopPropagation(),!1):void 0}}}",
+          "scriptSourceFile": {
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-ime-handler-h03-20261011/evidence/1791700789894-atlas-spatial-edit/script-143.js",
+            "sha256": "958ce57fe22f87fdf121546e46dfccd9c8ee971ce3fd8f801d60d4ece39a2df9"
+          },
+          "breakpointId": "7:1"
+        },
+        {
+          "index": 1,
+          "type": "keydown",
+          "useCapture": true,
+          "passive": false,
+          "once": false,
+          "scriptId": "202",
+          "lineNumber": 1050,
+          "columnNumber": 74221,
+          "script": {
+            "url": "plugin:dungeon-editor",
+            "hash": "f8bcf77ef115170aceef8167901b974bd88d0fd5a44cb322239d1f9f8be6a450",
+            "startLine": 0,
+            "startColumn": 0
+          },
+          "functionSource": "n=>{this.inputBlocked||this.closed||this.root.ownerDocument.activeElement!==this.viewport||this.escapeInspector(n)||((n.ctrlKey||n.metaKey)&&[\"s\",\"z\",\"y\"].includes(n.key.toLowerCase())&&n.stopImmediatePropagation(),n.code===\"Space\"&&(this.space=!0,this.pointer?.action===\"paint\"&&(this.finishStroke(),this.pointer.action=\"pan\"),this.pointer?.action===\"location\"&&(this.cancelDrag(),this.pointer.action=\"pan\"),this.pointer?.action===\"dungeon\"&&(this.cancelDungeon(),this.pointer.action=\"pan\"),n.preventDefault()),n.key===\"Escape\"&&(this.cancelCity(),this.cancelDungeon(),this.cancelStroke(),this.cancelDrag(),this.releasePointer(),n.preventDefault()),(n.ctrlKey||n.metaKey)&&n.key.toLowerCase()===\"s\"?(this.save(),n.preventDefault()):(n.ctrlKey||n.metaKey)&&n.key.toLowerCase()===\"z\"?(this.historyAction(n.shiftKey?\"redo\":\"undo\"),n.preventDefault()):(n.ctrlKey||n.metaKey)&&n.key.toLowerCase()===\"y\"?(this.historyAction(\"redo\"),n.preventDefault()):n.key===\"+\"||n.key===\"=\"?(this.zoom(.8),n.preventDefault()):n.key===\"-\"&&(this.zoom(1.25),n.preventDefault()))}",
+          "scriptSourceFile": {
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-ime-handler-h03-20261011/evidence/1791700789894-atlas-spatial-edit/script-202.js",
+            "sha256": "f8bcf77ef115170aceef8167901b974bd88d0fd5a44cb322239d1f9f8be6a450"
+          },
+          "breakpointId": "7:2"
+        },
+        {
+          "index": 2,
+          "type": "keydown",
+          "useCapture": true,
+          "passive": false,
+          "once": false,
+          "scriptId": "266",
+          "lineNumber": 4,
+          "columnNumber": 265,
+          "script": {
+            "url": "",
+            "hash": "4d8f3f3d06ad354cc77d8bd4e776d6fecc030bcee75825b5a726cc03c62692e8",
+            "startLine": 0,
+            "startColumn": 0
+          },
+          "functionSource": "e=>observe(source,e)",
+          "scriptSourceFile": {
+            "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-ime-handler-h03-20261011/evidence/1791700789894-atlas-spatial-edit/script-266.js",
+            "sha256": "4d8f3f3d06ad354cc77d8bd4e776d6fecc030bcee75825b5a726cc03c62692e8"
+          },
+          "breakpointId": "7:3"
+        }
+      ],
+      "actualCaptureEntries": [
+        {
+          "reason": "other",
+          "hitBreakpoints": [
+            "7:1"
+          ],
+          "event": {
+            "type": "keydown",
+            "key": "s",
+            "code": "KeyS",
+            "isTrusted": true,
+            "isComposing": true,
+            "ctrlKey": true,
+            "eventPhase": 1,
+            "defaultPrevented": false,
+            "cancelBubble": false,
+            "targetTag": "INPUT",
+            "targetLabel": "Ortsname",
+            "value": "H03 Ortsname 東京",
+            "activeLabel": "Ortsname"
+          },
+          "callFrames": [
+            {
+              "functionName": "e.onKeyEvent",
+              "functionLocation": {
+                "scriptId": "143",
+                "lineNumber": 0,
+                "columnNumber": 1216598
+              },
+              "location": {
+                "scriptId": "143",
+                "lineNumber": 0,
+                "columnNumber": 1216607
+              },
+              "url": "app://obsidian.md/app.js"
+            }
+          ]
+        },
+        {
+          "reason": "other",
+          "hitBreakpoints": [
+            "7:2"
+          ],
+          "event": {
+            "type": "keydown",
+            "key": "s",
+            "code": "KeyS",
+            "isTrusted": true,
+            "isComposing": true,
+            "ctrlKey": true,
+            "eventPhase": 1,
+            "defaultPrevented": true,
+            "cancelBubble": true,
+            "targetTag": "INPUT",
+            "targetLabel": "Ortsname",
+            "value": "H03 Ortsname 東京",
+            "activeLabel": "Ortsname"
+          },
+          "callFrames": [
+            {
+              "functionName": "t.addEventListener",
+              "functionLocation": {
+                "scriptId": "202",
+                "lineNumber": 1050,
+                "columnNumber": 74221
+              },
+              "location": {
+                "scriptId": "202",
+                "lineNumber": 1050,
+                "columnNumber": 74225
+              },
+              "url": "plugin:dungeon-editor"
+            }
+          ]
+        },
+        {
+          "reason": "other",
+          "hitBreakpoints": [
+            "7:3"
+          ],
+          "event": {
+            "type": "keydown",
+            "key": "s",
+            "code": "KeyS",
+            "isTrusted": true,
+            "isComposing": true,
+            "ctrlKey": true,
+            "eventPhase": 1,
+            "defaultPrevented": true,
+            "cancelBubble": true,
+            "targetTag": "INPUT",
+            "targetLabel": "Ortsname",
+            "value": "H03 Ortsname 東京",
+            "activeLabel": "Ortsname"
+          },
+          "callFrames": [
+            {
+              "functionName": "callback",
+              "functionLocation": {
+                "scriptId": "266",
+                "lineNumber": 4,
+                "columnNumber": 265
+              },
+              "location": {
+                "scriptId": "266",
+                "lineNumber": 4,
+                "columnNumber": 268
+              },
+              "url": ""
+            }
+          ]
+        }
+      ],
+      "diagnosis": {
+        "callbackBracketIdentified": true,
+        "hostDispatcher": "e.onKeyEvent",
+        "hostScript": "app://obsidian.md/app.js",
+        "hostScriptSha256": "958ce57fe22f87fdf121546e46dfccd9c8ee971ce3fd8f801d60d4ece39a2df9",
+        "registrationUseCapture": true,
+        "sourceRoute": "getWindowStack(activeWindow).scope.handleKey; source false-return branch prevents default and stops propagation",
+        "actualInnerScopeHandleKeyReturnSampled": false,
+        "actualObservation": "Trusted composing Ctrl+S targets Ortsname. Before Obsidian onKeyEvent both flags are false; at following plugin Atlas capture both are true; Document/panel/field receive no keydown. The host callback is directly identified as the cancellation bracket.",
+        "nativePanelGuardVerdict": "OPEN",
+        "productFailureEstablished": false
+      },
+      "result": {
+        "passiveTraceAndPreservation": "PASS",
+        "runnerExit": 0,
+        "rawPassed": true,
+        "outcome": "actual_Window_capture_callback_brackets_composing_Save_cancellation",
+        "traceErrors": [],
+        "scope": "Handler identity and state preservation only; no composing panel delivery, confirmed Save or product/whole-E2E qualification"
+      },
+      "preservation": {
+        "exactPendingText": "H03 Ortsname 東京",
+        "historyDepth": 0,
+        "sameOwnersCameraAndNativeModels": true,
+        "beforeHashes": {
+          "Atlanten/Gemeinsamer-Testatlas.overworld": "76e0a82a939f5c2b16c08f153cca827e4efd8d5920915c997ae2a3fc6d16de07",
+          "Städte/00000000-0000-4000-8000-000000000100.city": "d7ac830f0b1a1b2e20a396a8515cf6afa0b777e46ee39f0a5b39a75bd8a6184c",
+          "Dungeons/E2E-01-Testdungeon/Karte.dungeon": "c6fe58d1b5de5c707000a39b0b8da2883d31867b7d8bf347f63830021e2df742",
+          "Orte/00000000-0000-4000-8000-000000000011.location": "ac888059f997b3c0f697e2152c9d59375543d6d2004356f1eef482fd4ec27ab7",
+          "Orte/00000000-0000-4000-8000-000000000012.location": "57b455592dc30e0ab9e3286a56f27a408453b7a2a3b617eee03ea089ed963b5b",
+          "Atlasdaten/00000000-0000-4000-8000-000000000010/terrain/0_-1_0.json": "4e09dbcf59e5f81a35f0c72c44511b35073696cf079613f5d001baceeb59e358",
+          "Atlasdaten/00000000-0000-4000-8000-000000000010/terrain/0_0_0.json": "c32ba3548aa7236e573e145ec0e3c6e75326cc6cd47134a19c2230d2d790f2f2",
+          "Kampagnen/SaltMarcher/E2E-01-Atlas-Save.campaign.json": "e66a9c557016357d3dea7491fa7110f9db0eeccf6fed5d1f9510885f6990a6df"
+        },
+        "afterCommand": {
+          "Atlanten/Gemeinsamer-Testatlas.overworld": "76e0a82a939f5c2b16c08f153cca827e4efd8d5920915c997ae2a3fc6d16de07",
+          "Städte/00000000-0000-4000-8000-000000000100.city": "d7ac830f0b1a1b2e20a396a8515cf6afa0b777e46ee39f0a5b39a75bd8a6184c",
+          "Dungeons/E2E-01-Testdungeon/Karte.dungeon": "c6fe58d1b5de5c707000a39b0b8da2883d31867b7d8bf347f63830021e2df742",
+          "Orte/00000000-0000-4000-8000-000000000011.location": "ac888059f997b3c0f697e2152c9d59375543d6d2004356f1eef482fd4ec27ab7",
+          "Orte/00000000-0000-4000-8000-000000000012.location": "57b455592dc30e0ab9e3286a56f27a408453b7a2a3b617eee03ea089ed963b5b",
+          "Atlasdaten/00000000-0000-4000-8000-000000000010/terrain/0_-1_0.json": "4e09dbcf59e5f81a35f0c72c44511b35073696cf079613f5d001baceeb59e358",
+          "Atlasdaten/00000000-0000-4000-8000-000000000010/terrain/0_0_0.json": "c32ba3548aa7236e573e145ec0e3c6e75326cc6cd47134a19c2230d2d790f2f2",
+          "Kampagnen/SaltMarcher/E2E-01-Atlas-Save.campaign.json": "e66a9c557016357d3dea7491fa7110f9db0eeccf6fed5d1f9510885f6990a6df"
+        },
+        "afterNormalAppQuit": {
+          "Atlanten/Gemeinsamer-Testatlas.overworld": "76e0a82a939f5c2b16c08f153cca827e4efd8d5920915c997ae2a3fc6d16de07",
+          "Städte/00000000-0000-4000-8000-000000000100.city": "d7ac830f0b1a1b2e20a396a8515cf6afa0b777e46ee39f0a5b39a75bd8a6184c",
+          "Dungeons/E2E-01-Testdungeon/Karte.dungeon": "c6fe58d1b5de5c707000a39b0b8da2883d31867b7d8bf347f63830021e2df742",
+          "Orte/00000000-0000-4000-8000-000000000011.location": "ac888059f997b3c0f697e2152c9d59375543d6d2004356f1eef482fd4ec27ab7",
+          "Orte/00000000-0000-4000-8000-000000000012.location": "57b455592dc30e0ab9e3286a56f27a408453b7a2a3b617eee03ea089ed963b5b",
+          "Atlasdaten/00000000-0000-4000-8000-000000000010/terrain/0_-1_0.json": "4e09dbcf59e5f81a35f0c72c44511b35073696cf079613f5d001baceeb59e358",
+          "Atlasdaten/00000000-0000-4000-8000-000000000010/terrain/0_0_0.json": "c32ba3548aa7236e573e145ec0e3c6e75326cc6cd47134a19c2230d2d790f2f2",
+          "Kampagnen/SaltMarcher/E2E-01-Atlas-Save.campaign.json": "e66a9c557016357d3dea7491fa7110f9db0eeccf6fed5d1f9510885f6990a6df"
+        },
+        "protectedOriginalSha256": {
+          "checkpoint.json": "296f4db1da1c1dfb0642400fa9e594706756bfaedea020146fbad8d5606f9891",
+          "tests/core/assets.test.ts": "f255c4fad0f5766c533c4da9209420677ef058ed28d83248fbc947cba8c5f2ff",
+          "tests/object-colorable-tags.test.mjs": "4b5ec9893f70ce047f901316beb1216f0f469a219e6efc24ec236aaf1f648a95"
+        }
+      },
+      "slot": {
+        "freshConfirmation": {
+          "thread": "01a12022-b67b-7da2-bed5-8ebde169d475",
+          "text": "Stadt bestätigt lokalen GUI-Slot jetzt frisch frei ausschließlich für beschriebenen #80 IME-H03 auf697ff20d/Shareddbcecc79, eigene Spatial-V2-Fixture. Keine eigene GUI währenddessen. Normal beenden und ausdrücklich zurückgeben; kein City/physischer/Gesamtclaim."
+        },
+        "claim": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6106322735",
+        "returned": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6106335310",
+        "held": false,
+        "newExplicitCoordinationRequired": true
+      },
+      "processLifecycle": {
+        "unit": "dungeon-native-4013005.service",
+        "appPids": [
+          4013033,
+          4013106,
+          4013113,
+          4013129
+        ],
+        "allAppPidsGoneVerified": true,
+        "requestedNormalQuit": true,
+        "normalExitObserved": true,
+        "forcedTerminationPids": [],
+        "finishedAt": "2026-10-11T06:39:58.334Z",
+        "afterCleanup": {
+          "Id": "dungeon-native-4013005.service",
+          "ActiveState": "inactive",
+          "SubState": "dead",
+          "InvocationID": "",
+          "MainPID": "0",
+          "ControlPID": "0",
+          "Result": "success",
+          "ExecMainCode": "0",
+          "ExecMainStatus": "0"
+        }
+      },
+      "incomingConsumed": {
+        "beforeHost": {
+          "pullRequest": 123,
+          "head": "cfa86479cbc2307d547694b90c56a0425d2e413b",
+          "shared": "dbcecc79870252a9b6dae4b9a7959bb47bf5fc96",
+          "reviews": [
+            6106272076,
+            6106275130,
+            6106276617
+          ],
+          "headCi": 38118277674,
+          "sharedCi": 38118441471,
+          "ownRootsAndRelevantSourcesPreserved": true
+        },
+        "beforeReceipt": {
+          "pullRequest": 131,
+          "head": "3a9ba8819a7fa4d1cc0eabd7b91938cf8236c60b",
+          "shared": "b12b3a93cdd489ce457b3e53b9ae1a557f5632bc",
+          "independentUiReview": "PR86 MANUAL-PLANNER-REFRESH-NAME-R03 on ec9d7a4f2b608f691f75b70c2fb32dd9f48f7d79; panel/test bytes verified identical",
+          "headCi": 38118695342,
+          "sharedCi": 38118784702,
+          "ownRootsAndWorkingSectionPreserved": true,
+          "hostEvidenceNotReboundToLaterSource": true
+        }
+      },
+      "localEvidence": {
+        "executedHelper": {
+          "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-ime-handler-h03-20261011/handler-probe.cjs",
+          "sha256": "a45c9e445dbeffdf3e0ef140fd89ec9c4438d115f80c44ed6edd4f154a4484f1"
+        },
+        "preload": {
+          "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-ime-handler-h03-20261011/handler-preload.cjs",
+          "sha256": "d5db796f5dd8201a0d85f5f872780a0e5652110ee36c0bc19060f48919c0871e"
+        },
+        "invocation": {
+          "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-ime-handler-h03-20261011/invocation.json",
+          "sha256": "12d4bedf8095123a991a689eba7a368c2a1a280f65b74704c14c8c68b7a561ea"
+        },
+        "sourceBuild": {
+          "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-ime-handler-h03-20261011/source-build.log",
+          "sha256": "aa3972b4302800f050fa11753f2ef5d26ec3b5c24d519868ce5ab12348a7c043"
+        },
+        "hostLog": {
+          "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-ime-handler-h03-20261011/host.log",
+          "sha256": "313041f5578fbdfb46ed7a7b619737a9a1683643a425ad5f6aaea4caffaa17a8"
+        },
+        "runnerResult": {
+          "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-ime-handler-h03-20261011/runner-result.json",
+          "sha256": "6e39ec07278d4818043379a258c0f972057382b60077d912e5ccc9fa8a8e1255"
+        },
+        "rawHandlerTrace": {
+          "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-ime-handler-h03-20261011/evidence/1791700789894-atlas-spatial-edit/handler-probe.json",
+          "sha256": "4df3d330c8ff4c2caa6b888d8656c0b4355628f30304856d10ffd54c5912c180"
+        },
+        "processLifecycle": {
+          "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-ime-handler-h03-20261011/evidence/1791700789894-atlas-spatial-edit/process-lifecycle.json",
+          "sha256": "1049bccef2a56641543e0debb116040d243b326d5f9845754a9a4e22f1d380b5"
+        },
+        "screenshot": {
+          "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-ime-handler-h03-20261011/evidence/1791700789894-atlas-spatial-edit/location-composing.png",
+          "sha256": "416d246f62afe08f2ce90fade77f00040233e0af638189a2fcfaa2eb469b5fa8"
+        },
+        "afterNormalQuitHashes": {
+          "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-ime-handler-h03-20261011/after-normal-quit-hashes.json",
+          "sha256": "cc5653b81ab1ecccec360b989c2be468d109eb561079efa9d21bf442018d675a"
+        },
+        "protectedOriginal": {
+          "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-ime-handler-h03-20261011/protected-original.json",
+          "sha256": "b30feea6f89f88d7d5484bcfe0277ddb05d5fbd03d1d45e4be538a8a7e8a81c2"
+        },
+        "slotClaim": {
+          "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-ime-handler-h03-20261011/slot-claim.md",
+          "sha256": "fb8040b5c794d8ad84206a890f30630a0e68576269cbeafba710a23cc8a26ce8"
+        },
+        "slotReturn": {
+          "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-ime-handler-h03-20261011/slot-return.md",
+          "sha256": "3a395864968551472161687aaecd15dfebd26c702d759a0fcfd0ce2239c3751c"
+        },
+        "executedScript0": {
+          "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-ime-handler-h03-20261011/evidence/1791700789894-atlas-spatial-edit/script-143.js",
+          "sha256": "958ce57fe22f87fdf121546e46dfccd9c8ee971ce3fd8f801d60d4ece39a2df9"
+        },
+        "executedScript1": {
+          "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-ime-handler-h03-20261011/evidence/1791700789894-atlas-spatial-edit/script-202.js",
+          "sha256": "f8bcf77ef115170aceef8167901b974bd88d0fd5a44cb322239d1f9f8be6a450"
+        },
+        "executedScript2": {
+          "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-ime-handler-h03-20261011/evidence/1791700789894-atlas-spatial-edit/script-266.js",
+          "sha256": "4d8f3f3d06ad354cc77d8bd4e776d6fecc030bcee75825b5a726cc03c62692e8"
+        }
+      },
+      "screenshotReadByHex": "Directly viewed actual composing candidate and Text noch nicht übernommen; keyboard handler identity comes from trace, not screenshot.",
+      "limits": {
+        "actualIsolatedObsidian": true,
+        "syntheticInput": true,
+        "physicalOsIme": false,
+        "nativePanelGuardPass": false,
+        "confirmedSave": false,
+        "roomMetaCases": false,
+        "freshReuse": false,
+        "copyDiscardRecovery": false,
+        "fullE2E": false,
+        "productEdited": false,
+        "handlersReplacedOrBypassed": false,
+        "fakeKeyboardEvents": false,
+        "executedHelperEditedAfterRun": false,
+        "userVaultTouched": false,
+        "originalParity": false,
+        "largeMap": false,
+        "userVaultInstalled": false
+      },
+      "nextConsumer": "Hex: consume the concrete Obsidian onKeyEvent/active Scope cancellation. Read the supported View.scope/Scope registration contract and verify whether confirmed noncomposing Ctrl+S actually saves a focused Location Key through the existing host. Do not try more unchanged CDP input variants. A composing panel guard is still unverified because the host stops delivery; a product routing change needs a concrete confirmed-Save finding and must use supported host integration without replacing/removing/bypassing handlers. Reuse the qualified R01 guards and prior proofs. Any new local GUI requires fresh explicit slot coordination. Room/Meta, physical IME and full E2E remain separate.",
+      "startedAt": "2026-10-11T06:39:49.482657+00:00",
+      "finishedAt": "2026-10-11T06:40:00.339352+00:00"
+    },
+    "dungeonAtLocationInspectorConfirmedSaveH04": {
+      "id": "E2E-01-HEX04-INSPECTOR-CONFIRMED-SAVE-H04",
+      "owner": "Hex",
+      "issue": 80,
+      "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
+      "e2e01UserLine": 13,
+      "state": "H04_confirmed_native_Location_CtrlS_Save_FAIL_visible_button_PASS_routing_fix_needed",
+      "sourceCommit": "12265c2078b63bdfc3aa9bb94528bb0a4761565b",
+      "qualifiedSharedAtHost": "25792fb757ec70b02f0c3c59a47e2c3104e3a174",
+      "priorInput": "checkpoint.hexAtlasExecution.dungeonAtLocationInspectorImeSaveH03",
+      "integratedGuardInput": "checkpoint.hexAtlasExecution.dungeonAtLocationInspectorImeSaveR01",
+      "fixtureVersion": "e2e01-spatial-v2",
+      "fixtureManifestSha256": "23735bb6c95107b7dec93ffa56ec66405a0f4fe0ec3822fc0476d90d2920188d",
+      "browserVersion": {
+        "protocolVersion": "1.3",
+        "product": "Chrome/150.0.7871.250",
+        "revision": "@07ee2042224499f634596843f209356586214e26",
+        "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) obsidian/1.14.4 Chrome/150.0.7871.250 Electron/43.7.7 Safari/537.36",
+        "jsVersion": "15.0.245.31"
+      },
+      "triplet": {
+        "main.js": {
+          "source": "085371456392a196e60e2ff3549cb46677d9d92f4a78fa4d7860a28a00d71623",
+          "installed": "085371456392a196e60e2ff3549cb46677d9d92f4a78fa4d7860a28a00d71623"
+        },
+        "styles.css": {
+          "source": "df11f8352b61e45d3984d29e0136fc0225aaabe85c7b004a3b55eb0c6cc52934",
+          "installed": "df11f8352b61e45d3984d29e0136fc0225aaabe85c7b004a3b55eb0c6cc52934"
+        },
+        "manifest.json": {
+          "source": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64",
+          "installed": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64"
+        }
+      },
+      "sourceBuild": "One PASS clean build on actual Source12265c20 after qualified incoming PR132; no product edits in this diagnostic. Later PR130 consumed only after host exit.",
+      "executedRunnerSourceSha256": "aa24ed9b5280017b31791840d7c71156eecedf2c4a082c5e1a60e5655218ec08",
+      "hostContract": {
+        "activeView": true,
+        "viewScope": "undefined",
+        "ownSave": "undefined",
+        "file": "Atlanten/Gemeinsamer-Testatlas.overworld"
+      },
+      "supportedSdkContract": {
+        "localSdkVersion": "1.14.4",
+        "typeFileSha256": "33294c523546bcb961e1a612d2614a9009c19dbbbada1ebc2e24ea7aa73713dd",
+        "publicViewScopeLines": [
+          10495,
+          10509
+        ],
+        "publicScopeLines": [
+          8006,
+          8040
+        ],
+        "listenerFalsePreventsDefaultLines": [
+          5517,
+          5522
+        ],
+        "primarySource": "https://github.com/obsidianmd/obsidian-api/blob/master/obsidian.d.ts",
+        "interpretation": "Supported optional View.scope registers hotkeys while focused, using new Scope(app.scope). Unhandled events go to parent; Mod maps Ctrl on Linux. Returning false prevents default. Existing AtlasView extends FileView without assigning scope or defining own save method. No routing mutation in this diagnostic."
+      },
+      "diagnosis": {
+        "finding": "HEX80-H04-01",
+        "confirmedLocationCtrlS": "FAIL",
+        "visibleSaveButtonControl": "PASS",
+        "actualTrustedKeydown": {
+          "source": "window",
+          "type": "keydown",
+          "key": "s",
+          "code": "KeyS",
+          "keyCode": 83,
+          "isComposing": false,
+          "isTrusted": true,
+          "ctrlKey": true,
+          "metaKey": false,
+          "eventPhase": 1,
+          "targetTag": "INPUT",
+          "label": "Ortsname",
+          "value": "H04 Bestätigter Ortsname",
+          "activeLabel": "Ortsname",
+          "defaultPrevented": true,
+          "cancelBubble": true,
+          "defaultPreventedAfter": true,
+          "cancelBubbleAfter": true
+        },
+        "downstreamKeydownObserved": false,
+        "observation": "Focused confirmed Location name stays pending after trusted noncomposing Ctrl+S and 1.2s settle: History0, clean repository/no draft and all8 native bytes unchanged. Event is already prevented/stopped at passive Window capture; no Document/panel/field keydown. Separate visible Atlas speichern control stores exact same name with one History step.",
+        "hostCallbackRetracedInH04": false,
+        "priorH03CallbackEvidenceRetained": true,
+        "productFailureEstablished": true
+      },
+      "result": {
+        "runnerExit": 1,
+        "rawPassed": false,
+        "rawFailure": {
+          "name": "Error",
+          "message": "Confirmed Ctrl+S is consumed before Location panel; pending name remains unapplied, History0 and all8 native fixture bytes unchanged after 1.2s.",
+          "stack": "Error: Confirmed Ctrl+S is consumed before Location panel; pending name remains unapplied, History0 and all8 native fixture bytes unchanged after 1.2s.\n    at Object.edit (/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-confirmed-save-h04-20261011/confirmed-save-probe-v2.cjs:74:10)\n    at async workflow (/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/save-clean/tools/host-test.cjs:966:45)\n    at async main (/home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/save-clean/tools/host-test.cjs:795:3)\n    at async /home/aaron/.cache/dungeon-native-qa/hex-02/i01-20261009/save-clean/tools/host-test.cjs:2915:5"
+        },
+        "outcome": "confirmed_native_CtrlS_Save_failure_visible_button_control_pass",
+        "visibleControlPassed": true,
+        "noWholeGateQualification": true
+      },
+      "shortcut": {
+        "exactPendingText": "H04 Bestätigter Ortsname",
+        "locationBefore": {
+          "kind": "location",
+          "version": 1,
+          "id": "00000000-0000-4000-8000-000000000011",
+          "name": "Torheim",
+          "type": "city",
+          "sections": [
+            {
+              "id": "00000000-0000-4000-8000-000000000015",
+              "title": "Beschreibung",
+              "markdown": "Torheim am Fluss.\n"
+            },
+            {
+              "id": "00000000-0000-4000-8000-000000000016",
+              "title": "Notizen",
+              "markdown": "  **Feste Notiz**\r\n\n"
+            }
+          ],
+          "detailMaps": [],
+          "keyLinks": []
+        },
+        "locationAfterShortcut": {
+          "kind": "location",
+          "version": 1,
+          "id": "00000000-0000-4000-8000-000000000011",
+          "name": "Torheim",
+          "type": "city",
+          "sections": [
+            {
+              "id": "00000000-0000-4000-8000-000000000015",
+              "title": "Beschreibung",
+              "markdown": "Torheim am Fluss.\n"
+            },
+            {
+              "id": "00000000-0000-4000-8000-000000000016",
+              "title": "Notizen",
+              "markdown": "  **Feste Notiz**\r\n\n"
+            }
+          ],
+          "detailMaps": [],
+          "keyLinks": []
+        },
+        "historyDepth": 0,
+        "sameOwnersCameraAndDungeon": true,
+        "beforeHashes": {
+          "Atlanten/Gemeinsamer-Testatlas.overworld": "76e0a82a939f5c2b16c08f153cca827e4efd8d5920915c997ae2a3fc6d16de07",
+          "Städte/00000000-0000-4000-8000-000000000100.city": "d7ac830f0b1a1b2e20a396a8515cf6afa0b777e46ee39f0a5b39a75bd8a6184c",
+          "Dungeons/E2E-01-Testdungeon/Karte.dungeon": "c6fe58d1b5de5c707000a39b0b8da2883d31867b7d8bf347f63830021e2df742",
+          "Orte/00000000-0000-4000-8000-000000000011.location": "ac888059f997b3c0f697e2152c9d59375543d6d2004356f1eef482fd4ec27ab7",
+          "Orte/00000000-0000-4000-8000-000000000012.location": "57b455592dc30e0ab9e3286a56f27a408453b7a2a3b617eee03ea089ed963b5b",
+          "Atlasdaten/00000000-0000-4000-8000-000000000010/terrain/0_-1_0.json": "4e09dbcf59e5f81a35f0c72c44511b35073696cf079613f5d001baceeb59e358",
+          "Atlasdaten/00000000-0000-4000-8000-000000000010/terrain/0_0_0.json": "c32ba3548aa7236e573e145ec0e3c6e75326cc6cd47134a19c2230d2d790f2f2",
+          "Kampagnen/SaltMarcher/E2E-01-Atlas-Save.campaign.json": "e66a9c557016357d3dea7491fa7110f9db0eeccf6fed5d1f9510885f6990a6df"
+        },
+        "afterHashes": {
+          "Atlanten/Gemeinsamer-Testatlas.overworld": "76e0a82a939f5c2b16c08f153cca827e4efd8d5920915c997ae2a3fc6d16de07",
+          "Städte/00000000-0000-4000-8000-000000000100.city": "d7ac830f0b1a1b2e20a396a8515cf6afa0b777e46ee39f0a5b39a75bd8a6184c",
+          "Dungeons/E2E-01-Testdungeon/Karte.dungeon": "c6fe58d1b5de5c707000a39b0b8da2883d31867b7d8bf347f63830021e2df742",
+          "Orte/00000000-0000-4000-8000-000000000011.location": "ac888059f997b3c0f697e2152c9d59375543d6d2004356f1eef482fd4ec27ab7",
+          "Orte/00000000-0000-4000-8000-000000000012.location": "57b455592dc30e0ab9e3286a56f27a408453b7a2a3b617eee03ea089ed963b5b",
+          "Atlasdaten/00000000-0000-4000-8000-000000000010/terrain/0_-1_0.json": "4e09dbcf59e5f81a35f0c72c44511b35073696cf079613f5d001baceeb59e358",
+          "Atlasdaten/00000000-0000-4000-8000-000000000010/terrain/0_0_0.json": "c32ba3548aa7236e573e145ec0e3c6e75326cc6cd47134a19c2230d2d790f2f2",
+          "Kampagnen/SaltMarcher/E2E-01-Atlas-Save.campaign.json": "e66a9c557016357d3dea7491fa7110f9db0eeccf6fed5d1f9510885f6990a6df"
+        }
+      },
+      "visibleControl": {
+        "exactNativeLocation": {
+          "kind": "location",
+          "version": 1,
+          "id": "00000000-0000-4000-8000-000000000011",
+          "name": "H04 Bestätigter Ortsname",
+          "type": "city",
+          "sections": [
+            {
+              "id": "00000000-0000-4000-8000-000000000015",
+              "title": "Beschreibung",
+              "markdown": "Torheim am Fluss.\n"
+            },
+            {
+              "id": "00000000-0000-4000-8000-000000000016",
+              "title": "Notizen",
+              "markdown": "  **Feste Notiz**\r\n\n"
+            }
+          ],
+          "detailMaps": [],
+          "keyLinks": []
+        },
+        "historyDepth": 1,
+        "pending": false,
+        "dirty": false,
+        "draft": false,
+        "sameOwnersCameraAndDungeon": true,
+        "sixForeignSpatialFilesByteIdentical": true,
+        "afterHashes": {
+          "Atlanten/Gemeinsamer-Testatlas.overworld": "76e0a82a939f5c2b16c08f153cca827e4efd8d5920915c997ae2a3fc6d16de07",
+          "Städte/00000000-0000-4000-8000-000000000100.city": "d7ac830f0b1a1b2e20a396a8515cf6afa0b777e46ee39f0a5b39a75bd8a6184c",
+          "Dungeons/E2E-01-Testdungeon/Karte.dungeon": "c6fe58d1b5de5c707000a39b0b8da2883d31867b7d8bf347f63830021e2df742",
+          "Orte/00000000-0000-4000-8000-000000000011.location": "0e959ffede7be395327624c817c7d7b4446064b9dfc13912a7cff90984d492c8",
+          "Orte/00000000-0000-4000-8000-000000000012.location": "57b455592dc30e0ab9e3286a56f27a408453b7a2a3b617eee03ea089ed963b5b",
+          "Atlasdaten/00000000-0000-4000-8000-000000000010/terrain/0_-1_0.json": "4e09dbcf59e5f81a35f0c72c44511b35073696cf079613f5d001baceeb59e358",
+          "Atlasdaten/00000000-0000-4000-8000-000000000010/terrain/0_0_0.json": "c32ba3548aa7236e573e145ec0e3c6e75326cc6cd47134a19c2230d2d790f2f2",
+          "Kampagnen/SaltMarcher/E2E-01-Atlas-Save.campaign.json": "715db7072d36da3f57a3ab3f96ab0d14fb324d0c8179e9ca3d2f9d009c3ce296"
+        },
+        "afterNormalAppQuit": {
+          "Atlanten/Gemeinsamer-Testatlas.overworld": "76e0a82a939f5c2b16c08f153cca827e4efd8d5920915c997ae2a3fc6d16de07",
+          "Städte/00000000-0000-4000-8000-000000000100.city": "d7ac830f0b1a1b2e20a396a8515cf6afa0b777e46ee39f0a5b39a75bd8a6184c",
+          "Dungeons/E2E-01-Testdungeon/Karte.dungeon": "c6fe58d1b5de5c707000a39b0b8da2883d31867b7d8bf347f63830021e2df742",
+          "Orte/00000000-0000-4000-8000-000000000011.location": "0e959ffede7be395327624c817c7d7b4446064b9dfc13912a7cff90984d492c8",
+          "Orte/00000000-0000-4000-8000-000000000012.location": "57b455592dc30e0ab9e3286a56f27a408453b7a2a3b617eee03ea089ed963b5b",
+          "Atlasdaten/00000000-0000-4000-8000-000000000010/terrain/0_-1_0.json": "4e09dbcf59e5f81a35f0c72c44511b35073696cf079613f5d001baceeb59e358",
+          "Atlasdaten/00000000-0000-4000-8000-000000000010/terrain/0_0_0.json": "c32ba3548aa7236e573e145ec0e3c6e75326cc6cd47134a19c2230d2d790f2f2",
+          "Kampagnen/SaltMarcher/E2E-01-Atlas-Save.campaign.json": "715db7072d36da3f57a3ab3f96ab0d14fb324d0c8179e9ca3d2f9d009c3ce296"
+        },
+        "campaignChanges": [
+          {
+            "path": "/registry/registryRevision",
+            "before": "registry:input",
+            "after": "registry:64dfa29e9a7b18b9cb1f16a8b765f510406ea4120b9e02fc5e10b2c0ced31511"
+          },
+          {
+            "path": "/registry/owners/0/ownerRevision",
+            "before": "owner:aeff636e96e44a18d6542a17a66436043a6a41cbd61d48dad74ed64f89f2cee7",
+            "after": "owner:422bcd65633a4ed83f36084e9c1c83dd5834f16134e87e8b2b5c27d9caeec6c1"
+          },
+          {
+            "path": "/registry/owners/0/snapshotRevision",
+            "before": "snapshot:aeff636e96e44a18d6542a17a66436043a6a41cbd61d48dad74ed64f89f2cee7",
+            "after": "snapshot:422bcd65633a4ed83f36084e9c1c83dd5834f16134e87e8b2b5c27d9caeec6c1"
+          },
+          {
+            "path": "/registry/owners/0/source/generation",
+            "before": "source:aeff636e96e44a18d6542a17a66436043a6a41cbd61d48dad74ed64f89f2cee7",
+            "after": "source:422bcd65633a4ed83f36084e9c1c83dd5834f16134e87e8b2b5c27d9caeec6c1"
+          },
+          {
+            "path": "/registry/owners/0/records/1/payloadDigest",
+            "before": "sha256:ac888059f997b3c0f697e2152c9d59375543d6d2004356f1eef482fd4ec27ab7",
+            "after": "sha256:0e959ffede7be395327624c817c7d7b4446064b9dfc13912a7cff90984d492c8"
+          },
+          {
+            "path": "/registry/owners/0/records/5/payloadDigest",
+            "before": "sha256:ac888059f997b3c0f697e2152c9d59375543d6d2004356f1eef482fd4ec27ab7",
+            "after": "sha256:0e959ffede7be395327624c817c7d7b4446064b9dfc13912a7cff90984d492c8"
+          },
+          {
+            "path": "/registry/owners/0/records/6/payloadDigest",
+            "before": "sha256:ac888059f997b3c0f697e2152c9d59375543d6d2004356f1eef482fd4ec27ab7",
+            "after": "sha256:0e959ffede7be395327624c817c7d7b4446064b9dfc13912a7cff90984d492c8"
+          },
+          {
+            "path": "/registry/registryContentDigest",
+            "before": "sha256:3f30d6e3b3273fdc1f67db643e8501899831892f2c91516fafa24d3ce1994dcf",
+            "after": "sha256:04b1d0fcebcd9d5f9f41e55129d7ceeed205a6017c31735a6dfd85b9be20734e"
+          },
+          {
+            "path": "/atlas/files/3/savedDigest",
+            "before": "sha256:ac888059f997b3c0f697e2152c9d59375543d6d2004356f1eef482fd4ec27ab7",
+            "after": "sha256:0e959ffede7be395327624c817c7d7b4446064b9dfc13912a7cff90984d492c8"
+          }
+        ],
+        "campaignOracle": "Full deepEqual against original except the listed nine Location/owner/registry digest-revision fields. Location payloadDigests and savedDigest exactly match saved native byte hash. Other revision/registry hashes form-checked, not independently recomputed."
+      },
+      "firstLaunch": {
+        "verdict": "QA_ONLY_FAILURE_before_text_or_shortcut",
+        "failure": "page.evaluate: Error: Cannot find module 'obsidian'\nRequire stack:\n- electron/js2c/renderer_init\n    at Module._resolveFilename (node:internal/modules/cjs/loader:1571:15)\n    at a._resolveFilename (node:electron/js2c/renderer_init:2:4844)\n    at wrapResolveFilename (node:internal/modules/cjs/loader:1125:27)\n    at defaultResolveImplForCJSLoading (node:internal/modules/cjs/loader:1149:10)\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1176:12)\n    at Module._load (node:internal/modules/cjs/loader:1348:5)\n    at l._load (node:electron/js2c/node_init:2:18263)\n    at s._load (node:electron/js2c/renderer_init:2:34547)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:268:19)\n    at Module.require (node:internal/modules/cjs/loader:1681:12)",
+        "runnerExit": 1,
+        "all8NativeBytesUnchanged": true,
+        "executedHelperPreserved": true,
+        "correction": "New helper removes only unsupported renderer require(obsidian) API-version diagnostic. Same source/build; no native action attempted in first launch. Fresh explicit slot before second launch.",
+        "slotClaim": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6106422870",
+        "slotReturn": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6106431068"
+      },
+      "slot": {
+        "freshConfirmation": {
+          "thread": "01a12022-b67b-7da2-bed5-8ebde169d475",
+          "text": "Stadt bestätigt den lokalen GUI-Slot frisch für denselben begrenzten bestätigten, nicht komponierenden Ctrl+S-/sichtbaren Save-Kontrollnachweis auf sauberer Source12265c20/Shared25792fb in deiner isolierten Spatial-V2. Korrektur ausschließlich Entfernung des genannten QA-Diagnoseaufrufs; ursprünglichen Helfer/Fehlerbeleg erhalten. Keine Produktänderung oder neue IME-Variante. Stadt hält keine GUI und startet während dieses Laufs keine. Danach reguläres Appende und ausdrückliche Slotrückgabe."
+        },
+        "claim": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6106437330",
+        "returned": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6106444447",
+        "held": false,
+        "futureNewExplicitCoordinationRequired": true
+      },
+      "processLifecycle": {
+        "unit": "dungeon-native-4044720.service",
+        "appPids": [
+          4044753,
+          4044826,
+          4044833,
+          4044847
+        ],
+        "allAppPidsGoneVerified": true,
+        "requestedNormalQuit": true,
+        "normalExitObserved": true,
+        "forcedTerminationPids": [],
+        "afterCleanup": {
+          "Id": "dungeon-native-4044720.service",
+          "ActiveState": "inactive",
+          "SubState": "dead",
+          "InvocationID": "",
+          "MainPID": "0",
+          "ControlPID": "0",
+          "Result": "success",
+          "ExecMainCode": "0",
+          "ExecMainStatus": "0"
+        },
+        "finishedAt": "2026-10-11T06:56:05.037Z",
+        "firstLaunchNormalQuitAllPidsGoneVerified": true
+      },
+      "incomingConsumed": {
+        "beforeHost": {
+          "pullRequest": 132,
+          "head": "8a29f9df3e621ccad1b873a800c7faf20b3ff25a",
+          "shared": "25792fb757ec70b02f0c3c59a47e2c3104e3a174",
+          "independentReview": 6106379023,
+          "stewardReceipt": 6106391140,
+          "headCi": 38119032938,
+          "sharedCi": 38119275228,
+          "allNonCityRootsAndHexWorkingSectionPreserved": true
+        },
+        "beforeReceipt": {
+          "pullRequest": 130,
+          "head": "97641ece412ed2bd1b78b4a2d126efe595d29643",
+          "shared": "29e4ce68ff80e045b0b7fa4771d6d88aedcc9586",
+          "independentReview": 6106420974,
+          "stewardReceipt": 6106446297,
+          "headCi": 38119386753,
+          "sharedCi": 38119697183,
+          "allNonCityRootsAndHexWorkingSectionPreserved": true,
+          "hostSourceNotReboundToLaterMerge": true
+        }
+      },
+      "localEvidence": {
+        "firstHelper": {
+          "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-confirmed-save-h04-20261011/confirmed-save-probe.cjs",
+          "sha256": "b9f42bcd26d460f7f4412a2503603a70f465723180683eeca9b2d2220a5fe38e"
+        },
+        "firstPreload": {
+          "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-confirmed-save-h04-20261011/confirmed-save-preload.cjs",
+          "sha256": "6a46bc2a1b318663af9f5f2857808424ca715e5ae51a45c0d55357baddf64cbf"
+        },
+        "firstInvocation": {
+          "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-confirmed-save-h04-20261011/invocation.json",
+          "sha256": "8462dbf893640ab10a3b815690a90df0027bd56d0d94c16cdfebb20d1040c0b2"
+        },
+        "firstHostLog": {
+          "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-confirmed-save-h04-20261011/host.log",
+          "sha256": "7a0320e9c9fa91f045fa7998244e335f07dad62f708616bfc267b61ab8f771b1"
+        },
+        "firstLaunchResult": {
+          "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-confirmed-save-h04-20261011/first-launch-result.json",
+          "sha256": "8e2b4d287894b3a21b2638dead25b6f37fd100030084907bf087ccf73f1c8bca"
+        },
+        "firstRawResult": {
+          "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-confirmed-save-h04-20261011/evidence/1791701636249-atlas-spatial-edit/result.json",
+          "sha256": "2c44fe6b3508d562af776ac346ff41a318d2981c633aa09c4218af213c235dfb"
+        },
+        "firstRawProbe": {
+          "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-confirmed-save-h04-20261011/evidence/1791701636249-atlas-spatial-edit/confirmed-save-probe.json",
+          "sha256": "1e3f170f34501b16075cc444091c8871bc5b7747c0f4f6ebf66a8ecbed6a6687"
+        },
+        "firstLifecycle": {
+          "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-confirmed-save-h04-20261011/evidence/1791701636249-atlas-spatial-edit/process-lifecycle.json",
+          "sha256": "bbbf453e64d5bc57db8580319abc7a87ab9c307c46bc8c9acecd4b27e0b06f99"
+        },
+        "executedHelper": {
+          "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-confirmed-save-h04-20261011/confirmed-save-probe-v2.cjs",
+          "sha256": "04029ac8d84979fc7bd0dc3ea93e4e7d4f037922943782a7112983ad5bf238e5"
+        },
+        "executedPreload": {
+          "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-confirmed-save-h04-20261011/confirmed-save-preload-v2.cjs",
+          "sha256": "c9a9bdea5e4cb6fc1e764e9d5d4d54dde30d36d3d3508a74355e7b077fba9f5b"
+        },
+        "invocation": {
+          "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-confirmed-save-h04-20261011/invocation-v2.json",
+          "sha256": "c6d8859a4b26b008f84e0f5ed0d45f5fdb0b74dffeff7ea136c5f6de0d459eaf"
+        },
+        "sourceBuild": {
+          "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-confirmed-save-h04-20261011/source-build.log",
+          "sha256": "bd1579af216bb592c27ce3dbbfeea3efcccf31d5116830c45ef1cdf93fee006d"
+        },
+        "hostLog": {
+          "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-confirmed-save-h04-20261011/host-v2.log",
+          "sha256": "d7525a0f5ded9fb4b057191f543a88b76f2b5d86c814a3305df9b02ff2184605"
+        },
+        "runnerResult": {
+          "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-confirmed-save-h04-20261011/runner-result.json",
+          "sha256": "8c24ccc63b0bf05b6acc58abaabf6da883e7ca8e0a51d3d17f2fdbfef74e9b50"
+        },
+        "rawProbe": {
+          "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-confirmed-save-h04-20261011/evidence/1791701757484-atlas-spatial-edit/confirmed-save-probe.json",
+          "sha256": "d43a6924d5f039451ce5432c9672166f30e06237651d4801a45893a2b5fb555b"
+        },
+        "rawResult": {
+          "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-confirmed-save-h04-20261011/evidence/1791701757484-atlas-spatial-edit/result.json",
+          "sha256": "fe52b4679e3d3462cd1df31db9266fb06869405b4a7e9ae538207b79d9dbb455"
+        },
+        "lifecycle": {
+          "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-confirmed-save-h04-20261011/evidence/1791701757484-atlas-spatial-edit/process-lifecycle.json",
+          "sha256": "e4d9d09d0b4c3f987342224cce882472e83a029930b9e3d38c8d2d87fb927ee2"
+        },
+        "beforeShortcutImage": {
+          "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-confirmed-save-h04-20261011/evidence/1791701757484-atlas-spatial-edit/location-before-shortcut.png",
+          "sha256": "004b8f895bc239d09efd1668e8d3a1960cb3d5704b90bc2b3e70c18c720edfb1"
+        },
+        "afterShortcutImage": {
+          "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-confirmed-save-h04-20261011/evidence/1791701757484-atlas-spatial-edit/location-after-shortcut.png",
+          "sha256": "7cfa55c11bfab4318e7386f4a0691795caedd4d4dd88d1167251547b1e6a412d"
+        },
+        "visibleButtonSavedImage": {
+          "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-confirmed-save-h04-20261011/evidence/1791701757484-atlas-spatial-edit/location-visible-button-saved.png",
+          "sha256": "ffc085c63b47c10d0aa5a64b8511e5dfea825f6ab6f858ef92d4227838f727fa"
+        },
+        "afterNormalQuitHashes": {
+          "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-confirmed-save-h04-20261011/after-normal-quit-hashes.json",
+          "sha256": "1755d4054d8780612df218a7fcd6c666b3566a3a63a0ba0552fbc01b936f1daf"
+        },
+        "sdkContract": {
+          "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-confirmed-save-h04-20261011/sdk-contract.json",
+          "sha256": "8300a25d68897ae50ef185a72e734acb2ce61829693767b1dec9303f78b97e5b"
+        },
+        "protectedOriginal": {
+          "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-confirmed-save-h04-20261011/protected-original.json",
+          "sha256": "1e710a1a33ba9e6bae00cf35b28501a9e54e745da0e5d6a7f5d0b40906f3b1fc"
+        },
+        "firstSlotClaim": {
+          "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-confirmed-save-h04-20261011/slot-claim.md",
+          "sha256": "f2a145d1bb80aa47d0d5a976d9449e354fb62e6b7c50fd5bae3427ddf5827633"
+        },
+        "firstSlotReturn": {
+          "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-confirmed-save-h04-20261011/slot-return-first.md",
+          "sha256": "e350990d6a56460eb3baf6589571ccc9a54a53c473c30f0980cd99c21e20a4f0"
+        },
+        "slotClaim": {
+          "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-confirmed-save-h04-20261011/slot-claim-v2.md",
+          "sha256": "af961aa1b4fae4efb13c696c45745ad079ad919e3ca17260b1cb5665126087ca"
+        },
+        "slotReturn": {
+          "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-confirmed-save-h04-20261011/slot-return.md",
+          "sha256": "5f9c85967175b4c4c7bb0a250cd9ae6fffdf6608b9c7c0b28c3e4dc319aaf1a8"
+        }
+      },
+      "screenshotsReadByHex": "Directly viewed after-shortcut name with Text noch nicht übernommen and unchanged Torheim marker, then visible-button saved name/marker and Gespeichert. Trusted input/History/native hashes come from separate raw oracles.",
+      "protectedOriginal": {
+        "repo": "/home/aaron/.codex/.chatgpt-projects/g-p-6ac7c644e2008191a7bd985ea68679da/Obsidian-Dungeon-Editor-Phase1",
+        "status": " M checkpoint.json\n M tests/core/assets.test.ts\n M tests/object-colorable-tags.test.mjs\n",
+        "hashes": {
+          "checkpoint.json": "296f4db1da1c1dfb0642400fa9e594706756bfaedea020146fbad8d5606f9891",
+          "tests/core/assets.test.ts": "f255c4fad0f5766c533c4da9209420677ef058ed28d83248fbc947cba8c5f2ff",
+          "tests/object-colorable-tags.test.mjs": "4b5ec9893f70ce047f901316beb1216f0f469a219e6efc24ec236aaf1f648a95"
+        }
+      },
+      "limits": {
+        "actualIsolatedObsidian": true,
+        "syntheticKeyboard": true,
+        "physicalInput": false,
+        "composingPanelGuardPass": false,
+        "roomMetaCases": false,
+        "freshProcessReuse": false,
+        "copyDiscardRecovery": false,
+        "fullE2E": false,
+        "productEdited": false,
+        "handlersReplacedOrBypassed": false,
+        "fakeKeyboardEvents": false,
+        "executedHelpersEditedAfterRun": false,
+        "userVaultTouched": false,
+        "userVaultInstalled": false,
+        "originalParity": false,
+        "largeMap": false
+      },
+      "nextConsumer": "Hex: implement the confirmed Location Ctrl+S host-routing repair in existing #80. Use supported View.scope = new Scope(app.scope) / Mod+S registration and the existing serial Atlas Save path with current binding, pending-key and composition guards. Preserve qualified R01 Location/Room predicates; no handler replacement/removal/bypass or new unchanged IME variants. Add targeted actual focused-field regression and native confirmation through a freshly coordinated slot. Room/Meta, physical IME and fullE2E remain separate; no dependent detail expansion or competing City Save fix.",
+      "startedAt": "2026-10-11T06:55:56.470082+00:00",
+      "finishedAt": "2026-10-11T06:56:42.377855+00:00"
+    },
+    "dungeonAtLocationInspectorSaveRoutingR01": {
+      "id": "E2E-01-HEX04-INSPECTOR-SAVE-ROUTING-R01",
+      "owner": "Hex",
+      "issue": 80,
+      "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
+      "e2e01UserLine": 13,
+      "state": "supported_View_Scope_Location_CtrlS_native_PASS_targeted_independent_review_pending",
+      "sourceCommit": "e1bda0a08e985ef74ba1777d1e1588d507f838b7",
+      "qualifiedSharedAtHost": "29e4ce68ff80e045b0b7fa4771d6d88aedcc9586",
+      "priorInput": "checkpoint.hexAtlasExecution.dungeonAtLocationInspectorConfirmedSaveH04",
+      "finding": "HEX80-H04-01",
+      "implementation": {
+        "supportedApi": "AtlasView.scope = new Scope(app.scope); register([Mod], s) delegates to current editor.handleSaveShortcut; false consumes owned event, undefined retains parent fallback. Obsidian View owns lifecycle; no handler patch/removal/bypass.",
+        "save": "Focused attached Atlas target calls existing serial Save; current binding queue and pending-key/invalid-text checks retained. Composing/blocked/closed/flushing owned shortcut is consumed without publishing or falling through to parent file Save.",
+        "duplicate": "Existing focused Window listener skips already defaultPrevented Mod+S because Obsidian stopPropagation leaves other same-Window capture listeners running. Direct adapter baseline shows two calls without this guard.",
+        "preserved": "Existing qualified Location/Room isComposing predicates unchanged; no new placement/detail IDs, camera/history/modes or City Save implementation."
+      },
+      "checks": {
+        "baselineFourScopeCases": {
+          "source": "6ddb794b9284a7d1a7968439ecea9c691debf3a7",
+          "pass": 0,
+          "fail": 4,
+          "limit": "Registration/dispatch adapter lacks real native capture; baseline failed at missing supported Scope."
+        },
+        "duplicateCallBaseline": {
+          "pass": 0,
+          "fail": 1,
+          "actualSaveCalls": 2,
+          "expected": 1
+        },
+        "fiveScopeRegressions": "PASS in full suite: focused native Campaign Save/exact bytes/one History/repeat; same Window duplicate; composing/blocked/invalid pending text; foreign focus/detached field; queued binding revocation. Scope registration adapter is not native event-routing proof.",
+        "fullSuite": {
+          "total": 1090,
+          "pass": 1089,
+          "fail": 0,
+          "skip": 1,
+          "skipScope": "Existing optional external PDF fixture"
+        },
+        "typecheck": "PASS",
+        "cleanSourceBuild": "PASS",
+        "repositoryPreMetadata": "PASS",
+        "diffPreMetadata": "PASS"
+      },
+      "sourceFilesSha256": {
+        "src/ui/atlas-view.ts": "9907158d45be59749bab477a970dd65e09253b8192621fb2cb1a365d796333d5",
+        "src/features/atlas/atlas-editor.ts": "dad736acb40601b96b59061c682d5a24053f6088577f8423bd1a012549476108",
+        "tests/atlas-campaign-host.entry.ts": "6a6ef492f83aa86d8b56daf9d461d2c99791e01abd79dbc9f9e31eeec67f9b97",
+        "tests/fixtures/obsidian-atlas-host-stub.ts": "85dceca020bb00f35201d9715f63c95255633b4168da0a92689017d8e2b17ffc"
+      },
+      "fixtureVersion": "e2e01-spatial-v2",
+      "fixtureManifestSha256": "23735bb6c95107b7dec93ffa56ec66405a0f4fe0ec3822fc0476d90d2920188d",
+      "browserVersion": {
+        "protocolVersion": "1.3",
+        "product": "Chrome/150.0.7871.250",
+        "revision": "@07ee2042224499f634596843f209356586214e26",
+        "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) obsidian/1.14.4 Chrome/150.0.7871.250 Electron/43.7.7 Safari/537.36",
+        "jsVersion": "15.0.245.31"
+      },
+      "triplet": {
+        "main.js": {
+          "source": "0484028fbd24ddab6455d49559d967fa86add52a15d583deefc8159f2870dcbc",
+          "installed": "0484028fbd24ddab6455d49559d967fa86add52a15d583deefc8159f2870dcbc"
+        },
+        "styles.css": {
+          "source": "df11f8352b61e45d3984d29e0136fc0225aaabe85c7b004a3b55eb0c6cc52934",
+          "installed": "df11f8352b61e45d3984d29e0136fc0225aaabe85c7b004a3b55eb0c6cc52934"
+        },
+        "manifest.json": {
+          "source": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64",
+          "installed": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64"
+        }
+      },
+      "executedRunnerSourceSha256": "f424616f8e90f8766931d0b54f2703243b91a7999be16c7bedeffb26039b9cb2",
+      "native": {
+        "runnerExit": 0,
+        "rawPassed": true,
+        "rawFailure": null,
+        "outcome": "confirmed_native_Location_CtrlS_Save_PASS",
+        "hostContract": {
+          "activeView": true,
+          "viewScope": "object",
+          "ownSave": "undefined",
+          "file": "Atlanten/Gemeinsamer-Testatlas.overworld"
+        },
+        "trustedKeydown": {
+          "source": "window",
+          "type": "keydown",
+          "key": "s",
+          "code": "KeyS",
+          "keyCode": 83,
+          "isComposing": false,
+          "isTrusted": true,
+          "ctrlKey": true,
+          "metaKey": false,
+          "eventPhase": 1,
+          "targetTag": "INPUT",
+          "label": "Ortsname",
+          "value": "R01 Gespeicherter Ortsname",
+          "activeLabel": "Ortsname",
+          "defaultPrevented": true,
+          "cancelBubble": true,
+          "defaultPreventedAfter": true,
+          "cancelBubbleAfter": true
+        },
+        "exactText": "R01 Gespeicherter Ortsname",
+        "exactNativeLocation": {
+          "kind": "location",
+          "version": 1,
+          "id": "00000000-0000-4000-8000-000000000011",
+          "name": "R01 Gespeicherter Ortsname",
+          "type": "city",
+          "sections": [
+            {
+              "id": "00000000-0000-4000-8000-000000000015",
+              "title": "Beschreibung",
+              "markdown": "Torheim am Fluss.\n"
+            },
+            {
+              "id": "00000000-0000-4000-8000-000000000016",
+              "title": "Notizen",
+              "markdown": "  **Feste Notiz**\r\n\n"
+            }
+          ],
+          "detailMaps": [],
+          "keyLinks": []
+        },
+        "historyDepth": 1,
+        "pending": false,
+        "dirty": false,
+        "draft": false,
+        "sameOwnersCameraAndDungeon": true,
+        "sixForeignSpatialFilesByteIdentical": true,
+        "beforeHashes": {
+          "Atlanten/Gemeinsamer-Testatlas.overworld": "76e0a82a939f5c2b16c08f153cca827e4efd8d5920915c997ae2a3fc6d16de07",
+          "Städte/00000000-0000-4000-8000-000000000100.city": "d7ac830f0b1a1b2e20a396a8515cf6afa0b777e46ee39f0a5b39a75bd8a6184c",
+          "Dungeons/E2E-01-Testdungeon/Karte.dungeon": "c6fe58d1b5de5c707000a39b0b8da2883d31867b7d8bf347f63830021e2df742",
+          "Orte/00000000-0000-4000-8000-000000000011.location": "ac888059f997b3c0f697e2152c9d59375543d6d2004356f1eef482fd4ec27ab7",
+          "Orte/00000000-0000-4000-8000-000000000012.location": "57b455592dc30e0ab9e3286a56f27a408453b7a2a3b617eee03ea089ed963b5b",
+          "Atlasdaten/00000000-0000-4000-8000-000000000010/terrain/0_-1_0.json": "4e09dbcf59e5f81a35f0c72c44511b35073696cf079613f5d001baceeb59e358",
+          "Atlasdaten/00000000-0000-4000-8000-000000000010/terrain/0_0_0.json": "c32ba3548aa7236e573e145ec0e3c6e75326cc6cd47134a19c2230d2d790f2f2",
+          "Kampagnen/SaltMarcher/E2E-01-Atlas-Save.campaign.json": "e66a9c557016357d3dea7491fa7110f9db0eeccf6fed5d1f9510885f6990a6df"
+        },
+        "afterHashes": {
+          "Atlanten/Gemeinsamer-Testatlas.overworld": "76e0a82a939f5c2b16c08f153cca827e4efd8d5920915c997ae2a3fc6d16de07",
+          "Städte/00000000-0000-4000-8000-000000000100.city": "d7ac830f0b1a1b2e20a396a8515cf6afa0b777e46ee39f0a5b39a75bd8a6184c",
+          "Dungeons/E2E-01-Testdungeon/Karte.dungeon": "c6fe58d1b5de5c707000a39b0b8da2883d31867b7d8bf347f63830021e2df742",
+          "Orte/00000000-0000-4000-8000-000000000011.location": "223b6e597eb595f21b5848330b794b85b368c1e6d7fe783ccd7c896d3bf9efe7",
+          "Orte/00000000-0000-4000-8000-000000000012.location": "57b455592dc30e0ab9e3286a56f27a408453b7a2a3b617eee03ea089ed963b5b",
+          "Atlasdaten/00000000-0000-4000-8000-000000000010/terrain/0_-1_0.json": "4e09dbcf59e5f81a35f0c72c44511b35073696cf079613f5d001baceeb59e358",
+          "Atlasdaten/00000000-0000-4000-8000-000000000010/terrain/0_0_0.json": "c32ba3548aa7236e573e145ec0e3c6e75326cc6cd47134a19c2230d2d790f2f2",
+          "Kampagnen/SaltMarcher/E2E-01-Atlas-Save.campaign.json": "ff89566356640c5337e2cb6b5a96bd4c12af30874e39dcbc6012902b86a1f9bc"
+        },
+        "afterNormalAppQuit": {
+          "Atlanten/Gemeinsamer-Testatlas.overworld": "76e0a82a939f5c2b16c08f153cca827e4efd8d5920915c997ae2a3fc6d16de07",
+          "Städte/00000000-0000-4000-8000-000000000100.city": "d7ac830f0b1a1b2e20a396a8515cf6afa0b777e46ee39f0a5b39a75bd8a6184c",
+          "Dungeons/E2E-01-Testdungeon/Karte.dungeon": "c6fe58d1b5de5c707000a39b0b8da2883d31867b7d8bf347f63830021e2df742",
+          "Orte/00000000-0000-4000-8000-000000000011.location": "223b6e597eb595f21b5848330b794b85b368c1e6d7fe783ccd7c896d3bf9efe7",
+          "Orte/00000000-0000-4000-8000-000000000012.location": "57b455592dc30e0ab9e3286a56f27a408453b7a2a3b617eee03ea089ed963b5b",
+          "Atlasdaten/00000000-0000-4000-8000-000000000010/terrain/0_-1_0.json": "4e09dbcf59e5f81a35f0c72c44511b35073696cf079613f5d001baceeb59e358",
+          "Atlasdaten/00000000-0000-4000-8000-000000000010/terrain/0_0_0.json": "c32ba3548aa7236e573e145ec0e3c6e75326cc6cd47134a19c2230d2d790f2f2",
+          "Kampagnen/SaltMarcher/E2E-01-Atlas-Save.campaign.json": "ff89566356640c5337e2cb6b5a96bd4c12af30874e39dcbc6012902b86a1f9bc"
+        },
+        "campaignChanges": [
+          {
+            "path": "/registry/registryRevision",
+            "before": "registry:input",
+            "after": "registry:f7299743ac12cb66d0bb663d8db3d8e1498ee465751b056dfe1697bbf09edbf2"
+          },
+          {
+            "path": "/registry/owners/0/ownerRevision",
+            "before": "owner:aeff636e96e44a18d6542a17a66436043a6a41cbd61d48dad74ed64f89f2cee7",
+            "after": "owner:26a786e8d22ec6c93e5ba1348a8e3e1026999e44a7c851ca238797cc8052ffc6"
+          },
+          {
+            "path": "/registry/owners/0/snapshotRevision",
+            "before": "snapshot:aeff636e96e44a18d6542a17a66436043a6a41cbd61d48dad74ed64f89f2cee7",
+            "after": "snapshot:26a786e8d22ec6c93e5ba1348a8e3e1026999e44a7c851ca238797cc8052ffc6"
+          },
+          {
+            "path": "/registry/owners/0/source/generation",
+            "before": "source:aeff636e96e44a18d6542a17a66436043a6a41cbd61d48dad74ed64f89f2cee7",
+            "after": "source:26a786e8d22ec6c93e5ba1348a8e3e1026999e44a7c851ca238797cc8052ffc6"
+          },
+          {
+            "path": "/registry/owners/0/records/1/payloadDigest",
+            "before": "sha256:ac888059f997b3c0f697e2152c9d59375543d6d2004356f1eef482fd4ec27ab7",
+            "after": "sha256:223b6e597eb595f21b5848330b794b85b368c1e6d7fe783ccd7c896d3bf9efe7"
+          },
+          {
+            "path": "/registry/owners/0/records/5/payloadDigest",
+            "before": "sha256:ac888059f997b3c0f697e2152c9d59375543d6d2004356f1eef482fd4ec27ab7",
+            "after": "sha256:223b6e597eb595f21b5848330b794b85b368c1e6d7fe783ccd7c896d3bf9efe7"
+          },
+          {
+            "path": "/registry/owners/0/records/6/payloadDigest",
+            "before": "sha256:ac888059f997b3c0f697e2152c9d59375543d6d2004356f1eef482fd4ec27ab7",
+            "after": "sha256:223b6e597eb595f21b5848330b794b85b368c1e6d7fe783ccd7c896d3bf9efe7"
+          },
+          {
+            "path": "/registry/registryContentDigest",
+            "before": "sha256:3f30d6e3b3273fdc1f67db643e8501899831892f2c91516fafa24d3ce1994dcf",
+            "after": "sha256:a24ddab0ba3e02db6ca6e01d2e40c90dc6752216a87dc641795522ea7b4b9f1e"
+          },
+          {
+            "path": "/atlas/files/3/savedDigest",
+            "before": "sha256:ac888059f997b3c0f697e2152c9d59375543d6d2004356f1eef482fd4ec27ab7",
+            "after": "sha256:223b6e597eb595f21b5848330b794b85b368c1e6d7fe783ccd7c896d3bf9efe7"
+          }
+        ],
+        "campaignOracle": "Full deepEqual against original except nine listed Location/owner/registry digest-revision fields. Location payloadDigests and savedDigest exactly match saved native byte hash. Other revision/registry hashes form-checked, not independently recomputed.",
+        "downstreamKeydownExpected": false,
+        "nativeInput": "Actual synthetic trusted noncomposing Control+s in real isolated Obsidian at visible focused Ortsname; no direct product Save/model mutation to replace test action."
+      },
+      "slot": {
+        "freshConfirmation": {
+          "thread": "01a12022-b67b-7da2-bed5-8ebde169d475",
+          "text": "Stadt hält keine GUI. Frische ausdrückliche Slotbestätigung für genau deinen beschriebenen isolierten H04-Ctrl+S-Fixlauf #80 auf e1bda0a08e985ef74ba1777d1e1588d507f838b7 / Shared29e4ce68 / Spatial-V2, QAroot /home/aaron/.cache/dungeon-native-qa/hex-04/inspector-save-routing-r01-20261011. Pending Ortsname, trusted nicht komponierendes Ctrl+S und benannte Native/History/Kamera/Foreign-Orakel; kein Freshzweiterstart oder weitere IME-Variante. Nutzervault schützen, normal app.quit/PIDs prüfen und Slot anschließend ausdrücklich zurückgeben. Stadt startet daneben keine GUI."
+        },
+        "claim": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6106556206",
+        "returned": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6106563752",
+        "held": false,
+        "futureNewExplicitCoordinationRequired": true
+      },
+      "processLifecycle": {
+        "unit": "dungeon-native-4069831.service",
+        "appPids": [
+          4069859,
+          4069935,
+          4069942,
+          4069956
+        ],
+        "allAppPidsGoneVerified": true,
+        "requestedNormalQuit": true,
+        "normalExitObserved": true,
+        "forcedTerminationPids": [],
+        "finishedAt": "2026-10-11T07:12:38.074Z",
+        "systemdBeforeCleanup": {
+          "Id": "dungeon-native-4069831.service",
+          "ActiveState": "inactive",
+          "SubState": "dead",
+          "InvocationID": "",
+          "MainPID": "0",
+          "ControlPID": "0",
+          "Result": "success",
+          "ExecMainCode": "0",
+          "ExecMainStatus": "0"
+        },
+        "systemdAfterCleanup": {
+          "Id": "dungeon-native-4069831.service",
+          "ActiveState": "inactive",
+          "SubState": "dead",
+          "InvocationID": "",
+          "MainPID": "0",
+          "ControlPID": "0",
+          "Result": "success",
+          "ExecMainCode": "0",
+          "ExecMainStatus": "0"
+        }
+      },
+      "localEvidence": {
+        "baselineBuild": {
+          "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-save-routing-r01-20261011/test-build-baseline.log",
+          "sha256": "a3e6bc51f4fd65a0bc5aaea1abda053164d8e53cbc31a9c38b050afc32c88cfe"
+        },
+        "baselineFourRegressions": {
+          "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-save-routing-r01-20261011/baseline-regressions.log",
+          "sha256": "78abc5aeb1f2134c904a91fe4033d1a42dba917f01b341262103f93d9b12289b"
+        },
+        "initialFixedRegressions": {
+          "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-save-routing-r01-20261011/focused-regressions.log",
+          "sha256": "7339c658dbeec9874ae40a51bb553a465f4b5420cd35680b61a79ff4bde32866"
+        },
+        "doubleDispatchBaseline": {
+          "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-save-routing-r01-20261011/double-dispatch-regression.log",
+          "sha256": "aa80e3aa53afbe19cd280a1bba804ac432e3c1d00e89ac1400a92bd9c1cdade7"
+        },
+        "fullProductTests": {
+          "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-save-routing-r01-20261011/product-tests.log",
+          "sha256": "931956b746596cbb0b3bb64efd1945493903b5a26588d7f5ff57e121e925f020"
+        },
+        "typecheck": {
+          "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-save-routing-r01-20261011/typecheck-final.log",
+          "sha256": "079b4802c6da64fa1d4244b135be0c1fad7ce6c952c6dda76f3320c685743d4c"
+        },
+        "sourceBuild": {
+          "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-save-routing-r01-20261011/source-build.log",
+          "sha256": "6a3f140da86bdb15ca1773b1a29c6692e007582bd10de9544d8936e540673b8d"
+        },
+        "helper": {
+          "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-save-routing-r01-20261011/save-routing-probe.cjs",
+          "sha256": "1cbfcb7e89f8a9970022a3c98dcbfa108405fc4fe974e95adcab818ba9f2689b"
+        },
+        "preload": {
+          "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-save-routing-r01-20261011/save-routing-preload.cjs",
+          "sha256": "4f839c3dcfd9243ce326b6d87283a27ab3186cb1e10c4113ac1d748f3e4ab9e3"
+        },
+        "invocation": {
+          "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-save-routing-r01-20261011/invocation.json",
+          "sha256": "aff15cce0b115d813365d1c3bdb58a62fa0ec7d55ba63cff6d11885d44cc2382"
+        },
+        "hostLog": {
+          "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-save-routing-r01-20261011/host.log",
+          "sha256": "3c12b3b7d47b33503e2f084c336a2b25779934092eb5b502aec7dfb74c332326"
+        },
+        "runnerResult": {
+          "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-save-routing-r01-20261011/runner-result.json",
+          "sha256": "2798b8797f25ed167246340707c489338526a4b24028529deefe51e052868e5a"
+        },
+        "rawProbe": {
+          "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-save-routing-r01-20261011/evidence/1791702748667-atlas-spatial-edit/save-routing-probe.json",
+          "sha256": "35aa0c59a2fa4757dd98fbc6df4cd2f6b564219ad0b2f0be9243b8e1bdb3db51"
+        },
+        "rawResult": {
+          "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-save-routing-r01-20261011/evidence/1791702748667-atlas-spatial-edit/result.json",
+          "sha256": "037b1f6bb68c7034d302970ab31c14a3305ee354d307f522a650c4da22dbcce5"
+        },
+        "lifecycle": {
+          "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-save-routing-r01-20261011/evidence/1791702748667-atlas-spatial-edit/process-lifecycle.json",
+          "sha256": "ffa7f31514399a3727beb8a058febf1bc602f1c8f358fce7623efbb5d82523cf"
+        },
+        "beforeShortcutImage": {
+          "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-save-routing-r01-20261011/evidence/1791702748667-atlas-spatial-edit/location-before-shortcut.png",
+          "sha256": "dfea6b7a2d916e198e34a46288ac99381b3186a8ba868ed96acafb528fc5effb"
+        },
+        "afterShortcutImage": {
+          "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-save-routing-r01-20261011/evidence/1791702748667-atlas-spatial-edit/location-after-shortcut.png",
+          "sha256": "f9e343774ef65778a35309c9d9fb63ff1545cd64d95fab4b4f29379240aef9ae"
+        },
+        "afterNormalQuitHashes": {
+          "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-save-routing-r01-20261011/after-normal-quit-hashes.json",
+          "sha256": "f1492aed87653156a7ced4326b75abc468b6427f9fa20430effe2a2e2bce0e21"
+        },
+        "protectedOriginal": {
+          "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-save-routing-r01-20261011/protected-original.json",
+          "sha256": "1e710a1a33ba9e6bae00cf35b28501a9e54e745da0e5d6a7f5d0b40906f3b1fc"
+        },
+        "slotClaim": {
+          "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-save-routing-r01-20261011/slot-claim.md",
+          "sha256": "0b3d99fe195c0cf9cde2bd692e7d85d8d775f1e9fe0dde74523be6e3d36b362f"
+        },
+        "slotReturn": {
+          "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-save-routing-r01-20261011/slot-return.md",
+          "sha256": "d47e927f8d0ee3c1e59730d53311915daf0233f3e3648524313a42e79b388315"
+        }
+      },
+      "screenshotsReadByHex": "Directly viewed after-shortcut image: saved exact name in field and marker, Gespeichert, no pending text indicator. Trusted keyboard/History/native hashes established by separate raw oracles.",
+      "protectedOriginal": {
+        "repo": "/home/aaron/.codex/.chatgpt-projects/g-p-6ac7c644e2008191a7bd985ea68679da/Obsidian-Dungeon-Editor-Phase1",
+        "status": " M checkpoint.json\n M tests/core/assets.test.ts\n M tests/object-colorable-tags.test.mjs\n",
+        "hashes": {
+          "checkpoint.json": "296f4db1da1c1dfb0642400fa9e594706756bfaedea020146fbad8d5606f9891",
+          "tests/core/assets.test.ts": "f255c4fad0f5766c533c4da9209420677ef058ed28d83248fbc947cba8c5f2ff",
+          "tests/object-colorable-tags.test.mjs": "4b5ec9893f70ce047f901316beb1216f0f469a219e6efc24ec236aaf1f648a95"
+        }
+      },
+      "limits": {
+        "actualIsolatedObsidian": true,
+        "syntheticKeyboard": true,
+        "productEdited": true,
+        "independentReview": false,
+        "integrated": false,
+        "physicalInput": false,
+        "composingPanelGuardPass": false,
+        "roomMetaCases": false,
+        "freshProcessReuse": false,
+        "copyDiscardRecovery": false,
+        "fullE2E": false,
+        "handlersReplacedOrBypassed": false,
+        "fakeNativeKeyboardEvents": false,
+        "executedHelpersEditedAfterRun": false,
+        "userVaultTouched": false,
+        "userVaultInstalled": false,
+        "originalParity": false,
+        "largeMap": false
+      },
+      "nextConsumer": "Contributor: independently review the concrete H04 Save-routing repair on the published exact candidate in existing #80: supported View Scope parent/lifecycle, current focus and binding, composition/pending-key guards, same-window duplicate Save suppression, five regressions and source-bound native proof. No selfintegration. After qualified review/integration, Hex consumes concrete findings or the applicable fresh-process/remaining input evidence; Room/Meta, physical IME, Copy/Discard/Recovery and fullE2E remain separate. No general review round or dependent detail expansion.",
+      "startedAt": "2026-10-11T07:12:28.208181+00:00",
+      "finishedAt": "2026-10-11T07:12:40.079426+00:00",
+      "incomingConsumedAfterHost": {
+        "pullRequest": 133,
+        "head": "0e6a4164fdfcc85b5f57f3bc9766959002b166c8",
+        "shared": "6df23a7d30c415b026682473ed154d890ed8cb65",
+        "independentReview": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/133#issuecomment-6106571586",
+        "stewardReceipt": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/133#issuecomment-6106575746",
+        "headCi": 38120529580,
+        "sharedCi": 38120692880,
+        "bothCiSuccessDirectlyVerified": true,
+        "actualHostSourceAndBuildNotRebound": true,
+        "HexRuntimePanelsRunnerAndFixtureManifestBlobsUnchanged": true,
+        "scope": "ManualPlanner same-plan pending name retention only; City roots and working sections retained."
+      }
     }
   },
   "phase": "Phase 6: zweiter Nachbesserungslauf teilweise umgesetzt; fünf Restpositionen und unabhängiger Review offen",

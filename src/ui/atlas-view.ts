@@ -5,6 +5,7 @@ import {
   Menu,
   Modal,
   Notice,
+  Scope,
   Setting,
   TFile,
   type WorkspaceLeaf,
@@ -45,7 +46,13 @@ export class AtlasView extends FileView {
   private unregisteredMount?: { readonly revoked: boolean; revoke(retainWork: boolean): void };
   private discardedCamera?: { contextToken: string; camera: RelativeAtlasCamera };
   private assertCurrent: () => void = () => {};
-  constructor(leaf: WorkspaceLeaf, private readonly campaigns?: AtlasCampaignServices) { super(leaf); }
+  constructor(leaf: WorkspaceLeaf, private readonly campaigns?: AtlasCampaignServices) {
+    super(leaf);
+    this.scope = new Scope(this.app.scope);
+    this.scope.register(["Mod"], "s", (event) =>
+      this.editor?.handleSaveShortcut(event) ? false : undefined,
+    );
+  }
   getViewType(): string {
     return ATLAS_VIEW;
   }

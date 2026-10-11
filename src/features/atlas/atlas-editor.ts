@@ -594,6 +594,17 @@ export class AtlasEditor {
     this.work = operation.catch(() => {});
     return operation;
   }
+  /** Route the focused View hotkey through the same guarded Save as visible controls. */
+  handleSaveShortcut(event: KeyboardEvent): boolean {
+    const focused = this.root.ownerDocument.activeElement;
+    if (!focused || !this.root.contains(focused) || !event.target ||
+        !this.root.contains(event.target as Node)) return false;
+    // Consume owned shortcuts even while unavailable/composing; do not fall through
+    // to the parent Obsidian file hotkey or publish the unfinished key draft.
+    if (!event.isComposing && !this.inputBlocked && !this.closed && !this.flushing)
+      this.save();
+    return true;
+  }
   private save(): void {
     if (this.inputBlocked || this.closed) return;
     this.cancelDungeon();
@@ -1297,6 +1308,9 @@ export class AtlasEditor {
         if (this.inputBlocked || this.closed) return;
         const focused = this.root.ownerDocument.activeElement;
         if (focused !== this.viewport) return;
+        // The View Scope already routed and consumed this Save. Obsidian leaves
+        // other Window capture listeners running after stopPropagation().
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s" && e.defaultPrevented) return;
         if (this.escapeInspector(e)) return;
         if (
           (e.ctrlKey || e.metaKey) &&

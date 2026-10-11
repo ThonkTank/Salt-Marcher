@@ -12,6 +12,15 @@ export class TFile {
   }
 }
 export class FileSystemAdapter {}
+export class Scope {
+  readonly handlers: { modifiers: string[] | null; key: string | null; func: (event: KeyboardEvent, context: any) => any }[] = [];
+  constructor(readonly parent?: Scope) {}
+  register(modifiers: string[] | null, key: string | null, func: (event: KeyboardEvent, context: any) => any) {
+    const handler = { modifiers, key, func };
+    this.handlers.push(handler);
+    return handler;
+  }
+}
 export interface App {
   document: Document;
   vault: any;
