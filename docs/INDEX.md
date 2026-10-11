@@ -4,6 +4,8 @@
 
 **Konkrete Nutzerabläufe:** [Region → Dorf → Taverne → Dungeon und Spielabend](../ROADMAP-HEX-ATLAS.md#konkrete-nutzerabläufe). Die [Gebäudeentscheidung](../ROADMAP-CITIES.md#gebäude-und-innenräume-als-ein-objekt) legt die gemeinsame Bearbeitung von Außenform und Innenräumen fest.
 
+**Werkzeuge und Bediengefühl:** [Werkzeugkatalog, Gesten, Vorschau und Korrektur](../ROADMAP-HEX-ATLAS.md#werkzeuge-und-bediengefühl), einschließlich [Wandumfang und horizontaler Gebäudeskalierung](../ROADMAP-CITIES.md#wandumfang-und-horizontale-gesamtskalierung).
+
 | Thema | Fachliche Quellen |
 | --- | --- |
 | Gesamtprodukt | [Produktziele](PRODUCT.md), [Lieferfolge](ROADMAP.md), [vollständiger Umfang](SCOPE.md), [Quellenregister](scope-sources.json) |

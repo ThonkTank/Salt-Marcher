@@ -33,11 +33,13 @@ Bei sehr weitem Zoom erscheinen Stadtstruktur und wichtige Orte; beim Näherkomm
 
 **Nutzerpräzisierung vom 11.10.2026; Zielverhalten, noch keine vollständige Implementierung.** Der vollständige [Vorbereitungs- und Spielablauf](ROADMAP-HEX-ATLAS.md#konkrete-nutzerabläufe) verwendet die Taverne „Zum Silbernen Ast“ als Beispiel. Gebäudehülle, Außen-/Innenwände, Räume, Geschosse und Dach werden gemeinsam bearbeitet. Außenansicht und Innenansicht sind verschiedene Detailtiefen desselben Objekts. Ein unabhängig veränderter Hausumriss mit nachträglich einzupassender Dungeonkarte ist nicht das Ziel.
 
+Der [Werkzeugkatalog](ROADMAP-HEX-ATLAS.md#werkzeuge-und-bediengefühl) definiert die gemeinsame Bedienung: benannte Fachwerkzeuge, Landschaftspinsel, Klickpunkte/Rechteckziehen für präzise Geometrie, sichtbare Vorschauen und direkte Korrekturgriffe. Bebauung erzeugen und Innenräume anlegen sind ausdrückliche Aktionen am ausgewählten Objekt; Key-Arbeit bleibt im gemeinsamen Panel.
+
 | Meine Änderung | Wirkung am gemeinsamen Gebäude |
 | --- | --- |
 | Innenräume anlegen | Ausdrückliche Aktion erzeugt eine leere Hülle; anschließend zeichne ich Trennwände, Räume und Türen. Zoom allein erzeugt keine Daten. |
-| Eine Wand verschieben | Gebäudeform und angrenzende Raumgrenzen ändern sich konsistent in einem Befehl. |
-| „Gebäude skalieren“ wählen | Außenform und Innengeometrie werden gemeinsam proportional skaliert. |
+| Eine Wand verschieben | Gebäudeform und angrenzende Raumgrenzen ändern sich im ausdrücklich gewählten Wandumfang konsistent in einem Befehl. |
+| „Gebäude skalieren“ wählen | Grundrisse aller Geschosse samt Außenform und Innengeometrie werden horizontal proportional skaliert; Höhen und Geschossabstände bleiben erhalten. |
 | Gebäude verschieben oder drehen | Alle Gebäudeteile folgen; physische Maße und lokale Raumform bleiben erhalten. |
 | Geschoss oder Schnitt wählen | Ich bearbeite dieselbe Gebäudegeometrie in der gewählten Höhe; das Dach verdeckt meine Auswahl nicht. Ein Keller darf über den oberirdischen Umriss hinausreichen. |
 | Einen ungültigen Vorschlag machen | Die Vorschau zeigt den Fehler. Ich korrigiere oder verwerfe sie; der bestätigte Stand bleibt erhalten. |
@@ -45,6 +47,21 @@ Bei sehr weitem Zoom erscheinen Stadtstruktur und wichtige Orte; beim Näherkomm
 Kennungen, Texte, Abschnitts-/Raumlinks und Referenzen bleiben bei diesen Änderungen erhalten. Raumteilung/-vereinigung bewahrt Autoreninhalte und zeigt uneindeutige Zuordnungen sichtbar zur Auflösung. Manuelle Änderungen, Innenräume, Keys und Bindungen schützen ein Gebäude automatisch bei Regeneration; eine einzelne Freigabe ist ausdrücklich und löscht selbst noch nichts.
 
 Die bisherige Haus-/Dungeonbindung, ihre Fünf-Fuß-Rasterumrechnung und begrenzten Hostbelege bleiben vorhandener Teilstand. Die technische Umsetzung des gemeinsamen Gebäudeobjekts einschließlich Speicherformat und Übernahme vorhandener Daten ist vor Produktänderungen zu konkretisieren. Eigenständige Ruinen-/Höhlendungeons bleiben unabhängig platzierbare Dungeons; ein solcher Verweis ist kein Gebäudegeschoss. Vorhandene Grundrisse können ausdrücklich als Gebäudeinnenraum übernommen werden, sobald Übernahme, Maße und stabile Referenzen geklärt sind.
+
+### Wandumfang und horizontale Gesamtskalierung
+
+Beim Wandwerkzeug ist der Bearbeitungsumfang ausdrücklich wählbar. Dies ist eine lokale Werkzeugeinstellung innerhalb desselben Atlas-Editors, kein Welt-/Stadt-/Dungeonmodus.
+
+| Umfang | Wirkung |
+| --- | --- |
+| **Ausgewähltes Geschoss** | Ändert den Wandabschnitt im gewählten Geschoss beziehungsweise Höhenbereich und dessen angrenzende Raumgrenzen. Andere Geschosse bleiben erhalten. |
+| **Überlappende gemeinsam** | Ändert zusätzlich übereinanderliegende Abschnitte desselben Wandverlaufs und deren angrenzende Raumgrenzen. Nur der tatsächlich gemeinsame Verlauf folgt; bei teilweiser Überlappung bleiben Überstände separat. Vorsprünge, andere Außenkanten und getrennte Teile werden nicht allein aufgrund überschneidender Grundflächen mitverändert. |
+
+**Default:** Wandbearbeitung beginnt im ausgewählten Geschoss. „Überlappende gemeinsam“ wird ausdrücklich gewählt und bleibt anschließend erhalten. Zoom wechselt diesen Umfang nicht. Vor dem Ziehen hebt Hover alle betroffenen Abschnitte hervor und zeigt beispielsweise „betrifft drei Geschosse“; dieselben Teile sind in der Änderungsvorschau sichtbar. Der Umfang eines begonnenen Zugs bleibt bis Abschluss oder Abbruch fest.
+
+**Gebäude skalieren** ist eine davon getrennte Aktion: Alle Geschossgrundrisse einschließlich Außenform, Innenwänden und Raumgeometrie werden horizontal proportional größer oder kleiner. Höhen und vertikale Geschossabstände bleiben erhalten und werden separat bearbeitet. Die Gesamtskalierung betrifft das ganze Gebäude; sie hängt nicht vom gewählten Wandumfang ab. Verschieben/Drehen verändert hingegen keine physischen Maße.
+
+Beide Wandumfänge sind mit vollständig und teilweise übereinanderliegenden Wandabschnitten, Vorsprüngen und getrennten Teilen zu prüfen. Nach Übernahme, Undo/Redo und Neustart müssen die betroffenen Raumgrenzen konsistent und die übrigen Teile wertgleich sein. Gesamtskalierung ist an mehreren verschieden geformten Geschossen zu prüfen: sämtliche Grundrisse folgen demselben horizontalen Faktor, Höhen bleiben wertgleich, Kennungen, Texte und Verweise bleiben erhalten.
 
 ## Kleine Phasen und frühe Benutzbarkeit
 
@@ -82,7 +99,7 @@ CITY-05 ergänzt die zusammenhängenden Stadtstraßen auf der bereits geprüften
 | Ausarbeitung | Variierte Hausformen und Dächer, Vegetation und Dekoration ergeben eine stimmige, lesbare Draufsicht. |
 | Eigene Eingriffe | Generatorbereiche können lokal erneuert werden; manuelle Änderungen, Gebäude mit Innenräumen und Keys bleiben erhalten. |
 | Durchgehende Bearbeitung | Dasselbe Werkzeug-/Kameralayout, stabile Auswahl, gemeinsames Undo/Redo und sofortige Aktionen an sichtbarer Geometrie. |
-| Räumliche Übereinstimmung | Außenansicht, Außenwände, Eingänge und angrenzende Räume verwenden denselben Gebäudezustand. Wandänderung und Gesamtskalierung wirken gemeinsam auf Außen-/Innengeometrie; Verschieben/Drehen erhält Maße. Keller dürfen bewusst über den oberirdischen Umriss hinausreichen. |
+| Räumliche Übereinstimmung | Außenansicht, Außenwände, Eingänge und angrenzende Räume verwenden denselben Gebäudezustand. Wandänderung wirkt im gewählten Umfang; Gesamtskalierung verändert alle Grundrisse horizontal und erhält Höhen. Verschieben/Drehen erhält Maße. Keller dürfen bewusst über den oberirdischen Umriss hinausreichen. |
 | Haltbare Daten | Speichern, Neuöffnung, externe Änderungen und unterbrochenes Mehrdatei-Speichern erhalten Geometrie, Texte und Kennungen. |
 | Ausgabe | Übersicht, Detail und PNG/JPEG verwenden denselben Datenstand; Ausschnitt und Auflösung sind von der Editorkamera unabhängig. Lebensdaten-Ausgabe und weitere Formate werden anhand der offenen FTG-Exportinventur in CITY-08 geprüft. |
 
@@ -98,7 +115,7 @@ Zusätzliche Pflichtproben:
 
 - Auswahl, Werkzeug, Kamera und Undo-Folge bleiben über Zoomgrenzen erhalten. Keine Schaltfläche oder Auswahl einer „aktiven Karte“ ist für Navigation oder Bearbeitung erforderlich.
 - Ein begonnener Zeichenzug behält sein Ziel, wenn der Cursor eine Detailgrenze überschreitet. Neu sichtbar werdende Geometrie übernimmt den Zug nicht unbemerkt.
-- Stadt und Gebäude verschieben/drehen; Weltanker und Innenräume folgen korrekt, ohne lokale Maße zu verändern. Wandänderung und ausdrückliche Gebäudeskalierung getrennt prüfen: angrenzende Räume folgen der Wand, Gesamtskalierung verändert Außen- und Innengeometrie proportional. Das Dungeonraster bleibt fünf Fuß je Feld; eine Größenänderung ist eine ausdrückliche Geometrieänderung, keine Umdefinition der Feldeinheit.
+- Stadt und Gebäude verschieben/drehen; Weltanker und Innenräume folgen korrekt, ohne lokale Maße zu verändern. Beide Wandumfänge und ausdrückliche Gebäudeskalierung getrennt prüfen: angrenzende Räume folgen der Wand im gewählten Umfang; Gesamtskalierung verändert Außen- und Innengeometrie aller Grundrisse horizontal proportional und erhält Höhen/Geschossabstände. Das Dungeonraster bleibt fünf Fuß je Feld; eine Größenänderung ist eine ausdrückliche Geometrieänderung, keine Umdefinition der Feldeinheit.
 - Ein Viertel neu erzeugen und abbrechen; beschriebene oder manuell bearbeitete Häuser, lokale Straßen und Verknüpfungen erhalten. Neue Kennungen nur für tatsächlich neue Elemente vergeben.
 - Stadt mit 5.000 Gebäuden und mehreren Gebäudeinnenräumen prüfen. Die bestehenden Atlas-Ziele von höchstens 33 ms pro Navigationsbild im 95. Perzentil und 100 ms bis zur Werkzeugvorschau nach dem Laden werden gemessen; sie sind noch nicht verifiziert.
 - Physische Maus-/Touchpad-Bedienung, Großkartenlauf, Ergebnisvergleich, Ausgabe und tatsächlich installierten Endstand getrennt belegen.

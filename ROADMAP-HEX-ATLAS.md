@@ -78,7 +78,7 @@ Ich wähle ein Haus, korrigiere seine Lage, Drehung und Außenform, benenne es �
 
 Im selben Editor zeichne ich Trennwände und Türen für Schankraum, Küche und Gästezimmer, benenne die Räume und beschreibe sie. Eine Treppe verbindet Erd- und Obergeschoss; darunter ergänze ich einen Keller. Ich wähle die Höhe beziehungsweise den Schnitt, den ich bearbeiten möchte. Das Dach verdeckt keine ausgewählte oder bearbeitete Geometrie.
 
-Bei einer späteren Änderung unterscheide ich zwei Aktionen: **Eine Wand verschieben** ändert die angrenzenden Raumgrenzen gemeinsam mit der Gebäudeform. **„Gebäude skalieren“** ändert Außenform und Innengeometrie proportional als Ganzes. Verschieben und Drehen erhalten hingegen die physischen Abmessungen. Keller dürfen bewusst über den oberirdischen Umriss hinausreichen.
+Bei einer späteren Änderung unterscheide ich zwei Aktionen: **Eine Wand verschieben** ändert die angrenzenden Raumgrenzen im ausdrücklich gewählten Bearbeitungsumfang gemeinsam mit der Gebäudeform. Ich kann das ausgewählte Geschoss oder übereinanderliegende Abschnitte desselben Wandverlaufs gemeinsam bearbeiten; andere Kanten und getrennte Teile bleiben separat. **„Gebäude skalieren“** ändert die Grundrisse aller Geschosse samt Außenform und Innengeometrie horizontal proportional. Höhen und Geschossabstände bleiben dabei erhalten. Verschieben und Drehen erhalten die physischen Abmessungen. Keller dürfen bewusst über den oberirdischen Umriss hinausreichen.
 
 **Sichtbares Ergebnis:** Ich muss keinen unabhängigen Grundriss nachträglich in ein verändertes Haus einpassen. Kennungen, Texte und Links bleiben erhalten. Ein ungültiger Änderungsvorschlag wird sichtbar markiert und nicht übernommen; ich korrigiere oder verwerfe ihn. Jede bestätigte Änderung lässt sich gemeinsam zurücknehmen.
 
@@ -145,6 +145,96 @@ Die bestehende [Lieferfolge](#wie-kommen-wir-zum-ziel) bleibt erhalten. Das Leit
 | Vorbereiten → spielen → ausgeben → zuverlässig wiederaufnehmen | Suche/Navigation, große Datenbestände, Export und Endabnahme entsprechend HEX-08/22/27/28 und CITY-08/09 vervollständigen. |
 
 Für die spätere Produktabnahme wird das Leitbeispiel in einem isolierten Obsidian-Testvault durchgespielt. Dabei sind Vorschauabbruch ohne Restdaten, Wandänderung gegenüber Gesamtskalierung, metrisch erhaltendes Verschieben/Drehen, geschützte Regeneration, Raumteilung/-vereinigung ohne Textverlust, gemischte Undo/Redo-Reihenfolge, vollständiger Neustart, sichtbare Speicherfehler/externe Konflikte sowie Suche, stabile Links und Ausgabe ausdrücklich zu prüfen. Bestehende Teilbelege bestätigen nur ihren bisherigen Umfang. Diese Dokumentationsänderung vergibt keinen neuen PASS im Abnahmeregister.
+
+## Werkzeuge und Bediengefühl
+
+**Planungsstand: 11.10.2026; vereinbartes Zielverhalten.** Dieser Katalog konkretisiert die [Nutzerabläufe](#konkrete-nutzerabläufe). Er beschreibt benötigte Werkzeuge und deren Bedienung, keine bereits vollständig implementierte Oberfläche. Der [aktuelle Stand](#atlas-auf-einen-blick), die vollständigen HEX-/CITY-/Dungeonanforderungen und deren Nachweisgrenzen bleiben getrennt.
+
+Der Atlas soll sich wie ein Zeicheneditor anfühlen: Werkzeug wählen, Wirkung auf der Karte sehen, zeichnen und anschließend direkt korrigieren. Klar benannte Fachwerkzeuge sind direkt wählbar. Landschaft wird gepinselt; präzise Geometrie entsteht mit Klickpunkten und Rechteckziehen. Das Gefühl ist unmittelbar, nachvollziehbar und leicht korrigierbar.
+
+### Gemeinsame Bedienung
+
+Eine feste Werkzeugleiste gruppiert **Navigation, Landschaft, Stadt, Innenräume und Ausstattung**. Diese Gruppen ordnen die Werkzeuge und wechseln keinen Editor oder Kartenmodus. Zoom verändert weder Werkzeug noch dessen Einstellungen. Ein dauerhaftes Seitenpanel zeigt Werkzeugoptionen und Eigenschaften der Auswahl; Name und Key sind direkt erreichbar. Die Karte bleibt beim Bearbeiten sichtbar.
+
+| Eingabe oder Zustand | Gemeinsames Verhalten |
+| --- | --- |
+| Vorschau vor der Änderung | Pinselradius, Verlauf, Kontur oder Platzierungsobjekt folgen dem Cursor. Die betroffene Geometrie und der räumliche Maßstab sind sichtbar. |
+| Ziehen | Loslassen übernimmt eine gültige Änderung als einen Undo-Schritt. Eine ungültige Vorschau erzeugt keine Teiländerung. |
+| Mehrpunktzeichnung | Klicks setzen Punkte; Enter oder die sichtbare Schaltfläche „Fertig“ schließt ab. Escape verwirft den begonnenen Entwurf. |
+| Vorübergehende Navigation | Leertaste und Ziehen verschieben die Ansicht. Ein ruhender Mehrpunktentwurf bleibt erhalten; danach wird mit demselben Werkzeug weitergearbeitet. |
+| Nachträgliche Korrektur | Auswahl zeigt passende Punkte, Kanten und Griffe. Numerische Maße sind zusätzlich im Panel verfügbar. Ein begonnener Zug behält sein Ziel über Zoom-/Ladegrenzen. |
+| Einrasten | Das Fangziel wird vor dem Setzen sichtbar. Rasterfang und Anschlussfang sind getrennte Einstellungen; geometrisch vorgeschriebene Raster bleiben verbindlich. |
+| Fehler | Ungültige Vorschauen markieren die betroffene Stelle und zeigen einen kurzen Grund. Der bestätigte Stand bleibt erhalten. |
+| Textfokus | Beim Schreiben bleiben Kartenkürzel gesperrt. Key-Eingabe verliert bei Navigation weder Text noch Fokus unbemerkt. |
+| Umfangreiche Änderung | Erzeugung, umfangreicher Ersatz und Import erhalten eine ausdrückliche Vorschau mit Übernehmen und Abbrechen. Kleine gültige Änderungen benötigen keinen Bestätigungsdialog. |
+
+Diese gemeinsame Bedienung beschreibt den eigenen Atlasentwurf. Bereits verpflichtende, belegte Originalgesten aus Wonderdraft und den Dungeon-Fachkatalogen bleiben erhalten beziehungsweise werden in ihren bestehenden Vergleichsfällen ausdrücklich zugeordnet. Der Werkzeugkatalog hebt keine Originalabnahme auf.
+
+### Konkreter Werkzeugkatalog
+
+| Werkzeug | So bediene ich es | Wirkung und Rückmeldung |
+| --- | --- | --- |
+| **Auswahl** | Anklicken; Rahmen oder Lasso für mehrere Elemente. | Hover zeigt vorab das Ziel. Auswahl zeigt nur passende Griffe. Bei überlagerten Elementen bietet eine sichtbare Trefferliste die Alternativen. |
+| **Hand** | Ansicht ziehen; alternativ vorübergehend mit Leertaste. | Bewegt ausschließlich die Kamera. |
+| **Geländepinsel** | Land, Wasser oder Geländeart wählen und malen. | Radius und betroffener Maßstab sind sichtbar. Freie Küsten werden innerhalb der Hexes möglich; fein bearbeitete Eigenschaften bleiben bei groben Änderungen geschützt. |
+| **Zur Vorgabe zurücksetzen** | Über ausdrücklich verfeinerte Landschaft malen. | Die Vorschau markiert die Überschreibungen, die entfernt werden. Orte, Gebäude und Keys bleiben erhalten. |
+| **Fluss** | Verlaufspunkte setzen; Breite einstellen. | Ein durchgehendes Band zeigt die künftige Wasserfläche. Punkte, Kurven und Breite bleiben nachträglich bearbeitbar. |
+| **Straße** | Punkte setzen und an vorhandene Wege anschließen. | Vorschau zeigt Breite, Anschlüsse und Konflikte. Dieselbe Werkzeugfamilie zeichnet regionale Wege, Stadtstraßen und Gassen mit ausdrücklich gewähltem Typ. |
+| **Ort** | Typ wählen und auf die Karte klicken. | Dorf, Ruine oder anderer POI entsteht an dieser Stelle. Danach stehen Name und Key im Panel bereit. |
+| **Siedlungsfläche** | Rechteck ziehen oder Polygon zeichnen. | Legt den Bereich für die Stadtplanung fest. Zeichnen allein erzeugt noch keine Häuser. |
+| **Platz** | Fläche zeichnen und deren Anschlüsse korrigieren. | Hält die Fläche von normaler Bebauung frei; Straßen können daran anschließen. |
+| **Viertel** | Bereich zeichnen, Nutzung und Bebauungsvorgaben wählen. | Macht lokale Vorgaben sichtbar, etwa dichter Marktbereich oder lockere Wohnbebauung. |
+| **Gebäude** | Rechteck ziehen oder Außenkontur zeichnen. | Erstellt ein einzelnes bearbeitbares Gebäude. Lage, Drehung, Außenwände und Größe sind direkt korrigierbar. |
+| **Befestigung** | Mauerverlauf zeichnen; Tore und Türme gezielt einsetzen. | Zusammenhängende Geometrie mit sichtbaren Anschlüssen an Straßen und Mauern. |
+| **Raum** | Rechteck ziehen oder Raumkontur zeichnen. | Erzeugt räumliche Geometrie im gewählten Höhenbereich. Angrenzende Räume verwenden konsistente gemeinsame Grenzen; Raumidentität und Key bleiben bei späteren Änderungen erhalten. |
+| **Wand** | Wandzug zeichnen oder vorhandene Wand greifen. | Unterteilt beziehungsweise begrenzt Räume. Beim Verschieben zeigt die Vorschau sämtliche mitbetroffenen Raumgrenzen im gewählten Bearbeitungsumfang. |
+| **Verbindung** | Anfang und Ziel wählen, bei Bedarf Wegpunkte ergänzen. | Erzeugt Gang, Treppe oder Schacht. Verlauf und Höhenübergang werden vor Übernahme gezeigt; eine unmögliche Verbindung bleibt ein sichtbarer Entwurf. |
+| **Durchgang** | Tür, offene Öffnung oder Geheimdurchgang wählen und auf eine passende Grenze setzen. | Rastet sichtbar an der Grenze ein. Breite, Zustand und Beschreibung gehören zur stabilen Durchgangsidentität. |
+| **Objekt** | Asset oder fachlichen Gegenstand wählen, Vorschau ausrichten und platzieren. | Möbel, Dekoration und beschreibbare Features lassen sich bewegen, drehen und korrigieren. Wiederholtes Platzieren bleibt möglich. |
+| **Symbolpinsel** | Bäume, Berge oder andere Symbole mit Dichte und Streuung malen. | Zeigt die Verteilung als Vorschau; ein Pinselzug ist gemeinsam rücknehmbar. Einzelne Ergebnisse bleiben auswählbar. |
+| **Beschriftung** | Position wählen und Text eingeben. | Freier Text mit sichtbarer Formatierung. Ortsnamen können ausdrücklich an ihren Ort gebunden werden und folgen dessen Umbenennung. |
+| **Gebiet** | Politische oder geografische Grenze zeichnen. | Grenze, Name, Erscheinung und optionaler Key sind direkt bearbeitbar. |
+| **Messen** | Anfang, Ende und gegebenenfalls Wegpunkte setzen. | Zeigt reale Entfernung. Messen verändert keine Kartengeometrie. |
+
+**Key-Bearbeitung ist kein eigener Kartenmodus:** Die Auswahl eines Ortes, Gebäudes, Raumes oder Features zeigt dessen Beschreibung im Panel. Der Katalog bündelt den Zugang zu den vereinbarten Funktionen und streicht keine Fähigkeiten aus den vollständigen Fachkatalogen.
+
+### Aktionen am ausgewählten Objekt
+
+Die folgenden Funktionen benötigen keine zusätzlichen Zeichenwerkzeuge:
+
+| Aktion | Konkreter Ablauf |
+| --- | --- |
+| **Bebauung erzeugen** | Siedlungsfläche oder Viertel auswählen → Dichte, Größen und Struktur einstellen → Vorschau betrachten → Variante ausprobieren → Übernehmen. Geschützte Häuser sind sichtbar markiert. Abbrechen hinterlässt keine erzeugten Inhalte. Straßenänderungen lösen keine heimliche Neuerzeugung aus. |
+| **Innenräume anlegen** | Gebäude auswählen → „Innenräume anlegen“ → leere Hülle aus der bestehenden Gebäudeform erhalten → Räume und Trennwände zeichnen. Zoom allein erzeugt nichts. |
+| **Geschosse und Höhen** | Im gemeinsamen Panel Geschoss beziehungsweise Schnitt wählen, Geschoss darüber oder darunter ergänzen und Höhen bearbeiten. Benachbarte Höhen können als zurückhaltende Orientierung eingeblendet werden; die bearbeitete Geometrie bleibt eindeutig erkennbar. |
+| **Bewohner und Inhalte** | Am Ort oder Gebäude Bewohner, Haushalte und Verweise bearbeiten; am Raum Attribute, Features und Inhaltsvorlagen. Mehrfachauswahl ermöglicht gemeinsame Änderungen unter Erhalt individueller Abweichungen. |
+| **Vorlage, Gestaltung und Ausgabe** | Referenzbild hinzufügen und kalibrieren; Gestaltungsvorgaben anwenden; Ausschnitt wählen und exportieren. Diese Aktionen verwenden denselben Kartenstand und ersetzen keine bearbeitbare Geometrie durch ein Bild. |
+
+### Gebäudegriffe und Bearbeitungsumfang
+
+Ein Gebäude zeigt unterschiedliche Griffe für unterschiedliche Absichten:
+
+- **Verschieben und Drehen:** Das ganze Gebäude folgt einschließlich seiner Innenräume. Maße bleiben erhalten.
+- **Wand ziehen:** Der gewählte Wandabschnitt und angrenzende Raumgrenzen ändern sich gemeinsam im gewählten Bearbeitungsumfang.
+- **Gebäude skalieren:** Die Grundrisse aller Geschosse samt Innengeometrie werden horizontal proportional verändert. Höhen und Geschossabstände bleiben erhalten.
+
+Die beiden ausdrücklich wählbaren Wandumfänge, ihre räumliche Wirkung und der Default stehen verbindlich im [Gebäudevertrag](ROADMAP-CITIES.md#wandumfang-und-horizontale-gesamtskalierung). Vor dem Ziehen hebt Hover alle betroffenen Abschnitte hervor, etwa mit „betrifft drei Geschosse“. Der Umfang wechselt nicht automatisch beim Zoomen.
+
+Beispiel: Ich ziehe die Küchenwand nach außen. Schon während des Zugs sehe ich die neue Raumfläche und alle mitbetroffenen Wände. Möchte ich stattdessen die gesamte Taverne vergrößern, benutze ich ausdrücklich den Skalierungsgriff.
+
+### Spätere Bedienabnahme
+
+| Probe im isolierten Testvault | Erwartetes Ergebnis |
+| --- | --- |
+| Region zeichnen → Straße setzen → Dorf bebauen → einzelnes Haus korrigieren | Fachwerkzeuge sind direkt auffindbar; Erzeugung folgt ausdrücklicher Übernahme und Einzelkorrekturen bleiben native Geometrie. |
+| Innenraum anlegen → Räume zeichnen → Wand ändern → ganzes Gebäude skalieren | Gemeinsames Gebäude bleibt konsistent; Wandänderung betrifft den gewählten Umfang, Skalierung alle Grundrisse ohne Änderung der Höhen. |
+| Beide Wandumfänge an gleichen Wandverläufen, Vorsprüngen und getrennten Teilen | Geschosswahl wirkt nur im gewählten Höhenbereich. Gemeinsam folgen nur übereinanderliegende Abschnitte desselben Verlaufs; andere Kanten bleiben erhalten. Hover und Vorschau zeigen genau die später betroffenen Teile. |
+| Vorschau abbrechen und bestätigte Änderungen gemeinsam rücknehmen | Abbruch hinterlässt keine Restdaten; Undo/Redo erhält Geometrie, Kennungen, Keys und Referenzen. |
+| Mit begonnenem Punktentwurf navigieren; zoomen und überlagerte Elemente auswählen | Entwurf und Werkzeug bleiben erhalten; die Trefferliste erlaubt eindeutige Auswahl. Ein laufender Zug wechselt sein Ziel nicht. |
+| Key schreiben, Speicherfehler auslösen und vollständig neu starten | Kartenkürzel wirken nicht in Textfeldern, Fehler bleiben sichtbar und offene Arbeit erhalten. Erfolgreich gespeicherte Inhalte und Links sind wieder auffindbar. |
+| Maus, Touchpad, Tastatur und 200 % Darstellung | Werkzeuge, Griffe, Optionen und Abschluss-/Abbruchaktionen sind erreichbar; das Panel lässt die Karte bedienbar. |
+
+Diese Proben sind geplante Produktabnahmen, keine mit der Dokumentation ausgeführten GUI-Tests oder neuen PASS-Einträge. Die konkreten Produkt-APIs, Speicherformate und bestehenden Quellbausteine werden durch diesen Werkzeugentwurf nicht geändert.
 
 ## 1. Ausgangspunkt und Zielbild
 
