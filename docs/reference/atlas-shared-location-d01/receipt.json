@@ -18,9 +18,8 @@
   "productEdited": false,
   "nativeRepeated": false,
   "freshProcessStarted": false,
-  "guiSlotUsed": false,
   "independentAcceptance": "pending actual repair/native/independent #40 acceptance; no product PASS",
-  "next": "Targeted Hex navigation/native adapter repair; concrete Campaign-owned authorized native Location closure extension is required as input.",
+  "next": "Native Location save requires a Campaign-authorized closure Participant; navigation/native adapter repair remains open.",
   "recordedAt": "2026-10-10T19:10:52.470372+00:00",
   "rootCause": {
     "navigation": "New Location is absent from confirmed inventory; pre-save checkFiles rejects before repository.save. Catch repeats the same rejection and retires an otherwise current mount.",

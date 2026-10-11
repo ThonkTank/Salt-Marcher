@@ -1,6 +1,6 @@
 # Ursprüngliche Atlas-Speicher- und Wiederherstellungsbelege
 
-Datierter Zugang vom 10.10.2026 für den bestehenden integrierten Review zu [E2E01-PROMOTION-01 / #39](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/39), E2E-01 Zeile 13, Gate `E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001`. Diese Veröffentlichung enthält vorhandene Originale; sie erteilt keine unabhängige Freigabe.
+Datierter Zugang vom 10.10.2026 zu [#39](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/39), E2E-01 Zeile 13, Gate `E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001`. Diese Veröffentlichung enthält vorhandene Originale; sie erteilt keine unabhängige Freigabe.
 
 ## Die damaligen vier Läufe
 
@@ -31,6 +31,6 @@ Unmittelbar vor der Veröffentlichung kam Shared `7098269810801f93be247423862373
 
 Das Testwerkzeug `tools/host-test.cjs` wurde nach H02 durch den qualifizierten Shared-Commit `e4261ac899dadddffab1226b23eb3c8612dfead2` so geändert, dass Haupt-/Shutdownfehler im Ergebnis erhalten bleiben. Es ist nicht bytegleich mit dem alten Harness. [Der vollständige Harnessvergleich](provenance/saved-harness-to-current.patch) liegt bei; die vier damaligen erfolgreichen Prozesse besitzen eigene normale Abschlussreceipts ohne Zwangsbeendigung. Der aktuelle Evidence-Zugang selbst ändert keine Produkt-/Test-/Build-/Harnessdatei.
 
-Der bestehende integrierte Chronik-Reviewer erhält damit den fehlenden zugänglichen Eingang und kann entscheiden, welchen Save/Fresh/Rollback/Committed-Recovery-Scope diese Originale in der aktuellen Komposition decken. #38/R01/H02 bleibt geschlossen. Bis zu dieser unabhängigen Entscheidung bleibt #39 ohne Promotion. Keine neue allgemeine Reviewrunde und keine automatische GUI-Wiederholung.
+Die zugänglichen Originale belegen Save/Fresh/Rollback/Committed-Recovery ausschließlich für die genannten Quellstände; eine vollständige Abnahme der aktuellen Komposition bleibt offen.
 
 Grenzen: kleine synthetische Fixture, echte isolierte Obsidianprozesse mit synthetischen Gesten und kontrollierter Fehlerauslösung. Keine physische Eingabe, Originalparität, Großkarte, Nutzervaultinstallation, Stromausfalldauerhaftigkeit oder vollständige E2E-Freigabe.

@@ -57,13 +57,13 @@ Der folgende Fachvertrag allein belegt keinen Produkt-, Host-, P02-, P04- oder E
 
 Planbasis: Campaign-Kern `6bfb1f393722cd469dc4fd5f15d8dea12a154f6b`, Gatekatalog PR16 und Vertragsstand `11e256309d43bcd1c14db66ffc41945c9360aec8`.
 
-## Campaign-Kontext — Ziel und sichtbarer E2E-01-Beitrag
+### Ziel und sichtbarer E2E-01-Beitrag
 
 Der Lauf liefert den hostneutralen Campaign-Lifecycle- und Context-Kern, den Hex' dünner Campaign→Atlas-Adapter konsumieren kann. Eine Kampagne lässt sich anlegen, öffnen, umbenennen und wechseln. Wiederöffnen erhält die Campaign-ID; ein A→B→A-Wechsel erzeugt jeweils eine neue Context-Bindung, sodass Auswahl, History, Projektionen und Schreibbefehle aus einer früheren Aktivierung nicht in die aktuelle Kampagne gelangen. Für Copy und Complete-Import liefert der Lauf einen ownergebundenen Remap-Plan und einen Campaign/Data-Participant-Stage; erst ein späterer gemeinsamer Publish mit P02/P04 darf daraus eine sichtbare neue Kampagne machen.
 
 Der Lauf startet keine LiveSession und erzeugt keine Party-, Preparation-, Scene-, Encounter-, Clock- oder Atlas-Fachpayloads. Er bietet ausschließlich IDs, Revisionen, Namespace und Context-Guards.
 
-## Campaign-Kontext — Abgrenzung und Ownership
+### Abgrenzung und Ownership
 
 - Campaign/Data besitzt die Typen, Laufzeitvalidierung, immutable Projektionen, Lifecycle-/Command-Zustandsmaschine, Revision-/Context-Guards und das hostneutrale Import-Remap-Modell.
 - Hex besitzt den dünnen Adapter von einer bestätigten `CampaignContextProjection` zum Atlas. Der Adapter verwirft auf Contextwechsel seine ephemeral Selection/Camera/History-Bindung und lädt Ownerdaten neu; dieser Lauf implementiert den Adapter nicht.
@@ -71,27 +71,27 @@ Der Lauf startet keine LiveSession und erzeugt keine Party-, Preparation-, Scene
 - Der gemeinsame History-/Transaction-Port sowie P02-Save/Reopen und P04-Archiv/Checksum/Hostimport bleiben fremde, offene Eingänge. Eine injizierte In-Memory-Portgrenze beweist keine Dateidauerhaftigkeit.
 - Party/Preparation/Initialize ist in E2E-01 negativ: keine Methode dieses Kerns startet oder setzt Runtimezustand fort.
 
-## Campaign-Kontext — Geplante Verträge
+### Geplante Verträge
 
-### Campaign-Kontext — Identität und Snapshot
+#### Identität und Snapshot
 
 `CampaignId`, `CampaignLocalId`, `CampaignRevision`, `CampaignContextToken`, `CampaignNamespace`, `CampaignCommandId` und `CampaignReceiptId` werden als validierte, opaque Werte modelliert. Context-Token und Command-ID sind verschieden: der Token identifiziert eine flüchtige Aktivierung, die Command-ID denselben logischen Auftrag bis zu seinem terminalen Ausgang. Anzeigenamen stiften keine Identität. Ein persistierbarer `CampaignSnapshotV1` enthält genau Schema, Campaign-ID, Revision, Name, Namespace und Lifecycle-Zustand. Zusätzliche fremde Payloads werden nicht in diesen Kern kopiert.
 
 Jede bestätigte Mutation verlangt Campaign-ID plus erwartete Revision und erhöht die Revision genau einmal. Fehlende, fremde oder stale Revisionen scheitern vor Mutation. Rückgaben sind tief immutable; Eingabeobjekte werden defensiv kopiert.
 
-### Campaign-Kontext — Context-Aktivierung
+#### Context-Aktivierung
 
 `open`/`switch` validiert einen Snapshot und erzeugt eine `CampaignContextProjection` aus Campaign-ID, aktueller Revision, Namespace und einem neuen Context-Token. Der Token ist eine Aktivierungsidentität, keine persistierte Campaign-Identität. A→B→A erzeugt drei verschiedene Tokens; ein Befehl muss ID, Revision, Namespace und Token der aktuellen Projektion treffen. Dadurch darf ein alter A- oder B-Befehl selbst bei gleicher CampaignRevision nicht schreiben. Jede Aktivierungsanfrage trägt zusätzlich eine Command-ID und eine monotone lokale Anforderungssequenz; ein verspätetes Open(A) oder sein Callback darf einen inzwischen bestätigten B-/A2-Context nicht ersetzen.
 
 `reopen` liest denselben persistierten Snapshot, erhält Campaign-ID und Namespace und erzeugt nur einen neuen Context-Token. Normales Reopen remappt nie IDs. Contextwechsel veröffentlicht keinen Atlas-/Scene-/Sessionzustand und hat keinen Autostart-Hook.
 
-### Campaign-Kontext — Lifecycle- und Command-Kern
+#### Lifecycle- und Command-Kern
 
 Der Kern erhält ausschließlich injizierte Ports für Snapshot-Lesen, Commandstatus-Abfrage und compare-and-write-Veröffentlichen sowie injizierte ID-/Token-Fabriken. Geplant sind `create`, `open`, `rename`, `switch`, `planCopy` und `stageCompleteImport`. Jeder Auftrag friert unter einer stabilen `CampaignCommandId` den erwarteten CampaignContext, alle beteiligten Owner-/Schema-/Snapshotrevisionen und sämtliche vorab zugeordneten Ziel-IDs einschließlich Remap ein. Seine immutable Receipt-/Outcome-Projektion führt genau `staged`, `validated`, `published`, `verified`, `finalized`, `cancelled_before_publish`, `conflict` oder `outcome_unknown`.
 
 Stage→Validate→Publish→Verify→Finalize läuft unter derselben Command-ID und demselben Receipt. Retry oder Statusabfrage derselben Command-ID verwendet dieselben Ziel-IDs und dasselbe Ergebnis; sie erzeugt weder Ersatzauftrag noch zweite Revision oder Wirkung. Gewinnt Cancel vor Publish, bleibt bestätigte Wahrheit unverändert und verspätete Teilnehmerantworten dürfen nicht publizieren. Hat Publish gewonnen, beendet Cancel nur lokales Warten: Verify/Finalize bleiben pending und laufen ausschließlich vorwärts; ein Cancellation-Erfolg ist dann falsch. Antwortverlust und `outcome_unknown` werden über die ursprüngliche Command-ID abgefragt. Contextprüfung unmittelbar vor Mutation verhindert Wirkung nach einem Switch. Die erste Implementierung modelliert diese Semantik deterministisch und hostneutral; dauerhafte Receipts, Prozesscrash und echter Mehrbesitzer-Publish bleiben P02/P04-/Integrationsbeweise.
 
-### Campaign-Kontext — Copy-/Complete-Import-Remap und Ownerlieferung
+#### Copy-/Complete-Import-Remap und Ownerlieferung
 
 Ein versionierter `CampaignOwnerInventoryV1` bindet Source-Campaign, Owner-ID, erwartete Owner-/Schema-/Snapshotrevision, vollständige Records und Referenzen sowie Payload-Snapshots oder verifizierte Payloadbezüge an denselben eingefrorenen Lieferstand. Campaign/Data koordiniert die Abdeckung, erfindet aber keine fremden Records. World/Location/Placement, City/Building, Dungeon/Floor/Room/Route/Section, campaignlokale EncounterPlan-Referenzen und alle weiteren tatsächlich vorhandenen lokalen Bestände müssen durch ihren Owner vertreten sein. Enthält die Campaign Medien, bestätigt deren Owner außerdem `AudioSourceId`, Source-Metadaten, manifestgebundenen Bytehash/Payloadbeleg und alle kampagnenlokalen Cue-/Scene-/Runtime-Referenzen. Ein nicht vorhandener Bestand benötigt einen bestätigten Leerzustand; absent, unknown oder unavailable ist kein Leerzustand.
 
@@ -105,7 +105,7 @@ Die Closure enthält die alte und neue Campaign-ID, den alten und neuen Namespac
 
 Quelle, bestehende Kampagnen und shared definitions bleiben unverändert. Copy und Import dürfen nie in eine vorhandene Campaign mergen oder sie überschreiben. P04 validiert Archiv, Manifest, Checksums und Bytes; fehlende, beschädigte oder unverifizierbare erforderliche Medien verhindern Complete. Nur ein späterer, ausdrücklich gewählter Salvage-Pfad darf Auslassungen samt Identität und Auswirkung offenlegen. I01 akzeptiert nur das begrenzte ownergelieferte Identitäts-/Referenzmodell und behauptet weder Archivprüfung noch gemeinsamen Publish.
 
-## Campaign-Kontext — Vorgesehene Dateien
+### Vorgesehene Dateien
 
 - `src/features/campaign/campaign-contracts.ts`: opaque IDs, Laufzeitvalidierung und immutable Snapshot-/Context-/Command-/Inventory-/Graph-Typen.
 - `src/features/campaign/campaign-lifecycle.ts`: hostneutraler Lifecycle-/Command-Kern, Receiptstatus sowie stale/foreign/late-result Guards.
@@ -113,7 +113,7 @@ Quelle, bestehende Kampagnen und shared definitions bleiben unverändert. Copy u
 - `tests/core/campaign-lifecycle.test.ts`: Create/Open/Rename/Switch/Reopen, Command-/Cancel-/Retry-Semantik, Revisionen, Immutabilität und negative Sessiongrenze.
 - `tests/core/campaign-remap.test.ts`: Ownerinventare, Copy/Import-Closure, Participant-Stage, globale Identitäten, Atomizität und beschädigte Lieferungen.
 
-## Campaign-Kontext — Pflicht-Testmatrix für I01
+### Pflicht-Testmatrix für I01
 
 1. Create erzeugt eine eindeutige Campaign-ID, Revision 1 und eine immutable Projektion; gleicher Name bleibt erlaubt.
 2. Rename mit korrekter Revision erhöht exakt einmal; stale, foreign oder falscher Namespace verändert keine Daten.
@@ -129,13 +129,13 @@ Quelle, bestehende Kampagnen und shared definitions bleiben unverändert. Copy u
 12. Ein ablehnender Participant, fehlende Medienbytes oder fehlender gemeinsamer Transaction-/P04-Publish bewirkt null sichtbare Ziel-Campaign; Ownerprojektionen bleiben bytegleich.
 13. Typecheck, gesamte Git-Testsuite und Build bestehen. Das ist nur Codebeleg; realer P02-Reopen, P04-Import, gemeinsamer Mehrbesitzer-Publish und Obsidian-/Zielhostlauf bleiben offen.
 
-## Campaign-Kontext — Offene Gates nach diesem Paket
+### Offene Gates nach diesem Paket
 
 Auch ein bestandener I01-Lauf schließt E2E-01 nicht. Offen bleiben mindestens der Campaign→Atlas-Adapter, gemeinsame Atlas/City/Dungeon-History und Transaction, echter P02-Save/Reopen-Prozess, echter P04-Complete-Import mit Manifest/Checksums, House→Dungeon-Bindung, integriertes Fixture, installierter Hostlauf und unabhängige Atlas-QA-Abnahme. E2E-02 bis E2E-04 bleiben gesperrt.
 
 ## Ownership und gemeinsame Commands
 
-## Ownership und gemeinsame Commands — Gepinnte Grundlage
+### Gepinnte Grundlage
 
 - Einziger Integrationskandidat: PR #13, Exact-Head
   `e5a19a93ce417b4e48fa86512d1c7f1be4d41eea`.
@@ -155,7 +155,7 @@ Diese Grundlage bleibt als gepinnte fachliche Quelle erhalten. Die aktive Fixtur
 `e2e01-spatial-v2`, ihre sieben nativen Dateien und frühere Bereichsbelege bleiben
 bytegleich.
 
-## Ownership und gemeinsame Commands — Ziel und begrenzter E2E-01-Beitrag
+### Ziel und begrenzter E2E-01-Beitrag
 
 Der Lauf spezifiziert die fehlende hostneutrale Grenze zwischen einem bestätigten
 `CampaignContextProjection`, einer autoritativen vollständigen Ownership-Registry
@@ -168,7 +168,7 @@ City-, Dungeon-, Medien- noch andere Fremdpayloads, rekonstruiert sie nicht aus
 Dateinamen oder Deliveries und vergibt keine fremden Revisionen. Der Vault-
 Kennungslookup und `Session.revision` sind ausdrücklich keine Registryautorität.
 
-## Ownership und gemeinsame Commands — Vertragsgrenzen und Verantwortungen
+### Vertragsgrenzen und Verantwortungen
 
 - Der vorhandene `CampaignLifecyclePort` bleibt allein für Campaign-Snapshot,
   Create/Rename und Statusauflösung zuständig. Er wird nicht zum Mehrzweckstorage.
@@ -187,7 +187,7 @@ Kennungslookup und `Session.revision` sind ausdrücklich keine Registryautoritä
   Manifest, Checksums und unabhängigen Import. Dieser Lauf definiert nur deren
   erforderlichen Domainvertrag und implementiert keinen dieser Adapter.
 
-## Ownership und gemeinsame Commands — Versionierte Ownershipprojektion
+### Versionierte Ownershipprojektion
 
 `CampaignDomainOwnershipProjectionV1` ist eine tief immutable Projektion mit:
 
@@ -218,7 +218,7 @@ Für den Worldowner bindet der Adapter dieselbe gelesene Repositorygeneration an
 erreichten nativen Sources. Ein teilweise geladener Graph, mehrere Dateitreffer
 oder eine Generation, die sich während des Reads ändert, liefert keine Projektion.
 
-## Ownership und gemeinsame Commands — Read-only Registryport
+### Read-only Registryport
 
 Der geplante Port hat nur beobachtende Operationen:
 
@@ -239,7 +239,7 @@ Linearization-Grenze. Zwischen seinem Ergebnis und Publish darf sich Zustand än
 Darum werden dieselben erwarteten Context-/Registry-/Ownerwerte zusätzlich als
 Compare-Preconditions an die unten beschriebene dauerhafte Publishgrenze getragen.
 
-## Ownership und gemeinsame Commands — Mehrowner-Command- und Receipt-Envelope
+### Mehrowner-Command- und Receipt-Envelope
 
 `CampaignMultiOwnerCommandEnvelopeV1` friert vor der ersten Mutation ein:
 
@@ -286,7 +286,7 @@ verwenden das ursprüngliche Receipt. Der I01-Vertragslauf liefert Requesttyp,
 Precondition-Validator und ein ausführbares atomisches Port-Testdouble, aber keinen
 produktiven P02/P04-Adapter.
 
-## Ownership und gemeinsame Commands — Complete und Salvage sind verschiedene Befehle
+### Complete und Salvage sind verschiedene Befehle
 
 Der Envelope ist eine diskriminierte Union:
 
@@ -325,7 +325,7 @@ Quarantänebeleg blockiert Salvage vor Publish. Survivor-, Omission- und
 Quarantänedigests werden Teil von Command-Fingerprint, Receipt und atomaren
 Publish-Preconditions.
 
-## Ownership und gemeinsame Commands — Fail-closed-Orakel und geplante Negativfälle
+### Fail-closed-Orakel und geplante Negativfälle
 
 Der I01-Vertragslauf muss mindestens beweisen:
 
@@ -356,7 +356,7 @@ Fixture und einen nichtleeren AudioSource-Fall. Er darf fremde Payloadbytes nur 
 ownerbestätigte Digest-/Referenzbelege behandeln. Testdoubles müssen klar als solche
 markiert sein und sind kein produktiver Registrybeleg.
 
-## Ownership und gemeinsame Commands — Explizit offen
+### Explizit offen
 
 Offen bleiben produktiver Registryprovider, Campaign→Atlas-Adapter,
 Mehrowner-Publish/Journal/Recovery, P02-Haltbarkeit, P04-Archivprüfung und echter
@@ -368,7 +368,7 @@ nicht vorgezogen.
 
 Vertrags-/Entwurfsstand P01; die unten gepinnte Grundlage ist historisch. Runtime-Source/Picker sind inzwischen über PR #13 auf Shared integriert (begrenzte Entscheidung in [#39](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/39#issuecomment-6100834444)). Aktuelle Weiterarbeit: [#40](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/40) und [#41](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/41), nicht erneutes P01/I01. Kein P02-, P04- oder vollständiger E2E-01-PASS aus diesem Plan.
 
-## Persistierte Quelle und Kampagneneinstieg — Gepinnte Grundlage und Nutzerziel
+### Gepinnte Grundlage und Nutzerziel
 
 - Einziger Integrationskandidat: PR #13, Exact-Head
   `3926fe4a7b7e352edc1462c9ead732d4b4a0f03a`.
@@ -387,7 +387,7 @@ bereits angewandten B-Aktivierung bleibt B current/unavailable. A→B→A erzeug
 Context und liest Registry sowie Inventar erneut. Eine extern geänderte aktive
 Kampagne wird sofort an `contextChanged` gemeldet.
 
-## Persistierte Quelle und Kampagneneinstieg — Persistierte Quelle statt Testport
+### Persistierte Quelle statt Testport
 
 Ein versioniertes `CampaignRuntimeManifestV1` ist die produktive, lesende
 Hostquelle. Es enthält genau:
@@ -431,7 +431,7 @@ den vorhandenen `CampaignLifecyclePort` deshalb `read`; `publish/status` lehnen
 Create/Rename ausdrücklich als nicht verfügbar ab und die UI bietet sie nicht an.
 Das ist kein Mehrowner-Publish und kein P02-/P04-Ersatz.
 
-## Persistierte Quelle und Kampagneneinstieg — Laufzeitadapter und Wechselgrenze
+### Laufzeitadapter und Wechselgrenze
 
 `CampaignRuntimeSource` hält einen immutable Snapshot der gelesenen Manifestmenge
 und eine monotone Sourcegeneration. Daraus entstehen drei schmale Adapter:
@@ -466,7 +466,7 @@ A-Mount. Der Picker markiert B als aktiv mit konkretem Fehler und bietet Retry f
 B; er behauptet nie, A sei weiterhin aktiv. Ein verspäteter Fehler oder Erfolg
 eines überholten Auftrags verändert weder B noch einen neueren Mount.
 
-## Persistierte Quelle und Kampagneneinstieg — Bedienbarer Kampagneneinstieg
+### Bedienbarer Kampagneneinstieg
 
 `CampaignEntry` ist eine kleine DOM-Komponente für das bestehende Plugin-Dock. Sie
 zeigt Name und Status jeder validierten Campaign-ID, markiert die aktive Kampagne
@@ -479,7 +479,7 @@ Callbacks; verspätete Ergebnisse schreiben nicht in neues DOM. Die Komponente
 erhält nur immutable Einträge und `onOpen(campaignId, kind)`; sie besitzt keine
 Kamera, History, Registrywahrheit oder Persistenz.
 
-## Persistierte Quelle und Kampagneneinstieg — Eigene Dateien und Integrationsgrenze
+### Eigene Dateien und Integrationsgrenze
 
 - neu `src/features/campaign/campaign-runtime-source.ts`: Manifest- und durable
   Registryvalidator, contextgebundene Runtimeprojektion, immutable
@@ -496,7 +496,7 @@ Hex integriert nach unabhängigem PASS ausschließlich Konstruktion, sicheren
 Open-/Switch-Callback, `contextChanged` und die Dockmontage. Änderungen an
 `src/main.ts` oder `src/ui/atlas-view.ts` gehören deshalb nicht zu diesem Paket.
 
-## Persistierte Quelle und Kampagneneinstieg — Pflichtorakel
+### Pflichtorakel
 
 1. Zwei gespeicherte Kampagnen mit gleichem Namen bleiben über ihre IDs getrennt;
    Öffnen liefert den exakt gebundenen Context, Registry und Worldbestand.
@@ -521,7 +521,7 @@ Open-/Switch-Callback, `contextChanged` und die Dockmontage. Änderungen an
    stale Antwort, Update und Destroy sind isoliert geprüft.
 9. Campaignwechsel und Speicheranschluss am realen Atlas-Host prüfen; Kern-/DOM-Tests ersetzen diesen Ablauf nicht.
 
-## Persistierte Quelle und Kampagneneinstieg — Lieferfolge und verbleibende Gates
+### Lieferfolge und verbleibende Gates
 
 Den gelieferten Runtime-Source/Picker im bestehenden Produktpaket weiterverwenden.
 #40 verbindet neue Location-/Section-/Worldplacement-Bestände mit Navigation und

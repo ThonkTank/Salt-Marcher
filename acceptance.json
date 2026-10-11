@@ -776,7 +776,7 @@
         "state": "PASS",
         "reviewedCommit": "8772d950301b899c22f8bc4588e35bd2a5fe6dde",
         "issue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/64#pullrequestreview-5480446444",
-        "scope": "Independent Chronik full15-item visual/PDF review, actual Poppler25.07 and765/765PDF suite; not author-owned or a fullS01/product/host gate"
+        "scope": "Independent full15-item visual/PDF review, actual Poppler25.07 and765/765PDF suite; not author-owned or a fullS01/product/host gate"
       },
       "w25Integration": {
         "state": "completed",
@@ -787,7 +787,7 @@
           "state": "PASS",
           "reviewedCommit": "8772d950301b899c22f8bc4588e35bd2a5fe6dde",
           "issue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/64#pullrequestreview-5480446444",
-          "scope": "Independent Chronik full15-item visual/PDF review, actual Poppler25.07 and765/765PDF suite; not author-owned or a fullS01/product/host gate"
+          "scope": "Independent full15-item visual/PDF review, actual Poppler25.07 and765/765PDF suite; not author-owned or a fullS01/product/host gate"
         }
       },
       "magicItemAzCSectionEvidence": "Complete C-section A–Z33–47 on physical/printed pages213–215: fifteen full headers/prose/conditional rules and page continuations; nine Candle alignment rows, four Carpet size/capacity/speed rows, four Crystal Ball variant-specific rarity choices, six Cube faces and five charge-loss rows. Tables remain also in original prose order; whole-heading PDF/XML/schema/identity gates pass. No invented occurrences, merges, costs or conversions. All complete flags false, no Item product activation.",
@@ -935,7 +935,7 @@
       "rule": "Vor Stadtproduktcode kleine feste Galerie für Dorf, ummauerte Stadt, Hafen und ausgearbeitete Draufsicht mit Datum bzw Version, Umfang und Ergebnismerkmalen belegen. Funktionen aller drei Produkte inventarisieren und vollständig umsetzen; Originalgesten sind keine Pflicht. Galerieabschluss ersetzt keine Funktions-, Host-, Grafik- oder Bedienabnahme.",
       "evidence": [
         "/home/aaron/.cache/dungeon-native-qa/city-plans/city00-i09-gallery-20261009/manifest.json",
-        "ROADMAP-CITIES-REFERENCE-GALLERY.md"
+        "ROADMAP-CITIES.md#referenzgalerie"
       ],
       "closedAt": "2026-10-09T12:08:19.364542+00:00"
     },
@@ -4849,9 +4849,9 @@
       "checks": "2 core countercases and 3 managed DOM cases PASS; exact name/geometry/IDs; shared UndoRedo, native Save/model reopen; invalid/stale/ABA/revoked context and detached old callbacks fail closed",
       "remaining": "PR106 review/integration and GM6105037427 Save/navigation reuse consumed. GM6105664357 adds fresh-process/search/name reuse/second Save on eaf6bd9 and Apply/Discard Enter focus/next Tab on a4c2cb3. PR120 head1262cbf7 has eight durable pictures checked visually and by SHA-256 by City. Semantic after-save file comparison remains tester report, no raw after payloads; no launcher exitcode. Direct-Save focus native check, physical/broad Recovery/full parity remain open.",
       "inspectorReview": "R02 PASS5481432379 on0315b13, Exact-SHA CI38100640175 SUCCESS; no required finding; helper changes do not alter product source",
-      "nativeProof": "docs/reference/city-building-name-h01/receipt.json: actual GPU picking/Edit3/Fresh1 PASS on product0315b13, actual clean build/probea12b609d688a51c5139cfbe1b8073829a3254f02 (8d1d804 earlier equivalent helper); synthetic input; both normalExit0 and slot returned",
+      "nativeProof": "docs/reference/city-building-name-h01/receipt.json: actual GPU picking/Edit3/Fresh1 PASS on product0315b13, actual clean build/probea12b609d688a51c5139cfbe1b8073829a3254f02 (8d1d804 earlier equivalent helper); synthetic input; both normalExit0",
       "coreReview": "CITY-BUILDING-NAME-R01 PASS on793a68e; PR93 review5481404923; existing pure CityEdit/core delta only",
-      "saveRollback": "Save R03 independently PASS6104396047 and PR98 integrated Shared73bfe22. H02 native controlled manifest fault after won Citywrite restores canonical bytes, retains exact name/one History/context/camera; visible Retry and fresh Obsidian process Edit2/Fresh1 PASS on clean source1afac1d. docs/reference/city-building-name-h02/receipt.json; both normalExit0, slot returned. Independent H02-R01 PASS6104511968; PR101 integrated1d8c7ffc; no broad Recovery/physical pass.",
+      "saveRollback": "Save R03 independently PASS6104396047 and PR98 integrated Shared73bfe22. H02 native controlled manifest fault after won Citywrite restores canonical bytes, retains exact name/one History/context/camera; visible Retry and fresh Obsidian process Edit2/Fresh1 PASS on clean source1afac1d. docs/reference/city-building-name-h02/receipt.json; both normalExit0. Independent H02-R01 PASS6104511968; PR101 integrated1d8c7ffc; no broad Recovery/physical pass.",
       "reloadSaveRegression": "AtlasHistory notify pins current recipients and skips unsubscribed ones: newly rendered CityDraft does not receive prior change. Regression: native Save/model reopen/open Inspector/Apply/UndoRedo/new direct Save, exact Unicode/geometry/IDs, camera, foreign bytes and two History steps; FAIL before/PASS after. Five City regressions PASS, including external ABA/revocation.",
       "imeSaveRegression": "Ctrl/Cmd+S during active IME composition must not publish or save unfinished name. Two Managed/Vaultadapter countercases FAIL before/PASS after isComposing guard; input/focus, History and native bytes retained. After composition same shortcut saves with one History step. PR124 independently reviewed and integrated on Shared10defd5; native IME remains open."
     },
@@ -153275,13 +153275,6 @@
             "sixSourceBlobsExactOwner": true,
             "buildTripletExactOwner": true,
             "trackedFilesPreserved": 538
-          },
-          "reviewerCleanup": {
-            "state": "PASS_separate_reviewer_cleanup_P_I_R",
-            "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6094477609",
-            "actualEvidence": "/home/aaron/.cache/dungeon-native-qa/city-plans/runtime-i01a-r01-20261010/cleanup-review.json",
-            "readDirectly": true,
-            "hashBindingEvidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-capture-i01a-cleanup-20261010/i01/consumed-reviewer-cleanup.json"
           }
         }
       },
@@ -153341,16 +153334,7 @@
               "required": "Prevent an obsolete switch continuation from retiring/replacing a newer mount or pending open; preserve fresh B Repository/History/UI and unsaved work, without rolling back confirmed Lifecycle."
             }
           ],
-          "candidate": "d024b4e61b60a72937a17e4ce9a0103c8c20733d",
-          "reviewerCleanup": {
-            "state": "PASS_separate_reviewer_cleanup_P_I_R",
-            "actualEvidence": "/home/aaron/.cache/dungeon-native-qa/city-plans/runtime-i01b-r01-20261010/cleanup-review.json",
-            "sha256": "8a98a558b6af9373863bd25afa639a3b441a284d110f80ee4a0e5ec54d4486cb",
-            "planSha256": "735e1966f6ae8d9c32c0870a65a4a450d89868c669f04f1949f6b83a05d40d36",
-            "implementationSha256": "6a0da21fdbf8a1b1d961d76d0de1f150aca2df4a350008b72b9993b18564844b",
-            "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6094832423",
-            "readDirectly": true
-          }
+          "candidate": "d024b4e61b60a72937a17e4ce9a0103c8c20733d"
         },
         "repair": {
           "run": "E2E-01-SPACE-I01c-RUNTIME-N01b",
@@ -153429,17 +153413,6 @@
             "closedFindings": [
               "RUNTIME-I01b-R01-01"
             ],
-            "reviewerCleanup": {
-              "state": "PASS_separate_reviewer_cleanup_P_I_R",
-              "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6094957819",
-              "actualEvidence": "/home/aaron/.cache/dungeon-native-qa/city-plans/runtime-i01b-r02-20261010/cleanup-review.json",
-              "sha256": "4f3df0324a6b1b7a82ad399bc9ec9799617ab8467805fffc04765767928b7a3b",
-              "planSha256": "d6b01e6fab8a5bc5617567a8bfabff746ad266f460606bd464b33a5ecb6f6ee0",
-              "implementationSha256": "2d890c63e33618296f1bdb44d9e6d930acd8e8867bc76b452ac667ef0c4aa798",
-              "protectedFilesVerified": 551,
-              "deletedFilesAbsent": 41,
-              "readDirectly": true
-            },
             "limits": [
               "Actual controlled-port core review, no productive Host/provider receipt",
               "I01c visible integration and native/fresh-start check remain open",
@@ -153483,7 +153456,6 @@
             "repairOwnerReport": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6095288823",
             "mountInvalidationRequirement": "Independent R03 closes all R01/R02 findings including non-overwritable full-manifest lease, file/record coverage and synchronous invalidation. Visible host must connect actual Provider currentContext=null notification to pending/active mount revocation and safe Navigator switching. City UI remains readonly target consumer; no second authority.",
             "qualifiedSource": "6433952f3792205d79e92467e245f41ca1a0b29f",
-            "qualifiedOwnerCleanup": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6095346776",
             "qualifiedOwnerGate": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6095349357",
             "integrationEvidence": {
               "state": "PASS_actual_qualified_incoming_sources_integrated",
@@ -153499,7 +153471,7 @@
           },
           "componentReview": {
             "id": "CITY-UI-I01-R01",
-            "state": "PASS_component_review_qualified_owner_handoff_and_own_reviewer_cleanup_visible_host_open",
+            "state": "PASS_component_review_visible_host_open",
             "candidate": "5e72857ca9f794ce0027765766365bd0982e827d",
             "ownerTestedCode": "f5f50cf70277f442fc54140128bb6abebf06e30c",
             "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/29#issuecomment-6095156261",
@@ -153540,94 +153512,6 @@
             },
             "codeIntegrated": true,
             "hostMounted": false,
-            "ownReviewerCleanup": {
-              "id": "CITY-UI-I01-R01-CLEAN-P01",
-              "state": "PASS_separate_own_reviewer_cleanup_P_I_R",
-              "owner": "Hex, independent City UI reviewer",
-              "plan": "/home/aaron/.cache/dungeon-native-qa/hex-03/city-ui-i01-r01-20261010/cleanup/p01/cleanup-plan.json",
-              "planSha256": "8e5f293a9528ec57445cb2fe9a7393e66fc09fa0114192e5ddaa00493f6b372a",
-              "counts": {
-                "trackedSourceFilesProtected": 545,
-                "rootEvidenceFilesProtected": 22,
-                "additionalBuildAndProbeFilesProtected": 3,
-                "protectedFiles": 570,
-                "protectedBytes": 31673986,
-                "deleteFiles": 40,
-                "deleteBytes": 46215609,
-                "unlinkSymlinks": 1,
-                "removeEmptyDirectories": 18
-              },
-              "reviewedSource": "5e72857ca9f794ce0027765766365bd0982e827d",
-              "reviewEvidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/city-ui-i01-r01-20261010/review.json",
-              "reviewSha256": "ee59c7344598a74023dd1ccb6b8fd3acf6d1ab747d74d76006cc6ed7558b290f",
-              "validationEvidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/city-ui-i01-r01-20261010/cleanup/p01/plan-validation.json",
-              "validationSha256": "db7db29f4682d9c6bcafc12281cfc1aad07a1f533e0daafb2d116acdb92bb998",
-              "mutationsApplied": true,
-              "implementation": {
-                "id": "CITY-UI-I01-R01-CLEAN-I01",
-                "state": "PASS_separate_cleanup_R01_consumed",
-                "base": "1df1b4be0241db45010dfc7a89338271e7653bc2",
-                "consumedShared": "0c100613fdcbb232f07e3eeff23b32c27be4499d",
-                "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/city-ui-i01-r01-20261010/cleanup/i01/implementation.json",
-                "sha256": "f0eecac4dbb3d7bd580d9736ab1fa893aade80fe26e51dda2dd2c2788b16ff4f",
-                "actionsEvidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/city-ui-i01-r01-20261010/cleanup/i01/actions.json",
-                "actionsSha256": "4604f9c9a750725f771a52115cde2125b0e85110b0941a82d2f97270d74a68d9",
-                "protectedFilesVerifiedBeforeAndAfter": 570,
-                "deletedFiles": 40,
-                "deletedBytes": 46215609,
-                "unlinkedOwnSymlinks": 1,
-                "removedEmptyDirectories": 18,
-                "dependencyPhysicalTargetUnchanged": true,
-                "borrowedGitObjectTargetUnchanged": true,
-                "originalDirtyFilesUnchanged": true,
-                "productChanged": false,
-                "formalCleanupReview": "PASS_actual_separate_CLEAN_R01",
-                "review": {
-                  "id": "CITY-UI-I01-R01-CLEAN-R01",
-                  "result": "PASS",
-                  "candidate": "9d2bb03646be8d9a23041a48204a217328ac1ad3",
-                  "reviewer": "Hex, separate review of own completed City-component review-copy cleanup",
-                  "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/city-ui-i01-r01-20261010/cleanup/r01/review.json",
-                  "sha256": "04c983f3feba961c20782ad504c7872028d788cbfb2b5d6d440aaa6f707842fc",
-                  "planSha256": "8e5f293a9528ec57445cb2fe9a7393e66fc09fa0114192e5ddaa00493f6b372a",
-                  "implementationSha256": "f0eecac4dbb3d7bd580d9736ab1fa893aade80fe26e51dda2dd2c2788b16ff4f",
-                  "protectedFilesVerified": 570,
-                  "frozenSourceBindingsVerified": 545,
-                  "deletedRegularFilesAbsent": 40,
-                  "ownDependencySymlinksAbsent": 1,
-                  "removedEmptyDirectoriesAbsent": 18,
-                  "unexpectedFilesOrSymlinks": 0,
-                  "borrowedPhysicalTargetsUnchanged": true,
-                  "originalDirtyFilesUnchanged": true,
-                  "foreignRawSpansUnchanged": true,
-                  "nativeCurrentRunLiteralUnchanged": true,
-                  "productChanged": false,
-                  "scope": "Own reviewer-artifact cleanup R01 only; independent product/host review remains separate."
-                }
-              },
-              "review": {
-                "id": "CITY-UI-I01-R01-CLEAN-R01",
-                "result": "PASS",
-                "candidate": "9d2bb03646be8d9a23041a48204a217328ac1ad3",
-                "reviewer": "Hex, separate review of own completed City-component review-copy cleanup",
-                "evidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/city-ui-i01-r01-20261010/cleanup/r01/review.json",
-                "sha256": "04c983f3feba961c20782ad504c7872028d788cbfb2b5d6d440aaa6f707842fc",
-                "planSha256": "8e5f293a9528ec57445cb2fe9a7393e66fc09fa0114192e5ddaa00493f6b372a",
-                "implementationSha256": "f0eecac4dbb3d7bd580d9736ab1fa893aade80fe26e51dda2dd2c2788b16ff4f",
-                "protectedFilesVerified": 570,
-                "frozenSourceBindingsVerified": 545,
-                "deletedRegularFilesAbsent": 40,
-                "ownDependencySymlinksAbsent": 1,
-                "removedEmptyDirectoriesAbsent": 18,
-                "unexpectedFilesOrSymlinks": 0,
-                "borrowedPhysicalTargetsUnchanged": true,
-                "originalDirtyFilesUnchanged": true,
-                "foreignRawSpansUnchanged": true,
-                "nativeCurrentRunLiteralUnchanged": true,
-                "productChanged": false,
-                "scope": "Own reviewer-artifact cleanup R01 only; independent product/host review remains separate."
-              }
-            },
             "limits": [
               "Isolated component/DOM review; no real native Atlas host mounting or physical input receipt",
               "build.mjs/package.json hookup remains agreed Hex integration work",
@@ -153719,17 +153603,6 @@
           "closedFindings": [
             "RUNTIME-I01b-R01-01"
           ],
-          "reviewerCleanup": {
-            "state": "PASS_separate_reviewer_cleanup_P_I_R",
-            "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6094957819",
-            "actualEvidence": "/home/aaron/.cache/dungeon-native-qa/city-plans/runtime-i01b-r02-20261010/cleanup-review.json",
-            "sha256": "4f3df0324a6b1b7a82ad399bc9ec9799617ab8467805fffc04765767928b7a3b",
-            "planSha256": "d6b01e6fab8a5bc5617567a8bfabff746ad266f460606bd464b33a5ecb6f6ee0",
-            "implementationSha256": "2d890c63e33618296f1bdb44d9e6d930acd8e8867bc76b452ac667ef0c4aa798",
-            "protectedFilesVerified": 551,
-            "deletedFilesAbsent": 41,
-            "readDirectly": true
-          },
           "limits": [
             "Actual controlled-port core review, no productive Host/provider receipt",
             "I01c visible integration and native/fresh-start check remain open",
@@ -153774,14 +153647,6 @@
             "freshProcess": false,
             "nativeManifestAuthorityAvailable": false,
             "reason": "Actual owner-confirmed Campaignmanifest fixture and qualified Manifest Save Participant absent; no productive substitute generated from DOM test authority."
-          },
-          "ownership": {
-            "campaignOwnerTask": "E2E-01-CAMPAIGN-MANIFEST-SAVE-I01",
-            "ack": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6095847669",
-            "fileBoundary": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6095908675",
-            "hexConfirmation": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6095914801",
-            "CampaignData": "Campaign-only Participant/validator and input/expected fixture, then independent Chronik code review/cleanup/exact handoff",
-            "Hex": "Only existing AtlasRepository/FileTransaction/Recovery/Host callsites, joint save-fresh integration and PR13 consumption after qualified handoff"
           },
           "independentReview": {
             "id": "CITY-HOST-R01",
@@ -153902,23 +153767,7 @@
             "evidenceHashesChecked": 16,
             "readDirectly": true,
             "nativeRan": false,
-            "fullE2E": false,
-            "reviewerCleanup": {
-              "state": "PASS_separate_reviewer_cleanup_P_I_R",
-              "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/7#issuecomment-6096263046",
-              "actualEvidence": "/home/aaron/.cache/dungeon-native-qa/city-plans/city-host-r02-20261010/cleanup/review.json",
-              "sha256": "7979540253befb77932a657215072a0c5a1182f57afe40fe889dcd001328ef1f",
-              "planSha256": "3d327f27c01044dd3c89ca0b1a94167c19087f3e7005489892729358dd8250ae",
-              "implementationSha256": "8ef9b7f0d0a0920099b6f6a82c11c743e1626ed691544df61ca973ded831816c",
-              "protectedFilesVerified": 1785,
-              "sourceInventoryExact": 1762,
-              "removedOwnGeneratedFiles": 26,
-              "removedOwnGeneratedBytes": 73450807,
-              "borrowedDependencyTargetRetained": true,
-              "originalReviewUnchanged": true,
-              "readDirectly": true,
-              "scope": "Reviewer cleanup only; no Hex cleanup or new product/native/full E2E approval"
-            }
+            "fullE2E": false
           },
           "nativeRan": false,
           "fullE2E": false,
@@ -153958,110 +153807,7 @@
           "evidenceHashesChecked": 16,
           "readDirectly": true,
           "nativeRan": false,
-          "fullE2E": false,
-          "reviewerCleanup": {
-            "state": "PASS_separate_reviewer_cleanup_P_I_R",
-            "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/7#issuecomment-6096263046",
-            "actualEvidence": "/home/aaron/.cache/dungeon-native-qa/city-plans/city-host-r02-20261010/cleanup/review.json",
-            "sha256": "7979540253befb77932a657215072a0c5a1182f57afe40fe889dcd001328ef1f",
-            "planSha256": "3d327f27c01044dd3c89ca0b1a94167c19087f3e7005489892729358dd8250ae",
-            "implementationSha256": "8ef9b7f0d0a0920099b6f6a82c11c743e1626ed691544df61ca973ded831816c",
-            "protectedFilesVerified": 1785,
-            "sourceInventoryExact": 1762,
-            "removedOwnGeneratedFiles": 26,
-            "removedOwnGeneratedBytes": 73450807,
-            "borrowedDependencyTargetRetained": true,
-            "originalReviewUnchanged": true,
-            "readDirectly": true,
-            "scope": "Reviewer cleanup only; no Hex cleanup or new product/native/full E2E approval"
-          }
-        },
-        "hostCleanup": {
-          "id": "E2E-01-SPACE-I01c-RUNTIME-CLEAN-P01",
-          "state": "PASS_own_host_cleanup_P_I_R_closed",
-          "startedAt": "2026-10-10T09:45:26.594211+00:00",
-          "finishedAt": "2026-10-10T09:52:14.547387+00:00",
-          "base": "4c35a7d6482bc5583e10bf9155ce65e55e438889",
-          "consumedShared": "aa4a0eeccfa9a3b41caab061b90526e12d47065d",
-          "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
-          "catalog": "ROADMAP-E2E-GATES-CANDIDATE.md:13",
-          "plan": "ROADMAP-E2E01-ATLAS-HOST-CLEANUP-PLAN.md",
-          "planSha256": "7b6560717f96dc994a9371f420d28eb94b5cce2dec12fa3e33200845b3136007",
-          "retainedEvidenceInventory": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-visible-host-cleanup-20261010/p01/retained-evidence-inventory.json",
-          "inventorySha256": "91c1ef87f8a1118f424e4a4796efe14f79e5c1fa83f4077496556fbe2f6194f6",
-          "protectedSourceBindings": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-visible-host-cleanup-20261010/p01/protected-source-bindings.json",
-          "sourceBindingsSha256": "b456dc4e9038ab7bf68e3b668376b06c53b96583e9cffb493d992f6370fc1cb6",
-          "protectedTrackedFiles": 561,
-          "protectedNativeFixtureFiles": 32,
-          "retainedFiles": 58,
-          "retainedBytes": 40985197,
-          "deleteFiles": [],
-          "removeDirectories": [],
-          "productChanged": false,
-          "nativeRan": false,
-          "freshProcessRan": false,
-          "fullE2E": false,
-          "historicalNativeCurrentRunLiteralRetained": true,
-          "qualifiedReview": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-visible-host-cleanup-20261010/p01/qualified-review-and-cleanup-receipt.json",
-          "qualifiedReviewSha256": "de527b98f1ad939b55a68630c0259e559c0efa434f06a4eb3db25527170610e2",
-          "validationEvidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-visible-host-cleanup-20261010/p01/plan-validation.json",
-          "implementation": {
-            "id": "E2E-01-SPACE-I01c-RUNTIME-CLEAN-I01",
-            "state": "PASS_retention_implemented_and_independently_reviewed",
-            "startedAt": "2026-10-10T09:56:56.734396+00:00",
-            "completedAt": "2026-10-10T09:59:48.633766+00:00",
-            "planCandidate": "c14fadeb3e40aeba5f94c2c2fede03bdc6c11f56",
-            "checkedIntegratedSource": "550d9486d272ee9b86bc54bba6c3aedb20ed59c4",
-            "plan": "ROADMAP-E2E01-ATLAS-HOST-CLEANUP-PLAN.md",
-            "planSha256": "7b6560717f96dc994a9371f420d28eb94b5cce2dec12fa3e33200845b3136007",
-            "inventorySha256": "91c1ef87f8a1118f424e4a4796efe14f79e5c1fa83f4077496556fbe2f6194f6",
-            "retainedFilesVerified": 58,
-            "retainedBytesVerified": 40985197,
-            "retainedFileSetExact": true,
-            "allRetainedHashesUnchanged": true,
-            "protectedPlannedTrackedBindings": 561,
-            "unchangedPlannedFilesOutsideMetadataAndQualifiedIncoming": 554,
-            "protectedAllFixtureFilesVerified": 39,
-            "reviewedNativeFixtureFiles": 32,
-            "currentSourceBindings": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-visible-host-cleanup-20261010/i01/protected-source-bindings.json",
-            "sourceBindingsSha256": "15064a034d083377a6f9cc06ee38cfbb5d093fdc1388ca9e5c42ef4dc9abc9ab",
-            "currentTrackedFileBindings": 562,
-            "originalDirtyFilesVerified": 3,
-            "originalCheckoutStatusAndDirtyBytesUnchanged": true,
-            "borrowedDependencyIdentityUnchanged": true,
-            "deleteFiles": [],
-            "removeDirectories": [],
-            "deletedFiles": 0,
-            "removedDirectories": 0,
-            "unlinkedDependencies": 0,
-            "ownProductChanged": false,
-            "qualifiedIncomingIntegration": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-visible-host-cleanup-20261010/i01/incoming-integration.json",
-            "qualifiedIncomingIntegrationSha256": "d7f80075dc7caff6d05be6bc2a5d1c013378801d08f492d8d98eb58559915365",
-            "nativeRan": false,
-            "freshProcessRan": false,
-            "fullE2E": false,
-            "retentionEvidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-visible-host-cleanup-20261010/i01/retention.json",
-            "retentionSha256": "4e607eae6ce92a96048070c24129e8d890ab9fc52fa9ea817ae081ba77931803",
-            "metadataValidation": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-visible-host-cleanup-20261010/i01/metadata-validation.json"
-          },
-          "independentReview": {
-            "id": "CITY-HOST-OWNER-CLEAN-R01",
-            "state": "PASS",
-            "candidate": "c85692f4cb0e1c17574d0eb6e62b0ffd018f595c",
-            "findings": [],
-            "actualEvidence": "/home/aaron/.cache/dungeon-native-qa/city-plans/city-host-owner-clean-r01-20261010/review.json",
-            "sha256": "9836e9d880b62dcbfd5e430238593bfa16b125d90475f6fd9b99b942cf164143",
-            "readDirectly": true,
-            "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/13#issuecomment-6096386247",
-            "gate": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6096386433",
-            "retainedFiles": 58,
-            "retainedBytes": 40985197,
-            "deletedFiles": 0,
-            "reviewerDisposableArtifacts": 0,
-            "reviewerCleanupRequired": false,
-            "nativeRan": false,
-            "fullE2E": false
-          }
+          "fullE2E": false
         },
         "campaignManifestSaveCore": {
           "id": "E2E-01-SPACE-I01c-RUNTIME-MANIFEST-I01",
@@ -154374,7 +154120,7 @@
           "originalReceiptSha256": "4ed1f2b2da15c5715498399a4c6c32369c6aaa36261a1382ebc5cdd359d34820",
           "repositoryEvidence": "docs/reference/atlas-host-h02/binding-r02.json",
           "artifactIndex": "docs/reference/atlas-host-h02/ARTIFACTS.json",
-          "sha256": "14fe2d520df171a635681f0de14cb2884e7a66d9f982d55249e7865e727a7653",
+          "sha256": "53b7c0b56c635b97ea8ef60644c01e206254e9bdc5a034c5e9df0ddc3f8a05c4",
           "checks": {
             "allOriginalArtifactsByteExact": 10,
             "nativeInputFilesByteExact": 16,
@@ -154387,7 +154133,7 @@
           "reviewerMainJsSha256": "a7f2db0b104804be4a14a10888ef34248a0310f2daedee6aa64009cd5143bae7",
           "mismatchResolved": false,
           "newNativeRun": false,
-          "independentReview": "Existing Chronik CHANGES_REQUIRED build binding; accessible R02 delivery awaits same reviewer comparison. No new review round.",
+          "independentReview": "CHANGES_REQUIRED build binding at this source; accessible R02 evidence delivered, build comparison unresolved.",
           "fullE2E": false,
           "externalEvidence": "/home/aaron/.cache/dungeon-native-qa/hex-03/runtime-manifest-host-aba-20261010/evidence-binding-r02/binding-r02.json"
         },
@@ -154458,13 +154204,6 @@
           "checkpoint": "checkpoint.hexAtlasExecution.latestPromotionExecution",
           "fullE2E": false
         },
-        "postPromotionOwnCleanup": {
-          "id": "HEX-E2E01-POST-PROMOTION-CLEAN-01",
-          "state": "own_cleanup_complete_retention_and_handoff_only",
-          "checkpoint": "checkpoint.hexAtlasExecution.latestPostPromotionCleanup",
-          "newNativeRun": false,
-          "nextIssue": 40
-        },
         "sharedLocationKeyHostProbe": {
           "id": "E2E-01-SHARED-LOCATION-KEY-H01",
           "state": "FAIL_actual_Save_new_Location_D01_pending",
@@ -154472,7 +154211,7 @@
           "sourceCommit": "b87a066e38f1a0000def253bf50e45ee4a5d604f",
           "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
           "evidence": "docs/reference/atlas-shared-location-h01/receipt.json",
-          "sha256": "0465f5a87d83b97ea91977fb1b7342b66ec1dafd5ee6741835c59e300a51df62",
+          "sha256": "98d23f859725451a1f24c56de1d629da6c779c58b9d6013936a6a729b9c9fba3",
           "finding": "SHARED-LOCATION-H01-SAVE-01",
           "freshProcessStarted": false,
           "productEdited": false,
@@ -154499,7 +154238,7 @@
           "nativeRepeated": false,
           "freshProcessStarted": false,
           "independentAcceptance": "pending actual repair/native/independent #40 acceptance; no product PASS",
-          "sha256": "7bde44397cd9e3b3a586a5e8fdf88d6c757145fb9cc0e0afdcfe357af27b4e01"
+          "sha256": "7f67a37b0cba454d9e7867a8842cd7062e330b7ebbda5a96646d97478ab39112"
         },
         "sharedLocationKeyRepair": {
           "id": "E2E-01-SHARED-LOCATION-KEY-R01",
@@ -154535,7 +154274,7 @@
           "sourcePlan": "ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md",
           "state": "targeted_noop_Save_repair_checks_pass_independent_review_native_pending",
           "evidence": "docs/reference/atlas-shared-location-r01/noop-repair.json",
-          "sha256": "ca29a6cb1da09bd7aa92e47dde3b227e1eac80aa65bfa933426a08e932bbf221",
+          "sha256": "b9167a00b214207a897b4019dbae5c1407e40603da67515d34ae23856c08378f",
           "sourceCommit": "bc98b720d742693025563df7f93282be9936eb62",
           "consumedShared": "11b40200bd0fa3a86de2a81c85ce62e4edb2afcd",
           "reviewInput": {
@@ -154640,7 +154379,7 @@
           "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
           "sourcePlan": "ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md",
           "evidence": "docs/reference/atlas-shared-location-h02/receipt.json",
-          "sha256": "c2d51b96541366f891bac661a09c5198e97151e7a5086ac953d3ab440e2e7dc2",
+          "sha256": "369647b69d7f46b4848e6be1347932fe15b28299616cd29d5e6398aff5955d7b",
           "sourceCommit": "4515088772b759cda2e19d249367699c9868c72c",
           "buildSha256": "76bb453acca65f260e2276a385da66c5039a643fa10681b9b7a20fc5209c1322",
           "fixtureVersion": "e2e01-spatial-v2",
@@ -154727,7 +154466,7 @@
           "fullE2E": false,
           "commonGateClosed": false,
           "evidence": "docs/reference/atlas-shared-location-h02/qualification.json",
-          "sha256": "f4cb31fe94abfe54a7a1160b39f8f1aa065624e5fd1c88ac0848303e8af34c13",
+          "sha256": "5cfeeffbfeb28a0b8575e2b60e953ada593a4055c59a1cf6442dbbc2a900c6a2",
           "originalReceiptSha256": "12856a4f351af562952cd50ce8616dae734f14b91fc8abbaabed6eab17ab94bf",
           "nativeRepeated": false
         },
@@ -154822,7 +154561,7 @@
             "visibleDungeonPlacementUI": false
           },
           "receipt": "docs/reference/atlas-detail-binding-d01/repair-n01.json",
-          "sha256": "cb57edf035bb7acb51d276e3d75e52e3cd57657cb9aab08ed407f3667ca3f7c7"
+          "sha256": "b94957c3d9a63afa6c9dd55750dc0eaca1b14d5ec6d41c103d3739e88d28163d"
         },
         "dungeonAtLocationI01": {
           "id": "E2E-01-HEX04-DUNGEON-AT-LOCATION-I01",
@@ -155794,7 +155533,7 @@
           "sourceCommit": "bca790c22bdab5f76a28d3f1d4699f1f464c1572",
           "qualifiedShared": "a4f20a553060ec84941b97cbb71bd105d5ca5a62",
           "receipt": "docs/reference/atlas-detail-binding-d01/inspector-zoom-geometry-d01.json",
-          "receiptSha256": "363ec8c96ad4f5e091ae27cb391a5bd94310077e97bf2263f631dea666e1e270",
+          "receiptSha256": "d319cec07de3c74a637921d13ca628a931f66c5c716fdbfa407b94e2e71c5fbd",
           "fixtureVersion": "e2e01-spatial-v2",
           "fixtureManifestSha256": "23735bb6c95107b7dec93ffa56ec66405a0f4fe0ec3822fc0476d90d2920188d",
           "finding": {
@@ -159003,16 +158742,6 @@
                   "bytes": 2424
                 },
                 {
-                  "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-discard-d02-20261011/slot-claim.md",
-                  "sha256": "daadf4f2cd082832158401f2ab4876814db876425152c3c949367c298d6df030",
-                  "bytes": 976
-                },
-                {
-                  "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-discard-d02-20261011/slot-return.md",
-                  "sha256": "e63eced516de726d82fad2f508ab8fb1c1b22c923c25b71cfec3bed6db575885",
-                  "bytes": 936
-                },
-                {
                   "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-discard-d02-20261011/evidence/1791707108125-atlas-spatial-reopen/discard-room-probe.json",
                   "sha256": "17f2897d78bcbc6d14e6fe8316b58f17da447b2677514dbeeaeb837abbeebdec",
                   "bytes": 34267
@@ -159128,16 +158857,6 @@
                   "bytes": 1595
                 },
                 {
-                  "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-discard-d02-n01-20261011/slot-claim.md",
-                  "sha256": "b3a381eb20739494f2e7cdb8c6f6605c72e1eb017ca2c254cb6d87d7980ba92c",
-                  "bytes": 1281
-                },
-                {
-                  "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-discard-d02-n01-20261011/slot-return.md",
-                  "sha256": "b158242e4132592c6470d91c1b60266e528ee9b4d13434cde1119d05da63838e",
-                  "bytes": 1091
-                },
-                {
                   "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-discard-d02-n01-20261011/evidence/1791707591763-atlas-spatial-reopen/discard-room-probe.json",
                   "sha256": "b9e9d06e0f75b4fdd345e1c8c389a5d051b2164ad6dd240c5872ad22f405d7e8",
                   "bytes": 39796
@@ -159248,16 +158967,6 @@
                   "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-discard-d02-n02-20261011/host.log",
                   "sha256": "da30a73f0d37096fa36c829b51da80bf292779b2600784491c3115d291a09faf",
                   "bytes": 636
-                },
-                {
-                  "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-discard-d02-n02-20261011/slot-claim.md",
-                  "sha256": "66d7a1e6244349b37607ec6b3211e143ea97e0291e0a9d41dcb1116723a85919",
-                  "bytes": 994
-                },
-                {
-                  "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-discard-d02-n02-20261011/slot-return.md",
-                  "sha256": "0bb0904872c53510f45778bd41ae5f1b08fd00c4f47b12829cec57410eb191a8",
-                  "bytes": 1370
                 },
                 {
                   "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-discard-d02-n02-20261011/evidence/1791707773596-atlas-spatial-reopen/discard-room-probe.json",
@@ -159688,16 +159397,6 @@
               "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-recovery-r03-20261011/runner-result.json",
               "sha256": "510f29d4322a5479928232892c093df42b7be5e8184aad3dce64b6512c739ca7",
               "bytes": 4876
-            },
-            {
-              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-recovery-r03-20261011/slot-claim.md",
-              "sha256": "25c2bac54475419d925d22cd38361a8c9df6835fc7eab4713fc9a724bcc8ec24",
-              "bytes": 1227
-            },
-            {
-              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-recovery-r03-20261011/slot-return.md",
-              "sha256": "a90b3b694cb49f697abae025af8331127c2470730a7d406df1ca185583cbf2ba",
-              "bytes": 1665
             }
           ],
           "publicationIncoming": {
@@ -159984,26 +159683,6 @@
               "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-copy-c01-20261011/copy-output-file-oracle.json",
               "sha256": "0f4ac4998317e87d06cb8e937d873eeab924b3946fb0e582dee12a221c9c95a4",
               "bytes": 13810
-            },
-            {
-              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-copy-c01-20261011/slot-claim-body.md",
-              "sha256": "07be94f3eab07d4c1135e95fb7c76f30b1a27f3be41fc24d083067f0ca831194",
-              "bytes": 1992
-            },
-            {
-              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-copy-c01-20261011/slot-claim-readback.json",
-              "sha256": "8b4ad86dd6f721109be4e19ea43c84bc65b7e48b6bacb5ef2a35e44d7ed676dd",
-              "bytes": 3701
-            },
-            {
-              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-copy-c01-20261011/slot-return-body.md",
-              "sha256": "a4460a34b9f8aa6a4626450ddb7daf44bdaab0f24509d2f759bfc52a8e6a66f5",
-              "bytes": 1522
-            },
-            {
-              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-copy-c01-20261011/slot-return-readback.json",
-              "sha256": "879dbbdbea795469eb8c26eb80a17a23b7c7631faea60ed6c825609ea7a6caae",
-              "bytes": 3229
             }
           ],
           "publicationIncoming": {
@@ -160430,8 +160109,8 @@
             "files": [
               {
                 "path": "docs/reference/atlas-detail-binding-d01/room-draft-copy-c02/README.md",
-                "sha256": "4524a121937fcb1a89766074a0028f214e215b368f2a4e08230131ac8d9bbc1b",
-                "bytes": 2853
+                "sha256": "21ab6308764025d108fd9bd9501392d28f0e762d39f5fd0c36f491e23709d6a8",
+                "bytes": 2688
               },
               {
                 "path": "docs/reference/atlas-detail-binding-d01/room-draft-copy-c02/build.json",
@@ -160505,16 +160184,6 @@
               "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-copy-c02-20261011/protected-inputs-before.json",
               "sha256": "1a3ce26f6b043833e917c9494e55d33e815f13c81a4cecd1da8bd3136fe9f412",
               "bytes": 6526
-            },
-            {
-              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-copy-c02-20261011/slot-claim-readback.json",
-              "sha256": "4ab5f07b0a3f803ea27ffd9778cb42bdb4be94d6983f86a284da480610ed42ec",
-              "bytes": 3599
-            },
-            {
-              "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-copy-c02-20261011/slot-return-readback.json",
-              "sha256": "c434d31c66afdf82d7c22ab8a240c4e8fd709b48bbb7f7a2600090617bcd6a72",
-              "bytes": 3013
             },
             {
               "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/room-draft-copy-c02-20261011/consumed-independent-review.json",
@@ -160748,8 +160417,8 @@
             "files": [
               {
                 "path": "docs/reference/atlas-detail-binding-d01/room-draft-copy-c03/README.md",
-                "sha256": "71b1a8b1953ad80f93140377beafa8731192609980157cfbf0deee63f9f5bcf2",
-                "bytes": 4323
+                "sha256": "4e6fb793d3fcee9dab07e882284223ed5efc801e0aafd5fe6d525d5e7866e2ac",
+                "bytes": 4302
               },
               {
                 "path": "docs/reference/atlas-detail-binding-d01/room-draft-copy-c03/copy-after-normal-quit.json",
@@ -162820,17 +162489,6 @@
           "closedFindings": [
             "RUNTIME-I01b-R01-01"
           ],
-          "reviewerCleanup": {
-            "state": "PASS_separate_reviewer_cleanup_P_I_R",
-            "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/12#issuecomment-6094957819",
-            "actualEvidence": "/home/aaron/.cache/dungeon-native-qa/city-plans/runtime-i01b-r02-20261010/cleanup-review.json",
-            "sha256": "4f3df0324a6b1b7a82ad399bc9ec9799617ab8467805fffc04765767928b7a3b",
-            "planSha256": "d6b01e6fab8a5bc5617567a8bfabff746ad266f460606bd464b33a5ecb6f6ee0",
-            "implementationSha256": "2d890c63e33618296f1bdb44d9e6d930acd8e8867bc76b452ac667ef0c4aa798",
-            "protectedFilesVerified": 551,
-            "deletedFilesAbsent": 41,
-            "readDirectly": true
-          },
           "limits": [
             "Actual controlled-port core review, no productive Host/provider receipt",
             "I01c visible integration and native/fresh-start check remain open",

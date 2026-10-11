@@ -48,7 +48,7 @@ Portable Originale und Erhaltungsorakel:
 - [Aufruf/Identität](invocation.json), [ausgeführter C03-Helper](copy-room-c03-probe.cjs), [reiner QA-Preload](copy-room-c03-preload.cjs)
 
 Synthetische sichtbare Eingabe, setup ordinary file open und nachträgliche readonly
-Orakel sind getrennt. Dies ist eine gezielte Producerprobe; freie GM-Belege bleiben
-bei ihren echten Reviewern. Physische/IME/Meta-Eingabe, unterbrochene Save-/Copyjournale,
+Orakel sind getrennt. Dies ist eine gezielte Producerprobe; freie GM-Nutzung bleibt offen.
+Physische/IME/Meta-Eingabe, unterbrochene Save-/Copyjournale,
 Hardcrash, Kamera-/Historyrestauration nach Fresh, Originalparität, Großkarten,
 Nutzervaultinstallation und gemeinsames Gesamt-E2E sind hier nicht qualifiziert.

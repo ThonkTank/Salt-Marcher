@@ -98,6 +98,5 @@
     "independentReview": "pending Campaign/Data owner exact candidate review",
     "newPlacementIdentityAuthority": false,
     "visibleDungeonPlacementUI": false
-  },
-  "next": "Independent storage/reference-closure review of this concrete candidate; after acceptance/integration, add the still-missing visible Dungeon-at-Location action in a separate implementation run. No reopening of #40 or historical plan/codec rounds."
+  }
 }

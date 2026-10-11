@@ -85,9 +85,7 @@ Jedes Paket ergänzt nur additive, explizit versionierte JSON-Schemas und
 TypeScript-Port-/DTO-Typen unter `tools/adr-prototypes/contracts/**`. Eine
 Schemaänderung nach einem bestandenen Paket erzeugt eine neue Version und
 erzwingt die Wiederholung aller davon abhängigen Contract-Tests; stilles
-Überschreiben ist verboten. Die ausführbaren Adapter bleiben paketlokal und
-dürfen beim Aufräumen entfernt werden, die Verträge und Golden DTO Fixtures
-nicht.
+Überschreiben ist verboten. Verträge und Golden DTO Fixtures halten die geprüften Eingangsorakel fest.
 
 Nach P04 und vor jedem `Go zur bevorzugten Richtung` folgt ein eigener
 `ADR-C01`-Composition-Lauf. Er baut aus den erhaltenen Verträgen einen kleinen
@@ -114,7 +112,7 @@ plattformnativen absoluten
 `SMR_ADR_EVIDENCE_ROOT/<paket>/<receipt-id>/`. Fehlt dieser Root oder existiert
 die Receipt-ID bereits, startet der Lauf nicht. Ein kleiner gehashter
 Aggregatbeleg unter
-`tools/adr-prototypes/evidence/<paket>-aggregate.json` bindet nach Review alle
+`tools/adr-prototypes/evidence/<paket>-aggregate.json` bindet alle
 Pflichtreceipts und OS-Artefakthashes; `.build` ist keine dauerhafte Evidenz.
 Auf dem Repository-Linux-Host muss `SMR_ADR_EVIDENCE_ROOT` unter
 `/home/aaron/.cache/dungeon-native-qa/smr-adr-prototypes/` liegen; Windows und
@@ -162,10 +160,7 @@ Vergleich definieren.
 - Ein Backup zählt erst nach Wiederherstellung in einen dritten, leeren Root
   und Vergleich des semantischen Digests. Ein Export zählt erst, wenn die
   Quelle für den Importlauf nicht mehr erreichbar ist.
-- `No-Go` lässt den gemeinsamen Branch, das Obsidian-Plugin und alle
-  Nutzerdateien unverändert. Der Kandidatenbranch und seine Belege bleiben
-  nachvollziehbar; Prototypdaten werden erst nach Review gelöscht, Receipts
-  und minimale Fehlerbelege bleiben erhalten.
+- Ein fehlgeschlagener Prototyp verändert weder Produkt noch Nutzerdateien; Receipts und minimale Fehlerbelege halten den tatsächlich beobachteten Ausgang fest.
 
 ### Messregeln
 
@@ -818,9 +813,7 @@ Die Beweise bauen fachlich aufeinander auf:
 
 P02 benötigt die belegten P01-Eingangsorakel; P02 bleibt eine eigene atomare Write-/Recoveryprüfung.
 P04 benötigt P01- und P02-Digests als feste Eingangsorakel. C01 verwendet die
-geprüften P04-Ergebnisse und erhaltenen Vertragsartefakte. Der temporäre
-Composition-Harness kann entfernt werden; die Verträge bleiben erhalten. Ein
-späterer Prototyp darf kein früheres No-Go verdecken.
+geprüften P04-Ergebnisse und erhaltenen Vertragsartefakte. Ein späterer Prototyp darf kein früheres No-Go verdecken.
 
 ### Außerhalb P01-P04 verbleibende Ratifikationsblocker
 

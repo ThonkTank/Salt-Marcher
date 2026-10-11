@@ -4,8 +4,8 @@
   "files": [
     {
       "path": "binding-r02.json",
-      "bytes": 14386,
-      "sha256": "14fe2d520df171a635681f0de14cb2884e7a66d9f982d55249e7865e727a7653"
+      "bytes": 14476,
+      "sha256": "53b7c0b56c635b97ea8ef60644c01e206254e9bdc5a034c5e9df0ddc3f8a05c4"
     },
     {
       "path": "build-inputs.json",
@@ -139,8 +139,8 @@
     },
     {
       "path": "raw/native-aba-evidence.json",
-      "bytes": 19841,
-      "sha256": "4ed1f2b2da15c5715498399a4c6c32369c6aaa36261a1382ebc5cdd359d34820"
+      "bytes": 19570,
+      "sha256": "9b650cbec13d82705a253a541fb4addc087cb5f35b397411c1fb7e92819630ae"
     },
     {
       "path": "raw/native-input-bytes.json",
@@ -179,13 +179,13 @@
     },
     {
       "path": "H02-PROVENANCE.md",
-      "bytes": 4903,
-      "sha256": "80b28f6e1b58d6a5d7307d939bd7db2137f07480ed0f12c5360de18a485a42c4"
+      "bytes": 4504,
+      "sha256": "4d5fb0a6c6359d469178b80af9279e9581c17aebd13cc9a60d4b35d9f9f2e246"
     },
     {
       "path": "composition.json",
-      "bytes": 1532,
-      "sha256": "1e884ee5d45d8f78a4a9c26fd79a8b2298b6a2193fb15874c6f5dc5b3cea7c78"
+      "bytes": 1503,
+      "sha256": "8bb48eafc5d12e962c8ed2038109457e383b78377501f4afbf8a92b0c4fa109d"
     }
   ]
 }

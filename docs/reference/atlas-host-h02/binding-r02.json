@@ -7,7 +7,8 @@
   "historicalSource": "892e20d737c9e4868aa44b615f8da0f97d98fb39",
   "historicalReceipt": {
     "repositoryPath": "docs/reference/atlas-host-h02/raw/native-aba-evidence.json",
-    "sha256": "4ed1f2b2da15c5715498399a4c6c32369c6aaa36261a1382ebc5cdd359d34820"
+    "originalSha256": "4ed1f2b2da15c5715498399a4c6c32369c6aaa36261a1382ebc5cdd359d34820",
+    "sha256": "9b650cbec13d82705a253a541fb4addc087cb5f35b397411c1fb7e92819630ae"
   },
   "rawArtifactRemapping": [
     {

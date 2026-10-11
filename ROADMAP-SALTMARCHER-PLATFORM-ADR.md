@@ -82,39 +82,17 @@ Generatorlogik.
   Renderer-/Spielerprojektionen. Private GM-Daten dürfen einen passiven
   Spielerkanal nicht erreichen.
 
-## Beweisphase vor Ratifikation
+## Technische Nachweise
 
-### ADR-P01 – repräsentative Karte
+Ausführbare Verträge, Messprofile, Sicherheits- und Fehlerorakel stehen ausschließlich im [Prototypplan](ROADMAP-SALTMARCHER-ADR-PROTOTYPES.md).
 
-Eine vorhandene, große V4-Karte wird über einen hostneutralen Port in einem
-Desktop-Renderer geladen, geändert, rückgängig gemacht, gespeichert und nach
-Prozessneustart erneut geöffnet. IDs, Geometrie und History bleiben semantisch
-identisch; die vorhandenen Performancebudgets werden mindestens gehalten. Der
-bestehende imperative Karteneditor darf dazu unverändert als gekapselter
-Rendererbaustein eingebettet werden; ein React-Neubau ist kein Beweisziel.
-Ein zusätzlicher Grenztest belegt, dass der Renderer weder Node-/Dateisystem-
-noch Datenbankzugriff besitzt.
-
-### ADR-P02 – atomarer Kampagnenwrite
-
-Eine bestätigte Campaign-Mutation wird atomar persistiert und nach hartem
-Prozessabbruch exakt fortgesetzt. Ein unbestätigter Write darf weder als
-gespeichert erscheinen noch Teilfolgen hinterlassen. Backup und Recovery sind
-sichtbar prüfbar.
-
-### ADR-P03 – passives zweites Fenster
-
-Eine fokussierte Scene wird als ausdrücklich party-sichere Projektion in ein
-zweites Fenster übertragen. Der Kanal ist read-only; private Notizen,
-Mechanikdetails und nicht freigegebene Assets erreichen ihn technisch nicht.
-
-### ADR-P04 – geschlossener Datenroundtrip
-
-Current-Format-Kampagne, Karten, Dokumente und Assets werden als geschlossene
-Einheit exportiert, in einer frischen Umgebung importiert und nach Neustart
-semantisch identisch gelesen. Vertraglich als opaque/retained ausgewiesene
-Extension- und Capability-Daten bleiben erhalten; unbekannte Kernschemafelder
-werden fail-closed validiert und nicht pauschal akzeptiert.
+| Probe | Nachzuweisende Wirkung |
+| --- | --- |
+| ADR-P01 | Große vorhandene V4-Karte laden, ändern, Undo, Save und Neustart bei erhaltenen IDs/Geometrie/History und Performance; Renderer ohne Node-/Datei-/DB-Rechte. Bestehenden imperativen Editor wiederverwenden. |
+| ADR-P02 | Bestätigte Campaign-Mutation atomar speichern und nach hartem Abbruch fortsetzen; unbestätigte Writes hinterlassen keine Teilfolgen; Backup/Recovery prüfen. |
+| ADR-P03 | Read-only, party-sichere Scene in zweitem Fenster; private Notizen, Mechanikdetails und nicht freigegebene Assets bleiben unerreichbar. |
+| ADR-P04 | Geschlossener Current-Format-Roundtrip von Campaign, Karten, Dokumenten, Assets und opaque/retained Capability-Daten; unbekannte Kernschemafelder fail-closed validieren. |
+| ADR-C01 | Alle vier Verträge auf einer gemeinsamen Prozess-/Speichergrenze ausführen. |
 
 ## Ratifikationskriterien
 
@@ -122,22 +100,20 @@ werden fail-closed validiert und nicht pauschal akzeptiert.
   Performancegrenzen muss nachgewiesen sein; offene Fachabnahmen bleiben sichtbar.
 - Produktumfang, Plugin-Bestandsreuse und Migrationsfolge müssen anhand der
   Fachanforderungen und vorhandenen Implementierung geprüft sein.
-- Ein unabhängiger Architektur- und Technikreview bewertet die Bereichsrisiken
+- Technische Gegenprüfungen belegen die Bereichsrisiken
   einschließlich Sicherheit, Barrierefreiheit, Packaging und Datenlebenszyklus.
-- Pro Gerät läuft höchstens eine grafische Host-/Originalinstanz.
 - Die ersten vertikalen Abläufe bestehen Tastatur, 200 %, Screenreader/axe und
   die bestätigten kleinen Fenstergrößen.
 - Linux, Windows und macOS besitzen einen reproduzierbaren Build-/Smoke-Pfad,
   bevor Obsidian als Produktadapter entfernt wird.
-- Kein bestehender Fach-, Host-, Original-, Daten- oder Cleanup-Gate wird durch
-  den Architekturentscheid stillschweigend geschlossen.
+- Der Plattformnachweis ersetzt keine Fach-, Host-, Original- oder Datenabnahme.
 
 ## Migrationsfolge nach Ratifikation
 
 1. Hostabhängige Karten-, Katalog- und Encounter-Zustände hinter Ports lösen;
    Contract-Tests für alten Obsidian- und neuen lokalen Adapter aufbauen.
 2. Desktop-Shell und lokale Daten-/Asset-/Fenstergrenzen im Zielrepository
-   etablieren; keine zweite Produktroadmap eröffnen.
+   etablieren.
 3. Karten/Atlas und Katalog als erste vertikale Produktpfade gleichwertig
    qualifizieren.
 4. Campaign, World Planner, Party und Scene migrieren; anschließend Encounter,
@@ -146,7 +122,7 @@ werden fail-closed validiert und nicht pauschal akzeptiert.
 6. Obsidian-Adapter erst entfernen, wenn alle davon getragenen Abnahmen in der
    Zielshell bestanden sind und der Datenroundtrip belegt ist.
 
-## Offene Reviewfragen
+## Offene Architekturfragen
 
 - Welcher Teil der aktuellen Obsidian-Dokumentstruktur bleibt kanonische
   nutzerlesbare Wahrheit, welcher wird Projektion aus transaktionalen Daten?

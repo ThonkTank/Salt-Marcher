@@ -29,6 +29,16 @@ Dateien und historische Fixtures bleiben bytegleich. Campaign-/Registry-Eingaben
 werden später separat durch ihre tatsächlichen Owner geliefert. Bis dahin beweist
 ein kontrollierter Port im Kerntest ausschließlich Consumerverhalten.
 
+## Automatische Speicherung im normalen Bearbeitungsweg
+
+**Geplant für Work 1.** Nach einem erfolgreich übernommenen AtlasHistory-Befehl beziehungsweise einer gültigen Key-Übernahme wird automatisch gespeichert. Der Auftrag verwendet unmittelbar die bestehende Snapshot-/Journalqueue der geöffneten Repositoryinstanz; noch wartende Saveaufträge dürfen auf den jüngsten vollständigen Stand zusammengefasst werden. Navigation, Auswahl und laufende Geometrievorschau lösen keine Dokumentwrites aus.
+
+Während Save läuft, wartet weiterer bestätigter Zustand in derselben Queue. Ein abgeschlossener Save bestätigt nur seinen Snapshot; neuere Änderungen bleiben ungespeichert. Manueller Save fordert sofort den aktuellen gültigen Stand an. Orts-/Campaignwechsel und Schließen warten auf den bestehenden Flush-/Recoveryweg; späte Antworten dürfen den neuen Kontext nicht verändern. Ein nicht übernommener Text-/Geometrieentwurf folgt seinem bestehenden Erhaltungs-/Abbruchvertrag.
+
+Die Oberfläche zeigt „Speichert …“, „Gespeichert“ oder einen konkreten Fehler mit „Erneut versuchen“. Fehler erhalten offene Arbeit und den recoverbaren Entwurf; kein automatischer Wiederholungsloop überschreibt externe Änderungen oder einen unbekannten Journalausgang. Bei Wiederaufnahme wird der ursprüngliche Ausgang zuerst geklärt.
+
+**Abnahme:** Zehn schnelle Änderungen ergeben den letzten vollständigen Stand; eine Änderung während Save bleibt anschließend speicherpflichtig. Fehler und externer Konflikt erhalten Text, IDs, Kamera und History. Sofortiger Wechsel/Schließen sowie frischer Prozess zeigen denselben bestätigten Stand beziehungsweise den sichtbaren wiederherstellbaren Entwurf. Unvollständige/abgebrochene Gesten erzeugen weder Dokumentwrite noch Historyeintrag.
+
 ## Tatsächliche Anschlüsse und konkrete Lücken
 
 | Vorhandener Anschluss auf der Planbasis | Verwendung / noch notwendige Änderung |
@@ -331,7 +341,7 @@ kein Include in der grünen Basissuite.
 
 ## Gemeinsame räumliche Darstellung
 
-## Gemeinsame räumliche Darstellung — Nutzerablauf und historische Ausgangsbasis
+### Nutzerablauf und historische Ausgangsbasis
 
 Der gemeinsame sichtbare Nutzerablauf ist: Vorhandenen nativen Stadtplan am Ort und
 Dungeon am Haus verankern → allein hineinzoomen → Straße/Haus verschieben und
@@ -342,7 +352,7 @@ den gelieferten Stadtplan, nicht einen vorgezogenen Stadtgenerator.
 
 Der damalige Quellenanschluss prüfte AtlasRepository, CitySource und DungeonAtlasSource in derselben History und sieben bytegenau wiederhergestellte native Snapshots. Stadt war in diesem Ausgangslauf ein ausdrücklicher No-op. Die folgenden Anschlussanforderungen und Schnittkennungen dokumentieren diese historische Basis; der aktuelle Integrationsstand und verbleibende Host-/Recovery-/Importlücken stehen in [Arbeitsstand #80](#arbeitsstand-80).
 
-## Gemeinsame räumliche Darstellung — Gepinnte Eingänge und Anschlussgrenzen
+### Gepinnte Eingänge und Anschlussgrenzen
 
 | Vorhanden                                        | Folgerung für den Anschluss                                                                                                                                                                       |
 | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -358,7 +368,7 @@ Die neue vorgeschlagene Format-, Transform- und Speichergrenze steht ausschließ
 in [ARCHITECTURE.md](ARCHITECTURE.md#räumliche-atlasverträge).
 Die damaligen Schnittstellenvorschläge sind vom heutigen Quellstand zu unterscheiden; vorhandene APIs und Quellenanschlüsse werden weiterverwendet.
 
-## Gemeinsame räumliche Darstellung — Technische Anschlussanforderungen
+### Technische Anschlussanforderungen
 
 | Schnitt                                     | Konkretes Ergebnis                                                                                                                                                                                                         | Direkt erforderlicher Nachweis                                                                                                                                                                                                          |
 | ------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -366,7 +376,7 @@ Die damaligen Schnittstellenvorschläge sind vom heutigen Quellstand zu untersch
 | **I01b – unmittelbar sichtbarer Anschluss** | Citycontainer und erste native Dungeon-Raumzeichnung im vorhandenen Frame, Zoomdarstellung, Hitrouter, bestehende Stadtgesten und Source-basierter Raum-Key. Verankern nutzt denselben Atlas; keine Betreten-/Modusaktion. | Vor der nächsten Fachgruppe echte isolierte Obsidianprobe: vollständige sichtbare Folge aus dem ersten Absatz einschließlich Hausbewegung, Escape, gemeinsamen Undo/Redo, Save und einem neuen Prozess. Aktive Hosts schützen. |
 | **I01c – verbleibende Pflichtintegration**  | Dungeon-Geometrieaktionen über reine fachliche Changes, bestätigter Campaign/Vault-Context, persistierte Command-/Receiptgrenze und echte P02/P04-Importvariante; Katalogreferenzen aus tatsächlichen Ownerlieferungen.    | Exakte Reviewinputs und festes erweitertes Fixture; erst danach unabhängiger integrierter Code- und Hostreview anhand der [E2E-Kriterien](ROADMAP-E2E-GATES-CANDIDATE.md). Fehlende Ownerlieferung bleibt offen, nicht durch Platzhalter verdeckt.                                        |
 
-## Gemeinsame räumliche Darstellung — Sichtbarer Frame und Eingabe
+### Sichtbarer Frame und Eingabe
 
 - Source einmal je Dokument und History-Lebensdauer registrieren. Grafikcontainer
   dürfen unsichtbar werden oder freigegeben werden; Dirtyowner und Historywerte
@@ -400,7 +410,7 @@ Die damaligen Schnittstellenvorschläge sind vom heutigen Quellstand zu untersch
   Zwischenstufe benutzen. Nicht angebundene Gesten werden nicht als funktional
   ausgewiesen.
 
-## Gemeinsame räumliche Darstellung — Festes räumliches Orakel statt passend skalierter Bilder
+### Festes räumliches Orakel statt passend skalierter Bilder
 
 **Konkreter neuer Fixturebefund:** Haus A im gelieferten Cityseed ist 4 × 6 Meter.
 Der Dungeon-Torraum liegt von `(4,4)` bis `(14,12)` in Fünf-Fuß-Feldern, also
@@ -436,7 +446,7 @@ Dungeonfläche muss im Allgemeinen nicht im Haus liegen: Keller/Höhlen dürfen
 ausgreifen. Die Deckungsgleichheit ist ein gezieltes Orakel dieser Testkarte,
 keine universelle Größenbeschränkung.
 
-## Gemeinsame räumliche Darstellung — Passende Prüfungen, früh und getrennt
+### Passende Prüfungen, früh und getrennt
 
 1. **Relative Präzision:** Weltanker und Kameraanker `1e16`, `0,01 m/px`,
    Stadtpunkt `(0,01,0,01)` → genau `(1,1)` Pixel relativ zur Mitte und korrekt
@@ -471,11 +481,11 @@ Campaign-/Katalog-/P02/P04-Eingänge, keine positive LiveSession-Abhängigkeit.
 
 ## Dungeon-Geometrie und Vorschau
 
-## Dungeon-Geometrie und Vorschau — Aktueller Anschluss statt erneutem Phasenlauf
+### Aktueller Anschluss statt erneutem Phasenlauf
 
 Der Dungeon-Geometriebeitrag ist über PR13 auf `6a41f1640de3e4a4311d905d95f66cd79d91b698` integriert ([Integrationsbeleg](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/39#issuecomment-6100834444)). Der verbleibende Dungeon-am-Ort-/Recovery-Ablauf steht in [#80](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80). Geometrie verwendet denselben Atlas-/Saveweg; die folgenden Verträge beschreiben seine Grenzen.
 
-## Dungeon-Geometrie und Vorschau — Vertragsbegriffe
+### Vertragsbegriffe
 
 Diese Begriffe bezeichnen jeweils genau eine Ebene:
 
@@ -493,7 +503,7 @@ Die normativen Aussagen dieses Plans sind Scope, Eingaben, Ausgaben,
 Wirkungsverbote, Erhaltungsgrenzen und Gates. Bezeichner, TypeScript-Form,
 Dateizuschnitt und Sichtbarkeit richten sich nach dem tatsächlichen Source-/Framevertrag.
 
-## Dungeon-Geometrie und Vorschau — Enger Auftrag und Nichtziele
+### Enger Auftrag und Nichtziele
 
 Der erste Port bearbeitet ausschließlich einen Punkt der **äußeren Kontur**
 von Room31 auf Floor32. Er verwendet den vorhandenen nativen Dungeon-Snapshot,
@@ -509,7 +519,7 @@ Session, History oder Persistenzstrecke. Route33 bleibt ein semantischer
 Eingang und wird nicht als physische Tür umgedeutet. OBS-04/PR #21 bleibt
 unverändert.
 
-## Dungeon-Geometrie und Vorschau — Wiederverwendete Wahrheit
+### Wiederverwendete Wahrheit
 
 - `DungeonAtlasSource.read()` liefert aus der gemeinsamen `AtlasHistory` den
   kanonischen `.dungeon`-Bytewert, ein immutable `MapDocument` und die daraus
@@ -531,7 +541,7 @@ unverändert.
   danach genau einmal `AtlasHistory.execute()` für denselben vollständigen
   Befehl aufrufen.
 
-## Dungeon-Geometrie und Vorschau — Source- und Gesturevertrag
+### Source- und Gesturevertrag
 
 `src/features/dungeon/geometry-change.ts` liefert die integrierten Source-/Gestureverträge. Der Port exportiert keinen Executor und keine Speicherfunktion; alle Vorschauinformationen bleiben bis zum Handoff schreibfrei. Die Typen verwenden die tatsächlich gebundene `DungeonSpatialBasis`:
 
@@ -576,7 +586,7 @@ Ein Nullzug liefert kein Proposal. Ein erfolgreiches Proposal enthält genau
 den Byte-Snapshot, aus dem auch die Vorschau stammt. Es hat keine
 `execute`-, `undo`, `save`, `flush`-, Repository-, Vault- oder Dateimethode.
 
-## Dungeon-Geometrie und Vorschau — Rollen- und Wirkungsgrenzen
+### Rollen- und Wirkungsgrenzen
 
 | Rolle | Eingabe und Lebensdauer | Erlaubte Ausgabe | Verbotene Wirkung |
 | --- | --- | --- | --- |
@@ -590,7 +600,7 @@ den Byte-Snapshot, aus dem auch die Vorschau stammt. Es hat keine
 Diese Tabelle ordnet vorhandene Verantwortlichkeiten; sie führt keine zweite
 Source-, Transform-, History- oder Persistenzarchitektur ein.
 
-## Dungeon-Geometrie und Vorschau — Tatsächliche Gesturebasis und ChangedBasis
+### Tatsächliche Gesturebasis und ChangedBasis
 
 Der rein flüchtige `DungeonSpatialBasis`-Guard bindet jede Geste an ihre tatsächliche Basis. Der Guard wird bei Begin aus den **heute
 existierenden tatsächlichen Objekten und Records** gebildet und weder
@@ -641,7 +651,7 @@ anschließende beabsichtigte gemeinsame Execute keinen bereits übergebenen
 UI-Zustand reaktiviert. Es entsteht weder eine zweite Autorität noch ein
 zweiter Commit.
 
-## Dungeon-Geometrie und Vorschau — Gesture- und Vorschaulebensdauer
+### Gesture- und Vorschaulebensdauer
 
 1. Pointer-down im Select-Werkzeug trifft Room31 und zusätzlich einen
    expliziten äußeren Vertexgrip. Der Editor friert Owner/Floor/Room,
@@ -673,7 +683,7 @@ zweiter Commit.
    unverändert die bereits registrierten tatsächlichen Sources und den
    vorhandenen Repository-/FileTransaction-Weg.
 
-## Dungeon-Geometrie und Vorschau — Verbindliche Validierungsorakel
+### Verbindliche Validierungsorakel
 
 Die aktive Fixture `e2e01-spatial-v2` adressiert exakt:
 
@@ -722,7 +732,7 @@ Für I01 gelten alle folgenden Orakel:
    `RigidFrame` mit `1.524 m/Feld`. Verschieben des gebundenen Hauses ändert
    die starre Projektion, nicht die gespeicherte Dungeonkontur.
 
-### Dungeon-Geometrie und Vorschau — N01-Pflichtrepros für I01
+#### N01-Pflichtrepros für I01
 
 Jede Folge beginnt mit gültigem Room31/Floor32-Preview und endet mit exakten
 Zähler-, Byte- und Dateivergleichen:
@@ -750,7 +760,7 @@ Zähler-, Byte- und Dateivergleichen:
    `check`/einmalige-`execute`-Komposition und ein Undo/Redo-Schritt bleiben
    unverändert.
 
-## Dungeon-Geometrie und Vorschau — I01-Dateigrenze und Prüfplan
+### I01-Dateigrenze und Prüfplan
 
 Technische Modulgrenzen:
 

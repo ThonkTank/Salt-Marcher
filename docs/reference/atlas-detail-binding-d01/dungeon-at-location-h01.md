@@ -1,11 +1,11 @@
 # Dungeon am Ort: H01 und freier GM-Eingang
 
-Parent [#80](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80),
-Hex, E2E-01 Nutzerzeile 13, `E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001`.
+[#80](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80),
+E2E-01 Nutzerzeile 13, `E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001`.
 Der [quellgebundene H01-Beleg](dungeon-at-location-h01.json) bestätigt ausschließlich
 die native synthetische Producerprobe; freie GM-Nutzung und gemeinsames E2E bleiben offen.
 
-Weiterer quellgebundener Copy-Nachweis: [C02 mit unveränderten Rohbelegen und QA-Orakelfehler](room-draft-copy-c02/README.md). Der aktuelle Folgeauftrag bleibt am verlinkten Arbeitsstand von #80.
+Weiterer quellgebundener Copy-Nachweis: [C02 mit unveränderten Rohbelegen und QA-Orakelfehler](room-draft-copy-c02/README.md).
 [C03](room-draft-copy-c03/README.md) belegt nun sichtbares Copy/Abbrechen und den normalen Frischeinstieg derselben Kopie; C02 bleibt unverändert.
 [P01](room-copy-journal-p01/README.md) belegt tatsächliche prepared-Copy-Unterbrechung, sichtbare Rücknahme im frischen Prozess und erfolgreichen Copyretry.
 [Committed-Copy-C01](room-copy-committed-journal-c01/README.md) belegt tatsächlichen Journal-Cleanupfehler und sichtbare Wiederherstellung derselben sieben After-Dateien/23IDs im frischen Obsidian.
@@ -32,7 +32,7 @@ Die sieben `input`-Dateien und zusätzlich `campaign.input` an ihre jeweiligen
 `path`-Ziele in einen **neuen eigenen isolierten Testvault** kopieren; Byteanzahl
 und SHA-256 stehen im Manifest. Plugin-Build nach `.obsidian/plugins/dungeon-editor/`
 kopieren und dort ausschließlich `dungeon-editor` aktivieren. Bestehende eigene
-Cloud-Obsidianmontage verwenden, Nutzervault und fremde Geräte erhalten.
+Obsidianmontage verwenden; ausschließlich den isolierten Testvault ändern.
 
 Normaler Einstieg im Dateibaum des isolierten Vaults:
 `Atlanten/Gemeinsamer-Testatlas.overworld`. Die native Kampagne ist
@@ -49,7 +49,7 @@ Einen vorhandenen Dungeon an einem Ort verwenden, den zugehörigen Raum-Key
 bearbeiten und zum Atlas zurückkehren. Ortswechsel, Fehlerkorrektur und dauerhafte
 Wiederverwendung im normalen Produkteinstieg selbst erkunden. Keine vorbereitete
 Klickfolge. Auffindbarkeit, Kontext-/Texterhalt, Tastatur und passende Vergrößerung
-beobachten. Ergebnis oder konkreten Host-/Produktblocker an #80, Parent bleibt bei Hex.
+beobachten.
 Kein neuer Dungeon oder neue Placementidentität wird von diesem Anschluss erzeugt.
 
 ## Native Producerprobe reproduzieren
@@ -88,7 +88,7 @@ außerhalb des sichtbaren Scrollbereichs. Native Bytes, Fresh-Modellvergleich un
 DOM-Orakel bestätigen Texte, Bilder allein keine volle Prosa-/Feldsichtbarkeit.
 Keine neue unabhängige GUI-Ausführung; freie Cloud-GM-Nutzung bleibt offen.
 
-Nach frischer Slotkoordination dieselben isolierten Aufrufe wie oben mit zusätzlichem
+Dieselben isolierten Aufrufe wie oben mit zusätzlichem
 `--hex04-inspector-n02`; `--restart` verwendet denselben eigenen Testvault.
 Der neue Consumer prüft direkt Escape aus Orts-/Raumfeldern, invaliden Ortsdraft,
 „Zur Karte“, gecachte Rückkehr, gemeinsames Undo/Redo, Save und frischen Reopen.

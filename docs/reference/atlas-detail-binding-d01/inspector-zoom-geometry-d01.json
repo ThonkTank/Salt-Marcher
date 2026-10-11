@@ -453,8 +453,7 @@
       "helperFiles": {
         "geometry-probe.cjs": "315cad5f4780692d2bd98fe800da0add8728ba37d3eb0b70cdd686e90fea4b2c",
         "geometry-preload.cjs": "3a2403fbf6bf310e4afd50e456da3d0ddbbdc7fd0c91373093bea0adc299e3fa",
-        "invocation.json": "3a987cd4783b7403e1ad9e4c52b90064bc2e1b683d2dd24d0ef4374c178c0326",
-        "slot-claim.json": "24689eea4d4c0aebffe937917d1def19d8ebe5da1d2b8b3226c4c823ce2e91ef"
+        "invocation.json": "3a987cd4783b7403e1ad9e4c52b90064bc2e1b683d2dd24d0ef4374c178c0326"
       },
       "rawFiles": {
         "build.json": {
@@ -729,8 +728,7 @@
       "helperFiles": {
         "geometry-probe.cjs": "1534e642c4cf67d8896803635730b2b4b9091f4bc807e877e1cb7c5af9cba1a1",
         "geometry-preload.cjs": "3a2403fbf6bf310e4afd50e456da3d0ddbbdc7fd0c91373093bea0adc299e3fa",
-        "invocation.json": "88cede7e420f25bad33111734b79d4ae5d41c9e79d34352d0714a9058d4453d3",
-        "slot-claim.json": "f2c538d8e64c40f72bcc2cf3a6c4e772c6b95c90b53e405e314f3d48fb7cdac8"
+        "invocation.json": "88cede7e420f25bad33111734b79d4ae5d41c9e79d34352d0714a9058d4453d3"
       },
       "rawFiles": {
         "build.json": {

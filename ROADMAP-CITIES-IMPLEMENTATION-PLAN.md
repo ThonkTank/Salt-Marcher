@@ -4,7 +4,7 @@ Abschnitte: [Stand und offene Arbeit](#stand-und-offene-arbeit) · [Technische A
 
 Die [Atlasübersicht](ROADMAP-HEX-ATLAS.md#atlas-auf-einen-blick) zeigt den integrierten Stand und die offenen Kandidaten. Dieser Fachplan enthält technische Anforderungen und Pflichtfälle; seine ursprünglichen Statusangaben sind keine aktuelle Integrationsfreigabe. [Ergebnisgleichwertigkeit, KISS und Lieferstufen](ROADMAP-HEX-ATLAS.md#wie-kommen-wir-zum-ziel) bestimmen die Umsetzung; CITY-Nummern dienen der Fachzuordnung. Gemeinsame Werkzeuge und Panelaktionen stehen ausschließlich im [Atlas-Werkzeugkatalog](ROADMAP-HEX-ATLAS.md#werkzeuge-und-bediengefühl).
 
-**Nutzerpräzisierung vom 11.10.2026:** Die [konkreten Atlasabläufe](ROADMAP-HEX-ATLAS.md#konkrete-nutzerabläufe) und der [gemeinsame Gebäudevertrag](ROADMAP-CITIES.md#gebäude-und-innenräume-als-ein-objekt) bestimmen das Ziel für Außenform und Innenräume. Das Gebäude ist ein gemeinsam bearbeitetes Objekt: Wandänderung im ausgewählten Geschoss oder an übereinanderliegenden Abschnitten desselben Wandverlaufs und horizontale Gesamtskalierung aller Grundrisse sind verschiedene Aktionen. Höhen/Geschossabstände bleiben bei Gesamtskalierung erhalten; Verschieben/Drehen erhält Maße. [Werkzeugbedienung](ROADMAP-HEX-ATLAS.md#werkzeuge-und-bediengefühl) und [Wandumfang](ROADMAP-CITIES.md#wandumfang-und-horizontale-gesamtskalierung) beschreiben Gesten, Vorschau, Default und Rücknahme. Die folgenden City-v1-/Dungeonbindungs-Verträge beschreiben vorhandene Bausteine und ihre begrenzten Nachweise. Sie beweisen dieses erweiterte Ziel noch nicht; konkrete Speicherung, gemeinsame Befehle und Übernahme vorhandener Daten bleiben vor Umsetzung zu planen. Bestehende CTY-Kennungen und Abnahmezustände werden durch diese Dokumentation nicht neu vergeben oder geschlossen.
+**Nutzerpräzisierung vom 11.10.2026:** Die [konkreten Atlasabläufe](ROADMAP-HEX-ATLAS.md#konkrete-nutzerabläufe) und der [gemeinsame Gebäudevertrag](ROADMAP-CITIES.md#gebäude-und-innenräume-als-ein-objekt) bestimmen das Ziel für Außenform und Innenräume. Das Gebäude ist ein gemeinsam bearbeitetes Objekt: Wandänderung im ausgewählten Geschoss oder an übereinanderliegenden Abschnitten desselben Wandverlaufs und horizontale Gesamtskalierung aller Grundrisse sind verschiedene Aktionen. Höhen/Geschossabstände bleiben bei Gesamtskalierung erhalten; Verschieben/Drehen erhält Maße. [Werkzeugbedienung](ROADMAP-HEX-ATLAS.md#werkzeuge-und-bediengefühl) und [Wandumfang](ROADMAP-CITIES.md#wandumfang-und-horizontale-gesamtskalierung) beschreiben Gesten, Vorschau, Default und Rücknahme. Die folgenden City-v1-/Dungeonbindungs-Verträge beschreiben vorhandene Bausteine und ihre begrenzten Nachweise. Sie beweisen dieses erweiterte Ziel noch nicht; [Speicherung, gemeinsame Befehle und Datenübernahme](#gemeinsamer-gebäudezustand-erste-umsetzung) sind unten als nächster Ausbau konkretisiert. Bestehende CTY-Kennungen und Abnahmezustände werden durch diese Dokumentation nicht neu vergeben oder geschlossen.
 
 ## Stand und offene Arbeit
 
@@ -16,14 +16,14 @@ Planungsgrundlage: Shared `e157462ee1a4c2b82b0c927df664a8c06fc38cb1`, [Issue #44
 
 ### Offene Funktionen
 
-| Teilziel / vorhandene Quellkennung | Bestehendes Paket und Zielregel | Geplante Dokumentationsänderung und zukünftige Produktabnahme |
+| Teilziel / vorhandene Quellkennung | Bestehendes Paket und Zielregel | Produktabnahme |
 | --- | --- | --- |
-| Bewohner: `CO-FTG-0014`, ergänzend Demografie `CO-FTG-0004` und Massenbearbeitung `CO-FTG-0017` | CITY-06; Bewohner, Haushalt, Beruf sowie Wohn-/Arbeitsgebäude mit stabilen Referenzen. Explizite Änderungen und geschützte Regeneration, keine Erzeugung beim Öffnen. | CITY-06 in `ROADMAP-CITIES.md` und eigene Zuordnungstabelle in `docs/SCOPE.md` erweitern. Später zwei Bewohner anlegen/ändern, Haushalt und Arbeitsort wechseln, mehrere Namen mit Vorschau ändern; Cancel schreibt nichts, Apply ist ein gemeinsamer Befehl. IDs, geschützte Texte und Bindungen nach Regeneration, Undo/Redo und frischem Prozess prüfen. |
-| Beziehungen: `CO-FTG-0014`, Stammbaum `CO-FTG-0026` | CITY-06; Personenbindungen und navigierbarer Zusammenhang. Richtung, Beziehungstypen, reziproke Wirkung sowie Entfernen/Remap benötigen einen konkreten Fachvertrag; keine Typenliste aus Teilbeobachtung als vollständig ausgeben. | Beziehungen und Familienansicht ausdrücklich in CITY-06 nennen. Später Beziehung bearbeiten, von beiden Personen aus wiederfinden, Familienansicht navigieren und nach Neustart dieselben Kennungen prüfen; Änderung/Entfernung/Undo darf keine verwaisten Referenzen hinterlassen. |
-| Fraktionen: `CO-FTG-0007`, ergänzend Regierung/Wachen `CO-FTG-0005` | CITY-06; editierbare Fraktionsdaten und Zugehörigkeiten mit stabilen Personen-/Ortsbezügen. Allgemeine autonome Fraktionssimulation ist eine getrennte SaltMarcher-Frage; sie darf FTG-Funktionsumfang nicht streichen. | CITY-06 um Fraktionen ergänzen; konkrete Originalwirkungen sind noch offen. Später zwei Fraktionen anlegen, Zugehörigkeit ändern und gezielt suchen; Regeneration, Undo/Redo, Restart und vollständige Import-Referenzclosure prüfen. Umfang der Fraktionsattribute erst anhand vollständiger Inventur festlegen. |
-| Tagesabläufe: `CO-FTG-0018`, manueller Ruhetag `CO-FTG-0042` | CITY-07; Aufenthalts-/Aktivitätsanzeige aus stabilen Personen-, Wohn- und Arbeitsbezügen und gemeinsamer autoritativer Campaignzeit. Kein eigener Timer, keine zweite CitySceneClock. Kalender-/Overridepolitik und Zeitport bleiben im gemeinsamen Travel/Clock/Calendar-Vertrag zu entscheiden; [E2E-03](ROADMAP-E2E-GATES-CANDIDATE.md#e2e-03--reise--kalenderclock--weltreaktion) prüft dessen Verwendung. | CITY-07 und dessen Abnahme um Tagespläne ergänzen; die technische Tabellenzeile muss die gemeinsame Zeitquelle ausdrücklich nennen. Später Arbeits-/Ruhetag und manuellen Override bei gleicher Zeit sowie Tagesgrenze/großen Zeitsprung prüfen; Rücknahme und Restart rekonstruieren identische Aktivität, Retry erzeugt keine doppelte Zeitwirkung. Positive gemeinsame Zeitintegration gehört auch in E2E-03. |
+| Bewohner: `CO-FTG-0014`, ergänzend Demografie `CO-FTG-0004` und Massenbearbeitung `CO-FTG-0017` | CITY-06; Bewohner, Haushalt, Beruf sowie Wohn-/Arbeitsgebäude mit stabilen Referenzen. Explizite Änderungen und geschützte Regeneration, keine Erzeugung beim Öffnen. | zwei Bewohner anlegen/ändern, Haushalt und Arbeitsort wechseln, mehrere Namen mit Vorschau ändern; Cancel schreibt nichts, Apply ist ein gemeinsamer Befehl. IDs, geschützte Texte und Bindungen nach Regeneration, Undo/Redo und frischem Prozess prüfen. |
+| Beziehungen: `CO-FTG-0014`, Stammbaum `CO-FTG-0026` | CITY-06; Personenbindungen und navigierbarer Zusammenhang. Richtung, Beziehungstypen, reziproke Wirkung sowie Entfernen/Remap benötigen einen konkreten Fachvertrag; keine Typenliste aus Teilbeobachtung als vollständig ausgeben. | Beziehung bearbeiten, von beiden Personen aus wiederfinden, Familienansicht navigieren und nach Neustart dieselben Kennungen prüfen; Änderung/Entfernung/Undo darf keine verwaisten Referenzen hinterlassen. |
+| Fraktionen: `CO-FTG-0007`, ergänzend Regierung/Wachen `CO-FTG-0005` | CITY-06; editierbare Fraktionsdaten und Zugehörigkeiten mit stabilen Personen-/Ortsbezügen. Allgemeine autonome Fraktionssimulation ist eine getrennte SaltMarcher-Frage; sie darf FTG-Funktionsumfang nicht streichen. | zwei Fraktionen anlegen, Zugehörigkeit ändern und gezielt suchen; Regeneration, Undo/Redo, Restart und vollständige Import-Referenzclosure prüfen. Umfang der Fraktionsattribute erst anhand vollständiger Inventur festlegen. |
+| Tagesabläufe: `CO-FTG-0018`, manueller Ruhetag `CO-FTG-0042` | CITY-07; Aufenthalts-/Aktivitätsanzeige aus stabilen Personen-, Wohn- und Arbeitsbezügen und gemeinsamer autoritativer Campaignzeit. Kein eigener Timer, keine zweite CitySceneClock. Kalender-/Overridepolitik und Zeitport bleiben im gemeinsamen Travel/Clock/Calendar-Vertrag zu entscheiden; [E2E-03](ROADMAP-E2E-GATES-CANDIDATE.md#e2e-03--reise--kalenderclock--weltreaktion) prüft dessen Verwendung. | Arbeits-/Ruhetag und manuellen Override bei gleicher Zeit sowie Tagesgrenze/großen Zeitsprung prüfen; Rücknahme und Restart rekonstruieren identische Aktivität, Retry erzeugt keine doppelte Zeitwirkung. Positive gemeinsame Zeitintegration gehört auch in E2E-03. |
 
-Die jeweiligen exakten `sourceUrl`, beobachteten Zeiten, Originalbelege und `gap`-Felder bleiben ausschließlich im vorhandenen Inventar nachlesbar. Mehrere Originaleingaben dürfen derselben eigenen Funktion entsprechen; Aufgabenwirkung und Erhaltung der Daten bleiben unabhängig nachzuweisen. Die Quellkennungen werden in der Scope-Tabelle ausdrücklich referenziert; keine kopierte zweite Inventarliste und keine Änderungen an bestehenden Acceptancezuständen. CITY-00 besitzt weiterhin die vollständige Drei-Produkte-Inventur. CITY-08 berücksichtigt Ausgabe dieser Lebensdaten anhand der offenen Exportinventur; CITY-09 verlangt vollständige Funktion und gepaarte Aufgaben zur besseren Bedienung. E2E-01 ist kein Ersatz für diese späteren Fachabnahmen.
+Die jeweiligen exakten `sourceUrl`, beobachteten Zeiten, Originalbelege und `gap`-Felder bleiben ausschließlich im vorhandenen Inventar nachlesbar. Mehrere Originaleingaben dürfen derselben eigenen Funktion entsprechen; Aufgabenwirkung und Erhaltung der Daten bleiben unabhängig nachzuweisen. Die Quellkennungen werden in der Scope-Tabelle ausdrücklich referenziert; CITY-00 besitzt weiterhin die vollständige Drei-Produkte-Inventur. CITY-08 berücksichtigt Ausgabe dieser Lebensdaten anhand der offenen Exportinventur; CITY-09 verlangt vollständige Funktion und gepaarte Aufgaben zur besseren Bedienung. E2E-01 ist kein Ersatz für diese späteren Fachabnahmen.
 
 ## Technische Arbeitspakete
 
@@ -91,6 +91,18 @@ Originalentwurf Town(~4000): American-Stufe1 = Continue, Winkelwerte0/0, Segment
 
 CO-FTG-0022 umfasst Namensset-Referenzen pro Bewohnerart (12 sichtbare Sets, Mehrfachauswahl Generic+Old German belegt) sowie gespeicherte Generierungsvorgaben. CITY-02 speichert versionierte Vorgaben an der gemeinsamen Dokument-/Assetbibliothek; CITY-06 verwendet dieselben Referenzen deterministisch für Bewohnernamen. Kein Kopieren einer proprietären Namensdatenbank aus Originalinternas; konkrete kompatible Namenssammlungen und Bearbeitung/Import müssen vor Umsetzung geprüft werden. Gewichte der Arten und Stufenanteile sind getrennte Parameterarten; keine unbewiesene gemeinsame Prozentregel. Eigene Naming-Ausgabe, Import/Export und Gleichwertigkeit bleiben offen.
 
+## Gemeinsamer Gebäudezustand: erste Umsetzung
+
+**Geplant für Work 4b / CITY-03.** Ein ausgewähltes Gebäude wird aus `CityBuilding`, seiner vorhandenen `city-building`-Platzierung und dem zugehörigen nativen `.dungeon` als ein unveränderlicher Bearbeitungsstand gelesen. `.city` hält Namen, Außenkontur und Pose; `.dungeon` hält Geschosse, Wände, Räume, Dächer und Raum-Keys; `.overworld` hält die Verortung. Jede Information behält genau einen Speicherbesitzer. Auswahl, Vorschau und Befehle adressieren das Gebäude gemeinsam. Die vorhandene feste Umrechnung bleibt 1,524 Meter je Dungeonfeld.
+
+1. **Innenraum anlegen:** Haus wählen → „Innenraum anlegen“ → Grundrissvorschau aus der posierten Außenkontur → übernehmen. Ein gemeinsamer Auftrag erzeugt native Karte, erstes Geschoss/Raum und Placement und registriert neue Dateireferenzen über den autorisierten Campaignmanifest-Teilnehmer. Abbruch erzeugt keine Dateien; Dateinamens-/IDkonflikt übernimmt nichts. Keller und spätere Geschosse dürfen eigene Außenkonturen besitzen.
+2. **Vorhandenen Innenraum verwenden:** Der Anwender wählt ausdrücklich eine bestehende Karte und den vorhandenen Eingangs-/Geschossbezug. Vorschau zeigt Maßstab und Abweichungen. Bestehende Kennungen, Texte und Links bleiben erhalten; eine unpassende Kontur wird vor Übernahme gezielt korrigiert. Alle betroffenen Quellen müssen geladen und aktuell sein.
+3. **Wand im gewählten Geschoss ändern:** Der Zug hält Anfangsstand, Geschoss und Konturadresse. Vorschau berechnet die betroffene Wand sowie angrenzende Raumkonturen gemeinsam. Die Außenkontur der Stadtansicht folgt der oberirdischen Bezugsebene `surfaceFloorId`; Änderungen anderer Geschosse bleiben in deren nativer Geometrie. Topologie, Durchgangsanker und Room-IDs werden vor Apply zusammen geprüft. Mehrdeutige Nachbarschaft oder ungültige Geometrie erklärt die Vorschau und verhindert Apply.
+4. **Verschieben/Drehen:** Bestehende Hauspose und Parenttransform ändern; lokale Innenmaße und Keys bleiben erhalten. **Efficient:** Wandumfang umfasst nur ausdrücklich ausgewählte übereinanderliegende Abschnitte desselben Wandverlaufs. Gesamtskalierung wirkt vom bestätigten Gebäudeanker aus auf Außenform und alle horizontalen Geschossgeometrien einschließlich ihrer gebundenen Elemente; Höhe und vertikale Abstände bleiben erhalten.
+5. **Übernehmen und speichern:** Vollständige native Before-/Afterwerte aller betroffenen Dokumente bilden genau einen AtlasHistory-Befehl. Der bestehende Prospektivvalidator prüft die gesamte Referenzclosure vor Mutation; Save/Entwurf/Discard/Recovery laufen über AtlasRepository und dasselbe Journal. Cancel und stale Source ändern nichts; fehlender Childowner blockiert Apply. Generation behandelt Gebäude mit Innenräumen als geschützt.
+
+**Abnahme:** Zwei angrenzende Räume und zwei Geschosse an einem Haus. Wand im Erdgeschoss ändern, obere Kontur erhalten; danach getrennten Wandumfang und Gesamtskalierung prüfen. Verschieben/Drehen erhält Innenmaße. Jeden Auftrag gemeinsam rücknehmen/wiederholen, speichern und frisch öffnen; Namen, Room-/Floor-/Route-/Section-IDs, Texte und Links vergleichen. Ein Konflikt in `.city` oder `.dungeon` darf keine halbe Änderung hinterlassen. Erfordert eine fachliche Ergänzung neue native Felder, wird der betroffene Codec ausdrücklich versioniert; die erste gemeinsame Bearbeitung verwendet die vorhandenen Datenbesitzer.
+
 ## Stadtmodell und Codec
 
 Neue Dateien: `src/features/city/model.ts`, `src/features/city/codec.ts`, gezielte Tests unter `tests/core/city-codec.test.ts`. Nur ein Import im vorhandenen Testeinstieg; keine Hostregistrierung, keine Atlasänderung, keine eigene History oder Speicherpipeline.
@@ -105,9 +117,11 @@ Neue Dateien: `src/features/city/model.ts`, `src/features/city/codec.ts`, geziel
 | Grundstück | ID und Polygon, optional gültige Viertel-ID. |
 | Gebäude | ID, Name, lokaler Grundriss mit Außenring/Löchern, Position in Stadtmetern, endliche Drehung in Radiant, positive endliche Skalierung je Achse; optional gültige Grundstücks-ID. Elternplatzierung der gesamten Stadt bleibt im Atlas. Orts-/Dungeonbindungen werden nach dem tatsächlichen HEX-Vertrag ergänzt. |
 
+Sammlungen und Konturen müssen dichte native Arrays sein; Zusatzfelder, ausgelassene oder berechnete Einträge werden vor Serialisierung abgelehnt.
+
 Polygonringe sind implizit geschlossen, haben mindestens drei endliche Punkte und keine wiederholte Schließkopie. Vorhandene Polygon-Topologieprüfung aus `src/geometry.ts` verwenden; keine zweite Algorithmenkopie. Für die Prüfung den Polygonursprung abziehen, ohne gespeicherte Werte zu verändern. Der vorhandene Epsilonwert `1e-9` wird ausdrücklich in lokalen Meterkoordinaten getestet; numerisch nicht prüfbare/degenerierte Geometrie wird abgelehnt. Der Codec behauptet keine Straßen-/Gebäudekollisionsfreiheit oder fertige Netzplanung.
 
-## Stadtmodell und Codec — Umsetzung
+### Umsetzung
 
 1. `model.ts` liefert ausschließlich readonly Typen und eine Formatkonstante. Vorhandene Point-/Polygon-Typen wiederverwenden; Einheiten semantisch über den CityDocument-Vertrag festlegen.
 2. `codec.ts` liefert `newCityDocument`, `parseCityDocument` und `serializeCityDocument`. Eingaben vollständig prüfen und als eigene tief unveränderliche Daten zurückgeben. Keine fremde Eingabe mutieren/einfrieren; keine Generator-, Datei- oder Hostaktion.
@@ -115,7 +129,7 @@ Polygonringe sind implizit geschlossen, haben mindestens drei endliche Punkte un
 4. Grundstück-/Viertel-/Straßenreferenzen in einem zweiten Durchlauf nach ID-Erfassung prüfen. Gebäudepose auf numerisch gültige Ergebnisse prüfen; keine implizite Winkelnormalisierung oder Neugeneration.
 5. Codec-, Referenz- und Geometrieregressionen im bestehenden Testlauf prüfen.
 
-## Stadtmodell und Codec — Prüfanforderungen
+### Prüfanforderungen
 
 Nachweisen:
 
@@ -134,7 +148,9 @@ Nachweisen:
 - `src/geometry.ts`: `inside` wiederverwenden. Der vorhandene Abstand zur Strecke ist aktuell viermal in Dungeonhelfern eingebettet; keinen fünften Algorithmus in CITY kopieren. Einen punktbasierten `nearestSegmentPoint(point, a, b)` extrahieren und die bisherigen nearestBuildingSegment/nearestBoundary/nearestPath/nearestEdge darauf führen. Ergebnis Punkt, t und distance; Segment nuller Länge kontrolliert als Punkt behandeln. Rechnung normalisieren, damit lange Metersegmente nicht durch dx²+dy² überlaufen. Bestehende Dungeonadressen, contour/index/at, Gleichstandsreihenfolge und geschlossene Linien bleiben erhalten.
 - Tests: `tests/core/city-scene.test.ts` sowie gezielte gemeinsame Segmentregressionen im vorhandenen Geometrietesteinstieg; Testimporte erhalten. Kein Hosttest oder GUIzugriff in diesem Paket. Vollständige Dungeontests prüfen den gemeinsamen Helferumbau mit.
 
-## Stadtgeometrie und Treffer — Treffervertrag und Zeichenreihenfolge
+Codec und Szene verwenden denselben `cityBuildingOutline`-Helfer für lokale Hauspose. Der punktbasierte `nearestSegmentPoint` ist aus vier bestehenden Dungeonhelfern extrahiert; normalisierte Richtung verhindert den quadrierten Nennerüberlauf bei langen Strecken. Die ursprüngliche Residualarithmetik bleibt für die Dungeon-Gleichstandsfolge erhalten. 7525 gesicherte Vorher-/Nachhervergleiche behalten Adressen exakt, Zahlenfehler unter 4e-15. Außerhalb dieses Helferblocks ist die Dungeon-Geometriequelle bytegleich. Der native HEX-02-Regressionslauf prüft zusätzlich an einer eigenen assetfreien Dungeonkarte Kantenhover, Einfügen/Ziehen, einen Befehl, exaktes Undo/Redo, Raum-Key und Save sowie eine neue Kantenadresse nach frischem Prozess. Die proprietäre Texturmatrix bleibt mangels lokaler Original-Packdatei offen; dieser begrenzte Geometriefall schließt sie nicht. Dieser Geometrienachweis umfasst keine sichtbare Hostzeichnung, Pointerrouter oder räumliche Bindungen; deren integrierten Stand beschreibt der unten stehende E2E-01-SPACE-I01b-Anschluss.
+
+### Treffervertrag und Zeichenreihenfolge
 
 Die Szene sortiert ausschließlich nach festen Ebenen: Viertel, Grundstücke, Plätze, Straßen, Häuser. Innerhalb einer Ebene bleibt die Dokumentreihenfolge erhalten; die spätere Zeichnung benutzt genau diese Folge, die Trefferprüfung liest sie rückwärts. Ein später hinzugefügtes überlappendes Haus ist damit sichtbar oben und wird zuerst getroffen. Keine willkürliche Entfernungssortierung über verdeckte Flächen hinweg.
 
@@ -144,7 +160,7 @@ Polygoninnere trifft nur im Außenring außerhalb der Löcher. Randtreffer auf A
 
 CityHit enthält ausschließlich stabile Adresse plus bei Knotentreffer node-Kind. Keine mutable Entity, Kamera oder Kopie der aktuellen CitySource. Die Szene wird aus dem tatsächlichen History-/Vorschau-Snapshot neu abgeleitet; kein zweiter Stadtstand und keine eigene Revision. Unterdrücken, LOD und Sichtbarkeit werden erst mit dem Renderer festgelegt; Zoom löscht keine Auswahl oder Werkzeuge.
 
-## Stadtgeometrie und Treffer — Regressionen
+### Regressionen
 
 1. Reale Straße, Platz und zwei Häuser mit referenzierten Knoten: Shapes behalten IDs/Reihenfolge, Straßenendpunkte und Breite. Gemeinsamer Knotenedit verschiebt alle angeschlossenen Endpunkte, Hauspose transformiert Außenring und Löcher deckungsgleich mit Codecprüfung. Posewerte und Dokument bleiben unverändert.
 2. Gedrehtes/asymmetrisch skaliertes Haus: Innenpunkt, Außenpunkt, Außen-/Innenrand, Ecke und Innenhofmitte. Sehr kleine Kontur und große/negative Position. Ungültige oder kollabierte Pose wird wie im Codec abgelehnt; keine scheinbar gültige Szene aus unbekannten Feldern.
@@ -161,7 +177,7 @@ Die vorhandene History registriert jeden Owner einmal, lädt unveränderliche Au
 
 Die aktuelle API hat kein `unregister`. Deshalb erzeugt der aufrufende Besitzer genau eine CitySource je geladener Stadt und Historylebensdauer; weitere Verbraucher teilen diese Quelle. Erneutes Anlegen einer Quelle für denselben Owner ist ein Fehler und darf weder hydrieren noch laufende Änderungen ersetzen. Dieses Paket ergänzt keinen Registry-/Disposevertrag; dessen Hostlebensdauer wird bei HEX-05 integriert.
 
-## Stadtbefehle — Konkrete Umsetzung
+### Konkrete Umsetzung
 
 Nur `src/features/city/commands.ts`, `tests/core/city-commands.test.ts` und der bestehende Testimport werden ergänzt. Bestehende City-/Atlasdateien bleiben unverändert.
 
@@ -173,7 +189,7 @@ Nur `src/features/city/commands.ts`, `tests/core/city-commands.test.ts` und der 
 
 Die JSON-Konversion ist die eindeutige Brücke zwischen den typisierten Cityinterfaces und `AtlasValue`; kein Indexsignature-Cast direkt auf unbekannte Cityeingaben. Die gemeinsame History kopiert JSONwerte vor ihrer Ownerprüfung. Ein roh direkt eingereichter Atlasbefehl kann daher fremde Objektmetadaten schon vorher normalisieren; der Cityadapter garantiert die strikte Prüfung **an seiner Eingabegrenze**, ohne die gemeinsame History umzubauen.
 
-## Stadtbefehle — Bedeutungsvolle Regressionen
+### Bedeutungsvolle Regressionen
 
 - Laden erzeugt keinen Undo-/Dirtyeintrag; Lesen ist unveränderlich und verändert die Eingabe nicht. Ungültige Initialdaten lassen dieselbe ID anschließend gültig registrieren; doppelte Registrierung kollidiert.
 - Kleine reale City mit Straßenreferenzen und Hausgrundriss: Straße und Haus in einem Snapshot ändern; gemeinsames Undo/Redo stellt exakt Namen, IDs, Metergeometrie und kanonische Codecbytes wieder her. Der Adapter besitzt keine Undo-/Redomethoden.
@@ -183,11 +199,11 @@ Die JSON-Konversion ist die eindeutige Brücke zwischen den typisierten Cityinte
 - Gültiger City-No-op nach Undo erhält Redo; stale No-op wird abgelehnt. Falsches Target, fremde Dokument-ID oder `null` in einem direkt eingereichten normalen JSON-Change werden vom Owner abgelehnt.
 - Zwei CityOwner an derselben History bleiben unabhängig; Change/Undo der einen Stadt verändert die andere nicht. Owner-ID-Kollision mit dem echten TerrainSource wird kontrolliert abgelehnt.
 
-## Stadtbefehle — Modulgrenzen
+### Modulgrenzen
 
 ## Werkzeugentwurf
 
-## Werkzeugentwurf — Konkrete Draft-API
+### Konkrete Draft-API
 
 `CityDraft` besitzt folgende readonly Zustandszugriffe und Methoden:
 
@@ -206,7 +222,9 @@ CityDraftPreview enthält ausschließlich document und scene. Kein Pixiobjekt, C
 
 Die Prüfung, ob ein Draft noch bearbeitbar ist, erfolgt vor dem Update-try/catch; ein abgelehnter Aufruf auf applied/cancelled/failed darf diesen Zustand nicht in invalid umschreiben. preview=null entfernt nur das Draftoverlay: Der Renderer liest die **aktuelle** CitySource und zeichnet niemals automatisch before als zurückgeschriebenen Stadtstand. Terminale Draftreferenzen gibt der Router frei. Ein offener CityDraft besitzt genau einen temporären Subscriber an der vorhandenen AtlasHistory. Deren unveränderliches AtlasCommand-Ereignis macht jede Änderung am CityOwner sichtbar, auch bei verschachtelten Undo-/Redo-Benachrichtigungen. Apply löst den Subscriber vor dem eigenen Execute; Cancel und terminale Fehler lösen ihn ebenfalls. Timer und Pointercapture besitzt der Core weiterhin nicht; Cancel bleibt der Abschlussvertrag für einen verworfenen offenen Draft.
 
-## Werkzeugentwurf — Gestenvertrag für den späteren Router
+`AtlasHistory.notify` isoliert jetzt synchrone Subscriberfehler nach Commit und meldet sie separat; auch ein defekter Diagnosesink blockiert weder weitere Subscriber noch die Rückgabe von execute/undo/redo. Validierungs-/Stalekonflikte bleiben vor gemeinsamer Mutation werfend. subscribe reicht den bestehenden immutable AtlasCommand als zusätzliches Argument weiter; argumentlose Subscriber und die normale Benachrichtigungsreihenfolge bleiben kompatibel. Echte TerrainStroke.finish und CityDraft.apply mit werfendem Subscriber sind geprüft, ohne zweiten Commit.
+
+### Gestenvertrag für den späteren Router
 
 - Bei Beginn eine stabile Dokument-/Elementadresse und den CityDraft aufnehmen. Lokale Pointerwerte kommen aus dem bestätigten unproject-Vertrag. Bewegung, Drehung und Skalierung werden aus Anfangspose und aktueller lokaler Eingabe berechnet; wiederholte Pointerupdates addieren keinen Drift. CityEdit bleibt Besitzer der finalen Geometrieprüfung.
 - Straßen-/Hauszeichnung behält ihre rohen endlichen Punkte in einer abbrechbaren Routervorschau. Solange nicht ausdrücklich geschlossen/abgeschlossen, keine fertige Draftpreview und kein Apply. Ein gültiger Abschluss materialisiert einen Edit mit den am Zugbeginn reservierten callerbestimmten IDs. Erneutes Ändern der Rohkontur ruft clearPreview auf, damit ein alter Abschluss nicht versehentlich übernommen wird.
@@ -214,7 +232,7 @@ Die Prüfung, ob ein Draft noch bearbeitbar ist, erfolgt vor dem Update-try/catc
 - Ein History-Ereignis für den CityOwner während des Zugs setzt den Entwurf unmittelbar auf failed und entfernt die Vorschau sowie den Subscriber, auch wenn Undo/Redo danach denselben Dokumentstand wiederherstellt. SetEdits und Apply lehnen diesen Entwurf ab; Nutzer muss ausdrücklich einen neuen Zug beginnen. Andere Besitzer und Redo bleiben erhalten. Vollständige sichtbare Bedienung, Pointercapture und Routerereignisse sind nicht Teil dieser Coreabnahme.
 - Dokumentübergreifende Gesten brauchen weiterhin einen gemeinsam gebauten AtlasCommand. Dieser Draft gilt für genau einen CityOwner; Bindungsbewegung mehrerer Dokumente wird erst am echten HEX-05-Vertrag erweitert.
 
-## Werkzeugentwurf — Bedeutungsvolle Prüfungen
+### Bedeutungsvolle Prüfungen
 
 1. Neue Draftinstanz und mehrere vollständige Vorschauupdates erzeugen keine Historyeinträge, Benachrichtigungen oder Sourceänderungen. Anfangsstand unverändert; letzter Kandidat enthält nur den finalen Meterwert, keine kumulative Drift. Ergebnis und Szene tief gefroren, fremde Payloads bleiben ungefroren und nachträgliche Mutation wirkt nicht auf die Vorschau.
 2. Stadtstraße und Haus in einem Paket: ein Apply/Undo, exakte gemeinsame Wiederherstellung und Redo. Cancel vor Apply erhält alle Werte, Stack und Redo; Cancel nach Apply verändert nichts. No-op erhält vorhandenes Redo, wiederholter Apply erzeugt keinen zweiten Befehl.
@@ -225,7 +243,7 @@ Die Prüfung, ob ein Draft noch bearbeitbar ist, erfolgt vor dem Update-try/catc
 
 ## Stadtgesten
 
-## Stadtgesten — Öffentlicher Vertrag
+### Öffentlicher Vertrag
 
 `CityGestureTarget` ist eine readonly diskriminierte Zieladresse:
 
@@ -248,7 +266,7 @@ Owner muss exakt source.id entsprechen, Ziele müssen im **Gestenanfangsstand** 
 
 Zeichenaktionen bleiben vollständige `add-road`/`add-building`/`add-plaza`-Edits am vorhandenen CityDraft; rohe offene Konturen gehören zum Router und werden erst bei gültigem ausdrücklichem Abschluss materialisiert. Löschen benutzt vorhandene CityEdits und einen Draft. Diese Aktionen weder als vom Transformadapter implementiert ausgeben noch aus dem CITY-01-Umfang entfernen.
 
-## Stadtgesten — Geometrie und natürliche Griffe
+### Geometrie und natürliche Griffe
 
 Gemeinsame Punktpose als `CityBuildingPose = Pick<CityBuilding, position/rotationRadians/scale>`, `cityBuildingPoint(pose, buildingLocalPoint)` und `cityBuildingLocalPoint(pose, cityPoint)` aus vorhandenem Hausposecode ableiten. Vorwärts bleibt Scale→Rotate→Translate, inverse Translate→inverse Rotate→inverse Scale. Positive finite Achsenskalierung, finite Pose/Punkte und finite Resultate prüfen. `cityBuildingOutline` verwendet dieselbe Vorwärtsprimitive für Außenkontur und Löcher; Codec und Scene bleiben auf demselben Helfer. Bestehende Outline-Werte und Fehlergrenze erhalten, keine separate Poseformel in gestures.ts. Private Hilfsstruktur nur bei tatsächlichem Bedarf, keine Matrixbibliothek oder gespeicherter Atlastransform.
 
@@ -260,7 +278,7 @@ Hauspivot: Mitte des untransformierten Außenkontur-Bounds (Innenhöfe ändern s
 
 Sichtbarer Anschluss auf dem gemeinsamen Atlasfundament: Drehgriff und Eck-/Achsgriffe bleiben in Bildschirmpixeln bequem treffbar; der Router trifft nur sichtbare Griffe und liefert das zugehörige lokale Ziel. Zahlenfelder für Position/Winkel/Meterabmessungen verwenden dieselben validierten Endedits. Keine Pflicht für Modifier-Mausrad; bessere Bedienung muss später an gepaarten Aufgaben und realer Maus-/Touchpadbedienung geprüft werden.
 
-## Stadtgesten — Routerregeln und noch fehlende Integration
+### Routerregeln und noch fehlende Integration
 
 1. Pointer-Down trifft dargestellte CityScene/Griffe vor Hexhintergrund und bindet Source, Owner, Element und Werkzeug. Kein erneutes Hit-Testen auf jeder Bewegung, kein Zielwechsel beim Zoom.
 2. Jeder neue lokale Punkt stammt aus der **aktuellen** gemeinsamen inverse Projektionskette. Pan/Zoom verändern die Kamera, erhalten aber Adresse/Draft und Anfangspose. Keine zwischengespeicherte zweite Kamera oder Pixel-zu-Meter-Konstante im Adapter.
@@ -269,7 +287,7 @@ Sichtbarer Anschluss auf dem gemeinsamen Atlasfundament: Drehgriff und Eck-/Achs
 5. Nach Apply/Cancel Werkzeug und Auswahladresse erhalten; terminale Adapterreferenz freigeben. Gemeinsames Undo/Redo bleibt derselbe AtlasHistory-Stack. Geschlossene Adapter nehmen keine weiteren Updates an.
 6. Router-/Detail-Lifecycle, Sichtbarkeit/Hit-Toleranz, Capture/Focus, gemischte Owner, Parentplatzierung und Mehrdateispeicherung sind ausdrücklich echte Anschluss-/Hostarbeit. I06-Coretests behaupten dafür keine Abnahme.
 
-## Stadtgesten — Prüfanforderungen
+### Prüfanforderungen
 
 - Bestehenden Outlinehelfer samt Quellhash als externes Modul sichern und echte Konturwerte/Fallgrenzen vor/nach Extraktion vergleichen. Vorwärts/inverse Punktpose auf asymmetrischen, gedrehten/ungleich skalierten Häusern; Außenkontur und Hofwerte vor/nach Extraktion erhalten. Große/negative Meter, Millimetergrundriss, Überlauf und nichtendliche Werte kontrolliert. Nicht passende Dungeon-Posehelfer unverändert.
 - Hausbewegung aus innenliegendem Anfangspunkt ohne Sprung/Drift; mehrere Updates letzter absoluter Wert, keine Source-/Historymutation bis Apply, ein Undo/Redo. Fremde Payloadmutation unwirksam.
@@ -280,7 +298,7 @@ Sichtbarer Anschluss auf dem gemeinsamen Atlasfundament: Drehgriff und Eck-/Achs
 
 ## Straßen- und Hausaktionen
 
-## Straßen- und Hausaktionen — Dateien und öffentliche API
+### Dateien und öffentliche API
 
 Neue Datei `src/features/city/edit.ts`, gezielte Tests `tests/core/city-edit.test.ts` und ein Import im bestehenden Testeinstieg. Keine Erweiterung des Dateiformats, keine neue History oder Kopie der Topologieprüfung.
 
@@ -301,7 +319,7 @@ Neue Datei `src/features/city/edit.ts`, gezielte Tests `tests/core/city-edit.tes
 
 Erweiterte Bindungen und deren Schutzregeln werden nach ihrem tatsächlichen HEX-Vertrag ergänzt; das heutige Modell besitzt keine Dungeon-/Ortsbindung. Dieses Paket behauptet keine Abnahme von Löschen oder Bewegen gebundener Häuser.
 
-## Straßen- und Hausaktionen — Prüfung und Atomarität
+### Prüfung und Atomarität
 
 1. Den vollständigen Anfangsstand durch `serializeCityDocument` und `parseCityDocument` prüfen und kopieren **bevor** irgendein Feld ersetzt/entfernt wird. Ungültige Anfangsdaten dürfen nicht durch Löschen des fehlerhaften Elements bereinigt und dabei still verloren werden.
 2. Das Operationsarray muss eine dichte native Liste ohne Zusatzfelder, Getter oder Unterklasse sein. Jede Operation besitzt exakt die Felder ihres Tags und ausschließlich Daten-Descriptors; unbekannte Tags/Felder vor Zugriff ablehnen. Neue Daten werden unverändert in den Kandidaten aufgenommen und anschließend vom bestehenden Codec vollständig geprüft, keine verlustbringende JSON-Konversion ungeprüfter Payloads.
@@ -310,7 +328,7 @@ Erweiterte Bindungen und deren Schutzregeln werden nach ihrem tatsächlichen HEX
 5. Alle Edits sequenziell auf einem nur lokalen Kandidaten anwenden, dann **einmal abschließend** den gesamten Kandidaten codecvalidieren und kopieren. Keine Historymutation und kein Einfrieren fremder Eingaben. Ein Fehler an beliebiger Stelle liefert keinen Zwischenstand. Eine ausdrücklich geplante Knotenentfernung plus Kantenänderung ist im selben Paket erlaubt, wenn der Endzustand referenziell gültig ist; Referenzen nicht schon nach jeder Einzelaktion prüfen. Keine Kopie der Codec-Geometrie-/Referenzprüfungen.
 6. Endwerte aus Payloads und Anfangsstand dürfen mit dem Aufrufer keine mutable Referenz teilen. Leere Editliste liefert wertgleichen eigenen Stand. Keine neue ID, Sortierung, Winkelnormalisierung, Knotenverschmelzung oder automatische Hausregeneration. Straßen-/Hausüberlappung und automatische Netzplanung sind spätere Fachregeln, keine bereits belegte Leistung dieses Codecs.
 
-## Straßen- und Hausaktionen — Regressionen und Fachreview
+### Regressionen und Fachreview
 
 - T-Verzweigung: einen gemeinsamen Anschlussknoten bewegen, alle drei Kanten behalten seine ID und nutzen den neuen Punkt. Negative Meterpositionen und frei editierter Verlauf; IDs/Reihenfolge der unbeteiligten Elemente erhalten.
 - Straße mit callerbestimmten neuen Knoten ergänzen und mit vorhandener Straße verbinden. Breite/Verlauf/Anschluss ersetzen; ein gemeinsamer Historyeintrag, exaktes Undo/Redo der gesamten Stadt. Nullsegment, fehlender Anschluss und doppelte ID einschließlich Haus-/Straßenkollision abgelehnt.
@@ -324,7 +342,7 @@ Erweiterte Bindungen und deren Schutzregeln werden nach ihrem tatsächlichen HEX
 
 ## Stadtzeichnung
 
-## Stadtzeichnung — Renderer-Vertrag
+### Renderer-Vertrag
 
 Neue src/features/city/renderer.ts und tests/core/city-renderer.test.ts; nötiger Import im vorhandenen Testeingang. Keine Änderungen an Atlasdateien. CityRenderer besitzt einen Container mit Basis- und Auswahlgraphics, ausschließlich aus vorhandenem Pixi 8.22.0. Keine Application, DOM-Ansicht, Kamera, History, persistente Placementkopie, Subscription, Timer oder LiveScene/SceneClock.
 
@@ -338,19 +356,19 @@ Alle projizierten Punkte und abgeleiteten Differenzen müssen finit sein, Eingab
 
 Auswahl bleibt beim Atlas: fremder owner oder fehlendes Element bedeutet keine Hervorhebung. Keine Auswahlmutation. Passende Polygonkonturen erhalten stärkere Bildschirmumrandung; Löcher bleiben frei. Straßenauswahl markiert die editierbare Referenzlinie mit 2px, damit die vereinigten Kappen keine inneren Auswahlnahtlinien erhalten. Knoten nur bei showNodes:true als feste Bildschirmgriffe (Radius etwa 5px), stabile IDs und passende Auswahl. Der Atlas muss includeNodes bei Hitprüfung entsprechend Sichtbarkeit setzen. Via-, Dreh- und Achsgriffe sowie Pointercapture werden später mit dem Router angeschlossen; Knotendarstellung ist keine vollständige Werkzeugoberfläche.
 
-## Stadtzeichnung — Darstellungsplan und Kritik vor Code
+### Darstellungsplan und Kritik vor Code
 
 Kartografische Lesbarkeit im bestehenden Landschaftsraum: Straßen #D3D5CF, Plätze #98A6AD, Dächer #5B7287, Konturen #273C4A, Viertel #8CAFA1, Auswahl #E7B24E. Viertel/Grundstücke transparent, Dächer und Straßen deckend. Konturen etwa 1px, Auswahl etwa 2px; keine Mindesthausgröße, die Treffer und echte Kontur auseinanderzieht. Auswahl unterscheidet sich auch durch Linienstärke.
 
 Layout ist die bestehende Atlasfläche: Landschaft → Citybasis → Auswahl/Griffe. Keine eigenen Kartenrahmen, Panels oder Hintergrundfüllung. Typografie erbt für spätere Beschriftungen die vorhandene Obsidian-UI; dieser Beitrag zeichnet noch keinen Text. Innenhöfe zeigen wirklich Landschaft/Platz/Straße darunter. Ruhige kühle Bausteine und gezielte Auswahlfarbe dienen der Stadtbearbeitung. Die Kritik gegen den Auftrag verwirft dekorative Dachtexturen und eigene UI in diesem Paket; ihre spätere CITY-07-Abnahme bleibt erforderlich. Grafikgleichwertigkeit und bessere Bedienung sind erst mit echten Original-/Hostsequenzen belegt.
 
-## Stadtzeichnung — Prüfanforderungen
+### Prüfanforderungen
 
 I07: npm run check, npm test, npm run build plus gezielte Regressionen. R11 liest die Umsetzung gegen diesen Plan und prüft Gegenfälle unabhängig von der Produktionsberechnung. Pflichtfälle: echte GraphicsContext-Anweisungen in Scene-Reihenfolge; projizierte Konturen; mindestens zwei Löcher ohne Änderung vorheriger Füllung; Straßenbreite/-kappen unter affine Rotation und Achsenskalierung; feste Pixelgriffe; fremde/fehlende Auswahl; leere Scene und verwaiste Knoten; ungültige Projektion/werfernder Callback ohne stale Frame; wiederholtes draw/clear/destroy ohne eigene Ressourcenreste.
 
 Echte CityDraft-Vorschau/Cancel/Apply durch die Zeichnung führen und Source/AtlasHistory-/Terrainwerte auf Unverändertheit beim draw prüfen. Kontextanweisungen sind Kernnachweise, kein Pixel-/Hostbeweis. Spätere echte Pixi-/Obsidianzeichnung, Höfe über Landschaft, Zoom, Hauspose, Griffzug, Undo/Redo, Save und frischer Prozess ausschließlich im isolierten Testvault.
 
-## Stadtzeichnung — R11: numerischer Pflichtbefund
+### R11: numerischer Pflichtbefund
 
 CITY-RENDERER-R11-01: Eigene Modulgegenprobe akzeptiert eine gültige 0.01m-Straße bei lokalem X=10^16, caller project=(1000*(x-origin),1000*y). Erwartete 5px-Radiusachsen, tatsächlich (0,0)/(0,5). Addition des Radius an die große lokale Position rundet vor Projektion weg. Segmentnormaloffsets sind für entsprechend große lokale Achsen ebenfalls betroffen. Die aktuellen fünf Regressionen erfassen diesen Fall nicht. Beleg außerhalb Repo: r11-numeric-probe.json und eingefrorenes r11-module.cjs in city01-renderer-20261009. Kein Reviewpass.
 
@@ -362,7 +380,7 @@ R12 lokaler Abschluss:540unabhängigeaffineSollfälle/max3.638e-12px,4Mehrhofebe
 
 ## Atlasanschluss
 
-## Atlasanschluss — Umfang und Beleggrenze
+### Umfang und Beleggrenze
 
 CITY-00-I39 erstellt den konkreten Anschlussplan aus der aktuellen Quelle. Er ersetzt keine Produktimplementierung oder HEX-05-Abnahme. Maßgeblich bleiben [Stadt-Roadmap](ROADMAP-CITIES.md), [Gesamtplan](ROADMAP-CITIES-IMPLEMENTATION-PLAN.md), `acceptance.json.cityPlans` und [Architektur](ARCHITECTURE.md). Vollständige Parität aller drei Programme bleibt CITY-09-Pflicht.
 
@@ -370,7 +388,7 @@ Quellstand und Hashes der ursprünglichen Anschlusstabelle stehen im externen Au
 
 CITY-01 umfasst CTY-001.01, CTY-002.01 und CTY-002.02: native Stadt am gespeicherten Ort, Straße zeichnen/ziehen/ergänzen/rücknehmen, Häuser auswählen/verschieben/skalieren/drehen/entfernen, Platz und zwei Häuser. Kamera, Auswahl, Werkzeug und History bleiben beim Zoom erhalten. Stadtfläche darf wachsen; keine feste Leinwand begrenzt die Daten.
 
-## Atlasanschluss — Stadtanteil und ursprüngliche Modulverträge
+### Stadtanteil und ursprüngliche Modulverträge
 
 `src/features/city/model.ts` definiert ein versioniertes CityDocument mit stabiler Dokument-ID und lokalen Meterkoordinaten. Keine Pixel und keine zweite Kopie der Atlasplatzierung. Straßen besitzen Knoten und Kanten mit stabilen IDs, Endknotenreferenzen, editierbarem Verlauf und positiver Meterbreite. Plätze besitzen gültige Konturen; Gebäude besitzen lokale Kontur/Platzierung und stabile IDs. Vorgesehene Grundstücks-/Vierteldaten und optionale Orts-/Dungeonreferenzen dürfen spätere Generatorphasen erweitern; CITY-01 erzeugt keine Pflichtdatei für jedes namenlose Haus.
 
@@ -386,20 +404,20 @@ Die manuelle Hauskontur bleibt bis zum gültigen Schließen ein abbrechbarer Ent
 
 Hostintegration verwendet den gelieferten Atlas-Dokumentresolver und die registrierten gemeinsamen Befehle. „Stadt hier anlegen“ erzeugt CityDocument und Elternplatzierung als einen rücknehmbaren Auftrag. Save nutzt denselben konsistenten Snapshot beider Besitzer. Es gibt keine isolierte persistente Stadt-Kamera, keine eigene Undo-Liste und keinen Zoomschalter für Stadtwerkzeuge.
 
-## Atlasanschluss — Geometrie wiederverwenden, Einheiten prüfen
+### Geometrie wiederverwenden, Einheiten prüfen
 
 `src/geometry.ts` besitzt bereits die punktbasierten Helfer `rectangle`, `inside` und `overlaps`. CITY prüft sie zuerst auf dieselbe Meter-/Kontursemantik; eine weitere Kopie dieser Algorithmen ist nicht vorgesehen. `inside` besitzt keine ausdrückliche Behandlung von Randpunkten und `overlaps` prüft nur inklusive Bounding-Box-Überlappung. Sie allein beweisen keine gültige Straße-/Hauskollision oder Polygon-Topologie.
 
 `assertBuildingTopology` prüft zwar Konturen und Löcher, verwendet aber die feste Koordinatentoleranz `topologyEpsilon = 1e-9` und Building-spezifische Fehlermeldungen. Vor gemeinsamer Nutzung müssen Metermaßstab, Randfälle und sehr kleine/große Konturen geprüft und gegebenenfalls ein hostneutraler Kern mit expliziter Toleranz herausgezogen werden. `buildingEllipse` bemisst seine Segmentzahl anhand der Koordinatenspanne; Dungeon-Feldwerte dürfen nicht unverändert als Stadtmeter wirken. `moveEntity`, `hit`, Portalanker und `entityBounds` bleiben Dungeon-Adapter. Gemeinsame reine Geometrie wird bei Bedarf zusammen mit ihren Regressionen extrahiert; bestehende Dungeonwirkungen werden dabei erhalten. Kamera/Platzierungstransformationen stammen weiter ausschließlich aus dem gelieferten Atlasvertrag.
 
-## Atlasanschluss — Vollständiger Nutzerablauf
+### Vollständiger Nutzerablauf
 
 1. Vorhandene gemeinsame APIs und Modell-/Codec-/Befehls-, Gesten- und Rendererkerne verwenden. Region → Hex → Orts-Key → Dungeonraum/Key → zurück → Undo/Redo → Save → frischer Prozess und GM-UX-N-004 am realen Host prüfen.
 2. Stadt am gespeicherten Ort anlegen → Straße/Platz/zwei Häuser bearbeiten → gemeinsames Undo/Redo → Save → frischer Prozess. Fehlende Router-/Toolbaraktionen einschließlich Verschieben, Skalieren, Drehen und Entfernen ergänzen. Vorschau/Cancel, Topologie, stale Änderungen und Referenzschutz prüfen.
 3. Native Anlage/Dateiauflösung und Draft/Save/Recovery vervollständigen. Unterbrochene Anlage hinterlässt weder verwaiste Platzierung noch verlorene Datei. Externe Änderungen an World oder City sperren überholte Writes; Recovery überschreibt keine fremden Änderungen.
 4. Die drei CITY-01-Fälle und Datenhaltung im isolierten Host prüfen; Installation separat mit Sicherung und installiertem Build nachweisen.
 
-## Atlasanschluss — Konkrete Abnahmesequenzen
+### Konkrete Abnahmesequenzen
 
 | Pflicht | Sequenz / erwarteter Nachweis |
 |---|---|
@@ -413,7 +431,7 @@ Produktänderungen verlangen `npm run check`, `npm test`, `npm run build` und ge
 
 ## Integrationsanforderungen
 
-## Integrationsanforderungen — Konkrete Integrationsfolge
+### Konkrete Integrationsfolge
 
 1. HEX-03 liefert stabile Orts-/Weltplatzierung und deren gemeinsam journalisierte Speicherung; HEX-04/05 liefert die tatsächlich vereinbarte Welt-/Lokalabbildung und denselben Frame-/Pointerbesitz für Dungeon und Stadt. City erfindet keine zweite Placementdatenhaltung.
 2. Atlas hält CitySource und CityRenderer für die Lebensdauer des geladenen Stadtbesitzers. Quelle einmal in derselben History registrieren, Rendercontainer einmal an detailLayer hängen. Nie im Zeichenframe neu registrieren/hydrieren. Fremde oder kollidierende Kennung sichtbar ablehnen; vorhandene fachliche IDs nicht still umbenennen.
@@ -422,15 +440,15 @@ Produktänderungen verlangen `npm run check`, `npm test`, `npm run build` und ge
 5. Ein erfolgreicher Apply geht durch dieselbe History und bestehende Persistenzqueue. Die noch zu erweiternde gemeinsame Snapshot-/Entwurf-/Journalstrecke muss Stadtdatei und Platzierung zusammen erfassen, Konflikte vor Schreiben prüfen und frische Wiederherstellung ermöglichen. Kein lokaler Stadt-Autosave neben dem Atlasjournal. Undo/Redo und Discard erhalten Stadtbesitzer/Dateien genauso wie Terrain.
 6. Flush/Save/Sourcewechsel beenden ausstehende Gesten mit ausdrücklich vereinbarter Policy. Aktuell schließt Terrain bei pointercancel/blur via finishStroke ab; CityDraft.cancel schreibt nichts. Diese unterschiedlichen Regeln dürfen nicht unbemerkt vermischt werden. Danach Capture lösen, Vorschau/Quellenbindungen entfernen und CityRenderer vor dem übergeordneten Application-Destroy genau einmal freigeben. Späte Lade-/Speicherantworten dürfen den neuen Sourcezustand nicht verändern.
 
-## Integrationsanforderungen — Im HEX-04/05-Plan gemeinsam festzulegen
+### Im HEX-04/05-Plan gemeinsam festzulegen
 
 Platzierungsbesitz und validierte Transformation; Zeitpunkt des Detailzeichnens vor Render; Auswahl-/Trefferpriorität und meterbasierte Toleranz aus Bildschirmabstand; Lebensdauer geladener Owner; gemeinsame Gestenabschluss-/Cancelpolicy; vollständige City-/Placement-Snapshot-, Journal-, Discard- und Konfliktwiederherstellung. Es existiert derzeit kein zugesagter Frame-Subscriber/Cityhitrouter. Bei nicht gleichförmiger affiner Platzierung genügt ein einzelner lokaler Kreisradius nicht für exakte konstante Bildschirmtoleranz; dies muss am tatsächlichen Transformvertrag gelöst werden.
 
-## Integrationsanforderungen — Abnahmefolge nach Anschluss
+### Abnahmefolge nach Anschluss
 
 Native Stadt am Ort mit Straße, Platz und zwei Häusern anlegen; Straße/Knoten und Haus bewegen, drehen und skalieren; Cancel/No-op/Stale prüfen. Zwischen Stadt und Hex zoomen und bearbeiten, gemeinsame Undo/Redo-Folge, Save und frischer Prozess. Hausbindung und Dungeon-/Keyfolge anschließend in CITY-03. Viewportresize, große Weltposition, lokale Metergeometrie, Höfe und Breiten bleiben deckungsgleich. Unterbrochener Mehrdateisave, fremde Bytes und Sourcewechsel gehören zur Persistenzabnahme. Keine eigene zweite Editorinstanz; isolierte Testregion verwenden und aktive Hosts schützen. Lokale Unit-/Rendererprüfungen ersetzen diese Hostfolge nicht.
 
-## Integrationsanforderungen — Nachbesserung N01 aus R01
+### Nachbesserung N01 aus R01
 
 - **R01-01, relative Koordinatenkomposition:** Vorwärtszeichnung muss lokale Stadtmeter erst nach Bildung des kamera-/platzierungsrelativen großen Offsets addieren. Beim Pointerweg darf keine kleine Bildschirmverschiebung erst zu einer großen absoluten Weltkoordinate addiert und anschließend der Platzierungsanker abgezogen werden. Die konkrete gemeinsame Transformfunktion bleibt HEX-04/05-Besitz. Keine zweite Kamera, kein getrennt gespeichertes City-Weltkoordinatenmodell. Gegenprobe: Weltanker/Kameramitte1e16, .01m/Pixel, lokaler Punkt(.01,.01) muss1px Verschiebung ergeben und wieder in denselben lokalen Punkt umkehrbar sein. Rotation, Größenwechsel, große entfernte Platzierungen und unauflösbare Eingaben zusätzlich prüfen. Eine generische absolute worldToScreen-Komposition reicht dafür nicht.
 - **R01-02, gültige Placement-/Entwurfsstrecke:** `OverworldDocument.placements: never[]` und `parseOverworld` lehnen derzeit belegte Platzierungen ab. `AtlasDraft.sameWorld` lässt gegenüber der Basis nur Chunkänderungen zu. HEX-03/04 muss ein explizit validiertes neues natives Placement-/Entwurfsschema einschließlich Versionsentscheidung bereitstellen. Unbekannte Formate erhalten und sichtbar abweisen; keine stillen Felder anhängen. CITY speichert Stadt- und Placementänderungen erst über die gemeinsam erweiterte Snapshot-/Journalstrecke. Tests müssen Platzierungsanlage/-verschiebung, unterbrochenes Journal, Discard und frisches Laden tatsächlich abdecken.
@@ -447,7 +465,7 @@ Nicht verfügbare Ziele bleiben mit konkretem Grund erkennbar. Ein fehlerhafter
 Wechsel zeigt seinen Grund und lässt einen erneuten Versuch zu. Offene ungültige
 Keys behandelt der Host, bevor er eine Navigation bestätigt.
 
-## Ziele im Atlas-Dock — Technische Umsetzung
+### Technische Umsetzung
 
 `AtlasDetailEntry` und seine DOM-Prüfung sind die isolierte UI-Grenze; AtlasView/Editor/Renderer/Repository bleiben die gemeinsame Hostgrenze.
 
@@ -474,7 +492,7 @@ Retry. Nur die Antwort des noch gültigen UI-Auftrags verändert den Status.
 `destroy()` entfernt eigene Listener/Inhalte und widerruft alle noch laufenden
 UI-Antworten. Keine automatischen Wiederholungen.
 
-## Ziele im Atlas-Dock — Gestaltung und Bedienung
+### Gestaltung und Bedienung
 
 Bestehende Obsidian-Schrift, Themefarben und native Controls verwenden; keine
 zusätzliche Schrift, Palette, Animation oder zweite Seitenleiste. Der Host
@@ -492,7 +510,7 @@ Gestaltungsabgleich: ein eigener Kartenmodus oder dekorative Zielkarten würden
 den durchgehenden Atlasweg erschweren. Deshalb bleibt die vorhandene visuelle
 Hierarchie erhalten; die direkte Aktion am benannten Ziel trägt die neue Funktion.
 
-## Ziele im Atlas-Dock — Prüfbarkeit und noch offene Hostarbeit
+### Prüfbarkeit und noch offene Hostarbeit
 
 Der isolierte DOM-Test verwendet das vorhandene `linkedom` und echte DOM-Events:
 
@@ -525,7 +543,7 @@ Offen bleiben der native Fokusnachtest für direkten Save mit fokussiertem Namen
 
 ## Inspector und native Speicherung
 
-## Inspector und native Speicherung — Inspector- und Fachaktionsbelege
+### Inspector- und Fachaktionsbelege
 
 Zwei direkte Gegenproben FAIL vor/PASS nach Implementierung: exakte Namensänderung
 mit unveränderten übrigen Daten und Undo/Redo; ungültiger Name, fehlendes/fremdes
@@ -547,20 +565,38 @@ geprüft flushen; direkte Feldaktionen bleiben während der Sperre blockiert.
 Die Cacheidentität berücksichtigt den tatsächlichen CitySource. Explizites
 Verwerfen validiert die neue Basis, bevor der alte Entwurf abgelöst wird.
 
-## Inspector und native Speicherung — Verbleibende Umsetzung und Abnahme
+### Verbleibende Umsetzung und Abnahme
 
 Belegt sind die unten verlinkten begrenzten Hausnamen-, Apply/Discard-, Save- und Frischprozessfälle. Offen bleiben der native Fokusnachtest für direkten Save mit fokussiertem Namenfeld, native IME-Eingabe, physische Bedienung, breite Recovery und vollständige Stadt-/Originalparität. DOM-/Repository-/Modellreopen ersetzen diese Abnahmen nicht. Bestehende #80-H01-Belege bleiben in ihrem nachgewiesenen Umfang gültig.
 
-## Inspector und native Speicherung — Tatsächliche Hostprobe
+### Tatsächliche Hostprobe
 
 Der vorhandene isolierte Prüfer läuft über `node tools/host-test.cjs --city-building-name` und separat `--restart` (`tools/host/city-building-name.cjs`). H01 auf Produktstand `0315b13` prüft tatsächliche Hausauswahl, ungültigen Namen/Escape, exakten Unicode-/LF-/Tabtext, Undo/Redo, Rückkehr zur Karte, Save und einen frischen Prozess mit gespeicherten Hashes, Namensfeld, allen Citydaten und leerer History. Sechs fremde räumliche Dateien bleiben unverändert; die Campaignbytes werden erst in H02 zusätzlich geprüft.
 
 [H01-Receipt](docs/reference/city-building-name-h01/receipt.json) bindet Resultate, Buildtripel, Prozessnachweise, gespeicherte Baseline, Bilder und den ersten Fehlversuch mit SHA-256. Das sind synthetische Eingaben in tatsächlichen Obsidianprozessen; unabhängige GM-, physische-, breite Recovery- und Gesamtparitätsabnahme bleiben offen.
 
-## Inspector und native Speicherung — Direkter Save und City-Rollback (#92)
+### Direkter Save und City-Rollback (#92)
 
 Ein offener Hausname plus direkter Save scheiterte vor Publish mit „Native Atlas-Erfassung ist veraltet“: Namensübernahme und Save überlappten die Entwurfssicherung. Der Saveconsumer wartet nun nach Keyübernahme auf diese Sicherung und prüft den Context erneut. Queue, History und Persistenz werden wiederverwendet; kein automatischer Retry.
 
 Die DOM-/Vaultadapterregression scheiterte vor dem Fix und besteht danach: Ein Campaignmanifest-CAS-Fehler nach Citywrite rollt sämtliche ursprünglichen nativen Bytes zurück. Exakter Name, Geometrie, IDs und eine Historywirkung bleiben im selben Repository/Context für sichtbaren Retry erhalten. Der zweite Save erzeugt keine zusätzliche History; frisches Öffnen erhält die exakten Citybytes mit History0. Save-R03 ist auf PR98/6104396047 PASS und auf `73bfe22` integriert; S01-01 ist auf `0bebb85` integriert und geschlossen. Dieser direkte Saveweg erweitert H01 nicht rückwirkend.
 
 Der isolierte Hostprüfer verwendet `--city-building-name-rollback` und separat denselben Schalter mit `--restart`. [H02-Receipt](docs/reference/city-building-name-h02/receipt.json) belegt Edit2/Fresh1 PASS auf Prüfer-/Buildquelle `1afac1d`, Produktcode bytegleich `73bfe22`, sichtbaren Fehler/Retry, ganze City-/Campaignbaseline, unveränderte Fremdbytes, genau eine Historywirkung und erhaltene Kamera/Context. Beide Prozesse endeten normal mit Exit0; Faultinjektion wird auch bei Prüferfehler zurückgenommen. Freie GM-, physische und breite Recoveryabnahme bleiben offen.
+
+## Generation, Gestaltung und Ausgabe
+
+- Lokale Neugeneration schützt manuell bearbeitete Elemente, Gebäude mit Innenräumen, Keys oder Bindungen und deren Kennungen. Eine ausdrückliche einzelne Freigabe löscht selbst keine Inhalte; ein Ersatz darf keine Texte, Räume oder Referenzen stillschweigend verlieren. Nur neue Elemente erhalten neue Kennungen. Generationsvorgaben dürfen eine bestehende Karte nicht beim Öffnen verändern; Undo und Konfliktwiederherstellung erhalten zusammengehörige Geometrie und Keys.
+
+- Geplante CITY-04-Verformung ist ein Geometrieänderungsbefehl mit vollständigen Vorher-/Nachherwerten bestehender stabiler Elemente, getrennt vom Generatorersatz. Vorschau verändert keinen dauerhaften Zustand; Apply erzeugt einen gemeinsamen Atlas-History-Befehl, Cancel verwirft die Vorschau. Straßenknoten und angrenzende Konturen werden zusammen validiert. Personen, Ortsverweise, Keys und Kennungen bleiben erhalten. Geschützte Gebäude mit Innenräumen bleiben erhalten; eine ausdrücklich gewählte Gebäudegeometrieänderung folgt dem gemeinsamen Gebäudevertrag. Bisher separat gebundene Dungeonkarten werden nicht implizit durch ein Stadt-Verformungsfeld verzerrt. Save speichert Endgeometrie, ohne beim Laden die Operation zu wiederholen. I14 belegt nur Displace-Apply/Discard und visuelle lokale Neugeneration im Original; eigene Befehls-/Bindungs-/Hostabnahme offen.
+
+- Geplante Rollen aus I15: starre Gesamtdrehung nutzt die gemeinsame Stadtplatzierung mit ihrer Transformkette und Atlas-History; sie generiert keine lokale Geometrie neu. Lokale Konturverformung bleibt ein Geometriebefehl. Messung besitzt nur transiente Endpunkte/Overlay in gemeinsamen Meterkoordinaten, ohne Dokumentmutation, Dirty oder History; Anzeige folgt den gewählten Einheiten. I15 belegt sichtbare Teilwirkungen aller weiteren Originalwerkzeuge, eine Gesamtdrehung von Stadt/Fluss/Küste und die Anzeige96m. Exakte Formeln, Drehpunkt, Kalibrierung und eigene Bindungs-/Host-/Bedienabnahme bleiben offen.
+
+- Geplanter CITY-08-Export: PNG/JPEG, SVG und JSON lesen denselben unveränderlichen Szenen-/Dokumentstand. Weltmeter-Ausschnitt und Rasterauflösung sind von der Kamera getrennt. SVG führt Vektorpfade, Texte und nutzbare Stil-/Schriftressourcen; JSON führt explizite Schema-/Generatorversion, Koordinatenachsen/Einheiten, materialisierte Geometrie und stabile Element-/Bindungskennungen. Kein eigenes Exportmodell oder erneutes Generieren beim Ausgeben. I16 belegt drei empfangene Originaldateien und deren Struktur, PNG visuell; SVG-Sichtnachweis und eigene Format-/Host-/Bedienabnahmen bleiben offen.
+
+- Geplanter CITY-07-Gestaltungszustand: versionierte Vorgabe mit stabiler Kennung, semantischen Farbrollen für Papier, Linien, Dächer, Wasser, Grün, Straßen, Mauern, Bäume, Beschriftung und Elemente sowie getrennten Tönungs-/Verwitterungsparametern und Darstellungsflags. Datei und Bibliothek validieren denselben Zustand vollständig vor Anwendung; Parametereinheiten und Grenzen bleiben vor Umsetzung zu vermessen. Vorschau ist transient, Cancel erhält gespeicherte Werte; Apply ist ein gemeinsamer Atlasbefehl für Gestaltung ohne Geometrieersatz oder Regeneration. Geometrie, Kennungen, Keys, Personen und Hausbindungen bleiben erhalten; Renderer und Export lesen denselben Stand. I19 belegt Vivid-Apply, tatsächliche Farbschema-Datei und bytegleiche Geometrieausgaben; vollständiges Load/History/Neustart und eigene Implementierung bleiben offen.
+
+- Geplanter CITY-02-Vorgabenvertrag: stabile Vorgabenkennung, Name, Generatorversion und explizite Abschnittsmenge. Vollständige Validierung/Migration geht der Anwendung voraus; nur enthaltene Abschnitte werden atomar mit gemeinsamer History ersetzt, übrige Entwurfswerte bleiben erhalten. Datei und gemeinsame Bibliothek verwenden dieselbe kanonische Serialisierung. Fehlende Referenzen verhindern die Teilanwendung bis zur sichtbaren Auflösung. Cloud-Synchronisation ist noch zu vermessen. I13 belegt nur eine leere Load-Liste und einen nicht gefundenen Save-Zugang im temporären Originalformular; keine eigene API oder Original-Speicherwirkung.
+
+- Geplante CITY-02/CITY-05-Umgebung: Gewässerkontur, Breite und Ufer-/Bauabstand liegen in gemeinsamen Meterkoordinaten und bilden Ausschlussflächen für normale Straßen/Gebäude. Querungen sind explizite Übergangselemente mit stabiler Kennung und zwei Uferanschlüssen; Vorschau validiert ihren Straßenverbund. Regionale Gewässer behalten ihren Dokumentbesitz und werden durch Stadtgeneration nicht ersetzt. I37 belegt im Original Fluss-/Straßen-/Bebauungswirkung, aber keine exakte Übergangstopologie, Parametereinheiten oder eigene Implementierung.
+
+- Geplantes CITY-02/CITY-08-Generationsrezept: versionierter vollständiger Auftrag mit Generatorversion, getrennten Seed-/Größenvorgaben, Feature-/Anschlussstrategie, Siedlungsfläche, Umgebungsankern und Einheiten. Import validiert vor einem neuen Vorschauauftrag; kein Ausführen fremder URLs oder Netzwerkzugriff erforderlich. Reproduktion wird anhand materialisierter Geometrie geprüft. Die native Stadtdatei speichert erzeugte und manuell bearbeitete Geometrie/Keys/Bindings; normales Laden führt keine Generation aus. I35 belegt Small mit gleichzeitig neuem Seed und bytegleiche From-URL-Rückstellung im Original, keine Erhaltung manueller Bearbeitung oder eigene Implementierung.

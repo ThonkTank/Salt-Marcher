@@ -86,7 +86,6 @@
   "protectedOriginalUnchanged": true,
   "productEdited": false,
   "independentAcceptance": "pending; no PASS",
-  "next": "#40 Hex D01: diagnose actual Save/new-Location failure and hand off a targeted repair; GUI rerun requires a fresh slot",
   "limits": [
     "No Save success or fresh-process success",
     "No physical/original/large-world/user-vault-install/P02/P04/full-E2E claim"

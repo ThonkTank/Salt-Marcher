@@ -13,12 +13,12 @@
   "priorReceipts": [
     {
       "path": "docs/reference/atlas-shared-location-h01/receipt.json",
-      "sha256": "0465f5a87d83b97ea91977fb1b7342b66ec1dafd5ee6741835c59e300a51df62",
+      "sha256": "98d23f859725451a1f24c56de1d629da6c779c58b9d6013936a6a729b9c9fba3",
       "artifactsVerified": 25
     },
     {
       "path": "docs/reference/atlas-shared-location-d01/receipt.json",
-      "sha256": "7bde44397cd9e3b3a586a5e8fdf88d6c757145fb9cc0e0afdcfe357af27b4e01",
+      "sha256": "7f67a37b0cba454d9e7867a8842cd7062e330b7ebbda5a96646d97478ab39112",
       "artifactsVerified": 7
     },
     {
@@ -28,7 +28,7 @@
     },
     {
       "path": "docs/reference/atlas-shared-location-r01/noop-repair.json",
-      "sha256": "ca29a6cb1da09bd7aa92e47dde3b227e1eac80aa65bfa933426a08e932bbf221"
+      "sha256": "b9167a00b214207a897b4019dbae5c1407e40603da67515d34ae23856c08378f"
     }
   ],
   "originalH01RetainedDraftSha256": "101ac69851e8dd87e742c67eb3e1f62ecdde84e43bddea1f401fd3b63474c585",

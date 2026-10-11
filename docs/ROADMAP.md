@@ -9,7 +9,7 @@ Diese Datei führt die fachliche Lieferfolge. Der [Atlasstand](../ROADMAP-HEX-AT
 
 Der aktuelle E2E-01-Anschluss steht in #80 und #41. Frühere Atlas-/Wechselintegration: [#38](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/38) / [PR #13](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/13), unabhängiger Integrationsbeleg [#39](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/39).
 
-Der datierte Atlas-Funktionsstand steht in [Atlas auf einen Blick](../ROADMAP-HEX-ATLAS.md#atlas-auf-einen-blick); der [Umsetzungsplan](../ROADMAP-HEX-ATLAS.md#umsetzungsplan) führt die konkreten Codepakete und ihre Abschlussproben. Diese Produktroadmap führt weiterhin die gemeinsame Integration, keine zweite Atlaspriorisierung.
+Der datierte Atlas-Funktionsstand steht in [Atlas auf einen Blick](../ROADMAP-HEX-ATLAS.md#atlas-auf-einen-blick); der [Umsetzungsplan](../ROADMAP-HEX-ATLAS.md#umsetzungsplan) führt die konkreten Codepakete und ihre Abschlussproben.
 
 ## Lieferfolge des Gesamtprodukts
 

@@ -96,10 +96,8 @@
   },
   "nativeRun": false,
   "freshNativeProcess": false,
-  "guiSlotUsed": false,
   "independentRereview": "pending on published repair head",
   "fullE2E": false,
-  "next": "Existing Chronik reviewer resumes only the concrete R02 repair and remaining consumer/recovery checks on the new exact PR62 head; then a separately coordinated qualified native Save/fresh-process run.",
   "limits": "No selfreview, selfintegration, H01 replacement, user-vault install, physical-input/original-parity/large-map/CITY/E2E02-04/P02/P04/full-gate PASS.",
   "latestComposition": {
     "source": "f147794947ea49961df1bca8042593ce2dd87941",

@@ -7,7 +7,7 @@ Hex, E2E-01 Nutzerzeile13, PR157. Produktquelle
 Der [gezielte unabhängige N02-Review](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/157#issuecomment-6108108606)
 ist PASS; er enthält keinen eigenen nativen Copy-/Fresh-Nachweis.
 
-Nach neuer expliziter Laptop2-Koordination wurde genau ein sichtbarer Obsidianprozess
+Genau ein sichtbarer Obsidianprozess wurde
 mit einem neuen isolierten Abbild des tatsächlichen R03-Draftvaults gestartet.
 Ort/Raum-Key → Kartenmenü/Speichern unter → Abbrechen erhält den Zustand →
 Kopie speichern → Fit/Ctrl-Rad/Canvas-Raumklick erreicht die unabhängige Kopie
@@ -36,7 +36,6 @@ Portable Originale, unveränderte Bytes:
 
 Der einzige Prozess1791715037078 endet mit app.quit normal; kein forced PID,
 inactive/dead/MainPID0/ExecMainStatus0; alle gebundenen App-PIDs weg.
-[Explizite Slotrückgabe](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/11#issuecomment-6108158250).
 Synthetische sichtbare Eingaben, keine physische/GM-/Original-/Großkarten-/Nutzervault-
 oder Gesamt-E2E-Abnahme. Kanonischer Beleg:
 `acceptance.hexAtlas.requirements[30].dungeonAtLocationRoomDraftCopyC02`.

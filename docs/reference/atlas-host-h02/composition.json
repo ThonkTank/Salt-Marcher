@@ -28,7 +28,7 @@
   },
   "historicalR01H01H02AndSaveFreshRecoveryUnchanged": true,
   "newNativeRun": false,
-  "independentReview": "Existing Chronik review remains CHANGES_REQUIRED until accessible H02 and R02 are consumed and reviewer build hash comparison settled.",
+  "independentReview": "CHANGES_REQUIRED: accessible H02/R02 evidence delivered; build-hash comparison unresolved at this source.",
   "mismatchResolved": false,
   "fullE2E": false
 }

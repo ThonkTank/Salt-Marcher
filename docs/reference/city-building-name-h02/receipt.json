@@ -5,7 +5,7 @@
   "productDelta": "none; only helper and own metadata differ",
   "fixture": "tests/fixtures/atlas-e2e-spatial-v2/manifest.json",
   "fixtureSha256": "23735bb6c95107b7dec93ffa56ec66405a0f4fe0ec3822fc0476d90d2920188d",
-  "result": "Producer edit 2/2 and separate fresh process 1/1 PASS; both normal quit/exit, no forced PID, app services status 0; explicit GUI slot returned to Hex",
+  "result": "Producer edit 2/2 and separate fresh process 1/1 PASS; both normal quit/exit, no forced PID, app services status 0",
   "limits": "Synthetic visible input and controlled pre-manifest-CAS fault; bootstrap navigation through host API, actual GPU picking; no physical/independent GM/broad recovery/overall parity qualification",
   "artifacts": [
     {

@@ -4,13 +4,13 @@
   "files": [
     {
       "path": "SAVE-PROVENANCE.md",
-      "bytes": 6529,
-      "sha256": "d84f8cdc2a06c325d7cbc284ace1ef54109c9f6dcc32d6b0d24f88171cea0a47"
+      "bytes": 6261,
+      "sha256": "ba05affa8f07340873662c60421e60089998e1fc945c3d0f5ecd9c1a95b4a8a6"
     },
     {
       "path": "binding.json",
-      "bytes": 50004,
-      "sha256": "d77e2ceb2919be1e78291bdcd91b63cabe8e03efe7e11b6b9c39f5c1fccc9846"
+      "bytes": 49970,
+      "sha256": "119875d1be46ddece09081b44db02fbc46a74f8802776fc923d73ad970cc0f47"
     },
     {
       "path": "provenance/git-product-inputs.json",

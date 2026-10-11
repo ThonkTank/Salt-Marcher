@@ -15,7 +15,7 @@
   "consumedShared": "2a484df43bd2146217e0efb3986fd1971d8b55e1",
   "originalReceipt": {
     "path": "docs/reference/atlas-shared-location-h02/receipt.json",
-    "sha256": "c2d51b96541366f891bac661a09c5198e97151e7a5086ac953d3ab440e2e7dc2",
+    "sha256": "369647b69d7f46b4848e6be1347932fe15b28299616cd29d5e6398aff5955d7b",
     "artifactsVerified": 40,
     "unchanged": true
   },
@@ -62,11 +62,11 @@
   "priorReceipts": [
     {
       "path": "docs/reference/atlas-shared-location-h01/receipt.json",
-      "sha256": "0465f5a87d83b97ea91977fb1b7342b66ec1dafd5ee6741835c59e300a51df62"
+      "sha256": "98d23f859725451a1f24c56de1d629da6c779c58b9d6013936a6a729b9c9fba3"
     },
     {
       "path": "docs/reference/atlas-shared-location-d01/receipt.json",
-      "sha256": "7bde44397cd9e3b3a586a5e8fdf88d6c757145fb9cc0e0afdcfe357af27b4e01"
+      "sha256": "7f67a37b0cba454d9e7867a8842cd7062e330b7ebbda5a96646d97478ab39112"
     },
     {
       "path": "docs/reference/atlas-shared-location-r01/receipt.json",
@@ -74,7 +74,7 @@
     },
     {
       "path": "docs/reference/atlas-shared-location-r01/noop-repair.json",
-      "sha256": "ca29a6cb1da09bd7aa92e47dde3b227e1eac80aa65bfa933426a08e932bbf221"
+      "sha256": "b9167a00b214207a897b4019dbae5c1407e40603da67515d34ae23856c08378f"
     }
   ],
   "originalH01Status": "historical_FAIL_unchanged",

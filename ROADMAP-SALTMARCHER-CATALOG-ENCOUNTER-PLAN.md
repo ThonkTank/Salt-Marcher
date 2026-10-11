@@ -197,7 +197,7 @@ CE-01 besitzt komprimiertes Buildasset/Lazy Loader, Katalogview und Command-Foku
 
 ## Monsterkatalog
 
-## Monsterkatalog — Ausgangslage
+### Ausgangslage
 
 - CE-00 stellt einen geprüften, reinen Katalogkern mit 334 SRD-5.1-Kreaturen,
   Manifestbindung, unabhängigem Artefakthash, kombinierten Filtern, Sortierung,
@@ -220,7 +220,7 @@ CE-01 besitzt komprimiertes Buildasset/Lazy Loader, Katalogview und Command-Foku
   weder Abnahmebeleg noch Leistungsbaseline. CE-01-I01 ersetzt sie durch ein
   reproduzierbares Buildinventar; echte Start-/Ladezeit bleibt Hostabnahme.
 
-## Monsterkatalog — Verbindliche Entscheidungen
+### Verbindliche Entscheidungen
 
 1. Der Katalog wird ein eigener `ItemView` mit dem View-Type
    `dungeon-creature-catalog`. Ein Befehl `Monsterkatalog öffnen` öffnet oder
@@ -257,7 +257,7 @@ CE-01 besitzt komprimiertes Buildasset/Lazy Loader, Katalogview und Command-Foku
 6. CE-01 besitzt nur D&D-2014-Daten. Es gibt keine Regelversionsauswahl und
    keinen 2024-/Legacy-Filter.
 
-## Monsterkatalog — Oberfläche und Zustandsbesitz
+### Oberfläche und Zustandsbesitz
 
 `CreatureCatalogView` besitzt pro geöffneter Ansicht:
 
@@ -287,7 +287,7 @@ Alle aktiven Filter erscheinen als einzeln entfernbare Chips; `Zurücksetzen`
 leert nur Filter und springt auf Seite eins. Sortierung bleibt erhalten. Ein
 Nameklick, Doppelklick oder Enter auf einer ausgewählten Zeile öffnet Details.
 
-## Monsterkatalog — Tastatur und Barrierefreiheit
+### Tastatur und Barrierefreiheit
 
 - Suchfeld und Filter besitzen sichtbare Bezeichnung oder `aria-label`.
 - Tabellenkopf-Buttons veröffentlichen `aria-sort`.
@@ -299,9 +299,9 @@ Nameklick, Doppelklick oder Enter auf einer ausgewählten Zeile öffnet Details.
 - Fokus wird bei einer Aktualisierung nicht versetzt. Eine weiterhin vorhandene
   Auswahl bleibt nach Query-/Sortieränderung über ihre stabile ID erhalten.
 
-## Monsterkatalog — Umsetzungspakete
+### Umsetzungspakete
 
-### Monsterkatalog — CE-01-I01 – Komprimiertes Buildasset und Lazy Loader
+#### CE-01-I01 – Komprimiertes Buildasset und Lazy Loader
 
 Status: umgesetzt, Basisprüfungen und 222 Tests grün, nach Reparaturreview
 bestanden. Das Buildinventar misst 102.021 Gzip-Bytes, 136.028
@@ -320,7 +320,7 @@ sind eingehalten. Katalog-UI und Hostabnahme bleiben offen.
   Commit, Node-Version, Befehl, Payloadanteil und Gesamtwachstum.
 - Lazy-, Fehler-/Retry-, Hash-, Notice- und Buildinventartests ergänzen.
 
-### Monsterkatalog — CE-01-I02 – View-Grundgerüst und Kernfluss
+#### CE-01-I02 – View-Grundgerüst und Kernfluss
 
 Status: umgesetzt; Typprüfung, 225 Tests und Build bestanden. Unabhängiger
 Review, DOM-/Obsidian-Host und Fachabnahme bleiben offen.
@@ -330,7 +330,7 @@ Review, DOM-/Obsidian-Host und Fachabnahme bleiben offen.
   mit stabiler View-Session implementieren.
 - Kein Encounter-Button in diesem Paket.
 
-### Monsterkatalog — CE-01-I03 – Erweiterte Filter, Chips und Responsive/A11y
+#### CE-01-I03 – Erweiterte Filter, Chips und Responsive/A11y
 
 Status: umgesetzt; Typprüfung, 235 Tests einschließlich hostneutralem DOM-
 Harness und Build bestanden. Ein Reparaturreview bestätigt Filterprojektion,
@@ -353,7 +353,7 @@ Obsidian- und 900×650-/1150×700-Abnahme bleiben offen.
 - Tastaturablauf, 200-ms-Debounce, Statuszustände und Layout bei 900×650 und
   1150×700 fertigstellen.
 
-## Monsterkatalog — Fokussierte Prüfungen
+### Fokussierte Prüfungen
 
 - Reiner Loader-Test: keine Dekompression vor `load()`, gültige und beschädigte
   Payload, Retry nach behobenem Fehler und genau eine Instanz bei parallelem
@@ -368,7 +368,7 @@ Obsidian- und 900×650-/1150×700-Abnahme bleiben offen.
   Suche/Filter/Detail, Fokuswechsel, View schließen/neu öffnen und frischer
   Prozess.
 
-## Monsterkatalog — Offene Abnahme
+### Offene Abnahme
 
 - CE-AC-01 bleibt bis zu I03 und echtem Host offen.
 - CE-AC-02 bleibt bis zum vollständigen Inspector und nachgewiesenem
@@ -379,7 +379,7 @@ Obsidian- und 900×650-/1150×700-Abnahme bleiben offen.
 
 ## Monster-Hostprüfung
 
-## Monster-Hostprüfung — Zweck und Grenze
+### Zweck und Grenze
 
 Dieser Lauf prüft den auf `active/installed-phase1` integrierten CE-01-Kandidaten
 in einer echten, isolierten Obsidian-Desktopinstanz. Er ändert keine
@@ -393,9 +393,9 @@ Die Abnahme verwendet ausschließlich das QA-Vault unter
 Benutzerdaten werden nicht verändert. Auf diesem Gerät läuft gleichzeitig nur
 eine grafische Obsidian-, Original- oder Prototypinstanz.
 
-## Monster-Hostprüfung — Läufe und Belege
+### Läufe und Belege
 
-### Monster-Hostprüfung — H01-A – Kernablauf und frischer Prozess
+#### H01-A – Kernablauf und frischer Prozess
 
 1. `npm run check`, `npm test` und `npm run build` müssen auf sauberem SHA
    bestehen. SHA-256 und Größe von `main.js`, `manifest.json` und `styles.css`
@@ -417,7 +417,7 @@ eine grafische Obsidian-, Original- oder Prototypinstanz.
    serialisierten Viewzustand. Danach wird der Leaf geschlossen und über die
    Command Palette sauber als genau ein neuer Default-Leaf geöffnet.
 
-### Monster-Hostprüfung — H01-B – Beschädigte Payload und Retry
+#### H01-B – Beschädigte Payload und Retry
 
 Ein separater frischer Hostlauf injiziert vor dem ersten Katalogzugriff genau
 einmal beschädigte, von `atob` gelieferte Gzip-Bytes. Der unveränderte
@@ -434,7 +434,7 @@ Jeder Lauf schreibt unter einem neuen unveränderlichen Verzeichnis in
 Screenshots, Console-/Pagefehler und Speichertelemetrie. Vorhandene Receipts
 werden nicht überschrieben.
 
-## Monster-Hostprüfung — Gates
+### Gates
 
 - Exakter sauberer Git-SHA und Pluginhash stimmen in Edit-, Restart- und
   Faultlauf überein.
@@ -450,11 +450,11 @@ werden nicht überschrieben.
 - Ein erzwungener Prozessabbruch, fremde QA-Prozesse, geänderte Produktdateien
   oder fehlende Belege sind `failed`, nicht `passed with warning`.
 
-## Monster-Hostprüfung — Review und verbleibende Grenzen
+### Review und verbleibende Grenzen
 
 Physische Eingabe sowie nicht ausgeführte Plattform-/Screenreaderfälle bleiben offen; automatisierte Hostfälle belegen nur ihren tatsächlichen Umfang.
 
-## Monster-Hostprüfung — Ergebnis vom 9. Oktober 2026
+### Ergebnis vom 9. Oktober 2026
 
 Der automatisierte H01-Scope ist auf dem sauberen Commit
 `aa6d92d6cb1d8c8e06a0a61233ad837d25e40c05` unabhängig geprüft und
@@ -485,7 +485,7 @@ keine vollständige Fachfreigabe.
 
 ## Gemeinsame Providerverträge
 
-## Gemeinsame Providerverträge — Ziel und Wahrheitsgrenze
+### Ziel und Wahrheitsgrenze
 
 CE-02 erweitert den bestehenden, qualifizierten Monsterkatalog zu genau einem
 zustandserhaltenden Katalog mit sieben Bereichen:
@@ -509,7 +509,7 @@ Datenquellen besitzen. Ein sichtbarer Bereichswähler oder ein typisierter
 Nichtverfügbar-Zustand ist allein keine Fachfreigabe. CE-01 bleibt trotz dieser
 Planung mit physischer Eingabe, Screenreader und weiteren Plattformen offen.
 
-## Gemeinsame Providerverträge — Nichtziele
+### Nichtziele
 
 Dieser Plan autorisiert noch keine Umsetzung von:
 
@@ -521,9 +521,9 @@ Dieser Plan autorisiert noch keine Umsetzung von:
   Katalogwahrheit;
 - eine Vorentscheidung der noch vorgeschlagenen Zielplattform-ADR.
 
-## Gemeinsame Providerverträge — Ein gemeinsamer Katalog, sieben Eigentümer
+### Ein gemeinsamer Katalog, sieben Eigentümer
 
-### Gemeinsame Providerverträge — Kanonische Bereichsquelle
+#### Kanonische Bereichsquelle
 
 Eine einzige geordnete, unveränderliche `CATALOG_SECTIONS`-Definition ist die
 Quelle für Schlüssel, Label, Reihenfolge und Capability-Status. Die Schlüssel
@@ -536,7 +536,7 @@ Rail, Persistenznormalisierung, Fokusfolge, Tests und Providerregistrierung
 leiten sich aus dieser Quelle ab. Kein zweites Array, Switch mit denselben
 sieben Paaren oder manuell synchronisierte Tab-/State-Liste ist zulässig.
 
-### Gemeinsame Providerverträge — Zustand
+#### Zustand
 
 Der neue hostneutrale `CatalogWorkspaceState` besitzt eine explizite
 Schemaversion, `activeSection` und genau einen getrennten Zustand je Bereich.
@@ -563,7 +563,7 @@ und beschädigte Payloads werden verworfen oder auf dokumentierte Defaults
 gesetzt; sie dürfen keinen anderen Bereich beschädigen. Es gibt keine
 Migration historischer Alt-Editorformate.
 
-### Gemeinsame Providerverträge — Gemeinsame Interaktion
+#### Gemeinsame Interaktion
 
 Alle Bereiche verwenden:
 
@@ -582,7 +582,7 @@ aktuelle Auswahl, nicht den Bereich. Auswahl bleibt nebenwirkungsfrei; eine
 spätere Übergabe benötigt einen ausdrücklich benannten Button und ein eigenes
 Anwendungskommando.
 
-## Gemeinsame Providerverträge — Hostneutrale Providergrenze
+### Hostneutrale Providergrenze
 
 Die View erhält eine registrierte read-only Provider-Map. Jeder Provider
 besitzt seinen Query-, Row-, Detail- und Fehlervertrag und bietet nur:
@@ -608,16 +608,16 @@ Inspector. Bereichseigene Filter, Spalten, Row- und Detailprojektionen werden
 ein generischer Renderer, der unvalidiertes HTML oder beliebige Funktionen aus
 Datenquellen ausführt.
 
-## Gemeinsame Providerverträge — Datenbesitz je Bereich
+### Datenbesitz je Bereich
 
-### Gemeinsame Providerverträge — Monster
+#### Monster
 
 Die vorhandene CE-01-Wahrheit bleibt unverändert: gepinnte SRD-5.1-Daten,
 Manifest, SHA-256, Attribution, lazy Loader und `CreatureCatalog`-API. Filter,
 Draftzuordnung und Statblockprojektion werden nicht dupliziert. Der neue Shell-
 Adapter muss die bestehenden CE-01-Tests und Hostbelege erhalten.
 
-### Gemeinsame Providerverträge — Items
+#### Items
 
 Items erhalten einen eigenen lokalen, read-only Referenzkatalog mit stabilen
 Quellenschlüsseln. Vor dem ersten Datenimport benötigt das Umsetzungspaket:
@@ -634,7 +634,7 @@ Quellenschlüsseln. Vor dem ersten Datenimport benötigt das Umsetzungspaket:
 SaltMarchers Loot-Index ist ausdrücklich keine Item-Detailquelle. Browsing
 führt keinen Netzwerkzugriff und keine Mutation aus.
 
-### Gemeinsame Providerverträge — Gespeicherte Encounter
+#### Gespeicherte Encounter
 
 Encounter bleibt alleiniger Eigentümer. Die Katalogsuche liest nur stabile
 Plan-ID, Name und Encounter-eigene Kurzfassung. Roster und XP werden erst für
@@ -647,7 +647,7 @@ einen Encounter-eigenen Index. Dokumentformat, Revision, atomarer Write,
 Rebuild des Index und Konfliktverhalten benötigen vor der ersten Persistenz ein
 eigenes reviewtes Schema-/Owner-Paket; CE-02 implementiert nur read-only Ports.
 
-### Gemeinsame Providerverträge — NPCs, Fraktionen und Orte
+#### NPCs, Fraktionen und Orte
 
 World Planner besitzt die revisionierten vault-nativen Dokumente und ihre
 Indizes:
@@ -663,7 +663,7 @@ Die Katalogprovider veröffentlichen read-only Projektionen. Fremde Creature-
 oder Encounter-Table-Wahrheit wird über deren Besitzer nachgelesen. Auswahl
 mutiert keine Beziehung und keine globale Scene.
 
-### Gemeinsame Providerverträge — Encounter-Tabellen
+#### Encounter-Tabellen
 
 Encounter Tables besitzt stabile Tabellen-IDs, revisionierte vault-native
 Dokumente und einen eigenen read-only Provider. Auswahl kopiert weder
@@ -675,9 +675,9 @@ atomarer Write, Indexrebuild und Konfliktverhalten in eigenen Owner-Paketen
 reviewt werden, bevor ihre Persistenz als geliefert gilt. Die Viewer-Shell
 erfindet diese Verträge nicht.
 
-## Gemeinsame Providerverträge — Umsetzungspakete
+### Umsetzungspakete
 
-### Gemeinsame Providerverträge — CE-02-I01 – Shell und Zustand
+#### CE-02-I01 – Shell und Zustand
 
 - kanonische sieben Bereichsdefinitionen;
 - versionierter Workspace-State mit verlustfreier CE-01-Einordnung;
@@ -690,34 +690,34 @@ erfindet diese Verträge nicht.
 I01 schließt keinen neuen Datenbereich und CE-02 nicht ab. Es darf keine
 Beispiel- oder erfundene Produktwahrheit als Inhalt anzeigen.
 
-### Gemeinsame Providerverträge — CE-02-I02 – Items
+#### CE-02-I02 – Items
 
 Nach eigenem Provenienz-/Schema-Review: gepinnter Itemkatalog, Generator,
 Manifest/Attribution, Provider, Filter, Sortierung, Paging und vollständiger
 read-only Inspector. Item-Acceptance wird getrennt reviewed; die übrigen fünf
 Provider bleiben dadurch nicht bestanden.
 
-### Gemeinsame Providerverträge — CE-02-I03 – Encounter-Readmodel
+#### CE-02-I03 – Encounter-Readmodel
 
 Nach reviewtem Encounter-Dokument-/Indexvertrag: gespeicherte Encounter suchen,
 auswählen und begrenzt hydratisieren. Keine Builder- oder Combatmutation.
 
-### Gemeinsame Providerverträge — CE-02-I04 – World-Planner-Readmodels
+#### CE-02-I04 – World-Planner-Readmodels
 
 Nach reviewten Owner-Schemata: NPCs, Fraktionen und Orte als getrennte
 Providerprojektionen. Beziehungen werden nur gelesen und als stabile Links
 gezeigt.
 
-### Gemeinsame Providerverträge — CE-02-I05 – Encounter-Table-Readmodel
+#### CE-02-I05 – Encounter-Table-Readmodel
 
 Nach reviewtem Tabellenvertrag: suchen, auswählen, inspizieren; keine
 Generierung oder globale Poolmutation.
 
-### Gemeinsame Providerverträge — CE-02-H01 und CE-02-C01
+#### CE-02-H01 und CE-02-C01
 
 Der gemeinsame echte Hostlauf muss alle sieben realen Provider prüfen. Die Providerbelege allein ersetzen keine Encounter-Builder- oder Combatabnahme. Offene Providerbefunde bleiben sichtbar und werden nicht durch spätere Funktionsbelege geschlossen.
 
-## Gemeinsame Providerverträge — Technische Modulgrenzen
+### Technische Modulgrenzen
 
 CE-02-I01 umfasst folgende Modul-, UI- und Prüfgrenzen:
 
@@ -737,7 +737,7 @@ Combat-, Scene- oder Atlasmutation. I02 bis I05 benötigen die jeweiligen
 Provider-, Schema- und Persistenzverträge. Hex-, Stadt-, Dungeon- und
 ADR-Implementierungen bleiben außerhalb der Providershell.
 
-## Gemeinsame Providerverträge — Automatisierte Gates
+### Automatisierte Gates
 
 Für jedes Produktpaket bestehen `npm run check`, `npm test` und
 `npm run build`. I01 benötigt zusätzlich mindestens:
@@ -766,7 +766,7 @@ I02 bis I05 ergänzen je Eigentümer Contract-, Schema-, Provenienz-, beschädig
 Daten-, Revision-, Indexrebuild-, Query-/Detail- und Cross-reference-Tests.
 Testzahlen allein schließen keine Fachabnahme.
 
-## Gemeinsame Providerverträge — Echter Host und physische Gates
+### Echter Host und physische Gates
 
 CE-02-H01 verwendet neue isolierte Profile unter
 `/home/aaron/.cache/dungeon-native-qa/` und bindet exakten sauberen SHA,
@@ -791,7 +791,7 @@ Pflichtzeilen. Automatisierte DOM- oder Playwrightfolgen ersetzen sie nicht.
 
 ## Itemquellen und Provider
 
-### Itemquellen und Provider — Aktuelle Quellenlieferung
+#### Aktuelle Quellenlieferung
 
 Der vollständige S01-Quellenkandidat steht in [PR85](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/85); aktuelle Integration und Itemproduktabnahme stehen im Abnahmeregister. Quellenprüfung vergleicht vollständige Heading-zu-Heading-XML-Blöcke samt Prosa, Tabellenreihenfolge und Seitenfortsetzung.
 
@@ -891,7 +891,7 @@ Vollständigkeitsziel: 459 Occurrences (219 Ausrüstung + 239 A–Z + Orb), mit 
 
 `SRD51_SOURCE_PDF=/pfad/SRD_CC_v5.1.pdf node --test tests/items-srd51-source.test.mjs` aktiviert den vollständigen PDF-Test. Ohne PDF ist er skipped; Offline-XML ersetzt bei Quellenänderung keinen erneuten echten PDF-Lauf.
 
-## Itemquellen und Provider — Ziel und Grenze
+### Ziel und Grenze
 
 `Items` wird der erste echte Bereich nach `Monster` in der vorhandenen
 siebenfachen Katalog-Shell. Er liefert einen lokalen, nur lesbaren
@@ -904,7 +904,7 @@ SQLite-/HTTP-Importvertrag beschreibt das beobachtbare Verhalten, erzwingt aber
 keine SQLite- oder Laufzeit-Importarchitektur für dieses Plugin. Der Loot-Index
 ist keine Item-Detailquelle.
 
-## Itemquellen und Provider — Gepinnte Quelle und Freigabe vor Datenübernahme
+### Gepinnte Quelle und Freigabe vor Datenübernahme
 
 Die normative Inhaltsquelle ist Wizards of the Coast, *System Reference
 Document 5.1*, die 2014er Fassung unter
@@ -944,7 +944,7 @@ muss im SRD 5.1 verortbar sein. Nicht belegte oder außerhalb der SRD liegende
 Einträge werden abgewiesen. Die 5e-bits-MIT-Lizenz für Repository-Code ersetzt
 keine Prüfung der Inhaltslizenz.
 
-## Itemquellen und Provider — Quellprojektion und Schema
+### Quellprojektion und Schema
 
 Das in S01 erstellte Inventar ist die Identitätsgrundlage des Quelltranskripts. Eine
 Erscheinung erhält die ID `srd51:<equipment|magic-item>:<abschnitt>:<ordinal>`;
@@ -1038,7 +1038,7 @@ von Inventar über Transkript und Schema bis zur Filter-/Inspector-Projektion
 ab. Der Inspector
 kennzeichnet fehlende Fakten, statt sie mit Nullwerten zu verwechseln.
 
-## Itemquellen und Provider — Reproduzierbarer Build und Fail-closed-Lader
+### Reproduzierbarer Build und Fail-closed-Lader
 
 Ein enger Generator unter `tools/` liest ausschließlich das reviewte Inventar,
 Quelltranskript und Manifest mit PDF-URL/-SHA-256, Inventarhash,
@@ -1071,7 +1071,7 @@ Diese Fehler betreffen nur `items`. `creatures` und die fünf weiterhin
 `unavailable`-Provider behalten ihren Zustand. Kein Katalogklick startet
 Netzwerk, Import, Vaultwrite, Loot-, Inventory- oder Encounter-Mutation.
 
-## Itemquellen und Provider — Provider und sichtbares Verhalten
+### Provider und sichtbares Verhalten
 
 `I01` erweitert den vorhandenen Providervertrag ausdrücklich: Capability
 behält `available|missing|unavailable`; Query erhält neben `ready|empty|
@@ -1118,7 +1118,7 @@ Suche, Filter, Sortierung, Seite, Auswahl und beide Scrollpositionen. Tests
 prüfen v1→v2, beschädigtes Item bei intaktem Monster, unbekannte Zukunft,
 Item→Monster→Item und frischen Prozess-Restore.
 
-## Itemquellen und Provider — Lieferbestand und Prüfanforderungen
+### Lieferbestand und Prüfanforderungen
 
 `CE-02-I02-S01` besitzt Inventar, Identitäts-/Merge-Ledger, vollständiges
 Quelltranskript, `items-srd51-schema-v1.json`, Kategoriezuordnung, kanonische

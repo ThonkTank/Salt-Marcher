@@ -1,6 +1,6 @@
 # Schneller Auswahl-Hosttest
 
-Der Test startet eine eigene Obsidian-Instanz mit isoliertem Test-Vault und prüft Licht-Auswahlgriffe bei 50, 75 und 100 Prozent, die exakte 32-Pixel-Grenze, Rahmen-Wiederwahl und jeweiliges Undo. Sein Startskript sperrt weitere Schnelltests und prüft laufende isolierte Obsidian-Prozesse; mit der breiten Hostregression wird der Grafikslot zusätzlich abgestimmt.
+Der Test startet eine eigene Obsidian-Instanz mit isoliertem Test-Vault und prüft Licht-Auswahlgriffe bei 50, 75 und 100 Prozent, die exakte 32-Pixel-Grenze, Rahmen-Wiederwahl und jeweiliges Undo. Sein Startskript sperrt weitere Schnelltests und prüft laufende isolierte Obsidian-Prozesse.
 
 Aus dem Pluginverzeichnis:
 

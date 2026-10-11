@@ -49,7 +49,7 @@ Die Reihenfolge ist eine Vorbereitungshypothese, kein gemessener Nutzungsbefund.
 
 Das zentrale [Werkzeugverzeichnis](#konkreter-werkzeugkatalog) ordnet den Zugang und die Stufen zu; `acceptance.json` bleibt das einzige Funktions- und Nachweisregister. Fachpläne verweisen auf diese Lieferfolge und behalten ihre Details. Die [E2E-Abnahmen](docs/ROADMAP.md#lieferfolge-des-gesamtprodukts) behalten ihre fachlichen Voraussetzungen. Diese Planung vergibt keine neuen Nachweise oder PASS-Zustände.
 
-Diese Übersicht ist ein datierter Einstieg. Bei relevanter Integration oder geänderter Lücke wird sie am bestehenden Ort aktualisiert; Laufchroniken und Abnahmedetails bleiben in ihren Fachquellen. Die folgenden Abschnitte führen Zielarchitektur, vollständige Anforderungen und Phasenzuordnung.
+Abnahmedetails stehen in `acceptance.json`; die folgenden Abschnitte führen Zielarchitektur, Anforderungen und Umsetzung.
 
 ## Umsetzungsplan
 
@@ -83,7 +83,7 @@ Die Pakete sind konkrete Anschlüsse an die zentrale Lieferfolge. Innerhalb eine
 | **Work 2 – Dungeon einschließlich erster Ausgabe** | Vorhandene `src/features/dungeon/atlas-source.ts`, `geometry-change.ts`, Zeichen-/Portal-/Geschossbausteine und Keypanel im Atlas anschließen. Erst Raum/Rechteck und Gang/Tür/einfache Treppe, dann zweites Geschoss und Grundverwaltung vervollständigen. `src/render-drawing.ts` und `src/features/verwaltung/export-options.ts` für den gemeinsamen Ausschnitt verwenden; PNG aus demselben bestätigten Stand ausgeben. | Sechs Räume samt Keys vorbereiten, korrigieren, ausgeben und frisch öffnen. Spieler-PNG nur mit nachgewiesener Filterung gemäß Sichtbarkeitsvertrag; dieser Export ersetzt keine passive Live-Spielerprojektion. [Dungeonwerkzeuge](ROADMAP-PARITY-TOOLS.md), [GM-Aufgabe](ROADMAP-GM-PRODUCT-TESTING-PLAN.md). |
 | **Work 3 – Region einschließlich Referenz und Maß** | Terrainquelle/-schema und `atlas-renderer.ts` für freie Küste und native Verläufe erweitern; bestehende Ortsbindung behalten. Fluss/Straße mit Punktkorrektur anschließen, vorhandene Referenz-/Kalibrierungs- und Messbausteine in denselben Maßstab bringen. Ausgabe aus Work 2 wiederverwenden. | Kleine 3-Meilen-Region mit Küste, Fluss, Straße, drei Orten, kalibrierter Vorlage und korrekter Distanz ausgeben/frisch öffnen. [HEX-Fachumfang](#3-kleine-phasen-mit-früh-nutzbaren-ergebnissen), [Wonderdraft](WONDERDRAFT-PARITY.md). |
 | **Work 4a – Editierbare assistierte Siedlung** | Bestehende Citymodell/-commands/-draft/-gestures/-renderer und tatsächlichen Generatorstand prüfen/anschließen. Neue Siedlung mit nativen Dateien und Ortsverweisen anlegen; Fläche, Straßen und Platz → Dichte/Größe/Struktur → abbrechbarer Vorschlag → ein Commit. Auswahl/Griffe aus Work 1 zum Korrigieren einzelner Häuser verwenden. | Eichenfurt erzeugen, Variante abbrechen, übernehmen, Taverne ändern und nach Neustart wiederfinden. Bereits bearbeitete Häuser/Keys/Bindungen schützen, keine Erzeugung beim Laden. [CITY-01/02/04](ROADMAP-CITIES-IMPLEMENTATION-PLAN.md#technische-arbeitspakete). |
-| **Work 4b – Haus und Innenraum gemeinsam ändern** | Vor Produktänderung Gebäudezustand und Datenübernahme im bestehenden Cityfachplan konkretisieren. Citygebäude, räumliche Dungeonquelle und `atlas-city-building-panel.ts` zu einem gemeinsamen Gebäudeobjekt verbinden. Hülle ausdrücklich anlegen, Räume/Geschosse bearbeiten, Wand zunächst im gewählten Geschoss ändern; gemeinsame Mehrdateispeicherung aus Work 1 erhalten. | Außenform und Innenräume stimmen nach Korrektur, Undo/Redo und frischem Öffnen überein; Nutzertexte/IDs/Links erhalten. Danach das verbundene Leitbeispiel prüfen, soweit dessen Fähigkeiten geliefert sind. [Gebäudevertrag](ROADMAP-CITIES.md#gebäude-und-innenräume-als-ein-objekt), CITY-03. |
+| **Work 4b – Haus und Innenraum gemeinsam ändern** | [Gemeinsamen Gebäudezustand und Datenübernahme](ROADMAP-CITIES-IMPLEMENTATION-PLAN.md#gemeinsamer-gebäudezustand-erste-umsetzung) anschließen. Citygebäude, räumliche Dungeonquelle und `atlas-city-building-panel.ts` zu einem gemeinsamen Gebäudeobjekt verbinden. Hülle ausdrücklich anlegen, Räume/Geschosse bearbeiten, Wand zunächst im gewählten Geschoss ändern; gemeinsame Mehrdateispeicherung aus Work 1 erhalten. | Außenform und Innenräume stimmen nach Korrektur, Undo/Redo und frischem Öffnen überein; Nutzertexte/IDs/Links erhalten. Danach das verbundene Leitbeispiel prüfen, soweit dessen Fähigkeiten geliefert sind. [Gebäudevertrag](ROADMAP-CITIES.md#gebäude-und-innenräume-als-ein-objekt), CITY-03. |
 | **Efficient – Häufige Wiederholung zuerst** | Zuerst Duplizieren, wiederholte Assetplatzierung, zuletzt verwendet und schnelle Auswahl; danach gemischte Mehrfachwerte, Text-Sammeländerung, Gruppen/Prefabs und geschützte lokale Neuerzeugung. Weitere Wandreichweite/Gesamtskalierung am gemeinsamen Gebäudezustand ergänzen. Gemessene Engpässe im bestehenden Laden/Renderer/Suchen/Export gezielt verbessern. | Dieselbe GM-Aufgabe mit gleichem Ergebnis und weniger Aktionen/Suche/Fehlern/Produktwartezeit; keine zusätzliche Engine oder zweite History. [Zentraler Katalog](#konkreter-werkzeugkatalog), [GM-Vergleich](ROADMAP-GM-PRODUCT-TESTING-PLAN.md). |
 | **Weitere Fachfähigkeiten – Jeweils eigener Work-Abschluss** | Verbleibende Katalogaktionen in ihren bestehenden HEX-/CITY-/Dungeonpaketen liefern. Räumlich: vorhandene Volumes → Room-Lifecycle → Paths/Passages → strukturierte Features/Beschreibungen → Graphdiagnostik; verknüpfte Inhalte/Templates bauen auf stabilen Autorenidentitäten auf. Lebensdaten zunächst manuell bearbeiten, Tagesabläufe erst mit autoritativer Weltzeit. Formate/Pakete benötigen ihre jeweiligen Transferregeln. | Jede neue Wirkung zuerst sichtbar bearbeiten, sicher abbrechen, speichern/frisch öffnen und direkt fachlich prüfen; danach Efficient/Beautiful. Pflichtumfang bleibt im [Katalog](#aktionen-am-ausgewählten-objekt), [Scope](docs/SCOPE.md) und bestehenden Fachplänen, ohne kopiertes Restinventar. Offene Originalwirkungen nur für den betroffenen Ausbau klären. |
 | **Beautiful und Gesamtqualifikation** | Nach funktionalem Abschluss die vorhandenen UI-Bereiche, Kartenstile und Ausgabe verfeinern. Bestehende Größen-/OS-/Recovery-/Original-/Installationsabnahmen am vorgesehenen Endbuild vervollständigen. Bereits frühe Anforderungen an Lesbarkeit/Tastatur/200 % bleiben bei jedem Paket. | Gestaltung erhält alle Wirkungen. Endfreigabe verlangt sämtliche Pflichtfähigkeiten und direkte Belege; Work-Abschluss, Fachabnahme und vollständiges E2E-01 bleiben getrennte Aussagen. [Endabnahme](#4-abnahme-fehlerfälle-und-feste-vorgaben). |
@@ -385,7 +385,7 @@ Der vollständige Nutzerablauf lautet: Welt gestalten → Region verfeinern → 
 - **`.overworld`** enthält Weltmaßstab, Hex-Stufen, Landschaft, räumliche Platzierungen und Verweise auf Orte und Detailkarten. Große Datenbestände liegen in zugehörigen, bei Bedarf geladenen Dateien.
 - **`.location`** enthält stabile Ortskennung, Name, Typ, geordnete Markdown-Abschnitte und Verknüpfungen zu Detailkarten. Lage und Ausrichtung werden im Atlas gespeichert.
 - **`.city`** enthält native Stadtgeometrie mit Straßen, Vierteln, Grundstücken und Gebäuden sowie Generatorvorgaben und manuell bearbeiteten Elementen. Orts-Keys bleiben in `.location`; die Stadt verwendet die gemeinsame Zeichen- und Speicherbasis.
-- **`.dungeon` bleibt das Dungeonformat.** Eigenständige Dungeons behalten ihre räumliche Platzierung. Ein Gebäude mit Innenräumen ist fachlich ein gemeinsam bearbeitetes Objekt; Außenform und Räume werden aus demselben konsistenten Gebäudezustand dargestellt. Raum-Keys und vorhandene Links behalten ihre Kennungen. Das konkrete Speicherformat für diesen Gebäudezustand ist vor Umsetzung festzulegen; die vorhandene getrennte Haus-/Dungeonbindung ist nicht bereits die vollständige Zielarchitektur.
+- **`.dungeon` bleibt das Dungeonformat.** Eigenständige Dungeons behalten ihre räumliche Platzierung. Ein Gebäude mit Innenräumen ist fachlich ein gemeinsam bearbeitetes Objekt; Außenform und Räume werden aus demselben konsistenten Gebäudezustand dargestellt. Raum-Keys und vorhandene Links behalten ihre Kennungen. Der [technische Gebäudevertrag](ROADMAP-CITIES-IMPLEMENTATION-PLAN.md#gemeinsamer-gebäudezustand-erste-umsetzung) verbindet die vorhandenen Speicherbesitzer und gemeinsame Befehle; die heutige Bindung allein belegt diesen Ausbau noch nicht.
 - Weltpositionen werden intern in Metern geführt. Bestehende Dungeonfelder entsprechen weiterhin fünf Fuß. Verschiebung, Drehung und Maßstabsumrechnung verbinden die lokalen Kartenkoordinaten mit dem Atlas.
 - Eingänge verknüpfen einen räumlichen Anker mit Dungeonkarte, Geschoss und gegebenenfalls Raum oder Durchgang. Ein Dungeon kann mehrere Eingänge besitzen.
 - Geschosse bleiben getrennte Ebenen. Ihre bisherige Reihenfolge wird nicht automatisch als physische Höhe interpretiert.
@@ -519,21 +519,6 @@ Vor jeder Lieferung müssen ihre fachlichen Ergebnisse und Datenabhängigkeiten 
 
 **Praxistest:** Kleine Testregion und große Prüfwelt aus Abschnitt 4 im echten Obsidian bearbeiten, speichern, wiederherstellen und frisch öffnen. Physische Maus-/Touchpad-Eingaben, Detailkarten, Orts- und Raumlinks sowie Ausgabebilder prüfen. Nach Sicherung des aktuellen Produktstands installieren und den Kernablauf auf dem tatsächlich installierten Build wiederholen.
 
-### Zuordnung der ursprünglichen zehn Etappen
-
-| Ursprüngliche Etappe | Neue zuständige Phasen |
-|---|---|
-| 0 – Referenz und Ausgangsbasis | HEX-00: vorhandene Inventare und Belege verwenden; fachliche Unklarheiten gezielt vor der betroffenen Lieferung klären |
-| 1 – Raum- und Hex-Fundament | HEX-01/02/04/06/07/08; notwendige Anbindungen mit HEX-03/05 |
-| 2 – Erster zusammenhängender Atlas | HEX-02 bis HEX-05 |
-| 3 – Landmassen und Gewässer | HEX-11/12/15/16/23 |
-| 4 – Flüsse, Straßen und Pfade | HEX-13/14 |
-| 5 – Symbole und Assetbibliothek | HEX-17/18/19 |
-| 6 – Kartengestaltung und Ortsarbeit | HEX-03/20/21/24/25 |
-| 7 – Vollständiger Atlas-Zoom | HEX-04/05/06/22 |
-| 8 – Vorlagen, Ausgabe und Verwaltung | HEX-09/10/26/27 |
-| 9 – Gesamtabnahme und Installation | HEX-28; laufende Funktions- und Größenprüfungen bereits in den früheren Phasen |
-
 ## 4. Abnahme, Fehlerfälle und feste Vorgaben
 
 ### Häufige Prüfungen und ein gemeinsamer Alltagsablauf
@@ -546,7 +531,7 @@ Vor jeder Lieferung müssen ihre fachlichen Ergebnisse und Datenabhängigkeiten 
 
 Ab HEX-05 lautet die feste Folge: **Region anzeigen → Hex ändern → Orts-Key bearbeiten → in den Dungeon zoomen → Raum und Key bearbeiten → herauszoomen → rücknehmen/wiederholen → speichern → frischer Start → denselben Ort wiederfinden.** Ab CITY-03 wird zusätzlich in Stadt und Haus gezoomt und dort Straße, Gebäude und Hausgrundriss direkt bearbeitet. Keine dieser Aktionen verlangt einen Karten-, Kontext- oder Moduswechsel. Spätere Landschafts-, Symbol- und Exportfunktionen werden in diese Testregion eingebaut. Ein reiner Editor-Neustart oder eine Sammlung isolierter Dialogtests ersetzt diese Folge nicht.
 
-Funktionsbeleg und Paritätsbeleg werden je Unterfall getrennt festgehalten; Nachweise nennen den geprüften Build und den tatsächlichen Stand. Die Roadmap enthält keine laufenden Ergebnisprotokolle.
+Funktionsbeleg und Paritätsbeleg werden je Unterfall getrennt festgehalten; Nachweise nennen den geprüften Build und den tatsächlichen Stand.
 
 ### Funktions- und Bedienabnahme
 
@@ -580,7 +565,7 @@ Kernprüfungen, Build, Obsidian-Bedienung, Großkartenlauf und physische Maus-/T
 - Hex-Ausrichtung ist beim Anlegen wählbar und bleibt danach fest.
 - Automatischer Stufenwechsel besitzt einen Übergangsbereich gegen Hin-und-her-Springen; eine manuelle Stufenwahl bleibt möglich.
 - Unterhalb der 3-Meilen-Stufe entstehen keine weiteren Overworld-Hex-Stufen. Stadt- und Dungeonraster übernehmen die Detailbearbeitung.
-- Orts-Keys bleiben in `.location`, Raum-Keys eigenständiger Dungeons in `.dungeon`. Bestehende Gebäude-Raumkeys und ihre Links bleiben erhalten; ihr Speicherformat im gemeinsamen Gebäudezustand ist vor Umsetzung festzulegen. Der Atlas verweist auf diese Inhalte.
+- Orts-Keys bleiben in `.location`, Raum-Keys eigenständiger Dungeons in `.dungeon`. Bestehende Gebäude-Raumkeys und ihre Links bleiben erhalten; ihre Speicherung folgt dem [gemeinsamen Gebäudevertrag](ROADMAP-CITIES-IMPLEMENTATION-PLAN.md#gemeinsamer-gebäudezustand-erste-umsetzung). Der Atlas verweist auf diese Inhalte.
 - Stadtgeometrie wird in `.city` geführt. Außenform und Innenräume eines Gebäudes werden gemeinsam bearbeitet; eigenständige Dungeons bleiben stabil verortet. Generation schützt manuelle Änderungen, Innenräume und Keys.
 - Der Atlas bleibt ein durchgehend bearbeitbarer Raum ohne separate Modi. Zoom allein erschließt räumliche Größenstufen; Detaildarstellung ist kein Wechsel des Editors.
 - Bestehende Wonderdraft-Karten werden als Bildvorlagen verwendet; ihre Originaldateien bleiben erhalten.
