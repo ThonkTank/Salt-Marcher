@@ -6,7 +6,7 @@
   "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
   "state": "accepted_scoped_native_Location_Key_Move_UndoRedo_Save_fresh_process",
   "recordedAt": "2026-10-10T21:02:43Z",
-  "decision": "The complete #40 Location/Key user milestone is qualified and may close. The common E2E-01 row13 gate remains open; own cleanup follows in a separate bounded run.",
+  "decision": "The #40 Location/Key user milestone is qualified. The common E2E-01 row13 gate remains open.",
   "actualNativeSource": "4515088772b759cda2e19d249367699c9868c72c",
   "buildSha256": "76bb453acca65f260e2276a385da66c5039a643fa10681b9b7a20fc5209c1322",
   "fixtureVersion": "e2e01-spatial-v2",
@@ -18,12 +18,6 @@
     "sha256": "c2d51b96541366f891bac661a09c5198e97151e7a5086ac953d3ab440e2e7dc2",
     "artifactsVerified": 40,
     "unchanged": true
-  },
-  "metadataRepair": {
-    "path": "docs/reference/atlas-shared-location-h02/metadata-repair.json",
-    "sha256": "0ccff32070660c1e697b4d48320bb1b13069cb0406290f83fbe982432057bd72",
-    "slotRequiredAgain": false,
-    "onlyFindingClosedBy": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/40#issuecomment-6102084191"
   },
   "independentReviews": [
     {
@@ -41,14 +35,6 @@
       "result": "PASS_file_and_owner_closure_oracle",
       "commentBodySha256": "b64b596181634658f85429f1b6d1e84cb3337123f5fe0803fd9caac4e42b3b3b",
       "readDirectly": true
-    },
-    {
-      "reviewer": "Chronik",
-      "id": 6102084191,
-      "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/40#issuecomment-6102084191",
-      "result": "PASS_H02_R02_N01",
-      "commentBodySha256": "a66f31da6e95d6bad480061b8ce78e2315c18b91c9284e7e3c892d84b401f432",
-      "readDirectly": true
     }
   ],
   "independentStewardIntegration": {
@@ -57,8 +43,7 @@
     "readDirectly": true,
     "source": "41f09273abd4f536f4f1098d6bf726f7567a0d1b",
     "exactSecondParent": "c706df1f8fa2f6e242c0db32fc1930db74b1e19b",
-    "nativeEvidenceAndProductInputsByteEqualQualifiedHead": true,
-    "HexSelfMerge": false
+    "nativeEvidenceAndProductInputsByteEqualQualifiedHead": true
   },
   "candidateCI": {
     "headSha": "c706df1f8fa2f6e242c0db32fc1930db74b1e19b",
@@ -73,7 +58,7 @@
     "readDirectly": true,
     "scope": "repository structure only"
   },
-  "acceptedOutcome": "Native toolbar creates and selects Location; exact Unicode/Markdown/whitespace Keys and pointer movement share one canvas/camera/history with Undo/Redo. Create-Undo-no-op-Save retains the mount and Redo. Actual Save and a distinct fresh Obsidian process preserve all nine saved files, IDs, Key texts and position. Both processes exited normally and the local slot was returned.",
+  "acceptedOutcome": "Native toolbar creates and selects Location; exact Unicode/Markdown/whitespace Keys and pointer movement share one canvas/camera/history with Undo/Redo. Create-Undo-no-op-Save retains the mount and Redo. Actual Save and a distinct fresh Obsidian process preserve all nine saved files, IDs, Key texts and position. Both processes exited normally.",
   "priorReceipts": [
     {
       "path": "docs/reference/atlas-shared-location-h01/receipt.json",
@@ -95,15 +80,12 @@
   "originalH01Status": "historical_FAIL_unchanged",
   "checks": {
     "existing40ArtifactsAndReceiptsVerified": true,
-    "N01ReceiptVerified": true,
     "productEdited": false,
     "testsEdited": false,
     "buildRepeated": false,
     "modelTestsRepeated": false,
-    "nativeRepeated": false,
-    "guiSlotUsed": false
+    "nativeRepeated": false
   },
-  "next": "Separate bounded own cleanup of no-longer-needed owned transient resources only; preserve all canonical and historical evidence and unrelated files. No further general review or GUI run without a concrete new finding.",
   "limits": "Only #40 scoped Location Save/fresh-process acceptance. Synthetic native input, no physical GM acceptance. No new Copy/Discard/Recovery fault matrix, Detail/CITY/P02/P04/E2E02-04/original parity/large-world/installation/full-E2E acceptance. Later Shared docs and unrelated package changes are not a new native run.",
   "fullE2E": false,
   "commonGateClosed": false

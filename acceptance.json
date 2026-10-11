@@ -154472,7 +154472,7 @@
           "sourceCommit": "b87a066e38f1a0000def253bf50e45ee4a5d604f",
           "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
           "evidence": "docs/reference/atlas-shared-location-h01/receipt.json",
-          "sha256": "e628cacae0c0c9bf2c646dc3ec345ee743181133685962efe3cd458002bcf144",
+          "sha256": "0465f5a87d83b97ea91977fb1b7342b66ec1dafd5ee6741835c59e300a51df62",
           "finding": "SHARED-LOCATION-H01-SAVE-01",
           "freshProcessStarted": false,
           "productEdited": false,
@@ -154640,7 +154640,7 @@
           "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
           "sourcePlan": "ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md",
           "evidence": "docs/reference/atlas-shared-location-h02/receipt.json",
-          "sha256": "12856a4f351af562952cd50ce8616dae734f14b91fc8abbaabed6eab17ab94bf",
+          "sha256": "c2d51b96541366f891bac661a09c5198e97151e7a5086ac953d3ab440e2e7dc2",
           "sourceCommit": "4515088772b759cda2e19d249367699c9868c72c",
           "buildSha256": "76bb453acca65f260e2276a385da66c5039a643fa10681b9b7a20fc5209c1322",
           "fixtureVersion": "e2e01-spatial-v2",
@@ -154671,57 +154671,6 @@
           "fullE2E": false,
           "limits": "Two native processes only; no new Copy/Discard/Recovery fault matrix, physical/original/large-world/user-vault installation/Details/CITY/P02/P04/E2E02-04/full-gate claim."
         },
-        "sharedLocationKeyNativeH02MetadataN01": {
-          "id": "E2E-01-SHARED-LOCATION-KEY-H02-N01",
-          "owner": "Hex",
-          "issue": 40,
-          "e2e01UserLine": 13,
-          "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
-          "state": "targeted_metadata_fix_published_pending_existing_Chronik_R02_confirmation",
-          "actualNativeSource": "4515088772b759cda2e19d249367699c9868c72c",
-          "buildSha256": "76bb453acca65f260e2276a385da66c5039a643fa10681b9b7a20fc5209c1322",
-          "fixtureVersion": "e2e01-spatial-v2",
-          "existingIndependentReviews": {
-            "Stadt": {
-              "id": 6101960077,
-              "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/40#issuecomment-6101960077",
-              "result": "PASS_original_H02_native_evidence_only",
-              "findings": 0,
-              "readDirectly": true,
-              "commentBodySha256": "bf990c4f375162ec0e85e8f47c03ed23f507acca11fff60a4ff358f7b6f2ca54"
-            },
-            "CampaignData": {
-              "id": 6101957277,
-              "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/40#issuecomment-6101957277",
-              "result": "PASS_file_and_owner_closure_oracle_only",
-              "findings": 0,
-              "readDirectly": true,
-              "commentBodySha256": "b64b596181634658f85429f1b6d1e84cb3337123f5fe0803fd9caac4e42b3b3b"
-            },
-            "Chronik": {
-              "id": 6101982101,
-              "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/40#issuecomment-6101982101",
-              "result": "CHANGES_REQUIRED_authoritative_nextRun_slot_flag_only",
-              "nativeEvidenceFindings": 0,
-              "readDirectly": true,
-              "commentBodySha256": "1aa1564b08a2b731b4fe8d0dbe3f982a7a75d0986c449af1fd75f9fb87f7d882"
-            }
-          },
-          "correction": {
-            "path": "checkpoint.hexAtlasExecution.nextRun.slotRequiredAgain",
-            "before": true,
-            "after": false,
-            "reason": "Next run consumes existing gate qualification without GUI; require a fresh slot only for a separately justified actual future GUI run.",
-            "repeatedGUI": false
-          },
-          "limits": "Historical native source4515088 and H02 build remain exact. Incoming Sharedb02925c is not a new native run. No physical GM/Copy-Discard-Recovery fault matrix/original parity/large-world/installation/P02/P04/full-E2E acceptance.",
-          "fullE2E": false,
-          "issue40Closed": false,
-          "evidence": "docs/reference/atlas-shared-location-h02/metadata-repair.json",
-          "sha256": "4776407068ec6654a7ff143874bc62ef6af97577c6c83fb65b6da809efb3fb32",
-          "originalReceiptSha256": "12856a4f351af562952cd50ce8616dae734f14b91fc8abbaabed6eab17ab94bf",
-          "nativeRepeated": false
-        },
         "sharedLocationKeyNativeH02Qualification": {
           "id": "E2E-01-SHARED-LOCATION-KEY-H02-QUALIFICATION",
           "owner": "Hex",
@@ -154749,14 +154698,6 @@
               "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/40#issuecomment-6101957277",
               "result": "PASS_file_and_owner_closure_oracle",
               "commentBodySha256": "b64b596181634658f85429f1b6d1e84cb3337123f5fe0803fd9caac4e42b3b3b",
-              "readDirectly": true
-            },
-            {
-              "reviewer": "Chronik",
-              "id": 6102084191,
-              "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/40#issuecomment-6102084191",
-              "result": "PASS_H02_R02_N01",
-              "commentBodySha256": "a66f31da6e95d6bad480061b8ce78e2315c18b91c9284e7e3c892d84b401f432",
               "readDirectly": true
             }
           ],
@@ -154786,70 +154727,8 @@
           "fullE2E": false,
           "commonGateClosed": false,
           "evidence": "docs/reference/atlas-shared-location-h02/qualification.json",
-          "sha256": "71e3fef652677072a17eb4593d1a73b79f1d0292605d8028cbe493e7e893d4ba",
+          "sha256": "f4cb31fe94abfe54a7a1160b39f8f1aa065624e5fd1c88ac0848303e8af34c13",
           "originalReceiptSha256": "12856a4f351af562952cd50ce8616dae734f14b91fc8abbaabed6eab17ab94bf",
-          "nativeRepeated": false
-        },
-        "sharedLocationKeyNativeH02Cleanup": {
-          "id": "E2E-01-SHARED-LOCATION-KEY-H02-OWN-CLEANUP",
-          "owner": "Hex",
-          "issue": 40,
-          "e2e01UserLine": 13,
-          "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
-          "state": "PASS_bounded_own_transient_source_cleanup",
-          "finishedAt": "2026-10-10T21:12:55Z",
-          "qualifiedNativeSource": "4515088772b759cda2e19d249367699c9868c72c",
-          "removed": [
-            {
-              "path": "/home/aaron/.cache/dungeon-native-qa/hex-03/shared-location-h02-20261010-2029/source-4515088",
-              "kind": "clean detached owned test source worktree",
-              "normalGitWorktreeRemove": true,
-              "force": false
-            }
-          ],
-          "retainedSourceArchive": {
-            "path": "/home/aaron/.cache/dungeon-native-qa/hex-03/shared-location-h02-cleanup-20261010-2110/retained-source-4515088.tar.gz",
-            "sha256": "c5bc8562def856fd3ed7837783010b83a46a144fdf8036166b6d5e5c86fc3662",
-            "bytes": 6086171,
-            "entries": 939,
-            "allEntryBytesAndSymlinksVerified": true,
-            "manifest": "/home/aaron/.cache/dungeon-native-qa/hex-03/shared-location-h02-cleanup-20261010-2110/retained-source-manifest.json",
-            "manifestSha256": "2de84625752f0a0323fa446b4cdd0cad0bae8f079d06b643eb42594d757ca84f"
-          },
-          "preservation": {
-            "allCanonicalHistoricalFilesVerified": 82,
-            "originalH02Artifacts": 40,
-            "originalH02ReceiptSha256": "12856a4f351af562952cd50ce8616dae734f14b91fc8abbaabed6eab17ab94bf",
-            "allHostQAFilesOutsideRemovedCheckoutUnchanged": 177,
-            "savedNativeVaultFilesVerified": 9,
-            "installedSyntheticQAPluginTriplet": {
-              "main.js": "76bb453acca65f260e2276a385da66c5039a643fa10681b9b7a20fc5209c1322",
-              "styles.css": "68e1cf101ceaadd624168b431fddc297c90e8a5bc6be25a15f0926ebb569a5ea",
-              "manifest.json": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64"
-            },
-            "otherRegisteredWorktreesExact": 6,
-            "ownedDependencyTargetInodeUnchanged": 45467981,
-            "protectedOriginalForeignChangesAndDependencyInodeUnchanged": true,
-            "nativeProcessPidsAbsent": [
-              3243598,
-              3243624,
-              3243701,
-              3243708,
-              3243722,
-              3244554,
-              3244584,
-              3244661,
-              3244668,
-              3244694
-            ],
-            "userVaultUsed": false,
-            "sourcesEdited": false
-          },
-          "fullE2E": false,
-          "commonGateClosed": false,
-          "evidence": "docs/reference/atlas-shared-location-h02/cleanup.json",
-          "sha256": "85104415b1db06d3e6e5340f05c9fccde20c1a9911621ee8308ca90d48cc2a56",
-          "productEdited": false,
           "nativeRepeated": false
         },
         "detailBindingDiagnosticD01": {
@@ -154881,7 +154760,7 @@
           "fullE2E": false,
           "qualifiedLocationScopeReopened": false,
           "evidence": "docs/reference/atlas-detail-binding-d01/receipt.json",
-          "sha256": "2ff39c51e511c1d35a946db518675ec737d85b573a4fab690b3740df639e387f",
+          "sha256": "28f60f0f4b1821a380023f10ccf4a24c8f2c12e6f36fbd01dbc94e5bda214c5d",
           "reproduction": "docs/reference/atlas-detail-binding-d01/diagnostic.entry.ts",
           "modelCases": 4
         },
@@ -155190,7 +155069,7 @@
           },
           "finishedAt": "2026-10-10T23:34:50.676462+00:00",
           "receipt": "docs/reference/atlas-detail-binding-d01/dungeon-at-location-h01.json",
-          "sha256": "b4c3aadf414476e071e10b7c8834255efa3d06e32f3d954f105aa1f0ab7f67e1",
+          "sha256": "7ea12f49127fd9284ab575acdf889a20f9a3d0239e6f0d75286377afeac8ab3c",
           "nativeEditRun": "1791675129674-atlas-spatial-edit",
           "freshProcessRun": "1791675181265-atlas-spatial-reopen"
         },
@@ -155451,7 +155330,7 @@
           "productBuildSource": "dba7d559044f9e8b072a329f2efacd7452b333b4",
           "fixtureVersion": "e2e01-spatial-v2",
           "receipt": "docs/reference/atlas-detail-binding-d01/inspector-n02-native-h02.json",
-          "receiptSha256": "44e53e87b6f11c147dce30ab4cf92e878bc4db5ee99dc77155e7a927a23a8bcf",
+          "receiptSha256": "ceb0b240c02d828e74025154bcb15e5455c5af9e533ec9bf62d75c70b7caa1a2",
           "checks": {
             "nativeEditPassed": 5,
             "freshReopenPassed": 1,
@@ -155915,7 +155794,7 @@
           "sourceCommit": "bca790c22bdab5f76a28d3f1d4699f1f464c1572",
           "qualifiedShared": "a4f20a553060ec84941b97cbb71bd105d5ca5a62",
           "receipt": "docs/reference/atlas-detail-binding-d01/inspector-zoom-geometry-d01.json",
-          "receiptSha256": "37104af6095d4ac043d4e95e0eaee18c346cc49be93f2b8846cac6fe2ce72bd3",
+          "receiptSha256": "363ec8c96ad4f5e091ae27cb391a5bd94310077e97bf2263f631dea666e1e270",
           "fixtureVersion": "e2e01-spatial-v2",
           "fixtureManifestSha256": "23735bb6c95107b7dec93ffa56ec66405a0f4fe0ec3822fc0476d90d2920188d",
           "finding": {
@@ -155951,7 +155830,7 @@
           "fixtureVersion": "e2e01-spatial-v2",
           "fixtureManifestSha256": "23735bb6c95107b7dec93ffa56ec66405a0f4fe0ec3822fc0476d90d2920188d",
           "receipt": "docs/reference/atlas-detail-binding-d01/inspector-horizontal-fit-n04.json",
-          "receiptSha256": "eaaca71c5235b72cf120347210dfeb26fc5a55b1b94a8f942074d5459822da0c",
+          "receiptSha256": "18c8e783b58eabebe4bd77e02d17c590df62017be3ef1d00d7a638060feaa7f9",
           "result": "existing Location/Room actions and detail/binding targets fit available dock width; native seven-sample horizontal-layout regression PASS, 131% sidebar-open153/153 versus D01 153/276 CSSpx",
           "checks": {
             "type": "PASS",
@@ -162758,11 +162637,6 @@
                 "path": "docs/reference/atlas-detail-binding-d01/room-save-prepared-journal-j03/room-save-prepared-j03-probe.cjs",
                 "sha256": "cb4105c768411b55028b9514b6bd69069c029ad074d698f7049b218ecc6c3dca",
                 "bytes": 12947
-              },
-              {
-                "path": "docs/reference/atlas-detail-binding-d01/room-save-prepared-journal-j03/slot-claim.json",
-                "sha256": "ed4d4ec28dd30e6d01b43aa37cde8a09339bb6d4b1f38482e8c27cddd2b82f2e",
-                "bytes": 375
               },
               {
                 "path": "docs/reference/atlas-detail-binding-d01/room-save-prepared-journal-j03/process-end.json",

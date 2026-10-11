@@ -1125,8 +1125,6 @@ I01-A liefert die validierten Vertrags- und Projektionsinputs für I01-B.
   20 bleibt vollständig I01-C; echte Persistenz-, Performance- und UI-Gates
   bleiben I02/I03/SMR-11.
 
-Abschluss: getrennte Implementation, Review, Repair und Re-review.
-
 ### Kernverträge und Umsetzung — I01-C – History, Lösch- und Coordinator-Verträge
 
 - C01: providerneutrale Registry-, Manifest-, Slot-, Token-, Tombstone- und
@@ -1139,8 +1137,7 @@ Abschluss: getrennte Implementation, Review, Repair und Re-review.
   Command-/Phase-/Survivor-Zuordnung;
 - keine echte Erasure, Persistenz oder Prozessarbeit.
 
-Abschluss: getrennte Implementation, Review, Repair und Re-review. Die
-Faultmodelltests sind kein SMR-01-/Host-PASS.
+Faultmodelltests belegen keine tatsächliche Speicherung oder Hostfunktion.
 
 ### Kernverträge und Umsetzung — I02 – Persistenter Campaign-/Recovery-Adapter
 
@@ -1151,6 +1148,6 @@ Abnahmen; nicht Teil von I01.
 
 ### Kernverträge und Umsetzung — I03 – GM-Anwendung und Consumeradapter
 
-Erst nach ADR-/UI-Gate: Roster-, Party-, Scene-, Focus- und Pending-UX,
+Die GM-Anwendung verbindet Roster-, Party-, Scene-, Focus- und Pending-UX,
 Tastatur/200 Prozent/Lokalisierung sowie Music/Weather/Shops/Karten-
 Consumeradapter. Kein Passive Display; dessen sichere Projektion bleibt SMR-10.
