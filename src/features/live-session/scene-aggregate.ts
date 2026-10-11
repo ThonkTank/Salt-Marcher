@@ -1,0 +1,613 @@
+import type {
+  FocusSourceSnapshot,
+  LiveSceneSourceSnapshot,
+  OwnerReconciliation,
+  PartyProjection,
+} from "./contracts";
+import {
+  parseInitializeLiveSessionCommand,
+  parseMoveCharactersCommand,
+  parsePrepareRuntimeCommand,
+  parseSetFocusCommand,
+  type AggregateCommandBinding,
+} from "./commands";
+import {
+  revision,
+  type CharacterId,
+  type CommandDigest,
+  type CommandId,
+  type LiveSceneId,
+  type OwnerId,
+  type Revision,
+} from "./ids";
+import {
+  parseLiveSessionAggregateState,
+  type LiveSessionAggregateState,
+  type RuntimeSceneState,
+} from "./state";
+
+export type AggregateRejectionReason =
+  | "cancelled"
+  | "foreign-campaign"
+  | "stale-party"
+  | "stale-focus"
+  | "already-initialized"
+  | "not-initialized"
+  | "id-collision"
+  | "unknown-scene"
+  | "stale-scene"
+  | "inactive-scene"
+  | "same-scene"
+  | "invalid-membership"
+  | "prepared-scene";
+
+export interface ConsumerReconciliationDuty {
+  readonly ownerId: OwnerId;
+  readonly campaignId: LiveSessionAggregateState["campaignId"];
+  readonly commandId: CommandId;
+  readonly commandDigest: CommandDigest;
+  readonly sourceSceneId: LiveSceneId;
+  readonly targetSceneId: LiveSceneId;
+  readonly expectedSourceRevision: Revision;
+  readonly expectedTargetRevision: Revision;
+  readonly sourceLifecycleBefore: "active";
+  readonly sourceLifecycleAfter: "active" | "retired";
+  readonly action: "remove-participants" | "archive-source";
+  readonly characterIds: readonly CharacterId[];
+  readonly status: "required" | "pending";
+}
+
+export interface SceneCleanupDecision {
+  readonly sourceSceneId: LiveSceneId;
+  readonly targetSceneId: LiveSceneId;
+  readonly sourceRevisionBefore: Revision;
+  readonly sourceRevisionAfter: Revision;
+  readonly targetRevisionBefore: Revision;
+  readonly targetRevisionAfter: Revision;
+  readonly sourceLifecycleBefore: "active";
+  readonly sourceLifecycleAfter: "active" | "retired";
+  readonly primaryBefore: LiveSceneId;
+  readonly primaryAfter: LiveSceneId;
+  readonly focusBefore: LiveSceneId | null;
+  readonly focusAfter: LiveSceneId | null;
+  readonly focusRevisionBefore: Revision;
+  readonly focusRevisionAfter: Revision;
+  readonly movedCharacterIds: readonly CharacterId[];
+  readonly reconciliations: readonly ConsumerReconciliationDuty[];
+}
+
+export interface AggregateAppliedDecision {
+  readonly campaignId: LiveSessionAggregateState["campaignId"];
+  readonly commandId: CommandId;
+  readonly commandDigest: CommandDigest;
+  readonly kind:
+    | "initialized"
+    | "prepared-runtime-created"
+    | "characters-moved"
+    | "focus-changed";
+  readonly partyRevisionBefore: Revision;
+  readonly partyRevisionAfter: Revision;
+  readonly focusRevisionBefore: Revision;
+  readonly focusRevisionAfter: Revision;
+  readonly sceneCleanup?: SceneCleanupDecision;
+}
+
+export type AggregateCommandResult =
+  | {
+      readonly status: "applied";
+      readonly state: LiveSessionAggregateState;
+      readonly decision: AggregateAppliedDecision;
+    }
+  | {
+      readonly status: "rejected" | "cancelled";
+      readonly state: LiveSessionAggregateState;
+      readonly commandId: CommandId;
+      readonly commandDigest: CommandDigest;
+      readonly reason: AggregateRejectionReason;
+    };
+
+function nextRevision(value: Revision, label: string): Revision {
+  return revision(value + 1, label);
+}
+
+function reject(
+  state: LiveSessionAggregateState,
+  command: AggregateCommandBinding,
+  reason: AggregateRejectionReason,
+): AggregateCommandResult {
+  return Object.freeze({
+    status: reason === "cancelled" ? "cancelled" : "rejected",
+    state,
+    commandId: command.commandId,
+    commandDigest: command.commandDigest,
+    reason,
+  });
+}
+
+function commonRejection(
+  state: LiveSessionAggregateState,
+  command: AggregateCommandBinding,
+): AggregateCommandResult | undefined {
+  if (command.cancelled) return reject(state, command, "cancelled");
+  if (command.campaignId !== state.campaignId)
+    return reject(state, command, "foreign-campaign");
+  if (command.expectedPartyRevision !== state.party.partyRevision)
+    return reject(state, command, "stale-party");
+  if (command.expectedFocusRevision !== state.focus.focusRevision)
+    return reject(state, command, "stale-focus");
+  return undefined;
+}
+
+function applied(
+  state: LiveSessionAggregateState,
+  command: AggregateCommandBinding,
+  kind: AggregateAppliedDecision["kind"],
+  partyBefore: Revision,
+  focusBefore: Revision,
+  sceneCleanup?: SceneCleanupDecision,
+): AggregateCommandResult {
+  return Object.freeze({
+    status: "applied",
+    state,
+    decision: Object.freeze({
+      campaignId: state.campaignId,
+      commandId: command.commandId,
+      commandDigest: command.commandDigest,
+      kind,
+      partyRevisionBefore: partyBefore,
+      partyRevisionAfter: state.party.partyRevision,
+      focusRevisionBefore: focusBefore,
+      focusRevisionAfter: state.focus.focusRevision,
+      ...(sceneCleanup === undefined ? {} : { sceneCleanup }),
+    }),
+  });
+}
+
+function sceneRaw(scene: RuntimeSceneState, source: LiveSceneSourceSnapshot) {
+  return {
+    ...scene,
+    source,
+  };
+}
+
+function partyWithAssignments(
+  party: PartyProjection,
+  assignments: ReadonlyMap<CharacterId, { sceneId: LiveSceneId; revision: Revision }>,
+): PartyProjection {
+  return {
+    ...party,
+    partyRevision: nextRevision(party.partyRevision, "PartyProjection.partyRevision"),
+    characters: party.characters.map((character) => {
+      const assignment = assignments.get(character.characterId);
+      return assignment === undefined
+        ? character
+        : {
+            ...character,
+            sceneAssignment: {
+              status: "assigned" as const,
+              liveSceneId: assignment.sceneId,
+              sceneRevision: assignment.revision,
+            },
+          };
+    }),
+  };
+}
+
+export function initializeLiveSession(
+  stateValue: unknown,
+  commandValue: unknown,
+): AggregateCommandResult {
+  const state = parseLiveSessionAggregateState(stateValue),
+    command = parseInitializeLiveSessionCommand(commandValue),
+    blocked = commonRejection(state, command);
+  if (blocked) return blocked;
+  if (state.scenes.some((scene) => scene.source.lifecycle === "active"))
+    return reject(state, command, "already-initialized");
+  if (state.scenes.some((scene) => scene.source.liveSceneId === command.primarySceneId))
+    return reject(state, command, "id-collision");
+  if (
+    state.party.characters.some(
+      (character) =>
+        character.active && character.sceneAssignment.status !== "not-started",
+    )
+  )
+    return reject(state, command, "invalid-membership");
+  const partyRevision = nextRevision(
+      state.party.partyRevision,
+      "PartyProjection.partyRevision",
+    ),
+    sceneRevision = revision(0),
+    characterIds = Object.freeze(
+      state.party.characters
+        .filter((character) => character.active)
+        .map((character) => character.characterId),
+    ),
+    party = {
+      ...state.party,
+      partyRevision,
+      characters: state.party.characters.map((character) =>
+        character.active
+          ? {
+              ...character,
+              sceneAssignment: {
+                status: "assigned" as const,
+                liveSceneId: command.primarySceneId,
+                sceneRevision,
+              },
+            }
+          : character,
+      ),
+    },
+    focusRevision = nextRevision(
+      state.focus.focusRevision,
+      "FocusSource.focusRevision",
+    ),
+    source = {
+      kind: "live-scene-source",
+      version: 1,
+      campaignId: state.campaignId,
+      liveSceneId: command.primarySceneId,
+      sceneRevision,
+      lifecycle: "active",
+      primary: true,
+      characterIds,
+      pendingAssignments: [],
+      sceneClockRef: command.sceneClockRef,
+      groupRefs: [],
+      maskRefs: [],
+      reconciliations: [],
+      contentPins: [],
+    },
+    next = parseLiveSessionAggregateState({
+      ...state,
+      party,
+      focus: {
+        kind: "focus-source",
+        version: 1,
+        status: "active",
+        campaignId: state.campaignId,
+        focusRevision,
+        liveSceneId: command.primarySceneId,
+        sceneRevision,
+      },
+      primarySceneId: command.primarySceneId,
+      scenes: [
+        ...state.scenes,
+        {
+          kind: "runtime-scene-state",
+          version: 1,
+          source,
+          title: command.title,
+          notes: command.notes,
+        },
+      ],
+    });
+  return applied(
+    next,
+    command,
+    "initialized",
+    state.party.partyRevision,
+    state.focus.focusRevision,
+  );
+}
+
+export function createPreparedRuntime(
+  stateValue: unknown,
+  commandValue: unknown,
+): AggregateCommandResult {
+  const state = parseLiveSessionAggregateState(stateValue),
+    command = parsePrepareRuntimeCommand(commandValue),
+    blocked = commonRejection(state, command);
+  if (blocked) return blocked;
+  if (!state.primarySceneId) return reject(state, command, "not-initialized");
+  if (command.snapshot.campaignId !== state.campaignId)
+    return reject(state, command, "foreign-campaign");
+  if (state.scenes.some((scene) => scene.source.liveSceneId === command.liveSceneId))
+    return reject(state, command, "id-collision");
+  if (
+    state.scenes.some(
+      (scene) =>
+        scene.source.sceneClockRef?.ownerId === command.sceneClockRef.ownerId &&
+        scene.source.sceneClockRef.referenceId === command.sceneClockRef.referenceId,
+    )
+  )
+    return reject(state, command, "id-collision");
+  const source = {
+      kind: "live-scene-source",
+      version: 1,
+      campaignId: state.campaignId,
+      liveSceneId: command.liveSceneId,
+      sceneRevision: revision(0),
+      lifecycle: "prepared",
+      primary: false,
+      characterIds: [],
+      pendingAssignments: [],
+      ...(command.snapshot.locationRef === undefined
+        ? {}
+        : { locationRef: command.snapshot.locationRef }),
+      sceneClockRef: command.sceneClockRef,
+      groupRefs: [],
+      maskRefs: [],
+      reconciliations: [],
+      contentPins: command.snapshot.contentPins,
+    },
+    next = parseLiveSessionAggregateState({
+      ...state,
+      scenes: [
+        ...state.scenes,
+        {
+          kind: "runtime-scene-state",
+          version: 1,
+          source,
+          title: command.snapshot.title,
+          notes: command.snapshot.notes,
+          preparedFrom: command.snapshot,
+          ...(command.snapshot.encounterPlanRef === undefined
+            ? {}
+            : { encounterPlanRef: command.snapshot.encounterPlanRef }),
+        },
+      ],
+    });
+  return applied(
+    next,
+    command,
+    "prepared-runtime-created",
+    state.party.partyRevision,
+    state.focus.focusRevision,
+  );
+}
+
+function focusId(focus: FocusSourceSnapshot): LiveSceneId | null {
+  return focus.status === "active" ? focus.liveSceneId : null;
+}
+
+function reconciliationDuties(
+  state: LiveSessionAggregateState,
+  command: ReturnType<typeof parseMoveCharactersCommand>,
+  source: LiveSceneSourceSnapshot,
+  target: LiveSceneSourceSnapshot,
+  retired: boolean,
+): readonly ConsumerReconciliationDuty[] {
+  const ownerStates = new Map<OwnerId, OwnerReconciliation["status"]>();
+  for (const entry of source.reconciliations)
+    ownerStates.set(entry.ownerId, entry.status);
+  for (const mask of source.maskRefs)
+    if (!ownerStates.has(mask.ownerId)) ownerStates.set(mask.ownerId, "current");
+  return Object.freeze(
+    [...ownerStates.entries()].map(([ownerId, status]) =>
+      Object.freeze({
+        ownerId,
+        campaignId: state.campaignId,
+        commandId: command.commandId,
+        commandDigest: command.commandDigest,
+        sourceSceneId: source.liveSceneId,
+        targetSceneId: target.liveSceneId,
+        expectedSourceRevision: command.expectedSourceRevision,
+        expectedTargetRevision: command.expectedTargetRevision,
+        sourceLifecycleBefore: "active" as const,
+        sourceLifecycleAfter: retired ? ("retired" as const) : ("active" as const),
+        action: retired ? ("archive-source" as const) : ("remove-participants" as const),
+        characterIds: Object.freeze([...command.characterIds]),
+        status: status === "current" ? ("required" as const) : ("pending" as const),
+      }),
+    ),
+  );
+}
+
+export function moveCharacters(
+  stateValue: unknown,
+  commandValue: unknown,
+): AggregateCommandResult {
+  const state = parseLiveSessionAggregateState(stateValue),
+    command = parseMoveCharactersCommand(commandValue),
+    blocked = commonRejection(state, command);
+  if (blocked) return blocked;
+  if (!state.primarySceneId) return reject(state, command, "not-initialized");
+  if (command.sourceSceneId === command.targetSceneId)
+    return reject(state, command, "same-scene");
+  const sourceIndex = state.scenes.findIndex(
+      (scene) => scene.source.liveSceneId === command.sourceSceneId,
+    ),
+    targetIndex = state.scenes.findIndex(
+      (scene) => scene.source.liveSceneId === command.targetSceneId,
+    );
+  if (sourceIndex < 0 || targetIndex < 0)
+    return reject(state, command, "unknown-scene");
+  const sourceScene = state.scenes[sourceIndex]!,
+    targetScene = state.scenes[targetIndex]!,
+    source = sourceScene.source,
+    target = targetScene.source;
+  if (source.lifecycle !== "active" || !["active", "prepared"].includes(target.lifecycle))
+    return reject(state, command, "inactive-scene");
+  if (
+    source.sceneRevision !== command.expectedSourceRevision ||
+    target.sceneRevision !== command.expectedTargetRevision
+  )
+    return reject(state, command, "stale-scene");
+  const selected = new Set(command.characterIds),
+    partyById = new Map(
+      state.party.characters.map((character) => [character.characterId, character]),
+    );
+  if (
+    command.characterIds.some((id) => {
+      const character = partyById.get(id);
+      return (
+        !character?.active ||
+        character.sceneAssignment.status !== "assigned" ||
+        character.sceneAssignment.liveSceneId !== source.liveSceneId ||
+        character.sceneAssignment.sceneRevision !== source.sceneRevision ||
+        !source.characterIds.includes(id)
+      );
+    })
+  )
+    return reject(state, command, "invalid-membership");
+
+  const sourceRevision = nextRevision(source.sceneRevision, "Source.sceneRevision"),
+    targetRevision = nextRevision(target.sceneRevision, "Target.sceneRevision"),
+    sourceCharacters = source.characterIds.filter((id) => !selected.has(id)),
+    targetMembership = new Set([...target.characterIds, ...command.characterIds]),
+    targetCharacters = state.party.characters
+      .filter((character) => targetMembership.has(character.characterId))
+      .map((character) => character.characterId),
+    retired = sourceCharacters.length === 0,
+    focusBefore = focusId(state.focus),
+    focusChanges =
+      retired &&
+      state.focus.status === "active" &&
+      (state.focus.liveSceneId === source.liveSceneId ||
+        state.focus.liveSceneId === target.liveSceneId),
+    focusRevision = focusChanges
+      ? nextRevision(state.focus.focusRevision, "FocusSource.focusRevision")
+      : state.focus.focusRevision,
+    primaryAfter = source.primary && retired ? target.liveSceneId : state.primarySceneId,
+    nextSource: LiveSceneSourceSnapshot = {
+      ...source,
+      sceneRevision: sourceRevision,
+      lifecycle: retired ? "retired" : "active",
+      primary: retired ? false : source.primary,
+      characterIds: sourceCharacters,
+      reconciliations: source.reconciliations.map((entry) =>
+        entry.status === "current"
+          ? entry
+          : {
+              ownerId: entry.ownerId,
+              status: "pending" as const,
+              commandId: command.commandId,
+            },
+      ),
+    },
+    nextTarget: LiveSceneSourceSnapshot = {
+      ...target,
+      sceneRevision: targetRevision,
+      lifecycle: "active",
+      primary: target.primary || (source.primary && retired),
+      characterIds: targetCharacters,
+    },
+    assignments = new Map<
+      CharacterId,
+      { sceneId: LiveSceneId; revision: Revision }
+    >();
+  for (const id of sourceCharacters)
+    assignments.set(id, { sceneId: source.liveSceneId, revision: sourceRevision });
+  for (const id of targetCharacters)
+    assignments.set(id, { sceneId: target.liveSceneId, revision: targetRevision });
+  const party = partyWithAssignments(state.party, assignments),
+    focus: FocusSourceSnapshot = focusChanges
+      ? {
+          kind: "focus-source",
+          version: 1,
+          status: "active",
+          campaignId: state.campaignId,
+          focusRevision,
+          liveSceneId: target.liveSceneId,
+          sceneRevision: targetRevision,
+        }
+      : state.focus.status === "active" &&
+          state.focus.liveSceneId === source.liveSceneId
+        ? {
+            ...state.focus,
+            sceneRevision: sourceRevision,
+          }
+        : state.focus.status === "active" &&
+            state.focus.liveSceneId === target.liveSceneId
+          ? {
+              ...state.focus,
+              sceneRevision: targetRevision,
+            }
+          : state.focus,
+    duties = reconciliationDuties(state, command, source, target, retired),
+    cleanup = Object.freeze({
+      sourceSceneId: source.liveSceneId,
+      targetSceneId: target.liveSceneId,
+      sourceRevisionBefore: source.sceneRevision,
+      sourceRevisionAfter: sourceRevision,
+      targetRevisionBefore: target.sceneRevision,
+      targetRevisionAfter: targetRevision,
+      sourceLifecycleBefore: "active" as const,
+      sourceLifecycleAfter: retired ? ("retired" as const) : ("active" as const),
+      primaryBefore: state.primarySceneId,
+      primaryAfter,
+      focusBefore,
+      focusAfter: focusId(focus),
+      focusRevisionBefore: state.focus.focusRevision,
+      focusRevisionAfter: focus.focusRevision,
+      movedCharacterIds: Object.freeze([...command.characterIds]),
+      reconciliations: duties,
+    }),
+    scenes = state.scenes.map((scene, index) =>
+      index === sourceIndex
+        ? sceneRaw(sourceScene, nextSource)
+        : index === targetIndex
+          ? sceneRaw(targetScene, nextTarget)
+          : scene,
+    ),
+    next = parseLiveSessionAggregateState({
+      ...state,
+      party,
+      focus,
+      primarySceneId: primaryAfter,
+      scenes,
+    });
+  return applied(
+    next,
+    command,
+    "characters-moved",
+    state.party.partyRevision,
+    state.focus.focusRevision,
+    cleanup,
+  );
+}
+
+export function setFocus(
+  stateValue: unknown,
+  commandValue: unknown,
+): AggregateCommandResult {
+  const state = parseLiveSessionAggregateState(stateValue),
+    command = parseSetFocusCommand(commandValue),
+    blocked = commonRejection(state, command);
+  if (blocked) return blocked;
+  let focus: FocusSourceSnapshot;
+  if (command.targetSceneId === null) {
+    focus = {
+      kind: "focus-source",
+      version: 1,
+      status: "none",
+      campaignId: state.campaignId,
+      focusRevision: nextRevision(
+        state.focus.focusRevision,
+        "FocusSource.focusRevision",
+      ),
+    };
+  } else {
+    const target = state.scenes.find(
+      (scene) => scene.source.liveSceneId === command.targetSceneId,
+    )?.source;
+    if (!target) return reject(state, command, "unknown-scene");
+    if (target.lifecycle === "prepared")
+      return reject(state, command, "prepared-scene");
+    if (target.lifecycle !== "active")
+      return reject(state, command, "inactive-scene");
+    if (target.sceneRevision !== command.expectedTargetRevision)
+      return reject(state, command, "stale-scene");
+    focus = {
+      kind: "focus-source",
+      version: 1,
+      status: "active",
+      campaignId: state.campaignId,
+      focusRevision: nextRevision(
+        state.focus.focusRevision,
+        "FocusSource.focusRevision",
+      ),
+      liveSceneId: target.liveSceneId,
+      sceneRevision: target.sceneRevision,
+    };
+  }
+  const next = parseLiveSessionAggregateState({ ...state, focus });
+  return applied(
+    next,
+    command,
+    "focus-changed",
+    state.party.partyRevision,
+    state.focus.focusRevision,
+  );
+}

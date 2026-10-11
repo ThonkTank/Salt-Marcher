@@ -4,7 +4,15 @@ import test from "node:test";
 import ts from "typescript";
 
 const ROOT = new URL("../src/features/live-session/", import.meta.url);
-const ALLOWED_STATIC_IMPORTS = new Set(["./contracts", "./ids", "./projections"]);
+const ALLOWED_STATIC_IMPORTS = new Set([
+  "./commands",
+  "./contracts",
+  "./ids",
+  "./projections",
+  "./scene-aggregate",
+  "./state",
+  "./validation",
+]);
 
 function importsIn(source, file = "module.ts") {
   const tree = ts.createSourceFile(
@@ -68,7 +76,16 @@ function assertLocalStaticImports(source, file = "module.ts") {
 
 test("live-session core has no host, persistence or player-display surface", async () => {
   const files = (await readdir(ROOT)).filter((file) => file.endsWith(".ts"));
-  assert.deepEqual(files.sort(), ["contracts.ts", "ids.ts", "index.ts", "projections.ts"]);
+  assert.deepEqual(files.sort(), [
+    "commands.ts",
+    "contracts.ts",
+    "ids.ts",
+    "index.ts",
+    "projections.ts",
+    "scene-aggregate.ts",
+    "state.ts",
+    "validation.ts",
+  ]);
   const sources = await Promise.all(
     files.map(async (file) => [file, await readFile(new URL(file, ROOT), "utf8")]),
   );

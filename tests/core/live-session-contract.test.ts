@@ -182,6 +182,16 @@ test("party contracts reject unknown fields, duplicate ids and contradictory mem
   assert.throws(() => parsePartyProjection(inherited), /berechnete/);
 });
 
+test("active Party members may be explicitly not-started before initialization", () => {
+  const raw = partyRaw();
+  raw.characters[0]!.sceneAssignment = { status: "not-started" };
+  const parsed = parsePartyProjection(raw);
+  assert.equal(parsed.characters[0]?.sceneAssignment.status, "not-started");
+
+  raw.characters[1]!.sceneAssignment = { status: "not-started" };
+  assert.throws(() => parsePartyProjection(raw), /widersprüchliche Scene-Zuordnung/);
+});
+
 test("PreparationSnapshot is an independent immutable copy with exact provenance", () => {
   const raw = {
       kind: "preparation-snapshot",

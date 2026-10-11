@@ -49,6 +49,7 @@ export interface PartyCharacterProgressProjection {
 
 export type PartySceneAssignment =
   | { readonly status: "inactive" }
+  | { readonly status: "not-started" }
   | {
       readonly status: "assigned";
       readonly liveSceneId: LiveSceneId;
@@ -256,7 +257,10 @@ function unique<T>(
   return values;
 }
 
-function ownerReference(value: unknown, label: string): OwnerReference {
+export function parseOwnerReference(
+  value: unknown,
+  label = "OwnerReference",
+): OwnerReference {
   const row = record(
     value,
     ["ownerId", "referenceId", "ownerRevision"],
@@ -274,7 +278,7 @@ function ownerReferences(value: unknown, label: string): readonly OwnerReference
   return Object.freeze(
     unique(
       array(value, label).map((entry, index) =>
-        ownerReference(entry, `${label}[${index}]`),
+        parseOwnerReference(entry, `${label}[${index}]`),
       ),
       (entry) => `${entry.ownerId}\u0000${entry.referenceId}`,
       label,
@@ -383,6 +387,10 @@ function sceneAssignment(value: unknown, label: string): PartySceneAssignment {
     record(value, ["status"], [], label);
     return Object.freeze({ status: "inactive" });
   }
+  if (base.status === "not-started") {
+    record(value, ["status"], [], label);
+    return Object.freeze({ status: "not-started" });
+  }
   if (base.status === "assigned") {
     const row = record(value, ["status", "liveSceneId", "sceneRevision"], [], label);
     return Object.freeze({
@@ -417,7 +425,10 @@ export function parsePartyProjection(value: unknown): PartyProjection {
         row = record(entry, ["characterId", "active", "profile", "progress", "sceneAssignment"], [], label),
         active = bool(row.active, `${label}.active`),
         assignment = sceneAssignment(row.sceneAssignment, `${label}.sceneAssignment`);
-      if ((active && assignment.status === "inactive") || (!active && assignment.status !== "inactive"))
+      if (
+        (active && assignment.status === "inactive") ||
+        (!active && assignment.status !== "inactive")
+      )
         throw new Error(`${label} besitzt eine widersprüchliche Scene-Zuordnung.`);
       return Object.freeze({
         characterId: characterId(row.characterId, `${label}.characterId`),
@@ -488,12 +499,12 @@ export function parsePreparationSnapshot(value: unknown): PreparationSnapshot {
     notes: text(root.notes, "PreparationSnapshot.notes", true),
     ...(root.locationRef === undefined
       ? {}
-      : { locationRef: ownerReference(root.locationRef, "PreparationSnapshot.locationRef") }),
+      : { locationRef: parseOwnerReference(root.locationRef, "PreparationSnapshot.locationRef") }),
     contentPins: ownerReferences(root.contentPins, "PreparationSnapshot.contentPins"),
     ...(root.encounterPlanRef === undefined
       ? {}
       : {
-          encounterPlanRef: ownerReference(
+          encounterPlanRef: parseOwnerReference(
             root.encounterPlanRef,
             "PreparationSnapshot.encounterPlanRef",
           ),
@@ -626,10 +637,10 @@ export function parseLiveSceneSource(value: unknown): LiveSceneSourceSnapshot {
     pendingAssignments: pendingAssignments(root.pendingAssignments),
     ...(root.locationRef === undefined
       ? {}
-      : { locationRef: ownerReference(root.locationRef, "LiveSceneSource.locationRef") }),
+      : { locationRef: parseOwnerReference(root.locationRef, "LiveSceneSource.locationRef") }),
     ...(root.sceneClockRef === undefined
       ? {}
-      : { sceneClockRef: ownerReference(root.sceneClockRef, "LiveSceneSource.sceneClockRef") }),
+      : { sceneClockRef: parseOwnerReference(root.sceneClockRef, "LiveSceneSource.sceneClockRef") }),
     groupRefs: ownerReferences(root.groupRefs, "LiveSceneSource.groupRefs"),
     maskRefs: maskReferences(root.maskRefs),
     reconciliations: reconciliations(root.reconciliations),

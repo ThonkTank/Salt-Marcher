@@ -1,6 +1,7 @@
 export {
   parseFocusSource,
   parseLiveSceneSource,
+  parseOwnerReference,
   parsePartyProjection,
   parsePreparationSnapshot,
   type FocusSourceSnapshot,
@@ -20,6 +21,7 @@ export {
   campaignId,
   characterId,
   commandId,
+  commandDigest,
   liveSceneId,
   maskId,
   ownerId,
@@ -29,6 +31,7 @@ export {
   type CampaignId,
   type CharacterId,
   type CommandId,
+  type CommandDigest,
   type LiveSceneId,
   type MaskId,
   type OwnerId,
@@ -46,3 +49,31 @@ export {
   type LiveSceneProjectionResult,
   type LiveSessionProjection,
 } from "./projections";
+export {
+  createUninitializedLiveSessionState,
+  parseLiveSessionAggregateState,
+  type LiveSessionAggregateState,
+  type RuntimeSceneState,
+} from "./state";
+export {
+  parseInitializeLiveSessionCommand,
+  parseMoveCharactersCommand,
+  parsePrepareRuntimeCommand,
+  parseSetFocusCommand,
+  type AggregateCommandBinding,
+  type InitializeLiveSessionCommand,
+  type MoveCharactersCommand,
+  type PrepareRuntimeCommand,
+  type SetFocusCommand,
+} from "./commands";
+export {
+  createPreparedRuntime,
+  initializeLiveSession,
+  moveCharacters,
+  setFocus,
+  type AggregateAppliedDecision,
+  type AggregateCommandResult,
+  type AggregateRejectionReason,
+  type ConsumerReconciliationDuty,
+  type SceneCleanupDecision,
+} from "./scene-aggregate";

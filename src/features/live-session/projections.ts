@@ -536,6 +536,7 @@ function activeSceneMatchesParty(
   }
   for (const character of party.characters) {
     const assignment = character.sceneAssignment;
+    if (character.active && assignment.status === "not-started") return false;
     if (
       character.active &&
       assignment.status === "assigned" &&

@@ -30,6 +30,7 @@ import "./core/location.test";
 import "./core/location-key-draft.test";
 import "./core/atlas-location-draft.test";
 import "./core/live-session-contract.test";
+import "./core/scene-lifecycle.test";
 import "./core/atlas-location-repository.test";
 import "./core/campaign-lifecycle.test";
 import "./core/campaign-remap.test";

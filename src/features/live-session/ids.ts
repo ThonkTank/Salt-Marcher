@@ -6,6 +6,7 @@ export type LiveSceneId = OpaqueId<"LiveSceneId">;
 export type MaskId = OpaqueId<"MaskId">;
 export type OwnerId = OpaqueId<"OwnerId">;
 export type CommandId = OpaqueId<"CommandId">;
+export type CommandDigest = OpaqueId<"CommandDigest">;
 export type PreparationId = OpaqueId<"PreparationId">;
 export type ReferenceId = OpaqueId<"ReferenceId">;
 export type Revision = number & { readonly __revision: true };
@@ -41,6 +42,10 @@ export const ownerId = (value: unknown, label = "ownerId"): OwnerId =>
   opaque<"OwnerId">(value, label);
 export const commandId = (value: unknown, label = "commandId"): CommandId =>
   opaque<"CommandId">(value, label);
+export const commandDigest = (
+  value: unknown,
+  label = "commandDigest",
+): CommandDigest => opaque<"CommandDigest">(value, label);
 export const preparationId = (
   value: unknown,
   label = "preparationId",
