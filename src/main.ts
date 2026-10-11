@@ -59,7 +59,7 @@ import { atlasCampaignServices } from "./ui/atlas-campaign-services";
 import { VaultCampaignRuntimeStorage } from "./vault-campaign-runtime-source";
 import { VaultMwsImportMediaFiles } from "./vault-mws-import-media";
 import { WORLD_NOTES_VIEW, WorldNotesView } from "./ui/world-notes-view";
-import type { WorldNotesDraftBuffer } from "./ui/world-notes-panel";
+import { WorldNotesDraftBuffer } from "./ui/world-notes-panel";
 
 export interface OpenMap {
   session: Session;
@@ -152,7 +152,7 @@ interface CreationAppearance {
   readonly buildingWearMode?: "none" | "grime";
 }
 export default class DungeonPlugin extends Plugin {
-  private readonly worldNotesDraftBuffer: WorldNotesDraftBuffer = new Map();
+  private readonly worldNotesDraftBuffer = new WorldNotesDraftBuffer();
   private campaignServices?: ReturnType<typeof atlasCampaignServices>;
   private atlasCampaigns(): ReturnType<typeof atlasCampaignServices> {
     if (!this.campaignServices) {

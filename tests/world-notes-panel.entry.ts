@@ -9,7 +9,7 @@ import { serializeWorldNote } from "../src/features/world/world-notes";
 import { payloadDigest, type CampaignCommandId } from "../src/features/campaign/campaign-contracts";
 import { campaignOwnershipDigestValue } from "../src/features/campaign/campaign-ownership";
 import { worldNotePath, type WorldNotesCommitReceiptV1 } from "../src/features/campaign/world-notes-commit";
-import { WorldNotesPanel, type WorldNotesCreatureChoice } from "../src/ui/world-notes-panel";
+import { WorldNotesDraftBuffer, WorldNotesPanel, type WorldNotesCreatureChoice } from "../src/ui/world-notes-panel";
 
 const id = (n: number) => campaignLocalId(`00000000-0000-4000-8000-${String(n).padStart(12, "0")}`);
 const context = campaignContext(campaignSnapshot({ schemaVersion: 1,
@@ -22,7 +22,7 @@ const digest = (value: string) => `sha256:${createHash("sha256").update(value).d
 function fixture(creatures?: {
   search: (query: string) => Promise<readonly WorldNotesCreatureChoice[]>;
   detail: (id: string) => Promise<WorldNotesCreatureChoice | null>;
-}) {
+}, draftBuffer?: WorldNotesDraftBuffer) {
   const { document, window } = parseHTML("<html><body><div id='host'></div></body></html>");
   const host = document.querySelector<HTMLElement>("#host")!;
   let focused: HTMLElement | null = null;
@@ -37,6 +37,7 @@ function fixture(creatures?: {
   let rejectReceipt = false;
   const issued = new WeakSet<object>();
   const panel = new WorldNotesPanel(host, {
+    draftBuffer,
     newId: () => id(nextId++),
     currentContext: () => context,
     searchCreatures: creatures?.search,
@@ -94,6 +95,41 @@ function fixture(creatures?: {
     rejectReceipt: (value: boolean) => { rejectReceipt = value; },
     refuse: (value: boolean) => { refuse = value; }, window };
 }
+
+test("a newer view owns a shared draft; stale close cannot overwrite or revive discard", () => {
+  const drafts = new WorldNotesDraftBuffer();
+  const older = fixture(undefined, drafts);
+  older.click("NPC anlegen"); older.input("Name", "Older view text");
+  const oldInput = older.host.querySelector<HTMLInputElement>("form input")!;
+  const newer = fixture(undefined, drafts);
+  assert.equal(older.host.querySelector<HTMLElement>(".dn-world-notes")?.hidden, true);
+  assert.equal(newer.host.querySelector<HTMLInputElement>("form input")?.value, "Older view text");
+  newer.input("Name", "Newer view text");
+  oldInput.value = "stale edit";
+  oldInput.dispatchEvent(new older.window.Event("input", { bubbles: true }));
+  older.panel.destroy(); newer.panel.destroy();
+  const reopened = fixture(undefined, drafts);
+  assert.equal(reopened.host.querySelector<HTMLInputElement>("form input")?.value, "Newer view text");
+  const peer = fixture(undefined, drafts);
+  peer.click("Entwurf verwerfen"); peer.click("Verwerfen bestätigen");
+  reopened.panel.destroy(); peer.panel.destroy();
+  const afterDiscard = fixture(undefined, drafts);
+  assert.equal(afterDiscard.host.querySelector("form"), null);
+  afterDiscard.panel.destroy();
+});
+
+test("a stale view cannot revive a draft after its peer saves", async () => {
+  const drafts = new WorldNotesDraftBuffer();
+  const stale = fixture(undefined, drafts);
+  stale.click("NPC anlegen"); stale.input("Name", "Saved by peer");
+  const writer = fixture(undefined, drafts);
+  await writer.save();
+  assert.equal(writer.calls.length, 1);
+  stale.panel.destroy(); writer.panel.destroy();
+  const reopened = fixture(undefined, drafts);
+  assert.equal(reopened.host.querySelector("form"), null);
+  reopened.panel.destroy();
+});
 
 test("keyboard focus moves into a new editor and returns after save or discard", async () => {
   const f = fixture();

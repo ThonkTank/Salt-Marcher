@@ -8,6 +8,7 @@ import type { AtlasCampaignServices } from "../src/ui/atlas-campaign-host";
 import type { CreatureCatalogLoader } from "../src/features/catalog/creature-catalog-loader";
 import type { WorldNotesNativeSession } from "../src/ui/world-notes-native-session";
 import { WorldNotesView } from "../src/ui/world-notes-view";
+import { WorldNotesDraftBuffer } from "../src/ui/world-notes-panel";
 
 const context = (n: number, token = `world:${n}`) => campaignContext(campaignSnapshot({
   schemaVersion: 1,
@@ -32,7 +33,7 @@ test("actual World Notes view keeps authored A and B drafts across provider moun
     entries: async () => [],
   };
   const services = { provider } as unknown as AtlasCampaignServices;
-  const draftBuffer = new Map();
+  const draftBuffer = new WorldNotesDraftBuffer();
   class TestView extends WorldNotesView {
     protected override createSession(mounted: CampaignContextProjection): WorldNotesNativeSession {
       let closed = false;

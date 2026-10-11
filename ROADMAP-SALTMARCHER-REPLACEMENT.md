@@ -224,10 +224,14 @@ Der unabhängige enge Stadt-R01 und Exact-SHA-CI bestanden; Shared-Merge
 `87ccdb26`. Die vollständige SMR-02-Abnahme steht aus.
 
 Der folgende #68-Beitrag erhält diese Entwürfe auch beim Schließen und erneuten
-Öffnen der Weltwissen-Ansicht innerhalb derselben Pluginlaufzeit. Der
+Öffnen der Weltwissen-Ansicht innerhalb derselben Pluginlaufzeit. Pro
+Kampagne/Namespace besitzt nur eine Ansicht den editierbaren Entwurf; eine
+überholte Ansicht kann weder einen neueren Text überschreiben noch nach Save
+oder ausdrücklichem Verwerfen einen alten Entwurf wiederbeleben. Der
 Kampagnen-Snapshot wird weiterhin frisch bestätigt; der Puffer trägt keine
-Speicherautorität. Der fokussierte DOM-Test prüft A/B-Entwürfe, alte Eingaben
-und ausdrückliches Verwerfen nach dem Wiederöffnen. Ein isolierter echter
+Speicherautorität. Fokussierte DOM-Gegenproben prüfen A/B-Entwürfe, alte
+Eingaben, Close-Reihenfolgen sowie Save/Discard mit einer zweiten Ansicht.
+Ein isolierter echter
 Obsidianlauf A→B→A→B, Ansicht schließen/öffnen, B- und A-Entwurf erneut
 anzeigen, 16 native Eingabedateien bytegleich und normaler Exit bestand;
 Rohbeleg auf sauberem Produktstand `a3b2576c` unter
