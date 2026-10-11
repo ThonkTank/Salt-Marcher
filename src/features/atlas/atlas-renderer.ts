@@ -136,7 +136,7 @@ export class AtlasRenderer {
     });
     this.initialized = true;
     if (this.closed) {
-      this.application.destroy(true, { children: true });
+      this.destroy();
       return;
     }
     this.host.append(this.application.canvas);
@@ -464,6 +464,9 @@ export class AtlasRenderer {
     this.closed = true;
     this.observer?.disconnect();
     if (this.frame !== undefined) cancelAnimationFrame(this.frame);
-    if (this.initialized) this.application.destroy(true, { children: true });
+    if (this.initialized) {
+      this.initialized = false;
+      this.application.destroy(true, { children: true });
+    }
   }
 }

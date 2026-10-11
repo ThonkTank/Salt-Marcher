@@ -102,7 +102,9 @@ export class AtlasView extends FileView {
         throw error;
       }
       if (unregistered) unregistered.revoke(false);
-      else this.editor?.destroy();
+      // The campaign mount owns suspension/retention and disposal of its editor.
+      // Destroying it here would erase retained Keys and release the renderer twice.
+      else if (!this.managed) this.editor?.destroy();
     }
     unregistered?.revoke(false);
     this.editor = undefined;

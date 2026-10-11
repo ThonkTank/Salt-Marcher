@@ -24,6 +24,9 @@ import { CitySource } from "../src/features/city/commands";
 import { CityDraft } from "../src/features/city/draft";
 import { serializeCityDocument } from "../src/features/city/codec";
 import { cityBuildingOutline } from "../src/features/city/geometry";
+import { menus } from "./fixtures/obsidian-atlas-host-stub";
+
+const actualRendererInit = AtlasRenderer.prototype.init;
 
 const root = "tests/fixtures/atlas-e2e-spatial-v2/";
 const seed = JSON.parse(readFileSync(root + "manifest.json", "utf8"));
@@ -1914,4 +1917,93 @@ test('City rotation retains a pending name, rejects detached actions and turns l
     assert.equal(source.read().buildings.find(b => b.id === uuid(106))!.rotationRadians, -Math.PI / 2);
     assert.equal(active(f).history.undoDepth, depth + 1);
   } finally { await f.close(); }
+});
+
+test('Copy leaf change retains the dirty managed Room Key and revokes writers even when membership rejects the copy', async () => {
+  const f = await fixture(true), old = active(f), editor = f.editor()!;
+  try {
+    await f.host().navigate(locationTarget);
+    const room = f.host().details(uuid(11)).entries.find(e => e.target.kind === 'room')!;
+    await f.host().navigate(room.target);
+    const text = '## Eingang\nUngesicherter Raumtext bleibt in der Kopie.  \n\n',
+      field = f.input('[aria-label="Raumtext 1"]', text),
+      oldRoot = f.content.querySelector<HTMLElement>('.dn-atlas')!;
+    await editor.flush();
+    await old.repository.persistDraft();
+    const originalBytes = new Map(f.vault.bytes);
+    let releases = 0;
+    const release = editor.renderer.destroy.bind(editor.renderer);
+    editor.renderer.destroy = () => { releases++; release(); };
+    let opened: Promise<void> | undefined;
+    f.view.leaf.openFile = file => {
+      opened = f.view.onLoadFile(file);
+      return opened;
+    };
+    f.click(f.content.querySelector<HTMLElement>('[aria-label="Atlas-Kartenmenü"]')!);
+    menus.at(-1)!.items.find(item => item.title === 'Speichern unter …')!.click();
+    const modal = f.document.querySelector<HTMLElement>('.modal')!,
+      name = modal.querySelector<HTMLInputElement>('[aria-label="Kopiename"]')!;
+    name.value = 'Raumdraft Lebenszyklus';
+    name.dispatchEvent(new f.window.Event('input', { bubbles: true }));
+    f.click([...modal.querySelectorAll<HTMLButtonElement>('button')]
+      .find(button => button.textContent === 'Kopie speichern')!);
+    await settled(() => !!opened, () => modal.textContent ?? '');
+    await opened;
+    assert.equal(releases, 1, 'the campaign mount must release the old renderer exactly once');
+    // This separate existing membership gap remains visible; teardown is not an open-Copy PASS.
+    assert.equal(f.editor(), undefined);
+    assert.match(f.content.textContent!, /keinem bestätigten Kampagnenbestand/);
+    assert.equal(oldRoot.inert, true);
+    assert.equal(field.value, text);
+    assert.ok(oldRoot.contains(field), 'retained Room Key must remain inspectable');
+    assert.ok(f.services.retainedDrafts!.some(d => d.element === oldRoot));
+    assert.ok(f.vault.files.has('Atlanten/Raumdraft Lebenszyklus.overworld'));
+    const copies = [...f.vault.bytes].filter(([path]) => path.endsWith('.dungeon') && !originalBytes.has(path));
+    assert.equal(copies.length, 1);
+    assert.ok(JSON.parse(copies[0]![1]).entities.some((entity: any) =>
+      entity.key?.sections.some((section: any) => section.markdown === text)));
+    for (const [path, bytes] of originalBytes) assert.equal(f.vault.bytes.get(path), bytes, path);
+    const writes = f.vault.writes.length;
+    assert.throws(() => old.history.undo(), /widerrufen/);
+    await assert.rejects(old.repository.save(), /widerrufen/);
+    assert.equal(f.vault.writes.length, writes);
+  } finally { await f.close(); }
+});
+
+test('clean managed leaf replacement and unload each release their renderer once', async () => {
+  const f = await fixture(true), old = active(f), editor = f.editor()!, bytes = new Map(f.vault.bytes);
+  let oldReleases = 0, nextReleases = 0;
+  const release = editor.renderer.destroy.bind(editor.renderer);
+  editor.renderer.destroy = () => { oldReleases++; release(); };
+  try {
+    await f.view.onLoadFile(f.vault.files.get(aPath)!);
+    assert.equal(oldReleases, 1);
+    const next = f.editor()!;
+    assert.notEqual(next, editor);
+    const releaseNext = next.renderer.destroy.bind(next.renderer);
+    next.renderer.destroy = () => { nextReleases++; releaseNext(); };
+    assert.throws(() => old.history.undo(), /widerrufen/);
+    assert.equal(f.services.retainedDrafts!.length, 0);
+    await f.view.onUnloadFile();
+    await f.view.onUnloadFile();
+    assert.equal(nextReleases, 1);
+    assert.deepEqual(f.vault.bytes, bytes);
+  } finally { await f.close(); }
+});
+
+test('renderer finishing initialization after leaf unload releases its Application once', async () => {
+  const f = await fixture(true), renderer = f.editor()!.renderer;
+  let ready!: () => void, releases = 0;
+  const wait = new Promise<void>(resolve => { ready = resolve; });
+  // Exercise the actual async renderer lifecycle; the Application adapter excludes GPU startup only.
+  renderer.application.init = async () => { await wait; };
+  renderer.application.destroy = () => { releases++; };
+  const initializing = actualRendererInit.call(renderer);
+  try {
+    await f.view.onUnloadFile();
+    assert.equal(releases, 0);
+    ready(); await initializing;
+    renderer.destroy();
+    assert.equal(releases, 1);
+  } finally { ready(); await initializing; await f.close(); }
 });
