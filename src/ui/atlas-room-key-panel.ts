@@ -23,7 +23,7 @@ export class AtlasRoomKeyPanel {
       (e) => {
         if (e.key === "Escape") access.escape?.(e);
         e.stopPropagation();
-        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") {
+        if (!e.isComposing && (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") {
           e.preventDefault();
           access.save();
         }
