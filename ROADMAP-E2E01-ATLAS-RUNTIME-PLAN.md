@@ -50,76 +50,72 @@ integriert. Escape/Scroll/Fit aus PR91/100/110 bleiben quellgebunden;
 belegt horizontalen Dock-Fit100/131%, vertikales Scrollen bleibt nötig.
 [GM-Same-session](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80#issuecomment-6105400641)
 und [FreshReuse](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80#issuecomment-6105912997)
-belegen Torheim → Suche Torraum → vollständigen Eingangstext auf Produkt87ccdb2.
-S01 integrierte Beleghead6d03e5a in3af22a1. Bilder/Hashes gelesen; Testerberichte
-zu PIDs/Install-/Payloadorakeln sind kein eigener aktueller-Shared-Host-PASS.
-Nur PR115 belegt131%-Fit; Suche/Aktivierung100%.
+belegen Torheim → Suche Torraum → Eingangstext auf Produkt87ccdb2; nur PR115
+belegt131%-Fit, Suche/Aktivierung100%. S01 konsumierte Beleghead6d03e5a in3af22a1.
+Testerberichte zu PIDs/Payloadorakeln sind kein eigener aktueller-Shared-Host-PASS.
 
-**Erhaltene IME-/Fehlerbelege:** Qualifizierter PR126 schützt Location/Room ×
-Ctrl/Meta+S mit `isComposing`; vier Baseline-FAIL/50 Adapterfälle PASS sind
-DOM-/Modellschutz, kein nativer IME-PASS. [H01](docs/reference/atlas-detail-binding-d01/inspector-ime-save-h01.json),
-[H02](docs/reference/atlas-detail-binding-d01/inspector-ime-save-h02.json) und
-[H03](docs/reference/atlas-detail-binding-d01/inspector-ime-handler-h03.json)
-bleiben samt fehlenden Downstreamkeydowns/Rohfehlern erhalten. H03 identifiziert
-Obsidian e.onKeyEvent als Abfangcallback; innere Scope-Rückgabe nicht gemessen.
+**Erhaltene Fehler-/IMEbelege:** Qualifizierter PR126 schützt Location/Room ×
+Ctrl/Meta+S mit isComposing; vier Baseline-FAIL/50 Adapterfälle sind DOM-/Modellschutz.
+[H01](docs/reference/atlas-detail-binding-d01/inspector-ime-save-h01.json),
+[H02](docs/reference/atlas-detail-binding-d01/inspector-ime-save-h02.json),
+[H03](docs/reference/atlas-detail-binding-d01/inspector-ime-handler-h03.json) und
 [H04](docs/reference/atlas-detail-binding-d01/inspector-confirmed-save-h04.json)
-belegt HEX80-H04-01 auf12265c20/Shared25792fb: bestätigtes Ctrl+S lässt Ortsnamen
-pending/History0/alle8 Bytes gleich; sichtbarer Save speichert exakt. Dieser
-historische RunnerExit1 wird durch die Nachbesserung nicht umgedeutet.
+bleiben samt fehlenden Downstreamkeydowns/Rohfehlern erhalten. H03 identifiziert
+e.onKeyEvent, innere Scope-Rückgabe nicht gemessen. H04 belegt HEX80-H04-01 auf
+12265c20/Shared25792fb: Ctrl+S lässt Ortsname pending; sichtbarer Save speichert.
+Historische RunnerExit1 werden nicht umgedeutet; kein nativer IME-PASS.
 
-**Qualifizierter Routingfix:** PR135 ist durch [unabhängigen engen Review](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/135#issuecomment-6106627133)
+**Qualifizierter Routingfix:** PR135 ist durch [engen unabhängigen Review](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/135#issuecomment-6106627133)
 und [Stewardintegration](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/135#issuecomment-6106631127)
-integriert. Supported View.scope/Mod+S mit Parentfallback, bestehender serieller
-Save und Fokus-/Bindungs-/Kompositionsguards; konsumiertes Mod+S löst keinen
-zweiten Window-Save aus. Fünf Routingregressionen/Basissuite/Build bestehen.
+integriert: View.scope/Mod+S, Parentfallback, serieller Save und bestehende Guards;
+kein zweiter Window-Save. Fünf Regressionen/Basissuite/Build bestehen.
 [R01](docs/reference/atlas-detail-binding-d01/inspector-save-routing-r01.json)
-belegt tatsächlich nicht komponierendes Ctrl+S im Ortsnamen auf sauberere1bda0a/
-Shared29e4ce68 mit einer History, exakten Texten und nativen Erhaltungsorakeln.
-Keine unabhängige Cloud-Hostprüfung unzugänglicher Rohpfade. Shared6ee40d83 ist
-konsumiert; historische R01/H01–H04 und fremde Wurzeln bleiben erhalten.
+belegt nicht komponierendes Ctrl+S im Ortsnamen auf e1bda0a/Shared29e4ce68 mit
+einer History, exaktem Text/native Erhaltungsorakeln. Keine unabhängige Cloudprüfung
+unzugänglicher lokaler Rohpfade; historische R01/H01–H04 bleiben erhalten.
 
-**Gespeicherter Orts-Key nach Neustart:** F01 auf Source840f6f1f/Shared6ee40d83
-öffnet den tatsächlich R01-gespeicherten Vault im neuen Obsidian1.14.4-Prozess,
-ohne Neu-Seeden/Save-Replay. Exakter Ortsname/Abschnitte/IDs/CRLF, gemeinsame
-Besitzer, History0/clean/kein Draft; acht native Dateien auch nach normalem Quit
-bytegleich, neue PIDs weg/Runner0/Slot zurück. Direkter Beleg:
-`acceptance.hexAtlas.requirements[30].dungeonAtLocationInspectorSaveRoutingFreshF01`.
+**Save und frischer Prozess:** F01 Source840f6f1f/Shared6ee40d83 öffnet tatsächlich
+R01-gespeicherten Orts-Key exakt ohne Neu-Seeden/Save-Replay; IDs/CRLF/acht Bytes,
+gemeinsame Besitzer, clean/History0, normales Quit/PIDs/Slot/Runner0 belegt.
+R02 Sourcee98f394f/Shared6ee40d83 belegt sichtbar Ort11 → Raum31 → Raumtext1 →
+einmal nicht komponierendes Ctrl+S: History0→1/pending=false/clean, Besitzer/Kamera
+und Welt/Orts-Keys erhalten. Dungeon nur ein Markdownfeld, Campaign elf gebundene
+Dungeon-/Digest-Revisionsfelder, sechs fremde Dateien gleich. Native Digests
+bytegeprüft; weitere Ableitungen nur formgeprüft. F02 Source019f7a7d/Shared632c5803
+öffnet tatsächlichen R02-Save im neuen Obsidian1.14.4-Prozess: Name/Nummer/Markdown,
+IDs/Geometrie exakt, History0/clean/kein Draft, acht Bytes auch nach Quit gleich.
+Je Runner0/PIDs weg/Slot zurück, synthetische Eingabe. Direkte erhaltene Belege:
+`acceptance.hexAtlas.requirements[30].dungeonAtLocationInspectorSaveRoutingFreshF01`,
+`.dungeonAtLocationRoomScopeSaveR02` und `.dungeonAtLocationRoomScopeSaveFreshF02`.
+PR140/142/144 und Entscheidungsweg konsumiert; tatsächliche GUI-Quellen bleiben gebunden.
 
-**Raum-Key-Ctrl+S nativ belegt:** R02 auf sauberer Sourcee98f394f/Shared6ee40d83
-öffnet den früher nativ gespeicherten N02-Vault mit bereits verortetem Dungeon.
-Sichtbar Ort11 → Raum31 → Raumtext1 → gültiger Text → einmal nicht komponierendes
-Ctrl+S speichert exakt. Gemeinsame History0→1, pending=false/clean/kein Draft;
-Repository/History/Renderer/Token/Kamera, Welt und beide Orts-Keys erhalten.
-Dungeon geändert ausschließlich in einem Markdownfeld; sechs fremde Dateien
-bytegleich, vollständige Campaign nur elf Dungeon-/Digest-Revisionsfelder.
-Nach normal app.quit alle After-Save-Hashes gleich, PIDs weg/Runner0, Slot zurück.
-Beleg: `acceptance.hexAtlas.requirements[30].dungeonAtLocationRoomScopeSaveR02`.
-Native Digests an Bytehash geprüft; weitere Ableitungen nur formgeprüft.
-PR140 ist qualifiziert als Shared1580c39a konsumiert (Plannerfokus); relevante
-Atlas-/Panel-/Host-/Fixturepfade unverändert, tatsächliche R02-Quelle bleibt e98f394f.
+**Raum-Discard nativ belegt:** D02-N02 auf tatsächlichem sauberem Buildsourcee1d1b73,
+Metadatencheckout3b5e2be8/Sharedeb3652d3 und isoliertem F02/R02-Speicherstand:
+sichtbar Ort11/Raum31 → Raumtext → Karte/Entwurf verwerfen. Abbrechen erhält
+exakten Text/Runtime/Drafthash; Bestätigung stellt gespeicherten vollständigen
+Dungeon/IDs/Geometrie wieder her. Sichtbare Wiederöffnung zeigt exakten R02-Key.
+Neue guarded Sources/History0/canRedo=false/clean/kein Draft, Kamera erhalten;
+Location12 darf lazy bleiben, alle acht native Dateien vor/nach Quit bytegleich.
+Runner0/keine Fehler/Zwangstermination, PIDs weg/Bilder gelesen/Slot zurück.
+Kanonisch: `acceptance.hexAtlas.requirements[30].dungeonAtLocationRoomDiscardD02`.
+D02 Runner1 (readonly Lazy-Annahme) und D02-N01 Runner1 (erfundenes redoDepth)
+bleiben unverändert; letztes Orakel vor Start gegen ProduktAPI/Rohdaten geprüft.
+Kein Produktrepair. Alte nächste Annahme korrigiert: Roomtextfelder akzeptieren
+beliebige Strings, leeres Namefeld ist gültig; kein GUI-Invalidfall erfunden.
+Vor Veröffentlichung qualifizierten PR146/Shared9527c2da konsumiert; Live-session-
+Kernverträge ändern keine betroffenen Atlas-/Host-/Fixturepfade. Kein GUI-Replay daraus.
 
-**Neustart des tatsächlich gespeicherten Raum-Keys:** F02 auf sauberer
-Source019f7a7d/Shared632c5803 öffnet die byteidentische Kopie des nach R02 normal
-beendeten Vaults im neuen Obsidian1.14.4-Prozess, ohne Neu-Seeden/Save-Replay.
-Sichtbar Ort11 → Raum31 zeigt exakten gespeicherten Namen/Nummer/Markdown;
-IDs/Geometrie und gemeinsame Besitzer erhalten, History0/clean/kein Draft/pending=false.
-Alle acht nativen Dateien bleiben vor/nach Navigation und normalem app.quit
-bytegleich; vier neue PIDs weg, Runner0/PASS/keine Zwangstermination, Slot zurück.
-Beleg: `acceptance.hexAtlas.requirements[30].dungeonAtLocationRoomScopeSaveFreshF02`.
-PR142 vor Start konsumiert; PR144/Entscheidungsweg als Shared88a14b59 vor
-Veröffentlichung konsumiert. Atlaspfade unverändert, Bild direkt gelesen;
-tatsächliche native Quelle bleibt019f7a7d.
+**Nächster ausführbarer Hex-Beitrag:** Im selben #80 den tatsächlich nativ
+gesicherten unsaved Raumdraft im sequenziellen frischen Prozess wiederverwenden.
+Aktuellen Recoveryeinstieg zuerst prüfen; sichtbare Bearbeitung/Übernehmen ohne Save,
+normales Quit → frischer Prozess desselben isolierten Vaults → sichtbarer Room-Key.
+Exakten Entwurf/IDs/Geometrie und acht gespeicherte Bytes erhalten. Neu abgestimmter
+Slot für sequenzielle Prozesse, keine Modellwrites/Reseeding, normale Enden/Rückgabe.
 
-**Nächster ausführbarer Hex-Beitrag:** Auf isolierter Kopie des gespeicherten
-Raum-Keys sichtbare Room31-Bearbeitung → Karte/Entwurf verwerfen/Bestätigung;
-exakten Speicherstand/IDs/Geometrie und acht native Bytes erhalten. Auch blockiertes
-Verwerfen bei invalidem Pending-Key darf Text nicht verlieren. Kein Save-Replay;
-neuen Slot koordinieren, normal beenden/PIDs und zurückgeben.
-
-**Offen:** nativer Kompositionsguard/Meta, physische IME, Copy/Discard/Recovery,
-äußeres Clipping, Gesamt-E2E, Original-/Großkarten-/Nutzervaultabnahme bleiben getrennt.
-F01 bestätigt den R01-Orts-Key, F02 den tatsächlichen R02-Raumsave-Neustart.
-Historische Belege bleiben erhalten; jeder neue GUI-Start braucht Abstimmung.
+**Offen:** Copy/Recovery, nativer Kompositionsguard/Meta, physische IME, äußeres
+Clipping, Gesamt-E2E, Original-/Großkarten-/Nutzervaultabnahme bleiben getrennt.
+D02 belegt Discard im selben Prozess, keinen Frischstart danach. Keine zweite
+Ausführung/weitere GUI in diesem Lauf; historische Belege erhalten.
 
 ## Historische Planbasis und Lieferbelege
 
