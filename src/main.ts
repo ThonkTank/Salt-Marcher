@@ -276,7 +276,8 @@ export default class DungeonPlugin extends Plugin {
     this.registerView(ROOM_VIEW, (leaf) => new DungeonRoomView(leaf, this));
     this.registerView(CREATURE_CATALOG_VIEW, (leaf) => new CreatureCatalogView(leaf, this));
     this.registerView(ATLAS_VIEW, (leaf) => new AtlasView(leaf, this.atlasCampaigns()));
-    this.registerView(WORLD_NOTES_VIEW, (leaf) => new WorldNotesView(leaf, this.atlasCampaigns()));
+    this.registerView(WORLD_NOTES_VIEW, (leaf) => new WorldNotesView(leaf, this.atlasCampaigns(),
+      this.creatureCatalog));
     this.registerObsidianProtocolHandler("dungeon-room", (params) => {
       void this.openRoomLink(params).catch((error) => new Notice(String(error)));
     });

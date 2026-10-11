@@ -14,6 +14,10 @@ export interface WorldNotesCommitResult {
   readonly snapshot: WorldNotesSnapshotV1;
   readonly receipt: WorldNotesCommitReceiptV1;
 }
+export interface WorldNotesCreatureChoice {
+  readonly id: string;
+  readonly name: string;
+}
 export interface WorldNotesPanelOptions {
   readonly newId: () => CampaignLocalId;
   readonly currentContext: () => CampaignContextProjection | null;
@@ -23,6 +27,9 @@ export interface WorldNotesPanelOptions {
   /** Must return the published projection and its causal committed receipt. */
   readonly commit: (commandId: CampaignCommandId, change: WorldNoteChange,
     expectedRevision: number) => Promise<WorldNotesCommitResult>;
+  /** Catalog suggestions never create creature truth or replace a stored ID. */
+  readonly searchCreatures?: (query: string) => Promise<readonly WorldNotesCreatureChoice[]>;
+  readonly creatureDetail?: (id: string) => Promise<WorldNotesCreatureChoice | null>;
 }
 const kinds: readonly WorldNoteKind[] = ["npc", "faction", "quest", "rumor"];
 const labels: Record<WorldNoteKind, string> = {
@@ -216,6 +223,53 @@ export class WorldNotesPanel {
     const gmNotes = field("GM-Notizen", pending.draft.gmNotes, true);
     const creature = pending.draft.kind === "npc"
       ? field("Kreaturreferenz", pending.draft.creatureId ?? "") : null;
+    if (creature && this.options.searchCreatures) {
+      const creatureSearch = field("Kreatur suchen", "") as HTMLInputElement;
+      creatureSearch.type = "search";
+      const choices = doc.createElement("ul"), selected = doc.createElement("p");
+      form.append(choices, selected);
+      let searchGeneration = 0;
+      const active = () => !this.destroyed && !this.busy && this.pending === pending &&
+        this.snapshot === snapshot && this.editor.firstChild === form;
+      creatureSearch.addEventListener("input", () => {
+        const query = creatureSearch.value.trim(), stamp = ++searchGeneration;
+        choices.replaceChildren();
+        if (query.length < 2) return;
+        selected.textContent = "Kreaturen werden gesucht …";
+        void this.options.searchCreatures!(query).then((found) => {
+          if (!active() || stamp !== searchGeneration) return;
+          selected.textContent = found.length ? "Kreatur aus dem Katalog auswählen:" :
+            "Keine Kreatur gefunden.";
+          for (const choice of found) {
+            const row = doc.createElement("li"), button = doc.createElement("button");
+            button.type = "button"; button.textContent = `${choice.name} auswählen`;
+            button.setAttribute("aria-label", `${choice.name} (${choice.id}) auswählen`);
+            button.addEventListener("click", () => {
+              if (!active() || stamp !== searchGeneration) return;
+              searchGeneration++;
+              creature.value = choice.id;
+              pending.draft = { ...pending.draft, creatureId: choice.id };
+              selected.textContent = `Ausgewählt: ${choice.name} (${choice.id})`;
+              choices.replaceChildren();
+            });
+            row.append(button); choices.append(row);
+          }
+        }, () => {
+          if (active() && stamp === searchGeneration)
+            selected.textContent = "Monsterkatalog nicht verfügbar; vorhandene Kreaturreferenz bleibt erhalten.";
+        });
+      });
+      if (pending.draft.creatureId && this.options.creatureDetail) {
+        const id = pending.draft.creatureId;
+        void this.options.creatureDetail(id).then((found) => {
+          if (active() && creature.value === id && searchGeneration === 0)
+            selected.textContent = found ? `${found.name} (${id})` : `Kreaturreferenz: ${id}`;
+        }, () => {
+          if (active() && creature.value === id && searchGeneration === 0)
+            selected.textContent = `Kreaturreferenz: ${id}`;
+        });
+      }
+    }
     name.addEventListener("input", () => { pending.draft = { ...pending.draft, title: name.value }; });
     readAloud.addEventListener("input", () => { pending.draft = { ...pending.draft, readAloud: readAloud.value }; });
     gmNotes.addEventListener("input", () => { pending.draft = { ...pending.draft, gmNotes: gmNotes.value }; });

@@ -9,7 +9,7 @@ import { serializeWorldNote } from "../src/features/world/world-notes";
 import { payloadDigest, type CampaignCommandId } from "../src/features/campaign/campaign-contracts";
 import { campaignOwnershipDigestValue } from "../src/features/campaign/campaign-ownership";
 import { worldNotePath, type WorldNotesCommitReceiptV1 } from "../src/features/campaign/world-notes-commit";
-import { WorldNotesPanel } from "../src/ui/world-notes-panel";
+import { WorldNotesPanel, type WorldNotesCreatureChoice } from "../src/ui/world-notes-panel";
 
 const id = (n: number) => campaignLocalId(`00000000-0000-4000-8000-${String(n).padStart(12, "0")}`);
 const context = campaignContext(campaignSnapshot({ schemaVersion: 1,
@@ -19,7 +19,10 @@ const context = campaignContext(campaignSnapshot({ schemaVersion: 1,
 const tick = () => new Promise<void>((resolve) => setImmediate(resolve));
 const digest = (value: string) => `sha256:${createHash("sha256").update(value).digest("hex")}`;
 
-function fixture() {
+function fixture(creatures?: {
+  search: (query: string) => Promise<readonly WorldNotesCreatureChoice[]>;
+  detail: (id: string) => Promise<WorldNotesCreatureChoice | null>;
+}) {
   const { document, window } = parseHTML("<html><body><div id='host'></div></body></html>");
   const host = document.querySelector<HTMLElement>("#host")!;
   let focused: HTMLElement | null = null;
@@ -36,6 +39,8 @@ function fixture() {
   const panel = new WorldNotesPanel(host, {
     newId: () => id(nextId++),
     currentContext: () => context,
+    searchCreatures: creatures?.search,
+    creatureDetail: creatures?.detail,
     digest,
     validateReceipt: (receipt) => {
       if (rejectReceipt || !issued.has(receipt)) throw new Error("Fremdes Receipt");
@@ -100,6 +105,54 @@ test("keyboard focus moves into a new editor and returns after save or discard",
   assert.equal(f.focused(), f.host.querySelector("form input"));
   f.click("Entwurf verwerfen"); f.click("Verwerfen bestätigen");
   assert.equal(f.focused(), f.host.querySelector('input[type="search"]'));
+  f.panel.destroy();
+});
+
+test("NPC can choose an existing creature by name without copying catalog content", async () => {
+  const f = fixture({
+    search: async (query) => query === "gob" ? [{ id: "goblin", name: "Goblin" }] : [],
+    detail: async (id) => id === "goblin" ? { id, name: "Goblin" } : null,
+  });
+  f.click("NPC anlegen"); f.input("Name", "Maris");
+  f.input("Kreatur suchen", "gob"); await tick();
+  f.click("Goblin auswählen");
+  assert.equal(f.host.querySelector<HTMLInputElement>('form label input')?.value, "Maris");
+  assert.equal(Array.from(f.host.querySelectorAll("label"))
+    .find((label) => label.textContent?.startsWith("Kreaturreferenz"))?.querySelector("input")?.value, "goblin");
+  await f.save();
+  assert.equal(f.snapshot().records[0]?.creatureId, "goblin");
+  f.click("NPC: Maris"); await tick();
+  assert.match(f.host.querySelector("form")!.textContent!, /Goblin \(goblin\)/);
+  assert.equal(f.snapshot().records[0]?.readAloud, "");
+  f.panel.destroy();
+});
+
+test("late creature search cannot populate a discarded NPC editor", async () => {
+  let answer!: (choices: readonly WorldNotesCreatureChoice[]) => void;
+  const f = fixture({
+    search: () => new Promise((resolve) => { answer = resolve; }),
+    detail: async () => null,
+  });
+  f.click("NPC anlegen"); f.input("Kreatur suchen", "gob");
+  f.click("Entwurf verwerfen"); f.click("Verwerfen bestätigen");
+  answer([{ id: "goblin", name: "Goblin" }]); await tick();
+  assert.equal(f.host.querySelector("form"), null);
+  assert.equal(f.host.textContent?.includes("Goblin auswählen"), false);
+  f.panel.destroy();
+});
+
+test("older catalog answers cannot replace the newest creature search", async () => {
+  const answers = new Map<string, (choices: readonly WorldNotesCreatureChoice[]) => void>();
+  const f = fixture({
+    search: (query) => new Promise((resolve) => { answers.set(query, resolve); }),
+    detail: async () => null,
+  });
+  f.click("NPC anlegen"); f.input("Kreatur suchen", "gob");
+  f.input("Kreatur suchen", "dra");
+  answers.get("dra")!([{ id: "adult-red-dragon", name: "Adult Red Dragon" }]); await tick();
+  answers.get("gob")!([{ id: "goblin", name: "Goblin" }]); await tick();
+  assert.match(f.host.querySelector("form")!.textContent!, /Adult Red Dragon auswählen/);
+  assert.doesNotMatch(f.host.querySelector("form")!.textContent!, /Goblin auswählen/);
   f.panel.destroy();
 });
 

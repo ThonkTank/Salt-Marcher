@@ -47,6 +47,10 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out, checks, worl
       await form.locator("label").filter({ hasText: "Name" }).locator("input").fill("Maris vom Hafen");
       await form.locator("label").filter({ hasText: "Vorlesetext" }).locator("textarea").fill("Sie hebt die Laterne.");
       await form.locator("label").filter({ hasText: "GM-Notizen" }).locator("textarea").fill("Kennt den alten Kai.");
+      await form.getByRole("searchbox", { name: "Kreatur suchen" }).fill("goblin");
+      await form.getByRole("button", { name: "Goblin (goblin) auswählen" }).click();
+      assert.equal(await form.locator("label").filter({ hasText: "Kreaturreferenz" }).locator("input").inputValue(),
+        "goblin");
       if (worldNotesFault) {
         const beforeManifest = fs.readFileSync(path.join(vault, manifestPath), "utf8");
         const namespace = JSON.parse(beforeManifest).snapshot.namespace;
@@ -89,6 +93,8 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out, checks, worl
       assert.equal(note.title, "Maris vom Hafen");
       assert.equal(note.readAloud, "Sie hebt die Laterne.");
       assert.equal(note.gmNotes, "Kennt den alten Kai.");
+      assert.equal(note.creatureId, "goblin");
+      assert.equal("hp" in note, false);
       await panel.getByRole("button", { name: "Fraktion anlegen" }).click();
       const factionForm = panel.locator("form");
       await factionForm.locator("label").filter({ hasText: "Name" }).locator("input").fill("Nebelbund");
@@ -212,7 +218,11 @@ module.exports = ({ page, fs, path, assert, crypto, qa, vault, out, checks, worl
         "Sie hebt die Laterne.");
       assert.equal(await form.locator("label").filter({ hasText: "GM-Notizen" }).locator("textarea").inputValue(),
         "Kennt den alten Kai und den Nebelbund.");
-      assert.match(await form.locator("ul").innerText(), /kennt: Nebelbund/);
+      assert.equal(await form.locator("label").filter({ hasText: "Kreaturreferenz" }).locator("input").inputValue(),
+        "goblin");
+      assert.match(await form.innerText(), /Goblin \(goblin\)/);
+      assert.match(await form.locator("ul").filter({ hasText: "kennt: Nebelbund" }).innerText(),
+        /kennt: Nebelbund/);
       const notes = form.locator("label").filter({ hasText: "GM-Notizen" }).locator("textarea");
       await notes.fill("Ungespeicherter Entwurf");
       await form.getByRole("button", { name: "Fraktion Nebelbund öffnen" }).click();

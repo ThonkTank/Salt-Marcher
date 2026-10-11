@@ -8,6 +8,7 @@ import type { AtlasCampaignServices } from "./atlas-campaign-host";
 import { CampaignEntry } from "./campaign-entry";
 import { WorldNotesPanel } from "./world-notes-panel";
 import { WorldNotesNativeSession, recoverWorldNotesBeforeActivation } from "./world-notes-native-session";
+import type { CreatureCatalogLoader } from "../features/catalog/creature-catalog-loader";
 
 export const WORLD_NOTES_VIEW = "dungeon-world-notes";
 const digest = (bytes: string) => `sha256:${createHash("sha256").update(bytes).digest("hex")}`;
@@ -23,7 +24,8 @@ export class WorldNotesView extends ItemView {
   private status?: HTMLParagraphElement;
   private notesHost?: HTMLDivElement;
   private generation = 0;
-  constructor(leaf: WorkspaceLeaf, private readonly services: AtlasCampaignServices) { super(leaf); }
+  constructor(leaf: WorkspaceLeaf, private readonly services: AtlasCampaignServices,
+    private readonly creatures: CreatureCatalogLoader) { super(leaf); }
   getViewType(): string { return WORLD_NOTES_VIEW; }
   getDisplayText(): string { return "Kampagnenwissen"; }
   getIcon(): string { return "book-open"; }
@@ -107,6 +109,12 @@ export class WorldNotesView extends ItemView {
         digest,
         validateReceipt: session.validateReceipt,
         commit: (command, change, revision) => session.commit(command, change, revision),
+        searchCreatures: async (query) => (await this.creatures.load()).search({ text: query, limit: 8 })
+          .rows.map(({ id, name }) => ({ id, name })),
+        creatureDetail: async (id) => {
+          const creature = (await this.creatures.load()).detail(id);
+          return creature ? { id: creature.id, name: creature.name } : null;
+        },
       });
       this.panel.update(snapshot);
       this.message("");
