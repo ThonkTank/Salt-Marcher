@@ -155512,7 +155512,7 @@
           "issue": 80,
           "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
           "e2e01UserLine": 13,
-          "state": "input_panel_escape_independent_review_PASS_native_pending",
+          "state": "input_panel_escape_independent_review_and_shared_integration_PASS_native_pending",
           "sourceCommit": "dba7d559044f9e8b072a329f2efacd7452b333b4",
           "pullRequest": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/91",
           "consumedIndependentFinding": {
@@ -155590,7 +155590,7 @@
             "userVaultInstalled": false,
             "fullE2E": false
           },
-          "nextConsumer": "Hex: targeted actual narrow Obsidian save/reopen probe on unchanged N02 source, after new local slot coordination. Cloud-GM: free repair retest on own isolated host when existing test claims permit; #80 remains at Hex, no selfmerge or dependent expansion.",
+          "nextConsumer": "Hex: targeted actual narrow Obsidian save/reopen probe on integrated Shared ca29032 with unchanged N02 source, after new local slot coordination. Cloud-GM: free repair retest on own isolated host when existing test claims permit; #80 remains at Hex, no dependent expansion.",
           "independentRereview": {
             "reviewer": "Atlas-QA",
             "result": "PASS",
@@ -155601,6 +155601,19 @@
             "ci": "SUCCESS",
             "consumedAt": "2026-10-11T00:46:10.347313+00:00",
             "relevantProductBuildFixtureDeltaAfterReview": "none"
+          },
+          "consumedIntegration": {
+            "merge": "ca290326a35bb792c22ef8f02e215a3dd9ef121d",
+            "parents": [
+              "0077bdf04d56a7b7d251717cd236b7a6fa716e46",
+              "6b6f3624f8e2d7facaafedbeb7adb8d6d03a9bf0"
+            ],
+            "tree": "0214fb3687b487a560b7c9b11cde9d9150245578",
+            "receipt": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/91#issuecomment-6103883554",
+            "sharedCI": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/actions/runs/38099467773",
+            "ci": "SUCCESS",
+            "treeEqualsReviewedHead": true,
+            "ownWorkingRecordDelta": "Own review/transition metadata only; retained on Hex branch for next native handoff. No new product candidate or selfintegration."
           }
         }
       }

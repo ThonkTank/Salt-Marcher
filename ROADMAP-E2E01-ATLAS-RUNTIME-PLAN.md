@@ -39,7 +39,7 @@ Produktänderung, GUI, CITY oder E2E-02–04 begonnen.
 
 #### Arbeitsstand #80
 
-Kandidat: https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/91
+Integrierter Reparatureingang: [PR91](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/91).
 
 Integrierte Implementierungs-/Nachweisbasis: [PR81](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/81),
 [PR87](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/87) mit
@@ -80,8 +80,14 @@ Input-/Panel-/History-/Save-Scope, isolierter Exact-SHA-Testbuild und vier fokus
 Fälle, kein weiterer Pflichtbefund. Der frühere Capture-Befund wurde ausdrücklich
 auf die belegte Test-/Eventgrenze eingegrenzt. Produkt/Build/Fixture sind seit dem
 reviewten Stand unverändert; der neue eigene Beleg konsumiert diesen PASS.
+Die [separate Stewardintegration](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/91#issuecomment-6103883554)
+hat den reparierten Editor in Shared übernommen. Eltern und vollständiger Mergebaum
+sind direkt geprüft; der Baum entspricht exakt dem reviewten Kandidaten. Shared-CI
+besteht. Der eigene Branch konsumiert diese Integration und hält ausschließlich den
+aktuellen eigenen Nachtest-/Reviewarbeitsstand für den nächsten Native-Handoff.
 
 **Startbarer Nachtest:** N02-Produktquelle `dba7d559044f9e8b072a329f2efacd7452b333b4`,
+Integrierter Shared-Eingang `ca290326a35bb792c22ef8f02e215a3dd9ef121d`;
 Node22, `npm ci` und `npm run build`; aktuelles Plugintripel in demselben N02-Beleg.
 Versionierte Fixture `tests/fixtures/atlas-e2e-spatial-v2/manifest.json` unverändert.
 Die Fixture-/Isolationsanleitung im [H01-Eingang](docs/reference/atlas-detail-binding-d01/dungeon-at-location-h01.md#startbarer-eingang)
