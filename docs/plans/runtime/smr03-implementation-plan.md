@@ -461,11 +461,21 @@ Pflicht und Maskenpflichten pinnten die vorhandene OwnerRevision nicht. Repair
 `fdf6271` schließt diese Grenzen mit exakter Prepared-Provenienz, einem
 immutable Aggregate-Backlog je Command/Digest sowie Character-, Masken- und
 OwnerRevision-Bindung. Zwei aufeinanderfolgende unavailable Moves und die
-negativen Prepared-Zustände sind Regressionen; die engen Exact-SHA-Re-reviews
-laufen.
+negativen Prepared-Zustände sind Regressionen. Campaign/Data bestätigt seine
+beiden Befunde im engen Re-review auf `fdf6271` als geschlossen.
+
+Music/Weather/Shops fand danach zwei Stufen derselben generischen
+Consumergrenze: ein Owner ohne MaskRef brauchte zwingend einen Revisionspin,
+und eine persistierte Duty musste diesen Pin wieder exakt gegen den Source-
+Ownerstand binden. Cloud Architektur/Technik reproduzierte außerdem eine
+reihenfolgeabhängige Assigned-/Pending-Doppelzuordnung, Retirement trotz
+verbleibender Pending-Figur und einen nur nach MaskId statt nach OwnerId plus
+MaskId aufgelösten Lookup. Repair `a83a74f` schließt diese fünf Grenzen mit
+negativen beziehungsweise positiven Regressionen. Consumer R04 ist auf diesem
+Exact-SHA `PASS`; der enge Architektur-/Technik-Re-review läuft.
 
 Typecheck, vollständige serielle Tests, Produktbuild und Repositorystruktur
-sind für Repair `fdf6271` grün (1002 PASS, null FAIL, ein beabsichtigter Skip).
+sind für Repair `a83a74f` grün (1006 PASS, null FAIL, ein beabsichtigter Skip).
 Noch offen und nicht durch den Checkpoint
 behauptet sind das Party-Aggregat, Deactivate/Delete, Split/Rejoin samt opaque
 Clock-Beitrag, die vollständige Masken-Reconciliation, Invariant-Fuzzer und
