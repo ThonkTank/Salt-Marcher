@@ -20,6 +20,12 @@ import {
   DungeonAtlasSource,
   dungeonDocumentChange,
 } from "../../src/features/dungeon/atlas-source";
+import {
+  paintWalkableColumn,
+  projectVolumeSlice,
+  setHorizontalFace,
+  setVolumeHeight,
+} from "../../src/features/dungeon/volume";
 import { locationDocumentChange } from "../../src/features/location/location-source";
 import { parseCityDocument } from "../../src/features/city/codec";
 import { parseDocument, serializeDocument } from "../../src/model";
@@ -348,6 +354,84 @@ test("World, terrain, Location, house and room Key persist together through shar
   assert.equal(reset.history.undoDepth, 0);
   assert.equal(saved.repo.dirty, false);
   assert.equal(await f.store.read(path + ".draft"), null);
+});
+
+test("Dungeon Volume survives shared Atlas history, Draft, Save, Copy and Discard", async () => {
+  const f = await opened(),
+    before = f.dungeon.read().document,
+    lower = setVolumeHeight(paintWalkableColumn(before, id(600), {
+      x: -2, y: 4, bottomStep: -1,
+    }), id(600), 3),
+    stacked = paintWalkableColumn(lower, id(601), {
+      x: -2, y: 4, bottomStep: 2, heightSteps: 1,
+    }),
+    after = setHorizontalFace(stacked, {
+      volumeId: id(600), x: -2, y: 4, z: 1,
+      face: "ceiling", present: false,
+    }),
+    change = dungeonDocumentChange(before, after);
+  assert.equal(f.source.history.execute({
+    label: "Dungeon-Volume bearbeiten",
+    changes: [change],
+  }), true);
+  assert.equal(f.source.history.undoDepth, 1);
+  assert.deepEqual(f.dungeon.read().document.volumes, after.volumes);
+  assert.deepEqual(projectVolumeSlice(f.dungeon.read().document, 0).map((item) => [
+    item.volumeId, item.cell.z, item.relation,
+  ]), [
+    [id(600), -1, "below"],
+    [id(600), 0, "active"],
+    [id(600), 1, "active"],
+    [id(600), 2, "above"],
+  ]);
+  assert.equal(f.source.history.undo(), true);
+  assert.equal(f.dungeon.read().document.volumes, undefined);
+  assert.equal(f.source.history.redo(), true);
+  assert.deepEqual(f.dungeon.read().document.volumes, after.volumes);
+
+  await f.repo.persistDraft();
+  const draftReopen = await opened(f.store);
+  assert.deepEqual(draftReopen.dungeon.read().document.volumes, after.volumes);
+  await draftReopen.repo.save();
+  const saved = await opened(f.store);
+  assert.deepEqual(saved.dungeon.read().document.volumes, after.volumes);
+
+  const destination = "Atlanten/Volume-Kopie.overworld";
+  await saved.repo.copy(destination, id(900), "Volume-Kopie");
+  const copy = new AtlasRepository(
+    f.store, destination, f.store, options(f.store),
+  );
+  await copy.open();
+  const copiedWorld = copy.spatialGraph.world();
+  assert.ok(copiedWorld.version === 2);
+  const placement = copiedWorld.detailPlacements.find(
+    (candidate) => candidate.kind === "dungeon",
+  );
+  assert.ok(placement?.kind === "dungeon");
+  const copied = copy.detail("dungeon", placement.documentId);
+  assert.ok(copied instanceof DungeonAtlasSource);
+  assert.deepEqual(copied.read().document.volumes?.map((volume) =>
+    volume.cells.map(({ x, y, z, floor, ceiling, walls }) =>
+      ({ x, y, z, floor, ceiling, walls }))),
+  after.volumes?.map((volume) => volume.cells.map(
+    ({ x, y, z, floor, ceiling, walls }) =>
+      ({ x, y, z, floor, ceiling, walls }),
+  )));
+  assert.notEqual(copied.read().document.volumes?.[0]?.id, id(600));
+
+  const savedBytes = saved.dungeon.read().documentBytes,
+    edited = setVolumeHeight(saved.dungeon.read().document, id(600), 1);
+  saved.source.history.execute({
+    label: "Verwerfbare Volume-Höhe",
+    changes: [dungeonDocumentChange(saved.dungeon.read().document, edited)],
+  });
+  await saved.repo.persistDraft();
+  const reset = await saved.repo.discard(),
+    restored = saved.repo.detail("dungeon", id(30));
+  assert.equal(reset.history.undoDepth, 0);
+  assert.ok(restored instanceof DungeonAtlasSource);
+  assert.equal(restored.read().documentBytes, savedBytes);
+  assert.deepEqual(restored.read().document.volumes, after.volumes);
 });
 
 test("Spatial Save captures one combined state and retains a newer room Key as a new recoverable draft", async () => {
