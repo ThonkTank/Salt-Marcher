@@ -283,19 +283,19 @@ Whole-Branch-Merge und kein Legacy-Parser nur wegen historischer Existenz.
 I01 legt noch keine Hostabnahme ab. Es schafft den reproduzierbaren Kern für
 die 22 Fach-Acceptance-Fälle:
 
-| Suite                              | Verbindlicher Nachweis                                                                                                      |
-| ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `live-session-contract.test.ts`    | Parser, deep freeze, IDs/Revisionen, fremde Campaign, unbekannte Felder, keine mutable Aliase                               |
-| `party-aggregate.test.ts`          | Name-only, Duplikatnamen, Membership, Profile leeren, XP/Rest, keine Scene-Nebenwirkung                                     |
-| `scene-lifecycle.test.ts`          | Initialize, Primary/Focus, A/B/A, Split, Teil-Move, Rejoin, prepared Runtime Scene und deterministic Cleanup                |
-| `scene-clock-boundary.test.ts`     | frühere/spätere/manuelle Clockentscheidung, stale Revision, keine eigene Zeit-/WorldEffect-Wirkung                          |
-| `mask-reconciliation.test.ts`      | mehrere Masken, geteilte Teilnehmer, remove/retain/retire, unavailable/stale, keine Completion/Effects                      |
-| `live-session-projection.test.ts`  | active/none/pending/unavailable, stale/fremd/beschädigt fail-closed, immutable Consumergrenze                               |
-| `party-history.test.ts`            | 100 Schritte, neuer Command für Undo/Redo, Redozweig, Konflikte, irreversible/anonymisierte Löschung                        |
-| `reference-owner-contract.test.ts` | Registryvollständigkeit, Slot-/Target-/Survivor-Bindung, opaque Token, Tombstone und unknown Owner fail-closed              |
-| `multi-owner-model.test.ts`        | reine Stage-/Validate-/Publish-/Verify-/Finalize-Modellmatrix, Retry, unknown outcome und Cancel-Race                       |
-| `live-session-scale.test.ts`       | 20 Rosterfiguren, vier Scenes, acht Masken, 50 Teilnehmer ohne Truncation/Vermischung; Zeitmessung nur als lokaler Vorbeleg |
-| `live-session-boundary.test.mjs`   | kein Import von Obsidian, Electron, Node, `fs`, Vault, MapRepository oder Host-UI; kein Passive-Display-Export              |
+| Suite                              | Verbindlicher Nachweis                                                                                                                             |
+| ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `live-session-contract.test.ts`    | Parser, deep freeze, IDs/Revisionen, fremde Campaign, unbekannte Felder, keine mutable Aliase                                                      |
+| `party-aggregate.test.ts`          | Name-only, Duplikatnamen, Membership, Profile leeren, XP/Rest, keine Scene-Nebenwirkung                                                            |
+| `scene-lifecycle.test.ts`          | Initialize, Primary/Focus, A/B/A, Split, Teil-Move, Rejoin, prepared Runtime Scene und deterministic Cleanup                                       |
+| `scene-clock-boundary.test.ts`     | frühere/spätere/manuelle Clockentscheidung, stale Revision, keine eigene Zeit-/WorldEffect-Wirkung                                                 |
+| `mask-reconciliation.test.ts`      | mehrere Masken, geteilte Teilnehmer, remove/retain/retire, unavailable/stale, keine Completion/Effects                                             |
+| `live-session-projection.test.ts`  | active/none/pending/unavailable, stale/fremd/beschädigt fail-closed, immutable Consumergrenze                                                      |
+| `party-history.test.ts`            | 100 Schritte, neuer Command für Undo/Redo, Redozweig, Konflikte, irreversible/anonymisierte Löschung                                               |
+| `reference-owner-contract.test.ts` | Registryvollständigkeit, Slot-/Target-/Survivor-Bindung, opaque Token, Tombstone und unknown Owner fail-closed                                     |
+| `multi-owner-model.test.ts`        | reine Stage-/Validate-/Publish-/Verify-/Finalize-Modellmatrix, Retry, unknown outcome und Cancel-Race                                              |
+| `live-session-scale.test.ts`       | 20 Rosterfiguren, vier Scenes, acht ownerqualifizierte Masken, 50 Teilnahmeinzidenzen ohne Truncation/Vermischung; Zeit/DTO-Größe nur diagnostisch |
+| `live-session-boundary.test.mjs`   | kein Import von Obsidian, Electron, Node, `fs`, Vault, MapRepository oder Host-UI; kein Passive-Display-Export                                     |
 
 ### Vollständige Zuordnung der 22 Fach-Acceptance-Fälle
 
@@ -471,13 +471,18 @@ bei 1035 PASS, null FAIL und einem beabsichtigten Skip; Typecheck, Build, Repo-
 und Diff-Check sind grün. Der reine Dokumentationsstand danach ist
 `af842015822cdc4a3c6bb0b39a26058181c0fb88`.
 
-Innerhalb I01-B bleiben nur zwei getrennt reviewbare Pakete offen:
+Der providerneutrale Masken-Slice ist über PR #123 als Shared-Merge
+`dbcecc79870252a9b6dae4b9a7959bb47bf5fc96` integriert. Der Exact-SHA
+`cfa86479cbc2307d547694b90c56a0425d2e413b` bestand Candidate-CI sowie die
+getrennten Architektur/Technik-, Campaign/Data- und Music/Weather/Shops-
+Reviews; auch der Shared-Integrationslauf ist grün.
 
-1. vollständige providerneutrale Masken-Teilnahme/Reconciliation für mehrere
-   Masken gleichen oder verschiedenen Typs, ohne Completion, Transfer oder
-   Maskenpayload;
-2. deterministischer Invariant-Fuzzer und nichtnormative Scale-/DTO-Orakel für
-   20 Rosterfiguren, vier Scenes, acht Masken und 50 Teilnehmer.
+Innerhalb I01-B bleibt damit genau ein getrennt reviewbares Paket offen: der
+deterministische Invariant-Fuzzer und das nichtnormative Scale-/DTO-Orakel für
+20 Rosterfiguren, vier aktive Scenes, acht ownerqualifizierte Masken und exakt
+50 Masken-Teilnahmeinzidenzen. Die 50 sind ausdrücklich keine 50 eindeutigen
+CharacterIds. Laufzeit und serialisierte DTO-Größe werden nur diagnostisch
+ausgegeben und bilden keine Host-, Plattform- oder Produktgrenze.
 
 Der Masken-Slice bewahrt vollständige owner-/scenegebundene Prepared-Beiträge
 als modelllokale Append-/Replay-Evidenz und validiert Projektionen direkt gegen
