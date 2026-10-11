@@ -749,11 +749,18 @@ export function applyPartyHistoryCommand(
   for (const dependency of entry.dependencies) {
     const input = command.participantInputs.find(
       (candidate) => dependencyKey(candidate) === dependencyKey(dependency),
-    );
+    ),
+      previousPlan = [...history.operations]
+        .reverse()
+        .find((operation) => operation.entryId === entry.entryId)
+        ?.participantPlans.find(
+          (plan) => dependencyKey(plan) === dependencyKey(dependency),
+        ),
+      expectedCurrentRevision =
+        previousPlan?.revisionAfter ?? dependency.revisionAfter;
     if (
       !input ||
-      input.currentRevision !==
-        (undo ? dependency.revisionAfter : dependency.revisionBefore) ||
+      input.currentRevision !== expectedCurrentRevision ||
       (undo &&
         dependency.undoDisposition === "remove-if-unchanged" &&
         !input.targetUnused)
@@ -765,8 +772,11 @@ export function applyPartyHistoryCommand(
         version: 1 as const,
         ownerId: dependency.ownerId,
         targetId: dependency.targetId,
-        revisionBefore: dependency.revisionBefore,
-        revisionAfter: dependency.revisionAfter,
+        revisionBefore: input.currentRevision,
+        revisionAfter: revision(
+          input.currentRevision + 1,
+          "PartyHistoryParticipantPlan.revisionAfter",
+        ),
         disposition: undo
           ? dependency.undoDisposition
           : dependency.redoDisposition,

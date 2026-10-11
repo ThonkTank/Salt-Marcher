@@ -64,61 +64,62 @@ export interface MultiOwnerCommandModel {
   readonly participants: readonly CoordinatorParticipant[];
   readonly effectHash?: string;
   readonly unknownBoundary?: "pre-publish" | "post-publish";
+  readonly unknownOriginStatus?:
+    | "staged"
+    | "validated"
+    | "published"
+    | "verified";
 }
 
-export type CoordinatorEvent =
-  | {
+interface CoordinatorEventBinding {
+  readonly version: 1;
+  readonly campaignId: CampaignId;
+  readonly commandId: CommandId;
+  readonly commandDigest: CommandDigest;
+  readonly receiptId: ReceiptId;
+  readonly expectedGeneration: Revision;
+}
+
+export type CoordinatorEvent = CoordinatorEventBinding &
+  (
+    | {
       readonly kind: "validate";
-      readonly version: 1;
-      readonly expectedGeneration: Revision;
       readonly outcome: "valid" | "conflict" | "unavailable";
     }
   | {
       readonly kind: "prepare-participant";
-      readonly version: 1;
-      readonly expectedGeneration: Revision;
       readonly participantId: ReferenceId;
+      readonly ownerId: OwnerId;
       readonly ownerRevision: Revision;
+      readonly targetId: ReferenceId;
       readonly contributionHash: string;
     }
   | {
       readonly kind: "publish";
-      readonly version: 1;
-      readonly expectedGeneration: Revision;
       readonly effectHash: string;
       readonly survivorRootHash: string;
     }
   | {
       readonly kind: "cancel";
-      readonly version: 1;
-      readonly expectedGeneration: Revision;
     }
   | {
       readonly kind: "mark-outcome-unknown";
-      readonly version: 1;
-      readonly expectedGeneration: Revision;
     }
   | {
       readonly kind: "resolve-outcome";
-      readonly version: 1;
-      readonly expectedGeneration: Revision;
-      readonly receiptId: ReceiptId;
       readonly outcome: "cancelled-before-publish" | "published";
       readonly effectHash?: string;
       readonly survivorRootHash?: string;
     }
   | {
       readonly kind: "verify";
-      readonly version: 1;
-      readonly expectedGeneration: Revision;
       readonly effectHash: string;
       readonly survivorRootHash: string;
     }
   | {
       readonly kind: "finalize";
-      readonly version: 1;
-      readonly expectedGeneration: Revision;
-    };
+    }
+  );
 
 export type CoordinatorTransition =
   | {
@@ -138,6 +139,8 @@ export type CoordinatorTransition =
         | "survivor-mismatch"
         | "effect-mismatch"
         | "receipt-mismatch"
+        | "command-mismatch"
+        | "participant-mismatch"
         | "already-published"
         | "already-terminal";
     };
@@ -219,7 +222,7 @@ export function parseMultiOwnerCommandModel(
         "expectedSurvivorRootHash",
         "participants",
       ],
-      ["effectHash", "unknownBoundary"],
+      ["effectHash", "unknownBoundary", "unknownOriginStatus"],
       label,
     );
   if (
@@ -256,23 +259,43 @@ export function parseMultiOwnerCommandModel(
     unknownBoundary = row.unknownBoundary as
       | "pre-publish"
       | "post-publish"
-      | undefined;
+      | undefined,
+    unknownOriginStatus = row.unknownOriginStatus as
+      | "staged"
+      | "validated"
+      | "published"
+      | "verified"
+      | undefined,
+    effectExpected =
+      (["published", "verified", "finalized"] as CoordinatorStatus[]).includes(
+        status,
+      ) ||
+      (status === "unknown-outcome" && unknownBoundary === "post-publish");
   if (participants.length === 0)
     throw new Error(`${label} besitzt keine vollständige Participantliste.`);
-  if (
-    (["published", "verified", "finalized"] as CoordinatorStatus[]).includes(
-      status,
-    ) !== (effectHash !== undefined)
-  )
+  if ((effectHash !== undefined) !== effectExpected)
     throw new Error(`${label} bindet den Publish-Effekt nicht exakt.`);
   if (
     status === "unknown-outcome"
-      ? !["pre-publish", "post-publish"].includes(String(unknownBoundary))
-      : unknownBoundary !== undefined
+      ? !["pre-publish", "post-publish"].includes(String(unknownBoundary)) ||
+        !["staged", "validated", "published", "verified"].includes(
+          String(unknownOriginStatus),
+        ) ||
+        (unknownBoundary === "post-publish") !==
+          (effectHash !== undefined) ||
+        (unknownBoundary === "pre-publish") !==
+          (effectHash === undefined) ||
+        (unknownBoundary === "pre-publish" &&
+          !["staged", "validated"].includes(String(unknownOriginStatus))) ||
+        (unknownBoundary === "post-publish" &&
+          !["published", "verified"].includes(String(unknownOriginStatus)))
+      : unknownBoundary !== undefined || unknownOriginStatus !== undefined
   )
     throw new Error(`${label} besitzt eine ungültige Unknown-Grenze.`);
   if (
-    ["validated", "published", "verified", "finalized"].includes(status) &&
+    (["validated", "published", "verified", "finalized"].includes(status) ||
+      (status === "unknown-outcome" &&
+        unknownOriginStatus !== "staged")) &&
     participants.some((participant) => !participant.contributionHash)
   )
     throw new Error(`${label} besitzt unvorbereitete Participants.`);
@@ -294,6 +317,7 @@ export function parseMultiOwnerCommandModel(
     participants,
     ...(effectHash === undefined ? {} : { effectHash }),
     ...(unknownBoundary === undefined ? {} : { unknownBoundary }),
+    ...(unknownOriginStatus === undefined ? {} : { unknownOriginStatus }),
   });
 }
 
@@ -334,30 +358,51 @@ export function stageMultiOwnerCommand(input: {
 
 export function parseCoordinatorEvent(value: unknown): CoordinatorEvent {
   const label = "CoordinatorEvent",
+    bindingKeys = [
+      "kind",
+      "version",
+      "campaignId",
+      "commandId",
+      "commandDigest",
+      "receiptId",
+      "expectedGeneration",
+    ] as const,
     base = exactRecord(
       value,
-      ["kind", "version", "expectedGeneration"],
+      bindingKeys,
       [
         "outcome",
         "participantId",
+        "ownerId",
         "ownerRevision",
+        "targetId",
         "contributionHash",
         "effectHash",
         "survivorRootHash",
-        "receiptId",
       ],
       label,
     ),
     generation = revision(
       base.expectedGeneration,
       `${label}.expectedGeneration`,
-    );
+    ),
+    binding = Object.freeze({
+      version: 1 as const,
+      campaignId: campaignId(base.campaignId, `${label}.campaignId`),
+      commandId: commandId(base.commandId, `${label}.commandId`),
+      commandDigest: commandDigest(
+        base.commandDigest,
+        `${label}.commandDigest`,
+      ),
+      receiptId: receiptId(base.receiptId, `${label}.receiptId`),
+      expectedGeneration: generation,
+    });
   if (base.version !== 1) throw new Error(`${label}.version ist unbekannt.`);
   switch (base.kind) {
     case "validate": {
       const row = exactRecord(
         value,
-        ["kind", "version", "expectedGeneration", "outcome"],
+        [...bindingKeys, "outcome"],
         [],
         label,
       );
@@ -365,8 +410,7 @@ export function parseCoordinatorEvent(value: unknown): CoordinatorEvent {
         throw new Error(`${label}.outcome ist unbekannt.`);
       return Object.freeze({
         kind: "validate",
-        version: 1,
-        expectedGeneration: generation,
+        ...binding,
         outcome: row.outcome as "valid" | "conflict" | "unavailable",
       });
     }
@@ -376,9 +420,15 @@ export function parseCoordinatorEvent(value: unknown): CoordinatorEvent {
         [
           "kind",
           "version",
+          "campaignId",
+          "commandId",
+          "commandDigest",
+          "receiptId",
           "expectedGeneration",
           "participantId",
+          "ownerId",
           "ownerRevision",
+          "targetId",
           "contributionHash",
         ],
         [],
@@ -386,8 +436,7 @@ export function parseCoordinatorEvent(value: unknown): CoordinatorEvent {
       );
       return Object.freeze({
         kind: "prepare-participant",
-        version: 1,
-        expectedGeneration: generation,
+        ...binding,
         participantId: referenceId(
           row.participantId,
           `${label}.participantId`,
@@ -396,6 +445,8 @@ export function parseCoordinatorEvent(value: unknown): CoordinatorEvent {
           row.ownerRevision,
           `${label}.ownerRevision`,
         ),
+        ownerId: ownerId(row.ownerId, `${label}.ownerId`),
+        targetId: referenceId(row.targetId, `${label}.targetId`),
         contributionHash: hash(
           row.contributionHash,
           `${label}.contributionHash`,
@@ -407,9 +458,7 @@ export function parseCoordinatorEvent(value: unknown): CoordinatorEvent {
       const row = exactRecord(
         value,
         [
-          "kind",
-          "version",
-          "expectedGeneration",
+          ...bindingKeys,
           "effectHash",
           "survivorRootHash",
         ],
@@ -418,8 +467,7 @@ export function parseCoordinatorEvent(value: unknown): CoordinatorEvent {
       );
       return Object.freeze({
         kind: base.kind,
-        version: 1,
-        expectedGeneration: generation,
+        ...binding,
         effectHash: hash(row.effectHash, `${label}.effectHash`),
         survivorRootHash: hash(
           row.survivorRootHash,
@@ -432,23 +480,19 @@ export function parseCoordinatorEvent(value: unknown): CoordinatorEvent {
     case "finalize":
       exactRecord(
         value,
-        ["kind", "version", "expectedGeneration"],
+        bindingKeys,
         [],
         label,
       );
       return Object.freeze({
         kind: base.kind,
-        version: 1,
-        expectedGeneration: generation,
+        ...binding,
       });
     case "resolve-outcome": {
       const row = exactRecord(
         value,
         [
-          "kind",
-          "version",
-          "expectedGeneration",
-          "receiptId",
+          ...bindingKeys,
           "outcome",
         ],
         ["effectHash", "survivorRootHash"],
@@ -468,9 +512,7 @@ export function parseCoordinatorEvent(value: unknown): CoordinatorEvent {
         throw new Error(`${label} besitzt keinen Publish-Beleg.`);
       return Object.freeze({
         kind: "resolve-outcome",
-        version: 1,
-        expectedGeneration: generation,
-        receiptId: receiptId(row.receiptId, `${label}.receiptId`),
+        ...binding,
         outcome: row.outcome,
         ...(row.effectHash === undefined
           ? {}
@@ -516,6 +558,14 @@ export function transitionMultiOwnerCommand(
   if (event.expectedGeneration !== model.generation)
     return reject("stale-generation");
   if (
+    event.campaignId !== model.campaignId ||
+    event.commandId !== model.commandId ||
+    event.commandDigest !== model.commandDigest
+  )
+    return reject("command-mismatch");
+  if (event.receiptId !== model.receiptId)
+    return reject("receipt-mismatch");
+  if (
     [
       "finalized",
       "cancelled-before-publish",
@@ -546,6 +596,11 @@ export function transitionMultiOwnerCommand(
       (candidate) => candidate.participantId === event.participantId,
     );
     if (!participant) return reject("unknown-participant");
+    if (
+      participant.ownerId !== event.ownerId ||
+      participant.targetId !== event.targetId
+    )
+      return reject("participant-mismatch");
     if (participant.expectedOwnerRevision !== event.ownerRevision)
       return reject("stale-owner");
     if (participant.contributionHash)
@@ -597,7 +652,11 @@ export function transitionMultiOwnerCommand(
       unknownBoundary: ["published", "verified"].includes(model.status)
         ? "post-publish"
         : "pre-publish",
-      ...(model.effectHash === undefined ? {} : { effectHash: undefined }),
+      unknownOriginStatus: model.status as
+        | "staged"
+        | "validated"
+        | "published"
+        | "verified",
     });
   }
   if (event.kind === "resolve-outcome") {
@@ -612,6 +671,7 @@ export function transitionMultiOwnerCommand(
       return next(model, {
         status: "cancelled-before-publish",
         unknownBoundary: undefined,
+        unknownOriginStatus: undefined,
         participants: Object.freeze(
           model.participants.map((participant) => {
             const { contributionHash: _closed, ...closed } = participant;
@@ -619,14 +679,24 @@ export function transitionMultiOwnerCommand(
           }),
         ),
       });
+    if (model.unknownOriginStatus === "staged")
+      return reject("phase-conflict");
     if (model.participants.some((participant) => !participant.contributionHash))
       return reject("participants-incomplete");
     if (event.survivorRootHash !== model.expectedSurvivorRootHash)
       return reject("survivor-mismatch");
+    if (
+      event.effectHash === model.beforeTruthHash ||
+      (model.unknownBoundary === "post-publish" &&
+        event.effectHash !== model.effectHash)
+    )
+      return reject("effect-mismatch");
     return next(model, {
-      status: "published",
+      status:
+        model.unknownOriginStatus === "verified" ? "verified" : "published",
       effectHash: event.effectHash,
       unknownBoundary: undefined,
+      unknownOriginStatus: undefined,
     });
   }
   if (event.kind === "verify") {

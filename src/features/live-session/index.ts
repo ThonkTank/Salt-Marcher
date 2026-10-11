@@ -196,6 +196,7 @@ export {
   type PortabilityInventoryEntry,
   type ProviderDisposition,
   type ProviderDispositionEvidence,
+  type QuarantineSurvivorRemap,
   type QuarantineDiscardReceipt,
   type RetainedQuarantineSlot,
 } from "./portability";

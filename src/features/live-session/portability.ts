@@ -8,7 +8,9 @@ import {
   parseErasureToken,
   parseReferenceOwnerManifest,
   parseReferenceOwnerRegistryProjection,
+  referenceOwnerSurvivorProof,
   type ErasureToken,
+  type ExpectedSurvivorBinding,
   type ReferenceOwnerDigest,
   type ReferenceOwnerRegistryProjection,
 } from "./reference-owners";
@@ -40,6 +42,7 @@ export interface ProviderDispositionEvidence {
   readonly targetOwnerId: OwnerId;
   readonly targetRegistryRevision: Revision;
   readonly targetOwnerRevision: Revision;
+  readonly rebindAllowed: boolean;
 }
 
 export interface RetainedQuarantineSlot {
@@ -65,6 +68,22 @@ export interface RetainedQuarantineSlot {
   readonly expectedSurvivorSetHash: string;
   readonly expectedSurvivorRootHash: string;
   readonly opaqueEnvelopeHash: string;
+  readonly survivorRemap: readonly QuarantineSurvivorRemap[];
+}
+
+export interface QuarantineSurvivorRemap {
+  readonly kind: "quarantine-survivor-remap";
+  readonly version: 1;
+  readonly sourceOwnerId: OwnerId;
+  readonly sourcePayloadClass: string;
+  readonly sourceSurvivorId: ReferenceId;
+  readonly sourceTargetScopeId: ReferenceId;
+  readonly sourceBeforeHash: string;
+  readonly targetOwnerId: OwnerId;
+  readonly targetPayloadClass: string;
+  readonly targetSurvivorId: ReferenceId;
+  readonly targetTargetScopeId: ReferenceId;
+  readonly targetBeforeHash: string;
 }
 
 export interface QuarantineDiscardReceipt {
@@ -76,6 +95,11 @@ export interface QuarantineDiscardReceipt {
   readonly targetCampaignId: CampaignId;
   readonly targetCharacterId: CharacterId;
   readonly targetDeletionCommandId: CommandId;
+  readonly targetRegistryRevision: Revision;
+  readonly targetOwnerId: OwnerId;
+  readonly targetOwnerRevision: Revision;
+  readonly providerDisposition: "absent";
+  readonly rebindAllowed: false;
   readonly coreEnvelopeId: ReferenceId;
   readonly sourceManifestId: ReferenceId;
   readonly sourceTombstoneId: ReferenceId;
@@ -133,6 +157,84 @@ function opaque(value: unknown, label: string): string {
   return parsed;
 }
 
+function parseSurvivorRemap(
+  value: unknown,
+  index: number,
+): QuarantineSurvivorRemap {
+  const label = `RetainedQuarantineSlot.survivorRemap[${index}]`,
+    row = exactRecord(
+      value,
+      [
+        "kind",
+        "version",
+        "sourceOwnerId",
+        "sourcePayloadClass",
+        "sourceSurvivorId",
+        "sourceTargetScopeId",
+        "sourceBeforeHash",
+        "targetOwnerId",
+        "targetPayloadClass",
+        "targetSurvivorId",
+        "targetTargetScopeId",
+        "targetBeforeHash",
+      ],
+      [],
+      label,
+    );
+  if (row.kind !== "quarantine-survivor-remap" || row.version !== 1)
+    throw new Error(`${label} besitzt einen unbekannten Vertrag.`);
+  const result = Object.freeze({
+    kind: "quarantine-survivor-remap" as const,
+    version: 1 as const,
+    sourceOwnerId: ownerId(row.sourceOwnerId, `${label}.sourceOwnerId`),
+    sourcePayloadClass: opaque(
+      row.sourcePayloadClass,
+      `${label}.sourcePayloadClass`,
+    ),
+    sourceSurvivorId: referenceId(
+      row.sourceSurvivorId,
+      `${label}.sourceSurvivorId`,
+    ),
+    sourceTargetScopeId: referenceId(
+      row.sourceTargetScopeId,
+      `${label}.sourceTargetScopeId`,
+    ),
+    sourceBeforeHash: hash(
+      row.sourceBeforeHash,
+      `${label}.sourceBeforeHash`,
+    ),
+    targetOwnerId: ownerId(row.targetOwnerId, `${label}.targetOwnerId`),
+    targetPayloadClass: opaque(
+      row.targetPayloadClass,
+      `${label}.targetPayloadClass`,
+    ),
+    targetSurvivorId: referenceId(
+      row.targetSurvivorId,
+      `${label}.targetSurvivorId`,
+    ),
+    targetTargetScopeId: referenceId(
+      row.targetTargetScopeId,
+      `${label}.targetTargetScopeId`,
+    ),
+    targetBeforeHash: hash(
+      row.targetBeforeHash,
+      `${label}.targetBeforeHash`,
+    ),
+  });
+  if (result.sourceSurvivorId === result.targetSurvivorId)
+    throw new Error(`${label} remappt keine unabhängige Survivor-ID.`);
+  return result;
+}
+
+function survivorBindingKey(value: {
+  readonly ownerId: OwnerId;
+  readonly payloadClass: string;
+  readonly survivorId: ReferenceId;
+  readonly targetScopeId: ReferenceId;
+}): string {
+  return `${value.ownerId}\u0000${value.payloadClass}\u0000${value.survivorId}\u0000${value.targetScopeId}`;
+}
+
 export function parseRetainedQuarantineSlot(
   value: unknown,
 ): RetainedQuarantineSlot {
@@ -162,6 +264,7 @@ export function parseRetainedQuarantineSlot(
         "expectedSurvivorSetHash",
         "expectedSurvivorRootHash",
         "opaqueEnvelopeHash",
+        "survivorRemap",
       ],
       [],
       label,
@@ -173,6 +276,16 @@ export function parseRetainedQuarantineSlot(
   )
     throw new Error(`${label} besitzt keinen offline quarantined Vertrag.`);
   const sourceToken = parseErasureToken(row.sourceToken),
+    survivorRemap = Object.freeze(
+      uniqueBy(
+        exactArray(row.survivorRemap, `${label}.survivorRemap`).map(
+          parseSurvivorRemap,
+        ),
+        (entry) =>
+          `${entry.sourceOwnerId}\u0000${entry.sourcePayloadClass}\u0000${entry.sourceSurvivorId}\u0000${entry.sourceTargetScopeId}`,
+        `${label}.survivorRemap.source`,
+      ),
+    ),
     result = Object.freeze({
       kind: "retained-quarantine-slot" as const,
       version: 1 as const,
@@ -241,6 +354,7 @@ export function parseRetainedQuarantineSlot(
         row.opaqueEnvelopeHash,
         `${label}.opaqueEnvelopeHash`,
       ),
+      survivorRemap,
     });
   if (
     result.targetCampaignId === sourceToken.campaignId ||
@@ -249,10 +363,18 @@ export function parseRetainedQuarantineSlot(
     result.targetSlotId === sourceToken.slotId ||
     result.targetErasureUnitId === sourceToken.erasureUnitId ||
     result.targetScopeId === sourceToken.targetScopeId ||
-    result.expectedSurvivorSetHash ===
-      sourceToken.expectedSurvivorSetHash ||
-    result.expectedSurvivorRootHash ===
-      sourceToken.expectedSurvivorRootHash
+    new Set(
+      result.survivorRemap.map(
+        (entry) =>
+          `${entry.targetOwnerId}\u0000${entry.targetPayloadClass}\u0000${entry.targetSurvivorId}\u0000${entry.targetTargetScopeId}`,
+      ),
+    ).size !== result.survivorRemap.length ||
+    result.survivorRemap.some(
+      (entry) =>
+        entry.targetOwnerId !== result.targetOwnerId ||
+        entry.targetPayloadClass !== result.payloadClass ||
+        entry.targetTargetScopeId !== result.targetScopeId,
+    )
   )
     throw new Error(
       `${label} besitzt keine unabhängige vollständige Remap-Closure.`,
@@ -280,14 +402,44 @@ export function bindRetainedQuarantineSlot(
     ),
     sourceEntry = manifest.entries.find(
       (entry) => entry.erasureToken.tokenId === slot.sourceToken.tokenId,
-    );
+    ),
+    sourceSurvivors = sourceEntry?.expectedSurvivors ?? [],
+    targetSurvivors: readonly ExpectedSurvivorBinding[] =
+      slot.survivorRemap.map((entry) =>
+        Object.freeze({
+          kind: "expected-survivor-binding" as const,
+          version: 1 as const,
+          ownerId: entry.targetOwnerId,
+          payloadClass: entry.targetPayloadClass,
+          survivorId: entry.targetSurvivorId,
+          targetScopeId: entry.targetTargetScopeId,
+          beforeHash: entry.targetBeforeHash,
+        }),
+      ),
+    targetProof = referenceOwnerSurvivorProof(targetSurvivors, digest);
   if (
     slot.sourceManifestId !== manifest.manifestId ||
     slot.sourceTombstoneId !== tombstone.tombstoneId ||
     !sourceEntry ||
     sourceEntry.payloadClass !== slot.payloadClass ||
     JSON.stringify(sourceEntry.erasureToken) !==
-      JSON.stringify(slot.sourceToken)
+      JSON.stringify(slot.sourceToken) ||
+    sourceSurvivors.length !== slot.survivorRemap.length ||
+    sourceSurvivors.some((source) => {
+      const mapped = slot.survivorRemap.find(
+        (entry) =>
+          survivorBindingKey(source) ===
+          survivorBindingKey({
+            ownerId: entry.sourceOwnerId,
+            payloadClass: entry.sourcePayloadClass,
+            survivorId: entry.sourceSurvivorId,
+            targetScopeId: entry.sourceTargetScopeId,
+          }),
+      );
+      return !mapped || mapped.sourceBeforeHash !== source.beforeHash;
+    }) ||
+    targetProof.survivorSetHash !== slot.expectedSurvivorSetHash ||
+    targetProof.survivorRootHash !== slot.expectedSurvivorRootHash
   )
     throw new Error(
       "RetainedQuarantineSlot bindet nicht exakt an seine Quell-Closure.",
@@ -359,6 +511,11 @@ export function parseQuarantineDiscardReceipt(
         "targetCampaignId",
         "targetCharacterId",
         "targetDeletionCommandId",
+        "targetRegistryRevision",
+        "targetOwnerId",
+        "targetOwnerRevision",
+        "providerDisposition",
+        "rebindAllowed",
         "coreEnvelopeId",
         "sourceManifestId",
         "sourceTombstoneId",
@@ -374,7 +531,9 @@ export function parseQuarantineDiscardReceipt(
     row.kind !== "quarantine-discard-receipt" ||
     row.version !== 1 ||
     row.outcome !== "local-opaque-envelope-discard" ||
-    row.providerSemanticClosureClaimed !== false
+    row.providerSemanticClosureClaimed !== false ||
+    row.providerDisposition !== "absent" ||
+    row.rebindAllowed !== false
   )
     throw new Error(`${label} behauptet eine fremde semantische Closure.`);
   const result = Object.freeze({
@@ -395,6 +554,17 @@ export function parseQuarantineDiscardReceipt(
       row.targetDeletionCommandId,
       `${label}.targetDeletionCommandId`,
     ),
+    targetRegistryRevision: revision(
+      row.targetRegistryRevision,
+      `${label}.targetRegistryRevision`,
+    ),
+    targetOwnerId: ownerId(row.targetOwnerId, `${label}.targetOwnerId`),
+    targetOwnerRevision: revision(
+      row.targetOwnerRevision,
+      `${label}.targetOwnerRevision`,
+    ),
+    providerDisposition: "absent" as const,
+    rebindAllowed: false as const,
     coreEnvelopeId: referenceId(
       row.coreEnvelopeId,
       `${label}.coreEnvelopeId`,
@@ -422,6 +592,11 @@ export function parseQuarantineDiscardReceipt(
     result.targetCampaignId !== slot.targetCampaignId ||
     result.targetCharacterId !== slot.targetCharacterId ||
     result.targetDeletionCommandId !== slot.targetDeletionCommandId ||
+    result.targetRegistryRevision !== slot.targetRegistryRevision ||
+    result.targetOwnerId !== slot.targetOwnerId ||
+    result.targetOwnerRevision !== slot.targetOwnerRevision ||
+    result.providerDisposition !== "absent" ||
+    result.rebindAllowed !== false ||
     result.coreEnvelopeId !== slot.coreEnvelopeId ||
     result.sourceManifestId !== slot.sourceManifestId ||
     result.sourceTombstoneId !== slot.sourceTombstoneId ||
@@ -454,6 +629,7 @@ export function decideQuarantineDiscard(
     evidence.targetOwnerId !== slot.targetOwnerId ||
     evidence.targetRegistryRevision !== registry.registryRevision ||
     evidence.targetOwnerRevision !== slot.targetOwnerRevision ||
+    evidence.rebindAllowed !== false ||
     !owner ||
     owner.ownerRevision !== evidence.targetOwnerRevision ||
     owner.availability !== "unavailable"
@@ -482,6 +658,7 @@ export function parseProviderDispositionEvidence(
         "targetOwnerId",
         "targetRegistryRevision",
         "targetOwnerRevision",
+        "rebindAllowed",
       ],
       [],
       label,
@@ -510,6 +687,10 @@ export function parseProviderDispositionEvidence(
     targetOwnerRevision: revision(
       row.targetOwnerRevision,
       `${label}.targetOwnerRevision`,
+    ),
+    rebindAllowed: exactBoolean(
+      row.rebindAllowed,
+      `${label}.rebindAllowed`,
     ),
   });
 }

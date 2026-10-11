@@ -31,6 +31,8 @@ const digest = (canonical: string): string =>
   `sha256:${createHash("sha256").update(canonical).digest("hex")}`;
 const evidence = (label: string): string =>
   digest(JSON.stringify(["live-session-lifecycle", label]));
+const fact = (value: unknown): string =>
+  digest(JSON.stringify(["live-session-lifecycle-fact", value]));
 
 function profile(name: string) {
   return { name };
@@ -479,6 +481,76 @@ test("party history: coordinated Move undo requires exact owner revisions and an
     safe.operation.participantPlans[0]?.disposition,
     "remove-if-unchanged",
   );
+  assert.equal(safe.operation.participantPlans[0]?.revisionBefore, 1);
+  assert.equal(safe.operation.participantPlans[0]?.revisionAfter, 2);
+  const foreignOwnerChange = applyPartyHistoryCommand(
+    safe.history,
+    safe.party,
+    {
+      ...historyCommand(
+        "redo-party-history",
+        safe.party.partyRevision,
+        safe.history.historyRevision,
+        "redo-move-foreign-owner",
+      ),
+      participantInputs: [
+        {
+          kind: "party-history-participant-input",
+          version: 1,
+          ownerId: "owner-scenes",
+          targetId: "scene-created",
+          currentRevision: 9,
+          targetUnused: true,
+        },
+      ],
+    },
+  );
+  assert.equal(foreignOwnerChange.status, "rejected");
+  const redone = applyPartyHistoryCommand(safe.history, safe.party, {
+    ...historyCommand(
+      "redo-party-history",
+      safe.party.partyRevision,
+      safe.history.historyRevision,
+      "redo-move-safe",
+    ),
+    participantInputs: [
+      {
+        kind: "party-history-participant-input",
+        version: 1,
+        ownerId: "owner-scenes",
+        targetId: "scene-created",
+        currentRevision: 2,
+        targetUnused: true,
+      },
+    ],
+  });
+  assert.equal(redone.status, "applied");
+  if (redone.status !== "applied") throw new Error("redo move failed");
+  assert.equal(redone.operation.participantPlans[0]?.revisionBefore, 2);
+  assert.equal(redone.operation.participantPlans[0]?.revisionAfter, 3);
+  const undoneAgain = applyPartyHistoryCommand(redone.history, redone.party, {
+    ...historyCommand(
+      "undo-party-history",
+      redone.party.partyRevision,
+      redone.history.historyRevision,
+      "undo-move-again",
+    ),
+    participantInputs: [
+      {
+        kind: "party-history-participant-input",
+        version: 1,
+        ownerId: "owner-scenes",
+        targetId: "scene-created",
+        currentRevision: 3,
+        targetUnused: true,
+      },
+    ],
+  });
+  assert.equal(undoneAgain.status, "applied");
+  if (undoneAgain.status !== "applied")
+    throw new Error("second monotonic undo failed");
+  assert.equal(undoneAgain.operation.participantPlans[0]?.revisionBefore, 3);
+  assert.equal(undoneAgain.operation.participantPlans[0]?.revisionAfter, 4);
 });
 
 test("runtime lifecycle: active deletion cleans Scene, seals History and finalizes only after every owner receipt", () => {
@@ -804,6 +876,7 @@ test("runtime lifecycle golden: Preparation, Move, Rejoin, causal History and pe
     });
   assert.equal(rejoined.status, "applied");
   if (rejoined.status !== "applied") throw new Error("golden rejoin failed");
+  const historyBeforeRejoin = history;
   history = recordPartyHistory(history, {
     entryId: "history-golden-rejoin",
     actionKind: "scenes-rejoined",
@@ -853,12 +926,84 @@ test("runtime lifecycle golden: Preparation, Move, Rejoin, causal History and pe
     "character-b",
   ]);
 
-  let coordination = coordinator("rejoin-scenes");
+  const survivorRootHash = fact({
+      characterIds: rejoined.state.party.characters.map(
+        (character) => character.characterId,
+      ),
+      liveSceneIds: rejoined.state.scenes
+        .filter((scene) => scene.source.lifecycle === "active")
+        .map((scene) => scene.source.liveSceneId),
+    }),
+    rejoinEffectHash = fact({ state: rejoined.state, history }),
+    coordinationInput = {
+      commandId: rejoinCommandId,
+      commandDigest: rejoinDigest,
+      receiptId: "receipt-golden-rejoin",
+      beforeTruthHash: fact({
+        state: moved.state,
+        history: historyBeforeRejoin,
+      }),
+      expectedSurvivorRootHash: survivorRootHash,
+      participants: [
+        {
+          participantId: "participant-party",
+          ownerId: "owner-party",
+          expectedOwnerRevision: moved.state.party.partyRevision,
+          targetId: "party-runtime",
+        },
+        {
+          participantId: "participant-scenes",
+          ownerId: "owner-scenes",
+          expectedOwnerRevision: target.sceneRevision,
+          targetId: target.liveSceneId,
+        },
+        {
+          participantId: "participant-clock",
+          ownerId: "clock",
+          expectedOwnerRevision: target.sceneClockRef!.ownerRevision,
+          targetId: target.sceneClockRef!.referenceId,
+        },
+      ],
+    },
+    cancelledCoordination = coordinator(
+      "rejoin-scenes",
+      coordinationInput,
+    ),
+    cancelled = coordinatorTransition(cancelledCoordination, {
+      kind: "cancel",
+    });
+  assert.equal(cancelled.status, "applied");
+  assert.equal(
+    cancelled.model.beforeTruthHash,
+    coordinationInput.beforeTruthHash,
+  );
+  assert.equal(cancelled.model.effectHash, undefined);
+
+  let coordination = coordinator("rejoin-scenes", coordinationInput);
   for (const [participantId, ownerRevision, contribution] of [
-    ["participant-party", 1, evidence("golden-party")],
-    ["participant-scenes", 2, evidence("golden-scenes")],
+    [
+      "participant-party",
+      moved.state.party.partyRevision,
+      fact({ before: moved.state.party, after: rejoined.state.party }),
+    ],
+    [
+      "participant-scenes",
+      target.sceneRevision,
+      fact({ before: moved.state.scenes, after: rejoined.state.scenes }),
+    ],
+    [
+      "participant-clock",
+      target.sceneClockRef!.ownerRevision,
+      fact({
+        receiptId: "receipt-golden-clock-merge",
+        before: target.sceneClockRef,
+        after: rejoined.state.scenes.find(
+          (scene) => scene.source.liveSceneId === target.liveSceneId,
+        )?.source.sceneClockRef,
+      }),
+    ],
   ] as const) {
-    const next = transitionMultiOwnerCommand(coordination, {
+    const next = coordinatorTransition(coordination, {
       kind: "prepare-participant",
       version: 1,
       expectedGeneration: coordination.generation,
@@ -878,18 +1023,18 @@ test("runtime lifecycle golden: Preparation, Move, Rejoin, causal History and pe
     {
       kind: "publish",
       version: 1,
-      effectHash: evidence("golden-rejoin-effect"),
+      effectHash: rejoinEffectHash,
       survivorRootHash: coordination.expectedSurvivorRootHash,
     },
     {
       kind: "verify",
       version: 1,
-      effectHash: evidence("golden-rejoin-effect"),
+      effectHash: rejoinEffectHash,
       survivorRootHash: coordination.expectedSurvivorRootHash,
     },
     { kind: "finalize", version: 1 },
   ] as const) {
-    const next = transitionMultiOwnerCommand(coordination, {
+    const next = coordinatorTransition(coordination, {
       ...event,
       expectedGeneration: coordination.generation,
     });
@@ -944,6 +1089,22 @@ test("runtime lifecycle golden: Preparation, Move, Rejoin, causal History and pe
     ),
     true,
   );
+  const manifestInput = rawManifest(),
+    closure = assessCharacterClosure(
+      rawRegistry(),
+      manifestInput,
+      rawTombstone(),
+      [
+        rawClosureReceipt(manifestInput.entries[0], "removed"),
+        rawClosureReceipt(
+          manifestInput.entries[1],
+          "quarantine-erased",
+        ),
+      ],
+      digest,
+    );
+  assert.equal(closure.status, "permanent-purge-finalized");
+  assert.equal(closure.purgeEligible, true);
 });
 
 test("portability: imported quarantine stays offline, source token never executes and local rebind is target-only", () => {
@@ -951,6 +1112,22 @@ test("portability: imported quarantine stays offline, source token never execute
     sourceManifest = rawManifest(),
     sourceTombstone = rawTombstone(),
     sourceEntry = sourceManifest.entries[1],
+    sourceSurvivor = sourceEntry.expectedSurvivors[0],
+    targetSurvivors = [
+      {
+        kind: "expected-survivor-binding",
+        version: 1,
+        ownerId: "owner-scenes",
+        payloadClass: "live-scenes",
+        survivorId: "target-survivor-scenes",
+        targetScopeId: "target-scope-scenes",
+        beforeHash: evidence("target-survivor-before-scenes"),
+      },
+    ],
+    targetProof = referenceOwnerSurvivorProof(
+      targetSurvivors as never,
+      digest,
+    ),
     slotInput = {
       kind: "retained-quarantine-slot",
       version: 1,
@@ -971,9 +1148,25 @@ test("portability: imported quarantine stays offline, source token never execute
       targetErasureUnitId: "target-deleted-scenes",
       targetScopeId: "target-scope-scenes",
       expectedBeforeHash: evidence("target-before-scenes"),
-      expectedSurvivorSetHash: evidence("target-survivor-set-scenes"),
-      expectedSurvivorRootHash: evidence("target-survivor-root-scenes"),
+      expectedSurvivorSetHash: targetProof.survivorSetHash,
+      expectedSurvivorRootHash: targetProof.survivorRootHash,
       opaqueEnvelopeHash: evidence("opaque-envelope-scenes"),
+      survivorRemap: [
+        {
+          kind: "quarantine-survivor-remap",
+          version: 1,
+          sourceOwnerId: sourceSurvivor.ownerId,
+          sourcePayloadClass: sourceSurvivor.payloadClass,
+          sourceSurvivorId: sourceSurvivor.survivorId,
+          sourceTargetScopeId: sourceSurvivor.targetScopeId,
+          sourceBeforeHash: sourceSurvivor.beforeHash,
+          targetOwnerId: "owner-scenes",
+          targetPayloadClass: "live-scenes",
+          targetSurvivorId: "target-survivor-scenes",
+          targetTargetScopeId: "target-scope-scenes",
+          targetBeforeHash: evidence("target-survivor-before-scenes"),
+        },
+      ],
     },
     slot = bindRetainedQuarantineSlot(
       slotInput,
@@ -1069,6 +1262,18 @@ test("portability: imported quarantine stays offline, source token never execute
     bindRetainedQuarantineSlot(
       {
         ...slotInput,
+        expectedSurvivorRootHash: evidence("forged-target-survivor-root"),
+      },
+      sourceRegistry,
+      sourceManifest,
+      sourceTombstone,
+      digest,
+    ),
+  );
+  assert.throws(() =>
+    bindRetainedQuarantineSlot(
+      {
+        ...slotInput,
         sourceToken: sourceManifest.entries[0].erasureToken,
         expectedBeforeHash: sourceManifest.entries[0].beforeHash,
         expectedSurvivorSetHash: sourceManifest.entries[0].survivorSetHash,
@@ -1091,6 +1296,7 @@ test("portability: imported quarantine stays offline, source token never execute
       targetOwnerId: "owner-scenes",
       targetRegistryRevision: 1,
       targetOwnerRevision: 11,
+      rebindAllowed: false,
     },
     discard = {
     kind: "quarantine-discard-receipt",
@@ -1101,6 +1307,11 @@ test("portability: imported quarantine stays offline, source token never execute
     targetCampaignId: CAMPAIGN_B,
     targetCharacterId: "target-character-a",
     targetDeletionCommandId: "target-command-delete-character-a",
+    targetRegistryRevision: 1,
+    targetOwnerId: "owner-scenes",
+    targetOwnerRevision: 11,
+    providerDisposition: "absent",
+    rebindAllowed: false,
     coreEnvelopeId: "envelope-target-scenes",
     sourceManifestId: "manifest-character-a",
     sourceTombstoneId: "tombstone-character-a",
@@ -1140,6 +1351,14 @@ test("portability: imported quarantine stays offline, source token never execute
       slot,
       absentRegistry,
       { ...absentEvidence, disposition: "replaced" },
+      discard,
+    ),
+  );
+  assert.throws(() =>
+    decideQuarantineDiscard(
+      slot,
+      absentRegistry,
+      { ...absentEvidence, rebindAllowed: true },
       discard,
     ),
   );
@@ -1210,7 +1429,41 @@ test("portability: Complete never silently downgrades and Salvage discloses ever
   );
 });
 
-function coordinator(kind: CoordinatedCommandKind) {
+function coordinatorEvent(
+  model: ReturnType<typeof stageMultiOwnerCommand>,
+  event: Raw,
+) {
+  const participant =
+    event.kind === "prepare-participant"
+      ? model.participants.find(
+          (candidate) => candidate.participantId === event.participantId,
+        )
+      : undefined;
+  return {
+    version: 1,
+    campaignId: model.campaignId,
+    commandId: model.commandId,
+    commandDigest: model.commandDigest,
+    receiptId: model.receiptId,
+    expectedGeneration: model.generation,
+    ...(participant === undefined
+      ? {}
+      : { ownerId: participant.ownerId, targetId: participant.targetId }),
+    ...event,
+  };
+}
+
+function coordinatorTransition(
+  model: ReturnType<typeof stageMultiOwnerCommand>,
+  event: Raw,
+) {
+  return transitionMultiOwnerCommand(model, coordinatorEvent(model, event));
+}
+
+function coordinator(
+  kind: CoordinatedCommandKind,
+  overrides: Raw = {},
+) {
   return stageMultiOwnerCommand({
     campaignId: CAMPAIGN_A,
     commandId: `coordinator-${kind}`,
@@ -1233,6 +1486,7 @@ function coordinator(kind: CoordinatedCommandKind) {
         targetId: "target-scenes",
       },
     ],
+    ...overrides,
   });
 }
 
@@ -1242,7 +1496,7 @@ function prepared(kind: CoordinatedCommandKind) {
     ["participant-party", 1, "party"],
     ["participant-scenes", 2, "scenes"],
   ] as const) {
-    const transition = transitionMultiOwnerCommand(model, {
+    const transition = coordinatorTransition(model, {
       kind: "prepare-participant",
       version: 1,
       expectedGeneration: model.generation,
@@ -1253,7 +1507,7 @@ function prepared(kind: CoordinatedCommandKind) {
     assert.equal(transition.status, "applied");
     model = transition.model;
   }
-  const validated = transitionMultiOwnerCommand(model, {
+  const validated = coordinatorTransition(model, {
     kind: "validate",
     version: 1,
     expectedGeneration: model.generation,
@@ -1267,7 +1521,7 @@ test("coordinator: publish wins exactly once, unknown outcome rolls forward on t
   const validated = prepared("permanent-character-deletion"),
     effectHash = evidence("delete-effect"),
     survivorRootHash = validated.expectedSurvivorRootHash,
-    published = transitionMultiOwnerCommand(validated, {
+    published = coordinatorTransition(validated, {
       kind: "publish",
       version: 1,
       expectedGeneration: validated.generation,
@@ -1276,7 +1530,7 @@ test("coordinator: publish wins exactly once, unknown outcome rolls forward on t
     });
   assert.equal(published.status, "applied");
   assert.equal(published.model.status, "published");
-  const lateCancel = transitionMultiOwnerCommand(published.model, {
+  const lateCancel = coordinatorTransition(published.model, {
     kind: "cancel",
     version: 1,
     expectedGeneration: published.model.generation,
@@ -1285,12 +1539,12 @@ test("coordinator: publish wins exactly once, unknown outcome rolls forward on t
   if (lateCancel.status === "rejected")
     assert.equal(lateCancel.reason, "already-published");
 
-  const unknown = transitionMultiOwnerCommand(published.model, {
+  const unknown = coordinatorTransition(published.model, {
       kind: "mark-outcome-unknown",
       version: 1,
       expectedGeneration: published.model.generation,
     }),
-    falseCancel = transitionMultiOwnerCommand(unknown.model, {
+    falseCancel = coordinatorTransition(unknown.model, {
       kind: "resolve-outcome",
       version: 1,
       expectedGeneration: unknown.model.generation,
@@ -1298,7 +1552,7 @@ test("coordinator: publish wins exactly once, unknown outcome rolls forward on t
       outcome: "cancelled-before-publish",
     });
   assert.equal(falseCancel.status, "rejected");
-  const resolved = transitionMultiOwnerCommand(unknown.model, {
+  const resolved = coordinatorTransition(unknown.model, {
       kind: "resolve-outcome",
       version: 1,
       expectedGeneration: unknown.model.generation,
@@ -1307,20 +1561,82 @@ test("coordinator: publish wins exactly once, unknown outcome rolls forward on t
       effectHash,
       survivorRootHash,
     }),
-    verified = transitionMultiOwnerCommand(resolved.model, {
+    verified = coordinatorTransition(resolved.model, {
       kind: "verify",
       version: 1,
       expectedGeneration: resolved.model.generation,
       effectHash,
       survivorRootHash,
     }),
-    finalized = transitionMultiOwnerCommand(verified.model, {
+    finalized = coordinatorTransition(verified.model, {
       kind: "finalize",
       version: 1,
       expectedGeneration: verified.model.generation,
     });
   assert.equal(finalized.status, "applied");
   assert.equal(finalized.model.status, "finalized");
+});
+
+test("coordinator: unknown outcomes cannot replace publish truth or bypass validation", () => {
+  const validated = prepared("move-characters"),
+    effectHash = evidence("unknown-original-effect"),
+    published = coordinatorTransition(validated, {
+      kind: "publish",
+      effectHash,
+      survivorRootHash: validated.expectedSurvivorRootHash,
+    });
+  assert.equal(published.status, "applied");
+  const postPublishUnknown = coordinatorTransition(published.model, {
+      kind: "mark-outcome-unknown",
+    }),
+    changedEffect = coordinatorTransition(postPublishUnknown.model, {
+      kind: "resolve-outcome",
+      outcome: "published",
+      effectHash: evidence("unknown-replaced-effect"),
+      survivorRootHash: validated.expectedSurvivorRootHash,
+    });
+  assert.equal(changedEffect.status, "rejected");
+  if (changedEffect.status === "rejected")
+    assert.equal(changedEffect.reason, "effect-mismatch");
+
+  let staged = coordinator("move-characters");
+  for (const [participantId, ownerRevision, suffix] of [
+    ["participant-party", 1, "unknown-staged-party"],
+    ["participant-scenes", 2, "unknown-staged-scenes"],
+  ] as const) {
+    const next = coordinatorTransition(staged, {
+      kind: "prepare-participant",
+      participantId,
+      ownerRevision,
+      contributionHash: evidence(suffix),
+    });
+    assert.equal(next.status, "applied");
+    staged = next.model;
+  }
+  const stagedUnknown = coordinatorTransition(staged, {
+      kind: "mark-outcome-unknown",
+    }),
+    bypass = coordinatorTransition(stagedUnknown.model, {
+      kind: "resolve-outcome",
+      outcome: "published",
+      effectHash: evidence("staged-bypass-effect"),
+      survivorRootHash: staged.expectedSurvivorRootHash,
+    });
+  assert.equal(bypass.status, "rejected");
+  if (bypass.status === "rejected") assert.equal(bypass.reason, "phase-conflict");
+
+  const validatedUnknown = coordinatorTransition(validated, {
+      kind: "mark-outcome-unknown",
+    }),
+    beforeTruthPublish = coordinatorTransition(validatedUnknown.model, {
+      kind: "resolve-outcome",
+      outcome: "published",
+      effectHash: validated.beforeTruthHash,
+      survivorRootHash: validated.expectedSurvivorRootHash,
+    });
+  assert.equal(beforeTruthPublish.status, "rejected");
+  if (beforeTruthPublish.status === "rejected")
+    assert.equal(beforeTruthPublish.reason, "effect-mismatch");
 });
 
 test("coordinator: complete command matrix is cancel-safe and stale workers never publish", () => {
@@ -1336,9 +1652,12 @@ test("coordinator: complete command matrix is cancel-safe and stale workers neve
     "redo-party-history",
   ];
   for (const kind of kinds) {
+    const early = coordinator(kind),
+      earlyCancel = coordinatorTransition(early, { kind: "cancel" });
+    assert.equal(earlyCancel.status, "applied", `${kind}: early cancel`);
     const model = prepared(kind),
       before = model.beforeTruthHash,
-      cancelled = transitionMultiOwnerCommand(model, {
+      cancelled = coordinatorTransition(model, {
         kind: "cancel",
         version: 1,
         expectedGeneration: model.generation,
@@ -1353,7 +1672,7 @@ test("coordinator: complete command matrix is cancel-safe and stale workers neve
       true,
       kind,
     );
-    const stalePublish = transitionMultiOwnerCommand(cancelled.model, {
+    const stalePublish = coordinatorTransition(cancelled.model, {
       kind: "publish",
       version: 1,
       expectedGeneration: model.generation,
@@ -1361,12 +1680,114 @@ test("coordinator: complete command matrix is cancel-safe and stale workers neve
       survivorRootHash: model.expectedSurvivorRootHash,
     });
     assert.equal(stalePublish.status, "rejected", kind);
+
+    const publishModel = prepared(kind),
+      effectHash = evidence(`${kind}-matrix-effect`),
+      survivorMismatch = coordinatorTransition(publishModel, {
+        kind: "publish",
+        effectHash,
+        survivorRootHash: evidence(`${kind}-wrong-survivors`),
+      });
+    assert.equal(survivorMismatch.status, "rejected", `${kind}: survivors`);
+    const published = coordinatorTransition(publishModel, {
+      kind: "publish",
+      effectHash,
+      survivorRootHash: publishModel.expectedSurvivorRootHash,
+    });
+    assert.equal(published.status, "applied", `${kind}: publish`);
+    const late = coordinatorTransition(published.model, { kind: "cancel" });
+    assert.equal(late.status, "rejected", `${kind}: late cancel`);
+    const wrongVerify = coordinatorTransition(published.model, {
+      kind: "verify",
+      effectHash: evidence(`${kind}-wrong-effect`),
+      survivorRootHash: publishModel.expectedSurvivorRootHash,
+    });
+    assert.equal(wrongVerify.status, "rejected", `${kind}: verify effect`);
+    const unknown = coordinatorTransition(published.model, {
+        kind: "mark-outcome-unknown",
+      }),
+      resolved = coordinatorTransition(unknown.model, {
+        kind: "resolve-outcome",
+        outcome: "published",
+        effectHash,
+        survivorRootHash: publishModel.expectedSurvivorRootHash,
+      }),
+      verified = coordinatorTransition(resolved.model, {
+        kind: "verify",
+        effectHash,
+        survivorRootHash: publishModel.expectedSurvivorRootHash,
+      }),
+      finalized = coordinatorTransition(verified.model, { kind: "finalize" });
+    assert.equal(finalized.status, "applied", `${kind}: finalize`);
+    assert.equal(finalized.model.status, "finalized", `${kind}: finalized`);
+
+    const preUnknownModel = prepared(kind),
+      preUnknown = coordinatorTransition(preUnknownModel, {
+        kind: "mark-outcome-unknown",
+      }),
+      preResolved = coordinatorTransition(preUnknown.model, {
+        kind: "resolve-outcome",
+        outcome: "published",
+        effectHash,
+        survivorRootHash: preUnknownModel.expectedSurvivorRootHash,
+      }),
+      preVerified = coordinatorTransition(preResolved.model, {
+        kind: "verify",
+        effectHash,
+        survivorRootHash: preUnknownModel.expectedSurvivorRootHash,
+      }),
+      preFinalized = coordinatorTransition(preVerified.model, {
+        kind: "finalize",
+      });
+    assert.equal(preFinalized.status, "applied", `${kind}: pre-unknown`);
+    assert.equal(
+      preFinalized.model.status,
+      "finalized",
+      `${kind}: pre-unknown finalized`,
+    );
   }
+});
+
+test("coordinator: callback bindings reject other commands, campaigns, targets and cancelled generations", () => {
+  const commandA = coordinator("move-characters"),
+    commandB = coordinator("split-scene"),
+    callbackA = coordinatorEvent(commandA, {
+      kind: "prepare-participant",
+      participantId: "participant-party",
+      ownerRevision: 1,
+      contributionHash: evidence("callback-command-a"),
+    }),
+    crossed = transitionMultiOwnerCommand(commandB, callbackA);
+  assert.equal(crossed.status, "rejected");
+  if (crossed.status === "rejected")
+    assert.equal(crossed.reason, "command-mismatch");
+  const foreignCampaign = coordinatorTransition(commandA, {
+    kind: "prepare-participant",
+    participantId: "participant-party",
+    ownerRevision: 1,
+    contributionHash: evidence("callback-foreign-campaign"),
+    campaignId: CAMPAIGN_B,
+  });
+  assert.equal(foreignCampaign.status, "rejected");
+  const wrongTarget = coordinatorTransition(commandA, {
+    kind: "prepare-participant",
+    participantId: "participant-party",
+    ownerRevision: 1,
+    targetId: "target-other",
+    contributionHash: evidence("callback-wrong-target"),
+  });
+  assert.equal(wrongTarget.status, "rejected");
+  if (wrongTarget.status === "rejected")
+    assert.equal(wrongTarget.reason, "participant-mismatch");
+  const cancelled = coordinatorTransition(commandA, { kind: "cancel" }),
+    late = transitionMultiOwnerCommand(cancelled.model, callbackA);
+  assert.equal(late.status, "rejected");
+  if (late.status === "rejected") assert.equal(late.reason, "stale-generation");
 });
 
 test("coordinator: pre-publish unknown, validation failure and stale participant replies stay rollback-only", () => {
   let staged = coordinator("move-characters");
-  const firstPrepare = transitionMultiOwnerCommand(staged, {
+  const firstPrepare = coordinatorTransition(staged, {
     kind: "prepare-participant",
     version: 1,
     expectedGeneration: staged.generation,
@@ -1376,7 +1797,7 @@ test("coordinator: pre-publish unknown, validation failure and stale participant
   });
   assert.equal(firstPrepare.status, "applied");
   staged = firstPrepare.model;
-  const idempotent = transitionMultiOwnerCommand(staged, {
+  const idempotent = coordinatorTransition(staged, {
     kind: "prepare-participant",
     version: 1,
     expectedGeneration: staged.generation,
@@ -1386,7 +1807,7 @@ test("coordinator: pre-publish unknown, validation failure and stale participant
   });
   assert.equal(idempotent.status, "applied");
   assert.equal(idempotent.model.generation, staged.generation);
-  const staleWorker = transitionMultiOwnerCommand(staged, {
+  const staleWorker = coordinatorTransition(staged, {
     kind: "prepare-participant",
     version: 1,
     expectedGeneration: 0,
@@ -1398,12 +1819,12 @@ test("coordinator: pre-publish unknown, validation failure and stale participant
   if (staleWorker.status === "rejected")
     assert.equal(staleWorker.reason, "stale-generation");
 
-  const unknown = transitionMultiOwnerCommand(staged, {
+  const unknown = coordinatorTransition(staged, {
       kind: "mark-outcome-unknown",
       version: 1,
       expectedGeneration: staged.generation,
     }),
-    resolvedCancel = transitionMultiOwnerCommand(unknown.model, {
+    resolvedCancel = coordinatorTransition(unknown.model, {
       kind: "resolve-outcome",
       version: 1,
       expectedGeneration: unknown.model.generation,
@@ -1424,7 +1845,7 @@ test("coordinator: pre-publish unknown, validation failure and stale participant
     ["participant-party", 1, "party-conflict"],
     ["participant-scenes", 2, "scenes-conflict"],
   ] as const) {
-    const transition = transitionMultiOwnerCommand(fullyPrepared, {
+    const transition = coordinatorTransition(fullyPrepared, {
       kind: "prepare-participant",
       version: 1,
       expectedGeneration: fullyPrepared.generation,
@@ -1435,7 +1856,7 @@ test("coordinator: pre-publish unknown, validation failure and stale participant
     assert.equal(transition.status, "applied");
     fullyPrepared = transition.model;
   }
-  const conflict = transitionMultiOwnerCommand(fullyPrepared, {
+  const conflict = coordinatorTransition(fullyPrepared, {
       kind: "validate",
       version: 1,
       expectedGeneration: fullyPrepared.generation,
