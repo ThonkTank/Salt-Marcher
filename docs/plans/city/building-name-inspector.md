@@ -100,10 +100,26 @@ CityGesture-Präzisions-/Skalierfälle bestehen. Vollsuite1084PASS/0FAIL/1Skip,
 Typ/Build/Repo/Diff PASS. Planner-Refresh ist separat über PR131 integriert;
 dessen native Speicherentscheidung bleibt in #69 offen.
 
-Enger unabhängiger Fixreview und gezielter sichtbarer Mittelpunkt-/Fresh-Nachtest
-bleiben offen. H01 qualifiziert den alten Eckanker und wird nicht auf den Fix
-umgedeutet. Vierteldrehungen sind keine volle Haus-/Stadtparität; Modellwiederöffnung
-ist kein neuer Obsidianprozess. Jede neue GUI benötigt frische Slotabstimmung.
+**Konsumierter Anschluss:** Enger R01 auf8a29f9d und Exact-CI38119032938 PASS;
+PR132 ist regulär auf Shared25792fb integriert. Der frisch koordinierte native
+[H02](../../reference/city-building-rotation-h02/receipt.json) auf sauberer
+QA-Source92e4b82/Build08537145 verwendet denselben Produktpfad. Sichtbare
+Haus106-Auswahl, Dirty-Name-Grenze, Vierteldrehungen, UndoRedo und Save PASS;
+separater frischer Obsidianprozess zeigt dieselbe gespeicherte Mittelpunktpose.
+Before/right/fresh-Bilder selbst gelesen: Mitte bleibt bei etwa832/716px.
+Beide app.quit normal, ExitStatus0, keine Zwangstermination; Slot zurückgegeben.
+Sechs fremde räumliche Fixturedateien unverändert. Die gesamte Campaign wird
+gegen ihre Eingangsstruktur geprüft, außer erlaubten City-/Registrydigest- und
+Revisionfeldern; Citypayload-/Filedigest sind an tatsächliche Citybytes gebunden.
+Die Ableitung der übrigen Revision-/Digestwerte wird nicht unabhängig recomputiert.
+
+**H01-Belegkorrektur CITY127-H01-R01-01:** Der alte Oracletext „every foreign
+fixture byte“ war zu breit: Nach Save wurden nur sechs fremde räumliche Dateien
+geprüft, die Campaign lediglich als neue Baseline aufgenommen. H01-Originale bleiben
+unverändert; daraus folgt kein Campaign-Erhaltungspass. H02 enthält den reparierten
+Oracle und einen neuen Lauf auf dem Mittelpunktprodukt. Enger H02-/Helperreview
+bleibt offen. Kein freier GM-/physischer-/Haus105-nativer-/voller Paritätspass.
+Jede neue GUI benötigt frische Slotabstimmung.
 
 ## Inspector- und Fachaktionsbelege
 

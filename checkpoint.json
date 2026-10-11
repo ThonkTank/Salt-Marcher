@@ -11088,18 +11088,18 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "CITY127-CENTER-PIVOT-REPAIR",
+      "id": "CITY127-CENTER-H02",
       "issue": 127,
-      "state": "model_checked_independent_review_and_native_retest_pending",
-      "branch": "city/building-center-rotation-20261011",
+      "state": "native_midpoint_save_fresh_pass_qa_review_pending",
+      "branch": "city/building-rotation-host-20261011",
       "plan": "docs/plans/city/building-name-inspector.md#arbeitsstand-127",
-      "verification": "Two world-space corner-orbit regressions FAIL before/PASS after; linked house105 and courtyard106 retain center, every outline/hole vertex, shared UndoRedo, exact native Save/new model reopen, camera and foreign bytes. Full suite1084 PASS/0 FAIL/1 optional skip; type/build/repo/diff PASS. Existing gesture arithmetic shared unchanged.",
-      "next": "Independent narrow fix review and coordinated visible midpoint/Save/Fresh retest; preserve H01 originals in PR130. Planner UI refresh consumed via PR131/Sharedb12b3a9; native Campaign/Data contract remains in #69.",
-      "limits": "No native midpoint/physical/free GM/overall parity claim. Hex IME-H03 slot returned normally; new GUI needs fresh coordination."
+      "verification": "PR132 independent R01/Exact-CI PASS; regular Shared25792fb integration consumed. H02 on clean QA92e4b82/build08537145: visible centered house106 rotation/UndoRedo/native Save plus separate fresh process PASS; normal app.quit/Exit0/no forced termination. Six foreign spatial files unchanged; full Campaign semantic oracle except expected City/registry digest and revision fields. Portable receipt/images/JSON in docs/reference/city-building-rotation-h02.",
+      "next": "Independent narrow H02/helper review and regular PR130 QA integration. Original H01 Campaign claim corrected without rewriting raw evidence. #69 native storage contract and free GM/full City parity remain open.",
+      "limits": "Automated input and prepared navigation; no physical/free GM/house105 native/overall pass. Local slot returned. Registry revision/digest derivation not independently recomputed."
     },
     "nextRun": {
-      "id": "CITY127-CENTER-PIVOT-REVIEW-HOST",
-      "focus": "Consume independent review; targeted visible centered turn, native Save and separate fresh-process on the corrected candidate after fresh slot agreement."
+      "id": "CITY127-H02-REVIEW",
+      "focus": "Consume narrow QA oracle/evidence review; native midpoint path supplied. Free GM contribution remains available after own cloud host repair."
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",

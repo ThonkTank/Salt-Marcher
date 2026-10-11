@@ -4942,7 +4942,7 @@
       "source": "src/ui/atlas-city-building-panel.ts; existing CityEdit set-building-pose",
       "plan": "docs/plans/city/building-name-inspector.md#arbeitsstand-127",
       "checks": "Centered-pivot fix: two independent world-space regressions FAIL before/PASS after, complete linked-house/courtyard preservation, shared UndoRedo, exact native Save and new model reopen. Existing pending-name/stale/gesture precision tests PASS. Full suite1084 PASS/0 FAIL/1 optional skip; type/build/repo/diff PASS.",
-      "remaining": "Independent fix review and visible centered rotation/Save/Fresh retest remain open. H01 in PR130 only qualifies original corner-pivot sourceee9c70d/build94461124. Cloud GM blocked before UI; no physical/broad Recovery/full parity approval."
+      "remaining": "Product R01 and Shared25792fb integration consumed. H02 native centered house106 turn/Save/separate Fresh PASS on QA92e4b82/build08537145; portable receipt docs/reference/city-building-rotation-h02/receipt.json. Six foreign spatial bytes retained and full Campaign semantically checked except expected City/registry digest/revision fields. H01 Campaign preservation claim withdrawn; originals unchanged. Narrow H02 QA review, free GM/physical/House105 native/broad Recovery/full parity remain open."
     }
   },
   "wonderdraftParity": {
