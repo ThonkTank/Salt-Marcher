@@ -436,117 +436,51 @@ Gesamtfreigabe.
 
 #### Arbeitsstand #90
 
-I01-A ist nach unabhängigem Review über PR #88 als Shared-SHA
-`d9eda92f8270b364322e3c9a4cb2af5c2c69c8f7` integriert. I01-B ist davon
-getrennt auf `codex/smr-03-i01b-aggregates` beansprucht. Campaign/Data,
-Music/Weather/Shops und Cloud Architektur/Technik haben vor dem ersten
-Quellcheckpoint bestätigt, dass keine neue Planvorbedingung besteht, solange
-PreparationSnapshot-Provenienz, current Focus, ownergebundene Cleanup-Pflichten
-und die Host-/Persistenzgrenze unverändert bleiben.
+I01-A ist über PR #88 als Shared-SHA
+`d9eda92f8270b364322e3c9a4cb2af5c2c69c8f7` integriert. I01-B bleibt getrennt
+auf `codex/smr-03-i01b-aggregates` beansprucht.
 
-Der erste Quellcheckpoint `21f89b0` implementiert strikte immutable
-Aggregatezustände und revisionierte Commands für ausdrückliches Initialize,
-Prepared-Runtime-Kopie, Focus und Teilnehmer-Move. Teil-Moves erhalten die
-nichtleere Source; der letzte Move retired die leere Source und bindet
-Primary/Focus deterministisch an das befüllte Ziel. Prepared Scenes können
-weder implizit initialisieren noch vor einem bestätigten Move Primary oder
-Focus werden. Unavailable Maskenowner rollen die Party-/Scene-Mutation nicht
-zurück, sondern erhalten eine an Campaign, Command/Digest, Source/Target,
-Revisionen und exakte Pflicht gebundene Pending-Reconciliation.
+Bereits unabhängig bestätigt sind strikte immutable Aggregatezustände,
+Initialize, Prepared Runtime, Focus und Move samt Cleanup sowie ownergebundene
+Pending-Reconciliations. Die Zwischenreparaturen `fdf6271` und `a83a74f`
+schließen die damaligen Prepared-, Pending-, OwnerRevision- und
+Zuordnungsbefunde; ihre engen Re-reviews sind `PASS`.
 
-Die gleichrangigen Campaign/Data- und Music/Weather/Shops-Zwischenreviews
-reproduzierten vier begrenzte Lücken dieses Checkpoints: Prepared ContentPins
-und PendingAssignments waren nicht vollständig an die Snapshot-/Leerheits-
-Invariante gebunden; zwei Moves bei unavailable Owner überschrieben die erste
-Pflicht und Maskenpflichten pinnten die vorhandene OwnerRevision nicht. Repair
-`fdf6271` schließt diese Grenzen mit exakter Prepared-Provenienz, einem
-immutable Aggregate-Backlog je Command/Digest sowie Character-, Masken- und
-OwnerRevision-Bindung. Zwei aufeinanderfolgende unavailable Moves und die
-negativen Prepared-Zustände sind Regressionen. Campaign/Data bestätigt seine
-beiden Befunde im engen Re-review auf `fdf6271` als geschlossen.
-
-Music/Weather/Shops fand danach zwei Stufen derselben generischen
-Consumergrenze: ein Owner ohne MaskRef brauchte zwingend einen Revisionspin,
-und eine persistierte Duty musste diesen Pin wieder exakt gegen den Source-
-Ownerstand binden. Cloud Architektur/Technik reproduzierte außerdem eine
-reihenfolgeabhängige Assigned-/Pending-Doppelzuordnung, Retirement trotz
-verbleibender Pending-Figur und einen nur nach MaskId statt nach OwnerId plus
-MaskId aufgelösten Lookup. Repair `a83a74f` schließt diese fünf Grenzen mit
-negativen beziehungsweise positiven Regressionen. Consumer R04 und der enge
-Architektur-/Technik-Re-review sind auf diesem Exact-SHA `PASS`.
-
-Typecheck, vollständige serielle Tests, Produktbuild und Repositorystruktur
-sind für Repair `a83a74f` grün (1006 PASS, null FAIL, ein beabsichtigter Skip).
 Party-Checkpoint `2d563fc` ergänzt explizite CharacterId-/Name-only-Erstellung,
 Duplikatnamen, vollständige Profilersetzung mit echter optionaler Abwesenheit,
-validierte XP-/Fortschrittskorrektur und ausgewählte Short-/Long-Rests. Alle
-Party-Befehle sind revisioniert, immutable und erhalten Scene-Zuordnungen
-unverändert; die Vollsuite steht bei 1010 PASS, null FAIL und einem
-beabsichtigten Skip. Campaign/Data sowie Cloud Architektur/Technik bestätigen
-den Exact-SHA in ihren engen Zwischenreviews mit `PASS`.
+validierte XP-/Fortschrittskorrektur und ausgewählte Short-/Long-Rests; seine
+Campaign/Data- und Architektur-/Technikreviews sind `PASS`.
 
-Membership-Repair `490ed32` ergänzt Aktivierung und Deaktivierung vor und nach
-Sessionstart. Aktivierung bindet die aktuelle Focus-Scene samt Revision;
-Deaktivierung akzeptiert assigned und exakt gebundene pending Membership,
-erzeugt source-only Consumerpflichten und wählt einen Primary-Nachfolger zuerst
-über die andere bevölkerte Focus-Scene, sonst über die erste verbleibende
-aktive Partyfigur. Der Command pinnt Nachfolger und Revision; das Decision
-bindet Source-/Nachfolgerrevisionen vor und nach Cleanup. Der erste Membership-
-Checkpoint `8458409` erhielt drei P1-Befunde zu pending Deactivate,
-Successor-Präzedenz und Revisionsbindung. Cloud Architektur/Technik bestätigt
-diese drei Reparaturen auf Exact-SHA `490ed3277c94b166a97acca8ec796f1cd4ee7544`
-im engen Re-review mit `PASS`. Campaign/Data bestätigt auf demselben Source-SHA
-die Campaign-, Roster-, Membership-, Focus-/Primary- und Assignment-Grenzen
-ebenfalls mit `PASS`. Der exakte vollständige Lauf steht bei 1020 PASS, null
-FAIL und einem beabsichtigten Skip; Typecheck, Build und Repo-Check sind grün.
-Music/Weather/Shops bestätigt source-only null-Target-Pflichten, unverlierbare
-Pending-Akkumulation und exakte OwnerIdentity-/OwnerRevision-Bindung ebenfalls
-mit `PASS`. Damit ist der Membership-Checkpoint in allen drei getrennten
-Reviewgrenzen bestätigt, ohne einen I01-B- oder Produkt-Gesamtpass abzuleiten.
+Membership-Repair `490ed3277c94b166a97acca8ec796f1cd4ee7544`
+implementiert Aktivierung und Deaktivierung samt gebundenem Primary-/Focus-
+Cleanup. Architektur/Technik, Campaign/Data und Music/Weather/Shops bestätigen
+den Exact-SHA in ihren getrennten Grenzen mit `PASS`.
 
-Für Split/Rejoin bestätigen Campaign/Data/Party in Kommentar `6104445781` und
-Music/Weather/Shops in Kommentar `6104600781` die created-/existing-
-Endpunkte, Partyreihenfolge, source-only Consumerpflichten sowie die
-Location-/Content-/Preparation-Grenze. Die Architektur-/Technikentscheidung
-`6104762364` und die direkte Scene/Time/Travel-Owner-Ratifikation
-`6104896713` schließen den Clockvertrag: `smr07.elapsed-seconds` als
-kanonischer signed-64-Bit-Codec, explizite OwnerGeneration, eindeutige aktive
-Clockidentitäten, Revision 0 für Fork/Create und exakt einen Clock-
-Revisionsschritt für Merge/existing. Durable Publish, Recovery und
-Ownerautorisation bleiben ausdrücklich außerhalb von I01-B.
+Split/Rejoin folgt den Entscheidungen `6104445781`, `6104600781`, `6104762364`
+und der Clock-Owner-Ratifikation `6104896713`. Der Slice enthält strikt
+geparste `prepared-unpublished` Clock-Fork-/Merge-Beiträge, diskriminierte
+created-/existing-Endpunkte, Partyreihenfolge, gebundene Primary-/Focus-
+Ausgänge sowie source-only Consumerpflichten ohne Location-, Content-,
+Preparation- oder Consumertransfer.
 
-Der darauf basierende Split/Rejoin-Kandidat ergänzt strikt geparste immutable
-Fork-/Merge-Beiträge mit `prepared-unpublished` Receipt, diskriminierte
-Reconciliation-Ziele, partiellen und vollständigen Split sowie vollständigen
-Rejoin. Split kopiert ausschließlich die exakte LocationRef, startet das
-created Target consumerleer und ordnet Membership nach Partyreihenfolge.
-Rejoin lässt unresolved Source-Membership fail-closed, erhält vorhandene
-Target-Consumer und ortsgebundene Referenzen unverändert und archiviert nur
-die Source. Die Regressionen decken created/existing-Schemafehler, fremde
-Campaign-/Command-/Digest-/Generation-Pins, vertauschte ClockRefs, Alias und
-abweichenden Forkwert, unbekannte Clock-Codecs, alle drei auch rückwärts
-gerichteten Merge-Wahlen, Revisionsüberlauf, Cancel/stale, Focus-/Primary-
-Ausgänge, Pending-Akkumulation und unveränderte Target-Consumer ab. Ein
-vollständiger Exact-SHA-Review aller drei Grenzen bleibt vor Integration
-Pflicht.
+Der reparierte Split/Rejoin-Source-/Test-SHA
+`f9f07f90ac558ead4b7f4ba130fea3e37241ebba` ist durch Architektur/Technik/Clock
+`6105053957`, Campaign/Data/Party `6105042948` plus `6105186943` und
+Music/Weather/Shops `6105196543` jeweils `PASS`. Der vollständige Lauf steht
+bei 1035 PASS, null FAIL und einem beabsichtigten Skip; Typecheck, Build, Repo-
+und Diff-Check sind grün. Der reine Dokumentationsstand danach ist
+`af842015822cdc4a3c6bb0b39a26058181c0fb88`.
 
-Der erste Architektur-/Technik-/Clock-Review des Kandidaten in Kommentar
-`6105032432` fordert zwei enge Reparaturen: Prepared→Active ohne ClockRef muss
-normiert mit unverändertem Zustand statt erst im Folgezustandsparser scheitern,
-und ein persistierter `created`-Reconciliation-Endpunkt muss seine
-Initialrevision dauerhaft exakt auf 0 binden. Beide Gegenfälle sind als
-Regressionen ergänzt. Der reparierte Exact-SHA
-`f9f07f90ac558ead4b7f4ba130fea3e37241ebba` ist in Kommentar `6105053957`
-für beide Architektur-/Clock-Befunde und die unmittelbare Nichtregression
-`PASS`. Campaign/Data/Party bestätigt nach R01 auf dem Parent das Repairdelta
-in Kommentar `6105186943`; Music/Weather/Shops bestätigt den vollständigen
-Consumer-Scope in Kommentar `6105196543`. Beide sind auf demselben Repair-SHA
-`PASS`. Der exakte vollständige Lauf steht bei 1035 PASS, null FAIL und einem
-beabsichtigten Skip; Typecheck, Build, Repo- und Diff-Check sind grün. Damit
-ist ausschließlich der Split/Rejoin-Checkpoint in allen drei getrennten
-Reviewgrenzen bestätigt, nicht I01-B oder das Produkt insgesamt.
+Innerhalb I01-B bleiben nur zwei getrennt reviewbare Pakete offen:
 
-Noch offen und nicht durch diesen Kandidaten behauptet sind permanente
-Löschung, die über Split/Rejoin hinausgehende vollständige Masken-
-Reconciliation, Invariant-Fuzzer und Scaleorakel, deren jeweilige unabhängige
-Exact-SHA-Reviews und Shared-Integration.
+1. vollständige providerneutrale Masken-Teilnahme/Reconciliation für mehrere
+   Masken gleichen oder verschiedenen Typs, ohne Completion, Transfer oder
+   Maskenpayload;
+2. deterministischer Invariant-Fuzzer und nichtnormative Scale-/DTO-Orakel für
+   20 Rosterfiguren, vier Scenes, acht Masken und 50 Teilnehmer.
+
+Vor Masken-Produktcode ist die offene Encounter-/Chase-Ownergrenze für
+konkrete Maskenidentität, Teilnahmeprojektion und Pending-Reconciliation zu
+schließen. Permanente Löschung, History und Coordinator gehören vollständig
+zu I01-C; Host, Persistenz, Durability und UI bleiben I02/I03. Kein bisheriger
+Checkpoint behauptet einen I01-B- oder Produkt-Gesamtpass.
