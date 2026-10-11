@@ -24,9 +24,17 @@ const restart = process.argv.includes("--restart"),
   dd036S01Recovery = process.argv.includes("--dd036-s01-recovery") || process.argv.includes("--dd036-s01-hard-crash"),
   dd036S01HardCrash = process.argv.includes("--dd036-s01-hard-crash"),
   hex02Save = process.argv.includes("--hex02-save"),
+  hex04DungeonAtLocation = process.argv.includes("--hex04-dungeon-at-location"),
+  cityBuildingNameRollback = process.argv.includes("--city-building-name-rollback"),
+  cityBuildingName = process.argv.includes("--city-building-name") || cityBuildingNameRollback,
   atlasCampaignABA = process.argv.includes("--atlas-campaign-aba"),
-  worldNotesNative = process.argv.includes("--world-notes-native"),
-  atlasCampaignRuntime = process.argv.includes("--atlas-campaign-runtime") || atlasCampaignABA || worldNotesNative,
+  worldNotesDrafts = process.argv.includes("--world-notes-drafts"),
+  worldNotesReclaim = process.argv.includes("--world-notes-reclaim"),
+  worldNotesZoom200 = process.argv.includes("--world-notes-zoom200"),
+  worldNotesFault = process.argv.includes("--world-notes-rollback"),
+  worldNotesRecovery = process.argv.includes("--world-notes-recovery"),
+  worldNotesNative = process.argv.includes("--world-notes-native") || worldNotesZoom200 || worldNotesFault || worldNotesRecovery,
+  atlasCampaignRuntime = process.argv.includes("--atlas-campaign-runtime") || atlasCampaignABA || worldNotesDrafts || worldNotesReclaim || worldNotesNative || hex04DungeonAtLocation || cityBuildingName,
   atlasSpatial = process.argv.includes("--atlas-spatial") || atlasCampaignRuntime,
   hex03Location = process.argv.includes("--hex03-location"),
   hex02Terrain = process.argv.includes("--hex02-terrain") || hex02Save,
@@ -368,7 +376,7 @@ function prepare() {
       fs.mkdirSync(path.dirname(destination), { recursive: true });
       fs.writeFileSync(destination, bytes);
     }
-    if (atlasCampaignABA) {
+    if (atlasCampaignABA || worldNotesDrafts) {
       const bFixture = path.join(root, "tests/fixtures/atlas-e2e-campaign-b-v1");
       const bManifest = JSON.parse(fs.readFileSync(path.join(bFixture, "manifest.json"), "utf8"));
       for (const row of [...bManifest.input, bManifest.campaign]) {
@@ -381,6 +389,14 @@ function prepare() {
         fs.writeFileSync(destination, bytes);
       }
     }
+  }
+  if (worldNotesRecovery && restart) {
+    const recoveryCase = JSON.parse(fs.readFileSync(path.join(qa, "world-notes-recovery-case.json"), "utf8"));
+    for (const write of recoveryCase.journal.writes)
+      assert.equal(fs.readFileSync(path.join(vault, write.path), "utf8"), write.after, write.path);
+    const journalFile = path.join(vault, recoveryCase.journal.journalPath);
+    assert.equal(fs.existsSync(journalFile), false);
+    fs.writeFileSync(journalFile, JSON.stringify(recoveryCase.journal));
   }
   for (const f of ["main.js", "manifest.json", "styles.css"])
     fs.copyFileSync(
@@ -917,7 +933,17 @@ async function workflow() {
         renderCount: e.renderer.renderCount,
       };
     });
-  const scenarioContext = { page, browser, fs, path, assert, crypto, PNG, root, pluginRoot, qa, vault, sourceVault, restart, out, checks, chooseTool, editorAction, selectOnlyObjects, waitForFileAbsent, sleep, resolveQaAppCgroup };
+  const scenarioContext = { page, browser, fs, path, assert, crypto, PNG, root, pluginRoot, qa, vault, sourceVault, restart, out, checks, worldNotesZoom200, worldNotesFault, worldNotesRecovery, chooseTool, editorAction, selectOnlyObjects, waitForFileAbsent, sleep, resolveQaAppCgroup };
+  if (worldNotesDrafts) {
+    assert.equal(restart, false, "World Notes drafts use one real process");
+    await require("./host/world-notes-drafts.cjs")(scenarioContext)();
+    return;
+  }
+  if (worldNotesReclaim) {
+    assert.equal(restart, false, "World Notes reclaim uses one real process");
+    await require("./host/world-notes-reclaim.cjs")(scenarioContext)();
+    return;
+  }
   if (worldNotesNative) {
     const scenario = require("./host/world-notes-native.cjs")(scenarioContext);
     if (restart) await scenario.reopen(); else await scenario.edit();
@@ -929,10 +955,14 @@ async function workflow() {
     return;
   }
   if (atlasSpatial) {
-    const scenario = require(atlasCampaignRuntime
+    const scenario = require(cityBuildingName
+      ? "./host/city-building-name.cjs"
+      : hex04DungeonAtLocation
+      ? "./host/hex04-dungeon-at-location.cjs"
+      : atlasCampaignRuntime
       ? "./host/atlas-campaign-runtime.cjs"
       : "./host/atlas-spatial.cjs")({ ...scenarioContext,
-        recoveryAfterCommit: process.argv.includes("--atlas-campaign-commit-recovery") });
+        recoveryAfterCommit: process.argv.includes("--atlas-campaign-commit-recovery"), cityBuildingNameRollback });
     if(restart)await scenario.reopen();else await scenario.edit();
     return;
   }

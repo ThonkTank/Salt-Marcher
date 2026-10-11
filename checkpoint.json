@@ -23,6 +23,111 @@
     "architecture": "ARCHITECTURE.md#plattformoffene-saltmarcher-ablösung",
     "acceptance": "acceptance.json.saltMarcherReplacement",
     "objective": "This repository delivers the sole successor product for all implemented and planned SaltMarcher capabilities. UX and functional requirements are binding; the final host may be an Obsidian plugin, desktop application or evidence-backed hybrid.",
+    "smr02WorldNotes": {
+      "package": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/68",
+      "state": "world_notes_host_integrated_controlled_recovery_review_pass_remaining_scope_open",
+      "integratedProduct": "3fc5518b5a5cd48d03e647e63ce474f127ddde34",
+      "independentHostRepair": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/68#issuecomment-6103180580",
+      "independentEarlyGm": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/68#issuecomment-6103954556",
+      "zoom200": {
+        "sharedSource": "ca290326a35bb792c22ef8f02e215a3dd9ef121d",
+        "mainJsSha256": "f5c3b5a17e0c6765b279a164ead99453a3feb6c5b6d4b6aa1849866b06a454e9",
+        "fixtureManifestSha256": "23735bb6c95107b7dec93ffa56ec66405a0f4fe0ec3822fc0476d90d2920188d",
+        "hostRunnerSha256": "c0d664cb1fd783d2e634450e360c1d0a808057637e5e5e3751001fa9477cdf51",
+        "scenarioSha256": "5c366d830f37f2bf9ef70344a3635310b3f26f280122447e39cff60e9c1991e7",
+        "evidenceRoot": "/home/aaron/.cache/dungeon-native-qa/atlasqa-smr02-zoom200-flag-ca290/evidence/",
+        "editResult": "1791680719320-world-notes-native-edit/result.json",
+        "editResultSha256": "4f651901e1291dc98cbd7cc043b2510d9542a97d2ceb7cc223250a1ed85a2116",
+        "reopenResult": "1791680734171-world-notes-native-reopen/result.json",
+        "reopenResultSha256": "0b21dd7a17ba0987daee5fa06b0e7e6ceed494adad1fafb8912853e03406719a",
+        "result": "real Electron webFrame zoom factor 2; keyboard help and search, visible actions and edit fields inside viewport; native Save and fresh real Obsidian process passed on a synthetic vault"
+      },
+      "nativeRollback": {
+        "productSource": "ca290326a35bb792c22ef8f02e215a3dd9ef121d",
+        "mainJsSha256": "f5c3b5a17e0c6765b279a164ead99453a3feb6c5b6d4b6aa1849866b06a454e9",
+        "fixtureManifestSha256": "23735bb6c95107b7dec93ffa56ec66405a0f4fe0ec3822fc0476d90d2920188d",
+        "hostRunnerSha256": "37b65ec261c73034237fbad06155b5bfee3e04fc7a4ef1e4d7da54b2e00bb360",
+        "scenarioSha256": "e4451e3d6896656627cf65f667cf3ce2fb039c6962af1d0a46daf44280147bc0",
+        "evidenceRoot": "/home/aaron/.cache/dungeon-native-qa/atlasqa-smr02-rollback-fault-02/evidence/",
+        "editResult": "1791681272763-world-notes-native-edit/result.json",
+        "editResultSha256": "bba98eec02bcfc633a2c649724cae3b6d27e326818fdf983a39fdad9f01ee7d3",
+        "rollbackEvidenceSha256": "1721bfb73950585f1dcbbef8f2f37595583cae7d4d364c7036b88a750b58eb6b",
+        "reopenResult": "1791681289782-world-notes-native-reopen/result.json",
+        "reopenResultSha256": "5ce850c69605740f55b7f444d9090a15a0d46962fdbfc5eeff1651de800ed576",
+        "result": "real Obsidian manifest CAS fault after native note write; exact Before rollback and absent journal, retry, save and fresh-process reopen passed; controlled synthetic failure, not independent crash recovery"
+      },
+      "nativeCommittedRecovery": {
+        "productSource": "ca290326a35bb792c22ef8f02e215a3dd9ef121d",
+        "mainJsSha256": "f5c3b5a17e0c6765b279a164ead99453a3feb6c5b6d4b6aa1849866b06a454e9",
+        "hostRunnerSha256": "5787615106c323508c29b4aab2a1dcd6c74f72b957ae529a3dd2ee49d50a291a",
+        "scenarioSha256": "b7eb861379d9dcbfa836c9b98b3918044647171c5bbd23ef8f5da3719c204a35",
+        "caseSha256": "e41696411311c8e6cf2588764c58814fd6f5eb7e0ac76a76f60b47b3317fd9c5",
+        "evidenceRoot": "/home/aaron/.cache/dungeon-native-qa/atlasqa-smr02-committed-recovery-01/evidence/",
+        "editResult": "1791681781622-world-notes-native-edit/result.json",
+        "editResultSha256": "5307ebb225e5e535e7c69a393102ed40c44c4d8972fb78a8406a34da710b012b",
+        "reopenResult": "1791681794753-world-notes-native-reopen/result.json",
+        "reopenResultSha256": "733bf725841bef4e713f180718beca9ba5e602de7005d5907c000d9602f28cc1",
+        "result": "committed journal from native tombstone before/after bytes deliberately left for fresh real Obsidian; owner validation and cleanup before World Notes mount, exact prose and tombstone preserved"
+      },
+      "portableRecoveryEvidence": "docs/reference/smr02-world-notes-recovery/manifest.json",
+      "portableRecoveryEvidenceSha256": "a28136f9cc8b6b596462e6f1cf9d868a457ee9b3ac8e653aeb859246845ba353",
+      "independentControlledRecoveryReview": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/95#pullrequestreview-5481505362",
+      "relationSearchCandidate": "PR #99 integrated in Shared 88f455cb86219a92dfd1c310ed99336ce62ea8b0: active relation labels and related target titles are searchable within the requested note kind; deleted targets are excluded. An unchanged note can open its related target; an edited draft stays in place. Search R01 and navigation R02 independently passed on their exact product heads; clean native edit and fresh-process run passed within their stated scope.",
+      "nativeRelationNavigation": {
+        "source": "a7cc6991e078806bcb80f7983c82baa11cfe4e00",
+        "buildSha256": "b1c2a548768b8fc6013ab7fbbb56838e92522fd9448495d97056eec6b0d419fe",
+        "fixtureManifestSha256": "23735bb6c95107b7dec93ffa56ec66405a0f4fe0ec3822fc0476d90d2920188d",
+        "scenarioSha256": "c6f298b84b19a4b5c1f09cd9f6f96f3c0cd41e85eab2c734da2b7ef86c68a03b",
+        "evidenceRoot": "/home/aaron/.cache/dungeon-native-qa/atlasqa-relation-search-h02/evidence/",
+        "editResult": "1791684821031-world-notes-native-edit/result.json",
+        "editResultSha256": "bdabd257b434b4f341c3bd308f264136001babe657ef4f280da363e600ec8fef",
+        "reopenResult": "1791684834313-world-notes-native-reopen/result.json",
+        "reopenResultSha256": "ea410754f5b04debd54c40fe405005b8e8d9170489343b9c0d0aa96172e00015",
+        "result": "Isolated real Obsidian edit and separate fresh process PASS: relation-title search, unsaved draft retained, confirmed linked faction opened; both processes exited normally. Synthetic fixture and automated input only."
+      },
+      "incomingReferencesCandidate": "PR #104 integrated in Shared de3181be1696d7442e0100f5901172906cc03974. World Notes shows active saved notes that refer to the current entry and opens them only when the current draft is unchanged. Independent narrow Stadt R01, exact-SHA CI, and isolated native edit plus fresh-process checks passed; no reciprocal membership or new storage authority.",
+      "nativeIncomingReferences": {
+        "source": "1f264623af70c4e82e029807544f77bba3376e24",
+        "buildSha256": "edf075a16a06936144bd8c0542eda2ffa45bfcd9f441275ca17d64df9eb8b27b",
+        "scenarioSha256": "21dd00c0752347a059e519840cdba9dae5379b73429db725fb03c7dfe771c182",
+        "evidenceRoot": "/home/aaron/.cache/dungeon-native-qa/atlasqa-incoming-links-h02/evidence/",
+        "editResult": "1791686169123-world-notes-native-edit/result.json",
+        "editResultSha256": "84ae61b2ae065372248658ff2ccfb2356ab4577f0f1d46278c25ade6964f4872",
+        "reopenResult": "1791686187073-world-notes-native-reopen/result.json",
+        "reopenResultSha256": "b0057178e84988e82678c0c619daa2343328e938899f2e75c58e9ee67e996bbe",
+        "result": "Isolated real Obsidian edit and fresh process PASS: saved NPC is reachable from faction through an incoming reference, while an unsaved faction draft blocks opening; both processes exited normally. Synthetic fixture and automated input only."
+      },
+      "creaturePickerCandidate": "PR #107 integrated in Shared at 76d8ded1: NPC World Notes can select a stable Creature Catalog ID by name. Manual references and drafts stay editable; independent narrow R01 and exact-head delta review plus CI passed. Isolated native save/fresh and 200-percent zoom owner checks cover the primary picker path; the final manual-ID UI correction is DOM-checked only.",
+      "creatureReferenceSearchCandidate": "PR #108 integrated in Shared af5ddcbb: active NPC World Notes are discoverable by their saved creature ID in the existing note search and kind filter. Clean-source isolated Obsidian edit/fresh-process owner check, independent narrow Stadt R01 and exact-SHA CI passed within their scopes.",
+      "draftRetentionCandidate": "PR #112 integrated in Shared 87ccdb26: WorldNotesView keeps the panel across A/B/A context remounts, revokes old sessions and controls, and restores each Campaign draft only after a confirmed snapshot. Independent narrow Stadt R01, exact-SHA CI, and isolated real Obsidian A→B→A→B owner run passed within their scopes. Overall SMR-02 acceptance remains open.",
+      "viewCloseDraftRetentionCandidate": "After PR #112, closing WorldNotesView still destroyed its unsaved A/B drafts. This candidate gives the plugin one in-memory draft buffer with exclusive per-Campaign/namespace edit ownership across view instances; a new view reopens the draft only after a fresh confirmed Campaign snapshot. Focused DOM tests cover close/reopen, A/B isolation, stale controls, peer close ordering and no revival after peer Save/Discard. An isolated real Obsidian A→B→A→B, close/reopen, B/A restore run passed with all 16 native inputs byte exact and normal exit; clean repaired source c631eb5f result SHA256 7e8b86663a1f5390c411e2da4e16a80167accfd48b6e03e79b1fc52455c112e8 at /home/aaron/.cache/dungeon-native-qa/atlasqa-world-notes-close-r02-exact-01/evidence/1791692061930-atlas-spatial-edit/result.json. PR #114 integrated in Shared 52ab66e2 after independent narrow R02 and exact-SHA CI; process restart still loses unsaved drafts and full SMR-02 acceptance remains open.",
+      "viewReclaimCandidate": "After PR #114, a view displaced by another view cannot use the existing active-Campaign Retry button to reclaim its draft. This candidate makes that explicit user action open a fresh confirmed snapshot, take the latest draft and revoke the other view; ordinary provider events do not steal ownership back. A two-view DOM regression failed before and passed after the repair, including late old input. Local check, repository check, 1017/1018 tests (one existing skip) and build pass on Shared a4c2cb39. Isolated real Obsidian two-view reclaim passed on clean source 489bc13dd31733997ca803d40e7585ba04b55d0b with unchanged native inputs and normal exit; result SHA256 3216d4ca0fd0506404505d4dbb80476a0017591b8b419d959b18ad2f5d124f30 at /home/aaron/.cache/dungeon-native-qa/atlasqa-world-notes-reclaim-host-03/evidence/1791694205278-atlas-spatial-edit/result.json. Independent review and overall SMR-02 acceptance remain open.",
+      "nativeCreatureReferenceSearch": {
+        "source": "8621d2027e405602cedbca800558ca4ea49dc338",
+        "buildSha256": "543689af78b32e0ce13885d8381db04e882489242f0b9c0e13fd1d9901fe0d49",
+        "scenarioSha256": "4a6d25387ca880a78ce73ce757fc5b111b045a8d9beec625b9e20b718d994802",
+        "evidenceRoot": "/home/aaron/.cache/dungeon-native-qa/atlasqa-creature-ref-search-20261011/evidence/",
+        "editResult": "1791688550250-world-notes-native-edit/result.json",
+        "editResultSha256": "72fdb02287c6127d8dbfaac0838320ab0e0c55bb71da5a98ebc592426e2f2a7e",
+        "reopenResult": "1791688563736-world-notes-native-reopen/result.json",
+        "reopenResultSha256": "663659a51a4acfd736aea9f65756a38a1d8978a564f0d6f3385fc4557a96bd66",
+        "result": "Fresh real Obsidian finds the saved NPC by its catalog creature ID goblin while an unrelated faction stays hidden; edit and fresh processes exited normally. Synthetic fixture and automated input only."
+      },
+      "nativeCreaturePicker": {
+        "source": "58da6377f3d5914bccbbe1b6a2ea689e72ac6e7d",
+        "buildSha256": "9b8712802bf77bdca4e49da4186550dea937633f26fd1cba323d4122aa1e8982",
+        "scenarioSha256": "0bb60c0276bc6b05fa90c8502ee81923d30fbaa2565aada3352822aa752e9aa5",
+        "evidenceRoot": "/home/aaron/.cache/dungeon-native-qa/atlasqa-creature-picker-h02/evidence/",
+        "editResult": "1791687472578-world-notes-native-edit/result.json",
+        "editResultSha256": "52d8cccec90d38f5147618e295de69031bc4e6baf822f6b581e33465c8a355f7",
+        "reopenResult": "1791687487470-world-notes-native-reopen/result.json",
+        "reopenResultSha256": "3fef614315cb769fe8d3e324505b4a955841f3aa5c865bc1e72e6d4545aaa811",
+        "zoom200EvidenceRoot": "/home/aaron/.cache/dungeon-native-qa/atlasqa-creature-picker-zoom200/evidence/",
+        "result": "Isolated real Obsidian selected Goblin from the bundled Creature Catalog, saved only creatureId goblin in the native NPC note and reopened it with the name in a fresh process. A separate 200-percent zoom edit/reopen run passed; synthetic fixtures and automated input only."
+      },
+      "next": "Independently review the World Notes view-close draft buffer on its exact PR head before Shared integration. Broader crash recovery, Encounter constraints, NPC combat and World Planner requirements remain open.",
+      "limits": "Controlled rollback and committed-journal raw evidence independently reviewed; original host-run checkouts were dirty. No physical keyboard, power-loss, user-vault, broad recovery, full SMR-02 or overall product acceptance."
+    },
     "smr03LiveScene": {
       "state": "i01a_integrated_i01b_scene_lifecycle_checkpoint",
       "plan": "docs/plans/runtime/smr03-live-scene-contract.md",
@@ -918,46 +1023,36 @@
   "hexAtlasExecution": {
     "scope": "HEX-00 bis HEX-28 und sämtliche eingeordneten CITY-00 bis CITY-09 vollständig",
     "phase": "HEX-04",
-    "state": "dungeon_at_location_independently_qualified_integrated_native_and_GM_pending",
+    "state": "horizontal_inspector_fit_independent_review_PASS_steward_integration_pending",
     "plan": "ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md",
     "currentRun": {
-      "id": "E2E-01-HEX04-DUNGEON-AT-LOCATION-QUALIFICATION-CONSUMPTION",
-      "kind": "consume_independent_review_and_integrated_source",
-      "state": "consumed_host_step_now_executable",
+      "id": "E2E-01-HEX04-INSPECTOR-N04-R01-CONSUMED",
       "owner": "Hex",
       "issue": 80,
-      "sourceCommit": "ef07a3ab6d7dbb27c3b680b9311ba65bb7e7c81e",
-      "input": "checkpoint.hexAtlasExecution.dungeonAtLocationQualification",
+      "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
+      "e2e01UserLine": 13,
+      "state": "horizontal_inspector_fit_independent_review_PASS_steward_integration_pending",
+      "kind": "consume_scoped_independent_review_and_hand_off_steward_input",
+      "sourceCommit": "305680db90546207f259d246b3a6c86afcc44e68",
+      "record": "checkpoint.hexAtlasExecution.dungeonAtLocationInspectorHorizontalFitN04Qualification",
       "guiUsed": false,
-      "nativeOnThisBuild": false,
+      "productEdited": false,
       "phaseApproval": false,
-      "finishedAt": "2026-10-10T23:16:51.095587+00:00"
+      "finishedAt": "2026-10-11T03:29:58.140266+00:00"
     },
     "nextRun": {
-      "id": "E2E-01-HEX04-DUNGEON-AT-LOCATION-H01",
-      "kind": "actual_Obsidian_Dungeon_at_Location_and_fresh_process",
+      "id": "E2E-01-HEX04-INSPECTOR-N04-S01-CONSUMPTION",
+      "kind": "consume_independent_steward_integration_or_required_finding",
       "owner": "Hex",
       "issue": 80,
       "e2eIssue": 12,
-      "branch": "hex/dungeon-at-location-h01-20261011",
       "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
       "e2e01UserLine": 13,
-      "input": "checkpoint.hexAtlasExecution.dungeonAtLocationQualification",
-      "fixtureVersion": "e2e01-spatial-v2",
-      "focus": "Use the visible Dungeon-at-Location path in an isolated Obsidian host, preserve existing IDs and texts through A-to-B, shared Undo/Redo and Save; normal exit and distinct fresh Electron process read the saved native state.",
-      "slotRequiredAgain": true,
-      "slotConfirmedForNextRun": false,
-      "guiRule": "Coordinate the sole local slot again before starting; use an isolated synthetic vault and the qualified integrated build. Preserve user vault and other hosts.",
-      "nextConsumer": "Existing Cloud-GM colleague for early free GUI use of this path at issue80 before dependent expansion.",
-      "limits": {
-        "nativeObsidian": false,
-        "freshElectronProcess": false,
-        "physicalInput": false,
-        "originalParity": false,
-        "largeMap": false,
-        "userVaultInstalled": false,
-        "fullE2E": false
-      }
+      "input": "checkpoint.hexAtlasExecution.dungeonAtLocationInspectorHorizontalFitN04Qualification",
+      "focus": "Contributor (existing Obsidian Dungeon Repo ansehen chat): independent steward integration of PR110 after exact new-head CI and composition/source checks. Then qualified free GM followup in #80; no dependent detail expansion or selfintegration by Hex.",
+      "dependentExpansionAllowed": false,
+      "newLocalGuiSlotRequired": true,
+      "noCompetingCitySaveFix": true
     },
     "review": {
       "run": "HEX-02-R02",
@@ -5407,7 +5502,7 @@
       "platformIssue": 11,
       "checkpointIsAuthoritative": true
     },
-    "updatedAt": "2026-10-10T22:29:57.555698+00:00",
+    "updatedAt": "2026-10-11T03:29:58.140266+00:00",
     "consumerMatrix": {
       "id": "RUNTIME-MANIFEST-I02-CONSUMER-MATRIX-V1",
       "state": "frozen_complete_matrix_green_on_productive_Host_source",
@@ -6806,6 +6901,890 @@
       "largeMap": false,
       "userVaultInstalled": false,
       "fullE2E": false
+    },
+    "latestDungeonAtLocationH01": {
+      "id": "E2E-01-HEX04-DUNGEON-AT-LOCATION-H01",
+      "state": "producer_native_and_fresh_process_PASS_GM_free_use_pending",
+      "owner": "Hex",
+      "issue": 80,
+      "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
+      "e2e01UserLine": 13,
+      "sourceCommit": "17339c29c8494658d0cadf4d2d1c059b056c3184",
+      "qualifiedProductMerge": "ef07a3ab6d7dbb27c3b680b9311ba65bb7e7c81e",
+      "fixtureVersion": "e2e01-spatial-v2",
+      "fixtureManifestSha256": "23735bb6c95107b7dec93ffa56ec66405a0f4fe0ec3822fc0476d90d2920188d",
+      "limits": {
+        "nativeObsidian": true,
+        "freshElectronProcess": true,
+        "producerScopeOnly": true,
+        "independentGMUse": false,
+        "newNativeCopyDiscardRecoveryFaultMatrix": false,
+        "physicalInput": false,
+        "originalParity": false,
+        "largeMap": false,
+        "userVaultInstalled": false,
+        "fullE2E": false
+      },
+      "finishedAt": "2026-10-10T23:34:50.676462+00:00",
+      "receipt": "docs/reference/atlas-detail-binding-d01/dungeon-at-location-h01.json",
+      "sha256": "b4c3aadf414476e071e10b7c8834255efa3d06e32f3d954f105aa1f0ab7f67e1",
+      "nativeEditRun": "1791675129674-atlas-spatial-edit",
+      "freshProcessRun": "1791675181265-atlas-spatial-reopen",
+      "nextConsumer": "Existing Cloud-GM: early free use through normal product GUI in own isolated host before dependent expansion. Parent #80 stays open. If host access is absent, report concrete missing input without substituting model/DOM tests."
+    },
+    "dungeonAtLocationH01Consumption": {
+      "id": "E2E-01-HEX04-DUNGEON-AT-LOCATION-H01-CONSUMPTION",
+      "owner": "Hex",
+      "issue": 80,
+      "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
+      "e2e01UserLine": 13,
+      "state": "H01_evidence_review_PASS_and_reported_free_GM_bounded_PASS_consumed; inspector_followup_open",
+      "h01EvidenceReview": {
+        "reviewer": "Stadt",
+        "reviewedHead": "a454d9a708f54c4dddc755786653cb8155cbe29e",
+        "result": "PASS scoped helper/evidence; no required findings",
+        "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/87#pullrequestreview-5481256953",
+        "exactHeadCI": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/actions/runs/38095666287",
+        "scopeRetained": "Review binds a454d9a; later Shared composition and consumption metadata are not represented as reviewed on that exact head."
+      },
+      "freeGMInput": {
+        "owner": "Cloud-GM-Produkttester",
+        "testedHead": "a454d9a708f54c4dddc755786653cb8155cbe29e",
+        "report": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80#issuecomment-6103561640",
+        "checkpointPR": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/89",
+        "checkpointCommit": "59bb5bb2771bf27ab58f867b5ae9080ab50f77b2",
+        "checkpointReference": "gmProductTesting.currentRun / latestAtlasLocationGMReuse",
+        "result": "Reported bounded visible PASS: existing dungeon to Torheim, room Key edit, Save, map return and same-process file close/reopen with exact saved text and retained IDs.",
+        "host": "Isolated Cloud Obsidian 1.14.4; synthetic visible input; 1024x800 CSS px / DPR1",
+        "rawEvidenceDirectory": "/workspace/scratch/gm-cloud-qa/dungeon-at-location-gm-20261011/host-logs/",
+        "rawEvidenceAccess": "Cloud-local; not available in Hex local host. Producer report and versioned checkpoint read directly; screenshots not independently viewed by Hex.",
+        "usabilityFollowup": "At 1024x800, about 118px map width with target and room Key inspectors; Escape/repeated room-row click did not close the inspector, map click did. Reopen returns to world view.",
+        "freshProcessDemonstratedByGM": false,
+        "currentSharedExactTripletDemonstratedByGM": false,
+        "currentSharedBuildBlocker": "Cloud /workspace 32G/32G full; node22 container start ENOSPC. No foreign data deleted."
+      },
+      "consumptionDecision": {
+        "earlyFreeGMInputSatisfiedScoped": true,
+        "sourceComparisonShared": "d9eda92f8270b364322e3c9a4cb2af5c2c69c8f7",
+        "unchangedAtlasPathBlobs": {
+          "src/ui/atlas-view.ts": "6333f3b29ab488c8549400ffb6d587880165ffa3",
+          "src/features/atlas/atlas-editor.ts": "e1ae3e5e8954a116cf5a0b331efbf5425a92a85c",
+          "styles.css": "95122574d8b8a610fe7d4dc6b80e40098be19751"
+        },
+        "otherSharedChanges": "World-Notes registration/readers and separate LiveSession contracts remain incoming Shared work; this does not make the GM-tested old triplet an exact-Shared installation.",
+        "reuseEvidence": "Retain bounded free-GM result for unchanged Atlas view/editor/styles. No full GUI repetition solely for a new Shared SHA.",
+        "nextOwnContribution": "Evaluate inspector width, discoverable dismissal and return behavior in existing #80 before dependent detail expansion; implement only a concrete resulting repair in a later bounded step.",
+        "integrationConsumer": "Separate contributor/steward for PR87 final Shared composition and consumption delta; no Hex selfmerge.",
+        "dependentExpansionAllowed": false,
+        "parentClosed": false,
+        "fullE2E": false,
+        "physicalInput": false,
+        "originalParity": false,
+        "largeMap": false,
+        "userVaultInstalled": false
+      }
+    },
+    "dungeonAtLocationInspectorN01": {
+      "id": "E2E-01-HEX04-DUNGEON-AT-LOCATION-INSPECTOR-N01",
+      "owner": "Hex",
+      "issue": 80,
+      "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
+      "e2e01UserLine": 13,
+      "state": "implemented_DOM_Save_History_context_preservation_PASS_independent_review_and_native_pending",
+      "sourceCommit": "056c65ecf4069303ea7432b075b2941b61b2b454",
+      "pullRequest": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/91",
+      "consumedH01Integration": {
+        "merge": "0077bdf04d56a7b7d251717cd236b7a6fa716e46",
+        "parents": [
+          "d9eda92f8270b364322e3c9a4cb2af5c2c69c8f7",
+          "0ad8d5c18e32d5fdad488be49237b3fbc154da99"
+        ],
+        "tree": "a591703d98e1d12b4d6d10585ed9c53fd799409c",
+        "receipt": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/87#issuecomment-6103624843"
+      },
+      "finding": "Cloud-GM reported about118px remaining map width at1024x800 with two Key sidebars; source confirms independent40%/42% widths, Escape was viewport-only.",
+      "findingSource": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80#issuecomment-6103561640",
+      "implemented": "Location/Room Keys share one sidebar; cached Location panel is restored on return. Visible Zur Karte and focus-scoped Escape apply valid Keys through existing checked History before clearing selection, retain invalid input and refuse blocked/revoked/active-pointer closure. Camera, mount/repository/history/context identities retained; no new IDs.",
+      "fixtureVersion": "e2e01-spatial-v2",
+      "fixtureManifestSha256": "23735bb6c95107b7dec93ffa56ec66405a0f4fe0ec3822fc0476d90d2920188d",
+      "checks": {
+        "runtime": "Node v22.22.0",
+        "newRegressionCases": 3,
+        "baselineCasesFailed": 3,
+        "repairedCasesPassed": 3,
+        "fullSuite": {
+          "total": 995,
+          "pass": 994,
+          "fail": 0,
+          "skip": 1,
+          "skipScope": "Existing optional external PDF fixture"
+        },
+        "typecheck": "PASS",
+        "cleanSourceBuild": "PASS",
+        "repository": "PASS",
+        "diff": "PASS",
+        "sourceFilesSha256": {
+          "src/features/atlas/atlas-editor.ts": "85e8b5d6c3089eaf7644227d5cd168ef8963d09407caac6da9c7b61f454e135e",
+          "styles.css": "93b65fe1a695acd58aea7360a18b9e9b16d1df7f14a3e3e4dea5a3300cbbed7e",
+          "tests/atlas-campaign-host.entry.ts": "86cf45e574677d2b27f29daf1720e0bc08ede024491ffacfda2a5c34b080327c"
+        }
+      },
+      "buildTriplet": {
+        "main.js": {
+          "sha256": "ed15380d2e7e47ff608fcc1161ea96a0b94524eea3c0e4aeeb0704f520b53355",
+          "bytes": 1671049
+        },
+        "manifest.json": {
+          "sha256": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64",
+          "bytes": 237
+        },
+        "styles.css": {
+          "sha256": "93b65fe1a695acd58aea7360a18b9e9b16d1df7f14a3e3e4dea5a3300cbbed7e",
+          "bytes": 31227
+        }
+      },
+      "localEvidence": {
+        "baseline-regressions.log": {
+          "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/dungeon-at-location-inspector-n01-20261011/baseline-regressions.log",
+          "sha256": "0c9075a9e5d57f2f4dd43b95acc4ef223a1082369b25ef9b6bc7f55c32fa7fe9"
+        },
+        "product-tests.log": {
+          "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/dungeon-at-location-inspector-n01-20261011/product-tests.log",
+          "sha256": "3402fc2f5746a48951954ee40366c033f26b1415d5457db346a810726b4a9132"
+        },
+        "source-build.log": {
+          "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/dungeon-at-location-inspector-n01-20261011/source-build.log",
+          "sha256": "a80bf4bf64d32f8780f4f01eaee5b7107ce816c823791c68f2f013afd02044fc"
+        }
+      },
+      "limits": {
+        "actualNewObsidianProbe": false,
+        "narrowViewportVerifiedNatively": false,
+        "freshProcess": false,
+        "independentRepairReview": false,
+        "physicalInput": false,
+        "originalParity": false,
+        "largeMap": false,
+        "userVaultInstalled": false,
+        "fullE2E": false
+      },
+      "nextConsumer": "Existing independent contributor: exact PR91 editor/Key retention/keyboard/History review. Then separate targeted narrow Obsidian/GM followup with fresh local slot coordination or own isolated Cloud host; no dependent expansion or Selfmerge."
+    },
+    "dungeonAtLocationInspectorEscapeN02": {
+      "id": "E2E-01-HEX04-INSPECTOR-ESCAPE-N02",
+      "owner": "Hex",
+      "issue": 80,
+      "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
+      "e2e01UserLine": 13,
+      "state": "input_panel_escape_independent_review_and_shared_integration_PASS_native_pending",
+      "sourceCommit": "dba7d559044f9e8b072a329f2efacd7452b333b4",
+      "pullRequest": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/91",
+      "consumedIndependentFinding": {
+        "reviewer": "Atlas-QA",
+        "head": "9624eee84c657247a8ff8242f1bf107ddb99df4a",
+        "result": "CHANGES_REQUIRED",
+        "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/91#issuecomment-6103791794"
+      },
+      "diagnosis": "Prior exact source already registered window Capture. Linkedom0.18.13 does not implement capture traversal; the prior window-dispatched test bypassed the actual input/panel propagation boundary. Input-dispatched baseline cases fail in this DOM adapter; this does not establish a native browser Capture failure.",
+      "implemented": "Location and Room panels forward Escape to one Atlas guard/checked close before their propagation stop. Inspector controls use the same local handler; global listener handles only the focused viewport. Composing/blocked/flushing/pointer guards, checked queue revocation, invalid drafts, exact texts/IDs and shared camera/repository/history remain.",
+      "fixtureVersion": "e2e01-spatial-v2",
+      "fixtureManifestSha256": "23735bb6c95107b7dec93ffa56ec66405a0f4fe0ec3822fc0476d90d2920188d",
+      "checks": {
+        "runtime": "Node v22.22.0",
+        "baselineInputCasesFailed": 3,
+        "focusedCasesPassed": 4,
+        "fullSuite": {
+          "total": 996,
+          "pass": 995,
+          "fail": 0,
+          "skip": 1,
+          "skipScope": "Existing optional external PDF fixture"
+        },
+        "typecheck": "PASS",
+        "cleanSourceBuild": "PASS",
+        "repository": "PASS",
+        "diff": "PASS",
+        "sourceFilesSha256": {
+          "src/features/atlas/atlas-editor.ts": "d1da240817863b28286386ad19dd0a61c6ba37908cc8d7d9d86e8325bdd22ef3",
+          "src/ui/location-key-panel.ts": "d0b1bbf922a8bea1acd337436ee2f7eec34beead08f8b615b28a5f68654799b5",
+          "src/ui/atlas-room-key-panel.ts": "d3a7035e47db8fa4d8187b456664eb93a81eb0a6b15f20e0d7c2f58229d73475",
+          "tests/atlas-campaign-host.entry.ts": "afa913413023cf85f5cfbbf3783636f0ee75a8952f2b10571c92b12877f3f31e"
+        }
+      },
+      "buildTriplet": {
+        "main.js": {
+          "sha256": "f5c3b5a17e0c6765b279a164ead99453a3feb6c5b6d4b6aa1849866b06a454e9",
+          "bytes": 1671398
+        },
+        "manifest.json": {
+          "sha256": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64",
+          "bytes": 237
+        },
+        "styles.css": {
+          "sha256": "93b65fe1a695acd58aea7360a18b9e9b16d1df7f14a3e3e4dea5a3300cbbed7e",
+          "bytes": 31227
+        }
+      },
+      "localEvidence": {
+        "baseline-regressions.log": {
+          "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/dungeon-at-location-inspector-escape-n02-20261011/baseline-regressions.log",
+          "sha256": "8837f112425d7ea9f48dcd16a27147a86505884f66a311ea05b860a326435f18"
+        },
+        "focused-regressions.log": {
+          "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/dungeon-at-location-inspector-escape-n02-20261011/focused-regressions.log",
+          "sha256": "ff6cb0dbac837cb0a778bc19149cca491796669f3ae1970045fd2b1c08fb0b26"
+        },
+        "product-tests.log": {
+          "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/dungeon-at-location-inspector-escape-n02-20261011/product-tests.log",
+          "sha256": "1fa7d2bc4025004d01fa2ae73645b9a5baa6d489c265d66e922e2e158eab34d8"
+        },
+        "source-build.log": {
+          "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/dungeon-at-location-inspector-escape-n02-20261011/source-build.log",
+          "sha256": "6eb26471920f036643878fd9d21ac25551355b8e41ae169db93fd2ddce4fd1be"
+        }
+      },
+      "limits": {
+        "actualNewObsidianProbe": false,
+        "narrowViewportVerifiedNatively": false,
+        "freshProcess": false,
+        "independentRepairRereview": true,
+        "physicalInput": false,
+        "originalParity": false,
+        "largeMap": false,
+        "userVaultInstalled": false,
+        "fullE2E": false
+      },
+      "nextConsumer": "Hex: targeted actual narrow Obsidian save/reopen probe on integrated Shared ca29032 with unchanged N02 source, after new local slot coordination. Cloud-GM: free repair retest on own isolated host when existing test claims permit; #80 remains at Hex, no dependent expansion.",
+      "independentRereview": {
+        "reviewer": "Atlas-QA",
+        "result": "PASS",
+        "head": "6b6f3624f8e2d7facaafedbeb7adb8d6d03a9bf0",
+        "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/91#issuecomment-6103862700",
+        "scope": "Independent narrow Input/panel/History/Save rereview; isolated Exact-SHA testbuild and4/4 focused PASS, no further required finding. Prior native-Capture inference explicitly corrected; no GUI/native/full-E2E acceptance.",
+        "exactHeadCI": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/actions/runs/38099152678",
+        "ci": "SUCCESS",
+        "consumedAt": "2026-10-11T00:46:10.347313+00:00",
+        "relevantProductBuildFixtureDeltaAfterReview": "none"
+      },
+      "consumedIntegration": {
+        "merge": "ca290326a35bb792c22ef8f02e215a3dd9ef121d",
+        "parents": [
+          "0077bdf04d56a7b7d251717cd236b7a6fa716e46",
+          "6b6f3624f8e2d7facaafedbeb7adb8d6d03a9bf0"
+        ],
+        "tree": "0214fb3687b487a560b7c9b11cde9d9150245578",
+        "receipt": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/91#issuecomment-6103883554",
+        "sharedCI": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/actions/runs/38099467773",
+        "ci": "SUCCESS",
+        "treeEqualsReviewedHead": true,
+        "ownWorkingRecordDelta": "Own review/transition metadata only; retained on Hex branch for next native handoff. No new product candidate or selfintegration."
+      }
+    },
+    "dungeonAtLocationInspectorNativeH02": {
+      "id": "E2E-01-HEX04-INSPECTOR-N02-H02",
+      "owner": "Hex",
+      "issue": 80,
+      "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
+      "e2e01UserLine": 13,
+      "state": "independent_H02_raw_integrity_save_fresh_and_process_PASS_room_image_visibility_limited_GM_pending",
+      "sourceCommit": "bd2a0ada903b414eb46577ec5451f79ca885770d",
+      "productBase": "ca290326a35bb792c22ef8f02e215a3dd9ef121d",
+      "productBuildSource": "dba7d559044f9e8b072a329f2efacd7452b333b4",
+      "fixtureVersion": "e2e01-spatial-v2",
+      "receipt": "docs/reference/atlas-detail-binding-d01/inspector-n02-native-h02.json",
+      "receiptSha256": "44e53e87b6f11c147dce30ab4cf92e878bc4db5ee99dc77155e7a927a23a8bcf",
+      "checks": {
+        "nativeEditPassed": 5,
+        "freshReopenPassed": 1,
+        "normalProcessExit": 2,
+        "forcedProcessExit": 0
+      },
+      "limits": {
+        "actualObsidianProducerProbe": true,
+        "freshProcess": true,
+        "narrowViewport": true,
+        "syntheticInput": true,
+        "independentNativeEvidenceReview": true,
+        "freeGMRepairRetest": false,
+        "newNativeCopyDiscardRecoveryMatrix": false,
+        "physicalInput": false,
+        "originalParity": false,
+        "largeMap": false,
+        "userVaultInstallation": false,
+        "fullE2E": false,
+        "independentHelperOracleReceiptReview": true,
+        "independentGuiExecution": false,
+        "fullRoomNameAndProseVisibilityImageEvidence": false,
+        "freshRoomFieldDiscoverabilityVerified": false
+      },
+      "nextConsumer": "Cloud-GM retains the claimed isolated N02 repair retest and may observe scrolling and Room field discoverability through its ordinary free user flow. Hex consumes delivered GM findings at issue80. The local raw access gap is closed by Stadt RAW-R01; raw integrity and saved/fresh text are qualified, full Room name/prose visibility is not image-proven. No new producer GUI or general review solely for this metadata correction.",
+      "pullRequest": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/94",
+      "independentReview": {
+        "reviewer": "Contributor",
+        "claim": "HEX04-INSPECTOR-N02-H02-R01",
+        "result": "PASS",
+        "reviewedHead": "7f64b6c3db9796fe367936ddfe94f461f15ccd53",
+        "sharedInput": "ca290326a35bb792c22ef8f02e215a3dd9ef121d",
+        "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/94#issuecomment-6104068019",
+        "handoffUrl": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80#issuecomment-6104069333",
+        "scope": "Versioned H02 helper, after-action oracles, receipt inventory/hash bindings and stated evidence limits only; no required correction.",
+        "exactHeadCi": {
+          "runId": 38100760260,
+          "result": "PASS",
+          "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/actions/runs/38100760260"
+        },
+        "localRawFilesAccessibleFromReviewerCloud": false,
+        "rawFilesRead": false,
+        "independentGui": false,
+        "productOrCodecReview": false,
+        "freeGMRepairRetest": false,
+        "receiptSha256": "44e53e87b6f11c147dce30ab4cf92e878bc4db5ee99dc77155e7a927a23a8bcf",
+        "continuity": "This consumption leaves the reviewed helper, source/build/fixture inputs and original producer receipt byte-identical; metadata and the own working section only."
+      },
+      "independentIntegration": {
+        "steward": "Contributor",
+        "claim": "HEX04-INSPECTOR-N02-H02-S01",
+        "candidateHead": "cfdafa200a6cae0f55bdfae05f192675c3bf4fbd",
+        "sharedMerge": "efe573ac1ec86eb905dc6197d7c063269fdf1398",
+        "parents": [
+          "ca290326a35bb792c22ef8f02e215a3dd9ef121d",
+          "cfdafa200a6cae0f55bdfae05f192675c3bf4fbd"
+        ],
+        "candidateIdenticalTree": "f96eb008cd4db7e7b9c71a1f8f190257b32d9dc3",
+        "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/94#issuecomment-6104127611",
+        "sharedStructureCi": {
+          "runId": 38101379694,
+          "result": "PASS"
+        }
+      },
+      "independentRawReview": {
+        "reviewer": "Stadt",
+        "claim": "HEX04-N02-H02-RAW-R01",
+        "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80#issuecomment-6104135982",
+        "reviewedCandidate": "cfdafa200a6cae0f55bdfae05f192675c3bf4fbd",
+        "sharedInput": "efe573ac1ec86eb905dc6197d7c063269fdf1398",
+        "receiptSha256": "44e53e87b6f11c147dce30ab4cf92e878bc4db5ee99dc77155e7a927a23a8bcf",
+        "result": "PASS_for_raw_integrity_save_fresh_data_and_process_binding_with_image_visibility_limit",
+        "scope": "Independent read-only inspection of original local raw files and PNGs; no new native execution or free GM acceptance.",
+        "rawFilesRead": 30,
+        "editFilesRead": 19,
+        "freshFilesRead": 11,
+        "savedBaselineRead": true,
+        "nativeVaultHashesChecked": 8,
+        "pngsVisuallyInspected": 7,
+        "rawAccessGapClosed": true,
+        "normalProcessIdentitiesChecked": [
+          {
+            "pid": 3591769,
+            "startTicks": 21108009,
+            "normalExit": true,
+            "forcedTermination": false
+          },
+          {
+            "pid": 3593342,
+            "startTicks": 21112021,
+            "normalExit": true,
+            "forcedTermination": false
+          }
+        ],
+        "finding": {
+          "id": "RAW-R01-01",
+          "kind": "evidence_statement_limit",
+          "productFailureEstablished": false,
+          "affectedImages": [
+            "inspector-n02-room.png",
+            "inspector-n02-fresh-room.png"
+          ],
+          "observed": "Images show the lower navigation area. Room name/prose inputs are outside the visible scroll viewport.",
+          "textPreservationEvidence": "Saved native bytes, full fresh model comparison and DOM inputValue oracles establish exact text; screenshots alone do not establish full Room name/prose visibility or fresh field discoverability.",
+          "disposition": "Consumed in own acceptance and working section without editing the original receipt or helper. Existing free Cloud-GM scope can observe scrolling/discoverability; no additional producer GUI or general review required by this finding."
+        },
+        "independentGuiExecution": false,
+        "freeGMRepairRetest": false,
+        "productOrCodecQualification": false,
+        "fullE2E": false
+      }
+    },
+    "dungeonAtLocationInspectorGmN02Consumption": {
+      "id": "E2E-01-HEX04-INSPECTOR-N02-GM-CONSUMED",
+      "owner": "Hex",
+      "issue": 80,
+      "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
+      "e2e01UserLine": 13,
+      "state": "source_bound_GM_N02_consumed_scroll_and_zoom_findings_current_Shared_composition_open",
+      "consumerSharedInput": "0bebb85b562f0996c74b772aad311dc3a9aac047",
+      "producer": {
+        "role": "Cloud-GM-Produkttester",
+        "claim": "GM-E2E01-ATLAS-DETAIL-INSPECTOR-N02-GM-CLOUD-RETEST-20261011-01",
+        "reportUrl": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80#issuecomment-6104260884",
+        "checkpointCommit": "332e8ae4d62134ad7ac830cfed51b310ac5fc9d0",
+        "publishedBranchHead": "3ecc64914906d90bf06ca7da0ad339d600f4dbfb",
+        "reportAndOwnCheckpointReadDirectly": true
+      },
+      "testedBuild": {
+        "sourceRevision": "ca290326a35bb792c22ef8f02e215a3dd9ef121d",
+        "host": "Own isolated Cloud Obsidian1.14.4; separate profile/test vault",
+        "node": "v22.23.3",
+        "viewport": "1024x800 CSS px / DPR1; baseline UI zoom100%",
+        "fixtureVersion": "e2e01-spatial-v2",
+        "fixture": "tests/fixtures/atlas-e2e-spatial-v2/manifest.json",
+        "fixtureManifestSha256": "23735bb6c95107b7dec93ffa56ec66405a0f4fe0ec3822fc0476d90d2920188d",
+        "installedTripletSha256": {
+          "main.js": "f5c3b5a17e0c6765b279a164ead99453a3feb6c5b6d4b6aa1849866b06a454e9",
+          "styles.css": "93b65fe1a695acd58aea7360a18b9e9b16d1df7f14a3e3e4dea5a3300cbbed7e",
+          "manifest.json": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64"
+        }
+      },
+      "reportedResult": "Bounded free Cloud-GM flow PASS on ca290: ordinary file-tree Atlas entry, existing Location/Room Key; visible Zur Karte, Escape from focused Room text and Apply; exact Undo/Redo; Save and same-process editor-tab close/reopen retained text. Atlas, City, Location bytes and all reported IDs retained. Automated CDP/Playwright input, not physical.",
+      "findings": [
+        {
+          "id": "GM-N02-01",
+          "scope": "Location-to-Room target switch and field discoverability",
+          "observed": "Searching and choosing a detail target requires scrolling. The shared dock retains that scroll position after switching to Room, leaving its editor above the visible area until scrolling up.",
+          "currentSourceCorroboration": "AtlasEditor.syncLocations reuses one dn-atlas-location-dock across Location/Room/City. It changes visible panels without resetting scroll on semantic target change; no scroll reset exists in this editor. City PR93 preserves and extends this shared dock.",
+          "sourceFiles": [
+            "src/features/atlas/atlas-editor.ts:294",
+            "src/features/atlas/atlas-editor.ts:725"
+          ],
+          "consumer": "Hex #80",
+          "currentSharedGuiReproduced": false
+        },
+        {
+          "id": "GM-N02-02",
+          "scope": "Narrow window with UI enlargement",
+          "observed": "At131% UI zoom in the1024x800 Cloud window the inspector partly exceeded the viewport, even after hiding the left file pane; restored100%.",
+          "currentSourceCorroboration": "Atlas dock/body/viewport CSS is byte-identical to tested ca290. Root cause and current native geometry have not been independently established; inspect min-size/flex constraints with the targeted repair.",
+          "sourceFiles": [
+            "styles.css:1122",
+            "styles.css:1148",
+            "styles.css:1167"
+          ],
+          "consumer": "Hex #80",
+          "currentSharedGuiReproduced": false
+        }
+      ],
+      "currentSharedBoundary": {
+        "source": "0bebb85b562f0996c74b772aad311dc3a9aac047",
+        "priorCityMerge": "5c09e96ab050e72dd9ca0791939d0216e090a8ee",
+        "changedRelevantPathsSinceTest": [
+          "src/features/atlas/atlas-editor.ts",
+          "tests/atlas-campaign-host.entry.ts"
+        ],
+        "stylesUnchanged": true,
+        "locationAndRoomPanelsUnchanged": true,
+        "currentCityHexCompositionQualifiedByThisGmRun": false,
+        "earlierH02NotTransferred": true
+      },
+      "rawEvidence": {
+        "directory": "/workspace/scratch/gm-cloud-qa/E2E01-ATLAS-DETAIL-INSPECTOR-N02-GM-CLOUD-RETEST-20261011-01",
+        "producerReferences": [
+          "RUN-NOTES.md",
+          "evidence/baseline.json",
+          "evidence/after-state.json",
+          "evidence/installed-triplet.json",
+          "evidence/reportable/SHA256SUMS.txt"
+        ],
+        "consumerHasReadCloudRawFiles": false,
+        "consumerHasViewedCloudScreenshots": false
+      },
+      "limits": {
+        "freeGmObservationDeliveredForTestedSource": true,
+        "sameProcessTabReopenOnly": true,
+        "freshObsidianProcessInThisGmRun": false,
+        "consumerGuiExecution": false,
+        "physicalInput": false,
+        "originalParity": false,
+        "largeMap": false,
+        "userVaultInstallation": false,
+        "recoveryMatrix": false,
+        "fullE2E": false
+      },
+      "nextOwnContribution": "Repair the existing shared inspector in #80: expose the newly selected Key without carrying unrelated dock scroll; preserve scroll during same-target redraws and preserve pending drafts, camera/context/history/IDs. Investigate and constrain narrow enlarged layout based on GM-N02-02. Use current integrated City/Hex source, focused regressions and source-bound independent review; targeted free GM retest after delivery. No dependent detail expansion."
+    },
+    "dungeonAtLocationInspectorScrollN03": {
+      "id": "E2E-01-HEX04-INSPECTOR-SCROLL-N03",
+      "owner": "Hex",
+      "issue": 80,
+      "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
+      "e2e01UserLine": 13,
+      "state": "semantic_Key_scroll_DOM_PASS_independent_review_and_targeted_GM_pending_zoom_finding_open",
+      "sourceCommit": "1e22697638738d83388181273d40835425f04f4c",
+      "implementationCommit": "cac07c30e0d80bd8b657eb844e3621c01a696dc9",
+      "sharedInput": "73bfe2260d29716e7ca9811b4314fd8db67bfeb2",
+      "input": "checkpoint.hexAtlasExecution.dungeonAtLocationInspectorGmN02Consumption",
+      "finding": {
+        "id": "GM-N02-01",
+        "producerResult": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80#issuecomment-6104260884",
+        "producerSource": "ca290326a35bb792c22ef8f02e215a3dd9ef121d"
+      },
+      "implemented": "The existing shared dock resets scrollTop after a successfully shown different semantic Location/Room/Building Key. Kind, owner and element identity distinguish targets; hidden dock forgets its target. Same-target input, commit and History redraw preserve scroll. No panel, selection mode, persisted state or History added.",
+      "composition": "Current independently integrated City PR98 Save persistence await and post-await Context guard retained in the shared AtlasEditor; City Inspector and regression retained.",
+      "fixtureVersion": "e2e01-spatial-v2",
+      "fixtureManifestSha256": "23735bb6c95107b7dec93ffa56ec66405a0f4fe0ec3822fc0476d90d2920188d",
+      "checks": {
+        "runtime": "Node v22.22.0",
+        "baselineCasesFailed": 2,
+        "focusedCasesPassed": 2,
+        "fullSuite": {
+          "tests": 1004,
+          "pass": 1003,
+          "fail": 0,
+          "skipped": 1
+        },
+        "typecheck": "PASS",
+        "sourceBuild": "PASS",
+        "repository": "PASS",
+        "diff": "PASS",
+        "regressions": "Actual managed mount: lower Location target button opens Room at top; same-target draft/commit/Undo/Redo preserve scroll and camera/repository/History/Context; cached Location return, same-target navigation, invalid draft rejection and close/reopen; actual City pointer router: different house resets, same house and commit preserve scroll.",
+        "sourceFilesSha256": {
+          "src/features/atlas/atlas-editor.ts": "29e33e1ee088986c7d56bab9ddac07e1818524716e35153620bf5a3f7a27833e",
+          "tests/atlas-campaign-host.entry.ts": "a00bd36b3e21c1c2bd4a2b8ef7bbbbc40cd602ade8fd7dff4cde8270912e12ce"
+        }
+      },
+      "buildTriplet": {
+        "main.js": {
+          "sha256": "940f73b317eebdfbe9ae0419cb4540786a6bb7d4daea0fee04bd6c1224383e28",
+          "bytes": 1677173
+        },
+        "styles.css": {
+          "sha256": "93b65fe1a695acd58aea7360a18b9e9b16d1df7f14a3e3e4dea5a3300cbbed7e",
+          "bytes": 31227
+        },
+        "manifest.json": {
+          "sha256": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64",
+          "bytes": 237
+        }
+      },
+      "localEvidence": {
+        "baseline-regressions.log": {
+          "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/dungeon-at-location-inspector-scroll-n03-20261011/baseline-regressions.log",
+          "sha256": "3e621079ac119c3d3717a375eebcb8c5fa2ea7019d80d08b3213f1843dea380d"
+        },
+        "focused-regressions.log": {
+          "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/dungeon-at-location-inspector-scroll-n03-20261011/focused-regressions.log",
+          "sha256": "5d6c506eabb9193daea64fe92d4409526bcef900589538f1b56ada2f98930a8c"
+        },
+        "product-tests.log": {
+          "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/dungeon-at-location-inspector-scroll-n03-20261011/product-tests.log",
+          "sha256": "03b1b968e7a44bf17c359edf1f1416486af6d8f6123447109d919d269f1ed591"
+        },
+        "composed-typecheck.log": {
+          "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/dungeon-at-location-inspector-scroll-n03-20261011/composed-typecheck.log",
+          "sha256": "079b4802c6da64fa1d4244b135be0c1fad7ce6c952c6dda76f3320c685743d4c"
+        },
+        "source-build.log": {
+          "path": "/home/aaron/.cache/dungeon-native-qa/hex-04/dungeon-at-location-inspector-scroll-n03-20261011/source-build.log",
+          "sha256": "8b25bc4de8dcb11bea3c6f99bba67959270f5845e9aec23754ecafc01dab45c2"
+        }
+      },
+      "openFinding": {
+        "id": "GM-N02-02",
+        "status": "OPEN",
+        "reported": "Inspector partly outside viewport at 131 percent UI zoom, 1024x800. CSS unchanged by N03; root cause and current native geometry still unverified."
+      },
+      "limits": {
+        "independentRepairReview": false,
+        "actualObsidianRetest": false,
+        "nativeFieldVisibility": false,
+        "narrowZoomLayoutFixed": false,
+        "freshProcess": false,
+        "physicalInput": false,
+        "originalParity": false,
+        "largeMap": false,
+        "userVaultInstalled": false,
+        "fullE2E": false
+      },
+      "nextConsumer": "Independent targeted scroll/guard review of this product delta, then free GM observation on its isolated source-bound build. GM-N02-02 remains an explicit open geometry/reproduction input in the same package; no broad review or dependent detail expansion."
+    },
+    "dungeonAtLocationInspectorScrollN03Qualification": {
+      "id": "E2E-01-HEX04-INSPECTOR-N03-R01-S01-CONSUMED",
+      "owner": "Hex",
+      "issue": 80,
+      "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
+      "e2e01UserLine": 13,
+      "state": "independent_scroll_review_and_integration_consumed_bundled_GM_blocked_display_zoom_finding_open",
+      "sourceCommit": "7ff78b9bc31869bff3ba6d2f19d9a619ac6bbccb",
+      "producerRecord": "checkpoint.hexAtlasExecution.dungeonAtLocationInspectorScrollN03",
+      "independentReview": {
+        "id": "GM-N02-01-SCROLL-R01",
+        "reviewer": "Contributor",
+        "head": "c7e6873283f77f7334f924e07063c19499594db9",
+        "result": "PASS",
+        "requiredFindings": 0,
+        "focusedCasesReportedPassed": 6,
+        "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/100#issuecomment-6104475506",
+        "scope": "Semantic Key scroll reset after successful show; same-target draft/History preservation and guarded invalid/stale/revoked navigation. No CSS, GUI or repeated City Save review."
+      },
+      "independentIntegration": {
+        "id": "GM-N02-01-SCROLL-S01",
+        "pullRequest": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/100",
+        "head": "c7e6873283f77f7334f924e07063c19499594db9",
+        "sharedMerge": "7ff78b9bc31869bff3ba6d2f19d9a619ac6bbccb",
+        "parents": [
+          "73bfe2260d29716e7ca9811b4314fd8db67bfeb2",
+          "c7e6873283f77f7334f924e07063c19499594db9"
+        ],
+        "tree": "7641a27392fdf66729863f65a5ea04c77bfa337c",
+        "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/100#issuecomment-6104516785",
+        "productDiffFromReviewedHead": "empty",
+        "headCi": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/actions/runs/38103969288",
+        "sharedCi": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/actions/runs/38104432859",
+        "ciLiveChecked": "both SUCCESS on their exact recorded SHAs",
+        "selfIntegratedByHex": false
+      },
+      "bundledGmInput": {
+        "owner": "Cloud-GM-Produkttester",
+        "claim": "GM-CITY-HOUSE-NAME-CLOUD-UI-RETEST-20261011-01",
+        "cityIssue": 92,
+        "proposal": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80#issuecomment-6104526367",
+        "blocker": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/92#issuecomment-6104519136",
+        "state": "blocked_UI_not_started",
+        "missingInput": "Cloud owner must restore or prove a uniquely owned visible Obsidian window/display; prepared PR98 build predates integrated N03 and must be rebound to actual fresh Shared build.",
+        "consequence": "Reuse the existing City GM claim for one City/Hex field-discoverability observation after host resolution. No separate competing Atlas run or GUI claim."
+      },
+      "openFindings": [
+        "GM-N02-02: 131 percent UI zoom clipping; root cause and current native geometry still open"
+      ],
+      "limits": {
+        "actualNewObsidianRetest": false,
+        "nativeFieldVisibility": false,
+        "zoomLayoutFixed": false,
+        "freshProcess": false,
+        "physicalInput": false,
+        "originalParity": false,
+        "largeMap": false,
+        "userVaultInstalled": false,
+        "fullE2E": false
+      },
+      "nextConsumer": "Cloud-GM restores its own isolated visible host, then observes City name and integrated N03 Key discoverability in one existing claim on actual source/build/fixture. Hex consumes the result or concrete geometry finding; no dependent detail expansion."
+    },
+    "dungeonAtLocationInspectorScrollN03GmConsumption": {
+      "id": "E2E-01-HEX04-INSPECTOR-N03-BUNDLED-GM-CONSUMED",
+      "owner": "Hex",
+      "issue": 80,
+      "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
+      "e2e01UserLine": 13,
+      "state": "bundled_GM_N03_scroll_consumed_zoom_geometry_open_City_Save_owned_by_Stadt",
+      "sourceCommit": "cf8d3c1f9b1f47241bf751de997a1f86786ec83c",
+      "input": {
+        "producer": "Cloud-GM-Produkttester",
+        "claim": "GM-CITY-HOUSE-NAME-CLOUD-UI-RETEST-20261011-01",
+        "result": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/92#issuecomment-6104735161",
+        "hexHandoff": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80#issuecomment-6104737639",
+        "producerStatus": "partial",
+        "hostBlockerResolvedAsReported": true,
+        "producerBranchAtRead": "origin/codex/gm-city-house-n03-cloud-20261011",
+        "producerBranchHeadAtRead": "7c3a1e3b5cc08a9969fb2e6cb2e5d1a849c64faa",
+        "structuredProducerReceiptAvailableAtRead": true,
+        "producerCheckpointPath": "checkpoint.gmProductTesting.currentRun",
+        "producerSnapshotPr": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/105",
+        "producerSnapshotStateAtRead": "OPEN; read as source receipt, not integrated by Hex"
+      },
+      "sourceBinding": {
+        "firstVisibleBuild": "1d8c7ffc94f1ee062b8a42df5ca78ec9cb6beaef",
+        "currentVisibleBuild": "cf8d3c1f9b1f47241bf751de997a1f86786ec83c",
+        "buildsReportedClean": true,
+        "nodeReported": "v24.19.0",
+        "atlasEditorSha256VerifiedByHex": "29e33e1ee088986c7d56bab9ddac07e1818524716e35153620bf5a3f7a27833e",
+        "atlasEditorAndFocusedTestsDiffFirstToCurrent": "empty",
+        "currentSharedIntegratedBeforeConsumption": true,
+        "installedTripletsReported": [
+          {
+            "source": "1d8c7ffc94f1ee062b8a42df5ca78ec9cb6beaef",
+            "main.js": "940f73b317eebdfbe9ae0419cb4540786a6bb7d4daea0fee04bd6c1224383e28",
+            "styles.css": "93b65fe1a695acd58aea7360a18b9e9b16d1df7f14a3e3e4dea5a3300cbbed7e",
+            "manifest.json": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64"
+          },
+          {
+            "source": "cf8d3c1f9b1f47241bf751de997a1f86786ec83c",
+            "main.js": "75d23cd93cfb2accb1d9fc371cffc1d5da4b6b9c4a1bcc25a36e095f47e2d58e",
+            "styles.css": "93b65fe1a695acd58aea7360a18b9e9b16d1df7f14a3e3e4dea5a3300cbbed7e",
+            "manifest.json": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64"
+          }
+        ],
+        "postTestSharedAtConsumption": "de3181be1696d7442e0100f5901172906cc03974",
+        "postTestRelevantSourceDiff": "AtlasEditor, AtlasHistory, focused tests and CSS unchanged; World-Notes package PR104 advanced Shared. No UI replay or proof extension."
+      },
+      "reportedHost": {
+        "obsidian": "1.14.4",
+        "container": "e49e330d328c1e2d97e6f46a677e34f5f288c4dab7b41db242d3584e4ab66b33",
+        "display": ":99",
+        "viewport": "1440x1000",
+        "profile": "/qa/profile",
+        "syntheticVault": "/dev/shm/gm-city-vault",
+        "independentHostOwnershipVerifiedByHex": false
+      },
+      "fixtureBinding": {
+        "versionFromExistingClaim": "e2e01-spatial-v2",
+        "fullManifestHashRevalidatedInNewResult": false,
+        "reportedUnchangedDungeonSha256": "c6fe58d1b5de5c707000a39b0b8da2883d31867b7d8bf347f63830021e2df742",
+        "reportedUnchangedOverworldSha256": "76e0a82a939f5c2b16c08f153cca827e4efd8d5920915c997ae2a3fc6d16de07"
+      },
+      "n03Consequence": {
+        "GM_N02_01": "Resolved in the reported bounded visible room-Key flow. New-room opening starts with Name/Number/Text visible; same-room Apply/Undo/Redo retains dock scroll. No new broad GM round.",
+        "firstBuildReported": "normal Atlas entry, previously lower-scrolled Location dock, Torraum search, visible new room fields, temporary text Apply and Undo/Redo/Undo preserve scroll and restore exact original text",
+        "currentBuildReported": "after visible in-app reload, Torraum search again opens room fields at the top",
+        "currentBuildFullHistoryRetest": false,
+        "dungeonFileRemainedUnchangedAsReported": true
+      },
+      "cityFinding": {
+        "owner": "Stadt",
+        "issue": 92,
+        "source": "cf8d3c1f9b1f47241bf751de997a1f86786ec83c",
+        "input": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/92#issuecomment-6104735161",
+        "finding": "After visible app reload and house-name Apply/Undo/Redo/restore, Atlas Save and one retry report Stadtentwurf failed/collided; City/Campaign files remain at their previously saved hashes.",
+        "ownerHandling": "Stadt confirmed investigation of live AtlasHistory listener iteration in the existing #92 scope; hypothesis not independently verified by Hex. No competing Hex fix.",
+        "ownerClaim": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/92#issuecomment-6104746044"
+      },
+      "openFindings": [
+        "GM-N02-02: Inspector clipping at 131 percent UI zoom and 1024x800; new 1440x1000 GM result does not exercise this geometry."
+      ],
+      "evidenceLimits": {
+        "sourceComparisonPerformedByHex": true,
+        "visibleObsidianRetestReportedByProducer": true,
+        "cloudRawFilesReadByHex": false,
+        "rawImagesTemporaryUnpublished": true,
+        "currentRoomTopPngReportedSha256": "e4b743302475738434a5218892598e89b0f55b1e0b56ecd12ccf73ff4ef2226d",
+        "nativeGeometryFixed": false,
+        "freshProcess": false,
+        "physicalInput": false,
+        "originalParity": false,
+        "largeMap": false,
+        "userVaultInstalled": false,
+        "fullRecoveryMatrix": false,
+        "fullE2E": false,
+        "guiUsedByHex": false,
+        "productEditedByHex": false
+      },
+      "nextConsumer": "Hex reproduces the existing GM-N02-02 geometry finding in an isolated current-build Obsidian host at 1024x800 and 131 percent UI zoom after fresh explicit local-slot coordination; no duplicate City GM run or dependent detail expansion."
+    },
+    "dungeonAtLocationInspectorZoomGeometryD01": {
+      "id": "E2E-01-HEX04-INSPECTOR-GM-N02-02-D01",
+      "owner": "Hex",
+      "issue": 80,
+      "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
+      "e2e01UserLine": 13,
+      "state": "native_zoom_geometry_diagnosed_horizontal_controls_overflow_repair_next",
+      "sourceCommit": "bca790c22bdab5f76a28d3f1d4699f1f464c1572",
+      "qualifiedShared": "a4f20a553060ec84941b97cbb71bd105d5ca5a62",
+      "receipt": "docs/reference/atlas-detail-binding-d01/inspector-zoom-geometry-d01.json",
+      "receiptSha256": "37104af6095d4ac043d4e95e0eaee18c346cc49be93f2b8846cac6fe2ce72bd3",
+      "fixtureVersion": "e2e01-spatial-v2",
+      "fixtureManifestSha256": "23735bb6c95107b7dec93ffa56ec66405a0f4fe0ec3822fc0476d90d2920188d",
+      "finding": {
+        "id": "GM-N02-02-HORIZONTAL-CONTENT-D01",
+        "result": "confirmed required horizontal-content fit repair; original external dock clipping not reproduced in these conditions",
+        "observations": [
+          "Location baseline100%: dock client249/scroll276 CSSpx; original full dock remains inside renderer viewport.",
+          "Location and focused Room at131% with open sidebar: dock client153/scroll276 CSSpx; buttons exceed dock right edge, including Raumabschnitt: Torraum (~20px) and Hier verorten: Dungeonkarte – Torraum (~111px). Location Text verwerfen also exceeds dock right (~71px).",
+          "At131% with closed sidebar: client273/scroll276 CSSpx, dock inside viewport.",
+          "No measured dock rectangle exceeds CSS viewport; vertical scrolling is separate from external clipping. Existing GM-N02-02 external-window observation is not dismissed or qualified as fixed."
+        ],
+        "scope": "existing common Inspector child controls/layout; no camera/store/history/format change.",
+        "nextOwnStep": "fit existing Key actions and detail/binding target controls to available dock width and preserve same-target scrolling/navigation; then targeted layout/guard regression and qualified native followup. No blind external-dock CSS remedy."
+      },
+      "nativeOutcome": "first helper partial/selector FAIL retained; second Room probe completed; two normal exits/all8 native files unchanged. Geometry finding confirmed, not a GUI product PASS.",
+      "slotReturned": true,
+      "guiUsed": true,
+      "productEdited": false,
+      "phaseApproval": false,
+      "limits": [
+        "external viewport clipping not reproduced, remains open",
+        "no native Save/History acceptance or saved fresh restart",
+        "no physical/Original/large-map/user-vault/full-E2E acceptance"
+      ]
+    },
+    "dungeonAtLocationInspectorHorizontalFitN04": {
+      "id": "E2E-01-HEX04-INSPECTOR-GEOMETRY-REPAIR-N04",
+      "owner": "Hex",
+      "issue": 80,
+      "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
+      "e2e01UserLine": 13,
+      "state": "horizontal_inspector_fit_native_owner_PASS_independent_review_pending",
+      "sourceCommit": "da3e06adefdcad20bdeaf57019c54f7b0fe08e0a",
+      "fixtureVersion": "e2e01-spatial-v2",
+      "fixtureManifestSha256": "23735bb6c95107b7dec93ffa56ec66405a0f4fe0ec3822fc0476d90d2920188d",
+      "receipt": "docs/reference/atlas-detail-binding-d01/inspector-horizontal-fit-n04.json",
+      "receiptSha256": "eaaca71c5235b72cf120347210dfeb26fc5a55b1b94a8f942074d5459822da0c",
+      "result": "existing Location/Room actions and detail/binding targets fit available dock width; native seven-sample horizontal-layout regression PASS, 131% sidebar-open153/153 versus D01 153/276 CSSpx",
+      "checks": {
+        "type": "PASS",
+        "fullSuite": {
+          "total": 1010,
+          "pass": 1009,
+          "fail": 0,
+          "skip": 1,
+          "skipScope": "existing optional external PDF fixture"
+        },
+        "build": "PASS",
+        "native": "seven layout samples PASS; all dock and rendered field/button boxes fit horizontally without scrolling",
+        "guardRegressions": "existing actual managed Host scroll, same-Key History, invalid draft/Escape/queued revocation and City inspector cases PASS in full suite; not native Save/History acceptance"
+      },
+      "independentReview": "pending",
+      "nextConsumer": "Stadt: scoped independent review of two product files and source-bound horizontal-fit evidence; then steward integration and qualified free GM followup. No dependent expansion or selfmerge.",
+      "guiUsed": true,
+      "productEdited": true,
+      "phaseApproval": false,
+      "limits": [
+        "owner native geometry only; independent targeted review/integration and free GM retest pending",
+        "original GM-N02-02 external-window clipping was not reproduced by D01 and is not dismissed or qualified as fixed",
+        "controls below the vertical scroll viewport still require normal scrolling; bounding-box evidence is horizontal fit, not simultaneous visibility of all fields",
+        "no native edit/Save/History/recovery acceptance or saved fresh-process proof in this geometry run",
+        "no physical input, Original-parity, large-map, user-vault installation or full E2E acceptance"
+      ]
+    },
+    "dungeonAtLocationInspectorHorizontalFitN04Qualification": {
+      "id": "E2E-01-HEX04-INSPECTOR-N04-R01-CONSUMED",
+      "owner": "Hex",
+      "issue": 80,
+      "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
+      "e2e01UserLine": 13,
+      "state": "horizontal_inspector_fit_independent_review_PASS_steward_integration_pending",
+      "pullRequest": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/110",
+      "producerRecord": "checkpoint.hexAtlasExecution.dungeonAtLocationInspectorHorizontalFitN04",
+      "nativeReceipt": "docs/reference/atlas-detail-binding-d01/inspector-horizontal-fit-n04.json",
+      "nativeReceiptSha256": "eaaca71c5235b72cf120347210dfeb26fc5a55b1b94a8f942074d5459822da0c",
+      "nativeSourceCommit": "da3e06adefdcad20bdeaf57019c54f7b0fe08e0a",
+      "independentReview": {
+        "reviewer": "Stadt",
+        "reviewerThread": "01a12022-b67b-7da2-bed5-8ebde169d475",
+        "head": "305680db90546207f259d246b3a6c86afcc44e68",
+        "base": "2582f3f580a680765d90265a80fdcaf3f8ed3809",
+        "result": "PASS",
+        "requiredFindings": 0,
+        "url": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/110#pullrequestreview-5481730796",
+        "submittedAt": "2026-10-11T03:26:50Z",
+        "focusedCasesReportedPassed": 11,
+        "rawFilesReportedVerified": 22,
+        "imagesDirectlyViewedByReviewer": [
+          "location-131-actions.png",
+          "room-131-field-focused.png"
+        ],
+        "scope": "Two existing product files: dock-scoped wrapping/control width and Room action class; unchanged scroll/Draft/navigation, source-bound seven-sample horizontal native geometry. Reviewer did not start another GUI."
+      },
+      "checkedSourceBinding": {
+        "nativeProductPathsEqualReviewedHead": true,
+        "diffPathsFromNativeSource": [
+          "ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md",
+          "acceptance.json",
+          "checkpoint.json",
+          "docs/reference/atlas-detail-binding-d01/inspector-horizontal-fit-n04.json"
+        ],
+        "reviewedHeadCi": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/actions/runs/38108190000",
+        "reviewedHeadCiResult": "SUCCESS",
+        "qualificationDelta": "Only own checkpoint/acceptance and #80 working section; product and native receipt unchanged."
+      },
+      "independentIntegration": "pending",
+      "freeGmFollowup": "pending",
+      "nextConsumer": "Contributor (existing Obsidian Dungeon Repo ansehen chat): independent steward integration of PR110 after exact new-head CI and composition/source checks. Then qualified free GM followup in #80; no dependent detail expansion or selfintegration by Hex.",
+      "limits": [
+        "Independent scoped review consumes existing native evidence; no new native GUI or local slot claim.",
+        "Original external-window clipping was not reproduced in D01 and is not qualified as fixed.",
+        "Vertical scrolling, native edit/Save/History/Recovery, fresh-process, physical, Original-parity, large-map, user-vault and overall E2E claims retain their separate evidence and open boundaries."
+      ],
+      "guiUsedByHex": false,
+      "productEdited": false,
+      "phaseApproval": false
     }
   },
   "phase": "Phase 6: zweiter Nachbesserungslauf teilweise umgesetzt; fünf Restpositionen und unabhängiger Review offen",
@@ -10109,20 +11088,18 @@
     "state": "city01_core_prepared_hex05_integration_pending",
     "plan": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
     "currentRun": {
-      "id": "MANUAL-PLANNER-COMPOUND-N02",
-      "issue": 69,
-      "state": "atomic_rename_move_ready_for_independent_delta_review",
-      "branch": "city/manual-session-planner",
-      "plan": "docs/plans/campaign/manual-session-planner.md",
-      "finding": "Dirty draft published before failed rename/move second revision; 2 actual panel probes FAIL before repair",
-      "verification": "24 focused core/panel PASS; final-context and missing-target failures retain draft and allow exact successful retry",
-      "next": "Existing reviewer checks compound action delta; native Planner ownership/file/publish contract still open",
-      "qualifiedPriorInput": "Focus review5481049475 and visible Cloud-GM6102960484 PASS on59f04fe",
-      "limits": "No native storage/plugin/Save/Fresh/Recovery or overall product acceptance"
+      "id": "CITY-BUILDING-NAME-KEYBOARD-FOCUS",
+      "issue": 92,
+      "state": "integrated_gm_fresh_and_apply_discard_keyboard_verified",
+      "branch": "city/building-name-focus-20261011",
+      "plan": "docs/plans/city/building-name-inspector.md",
+      "verification": "Three Managed DOM focus regressions FAIL before/PASS after: Apply and Discard preserve replacement action focus, direct Save retains current textarea focus; toolbar focus stays external, detached old actions cannot publish or move focus. Typecheck/build/repo/diff PASS; suite1016 PASS/0 FAIL/1 existing skip. No physical GUI proof. Existing PR106 integration and bounded GM Save/reuse evidence remain in the plan and acceptance. Independent focus R01 PASS6105537557 on14729dc429d9699998284b1ee7a3bb8ee3ebc8a3; regular Shared integration a4c2cb39aafdfb7abf5469e575a82e630ef41313 confirmed in6105543027. Exact-CI38112395045 and Shared-structure38112524672 SUCCESS.  Cloud GM6105664357: fresh process/search/name reuse/second Save on eaf6bd95564ab398eabe9b2c0ac046feec079f0f; Apply/Discard Enter focus and next Tab on a4c2cb39aafdfb7abf5469e575a82e630ef41313. Durable PR120 evidence1262cbf7f4994626fc6ccc459550ea6e7aceb209: City checked eight image hashes and visible results. Full after-save payloads absent; semantic file oracle is tester report.",
+      "next": "Only direct-Save textarea focus lacks visible native verification. Fresh-process and Apply/Discard paths complete in bound sources; do not repeat unchanged checks. Continue useful City work or independent project contribution.",
+      "limits": "Synthetic Cloud keyboard/pointer input, no physical acceptance. Fresh-process source eaf6bd9 differs from focus source a4c2cb3; no launcher exitcode or independent full after-save payload comparison. Broad Recovery and overall City parity remain open."
     },
     "nextRun": {
-      "id": "MANUAL-PLANNER-I01-CONSUME",
-      "focus": "Finish current manual Planner package; bind confirmed Campaign persistence and review inputs. P04-HOST-I01 remains separately owned awaiting its declared payload/archive inputs."
+      "id": "CITY-BUILDING-NAME-DIRECT-SAVE-FOCUS",
+      "focus": "Optional targeted native direct-Save textarea focus verification; no repeat of completed fresh-process or Apply/Discard paths."
     },
     "open": [
       "CITY-00 volle Funktionsinventur/Originalwirkung aller drei Produkte; feste Ergebnisgalerie abgeschlossen",
@@ -10251,61 +11228,93 @@
     "limitation": "Nur Offline-Adaptertests; keine zusätzliche COK-Laufzeit- oder GUI-Abnahme."
   },
   "gmProductTesting": {
-    "date": "2026-10-10",
-    "state": "gm_product_testing_partial_other_scenarios_open; trap_content_undo_cloud_retest_passed; atlas_location_key_readiness_gate_still_hex_owned",
+    "date": "2026-10-11",
+    "state": "gm_product_testing_partial; city_92_postsave_fresh_process_pass_and_pr117_apply_discard_keyboard_focus_pass; N04_fresh_process_open; physical_input_200_percent_zoom_recovery_and_broad_gates_open",
     "plan": "ROADMAP-GM-PRODUCT-TESTING-PLAN.md",
     "focus": "Längere GM-Endanwenderabläufe, häufige Aktionen, Bedienkosten und UI-Überladung; belegte Nacharbeiten beauftragen und nachprüfen.",
     "currentRun": {
-      "id": "GM-UX-TRAP-CONTENT-UNDO-CLOUD-RETEST-20261010-01",
-      "status": "completed",
-      "owner": "Cloud-GM-Produkttester",
-      "branch": "active/installed-phase1",
-      "sharedHead": "7098269810801f93be247423862373e912cda210",
-      "productCommit": "7098269810801f93be247423862373e912cda210",
-      "candidateCommit": "b410e7d8069a879ab79adcf4861ed321f68fd612",
-      "request": "Exklusiver Cloud-GM-Nachtest des synthetischen Trap-Key-Note-Ablaufs nach PR55: Dirty-Guard, Apply, Undo/Redo, Save, Close/Reopen.",
-      "scope": "Nur derselbe synthetische Room-2/Marker-A/Trap-Key im isolierten QA-Vault. Keine Nutzerkarte, Trapmechanik, Atlas/Hex, Produktänderung oder breite Freigabe.",
-      "coordination": "Issue #1 contract 6087478045; Issue #8 preflight 6100517787; final report to be added after doc commit.",
-      "checks": [
-        "git fetch und normaler --ff-only-Integrationsschritt PASS; clean exact Shared HEAD 7098269810801f93be247423862373e912cda210.",
-        "git diff b410e7d8069a879ab79adcf4861ed321f68fd612..7098269810801f93be247423862373e912cda210 -- src/editor.ts tests/room-key-search-panel.entry.ts: leer; reviewed candidate product/test files unchanged.",
-        "npm run build: PASS; dirty:false; sourceRevision 7098269810801f93be247423862373e912cda210; Node v24.19.0.",
-        "Complete installed main.js/styles.css/manifest.json triplet byte-equal to Shared build after visible Reload app without saving. SHA-256 main=0e26628c2e58a0cc10e64641305cc74a2d77ad027a18d41396e0968207deef37; styles=a6d31c13219d4b9f49d2ecf6993106bedef2a33560c9bdfdb93106659d45bc2e; manifest=2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64. Previous installed main.js was 522823730ddce4d0ba83e0476f60887b60a07c517f84e8e270814b6d597efa43.",
-        "Visible room/key history: after fresh app reload, Undo had no available history and was disabled. One textual Apply established a session-history entry; subsequent Undo restored previous text without losing Room 2/Marker A/Key context, Redo restored exact text and kept context.",
-        "Visible dirty guard: with Undo enabled and second draft uncommitted, toolbar Undo showed “Key-Entwurf zuerst Übernehmen oder Verwerfen.” and preserved draft and applied text. Verwerfen removed only probe draft.",
-        "Visible save/close/reopen: Save status Gespeichert; Ctrl+W, Ctrl+O Quick Switcher, same QA Karte.dungeon, Room 2/Marker A/Key reopened. Final text/trap context visible. QA-file SHA before=12661953ec93498bcfca15df2c1e1cf45c546201077ef47eb313cd7b7e4894db; after Save and after Reopen=741a159b249c99938df9ce6bcc1775f837eaf5b68eb50109aa531269c69192d7.",
-        "No full test suite was run; bounded visible product retest only."
-      ],
-      "uiRun": "completed_visible_apply_undo_redo_dirty_guard_save_close_reopen_pass",
-      "finding": "PASS for the bounded applied key-text history contract, dirty-draft guard and persisted final state. Undo/Redo retained Room 2, marker A, Nadelwerferfalle and the Key panel.",
-      "historySetup": "After reload/reopen, toolbar Undo was disabled because the app session had no history. One Apply of the target control-note line seeded one history action; Undo and Redo then reverted/restored that line. Guard was separately checked with a second draft and active Undo.",
-      "changedFiles": [
-        "checkpoint.json (gmProductTesting root only)",
-        "acceptance.json (gmProductFollowups only)",
-        "ROADMAP-GM-PRODUCT-TESTING-PLAN.md",
-        "No product or test source files."
-      ],
-      "evidence": "/workspace/scratch/gm-cloud-qa/evidence-gmux-trap-content-undo-cloud-retest-20261010-01/ (RUN-NOTES.md; BUILD.txt; INSTALL.txt; triplet-hashes.json; QA-FILE-HASHES.txt; SCREENSHOT-SHA256SUMS.txt; screenshots/01..20)",
-      "notDemonstrated": [
-        "Physical keyboard/mouse or local laptop UI.",
-        "Fresh Electron process; only in-app Reload app without saving and normal tab close/reopen.",
-        "Trap mechanics, rules resolution, PlayerProjection, original-map parity, product latency, broad Dungeon/E2E/Atlas acceptance."
-      ],
-      "next": "No additional GM-UX-TRAP-CONTENT-UNDO product change or retest requested after this bounded PASS. Overall GM scenario and separate Hex-owned Atlas/Location gates remain outside this result.",
-      "priorAttempt": {
-        "id": "GM-UX-TRAP-CONTENT-20261010-01",
-        "status": "partial",
-        "issue8": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/8#issuecomment-6099894041"
+      "id": "GM-CITY-HOUSE-NAME-POSTSAVE-FRESH-PROCESS-20261011-01 + GM-CITY-HOUSE-NAME-PR117-KEYBOARD-FOCUS-20261011-01",
+      "status": "completed_city_fresh_process_reuse_save_pass_and_pr117_apply_discard_keyboard_focus_pass",
+      "owner": "Cloud-GM-Produkttester; existing #92 support claim; City retains package/product ownership",
+      "branch": "codex/gm-city-postsave-focus-20261011 (documentation/evidence only)",
+      "issue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/92",
+      "claim": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/92#issuecomment-6104423993",
+      "scope": "Finish the existing #92 post-save fresh-process City name path once, then the explicitly handed-off narrow PR-117 keyboard Apply/Discard focus check. No repeated Undo/Redo sequence, no second general City path, no product edit.",
+      "cityProductCommit": "eaf6bd95564ab398eabe9b2c0ac046feec079f0f",
+      "cityBuild": {
+        "command": "npm run build",
+        "result": "PASS; Node v24.19.0; dirty:false; exact sourceRevision eaf6bd95564ab398eabe9b2c0ac046feec079f0f; rebuilt after UI run to confirm triplet",
+        "installedTripletByteEqual": true,
+        "mainJsSha256": "46736ec62a71db260ddf3a78b66ddd15417e60cb8d3f796539b2d5b9b1693038",
+        "stylesCssSha256": "df11f8352b61e45d3984d29e0136fc0225aaabe85c7b004a3b55eb0c6cc52934",
+        "manifestJsonSha256": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64"
       },
-      "publishedOnSharedHead": "5e34270fd51162706f363260a92d12ec92bcc865; final post-run receipt Issue #8 comment 6100717372",
-      "sourceDiffSinceTest": "Shared advanced after the UI run from tested commit 7098269810801f93be247423862373e912cda210 to 6ce52f1c8915c006dfdefe2261f0c0c6d77b8483. Target src/editor.ts and tests/room-key-search-panel.entry.ts did not change. Later source diff is limited to catalog inventory/source-manifest/transcript JSON files. A fresh build from current Shared plus documentation commit 1c8d31ac004cb58e5053888a4088405d66163e7b was dirty:false; built main.js/styles.css/manifest.json equal the installed and visibly tested triplet, so no second UI sequence was needed.",
-      "postRunSharedHead": "6ce52f1c8915c006dfdefe2261f0c0c6d77b8483",
-      "postRunCurrentBuildSource": "1c8d31ac004cb58e5053888a4088405d66163e7b (documentation commit atop Shared 6ce52f1; npm run build PASS, dirty:false)",
-      "currentBuildTriplet": "main.js 0e26628c2e58a0cc10e64641305cc74a2d77ad027a18d41396e0968207deef37; styles.css a6d31c13219d4b9f49d2ecf6993106bedef2a33560c9bdfdb93106659d45bc2e; manifest.json 2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64; all match installed and visible test artifacts byte-for-byte.",
-      "postRunReport": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/8#issuecomment-6100717372",
-      "documentationCommit": "5e34270fd51162706f363260a92d12ec92bcc865"
+      "pr117": {
+        "request": "PR #117 / product commit 14729dc429d9699998284b1ee7a3bb8ee3ebc8a3; current Shared a4c2cb39aafdfb7abf5469e575a82e630ef41313",
+        "build": "npm run build PASS; Node v24.19.0; dirty:false; exact sourceRevision a4c2cb39aafdfb7abf5469e575a82e630ef41313",
+        "installedTripletByteEqual": true,
+        "mainJsSha256": "f3332ceac377a77fcdc359316bcba94217a6ca9d1e6bddbb2c932fed3373a953",
+        "stylesCssSha256": "df11f8352b61e45d3984d29e0136fc0225aaabe85c7b004a3b55eb0c6cc52934",
+        "manifestJsonSha256": "2acb4649cad04120636e891c96c5cbb9c84d5b91b1e4e378705b0f58d7a4bd64"
+      },
+      "host": {
+        "containerId": "e49e330d328c1e2d97e6f46a677e34f5f288c4dab7b41db242d3584e4ab66b33",
+        "containerName": "gm-city-cloud-isolated-20261011",
+        "app": "Obsidian 1.14.4 / Electron 43.7.7",
+        "display": "own Xvfb :100, 1440x1000; visible app inner viewport 1024x800 CSS px; devicePixelRatio 1",
+        "cdp": "127.0.0.1:9236, forwarded to own container port 9240",
+        "cityProfile": "/qa/gm-city-postsave-reopen-profile-6105457026",
+        "cityVault": "/dev/shm/gm-city-postsave-reopen-vault-6105457026",
+        "initialCityProcessPid": 2654,
+        "freshCityProcessPid": 3313,
+        "focusProfile": "/dev/shm/gm-city-pr117-profile-6105507657",
+        "focusVault": "/dev/shm/gm-city-pr117-vault-6105507657",
+        "focusProcessPid": 3715,
+        "input": "Visible product UI actions via own Cloud Playwright/CDP; keyboard events synthesized, not physical device input"
+      },
+      "fixture": {
+        "source": "tests/fixtures/atlas-e2e-spatial-v2/input at eaf6bd95564ab398eabe9b2c0ac046feec079f0f",
+        "sourceManifestSha256": "23735bb6c95107b7dec93ffa56ec66405a0f4fe0ec3822fc0476d90d2920188d",
+        "focusVault": "separate copy of this own synthetic City test state"
+      },
+      "cityVisibleResults": [
+        "Closed the initial own Obsidian process via CDP Browser.close; its PID disappeared without force-kill. A fresh app PID opened the same profile/vault. The detached launcher did not provide a recorded exit code.",
+        "After fresh process, clicked visible Torheim marker; filtered the visible target list with “Roter Anker”; the exact saved House B row appeared. Opening it and clicking the house footprint showed the previously saved exact name in the visible House inspector.",
+        "Changed the name once to “Haus B — Roter Anker (Post-Save-Reopen 2026-10-11; erneut verwendet)”, clicked visible Hausname übernehmen, then visible Atlas speichern. The UI showed Gespeichert.",
+        "City semantic oracle against the source fixture found only buildings[1].name changed; IDs 105/106 and all building geometry including House B courtyard remained unchanged. Atlas, both terrain files, Dungeon and both Locations match source hashes; Campaign digests/revisions updated with the City payload."
+      ],
+      "focusVisibleResults": [
+        "On the separate copy with the exact PR-117 triplet installed, focused the visible Gebäudename field, replaced text by keyboard, pressed Tab to Hausname übernehmen and Enter. After rerender, visible focus ring remained on the corresponding replacement Apply button.",
+        "Typed a second draft, used Tab/Tab to Namenseingabe verwerfen and Enter. The replacement Discard button retained visible focus; field reverted to the prior applied value. The next Tab focused the visible Atlas speichern inspector button.",
+        "City, Atlas and Campaign file hashes in the focus-only test copy were unchanged before/after; no persistence action occurred."
+      ],
+      "dataOracle": "docs/reference/gm-city-postsave-reopen-20261011/DATA-ORACLE.txt",
+      "evidence": "docs/reference/gm-city-postsave-reopen-20261011/README.md and screenshots/; screenshot SHA manifest included",
+      "checks": [
+        "npm run build at exact City source eaf6bd95564ab398eabe9b2c0ac046feec079f0f: PASS, dirty:false; installed triplet equality PASS",
+        "npm run build at exact PR-117 Shared source a4c2cb39aafdfb7abf5469e575a82e630ef41313: PASS, dirty:false; installed triplet equality PASS",
+        "Visible fresh-process City reuse/edit/save path PASS for this bounded scope",
+        "Visible PR-117 Apply/Discard keyboard focus continuity PASS for this bounded scope",
+        "npm run check:repo and git diff --check: run before publication",
+        "No automated product test suite run; tests were not substituted for UI use"
+      ],
+      "notDemonstrated": [
+        "Direct Save field-focus case from PR #117",
+        "Physical keyboard/mouse, 200% zoom, product latency, broad UX, external clipping, recovery, PlayerProjection, original-map parity or broad Atlas/Dungeon/E2E acceptance",
+        "PR-117 focus behavior after a separate fresh process; the separate City persistence fresh-process check is bound to eaf6bd9"
+      ],
+      "changedFiles": [
+        "checkpoint.json: gmProductTesting root only",
+        "docs/INDEX.md: link to durable #92 QA evidence",
+        "docs/reference/gm-city-postsave-reopen-20261011/README.md",
+        "docs/reference/gm-city-postsave-reopen-20261011/BUILD-MANIFEST.md",
+        "docs/reference/gm-city-postsave-reopen-20261011/DATA-ORACLE.txt",
+        "docs/reference/gm-city-postsave-reopen-20261011/screenshots/*.png and SHA256SUMS.txt"
+      ],
+      "next": "City hat den abgeschlossenen Fresh-Process-/PR-117-Befund in #92 konsumierbar erhalten. Der separate #80-N04-Fresh-Process-Support bleibt bei Hex; vor Wiederaufnahme Claims/Eingang am bestehenden #80 prüfen, kein City-Replay ohne Produktpfadänderung.",
+      "reportedToIssue": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/92#issuecomment-6105664357"
     },
-    "executedUiRuns": 19,
+    "executedUiRuns": 24,
     "observedFindings": [
       {
         "id": "GM-UX-001",
@@ -10473,7 +11482,7 @@
       "state": "completed",
       "supersedes": "GM-UX-ACCESS; Slotanfrage gemäß Nutzerkorrektur aufgehoben"
     },
-    "next": "No additional GM-UX-TRAP-CONTENT-UNDO product change or retest requested after this bounded PASS. Overall GM scenario and separate Hex-owned Atlas/Location gates remain outside this result.",
+    "next": "Bei nächster passender Ausführung ausschließlich den bestehenden #80-N04-Fresh-Process-Support mit Hex als Parentowner fortsetzen, falls Claim/Eingang weiterhin frei und gültig sind; keine City-Wiederholung ohne relevanten Produktpfadwechsel.",
     "automation": "Stündliche GM-Produkttests in eigener Cloud; keine Laptop-Slotfreigabe erforderlich.",
     "executionEnvironment": "Eigene Cloud-Umgebung, getrennt vom Laptop der Kollegen",
     "cloudHost": {
@@ -10712,7 +11721,7 @@
         "followUp": "Issue #8: Dungeon-Verantwortlicher beauftragt, die interne GM-Spielansicht so zu reparieren, dass Raumkörperklick einen Raum-Inspector mit explizitem „Text öffnen“ und Labelklick den passenden Room-Key öffnet; Keyinhalt nicht automatisch in der Karte rendern. Nach integrierter Änderung denselben Cloud-Ablauf nachtesten. PlayerProjection/Spieler-Rollenverhalten bleibt separat und unbewertet."
       }
     ],
-    "evidence": "/workspace/scratch/gm-cloud-qa/373-current-422-before-reload.png–393-current-422-key-reopened.png; earlier full GM-UX-01 run/evidence retained.",
+    "evidence": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/tree/codex/gm-n04-retest-20261011/docs/reference/gm-cloud-n04-20261011",
     "latestBundleRetest": {
       "date": "2026-10-09",
       "sharedCommit": "422718fe25768ed80a30945f316532546ba3c2cd",

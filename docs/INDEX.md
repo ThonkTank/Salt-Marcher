@@ -27,7 +27,8 @@
 - Veröffentlichung, Fachphasen und Hostschutz: [Arbeitsregeln](WORKFLOW.md).
 - Wiederkehrende Contributor-/Pflege-/Berichtsaufträge: [Arbeitsrollen](AGENT-ROLES.md); gemeinsame Regeln bleiben im Einstieg und Pflege-/Arbeitsvertrag.
 - Synthetische Fixtures ohne GUI: [Campaign B reproduzieren](CONTRIBUTOR-FIXTURE-B.md).
-- Atlas-Save-/Hostkontext: aktueller Aufgabenstand in [#40](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/40), [Fachvertrag](../ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md); frühere H01/D01/R01/H02-Läufe nur gezielt im [Belegregister](reference/PLAN-REGISTER.md#atlas-laufbelege).
+- Atlas-Save-/Hostkontext: aktueller Aufgabenstand in [#80](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/80), [Fachvertrag](../ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md), [Dungeon-am-Ort-H01 und freier GM-Eingang](reference/atlas-detail-binding-d01/dungeon-at-location-h01.md); frühere H01/D01/R01/H02-Läufe nur gezielt im [Belegregister](reference/PLAN-REGISTER.md#atlas-laufbelege).
+- Begrenzter Cloud-GM-N04-Such-/Bearbeiten-/Speichern-/Wiederverwenden-Nachtest für #80: [Runbericht, Buildidentität und Roh-Screenshots](reference/gm-cloud-n04-20261011/README.md).
 - Bestehende Detailpläne und historische Pakete: [Fachplanregister](reference/PLAN-REGISTER.md). Keine Pflichtlektüre beim Einstieg; stabile Pfade bleiben erhalten.
 - GM-Testvorlagen und frühere UI-Nachweise: [bestehender Testplan](../ROADMAP-GM-PRODUCT-TESTING-PLAN.md), nur den benötigten Szenario-/Belegabschnitt lesen. Aktueller Auftrag steht in der GUI-Testrolle und am Paket.
 - Attribution: [NOTICE](../NOTICE.md), [SRD](../src/features/catalog/SRD-5.1-ATTRIBUTION.md), [Items](../src/features/catalog/SRD-5.1-ITEMS-ATTRIBUTION.md).
@@ -35,4 +36,9 @@
 
 Große native Rohbelege liegen häufig auf dem Rechner des Prüfers. Ein historischer absoluter Pfad bestätigt keinen eigenen Zugriff; fehlenden Zugriff und offene Abnahme ausdrücklich nennen.
 
+- World Notes #68: [kleine portable Rollback-/Restjournal-Hostbelege](reference/smr02-world-notes-recovery/README.md) für unabhängige Prüfung; die Gesamt-Abnahme bleibt am Issue.
+
 - Manuelle GM-Sessionplanung: [Implementierung und Campaign-Speicheranschluss](plans/campaign/manual-session-planner.md) zu #69.
+
+- Stadt-Hauskorrektur: [Gebäudenamen im gemeinsamen Atlas](plans/city/building-name-inspector.md) zu #92; [H02 native Rollback-/Retrybelege](reference/city-building-name-h02/receipt.json).
+- Eigener Cloud-GM-Nachtest #92: [City-Hausname nach frischem Obsidian-Prozess wiederfinden/erneut speichern und enger PR-117-Tastaturfokus](reference/gm-city-postsave-reopen-20261011/README.md), mit exakten Buildtripeln, Datenoracle und Screenshots.

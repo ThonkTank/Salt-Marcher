@@ -9,7 +9,7 @@ import { serializeWorldNote } from "../src/features/world/world-notes";
 import { payloadDigest, type CampaignCommandId } from "../src/features/campaign/campaign-contracts";
 import { campaignOwnershipDigestValue } from "../src/features/campaign/campaign-ownership";
 import { worldNotePath, type WorldNotesCommitReceiptV1 } from "../src/features/campaign/world-notes-commit";
-import { WorldNotesPanel } from "../src/ui/world-notes-panel";
+import { WorldNotesDraftBuffer, WorldNotesPanel, type WorldNotesCreatureChoice } from "../src/ui/world-notes-panel";
 
 const id = (n: number) => campaignLocalId(`00000000-0000-4000-8000-${String(n).padStart(12, "0")}`);
 const context = campaignContext(campaignSnapshot({ schemaVersion: 1,
@@ -19,7 +19,10 @@ const context = campaignContext(campaignSnapshot({ schemaVersion: 1,
 const tick = () => new Promise<void>((resolve) => setImmediate(resolve));
 const digest = (value: string) => `sha256:${createHash("sha256").update(value).digest("hex")}`;
 
-function fixture() {
+function fixture(creatures?: {
+  search: (query: string) => Promise<readonly WorldNotesCreatureChoice[]>;
+  detail: (id: string) => Promise<WorldNotesCreatureChoice | null>;
+}, draftBuffer?: WorldNotesDraftBuffer) {
   const { document, window } = parseHTML("<html><body><div id='host'></div></body></html>");
   const host = document.querySelector<HTMLElement>("#host")!;
   let focused: HTMLElement | null = null;
@@ -34,8 +37,11 @@ function fixture() {
   let rejectReceipt = false;
   const issued = new WeakSet<object>();
   const panel = new WorldNotesPanel(host, {
+    draftBuffer,
     newId: () => id(nextId++),
     currentContext: () => context,
+    searchCreatures: creatures?.search,
+    creatureDetail: creatures?.detail,
     digest,
     validateReceipt: (receipt) => {
       if (rejectReceipt || !issued.has(receipt)) throw new Error("Fremdes Receipt");
@@ -90,6 +96,41 @@ function fixture() {
     refuse: (value: boolean) => { refuse = value; }, window };
 }
 
+test("a newer view owns a shared draft; stale close cannot overwrite or revive discard", () => {
+  const drafts = new WorldNotesDraftBuffer();
+  const older = fixture(undefined, drafts);
+  older.click("NPC anlegen"); older.input("Name", "Older view text");
+  const oldInput = older.host.querySelector<HTMLInputElement>("form input")!;
+  const newer = fixture(undefined, drafts);
+  assert.equal(older.host.querySelector<HTMLElement>(".dn-world-notes")?.hidden, true);
+  assert.equal(newer.host.querySelector<HTMLInputElement>("form input")?.value, "Older view text");
+  newer.input("Name", "Newer view text");
+  oldInput.value = "stale edit";
+  oldInput.dispatchEvent(new older.window.Event("input", { bubbles: true }));
+  older.panel.destroy(); newer.panel.destroy();
+  const reopened = fixture(undefined, drafts);
+  assert.equal(reopened.host.querySelector<HTMLInputElement>("form input")?.value, "Newer view text");
+  const peer = fixture(undefined, drafts);
+  peer.click("Entwurf verwerfen"); peer.click("Verwerfen bestätigen");
+  reopened.panel.destroy(); peer.panel.destroy();
+  const afterDiscard = fixture(undefined, drafts);
+  assert.equal(afterDiscard.host.querySelector("form"), null);
+  afterDiscard.panel.destroy();
+});
+
+test("a stale view cannot revive a draft after its peer saves", async () => {
+  const drafts = new WorldNotesDraftBuffer();
+  const stale = fixture(undefined, drafts);
+  stale.click("NPC anlegen"); stale.input("Name", "Saved by peer");
+  const writer = fixture(undefined, drafts);
+  await writer.save();
+  assert.equal(writer.calls.length, 1);
+  stale.panel.destroy(); writer.panel.destroy();
+  const reopened = fixture(undefined, drafts);
+  assert.equal(reopened.host.querySelector("form"), null);
+  reopened.panel.destroy();
+});
+
 test("keyboard focus moves into a new editor and returns after save or discard", async () => {
   const f = fixture();
   f.click("NPC anlegen");
@@ -100,6 +141,79 @@ test("keyboard focus moves into a new editor and returns after save or discard",
   assert.equal(f.focused(), f.host.querySelector("form input"));
   f.click("Entwurf verwerfen"); f.click("Verwerfen bestätigen");
   assert.equal(f.focused(), f.host.querySelector('input[type="search"]'));
+  f.panel.destroy();
+});
+
+test("NPC can choose an existing creature by name without copying catalog content", async () => {
+  const f = fixture({
+    search: async (query) => query === "gob" ? [{ id: "goblin", name: "Goblin" }] : [],
+    detail: async (id) => id === "goblin" ? { id, name: "Goblin" } : null,
+  });
+  f.click("NPC anlegen"); f.input("Name", "Maris");
+  f.input("Kreatur suchen", "gob"); await tick();
+  f.click("Goblin auswählen");
+  assert.equal(f.host.querySelector<HTMLInputElement>('form label input')?.value, "Maris");
+  assert.equal(Array.from(f.host.querySelectorAll("label"))
+    .find((label) => label.textContent?.startsWith("Kreaturreferenz"))?.querySelector("input")?.value, "goblin");
+  await f.save();
+  assert.equal(f.snapshot().records[0]?.creatureId, "goblin");
+  const search = f.host.querySelector<HTMLInputElement>('[aria-label="Notizen durchsuchen"]')!;
+  search.value = "goblin"; search.dispatchEvent(new f.window.Event("input"));
+  assert.deepEqual(Array.from(f.host.querySelectorAll<HTMLButtonElement>(".dn-world-notes-list button"))
+    .map((button) => button.textContent), ["NPC: Maris"]);
+  search.value = ""; search.dispatchEvent(new f.window.Event("input"));
+  f.click("NPC: Maris"); await tick();
+  assert.match(f.host.querySelector("form")!.textContent!, /Goblin \(goblin\)/);
+  assert.equal(f.snapshot().records[0]?.readAloud, "");
+  f.panel.destroy();
+});
+
+test("manual creature edits clear the prior catalog name and late suggestions", async () => {
+  let answer!: (choices: readonly WorldNotesCreatureChoice[]) => void;
+  const f = fixture({
+    search: (query) => query === "dra" ? new Promise((resolve) => { answer = resolve; }) :
+      Promise.resolve([{ id: "goblin", name: "Goblin" }]),
+    detail: async () => null,
+  });
+  f.click("NPC anlegen"); f.input("Name", "Maris");
+  f.input("Kreatur suchen", "gob"); await tick();
+  f.click("Goblin auswählen");
+  f.input("Kreatur suchen", "dra");
+  f.input("Kreaturreferenz", "srd:wizard");
+  answer([{ id: "dragon", name: "Drache" }]); await tick();
+  assert.match(f.host.querySelector("form")!.textContent!, /Kreaturreferenz: srd:wizard/);
+  assert.doesNotMatch(f.host.querySelector("form")!.textContent!, /Goblin|Drache auswählen/);
+  await f.save();
+  assert.equal(f.snapshot().records[0]?.creatureId, "srd:wizard");
+  f.panel.destroy();
+});
+
+test("late creature search cannot populate a discarded NPC editor", async () => {
+  let answer!: (choices: readonly WorldNotesCreatureChoice[]) => void;
+  const f = fixture({
+    search: () => new Promise((resolve) => { answer = resolve; }),
+    detail: async () => null,
+  });
+  f.click("NPC anlegen"); f.input("Kreatur suchen", "gob");
+  f.click("Entwurf verwerfen"); f.click("Verwerfen bestätigen");
+  answer([{ id: "goblin", name: "Goblin" }]); await tick();
+  assert.equal(f.host.querySelector("form"), null);
+  assert.equal(f.host.textContent?.includes("Goblin auswählen"), false);
+  f.panel.destroy();
+});
+
+test("older catalog answers cannot replace the newest creature search", async () => {
+  const answers = new Map<string, (choices: readonly WorldNotesCreatureChoice[]) => void>();
+  const f = fixture({
+    search: (query) => new Promise((resolve) => { answers.set(query, resolve); }),
+    detail: async () => null,
+  });
+  f.click("NPC anlegen"); f.input("Kreatur suchen", "gob");
+  f.input("Kreatur suchen", "dra");
+  answers.get("dra")!([{ id: "adult-red-dragon", name: "Adult Red Dragon" }]); await tick();
+  answers.get("gob")!([{ id: "goblin", name: "Goblin" }]); await tick();
+  assert.match(f.host.querySelector("form")!.textContent!, /Adult Red Dragon auswählen/);
+  assert.doesNotMatch(f.host.querySelector("form")!.textContent!, /Goblin auswählen/);
   f.panel.destroy();
 });
 
@@ -124,6 +238,43 @@ test("GM creates, searches, edits and reopens exact authored prose through confi
   assert.equal(reopened.host.querySelector<HTMLTextAreaElement>("textarea")?.value, "  Licht fällt.\n");
   assert.equal(reopened.host.querySelectorAll<HTMLTextAreaElement>("textarea")[1]?.value, "# Geheim\n\n[[Tor]]\nNeue Spur");
   reopened.panel.destroy();
+});
+
+test("GM finds a related NPC by faction name or relation label", async () => {
+  const f = fixture();
+  f.click("Fraktion anlegen"); f.input("Name", "Nebelbund"); await f.save();
+  f.click("NPC anlegen"); f.input("Name", "Älva");
+  f.host.querySelector('[aria-label="Beziehungsziel"] option')!.setAttribute("selected", "");
+  const relationLabel = f.host.querySelector<HTMLInputElement>('[aria-label="Beziehungsname"]')!;
+  relationLabel.value = "Mitglied";
+  f.click("Beziehung hinzufügen"); await f.save();
+  const search = f.host.querySelector<HTMLInputElement>('input[type="search"]')!;
+  const results = () => Array.from(f.host.querySelectorAll<HTMLButtonElement>(".dn-world-notes-list button"))
+    .map((button) => button.textContent);
+  search.value = "nebelbund"; search.dispatchEvent(new f.window.Event("input"));
+  assert.deepEqual(results(), ["Fraktion: Nebelbund", "NPC: Älva"]);
+  search.value = "mitglied"; search.dispatchEvent(new f.window.Event("input"));
+  assert.deepEqual(results(), ["NPC: Älva"]);
+  f.click("NPC: Älva");
+  f.input("GM-Notizen", "Nicht gespeichert");
+  f.click("Fraktion öffnen");
+  assert.equal(f.host.querySelector<HTMLInputElement>("form input")?.value, "Älva");
+  assert.equal(f.host.querySelectorAll<HTMLTextAreaElement>("textarea")[1]?.value, "Nicht gespeichert");
+  assert.match(f.host.querySelector('[role="alert"]')!.textContent!, /offenen Entwurf/);
+  f.input("GM-Notizen", "");
+  f.click("Fraktion öffnen");
+  assert.equal(f.host.querySelector<HTMLInputElement>("form input")?.value, "Nebelbund");
+  assert.match(f.host.querySelector("form")!.textContent!, /Verweise auf diesen Eintrag/);
+  assert.match(f.host.querySelector("form")!.textContent!, /Mitglied: NPC Älva/);
+  f.input("GM-Notizen", "Ungespeicherter Fraktionsentwurf");
+  f.click("NPC öffnen");
+  assert.equal(f.host.querySelector<HTMLInputElement>("form input")?.value, "Nebelbund");
+  assert.equal(f.host.querySelectorAll<HTMLTextAreaElement>("textarea")[1]?.value,
+    "Ungespeicherter Fraktionsentwurf");
+  f.input("GM-Notizen", "");
+  f.click("NPC öffnen");
+  assert.equal(f.host.querySelector<HTMLInputElement>("form input")?.value, "Älva");
+  f.panel.destroy();
 });
 
 test("failed save retains the draft and never turns a local proposal into confirmed data", async () => {
@@ -177,6 +328,28 @@ test("switching records or campaigns does not silently discard an authored draft
   f.panel.destroy();
 });
 
+test("suspended Campaign mount keeps each draft and rejects detached editor input", () => {
+  const f = fixture(); f.click("Fraktion anlegen"); f.input("Name", "Nebelbund");
+  f.input("GM-Notizen", "A-Entwurf");
+  const staleInput = f.host.querySelectorAll<HTMLTextAreaElement>("textarea")[1]!;
+  const a = f.snapshot(), b = { ...a,
+    campaignId: campaignId("00000000-0000-4000-8000-000000000099"),
+    namespace: campaignNamespace("00000000-0000-4000-8000-000000000098") };
+  f.panel.suspend();
+  assert.equal(f.host.querySelector<HTMLElement>(".dn-world-notes")?.hidden, true);
+  f.panel.update(b);
+  assert.equal(f.host.querySelector("form"), null);
+  f.click("Quest anlegen"); f.input("Name", "B-Entwurf");
+  staleInput.value = "Überschrieben";
+  staleInput.dispatchEvent(new f.window.Event("input", { bubbles: true }));
+  f.panel.suspend(); f.panel.update(a);
+  assert.equal(f.host.querySelector<HTMLInputElement>("form input")?.value, "Nebelbund");
+  assert.equal(f.host.querySelectorAll<HTMLTextAreaElement>("textarea")[1]?.value, "A-Entwurf");
+  f.panel.suspend(); f.panel.update(b);
+  assert.equal(f.host.querySelector<HTMLInputElement>("form input")?.value, "B-Entwurf");
+  f.panel.destroy();
+});
+
 test("unrelated higher commit revision cannot acknowledge a requested record or erase its draft", async () => {
   const f = fixture(); f.click("Quest anlegen"); f.input("Name", "Requested");
   f.input("GM-Notizen", "Nur mein Entwurf");
@@ -203,6 +376,11 @@ test("older and same-revision divergent host projections cannot roll back visibl
   f.panel.update({ ...f.snapshot(), records: [{ ...f.snapshot().records[0]!, title: "Divergent" }] });
   assert.match(f.host.querySelector("ul")!.textContent!, /Newest/);
   assert.doesNotMatch(f.host.querySelector("ul")!.textContent!, /Divergent/);
+  assert.equal(f.host.querySelectorAll<HTMLTextAreaElement>("textarea")[1]?.value, "Entwurf bleibt");
+  f.panel.suspend();
+  assert.equal(f.panel.update(old), false);
+  assert.equal(f.host.querySelector<HTMLElement>(".dn-world-notes")?.hidden, true);
+  assert.equal(f.panel.update(f.snapshot()), true);
   assert.equal(f.host.querySelectorAll<HTMLTextAreaElement>("textarea")[1]?.value, "Entwurf bleibt");
   f.panel.destroy();
 });

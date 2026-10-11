@@ -10,6 +10,7 @@ import {
   type RigidFrame,
   type RelativeAtlasCamera,
 } from "./relative-frame";
+import { AtlasCityBuildingPanel } from "../../ui/atlas-city-building-panel";
 import { AtlasRoomKeyPanel } from "../../ui/atlas-room-key-panel";
 import { AtlasRenderer } from "./atlas-renderer";
 import { hexAddressKey, hexAt } from "./hex";
@@ -87,11 +88,14 @@ export class AtlasEditor {
   private initialization?: Promise<void>;
   private detailEntry?: AtlasDetailEntry;
   private detailHost?: HTMLElement;
+  private inspector?: HTMLElement;
+  private inspectorKey?: string;
   private loadingVisible = false;
   private visibleLoad: Promise<void> = Promise.resolve();
   private visibleLoadFailed = false;
   private key?: LocationKeyPanel;
   private roomKey?: AtlasRoomKeyPanel;
+  private cityKey?: AtlasCityBuildingPanel;
   private spatial?: SpatialCanvas;
   private cityDrag?: {
     gesture: CityGesture;
@@ -287,10 +291,23 @@ export class AtlasEditor {
       },
       terrain,
     );
-    if (storage.locations) {
+    if (storage.locations || storage.spatial) {
       const host = doc.createElement("aside");
       host.className = "dn-atlas-location-dock";
+      host.hidden = true;
+      this.inspector = host;
       body.append(host);
+      host.addEventListener("keydown", (event) => this.escapeInspector(event), { signal: this.abort.signal });
+      const actions = doc.createElement("div"), close = doc.createElement("button");
+      actions.className = "dn-atlas-inspector-actions";
+      close.type = "button";
+      close.textContent = "Zur Karte";
+      close.setAttribute("aria-label", "Key-Inspector schließen");
+      close.addEventListener("click", () => this.closeInspector(), { signal: this.abort.signal });
+      actions.append(close); host.append(actions);
+    }
+    if (storage.locations) {
+      const host = this.inspector!;
       const keyHost = doc.createElement("div");
       host.append(keyHost);
       this.key = new LocationKeyPanel(keyHost, {
@@ -298,6 +315,7 @@ export class AtlasEditor {
         edit: (document) => storage.locations!.edit(document),
         changed: () => this.refreshHistory(),
         save: () => this.save(),
+        escape: (event) => this.escapeInspector(event),
         markdown: storage.locations.markdown,
       });
       if (storage.navigation) {
@@ -325,12 +343,25 @@ export class AtlasEditor {
           this.renderer.host.dataset.spatialError = String(error);
         }
       };
-      const host = doc.createElement("aside");
-      body.append(host);
+      const host = doc.createElement("div");
+      this.inspector!.insertBefore(host, this.detailHost ?? null);
       this.roomKey = new AtlasRoomKeyPanel(host, {
         read: (id) => storage.spatial!.dungeon(id),
         changed: () => this.refreshHistory(),
         save: () => this.save(),
+        escape: (event) => this.escapeInspector(event),
+      });
+    }
+    if (storage.spatial) {
+      const host = doc.createElement("div");
+      this.inspector!.insertBefore(host, this.detailHost ?? null);
+      this.cityKey = new AtlasCityBuildingPanel(host, {
+        read: (id) => storage.spatial!.city(id),
+        assertCurrent: () => { if (this.closed) throw new Error("Atlas ist geschlossen."); this.storage.assertCurrent?.(); },
+        assertInput: () => { if (this.inputBlocked) throw new Error("Atlas nicht bearbeitbar."); },
+        changed: () => this.refreshHistory(),
+        save: () => this.save(),
+        escape: (event) => this.escapeInspector(event),
       });
     }
     this.subscribeTerrain();
@@ -342,7 +373,7 @@ export class AtlasEditor {
     return this.currentTerrain;
   }
   get pendingKey(): boolean {
-    return !!(this.key?.dirty || this.roomKey?.dirty);
+    return !!(this.key?.dirty || this.roomKey?.dirty || this.cityKey?.dirty);
   }
   setInputBlocked(blocked: boolean): void {
     const released = this.inputBlocked && !blocked;
@@ -360,10 +391,13 @@ export class AtlasEditor {
   }
   navigate(target: AtlasResolvedNavigation, assertCurrent: () => void): void {
     assertCurrent();
+    this.applyKeys();
+    this.cityKey?.clear();
+    if (this.spatial) this.spatial.selection = undefined;
     ++this.selectionVersion;
     if (target.key?.kind === "location") {
       this.roomKey?.clear(); this.selectedRoom = undefined;
-      if (this.spatial) this.spatial.selectedRoom = undefined;
+      if (this.spatial) { this.spatial.selectedRoom = undefined; this.spatial.selection = undefined; }
       this.selectedLocation = target.key.documentId;
       this.loadedLocations.add(target.key.documentId);
     } else if (target.key?.kind === "room") {
@@ -382,6 +416,40 @@ export class AtlasEditor {
   private applyKeys(): void {
     this.key?.apply();
     this.roomKey?.apply();
+    this.cityKey?.apply();
+  }
+  private escapeInspector(event: KeyboardEvent): boolean {
+    const focused = this.root.ownerDocument.activeElement;
+    if (event.key !== "Escape" || event.isComposing || this.closed || this.inputBlocked ||
+      this.flushing || this.pointer || !focused || !this.root.contains(focused) ||
+      !(this.selectedLocation || this.selectedRoom || this.selectedBuilding || this.pendingKey)) return false;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    this.closeInspector();
+    return true;
+  }
+  private closeInspector(): void {
+    if (this.closed || this.inputBlocked || this.flushing || this.pointer) return;
+    this.enqueue(() => {
+      // Use the same checked commit as leaving a Key through navigation or the map.
+      // Invalid text must keep its visible draft and selection; no clear happens first.
+      this.applyKeys();
+      ++this.selectionVersion;
+      this.selectedLocation = undefined;
+      this.selectedRoom = undefined;
+      this.key?.clear();
+      this.cityKey?.clear();
+      this.roomKey?.clear();
+      if (this.spatial) {
+        this.spatial.selection = undefined;
+        this.spatial.selectedRoom = undefined;
+      }
+      this.renderer.selectedLocation = undefined;
+      this.syncLocations();
+      this.selection.textContent = "Karte";
+      this.renderer.schedule();
+      this.viewport.focus();
+    });
   }
   private cancelCity(): void {
     this.cityDrag?.gesture.cancel();
@@ -539,6 +607,9 @@ export class AtlasEditor {
     this.finishDrag();
     this.enqueue(async () => {
       this.applyKeys();
+      // Key apply starts draft persistence; finish it before pinning native Save.
+      await this.persistence;
+      this.storage.assertCurrent?.();
       const version = this.persistenceVersion;
       this.status.textContent = "Atlas wird gespeichert …";
       await this.storage.save();
@@ -571,6 +642,7 @@ export class AtlasEditor {
         this.loadedLocations.clear();
         this.failedLocations.clear();
         this.key?.clear();
+        this.cityKey?.clear();
         this.roomKey?.clear();
         this.selectedRoom = undefined;
         if (this.spatial) {
@@ -650,13 +722,38 @@ export class AtlasEditor {
       if (!this.closed && source !== this.terrain) this.renderer.schedule();
     }
   }
+  private get selectedBuilding() {
+    const hit = this.spatial?.selection;
+    return hit?.kind === "building" ? hit : undefined;
+  }
+  private revealInspectorKey(target: readonly string[]): void {
+    // Reset for a different Key, not for draft commits or History redraws of the same one.
+    const key = JSON.stringify(target);
+    if (this.inspector && this.inspectorKey !== key) this.inspector.scrollTop = 0;
+    this.inspectorKey = key;
+  }
   private syncLocations(): void {
+    if (this.inspector) {
+      this.inspector.hidden = !this.selectedLocation && !this.selectedRoom && !this.selectedBuilding && !this.pendingKey;
+      if (this.inspector.hidden) this.inspectorKey = undefined;
+    }
     if (this.detailEntry && this.detailHost) {
-      this.detailHost.hidden = !this.selectedLocation;
+      this.detailHost.hidden = !this.selectedLocation || !!this.selectedBuilding;
       if (this.selectedLocation) this.detailEntry.update(this.storage.navigation!.details(this.selectedLocation));
     }
+    if (this.selectedBuilding && this.cityKey) {
+      if (this.key) this.key.host.hidden = true;
+      if (this.roomKey) this.roomKey.host.hidden = true;
+      this.cityKey.show(this.selectedBuilding.ownerId, this.selectedBuilding.elementId);
+      this.revealInspectorKey(["building", this.selectedBuilding.ownerId, this.selectedBuilding.elementId]);
+      this.selection.textContent = "Haus bearbeiten";
+      return;
+    }
+    if (this.cityKey) this.cityKey.host.hidden = true;
     if (this.selectedRoom && this.roomKey) {
+      if (this.key) this.key.host.hidden = true;
       this.roomKey.show(this.selectedRoom.ownerId, this.selectedRoom.roomId);
+      this.revealInspectorKey(["room", this.selectedRoom.ownerId, this.selectedRoom.roomId]);
       this.selection.textContent = "Raum-Key";
       return;
     }
@@ -671,6 +768,8 @@ export class AtlasEditor {
       this.terrain.placements().some((p) => p.locationId === id)
     ) {
       this.key?.show(document);
+      if (this.key) this.key.host.hidden = false;
+      this.revealInspectorKey(["location", document.id]);
       this.selection.textContent = `${document.type === "city" ? "Stadt" : "POI"}: ${document.name}`;
     } else if (!this.pendingKey) this.key?.clear();
     this.renderer.selectedLocation = id;
@@ -743,6 +842,8 @@ export class AtlasEditor {
       this.loadedLocations.add(id);
       ++this.selectionVersion;
       this.selectedLocation = id;
+      this.cityKey?.clear();
+      if (this.spatial) this.spatial.selection = undefined;
       this.syncLocations();
       this.renderer.schedule();
       this.key?.focusName();
@@ -763,9 +864,10 @@ export class AtlasEditor {
         return;
       this.loadedLocations.add(id);
       this.applyKeys();
+      this.cityKey?.clear();
       this.roomKey?.clear();
       this.selectedRoom = undefined;
-      if (this.spatial) this.spatial.selectedRoom = undefined;
+      if (this.spatial) { this.spatial.selectedRoom = undefined; this.spatial.selection = undefined; }
       this.selectedLocation = id;
       this.renderer.selected = undefined;
       this.syncLocations();
@@ -911,6 +1013,7 @@ export class AtlasEditor {
         if (action === "select" && this.spatial) {
           const hit = this.spatial.hit(this.local(e));
           if (hit?.kind === "room") {
+            this.cityKey?.clear();
             this.key?.clear();
             this.selectedLocation = undefined;
             this.selectedRoom = { ownerId: hit.ownerId, roomId: hit.roomId };
@@ -959,10 +1062,15 @@ export class AtlasEditor {
                 this.status.textContent = String(error);
             }
           } else if (hit?.kind === "city") {
+            this.cityKey?.clear();
             this.roomKey?.clear();
             this.selectedRoom = undefined;
             this.spatial.selectedRoom = undefined;
             this.spatial.selection = hit.hit;
+            this.selectedLocation = undefined;
+            this.key?.clear();
+            this.renderer.selectedLocation = undefined;
+            this.syncLocations();
             this.renderer.selected = undefined;
             action = "city";
             if (hit.hit.kind === "building" || hit.hit.kind === "node") {
@@ -1144,6 +1252,7 @@ export class AtlasEditor {
           ++this.selectionVersion;
           this.selectedLocation = undefined;
           this.key?.clear();
+          this.cityKey?.clear();
           this.roomKey?.clear();
           this.selectedRoom = undefined;
           if (this.spatial) {
@@ -1151,6 +1260,7 @@ export class AtlasEditor {
             this.spatial.selectedRoom = undefined;
           }
           this.renderer.selectedLocation = undefined;
+          this.syncLocations();
           const a = this.address(e, this.renderer.level);
           this.renderer.selected = a;
           this.renderer.schedule();
@@ -1184,7 +1294,10 @@ export class AtlasEditor {
     win.addEventListener(
       "keydown",
       (e) => {
-        if (this.inputBlocked || this.closed || this.root.ownerDocument.activeElement !== this.viewport) return;
+        if (this.inputBlocked || this.closed) return;
+        const focused = this.root.ownerDocument.activeElement;
+        if (focused !== this.viewport) return;
+        if (this.escapeInspector(e)) return;
         if (
           (e.ctrlKey || e.metaKey) &&
           ["s", "z", "y"].includes(e.key.toLowerCase())
@@ -1274,6 +1387,7 @@ export class AtlasEditor {
     this.unsubscribe();
     this.key?.destroy();
     this.roomKey?.destroy();
+    this.cityKey?.destroy();
     this.spatial?.destroy();
     this.renderer.destroy();
     this.root.classList.remove("dn-atlas");

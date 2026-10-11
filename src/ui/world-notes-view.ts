@@ -6,8 +6,9 @@ import { VaultStore } from "../vault-stores";
 import { VaultCampaignRuntimeStorage } from "../vault-campaign-runtime-source";
 import type { AtlasCampaignServices } from "./atlas-campaign-host";
 import { CampaignEntry } from "./campaign-entry";
-import { WorldNotesPanel } from "./world-notes-panel";
+import { WorldNotesDraftBuffer, WorldNotesPanel } from "./world-notes-panel";
 import { WorldNotesNativeSession, recoverWorldNotesBeforeActivation } from "./world-notes-native-session";
+import type { CreatureCatalogLoader } from "../features/catalog/creature-catalog-loader";
 
 export const WORLD_NOTES_VIEW = "dungeon-world-notes";
 const digest = (bytes: string) => `sha256:${createHash("sha256").update(bytes).digest("hex")}`;
@@ -23,7 +24,9 @@ export class WorldNotesView extends ItemView {
   private status?: HTMLParagraphElement;
   private notesHost?: HTMLDivElement;
   private generation = 0;
-  constructor(leaf: WorkspaceLeaf, private readonly services: AtlasCampaignServices) { super(leaf); }
+  constructor(leaf: WorkspaceLeaf, private readonly services: AtlasCampaignServices,
+    private readonly creatures: CreatureCatalogLoader,
+    private readonly draftBuffer: WorldNotesDraftBuffer = new WorldNotesDraftBuffer()) { super(leaf); }
   getViewType(): string { return WORLD_NOTES_VIEW; }
   getDisplayText(): string { return "Kampagnenwissen"; }
   getIcon(): string { return "book-open"; }
@@ -44,12 +47,13 @@ export class WorldNotesView extends ItemView {
     });
     this.unsubscribe = this.services.provider.subscribeContextChanged(() => {
       const current = this.services.provider.currentContext();
-      if (this.mountedContext && (!current ||
-          current.contextToken !== this.mountedContext.contextToken)) this.clearPanel();
+      if (!current) this.suspendPanel();
+      else if (current.contextToken !== this.mountedContext?.contextToken)
+        void this.mount(current).catch((error) => this.message(String(error), true));
       void this.refresh().catch((error) => this.message(String(error), true));
     });
     this.unsubscribeClosed = this.services.subscribeClosed?.(() => {
-      this.clearPanel(); this.message("Kampagnenanschluss ist geschlossen.", true);
+      this.suspendPanel(); this.message("Kampagnenanschluss ist geschlossen.", true);
     });
     await this.refresh();
     const active = this.services.provider.currentContext();
@@ -60,11 +64,15 @@ export class WorldNotesView extends ItemView {
     this.status.textContent = value;
     this.status.setAttribute("role", error ? "alert" : "status");
   }
-  private clearPanel(): void {
+  private suspendPanel(): void {
     this.generation++;
-    this.panel?.destroy(); this.panel = undefined;
+    this.panel?.suspend();
     this.session?.close(); this.session = undefined;
     this.mountedContext = undefined;
+  }
+  private clearPanel(): void {
+    this.suspendPanel();
+    this.panel?.destroy(); this.panel = undefined;
     this.notesHost?.replaceChildren();
   }
   private async refresh(): Promise<void> {
@@ -77,7 +85,7 @@ export class WorldNotesView extends ItemView {
     const current = this.services.provider.currentContext();
     if (current && current.campaignId !== id)
       throw new Error("Kampagne zuerst im Atlas wechseln, damit offene Atlasentwürfe gesichert werden.");
-    if (current?.campaignId === id) { await this.mount(current); return; }
+    if (current?.campaignId === id) { await this.mount(current, true); return; }
     await recoverWorldNotesBeforeActivation({ campaignId: id,
       storage: new VaultCampaignRuntimeStorage(this.app), files: new VaultStore(this.app),
       digest, serializationScope: this.app.vault });
@@ -88,32 +96,51 @@ export class WorldNotesView extends ItemView {
     await this.mount(context);
     await this.refresh();
   }
-  private async mount(context: CampaignContextProjection): Promise<void> {
+  protected createSession(context: CampaignContextProjection): WorldNotesNativeSession {
+    return new WorldNotesNativeSession(this.services,
+      new VaultCampaignRuntimeStorage(this.app), new VaultStore(this.app), digest,
+      this.app.vault, context);
+  }
+  private async mount(context: CampaignContextProjection, reclaimOwnership = false): Promise<void> {
     if (!this.notesHost) return;
     if (this.mountedContext?.contextToken === context.contextToken && this.panel) return;
-    this.clearPanel();
-    const stamp = this.generation,
-      session = new WorldNotesNativeSession(this.services,
-        new VaultCampaignRuntimeStorage(this.app), new VaultStore(this.app), digest,
-        this.app.vault, context);
+    this.suspendPanel();
+    const stamp = this.generation, session = this.createSession(context);
     this.session = session;
     try {
       const snapshot = await session.open();
       if (stamp !== this.generation || this.session !== session) return;
-      this.mountedContext = context;
-      this.panel = new WorldNotesPanel(this.notesHost, {
+      this.panel ??= new WorldNotesPanel(this.notesHost, {
+        draftBuffer: this.draftBuffer,
+        onDraftOwnershipRevoked: () => {
+          this.suspendPanel();
+          this.message("Entwurf in einer anderen Ansicht geöffnet. Hier mit „Erneut versuchen“ übernehmen.");
+        },
         newId: () => campaignLocalId(crypto.randomUUID()),
         currentContext: () => this.services.provider.currentContext(),
         digest,
-        validateReceipt: session.validateReceipt,
-        commit: (command, change, revision) => session.commit(command, change, revision),
+        validateReceipt: (receipt) => {
+          if (!this.session) throw new Error("World-Notes-Kampagnenbindung wurde widerrufen.");
+          this.session.validateReceipt(receipt);
+        },
+        commit: (command, change, revision) => {
+          if (!this.session) throw new Error("World-Notes-Kampagnenbindung wurde widerrufen.");
+          return this.session.commit(command, change, revision);
+        },
+        searchCreatures: async (query) => (await this.creatures.load()).search({ text: query, limit: 8 })
+          .rows.map(({ id, name }) => ({ id, name })),
+        creatureDetail: async (id) => {
+          const creature = (await this.creatures.load()).detail(id);
+          return creature ? { id: creature.id, name: creature.name } : null;
+        },
       });
-      this.panel.update(snapshot);
+      if (!this.panel.update(snapshot, reclaimOwnership))
+        throw new Error("Veralteter World-Stand kann nicht montiert werden.");
+      this.mountedContext = context;
       this.message("");
     } catch (error) {
-      if (this.session === session) {
-        this.clearPanel(); this.message(String(error), true);
-      }
+      if (this.session !== session || stamp !== this.generation) return;
+      this.suspendPanel(); this.message(String(error), true);
       throw error;
     }
   }

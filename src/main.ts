@@ -59,6 +59,7 @@ import { atlasCampaignServices } from "./ui/atlas-campaign-services";
 import { VaultCampaignRuntimeStorage } from "./vault-campaign-runtime-source";
 import { VaultMwsImportMediaFiles } from "./vault-mws-import-media";
 import { WORLD_NOTES_VIEW, WorldNotesView } from "./ui/world-notes-view";
+import { WorldNotesDraftBuffer } from "./ui/world-notes-panel";
 
 export interface OpenMap {
   session: Session;
@@ -151,6 +152,7 @@ interface CreationAppearance {
   readonly buildingWearMode?: "none" | "grime";
 }
 export default class DungeonPlugin extends Plugin {
+  private readonly worldNotesDraftBuffer = new WorldNotesDraftBuffer();
   private campaignServices?: ReturnType<typeof atlasCampaignServices>;
   private atlasCampaigns(): ReturnType<typeof atlasCampaignServices> {
     if (!this.campaignServices) {
@@ -276,7 +278,8 @@ export default class DungeonPlugin extends Plugin {
     this.registerView(ROOM_VIEW, (leaf) => new DungeonRoomView(leaf, this));
     this.registerView(CREATURE_CATALOG_VIEW, (leaf) => new CreatureCatalogView(leaf, this));
     this.registerView(ATLAS_VIEW, (leaf) => new AtlasView(leaf, this.atlasCampaigns()));
-    this.registerView(WORLD_NOTES_VIEW, (leaf) => new WorldNotesView(leaf, this.atlasCampaigns()));
+    this.registerView(WORLD_NOTES_VIEW, (leaf) => new WorldNotesView(leaf, this.atlasCampaigns(),
+      this.creatureCatalog, this.worldNotesDraftBuffer));
     this.registerObsidianProtocolHandler("dungeon-room", (params) => {
       void this.openRoomLink(params).catch((error) => new Notice(String(error)));
     });
